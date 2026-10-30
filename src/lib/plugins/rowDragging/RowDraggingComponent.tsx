@@ -60,18 +60,19 @@ export const RowDraggingComponent = ({ row, table }: CellComponentProps) => {
     onSelect: () => moveRowToEdge(row, table, to),
   })
 
+  const server = !!serverMoveSource(table)
   const getMenuItems = () => [
     move('moveUp', labels.moveUp, -1),
     move('moveDown', labels.moveDown, 1),
-    // В серверной модели — к краям всего списка (ADR 0159, §6).
-    ...(serverMoveSource(table)
+    // В серверной модели — к краям ветки; вложение и вынос — только броском (ADR 0159, §6).
+    ...(server
       ? [
           edge('moveToStart', labels.moveToStart, 'start'),
           edge('moveToEnd', labels.moveToEnd, 'end'),
         ]
       : []),
-    ...((table.options as { enableExpanding?: boolean }).enableExpanding ===
-    true
+    ...(!server &&
+    (table.options as { enableExpanding?: boolean }).enableExpanding === true
       ? [
           {
             id: 'indent',
@@ -82,7 +83,7 @@ export const RowDraggingComponent = ({ row, table }: CellComponentProps) => {
           {
             id: 'outdent',
             label: labels.outdentRow,
-            disabled: !canUnnestRow(row),
+            disabled: !canUnnestRow(row, table),
             onSelect: () => unnestRow(row, table),
           },
         ]

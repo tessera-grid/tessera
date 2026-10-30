@@ -10,6 +10,7 @@ import { DataGrid } from '../../../grid/DataGrid'
 import {
   rowDragging,
   type RowDragEnd,
+  rowExpanding,
   serverRowModel,
   type ServerRowsRequest,
   type ServerRowsResponse,
@@ -17,17 +18,20 @@ import {
 import {
   HANDLE,
   container,
+  depthOf,
   dragOver,
   nextFrame,
   pointer,
   release,
   rowById,
+  settleSlotAfter,
   sleep,
   slot,
 } from './row-drop-helpers'
 
 // Перетаскивание строк в серверной модели настоящей мышью (ADR 0159): бросок на месте в
-// кэше (MV2), промис и откат (MV3), незагруженные строки (MV4), автопрокрутка (MV5).
+// кэше (MV2), промис и откат (MV3), незагруженные строки (MV4), автопрокрутка (MV5), ветки
+// (MV6).
 
 interface Item {
   id: string
@@ -42,14 +46,34 @@ const NO_DATA: Item[] = []
 const server = ({
   total = 1000,
   hold = () => false,
+  holdChildren = () => false,
 }: {
   total?: number
   hold?: (start: number) => boolean
+  /** Держать ответ с вложенными строками ветки до `replyChildren`. */
+  holdChildren?: (parentId: string) => boolean
 } = {}) => {
   const starts: number[] = []
   const held = new Map<number, () => void>()
-  const getRows = ({ start, end }: ServerRowsRequest) =>
+  const heldChildren: (() => void)[] = []
+  const getRows = ({ start, end, parentId }: ServerRowsRequest) =>
     new Promise<ServerRowsResponse<Item>>(resolve => {
+      if (parentId) {
+        const children = () =>
+          resolve({
+            rows: Array.from(
+              { length: Math.max(0, Math.min(end, CHILDREN) - start) },
+              (_, k) => ({
+                id: `${parentId}.${start + k}`,
+                name: `${parentId}.${start + k}`,
+              }),
+            ),
+            rowCount: CHILDREN,
+          })
+        if (holdChildren(parentId)) heldChildren.push(children)
+        else children()
+        return
+      }
       starts.push(start)
       const answer = () =>
         resolve({
@@ -66,19 +90,33 @@ const server = ({
     held.get(start)?.()
     held.delete(start)
   }
-  return { getRows, starts, reply }
+  const replyChildren = () => {
+    for (const answer of heldChildren.splice(0)) answer()
+  }
+  return { getRows, starts, reply, replyChildren }
 }
+
+/** Вложенных строк у ветки. */
+const CHILDREN = 2
+/** Ветки — строки верхнего уровня r3 и r5. */
+const isBranch = (row: { id: string; depth: number }) =>
+  row.depth === 0 && (row.id === 'r3' || row.id === 'r5')
 
 const Grid = ({
   getRows,
   rowCount = 1000,
   blockSize = 20,
   onRowDragEnd,
+  tree = false,
+  height = 420,
 }: {
   getRows: (request: ServerRowsRequest) => Promise<ServerRowsResponse<Item>>
   rowCount?: number
   blockSize?: number
   onRowDragEnd?: (end: RowDragEnd) => void | PromiseLike<unknown>
+  /** У строк r3 и r5 — вложенные строки. */
+  tree?: boolean
+  height?: number
 }) => {
   const table = useCreateTable({
     columns: COLUMNS as never,
@@ -87,10 +125,11 @@ const Grid = ({
     plugins: [
       serverRowModel({ getRows, rowCount, blockSize }),
       rowDragging({ onRowDragEnd }),
+      ...(tree ? [rowExpanding({ hasChildren: isBranch as never })] : []),
     ] as never,
   })
   return (
-    <div style={{ width: 400, height: 420 }}>
+    <div style={{ width: 400, height }}>
       <DataGrid table={table as never} />
     </div>
   )
@@ -229,6 +268,80 @@ describe('перетаскивание строк в серверной моде
       await release()
       expect(indexOf('r17')).toBe(20)
       expect(ends.at(-1)).toMatchObject({ rowId: 'r17', index: 20 })
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('MV6: ветки — пауза раскрывает свёрнутую ветку, бросок — после прихода её строк; перенос внутрь ветки и между ветками', async () => {
+    let holding = true
+    const { getRows, replyChildren } = server({
+      holdChildren: () => holding,
+    })
+    const ends: RowDragEnd[] = []
+    const screen = await render(
+      <Grid
+        getRows={getRows}
+        tree
+        height={640}
+        onRowDragEnd={end => void ends.push(end)}
+      />,
+    )
+    const invalid = () => container().hasAttribute('data-row-drop-invalid')
+    const expanded = (id: string) =>
+      rowById(id)
+        ?.querySelector('.row-expand-button')
+        ?.getAttribute('aria-expanded')
+    try {
+      await expect.poll(() => rowById('r5')).not.toBeNull()
+
+      // Строки ветки в пути: пауза раскрыла её, место недоступно, бросок ничего не меняет.
+      let { at } = await dragOver('r1', 'r3', 1)
+      await settleSlotAfter('r3', at)
+      await expect.poll(() => expanded('r3')).toBe('true')
+      await expect.poll(invalid).toBe(true)
+      await release()
+      expect(ends).toEqual([])
+      expect(indexOf('r1')).toBe(1)
+
+      // Строки пришли, пока строку держат неподвижно: место доступно, бросок — первой
+      // вложенной строкой.
+      ;({ at } = await dragOver('r1', 'r3', 1))
+      at = await settleSlotAfter('r3', at)
+      await expect.poll(invalid).toBe(true)
+      holding = false
+      replyChildren()
+      await expect.poll(() => rowById('r3.0')).not.toBeNull()
+      await expect.poll(invalid).toBe(false)
+      at = await settleSlotAfter('r3', at)
+      await expect
+        .poll(() => rowById('r3')!.hasAttribute('data-row-drop-parent'))
+        .toBe(true)
+      await release()
+      expect(ends.at(-1)).toMatchObject({
+        rowId: 'r1',
+        parentId: 'r3',
+        previousParentId: undefined,
+        index: 0,
+      })
+      expect(indexOf('r1')).toBe(indexOf('r3') + 1)
+      expect(depthOf(rowById('r1')!)).toBe(1)
+      expect(indexOf('r3.0')).toBe(indexOf('r1') + 1)
+
+      // Между ветками: вложенная строка r3 уходит первой в раскрытую r5.
+      rowById('r5')!.querySelector<HTMLElement>('.row-expand-button')!.click()
+      await expect.poll(() => rowById('r5.0')).not.toBeNull()
+      ;({ at } = await dragOver('r3.0', 'r5', 1))
+      await settleSlotAfter('r5', at)
+      await release()
+      expect(ends.at(-1)).toMatchObject({
+        rowId: 'r3.0',
+        parentId: 'r5',
+        previousParentId: 'r3',
+        index: 0,
+      })
+      expect(indexOf('r3.0')).toBe(indexOf('r5') + 1)
+      expect(depthOf(rowById('r3.0')!)).toBe(1)
     } finally {
       await screen.unmount()
     }

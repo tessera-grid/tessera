@@ -4,6 +4,27 @@ import { hasExpandToggle } from '../../core/keyboardActions'
 import type { Row } from '../../types'
 import type { RowSortableData } from './types'
 
+/**
+ * Детей у строки: в серверной модели массива `subRows` нет — число сестёр первого ребёнка
+ * (ADR 0159).
+ */
+const childCountOf = (row: Row<any, any>) => {
+  if (row.subRows.length > 0) return row.subRows.length
+  const source = (
+    row.table as {
+      getRowSource?: () => {
+        indexOf: (id: string) => number
+        treeAria?: (
+          index: number,
+        ) => { level: number; setSize: number } | undefined
+      }
+    }
+  ).getRowSource?.()
+  const index = source?.indexOf(row.id) ?? -1
+  const child = index < 0 ? undefined : source?.treeAria?.(index + 1)
+  return child?.level === row.depth + 2 ? child.setSize : 0
+}
+
 export const getMinDepth = (
   activeItem: Row<any, any>,
   targetItem: Row<any, any> | undefined,
@@ -12,10 +33,7 @@ export const getMinDepth = (
   if (!targetItem) return 0
 
   // Минимальная вложенность = 1, если роняем элемент на первое место раскрытой группы, и если это не единственный элемент в группе
-  if (
-    (targetItem.getIsExpanded?.() ?? false) &&
-    targetItem.subRows.length > 1
-  ) {
+  if ((targetItem.getIsExpanded?.() ?? false) && childCountOf(targetItem) > 1) {
     return targetItem.depth + 1
   }
 

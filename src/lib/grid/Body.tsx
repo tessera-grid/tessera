@@ -137,8 +137,11 @@ export const Body = ({
     [treeLinesIndex, rows, drop, first, last],
   )
   // Будущий родитель слота подсвечен (ADR 0109, §4).
+  // Строки — по источнику: у серверной модели массива строк нет (ADR 0159, §4).
   const dropParent =
-    drop?.acceptable && drop.depth > 0 ? findDropParent(rows, drop, first) : -1
+    drop?.acceptable && drop.depth > 0
+      ? findDropParent(rowSource, drop, first)
+      : -1
   const linesOf = (index: number, isActive: boolean) => {
     if (!drop || !projected) {
       return isActive && drop

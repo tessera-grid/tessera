@@ -36,7 +36,8 @@ import { inOneCommit } from '../../core/oneCommit'
 import { findDropParent, indexBeforeMove } from '../../grid/dnd/dropParent'
 import { dragRowsOf } from './dragRows'
 import { dropPlace } from './dropPlace'
-import { commitServerMove } from './serverMove'
+import { rowSourceOf } from '../../core/rowSource'
+import { commitServerMove, type ServerMovePlace } from './serverMove'
 import type { ExpandTimer } from './expandTimer'
 import { getRowDraggableOffsetLeft } from './getRowDraggableOffsetLeft'
 import { reorderRows } from './reorderRows'
@@ -266,11 +267,30 @@ export const getRowDraggingEvents = (
     to: number,
     depth: number,
   ) =>
-    // Без rowExpanding ленивых родителей нет.
+    // Без rowExpanding ленивых родителей нет; ветки серверной модели — не стадия модели.
+    !rows.server &&
     !!(activeRow as ExpandableRow).getIsLazyParent &&
     !canMoveInLazyTree(table) &&
     (isLazyParent(activeRow.getParentRow()) ||
       isLazyParent(rows.at(findDropParent(rows, { from, to, depth }, 0))))
+
+  /**
+   * Место броска в серверной модели (ADR 0159, §4): ветка раскрыта, её строки пришли, сестра
+   * рядом видна; иначе `undefined`.
+   */
+  const serverPlace = (
+    activeRow: Row<any, any>,
+    from: number,
+    to: number,
+    depth: number,
+  ): ServerMovePlace | undefined => {
+    const place = dropPlace(rows, activeRow, { from, to, depth })
+    if (place.index < 0 || (depth > 0 && !place.parent)) return undefined
+    const parentId = place.parent?.id
+    return rowSourceOf(table).branchSize?.(parentId)
+      ? { parentId, index: place.index }
+      : undefined
+  }
 
   // Шаг уровня читается из темы на старте перетаскивания, а не в рендере (RE64):
   // обработчики, пересозданные посреди перетаскивания, читают его при первом событии.
@@ -283,7 +303,20 @@ export const getRowDraggingEvents = (
     // её уровень в том же кадре.
     onRowModelChange: () => {
       const { activeId, fromIndex, overIndex, depth } = rowDraggingState
-      if (activeId === null || fromIndex === null || !overIndex) return
+      if (activeId === null || fromIndex === null || overIndex === null) return
+      // Строки ветки пришли без движения указателя — место становится допустимым.
+      if (rowDraggingState.waitsForBranch) {
+        const active = rows.byId(String(activeId))
+        if (active && serverPlace(active, fromIndex, overIndex, depth)) {
+          onRowDraggingChange(prev => ({
+            ...prev,
+            acceptable: true,
+            waitsForBranch: false,
+          }))
+        }
+        return
+      }
+      if (!overIndex) return
       const above = rows.at(
         indexBeforeMove(overIndex - 1, fromIndex, overIndex),
       )
@@ -406,10 +439,17 @@ export const getRowDraggingEvents = (
       if (group) expandTimer?.arm(group.id, delay, () => openByDelay(group))
       else expandTimer?.clear()
 
+      // Ветка серверной модели свёрнута или её строк ещё нет — бросок после их прихода.
+      const waitsForBranch =
+        acceptable &&
+        rows.server &&
+        !serverPlace(activeRow, activeVirtualIndex, overVirtualIndex, depth)
+
       onRowDraggingChange?.(prev => ({
         ...prev,
         offsetLeft: getOffsetLeftFromDepth(depth, getLevelStep()),
-        acceptable,
+        acceptable: acceptable && !waitsForBranch,
+        waitsForBranch,
         fromIndex: activeVirtualIndex,
         overIndex: overVirtualIndex,
         overId: String(over.id),
@@ -457,20 +497,35 @@ export const getRowDraggingEvents = (
       }
 
       const rowId = String(active.id)
-      // Серверная модель (ADR 0159, §2): строка встаёт на место слота транзакцией источника.
+      // Серверная модель (ADR 0159, §2, §4): строка встаёт на место слота транзакцией
+      // источника — в ветку, чьи строки пришли.
       if (rows.server) {
+        const place = serverPlace(
+          activeRow,
+          activeVirtualIndex,
+          overVirtualIndex,
+          currentDepth,
+        )
+        if (
+          !place ||
+          (place.parentId === activeRow.parentId &&
+            place.index === activeRow.index)
+        ) {
+          return cancel(active.id, 'cancel')
+        }
         reportAction(table, {
           plugin: 'rowDragging',
           action: 'drop',
-          detail: { rowId, index: overVirtualIndex },
+          detail: { rowId, parentId: place.parentId, index: place.index },
           source: 'pointer',
           phase: 'end',
         })
+        collapseOpenedByDelay(lineageOf(place.parentId))
         commitServerMove(
           table,
           rowId,
-          activeVirtualIndex,
-          overVirtualIndex,
+          { from: activeVirtualIndex, to: overVirtualIndex },
+          place,
           releaseSessionHooks<Partial<RowDraggingHooks>>(
             table as never,
             'rowDragging',

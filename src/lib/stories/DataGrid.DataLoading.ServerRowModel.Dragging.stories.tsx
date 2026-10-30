@@ -14,11 +14,12 @@ import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
   GuideStory,
   type GuideStoryStep,
+  type StepRun,
   guideArgs,
   stepAction,
 } from './demos/GuideStory'
 import { StoryComponent } from './DataGridStory'
-import { hasRow, layout } from './__mocks__/serverRowModelGuide'
+import { hasRow, layout, skeletonRows } from './__mocks__/serverRowModelGuide'
 import {
   answerMove,
   dragProps,
@@ -26,12 +27,21 @@ import {
   dropRow,
   indexOfRow,
   movePending,
+  releaseChildren,
 } from './__mocks__/serverDraggingGuide'
+import {
+  type HeldRow,
+  holdRowAtLevel,
+  layoutStill,
+  rowIndent,
+  rowOf,
+} from './__mocks__/rowDragHold'
+import { DRAG_FILL, OVERLAY } from './rowDragging.dnd'
 
 /**
  * Перетаскивание строк в серверной модели (ADR 0159): `Playground` — строки с «сервера»
- * с ручным порядком, ответ «сервера» на перенос — контролами; S1 — перенос подтверждён,
- * S2 — отказ.
+ * с ручным порядком, ответ «сервера» на перенос и ветки — контролами; S1 — перенос
+ * подтверждён, S2 — отказ, S3 — перенос в ветку.
  */
 const meta = {
   ...dataGridMeta,
@@ -47,15 +57,16 @@ const AT_REST = {} as Parameters<NonNullable<GuideStoryStep['props']>>[0]
 interface DraggingPlaygroundArgs extends StoryProps {
   saveDelayMs: number
   refuseMoves: boolean
+  branches: boolean
 }
 
 export const ServerDraggingPlayground: StoryObj<DraggingPlaygroundArgs> = {
   name: 'Playground',
-  parameters: showControls(['saveDelayMs', 'refuseMoves'], {
+  parameters: showControls(['saveDelayMs', 'refuseMoves', 'branches'], {
     dataCount: 'строки подаёт «сервер» демо',
     columnCount: 'колонки задаёт демо',
   }),
-  args: { ...layout, saveDelayMs: 800, refuseMoves: false },
+  args: { ...layout, saveDelayMs: 800, refuseMoves: false, branches: false },
   argTypes: {
     saveDelayMs: {
       description: 'Время ответа «сервера» на перенос, мс',
@@ -65,14 +76,18 @@ export const ServerDraggingPlayground: StoryObj<DraggingPlaygroundArgs> = {
       description: '«Сервер» отклоняет переносы',
       control: 'boolean',
     },
+    branches: {
+      description: 'У части строк — вложенные строки с «сервера»',
+      control: 'boolean',
+    },
   },
-  render: ({ saveDelayMs, refuseMoves, ...args }) => {
+  render: ({ saveDelayMs, refuseMoves, branches, ...args }) => {
     dragServer.auto = true
     dragServer.refuse = refuseMoves
     return (
       <StoryComponent
         {...normalizeArgs(args)}
-        {...dragProps({ delayMs: saveDelayMs })!(AT_REST)}
+        {...dragProps({ delayMs: saveDelayMs, tree: branches })!(AT_REST)}
       />
     )
   },
@@ -204,6 +219,169 @@ export const ServerDragRefused: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(indexOfRow(canvas, MOVED)).toBe(1)
+      await settle()
+    })
+  },
+}
+
+// --- S3: перенос в ветку --------------------------------------------------------------
+
+const LEAF = 'item-id-1'
+const BRANCH = 'item-id-3'
+
+const toggleOf = (root: HTMLElement, id: string) =>
+  rowOf(root, id)?.querySelector<HTMLElement>('.row-expand-button')
+const branchOpen = (root: HTMLElement) =>
+  toggleOf(root, BRANCH)?.getAttribute('aria-expanded') === 'true'
+const placeInvalid = (root: HTMLElement) =>
+  !!root
+    .querySelector('.data-grid__container')
+    ?.hasAttribute('data-row-drop-invalid')
+/** Строка — первая вложенная строка раскрытой ветки. */
+const inBranch = (root: HTMLElement) =>
+  branchOpen(root) &&
+  indexOfRow(root, LEAF) === indexOfRow(root, BRANCH) + 1 &&
+  rowIndent(root, LEAF, 'name') > rowIndent(root, BRANCH, 'name')
+
+/**
+ * Пользователь держит строку над свёрнутой веткой на уровне её вложенных строк, пока пауза
+ * её не раскроет (ADR 0109).
+ */
+const pauseOverBranch = async (root: HTMLElement, run: StepRun) => {
+  const held: HeldRow = await holdRowAtLevel(root, LEAF, BRANCH, 1, run, 'name')
+  // Слот переезжает за указателем: указатель доводится, пока слот не встал под веткой.
+  let y = rowOf(root, BRANCH)!.getBoundingClientRect().bottom
+  for (let tries = 0; ; tries++) {
+    await layoutStill(rowOf(root, BRANCH)!)
+    run.signal.throwIfAborted()
+    const slot = root.querySelector(DRAG_FILL)!.getBoundingClientRect()
+    const branch = rowOf(root, BRANCH)!.getBoundingClientRect()
+    if (Math.abs(slot.top - branch.bottom) < 2) break
+    if (tries === 12) throw new Error(`Слот не под строкой ${BRANCH}`)
+    y += slot.top < branch.top ? 6 : -6
+    await held.moveTo({ x: held.xAt(1), y }, 2)
+  }
+  await pollUntil(() => branchOpen(root), run.signal)
+  return held
+}
+
+/** Пауза раскрыла ветку, вложенные строки пришли: место доступно. */
+const holdInOpenBranch = async (root: HTMLElement, run: StepRun) => {
+  releaseChildren()
+  const held = await pauseOverBranch(root, run)
+  await pollUntil(
+    () => skeletonRows(root) === 0 && !placeInvalid(root),
+    run.signal,
+  )
+  return held
+}
+
+/** Строка уже в ветке, иначе пользователь переносит её туда. */
+const dropIntoBranch = async (root: HTMLElement, run: StepRun) => {
+  if (inBranch(root)) return
+  const held = await holdInOpenBranch(root, run)
+  held.release()
+}
+
+const TREE: readonly GuideStoryStep[] = [
+  {
+    title: 'Строки с вложенными записями',
+    hint: 'Сервер отдаёт строки блоками. У части строк — кнопка раскрытия: их вложенные строки таблица ещё не загружала.',
+    props: dragProps({ tree: true }),
+    enter: stepAction(async (root, { signal }) => {
+      dragServer.auto = false
+      releaseChildren()
+      await pollUntil(() => !!toggleOf(root, BRANCH), signal)
+    }),
+  },
+  {
+    title: 'Пауза над свёрнутой строкой',
+    hint: 'Пользователь задержал строку над свёрнутой строкой на уровне её вложенных: пауза раскрыла её, и таблица запросила вложенные строки. Пока они в пути, под строкой — скелеты, а место броска недоступно: облако в тоне ошибки.',
+    states: ['drag.rowInvalid', 'body.skeleton'],
+    enter: stepAction(async (root, run) => {
+      releaseChildren()
+      dragServer.holdChildren = true
+      await pauseOverBranch(root, run)
+      await pollUntil(
+        () => skeletonRows(root) > 0 && placeInvalid(root),
+        run.signal,
+      )
+    }),
+  },
+  {
+    title: 'Вложенные строки пришли',
+    hint: 'Сервер прислал вложенные строки: место броска стало доступно, слот встал первой вложенной строкой, будущий родитель обведён.',
+    states: ['drag.groupParent'],
+    enter: stepAction(async (root, run) => {
+      await holdInOpenBranch(root, run)
+    }),
+  },
+  {
+    title: 'Пользователь отпустил строку',
+    hint: 'Строка встала первой вложенной строкой, а сервер ещё сохраняет перенос: по ручке бежит дуга ожидания.',
+    states: ['drag.pending'],
+    enter: stepAction(async (root, run) => {
+      await dropIntoBranch(root, run)
+      await pollUntil(() => movePending(root, LEAF), run.signal)
+    }),
+  },
+  {
+    title: 'Сервер подтвердил',
+    hint: 'Сервер сохранил перенос: дуга погасла, строка осталась в ветке и коротко вспыхнула тоном успеха.',
+    enter: stepAction(async (root, run) => {
+      await dropIntoBranch(root, run)
+      await pollUntil(() => dragServer.moves.length > 0, run.signal)
+      answerMove(true)
+      await pollUntil(() => !movePending(root, LEAF), run.signal)
+    }),
+  },
+]
+
+/** ADR 0159, S3: пауза раскрывает свёрнутую ветку, бросок — после прихода её строк. */
+export const ServerDragTree: StoryObj<StoryProps> = {
+  name: 'Move into a branch',
+  parameters: { scenario: '0159/S3', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Перенос в ветку"
+      steps={TREE}
+      args={guideArgs(layout, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(TREE[0]!.title, async () => {
+      await stepDone(canvas)
+      await expect(branchOpen(canvas)).toBe(false)
+    })
+    await step(TREE[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(branchOpen(canvas)).toBe(true)
+      await expect(placeInvalid(canvas)).toBe(true)
+    })
+    await step(TREE[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(placeInvalid(canvas)).toBe(false)
+      await expect(rowOf(canvas, BRANCH)).toHaveAttribute(
+        'data-row-drop-parent',
+      )
+    })
+    await step(TREE[3]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await until(() => expect(document.querySelector(OVERLAY)).toBeNull())
+      await expect(inBranch(canvas)).toBe(true)
+      await expect(indexOfRow(canvas, LEAF)).toBe(
+        indexOfRow(canvas, BRANCH) + 1,
+      )
+    })
+    await step(TREE[4]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(inBranch(canvas)).toBe(true)
+      await expect(movePending(canvas, LEAF)).toBe(false)
       await settle()
     })
   },

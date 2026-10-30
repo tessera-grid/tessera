@@ -248,7 +248,7 @@ describe('перетаскивание строк в серверной моде
       const from = items.findIndex(item => item.id === 'r15')
       items.splice(25, 0, ...items.splice(from, 1))
     })
-    expect(source().moveRow!('r15', 25)).toBe(true)
+    expect(source().moveRow!('r15', { index: 25 })).toBe(true)
     await act(async () => before.resolve({ rows: stale, rowCount: TOTAL }))
     await answerOpen()
     show(0, 29)

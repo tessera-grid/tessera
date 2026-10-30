@@ -77,11 +77,22 @@ export interface RowSource<TRow = unknown> {
   /** Сквозной индекс строки, в том числе на другой странице; `-1` — её нет в списке. */
   listIndexOf?: (id: string) => number
   /**
-   * Перенести строку верхнего уровня на место `index` среди корней — сразу, без запроса
-   * (ADR 0159, §2). Строки нет в кэше — встаёт по данным `original`, итог прежний; без них
-   * — `false`.
+   * Строк в ветке `parentId` (без него — корней) и известен ли её итог; ветка не раскрыта —
+   * `undefined` (ADR 0159, §4).
    */
-  moveRow?: (id: string, index: number, original?: unknown) => boolean
+  branchSize?: (
+    parentId: string | undefined,
+  ) => { count: number; known: boolean } | undefined
+  /**
+   * Перенести строку на место `index` в ветке `parentId` (без него — среди корней) — сразу,
+   * без запроса (ADR 0159, §2, §4). Строки нет в кэше — встаёт по данным `original`, итог
+   * ветки прежний; без них — `false`. Ветка не загружена — `false`.
+   */
+  moveRow?: (
+    id: string,
+    place: { parentId?: string; index: number },
+    original?: unknown,
+  ) => boolean
   /** Строк в группе по строке-группе (серверная группировка, ADR 0144); иначе — нет. */
   groupChildCount?(row: TRow): number | undefined
   /** Итоги колонок выборки — из ответа сервера (ADR 0144, §4). */

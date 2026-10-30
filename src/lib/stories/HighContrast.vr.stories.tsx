@@ -911,6 +911,36 @@ export const HighContrastServerDragRefusedStep3 = {
   tags: ['!test'],
 }
 
+export const HighContrastServerDragTreeStep1 = {
+  ...twinStep(serverDraggingStories, serverDraggingStories.ServerDragTree, 1),
+  name: 'Data loading/Server row model/Dragging — Move into a branch, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerDragTreeStep2 = {
+  ...twinStep(serverDraggingStories, serverDraggingStories.ServerDragTree, 2),
+  name: 'Data loading/Server row model/Dragging — Move into a branch, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerDragTreeStep3 = {
+  ...twinStep(serverDraggingStories, serverDraggingStories.ServerDragTree, 3),
+  name: 'Data loading/Server row model/Dragging — Move into a branch, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerDragTreeStep4 = {
+  ...twinStep(serverDraggingStories, serverDraggingStories.ServerDragTree, 4),
+  name: 'Data loading/Server row model/Dragging — Move into a branch, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastServerDragTreeStep5 = {
+  ...twinStep(serverDraggingStories, serverDraggingStories.ServerDragTree, 5),
+  name: 'Data loading/Server row model/Dragging — Move into a branch, шаг 5',
+  tags: ['!test'],
+}
+
 export const HighContrastServerRowModelMillionRowsStep1 = {
   ...twinStep(
     serverRowModelStories,

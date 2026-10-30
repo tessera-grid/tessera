@@ -87,7 +87,6 @@ declare module '@tanstack/react-table' {
 type DraggableTable = {
   options: {
     enableRowDragging?: boolean | ((row: unknown) => boolean)
-    enableExpanding?: boolean
   }
   getHeaderGroups: () => unknown[]
   atoms: {
@@ -117,15 +116,12 @@ export const warnLazyTree = (table: unknown) =>
 
 /**
  * Группировка / сортировка / фильтр гасят drag (вложенная шапка — нет, ADR 0052). В
- * серверной модели строк — тоже они: порядком владеет сервер (ADR 0159, §1); дерево
- * серверной модели — до этапа 2 ADR 0159.
+ * серверной модели строк — тоже они: порядком владеет сервер (ADR 0159, §1).
  */
 export const rowDraggingInertReason = (
   table: unknown,
 ): PluginInertReason | undefined => {
-  const server = serverRowModelReason(table)
   const t = table as DraggableTable
-  if (server && t.options.enableExpanding === true) return server
   if ((t.atoms.grouping?.get() ?? []).length > 0) {
     return 'grouping'
   }
@@ -156,6 +152,8 @@ export const canDragRow = (row: DraggableRow): boolean => {
     return false
   }
   if (
+    // Ветки серверной модели переносятся транзакцией источника, не стадией модели.
+    !serverRowModelReason(row.table) &&
     row.getParentRow()?.getIsLazyParent?.() &&
     !canMoveInLazyTree(row.table)
   ) {

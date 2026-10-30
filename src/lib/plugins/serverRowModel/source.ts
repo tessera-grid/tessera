@@ -731,17 +731,19 @@ const createServerSource = (table: unknown): ServerSource => {
       return index < start || index >= end ? -1 : index - start
     },
     listIndexOf: id => shown.store.indexOf(id),
+    branchSize: parentId => shown.store.branchSize(parentId),
     // Перенос — транзакция строк (ADR 0157): удаление и вставка одной пачкой, итог тот же.
-    moveRow: (id, index, original) => {
+    moveRow: (id, { parentId, index }, original) => {
       const row = shown.store.rowById(id)
-      // Строки уже нет в кэше (ушла за окно): встаёт по данным, итог прежний.
+      // Строки уже нет в кэше (ушла за окно): встаёт по данным, итог ветки прежний.
       if (!row && original === undefined) return false
       const result = shown.store.applyTransaction(
         row
-          ? { remove: [id], add: { data: [row.original], index } }
+          ? { parentId, remove: [id], add: { data: [row.original], index } }
           : {
+              parentId,
               add: { data: [original], index },
-              rowCount: shown.store.rootCount(),
+              rowCount: shown.store.branchSize(parentId)?.count,
             },
       )
       return result !== 'branchNotLoaded'

@@ -179,7 +179,8 @@ export const moveRow = (
 
 /** Предыдущая корневая строка-группа, в которую вкладывается строка. */
 const nestTargetOf = (row: MoveRow, table: unknown) => {
-  if (row.getParentRow() || row.subRows.length > 0) {
+  // В серверной модели вложение и вынос — только броском (ADR 0159, §6).
+  if (serverMoveSource(table) || row.getParentRow() || row.subRows.length > 0) {
     return undefined
   }
   const target = (table as MoveTable).getCoreRowModel().rows[row.index - 1]
@@ -232,14 +233,15 @@ export const nestRow = (row: unknown, table: unknown) => {
 }
 
 /** Выносится только подстрока корневой группы. */
-export const canUnnestRow = (row: unknown) => {
+export const canUnnestRow = (row: unknown, table: unknown) => {
+  if (serverMoveSource(table)) return false
   const parent = (row as MoveRow).getParentRow()
   return !!parent && parent.depth === 0
 }
 
 /** Подстрока встаёт в корень сразу после родителя. */
 export const unnestRow = (row: unknown, table: unknown) => {
-  if (!canUnnestRow(row)) {
+  if (!canUnnestRow(row, table)) {
     return
   }
   const r = row as MoveRow

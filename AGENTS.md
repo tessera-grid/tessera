@@ -1026,10 +1026,11 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       ([ADR 0158](docs/decisions/0158-ssrm-pagination.md)).
     - _Перетаскивание строк в SSRM:_ модульный `serverRowDragging.dom` (MV1, MV8–MV10 — активен
       и инертен при серверной сортировке и фильтре, меню ручки и клавиши, блок в пути, канал
-      действий), визуальный `server-row-dragging` (MV2–MV5 — бросок в кэше, промис и откат,
-      незагруженные строки, автопрокрутка в растянутой области), перф MV11 — в `interaction`,
-      истории «Data loading/Server row model/Dragging» (S1–S2)
-      ([ADR 0159](docs/decisions/0159-ssrm-row-dragging.md), этап 1).
+      действий), визуальный `server-row-dragging` (MV2–MV6 — бросок в кэше, промис и откат,
+      незагруженные строки, автопрокрутка в растянутой области, ветки: пауза раскрывает,
+      бросок после прихода строк, перенос внутрь и между ветками), перф MV11 — в
+      `interaction`, истории «Data loading/Server row model/Dragging» (S1–S3)
+      ([ADR 0159](docs/decisions/0159-ssrm-row-dragging.md), этапы 1–2).
     - _Сверка требований:_ модульный `checkRequirements` (TQ10 — пропуск, дубль,
       неизвестный ID, коллизия, устаревшая запись базы; TQ11 — источники из рабочего
       дерева, удалённый непроиндексированный файл не роняет сверку,

@@ -622,6 +622,18 @@ export class BlockTree<TData, TRow, TQuery> {
     return this.root.store.count()
   }
 
+  /**
+   * Строк в ветке `parentId` (без него — корней) и известен ли её итог; ветка не раскрыта —
+   * `undefined`.
+   */
+  branchSize(
+    parentId: string | undefined,
+  ): { count: number; known: boolean } | undefined {
+    const node = this.nodes.get(parentId)
+    if (!node || !this.openNodes().has(node)) return undefined
+    return { count: node.store.count(), known: node.store.isTotalKnown() }
+  }
+
   /** Итог корней известен: задан, пришёл в ответе или найден коротким блоком. */
   isRootCountKnown(): boolean {
     return this.root.store.isTotalKnown()

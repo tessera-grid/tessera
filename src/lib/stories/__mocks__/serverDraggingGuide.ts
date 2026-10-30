@@ -1,7 +1,7 @@
 /**
- * «Сервер» гайдов перетаскивания строк в серверной модели (ADR 0159): свой порядок строк,
- * блоки из него, перенос сохраняется по шагу гайда — подтверждение меняет порядок
- * «сервера», отказ его не трогает.
+ * «Сервер» гайдов перетаскивания строк в серверной модели (ADR 0159): свой порядок строк и
+ * вложенных строк веток, блоки из него, перенос сохраняется по шагу гайда — подтверждение
+ * меняет порядок «сервера», отказ его не трогает.
  */
 import type { TesseraFeatureEntry } from '../../core/features'
 import type {
@@ -31,15 +31,50 @@ interface Move {
 const initialItems = () =>
   Array.from({ length: DRAG_TOTAL }, (_, i) => filteringItemAt(i))
 
+/** Вложенных строк у ветки. */
+const BRANCH_CHILDREN = 4
+
+/** У каждой четвёртой строки верхнего уровня — вложенные строки (S3). */
+export const isBranch = (id: string) =>
+  !id.includes('.') && Number(id.split('-').at(-1)) % 4 === 3
+
 /** Порядок строк «сервера» и переносы, ждущие его ответа. */
 export const dragServer = {
   table: undefined as unknown,
   items: initialItems(),
   moves: [] as Move[],
+  /** Вложенные строки веток, которые «сервер» уже отдавал. */
+  children: new Map<string, FilteringItem[]>(),
+  /** Ответы с вложенными строками «сервер» держит до шага гайда. */
+  holdChildren: false,
+  held: [] as (() => void)[],
   /** Переносы «сервер» подтверждает сам — без шага гайда. */
   auto: false,
   /** Ответ на перенос — отказ. */
   refuse: false,
+}
+
+/** Строки ветки `parentId`, без него — верхнего уровня. */
+const listOf = (parentId: string | undefined) => {
+  if (!parentId) return dragServer.items
+  let list = dragServer.children.get(parentId)
+  if (!list) {
+    const first = DRAG_TOTAL + Number(parentId.split('-').at(-1)) * 10
+    list = Array.from({ length: BRANCH_CHILDREN }, (_, k) => ({
+      ...filteringItemAt(first + k),
+      id: `${parentId}.${k}`,
+    }))
+    dragServer.children.set(parentId, list)
+  }
+  return list
+}
+
+/** «Сервер» отдаёт вложенные строки, которые держал. */
+export const releaseChildren = () => {
+  dragServer.holdChildren = false
+  const held = dragServer.held
+  dragServer.held = []
+  for (const answer of held) answer()
 }
 
 export const MOVE_REFUSAL = 'The server could not save the new order'
@@ -52,9 +87,10 @@ export const answerMove = (ok: boolean) => {
     move.reject(new Error(MOVE_REFUSAL))
     return
   }
-  const from = dragServer.items.findIndex(item => item.id === move.end.rowId)
-  const [item] = dragServer.items.splice(from, 1)
-  dragServer.items.splice(move.end.index, 0, item!)
+  const source = listOf(move.end.previousParentId)
+  const from = source.findIndex(item => item.id === move.end.rowId)
+  const [item] = source.splice(from, 1)
+  listOf(move.end.parentId).splice(move.end.index, 0, item!)
   move.resolve()
 }
 
@@ -66,30 +102,36 @@ const dragReset: TesseraFeatureEntry = {
     if (dragServer.table === store) return
     dragServer.table = store
     dragServer.items = initialItems()
+    dragServer.children = new Map()
+    dragServer.holdChildren = false
+    dragServer.held = []
     for (const move of dragServer.moves) move.reject(new Error('reset'))
     dragServer.moves = []
   },
 }
 
+/** Таблица гайда; `tree` — у строк верхнего уровня есть ветки (S3). */
 export const dragProps =
-  ({ delayMs = SERVER_DELAY_MS } = {}): GuideStoryStep['props'] =>
+  ({ delayMs = SERVER_DELAY_MS, tree = false } = {}): GuideStoryStep['props'] =>
   () => ({
     columnsOverride: filteringColumns,
     dataOverride: [],
     enableServerRowModel: true,
     serverRowModelBlockSize: DRAG_BLOCK,
     serverRowModelRowCount: DRAG_TOTAL,
-    serverRowModelGetRows: ({ start, end }: ServerRowsRequest) =>
-      new Promise<ServerRowsResponse<FilteringItem>>(resolve =>
-        setTimeout(
-          () =>
-            resolve({
-              rows: dragServer.items.slice(start, end),
-              rowCount: dragServer.items.length,
-            }),
-          delayMs,
-        ),
-      ),
+    serverRowModelGetRows: ({ start, end, parentId }: ServerRowsRequest) =>
+      new Promise<ServerRowsResponse<FilteringItem>>(resolve => {
+        const answer = () => {
+          const list = listOf(parentId)
+          resolve({ rows: list.slice(start, end), rowCount: list.length })
+        }
+        if (parentId && dragServer.holdChildren) dragServer.held.push(answer)
+        else setTimeout(answer, delayMs)
+      }),
+    ...(tree && {
+      enableRowExpanding: true,
+      rowExpandingHasChildren: (row: { id: string }) => isBranch(row.id),
+    }),
     enableRowDragging: true,
     onRowDragEnd: (end: RowDragEnd) =>
       new Promise<void>((resolve, reject) => {

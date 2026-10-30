@@ -19,7 +19,9 @@ export const findDropParent = (
   if (depth <= 0) return -1
   for (let position = to - 1; position >= lowest; position--) {
     const index = indexBeforeMove(position, from, to)
-    const rowDepth = rows.at(index)!.depth
+    // Незагруженная строка серверной модели: родителя выше не видно (ADR 0159).
+    const rowDepth = rows.at(index)?.depth
+    if (rowDepth === undefined) return -1
     if (rowDepth < depth) return rowDepth === depth - 1 ? index : -1
   }
   return -1

@@ -163,6 +163,14 @@ export const commonFeature: TableFeature = {
           if (row.parentId == null) {
             return false
           }
+          // Серверная модель: детей массивом нет — место строки в ветке (ADR 0159).
+          const source = rowSourceOf<{ id: string }>(
+            (row as { table?: unknown }).table,
+          )
+          if (source.treeAria) {
+            const aria = source.treeAria(source.indexOf(row.id))
+            return !!aria && aria.posInSet === aria.setSize
+          }
           const parent = row.getParentRow?.()
           return row.id === parent?.subRows.at(-1)?.id
         },

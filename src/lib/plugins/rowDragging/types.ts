@@ -16,6 +16,8 @@ export interface RowDragOverlayState {
   depth: number
   /** Группы, раскрытые паузой над ними за сессию (ADR 0109, §3). */
   openedByDelay: readonly string[]
+  /** Место недопустимо только до прихода строк ветки серверной модели (ADR 0159, §4). */
+  waitsForBranch: boolean
 }
 
 export const DEFAULT_ROW_DRAG_OVERLAY_STATE: RowDragOverlayState = {
@@ -28,6 +30,7 @@ export const DEFAULT_ROW_DRAG_OVERLAY_STATE: RowDragOverlayState = {
   overId: null,
   depth: 0,
   openedByDelay: [],
+  waitsForBranch: false,
 }
 
 export interface RowDraggingState {
