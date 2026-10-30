@@ -87,6 +87,7 @@ const KebabPlaceholder = ({
       aria-label={kebab.ariaLabel}
       aria-haspopup="menu"
       aria-expanded={open}
+      data-action-menu={variant}
       onClick={onOpen}
       onPointerLeave={kebab.leave}
       active={active}

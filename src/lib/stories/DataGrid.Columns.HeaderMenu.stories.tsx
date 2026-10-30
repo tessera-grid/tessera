@@ -575,7 +575,7 @@ export const HeaderMenuNarrowActive: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await until(() => expect(sorted()).toBe(false))
       await expect(sortButton(canvas)).not.toBeNull()
-      await expect(marked(sortButton(canvas))).toBe(false)
+      await until(() => expect(marked(sortButton(canvas))).toBe(false))
       await expect(pinButton(canvas)).toBeNull()
       await settle()
     })
