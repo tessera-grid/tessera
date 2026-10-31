@@ -3,6 +3,7 @@
  * пишет в журнал «список `next` получен из `previous`, первое отличие — `from`»;
  * виртуализатор строк сравнивает свою прошлую сборку с текущей и сверку ключей не делает.
  */
+import { type DataOperation, dataModeOf } from './dataMode'
 import { rowSourceOf } from './rowSource'
 
 interface RowChange {
@@ -60,8 +61,6 @@ interface BuildTable {
   options: {
     data: unknown
     appendOnlyData?: boolean
-    manualSorting?: boolean
-    manualFiltering?: boolean
     manualGrouping?: boolean
   }
   store: {
@@ -86,13 +85,14 @@ export const rowBuildOf = (table: unknown, list?: object): RowBuild => {
 
 /** Модель на клиенте меняет порядок строк `data` или убирает часть из них. */
 const reordersData = (table: BuildTable) => {
-  const { options } = table
   const state = table.store.get()
+  const client = (operation: DataOperation) =>
+    dataModeOf(table, operation) === 'client'
   return (
-    (!!state.sorting?.length && !options.manualSorting) ||
-    ((!!state.columnFilters?.length || !!state.globalFilter) &&
-      !options.manualFiltering) ||
-    (!!state.grouping?.length && !options.manualGrouping)
+    (!!state.sorting?.length && client('sorting')) ||
+    (!!state.columnFilters?.length && client('filtering')) ||
+    (!!state.globalFilter && client('search')) ||
+    (!!state.grouping?.length && !table.options.manualGrouping)
   )
 }
 

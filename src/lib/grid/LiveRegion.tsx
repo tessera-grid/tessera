@@ -6,6 +6,7 @@ import { type RefObject, useEffect, useRef, useState } from 'react'
 
 import { announceLabel, registerAnnouncer } from '../core/announcer'
 import { takeLoadCancelled } from '../core/cancellation'
+import { dataModeOf } from '../core/dataMode'
 import type { TableLabels } from '../core/localization'
 import { useTableState } from '../core/reactivity'
 
@@ -112,8 +113,8 @@ export const LiveRegion = ({
           : l.announceSortAscending(columnName(table, id)),
     )
   })
-  // Фильтр или поиск применён — объявить число строк (ADR 0045, FL32). В серверном
-  // режиме результат ещё не пришёл: о нём скажет окончание загрузки.
+  // Фильтр или поиск применён — объявить число строк (ADR 0045, FL32). Операцию на
+  // сервере ещё не выполнили: о результате скажет окончание загрузки (ADR 0169).
   const filters = useTableState(table as never, state => {
     const { columnFilters, globalFilter } = state as {
       columnFilters?: unknown
@@ -122,12 +123,15 @@ export const LiveRegion = ({
     return JSON.stringify([columnFilters ?? [], globalFilter ?? ''])
   }) as string
   const filtersChanged = useRef(false)
-  useOnChange(filters, () => {
-    const t = table as {
-      options: { manualFiltering?: boolean }
-      getFilteredRowModel?: () => { rows: unknown[] }
-    }
-    if (t.options.manualFiltering || !t.getFilteredRowModel) return
+  useOnChange(filters, (next, prev) => {
+    const t = table as { getFilteredRowModel?: () => { rows: unknown[] } }
+    const [nextFilters, nextSearch] = JSON.parse(next) as unknown[]
+    const [prevFilters, prevSearch] = JSON.parse(prev) as unknown[]
+    const onServer =
+      (JSON.stringify(nextFilters) !== JSON.stringify(prevFilters) &&
+        dataModeOf(table, 'filtering') === 'server') ||
+      (nextSearch !== prevSearch && dataModeOf(table, 'search') === 'server')
+    if (onServer || !t.getFilteredRowModel) return
     filtersChanged.current = true
     const count = t.getFilteredRowModel().rows.length
     announceLabel(table, l => l.announceFilteredRows(count))

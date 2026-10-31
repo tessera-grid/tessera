@@ -55,11 +55,11 @@ const Host = () => {
   captured = useCreateTable({
     columns: columns as never,
     data,
+    dataMode: { sorting: 'server', pagination: 'server' },
     onDebugAction: action => actions.push(action),
     plugins: [
-      columnSorting({ server: true, onToggleColumnSort: reply }),
+      columnSorting({ onToggleColumnSort: reply }),
       pagination({
-        server: true,
         rowCount: 1000,
         initialPageSize: 25,
         onPageChange: reply,

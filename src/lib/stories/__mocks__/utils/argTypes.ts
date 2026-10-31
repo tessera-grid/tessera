@@ -74,6 +74,13 @@ const radioControl = (
   table: { defaultValue: { summary: defaultSummary } },
 })
 
+/** Режим данных (ADR 0169): одна радиокнопка на все операции. */
+export const dataModeType = radioControl(
+  'Где выполняются операции над строками (`dataMode`): `server` — таблица меняет состояние и вызывает колбэки, а строки не переставляет и не сужает — сервера в истории нет',
+  ['client', 'server'],
+  'client',
+)
+
 const objectControl = (
   description: string,
   typeSummary: string,
@@ -244,18 +251,12 @@ export const columnSortingMultiSortType = booleanControl(
   'Мультисортировка по нескольким колонкам жестом Shift+клик (`multiSort`); `max` и `event` — объектом из истории',
   true,
 )
-export const columnSortingServerType = booleanControl(
-  'Сортирует сервер (`server`): таблица меняет состояние и вызывает колбэк, а строки не переставляет — сервера в истории нет, порядок остаётся прежним',
-)
 export const columnSortingRevertOnRejectType = booleanControl(
   'Откатывать сортировку при отказе промиса `onToggleColumnSort` в серверном режиме (`revertOnReject`, ADR 0116)',
   true,
 )
 export const enableColumnSortingModelType = booleanControl(
   'Сортировка без кнопок: порядок строк по состоянию `sorting` (плагин `columnSortingModel`)',
-)
-export const columnSortingModelServerType = booleanControl(
-  'Сортирует сервер (`server`): таблица строки не переставляет — сервера в истории нет, порядок остаётся прежним',
 )
 export const columnSortingModelMultiSortType = booleanControl(
   'Несколько колонок в срезе `sorting` (`multiSort`); иначе действует только первая',

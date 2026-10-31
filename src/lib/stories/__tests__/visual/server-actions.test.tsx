@@ -117,9 +117,14 @@ const Grid = () => {
     loadError: options.loadError,
     onRetry: options.onRetry,
     refreshOptions: options.refreshOptions ?? { delayMs: 0, minDurationMs: 0 },
+    dataMode: {
+      sorting: options.sortingServer ? 'server' : 'client',
+      pagination: options.paginationServer ? 'server' : 'client',
+      filtering: 'server',
+      search: 'server',
+    },
     plugins: [
       columnSorting({
-        server: options.sortingServer,
         multiSort: false,
         onToggleColumnSort: answer('sort'),
         ...(options.controlled
@@ -135,16 +140,15 @@ const Grid = () => {
       options.feed
         ? infiniteScroll({ onLoadMore: answer('load'), hasMore: true })
         : pagination({
-            server: options.paginationServer,
             rowCount: options.paginationServer ? 1000 : undefined,
             initialPageSize: options.pageSize,
             onPageChange: answer('page'),
           }),
       ...(options.search
-        ? [quickSearch({ server: true, onSearchChange: answer('search') })]
+        ? [quickSearch({ onSearchChange: answer('search') })]
         : []),
       ...(options.filter
-        ? [columnFiltering({ server: true, onFilterChange: answer('filter') })]
+        ? [columnFiltering({ onFilterChange: answer('filter') })]
         : []),
       ...(options.menu ? [headerActionMenu({ mode: 'always' })] : []),
       ...(options.keyboard ? [keyboardNavigation()] : []),

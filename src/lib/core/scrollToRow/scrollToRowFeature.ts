@@ -14,6 +14,7 @@ import {
   getCenterViewport,
 } from '../keyboardNavigation/geometry'
 import type { Row, RowData, TableFeature, TableFeatures } from '../../types'
+import { dataModeOf, isPaginationActive } from '../dataMode'
 import type { RowSource } from '../rowSource'
 import { type ScrollTarget, scrollGridTo } from '../scrollGridTo'
 import { scrollLayer } from '../scrollStretch'
@@ -78,7 +79,6 @@ type AnyRow = Row<any, any>
 
 interface ScrollTable {
   store: { state: { pagination?: { pageIndex: number; pageSize: number } } }
-  options: { manualPagination?: boolean; paginateExpandedRows?: boolean }
   getRowSource: () => RowSource<AnyRow>
   getPreExpandedRowModel: () => { rows: AnyRow[] }
   setPageIndex?: (index: number) => void
@@ -168,8 +168,8 @@ const pageOf = (table: ScrollTable, root: AnyRow): number | undefined => {
   const pagination = paginationOf(table)
   if (
     !pagination ||
-    table.options.manualPagination ||
-    table.options.paginateExpandedRows !== false ||
+    !isPaginationActive(table) ||
+    dataModeOf(table, 'pagination') === 'server' ||
     !table.setPageIndex
   ) {
     return undefined

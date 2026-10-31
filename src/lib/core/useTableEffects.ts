@@ -11,6 +11,7 @@ import {
   type TesseraFeatureEntry,
 } from './features'
 import { readPluginHooks, writePluginAtom } from './definePlugin/channels'
+import { warnClientOverPartialRows, warnDataModeInServerRows } from './dataMode'
 import { logWarn } from '../util/logger'
 import {
   type ModelArgsMismatch,
@@ -146,6 +147,25 @@ export const useTableEffects = (
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по сигнатуре набора
     [signature],
+  )
+
+  // Дев-варны режима данных (ADR 0169): противоречие серверной модели строк — на смену
+  // набора (MD4); клиентская операция над частью строк — на смену срезов (MD5).
+  useEffect(
+    () => {
+      warnDataModeInServerRows(table)
+      warnClientOverPartialRows(table)
+      const subscription = (
+        table as {
+          store: {
+            subscribe: (listener: () => void) => { unsubscribe: () => void }
+          }
+        }
+      ).store.subscribe(() => warnClientOverPartialRows(table))
+      return () => subscription.unsubscribe()
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по значению аргументов
+    [argsSignature, store],
   )
 
   // Дев-варн на смену аргумента-договора после монтирования (ADR 0039, RX4).

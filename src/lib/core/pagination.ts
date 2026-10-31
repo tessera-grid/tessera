@@ -1,6 +1,6 @@
 /**
  * Ядровой шов пагинации (плагин pagination, ADR 0038). Ядро НЕ импортит плагин:
- * страницу читает из стокового среза `pagination`, режим — из опций v9.
+ * страницу читает из стокового среза `pagination`, режим — у ядра (ADR 0169).
  *  - `getRowWindow` — место страницы в полном наборе для `aria-rowcount` и
  *    сквозного `aria-rowindex` (PG15);
  *  - `usePageChange` — после смены страницы тело прокручено к началу, активная
@@ -11,6 +11,7 @@ import { useEffect, useRef } from 'react'
 
 import type { PaginationState } from '@tanstack/react-table'
 
+import { dataModeOf, isPaginationActive } from './dataMode'
 import { setPluginState, pluginStateKey } from './definePlugin'
 import type { RowSource } from './rowSource'
 import { scrollLayer } from './scrollStretch'
@@ -25,7 +26,7 @@ interface WindowRow {
 }
 
 interface PaginatedTable {
-  options: { manualPagination?: boolean; rowCount?: number }
+  options: { rowCount?: number }
   atoms: { pagination?: { get: () => PaginationState } }
   getRowsInDisplayOrder?: () => unknown[]
 }
@@ -36,14 +37,6 @@ export interface RowWindow {
   /** Строк данных во всём наборе (все страницы). */
   total: number
 }
-
-/**
- * Пагинация включена: модель режет страницы. Так её узнают и серверная модель строк, где
- * страницу режет источник (ADR 0158).
- */
-export const isPaginationActive = (table: unknown) =>
-  (table as { options: { paginateExpandedRows?: boolean } }).options
-    .paginateExpandedRows === false
 
 /** Срез страницы, когда пагинация включена. */
 export const activePageOf = (table: unknown): PaginationState | undefined =>
@@ -63,12 +56,12 @@ export const getRowWindow = (
   }
   const t = table as PaginatedTable
   const pagination = t.atoms.pagination?.get()
-  if (!pagination) {
+  if (!pagination || !isPaginationActive(table)) {
     return { offset: 0, total: rows.length }
   }
-  if (t.options.manualPagination) {
+  if (dataModeOf(table, 'pagination') === 'server') {
     // Серверная страница: смещение — по номеру страницы, итог — `rowCount`.
-    // Без `rowCount` плагин выключен или инертен — страниц нет.
+    // Без `rowCount` плагин инертен — страниц нет.
     if (t.options.rowCount === undefined) {
       return { offset: 0, total: rows.length }
     }

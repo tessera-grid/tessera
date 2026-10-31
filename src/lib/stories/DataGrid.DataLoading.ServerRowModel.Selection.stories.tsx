@@ -164,7 +164,7 @@ const SELECT_ALL_EXCEPT: readonly GuideStoryStep[] = [
       enableRowSelection: true,
       rowSelectionSelectedCount: true,
       enableDataExport: true,
-      dataExportServer: true,
+      dataMode: { export: 'server' },
       // Одна комбинация: кнопка выгружает выбранное сразу, без панели.
       dataExportAllow: { rows: ['selected'], columns: ['visible'] },
       onExport: (request: ExportRequest) =>
@@ -286,7 +286,7 @@ const groupSelectProps =
     rowSelectionSelectedCount: true,
     ...(exported && {
       enableDataExport: true,
-      dataExportServer: true,
+      dataMode: { export: 'server' },
       // Одна комбинация: кнопка выгружает выбранное сразу, без панели.
       dataExportAllow: { rows: ['selected'], columns: ['visible'] },
       onExport: (request: ExportRequest) =>

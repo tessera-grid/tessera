@@ -45,9 +45,8 @@ const Host = ({ open }: { open: boolean }) => {
   table = useCreateTable({
     columns: columns as never,
     data,
-    plugins: [
-      columnFiltering({ server: true, onFilterChange: () => undefined }),
-    ],
+    dataMode: { filtering: 'server' },
+    plugins: [columnFiltering({ onFilterChange: () => undefined })],
   })
   return open ? createElement(Panel) : null
 }

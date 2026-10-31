@@ -7,6 +7,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+import type { DataMode } from '../core/dataMode'
 import type { RowSource } from '../core/rowSource'
 import {
   countSelectionIn,
@@ -56,11 +57,18 @@ const getRows = (request: ServerRowsRequest) =>
     calls.push({ request, resolve })
   })
 
-const Grid = ({ extra = [] }: { extra?: readonly unknown[] }) => {
+const Grid = ({
+  extra = [],
+  dataMode,
+}: {
+  extra?: readonly unknown[]
+  dataMode?: DataMode
+}) => {
   table = useCreateTable({
     columns: COLUMNS as never,
     data: NO_DATA,
     getRowId: (row: Item) => row.id,
+    dataMode,
     plugins: [
       serverRowModel({ getRows, rowCount: TOTAL, blockSize: BLOCK }),
       ...extra,
@@ -228,30 +236,21 @@ describe('пагинация в серверной модели строк (ADR 
     expect([idAt(2), idAt(4)]).toEqual(['r3', 'r5'])
   })
 
-  it('SP10: server: true у pagination в SSRM — одно dev-предупреждение, флаг не действует', async () => {
+  it('SP10: режим пагинации dataMode в SSRM не действует: страницы режет источник без предупреждений, смена страницы — не серверное действие', async () => {
     act(() =>
       root.render(
         <Grid
+          dataMode={{ pagination: 'server' }}
           extra={[
-            pagination({ server: true, rowCount: 5, initialPageSize: 5 }),
+            pagination({ rowCount: 5, initialPageSize: 5 }),
             columnSortingModel(),
           ]}
         />,
       ),
     )
-    act(() =>
-      root.render(
-        <Grid
-          extra={[
-            pagination({ server: true, rowCount: 5, initialPageSize: 5 }),
-            columnSortingModel(),
-          ]}
-        />,
-      ),
-    )
-    const notes = warnings().filter(text => text.includes('server row model'))
-    expect(notes).toHaveLength(1)
-    expect(notes[0]).toContain('pagination')
+    expect(
+      warnings().filter(text => text.includes('server row model')),
+    ).toEqual([])
 
     // Страницы режет источник, смена страницы — не серверное действие.
     expect(isServerAction(table, 'pagination')).toBe(false)

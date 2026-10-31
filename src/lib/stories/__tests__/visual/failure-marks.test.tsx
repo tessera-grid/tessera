@@ -99,6 +99,7 @@ const Grid = ({
     columns: COLUMNS as never,
     data,
     getRowId: (row: Item) => row.id,
+    dataMode: { pagination: serverPages ? 'server' : 'client' },
     plugins: [
       ...(keyboard ? [keyboardNavigation()] : []),
       columnSorting(),
@@ -115,7 +116,6 @@ const Grid = ({
       ...(pageSize
         ? [
             pagination({
-              server: serverPages,
               rowCount: serverPages ? 1000 : undefined,
               initialPageSize: pageSize,
               onPageChange: serverPages ? () => server.answer() : undefined,

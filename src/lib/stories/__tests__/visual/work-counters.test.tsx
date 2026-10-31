@@ -3,6 +3,7 @@ import { render } from 'vitest-browser-react'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import { revealedHandleWidth } from '../helpers'
 
+import type { DataMode } from '../../../core/dataMode'
 import type { DebugAction, OnDebugAction } from '../../../core/debugActions'
 import { definePlugin } from '../../../core/definePlugin'
 import type { HeaderAction } from '../../../core/headerActions'
@@ -75,6 +76,7 @@ const mountGrid = async (
   onDebugAction?: OnDebugAction,
   columns?: unknown[],
   footer?: boolean,
+  dataMode?: DataMode,
 ) => {
   const box: { table?: object } = {}
   const screen = await render(
@@ -85,6 +87,7 @@ const mountGrid = async (
       onDebugAction={onDebugAction}
       columns={columns}
       footer={footer}
+      dataMode={dataMode}
       onTable={table => (box.table = table)}
     />,
   )
@@ -572,13 +575,20 @@ describe('Счётчики работы — ручка колонки (ADR 0114)
 
   test('SA16: вход в ожидание серверного действия и выход из него перерисовывают причину и свечение, но не строки тела', async () => {
     let answer!: () => void
-    const { measure } = await mountGrid({}, getData(300), [
-      columnSorting({
-        server: true,
-        onToggleColumnSort: () =>
-          new Promise<void>(resolve => (answer = resolve)),
-      }),
-    ])
+    const { measure } = await mountGrid(
+      {},
+      getData(300),
+      [
+        columnSorting({
+          onToggleColumnSort: () =>
+            new Promise<void>(resolve => (answer = resolve)),
+        }),
+      ],
+      undefined,
+      undefined,
+      undefined,
+      { sorting: 'server' },
+    )
     const button = document.querySelector<HTMLElement>(
       '.data-grid__head-cell [aria-label^="Sort"]',
     )!

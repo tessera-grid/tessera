@@ -64,6 +64,7 @@ const Grid = ({ plugins }: { plugins: readonly unknown[] }) => {
     columns: COLUMNS as never,
     data: NO_DATA,
     getRowId: (row: Item) => row.id,
+    dataMode: { export: 'server' },
     plugins: [
       serverRowModel({
         getRows,
@@ -200,7 +201,6 @@ describe('выбор группы целиком в SSRM (ADR 0148)', () => {
     await mountGroups([
       rowSelection(),
       dataExport({
-        server: true,
         onExport: request => {
           exports.push(request)
         },

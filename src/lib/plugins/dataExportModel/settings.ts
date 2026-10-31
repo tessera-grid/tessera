@@ -3,6 +3,7 @@
  * активным плагинам, какие разрешены `allow`, начальные значения, место выполнения.
  */
 import { logError, logWarn } from '../../util/logger'
+import { dataModeOf } from '../../core/dataMode'
 import {
   type PluginDiagnostic,
   type PluginInertReason,
@@ -52,8 +53,11 @@ export interface ResolvedExportOptions {
     row: unknown
     column: { id: string }
   }) => unknown
-  server?: boolean
 }
+
+/** Полного набора строк на клиенте нет: значения строк, кроме `page`, выгружает сервер (ADR 0169). */
+export const exportsOnServer = (table: unknown) =>
+  dataModeOf(table, 'export') === 'server'
 
 export interface Choice<T> {
   value: T
@@ -108,7 +112,9 @@ export const resolveAxes = (table: unknown): ExportAxes | undefined => {
   const noSelection =
     !tableAllSelection(table) && selectedRowIdsOf(table).length === 0
   // Строк у грида нет — их выгружает только сервер (ADR 0138, §10).
-  const serverRows = config.server ? undefined : serverRowModelReason(table)
+  const serverRows = exportsOnServer(table)
+    ? undefined
+    : serverRowModelReason(table)
 
   const present = (rows: ExportRows) =>
     rows === 'view'
@@ -223,7 +229,7 @@ export const settingsFromArg = (
 
 /** Серверные значения строк выгружает потребитель; `page` — клиент (ADR 0044, §6). */
 const isServerRows = (table: unknown, rows: ExportRows) =>
-  !!exportConfigOf(table)?.server && rows !== 'page'
+  !!exportConfigOf(table) && exportsOnServer(table) && rows !== 'page'
 
 export const whereOf = (
   table: unknown,

@@ -5,6 +5,7 @@ import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
 import type { ColumnOption } from '../../../core/columnOptions'
+import type { DataMode } from '../../../core/dataMode'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import { columnFiltering, keyboardNavigation } from '../../../plugins'
@@ -158,6 +159,7 @@ const columnsWith = ({
 ]
 
 interface GridProps {
+  dataMode?: DataMode
   columns?: object[]
   data?: { id: string }[]
   plugins?: readonly unknown[]
@@ -169,6 +171,7 @@ interface GridProps {
 
 const Grid = ({
   columns = columnsWith(),
+  dataMode,
   data = DATA,
   plugins = [columnFiltering({ debounceMs: 0 })],
   localization,
@@ -181,6 +184,7 @@ const Grid = ({
     data,
     getRowId: (row: { id: string }) => row.id,
     enableToolbar: true,
+    dataMode,
     plugins: plugins as never,
   })
   onTable?.(table)
@@ -592,9 +596,8 @@ describe('Фильтр вариантов — подписи и вид', () => {
             count: 10 * (i + 1),
           })),
         })}
-        plugins={[
-          columnFiltering({ server: true, debounceMs: 0, onFilterChange }),
-        ]}
+        dataMode={{ filtering: 'server' }}
+        plugins={[columnFiltering({ debounceMs: 0, onFilterChange })]}
       />,
     )
     await waitForGrid()

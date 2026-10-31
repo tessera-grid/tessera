@@ -26,6 +26,7 @@ import {
   type Choice,
   type ExportAxes,
   exportConfigOf,
+  exportsOnServer,
   resolveSettings,
   warnUnusablePresets,
   whereOf,
@@ -185,7 +186,7 @@ export const ExportPanel = ({
 
   // Лента без серверной выгрузки: «все строки» — только загруженные (ADR 0081).
   const loaded =
-    !config.server && table.options.partialData
+    !exportsOnServer(table) && table.options.partialData
       ? table.getCoreRowModel().rows.length
       : undefined
 

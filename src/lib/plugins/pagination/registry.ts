@@ -29,7 +29,7 @@ export interface PaginationOptions extends Omit<
   /** Варианты выбора размера (по умолчанию 10/25/50/100); `false` — без выбора. */
   pageSizes?: number[] | false
   /**
-   * Отказ промиса `onPageChange` в серверном режиме возвращает прежнюю страницу и её
+   * Отказ промиса `onPageChange` при страницах с сервера возвращает прежнюю страницу и её
    * размер (по умолчанию true); `false` — страница остаётся новой (ADR 0116).
    */
   revertOnReject?: boolean
@@ -44,7 +44,6 @@ export const pagination = definePlugin<PaginationOptions>()({
     plugin: paginationModel,
     keys: [
       'initialPageSize',
-      'server',
       'rowCount',
       'pagination',
       'onPaginationChange',

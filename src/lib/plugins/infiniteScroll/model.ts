@@ -1,9 +1,10 @@
 /**
  * Модель бесконечной прокрутки (ADR 0081): когда просить блок, сколько скелет-строк
- * в хвосте, инертность рядом с пагинацией и предупреждения о клиентской обработке.
+ * в хвосте и инертность рядом с пагинацией. О клиентской обработке загруженных строк
+ * предупреждает ядро (ADR 0169, §3).
  */
+import { isPaginationActive } from '../../core/dataMode'
 import { pluginStateKey } from '../../core/definePlugin'
-import { logWarn } from '../../util/logger'
 import {
   type PluginDiagnose,
   serverRowModelReason,
@@ -14,18 +15,10 @@ export const INFINITE_SCROLL = 'infiniteScroll'
 
 export const IDLE: InfiniteScrollState = { status: 'idle', tailRows: 0 }
 
-interface ScrollTable {
-  options: Record<string, unknown>
-  store: { get: () => Record<string, unknown> }
-}
-
 /** Пагинация включена: страницы и лента — взаимоисключающие модели позиции. */
-const paginationActive = (table: unknown) =>
-  (table as ScrollTable).options.paginateExpandedRows === false
-
 export const infiniteScrollInertReason: PluginDiagnose = table =>
   serverRowModelReason(table) ??
-  (paginationActive(table) ? 'pagination' : undefined)
+  (isPaginationActive(table) ? 'pagination' : undefined)
 
 export const readInfiniteScrollState = (
   state: Record<string, unknown>,
@@ -81,43 +74,3 @@ export const tailRowCount = (
       ? viewportRows
       : Math.min(viewportRows, rowCount - loaded),
   )
-
-type ClientFeature = 'sorting' | 'filtering' | 'search' | 'grouping'
-
-/** Обработка, которая на клиенте видит только загруженные строки. */
-export const clientRowModelFeatures = (
-  options: Record<string, unknown>,
-): ClientFeature[] => {
-  const found: ClientFeature[] = []
-  if (options.enableSorting === true && !options.manualSorting) {
-    found.push('sorting')
-  }
-  if (options.enableColumnFilters === true && !options.columnFilteringServer) {
-    found.push('filtering')
-  }
-  if (options.enableGlobalFilter === true && !options.quickSearchServer) {
-    found.push('search')
-  }
-  if (options.enableGrouping === true) {
-    found.push('grouping')
-  }
-  return found
-}
-
-/** Dev-warn о клиентской обработке: плагин работает, но видит только загруженное. */
-export const warnClientRowModel = (table: unknown) => {
-  const { options } = table as ScrollTable
-  if (
-    options.enableInfiniteScroll !== true ||
-    infiniteScrollInertReason(table)
-  ) {
-    return
-  }
-  for (const feature of clientRowModelFeatures(options)) {
-    logWarn(
-      table as never,
-      `infiniteScroll: client-side ${feature} only sees loaded rows; use server mode`,
-      `infiniteScroll:client:${feature}`,
-    )
-  }
-}

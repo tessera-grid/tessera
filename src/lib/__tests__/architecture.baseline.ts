@@ -36,14 +36,10 @@ export const CORE_PLUGIN_API: Record<string, string> = {
     'показ служебной колонки по условию: ведёт definePlugin, условия задают плагины (ADR 0050)',
 }
 
-const SERVER_MODES =
-  'серверные режимы плагинов читают ядро и лента — находки 1 и 5, шаг 6 (режим данных)'
-const PAGE_MODE =
-  'клиентская страница и итог строк — режим данных, находка 5, шаг 6'
+const ROW_COUNT =
+  'итог строк — опция таблицы, находка 5, шаг 6 (ADR 0169, этап 2)'
 const FLAG_PLUGIN = 'плагин-флажок, механика в ядре и гриде — находка 3, шаг 7'
 const CELL_SELECTION = 'выделение ячеек в ядре и гриде — находки 3 и 4, шаг 7'
-const FEED_CHECKS =
-  'лента проверяет клиентскую обработку и серверный режим чужих плагинов — находка 5, шаг 6'
 
 /** LB5: чтения ключей опций плагина вне его семьи и его кода в `shared/` — `файл: ключ`. */
 export const FOREIGN_OPTION_READS: Record<string, string> = {
@@ -56,49 +52,24 @@ export const FOREIGN_OPTION_READS: Record<string, string> = {
   'lib/core/keyboardNavigation/model.ts: enableExpanding':
     'иерархия строк для treegrid в навигации ядра — находка 3, шаг 7',
   'lib/core/keyboardNavigation/model.ts: enableKeyboardNavigation': FLAG_PLUGIN,
-  'lib/core/pagination.ts: manualPagination': PAGE_MODE,
-  'lib/core/pagination.ts: paginateExpandedRows': PAGE_MODE,
-  'lib/core/pagination.ts: rowCount': PAGE_MODE,
+  'lib/core/pagination.ts: rowCount': ROW_COUNT,
   'lib/core/pluginDiagnostics.ts: cellSelectionInteraction':
     'диагностика выделения ячеек в ядре — находки 3 и 13, шаг 7',
-  'lib/core/rowChanges.ts: manualFiltering':
-    'подсказка виртуализатору не строится для серверных моделей — режим данных, шаг 6',
-  'lib/core/rowChanges.ts: manualSorting':
-    'подсказка виртуализатору не строится для серверных моделей — режим данных, шаг 6',
-  'lib/core/scrollToRow/scrollToRowFeature.ts: manualPagination': PAGE_MODE,
-  'lib/core/scrollToRow/scrollToRowFeature.ts: paginateExpandedRows': PAGE_MODE,
-  'lib/core/serverActions/index.ts: columnFilteringServer': SERVER_MODES,
-  'lib/core/serverActions/index.ts: manualPagination': SERVER_MODES,
-  'lib/core/serverActions/index.ts: manualSorting': SERVER_MODES,
-  'lib/core/serverActions/index.ts: quickSearchServer': SERVER_MODES,
   'lib/grid/DataGrid.tsx: enableContextMenu': FLAG_PLUGIN,
   'lib/grid/DataGrid.tsx: enableTreeLines': FLAG_PLUGIN,
   'lib/grid/DataGridTable.tsx: enableCellSelection': CELL_SELECTION,
   'lib/grid/DataGridTable.tsx: enableRowSelection':
     'выбор строк задаёт роль и aria грида — находка 3, шаг 7',
   'lib/grid/DataGridTable.tsx: enableTreeLines': FLAG_PLUGIN,
-  'lib/grid/LiveRegion.tsx: manualFiltering':
-    'объявление итога поиска в серверном режиме — режим данных, шаг 6',
   'lib/grid/SkeletonBody.tsx: enableTreeLines': FLAG_PLUGIN,
   'lib/grid/StickyRows.tsx: stickyBranchRows':
     'липкие строки плагинов рисует грид — находка 3, шаг 7',
   'lib/grid/StickyRows.tsx: stickyGroupRows':
     'липкие строки плагинов рисует грид — находка 3, шаг 7',
   'lib/plugins/dataExportModel/exportData.ts: columnFilteringTimeZone':
-    'выгрузка читает пояс фильтра — находка 4, timeZone — в useCreateTable, шаг 6',
-  'lib/plugins/infiniteScroll/model.ts: columnFilteringServer': FEED_CHECKS,
-  'lib/plugins/infiniteScroll/model.ts: enableColumnFilters': FEED_CHECKS,
-  'lib/plugins/infiniteScroll/model.ts: enableGlobalFilter': FEED_CHECKS,
-  'lib/plugins/infiniteScroll/model.ts: enableSorting': FEED_CHECKS,
-  'lib/plugins/infiniteScroll/model.ts: manualSorting': FEED_CHECKS,
-  'lib/plugins/infiniteScroll/model.ts: paginateExpandedRows': FEED_CHECKS,
-  'lib/plugins/infiniteScroll/model.ts: quickSearchServer': FEED_CHECKS,
-  'lib/plugins/serverRowModel/blockStore.ts: rowCount':
-    'серверная модель читает итог пагинации — режим данных, шаг 6',
-  'lib/plugins/serverRowModel/tree.ts: rowCount':
-    'серверная модель читает итог пагинации — режим данных, шаг 6',
-  'lib/shared/rowModels/expandedRowModel.ts: manualPagination':
-    'модель раскрытия читает серверную пагинацию — режим данных, шаг 6',
+    'выгрузка читает пояс фильтра — находка 4, timeZone — в useCreateTable, шаг 6 (ADR 0169, этап 2)',
+  'lib/plugins/serverRowModel/blockStore.ts: rowCount': ROW_COUNT,
+  'lib/plugins/serverRowModel/tree.ts: rowCount': ROW_COUNT,
 }
 
 /** LB7: модули, которые дополняют `ColumnMeta`. */

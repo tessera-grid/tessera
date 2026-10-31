@@ -98,14 +98,20 @@ describe('pagination — модель', () => {
   })
 
   it("PG8: серверный режим без rowCount — diagnose → 'noRowCount'", () => {
-    const { table } = build(items(25), { server: true })
+    const { table } = build(items(25), {}, [], {
+      dataMode: { pagination: 'server' },
+      manualPagination: true,
+    })
     expect(
       table
         .getPluginDiagnostics()
         .find((d: { id: string }) => d.id === 'pagination'),
     ).toEqual({ id: 'pagination', status: 'inert', reason: 'noRowCount' })
 
-    const counted = build(items(25), { server: true, rowCount: 0 }).table
+    const counted = build(items(25), { rowCount: 0 }, [], {
+      dataMode: { pagination: 'server' },
+      manualPagination: true,
+    }).table
     expect(
       counted
         .getPluginDiagnostics()

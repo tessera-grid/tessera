@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 /**
- * Договоры на время жизни таблицы и начальные значения (ADR 0039, RX4–RX7): режим
- * данных и состав набора плагинов после монтирования не меняются, а предупреждают;
+ * Договоры на время жизни таблицы и начальные значения (ADR 0039, RX4–RX7): аргументы-
+ * договоры и состав набора плагинов после монтирования не меняются, а предупреждают;
  * `initialPageSize` — семя состояния.
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
@@ -20,7 +20,9 @@ import {
 import type { TesseraFeatureEntry } from '../core/features'
 import { __resetLogger, __setLoggerProduction } from '../util/logger'
 import { useCreateTable } from '../core/useCreateTable'
-import { columnSorting, pagination, rowSelection } from '../plugins'
+import { definePlugin } from '../core/definePlugin'
+import { neverInert } from '../core/pluginDiagnostics'
+import { pagination, rowSelection } from '../plugins'
 
 ;(
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -67,20 +69,18 @@ afterEach(() => {
 })
 
 describe('договоры на время жизни таблицы', () => {
-  it('RX4: смена server у columnSorting или pagination после монтирования не применяется и сопровождается dev-warn', () => {
-    const plugins = (server: boolean) => [
-      columnSorting({ server }),
-      pagination({ server, rowCount: 60 }),
-    ]
-    render(plugins(false))
-    render(plugins(true))
+  it('RX4: смена аргумента-договора (lifetime записи definePlugin) после монтирования не применяется и сопровождается dev-warn', () => {
+    const contract = definePlugin<{ enabled?: boolean; mode?: string }>()({
+      id: 'contract',
+      lifetime: ['mode'],
+      diagnose: neverInert,
+      options: o => ({ contractMode: o.mode }),
+    })
+    render([contract({ mode: 'first' })])
+    render([contract({ mode: 'second' })])
 
-    expect(captured.options.manualSorting).toBe(false)
-    expect(captured.options.manualPagination).toBe(false)
-    expect(captured.getRowModel().rows).toHaveLength(25)
-    const text = warnings().join('\n')
-    expect(text).toContain('columnSorting.server')
-    expect(text).toContain('pagination.server')
+    expect(captured.options.contractMode).toBe('first')
+    expect(warnings().some(text => text.includes('contract.mode'))).toBe(true)
   })
 
   it("RX5: плагин, добавленный после монтирования, инертен с причиной 'addedAfterMount' и сопровождается dev-warn с его id", () => {

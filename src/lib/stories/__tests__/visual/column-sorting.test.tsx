@@ -385,7 +385,7 @@ describe('Column Sorting — requirements', () => {
   test('CS13: server sorting keeps row order but still toggles state and hook', async () => {
     const onToggleColumnSort = vi.fn()
     const container = await renderColumnSorting({
-      columnSortingServer: true,
+      dataMode: { sorting: 'server' },
       onToggleColumnSort,
     })
     const cell = firstDataCell(container)
@@ -561,7 +561,9 @@ describe('Column Sorting — multi-sort requirements', () => {
   })
 
   test('CS23: server multi-sort keeps row order but tracks every sorted column', async () => {
-    const container = await renderColumnSorting({ columnSortingServer: true })
+    const container = await renderColumnSorting({
+      dataMode: { sorting: 'server' },
+    })
     const colIndex = colIndexOf(dataCell(container, 0))
     const before = columnValues(container, colIndex)
 

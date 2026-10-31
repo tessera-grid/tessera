@@ -85,25 +85,25 @@ const PAIRS = [
   {
     model: columnSortingModel,
     ui: columnSorting,
-    flags: ['enableSorting', 'manualSorting'],
+    flags: ['enableSorting'],
     state: { sorting: [{ id: 'name', desc: true }] },
   },
   {
     model: paginationModel,
     ui: pagination,
-    flags: ['manualPagination', 'paginateExpandedRows', 'autoResetPageIndex'],
+    flags: ['pagedRows', 'paginateExpandedRows', 'autoResetPageIndex'],
     state: { pagination: { pageIndex: 1, pageSize: 1 } },
   },
   {
     model: columnFilteringModel,
     ui: columnFiltering,
-    flags: ['enableColumnFilters', 'columnFilteringServer'],
+    flags: ['enableColumnFilters', 'filterFromLeafRows'],
     state: { columnFilters: [{ id: 'name', value: 'b' }] },
   },
   {
     model: quickSearchModel,
     ui: quickSearch,
-    flags: ['enableGlobalFilter', 'quickSearchServer'],
+    flags: ['enableGlobalFilter', 'filterFromLeafRows'],
     state: { globalFilter: 'c' },
   },
   {

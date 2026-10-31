@@ -85,17 +85,14 @@ const Host = ({
   // Набор плагинов — договор на время жизни таблицы: стенд его не меняет.
   const [plugins] = useState(() => [
     quickSearch({
-      server: options.server,
       onSearchChange: options.onSearchChange as never,
     }),
     columnFiltering({
-      server: options.server,
       onFilterChange: options.onFilterChange as never,
       initialColumnFilters: options.initialColumnFilters as never,
     }),
     columnVisibility(),
     dataExport({
-      server: options.exportServer,
       onExport: options.onExport as never,
       onExported: options.onExported as never,
       ...(options.singleExport && {
@@ -109,6 +106,11 @@ const Host = ({
     getRowId: (row: Row) => row.id,
     plugins: plugins as never,
     loading,
+    dataMode: {
+      filtering: options.server ? 'server' : 'client',
+      search: options.server ? 'server' : 'client',
+      export: options.exportServer ? 'server' : 'client',
+    },
   })
   return (
     <div style={{ height: 400, display: 'flex', flexDirection: 'column' }}>

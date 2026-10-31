@@ -15,7 +15,6 @@ import {
   infiniteScrollInertReason,
   isLoadingMore,
   totalRowCountOf,
-  warnClientRowModel,
 } from './model'
 import type { InfiniteScrollHooks, InfiniteScrollState } from './types'
 
@@ -80,7 +79,6 @@ export const infiniteScroll = definePlugin<InfiniteScrollOptions>()({
         ]
       : []),
   ],
-  setup: () => warnClientRowModel,
 })
 
 /* eslint-disable @typescript-eslint/no-unused-vars -- generics карт обязаны

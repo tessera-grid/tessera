@@ -387,7 +387,7 @@ const SERVER_QUERY: readonly GuideStoryStep[] = [
     props: ({ app, ...context }) => ({
       ...feedProps({})!({ app, ...context }),
       enableColumnSorting: true,
-      columnSortingServer: true,
+      dataMode: { sorting: 'server' },
       columnSortingMultiSort: false,
       onToggleColumnSort: (id: string, direction: 'asc' | 'desc' | false) => {
         feed.query = {

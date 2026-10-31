@@ -1056,9 +1056,9 @@ describe('канал действий (ADR 0125)', () => {
         getRowId: (row: (typeof PROBE_DATA)[number]) => row.id,
         enableToolbar: true,
         onDebugAction,
+        dataMode: { export: 'server' },
         plugins: [
           dataExport({
-            server: true,
             formats: [exportFormats.csv(), JSON_FORMAT],
             onExport: () => {
               const run = deferred<void>()

@@ -35,9 +35,10 @@ export interface DataExportModelOptions {
     string | ((settings: ExportSettings, format: ExportFormat) => string)
   /** Переопределяет значение ячейки в выгрузке. */
   formatValue?: (context: ExportValueContext) => unknown
-  /** Полного набора строк на клиенте нет: все значения строк, кроме `page`, выполняет сервер. */
-  server?: boolean
-  /** Серверная выгрузка: её делает потребитель; промис держит выгрузку в ожидании. */
+  /**
+   * Серверная выгрузка (`dataMode.export`, ADR 0169): её делает потребитель; промис держит
+   * выгрузку в ожидании.
+   */
   onExport?: ExportHooks['onExport']
   /** Файл скачан клиентом. */
   onExported?: ExportHooks['onExported']
@@ -48,8 +49,6 @@ export const dataExportModelFeatures = { dataExportFeature }
 
 export const dataExportModel = definePlugin<DataExportModelOptions>()({
   id: 'dataExportModel',
-  // Режим выгрузки — договор с потребителем на время жизни таблицы (ADR 0039).
-  lifetime: ['server'],
   diagnose: exportInertReason,
   features: dataExportModelFeatures,
   hooks: o => ({ onExport: o.onExport, onExported: o.onExported }),
@@ -60,7 +59,6 @@ export const dataExportModel = definePlugin<DataExportModelOptions>()({
       presets: o.presets,
       filename: o.filename,
       formatValue: o.formatValue,
-      server: o.server,
     } satisfies ResolvedExportOptions,
   }),
 })

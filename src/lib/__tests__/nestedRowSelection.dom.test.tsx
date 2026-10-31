@@ -90,6 +90,7 @@ const ServerTree = ({
     columns: COLUMNS as never,
     data: NO_DATA,
     getRowId: (row: Item) => row.id,
+    dataMode: { export: 'server' },
     plugins: [
       serverRowModel({ getRows, rowCount: total, blockSize: BLOCK }),
       rowExpanding({ hasChildren: row => expandable(row.original) }),
@@ -357,7 +358,6 @@ describe('выбор вложенных строк (ADR 0162)', () => {
         columnFilteringModel(),
         quickSearchModel(),
         dataExport({
-          server: true,
           onExport: request => {
             exports.push(request)
           },

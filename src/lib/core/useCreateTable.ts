@@ -19,6 +19,7 @@ import type {
 
 import type { ColumnDef, RowData, TableOptions } from '../types'
 import type { CoreOptions } from './commonFeature.types'
+import { dataModeKeyOf, manualOptionsOf } from './dataMode'
 import { type DefaultColumnSizing, resolveDefaultColumn } from './defaultColumn'
 import { resolveHooks } from './createHooks'
 import {
@@ -74,6 +75,7 @@ const INITIAL_EFFECTIVE_STATE = { columnVisibility: {} }
  * `useTable`, сливая опции с прежними, оставил бы снятое значение.
  */
 const CORE_OPTION_KEYS: Record<keyof CoreOptions, true> = {
+  dataMode: true,
   loading: true,
   enableFooter: true,
   footerPosition: true,
@@ -177,7 +179,15 @@ export const useCreateTable = <
   argsStore.current ??= createPluginArgsStore()
   rememberPluginArgs(argsStore.current, entries)
   const argsSignature = `${signature}#${pluginArgsSignature(entries)}`
-  const lifetimeViolations = lifetimeArgViolations(argsStore.current, entries)
+  // Режим данных — договор на время жизни таблицы (ADR 0169, §1): смена после
+  // монтирования не применяется.
+  const [dataMode] = useState(coreOptions.dataMode)
+  const lifetimeViolations = [
+    ...lifetimeArgViolations(argsStore.current, entries),
+    ...(dataModeKeyOf(coreOptions.dataMode) === dataModeKeyOf(dataMode)
+      ? []
+      : ['dataMode']),
+  ]
 
   const folded = useMemo(
     () => foldEntries(resolvePluginEntries(argsStore.current!, entries)),
@@ -393,6 +403,9 @@ export const useCreateTable = <
     ),
     actionMenu: folded.actionMenu,
     ...coreOptionsOf(coreOptions),
+    dataMode,
+    // Стоковые `manual*` выставляет ядро по режиму, плагины их не задают (ADR 0169, §1).
+    ...manualOptionsOf({ ...folded.options, dataMode }),
   }
 
   // Каст опций — компромисс динамической сборки (Q2): tableFeatures() валидирует

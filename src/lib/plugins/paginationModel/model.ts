@@ -4,7 +4,7 @@
  */
 import type { PaginationState } from '@tanstack/react-table'
 
-import { logWarn } from '../../util/logger'
+import { dataModeOf } from '../../core/dataMode'
 import {
   type PluginDiagnose,
   serverRowModelReason,
@@ -18,7 +18,6 @@ interface Atom<T> {
 
 export interface PaginationTable {
   options: {
-    manualPagination?: boolean
     rowCount?: number
     pageCount?: number
   }
@@ -38,17 +37,13 @@ export interface PaginationTable {
 }
 
 /**
- * Страницы режет серверная модель строк (ADR 0158): `server` не действует, данные страниц
- * запрашивает грид.
+ * Страницы режет сервер, а `data` — текущая страница (ADR 0169). В серверной модели строк
+ * данные страниц запрашивает грид (ADR 0158).
  */
 export const isManualPagination = (table: unknown) =>
-  !!(table as PaginationTable).options.manualPagination &&
-  !serverRowModelReason(table)
+  dataModeOf(table, 'pagination') === 'server' && !serverRowModelReason(table)
 
-/**
- * Активный плагин с `manualPagination` — серверный режим: без итога число страниц
- * неизвестно (PG8).
- */
+/** Страницы режет сервер: без итога число страниц неизвестно (PG8). */
 export const paginationInertReason: PluginDiagnose = table => {
   const { rowCount, pageCount } = (table as PaginationTable).options
   return isManualPagination(table) &&
@@ -75,17 +70,6 @@ export const pageCountsOf = (
     }
   }
   return { rowCount: t.getRowCount(), pageCount: t.getPageCount(), known: true }
-}
-
-/** `server: true` в серверной модели строк не действует (ADR 0158, §7). */
-export const warnServerInSsrm = (table: unknown, server: boolean) => {
-  if (server && serverRowModelReason(table)) {
-    logWarn(
-      table as never,
-      'pagination: server has no effect with the server row model — the grid requests page rows itself',
-      'pagination:serverInSsrm',
-    )
-  }
 }
 
 /**

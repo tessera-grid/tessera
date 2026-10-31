@@ -3,7 +3,7 @@ import {
   serverRowModelReason,
 } from '../../core/pluginDiagnostics'
 import type { ExportRows } from './types'
-import type { ResolvedExportOptions } from './settings'
+import { exportsOnServer, type ResolvedExportOptions } from './settings'
 
 type ExportTable = {
   options: { exportOptions?: ResolvedExportOptions }
@@ -23,14 +23,14 @@ export const exportInertReason = (
   const { options, getHooks } = table as ExportTable
   const config = options.exportOptions
   // Серверная модель строк: выгрузка — только серверная (ADR 0138, §10).
-  if (!config?.server) {
-    const server = serverRowModelReason(table)
-    if (server) return server
+  const server = exportsOnServer(table)
+  if (!server) {
+    const serverRows = serverRowModelReason(table)
+    if (serverRows) return serverRows
   }
   const hooks = getHooks?.call(table)?.dataExportModel as
     { onExport?: unknown } | undefined
   const runsOnServer =
-    !!config?.server &&
-    (config.allow?.rows ?? ALL_ROWS).some(rows => rows !== 'page')
+    server && (config?.allow?.rows ?? ALL_ROWS).some(rows => rows !== 'page')
   return runsOnServer && !hooks?.onExport ? 'noOnExport' : undefined
 }

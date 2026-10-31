@@ -3,6 +3,7 @@ import { commands, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 
+import type { DataMode } from '../../../core/dataMode'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import { columnSorting } from '../../../plugins/columnSorting'
@@ -101,6 +102,7 @@ const Grid = ({
   colorMode,
   localization,
   icons,
+  dataMode,
 }: {
   options?: ExportOptions
   enableToolbar?: boolean
@@ -109,12 +111,14 @@ const Grid = ({
   colorMode?: 'light' | 'dark'
   localization?: Record<string, unknown>
   icons?: Record<string, unknown>
+  dataMode?: DataMode
 }) => {
   const table = useCreateTable({
     columns: COLUMNS,
     data: DATA,
     getRowId: (row: (typeof DATA)[number]) => row.id,
     enableToolbar,
+    dataMode,
     plugins: [
       ...extraPlugins.map(plugin => plugin()),
       ...(withExport ? [dataExport(options)] : []),
@@ -340,7 +344,8 @@ describe('dataExport — скачивание', () => {
 describe('dataExport — серверный режим', () => {
   const serverGrid = (options: ExportOptions) =>
     renderGrid({
-      options: { server: true, ...options },
+      options,
+      dataMode: { export: 'server' },
       extraPlugins: [() => columnSorting(), () => rowSelection()],
     })
 
@@ -374,8 +379,9 @@ describe('dataExport — серверный режим', () => {
     const onExport = vi.fn()
     const onExported = vi.fn()
     await renderGrid({
-      options: { server: true, onExport, onExported },
-      extraPlugins: [() => pagination({ server: true, rowCount: 2 })],
+      options: { onExport, onExported },
+      dataMode: { pagination: 'server', export: 'server' },
+      extraPlugins: [() => pagination({ rowCount: 2 })],
     })
     await openPanel()
     await userEvent.click(radio('rows', 'page')!)
@@ -394,8 +400,9 @@ describe('dataExport — серверный режим', () => {
       () => new Promise<void>(resolve => (finish = resolve)),
     )
     const pending = await renderGrid({
-      options: { server: true, onExport },
-      extraPlugins: [() => pagination({ server: true, rowCount: 2 })],
+      options: { onExport },
+      dataMode: { pagination: 'server', export: 'server' },
+      extraPlugins: [() => pagination({ rowCount: 2 })],
     })
     await openPanel()
     await runExport()

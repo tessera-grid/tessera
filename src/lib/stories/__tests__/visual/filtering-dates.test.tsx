@@ -5,6 +5,7 @@ import { commands, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
+import type { DataMode } from '../../../core/dataMode'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import { columnFiltering, keyboardNavigation } from '../../../plugins'
@@ -92,6 +93,7 @@ const COLUMNS = [
 ]
 
 interface GridProps {
+  dataMode?: DataMode
   plugins?: readonly unknown[]
   localization?: Record<string, unknown>
   icons?: Record<string, unknown>
@@ -102,6 +104,7 @@ interface GridProps {
 
 const Grid = ({
   plugins = [columnFiltering({ timeZone: 'UTC', debounceMs: 0 })],
+  dataMode,
   localization,
   icons,
   colorMode,
@@ -113,6 +116,7 @@ const Grid = ({
     data: DATA,
     getRowId: (row: (typeof DATA)[number]) => row.id,
     enableToolbar: true,
+    dataMode,
     plugins: [
       ...plugins,
       ...(enableKeyboardNavigation ? [keyboardNavigation()] : []),
@@ -605,9 +609,9 @@ describe('Фильтр дат — сервер', () => {
     let table: any
     await render(
       <Grid
+        dataMode={{ filtering: 'server' }}
         plugins={[
           columnFiltering({
-            server: true,
             timeZone: 'UTC',
             debounceMs: 0,
             onFilterChange,

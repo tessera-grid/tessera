@@ -60,6 +60,7 @@ const Grid = ({ plugins }: { plugins: readonly unknown[] }) => {
     columns: COLUMNS as never,
     data: NO_DATA,
     getRowId: (row: Item) => row.id,
+    dataMode: { export: 'server' },
     plugins: [
       serverRowModel({
         getRows,
@@ -254,7 +255,6 @@ describe('серверная группировка на таблице (ADR 014
           plugins={[
             rowGrouping({ initialGrouping: ['country'] }),
             dataExport({
-              server: true,
               onExport: request => {
                 exports.push(request)
               },

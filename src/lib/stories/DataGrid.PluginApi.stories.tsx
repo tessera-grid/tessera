@@ -155,7 +155,7 @@ export const PluginApiPlayground: StoryObj<SessionsArgs> = {
         'enableColumnSorting',
         'columnSortingRemoval',
         'columnSortingMultiSort',
-        'columnSortingServer',
+        'dataMode',
         'columnSortingRevertOnReject',
         'enableRowExpanding',
         'rowExpandingMaxDepth',

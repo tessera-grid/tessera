@@ -27,7 +27,8 @@ const Host = ({ rowCount }: { rowCount: number }) => {
   captured = useCreateTable({
     columns: columns as never,
     data: page,
-    plugins: [pagination({ server: true, rowCount, initialPageSize: 25 })],
+    dataMode: { pagination: 'server' },
+    plugins: [pagination({ rowCount, initialPageSize: 25 })],
   })
   return null
 }

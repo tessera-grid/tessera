@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest'
 
 import { injectServiceColumns } from '../core/createColumns'
 import { resolveHooks } from '../core/createHooks'
+import { type DataMode, manualOptionsOf } from '../core/dataMode'
 import { buildTesseraFeatures, foldEntries, foldHooks } from '../core/features'
 import { ENGLISH_LABELS } from '../core/localization'
 import { dataExport } from '../plugins/dataExport'
@@ -43,7 +44,10 @@ const COLUMNS = [
   { id: 'age', accessorKey: 'age', header: 'Age', filter: 'number' },
 ]
 
-const build = (plugins: any[] = [columnFiltering(), quickSearch()]) => {
+const build = (
+  plugins: any[] = [columnFiltering(), quickSearch()],
+  dataMode?: DataMode,
+) => {
   const entries = [
     {
       id: 'reactivity',
@@ -58,6 +62,8 @@ const build = (plugins: any[] = [columnFiltering(), quickSearch()]) => {
     columns: injectServiceColumns(COLUMNS as any[], folded.serviceColumns),
     getRowId: (row: Item) => row.id,
     ...folded.options,
+    dataMode,
+    ...manualOptionsOf({ ...folded.options, dataMode }),
     hooks: resolveHooks(foldHooks(entries)),
     pluginDiagnostics: folded.pluginDiagnostics,
     logLevel: 'error',
@@ -261,16 +267,19 @@ describe('фильтрация и экспорт', () => {
 
 describe('серверный режим без колбэка', () => {
   it('FL31: серверный режим без колбэка — diagnose → noOnFilterChange / noOnSearchChange', () => {
-    const filtering = columnFiltering({ server: true }) as any
-    const search = quickSearch({ server: true }) as any
-    const table = build([filtering, search])
+    const filtering = columnFiltering() as any
+    const search = quickSearch() as any
+    const table = build([filtering, search], 'server')
     expect(filtering.diagnose(table)).toBe('noOnFilterChange')
     expect(search.diagnose(table)).toBe('noOnSearchChange')
 
-    const withCallbacks = build([
-      columnFiltering({ server: true, onFilterChange: () => {} }),
-      quickSearch({ server: true, onSearchChange: () => {} }),
-    ])
+    const withCallbacks = build(
+      [
+        columnFiltering({ onFilterChange: () => {} }),
+        quickSearch({ onSearchChange: () => {} }),
+      ],
+      'server',
+    )
     expect(filtering.diagnose(withCallbacks)).toBeUndefined()
     expect(search.diagnose(withCallbacks)).toBeUndefined()
   })

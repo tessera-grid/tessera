@@ -127,7 +127,7 @@ const POPOVER_PLUGINS = [
   popoverProbe(),
   rowActions(),
   rowActionMenu({ mode: 'always' }),
-  dataExport({ server: true, onExport: () => new Promise<void>(() => {}) }),
+  dataExport({ onExport: () => new Promise<void>(() => {}) }),
 ]
 
 const PopoverGrid = () => {
@@ -136,6 +136,7 @@ const PopoverGrid = () => {
     data: DATA,
     getRowId: (row: (typeof DATA)[number]) => row.id,
     enableToolbar: true,
+    dataMode: { export: 'server' },
     plugins: POPOVER_PLUGINS as never,
   })
   return (

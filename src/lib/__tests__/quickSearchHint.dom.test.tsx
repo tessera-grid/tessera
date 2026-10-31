@@ -10,6 +10,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { setSearchByUser } from '../shared/filtering/filtering'
 import { searchColumnIdsOf } from '../shared/filtering/searchColumns'
+import type { DataMode } from '../core/dataMode'
 import { useCreateTable } from '../core/useCreateTable'
 import { quickSearch } from '../plugins'
 
@@ -45,11 +46,15 @@ const data = [
   },
 ]
 
-const mount = (options: Parameters<typeof quickSearch>[0] = {}) => {
+const mount = (
+  options: Parameters<typeof quickSearch>[0] = {},
+  dataMode?: DataMode,
+) => {
   const Host = () => {
     captured = useCreateTable({
       columns: columns as never,
       data,
+      dataMode,
       plugins: [quickSearch(options)],
     })
     return null
@@ -85,7 +90,7 @@ describe('колонки быстрого поиска', () => {
 
   it('QS7: в серверном режиме смена набора колонок при непустом поиске зовёт onSearchChange с прежней строкой и новыми columnIds; при пустом — нет', () => {
     const onSearchChange = vi.fn()
-    mount({ server: true, onSearchChange })
+    mount({ onSearchChange }, { search: 'server' })
     act(() => captured.getColumn('city').toggleVisibility(false))
     expect(onSearchChange).not.toHaveBeenCalled()
 

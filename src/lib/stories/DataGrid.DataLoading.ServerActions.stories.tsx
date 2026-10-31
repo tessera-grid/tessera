@@ -57,12 +57,14 @@ export default meta
 /** Сортировка, страница и поиск таблицы идут на сервер. */
 const SERVER_MODE = {
   columnsOverride: filteringColumns,
-  columnSortingServer: true,
+  dataMode: {
+    sorting: 'server',
+    filtering: 'server',
+    search: 'server',
+    pagination: 'server',
+  },
   columnSortingMultiSort: false,
-  paginationServer: true,
   paginationInitialPageSize: ACTION_SERVER_PAGE,
-  columnFilteringServer: true,
-  quickSearchServer: true,
 } satisfies Partial<StoryProps>
 
 const SERVER_PLUGINS = {

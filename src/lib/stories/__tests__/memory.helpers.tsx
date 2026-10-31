@@ -6,6 +6,7 @@ import {
   type ReactElement,
 } from 'react'
 import { flushSync } from 'react-dom'
+import type { DataMode } from '../../core/dataMode'
 import type { OnDebugAction } from '../../core/debugActions'
 import { createRoot } from 'react-dom/client'
 import { commands } from 'vitest/browser'
@@ -77,6 +78,8 @@ export interface GridProps {
   onDebugAction?: OnDebugAction
   /** Футер колонок (ADR 0118). */
   footer?: boolean
+  /** Режим данных (ADR 0169). */
+  dataMode?: DataMode
 }
 
 const DEFAULT_DATA = getData(60, 'nested')
@@ -90,6 +93,7 @@ export const Grid = ({
   colorMode,
   onDebugAction,
   footer,
+  dataMode,
 }: GridProps) => {
   const built = useMemo(() => argsToPlugins(toggles), [toggles])
   const plugins = pluginsProp ?? built
@@ -100,6 +104,7 @@ export const Grid = ({
     plugins: plugins as never,
     onDebugAction,
     enableFooter: footer,
+    dataMode,
   })
   useEffect(() => {
     onTable?.(table)

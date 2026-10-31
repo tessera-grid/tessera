@@ -219,7 +219,7 @@ export const ToolbarSearchBeforeDataServer: StoryObj<StoryProps> = {
           columnCount: 6,
           dataCount: 40,
           enableQuickSearch: true,
-          quickSearchServer: true,
+          dataMode: { search: 'server' },
           onSearchChange: search => {
             searchRequests.push(search)
           },

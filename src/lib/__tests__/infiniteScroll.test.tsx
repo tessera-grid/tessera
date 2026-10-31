@@ -2,7 +2,7 @@
 /**
  * Лента (ADR 0081; IS5, IS6, IS8): загрузчик — одна загрузка за раз, цепочка, пауза
  * после пустого ответа, синхронный `onLoadMore`; живые аргументы без пересоздания
- * таблицы; инертность рядом с пагинацией и предупреждения о клиентской обработке.
+ * таблицы; инертность рядом с пагинацией. О клиентской обработке предупреждает ядро (MD5).
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { act, createElement } from 'react'
@@ -10,14 +10,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { useCreateTable } from '../core/useCreateTable'
-import {
-  columnFiltering,
-  columnSorting,
-  infiniteScroll,
-  pagination,
-  quickSearch,
-  rowGrouping,
-} from '../plugins'
+import { infiniteScroll, pagination } from '../plugins'
 import {
   type EdgeGeometry,
   InfiniteLoader,
@@ -26,7 +19,6 @@ import {
 import { IDLE } from '../plugins/infiniteScroll/model'
 import type { InfiniteScrollState } from '../plugins/infiniteScroll/types'
 import { captureInertWarnings } from './inertWarnings'
-import { __resetLogger } from '../util/logger'
 
 ;(
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -202,17 +194,9 @@ describe('Лента: аргументы и совместимость', () => {
 
   describe('предупреждения', () => {
     const warnings = captureInertWarnings()
-    let before = 0
-    /** Новая таблица и чистый dedup логгера: предупреждения части — только её. */
-    const fresh = () => {
-      act(() => root?.unmount())
-      root = undefined
-      __resetLogger()
-      before = warnings().length
-    }
 
     it('IS8: с пагинацией лента инертна — причина pagination и dev-warn', () => {
-      let table = mount([pagination(), infiniteScroll({ hasMore: true })])
+      const table = mount([pagination(), infiniteScroll({ hasMore: true })])
       const diagnostic = table
         .getPluginDiagnostics()
         .find((d: { id: string }) => d.id === 'infiniteScroll')
@@ -223,41 +207,6 @@ describe('Лента: аргументы и совместимость', () => {
       })
       expect(table.options.getTotalRowCount(table)).toBeUndefined()
       expect(warnings().some(w => w.includes('infiniteScroll'))).toBe(true)
-
-      // Клиентские сортировка, фильтр, поиск и группировка — dev-warn, плагин работает
-      fresh()
-
-      table = mount([
-        columnSorting(),
-        columnFiltering(),
-        quickSearch(),
-        rowGrouping(),
-        infiniteScroll({ hasMore: true }),
-      ])
-      const text = warnings().join('\n')
-      for (const feature of ['sorting', 'filtering', 'search', 'grouping']) {
-        expect(text).toContain(`client-side ${feature}`)
-      }
-      expect(
-        table
-          .getPluginDiagnostics()
-          .find((d: { id: string }) => d.id === 'infiniteScroll').status,
-      ).toBe('active')
-
-      // Серверные сортировка, фильтр и поиск — без предупреждений
-      fresh()
-
-      mount([
-        columnSorting({ server: true }),
-        columnFiltering({ server: true }),
-        quickSearch({ server: true }),
-        infiniteScroll({ hasMore: true }),
-      ])
-      expect(
-        warnings()
-          .slice(before)
-          .filter(w => w.includes('client-side')),
-      ).toEqual([])
     })
   })
 })

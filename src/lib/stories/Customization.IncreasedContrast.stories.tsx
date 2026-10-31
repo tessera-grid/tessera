@@ -90,7 +90,7 @@ export const IncreasedContrastPlayground: StoryObj<StoryProps> = {
       'enableColumnSorting',
       'columnSortingRemoval',
       'columnSortingMultiSort',
-      'columnSortingServer',
+      'dataMode',
       'columnSortingRevertOnReject',
       'enableColumnPinning',
       'columnPinningLeafPinning',

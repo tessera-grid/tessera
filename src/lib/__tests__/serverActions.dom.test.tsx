@@ -87,21 +87,20 @@ const Host = ({
   captured = useCreateTable({
     columns: columns as never,
     data,
+    dataMode: server ? 'server' : 'client',
     plugins: [
       columnSorting({
-        server,
         revertOnReject: sortingRevert,
         onToggleColumnSort: reply('sorting'),
       }),
       pagination({
-        server,
         rowCount: 1000,
         initialPageSize: 25,
         revertOnReject: paginationRevert,
         onPageChange: reply('pagination'),
       }),
-      columnFiltering({ server, onFilterChange: reply('filtering') }),
-      quickSearch({ server, onSearchChange: reply('search') }),
+      columnFiltering({ onFilterChange: reply('filtering') }),
+      quickSearch({ onSearchChange: reply('search') }),
     ],
   })
   return null

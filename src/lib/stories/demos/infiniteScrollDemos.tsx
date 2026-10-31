@@ -178,14 +178,12 @@ export const InfiniteScrollDemo = ({
       infiniteScrollLoadedCount={args.infiniteScrollLoadedCount ?? true}
       {...(serverQuery && {
         enableColumnSorting: true,
-        columnSortingServer: true,
+        dataMode: { sorting: 'server', filtering: 'server', search: 'server' },
         columnSortingMultiSort: false,
         onToggleColumnSort,
         enableColumnFiltering: true,
         enableQuickSearch: true,
-        columnFilteringServer: true,
         onFilterChange,
-        quickSearchServer: true,
         onSearchChange,
       })}
     />

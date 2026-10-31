@@ -433,9 +433,8 @@ export const ExportServer: StoryObj<StoryProps> = {
           paginationInitialPageSize: 25,
           enableRowSelection: true,
           dataOverride: serverPage,
-          paginationServer: true,
+          dataMode: { pagination: 'server', export: 'server' },
           paginationRowCount: 1000,
-          dataExportServer: true,
           onExport: exportServer.onExport,
           onExported,
         },
@@ -738,7 +737,7 @@ export const ExportServerInitialLoading: StoryObj<StoryProps> = {
       args={guideArgs(
         {
           ...GRID,
-          dataExportServer: true,
+          dataMode: { export: 'server' },
           // Одна комбинация: клик выгружает сразу, без панели.
           dataExportAllow: { rows: ['all'], columns: ['visible'] },
           onExport: request => {

@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest'
 import { rememberOptionLabels } from '../core/columnOptions'
 import { injectServiceColumns } from '../core/createColumns'
 import { resolveHooks } from '../core/createHooks'
+import { manualOptionsOf } from '../core/dataMode'
 import { buildTesseraFeatures, foldEntries, foldHooks } from '../core/features'
 import { columnSorting } from '../plugins/columnSorting'
 
@@ -60,15 +61,18 @@ const build = (
       id: 'reactivity',
       features: { coreReactivityFeature: storeReactivityBindings() },
     },
-    columnSorting({ server }),
+    columnSorting(),
   ]
   const folded = foldEntries(entries as never)
+  const dataMode = server ? 'server' : 'client'
   return constructTable({
     features: buildTesseraFeatures(entries as never),
     data,
     columns: injectServiceColumns(columns(extra) as any[], []),
     getRowId: (row: Item) => row.id,
     ...folded.options,
+    dataMode,
+    ...manualOptionsOf({ dataMode }),
     hooks: resolveHooks(foldHooks(entries as never)),
     pluginDiagnostics: folded.pluginDiagnostics,
     logLevel: 'error',

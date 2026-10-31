@@ -10,7 +10,11 @@ import type { DayPickerLocale } from '@daypicker/react'
 import { definePlugin } from '../../core/definePlugin'
 import { readPluginHooks } from '../../core/definePlugin'
 import type { FilterChangeHook } from '../../shared/filtering/filtering'
-import type { PluginInertReason } from '../../core/pluginDiagnostics'
+import { dataModeOf } from '../../core/dataMode'
+import {
+  type PluginInertReason,
+  serverRowModelReason,
+} from '../../core/pluginDiagnostics'
 import {
   columnFilteringModel,
   columnFilteringModelFeatures,
@@ -32,32 +36,34 @@ export interface ColumnFilteringOptions extends Omit<
   /** «Показано N из M» в нижней панели при активном фильтре (по умолчанию нет). */
   filteredCount?: boolean
   /**
-   * Бизнес-колбэк: пользователь изменил фильтры колонок (после дебаунса). В серверном
-   * режиме промис — запрос данных: грид ждёт, отказ отмечает фильтр (ADR 0116).
+   * Бизнес-колбэк: пользователь изменил фильтры колонок (после дебаунса). Фильтры на
+   * сервере (`dataMode`, ADR 0169) — промис запроса данных: грид ждёт, отказ отмечает
+   * фильтр (ADR 0116).
    */
   onFilterChange?: FilterChangeHook
-  /** Серверный режим: строк после фильтрации — для «показано N из M». */
+  /** Фильтры или поиск на сервере: строк после фильтрации — для «показано N из M». */
   filteredRowCount?: number
-  /** Серверный режим: всех строк — для «показано N из M». */
+  /** Фильтры или поиск на сервере: всех строк — для «показано N из M». */
   totalRowCount?: number
   /** Локаль календаря: месяцы, дни недели, первый день недели (по умолчанию `en-US`). */
   dateLocale?: DayPickerLocale
 }
 
-/** Серверный режим без колбэка: фильтры некуда отправить (FL31). */
+/**
+ * Фильтры на сервере без колбэка — их некуда отправить (FL31). Серверная модель строк
+ * отправляет их сама (ADR 0138).
+ */
 const columnFilteringInertReason = (
   table: unknown,
-): PluginInertReason | undefined => {
-  const t = table as {
-    options: { columnFilteringServer?: boolean }
-    getHooks: () => unknown
-  }
-  return t.options.columnFilteringServer &&
-    !readPluginHooks<{ onFilterChange?: unknown }>(t, 'columnFiltering')
-      .onFilterChange
+): PluginInertReason | undefined =>
+  dataModeOf(table, 'filtering') === 'server' &&
+  !serverRowModelReason(table) &&
+  !readPluginHooks<{ onFilterChange?: unknown }>(
+    table as { getHooks: () => unknown },
+    'columnFiltering',
+  ).onFilterChange
     ? 'noOnFilterChange'
     : undefined
-}
 
 export const columnFiltering = definePlugin<ColumnFilteringOptions>()({
   id: 'columnFiltering',
@@ -65,7 +71,6 @@ export const columnFiltering = definePlugin<ColumnFilteringOptions>()({
   model: {
     plugin: columnFilteringModel,
     keys: [
-      'server',
       'timeZone',
       'columnFilters',
       'onColumnFiltersChange',
@@ -91,14 +96,10 @@ export const columnFiltering = definePlugin<ColumnFilteringOptions>()({
   options: o => ({
     columnFilteringDebounceMs: o.debounceMs ?? DEFAULT_FILTER_DEBOUNCE_MS,
     columnFilteringDateLocale: o.dateLocale,
-    ...(o.server
-      ? {
-          filteringRowCounts: {
-            filtered: o.filteredRowCount,
-            total: o.totalRowCount,
-          },
-        }
-      : {}),
+    filteringRowCounts: {
+      filtered: o.filteredRowCount,
+      total: o.totalRowCount,
+    },
   }),
 })
 

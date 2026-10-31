@@ -23,11 +23,6 @@ export interface ColumnFilteringModelOptions {
   /** `false` — плагин отключён: фильтры колонок не применяются. */
   enabled?: boolean
   /**
-   * Серверная фильтрация — v9 `manualFiltering`: грид не фильтрует, `data` — уже
-   * результат. Режим данных общий с поиском (ADR 0045, §10).
-   */
-  server?: boolean
-  /**
    * Пояс дат (IANA или `'UTC'`): сутки, «сегодня», пресеты и стенное время
    * `datetime`; по умолчанию — пояс браузера (ADR 0047, §4).
    */
@@ -55,8 +50,6 @@ const NO_FILTERS: never[] = []
 export const columnFilteringModel = definePlugin<ColumnFilteringModelOptions>()(
   {
     id: 'columnFilteringModel',
-    // Режим данных — договор с потребителем на время жизни таблицы (ADR 0039).
-    lifetime: ['server'],
     diagnose: neverInert,
     stubs: [FILTERED_STUB],
     features: columnFilteringModelFeatures,
@@ -76,8 +69,6 @@ export const columnFilteringModel = definePlugin<ColumnFilteringModelOptions>()(
       // В дереве родитель виден, если фильтр проходит потомок (FL22).
       filterFromLeafRows: true,
       columnFilteringTimeZone: o.timeZone,
-      columnFilteringServer: !!o.server,
-      ...(o.server ? { manualFiltering: true } : {}),
     }),
   },
 )
@@ -91,7 +82,6 @@ declare module '@tanstack/react-table' {
   > {
     /** Опции таблицы, которые выставляет плагин (ADR 0167). */
     columnFilteringModelPlugin: {
-      columnFilteringServer?: boolean
       columnFilteringTimeZone?: ColumnFilteringModelOptions['timeZone']
     }
   }

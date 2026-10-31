@@ -113,7 +113,7 @@ export const corePluginOnlyModules = () => {
 }
 
 /** Аргументы, с которыми плагины выставляют разные опции. */
-const ARG_SETS: unknown[] = [{}, { enabled: false }, { server: true }]
+const ARG_SETS: unknown[] = [{}, { enabled: false }]
 
 const optionKeysOf = (entry: Entry) =>
   ARG_SETS.flatMap(args => {

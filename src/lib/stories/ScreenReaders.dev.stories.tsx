@@ -24,7 +24,7 @@ export const A11yGrid: StoryObj<StoryProps> = {
     'enableColumnSorting',
     'columnSortingRemoval',
     'columnSortingMultiSort',
-    'columnSortingServer',
+    'dataMode',
     'columnSortingRevertOnReject',
     'enableColumnPinning',
     'columnPinningLeafPinning',

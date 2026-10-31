@@ -4,11 +4,7 @@
  * колонкам, с фильтрами колонок — через И; поле поиска и колбэк пользователя — у
  * `quickSearch`, который включает эту модель.
  */
-import {
-  globalFilteringFeature,
-  type RowData,
-  type TableFeatures,
-} from '@tanstack/react-table'
+import { globalFilteringFeature } from '@tanstack/react-table'
 
 import { definePlugin } from '../../core/definePlugin'
 import { FILTERED_STUB } from '../../shared/filtering/filtering'
@@ -19,11 +15,6 @@ import { canSearchColumn, quickSearchFilter } from './search'
 export interface QuickSearchModelOptions {
   /** `false` — плагин отключён: поиск не применяется. */
   enabled?: boolean
-  /**
-   * Серверный поиск — v9 `manualFiltering`: грид не ищет. Режим данных общий с
-   * фильтрами колонок (ADR 0045, §10).
-   */
-  server?: boolean
   /** Строка поиска: задаёт приложение; без него срез хранит грид. */
   globalFilter?: string
   /** Новое значение среза после каждого изменения изнутри грида. */
@@ -40,8 +31,6 @@ export const quickSearchModelFeatures = {
 
 export const quickSearchModel = definePlugin<QuickSearchModelOptions>()({
   id: 'quickSearchModel',
-  // Режим данных — договор с потребителем на время жизни таблицы (ADR 0039).
-  lifetime: ['server'],
   diagnose: neverInert,
   stubs: [FILTERED_STUB],
   features: quickSearchModelFeatures,
@@ -59,22 +48,5 @@ export const quickSearchModel = definePlugin<QuickSearchModelOptions>()({
     filterFromLeafRows: true,
     globalFilterFn: quickSearchFilter,
     getColumnCanGlobalFilter: canSearchColumn,
-    quickSearchServer: !!o.server,
-    ...(o.server ? { manualFiltering: true } : {}),
   }),
 })
-
-/* eslint-disable @typescript-eslint/no-unused-vars -- generics карт обязаны
-   повторять сигнатуры v9, иначе declaration merging не склеится */
-declare module '@tanstack/react-table' {
-  interface TableOptions_FeatureMap<
-    in out TFeatures extends TableFeatures,
-    in out TData extends RowData,
-  > {
-    /** Опции таблицы, которые выставляет плагин (ADR 0167). */
-    quickSearchModelPlugin: {
-      quickSearchServer?: boolean
-    }
-  }
-}
-/* eslint-enable @typescript-eslint/no-unused-vars */

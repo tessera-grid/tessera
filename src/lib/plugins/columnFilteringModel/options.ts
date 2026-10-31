@@ -10,6 +10,7 @@ import {
   optionLabelOf,
   type OptionValue,
 } from '../../core/columnOptions'
+import { dataModeOf } from '../../core/dataMode'
 import type { ColumnFilterType, OptionFilter } from './types'
 
 export const isOptionType = (type: ColumnFilterType | undefined) =>
@@ -50,8 +51,11 @@ interface FacetColumn {
 
 interface FacetTable {
   getPreFilteredRowModel: () => { flatRows: FacetRow[] }
-  options: { manualFiltering?: boolean }
 }
+
+/** Варианты и их счётчики — от сервера: фильтры колонок выполняет он (ADR 0169). */
+const filtersOnServer = (table: unknown) =>
+  dataModeOf(table, 'filtering') === 'server'
 
 const countCache = new WeakMap<FacetRow[], Map<string, Map<unknown, number>>>()
 
@@ -78,7 +82,7 @@ export const optionCountsOf = (
   table: unknown,
   column: FacetColumn,
 ): Map<unknown, number> | undefined => {
-  if ((table as FacetTable).options.manualFiltering) {
+  if (filtersOnServer(table)) {
     const options = column.columnDef.options ?? []
     if (!options.some(option => option.count !== undefined)) return undefined
     return new Map(
@@ -101,7 +105,7 @@ export const filterOptionsOf = (
 ): ColumnOption[] => {
   if (column.columnDef.options) return column.columnDef.options
   const t = table as FacetTable
-  if (t.options.manualFiltering) return []
+  if (filtersOnServer(table)) return []
   const values = countValues(t.getPreFilteredRowModel().flatRows, column.id)
   return [...values.keys()]
     .map(value => ({

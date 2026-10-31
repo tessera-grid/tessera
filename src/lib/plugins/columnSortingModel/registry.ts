@@ -23,8 +23,6 @@ import { createTesseraSortedRowModel } from './sortedRowModel'
 export interface ColumnSortingModelOptions {
   /** `false` — плагин отключён. */
   enabled?: boolean
-  /** Серверная сортировка — v9 `manualSorting`: `data` уже упорядочены (по умолчанию false). */
-  server?: boolean
   /**
    * Мультисортировка: `true`/`undefined` — без предела; `false` — один столбец;
    * `{ max }` — не больше `max` столбцов в срезе.
@@ -68,8 +66,6 @@ export const multiSortLimit = (
 
 export const columnSortingModel = definePlugin<ColumnSortingModelOptions>()({
   id: 'columnSortingModel',
-  // Режим данных — договор с потребителем на время жизни таблицы (ADR 0039).
-  lifetime: ['server'],
   diagnose: neverInert,
   features: sortingModelFeatures,
   slices: ['sorting'],
@@ -82,6 +78,5 @@ export const columnSortingModel = definePlugin<ColumnSortingModelOptions>()({
   },
   options: o => ({
     enableSorting: o.enabled !== false,
-    manualSorting: o.server ?? false,
   }),
 })

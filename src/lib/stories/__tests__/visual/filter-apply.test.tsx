@@ -123,9 +123,9 @@ const Grid = ({ server = true, wide = false, localization }: GridProps) => {
     data: DATA,
     getRowId: (row: (typeof DATA)[number]) => row.id,
     refreshOptions: { delayMs: 0, minDurationMs: 0 },
+    dataMode: { filtering: server ? 'server' : 'client' },
     plugins: [
       columnFiltering({
-        server,
         timeZone: 'UTC',
         debounceMs: 0,
         onFilterChange,

@@ -40,7 +40,7 @@ export const ColumnSortingPlayground: StoryObj<StoryProps> = {
     'enableColumnSorting',
     'columnSortingRemoval',
     'columnSortingMultiSort',
-    'columnSortingServer',
+    'dataMode',
     'columnSortingRevertOnReject',
   ]),
   args: {

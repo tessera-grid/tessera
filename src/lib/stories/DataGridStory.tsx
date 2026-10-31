@@ -18,6 +18,7 @@ import { Grid } from './_shims'
 import { loadingArg, panelFlag } from './__mocks__/utils/dataGridControls'
 import type { RowSelectionValue } from '../../lib/core/rowSelectionAll'
 import type { TesseraFeatureEntry } from '../../lib/core/features'
+import { dataModeKeyOf } from '../../lib/core/dataMode'
 import { argsKeyOf } from '../../lib/core/pluginArgs'
 import type { DebugAction } from '../../lib/core/debugActions'
 import { useCreateTable } from '../../lib/core/useCreateTable'
@@ -59,12 +60,12 @@ const demoCellError = (ctx: CellComponentProps) =>
     : undefined
 
 /**
- * Аргументы-договоры на время жизни (`server`, ADR 0039) таблица берёт при монтировании:
- * смена такого аргумента из Controls пересоздаёт грид, как велит договор.
+ * Аргументы-договоры на время жизни (ADR 0039) и `dataMode` (ADR 0169) таблица берёт при
+ * монтировании: смена такого аргумента из Controls пересоздаёт грид, как велит договор.
  */
 const lifetimeKeyOf = (entries: readonly TesseraFeatureEntry[]) =>
   entries
-    // Модель, которую несёт интерфейс, держит свои договоры (ADR 0120): `server` сортировки.
+    // Модель, которую несёт интерфейс, держит свои договоры (ADR 0120).
     .flatMap(entry => (entry.model ? [entry, entry.model] : [entry]))
     .flatMap(entry =>
       (entry.lifetimeArgs ?? []).map(
@@ -417,6 +418,7 @@ const StoryGrid = memo(
           : {}),
       },
       // Ядровые (не плагинные) опции остаются флагами.
+      dataMode: options.dataMode,
       loading:
         retry === 'loading'
           ? firstLoad
@@ -577,10 +579,10 @@ export const StoryComponent = memo((props: StoryProps) => {
   const consoleLog = props.consoleLog ?? contextLog
   return (
     <StoryGrid
-      key={lifetimeKeyOf([
+      key={`${dataModeKeyOf(props.dataMode)}|${lifetimeKeyOf([
         ...argsToPlugins(props),
         ...(props.extraPlugins ?? []),
-      ])}
+      ])}`}
       {...props}
       consoleLog={consoleLog}
       // Под консолью область — по высоте таблицы: консоль сразу за рамкой (ADR 0124);

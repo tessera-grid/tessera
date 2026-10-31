@@ -109,10 +109,10 @@ const Host = ({ server }: { server: boolean }) => {
   captured = useCreateTable({
     columns: columns as never,
     data: DATA,
+    dataMode: { sorting: 'server', export: server ? 'server' : 'client' },
     onDebugAction: action => actions.push(action),
     plugins: [
       columnSorting({
-        server: true,
         onToggleColumnSort: (...args: unknown[]) =>
           reply('sorting', (args.at(-1) as { signal: AbortSignal }).signal),
       }),
@@ -121,7 +121,6 @@ const Host = ({ server }: { server: boolean }) => {
         loadChildren: (_row, context) => reply('children', context!.signal),
       }),
       dataExport({
-        server,
         formats: [slowFormat],
         onExport: (_request, context) => reply('export', context!.signal),
         onExported: () => calls.push({ kind: 'exported' } as Call),

@@ -4,6 +4,7 @@ import { commands, page, userEvent } from 'vitest/browser'
 import { cleanup, render } from 'vitest-browser-react'
 import { beforeAll, beforeEach, describe, expect, test } from 'vitest'
 
+import type { DataMode } from '../../../core/dataMode'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import {
@@ -99,6 +100,7 @@ interface FeedProps {
   wide?: boolean
   columns?: unknown[]
   loading?: 'initial' | false
+  dataMode?: DataMode
 }
 
 const WIDE_COLUMNS = [
@@ -122,6 +124,7 @@ const Feed = ({
   wide = false,
   columns,
   loading,
+  dataMode,
 }: FeedProps) => {
   const [rows, setRows] = useState(() => itemsFrom(0, initial))
   feed = {
@@ -131,6 +134,7 @@ const Feed = ({
   table = useCreateTable({
     columns: (columns ?? (wide ? WIDE_COLUMNS : COLUMNS)) as never,
     loading,
+    dataMode,
     data: rows,
     getRowId: (row: Item) => row.id,
     state: state as never,
@@ -415,11 +419,7 @@ describe('Лента: хвост ожидания и ответ', () => {
 })
 
 describe('Лента: смена условия выборки', () => {
-  const plugins = () => [
-    columnSorting({ server: true }),
-    columnFiltering({ server: true }),
-    quickSearch({ server: true }),
-  ]
+  const plugins = () => [columnSorting(), columnFiltering(), quickSearch()]
   const changes: [string, () => void][] = [
     ['сортировка', () => table.setSorting([{ id: 'a', desc: true }])],
     [
@@ -434,7 +434,7 @@ describe('Лента: смена условия выборки', () => {
 
   test('IS7: смена сортировки, фильтра колонки или поиска — тело в начале, signal отменён, хвост и строка ошибки сняты, отменённая загрузка не показывает ожидания и ошибки', async () => {
     for (const [name, change] of changes) {
-      await mount({ plugins: plugins() })
+      await mount({ plugins: plugins(), dataMode: 'server' })
       await scrollToEnd()
       const call = await pendingCall()
       await frames()
@@ -457,7 +457,7 @@ describe('Лента: смена условия выборки', () => {
     }
 
     // Смена условия снимает строку ошибки.
-    await mount({ plugins: plugins() })
+    await mount({ plugins: plugins(), dataMode: 'server' })
     await scrollToEnd()
     await pendingCall()
     await fail()
@@ -633,7 +633,7 @@ describe('Лента: итог и доступность', () => {
     ).toBe(true)
   })
 
-  test('IS14: выгрузка — с dataExport({ server: true }) серверная, без него вариант all подписан «Loaded rows (N)»', async () => {
+  test('IS14: выгрузка — на сервере (dataMode.export) серверная, без него вариант all подписан «Loaded rows (N)»', async () => {
     const rowsLabel = async () => {
       await userEvent.click(
         document.querySelector<HTMLElement>('[data-testid="export-button"]')!,
@@ -652,7 +652,8 @@ describe('Лента: итог и доступность', () => {
     await client.unmount()
 
     await mount({
-      plugins: [dataExport({ server: true, onExport: async () => {} })],
+      dataMode: { export: 'server' },
+      plugins: [dataExport({ onExport: async () => {} })],
     })
     const label = await rowsLabel()
     expect(label).toContain(tableLabels.exportAll)
@@ -666,7 +667,7 @@ describe('Лента: итог и доступность', () => {
   ]
   for (const [role, plugins] of roles) {
     test(`IS15: axe и color-contrast хвоста и строки ошибки в обеих темах, роль ${role}`, async () => {
-      await mount({ plugins: plugins() })
+      await mount({ plugins: plugins(), dataMode: 'server' })
       expect(gridRoot().getAttribute('role')).toBe(role)
       await scrollToEnd()
       await pendingCall()

@@ -259,7 +259,7 @@ export const findPluginOverwrites = (
   ) => {
     for (const [key, value] of Object.entries(source ?? {})) {
       const from = owners[kind].get(key)
-      // Одинаковое значение — не перезапись: общий режим данных фильтров и поиска.
+      // Одинаковое значение — не перезапись: общая опция фильтров и поиска `filterFromLeafRows`.
       if (
         from !== undefined &&
         from !== id &&

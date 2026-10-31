@@ -29,15 +29,15 @@ const columnValues = (container: HTMLElement, colIndex: string) =>
     .map(cell => cell.textContent?.trim() ?? '')
 
 describe('истории DataGrid: аргументы-договоры на время жизни', () => {
-  test('смена serverColumnSorting после монтирования пересоздаёт грид: клик сортировки не меняет порядок строк', async () => {
+  test('смена dataMode после монтирования пересоздаёт грид: клик сортировки не меняет порядок строк', async () => {
     const { container, rerender } = await render(
-      <composed.ColumnSortingPlayground columnSortingServer={false} />,
+      <composed.ColumnSortingPlayground dataMode="client" />,
     )
     await expect
       .poll(() => container.querySelectorAll(HEAD_CELL).length)
       .toBeGreaterThan(3)
 
-    await rerender(<composed.ColumnSortingPlayground columnSortingServer />)
+    await rerender(<composed.ColumnSortingPlayground dataMode="server" />)
     await expect
       .poll(() => container.querySelectorAll(HEAD_CELL).length)
       .toBeGreaterThan(3)

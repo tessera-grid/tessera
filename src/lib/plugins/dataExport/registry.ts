@@ -28,7 +28,6 @@ export const dataExport = definePlugin<ExportOptions>()({
       'presets',
       'filename',
       'formatValue',
-      'server',
       'onExport',
       'onExported',
     ],

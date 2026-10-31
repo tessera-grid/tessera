@@ -6,6 +6,7 @@ import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
+import type { DataMode } from '../../../core/dataMode'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import {
@@ -759,6 +760,7 @@ const DIRECT_COLUMNS = [
 ]
 
 interface DirectGridProps {
+  dataMode?: DataMode
   plugins: readonly unknown[]
   stubs?: ComponentProps<typeof DataGrid>['stubs']
   localization?: ComponentProps<typeof DataGrid>['localization']
@@ -770,6 +772,7 @@ interface DirectGridProps {
 /** Грид напрямую: пропы DataGrid, которых истории не пробрасывают. */
 const DirectGrid = ({
   plugins,
+  dataMode,
   stubs,
   localization,
   icons,
@@ -781,6 +784,7 @@ const DirectGrid = ({
     data: DATA,
     getRowId: (row: (typeof DATA)[number]) => row.id,
     enableToolbar: true,
+    dataMode,
     plugins: plugins as never,
   })
   onTable?.(table)
@@ -904,10 +908,16 @@ describe('Фильтрация — пустой результат, сервер
     const onSearchChange = vi.fn()
     let table: any
     const plugins = [
-      columnFiltering({ server: true, debounceMs: 100, onFilterChange }),
-      quickSearch({ server: true, debounceMs: 100, onSearchChange }),
+      columnFiltering({ debounceMs: 100, onFilterChange }),
+      quickSearch({ debounceMs: 100, onSearchChange }),
     ] as const
-    await render(<DirectGrid plugins={plugins} onTable={t => (table = t)} />)
+    await render(
+      <DirectGrid
+        dataMode="server"
+        plugins={plugins}
+        onTable={t => (table = t)}
+      />,
+    )
     await waitForGrid()
     await waitForToolbar()
 
@@ -947,9 +957,9 @@ describe('Фильтрация — пустой результат, сервер
   test('FL30: server — «показано N из M» из filteredRowCount / totalRowCount, без них элемента нет; «скрыто фильтром» не показывается', async () => {
     const counted = await render(
       <DirectGrid
+        dataMode={{ filtering: 'server' }}
         plugins={[
           columnFiltering({
-            server: true,
             debounceMs: 0,
             filteredCount: true,
             onFilterChange: () => {},
@@ -976,9 +986,9 @@ describe('Фильтрация — пустой результат, сервер
 
     await render(
       <DirectGrid
+        dataMode={{ filtering: 'server' }}
         plugins={[
           columnFiltering({
-            server: true,
             debounceMs: 0,
             filteredCount: true,
             onFilterChange: () => {},

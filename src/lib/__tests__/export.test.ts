@@ -114,8 +114,12 @@ const disabled = (choices: ExportAxes['rows']) =>
 describe('dataExport — оси настроек', () => {
   it('PB8: при enableToolbar: false dataExport активен в diagnose, а table.exportData() запускает выгрузку', async () => {
     const onExport = vi.fn()
-    const entry = dataExport({ server: true, onExport }) as any
-    const table = build({ plugins: [entry], enableToolbar: false })
+    const entry = dataExport({ onExport }) as any
+    const table = build({
+      plugins: [entry],
+      enableToolbar: false,
+      options: { dataMode: { export: 'server' } },
+    })
     expect(entry.diagnose(table)).toBeUndefined()
     await table.exportData()
     expect(onExport).toHaveBeenCalledTimes(1)
@@ -372,12 +376,13 @@ describe('dataExport — серверный режим и exportData', () => {
   ) =>
     build({
       plugins: [
-        dataExport({ server: true, ...options }),
+        dataExport(options),
         columnSorting(),
         pagination(),
         rowSelection(),
       ],
       state,
+      options: { dataMode: { export: 'server' } },
     })
 
   it('EX29: серверная выгрузка без onExport — diagnose → noOnExport; с onExport или только page — нет', () => {
@@ -441,8 +446,9 @@ describe('dataExport — до прихода данных (ADR 0122)', () => {
   it('TF7: до данных клиентские значения оси «Строки» недоступны, выбрано первое доступное', () => {
     const selection = { rowSelection: { '1': true } }
     const server = build({
-      plugins: plugins({ server: true, onExport: () => {} }),
+      plugins: plugins({ onExport: () => {} }),
       state: selection,
+      options: { dataMode: { export: 'server' } },
     })
     const serverAxes = axesBeforeData(server, resolveAxes(server)!)
     // С сервером клиентская — только страница.

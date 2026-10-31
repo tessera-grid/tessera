@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest'
 import { optionLabelOf, rememberOptionLabels } from '../core/columnOptions'
 import { injectServiceColumns } from '../core/createColumns'
 import { resolveHooks } from '../core/createHooks'
+import { type DataMode, manualOptionsOf } from '../core/dataMode'
 import { buildTesseraFeatures, foldEntries, foldHooks } from '../core/features'
 import { columnFiltering } from '../plugins/columnFiltering'
 import type { ColumnFilterValue } from '../plugins/columnFiltering'
@@ -81,7 +82,7 @@ const COLUMNS = [
   { id: 'city', accessorKey: 'city', header: 'City', filter: 'select' },
 ]
 
-const build = (plugins: any[] = [columnFiltering()]) => {
+const build = (plugins: any[] = [columnFiltering()], dataMode?: DataMode) => {
   const entries = [
     {
       id: 'reactivity',
@@ -96,6 +97,8 @@ const build = (plugins: any[] = [columnFiltering()]) => {
     columns: injectServiceColumns(COLUMNS as any[], folded.serviceColumns),
     getRowId: (row: Item) => row.id,
     ...folded.options,
+    dataMode,
+    ...manualOptionsOf({ ...folded.options, dataMode }),
     hooks: resolveHooks(foldHooks(entries)),
     pluginDiagnostics: folded.pluginDiagnostics,
     logLevel: 'error',
@@ -137,9 +140,9 @@ describe('columnFiltering — варианты', () => {
         }),
     ).toBe('archived')
 
-    const server = build([
-      columnFiltering({ server: true, onFilterChange: () => {} }),
-    ])
+    const server = build([columnFiltering({ onFilterChange: () => {} })], {
+      filtering: 'server',
+    })
     expect(filterOptionsOf(server, server.getColumn('city'))).toEqual([])
     expect(filterOptionsOf(server, server.getColumn('status'))).toBe(STATUS)
   })

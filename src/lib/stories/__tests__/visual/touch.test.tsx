@@ -787,9 +787,9 @@ describe('«Стоп» на касаниях (ADR 0153)', () => {
       const table = useCreateTable({
         columns: [{ id: 'name', accessorKey: 'name', header: 'Name' }] as never,
         data: [{ id: '1', name: 'Bob' }],
+        dataMode: { sorting: 'server' },
         plugins: [
           columnSorting({
-            server: true,
             onToggleColumnSort: (...args: unknown[]) => {
               signals.push((args.at(-1) as { signal: AbortSignal }).signal)
               return new Promise<void>(() => {})

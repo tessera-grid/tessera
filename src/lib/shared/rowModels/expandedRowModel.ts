@@ -7,6 +7,7 @@
 import { createExpandedRowModel } from '@tanstack/react-table'
 
 import type { RowData, Table, TableFeatures } from '../../types'
+import { dataModeOf, isPaginationActive } from '../../core/dataMode'
 import type { NarrowState } from '../../core/effectiveState'
 import { recordRowChange } from '../../core/rowChanges'
 
@@ -28,8 +29,6 @@ type Expanded = true | Record<string, boolean>
 interface ExpandTable {
   atoms: { expanded?: { get: () => Expanded | undefined } }
   options: {
-    paginateExpandedRows?: boolean
-    manualPagination?: boolean
     getIsRowExpanded?: unknown
   }
   getPreExpandedRowModel: () => ExpandModel
@@ -50,6 +49,13 @@ interface Built {
 }
 
 const NO_EXPANDED: Record<string, boolean> = {}
+
+/**
+ * Модель раскрывает строки сама: клиентская страница режется по корням, и раскрывает
+ * модель страницы, а эта отдаёт вход как есть (ADR 0169, §6).
+ */
+const expandsHere = (table: unknown) =>
+  !isPaginationActive(table) || dataModeOf(table, 'pagination') === 'server'
 
 /**
  * Выключенная модель дерева показывает одни корни, сохранённый срез `expanded` не
@@ -151,10 +157,7 @@ export const createIncrementalExpandedRowModel =
       paginate: unknown,
     ): Built => {
       const output = stock() as unknown as ExpandModel
-      // Без пагинации раскрытых строк (`paginateExpandedRows`) раскрывает модель
-      // страницы, а эта отдаёт вход как есть.
-      const expands =
-        !!t.options.paginateExpandedRows || !!t.options.manualPagination
+      const expands = expandsHere(t)
       return {
         input,
         expanded,
@@ -224,8 +227,7 @@ export const createIncrementalExpandedRowModel =
     return () => {
       const input = t.getPreExpandedRowModel()
       const expanded = t.atoms.expanded?.get() ?? NO_EXPANDED
-      const { paginateExpandedRows, manualPagination } = t.options
-      const paginate = `${paginateExpandedRows}/${manualPagination}`
+      const paginate = expandsHere(t)
       const prev = last
       if (
         prev &&

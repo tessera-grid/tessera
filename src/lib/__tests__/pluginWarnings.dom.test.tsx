@@ -111,17 +111,11 @@ describe('перезапись опций и хуков (ADR 0140)', () => {
     expect(lastTable.getHooks().shared.answer()).toBe(2)
   })
 
-  it('OW3: записи, задающие одну опцию одинаковым значением, не предупреждают: серверные фильтры колонок и быстрый поиск вместе (filterFromLeafRows, manualFiltering) — без предупреждений', () => {
+  it('OW3: записи, задающие одну опцию одинаковым значением, не предупреждают: фильтры колонок и быстрый поиск вместе (filterFromLeafRows) — без предупреждений', () => {
     expect(
-      warningsAbout(OVERWRITE, [
-        columnFilteringModel({ server: true } as never),
-        quickSearchModel({ server: true } as never),
-      ]),
+      warningsAbout(OVERWRITE, [columnFilteringModel(), quickSearchModel()]),
     ).toEqual([])
-    expect(lastTable.options).toMatchObject({
-      manualFiltering: true,
-      filterFromLeafRows: true,
-    })
+    expect(lastTable.options).toMatchObject({ filterFromLeafRows: true })
   })
 
   it('OW4: все встроенные плагины в одной таблице не дают ни одного предупреждения о перезаписи', () => {

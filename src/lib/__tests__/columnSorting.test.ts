@@ -60,7 +60,6 @@ describe('columnSorting', () => {
     expect(folded.options).toMatchObject({
       enableSorting: true,
       enableSortingRemoval: true,
-      manualSorting: false,
       enableMultiSort: true,
     })
   })

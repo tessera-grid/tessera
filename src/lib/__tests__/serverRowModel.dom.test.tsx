@@ -10,6 +10,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { pluginStateKey, setPluginState } from '../core/definePlugin'
+import type { DataMode } from '../core/dataMode'
 import type { DebugAction } from '../core/debugActions'
 import type { RowSource } from '../core/rowSource'
 import { rowSelectionValueOf } from '../core/rowSelectionAll'
@@ -70,17 +71,20 @@ const Grid = ({
   onDebugAction,
   rowId = (row: Item) => row.id,
   extra = [],
+  dataMode,
 }: {
   maxBlocks?: number
   loader?: boolean
   onDebugAction?: (report: DebugAction) => void
   rowId?: (row: Item) => string
   extra?: readonly unknown[]
+  dataMode?: DataMode
 }) => {
   table = useCreateTable({
     columns: COLUMNS as never,
     data: NO_DATA,
     getRowId: rowId,
+    dataMode,
     onDebugAction: onDebugAction as never,
     plugins: [
       serverRowModel({
@@ -472,16 +476,16 @@ describe('серверная модель строк на таблице (ADR 01
     }
   })
 
-  it('SD30: выгрузка в SSRM — серверная, onExport получает состояние запроса и выбора; без server: true — dev-warn, значения all, view, selected недоступны с причиной', async () => {
+  it('SD30: выгрузка в SSRM — серверная, onExport получает состояние запроса и выбора; без серверной выгрузки — dev-warn, значения all, view, selected недоступны с причиной', async () => {
     const exports: ExportRequest[] = []
     act(() =>
       root.render(
         <Grid
+          dataMode={{ export: 'server' }}
           extra={[
             rowSelection(),
             columnSortingModel(),
             dataExport({
-              server: true,
               onExport: request => {
                 exports.push(request)
               },

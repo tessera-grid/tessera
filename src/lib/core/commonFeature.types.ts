@@ -10,6 +10,7 @@
 import type { ColumnOptionsDef } from './columnOptions'
 import type { ServiceColumnInfo } from './createColumns'
 import type { ColumnDataType } from './columnDataType'
+import type { DataMode } from './dataMode'
 import type { ActionReport, OnDebugAction } from './debugActions'
 import type { SkeletonCellKind } from './skeletonOptions'
 import type { RowSource } from './rowSource'
@@ -55,6 +56,12 @@ export type LogLevel = 'silent' | 'error' | 'warn' | 'info' | 'debug'
 // --- Опции фичи --------------------------------------------------------------
 /** Опции ядра, которые задаёт приложение в `useCreateTable` (ADR 0164). */
 export interface CoreOptions {
+  /**
+   * Где выполняются операции над строками (ADR 0169): `'client'`, `'server'` или по
+   * операциям `sorting`, `filtering`, `search`, `pagination`, `export`; не заданная
+   * операция — на клиенте. Значение берётся при монтировании.
+   */
+  dataMode?: DataMode
   /**
    * Загрузка данных сейчас (ADR 0106): `'initial'` — скелет первой загрузки (ADR 0060),
    * `'refresh'` — свечение обновления (ADR 0094), `false` — нет.
@@ -127,6 +134,8 @@ export interface CommonOptions extends CoreOptions {
   getBodyBusy?: (state: object) => boolean
   /** В `data` загружена только часть строк сервера (лента, ADR 0081). */
   partialData?: boolean
+  /** Строки показаны страницами модели пагинации (ADR 0169, §6). */
+  pagedRows?: boolean
   /** Новая `data` только дописывает строки в конец прежней (лента, ADR 0145). */
   appendOnlyData?: boolean
   /** Writer авто-слайса размеров (generic-механизм). */

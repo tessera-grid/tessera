@@ -62,13 +62,7 @@ export const columnSorting = definePlugin<ColumnSortingOptions>()({
   diagnose: neverInert,
   model: {
     plugin: columnSortingModel,
-    keys: [
-      'server',
-      'multiSort',
-      'sorting',
-      'onSortingChange',
-      'initialSorting',
-    ],
+    keys: ['multiSort', 'sorting', 'onSortingChange', 'initialSorting'],
   },
   features: sortingModelFeatures,
   hooks: o => ({ onToggleColumnSort: o.onToggleColumnSort }),

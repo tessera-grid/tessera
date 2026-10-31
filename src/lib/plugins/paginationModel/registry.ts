@@ -11,11 +11,7 @@ import {
 } from '@tanstack/react-table'
 
 import { definePlugin } from '../../core/definePlugin'
-import {
-  paginationInertReason,
-  resetPageOnReorder,
-  warnServerInSsrm,
-} from './model'
+import { paginationInertReason, resetPageOnReorder } from './model'
 
 export const DEFAULT_PAGE_SIZE = 25
 
@@ -27,9 +23,10 @@ export interface PaginationModelOptions {
    * состояния: текущим размером владеет срез `pagination` (ADR 0039).
    */
   initialPageSize?: number
-  /** Серверная пагинация — v9 `manualPagination`: `data` — уже текущая страница. */
-  server?: boolean
-  /** Всего строк на сервере; обязателен при `server` (0, пока ответа нет). */
+  /**
+   * Всего строк на сервере; обязателен, когда страницы режет сервер (`dataMode`, ADR 0169;
+   * 0, пока ответа нет).
+   */
   rowCount?: number
   /** Страница и её размер: задаёт приложение; без него срез хранит грид. */
   pagination?: PaginationState
@@ -47,19 +44,18 @@ export const paginationModelFeatures = {
 
 export const paginationModel = definePlugin<PaginationModelOptions>()({
   id: 'paginationModel',
-  // Режим данных — договор с потребителем на время жизни таблицы (ADR 0039).
-  lifetime: ['server'],
   diagnose: paginationInertReason,
   features: paginationModelFeatures,
   slices: ['pagination'],
   // Отключённый плагин отдаёт нейтральные значения: v9 сливает опции с прежними,
-  // и `paginateExpandedRows: false` без нарезки спрятал бы раскрытые строки.
+  // и `paginateExpandedRows: false` без нарезки спрятал бы раскрытые строки. Строки
+  // показаны страницами — факт ядра `pagedRows`: без него страниц не режет ядро (ADR 0169, §6).
   options: o => {
     const enabled = o.enabled !== false
     const pageSize = o.initialPageSize ?? DEFAULT_PAGE_SIZE
     return {
-      manualPagination: !enabled || !!o.server,
-      rowCount: enabled && o.server ? o.rowCount : undefined,
+      pagedRows: enabled,
+      rowCount: enabled ? o.rowCount : undefined,
       paginateExpandedRows: !enabled,
       // Стоковый сброс срабатывает на любую смену data (правка ячейки, перестановка
       // строки); страницу сбрасывает плагин — только при смене порядка строк.
@@ -67,8 +63,5 @@ export const paginationModel = definePlugin<PaginationModelOptions>()({
       initialState: { pagination: { pageIndex: 0, pageSize } },
     }
   },
-  setup: o => table => {
-    warnServerInSsrm(table, !!o.server)
-    return resetPageOnReorder(table)
-  },
+  setup: () => resetPageOnReorder,
 })

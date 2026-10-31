@@ -12,6 +12,7 @@ import {
   markLoadCancelled,
   registerPending,
 } from '../cancellation'
+import { dataModeOf } from '../dataMode'
 import { reportAction } from '../debugActions'
 import type { TableLabels } from '../localization'
 import { serverRowModelReason } from '../pluginDiagnostics'
@@ -79,12 +80,6 @@ interface Chain {
 
 interface ServerTable {
   store: object
-  options: {
-    manualSorting?: boolean
-    manualPagination?: boolean
-    columnFilteringServer?: boolean
-    quickSearchServer?: boolean
-  }
   atoms: {
     sorting?: {
       get: () => unknown
@@ -145,20 +140,16 @@ const sourceLoad = (table: unknown, kind: ServerActionKind) =>
 
 const isServer = (t: ServerTable, kind: ServerActionKind) => {
   if (sourceLoad(t, kind)) return true
-  const { options } = t
   switch (kind) {
-    case 'sorting':
-      return !!options.manualSorting
     // Страницы серверной модели строк — из её кэша, ждать нечего (ADR 0158).
     case 'pagination':
-      return !!options.manualPagination && !serverRowModelReason(t)
-    case 'filtering':
-      return !!options.columnFilteringServer
-    case 'search':
-      return !!options.quickSearchServer
+      return dataModeOf(t, kind) === 'server' && !serverRowModelReason(t)
     // Группирует сервер только в серверной модели строк (ADR 0144).
     case 'grouping':
+    case 'copy':
       return false
+    default:
+      return dataModeOf(t, kind) === 'server'
   }
 }
 
