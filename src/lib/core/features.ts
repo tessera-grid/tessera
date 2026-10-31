@@ -148,15 +148,9 @@ export interface TesseraFeatureEntry<
    */
   refreshArgs?: readonly string[]
   /**
-   * Внешнее значение локального состояния плагина (ADR 0028, DP8): ключ среза,
-   * значение из опции плагина (`undefined` — не передано) и колбэк изменений.
+   * Срезы из аргументов плагина: `<срез>`, `on<Срез>Change`, `initial<Срез>` — TanStack
+   * (ADR 0120, §4) и локальный срез `plugin:<id>` (ADR 0171, §4).
    */
-  controlledState?: {
-    key: string
-    value: unknown
-    onChange?: (next: unknown) => void
-  }
-  /** Срезы TanStack из аргументов плагина: `<срез>`, `on<Срез>Change`, `initial<Срез>` (ADR 0120, §4). */
   stateSlices?: PluginStateSlice[]
   /** Кто включил запись — интерфейс свою модель (MP16) или ядро свою (ADR 0170): в диагностике её нет. */
   includedBy?: string

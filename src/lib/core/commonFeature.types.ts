@@ -41,6 +41,7 @@ import type { FooterPosition } from './footer'
 import type { StubEntry } from './stubs'
 import type { FoldedWrappers } from './pluginWrappers'
 import type { FoldedBody } from './bodyContributions'
+import type { RenderVersionAtom } from './renderVersion'
 import type { NarrowContext, NarrowMap } from './effectiveState'
 import type { RefreshOptions } from './loadingDisplay'
 
@@ -102,10 +103,12 @@ export interface CoreOptions {
    * `tabindex` и клавиши; без флага — `role="table"`.
    */
   enableKeyboardNavigation?: boolean
-  /** Активная ячейка снаружи — индексы отображения; новая ссылка ставит её активной (KN31). */
+  /** Активная ячейка у приложения — индексы отображения (KN31, ADR 0171, §4). */
   activeCell?: ActiveCell
   /** Активная ячейка сменилась — стрелками, кликом или Tab. */
   onActiveCellChange?: (next: ActiveCell) => void
+  /** Активная ячейка при монтировании, если её не ведёт приложение (EF10). */
+  initialActiveCell?: ActiveCell
   /** `false` — без тултипа у обрезанного текста ячеек (ADR 0075). */
   enableOverflowTooltip?: boolean
   /** `false` — смены модели строк мгновенны, без движения (ADR 0107). */
@@ -142,8 +145,8 @@ export interface CommonOptions extends CoreOptions {
   pluginDiagnostics?: PluginDiagnosticSource[]
   actionMenu?: SlotActionMenuV9
   logLevel?: LogLevel
-  /** Номер перерисовки ячеек: растёт при новой функции-аргументе плагина (ADR 0039). */
-  pluginRenderVersion?: number
+  /** Атом номера перерисовки ячеек: растёт при новой функции-аргументе плагина (ADR 0039, ADR 0171). */
+  pluginRenderVersion?: RenderVersionAtom
   /** Обёртки и декораторы тела и шапки от плагинов (ADR 0168, §2). */
   pluginWrappers?: FoldedWrappers
   /** Вклад плагинов в тело грида и клавиши навигации (ADR 0170, §3). */
@@ -152,8 +155,6 @@ export interface CommonOptions extends CoreOptions {
   pluginNarrows?: NarrowMap
   /** Свёртка набора для сужения: опции и действия слотов (ADR 0171, §1). */
   pluginNarrowContext?: NarrowContext
-  /** Колбэки изменений локальных срезов плагинов по ключу среза (DP17). */
-  pluginStateListeners?: Record<string, (next: unknown) => void>
   /**
    * Строк данных на сервере для `aria-rowcount`; `-1` — итог неизвестен,
    * `undefined` — строк столько, сколько в `data` (ADR 0081).

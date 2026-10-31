@@ -13,7 +13,6 @@ import type {
   StatusBarComponentProps,
   ToolbarComponentProps,
 } from '../createSlots'
-import { commonOptionsOf } from '../commonFeature'
 import { useSlice } from '../reactivity'
 
 /** Пропсы компонента ячейки: нативный `CellContext` + инъектированный слайс хуков. */
@@ -97,24 +96,13 @@ export const setPluginState = (
     updater(next)
     return
   }
-  // Обёртка useTable несёт сырые опции без updater-опции фичи: пишем в атом и сами
-  // сообщаем изменение во внешнее состояние (DP17).
-  const prev = readPluginAtom(table, key)
+  // Обёртка useTable несёт сырые опции: без колбэка среза ядро обработчик не ставит —
+  // пишем в атом.
   writePluginAtom(table, key, next)
-  if (readPluginAtom(table, key) !== prev) {
-    const listeners = commonOptionsOf(table)?.pluginStateListeners
-    listeners?.[key]?.(next)
-  }
 }
 
-const readPluginAtom = (table: unknown, key: string): unknown =>
-  (
-    table as { atoms?: Record<string, { get: () => unknown } | undefined> }
-  ).atoms?.[key]?.get()
-
 /**
- * Запись слайса по ключу напрямую в атом, мимо updater-опции: так ядро переносит
- * в срез внешнее значение, не возвращая его эхом в `onChange` (DP8).
+ * Запись слайса по ключу напрямую в атом, мимо updater-опции.
  */
 export const writePluginAtom = (
   table: unknown,

@@ -102,7 +102,7 @@ describe('контракт ядра (ADR 0164)', () => {
         ...ownTableOptionKeys(),
         ...pluginOptionKeys(),
       ])
-      for (const key of ['pluginRenderVersion', 'pluginStateListeners']) {
+      for (const key of ['pluginRenderVersion']) {
         expect(keys).toContain(key)
         expect(coreOptionKeys()).toContain(key)
       }

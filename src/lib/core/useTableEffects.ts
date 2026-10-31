@@ -10,7 +10,7 @@ import {
   type FoldedEntryConfig,
   type TesseraFeatureEntry,
 } from './features'
-import { readPluginHooks, writePluginAtom } from './definePlugin/channels'
+import { readPluginHooks } from './definePlugin/channels'
 import { warnClientOverPartialRows, warnDataModeInServerRows } from './dataMode'
 import { logWarn } from '../util/logger'
 import {
@@ -59,25 +59,6 @@ export const useTableEffects = (
   // Размонтирование прерывает ожидающее серверное действие (ADR 0116, SA2).
   const { store } = table as { store: object }
   useEffect(() => () => abortServerActions(store), [store])
-
-  // Внешнее значение локального состояния плагина — в срез до отрисовки кадра, только
-  // при новой ссылке: та же ссылка не затирает изменения изнутри (ADR 0028, DP8).
-  const syncedStates = useRef(new Map<string, unknown>())
-  useIsomorphicLayoutEffect(() => {
-    for (const entry of plugins) {
-      const external = entry.controlledState
-      if (
-        !external ||
-        external.value === undefined ||
-        entry.enabled === false ||
-        syncedStates.current.get(external.key) === external.value
-      ) {
-        continue
-      }
-      syncedStates.current.set(external.key, external.value)
-      writePluginAtom(table, external.key, external.value)
-    }
-  })
 
   // Согласование состояния плагинов с таблицей — после каждого рендера, и у
   // выключенных записей (ADR 0040, §2).

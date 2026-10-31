@@ -19,6 +19,7 @@ export const COLUMN_DEF_FIELDS: Record<string, string> = {
 export const CORE_OPTIONS: Record<string, string> = {
   actionMenu: '0024',
   activeCell: '0170',
+  initialActiveCell: '0171',
   appendOnlyData: '0145',
   contextMenuActions: '0030',
   dataMode: '0169',
@@ -53,7 +54,6 @@ export const CORE_OPTIONS: Record<string, string> = {
   pluginNarrowContext: '0171',
   pluginNarrows: '0171',
   pluginRenderVersion: '0039',
-  pluginStateListeners: '0028',
   pluginWrappers: '0168',
   refreshOptions: '0094',
   rowCount: '0169',
@@ -97,7 +97,6 @@ export const INTERNAL_ENTRY_FIELDS: Record<string, string> = {
   argsKey: '0039',
   body: '0170',
   configure: '0039',
-  controlledState: '0028',
   includedBy: '0120',
   inertReason: '0039',
   lifetimeArgs: '0039',

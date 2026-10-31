@@ -37,7 +37,6 @@ import {
   presenceNarrow,
 } from '../servicePresence'
 import { argsKeyOf } from '../pluginArgs'
-import { commonOptionsOf } from '../commonFeature'
 import {
   pluginStateKey,
   stateChangeOption,
@@ -70,23 +69,9 @@ const makeLocalStateFeature = (
   const key = pluginStateKey(id)
   return {
     getInitialState: state => ({ [key]: getDefault(), ...state }),
-    getDefaultTableOptions: table => {
-      const write = makeStateUpdater(key as never, table)
-      const t = table as unknown as {
-        atoms: Record<string, { get: () => unknown } | undefined>
-      }
-      return {
-        // Каждое изменение среза изнутри — в `onChange` внешнего состояния (DP17).
-        [stateChangeOption(key)]: (updater: never) => {
-          const prev = t.atoms[key]?.get()
-          write(updater)
-          const next = t.atoms[key]?.get()
-          if (next !== prev) {
-            commonOptionsOf(table).pluginStateListeners?.[key]?.(next)
-          }
-        },
-      }
-    },
+    getDefaultTableOptions: table => ({
+      [stateChangeOption(key)]: makeStateUpdater(key as never, table),
+    }),
   }
 }
 
@@ -207,13 +192,11 @@ interface DefinePluginConfig<
    */
   state?: () => TState
   /**
-   * Пара опций внешнего локального состояния (ADR 0028, DP8): `value` — значение,
-   * которое приложение задаёт срезу, `onChange` — колбэк каждого изменения среза.
+   * Имя локального среза в аргументах (ADR 0171, §4): плагин принимает `<имя>`,
+   * `on<Имя>Change` и `initial<Имя>`, как срезы TanStack. С `<имя>` срезом владеет
+   * приложение: изменение изнутри приходит колбэку, видно — с новым значением.
    */
-  controlled?: {
-    value: Extract<keyof TOptions, string>
-    onChange?: Extract<keyof TOptions, string>
-  }
+  stateName?: Extract<keyof TOptions, string>
   /**
    * Срезы TanStack, которые плагин принимает аргументами `<срез>`, `on<Срез>Change` и
    * `initial<Срез>` (ADR 0120, §4).
@@ -394,7 +377,7 @@ export const definePlugin = <
       // Значение внешнего состояния — не настройка: его смена не пересобирает плагин (DP18).
       entry.argsKey = argsKeyOf(
         withoutKeys(opts, [
-          ...(config.controlled ? [config.controlled.value] : []),
+          ...(config.stateName ? [config.stateName] : []),
           ...(config.slices ?? []),
         ]),
       )
@@ -415,16 +398,15 @@ export const definePlugin = <
           enabled: opts.enabled,
         })
       }
-      if (config.controlled) {
-        const options = opts as Record<string, unknown>
-        const onChange = config.controlled.onChange
-        entry.controlledState = {
-          key: pluginStateKey(config.id),
-          value: options[config.controlled.value],
-          onChange: onChange
-            ? (options[onChange] as ((next: unknown) => void) | undefined)
-            : undefined,
-        }
+      if (config.stateName) {
+        const [slice] = stateSlicesOf(
+          [config.stateName],
+          opts as Record<string, unknown>,
+        )
+        entry.stateSlices = [
+          ...(entry.stateSlices ?? []),
+          { ...slice!, key: pluginStateKey(config.id) },
+        ]
       }
       entry.configure = configure as TesseraFeatureEntry['configure']
       if (config.lifetime) {

@@ -163,7 +163,7 @@ reportOutcome(table, { plugin: 'starRows', action: 'save', cause: id }, promise)
   `getPluginDiagnostics()` не видна; явная — своей записью (MP16).
 - **Срезы в аргументах.** Модель объявляет `slices: ['expanded']`: аргументы `<срез>`,
   `on<Срез>Change` и `initial<Срез>` (MP8, MP9). Срез с внешним значением (или со своим
-  сужением) ведёт ядро, как суженный (`useEffectiveState`); без них срезом владеет
+  сужением) ведёт ядро, как суженный (`useEffectiveSlices`); без них срезом владеет
   TanStack, а ядро оборачивает его `makeStateUpdater`, чтобы колбэк получил новое
   значение. `initial<Срез>` уходит и в `initialState` TanStack: автосброс
   (`autoResetCellSelection`) и `reset*` возвращают к нему. Сброс среза ядра в

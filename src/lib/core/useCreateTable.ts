@@ -8,7 +8,7 @@
  *    columnPinning (пиннинг сервисных колонок) и columnSizing (авто-слайс), остальное
  *    прокидывается из state/handlers потребителя.
  */
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { makeStateUpdater, useTable } from '@tanstack/react-table'
 import type {
@@ -41,13 +41,12 @@ import {
   pluginArgsSignature,
   rememberPluginArgs,
   resolvePluginEntries,
-  type PluginArgsStore,
 } from './pluginArgs'
 import {
   createPluginSetStore,
   pluginSetSignature,
+  rememberPluginSet,
   resolvePluginSet,
-  type PluginSetStore,
 } from './pluginSet'
 import {
   createSliceStore,
@@ -68,6 +67,7 @@ import {
   withSliceNarrows,
 } from './pluginModels'
 import { useTableEffects } from './useTableEffects'
+import { useIsomorphicLayoutEffect } from '../util/useIsomorphicLayoutEffect'
 import { keyboardNavigationEntry } from './keyboardNavigation/entry'
 
 // Видимость служебных колонок сужается с первого рендера (ADR 0050).
@@ -92,6 +92,7 @@ const CORE_OPTION_KEYS: Record<keyof CoreOptions, true> = {
   enableKeyboardNavigation: true,
   activeCell: true,
   onActiveCellChange: true,
+  initialActiveCell: true,
   enableOverflowTooltip: true,
   enableRowAnimation: true,
   enableColumnAnimation: true,
@@ -156,21 +157,22 @@ export const useCreateTable = <
   defaultColumn,
   ...coreOptions
 }: UseCreateTableParams<TData, TEntries>) => {
-  // Состав набора — договор на время жизни таблицы (ADR 0039): добавленный позже
-  // плагин инертен, удалённый — выключен как enabled: false.
-  const setStore = useRef<PluginSetStore | null>(null)
-  setStore.current ??= createPluginSetStore()
   // Модель, которую несёт интерфейс, — своя запись перед ним (ADR 0120, §3).
   const { entries: withModels, mismatches: modelMismatches } =
     expandIncludedModels(plugins as readonly TesseraFeatureEntry[])
   // Срез активной ячейки — запись ядра в каждой таблице (ADR 0170, §1).
-  const entries = resolvePluginSet(setStore.current, [
+  const requested = [
     keyboardNavigationEntry({
       activeCell: coreOptions.activeCell,
       onActiveCellChange: coreOptions.onActiveCellChange,
+      initialActiveCell: coreOptions.initialActiveCell,
     }),
     ...withModels,
-  ])
+  ]
+  // Состав набора — договор на время жизни таблицы (ADR 0039): добавленный позже
+  // плагин инертен, удалённый — выключен как enabled: false.
+  const [setStore] = useState(() => createPluginSetStore(requested))
+  const entries = resolvePluginSet(setStore, requested)
 
   // Держим набор фич и свёртку по СИГНАТУРЕ структуры активных записей (id +
   // enabled), а не по идентичности массива — иначе новый plugins пересобирал бы всё.
@@ -197,23 +199,27 @@ export const useCreateTable = <
   )
 
   // Аргументы фабрик живые (ADR 0039): настройка записей пересобирается при смене
-  // ЗНАЧЕНИЯ аргументов, функции из аргументов — стабильные обёртки на последнюю версию.
-  const argsStore = useRef<PluginArgsStore | null>(null)
-  argsStore.current ??= createPluginArgsStore()
-  rememberPluginArgs(argsStore.current, entries)
+  // ЗНАЧЕНИЯ аргументов, функции из аргументов — стабильные обёртки на версию последнего
+  // коммита. Хранилища набора и аргументов пишет эффект коммита (ADR 0171, §3): новая
+  // ссылка на предикат поднимает атом версии отрисовки — ячейки перерисуются до кадра.
+  const [argsStore] = useState(() => createPluginArgsStore(entries))
+  useIsomorphicLayoutEffect(() => {
+    rememberPluginSet(setStore, requested)
+    rememberPluginArgs(argsStore, entries)
+  })
   const argsSignature = `${signature}#${pluginArgsSignature(entries)}`
   // Режим данных — договор на время жизни таблицы (ADR 0169, §1): смена после
   // монтирования не применяется.
   const [dataMode] = useState(coreOptions.dataMode)
   const lifetimeViolations = [
-    ...lifetimeArgViolations(argsStore.current, entries),
+    ...lifetimeArgViolations(argsStore, entries),
     ...(dataModeKeyOf(coreOptions.dataMode) === dataModeKeyOf(dataMode)
       ? []
       : ['dataMode']),
   ]
 
   const folded = useMemo(
-    () => foldEntries(resolvePluginEntries(argsStore.current!, entries)),
+    () => foldEntries(resolvePluginEntries(argsStore, entries)),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по значению аргументов
     [argsSignature],
   )
@@ -392,17 +398,9 @@ export const useCreateTable = <
     stubEntries: folded.stubEntries,
     keyboardActions: folded.keyboardActions,
     pluginDiagnostics: folded.pluginDiagnostics,
-    pluginRenderVersion: argsStore.current.renderVersion,
+    pluginRenderVersion: argsStore.renderVersion,
     pluginWrappers: folded.wrappers,
     pluginBody: folded.body,
-    // Колбэки изменений локального состояния плагинов по ключу среза (DP17).
-    pluginStateListeners: Object.fromEntries(
-      entries.flatMap(entry =>
-        entry.enabled !== false && entry.controlledState?.onChange
-          ? [[entry.controlledState.key, entry.controlledState.onChange]]
-          : [],
-      ),
-    ),
     actionMenu: folded.actionMenu,
     ...coreOptionsOf(coreOptions),
     dataMode,

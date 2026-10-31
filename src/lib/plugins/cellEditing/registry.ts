@@ -38,12 +38,14 @@ export interface CellEditingOptions {
   /** Проверка значения перед коммитом: текст ошибки блокирует коммит. */
   validate?: CellEditingHooks['validate']
   /**
-   * Состояние правки снаружи: открытая правка (`active`) и ячейки, ждущие сервера;
-   * новая ссылка переносится в плагин (ADR 0028, CE6).
+   * Состояние правки у приложения: открытая правка (`active`) и ячейки, ждущие сервера
+   * (ADR 0028, CE6; ADR 0171, §4).
    */
   editing?: CellEditingState
   /** Состояние правки сменилось — открытие, ввод черновика, закрытие, ответ сервера. */
   onEditingChange?: (next: CellEditingState) => void
+  /** Состояние правки при монтировании, если его не ведёт приложение (EF10). */
+  initialEditing?: CellEditingState
 }
 
 export const cellEditing = definePlugin<CellEditingOptions>()({
@@ -53,7 +55,7 @@ export const cellEditing = definePlugin<CellEditingOptions>()({
   diagnose: neverInert,
   // Локальный слайс: активная правка и отправленные ячейки (ADR 0040, ADR 0041).
   state: (): CellEditingState => EMPTY_EDITING_STATE,
-  controlled: { value: 'editing', onChange: 'onEditingChange' },
+  stateName: 'editing',
   reconcile: reconcileEditSession,
   hooks: o => ({
     canEditCell: o.canEditCell ?? (() => true),

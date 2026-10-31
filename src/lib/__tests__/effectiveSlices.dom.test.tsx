@@ -6,6 +6,7 @@
  */
 import {
   act,
+  memo,
   type ReactNode,
   startTransition,
   Suspense,
@@ -16,9 +17,15 @@ import {
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { definePlugin, setPluginState } from '../core/definePlugin'
+import {
+  PluginRenderVersionContext,
+  usePluginRenderVersion,
+} from '../core/renderVersion'
 import { useCreateTable } from '../core/useCreateTable'
 import { allSelectionOf } from '../core/rowSelectionAll'
 import {
+  cellEditing,
   columnPinning,
   columnSorting,
   rowExpanding,
@@ -266,6 +273,157 @@ describe('эффективное состояние в атомах (ADR 0171)',
     act(() => update!({ leafPinning: false, suspend: false }))
     expect(Object.keys(atoms)).toContain('columnPinning')
     expect(captured.getColumn('name').getIsPinned()).toBe(false)
+  })
+
+  it('EF7: хранилище аргументов плагинов обновляется в эффекте коммита: новая функция-предикат видна в перерисовке ячеек того же кадра, прерванный конкурентный рендер аргументов не оставляет', async () => {
+    let view: { check: () => string } | undefined
+    const probe = definePlugin<{ enabled?: boolean; check: () => string }>()({
+      id: 'argsProbe',
+      refreshOn: ['check'],
+      // Вид аргументов с обёртками функций — у `setup` набора, который выполняет эффект.
+      setup: opts => () => {
+        view = opts as typeof view
+      },
+    })
+    const seen: string[] = []
+    // Ячейка под мемоизацией: перерисовывает её только версия отрисовки.
+    const Cell = memo(() => {
+      usePluginRenderVersion()
+      // Вид появляется в эффекте: первый рендер ячейки его ещё не видит.
+      seen.push(view?.check() ?? '')
+      return null
+    })
+    const never = new Promise<never>(() => {})
+    const Suspend = ({ on }: { on: boolean }) => {
+      if (on) use(never)
+      return null
+    }
+    const ArgsHost = ({ check }: { check: () => string }) => {
+      captured = useCreateTable({
+        columns: columns as never,
+        data,
+        plugins: [probe({ check })],
+      })
+      return (
+        <PluginRenderVersionContext.Provider
+          value={captured.options.pluginRenderVersion}
+        >
+          <Cell />
+        </PluginRenderVersionContext.Provider>
+      )
+    }
+    let update:
+      ((next: { check: () => string; suspend: boolean }) => void) | undefined
+    const App = () => {
+      const [props, setProps] = useState<{
+        check: () => string
+        suspend: boolean
+      }>({ check: () => 'a', suspend: false })
+      update = setProps
+      return (
+        <Suspense fallback={null}>
+          <ArgsHost check={props.check} />
+          <Suspend on={props.suspend} />
+        </Suspense>
+      )
+    }
+    mount(<App />)
+    expect(view!.check()).toBe('a')
+
+    // Новый предикат: ячейка перерисована в том же коммите и видит его.
+    act(() => update!({ check: () => 'b', suspend: false }))
+    expect(seen.at(-1)).toBe('b')
+
+    // Переход с новым предикатом застрял на ожидании — хранилище прежнее.
+    await act(async () => {
+      startTransition(() => update!({ check: () => 'c', suspend: true }))
+    })
+    expect(view!.check()).toBe('b')
+  })
+
+  it('EF9: канала controlled у definePlugin нет: локальный срез плагина берёт <срез>, on<Срез>Change и initial<Срез> из аргументов', () => {
+    definePlugin<{ enabled?: boolean; mark?: number }>()({
+      id: 'noControlled',
+      state: () => 0,
+      // @ts-expect-error — канала `controlled` нет (ADR 0171, §4)
+      controlled: { value: 'mark' },
+    })
+    const onMarkChange = vi.fn()
+    const marker = definePlugin<{
+      enabled?: boolean
+      mark?: number
+      onMarkChange?: (next: number) => void
+      initialMark?: number
+    }>()({ id: 'marker', state: () => 0, stateName: 'mark' })
+    const entry = marker({ mark: 2, onMarkChange, initialMark: 1 })
+    expect(entry.stateSlices).toEqual([
+      { key: 'plugin:marker', value: 2, onChange: onMarkChange, initial: 1 },
+    ])
+    expect('controlledState' in entry).toBe(false)
+  })
+
+  it('EF10: cellEditing принимает editing, onEditingChange и initialEditing, ядро — activeCell, onActiveCellChange и initialActiveCell', () => {
+    // Отправленная ячейка отличает начальное значение от значения по умолчанию.
+    const initialEditing = {
+      active: null,
+      submitted: {
+        '1:name': {
+          rowId: '1',
+          columnId: 'name',
+          draft: 'B',
+          original: 'A',
+          status: 'error' as const,
+          attempt: 1,
+        },
+      },
+    }
+    const initialActiveCell = { rowIndex: 1, columnIndex: 0 }
+    const editingKey = 'plugin:cellEditing'
+    const cellKey = 'plugin:keyboardNavigation'
+    const OwnHost = () => {
+      captured = useCreateTable({
+        columns: columns as never,
+        data,
+        initialActiveCell,
+        plugins: [cellEditing({ initialEditing })],
+      })
+      return null
+    }
+    mount(<OwnHost />)
+    // TanStack копирует начальное значение: сравнение по значению.
+    expect(captured.atoms[editingKey].get()).toEqual(initialEditing)
+    expect(captured.atoms[cellKey].get()).toEqual(initialActiveCell)
+
+    act(() => root?.unmount())
+    root = undefined
+    const editing = { active: null, submitted: {} }
+    const activeCell = { rowIndex: 0, columnIndex: 1 }
+    const onEditingChange = vi.fn()
+    const onActiveCellChange = vi.fn()
+    const AppHost = () => {
+      captured = useCreateTable({
+        columns: columns as never,
+        data,
+        activeCell,
+        onActiveCellChange,
+        plugins: [cellEditing({ editing, onEditingChange })],
+      })
+      return null
+    }
+    mount(<AppHost />)
+    expect(captured.atoms[editingKey].get()).toBe(editing)
+    expect(captured.atoms[cellKey].get()).toBe(activeCell)
+    const nextCell = { rowIndex: 1, columnIndex: 1 }
+    const nextEditing = { active: null, submitted: {} }
+    act(() => {
+      setPluginState(captured, 'keyboardNavigation', nextCell)
+      setPluginState(captured, 'cellEditing', nextEditing)
+    })
+    expect(onActiveCellChange).toHaveBeenCalledWith(nextCell)
+    expect(onEditingChange).toHaveBeenCalledWith(nextEditing)
+    // Срезом владеет приложение: без нового значения от него срез прежний.
+    expect(captured.atoms[cellKey].get()).toBe(activeCell)
+    expect(captured.atoms[editingKey].get()).toBe(editing)
   })
 
   it('EF11: итог сужения от того же сохранённого значения с теми же полями — прежний объект; от другого сохранённого значения прежний не берётся, даже если поля равны (значения «всё, кроме» выбора строк — разные объекты)', () => {

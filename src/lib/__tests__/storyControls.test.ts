@@ -49,6 +49,7 @@ const WITHOUT_CONTROL: Record<string, string> = {
   infiniteScrollHasMore: 'конец ленты знает история с сервером',
   headerActionMenuSlots: 'список кнопок — из кода плагинов',
   cellEditingEditing: 'состояние правки у приложения — своя история',
+  cellEditingInitialEditing: 'состояние правки у приложения — своя история',
   columnSortingSorting: 'порядок сортировки у приложения — своя история',
   columnSortingInitialSorting: 'порядок сортировки у приложения — своя история',
   columnSortingModelSorting: 'порядок сортировки у приложения — своя история',

@@ -50,7 +50,10 @@ import { logWarn } from '../util/logger'
 import { LiveRegion } from './LiveRegion'
 import { EmptyStub } from './stubs/EmptyStub'
 import { type StubContext, resolveStub, stubEntriesOf } from '../core/stubs'
-import { PluginRenderVersionContext } from '../core/renderVersion'
+import {
+  NO_RENDER_VERSION,
+  PluginRenderVersionContext,
+} from '../core/renderVersion'
 import { usePageChange } from '../core/pagination'
 import { IconsProvider } from '../ui/icons'
 import { LinearProgress } from '../ui/LinearProgress'
@@ -196,7 +199,7 @@ export const DataGrid = ({
   const rowDragging = rowDragSessionOf(state)
 
   const enableOverflowTooltip = options.enableOverflowTooltip !== false
-  const renderVersion = options.pluginRenderVersion ?? 0
+  const renderVersion = options.pluginRenderVersion ?? NO_RENDER_VERSION
   // Панели включают слоты плагинов; флаг их переопределяет (ADR 0046).
   const renderSlots = (table.getRenderSlots as () => RenderSlots | undefined)()
   const statusBarSlot = renderSlots?.statusBarSlot ?? []

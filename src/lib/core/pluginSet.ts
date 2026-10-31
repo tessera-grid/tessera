@@ -12,14 +12,28 @@ import type { TesseraFeatureEntry } from './features'
 import { argsKeyOf } from './pluginArgs'
 
 export interface PluginSetStore {
-  mounted: ReadonlySet<string> | null
+  mounted: ReadonlySet<string>
+  /** Записи последнего коммита: из них собирается «призрак» удалённого плагина. */
   last: Map<string, TesseraFeatureEntry>
 }
 
-export const createPluginSetStore = (): PluginSetStore => ({
-  mounted: null,
+/** Состав — с первого рендера: набор, с которым таблица монтируется. */
+export const createPluginSetStore = (
+  plugins: readonly TesseraFeatureEntry[],
+): PluginSetStore => ({
+  mounted: new Set(plugins.map(entry => entry.id)),
   last: new Map(),
 })
+
+/** Эффект коммита: запомнить записи набора для «призраков». */
+export const rememberPluginSet = (
+  store: PluginSetStore,
+  plugins: readonly TesseraFeatureEntry[],
+) => {
+  for (const entry of plugins) {
+    if (store.mounted.has(entry.id)) store.last.set(entry.id, entry)
+  }
+}
 
 const ghostOf = (
   id: string,
@@ -52,15 +66,13 @@ export const resolvePluginSet = (
   store: PluginSetStore,
   plugins: readonly TesseraFeatureEntry[],
 ): TesseraFeatureEntry[] => {
-  store.mounted ??= new Set(plugins.map(entry => entry.id))
-  const mounted = store.mounted
+  const { mounted } = store
   const present = new Set<string>()
   const entries: TesseraFeatureEntry[] = []
 
   for (const entry of plugins) {
     present.add(entry.id)
     if (mounted.has(entry.id)) {
-      store.last.set(entry.id, entry)
       entries.push(entry)
     } else {
       entries.push({

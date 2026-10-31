@@ -117,6 +117,7 @@ interface CounterOpts {
   enabled?: boolean
   count?: number
   onCountChange?: (next: number) => void
+  initialCount?: number
   label?: string
 }
 
@@ -126,7 +127,7 @@ describe('внешнее локальное состояние', () => {
   const counter = definePlugin<CounterOpts>()({
     id: 'counter',
     state: () => 0,
-    controlled: { value: 'count', onChange: 'onCountChange' },
+    stateName: 'count',
     slots: o => [
       {
         id: `counter-${o.label ?? ''}`,
@@ -163,21 +164,32 @@ describe('внешнее локальное состояние', () => {
     }
   }
 
-  it('DP8: без value — дефолт; новая ссылка value переносится в срез; та же ссылка изменения изнутри не затирает', () => {
-    const host = mount()
-    host.render({})
+  it('DP8: с аргументом <имя> локальным срезом владеет приложение: срез равен значению аргумента, изменение изнутри приходит колбэку и срез не меняет до нового значения; без аргумента — дефолт state или initial<Имя>, изменения изнутри пишутся в срез', () => {
+    const own = mount()
+    own.render({})
     expect(value()).toBe(0)
-    host.render({ count: 5 })
+    act(() => write!(7))
+    expect(value()).toBe(7)
+    own.unmount()
+
+    const initial = mount()
+    initial.render({ initialCount: 3 })
+    expect(value()).toBe(3)
+    initial.unmount()
+
+    const onCountChange = vi.fn()
+    const app = mount()
+    app.render({ count: 5, onCountChange })
     expect(value()).toBe(5)
     act(() => write!(7))
-    host.render({ count: 5 })
+    expect(onCountChange).toHaveBeenCalledExactlyOnceWith(7)
+    expect(value()).toBe(5)
+    app.render({ count: 7, onCountChange })
     expect(value()).toBe(7)
-    host.render({ count: 9 })
-    expect(value()).toBe(9)
-    host.unmount()
+    app.unmount()
   })
 
-  it('DP17: изменение изнутри приходит в onChange; перенос внешнего значения — нет; без onChange срез всё равно меняется', () => {
+  it('DP17: изменение локального среза изнутри (сеттер пары state, setPluginState) приходит в on<Имя>Change с новым значением — с аргументом <имя> и без него; новое значение от приложения колбэк не зовёт', () => {
     const onCountChange = vi.fn()
     const host = mount()
     host.render({ count: 1, onCountChange })
@@ -188,14 +200,16 @@ describe('внешнее локальное состояние', () => {
     expect(onCountChange).toHaveBeenCalledTimes(1)
     host.unmount()
 
-    const silent = mount()
-    silent.render({})
+    const own = vi.fn()
+    const local = mount()
+    local.render({ onCountChange: own })
     act(() => write!(4))
+    expect(own).toHaveBeenCalledExactlyOnceWith(4)
     expect(value()).toBe(4)
-    silent.unmount()
+    local.unmount()
   })
 
-  it('DP18: новое value не пересобирает настройку плагина; смена обычной опции — пересобирает', () => {
+  it('DP18: новое значение аргумента <имя> не пересобирает настройку плагина; смена обычной опции — пересобирает', () => {
     const host = mount()
     host.render({ count: 1, label: 'a' })
     const slots = table.getRenderSlots()

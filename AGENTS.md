@@ -1317,8 +1317,7 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
   почему в отчёте.
 - **Формат безопасен для мутаций:** `npm run format` его чинит; затем перезапустите `format:check`.
 - **Примечание про линт:** конфиг запускает полный набор `react-hooks@7` (правила React
-  Compiler). Узкие исключения — в `eslint.config.js` с причиной: `refs` в
-  `useCreateTable`/`effectiveState` (сборка ядра в рендере, ADR 0039; переделка — в roadmap),
+  Compiler). Узкие исключения — в `eslint.config.js` с причиной:
   `globals`/`immutability` в `__tests__` (хосты отдают тесту экземпляр), `refs` в
   `columnVirtualizer`/`OptionFilterPanel` (`useVirtualizer` из вендора компилятор не узнаёт как
   несовместимую библиотеку, ADR 0143; переделка — в roadmap). Ref на последнее

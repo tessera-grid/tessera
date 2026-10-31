@@ -21,6 +21,7 @@ import type { RowAction } from '../../lib/core/headerActions'
 import { exportFormats } from '../../lib/plugins/dataExport'
 import type { ColumnDef } from '../../lib/types'
 import {
+  type GuideApp,
   GuideStory,
   type GuideStoryStep,
   type StepRun,
@@ -1191,7 +1192,7 @@ const AppFavoriteButton = ({
 const appFavorites = definePlugin<AppFavoritesArgs>()({
   id: 'appFavorites',
   state: (): Marks => ({}),
-  controlled: { value: 'favorites', onChange: 'onFavoritesChange' },
+  stateName: 'favorites',
   slots: [
     {
       id: 'appFavorites',
@@ -1206,26 +1207,49 @@ const UNMARKED_ROW = 'item-id-1'
 const KEPT_ROW = 'item-id-3'
 const APP_MARKS: Marks = { [UNMARKED_ROW]: true, [KEPT_ROW]: true }
 const NO_MARKS: Marks = {}
-/** Записи плагина с отметками приложения: одна на консоль и набор отметок. */
-const appFavoritesOf = (favorites: Marks) =>
-  perLog(log => [
+
+/** Отметки и журнал за записями плагина: приложение истории строит их заново из своих. */
+const favoritesOfEntries = new WeakMap<
+  object,
+  { marks: Marks; log?: ConsoleLog }
+>()
+
+/**
+ * Приложение истории хранит отметки у себя: новое значение из колбэка оно сохраняет и
+ * передаёт плагину следующей отрисовкой.
+ */
+const appFavoritesWith = (marks: Marks, app: GuideApp, log?: ConsoleLog) => {
+  const save = (next: Marks) =>
+    app.update(props => ({
+      ...props,
+      extraPlugins: appFavoritesWith(next, app, log),
+    }))
+  const entries = [
     appFavorites({
-      favorites,
-      onFavoritesChange: loggedCallback(log, 'onFavoritesChange', accept),
+      favorites: marks,
+      onFavoritesChange: log
+        ? loggedCallback(log, 'onFavoritesChange', save)
+        : save,
     }),
-  ])
-const appMarked = appFavoritesOf(APP_MARKS)
-const appCleared = appFavoritesOf(NO_MARKS)
+  ]
+  favoritesOfEntries.set(entries, { marks, log })
+  return entries
+}
+const appMarked = new WeakMap<ConsoleLog, ReturnType<typeof appFavoritesWith>>()
 
 const CONTROLLED: readonly GuideStoryStep[] = [
   {
     title: 'Отметки задало приложение',
     hint: 'Приложение передало плагину отметки двух строк. Таблица показывает эти строки отмеченными.',
-    props: ({ log }) => ({ extraPlugins: appMarked(log) }),
+    props: ({ log, app }) => {
+      if (!appMarked.has(log))
+        appMarked.set(log, appFavoritesWith(APP_MARKS, app, log))
+      return { extraPlugins: appMarked.get(log) }
+    },
   },
   {
     title: 'Пользователь снял отметку',
-    hint: 'Пользователь нажал кнопку отмеченной строки. Плагин снял отметку и передал приложению новый набор отметок.',
+    hint: 'Пользователь нажал кнопку отмеченной строки. Плагин передал приложению новый набор отметок, приложение сохранило его, и отметка снята.',
     enter: untilDone(
       root => !!markOf(root, UNMARKED_ROW) && !isMarked(root, UNMARKED_ROW),
       root => {
@@ -1236,7 +1260,18 @@ const CONTROLLED: readonly GuideStoryStep[] = [
   {
     title: 'Приложение сбросило отметки',
     hint: 'Приложение передало плагину пустой набор. Отметки сняты во всех строках, хотя пользователь их не трогал.',
-    props: ({ log }) => ({ extraPlugins: appCleared(log) }),
+    enter: (_root, app) =>
+      app.update(props => {
+        const current = props.extraPlugins
+          ? favoritesOfEntries.get(props.extraPlugins)
+          : undefined
+        return current?.marks === NO_MARKS
+          ? props
+          : {
+              ...props,
+              extraPlugins: appFavoritesWith(NO_MARKS, app, current?.log),
+            }
+      }),
   },
 ]
 

@@ -954,12 +954,15 @@ export interface CellHiddenOptions {
   hiddenCells?: HiddenCells
   /** Новое значение после каждого переключения. */
   onHiddenCellsChange?: (next: HiddenCells) => void
+  /** Скрытые ячейки при монтировании, если состояние хранит плагин. */
+  initialHiddenCells?: HiddenCells
 }
 ```
 
-Состояние объявим полем `state` в `definePlugin`, а пару «значение — колбэк» —
-полем `controlled`: так состояние может держать и сам плагин, и приложение через
-аргументы фабрики. Плагин рисует кнопку справа в ячейке (`rightCellSlot`) и замещает
+Состояние объявим полем `state` в `definePlugin`, а его имя в аргументах — полем
+`stateName`: плагин принимает `hiddenCells`, `onHiddenCellsChange` и `initialHiddenCells`,
+как срезы TanStack. Так состояние может держать и сам плагин, и приложение через аргументы
+фабрики. Плагин рисует кнопку справа в ячейке (`rightCellSlot`) и замещает
 содержимое скрытой ячейки (`cellSlot`); оба слота получают состояние пропсом
 `state: [value, setter]`:
 
@@ -974,7 +977,7 @@ import type { CellHiddenOptions, HiddenCells } from './types'
 export const cellHiddenAction = definePlugin<CellHiddenOptions>()({
   id: 'cellHiddenAction',
   state: (): HiddenCells => ({}),
-  controlled: { value: 'hiddenCells', onChange: 'onHiddenCellsChange' },
+  stateName: 'hiddenCells',
   slots: [
     {
       id: 'cellHiddenToggle',
@@ -1079,7 +1082,9 @@ const Table = () => {
 }
 ```
 
-> Без `hiddenCells` в аргументах состояние живёт внутри плагина. Состояние плагина
+> С `hiddenCells` состоянием владеет приложение: переключение приходит в
+> `onHiddenCellsChange` и видно, когда приложение передаст новое значение. Без
+> `hiddenCells` в аргументах состояние живёт внутри плагина. Состояние плагина
 > задаётся только его аргументами: `state`/`handlers` `useCreateTable` принимают лишь
 > срезы колонок (ADR 0120).
 

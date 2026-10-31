@@ -94,7 +94,7 @@ flowchart LR
     P --> CTRL["перехват:<br/>сервисный пиннинг + авто-слайс"]
     R --> PASS["pass-through в useTable"]
     F --> DROP["вырезка + dev-warn (MP7)"]
-    S --> SLICES["pluginSlicesOf → useEffectiveState / TanStack"]
+    S --> SLICES["pluginSlicesOf → useEffectiveSlices / TanStack"]
     CTRL --> MERGE["options.state"]
     PASS --> MERGE
     SLICES --> MERGE

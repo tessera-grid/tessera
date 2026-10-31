@@ -5,6 +5,7 @@
  * стабильными обёртками, которые зовут последнюю версию.
  */
 import type { TesseraFeatureEntry } from './features'
+import { createRenderVersion, type RenderVersionAtom } from './renderVersion'
 
 const FUNCTION_KEY = '"ƒ"'
 
@@ -42,21 +43,33 @@ const readPath = (value: unknown, path: readonly string[]): unknown =>
     value,
   )
 
-/** Последние аргументы, аргументы монтирования и обёртки функций одной таблицы. */
+/**
+ * Аргументы последнего коммита, аргументы монтирования и обёртки функций одной таблицы.
+ * Аргументы первого рендера хранилище берёт при создании, дальше — в эффекте коммита.
+ */
 export interface PluginArgsStore {
   latest: Map<string, unknown>
   mounted: Map<string, unknown>
   trampolines: Map<string, (...args: unknown[]) => unknown>
   /** Растёт при новой ссылке на предикат из `refreshArgs` (перерисовка ячеек). */
-  renderVersion: number
+  renderVersion: RenderVersionAtom
 }
 
-export const createPluginArgsStore = (): PluginArgsStore => ({
-  latest: new Map(),
-  mounted: new Map(),
-  trampolines: new Map(),
-  renderVersion: 0,
-})
+export const createPluginArgsStore = (
+  entries: readonly TesseraFeatureEntry[],
+): PluginArgsStore => {
+  const args = new Map(
+    entries.flatMap(entry =>
+      entry.configure ? [[entry.id, entry.args] as const] : [],
+    ),
+  )
+  return {
+    latest: args,
+    mounted: new Map(args),
+    trampolines: new Map(),
+    renderVersion: createRenderVersion(),
+  }
+}
 
 /**
  * Вид аргументов для `configure`: значения как есть, функции — стабильные обёртки
@@ -91,11 +104,15 @@ const viewOf = (
   return value
 }
 
-/** Запомнить аргументы текущего рендера: обёртки функций читают их при вызове. */
+/**
+ * Эффект коммита: запомнить аргументы — обёртки функций читают их при вызове; новая
+ * ссылка на предикат из `refreshArgs` поднимает версию отрисовки ячеек.
+ */
 export const rememberPluginArgs = (
   store: PluginArgsStore,
   entries: readonly TesseraFeatureEntry[],
-) => {
+): void => {
+  let refresh = false
   for (const entry of entries) {
     if (entry.configure) {
       const previous = store.latest.get(entry.id)
@@ -107,7 +124,7 @@ export const rememberPluginArgs = (
               typeof readPath(entry.args, [key]) === 'function'),
         )
       ) {
-        store.renderVersion += 1
+        refresh = true
       }
       store.latest.set(entry.id, entry.args)
       if (!store.mounted.has(entry.id)) {
@@ -115,6 +132,7 @@ export const rememberPluginArgs = (
       }
     }
   }
+  if (refresh) store.renderVersion.set(version => version + 1)
 }
 
 /** Аргументы с договорами на время жизни, взятыми с момента монтирования (RX4). */
