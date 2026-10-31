@@ -426,6 +426,77 @@ describe('эффективное состояние в атомах (ADR 0171)',
     expect(captured.atoms[editingKey].get()).toBe(editing)
   })
 
+  it('EF12: подписчик на суженный срез — на атом таблицы table.atoms, на table.store или на сам атом-линзу из options.atoms — получает новое эффективное значение после смены данных и колонок', () => {
+    const subscribe = (key: string) => {
+      const seen = {
+        atom: [] as unknown[],
+        store: [] as unknown[],
+        lens: [] as unknown[],
+      }
+      captured.atoms[key].subscribe((value: unknown) => seen.atom.push(value))
+      captured.store.subscribe((state: Record<string, unknown>) =>
+        seen.store.push(state[key]),
+      )
+      captured.options.atoms[key].subscribe((value: unknown) =>
+        seen.lens.push(value),
+      )
+      return seen
+    }
+
+    // Данные: у новой строки есть дети — раскрытие сужено до глубины 1.
+    const DataHost = ({ rows }: { rows: Node[] }) => {
+      captured = useCreateTable({
+        columns: columns as never,
+        data: rows,
+        plugins: [rowExpanding({ maxDepth: 1, initialExpanded: true })],
+      })
+      return null
+    }
+    mount(<DataHost rows={[{ id: 'p', name: 'P' }]} />)
+    const expanded = subscribe('expanded')
+    mount(
+      <DataHost
+        rows={[
+          {
+            id: 'p',
+            name: 'P',
+            subRows: [{ id: 'c', name: 'C', subRows: [{ id: 'g' }] }],
+          },
+        ]}
+      />,
+    )
+    const deep = { p: true }
+    expect(expanded.atom.at(-1)).toEqual(deep)
+    expect(expanded.store.at(-1)).toEqual(deep)
+    expect(expanded.lens.at(-1)).toEqual(deep)
+
+    // Колонки: лист под группой без закрепления листьев — закрепление сужено.
+    act(() => root?.unmount())
+    root = undefined
+    const nested = [
+      { id: 'group', header: 'Group', columns },
+      { id: 'other', accessorKey: 'other' },
+    ]
+    const PinHost = ({ cols }: { cols: unknown[] }) => {
+      captured = useCreateTable({
+        columns: cols as never,
+        data,
+        plugins: [columnPinning({ leafPinning: false })],
+      })
+      return null
+    }
+    mount(<PinHost cols={columns} />)
+    act(() => captured.getColumn('name').pin('start'))
+    const pinning = subscribe('columnPinning')
+    mount(<PinHost cols={nested} />)
+    const startOf = (value: unknown) =>
+      (value as { start?: string[] } | undefined)?.start ?? []
+    for (const seen of Object.values(pinning)) expect(seen).not.toHaveLength(0)
+    expect(startOf(pinning.atom.at(-1))).not.toContain('name')
+    expect(startOf(pinning.store.at(-1))).not.toContain('name')
+    expect(startOf(pinning.lens.at(-1))).not.toContain('name')
+  })
+
   it('EF11: итог сужения от того же сохранённого значения с теми же полями — прежний объект; от другого сохранённого значения прежний не берётся, даже если поля равны (значения «всё, кроме» выбора строк — разные объекты)', () => {
     const DataSortHost = ({
       rows,

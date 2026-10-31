@@ -85,7 +85,7 @@ export interface SliceTable {
     string,
     { get: () => unknown; set: (value: unknown) => void }
   >
-  atoms: Record<string, { get: () => unknown } | undefined>
+  atoms: Record<string, Derived | undefined>
   initialState: Record<string, unknown>
 }
 
@@ -205,7 +205,10 @@ export const createSliceStore = () => {
       lens: {
         get: () => effective().get(),
         set: updater => write(key, slice, updater),
-        subscribe: listener => effective().subscribe(listener),
+        // Производный атом при смене данных заменяется новым, атом таблицы — нет: его
+        // подписку TanStack обновляет после коммита.
+        subscribe: listener =>
+          (table.get()?.atoms[key] ?? effective()).subscribe(listener),
       },
     }
     return slice
