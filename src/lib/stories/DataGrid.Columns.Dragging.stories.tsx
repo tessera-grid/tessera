@@ -7,13 +7,14 @@ import { StoryComponent } from './DataGridStory'
 import { dataGridMeta } from './dataGridMeta'
 import {
   afterRows,
-  type HeldDrag,
-  type Point,
   centerOf,
   dragHold,
   guideNext,
   headCell,
+  type HeldDrag,
+  type Point,
   pollUntil,
+  pressEscape,
   releaseFocus,
   settle,
   stepDone,
@@ -110,10 +111,7 @@ const moveByMenu = (
   if (menu) {
     if (handle?.getAttribute('aria-expanded') === 'true')
       menu.querySelector<HTMLElement>(`[data-item-id="${item}"]`)?.click()
-    else
-      document.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
-      )
+    else pressEscape()
   } else if (!document.querySelector('[role="menu"]')) handle?.click()
 }
 

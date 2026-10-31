@@ -8,6 +8,7 @@ import { dataGridMeta } from './dataGridMeta'
 import {
   consoleText,
   guideNext,
+  pressEscape,
   settle,
   until,
   waitForRows,
@@ -145,10 +146,7 @@ const NBSP = ' '
 // --- ADR 0132 S1 ---------------------------------------------------------------------
 
 /** Закрыть открытое меню или панель — как `Escape` пользователя. */
-const closePopups = () =>
-  document.dispatchEvent(
-    new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
-  )
+const closePopups = pressEscape
 
 const columnsButtonOf = (root: ParentNode) =>
   root.querySelector<HTMLElement>('[data-testid="column-visibility-button"]')

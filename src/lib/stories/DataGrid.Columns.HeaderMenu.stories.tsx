@@ -13,6 +13,7 @@ import {
   headKebab,
   pointAt,
   pollUntil,
+  pressEscape,
   settle,
   until,
   waitForRows,
@@ -607,11 +608,6 @@ const indexDemo: TesseraFeatureEntry = {
 
 const INDEX_ACTION = '[data-action-id="asyncBuildIndex"]'
 
-const escape = () =>
-  document.dispatchEvent(
-    new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
-  )
-
 const busy = (root: ParentNode, column: string) =>
   headKebab(root, column)?.getAttribute('aria-busy') === 'true'
 
@@ -660,7 +656,7 @@ const inIndexMenu =
       const menu = document.querySelector<HTMLElement>('[role="menu"]')
       if (menu?.hasAttribute('data-open')) {
         if (expandedMenuOf(root, column)) act(menu)
-        else escape()
+        else pressEscape()
       } else if (!menu && !busy(root, column)) {
         revealColumn(root, column)
         headKebab(root, column)?.click()

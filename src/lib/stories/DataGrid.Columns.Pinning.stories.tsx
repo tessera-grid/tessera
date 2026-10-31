@@ -7,6 +7,7 @@ import { dataGridMeta } from './dataGridMeta'
 import {
   afterRows,
   guideNext,
+  pressEscape,
   settle,
   until,
   waitForRows,
@@ -81,10 +82,6 @@ const scrollerOf = (root: ParentNode) =>
 const box = (element: Element) => element.getBoundingClientRect()
 const openMenu = () =>
   document.querySelector<HTMLElement>('[role="menu"][data-open]')
-const escape = () =>
-  document.dispatchEvent(
-    new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
-  )
 
 /**
  * Довести таблицу до закреплений шага, как пользователь: кнопка закрепления колонки,
@@ -108,7 +105,7 @@ const pinAll =
       if (menu) {
         if (button?.getAttribute('aria-expanded') === 'true')
           menu.querySelector<HTMLElement>(`[data-item-id="${side}"]`)?.click()
-        else escape()
+        else pressEscape()
       } else if (!document.querySelector('[role="menu"]')) button?.click()
       setTimeout(run, 100)
     }

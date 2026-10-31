@@ -228,10 +228,10 @@ export const dragHold = async (
 }
 
 /**
- * Escape: удержанное перетаскивание отменяется; без перетаскивания — ничего. От `body`,
- * а не от документа: обработчик клавиш Storybook читает атрибуты цели.
+ * Пользователь нажал Escape вне полей ввода. От `body`, а не от документа: обработчик клавиш
+ * Storybook читает атрибуты цели, у документа их нет.
  */
-export const cancelDrag = () =>
+export const pressEscape = () =>
   document.body.dispatchEvent(
     new KeyboardEvent('keydown', {
       key: 'Escape',
@@ -239,6 +239,9 @@ export const cancelDrag = () =>
       bubbles: true,
     }),
   )
+
+/** Escape: удержанное перетаскивание отменяется; без перетаскивания — ничего. */
+export const cancelDrag = pressEscape
 
 /** События указателя, по которым dnd-kit ведёт и заканчивает перетаскивание. */
 const DRAG_POINTER = ['pointermove', 'pointerup', 'pointercancel']

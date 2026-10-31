@@ -7,7 +7,13 @@ import { Stub } from '../ui/Stub'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import { vrStates } from './__mocks__/catalog'
-import { byTestId, guideNext, settle, until } from './__mocks__/catalogPlay'
+import {
+  byTestId,
+  guideNext,
+  pressEscape,
+  settle,
+  until,
+} from './__mocks__/catalogPlay'
 import { storyLabels } from './__mocks__/storyLabels'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
@@ -189,9 +195,7 @@ const hideAllFromMenu = (root: HTMLElement) => {
     )
     if (box && menu()!.hasAttribute('data-open')) {
       box.click()
-      document.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
-      )
+      pressEscape()
       requestAnimationFrame(blurWhenClosed)
       return
     }

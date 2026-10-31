@@ -15,6 +15,7 @@ import {
   orderedRows,
   pointAt,
   pollUntil,
+  pressEscape,
   settle,
   stepDone,
   until,
@@ -255,10 +256,6 @@ const filterPanel = () =>
   document.querySelector<HTMLElement>('[data-testid="filter-panel"]')
 const filterValue = () =>
   document.querySelector<HTMLInputElement>('[data-testid="filter-value"]')
-const escape = () =>
-  document.dispatchEvent(
-    new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
-  )
 /** Отметка отказа кнопки фильтра — точка ошибки (ADR 0116, SA18). */
 const filterFailed = (root: HTMLElement) =>
   filterButton(root)
@@ -408,7 +405,7 @@ const REFUSED: readonly GuideStoryStep[] = [
         await refuseFilter(root, signal)
       await pollUntil(() => {
         if (!filterPanel()) return true
-        escape()
+        pressEscape()
         return false
       }, signal)
       guide.mode = 'refuse'

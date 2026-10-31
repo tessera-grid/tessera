@@ -21,6 +21,7 @@ import {
   orderedRows,
   pointAt,
   pollUntil,
+  pressEscape,
   settle,
   sleep,
   stepDone,
@@ -100,10 +101,6 @@ export const FilteringPlayground: StoryObj<StoryProps> = {
 // --- Действия шагов ------------------------------------------------------------------
 
 const panel = () => byTestId('filter-panel')
-const escape = () =>
-  document.dispatchEvent(
-    new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
-  )
 
 /** Повторяет `act` с паузой, пока не выполнится `done`: кнопки готовы не сразу. */
 const repeat = async (
@@ -121,7 +118,7 @@ const repeat = async (
 
 /** Пользователь закрывает открытую панель. */
 const closePanel = (signal: AbortSignal) =>
-  repeat(() => !panel(), escape, signal)
+  repeat(() => !panel(), pressEscape, signal)
 
 /** Пользователь открывает панель фильтра колонки нажатием на её кнопку. */
 const openPanel = async (
@@ -431,7 +428,7 @@ const hideAge = async (root: HTMLElement, signal: AbortSignal) => {
   )
   await repeat(
     () => !document.querySelector('[data-testid="column-visibility-menu"]'),
-    escape,
+    pressEscape,
     signal,
   )
 }

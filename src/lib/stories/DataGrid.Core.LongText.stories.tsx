@@ -9,6 +9,7 @@ import {
   guideNext,
   openMenuBy,
   orderedRows,
+  pressEscape,
   rowKebab,
   settle,
   until,
@@ -204,9 +205,7 @@ const MENUS: readonly GuideStoryStep[] = [
     hint: 'Пользователь выбрал строки в узкой таблице. Нижняя панель переходит на компактную раскладку, и счётчики показываются в короткой форме.',
     props: () => ({ containerWidth: 360 }),
     enter: afterRows(root => {
-      document.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
-      )
+      pressEscape()
       orderedRows(root)
         .slice(0, 2)
         .forEach(row => {
