@@ -76,19 +76,28 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
-const Grid = (props: { data: Node[]; plugins: () => readonly unknown[] }) => {
+const Grid = (props: {
+  data: Node[]
+  plugins: () => readonly unknown[]
+  rowCount?: number
+}) => {
   table = useCreateTable({
     columns: COLUMNS as never,
     data: props.data,
+    rowCount: props.rowCount,
     getRowId: (row: Node) => row.id,
     plugins: props.plugins() as never,
   })
   return null
 }
 
-const render = (data: Node[], plugins: () => readonly unknown[]) => {
+const render = (
+  data: Node[],
+  plugins: () => readonly unknown[],
+  rowCount?: number,
+) => {
   root ??= createRoot(document.createElement('div'))
-  act(() => root!.render(createElement(Grid, { data, plugins })))
+  act(() => root!.render(createElement(Grid, { data, plugins, rowCount })))
 }
 
 /** Размер строки — от её ключа: сдвиг позиций виден, если подсказка дальше изменения. */
@@ -309,12 +318,16 @@ describe('Подсказка места изменения строк (ADR 0145)
       new Promise<ServerRowsResponse<Node>>(resolve => {
         calls.push({ request, resolve })
       })
-    render([], () => [
-      serverRowModel({ getRows, rowCount: 1000, blockSize: 10 }),
-      rowExpanding({
-        hasChildren: (row: { depth: number }) => row.depth === 0,
-      }),
-    ])
+    render(
+      [],
+      () => [
+        serverRowModel({ getRows, blockSize: 10 }),
+        rowExpanding({
+          hasChildren: (row: { depth: number }) => row.depth === 0,
+        }),
+      ],
+      1000,
+    )
     const source = () => rowSourceOf(table)
     const answer = async (count?: number) => {
       const { request, resolve } = calls.at(-1)!

@@ -119,6 +119,7 @@ interface GridProps {
 
 const Grid = ({ server = true, wide = false, localization }: GridProps) => {
   const table = useCreateTable({
+    timeZone: 'UTC',
     columns: (wide ? [...COLUMNS, ...FILLERS] : COLUMNS) as never,
     data: DATA,
     getRowId: (row: (typeof DATA)[number]) => row.id,
@@ -126,7 +127,6 @@ const Grid = ({ server = true, wide = false, localization }: GridProps) => {
     dataMode: { filtering: server ? 'server' : 'client' },
     plugins: [
       columnFiltering({
-        timeZone: 'UTC',
         debounceMs: 0,
         onFilterChange,
       }),

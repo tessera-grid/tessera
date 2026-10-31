@@ -210,7 +210,7 @@ export const dragProps =
             enableRowExpanding: true,
             enableTreeLines: true,
           }
-        : { serverRowModelRowCount: DRAG_TOTAL }),
+        : { rowCount: DRAG_TOTAL }),
       serverRowModelGetRows: (request: ServerRowsRequest) =>
         new Promise<ServerRowsResponse<FilteringItem>>(resolve => {
           const { start, end, parentId } = request

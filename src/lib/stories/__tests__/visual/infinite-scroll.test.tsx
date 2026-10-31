@@ -132,6 +132,7 @@ const Feed = ({
       setRows(prev => [...prev, ...itemsFrom(prev.length, count)]),
   }
   table = useCreateTable({
+    rowCount: knownTotal ? total : undefined,
     columns: (columns ?? (wide ? WIDE_COLUMNS : COLUMNS)) as never,
     loading,
     dataMode,
@@ -145,7 +146,6 @@ const Feed = ({
             calls.push({ ctx, resolve, reject }),
           ),
         hasMore: rows.length < total,
-        rowCount: knownTotal ? total : undefined,
         loadedCount,
         threshold,
       }),

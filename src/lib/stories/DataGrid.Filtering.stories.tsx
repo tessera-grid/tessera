@@ -88,7 +88,7 @@ export const FilteringPlayground: StoryObj<StoryProps> = {
     'enableColumnFiltering',
     'columnFilteringDebounceMs',
     'columnFilteringFilteredCount',
-    'columnFilteringTimeZone',
+    'timeZone',
     'enablePagination',
     'paginationInitialPageSize',
     'enableRowSelection',
@@ -383,7 +383,7 @@ const refetch = (app: GuideApp, log: ConsoleLog) => {
       ...props,
       loading: false,
       dataOverride: rows,
-      columnFilteringFilteredRowCount: rows.length,
+      rowCount: rows.length,
     }))
   }, SERVER_DELAY_MS)
 }
@@ -515,8 +515,8 @@ export const FilteringServer: StoryObj<StoryProps> = {
           dataOverride: SERVER_DATA,
           enableColumnVisibility: true,
           dataMode: { filtering: 'server', search: 'server' },
-          columnFilteringFilteredRowCount: SERVER_TOTAL,
-          columnFilteringTotalRowCount: SERVER_TOTAL,
+          rowCount: SERVER_TOTAL,
+          totalRowCount: SERVER_TOTAL,
           extraPlugins: [serverReset],
         },
         args,
@@ -562,6 +562,121 @@ export const FilteringServer: StoryObj<StoryProps> = {
       await stepDone(canvas)
       await expect(searchHint()).toBe(
         labels.searchColumnsHint(['Name', 'City', 'Visits']),
+      )
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0169 S1 ---------------------------------------------------------------------
+
+/** «Сервер» фильтрует колонки, а поиска не видит: искать по пришедшим строкам — таблице. */
+const refetchFilters = (app: GuideApp, log: ConsoleLog) => {
+  const seq = ++request.seq
+  app.update(props => ({ ...props, loading: 'refresh' }))
+  setTimeout(() => {
+    if (seq !== request.seq) return
+    const rows = queryFiltering(request.filters, '', [])
+    log.log('server', `${rows.length} of ${SERVER_TOTAL} rows`)
+    app.update(props => ({
+      ...props,
+      loading: false,
+      dataOverride: rows,
+      rowCount: rows.length,
+    }))
+  }, SERVER_DELAY_MS)
+}
+
+const searchedOnClient = (root: HTMLElement) =>
+  allMatch(root, 'city', SEARCH) && serverAnswered(root)
+
+const MIXED: readonly GuideStoryStep[] = [
+  {
+    title: 'Фильтры на сервере, поиск в таблице',
+    hint: 'Условия фильтров колонок уходят приложению, оно перезапрашивает строки у сервера. Поиск таблица ведёт сама — по строкам, которые уже пришли.',
+    props: ({ app, log }) => ({
+      onFilterChange: (filters: ServerFilters) => {
+        request.filters = filters
+        refetchFilters(app, log)
+      },
+    }),
+  },
+  {
+    title: 'Пользователь ищет',
+    hint: 'Запроса к серверу нет: таблица сразу оставила строки с найденным текстом, нижняя панель называет, сколько их из всех строк сервера.',
+    enter: stepAction(async (root, { signal }) => {
+      await search(root, SEARCH, () => searchedOnClient(root), signal)
+    }),
+  },
+  {
+    title: 'Пользователь отфильтровал по имени',
+    hint: 'Фильтр колонки ушёл серверу, пока он отвечает, таблица в состоянии обновления данных. Пришли строки с этим именем, и поиск сразу сузил их.',
+    states: ['body.refreshing'],
+    enter: stepAction(async (root, { signal }) => {
+      await search(root, SEARCH, () => searchedOnClient(root), signal)
+      await filterByName(root, signal)
+      await pollUntil(
+        () => allMatch(root, 'name', NAME) && searchedOnClient(root),
+        signal,
+      )
+    }),
+  },
+]
+
+/** ADR 0169, S1: фильтры колонок идут на сервер, поиск — по загруженным строкам. */
+export const FilteringServerFiltersClientSearch: StoryObj<StoryProps> = {
+  name: 'Server filters, client search',
+  parameters: { scenario: '0169/S1', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Фильтры на сервере, поиск в таблице"
+      steps={MIXED}
+      args={guideArgs(
+        {
+          ...GRID,
+          dataOverride: SERVER_DATA,
+          dataMode: { filtering: 'server' },
+          rowCount: SERVER_TOTAL,
+          totalRowCount: SERVER_TOTAL,
+          extraPlugins: [serverReset],
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const labels = storyLabels(args.locale)
+    const columns = ['name', 'city', 'age', 'visits']
+    const nameFilter = [
+      { id: 'name', value: { operator: 'contains', value: NAME } },
+    ]
+    await step(MIXED[0]!.title, async () => {
+      await waitForRows(canvas)
+      await expect(orderedRows(canvas).length).toBeGreaterThan(0)
+    })
+    await step(MIXED[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(allMatch(canvas, 'city', SEARCH)).toBe(true)
+      await expect(filteredCount()).toBe(
+        labels.filteredRows(
+          queryFiltering([], SEARCH, columns).length,
+          SERVER_TOTAL,
+        ),
+      )
+      await expect(consoleText()).not.toContain('onSearchChange')
+    })
+    await step(MIXED[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(consoleText()).toContain('onFilterChange')
+      await expect(allMatch(canvas, 'name', NAME)).toBe(true)
+      await expect(filteredCount()).toBe(
+        labels.filteredRows(
+          queryFiltering(nameFilter as ServerFilters, SEARCH, columns).length,
+          SERVER_TOTAL,
+        ),
       )
       await settle()
     })
@@ -750,7 +865,7 @@ const DATES = {
   ...GRID,
   columnsOverride: dateFilteringColumns,
   dataOverride: dateFilteringData,
-  columnFilteringTimeZone: 'UTC',
+  timeZone: 'UTC',
 } satisfies Partial<StoryProps>
 
 const calendar = () => byTestId('filter-calendar')
@@ -817,7 +932,7 @@ const DATE_STEPS: readonly GuideStoryStep[] = [
   {
     title: 'Приложение сменило часовой пояс',
     hint: 'Тот же день в другом поясе — другие строки: часть ушла в соседний день.',
-    props: () => ({ columnFilteringTimeZone: 'Asia/Tokyo' }),
+    props: () => ({ timeZone: 'Asia/Tokyo' }),
     enter: stepAction((root, { signal }) => filterCreated(root, signal)),
   },
   {
@@ -1107,7 +1222,7 @@ const LOOKUP: readonly GuideStoryStep[] = [
             ...props,
             loading: false,
             dataOverride: rows,
-            columnFilteringFilteredRowCount: rows.length,
+            rowCount: rows.length,
           }))
         }, LOOKUP_DELAY_MS)
       },
@@ -1160,8 +1275,8 @@ export const FilteringLookupServer: StoryObj<StoryProps> = {
           dataOverride: OPTION_SERVER_DATA,
           enableQuickSearch: false,
           dataMode: { filtering: 'server' },
-          columnFilteringFilteredRowCount: OPTION_TOTAL,
-          columnFilteringTotalRowCount: OPTION_TOTAL,
+          rowCount: OPTION_TOTAL,
+          totalRowCount: OPTION_TOTAL,
         },
         args,
       )}
@@ -1483,8 +1598,8 @@ export const FilteringServerCancel: StoryObj<StoryProps> = {
           ...GRID,
           dataOverride: SERVER_DATA,
           dataMode: { filtering: 'server' },
-          columnFilteringFilteredRowCount: SERVER_TOTAL,
-          columnFilteringTotalRowCount: SERVER_TOTAL,
+          rowCount: SERVER_TOTAL,
+          totalRowCount: SERVER_TOTAL,
         },
         args,
       )}
@@ -1563,7 +1678,7 @@ const heldUntilRelease =
         app.update(props => ({
           ...props,
           dataOverride: rows,
-          columnFilteringFilteredRowCount: rows.length,
+          rowCount: rows.length,
         }))
         resolve()
       }
@@ -1652,8 +1767,8 @@ export const FilteringServerApply: StoryObj<StoryProps> = {
           ...GRID,
           dataOverride: SERVER_DATA,
           dataMode: { filtering: 'server' },
-          columnFilteringFilteredRowCount: SERVER_TOTAL,
-          columnFilteringTotalRowCount: SERVER_TOTAL,
+          rowCount: SERVER_TOTAL,
+          totalRowCount: SERVER_TOTAL,
           extraPlugins: [applyServerReset],
         },
         args,
@@ -1785,8 +1900,8 @@ export const FilteringServerReapply: StoryObj<StoryProps> = {
           ...GRID,
           dataOverride: SERVER_DATA,
           dataMode: { filtering: 'server' },
-          columnFilteringFilteredRowCount: SERVER_TOTAL,
-          columnFilteringTotalRowCount: SERVER_TOTAL,
+          rowCount: SERVER_TOTAL,
+          totalRowCount: SERVER_TOTAL,
         },
         args,
       )}

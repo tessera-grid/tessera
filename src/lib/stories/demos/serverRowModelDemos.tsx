@@ -76,7 +76,7 @@ export const ServerRowModelDemo = ({
       dataOverride={NO_ROWS}
       enableServerRowModel
       serverRowModelGetRows={getRows}
-      serverRowModelRowCount={knownTotal ? serverTotal : undefined}
+      rowCount={knownTotal ? serverTotal : undefined}
       serverRowModelBlockSize={blockSize}
       serverRowModelMaxBlocks={maxBlocks}
     />

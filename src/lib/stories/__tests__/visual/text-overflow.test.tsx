@@ -155,13 +155,13 @@ let rejects: ((error: Error) => void)[] = []
 
 const Feed = () => {
   const feed = useCreateTable({
+    rowCount: 100_000,
     columns: COLUMNS as never,
     data: DATA.slice(0, 30),
     getRowId: (row: Item) => row.id,
     plugins: [
       infiniteScroll({
         hasMore: true,
-        rowCount: 100_000,
         loadedCount: true,
         onLoadMore: () =>
           new Promise<void>((_resolve, reject) => rejects.push(reject)),

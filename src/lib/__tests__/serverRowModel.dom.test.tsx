@@ -81,6 +81,7 @@ const Grid = ({
   dataMode?: DataMode
 }) => {
   table = useCreateTable({
+    rowCount: 1000,
     columns: COLUMNS as never,
     data: NO_DATA,
     getRowId: rowId,
@@ -89,7 +90,6 @@ const Grid = ({
     plugins: [
       serverRowModel({
         getRows: loader ? getRows : undefined,
-        rowCount: 1000,
         blockSize: BLOCK,
         maxBlocks,
       }),

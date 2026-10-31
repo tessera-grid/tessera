@@ -80,8 +80,9 @@ const COLUMNS = [
 ]
 
 const build = (
-  plugins: any[] = [columnFiltering({ timeZone: 'UTC' })],
+  plugins: any[] = [columnFiltering()],
   data: object[] = DATA,
+  timeZone: string | undefined = 'UTC',
 ) => {
   const entries = [
     {
@@ -97,6 +98,7 @@ const build = (
     columns: injectServiceColumns(COLUMNS as any[], folded.serviceColumns),
     getRowId: (row: Item) => row.id,
     ...folded.options,
+    timeZone,
     hooks: resolveHooks(foldHooks(entries)),
     pluginDiagnostics: folded.pluginDiagnostics,
     logLevel: 'error',
@@ -112,7 +114,7 @@ const filtered = (
   timeZone: string | null = 'UTC',
 ) => {
   // null — без timeZone, в поясе среды.
-  const table = build([columnFiltering({ timeZone: timeZone ?? undefined })])
+  const table = build([columnFiltering()], DATA, timeZone ?? undefined)
   table.setColumnFilters([{ id: columnId, value: filter }])
   return ids(table)
 }
@@ -358,12 +360,12 @@ describe('columnFiltering — условия дат', () => {
     expect(filtered('created', today, 'Europe/Moscow')).toEqual(['a', 'b'])
 
     // Смена пояса на живой таблице пересчитывает фильтр.
-    const table = build([columnFiltering({ timeZone: 'Europe/London' })])
+    const table = build([columnFiltering()], DATA, 'Europe/London')
     table.setColumnFilters([{ id: 'created', value: on3 }])
     expect(ids(table)).toEqual(['a', 'e'])
     table.setOptions((prev: object) => ({
       ...prev,
-      columnFilteringTimeZone: 'Europe/Moscow',
+      timeZone: 'Europe/Moscow',
     }))
     expect(ids(table)).toEqual(['e'])
   })
@@ -371,7 +373,7 @@ describe('columnFiltering — условия дат', () => {
 
 describe('даты и соседние плагины', () => {
   it('DF18: быстрый поиск не обходит колонки date и datetime', () => {
-    const table = build([columnFiltering({ timeZone: 'UTC' }), quickSearch()])
+    const table = build([columnFiltering(), quickSearch()])
     expect(table.getColumn('day').getCanGlobalFilter()).toBe(false)
     expect(table.getColumn('created').getCanGlobalFilter()).toBe(false)
     expect(table.getColumn('closed').getCanGlobalFilter()).toBe(false)
@@ -384,7 +386,7 @@ describe('даты и соседние плагины', () => {
   })
 
   it('DF20: экспорт view учитывает фильтр дат', () => {
-    const table = build([columnFiltering({ timeZone: 'UTC' }), dataExport()])
+    const table = build([columnFiltering(), dataExport()])
     const view = () => exportRowsOf(table, 'view').map(row => row.id)
     expect(view()).toHaveLength(DATA.length)
     table.setColumnFilters([

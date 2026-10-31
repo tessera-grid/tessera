@@ -23,11 +23,6 @@ export interface PaginationModelOptions {
    * состояния: текущим размером владеет срез `pagination` (ADR 0039).
    */
   initialPageSize?: number
-  /**
-   * Всего строк на сервере; обязателен, когда страницы режет сервер (`dataMode`, ADR 0169;
-   * 0, пока ответа нет).
-   */
-  rowCount?: number
   /** Страница и её размер: задаёт приложение; без него срез хранит грид. */
   pagination?: PaginationState
   /** Новое значение среза после каждого изменения изнутри грида. */
@@ -55,7 +50,6 @@ export const paginationModel = definePlugin<PaginationModelOptions>()({
     const pageSize = o.initialPageSize ?? DEFAULT_PAGE_SIZE
     return {
       pagedRows: enabled,
-      rowCount: enabled ? o.rowCount : undefined,
       paginateExpandedRows: !enabled,
       // Стоковый сброс срабатывает на любую смену data (правка ячейки, перестановка
       // строки); страницу сбрасывает плагин — только при смене порядка строк.

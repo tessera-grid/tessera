@@ -57,13 +57,14 @@ const Grid = ({
   onTable?: (table: StretchTable) => void
 }) => {
   const table = useCreateTable({
+    rowCount,
     columns: COLUMNS as never,
     data: NO_DATA,
     getRowId: (row: Item) => row.id,
     // Нижняя панель — место кнопки «наверх» (ADR 0082).
     enableStatusBar: true,
     plugins: [
-      serverRowModel({ getRows, rowCount }),
+      serverRowModel({ getRows }),
       keyboardNavigation({ enabled: keyboard }),
       backToTop(),
       columnSortingModel(),

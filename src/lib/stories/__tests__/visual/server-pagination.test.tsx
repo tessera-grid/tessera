@@ -114,11 +114,12 @@ const Grid = ({
   onTable?: (table: PagedTable) => void
 }) => {
   const table = useCreateTable({
+    rowCount,
     columns: COLUMNS as never,
     data: NO_DATA,
     getRowId: (row: Item) => row.id,
     plugins: [
-      serverRowModel({ getRows, rowCount, blockSize, maxBlocks }),
+      serverRowModel({ getRows, blockSize, maxBlocks }),
       pagination({ initialPageSize: pageSize }),
       ...plugins,
     ] as never,

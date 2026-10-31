@@ -20,8 +20,6 @@ export interface ServerRowModelOptions {
   enabled?: boolean
   /** Загрузить строки `[start, end)`; читается живо. */
   getRows?: ServerRowModelHooks['getRows']
-  /** Всего строк, если известно до первого ответа. */
-  rowCount?: number
   /** Строк в блоке; договор на время жизни таблицы. */
   blockSize?: number
   /** Сколько блоков держать в кэше; давно не нужные сверх него вытесняются. */
@@ -60,7 +58,6 @@ export const serverRowModel = definePlugin<ServerRowModelOptions>()({
       getRowSource: enabled && o.getRows ? serverSourceOf : undefined,
       serverRowModelBlockSize: o.blockSize ?? DEFAULT_BLOCK_SIZE,
       serverRowModelMaxBlocks: o.maxBlocks ?? DEFAULT_MAX_BLOCKS,
-      serverRowModelRowCount: enabled ? o.rowCount : undefined,
       // Клиентская модель строк здесь не рисует: новая `data` выделение по индексам не
       // сбрасывает, новую выборку отслеживает само выделение (ADR 0146, §6).
       autoResetCellSelection: enabled ? false : undefined,
@@ -88,7 +85,6 @@ declare module '@tanstack/react-table' {
       enableServerRowModel?: boolean
       serverRowModelBlockSize?: number
       serverRowModelMaxBlocks?: number
-      serverRowModelRowCount?: number
     }
   }
 }

@@ -2167,7 +2167,7 @@ describe('Производительность прокрутки — серве
           ...NO_PLUGINS,
           ...(server && {
             enableServerRowModel: true,
-            serverRowModelRowCount: 1_000_000,
+            rowCount: 1_000_000,
             serverRowModelGetRows: getRows,
           }),
         })
@@ -2253,7 +2253,7 @@ describe('Производительность прокрутки — растя
           ...SMALL,
           ...NO_PLUGINS,
           enableServerRowModel: true,
-          serverRowModelRowCount: stretched ? 1_000_000 : 150_000,
+          rowCount: stretched ? 1_000_000 : 150_000,
           serverRowModelGetRows: getRows,
         })
         await expect
@@ -2378,13 +2378,13 @@ const groupedRowsOf = ({
 }
 const GroupedServerGrid = ({ grouped }: { grouped: boolean }) => {
   const table = useCreateTable({
+    rowCount: grouped ? undefined : GS13_GROUPS * (GS13_GROUP_SIZE + 1),
     columns: GROUPED_COLUMNS as never,
     data: NO_GROUPED_ROWS,
     getRowId: (row: GroupedRow) => row.id,
     plugins: [
       serverRowModel({
         getRows: groupedRowsOf,
-        rowCount: grouped ? undefined : GS13_GROUPS * (GS13_GROUP_SIZE + 1),
         getGroupChildCount: (row: GroupedRow) => row.count,
       }),
       // Модель дерева задаёт первый несущий её интерфейс (ADR 0120): раскрытие — первым.
@@ -2492,11 +2492,12 @@ const treeRowsOf = ({ start, end, parentId }: ServerRowsRequest) => {
 }
 const TreeServerGrid = ({ lines }: { lines: boolean }) => {
   const table = useCreateTable({
+    rowCount: TL15_ROOTS,
     columns: GROUPED_COLUMNS as never,
     data: NO_GROUPED_ROWS,
     getRowId: (row: GroupedRow) => row.id,
     plugins: [
-      serverRowModel({ getRows: treeRowsOf, rowCount: TL15_ROOTS }),
+      serverRowModel({ getRows: treeRowsOf }),
       rowExpanding({
         hasChildren: (row: { depth: number }) => row.depth === 0,
         initialExpanded: true,
@@ -2591,11 +2592,12 @@ const NS11_SELECTION = {
 const NS11_EVERYTHING = { all: true, except: [] }
 const SelectedTreeServerGrid = ({ selected }: { selected: boolean }) => {
   const table = useCreateTable({
+    rowCount: TL15_ROOTS,
     columns: GROUPED_COLUMNS as never,
     data: NO_GROUPED_ROWS,
     getRowId: (row: GroupedRow) => row.id,
     plugins: [
-      serverRowModel({ getRows: treeRowsOf, rowCount: TL15_ROOTS }),
+      serverRowModel({ getRows: treeRowsOf }),
       rowExpanding({
         hasChildren: (row: { depth: number }) => row.depth === 0,
         initialExpanded: true,
@@ -2846,7 +2848,7 @@ describe('Производительность прокрутки — выдел
           ...SMALL,
           ...NO_PLUGINS,
           enableServerRowModel: true,
-          serverRowModelRowCount: 1_000_000,
+          rowCount: 1_000_000,
           serverRowModelGetRows: getRows,
           enableCellSelection: true,
           cellSelectionInitialCellSelection: selected

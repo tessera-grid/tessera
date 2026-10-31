@@ -94,11 +94,12 @@ const Tree = ({
   drag?: boolean
 }) => {
   const table = useCreateTable({
+    rowCount: ROOTS,
     columns: COLUMNS as never,
     data: NO_DATA,
     getRowId: (row: Item) => row.id,
     plugins: [
-      serverRowModel({ getRows, rowCount: ROOTS, blockSize: BLOCK }),
+      serverRowModel({ getRows, blockSize: BLOCK }),
       rowExpanding({
         hasChildren: (row: { id: string; depth: number }) =>
           row.depth === 0 && row.id === 'r2',

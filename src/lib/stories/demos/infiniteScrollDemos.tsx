@@ -174,7 +174,7 @@ export const InfiniteScrollDemo = ({
       enableInfiniteScroll
       onLoadMore={onLoadMore}
       infiniteScrollHasMore={hasMore}
-      infiniteScrollRowCount={knownTotal ? total : undefined}
+      rowCount={knownTotal ? total : undefined}
       infiniteScrollLoadedCount={args.infiniteScrollLoadedCount ?? true}
       {...(serverQuery && {
         enableColumnSorting: true,

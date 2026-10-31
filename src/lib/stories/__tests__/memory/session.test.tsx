@@ -280,9 +280,9 @@ describe('Утечки в долгой сессии', () => {
 // Серверная модель строк (ADR 0138, SD33): прокрутка по 100 000 строк с вытеснением —
 // кэш держит три блока, остальные уходят и приходят заново.
 const SERVER_POOL = getData(100)
+const SERVER_ROWS = 100_000
 const serverPlugins = [
   serverRowModel({
-    rowCount: 100_000,
     // Крупные блоки: удержание вытесненного блока заметно выше шума кучи.
     blockSize: 500,
     maxBlocks: 3,
@@ -297,7 +297,9 @@ const serverPlugins = [
 
 describe('Утечки серверной модели строк', () => {
   test('SD33: долгая прокрутка с вытеснением блоков — после прогрева прирост узлов, обработчиков и кучи после сборки мусора за 2N циклов не больше прироста за N плюс шум', async () => {
-    const mounted = mount(<Grid plugins={serverPlugins} />)
+    const mounted = mount(
+      <Grid plugins={serverPlugins} rowCount={SERVER_ROWS} />,
+    )
     await settled(mounted.container)
     const element = scroller(mounted.container)
     const loaded = () =>

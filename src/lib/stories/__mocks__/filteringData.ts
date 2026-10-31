@@ -99,7 +99,7 @@ export const makeDateFilteringData = (
 export const dateFilteringData = makeDateFilteringData()
 
 interface DateCellOptions {
-  columnFilteringTimeZone?: string
+  timeZone?: string
   columnFilteringDateLocale?: { code?: string }
 }
 
@@ -108,7 +108,7 @@ const formatCreatedAt = (value: string, options: DateCellOptions) =>
   new Intl.DateTimeFormat(options.columnFilteringDateLocale?.code ?? 'en-US', {
     dateStyle: 'medium',
     timeStyle: 'short',
-    timeZone: options.columnFilteringTimeZone,
+    timeZone: options.timeZone,
   }).format(new Date(value))
 
 export const dateFilteringColumns: ColumnDef<any, any>[] = [

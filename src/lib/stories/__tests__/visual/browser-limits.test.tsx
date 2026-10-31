@@ -38,10 +38,11 @@ const getRows = ({ start, end }: ServerRowsRequest) => ({
 
 const Grid = ({ rowCount }: { rowCount: number }) => {
   const table = useCreateTable({
+    rowCount,
     columns: COLUMNS as never,
     data: NO_DATA,
     getRowId: (row: Item) => row.id,
-    plugins: [serverRowModel({ getRows, rowCount })],
+    plugins: [serverRowModel({ getRows })],
   } as never)
   return (
     <div style={{ width: 400, height: 400 }}>

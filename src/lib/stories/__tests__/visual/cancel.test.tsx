@@ -110,6 +110,7 @@ const DATA: Node[] = Array.from({ length: 25 }, (_, index) => ({
 
 const Grid = ({ menu }: { menu: boolean }) => {
   const table = useCreateTable({
+    rowCount: 1000,
     columns: [
       { id: 'name', accessorKey: 'name', header: 'Name', filter: 'text' },
     ] as never,
@@ -127,7 +128,6 @@ const Grid = ({ menu }: { menu: boolean }) => {
       columnFiltering({ onFilterChange: held('filter') }),
       quickSearch({ onSearchChange: held('search') }),
       pagination({
-        rowCount: 1000,
         initialPageSize: 25,
         onPageChange: held('page'),
       }),

@@ -79,6 +79,7 @@ const Grid = ({
   knownTotal?: boolean
 }) => {
   table = useCreateTable({
+    rowCount: knownTotal ? TOTAL : undefined,
     columns: COLUMNS as never,
     data: NO_DATA,
     getRowId: (row: Item) => row.id,
@@ -86,7 +87,6 @@ const Grid = ({
     plugins: [
       serverRowModel({
         getRows,
-        rowCount: knownTotal ? TOTAL : undefined,
         blockSize: BLOCK,
       }),
       rowDragging({ onRowDragEnd }),

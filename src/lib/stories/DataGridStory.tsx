@@ -419,6 +419,10 @@ const StoryGrid = memo(
       },
       // Ядровые (не плагинные) опции остаются флагами.
       dataMode: options.dataMode,
+      rowCount: options.rowCount,
+      totalRowCount: options.totalRowCount,
+      locale: locale === 'ru' ? 'ru-RU' : undefined,
+      timeZone: options.timeZone,
       loading:
         retry === 'loading'
           ? firstLoad
@@ -506,7 +510,6 @@ const StoryGrid = memo(
           colorMode={colorMode}
           contrast={contrast}
           localization={labels}
-          locale={locale === 'ru' ? 'ru-RU' : undefined}
           icons={icons}
           stubs={stubs}
         />

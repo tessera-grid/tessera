@@ -1460,6 +1460,36 @@ export const HighContrastFilteringServerStep4 = {
   tags: ['!test'],
 }
 
+export const HighContrastFilteringServerFiltersClientSearchStep1 = {
+  ...twinStep(
+    filteringStories,
+    filteringStories.FilteringServerFiltersClientSearch,
+    1,
+  ),
+  name: 'Filtering — Server filters, client search, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringServerFiltersClientSearchStep2 = {
+  ...twinStep(
+    filteringStories,
+    filteringStories.FilteringServerFiltersClientSearch,
+    2,
+  ),
+  name: 'Filtering — Server filters, client search, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringServerFiltersClientSearchStep3 = {
+  ...twinStep(
+    filteringStories,
+    filteringStories.FilteringServerFiltersClientSearch,
+    3,
+  ),
+  name: 'Filtering — Server filters, client search, шаг 3',
+  tags: ['!test'],
+}
+
 export const HighContrastFilteringTreeStep1 = {
   ...twinStep(filteringStories, filteringStories.FilteringTree, 1),
   name: 'Filtering — Tree, шаг 1',

@@ -48,7 +48,7 @@ interface ExportTable {
   getRowModel: () => RowModel
   getPreExpandedRowModel?: () => RowModel
   getPrePaginatedRowModel?: () => RowModel
-  options?: { columnFilteringTimeZone?: string }
+  options?: { timeZone?: string }
 }
 
 const PIN_ORDER = { start: 0, center: 1, end: 2 } as const
@@ -186,7 +186,7 @@ export const collectExportData = (
       ? { filter: column.columnDef.filter as ExportColumn['filter'] }
       : {}),
   }))
-  const timeZone = (table as ExportTable).options?.columnFilteringTimeZone
+  const timeZone = (table as ExportTable).options?.timeZone
   return {
     columns: exportColumns,
     ...(timeZone ? { timeZone } : {}),

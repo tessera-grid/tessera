@@ -3,6 +3,7 @@
  * live-область: приход блока объявляет сам хвост ленты.
  */
 import type { StatusBarComponentProps } from '../../core/createSlots'
+import { knownCount, rowCountOf } from '../../core/dataMode'
 import { useLocalization } from '../../core/localization'
 import { isSkeletonShown } from '../../core/skeletonOptions'
 import { StatusBarCount } from '../../ui/StatusBarCount/StatusBarCount'
@@ -17,7 +18,7 @@ export const LoadedRowsCount = ({ table }: StatusBarComponentProps) => {
       </span>
     )
   }
-  const rowCount = table.options.infiniteScrollRowCount
+  const rowCount = knownCount(rowCountOf(table))
   const loaded = table.getCoreRowModel().rows.length
   return (
     <StatusBarCount

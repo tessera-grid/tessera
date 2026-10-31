@@ -85,6 +85,7 @@ const Host = ({
       return call.deferred.promise
     }
   captured = useCreateTable({
+    rowCount: 1000,
     columns: columns as never,
     data,
     dataMode: server ? 'server' : 'client',
@@ -94,7 +95,6 @@ const Host = ({
         onToggleColumnSort: reply('sorting'),
       }),
       pagination({
-        rowCount: 1000,
         initialPageSize: 25,
         revertOnReject: paginationRevert,
         onPageChange: reply('pagination'),

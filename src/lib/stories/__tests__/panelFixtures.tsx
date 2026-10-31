@@ -47,7 +47,7 @@ export const FilterDatePanel = fixture(
   {
     columnsOverride: dateFilteringColumns,
     dataOverride: dateFilteringData,
-    columnFilteringTimeZone: 'UTC',
+    timeZone: 'UTC',
   },
   openFilter('createdAt'),
 )

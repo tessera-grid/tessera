@@ -14,7 +14,7 @@ import {
   INFINITE_SCROLL,
   infiniteScrollInertReason,
   isLoadingMore,
-  totalRowCountOf,
+  ariaRowCountOf,
 } from './model'
 import type { InfiniteScrollHooks, InfiniteScrollState } from './types'
 
@@ -25,8 +25,6 @@ export interface InfiniteScrollOptions {
   onLoadMore?: InfiniteScrollHooks['onLoadMore']
   /** Есть ли ещё строки на сервере. */
   hasMore?: boolean
-  /** Всего строк на сервере, если известно. */
-  rowCount?: number
   /** За сколько строк до края просить блок; по умолчанию — строк в окне. */
   threshold?: number
   /** Счётчик загруженных строк в нижней панели; по умолчанию выключен. */
@@ -45,11 +43,8 @@ export const infiniteScroll = definePlugin<InfiniteScrollOptions>()({
     return {
       enableInfiniteScroll: enabled,
       infiniteScrollHasMore: hasMore,
-      infiniteScrollRowCount: enabled ? o.rowCount : undefined,
       infiniteScrollThreshold: enabled ? o.threshold : undefined,
-      getTotalRowCount: enabled
-        ? totalRowCountOf(hasMore, o.rowCount)
-        : undefined,
+      getTotalRowCount: enabled ? ariaRowCountOf(hasMore) : undefined,
       getBodyBusy: enabled ? isLoadingMore : undefined,
       partialData: enabled,
       appendOnlyData: enabled,
@@ -92,7 +87,6 @@ declare module '@tanstack/react-table' {
     infiniteScrollPlugin: {
       enableInfiniteScroll?: boolean
       infiniteScrollHasMore?: boolean
-      infiniteScrollRowCount?: number
       infiniteScrollThreshold?: number
     }
   }

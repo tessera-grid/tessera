@@ -434,7 +434,7 @@ export const ExportServer: StoryObj<StoryProps> = {
           enableRowSelection: true,
           dataOverride: serverPage,
           dataMode: { pagination: 'server', export: 'server' },
-          paginationRowCount: 1000,
+          rowCount: 1000,
           onExport: exportServer.onExport,
           onExported,
         },

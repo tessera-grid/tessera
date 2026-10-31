@@ -94,6 +94,8 @@ const COLUMNS = [
 
 interface GridProps {
   dataMode?: DataMode
+  /** Пояс дат таблицы; по умолчанию UTC. */
+  timeZone?: string
   plugins?: readonly unknown[]
   localization?: Record<string, unknown>
   icons?: Record<string, unknown>
@@ -103,8 +105,9 @@ interface GridProps {
 }
 
 const Grid = ({
-  plugins = [columnFiltering({ timeZone: 'UTC', debounceMs: 0 })],
+  plugins = [columnFiltering({ debounceMs: 0 })],
   dataMode,
+  timeZone = 'UTC',
   localization,
   icons,
   colorMode,
@@ -117,6 +120,7 @@ const Grid = ({
     getRowId: (row: (typeof DATA)[number]) => row.id,
     enableToolbar: true,
     dataMode,
+    timeZone,
     plugins: [
       ...plugins,
       ...(enableKeyboardNavigation ? [keyboardNavigation()] : []),
@@ -235,11 +239,7 @@ describe('Фильтр дат — панель', () => {
 
   test('DF9: поповер даты — условие, пресеты, календарь (диапазон у «между»), выпадающие месяц и год, «Сбросить»; выбор дня, диапазона и пресета применяется сразу', async () => {
     // Задержка ввода большая: выбор в календаре от неё не зависит.
-    await render(
-      <Grid
-        plugins={[columnFiltering({ timeZone: 'UTC', debounceMs: 5000 })]}
-      />,
-    )
+    await render(<Grid plugins={[columnFiltering({ debounceMs: 5000 })]} />)
     await waitForGrid()
     await openFilter('created')
     const selects = calendar()!.querySelectorAll('select')
@@ -284,11 +284,7 @@ describe('Фильтр дат — панель', () => {
   })
 
   test('DF10: у datetime для «до», «после», «между» есть поле времени, ввод применяется через debounceMs; у «в день» и пресетов поля нет', async () => {
-    await render(
-      <Grid
-        plugins={[columnFiltering({ timeZone: 'UTC', debounceMs: 300 })]}
-      />,
-    )
+    await render(<Grid plugins={[columnFiltering({ debounceMs: 300 })]} />)
     await waitForGrid()
     await openFilter('created')
     expect(byTestId('filter-time')).toBeNull()
@@ -466,9 +462,7 @@ describe('Фильтр дат — вид', () => {
     const Next = () => <svg data-testid="custom-next" />
     await render(
       <Grid
-        plugins={[
-          columnFiltering({ timeZone: 'UTC', debounceMs: 0, dateLocale: ru }),
-        ]}
+        plugins={[columnFiltering({ debounceMs: 0, dateLocale: ru })]}
         localization={{
           filterOn: 'В день',
           filterBefore: 'До',
@@ -538,9 +532,9 @@ describe('Фильтр дат — вид', () => {
 
     await render(
       <Grid
+        timeZone="Asia/Tokyo"
         plugins={[
           columnFiltering({
-            timeZone: 'Asia/Tokyo',
             debounceMs: 0,
             dateLocale: ru,
           }),
@@ -612,7 +606,6 @@ describe('Фильтр дат — сервер', () => {
         dataMode={{ filtering: 'server' }}
         plugins={[
           columnFiltering({
-            timeZone: 'UTC',
             debounceMs: 0,
             onFilterChange,
           }),

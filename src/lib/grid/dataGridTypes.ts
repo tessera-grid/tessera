@@ -35,8 +35,6 @@ export interface DataGridProps {
    * `<ключ>_<форма>` (ADR 0132).
    */
   localization?: LabelDictionary
-  /** Язык форм слова, чисел и списков в подписях (BCP 47), по умолчанию `en-US`. */
-  locale?: string
   /**
    * number — высота в px; string — в процентах (50%, 100%); auto — контейнер по
    * flexbox с flex: 1.

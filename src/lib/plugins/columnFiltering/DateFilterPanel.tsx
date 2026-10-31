@@ -229,7 +229,7 @@ const switchOperator = (
 }
 
 interface DateFilterOptions {
-  columnFilteringTimeZone?: string
+  timeZone?: string
   columnFilteringDateLocale?: DayPickerLocale
 }
 
@@ -243,7 +243,7 @@ export const DateFilterPanel = ({
   const presetsId = useId()
   const rootRef = useRef<HTMLDivElement>(null)
   const options = (table as { options: DateFilterOptions }).options
-  const timeZone = options.columnFilteringTimeZone
+  const timeZone = options.timeZone
   const locale = options.columnFilteringDateLocale
   const timed = type === 'datetime'
   const filterDraft = useFilterDraft({

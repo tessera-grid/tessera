@@ -111,6 +111,7 @@ const Grid = () => {
   const { options } = harness
   const [sorting, setSorting] = useState<SortingState>([])
   const table = useCreateTable({
+    rowCount: options.paginationServer ? 1000 : undefined,
     columns: wideColumns(options.extraColumns ?? 0) as never,
     data: options.paginationServer ? DATA.slice(0, options.pageSize) : DATA,
     loading: options.loading ?? false,
@@ -140,7 +141,6 @@ const Grid = () => {
       options.feed
         ? infiniteScroll({ onLoadMore: answer('load'), hasMore: true })
         : pagination({
-            rowCount: options.paginationServer ? 1000 : undefined,
             initialPageSize: options.pageSize,
             onPageChange: answer('page'),
           }),

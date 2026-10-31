@@ -60,14 +60,17 @@ const getRows = (request: ServerRowsRequest) =>
 
 const Grid = ({
   data = NO_DATA,
+  rowCount,
   plugins,
 }: {
   data?: Item[]
+  rowCount?: number
   plugins: () => readonly unknown[]
 }) => {
   table = useCreateTable({
     columns: COLUMNS as never,
     data,
+    rowCount,
     getRowId: (row: Item) => row.id,
     onDebugAction: (action: DebugAction) => actions.push(action),
     plugins: plugins() as never,
@@ -75,17 +78,25 @@ const Grid = ({
   return null
 }
 
-const render = (plugins: () => readonly unknown[], data?: Item[]) => {
+const render = (
+  plugins: () => readonly unknown[],
+  data?: Item[],
+  rowCount?: number,
+) => {
   root ??= createRoot(document.createElement('div'))
-  act(() => root!.render(createElement(Grid, { plugins, data })))
+  act(() => root!.render(createElement(Grid, { plugins, data, rowCount })))
 }
 
 const server = (extra: readonly unknown[] = [], selection = {}) =>
-  render(() => [
-    serverRowModel({ getRows, rowCount: 1000, blockSize: BLOCK }),
-    cellSelection(selection),
-    ...extra,
-  ])
+  render(
+    () => [
+      serverRowModel({ getRows, blockSize: BLOCK }),
+      cellSelection(selection),
+      ...extra,
+    ],
+    undefined,
+    1000,
+  )
 
 const source = () => table.getRowSource() as RowSource<{ id: string }>
 const show = (first: number, last: number) =>

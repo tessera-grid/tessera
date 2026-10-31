@@ -77,6 +77,7 @@ const mountGrid = async (
   columns?: unknown[],
   footer?: boolean,
   dataMode?: DataMode,
+  rowCount?: number,
 ) => {
   const box: { table?: object } = {}
   const screen = await render(
@@ -88,6 +89,7 @@ const mountGrid = async (
       columns={columns}
       footer={footer}
       dataMode={dataMode}
+      rowCount={rowCount}
       onTable={table => (box.table = table)}
     />,
   )
@@ -657,7 +659,6 @@ describe('Счётчики работы — ручка колонки (ADR 0114)
       [],
       [
         serverRowModel({
-          rowCount: all.length,
           blockSize: BLOCK,
           // Первый блок — сразу, остальные ждут ответа из теста.
           getRows: ({ start, end }) =>
@@ -671,6 +672,11 @@ describe('Счётчики работы — ручка колонки (ADR 0114)
                 }),
         }),
       ],
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      all.length,
     )
     const rowAt = (index: number) =>
       document.querySelector<HTMLElement>(
@@ -713,30 +719,38 @@ describe('линии дерева в серверной модели (ADR 0161)'
     const BLOCK = 10
     const branch = roots[3]!.id
     const held: { start: number; answer: () => void }[] = []
-    const { measure, table } = await mountGrid({}, roots, [
-      serverRowModel({
-        rowCount: roots.length,
-        blockSize: BLOCK,
-        // Корни и первый блок ветки — сразу, второй блок ветки ждёт ответа теста.
-        getRows: ({ start, end, parentId }) => {
-          if (!parentId) return { rows: roots.slice(start, end) }
-          const rows = kids
-            .slice(start, end)
-            .map((row, k) => ({ ...row, id: `${parentId}.${start + k}` }))
-          if (start === 0) return { rows, rowCount: kids.length }
-          return new Promise(resolve => {
-            held.push({
-              start,
-              answer: () => resolve({ rows, rowCount: kids.length }),
+    const { measure, table } = await mountGrid(
+      {},
+      roots,
+      [
+        serverRowModel({
+          blockSize: BLOCK,
+          // Корни и первый блок ветки — сразу, второй блок ветки ждёт ответа теста.
+          getRows: ({ start, end, parentId }) => {
+            if (!parentId) return { rows: roots.slice(start, end) }
+            const rows = kids
+              .slice(start, end)
+              .map((row, k) => ({ ...row, id: `${parentId}.${start + k}` }))
+            if (start === 0) return { rows, rowCount: kids.length }
+            return new Promise(resolve => {
+              held.push({
+                start,
+                answer: () => resolve({ rows, rowCount: kids.length }),
+              })
             })
-          })
-        },
-      }),
-      rowExpanding({
-        hasChildren: (row: { depth: number }) => row.depth === 0,
-      } as never),
-      treeLines(),
-    ])
+          },
+        }),
+        rowExpanding({
+          hasChildren: (row: { depth: number }) => row.depth === 0,
+        } as never),
+        treeLines(),
+      ],
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      roots.length,
+    )
     const bodyRow = (id: string) =>
       document.querySelector<HTMLElement>(
         `.data-grid__body-row[data-row-id="${CSS.escape(id)}"]`,

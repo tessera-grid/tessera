@@ -26,15 +26,10 @@ const TYPES_TIMEOUT = 120_000
 
 /** Аргументы-данные без контрола: панелью их не задать или нужна своя история. */
 const WITHOUT_CONTROL: Record<string, string> = {
-  paginationRowCount: 'только вместе с dataMode.pagination',
   paginationPagination: 'страница у приложения — своя история',
   paginationInitialPagination: 'страница у приложения — своя история',
-  paginationModelRowCount: 'только вместе с dataMode.pagination',
   paginationModelPagination: 'страница у приложения — своя история',
   paginationModelInitialPagination: 'страница у приложения — своя история',
-  serverRowModelRowCount: 'итог задаёт мок-сервер истории вместе с загрузчиком',
-  columnFilteringFilteredRowCount: 'только вместе с dataMode.filtering',
-  columnFilteringTotalRowCount: 'только вместе с dataMode.filtering',
   columnFilteringDateLocale: 'локаль календаря — объект с функциями',
   columnFilteringColumnFilters: 'фильтры у приложения — своя история',
   columnFilteringInitialColumnFilters: 'фильтры у приложения — своя история',
@@ -52,7 +47,6 @@ const WITHOUT_CONTROL: Record<string, string> = {
   dataExportModelPresets: 'быстрые наборы задаёт история',
   dataExportModelAllow: 'оси своей кнопки выгрузки задаёт история',
   infiniteScrollHasMore: 'конец ленты знает история с сервером',
-  infiniteScrollRowCount: 'итог знает история с сервером',
   headerActionMenuSlots: 'список кнопок — из кода плагинов',
   cellEditingEditing: 'состояние правки у приложения — своя история',
   keyboardNavigationActiveCell: 'активная ячейка у приложения — своя история',

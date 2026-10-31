@@ -36,8 +36,6 @@ export const CORE_PLUGIN_API: Record<string, string> = {
     'показ служебной колонки по условию: ведёт definePlugin, условия задают плагины (ADR 0050)',
 }
 
-const ROW_COUNT =
-  'итог строк — опция таблицы, находка 5, шаг 6 (ADR 0169, этап 2)'
 const FLAG_PLUGIN = 'плагин-флажок, механика в ядре и гриде — находка 3, шаг 7'
 const CELL_SELECTION = 'выделение ячеек в ядре и гриде — находки 3 и 4, шаг 7'
 
@@ -52,7 +50,6 @@ export const FOREIGN_OPTION_READS: Record<string, string> = {
   'lib/core/keyboardNavigation/model.ts: enableExpanding':
     'иерархия строк для treegrid в навигации ядра — находка 3, шаг 7',
   'lib/core/keyboardNavigation/model.ts: enableKeyboardNavigation': FLAG_PLUGIN,
-  'lib/core/pagination.ts: rowCount': ROW_COUNT,
   'lib/core/pluginDiagnostics.ts: cellSelectionInteraction':
     'диагностика выделения ячеек в ядре — находки 3 и 13, шаг 7',
   'lib/grid/DataGrid.tsx: enableContextMenu': FLAG_PLUGIN,
@@ -66,10 +63,6 @@ export const FOREIGN_OPTION_READS: Record<string, string> = {
     'липкие строки плагинов рисует грид — находка 3, шаг 7',
   'lib/grid/StickyRows.tsx: stickyGroupRows':
     'липкие строки плагинов рисует грид — находка 3, шаг 7',
-  'lib/plugins/dataExportModel/exportData.ts: columnFilteringTimeZone':
-    'выгрузка читает пояс фильтра — находка 4, timeZone — в useCreateTable, шаг 6 (ADR 0169, этап 2)',
-  'lib/plugins/serverRowModel/blockStore.ts: rowCount': ROW_COUNT,
-  'lib/plugins/serverRowModel/tree.ts: rowCount': ROW_COUNT,
 }
 
 /** LB7: модули, которые дополняют `ColumnMeta`. */

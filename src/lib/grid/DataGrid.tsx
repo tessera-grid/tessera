@@ -123,6 +123,9 @@ const releaseContainerFocus = (event: FocusEvent<HTMLDivElement>) => {
   if (event.target === event.currentTarget) event.currentTarget.blur()
 }
 
+const localeOf = (table: unknown): string =>
+  commonOptionsOf(table).locale ?? DEFAULT_LOCALE
+
 /**
  * Основной компонент таблицы. Ожидает инстанс таблицы (useCreateTable) и высоту;
  * заглушки пустой таблицы — из реестра причин, свой вид — пропом `stubs` (ADR 0123).
@@ -136,12 +139,13 @@ export const DataGrid = ({
   contrast = 'auto',
   icons,
   localization,
-  locale = DEFAULT_LOCALE,
   className,
   style,
 }: DataGridProps) => {
   const table = tableProp as unknown as Table<any, any>
   const options = commonOptionsOf(table)
+  // Язык подписей — опция таблицы (ADR 0169, §5).
+  const locale = localeOf(table)
   // Реактивная подписка корня на СТРУКТУРНЫЕ срезы (всё, кроме rowSelection): смена
   // выбора строк не перестраивает раскладку/модель — её несут сами строки и чекбоксы
   // (useSelector в компонентах), поэтому корню на неё ре-рендериться незачем. Прочие

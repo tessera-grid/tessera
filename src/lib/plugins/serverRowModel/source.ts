@@ -13,6 +13,7 @@ import { reportAction, reportOutcome } from '../../core/debugActions'
 import { flashOutcome } from '../../core/flashes/flashFeature'
 import { logWarn } from '../../util/logger'
 import { activePageOf } from '../../core/pagination'
+import { knownCount, rowCountOf } from '../../core/dataMode'
 import { pluginStateKey, setPluginState } from '../../core/definePlugin'
 import { readPluginHooks } from '../../core/definePlugin'
 import {
@@ -66,7 +67,6 @@ interface ServerTable {
     getRowId?: (original: unknown, index: number) => unknown
     serverRowModelBlockSize?: number
     serverRowModelMaxBlocks?: number
-    serverRowModelRowCount?: number
   }
   atoms: Record<string, { get: () => unknown } | undefined>
   store: { get: () => Record<string, unknown> }
@@ -308,7 +308,8 @@ const createServerSource = (table: unknown): ServerSource => {
     generation.store = new BlockTree<unknown, SourceRow, Query>({
       blockSize: t.options.serverRowModelBlockSize ?? DEFAULT_BLOCK_SIZE,
       maxBlocks,
-      rowCount: t.options.serverRowModelRowCount,
+      // Итог до первого ответа — `rowCount` таблицы (ADR 0169, §4).
+      rowCount: knownCount(rowCountOf(t)),
       query: () => query,
       getRows: ({ query: rowsQuery, signal, ...range }) => {
         const { getRows } = readPluginHooks<ServerRowModelHooks>(

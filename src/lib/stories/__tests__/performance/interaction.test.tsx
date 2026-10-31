@@ -3021,12 +3021,12 @@ let serverCalls: ServerCall[] = []
 const SSRM_BLOCK = 10
 const ServerGrid = ({ total }: { total: number }) => {
   const table = useCreateTable({
+    rowCount: total,
     columns: FEED_COLUMNS as never,
     data: NO_FEED,
     getRowId: (row: FeedRow) => row.id,
     plugins: [
       serverRowModel({
-        rowCount: total,
         blockSize: SSRM_BLOCK,
         getRows: ({ start, end }) =>
           new Promise<{ rows: FeedRow[] }>(resolve => {
@@ -3124,12 +3124,12 @@ interface TransactionGridTable {
 let transactionTable: TransactionGridTable | undefined
 const TransactionGrid = () => {
   const table = useCreateTable({
+    rowCount: 1_000_000,
     columns: FEED_COLUMNS as never,
     data: NO_FEED,
     getRowId: (row: FeedRow) => row.id,
     plugins: [
       serverRowModel({
-        rowCount: 1_000_000,
         blockSize: 100,
         getRows: ({ start, end }) =>
           Promise.resolve({ rows: feedRows(start, end - start) }),
@@ -3226,6 +3226,7 @@ const PAGED_ROWS = 100
 const CLIENT_PAGED_DATA = feedRows(0, 100_000)
 const PagedGrid = ({ server }: { server: boolean }) => {
   const table = useCreateTable({
+    rowCount: 1_000_000,
     columns: FEED_COLUMNS as never,
     data: server ? NO_FEED : CLIENT_PAGED_DATA,
     getRowId: (row: FeedRow) => row.id,
@@ -3233,7 +3234,6 @@ const PagedGrid = ({ server }: { server: boolean }) => {
       ...(server
         ? [
             serverRowModel({
-              rowCount: 1_000_000,
               blockSize: PAGED_ROWS,
               getRows: ({ start, end }) =>
                 Promise.resolve({ rows: feedRows(start, end - start) }),
@@ -3317,6 +3317,7 @@ const CLIENT_MOVE_DATA = feedRows(0, 100_000)
 const MoveGrid = ({ server }: { server: boolean }) => {
   const [rows, setRows] = useState(CLIENT_MOVE_DATA)
   const table = useCreateTable({
+    rowCount: 1_000_000,
     columns: FEED_COLUMNS as never,
     data: server ? NO_FEED : rows,
     getRowId: (row: FeedRow) => row.id,
@@ -3324,7 +3325,6 @@ const MoveGrid = ({ server }: { server: boolean }) => {
       ...(server
         ? [
             serverRowModel({
-              rowCount: 1_000_000,
               blockSize: 100,
               getRows: ({ start, end }) =>
                 Promise.resolve({ rows: feedRows(start, end - start) }),
@@ -3422,12 +3422,12 @@ let treeCalls: ServerTreeCall[] = []
 const BRANCH = 100
 const ServerTreeGrid = ({ total }: { total: number }) => {
   const table = useCreateTable({
+    rowCount: total,
     columns: FEED_COLUMNS as never,
     data: NO_FEED,
     getRowId: (row: FeedRow) => row.id,
     plugins: [
       serverRowModel({
-        rowCount: total,
         blockSize: BRANCH,
         getRows: ({ start, end, parentId }) =>
           new Promise<{ rows: FeedRow[]; rowCount?: number }>(resolve => {
@@ -3871,6 +3871,7 @@ const NO_COPY_ROWS: CopyRow[] = []
 let copyTable: { selectAllCells: () => void } | undefined
 const CopyGrid = ({ server }: { server: boolean }) => {
   const table = useCreateTable({
+    rowCount: XC15_ROWS,
     columns: XC15_COLUMNS as never,
     data: server ? NO_COPY_ROWS : copyRowsOf(),
     getRowId: (row: CopyRow) => row.id,
@@ -3878,7 +3879,6 @@ const CopyGrid = ({ server }: { server: boolean }) => {
       ...(server
         ? [
             serverRowModel({
-              rowCount: XC15_ROWS,
               getRows: ({ start, end }) => ({
                 rows: copyRowsOf().slice(start, end),
               }),

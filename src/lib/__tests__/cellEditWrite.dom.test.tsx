@@ -77,13 +77,12 @@ const getRows = ({ start, end }: ServerRowsRequest) => ({
 
 const Grid = ({ server = true }: { server?: boolean }) => {
   table = useCreateTable({
+    rowCount: 100,
     columns: COLUMNS as never,
     data: server ? NO_DATA : CLIENT_DATA,
     getRowId: (row: Item) => row.id,
     plugins: [
-      ...(server
-        ? [serverRowModel({ getRows, rowCount: 100, blockSize: 10 })]
-        : []),
+      ...(server ? [serverRowModel({ getRows, blockSize: 10 })] : []),
       cellEditing({ onCellEdit: () => {} }),
     ] as never,
   })

@@ -761,6 +761,8 @@ const DIRECT_COLUMNS = [
 
 interface DirectGridProps {
   dataMode?: DataMode
+  rowCount?: number
+  totalRowCount?: number
   plugins: readonly unknown[]
   stubs?: ComponentProps<typeof DataGrid>['stubs']
   localization?: ComponentProps<typeof DataGrid>['localization']
@@ -773,6 +775,8 @@ interface DirectGridProps {
 const DirectGrid = ({
   plugins,
   dataMode,
+  rowCount,
+  totalRowCount,
   stubs,
   localization,
   icons,
@@ -785,6 +789,8 @@ const DirectGrid = ({
     getRowId: (row: (typeof DATA)[number]) => row.id,
     enableToolbar: true,
     dataMode,
+    rowCount,
+    totalRowCount,
     plugins: plugins as never,
   })
   onTable?.(table)
@@ -954,17 +960,17 @@ describe('Фильтрация — пустой результат, сервер
     expect(onSearchChange).toHaveBeenCalledTimes(1)
   })
 
-  test('FL30: server — «показано N из M» из filteredRowCount / totalRowCount, без них элемента нет; «скрыто фильтром» не показывается', async () => {
+  test('FL30: server — «показано N из M» из rowCount / totalRowCount таблицы, без них элемента нет; «скрыто фильтром» не показывается', async () => {
     const counted = await render(
       <DirectGrid
         dataMode={{ filtering: 'server' }}
+        rowCount={3}
+        totalRowCount={40}
         plugins={[
           columnFiltering({
             debounceMs: 0,
             filteredCount: true,
             onFilterChange: () => {},
-            filteredRowCount: 3,
-            totalRowCount: 40,
           }),
           rowSelection({ selectedCount: true }),
         ]}

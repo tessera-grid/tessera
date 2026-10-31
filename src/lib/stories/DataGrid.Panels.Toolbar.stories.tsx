@@ -34,7 +34,7 @@ export const ToolbarPlayground: StoryObj<StoryProps> = {
       'enableColumnFiltering',
       'columnFilteringDebounceMs',
       'columnFilteringFilteredCount',
-      'columnFilteringTimeZone',
+      'timeZone',
       'enableDataExport',
       'dataExportAllow',
       'dataExportFilename',

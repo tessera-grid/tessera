@@ -53,6 +53,7 @@ const Host = () => {
     return next.promise
   }
   captured = useCreateTable({
+    rowCount: 1000,
     columns: columns as never,
     data,
     dataMode: { sorting: 'server', pagination: 'server' },
@@ -60,7 +61,6 @@ const Host = () => {
     plugins: [
       columnSorting({ onToggleColumnSort: reply }),
       pagination({
-        rowCount: 1000,
         initialPageSize: 25,
         onPageChange: reply,
       }),

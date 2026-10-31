@@ -171,7 +171,7 @@ const feedProps =
     dataOverride: SERVER_DATA.slice(0, BLOCK),
     enableInfiniteScroll: true,
     infiniteScrollHasMore: true,
-    infiniteScrollRowCount: knownTotal ? SERVER_TOTAL : undefined,
+    rowCount: knownTotal ? SERVER_TOTAL : undefined,
     infiniteScrollLoadedCount: true,
     onLoadMore: loadMore(app, mode),
     extraPlugins: [feedReset],
@@ -365,7 +365,7 @@ const reload = (app: GuideApp) => {
       loading: false,
       dataOverride: feed.rows,
       infiniteScrollHasMore: feed.rows.length < all.length,
-      infiniteScrollRowCount: all.length,
+      rowCount: all.length,
     }))
   }, SERVER_DELAY_MS)
 }

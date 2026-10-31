@@ -43,7 +43,7 @@ interface FilterRow {
     getColumn: (
       id: string,
     ) => { columnDef: ColumnFilterTypesColumnDef } | undefined
-    options: { columnFilteringTimeZone?: string }
+    options: { timeZone?: string }
   }
   getValue: (columnId: string) => unknown
 }
@@ -84,7 +84,8 @@ const columnTypeFilter = ((
   const type = filterTypeOf(def)
   if (!type) return true
   if (isDateType(type)) {
-    const timeZone = row.table.options.columnFilteringTimeZone
+    // Пояс дат — опция таблицы (ADR 0169, §5).
+    const timeZone = row.table.options.timeZone
     return matchesDate(
       cellWallOf(row, columnId, def, timeZone),
       filter as DateFilter,

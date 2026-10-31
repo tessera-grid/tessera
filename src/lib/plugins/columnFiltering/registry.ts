@@ -41,10 +41,6 @@ export interface ColumnFilteringOptions extends Omit<
    * фильтр (ADR 0116).
    */
   onFilterChange?: FilterChangeHook
-  /** Фильтры или поиск на сервере: строк после фильтрации — для «показано N из M». */
-  filteredRowCount?: number
-  /** Фильтры или поиск на сервере: всех строк — для «показано N из M». */
-  totalRowCount?: number
   /** Локаль календаря: месяцы, дни недели, первый день недели (по умолчанию `en-US`). */
   dateLocale?: DayPickerLocale
 }
@@ -70,12 +66,7 @@ export const columnFiltering = definePlugin<ColumnFilteringOptions>()({
   diagnose: columnFilteringInertReason,
   model: {
     plugin: columnFilteringModel,
-    keys: [
-      'timeZone',
-      'columnFilters',
-      'onColumnFiltersChange',
-      'initialColumnFilters',
-    ],
+    keys: ['columnFilters', 'onColumnFiltersChange', 'initialColumnFilters'],
   },
   features: columnFilteringModelFeatures,
   hooks: o => ({ onFilterChange: o.onFilterChange }),
@@ -96,10 +87,6 @@ export const columnFiltering = definePlugin<ColumnFilteringOptions>()({
   options: o => ({
     columnFilteringDebounceMs: o.debounceMs ?? DEFAULT_FILTER_DEBOUNCE_MS,
     columnFilteringDateLocale: o.dateLocale,
-    filteringRowCounts: {
-      filtered: o.filteredRowCount,
-      total: o.totalRowCount,
-    },
   }),
 })
 
@@ -114,8 +101,6 @@ declare module '@tanstack/react-table' {
     columnFilteringPlugin: {
       columnFilteringDateLocale?: ColumnFilteringOptions['dateLocale']
       columnFilteringDebounceMs?: number
-      /** Числа «показано N из M» от приложения в серверном режиме. */
-      filteringRowCounts?: { filtered?: number; total?: number }
     }
   }
 }

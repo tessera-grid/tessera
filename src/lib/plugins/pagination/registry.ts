@@ -44,7 +44,6 @@ export const pagination = definePlugin<PaginationOptions>()({
     plugin: paginationModel,
     keys: [
       'initialPageSize',
-      'rowCount',
       'pagination',
       'onPaginationChange',
       'initialPagination',

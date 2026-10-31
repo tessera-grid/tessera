@@ -43,7 +43,7 @@ export interface PaginationTable {
 export const isManualPagination = (table: unknown) =>
   dataModeOf(table, 'pagination') === 'server' && !serverRowModelReason(table)
 
-/** Страницы режет сервер: без итога число страниц неизвестно (PG8). */
+/** Страницы режет сервер: без итога `rowCount` таблицы число страниц неизвестно (PG8). */
 export const paginationInertReason: PluginDiagnose = table => {
   const { rowCount, pageCount } = (table as PaginationTable).options
   return isManualPagination(table) &&

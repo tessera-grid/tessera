@@ -123,7 +123,7 @@ export const serverProps =
     dataOverride: [],
     enableServerRowModel: true,
     serverRowModelBlockSize: blockSize,
-    serverRowModelRowCount: knownTotal ? total : undefined,
+    rowCount: knownTotal ? total : undefined,
     ...(sortable && {
       enableColumnSorting: true,
       columnSortingMultiSort: false,
@@ -372,7 +372,7 @@ export const treeProps: GuideStoryStep['props'] = () => ({
   dataOverride: [],
   enableServerRowModel: true,
   serverRowModelBlockSize: TREE_BLOCK,
-  serverRowModelRowCount: TREE_TOTAL,
+  rowCount: TREE_TOTAL,
   enableRowExpanding: true,
   rowExpandingHasChildren: (row: { depth: number }) => row.depth === 0,
   // Линии дерева у веток серверной модели (ADR 0161).

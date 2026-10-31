@@ -103,6 +103,7 @@ const Grid = ({
   localization,
   icons,
   dataMode,
+  rowCount,
 }: {
   options?: ExportOptions
   enableToolbar?: boolean
@@ -112,6 +113,7 @@ const Grid = ({
   localization?: Record<string, unknown>
   icons?: Record<string, unknown>
   dataMode?: DataMode
+  rowCount?: number
 }) => {
   const table = useCreateTable({
     columns: COLUMNS,
@@ -119,6 +121,7 @@ const Grid = ({
     getRowId: (row: (typeof DATA)[number]) => row.id,
     enableToolbar,
     dataMode,
+    rowCount,
     plugins: [
       ...extraPlugins.map(plugin => plugin()),
       ...(withExport ? [dataExport(options)] : []),
@@ -381,7 +384,8 @@ describe('dataExport — серверный режим', () => {
     await renderGrid({
       options: { onExport, onExported },
       dataMode: { pagination: 'server', export: 'server' },
-      extraPlugins: [() => pagination({ rowCount: 2 })],
+      rowCount: 2,
+      extraPlugins: [() => pagination()],
     })
     await openPanel()
     await userEvent.click(radio('rows', 'page')!)
@@ -402,7 +406,8 @@ describe('dataExport — серверный режим', () => {
     const pending = await renderGrid({
       options: { onExport },
       dataMode: { pagination: 'server', export: 'server' },
-      extraPlugins: [() => pagination({ rowCount: 2 })],
+      rowCount: 2,
+      extraPlugins: [() => pagination()],
     })
     await openPanel()
     await runExport()

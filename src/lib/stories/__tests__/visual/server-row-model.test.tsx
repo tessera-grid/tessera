@@ -154,6 +154,7 @@ const Grid = ({
   columns?: readonly object[]
 }) => {
   const table = useCreateTable({
+    rowCount,
     columns: columns as never,
     data: NO_DATA,
     getRowId: (row: Item) => row.id,
@@ -161,7 +162,7 @@ const Grid = ({
     // Свечение обновления сразу, без задержки показа (ADR 0094).
     refreshOptions: { delayMs: 0, minDurationMs: 0 },
     plugins: [
-      serverRowModel({ getRows, rowCount, blockSize: BLOCK, maxBlocks }),
+      serverRowModel({ getRows, blockSize: BLOCK, maxBlocks }),
       ...plugins,
     ] as never,
   })

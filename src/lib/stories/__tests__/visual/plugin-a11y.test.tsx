@@ -14,6 +14,7 @@ import { waitForGrid } from './core-helpers'
 // Значение — тумблеры историй с минимальным окружением, без которого у плагина нет UI.
 
 type GridArgs = FeatureToggles & {
+  rowCount?: number
   enableToolbar?: boolean
   headerNesting?: 'flat' | 'nested'
   dataNesting?: 'flat' | 'nested'
@@ -68,7 +69,7 @@ const PLUGIN_ARGS: Record<string, GridArgs> = {
   infiniteScroll: {
     enableInfiniteScroll: true,
     infiniteScrollHasMore: true,
-    infiniteScrollRowCount: 1000,
+    rowCount: 1000,
     infiniteScrollLoadedCount: true,
   },
   serverRowModel: {

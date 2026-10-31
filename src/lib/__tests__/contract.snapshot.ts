@@ -37,6 +37,7 @@ export const CORE_OPTIONS: Record<string, string> = {
   keyboardActions: '0021',
   loadError: '0096',
   loading: '0106',
+  locale: '0169',
   logLevel: '0022',
   onColumnAutoSizingChange: '0010',
   onDebugAction: '0125',
@@ -49,11 +50,15 @@ export const CORE_OPTIONS: Record<string, string> = {
   pluginWrappers: '0168',
   refreshNarrowing: '0160',
   refreshOptions: '0094',
+  rowCount: '0169',
   rowHeight: '0077',
   skeletonOptions: '0060',
   slotActions: '0024',
+  serverRowCount: '0169',
   slots: '0010',
   stubEntries: '0123',
+  timeZone: '0169',
+  totalRowCount: '0169',
 }
 
 /** Поля публичной записи плагина `TablePlugin` (ADR 0164, §3). */

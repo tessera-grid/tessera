@@ -25,7 +25,7 @@ export interface ExportColumn {
 export interface ExportData {
   columns: ExportColumn[]
   rows: unknown[][]
-  /** Пояс дат грида (`columnFiltering({ timeZone })`); без него — браузера. */
+  /** Пояс дат таблицы (`useCreateTable({ timeZone })`, ADR 0169); без него — браузера. */
   timeZone?: string
 }
 

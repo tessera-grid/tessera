@@ -65,14 +65,12 @@ const Grid = ({
   dataMode?: DataMode
 }) => {
   table = useCreateTable({
+    rowCount: TOTAL,
     columns: COLUMNS as never,
     data: NO_DATA,
     getRowId: (row: Item) => row.id,
     dataMode,
-    plugins: [
-      serverRowModel({ getRows, rowCount: TOTAL, blockSize: BLOCK }),
-      ...extra,
-    ] as never,
+    plugins: [serverRowModel({ getRows, blockSize: BLOCK }), ...extra] as never,
   })
   return null
 }
@@ -241,10 +239,7 @@ describe('пагинация в серверной модели строк (ADR 
       root.render(
         <Grid
           dataMode={{ pagination: 'server' }}
-          extra={[
-            pagination({ rowCount: 5, initialPageSize: 5 }),
-            columnSortingModel(),
-          ]}
+          extra={[pagination({ initialPageSize: 5 }), columnSortingModel()]}
         />,
       ),
     )

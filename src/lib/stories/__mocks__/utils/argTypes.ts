@@ -74,6 +74,13 @@ const radioControl = (
   table: { defaultValue: { summary: defaultSummary } },
 })
 
+/** Пояс дат таблицы (ADR 0169, §5). */
+export const timeZoneType: InputType = {
+  control: 'text',
+  description:
+    'Часовой пояс дат таблицы, IANA (`timeZone`): фильтр дат и выгрузка; по умолчанию — пояс браузера',
+}
+
 /** Режим данных (ADR 0169): одна радиокнопка на все операции. */
 export const dataModeType = radioControl(
   'Где выполняются операции над строками (`dataMode`): `server` — таблица меняет состояние и вызывает колбэки, а строки не переставляет и не сужает — сервера в истории нет',
@@ -477,19 +484,9 @@ export const columnFilteringDebounceMsType = debounceType(
 export const columnFilteringFilteredCountType = booleanControl(
   '«Показано N из M» в нижней панели (`filteredCount`)',
 )
-export const columnFilteringTimeZoneType: InputType = {
-  control: 'text',
-  description:
-    'Часовой пояс фильтра дат, IANA (`timeZone`); по умолчанию — пояс браузера',
-}
 export const enableColumnFilteringModelType = booleanControl(
   'Фильтры без кнопок: строки по состоянию `columnFilters` (плагин `columnFilteringModel`)',
 )
-export const columnFilteringModelTimeZoneType: InputType = {
-  control: 'text',
-  description:
-    'Часовой пояс фильтра дат модели, IANA (`timeZone`); по умолчанию — пояс браузера',
-}
 export const enableQuickSearchModelType = booleanControl(
   'Поиск без поля: строки по состоянию `globalFilter` (плагин `quickSearchModel`)',
 )

@@ -87,12 +87,13 @@ const ServerTree = ({
   counter?: boolean
 }) => {
   table = useCreateTable({
+    rowCount: total,
     columns: COLUMNS as never,
     data: NO_DATA,
     getRowId: (row: Item) => row.id,
     dataMode: { export: 'server' },
     plugins: [
-      serverRowModel({ getRows, rowCount: total, blockSize: BLOCK }),
+      serverRowModel({ getRows, blockSize: BLOCK }),
       rowExpanding({ hasChildren: row => expandable(row.original) }),
       rowSelection({
         subRows,

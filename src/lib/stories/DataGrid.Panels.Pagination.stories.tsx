@@ -203,7 +203,7 @@ const SERVER: readonly GuideStoryStep[] = [
   },
 ]
 
-/** ADR 0038, S1: страницы и сортировка приходят с сервера, итог — из `paginationRowCount`. */
+/** ADR 0038, S1: страницы и сортировка приходят с сервера, итог — из `rowCount`. */
 export const PaginationServer: StoryObj<StoryProps> = {
   name: 'Server',
   parameters: {
@@ -222,7 +222,7 @@ export const PaginationServer: StoryObj<StoryProps> = {
           maxHeight: '460',
           enablePagination: true,
           dataMode: { sorting: 'server', pagination: 'server' },
-          paginationRowCount: PAGE_SERVER_TOTAL,
+          rowCount: PAGE_SERVER_TOTAL,
           paginationInitialPageSize: SERVER_PAGE,
           enableColumnSorting: true,
           columnSortingMultiSort: false,
@@ -449,7 +449,7 @@ export const PaginationServerCancel: StoryObj<StoryProps> = {
           maxHeight: '460',
           enablePagination: true,
           dataMode: { pagination: 'server' },
-          paginationRowCount: PAGE_SERVER_TOTAL,
+          rowCount: PAGE_SERVER_TOTAL,
           paginationInitialPageSize: SERVER_PAGE,
         },
         args,

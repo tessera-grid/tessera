@@ -40,6 +40,7 @@ const PluginsGrid = ({
   const table = useCreateTable({
     columns: columns as never,
     data,
+    locale,
     plugins: plugins as never,
   })
   return (
@@ -55,7 +56,6 @@ const PluginsGrid = ({
         table={table as never}
         height={500}
         localization={localization}
-        locale={locale}
       />
     </div>
   )

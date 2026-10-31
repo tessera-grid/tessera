@@ -151,13 +151,13 @@ const Grid = ({
   height?: number
 }) => {
   const table = useCreateTable({
+    rowCount: groups ? undefined : rowCount,
     columns: (groups ? GROUP_COLUMNS : COLUMNS) as never,
     data: NO_DATA,
     getRowId: (row: Item) => row.id,
     plugins: [
       serverRowModel({
         getRows,
-        rowCount: groups ? undefined : rowCount,
         blockSize,
         getGroupChildCount: (row: Item) => row.count,
       }),

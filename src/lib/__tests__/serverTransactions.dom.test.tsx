@@ -69,6 +69,7 @@ const Grid = ({
   extra?: readonly unknown[]
 }) => {
   table = useCreateTable({
+    rowCount: TOTAL,
     columns: COLUMNS as never,
     data: NO_DATA,
     getRowId: (row: Item) => row.id,
@@ -77,7 +78,6 @@ const Grid = ({
       serverRowModel({
         enabled,
         getRows: loader ? getRows : undefined,
-        rowCount: TOTAL,
         blockSize: BLOCK,
         maxBlocks: 10,
       }),

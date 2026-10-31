@@ -30,6 +30,8 @@ interface ModeTable {
     getRowSource?: unknown
     pagedRows?: boolean
     partialData?: boolean
+    serverRowCount?: number
+    totalRowCount?: number
   }
   store?: { get: () => Record<string, unknown> }
 }
@@ -82,6 +84,32 @@ export const manualOptionsOf = (options: ModeTable['options']) => {
     manualPagination: options.pagedRows !== true || server('pagination'),
   }
 }
+
+/** Строк на сервере для текущего запроса (§4): `-1` — неизвестно, `undefined` — не задано. */
+export const rowCountOf = (table: unknown): number | undefined =>
+  (table as ModeTable).options.serverRowCount
+
+/** Строк на сервере до фильтров и поиска. */
+export const totalRowCountOf = (table: unknown): number | undefined =>
+  (table as ModeTable).options.totalRowCount
+
+/** Известный итог: неизвестный (`-1`) и не заданный — `undefined`. */
+export const knownCount = (count: number | undefined) =>
+  count === undefined || count < 0 ? undefined : count
+
+/**
+ * Стоковый `rowCount` TanStack (число страниц) — только у страниц с сервера: у клиентской
+ * страницы итог — строки в `data` после клиентских операций.
+ */
+export const stockRowCountOf = (
+  options: ModeTable['options'] & {
+    rowCount?: number
+  },
+) =>
+  isPaginationActive({ options }) &&
+  modeOf(options.dataMode, false, 'pagination') === 'server'
+    ? knownCount(options.rowCount)
+    : undefined
 
 /** Ключ значения режима: смена ключа после монтирования — нарушение договора. */
 export const dataModeKeyOf = (dataMode: DataMode | undefined) =>

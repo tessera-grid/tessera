@@ -108,9 +108,10 @@ describe('pagination — модель', () => {
         .find((d: { id: string }) => d.id === 'pagination'),
     ).toEqual({ id: 'pagination', status: 'inert', reason: 'noRowCount' })
 
-    const counted = build(items(25), { rowCount: 0 }, [], {
+    const counted = build(items(25), {}, [], {
       dataMode: { pagination: 'server' },
       manualPagination: true,
+      rowCount: 0,
     }).table
     expect(
       counted

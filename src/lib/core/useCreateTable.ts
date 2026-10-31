@@ -19,7 +19,7 @@ import type {
 
 import type { ColumnDef, RowData, TableOptions } from '../types'
 import type { CoreOptions } from './commonFeature.types'
-import { dataModeKeyOf, manualOptionsOf } from './dataMode'
+import { dataModeKeyOf, manualOptionsOf, stockRowCountOf } from './dataMode'
 import { type DefaultColumnSizing, resolveDefaultColumn } from './defaultColumn'
 import { resolveHooks } from './createHooks'
 import {
@@ -76,6 +76,10 @@ const INITIAL_EFFECTIVE_STATE = { columnVisibility: {} }
  */
 const CORE_OPTION_KEYS: Record<keyof CoreOptions, true> = {
   dataMode: true,
+  rowCount: true,
+  totalRowCount: true,
+  locale: true,
+  timeZone: true,
   loading: true,
   enableFooter: true,
   footerPosition: true,
@@ -406,6 +410,13 @@ export const useCreateTable = <
     dataMode,
     // Стоковые `manual*` выставляет ядро по режиму, плагины их не задают (ADR 0169, §1).
     ...manualOptionsOf({ ...folded.options, dataMode }),
+    // Итог приложения — как есть; стоковый `rowCount` — только страницам с сервера (§4).
+    serverRowCount: coreOptions.rowCount,
+    rowCount: stockRowCountOf({
+      ...folded.options,
+      dataMode,
+      rowCount: coreOptions.rowCount,
+    }),
   }
 
   // Каст опций — компромисс динамической сборки (Q2): tableFeatures() валидирует

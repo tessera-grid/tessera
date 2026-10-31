@@ -22,7 +22,7 @@ interface FilteringTable {
     globalFilter?: Atom
     columnFilters?: { get: () => unknown[] | undefined }
   }
-  options: { columnFilteringTimeZone?: string }
+  options: { timeZone?: string }
   getPreFilteredRowModel: () => unknown
   autoResetPageIndex?: () => void
 }
@@ -67,7 +67,7 @@ export const createSearchAwareFilteredRowModel =
     const filtering = () => (atoms.columnFilters?.get()?.length ?? 0) > 0
     const searchAware = () => {
       const next = atoms.columnVisibility?.get()
-      const nextTimeZone = t.options.columnFilteringTimeZone
+      const nextTimeZone = t.options.timeZone
       const searching = !!searchValue()
       const stale =
         (visibility !== UNSET && next !== visibility && searching) ||

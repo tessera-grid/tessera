@@ -112,6 +112,7 @@ const Grid = ({
   icons,
 }: GridProps) => {
   const table = useCreateTable({
+    rowCount: data.length * 10,
     columns: (wide ? WIDE_COLUMNS : COLUMNS) as never,
     data,
     getRowId: (row: Item) => row.id,
@@ -125,7 +126,6 @@ const Grid = ({
       infiniteScroll({
         enabled: infinite,
         hasMore: true,
-        rowCount: data.length * 10,
         loadedCount: true,
         onLoadMore: () => {
           loadCalls++

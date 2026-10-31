@@ -6,6 +6,7 @@
 import { useEffect, useRef, useState } from 'react'
 
 import type { BodyEndComponentProps } from '../../core/createSlots'
+import { knownCount, rowCountOf } from '../../core/dataMode'
 import { useTableState } from '../../core/reactivity'
 import { SkeletonRows } from '../../grid/SkeletonBody'
 import { InfiniteLoader, registerLoader } from './loader'
@@ -17,7 +18,6 @@ import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
 
 interface InfiniteOptions {
   infiniteScrollHasMore?: boolean
-  infiniteScrollRowCount?: number
   infiniteScrollThreshold?: number
 }
 
@@ -52,7 +52,7 @@ export const InfiniteTail = ({
       hooks,
       hasMore,
       loaded,
-      rowCount: options.infiniteScrollRowCount,
+      rowCount: knownCount(rowCountOf(table)),
       threshold: options.infiniteScrollThreshold,
       inert,
       setValue,

@@ -1,12 +1,14 @@
 // @vitest-environment happy-dom
 /**
- * Режим данных таблицы (ADR 0169; MD1, MD2, MD4, MD5, MD8, MD9): `dataMode` по операциям,
+ * Режим данных таблицы (ADR 0169; MD1, MD2, MD4–MD6, MD8–MD10): `dataMode` по операциям,
  * `manual*` от ядра, фильтры колонок и поиск по отдельности, серверная модель строк,
- * предупреждение о клиентской операции над частью строк и факт «строки страницами».
+ * предупреждение о клиентской операции над частью строк, итог строк таблицы и факт
+ * «строки страницами».
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
+import { flushSync } from 'react-dom'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import {
@@ -17,6 +19,7 @@ import {
 } from '../core/dataMode'
 import { foldEntries, type TesseraFeatureEntry } from '../core/features'
 import { expandIncludedModels } from '../core/pluginModels'
+import { ENGLISH_LABELS } from '../core/localization'
 import { useCreateTable } from '../core/useCreateTable'
 import {
   columnFiltering,
@@ -31,6 +34,7 @@ import {
 } from '../plugins'
 import { FOREIGN_OPTION_READS } from './architecture.baseline'
 import { builtinPluginEntries, pluginFactories } from './builtinPlugins'
+import { FilteredRowsCount } from '../shared/filtering/FilteredRowsCount'
 import { captureInertWarnings } from './inertWarnings'
 
 ;(
@@ -58,34 +62,50 @@ const COLUMNS = [
 let root: Root | undefined
 let table: any
 
+interface Counts {
+  rowCount?: number
+  totalRowCount?: number
+}
+
 const Host = ({
   plugins,
   dataMode,
+  counts,
 }: {
   plugins: readonly unknown[]
   dataMode?: DataMode
+  counts?: Counts
 }) => {
   table = useCreateTable({
     columns: COLUMNS as never,
     data: DATA,
     getRowId: (row: Item) => row.id,
     dataMode,
+    ...counts,
     plugins: plugins as never,
   })
   return null
 }
 
-const render = (plugins: readonly unknown[], dataMode?: DataMode) => {
+const render = (
+  plugins: readonly unknown[],
+  dataMode?: DataMode,
+  counts?: Counts,
+) => {
   root ??= createRoot(document.createElement('div'))
-  act(() => root!.render(createElement(Host, { plugins, dataMode })))
+  act(() => root!.render(createElement(Host, { plugins, dataMode, counts })))
   return table
 }
 
 /** Новая таблица: режим и набор плагинов — договор на время жизни. */
-const mount = (plugins: readonly unknown[], dataMode?: DataMode) => {
+const mount = (
+  plugins: readonly unknown[],
+  dataMode?: DataMode,
+  counts?: Counts,
+) => {
   act(() => root?.unmount())
   root = undefined
-  return render(plugins, dataMode)
+  return render(plugins, dataMode, counts)
 }
 
 afterEach(() => {
@@ -199,10 +219,7 @@ describe('режим данных (ADR 0169)', () => {
   })
 
   it('MD4: serverRowModel — сервер для всех операций, кроме выгрузки; dataMode, который ему противоречит, — dev-warn', () => {
-    const rows = serverRowModel({
-      getRows: () => new Promise(() => {}),
-      rowCount: 10,
-    })
+    const rows = serverRowModel({ getRows: () => new Promise(() => {}) })
     mount([rows, columnSorting()])
     expect(modes()).toEqual(
       onServer('sorting', 'filtering', 'search', 'pagination'),
@@ -243,7 +260,7 @@ describe('режим данных (ADR 0169)', () => {
     expect(modeWarnings('only sees loaded rows')).toHaveLength(2)
 
     // Страницы с сервера и поиск на клиенте.
-    mount([quickSearch(), pagination({ rowCount: 100 })], {
+    mount([quickSearch(), pagination()], {
       pagination: 'server',
     })
     act(() => table.setGlobalFilter('Ali'))
@@ -325,6 +342,112 @@ describe('режим данных (ADR 0169)', () => {
       /: (manual\w+|paginateExpandedRows|\w+Server|enableSorting|enableColumnFilters|enableGlobalFilter)$/
     expect(
       Object.keys(FOREIGN_OPTION_READS).filter(key => MODE_KEYS.test(key)),
+    ).toEqual([])
+  })
+
+  it('MD6: rowCount (-1 — неизвестно) и totalRowCount в useCreateTable: пейджер, серверная модель, лента, aria-rowcount и «показано N из M» читают их через ядро; аргументов rowCount, filteredRowCount и totalRowCount у плагинов нет', () => {
+    // Пейджер: страницы с сервера — по итогу таблицы, клиентские — по строкам data.
+    mount(
+      [pagination({ initialPageSize: 2 })],
+      { pagination: 'server' },
+      {
+        rowCount: 60,
+      },
+    )
+    expect(table.getPageCount()).toBe(30)
+    mount(
+      [pagination({ initialPageSize: 2 })],
+      { pagination: 'server' },
+      {
+        rowCount: -1,
+      },
+    )
+    expect(
+      table
+        .getPluginDiagnostics()
+        .find((d: { id: string }) => d.id === 'pagination'),
+    ).toMatchObject({ status: 'inert', reason: 'noRowCount' })
+    mount([pagination({ initialPageSize: 2 })], undefined, { rowCount: 60 })
+    expect(table.getPageCount()).toBe(2)
+
+    // Серверная модель строк: итог до первого ответа.
+    mount(
+      [serverRowModel({ getRows: () => new Promise(() => {}) })],
+      undefined,
+      { rowCount: 500 },
+    )
+    expect(table.getRowSource().count()).toBe(500)
+
+    // Лента: aria-rowcount — итог таблицы, -1 — неизвестен.
+    const ariaRowCount = (rowCount?: number) =>
+      mount([infiniteScroll({ hasMore: true })], undefined, {
+        rowCount,
+      }).options.getTotalRowCount(table)
+    expect([ariaRowCount(100), ariaRowCount(-1), ariaRowCount()]).toEqual([
+      100, -1, -1,
+    ])
+
+    // «Показано N из M» при фильтрах на сервере.
+    const shown = (
+      counts: Counts,
+      dataMode: DataMode = 'server',
+      searchText = 'Ali',
+    ) => {
+      mount(
+        [columnFiltering({ filteredCount: true }), quickSearchModel()],
+        dataMode,
+        counts,
+      )
+      act(() =>
+        table.setColumnFilters([
+          { id: 'city', value: { operator: 'contains', value: 'Paris' } },
+        ]),
+      )
+      act(() => table.setGlobalFilter(searchText))
+      const node = document.createElement('div')
+      const counter = createRoot(node)
+      flushSync(() =>
+        counter.render(createElement(FilteredRowsCount, { table } as never)),
+      )
+      const text = node.textContent
+      counter.unmount()
+      return text
+    }
+    expect(shown({ rowCount: 3, totalRowCount: 40 })).toBe(
+      ENGLISH_LABELS.filteredRows(3, 40),
+    )
+    expect(shown({ rowCount: 3 })).toBe('')
+    // Фильтры на сервере, клиент ответ не сужает: N — итог сервера.
+    expect(
+      shown({ rowCount: 4, totalRowCount: 40 }, { filtering: 'server' }, ''),
+    ).toBe(ENGLISH_LABELS.filteredRows(4, 40))
+    // Фильтры на сервере, поиск на клиенте: N — строки ответа после поиска.
+    expect(
+      shown({ rowCount: 4, totalRowCount: 40 }, { filtering: 'server' }),
+    ).toBe(ENGLISH_LABELS.filteredRows(2, 40))
+
+    // Аргументы итога у фабрик ничего не меняют.
+    const optionsOf = (entry: TesseraFeatureEntry) =>
+      JSON.stringify(foldEntries(expandIncludedModels([entry]).entries).options)
+    for (const [name, factory] of pluginFactories()) {
+      expect(
+        optionsOf(
+          factory({
+            rowCount: 7,
+            filteredRowCount: 7,
+            totalRowCount: 7,
+          }) as TesseraFeatureEntry,
+        ),
+        name,
+      ).toBe(optionsOf(factory({}) as TesseraFeatureEntry))
+    }
+  })
+
+  it('MD10: в базе LB5 нет записей шага 6: итог строк и пояс дат читаются через ядро', () => {
+    expect(
+      Object.entries(FOREIGN_OPTION_READS)
+        .filter(([, reason]) => reason.includes('шаг 6'))
+        .map(([key]) => key),
     ).toEqual([])
   })
 })

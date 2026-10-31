@@ -80,6 +80,8 @@ export interface GridProps {
   footer?: boolean
   /** Режим данных (ADR 0169). */
   dataMode?: DataMode
+  /** Строк на сервере (ADR 0169, §4). */
+  rowCount?: number
 }
 
 const DEFAULT_DATA = getData(60, 'nested')
@@ -94,6 +96,7 @@ export const Grid = ({
   onDebugAction,
   footer,
   dataMode,
+  rowCount,
 }: GridProps) => {
   const built = useMemo(() => argsToPlugins(toggles), [toggles])
   const plugins = pluginsProp ?? built
@@ -105,6 +108,7 @@ export const Grid = ({
     onDebugAction,
     enableFooter: footer,
     dataMode,
+    rowCount,
   })
   useEffect(() => {
     onTable?.(table)

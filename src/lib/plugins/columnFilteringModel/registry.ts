@@ -9,8 +9,6 @@ import {
   columnFacetingFeature,
   columnFilteringFeature,
   createFacetedRowModel,
-  type RowData,
-  type TableFeatures,
 } from '@tanstack/react-table'
 
 import { definePlugin } from '../../core/definePlugin'
@@ -22,11 +20,6 @@ import { columnFilterTypesFeature } from './columnFilterTypesFeature'
 export interface ColumnFilteringModelOptions {
   /** `false` — плагин отключён: фильтры колонок не применяются. */
   enabled?: boolean
-  /**
-   * Пояс дат (IANA или `'UTC'`): сутки, «сегодня», пресеты и стенное время
-   * `datetime`; по умолчанию — пояс браузера (ADR 0047, §4).
-   */
-  timeZone?: string
   /** Фильтры колонок: задаёт приложение; без него срез хранит грид. */
   columnFilters?: ColumnFiltersState
   /** Новое значение среза после каждого изменения изнутри грида. */
@@ -68,22 +61,6 @@ export const columnFilteringModel = definePlugin<ColumnFilteringModelOptions>()(
       enableColumnFilters: o.enabled !== false,
       // В дереве родитель виден, если фильтр проходит потомок (FL22).
       filterFromLeafRows: true,
-      columnFilteringTimeZone: o.timeZone,
     }),
   },
 )
-
-/* eslint-disable @typescript-eslint/no-unused-vars -- generics карт обязаны
-   повторять сигнатуры v9, иначе declaration merging не склеится */
-declare module '@tanstack/react-table' {
-  interface TableOptions_FeatureMap<
-    in out TFeatures extends TableFeatures,
-    in out TData extends RowData,
-  > {
-    /** Опции таблицы, которые выставляет плагин (ADR 0167). */
-    columnFilteringModelPlugin: {
-      columnFilteringTimeZone?: ColumnFilteringModelOptions['timeZone']
-    }
-  }
-}
-/* eslint-enable @typescript-eslint/no-unused-vars */

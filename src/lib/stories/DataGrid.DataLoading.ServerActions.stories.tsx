@@ -114,7 +114,7 @@ const ServerActionsSandbox = ({
         {...SERVER_MODE}
         {...callbacks}
         dataOverride={answer.rows}
-        paginationRowCount={answer.total}
+        rowCount={answer.total}
       />
     </WithConsole>
   )
@@ -301,7 +301,7 @@ const REFUSED: readonly GuideStoryStep[] = [
           app.update(props => ({
             ...props,
             dataOverride: rows,
-            paginationRowCount: total,
+            rowCount: total,
           })),
         log: text => {
           guide.lastReply = text
@@ -440,7 +440,7 @@ export const ServerActionsRefused: StoryObj<StoryProps> = {
           height: '460',
           maxHeight: '460',
           dataOverride: queryActionServer(initialActionQuery()).rows,
-          paginationRowCount: queryActionServer(initialActionQuery()).total,
+          rowCount: queryActionServer(initialActionQuery()).total,
           extraPlugins: [serverReset],
         },
         args,
@@ -573,7 +573,7 @@ const cancelServerStep = (title: string, hint: string): GuideStoryStep => ({
         app.update(props => ({
           ...props,
           dataOverride: rows,
-          paginationRowCount: total,
+          rowCount: total,
         })),
       log: text => log.log('server', text),
     }),
@@ -589,7 +589,7 @@ const cancelGuideArgs = {
   height: '460',
   maxHeight: '460',
   dataOverride: queryActionServer(initialActionQuery()).rows,
-  paginationRowCount: queryActionServer(initialActionQuery()).total,
+  rowCount: queryActionServer(initialActionQuery()).total,
   extraPlugins: [cancelReset],
 } satisfies Partial<StoryProps>
 

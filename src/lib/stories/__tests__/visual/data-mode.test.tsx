@@ -4,6 +4,7 @@ import { describe, expect, test } from 'vitest'
 
 import type { DataMode } from '../../../core/dataMode'
 import { foldEntries, type TesseraFeatureEntry } from '../../../core/features'
+import { collectExportData } from '../../../plugins/dataExportModel/exportData'
 import { expandIncludedModels } from '../../../core/pluginModels'
 import { firstChangedIndex } from '../../../core/rowChanges'
 import { isServerAction } from '../../../core/serverActions'
@@ -12,7 +13,9 @@ import { DataGrid } from '../../../grid/DataGrid'
 import {
   columnFiltering,
   columnSorting,
+  dataExport,
   infiniteScroll,
+  pagination,
   quickSearch,
 } from '../../../plugins'
 import { pluginFactories } from '../../../__tests__/builtinPlugins'
@@ -20,7 +23,7 @@ import { tableLabels } from '../labels'
 import { waitForGrid } from './core-helpers'
 
 // Режим операции у ядра (ADR 0169, MD3): серверные действия, объявления числа строк и
-// подсказка виртуализатору. MD1–MD2, MD4–MD5, MD8–MD9 — модульные (`dataMode.dom`).
+// подсказка виртуализатору; язык и пояс таблицы (MD7). Остальные — модульные (`dataMode.dom`).
 
 interface Item {
   id: string
@@ -159,5 +162,107 @@ describe('режим данных у ядра (ADR 0169)', () => {
         /columnFilteringServer|quickSearchServer/,
       )
     }
+  })
+
+  test('MD7: locale и timeZone в useCreateTable: подписи и числа, фильтр дат и выгрузка следуют им; пропа locale у DataGrid и аргументов timeZone нет; dateLocale — аргумент columnFiltering', async () => {
+    const MANY = Array.from({ length: 2000 }, (_, index) => ({
+      id: String(index),
+      name: `Row ${index}`,
+      created: index === 0 ? '2026-10-03T23:30:00Z' : '2026-10-01T12:00:00Z',
+    }))
+    const DateGrid = ({
+      locale,
+      timeZone,
+      gridLocale,
+    }: {
+      locale?: string
+      timeZone?: string
+      gridLocale?: string
+    }) => {
+      table = useCreateTable({
+        columns: [
+          { id: 'name', accessorKey: 'name', header: 'Name' },
+          {
+            id: 'created',
+            accessorKey: 'created',
+            header: 'Created',
+            filter: 'datetime',
+          },
+        ] as never,
+        data: MANY,
+        getRowId: (row: (typeof MANY)[number]) => row.id,
+        enableToolbar: true,
+        locale,
+        timeZone,
+        plugins: [
+          pagination({ initialPageSize: 25 }),
+          columnFiltering({ debounceMs: 0 }),
+          dataExport(),
+        ] as never,
+      })
+      return (
+        <div style={{ height: 400, width: 600 }}>
+          <DataGrid
+            table={table as never}
+            {...(gridLocale ? ({ locale: gridLocale } as object) : {})}
+          />
+        </div>
+      )
+    }
+    const statusText = () =>
+      document.querySelector<HTMLElement>(
+        '[data-testid="data-grid-status-bar"]',
+      )?.textContent ?? ''
+
+    // Числа подписей — по языку таблицы, смена на лету без пересоздания.
+    const screen = await render(<DateGrid locale="de-DE" />)
+    await waitForGrid()
+    await expect.poll(statusText).toContain('2.000')
+    await screen.rerender(<DateGrid locale="en-US" />)
+    await expect.poll(statusText).toContain('2,000')
+    await screen.unmount()
+
+    // Проп locale у DataGrid не действует.
+    const ignored = await render(<DateGrid gridLocale="de-DE" />)
+    await waitForGrid()
+    await expect.poll(statusText).toContain('2,000')
+    await ignored.unmount()
+
+    // Фильтр дат и выгрузка — в поясе таблицы.
+    const onThird = async (timeZone: string) => {
+      const grid = await render(<DateGrid timeZone={timeZone} />)
+      await waitForGrid()
+      table.setColumnFilters([
+        { id: 'created', value: { operator: 'on', value: '2026-10-03' } },
+      ])
+      const rows = (table.getRowModel().rows as { id: string }[]).map(
+        row => row.id,
+      )
+      const exported = collectExportData(table).timeZone
+      await grid.unmount()
+      return { rows, exported }
+    }
+    expect(await onThird('UTC')).toEqual({ rows: ['0'], exported: 'UTC' })
+    expect(await onThird('Asia/Tokyo')).toEqual({
+      rows: [],
+      exported: 'Asia/Tokyo',
+    })
+
+    // Аргумента timeZone у фильтра нет, dateLocale — аргумент columnFiltering.
+    const optionsOf = (entry: TesseraFeatureEntry) =>
+      foldEntries(expandIncludedModels([entry]).entries).options
+    expect(
+      JSON.stringify(
+        optionsOf(
+          columnFiltering({
+            timeZone: 'Asia/Tokyo',
+          } as never) as TesseraFeatureEntry,
+        ),
+      ),
+    ).toBe(JSON.stringify(optionsOf(columnFiltering() as TesseraFeatureEntry)))
+    const dateLocale = { code: 'ru' } as never
+    expect(
+      optionsOf(columnFiltering({ dateLocale }) as TesseraFeatureEntry),
+    ).toMatchObject({ columnFilteringDateLocale: dateLocale })
   })
 })

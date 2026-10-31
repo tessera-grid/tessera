@@ -397,7 +397,7 @@ describe('Производительность первой отрисовки �
               ...SMALL,
               ...NO_PLUGINS,
               enableServerRowModel: true,
-              serverRowModelRowCount: 1_000_000,
+              rowCount: 1_000_000,
               serverRowModelGetRows: getRows,
             })
           },

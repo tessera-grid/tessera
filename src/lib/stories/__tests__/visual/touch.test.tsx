@@ -731,7 +731,7 @@ describe('Касания в растянутой области', () => {
       columnCount: 5,
       dataCount: 0,
       enableServerRowModel: true,
-      serverRowModelRowCount: 1_000_000,
+      rowCount: 1_000_000,
       serverRowModelGetRows: getRows,
     })
     await expect

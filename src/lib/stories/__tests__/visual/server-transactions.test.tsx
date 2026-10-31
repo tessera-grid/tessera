@@ -71,11 +71,12 @@ const Grid = ({
   onTable: (table: TransactionTable) => void
 }) => {
   const table = useCreateTable({
+    rowCount: TOTAL,
     columns: COLUMNS as never,
     data: NO_DATA,
     getRowId: (row: Item) => row.id,
     plugins: [
-      serverRowModel({ getRows, rowCount: TOTAL, blockSize: BLOCK }),
+      serverRowModel({ getRows, blockSize: BLOCK }),
       ...plugins,
     ] as never,
   })

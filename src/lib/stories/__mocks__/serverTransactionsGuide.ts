@@ -107,7 +107,7 @@ export const txProps =
     dataOverride: [],
     enableServerRowModel: true,
     serverRowModelBlockSize: TX_BLOCK,
-    serverRowModelRowCount: TX_TOTAL,
+    rowCount: TX_TOTAL,
     ...(tree && {
       enableRowExpanding: true,
       rowExpandingHasChildren: (row: { depth: number }) => row.depth === 0,

@@ -154,19 +154,26 @@ afterEach(() => {
   captured = undefined
 })
 
-const Host = ({ plugins }: { plugins: unknown[] }) => {
+const Host = ({
+  plugins,
+  rowCount,
+}: {
+  plugins: unknown[]
+  rowCount?: number
+}) => {
   captured = useCreateTable({
     columns: [{ id: 'a', accessorKey: 'a' }] as never,
     data: [{ id: 'r1', a: 'A' }],
+    rowCount,
     getRowId: (row: { id: string }) => row.id,
     plugins: plugins as never,
   } as never)
   return null
 }
 
-const mount = (plugins: unknown[]) => {
+const mount = (plugins: unknown[], rowCount?: number) => {
   root ??= createRoot(document.createElement('div'))
-  act(() => root!.render(createElement(Host, { plugins })))
+  act(() => root!.render(createElement(Host, { plugins, rowCount })))
   return captured
 }
 
@@ -179,11 +186,11 @@ describe('Лента: аргументы и совместимость', () => {
 
     // Смена hasMore и rowCount на лету — без пересоздания таблицы
 
-    const first = mount([infiniteScroll({ hasMore: true, rowCount: 100 })])
+    const first = mount([infiniteScroll({ hasMore: true })], 100)
     expect(first.options.infiniteScrollHasMore).toBe(true)
     expect(first.options.getTotalRowCount(first)).toBe(100)
     const store = first.store
-    const second = mount([infiniteScroll({ hasMore: false, rowCount: 120 })])
+    const second = mount([infiniteScroll({ hasMore: false })], 120)
     // Адаптер отдаёт новую обёртку на рендер; таблица та же — тот же store.
     expect(second.store).toBe(store)
     expect(second.options.infiniteScrollHasMore).toBe(false)

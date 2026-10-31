@@ -96,6 +96,7 @@ const Grid = ({
     ),
   )
   const table = useCreateTable({
+    rowCount: serverPages ? 1000 : undefined,
     columns: COLUMNS as never,
     data,
     getRowId: (row: Item) => row.id,
@@ -116,7 +117,6 @@ const Grid = ({
       ...(pageSize
         ? [
             pagination({
-              rowCount: serverPages ? 1000 : undefined,
               initialPageSize: pageSize,
               onPageChange: serverPages ? () => server.answer() : undefined,
             }),

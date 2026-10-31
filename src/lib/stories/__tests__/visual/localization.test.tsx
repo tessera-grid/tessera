@@ -53,10 +53,15 @@ const Host = ({
     ],
     [selection, search],
   )
-  const table = useCreateTable({ columns: columns as never, data, plugins })
+  const table = useCreateTable({
+    columns: columns as never,
+    data,
+    plugins,
+    locale,
+  })
   return (
     <div style={{ height: 400 }}>
-      <DataGrid table={table} localization={localization} locale={locale} />
+      <DataGrid table={table} localization={localization} />
     </div>
   )
 }
@@ -150,7 +155,7 @@ describe('Словарь подписей на таблице', () => {
     }
   })
 
-  test('LC5: проп locale у DataGrid задаёт язык форм числа, чисел и списков; по умолчанию en-US', async () => {
+  test('LC5: опция locale таблицы задаёт язык форм числа, чисел и списков; по умолчанию en-US', async () => {
     const localization = { pageRange: '{from}–{to} из {total}' }
     const view = await render(<Host localization={localization} />)
     await expect.poll(range).toBe('1–25 из 12,340')

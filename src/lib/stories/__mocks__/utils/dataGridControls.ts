@@ -30,10 +30,9 @@ import {
   cellSelectionRangeSelectionType,
   columnCountType,
   dataModeType,
+  timeZoneType,
   columnFilteringDebounceMsType,
   columnFilteringFilteredCountType,
-  columnFilteringModelTimeZoneType,
-  columnFilteringTimeZoneType,
   columnPinningLeafPinningType,
   pinFirstColumnType,
   hideAllColumnsType,
@@ -171,6 +170,7 @@ export const dataGridArgTypes = {
   }),
   ...inCategory('Ядро: панели и состояния', {
     dataMode: dataModeType,
+    timeZone: timeZoneType,
     loading: loadingType,
     retrySucceeds: retrySucceedsType,
     ...whenEq('loading', 'initial', { skeletonOptions: skeletonOptionsType }),
@@ -320,12 +320,8 @@ export const dataGridArgTypes = {
     ...when('enableColumnFiltering', {
       columnFilteringDebounceMs: columnFilteringDebounceMsType,
       columnFilteringFilteredCount: columnFilteringFilteredCountType,
-      columnFilteringTimeZone: columnFilteringTimeZoneType,
     }),
     enableColumnFilteringModel: enableColumnFilteringModelType,
-    ...when('enableColumnFilteringModel', {
-      columnFilteringModelTimeZone: columnFilteringModelTimeZoneType,
-    }),
     enableQuickSearchModel: enableQuickSearchModelType,
     enablePagination: enablePaginationType,
     ...when('enablePagination', {
