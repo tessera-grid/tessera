@@ -4,7 +4,7 @@ import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 import type { CSSProperties, ReactNode } from 'react'
 
-import '../../../core/themeVariables/theme.css'
+import '../../../ui/theme/theme.css'
 import { IconButton } from '@/lib/ui/IconButton'
 import { SvgIcon } from '@/lib/ui/icons'
 import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'

@@ -12,7 +12,7 @@ import {
 import { useIcons } from '../../ui/icons'
 
 import styles from './SortButton.module.css'
-import '../../grid/cellControls/buttonVisibility.css'
+import '../../ui/cellControls/buttonVisibility.css'
 
 export interface SortButtonProps extends DerivedButtonProps, RevealProps {
   operation: SortDirection | false

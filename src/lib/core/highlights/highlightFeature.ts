@@ -12,8 +12,8 @@ import {
 } from '@tanstack/react-table'
 
 import { announce, readGridToken } from '../announcer'
-import { logWarn } from '../logger'
-import { parseDuration } from '../../ui/buttonStates/useErrorFlash'
+import { logWarn } from '../../util/logger'
+import { parseDuration } from '../../util/cssTime'
 import {
   revealColumn,
   scrollToRow,

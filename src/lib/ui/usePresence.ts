@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-import { longestTransition } from './buttonStates/useErrorFlash'
+import { longestTransition } from '../util/cssTime'
 
 /**
  * Плавное появление и уход элемента: появление — CSS-анимацией самого элемента, уход —

@@ -10,12 +10,12 @@ import {
   flashOutcome,
 } from '../../core/flashes/flashFeature'
 import { reportOutcome } from '../../core/debugActions'
-import { isThenable, rejectionText } from '../../core/thenable'
+import { isThenable, rejectionText } from '../../util/thenable'
 import {
   type FailedAttempts,
   withoutFailure,
   withoutGone,
-} from '../../core/failedAttempts'
+} from '../../shared/failedAttempts'
 
 /** Перенос узла в ожидании: его листья и соседи до переноса. */
 export interface ColumnMoveEntry {

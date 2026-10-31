@@ -17,7 +17,7 @@ import { toggleExpandedKeyboardAction } from './keyboardActions'
 import {
   createIncrementalExpandedRowModel,
   narrowExpandingOff,
-} from '../../core/expandedRowModel'
+} from '../../shared/rowModels/expandedRowModel'
 import { createLazyCoreRowModel } from './lazyCoreRowModel'
 import {
   readLoadedChildren,

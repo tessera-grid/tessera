@@ -5,7 +5,7 @@
 import type { StatusBarComponentProps } from '../../core/createSlots'
 import { useLocalization } from '../../core/localization'
 import { isSkeletonShown } from '../../core/skeletonOptions'
-import { StatusBarCount } from '../../grid/StatusBar/StatusBarCount'
+import { StatusBarCount } from '../../ui/StatusBarCount/StatusBarCount'
 import { Skeleton } from '../../ui/Skeleton'
 
 export const LoadedRowsCount = ({ table }: StatusBarComponentProps) => {

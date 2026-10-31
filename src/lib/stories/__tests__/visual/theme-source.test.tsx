@@ -5,9 +5,9 @@ import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 
-import { __resetLogger } from '../../../core/logger'
+import { __resetLogger } from '../../../util/logger'
 
-import type { ColorMode } from '../../../core/themeVariables'
+import type { ColorMode } from '../../../ui/theme'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import {

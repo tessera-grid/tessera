@@ -13,7 +13,7 @@ import type { VirtualItem } from '../../../vendor/tanstack-virtual/react-virtual
 import type { RowSource } from '../../core/rowSource'
 import { priorIndex } from '../../core/rowListFollow'
 import { planRowMotion, type RowMotionPlan } from './planRowMotion'
-import { rowMotionTiming } from './rowMotionTiming'
+import { rowMotionTiming } from '../../ui/theme/rowMotionTiming'
 import styles from '../Body/Body.module.css'
 
 const ROW = ':scope > [data-row-id]'

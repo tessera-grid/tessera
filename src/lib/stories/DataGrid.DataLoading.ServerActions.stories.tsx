@@ -3,7 +3,7 @@ import { Meta, StoryObj } from '@storybook/react'
 import { expect } from 'storybook/test'
 
 import type { TesseraFeatureEntry } from '../core/features'
-import { useLatest } from '../core/useLatest'
+import { useLatest } from '../util/useLatest'
 import type { StoryProps } from './DataGridStory.types'
 import { StoryComponent } from './DataGridStory'
 import { dataGridMeta } from './dataGridMeta'

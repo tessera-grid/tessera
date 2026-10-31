@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { announceLabel } from '../../core/announcer'
 import { hasLoadError, loadErrorReason } from '../../core/loadError'
-import { useLatest } from '../../core/useLatest'
+import { useLatest } from '../../util/useLatest'
 
 interface LoadErrorInput {
   table: unknown

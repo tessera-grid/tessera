@@ -15,12 +15,12 @@ import {
   readRowMoves,
   type RowMoves,
   rowIdOf,
-} from '../../core/rowMoves'
+} from '../../shared/rowMoves'
 import {
   isLazyPlaceholder,
   lazyPlaceholdersOf,
 } from '../../core/lazyPlaceholder'
-import { handOverRowsById } from '../../core/rowsByIdHandover'
+import { handOverRowsById } from '../../shared/rowModels/rowsByIdHandover'
 import type { RowData, Table, TableFeatures } from '../../types'
 import { type LoadedChildren, readLoadedChildren } from './lazyChildrenFeature'
 

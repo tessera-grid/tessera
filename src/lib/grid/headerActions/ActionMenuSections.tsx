@@ -8,7 +8,7 @@ import { Menu } from '@base-ui/react/menu'
 import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
-import { rejectionText } from '../../core/thenable'
+import { rejectionText } from '../../util/thenable'
 import { Skeleton } from '../../ui/Skeleton'
 import { Tooltip } from '../../ui/Tooltip'
 import { useIcons } from '../../ui/icons'
@@ -16,7 +16,7 @@ import { ActionMenuItems, type ActionMenuItemsProps } from './ActionMenuItems'
 import type { MenuSections } from './useMenuSections'
 
 import styles from '../../grid/headerActions/ActionMenu.module.css'
-import { useIsomorphicLayoutEffect } from '../../core/useIsomorphicLayoutEffect'
+import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
 
 interface ActionMenuSectionsProps extends Omit<
   ActionMenuItemsProps,

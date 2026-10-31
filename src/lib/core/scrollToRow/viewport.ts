@@ -3,7 +3,7 @@
 // таблицы и снимает при размонтировании.
 import type { Virtualizer } from '../../../vendor/tanstack-virtual/react-virtual'
 
-import { useIsomorphicLayoutEffect } from '../useIsomorphicLayoutEffect'
+import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
 
 export interface ScrollViewport {
   getScrollElement: () => HTMLElement | null

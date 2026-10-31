@@ -26,6 +26,7 @@ import { SkeletonModeContext } from './skeletonMode'
 import { TableEndRow } from './TableEndRow'
 
 import dataGridStyles from '../grid/DataGrid/DataGrid.module.css'
+import hidden from '../ui/visuallyHidden.module.css'
 
 interface DataGridTableProps {
   table: Table<any, any>
@@ -198,7 +199,7 @@ export const DataGridTable = ({
         rootRef={rootRef}
       >
         {skeleton && (
-          <span role="status" className={dataGridStyles['visually-hidden']}>
+          <span role="status" className={hidden['visually-hidden']}>
             {loadingLabel}
           </span>
         )}

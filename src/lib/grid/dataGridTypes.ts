@@ -2,7 +2,7 @@ import type { StubsOverride } from '../core/stubs'
 import type { CSSProperties } from 'react'
 
 import type { LabelDictionary } from '../core/localization'
-import type { ColorMode, ContrastMode } from '../core/themeVariables'
+import type { ColorMode, ContrastMode } from '../ui/theme'
 import type { TableIcons } from '../ui/icons'
 import type { PluginDiagnostic } from '../core/pluginDiagnostics'
 

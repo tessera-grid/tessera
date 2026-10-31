@@ -97,16 +97,17 @@ upstream-библиотек headless-ядра — он никогда их не 
 ```
 src/lib/
   core/       useCreateTable + features/foldEntries (composition), commonFeature (bootstrap),
-              reactivity (TanStack Store subscriptions), themeVariables (colorMode → CSS vars),
+              reactivity (TanStack Store subscriptions),
               createColumns/State/Hooks/Slots, localization, virtualization, fastScroll
   plugins/    rowSelection, rowExpanding, rowDragging, rowGrouping, rowActions, cellEditing,
               cellSelection, contextMenu, keyboardNavigation,
               columnPinning, columnSizing, columnSorting, columnDragging, columnVisibility,
               header/rowActionMenu
   grid/       DataGrid + подкомпоненты (Head/Body/Footer, Cell, overlays, DnD-обёртки, layout)
-  ui/         примитивы: IconButton, Tooltip, Switch, Skeleton, LinearProgress, Bubble, icons
-  shared/     код, общий у двух и более плагинов; ядро и грид его не импортируют (ADR 0163)
-  util/       листовые утилиты без импортов src/lib (ADR 0163); обе папки — с первого переноса
+  ui/         примитивы: IconButton, Tooltip, Switch, Skeleton, LinearProgress, Bubble, icons,
+              CellButton/RowButton; theme (colorMode → CSS vars, ADR 0166)
+  shared/     код, общий у плагинов: rowModels, filtering…; ядро и грид его не импортируют (ADR 0163)
+  util/       листовые утилиты без импортов src/lib: logger, cssTime, useLatest… (ADR 0166)
   stories/    Storybook stories + neutral _shims (no external UI deps)
               __tests__/  Vitest browser tests (reuse stories via composeStories)
   types.ts    ре-экспорт v9-типов TanStack (параметризованных TFeatures)
@@ -1081,6 +1082,10 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       `fill` записи `ServiceColumn`, SX4 — `pinSides` полем колонки), визуальный `skeleton-toggle`
       (SX3 — `skeletonCell: 'toggle'`) ([ADR 0165](docs/decisions/0165-service-columns-by-core-mark.md));
       таблица без DOM для стражей — `__tests__/tableHost.ts`.
+    - _Общий слой:_ модульный `sharedLayer` (SH1 — утилиты в `util/` и один разбор CSS-времени,
+      SH2 — код плагинов и свои модели строк в `shared/`, SH3 — тема в `ui/theme` без рёбер
+      ядро ↔ кит, SH4 — компоненты грида для плагинов в `ui/`, экспорты `/ui` прежние)
+      ([ADR 0166](docs/decisions/0166-shared-layer-utils-and-kit.md)).
     - _Движение строк:_ `row-motion` (RM1–RM17, RM19, RM22, RM24–RM25, RM27–RM31 — раскрытие и сворачивание с
       призраками, сортировка издалека и вдаль, поиск, замена и геометрия без движения,
       ленивые дети, сдвиг соседей и приземление броска, автопрокрутка во время
@@ -1305,7 +1310,7 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
   `globals`/`immutability` в `__tests__` (хосты отдают тесту экземпляр), `refs` в
   `columnVirtualizer`/`OptionFilterPanel` (`useVirtualizer` из вендора компилятор не узнаёт как
   несовместимую библиотеку, ADR 0143; переделка — в roadmap). Ref на последнее
-  значение — `core/useLatest`, а не запись `ref.current` в рендере; запись в чужой ref —
+  значение — `util/useLatest`, а не запись `ref.current` в рендере; запись в чужой ref —
   `ui/assignRef`. Предупреждения `incompatible-library` (хуки TanStack) ожидаемы.
 - **UI-изменения:** корректность UI гарантируют visual-тесты, а не ручной осмотр в браузере.
   Не открывайте Storybook на каждое изменение `ui/` — вместо этого убедитесь, что изменение

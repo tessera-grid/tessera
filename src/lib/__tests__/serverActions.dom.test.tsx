@@ -9,7 +9,10 @@ import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { setColumnFiltersByUser, setSearchByUser } from '../core/filtering'
+import {
+  setColumnFiltersByUser,
+  setSearchByUser,
+} from '../shared/filtering/filtering'
 import { readServerAction } from '../core/serverActions'
 import { useCreateTable } from '../core/useCreateTable'
 import { columnFiltering } from '../plugins/columnFiltering'

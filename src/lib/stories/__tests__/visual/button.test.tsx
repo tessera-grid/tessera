@@ -4,7 +4,7 @@ import { render } from 'vitest-browser-react'
 import { afterEach, describe, expect, onTestFinished, test, vi } from 'vitest'
 import type { CSSProperties, ReactNode } from 'react'
 
-import '../../../core/themeVariables/theme.css'
+import '../../../ui/theme/theme.css'
 import { Button } from '@/lib/ui/Button'
 import { IconButton } from '@/lib/ui/IconButton'
 import { failureShownOn, pendingArcOf } from '../helpers'

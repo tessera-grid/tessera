@@ -2,7 +2,7 @@
 // пропов числа для раскладки читаются из токенов темы до первой отрисовки.
 import { type CSSProperties, type RefObject, useEffect, useState } from 'react'
 
-import { logWarn } from '../core/logger'
+import { logWarn } from '../util/logger'
 import {
   DEFAULT_ROW_HEIGHT,
   HEAD_ROW_HEIGHT_VAR,
@@ -10,7 +10,7 @@ import {
   readHeightVar,
   resolveRowHeights,
 } from '../core/rowHeights'
-import { useIsomorphicLayoutEffect } from '../core/useIsomorphicLayoutEffect'
+import { useIsomorphicLayoutEffect } from '../util/useIsomorphicLayoutEffect'
 
 export interface RowHeights {
   row: number

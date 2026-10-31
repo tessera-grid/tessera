@@ -11,12 +11,9 @@ import clsx from 'clsx'
 import {
   setColumnFilterByUser,
   setColumnFiltersByUser,
-} from '../../core/filtering'
+} from '../../shared/filtering/filtering'
 import { useLocalization } from '../../core/localization'
-import {
-  usePortalThemeData,
-  usePortalThemeClass,
-} from '../../core/themeVariables'
+import { usePortalThemeData, usePortalThemeClass } from '../../ui/theme'
 import type { Table } from '../../types'
 import { Button } from '../../ui/Button'
 import { useIcons } from '../../ui/icons'

@@ -7,7 +7,7 @@ import clsx from 'clsx'
 import { actionOwnerOf } from '../../core/actionOwners'
 import { announceLabel } from '../../core/announcer'
 import { type DebugActionSource, reportAction } from '../../core/debugActions'
-import { useLatest } from '../../core/useLatest'
+import { useLatest } from '../../util/useLatest'
 import type { TableLabels } from '../../core/localization'
 import {
   type MenuAction,

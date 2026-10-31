@@ -25,9 +25,9 @@ import {
   type OptionValue,
   rememberOptionLabels,
 } from '../../core/columnOptions'
-import { setColumnFilterByUser } from '../../core/filtering'
+import { setColumnFilterByUser } from '../../shared/filtering/filtering'
 import { useLocalization } from '../../core/localization'
-import { useDebouncedCallback } from '../../core/useDebouncedCallback'
+import { useDebouncedCallback } from '../../util/useDebouncedCallback'
 import { Button } from '../../ui/Button'
 import { useIcons } from '../../ui/icons'
 import { Tooltip } from '../../ui/Tooltip'

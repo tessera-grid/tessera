@@ -11,7 +11,7 @@ import {
 import { useIcons } from '../../ui/icons'
 
 import styles from './PinButton.module.css'
-import '../../grid/cellControls/buttonVisibility.css'
+import '../../ui/cellControls/buttonVisibility.css'
 
 export interface PinButtonProps extends DerivedButtonProps, RevealProps {
   pinned: boolean

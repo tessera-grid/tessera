@@ -7,7 +7,7 @@
 import { arrayMove } from '@dnd-kit/sortable'
 
 import { readPluginHooks } from '../../core/definePlugin'
-import { readRowMoves } from '../../core/rowMoves'
+import { readRowMoves } from '../../shared/rowMoves'
 import { commitRowMove, type RowMoveCommit } from './commitRowMove'
 import { canNestInto } from './draggingHelpers'
 import {

@@ -18,7 +18,7 @@ import {
 } from 'vitest'
 
 import { foldEntries, type TesseraFeatureEntry } from '../core/features'
-import { __resetLogger } from '../core/logger'
+import { __resetLogger } from '../util/logger'
 import {
   expandIncludedModels,
   modelArgsMismatchMessage,

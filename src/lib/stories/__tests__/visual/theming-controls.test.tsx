@@ -4,11 +4,11 @@ import { userEvent } from '@vitest/browser/context'
 import { render } from 'vitest-browser-react'
 import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 
-import { RowButton } from '../../../grid/Actions/RowButton'
+import { RowButton } from '../../../ui/RowButton/RowButton'
 // Контролы рендерятся без DataGrid, поэтому глобальный слой темы подключаем явно
 // (иначе токены не определены и сравнения проходят ложно — обе стороны transparent).
-import '../../../core/themeVariables/theme.css'
-import type { ColorMode } from '../../../core/themeVariables'
+import '../../../ui/theme/theme.css'
+import type { ColorMode } from '../../../ui/theme'
 import { SelectCheckbox } from '../../../ui/SelectCheckbox/SelectCheckbox'
 import { IconButton } from '../../../ui/IconButton'
 import { Switch } from '../../../ui/Switch'

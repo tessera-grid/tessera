@@ -14,7 +14,7 @@ import {
 } from 'react'
 
 import { assignRef } from '../assignRef'
-import { REACT_MAJOR } from '../../core/reactVersion'
+import { REACT_MAJOR } from '../../util/reactVersion'
 
 export type TooltipSide = 'top' | 'right' | 'bottom' | 'left'
 

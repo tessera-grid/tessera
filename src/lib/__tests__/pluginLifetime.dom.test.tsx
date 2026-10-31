@@ -18,7 +18,7 @@ import {
 } from 'vitest'
 
 import type { TesseraFeatureEntry } from '../core/features'
-import { __resetLogger, __setLoggerProduction } from '../core/logger'
+import { __resetLogger, __setLoggerProduction } from '../util/logger'
 import { useCreateTable } from '../core/useCreateTable'
 import { columnSorting, pagination, rowSelection } from '../plugins'
 

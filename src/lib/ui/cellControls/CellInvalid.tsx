@@ -3,7 +3,7 @@
 // у тронутой пальцем ячейки (core/touchedCell.ts).
 import { useRef } from 'react'
 
-import { useIsomorphicLayoutEffect } from '../../core/useIsomorphicLayoutEffect'
+import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
 
 export const CellInvalid = () => {
   const marker = useRef<HTMLSpanElement>(null)

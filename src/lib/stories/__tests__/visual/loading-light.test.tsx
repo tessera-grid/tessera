@@ -3,8 +3,8 @@ import { render } from 'vitest-browser-react'
 import { afterEach, describe, expect, test } from 'vitest'
 import type { CSSProperties, ReactNode } from 'react'
 
-import '../../../core/themeVariables/theme.css'
-import { parseDuration } from '@/lib/ui/buttonStates'
+import '../../../ui/theme/theme.css'
+import { parseDuration } from '@/lib/util/cssTime'
 import ringStyles from '@/lib/ui/ringStates/ringStates.module.css'
 import { toRgba } from './a11y-helpers'
 

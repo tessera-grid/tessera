@@ -11,7 +11,7 @@ import { IconButton } from '../../ui/IconButton'
 import { HiddenButtonContext } from '../../ui/IconButton/iconReveal'
 import type { SlotAction } from '../../core/headerActions'
 import { ActionMenuPopup } from './ActionMenuPopup'
-import { useLatest } from '../../core/useLatest'
+import { useLatest } from '../../util/useLatest'
 import { useCloseOnGridScroll } from './useCloseOnGridScroll'
 import { useClosingVisible } from './useClosingVisible'
 import { GRID_SCROLL_REASON, useMenuLeave } from './useMenuLeave'
@@ -19,7 +19,7 @@ import { useAvailabilityChecks } from './useAvailabilityChecks'
 import { useMenuSections } from './useMenuSections'
 import { useStateWhileOpen } from './useStateWhileOpen'
 
-import '../../grid/cellControls/buttonVisibility.css'
+import '../../ui/cellControls/buttonVisibility.css'
 
 export interface ActionInlineMenuProps {
   action: SlotAction

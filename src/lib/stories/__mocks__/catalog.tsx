@@ -8,7 +8,7 @@ import type { Args } from '@storybook/react'
 import { UPDATE_STORY_ARGS } from 'storybook/internal/core-events'
 import { addons } from 'storybook/preview-api'
 
-import { useIsomorphicLayoutEffect } from '../../core/useIsomorphicLayoutEffect'
+import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
 
 // Оси каталога визуальных состояний (ADR 0093, §1, VR9, VR16): тема, палитра, контраст
 // и ширина. Ширина — режим Chromatic (`viewport`), остальное — глобалы Storybook.

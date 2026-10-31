@@ -1,4 +1,4 @@
-import { REACT_MAJOR } from './reactVersion'
+import { REACT_MAJOR } from '../util/reactVersion'
 
 /**
  * `inert` для React 18 и 19 (ADR 0091): React 18 атрибута не знает и булево значение не

@@ -4,7 +4,7 @@
  * вытеснение давно не нужных блоков сверх `maxBlocks`, итог известный или нет.
  * Без React и DOM: окно, быструю прокрутку и закреплённые строки сообщает плагин.
  */
-import { isThenable, rejectionText } from '../../core/thenable'
+import { isThenable, rejectionText } from '../../util/thenable'
 
 /** Запрос строк `[start, end)`; состояние выборки — от плагина. */
 export interface BlockRequest<TQuery> {

@@ -9,7 +9,7 @@ import { definePlugin } from '../../core/definePlugin'
 import {
   createIncrementalExpandedRowModel,
   narrowExpandingOff,
-} from '../../core/expandedRowModel'
+} from '../../shared/rowModels/expandedRowModel'
 import { neverInert } from '../../core/pluginDiagnostics'
 
 export interface RowExpandingModelOptions {

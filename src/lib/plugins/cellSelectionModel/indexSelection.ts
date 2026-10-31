@@ -3,7 +3,7 @@
  * (серверная модель строк) методы фичи TanStack работают по индексам источника: строки
  * могут быть не загружены, их id неизвестны. Иначе — стоковые методы.
  */
-import { logWarn } from '../../core/logger'
+import { logWarn } from '../../util/logger'
 import {
   followRowList as followRows,
   followSpans,

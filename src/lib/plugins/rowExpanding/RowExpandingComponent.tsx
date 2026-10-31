@@ -12,7 +12,7 @@ import {
 } from '../../core/cancellation'
 import { reportAction, sourceOf } from '../../core/debugActions'
 import type { PluginCellProps } from '../../core/definePlugin'
-import type { FailedAttempt } from '../../core/failedAttempts'
+import type { FailedAttempt } from '../../shared/failedAttempts'
 import { useLocalization } from '../../core/localization'
 import {
   useSlice,
@@ -20,7 +20,7 @@ import {
   useTableState,
 } from '../../core/reactivity'
 import { rowSourceOf } from '../../core/rowSource'
-import { rejectionText } from '../../core/thenable'
+import { rejectionText } from '../../util/thenable'
 import { ExpandButton } from '../../plugins/rowExpanding/ExpandButton'
 import { readLoadedChildren } from './lazyChildrenFeature'
 import {

@@ -4,7 +4,7 @@
  * `table.reportAction`, который ставит `commonFeature`.
  */
 import { INPUT_MODALITY_ATTR } from './inputModality'
-import { isThenable, rejectionText } from './thenable'
+import { isThenable, rejectionText } from '../util/thenable'
 
 /** Откуда действие: указатель, клавиатура, вызов приложения или сам грид. */
 export type DebugActionSource = 'pointer' | 'keyboard' | 'api' | 'auto'

@@ -2,7 +2,7 @@ import { render } from 'vitest-browser-react'
 import { userEvent } from 'vitest/browser'
 import { describe, expect, test } from 'vitest'
 
-import '../../../core/themeVariables/theme.css'
+import '../../../ui/theme/theme.css'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import { getTreeLines } from '../../../grid/treeBranches'

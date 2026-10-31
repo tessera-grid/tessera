@@ -21,8 +21,8 @@ import {
   parseByDataType,
   setAtPath,
 } from '../../core/columnDataType'
-import { logWarn } from '../../core/logger'
-import { isThenable, rejectionText } from '../../core/thenable'
+import { logWarn } from '../../util/logger'
+import { isThenable, rejectionText } from '../../util/thenable'
 import {
   pluginStateKey,
   readPluginHooks,

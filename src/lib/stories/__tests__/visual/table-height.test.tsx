@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
-import { DATA_GRID_THEME_CLASS } from '../../../core/themeVariables'
+import { DATA_GRID_THEME_CLASS } from '../../../ui/theme'
 import { bodyRows, getScroller, renderGrid } from '../helpers'
 
 // Высота таблицы (ADR 0131). GH1–GH4 доказывают `play` историй `Core/Sizing`.

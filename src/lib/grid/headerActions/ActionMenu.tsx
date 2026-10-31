@@ -31,7 +31,7 @@ import {
 } from '../../core/serverActions'
 
 import styles from '../../grid/headerActions/ActionMenu.module.css'
-import '../../grid/cellControls/buttonVisibility.css'
+import '../../ui/cellControls/buttonVisibility.css'
 
 export interface ActionMenuProps {
   actions: SlotAction[]

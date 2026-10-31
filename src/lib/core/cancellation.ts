@@ -5,7 +5,7 @@
  * через него.
  */
 import { sourceOf } from './debugActions'
-import { logWarn } from './logger'
+import { logWarn } from '../util/logger'
 
 /** Вид ждущей операции — фильтр `table.cancelPending`. */
 export type PendingKind = 'menu' | 'server' | 'export' | 'children' | 'copy'

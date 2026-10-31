@@ -2,8 +2,8 @@ import { render } from 'vitest-browser-react'
 import { server } from 'vitest/browser'
 import { afterEach, describe, expect, test } from 'vitest'
 
-import '../../../core/themeVariables/theme.css'
-import { __resetLogger, __setLoggerProduction } from '../../../core/logger'
+import '../../../ui/theme/theme.css'
+import { __resetLogger, __setLoggerProduction } from '../../../util/logger'
 import {
   __resetScrollLimits,
   LIMIT_PROBE_ATTRIBUTE,

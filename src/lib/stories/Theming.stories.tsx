@@ -8,7 +8,7 @@ import {
 } from '@tanstack/react-table'
 
 import { Grid } from './_shims'
-import { DATA_GRID_THEME_CLASS } from '../core/themeVariables'
+import { DATA_GRID_THEME_CLASS } from '../ui/theme'
 import type { TesseraFeatureEntry } from '../core/features'
 import type { RowSelectionValue } from '../../lib/core/rowSelectionAll'
 import { useCreateTable } from '../../lib/core/useCreateTable'

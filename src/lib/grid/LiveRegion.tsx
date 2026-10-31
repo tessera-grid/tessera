@@ -9,7 +9,7 @@ import { takeLoadCancelled } from '../core/cancellation'
 import type { TableLabels } from '../core/localization'
 import { useTableState } from '../core/reactivity'
 
-import dataGridStyles from '../grid/DataGrid/DataGrid.module.css'
+import hidden from '../ui/visuallyHidden.module.css'
 
 interface LiveRegionProps {
   table: unknown
@@ -167,7 +167,7 @@ export const LiveRegion = ({
       role="status"
       aria-live="polite"
       aria-atomic="true"
-      className={dataGridStyles['visually-hidden']}
+      className={hidden['visually-hidden']}
     >
       <span key={message.id}>{message.text}</span>
     </div>

@@ -4,9 +4,9 @@ import { commands, server, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { afterEach, describe, expect, test } from 'vitest'
 
-import '../../../core/themeVariables/theme.css'
-import themeCss from '../../../core/themeVariables/theme.css?raw'
-import type { ContrastMode } from '../../../core/themeVariables'
+import '../../../ui/theme/theme.css'
+import themeCss from '../../../ui/theme/theme.css?raw'
+import type { ContrastMode } from '../../../ui/theme'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import {

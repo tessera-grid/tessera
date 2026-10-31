@@ -4,7 +4,7 @@
  */
 import { useEffect, useRef } from 'react'
 
-import { useLatest } from '../../core/useLatest'
+import { useLatest } from '../../util/useLatest'
 import { type ConsoleLog, preview } from './consoleLog'
 
 type Atom = {

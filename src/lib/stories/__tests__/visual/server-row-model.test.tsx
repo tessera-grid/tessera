@@ -3,7 +3,7 @@ import { render } from 'vitest-browser-react'
 import { commands, server as browser, userEvent } from 'vitest/browser'
 import { describe, expect, test, vi } from 'vitest'
 
-import '../../../core/themeVariables/theme.css'
+import '../../../ui/theme/theme.css'
 import type { TesseraFeatureEntry } from '../../../core/features'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
@@ -26,7 +26,10 @@ import {
   type ServerRowsResponse,
 } from '../../../plugins'
 import { BodyRow } from '../../../grid/BodyRow'
-import { setColumnFilterByUser, setSearchByUser } from '../../../core/filtering'
+import {
+  setColumnFilterByUser,
+  setSearchByUser,
+} from '../../../shared/filtering/filtering'
 import { humanClick, revealCellButtons } from '../helpers'
 import { tableLabels } from '../labels'
 import { measureWork, renders } from '../work.helpers'

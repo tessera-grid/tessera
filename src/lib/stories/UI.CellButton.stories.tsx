@@ -1,6 +1,6 @@
 import { Meta, StoryObj } from '@storybook/react'
 
-import { CellButton } from '../grid/Actions/CellButton'
+import { CellButton } from '../ui/CellButton/CellButton'
 import { useIcons } from '../ui/icons'
 import {
   DERIVED_BUTTON_ARGS,

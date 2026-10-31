@@ -17,7 +17,7 @@ import {
 import { HandleMenu, useHandleMenu } from '../../grid/handleMenu/HandleMenu'
 import { reportAction } from '../../core/debugActions'
 import styles from './ResizeHandler.module.css'
-import '../../grid/cellControls/buttonVisibility.css'
+import '../../ui/cellControls/buttonVisibility.css'
 
 /** Шаг изменения ширины стрелкой и Shift+стрелкой, px. */
 const KEY_STEP = 10

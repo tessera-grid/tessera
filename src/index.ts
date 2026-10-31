@@ -125,7 +125,7 @@ export {
   DATA_GRID_THEME_CLASS,
   type ColorMode,
   type ContrastMode,
-} from './lib/core/themeVariables'
+} from './lib/ui/theme'
 
 export {
   type TableIcons,

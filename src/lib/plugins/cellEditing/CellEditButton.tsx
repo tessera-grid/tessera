@@ -10,8 +10,8 @@ import { sourceOf } from '../../core/debugActions'
 import { readPluginHooks, type PluginCellProps } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
 import { useSliceProjection } from '../../core/reactivity'
-import { CellButton } from '../../grid/Actions/CellButton'
-import { CellInvalid } from '../../grid/cellControls/CellInvalid'
+import { CellButton } from '../../ui/CellButton/CellButton'
+import { CellInvalid } from '../../ui/cellControls/CellInvalid'
 import { useIcons } from '../../ui/icons'
 import {
   EDIT_SESSION_KEY,

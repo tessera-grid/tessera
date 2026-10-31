@@ -13,7 +13,7 @@ import {
   tableMemo,
 } from '@tanstack/react-table'
 
-import { handOverRowsById } from '../../core/rowsByIdHandover'
+import { handOverRowsById } from '../../shared/rowModels/rowsByIdHandover'
 
 type SortedRowModelFactory = ReturnType<typeof createSortedRowModel>
 

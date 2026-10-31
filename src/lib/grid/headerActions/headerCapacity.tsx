@@ -7,7 +7,7 @@
 import { type PropsWithChildren, createContext, useRef, useState } from 'react'
 
 import { buttonCapacity } from '../../core/headerActions'
-import { useIsomorphicLayoutEffect } from '../../core/useIsomorphicLayoutEffect'
+import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
 
 export interface HeaderMetrics {
   /** Отступ слева и наименьшая подпись, px. */

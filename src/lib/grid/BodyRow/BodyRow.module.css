@@ -67,7 +67,7 @@
 
 /*
  * Видимость hidden-кнопок строки — единый контракт в
- * grid/cellControls/buttonVisibility.css.
+ * ui/cellControls/buttonVisibility.css.
  */
 
 /* Фокус на строке treegrid (ADR 0032, W16): контур по токену фокуса. */

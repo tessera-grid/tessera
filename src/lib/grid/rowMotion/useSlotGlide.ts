@@ -1,6 +1,6 @@
 import { type RefObject, useLayoutEffect, useRef } from 'react'
 
-import { rowMotionTiming } from './rowMotionTiming'
+import { rowMotionTiming } from '../../ui/theme/rowMotionTiming'
 
 /**
  * Слот перетаскивания при прокрутке грида (ADR 0107, RM24): цель меняется каждые

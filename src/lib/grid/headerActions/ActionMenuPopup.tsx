@@ -5,10 +5,7 @@ import type { Ref } from 'react'
 import { Menu } from '@base-ui/react/menu'
 import clsx from 'clsx'
 
-import {
-  usePortalThemeData,
-  usePortalThemeClass,
-} from '../../core/themeVariables'
+import { usePortalThemeData, usePortalThemeClass } from '../../ui/theme'
 import type { SlotAction } from '../../core/headerActions'
 import { ActionMenuItems, type ActionMenuItemsProps } from './ActionMenuItems'
 import { ActionMenuSections } from './ActionMenuSections'

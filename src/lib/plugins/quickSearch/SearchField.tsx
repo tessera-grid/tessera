@@ -11,19 +11,22 @@ import { Toolbar } from '@base-ui/react/toolbar'
 
 import type { ToolbarComponentProps } from '../../core/createSlots'
 import { cancelPending, cancelSourceOf } from '../../core/cancellation'
-import { setSearchByUser } from '../../core/filtering'
+import { setSearchByUser } from '../../shared/filtering/filtering'
 import { useLocalization } from '../../core/localization'
 import { useTableState } from '../../core/reactivity'
-import { searchColumnLabel, searchColumnsOf } from '../../core/searchColumns'
+import {
+  searchColumnLabel,
+  searchColumnsOf,
+} from '../../shared/filtering/searchColumns'
 import { isWaitingForColumns } from '../../core/skeletonOptions'
 import { ToolbarSkeleton } from '../../ui/ToolbarButton'
 import { Tooltip } from '../../ui/Tooltip'
-import { useDebouncedCallback } from '../../core/useDebouncedCallback'
+import { useDebouncedCallback } from '../../util/useDebouncedCallback'
 import { useIcons } from '../../ui/icons'
 import { DEFAULT_SEARCH_DEBOUNCE_MS } from '../quickSearchModel/search'
 
 import styles from './SearchField.module.css'
-import gridStyles from '../../grid/DataGrid/DataGrid.module.css'
+import hidden from '../../ui/visuallyHidden.module.css'
 
 interface SearchTable {
   options: { quickSearchDebounceMs?: number }
@@ -111,7 +114,7 @@ export const SearchField = ({ table }: ToolbarComponentProps) => {
         }}
         data-testid="quick-search"
       />
-      <span id={hintId} className={gridStyles['visually-hidden']}>
+      <span id={hintId} className={hidden['visually-hidden']}>
         {hint}
       </span>
       <Tooltip title={hint}>

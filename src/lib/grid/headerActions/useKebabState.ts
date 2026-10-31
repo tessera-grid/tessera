@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 
 import { useLocalization } from '../../core/localization'
 import { useActionStatus } from './useActionStatus'
-import { useLatest } from '../../core/useLatest'
+import { useLatest } from '../../util/useLatest'
 import {
   type ActionStatus,
   type MenuAction,

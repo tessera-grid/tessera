@@ -6,7 +6,7 @@ import { readFileSync, existsSync } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { RowMoves } from '../core/rowMoves'
+import type { RowMoves } from '../shared/rowMoves'
 import {
   DEFAULT_ROW_DRAG_OVERLAY_STATE,
   getRowDraggingEvents,
@@ -15,7 +15,7 @@ import { commitRowMove } from '../plugins/rowDragging/commitRowMove'
 import { dropPlace } from '../plugins/rowDragging/dropPlace'
 import { reconcileRowMoves } from '../plugins/rowDragging/reconcileRowMoves'
 import { canDragRow } from '../plugins/rowDragging/rowDraggingFeature'
-import { __resetLogger } from '../core/logger'
+import { __resetLogger } from '../util/logger'
 import { captureInertWarnings } from './inertWarnings'
 
 type Item = { id: string }
@@ -300,7 +300,7 @@ describe('Перенос в ленивом дереве (ADR 0112)', () => {
     const reached = [...seen].map(file =>
       relative(root, file).replaceAll('\\', '/'),
     )
-    expect(reached).toContain('core/rowMoves.ts')
+    expect(reached).toContain('shared/rowMoves.ts')
     expect(
       reached.filter(file => file.startsWith('plugins/rowExpanding/')),
     ).toEqual([])

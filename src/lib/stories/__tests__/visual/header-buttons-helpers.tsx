@@ -2,7 +2,7 @@ import { render } from 'vitest-browser-react'
 import { expect } from 'vitest'
 import { userEvent } from 'vitest/browser'
 
-import type { ColorMode } from '../../../core/themeVariables'
+import type { ColorMode } from '../../../ui/theme'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import { columnPinning, columnSorting, rowGrouping } from '../../../plugins'

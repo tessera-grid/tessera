@@ -3,8 +3,8 @@
  * браузера растянуто: физический `scrollTop` — виртуальная позиция / `scale`, ползунок
  * пропорционален итогу, колесо сдвигает строки 1:1. Без растяжки слой — тождество.
  */
-import { parseDuration } from '../ui/buttonStates/useErrorFlash'
-import { useIsomorphicLayoutEffect } from './useIsomorphicLayoutEffect'
+import { parseDuration } from '../util/cssTime'
+import { useIsomorphicLayoutEffect } from '../util/useIsomorphicLayoutEffect'
 
 export interface ScrollTarget {
   top?: number

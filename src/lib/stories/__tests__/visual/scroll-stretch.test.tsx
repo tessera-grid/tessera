@@ -2,7 +2,7 @@ import { render } from 'vitest-browser-react'
 import { commands, server, userEvent } from 'vitest/browser'
 import { describe, expect, test, vi } from 'vitest'
 
-import '../../../core/themeVariables/theme.css'
+import '../../../ui/theme/theme.css'
 import { scrollLayer } from '../../../core/scrollStretch'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'

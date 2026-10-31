@@ -4,7 +4,7 @@ import { render } from 'vitest-browser-react'
 import { afterEach, describe, expect, test } from 'vitest'
 
 import { definePlugin } from '../../../core/definePlugin'
-import { setColumnFilterByUser } from '../../../core/filtering'
+import { setColumnFilterByUser } from '../../../shared/filtering/filtering'
 import type { ContextMenuAction, RowAction } from '../../../core/headerActions'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'

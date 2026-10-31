@@ -12,7 +12,7 @@ import { HeadCellView, type TableHeadCellProps } from './HeadCell'
 import { NodeShiftContext, noopSubscribe } from './dnd/nodeShift'
 import { getDisabledSortable } from './headCellParams'
 import { useTableState } from '../core/reactivity'
-import { useIsomorphicLayoutEffect } from '../core/useIsomorphicLayoutEffect'
+import { useIsomorphicLayoutEffect } from '../util/useIsomorphicLayoutEffect'
 
 /**
  * Ячейка заголовка с включённым Drag&Drop: регистрирует узел (лист или группу) в

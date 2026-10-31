@@ -8,7 +8,7 @@ import { type ColumnOptionsDef, optionTextOf } from '../../core/columnOptions'
 import { serverRowModelReason } from '../../core/pluginDiagnostics'
 import { rowSourceOf } from '../../core/rowSource'
 import { rowSelectionValueOf } from '../../core/rowSelectionAll'
-import { serverAggregationsOf } from '../../core/serverAggregations'
+import { serverAggregationsOf } from '../../shared/serverAggregations'
 import type {
   ExportColumn,
   ExportData,

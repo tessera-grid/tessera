@@ -6,7 +6,7 @@ import clsx from 'clsx'
 
 import { cancelSourceOf } from '../../core/cancellation'
 import { useLocalization } from '../../core/localization'
-import { logWarn } from '../../core/logger'
+import { logWarn } from '../../util/logger'
 import { useActionStatus } from './useActionStatus'
 import {
   pendingAttributes,
@@ -26,7 +26,7 @@ import {
   type SlotAction,
 } from '../../core/headerActions'
 
-import '../../grid/cellControls/buttonVisibility.css'
+import '../../ui/cellControls/buttonVisibility.css'
 
 interface ActionButtonProps {
   action: SlotAction

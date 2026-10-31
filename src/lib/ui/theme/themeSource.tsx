@@ -9,7 +9,7 @@ import {
   useState,
 } from 'react'
 
-import { logWarn, shouldLog } from '../logger'
+import { logWarn, shouldLog } from '../../util/logger'
 import {
   contrastAttribute,
   PortalThemeDataProvider,
@@ -17,7 +17,7 @@ import {
   portalThemeClass,
 } from './portalTheme'
 import type { ColorMode, ContrastMode } from './types'
-import { useIsomorphicLayoutEffect } from '../useIsomorphicLayoutEffect'
+import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
 
 const SWITCHING_ATTRIBUTE = 'data-tsr-theme-switching'
 let switchId = 0

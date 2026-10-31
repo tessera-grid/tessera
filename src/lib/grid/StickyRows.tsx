@@ -7,12 +7,12 @@
  */
 import { type ReactNode, type MouseEvent, useRef, useState } from 'react'
 
-import { useLatest } from '../core/useLatest'
+import { useLatest } from '../util/useLatest'
 
 import { scrollLayer } from '../core/scrollStretch'
 import { viewportOf } from '../core/scrollToRow/viewport'
 import type { RowSource } from '../core/rowSource'
-import { useIsomorphicLayoutEffect } from '../core/useIsomorphicLayoutEffect'
+import { useIsomorphicLayoutEffect } from '../util/useIsomorphicLayoutEffect'
 import type { Row } from '../types'
 
 import styles from './Body/Body.module.css'

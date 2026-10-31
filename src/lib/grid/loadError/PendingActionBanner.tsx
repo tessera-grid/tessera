@@ -17,7 +17,7 @@ import {
 } from '../../core/serverActions'
 import { Alert } from '../../ui/Alert'
 import { Button } from '../../ui/Button'
-import { parseDuration } from '../../ui/buttonStates/useErrorFlash'
+import { parseDuration } from '../../util/cssTime'
 
 import styles from './LoadError.module.css'
 

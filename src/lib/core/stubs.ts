@@ -5,7 +5,6 @@
  */
 import type { ReactNode } from 'react'
 
-import type { TableIcons } from '../ui/icons'
 import type { TableLabels } from './localization'
 
 /** Отказ загрузки, как его видит грид (ADR 0096). */
@@ -28,7 +27,8 @@ export interface StubAction {
   label: string
   run: () => void
   pending?: boolean
-  icon?: keyof TableIcons
+  /** Ключ словаря `icons` (`retry`…): иконку по нему находит грид (ADR 0166). */
+  icon?: string
   testId?: string
   /** Кнопка берёт фокус при появлении заглушки, если вернёт `true` (зовётся в эффекте). */
   focusOnMount?: () => boolean
@@ -44,8 +44,8 @@ export interface StubEntry {
   when: (context: StubContext) => boolean
   title: (labels: TableLabels) => string
   description?: (context: StubContext) => string | undefined
-  /** Иконка или иллюстрация из `icons`, её сторона в px и цвет (CSS-значение). */
-  media?: keyof TableIcons
+  /** Ключ иконки или иллюстрации словаря `icons`, её сторона в px и цвет (CSS-значение). */
+  media?: string
   mediaSize?: number
   mediaColor?: string
   action?: (context: StubContext, labels: TableLabels) => StubAction | undefined

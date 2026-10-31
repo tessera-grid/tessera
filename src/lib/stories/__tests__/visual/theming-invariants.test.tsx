@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
-import themeCss from '../../../core/themeVariables/theme.css?raw'
+import themeCss from '../../../ui/theme/theme.css?raw'
 
 // Статические инварианты токен-системы по ИСХОДНИКАМ. Дополняют
 // dist-инварианты TI-01…04 (scripts/check-theme-dist.mjs, по артефакту сборки).

@@ -9,7 +9,7 @@ import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { describe, expect, it, vi } from 'vitest'
 
-import { __resetLogger } from '../core/logger'
+import { __resetLogger } from '../util/logger'
 import { useCreateTable } from '../core/useCreateTable'
 import { columnFilteringModel, quickSearchModel } from '../plugins'
 import { builtinPluginEntries } from './builtinPlugins'

@@ -3,12 +3,12 @@ import { createColumnHelper } from '@tanstack/react-table'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
-import type { ColorMode } from '../../../core/themeVariables'
+import type { ColorMode } from '../../../ui/theme'
 import { useCreateTable } from '../../../../lib/core/useCreateTable'
 import { DataGrid } from '../../../../lib/grid/DataGrid'
 import { OverlayBodyRow } from '../../../../lib/grid/OverlayBodyRow'
 import { OverlayHeadCell } from '../../../../lib/grid/OverlayHeadCell'
-import '../../../core/themeVariables/theme.css'
+import '../../../ui/theme/theme.css'
 
 // Простые колонки с ПЛОСКИМ `cell` (без подписок на store) — оверлеи рендерятся
 // вне провайдеров грида, поэтому мок-ячейки с подпиской тут повисли бы.

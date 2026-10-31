@@ -7,8 +7,8 @@ import { useSelector } from '@tanstack/react-store'
 
 import type { CellComponentProps } from '../../core/createSlots'
 import { useLocalization } from '../../core/localization'
-import type { FailedAttempt } from '../../core/failedAttempts'
-import { rejectionText } from '../../core/thenable'
+import type { FailedAttempt } from '../../shared/failedAttempts'
+import { rejectionText } from '../../util/thenable'
 import { DragHandler } from '../../grid/dnd'
 import {
   type RowMoveDirection,

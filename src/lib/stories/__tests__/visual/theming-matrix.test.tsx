@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 
 import type { RowSelectionValue } from '../../../../lib/core/rowSelectionAll'
 import { useCreateTable } from '../../../../lib/core/useCreateTable'
-import type { ColorMode } from '../../../core/themeVariables'
+import type { ColorMode } from '../../../ui/theme'
 import { DataGrid } from '../../../../lib/grid/DataGrid'
 import { rowActions, rowSelection } from '../../../../lib/plugins'
 import { useColumns } from '../../__mocks__/columns'

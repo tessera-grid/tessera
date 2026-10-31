@@ -389,7 +389,7 @@ describe('ожидание и отказ у кнопки правки (ADR 0127)
     expect(container!.querySelector('.cell-edit-feedback')).toBeNull()
 
     const theme = readFileSync(
-      join(process.cwd(), 'src/lib/core/themeVariables/theme.css'),
+      join(process.cwd(), 'src/lib/ui/theme/theme.css'),
       'utf8',
     )
     expect(theme).not.toMatch(/--tsr-comp-cell-pending-glow-/)

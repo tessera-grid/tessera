@@ -13,10 +13,7 @@ import clsx from 'clsx'
 import { Check } from 'lucide-react'
 
 import { useLocalization } from '../../core/localization'
-import {
-  usePortalThemeData,
-  usePortalThemeClass,
-} from '../../core/themeVariables'
+import { usePortalThemeData, usePortalThemeClass } from '../../ui/theme'
 import type { Table } from '../../types'
 import { Button } from '../../ui/Button'
 import { type TableIcons, useIcons } from '../../ui/icons'

@@ -16,7 +16,7 @@ import {
 } from '../../core/rowSelectionAll'
 import { useSlice, useTableState } from '../../core/reactivity'
 import { isSkeletonShown } from '../../core/skeletonOptions'
-import { StatusBarCount } from '../../grid/StatusBar/StatusBarCount'
+import { StatusBarCount } from '../../ui/StatusBarCount/StatusBarCount'
 import { Skeleton } from '../../ui/Skeleton'
 import {
   groupingLength,

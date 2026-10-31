@@ -17,8 +17,8 @@ import {
   isKeyboardNavigationEnabled,
 } from '../../core/keyboardNavigation'
 import { useLocalization } from '../../core/localization'
-import { useIsomorphicLayoutEffect } from '../../core/useIsomorphicLayoutEffect'
-import { LoadMoreError } from '../../grid/LoadMoreError'
+import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
+import { LoadMoreError } from '../../ui/LoadMoreError/LoadMoreError'
 import { loaderOf } from './loader'
 import { infiniteScrollInertReason } from './model'
 import type { InfiniteScrollState } from './types'

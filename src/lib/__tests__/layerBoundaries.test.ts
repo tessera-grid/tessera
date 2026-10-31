@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   COLUMN_META_AUGMENTATIONS,
+  CORE_PLUGIN_API,
   CORE_PLUGIN_ONLY,
   FOREIGN_OPTION_READS,
   LAYER_EDGES,
@@ -48,8 +49,14 @@ describe('границы слоёв (ADR 0163)', () => {
     expectBaseline(layerViolations(), LAYER_EDGES)
   })
 
-  it('LB2: модуль ядра, который импортируют только плагины или shared/, — только из базы с причиной', () => {
-    expectBaseline(corePluginOnlyModules(), CORE_PLUGIN_ONLY)
+  it('LB2: модуль ядра, который импортируют только плагины или shared/, — только из базы долга или перечня «API ядра для плагинов» с причиной; модуль в обоих перечнях роняет страж', () => {
+    expectBaseline(corePluginOnlyModules(), {
+      ...CORE_PLUGIN_ONLY,
+      ...CORE_PLUGIN_API,
+    })
+    expect(
+      Object.keys(CORE_PLUGIN_ONLY).filter(path => path in CORE_PLUGIN_API),
+    ).toEqual([])
   })
 
   it(

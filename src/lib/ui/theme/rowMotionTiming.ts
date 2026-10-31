@@ -1,3 +1,5 @@
+import { parseDuration } from '../../util/cssTime'
+
 /**
  * Длительность (мс) и кривая движения строк (ADR 0107) — из токенов темы у узла грида:
  * вычисленный переход учитывает переопределения темы и уменьшенное движение (MO3).
@@ -10,9 +12,8 @@ export const rowMotionTiming = (node: HTMLElement) => {
   const { transitionDuration, transitionTimingFunction } =
     getComputedStyle(probe)
   probe.remove()
-  const value = parseFloat(transitionDuration)
   return {
-    duration: transitionDuration.endsWith('ms') ? value : value * 1000,
+    duration: parseDuration(transitionDuration),
     easing: transitionTimingFunction,
   }
 }

@@ -1,6 +1,6 @@
 import { Meta, StoryObj } from '@storybook/react'
 
-import { RowButton } from '../grid/Actions/RowButton'
+import { RowButton } from '../ui/RowButton/RowButton'
 import { useIcons } from '../ui/icons'
 import {
   DERIVED_BUTTON_ARGS,

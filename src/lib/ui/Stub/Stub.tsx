@@ -15,7 +15,7 @@ import { flushSync } from 'react-dom'
 
 import clsx from 'clsx'
 
-import { useIsomorphicLayoutEffect } from '../../core/useIsomorphicLayoutEffect'
+import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
 import { assignRef } from '../assignRef'
 import { Tooltip } from '../Tooltip'
 

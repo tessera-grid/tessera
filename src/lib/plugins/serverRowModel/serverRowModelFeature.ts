@@ -5,7 +5,7 @@
 import { assignPrototypeAPIs, assignTableAPIs } from '@tanstack/react-table'
 
 import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
-import { logWarn } from '../../core/logger'
+import { logWarn } from '../../util/logger'
 import type { ServerSource } from './source'
 import type { ServerRowTransaction, ServerRowTransactionResult } from './types'
 

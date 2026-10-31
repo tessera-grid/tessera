@@ -6,7 +6,7 @@ import {
   type RefreshOptions,
   resolveRefreshOptions,
 } from '../core/loadingDisplay'
-import { useLatest } from '../core/useLatest'
+import { useLatest } from '../util/useLatest'
 
 /** Показано ли обновление данных: с задержкой и минимумом (ADR 0094, §3). */
 export const useLoadingDisplay = (

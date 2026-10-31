@@ -3,7 +3,7 @@ import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 
-import { __resetLogger } from '../../../core/logger'
+import { __resetLogger } from '../../../util/logger'
 import {
   type LabelDictionary,
   unknownLabelKeys,

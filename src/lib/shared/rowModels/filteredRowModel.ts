@@ -7,7 +7,7 @@
  */
 import { createFilteredRowModel } from '@tanstack/react-table'
 
-import type { RowData, Table, TableFeatures } from '../types'
+import type { RowData, Table, TableFeatures } from '../../types'
 import { skipIdlePasses } from './idleRowModel'
 
 interface FilteringTable {

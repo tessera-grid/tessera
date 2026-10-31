@@ -4,7 +4,7 @@
  * мере рендера: инертен ли плагин, решает его `diagnose` — та же проверка, что
  * гасит его `getCan*`.
  */
-import { logError, logWarn } from './logger'
+import { logError, logWarn } from '../util/logger'
 
 /** Почему подключённый плагин сейчас ничего не делает. */
 export type PluginInertReason =

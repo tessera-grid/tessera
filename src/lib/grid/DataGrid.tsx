@@ -33,14 +33,14 @@ import {
   DATA_GRID_THEME_CLASS,
   contrastAttribute,
   ThemeScope,
-} from '../core/themeVariables'
+} from '../ui/theme'
 import {
   DEFAULT_LOCALE,
   LocalizationContext,
   resolveLabels,
   unknownLabelKeys,
 } from '../core/localization'
-import { logWarn } from '../core/logger'
+import { logWarn } from '../util/logger'
 import { LiveRegion } from './LiveRegion'
 import { EmptyStub } from './stubs/EmptyStub'
 import { type StubContext, resolveStub, stubEntriesOf } from '../core/stubs'
@@ -101,8 +101,8 @@ import type { DataGridProps } from './dataGridTypes'
 import dataGridStyles from '../grid/DataGrid/DataGrid.module.css'
 // Токены темы (`.data-grid-theme`: --tsr-ref/sys/comp, light/dark) как ГЛОБАЛЬНЫЙ
 // (не-модульный) CSS side-effect отсюда — чтобы классы шиппились не захешированными.
-import '../core/themeVariables/theme.css'
-import { useIsomorphicLayoutEffect } from '../core/useIsomorphicLayoutEffect'
+import '../ui/theme/theme.css'
+import { useIsomorphicLayoutEffect } from '../util/useIsomorphicLayoutEffect'
 
 // Base UI Toolbar — около 6.5 KB gzip; грузим, только когда тулбар показывается.
 const NO_ROWS: Row<any, any>[] = []

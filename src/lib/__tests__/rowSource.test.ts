@@ -194,11 +194,11 @@ const sourceFiles = (dir: string): string[] =>
  */
 const MODEL_READERS: Record<string, string> = {
   'core/rowSource.ts': 'клиентский источник строк — над моделью TanStack',
-  'core/expandedRowModel.ts':
+  'shared/rowModels/expandedRowModel.ts':
     'фабрика модели раскрытия клиентского режима (ADR 0070)',
-  'core/filteredRowModel.ts':
+  'shared/rowModels/filteredRowModel.ts':
     'фабрика модели фильтрации клиентского режима (ADR 0045, 0068)',
-  'core/rowsByIdHandover.ts':
+  'shared/rowModels/rowsByIdHandover.ts':
     'передача словаря между моделями клиентского режима (ADR 0069)',
   'plugins/columnSortingModel/sortedRowModel.ts':
     'фабрика модели сортировки клиентского режима (ADR 0064, 0072)',
@@ -226,7 +226,7 @@ const MODEL_READERS: Record<string, string> = {
     'согласование переносов с данными клиентского режима; в SSRM — кэш источника (ADR 0159)',
   'grid/LiveRegion.tsx':
     'объявление числа строк после фильтра клиентского режима (ADR 0045)',
-  'grid/filtering/FilteredRowsCount.tsx':
+  'shared/filtering/FilteredRowsCount.tsx':
     'счётчик «показано N из M» по данным клиентского режима (ADR 0045)',
   'plugins/rowSelection/SelectedRowsCount.tsx':
     'выбранные строки, скрытые фильтром, по данным клиентского режима (ADR 0045)',

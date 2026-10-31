@@ -4,7 +4,7 @@
  */
 import { useRef } from 'react'
 
-import { useIsomorphicLayoutEffect } from '../../core/useIsomorphicLayoutEffect'
+import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
 import { type ConsoleLog, preview } from './consoleLog'
 
 /** Служебные пропсы истории, не контролы. */

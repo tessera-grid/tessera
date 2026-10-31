@@ -18,7 +18,7 @@ import {
   targetKey,
 } from '../highlights/highlightFeature'
 import { rangeEntriesAt } from '../highlights/targetRanges'
-import { parseDuration } from '../../ui/buttonStates/useErrorFlash'
+import { parseDuration } from '../../util/cssTime'
 import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
 
 /** Итог: здесь появилось, сервер принял запись, грид вернул прежнее. */

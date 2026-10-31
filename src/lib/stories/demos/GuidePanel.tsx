@@ -9,10 +9,10 @@ import { type ReactNode, useEffect, useId, useRef, useState } from 'react'
 
 import { Check as CheckIcon, Pause, Play, Undo2 } from 'lucide-react'
 
-import '../../core/themeVariables/theme.css'
-import { DATA_GRID_THEME_CLASS } from '../../core/themeVariables'
-import { useIsomorphicLayoutEffect } from '../../core/useIsomorphicLayoutEffect'
-import { useLatest } from '../../core/useLatest'
+import '../../ui/theme/theme.css'
+import { DATA_GRID_THEME_CLASS } from '../../ui/theme'
+import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
+import { useLatest } from '../../util/useLatest'
 import { Button } from '../../ui/Button'
 import { useIcons } from '../../ui/icons'
 

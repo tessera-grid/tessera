@@ -268,7 +268,7 @@
 
 /*
  * Видимость hidden-кнопок ячейки — единый контракт в
- * grid/cellControls/buttonVisibility.css.
+ * ui/cellControls/buttonVisibility.css.
  */
 
 /* Подсветка колонки (ADR 0080) и вспышка итога над ней (ADR 0134): слои фона заголовка. */

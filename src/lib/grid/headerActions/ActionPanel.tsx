@@ -21,8 +21,8 @@ import {
   useServerActionMarks,
 } from '../../core/serverActions'
 
-import gridStyles from '../../grid/DataGrid/DataGrid.module.css'
-import '../../grid/cellControls/buttonVisibility.css'
+import hidden from '../../ui/visuallyHidden.module.css'
+import '../../ui/cellControls/buttonVisibility.css'
 
 export interface ActionPanelProps {
   action: SlotAction
@@ -110,7 +110,7 @@ export const ActionPanel = ({
           {button}
         </HiddenButtonContext.Provider>
         {failure && (
-          <span id={reasonId} className={gridStyles['visually-hidden']}>
+          <span id={reasonId} className={hidden['visually-hidden']}>
             {serverActionReason(failure, labels)}
           </span>
         )}

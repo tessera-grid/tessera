@@ -12,7 +12,8 @@ import {
 
 import { assignRef } from '../assignRef'
 import { type ArcPhase, PendingArc } from './PendingArc'
-import { longestTransition, parseDuration, phaseLayerOf } from './useErrorFlash'
+import { longestTransition, parseDuration } from '../../util/cssTime'
+import { phaseLayerOf } from './useErrorFlash'
 
 import styles from '../ringStates/ringStates.module.css'
 

@@ -3,7 +3,7 @@ import { commands, userEvent } from 'vitest/browser'
 import { cleanup, render } from 'vitest-browser-react'
 import { afterEach, describe, expect, test } from 'vitest'
 
-import '../../../core/themeVariables/theme.css'
+import '../../../ui/theme/theme.css'
 import { ENGLISH_LABELS } from '../../../core/localization'
 import { renderGrid, rowState } from '../helpers'
 import { composed } from '../stories'

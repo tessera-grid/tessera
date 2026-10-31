@@ -54,7 +54,7 @@ import {
 
 import { assignRef } from '../ui/assignRef'
 import headCellStyles from '../grid/HeadCell/HeadCell.module.css'
-import dataGridStyles from '../grid/DataGrid/DataGrid.module.css'
+import hidden from '../ui/visuallyHidden.module.css'
 
 export interface TableHeadCellProps {
   layout: 'grid' | 'flex'
@@ -150,7 +150,7 @@ export const HeadCellView = ({
       <>
         {content}
         {serviceLabel && (
-          <span className={dataGridStyles['visually-hidden']}>
+          <span className={hidden['visually-hidden']}>
             {labels[serviceLabel]}
           </span>
         )}

@@ -9,9 +9,9 @@ import {
   childrenOf,
   readRowMoves,
   rowIdOf,
-} from '../../core/rowMoves'
+} from '../../shared/rowMoves'
 import { dropRowMove, writeTarget } from './commitRowMove'
-import { type FailedAttempts, withoutGone } from '../../core/failedAttempts'
+import { type FailedAttempts, withoutGone } from '../../shared/failedAttempts'
 import { serverMoveSource } from './serverMove'
 
 interface ReconcileTable {

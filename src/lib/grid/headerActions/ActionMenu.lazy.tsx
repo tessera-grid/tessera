@@ -33,7 +33,7 @@ import {
 import { type KebabState, useKebabState } from './useKebabState'
 
 import styles from '../../grid/headerActions/ActionMenu.module.css'
-import '../../grid/cellControls/buttonVisibility.css'
+import '../../ui/cellControls/buttonVisibility.css'
 
 const ActionMenuImpl = preloadable(() =>
   import('./ActionMenu').then(m => m.ActionMenu),

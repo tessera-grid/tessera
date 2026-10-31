@@ -6,7 +6,7 @@
 import { useCallback, useRef, useState } from 'react'
 
 import type { CellComponentProps } from '../../core/createSlots'
-import { useLatest } from '../../core/useLatest'
+import { useLatest } from '../../util/useLatest'
 import type { CellEditCancel, CellEditCommit, RowDragEnd } from '../../plugins'
 import type { Row } from '../../types'
 import { StoryComponent } from '../DataGridStory'

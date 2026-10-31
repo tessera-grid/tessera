@@ -325,7 +325,7 @@ describe('Вспышка итога: перерисовка только цел�
 describe('Вспышка итога: токены темы', () => {
   it('OF19: токены --tsr-comp-flash-* — в трёх уровнях темы; токенов --tsr-comp-row-arrival-*, --tsr-comp-cell-saved-* и --tsr-comp-highlight-arrival-bg в теме нет', () => {
     const css = readFileSync(
-      join(process.cwd(), 'src/lib/core/themeVariables/theme.css'),
+      join(process.cwd(), 'src/lib/ui/theme/theme.css'),
       'utf8',
     )
     const declared = new Map(

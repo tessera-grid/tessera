@@ -3,8 +3,8 @@
 // проявляется при наведении, как в гриде; заглушка — в пустом теле под шапкой.
 import type { CSSProperties, ReactNode } from 'react'
 
-import '../../core/themeVariables/theme.css'
-import { DATA_GRID_THEME_CLASS } from '../../core/themeVariables'
+import '../../ui/theme/theme.css'
+import { DATA_GRID_THEME_CLASS } from '../../ui/theme'
 
 import styles from './UiCanvas.module.css'
 

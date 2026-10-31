@@ -25,7 +25,7 @@ import {
   isTreeGrid,
   resolveActive,
 } from './model'
-import { useIsomorphicLayoutEffect } from '../useIsomorphicLayoutEffect'
+import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
 
 /**
  * Индекс активной строки/колонки для пиновки в `rangeExtractor`; `undefined` без

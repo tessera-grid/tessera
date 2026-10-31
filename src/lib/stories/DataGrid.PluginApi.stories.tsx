@@ -11,7 +11,7 @@ import {
   definePlugin,
   type PluginCellStateProps,
 } from '../../lib/core/definePlugin'
-import { CellButton } from '../../lib/grid/Actions/CellButton'
+import { CellButton } from '../ui/CellButton/CellButton'
 import { Button } from '../../lib/ui/Button'
 import type { RowAction } from '../../lib/core/headerActions'
 import { exportFormats } from '../../lib/plugins/dataExport'

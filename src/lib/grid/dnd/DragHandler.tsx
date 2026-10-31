@@ -17,7 +17,7 @@ import { IconButton } from '../../ui/IconButton'
 import { HiddenButtonContext } from '../../ui/IconButton/iconReveal'
 
 import styles from '../../grid/dnd/DragHandler.module.css'
-import '../../grid/cellControls/buttonVisibility.css'
+import '../../ui/cellControls/buttonVisibility.css'
 
 export interface DragHandlerProps {
   id: string

@@ -13,12 +13,12 @@ import {
   useState,
 } from 'react'
 
-import { Button } from '../ui/Button'
-import { useIcons } from '../ui/icons'
-import { Tooltip } from '../ui/Tooltip'
-import { assignRef } from '../ui/assignRef'
+import { Button } from '../Button'
+import { useIcons } from '../icons'
+import { Tooltip } from '../Tooltip'
+import { assignRef } from '../assignRef'
 
-import styles from './LoadMoreError/LoadMoreError.module.css'
+import styles from './LoadMoreError.module.css'
 
 export interface LoadMoreErrorProps {
   title: string

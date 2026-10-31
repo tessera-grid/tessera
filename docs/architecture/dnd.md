@@ -172,7 +172,7 @@ Tessera поставляет **кастомную стратегию колли�
 на ручке; строку с записью не переносят (`isMovableRow`, `disabled` у `useSortable`).
 Перенос, задевающий ленивого родителя (`row.getIsLazyParent` из `rowExpanding`), в
 `data` и ответы `loadedChildren` сразу не пишется: исходная модель `rowExpanding`
-собирается из данных и ответов с ним (`applyRowMoves`, `core/rowMoves.ts`) — модули
+собирается из данных и ответов с ним (`applyRowMoves`, `shared/rowMoves.ts`) — модули
 общие, плагины друг друга не импортируют. Место держится за id соседних сестёр. Итог
 промиса пишет грид (`setLoadedChildren`, `onRowOrderChange`), отказ снимает стадию;
 `reconcileRowMoves` после рендера снимает переносы ушедших строк и родителей и вставляет

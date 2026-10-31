@@ -7,7 +7,7 @@
  * Срезы `rowMoves` — переносы в ожидании промиса `onRowDragEnd`, `rowMoveFailed` —
  * номер последнего отказа строки, ключ вспышки ручки (ADR 0112).
  */
-import type { FailedAttempts } from '../../core/failedAttempts'
+import type { FailedAttempts } from '../../shared/failedAttempts'
 import {
   assignPrototypeAPIs,
   assignTableAPIs,
@@ -16,13 +16,13 @@ import {
 } from '@tanstack/react-table'
 
 import { readPluginHooks } from '../../core/definePlugin'
-import { type LoggerHost, logWarn } from '../../core/logger'
+import { type LoggerHost, logWarn } from '../../util/logger'
 import {
   type PluginInertReason,
   serverRowModelReason,
   warnPluginInert,
 } from '../../core/pluginDiagnostics'
-import type { RowMoves } from '../../core/rowMoves'
+import type { RowMoves } from '../../shared/rowMoves'
 import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
 import {
   DEFAULT_ROW_DRAG_OVERLAY_STATE,

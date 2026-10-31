@@ -6,10 +6,7 @@ import type { RefObject } from 'react'
 import { Menu } from '@base-ui/react/menu'
 import clsx from 'clsx'
 
-import {
-  usePortalThemeData,
-  usePortalThemeClass,
-} from '../../core/themeVariables'
+import { usePortalThemeData, usePortalThemeClass } from '../../ui/theme'
 import type { HeaderMenuItem } from '../../core/headerActions'
 
 import { useCloseOnGridScroll } from '../headerActions/useCloseOnGridScroll'

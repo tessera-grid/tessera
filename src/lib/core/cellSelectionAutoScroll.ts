@@ -18,7 +18,7 @@
 import { useEffect } from 'react'
 
 import { scrollLayer } from './scrollStretch'
-import { useLatest } from './useLatest'
+import { useLatest } from '../util/useLatest'
 
 interface AutoScrollTable {
   getSelectedCellRangesData?: () => unknown

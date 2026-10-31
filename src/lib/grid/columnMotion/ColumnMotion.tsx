@@ -7,7 +7,7 @@
 import { Component, createRef, type ReactNode, type RefObject } from 'react'
 
 import { planColumnMotion, type MotionColumn } from './planColumnMotion'
-import { rowMotionTiming } from '../rowMotion/rowMotionTiming'
+import { rowMotionTiming } from '../../ui/theme/rowMotionTiming'
 import styles from './ColumnMotion.module.css'
 
 /** Ячейки шапки — по ним меряются позиции колонок. */

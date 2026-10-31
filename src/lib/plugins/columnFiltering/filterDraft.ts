@@ -6,7 +6,7 @@
  */
 import { useState } from 'react'
 
-import { setColumnFilterByUser } from '../../core/filtering'
+import { setColumnFilterByUser } from '../../shared/filtering/filtering'
 import { useTableState } from '../../core/reactivity'
 import { isServerAction } from '../../core/serverActions'
 import type { ColumnFilterValue } from '../columnFilteringModel/types'

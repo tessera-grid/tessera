@@ -11,7 +11,7 @@ import {
 } from '@tanstack/react-table'
 
 import { commonOptionsOf } from '../../core/commonFeature'
-import { type FailedAttempts, withoutGone } from '../../core/failedAttempts'
+import { type FailedAttempts, withoutGone } from '../../shared/failedAttempts'
 import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
 
 export type LoadedChildren = Record<string, readonly unknown[]>

@@ -9,10 +9,7 @@ import { Popover } from '@base-ui/react/popover'
 import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
-import {
-  usePortalThemeData,
-  usePortalThemeClass,
-} from '../../core/themeVariables'
+import { usePortalThemeData, usePortalThemeClass } from '../../ui/theme'
 import type { Table } from '../../types'
 import { ToolbarButton } from '../../ui/ToolbarButton'
 import { ColumnVisibilityMenu } from './ColumnVisibilityMenu'

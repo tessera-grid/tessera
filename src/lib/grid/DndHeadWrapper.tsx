@@ -34,7 +34,7 @@ import { horizontalCollisionDetection } from './dnd/collisionDetection'
 import { OverlayHeadCell } from './OverlayHeadCell'
 import { NodeShiftContext, createNodeShiftStore } from './dnd/nodeShift'
 import { nodeIdOf, zoneOf } from '../core/columnNodes'
-import { useIsomorphicLayoutEffect } from '../core/useIsomorphicLayoutEffect'
+import { useIsomorphicLayoutEffect } from '../util/useIsomorphicLayoutEffect'
 
 /** Столкновения — только с соседями активного узла (ADR 0052, ND3). */
 const siblingCollisionDetection: CollisionDetection = args => {

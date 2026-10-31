@@ -26,7 +26,7 @@ import {
 import { IDLE } from '../plugins/infiniteScroll/model'
 import type { InfiniteScrollState } from '../plugins/infiniteScroll/types'
 import { captureInertWarnings } from './inertWarnings'
-import { __resetLogger } from '../core/logger'
+import { __resetLogger } from '../util/logger'
 
 ;(
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }

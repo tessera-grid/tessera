@@ -5,8 +5,8 @@
  */
 import { readPluginHooks, type PluginCellProps } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
-import { CellButton } from '../../grid/Actions/CellButton'
-import { CellInvalid } from '../../grid/cellControls/CellInvalid'
+import { CellButton } from '../../ui/CellButton/CellButton'
+import { CellInvalid } from '../../ui/cellControls/CellInvalid'
 import type { CellEditHook } from '../../shared/cellHooks'
 import type { CellErrorsHooks } from './types'
 

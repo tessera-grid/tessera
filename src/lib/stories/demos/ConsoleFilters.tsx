@@ -8,11 +8,8 @@ import { Popover } from '@base-ui/react/popover'
 import clsx from 'clsx'
 import { ChevronDown } from 'lucide-react'
 
-import {
-  contrastAttribute,
-  portalThemeClass,
-} from '../../core/themeVariables/portalTheme'
-import type { ContrastMode } from '../../core/themeVariables/types'
+import { contrastAttribute, portalThemeClass } from '../../ui/theme/portalTheme'
+import type { ContrastMode } from '../../ui/theme/types'
 import { Button } from '../../ui/Button'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 import { SelectCheckbox } from '../../ui/SelectCheckbox/SelectCheckbox'

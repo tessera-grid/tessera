@@ -20,7 +20,7 @@ import { ItemDraggableWrapper } from './dnd'
 import { highlightRender } from './highlight'
 import { flashRender } from './flash'
 import { useSlotGlide } from './rowMotion/useSlotGlide'
-import { useIsomorphicLayoutEffect } from '../core/useIsomorphicLayoutEffect'
+import { useIsomorphicLayoutEffect } from '../util/useIsomorphicLayoutEffect'
 
 import styles from '../grid/BodyRow/BodyRow.module.css'
 

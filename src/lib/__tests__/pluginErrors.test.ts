@@ -16,7 +16,7 @@ import {
 } from 'vitest'
 
 import { buildTesseraFeatures, foldEntries } from '../core/features'
-import { __resetLogger, __setLoggerProduction } from '../core/logger'
+import { __resetLogger, __setLoggerProduction } from '../util/logger'
 import { withPluginBoundary } from '../core/pluginBoundary'
 import { rowSelection } from '../plugins/rowSelection'
 

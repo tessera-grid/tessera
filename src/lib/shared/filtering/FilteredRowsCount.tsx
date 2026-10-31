@@ -5,10 +5,10 @@
  * серверном режиме оба числа даёт приложение (FL30); без них элемента нет.
  */
 import type { StatusBarComponentProps } from '../../core/createSlots'
-import { isFilteringActive } from '../../core/filtering'
+import { isFilteringActive } from './filtering'
 import { useLocalization } from '../../core/localization'
 import { useTableState } from '../../core/reactivity'
-import { StatusBarCount } from '../StatusBar/StatusBarCount'
+import { StatusBarCount } from '../../ui/StatusBarCount/StatusBarCount'
 
 export const FILTERED_ROWS_COUNT_SLOT_ID = 'filteredRowsCount'
 

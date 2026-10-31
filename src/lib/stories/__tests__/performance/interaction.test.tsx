@@ -49,9 +49,9 @@ import type { MenuAction, RowAction } from '../../../core/headerActions'
 import { createTesseraSortedRowModel } from '../../../plugins/columnSortingModel/sortedRowModel'
 import { getTreeAria } from '../../../grid/treeAria'
 import { createLazyCoreRowModel } from '../../../plugins/rowExpanding/lazyCoreRowModel'
-import { createIncrementalExpandedRowModel } from '../../../core/expandedRowModel'
+import { createIncrementalExpandedRowModel } from '../../../shared/rowModels/expandedRowModel'
 import { rowChangeHints } from '../../../core/rowChanges'
-import { createSearchAwareFilteredRowModel } from '../../../core/filteredRowModel'
+import { createSearchAwareFilteredRowModel } from '../../../shared/rowModels/filteredRowModel'
 import { createIdleAwareGroupedRowModel } from '../../../plugins/rowGroupingModel/groupedRowModel'
 import {
   rowExpandingLazyFeature,

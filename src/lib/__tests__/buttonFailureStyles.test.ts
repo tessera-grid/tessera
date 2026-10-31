@@ -11,13 +11,17 @@ import { describe, expect, it } from 'vitest'
 const root = join(process.cwd(), 'src/lib')
 const read = (path: string) => readFileSync(join(root, path), 'utf8')
 
-/** CSS кнопок: кит, кроме полосы загрузки, и стили кнопок грида и плагинов. */
+/** CSS кнопок: кит, кроме полосы загрузки и темы, и стили кнопок грида и плагинов. */
 const BUTTON_CSS = [
   ...readdirSync(join(root, 'ui'), { recursive: true })
     .map(String)
-    .filter(path => path.endsWith('.css') && !path.includes('LinearProgress'))
+    .filter(
+      path =>
+        path.endsWith('.css') &&
+        !path.includes('LinearProgress') &&
+        !path.startsWith('theme'),
+    )
     .map(path => `ui/${path}`),
-  'grid/cellControls/buttonVisibility.css',
   'grid/headerActions/ActionButton.module.css',
   'plugins/pagination/Pagination.module.css',
 ]
@@ -28,7 +32,7 @@ describe('Отказ кнопки без красного контура (ADR 01
     for (const path of BUTTON_CSS) {
       expect(read(path), path).not.toMatch(/--tsr-comp-error-flash-/)
     }
-    expect(read('core/themeVariables/theme.css')).toMatch(
+    expect(read('ui/theme/theme.css')).toMatch(
       /--tsr-comp-pending-stop-duration:\s*200ms;/,
     )
     expect(read('ui/ringStates/ringStates.module.css')).toMatch(

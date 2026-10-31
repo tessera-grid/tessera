@@ -14,7 +14,7 @@ import {
 } from '../columnFilteringModel/conditions'
 import type { ColumnFilterDef } from '../columnFilteringModel/types'
 
-import '../../grid/cellControls/buttonVisibility.css'
+import '../../ui/cellControls/buttonVisibility.css'
 
 const loadFilterPanelModule = () => import('./FilterPanel')
 

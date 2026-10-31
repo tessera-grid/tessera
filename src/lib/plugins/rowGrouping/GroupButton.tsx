@@ -11,7 +11,7 @@ import {
 import { useIcons } from '../../ui/icons'
 
 import styles from './GroupButton.module.css'
-import '../../grid/cellControls/buttonVisibility.css'
+import '../../ui/cellControls/buttonVisibility.css'
 
 export interface GroupButtonProps extends DerivedButtonProps, RevealProps {
   grouped: boolean

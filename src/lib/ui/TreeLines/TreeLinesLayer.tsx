@@ -2,8 +2,8 @@
 // к её детям. Декоративны: уровень строки несёт `aria-level`.
 import { type CSSProperties, useLayoutEffect, useRef, useState } from 'react'
 
-import { rowMotionTiming } from './rowMotion/rowMotionTiming'
-import styles from './TreeLines/TreeLines.module.css'
+import { rowMotionTiming } from '../theme/rowMotionTiming'
+import styles from './TreeLines.module.css'
 
 /** Перетаскивание с движением строк: части линий проявляются и гаснут (ADR 0108, PV11). */
 const FADE_WHILE = '[data-row-animation][data-row-dragging]'

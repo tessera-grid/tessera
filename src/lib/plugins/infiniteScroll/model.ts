@@ -3,7 +3,7 @@
  * в хвосте, инертность рядом с пагинацией и предупреждения о клиентской обработке.
  */
 import { pluginStateKey } from '../../core/definePlugin'
-import { logWarn } from '../../core/logger'
+import { logWarn } from '../../util/logger'
 import {
   type PluginDiagnose,
   serverRowModelReason,

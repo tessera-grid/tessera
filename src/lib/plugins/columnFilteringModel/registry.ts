@@ -12,8 +12,8 @@ import {
 } from '@tanstack/react-table'
 
 import { definePlugin } from '../../core/definePlugin'
-import { FILTERED_STUB } from '../../core/filtering'
-import { createSearchAwareFilteredRowModel } from '../../core/filteredRowModel'
+import { FILTERED_STUB } from '../../shared/filtering/filtering'
+import { createSearchAwareFilteredRowModel } from '../../shared/rowModels/filteredRowModel'
 import { neverInert } from '../../core/pluginDiagnostics'
 import { columnFilterTypesFeature } from './columnFilterTypesFeature'
 

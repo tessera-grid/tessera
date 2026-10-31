@@ -29,10 +29,10 @@ import {
   hasLazyMoves,
   readRowMoves,
   rowIdOf,
-} from '../../core/rowMoves'
+} from '../../shared/rowMoves'
 import { commitRowMove } from './commitRowMove'
 import { reportAction } from '../../core/debugActions'
-import { inOneCommit } from '../../core/oneCommit'
+import { inOneCommit } from '../../util/oneCommit'
 import { findDropParent, indexBeforeMove } from '../../grid/dnd/dropParent'
 import { dragRowsOf } from './dragRows'
 import { dropPlace } from './dropPlace'

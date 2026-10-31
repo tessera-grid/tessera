@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 
-import { useLatest } from '../../core/useLatest'
+import { useLatest } from '../../util/useLatest'
 
 const GRID_SCROLLER = '.data-grid__container'
 

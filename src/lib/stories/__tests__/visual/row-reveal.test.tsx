@@ -2,7 +2,7 @@ import { userEvent } from 'vitest/browser'
 import { describe, expect, test } from 'vitest'
 
 import type { TesseraFeatureEntry } from '../../../core/features'
-import { CellButton } from '../../../grid/Actions/CellButton'
+import { CellButton } from '../../../ui/CellButton/CellButton'
 import { headCells, humanClick, renderGrid } from '../helpers'
 import { waitForGrid } from './core-helpers'
 

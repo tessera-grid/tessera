@@ -26,7 +26,7 @@ import {
 import { ESTIMATE_SIZE } from '../core/virtualization/measureRows'
 import { isIndentColumn } from './cellExpandingStyles'
 import { renderSkeletonCell, skeletonCellKindOf } from './skeletonCell'
-import { TreeLines } from './TreeLinesLayer'
+import { TreeLines } from '../ui/TreeLines/TreeLinesLayer'
 import type { Column, Table } from '../types'
 import { CellWrapperContent, getAlignContent } from './CellWrapperContent'
 import { getCellPinningParams, pinnedSideToDom } from './cellPinningParams'
@@ -41,7 +41,7 @@ import bodyCellStyles from '../grid/BodyCell/BodyCell.module.css'
 import { getFooterPosition } from '../core/footer'
 import footerStyles from '../grid/Footer/Footer.module.css'
 import footerCellStyles from '../grid/FooterCell/FooterCell.module.css'
-import { useIsomorphicLayoutEffect } from '../core/useIsomorphicLayoutEffect'
+import { useIsomorphicLayoutEffect } from '../util/useIsomorphicLayoutEffect'
 import { inertProp } from '../core/inertProp'
 
 interface SkeletonColumn {

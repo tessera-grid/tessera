@@ -7,7 +7,7 @@ import {
   GRID_BUTTON_SIZE_VAR,
   controlColumnSize,
 } from '../core/createColumns/actionColumnParams'
-import { useIsomorphicLayoutEffect } from '../core/useIsomorphicLayoutEffect'
+import { useIsomorphicLayoutEffect } from '../util/useIsomorphicLayoutEffect'
 import type { ColumnSizingState, Updater } from '../types'
 
 interface ControlSizedTable {

@@ -3,7 +3,7 @@ import { render } from 'vitest-browser-react'
 import { page, server, userEvent } from 'vitest/browser'
 import { beforeAll, describe, expect, test } from 'vitest'
 
-import '../../../core/themeVariables/theme.css'
+import '../../../ui/theme/theme.css'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import {

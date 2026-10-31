@@ -9,7 +9,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { __resetLogger } from '../core/logger'
+import { __resetLogger } from '../util/logger'
 import type { RowSource } from '../core/rowSource'
 import { useCreateTable } from '../core/useCreateTable'
 import {

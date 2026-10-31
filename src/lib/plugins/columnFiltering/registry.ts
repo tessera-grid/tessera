@@ -8,7 +8,7 @@ import type { DayPickerLocale } from '@daypicker/react'
 
 import { definePlugin } from '../../core/definePlugin'
 import { readPluginHooks } from '../../core/definePlugin'
-import type { FilterChangeHook } from '../../core/filtering'
+import type { FilterChangeHook } from '../../shared/filtering/filtering'
 import type { PluginInertReason } from '../../core/pluginDiagnostics'
 import {
   columnFilteringModel,
@@ -18,7 +18,7 @@ import {
 import { DEFAULT_FILTER_DEBOUNCE_MS } from '../columnFilteringModel/conditions'
 import { filterHeaderAction } from './filterHeaderAction'
 import { FilterSummaryButton } from './FilterSummaryButton'
-import { filteredRowsCountSlot } from '../../grid/filtering/FilteredRowsCount'
+import { filteredRowsCountSlot } from '../../shared/filtering/FilteredRowsCount'
 
 export interface ColumnFilteringOptions extends Omit<
   ColumnFilteringModelOptions,

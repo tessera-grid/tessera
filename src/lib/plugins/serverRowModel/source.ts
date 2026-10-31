@@ -11,10 +11,10 @@ import { announceLabel } from '../../core/announcer'
 import { markLoadAnnounced } from '../../core/cancellation'
 import { reportAction, reportOutcome } from '../../core/debugActions'
 import { flashOutcome } from '../../core/flashes/flashFeature'
-import { logWarn } from '../../core/logger'
+import { logWarn } from '../../util/logger'
 import { activePageOf } from '../../core/pagination'
 import { pluginStateKey, setPluginState } from '../../core/definePlugin'
-import { readPluginHooks } from '../../core/definePlugin/channels'
+import { readPluginHooks } from '../../core/definePlugin'
 import {
   GROUP_ROW_PREFIX,
   groupKeysOf,
@@ -29,8 +29,8 @@ import {
   rowSelectionValueOf,
   setRowSelectionValue,
 } from '../../core/rowSelectionAll'
-import { serverAggregationsOf } from '../../core/serverAggregations'
-import { isThenable } from '../../core/thenable'
+import { serverAggregationsOf } from '../../shared/serverAggregations'
+import { isThenable } from '../../util/thenable'
 import { BlockTree, type ExpandedRows } from './tree'
 import { isExpandedAll } from '../../core/expandAll'
 import type {

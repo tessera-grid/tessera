@@ -5,7 +5,7 @@
  */
 import { type CSSProperties, type ReactNode, useRef, useState } from 'react'
 
-import { useIsomorphicLayoutEffect } from '../core/useIsomorphicLayoutEffect'
+import { useIsomorphicLayoutEffect } from '../util/useIsomorphicLayoutEffect'
 
 import styles from './Footer/Footer.module.css'
 

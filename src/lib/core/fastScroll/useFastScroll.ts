@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-import { useLatest } from '../useLatest'
+import { useLatest } from '../../util/useLatest'
 import { scrollLayer } from '../scrollStretch'
 import {
   type FastScrollDetectorOptions,

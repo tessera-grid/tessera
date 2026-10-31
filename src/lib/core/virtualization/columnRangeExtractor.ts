@@ -8,7 +8,7 @@ import {
 import type { Table } from '../../types'
 import { useActiveCellIndex } from '../keyboardNavigation'
 import { useSlice } from '../reactivity'
-import { useLatest } from '../useLatest'
+import { useLatest } from '../../util/useLatest'
 
 export interface UseColumnRangeExtractorParams {
   table: Table<any, any>

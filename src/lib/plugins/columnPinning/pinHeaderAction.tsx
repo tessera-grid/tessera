@@ -14,7 +14,7 @@ import { readPluginHooks } from '../../core/definePlugin'
 import { warnPluginInert } from '../../core/pluginDiagnostics'
 import type { ColumnPinningHooks, PinSides } from './types'
 
-import '../../grid/cellControls/buttonVisibility.css'
+import '../../ui/cellControls/buttonVisibility.css'
 
 type PinSide = 'start' | 'end'
 type PinningState = { start: string[]; end: string[] }

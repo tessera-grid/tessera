@@ -4,7 +4,7 @@
  */
 import { createGroupedRowModel } from '@tanstack/react-table'
 
-import { skipIdlePasses } from '../../core/idleRowModel'
+import { skipIdlePasses } from '../../shared/rowModels/idleRowModel'
 import type { RowData, Table, TableFeatures } from '../../types'
 
 interface GroupingTable {

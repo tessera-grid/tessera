@@ -4,7 +4,7 @@ import { describe, expect, test } from 'vitest'
 import { composeStories } from '@storybook/react-vite'
 import type { CSSProperties, ReactNode } from 'react'
 
-import '../../../core/themeVariables/theme.css'
+import '../../../ui/theme/theme.css'
 import { Button } from '@/lib/ui/Button'
 import { IconButton } from '@/lib/ui/IconButton'
 import { failureShownOn, pendingArcOf } from '../helpers'

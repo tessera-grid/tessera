@@ -3,7 +3,7 @@ import { userEvent } from 'vitest/browser'
 import { describe, expect, test } from 'vitest'
 import type { SVGProps } from 'react'
 
-import '../../../core/themeVariables/theme.css'
+import '../../../ui/theme/theme.css'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import { rowExpanding } from '../../../plugins'

@@ -12,7 +12,7 @@ import {
 } from '../../core/cancelInteraction'
 import type { PluginHeaderProps } from '../../core/definePlugin'
 import { useSlice, useTableState } from '../../core/reactivity'
-import { useLatest } from '../../core/useLatest'
+import { useLatest } from '../../util/useLatest'
 import { ResizeHandler } from '../../plugins/columnSizing/ResizeHandler'
 import type { ColumnSizingHooks } from './types'
 

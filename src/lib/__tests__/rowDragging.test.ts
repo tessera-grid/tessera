@@ -20,7 +20,7 @@ import {
 import { createExpandTimer } from '../plugins/rowDragging/expandTimer'
 import { commitRowMove } from '../plugins/rowDragging/commitRowMove'
 import { rowHighlightKey } from '../core/highlights/highlightFeature'
-import { __resetLogger } from '../core/logger'
+import { __resetLogger } from '../util/logger'
 import { captureInertWarnings } from './inertWarnings'
 import { findDraggableRow, getSortableRowIds } from '../grid/DndBodyWrapper'
 import { reorderRows } from '../plugins/rowDragging/reorderRows'

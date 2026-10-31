@@ -14,7 +14,7 @@ import {
 } from '../../core/rowSelectionAll'
 import { runServerAction } from '../../core/serverActions'
 
-import '../../grid/cellControls/buttonVisibility.css'
+import '../../ui/cellControls/buttonVisibility.css'
 
 /** Тематизируемая иконка группировки; `grouped` — у сгруппированной колонки (ADR 0062, AI13). */
 const GroupActionIcon = ({ grouped = false }: { grouped?: boolean }) => {

@@ -2,7 +2,7 @@
  * Оси настроек выгрузки (ADR 0044, §2, §6, §7): какие значения присутствуют по
  * активным плагинам, какие разрешены `allow`, начальные значения, место выполнения.
  */
-import { logError, logWarn } from '../../core/logger'
+import { logError, logWarn } from '../../util/logger'
 import {
   type PluginDiagnostic,
   type PluginInertReason,

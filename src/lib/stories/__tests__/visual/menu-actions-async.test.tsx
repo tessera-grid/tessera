@@ -11,7 +11,7 @@ import type {
   HeaderAction,
   RowAction,
 } from '../../../core/headerActions'
-import { __resetLogger } from '../../../core/logger'
+import { __resetLogger } from '../../../util/logger'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import type { DataGridProps } from '../../../grid/dataGridTypes'

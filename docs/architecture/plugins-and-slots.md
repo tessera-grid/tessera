@@ -176,7 +176,7 @@ reportOutcome(table, { plugin: 'starRows', action: 'save', cause: id }, promise)
   `check:tree-shaking` разрешает плагину модули моделей по цепочке `entry.model`.
 
 Выключенную модель показывает пустой срез — сужение `narrowExpandingOff`
-(`core/expandedRowModel.ts`), сохранённое значение не меняется. Общий код модели и
+(`shared/rowModels/expandedRowModel.ts`), сохранённое значение не меняется. Общий код модели и
 интерфейса живёт вне их папок (IV3).
 
 ## Слоты

@@ -4,7 +4,7 @@
  */
 import { afterEach, beforeEach, type MockInstance, vi } from 'vitest'
 
-import { __resetLogger, __setLoggerProduction } from '../core/logger'
+import { __resetLogger, __setLoggerProduction } from '../util/logger'
 
 export const captureInertWarnings = () => {
   let spy: MockInstance<typeof console.warn>

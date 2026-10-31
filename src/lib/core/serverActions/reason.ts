@@ -1,5 +1,5 @@
 import type { TableLabels } from '../localization'
-import { rejectionText } from '../thenable'
+import { rejectionText } from '../../util/thenable'
 import type { ServerActionKind } from './serverActionFeature'
 
 /** Подпись отказа по виду серверного действия (ADR 0132, §6). */

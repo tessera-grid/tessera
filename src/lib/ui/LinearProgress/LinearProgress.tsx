@@ -1,7 +1,7 @@
 import { memo, useRef, useState } from 'react'
 import clsx from 'clsx'
 
-import { useIsomorphicLayoutEffect } from '../../core/useIsomorphicLayoutEffect'
+import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
 import { useErrorFlash } from '../buttonStates/useErrorFlash'
 import { usePresence } from '../usePresence'
 

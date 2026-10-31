@@ -3,7 +3,7 @@
 // ступень, когда содержимое шире панели, и поднимается, только когда ширина покрывает
 // запомненную ширину содержимого в более полном виде — без мерцания.
 import { useRef, useState } from 'react'
-import { useIsomorphicLayoutEffect } from '../../core/useIsomorphicLayoutEffect'
+import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
 
 export type StatusBarLayout = 'full' | 'compact' | 'stacked'
 

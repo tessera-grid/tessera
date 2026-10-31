@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 
-import { logWarn, shouldLog } from '../../core/logger'
+import { logWarn, shouldLog } from '../../util/logger'
 
 /**
  * Включённое состояние скринридеру передаёт подпись (ADR 0129, §5): `active` сменился, а

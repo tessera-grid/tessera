@@ -13,9 +13,9 @@ import {
   reportAction,
   reportOutcome,
 } from '../../core/debugActions'
-import { logError, logWarn } from '../../core/logger'
+import { logError, logWarn } from '../../util/logger'
 import { isSkeletonShown } from '../../core/skeletonOptions'
-import { isThenable } from '../../core/thenable'
+import { isThenable } from '../../util/thenable'
 import { downloadFile } from './download'
 import {
   collectExportData,

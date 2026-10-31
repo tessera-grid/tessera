@@ -6,7 +6,7 @@ import { useState } from 'react'
 
 import { definePlugin, isSkeletonShown } from '../../../../index'
 import { Skeleton } from '../../../../ui'
-import { DATA_GRID_THEME_CLASS } from '../../../core/themeVariables'
+import { DATA_GRID_THEME_CLASS } from '../../../ui/theme'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import { SKELETON_WAVE_ANIMATION } from '../../../grid/useSkeletonWave'

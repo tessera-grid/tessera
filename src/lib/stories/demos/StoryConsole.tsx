@@ -5,8 +5,8 @@
  */
 import { type ReactNode, useId, useRef, useState } from 'react'
 
-import { DATA_GRID_THEME_CLASS } from '../../core/themeVariables'
-import { useIsomorphicLayoutEffect } from '../../core/useIsomorphicLayoutEffect'
+import { DATA_GRID_THEME_CLASS } from '../../ui/theme'
+import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
 import { Button } from '../../ui/Button'
 import { useIcons } from '../../ui/icons'
 import { ConsoleFilters } from './ConsoleFilters'

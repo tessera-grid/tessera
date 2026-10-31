@@ -11,7 +11,7 @@ import {
   type TesseraFeatureEntry,
 } from './features'
 import { readPluginHooks, writePluginAtom } from './definePlugin/channels'
-import { logWarn } from './logger'
+import { logWarn } from '../util/logger'
 import {
   type ModelArgsMismatch,
   modelArgsMismatchMessage,
@@ -27,7 +27,7 @@ import {
   reportPluginError,
   warnInertPlugins,
 } from './pluginDiagnostics'
-import { useIsomorphicLayoutEffect } from './useIsomorphicLayoutEffect'
+import { useIsomorphicLayoutEffect } from '../util/useIsomorphicLayoutEffect'
 
 export const useTableEffects = (
   table: unknown,

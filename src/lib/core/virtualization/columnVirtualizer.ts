@@ -9,7 +9,7 @@ import type { Column, Table } from '../../types'
 import { getDisplayColumns } from '../displayColumns'
 import { useTableState } from '../reactivity'
 import { useColumnRangeExtractor } from './columnRangeExtractor'
-import { useIsomorphicLayoutEffect } from '../useIsomorphicLayoutEffect'
+import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
 
 export interface ColumnVirtualizerParams {
   table: Table<any, any>

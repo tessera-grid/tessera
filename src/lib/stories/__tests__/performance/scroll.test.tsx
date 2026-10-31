@@ -45,7 +45,7 @@ import { renderPluginsGrid } from './hosts'
 import { scrollLayer } from '../../../core/scrollStretch'
 import type { CellComponentProps } from '../../../core/createSlots'
 import type { TesseraFeatureEntry } from '../../../core/features'
-import { CellButton } from '../../../grid/Actions/CellButton'
+import { CellButton } from '../../../ui/CellButton/CellButton'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import {

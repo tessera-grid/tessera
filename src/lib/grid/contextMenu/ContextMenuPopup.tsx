@@ -5,10 +5,7 @@
 import { Menu } from '@base-ui/react/menu'
 import clsx from 'clsx'
 
-import {
-  usePortalThemeData,
-  usePortalThemeClass,
-} from '../../core/themeVariables'
+import { usePortalThemeData, usePortalThemeClass } from '../../ui/theme'
 import type { TableLabels } from '../../core/localization'
 import type {
   ContextMenuAction,

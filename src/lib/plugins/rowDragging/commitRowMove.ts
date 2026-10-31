@@ -17,12 +17,12 @@ import {
   updateChildren,
   withoutRow,
   withRowNear,
-} from '../../core/rowMoves'
-import { inOneCommit } from '../../core/oneCommit'
-import { isThenable, rejectionText } from '../../core/thenable'
+} from '../../shared/rowMoves'
+import { inOneCommit } from '../../util/oneCommit'
+import { isThenable, rejectionText } from '../../util/thenable'
 import type { RowMoveFailed } from './rowDraggingFeature'
 import { flashOutcome } from '../../core/flashes/flashFeature'
-import { withoutFailure } from '../../core/failedAttempts'
+import { withoutFailure } from '../../shared/failedAttempts'
 import type { RowDraggingHooks } from './types'
 
 type Updater<T> = (prev: T) => T

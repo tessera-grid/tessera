@@ -12,9 +12,9 @@ import { createRoot, type Root } from 'react-dom/client'
 import { Toolbar } from '@base-ui/react/toolbar'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { __resetLogger } from '../core/logger'
-import { CellButton } from '../grid/Actions/CellButton'
-import { RowButton } from '../grid/Actions/RowButton'
+import { __resetLogger } from '../util/logger'
+import { CellButton } from '../ui/CellButton/CellButton'
+import { RowButton } from '../ui/RowButton/RowButton'
 import { IconButton, type IconButtonProps } from '../ui/IconButton'
 import { ToolbarButton } from '../ui/ToolbarButton'
 

@@ -4,7 +4,7 @@ import { userEvent } from '@vitest/browser/context'
 import { render } from 'vitest-browser-react'
 import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 
-import type { ColorMode } from '../../../core/themeVariables'
+import type { ColorMode } from '../../../ui/theme'
 import { DragHandler } from '../../../grid/dnd/DragHandler'
 import { PinButton } from '../../../plugins/columnPinning/PinButton'
 import { ResizeHandler } from '../../../plugins/columnSizing/ResizeHandler'
@@ -12,7 +12,7 @@ import { SortButton } from '../../../plugins/columnSorting/SortButton'
 import { GroupButton } from '../../../plugins/rowGrouping/GroupButton'
 import { renderHeaderButtons } from './header-buttons-helpers'
 // Контролы рендерятся без DataGrid — тему подключаем явно (иначе токены не заданы).
-import '../../../core/themeVariables/theme.css'
+import '../../../ui/theme/theme.css'
 
 // Матрица темизации, этап 3 — контролы шапки: сортировка/пиннинг/группировка
 // (base/active/hover), ресайз и drag (base/disabled). Публичные примитивы `/ui` —

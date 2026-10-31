@@ -4,7 +4,7 @@
  */
 import type { PaginationState } from '@tanstack/react-table'
 
-import { logWarn } from '../../core/logger'
+import { logWarn } from '../../util/logger'
 import {
   type PluginDiagnose,
   serverRowModelReason,

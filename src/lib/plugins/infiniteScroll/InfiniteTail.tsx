@@ -13,7 +13,7 @@ import { infiniteScrollInertReason } from './model'
 import type { InfiniteScrollHooks, InfiniteScrollState } from './types'
 
 import styles from './InfiniteTail.module.css'
-import { useIsomorphicLayoutEffect } from '../../core/useIsomorphicLayoutEffect'
+import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
 
 interface InfiniteOptions {
   infiniteScrollHasMore?: boolean

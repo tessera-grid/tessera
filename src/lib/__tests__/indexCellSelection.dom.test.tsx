@@ -11,7 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { copyCellSelection } from '../core/cellSelectionCopy'
 import type { DebugAction } from '../core/debugActions'
-import { __resetLogger } from '../core/logger'
+import { __resetLogger } from '../util/logger'
 import type { RowSource } from '../core/rowSource'
 import { readServerAction } from '../core/serverActions'
 import { useCreateTable } from '../core/useCreateTable'

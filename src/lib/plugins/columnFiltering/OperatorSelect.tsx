@@ -6,10 +6,7 @@ import clsx from 'clsx'
 import { Check, ChevronDown } from 'lucide-react'
 
 import { useLocalization } from '../../core/localization'
-import {
-  usePortalThemeData,
-  usePortalThemeClass,
-} from '../../core/themeVariables'
+import { usePortalThemeData, usePortalThemeClass } from '../../ui/theme'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 import { useTriggerWidth } from '../../ui/Popup/useTriggerWidth'
 

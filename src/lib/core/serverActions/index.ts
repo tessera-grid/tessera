@@ -21,7 +21,7 @@ import {
   setRowSelectionValue,
   type RowSelectionValue,
 } from '../rowSelectionAll'
-import { isThenable, rejectionText } from '../thenable'
+import { isThenable, rejectionText } from '../../util/thenable'
 import {
   readServerAction,
   type ServerActionCause,

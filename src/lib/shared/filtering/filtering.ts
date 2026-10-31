@@ -4,15 +4,15 @@
  * зовёт (как `onPageChange`, PG6). Общие для `columnFiltering`, `quickSearch` и
  * заглушки пустого результата. В серверном режиме — серверные действия (ADR 0116).
  */
-import { reportAction, sourceOf } from './debugActions'
-import { readPluginHooks } from './definePlugin'
+import { reportAction, sourceOf } from '../../core/debugActions'
+import { readPluginHooks } from '../../core/definePlugin'
 import { searchColumnIdsOf } from './searchColumns'
-import { ILLUSTRATION_SIZE, type StubEntry } from './stubs'
+import { ILLUSTRATION_SIZE, type StubEntry } from '../../core/stubs'
 import {
   runServerAction,
   type ServerActionContext,
   type ServerActionResult,
-} from './serverActions'
+} from '../../core/serverActions'
 
 export interface ColumnFilterEntry {
   id: string

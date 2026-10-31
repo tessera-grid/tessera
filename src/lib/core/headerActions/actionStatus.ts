@@ -19,7 +19,7 @@ import {
   registerPending,
 } from '../cancellation'
 import type { TableLabels } from '../localization'
-import { isThenable, rejectionText } from '../thenable'
+import { isThenable, rejectionText } from '../../util/thenable'
 import {
   type ActionStatus,
   type ActionStatusEntry,

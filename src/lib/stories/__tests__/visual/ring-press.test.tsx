@@ -3,7 +3,7 @@ import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 import type { CSSProperties } from 'react'
 
-import '../../../core/themeVariables/theme.css'
+import '../../../ui/theme/theme.css'
 import { IconButton } from '@/lib/ui/IconButton'
 import { SvgIcon } from '@/lib/ui/icons'
 import { pendingArcOf } from '../helpers'

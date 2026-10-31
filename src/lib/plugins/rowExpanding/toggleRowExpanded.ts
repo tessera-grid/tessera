@@ -9,8 +9,8 @@ import {
 import { reportAction, reportOutcome } from '../../core/debugActions'
 import { rowSourceOf } from '../../core/rowSource'
 import { flashOutcome } from '../../core/flashes/flashFeature'
-import { inOneCommit } from '../../core/oneCommit'
-import { isThenable, rejectionText } from '../../core/thenable'
+import { inOneCommit } from '../../util/oneCommit'
+import { isThenable, rejectionText } from '../../util/thenable'
 import {
   clearExpandFailed,
   markExpandFailed,

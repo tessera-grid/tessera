@@ -11,7 +11,7 @@ import { useRef, useState } from 'react'
 
 import { createAtom, useSelector } from '@tanstack/react-store'
 import { functionalUpdate } from '@tanstack/react-table'
-import { useIsomorphicLayoutEffect } from './useIsomorphicLayoutEffect'
+import { useIsomorphicLayoutEffect } from '../util/useIsomorphicLayoutEffect'
 
 /** Текущая свёртка набора (опции, действия слотов) — свежее, чем опции `table`. */
 export interface NarrowContext {

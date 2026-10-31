@@ -4,13 +4,13 @@ import { userEvent } from '@vitest/browser/context'
 import { render } from 'vitest-browser-react'
 import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 
-import type { ColorMode } from '../../../core/themeVariables'
+import type { ColorMode } from '../../../ui/theme'
 import { Tooltip } from '../../../ui/Tooltip'
 import { LinearProgress } from '../../../ui/LinearProgress'
 import { Skeleton } from '../../../ui/Skeleton'
 import { SvgIcon } from '../../../ui/icons'
 // Компоненты рендерятся без DataGrid — тему подключаем явно.
-import '../../../core/themeVariables/theme.css'
+import '../../../ui/theme/theme.css'
 
 // Матрица темизации, этап 4 — загрузка, tooltip, иконки. LinearProgress/Skeleton/
 // SvgIcon — обычный standalone-рендер; Tooltip особый: popup уходит в ПОРТАЛ

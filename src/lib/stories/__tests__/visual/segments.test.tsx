@@ -5,8 +5,8 @@ import { commands, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { afterEach, describe, expect, test } from 'vitest'
 
-import '../../../core/themeVariables/theme.css'
-import { DATA_GRID_THEME_CLASS } from '../../../core/themeVariables'
+import '../../../ui/theme/theme.css'
+import { DATA_GRID_THEME_CLASS } from '../../../ui/theme'
 import { Segments, type SegmentOption } from '../../../ui/Segments'
 import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
 

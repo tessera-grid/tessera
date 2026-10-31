@@ -4,7 +4,7 @@
  */
 import { describe, expect, it, vi } from 'vitest'
 
-import type { RowMoves } from '../core/rowMoves'
+import type { RowMoves } from '../shared/rowMoves'
 import { settleColumnMove } from '../plugins/columnDragging/commitColumnMove'
 import { commitRowMove } from '../plugins/rowDragging/commitRowMove'
 

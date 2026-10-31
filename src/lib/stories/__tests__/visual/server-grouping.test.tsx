@@ -3,10 +3,10 @@ import { render } from 'vitest-browser-react'
 import { commands, server as browser, userEvent } from 'vitest/browser'
 import { describe, expect, test } from 'vitest'
 
-import '../../../core/themeVariables/theme.css'
+import '../../../ui/theme/theme.css'
 import type { DebugAction } from '../../../core/debugActions'
 import type { TesseraFeatureEntry } from '../../../core/features'
-import { setSearchByUser } from '../../../core/filtering'
+import { setSearchByUser } from '../../../shared/filtering/filtering'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import {

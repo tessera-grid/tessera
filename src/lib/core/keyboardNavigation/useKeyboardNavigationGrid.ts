@@ -14,7 +14,7 @@ import {
   type NavTable,
   isKeyboardNavigationEnabled,
 } from './model'
-import { useIsomorphicLayoutEffect } from '../useIsomorphicLayoutEffect'
+import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
 
 export interface KeyboardNavigationGrid {
   onKeyDown: (event: ReactKeyboardEvent<HTMLElement>) => void

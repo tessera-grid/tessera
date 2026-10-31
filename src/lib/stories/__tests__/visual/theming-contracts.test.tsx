@@ -6,7 +6,7 @@ import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
-import { RowButton } from '../../../grid/Actions/RowButton'
+import { RowButton } from '../../../ui/RowButton/RowButton'
 import { DragHandler } from '../../../grid/dnd/DragHandler'
 import { ActionButton } from '../../../grid/headerActions/ActionButton'
 import { PinButton } from '../../../plugins/columnPinning/PinButton'
@@ -18,7 +18,7 @@ import { IconButton } from '../../../ui/IconButton'
 import { Switch } from '../../../ui/Switch'
 import { ToolbarButton } from '../../../ui/ToolbarButton'
 import { revealCellButtons } from '../helpers'
-import '../../../core/themeVariables/theme.css'
+import '../../../ui/theme/theme.css'
 import {
   type HeaderButtonKind,
   renderHeaderButtons,

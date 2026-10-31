@@ -27,7 +27,7 @@ const BOUNDED: Record<string, string> = {
     'константный набор операторов',
   'plugins/quickSearchModel/search.ts:UNSEARCHABLE_TYPES':
     'константный набор типов',
-  'core/logger.ts:emitted':
+  'util/logger.ts:emitted':
     'тексты выданных предупреждений: их набор конечен — по одному на место в коде',
   'core/wallTime.ts:formatters':
     'форматтер на часовой пояс: поясов конечное число',

@@ -48,9 +48,9 @@ import {
 } from './dnd/parameters'
 import { OverlayBodyRow } from './OverlayBodyRow'
 import { windowedListSortingStrategy } from './dnd/windowedListSortingStrategy'
-import { useIsomorphicLayoutEffect } from '../core/useIsomorphicLayoutEffect'
-import { useLatest } from '../core/useLatest'
-import { REACT_MAJOR } from '../core/reactVersion'
+import { useIsomorphicLayoutEffect } from '../util/useIsomorphicLayoutEffect'
+import { useLatest } from '../util/useLatest'
+import { REACT_MAJOR } from '../util/reactVersion'
 
 /** Перетаскиваемая строка модели; без перетаскивания строки не обходятся (D33). */
 export const findDraggableRow = <TRow,>(

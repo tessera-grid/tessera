@@ -8,8 +8,8 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { setSearchByUser } from '../core/filtering'
-import { searchColumnIdsOf } from '../core/searchColumns'
+import { setSearchByUser } from '../shared/filtering/filtering'
+import { searchColumnIdsOf } from '../shared/filtering/searchColumns'
 import { useCreateTable } from '../core/useCreateTable'
 import { quickSearch } from '../plugins'
 

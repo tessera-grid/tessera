@@ -6,9 +6,9 @@
  */
 import { createExpandedRowModel } from '@tanstack/react-table'
 
-import type { RowData, Table, TableFeatures } from '../types'
-import type { NarrowState } from './effectiveState'
-import { recordRowChange } from './rowChanges'
+import type { RowData, Table, TableFeatures } from '../../types'
+import type { NarrowState } from '../../core/effectiveState'
+import { recordRowChange } from '../../core/rowChanges'
 
 interface ExpandRow {
   id: string

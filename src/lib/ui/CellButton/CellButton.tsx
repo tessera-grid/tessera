@@ -7,32 +7,32 @@ import {
   type ActiveProps,
   type DerivedButtonProps,
   type RevealProps,
-} from '../../ui/IconButton'
-import { HiddenButtonContext } from '../../ui/IconButton/iconReveal'
+} from '../IconButton'
+import { HiddenButtonContext } from '../IconButton/iconReveal'
 
 import '../cellControls/buttonVisibility.css'
 
-export interface RowButtonProps
+export interface CellButtonProps
   extends DerivedButtonProps, RevealProps, ActiveProps {
   /** Тултип и доступное имя кнопки (`aria-label`). */
   label: string
   icon: ReactNode
 }
 
-export const RowButton = memo(
+export const CellButton = memo(
   ({
     label,
     icon,
     active,
     revealOnHover = true,
     ...button
-  }: RowButtonProps) => (
+  }: CellButtonProps) => (
     <div
-      className={clsx('row__button', revealOnHover && 'row__button--hidden')}
+      className={clsx('cell__button', revealOnHover && 'cell__button--hidden')}
       data-button-active={active || undefined}
     >
       <HiddenButtonContext.Provider value={revealOnHover && !active}>
-        <IconButton variant="overlay" label={label} active={active} {...button}>
+        <IconButton label={label} active={active} {...button}>
           {icon}
         </IconButton>
       </HiddenButtonContext.Provider>
@@ -40,4 +40,4 @@ export const RowButton = memo(
   ),
 )
 
-RowButton.displayName = 'RowButton'
+CellButton.displayName = 'CellButton'

@@ -4,8 +4,8 @@ import type { FastScrollStore } from './fastScroll/useFastScroll'
 import { useTableState } from './reactivity'
 import { scrollGridTo } from './scrollGridTo'
 import type { RowSource } from './rowSource'
-import { useIsomorphicLayoutEffect } from './useIsomorphicLayoutEffect'
-import { useLatest } from './useLatest'
+import { useIsomorphicLayoutEffect } from '../util/useIsomorphicLayoutEffect'
+import { useLatest } from '../util/useLatest'
 
 interface RowRange {
   range: { startIndex: number; endIndex: number } | null

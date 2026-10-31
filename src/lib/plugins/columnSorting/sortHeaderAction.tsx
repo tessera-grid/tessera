@@ -14,7 +14,7 @@ import { readPluginHooks } from '../../core/definePlugin'
 import { runServerAction } from '../../core/serverActions'
 import type { ColumnSortingHooks } from './types'
 
-import '../../grid/cellControls/buttonVisibility.css'
+import '../../ui/cellControls/buttonVisibility.css'
 
 type SortDir = 'asc' | 'desc' | 'none'
 

@@ -10,7 +10,7 @@ import { type RefObject, useRef, useState } from 'react'
 import { useVirtualizer } from '../../../vendor/tanstack-virtual/react-virtual'
 
 import { useLocalization } from '../../core/localization'
-import { TreeLines } from '../../grid/TreeLinesLayer'
+import { TreeLines } from '../../ui/TreeLines/TreeLinesLayer'
 import { useTableState } from '../../core/reactivity'
 import type { Table } from '../../types'
 import { Button } from '../../ui/Button'

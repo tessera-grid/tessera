@@ -194,13 +194,13 @@ start` — кнопка держит свою ширину, обёртка её 
 Грид работает на React 18 и 19, под StrictMode и на сервере
 (ADR [0091](../decisions/0091-environment-compatibility.md)). Правила для нового кода:
 
-- **Эффект раскладки — `useIsomorphicLayoutEffect`** (`core/useIsomorphicLayoutEffect`),
+- **Эффект раскладки — `useIsomorphicLayoutEffect`** (`util/useIsomorphicLayoutEffect`),
   а не `useLayoutEffect`: без DOM он становится `useEffect`, и React 18 не предупреждает
   при серверном рендере. Модуль не обращается к `window` и `document` при импорте —
   только в эффектах и обработчиках или за проверкой `typeof`.
 - **`inert` — через `inertProp`** (`core/inertProp`): React 18 атрибута не знает и булево
   значение в DOM не пишет. Различия API 18 и 19 — по `REACT_MAJOR`
-  (`core/reactVersion`); так `Tooltip` берёт `ref` триггера.
+  (`util/reactVersion`); так `Tooltip` берёт `ref` триггера.
 - **Обновители состояния и эффекты переживают двойной запуск**: StrictMode зовёт их
   дважды. Обновитель не меняет `prev` — `reorderRows` копирует затронутые группы.
 - Входы `dist` помечены `'use client'` (баннер сборки), проп `table` у `DataGrid` —

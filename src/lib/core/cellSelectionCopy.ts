@@ -15,7 +15,7 @@ import {
 import { reportAction } from './debugActions'
 import { ENGLISH_LABELS } from './localization/resolveLabels'
 import { rowSourceOf } from './rowSource'
-import { timeSlicer } from './timeSlice'
+import { timeSlicer } from '../util/timeSlice'
 import {
   readServerAction,
   writeServerAction,

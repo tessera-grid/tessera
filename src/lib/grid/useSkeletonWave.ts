@@ -1,6 +1,7 @@
 import { type RefObject } from 'react'
 
-import { useIsomorphicLayoutEffect } from '../core/useIsomorphicLayoutEffect'
+import { parseDuration } from '../util/cssTime'
+import { useIsomorphicLayoutEffect } from '../util/useIsomorphicLayoutEffect'
 import { SKELETON_WAVE_ATTRIBUTE } from '../ui/Skeleton/Skeleton'
 
 /**
@@ -23,13 +24,6 @@ const numberOf = (
   return Number.isFinite(value) ? value : fallback
 }
 
-/** Время из CSS (`2.4s`, `500ms`) в мс. */
-const msOf = (value: string) => {
-  const number = Number.parseFloat(value)
-  if (!Number.isFinite(number)) return 0
-  return value.trim().endsWith('ms') ? number : number * 1000
-}
-
 /**
  * Проход и задержка волны из токенов темы — через `transition` пробы в рамке: под
  * `prefers-reduced-motion` тема обнуляет переходы, и волны нет.
@@ -50,8 +44,8 @@ const timingOf = (
   frame.append(probe)
   const style = getComputedStyle(probe)
   const timing = {
-    duration: msOf(style.transitionDuration),
-    delay: msOf(style.transitionDelay),
+    duration: parseDuration(style.transitionDuration),
+    delay: parseDuration(style.transitionDelay),
   }
   probe.remove()
   return timing

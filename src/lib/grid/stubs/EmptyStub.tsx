@@ -7,11 +7,11 @@ import { useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 
 import { useLocalization } from '../../core/localization'
-import { useIsomorphicLayoutEffect } from '../../core/useIsomorphicLayoutEffect'
-import { useLatest } from '../../core/useLatest'
+import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
+import { useLatest } from '../../util/useLatest'
 import type { StubContext, StubEntry, StubRender } from '../../core/stubs'
 import { Button } from '../../ui/Button'
-import { useIcons } from '../../ui/icons'
+import { type TableIcons, useIcons } from '../../ui/icons'
 import { Stub } from '../../ui/Stub'
 
 interface EmptyStubProps {
@@ -83,8 +83,8 @@ export const EmptyStub = ({
     )
   }
 
-  const Media = entry.media && icons[entry.media]
-  const ActionIcon = action?.icon && icons[action.icon]
+  const Media = entry.media && icons[entry.media as keyof TableIcons]
+  const ActionIcon = action?.icon && icons[action.icon as keyof TableIcons]
   return (
     <Stub
       ref={bodyRef}

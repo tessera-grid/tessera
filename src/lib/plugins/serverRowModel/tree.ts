@@ -4,7 +4,7 @@
  * окно тела раскладывается по хранилищам. Предел `maxBlocks` — общий: первыми уходят
  * блоки свёрнутых веток, затем давно не нужные.
  */
-import { timeSlicer } from '../../core/timeSlice'
+import { timeSlicer } from '../../util/timeSlice'
 import { BlockStore, type BlockResponse, editedIndex } from './blockStore'
 
 export interface TreeRequest<TQuery> {

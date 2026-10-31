@@ -2,10 +2,7 @@ import { Tooltip as BaseTooltip } from '@base-ui/react/tooltip'
 import clsx from 'clsx'
 import type { ReactNode, RefObject } from 'react'
 
-import {
-  usePortalThemeData,
-  usePortalThemeClass,
-} from '../../core/themeVariables'
+import { usePortalThemeData, usePortalThemeClass } from '../theme'
 import type { TooltipSide } from './Tooltip'
 import styles from './Tooltip.module.css'
 
