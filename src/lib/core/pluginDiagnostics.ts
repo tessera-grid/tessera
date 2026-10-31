@@ -43,14 +43,6 @@ export const serverRowModelReason = (
     ? 'serverRowModel'
     : undefined
 
-/**
- * Жесты, клавиши и копирование выделения ячеек — только с плагином интерфейса (ADR 0120);
- * в серверной модели строк — по индексам (ADR 0146).
- */
-export const isCellSelectionInteractive = (table: unknown) =>
-  (table as { options?: { cellSelectionInteraction?: boolean } }).options
-    ?.cellSelectionInteraction === true
-
 /** `diagnose` плагина, у которого нет условий инертности (ADR 0036, PQ1). */
 export const neverInert: PluginDiagnose = () => undefined
 

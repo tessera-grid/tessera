@@ -1,19 +1,25 @@
 // BodyCell. Ячейка тела: пиннинг-стили/атрибуты (start/end) через
 // getCellPinningParams, skeleton при fast-scroll, слоты, контент через flexRender
 // от columnDef.cell.
-import { memo, useContext, useMemo, type CSSProperties } from 'react'
+import { memo, useContext, useMemo } from 'react'
 
 import { flexRender } from '@tanstack/react-table'
 import clsx from 'clsx'
 
 import { useFastScrollSuppressed } from '../core/fastScroll'
-import { useCellSelection } from '../core/cellSelection'
+import {
+  bodyOf,
+  type CellContributionContext,
+  mergeContributions,
+  useContributionNode,
+} from '../core/bodyContributions'
 import { getDisplayColumnIndex } from '../core/displayColumns'
 import {
+  KeyboardNavigationContext,
   NAV_CELL_ATTR,
-  useKeyboardNavigationCell,
+  selectNavigationCell,
+  useKeyboardNavigationCellBinding,
 } from '../core/keyboardNavigation'
-import { useTableState } from '../core/reactivity'
 import { useLocalization } from '../core/localization'
 import { rowSourceOf } from '../core/rowSource'
 import {
@@ -92,46 +98,60 @@ export const BodyCell = memo(
     // Новая ссылка на предикат плагина (canSelectCell, canEditCell…) — перерисовка.
     usePluginRenderVersion()
 
-    // Самоподписка: BodyCell — memo по стабильному `cell`, поэтому смена срезов не
-    // приходит сверху новым пропом. Подписка сужена до срезов ФОРМЫ КОЛОНОК, от которых
-    // зависят атрибуты/офсеты ячейки (пиннинг/размеры/порядок/видимость) — на смену
-    // rowSelection/сортировки/раскрытия ячейка НЕ ре-рендерится (это лишняя работа;
-    // контент-реактивность несут сам плагин-компонент ячейки и его useSelector).
-    // Подсветка своей ячейки, диапазона вокруг и своей колонки (ADR 0080, ADR 0152) и
-    // ожидание действия меню на ячейке — в той же подписке.
+    // Одна подписка ячейки (ADR 0170, CH5): BodyCell — memo по стабильному `cell`, смена
+    // срезов сверху пропом не приходит. Узел — срезы формы колонок (пиннинг, размеры,
+    // порядок, видимость), подсветка, вспышка и ожидание на ячейке и её колонке (ADR 0080,
+    // ADR 0152), активная ячейка навигации и выборы вкладчиков плагинов; на смену выбора
+    // строк, сортировки и раскрытия ячейка не перерисовывается.
     const rowId = cell.row.id
     const columnId = cell.column.id
     const cellKey = cellHighlightKey(rowId, columnId)
     const columnKey = columnHighlightKey(columnId)
-    const { cellHighlight, columnHighlight, cellFlash, columnFlash, busy } =
-      useTableState(table as never, (state: unknown) => {
-        const s = state as Record<string, unknown> & {
-          highlights?: Highlights
-          flashes?: Flashes
-          actionStatus?: ActionStatus
-        }
-        return {
-          columnPinning: s.columnPinning,
-          columnSizing: s.columnSizing,
-          columnOrder: s.columnOrder,
-          columnVisibility: s.columnVisibility,
-          cellHighlight:
-            s.highlights?.[cellKey] ??
-            rangeHighlightAt(table, s.highlights, rowId, columnId),
-          columnHighlight: s.highlights?.[columnKey],
-          cellFlash:
-            s.flashes?.[cellKey] ??
-            rangeFlashAt(table, s.flashes, rowId, columnId),
-          columnFlash: s.flashes?.[columnKey],
-          busy: cellPendingOf(table, s.actionStatus, rowId, columnId),
-        }
-      }) as {
-        cellHighlight?: HighlightTargetState
-        columnHighlight?: HighlightTargetState
-        cellFlash?: FlashEntry
-        columnFlash?: FlashEntry
-        busy?: 'wave' | 'busy'
+    const navigation = useContext(KeyboardNavigationContext)
+    const contributors = bodyOf(table).cell
+    const contributionContext: CellContributionContext = {
+      table: table as never,
+      cell,
+      rowIndex,
+      navigation,
+    }
+    const {
+      cellHighlight,
+      columnHighlight,
+      cellFlash,
+      columnFlash,
+      busy,
+      navActive,
+      contributions,
+    } = useContributionNode(table, contributors, contributionContext, state => {
+      const s = state as Record<string, unknown> & {
+        highlights?: Highlights
+        flashes?: Flashes
+        actionStatus?: ActionStatus
       }
+      return {
+        columnPinning: s.columnPinning,
+        columnSizing: s.columnSizing,
+        columnOrder: s.columnOrder,
+        columnVisibility: s.columnVisibility,
+        cellHighlight: (s.highlights?.[cellKey] ??
+          rangeHighlightAt(table, s.highlights, rowId, columnId)) as
+          HighlightTargetState | undefined,
+        columnHighlight: s.highlights?.[columnKey] as
+          HighlightTargetState | undefined,
+        cellFlash: (s.flashes?.[cellKey] ??
+          rangeFlashAt(table, s.flashes, rowId, columnId)) as
+          FlashEntry | undefined,
+        columnFlash: s.flashes?.[columnKey] as FlashEntry | undefined,
+        busy: cellPendingOf(table, s.actionStatus, rowId, columnId) as
+          'wave' | 'busy' | undefined,
+        navActive: selectNavigationCell(table, s, {
+          rowIndex,
+          columnId,
+          participates: navigation && !copy,
+        }),
+      }
+    })
     const highlighted = highlightRender([
       { layer: 'cell', state: cellHighlight },
       { layer: 'column', state: columnHighlight, describe: false },
@@ -184,16 +204,18 @@ export const BodyCell = memo(
     const showSkeleton = isSlot ? !isActionsColumn : isSuppressed
     const canRenderSlots = !isActionsColumn && !showSkeleton && !isSlot
 
-    // Выделение ячеек (плагин cellSelection): гранулярная подписка, `null` без
-    // плагина/для невыбираемых ячеек — тогда ниже не вешаем ни атрибутов, ни
-    // обработчиков, ни tabindex (шов инертен, см. ADR 0029).
-    const cellSel = useCellSelection(cell)
     // Клавиатурная навигация: включённая владеет roving tabindex ячейки; `null` без неё.
-    const nav = useKeyboardNavigationCell(
+    const nav = useKeyboardNavigationCellBinding(
       table,
+      navActive,
       rowIndex,
-      cell.column.id,
-      !copy,
+      columnId,
+    )
+    // Вклад плагинов в ячейку (ADR 0170, §3): атрибуты, переменные стиля, tabindex.
+    const contributed = mergeContributions(
+      contributors,
+      contributions,
+      contributionContext,
     )
     const labels = useLocalization()
     // Число строк группы серверной группировки (ADR 0144, §2) — рядом с её значением.
@@ -202,19 +224,6 @@ export const BodyCell = memo(
     ).getIsGrouped?.()
       ? rowSourceOf(table).groupChildCount?.(cell.row)
       : undefined
-    const edgeColor = (on: boolean) =>
-      on ? 'var(--tsr-comp-cell-selected-border-color)' : 'transparent'
-    const selectionStyle = (
-      cellSel?.isSelected
-        ? {
-            '--tsr-sel-edge-top': edgeColor(cellSel.edgeTop),
-            '--tsr-sel-edge-right': edgeColor(cellSel.edgeRight),
-            '--tsr-sel-edge-bottom': edgeColor(cellSel.edgeBottom),
-            '--tsr-sel-edge-left': edgeColor(cellSel.edgeLeft),
-          }
-        : undefined
-    ) as CSSProperties | undefined
-
     const render = useMemo(() => {
       if (showSkeleton) {
         return renderSkeletonCell(
@@ -281,36 +290,16 @@ export const BodyCell = memo(
                 right: endPinnedOffset,
               }),
           paddingLeft,
-          ...selectionStyle,
+          ...contributed.style,
           ...highlighted.style,
           ...flashed.style,
         }}
-        tabIndex={nav ? nav.tabIndex : cellSel?.tabIndex}
+        {...contributed.attrs}
+        tabIndex={nav ? nav.tabIndex : contributed.tabIndex}
         onFocus={nav?.onFocus}
         onBlur={nav?.onBlur}
         {...(nav && { [NAV_CELL_ATTR]: '' })}
         data-kn-active={nav?.isActive || undefined}
-        data-cell-selectable={cellSel ? true : undefined}
-        onMouseDown={
-          cellSel
-            ? event => {
-                // Начинаем/сбрасываем выделение только ЛЕВОЙ кнопкой. Правый клик
-                // (button 2) шлёт mousedown до contextmenu — не должен рвать
-                // мультивыбор; выделением target'а по правому клику владеет
-                // контекстное меню (setFocusedCell, ADR 0030).
-                if (event.button !== 0) {
-                  return
-                }
-                cellSel.onMouseDown(event)
-                // Фокус на ячейку — чтобы нативное copy-событие всплыло сюда.
-                event.currentTarget.focus()
-              }
-            : undefined
-        }
-        onMouseEnter={cellSel ? cellSel.onMouseEnter : undefined}
-        aria-selected={nav && cellSel ? cellSel.isSelected : undefined}
-        data-cell-selected={cellSel?.isSelected || undefined}
-        data-cell-focused={cellSel?.isFocused || undefined}
         {...highlighted.attrs}
         {...flashed.attrs}
         aria-busy={!!busy || undefined}

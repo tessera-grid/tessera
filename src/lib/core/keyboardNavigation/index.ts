@@ -38,7 +38,9 @@ export {
 export {
   KeyboardNavigationContext,
   useActiveCellIndex,
+  selectNavigationCell,
   useKeyboardNavigationCell,
+  useKeyboardNavigationCellBinding,
   useKeyboardNavigationRow,
   type KeyboardNavigationCell,
 } from './useKeyboardNavigationCell'

@@ -7,4 +7,4 @@ export {
   cellRangesToTsv,
   cellRangesToHtml,
   hasSelectedCells,
-} from '../../core/clipboard'
+} from './clipboard'

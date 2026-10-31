@@ -54,6 +54,12 @@ import {
   registerWrappersInto,
 } from './pluginWrappers'
 import {
+  type BodyContributions,
+  type FoldedBody,
+  createEmptyBody,
+  registerBodyInto,
+} from './bodyContributions'
+import {
   reportPluginError,
   type PluginDiagnose,
   type PluginInertReason,
@@ -164,6 +170,8 @@ export interface TesseraFeatureEntry<
   model?: TesseraFeatureEntry
   /** Обёртки и декораторы тела и шапки плагина перетаскивания (ADR 0168, §2). */
   wrappers?: PluginWrappers
+  /** Вклад в ячейку и строку тела, корень грида и клавиши навигации (ADR 0170, §3). */
+  body?: BodyContributions
 }
 
 /** Срез TanStack, заданный аргументами плагина; `undefined` — аргумент не передан. */
@@ -205,6 +213,7 @@ export interface FoldedEntryConfig {
   /** Все присутствующие записи, включая `enabled: false`. */
   pluginDiagnostics: PluginDiagnosticSource[]
   wrappers: FoldedWrappers
+  body: FoldedBody
 }
 
 const isActive = (entry: TesseraFeatureEntry) => entry.enabled !== false
@@ -300,6 +309,7 @@ export const foldEntries = (
   const pluginDiagnostics: PluginDiagnosticSource[] = []
   const narrow: NarrowMap = {}
   const wrappers = createEmptyWrappers()
+  const body = createEmptyBody()
 
   for (const entry of entries) {
     if (!entry.includedBy) {
@@ -329,6 +339,8 @@ export const foldEntries = (
     if (!isActive(entry)) {
       continue
     }
+
+    registerBodyInto(body, entry.body)
 
     entry.slots?.forEach(slot =>
       registerSlotInto(slots, { ...slot, pluginId: entry.id }),
@@ -392,6 +404,7 @@ export const foldEntries = (
     narrow,
     pluginDiagnostics,
     wrappers,
+    body,
   }
 }
 

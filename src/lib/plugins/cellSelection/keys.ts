@@ -1,21 +1,51 @@
-/** Синхронизация активной ячейки с выделением плагина cellSelection. */
-import { getDisplayColumns } from '../displayColumns'
-import { isCellSelectionInteractive } from '../pluginDiagnostics'
-import { scrollToRowIndex } from '../scrollToRow/scrollToRowFeature'
+/**
+ * Клавиши выделения ячеек в канале клавиш навигации (ADR 0170, §4): Shift со стрелками и
+ * листанием, Ctrl+Shift+Home и End, Ctrl+A; смена активной ячейки схлопывает выделение.
+ */
+import type {
+  NavigationKeyEvent,
+  NavigationKeys,
+} from '../../core/bodyContributions'
+import { getDisplayColumns } from '../../core/displayColumns'
+import { scrollToRowIndex } from '../../core/scrollToRow/scrollToRowFeature'
 import {
+  ARROW_DIRECTIONS,
   type ActiveCell,
   type Direction,
-  type NavTable,
+  type NavTable as CoreNavTable,
   ROW_FOCUS_COLUMN,
   isFooterRowIndex,
-} from './model'
-import type { NavigationKeyEvent } from './resolveKey'
+} from '../../core/keyboardNavigation/model'
+import { isInteractive } from './copyEvent'
+
+interface CellRange {
+  anchorRowId?: string
+  anchorColumnId: string
+  focusRowId?: string
+  focusColumnId: string
+  /** В серверной модели строк диапазон — индексы строк (ADR 0146). */
+  anchorRowIndex?: number
+  focusRowIndex?: number
+}
+
+/** Таблица навигации со стоковой фичей выделения ячеек. */
+type NavTable = CoreNavTable & {
+  setFocusedCell?: (rowId: string, columnId: string) => void
+  extendCellSelection?: (direction: Direction) => void
+  setCellSelection?: (updater: (old: CellRange[]) => CellRange[]) => void
+  selectAllCells?: () => void
+  getColumn?: (
+    id: string,
+  ) => { columnDef: { enableCellSelection?: unknown } } | undefined
+  getFocusedCell?: () =>
+    { row: { id: string }; column: { id: string } } | undefined
+}
 
 /** Клавиши меняют выделение только с плагином интерфейса (ADR 0120). */
 const isCellSelectionActive = (t: NavTable) =>
   typeof t.setFocusedCell === 'function' &&
   t.options.enableCellSelection !== false &&
-  isCellSelectionInteractive(t)
+  isInteractive(t)
 
 /** Диапазон — индексы строк: серверная модель строк (ADR 0146). */
 const byIndex = (t: NavTable) => t.getRowSource().keyByIndex === true
@@ -30,7 +60,7 @@ const selectableColumnIds = (t: NavTable) =>
  * Схлопнуть выделение в активную ячейку тела; на невыбираемой ячейке (служебная
  * колонка, шапка, футер) — снять его, чтобы оно не оставалось позади фокуса.
  */
-export const collapseSelectionTo = (t: NavTable, active: ActiveCell) => {
+const collapseSelectionTo = (t: NavTable, active: ActiveCell) => {
   if (!isCellSelectionActive(t)) {
     return
   }
@@ -160,7 +190,7 @@ const canExtend = (t: NavTable, active: ActiveCell) =>
  * Shift+стрелка: расширить диапазон на шаг, Ctrl+Shift+стрелка — до края таблицы;
  * якорь — активная ячейка.
  */
-export const extendSelectionFrom = (
+const extendSelectionFrom = (
   t: NavTable,
   active: ActiveCell,
   direction: Direction,
@@ -182,7 +212,7 @@ export const extendSelectionFrom = (
  * Shift+PageDown/PageUp — фокус диапазона на экран вниз или вверх, Ctrl+Shift+End/Home —
  * в последнюю или первую ячейку таблицы (ADR 0146, §3). Строки между не загружаются.
  */
-export const extendSelectionByKey = (
+const extendSelectionByKey = (
   t: NavTable,
   active: ActiveCell,
   event: NavigationKeyEvent,
@@ -220,14 +250,14 @@ export const extendSelectionByKey = (
   return true
 }
 
-export const isSelectAllKey = (event: NavigationKeyEvent) =>
+const isSelectAllKey = (event: NavigationKeyEvent) =>
   (event.ctrlKey || event.metaKey) &&
   !event.altKey &&
   !event.shiftKey &&
   event.key.toLowerCase() === 'a'
 
 /** Ctrl+A: выделить все ячейки; без cellSelection клавиша остаётся браузеру. */
-export const selectAllCellsIn = (t: NavTable): boolean => {
+const selectAllCellsIn = (t: NavTable): boolean => {
   if (
     !isCellSelectionActive(t) ||
     typeof t.selectAllCells !== 'function' ||
@@ -237,4 +267,26 @@ export const selectAllCellsIn = (t: NavTable): boolean => {
   }
   t.selectAllCells()
   return true
+}
+
+/** Вклад выделения ячеек в клавиши навигации. */
+export const cellSelectionKeys: NavigationKeys = {
+  id: 'cellSelection',
+  onKey: (event, { table, active, pageRows }) => {
+    const t = table as unknown as NavTable
+    if (isSelectAllKey(event)) return selectAllCellsIn(t)
+    if (extendSelectionByKey(t, active, event, pageRows)) return true
+    const direction = ARROW_DIRECTIONS[event.key]
+    if (event.shiftKey && !event.altKey && direction) {
+      return extendSelectionFrom(
+        t,
+        active,
+        direction,
+        event.ctrlKey || event.metaKey,
+      )
+    }
+    return false
+  },
+  onActiveCellChange: (table, next) =>
+    collapseSelectionTo(table as unknown as NavTable, next),
 }

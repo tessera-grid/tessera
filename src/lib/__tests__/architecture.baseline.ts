@@ -9,8 +9,6 @@ export const LAYER_EDGES: Record<string, string> = {}
 
 /** LB2: модули ядра, которые импортируют только плагины, — долг: модуль переедет. */
 export const CORE_PLUGIN_ONLY: Record<string, string> = {
-  'lib/core/clipboard.ts':
-    'буфер обмена выделения ячеек — с копированием выделения в ядре, шаг 7',
   'lib/core/columnDataType.ts':
     'разбор ввода по типу колонки — находки 1 и 16, прожарка dataType',
   'lib/core/effectiveState.ts':
@@ -34,23 +32,12 @@ export const CORE_PLUGIN_API: Record<string, string> = {
 }
 
 const FLAG_PLUGIN = 'плагин-флажок, механика в ядре и гриде — находка 3, шаг 7'
-const CELL_SELECTION = 'выделение ячеек в ядре и гриде — находки 3 и 4, шаг 7'
 
 /** LB5: чтения ключей опций плагина вне его семьи и его кода в `shared/` — `файл: ключ`. */
 export const FOREIGN_OPTION_READS: Record<string, string> = {
-  'lib/core/cellSelectionCopy.ts: cellSelectionMaxCopyRows': CELL_SELECTION,
-  'lib/core/keyboardNavigation/cellSelectionSync.ts: enableCellRangeSelection':
-    CELL_SELECTION,
-  'lib/core/keyboardNavigation/cellSelectionSync.ts: enableCellSelection':
-    CELL_SELECTION,
   'lib/core/keyboardNavigation/gridKeyDown.ts: enableContextMenu': FLAG_PLUGIN,
-  'lib/core/pluginDiagnostics.ts: cellSelectionInteraction':
-    'диагностика выделения ячеек в ядре — находки 3 и 13, шаг 7',
   'lib/grid/DataGrid.tsx: enableContextMenu': FLAG_PLUGIN,
   'lib/grid/DataGrid.tsx: enableTreeLines': FLAG_PLUGIN,
-  'lib/grid/DataGridTable.tsx: enableCellSelection': CELL_SELECTION,
-  'lib/grid/DataGridTable.tsx: enableRowSelection':
-    'выбор строк задаёт роль и aria грида — находка 3, шаг 7',
   'lib/grid/DataGridTable.tsx: enableTreeLines': FLAG_PLUGIN,
   'lib/grid/SkeletonBody.tsx: enableTreeLines': FLAG_PLUGIN,
 }

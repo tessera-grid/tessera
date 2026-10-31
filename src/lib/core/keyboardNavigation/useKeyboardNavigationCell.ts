@@ -72,26 +72,68 @@ export const useKeyboardNavigationCell = (
   participates = true,
   headerId?: string,
 ): KeyboardNavigationCell | null => {
+  const enabled = useContext(KeyboardNavigationContext)
+  const isActive = useTableState(table as never, (state: unknown) =>
+    selectNavigationCell(table, state, {
+      rowIndex,
+      columnId,
+      participates: participates && enabled,
+      headerId,
+    }),
+  ) as boolean | null
+  return useKeyboardNavigationCellBinding(
+    table,
+    isActive,
+    rowIndex,
+    columnId,
+    headerId,
+  )
+}
+
+interface NavigationCellTarget {
+  rowIndex: number
+  columnId: string
+  /** Ячейка в навигации: она включена, и ячейка не плейсхолдер шапки и не копия. */
+  participates: boolean
+  headerId?: string
+}
+
+/** Активна ли ячейка; `null` — ячейка в навигации не участвует. */
+export const selectNavigationCell = (
+  table: unknown,
+  state: unknown,
+  { rowIndex, columnId, participates, headerId }: NavigationCellTarget,
+): boolean | null => {
+  if (!participates) {
+    return null
+  }
+  const t = table as NavTable
+  const active = resolveActive(t, state as Record<string, unknown>)
+  if (headerId !== undefined) {
+    return (
+      active.rowIndex < 0 &&
+      getHeaderOwner(t, active.rowIndex, active.columnIndex)?.id === headerId
+    )
+  }
+  return (
+    active.rowIndex === rowIndex &&
+    getDisplayColumns(t).ids[active.columnIndex] === columnId
+  )
+}
+
+/**
+ * Привязка ячейки к навигации по готовому `isActive`: ячейка тела выбирает его в своём
+ * узле подписки (ADR 0170, §3).
+ */
+export const useKeyboardNavigationCellBinding = (
+  table: unknown,
+  isActive: boolean | null,
+  rowIndex: number,
+  columnId: string,
+  headerId?: string,
+): KeyboardNavigationCell | null => {
   const t = table as NavTable
   const ref = useRef<HTMLDivElement>(null)
-  const enabled = useContext(KeyboardNavigationContext)
-
-  const isActive = useTableState(table as never, (state: unknown) => {
-    if (!participates || !enabled) {
-      return null
-    }
-    const active = resolveActive(t, state as Record<string, unknown>)
-    if (headerId !== undefined) {
-      return (
-        active.rowIndex < 0 &&
-        getHeaderOwner(t, active.rowIndex, active.columnIndex)?.id === headerId
-      )
-    }
-    return (
-      active.rowIndex === rowIndex &&
-      getDisplayColumns(t).ids[active.columnIndex] === columnId
-    )
-  }) as boolean | null
 
   useIsomorphicLayoutEffect(() => {
     const el = ref.current

@@ -4,22 +4,19 @@
  * пишется асинхронным Clipboard API. Строк больше `cellSelectionMaxCopyRows` — отказ с
  * причиной. Отказ — плашка с повтором (ADR 0116); буфер тогда не меняется.
  */
-import { announceLabel, announcerLabels } from './announcer'
-import { type CancelSource, registerPending } from './cancellation'
+import { announceLabel, announcerLabels } from '../../core/announcer'
+import { type CancelSource, registerPending } from '../../core/cancellation'
 import {
   cellRangesToHtml,
   cellRangesToTsv,
   countCells,
   hasSelectedCells,
 } from './clipboard'
-import { reportAction } from './debugActions'
-import { ENGLISH_LABELS } from './localization/resolveLabels'
-import { rowSourceOf } from './rowSource'
-import { timeSlicer } from '../util/timeSlice'
-import {
-  readServerAction,
-  writeServerAction,
-} from './serverActions/serverActionFeature'
+import { reportAction } from '../../core/debugActions'
+import { ENGLISH_LABELS } from '../../core/localization'
+import { rowSourceOf } from '../../core/rowSource'
+import { timeSlicer } from '../../util/timeSlice'
+import { readServerAction, writeServerAction } from '../../core/serverActions'
 
 /** Предел строк выделения для буфера по умолчанию (ADR 0146, §5). */
 export const DEFAULT_MAX_COPY_ROWS = 10_000

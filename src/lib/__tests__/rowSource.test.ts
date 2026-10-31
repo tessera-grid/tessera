@@ -159,7 +159,7 @@ describe('Источник строк ядра (ADR 0138)', () => {
 const THROUGH_SOURCE = [
   'core/virtualization/rowVirtualizer.ts',
   'core/keyboardNavigation/actions.ts',
-  'core/keyboardNavigation/cellSelectionSync.ts',
+  'plugins/cellSelection/keys.ts',
   'core/keyboardNavigation/focus.ts',
   'core/keyboardNavigation/gridKeyDown.ts',
   'core/keyboardNavigation/model.ts',

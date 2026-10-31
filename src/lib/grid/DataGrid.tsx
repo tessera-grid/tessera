@@ -21,7 +21,7 @@ import { FastScrollProvider, useFastScroll } from '../core/fastScroll'
 import { useRowSourceWindow } from '../core/rowSourceWindow'
 import { clampBodyHeight } from '../core/scrollHeightLimit'
 import { scrollLayer, useScrollStretch } from '../core/scrollStretch'
-import { useCellSelectionAutoScroll } from '../core/cellSelectionAutoScroll'
+import { bodyEventHandlers, RootHooks } from '../core/bodyContributions'
 import {
   KeyboardNavigationContext,
   useKeyboardNavigationGrid,
@@ -85,7 +85,6 @@ import { useScrollViewport } from '../core/scrollToRow/viewport'
 import { useDragPointerY } from './useDragPointerY'
 import { useCalculateColumnSizes } from './useCalculateColumnSizes'
 import { columnShiftVars } from './columnSizes'
-import { useCellSelectionCopy } from './useCellSelectionCopy'
 import { DataGridTable } from './DataGridTable'
 import { StatusBar } from './StatusBar/StatusBar'
 import { getTableHeight } from './getTableHeight'
@@ -216,11 +215,8 @@ export const DataGrid = ({
   const heights = useRowHeights(table, wrapperRef, themeKey)
   useControlColumnSizes(table, wrapperRef, themeKey)
 
-  // Авто-прокрутка при drag-выделении ячеек у края/за пределами таблицы (инертно
-  // без плагина cellSelection). См. core/cellSelectionAutoScroll.
-  useCellSelectionAutoScroll(table, getScrollElement)
-
-  const handleCopy = useCellSelectionCopy(table)
+  // События над телом — вкладчикам корня делегированием (ADR 0170, §3).
+  const bodyEvents = bodyEventHandlers(table)
 
   // Кольцо фокуса по последнему вводу — и в Firefox после мыши (ADR 0084, CB5).
   useEffect(trackInputModality, [])
@@ -571,6 +567,10 @@ export const DataGrid = ({
                         blocked={loadError.bannerShown}
                         onCancelled={focusBody}
                       />
+                      <RootHooks
+                        table={table}
+                        getScrollElement={getScrollElement}
+                      />
                       <ScrollingAttribute getScrollElement={getScrollElement} />
                       <PinnedEdgesAttribute
                         getScrollElement={getScrollElement}
@@ -646,7 +646,7 @@ export const DataGrid = ({
                             options.enableRowAnimation !== false || undefined
                           }
                           data-empty-stub={bodyStub?.id}
-                          onCopy={handleCopy}
+                          {...bodyEvents}
                         >
                           <DataGridTable
                             table={table}

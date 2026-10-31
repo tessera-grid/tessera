@@ -19,13 +19,7 @@ import {
   resolveRowFocusKey,
   restoreFocusIfLost,
 } from './actions'
-import {
-  collapseSelectionTo,
-  extendSelectionByKey,
-  extendSelectionFrom,
-  isSelectAllKey,
-  selectAllCellsIn,
-} from './cellSelectionSync'
+import { notifyActiveCellChange, runNavigationKeys } from '../bodyContributions'
 import { applyFollow, trackingOf } from './focus'
 import { getPageRows } from './geometry'
 import { skipHeaderSpans } from './header'
@@ -193,24 +187,18 @@ export const handleGridKeyDown = (
     }
   }
 
-  if (isSelectAllKey(event)) {
-    if (selectAllCellsIn(t)) {
-      event.preventDefault()
-    }
-    return
-  }
-
-  if (extendSelectionByKey(t, active, event, getPageRows(getScrollElement()))) {
+  // Клавишу сначала берут плагины (ADR 0170, §4): выделение — Shift со стрелками и
+  // листанием, Ctrl+Shift+Home и End, Ctrl+A.
+  const pageRows = getPageRows(getScrollElement())
+  if (runNavigationKeys(t as never, event, { active, pageRows })) {
     event.preventDefault()
     return
   }
-
-  const direction = ARROW_DIRECTIONS[event.key]
-  if (event.shiftKey && !event.altKey && direction) {
-    const toEdge = event.ctrlKey || event.metaKey
-    if (extendSelectionFrom(t, active, direction, toEdge)) {
-      event.preventDefault()
-    }
+  // Без плагина Ctrl+A — браузеру, Shift со стрелкой ячейку не двигает.
+  if (isSelectAllKey(event)) {
+    return
+  }
+  if (event.shiftKey && !event.altKey && ARROW_DIRECTIONS[event.key]) {
     return
   }
 
@@ -240,7 +228,7 @@ export const handleGridKeyDown = (
   const resolved = resolveNavigationKey(active, event, {
     rowCount: getNavRowCount(t),
     columnCount: getDisplayColumns(t).ids.length,
-    pageRows: getPageRows(getScrollElement()),
+    pageRows,
     headerRowCount: t.getHeaderGroups().length,
   })
   if (!resolved) {
@@ -250,7 +238,7 @@ export const handleGridKeyDown = (
   const next = skipHeaderSpans(t, active, resolved, modified ? '' : event.key)
   // Навигационная клавиша не должна прокручивать контейнер нативно.
   event.preventDefault()
-  collapseSelectionTo(t, next)
+  notifyActiveCellChange(t as never, next)
   if (
     next.rowIndex === active.rowIndex &&
     next.columnIndex === active.columnIndex
@@ -263,6 +251,19 @@ export const handleGridKeyDown = (
     to: next,
   }))
   setPluginState(t, KEYBOARD_NAVIGATION, next)
+}
+
+const isSelectAllKey = (event: { key: string } & Modifiers) =>
+  (event.ctrlKey || event.metaKey) &&
+  !event.altKey &&
+  !event.shiftKey &&
+  event.key.toLowerCase() === 'a'
+
+interface Modifiers {
+  ctrlKey: boolean
+  metaKey: boolean
+  altKey: boolean
+  shiftKey: boolean
 }
 
 /** Вход в режим действия — фокус на первый виджет ячейки. */

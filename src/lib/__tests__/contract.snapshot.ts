@@ -48,6 +48,7 @@ export const CORE_OPTIONS: Record<string, string> = {
   onRetry: '0096',
   pagedRows: '0169',
   partialData: '0081',
+  pluginBody: '0170',
   pluginDiagnostics: '0022',
   pluginRenderVersion: '0039',
   pluginStateListeners: '0028',
@@ -93,6 +94,7 @@ export const PLUGIN_ENTRY_FIELDS: Record<string, string> = {
 export const INTERNAL_ENTRY_FIELDS: Record<string, string> = {
   args: '0039',
   argsKey: '0039',
+  body: '0170',
   configure: '0039',
   controlledState: '0028',
   includedBy: '0120',

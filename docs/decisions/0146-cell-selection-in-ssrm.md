@@ -7,6 +7,8 @@
     больше не инертны (§8, §13); требование SD27 снято.
   - [ADR 0029](0029-cell-range-selection.md) — предел копируемых строк `maxCopyRows` и в
     клиентском режиме.
+- **Изменён:** [ADR 0170](0170-body-contribution-channel.md) (2026-10-31) — копирование, клавиши и автопрокрутка — в плагине
+  `cellSelection` (`plugins/cellSelection/`), а не в ядре и гриде.
 - **Связано:**
   - [ADR 0120](0120-model-and-interface-plugins.md) — модель `cellSelectionModel` и интерфейс
     `cellSelection`, срез аргументами.

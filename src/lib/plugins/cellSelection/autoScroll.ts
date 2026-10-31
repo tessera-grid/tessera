@@ -4,9 +4,8 @@
  * `mouseenter` ячейки — за краем ячеек под курсором нет, поэтому прокрутку и
  * до-расширение делаем сами.
  *
- * Ядровой шов (ядро плагин не импортит): активен только при наличии фичи
- * (`getSelectedCellRangesData` есть ⇒ плагин cellSelection подключён) и только пока
- * открыта drag-сессия (`_isSelectingCells`). Расширение — публичным
+ * Хук корня плагина cellSelection (ADR 0170, §5): активен, только пока открыта
+ * drag-сессия (`_isSelectingCells`). Расширение — публичным
  * `selectCellRange` к ячейке под клампнутым в границы контейнера курсором: точно и
  * самокорректируемо (следует за прокруткой без синтеза событий). См. ADR 0029.
  *
@@ -17,8 +16,8 @@
  */
 import { useEffect } from 'react'
 
-import { scrollLayer } from './scrollStretch'
-import { useLatest } from '../util/useLatest'
+import { scrollLayer } from '../../core/scrollStretch'
+import { useLatest } from '../../util/useLatest'
 
 interface AutoScrollTable {
   getSelectedCellRangesData?: () => unknown

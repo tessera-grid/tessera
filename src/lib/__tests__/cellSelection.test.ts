@@ -10,7 +10,7 @@ import {
   cellRangesToHtml,
   cellRangesToTsv,
   hasSelectedCells,
-} from '../core/clipboard'
+} from '../plugins/cellSelection/clipboard'
 import { foldEntries } from '../core/features'
 import { cellSelection } from '../plugins/cellSelection'
 import type { CellSelectionPredicateCell } from '../plugins/cellSelection/types'

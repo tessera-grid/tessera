@@ -6,6 +6,7 @@
  */
 import { cellSelectionFeature } from '@tanstack/react-table'
 
+import { withBody } from '../../core/bodyContributions'
 import { definePlugin } from '../../core/definePlugin'
 import { neverInert } from '../../core/pluginDiagnostics'
 import {
@@ -13,6 +14,7 @@ import {
   followRowList,
   indexCellSelectionFeature,
 } from './indexSelection'
+import { cellSelectionModelBody } from './contribution'
 
 export type { CellSelectionRange, CellSelectionState } from './indexSelection'
 
@@ -53,7 +55,7 @@ export const cellSelectionModelFeatures = {
 const isServiceCell = (cell: CellSelectionPredicateCell): boolean =>
   cell.column.getIsActionsColumn()
 
-export const cellSelectionModel = definePlugin<CellSelectionModelOptions>()({
+const cellSelectionModelEntry = definePlugin<CellSelectionModelOptions>()({
   id: 'cellSelectionModel',
   diagnose: neverInert,
   // Предикат влияет на отрисовку ячеек: новая ссылка — перерисовка (ADR 0039).
@@ -74,3 +76,9 @@ export const cellSelectionModel = definePlugin<CellSelectionModelOptions>()({
     }
   },
 })
+
+/** Состояние ячейки и `aria-multiselectable` корня — вкладом в тело (ADR 0170, §5). */
+export const cellSelectionModel = withBody(
+  cellSelectionModelEntry,
+  cellSelectionModelBody,
+)

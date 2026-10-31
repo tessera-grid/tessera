@@ -73,16 +73,6 @@ interface NavRow {
 
 type NavColumn = { id: string }
 
-interface NavCellRange {
-  anchorRowId?: string
-  anchorColumnId: string
-  focusRowId?: string
-  focusColumnId: string
-  /** В серверной модели строк диапазон — индексы строк (ADR 0146). */
-  anchorRowIndex?: number
-  focusRowIndex?: number
-}
-
 /** Duck-typed поверхность таблицы, которую читает шов. */
 export interface NavTable {
   options: Record<string, unknown>
@@ -92,18 +82,8 @@ export interface NavTable {
   getStartVisibleLeafColumns?: () => NavColumn[]
   getCenterVisibleLeafColumns?: () => NavColumn[]
   getEndVisibleLeafColumns?: () => NavColumn[]
-  // Стоковая фича cellSelection (есть, только если плагин подключён).
-  setFocusedCell?: (rowId: string, columnId: string) => void
-  extendCellSelection?: (direction: Direction) => void
-  setCellSelection?: (updater: (old: NavCellRange[]) => NavCellRange[]) => void
-  selectAllCells?: () => void
-  getColumn?: (
-    id: string,
-  ) => { columnDef: { enableCellSelection?: unknown } } | undefined
   getHeaderGroups: () => { headers: NavHeader[] }[]
   getKeyboardActions?: () => KeyboardAction[] | undefined
-  getFocusedCell?: () =>
-    { row: { id: string }; column: { id: string } } | undefined
 }
 
 export interface NavHeader {

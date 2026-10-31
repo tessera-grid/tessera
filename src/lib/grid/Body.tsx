@@ -40,7 +40,6 @@ interface TableBodyProps {
   actionRowSlot?: CellSlot
   /** `aria-rowindex` первой строки тела минус 1: строки шапки + строки прошлых страниц. */
   ariaRowIndexBase: number
-  selectableRows?: boolean
   /** Строки несут aria-level/setsize/posinset (treegrid). */
   treeRows?: boolean
   /** Ветки линий дерева (ADR 0102). */
@@ -76,7 +75,6 @@ export const Body = ({
   cellSlot,
   actionRowSlot,
   ariaRowIndexBase,
-  selectableRows,
   treeRows,
   treeLines,
   isVirtualColumns,
@@ -196,7 +194,6 @@ export const Body = ({
                 cellSlot={cellSlot}
                 actionRowSlot={actionRowSlot}
                 ariaRowIndexBase={ariaRowIndexBase}
-                selectableRows={selectableRows}
                 isVirtualColumns={isVirtualColumns}
               />
             )}
@@ -302,7 +299,6 @@ export const Body = ({
               cellSlot,
               actionRowSlot,
               ariaRowIndexBase,
-              selectableRows,
               treeSetSize: treeAria?.setSize(virtualRow.index),
               treePosInSet: treeAria?.posInSet(virtualRow.index),
               treeBranch: lines.branch,

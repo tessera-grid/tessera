@@ -5,7 +5,7 @@
  */
 import { Copy } from 'lucide-react'
 
-import { copyCellSelection } from '../../core/cellSelectionCopy'
+import { copyCellSelection } from './copy'
 import type { ContextMenuAction } from '../../core/headerActions'
 
 export const copyContextAction: ContextMenuAction = {

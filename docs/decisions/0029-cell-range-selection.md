@@ -2,6 +2,12 @@
 
 - **Статус:** Принято
 - **Дата:** 2026-09-22
+- **Изменён:** 2026-10-31 — [ADR 0170](0170-body-contribution-channel.md): швы выделения ушли из ядра и грида в плагины.
+  Состояние ячейки (выбрана, в фокусе, края, `tabIndex`) и `aria-multiselectable` — вклад
+  `cellSelectionModel` в тело; мышь и копирование приходят `cellSelection` делегированием от
+  корня грида, автопрокрутка — хуком корня, клавиши — каналом клавиш навигации. Модули —
+  `plugins/cellSelection/` (`pointer`, `copy`, `copyEvent`, `clipboard`, `autoScroll`,
+  `keys`) и `plugins/cellSelectionModel/contribution.ts`; описание швов ниже — история.
 - **Изменён:** 2026-10-16 — [ADR 0120](0120-model-and-interface-plugins.md): модель выделения —
   плагин `cellSelectionModel` (`canSelectCell`, подсветка, срез `cellSelection` аргументами);
   `cellSelection` её включает и добавляет мышь, синхронизацию с клавиатурой, копирование и

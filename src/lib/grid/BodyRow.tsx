@@ -12,7 +12,12 @@ import { isRowExpandedIn } from '../core/expandAll'
 import type { CellSlot } from '../core/createSlots'
 import type { RowDragBinding } from '../core/pluginWrappers'
 import { assignRef } from '../ui/assignRef'
-import { useTableState } from '../core/reactivity'
+import {
+  bodyOf,
+  mergeContributions,
+  type RowContributionContext,
+  useContributionNode,
+} from '../core/bodyContributions'
 import { hasExpandToggle } from '../core/keyboardActions'
 import {
   type Highlights,
@@ -23,6 +28,7 @@ import { highlightRender } from './highlight'
 import { flashRender } from './flash'
 import type { FlashEntry, Flashes } from '../core/flashes/flashFeature'
 import {
+  KeyboardNavigationContext,
   NAV_ROW_ATTR,
   useKeyboardNavigationRow,
 } from '../core/keyboardNavigation'
@@ -56,8 +62,6 @@ export interface TableBodyRowProps {
   actionRowSlot?: CellSlot
   /** `aria-rowindex` первой строки тела минус 1: строки шапки + строки прошлых страниц. */
   ariaRowIndexBase: number
-  /** Строки несут `aria-selected` (grid с rowSelection). */
-  selectableRows?: boolean
   /** Позиция строки среди соседей в treegrid; есть только в treegrid. */
   treeSetSize?: number
   treePosInSet?: number
@@ -79,39 +83,47 @@ interface BodyRowCellsProps extends TableBodyRowProps {
 
 /**
  * Пер-строчная подписка на СВОИ срезы: строка ре-рендерится только когда меняется её
- * собственный выбор/раскрытие (а не любой выбор/раскрытие в таблице) либо группировка.
+ * собственный выбор/раскрытие (а не любой выбор/раскрытие в таблице), группировка или
+ * вклад плагинов в неё (ADR 0170, §3).
  */
-export const useRowStateSubscription = (row: Row<any, any>) => {
-  const table = (row as unknown as { table: never }).table
+const useRowStateSubscription = (
+  row: Row<any, any>,
+  context: RowContributionContext,
+) => {
   const highlightKey = rowHighlightKey(row.id)
-  return useTableState(table, (state: unknown) => {
-    const s = state as {
-      rowSelection?: Record<string, boolean>
-      expanded?: true | Record<string, boolean>
-      grouping?: unknown
-      rowExpandPending?: Record<string, number>
-      rowMoves?: Record<string, { pending: boolean }>
-      highlights?: Highlights
-      flashes?: Flashes
-    }
-    const move = s.rowMoves?.[row.id]
-    return {
-      selected: s.rowSelection?.[row.id] ?? false,
-      expanded: isRowExpandedIn(s.expanded, row.id),
-      grouping: s.grouping,
-      expandPending: s.rowExpandPending?.[row.id] ?? 0,
-      highlight: s.highlights?.[highlightKey],
-      flash: s.flashes?.[highlightKey],
-      // Перенос не завершён (ADR 0112): ждёт промиса или ответа цели.
-      moving: !!move,
-      movePending: !!move?.pending,
-    }
-  }) as {
-    highlight?: HighlightTargetState
-    flash?: FlashEntry
-    moving: boolean
-    movePending: boolean
-  }
+  return useContributionNode(
+    context.table,
+    bodyOf(context.table).row,
+    context,
+    (state: unknown) => {
+      const s = state as {
+        rowSelection?: Record<string, boolean>
+        expanded?: true | Record<string, boolean>
+        grouping?: unknown
+        rowExpandPending?: Record<string, number>
+        rowMoves?: Record<string, { pending: boolean }>
+        highlights?: Highlights
+        flashes?: Flashes
+      }
+      const move = s.rowMoves?.[row.id]
+      return {
+        selected: s.rowSelection?.[row.id] ?? false,
+        expanded: isRowExpandedIn(s.expanded, row.id),
+        grouping: s.grouping,
+        expandPending: s.rowExpandPending?.[row.id] ?? 0,
+        highlight: s.highlights?.[highlightKey],
+        flash: s.flashes?.[highlightKey],
+        // Перенос не завершён (ADR 0112): ждёт промиса или ответа цели.
+        moving: !!move,
+        movePending: !!move?.pending,
+      } as {
+        highlight?: HighlightTargetState
+        flash?: FlashEntry
+        moving: boolean
+        movePending: boolean
+      }
+    },
+  )
 }
 
 export const BodyRowCells = ({
@@ -219,15 +231,6 @@ export const BodyRowCells = ({
   )
 }
 
-/** `aria-selected` только у выбираемых строк грида с rowSelection. */
-export const getAriaSelected = (
-  row: Row<any, any>,
-  selectableRows?: boolean,
-) =>
-  selectableRows && (row.getCanSelect?.() ?? false)
-    ? (row.getIsSelected?.() ?? false)
-    : undefined
-
 /**
  * Ряд тела без Drag&Drop-обвязки. Используется, когда перетаскивание строк
  * выключено — чтобы не платить за useSortable на каждый смонтированный ряд.
@@ -235,7 +238,25 @@ export const getAriaSelected = (
 export const BodyRow = memo((props: TableBodyRowProps) => {
   const { layout, row, virtualRow, ariaRowIndexBase, drag } = props
 
-  const { highlight, flash } = useRowStateSubscription(row)
+  const table = (row as unknown as { table: RowContributionContext['table'] })
+    .table
+  const navigation = useContext(KeyboardNavigationContext)
+  const contributionContext: RowContributionContext = {
+    table,
+    row,
+    rowIndex: virtualRow.index,
+    navigation: navigation && !props.copy,
+  }
+  const { highlight, flash, contributions } = useRowStateSubscription(
+    row,
+    contributionContext,
+  )
+  // Вклад плагинов в строку (ADR 0170, §3): `aria-selected` выбора строк и прочее.
+  const contributed = mergeContributions(
+    bodyOf(table).row,
+    contributions,
+    contributionContext,
+  )
   const highlighted = highlightRender([{ layer: 'row', state: highlight }])
   const flashed = flashRender([{ layer: 'row', entry: flash }])
   const navRow = useKeyboardNavigationRow(
@@ -266,6 +287,7 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
 
   return (
     <div
+      {...contributed.attrs}
       {...(drag && {
         ref: (element: HTMLDivElement | null) => {
           drag.setNodeRef(element)
@@ -289,7 +311,6 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
         canToggle && props.treeSetSize !== undefined ? isExpanded : undefined
       }
       aria-busy={isExpandPending || drag?.busy || undefined}
-      aria-selected={getAriaSelected(row, props.selectableRows)}
       aria-level={props.treeSetSize !== undefined ? row.depth + 1 : undefined}
       aria-setsize={props.treeSetSize}
       aria-posinset={props.treePosInSet}
@@ -311,8 +332,13 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
       data-last-row={row.getIsLastRow()}
       data-layout={layout}
       style={
-        highlighted.style || flashed.style
-          ? { ...rowStyles, ...highlighted.style, ...flashed.style }
+        highlighted.style || flashed.style || contributed.style
+          ? {
+              ...rowStyles,
+              ...contributed.style,
+              ...highlighted.style,
+              ...flashed.style,
+            }
           : rowStyles
       }
     >

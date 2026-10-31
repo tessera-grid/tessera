@@ -36,7 +36,7 @@
 ## Контекст
 
 Экспорт — частый enterprise-запрос. Часть механики есть: сериализация TSV/HTML для
-копирования ([`core/clipboard.ts`](../../src/lib/core/clipboard.ts)) и место для кнопки
+копирования ([`plugins/cellSelection/clipboard.ts`](../../src/lib/plugins/cellSelection/clipboard.ts)) и место для кнопки
 ([ADR 0035](0035-toolbar-and-column-visibility.md) заранее называл экспорт кандидатом
 на `toolbarSlot`).
 

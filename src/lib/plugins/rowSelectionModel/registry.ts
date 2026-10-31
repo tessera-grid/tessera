@@ -13,6 +13,7 @@ import {
 } from '@tanstack/react-table'
 
 import type { Row, Table } from '../../types'
+import { type BodyContributions, withBody } from '../../core/bodyContributions'
 import { definePlugin } from '../../core/definePlugin'
 import {
   effectiveSelectionOf,
@@ -117,7 +118,7 @@ const resetOnSelectionChange = (table: unknown) => {
   if (previous !== undefined && previous !== key) t.resetRowSelection(true)
 }
 
-export const rowSelectionModel = definePlugin<RowSelectionModelOptions>()({
+const rowSelectionModelEntry = definePlugin<RowSelectionModelOptions>()({
   id: 'rowSelectionModel',
   features: rowSelectionModelFeatures,
   slices: ['rowSelection'],
@@ -163,6 +164,32 @@ export const rowSelectionModel = definePlugin<RowSelectionModelOptions>()({
   }),
   diagnose: table => (isGroupingActive(table) ? 'grouping' : undefined),
 })
+
+/**
+ * `aria-selected` выбираемых строк и `aria-multiselectable` корня — с клавиатурной
+ * навигацией, вкладом в тело (ADR 0170, §5).
+ */
+const rowSelectionBody: BodyContributions = {
+  row: {
+    id: 'rowSelectionModel',
+    select: (_state, { row, navigation }) =>
+      navigation && (row.getCanSelect?.() ?? false)
+        ? (row.getIsSelected?.() ?? false)
+        : undefined,
+    render: (selected: boolean | undefined) =>
+      selected === undefined ? null : { attrs: { 'aria-selected': selected } },
+  },
+  root: {
+    id: 'rowSelectionModel',
+    attrs: ({ navigation }) =>
+      navigation ? { 'aria-multiselectable': true } : undefined,
+  },
+}
+
+export const rowSelectionModel = withBody(
+  rowSelectionModelEntry,
+  rowSelectionBody,
+)
 
 /* eslint-disable @typescript-eslint/no-unused-vars -- generics карт обязаны
    повторять сигнатуры v9, иначе declaration merging не склеится */

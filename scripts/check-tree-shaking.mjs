@@ -88,7 +88,8 @@ const bundle = async (name, source) => {
   const externals = new Set(
     chunks.flatMap(chunk => [...chunk.imports, ...chunk.dynamicImports]),
   )
-  return { plugins: pluginDirs, gzip, externals }
+  const modules = chunks.flatMap(chunk => chunk.moduleIds)
+  return { plugins: pluginDirs, gzip, externals, modules }
 }
 
 /** Каталоги плагинов, чьи модули попали в сборку потребителя с одним импортом. */
@@ -133,6 +134,16 @@ for (const name of [...grid.plugins].sort()) {
 for (const id of [...grid.externals].sort()) {
   if (id.startsWith('@dnd-kit/')) {
     failures.push(`DataGrid без плагинов: в сборке импорт ${id}`)
+  }
+}
+// CH10: механика выделения ячеек — в плагинах, без них в сборку не попадает (ADR 0170).
+const CELL_SELECTION_MODULE = /cellSelection|clipboard/i
+for (const id of grid.modules) {
+  const path = id.split('\\').join('/')
+  if (CELL_SELECTION_MODULE.test(path.slice(path.lastIndexOf('/dist/')))) {
+    failures.push(
+      `DataGrid без плагинов: в сборке модуль выделения ячеек ${path}`,
+    )
   }
 }
 for (const [name, reason] of Object.entries(budget.pluginModules)) {

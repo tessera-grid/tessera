@@ -40,6 +40,7 @@ import type { SkeletonOptions } from './skeletonOptions'
 import type { FooterPosition } from './footer'
 import type { StubEntry } from './stubs'
 import type { FoldedWrappers } from './pluginWrappers'
+import type { FoldedBody } from './bodyContributions'
 import type { RefreshOptions } from './loadingDisplay'
 
 // --- Payload-типы контракта --------------------------------------------------
@@ -146,6 +147,8 @@ export interface CommonOptions extends CoreOptions {
   pluginRenderVersion?: number
   /** Обёртки и декораторы тела и шапки от плагинов (ADR 0168, §2). */
   pluginWrappers?: FoldedWrappers
+  /** Вклад плагинов в тело грида и клавиши навигации (ADR 0170, §3). */
+  pluginBody?: FoldedBody
   /** Колбэки изменений локальных срезов плагинов по ключу среза (DP17). */
   pluginStateListeners?: Record<string, (next: unknown) => void>
   /**

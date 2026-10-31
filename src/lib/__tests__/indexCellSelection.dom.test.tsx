@@ -9,7 +9,7 @@ import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { copyCellSelection } from '../core/cellSelectionCopy'
+import { copyCellSelection } from '../plugins/cellSelection/copy'
 import type { DebugAction } from '../core/debugActions'
 import { __resetLogger } from '../util/logger'
 import type { RowSource } from '../core/rowSource'

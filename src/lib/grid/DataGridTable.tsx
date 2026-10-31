@@ -11,6 +11,7 @@ import { getDisplayColumns } from '../core/displayColumns'
 import { getFooterPosition } from '../core/footer'
 import { getRowWindow } from '../core/pagination'
 import type { RowSource } from '../core/rowSource'
+import { rootAttrsOf } from '../core/bodyContributions'
 import { RenderSlot } from '../core/renderSlots'
 import type { SkeletonRowsRequest } from '../core/createSlots'
 import { useTableState } from '../core/reactivity'
@@ -81,8 +82,6 @@ export const DataGridTable = ({
 }: DataGridTableProps) => {
   const { options } = table
   const wrappers = wrappersOf(table)
-  // rowSelection даёт функциональный enableRowSelection (гейт группировки), выкл — false.
-  const enableRowSelection = !!options.enableRowSelection
   // Иерархия строк (rowExpanding / rowGrouping) — с клавиатурной навигацией грид
   // становится treegrid (ADR 0032, W10).
   const hierarchical = isTreeGrid(table)
@@ -128,11 +127,8 @@ export const DataGridTable = ({
         'aria-busy': busy || bodyBusy || undefined,
         'aria-rowcount': ariaRowCount,
         'aria-colcount': leafColumns.length,
-        'aria-multiselectable':
-          keyboardNavigation &&
-          (enableRowSelection || !!options.enableCellSelection)
-            ? true
-            : undefined,
+        // Вклад плагинов в корень (ADR 0170, §3): `aria-multiselectable` выбора.
+        ...rootAttrsOf({ table, navigation: !!keyboardNavigation }),
         onKeyDown: keyboardNavigation?.onKeyDown,
         onFocusCapture: keyboardNavigation?.onFocusCapture,
         onPointerDownCapture: keyboardNavigation?.onPointerDownCapture,
@@ -254,7 +250,6 @@ export const DataGridTable = ({
               cellSlot={cellSlot}
               actionRowSlot={actionRowSlot}
               ariaRowIndexBase={headerGroups.length + rowWindow.offset}
-              selectableRows={!!keyboardNavigation && enableRowSelection}
               treeRows={!!keyboardNavigation && hierarchical}
               treeLines={table.options.enableTreeLines}
               isResizingColumns={isResizingColumns}
