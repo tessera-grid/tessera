@@ -1,7 +1,8 @@
 import { Meta, StoryObj } from '@storybook/react'
 import { useState } from 'react'
-import { Archive, Star } from 'lucide-react'
+import { Archive, Eye, Flag, Star } from 'lucide-react'
 import { expect } from 'storybook/test'
+import { COLUMN_ACTIONS_SIZE } from '../../lib/core/createColumns/actionColumnParams'
 import type {
   CellComponentProps,
   ToolbarComponentProps,
@@ -9,26 +10,32 @@ import type {
 import { sourceOf } from '../../lib/core/debugActions'
 import {
   definePlugin,
+  type PluginCellProps,
   type PluginCellStateProps,
+  type PluginHeaderProps,
 } from '../../lib/core/definePlugin'
 import { CellButton } from '../ui/CellButton/CellButton'
 import { Button } from '../../lib/ui/Button'
+import { IconButton } from '../../lib/ui/IconButton'
 import type { RowAction } from '../../lib/core/headerActions'
 import { exportFormats } from '../../lib/plugins/dataExport'
+import type { ColumnDef } from '../../lib/types'
 import {
   GuideStory,
   type GuideStoryStep,
+  type StepRun,
   guideArgs,
   stepAction,
 } from './demos/GuideStory'
+import { type ConsoleLog, loggedCallback } from './demos/consoleLog'
 import type { StoryProps } from './DataGridStory.types'
 import { StoryComponent } from './DataGridStory'
 import { dataGridMeta } from './dataGridMeta'
-import { makeData } from './__mocks__/data'
+import { getData, makeData } from './__mocks__/data'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { canEditDemoCell, type ServerFailMode } from './demos/sessionDemos'
 import { argsUpdater } from './__mocks__/catalog'
-import { clickByMouse, untilDone } from './__mocks__/cellGestures'
+import { cellOf, clickByMouse, untilDone } from './__mocks__/cellGestures'
 import {
   bodyRow,
   cancelDrag,
@@ -52,8 +59,9 @@ import {
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 
 /**
- * API плагинов: `Playground` — аргументы фабрик на лету; S1 ADR 0039 — аргумент меняется
- * на той же таблице, S4 ADR 0040 — колбэки перетаскивания, S1–S2 ADR 0125 — канал действий.
+ * API плагинов: `Playground` — аргументы фабрик на лету; S1–S2 ADR 0039 — аргумент и запрет
+ * на той же таблице, S4–S5 ADR 0040 — колбэки перетаскивания и протяжки, S1–S2 ADR 0125 —
+ * канал действий, S1–S3 ADR 0028 — плагин автора, S1 ADR 0037 — его падение.
  */
 const meta = {
   ...dataGridMeta,
@@ -83,6 +91,18 @@ const GRID = {
   containerHeight: '560',
   height: '460',
   maxHeight: '460',
+}
+
+/** Колбэк приложения: журнал консоли записывает каждый вызов. */
+const accept = () => {}
+
+/** Записи плагинов истории — одни на консоль: набор плагинов не меняется на каждой отрисовке. */
+const perLog = <T,>(make: (log: ConsoleLog) => T) => {
+  const made = new WeakMap<ConsoleLog, T>()
+  return (log: ConsoleLog) => {
+    if (!made.has(log)) made.set(log, make(log))
+    return made.get(log)!
+  }
 }
 
 // --- Аргументы плагинов на лету (ADR 0039) -------------------------------------
@@ -258,6 +278,112 @@ export const PluginApiReactiveArgs: StoryObj<SessionsArgs> = {
   },
 }
 
+// --- ADR 0039 S2 ---------------------------------------------------------------------
+
+const EDIT_ROW = 'item-id-1'
+const EDIT_COLUMN = 'age'
+const DRAFT = '77'
+
+const editCellOf = (root: ParentNode) => cellOf(root, EDIT_ROW, EDIT_COLUMN)
+const editInputOf = (root: ParentNode) =>
+  editCellOf(root)?.querySelector<HTMLInputElement>('input') ?? null
+const editButtonOf = (root: ParentNode) =>
+  editCellOf(root)?.querySelector<HTMLElement>('.cell__button button') ?? null
+const hasDraft = (root: ParentNode) => editInputOf(root)?.value === DRAFT
+/** Значение в ячейке — без кнопки правки. */
+const editCellText = (root: ParentNode) => {
+  const copy = editCellOf(root)?.cloneNode(true) as HTMLElement | undefined
+  copy?.querySelectorAll('.cell__button').forEach(button => button.remove())
+  return copy?.textContent?.trim()
+}
+
+/** Пользователь открывает правку возраста кнопкой ячейки и набирает черновик. */
+const typeDraft = (root: HTMLElement) => {
+  const input = editInputOf(root)
+  if (!input) {
+    editButtonOf(root)?.click()
+    return
+  }
+  // Ввод с клавиатуры: значение — сеттером поля и событием `input`, как у браузера.
+  Object.getOwnPropertyDescriptor(
+    HTMLInputElement.prototype,
+    'value',
+  )!.set!.call(input, DRAFT)
+  input.dispatchEvent(new Event('input', { bubbles: true }))
+}
+
+const REVOKE: readonly GuideStoryStep[] = [
+  {
+    title: 'Правка разрешена',
+    hint: 'Приложение разрешает править ячейки: при наведении в ячейке появляется кнопка правки.',
+    props: () => ({
+      cellEditingCanEditCell: canEditDemoCell,
+      onEditCancel: accept,
+    }),
+  },
+  {
+    title: 'Пользователь правит ячейку',
+    hint: 'Пользователь открыл поле правки и ввёл новое значение, но ещё не сохранил его.',
+    states: ['body.editing'],
+    enter: untilDone(hasDraft, typeDraft),
+  },
+  {
+    title: 'Приложение запретило правку',
+    hint: 'Пока поле открыто, приложение запретило править ячейки. Поле закрылось, в ячейке прежнее значение, а введённый черновик приложение получило в колбэке отмены вместе с причиной.',
+    enter: stepAction(async (root, { signal }, app) => {
+      // Черновик — до запрета, если шаг открыли, минуя прошлый.
+      for (let tries = 0; !hasDraft(root); tries++) {
+        if (tries > 80) throw new Error('Шаг гайда не открыл правку')
+        typeDraft(root)
+        await sleep(100)
+        signal.throwIfAborted()
+      }
+      app.update(props => ({ ...props, cellEditingCanEditCell: denyEditing }))
+      await pollUntil(() => !editInputOf(root), signal)
+    }),
+  },
+]
+
+/** ADR 0039, S2: приложение запрещает правку посреди сессии — черновик приходит в колбэке отмены. */
+export const PluginApiRevokeEditing: StoryObj<SessionsArgs> = {
+  name: 'Revoke editing',
+  parameters: { scenario: '0039/S2', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Запрет правки посреди сессии"
+      steps={REVOKE}
+      args={guideArgs(
+        { ...GRID, dataCount: 10, enableCellEditing: true },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    let original: string | undefined
+    await step(REVOKE[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(editButtonOf(canvas)).not.toBeNull())
+      original = editCellText(canvas)
+    })
+    await step(REVOKE[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(editInputOf(canvas)?.value).toBe(DRAFT))
+    })
+    await step(REVOKE[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      expect(editInputOf(canvas)).toBeNull()
+      expect(editCellText(canvas)).toBe(original)
+      await until(() =>
+        expect(consoleText()).toMatch(/onEditCancel[^\n]*revoke/),
+      )
+      expect(consoleText()).toMatch(new RegExp(`onEditCancel[^\\n]*${DRAFT}`))
+      await settle()
+    })
+  },
+}
+
 // --- ADR 0040 S4 ---------------------------------------------------------------------
 
 const DRAGGED = 'item-id-0'
@@ -279,22 +405,13 @@ const moveFirstRow = async (root: HTMLElement, signal: AbortSignal) => {
   await clicksBack(signal)
 }
 
-/** Колбэки приложения: журнал консоли записывает каждый вызов. */
-const accept = () => {}
-const SESSION_CALLBACKS = {
-  onRowDragEnd: accept,
-  onRowDragCancel: accept,
-  onColumnDragEnd: accept,
-  onColumnDragCancel: accept,
-  onColumnResizeEnd: accept,
-  onColumnResizeCancel: accept,
-}
+const DRAG_CALLBACKS = { onRowDragEnd: accept, onRowDragCancel: accept }
 
 const CALLBACKS: readonly GuideStoryStep[] = [
   {
     title: 'Таблица с перетаскиванием',
-    hint: 'Строки и колонки переставляются перетаскиванием, ширина колонок меняется протяжкой. Итог каждого действия приложение получает в колбэке, журнал — в консоли под таблицей.',
-    props: () => SESSION_CALLBACKS,
+    hint: 'Строки переставляются перетаскиванием за ручку. Итог каждого перетаскивания приложение получает в колбэке, журнал — в консоли под таблицей.',
+    props: () => DRAG_CALLBACKS,
   },
   {
     title: 'Пользователь перетащил строку',
@@ -319,9 +436,9 @@ const CALLBACKS: readonly GuideStoryStep[] = [
   },
 ]
 
-/** ADR 0040, S4: итоги перетаскивания приходят приложению колбэками успеха и отмены. */
+/** ADR 0040, S4: итоги перетаскивания строки приходят приложению колбэками успеха и отмены. */
 export const SessionCallbacks: StoryObj<SessionsArgs> = {
-  name: 'Drag & resize callbacks',
+  name: 'Drag callbacks',
   parameters: {
     scenario: '0040/S4',
     requirements: ['DS3'],
@@ -332,13 +449,7 @@ export const SessionCallbacks: StoryObj<SessionsArgs> = {
       title="Колбэки перетаскивания"
       steps={CALLBACKS}
       args={guideArgs(
-        {
-          ...GRID,
-          dataCount: 30,
-          enableRowDragging: true,
-          enableColumnDragging: true,
-          enableColumnSizing: true,
-        },
+        { ...GRID, dataCount: 30, enableRowDragging: true },
         args,
       )}
     />
@@ -360,6 +471,140 @@ export const SessionCallbacks: StoryObj<SessionsArgs> = {
       await stepDone(canvas)
       await until(() => expect(consoleText()).toContain('onRowDragCancel'))
       await expect(consoleText()).toMatch(/onRowDragCancel[^\n]*cancel/)
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0040 S5 ---------------------------------------------------------------------
+
+const RESIZED = 'firstName'
+/** Сдвиг границы заголовка при протяжке, px. */
+const RESIZE_BY = 100
+
+const resizedHead = (root: ParentNode) =>
+  root.querySelector<HTMLElement>(
+    `.data-grid__head-cell[data-column-id="${RESIZED}"]`,
+  )
+const widthOf = (root: ParentNode) =>
+  Math.round(resizedHead(root)?.getBoundingClientRect().width ?? 0)
+
+/**
+ * Нажатие на границе заголовка и движение мыши — события, которые шлёт браузер: нажатие —
+ * на ручке, движение и отпускание — на документе.
+ */
+const pressGrip = (root: ParentNode) => {
+  const grip = resizedHead(root)!.querySelector<HTMLElement>(
+    '.resize__handler--column',
+  )!
+  const box = grip.getBoundingClientRect()
+  const x = box.left + box.width / 2
+  const y = box.top + box.height / 2
+  const mouse = (type: string, target: EventTarget, clientX: number) =>
+    target.dispatchEvent(
+      new MouseEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        button: 0,
+        buttons: type === 'mouseup' ? 0 : 1,
+        clientX,
+        clientY: y,
+      }),
+    )
+  mouse('mousedown', grip, x)
+  return {
+    move: () => mouse('mousemove', document, x + RESIZE_BY),
+    release: () => mouse('mouseup', document, x + RESIZE_BY),
+  }
+}
+
+/** Пользователь тянет границу заголовка вправо: колонка шире, кнопка мыши ещё зажата. */
+const pullGrip = async (root: HTMLElement, step: StepRun) => {
+  await pollUntil(() => !!resizedHead(root), step.signal)
+  const before = widthOf(root)
+  const grip = pressGrip(root)
+  step.onLeave(grip.release)
+  await sleep(16)
+  grip.move()
+  await pollUntil(() => widthOf(root) > before + RESIZE_BY / 2, step.signal)
+  return { before, release: grip.release }
+}
+
+const RESIZE_CALLBACKS = {
+  onColumnResizeEnd: accept,
+  onColumnResizeCancel: accept,
+}
+
+const RESIZE: readonly GuideStoryStep[] = [
+  {
+    title: 'Таблица с протяжкой ширины',
+    hint: 'Ширина колонок меняется протяжкой границы заголовка. Итог каждого изменения приложение получает в колбэке, журнал — в консоли под таблицей.',
+    props: () => RESIZE_CALLBACKS,
+  },
+  {
+    title: 'Пользователь расширил колонку',
+    hint: 'Пользователь протянул границу заголовка и отпустил. Колонка стала шире, приложение получило новую ширину.',
+    enter: stepAction(async (root, step) => {
+      const { release } = await pullGrip(root, step)
+      release()
+    }),
+  },
+  {
+    title: 'Пользователь отменил протяжку',
+    hint: 'Пользователь начал тянуть границу и нажал Escape. Ширина вернулась к прежней, приложение получило отмену с причиной.',
+    enter: stepAction(async (root, step) => {
+      const { before, release } = await pullGrip(root, step)
+      cancelDrag()
+      await pollUntil(() => widthOf(root) === before, step.signal)
+      release()
+    }),
+  },
+]
+
+/** ADR 0040, S5: итоги протяжки ширины приходят приложению колбэками успеха и отмены. */
+export const PluginApiResizeCallbacks: StoryObj<SessionsArgs> = {
+  name: 'Resize callbacks',
+  parameters: { scenario: '0040/S5', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Колбэки протяжки ширины"
+      steps={RESIZE}
+      args={guideArgs({ ...GRID, enableColumnSizing: true }, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    let start = 0
+    await step(RESIZE[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() =>
+        expect(
+          resizedHead(canvas)?.querySelector('.resize__handler--column'),
+        ).toBeTruthy(),
+      )
+      start = widthOf(canvas)
+    })
+    await step(RESIZE[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      expect(widthOf(canvas)).toBeGreaterThan(start + RESIZE_BY / 2)
+      await until(() =>
+        expect(consoleText()).toMatch(
+          new RegExp(`onColumnResizeEnd[^\\n]*${RESIZED}`),
+        ),
+      )
+      const width = /onColumnResizeEnd[^\n]*width\D*(\d+)/.exec(consoleText())
+      expect(Number(width?.[1])).toBeGreaterThan(start + RESIZE_BY / 2)
+    })
+    await step(RESIZE[2]!.title, async () => {
+      const wide = widthOf(canvas)
+      await guideNext(canvas)
+      await stepDone(canvas)
+      expect(widthOf(canvas)).toBe(wide)
+      await until(() =>
+        expect(consoleText()).toMatch(/onColumnResizeCancel[^\n]*cancel/),
+      )
+      expect(consoleText().match(/onColumnResizeEnd/g)).toHaveLength(1)
       await settle()
     })
   },
@@ -447,17 +692,17 @@ const sortByKeyboard = async (root: HTMLElement, signal: AbortSignal) => {
 const DEBUG_ACTIONS: readonly GuideStoryStep[] = [
   {
     title: 'Журнал пуст',
-    hint: 'Приложение подписано на onDebugAction: каждое действие попадает в консоль под таблицей. Раскройте её.',
+    hint: 'Приложение записывает каждое действие пользователя в свой журнал. Журнал — в консоли под таблицей, пока он пуст.',
     props: () => ({ enableColumnSorting: true }),
   },
   {
     title: 'Сортировка мышью',
-    hint: 'Нажмите кнопку сортировки в шапке First name: действие №1 columnSorting, источник «мышь».',
+    hint: 'Пользователь нажал кнопку сортировки в заголовке колонки. В журнале появилось первое действие — сортировка, источник — мышь.',
     enter: stepAction((root, { signal }) => sortByMouse(root, signal)),
   },
   {
     title: 'Сортировка клавишей',
-    hint: 'Включена клавиатура: Tab в шапку, Enter на заголовке — то же действие с источником «клавиатура».',
+    hint: 'Пользователь перешёл в заголовок с клавиатуры и нажал Enter. В журнале — то же действие, источник — клавиатура.',
     props: () => ({ enableKeyboardNavigation: true }),
     // Сортировка мышью — до клавиши, если шаг открыли, минуя прошлый.
     enter: stepAction(async (root, { signal }) => {
@@ -609,7 +854,7 @@ const pressFavorite = (index: number) => (root: HTMLElement) => {
 const OUTCOME_FLASH: readonly GuideStoryStep[] = [
   {
     title: 'Кнопка избранного',
-    hint: 'Приложение ставит в ячейки первой колонки кнопку избранного. Нажатие сразу отмечает строку и отправляет запрос на сервер.',
+    hint: 'Приложение ставит в ячейки колонки имени кнопку избранного. Нажатие сразу отмечает строку и отправляет запрос на сервер.',
     props: () => ({ extraPlugins: FAVORITE_ACCEPTS }),
   },
   {
@@ -723,12 +968,12 @@ const starButton = (root: ParentNode) =>
 const REPORT_ACTION: readonly GuideStoryStep[] = [
   {
     title: 'Кнопка плагина',
-    hint: 'Плагин definePlugin ставит в тулбар кнопку «Star rows». Других плагинов нет — table.reportAction ставит ядро.',
+    hint: 'Плагин автора поставил в тулбар свою кнопку. Других плагинов в таблице нет: сообщать о действиях умеет сама таблица.',
     props: () => ({ extraPlugins: STAR_ROWS }),
   },
   {
     title: 'Нажатие кнопки',
-    hint: 'Кнопка зовёт table.reportAction: в консоли — действие starRows · starAll, а кнопка показывает его номер.',
+    hint: 'Пользователь нажал кнопку плагина. Плагин сообщил таблице своё действие: оно попало в журнал под таблицей, а кнопка показывает его номер.',
     // Пользователь нажимает кнопку мышью: одно нажатие — одно действие.
     enter: stepAction(async (root, { signal }) => {
       await pollUntil(() => !!starButton(root), signal)
@@ -761,6 +1006,510 @@ export const PluginApiReportAction: StoryObj<StoryProps> = {
       expect(starButton(canvas)!.textContent).toBe('Star rows · #1')
     })
     await settle()
+  },
+}
+
+// --- Плагин автора (ADR 0028) ------------------------------------------------------
+
+type Marks = Record<string, boolean>
+
+/** Кнопка в ячейке плагина: отмечена ли строка и что делает нажатие. */
+const MarkToggle = ({
+  marked,
+  onToggle,
+}: {
+  marked: boolean
+  onToggle: () => void
+}) => (
+  <CellButton
+    data-testid="mark"
+    label={marked ? 'Remove from favorites' : 'Add to favorites'}
+    icon={<Star size={16} fill={marked ? 'currentColor' : 'none'} />}
+    active={marked || undefined}
+    indicator={false}
+    revealOnHover={false}
+    onClick={onToggle}
+  />
+)
+
+const markOf = (root: ParentNode, row: string) =>
+  root.querySelector<HTMLElement>(
+    `.data-grid__body-row[data-row-id="${row}"] [data-testid="mark"]`,
+  )
+const isMarked = (root: ParentNode, row: string) =>
+  !!markOf(root, row)?.closest('[data-button-active]')
+const markedRows = (root: ParentNode) =>
+  root.querySelectorAll(
+    '.data-grid__body-row [data-button-active] [data-testid="mark"]',
+  ).length
+
+// S1: кнопка в ячейке со своим состоянием.
+
+type ToggleFavorite = (change: { rowId: string; favorite: boolean }) => void
+
+interface FavoriteRowsArgs {
+  enabled?: boolean
+  onToggleFavorite?: ToggleFavorite
+}
+interface FavoriteRowsHooks {
+  onToggleFavorite: ToggleFavorite
+}
+
+const FavoriteRowButton = ({
+  row,
+  column,
+  hooks,
+  state: [marks, setMarks],
+}: PluginCellStateProps<FavoriteRowsHooks, Marks>) => {
+  if (column.id !== FAVORITE_COLUMN) return null
+  const marked = marks[row.id] ?? false
+  return (
+    <MarkToggle
+      marked={marked}
+      onToggle={() => {
+        setMarks({ ...marks, [row.id]: !marked })
+        hooks.onToggleFavorite({ rowId: row.id, favorite: !marked })
+      }}
+    />
+  )
+}
+
+const favoriteRows = definePlugin<FavoriteRowsArgs>()({
+  id: 'favoriteRows',
+  hooks: (args): FavoriteRowsHooks => ({
+    onToggleFavorite: args.onToggleFavorite ?? accept,
+  }),
+  state: (): Marks => ({}),
+  slots: [
+    {
+      id: 'favoriteRows',
+      slot: 'rightCellSlot',
+      state: true,
+      component: FavoriteRowButton,
+    },
+  ],
+})
+const favoriteRowsOf = perLog(log => [
+  favoriteRows({
+    onToggleFavorite: loggedCallback(log, 'onToggleFavorite', accept),
+  }),
+])
+
+const MARKED_ROW = 'item-id-0'
+const scrollerOf = (root: ParentNode) =>
+  root.querySelector<HTMLElement>('.data-grid__container')
+const isMounted = (root: ParentNode, row: string) =>
+  !!root.querySelector(`.data-grid__body-row[data-row-id="${row}"]`)
+
+/** Пользователь отмечает первую строку кнопкой плагина. */
+const markFirstRow = (root: HTMLElement) => markOf(root, MARKED_ROW)?.click()
+
+const CELL_BUTTON: readonly GuideStoryStep[] = [
+  {
+    title: 'Кнопка плагина в ячейках',
+    hint: 'Автор плагина поставил в ячейки колонки имени свою кнопку избранного. Пока ни одна строка не отмечена.',
+    props: ({ log }) => ({ extraPlugins: favoriteRowsOf(log) }),
+  },
+  {
+    title: 'Пользователь отметил строку',
+    hint: 'Пользователь нажал кнопку в первой строке. Плагин запомнил отметку в своём состоянии: кнопка показана включённой, приложение получило колбэк со строкой и отметкой.',
+    enter: untilDone(root => isMarked(root, MARKED_ROW), markFirstRow),
+  },
+  {
+    title: 'Отметка пережила прокрутку',
+    hint: 'Пользователь прокрутил таблицу вниз и обратно. Строка ушла из виду и вернулась с отметкой: состояние хранит плагин, а не кнопка.',
+    enter: stepAction(async (root, { signal }) => {
+      await pollUntil(() => !!markOf(root, MARKED_ROW), signal)
+      if (!isMarked(root, MARKED_ROW)) markFirstRow(root)
+      await pollUntil(() => isMarked(root, MARKED_ROW), signal)
+      const scroller = scrollerOf(root)!
+      scroller.scrollTop = scroller.scrollHeight
+      await pollUntil(() => !isMounted(root, MARKED_ROW), signal)
+      scroller.scrollTop = 0
+      await pollUntil(() => isMarked(root, MARKED_ROW), signal)
+    }),
+  },
+]
+
+/** ADR 0028, S1: автор плагина ставит в ячейки кнопку со своим состоянием. */
+export const PluginApiCellButton: StoryObj<StoryProps> = {
+  name: 'Cell button',
+  parameters: { scenario: '0028/S1', ...GUIDED },
+  render: args => (
+    <GuideStory
+      title="Кнопка плагина в ячейке"
+      steps={CELL_BUTTON}
+      args={guideArgs({ ...GRID, dataCount: 100 }, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(CELL_BUTTON[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(markOf(canvas, MARKED_ROW)).not.toBeNull())
+      expect(markedRows(canvas)).toBe(0)
+    })
+    await step(CELL_BUTTON[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(isMarked(canvas, MARKED_ROW)).toBe(true))
+      await until(() =>
+        expect(consoleText()).toMatch(
+          new RegExp(`onToggleFavorite[^\\n]*${MARKED_ROW}[^\\n]*true`),
+        ),
+      )
+    })
+    await step(CELL_BUTTON[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      expect(isMarked(canvas, MARKED_ROW)).toBe(true)
+      expect(markedRows(canvas)).toBe(1)
+      await settle()
+    })
+  },
+}
+
+// S2: состояние плагина — у приложения.
+
+interface AppFavoritesArgs {
+  enabled?: boolean
+  favorites?: Marks
+  onFavoritesChange?: (next: Marks) => void
+}
+
+const AppFavoriteButton = ({
+  row,
+  column,
+  state: [marks, setMarks],
+}: PluginCellStateProps<Record<never, never>, Marks>) =>
+  column.id === FAVORITE_COLUMN ? (
+    <MarkToggle
+      marked={marks[row.id] ?? false}
+      onToggle={() => setMarks({ ...marks, [row.id]: !marks[row.id] })}
+    />
+  ) : null
+
+const appFavorites = definePlugin<AppFavoritesArgs>()({
+  id: 'appFavorites',
+  state: (): Marks => ({}),
+  controlled: { value: 'favorites', onChange: 'onFavoritesChange' },
+  slots: [
+    {
+      id: 'appFavorites',
+      slot: 'rightCellSlot',
+      state: true,
+      component: AppFavoriteButton,
+    },
+  ],
+})
+
+const UNMARKED_ROW = 'item-id-1'
+const KEPT_ROW = 'item-id-3'
+const APP_MARKS: Marks = { [UNMARKED_ROW]: true, [KEPT_ROW]: true }
+const NO_MARKS: Marks = {}
+/** Записи плагина с отметками приложения: одна на консоль и набор отметок. */
+const appFavoritesOf = (favorites: Marks) =>
+  perLog(log => [
+    appFavorites({
+      favorites,
+      onFavoritesChange: loggedCallback(log, 'onFavoritesChange', accept),
+    }),
+  ])
+const appMarked = appFavoritesOf(APP_MARKS)
+const appCleared = appFavoritesOf(NO_MARKS)
+
+const CONTROLLED: readonly GuideStoryStep[] = [
+  {
+    title: 'Отметки задало приложение',
+    hint: 'Приложение передало плагину отметки двух строк. Таблица показывает эти строки отмеченными.',
+    props: ({ log }) => ({ extraPlugins: appMarked(log) }),
+  },
+  {
+    title: 'Пользователь снял отметку',
+    hint: 'Пользователь нажал кнопку отмеченной строки. Плагин снял отметку и передал приложению новый набор отметок.',
+    enter: untilDone(
+      root => !!markOf(root, UNMARKED_ROW) && !isMarked(root, UNMARKED_ROW),
+      root => {
+        if (isMarked(root, UNMARKED_ROW)) markOf(root, UNMARKED_ROW)?.click()
+      },
+    ),
+  },
+  {
+    title: 'Приложение сбросило отметки',
+    hint: 'Приложение передало плагину пустой набор. Отметки сняты во всех строках, хотя пользователь их не трогал.',
+    props: ({ log }) => ({ extraPlugins: appCleared(log) }),
+  },
+]
+
+/** ADR 0028, S2: приложение задаёт состояние плагина и получает каждое его изменение. */
+export const PluginApiControlledState: StoryObj<StoryProps> = {
+  name: 'Controlled state',
+  parameters: { scenario: '0028/S2', ...GUIDED },
+  render: guided('Состояние плагина у приложения', CONTROLLED),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(CONTROLLED[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(isMarked(canvas, UNMARKED_ROW)).toBe(true))
+      expect(isMarked(canvas, KEPT_ROW)).toBe(true)
+      expect(markedRows(canvas)).toBe(2)
+    })
+    await step(CONTROLLED[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(isMarked(canvas, UNMARKED_ROW)).toBe(false))
+      expect(isMarked(canvas, KEPT_ROW)).toBe(true)
+      await until(() =>
+        expect(consoleText()).toMatch(
+          new RegExp(`onFavoritesChange[^\\n]*${UNMARKED_ROW}[^\\n]*false`),
+        ),
+      )
+    })
+    await step(CONTROLLED[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(markedRows(canvas)).toBe(0))
+      expect(markOf(canvas, KEPT_ROW)).not.toBeNull()
+      await settle()
+    })
+  },
+}
+
+// S3: служебная колонка плагина.
+
+type FlagRow = (change: { rowId: string }) => void
+
+interface RowFlagsArgs {
+  enabled?: boolean
+  onFlagRow?: FlagRow
+  onFlagAll?: () => void
+}
+interface RowFlagsHooks {
+  onFlagRow: FlagRow
+  onFlagAll: () => void
+}
+
+const FLAG_COLUMN = 'rowFlags'
+
+const FlagRowButton = ({ row, hooks }: PluginCellProps<RowFlagsHooks>) => (
+  <IconButton
+    data-testid="flag-row"
+    label="Flag row"
+    onClick={() => hooks.onFlagRow({ rowId: row.id })}
+  >
+    <Flag size={16} />
+  </IconButton>
+)
+
+const FlagAllButton = ({ hooks }: PluginHeaderProps<RowFlagsHooks>) => (
+  <IconButton
+    data-testid="flag-all"
+    label="Flag all rows"
+    onClick={() => hooks.onFlagAll()}
+  >
+    <Flag size={16} />
+  </IconButton>
+)
+
+const rowFlags = definePlugin<RowFlagsArgs>()({
+  id: 'rowFlags',
+  hooks: (args): RowFlagsHooks => ({
+    onFlagRow: args.onFlagRow ?? accept,
+    onFlagAll: args.onFlagAll ?? accept,
+  }),
+  column: {
+    id: FLAG_COLUMN,
+    side: 'leading',
+    order: 0,
+    controlSized: true,
+    cell: FlagRowButton,
+    header: FlagAllButton,
+    make: ({ cell, header }) =>
+      ({
+        id: FLAG_COLUMN,
+        skeletonCell: 'control',
+        minSize: 0,
+        size: COLUMN_ACTIONS_SIZE,
+        enableSorting: false,
+        enableResizing: false,
+        header,
+        cell,
+      }) as unknown as ColumnDef<any, any, any>,
+  },
+})
+const rowFlagsOf = perLog(log => [
+  rowFlags({
+    onFlagRow: loggedCallback(log, 'onFlagRow', accept),
+    onFlagAll: loggedCallback(log, 'onFlagAll', accept),
+  }),
+])
+
+const FLAGGED_ROW = 'item-id-0'
+const flagOf = (root: ParentNode, row: string) =>
+  root.querySelector<HTMLElement>(
+    `.data-grid__body-row[data-row-id="${row}"] [data-testid="flag-row"]`,
+  )
+const flagAllOf = (root: ParentNode) =>
+  root.querySelector<HTMLElement>(
+    `.data-grid__head-cell[data-column-id="${FLAG_COLUMN}"] [data-testid="flag-all"]`,
+  )
+
+const SERVICE_COLUMN: readonly GuideStoryStep[] = [
+  {
+    title: 'Служебная колонка плагина',
+    hint: 'Плагин добавил свою служебную колонку: в заголовке — кнопка для всех строк, в каждой строке — кнопка для этой строки.',
+    props: ({ log }) => ({ extraPlugins: rowFlagsOf(log) }),
+  },
+  {
+    title: 'Пользователь нажал кнопку строки',
+    hint: 'Пользователь нажал кнопку в первой строке. Кнопка вызвала колбэк плагина: приложение получило строку, журнал — в консоли под таблицей.',
+    enter: stepAction(async (root, { signal }) => {
+      await pollUntil(() => !!flagOf(root, FLAGGED_ROW), signal)
+      clickByMouse(flagOf(root, FLAGGED_ROW)!)
+    }),
+  },
+]
+
+/** ADR 0028, S3: автор плагина добавляет служебную колонку, её кнопки зовут колбэки плагина. */
+export const PluginApiServiceColumn: StoryObj<StoryProps> = {
+  name: 'Service column',
+  parameters: { scenario: '0028/S3', ...GUIDED },
+  render: guided('Служебная колонка плагина', SERVICE_COLUMN),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(SERVICE_COLUMN[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(flagAllOf(canvas)).not.toBeNull())
+      expect(flagOf(canvas, FLAGGED_ROW)).not.toBeNull()
+    })
+    await step(SERVICE_COLUMN[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await until(() =>
+        expect(consoleText()).toMatch(
+          new RegExp(`onFlagRow[^\\n]*${FLAGGED_ROW}`),
+        ),
+      )
+      expect(consoleText()).not.toMatch(/onFlagAll/)
+      await settle()
+    })
+  },
+}
+
+// --- Падение плагина автора (ADR 0037) ---------------------------------------------
+
+const CRASH_ROW = 'item-id-2'
+const VISITS_FAILURE = /has no visit count/
+
+/** Кнопка плагина с числом визитов строки: компонент ждёт число в каждой строке. */
+const VisitsButton = ({ row, column }: CellComponentProps) => {
+  if (column.id !== FAVORITE_COLUMN) return null
+  const { visits } = row.original as { visits?: unknown }
+  if (typeof visits !== 'number') {
+    throw new Error(`visitsBadge: row ${row.id} has no visit count`)
+  }
+  return (
+    <CellButton
+      data-testid="visits"
+      label={`${visits} visits`}
+      icon={<Eye size={16} />}
+      revealOnHover={false}
+    />
+  )
+}
+
+const visitsBadge = definePlugin()({
+  id: 'visitsBadge',
+  slots: [
+    { id: 'visitsBadge', slot: 'rightCellSlot', component: VisitsButton },
+  ],
+})
+const VISITS_BADGE = [visitsBadge()]
+
+// Данные — при первой отрисовке истории, а не при импорте модуля (getData пересевает
+// общий faker); строка без числа визитов — из тех же данных.
+let crashData: ReturnType<typeof getData> | undefined
+let brokenData: ReturnType<typeof getData> | undefined
+const crashRows = () => (crashData ??= getData(30))
+const brokenRows = () =>
+  (brokenData ??= crashRows().map(row =>
+    row.id === CRASH_ROW ? { ...row, visits: null } : row,
+  ))
+
+const visitsOf = (root: ParentNode, row: string) =>
+  root.querySelector(
+    `.data-grid__body-row[data-row-id="${row}"] [data-testid="visits"]`,
+  )
+const checkboxOf = (root: ParentNode, row: string) =>
+  root.querySelector(
+    `.data-grid__body-row[data-row-id="${row}"] [role="checkbox"]`,
+  )
+
+const CRASH: readonly GuideStoryStep[] = [
+  {
+    title: 'Плагин работает',
+    hint: 'В ячейках колонки имени — кнопка стороннего плагина с числом визитов, рядом работают встроенные плагины: выбор строк и сортировка.',
+    props: () => ({ dataOverride: crashRows(), extraPlugins: VISITS_BADGE }),
+  },
+  {
+    title: 'Плагин упал на строке',
+    hint: 'Приложение передало строку без числа визитов, и компонент плагина бросил на ней ошибку. На месте его кнопки в этой строке пусто; остальные строки и встроенные плагины работают, ошибка — в консоли браузера.',
+    enter: (_root, app) =>
+      app.update(props => ({ ...props, dataOverride: brokenRows() })),
+  },
+]
+
+/** ADR 0037, S1: компонент плагина падает на одной строке — таблица работает. */
+export const PluginApiPluginCrash: StoryObj<StoryProps> = {
+  name: 'Plugin crash',
+  parameters: {
+    scenario: '0037/S1',
+    consoleErrors: {
+      expected: [VISITS_FAILURE],
+      reason:
+        'Шаг гайда показывает падение компонента плагина: React и таблица пишут его ошибку в консоль (ADR 0037, S1).',
+    },
+    ...GUIDED,
+  },
+  render: args => (
+    <GuideStory
+      title="Падение плагина"
+      steps={CRASH}
+      args={guideArgs(
+        { ...GRID, enableRowSelection: true, enableColumnSorting: true },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(CRASH[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(visitsOf(canvas, CRASH_ROW)).not.toBeNull())
+      expect(checkboxOf(canvas, CRASH_ROW)).not.toBeNull()
+      expect(canvas.querySelector('.column-sort__button')).not.toBeNull()
+    })
+    await step(CRASH[1]!.title, async () => {
+      // Сообщения консоли за шаг — проверка, а не событие: шаг их только вызывает.
+      const logged: string[] = []
+      const error = console.error
+      console.error = (...args: unknown[]) => {
+        logged.push(args.map(String).join(' '))
+        error(...args)
+      }
+      try {
+        await guideNext(canvas)
+        await until(() => expect(visitsOf(canvas, CRASH_ROW)).toBeNull())
+        await until(() =>
+          expect(logged.some(message => VISITS_FAILURE.test(message))).toBe(
+            true,
+          ),
+        )
+      } finally {
+        console.error = error
+      }
+      expect(checkboxOf(canvas, CRASH_ROW)).not.toBeNull()
+      expect(visitsOf(canvas, 'item-id-1')).not.toBeNull()
+      expect(canvas.querySelector('.column-sort__button')).not.toBeNull()
+      await settle()
+    })
   },
 }
 

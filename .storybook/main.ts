@@ -42,7 +42,6 @@ const config: StorybookConfig = {
             'Panels',
             'Accessibility',
             'Plugin API',
-            'Data & scale',
           ],
           'Customization',
           'Theming',

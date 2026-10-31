@@ -17,6 +17,7 @@ import {
   PlayArgs,
 } from '../src/lib/stories/__mocks__/catalog'
 import { pinClock } from '../src/lib/stories/__mocks__/clock'
+import { type ConsoleErrors, expectConsoleErrors } from './consoleErrors'
 import './catalog.css'
 
 const INTER_STACK =
@@ -119,6 +120,10 @@ const preview: Preview = {
         date: /Date$/i,
       },
     },
+  },
+  // Сообщения `console.error`, которые история пишет нарочно (ADR 0093, VR18).
+  beforeEach: ({ parameters }) => {
+    expectConsoleErrors(parameters.consoleErrors as ConsoleErrors | undefined)
   },
   // Число на вкладке Controls Storybook считает по всем argTypes с контролом, без учёта
   // `controls.include`: скрытым списком контролам — `table.disable` (ADR 0117).

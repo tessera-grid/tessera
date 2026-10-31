@@ -8,6 +8,10 @@ import { join } from 'node:path'
 
 import { describe, expect, it, vi } from 'vitest'
 
+import {
+  type ConsoleErrors,
+  isExpectedConsoleError,
+} from '../../../.storybook/consoleErrors'
 import main from '../../../.storybook/main'
 import preview from '../../../.storybook/preview'
 import {
@@ -74,6 +78,7 @@ interface LoadedStory {
     scenario?: string
     guideStep?: number
     chromatic?: { forcedColors?: string; modes?: unknown }
+    consoleErrors?: ConsoleErrors
   }
 }
 
@@ -342,6 +347,39 @@ describe('Каталог визуальных состояний', () => {
     expect(
       countSnapshots(files, modes) - countSnapshots(withoutSteps, modes),
     ).toBe(steps)
+  })
+
+  it('VR18: история перечисляет ожидаемые сообщения console.error параметром consoleErrors — образцы и причина: сообщение по образцу тест не роняет, любое другое роняет; параметр без образцов или без причины роняет страж', async () => {
+    const setup = readFileSync(join(ROOT, '.storybook/vitest.setup.ts'), 'utf8')
+    expect(setup).toMatch(/!isExpectedConsoleError\(message\)/)
+    expect(setup).toMatch(/expectConsoleErrors\(undefined\)/)
+
+    // Список задаёт `preview` из параметра истории, которая идёт сейчас.
+    const beforeEach = preview.beforeEach as (context: object) => unknown
+    beforeEach({
+      parameters: {
+        consoleErrors: { expected: [/plugin failed/], reason: 'падение' },
+      },
+    })
+    expect(isExpectedConsoleError('Error: plugin failed')).toBe(true)
+    expect(isExpectedConsoleError('Warning: unique key')).toBe(false)
+    beforeEach({ parameters: {} })
+    expect(isExpectedConsoleError('Error: plugin failed')).toBe(false)
+
+    const wrong: string[] = []
+    let declared = 0
+    for (const [path, load] of Object.entries(storyModules)) {
+      const { default: _meta, ...stories } = await load()
+      for (const [name, story] of Object.entries(stories)) {
+        const errors = story.parameters?.consoleErrors
+        if (!errors) continue
+        declared++
+        if (errors.expected.length === 0 || errors.reason.trim() === '')
+          wrong.push(`${path}:${name}`)
+      }
+    }
+    expect(declared).toBeGreaterThan(0)
+    expect(wrong).toEqual([])
   })
 
   it('VR10: история вне снимков несёт причину; история без снимка и без причины роняет страж', () => {

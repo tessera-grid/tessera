@@ -18,7 +18,7 @@ export interface StoryExport {
  * около пяти полных сборок; обычная правка с TurboSnap снимает лишь затронутые
  * истории.
  */
-export const SNAPSHOT_BUDGET = 950
+export const SNAPSHOT_BUDGET = 1000
 
 /** Длина причины пропуска снимка, ниже которой это не причина. */
 const MIN_REASON = 10

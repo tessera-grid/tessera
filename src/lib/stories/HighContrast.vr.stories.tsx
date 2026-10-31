@@ -2896,19 +2896,19 @@ export const HighContrastPluginApiReactiveArgsStep4 = {
 
 export const HighContrastSessionCallbacksStep1 = {
   ...twinStep(pluginApiStories, pluginApiStories.SessionCallbacks, 1),
-  name: 'Plugin API — Drag & resize callbacks, шаг 1',
+  name: 'Plugin API — Drag callbacks, шаг 1',
   tags: ['!test'],
 }
 
 export const HighContrastSessionCallbacksStep2 = {
   ...twinStep(pluginApiStories, pluginApiStories.SessionCallbacks, 2),
-  name: 'Plugin API — Drag & resize callbacks, шаг 2',
+  name: 'Plugin API — Drag callbacks, шаг 2',
   tags: ['!test'],
 }
 
 export const HighContrastSessionCallbacksStep3 = {
   ...twinStep(pluginApiStories, pluginApiStories.SessionCallbacks, 3),
-  name: 'Plugin API — Drag & resize callbacks, шаг 3',
+  name: 'Plugin API — Drag callbacks, шаг 3',
   tags: ['!test'],
 }
 
@@ -2957,6 +2957,102 @@ export const HighContrastOutcomeFlashFromAppStep2 = {
 export const HighContrastOutcomeFlashFromAppStep3 = {
   ...twinStep(pluginApiStories, pluginApiStories.OutcomeFlashFromApp, 3),
   name: 'Plugin API — Outcome flash, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiRevokeEditingStep1 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiRevokeEditing, 1),
+  name: 'Plugin API — Revoke editing, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiRevokeEditingStep2 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiRevokeEditing, 2),
+  name: 'Plugin API — Revoke editing, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiRevokeEditingStep3 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiRevokeEditing, 3),
+  name: 'Plugin API — Revoke editing, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiResizeCallbacksStep1 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiResizeCallbacks, 1),
+  name: 'Plugin API — Resize callbacks, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiResizeCallbacksStep2 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiResizeCallbacks, 2),
+  name: 'Plugin API — Resize callbacks, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiResizeCallbacksStep3 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiResizeCallbacks, 3),
+  name: 'Plugin API — Resize callbacks, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiCellButtonStep1 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiCellButton, 1),
+  name: 'Plugin API — Cell button, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiCellButtonStep2 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiCellButton, 2),
+  name: 'Plugin API — Cell button, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiCellButtonStep3 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiCellButton, 3),
+  name: 'Plugin API — Cell button, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiControlledStateStep1 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiControlledState, 1),
+  name: 'Plugin API — Controlled state, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiControlledStateStep2 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiControlledState, 2),
+  name: 'Plugin API — Controlled state, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiControlledStateStep3 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiControlledState, 3),
+  name: 'Plugin API — Controlled state, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiServiceColumnStep1 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiServiceColumn, 1),
+  name: 'Plugin API — Service column, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiServiceColumnStep2 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiServiceColumn, 2),
+  name: 'Plugin API — Service column, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiPluginCrashStep1 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiPluginCrash, 1),
+  name: 'Plugin API — Plugin crash, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiPluginCrashStep2 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiPluginCrash, 2),
+  name: 'Plugin API — Plugin crash, шаг 2',
   tags: ['!test'],
 }
 
