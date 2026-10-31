@@ -22,11 +22,7 @@ import type { CoreOptions } from './commonFeature.types'
 import { dataModeKeyOf, manualOptionsOf, stockRowCountOf } from './dataMode'
 import { type DefaultColumnSizing, resolveDefaultColumn } from './defaultColumn'
 import { resolveHooks } from './createHooks'
-import {
-  getColumnsSignature,
-  injectServiceColumns,
-  orderServiceColumns,
-} from './createColumns'
+import { injectServiceColumns, orderServiceColumns } from './createColumns'
 import {
   buildTesseraFeatures,
   foldEntries,
@@ -53,7 +49,14 @@ import {
   resolvePluginSet,
   type PluginSetStore,
 } from './pluginSet'
-import { handlerOf, useEffectiveState } from './effectiveState'
+import {
+  createSliceStore,
+  handlerOf,
+  type SliceInput,
+  type SliceTable,
+  useEffectiveSlices,
+  useNarrowContext,
+} from './effectiveState'
 import {
   type CoreTableHandlers,
   type CoreTableState,
@@ -67,8 +70,7 @@ import {
 import { useTableEffects } from './useTableEffects'
 import { keyboardNavigationEntry } from './keyboardNavigation/entry'
 
-// Видимость служебных колонок сужается с первого рендера (ADR 0050). Константа: новое
-// значение на каждый рендер сбрасывало бы кэш сужения (SC11).
+// Видимость служебных колонок сужается с первого рендера (ADR 0050).
 const INITIAL_EFFECTIVE_STATE = { columnVisibility: {} }
 
 /**
@@ -174,8 +176,14 @@ export const useCreateTable = <
   // enabled), а не по идентичности массива — иначе новый plugins пересобирал бы всё.
   const signature = pluginSetSignature(entries)
 
+  // Срезы под сужением — атомы-линзы хранилища (ADR 0171, §1); таблица узнаёт его при
+  // создании, его фичей набора.
+  const [sliceStore] = useState(createSliceStore)
   const features = useMemo(
-    () => buildTesseraFeatures(entries),
+    () => ({
+      ...buildTesseraFeatures(entries),
+      effectiveSlicesFeature: sliceStore.feature,
+    }),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по сигнатуре набора
     [signature],
   )
@@ -280,22 +288,8 @@ export const useCreateTable = <
   // мемоизируются по сигнатуре набора. resolveHooks подкладывает no-op дефолты.
   const resolvedHooks = resolveHooks(foldHooks(entries))
 
-  // Эффективное состояние при сужении параметров (ADR 0039, §4): TanStack видит
-  // «сохранённое ∩ допустимое», сохранённое остаётся нетронутым. Сужению отдаётся
-  // экземпляр предыдущего рендера, только если его данные и структура колонок совпадают
-  // с текущими (строки и колонки уже построены); иначе оно откладывается на повторный
-  // рендер.
-  const tableRef = useRef<{
-    options: { data: unknown; columns: readonly unknown[] }
-    atoms: Record<string, { get: () => unknown }>
-  }>(null)
-  const previous = tableRef.current
-  const columnsSignature = getColumnsSignature(injectedColumns)
-  const freshTable =
-    previous?.options.data === data &&
-    getColumnsSignature(previous.options.columns) === columnsSignature
-      ? previous
-      : null
+  // Эффективное состояние при сужении параметров (ADR 0039, §4; ADR 0171): TanStack
+  // видит «сохранённое ∩ допустимое» через атомы-линзы, сохранённое остаётся нетронутым.
   // Срезы из аргументов плагинов (ADR 0120, §4): с внешним значением их ведёт ядро,
   // как суженные; без него — TanStack, а ядро лишь сообщает новое значение колбэку.
   const slices = pluginSlicesOf(entries)
@@ -305,64 +299,54 @@ export const useCreateTable = <
     // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по составу срезов
     [folded.narrow, sliceKeys],
   )
+  // Первая загрузка видна условиям показа служебных колонок (ADR 0060, SL25).
+  const narrowContext = useNarrowContext(folded, coreOptions.loading)
   // Срезы, которыми ядро владеет само: сужение снимается, а обработчик остаётся у владельца.
-  const owned = { columnPinning: displayedPinning }
-  // `useTable` сливает опции с прежними: обработчик снятого сужения остался бы в
-  // таблице и писал бы мимо среза — срез, который снова ведёт TanStack, получает запись в атом.
-  const narrowedKeys = useRef(new Set<string>())
-  for (const key of Object.keys(narrow)) narrowedKeys.current.add(key)
-  const releasedSliceHandlers = Object.fromEntries(
-    [...narrowedKeys.current]
-      .filter(key => !(key in narrow) && !(key in owned))
-      .map(key => [
-        handlerOf(key),
-        (updater: unknown) =>
-          makeStateUpdater(
-            key as never,
-            tableRef.current as unknown as Parameters<
-              typeof makeStateUpdater
-            >[1],
-          )(updater as never),
-      ]),
+  const owned: Record<string, unknown> = { columnPinning: displayedPinning }
+  const sliceState: Record<string, unknown> = { ...restState, ...slices.state }
+  const sliceInitial: Record<string, unknown> = {
+    ...INITIAL_EFFECTIVE_STATE,
+    ...slices.initial,
+  }
+  const sliceInputs: Record<string, SliceInput> = Object.fromEntries(
+    Object.keys(narrow).map(key => {
+      const isOwned = key in owned
+      return [
+        key,
+        {
+          value: isOwned ? owned[key] : sliceState[key],
+          controlled: !isOwned && sliceState[key] !== undefined,
+          owned: isOwned,
+          external: restHandlers[handlerOf(key)] as SliceInput['external'],
+          listener: slices.listeners[key],
+          initial:
+            key in sliceInitial ? { value: sliceInitial[key] } : undefined,
+        },
+      ]
+    }),
   )
+  const effective = useEffectiveSlices(sliceStore, sliceInputs)
+  // Срез плагина, которым владеет TanStack: ядро сообщает новое значение колбэку.
   const ownedSliceHandlers = Object.fromEntries(
     Object.entries(slices.listeners)
       .filter(([key]) => !(key in narrow))
       .map(([key, listener]) => [
         handlerOf(key),
         (updater: unknown) => {
-          const t = tableRef.current as unknown as Parameters<
-            typeof makeStateUpdater
-          >[1] & { atoms: Record<string, { get: () => unknown }> }
+          const t = sliceStore.table() as SliceTable &
+            Parameters<typeof makeStateUpdater>[1]
           makeStateUpdater(key as never, t)(updater as never)
           listener(t.atoms[key]?.get())
         },
       ]),
   )
-  // Сужение зависит не только от данных: плагин просит пересчёт, когда сменилось то, что
-  // оно читает из таблицы (ответы ленивых строк при «раскрыть всё», ADR 0160).
-  const [narrowEpoch, setNarrowEpoch] = useState(0)
-  const effective = useEffectiveState({
-    narrow,
-    owned,
-    state: { ...restState, ...slices.state },
-    handlers: restHandlers,
-    listeners: slices.listeners,
-    table: freshTable,
-    getAtoms: () => tableRef.current?.atoms,
-    inputs: [data, columnsSignature, narrowEpoch],
-    // Первая загрузка видна условиям показа служебных колонок (ADR 0060, SL25).
-    context: {
-      options: { ...folded.options, loading: coreOptions.loading },
-      slotActions: folded.slotActions,
-    },
-    initial: { ...INITIAL_EFFECTIVE_STATE, ...slices.initial },
-  })
 
+  // Срезы плагинов с внешним значением — тоже здесь: суженный срез линза читает из `state`
+  // рендера, а несуженный TanStack — сам (ADR 0171, §2).
   const controlledState = {
     ...restState,
-    ...effective.state,
-    columnPinning: effective.state.columnPinning ?? displayedPinning,
+    ...slices.state,
+    columnPinning: displayedPinning,
     columnSizing: displayedSizing,
   }
 
@@ -388,13 +372,15 @@ export const useCreateTable = <
 
     // Контролируемое состояние: пиннинг/размер перехвачены, остальное — от потребителя.
     state: controlledState,
-    refreshNarrowing: () => setNarrowEpoch(epoch => epoch + 1),
+    // Суженные срезы — атомы-линзы: TanStack читает их раньше `state` (ADR 0171, §1).
+    atoms: effective.atoms,
+    pluginNarrows: narrow,
+    pluginNarrowContext: narrowContext,
     onColumnPinningChange,
     onColumnSizingChange,
     onColumnAutoSizingChange,
     // Прочие onXChange потребителя (onExpandedChange/onRowSelectionChange/
     // onGroupingChange/onRowOrderChange…); для суженных срезов — обёртки слоя.
-    ...releasedSliceHandlers,
     ...restHandlers,
     ...ownedSliceHandlers,
     ...effective.handlers,
@@ -437,8 +423,6 @@ export const useCreateTable = <
   const table = useTable(
     options as unknown as TableOptions<TesseraFeatures<TEntries>, TData>,
   )
-
-  tableRef.current = table as unknown as typeof tableRef.current
 
   useTableEffects(
     table,

@@ -15,7 +15,6 @@ import {
   clearExpandFailed,
   markExpandFailed,
   readLoadedChildren,
-  refreshAfterExpandAll,
   setLoadedAnswer,
 } from './lazyChildrenFeature'
 import { type BatchTable, enqueueAnswer } from './answerBatch'
@@ -48,7 +47,6 @@ const storeAnswer = (table: unknown, rowId: string, rows: unknown) => {
     ...prev,
     [rowId]: Array.isArray(rows) ? rows : [],
   }))
-  refreshAfterExpandAll(table)
 }
 
 /**

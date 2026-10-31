@@ -180,12 +180,12 @@ describe('показ служебных колонок', () => {
     const hasChildren = vi.fn(() => false)
     mount(<Host data={flat} plugins={[rowExpanding({ hasChildren })]} />)
     expect(visible(COLUMN_EXPANDING_ID)).toBe(false)
-    const visibility = captured.options.state.columnVisibility
+    const visibility = captured.atoms.columnVisibility.get()
     const calls = hasChildren.mock.calls.length
 
     mount(<Host data={flat} plugins={[rowExpanding({ hasChildren })]} />)
     expect(hasChildren).toHaveBeenCalledTimes(calls)
-    expect(captured.options.state.columnVisibility).toBe(visibility)
+    expect(captured.atoms.columnVisibility.get()).toBe(visibility)
     expect(visible(COLUMN_EXPANDING_ID)).toBe(false)
   })
 })

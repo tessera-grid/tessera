@@ -10,7 +10,6 @@ import {
   makeStateUpdater,
 } from '@tanstack/react-table'
 
-import { commonOptionsOf } from '../../core/commonFeature'
 import { type FailedAttempts, withoutGone } from '../../shared/failedAttempts'
 import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
 
@@ -97,15 +96,6 @@ export const setLoadedAnswer = (
   table: unknown,
   updater: Updater<LoadedChildren>,
 ) => writeSlice(table as LazyTable, 'loadedChildren', updater)
-
-/**
- * Ответ ленивой строки записан при «раскрыть всё» кнопкой (ADR 0160, §2): сохранённый срез
- * `true` не меняется, и сужение раскрытия пересчитывается по просьбе.
- */
-export const refreshAfterExpandAll = (table: unknown) => {
-  const t = table as { atoms: { rowExpandAll?: { get: () => boolean } } }
-  if (t.atoms.rowExpandAll?.get()) commonOptionsOf(table).refreshNarrowing?.()
-}
 
 export const markExpandFailed = (
   table: unknown,

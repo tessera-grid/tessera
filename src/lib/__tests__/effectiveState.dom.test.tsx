@@ -96,14 +96,12 @@ describe('эффективное состояние при сужении', () =
     expect(ids()).toEqual(['3', '1', '2'])
 
     mount(<SortHost max={1} />)
-    expect(captured.options.state.sorting).toEqual([
-      { id: 'name', desc: false },
-    ])
+    expect(captured.atoms.sorting.get()).toEqual([{ id: 'name', desc: false }])
     expect(ids()).toEqual(['1', '3', '2'])
 
     mount(<SortHost max={3} />)
     expect(
-      captured.options.state.sorting.map((sort: { id: string }) => sort.id),
+      captured.atoms.sorting.get().map((sort: { id: string }) => sort.id),
     ).toEqual(['name', 'rank'])
     expect(ids()).toEqual(['3', '1', '2'])
   })
@@ -164,10 +162,10 @@ describe('эффективное состояние при сужении', () =
     }
     mount(<Host subRows={false} />)
     act(() => captured.getRow('1').toggleSelected(true))
-    expect(captured.options.state.rowSelection).toEqual({ '1': true })
+    expect(captured.atoms.rowSelection.get()).toEqual({ '1': true })
 
     mount(<Host subRows />)
-    expect(captured.options.state.rowSelection).toEqual({})
+    expect(captured.atoms.rowSelection.get()).toEqual({})
   })
 
   it('PO5: выбор при смене enabled или subRows сбрасывает rowSelectionModel, а не ядро; монтирование и перерисовка без смены выбор не сбрасывают', () => {
@@ -299,6 +297,6 @@ describe('эффективное состояние при сужении', () =
 
     act(() => captured.getColumn('name').pin('start'))
     expect(captured.getColumn('name').getIsPinned()).toBe('start')
-    expect(captured.options.state.columnPinning.start).toEqual(['name'])
+    expect(captured.atoms.columnPinning.get().start).toEqual(['name'])
   })
 })

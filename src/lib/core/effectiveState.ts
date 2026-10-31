@@ -1,17 +1,20 @@
 /**
- * Эффективное состояние при сужении параметров (ADR 0039, §4, RX8–RX12). Плагин
- * объявляет сужение среза (`narrow`): функцию «сохранённое → допустимое». Ядро
- * хранит сохранённое значение само (неконтролируемый срез) или берёт его у
- * потребителя (контролируемый) и отдаёт TanStack эффективное через `state` — мемо
- * row-моделей видят изменившийся срез штатно. Сохранённое не переписывается: вернули
- * параметр — вернулось прежнее состояние; контролируемому потребителю `on*Change`
- * из-за сужения не приходит.
+ * Эффективное состояние при сужении параметров (ADR 0039, §4; ADR 0171, §1–§2). Плагин
+ * объявляет сужение среза (`narrow`): функцию «сохранённое → допустимое». Ядро хранит
+ * сохранённое значение в атоме-источнике и отдаёт TanStack атом-линзу в `options.atoms`:
+ * чтение — эффективное значение, запись — в сохранённое. Эффективное — производный атом:
+ * пересчитывается по всему, что читает сужение (аргументы, данные, состояние плагинов), без
+ * перерисовки хоста. Сохранённое не переписывается: вернули параметр — вернулось прежнее
+ * состояние; контролируемому потребителю `on*Change` из-за сужения не приходит. Значение
+ * приложения, сужения и свёртку набора линза читает из опций текущего рендера, как TanStack
+ * читает `state`: весь коммит видит одно значение. Рендер атомы не пишет.
  */
-import { useRef, useState } from 'react'
+import { useMemo } from 'react'
 
-import { createAtom, useSelector } from '@tanstack/react-store'
+import { createAtom } from '@tanstack/react-store'
 import { functionalUpdate } from '@tanstack/react-table'
 import { useIsomorphicLayoutEffect } from '../util/useIsomorphicLayoutEffect'
+import { shallowEqual } from './reactivity'
 
 /** Текущая свёртка набора (опции, действия слотов) — свежее, чем опции `table`. */
 export interface NarrowContext {
@@ -20,9 +23,10 @@ export interface NarrowContext {
 }
 
 /**
- * Сужение среза. `table` — экземпляр с текущими данными и колонками или `null`
- * (монтирование, смена данных). Возвращает то же значение, если сужать нечего;
- * `undefined` — без таблицы не посчитать (ядро пересчитает после рендера).
+ * Сужение среза. `table` — экземпляр таблицы или `null` (ещё не создан). Возвращает то же
+ * значение, если сужать нечего; `undefined` — без таблицы не посчитать. Итог от того же
+ * значения ядро сравнивает по полям: значение, чей смысл не в полях (прокси, символы), —
+ * один объект на одно сохранённое значение (ADR 0171, §1).
  */
 export type NarrowState = (
   value: any,
@@ -31,8 +35,6 @@ export type NarrowState = (
 ) => unknown
 
 export type NarrowMap = Record<string, NarrowState[]>
-
-const MAX_FORCED_RENDERS = 2
 
 export const handlerOf = (key: string) =>
   `on${key.charAt(0).toUpperCase()}${key.slice(1)}Change`
@@ -55,155 +57,279 @@ export const applyNarrow = (
   return current
 }
 
-interface CacheEntry {
-  raw: unknown
-  narrows: readonly NarrowState[]
-  inputs: readonly unknown[]
-  result: unknown
-}
-
-const sameInputs = (a: readonly unknown[], b: readonly unknown[]) =>
-  a.length === b.length && a.every((value, index) => value === b[index])
-
-interface EffectiveStateParams {
-  narrow: NarrowMap
-  /**
-   * Срезы, которыми ядро уже владеет само (пиннинг): их значение сужается, но
-   * обработчик смены остаётся у владельца.
-   */
-  owned: Record<string, unknown>
-  state: Record<string, unknown>
-  handlers: Record<string, unknown>
-  /** Экземпляр с текущими данными — для сужения; `null`, если данные сменились. */
-  table: unknown
-  /** Атомы любого прежнего экземпляра — источник сохранённого значения. */
-  getAtoms: () => Record<string, { get: () => unknown }> | undefined
-  /** Данные и подпись структуры колонок: при смене любого сужение пересчитывается. */
-  inputs: readonly unknown[]
-  context: NarrowContext
+/** Что ядро знает о срезе на рендер: сужение, значение снаружи и колбэки. */
+export interface SliceInput {
+  /** Значение снаружи: срез приложения (`controlled`) или ядра-владельца (`owned`). */
+  value: unknown
+  controlled: boolean
+  /** Срезом владеет ядро (закрепление): запись — у владельца, слой только сужает. */
+  owned: boolean
+  external?: (updater: unknown) => void
+  listener?: (next: unknown) => void
   /** Начальное значение среза, которым TanStack не владеет до первого рендера. */
-  initial?: Record<string, unknown>
-  /** Колбэки срезов из аргументов плагинов: получают новое значение (ADR 0120, MP8). */
-  listeners?: Record<string, ((next: unknown) => void) | undefined>
+  initial: { value: unknown } | undefined
 }
 
-export const useEffectiveState = ({
-  narrow,
-  owned,
-  state,
-  handlers,
-  table,
-  getAtoms,
-  inputs,
-  context,
-  initial = {},
-  listeners = {},
-}: EffectiveStateParams) => {
-  // Атом, а не состояние React: в React 18 запись вне событий (таймер, промис) иначе
-  // коммитилась бы отдельно от записей в атомы TanStack той же задачи.
-  const [innerAtom] = useState(() => createAtom<Record<string, unknown>>({}))
-  const inner = useSelector(innerAtom)
-  // Синхронная копия `inner`: новое значение нужно колбэку сразу, вне функции обновления.
-  const innerRef = useRef(inner)
-  const cache = useRef(new Map<string, CacheEntry>())
-  const [tick, forceRender] = useState(0)
-  const forced = useRef(0)
-  // Новое значение контролируемого среза до перерисовки: смены подряд в одном такте
-  // строятся друг на друге, а не на одном прежнем значении (MP17). Рендер — от пропа.
-  const sent = useRef<Record<string, { from: unknown; value: unknown }>>({})
-  sent.current = {}
-  let pending = false
+/** Сохранённое значение; `undefined` — не сохранено: срез начальный у TanStack. */
+type Saved = { value: unknown } | undefined
 
-  const stateOut: Record<string, unknown> = {}
-  const handlersOut: Record<string, unknown> = {}
+export interface SliceTable {
+  options: {
+    data?: unknown
+    columns?: unknown
+    state?: Record<string, unknown>
+    pluginNarrows?: NarrowMap
+    pluginNarrowContext?: NarrowContext
+  }
+  baseAtoms: Record<
+    string,
+    { get: () => unknown; set: (value: unknown) => void }
+  >
+  atoms: Record<string, { get: () => unknown } | undefined>
+  initialState: Record<string, unknown>
+}
 
-  for (const key of Object.keys(narrow)) {
-    const isOwned = key in owned
-    const handlerName = handlerOf(key)
-    const external = handlers[handlerName] as
-      ((updater: unknown) => void) | undefined
-    const raw = isOwned
-      ? owned[key]
-      : state[key] !== undefined
-        ? state[key]
-        : key in inner
-          ? inner[key]
-          : key in initial
-            ? initial[key]
-            : getAtoms()?.[key]?.get()
+interface Derived {
+  get: () => unknown
+  subscribe: (listener: (value: unknown) => void) => { unsubscribe: () => void }
+}
 
-    const listener = listeners[key]
-    if (!isOwned)
-      handlersOut[handlerName] = (updater: unknown) => {
-        external?.(updater)
-        // Без контролируемого значения срез хранит ядро — и при колбэке потребителя.
-        if (state[key] !== undefined && (external || listener)) {
-          const last = sent.current[key]
-          const next = functionalUpdate(
-            updater as never,
-            (last?.from === state[key] ? last.value : state[key]) as never,
-          )
-          sent.current[key] = { from: state[key], value: next }
-          listener?.(next)
-          return
-        }
-        const prev = innerRef.current
-        const next = functionalUpdate(
-          updater as never,
-          (key in prev
-            ? prev[key]
-            : key in initial
-              ? initial[key]
-              : getAtoms()?.[key]?.get()) as never,
-        )
-        innerRef.current = { ...prev, [key]: next }
-        innerAtom.set(innerRef.current)
-        listener?.(next)
-      }
-
-    if (raw === undefined) {
-      // Сброс в `undefined` (`resetGlobalFilter`) — тоже значение: TanStack читает своё
-      // свойство `undefined` как начальное, а без свойства — прежнее из базового атома.
-      if (!isOwned && state[key] === undefined && key in inner) {
-        stateOut[key] = undefined
-      }
-      continue
+interface Slice {
+  /** Сохранённое ядром: неконтролируемый срез. */
+  source: ReturnType<typeof createAtom<Saved>>
+  lens: {
+    get: () => unknown
+    set: (updater: unknown) => void
+    subscribe: (listener: (value: unknown) => void) => {
+      unsubscribe: () => void
     }
-    const cached = cache.current.get(key)
-    let result: unknown
-    if (
-      cached &&
-      cached.raw === raw &&
-      cached.narrows === narrow[key] &&
-      sameInputs(cached.inputs, inputs)
-    ) {
-      result = cached.result
-    } else {
-      result = applyNarrow(narrow[key], raw, table, context)
-      if (result === undefined) {
-        pending = true
-        result = raw
-      } else {
-        cache.current.set(key, { raw, narrows: narrow[key], inputs, result })
-      }
-    }
-    stateOut[key] = result
+  }
+  /** Колбэки последнего коммита: их зовут события после него. */
+  input: SliceInput
+  /** Новое значение контролируемого среза до перерисовки: смены подряд строятся друг на друге (MP17). */
+  sent?: { from: unknown; value: unknown }
+}
+
+/** Значение приложения или ядра-владельца в опциях рендера; `undefined` — среза снаружи нет. */
+const externalOf = (instance: SliceTable | null, key: string) =>
+  instance?.options.state?.[key]
+
+export const createSliceStore = () => {
+  const table = createAtom<SliceTable | null>(null)
+  const slices = new Map<string, Slice>()
+  /** Срезы, которые сужались и сужение сняли: их ведёт TanStack. */
+  const released = new Set<string>()
+
+  const savedOf = (key: string, slice: Slice) => {
+    const saved = slice.source.get()
+    return saved ? saved.value : table.get()?.baseAtoms[key]?.get()
   }
 
-  // Сужение, которому нужна таблица, до её обновления не посчитать — пересчёт после
-  // коммита; `tick` перезапускает проверку после каждой принудительной перерисовки.
-  // Предел — если данные новые каждый рендер (не мемоизированы), таблица никогда не
-  // «свежая», и без предела это был бы бесконечный цикл.
-  useIsomorphicLayoutEffect(() => {
-    if (!pending) {
-      forced.current = 0
+  const write = (key: string, slice: Slice, updater: unknown) => {
+    const { input } = slice
+    input.external?.(updater)
+    const value = externalOf(table.get(), key)
+    // Срез приложения: новое значение — колбэкам, отрисовка — от его пропа.
+    if (value !== undefined && (input.external || input.listener)) {
+      const { sent } = slice
+      const base = sent && sent.from === value ? sent.value : value
+      const next = functionalUpdate(updater as never, base as never)
+      slice.sent = { from: value, value: next }
+      input.listener?.(next)
       return
     }
-    if (forced.current < MAX_FORCED_RENDERS) {
-      forced.current += 1
-      forceRender(previous => previous + 1)
-    }
-  }, [pending, tick])
+    const next = functionalUpdate(
+      updater as never,
+      savedOf(key, slice) as never,
+    )
+    slice.source.set({ value: next })
+    input.listener?.(next)
+  }
 
-  return { state: stateOut, handlers: handlersOut }
+  const create = (key: string, input: SliceInput): Slice => {
+    const source = createAtom<Saved>(input.initial)
+    let last: { raw: unknown; value: unknown } | undefined
+    /** Сужение — производный атом: следит за атомами, которые читает (ленивые дети и т. п.). */
+    const computeWith = (instance: SliceTable | null) => () => {
+      const options = instance?.options
+      const external = externalOf(instance, key)
+      const saved = source.get()
+      const raw =
+        external !== undefined
+          ? external
+          : saved
+            ? saved.value
+            : instance?.baseAtoms[key]?.get()
+      // Сброс в `undefined` (`resetGlobalFilter`) — начальное значение TanStack.
+      if (raw === undefined) return instance?.initialState[key]
+      const narrowed = applyNarrow(
+        options?.pluginNarrows?.[key] ?? [],
+        raw,
+        instance,
+        options?.pluginNarrowContext,
+      )
+      // Сужать нечего — сужение отдаёт то же значение: мемо моделей строк не пересобираются.
+      const value = narrowed === undefined ? raw : narrowed
+      // Атом без подписчиков пересчитывается заново (StrictMode отписывается и подписывается):
+      // тот же итог от того же значения — прежняя ссылка, иначе хост перерисуется зря.
+      if (last && last.raw === raw && shallowEqual(last.value, value)) {
+        return last.value
+      }
+      last = { raw, value }
+      return value
+    }
+    // Опции React-адаптера — простые данные, `useTable` ставит их в рендере: то, что сужение
+    // берёт из них, атом не видит — при смене берётся новый производный атом.
+    let current: { inputs: unknown[]; atom: Derived } | undefined
+    const effective = (): Derived => {
+      const instance = table.get()
+      const options = instance?.options
+      const inputs = [
+        instance,
+        options?.data,
+        options?.columns,
+        externalOf(instance, key),
+        options?.pluginNarrows?.[key],
+        options?.pluginNarrowContext,
+      ]
+      if (current?.inputs.every((value, index) => value === inputs[index])) {
+        return current.atom
+      }
+      const atom: Derived = createAtom<unknown>(computeWith(instance))
+      current = { inputs, atom }
+      return atom
+    }
+    const slice: Slice = {
+      source,
+      input,
+      lens: {
+        get: () => effective().get(),
+        set: updater => write(key, slice, updater),
+        subscribe: listener => effective().subscribe(listener),
+      },
+    }
+    return slice
+  }
+
+  /** Внешние атомы таблицы: TanStack берёт объект при создании, срезы в нём меняет ядро. */
+  const atoms: Record<string, Slice['lens']> = {}
+  let constructed = false
+
+  return {
+    /** Фича набора: таблица узнаёт хранилище при создании — сужению она нужна сразу. */
+    feature: {
+      // StrictMode создаёт таблицу дважды, а React оставляет первую — её и берём.
+      constructTableAPIs: (instance: unknown) => {
+        if (constructed) return
+        table.set(instance as SliceTable)
+        constructed = true
+      },
+    },
+    table: () => table.get(),
+    /**
+     * Внешние атомы для опций таблицы. Срезы первого рендера — до создания таблицы; новые
+     * срезы позже добавляет эффект коммита.
+     */
+    atoms: (inputs: Record<string, SliceInput>) => {
+      if (!constructed) {
+        for (const [key, input] of Object.entries(inputs)) {
+          if (slices.has(key)) continue
+          const slice = create(key, input)
+          slices.set(key, slice)
+          atoms[key] = slice.lens
+        }
+      }
+      return atoms
+    },
+    /** Обработчики смены срезов: у сужаемых — запись в сохранённое, у снятых — в TanStack. */
+    handlers: (inputs: Record<string, SliceInput>) => {
+      // `useTable` сливает опции с прежними: обработчик снятого сужения остаётся в таблице
+      // и пишет в срез TanStack, пока сужения нет.
+      const handlers: Record<string, (updater: unknown) => void> = {}
+      const keys = new Set([
+        ...Object.keys(inputs),
+        ...slices.keys(),
+        ...released,
+      ])
+      for (const key of keys) {
+        if (inputs[key]?.owned || slices.get(key)?.input.owned) continue
+        handlers[handlerOf(key)] = updater => {
+          const slice = slices.get(key)
+          if (slice) {
+            write(key, slice, updater)
+            return
+          }
+          const atom = table.get()?.baseAtoms[key]
+          atom?.set(functionalUpdate(updater as never, atom.get() as never))
+        }
+      }
+      return handlers
+    },
+    /** Эффект коммита: срезы, появившиеся и снятые на лету, и колбэки для событий. */
+    commit: (inputs: Record<string, SliceInput>) => {
+      for (const [key, input] of Object.entries(inputs)) {
+        let slice = slices.get(key)
+        if (!slice) {
+          // Сужение появилось на лету: срез с сохранённым значением TanStack.
+          const base = table.get()?.baseAtoms[key]?.get()
+          slice = create(key, {
+            ...input,
+            initial: base === undefined ? input.initial : { value: base },
+          })
+          slices.set(key, slice)
+          atoms[key] = slice.lens
+          released.delete(key)
+          continue
+        }
+        // Приложение перестало вести срез: сохранённым становится его последнее значение.
+        if (slice.input.controlled && !input.controlled) {
+          slice.source.set({ value: slice.input.value })
+        }
+        slice.input = input
+        // После перерисовки следующая смена — снова от значения приложения (MP17).
+        slice.sent = undefined
+        released.delete(key)
+      }
+      // Сужение сняли: сохранённое уходит TanStack (RX26, RX27).
+      for (const [key, slice] of slices) {
+        if (key in inputs) continue
+        const saved = slice.source.get()
+        if (saved && !slice.input.owned) {
+          table.get()?.baseAtoms[key]?.set(saved.value)
+        }
+        slices.delete(key)
+        delete atoms[key]
+        released.add(key)
+      }
+    },
+  }
 }
+
+export type SliceStore = ReturnType<typeof createSliceStore>
+
+/** Хранилище срезов таблицы: линзы и обработчики рендера, перенос входов — в эффекте. */
+export const useEffectiveSlices = (
+  store: SliceStore,
+  inputs: Record<string, SliceInput>,
+) => {
+  const atoms = store.atoms(inputs)
+  const handlers = store.handlers(inputs)
+  useIsomorphicLayoutEffect(() => store.commit(inputs))
+  return { atoms, handlers }
+}
+
+/** Свёртка набора для сужения: новый объект — только при новой свёртке или загрузке. */
+export const useNarrowContext = (
+  folded: {
+    options: Record<string, unknown>
+    slotActions: NarrowContext['slotActions']
+  },
+  loading: unknown,
+): NarrowContext =>
+  useMemo(
+    () => ({
+      options: { ...folded.options, loading },
+      slotActions: folded.slotActions,
+    }),
+    [folded, loading],
+  )

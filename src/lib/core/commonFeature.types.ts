@@ -41,6 +41,7 @@ import type { FooterPosition } from './footer'
 import type { StubEntry } from './stubs'
 import type { FoldedWrappers } from './pluginWrappers'
 import type { FoldedBody } from './bodyContributions'
+import type { NarrowContext, NarrowMap } from './effectiveState'
 import type { RefreshOptions } from './loadingDisplay'
 
 // --- Payload-типы контракта --------------------------------------------------
@@ -141,14 +142,16 @@ export interface CommonOptions extends CoreOptions {
   pluginDiagnostics?: PluginDiagnosticSource[]
   actionMenu?: SlotActionMenuV9
   logLevel?: LogLevel
-  /** Пересчитать сужение срезов: плагин сменил то, что сужение читает (ADR 0160). */
-  refreshNarrowing?: () => void
   /** Номер перерисовки ячеек: растёт при новой функции-аргументе плагина (ADR 0039). */
   pluginRenderVersion?: number
   /** Обёртки и декораторы тела и шапки от плагинов (ADR 0168, §2). */
   pluginWrappers?: FoldedWrappers
   /** Вклад плагинов в тело грида и клавиши навигации (ADR 0170, §3). */
   pluginBody?: FoldedBody
+  /** Сужения срезов по ключу — их читает атом-линза среза (ADR 0171, §1). */
+  pluginNarrows?: NarrowMap
+  /** Свёртка набора для сужения: опции и действия слотов (ADR 0171, §1). */
+  pluginNarrowContext?: NarrowContext
   /** Колбэки изменений локальных срезов плагинов по ключу среза (DP17). */
   pluginStateListeners?: Record<string, (next: unknown) => void>
   /**
