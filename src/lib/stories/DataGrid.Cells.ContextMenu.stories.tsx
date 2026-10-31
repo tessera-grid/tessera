@@ -311,6 +311,21 @@ const holdFlash = (canvas: HTMLElement) =>
     .forEach(theme =>
       theme.style.setProperty('--tsr-comp-flash-duration', '600000ms'),
     )
+/** Таблица гайда «Async items»: шаг после вспышки снимает её удержание. */
+const flashHold: { table?: { setFlashes: (flashes: object) => void } } = {}
+const flashHoldSeed: TesseraFeatureEntry = {
+  id: 'asyncItemsFlashHold',
+  setup: table => {
+    flashHold.table = table as unknown as typeof flashHold.table
+  },
+}
+/** Удержание снято: следующий шаг — без вспышки, как у человека (ADR 0089, CX19). */
+const releaseFlash = (canvas: HTMLElement) => {
+  canvas
+    .querySelectorAll<HTMLElement>('.data-grid-theme')
+    .forEach(theme => theme.style.removeProperty('--tsr-comp-flash-duration'))
+  flashHold.table?.setFlashes({})
+}
 /** Ход гайда: пересчёт запущен, меню после него открыто заново. */
 const run = { started: false, reopened: false }
 
@@ -415,6 +430,7 @@ export const ContextMenuAsyncItems: StoryObj<StoryProps> = {
           enableContextMenu: true,
           enableCellSelection: true,
           actionsDemo: 'async',
+          extraPlugins: [flashHoldSeed],
           columnCount: 8,
           dataCount: 20,
           height: '360',
@@ -456,6 +472,8 @@ export const ContextMenuAsyncItems: StoryObj<StoryProps> = {
       expect(busyCell(canvas)).toBe(false)
     })
     await step(ASYNC_ITEMS[3]!.title, async () => {
+      releaseFlash(canvas)
+      await until(() => expect(flashedCell(canvas)).toBe(false))
       await guideNext(canvas)
       await until(() => expect(recalculateFailed()).toBe(true))
       const item = recalculate()!

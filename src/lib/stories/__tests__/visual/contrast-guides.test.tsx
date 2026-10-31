@@ -93,6 +93,21 @@ const pseudoTargets = (step: GuideStoryStep) =>
 /** Остановка проигрывания после шага с `immediate` (CX15). */
 class StopReplay extends Error {}
 
+/** Вспышка итога (ADR 0134): живёт по таймеру, переходом её не довести. */
+const FLASHES = '[data-flash], [data-column-flash]'
+/** Предел ожидания конца вспышек шага, мс (CX19). */
+const FLASH_WAIT = 5000
+
+/** Вспышки в гриде кончились; `false` — не за предел. */
+const settleFlashes = async (container: HTMLElement) => {
+  const started = performance.now()
+  while (container.querySelector(FLASHES)) {
+    if (performance.now() - started > FLASH_WAIT) return false
+    await new Promise(resolve => setTimeout(resolve, 20))
+  }
+  return true
+}
+
 /**
  * Проверка шага в сочетаниях: пороги по стилям или пикселям, axe в обычных; для
  * `pseudo` — снимки до и после в режиме. `finish: false` — короткое состояние.
@@ -127,6 +142,13 @@ const auditStep = async (
       result.fit.push(`${label} | ${comboLabel(combo)}: ${error.message}`)
       return null
     }
+  }
+  // Обычный шаг — в покое (CX19): иначе сочетания застанут разные фазы вспышки, а снимок
+  // режима и цвет текста из стилей — разные моменты.
+  if (finish && !(await settleFlashes(container))) {
+    result.guard.push(
+      `${label}: вспышка итога не кончилась за ${FLASH_WAIT} мс`,
+    )
   }
   // Псевдо-состояние: снимки режима до него, затем классы `pseudo-*`.
   const before = new Map<string, Shot | null>()
@@ -311,7 +333,9 @@ const stand = (
           .cx14-visible.pseudo-hover { outline: 2px solid Highlight; }
           .cx14-custom.pseudo-hover { forced-color-adjust: none; outline: 2px solid rgb(255, 0, 255); }
           .cx15-flash { forced-color-adjust: none; background: white; }
+          .cx19-flash { forced-color-adjust: none; background: white; color: black; }
         }
+        .cx19-flash[data-flash] { color: #d0d0d0; }
       `}</style>
       <div
         className="data-grid-theme theme-wrapper cx-stand"
@@ -557,6 +581,38 @@ describe('Шаги гайдов в матрице контраста (ADR 0089, 
     expect(tall.fit.length).toBeGreaterThan(0)
     expect(tall.fit[0]).toMatch(/проверяемая область больше окна/)
   })
+
+  test('CX19: шаг без immediate проверяется после конца вспышки итога во всех своих сочетаниях; вспышка, не кончившаяся за предел, — сбой стража', async () => {
+    // Вспышка: текст светлый, пока на узле `data-flash`; таймер снимает его через 600 мс.
+    const flash = (ends: boolean) => (root: HTMLElement) => {
+      const el = root.querySelector('.cx19-flash')!
+      el.setAttribute('data-flash', 'reverted')
+      if (ends) setTimeout(() => el.removeAttribute('data-flash'), 600)
+    }
+    const walk = (ends: boolean) =>
+      walkGuide(
+        `Стенд CX19 ${ends}`,
+        stand(
+          [REST, { title: 'Отказ', hint: '', enter: flash(ends) }],
+          <div className="cx19-flash">Flash text</div>,
+        ),
+      )
+    const settled = await walk(true)
+    expect(settled.guard).toEqual([])
+    const audit = settled.audits.find(a => a.step === 'Отказ')!
+    for (const label of STEP_LABELS) {
+      expect(audit.checked[label], label).toBeGreaterThan(0)
+    }
+    expect(
+      settled.findings
+        .filter(f => f.key.includes('Отказ') && checked(f.key))
+        .map(f => f.key),
+    ).toEqual([])
+    const endless = await walk(false)
+    expect(endless.guard).toEqual([
+      'Стенд CX19 false › Отказ: вспышка итога не кончилась за 5000 мс',
+    ])
+  }, 30_000)
 
   test('DG2: каждое состояние drag.* объявлено шагом гайда истории сценария перетаскивания и проверено матрицей во всех сочетаниях шага', () => {
     const dragging = ['/Rows/Dragging/', '/Columns/Dragging/']
