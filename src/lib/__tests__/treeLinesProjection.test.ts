@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from 'vitest'
 
-import { getTreeLines, projectTreeLines } from '../grid/treeBranches'
+import { getTreeLines, projectTreeLines } from '../plugins/treeLines/branches'
 
 /** Детерминированный генератор: тест воспроизводим. */
 const random = (seed: number) => () => {

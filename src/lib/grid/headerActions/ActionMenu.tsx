@@ -23,7 +23,7 @@ import { useClosingVisible } from './useClosingVisible'
 import { GRID_SCROLL_REASON, useMenuLeave } from '../../ui/Popup/useMenuLeave'
 import { usePanelOpening } from './usePanelOpening'
 import { type KebabState } from './useKebabState'
-import { useMenuSections } from './useMenuSections'
+import { useMenuSections } from '../../core/headerActions'
 import { useStateWhileOpen } from './useStateWhileOpen'
 import {
   pendingAttributes,

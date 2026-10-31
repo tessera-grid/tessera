@@ -25,7 +25,7 @@ import {
 import { ESTIMATE_SIZE } from '../core/virtualization/measureRows'
 import { isIndentColumn } from './cellExpandingStyles'
 import { renderSkeletonCell, skeletonCellKindOf } from './skeletonCell'
-import { TreeLines } from '../ui/TreeLines/TreeLinesLayer'
+import { cellLayersOf, type WindowRow } from '../core/bodyContributions'
 import type { Column, Table } from '../types'
 import { CellWrapperContent, getAlignContent } from './CellWrapperContent'
 import { getCellPinningParams, pinnedSideToDom } from './cellPinningParams'
@@ -153,7 +153,9 @@ interface SkeletonCellsProps {
   filler?: ReactNode
   /** Строка дерева скелета (ADR 0119, SL22). */
   tree?: SkeletonTreeRow
-  treeLines?: boolean
+  table: Table<any, any>
+  /** Данные строки окна от плагинов — у строки на месте незагруженной (ADR 0170, §3). */
+  window?: WindowRow
   /** Квадрат в колонке раскрытия; без значения — у каждой строки. */
   toggle?: boolean
 }
@@ -167,14 +169,22 @@ const SkeletonCells = ({
   rowCount,
   filler,
   tree,
-  treeLines,
+  table,
+  window,
   toggle,
 }: SkeletonCellsProps) => {
   const odd = rowIndex !== undefined && rowIndex % 2 !== 0
   const renderCell = (column: SkeletonColumn) => {
     const nested = tree && column.isIndent && tree.depth > 0
-    const lines =
-      !!tree && column.isIndent && !!treeLines && (tree.depth > 0 || tree.open)
+    // Слои плагинов — линии дерева строки скелета (ADR 0170, §3).
+    const layers = cellLayersOf({
+      table,
+      columnId: column.id,
+      isIndent: column.isIndent,
+      depth: tree?.depth ?? 0,
+      window,
+      skeleton: tree,
+    })
     return (
       <div
         key={column.id}
@@ -188,7 +198,7 @@ const SkeletonCells = ({
             : column.style
         }
         {...column.attrs}
-        data-tree-depth={lines ? tree!.depth : undefined}
+        {...layers.attrs}
         {...(rowIndex !== undefined && {
           'data-cell-of-first-row': rowIndex === 0,
           'data-cell-of-last-row': rowIndex === (rowCount ?? 0) - 1,
@@ -196,7 +206,7 @@ const SkeletonCells = ({
           'data-cell-odd-right-pinned': odd && column.placement === 'end',
         })}
       >
-        {lines && <TreeLines branch={tree!.branch} open={tree!.open} />}
+        {layers.nodes}
         <CellWrapperContent
           flex={column.flex}
           smallPadding={column.isActionsColumn}
@@ -241,7 +251,8 @@ interface SkeletonRowsBlockProps {
   cells?: boolean
   /** План строк дерева (ADR 0119, SL22). */
   tree?: SkeletonTreeRow[]
-  treeLines?: boolean
+  table: Table<any, any>
+  window?: WindowRow
   /** Квадраты раскрытия вразброс по номеру строки (плоский скелет, SL25). */
   scatterToggles?: boolean
   rowClassName?: string
@@ -258,7 +269,8 @@ const SkeletonRowsBlock = ({
   className,
   cells = true,
   tree,
-  treeLines,
+  table,
+  window,
   scatterToggles,
   rowClassName = 'data-grid__body-row--skeleton',
 }: SkeletonRowsBlockProps) => (
@@ -286,7 +298,8 @@ const SkeletonRowsBlock = ({
           rowCount={firstRowIndex + rowCount}
           filler={filler}
           tree={tree?.[rowIndex]}
-          treeLines={treeLines}
+          table={table}
+          window={window}
           toggle={
             scatterToggles
               ? isSkeletonParentRow(firstRowIndex + rowIndex)
@@ -324,7 +337,7 @@ export interface SkeletonRowsProps {
   cellExtra?: (columnId: string) => SkeletonCellExtra | undefined
   /** Отступ и линии дерева строк — скелет-строка ленивых детей (ADR 0155, §3). */
   tree?: SkeletonTreeRow[]
-  treeLines?: boolean
+  window?: WindowRow
 }
 
 export interface SkeletonCellExtra {
@@ -350,7 +363,7 @@ export const SkeletonRows = memo(
     empty = false,
     cellExtra,
     tree,
-    treeLines,
+    window,
   }: SkeletonRowsProps) => {
     const columns = getSkeletonColumns(
       table,
@@ -390,7 +403,8 @@ export const SkeletonRows = memo(
           className={className}
           cells={cells}
           tree={tree}
-          treeLines={treeLines}
+          table={table}
+          window={window}
           rowClassName={
             empty
               ? 'data-grid__body-row--empty'
@@ -532,7 +546,7 @@ export const SkeletonBody = memo(
           filler={bodyFiller}
           rowCount={rowCount}
           tree={treeRows}
-          treeLines={options.enableTreeLines}
+          table={table}
           scatterToggles={!treeRows}
         />
         {footerColumns && (
@@ -548,6 +562,7 @@ export const SkeletonBody = memo(
                 isVirtualColumns={cellsVirtual}
                 className="data-grid__footer-cell--skeleton"
                 moduleClassName={footerCellStyles.footer__cell}
+                table={table}
               />
             </div>
           </div>

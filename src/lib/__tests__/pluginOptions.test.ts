@@ -47,9 +47,9 @@ describe('опции плагинов в типах (ADR 0167)', () => {
         'columnFiltering',
         'quickSearch',
       ])
-      const reads = foreignOptionReads()
-      expect(reads.filter(read => read.startsWith(counter))).toEqual([])
-      expect(reads).toContain('lib/grid/DataGridTable.tsx: enableTreeLines')
+      expect(
+        foreignOptionReads().filter(read => read.startsWith(counter)),
+      ).toEqual([])
     },
     TYPES_TIMEOUT,
   )

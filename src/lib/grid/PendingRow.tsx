@@ -18,6 +18,7 @@ import { useLocalization } from '../core/localization'
 import type { PendingRowDragBinding } from '../core/pluginWrappers'
 import { useTableState } from '../core/reactivity'
 import type { Column, Table } from '../types'
+import type { WindowRow } from '../core/bodyContributions'
 import type { SkeletonTreeRow } from '../core/skeletonOptions'
 import { type SkeletonCellExtra, SkeletonRows } from './SkeletonBody'
 
@@ -35,7 +36,8 @@ interface PendingRowProps {
   tree?: { level: number; posInSet: number; setSize: number }
   /** Отступ и линии дерева скелета — у скелет-строки ленивых детей (ADR 0155, §3). */
   skeletonTree?: SkeletonTreeRow
-  treeLines?: boolean
+  /** Данные строки окна от плагинов — линии дерева её места (ADR 0170, §3). */
+  window?: WindowRow
   /** Место под указателем перетаскивания от декоратора плагина (ADR 0168, §2). */
   drag?: PendingRowDragBinding
 }
@@ -157,7 +159,7 @@ export const PendingRow = ({
   ariaRowIndexBase,
   tree,
   skeletonTree,
-  treeLines,
+  window,
   drag,
 }: PendingRowProps) => {
   // Выделение по индексам заливает и незагруженную строку (ADR 0146, §3).
@@ -189,7 +191,7 @@ export const PendingRow = ({
         firstRowIndex={virtualRow.index}
         cellExtra={cellExtra}
         tree={skeletonTree && [skeletonTree]}
-        treeLines={treeLines}
+        window={window}
       />
       <PendingCell
         table={table}

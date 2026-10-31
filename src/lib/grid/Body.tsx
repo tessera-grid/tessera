@@ -21,7 +21,7 @@ import { hasStickyRows, StickyRows } from './StickyRows'
 import { isPlaceholderRow } from '../core/lazyPlaceholder'
 import { FailedRow, PendingRow } from './PendingRow'
 import { getTreeAria } from './treeAria'
-import { getTreeLines, projectTreeLines, treeLinesOf } from './treeBranches'
+import { useWindowData } from '../core/bodyContributions'
 
 import styles from '../grid/Body/Body.module.css'
 
@@ -43,7 +43,6 @@ interface TableBodyProps {
   /** Строки несут aria-level/setsize/posinset (treegrid). */
   treeRows?: boolean
   /** Ветки линий дерева (ADR 0102). */
-  treeLines?: boolean
   isResizingColumns: false | string
   isVirtualColumns: boolean
   /** Движение строк при смене модели (ADR 0107). */
@@ -53,14 +52,6 @@ interface TableBodyProps {
 }
 
 const NO_FAILURES: readonly RowFailure[] = []
-
-/** Позиция строки `index` после переноса `from` → `to` (как `arrayMove`). */
-const positionAfterMove = (index: number, from: number, to: number) => {
-  if (index === from) return to
-  if (from < to && index > from && index <= to) return index - 1
-  if (from > to && index >= to && index < from) return index + 1
-  return index
-}
 
 export const Body = ({
   table,
@@ -76,7 +67,6 @@ export const Body = ({
   actionRowSlot,
   ariaRowIndexBase,
   treeRows,
-  treeLines,
   isVirtualColumns,
   rowAnimation = false,
   dropPreview,
@@ -104,18 +94,7 @@ export const Body = ({
           : getTreeAria(rows),
     [treeRows, rows, sourceAria],
   )
-  // Серверная модель знает линии строки по раскладке дерева (ADR 0161).
-  const sourceLines = rowSource.treeLines
   const rowCount = rowSource.count()
-  const treeLinesIndex = useMemo(
-    () =>
-      !treeLines
-        ? undefined
-        : sourceLines
-          ? treeLinesOf(rowCount, sourceLines)
-          : getTreeLines(rows),
-    [treeLines, rows, sourceLines, rowCount],
-  )
   const drop = dropPreview ?? null
   const labels = useLocalization()
   const failures = rowSource.failures?.() ?? NO_FAILURES
@@ -123,18 +102,10 @@ export const Body = ({
     failures.some(failure => index >= failure.start && index < failure.end)
   const first = virtualRows[0]?.index ?? 0
   const last = virtualRows[virtualRows.length - 1]?.index ?? -1
-  // Линии окна «как после броска» (ADR 0108, §4), и на недопустимом месте (ADR 0137, §4).
-  const projected = useMemo(
-    () =>
-      treeLinesIndex && drop
-        ? projectTreeLines(
-            treeLinesIndex,
-            drop,
-            Math.max(0, first - 1),
-            Math.min(treeLinesIndex.count - 1, last + 1),
-          )
-        : undefined,
-    [treeLinesIndex, drop, first, last],
+  // Данные строк окна от плагинов — линии дерева (ADR 0170, §3).
+  const windowData = useWindowData(
+    { table, rows, rowSource, rowCount, drop },
+    { first, last },
   )
   // Будущий родитель слота подсвечен (ADR 0109, §4).
   // Строки — по источнику: у серверной модели массива строк нет (ADR 0159, §4).
@@ -142,22 +113,6 @@ export const Body = ({
     drop?.acceptable && drop.depth > 0
       ? findDropParent(rowSource, drop, first)
       : -1
-  const linesOf = (index: number, isActive: boolean) => {
-    if (!drop || !projected) {
-      return isActive && drop
-        ? { branch: undefined, open: undefined }
-        : {
-            branch: treeLinesIndex?.branch(index),
-            open: treeLinesIndex?.open(index),
-          }
-    }
-    const position = positionAfterMove(index, drop.from, drop.to)
-    return {
-      branch: projected.branch(position),
-      open: projected.open(position),
-    }
-  }
-
   return (
     <div
       ref={bodyRef}
@@ -226,19 +181,11 @@ export const Body = ({
             // Строка ещё не загружена (ADR 0138, §5): скелет на её месте — с линиями дерева
             // её места (ADR 0161, §2).
             if (!row) {
-              const depth = treeLinesIndex?.depth(virtualRow.index) ?? -1
-              const pending = depth >= 0 && linesOf(virtualRow.index, false)
+              const place = windowData.skeletonOf(virtualRow.index)
               const pendingProps = {
                 tree: treeRows ? sourceAria?.(virtualRow.index) : undefined,
-                skeletonTree: pending
-                  ? {
-                      depth,
-                      branch: pending.branch ?? '',
-                      open: !!pending.open,
-                      parent: false,
-                    }
-                  : undefined,
-                treeLines: !!pending,
+                skeletonTree: place ? { ...place, parent: false } : undefined,
+                window: place ? windowData.rowOf(virtualRow.index) : undefined,
                 table,
                 layout,
                 virtualRow,
@@ -260,7 +207,6 @@ export const Body = ({
             }
             // Ленивые дети в пути (ADR 0155, §3): скелет-строка с отступом ребёнка.
             if (isPlaceholderRow(row)) {
-              const placeholder = linesOf(virtualRow.index, false)
               return (
                 <PendingRow
                   key={row.id}
@@ -278,16 +224,15 @@ export const Body = ({
                   }
                   skeletonTree={{
                     depth: row.depth,
-                    branch: placeholder.branch ?? '',
+                    branch: '',
                     open: false,
                     parent: false,
                   }}
-                  treeLines={!!treeLinesIndex}
+                  window={windowData.rowOf(virtualRow.index)}
                 />
               )
             }
             const isActive = drop?.activeId === row.id
-            const lines = linesOf(virtualRow.index, isActive)
             const rowProps = {
               layout,
               row,
@@ -301,8 +246,7 @@ export const Body = ({
               ariaRowIndexBase,
               treeSetSize: treeAria?.setSize(virtualRow.index),
               treePosInSet: treeAria?.posInSet(virtualRow.index),
-              treeBranch: lines.branch,
-              treeOpen: lines.open,
+              window: windowData.rowOf(virtualRow.index, isActive),
               slotDepth: isActive ? drop.depth : undefined,
               dropParent: virtualRow.index === dropParent || undefined,
               isVirtualColumns,

@@ -17,6 +17,7 @@ import {
   mergeContributions,
   type RowContributionContext,
   useContributionNode,
+  type WindowRow,
 } from '../core/bodyContributions'
 import { hasExpandToggle } from '../core/keyboardActions'
 import {
@@ -65,9 +66,8 @@ export interface TableBodyRowProps {
   /** Позиция строки среди соседей в treegrid; есть только в treegrid. */
   treeSetSize?: number
   treePosInSet?: number
-  /** Линии дерева (ADR 0102): маска уровней строки и отросток к детям. */
-  treeBranch?: string
-  treeOpen?: boolean
+  /** Данные строки окна от плагинов — линии дерева (ADR 0170, §3). */
+  window?: WindowRow
   /** Строка — слот перетаскивания: скелет на этой глубине (ADR 0108). */
   slotDepth?: number
   /** Будущий родитель слота перетаскивания (ADR 0109, §4). */
@@ -137,8 +137,7 @@ export const BodyRowCells = ({
   rightCellSlot,
   cellSlot,
   actionRowSlot,
-  treeBranch,
-  treeOpen,
+  window,
   slotDepth,
   isVirtualColumns,
   isRowInteract,
@@ -159,8 +158,7 @@ export const BodyRowCells = ({
       cellSlot,
       actionRowSlot,
       interact: isRowInteract,
-      treeBranch,
-      treeOpen,
+      window,
       slotDepth,
       absoluteLeft,
       copy,
@@ -214,8 +212,7 @@ export const BodyRowCells = ({
             cellSlot={cellSlot}
             actionRowSlot={actionRowSlot}
             interact={isRowInteract}
-            treeBranch={treeBranch}
-            treeOpen={treeOpen}
+            window={window}
             slotDepth={slotDepth}
             copy={copy}
           />
@@ -246,6 +243,7 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
     row,
     rowIndex: virtualRow.index,
     navigation: navigation && !props.copy,
+    window: props.window,
   }
   const { highlight, flash, contributions } = useRowStateSubscription(
     row,

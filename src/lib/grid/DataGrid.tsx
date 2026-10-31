@@ -21,7 +21,11 @@ import { FastScrollProvider, useFastScroll } from '../core/fastScroll'
 import { useRowSourceWindow } from '../core/rowSourceWindow'
 import { clampBodyHeight } from '../core/scrollHeightLimit'
 import { scrollLayer, useScrollStretch } from '../core/scrollStretch'
-import { bodyEventHandlers, RootHooks } from '../core/bodyContributions'
+import {
+  bodyEventHandlers,
+  RootHooks,
+  themeAttrsOf,
+} from '../core/bodyContributions'
 import {
   KeyboardNavigationContext,
   useKeyboardNavigationGrid,
@@ -30,7 +34,6 @@ import { trackInputModality } from '../core/inputModality'
 import { trackStickyGeometry } from '../core/stickyGeometry'
 import { trackTouchedCell } from '../core/touchedCell'
 import { RowRevealContext, createRowReveal, trackRowReveal } from './rowReveal'
-import { ContextMenu } from './contextMenu/ContextMenu'
 import { OverflowTooltip } from './OverflowTooltip'
 import {
   DATA_GRID_THEME_CLASS,
@@ -192,7 +195,6 @@ export const DataGrid = ({
   }, [resizeLost, table])
   const rowDragging = rowDragSessionOf(state)
 
-  const enableContextMenu = !!table.options.enableContextMenu
   const enableOverflowTooltip = options.enableOverflowTooltip !== false
   const renderVersion = options.pluginRenderVersion ?? 0
   // Панели включают слоты плагинов; флаг их переопределяет (ADR 0046).
@@ -543,9 +545,7 @@ export const DataGrid = ({
                       data-status-bar={hasStatusBar || undefined}
                       data-refreshing={refreshingShown || undefined}
                       data-skeleton-wave={showSkeleton || undefined}
-                      data-tree-lines={
-                        table.options.enableTreeLines || undefined
-                      }
+                      {...themeAttrsOf(table)}
                       style={wrapperStyles}
                     >
                       {toolbar}
@@ -577,12 +577,6 @@ export const DataGrid = ({
                       />
                       {enableOverflowTooltip && (
                         <OverflowTooltip getScrollElement={getScrollElement} />
-                      )}
-                      {enableContextMenu && (
-                        <ContextMenu
-                          table={table}
-                          getScrollElement={getScrollElement}
-                        />
                       )}
                       {keyboardNavigation && (
                         <div

@@ -3,7 +3,7 @@ import { commands, server, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
-import { getTreeLines } from '../../../grid/treeBranches'
+import { getTreeLines } from '../../../plugins/treeLines/branches'
 import { composed } from '../stories'
 import { settleRowMotion } from '../helpers'
 import { AXE_OPTIONS, contrast, inBothThemes, toRgba } from './a11y-helpers'

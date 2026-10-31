@@ -31,16 +31,8 @@ export const CORE_PLUGIN_API: Record<string, string> = {
     'показ служебной колонки по условию: ведёт definePlugin, условия задают плагины (ADR 0050)',
 }
 
-const FLAG_PLUGIN = 'плагин-флажок, механика в ядре и гриде — находка 3, шаг 7'
-
 /** LB5: чтения ключей опций плагина вне его семьи и его кода в `shared/` — `файл: ключ`. */
-export const FOREIGN_OPTION_READS: Record<string, string> = {
-  'lib/core/keyboardNavigation/gridKeyDown.ts: enableContextMenu': FLAG_PLUGIN,
-  'lib/grid/DataGrid.tsx: enableContextMenu': FLAG_PLUGIN,
-  'lib/grid/DataGrid.tsx: enableTreeLines': FLAG_PLUGIN,
-  'lib/grid/DataGridTable.tsx: enableTreeLines': FLAG_PLUGIN,
-  'lib/grid/SkeletonBody.tsx: enableTreeLines': FLAG_PLUGIN,
-}
+export const FOREIGN_OPTION_READS: Record<string, string> = {}
 
 /** LB7: модули, которые дополняют `ColumnMeta`. */
 export const COLUMN_META_AUGMENTATIONS: Record<string, string> = {}

@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from 'vitest'
 
-import { getTreeLines } from '../grid/treeBranches'
+import { getTreeLines } from '../plugins/treeLines/branches'
 import { BlockStore } from '../plugins/serverRowModel/blockStore'
 import { BlockTree } from '../plugins/serverRowModel/tree'
 

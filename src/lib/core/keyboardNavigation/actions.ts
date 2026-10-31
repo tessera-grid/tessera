@@ -192,10 +192,10 @@ export const handleActionModeKey = (
   restoreFocusIfLost(cell)
 }
 
-/** Открыть контекстное меню у ячейки (клавиатурный вызов, центр ячейки). */
-export const openContextMenuAt = (cell: HTMLElement) => {
+/** Событие `contextmenu` в центре ячейки; `true` — его обработали (меню открыто). */
+export const openContextMenuAt = (cell: HTMLElement): boolean => {
   const rect = cell.getBoundingClientRect()
-  cell.dispatchEvent(
+  return !cell.dispatchEvent(
     new MouseEvent('contextmenu', {
       bubbles: true,
       cancelable: true,

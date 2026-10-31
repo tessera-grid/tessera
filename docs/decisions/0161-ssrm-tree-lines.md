@@ -2,6 +2,7 @@
 
 - **Статус:** Принято (решения — по итогам прожарки 2026-10-29)
 - **Дата:** 2026-10-29
+- **Изменён:** [ADR 0170](0170-body-contribution-channel.md) (2026-10-31) — индекс линий по раскладке строит плагин `treeLines` (`plugins/treeLines/branches.ts`), а не `Body`.
 - **Изменяет:**
   - [ADR 0138](0138-server-side-row-model.md) §14 и SD44 — `treeLines` в SSRM не инертен.
   - [ADR 0102](0102-curved-tree-lines.md) — второй способ счёта линий: по раскладке дерева

@@ -10,8 +10,10 @@ import { useFastScrollSuppressed } from '../core/fastScroll'
 import {
   bodyOf,
   type CellContributionContext,
+  cellLayersOf,
   mergeContributions,
   useContributionNode,
+  type WindowRow,
 } from '../core/bodyContributions'
 import { getDisplayColumnIndex } from '../core/displayColumns'
 import {
@@ -48,7 +50,6 @@ import type { RegisterSlotParams } from '../core/createSlots'
 import { ActionsZone } from './headerActions/ActionsZone'
 import { getCellPinningParams, pinnedSideToDom } from './cellPinningParams'
 import { getCellExpandingStyles, isIndentColumn } from './cellExpandingStyles'
-import { TreeLines } from '../ui/TreeLines/TreeLinesLayer'
 import { getColumnSizeVariable, getVirtualCellLeft } from './columnSizes'
 import { RowRevealContext } from './rowReveal'
 import { IconRevealContext } from '../ui/IconButton/iconReveal'
@@ -64,9 +65,8 @@ interface TableBodyCellProps {
   cellSlot?: RegisterSlotParams<any>[]
   actionRowSlot?: RegisterSlotParams<any>[]
   interact?: boolean
-  /** Линии дерева строки (ADR 0102): маска уровней и отросток к детям. */
-  treeBranch?: string
-  treeOpen?: boolean
+  /** Данные строки окна от плагинов — линии дерева (ADR 0170, §3). */
+  window?: WindowRow
   /** Ячейка слота перетаскивания: скелет с отступом этой глубины (ADR 0108). */
   slotDepth?: number
   // Абсолютная позиция центральной (непиннутой) виртуализированной ячейки: её `left`
@@ -88,8 +88,7 @@ export const BodyCell = memo(
     cellSlot,
     actionRowSlot,
     interact = true,
-    treeBranch,
-    treeOpen,
+    window,
     slotDepth,
     absoluteLeft,
     copy,
@@ -114,6 +113,7 @@ export const BodyCell = memo(
       cell,
       rowIndex,
       navigation,
+      window,
     }
     const {
       cellHighlight,
@@ -181,12 +181,15 @@ export const BodyCell = memo(
       table: table as never,
     })
 
-    // Линии дерева (ADR 0102) — в ячейке отступа: ветки строки и отросток к детям. Слой
-    // стоит и без линий: ушедшие части в нём гаснут (ADR 0108, PV11).
-    const treeLayer =
-      treeBranch !== undefined &&
-      isIndentColumn(cell.column as never, table as never)
-    const treeLines = treeLayer && (depth > 0 || !!treeOpen)
+    // Слои плагинов перед содержимым — линии дерева в ячейке отступа (ADR 0170, §3); и при
+    // быстрой прокрутке, когда слоты не рисуются.
+    const layers = cellLayersOf({
+      table: table as never,
+      columnId,
+      isIndent: isIndentColumn(cell.column as never, table as never),
+      depth,
+      window,
+    })
 
     const isPinnedColumn = cell.column.getIsPinned()
     const isActionsColumn = cell.column.getIsActionsColumn()
@@ -300,6 +303,7 @@ export const BodyCell = memo(
         onBlur={nav?.onBlur}
         {...(nav && { [NAV_CELL_ATTR]: '' })}
         data-kn-active={nav?.isActive || undefined}
+        {...layers.attrs}
         {...highlighted.attrs}
         {...flashed.attrs}
         aria-busy={!!busy || undefined}
@@ -307,7 +311,6 @@ export const BodyCell = memo(
         data-virtual-cell={absoluteLeft !== undefined || undefined}
         aria-colindex={getDisplayColumnIndex(table, cell.column.id) + 1}
         data-column-id={cell.column.id}
-        data-tree-depth={treeLines ? depth : undefined}
         data-cell-pinned={pinnedSideToDom(isPinnedColumn)}
         data-cell-odd-left-pinned={isStartPinned && rowIndex % 2 !== 0}
         data-cell-odd-right-pinned={isEndPinned && rowIndex % 2 !== 0}
@@ -323,7 +326,7 @@ export const BodyCell = memo(
         data-cell-of-first-row={cell.row.getIsFirstRow()}
         data-cell-of-last-row={cell.row.getIsLastRow()}
       >
-        {treeLayer && <TreeLines branch={treeBranch} open={!!treeOpen} />}
+        {layers.nodes}
         <IconRevealContext.Provider value={iconReveal}>
           <CellWrapperContent
             flex={getAlignContent({

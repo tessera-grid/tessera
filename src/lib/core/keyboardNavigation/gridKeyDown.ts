@@ -77,11 +77,9 @@ export const handleGridKeyDown = (
     return
   }
 
+  // Клавиша меню — событие `contextmenu` на ячейке: меню открывает тот, кто его слушает.
   if (isContextMenuKey(event)) {
-    if (t.options.enableContextMenu) {
-      event.preventDefault()
-      openContextMenuAt(cell)
-    }
+    if (openContextMenuAt(cell)) event.preventDefault()
     return
   }
 

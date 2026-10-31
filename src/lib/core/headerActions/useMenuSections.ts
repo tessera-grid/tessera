@@ -2,24 +2,20 @@
 // асинхронных разделов, снимок уходящего уровня для анимации и фокус после смены.
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 
-import clsx from 'clsx'
-
-import { actionOwnerOf } from '../../core/actionOwners'
-import { announceLabel } from '../../core/announcer'
-import { type DebugActionSource, reportAction } from '../../core/debugActions'
+import { actionOwnerOf } from '../actionOwners'
+import { announceLabel } from '../announcer'
+import { type DebugActionSource, reportAction } from '../debugActions'
 import { useLatest } from '../../util/useLatest'
-import type { TableLabels } from '../../core/localization'
+import type { TableLabels } from '../localization'
 import {
-  type MenuAction,
   createSectionLoads,
   enterSection,
   leaveSection,
   loadSection,
   resolveMenuLevel,
   sectionKey,
-} from '../../core/headerActions'
-
-import styles from '../../ui/Popup/ActionMenu.module.css'
+} from './menuSections'
+import type { MenuAction } from './types'
 
 export type SectionDirection = 'forward' | 'back'
 
@@ -57,7 +53,7 @@ export const useMenuSections = (
   )
 
   // Снимок уходящего уровня — разметка без обработчиков и ролей: Base UI не ведёт по
-  // нему стрелки, а скринридер его не видит.
+  // нему стрелки, а скринридер его не видит. Классы снимка задаёт вид меню на слое снимков.
   const snapshot = (towards: SectionDirection) => {
     const current = levelRef.current
     const host = ghostRef.current
@@ -71,11 +67,10 @@ export const useMenuSections = (
     ghost.removeAttribute('data-menu-level')
     ghost.setAttribute('aria-hidden', 'true')
     ghost.setAttribute('inert', '')
-    ghost.className = clsx(
-      styles.level,
-      styles.ghost,
-      towards === 'forward' ? styles.leaveForward : styles.leaveBack,
-    )
+    ghost.className =
+      (towards === 'forward'
+        ? host.dataset.leaveForward
+        : host.dataset.leaveBack) ?? ''
     ghost.style.width = `${current.offsetWidth}px`
     host.replaceChildren(ghost)
     void Promise.all(

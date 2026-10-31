@@ -6,10 +6,10 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   type AvailabilityCheck,
   type AvailabilityChecks,
-  type MenuAction,
   checkAvailability,
   startAvailabilityChecks,
-} from '../../core/headerActions'
+} from './actionStatus'
+import type { MenuAction } from './types'
 
 export const useAvailabilityChecks = () => {
   const [checks, setChecks] = useState<AvailabilityChecks | null>(null)

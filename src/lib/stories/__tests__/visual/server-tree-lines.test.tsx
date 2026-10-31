@@ -5,7 +5,7 @@ import { describe, expect, test } from 'vitest'
 import '../../../ui/theme/theme.css'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
-import { getTreeLines } from '../../../grid/treeBranches'
+import { getTreeLines } from '../../../plugins/treeLines/branches'
 import {
   rowDragging,
   rowExpanding,

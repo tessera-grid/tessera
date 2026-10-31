@@ -7,7 +7,7 @@ import clsx from 'clsx'
 import { cancelSourceOf } from '../../core/cancellation'
 import { useLocalization } from '../../core/localization'
 import { logWarn } from '../../util/logger'
-import { useActionStatus } from './useActionStatus'
+import { useActionStatus } from '../../core/headerActions'
 import {
   pendingAttributes,
   serverActionReason,

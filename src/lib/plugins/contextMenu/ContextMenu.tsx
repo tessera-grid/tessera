@@ -1,8 +1,9 @@
-// ContextMenu (эагерный): слушатель contextmenu + состояние открытия. Base UI-меню
-// (ContextMenuPopup) грузится лениво — floating-ui в базовый бандл не тянется: при
-// первом наведении на тело грида или фокусе внутри него, а правый клик до загрузки
-// открывает меню после неё (ADR 0061, LZ6–LZ10). Рендерится DataGrid'ом при активном
-// плагине contextMenu (`enableContextMenu`). ADR 0030.
+// ContextMenu: состояние открытия, долгое нажатие пальцем и загрузка меню — хук корня
+// плагина contextMenu (ADR 0170, §5); правый клик и клавиша меню приходят событием
+// `contextmenu` от корня грида. Base UI-меню (ContextMenuPopup) грузится лениво —
+// floating-ui в базовый бандл не тянется: при первом наведении на тело грида или фокусе
+// внутри него, а правый клик до загрузки открывает меню после неё (ADR 0061, LZ6–LZ10).
+// ADR 0030.
 import { type DebugActionSource, reportAction } from '../../core/debugActions'
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 
@@ -16,8 +17,8 @@ import {
   resolveVisibleActions,
   type ContextMenuAction,
   type ContextMenuContext,
+  useAvailabilityChecks,
 } from '../../core/headerActions'
-import { useAvailabilityChecks } from '../headerActions/useAvailabilityChecks'
 
 const ContextMenuPopupImpl = preloadable(() =>
   import('./ContextMenuPopup').then(m => m.ContextMenuPopup),
@@ -109,6 +110,12 @@ export interface ContextMenuProps {
   table: unknown
   getScrollElement: () => HTMLElement | null
 }
+
+/** Обработчик `contextmenu` над телом по таблице: его зовёт событие корня грида. */
+const handlers = new WeakMap<object, (event: MouseEvent) => void>()
+
+export const openOnContextMenu = (table: unknown, event: MouseEvent) =>
+  handlers.get((table as { store: object }).store)?.(event)
 
 export const ContextMenu = ({ table, getScrollElement }: ContextMenuProps) => {
   const [state, setState] = useState<OpenState | null>(null)
@@ -258,9 +265,11 @@ export const ContextMenu = ({ table, getScrollElement }: ContextMenuProps) => {
       }
     }
 
-    document.addEventListener('contextmenu', onContextMenu, true)
-    return () =>
-      document.removeEventListener('contextmenu', onContextMenu, true)
+    const store = (table as { store: object }).store
+    handlers.set(store, onContextMenu)
+    return () => {
+      if (handlers.get(store) === onContextMenu) handlers.delete(store)
+    }
   }, [table, getScrollElement, request, startChecks])
 
   // Долгое нажатие пальцем на ячейку тела открывает меню (ADR 0086, §5). Подписка

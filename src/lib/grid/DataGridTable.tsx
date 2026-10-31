@@ -251,7 +251,6 @@ export const DataGridTable = ({
               actionRowSlot={actionRowSlot}
               ariaRowIndexBase={headerGroups.length + rowWindow.offset}
               treeRows={!!keyboardNavigation && hierarchical}
-              treeLines={table.options.enableTreeLines}
               isResizingColumns={isResizingColumns}
               isVirtualColumns={isVirtualColumns}
               rowAnimation={

@@ -8,10 +8,13 @@ import {
   type CSSProperties,
   Fragment,
   type ReactNode,
+  useMemo,
 } from 'react'
 
 import { useSelector } from '@tanstack/react-store'
 
+import type { DropPreview } from './dragSession'
+import type { RowSource } from './rowSource'
 import type { Cell, Row, Table } from '../types'
 
 /** Что вклад даёт своей цели: атрибуты, переменные стиля и `tabIndex`. */
@@ -21,12 +24,16 @@ export interface ContributionOutput {
   tabIndex?: number
 }
 
+/** Данные строки окна по вкладчикам окна: `{ [id вкладчика]: значение }`. */
+export type WindowRow = Readonly<Record<string, unknown>>
+
 export interface CellContributionContext {
   table: Table<any, any>
   cell: Cell<any, any, unknown>
   rowIndex: number
   /** Клавиатурная навигация включена у грида. */
   navigation: boolean
+  window?: WindowRow
 }
 
 export interface RowContributionContext {
@@ -34,6 +41,33 @@ export interface RowContributionContext {
   row: Row<any, any>
   rowIndex: number
   navigation: boolean
+  window?: WindowRow
+}
+
+/** Место строки скелета в дереве (ADR 0060, ADR 0155). */
+export interface SkeletonTreePlace {
+  depth: number
+  branch: string
+  open: boolean
+}
+
+/** Ячейка, в которой вклад рисует слой: тела или скелета. */
+export interface CellLayerContext {
+  table: Table<any, any>
+  columnId: string
+  /** Колонка отступа дерева (ADR 0059). */
+  isIndent: boolean
+  /** Глубина строки; у слота перетаскивания — глубина места броска. */
+  depth: number
+  window?: WindowRow
+  /** Строка скелета: первой загрузки, незагруженная или ленивых детей. */
+  skeleton?: SkeletonTreePlace
+}
+
+/** Слой перед содержимым ячейки и атрибуты, которые идут с ним. */
+export interface CellLayer {
+  node?: ReactNode
+  attrs?: ContributionOutput['attrs']
 }
 
 /**
@@ -49,7 +83,13 @@ export interface TargetContribution<TContext, TSelected = any> {
 export type CellContribution<TSelected = any> = TargetContribution<
   CellContributionContext,
   TSelected
->
+> & {
+  /**
+   * Слой перед содержимым ячейки: рисуется и в скелете первой загрузки, и при быстрой
+   * прокрутке, когда слоты ячейки не рисуются.
+   */
+  layer?: (context: CellLayerContext) => CellLayer | null
+}
 export type RowContribution<TSelected = any> = TargetContribution<
   RowContributionContext,
   TSelected
@@ -89,10 +129,12 @@ export interface RootHookProps {
 /** Вклад в корень грида. */
 export interface RootContribution {
   id: string
+  /** Атрибуты корня темы: от них зависят токены темы (ADR 0018). */
+  themeAttrs?: () => ContributionOutput['attrs']
   /** Атрибуты элемента таблицы по состоянию: корень перерисовывают срезы раскладки. */
   attrs?: (context: RootContributionContext) => ContributionOutput['attrs']
   /** Хук на гриде с элементом прокрутки: автопрокрутка, копирование, поповер. */
-  useRoot?: (props: RootHookProps) => void
+  useRoot?: (props: RootHookProps) => ReactNode | void
   events?: BodyEvents
 }
 
@@ -124,12 +166,46 @@ export interface NavigationKeys {
   ) => void
 }
 
+export interface WindowContext {
+  table: Table<any, any>
+  /** Строки модели, если список загружен целиком; у серверной модели — пусто. */
+  rows: readonly Row<any, any>[]
+  rowSource: RowSource
+  rowCount: number
+  drop: DropPreview | null
+}
+
+export interface WindowRowContext {
+  /** Окно виртуализатора строк. */
+  first: number
+  last: number
+  /** Строка — перетаскиваемая. */
+  active: boolean
+}
+
+/**
+ * Данные строк окна (ADR 0170, §3): считаются раз на смену модели строк, источника и
+ * превью броска; значение строки получают вклады строки и ячейки.
+ */
+export interface WindowContribution<TData = any> {
+  id: string
+  compute: (context: WindowContext) => TData
+  row: (data: TData, index: number, context: WindowRowContext) => unknown
+  /** Место в дереве скелет-строки на месте незагруженной строки (ADR 0161, §2). */
+  skeleton?: (
+    data: TData,
+    index: number,
+    context: WindowRowContext,
+  ) => SkeletonTreePlace | undefined
+}
+
 /** Вклад записи плагина в тело грида. */
 export interface BodyContributions {
   cell?: CellContribution
   row?: RowContribution
   root?: RootContribution
   keys?: NavigationKeys
+  window?: WindowContribution
 }
 
 export interface FoldedBody {
@@ -137,6 +213,7 @@ export interface FoldedBody {
   row: RowContribution[]
   root: RootContribution[]
   keys: NavigationKeys[]
+  window: WindowContribution[]
 }
 
 export const createEmptyBody = (): FoldedBody => ({
@@ -144,6 +221,7 @@ export const createEmptyBody = (): FoldedBody => ({
   row: [],
   root: [],
   keys: [],
+  window: [],
 })
 
 const EMPTY_BODY = createEmptyBody()
@@ -256,12 +334,111 @@ export const rootAttrsOf = (
   return attrs
 }
 
+/** Атрибуты корня темы от вкладчиков корня. */
+export const themeAttrsOf = (table: unknown) => {
+  const attrs: NonNullable<ContributionOutput['attrs']> = {}
+  for (const item of bodyOf(table).root)
+    Object.assign(attrs, item.themeAttrs?.())
+  return attrs
+}
+
+/** Слои ячейки от вкладчиков: узлы перед содержимым и их атрибуты. */
+export const cellLayersOf = (context: CellLayerContext) => {
+  const nodes: ReactNode[] = []
+  const attrs: NonNullable<ContributionOutput['attrs']> = {}
+  for (const item of bodyOf(context.table).cell) {
+    const layer = item.layer?.(context)
+    if (!layer) continue
+    if (layer.node != null) {
+      nodes.push(createElement(Fragment, { key: item.id }, layer.node))
+    }
+    Object.assign(attrs, layer.attrs)
+  }
+  return { nodes, attrs }
+}
+
+export interface WindowData {
+  /** Данные строки окна; без вкладчиков — `undefined`. */
+  rowOf: (index: number, active?: boolean) => WindowRow | undefined
+  /** Место скелет-строки в дереве от первого вкладчика, который его знает. */
+  skeletonOf: (index: number) => SkeletonTreePlace | undefined
+}
+
+/**
+ * Данные строк окна вкладчиков: `compute` — раз на смену строк, источника, их числа и
+ * превью броска; значение строки, совпавшее по полям с прошлым, отдаётся тем же
+ * объектом — строки и ячейки под memo не перерисовываются.
+ */
+export const useWindowData = (
+  context: WindowContext,
+  window: { first: number; last: number },
+): WindowData => {
+  const { table, rows, rowSource, rowCount, drop } = context
+  const contributors = bodyOf(table).window
+  const computed = useMemo(
+    () =>
+      contributors.map(item =>
+        item.compute({ table, rows, rowSource, rowCount, drop }),
+      ),
+    // `table` — новая копия на каждый рендер; данные от неё не зависят.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [contributors, rows, rowSource, rowCount, drop],
+  )
+  if (!contributors.length) return NO_WINDOW
+  const { first, last } = window
+  const previous = windowRowsOf(table, first, last)
+  const rowOf = (index: number, active = false) => {
+    const next: Record<string, unknown> = {}
+    contributors.forEach((item, at) => {
+      next[item.id] = item.row(computed[at], index, { first, last, active })
+    })
+    const key = `${index}:${active}`
+    const before = previous.get(key)
+    if (before && equalTo(before, next, 2)) return before
+    previous.set(key, next)
+    return next
+  }
+  const skeletonOf = (index: number) => {
+    for (const [at, item] of contributors.entries()) {
+      const place = item.skeleton?.(computed[at], index, {
+        first,
+        last,
+        active: false,
+      })
+      if (place) return place
+    }
+    return undefined
+  }
+  return { rowOf, skeletonOf }
+}
+
+/** Прошлые значения строк окна по таблице: живут, пока строка рядом с окном. */
+const windowRows = new WeakMap<object, Map<string, WindowRow>>()
+const WINDOW_ROWS_LIMIT = 2000
+
+const windowRowsOf = (table: unknown, first: number, last: number) => {
+  const store = (table as { store: object }).store
+  let rows = windowRows.get(store)
+  if (!rows) windowRows.set(store, (rows = new Map()))
+  if (rows.size > WINDOW_ROWS_LIMIT) {
+    for (const key of rows.keys()) {
+      const index = Number.parseInt(key, 10)
+      if (index < first - 50 || index > last + 50) rows.delete(key)
+    }
+  }
+  return rows
+}
+
+const NO_WINDOW: WindowData = {
+  rowOf: () => undefined,
+  skeletonOf: () => undefined,
+}
+
 const RootHook = ({
   use,
   ...props
 }: RootHookProps & { use: NonNullable<RootContribution['useRoot']> }) => {
-  use(props)
-  return null
+  return use(props) ?? null
 }
 
 /** Хуки вкладчиков корня — компонентом на вкладчика: набор плагинов может смениться. */

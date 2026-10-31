@@ -15,8 +15,10 @@ import { useLatest } from '../../util/useLatest'
 import { useCloseOnGridScroll } from '../../ui/Popup/useCloseOnGridScroll'
 import { useClosingVisible } from './useClosingVisible'
 import { GRID_SCROLL_REASON, useMenuLeave } from '../../ui/Popup/useMenuLeave'
-import { useAvailabilityChecks } from './useAvailabilityChecks'
-import { useMenuSections } from './useMenuSections'
+import {
+  useAvailabilityChecks,
+  useMenuSections,
+} from '../../core/headerActions'
 import { useStateWhileOpen } from './useStateWhileOpen'
 
 import '../../ui/cellControls/buttonVisibility.css'

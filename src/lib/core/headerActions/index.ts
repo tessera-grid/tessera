@@ -15,6 +15,20 @@ import { readSyncDisabled } from './actionStatus'
 
 export * from './actionStatus'
 export * from './menuSections'
+export { useActionStatus } from './useActionStatus'
+export {
+  type AvailabilitySession,
+  useAvailabilityChecks,
+} from './useAvailabilityChecks'
+export {
+  type MenuItemGroupsOptions,
+  useMenuItemGroups,
+} from './useMenuItemGroups'
+export {
+  type MenuSections,
+  type SectionDirection,
+  useMenuSections,
+} from './useMenuSections'
 export {
   actionStatusFeature,
   type ActionStatus,

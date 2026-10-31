@@ -2,8 +2,8 @@
 // таблицы срез пустой.
 import { useSelector } from '@tanstack/react-store'
 
-import { shallowEqual } from '../../core/reactivity'
-import type { ActionStatus } from '../../core/headerActions'
+import { shallowEqual } from '../reactivity'
+import type { ActionStatus } from './actionStatusFeature'
 
 type Source = {
   get: () => ActionStatus

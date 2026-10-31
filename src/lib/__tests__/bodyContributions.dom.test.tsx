@@ -15,6 +15,8 @@ import {
   bodyEventHandlers,
   RootHooks,
   rootAttrsOf,
+  useWindowData,
+  type WindowData,
   withBody,
 } from '../core/bodyContributions'
 import {
@@ -322,5 +324,71 @@ describe('вклад плагинов в тело (ADR 0170)', () => {
       const source = readFileSync(resolve(dir, file), 'utf8')
       expect(source, file).not.toMatch(/cellSelection|CellSelection|plugins\//)
     }
+  })
+})
+
+describe('данные строк окна (ADR 0170)', () => {
+  it('CH11: данные строк окна плагин считает по модели строк, источнику строк и превью броска один раз на их смену, а не на строку', () => {
+    let computed = 0
+    const rowsSeen: number[] = []
+    mountTable([
+      probe('lines', {
+        window: {
+          id: 'lines',
+          compute: ({ rows, drop }) => {
+            computed++
+            return { count: rows.length, shift: drop?.depth ?? 0 }
+          },
+          row: (data: { count: number; shift: number }, index) => {
+            rowsSeen.push(index)
+            return { at: index + data.shift, of: data.count }
+          },
+        },
+      }),
+    ])
+    const rowSource = table.getRowSource()
+    let data: WindowData | undefined
+    const Probe = (props: {
+      rows: readonly unknown[]
+      drop: unknown
+      first: number
+    }) => {
+      data = useWindowData(
+        {
+          table,
+          rows: props.rows as never,
+          rowSource,
+          rowCount: props.rows.length,
+          drop: props.drop as never,
+        },
+        { first: props.first, last: props.first + 1 },
+      )
+      return null
+    }
+    const rows = table.getRowModel().rows
+    const drop = { activeId: 'r1', from: 0, to: 1, depth: 2, acceptable: true }
+    const container = document.createElement('div')
+    const root = createRoot(container)
+    roots.push(root)
+    act(() => root.render(<Probe rows={rows} drop={null} first={0} />))
+    expect(computed).toBe(1)
+    expect(data!.rowOf(1)).toEqual({ lines: { at: 1, of: 2 } })
+
+    // Окно и перерисовка без смены строк, источника и превью — без пересчёта.
+    act(() => root.render(<Probe rows={rows} drop={null} first={1} />))
+    act(() => root.render(<Probe rows={rows} drop={null} first={1} />))
+    expect(computed).toBe(1)
+
+    act(() => root.render(<Probe rows={[...rows]} drop={null} first={1} />))
+    expect(computed).toBe(2)
+    act(() => root.render(<Probe rows={rows} drop={drop} first={1} />))
+    expect(computed).toBe(3)
+    expect(data!.rowOf(0)).toEqual({ lines: { at: 2, of: 2 } })
+
+    // Значение строки, совпавшее по полям, — тот же объект: строка под memo не рисуется.
+    const before = data!.rowOf(0)
+    act(() => root.render(<Probe rows={[...rows]} drop={drop} first={0} />))
+    expect(data!.rowOf(0)).toBe(before)
+    expect(rowsSeen.length).toBeGreaterThan(0)
   })
 })

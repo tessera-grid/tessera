@@ -136,14 +136,23 @@ for (const id of [...grid.externals].sort()) {
     failures.push(`DataGrid без плагинов: в сборке импорт ${id}`)
   }
 }
-// CH10: механика выделения ячеек — в плагинах, без них в сборку не попадает (ADR 0170).
-const CELL_SELECTION_MODULE = /cellSelection|clipboard/i
+// CH10, CH13: механика выделения ячеек, контекстного меню и линий дерева — в плагинах,
+// без них в сборку не попадает (ADR 0170).
+const FLAG_MECHANICS = [
+  ['выделения ячеек', /cellSelection|clipboard/i],
+  ['контекстного меню', /contextMenu/i],
+  ['линий дерева', /treeLines|treeBranches/i],
+]
 for (const id of grid.modules) {
   const path = id.split('\\').join('/')
-  if (CELL_SELECTION_MODULE.test(path.slice(path.lastIndexOf('/dist/')))) {
-    failures.push(
-      `DataGrid без плагинов: в сборке модуль выделения ячеек ${path}`,
-    )
+  // Только модули библиотеки: у Base UI свои модули меню в `dist/node_modules`.
+  const at = path.lastIndexOf('/dist/lib/')
+  if (at < 0) continue
+  const own = path.slice(at)
+  for (const [name, pattern] of FLAG_MECHANICS) {
+    if (pattern.test(own)) {
+      failures.push(`DataGrid без плагинов: в сборке модуль ${name} ${path}`)
+    }
   }
 }
 for (const [name, reason] of Object.entries(budget.pluginModules)) {

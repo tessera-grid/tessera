@@ -1,6 +1,7 @@
 import { commands, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
+import { useState } from 'react'
 
 import type { BodyEventTarget } from '../../../core/bodyContributions'
 import { useCreateTable } from '../../../core/useCreateTable'
@@ -169,5 +170,97 @@ describe('канал вклада в тело (ADR 0170)', () => {
     expect(
       reactHandlers(row('r1')).filter(name => !focusOnly.includes(name)),
     ).toEqual([])
+  })
+})
+
+// Свой плагин со слоем в каждой ячейке: метка перед содержимым.
+const layerProbe = {
+  id: 'layerProbe',
+  diagnose: () => undefined,
+  body: {
+    cell: {
+      id: 'layerProbe',
+      select: () => null,
+      render: () => null,
+      layer: () => ({ node: <i data-probe-layer="" /> }),
+    },
+  },
+}
+
+const MANY = Array.from({ length: 1000 }, (_, index) => ({
+  id: `r${index}`,
+  a: `A${index}`,
+  b: `B${index}`,
+  c: `C${index}`,
+  d: `D${index}`,
+}))
+
+let showData: (() => void) | undefined
+
+const LayerGrid = () => {
+  const [loading, setLoading] = useState<'initial' | undefined>('initial')
+  showData = () => setLoading(undefined)
+  const table = useCreateTable({
+    columns: COLUMNS as never,
+    data: loading ? [] : MANY,
+    getRowId: (row: { id: string }) => row.id,
+    loading,
+    plugins: [layerProbe] as never,
+  })
+  return (
+    <div style={{ width: 640, height: 400 }}>
+      <DataGrid table={table as never} />
+    </div>
+  )
+}
+
+const nextFrame = () => new Promise(resolve => requestAnimationFrame(resolve))
+
+describe('слой ячейки (ADR 0170)', () => {
+  test('CH12: вклад ячейки рисует свой слой и в скелете первой загрузки, и при быстрой прокрутке, когда слоты ячейки не рисуются', async () => {
+    await render(<LayerGrid />)
+    const skeletonCells = () =>
+      Array.from(
+        document.querySelectorAll<HTMLElement>(
+          '.data-grid__body-cell--skeleton',
+        ),
+      )
+    await expect.poll(() => skeletonCells().length).toBeGreaterThan(4)
+    expect(
+      skeletonCells().every(cell => cell.querySelector('[data-probe-layer]')),
+    ).toBe(true)
+
+    showData!()
+    await waitForGrid()
+    const scroller = document.querySelector<HTMLElement>('[data-resizing]')!
+    const rows = () =>
+      Array.from(
+        document.querySelectorAll<HTMLElement>(
+          '.data-grid__body-row[data-row-id]',
+        ),
+      )
+    const before = new Set(rows())
+    // 100 px за кадр — выше порога входа в быструю прокрутку по Y.
+    for (let i = 0; i < 3; i++) {
+      scroller.scrollTop += 100
+      // eslint-disable-next-line no-await-in-loop
+      await nextFrame()
+    }
+    const mounted = rows().filter(row => !before.has(row))
+    const fastCells = mounted.flatMap(row =>
+      Array.from(
+        row.querySelectorAll<HTMLElement>(
+          '.data-grid__body-cell[data-column-id]',
+        ),
+      ),
+    )
+    // Ячейки сессии быстрой прокрутки — скелет вместо содержимого, слой на месте.
+    expect(fastCells.length).toBeGreaterThan(0)
+    expect(
+      fastCells.some(cell => cell.querySelector('[class*="skeleton"]')),
+    ).toBe(true)
+    expect(
+      fastCells.every(cell => cell.querySelector('[data-probe-layer]')),
+    ).toBe(true)
   })
 })

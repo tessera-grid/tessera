@@ -1,21 +1,24 @@
 // ContextMenuPopup: тело контекстного меню (Base UI Menu, контролируемый open,
 // виртуальный якорь у курсора). Грузится лениво (Base UI тянет floating-ui) —
-// монтируется только когда меню открыто. Переиспользует движок пунктов
-// (ActionMenuItems) и стили кебаба (ActionMenu.module.css). ADR 0030.
+// монтируется только когда меню открыто. Пункты и разделы — модель ядра в виде кита,
+// как у кебаба (ActionMenu.module.css). ADR 0030.
 import { Menu } from '@base-ui/react/menu'
 import clsx from 'clsx'
 
 import { usePortalThemeData, usePortalThemeClass } from '../../ui/theme'
+import { sourceOf } from '../../core/debugActions'
 import type { TableLabels } from '../../core/localization'
-import type {
-  ContextMenuAction,
-  ContextMenuContext,
+import {
+  type ContextMenuAction,
+  type ContextMenuContext,
+  type MenuItemGroupsOptions,
+  useMenuItemGroups,
+  useMenuSections,
 } from '../../core/headerActions'
-import type { ActionMenuItemsProps } from '../headerActions/ActionMenuItems'
-import { ActionMenuSections } from '../headerActions/ActionMenuSections'
+import { MenuItems } from '../../ui/Popup/MenuItems'
+import { MenuSections } from '../../ui/Popup/MenuSections'
 import { useCloseOnGridScroll } from '../../ui/Popup/useCloseOnGridScroll'
 import { GRID_SCROLL_REASON, useMenuLeave } from '../../ui/Popup/useMenuLeave'
-import { useMenuSections } from '../headerActions/useMenuSections'
 
 import menuStyles from '../../ui/Popup/ActionMenu.module.css'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
@@ -28,11 +31,15 @@ export interface ContextMenuPopupProps {
   context: ContextMenuContext
   labels: TableLabels
   /** Сессия проверки доступности (ADR 0078). */
-  session?: ActionMenuItemsProps['session']
+  session?: MenuItemGroupsOptions['session']
   /** Проверить пункты вошедшего раздела в сессии (ADR 0079). */
-  extendChecks?: (actions: ActionMenuItemsProps['actions']) => void
+  extendChecks?: (actions: MenuItemGroupsOptions['actions']) => void
   onClose: () => void
 }
+
+const ContextMenuItems = (props: MenuItemGroupsOptions) => (
+  <MenuItems groups={useMenuItemGroups(props)} />
+)
 
 export const ContextMenuPopup = ({
   x,
@@ -90,12 +97,23 @@ export const ContextMenuPopup = ({
             className={clsx(themeClass, menuStyles.popup)}
             finalFocus={leave.returnFocus}
           >
-            <ActionMenuSections
+            <MenuSections
               sections={sections}
-              context={context}
-              session={session}
-              close={onClose}
-            />
+              backLabel={labels.menuBack(sections.level.title ?? '')}
+              failedLabel={labels.sectionLoadFailed}
+              onBack={event => sections.back(sourceOf(event))}
+            >
+              {(items, closeOnSelect) => (
+                <ContextMenuItems
+                  actions={items}
+                  context={context}
+                  session={session}
+                  close={onClose}
+                  sections={sections}
+                  closeOnSelect={closeOnSelect}
+                />
+              )}
+            </MenuSections>
           </Menu.Popup>
         </Menu.Positioner>
       </Menu.Portal>

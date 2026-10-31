@@ -9,7 +9,7 @@ import { usePortalThemeData, usePortalThemeClass } from '../../ui/theme'
 import type { SlotAction } from '../../core/headerActions'
 import { ActionMenuItems, type ActionMenuItemsProps } from './ActionMenuItems'
 import { ActionMenuSections } from './ActionMenuSections'
-import type { MenuSections } from './useMenuSections'
+import type { MenuSections } from '../../core/headerActions'
 
 import styles from '../../ui/Popup/ActionMenu.module.css'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'

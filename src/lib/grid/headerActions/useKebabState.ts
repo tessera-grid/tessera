@@ -4,7 +4,6 @@
 import { useEffect, useState } from 'react'
 
 import { useLocalization } from '../../core/localization'
-import { useActionStatus } from './useActionStatus'
 import { useLatest } from '../../util/useLatest'
 import {
   type ActionStatus,
@@ -14,7 +13,10 @@ import {
   kebabStatus,
   markActionErrorsSeen,
 } from '../../core/headerActions'
-import { useAvailabilityChecks } from './useAvailabilityChecks'
+import {
+  useActionStatus,
+  useAvailabilityChecks,
+} from '../../core/headerActions'
 
 export interface KebabState {
   /** Доступное имя кебаба. */
