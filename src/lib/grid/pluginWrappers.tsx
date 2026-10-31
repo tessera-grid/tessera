@@ -13,8 +13,10 @@ import {
 
 const NO_WRAPPERS = createEmptyWrappers()
 
+/** Строка шапки без заголовков (колонок ещё нет) таблицы не знает — декорировать нечего. */
 export const wrappersOf = (table: unknown): FoldedWrappers =>
-  commonOptionsOf(table).pluginWrappers ?? NO_WRAPPERS
+  (table === undefined ? undefined : commonOptionsOf(table).pluginWrappers) ??
+  NO_WRAPPERS
 
 /**
  * Декораторы вокруг базового компонента: внешний получает следующий слой пропсом `slot`,
