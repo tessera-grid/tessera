@@ -181,6 +181,7 @@ export const dataGridArgTypes = {
     enableToolbar: enableToolbarType,
     enableStatusBar: enableStatusBarType,
     enableAnnouncements: enableAnnouncementsType,
+    enableKeyboardNavigation: enableKeyboardNavigationType,
     enableOverflowTooltip: enableOverflowTooltipType,
     enableRowAnimation: enableRowAnimationType,
     enableColumnAnimation: enableColumnAnimationType,
@@ -308,7 +309,6 @@ export const dataGridArgTypes = {
       cellSelectionMaxCopyRows: cellSelectionMaxCopyRowsType,
     }),
     enableContextMenu: enableContextMenuType,
-    enableKeyboardNavigation: enableKeyboardNavigationType,
   }),
   ...inCategory('Поиск, фильтры, страницы, экспорт', {
     enableQuickSearch: enableQuickSearchType,

@@ -14,7 +14,6 @@ import {
   dataExport,
   infiniteScroll,
   type InfiniteScrollLoadContext,
-  keyboardNavigation,
   quickSearch,
   rowDragging,
   rowExpanding,
@@ -95,6 +94,8 @@ interface FeedProps {
   loadedCount?: boolean
   threshold?: number
   plugins?: unknown[]
+  /** Клавиатурная навигация (ADR 0170, §1). */
+  keyboard?: boolean
   state?: Record<string, unknown>
   /** Колонки шире грида — есть горизонтальная прокрутка. */
   wide?: boolean
@@ -120,6 +121,7 @@ const Feed = ({
   loadedCount = false,
   threshold,
   plugins = [],
+  keyboard,
   state,
   wide = false,
   columns,
@@ -132,6 +134,7 @@ const Feed = ({
       setRows(prev => [...prev, ...itemsFrom(prev.length, count)]),
   }
   table = useCreateTable({
+    enableKeyboardNavigation: keyboard,
     rowCount: knownTotal ? total : undefined,
     columns: (columns ?? (wide ? WIDE_COLUMNS : COLUMNS)) as never,
     loading,
@@ -342,7 +345,7 @@ describe('Лента: хвост ожидания и ответ', () => {
   })
 
   test('IS3: ответ дописывает строки на место хвоста — позиция прокрутки и фокус не сдвигаются', async () => {
-    await mount({ plugins: [keyboardNavigation()] })
+    await mount({ keyboard: true, plugins: [] })
     await scrollToEnd()
     await pendingCall()
     await humanClick(cellEl('r27', 'b')!)
@@ -518,7 +521,7 @@ describe('Лента: итог и доступность', () => {
   })
 
   test('IS11: PageDown у края запускает загрузку', async () => {
-    await mount({ plugins: [keyboardNavigation()] })
+    await mount({ keyboard: true, plugins: [] })
     await humanClick(cellEl('r0', 'a')!)
     for (let i = 0; i < 12 && calls.length === 0; i++) {
       await userEvent.keyboard('{PageDown}')
@@ -529,7 +532,7 @@ describe('Лента: итог и доступность', () => {
     // Ctrl+End у края запускает загрузку, фокус переживает приход блока; ↓ с последней строки — в строку ошибки, Enter — «Retry», ↑ — назад
     await cleanup()
     calls = []
-    await mount({ plugins: [keyboardNavigation()] })
+    await mount({ keyboard: true, plugins: [] })
     await humanClick(cellEl('r0', 'a')!)
     await userEvent.keyboard('{Control>}{End}{/Control}')
     await pendingCall()
@@ -572,7 +575,7 @@ describe('Лента: итог и доступность', () => {
   })
 
   test('IS12: скелет-строки не фокусируются, не выбираются, без действий, меню и перетаскивания, скрыты от вспомогательных технологий', async () => {
-    await mount({ plugins: [rowSelection(), keyboardNavigation()] })
+    await mount({ keyboard: true, plugins: [rowSelection()] })
     await scrollToEnd()
     await pendingCall()
     await frames()
@@ -660,14 +663,14 @@ describe('Лента: итог и доступность', () => {
     expect(label).not.toContain('Loaded')
   })
 
-  const roles: [string, () => unknown[]][] = [
-    ['table', () => []],
-    ['grid', () => [keyboardNavigation()]],
-    ['treegrid', () => [keyboardNavigation(), rowExpanding()]],
+  const roles: [string, () => unknown[], boolean][] = [
+    ['table', () => [], false],
+    ['grid', () => [], true],
+    ['treegrid', () => [rowExpanding()], true],
   ]
-  for (const [role, plugins] of roles) {
+  for (const [role, plugins, keyboard] of roles) {
     test(`IS15: axe и color-contrast хвоста и строки ошибки в обеих темах, роль ${role}`, async () => {
-      await mount({ plugins: plugins(), dataMode: 'server' })
+      await mount({ plugins: plugins(), keyboard, dataMode: 'server' })
       expect(gridRoot().getAttribute('role')).toBe(role)
       await scrollToEnd()
       await pendingCall()

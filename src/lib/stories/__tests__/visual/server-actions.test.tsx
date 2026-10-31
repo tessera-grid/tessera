@@ -12,7 +12,6 @@ import { columnFiltering } from '../../../plugins/columnFiltering'
 import { columnSorting } from '../../../plugins/columnSorting'
 import { headerActionMenu } from '../../../plugins/headerActionMenu'
 import { infiniteScroll } from '../../../plugins/infiniteScroll'
-import { keyboardNavigation } from '../../../plugins/keyboardNavigation'
 import { pagination } from '../../../plugins/pagination'
 import { quickSearch } from '../../../plugins/quickSearch'
 import {
@@ -111,6 +110,7 @@ const Grid = () => {
   const { options } = harness
   const [sorting, setSorting] = useState<SortingState>([])
   const table = useCreateTable({
+    enableKeyboardNavigation: options.keyboard,
     rowCount: options.paginationServer ? 1000 : undefined,
     columns: wideColumns(options.extraColumns ?? 0) as never,
     data: options.paginationServer ? DATA.slice(0, options.pageSize) : DATA,
@@ -151,7 +151,6 @@ const Grid = () => {
         ? [columnFiltering({ onFilterChange: answer('filter') })]
         : []),
       ...(options.menu ? [headerActionMenu({ mode: 'always' })] : []),
-      ...(options.keyboard ? [keyboardNavigation()] : []),
     ],
   })
   return (

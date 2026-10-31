@@ -17,7 +17,6 @@ import {
   infiniteScroll,
   rowGrouping,
   columnSortingModel,
-  keyboardNavigation,
   quickSearchModel,
   rowExpanding,
   rowSelection,
@@ -138,6 +137,7 @@ const Grid = ({
   getRows,
   rowCount,
   plugins = [],
+  keyboard,
   state,
   colorMode,
   onTable,
@@ -147,6 +147,8 @@ const Grid = ({
   getRows: ReturnType<typeof server>['getRows']
   rowCount?: number
   plugins?: readonly TesseraFeatureEntry[]
+  /** Клавиатурная навигация (ADR 0170, §1). */
+  keyboard?: boolean
   state?: Record<string, unknown>
   colorMode?: 'light' | 'dark'
   onTable?: (table: QueryTable) => void
@@ -154,6 +156,7 @@ const Grid = ({
   columns?: readonly object[]
 }) => {
   const table = useCreateTable({
+    enableKeyboardNavigation: keyboard,
     rowCount,
     columns: columns as never,
     data: NO_DATA,
@@ -312,13 +315,13 @@ describe('Серверная модель строк (ADR 0138)', () => {
       <Grid
         getRows={getRows}
         rowCount={10_000}
+        keyboard
         plugins={[
           columnSortingModel({ initialSorting: sorting } as never),
           columnFilteringModel({
             initialColumnFilters: columnFilters,
           } as never),
           quickSearchModel({ initialGlobalFilter: 'N' } as never),
-          keyboardNavigation(),
         ]}
       />,
     )
@@ -392,7 +395,7 @@ describe('Серверная модель строк (ADR 0138)', () => {
       rows: rowsOf(start, Math.min(end, LAST)),
     }))
     const screen = await render(
-      <Grid getRows={getRows} plugins={[keyboardNavigation()]} />,
+      <Grid getRows={getRows} keyboard plugins={[]} />,
     )
     try {
       await expect.poll(shownIndexes).toContain(0)
@@ -543,11 +546,7 @@ describe('Серверная модель строк (ADR 0138)', () => {
       start === 0 ? { rows: rowsOf(start, end) } : undefined,
     )
     let screen = await render(
-      <Grid
-        getRows={getRows}
-        rowCount={1000}
-        plugins={[keyboardNavigation()]}
-      />,
+      <Grid getRows={getRows} rowCount={1000} keyboard plugins={[]} />,
     )
     try {
       await scrollToIndex(90)
@@ -604,11 +603,7 @@ describe('Серверная модель строк (ADR 0138)', () => {
       rows: rowsOf(start, end),
     }))
     const screen = await render(
-      <Grid
-        getRows={getRows}
-        rowCount={1000}
-        plugins={[keyboardNavigation()]}
-      />,
+      <Grid getRows={getRows} rowCount={1000} keyboard plugins={[]} />,
     )
     try {
       await focusRow(0)
@@ -645,13 +640,13 @@ describe('Серверная модель строк (ADR 0138)', () => {
   })
 
   test('SD16: aria-rowcount — итог с шапкой или -1; незагруженные строки — role="row" со сквозным aria-rowindex и aria-busy; в ролях table и grid', async () => {
-    for (const plugins of [[], [keyboardNavigation()]]) {
-      const role = plugins.length ? 'grid' : 'table'
+    for (const keyboard of [false, true]) {
+      const role = keyboard ? 'grid' : 'table'
       const { getRows } = server(({ start, end }) =>
         start === 0 ? { rows: rowsOf(start, end) } : undefined,
       )
       const screen = await render(
-        <Grid getRows={getRows} rowCount={1000} plugins={plugins} />,
+        <Grid getRows={getRows} rowCount={1000} keyboard={keyboard} />,
       )
       try {
         const root = q(`[role="${role}"]`)!
@@ -706,7 +701,8 @@ describe('Серверная модель строк (ADR 0138)', () => {
         <Grid
           getRows={getRows}
           rowCount={1000}
-          plugins={[keyboardNavigation()]}
+          keyboard
+          plugins={[]}
           colorMode={colorMode}
         />,
       )
@@ -1296,7 +1292,8 @@ describe('Серверная модель строк (ADR 0138)', () => {
         <Grid
           getRows={getRows}
           rowCount={1000}
-          plugins={[rowExpanding({ hasChildren }), keyboardNavigation()]}
+          keyboard
+          plugins={[rowExpanding({ hasChildren })]}
         />,
       )
       try {
@@ -1334,7 +1331,8 @@ describe('Серверная модель строк (ADR 0138)', () => {
         <Grid
           getRows={getRows}
           rowCount={1000}
-          plugins={[rowExpanding({ hasChildren }), keyboardNavigation()]}
+          keyboard
+          plugins={[rowExpanding({ hasChildren })]}
         />,
       )
       const aria = (row: Element | null) =>
@@ -1541,9 +1539,9 @@ describe('Серверная модель строк (ADR 0138)', () => {
           <Grid
             getRows={getRows}
             rowCount={1000}
+            keyboard
             plugins={[
               rowExpanding({ hasChildren }),
-              keyboardNavigation(),
               rowSelection({ subRows: true }),
             ]}
           />,

@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import type { DataMode } from '../../../core/dataMode'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
-import { columnFiltering, keyboardNavigation } from '../../../plugins'
+import { columnFiltering } from '../../../plugins'
 import { AXE_OPTIONS } from './a11y-helpers'
 import { bodyRows, humanClick } from '../helpers'
 import { waitForGrid } from './core-helpers'
@@ -115,16 +115,14 @@ const Grid = ({
   onTable,
 }: GridProps) => {
   const table = useCreateTable({
+    enableKeyboardNavigation: enableKeyboardNavigation,
     columns: COLUMNS as never,
     data: DATA,
     getRowId: (row: (typeof DATA)[number]) => row.id,
     enableToolbar: true,
     dataMode,
     timeZone,
-    plugins: [
-      ...plugins,
-      ...(enableKeyboardNavigation ? [keyboardNavigation()] : []),
-    ] as never,
+    plugins: [...plugins] as never,
   })
   onTable?.(table)
   return (

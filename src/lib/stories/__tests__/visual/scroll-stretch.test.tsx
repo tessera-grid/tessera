@@ -10,7 +10,6 @@ import {
   backToTop,
   columnSorting,
   columnSortingModel,
-  keyboardNavigation,
   serverRowModel,
   type ServerRowsRequest,
 } from '../../../plugins'
@@ -57,6 +56,7 @@ const Grid = ({
   onTable?: (table: StretchTable) => void
 }) => {
   const table = useCreateTable({
+    enableKeyboardNavigation: keyboard,
     rowCount,
     columns: COLUMNS as never,
     data: NO_DATA,
@@ -65,7 +65,6 @@ const Grid = ({
     enableStatusBar: true,
     plugins: [
       serverRowModel({ getRows }),
-      keyboardNavigation({ enabled: keyboard }),
       backToTop(),
       columnSortingModel(),
       columnSorting(),

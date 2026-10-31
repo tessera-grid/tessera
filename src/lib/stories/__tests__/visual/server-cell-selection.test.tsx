@@ -11,7 +11,6 @@ import { DataGrid } from '../../../grid/DataGrid'
 import {
   cellSelection,
   contextMenu,
-  keyboardNavigation,
   rowExpanding,
   rowGrouping,
   serverRowModel,
@@ -81,6 +80,7 @@ const Grid = ({
   getRows,
   rowCount = 1000,
   plugins = [],
+  keyboard,
   selection = {},
   colorMode,
   onTable,
@@ -88,11 +88,14 @@ const Grid = ({
   getRows: ReturnType<typeof server>['getRows']
   rowCount?: number
   plugins?: readonly TesseraFeatureEntry[]
+  /** Клавиатурная навигация (ADR 0170, §1). */
+  keyboard?: boolean
   selection?: Parameters<typeof cellSelection>[0]
   colorMode?: 'light' | 'dark'
   onTable?: (table: GridTable) => void
 }) => {
   const table = useCreateTable({
+    enableKeyboardNavigation: keyboard,
     rowCount,
     columns: COLUMNS as never,
     data: NO_DATA,
@@ -265,7 +268,8 @@ describe('Выделение ячеек в серверной модели ст�
     const screen = await render(
       <Grid
         getRows={getRows}
-        plugins={[keyboardNavigation()]}
+        keyboard
+        plugins={[]}
         onTable={t => (table = t)}
       />,
     )
@@ -640,8 +644,8 @@ describe('Выделение ячеек в серверной модели ст�
           <Grid
             getRows={getRows}
             colorMode={colorMode}
+            keyboard
             plugins={[
-              keyboardNavigation(),
               ...(tree ? [rowExpanding({ hasChildren: () => true })] : []),
             ]}
             onTable={t => (table = t)}

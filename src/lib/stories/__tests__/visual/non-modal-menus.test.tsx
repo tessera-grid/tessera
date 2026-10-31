@@ -10,7 +10,6 @@ import {
   contextMenu,
   dataExport,
   headerActionMenu,
-  keyboardNavigation,
   rowActionMenu,
   rowActions,
   rowSelection,
@@ -74,6 +73,7 @@ const COLUMNS = [
 
 const Grid = ({ menus, keyboard }: { menus: boolean; keyboard: boolean }) => {
   const table = useCreateTable({
+    enableKeyboardNavigation: keyboard,
     columns: COLUMNS as never,
     data: DATA,
     getRowId: (row: (typeof DATA)[number]) => row.id,
@@ -88,7 +88,6 @@ const Grid = ({ menus, keyboard }: { menus: boolean; keyboard: boolean }) => {
         : []),
       contextMenu(),
       rowSelection(),
-      keyboardNavigation({ enabled: keyboard }),
     ] as never,
   })
   return (

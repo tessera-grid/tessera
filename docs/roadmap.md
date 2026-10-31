@@ -109,11 +109,11 @@ expandParents })` — один прыжок без скелетов, стран�
 - **Контекстное меню — первый срез.** Плагин `contextMenu`
   ([ADR 0030](decisions/0030-context-menu.md)): меню по правому клику на ячейках
   (не на сервисных колонках), согласовано с мультивыбором `cellSelection`.
-  Клавиатурный вызов (`Shift+F10`) — через `keyboardNavigation`; touch и «вставка» —
+  Клавиатурный вызов (`Shift+F10`) — с клавиатурной навигацией; touch и «вставка» —
   в плане ADR 0030.
 
-- **Клавиатурная навигация — сделано.** Плагин `keyboardNavigation`
-  ([ADR 0021](decisions/0021-keyboard-navigation.md)): `role="grid"`, roving tabindex
+- **Клавиатурная навигация — сделано.** Опция ядра `enableKeyboardNavigation`
+  ([ADR 0021](decisions/0021-keyboard-navigation.md), [ADR 0170](decisions/0170-body-contribution-channel.md)): `role="grid"`, roving tabindex
   по всей модели (шапка и сервисные колонки), стрелки/Home/End/Page под
   виртуализацией, режим действия (`Enter`/`F2`/`Escape`), один tab-stop, действия
   плагинов с клавиатуры через канал `keyboardActions` (`Space` — выбор строки,
@@ -359,7 +359,7 @@ loadedCount })` — у края грид просит блок, приложен
   ([ADR 0123](decisions/0123-empty-state-stubs.md), «Границы»).
 
 - **Доступность — хвосты после клавиатурной навигации.** WCAG 2.1.1 закрыт с
-  плагином `keyboardNavigation` ([ADR 0031](decisions/0031-wcag-keyboard.md),
+  клавиатурной навигацией ([ADR 0031](decisions/0031-wcag-keyboard.md),
   KB1–KB14); остаток WCAG 2.1 AA — [ADR 0032](decisions/0032-wcag-aa-remainder.md)
   (W1–W17), проверка автоматикой — ADR 0033, WCAG 2.2 AA (альтернатива
   перетаскиванию меню на ручках, зона нажатия 24×24) —
@@ -772,7 +772,7 @@ React 18, StrictMode, SSR и пакет глазами потребителя з
   прячутся кнопки в колонке, а не она сама — раскладка не прыгает. Колонки раскрытия и
   действий, наоборот, показываются по условию.
 
-- **Активная ячейка `keyboardNavigation` — по индексам, а не по `id`** — **осознанный
+- **Активная ячейка клавиатурной навигации — по индексам, а не по `id`** — **осознанный
   контракт** ([ADR 0021](decisions/0021-keyboard-navigation.md)): после сортировки фокус
   остаётся на той же позиции экрана, а не уезжает за строкой. Внешнее значение
   `activeCell` / `onActiveCellChange` (KN31) повторяет эту модель; строку под активной

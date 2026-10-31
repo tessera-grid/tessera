@@ -6,6 +6,7 @@ import { type DebugActionSource, reportAction } from '../debugActions'
 import { pluginStateKey } from '../definePlugin'
 import { getDisplayColumns } from '../displayColumns'
 import type { KeyboardAction } from '../keyboardActions'
+import { hasRowHierarchy } from '../rowHierarchy'
 import type { RowSource } from '../rowSource'
 
 export const KEYBOARD_NAVIGATION = 'keyboardNavigation'
@@ -118,13 +119,11 @@ export const isKeyboardNavigationEnabled = (table: unknown): boolean =>
   !!(table as NavTable).options.enableKeyboardNavigation
 
 /**
- * Иерархия строк (`rowExpanding` / `rowGrouping` включены): с клавиатурной
+ * Иерархия строк — факт ядра от модели дерева или группировки (ADR 0168, §4): с клавиатурной
  * навигацией грид — `treegrid` (ADR 0032, W10, W16).
  */
-export const isTreeGrid = (table: unknown): boolean => {
-  const { options } = table as NavTable
-  return options.enableExpanding === true || options.enableGrouping === true
-}
+export const isTreeGrid = (table: unknown): boolean =>
+  hasRowHierarchy(table, 'tree') || hasRowHierarchy(table, 'groups')
 
 const clampActive = (
   raw: ActiveCell | undefined,
@@ -171,12 +170,12 @@ export const resolveActive = (t: NavTable, state: Record<string, unknown>) => {
     : active
 }
 
-/** Навигация — в канал действий от имени плагина клавиатуры (ADR 0125, AL5). */
+/** Навигация — в канал действий от имени ядра (ADR 0125, AL5; ADR 0170, §1). */
 export const reportNavigation = (
   table: unknown,
   action: 'moveActiveCell' | 'enterActionMode' | 'exitActionMode',
   source: DebugActionSource,
   detail?: () => unknown,
 ): void => {
-  reportAction(table, { plugin: KEYBOARD_NAVIGATION, action, source, detail })
+  reportAction(table, { plugin: 'core', action, source, detail })
 }

@@ -18,7 +18,6 @@ import {
   columnSizing,
   columnSorting,
   columnVisibility,
-  keyboardNavigation,
   rowActions,
   rowDragging,
   rowSelection,
@@ -715,6 +714,7 @@ const ThemingDemo = memo((args: ThemingArgs) => {
   })
 
   const table = useCreateTable({
+    enableKeyboardNavigation: true,
     // Демо-колонки строятся отдельным хелпером (мок) с иной вариантностью типов,
     // чем у таблицы: касты на границе снимают расхождение (рантайм совпадает,
     // покрыт визуал-тестами).
@@ -733,9 +733,8 @@ const ThemingDemo = memo((args: ThemingArgs) => {
     // токенов: чекбоксы (rowSelection), кнопки шапки (sorting/pinning/sizing),
     // кнопки действий строки (rowActions), клон и счётчик перетаскивания
     // (rowDragging), тулбар (columnVisibility), кольцо фокуса ячейки
-    // (keyboardNavigation).
+    // (enableKeyboardNavigation).
     plugins: [
-      keyboardNavigation(),
       columnVisibility(),
       rowSelection({
         rowSelection: selection,

@@ -11,12 +11,7 @@ import {
 } from '../../../core/fastScroll/fastScrollDetector'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
-import {
-  backToTop,
-  infiniteScroll,
-  keyboardNavigation,
-  pagination,
-} from '../../../plugins'
+import { backToTop, infiniteScroll, pagination } from '../../../plugins'
 import { humanClick } from '../helpers'
 import { composed } from '../stories'
 import {
@@ -112,6 +107,7 @@ const Grid = ({
   icons,
 }: GridProps) => {
   const table = useCreateTable({
+    enableKeyboardNavigation: keyboard,
     rowCount: data.length * 10,
     columns: (wide ? WIDE_COLUMNS : COLUMNS) as never,
     data,
@@ -132,7 +128,6 @@ const Grid = ({
           return new Promise<void>(() => {})
         },
       }),
-      keyboardNavigation({ enabled: keyboard }),
     ] as never,
   })
   useEffect(() => {

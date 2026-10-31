@@ -224,7 +224,6 @@ declare module '@tanstack/react-table' {
     /** Опции таблицы, которые выставляет плагин (ADR 0167). */
     rowExpandingPlugin: {
       rowExpandAllButton?: boolean
-      stickyBranchRows?: boolean
     }
   }
 }

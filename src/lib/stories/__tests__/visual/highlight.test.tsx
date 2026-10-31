@@ -18,7 +18,6 @@ import {
   cellSelection,
   columnPinning,
   columnSorting,
-  keyboardNavigation,
   pagination,
   quickSearch,
   rowExpanding,
@@ -147,6 +146,7 @@ const Grid = ({
     [count, data],
   )
   table = useCreateTable({
+    enableKeyboardNavigation: keyboard,
     columns: columns as never,
     data: rows,
     getRowId: (row: Item) => row.id,
@@ -166,7 +166,6 @@ const Grid = ({
           ]
         : []),
       ...(cells ? [cellSelection()] : []),
-      ...(keyboard ? [keyboardNavigation()] : []),
       ...(tree ? [rowExpanding()] : []),
       ...(paged ? [pagination({ initialPageSize: 5 })] : []),
     ] as never,

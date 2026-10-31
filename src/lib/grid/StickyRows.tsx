@@ -11,6 +11,7 @@ import { useLatest } from '../util/useLatest'
 
 import { scrollLayer } from '../core/scrollStretch'
 import { viewportOf } from '../core/scrollToRow/viewport'
+import type { CommonOptions } from '../core/commonFeature.types'
 import type { RowSource } from '../core/rowSource'
 import { useIsomorphicLayoutEffect } from '../util/useIsomorphicLayoutEffect'
 import type { Row } from '../types'
@@ -27,7 +28,7 @@ export interface StickyRow {
 }
 
 interface StickyTable {
-  options: { stickyGroupRows?: boolean; stickyBranchRows?: boolean }
+  options: Pick<CommonOptions, 'stickyGroupRows' | 'stickyBranchRows'>
   scrollToRowIndex?: (index: number, options?: { align?: 'start' }) => unknown
 }
 
@@ -35,7 +36,7 @@ interface StickyTable {
 const MAX_LEVELS = 10
 const NONE: readonly StickyRow[] = []
 
-/** Липкие строки включены у группировки или у дерева. */
+/** Липкие строки групп или веток — факт ядра от плагинов (ADR 0170, §2). */
 export const hasStickyRows = (table: unknown) => {
   const { options } = table as StickyTable
   return !!options.stickyGroupRows || !!options.stickyBranchRows

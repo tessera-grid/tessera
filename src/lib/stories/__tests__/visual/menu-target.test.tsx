@@ -16,7 +16,6 @@ import {
   cellSelection,
   contextMenu,
   headerActionMenu,
-  keyboardNavigation,
   rowActionMenu,
   rowActions,
   rowExpanding,
@@ -189,6 +188,7 @@ const Grid = ({
   tree = false,
 }: GridProps) => {
   const table = useCreateTable({
+    enableKeyboardNavigation: keyboard,
     columns: COLUMNS as never,
     data: tree ? TREE : DATA,
     getRowId: (row: Item) => row.id,
@@ -204,7 +204,6 @@ const Grid = ({
         : []),
       contextMenu(),
       cellSelection(),
-      keyboardNavigation({ enabled: keyboard }),
       ...(tree ? [rowExpanding()] : []),
     ] as never,
   })

@@ -11,7 +11,6 @@ import {
   narrowExpandingOff,
 } from '../../shared/rowModels/expandedRowModel'
 import { neverInert } from '../../core/pluginDiagnostics'
-import { declareRowHierarchy } from '../../core/rowHierarchy'
 
 export interface RowExpandingModelOptions {
   /** `false` — плагин отключён. */
@@ -32,10 +31,11 @@ export const rowExpandingModel = definePlugin<RowExpandingModelOptions>()({
     expandedRowModel: createIncrementalExpandedRowModel(),
   },
   slices: ['expanded'],
-  setup: () => table => declareRowHierarchy(table, 'tree'),
   narrow: () => ({ expanded: narrowExpandingOff }),
   options: o => ({
     enableExpanding: o.enabled !== false,
+    // Строки — дерево: факт ядра (ADR 0168, §4).
+    treeRows: o.enabled !== false,
     autoResetExpanded: false,
   }),
 })

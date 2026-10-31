@@ -7,12 +7,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 import '../../../ui/theme/theme.css'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
-import {
-  cellSelection,
-  columnPinning,
-  keyboardNavigation,
-  rowSelection,
-} from '../../../plugins'
+import { cellSelection, columnPinning, rowSelection } from '../../../plugins'
 import type {
   HighlightOptions,
   HighlightTarget,
@@ -130,6 +125,7 @@ const Grid = ({
     [],
   )
   table = useCreateTable({
+    enableKeyboardNavigation: true,
     columns: (nested
       ? NESTED_COLUMNS
       : footer
@@ -145,7 +141,6 @@ const Grid = ({
         rowSelection: Object.fromEntries(selected.map(id => [id, true])),
       }),
       cellSelection(),
-      keyboardNavigation(),
     ] as never,
   }) as unknown as Api
   return (

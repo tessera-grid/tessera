@@ -456,7 +456,7 @@ export const enableContextMenuType = booleanControl(
   'Контекстное меню по правому клику (плагин `contextMenu`)',
 )
 export const enableKeyboardNavigationType = booleanControl(
-  'Навигация по ячейкам стрелками: роль grid, roving tabindex (плагин `keyboardNavigation`)',
+  'Навигация по ячейкам стрелками: роль grid, roving tabindex (`enableKeyboardNavigation`)',
 )
 
 // --- Поиск, фильтры, страницы, экспорт -----------------------------------------

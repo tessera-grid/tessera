@@ -30,7 +30,6 @@ import {
   exportFormats,
   headerActionMenu,
   infiniteScroll,
-  keyboardNavigation,
   rowActionMenu,
   rowActions,
   rowDragging,
@@ -214,6 +213,7 @@ const ProbeGrid = ({
 }) => {
   const [data, setData] = useState(PROBE_DATA)
   const table = useCreateTable({
+    enableKeyboardNavigation: keyboard,
     columns: PROBE_COLUMNS as never,
     data,
     getRowId: (row: (typeof PROBE_DATA)[number]) => row.id,
@@ -229,7 +229,6 @@ const ProbeGrid = ({
         : []),
       contextMenu(),
       columnSorting(),
-      keyboardNavigation({ enabled: keyboard }),
       rowDragging({ onRowOrderChange: setData as never }),
     ] as never,
   })
@@ -353,13 +352,11 @@ describe('канал действий (ADR 0125)', () => {
     await expect.poll(() => bodyRows().length).toBeGreaterThan(2)
     await humanClick(cellOf(bodyRows()[1]!, 'firstName'))
     await expect
-      .poll(() => lastOf('keyboardNavigation', 'moveActiveCell'))
+      .poll(() => lastOf('core', 'moveActiveCell'))
       .toMatchObject({ source: 'pointer' })
     await userEvent.keyboard('{ArrowDown}')
-    await expect
-      .poll(() => of('keyboardNavigation', 'moveActiveCell').length)
-      .toBe(2)
-    expect(lastOf('keyboardNavigation', 'moveActiveCell')).toMatchObject({
+    await expect.poll(() => of('core', 'moveActiveCell').length).toBe(2)
+    expect(lastOf('core', 'moveActiveCell')).toMatchObject({
       source: 'keyboard',
     })
     // Home — на ячейку флажка выбора, Enter — в её виджет.
@@ -369,11 +366,11 @@ describe('канал действий (ADR 0125)', () => {
       .toBeTruthy()
     await userEvent.keyboard('{Enter}')
     await expect
-      .poll(() => lastOf('keyboardNavigation', 'enterActionMode'))
+      .poll(() => lastOf('core', 'enterActionMode'))
       .toMatchObject({ source: 'keyboard' })
     await userEvent.keyboard('{Escape}')
     await expect
-      .poll(() => lastOf('keyboardNavigation', 'exitActionMode'))
+      .poll(() => lastOf('core', 'exitActionMode'))
       .toMatchObject({ source: 'keyboard' })
   })
 

@@ -152,7 +152,7 @@ export interface TesseraFeatureEntry<
   }
   /** Срезы TanStack из аргументов плагина: `<срез>`, `on<Срез>Change`, `initial<Срез>` (ADR 0120, §4). */
   stateSlices?: PluginStateSlice[]
-  /** Интерфейс, включивший эту модель: в диагностике её нет (MP16). */
+  /** Кто включил запись — интерфейс свою модель (MP16) или ядро свою (ADR 0170): в диагностике её нет. */
   includedBy?: string
   /** Причина инертности, заданная ядром по составу набора (`'addedAfterMount'`…). */
   inertReason?: PluginInertReason

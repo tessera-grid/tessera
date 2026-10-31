@@ -9,7 +9,6 @@ import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import {
   infiniteScroll,
-  keyboardNavigation,
   pagination,
   quickSearch,
   rowExpanding,
@@ -126,7 +125,6 @@ const Grid = ({
   // Набор плагинов — договор на время жизни таблицы: стенд его не меняет.
   const [plugins] = useState(() => [
     ...(mode === 'tree' ? [rowExpanding()] : []),
-    ...(mode !== 'plain' ? [keyboardNavigation()] : []),
     ...(pageSize ? [pagination({ initialPageSize: pageSize })] : []),
     ...(onLoadMore ? [infiniteScroll({ onLoadMore, hasMore: true })] : []),
     ...(search ? [quickSearch()] : []),
@@ -137,6 +135,7 @@ const Grid = ({
     getRowId: (row: Item) => row.id,
     getSubRows: (row: Item) => row.subRows,
     plugins: plugins as never,
+    enableKeyboardNavigation: mode !== 'plain',
     enableFooter,
     footerPosition,
     loading,

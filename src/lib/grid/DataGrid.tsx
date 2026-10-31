@@ -22,7 +22,10 @@ import { useRowSourceWindow } from '../core/rowSourceWindow'
 import { clampBodyHeight } from '../core/scrollHeightLimit'
 import { scrollLayer, useScrollStretch } from '../core/scrollStretch'
 import { useCellSelectionAutoScroll } from '../core/cellSelectionAutoScroll'
-import { useKeyboardNavigationGrid } from '../core/keyboardNavigation'
+import {
+  KeyboardNavigationContext,
+  useKeyboardNavigationGrid,
+} from '../core/keyboardNavigation'
 import { trackInputModality } from '../core/inputModality'
 import { trackStickyGeometry } from '../core/stickyGeometry'
 import { trackTouchedCell } from '../core/touchedCell'
@@ -230,8 +233,8 @@ export const DataGrid = ({
     [getScrollElement, rowReveal],
   )
 
-  // Клавиатурная навигация (плагин keyboardNavigation): роль grid + резолвер клавиш
-  // на корне. `null` без плагина — остаётся role=table без обработчиков.
+  // Клавиатурная навигация: роль grid и резолвер клавиш на корне; без опции —
+  // `null`, остаётся role=table без обработчиков.
   const keyboardNavigation = useKeyboardNavigationGrid(table, getScrollElement)
   const guardBeforeRef = keyboardNavigation?.guardBeforeRef
   const guardAfterRef = keyboardNavigation?.guardAfterRef
@@ -521,165 +524,175 @@ export const DataGrid = ({
         themeNode={scrollableNodeRef}
       />
       <PluginRenderVersionContext.Provider value={renderVersion}>
-        <ThemeScope
-          colorMode={colorMode}
-          contrast={contrast}
-          rootRef={wrapperRef}
-          host={table as never}
-        >
-          <IconsProvider icons={icons}>
-            <LocalizationContext.Provider value={labels}>
-              <FastScrollProvider store={fastScrollStore}>
-                <RowRevealContext.Provider value={rowReveal}>
-                  <div
-                    ref={wrapperRef}
-                    className={clsx(
-                      dataGridStyles['table__theme-wrapper'],
-                      themeClassName,
-                    )}
-                    data-tsr-contrast={contrastAttr}
-                    data-tsr-color-mode={colorModeAttr}
-                    data-toolbar={enableToolbar || undefined}
-                    data-status-bar={hasStatusBar || undefined}
-                    data-refreshing={refreshingShown || undefined}
-                    data-skeleton-wave={showSkeleton || undefined}
-                    data-tree-lines={table.options.enableTreeLines || undefined}
-                    style={wrapperStyles}
-                  >
-                    {toolbar}
-                    <LinearProgress
-                      label={loadingLabel}
-                      active={refreshingShown}
-                      errorFlash={loadError.flashKey}
-                    />
-                    <LoadErrorBanner
-                      shown={loadError.bannerShown}
-                      reason={loadError.reason}
-                      title={loadError.title}
-                      retry={retryLoadFromBanner}
-                      onDismiss={dismissLoadError}
-                    />
-                    <PendingActionBanner
-                      table={table}
-                      themeRef={wrapperRef}
-                      blocked={loadError.bannerShown}
-                      onCancelled={focusBody}
-                    />
-                    <ScrollingAttribute getScrollElement={getScrollElement} />
-                    <PinnedEdgesAttribute getScrollElement={getScrollElement} />
-                    {enableOverflowTooltip && (
-                      <OverflowTooltip getScrollElement={getScrollElement} />
-                    )}
-                    {enableContextMenu && (
-                      <ContextMenu
+        <KeyboardNavigationContext.Provider value={!!keyboardNavigation}>
+          <ThemeScope
+            colorMode={colorMode}
+            contrast={contrast}
+            rootRef={wrapperRef}
+            host={table as never}
+          >
+            <IconsProvider icons={icons}>
+              <LocalizationContext.Provider value={labels}>
+                <FastScrollProvider store={fastScrollStore}>
+                  <RowRevealContext.Provider value={rowReveal}>
+                    <div
+                      ref={wrapperRef}
+                      className={clsx(
+                        dataGridStyles['table__theme-wrapper'],
+                        themeClassName,
+                      )}
+                      data-tsr-contrast={contrastAttr}
+                      data-tsr-color-mode={colorModeAttr}
+                      data-toolbar={enableToolbar || undefined}
+                      data-status-bar={hasStatusBar || undefined}
+                      data-refreshing={refreshingShown || undefined}
+                      data-skeleton-wave={showSkeleton || undefined}
+                      data-tree-lines={
+                        table.options.enableTreeLines || undefined
+                      }
+                      style={wrapperStyles}
+                    >
+                      {toolbar}
+                      <LinearProgress
+                        label={loadingLabel}
+                        active={refreshingShown}
+                        errorFlash={loadError.flashKey}
+                      />
+                      <LoadErrorBanner
+                        shown={loadError.bannerShown}
+                        reason={loadError.reason}
+                        title={loadError.title}
+                        retry={retryLoadFromBanner}
+                        onDismiss={dismissLoadError}
+                      />
+                      <PendingActionBanner
                         table={table}
+                        themeRef={wrapperRef}
+                        blocked={loadError.bannerShown}
+                        onCancelled={focusBody}
+                      />
+                      <ScrollingAttribute getScrollElement={getScrollElement} />
+                      <PinnedEdgesAttribute
                         getScrollElement={getScrollElement}
                       />
-                    )}
-                    {keyboardNavigation && (
-                      <div
-                        ref={guardBeforeRef}
-                        tabIndex={-1}
-                        className={dataGridStyles['focus-guard']}
-                        data-kn-guard="before"
-                      />
-                    )}
-                    {/* Заглушка вместо таблицы — в том же дереве: тулбар и нижняя панель
-                      не перемонтируются при переходе (ADR 0123). */}
-                    {gridStub ? (
-                      <div
-                        className={clsx(
-                          'data-grid__container',
-                          dataGridStyles['table__stub-container'],
-                        )}
-                        ref={scrollableNodeRef}
-                      >
-                        <div className={dataGridStyles.table__stub}>
-                          <EmptyStub
-                            entry={gridStub}
-                            context={stubContext}
-                            render={stubs?.[gridStub.id]}
-                            className={dataGridStyles['table__grid-stub']}
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <div
-                        className={clsx(
-                          'data-grid__container',
-                          dataGridStyles.table__container,
-                          {
-                            [dataGridStyles['table__container--skeleton']]:
-                              showSkeleton,
-                          },
-                        )}
-                        ref={scrollableNodeRef}
-                        // Firefox держит прокручиваемую область в порядке Tab (KN32).
-                        tabIndex={keyboardNavigation ? -1 : undefined}
-                        onKeyDown={cancelOnEscape}
-                        onFocus={
-                          keyboardNavigation ? releaseContainerFocus : undefined
-                        }
-                        data-resizing={isResizingColumns !== false}
-                        data-column-dragging={
-                          columnDragActiveIdOf(state) != null || undefined
-                        }
-                        data-row-dragging={
-                          rowDragging?.activeId != null || undefined
-                        }
-                        data-row-drop-invalid={
-                          (rowDragging?.activeId != null &&
-                            rowDragging.acceptable === false) ||
-                          undefined
-                        }
-                        data-row-animation={
-                          options.enableRowAnimation !== false || undefined
-                        }
-                        data-empty-stub={bodyStub?.id}
-                        onCopy={handleCopy}
-                      >
-                        <DataGridTable
+                      {enableOverflowTooltip && (
+                        <OverflowTooltip getScrollElement={getScrollElement} />
+                      )}
+                      {enableContextMenu && (
+                        <ContextMenu
                           table={table}
-                          layout={layout}
-                          headStyles={headStyles}
-                          headerGroups={headerGroups}
-                          rows={rows}
-                          rowSource={rowSource}
-                          leafColumns={leafColumns}
-                          virtualRows={virtualRows}
-                          virtualColumns={virtualColumns}
-                          isVirtualColumns={!hasNestedGroups}
-                          isResizingColumns={isResizingColumns}
-                          keyboardNavigation={keyboardNavigation}
-                          label={tableLabel}
-                          busy={showLinearProgress}
-                          skeleton={showSkeleton}
-                          loadingLabel={loadingLabel}
-                          endContent={stubsAboveFooter ? emptyStubs : undefined}
-                          style={{
-                            ...columnSizes,
-                            ...columnShiftVars(columnShifts),
-                            ...virtualPaddingStyles,
-                          }}
+                          getScrollElement={getScrollElement}
                         />
-                        {!stubsAboveFooter && emptyStubs}
-                      </div>
-                    )}
-                    {keyboardNavigation && (
-                      <div
-                        ref={guardAfterRef}
-                        tabIndex={-1}
-                        className={dataGridStyles['focus-guard']}
-                        data-kn-guard="after"
-                      />
-                    )}
-                    {statusBar}
-                  </div>
-                </RowRevealContext.Provider>
-              </FastScrollProvider>
-            </LocalizationContext.Provider>
-          </IconsProvider>
-        </ThemeScope>
+                      )}
+                      {keyboardNavigation && (
+                        <div
+                          ref={guardBeforeRef}
+                          tabIndex={-1}
+                          className={dataGridStyles['focus-guard']}
+                          data-kn-guard="before"
+                        />
+                      )}
+                      {/* Заглушка вместо таблицы — в том же дереве: тулбар и нижняя панель
+                      не перемонтируются при переходе (ADR 0123). */}
+                      {gridStub ? (
+                        <div
+                          className={clsx(
+                            'data-grid__container',
+                            dataGridStyles['table__stub-container'],
+                          )}
+                          ref={scrollableNodeRef}
+                        >
+                          <div className={dataGridStyles.table__stub}>
+                            <EmptyStub
+                              entry={gridStub}
+                              context={stubContext}
+                              render={stubs?.[gridStub.id]}
+                              className={dataGridStyles['table__grid-stub']}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          className={clsx(
+                            'data-grid__container',
+                            dataGridStyles.table__container,
+                            {
+                              [dataGridStyles['table__container--skeleton']]:
+                                showSkeleton,
+                            },
+                          )}
+                          ref={scrollableNodeRef}
+                          // Firefox держит прокручиваемую область в порядке Tab (KN32).
+                          tabIndex={keyboardNavigation ? -1 : undefined}
+                          onKeyDown={cancelOnEscape}
+                          onFocus={
+                            keyboardNavigation
+                              ? releaseContainerFocus
+                              : undefined
+                          }
+                          data-resizing={isResizingColumns !== false}
+                          data-column-dragging={
+                            columnDragActiveIdOf(state) != null || undefined
+                          }
+                          data-row-dragging={
+                            rowDragging?.activeId != null || undefined
+                          }
+                          data-row-drop-invalid={
+                            (rowDragging?.activeId != null &&
+                              rowDragging.acceptable === false) ||
+                            undefined
+                          }
+                          data-row-animation={
+                            options.enableRowAnimation !== false || undefined
+                          }
+                          data-empty-stub={bodyStub?.id}
+                          onCopy={handleCopy}
+                        >
+                          <DataGridTable
+                            table={table}
+                            layout={layout}
+                            headStyles={headStyles}
+                            headerGroups={headerGroups}
+                            rows={rows}
+                            rowSource={rowSource}
+                            leafColumns={leafColumns}
+                            virtualRows={virtualRows}
+                            virtualColumns={virtualColumns}
+                            isVirtualColumns={!hasNestedGroups}
+                            isResizingColumns={isResizingColumns}
+                            keyboardNavigation={keyboardNavigation}
+                            label={tableLabel}
+                            busy={showLinearProgress}
+                            skeleton={showSkeleton}
+                            loadingLabel={loadingLabel}
+                            endContent={
+                              stubsAboveFooter ? emptyStubs : undefined
+                            }
+                            style={{
+                              ...columnSizes,
+                              ...columnShiftVars(columnShifts),
+                              ...virtualPaddingStyles,
+                            }}
+                          />
+                          {!stubsAboveFooter && emptyStubs}
+                        </div>
+                      )}
+                      {keyboardNavigation && (
+                        <div
+                          ref={guardAfterRef}
+                          tabIndex={-1}
+                          className={dataGridStyles['focus-guard']}
+                          data-kn-guard="after"
+                        />
+                      )}
+                      {statusBar}
+                    </div>
+                  </RowRevealContext.Provider>
+                </FastScrollProvider>
+              </LocalizationContext.Provider>
+            </IconsProvider>
+          </ThemeScope>
+        </KeyboardNavigationContext.Provider>
       </PluginRenderVersionContext.Provider>
     </>
   )

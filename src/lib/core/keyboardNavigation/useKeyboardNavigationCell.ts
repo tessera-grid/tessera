@@ -1,7 +1,9 @@
 import {
+  createContext,
   type FocusEvent as ReactFocusEvent,
   type RefObject,
   useCallback,
+  useContext,
   useRef,
 } from 'react'
 
@@ -26,6 +28,12 @@ import {
   resolveActive,
 } from './model'
 import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
+
+/**
+ * Навигация включена у грида (ADR 0170, §1): ячейки и строки под memo опцию не
+ * перечитывают — смену флага на лету им приносит контекст.
+ */
+export const KeyboardNavigationContext = createContext(false)
 
 /**
  * Индекс активной строки/колонки для пиновки в `rangeExtractor`; `undefined` без
@@ -66,9 +74,10 @@ export const useKeyboardNavigationCell = (
 ): KeyboardNavigationCell | null => {
   const t = table as NavTable
   const ref = useRef<HTMLDivElement>(null)
+  const enabled = useContext(KeyboardNavigationContext)
 
   const isActive = useTableState(table as never, (state: unknown) => {
-    if (!participates || !isKeyboardNavigationEnabled(t)) {
+    if (!participates || !enabled) {
       return null
     }
     const active = resolveActive(t, state as Record<string, unknown>)
@@ -189,9 +198,10 @@ export const useKeyboardNavigationRow = (
 ): KeyboardNavigationCell | null => {
   const t = table as NavTable
   const ref = useRef<HTMLDivElement>(null)
+  const enabled = useContext(KeyboardNavigationContext)
 
   const isActive = useTableState(table as never, (state: unknown) => {
-    if (!isKeyboardNavigationEnabled(t) || !isTreeGrid(t)) {
+    if (!enabled || !isTreeGrid(t)) {
       return null
     }
     const active = resolveActive(t, state as Record<string, unknown>)

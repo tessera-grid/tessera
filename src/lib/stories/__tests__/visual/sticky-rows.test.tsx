@@ -4,11 +4,12 @@ import { commands, server as browser, userEvent } from 'vitest/browser'
 import { describe, expect, test } from 'vitest'
 
 import '../../../ui/theme/theme.css'
+import { definePlugin } from '../../../core/definePlugin'
+import { neverInert } from '../../../core/pluginDiagnostics'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import {
   columnPinning,
-  keyboardNavigation,
   rowExpanding,
   rowGrouping,
   serverRowModel,
@@ -61,6 +62,7 @@ const COLUMNS = [
  */
 const Grouped = ({ keyboard = false }: { keyboard?: boolean }) => {
   const table = useCreateTable({
+    enableKeyboardNavigation: keyboard,
     columns: COLUMNS as never,
     data: DATA,
     getRowId: (row: Item) => row.id,
@@ -69,7 +71,31 @@ const Grouped = ({ keyboard = false }: { keyboard?: boolean }) => {
       rowGrouping({ initialGrouping: ['team', 'city'], stickyRows: true }),
       rowExpanding({ initialExpanded: true }),
       columnPinning(),
-      ...(keyboard ? [keyboardNavigation()] : []),
+    ] as never,
+  } as never)
+  return (
+    <div style={{ width: 600, height: 420 }}>
+      <DataGrid table={table as never} />
+    </div>
+  )
+}
+
+/** Свой плагин: строки групп липнут по факту ядра, а не по аргументу `rowGrouping`. */
+const ownStickyGroups = definePlugin<{ enabled?: boolean }>()({
+  id: 'ownStickyGroups',
+  diagnose: neverInert,
+  options: o => ({ stickyGroupRows: o.enabled !== false }),
+})
+
+const OwnSticky = ({ own }: { own: boolean }) => {
+  const table = useCreateTable({
+    columns: COLUMNS as never,
+    data: DATA,
+    getRowId: (row: Item) => row.id,
+    plugins: [
+      rowGrouping({ initialGrouping: ['team', 'city'] }),
+      rowExpanding({ initialExpanded: true }),
+      ownStickyGroups({ enabled: own }),
     ] as never,
   } as never)
   return (
@@ -367,6 +393,21 @@ describe('липкие строки групп и веток (ADR 0160)', () => 
       }
     } finally {
       await screen.unmount()
+    }
+  })
+
+  test('CH3: свой плагин, объявивший липкие строки фактом ядра, получает их копии под шапкой, как встроенные', async () => {
+    for (const own of [false, true]) {
+      const screen = await render(<OwnSticky own={own} />)
+      try {
+        await expect.poll(() => realRow('r3')).not.toBeNull()
+        const h = rowHeight()
+        await scrollTo(5 * h)
+        await expect.poll(copyIds).toEqual(own ? [t0, t0c0] : [])
+        if (own) expect(copyTops()).toEqual([0, h])
+      } finally {
+        await screen.unmount()
+      }
     }
   })
 })

@@ -206,9 +206,9 @@ reportOutcome(table, { plugin: 'starRows', action: 'save', cause: id }, promise)
 `bodyEndSlot` — строки сразу за последней строкой тела, вне модели и вне
 виртуализатора строк ([ADR 0081](../decisions/0081-infinite-scroll.md)): компонент
 получает `{ table, layout, leafColumns, virtualColumns, isVirtualColumns,
-nextAriaRowIndex }`, чтобы его строки повторяли ширины, закрепление и окно колонок
-тела. Так лента (`infiniteScroll`) рисует хвост скелет-строк (`SkeletonRows` из
-`grid/SkeletonBody`).
+nextAriaRowIndex, renderSkeletonRows }`, чтобы его строки повторяли ширины, закрепление и
+окно колонок тела. Так лента (`infiniteScroll`) рисует хвост скелет-строк функцией
+`renderSkeletonRows` — грид она не импортирует ([ADR 0170](../decisions/0170-body-contribution-channel.md), §2).
 
 `tableEndSlot` — строки в конце таблицы с тем же контекстом: до закреплённого футера и
 после незакреплённого ([ADR 0118](../decisions/0118-column-footer.md), §3). Там лента

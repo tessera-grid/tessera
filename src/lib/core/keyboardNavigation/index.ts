@@ -1,8 +1,8 @@
 /**
- * Ядровой шов клавиатурной навигации (плагин keyboardNavigation): активная ячейка,
- * roving tabindex, клавиатурный резолвер, довод в вид и фокус. Ядро НЕ импортит
- * плагин — presence читается по опции `enableKeyboardNavigation`, слайс — по ключу
- * `keyboardNavigation` (его seed'ит локальный `state` плагина через definePlugin).
+ * Клавиатурная навигация — возможность ядра (ADR 0021, ADR 0170): активная ячейка, roving
+ * tabindex, клавиатурный резолвер, довод в вид и фокус. Включает её опция
+ * `enableKeyboardNavigation`, срез активной ячейки — под ключом `keyboardNavigation`
+ * записи ядра (`entry.ts`).
  *
  * Активная ячейка — в модельных индексах: `rowIndex` в источнике строк (`getRowSource()`, ADR 0138)
  * (`-1` — листовая строка заголовка), `columnIndex` — позиция колонки в порядке
@@ -36,6 +36,7 @@ export {
   type KeyboardNavigationGrid,
 } from './useKeyboardNavigationGrid'
 export {
+  KeyboardNavigationContext,
   useActiveCellIndex,
   useKeyboardNavigationCell,
   useKeyboardNavigationRow,

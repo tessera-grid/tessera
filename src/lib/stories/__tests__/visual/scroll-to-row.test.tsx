@@ -14,7 +14,7 @@ import { columns } from '../../__mocks__/columns'
 import { getData } from '../../__mocks__/data'
 import {
   argsToPlugins,
-  type FeatureToggles,
+  type GridToggles,
 } from '../../__mocks__/utils/argsToPlugins'
 
 // Прокрутка к строке (ADR 0104, SV1–SV10): `table.scrollToRow` и `reveal` подсветки на
@@ -42,7 +42,7 @@ type ScrollTable = {
 }
 
 interface GridProps {
-  toggles?: FeatureToggles
+  toggles?: GridToggles
   data?: unknown[]
   width?: number
   onTable: (table: ScrollTable) => void
@@ -56,6 +56,7 @@ const Grid = ({ toggles = {}, data, width = 1100, onTable }: GridProps) => {
     data: rows as never,
     getRowId: (row: { id: string }) => row.id,
     plugins: plugins as never,
+    enableKeyboardNavigation: toggles.enableKeyboardNavigation,
     enableFooter: true,
   })
   useEffect(() => {

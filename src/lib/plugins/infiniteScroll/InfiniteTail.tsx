@@ -8,7 +8,6 @@ import { useEffect, useRef, useState } from 'react'
 import type { BodyEndComponentProps } from '../../core/createSlots'
 import { knownCount, rowCountOf } from '../../core/dataMode'
 import { useTableState } from '../../core/reactivity'
-import { SkeletonRows } from '../../grid/SkeletonBody'
 import { InfiniteLoader, registerLoader } from './loader'
 import { infiniteScrollInertReason } from './model'
 import type { InfiniteScrollHooks, InfiniteScrollState } from './types'
@@ -31,10 +30,7 @@ const sameConditions = (a: unknown[], b: unknown[]) =>
 
 export const InfiniteTail = ({
   table,
-  layout,
-  leafColumns,
-  virtualColumns,
-  isVirtualColumns,
+  renderSkeletonRows,
   hooks,
   state: [value, setValue],
 }: InfiniteTailProps) => {
@@ -114,19 +110,14 @@ export const InfiniteTail = ({
   return (
     <div style={{ display: 'contents' }} data-testid="infinite-scroll-tail">
       <div ref={sentinelRef} className={styles.sentinel} aria-hidden="true" />
-      {value.status === 'pending' && value.tailRows > 0 && (
-        <SkeletonRows
-          table={table}
-          layout={layout}
-          leafColumns={leafColumns}
-          virtualColumns={virtualColumns}
-          isVirtualColumns={isVirtualColumns}
-          rowCount={value.tailRows}
-          firstRowIndex={bodyRows}
-          className="data-grid__body--infinite-tail"
-          cells={tailInView}
-        />
-      )}
+      {value.status === 'pending' &&
+        value.tailRows > 0 &&
+        renderSkeletonRows({
+          rowCount: value.tailRows,
+          firstRowIndex: bodyRows,
+          className: 'data-grid__body--infinite-tail',
+          cells: tailInView,
+        })}
     </div>
   )
 }

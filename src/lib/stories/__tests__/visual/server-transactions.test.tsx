@@ -9,7 +9,6 @@ import { DataGrid } from '../../../grid/DataGrid'
 import {
   cellEditing,
   cellSelection,
-  keyboardNavigation,
   serverRowModel,
   type ServerRowsRequest,
   type ServerRowsResponse,
@@ -65,12 +64,16 @@ const transact = (
 
 const Grid = ({
   plugins = [],
+  keyboard,
   onTable,
 }: {
   plugins?: readonly TesseraFeatureEntry[]
+  /** Клавиатурная навигация (ADR 0170, §1). */
+  keyboard?: boolean
   onTable: (table: TransactionTable) => void
 }) => {
   const table = useCreateTable({
+    enableKeyboardNavigation: keyboard,
     rowCount: TOTAL,
     columns: COLUMNS as never,
     data: NO_DATA,
@@ -144,11 +147,8 @@ describe('Транзакции строк серверной модели (ADR 0
     const onEditCancel = vi.fn()
     const screen = await render(
       <Grid
-        plugins={[
-          keyboardNavigation(),
-          cellSelection(),
-          cellEditing({ onEditCancel }),
-        ]}
+        keyboard
+        plugins={[cellSelection(), cellEditing({ onEditCancel })]}
         onTable={t => (table = t)}
       />,
     )

@@ -9,12 +9,7 @@ import themeCss from '../../../ui/theme/theme.css?raw'
 import type { ContrastMode } from '../../../ui/theme'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
-import {
-  columnPinning,
-  infiniteScroll,
-  keyboardNavigation,
-  rowSelection,
-} from '../../../plugins'
+import { columnPinning, infiniteScroll, rowSelection } from '../../../plugins'
 import { Segments } from '@/lib/ui/Segments'
 import { Switch } from '@/lib/ui/Switch'
 import { humanClick, renderGrid, rowState } from '../helpers'
@@ -81,6 +76,7 @@ const Grid = ({
     [],
   )
   const table = useCreateTable({
+    enableKeyboardNavigation: true,
     columns: COLUMNS as never,
     data,
     getRowId: (row: Item) => row.id,
@@ -90,7 +86,6 @@ const Grid = ({
       rowSelection({
         rowSelection: Object.fromEntries(selected.map(id => [id, true])),
       }),
-      keyboardNavigation(),
     ] as never,
   })
   return (

@@ -15,7 +15,6 @@ import { DataGrid } from '../../../grid/DataGrid'
 import {
   contextMenu,
   headerActionMenu,
-  keyboardNavigation,
   rowActionMenu,
   rowActions,
 } from '../../../plugins'
@@ -236,6 +235,7 @@ const Grid = ({
   width?: number | string
 }) => {
   const table = useCreateTable({
+    enableKeyboardNavigation: keyboard,
     columns: [{ id: 'name', accessorKey: 'name', header: 'Name' }] as never,
     data: DATA,
     getRowId: (row: (typeof DATA)[number]) => row.id,
@@ -249,7 +249,6 @@ const Grid = ({
           ]
         : []),
       contextMenu(),
-      keyboardNavigation({ enabled: keyboard }),
     ] as never,
   })
   return (

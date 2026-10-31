@@ -31,6 +31,7 @@ import type {
   SlotActions,
 } from './headerActions'
 import type { KeyboardAction } from './keyboardActions'
+import type { ActiveCell } from './keyboardNavigation/model'
 import type {
   PluginDiagnostic,
   PluginDiagnosticSource,
@@ -94,6 +95,15 @@ export interface CoreOptions {
   enableStatusBar?: boolean
   /** `false` — ядро не объявляет изменения скринридеру (ADR 0032, W9). */
   enableAnnouncements?: boolean
+  /**
+   * Клавиатурная навигация по ячейкам (ADR 0021, ADR 0170): роль `grid` (`treegrid`), roving
+   * `tabindex` и клавиши; без флага — `role="table"`.
+   */
+  enableKeyboardNavigation?: boolean
+  /** Активная ячейка снаружи — индексы отображения; новая ссылка ставит её активной (KN31). */
+  activeCell?: ActiveCell
+  /** Активная ячейка сменилась — стрелками, кликом или Tab. */
+  onActiveCellChange?: (next: ActiveCell) => void
   /** `false` — без тултипа у обрезанного текста ячеек (ADR 0075). */
   enableOverflowTooltip?: boolean
   /** `false` — смены модели строк мгновенны, без движения (ADR 0107). */
@@ -151,6 +161,14 @@ export interface CommonOptions extends CoreOptions {
   partialData?: boolean
   /** Строки показаны страницами модели пагинации (ADR 0169, §6). */
   pagedRows?: boolean
+  /** Строки — дерево модели раскрытия (ADR 0168, §4; ADR 0170, §2). */
+  treeRows?: boolean
+  /** Строки — группы модели группировки. */
+  groupRows?: boolean
+  /** Строки групп держатся под шапкой, пока видны их дети (ADR 0160, §3; ADR 0170, §2). */
+  stickyGroupRows?: boolean
+  /** Строки веток дерева держатся под шапкой, пока видны их дети. */
+  stickyBranchRows?: boolean
   /** `rowCount` приложения как есть: стоковый `rowCount` ядро задаёт только страницам с сервера. */
   serverRowCount?: number
   /** Новая `data` только дописывает строки в конец прежней (лента, ADR 0145). */

@@ -2,6 +2,10 @@
 
 - **Статус:** Принято (реализовано: фазы 1–6)
 - **Дата:** 2026-09-06 (пересмотрено 2026-09-22)
+- **Изменено:** [ADR 0170](0170-body-contribution-channel.md) (2026-10-31) — плагина `keyboardNavigation` нет:
+  навигацию включает опция ядра `useCreateTable({ enableKeyboardNavigation })`, активную
+  ячейку задают опции `activeCell` и `onActiveCellChange`; роль `treegrid` — по факту
+  иерархии строк ядра.
 - **Изменено:** [ADR 0138](0138-server-side-row-model.md) (2026-10-25) — в режиме
   `serverRowModel` активная ячейка может стоять на незагруженной строке; `Ctrl+End` и
   `PageDown` двигают по всему итогу.

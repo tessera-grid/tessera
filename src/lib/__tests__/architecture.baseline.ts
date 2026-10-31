@@ -5,10 +5,7 @@
  */
 
 /** LB1: рёбра в запрещённый слой. */
-export const LAYER_EDGES: Record<string, string> = {
-  'lib/plugins/infiniteScroll/InfiniteTail.tsx -> lib/grid/SkeletonBody.tsx':
-    'хвост ленты рисует строки скелета грида — канал «плагин вносит в тело», шаг 7',
-}
+export const LAYER_EDGES: Record<string, string> = {}
 
 /** LB2: модули ядра, которые импортируют только плагины, — долг: модуль переедет. */
 export const CORE_PLUGIN_ONLY: Record<string, string> = {
@@ -29,7 +26,7 @@ export const CORE_PLUGIN_API: Record<string, string> = {
   'lib/core/rowChanges.ts':
     'подсказка виртуализатору: пишут модели строк, читает виртуализатор ядра (ADR 0145)',
   'lib/core/rowHierarchy.ts':
-    'иерархия строк: объявляют модели дерева и группировки, читает rowDragging, на шаге 7 — грид (ADR 0168)',
+    'иерархия строк: выставляют модели дерева и группировки, читают навигация ядра и rowDragging (ADR 0168, ADR 0170)',
   'lib/core/scrollGridTo.ts':
     'прокрутка грида: ею прокручивают ядро и кнопка «наверх» (ADR 0105)',
   'lib/core/servicePresence.ts':
@@ -47,9 +44,6 @@ export const FOREIGN_OPTION_READS: Record<string, string> = {
   'lib/core/keyboardNavigation/cellSelectionSync.ts: enableCellSelection':
     CELL_SELECTION,
   'lib/core/keyboardNavigation/gridKeyDown.ts: enableContextMenu': FLAG_PLUGIN,
-  'lib/core/keyboardNavigation/model.ts: enableExpanding':
-    'иерархия строк для treegrid в навигации ядра — находка 3, шаг 7',
-  'lib/core/keyboardNavigation/model.ts: enableKeyboardNavigation': FLAG_PLUGIN,
   'lib/core/pluginDiagnostics.ts: cellSelectionInteraction':
     'диагностика выделения ячеек в ядре — находки 3 и 13, шаг 7',
   'lib/grid/DataGrid.tsx: enableContextMenu': FLAG_PLUGIN,
@@ -59,10 +53,6 @@ export const FOREIGN_OPTION_READS: Record<string, string> = {
     'выбор строк задаёт роль и aria грида — находка 3, шаг 7',
   'lib/grid/DataGridTable.tsx: enableTreeLines': FLAG_PLUGIN,
   'lib/grid/SkeletonBody.tsx: enableTreeLines': FLAG_PLUGIN,
-  'lib/grid/StickyRows.tsx: stickyBranchRows':
-    'липкие строки плагинов рисует грид — находка 3, шаг 7',
-  'lib/grid/StickyRows.tsx: stickyGroupRows':
-    'липкие строки плагинов рисует грид — находка 3, шаг 7',
 }
 
 /** LB7: модули, которые дополняют `ColumnMeta`. */

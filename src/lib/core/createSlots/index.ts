@@ -18,6 +18,7 @@ export type {
   ToolbarComponentProps,
   StatusBarComponentProps,
   BodyEndComponentProps,
+  SkeletonRowsRequest,
 } from './types'
 
 /** Пустой набор слотов — база, в которую ядро сворачивает объявления плагинов. */

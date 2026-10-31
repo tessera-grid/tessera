@@ -12,6 +12,7 @@ import { getFooterPosition } from '../core/footer'
 import { getRowWindow } from '../core/pagination'
 import type { RowSource } from '../core/rowSource'
 import { RenderSlot } from '../core/renderSlots'
+import type { SkeletonRowsRequest } from '../core/createSlots'
 import { useTableState } from '../core/reactivity'
 import type { Column, HeaderGroup, Row, Table } from '../types'
 import { ColumnMotion } from './columnMotion/ColumnMotion'
@@ -22,7 +23,7 @@ import { MemoizedHead } from './Head'
 import { renderRowCloud } from './OverlayBodyRow'
 import { OverlayHeadCell } from './OverlayHeadCell'
 import { wrapWith, wrappersOf } from './pluginWrappers'
-import { SkeletonBody } from './SkeletonBody'
+import { SkeletonBody, SkeletonRows } from './SkeletonBody'
 import { SkeletonModeContext } from './skeletonMode'
 import { TableEndRow } from './TableEndRow'
 
@@ -149,6 +150,16 @@ export const DataGridTable = ({
     isVirtualColumns,
     nextAriaRowIndex:
       headerGroups.length + rowWindow.offset + rowSource.count() + 1,
+    renderSkeletonRows: (request: SkeletonRowsRequest) => (
+      <SkeletonRows
+        table={table}
+        layout={layout}
+        leafColumns={leafColumns}
+        virtualColumns={virtualColumns}
+        isVirtualColumns={isVirtualColumns}
+        {...request}
+      />
+    ),
   }
   // Конец таблицы — до закреплённого футера и после незакреплённого, заглушка — всегда
   // перед футером (ADR 0118, §3).

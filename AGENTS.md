@@ -98,9 +98,10 @@ upstream-библиотек headless-ядра — он никогда их не 
 src/lib/
   core/       useCreateTable + features/foldEntries (composition), commonFeature (bootstrap),
               reactivity (TanStack Store subscriptions),
-              createColumns/State/Hooks/Slots, localization, virtualization, fastScroll
+              createColumns/State/Hooks/Slots, localization, virtualization, fastScroll,
+              keyboardNavigation (опция ядра, ADR 0170)
   plugins/    rowSelection, rowExpanding, rowDragging, rowGrouping, rowActions, cellEditing,
-              cellSelection, contextMenu, keyboardNavigation,
+              cellSelection, contextMenu,
               columnPinning, columnSizing, columnSorting, columnDragging, columnVisibility,
               header/rowActionMenu
   grid/       DataGrid + подкомпоненты (Head/Body/Footer, Cell, overlays, DnD-обёртки, layout)

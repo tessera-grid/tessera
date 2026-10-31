@@ -6,12 +6,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest'
 import { ENGLISH_LABELS } from '../../../core/localization'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
-import {
-  columnDragging,
-  columnPinning,
-  columnSizing,
-  keyboardNavigation,
-} from '../../../plugins'
+import { columnDragging, columnPinning, columnSizing } from '../../../plugins'
 import { humanClick, revealedHandleWidth } from '../helpers'
 import { measureWork } from '../work.helpers'
 
@@ -100,6 +95,7 @@ const Host = ({
     ),
   )
   const created = useCreateTable({
+    enableKeyboardNavigation: true,
     columns: columns as never,
     data,
     getRowId: (row: { id: string }) => row.id,
@@ -109,7 +105,6 @@ const Host = ({
       columnDragging({ onColumnDragEnd }),
       columnPinning(),
       columnSizing(),
-      keyboardNavigation(),
     ],
   } as never)
   table = created as unknown as MotionTable

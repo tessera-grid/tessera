@@ -9,7 +9,7 @@ import { DataGrid } from '../../../grid/DataGrid'
 import type { StubsOverride } from '../../../core/stubs'
 import type { TableLabels } from '../../../core/localization'
 import type { TableIcons } from '../../../ui/icons'
-import { keyboardNavigation, quickSearch, rowExpanding } from '../../../plugins'
+import { quickSearch, rowExpanding } from '../../../plugins'
 import { humanClick, rowState } from '../helpers'
 import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
 import { tableLabels } from '../labels'
@@ -100,13 +100,11 @@ const Grid = ({
   // Набор плагинов — договор на время жизни таблицы: режим стенда не меняется.
   const plugins = useMemo(
     () =>
-      mode === 'keyboard'
-        ? [keyboardNavigation()]
-        : mode === 'tree'
-          ? [rowExpanding(), keyboardNavigation()]
-          : mode === 'search'
-            ? [quickSearch()]
-            : [],
+      mode === 'tree'
+        ? [rowExpanding()]
+        : mode === 'search'
+          ? [quickSearch()]
+          : [],
     [mode],
   )
   const refreshOptions = useMemo(
@@ -119,6 +117,7 @@ const Grid = ({
     getRowId: (row: Item) => row.id,
     getSubRows: (row: Item) => row.subRows,
     plugins: plugins as never,
+    enableKeyboardNavigation: mode === 'keyboard' || mode === 'tree',
     loading,
     refreshOptions,
     loadError,

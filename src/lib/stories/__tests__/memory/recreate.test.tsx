@@ -35,8 +35,13 @@ type ModelTable = { getRowModel: () => { rows: object[] } }
 const freshData = () => getData(60).map((row: Row) => ({ ...row }))
 const freshColumns = () => mockColumns.map(column => ({ ...column }))
 
-/** Без ленты: с пагинацией она инертна, а набор ниже переключает плагины по одному. */
-const TOGGLE_ORDER = Object.keys(ALL_PLUGINS) as (keyof typeof ALL_PLUGINS)[]
+/**
+ * Без ленты: с пагинацией она инертна, а набор ниже переключает плагины по одному;
+ * навигация — опция ядра, а не плагин (ADR 0170, §1).
+ */
+const TOGGLE_ORDER = (
+  Object.keys(ALL_PLUGINS) as (keyof typeof ALL_PLUGINS)[]
+).filter(name => name !== 'enableKeyboardNavigation')
 
 describe('Утечки при пересоздании таблицы', () => {
   test(`LK5: ${CHANGES} смен columns и data — прежние массивы данных собираются, число удержанных прежних объектов строк не растёт с числом смен, узлы и обработчики не растут`, async () => {

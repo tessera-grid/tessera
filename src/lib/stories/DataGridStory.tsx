@@ -20,6 +20,7 @@ import type { RowSelectionValue } from '../../lib/core/rowSelectionAll'
 import type { TesseraFeatureEntry } from '../../lib/core/features'
 import { dataModeKeyOf } from '../../lib/core/dataMode'
 import { argsKeyOf } from '../../lib/core/pluginArgs'
+import type { CoreOptions } from '../../lib/core/commonFeature.types'
 import type { DebugAction } from '../../lib/core/debugActions'
 import { useCreateTable } from '../../lib/core/useCreateTable'
 import { isThenable } from '../util/thenable'
@@ -439,6 +440,8 @@ const StoryGrid = memo(
       enableToolbar: panelFlag(options.enableToolbar),
       enableStatusBar: panelFlag(options.enableStatusBar),
       enableAnnouncements: options.enableAnnouncements,
+      enableKeyboardNavigation: options.enableKeyboardNavigation,
+      onActiveCellChange: (pluginArgs as CoreOptions).onActiveCellChange,
       enableOverflowTooltip: options.enableOverflowTooltip,
       enableRowAnimation: options.enableRowAnimation,
       enableColumnAnimation: options.enableColumnAnimation,

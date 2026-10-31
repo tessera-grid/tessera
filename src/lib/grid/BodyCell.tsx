@@ -188,8 +188,7 @@ export const BodyCell = memo(
     // плагина/для невыбираемых ячеек — тогда ниже не вешаем ни атрибутов, ни
     // обработчиков, ни tabindex (шов инертен, см. ADR 0029).
     const cellSel = useCellSelection(cell)
-    // Клавиатурная навигация (плагин keyboardNavigation): при наличии владеет
-    // roving tabindex ячейки; `null` без плагина.
+    // Клавиатурная навигация: включённая владеет roving tabindex ячейки; `null` без неё.
     const nav = useKeyboardNavigationCell(
       table,
       rowIndex,

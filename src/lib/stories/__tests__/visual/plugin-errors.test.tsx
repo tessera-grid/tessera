@@ -5,7 +5,6 @@ import { userEvent } from 'vitest/browser'
 
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
-import { keyboardNavigation } from '../../../plugins/keyboardNavigation'
 import { rowDragging } from '../../../plugins/rowDragging'
 import { humanClick } from '../helpers'
 import { tableLabels } from '../labels'
@@ -83,16 +82,14 @@ const HandleGrid = ({
   const [data, setData] = useState(HANDLE_DATA)
   const [, setPresses] = useState(0)
   const table = useCreateTable({
+    enableKeyboardNavigation: keyboard,
     columns: [
       { id: 'a', accessorKey: 'a', header: `A${pass}` },
       { id: 'b', accessorKey: 'b', header: 'B' },
     ],
     data,
     getRowId: (row: (typeof HANDLE_DATA)[number]) => row.id,
-    plugins: [
-      keyboardNavigation({ enabled: keyboard }),
-      rowDragging({ onRowOrderChange: setData as never }),
-    ],
+    plugins: [rowDragging({ onRowOrderChange: setData as never })],
   } as never)
   return (
     <div

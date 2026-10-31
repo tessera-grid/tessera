@@ -8,7 +8,6 @@ import { DataGrid } from '../../../grid/DataGrid'
 import {
   columnDragging,
   columnSorting,
-  keyboardNavigation,
   pagination,
   rowDragging,
   rowExpanding,
@@ -96,13 +95,13 @@ const Grid = ({
     ),
   )
   const table = useCreateTable({
+    enableKeyboardNavigation: keyboard,
     rowCount: serverPages ? 1000 : undefined,
     columns: COLUMNS as never,
     data,
     getRowId: (row: Item) => row.id,
     dataMode: { pagination: serverPages ? 'server' : 'client' },
     plugins: [
-      ...(keyboard ? [keyboardNavigation()] : []),
       columnSorting(),
       rowExpanding({
         onExpandRow: (_row: unknown, expanding: boolean) =>

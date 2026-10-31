@@ -52,7 +52,6 @@ const PLUGIN_ARGS: Record<string, GridArgs> = {
   cellErrors: { enableCellErrors: true },
   cellSelection: { enableCellSelection: true },
   contextMenu: { enableContextMenu: true, enableCellSelection: true },
-  keyboardNavigation: { enableKeyboardNavigation: true },
   columnSorting: { enableColumnSorting: true },
   columnPinning: { enableColumnPinning: true },
   columnSizing: { enableColumnSizing: true },

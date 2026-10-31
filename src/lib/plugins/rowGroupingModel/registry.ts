@@ -20,7 +20,6 @@ import {
 
 import { definePlugin } from '../../core/definePlugin'
 import { serverRowModelReason } from '../../core/pluginDiagnostics'
-import { declareRowHierarchy } from '../../core/rowHierarchy'
 import { rowExpandingModel } from '../rowExpandingModel/registry'
 import { createIdleAwareGroupedRowModel } from './groupedRowModel'
 
@@ -65,7 +64,6 @@ export const rowGroupingModel = definePlugin<RowGroupingModelOptions>()({
   model: { plugin: rowExpandingModel, keys: [] },
   features: rowGroupingModelFeatures,
   slices: ['grouping'],
-  setup: () => table => declareRowHierarchy(table, 'groups'),
   // Выключенная модель не группирует: TanStack группирует по срезу и при
   // `enableGrouping: false`, поэтому эффективный срез пуст, сохранённый не меняется.
   narrow: o =>
@@ -77,6 +75,7 @@ export const rowGroupingModel = definePlugin<RowGroupingModelOptions>()({
       : undefined,
   options: o => ({
     enableGrouping: o.enabled !== false,
+    groupRows: o.enabled !== false,
     groupedColumnMode: false,
   }),
 })

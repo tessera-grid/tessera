@@ -8,7 +8,7 @@ import type { ColumnOption } from '../../../core/columnOptions'
 import type { DataMode } from '../../../core/dataMode'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
-import { columnFiltering, keyboardNavigation } from '../../../plugins'
+import { columnFiltering } from '../../../plugins'
 import type { LoadOptions } from '../../../plugins/columnFilteringModel/types'
 import { AXE_OPTIONS } from './a11y-helpers'
 import { bodyRows, humanClick } from '../helpers'
@@ -163,6 +163,7 @@ interface GridProps {
   columns?: object[]
   data?: { id: string }[]
   plugins?: readonly unknown[]
+  keyboard?: boolean
   localization?: Record<string, unknown>
   icons?: Record<string, unknown>
   colorMode?: 'light' | 'dark'
@@ -174,6 +175,7 @@ const Grid = ({
   dataMode,
   data = DATA,
   plugins = [columnFiltering({ debounceMs: 0 })],
+  keyboard,
   localization,
   icons,
   colorMode,
@@ -184,6 +186,7 @@ const Grid = ({
     data,
     getRowId: (row: { id: string }) => row.id,
     enableToolbar: true,
+    enableKeyboardNavigation: keyboard,
     dataMode,
     plugins: plugins as never,
   })
@@ -420,10 +423,8 @@ describe('Фильтр вариантов — панель', () => {
     async withKeyboard => {
       await render(
         <Grid
-          plugins={[
-            columnFiltering({ debounceMs: 0 }),
-            ...(withKeyboard ? [keyboardNavigation()] : []),
-          ]}
+          plugins={[columnFiltering({ debounceMs: 0 })]}
+          keyboard={withKeyboard}
         />,
       )
       await waitForGrid()

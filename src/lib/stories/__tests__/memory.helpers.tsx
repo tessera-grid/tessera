@@ -18,7 +18,7 @@ import { columns as mockColumns } from '../__mocks__/columns'
 import { getData } from '../__mocks__/data'
 import {
   argsToPlugins,
-  type FeatureToggles,
+  type GridToggles,
 } from '../__mocks__/utils/argsToPlugins'
 import type { DomCounters, GlobalListeners } from './memory.commands'
 
@@ -39,7 +39,7 @@ export const memory = commands as unknown as {
 }
 
 /** Все плагины грида, кроме ленты: с пагинацией она инертна (ADR 0081). */
-export const ALL_PLUGINS: FeatureToggles = {
+export const ALL_PLUGINS: GridToggles = {
   enableRowSelection: true,
   rowSelectionSelectedCount: true,
   enableRowExpanding: true,
@@ -66,7 +66,7 @@ export const ALL_PLUGINS: FeatureToggles = {
 }
 
 export interface GridProps {
-  toggles?: FeatureToggles
+  toggles?: GridToggles
   /** Готовый набор записей плагинов вместо `toggles`. */
   plugins?: readonly unknown[]
   data?: unknown[]
@@ -105,6 +105,7 @@ export const Grid = ({
     data: data as never,
     getRowId: (row: { id: string }) => row.id,
     plugins: plugins as never,
+    enableKeyboardNavigation: toggles.enableKeyboardNavigation,
     onDebugAction,
     enableFooter: footer,
     dataMode,

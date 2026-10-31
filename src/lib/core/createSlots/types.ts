@@ -3,6 +3,8 @@
  * `render` (`ColumnDefTemplate`) оставлено для совместимости, но НЕ путь рендера —
  * рендер идёт через нативный `FlexRender` (см. `component`).
  */
+import type { ReactNode } from 'react'
+
 import type { VirtualItem } from '../../../vendor/tanstack-virtual/react-virtual'
 
 import type {
@@ -35,6 +37,17 @@ export interface BodyEndComponentProps {
   isVirtualColumns: boolean
   /** `aria-rowindex` строки сразу за последней строкой тела. */
   nextAriaRowIndex: number
+  /** Строки скелета после тела — тем же видом, что строки тела (ADR 0170, §2). */
+  renderSkeletonRows: (request: SkeletonRowsRequest) => ReactNode
+}
+
+export interface SkeletonRowsRequest {
+  rowCount: number
+  /** Номер первой строки в теле: чётность полос продолжает тело. */
+  firstRowIndex: number
+  className?: string
+  /** `false` — строки вне области прокрутки: только их высота, без ячеек. */
+  cells?: boolean
 }
 
 export interface RegisterSlotParams<TContext extends object> {

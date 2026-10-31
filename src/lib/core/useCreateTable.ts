@@ -65,6 +65,7 @@ import {
   withSliceNarrows,
 } from './pluginModels'
 import { useTableEffects } from './useTableEffects'
+import { keyboardNavigationEntry } from './keyboardNavigation/entry'
 
 // Видимость служебных колонок сужается с первого рендера (ADR 0050). Константа: новое
 // значение на каждый рендер сбрасывало бы кэш сужения (SC11).
@@ -86,6 +87,9 @@ const CORE_OPTION_KEYS: Record<keyof CoreOptions, true> = {
   enableToolbar: true,
   enableStatusBar: true,
   enableAnnouncements: true,
+  enableKeyboardNavigation: true,
+  activeCell: true,
+  onActiveCellChange: true,
   enableOverflowTooltip: true,
   enableRowAnimation: true,
   enableColumnAnimation: true,
@@ -157,7 +161,14 @@ export const useCreateTable = <
   // Модель, которую несёт интерфейс, — своя запись перед ним (ADR 0120, §3).
   const { entries: withModels, mismatches: modelMismatches } =
     expandIncludedModels(plugins as readonly TesseraFeatureEntry[])
-  const entries = resolvePluginSet(setStore.current, withModels)
+  // Срез активной ячейки — запись ядра в каждой таблице (ADR 0170, §1).
+  const entries = resolvePluginSet(setStore.current, [
+    keyboardNavigationEntry({
+      activeCell: coreOptions.activeCell,
+      onActiveCellChange: coreOptions.onActiveCellChange,
+    }),
+    ...withModels,
+  ])
 
   // Держим набор фич и свёртку по СИГНАТУРЕ структуры активных записей (id +
   // enabled), а не по идентичности массива — иначе новый plugins пересобирал бы всё.

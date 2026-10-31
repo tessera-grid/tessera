@@ -5,7 +5,6 @@ import {
   cellSelection,
   cellSelectionModel,
   contextMenu,
-  keyboardNavigation,
   columnDragging,
   columnFiltering,
   columnFilteringModel,
@@ -41,6 +40,7 @@ import {
   asyncHeaderActionsDemo,
   asyncRowActionsDemo,
 } from '../plugins/asyncActionsDemo/asyncActionsDemo'
+import type { CoreOptions } from '../../../core/commonFeature.types'
 import {
   nestedContextActionsDemo,
   nestedRowActionsDemo,
@@ -74,7 +74,6 @@ const FACTORIES = {
   cellSelection,
   cellSelectionModel,
   contextMenu,
-  keyboardNavigation,
   columnVisibility,
   columnFiltering,
   columnFilteringModel,
@@ -115,7 +114,6 @@ const CALLBACKS = {
   quickSearch: ['onSearchChange'],
   dataExport: ['onExport', 'onExported'],
   infiniteScroll: ['onLoadMore'],
-  keyboardNavigation: ['onActiveCellChange'],
 } as const satisfies {
   [F in FactoryName]?: readonly (keyof OptionsOf<F> & Callback)[]
 }
@@ -162,6 +160,10 @@ export type FeatureToggles = Toggles &
      */
     actionsDemo?: 'basic' | 'async' | 'nested' | 'none'
   }
+
+/** Тумблеры стендов тестов: плагины и навигация — опция ядра (ADR 0170, §1). */
+export type GridToggles = FeatureToggles &
+  Pick<CoreOptions, 'enableKeyboardNavigation'>
 
 /** Действия асинхронного демо строки и колонки — одни на все рендеры. */
 const ASYNC_SLOT_ACTIONS = [...asyncRowActionsDemo, ...asyncHeaderActionsDemo()]
@@ -219,7 +221,6 @@ export const argsToPlugins = (o: FeatureToggles) => {
     cellSelection(argsOf(o, 'cellSelection')),
     cellSelectionModel(argsOf(o, 'cellSelectionModel')),
     contextMenu(argsOf(o, 'contextMenu')),
-    keyboardNavigation(argsOf(o, 'keyboardNavigation')),
     columnVisibility(argsOf(o, 'columnVisibility')),
     columnFiltering(argsOf(o, 'columnFiltering')),
     columnFilteringModel(argsOf(o, 'columnFilteringModel')),

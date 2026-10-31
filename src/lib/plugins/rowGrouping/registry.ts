@@ -3,7 +3,6 @@
  * группировки — кнопка в заголовке (инлайн или строка кебаба). Модель —
  * `rowGroupingModel`, плагин её включает и передаёт ей срез.
  */
-import type { RowData, TableFeatures } from '@tanstack/react-table'
 import { definePlugin } from '../../core/definePlugin'
 import { neverInert } from '../../core/pluginDiagnostics'
 import {
@@ -37,20 +36,6 @@ export const rowGrouping = definePlugin<RowGroupingOptions>()({
   features: rowGroupingModelFeatures,
   // Единый дескриптор: ядро решает подачу (инлайн-кнопка / строка меню).
   slotActions: [groupHeaderAction],
+  // Липкие строки групп — факт ядра (ADR 0170, §2).
   options: o => ({ stickyGroupRows: o.enabled !== false && !!o.stickyRows }),
 })
-
-/* eslint-disable @typescript-eslint/no-unused-vars -- generics карт обязаны
-   повторять сигнатуры v9, иначе declaration merging не склеится */
-declare module '@tanstack/react-table' {
-  interface TableOptions_FeatureMap<
-    in out TFeatures extends TableFeatures,
-    in out TData extends RowData,
-  > {
-    /** Опции таблицы, которые выставляет плагин (ADR 0167). */
-    rowGroupingPlugin: {
-      stickyGroupRows?: boolean
-    }
-  }
-}
-/* eslint-enable @typescript-eslint/no-unused-vars */

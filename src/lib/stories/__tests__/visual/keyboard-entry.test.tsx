@@ -4,7 +4,6 @@ import { describe, expect, test } from 'vitest'
 
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
-import { keyboardNavigation } from '../../../plugins'
 import { humanClick } from '../helpers'
 
 // Вход в грид с клавиатуры снаружи (ADR 0021, KN32). Набор зависит от движка: Firefox
@@ -22,10 +21,10 @@ const COLUMNS = [
 
 const Grid = () => {
   const table = useCreateTable({
+    enableKeyboardNavigation: true,
     columns: COLUMNS as never,
     data: DATA,
     getRowId: (row: (typeof DATA)[number]) => row.id,
-    plugins: [keyboardNavigation()] as never,
   })
   return (
     <div>

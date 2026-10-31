@@ -7,12 +7,7 @@ import { describe, expect, test, vi } from 'vitest'
 import { ENGLISH_LABELS } from '../../../core/localization'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
-import {
-  keyboardNavigation,
-  pagination,
-  rowDragging,
-  rowExpanding,
-} from '../../../plugins'
+import { pagination, rowDragging, rowExpanding } from '../../../plugins'
 import type { RowDragEnd } from '../../../plugins'
 import type { Row } from '../../../types'
 import {
@@ -123,6 +118,7 @@ const LazyTree = ({ roots }: { roots: Node[] }) => {
   harness.setData = setData
   const { options } = harness
   const table = useCreateTable({
+    enableKeyboardNavigation: options.keyboard,
     columns: COLUMNS as never,
     data,
     getRowId: (row: Node) => row.id,
@@ -146,7 +142,6 @@ const LazyTree = ({ roots }: { roots: Node[] }) => {
           setData(updater as (prev: Node[]) => Node[])
         },
       }),
-      ...(options.keyboard ? [keyboardNavigation()] : []),
       ...(options.pageSize
         ? [pagination({ initialPageSize: options.pageSize })]
         : []),

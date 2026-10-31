@@ -40,6 +40,7 @@ describe('опции плагинов в типах (ADR 0167)', () => {
       expect(owners.get('enableColumnPinning')).toBeUndefined()
       expect(owners.get('enableFooter')).toBeUndefined()
       expect(owners.get('enableRowDragging')?.has('rowDragging')).toBe(true)
+      expect(owners.get('enableExpanding')?.has('rowExpandingModel')).toBe(true)
 
       const counter = 'lib/shared/filtering/FilteredRowsCount.tsx'
       expect([...(sharedUsers().get(counter) ?? [])].sort()).toEqual([
@@ -48,9 +49,7 @@ describe('опции плагинов в типах (ADR 0167)', () => {
       ])
       const reads = foreignOptionReads()
       expect(reads.filter(read => read.startsWith(counter))).toEqual([])
-      expect(reads).toContain(
-        'lib/core/keyboardNavigation/model.ts: enableExpanding',
-      )
+      expect(reads).toContain('lib/grid/DataGridTable.tsx: enableCellSelection')
     },
     TYPES_TIMEOUT,
   )

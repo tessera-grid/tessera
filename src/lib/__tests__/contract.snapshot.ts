@@ -18,12 +18,14 @@ export const COLUMN_DEF_FIELDS: Record<string, string> = {
 /** Опции ядра `CommonOptions`. */
 export const CORE_OPTIONS: Record<string, string> = {
   actionMenu: '0024',
+  activeCell: '0170',
   appendOnlyData: '0145',
   contextMenuActions: '0030',
   dataMode: '0169',
   enableAnnouncements: '0032',
   enableColumnAnimation: '0115',
   enableFooter: '0106',
+  enableKeyboardNavigation: '0170',
   enableOverflowTooltip: '0075',
   enableRowAnimation: '0107',
   enableStatusBar: '0046',
@@ -32,6 +34,7 @@ export const CORE_OPTIONS: Record<string, string> = {
   getBodyBusy: '0081',
   getRowSource: '0138',
   getTotalRowCount: '0081',
+  groupRows: '0170',
   headerHeight: '0077',
   hooks: '0027',
   keyboardActions: '0021',
@@ -39,6 +42,7 @@ export const CORE_OPTIONS: Record<string, string> = {
   loading: '0106',
   locale: '0169',
   logLevel: '0022',
+  onActiveCellChange: '0170',
   onColumnAutoSizingChange: '0010',
   onDebugAction: '0125',
   onRetry: '0096',
@@ -56,9 +60,12 @@ export const CORE_OPTIONS: Record<string, string> = {
   slotActions: '0024',
   serverRowCount: '0169',
   slots: '0010',
+  stickyBranchRows: '0170',
+  stickyGroupRows: '0170',
   stubEntries: '0123',
   timeZone: '0169',
   totalRowCount: '0169',
+  treeRows: '0170',
 }
 
 /** Поля публичной записи плагина `TablePlugin` (ADR 0164, §3). */

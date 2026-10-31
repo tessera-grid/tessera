@@ -5,6 +5,7 @@ export {
 export type { TesseraFeatures } from './lib/core/features'
 export type { SkeletonOptions } from './lib/core/skeletonOptions'
 export type { FooterPosition } from './lib/core/footer'
+export type { ActiveCell } from './lib/core/keyboardNavigation'
 export type { RefreshOptions } from './lib/core/loadingDisplay'
 export type {
   ColumnOption,

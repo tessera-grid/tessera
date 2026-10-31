@@ -1,15 +1,28 @@
 // @vitest-environment happy-dom
 /**
- * Иерархия строк — точка расширения ядра (ADR 0168, §4).
+ * Иерархия строк — точка расширения ядра (ADR 0168, §4); её читает навигация (ADR 0170, §2).
  * Запуск: npx vitest run --config vitest.node.config.ts rowHierarchy
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it } from 'vitest'
 
+import { definePlugin, pluginStateKey } from '../core/definePlugin'
+import {
+  isTreeGrid,
+  resolveActive,
+  ROW_FOCUS_COLUMN,
+} from '../core/keyboardNavigation/model'
+import { neverInert } from '../core/pluginDiagnostics'
 import { hasRowHierarchy } from '../core/rowHierarchy'
 import { useCreateTable } from '../core/useCreateTable'
-import { rowDragging, rowExpandingModel, rowGroupingModel } from '../plugins'
+import {
+  rowDragging,
+  rowExpanding,
+  rowExpandingModel,
+  rowGroupingModel,
+  serverRowModel,
+} from '../plugins'
 ;(
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true
@@ -71,5 +84,42 @@ describe('иерархия строк (ADR 0168)', () => {
         /\.enableExpanding\b/.test(sources[path]),
       ),
     ).toEqual([])
+  })
+
+  it('CH2: роль treegrid и фокус на строке — по факту иерархии строк ядра: у модели дерева, группировки и серверной модели, без чтения опций плагинов', () => {
+    // Своя запись с опцией вместо факта.
+    const ownOptions = (options: Record<string, unknown>) =>
+      definePlugin<{ enabled?: boolean }>()({
+        id: 'ownOptions',
+        diagnose: neverInert,
+        options: () => options,
+      })()
+    const rowFocus = () =>
+      resolveActive(captured, {
+        [pluginStateKey('keyboardNavigation')]: {
+          rowIndex: 0,
+          columnIndex: ROW_FOCUS_COLUMN,
+        },
+      }).columnIndex === ROW_FOCUS_COLUMN
+
+    mount([])
+    expect([isTreeGrid(captured), rowFocus()]).toEqual([false, false])
+    mount([ownOptions({ enableExpanding: true, enableGrouping: true })])
+    expect([isTreeGrid(captured), rowFocus()]).toEqual([false, false])
+
+    mount([rowExpandingModel()])
+    expect([isTreeGrid(captured), rowFocus()]).toEqual([true, true])
+    mount([rowGroupingModel()])
+    expect([isTreeGrid(captured), rowFocus()]).toEqual([true, true])
+    mount([ownOptions({ treeRows: true })])
+    expect([isTreeGrid(captured), rowFocus()]).toEqual([true, true])
+    mount([rowExpandingModel({ enabled: false })])
+    expect(isTreeGrid(captured)).toBe(false)
+
+    mount([
+      serverRowModel({ getRows: () => new Promise(() => {}) }),
+      rowExpanding({ hasChildren: () => true }),
+    ])
+    expect(isTreeGrid(captured)).toBe(true)
   })
 })

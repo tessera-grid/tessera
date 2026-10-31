@@ -23,7 +23,6 @@ import {
   dataExport,
   type ExportRequest,
   infiniteScroll,
-  keyboardNavigation,
   pagination,
   paginationModel,
   quickSearchModel,
@@ -81,6 +80,7 @@ const Grid = ({
   dataMode?: DataMode
 }) => {
   table = useCreateTable({
+    enableKeyboardNavigation: true,
     rowCount: 1000,
     columns: COLUMNS as never,
     data: NO_DATA,
@@ -93,7 +93,6 @@ const Grid = ({
         blockSize: BLOCK,
         maxBlocks,
       }),
-      keyboardNavigation(),
       cellEditing(),
       ...extra,
     ] as never,

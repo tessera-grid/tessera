@@ -11,7 +11,6 @@ import {
   cellEditing,
   columnFilteringModel,
   columnSortingModel,
-  keyboardNavigation,
   pagination,
   quickSearchModel,
   rowExpanding,
@@ -103,6 +102,7 @@ const Grid = ({
   blockSize = 100,
   maxBlocks,
   plugins = [],
+  keyboard,
   onTable,
 }: {
   getRows: (request: ServerRowsRequest) => Promise<ServerRowsResponse<Item>>
@@ -111,9 +111,12 @@ const Grid = ({
   blockSize?: number
   maxBlocks?: number
   plugins?: readonly TesseraFeatureEntry[]
+  /** Клавиатурная навигация (ADR 0170, §1). */
+  keyboard?: boolean
   onTable?: (table: PagedTable) => void
 }) => {
   const table = useCreateTable({
+    enableKeyboardNavigation: keyboard,
     rowCount,
     columns: COLUMNS as never,
     data: NO_DATA,
@@ -336,14 +339,11 @@ describe('пагинация в серверной модели строк (ADR 
   })
 
   test('SP8: клавиши ходят в пределах страницы; aria-rowindex сквозной, aria-rowcount — итог; axe в ролях grid и treegrid', async () => {
-    for (const plugins of [
-      [keyboardNavigation()],
-      [keyboardNavigation(), rowExpanding({ hasChildren: () => true })],
-    ]) {
-      const role = plugins.length > 1 ? 'treegrid' : 'grid'
+    for (const plugins of [[], [rowExpanding({ hasChildren: () => true })]]) {
+      const role = plugins.length > 0 ? 'treegrid' : 'grid'
       const { getRows } = server()
       const screen = await render(
-        <Grid getRows={getRows} rowCount={1000} plugins={plugins} />,
+        <Grid getRows={getRows} rowCount={1000} keyboard plugins={plugins} />,
       )
       try {
         await expect.poll(() => rowById('r0')).not.toBeNull()

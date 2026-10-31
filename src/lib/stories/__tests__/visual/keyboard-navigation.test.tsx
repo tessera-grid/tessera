@@ -6,7 +6,7 @@ import { describe, expect, test, vi } from 'vitest'
 
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
-import { keyboardNavigation, type ActiveCell } from '../../../plugins'
+import type { ActiveCell } from '../../../core/keyboardNavigation'
 import { StoryComponent } from '../../DataGridStory'
 import type { StoryProps } from '../../DataGridStory.types'
 import { normalizeArgs } from '../../__mocks__/utils/normalizeArgs'
@@ -629,15 +629,12 @@ const ControlledNavigation = ({
   const table = useCreateTable({
     columns: NAV_COLUMNS,
     data: NAV_DATA,
-    plugins: [
-      keyboardNavigation({
-        activeCell,
-        onActiveCellChange: next => {
-          onActiveCellChange(next)
-          setActiveCell(next)
-        },
-      }),
-    ],
+    enableKeyboardNavigation: true,
+    activeCell,
+    onActiveCellChange: next => {
+      onActiveCellChange(next)
+      setActiveCell(next)
+    },
   })
   return (
     <div style={{ height: 300 }}>
@@ -665,5 +662,55 @@ describe('Клавиатурная навигация — активная яч�
       rowIndex: 0,
       columnIndex: 1,
     })
+  })
+})
+
+// Экземпляр таблицы — её store: React-адаптер отдаёт новый объект на каждый рендер.
+const navToggle: { set?: (on: boolean) => void; stores: Set<unknown> } = {
+  stores: new Set(),
+}
+
+const ToggledNavigation = () => {
+  const [enabled, setEnabled] = useState(false)
+  navToggle.set = setEnabled
+  const table = useCreateTable({
+    columns: NAV_COLUMNS,
+    data: NAV_DATA,
+    enableKeyboardNavigation: enabled,
+  })
+  navToggle.stores.add(table.store)
+  return (
+    <div style={{ height: 300 }}>
+      <DataGrid table={table as never} />
+    </div>
+  )
+}
+
+describe('Клавиатурная навигация — опция ядра (ADR 0170)', () => {
+  test('CH1: enableKeyboardNavigation на лету меняет роль грида, tabindex ячеек и обработку клавиш без пересоздания таблицы', async () => {
+    navToggle.stores.clear()
+    await render(<ToggledNavigation />)
+    await expect.poll(() => gridRoot()?.getAttribute('role')).toBe('table')
+    const root = gridRoot()
+    expect(document.querySelectorAll(NAV_CELL)).toHaveLength(0)
+
+    navToggle.set!(true)
+    await expect.poll(() => gridRoot().getAttribute('role')).toBe('grid')
+    expect(gridRoot()).toBe(root)
+    await expect.poll(() => tabStops().length).toBe(1)
+    await humanClick(bodyCellAt(0, 'name'))
+    await press('{ArrowDown}')
+    await expect.poll(active).toBe(bodyCellAt(1, 'name'))
+    expect(tabStops()).toEqual([bodyCellAt(1, 'name')])
+
+    navToggle.set!(false)
+    await expect.poll(() => gridRoot().getAttribute('role')).toBe('table')
+    expect(gridRoot()).toBe(root)
+    expect(document.querySelectorAll(NAV_CELL)).toHaveLength(0)
+    // Клавиши навигация обрабатывает только на своих ячейках: их больше нет.
+    expect(document.querySelector('[data-kn-active]')).toBeNull()
+    await press('{ArrowDown}')
+    expect(document.querySelector('[data-kn-active]')).toBeNull()
+    expect(navToggle.stores.size).toBe(1)
   })
 })

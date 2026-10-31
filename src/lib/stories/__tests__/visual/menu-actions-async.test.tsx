@@ -19,7 +19,6 @@ import {
   columnSorting,
   contextMenu,
   headerActionMenu,
-  keyboardNavigation,
   pagination,
   rowActionMenu,
   rowActions,
@@ -196,6 +195,7 @@ const Grid = ({
   ...gridProps
 }: GridProps) => {
   const table = useCreateTable({
+    enableKeyboardNavigation: keyboard,
     columns: [{ id: 'name', accessorKey: 'name', header: 'Name' }] as never,
     data: DATA,
     getRowId: (row: (typeof DATA)[number]) => row.id,
@@ -210,7 +210,6 @@ const Grid = ({
         : []),
       contextMenu(),
       columnSorting(),
-      keyboardNavigation({ enabled: keyboard }),
       ...(paged ? [pagination({ initialPageSize: 20 })] : []),
     ] as never,
   })

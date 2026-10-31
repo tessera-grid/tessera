@@ -11,7 +11,6 @@ import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import {
   columnSorting,
-  keyboardNavigation,
   quickSearchModel,
   rowExpanding,
   rowGrouping,
@@ -156,6 +155,7 @@ interface GridTable {
 const Grid = ({
   getRows,
   plugins = [],
+  keyboard,
   grouping = [],
   columns = COLUMNS,
   maxBlocks,
@@ -167,6 +167,8 @@ const Grid = ({
 }: {
   getRows: ReturnType<typeof server>['getRows']
   plugins?: readonly TesseraFeatureEntry[]
+  /** Клавиатурная навигация (ADR 0170, §1). */
+  keyboard?: boolean
   grouping?: string[]
   columns?: readonly object[]
   maxBlocks?: number
@@ -178,6 +180,7 @@ const Grid = ({
   groupCounts?: boolean
 }) => {
   const table = useCreateTable({
+    enableKeyboardNavigation: keyboard,
     columns: columns as never,
     data: NO_DATA,
     getRowId: (row: Item) => row.id,
@@ -462,7 +465,8 @@ describe('Серверная группировка (ADR 0144)', () => {
         <Grid
           getRows={getRows}
           grouping={['city', 'kind']}
-          plugins={[keyboardNavigation()]}
+          keyboard
+          plugins={[]}
           colorMode={colorMode}
         />,
       )
@@ -945,7 +949,8 @@ describe('Выбор группы целиком (ADR 0148)', () => {
       <Grid
         getRows={getRows}
         grouping={['city']}
-        plugins={[keyboardNavigation(), rowSelection()]}
+        keyboard
+        plugins={[rowSelection()]}
       />,
     )
     try {

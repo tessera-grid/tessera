@@ -9,7 +9,6 @@ import { DataGrid } from '../../../grid/DataGrid'
 import {
   cellSelection,
   columnPinning,
-  keyboardNavigation,
   pagination,
   rowExpanding,
   rowSelection,
@@ -130,6 +129,7 @@ const Grid = ({
     [count, data],
   )
   table = useCreateTable({
+    enableKeyboardNavigation: keyboard,
     columns: columns as never,
     data: rows,
     getRowId: (row: Item) => row.id,
@@ -147,7 +147,6 @@ const Grid = ({
           ]
         : []),
       ...(cells ? [cellSelection()] : []),
-      ...(keyboard ? [keyboardNavigation()] : []),
       ...(tree ? [rowExpanding()] : []),
       ...(paged ? [pagination({ initialPageSize: 5 })] : []),
     ] as never,
