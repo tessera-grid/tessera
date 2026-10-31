@@ -11,7 +11,7 @@ import { ActionMenuItems, type ActionMenuItemsProps } from './ActionMenuItems'
 import { ActionMenuSections } from './ActionMenuSections'
 import type { MenuSections } from './useMenuSections'
 
-import styles from '../../grid/headerActions/ActionMenu.module.css'
+import styles from '../../ui/Popup/ActionMenu.module.css'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 
 interface ActionMenuPopupProps {

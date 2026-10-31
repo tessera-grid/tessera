@@ -5,7 +5,7 @@ import { Meta, StoryObj } from '@storybook/react'
 
 import '../ui/theme/theme.css'
 import { DATA_GRID_THEME_CLASS } from '../ui/theme'
-import menu from '../grid/headerActions/ActionMenu.module.css'
+import menu from '../ui/Popup/ActionMenu.module.css'
 import { IconButton } from '../ui/IconButton'
 import { LinearProgress } from '../ui/LinearProgress'
 import popup from '../ui/Popup/Popup.module.css'

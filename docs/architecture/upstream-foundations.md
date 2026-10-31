@@ -93,7 +93,7 @@ dnd-kit — это headless-тулкит drag-and-drop для React.
 
 - **`DndContext`** — предоставляет состояние перетаскивания, подключает сенсоры,
   эмитит `onDragStart/Over/End`. Tessera оборачивает head и body в
-  `DndHeadWrapper` / `DndBodyWrapper`.
+  обёртки плагинов `HeadBoundary` / `BodyBoundary` (ADR 0168).
 - **`SortableContext` + `useSortable`** — упорядоченные, сортируемые списки;
   используются для переупорядочивания столбцов (header) и строк (body).
 - **Sensors / collision detection / modifiers** — Tessera поставляет кастомную

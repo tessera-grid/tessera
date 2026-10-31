@@ -1,5 +1,4 @@
 import type { Header } from '../types'
-import { zoneOf } from '../core/columnNodes'
 import { getDisplayColumnIndex } from '../core/displayColumns'
 import { getPinnedEndOffset, getPinnedStartOffset } from './columnSizes'
 
@@ -14,16 +13,6 @@ export const getAriaSort = (
   if (sorted === 'desc') return 'descending'
   return 'none'
 }
-
-export const getDisabledSortable = (
-  header: Header<any, any, unknown>,
-): boolean =>
-  // Зона узла по его листьям: сегмент разрезанной группы в центре перемещаем.
-  zoneOf(header as never) !== false ||
-  header.column.getIsActionsColumn() ||
-  // При presence-based композиции columnDragging может отсутствовать — тогда
-  // getCanDrag не определён (перетаскивания нет), что эквивалентно canDrag=false.
-  !(header.column.getCanDrag?.() ?? false)
 
 /**
  * Пиннинг по листьям ячейки-заголовка (reorder-out: сегмент закреплён, только если

@@ -37,6 +37,7 @@ import type {
 import type { SkeletonOptions } from './skeletonOptions'
 import type { FooterPosition } from './footer'
 import type { StubEntry } from './stubs'
+import type { FoldedWrappers } from './pluginWrappers'
 import type { RefreshOptions } from './loadingDisplay'
 
 // --- Payload-типы контракта --------------------------------------------------
@@ -111,6 +112,8 @@ export interface CommonOptions extends CoreOptions {
   refreshNarrowing?: () => void
   /** Номер перерисовки ячеек: растёт при новой функции-аргументе плагина (ADR 0039). */
   pluginRenderVersion?: number
+  /** Обёртки и декораторы тела и шапки от плагинов (ADR 0168, §2). */
+  pluginWrappers?: FoldedWrappers
   /** Колбэки изменений локальных срезов плагинов по ключу среза (DP17). */
   pluginStateListeners?: Record<string, (next: unknown) => void>
   /**

@@ -44,6 +44,7 @@ export const CORE_OPTIONS: Record<string, string> = {
   pluginDiagnostics: '0022',
   pluginRenderVersion: '0039',
   pluginStateListeners: '0028',
+  pluginWrappers: '0168',
   refreshNarrowing: '0160',
   refreshOptions: '0094',
   rowHeight: '0077',
@@ -85,4 +86,5 @@ export const INTERNAL_ENTRY_FIELDS: Record<string, string> = {
   lifetimeArgs: '0039',
   refreshArgs: '0039',
   stateSlices: '0120',
+  wrappers: '0168',
 }

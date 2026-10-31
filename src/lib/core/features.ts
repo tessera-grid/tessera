@@ -48,6 +48,12 @@ import {
 import type { NarrowMap, NarrowState } from './effectiveState'
 import type { StubEntry } from './stubs'
 import {
+  type FoldedWrappers,
+  type PluginWrappers,
+  createEmptyWrappers,
+  registerWrappersInto,
+} from './pluginWrappers'
+import {
   reportPluginError,
   type PluginDiagnose,
   type PluginInertReason,
@@ -156,6 +162,8 @@ export interface TesseraFeatureEntry<
    */
   configure?: (args: any) => PluginConfiguration
   model?: TesseraFeatureEntry
+  /** Обёртки и декораторы тела и шапки плагина перетаскивания (ADR 0168, §2). */
+  wrappers?: PluginWrappers
 }
 
 /** Срез TanStack, заданный аргументами плагина; `undefined` — аргумент не передан. */
@@ -196,6 +204,7 @@ export interface FoldedEntryConfig {
   narrow: NarrowMap
   /** Все присутствующие записи, включая `enabled: false`. */
   pluginDiagnostics: PluginDiagnosticSource[]
+  wrappers: FoldedWrappers
 }
 
 const isActive = (entry: TesseraFeatureEntry) => entry.enabled !== false
@@ -290,6 +299,7 @@ export const foldEntries = (
   const setups: NonNullable<TesseraFeatureEntry['setup']>[] = []
   const pluginDiagnostics: PluginDiagnosticSource[] = []
   const narrow: NarrowMap = {}
+  const wrappers = createEmptyWrappers()
 
   for (const entry of entries) {
     if (!entry.includedBy) {
@@ -312,6 +322,9 @@ export const foldEntries = (
     for (const [key, fn] of Object.entries(entry.narrow ?? {})) {
       ;(narrow[key] ??= []).push(fn)
     }
+
+    // Обёртки тела и шапки — и у выключенной записи: начатая сессия доживает до отмены.
+    registerWrappersInto(wrappers, entry.wrappers, isActive(entry))
 
     if (!isActive(entry)) {
       continue
@@ -378,6 +391,7 @@ export const foldEntries = (
     setups,
     narrow,
     pluginDiagnostics,
+    wrappers,
   }
 }
 

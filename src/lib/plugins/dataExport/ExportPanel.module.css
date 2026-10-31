@@ -12,7 +12,7 @@
 
 /* Группы — как в меню действий (ADR 0074, EP2): подпись и разделитель между группами. */
 .group {
-  composes: group from '../../grid/headerActions/ActionMenu.module.css';
+  composes: group from '../../ui/Popup/ActionMenu.module.css';
 }
 
 .group + .group,
@@ -23,7 +23,7 @@
 }
 
 .groupLabel {
-  composes: groupLabel from '../../grid/headerActions/ActionMenu.module.css';
+  composes: groupLabel from '../../ui/Popup/ActionMenu.module.css';
 }
 
 .items {
@@ -32,7 +32,7 @@
 }
 
 .item {
-  composes: item from '../../grid/headerActions/ActionMenu.module.css';
+  composes: item from '../../ui/Popup/ActionMenu.module.css';
   width: 100%;
   color: inherit;
   /* Шрифт кнопки — от панели; высоту строки задаёт пункт поповера. */
@@ -72,15 +72,15 @@
 }
 
 .itemIcon {
-  composes: itemIcon from '../../grid/headerActions/ActionMenu.module.css';
+  composes: itemIcon from '../../ui/Popup/ActionMenu.module.css';
 }
 
 .itemLabel {
-  composes: itemLabel from '../../grid/headerActions/ActionMenu.module.css';
+  composes: itemLabel from '../../ui/Popup/ActionMenu.module.css';
 }
 
 .itemCheck {
-  composes: itemCheck from '../../grid/headerActions/ActionMenu.module.css';
+  composes: itemCheck from '../../ui/Popup/ActionMenu.module.css';
 }
 
 /* Галочка всегда в разметке и проявляется у выбранного пункта (ADR 0074, EP5). */

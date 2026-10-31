@@ -1091,9 +1091,12 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       который её приносит, и читатели `shared/`, PO6 — у записи базы LB5 шаг аудита),
       `serverActions.dom` (PO3 — политика отката среза) и `effectiveState.dom` (PO5 — сброс
       выбора в `rowSelectionModel`) ([ADR 0167](docs/decisions/0167-plugin-options-in-types.md)).
-    - _Перетаскивание в плагинах:_ модульные `dragSession` (DM5 — сессия перетаскивания —
-      срез ядра, грид читает её типом ядра) и `rowHierarchy.dom` (DM6 — иерархия строк — факт
-      ядра); DM1–DM4, DM7–DM8 — этап 2 ([ADR 0168](docs/decisions/0168-dnd-in-plugins.md)).
+    - _Перетаскивание в плагинах:_ модульные `dndInPlugins` (DM1 — грид и ядро без dnd-kit и
+      плагинов перетаскивания, DM3 — общее в `shared/dnd` и `shared/handleMenu`),
+      `pluginWrappers.dom` (DM4, DM7 — обёртки и декораторы тела и шапки), `dragSession` (DM5 —
+      сессия перетаскивания — срез ядра) и `rowHierarchy.dom` (DM6 — иерархия строк — факт
+      ядра), визуальный `drag-session` (DM8 — свой плагин сессии получает ту же отрисовку), DM2
+      — `check:tree-shaking` ([ADR 0168](docs/decisions/0168-dnd-in-plugins.md)).
     - _Движение строк:_ `row-motion` (RM1–RM17, RM19, RM22, RM24–RM25, RM27–RM31 — раскрытие и сворачивание с
       призраками, сортировка издалека и вдаль, поиск, замена и геометрия без движения,
       ленивые дети, сдвиг соседей и приземление броска, автопрокрутка во время

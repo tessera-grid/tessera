@@ -10,8 +10,8 @@ import { ActionButton } from '../../../grid/headerActions/ActionButton'
 import { ActionsZone } from '../../../grid/headerActions/ActionsZone'
 import { BodyCell } from '../../../grid/BodyCell'
 import { BodyRow, BodyRowCells } from '../../../grid/BodyRow'
-import { DraggableBodyRow } from '../../../grid/DraggableBodyRow'
-import { ItemDraggableWrapper } from '../../../grid/dnd'
+import { SortableRow } from '../../../plugins/rowDragging/SortableRow'
+import { ItemSortableContextProvider } from '../../../shared/dnd'
 import { FooterCell } from '../../../grid/FooterCell'
 import { Toolbar } from '../../../grid/Toolbar/Toolbar'
 import { HeadCellView } from '../../../grid/HeadCell'
@@ -107,7 +107,8 @@ const windowSize = () => {
   }
 }
 
-const rowRenders = (work: Work) => renders(work, BodyRow, DraggableBodyRow)
+// Строка с декоратором перетаскивания рисует и его, и BodyRow: строку считает BodyRow.
+const rowRenders = (work: Work) => renders(work, BodyRow)
 
 const checkbox = (index: number) =>
   document.querySelectorAll<HTMLElement>(
@@ -339,7 +340,7 @@ describe('Счётчики работы', () => {
     const work = await measure(() => userEvent.click(button))
     expect(document.querySelector('[role="menu"]')).not.toBeNull()
     expect(
-      renders(work, BodyRow, DraggableBodyRow, BodyRowCells, BodyCell),
+      renders(work, BodyRow, SortableRow, BodyRowCells, BodyCell),
       describeWork(work),
     ).toBe(0)
   })
@@ -588,7 +589,7 @@ describe('Счётчики работы — ручка колонки (ADR 0114)
         0,
       )
       expect(
-        renders(work, BodyRow, DraggableBodyRow, BodyRowCells, BodyCell),
+        renders(work, BodyRow, SortableRow, BodyRowCells, BodyCell),
         describeWork(work),
       ).toBe(0)
     }
@@ -869,10 +870,10 @@ describe('сдвиг окна при прокрутке (ADR 0149)', () => {
     await waitForQuietDocument(500)
     // Окно строк сдвинулось на одну: перерисована только пришедшая строка.
     const work = await measure(() => wheel(2))
-    within(work, renders(work, DraggableBodyRow), 1, 'строки')
+    within(work, renders(work, SortableRow), 1, 'строки')
     within(
       work,
-      renders(work, ItemDraggableWrapper),
+      renders(work, ItemSortableContextProvider),
       1,
       'обёртки перетаскивания',
     )

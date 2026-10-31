@@ -1,13 +1,17 @@
 /**
  * Запись плагина rowDragging на `definePlugin`. Кастомная фича
  * `rowDraggingFeature` (слайс состояния + row-метод getCanDrag) и сервисная
- * колонка-ручка. dnd-редьюсер (getRowDraggingEvents) с геометрией offset/nesting —
- * grid-слой.
+ * колонка-ручка. Обёртка тела, декораторы строки и незагруженной строки встраивают
+ * dnd-kit в грид (ADR 0168, §2); dnd-редьюсер — getRowDraggingEvents.
  */
 import type { Updater } from '@tanstack/react-table'
 
 import type { Row } from '../../types'
 import { definePlugin } from '../../core/definePlugin'
+import { withWrappers } from '../../core/pluginWrappers'
+import { BodyBoundary } from './BodyBoundary'
+import { DroppablePendingRow } from './DroppablePendingRow'
+import { SortableRow } from './SortableRow'
 import { COLUMN_DRAGGING_ID, getRowDraggingColumn } from './rowDraggingColumn'
 import { moveRowKeyboardAction, nestRowKeyboardAction } from './keyboardActions'
 import {
@@ -47,7 +51,7 @@ export interface RowDraggingOptions {
   onRowOrderChange?: (updater: Updater<any[]>) => void
 }
 
-export const rowDragging = definePlugin<RowDraggingOptions>()({
+const rowDraggingEntry = definePlugin<RowDraggingOptions>()({
   id: 'rowDragging',
   // Предикат влияет на отрисовку ячеек: новая ссылка — перерисовка (ADR 0039).
   refreshOn: ['canDragRow'],
@@ -73,4 +77,10 @@ export const rowDragging = definePlugin<RowDraggingOptions>()({
     rowDragRevertOnReject: o.revertOnReject !== false,
     onRowOrderChange: o.onRowOrderChange,
   }),
+})
+
+export const rowDragging = withWrappers(rowDraggingEntry, {
+  bodyBoundary: { id: 'rowDragging', component: BodyBoundary },
+  rowDecorator: { id: 'rowDragging', component: SortableRow },
+  pendingRowDecorator: { id: 'rowDragging', component: DroppablePendingRow },
 })

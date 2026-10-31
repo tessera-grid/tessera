@@ -214,7 +214,7 @@ const MODEL_READERS: Record<string, string> = {
     'путь до строки в дереве и страница по корню (ADR 0104); незагруженные строки SSRM — этап 3',
   'core/servicePresence.ts':
     'есть ли подстроки в данных — показ служебной колонки (ADR 0050)',
-  'grid/DndBodyWrapper.tsx':
+  'plugins/rowDragging/BodyBoundary.tsx':
     'строки модели для перетаскивания клиентского режима; в SSRM — источник через dragRows (ADR 0159)',
   'plugins/rowDragging/dragRows.ts':
     'строки перетаскивания клиентского режима — модель TanStack; в SSRM — источник (ADR 0159)',

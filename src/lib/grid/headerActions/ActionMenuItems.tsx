@@ -37,7 +37,7 @@ import {
 import { Tooltip } from '../../ui/Tooltip'
 import { useIcons } from '../../ui/icons'
 
-import styles from '../../grid/headerActions/ActionMenu.module.css'
+import styles from '../../ui/Popup/ActionMenu.module.css'
 
 export interface ActionMenuItemsProps {
   actions: MenuAction[]

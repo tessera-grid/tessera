@@ -10,6 +10,8 @@ import clsx from 'clsx'
 import type { Cell, Column, Row } from '../types'
 import { isRowExpandedIn } from '../core/expandAll'
 import type { CellSlot } from '../core/createSlots'
+import type { RowDragBinding } from '../core/pluginWrappers'
+import { assignRef } from '../ui/assignRef'
 import { useTableState } from '../core/reactivity'
 import { hasExpandToggle } from '../core/keyboardActions'
 import {
@@ -67,6 +69,8 @@ export interface TableBodyRowProps {
   /** Будущий родитель слота перетаскивания (ADR 0109, §4). */
   dropParent?: boolean
   isVirtualColumns: boolean
+  /** Привязка к перетаскиванию от декоратора плагина (ADR 0168, §2). */
+  drag?: RowDragBinding
 }
 
 interface BodyRowCellsProps extends TableBodyRowProps {
@@ -229,7 +233,7 @@ export const getAriaSelected = (
  * выключено — чтобы не платить за useSortable на каждый смонтированный ряд.
  */
 export const BodyRow = memo((props: TableBodyRowProps) => {
-  const { layout, row, virtualRow, ariaRowIndexBase } = props
+  const { layout, row, virtualRow, ariaRowIndexBase, drag } = props
 
   const { highlight, flash } = useRowStateSubscription(row)
   const highlighted = highlightRender([{ layer: 'row', state: highlight }])
@@ -255,10 +259,21 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
     [virtualRow.start],
   )
 
+  // Слот — по сессии перетаскивания строки (ADR 0168, DM8); при декораторе — по dnd-kit: в
+  // React 18 её старт коммитится позже атома перетаскивания.
+  const slotDepth = drag && !drag.dragging ? undefined : props.slotDepth
+  const interacting = drag ? drag.interacting : true
+
   return (
     <div
+      {...(drag && {
+        ref: (element: HTMLDivElement | null) => {
+          drag.setNodeRef(element)
+          assignRef(nav?.ref, element)
+        },
+      })}
       {...(nav && {
-        ref: nav.ref,
+        ...(!drag && { ref: nav.ref }),
         tabIndex: nav.tabIndex,
         onFocus: nav.onFocus,
         onBlur: nav.onBlur,
@@ -273,7 +288,7 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
       aria-expanded={
         canToggle && props.treeSetSize !== undefined ? isExpanded : undefined
       }
-      aria-busy={isExpandPending || undefined}
+      aria-busy={isExpandPending || drag?.busy || undefined}
       aria-selected={getAriaSelected(row, props.selectableRows)}
       aria-level={props.treeSetSize !== undefined ? row.depth + 1 : undefined}
       aria-setsize={props.treeSetSize}
@@ -289,7 +304,10 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
       {...highlighted.attrs}
       {...flashed.attrs}
       data-row-odd={virtualRow.index % 2 !== 0}
-      data-row-interact
+      data-row-draggable={drag?.dragging}
+      data-row-slot-hidden={drag?.slotHidden || undefined}
+      data-row-drop-parent={props.dropParent || undefined}
+      data-row-interact={interacting}
       data-last-row={row.getIsLastRow()}
       data-layout={layout}
       style={
@@ -298,7 +316,11 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
           : rowStyles
       }
     >
-      <BodyRowCells {...props} isRowInteract />
+      <BodyRowCells
+        {...props}
+        slotDepth={slotDepth}
+        isRowInteract={interacting}
+      />
     </div>
   )
 })

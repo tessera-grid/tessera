@@ -5,8 +5,9 @@ import {
   type Modifier,
 } from '@dnd-kit/core'
 
+import { AUTOSCROLL_THRESHOLD } from '../../core/dragSession'
+
 const ADJUST_OVERLAY_POSITION_Y = 10
-const AUTOSCROLL_THRESHOLD = 0.2
 const ACCELERATION_SCROLL_Y = 20
 const ACCELERATION_SCROLL_X = 10
 
@@ -62,19 +63,6 @@ export const measuring: MeasuringConfiguration = {
     measure: getLayoutRect,
     strategy: MeasuringStrategy.WhileDragging,
   },
-}
-
-/**
- * Указатель в ближней к краю половине зоны автопрокрутки: dnd-kit крутит быстрее, чем
- * успевает отрисоваться содержимое, — быстрая прокрутка (ADR 0107, RM25). Скорость не
- * годится в признак: частота шагов автопрокрутки зависит от движка и загрузки машины.
- */
-export const isNearAutoScrollEdge = (
-  rect: { top: number; bottom: number; height: number },
-  y: number,
-) => {
-  const zone = rect.height * AUTOSCROLL_THRESHOLD
-  return y >= rect.bottom - zone / 2 || y <= rect.top + zone / 2
 }
 
 export const autoScrollOnlyY: AutoScrollOptions = {

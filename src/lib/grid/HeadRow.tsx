@@ -1,20 +1,17 @@
-// HeadRow: строка заголовка (заголовки группы → HeadCell/DraggableHeadCell). При
-// enableColumnDragging рисуется DraggableHeadCell (useSortable под DndContext
-// хедера), иначе обычная HeadCell.
+// HeadRow: строка заголовка (заголовки группы → HeadCell). Перетаскивание колонок
+// приносят обёртка серии соседей и декоратор ячейки плагина (ADR 0168, §2).
 import type { VirtualItem } from '../../vendor/tanstack-virtual/react-virtual'
-import {
-  SortableContext,
-  horizontalListSortingStrategy,
-} from '@dnd-kit/sortable'
+import { Fragment } from 'react'
+
 import clsx from 'clsx'
 
 import type { HeaderGroup } from '../types'
 import type { HeaderSlot } from '../core/createSlots'
-import { DraggableHeadCell } from './DraggableHeadCell'
 import { HeadCell } from './HeadCell'
 import { VirtualCenterSpacer } from './VirtualCenterSpacer'
 import { RightFillerHeadColumn } from './RightFillerHeadColumn'
 import { needsRightFiller } from './layout'
+import { useDecorators, wrapWith, wrappersOf } from './pluginWrappers'
 import { isCoveredHeader } from '../core/headerSpans'
 import { siblingKeyOf } from '../core/columnNodes'
 
@@ -28,11 +25,10 @@ interface TableHeadRowProps {
   leftHeaderSlot?: HeaderSlot
   rightHeaderSlot?: HeaderSlot
   isVirtualColumns: boolean
-  enableColumnDragging?: boolean
 }
 
 /**
- * Серии подряд идущих соседей строки (ADR 0052): у каждой свой SortableContext, чтобы
+ * Серии подряд идущих соседей строки (ADR 0052): у каждой своя обёртка плагина, чтобы
  * перетаскивание шло только среди соседей. Порядок в DOM сохраняется — от него
  * зависит раскладка CSS grid; покрытые заголовки идут в текущую серию.
  */
@@ -60,26 +56,34 @@ export const HeadRow = ({
   leftHeaderSlot,
   rightHeaderSlot,
   isVirtualColumns,
-  enableColumnDragging,
 }: TableHeadRowProps) => {
   const { headers } = headerGroup
+  const wrappers = wrappersOf(headers[0]?.getContext().table)
+  const decorated = useDecorators(wrappers.headCellDecorator, HeadCell, 'Cell')
 
-  const CellComponent = enableColumnDragging ? DraggableHeadCell : HeadCell
+  const cell = (
+    header: (typeof headers)[number],
+    absoluteLeft?: number,
+    plain = false,
+  ) => {
+    const props = {
+      layout,
+      header,
+      leftHeaderSlot,
+      rightHeaderSlot,
+      absoluteLeft,
+    }
+    return decorated && !plain ? (
+      <decorated.Outer key={header.id} {...props} Cell={decorated.Inner} />
+    ) : (
+      <HeadCell key={header.id} {...props} />
+    )
+  }
 
   if (!isVirtualColumns) {
-    const renderCell = (header: (typeof headers)[number]) => {
-      // Покрытый заголовок не рисуется и в сортировке не участвует.
-      const Component = isCoveredHeader(header) ? HeadCell : CellComponent
-      return (
-        <Component
-          key={header.id}
-          layout={layout}
-          header={header}
-          leftHeaderSlot={leftHeaderSlot}
-          rightHeaderSlot={rightHeaderSlot}
-        />
-      )
-    }
+    // Покрытый заголовок не рисуется и в сортировке не участвует.
+    const renderCell = (header: (typeof headers)[number]) =>
+      cell(header, undefined, isCoveredHeader(header))
 
     return (
       <div
@@ -87,15 +91,15 @@ export const HeadRow = ({
         aria-rowindex={headerGroup.depth + 1}
         style={{ display: 'contents' }}
       >
-        {enableColumnDragging
+        {wrappers.headSeries.length > 0
           ? siblingRuns(headers).map(run => (
-              <SortableContext
-                key={run.ids[0] ?? run.headers[0].id}
-                items={run.ids}
-                strategy={horizontalListSortingStrategy}
-              >
-                {run.headers.map(renderCell)}
-              </SortableContext>
+              <Fragment key={run.ids[0] ?? run.headers[0].id}>
+                {wrapWith(
+                  wrappers.headSeries,
+                  { ids: run.ids },
+                  run.headers.map(renderCell),
+                )}
+              </Fragment>
             ))
           : headers.map(renderCell)}
         {needsRightFiller(headers.at(-1)?.getLeafHeaders().at(-1)?.column) && (
@@ -122,17 +126,6 @@ export const HeadRow = ({
     else if (pinned === 'end') endHeaders.push(header)
     else centerHeaders.push({ header, start: virtualColumn.start })
   }
-
-  const cell = (header: (typeof headers)[number], absoluteLeft?: number) => (
-    <CellComponent
-      key={header.id}
-      layout={layout}
-      header={header}
-      leftHeaderSlot={leftHeaderSlot}
-      rightHeaderSlot={rightHeaderSlot}
-      absoluteLeft={absoluteLeft}
-    />
-  )
 
   return (
     <div

@@ -3,11 +3,11 @@
 }
 
 .positioner {
-  composes: positioner from '../../ui/Popup/Popup.module.css';
+  composes: positioner from './Popup.module.css';
 }
 
 .popup {
-  composes: popup from '../../ui/Popup/Popup.module.css';
+  composes: popup from './Popup.module.css';
   min-width: 180px;
   max-width: min(var(--tsr-comp-popup-max-width), calc(100vw - 16px));
 }
@@ -37,7 +37,7 @@
  * однострочного пункта прежняя за счёт поля сверху и снизу.
  */
 .item {
-  composes: item from '../../ui/Popup/Popup.module.css';
+  composes: item from './Popup.module.css';
   --_line: calc(1.2 * var(--tsr-comp-popup-font-size));
   --_item-align: flex-start;
   --_item-padding-block: calc(
@@ -84,7 +84,7 @@
 
 /* Ожидание пункта (ADR 0078): пятна света по кольцу, как у кнопок и ячеек. */
 .itemSpinner {
-  composes: spinner from '../../ui/ringStates/ringStates.module.css';
+  composes: spinner from '../ringStates/ringStates.module.css';
   width: 12px;
   height: 12px;
 }

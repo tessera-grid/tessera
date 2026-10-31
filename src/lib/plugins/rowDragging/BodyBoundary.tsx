@@ -1,9 +1,7 @@
-// DnD-обвязка тела. BodyDndBoundary монтирует DndContext + SortableContext только
-// при enableRowDragging (иначе цена useSortable платится на каждый смонтированный
-// ряд). Состояние overlay читается из атома rowDragging; геометрия
-// переупорядочивания — getRowDraggingEvents.
+// Обёртка тела плагина rowDragging (ADR 0168, §2): DndContext + SortableContext строк —
+// только при включённом перетаскивании или идущей сессии. Состояние облака — срез
+// rowDragging, геометрия переупорядочивания — getRowDraggingEvents, облако рисует грид.
 import {
-  type PropsWithChildren,
   type RefObject,
   useCallback,
   useEffect,
@@ -27,17 +25,15 @@ import {
 } from '@dnd-kit/core'
 import { SortableContext } from '@dnd-kit/sortable'
 
-import type { Table } from '../types'
-import { cancelDragLikeEscape } from '../core/cancelInteraction'
-import { useSlice, useTableState } from '../core/reactivity'
-import {
-  type RowDragOverlayState,
-  getRowDraggingEvents,
-} from '../plugins/rowDragging'
-import { createExpandTimer } from '../plugins/rowDragging/expandTimer'
-import { dragRowsOf } from '../plugins/rowDragging/dragRows'
-import { readRowNestingIndent } from '../core/rowNesting'
-import { createDropLevel } from './dnd/dropLevel'
+import { cancelDragLikeEscape } from '../../core/cancelInteraction'
+import type { BodyBoundaryProps } from '../../core/pluginWrappers'
+import { useSlice, useTableState } from '../../core/reactivity'
+import { getRowDraggingEvents } from './getRowDraggingEvents'
+import type { RowDragOverlayState } from './types'
+import { createExpandTimer } from './expandTimer'
+import { dragRowsOf } from './dragRows'
+import { readRowNestingIndent } from '../../core/rowNesting'
+import { createDropLevel } from './dropLevel'
 import {
   Z_INDEX,
   adjustOverlayPosition,
@@ -45,12 +41,12 @@ import {
   dndAccessibility,
   measuring,
   sensorOptions,
-} from './dnd/parameters'
-import { OverlayBodyRow } from './OverlayBodyRow'
-import { windowedListSortingStrategy } from './dnd/windowedListSortingStrategy'
-import { useIsomorphicLayoutEffect } from '../util/useIsomorphicLayoutEffect'
-import { useLatest } from '../util/useLatest'
-import { REACT_MAJOR } from '../util/reactVersion'
+} from '../../shared/dnd/parameters'
+import { DragHandler } from '../../shared/dnd'
+import { windowedListSortingStrategy } from './windowedListSortingStrategy'
+import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
+import { useLatest } from '../../util/useLatest'
+import { REACT_MAJOR } from '../../util/reactVersion'
 
 /** Перетаскиваемая строка модели; без перетаскивания строки не обходятся (D33). */
 export const findDraggableRow = <TRow,>(
@@ -96,25 +92,13 @@ const OverCommit = ({
 
 const NO_SORTABLE_ROWS: string[] = []
 
-export interface DndBodyWrapperProps {
-  table: Table<any, any>
-  /** Окно виртуализатора строк: id для `SortableContext`. */
-  virtualRows: readonly { index: number }[]
-}
-
-export interface BodyDndBoundaryProps extends DndBodyWrapperProps {
-  enableRowDragging: boolean
-}
-
-/**
- * Монтирует Drag&Drop-обвязку тела только при включённом перетаскивании строк.
- */
-export const BodyDndBoundary = ({
+/** Монтирует Drag&Drop-обвязку тела только при включённом перетаскивании строк. */
+export const BodyBoundary = ({
   table,
-  enableRowDragging,
   virtualRows,
+  renderCloud,
   children,
-}: PropsWithChildren<BodyDndBoundaryProps>) => {
+}: BodyBoundaryProps) => {
   // Идущее перетаскивание держит обёртку, пока его не отменят (ADR 0039, RX14).
   const activeId = useTableState(
     table,
@@ -122,22 +106,27 @@ export const BodyDndBoundary = ({
       (state as { rowDragging?: { activeId: string | null } }).rowDragging
         ?.activeId ?? null,
   )
-  if (!enableRowDragging && !activeId) {
+  if (!table.options.enableRowDragging && !activeId) {
     return children
   }
 
   return (
-    <DndBodyWrapper table={table} virtualRows={virtualRows}>
+    <DndBodyWrapper
+      table={table}
+      virtualRows={virtualRows}
+      renderCloud={renderCloud}
+    >
       {children}
     </DndBodyWrapper>
   )
 }
 
-export const DndBodyWrapper = ({
+const DndBodyWrapper = ({
   table,
   virtualRows,
+  renderCloud,
   children,
-}: PropsWithChildren<DndBodyWrapperProps>) => {
+}: BodyBoundaryProps) => {
   // Уровень броска — по тексту облака (ADR 0108, §2): начало уровней строки меряется на
   // старте, отступ текста облака — по нему самому.
   const [dropLevel] = useState(createDropLevel)
@@ -228,14 +217,6 @@ export const DndBodyWrapper = ({
     }
   }, [forbidden, lost])
 
-  const draggableRowCell = useMemo(
-    () =>
-      draggableRow
-        ?.getVisibleCells()
-        .find((cell: any) => !cell.column.getIsActionsColumn()),
-    [draggableRow],
-  )
-
   // Вне перетаскивания список строк постоянный: сдвиг окна не перерисовывает строки через
   // контекст dnd-kit (ADR 0149, PS11). Строки окна нужны только идущему перетаскиванию (D34).
   // Строки серверной модели приходят без смены раскладки: id окна — на каждый рендер сессии.
@@ -299,14 +280,11 @@ export const DndBodyWrapper = ({
         dropAnimation={null}
         zIndex={Z_INDEX}
       >
-        {draggableRowCell && (
-          <OverlayBodyRow
-            ref={attachOverlay}
-            firstCell={draggableRowCell}
-            withCount={draggableRow?.getCanExpand?.() ?? false}
-            subRowsCount={draggableRow?.subRows.length}
-          />
-        )}
+        {draggableRow &&
+          renderCloud(draggableRow as never, {
+            ref: attachOverlay,
+            handle: <DragHandler id="" type="row" />,
+          })}
       </DragOverlay>
     </DndContext>
   )

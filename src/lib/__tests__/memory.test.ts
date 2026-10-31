@@ -20,7 +20,7 @@ const LIB = join(ROOT, 'src', 'lib')
 const BOUNDED: Record<string, string> = {
   'core/inputModality.ts:MODIFIER_KEYS': 'константный набор клавиш',
   'core/keyboardNavigation/actions.ts:ACTION_KEYS': 'константный набор клавиш',
-  'grid/headerActions/useMenuLeave.ts:LEAVING': 'константный набор причин',
+  'ui/Popup/useMenuLeave.ts:LEAVING': 'константный набор причин',
   'plugins/columnFiltering/describeFilter.ts:DATE_OPERATORS':
     'константный набор операторов',
   'plugins/columnFiltering/describeFilter.ts:OPTION_OPERATORS':

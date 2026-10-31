@@ -7,7 +7,7 @@ import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
 import { RowButton } from '../../../ui/RowButton/RowButton'
-import { DragHandler } from '../../../grid/dnd/DragHandler'
+import { DragHandler } from '../../../shared/dnd/DragHandler'
 import { ActionButton } from '../../../grid/headerActions/ActionButton'
 import { PinButton } from '../../../plugins/columnPinning/PinButton'
 import { SortButton } from '../../../plugins/columnSorting/SortButton'

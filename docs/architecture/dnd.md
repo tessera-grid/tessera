@@ -10,19 +10,29 @@ Tessera строит перетаскивание рендер-слоя пове
 
 ## DnD-обёртки
 
-Head и body оборачиваются в отдельные обёртки, каждая со своим `DndContext` +
-`SortableContext`:
+dnd-kit и логика перетаскивания живут в плагинах `rowDragging` и `columnDragging`; грид и
+ядро dnd-kit не импортируют ([ADR 0168](../decisions/0168-dnd-in-plugins.md)). Плагин
+встраивается обёртками и декораторами — внутренними слотами записи (`wrappers`,
+`core/pluginWrappers.ts`), грид вкладывает их вокруг тела, шапки, строки и ячейки
+(`grid/pluginWrappers.tsx`); без записи грид рисует всё как есть, без лишних компонентов:
 
-- **`DndHeadWrapper`** (`src/lib/grid/DndHeadWrapper.tsx`) — оборачивает
-  заголовки в `DndContext` + `SortableContext` для переупорядочивания **столбцов**.
-- **`DndBodyWrapper`** (`src/lib/grid/DndBodyWrapper.tsx`) — то же для
-  переупорядочивания **строк**; поднимает вертикальный `SortableContext` и
-  подключает handlers из `getRowDraggingEvents(table)`.
+- **`HeadBoundary`** (`plugins/columnDragging`) — `DndContext` + `SortableContext` шапки
+  для переупорядочивания **столбцов**; `HeadSeries` — `SortableContext` серии соседей в строке
+  шапки; `SortableHeadCell` — `useSortable` ячейки, отдаёт `HeadCell` привязку
+  (`HeadDragBinding`: ref, сдвиг, скрытие, занятость).
+- **`BodyBoundary`** (`plugins/rowDragging`) — то же для **строк**: вертикальный
+  `SortableContext` окна и обработчики `getRowDraggingEvents(table)`; `SortableRow` —
+  `useSortable` строки, отдаёт `BodyRow` привязку (`RowDragBinding`) и сам сдвигает её
+  элемент; `DroppablePendingRow` — незагруженная строка как место броска.
+- Обёртки тела и шапки собираются и у выключенного плагина: начатая сессия доживает до
+  отмены (RX14). Облака рисует грид по `renderCloud` обёртки, ручку облака строки даёт плагин.
+- Общее у двух плагинов — `shared/dnd` (сенсоры, доступность, замер, `DragHandler` и его
+  контекст) и `shared/handleMenu` (меню ручки).
 
 > **Ловушка.** `DndContext` по умолчанию рендерит свой live region
 > (`role="status"`) и скрытые инструкции **на месте** — то есть внутри
 > `role="table"`, где axe допускает только строки (`aria-required-children`). Обе
-> обёртки передают `accessibility={dndAccessibility}` (`grid/dnd/parameters.ts`),
+> обёртки передают `accessibility={dndAccessibility}` (`shared/dnd/parameters.ts`),
 > и dnd-kit порталит эту разметку в `document.body` (ADR 0036, PQ4).
 >
 > Облака перетаскивания (`OverlayBodyRow`, `OverlayHeadCell`) тоже рисуются внутри
@@ -32,10 +42,10 @@ Head и body оборачиваются в отдельные обёртки, к
 
 ```mermaid
 flowchart TB
-    DHW["DndHeadWrapper<br/>DndContext + SortableContext (столбцы)"]
-    DBW["DndBodyWrapper<br/>DndContext + SortableContext (строки)"]
-    OHC["OverlayHeadCell (overlay столбца)"]
-    OBR["OverlayBodyRow (overlay строки)"]
+    DHW["HeadBoundary (columnDragging)<br/>DndContext + SortableContext (столбцы)"]
+    DBW["BodyBoundary (rowDragging)<br/>DndContext + SortableContext (строки)"]
+    OHC["OverlayHeadCell (облако столбца, грид)"]
+    OBR["OverlayBodyRow (облако строки, грид)"]
     DHW --> OHC
     DBW --> OBR
 ```
@@ -70,14 +80,14 @@ flowchart TB
 
 Свёрнутая группа, под которой слот стоит на уровне её детей, раскрывается паузой
 (ADR [0109](../decisions/0109-drop-into-collapsed-groups.md)): таймер
-`createExpandTimer` живёт в `DndBodyWrapper` дольше обработчиков одного рендера,
+`createExpandTimer` живёт в `BodyBoundary` дольше обработчиков одного рендера,
 раскрытие идёт путём клика (`row.setExpandedByUser` из `rowExpanding` — без импорта
 плагина). Раскрытые паузой группы — в срезе `openedByDelay`, после сессии они
 сворачиваются, кроме группы броска и её предков. Цель вложения — `canNestInto`: группа
 с переключателем (`hasExpandToggle`) или уже раскрытая; свёрнутая группа дерева
 `rowExpandingModel` без `rowExpanding` для паузы, броска и меню ручки — лист (ADR 0109,
 §5). Строки окна сдвигаются без движения
-указателя — `DndBodyWrapper` выравнивает `fromIndex` и `overIndex` по id (`overId`).
+указателя — `BodyBoundary` выравнивает `fromIndex` и `overIndex` по id (`overId`).
 Строки и облако dnd-kit мерит `getLayoutRect` — без `transform` и без `translate`
 движения строк: с `translate` раскрытие посреди сессии ставило слот под облако, и
 местом броска становился он сам. Будущий родитель слота — `findDropParent` по строкам
@@ -100,7 +110,7 @@ flowchart TB
 ## Collision detection и modifiers
 
 Tessera поставляет **кастомную стратегию коллизий** для столбцов и **модификаторы**
-для ограничения движения (`src/lib/grid/dnd/`). Автоскролл у края ограничен
+для ограничения движения (`plugins/columnDragging`, `shared/dnd/parameters.ts`). Автоскролл у края ограничен
 **только вертикальной осью** (`autoScroll={autoScrollOnlyY}`,
 `core/dnd/parameters.ts`): удержание указателя у верхнего/нижнего края скроллит
 таблицу вертикально, горизонтальный автоскролл отключён.
@@ -118,7 +128,7 @@ Tessera поставляет **кастомную стратегию колли�
 - столкновения считаются только с соседями активного узла (`siblingKey` в `data`
   сортируемого элемента), бросок за край прижимает узел к краю группы;
 - ячейки под группой лежат в других строках сетки, обёрткой их не охватить: сдвиг и
-  скрытие они берут у предка через стор `grid/dnd/nodeShift.ts`, который публикует
+  скрытие они берут у предка через стор `plugins/columnDragging/nodeShift.ts`, который публикует
   ячейка группы;
 - бросок переставляет блок листьев узла (`moveBlock`), колбэк получает `columnId` и
   новый `columnOrder`.
@@ -129,13 +139,13 @@ Tessera поставляет **кастомную стратегию колли�
 ## Порог старта и меню ручки
 
 Сенсоры dnd-kit (`Pointer`, `Mouse`, `Touch`) в обеих обёртках получают
-`activationConstraint: { distance: 5 }` (`grid/dnd/parameters.ts`): перетаскивание
+`activationConstraint: { distance: 5 }` (`shared/dnd/parameters.ts`): перетаскивание
 начинается после сдвига на 5 px. Короткое нажатие — обычный клик: ручка
 `DragHandler` — кнопка меню команд перестановки (WCAG 2.5.7,
 [ADR 0034](../decisions/0034-wcag-22-dragging-and-target-size.md)). Пункты меню
 дают плагины (`ColumnDraggingComponent`, `RowDraggingComponent`) и вызывают ту же
 логику, что `Alt+Shift+стрелки` (`moveColumn.ts`, `moveRow.ts`). Попап
-(`grid/handleMenu`) грузится лениво — при наведении и фокусе на ручке — и монтируется
+(`shared/handleMenu`) грузится лениво — при наведении и фокусе на ручке — и монтируется
 только открытым; нажатие до загрузки открывает меню после неё, долгое ожидание видно
 на ручке ([ADR 0061](../decisions/0061-lazy-popover-loading.md)). Грип ширины
 `columnSizing` использует тот же попап.

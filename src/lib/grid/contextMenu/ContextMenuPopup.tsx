@@ -13,11 +13,11 @@ import type {
 } from '../../core/headerActions'
 import type { ActionMenuItemsProps } from '../headerActions/ActionMenuItems'
 import { ActionMenuSections } from '../headerActions/ActionMenuSections'
-import { useCloseOnGridScroll } from '../headerActions/useCloseOnGridScroll'
-import { GRID_SCROLL_REASON, useMenuLeave } from '../headerActions/useMenuLeave'
+import { useCloseOnGridScroll } from '../../ui/Popup/useCloseOnGridScroll'
+import { GRID_SCROLL_REASON, useMenuLeave } from '../../ui/Popup/useMenuLeave'
 import { useMenuSections } from '../headerActions/useMenuSections'
 
-import menuStyles from '../headerActions/ActionMenu.module.css'
+import menuStyles from '../../ui/Popup/ActionMenu.module.css'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 
 export interface ContextMenuPopupProps {

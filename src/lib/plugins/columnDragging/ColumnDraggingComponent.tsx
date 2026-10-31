@@ -10,7 +10,7 @@ import { useLocalization } from '../../core/localization'
 import type { FailedAttempt } from '../../shared/failedAttempts'
 import { rejectionText } from '../../util/thenable'
 import { useSlice, useTableState } from '../../core/reactivity'
-import { DragHandler } from '../../grid/dnd'
+import { DragHandler } from '../../shared/dnd'
 import {
   type ColumnMoveDirection,
   canMoveColumn,

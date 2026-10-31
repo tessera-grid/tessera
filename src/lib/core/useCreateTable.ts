@@ -382,6 +382,7 @@ export const useCreateTable = <
     keyboardActions: folded.keyboardActions,
     pluginDiagnostics: folded.pluginDiagnostics,
     pluginRenderVersion: argsStore.current.renderVersion,
+    pluginWrappers: folded.wrappers,
     // Колбэки изменений локального состояния плагинов по ключу среза (DP17).
     pluginStateListeners: Object.fromEntries(
       entries.flatMap(entry =>

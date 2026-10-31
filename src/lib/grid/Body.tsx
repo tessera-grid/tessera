@@ -1,7 +1,6 @@
 // Body: контейнер тела. Виртуализация приходит пропсами (virtualRows/virtualColumns
-// считает DataGrid), Body лишь маппит строки в BodyRow/DraggableBodyRow. При
-// enableRowDragging рисуется DraggableBodyRow (useSortable под DndContext тела),
-// иначе обычная BodyRow.
+// считает DataGrid), Body лишь маппит строки в BodyRow; декораторы плагинов оборачивают
+// строку и незагруженную строку (ADR 0168, §2).
 import { memo, useMemo, useRef } from 'react'
 
 import type { VirtualItem } from '../../vendor/tanstack-virtual/react-virtual'
@@ -14,10 +13,10 @@ import { useLocalization } from '../core/localization'
 import type { RowFailure, RowSource } from '../core/rowSource'
 import { BodyRow } from './BodyRow'
 import { ColumnWindowContext } from './columnWindow'
-import { DraggableBodyRow } from './DraggableBodyRow'
 import { type DropPreview, findDropParent } from '../core/dragSession'
 import { LoadMoreError } from '../ui/LoadMoreError/LoadMoreError'
 import { RowMotion } from './rowMotion/RowMotion'
+import { useDecorators, wrappersOf } from './pluginWrappers'
 import { hasStickyRows, StickyRows } from './StickyRows'
 import { isPlaceholderRow } from '../core/lazyPlaceholder'
 import { FailedRow, PendingRow } from './PendingRow'
@@ -48,7 +47,6 @@ interface TableBodyProps {
   treeLines?: boolean
   isResizingColumns: false | string
   isVirtualColumns: boolean
-  enableRowDragging?: boolean
   /** Движение строк при смене модели (ADR 0107). */
   rowAnimation?: boolean
   /** Перетаскиваемая строка и место броска (ADR 0108). */
@@ -82,12 +80,17 @@ export const Body = ({
   treeRows,
   treeLines,
   isVirtualColumns,
-  enableRowDragging,
   rowAnimation = false,
   dropPreview,
 }: TableBodyProps) => {
   const bodyRef = useRef<HTMLDivElement>(null)
-  const RowComponent = enableRowDragging ? DraggableBodyRow : BodyRow
+  const wrappers = wrappersOf(table)
+  const decoratedRow = useDecorators(wrappers.rowDecorator, BodyRow, 'Row')
+  const decoratedPending = useDecorators(
+    wrappers.pendingRowDecorator,
+    PendingRow,
+    'Row',
+  )
   // Серверная модель строк считает `aria-*` дерева сама: массива строк у неё нет
   // (ADR 0138, §14).
   const sourceAria = rowSource.treeAria
@@ -228,30 +231,34 @@ export const Body = ({
             if (!row) {
               const depth = treeLinesIndex?.depth(virtualRow.index) ?? -1
               const pending = depth >= 0 && linesOf(virtualRow.index, false)
-              return (
-                <PendingRow
-                  droppable={!!enableRowDragging}
-                  tree={treeRows ? sourceAria?.(virtualRow.index) : undefined}
-                  skeletonTree={
-                    pending
-                      ? {
-                          depth,
-                          branch: pending.branch ?? '',
-                          open: !!pending.open,
-                          parent: false,
-                        }
-                      : undefined
-                  }
-                  treeLines={!!pending}
-                  key={`pending-${virtualRow.index}`}
-                  table={table}
-                  layout={layout}
-                  virtualRow={virtualRow}
-                  leafColumns={leafColumns}
-                  virtualColumns={virtualColumns}
-                  isVirtualColumns={isVirtualColumns}
-                  ariaRowIndexBase={ariaRowIndexBase}
+              const pendingProps = {
+                tree: treeRows ? sourceAria?.(virtualRow.index) : undefined,
+                skeletonTree: pending
+                  ? {
+                      depth,
+                      branch: pending.branch ?? '',
+                      open: !!pending.open,
+                      parent: false,
+                    }
+                  : undefined,
+                treeLines: !!pending,
+                table,
+                layout,
+                virtualRow,
+                leafColumns,
+                virtualColumns,
+                isVirtualColumns,
+                ariaRowIndexBase,
+              }
+              const key = `pending-${virtualRow.index}`
+              return decoratedPending ? (
+                <decoratedPending.Outer
+                  key={key}
+                  {...pendingProps}
+                  Row={decoratedPending.Inner}
                 />
+              ) : (
+                <PendingRow key={key} {...pendingProps} />
               )
             }
             // Ленивые дети в пути (ADR 0155, §3): скелет-строка с отступом ребёнка.
@@ -284,28 +291,34 @@ export const Body = ({
             }
             const isActive = drop?.activeId === row.id
             const lines = linesOf(virtualRow.index, isActive)
-            return (
-              <RowComponent
+            const rowProps = {
+              layout,
+              row,
+              virtualRow,
+              visibleCells: row.getVisibleCells(),
+              leafColumns,
+              leftCellSlot,
+              rightCellSlot,
+              cellSlot,
+              actionRowSlot,
+              ariaRowIndexBase,
+              selectableRows,
+              treeSetSize: treeAria?.setSize(virtualRow.index),
+              treePosInSet: treeAria?.posInSet(virtualRow.index),
+              treeBranch: lines.branch,
+              treeOpen: lines.open,
+              slotDepth: isActive ? drop.depth : undefined,
+              dropParent: virtualRow.index === dropParent || undefined,
+              isVirtualColumns,
+            }
+            return decoratedRow ? (
+              <decoratedRow.Outer
                 key={row.id}
-                layout={layout}
-                row={row}
-                virtualRow={virtualRow}
-                visibleCells={row.getVisibleCells()}
-                leafColumns={leafColumns}
-                leftCellSlot={leftCellSlot}
-                rightCellSlot={rightCellSlot}
-                cellSlot={cellSlot}
-                actionRowSlot={actionRowSlot}
-                ariaRowIndexBase={ariaRowIndexBase}
-                selectableRows={selectableRows}
-                treeSetSize={treeAria?.setSize(virtualRow.index)}
-                treePosInSet={treeAria?.posInSet(virtualRow.index)}
-                treeBranch={lines.branch}
-                treeOpen={lines.open}
-                slotDepth={isActive ? drop.depth : undefined}
-                dropParent={virtualRow.index === dropParent || undefined}
-                isVirtualColumns={isVirtualColumns}
+                {...rowProps}
+                Row={decoratedRow.Inner}
               />
+            ) : (
+              <BodyRow key={row.id} {...rowProps} />
             )
           })}
         </RowMotion>

@@ -1,7 +1,7 @@
 import { userEvent } from 'vitest/browser'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 
-import { handleMenuModule } from '../../../grid/handleMenu/HandleMenu'
+import { handleMenuModule } from '../../../shared/handleMenu/HandleMenu'
 import {
   MODULE,
   columnHandle,

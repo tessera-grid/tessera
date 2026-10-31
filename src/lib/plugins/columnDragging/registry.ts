@@ -2,11 +2,15 @@
  * Запись плагина columnDragging на `definePlugin`. Кастомная фича
  * `columnDraggingFeature` (свой слайс состояния + column-методы); порядок колонок
  * обеспечивает `columnOrderingFeature`. dnd-события — в getColumnDraggingEvents
- * (грид вызывает их).
+ * (их зовёт обёртка шапки плагина, ADR 0168).
  */
 import { columnOrderingFeature } from '@tanstack/react-table'
 
 import { definePlugin } from '../../core/definePlugin'
+import { withWrappers } from '../../core/pluginWrappers'
+import { HeadBoundary } from './HeadBoundary'
+import { HeadSeries } from './HeadSeries'
+import { SortableHeadCell } from './SortableHeadCell'
 import { ColumnDraggingComponent } from './ColumnDraggingComponent'
 import { columnDraggingFeature } from './columnDraggingFeature'
 import { neverInert } from '../../core/pluginDiagnostics'
@@ -31,7 +35,7 @@ export interface ColumnDraggingOptions {
   onColumnDragCancel?: ColumnDraggingHooks['onColumnDragCancel']
 }
 
-export const columnDragging = definePlugin<ColumnDraggingOptions>()({
+const columnDraggingEntry = definePlugin<ColumnDraggingOptions>()({
   id: 'columnDragging',
   features: { columnDraggingFeature, columnOrderingFeature },
   hooks: o => ({
@@ -53,4 +57,10 @@ export const columnDragging = definePlugin<ColumnDraggingOptions>()({
     enableColumnDragging: o.enabled !== false,
     columnDragRevertOnReject: o.revertOnReject !== false,
   }),
+})
+
+export const columnDragging = withWrappers(columnDraggingEntry, {
+  headBoundary: { id: 'columnDragging', component: HeadBoundary },
+  headSeries: { id: 'columnDragging', component: HeadSeries },
+  headCellDecorator: { id: 'columnDragging', component: SortableHeadCell },
 })

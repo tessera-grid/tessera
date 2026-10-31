@@ -5,7 +5,8 @@
 // `npm run build` — `npm run check:tree-shaking`. Интерфейс несёт свою модель
 // (ADR 0120, MP11): ему разрешены модели по цепочке `entry.model`, модели интерфейс — нет.
 // `DataGrid` с `useCreateTable` без плагинов не тянет модулей плагинов кроме базы, а размер
-// его сборки после gzip держится в бюджете `scripts/core-budget.json` (ADR 0163, LB3–LB4).
+// его сборки после gzip держится в бюджете `scripts/core-budget.json` (ADR 0163, LB3–LB4), импорта
+// `@dnd-kit/*` в ней нет: перетаскивание — в плагинах (ADR 0168, DM2).
 
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -84,7 +85,10 @@ const bundle = async (name, source) => {
     (sum, chunk) => sum + gzipSync(chunk.code).length,
     0,
   )
-  return { plugins: pluginDirs, gzip }
+  const externals = new Set(
+    chunks.flatMap(chunk => [...chunk.imports, ...chunk.dynamicImports]),
+  )
+  return { plugins: pluginDirs, gzip, externals }
 }
 
 /** Каталоги плагинов, чьи модули попали в сборку потребителя с одним импортом. */
@@ -123,6 +127,12 @@ const grid = await bundle(
 for (const name of [...grid.plugins].sort()) {
   if (!(name in budget.pluginModules)) {
     failures.push(`DataGrid без плагинов: в сборку попал плагин ${name}`)
+  }
+}
+// DM2: перетаскивание — в плагинах, dnd-kit без них в сборку не попадает (ADR 0168).
+for (const id of [...grid.externals].sort()) {
+  if (id.startsWith('@dnd-kit/')) {
+    failures.push(`DataGrid без плагинов: в сборке импорт ${id}`)
   }
 }
 for (const [name, reason] of Object.entries(budget.pluginModules)) {

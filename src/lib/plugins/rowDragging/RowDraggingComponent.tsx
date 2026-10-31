@@ -10,7 +10,7 @@ import { useLocalization } from '../../core/localization'
 import { hasRowHierarchy } from '../../core/rowHierarchy'
 import type { FailedAttempt } from '../../shared/failedAttempts'
 import { rejectionText } from '../../util/thenable'
-import { DragHandler } from '../../grid/dnd'
+import { DragHandler } from '../../shared/dnd'
 import {
   type RowMoveDirection,
   canMoveRow,

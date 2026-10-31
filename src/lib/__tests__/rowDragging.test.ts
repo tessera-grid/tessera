@@ -22,7 +22,10 @@ import { commitRowMove } from '../plugins/rowDragging/commitRowMove'
 import { rowHighlightKey } from '../core/highlights/highlightFeature'
 import { __resetLogger } from '../util/logger'
 import { captureInertWarnings } from './inertWarnings'
-import { findDraggableRow, getSortableRowIds } from '../grid/DndBodyWrapper'
+import {
+  findDraggableRow,
+  getSortableRowIds,
+} from '../plugins/rowDragging/BodyBoundary'
 import { reorderRows } from '../plugins/rowDragging/reorderRows'
 import { canNestRow } from '../plugins/rowDragging/moveRow'
 import {

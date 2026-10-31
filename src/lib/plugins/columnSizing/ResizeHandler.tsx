@@ -14,7 +14,7 @@ import {
   resizeCancelReason,
   type SessionCancelReason,
 } from '../../core/cancelInteraction'
-import { HandleMenu, useHandleMenu } from '../../grid/handleMenu/HandleMenu'
+import { HandleMenu, useHandleMenu } from '../../shared/handleMenu/HandleMenu'
 import { reportAction } from '../../core/debugActions'
 import styles from './ResizeHandler.module.css'
 import '../../ui/cellControls/buttonVisibility.css'

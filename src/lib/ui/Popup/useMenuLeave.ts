@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 
-import { focusStayed } from '../../ui/Popup/finalFocus'
+import { focusStayed } from './finalFocus'
 
 /** Причина закрытия меню прокруткой грида пользователем (ADR 0085, MM4). */
 export const GRID_SCROLL_REASON = 'wheel'

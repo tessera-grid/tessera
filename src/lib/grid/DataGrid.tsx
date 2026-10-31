@@ -64,7 +64,11 @@ import {
 import { useLoadingDisplay } from './useLoadingDisplay'
 import type { Column, Row, Table } from '../types'
 import { commonOptionsOf } from '../core/commonFeature'
-import { columnDragActiveIdOf, rowDragSessionOf } from '../core/dragSession'
+import {
+  columnDragActiveIdOf,
+  isNearAutoScrollEdge,
+  rowDragSessionOf,
+} from '../core/dragSession'
 import type { RenderSlots } from '../core/createSlots'
 import { useTableState } from '../core/reactivity'
 import { cancelColumnResize } from '../core/cancelInteraction'
@@ -75,8 +79,7 @@ import {
   useRowVirtualizer,
 } from '../core/virtualization'
 import { useScrollViewport } from '../core/scrollToRow/viewport'
-import { isNearAutoScrollEdge } from './dnd/parameters'
-import { useDragPointerY } from './dnd/useDragPointerY'
+import { useDragPointerY } from './useDragPointerY'
 import { useCalculateColumnSizes } from './useCalculateColumnSizes'
 import { columnShiftVars } from './columnSizes'
 import { useCellSelectionCopy } from './useCellSelectionCopy'

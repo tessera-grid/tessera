@@ -15,12 +15,13 @@ import { RenderSlot } from '../core/renderSlots'
 import { useTableState } from '../core/reactivity'
 import type { Column, HeaderGroup, Row, Table } from '../types'
 import { ColumnMotion } from './columnMotion/ColumnMotion'
-import { BodyDndBoundary } from './DndBodyWrapper'
 import { MemoizedBody } from './Body'
 import { dropPreviewOf } from '../core/dragSession'
 import { MemoizedFooter } from './Footer'
-import { HeadDndBoundary } from './DndHeadWrapper'
 import { MemoizedHead } from './Head'
+import { renderRowCloud } from './OverlayBodyRow'
+import { OverlayHeadCell } from './OverlayHeadCell'
+import { wrapWith, wrappersOf } from './pluginWrappers'
 import { SkeletonBody } from './SkeletonBody'
 import { SkeletonModeContext } from './skeletonMode'
 import { TableEndRow } from './TableEndRow'
@@ -78,9 +79,7 @@ export const DataGridTable = ({
   style,
 }: DataGridTableProps) => {
   const { options } = table
-  // Инертность перетаскивания (сортировка, фильтр, дерево серверной модели) решает строка.
-  const enableRowDragging = !!options.enableRowDragging
-  const enableColumnDragging = !!options.enableColumnDragging
+  const wrappers = wrappersOf(table)
   // rowSelection даёт функциональный enableRowSelection (гейт группировки), выкл — false.
   const enableRowSelection = !!options.enableRowSelection
   // Иерархия строк (rowExpanding / rowGrouping) — с клавиатурной навигацией грид
@@ -193,12 +192,18 @@ export const DataGridTable = ({
           </span>
         )}
         <SkeletonModeContext.Provider value={skeleton}>
-          <HeadDndBoundary
-            table={table}
-            leftHeaderSlot={leftHeaderSlot}
-            rightHeaderSlot={rightHeaderSlot}
-            enableColumnDragging={enableColumnDragging}
-          >
+          {wrapWith(
+            wrappers.headBoundary,
+            {
+              table,
+              renderCloud: header => (
+                <OverlayHeadCell
+                  header={header}
+                  leftHeaderSlot={leftHeaderSlot}
+                  rightHeaderSlot={rightHeaderSlot}
+                />
+              ),
+            },
             <MemoizedHead
               layout={layout}
               style={headStyles}
@@ -208,10 +213,9 @@ export const DataGridTable = ({
               rightHeaderSlot={rightHeaderSlot}
               isResizingColumns={isResizingColumns}
               isVirtualColumns={isVirtualColumns}
-              enableColumnDragging={enableColumnDragging}
               skeleton={skeleton}
-            />
-          </HeadDndBoundary>
+            />,
+          )}
         </SkeletonModeContext.Provider>
         {skeleton ? (
           <SkeletonBody
@@ -222,11 +226,9 @@ export const DataGridTable = ({
             isVirtualColumns={isVirtualColumns}
           />
         ) : (
-          <BodyDndBoundary
-            table={table}
-            enableRowDragging={enableRowDragging}
-            virtualRows={virtualRows}
-          >
+          wrapWith(
+            wrappers.bodyBoundary,
+            { table, virtualRows, renderCloud: renderRowCloud },
             <MemoizedBody
               dropPreview={dropPreview}
               layout={layout}
@@ -246,13 +248,12 @@ export const DataGridTable = ({
               treeLines={table.options.enableTreeLines}
               isResizingColumns={isResizingColumns}
               isVirtualColumns={isVirtualColumns}
-              enableRowDragging={enableRowDragging}
               rowAnimation={
                 options.enableRowAnimation !== false &&
                 (!!rowSource.rows || !!rowSource.changesSince)
               }
-            />
-          </BodyDndBoundary>
+            />,
+          )
         )}
         {!skeleton && <RenderSlot slot={bodyEndSlot} context={endContext} />}
         {!footerInline && tableEnd}

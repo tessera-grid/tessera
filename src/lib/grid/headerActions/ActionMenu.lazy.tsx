@@ -32,7 +32,7 @@ import {
 } from './usePanelOpening'
 import { type KebabState, useKebabState } from './useKebabState'
 
-import styles from '../../grid/headerActions/ActionMenu.module.css'
+import styles from '../../ui/Popup/ActionMenu.module.css'
 import '../../ui/cellControls/buttonVisibility.css'
 
 const ActionMenuImpl = preloadable(() =>

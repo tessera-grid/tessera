@@ -102,8 +102,8 @@ flowchart TB
 
     subgraph paint["отрисовка"]
         TB["Toolbar (toolbarSlot или enableToolbar) — вне скролл-контейнера<br/>+ toolbarSlot по подгруппам"]
-        HEAD["DndHeadWrapper → Head → HeadRow → HeadCell<br/>+ left/right header-слоты"]
-        BODY["DndBodyWrapper → Body → BodyRow → BodyCell<br/>+ left/right cell-слоты, actionRow-слот, renderComponent"]
+        HEAD["обёртка шапки плагина → Head → HeadRow → HeadCell<br/>+ left/right header-слоты"]
+        BODY["обёртка тела плагина → Body → BodyRow → BodyCell<br/>+ left/right cell-слоты, actionRow-слот, renderComponent"]
         FOOT["Footer (enableFooter)"]
         SB["StatusBar (statusBarSlot или enableStatusBar) — вне скролл-контейнера<br/>+ statusBarSlot по сторонам"]
         SK["скелет первой загрузки (loading: initial): та же шапка, SkeletonBody<br/>LinearProgress (loading: refresh)"]
@@ -112,7 +112,7 @@ flowchart TB
     read --> virt --> paint
 ```
 
-DnD-обёртки (`DndHeadWrapper` / `DndBodyWrapper`) разобраны в [dnd.md](dnd.md).
+Обёртки перетаскивания плагинов (`HeadBoundary` / `BodyBoundary`, ADR 0168) разобраны в [dnd.md](dnd.md).
 
 На ячейку `BodyCell` решает содержимое в порядке приоритета: скелетон быстрого
 скролла → `cell.renderComponent` → слот action/row-actions → `flexRender` от

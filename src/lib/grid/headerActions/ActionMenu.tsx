@@ -18,9 +18,9 @@ import { countActiveActions, type SlotAction } from '../../core/headerActions'
 import { ErrorDot, kebabActive } from './ErrorDot'
 import { ActionMenuPopup } from './ActionMenuPopup'
 import { ActionPanelPopup } from './ActionPanelPopup'
-import { useCloseOnGridScroll } from './useCloseOnGridScroll'
+import { useCloseOnGridScroll } from '../../ui/Popup/useCloseOnGridScroll'
 import { useClosingVisible } from './useClosingVisible'
-import { GRID_SCROLL_REASON, useMenuLeave } from './useMenuLeave'
+import { GRID_SCROLL_REASON, useMenuLeave } from '../../ui/Popup/useMenuLeave'
 import { usePanelOpening } from './usePanelOpening'
 import { type KebabState } from './useKebabState'
 import { useMenuSections } from './useMenuSections'
@@ -30,7 +30,7 @@ import {
   useServerActionMarks,
 } from '../../core/serverActions'
 
-import styles from '../../grid/headerActions/ActionMenu.module.css'
+import styles from '../../ui/Popup/ActionMenu.module.css'
 import '../../ui/cellControls/buttonVisibility.css'
 
 export interface ActionMenuProps {

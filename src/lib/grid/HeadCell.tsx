@@ -1,11 +1,10 @@
-// HeadCell: ячейка заголовка (перетаскиваемая обёртка — DraggableHeadCell).
+// HeadCell: ячейка заголовка (перетаскивание приносит декоратор плагина).
 // Пиннинг start/end по листьям ячейки-заголовка; контент через flexRender;
 // действия слотов — ActionsZone.
 // Опциональные методы фич (sort/resize/drag) вызываются через ?. — плагина может
 // не быть в наборе.
 import {
   type CSSProperties,
-  type ReactNode,
   memo,
   useCallback,
   useId,
@@ -13,8 +12,6 @@ import {
   useRef,
 } from 'react'
 
-import type { DraggableAttributes } from '@dnd-kit/core'
-import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities'
 import { flexRender } from '@tanstack/react-table'
 import clsx from 'clsx'
 
@@ -36,7 +33,6 @@ import { usePluginRenderVersion } from '../core/renderVersion'
 import { useLocalization } from '../core/localization'
 import { ActionsZone } from './headerActions/ActionsZone'
 import { ActionsHostContext } from './headerActions/useHeldActive'
-import { ItemDraggableWrapper } from './dnd'
 import { useGridStyles } from './layout'
 import { pinnedSideToDom } from './cellPinningParams'
 import { useSkeletonMode } from './skeletonMode'
@@ -47,11 +43,11 @@ import {
 } from './columnSizes'
 import {
   getAriaSort,
-  getDisabledSortable,
   getHeadCellState,
   getHeaderPinning,
 } from './headCellParams'
 
+import type { HeadDragBinding } from '../core/pluginWrappers'
 import { assignRef } from '../ui/assignRef'
 import headCellStyles from '../grid/HeadCell/HeadCell.module.css'
 import hidden from '../ui/visuallyHidden.module.css'
@@ -66,21 +62,9 @@ export interface TableHeadCellProps {
   absoluteLeft?: number
 }
 
-interface DragBindings {
-  setNodeRef: (element: HTMLElement | null) => void
-  setActivatorNodeRef: (element: HTMLElement | null) => void
-  listeners: SyntheticListenerMap | undefined
-  attributes: DraggableAttributes
-  transformX: number
-  isDragging: boolean
-}
-
 interface HeadCellViewProps extends TableHeadCellProps {
-  disabledSortable: boolean
-  /** Перенос узла ждёт промиса `onColumnDragEnd` (ADR 0114). */
-  movePending?: boolean
-  /** Drag&Drop-привязки; `null`, когда перетаскивание колонок выключено. */
-  drag: DragBindings | null
+  /** Привязка к перетаскиванию от декоратора плагина (ADR 0168, §2). */
+  drag?: HeadDragBinding
 }
 
 export const HeadCellView = ({
@@ -88,8 +72,6 @@ export const HeadCellView = ({
   header,
   leftHeaderSlot,
   rightHeaderSlot,
-  disabledSortable,
-  movePending = false,
   drag,
   absoluteLeft,
 }: HeadCellViewProps) => {
@@ -132,7 +114,7 @@ export const HeadCellView = ({
   // Скелет первой загрузки: только названия колонок (ADR 0060, §3).
   const skeleton = useSkeletonMode()
   const canRenderSlots = !isActionsColumn && !skeleton
-  const isDragging = drag?.isDragging ?? false
+  const isDragging = drag?.dragging ?? false
 
   const labels = useLocalization()
   const serviceLabel = header.column.getServiceColumn()?.label
@@ -234,19 +216,6 @@ export const HeadCellView = ({
     </ActionsHostContext.Provider>
   )
 
-  const content: ReactNode = drag ? (
-    <ItemDraggableWrapper
-      setActivatorNodeRef={drag.setActivatorNodeRef}
-      listeners={drag.listeners}
-      attributes={drag.attributes}
-      isRowDraggingEnable={!disabledSortable}
-    >
-      {slots}
-    </ItemDraggableWrapper>
-  ) : (
-    slots
-  )
-
   return (
     <div
       ref={setNodeRef}
@@ -268,7 +237,7 @@ export const HeadCellView = ({
       // Спанящий групповой заголовок — позиция его первого листа.
       aria-colindex={getDisplayColumnIndex(table, firstLeaf.id) + 1}
       aria-sort={getAriaSort(header)}
-      aria-busy={movePending || undefined}
+      aria-busy={drag?.busy || undefined}
       aria-rowspan={header.rowSpan > 1 ? header.rowSpan : undefined}
       aria-colspan={header.colSpan > 1 ? header.colSpan : undefined}
       data-column-id={header.column.id}
@@ -292,24 +261,17 @@ export const HeadCellView = ({
         flex={getAlignContent({ isActionsColumn, isFillColumn: false })}
         smallPadding={isActionsColumn}
       >
-        {content}
+        {slots}
       </CellWrapperContent>
     </div>
   )
 }
 
-/**
- * Ячейка заголовка без Drag&Drop-обвязки. Используется, когда перетаскивание
- * колонок выключено — чтобы не платить за useSortable на каждую ячейку.
- */
-export const HeadCell = memo((props: TableHeadCellProps) => {
-  return (
-    <HeadCellView
-      {...props}
-      disabledSortable={getDisabledSortable(props.header)}
-      drag={null}
-    />
-  )
-})
+/** Ячейка заголовка; перетаскивание колонок приносит её декоратор плагина (ADR 0168, §2). */
+export const HeadCell = memo(
+  (props: TableHeadCellProps & { drag?: HeadDragBinding }) => (
+    <HeadCellView {...props} />
+  ),
+)
 
 HeadCell.displayName = 'HeadCell'

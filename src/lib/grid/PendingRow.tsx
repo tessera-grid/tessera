@@ -6,8 +6,6 @@
  */
 import { type CSSProperties, useMemo } from 'react'
 
-import { useDroppable } from '@dnd-kit/core'
-
 import type { VirtualItem } from '../../vendor/tanstack-virtual/react-virtual'
 
 import { getDisplayColumns } from '../core/displayColumns'
@@ -17,6 +15,7 @@ import {
 } from '../core/keyboardNavigation'
 import { resolveActive, type NavTable } from '../core/keyboardNavigation/model'
 import { useLocalization } from '../core/localization'
+import type { PendingRowDragBinding } from '../core/pluginWrappers'
 import { useTableState } from '../core/reactivity'
 import type { Column, Table } from '../types'
 import type { SkeletonTreeRow } from '../core/skeletonOptions'
@@ -37,17 +36,8 @@ interface PendingRowProps {
   /** Отступ и линии дерева скелета — у скелет-строки ленивых детей (ADR 0155, §3). */
   skeletonTree?: SkeletonTreeRow
   treeLines?: boolean
-  /**
-   * Идёт перетаскивание строк: строка — место под указателем, бросок на неё недоступен
-   * (ADR 0159, §3).
-   */
-  droppable?: boolean
-}
-
-/** Незагруженная строка под указателем перетаскивания: бросок недоступен. */
-export interface PendingDropData {
-  pending: true
-  virtualIndex: number
+  /** Место под указателем перетаскивания от декоратора плагина (ADR 0168, §2). */
+  drag?: PendingRowDragBinding
 }
 
 interface SelectionBounds {
@@ -168,16 +158,8 @@ export const PendingRow = ({
   tree,
   skeletonTree,
   treeLines,
-  droppable = false,
+  drag,
 }: PendingRowProps) => {
-  const { setNodeRef } = useDroppable({
-    id: `pending:${virtualRow.index}`,
-    data: {
-      pending: true,
-      virtualIndex: virtualRow.index,
-    } satisfies PendingDropData,
-    disabled: !droppable,
-  })
   // Выделение по индексам заливает и незагруженную строку (ADR 0146, §3).
   const selection = useTableState(table, () =>
     selectionOf(table, virtualRow.index),
@@ -185,7 +167,7 @@ export const PendingRow = ({
   const cellExtra = useMemo(() => selectionExtra(selection), [selection])
   return (
     <div
-      ref={setNodeRef}
+      ref={drag?.setNodeRef}
       role="row"
       aria-rowindex={ariaRowIndexBase + virtualRow.index + 1}
       aria-level={tree?.level}

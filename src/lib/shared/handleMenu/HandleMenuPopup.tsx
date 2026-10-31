@@ -9,10 +9,10 @@ import clsx from 'clsx'
 import { usePortalThemeData, usePortalThemeClass } from '../../ui/theme'
 import type { HeaderMenuItem } from '../../core/headerActions'
 
-import { useCloseOnGridScroll } from '../headerActions/useCloseOnGridScroll'
-import { GRID_SCROLL_REASON, useMenuLeave } from '../headerActions/useMenuLeave'
+import { useCloseOnGridScroll } from '../../ui/Popup/useCloseOnGridScroll'
+import { GRID_SCROLL_REASON, useMenuLeave } from '../../ui/Popup/useMenuLeave'
 
-import menuStyles from '../headerActions/ActionMenu.module.css'
+import menuStyles from '../../ui/Popup/ActionMenu.module.css'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 import { reportAction, sourceOf } from '../../core/debugActions'
 

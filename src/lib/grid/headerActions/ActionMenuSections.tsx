@@ -15,7 +15,7 @@ import { useIcons } from '../../ui/icons'
 import { ActionMenuItems, type ActionMenuItemsProps } from './ActionMenuItems'
 import type { MenuSections } from './useMenuSections'
 
-import styles from '../../grid/headerActions/ActionMenu.module.css'
+import styles from '../../ui/Popup/ActionMenu.module.css'
 import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
 
 interface ActionMenuSectionsProps extends Omit<

@@ -19,7 +19,7 @@ import {
   sectionKey,
 } from '../../core/headerActions'
 
-import styles from '../../grid/headerActions/ActionMenu.module.css'
+import styles from '../../ui/Popup/ActionMenu.module.css'
 
 export type SectionDirection = 'forward' | 'back'
 

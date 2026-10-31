@@ -56,6 +56,22 @@ export const dropPreviewOf = (state: object): DropPreview | null => {
     : null
 }
 
+/** Доля края области прокрутки, у которой dnd-kit начинает автопрокрутку. */
+export const AUTOSCROLL_THRESHOLD = 0.2
+
+/**
+ * Указатель в ближней к краю половине зоны автопрокрутки: dnd-kit крутит быстрее, чем
+ * успевает отрисоваться содержимое, — быстрая прокрутка (ADR 0107, RM25). Скорость не
+ * годится в признак: частота шагов автопрокрутки зависит от движка и загрузки машины.
+ */
+export const isNearAutoScrollEdge = (
+  rect: { top: number; bottom: number; height: number },
+  y: number,
+) => {
+  const zone = rect.height * AUTOSCROLL_THRESHOLD
+  return y >= rect.bottom - zone / 2 || y <= rect.top + zone / 2
+}
+
 /** Индекс строки, стоящей на позиции `position` после переноса `from` → `to`. */
 export const indexBeforeMove = (position: number, from: number, to: number) => {
   if (position === to) return from

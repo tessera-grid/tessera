@@ -5,7 +5,7 @@ import { render } from 'vitest-browser-react'
 import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 
 import type { ColorMode } from '../../../ui/theme'
-import { DragHandler } from '../../../grid/dnd/DragHandler'
+import { DragHandler } from '../../../shared/dnd/DragHandler'
 import { PinButton } from '../../../plugins/columnPinning/PinButton'
 import { ResizeHandler } from '../../../plugins/columnSizing/ResizeHandler'
 import { SortButton } from '../../../plugins/columnSorting/SortButton'

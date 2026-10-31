@@ -1,7 +1,7 @@
-// DnD-обвязка хедера. HeadDndBoundary монтирует DndContext + SortableContext только
-// при enableColumnDragging (иначе цена useSortable платится на каждую ячейку).
-// Состояние overlay читается из атома columnDraggingActiveId.
-import { type PropsWithChildren, useMemo, useState } from 'react'
+// Обёртка шапки плагина columnDragging (ADR 0168, §2): DndContext + SortableContext
+// колонок — только при включённом перетаскивании или идущей сессии. Состояние облака —
+// срез columnDraggingActiveId, облако рисует грид.
+import { useMemo, useState } from 'react'
 
 import {
   type CollisionDetection,
@@ -19,22 +19,20 @@ import {
   horizontalListSortingStrategy,
 } from '@dnd-kit/sortable'
 
-import type { Table } from '../types'
-import type { HeaderSlot } from '../core/createSlots'
-import { cancelDragLikeEscape } from '../core/cancelInteraction'
-import { useSlice, useTableState } from '../core/reactivity'
-import { getColumnDraggingEvents } from '../plugins/columnDragging'
+import { cancelDragLikeEscape } from '../../core/cancelInteraction'
+import type { HeadBoundaryProps } from '../../core/pluginWrappers'
+import { useSlice, useTableState } from '../../core/reactivity'
+import { getColumnDraggingEvents } from './getColumnDraggingEvents'
 import {
   Z_INDEX,
   autoScrollOnlyX,
   dndAccessibility,
   sensorOptions,
-} from './dnd/parameters'
-import { horizontalCollisionDetection } from './dnd/collisionDetection'
-import { OverlayHeadCell } from './OverlayHeadCell'
-import { NodeShiftContext, createNodeShiftStore } from './dnd/nodeShift'
-import { nodeIdOf, zoneOf } from '../core/columnNodes'
-import { useIsomorphicLayoutEffect } from '../util/useIsomorphicLayoutEffect'
+} from '../../shared/dnd/parameters'
+import { horizontalCollisionDetection } from './collisionDetection'
+import { NodeShiftContext, createNodeShiftStore } from './nodeShift'
+import { nodeIdOf, zoneOf } from '../../core/columnNodes'
+import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
 
 /** Столкновения — только с соседями активного узла (ADR 0052, ND3). */
 const siblingCollisionDetection: CollisionDetection = args => {
@@ -47,26 +45,12 @@ const siblingCollisionDetection: CollisionDetection = args => {
   })
 }
 
-export interface DndHeadWrapperProps {
-  table: Table<any, any>
-  leftHeaderSlot?: HeaderSlot
-  rightHeaderSlot?: HeaderSlot
-}
-
-export interface HeadDndBoundaryProps extends DndHeadWrapperProps {
-  enableColumnDragging: boolean
-}
-
-/**
- * Монтирует Drag&Drop-обвязку хедера только при включённом перетаскивании колонок.
- */
-export const HeadDndBoundary = ({
+/** Монтирует Drag&Drop-обвязку шапки только при включённом перетаскивании колонок. */
+export const HeadBoundary = ({
   table,
-  leftHeaderSlot,
-  rightHeaderSlot,
-  enableColumnDragging,
+  renderCloud,
   children,
-}: PropsWithChildren<HeadDndBoundaryProps>) => {
+}: HeadBoundaryProps) => {
   // Идущее перетаскивание держит обёртку, пока его не отменят (ADR 0039, RX14).
   const activeId = useTableState(
     table,
@@ -74,27 +58,22 @@ export const HeadDndBoundary = ({
       (state as { columnDraggingActiveId?: string | null })
         .columnDraggingActiveId ?? null,
   )
-  if (!enableColumnDragging && !activeId) {
+  if (!table.options.enableColumnDragging && !activeId) {
     return children
   }
 
   return (
-    <DndHeadWrapper
-      table={table}
-      leftHeaderSlot={leftHeaderSlot}
-      rightHeaderSlot={rightHeaderSlot}
-    >
+    <DndHeadWrapper table={table} renderCloud={renderCloud}>
       {children}
     </DndHeadWrapper>
   )
 }
 
-export const DndHeadWrapper = ({
+const DndHeadWrapper = ({
   table,
-  leftHeaderSlot,
-  rightHeaderSlot,
+  renderCloud,
   children,
-}: PropsWithChildren<DndHeadWrapperProps>) => {
+}: HeadBoundaryProps) => {
   const headers = table.getFlatHeaders()
 
   const columnDraggingActiveId = useSlice(
@@ -164,13 +143,7 @@ export const DndHeadWrapper = ({
         </SortableContext>
       </NodeShiftContext.Provider>
       <DragOverlay zIndex={Z_INDEX}>
-        {draggableHeader && (
-          <OverlayHeadCell
-            header={draggableHeader}
-            leftHeaderSlot={leftHeaderSlot}
-            rightHeaderSlot={rightHeaderSlot}
-          />
-        )}
+        {draggableHeader && renderCloud(draggableHeader)}
       </DragOverlay>
     </DndContext>
   )

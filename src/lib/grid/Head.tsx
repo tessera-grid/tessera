@@ -1,5 +1,5 @@
 // Head: контейнер заголовка (headerGroups → HeadRow). Виртуализация приходит
-// пропсом. DnD-обвязка (enableColumnDragging→DraggableHeadCell) внутри HeadRow.
+// пропсом. Перетаскивание колонок приносит декоратор плагина в HeadRow (ADR 0168).
 import { type CSSProperties, memo } from 'react'
 
 import type { VirtualItem } from '../../vendor/tanstack-virtual/react-virtual'
@@ -22,7 +22,6 @@ interface TableHeadProps {
   rightHeaderSlot?: HeaderSlot
   isResizingColumns: false | string | undefined
   isVirtualColumns: boolean
-  enableColumnDragging?: boolean
   /** Шапка внутри скелета первой загрузки: скрыта от скринридера и неинтерактивна. */
   skeleton?: boolean
 }
@@ -35,7 +34,6 @@ export const Head = ({
   leftHeaderSlot,
   rightHeaderSlot,
   isVirtualColumns,
-  enableColumnDragging,
   skeleton,
 }: TableHeadProps) => (
   <div
@@ -59,7 +57,6 @@ export const Head = ({
           leftHeaderSlot={leftHeaderSlot}
           rightHeaderSlot={rightHeaderSlot}
           isVirtualColumns={isVirtualColumns}
-          enableColumnDragging={enableColumnDragging}
         />
       ))}
     </HeaderMetricsProvider>

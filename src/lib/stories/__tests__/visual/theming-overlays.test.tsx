@@ -8,6 +8,7 @@ import { useCreateTable } from '../../../../lib/core/useCreateTable'
 import { DataGrid } from '../../../../lib/grid/DataGrid'
 import { OverlayBodyRow } from '../../../../lib/grid/OverlayBodyRow'
 import { OverlayHeadCell } from '../../../../lib/grid/OverlayHeadCell'
+import { DragHandler } from '../../../shared/dnd'
 import '../../../ui/theme/theme.css'
 
 // Простые колонки с ПЛОСКИМ `cell` (без подписок на store) — оверлеи рендерятся
@@ -57,7 +58,12 @@ const RowOverlayHarness = ({ colorMode }: { colorMode: ColorMode }) => {
   const firstCell = table.getRowModel().rows[0].getVisibleCells()[0]
   return (
     <div className={themeClass(colorMode === 'dark')}>
-      <OverlayBodyRow firstCell={firstCell} withCount subRowsCount={5} />
+      <OverlayBodyRow
+        firstCell={firstCell}
+        withCount
+        subRowsCount={5}
+        handle={<DragHandler id="" type="row" />}
+      />
     </div>
   )
 }

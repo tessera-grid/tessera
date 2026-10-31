@@ -4,28 +4,10 @@
  * сокращаются: исправленное место уходит из базы, иначе страж падает.
  */
 
-const DND_IN_GRID = 'перетаскивание строк и колонок в гриде — находка 2, шаг 5'
-
 /** LB1: рёбра в запрещённый слой. */
 export const LAYER_EDGES: Record<string, string> = {
-  'lib/grid/DndBodyWrapper.tsx -> lib/plugins/rowDragging/dragRows.ts':
-    DND_IN_GRID,
-  'lib/grid/DndBodyWrapper.tsx -> lib/plugins/rowDragging/expandTimer.ts':
-    DND_IN_GRID,
-  'lib/grid/DndBodyWrapper.tsx -> lib/plugins/rowDragging/index.ts':
-    DND_IN_GRID,
-  'lib/grid/DndHeadWrapper.tsx -> lib/plugins/columnDragging/index.ts':
-    DND_IN_GRID,
-  'lib/grid/DraggableBodyRow.tsx -> lib/plugins/rowDragging/index.ts':
-    DND_IN_GRID,
-  'lib/plugins/columnDragging/ColumnDraggingComponent.tsx -> lib/grid/dnd/index.ts':
-    DND_IN_GRID,
-  'lib/plugins/columnSizing/ResizeHandler.tsx -> lib/grid/handleMenu/HandleMenu.tsx':
-    'меню ручки — у перетаскивания в гриде и у грипа, место — shared/ после шага 5',
   'lib/plugins/infiniteScroll/InfiniteTail.tsx -> lib/grid/SkeletonBody.tsx':
     'хвост ленты рисует строки скелета грида — канал «плагин вносит в тело», шаг 7',
-  'lib/plugins/rowDragging/RowDraggingComponent.tsx -> lib/grid/dnd/index.ts':
-    DND_IN_GRID,
 }
 
 /** LB2: модули ядра, которые импортируют только плагины, — долг: модуль переедет. */
@@ -92,13 +74,9 @@ export const FOREIGN_OPTION_READS: Record<string, string> = {
   'lib/grid/DataGrid.tsx: enableContextMenu': FLAG_PLUGIN,
   'lib/grid/DataGrid.tsx: enableTreeLines': FLAG_PLUGIN,
   'lib/grid/DataGridTable.tsx: enableCellSelection': CELL_SELECTION,
-  'lib/grid/DataGridTable.tsx: enableColumnDragging': DND_IN_GRID,
-  'lib/grid/DataGridTable.tsx: enableRowDragging': DND_IN_GRID,
   'lib/grid/DataGridTable.tsx: enableRowSelection':
     'выбор строк задаёт роль и aria грида — находка 3, шаг 7',
   'lib/grid/DataGridTable.tsx: enableTreeLines': FLAG_PLUGIN,
-  'lib/grid/DndBodyWrapper.tsx: enableRowDragging': DND_IN_GRID,
-  'lib/grid/DndHeadWrapper.tsx: enableColumnDragging': DND_IN_GRID,
   'lib/grid/LiveRegion.tsx: manualFiltering':
     'объявление итога поиска в серверном режиме — режим данных, шаг 6',
   'lib/grid/SkeletonBody.tsx: enableTreeLines': FLAG_PLUGIN,
