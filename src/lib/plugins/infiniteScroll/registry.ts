@@ -4,6 +4,7 @@
  * ожидания — в `bodyEndSlot`, строка ошибки — в `tableEndSlot` (ADR 0118), счётчик —
  * в `statusBarSlot`.
  */
+import type { RowData, TableFeatures } from '@tanstack/react-table'
 import { definePlugin } from '../../core/definePlugin'
 import { InfiniteErrorRow } from './InfiniteErrorRow'
 import { InfiniteTail } from './InfiniteTail'
@@ -81,3 +82,21 @@ export const infiniteScroll = definePlugin<InfiniteScrollOptions>()({
   ],
   setup: () => warnClientRowModel,
 })
+
+/* eslint-disable @typescript-eslint/no-unused-vars -- generics карт обязаны
+   повторять сигнатуры v9, иначе declaration merging не склеится */
+declare module '@tanstack/react-table' {
+  interface TableOptions_FeatureMap<
+    in out TFeatures extends TableFeatures,
+    in out TData extends RowData,
+  > {
+    /** Опции таблицы, которые выставляет плагин (ADR 0167). */
+    infiniteScrollPlugin: {
+      enableInfiniteScroll?: boolean
+      infiniteScrollHasMore?: boolean
+      infiniteScrollRowCount?: number
+      infiniteScrollThreshold?: number
+    }
+  }
+}
+/* eslint-enable @typescript-eslint/no-unused-vars */

@@ -23,7 +23,14 @@ import {
   warnPluginInert,
 } from '../../core/pluginDiagnostics'
 import type { RowMoves } from '../../shared/rowMoves'
-import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
+import type { RowDraggingOptions as RowDraggingArgs } from './registry'
+import type {
+  RowData,
+  Table,
+  TableFeature,
+  TableFeatures,
+  Updater,
+} from '../../types'
 import {
   DEFAULT_ROW_DRAG_OVERLAY_STATE,
   type RowDragOverlayState,
@@ -39,6 +46,8 @@ interface RowDraggingStateSlice {
 }
 interface RowDraggingOptions {
   enableRowDragging?: boolean | ((row: unknown) => boolean)
+  rowDragRevertOnReject?: boolean
+  onRowOrderChange?: RowDraggingArgs['onRowOrderChange']
   /** Пауза над свёрнутой группой до её раскрытия, мс (ADR 0109). */
   rowDragExpandDelay?: number
   onRowDraggingChange?: (updater: Updater<RowDragOverlayState>) => void
@@ -213,9 +222,7 @@ export const rowDraggingFeature: TableFeature = {
     assignTableAPIs('rowDraggingFeature', table, {
       table_setRowDragging: {
         fn: (updater: Updater<RowDragOverlayState>) => {
-          const opts = table.options as {
-            onRowDraggingChange?: (u: Updater<RowDragOverlayState>) => void
-          }
+          const opts = (table as Table<any, any>).options
           if (opts.onRowDraggingChange) {
             opts.onRowDraggingChange(updater)
             return

@@ -84,8 +84,6 @@ interface ServerTable {
     manualPagination?: boolean
     columnFilteringServer?: boolean
     quickSearchServer?: boolean
-    columnSortingRevertOnReject?: boolean
-    paginationRevertOnReject?: boolean
   }
   atoms: {
     sorting?: {
@@ -110,6 +108,31 @@ interface ServerTable {
 
 // Ключ — общий store: React-адаптер отдаёт гриду другой объект таблицы, чем ячейкам.
 const chains = new WeakMap<object, Chain>()
+const revertPolicies = new WeakMap<object, Map<RevertedSlice, boolean>>()
+
+/** Срез, который откат возвращает к состоянию до цепочки. */
+export type RevertedSlice = 'sorting' | 'pagination'
+
+/**
+ * Политика отката среза при отказе (ADR 0167, §3): плагин объявляет её в `setup`, отдаёт
+ * результат как cleanup. Без объявления срез откатывается.
+ */
+export const declareRevertOnReject = (
+  table: unknown,
+  slice: RevertedSlice,
+  revertOnReject: boolean,
+) => {
+  const { store } = table as { store: object }
+  const policies = revertPolicies.get(store) ?? new Map()
+  revertPolicies.set(store, policies)
+  policies.set(slice, revertOnReject)
+  return () => {
+    policies.delete(slice)
+  }
+}
+
+const revertsOnReject = (t: ServerTable, slice: RevertedSlice) =>
+  revertPolicies.get(t.store)?.get(slice) !== false
 let lastAttempt = 0
 
 let neverAborted: AbortSignal | undefined
@@ -209,7 +232,7 @@ const revert = (t: ServerTable, snapshot: Snapshot, force = false) => {
   setGroupingTo(t, snapshot)
   const restorePage = () => {
     if (
-      (force || t.options.paginationRevertOnReject !== false) &&
+      (force || revertsOnReject(t, 'pagination')) &&
       pagination !== undefined &&
       !samePage(atoms.pagination?.get(), pagination)
     ) {
@@ -218,7 +241,7 @@ const revert = (t: ServerTable, snapshot: Snapshot, force = false) => {
   }
   // Сортировка первой: при клиентской пагинации её смена сбрасывает страницу.
   if (
-    (force || t.options.columnSortingRevertOnReject !== false) &&
+    (force || revertsOnReject(t, 'sorting')) &&
     sorting !== undefined &&
     atoms.sorting &&
     !sameSorting(atoms.sorting.get(), sorting)

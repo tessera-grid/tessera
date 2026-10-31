@@ -114,8 +114,7 @@ export const DndHeadWrapper = ({
   // Перетаскивание запретили на лету или колонка ушла — отмена как по Escape.
   const forbidden =
     !!columnDraggingActiveId &&
-    (!(table.options as { enableColumnDragging?: boolean })
-      .enableColumnDragging ||
+    (!table.options.enableColumnDragging ||
       !(
         draggableHeader?.column as { getCanDrag?: () => boolean } | undefined
       )?.getCanDrag?.())

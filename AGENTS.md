@@ -1086,6 +1086,11 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       SH2 — код плагинов и свои модели строк в `shared/`, SH3 — тема в `ui/theme` без рёбер
       ядро ↔ кит, SH4 — компоненты грида для плагинов в `ui/`, экспорты `/ui` прежние)
       ([ADR 0166](docs/decisions/0166-shared-layer-utils-and-kit.md)).
+    - _Опции плагинов в типах:_ модульные `pluginOptions` (PO1 — каждый ключ `options` объявлен
+      в карте фич или `CommonOptions`, PO2 — база LB9 пуста, PO4 — стоковый ключ фичи у плагина,
+      который её приносит, и читатели `shared/`, PO6 — у записи базы LB5 шаг аудита),
+      `serverActions.dom` (PO3 — политика отката среза) и `effectiveState.dom` (PO5 — сброс
+      выбора в `rowSelectionModel`) ([ADR 0167](docs/decisions/0167-plugin-options-in-types.md)).
     - _Движение строк:_ `row-motion` (RM1–RM17, RM19, RM22, RM24–RM25, RM27–RM31 — раскрытие и сворачивание с
       призраками, сортировка издалека и вдаль, поиск, замена и геометрия без движения,
       ленивые дети, сдвиг соседей и приземление броска, автопрокрутка во время

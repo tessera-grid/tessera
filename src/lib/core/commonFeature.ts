@@ -57,7 +57,7 @@ export const commonFeature: TableFeature = {
   }),
 
   constructTableAPIs: table => {
-    const options = () => table.options as unknown as CommonOptions
+    const options = () => commonOptionsOf(table)
     const pluginErrors = createPluginErrorRegistry(table)
     const rowSource = createClientRowSource(table)
 

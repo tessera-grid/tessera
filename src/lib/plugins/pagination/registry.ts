@@ -4,6 +4,7 @@
  * пользователя. Модель — `paginationModel`, плагин её включает и передаёт ей режим данных
  * и срез.
  */
+import type { RowData, TableFeatures } from '@tanstack/react-table'
 import { definePlugin } from '../../core/definePlugin'
 import {
   DEFAULT_PAGE_SIZE,
@@ -11,6 +12,7 @@ import {
   paginationModelFeatures,
   type PaginationModelOptions,
 } from '../paginationModel/registry'
+import { declareRevertOnReject } from '../../core/serverActions'
 import { paginationInertReason } from '../paginationModel/model'
 import { PaginationControl } from './PaginationControl'
 import type { PaginationHooks } from './types'
@@ -51,8 +53,9 @@ export const pagination = definePlugin<PaginationOptions>()({
   },
   features: paginationModelFeatures,
   hooks: o => ({ onPageChange: o.onPageChange }),
+  setup: o => table =>
+    declareRevertOnReject(table, 'pagination', o.revertOnReject !== false),
   options: o => ({
-    paginationRevertOnReject: o.revertOnReject !== false,
     paginationPageSizes: o.pageSizes ?? DEFAULT_PAGE_SIZES,
   }),
   slots: [
@@ -64,3 +67,18 @@ export const pagination = definePlugin<PaginationOptions>()({
     },
   ],
 })
+
+/* eslint-disable @typescript-eslint/no-unused-vars -- generics карт обязаны
+   повторять сигнатуры v9, иначе declaration merging не склеится */
+declare module '@tanstack/react-table' {
+  interface TableOptions_FeatureMap<
+    in out TFeatures extends TableFeatures,
+    in out TData extends RowData,
+  > {
+    /** Опции таблицы, которые выставляет плагин (ADR 0167). */
+    paginationPlugin: {
+      paginationPageSizes?: PaginationOptions['pageSizes']
+    }
+  }
+}
+/* eslint-enable @typescript-eslint/no-unused-vars */

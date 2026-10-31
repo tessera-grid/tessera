@@ -9,6 +9,8 @@ import {
   columnFacetingFeature,
   columnFilteringFeature,
   createFacetedRowModel,
+  type RowData,
+  type TableFeatures,
 } from '@tanstack/react-table'
 
 import { definePlugin } from '../../core/definePlugin'
@@ -79,3 +81,19 @@ export const columnFilteringModel = definePlugin<ColumnFilteringModelOptions>()(
     }),
   },
 )
+
+/* eslint-disable @typescript-eslint/no-unused-vars -- generics карт обязаны
+   повторять сигнатуры v9, иначе declaration merging не склеится */
+declare module '@tanstack/react-table' {
+  interface TableOptions_FeatureMap<
+    in out TFeatures extends TableFeatures,
+    in out TData extends RowData,
+  > {
+    /** Опции таблицы, которые выставляет плагин (ADR 0167). */
+    columnFilteringModelPlugin: {
+      columnFilteringServer?: boolean
+      columnFilteringTimeZone?: ColumnFilteringModelOptions['timeZone']
+    }
+  }
+}
+/* eslint-enable @typescript-eslint/no-unused-vars */

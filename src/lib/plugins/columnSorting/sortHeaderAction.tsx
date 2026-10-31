@@ -137,9 +137,7 @@ export const sortHeaderAction: HeaderAction = {
       },
     ]
 
-    if (
-      (table.options as { enableSortingRemoval?: boolean }).enableSortingRemoval
-    ) {
+    if (table.options.enableSortingRemoval) {
       items.push({
         id: 'clear',
         label: labels.clearSort,

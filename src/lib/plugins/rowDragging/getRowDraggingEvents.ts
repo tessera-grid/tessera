@@ -117,8 +117,8 @@ export const getRowDraggingEvents = (
 
   // v9 useTable возвращает фасад с сырыми options (без фичевых defaults), поэтому
   // overlay-состояние меняем методом table.setRowDragging (бьёт по внутреннему
-  // updater), а не через table.options.onRowDraggingChange. onRowOrderChange/
-  // onExpandedChange передаёт потребитель — они на возвращаемых options есть.
+  // updater), а не через table.options.onRowDraggingChange. onRowOrderChange передаёт
+  // потребитель — он на возвращаемых options есть.
   const onRowDraggingChange = (
     table as unknown as {
       setRowDragging: (
@@ -126,12 +126,7 @@ export const getRowDraggingEvents = (
       ) => void
     }
   ).setRowDragging
-  const { onRowOrderChange, onExpandedChange } = table.options as unknown as {
-    onRowOrderChange?: (updater: (prev: any[]) => any[]) => void
-    onExpandedChange?: (
-      updater: true | Record<string, boolean> | ((prev: any) => any),
-    ) => void
-  }
+  const { onRowOrderChange } = table.options
 
   /** Все группы раскрыты — записью, чтобы сменить одну (ADR 0137, §6). */
   const allExpanded = () =>
@@ -144,7 +139,7 @@ export const getRowDraggingEvents = (
 
   /** Свернуть/развернуть группу до и после перетаскивания. */
   const expandGroup = (groupId: UniqueIdentifier, expanded: boolean) => {
-    onExpandedChange?.((prev: any) => ({
+    table.setExpanded?.(prev => ({
       ...(prev === true ? allExpanded() : prev),
       [groupId]: expanded,
     }))
@@ -433,8 +428,7 @@ export const getRowDraggingEvents = (
 
       // Слот вкладывают в свёрнутую группу — пауза раскрывает её (ADR 0109, §1).
       const delay =
-        (table.options as { rowDragExpandDelay?: number }).rowDragExpandDelay ??
-        DEFAULT_ROW_DRAG_EXPAND_DELAY
+        table.options.rowDragExpandDelay ?? DEFAULT_ROW_DRAG_EXPAND_DELAY
       const group =
         acceptable &&
         delay > 0 &&

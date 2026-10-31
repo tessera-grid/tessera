@@ -445,7 +445,9 @@ columnId] }` или `{ column }`. Вызов возвращает `{ clear() }`;
   во время ожидания разрешены.
 - **Откат.** Сортировка и страница до первого действия цепочки ожидания — цель отката
   (`setSorting` / `setPagination`, колбэки действий не зовутся). `revertOnReject: false`
-  у `columnSorting` и `pagination` оставляет новое состояние. Текст поиска и значения
+  у `columnSorting` и `pagination` оставляет новое состояние: плагин объявляет политику
+  своего среза в `setup` через `declareRevertOnReject`, ядро читает её при откате
+  ([ADR 0167](../decisions/0167-plugin-options-in-types.md), §3). Текст поиска и значения
   фильтра не откатываются.
 - **Повтор** из плашки возвращает сортировку и страницу отказавшей попытки и зовёт тот
   же колбэк с теми же аргументами.
@@ -483,7 +485,11 @@ columnId] }` или `{ column }`. Вызов возвращает `{ clear() }`;
 - **Добавить кастомное состояние таблицы** → `getInitialState` фичи + declaration
   merging через `TableState_FeatureMap`.
 - **Добавить кастомные методы/опции** → `constructTableAPIs` / `getDefaultTableOptions`
-  фичи + declaration merging через `Table_FeatureMap` / `TableOptions_FeatureMap`.
+  фичи + declaration merging через `Table_FeatureMap` / `TableOptions_FeatureMap`. Каждый
+  ключ, который плагин выставляет в `options`, объявлен в `TableOptions_FeatureMap` (у плагина
+  без своей фичи — запись `<плагин>Plugin`) или в `CommonOptions`: `Table<any, any>` видит все
+  записи карты, и опция читается без каста (ADR 0167, PO1–PO2). Факт плагина, который нужен
+  ядру, плагин сообщает через точку расширения ядра, а не опцией со своим именем (§3).
 - **Реагировать на внешние значения внутри компонента плагина** → подписывайтесь на
   срез через `useSlice(table, key)` / `useTableState(table, selector)`
   ([reactivity.md](reactivity.md)); вызывайте бизнес-функции через `table.getHooks()`.

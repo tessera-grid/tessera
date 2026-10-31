@@ -13,7 +13,7 @@ import {
   setColumnFiltersByUser,
   setSearchByUser,
 } from '../shared/filtering/filtering'
-import { readServerAction } from '../core/serverActions'
+import { declareRevertOnReject, readServerAction } from '../core/serverActions'
 import { useCreateTable } from '../core/useCreateTable'
 import { columnFiltering } from '../plugins/columnFiltering'
 import { sortHeaderAction } from '../plugins/columnSorting/sortHeaderAction'
@@ -281,6 +281,33 @@ describe('серверные действия (ADR 0116)', () => {
     await settle(() => calls[5].deferred!.reject(SERVER_ERROR))
     expect(sorting()).toEqual([{ id: 'name', desc: true }])
     expect(page().pageIndex).toBe(7)
+  })
+})
+
+describe('Политика отката среза (ADR 0167)', () => {
+  it('PO3: откат сортировки и страницы следует политике, которую плагин объявил ядру в setup: `revertOnReject: false` срез не откатывает, без объявления срез откатывается, cleanup снимает политику; ключей `…RevertOnReject` в опциях нет', async () => {
+    const { calls } = mount({
+      answer: 'pending',
+      sortingRevert: false,
+      paginationRevert: false,
+    })
+    expect(table().options).not.toHaveProperty('columnSortingRevertOnReject')
+    expect(table().options).not.toHaveProperty('paginationRevertOnReject')
+
+    sort()
+    goToPage(2)
+    await settle(() => calls[1].deferred!.reject(SERVER_ERROR))
+    expect(sorting()).toEqual([{ id: 'name', desc: true }])
+    expect(page().pageIndex).toBe(2)
+
+    // Объявление и сразу cleanup: политики нет — срез откатывается.
+    declareRevertOnReject(table(), 'sorting', false)()
+    declareRevertOnReject(table(), 'pagination', false)()
+    sort()
+    goToPage(5)
+    await settle(() => calls[3].deferred!.reject(SERVER_ERROR))
+    expect(sorting()).toEqual([{ id: 'name', desc: true }])
+    expect(page().pageIndex).toBe(2)
   })
 })
 

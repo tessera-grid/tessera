@@ -104,11 +104,7 @@ type PendingTable = {
 const EMPTY: RowExpandPending = {}
 
 const hasOwnSubRows = (row: Row<any, any>) =>
-  !!(
-    row.table.options as {
-      getSubRows?: (row: unknown, index: number) => unknown[] | undefined
-    }
-  ).getSubRows?.(row.original, row.index)?.length
+  !!row.table.options.getSubRows?.(row.original, row.index)?.length
 
 interface AllRow {
   id: string

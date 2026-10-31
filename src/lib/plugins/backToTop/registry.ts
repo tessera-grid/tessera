@@ -3,6 +3,7 @@
  * колонке» и «наверх» справа в нижней панели, перед пагинацией. Панель сами не вызывают
  * (`showsPanel: false`).
  */
+import type { RowData, TableFeatures } from '@tanstack/react-table'
 import { definePlugin } from '../../core/definePlugin'
 import { BackToStartButton, BackToTopButton } from './BackToTopButton'
 import { BACK_TO_TOP, backToTopInertReason } from './model'
@@ -46,3 +47,20 @@ export const backToTop = definePlugin<BackToTopOptions>()({
     },
   ],
 })
+
+/* eslint-disable @typescript-eslint/no-unused-vars -- generics карт обязаны
+   повторять сигнатуры v9, иначе declaration merging не склеится */
+declare module '@tanstack/react-table' {
+  interface TableOptions_FeatureMap<
+    in out TFeatures extends TableFeatures,
+    in out TData extends RowData,
+  > {
+    /** Опции таблицы, которые выставляет плагин (ADR 0167). */
+    backToTopPlugin: {
+      backToTopThreshold?: number
+      backToTopHorizontalThreshold?: number
+      backToTopAxes?: BackToTopOptions['axes']
+    }
+  }
+}
+/* eslint-enable @typescript-eslint/no-unused-vars */

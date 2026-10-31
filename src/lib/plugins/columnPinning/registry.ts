@@ -5,7 +5,11 @@
  *    per-column canPin);
  *  - `enableLeafPinning` (opt-in reorder-out) — доп. табличная опция.
  */
-import { columnPinningFeature } from '@tanstack/react-table'
+import {
+  columnPinningFeature,
+  type RowData,
+  type TableFeatures,
+} from '@tanstack/react-table'
 
 import { definePlugin } from '../../core/definePlugin'
 import { neverInert } from '../../core/pluginDiagnostics'
@@ -39,3 +43,18 @@ export const columnPinning = definePlugin<ColumnPinningOptions>()({
     enableLeafPinning: !!o.leafPinning,
   }),
 })
+
+/* eslint-disable @typescript-eslint/no-unused-vars -- generics карт обязаны
+   повторять сигнатуры v9, иначе declaration merging не склеится */
+declare module '@tanstack/react-table' {
+  interface TableOptions_FeatureMap<
+    in out TFeatures extends TableFeatures,
+    in out TData extends RowData,
+  > {
+    /** Опции таблицы, которые выставляет плагин (ADR 0167). */
+    columnPinningPlugin: {
+      enableLeafPinning?: boolean
+    }
+  }
+}
+/* eslint-enable @typescript-eslint/no-unused-vars */

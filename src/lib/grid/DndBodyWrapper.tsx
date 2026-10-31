@@ -217,7 +217,7 @@ export const DndBodyWrapper = ({
   // Перетаскивание запретили на лету или строка ушла — отмена как по Escape.
   const forbidden =
     !!activeId &&
-    (!(table.options as { enableRowDragging?: unknown }).enableRowDragging ||
+    (!table.options.enableRowDragging ||
       !(
         draggableRow as { getCanDrag?: () => boolean } | undefined
       )?.getCanDrag?.())

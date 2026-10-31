@@ -4,6 +4,7 @@
  * M» и колбэк пользователя. Модель — `columnFilteringModel`, плагин её включает и передаёт
  * ей режим данных, пояс дат и срез.
  */
+import type { RowData, TableFeatures } from '@tanstack/react-table'
 import type { DayPickerLocale } from '@daypicker/react'
 
 import { definePlugin } from '../../core/definePlugin'
@@ -100,3 +101,21 @@ export const columnFiltering = definePlugin<ColumnFilteringOptions>()({
       : {}),
   }),
 })
+
+/* eslint-disable @typescript-eslint/no-unused-vars -- generics карт обязаны
+   повторять сигнатуры v9, иначе declaration merging не склеится */
+declare module '@tanstack/react-table' {
+  interface TableOptions_FeatureMap<
+    in out TFeatures extends TableFeatures,
+    in out TData extends RowData,
+  > {
+    /** Опции таблицы, которые выставляет плагин (ADR 0167). */
+    columnFilteringPlugin: {
+      columnFilteringDateLocale?: ColumnFilteringOptions['dateLocale']
+      columnFilteringDebounceMs?: number
+      /** Числа «показано N из M» от приложения в серверном режиме. */
+      filteringRowCounts?: { filtered?: number; total?: number }
+    }
+  }
+}
+/* eslint-enable @typescript-eslint/no-unused-vars */

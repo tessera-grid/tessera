@@ -170,6 +170,55 @@ describe('эффективное состояние при сужении', () =
     expect(captured.options.state.rowSelection).toEqual({})
   })
 
+  it('PO5: выбор при смене enabled или subRows сбрасывает rowSelectionModel, а не ядро; монтирование и перерисовка без смены выбор не сбрасывают', () => {
+    const Host = ({
+      enabled,
+      subRows,
+    }: {
+      enabled: boolean
+      subRows: boolean
+    }) => {
+      captured = useCreateTable({
+        columns: [{ id: 'name', accessorKey: 'name' }] as never,
+        data: flatData,
+        plugins: [
+          rowSelectionModel({
+            enabled,
+            subRows,
+            initialRowSelection: { '1': true },
+          }),
+        ],
+      })
+      return null
+    }
+    const saved = () => captured.atoms.rowSelection.get()
+
+    mount(<Host enabled subRows={false} />)
+    expect(saved()).toEqual({ '1': true })
+    mount(<Host enabled subRows={false} />)
+    expect(saved()).toEqual({ '1': true })
+
+    // Выключение без сброса сузило бы срез, а включение вернуло бы выбор.
+    mount(<Host enabled={false} subRows={false} />)
+    mount(<Host enabled subRows={false} />)
+    expect(saved()).toEqual({})
+
+    act(() => captured.getRow('1').toggleSelected(true))
+    mount(<Host enabled subRows />)
+    expect(saved()).toEqual({})
+
+    const coreSources = import.meta.glob<string>('../core/**/*.{ts,tsx}', {
+      query: '?raw',
+      import: 'default',
+      eager: true,
+    })
+    expect(
+      Object.keys(coreSources).filter(path =>
+        /resetRowSelection/.test(coreSources[path]),
+      ),
+    ).toEqual([])
+  })
+
   it('RX25: сужение пересчитывается при смене данных или колонок, даже когда сохранённый срез тот же', () => {
     // Сохранённое раскрытие — одна ссылка: меняются только данные.
     const expanded = { p: true, c: true }

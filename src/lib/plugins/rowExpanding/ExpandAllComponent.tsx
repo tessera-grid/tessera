@@ -41,8 +41,7 @@ export const ExpandAllComponent = ({
   const t = table as unknown as ExpandAllTable
   const server = !!serverRowModelReason(table)
   // Кнопку выключает аргумент фабрики `expandAll: false` (ADR 0160, §2).
-  const enabled = (table.options as { rowExpandAllButton?: boolean })
-    .rowExpandAllButton
+  const enabled = table.options.rowExpandAllButton
 
   const allOpen =
     value === true ||

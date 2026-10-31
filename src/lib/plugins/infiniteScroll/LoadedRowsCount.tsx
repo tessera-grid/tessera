@@ -17,8 +17,7 @@ export const LoadedRowsCount = ({ table }: StatusBarComponentProps) => {
       </span>
     )
   }
-  const rowCount = (table.options as { infiniteScrollRowCount?: number })
-    .infiniteScrollRowCount
+  const rowCount = table.options.infiniteScrollRowCount
   const loaded = table.getCoreRowModel().rows.length
   return (
     <StatusBarCount

@@ -34,8 +34,8 @@ export const readInfiniteScrollState = (
   IDLE
 
 /** `aria-busy` таблицы: блок в пути. */
-export const isLoadingMore = (state: Record<string, unknown>) =>
-  readInfiniteScrollState(state).status === 'pending'
+export const isLoadingMore = (state: object) =>
+  readInfiniteScrollState(state as Record<string, unknown>).status === 'pending'
 
 /** Итог для `aria-rowcount`: известный, `-1` при неизвестном или `undefined` — строк столько, сколько в `data`. */
 export const totalRowCountOf =

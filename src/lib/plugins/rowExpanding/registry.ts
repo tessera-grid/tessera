@@ -4,7 +4,11 @@
  * ПОЛНОСТЬЮ заменяет дефолт, поэтому проверку `subRows` включаем сами; гейт
  * группировки — там же. Ленивые дети (ADR 0054) — своя исходная модель и срез ответов.
  */
-import { rowExpandingFeature } from '@tanstack/react-table'
+import {
+  rowExpandingFeature,
+  type RowData,
+  type TableFeatures,
+} from '@tanstack/react-table'
 
 import type { Row } from '../../types'
 import { definePlugin } from '../../core/definePlugin'
@@ -209,3 +213,19 @@ export const rowExpanding = definePlugin<RowExpandingOptions>()({
     }
   },
 })
+
+/* eslint-disable @typescript-eslint/no-unused-vars -- generics карт обязаны
+   повторять сигнатуры v9, иначе declaration merging не склеится */
+declare module '@tanstack/react-table' {
+  interface TableOptions_FeatureMap<
+    in out TFeatures extends TableFeatures,
+    in out TData extends RowData,
+  > {
+    /** Опции таблицы, которые выставляет плагин (ADR 0167). */
+    rowExpandingPlugin: {
+      rowExpandAllButton?: boolean
+      stickyBranchRows?: boolean
+    }
+  }
+}
+/* eslint-enable @typescript-eslint/no-unused-vars */

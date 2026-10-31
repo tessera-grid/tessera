@@ -71,8 +71,7 @@ export const RowDraggingComponent = ({ row, table }: CellComponentProps) => {
           edge('moveToEnd', labels.moveToEnd, 'end'),
         ]
       : []),
-    ...(!server &&
-    (table.options as { enableExpanding?: boolean }).enableExpanding === true
+    ...(!server && table.options.enableExpanding === true
       ? [
           {
             id: 'indent',

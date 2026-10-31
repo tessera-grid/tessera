@@ -10,6 +10,7 @@ import {
   sortingModelFeatures,
 } from '../columnSortingModel/registry'
 import { neverInert } from '../../core/pluginDiagnostics'
+import { declareRevertOnReject } from '../../core/serverActions'
 import { sortKeyboardAction } from './keyboardActions'
 import { sortHeaderAction } from './sortHeaderAction'
 import type { ColumnSortingHooks } from './types'
@@ -74,13 +75,14 @@ export const columnSorting = definePlugin<ColumnSortingOptions>()({
   // Единый дескриптор: инлайн — циклящая кнопка с бейджем приоритета;
   // в кебаб-меню — пункты asc/desc/сброс. Ядро решает подачу.
   slotActions: [sortHeaderAction],
+  setup: o => table =>
+    declareRevertOnReject(table, 'sorting', o.revertOnReject !== false),
   keyboardActions: [sortKeyboardAction],
   options: o => {
     const multi = resolveMultiSort(o.multiSort)
     const isMultiSortEvent = resolveMultiSortEvent(multi.opts.event)
     return {
       enableSortingRemoval: o.removal ?? true,
-      columnSortingRevertOnReject: o.revertOnReject !== false,
       sortDescFirst: true,
       enableMultiSort: multi.enabled,
       ...(multi.opts.max !== undefined

@@ -185,7 +185,7 @@ export const ExportPanel = ({
 
   // Лента без серверной выгрузки: «все строки» — только загруженные (ADR 0081).
   const loaded =
-    !config.server && (table.options as { partialData?: boolean }).partialData
+    !config.server && table.options.partialData
       ? table.getCoreRowModel().rows.length
       : undefined
 

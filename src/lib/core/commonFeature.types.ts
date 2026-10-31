@@ -121,7 +121,7 @@ export interface CommonOptions extends CoreOptions {
   /** Свой источник строк тела (серверная модель строк, ADR 0138); один объект на таблицу. */
   getRowSource?: (table: unknown) => RowSource
   /** Тело ждёт данных плагина: `aria-busy` таблицы (ADR 0081). */
-  getBodyBusy?: (state: Record<string, unknown>) => boolean
+  getBodyBusy?: (state: object) => boolean
   /** В `data` загружена только часть строк сервера (лента, ADR 0081). */
   partialData?: boolean
   /** Новая `data` только дописывает строки в конец прежней (лента, ADR 0145). */

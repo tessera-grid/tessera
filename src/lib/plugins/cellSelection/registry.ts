@@ -7,6 +7,7 @@
  *
  * Сервисной колонки нет: выделение — свойство самих ячеек тела.
  */
+import type { RowData, TableFeatures } from '@tanstack/react-table'
 import { definePlugin } from '../../core/definePlugin'
 import { neverInert } from '../../core/pluginDiagnostics'
 import {
@@ -49,3 +50,20 @@ export const cellSelection = definePlugin<CellSelectionOptions>()({
   // активном плагине contextMenu; отключённый cellSelection пунктов не даёт.
   contextMenuActions: [copyContextAction],
 })
+
+/* eslint-disable @typescript-eslint/no-unused-vars -- generics карт обязаны
+   повторять сигнатуры v9, иначе declaration merging не склеится */
+declare module '@tanstack/react-table' {
+  interface TableOptions_FeatureMap<
+    in out TFeatures extends TableFeatures,
+    in out TData extends RowData,
+  > {
+    /** Опции таблицы, которые выставляет плагин (ADR 0167). */
+    cellSelectionPlugin: {
+      /** Жесты выделения включены: `false` у выключенного плагина. */
+      cellSelectionInteraction?: boolean
+      cellSelectionMaxCopyRows?: number
+    }
+  }
+}
+/* eslint-enable @typescript-eslint/no-unused-vars */

@@ -105,9 +105,7 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
   const { pageSize } = pagination
   const { from, to } = pageRange(pagination, rowCount)
   const lastIndex = Math.max(0, pageCount - 1)
-  const pageSizesOption = (
-    table.options as { paginationPageSizes?: number[] | false }
-  ).paginationPageSizes
+  const pageSizesOption = table.options.paginationPageSizes
 
   const announcePage = (index: number, pages: number | undefined) =>
     announceLabel(table, all =>

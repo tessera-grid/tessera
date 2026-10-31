@@ -242,30 +242,4 @@ export const useTableEffects = (
     )
     // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по составу владельцев
   }, [cellSlotOwners.join('|'), host])
-
-  // Сброс выбора строк при смене опций выбора (ядровая логика). Триггер
-  // ТОЛЬКО по изменению самих опций (через ref), а не по идентичности table — иначе
-  // нестабильный ref из useTable запускал бы reset каждый рендер (бесконечный цикл).
-  // Монтирование — не смена: начальный выбор (`initialRowSelection`) остаётся, а
-  // колбэк среза не зовётся (ADR 0120, MP9).
-  const { enableRowSelection, enableSubRowSelection } = host.options as {
-    enableRowSelection?: unknown
-    enableSubRowSelection?: unknown
-  }
-  const prevSelectionOpts = useRef<string | undefined>(undefined)
-  const selectionOptsKey = JSON.stringify([
-    typeof enableRowSelection === 'function' ? 'fn' : enableRowSelection,
-    enableSubRowSelection,
-  ])
-  useEffect(() => {
-    const previous = prevSelectionOpts.current
-    prevSelectionOpts.current = selectionOptsKey
-    if (previous === undefined || previous === selectionOptsKey) {
-      return
-    }
-    ;(
-      table as { resetRowSelection?: (defaultState?: boolean) => void }
-    ).resetRowSelection?.(true)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectionOptsKey])
 }

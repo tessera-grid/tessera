@@ -4,7 +4,11 @@
  * колонкам, с фильтрами колонок — через И; поле поиска и колбэк пользователя — у
  * `quickSearch`, который включает эту модель.
  */
-import { globalFilteringFeature } from '@tanstack/react-table'
+import {
+  globalFilteringFeature,
+  type RowData,
+  type TableFeatures,
+} from '@tanstack/react-table'
 
 import { definePlugin } from '../../core/definePlugin'
 import { FILTERED_STUB } from '../../shared/filtering/filtering'
@@ -59,3 +63,18 @@ export const quickSearchModel = definePlugin<QuickSearchModelOptions>()({
     ...(o.server ? { manualFiltering: true } : {}),
   }),
 })
+
+/* eslint-disable @typescript-eslint/no-unused-vars -- generics карт обязаны
+   повторять сигнатуры v9, иначе declaration merging не склеится */
+declare module '@tanstack/react-table' {
+  interface TableOptions_FeatureMap<
+    in out TFeatures extends TableFeatures,
+    in out TData extends RowData,
+  > {
+    /** Опции таблицы, которые выставляет плагин (ADR 0167). */
+    quickSearchModelPlugin: {
+      quickSearchServer?: boolean
+    }
+  }
+}
+/* eslint-enable @typescript-eslint/no-unused-vars */

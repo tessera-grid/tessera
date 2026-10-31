@@ -17,12 +17,10 @@ import {
 import {
   adrsWithoutLayer,
   columnMetaAugmentations,
-  coreOptionKeys,
   corePluginOnlyModules,
   foreignOptionReads,
   layerViolations,
   optionCasts,
-  stockTableOptionKeys,
 } from './layerRules'
 
 const TYPES_TIMEOUT = 120_000
@@ -62,15 +60,7 @@ describe('границы слоёв (ADR 0163)', () => {
   it(
     'LB5: собственный ключ опций плагина читают только он и его цепочка entry.model; чтение в ядре, гриде и чужом плагине — только из базы',
     () => {
-      const foreignKeys = new Set([
-        ...stockTableOptionKeys(),
-        ...coreOptionKeys(),
-      ])
-      // Стоковые и ядровые ключи на месте: иначе страж считал бы и их.
-      expect(foreignKeys.has('manualFiltering')).toBe(true)
-      expect(foreignKeys.has('enableFooter')).toBe(true)
-      expect(foreignKeys.has('enableRowDragging')).toBe(false)
-      expectBaseline(foreignOptionReads(foreignKeys), FOREIGN_OPTION_READS)
+      expectBaseline(foreignOptionReads(), FOREIGN_OPTION_READS)
     },
     TYPES_TIMEOUT,
   )

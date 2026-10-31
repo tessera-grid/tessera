@@ -16,7 +16,13 @@ import {
   makeStateUpdater,
 } from '@tanstack/react-table'
 
-import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
+import type {
+  RowData,
+  Table,
+  TableFeature,
+  TableFeatures,
+  Updater,
+} from '../../types'
 import type { ColumnMoveFailed, ColumnMoves } from './commitColumnMove'
 import type { DragOverlayState } from './types'
 
@@ -27,6 +33,7 @@ interface ColumnDraggingStateSlice {
 }
 interface ColumnDraggingOptions {
   enableColumnDragging?: boolean
+  columnDragRevertOnReject?: boolean
   onColumnDraggingActiveIdChange?: (updater: Updater<DragOverlayState>) => void
   onColumnMovesChange?: (updater: Updater<ColumnMoves>) => void
   onColumnMoveFailedChange?: (updater: Updater<ColumnMoveFailed>) => void
@@ -165,11 +172,7 @@ export const columnDraggingFeature: TableFeature = {
     assignTableAPIs('columnDraggingFeature', table, {
       table_setColumnDraggingActiveId: {
         fn: (updater: Updater<DragOverlayState>) => {
-          const opts = table.options as {
-            onColumnDraggingActiveIdChange?: (
-              u: Updater<DragOverlayState>,
-            ) => void
-          }
+          const opts = (table as Table<any, any>).options
           if (opts.onColumnDraggingActiveIdChange) {
             opts.onColumnDraggingActiveIdChange(updater)
             return

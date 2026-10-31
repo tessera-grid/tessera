@@ -77,7 +77,7 @@ export const DataGridTable = ({
   endContent,
   style,
 }: DataGridTableProps) => {
-  const options = table.options as any
+  const { options } = table
   // Инертность перетаскивания (сортировка, фильтр, дерево серверной модели) решает строка.
   const enableRowDragging = !!options.enableRowDragging
   const enableColumnDragging = !!options.enableColumnDragging
@@ -254,9 +254,7 @@ export const DataGridTable = ({
               ariaRowIndexBase={headerGroups.length + rowWindow.offset}
               selectableRows={!!keyboardNavigation && enableRowSelection}
               treeRows={!!keyboardNavigation && hierarchical}
-              treeLines={
-                (table.options as { enableTreeLines?: boolean }).enableTreeLines
-              }
+              treeLines={table.options.enableTreeLines}
               isResizingColumns={isResizingColumns}
               isVirtualColumns={isVirtualColumns}
               enableRowDragging={enableRowDragging}

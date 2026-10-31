@@ -21,7 +21,6 @@ import {
   getSkeletonTreeRows,
   isSkeletonParentRow,
   resolveSkeletonOptions,
-  type SkeletonOptions,
 } from '../core/skeletonOptions'
 import { ESTIMATE_SIZE } from '../core/virtualization/measureRows'
 import { isIndentColumn } from './cellExpandingStyles'
@@ -427,13 +426,7 @@ export const SkeletonBody = memo(
     isVirtualColumns,
   }: SkeletonBodyProps) => {
     const rootRef = useRef<HTMLDivElement>(null)
-    const options = table.options as {
-      skeletonOptions?: SkeletonOptions
-      enableFooter?: boolean
-      enableTreeLines?: boolean
-      rowHeight?: number
-      headerHeight?: number
-    }
+    const { options } = table
     const { rowsCount, columnsCount } = resolveSkeletonOptions(
       options.skeletonOptions,
     )

@@ -40,7 +40,7 @@ flowchart TB
     OUT["инстанс table"]
 
     IN --> SIG --> FEAT --> FOLD --> COLS --> CTRL --> HK --> RT --> OUT
-    RT --> EFF["useEffect: folded.setups(table)<br/>useEffect: resetRowSelection при смене опций выбора"]
+    RT --> EFF["useEffect: folded.setups(table)<br/>layout-эффект: reconcile каждой записи"]
 ```
 
 ## Сервисные столбцы (`injectServiceColumns`)

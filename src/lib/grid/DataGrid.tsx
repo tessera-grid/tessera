@@ -184,7 +184,7 @@ export const DataGrid = ({
     | { activeId: string | null; acceptable: boolean; offsetLeft: number }
     | undefined
 
-  const enableContextMenu = !!(table.options as any).enableContextMenu
+  const enableContextMenu = !!table.options.enableContextMenu
   const enableOverflowTooltip = options.enableOverflowTooltip !== false
   const renderVersion = options.pluginRenderVersion ?? 0
   // Панели включают слоты плагинов; флаг их переопределяет (ADR 0046).
@@ -537,10 +537,7 @@ export const DataGrid = ({
                     data-status-bar={hasStatusBar || undefined}
                     data-refreshing={refreshingShown || undefined}
                     data-skeleton-wave={showSkeleton || undefined}
-                    data-tree-lines={
-                      (table.options as { enableTreeLines?: boolean })
-                        .enableTreeLines || undefined
-                    }
+                    data-tree-lines={table.options.enableTreeLines || undefined}
                     style={wrapperStyles}
                   >
                     {toolbar}

@@ -4,6 +4,7 @@
  * значения, разрешённые оси и быстрые наборы, серверный режим и колбэки выгрузки.
  * Кнопка с панелью настроек в тулбаре — у `dataExport`, который включает эту модель.
  */
+import type { RowData, TableFeatures } from '@tanstack/react-table'
 import { definePlugin } from '../../core/definePlugin'
 import { csvFormat } from './csv'
 import { dataExportFeature } from './dataExportFeature'
@@ -63,3 +64,18 @@ export const dataExportModel = definePlugin<DataExportModelOptions>()({
     } satisfies ResolvedExportOptions,
   }),
 })
+
+/* eslint-disable @typescript-eslint/no-unused-vars -- generics карт обязаны
+   повторять сигнатуры v9, иначе declaration merging не склеится */
+declare module '@tanstack/react-table' {
+  interface TableOptions_FeatureMap<
+    in out TFeatures extends TableFeatures,
+    in out TData extends RowData,
+  > {
+    /** Опции таблицы, которые выставляет плагин (ADR 0167). */
+    dataExportModelPlugin: {
+      exportOptions?: ResolvedExportOptions
+    }
+  }
+}
+/* eslint-enable @typescript-eslint/no-unused-vars */

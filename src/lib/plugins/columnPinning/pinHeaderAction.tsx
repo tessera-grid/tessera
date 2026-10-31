@@ -24,7 +24,7 @@ const getPinSides = (column: Column<any, any>): PinSides =>
   (column.columnDef as { pinSides?: PinSides }).pinSides ?? 'both'
 
 const isLeafPinningEnabled = (table: HeaderComponentProps['table']): boolean =>
-  !!(table.options as { enableLeafPinning?: boolean }).enableLeafPinning
+  !!table.options.enableLeafPinning
 
 const getPinningState = (table: HeaderComponentProps['table']): PinningState =>
   ((

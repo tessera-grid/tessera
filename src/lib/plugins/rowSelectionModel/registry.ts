@@ -8,9 +8,11 @@ import { isPlaceholderRow } from '../../core/lazyPlaceholder'
 import {
   type RowSelectionState,
   rowSelectionFeature,
+  type RowData,
+  type TableFeatures,
 } from '@tanstack/react-table'
 
-import type { Row } from '../../types'
+import type { Row, Table } from '../../types'
 import { definePlugin } from '../../core/definePlugin'
 import {
   effectiveSelectionOf,
@@ -98,10 +100,28 @@ const enableSubRowSelection = (row: Row<any, any>) =>
 
 const NO_SELECTION: RowSelectionState = {}
 
+const selectionKeys = new WeakMap<object, string>()
+
+const keyOf = (option: unknown) =>
+  typeof option === 'function' ? 'fn' : String(option)
+
+/**
+ * Смена опций выбора меняет смысл среза — выбор сбрасывается (ADR 0039, RX13). Монтирование
+ * и новая ссылка на предикат — не смена: начальный выбор остаётся (ADR 0120, MP9).
+ */
+const resetOnSelectionChange = (table: unknown) => {
+  const t = table as Table<any, any>
+  const key = `${keyOf(t.options.enableRowSelection)}/${keyOf(t.options.enableSubRowSelection)}`
+  const previous = selectionKeys.get(t.store)
+  selectionKeys.set(t.store, key)
+  if (previous !== undefined && previous !== key) t.resetRowSelection(true)
+}
+
 export const rowSelectionModel = definePlugin<RowSelectionModelOptions>()({
   id: 'rowSelectionModel',
   features: rowSelectionModelFeatures,
   slices: ['rowSelection'],
+  reconcile: resetOnSelectionChange,
   // Выключенная модель не показывает выбор: эффективный срез пуст, сохранённый не
   // меняется (ADR 0039) — включили снова, выбор вернулся. «Всё, кроме» TanStack видит
   // объектом, где выбрана каждая строка вне исключений (ADR 0138, §9).
@@ -143,3 +163,18 @@ export const rowSelectionModel = definePlugin<RowSelectionModelOptions>()({
   }),
   diagnose: table => (isGroupingActive(table) ? 'grouping' : undefined),
 })
+
+/* eslint-disable @typescript-eslint/no-unused-vars -- generics карт обязаны
+   повторять сигнатуры v9, иначе declaration merging не склеится */
+declare module '@tanstack/react-table' {
+  interface TableOptions_FeatureMap<
+    in out TFeatures extends TableFeatures,
+    in out TData extends RowData,
+  > {
+    /** Опции таблицы, которые выставляет плагин (ADR 0167). */
+    rowSelectionModelPlugin: {
+      rowSelectionSubRows?: RowSelectionModelOptions['subRows']
+    }
+  }
+}
+/* eslint-enable @typescript-eslint/no-unused-vars */
