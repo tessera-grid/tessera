@@ -2,7 +2,7 @@ import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
 import { composed } from '../stories'
-import { ROW_ACTIONS_COLUMN_ID } from '../../../core/createColumns'
+import { ROW_ACTIONS_COLUMN_ID } from '../../../plugins/rowActions'
 
 // Runtime-toggle parity for EVERY plugin (R11). Presence-based
 // композиция обещает: включение/выключение плагина в рантайме (без перезагрузки

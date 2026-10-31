@@ -55,11 +55,11 @@ import {
 } from './pluginDiagnostics'
 
 /**
- * Запись фичи Tessera: фрагмент карты фич +
- * табличные опции + декларативные слоты/действия/меню. `features` идёт в
- * `tableFeatures()`; остальное сворачивается в опции таблицы (`foldEntries`).
+ * Запись плагина, которую задаёт автор (ADR 0164, §3): фрагмент карты фич, табличные
+ * опции и декларативные слоты, действия и меню. `features` идёт в `tableFeatures()`;
+ * остальное сворачивается в опции таблицы (`foldEntries`).
  */
-export interface TesseraFeatureEntry<TFeatures extends object = object> {
+export interface TablePlugin<TFeatures extends object = object> {
   id: string
   /**
    * Фрагмент для `tableFeatures({...})`, напр. `{ rowSortingFeature, sortedRowModel,
@@ -71,42 +71,8 @@ export interface TesseraFeatureEntry<TFeatures extends object = object> {
   enabled?: boolean
   /** Табличные опции фичи (напр. `{ enableSorting: true }`) — вливаются в опции useTable. */
   options?: Record<string, unknown>
-  /** Аргументы фабрики `definePlugin` (ADR 0039): из них ядро пересобирает настройку. */
-  args?: unknown
-  /** Ключ аргументов по значению; смена ключа пересобирает `configure`. */
-  argsKey?: string
-  /**
-   * Аргументы-договоры на время жизни таблицы (напр. `server`, ADR 0039): ядро
-   * держит их значение с момента монтирования, смена на лету — dev-warn.
-   */
-  lifetimeArgs?: readonly string[]
-  /**
-   * Аргументы-функции, влияющие на отрисовку (ADR 0039): новая ссылка на такую
-   * функцию перерисовывает ячейки. Колбэки `on*` сюда не входят.
-   */
-  refreshArgs?: readonly string[]
-  /**
-   * Внешнее значение локального состояния плагина (ADR 0028, DP8): ключ среза,
-   * значение из опции плагина (`undefined` — не передано) и колбэк изменений.
-   */
-  controlledState?: {
-    key: string
-    value: unknown
-    onChange?: (next: unknown) => void
-  }
-  /** Срезы TanStack из аргументов плагина: `<срез>`, `on<Срез>Change`, `initial<Срез>` (ADR 0120, §4). */
-  stateSlices?: PluginStateSlice[]
   /** Модель, которую несёт плагин интерфейса; ядро раскрывает её в свою запись (ADR 0120, §3). */
-  model?: TesseraFeatureEntry
-  /** Интерфейс, включивший эту модель: в диагностике её нет (MP16). */
-  includedBy?: string
-  /** Причина инертности, заданная ядром по составу набора (`'addedAfterMount'`…). */
-  inertReason?: PluginInertReason
-  /**
-   * Настройка из вида аргументов (функции — стабильные обёртки). Ядро зовёт её при
-   * смене `argsKey` вместо готовых `options`/`slots`/`actionMenu`/`setup`.
-   */
-  configure?: (args: any) => PluginConfiguration
+  model?: TablePlugin
   /**
    * Живой слайс бизнес-хуков плагина (колбэки/флаги), читается через
    * `table.getHooks()`. В отличие от `options`/`slots`, НЕ мемоизируется по сигнатуре
@@ -149,6 +115,47 @@ export interface TesseraFeatureEntry<TFeatures extends object = object> {
    * дешёвым, когда согласовывать нечего.
    */
   reconcile?: (table: unknown, context: PluginReconcileContext) => void
+}
+
+/** Внутренняя запись плагина: поля, которые ставят ядро и `definePlugin` (ADR 0164, §3). */
+export interface TesseraFeatureEntry<
+  TFeatures extends object = object,
+> extends TablePlugin<TFeatures> {
+  /** Аргументы фабрики `definePlugin` (ADR 0039): из них ядро пересобирает настройку. */
+  args?: unknown
+  /** Ключ аргументов по значению; смена ключа пересобирает `configure`. */
+  argsKey?: string
+  /**
+   * Аргументы-договоры на время жизни таблицы (напр. `server`, ADR 0039): ядро
+   * держит их значение с момента монтирования, смена на лету — dev-warn.
+   */
+  lifetimeArgs?: readonly string[]
+  /**
+   * Аргументы-функции, влияющие на отрисовку (ADR 0039): новая ссылка на такую
+   * функцию перерисовывает ячейки. Колбэки `on*` сюда не входят.
+   */
+  refreshArgs?: readonly string[]
+  /**
+   * Внешнее значение локального состояния плагина (ADR 0028, DP8): ключ среза,
+   * значение из опции плагина (`undefined` — не передано) и колбэк изменений.
+   */
+  controlledState?: {
+    key: string
+    value: unknown
+    onChange?: (next: unknown) => void
+  }
+  /** Срезы TanStack из аргументов плагина: `<срез>`, `on<Срез>Change`, `initial<Срез>` (ADR 0120, §4). */
+  stateSlices?: PluginStateSlice[]
+  /** Интерфейс, включивший эту модель: в диагностике её нет (MP16). */
+  includedBy?: string
+  /** Причина инертности, заданная ядром по составу набора (`'addedAfterMount'`…). */
+  inertReason?: PluginInertReason
+  /**
+   * Настройка из вида аргументов (функции — стабильные обёртки). Ядро зовёт её при
+   * смене `argsKey` вместо готовых `options`/`slots`/`actionMenu`/`setup`.
+   */
+  configure?: (args: any) => PluginConfiguration
+  model?: TesseraFeatureEntry
 }
 
 /** Срез TanStack, заданный аргументами плагина; `undefined` — аргумент не передан. */
@@ -404,15 +411,16 @@ type EntryFeatures<E> = E extends { features?: infer F }
   ? NonNullable<F>
   : never
 
-type MergeFeatures<T extends readonly TesseraFeatureEntry[]> =
-  UnionToIntersection<EntryFeatures<T[number]>>
+type MergeFeatures<T extends readonly TablePlugin[]> = UnionToIntersection<
+  EntryFeatures<T[number]>
+>
 
 /**
  * Тип набора фич: always-on `commonFeature` + `columnOrderingFeature` (порядок/
  * индексы колонок нужны гриду всегда — getIndex/getIsFirstColumn/getIsLastColumn)
  * + слоты записей.
  */
-export type TesseraFeatures<T extends readonly TesseraFeatureEntry[]> = {
+export type TesseraFeatures<T extends readonly TablePlugin[]> = {
   commonFeature: typeof commonFeature
   actionStatusFeature: typeof actionStatusFeature
   highlightFeature: typeof highlightFeature

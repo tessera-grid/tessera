@@ -2,18 +2,19 @@ import { CellWrapperContentProps } from './CellWrapperContent'
 
 export interface GetAlignContentParams {
   isActionsColumn: boolean
-  isRowActionsColumn: boolean
+  /** Колонка зоны действий строки: `fill` записи `ServiceColumn` (ADR 0165). */
+  isFillColumn: boolean
 }
 
 export const getAlignContent = ({
   isActionsColumn,
-  isRowActionsColumn,
+  isFillColumn,
 }: GetAlignContentParams): CellWrapperContentProps['flex'] => {
-  if (isActionsColumn && !isRowActionsColumn) {
+  if (isActionsColumn && !isFillColumn) {
     return 'center'
   }
 
-  if (isRowActionsColumn) {
+  if (isFillColumn) {
     return 'end'
   }
 

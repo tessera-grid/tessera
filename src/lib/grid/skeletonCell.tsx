@@ -26,7 +26,7 @@ export const renderSkeletonCell = (
   wave: boolean,
 ) => {
   const animation = wave && 'wave'
-  if (kind === 'control') {
+  if (kind === 'control' || kind === 'toggle') {
     return (
       <Skeleton
         width={CONTROL_SIZE}

@@ -170,7 +170,7 @@ export const BodyCell = memo(
 
     const isPinnedColumn = cell.column.getIsPinned()
     const isActionsColumn = cell.column.getIsActionsColumn()
-    const isRowActionsColumn = cell.column.getIsRowActionsColumn()
+    const isFillColumn = !!cell.column.getServiceColumn()?.fill
 
     const rowReveal = useContext(RowRevealContext)
     const iconReveal = useMemo(
@@ -228,9 +228,9 @@ export const BodyCell = memo(
         return null
       }
 
-      // Колонка действий строки — зона действий в слоте actionRowSlot (инлайн-кнопки
+      // Колонка зоны действий строки (`fill`) — действия слота actionRowSlot (инлайн-кнопки
       // + overflow-кебаб), а не flexRender контента.
-      if (isRowActionsColumn) {
+      if (isFillColumn) {
         return (
           <ActionsZone
             slot="actionRowSlot"
@@ -258,7 +258,7 @@ export const BodyCell = memo(
       groupCount,
       labels,
       isActionsColumn,
-      isRowActionsColumn,
+      isFillColumn,
       actionRowSlot,
       isSuppressed,
       showSkeleton,
@@ -340,7 +340,7 @@ export const BodyCell = memo(
           <CellWrapperContent
             flex={getAlignContent({
               isActionsColumn,
-              isRowActionsColumn: cell.column.getIsRowActionsColumn(),
+              isFillColumn,
             })}
             smallPadding={isActionsColumn}
           >

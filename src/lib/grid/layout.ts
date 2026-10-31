@@ -1,6 +1,6 @@
 /**
  * grid-раскладка: getGridLayout (CSS grid template для вложенной шапки) и
- * useGridStyles (grid-позиция ячейки заголовка); getIsRowActionsColumn даёт
+ * useGridStyles (grid-позиция ячейки заголовка); сведения служебной колонки даёт
  * commonFeature.
  */
 import { useMemo } from 'react'
@@ -12,7 +12,7 @@ import {
   isCoveredHeader,
 } from '../core/headerSpans'
 
-type RowActionsAware = { getIsRowActionsColumn: () => boolean }
+type ServiceAware = { getServiceColumn: () => { fill?: boolean } | undefined }
 
 export interface GetGridLayoutParams {
   layout: 'grid' | 'flex'
@@ -31,11 +31,11 @@ export const getGridLayout = ({
 
   const gridTemplateRows = `repeat(${headerGroups.length}, auto)`
 
-  const isRowActions = (column: Column<any, any, unknown>) =>
-    (column as unknown as RowActionsAware).getIsRowActionsColumn()
+  const isFill = (column: Column<any, any, unknown>) =>
+    !!(column as unknown as ServiceAware).getServiceColumn()?.fill
 
   const track = (column: Column<any, any, unknown>) =>
-    isRowActions(column) ? '1fr' : 'auto'
+    isFill(column) ? '1fr' : 'auto'
 
   // Свободное место забирает первая закреплённая справа колонка — как в теле.
   // Правые листья в шапке всегда последние, а `leafColumns` — в порядке колонок.
@@ -45,7 +45,7 @@ export const getGridLayout = ({
   const gridTemplateColumns =
     endCount > 0
       ? leafColumns.map((_, i) => (i === firstEnd ? '1fr' : 'auto')).join(' ')
-      : leafColumns.at(-1) && isRowActions(leafColumns.at(-1)!)
+      : leafColumns.at(-1) && isFill(leafColumns.at(-1)!)
         ? leafColumns.map(track).join(' ')
         : leafColumns.map(track).concat('1fr').join(' ')
 

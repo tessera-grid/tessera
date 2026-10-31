@@ -90,7 +90,6 @@ describe('живые аргументы фабрик', () => {
     const cell = {
       column: {
         getIsActionsColumn: () => false,
-        getIsRowActionsColumn: () => false,
       },
     }
     mount({ canSelectCell: () => true })

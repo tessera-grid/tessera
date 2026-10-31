@@ -77,5 +77,6 @@ export const rowSelection = definePlugin<RowSelectionOptions>()({
     side: 'leading',
     order: 1,
     pin: { side: 'start', when: 'with-user' },
+    controlSized: true,
   },
 })

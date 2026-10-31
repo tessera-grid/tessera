@@ -15,10 +15,11 @@ import { useControlColumnSizes } from '../grid/useControlColumnSizes'
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true
 
+const controlSized = () => ({ controlSized: true })
 const columns = [
-  { id: 'select', columnDef: { controlSized: true } },
-  { id: 'expand', columnDef: { controlSized: true } },
-  { id: 'name', columnDef: {} },
+  { id: 'select', getServiceColumn: controlSized },
+  { id: 'expand', getServiceColumn: controlSized },
+  { id: 'name', getServiceColumn: () => undefined },
 ]
 
 const Host = ({

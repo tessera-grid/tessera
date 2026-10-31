@@ -15,10 +15,7 @@ import {
   functionalUpdate,
 } from '@tanstack/react-table'
 
-import {
-  ROW_ACTIONS_COLUMN_ID,
-  checkIsActionColumn,
-} from '../core/createColumns/actionColumnParams'
+import { serviceColumnOf } from './createColumns'
 import type { ColumnSizingState, TableFeature, Updater } from '../types'
 import type { CommonOptions } from './commonFeature.types'
 import { announce } from './announcer'
@@ -33,6 +30,10 @@ import { DEFAULT_SKELETON_OPTIONS } from './skeletonOptions'
 
 // Побочка импорта типов: подключает declaration merging из commonFeature.types.
 export type { CommonOptions } from './commonFeature.types'
+
+/** Опции `commonFeature`: они есть у таблицы при любом наборе фич (ADR 0164). */
+export const commonOptionsOf = (table: unknown): CommonOptions =>
+  (table as { options: CommonOptions }).options
 
 export const commonFeature: TableFeature = {
   getDefaultTableOptions: () => ({
@@ -110,11 +111,12 @@ export const commonFeature: TableFeature = {
   assignColumnPrototype: (prototype, table) => {
     assignPrototypeAPIs('commonFeature', prototype, table, {
       column_getIsActionsColumn: {
-        fn: (column: { id: string }) => checkIsActionColumn(column.id),
+        fn: (column: { columnDef: object }) =>
+          serviceColumnOf(column.columnDef) !== undefined,
       },
-      column_getIsRowActionsColumn: {
-        fn: (column: { id: string }) =>
-          column.id.includes(ROW_ACTIONS_COLUMN_ID),
+      column_getServiceColumn: {
+        fn: (column: { columnDef: object }) =>
+          serviceColumnOf(column.columnDef),
       },
     })
   },

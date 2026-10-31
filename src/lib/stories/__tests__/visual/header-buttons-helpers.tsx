@@ -25,7 +25,7 @@ const HeaderButtonsGrid = ({ colorMode }: { colorMode: ColorMode }) => {
         id: 'age',
         accessorKey: 'age',
         header: 'Age',
-        meta: { pinSides: 'start' },
+        pinSides: 'start',
       },
     ] as never,
     data: DATA,

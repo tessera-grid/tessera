@@ -58,7 +58,7 @@ export const OverlayHeadCell = memo(
         data-actions-column-cell={isActionsColumn}
       >
         <CellWrapperContent
-          flex={getAlignContent({ isActionsColumn, isRowActionsColumn: false })}
+          flex={getAlignContent({ isActionsColumn, isFillColumn: false })}
         >
           {!isActionsColumn && (
             <ActionsZone

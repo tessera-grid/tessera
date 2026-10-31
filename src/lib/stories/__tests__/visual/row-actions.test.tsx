@@ -1,7 +1,7 @@
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
-import { ROW_ACTIONS_COLUMN_ID } from '../../../core/createColumns'
+import { ROW_ACTIONS_COLUMN_ID } from '../../../plugins/rowActions'
 import { DEFAULT_ROW_ACTIONS_OPTIONS } from '../../../../lib/plugins/rowActions'
 import { composed, rowMenuArgs } from '../stories'
 

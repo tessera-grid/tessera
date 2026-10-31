@@ -7,7 +7,7 @@ import { readPluginHooks, type PluginCellProps } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
 import { CellButton } from '../../grid/Actions/CellButton'
 import { CellInvalid } from '../../grid/cellControls/CellInvalid'
-import type { CellEditingHooks } from '../cellEditing/types'
+import type { CellEditHook } from '../../shared/cellHooks'
 import type { CellErrorsHooks } from './types'
 
 const ignore = () => {}
@@ -16,7 +16,7 @@ export const CellErrorMark = (props: PluginCellProps<CellErrorsHooks>) => {
   const { table, hooks } = props
   const labels = useLocalization()
   const error = hooks.getCellError(props)
-  const editing = readPluginHooks<Partial<CellEditingHooks>>(
+  const editing = readPluginHooks<Partial<CellEditHook>>(
     table as never,
     'cellEditing',
   )

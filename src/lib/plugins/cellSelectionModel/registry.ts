@@ -22,7 +22,6 @@ export interface CellSelectionPredicateCell {
   column: {
     id: string
     getIsActionsColumn: () => boolean
-    getIsRowActionsColumn: () => boolean
   }
   row: { id: string; original: unknown; depth: number }
   getValue: () => unknown
@@ -52,7 +51,7 @@ export const cellSelectionModelFeatures = {
 
 /** Сервисные колонки (действия) невыбираемы — граница плагина, не настройка. */
 const isServiceCell = (cell: CellSelectionPredicateCell): boolean =>
-  cell.column.getIsActionsColumn() || cell.column.getIsRowActionsColumn()
+  cell.column.getIsActionsColumn()
 
 export const cellSelectionModel = definePlugin<CellSelectionModelOptions>()({
   id: 'cellSelectionModel',

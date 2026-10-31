@@ -67,7 +67,7 @@ describe('v9 ядро: presence-based сборка + commonFeature', () => {
     const table = makeTable()
     const [column] = table.getAllLeafColumns()
     expect(column.getIsActionsColumn()).toBe(false)
-    expect(column.getIsRowActionsColumn()).toBe(false)
+    expect(column.getServiceColumn()).toBeUndefined()
   })
 
   it('row API commonFeature: первая/последняя строка после сортировки', () => {

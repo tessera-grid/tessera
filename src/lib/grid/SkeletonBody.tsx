@@ -12,7 +12,6 @@ import {
 import type { VirtualItem } from '../../vendor/tanstack-virtual/react-virtual'
 import clsx from 'clsx'
 
-import type { CommonColumnDef } from '../core/commonFeature.types'
 import { useTableState } from '../core/reactivity'
 import { ROW_NESTING_INDENT_TOKEN } from '../core/rowNesting'
 import {
@@ -93,11 +92,10 @@ const getSkeletonColumns = (
       placement,
       isActionsColumn,
       isIndent: isIndentColumn(column, table),
-      isToggle:
-        (column.columnDef as CommonColumnDef).serviceLabel === 'expandColumn',
+      isToggle: skeletonCellKindOf(column) === 'toggle',
       flex: getAlignContent({
         isActionsColumn,
-        isRowActionsColumn: column.getIsRowActionsColumn(),
+        isFillColumn: !!column.getServiceColumn()?.fill,
       }),
       content: cellContent(column, shape(column), wave),
       style: {

@@ -5,7 +5,8 @@ import {
   ExpandedState,
 } from '@tanstack/react-table'
 import type { TesseraFeatureEntry } from '../../lib/core/features'
-import { CreateDataGridOptions } from '../../lib/core/useCreateTable'
+import type { CoreOptions } from '../../lib/core/commonFeature.types'
+import type { DefaultColumnSizing } from '../../lib/core/defaultColumn'
 import { DataGridProps } from '../../lib/grid/dataGridTypes'
 import { useColumns } from './__mocks__/columns'
 import type { Nesting } from './__mocks__/data'
@@ -16,12 +17,13 @@ import { RowExpandingHooks } from '../../lib/plugins/rowExpanding'
 import { RowSelectionHooks } from '../../lib/plugins/rowSelection'
 import { FeatureToggles } from './__mocks__/utils/argsToPlugins'
 import type { ConsoleLog } from './demos/consoleLog'
-import type { OnDebugAction } from '../../lib/core/debugActions'
 
 export const COLUMN_COUNT = 20
 export const DATA_COUNT = 10
 
-export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
+export interface StoryProps extends CoreOptions, FeatureToggles {
+  /** Размеры колонок без своих (ADR 0077). */
+  defaultColumn?: DefaultColumnSizing
   columnCount: number
   dataCount: number
   /** Вложенность генерируемого мока строк: `nested` — дети у каждой 10-й строки. */
@@ -70,8 +72,6 @@ export interface StoryProps extends CreateDataGridOptions, FeatureToggles {
   extraPlugins?: TesseraFeatureEntry[]
   /** Консоль истории (ADR 0124): колбэки, состояние и жизненный цикл грида. */
   consoleLog?: ConsoleLog
-  /** Слушатель канала действий грида (ADR 0125): тесты и истории сценариев. */
-  onDebugAction?: OnDebugAction
 
   containerHeight: number | string
   /**

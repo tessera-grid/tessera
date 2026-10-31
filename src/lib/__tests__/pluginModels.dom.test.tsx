@@ -4,7 +4,8 @@
  * своя запись, явная модель главнее включённой, срез — аргументами плагина.
  * Запуск: npx vitest run --project unit pluginModels
  */
-import { act, createElement } from 'react'
+import { act, createElement, useState } from 'react'
+import type { ExpandedState } from '@tanstack/react-table'
 import { createRoot, type Root } from 'react-dom/client'
 import {
   afterEach,
@@ -17,7 +18,6 @@ import {
 } from 'vitest'
 
 import { foldEntries, type TesseraFeatureEntry } from '../core/features'
-import { useExpandedState } from '../core/createState'
 import { __resetLogger } from '../core/logger'
 import {
   expandIncludedModels,
@@ -352,7 +352,7 @@ describe('плагины модели и интерфейса (ADR 0120)', () =>
     expect(onExpandedChange).toHaveBeenLastCalledWith({ a: true, c: true })
   })
 
-  it('MP8: срез — аргументами модели и интерфейса: внешнее значение применяется до кадра, изменения изнутри уходят в колбэк новым значением; useExpandedState разворачивается в аргументы', () => {
+  it('MP8: срез — аргументами модели и интерфейса: внешнее значение применяется до кадра, изменения изнутри уходят в колбэк новым значением; useState приложения передаётся в аргументы', () => {
     for (const factory of [rowExpandingModel, rowExpanding]) {
       const onExpandedChange = vi.fn()
       let expanded: Record<string, boolean> = { a: true }
@@ -371,18 +371,18 @@ describe('плагины модели и интерфейса (ADR 0120)', () =>
       root = undefined
     }
 
-    const WithHelper = () => {
-      const state = useExpandedState()
+    const WithAppState = () => {
+      const [expanded, onExpandedChange] = useState<ExpandedState>({})
       table = useCreateTable({
         columns: COLUMNS as never,
         data: DATA,
         getRowId: (row: Node) => row.id,
-        plugins: [rowExpandingModel({ ...state })],
+        plugins: [rowExpandingModel({ expanded, onExpandedChange })],
       })
       return null
     }
     root = createRoot(document.createElement('div'))
-    act(() => root!.render(createElement(WithHelper)))
+    act(() => root!.render(createElement(WithAppState)))
     expect(rows()).toEqual(ROOTS)
     act(() => table.getRow('c').toggleExpanded())
     expect(rows()).toEqual(['a', 'b', 'c', 'c1'])

@@ -9,14 +9,14 @@ import {
 } from 'react'
 import {
   type ColumnPinningState,
+  type ExpandedState,
   GroupingState,
   Updater,
   functionalUpdate,
 } from '@tanstack/react-table'
 import { Grid } from './_shims'
 import { loadingArg, panelFlag } from './__mocks__/utils/dataGridControls'
-import { useExpandedState } from '../../lib/core/createState'
-import { useRowSelectionState } from '../../lib/core/createState'
+import type { RowSelectionValue } from '../../lib/core/rowSelectionAll'
 import type { TesseraFeatureEntry } from '../../lib/core/features'
 import { argsKeyOf } from '../../lib/core/pluginArgs'
 import type { DebugAction } from '../../lib/core/debugActions'
@@ -256,9 +256,18 @@ const StoryGrid = memo(
       setColumnVisibility(hideAllColumns ? hiddenAll(columnsGetter) : {})
     }
 
-    const { expanded, onExpandedChange } = useExpandedState(
-      expandAll ? true : (initialExpanded ?? expandingInitialState),
-    )
+    // Начальное раскрытие из аргументов: смена аргумента задаёт срез заново.
+    const initialExpandedState: ExpandedState = expandAll
+      ? true
+      : (initialExpanded ?? expandingInitialState)
+    const [expanded, onExpandedChange] =
+      useState<ExpandedState>(initialExpandedState)
+    const [appliedInitialExpanded, setAppliedInitialExpanded] =
+      useState(initialExpandedState)
+    if (appliedInitialExpanded !== initialExpandedState) {
+      setAppliedInitialExpanded(initialExpandedState)
+      onExpandedChange(initialExpandedState)
+    }
     // `expandAll` из панели раскрывает или сворачивает всё на лету (SN10).
     const [appliedExpandAll, setAppliedExpandAll] = useState(expandAll)
     if (appliedExpandAll !== expandAll) {
@@ -266,7 +275,7 @@ const StoryGrid = memo(
       if (expandAll !== undefined) onExpandedChange(expandAll ? true : {})
     }
 
-    const { rowSelection, onRowSelectionChange } = useRowSelectionState()
+    const [rowSelection, onRowSelectionChange] = useState<RowSelectionValue>({})
     const { getSelectedData, selectedDataCount } = useAllRowsSelect({
       data,
       rowSelection,

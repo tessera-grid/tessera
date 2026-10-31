@@ -10,7 +10,7 @@ import {
 import { Grid } from './_shims'
 import { DATA_GRID_THEME_CLASS } from '../core/themeVariables'
 import type { TesseraFeatureEntry } from '../core/features'
-import { useRowSelectionState } from '../../lib/core/createState'
+import type { RowSelectionValue } from '../../lib/core/rowSelectionAll'
 import { useCreateTable } from '../../lib/core/useCreateTable'
 import { DataGrid } from '../../lib/grid/DataGrid'
 import {
@@ -707,8 +707,7 @@ const ThemingDemo = memo((args: ThemingArgs) => {
   // Строк больше окна: видна прокрутка и её ползунок.
   const { data, setData } = useData({ count: 40, showStub: false })
 
-  const { rowSelection: selection, onRowSelectionChange } =
-    useRowSelectionState()
+  const [selection, onRowSelectionChange] = useState<RowSelectionValue>({})
   // Закреплённая колонка с первого кадра: токены закреплённых ячеек видны сразу.
   const [pinning, setPinning] = useState<ColumnPinningState>({
     start: ['country'],

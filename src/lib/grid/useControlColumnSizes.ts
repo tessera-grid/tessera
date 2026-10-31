@@ -13,7 +13,7 @@ import type { ColumnSizingState, Updater } from '../types'
 interface ControlSizedTable {
   getAllLeafColumns: () => {
     id: string
-    columnDef: { controlSized?: boolean }
+    getServiceColumn: () => { controlSized?: boolean } | undefined
   }[]
   setColumnAutoSizing?: (updater: Updater<ColumnSizingState>) => void
 }
@@ -38,7 +38,7 @@ export const useControlColumnSizes = (
   const t = table as ControlSizedTable
   const ids = t
     .getAllLeafColumns()
-    .filter(column => column.columnDef.controlSized)
+    .filter(column => column.getServiceColumn()?.controlSized)
     .map(column => column.id)
   const idsKey = ids.join('|')
   // Что записано в авто-слайс: ширина своей темы по колонкам или ничего. Сеттер — только

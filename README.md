@@ -397,12 +397,12 @@ useCreateTable({
 ```tsx
 // Table.tsx
 
+import { useState } from 'react'
+import { useCreateTable, DataGrid } from '@tessera-grid/tessera'
 import {
-  useCreateTable,
-  DataGrid,
-  useRowSelectionState,
-} from '@tessera-grid/tessera'
-import { rowSelection } from '@tessera-grid/tessera/plugins'
+  rowSelection,
+  type RowSelectionValue,
+} from '@tessera-grid/tessera/plugins'
 import { useColumns } from './useColumns'
 import { useData } from './useData'
 import { useFields } from './useFields'
@@ -412,13 +412,18 @@ export const Table = () => {
   const columns = useColumns({ fields })
   const data = useData()
 
-  // { rowSelection, onRowSelectionChange } — разворачивается в аргументы плагина.
-  const selection = useRowSelectionState()
+  // Срез выбора — состояние приложения, аргументами плагина.
+  const [selected, setSelected] = useState<RowSelectionValue>({})
 
   const table = useCreateTable({
     columns,
     data,
-    plugins: [rowSelection({ ...selection })],
+    plugins: [
+      rowSelection({
+        rowSelection: selected,
+        onRowSelectionChange: setSelected,
+      }),
+    ],
   })
 
   return <DataGrid table={table} />
@@ -571,12 +576,12 @@ useCreateTable({
 параметры типизируются нативно из сигнатуры плагина, отдельного объекта `hooks` нет:
 
 ```tsx
+import { useState } from 'react'
+import { useCreateTable, DataGrid } from '@tessera-grid/tessera'
 import {
-  useCreateTable,
-  DataGrid,
-  useRowSelectionState,
-} from '@tessera-grid/tessera'
-import { rowSelection } from '@tessera-grid/tessera/plugins'
+  rowSelection,
+  type RowSelectionValue,
+} from '@tessera-grid/tessera/plugins'
 import { useColumns } from './useColumns'
 import { useData } from './useData'
 import { useFields } from './useFields'
@@ -586,8 +591,9 @@ export const Table = () => {
   const columns = useColumns({ fields })
   const data = useData()
 
-  const { rowSelection: rowSelectionState, onRowSelectionChange } =
-    useRowSelectionState()
+  const [rowSelectionState, onRowSelectionChange] = useState<RowSelectionValue>(
+    {},
+  )
 
   const table = useCreateTable({
     columns,
@@ -766,12 +772,13 @@ RowDownloadComponent.displayName = 'RowDownloadComponent'
 ```tsx
 // MyTable.tsx
 
+import { useState } from 'react'
+import { useCreateTable, DataGrid } from '@tessera-grid/tessera'
 import {
-  useCreateTable,
-  DataGrid,
-  useRowSelectionState,
-} from '@tessera-grid/tessera'
-import { rowSelection, rowActions } from '@tessera-grid/tessera/plugins'
+  rowSelection,
+  rowActions,
+  type RowSelectionValue,
+} from '@tessera-grid/tessera/plugins'
 import { useColumns } from './useColumns'
 import { useData } from './useData'
 import { useFields } from './useFields'
@@ -782,8 +789,9 @@ export const Table = () => {
   const columns = useColumns({ fields })
   const data = useData()
 
-  const { rowSelection: rowSelectionState, onRowSelectionChange } =
-    useRowSelectionState()
+  const [rowSelectionState, onRowSelectionChange] = useState<RowSelectionValue>(
+    {},
+  )
 
   const table = useCreateTable({
     columns,
@@ -877,12 +885,13 @@ RowDownloadComponent.displayName = 'RowDownloadComponent'
 ```tsx
 // MyTable.tsx
 
+import { useState } from 'react'
+import { useCreateTable, DataGrid } from '@tessera-grid/tessera'
 import {
-  useCreateTable,
-  DataGrid,
-  useRowSelectionState,
-} from '@tessera-grid/tessera'
-import { rowSelection, rowActions } from '@tessera-grid/tessera/plugins'
+  rowSelection,
+  rowActions,
+  type RowSelectionValue,
+} from '@tessera-grid/tessera/plugins'
 import { useColumns } from './useColumns'
 import { useData } from './useData'
 import { useFields } from './useFields'
@@ -893,8 +902,9 @@ export const Table = () => {
   const columns = useColumns({ fields })
   const data = useData()
 
-  const { rowSelection: rowSelectionState, onRowSelectionChange } =
-    useRowSelectionState()
+  const [rowSelectionState, onRowSelectionChange] = useState<RowSelectionValue>(
+    {},
+  )
 
   const table = useCreateTable({
     columns,
@@ -1024,12 +1034,12 @@ export const CellHiddenContent = ({
 // MyTable.tsx
 
 import { useState } from 'react'
+import { useCreateTable, DataGrid } from '@tessera-grid/tessera'
 import {
-  useCreateTable,
-  DataGrid,
-  useRowSelectionState,
-} from '@tessera-grid/tessera'
-import { rowSelection, rowActions } from '@tessera-grid/tessera/plugins'
+  rowSelection,
+  rowActions,
+  type RowSelectionValue,
+} from '@tessera-grid/tessera/plugins'
 import { useColumns } from './useColumns'
 import { useData } from './useData'
 import { useFields } from './useFields'
@@ -1042,7 +1052,7 @@ const Table = () => {
   const columns = useColumns({ fields })
   const data = useData()
 
-  const selection = useRowSelectionState()
+  const [selected, setSelected] = useState<RowSelectionValue>({})
   const [hiddenCells, setHiddenCells] = useState<HiddenCells>({})
 
   const table = useCreateTable({
@@ -1050,7 +1060,8 @@ const Table = () => {
     data,
     plugins: [
       rowSelection({
-        ...selection,
+        rowSelection: selected,
+        onRowSelectionChange: setSelected,
         onSelectRow: (row, selected) => console.info(row.id, selected),
       }),
       rowActions({ width: 40 }),
@@ -1263,12 +1274,12 @@ SwitchActionComponent.displayName = 'SwitchActionComponent'
 // MyTable.tsx
 
 import { useState } from 'react'
+import { useCreateTable, DataGrid } from '@tessera-grid/tessera'
 import {
-  useCreateTable,
-  DataGrid,
-  useRowSelectionState,
-} from '@tessera-grid/tessera'
-import { rowSelection, rowActions } from '@tessera-grid/tessera/plugins'
+  rowSelection,
+  rowActions,
+  type RowSelectionValue,
+} from '@tessera-grid/tessera/plugins'
 import { useColumns } from './useColumns'
 import { useData } from './useData'
 import { useFields } from './useFields'
@@ -1282,7 +1293,7 @@ const Table = () => {
   const columns = useColumns({ fields })
   const data = useData()
 
-  const selection = useRowSelectionState()
+  const [selected, setSelected] = useState<RowSelectionValue>({})
   const [hiddenCells, setHiddenCells] = useState<HiddenCells>({})
 
   const table = useCreateTable({
@@ -1290,7 +1301,8 @@ const Table = () => {
     data,
     plugins: [
       rowSelection({
-        ...selection,
+        rowSelection: selected,
+        onRowSelectionChange: setSelected,
         onSelectRow: (row, selected) => console.info(row.id, selected),
       }),
       rowActions({ width: 40 }),
@@ -1484,11 +1496,11 @@ const plugins = [columnPinning(), columnSorting()] as const
 type Features = TesseraFeatures<typeof plugins>
 
 const columns: ColumnDef<Features, Person, unknown>[] = [
-  { accessorKey: 'name', meta: { pinSides: 'start' } },
+  { accessorKey: 'name', pinSides: 'start' },
 ]
 ```
 
-Аугментации `Tessera` (методы `commonFeature` вроде `column.getIsActionsColumn()`, `meta.pinSides`, срезы состояния плагинов) подключаются вместе с импортом пакета — отдельный импорт для них не нужен. API фичи виден в типах ровно тогда, когда плагин есть в `plugins`.
+Аугментации `Tessera` (методы `commonFeature` вроде `column.getIsActionsColumn()`, поле колонки `pinSides`, срезы состояния плагинов) подключаются вместе с импортом пакета — отдельный импорт для них не нужен. API фичи виден в типах ровно тогда, когда плагин есть в `plugins`.
 
 ### Полезные ссылки
 

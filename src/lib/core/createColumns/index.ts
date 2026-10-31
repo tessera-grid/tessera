@@ -4,7 +4,13 @@
  * используется и `useCreateTable`, и тестами.
  */
 import type { ColumnDef } from '../../types'
+import type { TableLabels } from '../localization'
 import { withPluginBoundary } from '../pluginBoundary'
+
+/** Ключ словаря со строкой: скрытая подпись шапки служебной колонки. */
+export type ServiceColumnLabel = {
+  [K in keyof TableLabels]: TableLabels[K] extends string ? K : never
+}[keyof TableLabels]
 
 /**
  * Привязка сервисной колонки плагина к сборке колонок (pre-table инъекция).
@@ -28,7 +34,29 @@ export interface ServiceColumn {
     side: 'start' | 'end'
     when: 'always' | 'with-user'
   }
+  /** Скрытая подпись шапки — ключ `localization` (ADR 0165). */
+  label?: ServiceColumnLabel
+  /** Ширина — по кнопке грида из темы (ADR 0135). */
+  controlSized?: boolean
+  /** Колонка забирает свободное место строки (ADR 0025). */
+  fill?: boolean
 }
+
+/** Сведения служебной колонки, которыми ядро метит её при вставке (ADR 0165). */
+export type ServiceColumnInfo = Pick<
+  ServiceColumn,
+  'id' | 'pluginId' | 'label' | 'controlSized' | 'fill'
+>
+
+const SERVICE_COLUMN = Symbol('tessera.serviceColumn')
+
+/** Сведения служебной колонки по её описанию; у колонки приложения — `undefined`. */
+export const serviceColumnOf = (
+  columnDef: object | undefined,
+): ServiceColumnInfo | undefined =>
+  (columnDef as { [SERVICE_COLUMN]?: ServiceColumnInfo } | undefined)?.[
+    SERVICE_COLUMN
+  ]
 
 /**
  * Структура колонок одной строкой: `id` и вложенность групп. Новый массив с той же
@@ -96,10 +124,20 @@ export const injectServiceColumns = <TColumn>(
   const leading = ordered.filter(c => c.side === 'leading')
   const trailing = ordered.filter(c => c.side === 'trailing')
 
-  const make = (column: ServiceColumn) =>
-    (column.pluginId
+  const make = (column: ServiceColumn) => {
+    const def = column.pluginId
       ? withPluginBoundary(column.make(), column.pluginId)
-      : column.make()) as TColumn
+      : column.make()
+    const info: ServiceColumnInfo = {
+      id: column.id,
+      pluginId: column.pluginId,
+      label: column.label,
+      controlSized: column.controlSized,
+      fill: column.fill,
+    }
+    // Символ переживает слияние с `defaultColumn`: TanStack копирует описание спредом.
+    return { ...def, [SERVICE_COLUMN]: info } as TColumn
+  }
 
   return dedupeById([
     ...leading.map(make),

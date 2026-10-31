@@ -36,5 +36,5 @@ export type ColumnDefFeatureMap = ColumnDef_FeatureMap<
   unknown
 >
 
-export type { CommonOptions } from '../core/commonFeature.types'
-export type { TesseraFeatureEntry } from '../core/features'
+export type { CommonOptions, CoreOptions } from '../core/commonFeature.types'
+export type { TablePlugin, TesseraFeatureEntry } from '../core/features'

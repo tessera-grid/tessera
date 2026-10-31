@@ -18,7 +18,7 @@ import {
   cellEditingViewOf,
   startEditSession,
 } from './session'
-import type { CellErrorsHooks } from '../cellErrors/types'
+import type { CellErrorHook } from '../../shared/cellHooks'
 import type { CellEditingHooks, CellEditingState } from './types'
 
 export const CellEditButton = (props: PluginCellProps<CellEditingHooks>) => {
@@ -45,7 +45,7 @@ export const CellEditButton = (props: PluginCellProps<CellEditingHooks>) => {
   const failure =
     view?.status === 'error'
       ? labels.actionFailedRetry(view.error || labels.saveFailed)
-      : readPluginHooks<Partial<CellErrorsHooks>>(
+      : readPluginHooks<Partial<CellErrorHook>>(
           table as never,
           'cellErrors',
         ).getCellError?.(props)

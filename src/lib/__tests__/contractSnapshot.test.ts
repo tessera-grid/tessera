@@ -11,10 +11,12 @@ import { describe, expect, it } from 'vitest'
 import {
   COLUMN_DEF_FIELDS,
   CORE_OPTIONS,
+  INTERNAL_ENTRY_FIELDS,
   PLUGIN_ENTRY_FIELDS,
 } from './contract.snapshot'
 import {
   coreOptionKeys,
+  internalEntryKeys,
   ownColumnDefFields,
   pluginEntryKeys,
   stockColumnDefFields,
@@ -43,21 +45,24 @@ describe('контракт колонки и записи плагина (ADR 01
   )
 
   it(
-    'LB8: поля колонки, ключи CommonOptions и поля записи плагина совпадают со снимком, у каждого ключа — существующий ADR',
+    'LB8: поля колонки, ключи CommonOptions, поля публичной и внутренней записи плагина совпадают со снимком, у каждого ключа — существующий ADR',
     () => {
       expect({
         columnDef: ownColumnDefFields(),
         coreOptions: coreOptionKeys(),
         pluginEntry: pluginEntryKeys(),
+        internalEntry: internalEntryKeys(),
       }).toEqual({
         columnDef: Object.keys(COLUMN_DEF_FIELDS).sort(),
         coreOptions: Object.keys(CORE_OPTIONS).sort(),
         pluginEntry: Object.keys(PLUGIN_ENTRY_FIELDS).sort(),
+        internalEntry: Object.keys(INTERNAL_ENTRY_FIELDS).sort(),
       })
       const missing = Object.entries({
         ...COLUMN_DEF_FIELDS,
         ...CORE_OPTIONS,
         ...PLUGIN_ENTRY_FIELDS,
+        ...INTERNAL_ENTRY_FIELDS,
       }).filter(([, adr]) => !ADR_NUMBERS.has(adr))
       expect(missing).toEqual([])
     },

@@ -4,7 +4,7 @@ import { describe, expect, test } from 'vitest'
 import { COLUMN_DRAGGING_ID } from '../../../../lib/plugins/rowDragging'
 import { COLUMN_EXPANDING_ID } from '../../../../lib/plugins/rowExpanding'
 import { COLUMN_SELECTION_ID } from '../../../../lib/plugins/rowSelection'
-import { ROW_ACTIONS_COLUMN_ID } from '../../../core/createColumns'
+import { ROW_ACTIONS_COLUMN_ID } from '../../../plugins/rowActions'
 import { renderGrid } from '../helpers'
 import { headCellsLeftRight, waitForGrid } from './core-helpers'
 import {

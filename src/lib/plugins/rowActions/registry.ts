@@ -5,7 +5,6 @@
  * collapsedWidth) через `table.setColumnAutoSizing`; факт «слот схлопнут» читаем из
  * общей опции actionMenu.
  */
-import { ROW_ACTIONS_COLUMN_ID } from '../../core/createColumns/actionColumnParams'
 import { definePlugin } from '../../core/definePlugin'
 import { noSlotActionsReason } from '../../core/pluginDiagnostics'
 import type { ServiceColumnMode } from '../../core/servicePresence'
@@ -13,6 +12,7 @@ import type { SlotActionMenu } from '../../core/headerActions'
 import type { ColumnSizingState, Updater } from '../../types'
 import {
   DEFAULT_ROW_ACTIONS_OPTIONS,
+  ROW_ACTIONS_COLUMN_ID,
   getRowActionsColumn,
 } from './rowActionsColumn'
 
@@ -46,6 +46,8 @@ export const rowActions = definePlugin<RowActionsPluginOptions>()({
     order: 0,
     // Колонка действий закреплена всегда справа (логическая сторона end в v9).
     pin: { side: 'end', when: 'always' },
+    label: 'rowActionsColumn',
+    fill: true,
     // То же условие, что у диагностики 'noActions'.
     presence: (_table, context) =>
       (context.slotActions.actionRowSlot?.length ?? 0) > 0,

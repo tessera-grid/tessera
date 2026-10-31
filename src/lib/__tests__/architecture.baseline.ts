@@ -9,7 +9,6 @@ const UTIL_IN_CORE = 'утилита ядра в ките, место — util/ 
 const GRID_KIT = 'компонент грида в плагине, место — кит ui — находка 9'
 const BUTTON_VISIBILITY =
   'общий CSS видимости кнопок ячейки лежит в гриде — находка 9'
-const SHARED_TYPES = 'общие типы двух плагинов, место — shared/ — находка 15'
 
 /** LB1: рёбра в запрещённый слой. */
 export const LAYER_EDGES: Record<string, string> = {
@@ -36,14 +35,10 @@ export const LAYER_EDGES: Record<string, string> = {
     GRID_KIT,
   'lib/plugins/cellEditing/CellEditButton.tsx -> lib/grid/cellControls/CellInvalid.tsx':
     GRID_KIT,
-  'lib/plugins/cellEditing/CellEditButton.tsx -> lib/plugins/cellErrors/types.ts':
-    SHARED_TYPES,
   'lib/plugins/cellErrors/CellErrorMark.tsx -> lib/grid/Actions/CellButton.tsx':
     GRID_KIT,
   'lib/plugins/cellErrors/CellErrorMark.tsx -> lib/grid/cellControls/CellInvalid.tsx':
     GRID_KIT,
-  'lib/plugins/cellErrors/CellErrorMark.tsx -> lib/plugins/cellEditing/types.ts':
-    SHARED_TYPES,
   'lib/plugins/columnDragging/ColumnDraggingComponent.tsx -> lib/grid/dnd/index.ts':
     DND_IN_GRID,
   'lib/plugins/columnFiltering/filterHeaderAction.tsx -> lib/grid/cellControls/buttonVisibility.css':
@@ -80,8 +75,6 @@ export const LAYER_EDGES: Record<string, string> = {
     DND_IN_GRID,
   'lib/plugins/rowDragging/getRowDraggingEvents.ts -> lib/grid/dnd/dropParent.ts':
     DND_IN_GRID,
-  'lib/plugins/rowDragging/types.ts -> lib/plugins/columnDragging/types.ts':
-    SHARED_TYPES,
   'lib/plugins/rowGrouping/GroupButton.tsx -> lib/grid/cellControls/buttonVisibility.css':
     BUTTON_VISIBILITY,
   'lib/plugins/rowGrouping/groupHeaderAction.tsx -> lib/grid/cellControls/buttonVisibility.css':
@@ -169,10 +162,7 @@ export const FOREIGN_OPTION_READS: Record<string, string> = {
 }
 
 /** LB7: модули, которые дополняют `ColumnMeta`. */
-export const COLUMN_META_AUGMENTATIONS: Record<string, string> = {
-  'lib/plugins/columnPinning/types.ts':
-    '`pinSides` в пространстве приложения `meta` — находка 14',
-}
+export const COLUMN_META_AUGMENTATIONS: Record<string, string> = {}
 
 const CAST_READS = 'опции плагинов и ядра через каст — находки 4 и 7'
 
@@ -180,7 +170,7 @@ const CAST_READS = 'опции плагинов и ядра через каст 
 export const OPTION_CASTS: Record<string, { count: number; reason: string }> = {
   'lib/core/commonFeature.ts': { count: 1, reason: CAST_READS },
   'lib/core/useTableEffects.ts': { count: 1, reason: CAST_READS },
-  'lib/grid/DataGrid.tsx': { count: 13, reason: CAST_READS },
+  'lib/grid/DataGrid.tsx': { count: 2, reason: CAST_READS },
   'lib/grid/DataGridTable.tsx': { count: 2, reason: CAST_READS },
   'lib/grid/DndBodyWrapper.tsx': { count: 1, reason: DND_IN_GRID },
   'lib/grid/DndHeadWrapper.tsx': { count: 1, reason: DND_IN_GRID },

@@ -37,6 +37,7 @@ import {
   presenceNarrow,
 } from '../servicePresence'
 import { argsKeyOf } from '../pluginArgs'
+import { commonOptionsOf } from '../commonFeature'
 import {
   pluginStateKey,
   stateChangeOption,
@@ -73,9 +74,6 @@ const makeLocalStateFeature = (
       const write = makeStateUpdater(key as never, table)
       const t = table as unknown as {
         atoms: Record<string, { get: () => unknown } | undefined>
-        options: {
-          pluginStateListeners?: Record<string, (next: unknown) => void>
-        }
       }
       return {
         // Каждое изменение среза изнутри — в `onChange` внешнего состояния (DP17).
@@ -84,7 +82,7 @@ const makeLocalStateFeature = (
           write(updater)
           const next = t.atoms[key]?.get()
           if (next !== prev) {
-            t.options.pluginStateListeners?.[key]?.(next)
+            commonOptionsOf(table).pluginStateListeners?.[key]?.(next)
           }
         },
       }

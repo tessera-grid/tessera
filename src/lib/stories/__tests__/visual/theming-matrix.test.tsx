@@ -1,10 +1,10 @@
-import { memo } from 'react'
+import { memo, useState } from 'react'
 
 import { userEvent } from '@vitest/browser/context'
 import { render } from 'vitest-browser-react'
 import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 
-import { useRowSelectionState } from '../../../../lib/core/createState'
+import type { RowSelectionValue } from '../../../../lib/core/rowSelectionAll'
 import { useCreateTable } from '../../../../lib/core/useCreateTable'
 import type { ColorMode } from '../../../core/themeVariables'
 import { DataGrid } from '../../../../lib/grid/DataGrid'
@@ -22,8 +22,7 @@ import { rowState } from '../helpers'
 const Grid = memo(({ colorMode }: { colorMode: ColorMode }) => {
   const columns = useColumns(6)
   const { data } = useData({ count: 6, showStub: false })
-  const { rowSelection: selection, onRowSelectionChange } =
-    useRowSelectionState()
+  const [selection, onRowSelectionChange] = useState<RowSelectionValue>({})
 
   const table = useCreateTable({
     columns,

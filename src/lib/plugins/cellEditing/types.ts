@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 
 import type { SessionCancelReason } from '../../core/cancelInteraction'
 import type { CellComponentProps } from '../../core/createSlots'
+import type { CellEditHook } from '../../shared/cellHooks'
 
 /**
  * Сессия правки (ADR 0040, §2): ячейка, черновик и значение на начало. Живёт в
@@ -93,9 +94,8 @@ export type CellEditor = (props: {
   cell: CellComponentProps
 }) => ReactNode
 
-export interface CellEditingHooks {
-  /** Условие показа кнопки редактирования по контексту ячейки. */
-  canEditCell: (ctx: CellComponentProps) => boolean
+/** `canEditCell` — условие показа кнопки редактирования по контексту ячейки. */
+export interface CellEditingHooks extends CellEditHook {
   /**
    * Коммит нового значения ячейки. Промис — сохранение с ожиданием: ячейка ждёт
    * его итога, не блокируя правку других (ADR 0041). Сохранённая строка в ответе —

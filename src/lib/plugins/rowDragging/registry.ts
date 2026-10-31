@@ -65,6 +65,7 @@ export const rowDragging = definePlugin<RowDraggingOptions>()({
     side: 'leading',
     order: 0,
     pin: { side: 'start', when: 'with-user' },
+    label: 'reorderColumn',
   },
   options: o => ({
     enableRowDragging: o.enabled === false ? false : (o.canDragRow ?? true),

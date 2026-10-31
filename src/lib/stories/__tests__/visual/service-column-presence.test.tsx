@@ -2,7 +2,7 @@ import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
-import { ROW_ACTIONS_COLUMN_ID } from '../../../core/createColumns'
+import { ROW_ACTIONS_COLUMN_ID } from '../../../plugins/rowActions'
 import { COLUMN_EXPANDING_ID } from '../../../plugins/rowExpanding/rowExpandingColumn'
 import { COLUMN_SELECTION_ID } from '../../../plugins/rowSelection/rowSelectionColumn'
 import { makeData } from '../../__mocks__/data'

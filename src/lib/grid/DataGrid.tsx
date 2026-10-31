@@ -63,6 +63,7 @@ import {
 } from '../core/serverActions'
 import { useLoadingDisplay } from './useLoadingDisplay'
 import type { Column, Row, Table } from '../types'
+import { commonOptionsOf } from '../core/commonFeature'
 import type { RenderSlots } from '../core/createSlots'
 import { useTableState } from '../core/reactivity'
 import { cancelColumnResize } from '../core/cancelInteraction'
@@ -136,6 +137,7 @@ export const DataGrid = ({
   style,
 }: DataGridProps) => {
   const table = tableProp as unknown as Table<any, any>
+  const options = commonOptionsOf(table)
   // Реактивная подписка корня на СТРУКТУРНЫЕ срезы (всё, кроме rowSelection): смена
   // выбора строк не перестраивает раскладку/модель — её несут сами строки и чекбоксы
   // (useSelector в компонентах), поэтому корню на неё ре-рендериться незачем. Прочие
@@ -183,19 +185,17 @@ export const DataGrid = ({
     | undefined
 
   const enableContextMenu = !!(table.options as any).enableContextMenu
-  const enableOverflowTooltip =
-    (table.options as any).enableOverflowTooltip !== false
-  const renderVersion = ((table.options as any).pluginRenderVersion ??
-    0) as number
+  const enableOverflowTooltip = options.enableOverflowTooltip !== false
+  const renderVersion = options.pluginRenderVersion ?? 0
   // Панели включают слоты плагинов; флаг их переопределяет (ADR 0046).
   const renderSlots = (table.getRenderSlots as () => RenderSlots | undefined)()
   const statusBarSlot = renderSlots?.statusBarSlot ?? []
   const enableToolbar = resolvePanelVisible(
-    (table.options as any).enableToolbar,
+    options.enableToolbar,
     renderSlots?.toolbarSlot.length ?? 0,
   )
   const hasStatusBar = resolvePanelVisible(
-    (table.options as any).enableStatusBar,
+    options.enableStatusBar,
     countPanelSlots(statusBarSlot),
   )
 
@@ -334,8 +334,7 @@ export const DataGrid = ({
     columnsTotalSize: bodyWidth,
   })
 
-  const loading = (table.options as any).loading as
-    'initial' | 'refresh' | false | undefined
+  const loading = options.loading
   const initialLoading = loading === 'initial'
   // Ожидание серверного действия — то же свечение обновления без пропа (ADR 0116, §3); окно
   // новой выборки серверной модели строк — тоже (ADR 0138, §6).
@@ -353,7 +352,7 @@ export const DataGrid = ({
     tableAction.pending ||
     !!rowSource.refreshing?.()
   // Отказ серверного действия — та же плашка; ошибка приложения главнее (ADR 0116, §5).
-  const appError = (table.options as any).loadError
+  const appError = options.loadError
   const appFailed = hasLoadError(appError)
   const { failed } = serverAction
   const actionError = useMemo(
@@ -380,7 +379,7 @@ export const DataGrid = ({
     table,
     error: appFailed ? appError : (sourceError ?? actionError ?? menuError),
     onRetry: appFailed
-      ? (table.options as any).onRetry
+      ? options.onRetry
       : (listError?.retry ?? failed?.retry ?? menuFailure?.entry.retry),
     loading: initialLoading || refreshLoading,
     // Отказ действия — всегда плашка: прежние данные на месте, пусть их и нет.
@@ -407,7 +406,7 @@ export const DataGrid = ({
     rowCount,
     loadError: {
       shown: loadError.stubShown,
-      error: (table.options as any).loadError,
+      error: options.loadError,
       reason: loadError.reason,
       retry: loadError.retry,
       pending: loadError.pending,
@@ -432,13 +431,13 @@ export const DataGrid = ({
       className={dataGridStyles['table__body-stub']}
     />
   ) : null
-  const stubsAboveFooter = !!(table.options as any).enableFooter
+  const stubsAboveFooter = !!options.enableFooter
 
   const showLinearProgress = refreshLoading && !showSkeleton
   // Свечение и приглушение — с задержкой и минимумом; aria-busy и объявление — сразу.
   const refreshing = useLoadingDisplay(
     showLinearProgress,
-    (table.options as any).refreshOptions,
+    options.refreshOptions,
   )
   // Отказ снимает приглушение сразу, без минимума показа: старые данные рабочие.
   const refreshingShown = refreshing && (refreshLoading || !loadError.present)
@@ -631,8 +630,7 @@ export const DataGrid = ({
                           undefined
                         }
                         data-row-animation={
-                          (table.options as any).enableRowAnimation !== false ||
-                          undefined
+                          options.enableRowAnimation !== false || undefined
                         }
                         data-empty-stub={bodyStub?.id}
                         onCopy={handleCopy}

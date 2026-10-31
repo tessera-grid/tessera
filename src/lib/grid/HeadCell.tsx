@@ -34,7 +34,6 @@ import { highlightRender, useColumnHighlight } from './highlight'
 import { flashRender, useColumnFlash } from './flash'
 import { usePluginRenderVersion } from '../core/renderVersion'
 import { useLocalization } from '../core/localization'
-import type { CommonColumnDef } from '../core/commonFeature.types'
 import { ActionsZone } from './headerActions/ActionsZone'
 import { ActionsHostContext } from './headerActions/useHeldActive'
 import { ItemDraggableWrapper } from './dnd'
@@ -136,7 +135,7 @@ export const HeadCellView = ({
   const isDragging = drag?.isDragging ?? false
 
   const labels = useLocalization()
-  const serviceLabel = (header.column.columnDef as CommonColumnDef).serviceLabel
+  const serviceLabel = header.column.getServiceColumn()?.label
 
   // Имя заголовка — только его текст: кнопки действий в имя не попадают (W17).
   const titleId = useId()
@@ -187,7 +186,7 @@ export const HeadCellView = ({
     ...gridStyles,
     width:
       layout === 'grid' &&
-      (header.column.getIsRowActionsColumn() || isFirstEndPinnedColumn)
+      (!!header.column.getServiceColumn()?.fill || isFirstEndPinnedColumn)
         ? 'auto'
         : `var(${getColumnSizeVariable(header.id)})`,
     // Центральный виртуализированный заголовок — только динамический left инлайн,
@@ -290,7 +289,7 @@ export const HeadCellView = ({
       data-header-full-height={header.getIsFullHeightHeader()}
     >
       <CellWrapperContent
-        flex={getAlignContent({ isActionsColumn, isRowActionsColumn: false })}
+        flex={getAlignContent({ isActionsColumn, isFillColumn: false })}
         smallPadding={isActionsColumn}
       >
         {content}

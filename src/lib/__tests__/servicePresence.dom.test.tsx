@@ -9,7 +9,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { ROW_ACTIONS_COLUMN_ID } from '../core/createColumns'
+import { ROW_ACTIONS_COLUMN_ID } from '../plugins/rowActions'
 import { useCreateTable } from '../core/useCreateTable'
 import {
   columnSorting,

@@ -15,7 +15,6 @@ export const editCellKeyboardAction: CellKeyboardAction = {
   // Кнопка правки живёт только в не-сервисных колонках — те же границы здесь.
   visible: ctx =>
     !ctx.column.getIsActionsColumn() &&
-    !ctx.column.getIsRowActionsColumn() &&
     !isCellPending(ctx.table, ctx.row.id, ctx.column.id) &&
     (readPluginHooks<Partial<CellEditingHooks>>(
       ctx.table,

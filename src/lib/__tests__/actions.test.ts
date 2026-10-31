@@ -6,7 +6,7 @@
  */
 import { describe, expect, it, vi } from 'vitest'
 
-import { ROW_ACTIONS_COLUMN_ID } from '../core/createColumns/actionColumnParams'
+import { ROW_ACTIONS_COLUMN_ID } from '../plugins/rowActions'
 import { foldEntries } from '../core/features'
 import { headerActionMenu } from '../plugins/headerActionMenu'
 import { rowActionMenu } from '../plugins/rowActionMenu'

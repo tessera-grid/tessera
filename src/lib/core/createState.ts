@@ -7,23 +7,11 @@
  *    (ширины служебных колонок, generic-escape).
  *
  * Остальные контролируемые слайсы (expanded/rowSelection/grouping/sorting/…)
- * прокидываются как есть из `state`/`handlers` потребителя. Публичные контролируемые
- * хуки (useRowSelectionState и т.д.) сохранены для совместимости API.
+ * прокидываются как есть из `state`/`handlers` потребителя.
  */
-import { useMemo, useState } from 'react'
-
-import type { RowSelectionValue } from './rowSelectionAll'
-
-import {
-  type ColumnOrderState,
-  type ColumnPinningState,
-  type ColumnSizingState,
-  type ExpandedState,
-  type GroupingState,
-  type ColumnVisibilityState,
-  type OnChangeFn,
-  type RowSelectionState,
-  type SortingState,
+import type {
+  ColumnPinningState,
+  ColumnSizingState,
 } from '@tanstack/react-table'
 
 // --- Пиннинг сервисных колонок (start/end) -----------------------------------
@@ -100,89 +88,4 @@ export const isSameColumnSizing = (
   const bKeys = Object.keys(b)
   if (aKeys.length !== bKeys.length) return false
   return aKeys.every(key => a[key] === b[key])
-}
-
-// --- Публичные контролируемые стейт-хуки (совместимость API) ------------------
-
-/**
- * Контролируемый срез. `initial` синхронизируется в состояние, НО только при смене
- * ССЫЛКИ initial — поэтому дефолты хуков обязаны быть СТАБИЛЬНЫМИ модуль-константами
- * (инлайн-литерал `{}`/`[]` в дефолте параметра создаёт новую ссылку каждый рендер →
- * состояние сбрасывается на каждом рендере → бесконечный цикл).
- */
-const useControlledSlice = <T>(initial: T): [T, OnChangeFn<T>] => {
-  const [value, setValue] = useState<T>(initial)
-  const [lastInitial, setLastInitial] = useState(initial)
-
-  if (lastInitial !== initial) {
-    setLastInitial(initial)
-    setValue(initial)
-  }
-
-  return [value, setValue as OnChangeFn<T>]
-}
-
-const EMPTY_ORDER: ColumnOrderState = []
-const EMPTY_VISIBILITY: ColumnVisibilityState = {}
-const EMPTY_SIZING: ColumnSizingState = {}
-const EMPTY_SORTING: SortingState = []
-const EMPTY_SELECTION: RowSelectionState = {}
-const EMPTY_EXPANDED: ExpandedState = {} as ExpandedState
-const EMPTY_GROUPING: GroupingState = []
-
-export const useColumnOrderState = (
-  initial: ColumnOrderState = EMPTY_ORDER,
-) => {
-  const [columnOrder, onColumnOrderChange] = useControlledSlice(initial)
-  return { columnOrder, onColumnOrderChange }
-}
-
-export const useColumnVisibilityState = (
-  initial: ColumnVisibilityState = EMPTY_VISIBILITY,
-) => {
-  const [columnVisibility, onColumnVisibilityChange] =
-    useControlledSlice(initial)
-  return { columnVisibility, onColumnVisibilityChange }
-}
-
-export const useColumnSizingState = (
-  initial: ColumnSizingState = EMPTY_SIZING,
-) => {
-  const [columnSizing, onColumnSizingChange] = useControlledSlice(initial)
-  return { columnSizing, onColumnSizingChange }
-}
-
-export const useColumnPinningState = (
-  initial: ColumnPinningState = defaultColumnPinningState,
-) => {
-  const merged = useMemo(
-    () => mergeColumnPinning(defaultColumnPinningState, initial),
-    [initial],
-  )
-  const [columnPinning, onColumnPinningChange] = useControlledSlice(merged)
-  return { columnPinning, onColumnPinningChange }
-}
-
-export const useSortingState = (initial: SortingState = EMPTY_SORTING) => {
-  const [sorting, onSortingChange] = useControlledSlice(initial)
-  return { sorting, onSortingChange }
-}
-
-/** Выбранные `id` или «всё, кроме» серверной модели строк (ADR 0138, §9). */
-export const useRowSelectionState = (
-  initial: RowSelectionValue = EMPTY_SELECTION,
-) => {
-  const [rowSelection, onRowSelectionChange] =
-    useControlledSlice<RowSelectionValue>(initial)
-  return { rowSelection, onRowSelectionChange }
-}
-
-export const useExpandedState = (initial: ExpandedState = EMPTY_EXPANDED) => {
-  const [expanded, onExpandedChange] = useControlledSlice(initial)
-  return { expanded, onExpandedChange }
-}
-
-export const useGroupingState = (initial: GroupingState = EMPTY_GROUPING) => {
-  const [grouping, onGroupingChange] = useControlledSlice(initial)
-  return { grouping, onGroupingChange }
 }

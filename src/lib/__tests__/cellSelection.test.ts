@@ -18,14 +18,12 @@ import type { CellSelectionPredicateCell } from '../plugins/cellSelection/types'
 // Фейковая ячейка для предиката выбираемости (duck-typed под stock-фичу).
 const fakeCell = (
   isActions = false,
-  isRowActions = false,
   columnId = 'name',
 ): CellSelectionPredicateCell => ({
   id: `r1_${columnId}`,
   column: {
     id: columnId,
     getIsActionsColumn: () => isActions,
-    getIsRowActionsColumn: () => isRowActions,
   },
   row: { id: 'r1', original: { name: 'Alice', age: 30 }, depth: 0 },
   getValue: () => 'Alice',
@@ -102,8 +100,8 @@ describe('cellSelection — гейтинг и предикат (CRS10/CRS11)', (
       cell: CellSelectionPredicateCell,
     ) => boolean
     expect(predicate(fakeCell())).toBe(true)
-    expect(predicate(fakeCell(true))).toBe(false) // actions column
-    expect(predicate(fakeCell(false, true))).toBe(false) // row-actions column
+    // Служебные колонки, и колонка действий строки тоже, — по метке ядра (ADR 0165).
+    expect(predicate(fakeCell(true))).toBe(false)
   })
 
   it('CRS22: пользовательский canSelectCell сужает выбор — запрещённая им ячейка не выделяется', () => {
@@ -111,8 +109,8 @@ describe('cellSelection — гейтинг и предикат (CRS10/CRS11)', (
       canSelectCell: (cell: CellSelectionPredicateCell) =>
         cell.column.id !== 'age',
     })
-    expect(predicate(fakeCell(false, false, 'age'))).toBe(false)
-    expect(predicate(fakeCell(false, false, 'name'))).toBe(true)
+    expect(predicate(fakeCell(false, 'age'))).toBe(false)
+    expect(predicate(fakeCell(false, 'name'))).toBe(true)
   })
 
   it('CRS23: предикат получает id, column.id, row.id/original/depth и getValue() без приведения типа', () => {
@@ -138,7 +136,6 @@ describe('cellSelection — гейтинг и предикат (CRS10/CRS11)', (
     const predicate = predicateOf({ canSelectCell: () => true })
     expect(predicate(fakeCell())).toBe(true)
     expect(predicate(fakeCell(true))).toBe(false)
-    expect(predicate(fakeCell(false, true))).toBe(false)
   })
 
   it('rangeSelection/dragSelection/multiRange — тумблеры прокидываются', () => {

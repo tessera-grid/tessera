@@ -8,6 +8,7 @@
  * используем прямой merge интерфейса (эскейп).
  */
 import type { ColumnOptionsDef } from './columnOptions'
+import type { ServiceColumnInfo } from './createColumns'
 import type { ColumnDataType } from './columnDataType'
 import type { ActionReport, OnDebugAction } from './debugActions'
 import type { SkeletonCellKind } from './skeletonOptions'
@@ -51,7 +52,51 @@ export type SlotActionMenuV9 = SlotActionMenu
 export type LogLevel = 'silent' | 'error' | 'warn' | 'info' | 'debug'
 
 // --- Опции фичи --------------------------------------------------------------
-export interface CommonOptions {
+/** Опции ядра, которые задаёт приложение в `useCreateTable` (ADR 0164). */
+export interface CoreOptions {
+  /**
+   * Загрузка данных сейчас (ADR 0106): `'initial'` — скелет первой загрузки (ADR 0060),
+   * `'refresh'` — свечение обновления (ADR 0094), `false` — нет.
+   */
+  loading?: 'initial' | 'refresh' | false
+  enableFooter?: boolean
+  /**
+   * Положение строки футера (ADR 0118): `'pinned'` — всегда у низа области прокрутки,
+   * `'inline'` — сразу за последней строкой, прокручивается вместе с телом.
+   */
+  footerPosition?: FooterPosition
+  /** Верхний тулбар: без флага — по наличию кнопок плагинов, `true` — всегда, `false` — никогда (ADR 0046). */
+  enableToolbar?: boolean
+  /** Нижняя панель: без флага — по наличию её слотов, `true` — всегда, `false` — никогда (ADR 0046). */
+  enableStatusBar?: boolean
+  /** `false` — ядро не объявляет изменения скринридеру (ADR 0032, W9). */
+  enableAnnouncements?: boolean
+  /** `false` — без тултипа у обрезанного текста ячеек (ADR 0075). */
+  enableOverflowTooltip?: boolean
+  /** `false` — смены модели строк мгновенны, без движения (ADR 0107). */
+  enableRowAnimation?: boolean
+  /** `false` — смены порядка колонок мгновенны, без движения (ADR 0115). */
+  enableColumnAnimation?: boolean
+  skeletonOptions?: SkeletonOptions
+  /** Задержка и минимум показа обновления при `loading: 'refresh'` (ADR 0094). */
+  refreshOptions?: RefreshOptions
+  /**
+   * Отказ загрузки данных (ADR 0096): `Error` или строка; `null` — ошибки нет. С данными —
+   * красный свет под шапкой и плашка, без данных — заглушка ошибки.
+   */
+  loadError?: unknown
+  /** Повтор загрузки из плашки и заглушки; промис держит кнопку в ожидании. */
+  onRetry?: () => unknown
+  /** Канал действий грида: что сделал пользователь, приложение или грид (ADR 0125). */
+  onDebugAction?: OnDebugAction
+  /** Высота строк тела, футера и скелета, px; по умолчанию 50, не ниже 40 (ADR 0077). */
+  rowHeight?: number
+  /** Высота каждой строки шапки, px; по умолчанию — как `rowHeight`, не ниже 36. */
+  headerHeight?: number
+}
+
+/** Опции `commonFeature`: опции ядра и каналы сборки и плагинов (ADR 0164). */
+export interface CommonOptions extends CoreOptions {
   hooks?: CommonHooks
   slots?: RenderSlotsV9
   slotActions?: SlotActionsV9
@@ -62,37 +107,12 @@ export interface CommonOptions {
   pluginDiagnostics?: PluginDiagnosticSource[]
   actionMenu?: SlotActionMenuV9
   logLevel?: LogLevel
-  /**
-   * Загрузка данных сейчас (ADR 0106): `'initial'` — скелет первой загрузки (ADR 0060),
-   * `'refresh'` — свечение обновления (ADR 0094), `false` — нет.
-   */
-  loading?: 'initial' | 'refresh' | false
-  enableFooter?: boolean
-  /** Положение футера: у низа области или за последней строкой (ADR 0118). */
-  footerPosition?: FooterPosition
-  /** Верхний тулбар: без флага — по наличию `toolbarSlot` (ADR 0046). */
-  enableToolbar?: boolean
-  /** Нижняя панель: без флага — по наличию `statusBarSlot` (ADR 0046). */
-  enableStatusBar?: boolean
-  /** `false` — ядро не объявляет сортировку/выбор/копирование/загрузку. */
-  enableAnnouncements?: boolean
-  /** `false` — без тултипа у обрезанного текста ячеек (ADR 0075). */
-  enableOverflowTooltip?: boolean
-  /** `false` — без движения строк при смене модели (ADR 0107). */
-  enableRowAnimation?: boolean
-  /** `false` — без движения колонок при смене порядка (ADR 0115). */
-  enableColumnAnimation?: boolean
-  /** Высота строк тела и шапки, px (ADR 0077). */
-  rowHeight?: number
-  headerHeight?: number
-  skeletonOptions?: SkeletonOptions
-  /** Задержка и минимум показа обновления (ADR 0094). */
-  refreshOptions?: RefreshOptions
-  /** Отказ загрузки данных и повтор (ADR 0096). */
-  loadError?: unknown
-  onRetry?: () => unknown
-  /** Канал действий грида (ADR 0125). */
-  onDebugAction?: OnDebugAction
+  /** Пересчитать сужение срезов: плагин сменил то, что сужение читает (ADR 0160). */
+  refreshNarrowing?: () => void
+  /** Номер перерисовки ячеек: растёт при новой функции-аргументе плагина (ADR 0039). */
+  pluginRenderVersion?: number
+  /** Колбэки изменений локальных срезов плагинов по ключу среза (DP17). */
+  pluginStateListeners?: Record<string, (next: unknown) => void>
   /**
    * Строк данных на сервере для `aria-rowcount`; `-1` — итог неизвестен,
    * `undefined` — строк столько, сколько в `data` (ADR 0081).
@@ -135,8 +155,10 @@ export interface CommonTableAPI<
 }
 
 export interface CommonColumnAPI {
+  /** Колонка — служебная: её вставило ядро по записи плагина (ADR 0165). */
   getIsActionsColumn: () => boolean
-  getIsRowActionsColumn: () => boolean
+  /** Сведения служебной колонки; у колонки приложения — `undefined`. */
+  getServiceColumn: () => ServiceColumnInfo | undefined
 }
 
 /** Кастомные поля columnDef Tessera; `options` / `getOptionLabel` — ADR 0048. */
@@ -145,15 +167,12 @@ export interface CommonColumnDef<TData = any> extends ColumnOptionsDef {
   dataType?: ColumnDataType
   /** Свой разбор текста редактора, главнее `dataType` (ADR 0139). */
   parseValue?: (text: string, row: TData) => unknown
-  /** Служебная колонка: ключ `localization` для скрытой подписи её заголовка. */
-  serviceLabel?: 'expandColumn' | 'reorderColumn' | 'rowActionsColumn'
   /**
    * Ячейка колонки в скелетах (ADR 0060, SL18): `'bar'` — полоска, `'control'` —
-   * квадрат контрола, `'none'` — пусто. Без поля — полоска, у служебной — пусто.
+   * квадрат контрола, `'toggle'` — переключатель на строках дерева с детьми (ADR 0165),
+   * `'none'` — пусто. Без поля — полоска, у служебной — пусто.
    */
   skeletonCell?: SkeletonCellKind
-  /** Ширина — по кнопке грида из темы (ADR 0135): колонки выбора и раскрытия. */
-  controlSized?: boolean
 }
 
 export interface CommonHeaderAPI {

@@ -91,7 +91,7 @@ describe('Доступность (a11y)', () => {
       header: `C${i}`,
       size: 150,
       enablePinning: true,
-      ...(i === 2 ? { meta: { pinSides: 'end' as const } } : {}),
+      ...(i === 2 ? { pinSides: 'end' as const } : {}),
     }))
     renderGrid({
       columnsOverride,

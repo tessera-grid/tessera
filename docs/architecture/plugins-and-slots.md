@@ -2,10 +2,12 @@
 
 **Плагин** Tessera — это v9 `TableFeature` плюс конвенция рендеринга на **слотах** и
 переопределениях рендера на уровне ячейки/заголовка. Потребителю плагин доставляется
-записью `TesseraFeatureEntry` (presence-based композиция,
+записью `TablePlugin` (presence-based композиция,
 [features.ts](../../src/lib/core/features.ts), ADR 0010): фрагмент карты фич живёт в
-`entry.slot`, а сервисная колонка, тонкие опции, декларативные слоты/действия и
-императивный `setup` — в остальных полях записи.
+`entry.features`, а сервисная колонка, тонкие опции, декларативные слоты/действия и
+императивный `setup` — в остальных полях записи. Поля, которые ставят ядро и
+`definePlugin` (`args`, `configure`, `stateSlices`…), — во внутренней `TesseraFeatureEntry`,
+не в публичном типе ([ADR 0164](../decisions/0164-core-options-and-public-plugin-entry.md)).
 
 ## Жизненный цикл фичи (v9 `TableFeature`)
 

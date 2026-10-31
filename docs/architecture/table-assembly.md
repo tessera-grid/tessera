@@ -47,10 +47,13 @@ flowchart TB
 
 Tessera инъектирует не-data столбцы на основе **наличия плагина** в `plugins`
 (presence-based, ADR 0010): плагин приносит свою сервисную колонку в записи как
-`TesseraFeatureEntry.column` (`rowSelection`, `rowExpanding`, `rowDragging`,
+`TablePlugin.column` (`rowSelection`, `rowExpanding`, `rowDragging`,
 `rowActions`). `foldEntries` собирает их в `serviceColumns`, а `injectServiceColumns`
-раскладывает по `side`/`order`; ядро плагины не импортит. У колонок зарезервированные
-id, распознаются `column.getIsActionsColumn()` (метод от `commonFeature`). Сервисная
+раскладывает по `side`/`order`; ядро плагины не импортит. При вставке ядро метит колонку
+(символ в описании, ADR 0165): `column.getIsActionsColumn()` и `column.getServiceColumn()`
+читают метку, а не id. Скрытую подпись шапки (`label`), ширину по кнопке грида
+(`controlSized`) и зону действий строки (`fill` — свободное место и действия слота
+`actionRowSlot`) колонка объявляет полями записи `ServiceColumn`. Сервисная
 колонка — всегда лист без групп-обёрток: под вложенной шапкой полную высоту ей даёт
 вертикальный спан TanStack v9 ([ADR 0049](../decisions/0049-native-header-spans.md)).
 

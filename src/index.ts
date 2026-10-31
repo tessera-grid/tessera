@@ -21,6 +21,7 @@ export {
 export { COLUMN_SELECTION_ID } from './lib/plugins/rowSelection'
 export { COLUMN_EXPANDING_ID } from './lib/plugins/rowExpanding'
 export { COLUMN_DRAGGING_ID } from './lib/plugins/rowDragging'
+export { ROW_ACTIONS_COLUMN_ID } from './lib/plugins/rowActions'
 
 // Публичная подсветка строк, ячеек, колонок и диапазонов (ADR 0080, ADR 0152): `table.highlight`.
 export type {
@@ -47,19 +48,8 @@ export type { RowSource, RowWindow } from './lib/core/rowSource'
 // Реактивность: подписки на состояние идут через атомы TanStack Store.
 export { useSlice, useTableState } from './lib/core/reactivity'
 
-export {
-  useColumnOrderState,
-  useColumnPinningState,
-  useRowSelectionState,
-  useColumnSizingState,
-  useExpandedState,
-  useSortingState,
-  useColumnVisibilityState,
-  useGroupingState,
-} from './lib/core/createState'
-
-// Запись фичи Tessera (экспортируется как TablePlugin).
-export type { TesseraFeatureEntry as TablePlugin } from './lib/core/features'
+// Запись плагина, которую задаёт автор (ADR 0164).
+export type { TablePlugin } from './lib/core/features'
 export type {
   HeaderComponentProps,
   CellComponentProps,

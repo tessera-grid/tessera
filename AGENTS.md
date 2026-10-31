@@ -1073,6 +1073,14 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       (LB6 — свои поля колонки не совпадают со стоковыми, LB8 — снимок контракта с номером ADR
       у ключа), LB3–LB4 — `check:tree-shaking`; базы с причиной — `architecture.baseline.ts`,
       только сокращаются ([ADR 0163](docs/decisions/0163-layer-boundaries-and-guards.md)).
+    - _Контракт ядра и служебные колонки:_ модульный `coreContract` (CK1 — опции ядра одним
+      типом `CoreOptions`, CK2 — каждый ключ опций таблицы объявлен, CK3 — публичный
+      `TablePlugin` без служебных полей, CK4 — без хелперов `use*State`;
+      [ADR 0164](docs/decisions/0164-core-options-and-public-plugin-entry.md)), модульный
+      `serviceColumns` (SX1 — метка ядра вместо подстроки id, SX2 — поля `label`, `controlSized`,
+      `fill` записи `ServiceColumn`, SX4 — `pinSides` полем колонки), визуальный `skeleton-toggle`
+      (SX3 — `skeletonCell: 'toggle'`) ([ADR 0165](docs/decisions/0165-service-columns-by-core-mark.md));
+      таблица без DOM для стражей — `__tests__/tableHost.ts`.
     - _Движение строк:_ `row-motion` (RM1–RM17, RM19, RM22, RM24–RM25, RM27–RM31 — раскрытие и сворачивание с
       призраками, сортировка издалека и вдаль, поиск, замена и геометрия без движения,
       ленивые дети, сдвиг соседей и приземление броска, автопрокрутка во время

@@ -2,8 +2,11 @@
  * Сервисная колонка действий строки. Колонка-контейнер: сами действия рисуются
  * гридом в слот `actionRowSlot`. Ширина задаётся авто-слайсом через setup плагина.
  */
-import { ROW_ACTIONS_COLUMN_ID } from '../../core/createColumns/actionColumnParams'
+import { getActionColumnId } from '../../core/createColumns/actionColumnParams'
 import type { ColumnDef } from '../../types'
+
+/** Стабильный id колонки действий строки. */
+export const ROW_ACTIONS_COLUMN_ID = getActionColumnId('rowActions')
 
 export interface RowActionsOptions {
   width: number
@@ -18,7 +21,6 @@ export const DEFAULT_ROW_ACTIONS_OPTIONS: RowActionsOptions = {
 
 const leafColumn = {
   id: ROW_ACTIONS_COLUMN_ID,
-  serviceLabel: 'rowActionsColumn',
   accessorKey: ROW_ACTIONS_COLUMN_ID,
   minSize: 0,
   size: 0,

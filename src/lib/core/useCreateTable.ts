@@ -9,7 +9,6 @@
  *    прокидывается из state/handlers потребителя.
  */
 import { useMemo, useRef, useState } from 'react'
-import type { OnDebugAction } from './debugActions'
 
 import { makeStateUpdater, useTable } from '@tanstack/react-table'
 import type {
@@ -19,9 +18,7 @@ import type {
 } from '@tanstack/react-table'
 
 import type { ColumnDef, RowData, TableOptions } from '../types'
-import type { SkeletonOptions } from './skeletonOptions'
-import type { FooterPosition } from './footer'
-import type { RefreshOptions } from './loadingDisplay'
+import type { CoreOptions } from './commonFeature.types'
 import { type DefaultColumnSizing, resolveDefaultColumn } from './defaultColumn'
 import { resolveHooks } from './createHooks'
 import {
@@ -33,6 +30,7 @@ import {
   buildTesseraFeatures,
   foldEntries,
   foldHooks,
+  type TablePlugin,
   type TesseraFeatureEntry,
   type TesseraFeatures,
 } from './features'
@@ -72,36 +70,35 @@ import { useTableEffects } from './useTableEffects'
 const INITIAL_EFFECTIVE_STATE = { columnVisibility: {} }
 
 /**
- * Ядровые (не плагинные) опции DataGrid (демо/стори типизируют ими свои args).
- * Плагинные фичи включаются через `plugins`.
+ * Ключи опций ядра (ADR 0164): уходят в таблицу все, и непереданные — `undefined`, иначе
+ * `useTable`, сливая опции с прежними, оставил бы снятое значение.
  */
-export interface CreateDataGridOptions {
-  /**
-   * Загрузка данных сейчас (ADR 0106): `'initial'` — скелет первой загрузки (ADR 0060),
-   * `'refresh'` — свечение обновления (ADR 0094), `false` — нет.
-   */
-  loading?: 'initial' | 'refresh' | false
-  enableFooter?: boolean
-  /**
-   * Положение строки футера (ADR 0118): `'pinned'` — всегда у низа области прокрутки,
-   * `'inline'` — сразу за последней строкой, прокручивается вместе с телом.
-   */
-  footerPosition?: FooterPosition
-  enableToolbar?: boolean
-  enableStatusBar?: boolean
-  enableAnnouncements?: boolean
-  enableOverflowTooltip?: boolean
-  enableRowAnimation?: boolean
-  enableColumnAnimation?: boolean
-  skeletonOptions?: SkeletonOptions
-  refreshOptions?: RefreshOptions
-  loadError?: unknown
-  onRetry?: () => unknown
-  rowHeight?: number
-  headerHeight?: number
-  defaultColumn?: DefaultColumnSizing
-  handlers?: CoreTableHandlers
+const CORE_OPTION_KEYS: Record<keyof CoreOptions, true> = {
+  loading: true,
+  enableFooter: true,
+  footerPosition: true,
+  enableToolbar: true,
+  enableStatusBar: true,
+  enableAnnouncements: true,
+  enableOverflowTooltip: true,
+  enableRowAnimation: true,
+  enableColumnAnimation: true,
+  skeletonOptions: true,
+  refreshOptions: true,
+  loadError: true,
+  onRetry: true,
+  onDebugAction: true,
+  rowHeight: true,
+  headerHeight: true,
 }
+
+const coreOptionsOf = (params: CoreOptions): CoreOptions =>
+  Object.fromEntries(
+    Object.keys(CORE_OPTION_KEYS).map(key => [
+      key,
+      params[key as keyof CoreOptions],
+    ]),
+  )
 
 /** Без строкового `id` в строке `getRowId` обязателен — иначе id строк молча `undefined`. */
 type RowIdParams<TData extends RowData> = [TData] extends [{ id: string }]
@@ -110,70 +107,32 @@ type RowIdParams<TData extends RowData> = [TData] extends [{ id: string }]
 
 export type UseCreateTableParams<
   TData extends RowData,
-  TEntries extends readonly TesseraFeatureEntry[],
-> = RowIdParams<TData> & {
-  columns: ColumnDef<TesseraFeatures<TEntries>, TData, unknown>[]
-  data: TData[]
-  plugins?: TEntries
+  TEntries extends readonly TablePlugin[],
+> = RowIdParams<TData> &
+  CoreOptions & {
+    columns: ColumnDef<TesseraFeatures<TEntries>, TData, unknown>[]
+    data: TData[]
+    plugins?: TEntries
 
-  getSubRows?: (row: TData) => TData[] | undefined
+    getSubRows?: (row: TData) => TData[] | undefined
 
-  /**
-   * Срезы колонок (ADR 0120, §4). Срез плагина — аргументами его фабрики:
-   * `columnSorting({ sorting, onSortingChange })`.
-   */
-  state?: CoreTableState
-  /** Колбэки срезов колонок (прокидываются в опции v9 как есть). */
-  handlers?: CoreTableHandlers
+    /**
+     * Срезы колонок (ADR 0120, §4). Срез плагина — аргументами его фабрики:
+     * `columnSorting({ sorting, onSortingChange })`.
+     */
+    state?: CoreTableState
+    /** Колбэки срезов колонок (прокидываются в опции v9 как есть). */
+    handlers?: CoreTableHandlers
 
-  /**
-   * Загрузка данных сейчас (ADR 0106): `'initial'` — скелет первой загрузки (ADR 0060),
-   * `'refresh'` — свечение обновления (ADR 0094), `false` — нет.
-   */
-  loading?: 'initial' | 'refresh' | false
-  enableFooter?: boolean
-  /**
-   * Положение строки футера (ADR 0118): `'pinned'` — всегда у низа области прокрутки,
-   * `'inline'` — сразу за последней строкой, прокручивается вместе с телом.
-   */
-  footerPosition?: FooterPosition
-  /** Верхний тулбар: без флага — по наличию кнопок плагинов, `true` — всегда, `false` — никогда (ADR 0046). */
-  enableToolbar?: boolean
-  /** Нижняя панель: без флага — по наличию её слотов, `true` — всегда, `false` — никогда (ADR 0046). */
-  enableStatusBar?: boolean
-  /** `false` — ядро не объявляет изменения скринридеру (ADR 0032, W9). */
-  enableAnnouncements?: boolean
-  /** `false` — без тултипа у обрезанного текста ячеек (ADR 0075). */
-  enableOverflowTooltip?: boolean
-  /** `false` — смены модели строк мгновенны, без движения (ADR 0107). */
-  enableRowAnimation?: boolean
-  /** `false` — смены порядка колонок мгновенны, без движения (ADR 0115). */
-  enableColumnAnimation?: boolean
-  skeletonOptions?: SkeletonOptions
-  /** Задержка и минимум показа обновления при `loading: 'refresh'` (ADR 0094). */
-  refreshOptions?: RefreshOptions
-  /**
-   * Отказ загрузки данных (ADR 0096): `Error` или строка; `null` — ошибки нет. С данными —
-   * красный свет под шапкой и плашка, без данных — заглушка ошибки.
-   */
-  loadError?: unknown
-  /** Повтор загрузки из плашки и заглушки; промис держит кнопку в ожидании. */
-  onRetry?: () => unknown
-  /** Канал действий грида: что сделал пользователь, приложение или грид (ADR 0125). */
-  onDebugAction?: OnDebugAction
-  /** Высота строк тела, футера и скелета, px; по умолчанию 50, не ниже 40 (ADR 0077). */
-  rowHeight?: number
-  /** Высота каждой строки шапки, px; по умолчанию — как `rowHeight`, не ниже 36. */
-  headerHeight?: number
-  /** Размеры колонок без своих; дополняет умолчания (`minSize` 48, `maxSize` 750). */
-  defaultColumn?: DefaultColumnSizing
-}
+    /** Размеры колонок без своих; дополняет умолчания (`minSize` 48, `maxSize` 750). */
+    defaultColumn?: DefaultColumnSizing
+  }
 
 const DEFAULT_ENTRIES = [] as const
 
 export const useCreateTable = <
   TData extends RowData,
-  const TEntries extends readonly TesseraFeatureEntry[],
+  const TEntries extends readonly TablePlugin[],
 >({
   columns,
   data,
@@ -182,23 +141,8 @@ export const useCreateTable = <
   getSubRows,
   state,
   handlers,
-  loading,
-  enableFooter,
-  footerPosition,
-  enableToolbar,
-  enableStatusBar,
-  enableAnnouncements,
-  enableOverflowTooltip,
-  enableRowAnimation,
-  enableColumnAnimation,
-  skeletonOptions,
-  refreshOptions,
-  loadError,
-  onRetry,
-  onDebugAction,
-  rowHeight,
-  headerHeight,
   defaultColumn,
+  ...coreOptions
 }: UseCreateTableParams<TData, TEntries>) => {
   // Состав набора — договор на время жизни таблицы (ADR 0039): добавленный позже
   // плагин инертен, удалённый — выключен как enabled: false.
@@ -206,7 +150,7 @@ export const useCreateTable = <
   setStore.current ??= createPluginSetStore()
   // Модель, которую несёт интерфейс, — своя запись перед ним (ADR 0120, §3).
   const { entries: withModels, mismatches: modelMismatches } =
-    expandIncludedModels(plugins)
+    expandIncludedModels(plugins as readonly TesseraFeatureEntry[])
   const entries = resolvePluginSet(setStore.current, withModels)
 
   // Держим набор фич и свёртку по СИГНАТУРЕ структуры активных записей (id +
@@ -384,7 +328,7 @@ export const useCreateTable = <
     inputs: [data, columnsSignature, narrowEpoch],
     // Первая загрузка видна условиям показа служебных колонок (ADR 0060, SL25).
     context: {
-      options: { ...folded.options, loading },
+      options: { ...folded.options, loading: coreOptions.loading },
       slotActions: folded.slotActions,
     },
     initial: { ...INITIAL_EFFECTIVE_STATE, ...slices.initial },
@@ -447,22 +391,7 @@ export const useCreateTable = <
       ),
     ),
     actionMenu: folded.actionMenu,
-    loading,
-    enableFooter,
-    footerPosition,
-    enableToolbar,
-    enableStatusBar,
-    enableAnnouncements,
-    enableOverflowTooltip,
-    enableRowAnimation,
-    enableColumnAnimation,
-    skeletonOptions,
-    refreshOptions,
-    loadError,
-    onRetry,
-    onDebugAction,
-    rowHeight,
-    headerHeight,
+    ...coreOptionsOf(coreOptions),
   }
 
   // Каст опций — компромисс динамической сборки (Q2): tableFeatures() валидирует

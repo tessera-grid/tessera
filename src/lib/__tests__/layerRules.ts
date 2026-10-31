@@ -220,6 +220,13 @@ export const stockTableOptionKeys = () =>
     ...featureMapProps('TableOptionsFeatureMap', true),
   ])
 
+/** Ключи опций таблицы, которые объявляют фичи Tessera в карте фич. */
+export const ownTableOptionKeys = () =>
+  featureMapProps('TableOptionsFeatureMap', false)
+
+/** Ключи опций таблицы, которые выставляют встроенные плагины. */
+export const pluginOptionKeys = () => unique([...optionEmitters().keys()])
+
 /** Ключи опций ядра `CommonOptions`. */
 export const coreOptionKeys = () => unique(propNames('CommonOptions'))
 
@@ -237,8 +244,16 @@ export const stockColumnDefFields = () =>
 export const ownColumnDefFields = () =>
   featureMapProps('ColumnDefFeatureMap', false)
 
-/** Поля записи плагина `TesseraFeatureEntry`. */
-export const pluginEntryKeys = () => unique(propNames('TesseraFeatureEntry'))
+/** Поля публичной записи плагина `TablePlugin`. */
+export const pluginEntryKeys = () => unique(propNames('TablePlugin'))
+
+/** Поля внутренней записи `TesseraFeatureEntry` сверх `TablePlugin`. */
+export const internalEntryKeys = () => {
+  const publicKeys = new Set(pluginEntryKeys())
+  return unique(propNames('TesseraFeatureEntry')).filter(
+    key => !publicKeys.has(key),
+  )
+}
 
 /** LB10: ADR с номером больше `after` без строки `- **Слой:** …` в шапке. */
 export const adrsWithoutLayer = (after: number) =>

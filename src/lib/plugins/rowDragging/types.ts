@@ -1,7 +1,7 @@
 /** Типы плагина rowDragging. */
 import type { Row } from '../../types'
 import type { SessionCancelReason } from '../../core/cancelInteraction'
-import type { DragOverlayState } from '../columnDragging/types'
+import type { DragOverlayState } from '../../shared/dragOverlay'
 
 export interface RowDragOverlayState {
   activeId: DragOverlayState

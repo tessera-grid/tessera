@@ -18,7 +18,6 @@ export const COLUMN_DRAGGING_SIZE =
 
 const leafColumn = {
   id: COLUMN_DRAGGING_ID,
-  serviceLabel: 'reorderColumn',
   accessorKey: 'id',
   minSize: COLUMN_DRAGGING_SIZE,
   size: COLUMN_DRAGGING_SIZE,

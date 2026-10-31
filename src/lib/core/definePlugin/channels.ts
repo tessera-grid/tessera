@@ -13,6 +13,7 @@ import type {
   StatusBarComponentProps,
   ToolbarComponentProps,
 } from '../createSlots'
+import { commonOptionsOf } from '../commonFeature'
 import { useSlice } from '../reactivity'
 
 /** Пропсы компонента ячейки: нативный `CellContext` + инъектированный слайс хуков. */
@@ -101,11 +102,7 @@ export const setPluginState = (
   const prev = readPluginAtom(table, key)
   writePluginAtom(table, key, next)
   if (readPluginAtom(table, key) !== prev) {
-    const listeners = (
-      t.options as
-        | { pluginStateListeners?: Record<string, (value: unknown) => void> }
-        | undefined
-    )?.pluginStateListeners
+    const listeners = commonOptionsOf(table)?.pluginStateListeners
     listeners?.[key]?.(next)
   }
 }

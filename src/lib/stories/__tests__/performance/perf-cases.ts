@@ -19,7 +19,7 @@ export {
 import type { TesseraFeatureEntry } from '../../../core/features'
 import { setPluginState } from '../../../core/definePlugin'
 import { cellKey } from '../../../plugins/cellEditing/session'
-import { ROW_ACTIONS_COLUMN_ID } from '../../../core/createColumns/actionColumnParams'
+import { ROW_ACTIONS_COLUMN_ID } from '../../../plugins/rowActions'
 import {
   type ActionStatus,
   type MenuAction,

@@ -5,14 +5,13 @@
 
 /** Свои поля описания колонки — записи фич Tessera в `ColumnDef_FeatureMap`. */
 export const COLUMN_DEF_FIELDS: Record<string, string> = {
-  controlSized: '0135',
   dataType: '0139',
   enableDragging: '0006',
   filter: '0045',
   getOptionLabel: '0048',
   options: '0048',
   parseValue: '0139',
-  serviceLabel: '0032',
+  pinSides: '0165',
   skeletonCell: '0060',
 }
 
@@ -43,6 +42,9 @@ export const CORE_OPTIONS: Record<string, string> = {
   onRetry: '0096',
   partialData: '0081',
   pluginDiagnostics: '0022',
+  pluginRenderVersion: '0039',
+  pluginStateListeners: '0028',
+  refreshNarrowing: '0160',
   refreshOptions: '0094',
   rowHeight: '0077',
   skeletonOptions: '0060',
@@ -51,32 +53,36 @@ export const CORE_OPTIONS: Record<string, string> = {
   stubEntries: '0123',
 }
 
-/** Поля записи плагина `TesseraFeatureEntry`. */
+/** Поля публичной записи плагина `TablePlugin` (ADR 0164, §3). */
 export const PLUGIN_ENTRY_FIELDS: Record<string, string> = {
   actionMenu: '0024',
-  args: '0039',
-  argsKey: '0039',
   column: '0010',
-  configure: '0039',
   contextMenuActions: '0030',
-  controlledState: '0028',
   diagnose: '0022',
   enabled: '0010',
   features: '0010',
   hooks: '0027',
   id: '0010',
-  includedBy: '0120',
-  inertReason: '0039',
   keyboardActions: '0021',
-  lifetimeArgs: '0039',
   model: '0120',
   narrow: '0039',
   options: '0010',
   reconcile: '0040',
-  refreshArgs: '0039',
   setup: '0010',
   slotActions: '0024',
   slots: '0010',
-  stateSlices: '0120',
   stubs: '0123',
+}
+
+/** Поля внутренней записи `TesseraFeatureEntry`, которые ставят ядро и `definePlugin`. */
+export const INTERNAL_ENTRY_FIELDS: Record<string, string> = {
+  args: '0039',
+  argsKey: '0039',
+  configure: '0039',
+  controlledState: '0028',
+  includedBy: '0120',
+  inertReason: '0039',
+  lifetimeArgs: '0039',
+  refreshArgs: '0039',
+  stateSlices: '0120',
 }

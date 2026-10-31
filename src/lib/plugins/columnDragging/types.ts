@@ -1,9 +1,8 @@
 /** Типы плагина columnDragging. */
-import type { UniqueIdentifier } from '@dnd-kit/core'
-
 import type { SessionCancelReason } from '../../core/cancelInteraction'
+import type { DragOverlayState } from '../../shared/dragOverlay'
 
-export type DragOverlayState = UniqueIdentifier | null
+export type { DragOverlayState }
 
 export interface ColumnDraggingState {
   columnDraggingActiveId: DragOverlayState

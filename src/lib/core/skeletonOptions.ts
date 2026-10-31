@@ -57,7 +57,7 @@ export const getSkeletonRowCount = ({
 }
 
 /** Вид ячейки скелета (ADR 0060, SL18): полоска, квадрат контрола или пусто. */
-export type SkeletonCellKind = 'bar' | 'control' | 'none'
+export type SkeletonCellKind = 'bar' | 'control' | 'toggle' | 'none'
 
 /** Вид ячейки скелета: свой у колонки, иначе пусто у служебной и полоска у данных. */
 export const getSkeletonCellKind = (

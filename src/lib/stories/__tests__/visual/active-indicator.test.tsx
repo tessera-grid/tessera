@@ -100,7 +100,7 @@ const IconGrid = ({
   const table = useCreateTable({
     columns: [
       ...COLUMNS.slice(0, 2),
-      { ...COLUMNS[2], meta: { pinSides: 'start' } },
+      { ...COLUMNS[2], pinSides: 'start' },
     ] as never,
     data: data as never,
     getRowId: (row: { id: string }) => row.id,

@@ -19,9 +19,9 @@ import '../../grid/cellControls/buttonVisibility.css'
 type PinSide = 'start' | 'end'
 type PinningState = { start: string[]; end: string[] }
 
-/** Разрешённые стороны из `columnDef.meta.pinSides` (по умолчанию `both`). */
+/** Разрешённые стороны из поля колонки `pinSides` (по умолчанию `both`). */
 const getPinSides = (column: Column<any, any>): PinSides =>
-  column.columnDef.meta?.pinSides ?? 'both'
+  (column.columnDef as { pinSides?: PinSides }).pinSides ?? 'both'
 
 const isLeafPinningEnabled = (table: HeaderComponentProps['table']): boolean =>
   !!(table.options as { enableLeafPinning?: boolean }).enableLeafPinning

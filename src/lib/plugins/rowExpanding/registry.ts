@@ -148,6 +148,8 @@ export const rowExpanding = definePlugin<RowExpandingOptions>()({
     side: 'leading',
     order: 2,
     pin: { side: 'start', when: 'with-user' },
+    label: 'expandColumn',
+    controlSized: true,
     presence: hasExpandableRows,
   },
   options: o => {

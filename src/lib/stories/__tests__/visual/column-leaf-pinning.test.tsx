@@ -5,7 +5,7 @@ import { describe, expect, test } from 'vitest'
 import { composed } from '../stories'
 import { COLUMN_SELECTION_ID } from '../../../../lib/plugins/rowSelection'
 import { COLUMN_DRAGGING_ID } from '../../../../lib/plugins/rowDragging'
-import { ROW_ACTIONS_COLUMN_ID } from '../../../core/createColumns'
+import { ROW_ACTIONS_COLUMN_ID } from '../../../plugins/rowActions'
 import { tableLabels } from '../labels'
 import { LEAF_PINNING } from './header-fixtures'
 

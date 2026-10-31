@@ -266,7 +266,7 @@ export interface TableLabels {
   noColumnsTitle: string
   /** Заглушка: все колонки скрыты (ADR 0123) */
   columnsHiddenTitle: string
-  /** Скрытые подписи заголовков служебных колонок (`columnDef.serviceLabel`) */
+  /** Скрытые подписи заголовков служебных колонок (`label` записи `ServiceColumn`) */
   expandColumn: string
   reorderColumn: string
   rowActionsColumn: string

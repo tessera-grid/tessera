@@ -2,7 +2,7 @@ import type { RowSelectionState } from '@tanstack/react-table'
 import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, onTestFinished, test } from 'vitest'
-import { ROW_ACTIONS_COLUMN_ID } from '../../../core/createColumns'
+import { ROW_ACTIONS_COLUMN_ID } from '../../../plugins/rowActions'
 import { ENGLISH_LABELS } from '../../../core/localization'
 import { syncStickyGeometry } from '../../../core/stickyGeometry'
 import { useCreateTable } from '../../../core/useCreateTable'
@@ -120,7 +120,7 @@ describe('Column Pinning — right side', () => {
       header: `C${i}`,
       size: 150,
       enablePinning: true,
-      ...(i === 1 ? { meta: { pinSides: 'end' as const } } : {}),
+      ...(i === 1 ? { pinSides: 'end' as const } : {}),
     }))
     const container = await renderColumnPinning({ columnsOverride: columns })
 
@@ -263,7 +263,7 @@ describe('Column Pinning — right side', () => {
       header: `C${i}`,
       size: i === 5 ? 400 : 150,
       enablePinning: true,
-      ...(i === 5 ? { meta: { pinSides: 'end' as const } } : {}),
+      ...(i === 5 ? { pinSides: 'end' as const } : {}),
     }))
     const container = await renderColumnPinning({ columnsOverride: columns })
 

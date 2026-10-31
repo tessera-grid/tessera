@@ -16,9 +16,7 @@ export const getRowExpandingColumn = ({
 }: ServiceColumnParts): ColumnDef<any, any, any> =>
   ({
     id: COLUMN_EXPANDING_ID,
-    serviceLabel: 'expandColumn',
-    skeletonCell: 'control',
-    controlSized: true,
+    skeletonCell: 'toggle',
     accessorKey: 'id',
     minSize: 0,
     size: COLUMN_ACTIONS_SIZE,
