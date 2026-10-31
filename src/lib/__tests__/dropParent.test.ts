@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from 'vitest'
 
-import { findDropParent, indexBeforeMove } from '../grid/dnd/dropParent'
+import { findDropParent, indexBeforeMove } from '../core/dragSession'
 
 /** Родитель полным проходом: строки в порядке после переноса, глубина слота — `depth`. */
 const naiveParent = (

@@ -7,6 +7,7 @@ import { useSelector } from '@tanstack/react-store'
 
 import type { CellComponentProps } from '../../core/createSlots'
 import { useLocalization } from '../../core/localization'
+import { hasRowHierarchy } from '../../core/rowHierarchy'
 import type { FailedAttempt } from '../../shared/failedAttempts'
 import { rejectionText } from '../../util/thenable'
 import { DragHandler } from '../../grid/dnd'
@@ -71,7 +72,7 @@ export const RowDraggingComponent = ({ row, table }: CellComponentProps) => {
           edge('moveToEnd', labels.moveToEnd, 'end'),
         ]
       : []),
-    ...(!server && table.options.enableExpanding === true
+    ...(!server && hasRowHierarchy(table, 'tree')
       ? [
           {
             id: 'indent',

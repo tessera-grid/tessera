@@ -64,6 +64,7 @@ import {
 import { useLoadingDisplay } from './useLoadingDisplay'
 import type { Column, Row, Table } from '../types'
 import { commonOptionsOf } from '../core/commonFeature'
+import { columnDragActiveIdOf, rowDragSessionOf } from '../core/dragSession'
 import type { RenderSlots } from '../core/createSlots'
 import { useTableState } from '../core/reactivity'
 import { cancelColumnResize } from '../core/cancelInteraction'
@@ -180,9 +181,7 @@ export const DataGrid = ({
       cancelColumnResize(table, 'unavailable')
     }
   }, [resizeLost, table])
-  const rowDragging = state.rowDragging as
-    | { activeId: string | null; acceptable: boolean; offsetLeft: number }
-    | undefined
+  const rowDragging = rowDragSessionOf(state)
 
   const enableContextMenu = !!table.options.enableContextMenu
   const enableOverflowTooltip = options.enableOverflowTooltip !== false
@@ -616,7 +615,7 @@ export const DataGrid = ({
                         }
                         data-resizing={isResizingColumns !== false}
                         data-column-dragging={
-                          state.columnDraggingActiveId != null || undefined
+                          columnDragActiveIdOf(state) != null || undefined
                         }
                         data-row-dragging={
                           rowDragging?.activeId != null || undefined

@@ -33,7 +33,7 @@ import {
 import { commitRowMove } from './commitRowMove'
 import { reportAction } from '../../core/debugActions'
 import { inOneCommit } from '../../util/oneCommit'
-import { findDropParent, indexBeforeMove } from '../../grid/dnd/dropParent'
+import { findDropParent, indexBeforeMove } from '../../core/dragSession'
 import { dragRowsOf } from './dragRows'
 import { dropPlace } from './dropPlace'
 import { rowSourceOf } from '../../core/rowSource'

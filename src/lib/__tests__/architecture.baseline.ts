@@ -8,7 +8,6 @@ const DND_IN_GRID = 'перетаскивание строк и колонок �
 
 /** LB1: рёбра в запрещённый слой. */
 export const LAYER_EDGES: Record<string, string> = {
-  'lib/grid/DataGridTable.tsx -> lib/plugins/rowDragging/types.ts': DND_IN_GRID,
   'lib/grid/DndBodyWrapper.tsx -> lib/plugins/rowDragging/dragRows.ts':
     DND_IN_GRID,
   'lib/grid/DndBodyWrapper.tsx -> lib/plugins/rowDragging/expandTimer.ts':
@@ -26,10 +25,6 @@ export const LAYER_EDGES: Record<string, string> = {
   'lib/plugins/infiniteScroll/InfiniteTail.tsx -> lib/grid/SkeletonBody.tsx':
     'хвост ленты рисует строки скелета грида — канал «плагин вносит в тело», шаг 7',
   'lib/plugins/rowDragging/RowDraggingComponent.tsx -> lib/grid/dnd/index.ts':
-    DND_IN_GRID,
-  'lib/plugins/rowDragging/dropPlace.ts -> lib/grid/dnd/dropParent.ts':
-    DND_IN_GRID,
-  'lib/plugins/rowDragging/getRowDraggingEvents.ts -> lib/grid/dnd/dropParent.ts':
     DND_IN_GRID,
 }
 
@@ -51,6 +46,8 @@ export const CORE_PLUGIN_ONLY: Record<string, string> = {
 export const CORE_PLUGIN_API: Record<string, string> = {
   'lib/core/rowChanges.ts':
     'подсказка виртуализатору: пишут модели строк, читает виртуализатор ядра (ADR 0145)',
+  'lib/core/rowHierarchy.ts':
+    'иерархия строк: объявляют модели дерева и группировки, читает rowDragging, на шаге 7 — грид (ADR 0168)',
   'lib/core/scrollGridTo.ts':
     'прокрутка грида: ею прокручивают ядро и кнопка «наверх» (ADR 0105)',
   'lib/core/servicePresence.ts':
@@ -118,8 +115,6 @@ export const FOREIGN_OPTION_READS: Record<string, string> = {
   'lib/plugins/infiniteScroll/model.ts: manualSorting': FEED_CHECKS,
   'lib/plugins/infiniteScroll/model.ts: paginateExpandedRows': FEED_CHECKS,
   'lib/plugins/infiniteScroll/model.ts: quickSearchServer': FEED_CHECKS,
-  'lib/plugins/rowDragging/RowDraggingComponent.tsx: enableExpanding':
-    'вложение строки из меню ручки — при включённом раскрытии; у фичи раскрытия нет метода без смены вида меню, шаг 5',
   'lib/plugins/serverRowModel/blockStore.ts: rowCount':
     'серверная модель читает итог пагинации — режим данных, шаг 6',
   'lib/plugins/serverRowModel/tree.ts: rowCount':

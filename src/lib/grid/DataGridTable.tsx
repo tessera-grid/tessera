@@ -16,8 +16,8 @@ import { useTableState } from '../core/reactivity'
 import type { Column, HeaderGroup, Row, Table } from '../types'
 import { ColumnMotion } from './columnMotion/ColumnMotion'
 import { BodyDndBoundary } from './DndBodyWrapper'
-import { type DropPreview, MemoizedBody } from './Body'
-import type { RowDragOverlayState } from '../plugins/rowDragging/types'
+import { MemoizedBody } from './Body'
+import { dropPreviewOf } from '../core/dragSession'
 import { MemoizedFooter } from './Footer'
 import { HeadDndBoundary } from './DndHeadWrapper'
 import { MemoizedHead } from './Head'
@@ -88,20 +88,9 @@ export const DataGridTable = ({
   const hierarchical = isTreeGrid(table)
   // Страница — окно полного набора: число строк и индексы сквозные (ADR 0038, PG15).
   // Превью броска строки (ADR 0108): меняется на каждую смену места, только пока тащат.
-  const dropPreview = useTableState(table as never, (state: unknown) => {
-    const drag = (state as { rowDragging?: RowDragOverlayState }).rowDragging
-    return drag?.activeId != null &&
-      drag.fromIndex != null &&
-      drag.overIndex != null
-      ? {
-          activeId: String(drag.activeId),
-          from: drag.fromIndex,
-          to: drag.overIndex,
-          depth: drag.depth,
-          acceptable: drag.acceptable,
-        }
-      : null
-  }) as DropPreview | null
+  const dropPreview = useTableState(table as never, (state: object) =>
+    dropPreviewOf(state),
+  )
 
   const rowWindow = getRowWindow(table, rows, rowSource)
   const rootRef = useRef<HTMLDivElement>(null)

@@ -4,7 +4,7 @@
  * ниже; на странице без сестёр — первым ребёнком. Сёстры скрыты незагруженными строками
  * серверной модели — индекс `-1` (ADR 0159, §3).
  */
-import { findDropParent, indexBeforeMove } from '../../grid/dnd/dropParent'
+import { findDropParent, indexBeforeMove } from '../../core/dragSession'
 
 interface PlaceRow {
   id: string

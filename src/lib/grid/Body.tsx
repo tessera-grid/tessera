@@ -15,7 +15,7 @@ import type { RowFailure, RowSource } from '../core/rowSource'
 import { BodyRow } from './BodyRow'
 import { ColumnWindowContext } from './columnWindow'
 import { DraggableBodyRow } from './DraggableBodyRow'
-import { findDropParent } from './dnd/dropParent'
+import { type DropPreview, findDropParent } from '../core/dragSession'
 import { LoadMoreError } from '../ui/LoadMoreError/LoadMoreError'
 import { RowMotion } from './rowMotion/RowMotion'
 import { hasStickyRows, StickyRows } from './StickyRows'
@@ -53,15 +53,6 @@ interface TableBodyProps {
   rowAnimation?: boolean
   /** Перетаскиваемая строка и место броска (ADR 0108). */
   dropPreview?: DropPreview | null
-}
-
-export interface DropPreview {
-  activeId: string
-  /** Индексы в `rows`: откуда строку взяли и куда она встанет. */
-  from: number
-  to: number
-  depth: number
-  acceptable: boolean
 }
 
 const NO_FAILURES: readonly RowFailure[] = []
@@ -124,7 +115,7 @@ export const Body = ({
           : getTreeLines(rows),
     [treeLines, rows, sourceLines, rowCount],
   )
-  const drop = enableRowDragging ? dropPreview : null
+  const drop = dropPreview ?? null
   const labels = useLocalization()
   const failures = rowSource.failures?.() ?? NO_FAILURES
   const failedAt = (index: number) =>

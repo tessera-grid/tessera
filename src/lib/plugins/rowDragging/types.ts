@@ -2,18 +2,14 @@
 import type { Row } from '../../types'
 import type { SessionCancelReason } from '../../core/cancelInteraction'
 import type { DragOverlayState } from '../../shared/dragOverlay'
+import type { RowDragSession } from '../../core/dragSession'
 
-export interface RowDragOverlayState {
+/** Срез сессии перетаскивания строки: поля, которые рисует грид, — у ядра (ADR 0168, §3). */
+export interface RowDragOverlayState extends RowDragSession {
   activeId: DragOverlayState
-  offsetLeft: number
   isExpanded: boolean
-  acceptable: boolean
-  /** Превью броска (ADR 0108): индексы в показанных строках и глубина на новом месте. */
-  fromIndex: number | null
-  overIndex: number | null
   /** Строка под слотом: по ней место выравнивается, когда строки окна сдвинулись. */
   overId: string | null
-  depth: number
   /** Группы, раскрытые паузой над ними за сессию (ADR 0109, §3). */
   openedByDelay: readonly string[]
   /** Место недопустимо только до прихода строк ветки серверной модели (ADR 0159, §4). */
