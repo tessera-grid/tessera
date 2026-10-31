@@ -30,3 +30,9 @@ export const pluginFactoryNames = (): string[] =>
   Object.entries(plugins).flatMap(([name, value]) =>
     entryOf(value) ? [name] : [],
   )
+
+/** Фабрики входа `/plugins` по имени экспорта (ADR 0163). */
+export const pluginFactories = (): [string, (args?: unknown) => unknown][] =>
+  Object.entries(plugins).flatMap(([name, value]) =>
+    entryOf(value) ? [[name, value as (args?: unknown) => unknown]] : [],
+  )

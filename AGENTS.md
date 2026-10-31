@@ -105,6 +105,8 @@ src/lib/
               header/rowActionMenu
   grid/       DataGrid + подкомпоненты (Head/Body/Footer, Cell, overlays, DnD-обёртки, layout)
   ui/         примитивы: IconButton, Tooltip, Switch, Skeleton, LinearProgress, Bubble, icons
+  shared/     код, общий у двух и более плагинов; ядро и грид его не импортируют (ADR 0163)
+  util/       листовые утилиты без импортов src/lib (ADR 0163); обе папки — с первого переноса
   stories/    Storybook stories + neutral _shims (no external UI deps)
               __tests__/  Vitest browser tests (reuse stories via composeStories)
   types.ts    ре-экспорт v9-типов TanStack (параметризованных TFeatures)
@@ -152,7 +154,7 @@ docs/architecture/   contributor deep-dive (source of truth — see below)
 | Сборка библиотеки             | `npm run build`                  | Vite lib mode → `dist/` (ESM + CJS + `.d.ts` + `style.css`).                             |
 | Инварианты темы в `dist`      | `npm run check:theme`            | После `build`: проверяет `dist/style.css` (ADR 0018/0019).                               |
 | Требования ↔ тесты            | `npm run check:requirements`     | Сверка ID таблиц ADR с именами тестов (ADR 0043, TQ10).                                  |
-| Tree-shaking плагинов         | `npm run check:tree-shaking`     | После `build`: импорт одного плагина не тянет другие (IV3).                              |
+| Tree-shaking плагинов         | `npm run check:tree-shaking`     | После `build`: плагин не тянет другие (IV3), `DataGrid` — в бюджете (LB3–LB4).           |
 | Пересборка при правках        | `npm run dev`                    | `vite build --watch`. Долгоживущая — запускать в фоне.                                   |
 | Проверка типов                | `npm run typecheck`              | `tsc --noEmit` инкрементально (`node_modules/.cache/tsc`). **Включает stories.**         |
 | Линт                          | `npm run lint`                   | Плоский конфиг ESLint, кэш по содержимому в `node_modules/.cache/eslint`.                |
@@ -301,7 +303,10 @@ browsers**. Шаги 12–13 — не барьер, но обязательны 
 своего этапа помечено видом `этап N` — тест с его ID роняет шаг, пока вид не сменят. Шаг 7 (`check:tree-shaking`) — после
 `build`: для каждого плагина собирает vite-приложение из одного импорта поверх `dist` и
 падает, если в сборку попали модули других плагинов (ADR 0010, IV3). `dist` собран с
-`preserveModules` — модуль на файл; общий код двух плагинов живёт вне папок плагинов.
+`preserveModules` — модуль на файл; общий код двух плагинов живёт в `shared/` (ADR 0163).
+Тот же шаг собирает `DataGrid` с `useCreateTable` без плагинов: модулей плагинов в нём нет,
+кроме базы, а размер после gzip не растёт больше чем на 1 % от `scripts/core-budget.json`
+(LB3–LB4) — новое значение записывают осознанно.
 Шаг 8 (`check:theme`) —
 пост-build-страж: он проверяет собранный `dist/style.css` (нехешированные классы
 темы, три уровня токенов — ADR 0018/0019), чего браузерные тесты по исходникам не
@@ -1062,6 +1067,12 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       неизвестный ID, коллизия, устаревшая запись базы; TQ11 — источники из рабочего
       дерева, удалённый непроиндексированный файл не роняет сверку,
       [ADR 0043](docs/decisions/0043-honest-test-coverage.md)).
+    - _Границы слоёв:_ модульные `layerBoundaries` (LB1 — рёбра в запрещённый слой, LB2 —
+      модуль ядра только для плагинов, LB5 — собственные опции плагина вне его цепочки, LB7 —
+      `ColumnMeta`, LB9 — касты `….options`, LB10 — строка «Слой» в ADR) и `contractSnapshot`
+      (LB6 — свои поля колонки не совпадают со стоковыми, LB8 — снимок контракта с номером ADR
+      у ключа), LB3–LB4 — `check:tree-shaking`; базы с причиной — `architecture.baseline.ts`,
+      только сокращаются ([ADR 0163](docs/decisions/0163-layer-boundaries-and-guards.md)).
     - _Движение строк:_ `row-motion` (RM1–RM17, RM19, RM22, RM24–RM25, RM27–RM31 — раскрытие и сворачивание с
       призраками, сортировка издалека и вдаль, поиск, замена и геометрия без движения,
       ленивые дети, сдвиг соседей и приземление броска, автопрокрутка во время
@@ -1387,7 +1398,9 @@ ADR и не с кода.** Прожарка — короткий диалог с
    (будущие `R<n>`) с видом теста для каждого и таблицу клиентских сценариев (будущие
    `S<n>`, у каждого — своя история) и покажите их человеку. Явно назовите:
    что войдёт, что осознанно вне объёма, какие связи с существующими ADR и плагинами
-   затронуты, какие риски (перф, API, a11y).
+   затронуты, какие риски (перф, API, a11y), в каком слое каждый новый модуль и почему не
+   в плагине — это строка «Слой» в шапке ADR
+   ([ADR 0163](docs/decisions/0163-layer-boundaries-and-guards.md), LB10).
 5. **Только после согласия** — ADR со списком требований
    ([ADR 0001](docs/decisions/0001-spec-driven-development.md)), затем код, тесты и
    [истории Storybook](#истории-storybook--на-каждую-фичу-и-её-сценарий).
@@ -1589,6 +1602,11 @@ UI-кит `src/lib/ui`, а не собирается по месту в плаг
 
 ### Архитектурная дисциплина
 
+- **Слои — по [ADR 0163](docs/decisions/0163-layer-boundaries-and-guards.md).** Ядро не
+  импортирует `grid`, `ui` и плагины; грид — плагины; `ui` — только `util`. Код, нужный
+  только плагинам, — в `shared/`, а не в ядре. Собственную опцию плагина читают только он и
+  его модели; опции объявляют в `CommonOptions` или карте фичи, а не кастом `….options as …`.
+  Нарушение вне базы `architecture.baseline.ts` роняет `npm test`.
 - **Анимации — только через токены движения** (`--tsr-comp-motion-duration`,
   `--tsr-comp-motion-easing`, [ADR 0017](docs/decisions/0017-ui-components.md), MO1–MO6):
   никаких литералов `ms`/`cubic-bezier` в компонентах; скрытые кнопки ячейки и строки

@@ -14,6 +14,7 @@ export const ENTRY = {
   ui: `${root}src/ui.ts`,
   useCreateTable: `${root}src/lib/core/useCreateTable.ts`,
   storyToggles: `${root}src/lib/stories/__mocks__/utils/argsToPlugins.ts`,
+  contract: `${root}src/lib/__tests__/contractTypes.ts`,
 } as const
 
 let cached: { program: ts.Program; checker: ts.TypeChecker } | undefined
@@ -103,6 +104,21 @@ const propsOfType = (type: ts.Type): PropInfo[] => {
 export const typeProps = (file: string, name: string) => {
   const { checker } = typeProgram()
   return propsOfType(checker.getDeclaredTypeOfSymbol(exportSymbol(file, name)))
+}
+
+/** Записи карты фич (ADR 0163): ключ фичи, файл, где запись объявлена, и свойства её типа. */
+export const featureMapEntries = (file: string, name: string) => {
+  const { checker } = typeProgram()
+  const type = checker.getDeclaredTypeOfSymbol(exportSymbol(file, name))
+  return checker.getPropertiesOfType(type).map(entry => ({
+    name: entry.name,
+    file: entry.declarations?.[0]?.getSourceFile().fileName ?? '',
+    props: checker
+      .getPropertiesOfType(
+        checker.getNonNullableType(checker.getTypeOfSymbol(entry)),
+      )
+      .map(prop => prop.name),
+  }))
 }
 
 /** Свойства первого параметра экспортированной функции. */

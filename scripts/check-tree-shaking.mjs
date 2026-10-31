@@ -4,15 +4,22 @@
 // каких плагинов (`dist/lib/plugins/<плагин>/`) попали в сборку. Запуск: после
 // `npm run build` — `npm run check:tree-shaking`. Интерфейс несёт свою модель
 // (ADR 0120, MP11): ему разрешены модели по цепочке `entry.model`, модели интерфейс — нет.
+// `DataGrid` с `useCreateTable` без плагинов не тянет модулей плагинов кроме базы, а размер
+// его сборки после gzip держится в бюджете `scripts/core-budget.json` (ADR 0163, LB3–LB4).
 
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { gzipSync } from 'node:zlib'
 
 import { build } from 'vite'
 
 const root = process.cwd()
 const dist = resolve(root, 'dist/plugins.js')
+const distIndex = resolve(root, 'dist/index.js')
+const budgetPath = resolve(root, 'scripts/core-budget.json')
+/** Допуск бюджета: рост больше него роняет проверку, уменьшение — подсказка (LB4). */
+const BUDGET_TOLERANCE = 0.01
 const work = resolve(root, 'node_modules/.cache/check-tree-shaking')
 rmSync(work, { recursive: true, force: true })
 mkdirSync(work, { recursive: true })
@@ -41,13 +48,12 @@ const modelsOf = name => {
 
 const PLUGIN_MODULE = /\/dist\/lib\/plugins\/([^/]+)\//
 
-/** Каталоги плагинов, чьи модули попали в сборку потребителя с одним импортом. */
-const bundledPlugins = async name => {
+const importPath = file => JSON.stringify(file.split('\\').join('/'))
+
+/** Сборка приложения из одного импорта: каталоги плагинов в ней и размер после gzip. */
+const bundle = async (name, source) => {
   const entry = resolve(work, `${name}.js`)
-  writeFileSync(
-    entry,
-    `import { ${name} } from ${JSON.stringify(dist.split('\\').join('/'))}\nconsole.log(${name})\n`,
-  )
+  writeFileSync(entry, source)
   const result = await build({
     configFile: false,
     logLevel: 'silent',
@@ -65,16 +71,30 @@ const bundledPlugins = async name => {
       },
     },
   })
-  const moduleIds = (Array.isArray(result) ? result : [result])
+  const chunks = (Array.isArray(result) ? result : [result])
     .flatMap(output => output.output)
     .filter(chunk => chunk.type === 'chunk')
-    .flatMap(chunk => chunk.moduleIds)
-  return new Set(
-    moduleIds
+  const pluginDirs = new Set(
+    chunks
+      .flatMap(chunk => chunk.moduleIds)
       .map(id => PLUGIN_MODULE.exec(id.split('\\').join('/'))?.[1])
       .filter(Boolean),
   )
+  const gzip = chunks.reduce(
+    (sum, chunk) => sum + gzipSync(chunk.code).length,
+    0,
+  )
+  return { plugins: pluginDirs, gzip }
 }
+
+/** Каталоги плагинов, чьи модули попали в сборку потребителя с одним импортом. */
+const bundledPlugins = async name =>
+  (
+    await bundle(
+      name,
+      `import { ${name} } from ${importPath(dist)}\nconsole.log(${name})\n`,
+    )
+  ).plugins
 
 const failures = []
 for (const name of plugins) {
@@ -93,6 +113,38 @@ for (const name of plugins) {
     failures.push(`${name}: в сборку попали ${leaked.join(', ')}`)
   }
 }
+
+// LB3–LB4: `DataGrid` без плагинов. База каталогов плагинов только сокращается.
+const budget = JSON.parse(readFileSync(budgetPath, 'utf8'))
+const grid = await bundle(
+  'dataGrid',
+  `import { DataGrid, useCreateTable } from ${importPath(distIndex)}\nconsole.log(DataGrid, useCreateTable)\n`,
+)
+for (const name of [...grid.plugins].sort()) {
+  if (!(name in budget.pluginModules)) {
+    failures.push(`DataGrid без плагинов: в сборку попал плагин ${name}`)
+  }
+}
+for (const [name, reason] of Object.entries(budget.pluginModules)) {
+  if (!grid.plugins.has(name)) {
+    failures.push(
+      `DataGrid без плагинов: ${name} в сборке нет — уберите запись из core-budget.json`,
+    )
+  }
+  if (reason.length < 10) {
+    failures.push(`core-budget.json: у ${name} нет причины`)
+  }
+}
+const limit = Math.floor(budget.gzipBytes * (1 + BUDGET_TOLERANCE))
+if (grid.gzip > limit) {
+  failures.push(
+    `DataGrid без плагинов: ${grid.gzip} байт gzip больше бюджета ${budget.gzipBytes} + 1 % — новое значение записывают в core-budget.json осознанно`,
+  )
+} else if (grid.gzip < budget.gzipBytes * (1 - BUDGET_TOLERANCE)) {
+  console.log(
+    `[check-tree-shaking] DataGrid без плагинов — ${grid.gzip} байт gzip: меньше бюджета ${budget.gzipBytes}, снизьте запись в core-budget.json`,
+  )
+}
 rmSync(work, { recursive: true, force: true })
 
 if (failures.length > 0) {
@@ -102,5 +154,5 @@ if (failures.length > 0) {
   process.exit(1)
 }
 console.log(
-  `[check-tree-shaking] OK — ${plugins.length} плагинов, импорт одного не тянет остальные`,
+  `[check-tree-shaking] OK — ${plugins.length} плагинов, импорт одного не тянет остальные; DataGrid без плагинов — ${grid.gzip} байт gzip (бюджет ${budget.gzipBytes})`,
 )
