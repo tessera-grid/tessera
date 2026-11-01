@@ -295,7 +295,7 @@ const DATE_FILTERING = {
       id: 'registered',
       accessorKey: 'registered',
       header: 'Registered',
-      filter: 'date',
+      dataType: 'dateString',
       size: 150,
     },
     ...mockColumns,
@@ -362,7 +362,7 @@ const OPTION_FILTERING = {
             { value: 'male', label: 'Male' },
             { value: 'female', label: 'Female' },
           ],
-          filter: 'select',
+          dataType: 'select',
         }
       : column,
   ),
@@ -398,7 +398,7 @@ const MANY_OPTIONS_FILTERING = {
       accessorFn: (_: unknown, index: number) => `v${(index * 37) % 1000}`,
       header: 'Variant',
       options: MANY_OPTIONS,
-      filter: 'select',
+      dataType: 'select',
       size: 150,
     },
     ...mockColumns,
@@ -1118,7 +1118,7 @@ const OPTION_SORT_DATA = makeOptionFilteringData(100_000)
 const managerColumn = (labelled: boolean) =>
   optionFilteringColumns.map(column =>
     column.id === 'managerId' && !labelled
-      ? { ...column, getOptionLabel: undefined, filter: undefined }
+      ? { ...column, getOptionLabel: undefined, dataType: undefined }
       : column,
   )
 
@@ -1200,6 +1200,92 @@ describe('Отзывчивость — сортировка по подписи'
       expect(
         labelled.longestMs,
         `по подписи longest=${labelled.longestMs.toFixed(1)}ms, база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Сортировка текста по типу (ADR 0172, DT11): первый клик сортировки колонки имён на
+// 100 000 строк — с `dataType: 'text'` (`Intl.Collator` языка) против той же колонки без
+// типа (сортировка TanStack). Каждый замер — свежий грид.
+const nameColumn = (typed: boolean) =>
+  optionFilteringColumns.map(column =>
+    column.id === 'name' && typed ? { ...column, dataType: 'text' } : column,
+  )
+
+describe('Отзывчивость — сортировка по типу данных', () => {
+  test(
+    'DT11: сортировка 100 000 строк текста через Intl.Collator — против нынешней сортировки',
+    async () => {
+      const measure = async (typed: boolean) => {
+        await renderGrid({
+          ...ALL_PLUGINS,
+          ...inlineHeaderActions(nameColumn(typed)),
+          dataOverride: OPTION_SORT_DATA,
+        } as Parameters<typeof renderGrid>[0])
+        await waitForGrid()
+        const button = () =>
+          document.querySelector<HTMLElement>(
+            '.data-grid__head-cell[data-column-id="name"] .column-sort__button',
+          )
+        await expect.poll(button).toBeTruthy()
+        // Прогрев сортирует другую колонку: замер — первый клик по колонке имён.
+        let warmed = false
+        const result = await measureInteractionWork(
+          async () => {
+            const target = warmed ? 'name' : 'status'
+            warmed = true
+            document
+              .querySelector<HTMLElement>(
+                `.data-grid__head-cell[data-column-id="${target}"] .column-sort__button`,
+              )!
+              .click()
+          },
+          { afterWarmup: () => expect(sortOf('status')).not.toBe('none') },
+        )
+        expect([sortOf('name'), sortOf('status')]).toEqual([
+          expect.not.stringMatching(/^none$/),
+          'none',
+        ])
+        await cleanup()
+        return result
+      }
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const typed = medianRun(runs.variant, r => r.longestMs)
+      // Collator с числами по значению против alphanumeric TanStack — запас как у OS11.
+      const ceiling = ceilingOver(base.longestMs, { ratio: 1.5, plusMs: 300 })
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '100 000×5',
+          plugins: 'all',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('DT11-base', 'сортировка текста без типа', base, false)
+      await record('DT11', 'сортировка текста по типу', typed, true)
+
+      expect(
+        typed.longestMs,
+        `по типу longest=${typed.longestMs.toFixed(1)}ms, база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)}ms`,
       ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,
@@ -1914,7 +2000,9 @@ const XLSX_COLUMNS = Array.from({ length: 10 }, (_, i) => ({
   id: `c${i}`,
   header: `Column ${i}`,
   size: 120,
-  ...(i === 3 ? { filter: 'date' } : {}),
+  ...(i === 3
+    ? { dataType: { name: 'dateString', base: 'dateString' as const } }
+    : {}),
 }))
 const XLSX_ROWS = Array.from({ length: 100_000 }, (_, r) =>
   XLSX_COLUMNS.map((_, c) =>

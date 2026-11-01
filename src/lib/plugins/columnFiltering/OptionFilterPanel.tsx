@@ -34,12 +34,12 @@ import { Tooltip } from '../../ui/Tooltip'
 import { operatorLabel } from './describeFilter'
 import type { FilterPanelProps } from './FilterPanel'
 import { OperatorSelect } from './OperatorSelect'
+import { columnFilterDefOf } from '../columnFilteringModel/conditions'
 import {
   filterOptionsOf,
   optionCountsOf,
 } from '../columnFilteringModel/options'
 import type {
-  ColumnFilterDef,
   LoadOptions,
   OptionFilter,
   OptionFilterOperator,
@@ -158,7 +158,7 @@ export const OptionFilterPanel = ({
   const searchRef =
     controls.initialFocusRef as RefObject<HTMLInputElement | null>
   const t = table as object
-  const def = column.columnDef.filter as ColumnFilterDef | undefined
+  const def = columnFilterDefOf(column as never)
   const loadOptions = typeof def === 'object' ? def.loadOptions : undefined
   const header =
     typeof (column.columnDef as { header?: unknown }).header === 'string'

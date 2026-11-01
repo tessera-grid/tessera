@@ -21,6 +21,7 @@ import {
   parseKindOf,
   setAtPath,
 } from '../../core/columnDataType'
+import type { ColumnOption } from '../../core/columnOptions'
 import type { ResolvedDataType } from '../../core/dataTypes'
 import { logWarn } from '../../util/logger'
 import { isThenable, rejectionText } from '../../util/thenable'
@@ -256,6 +257,7 @@ interface SavedTable {
     | {
         columnDef: {
           accessorKey?: unknown
+          options?: ColumnOption[]
           parseValue?: (text: string, row: unknown) => unknown
         }
         getDataType: () => ResolvedDataType | undefined
@@ -265,7 +267,10 @@ interface SavedTable {
     original: unknown
     getValue: (columnId: string) => unknown
   }>
-  options: { getRowId?: (row: unknown, index: number) => string }
+  options: {
+    getRowId?: (row: unknown, index: number) => string
+    locale?: string
+  }
 }
 
 /** Ответ `onCellEdit` — сохранённая строка: объект с тем же id (ADR 0139, §1). */
@@ -317,6 +322,7 @@ const writeSaved = (
     : parseByDataType(
         text,
         type ? parseKindOf(type.base) : inferDataType(row.getValue(columnId)),
+        { locale: t.options.locale, options: column!.columnDef.options },
       )
   if (!parsed) {
     warnNotWritten(table)

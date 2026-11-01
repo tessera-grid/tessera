@@ -21,6 +21,7 @@ import {
   orderedRows,
   pointAt,
   pollUntil,
+  repeat,
   pressEscape,
   settle,
   sleep,
@@ -29,6 +30,17 @@ import {
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
+import {
+  calendar,
+  chooseOperator,
+  closePanel,
+  filterActive,
+  filteredCount,
+  openPanel,
+  operatorValue,
+  panel,
+  pickDay,
+} from './__mocks__/filterGuide'
 import { labelPattern, storyLabels } from './__mocks__/storyLabels'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
@@ -100,43 +112,6 @@ export const FilteringPlayground: StoryObj<StoryProps> = {
 
 // --- Действия шагов ------------------------------------------------------------------
 
-const panel = () => byTestId('filter-panel')
-
-/** Повторяет `act` с паузой, пока не выполнится `done`: кнопки готовы не сразу. */
-const repeat = async (
-  done: () => boolean,
-  act: () => void,
-  signal: AbortSignal,
-) => {
-  for (let tries = 0; !done(); tries += 1) {
-    if (tries > 60) throw new Error(`Шаг гайда не дождался: ${done}`)
-    act()
-    await sleep(200)
-    signal.throwIfAborted()
-  }
-}
-
-/** Пользователь закрывает открытую панель. */
-const closePanel = (signal: AbortSignal) =>
-  repeat(() => !panel(), pressEscape, signal)
-
-/** Пользователь открывает панель фильтра колонки нажатием на её кнопку. */
-const openPanel = async (
-  root: HTMLElement,
-  column: string,
-  signal: AbortSignal,
-) => {
-  await closePanel(signal)
-  await repeat(
-    () => !!panel(),
-    () =>
-      headCell(root, column)
-        ?.querySelector<HTMLElement>('.column-filter__button')
-        ?.click(),
-    signal,
-  )
-}
-
 /** Ввод в поле — как набор пользователя: React слышит событие `input`. */
 const type = (field: HTMLElement | null, text: string) => {
   const input = field as HTMLInputElement | null
@@ -161,12 +136,6 @@ const allMatch = (root: ParentNode, column: string, needle: string) => {
     cells.every(cell => cell.toLowerCase().includes(needle.toLowerCase()))
   )
 }
-/** Кнопка фильтра колонки отмечена как включённая. */
-const filterActive = (root: HTMLElement, column: string) =>
-  !!headCell(root, column)?.querySelector(
-    '.column-filter__button[data-active="true"]',
-  )
-const filteredCount = () => byTestId('filtered-rows-count')?.textContent ?? ''
 const busy = (root: HTMLElement) =>
   root.querySelector('.data-grid__container')?.getAttribute('aria-busy') ===
   'true'
@@ -184,25 +153,6 @@ const checkOption = (value: string, signal: AbortSignal) =>
     () => optionChecked(value),
     () =>
       optionOf(value)?.querySelector<HTMLElement>('[role="checkbox"]')?.click(),
-    signal,
-  )
-/** Выбранное условие панели — значение скрытого поля списка условий. */
-const operatorValue = () =>
-  panel()?.querySelector<HTMLInputElement>('input[aria-hidden="true"]')?.value
-/** Пользователь выбирает условие панели: открывает список и нажимает пункт. */
-const chooseOperator = (operator: string, signal: AbortSignal) =>
-  repeat(
-    () =>
-      operatorValue() === operator &&
-      byTestId('filter-operator')?.getAttribute('aria-expanded') === 'false',
-    () => {
-      const trigger = byTestId('filter-operator')
-      if (trigger?.getAttribute('aria-expanded') !== 'true') trigger?.click()
-      else
-        document
-          .querySelector<HTMLElement>(`[data-operator="${operator}"]`)
-          ?.click()
-    },
     signal,
   )
 /** Описание поля поиска — колонки, по которым он идёт (ADR 0053). */
@@ -868,34 +818,6 @@ const DATES = {
   timeZone: 'UTC',
 } satisfies Partial<StoryProps>
 
-const calendar = () => byTestId('filter-calendar')
-
-/** Пользователь выбирает в календаре год, месяц март и день. */
-const pickDay = async (year: string, day: string, signal: AbortSignal) => {
-  await pollUntil(() => !!calendar()?.querySelector('select'), signal)
-  const change = (select: HTMLSelectElement, value: string) => {
-    if (select.value === value) return
-    Object.getOwnPropertyDescriptor(
-      HTMLSelectElement.prototype,
-      'value',
-    )!.set!.call(select, value)
-    select.dispatchEvent(new Event('change', { bubbles: true }))
-  }
-  const selects = () =>
-    calendar()!.querySelectorAll<HTMLSelectElement>('select')
-  // Календарь перерисовывается и после смены условия — выбор повторяется, пока не виден день.
-  await repeat(
-    () => !!document.querySelector(`[data-day="${day}"] button`),
-    () => {
-      change(selects()[1]!, year)
-      // Месяцы — номера с нуля: март.
-      change(selects()[0]!, '2')
-    },
-    signal,
-  )
-  document.querySelector<HTMLElement>(`[data-day="${day}"] button`)!.click()
-}
-
 const createdFiltered = (root: HTMLElement) =>
   !!byTestId('filtered-rows-count') && filterActive(root, 'createdAt')
 const birthFiltered = (root: HTMLElement) => filterActive(root, 'birthDate')
@@ -904,7 +826,7 @@ const birthFiltered = (root: HTMLElement) => filterActive(root, 'birthDate')
 const filterCreated = async (root: HTMLElement, signal: AbortSignal) => {
   if (!createdFiltered(root)) {
     await openPanel(root, 'createdAt', signal)
-    await pickDay('2026', '2026-03-15', signal)
+    await pickDay('2026', 2, '2026-03-15', signal)
     await pollUntil(() => createdFiltered(root), signal)
   }
   await closePanel(signal)
@@ -943,7 +865,7 @@ const DATE_STEPS: readonly GuideStoryStep[] = [
       if (!birthFiltered(root)) {
         await openPanel(root, 'birthDate', signal)
         await chooseOperator('before', signal)
-        await pickDay('1980', '1980-03-01', signal)
+        await pickDay('1980', 2, '1980-03-01', signal)
         await pollUntil(() => birthFiltered(root), signal)
       }
       await closePanel(signal)
@@ -1143,15 +1065,10 @@ const lookupColumnsOf = (log: ConsoleLog) => {
         column.id === 'managerId'
           ? {
               ...column,
-              filter: {
-                type: 'lookup',
-                loadOptions: (
-                  text: string,
-                  context: { signal: AbortSignal },
-                ) => {
-                  log.log('loadOptions', describeEvent({ search: text }))
-                  return loadManagers(text, context, LOOKUP_DELAY_MS)
-                },
+              dataType: 'select',
+              loadOptions: (text: string, context: { signal: AbortSignal }) => {
+                log.log('loadOptions', describeEvent({ search: text }))
+                return loadManagers(text, context, LOOKUP_DELAY_MS)
               },
             }
           : column,

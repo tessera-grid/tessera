@@ -352,8 +352,8 @@ describe('Скрытие всех колонок', () => {
 })
 
 const FILTERING_COLUMNS = [
-  { id: 'name', accessorKey: 'name', header: 'Name', filter: 'text' },
-  { id: 'status', accessorKey: 'status', header: 'Status', filter: 'select' },
+  { id: 'name', accessorKey: 'name', header: 'Name' },
+  { id: 'status', accessorKey: 'status', header: 'Status', dataType: 'select' },
 ]
 const FILTERING_DATA = [
   { id: '1', name: 'A', status: 'open' },

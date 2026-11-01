@@ -57,11 +57,15 @@ const columnName = (index: number) => {
 
 type DateKind = 'date' | 'datetime' | undefined
 
-const dateKindOf = (column: ExportColumn): DateKind => {
-  const filter = column.filter
-  const type = typeof filter === 'object' ? filter?.type : filter
-  return type === 'date' || type === 'datetime' ? type : undefined
+const DATE_KIND: Partial<Record<string, DateKind>> = {
+  date: 'date',
+  dateString: 'date',
+  dateTime: 'datetime',
+  dateTimeString: 'datetime',
 }
+
+const dateKindOf = (column: ExportColumn): DateKind =>
+  column.dataType ? DATE_KIND[column.dataType.base] : undefined
 
 const textCell = (ref: string, text: string, style = 0) =>
   `<c r="${ref}" t="inlineStr"${style ? ` s="${style}"` : ''}><is><t xml:space="preserve">${escapeXml(text)}</t></is></c>`
@@ -155,7 +159,7 @@ export const buildXlsx = async (
   const encoder = new TextEncoder()
   const contexts: CellContext[] = columns.map(column => ({
     kind: dateKindOf(column),
-    parse: typeof column.filter === 'object' ? column.filter?.parse : undefined,
+    parse: column.dataType?.parseDate,
     timeZone,
   }))
   const refs = columns.map((_, index) => columnName(index))

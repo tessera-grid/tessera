@@ -847,7 +847,7 @@ const ROW_DATA = Array.from({ length: 6 }, (_, i) => ({
 const RowGrid = () => {
   const table = useCreateTable({
     columns: [
-      { id: 'name', accessorKey: 'name', header: 'Name', filter: 'text' },
+      { id: 'name', accessorKey: 'name', header: 'Name' },
       { id: 'city', accessorKey: 'city', header: 'City' },
     ] as never,
     data: ROW_DATA,

@@ -39,7 +39,6 @@ export const textOverflowColumns: ColumnDef<any, any>[] = [
     accessorKey: 'account',
     header: 'Customer account responsible for the regional contract',
     size: 200,
-    filter: 'text',
   },
   {
     id: 'status',
@@ -47,7 +46,7 @@ export const textOverflowColumns: ColumnDef<any, any>[] = [
     header: 'Current approval status of the commercial proposal',
     size: 200,
     options: LONG_STATUS_OPTIONS,
-    filter: 'select',
+    dataType: 'select',
   },
 ]
 

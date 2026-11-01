@@ -44,7 +44,7 @@ interface Call {
   resolve: (response: ServerRowsResponse<Item>) => void
 }
 
-const COLUMNS = [{ id: 'name', accessorKey: 'name', filter: 'text' }]
+const COLUMNS = [{ id: 'name', accessorKey: 'name' }]
 const BLOCK = 10
 const TOTAL = 100
 const NO_DATA: Item[] = []

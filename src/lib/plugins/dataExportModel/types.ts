@@ -1,3 +1,4 @@
+import type { BuiltInDataType, DateCellValue } from '../../core/dataTypes'
 import type { RowSelectionValue } from '../../core/rowSelectionAll'
 
 /** Значения оси «Строки» (ADR 0044, §2). */
@@ -6,9 +7,13 @@ export type ExportRows = 'all' | 'view' | 'page' | 'selected'
 /** Значения оси «Колонки». */
 export type ExportColumns = 'visible' | 'all'
 
-/** Поле `filter` колонки, как его читает лист: тип и разбор даты (ADR 0073, §3). */
-export type ExportColumnFilter =
-  string | { type?: string; parse?: (value: unknown) => unknown }
+/** Тип данных колонки, как его читает лист (ADR 0172, DT17). */
+export interface ExportColumnDataType {
+  name: string
+  base: BuiltInDataType
+  /** Значение ячейки своего формата → дата. */
+  parseDate?: (value: unknown) => DateCellValue
+}
 
 export interface ExportColumn {
   id: string
@@ -17,8 +22,8 @@ export interface ExportColumn {
   size?: number
   /** Сторона закрепления в гриде. */
   pinned?: 'start' | 'end' | false
-  /** `columnDef.filter`: колонки `date` / `datetime` лист пишет датами. */
-  filter?: ExportColumnFilter
+  /** Тип данных колонки: колонки типов дат лист пишет датами. */
+  dataType?: ExportColumnDataType
 }
 
 /** Данные выгрузки: колонки и строки значений в порядке колонок. */

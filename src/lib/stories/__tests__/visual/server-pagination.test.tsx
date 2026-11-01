@@ -31,9 +31,7 @@ interface Item {
   name: string
 }
 
-const COLUMNS = [
-  { id: 'name', accessorKey: 'name', header: 'Name', filter: 'text' },
-]
+const COLUMNS = [{ id: 'name', accessorKey: 'name', header: 'Name' }]
 const NO_DATA: Item[] = []
 const PAGE = 25
 

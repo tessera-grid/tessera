@@ -110,7 +110,7 @@ export {
   type XlsxFormatOptions,
   type ExportAllow,
   type ExportColumn,
-  type ExportColumnFilter,
+  type ExportColumnDataType,
   type ExportContent,
   type ExportContext,
   type ExportColumns,

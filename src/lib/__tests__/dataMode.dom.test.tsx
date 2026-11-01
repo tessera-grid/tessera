@@ -55,8 +55,8 @@ const DATA: Item[] = [
 ]
 
 const COLUMNS = [
-  { id: 'name', accessorKey: 'name', header: 'Name', filter: 'text' },
-  { id: 'city', accessorKey: 'city', header: 'City', filter: 'text' },
+  { id: 'name', accessorKey: 'name', header: 'Name' },
+  { id: 'city', accessorKey: 'city', header: 'City' },
 ]
 
 let root: Root | undefined

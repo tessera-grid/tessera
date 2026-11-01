@@ -19,8 +19,8 @@ import { waitForGrid } from './core-helpers'
 // `touch`, KA7 — перф в `scroll`, KA8 — в `work-counters`.
 
 const COLUMNS = [
-  { id: 'name', accessorKey: 'name', header: 'Name', filter: 'text' },
-  { id: 'city', accessorKey: 'city', header: 'City', filter: 'text' },
+  { id: 'name', accessorKey: 'name', header: 'Name' },
+  { id: 'city', accessorKey: 'city', header: 'City' },
   { id: 'age', accessorKey: 'age', header: 'Age' },
 ]
 const DATA = Array.from({ length: 8 }, (_, i) => ({

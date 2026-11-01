@@ -51,7 +51,7 @@ interface Item {
 
 const COLUMNS = [
   { id: 'name', accessorKey: 'name', header: 'Name' },
-  { id: 'city', accessorKey: 'city', header: 'City', filter: 'text' },
+  { id: 'city', accessorKey: 'city', header: 'City' },
 ]
 const NO_DATA: Item[] = []
 const BLOCK = 100

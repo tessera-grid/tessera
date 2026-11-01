@@ -170,8 +170,8 @@ const TREE: Item[] = [
   ...ITEMS.slice(2),
 ]
 const COLUMNS = [
-  { id: 'name', accessorKey: 'name', header: 'Name', filter: 'text' },
-  { id: 'age', accessorKey: 'age', header: 'Age', filter: 'number' },
+  { id: 'name', accessorKey: 'name', header: 'Name' },
+  { id: 'age', accessorKey: 'age', header: 'Age', dataType: 'number' },
   { id: 'gender', accessorKey: 'gender', header: 'Gender' },
 ]
 

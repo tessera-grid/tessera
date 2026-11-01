@@ -3,6 +3,7 @@
  * типа колонки — один раз на описание колонки и реестр. Ячейка, плагины и плагин автора
  * узнают тип только через `column.getDataType()`.
  */
+import type { LoadOptions } from './columnOptions'
 import { logWarn } from '../util/logger'
 
 export const BUILT_IN_DATA_TYPES = [
@@ -28,6 +29,9 @@ export type DataTypeAlign = 'start' | 'center' | 'end'
 export type DataTypeFormat = Intl.NumberFormatOptions &
   Intl.DateTimeFormatOptions
 
+/** Значение ячейки даты своего формата, разобранное в дату: `Date`, миллисекунды или ISO. */
+export type DateCellValue = Date | string | number | null | undefined
+
 /** Поля, которые задаются у типа и у колонки; поле колонки главнее (DT2). */
 export interface DataTypeFields<TData = any> {
   /** Опции `Intl` на языке таблицы (DT7). */
@@ -38,6 +42,10 @@ export interface DataTypeFields<TData = any> {
   align?: DataTypeAlign
   /** Свой разбор текста редактора (ADR 0139). */
   parseValue?: (text: string, row: TData) => unknown
+  /** Значение ячейки своего формата → дата: вид, сортировка, фильтр и выгрузка (DT10, DT13). */
+  parseDate?: (value: unknown) => DateCellValue
+  /** Справочник: варианты фильтра по строке поиска (DT13). */
+  loadOptions?: LoadOptions
 }
 
 /** Запись реестра `dataTypes`: свой тип или замена полей встроенного. */
@@ -60,7 +68,14 @@ const BUILT_IN = new Set<string>(BUILT_IN_DATA_TYPES)
 export const isBuiltInDataType = (name: string): name is BuiltInDataType =>
   BUILT_IN.has(name)
 
-const FIELDS = ['format', 'formatValue', 'align', 'parseValue'] as const
+const FIELDS = [
+  'format',
+  'formatValue',
+  'align',
+  'parseValue',
+  'parseDate',
+  'loadOptions',
+] as const
 
 const ownFields = (source: object): DataTypeFields =>
   Object.fromEntries(

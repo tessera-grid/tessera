@@ -114,7 +114,7 @@ describe('Quick search hint', () => {
             id: 'vip',
             accessorKey: 'vip',
             header: 'VIP',
-            filter: { type: 'boolean', nullable: true },
+            dataType: 'boolean',
           },
         ]}
       />,

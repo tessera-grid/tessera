@@ -63,23 +63,24 @@ const COLUMNS = [
     accessorKey: 'status',
     header: 'Status',
     options: STATUS,
-    filter: 'select',
+    dataType: 'select',
   },
   {
     id: 'tags',
     accessorKey: 'tags',
     header: 'Tags',
     options: TAGS,
-    filter: 'multiselect',
+    dataType: 'multiSelect',
   },
   {
     id: 'manager',
     accessorKey: 'manager',
     header: 'Manager',
     getOptionLabel: (id: string) => MANAGERS[id],
-    filter: { type: 'lookup', loadOptions: async () => [] },
+    dataType: 'select',
+    loadOptions: async () => [],
   },
-  { id: 'city', accessorKey: 'city', header: 'City', filter: 'select' },
+  { id: 'city', accessorKey: 'city', header: 'City', dataType: 'select' },
 ]
 
 const build = (plugins: any[] = [columnFiltering()], dataMode?: DataMode) => {

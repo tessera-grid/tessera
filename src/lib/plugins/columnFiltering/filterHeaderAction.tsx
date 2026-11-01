@@ -9,10 +9,10 @@ import type { HeaderAction } from '../../core/headerActions'
 import { preloadable } from '../../core/preloadable'
 import { useIcons } from '../../ui/icons'
 import {
+  columnFilterDefOf,
   DEFAULT_FILTER_DEBOUNCE_MS,
   filterTypeOf,
 } from '../columnFilteringModel/conditions'
-import type { ColumnFilterDef } from '../columnFilteringModel/types'
 
 import '../../ui/cellControls/buttonVisibility.css'
 
@@ -33,8 +33,7 @@ interface FilteringOptions {
   columnFilteringDebounceMs?: number
 }
 
-const filterDefOf = (column: { columnDef: unknown }) =>
-  (column.columnDef as { filter?: ColumnFilterDef }).filter
+const filterDefOf = (column: unknown) => columnFilterDefOf(column as never)
 
 export const filterHeaderAction: HeaderAction = {
   id: 'columnFiltering',

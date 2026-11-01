@@ -18,6 +18,7 @@ import { definePlugin } from '../../core/definePlugin'
 import { neverInert } from '../../core/pluginDiagnostics'
 import { narrowSorting } from './narrowSorting'
 import { optionLabelSortFeature } from './optionLabelSort'
+import { typedSortFeature } from './typedSort'
 import { createTesseraSortedRowModel } from './sortedRowModel'
 
 export interface ColumnSortingModelOptions {
@@ -50,6 +51,7 @@ const sortFns = {
 export const sortingModelFeatures = {
   rowSortingFeature,
   optionLabelSortFeature,
+  typedSortFeature,
   sortedRowModel: createTesseraSortedRowModel(),
   sortFns,
 }

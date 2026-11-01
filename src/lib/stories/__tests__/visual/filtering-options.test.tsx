@@ -131,28 +131,29 @@ const columnsWith = ({
   statusOptions?: ColumnOption[]
   extra?: object[]
 } = {}) => [
-  { id: 'name', accessorKey: 'name', header: 'Name', filter: 'text' },
+  { id: 'name', accessorKey: 'name', header: 'Name' },
   {
     id: 'status',
     accessorKey: 'status',
     header: 'Status',
     options: statusOptions,
-    filter: 'select',
+    dataType: 'select',
   },
   {
     id: 'tags',
     accessorKey: 'tags',
     header: 'Tags',
     options: TAGS,
-    filter: 'multiselect',
+    dataType: 'multiSelect',
   },
-  { id: 'city', accessorKey: 'city', header: 'City', filter: 'select' },
+  { id: 'city', accessorKey: 'city', header: 'City', dataType: 'select' },
   {
     id: 'manager',
     accessorKey: 'manager',
     header: 'Manager',
     getOptionLabel: managerName,
-    filter: { type: 'lookup', loadOptions },
+    dataType: 'select',
+    loadOptions,
   },
   { id: 'note', accessorKey: 'note', header: 'Note' },
   ...extra,
@@ -160,6 +161,7 @@ const columnsWith = ({
 
 interface GridProps {
   dataMode?: DataMode
+  dataTypes?: Record<string, object>
   columns?: object[]
   data?: { id: string }[]
   plugins?: readonly unknown[]
@@ -173,6 +175,7 @@ interface GridProps {
 const Grid = ({
   columns = columnsWith(),
   dataMode,
+  dataTypes,
   data = DATA,
   plugins = [columnFiltering({ debounceMs: 0 })],
   keyboard,
@@ -188,6 +191,7 @@ const Grid = ({
     enableToolbar: true,
     enableKeyboardNavigation: keyboard,
     dataMode,
+    dataTypes: dataTypes as never,
     plugins: plugins as never,
   })
   onTable?.(table)
@@ -258,13 +262,21 @@ const chooseOperator = async (operator: string) => {
 }
 
 describe('Фильтр вариантов — панель', () => {
-  test('SF1: filter select | multiselect | lookup (строкой и объектом) даёт колонке кнопку фильтра; панель — чек-лист', async () => {
-    await render(<Grid />)
+  test('SF1: типы select и multiSelect и loadOptions колонки или типа дают колонке фильтр вариантов; панель — чек-лист', async () => {
+    const first = await render(<Grid />)
     await waitForGrid()
     for (const id of ['status', 'tags', 'city', 'manager']) {
       expect(filterButton(id), id).not.toBeNull()
     }
-    expect(filterButton('note')).toBeNull()
+    // Колонка без типа — текстовый фильтр, не чек-лист.
+    await userEvent.hover(headCell('note'))
+    await humanClick(filterButton('note')!)
+    const textPanel = () =>
+      document.querySelector<HTMLElement>('[data-testid="filter-panel"]')
+    await expect.poll(textPanel).not.toBeNull()
+    expect(textPanel()!.dataset.filterType).toBeUndefined()
+    expect(textPanel()!.querySelector('[role="group"]')).toBeNull()
+    await closePanel()
 
     for (const [id, type] of [
       ['status', 'select'],
@@ -281,6 +293,24 @@ describe('Фильтр вариантов — панель', () => {
       )
       await closePanel()
     }
+    await first.unmount()
+
+    // Справочник у своего типа: loadOptions — в реестре, колонка его только называет.
+    const { load } = makeLoader()
+    const typed = await render(
+      <Grid
+        columns={columnsWith().map(column =>
+          (column as { id: string }).id === 'manager'
+            ? { ...column, dataType: 'manager', loadOptions: undefined }
+            : column,
+        )}
+        dataTypes={{ manager: { extends: 'select', loadOptions: load } }}
+      />,
+    )
+    await openFilter('manager')
+    expect(panel()!.dataset.filterType).toBe('lookup')
+    await closePanel()
+    await typed.unmount()
   })
 
   test('SF6: галочка, «Выбрать все», «Снять» и условие применяются сразу; «Выбрать все» и «Снять» действуют на варианты, видимые после поиска', async () => {
@@ -372,7 +402,7 @@ describe('Фильтр вариантов — панель', () => {
                 `v${(Number(row.id) - 1) * 99}`,
               header: 'Big',
               options: MANY,
-              filter: 'select',
+              dataType: 'select',
             },
           ],
         })}

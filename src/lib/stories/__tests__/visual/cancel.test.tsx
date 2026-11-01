@@ -111,9 +111,7 @@ const Grid = ({ menu }: { menu: boolean }) => {
   const table = useCreateTable({
     enableKeyboardNavigation: true,
     rowCount: 1000,
-    columns: [
-      { id: 'name', accessorKey: 'name', header: 'Name', filter: 'text' },
-    ] as never,
+    columns: [{ id: 'name', accessorKey: 'name', header: 'Name' }] as never,
     data: DATA,
     getRowId: (row: Node) => row.id,
     refreshOptions: { delayMs: 0, minDurationMs: 0 },

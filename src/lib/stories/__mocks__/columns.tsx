@@ -48,7 +48,6 @@ export const columns: any[] = [
   columnHelper.accessor('country', {
     id: 'country',
     // Фильтр колонки (ADR 0045): кнопка появляется с enableColumnFiltering.
-    filter: 'text',
     header: 'Country',
     // Демо `pinSides`: только левое закрепление — инлайн даёт прямой
     // тумблер без поповера.
@@ -75,7 +74,6 @@ export const columns: any[] = [
   }),
   columnHelper.accessor('firstName', {
     id: 'firstName',
-    filter: 'text',
     header: 'First Name',
     aggregatedCell: cell => {
       return cell.table.options.enableGrouping
@@ -98,7 +96,6 @@ export const columns: any[] = [
   }),
   columnHelper.accessor('lastName', {
     id: 'lastName',
-    filter: 'text',
     header: 'Last Name',
     aggregatedCell: cell => {
       return cell.table.options.enableGrouping
@@ -121,7 +118,7 @@ export const columns: any[] = [
   }),
   columnHelper.accessor('age', {
     id: 'age',
-    filter: 'number',
+    dataType: 'number',
     header: 'Age',
     aggregatedCell: cell => {
       return cell.table.options.enableGrouping
@@ -161,7 +158,7 @@ export const columns: any[] = [
   }),
   columnHelper.accessor('visits', {
     id: 'visits',
-    filter: 'number',
+    dataType: 'number',
     header: 'Visits',
     // В сгруппированной строке getValue() возвращает агрегат (сумму),
     // в обычной — исходное значение.
@@ -179,7 +176,7 @@ export const columns: any[] = [
   }),
   columnHelper.accessor('total', {
     id: 'total',
-    filter: 'number',
+    dataType: 'number',
     header: 'Total',
     // Демо `pinSides`: только правое закрепление — инлайн даёт прямой
     // тумблер без поповера.

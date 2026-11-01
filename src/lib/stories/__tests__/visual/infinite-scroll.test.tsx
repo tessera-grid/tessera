@@ -67,7 +67,7 @@ const itemsFrom = (from: number, count: number) =>
   Array.from({ length: count }, (_, k) => item(from + k))
 
 const COLUMNS = [
-  { id: 'a', accessorKey: 'a', header: 'A', size: 160, filter: 'text' },
+  { id: 'a', accessorKey: 'a', header: 'A', size: 160 },
   { id: 'b', accessorKey: 'b', header: 'B', size: 160 },
   { id: 'c', accessorKey: 'c', header: 'C', size: 160 },
 ]

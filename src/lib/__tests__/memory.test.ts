@@ -32,6 +32,11 @@ const BOUNDED: Record<string, string> = {
   'core/dataTypeFormat.ts:partsFormatters':
     'форматтер частей даты на пояс: поясов конечное число',
   'core/dataTypes.ts:BUILT_IN': 'константный набор встроенных типов',
+  'core/dataTypeFormat.ts:DATE_BASES': 'константный набор типов дат',
+  'util/parseNumber.ts:separators':
+    'знаки чисел на язык: языков конечное число',
+  'plugins/columnSortingModel/typedSort.ts:collators':
+    'сравнение текста на язык: языков конечное число',
   'core/wallTime.ts:formatters':
     'форматтер на часовой пояс: поясов конечное число',
   'core/localization/resolveLabels.ts:COUNT_KEYS':

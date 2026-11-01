@@ -7,6 +7,7 @@
 import type { FilterFn } from '@tanstack/react-table'
 
 import { type ColumnOptionsDef, optionTextOf } from '../../core/columnOptions'
+import type { ResolvedDataType } from '../../core/dataTypes'
 
 interface SearchRow {
   getValue: (columnId: string) => unknown
@@ -18,7 +19,7 @@ interface SearchRow {
 }
 
 interface SearchColumn {
-  columnDef?: { filter?: string | { type?: string } }
+  getDataType?: () => ResolvedDataType | undefined
   getIsVisible?: () => boolean
   getIsActionsColumn?: () => boolean
 }
@@ -47,12 +48,18 @@ export const quickSearchFilter = ((
 
 quickSearchFilter.resolveFilterValue = normalizeSearch
 
-const UNSEARCHABLE_TYPES = new Set(['date', 'datetime', 'boolean'])
+/** Даты и булево поиск обходит, пока он ищет по сырым значениям (ADR 0045, ADR 0172). */
+const UNSEARCHABLE_TYPES = new Set([
+  'date',
+  'dateTime',
+  'dateString',
+  'dateTimeString',
+  'boolean',
+])
 
-const isUnsearchableType = ({ columnDef }: SearchColumn) => {
-  const def = columnDef?.filter
-  const type = typeof def === 'object' ? def.type : def
-  return !!type && UNSEARCHABLE_TYPES.has(type)
+const isUnsearchableType = (column: SearchColumn) => {
+  const base = column.getDataType?.()?.base
+  return !!base && UNSEARCHABLE_TYPES.has(base)
 }
 
 export const canSearchColumn = (column: SearchColumn) =>

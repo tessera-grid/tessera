@@ -12,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { __resetLogger } from '../util/logger'
 import type { RowSource } from '../core/rowSource'
 import { useCreateTable } from '../core/useCreateTable'
+import { parseNumberInput } from '../plugins/columnFiltering/FilterPanel'
 import {
   cellEditing,
   serverRowModel,
@@ -64,6 +65,18 @@ const COLUMNS = [
     parseValue: (text: string) => Number(text) / 100,
   },
   { id: 'total', accessorFn: (row: Item) => row.total * 2 },
+  { id: 'when', accessorKey: 'when', dataType: 'dateTime' },
+  { id: 'stamp', accessorKey: 'stamp', dataType: 'dateTimeString' },
+  {
+    id: 'status',
+    accessorKey: 'status',
+    dataType: 'select',
+    options: [
+      { value: 'a', label: 'Active' },
+      { value: 'z', label: 'Archived' },
+    ],
+  },
+  { id: 'weight', accessorKey: 'weight', dataType: 'kilograms' },
 ]
 const NO_DATA: Item[] = []
 const CLIENT_DATA = [itemAt(0), itemAt(1)]
@@ -75,9 +88,25 @@ const getRows = ({ start, end }: ServerRowsRequest) => ({
   rows: Array.from({ length: end - start }, (_, i) => itemAt(start + i)),
 })
 
-const Grid = ({ server = true }: { server?: boolean }) => {
+/** Свой тип с разбором: граммы из килограммов (DT14). */
+const DATA_TYPES = {
+  kilograms: {
+    extends: 'number',
+    parseValue: (text: string) => Number(text) * 1000,
+  },
+}
+
+const Grid = ({
+  server = true,
+  locale,
+}: {
+  server?: boolean
+  locale?: string
+}) => {
   table = useCreateTable({
     rowCount: 100,
+    locale,
+    dataTypes: DATA_TYPES,
     columns: COLUMNS as never,
     data: server ? NO_DATA : CLIENT_DATA,
     getRowId: (row: Item) => row.id,
@@ -224,5 +253,31 @@ describe('Итог правки в кэше серверной модели (ADR
     expect(table.options.data).toBe(data)
     expect(data[1]!.price).toBe(11)
     expect(warned()).toBe(false)
+  })
+
+  it('DT14: поле числа в панели фильтра и ввод правки разбирают десятичный знак и разряды языка («1,5» и «1 234,5» в ru); разбор правки понимает dateTime и dateTimeString, select — по подписи варианта, свой тип — своим parseValue', async () => {
+    const saved = (key: string) =>
+      (row('r1') as unknown as Record<string, unknown>)[key]
+    expect(parseNumberInput('1,5', 'ru-RU')).toBe(1.5)
+    expect(parseNumberInput('1 234,5', 'ru-RU')).toBe(1234.5)
+    expect(parseNumberInput('1,234.5', 'en-US')).toBe(1234.5)
+    expect(parseNumberInput('abc', 'ru-RU')).toBeNaN()
+
+    act(() => root.unmount())
+    root = createRoot(document.createElement('div'))
+    act(() => root.render(<Grid locale="ru-RU" />))
+    act(() => source().observe!({ first: 0, last: 9, fast: false }))
+    await act(async () => {})
+
+    await edit('r1', 'note', '1 234,5')
+    expect(row('r1').note).toBe(1234.5)
+    await edit('r1', 'when', '2026-10-31T14:05:00Z')
+    expect(saved('when')).toEqual(new Date('2026-10-31T14:05:00Z'))
+    await edit('r1', 'stamp', '2026-10-31T14:05:00Z')
+    expect(saved('stamp')).toBe('2026-10-31T14:05:00.000Z')
+    await edit('r1', 'status', 'archived')
+    expect(saved('status')).toBe('z')
+    await edit('r1', 'weight', '2')
+    expect(saved('weight')).toBe(2000)
   })
 })

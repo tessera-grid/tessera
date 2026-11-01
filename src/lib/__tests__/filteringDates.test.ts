@@ -63,19 +63,20 @@ const parseDotted = (value: unknown) => {
 }
 
 const COLUMNS = [
-  { id: 'name', accessorKey: 'name', header: 'Name', filter: 'text' },
-  { id: 'day', accessorKey: 'day', header: 'Day', filter: 'date' },
+  { id: 'name', accessorKey: 'name', header: 'Name' },
+  { id: 'day', accessorKey: 'day', header: 'Day', dataType: 'dateString' },
   {
     id: 'created',
     accessorKey: 'created',
     header: 'Created',
-    filter: 'datetime',
+    dataType: 'dateTimeString',
   },
   {
     id: 'closed',
     accessorKey: 'closed',
     header: 'Closed',
-    filter: { type: 'date', parse: parseDotted },
+    dataType: 'dateString',
+    parseDate: parseDotted,
   },
 ]
 

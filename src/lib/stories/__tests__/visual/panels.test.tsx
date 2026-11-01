@@ -23,9 +23,7 @@ const DATA = Array.from({ length: 40 }, (_, i) => ({
   id: String(i),
   name: `Name ${i}`,
 }))
-const COLUMNS = [
-  { id: 'name', accessorKey: 'name', header: 'Name', filter: 'text' as const },
-]
+const COLUMNS = [{ id: 'name', accessorKey: 'name', header: 'Name' }]
 
 type Plugins = readonly unknown[]
 

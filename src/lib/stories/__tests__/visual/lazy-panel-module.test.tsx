@@ -16,9 +16,7 @@ afterEach(() => releaseModule(MODULE.panel))
 
 const Grid = () => {
   const table = useCreateTable({
-    columns: [
-      { id: 'name', accessorKey: 'name', header: 'Name', filter: 'text' },
-    ] as never,
+    columns: [{ id: 'name', accessorKey: 'name', header: 'Name' }] as never,
     data: [{ id: '1', name: 'Alice' }],
     plugins: [columnFiltering()],
   })

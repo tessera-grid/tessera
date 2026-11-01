@@ -46,7 +46,7 @@ const deferred = (): Deferred => {
 }
 
 const BASE_COLUMNS = [
-  { id: 'name', accessorKey: 'name', header: 'Name', filter: 'text' },
+  { id: 'name', accessorKey: 'name', header: 'Name' },
   { id: 'value', accessorKey: 'value', header: 'Value' },
 ]
 const wideColumns = (extra: number) => [

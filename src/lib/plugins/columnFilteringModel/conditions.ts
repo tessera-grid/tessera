@@ -3,6 +3,8 @@
  * Значение, которое условие не может применить (пустой текст, нечисловая граница),
  * фильтром не считается — строка проходит.
  */
+import type { ColumnOptionsDef } from '../../core/columnOptions'
+import type { BuiltInDataType, ResolvedDataType } from '../../core/dataTypes'
 import { cellToWall, isInactiveDateFilter, matchesDate, nowWall } from './dates'
 import { matchesOption } from './options'
 import type {
@@ -21,6 +23,56 @@ export const DEFAULT_FILTER_DEBOUNCE_MS = 200
 
 export const isEmptyValue = (value: unknown) =>
   value === null || value === undefined || value === ''
+
+/** Колонка, чей фильтр выводится из типа данных. */
+export interface FilterDefColumn {
+  accessorFn?: unknown
+  columnDef: ColumnOptionsDef & { enableColumnFilter?: boolean }
+  getIsActionsColumn?: () => boolean
+  getDataType?: () => ResolvedDataType | undefined
+}
+
+const KIND: Partial<Record<BuiltInDataType, ColumnFilterType>> = {
+  number: 'number',
+  boolean: 'boolean',
+  date: 'date',
+  dateString: 'date',
+  dateTime: 'datetime',
+  dateTimeString: 'datetime',
+  select: 'select',
+  multiSelect: 'multiselect',
+}
+
+/** Вид фильтра по базовому типу: текст и колонка без типа — текстовый. */
+export const filterTypeOfBase = (
+  base: BuiltInDataType | undefined,
+): ColumnFilterType => (base && KIND[base]) ?? 'text'
+
+/**
+ * Фильтр колонки по её типу данных (ADR 0172, DT12): у каждой колонки с данными, текст и
+ * колонка без типа — текстовый; справочник — `loadOptions` типа или колонки. Без данных,
+ * у служебной и у колонки с `enableColumnFilter: false` фильтра нет.
+ */
+export const columnFilterDefOf = (
+  column: FilterDefColumn,
+): ColumnFilterDef | undefined => {
+  if (
+    !column.accessorFn ||
+    column.columnDef.enableColumnFilter === false ||
+    column.getIsActionsColumn?.()
+  ) {
+    return undefined
+  }
+  const type = column.getDataType?.()
+  const loadOptions =
+    type?.definition.loadOptions ?? column.columnDef.loadOptions
+  return {
+    type: loadOptions ? 'lookup' : filterTypeOfBase(type?.base),
+    nullable: true,
+    parse: type?.definition.parseDate,
+    loadOptions,
+  }
+}
 
 export const filterTypeOf = (
   def: ColumnFilterDef | undefined,

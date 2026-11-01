@@ -17,14 +17,14 @@ const DATA = [{ id: '1', name: 'Alice', created: '2026-03-15' }]
 const Grid = ({ withDates }: { withDates: boolean }) => {
   const table = useCreateTable({
     columns: [
-      { id: 'name', accessorKey: 'name', header: 'Name', filter: 'text' },
+      { id: 'name', accessorKey: 'name', header: 'Name' },
       ...(withDates
         ? [
             {
               id: 'created',
               accessorKey: 'created',
               header: 'Created',
-              filter: 'date',
+              dataType: 'dateString',
             },
           ]
         : []),

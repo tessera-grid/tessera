@@ -45,14 +45,14 @@ const ROWS: Row[] = [
 const NO_ROWS: Row[] = []
 
 const COLUMNS = [
-  { id: 'name', accessorKey: 'name', header: 'Name', filter: 'text' as const },
-  { id: 'city', accessorKey: 'city', header: 'City', filter: 'text' as const },
+  { id: 'name', accessorKey: 'name', header: 'Name' },
+  { id: 'city', accessorKey: 'city', header: 'City' },
 ]
 const NO_COLUMNS: typeof COLUMNS = []
 /** Колонки, по которым поиск не ищет: булевы. */
 const NOT_SEARCHABLE = COLUMNS.map(column => ({
   ...column,
-  filter: 'boolean' as const,
+  dataType: 'boolean' as const,
 }))
 
 const NAME_FILTER = [

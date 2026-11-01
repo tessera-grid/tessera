@@ -46,8 +46,8 @@ const DATA: Item[] = [
   item('f', 'Oslo'),
 ]
 const COLUMNS = [
-  { id: 'name', accessorKey: 'name', header: 'Name', filter: 'text' },
-  { id: 'city', accessorKey: 'city', header: 'City', filter: 'text' },
+  { id: 'name', accessorKey: 'name', header: 'Name' },
+  { id: 'city', accessorKey: 'city', header: 'City' },
 ]
 const kids = (parent: string, tag: string) =>
   [1, 2].map(i => item(`${parent}-${tag}${i}`, 'Lima'))

@@ -1207,7 +1207,6 @@ describe('канал действий (ADR 0125)', () => {
             id: 'name',
             accessorKey: 'name',
             header: 'Name',
-            filter: 'text',
           },
         ] as never,
         data: PROBE_DATA,

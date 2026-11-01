@@ -37,8 +37,8 @@ const ROWS: Row[] = [
 ]
 const NO_ROWS: Row[] = []
 const COLUMNS = [
-  { id: 'name', accessorKey: 'name', header: 'Name', filter: 'text' as const },
-  { id: 'city', accessorKey: 'city', header: 'City', filter: 'text' as const },
+  { id: 'name', accessorKey: 'name', header: 'Name' },
+  { id: 'city', accessorKey: 'city', header: 'City' },
 ]
 const NO_COLUMNS: typeof COLUMNS = []
 const ALL_HIDDEN = { name: false, city: false }

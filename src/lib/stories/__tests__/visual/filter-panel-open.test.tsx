@@ -22,18 +22,18 @@ const DATA = [
 const Grid = ({ withMenu }: { withMenu: boolean }) => {
   const table = useCreateTable({
     columns: [
-      { id: 'name', accessorKey: 'name', header: 'Name', filter: 'text' },
+      { id: 'name', accessorKey: 'name', header: 'Name' },
       {
         id: 'created',
         accessorKey: 'created',
         header: 'Created',
-        filter: 'date',
+        dataType: 'dateString',
       },
       {
         id: 'status',
         accessorKey: 'status',
         header: 'Status',
-        filter: 'select',
+        dataType: 'select',
       },
     ] as never,
     data: DATA,

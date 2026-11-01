@@ -54,9 +54,7 @@ const node = (id: string, subRows?: Node[], kids = 0): Node => ({
   kids,
   ...(subRows ? { subRows } : {}),
 })
-const COLUMNS = [
-  { id: 'name', accessorKey: 'name', header: 'Name', filter: 'text' },
-]
+const COLUMNS = [{ id: 'name', accessorKey: 'name', header: 'Name' }]
 const TREE: Node[] = [
   node('a', [node('a1'), node('a2', [node('a2x')])]),
   node('b'),

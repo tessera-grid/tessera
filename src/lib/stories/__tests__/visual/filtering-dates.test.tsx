@@ -70,24 +70,27 @@ const DATA = [
 const ALL = DATA.map(row => row.id)
 
 const COLUMNS = [
-  { id: 'name', accessorKey: 'name', header: 'Name', filter: 'text' },
-  { id: 'birth', accessorKey: 'birth', header: 'Birth', filter: 'date' },
+  { id: 'name', accessorKey: 'name', header: 'Name' },
+  {
+    id: 'birth',
+    accessorKey: 'birth',
+    header: 'Birth',
+    dataType: 'dateString',
+  },
   {
     id: 'created',
     accessorKey: 'created',
     header: 'Created',
-    filter: 'datetime',
+    dataType: 'dateTimeString',
   },
   {
     id: 'closed',
     accessorFn: (row: { birth: string | null }) =>
       row.birth?.split('-').reverse().join('.'),
     header: 'Closed',
-    filter: {
-      type: 'date',
-      parse: (value: unknown) =>
-        typeof value === 'string' ? value.split('.').reverse().join('-') : null,
-    },
+    dataType: 'dateString',
+    parseDate: (value: unknown) =>
+      typeof value === 'string' ? value.split('.').reverse().join('-') : null,
   },
   { id: 'note', accessorKey: 'note', header: 'Note' },
 ]
@@ -208,13 +211,21 @@ afterEach(async () => {
 })
 
 describe('Фильтр дат — панель', () => {
-  test('DF1: date и datetime (строкой и объектом с parse) дают колонке кнопку фильтра; колонка без filter в фильтре дат не участвует', async () => {
+  test('DF1: типы date, dateString, dateTime и dateTimeString (и свой тип с parseDate) дают колонке фильтр дат; колонка другого типа в фильтре дат не участвует', async () => {
     await render(<Grid />)
     await waitForGrid()
     for (const id of ['birth', 'created', 'closed']) {
       expect(filterButton(id), id).not.toBeNull()
     }
-    expect(filterButton('note')).toBeNull()
+    // Колонка без типа — текстовый фильтр, не фильтр дат.
+    await userEvent.hover(headCell('note'))
+    await humanClick(filterButton('note')!)
+    const textPanel = () =>
+      document.querySelector<HTMLElement>('[data-testid="filter-panel"]')
+    await expect.poll(textPanel).not.toBeNull()
+    expect(textPanel()!.dataset.filterType).toBeUndefined()
+    expect(calendar()).toBeNull()
+    await closePanel()
 
     await openFilter('birth')
     expect(panel()!.dataset.filterType).toBe('date')

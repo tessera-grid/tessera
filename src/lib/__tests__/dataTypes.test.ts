@@ -3,10 +3,16 @@
  * через `column.getDataType()` и формат `Intl`.
  * Запуск: npx vitest run --config vitest.node.config.ts dataTypes
  */
+import ExcelJS from 'exceljs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { formatDataTypeValue } from '../core/dataTypeFormat'
 import { BUILT_IN_DATA_TYPES } from '../core/dataTypes'
+import { columnFiltering, columnSorting } from '../plugins'
+import { columnFilterDefOf } from '../plugins/columnFilteringModel/conditions'
+import { csvFormat } from '../plugins/dataExportModel/csv'
+import { collectExportData } from '../plugins/dataExportModel/exportData'
+import { buildXlsx } from '../plugins/dataExportModel/xlsxBuild'
 import { __resetLogger } from '../util/logger'
 import { modules, sourceOf } from './importGraph'
 import { hostTable } from './tableHost'
@@ -136,7 +142,7 @@ describe('тип данных колонки (ADR 0172)', () => {
     const readers = modules()
       .map(module => module.path)
       .filter(path => !/\/(__tests__|stories)\//.test(path))
-      .filter(path => /\.dataType\b/.test(sourceOf(path)))
+      .filter(path => /columnDef\??\.dataType\b/.test(sourceOf(path)))
     expect(readers).toEqual(['lib/core/dataTypes.ts'])
   })
 
@@ -185,5 +191,240 @@ describe('тип данных колонки (ADR 0172)', () => {
       ).toBe('5 kg')
       expect(textOf(table, 'tagged', 5)).toBe('#5')
     }
+  })
+})
+
+describe('фичи по типу данных колонки (ADR 0172, этап 2)', () => {
+  const dotted = (value: unknown) => {
+    const [day, month, year] = String(value).split('.')
+    return `${year}-${month}-${day}`
+  }
+
+  const sortedIds = (table: any, id: string, desc = false) => {
+    table.setSorting([{ id, desc }])
+    return table.getSortedRowModel().rows.map((row: { id: string }) => row.id)
+  }
+
+  it('DT10: сортировка по базовому типу — текст Intl.Collator языка с числами по значению без учёта регистра; числа; сначала false, потом true; даты по времени; даты-строки разбором, свой формат правилом типа; варианты по подписи; пустые в конце при обоих направлениях; sortFn и sortUndefined колонки главнее', () => {
+    const rows = [
+      {
+        id: 'a',
+        text: 'item 10',
+        num: 10,
+        flag: true,
+        day: '2026-03-01',
+        when: new Date('2026-03-01T10:00:00Z'),
+        own: '01.03.2026',
+        pick: 'b',
+        mine: 3,
+      },
+      {
+        id: 'b',
+        text: 'Item 2',
+        num: 2,
+        flag: false,
+        day: '2026-01-15',
+        when: new Date('2026-01-15T10:00:00Z'),
+        own: '15.01.2026',
+        pick: 'a',
+        mine: 1,
+      },
+      {
+        id: 'c',
+        text: null,
+        num: null,
+        flag: null,
+        day: null,
+        when: null,
+        own: null,
+        pick: null,
+        mine: 2,
+      },
+      {
+        id: 'd',
+        text: 'item 1',
+        num: 1,
+        flag: true,
+        day: '2026-02-10',
+        when: new Date('2026-02-10T10:00:00Z'),
+        own: '10.02.2026',
+        pick: 'c',
+        mine: 4,
+      },
+    ]
+    const table = hostTable({
+      data: rows,
+      getRowId: (row: { id: string }) => row.id,
+      columns: [
+        { id: 'text', accessorKey: 'text', dataType: 'text' },
+        { id: 'num', accessorKey: 'num', dataType: 'number' },
+        { id: 'flag', accessorKey: 'flag', dataType: 'boolean' },
+        { id: 'day', accessorKey: 'day', dataType: 'dateString' },
+        { id: 'when', accessorKey: 'when', dataType: 'dateTime' },
+        { id: 'own', accessorKey: 'own', dataType: 'dotted' },
+        {
+          id: 'pick',
+          accessorKey: 'pick',
+          dataType: 'select',
+          options: [
+            { value: 'c', label: 'Alpha' },
+            { value: 'a', label: 'Beta' },
+            { value: 'b', label: 'Gamma' },
+          ],
+        },
+        {
+          id: 'mine',
+          accessorKey: 'mine',
+          dataType: 'number',
+          sortFn: (rowA: any, rowB: any) =>
+            rowB.original.mine - rowA.original.mine,
+        },
+        {
+          id: 'undef',
+          accessorFn: (row: { num: number | null }) => row.num ?? undefined,
+          dataType: 'number',
+          sortUndefined: 'first',
+        },
+      ],
+      dataTypes: { dotted: { extends: 'dateString', parseDate: dotted } },
+      plugins: [columnSorting()],
+    }) as any
+    expect(sortedIds(table, 'text')).toEqual(['d', 'b', 'a', 'c'])
+    expect(sortedIds(table, 'text', true)).toEqual(['a', 'b', 'd', 'c'])
+    expect(sortedIds(table, 'num')).toEqual(['d', 'b', 'a', 'c'])
+    expect(sortedIds(table, 'num', true)).toEqual(['a', 'b', 'd', 'c'])
+    expect(sortedIds(table, 'flag')).toEqual(['b', 'a', 'd', 'c'])
+    expect(sortedIds(table, 'day')).toEqual(['b', 'd', 'a', 'c'])
+    expect(sortedIds(table, 'when', true)).toEqual(['a', 'd', 'b', 'c'])
+    expect(sortedIds(table, 'own')).toEqual(['b', 'd', 'a', 'c'])
+    expect(sortedIds(table, 'pick')).toEqual(['d', 'b', 'a', 'c'])
+    // Своя функция колонки главнее сортировки по типу.
+    expect(sortedIds(table, 'mine')).toEqual(['d', 'a', 'c', 'b'])
+    // sortUndefined колонки: undefined первым, а не в конце, как пустые по типу.
+    expect(sortedIds(table, 'undef')).toEqual(['c', 'd', 'b', 'a'])
+  })
+
+  it('DT13: условия фильтра сравнивают по типу — даты-строки и свои форматы дат разбором типа в поясе таблицы; лукап — loadOptions колонки или типа', () => {
+    const load = async () => []
+    const table = hostTable({
+      data: [
+        { id: 'a', day: '2026-03-01', own: '01.03.2026' },
+        { id: 'b', day: '2026-01-15', own: '15.01.2026' },
+        { id: 'c', day: '2026-03-02', own: '02.03.2026' },
+      ],
+      getRowId: (row: { id: string }) => row.id,
+      columns: [
+        { id: 'day', accessorKey: 'day', dataType: 'dateString' },
+        { id: 'own', accessorKey: 'own', dataType: 'dotted' },
+        {
+          id: 'managerOwn',
+          accessorKey: 'm',
+          dataType: 'select',
+          loadOptions: load,
+        },
+        { id: 'managerType', accessorKey: 'm', dataType: 'manager' },
+      ],
+      dataTypes: {
+        dotted: { extends: 'dateString', parseDate: dotted },
+        manager: { extends: 'select', loadOptions: load },
+      },
+      plugins: [columnFiltering()],
+    }) as any
+    const filtered = (id: string, value: unknown) => {
+      table.setColumnFilters([{ id, value }])
+      return table
+        .getFilteredRowModel()
+        .rows.map((row: { id: string }) => row.id)
+    }
+    expect(filtered('day', { operator: 'on', value: '2026-03-01' })).toEqual([
+      'a',
+    ])
+    expect(filtered('day', { operator: 'after', value: '2026-02-01' })).toEqual(
+      ['a', 'c'],
+    )
+    expect(filtered('own', { operator: 'on', value: '2026-03-02' })).toEqual([
+      'c',
+    ])
+    expect(
+      filtered('own', { operator: 'before', value: '2026-02-01' }),
+    ).toEqual(['b'])
+    for (const id of ['managerOwn', 'managerType']) {
+      expect(columnFilterDefOf(table.getColumn(id))).toMatchObject({
+        type: 'lookup',
+        loadOptions: load,
+      })
+    }
+  })
+
+  it('DT17: CSV — значения, как сейчас; xlsx — тип ячейки по базовому типу; ExportColumn несёт имя и базовый тип вместо filter', async () => {
+    const table = hostTable({
+      data: [
+        {
+          id: 'a',
+          price: 12.5,
+          day: '2026-03-01',
+          at: '2026-03-01T10:30:00Z',
+          flag: true,
+        },
+      ],
+      getRowId: (row: { id: string }) => row.id,
+      columns: [
+        {
+          id: 'price',
+          accessorKey: 'price',
+          header: 'Price',
+          dataType: 'money',
+        },
+        {
+          id: 'day',
+          accessorKey: 'day',
+          header: 'Day',
+          dataType: 'dateString',
+        },
+        {
+          id: 'at',
+          accessorKey: 'at',
+          header: 'At',
+          dataType: 'dateTimeString',
+        },
+        {
+          id: 'flag',
+          accessorKey: 'flag',
+          header: 'Flag',
+          dataType: 'boolean',
+        },
+      ],
+      dataTypes: {
+        money: {
+          extends: 'number',
+          format: { style: 'currency', currency: 'USD' },
+        },
+      },
+    }) as any
+    const data = collectExportData(table)
+    expect(data.columns.map(column => column.dataType)).toEqual([
+      { name: 'money', base: 'number' },
+      { name: 'dateString', base: 'dateString' },
+      { name: 'dateTimeString', base: 'dateTimeString' },
+      { name: 'boolean', base: 'boolean' },
+    ])
+    expect(data.columns.some(column => 'filter' in column)).toBe(false)
+    // CSV — значения как есть, без формата типа.
+    expect(csvFormat().serialize(data).split(/\r?\n/)[1]).toBe(
+      '12.5,2026-03-01,2026-03-01T10:30:00Z,true',
+    )
+    const workbook = new ExcelJS.Workbook()
+    await workbook.xlsx.load(
+      (await (await buildXlsx(data)).arrayBuffer()) as never,
+    )
+    const cells = [1, 2, 3, 4].map(index =>
+      workbook.worksheets[0]!.getRow(2).getCell(index),
+    )
+    expect(cells.map(cell => cell.type)).toEqual([
+      ExcelJS.ValueType.Number,
+      ExcelJS.ValueType.Date,
+      ExcelJS.ValueType.Date,
+      ExcelJS.ValueType.Boolean,
+    ])
   })
 })

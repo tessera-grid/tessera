@@ -23,6 +23,20 @@ const LOAD_TIMEOUT = 5000
 export const sleep = (ms: number) =>
   new Promise(resolve => setTimeout(resolve, ms))
 
+/** Повторяет `act` с паузой, пока не выполнится `done`: кнопки готовы не сразу. */
+export const repeat = async (
+  done: () => boolean,
+  act: () => void,
+  signal: AbortSignal,
+) => {
+  for (let tries = 0; !done(); tries += 1) {
+    if (tries > 60) throw new Error(`Шаг гайда не дождался: ${done}`)
+    act()
+    await sleep(200)
+    signal.throwIfAborted()
+  }
+}
+
 /** Конечные анимации доиграны: снимок и axe не застают промежуточный кадр. */
 export const settle = async () => {
   await new Promise(resolve => requestAnimationFrame(resolve))

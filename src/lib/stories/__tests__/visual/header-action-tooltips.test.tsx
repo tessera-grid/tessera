@@ -23,9 +23,7 @@ const tooltipShown = (text: string) => () =>
 
 const FilterGrid = () => {
   const table = useCreateTable({
-    columns: [
-      { id: 'name', accessorKey: 'name', header: 'Name', filter: 'text' },
-    ] as never,
+    columns: [{ id: 'name', accessorKey: 'name', header: 'Name' }] as never,
     data: [{ id: '1', name: 'Alice' }],
     plugins: [columnFiltering()],
   })

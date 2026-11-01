@@ -15,11 +15,19 @@ export interface ColumnOption {
   count?: number
 }
 
+/** Поиск вариантов справочника по строке (ADR 0048, §5; ADR 0172, DT13). */
+export type LoadOptions = (
+  search: string,
+  context: { signal: AbortSignal },
+) => Promise<ColumnOption[]>
+
 export interface ColumnOptionsDef {
   /** Варианты значений колонки: подписи в ячейке, поиске, экспорте и фильтре. */
   options?: ColumnOption[]
   /** Подпись значения вне `options` (справочник): `undefined` — подписи нет. */
   getOptionLabel?: (value: OptionValue) => string | undefined
+  /** Справочник: варианты фильтра по строке поиска; главнее — у типа колонки. */
+  loadOptions?: LoadOptions
 }
 
 interface OptionsColumn {

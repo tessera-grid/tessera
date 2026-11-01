@@ -7,7 +7,7 @@ export { xlsxFormat, type XlsxFormatOptions } from '../dataExportModel/xlsx'
 export type {
   ExportAllow,
   ExportColumn,
-  ExportColumnFilter,
+  ExportColumnDataType,
   ExportContent,
   ExportContext,
   ExportColumns,

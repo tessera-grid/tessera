@@ -52,6 +52,8 @@ interface SortColumn {
 }
 
 interface SortTable {
+  /** Язык и типы колонок — правила сравнения сортировки по типу (ADR 0172, DT10). */
+  options: { locale?: string; dataTypes?: unknown }
   atoms: { sorting?: { get: () => { id: string; desc: boolean }[] } }
   getPreSortedRowModel: () => RowModel
   getColumn: (id: string) => SortColumn | undefined
@@ -204,6 +206,8 @@ const sorter = (
 interface Sorted {
   input: RowModel
   sorting: unknown
+  /** Правила сравнения, по которым построен порядок: язык и реестр типов. */
+  rules: readonly unknown[]
   sortFns: RowSortFn[]
   output: RowModel
   /** `rowsById` модели — свой словарь (с копиями родителей), а не словарь входа. */
@@ -214,11 +218,17 @@ interface Sorted {
   starts?: Int32Array
 }
 
+const rulesOf = (table: SortTable) => [
+  table.options.locale,
+  table.options.dataTypes,
+]
+
 const fullSort = (table: SortTable): Sorted => {
   const input = table.getPreSortedRowModel()
   const base = {
     input,
     sorting: table.atoms.sorting?.get(),
+    rules: rulesOf(table),
   }
   const entries = input.rows.length ? sortEntries(table) : []
   if (!entries.length) {
@@ -259,6 +269,7 @@ const patchSort = (table: SortTable, prev: Sorted): Sorted | undefined => {
   if (
     prev.output === prev.input ||
     sorting !== prev.sorting ||
+    rulesOf(table).some((rule, i) => rule !== prev.rules[i]) ||
     input.rows.length !== prev.input.rows.length
   ) {
     return undefined
@@ -371,7 +382,11 @@ export const createTesseraSortedRowModel = (): SortedRowModelFactory =>
       feature: 'rowSortingFeature',
       table,
       fnName: 'table.getSortedRowModel',
-      memoDeps: () => [t.atoms.sorting?.get(), t.getPreSortedRowModel()],
+      memoDeps: () => [
+        t.atoms.sorting?.get(),
+        t.getPreSortedRowModel(),
+        ...rulesOf(t),
+      ],
       fn: () => {
         last = (last && patchSort(t, last)) ?? fullSort(t)
         return last.output

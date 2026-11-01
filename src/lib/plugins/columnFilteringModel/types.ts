@@ -1,4 +1,6 @@
-import type { ColumnOption, OptionValue } from '../../core/columnOptions'
+import type { LoadOptions } from '../../core/columnOptions'
+import type { DateCellValue } from '../../core/dataTypes'
+import type { OptionValue } from '../../core/columnOptions'
 
 /** Тип фильтра колонки (ADR 0045, §2; ADR 0047, §1; ADR 0048): набор условий и UI. */
 export type ColumnFilterType =
@@ -11,21 +13,14 @@ export type ColumnFilterType =
   | 'multiselect'
   | 'lookup'
 
-/** Поиск вариантов справочника в панели фильтра (ADR 0048, §5). */
-export type LoadOptions = (
-  search: string,
-  context: { signal: AbortSignal },
-) => Promise<ColumnOption[]>
+export type { DateCellValue, LoadOptions }
 
-/** Значение даты в ячейке, которое разбирает фильтр дат (ADR 0047, §2). */
-export type DateCellValue = Date | string | number | null | undefined
-
-/** Поле `filter` в описании колонки: тип строкой или объектом с уточнениями. */
+/** Фильтр колонки, выведенный из её типа данных (ADR 0172, DT12): вид и уточнения. */
 export type ColumnFilterDef =
   | ColumnFilterType
   | {
       type: ColumnFilterType
-      /** Булево: вариант «Пусто». */
+      /** Булево: вариант «Пусто» — у булева фильтра всегда (ADR 0172). */
       nullable?: boolean
       /** Дата: своё значение ячейки → `Date`, миллисекунды или ISO. */
       parse?: (value: unknown) => DateCellValue
@@ -66,7 +61,7 @@ export type NumberFilter =
   | { operator: 'between'; value: [number | null, number | null] }
   | EmptinessFilter
 
-/** «Все» — отсутствие фильтра; «Пусто» — только у колонки с `nullable`. */
+/** «Все» — отсутствие фильтра; «Пусто» — вариант булева фильтра. */
 export type BooleanFilter =
   { operator: 'equals'; value: boolean } | { operator: 'empty' }
 

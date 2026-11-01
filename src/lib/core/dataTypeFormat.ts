@@ -88,6 +88,10 @@ const DATE_ONLY = /^(\d{4}-\d{2}-\d{2})/
 const instantOf = (value: unknown, base: string): Date | undefined => {
   if (value instanceof Date)
     return Number.isNaN(value.getTime()) ? undefined : value
+  if (typeof value === 'number') {
+    const date = new Date(value)
+    return Number.isNaN(date.getTime()) ? undefined : date
+  }
   if (typeof value !== 'string') return undefined
   // Дата без времени — сутки в UTC: так её читает `Date` и пишет выгрузка.
   const date =
@@ -116,7 +120,10 @@ const dateText = (
     const day = DATE_ONLY.exec(value)
     if (day) return day[1]!
   }
-  const instant = instantOf(value, base)
+  const instant = instantOf(
+    definition.parseDate ? definition.parseDate(value) : value,
+    base,
+  )
   if (!instant) return String(value)
   const zone = base === 'dateString' ? 'UTC' : timeZone
   if (definition.format) {
@@ -127,6 +134,23 @@ const dateText = (
     base === 'dateTime' || base === 'dateTimeString',
     zone,
   )
+}
+
+const DATE_BASES = new Set(['date', 'dateTime', 'dateString', 'dateTimeString'])
+
+/**
+ * Момент значения колонки с типом даты, в миллисекундах; свой формат — `parseDate` типа.
+ * `undefined` — не дата или пусто (DT10, DT13).
+ */
+export const dateTypeInstant = (
+  type: ResolvedDataType | undefined,
+  value: unknown,
+): number | undefined => {
+  if (!type || !DATE_BASES.has(type.base) || isEmpty(value)) return undefined
+  const parsed = type.definition.parseDate
+    ? type.definition.parseDate(value)
+    : value
+  return instantOf(parsed, type.base)?.getTime()
 }
 
 /** Текст значения колонки по её типу (DT4, DT5, DT7). */

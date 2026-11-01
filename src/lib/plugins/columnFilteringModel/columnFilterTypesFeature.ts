@@ -1,13 +1,14 @@
 /**
- * Типы фильтров колонок (ADR 0045, §2–§3): поле `filter` в описании колонки и
- * функция фильтра по умолчанию, применяющая условия своего типа. Колонка без
- * `filter` в фильтрах колонок не участвует; свой `filterFn` колонки перекрывает этот.
+ * Типы фильтров колонок (ADR 0045, §2–§3; ADR 0172, DT12): вид фильтра — от типа данных
+ * колонки, функция фильтра по умолчанию применяет условия своего вида; свой `filterFn`
+ * колонки перекрывает этот.
  * Фича стоит после `columnFilteringFeature`: её `filterFn` по умолчанию сменяет `'auto'`.
  */
 import type { FilterFn } from '@tanstack/react-table'
 
-import type { RowData, TableFeature, TableFeatures } from '../../types'
+import type { TableFeature } from '../../types'
 import {
+  columnFilterDefOf,
   dateCellWall,
   filterTypeOf,
   isDateType,
@@ -17,32 +18,17 @@ import {
 import { matchesDate, nowWall } from './dates'
 import type { ColumnFilterDef, ColumnFilterValue, DateFilter } from './types'
 
-interface ColumnFilterTypesColumnDef {
-  /** Тип фильтра колонки; без него колонку не отфильтровать (ADR 0045). */
-  filter?: ColumnFilterDef
-}
-
-/* eslint-disable @typescript-eslint/no-unused-vars -- generics карт обязаны
-   повторять сигнатуры v9, иначе declaration merging не склеится */
 declare module '@tanstack/react-table' {
   interface Plugins {
     columnFilterTypesFeature: TableFeature
   }
-  interface ColumnDef_FeatureMap<
-    in out TFeatures extends TableFeatures,
-    in out TData extends RowData,
-    in out TValue,
-  > {
-    columnFilterTypesFeature: ColumnFilterTypesColumnDef
-  }
 }
-/* eslint-enable @typescript-eslint/no-unused-vars */
 
 interface FilterRow {
   table: {
     getColumn: (
       id: string,
-    ) => { columnDef: ColumnFilterTypesColumnDef } | undefined
+    ) => Parameters<typeof columnFilterDefOf>[0] | undefined
     options: { timeZone?: string }
   }
   getValue: (columnId: string) => unknown
@@ -80,9 +66,11 @@ const columnTypeFilter = ((
   columnId: string,
   filter: ColumnFilterValue,
 ) => {
-  const def = row.table.getColumn(columnId)?.columnDef.filter
+  const column = row.table.getColumn(columnId)
+  const def = column ? columnFilterDefOf(column) : undefined
   const type = filterTypeOf(def)
-  if (!type) return true
+  // Значение не условие своего вида (`setFilterValue('b')`) — фильтром не считается.
+  if (!type || isInactiveFilter(filter)) return true
   if (isDateType(type)) {
     // Пояс дат — опция таблицы (ADR 0169, §5).
     const timeZone = row.table.options.timeZone

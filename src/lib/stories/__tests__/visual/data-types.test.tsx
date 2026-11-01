@@ -9,7 +9,9 @@ import type { DataTypeRegistry } from '../../../core/dataTypes'
 import { DataGrid } from '../../../grid/DataGrid'
 import { columnFiltering, columnSorting, rowGrouping } from '../../../plugins'
 import { UiCanvas } from '../../__mocks__/UiCanvas'
-import { humanClick } from '../helpers'
+import { RU_LABELS } from '../../__mocks__/localization.ru'
+import { storyLabels } from '../../__mocks__/storyLabels'
+import { humanClick, revealCellButtons } from '../helpers'
 import {
   AXE_OPTIONS,
   contrast,
@@ -19,9 +21,10 @@ import {
 } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
 
-// Тип данных колонки (ADR 0172, этап 1): вид по типу, значок булева, текст по типу в группе,
-// агрегате, тултипе и сводке фильтров, выравнивание, примитив `CheckMark`.
-// DT1–DT3, DT7 — модульный `dataTypes`, DT20 — перф в `scroll`.
+// Тип данных колонки (ADR 0172): вид по типу, значок булева, текст по типу в группе,
+// агрегате, тултипе и сводке фильтров, выравнивание, примитив `CheckMark`; вид фильтра,
+// сортировка и фильтр настоящими событиями, язык на лету. DT1–DT3, DT7, DT10, DT13–DT14,
+// DT17 — модульные, DT20 — перф в `scroll`, DT11 — в `interaction`.
 
 const fc = commands as unknown as {
   forcedColors: (active: boolean) => Promise<void>
@@ -233,7 +236,6 @@ describe('Тип данных колонки (ADR 0172)', () => {
         accessorKey: 'price',
         header: 'Price',
         dataType: 'money',
-        filter: 'number',
         size: 160,
       },
       {
@@ -459,5 +461,240 @@ describe('Тип данных колонки (ADR 0172)', () => {
         await fc.forcedColors(false)
       }
     }
+  })
+
+  test('DT12: поля колонки filter нет — при подключённом фильтре он есть у каждой колонки с данными, вид — от базового типа (текст и без типа — текстовый, дата, дата со временем, да, нет или пусто, выбор одного, список с флажками); enableColumnFilter: false выключает фильтр колонки', async () => {
+    const options = [
+      { value: 'a', label: 'Alpha' },
+      { value: 'b', label: 'Beta' },
+    ]
+    const kinds: [Record<string, unknown>, string][] = [
+      [{ id: 'plain' }, 'text'],
+      [{ id: 'text', dataType: 'text' }, 'text'],
+      [{ id: 'num', dataType: 'number' }, 'number'],
+      [{ id: 'flag', dataType: 'boolean' }, 'boolean'],
+      [{ id: 'day', dataType: 'date' }, 'date'],
+      [{ id: 'dayText', dataType: 'dateString' }, 'date'],
+      [{ id: 'at', dataType: 'dateTime' }, 'datetime'],
+      [{ id: 'atText', dataType: 'dateTimeString' }, 'datetime'],
+      [{ id: 'pick', dataType: 'select', options }, 'select'],
+      [{ id: 'picks', dataType: 'multiSelect', options }, 'multiselect'],
+    ]
+    const columns = [
+      ...kinds.map(([column]) => ({
+        accessorKey: column.id,
+        header: column.id,
+        size: 110,
+        ...column,
+      })),
+      {
+        id: 'off',
+        accessorKey: 'text',
+        header: 'off',
+        dataType: 'text',
+        enableColumnFilter: false,
+        size: 110,
+      },
+      { id: 'shown', header: 'shown', cell: () => '—', size: 110 },
+    ]
+    const data = [
+      {
+        id: 'r1',
+        plain: 'x',
+        text: 'y',
+        num: 1,
+        flag: true,
+        day: new Date('2026-10-31T00:00:00Z'),
+        dayText: '2026-10-31',
+        at: MOMENT,
+        atText: '2026-10-31T14:05:00Z',
+        pick: 'a',
+        picks: ['a', 'b'],
+      },
+    ]
+    await render(
+      <Grid
+        columns={columns}
+        data={data}
+        plugins={[columnFiltering()]}
+        width={1500}
+      />,
+    )
+    await waitForGrid()
+
+    const button = (columnId: string) =>
+      headOf(columnId).querySelector<HTMLElement>('.column-filter__button')
+    const panel = () =>
+      document.querySelector<HTMLElement>('[data-testid="filter-panel"]')
+    // Вид панели: у календаря и списка вариантов — data-filter-type, у булева — радиогруппа,
+    // у числа — поле с десятичной клавиатурой, у текста — простое поле.
+    const panelKind = () => {
+      const open = panel()
+      if (!open) return null
+      if (open.dataset.filterType) return open.dataset.filterType
+      if (open.querySelector('[data-testid="filter-boolean"]')) return 'boolean'
+      const field = open.querySelector('[data-testid="filter-value"]')
+      if (!field) return null
+      return field.getAttribute('inputmode') === 'decimal' ? 'number' : 'text'
+    }
+
+    for (const [{ id }, kind] of kinds) {
+      const columnId = id as string
+      await revealCellButtons(headOf(columnId))
+      expect(button(columnId), columnId).not.toBeNull()
+      await humanClick(button(columnId)!)
+      await expect.poll(panelKind, { message: columnId }).toBe(kind)
+      await userEvent.keyboard('{Escape}')
+      await expect.poll(panel).toBeNull()
+    }
+    expect(button('off')).toBeNull()
+    expect(button('shown')).toBeNull()
+  })
+
+  test('DT21: настоящими событиями — нажатие на заголовки колонок текста, чисел и дат-строк и фильтр даты-строки дают порядок и отбор по DT10 и DT13', async () => {
+    const columns = [
+      { id: 'name', accessorKey: 'name', header: 'Name', dataType: 'text' },
+      {
+        id: 'price',
+        accessorKey: 'price',
+        header: 'Price',
+        dataType: 'number',
+      },
+      {
+        id: 'released',
+        accessorKey: 'released',
+        header: 'Released',
+        dataType: 'dateString',
+      },
+    ]
+    // Текстом порядок был бы другим: «Lamp 2» выше «Lamp 10», «9.5» выше «1000».
+    const data = [
+      { id: 'a', name: 'Lamp 10', price: 120, released: '2026-03-14' },
+      { id: 'b', name: 'chair 2', price: 9.5, released: '2025-11-02' },
+      { id: 'c', name: null, price: 1000, released: null },
+      { id: 'd', name: 'Lamp 2', price: null, released: '2026-07-01' },
+      { id: 'e', name: 'lamp 1', price: 15, released: '2026-03-02' },
+    ]
+    await render(
+      <Grid
+        columns={columns}
+        data={data}
+        plugins={[columnSorting(), columnFiltering()]}
+      />,
+    )
+    await waitForGrid()
+    const sortBy = async (columnId: string) => {
+      await revealCellButtons(headOf(columnId))
+      await humanClick(headOf(columnId).querySelector('.column-sort__button')!)
+    }
+
+    // Первый щелчок — по убыванию, второй — по возрастанию; пустые — в конце при обоих.
+    await sortBy('name')
+    await expect.poll(rowIds).toEqual(['a', 'd', 'e', 'b', 'c'])
+    await sortBy('name')
+    await expect.poll(rowIds).toEqual(['b', 'e', 'd', 'a', 'c'])
+    await sortBy('price')
+    await expect.poll(rowIds).toEqual(['c', 'a', 'e', 'b', 'd'])
+    await sortBy('released')
+    await expect.poll(rowIds).toEqual(['d', 'a', 'e', 'b', 'c'])
+
+    // Фильтр даты-строки: день в календаре, затем условие «после».
+    await revealCellButtons(headOf('released'))
+    await humanClick(
+      headOf('released').querySelector('.column-filter__button')!,
+    )
+    const calendar = () =>
+      document.querySelector<HTMLElement>('[data-testid="filter-calendar"]')
+    await expect.poll(() => calendar()?.querySelector('select')).toBeTruthy()
+    const [month, year] = calendar()!.querySelectorAll('select')
+    await userEvent.selectOptions(year!, '2026')
+    await userEvent.selectOptions(month!, '2')
+    const day = () =>
+      document.querySelector<HTMLElement>('[data-day="2026-03-14"] button')
+    await expect.poll(day).toBeTruthy()
+    await humanClick(day()!)
+    await expect.poll(rowIds).toEqual(['a'])
+
+    const after = () =>
+      document.querySelector<HTMLElement>('[data-operator="after"]')
+    await humanClick(document.querySelector('[data-testid="filter-operator"]')!)
+    await expect.poll(after).toBeTruthy()
+    await humanClick(after()!)
+    await expect.poll(rowIds).toEqual(['d'])
+  })
+
+  test('DT19: смена locale на лету меняет текст ячеек, порядок сортировки и подписи без пересоздания таблицы', async () => {
+    const columns = [
+      { id: 'name', accessorKey: 'name', header: 'Name', dataType: 'text' },
+      { id: 'price', accessorKey: 'price', header: 'Price', dataType: 'money' },
+    ]
+    const data = [
+      { id: 'a', name: 'Lamp', price: 1234.5 },
+      { id: 'b', name: 'Кружка', price: 18.9 },
+      { id: 'c', name: 'Apple', price: 2499 },
+      { id: 'd', name: 'Лампа', price: 1150.75 },
+    ]
+    const money: DataTypeRegistry = {
+      money: {
+        extends: 'number',
+        format: { style: 'currency', currency: 'USD' },
+      },
+    }
+    const stores = new Set<unknown>()
+    const LocaleGrid = ({ locale }: { locale: string }) => {
+      const table = useCreateTable({
+        columns: columns as never,
+        data,
+        getRowId: (row: Row) => row.id,
+        plugins: [columnSorting()] as never,
+        dataTypes: money,
+        locale,
+        timeZone: 'UTC',
+      })
+      stores.add((table as unknown as { store: unknown }).store)
+      return (
+        <div style={{ width: 960, height: 420 }}>
+          <DataGrid
+            table={table as never}
+            localization={(locale === 'ru-RU' ? RU_LABELS : undefined) as never}
+          />
+        </div>
+      )
+    }
+    const desc = (locale: string) =>
+      [...data]
+        .sort((x, y) => new Intl.Collator(locale).compare(y.name, x.name))
+        .map(row => row.id)
+    const price = (locale: string) =>
+      new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: 'USD',
+      }).format(1234.5)
+    const sortButton = () =>
+      headOf('name').querySelector<HTMLElement>('.column-sort__button')!
+
+    const screen = await render(<LocaleGrid locale="en-US" />)
+    await waitForGrid()
+    const opened = stores.size
+    expect(textOf('a', 'price')).toBe(price('en-US'))
+    await userEvent.hover(headOf('name'))
+    await humanClick(sortButton())
+    await expect.poll(rowIds).toEqual(desc('en-US'))
+    expect(sortButton().getAttribute('aria-label')).toBe(
+      storyLabels('en').sortAscending,
+    )
+    const row = cellOf('a', 'name').closest('.data-grid__body-row')!
+
+    await screen.rerender(<LocaleGrid locale="ru-RU" />)
+    await expect.poll(() => textOf('a', 'price')).toBe(price('ru-RU'))
+    await expect.poll(rowIds).toEqual(desc('ru-RU'))
+    expect(desc('ru-RU')).not.toEqual(desc('en-US'))
+    expect(headOf('name').getAttribute('aria-sort')).toBe('descending')
+    expect(sortButton().getAttribute('aria-label')).toBe(
+      storyLabels('ru').sortAscending,
+    )
+    // Тот же экземпляр таблицы и та же строка в DOM — без пересоздания.
+    expect(stores.size).toBe(opened)
+    expect(row.isConnected).toBe(true)
   })
 })

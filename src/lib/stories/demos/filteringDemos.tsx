@@ -4,8 +4,10 @@
  * набором теми же условиями, что у клиентского режима.
  */
 import type { ColumnFilterValue } from '../../plugins'
+import type { ColumnOptionsDef } from '../../core/columnOptions'
+import type { BuiltInDataType } from '../../core/dataTypes'
 import {
-  filterTypeOf,
+  filterTypeOfBase,
   matchesColumnFilter,
 } from '../../plugins/columnFilteringModel/conditions'
 import {
@@ -26,15 +28,26 @@ export type ServerFilters = { id: string; value: unknown }[]
 export const SERVER_TOTAL = 200
 export const SERVER_DATA = makeFilteringData(SERVER_TOTAL)
 
+/** Вид фильтра колонки «сервера» — по её типу данных, как у таблицы (ADR 0172, DT12). */
+export const serverFilterTypeOf = (
+  columns: readonly { id?: string }[],
+  id: string,
+) => {
+  const def = columns.find(column => column.id === id) as
+    (ColumnOptionsDef & { dataType?: string }) | undefined
+  if (!def) return undefined
+  return def.loadOptions
+    ? 'lookup'
+    : filterTypeOfBase(def.dataType as BuiltInDataType | undefined)
+}
+
 const matches = (
   columns: readonly { id?: string }[],
   row: object,
   filters: ServerFilters,
 ) =>
   filters.every(({ id, value }) => {
-    const def = columns.find(column => column.id === id) as
-      { filter?: Parameters<typeof filterTypeOf>[0] } | undefined
-    const type = filterTypeOf(def?.filter)
+    const type = serverFilterTypeOf(columns, id)
     return (
       !type ||
       matchesColumnFilter(

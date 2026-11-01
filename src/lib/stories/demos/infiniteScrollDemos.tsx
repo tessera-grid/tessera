@@ -9,10 +9,7 @@ import type {
   ColumnFilterValue,
   InfiniteScrollLoadContext,
 } from '../../plugins'
-import {
-  filterTypeOf,
-  matchesColumnFilter,
-} from '../../plugins/columnFilteringModel/conditions'
+import { matchesColumnFilter } from '../../plugins/columnFilteringModel/conditions'
 import {
   matchesSearch,
   normalizeSearch,
@@ -24,6 +21,7 @@ import {
   filteringColumns,
   makeFilteringData,
 } from '../__mocks__/filteringData'
+import { serverFilterTypeOf } from './filteringDemos'
 
 export interface InfiniteScrollDemoProps extends StoryProps {
   /** Время ответа «сервера», мс. */
@@ -63,9 +61,7 @@ export const select = ({ sort, filters, search, columnIds }: Query) => {
   const rows = SERVER_DATA.filter(
     row =>
       filters.every(({ id, value }) => {
-        const def = filteringColumns.find(column => column.id === id) as
-          { filter?: Parameters<typeof filterTypeOf>[0] } | undefined
-        const type = filterTypeOf(def?.filter)
+        const type = serverFilterTypeOf(filteringColumns, id)
         return (
           !type ||
           matchesColumnFilter(

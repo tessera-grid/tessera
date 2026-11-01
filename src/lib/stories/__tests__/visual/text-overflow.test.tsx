@@ -105,7 +105,6 @@ const COLUMNS = [
     accessorKey: 'account',
     header: LONG_HEADER,
     size: 200,
-    filter: 'text',
   },
   {
     id: 'status',
@@ -113,7 +112,7 @@ const COLUMNS = [
     header: 'Status',
     size: 160,
     options: OPTIONS,
-    filter: 'select',
+    dataType: 'select',
   },
 ]
 

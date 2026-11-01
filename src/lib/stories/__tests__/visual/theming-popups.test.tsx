@@ -26,8 +26,13 @@ import { tableLabels } from '../labels'
 
 const COLUMNS = [
   { id: 'name', accessorKey: 'name', header: 'Name', enableHiding: false },
-  { id: 'note', accessorKey: 'note', header: 'Note', filter: 'text' as const },
-  { id: 'vip', accessorKey: 'vip', header: 'VIP', filter: 'boolean' as const },
+  { id: 'note', accessorKey: 'note', header: 'Note' },
+  {
+    id: 'vip',
+    accessorKey: 'vip',
+    header: 'VIP',
+    dataType: 'boolean' as const,
+  },
 ]
 const DATA = [
   { id: '1', name: 'Ann', note: 'a', vip: true },

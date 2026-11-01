@@ -17,7 +17,7 @@ const DATA = [{ id: '1', name: 'Alice', status: 'won' }]
 const Grid = ({ withOptions }: { withOptions: boolean }) => {
   const table = useCreateTable({
     columns: [
-      { id: 'name', accessorKey: 'name', header: 'Name', filter: 'text' },
+      { id: 'name', accessorKey: 'name', header: 'Name' },
       ...(withOptions
         ? [
             {
@@ -25,7 +25,7 @@ const Grid = ({ withOptions }: { withOptions: boolean }) => {
               accessorKey: 'status',
               header: 'Status',
               options: [{ value: 'won', label: 'Won' }],
-              filter: 'select',
+              dataType: 'select',
             },
           ]
         : []),

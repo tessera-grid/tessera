@@ -29,8 +29,8 @@ afterEach(() => {
 const columns = [
   { id: 'name', accessorKey: 'name', header: 'Name' },
   { id: 'city', accessorKey: 'city', header: 'City' },
-  { id: 'vip', accessorKey: 'vip', filter: 'boolean' },
-  { id: 'born', accessorKey: 'born', filter: 'date' },
+  { id: 'vip', accessorKey: 'vip', dataType: 'boolean' },
+  { id: 'born', accessorKey: 'born', dataType: 'dateString' },
   { id: 'code', accessorKey: 'code', enableGlobalFilter: false },
   { id: 'visits', accessorKey: 'visits', header: 'Visits' },
 ]

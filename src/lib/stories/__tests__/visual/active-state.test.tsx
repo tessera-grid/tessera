@@ -265,8 +265,8 @@ describe('Включённое состояние кнопок (ADR 0129)', () =
     const Grid = () => {
       const table = useCreateTable({
         columns: [
-          { id: 'name', accessorKey: 'name', header: 'Name', filter: 'text' },
-          { id: 'city', accessorKey: 'city', header: 'City', filter: 'text' },
+          { id: 'name', accessorKey: 'name', header: 'Name' },
+          { id: 'city', accessorKey: 'city', header: 'City' },
         ] as never,
         data: [
           { id: '1', name: 'Alice', city: 'Rome' },

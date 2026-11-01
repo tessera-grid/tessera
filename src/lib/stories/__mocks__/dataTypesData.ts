@@ -120,3 +120,38 @@ export const MEDIUM_DATES: DataTypeRegistry = {
   dateString: { format: { dateStyle: 'medium' } },
   dateTimeString: { format: { dateStyle: 'medium', timeStyle: 'short' } },
 }
+
+/** Товары с пропусками и номерами в названиях: порядок по типу и пустые в конце (S1). */
+export const SORT_ROWS = (
+  [
+    ['Lamp 10', 120, '2026-03-14'],
+    ['chair 2', 9.5, '2025-11-02'],
+    [null, 45, '2026-01-20'],
+    ['Lamp 2', null, '2026-07-01'],
+    ['mug', 1000, null],
+    ['Chair 12', 89.9, '2024-12-31'],
+    ['lamp 1', 200, '2026-02-03'],
+    ['Desk', 15, '2025-06-18'],
+    [null, 7, '2026-10-05'],
+    ['desk mat', null, '2026-05-09'],
+  ] as const
+).map(([name, price, released], index) => ({
+  ...productAt(index),
+  name,
+  price,
+  released,
+}))
+
+/** Названия на латинице и кириллице, цены с разрядами: вид и порядок по языку (S7). */
+export const LOCALE_ROWS = (
+  [
+    ['Lamp', 1234.5],
+    ['Кружка', 18.9],
+    ['Apple', 2499],
+    ['Лампа', 1150.75],
+    ['Notebook', 3200],
+    ['Яблоко', 4.2],
+    ['Mug', 12.5],
+    ['Блокнот', 1890.1],
+  ] as const
+).map(([name, price], index) => ({ ...productAt(index), name, price }))

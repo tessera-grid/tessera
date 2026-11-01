@@ -1,5 +1,5 @@
 import { Meta, StoryObj } from '@storybook/react'
-import { expect, spyOn } from 'storybook/test'
+import { expect } from 'storybook/test'
 
 import { exportFormats } from '../plugins/dataExport'
 import type { ToolbarComponentProps } from '../core/createSlots/types'
@@ -20,7 +20,21 @@ import {
   stepDone,
   until,
   waitForRows,
+  repeat,
 } from './__mocks__/catalogPlay'
+import {
+  axisChecked,
+  axisValue,
+  chooseAxis,
+  exportButton,
+  exportPanel,
+  exported,
+  interceptDownload,
+  onExported,
+  openExportPanel,
+  runExport,
+  zipEntryText,
+} from './__mocks__/exportGuide'
 import { storyLabels } from './__mocks__/storyLabels'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
@@ -65,67 +79,6 @@ export const ExportPlayground: StoryObj<StoryProps> = {
 }
 
 // --- Действия шагов ------------------------------------------------------------------
-
-const exportPanel = () => byTestId('export-panel')
-const exportButton = () => byTestId('export-button')
-
-/** Повторяет `act` с паузой, пока не выполнится `done`: кнопки готовы не сразу. */
-const repeat = async (
-  done: () => boolean,
-  act: () => void,
-  signal: AbortSignal,
-) => {
-  for (let tries = 0; !done(); tries += 1) {
-    if (tries > 60) throw new Error(`Шаг гайда не дождался: ${done}`)
-    act()
-    await sleep(200)
-    signal.throwIfAborted()
-  }
-}
-
-/** Пользователь открывает настройки выгрузки. */
-const openExportPanel = async (root: HTMLElement, signal: AbortSignal) => {
-  await pollUntil(() => !!root.querySelector('.data-grid__body-row'), signal)
-  await repeat(
-    () => !!exportPanel(),
-    () => exportButton()?.click(),
-    signal,
-  )
-}
-
-const axisValue = (axis: string, value: string) =>
-  document.querySelector<HTMLElement>(
-    `[data-testid="export-axis-${axis}"] [role="radio"][data-value="${value}"]`,
-  )
-const axisChecked = (axis: string, value: string) =>
-  axisValue(axis, value)?.getAttribute('aria-checked') === 'true'
-/** Пользователь выбирает значение оси панели. */
-const chooseAxis = (axis: string, value: string, signal: AbortSignal) =>
-  repeat(
-    () => axisChecked(axis, value),
-    () => axisValue(axis, value)?.click(),
-    signal,
-  )
-
-/** Выгрузки, которые таблица скачала сама (`onExported`). */
-const exported: string[] = []
-const onExported = (request: {
-  settings: { rows: string }
-  format: { id: string }
-}) => {
-  exported.push(`${request.settings.rows}.${request.format.id}`)
-}
-
-/** Пользователь нажимает «выгрузить» в панели и ждёт файла. */
-const runExport = async (signal: AbortSignal) => {
-  const before = exported.length
-  await repeat(
-    () => exported.length > before || !exportPanel(),
-    () => byTestId('export-run')?.click(),
-    signal,
-  )
-  await pollUntil(() => exported.length > before, signal)
-}
 
 // --- ADR 0044 S1 ---------------------------------------------------------------------
 
@@ -884,48 +837,4 @@ export const ExportCancel: StoryObj<StoryProps> = {
       download.restore()
     }
   },
-}
-
-function interceptDownload() {
-  const names: string[] = []
-  const blobs: Blob[] = []
-  const url = spyOn(URL, 'createObjectURL').mockImplementation(value => {
-    blobs.push(value as Blob)
-    return 'blob:export-story'
-  })
-  const click = spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(
-    function (this: HTMLAnchorElement) {
-      names.push(this.download)
-    },
-  )
-  return {
-    names,
-    blobs,
-    restore: () => {
-      url.mockRestore()
-      click.mockRestore()
-    },
-  }
-}
-
-/** Текст записи zip по локальным заголовкам; deflate — встроенным `DecompressionStream`. */
-async function zipEntryText(bytes: Uint8Array, name: string) {
-  const view = new DataView(bytes.buffer)
-  for (let at = 0; view.getUint32(at, true) === 0x04034b50;) {
-    const method = view.getUint16(at + 8, true)
-    const size = view.getUint32(at + 18, true)
-    const nameLength = view.getUint16(at + 26, true)
-    const start = at + 30 + nameLength
-    const entry = new TextDecoder().decode(bytes.slice(at + 30, start))
-    if (entry === name) {
-      const stream = new Blob([bytes.slice(start, start + size)]).stream()
-      return new Response(
-        method === 8
-          ? stream.pipeThrough(new DecompressionStream('deflate-raw'))
-          : stream,
-      ).text()
-    }
-    at = start + size
-  }
-  return ''
 }

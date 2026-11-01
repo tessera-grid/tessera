@@ -264,7 +264,11 @@ describe('Кнопки грида 28px (ADR 0135)', () => {
     await revealCellButtons(cell)
     const c = box(cell)
     const pencil = box(iconOf(cell.querySelector('[aria-label="Edit cell"]')!))
-    const text = textLeft(titleOf(cell)) - c.left
+    // Отступ текста — у текстовой ячейки той же строки: число выровнено вправо (ADR 0172).
+    const textCell = cell
+      .closest(SEL.bodyRow)!
+      .querySelector<HTMLElement>(`${SEL.bodyCell}[data-column-id="lastName"]`)!
+    const text = textLeft(titleOf(textCell)) - box(textCell).left
     expect(c.right - pencil.right).toBeCloseTo(text, 0)
     // Заголовок без грипа: иконка последней кнопки — на линии текста.
     let head = headCell('lastName')
@@ -605,7 +609,7 @@ describe('Ряд кнопок заголовка с открытым попов�
       // У колонки с фильтром — кнопка панели фильтра.
       columnsOverride: (WIDE_COLUMNS as unknown as object[]).map(column =>
         (column as { id: string }).id === 'lastName'
-          ? { ...column, filter: { type: 'text' } }
+          ? { ...column, dataType: 'text' }
           : column,
       ) as never,
     })

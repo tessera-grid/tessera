@@ -46,8 +46,8 @@ const DATA: Item[] = [
   item('f', 'Oslo'),
 ]
 const COLUMNS = [
-  { id: 'name', accessorKey: 'name', header: 'Name', filter: 'text' },
-  { id: 'city', accessorKey: 'city', header: 'City', filter: 'text' },
+  { id: 'name', accessorKey: 'name', header: 'Name' },
+  { id: 'city', accessorKey: 'city', header: 'City' },
 ]
 
 const build = () => {

@@ -79,21 +79,26 @@ const FILLERS = Array.from({ length: 30 }, (_, i) => ({
 }))
 
 const COLUMNS = [
-  { id: 'name', accessorKey: 'name', header: 'Name', filter: 'text' },
-  { id: 'age', accessorKey: 'age', header: 'Age', filter: 'number' },
+  { id: 'name', accessorKey: 'name', header: 'Name' },
+  { id: 'age', accessorKey: 'age', header: 'Age', dataType: 'number' },
   {
     id: 'vip',
     accessorKey: 'vip',
     header: 'VIP',
-    filter: { type: 'boolean' },
+    dataType: 'boolean',
   },
-  { id: 'created', accessorKey: 'created', header: 'Created', filter: 'date' },
+  {
+    id: 'created',
+    accessorKey: 'created',
+    header: 'Created',
+    dataType: 'dateString',
+  },
   {
     id: 'status',
     accessorKey: 'status',
     header: 'Status',
     options: STATUS,
-    filter: 'select',
+    dataType: 'select',
   },
   {
     id: 'manager',
@@ -101,13 +106,11 @@ const COLUMNS = [
     header: 'Manager',
     getOptionLabel: (id: string) =>
       MANAGERS.find(manager => manager.value === id)?.label,
-    filter: {
-      type: 'lookup',
-      loadOptions: async (search: string) =>
-        MANAGERS.filter(manager =>
-          manager.label.toLowerCase().includes(search.toLowerCase()),
-        ),
-    },
+    dataType: 'select',
+    loadOptions: async (search: string) =>
+      MANAGERS.filter(manager =>
+        manager.label.toLowerCase().includes(search.toLowerCase()),
+      ),
   },
 ]
 

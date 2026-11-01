@@ -14,13 +14,17 @@ import { Button } from '../../ui/Button'
 import { setColumnFilterByUser } from '../../shared/filtering/filtering'
 import type { ActionPanelControls } from '../../core/headerActions'
 import { useLocalization } from '../../core/localization'
+import { parseLocaleNumber } from '../../util/parseNumber'
 import { preloadable } from '../../core/preloadable'
 import { useDebouncedCallback } from '../../util/useDebouncedCallback'
-import { filterTypeOf } from '../columnFilteringModel/conditions'
+import {
+  columnFilterDefOf,
+  type FilterDefColumn,
+  filterTypeOf,
+} from '../columnFilteringModel/conditions'
 import { type FilterOperator, operatorLabel } from './describeFilter'
 import { OperatorSelect } from './OperatorSelect'
 import type {
-  ColumnFilterDef,
   ColumnFilterValue,
   NumberFilterOperator,
   TextFilterOperator,
@@ -31,9 +35,8 @@ import { FilterApply } from './FilterApply'
 import { FilterFailure } from './FilterFailure'
 import { useFilterDraft } from './filterDraft'
 
-export interface FilterColumn {
+export interface FilterColumn extends FilterDefColumn {
   id: string
-  columnDef: { filter?: ColumnFilterDef }
   getFilterValue: () => unknown
 }
 
@@ -89,16 +92,11 @@ const NUMBER_OPERATORS: NumberFilterOperator[] = [
 const needsValue = (operator: Operator) =>
   operator !== 'empty' && operator !== 'notEmpty'
 
-/** Число из ввода: `null` — пусто, `NaN` — не число; запятая — десятичный знак. */
-export const parseNumberInput = (input: string): number | null => {
-  const text = input.trim().replace(',', '.')
-  if (text === '') return null
-  const value = Number(text)
-  return Number.isFinite(value) ? value : Number.NaN
-}
+/** Число из ввода по языку таблицы: `null` — пусто, `NaN` — не число (ADR 0172, DT14). */
+export const parseNumberInput = parseLocaleNumber
 
-const isInvalidNumber = (input: string) =>
-  Number.isNaN(parseNumberInput(input) as number)
+const isInvalidNumber = (input: string, locale?: string) =>
+  Number.isNaN(parseNumberInput(input, locale) as number)
 
 interface Draft {
   operator: Operator
@@ -134,6 +132,7 @@ const draftOf = (
 const filterOf = (
   type: 'text' | 'number',
   draft: Draft,
+  locale?: string,
 ): ColumnFilterValue | undefined | null => {
   const { operator } = draft
   if (!needsValue(operator)) {
@@ -143,13 +142,13 @@ const filterOf = (
     return { operator, value: draft.value } as ColumnFilterValue
   }
   if (operator === 'between') {
-    const from = parseNumberInput(draft.from)
-    const to = parseNumberInput(draft.to)
+    const from = parseNumberInput(draft.from, locale)
+    const to = parseNumberInput(draft.to, locale)
     if (Number.isNaN(from) || Number.isNaN(to)) return null
     if (from === null && to === null) return undefined
     return { operator, value: [from, to] }
   }
-  const value = parseNumberInput(draft.value)
+  const value = parseNumberInput(draft.value, locale)
   if (Number.isNaN(value)) return null
   if (value === null) return undefined
   return { operator, value } as ColumnFilterValue
@@ -164,16 +163,17 @@ const ConditionPanel = ({
 }: FilterPanelProps & { type: 'text' | 'number' }) => {
   const labels = useLocalization()
   const errorId = useId()
+  const { locale } = (table as { options: { locale?: string } }).options
   const filterDraft = useFilterDraft({
     table,
     columnId: column.id,
     current: column.getFilterValue(),
     draftOf: current => draftOf(type, current),
-    filterOf: next => filterOf(type, next),
+    filterOf: next => filterOf(type, next, locale),
   })
   const { draft, setDraft, server } = filterDraft
   const apply = useDebouncedCallback((next: Draft) => {
-    const filter = filterOf(type, next)
+    const filter = filterOf(type, next, locale)
     if (filter !== null) setColumnFilterByUser(table, column.id, filter)
   }, debounceMs)
 
@@ -201,7 +201,7 @@ const ConditionPanel = ({
     label: string,
     focusRef?: RefObject<HTMLElement | null>,
   ) => {
-    const invalid = type === 'number' && isInvalidNumber(draft[key])
+    const invalid = type === 'number' && isInvalidNumber(draft[key], locale)
     return (
       <input
         ref={focusRef as RefObject<HTMLInputElement | null> | undefined}
@@ -229,8 +229,8 @@ const ConditionPanel = ({
   const invalid =
     type === 'number' &&
     (draft.operator === 'between'
-      ? isInvalidNumber(draft.from) || isInvalidNumber(draft.to)
-      : needsValue(draft.operator) && isInvalidNumber(draft.value))
+      ? isInvalidNumber(draft.from, locale) || isInvalidNumber(draft.to, locale)
+      : needsValue(draft.operator) && isInvalidNumber(draft.value, locale))
 
   return (
     <div className={styles.panel} data-testid="filter-panel">
@@ -291,8 +291,7 @@ const filterOfChoice = (
 const BooleanPanel = ({ table, column, controls }: FilterPanelProps) => {
   const labels = useLocalization()
   const labelId = useId()
-  const def = column.columnDef.filter
-  const nullable = typeof def === 'object' && !!def.nullable
+  const nullable = true
   const filterDraft = useFilterDraft({
     table,
     columnId: column.id,
@@ -359,7 +358,7 @@ const BooleanPanel = ({ table, column, controls }: FilterPanelProps) => {
 }
 
 export const FilterPanel = (props: FilterPanelProps) => {
-  const type = filterTypeOf(props.column.columnDef.filter)
+  const type = filterTypeOf(columnFilterDefOf(props.column))
   if (type === 'boolean') return <BooleanPanel {...props} />
   // Календарь — ленивый модуль: грид без колонок дат его не загружает (DF14).
   // Чек-лист вариантов — тоже ленивый модуль (ADR 0048, SF22).

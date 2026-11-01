@@ -46,7 +46,7 @@ const ROWS: Node[] = Array.from({ length: 20 }, (_, i) =>
     : node(`r${i}`, i % 3 === 0 ? 1 : 0),
 )
 const COLUMNS = [
-  { id: 'name', accessorKey: 'name', header: 'Name', filter: 'text' },
+  { id: 'name', accessorKey: 'name', header: 'Name' },
   { id: 'group', accessorKey: 'group', header: 'Group' },
 ]
 const kids = (parent: string, tag = 'k') =>

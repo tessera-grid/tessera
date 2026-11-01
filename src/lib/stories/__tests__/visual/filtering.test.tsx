@@ -87,7 +87,7 @@ const renderFilteringWith = async (args: Record<string, unknown>) => {
 
 const EDIT_COLUMNS = [
   { id: 'name', accessorKey: 'name', header: 'Name' },
-  { id: 'age', accessorKey: 'age', header: 'Age', filter: 'number' as const },
+  { id: 'age', accessorKey: 'age', header: 'Age', dataType: 'number' as const },
 ]
 
 const DRAG_HANDLE = '.drag__handler--column'
@@ -107,12 +107,28 @@ const chooseOperator = async (operator: string) => {
 }
 
 describe('Фильтрация — фильтры колонок', () => {
-  test('FL3: кнопка фильтра только у колонки с filter; колонка без filter не фильтруется; фильтр идёт по значению, а не по отрисовке', async () => {
-    await renderFiltering()
+  test('FL3: кнопка фильтра — у каждой колонки с данными, вид — от типа данных колонки (ADR 0172); у колонки без данных и с enableColumnFilter: false фильтра нет; фильтруется cell.getValue(), а не отрисовка', async () => {
+    // Колонка без данных и колонка с выключенным фильтром — кнопки нет.
+    const own = await renderFilteringWith({
+      columnsOverride: [
+        ...filteringColumns.map(column =>
+          column.id === 'visits'
+            ? { ...column, enableColumnFilter: false }
+            : column,
+        ),
+        { id: 'note', header: 'Note', cell: () => 'note' },
+      ],
+    })
     for (const id of ['name', 'city', 'age', 'vip']) {
       expect(filterButton(id), id).not.toBeNull()
     }
     expect(filterButton('visits')).toBeNull()
+    expect(filterButton('note')).toBeNull()
+    await own.unmount()
+
+    // Колонка без типа — тоже с фильтром, текстовым.
+    await renderFiltering()
+    expect(filterButton('visits')).not.toBeNull()
 
     // VIP отрисован текстом «Yes»/«No», а фильтруется булево значение.
     await openFilter('vip')
@@ -152,8 +168,8 @@ describe('Фильтрация — фильтры колонок', () => {
     expect(rowIds()).toEqual(['1'])
   })
 
-  test('FL8: булево — «Все / Да / Нет», «Пусто» только при nullable и отбирает пустые', async () => {
-    const nullable = await renderFiltering()
+  test('FL8: булево — «Все / Да / Нет / Пусто»; «Пусто» отбирает null и undefined (ADR 0172)', async () => {
+    await renderFiltering()
     await openFilter('vip')
     const values = () =>
       [...panel()!.querySelectorAll<HTMLElement>('[data-value]')].map(
@@ -166,16 +182,6 @@ describe('Фильтрация — фильтры колонок', () => {
     await expect.poll(rowIds).toEqual(['1', '2', '4', '5', '7', '10', '11'])
     await humanClick(radio('all'))
     await expect.poll(rowIds).toEqual(ALL)
-    await userEvent.keyboard('{Escape}')
-    await nullable.unmount()
-
-    await renderFiltering({
-      columnsOverride: filteringColumns.map(column =>
-        column.id === 'vip' ? { ...column, filter: 'boolean' } : column,
-      ),
-    })
-    await openFilter('vip')
-    expect(values()).toEqual(['all', 'yes', 'no'])
   })
 
   test('FL9: кнопка открывает панель (условие, значение, «Сбросить»); активный фильтр виден по индикации и доступному имени; при headerActionMenu — пункт кебаба', async () => {
@@ -548,7 +554,6 @@ const TREE_COLUMNS = [
     accessorKey: 'firstName',
     header: 'First Name',
     size: 200,
-    filter: 'text' as const,
   },
   { id: 'country', accessorKey: 'country', header: 'Country', size: 160 },
 ]
@@ -755,8 +760,8 @@ describe('Фильтрация — сочетания с плагинами', ()
 })
 
 const DIRECT_COLUMNS = [
-  { id: 'name', accessorKey: 'name', header: 'Name', filter: 'text' as const },
-  { id: 'city', accessorKey: 'city', header: 'City', filter: 'text' as const },
+  { id: 'name', accessorKey: 'name', header: 'Name' },
+  { id: 'city', accessorKey: 'city', header: 'City' },
 ]
 
 interface DirectGridProps {

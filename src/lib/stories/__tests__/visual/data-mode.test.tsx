@@ -39,8 +39,8 @@ const DATA: Item[] = [
 ]
 
 const COLUMNS = [
-  { id: 'name', accessorKey: 'name', header: 'Name', filter: 'text' },
-  { id: 'city', accessorKey: 'city', header: 'City', filter: 'text' },
+  { id: 'name', accessorKey: 'name', header: 'Name' },
+  { id: 'city', accessorKey: 'city', header: 'City' },
 ]
 
 let table: any
@@ -186,7 +186,7 @@ describe('режим данных у ядра (ADR 0169)', () => {
             id: 'created',
             accessorKey: 'created',
             header: 'Created',
-            filter: 'datetime',
+            dataType: 'dateTimeString',
           },
         ] as never,
         data: MANY,

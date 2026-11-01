@@ -5,6 +5,7 @@
  */
 import { isPlaceholderRow } from '../../core/lazyPlaceholder'
 import { type ColumnOptionsDef, optionTextOf } from '../../core/columnOptions'
+import type { ResolvedDataType } from '../../core/dataTypes'
 import { serverRowModelReason } from '../../core/pluginDiagnostics'
 import { rowSourceOf } from '../../core/rowSource'
 import { rowSelectionValueOf } from '../../core/rowSelectionAll'
@@ -33,7 +34,8 @@ interface ExportRow {
 
 interface ExportSourceColumn {
   id: string
-  columnDef: { header?: unknown; filter?: unknown } & ColumnOptionsDef
+  columnDef: { header?: unknown } & ColumnOptionsDef
+  getDataType?: () => ResolvedDataType | undefined
   getIsVisible: () => boolean
   getSize?: () => number
   getIsActionsColumn?: () => boolean
@@ -172,6 +174,21 @@ export const selectedRowIdsOf = (table: unknown): string[] => {
     .map(([id]) => id)
 }
 
+const dataTypeOf = (
+  column: ExportSourceColumn,
+): Pick<ExportColumn, 'dataType'> => {
+  const type = column.getDataType?.()
+  if (!type) return {}
+  const { parseDate } = type.definition
+  return {
+    dataType: {
+      name: type.name,
+      base: type.base,
+      ...(parseDate && { parseDate }),
+    },
+  }
+}
+
 export const collectExportData = (
   table: unknown,
   { rows = 'all', columns = 'visible', formatValue }: ExportCollectOptions = {},
@@ -182,9 +199,7 @@ export const collectExportData = (
     header: headerOf(column),
     size: column.getSize?.(),
     pinned: column.getIsPinned?.() ?? false,
-    ...(column.columnDef.filter !== undefined
-      ? { filter: column.columnDef.filter as ExportColumn['filter'] }
-      : {}),
+    ...dataTypeOf(column),
   }))
   const timeZone = (table as ExportTable).options?.timeZone
   return {

@@ -37,22 +37,26 @@ export const filteringColumns: ColumnDef<any, any>[] = [
     accessorKey: 'name',
     header: 'Name',
     size: 160,
-    filter: 'text',
   },
   {
     id: 'city',
     accessorKey: 'city',
     header: 'City',
     size: 140,
-    filter: 'text',
   },
-  { id: 'age', accessorKey: 'age', header: 'Age', size: 120, filter: 'number' },
+  {
+    id: 'age',
+    accessorKey: 'age',
+    header: 'Age',
+    size: 120,
+    dataType: 'number',
+  },
   {
     id: 'vip',
     accessorKey: 'vip',
     header: 'VIP',
     size: 120,
-    filter: { type: 'boolean', nullable: true },
+    dataType: 'boolean',
     cell: ({ getValue }) => {
       const value = getValue()
       return value === null ? '—' : value ? 'Yes' : 'No'
@@ -117,14 +121,13 @@ export const dateFilteringColumns: ColumnDef<any, any>[] = [
     accessorKey: 'name',
     header: 'Name',
     size: 160,
-    filter: 'text',
   },
   {
     id: 'birthDate',
     accessorKey: 'birthDate',
     header: 'Birth date',
     size: 160,
-    filter: 'date',
+    dataType: 'dateString',
     cell: ({ getValue }) => getValue() ?? '—',
   },
   {
@@ -132,7 +135,7 @@ export const dateFilteringColumns: ColumnDef<any, any>[] = [
     accessorKey: 'createdAt',
     header: 'Created',
     size: 220,
-    filter: 'datetime',
+    dataType: 'dateTimeString',
     cell: ({ getValue, table }) =>
       formatCreatedAt(getValue() as string, table.options as DateCellOptions),
   },
@@ -238,7 +241,6 @@ export const optionFilteringColumns: ColumnDef<any, any>[] = [
     accessorKey: 'name',
     header: 'Name',
     size: 140,
-    filter: 'text',
   },
   {
     id: 'status',
@@ -246,7 +248,7 @@ export const optionFilteringColumns: ColumnDef<any, any>[] = [
     header: 'Status',
     size: 130,
     options: STATUS_OPTIONS,
-    filter: 'select',
+    dataType: 'select',
   },
   {
     id: 'tags',
@@ -254,14 +256,14 @@ export const optionFilteringColumns: ColumnDef<any, any>[] = [
     header: 'Tags',
     size: 220,
     options: TAG_OPTIONS,
-    filter: 'multiselect',
+    dataType: 'multiSelect',
   },
   {
     id: 'city',
     accessorKey: 'city',
     header: 'City',
     size: 120,
-    filter: 'select',
+    dataType: 'select',
   },
   {
     id: 'managerId',
@@ -269,6 +271,7 @@ export const optionFilteringColumns: ColumnDef<any, any>[] = [
     header: 'Manager',
     size: 160,
     getOptionLabel: (id: string) => managerNames.get(id),
-    filter: { type: 'lookup', loadOptions: loadManagers },
+    dataType: 'select',
+    loadOptions: loadManagers,
   },
 ] as ColumnDef<any, any>[]

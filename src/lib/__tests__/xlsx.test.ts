@@ -16,6 +16,10 @@ const read = async (blob: Blob) => {
   return workbook
 }
 
+/** Тип колонки выгрузки (ADR 0172, DT17). */
+const DAY = { name: 'dateString', base: 'dateString' } as const
+const MOMENT = { name: 'dateTimeString', base: 'dateTimeString' } as const
+
 const sheetOf = async (data: ExportData, options = {}) =>
   (await read(await buildXlsx(data, options))).worksheets[0]!
 
@@ -97,13 +101,16 @@ describe('xlsx — генератор (ADR 0073)', () => {
 
   it('XL3: колонки date/datetime — строки по DF2; date — день без сдвига, datetime и Date — стенное время timeZone с секундами; неразборчивое — текст', async () => {
     const columns = [
-      { id: 'day', header: 'Day', filter: 'date' },
+      { id: 'day', header: 'Day', dataType: DAY },
       {
         id: 'at',
         header: 'At',
-        filter: { type: 'datetime', parse: (v: unknown) => `${v as string}Z` },
+        dataType: {
+          ...MOMENT,
+          parseDate: (v: unknown) => `${v as string}Z`,
+        },
       },
-      { id: 'moment', header: 'Moment', filter: 'datetime' },
+      { id: 'moment', header: 'Moment', dataType: MOMENT },
     ]
     const sheet = await sheetOf(
       {

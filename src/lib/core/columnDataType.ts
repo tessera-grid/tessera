@@ -1,3 +1,5 @@
+import { parseLocaleNumber } from '../util/parseNumber'
+import type { ColumnOption } from './columnOptions'
 import type { BuiltInDataType } from './dataTypes'
 
 /**
@@ -5,9 +7,26 @@ import type { BuiltInDataType } from './dataTypes'
  * лежит в данных.
  */
 
-/** `'date'` — объект `Date`, `'dateString'` — строка `YYYY-MM-DD`. */
+/**
+ * Вид разбора: `'date'` и `'dateTime'` — объект `Date`, `'dateString'` — строка
+ * `YYYY-MM-DD`, `'dateTimeString'` — ISO со временем, `'select'` — значение варианта по
+ * подписи.
+ */
 export type ColumnDataType =
-  'text' | 'number' | 'boolean' | 'date' | 'dateString'
+  | 'text'
+  | 'number'
+  | 'boolean'
+  | 'date'
+  | 'dateTime'
+  | 'dateString'
+  | 'dateTimeString'
+  | 'select'
+
+/** Язык чисел и варианты колонки — для разбора по типу (DT14). */
+export interface ParseContext {
+  locale?: string
+  options?: readonly ColumnOption[]
+}
 
 /** Тип по прежнему значению ячейки: число, булево или `Date`, иначе текст. */
 export const inferDataType = (value: unknown): ColumnDataType =>
@@ -19,16 +38,9 @@ export const inferDataType = (value: unknown): ColumnDataType =>
         ? 'date'
         : 'text'
 
-/** Разбор правки по базовому типу (ADR 0172): прочие базовые типы — текстом до этапа 2. */
+/** Разбор правки по базовому типу (ADR 0172, DT14); `multiSelect` — текстом. */
 export const parseKindOf = (base: BuiltInDataType): ColumnDataType =>
-  base === 'dateTime'
-    ? 'date'
-    : base === 'number' ||
-        base === 'boolean' ||
-        base === 'date' ||
-        base === 'dateString'
-      ? base
-      : 'text'
+  base === 'multiSelect' ? 'text' : base
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
 
@@ -36,14 +48,28 @@ const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
 export const parseByDataType = (
   text: string,
   type: ColumnDataType,
+  { locale, options }: ParseContext = {},
 ): { value: unknown } | undefined => {
   if (type === 'text') return { value: text }
   const trimmed = text.trim()
   if (trimmed === '') return { value: null }
   switch (type) {
     case 'number': {
-      const value = Number(trimmed)
-      return Number.isFinite(value) ? { value } : undefined
+      const value = parseLocaleNumber(trimmed, locale)
+      return value !== null && Number.isFinite(value) ? { value } : undefined
+    }
+    case 'select': {
+      const lower = trimmed.toLowerCase()
+      const option =
+        options?.find(item => item.label.toLowerCase() === lower) ??
+        options?.find(item => String(item.value) === trimmed)
+      return option ? { value: option.value } : undefined
+    }
+    case 'dateTime':
+    case 'dateTimeString': {
+      const date = new Date(trimmed)
+      if (Number.isNaN(date.getTime())) return undefined
+      return { value: type === 'dateTime' ? date : date.toISOString() }
     }
     case 'boolean': {
       const lower = trimmed.toLowerCase()
