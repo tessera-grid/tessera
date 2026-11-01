@@ -3,7 +3,7 @@
 import { flexRender } from '@tanstack/react-table'
 
 import { defaultCell } from '../core/commonFeature'
-import { alignOf } from '../core/dataTypeFormat'
+import { alignOf, isNumericBase } from '../core/dataTypeFormat'
 import type { TableLabels } from '../core/localization'
 import type { Cell, Column } from '../types'
 import { CheckMark } from '../ui/CheckMark/CheckMark'
@@ -33,5 +33,5 @@ export const renderCellContent = (
 /** Атрибуты выравнивания ячейки и заголовка колонки (ADR 0172, DT9). */
 export const alignAttrs = (column: Column<any, any, unknown>) => ({
   'data-align': alignOf(column.table as never, column),
-  'data-numeric': column.getDataType()?.base === 'number' || undefined,
+  'data-numeric': isNumericBase(column.getDataType()?.base) || undefined,
 })

@@ -5,6 +5,7 @@ import type { CellComponentProps } from '../core/createSlots'
 import type { ServerRowsRequest } from '../plugins'
 import { exportFormats } from '../plugins/dataExport'
 import type { ColumnDef } from '../types'
+import { compareDecimal, decimalText, parseDecimal } from '../util/decimal'
 import type { StoryProps } from './DataGridStory.types'
 import { StoryComponent } from './DataGridStory'
 import { dataGridMeta } from './dataGridMeta'
@@ -21,6 +22,8 @@ import {
 } from './__mocks__/catalogPlay'
 import { untilDone } from './__mocks__/cellGestures'
 import {
+  AMOUNT_ROWS,
+  BALANCE_COLUMN,
   LOCALE_ROWS,
   MANAGERS,
   MANAGER_COLUMN,
@@ -85,7 +88,11 @@ const OWN_TABLE = 'Строки и колонки задаёт раздел: п�
 export const DataTypesPlayground: StoryObj<StoryProps> = {
   name: 'Playground',
   args: {
-    columnsOverride: [...productColumns('money'), MANAGER_COLUMN],
+    columnsOverride: [
+      ...productColumns('money'),
+      MANAGER_COLUMN,
+      BALANCE_COLUMN,
+    ],
     dataOverride: managedRows(50),
     dataTypes: MONEY_TYPES,
     timeZone: 'UTC',
@@ -1029,5 +1036,156 @@ export const DataTypesObjectLabel: StoryObj<StoryProps> = {
       )
       await settle()
     })
+  },
+}
+
+// --- ADR 0174, S3: суммы строками — точный порядок ---------------------------------------
+
+const AMOUNT_COLUMNS: ColumnDef<any, any>[] = [
+  { id: 'name', accessorKey: 'name', header: 'Name', dataType: 'text' },
+  {
+    id: 'amount',
+    accessorKey: 'amount',
+    header: 'Amount',
+    dataType: 'numberString',
+    size: 240,
+  },
+]
+const amountTexts = (root: HTMLElement) =>
+  orderedRows(root).map(
+    row =>
+      row
+        .querySelector(`${CELL}[data-column-id="amount"]`)
+        ?.textContent?.trim() ?? '',
+  )
+/** Порядок сумм по значению: те же строки, сравнение — по цифрам. */
+const amountsDesc = () =>
+  [...AMOUNT_ROWS]
+    .map(row => row.amount)
+    .sort((a, b) => compareDecimal(parseDecimal(b)!, parseDecimal(a)!))
+
+const NUMBER_STRING: readonly GuideStoryStep[] = [
+  {
+    title: 'Суммы хранятся строками',
+    hint: 'Сервер отдаёт суммы строками, чтобы не терять знаки: у двух самых больших сумм различается только последняя цифра. Таблица показывает суммы как есть и выравнивает их по правому краю.',
+    props: () => ({
+      columnsOverride: AMOUNT_COLUMNS,
+      dataOverride: AMOUNT_ROWS,
+      enableColumnSorting: true,
+    }),
+  },
+  {
+    title: 'Пользователь отсортировал по сумме',
+    hint: 'Суммы упорядочены по значению от большей к меньшей, с учётом знака. Две самые большие суммы стоят в верном порядке, хотя обычным числом они бы совпали.',
+    enter: sortTo('amount', 'descending'),
+  },
+]
+
+/** ADR 0174, S3: пользователь сортирует суммы, хранящиеся строками, — порядок точный. */
+export const DataTypesNumberString: StoryObj<StoryProps> = {
+  name: 'Decimal strings',
+  parameters: { scenario: '0174/S3', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Суммы строками"
+      steps={NUMBER_STRING}
+      args={guideArgs({ height: '560' }, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(NUMBER_STRING[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() =>
+        expect(amountTexts(canvas)).toEqual(AMOUNT_ROWS.map(row => row.amount)),
+      )
+      await expect(cellOf(canvas, 0, 'amount')!.dataset.align).toBe('end')
+    })
+    await step(NUMBER_STRING[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(amountTexts(canvas)).toEqual(amountsDesc()))
+      const [first, second] = amountTexts(canvas)
+      await expect(Number(first)).toBe(Number(second))
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0174, S4: суммы строками в Excel -----------------------------------------------
+
+const AMOUNT_EXPORT: readonly GuideStoryStep[] = [
+  {
+    title: 'Суммы строками и выгрузка',
+    hint: 'Суммы хранятся строками. К выгрузке подключён формат Excel.',
+    props: () => ({
+      columnsOverride: AMOUNT_COLUMNS,
+      dataOverride: AMOUNT_ROWS,
+      enableDataExport: true,
+      dataExportFormats: [exportFormats.csv(), exportFormats.xlsx()],
+      onExported,
+    }),
+  },
+  {
+    title: 'Пользователь выбрал Excel',
+    hint: 'В настройках выгрузки выбран формат Excel.',
+    states: ['overlay.export'],
+    enter: stepAction(async (root, { signal }) => {
+      await openExportPanel(root, signal)
+      await chooseAxis('format', 'xlsx', signal)
+    }),
+  },
+  {
+    title: 'Пользователь выгрузил',
+    hint: 'Скачался файл Excel. Суммы в нём — числа, с ними можно считать. Сумма длиннее пятнадцати знаков записана текстом: числом Excel её бы округлил.',
+    enter: stepAction(async (root, { signal }) => {
+      await openExportPanel(root, signal)
+      await chooseAxis('format', 'xlsx', signal)
+      await runExport(signal)
+    }),
+  },
+]
+
+/** ADR 0174, S4: пользователь выгружает суммы-строки в Excel и получает числа. */
+export const DataTypesNumberStringExport: StoryObj<StoryProps> = {
+  name: 'Decimal strings to Excel',
+  parameters: { scenario: '0174/S4', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Суммы строками в Excel"
+      steps={AMOUNT_EXPORT}
+      args={guideArgs({ height: '460' }, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const download = interceptDownload()
+    try {
+      await step(AMOUNT_EXPORT[0]!.title, async () => {
+        await waitForRows(canvas)
+      })
+      await step(AMOUNT_EXPORT[1]!.title, async () => {
+        await guideNext(canvas)
+        await stepDone(canvas)
+        await expect(axisChecked('format', 'xlsx')).toBe(true)
+        await settle()
+      })
+      await step(AMOUNT_EXPORT[2]!.title, async () => {
+        await guideNext(canvas)
+        await stepDone(canvas)
+        await expect(download.names).toEqual(['export.xlsx'])
+        const bytes = new Uint8Array(await download.blobs[0]!.arrayBuffer())
+        const sheet = await zipEntryText(bytes, 'xl/worksheets/sheet1.xml')
+        // Строка 2 — первая сумма: длинная, текстом; строка 4 — короткая, числом.
+        expect(sheet).toContain(
+          `<t xml:space="preserve">${AMOUNT_ROWS[0]!.amount}</t>`,
+        )
+        expect(sheet).toContain(
+          `<c r="B4"><v>${decimalText(parseDecimal(AMOUNT_ROWS[2]!.amount)!)}</v></c>`,
+        )
+      })
+    } finally {
+      download.restore()
+    }
+    await settle()
   },
 }

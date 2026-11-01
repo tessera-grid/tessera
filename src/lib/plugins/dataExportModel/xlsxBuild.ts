@@ -7,6 +7,14 @@ import { cellToWallValue } from '../../core/wallTime'
 import { toExportText } from './exportData'
 import type { ExportColumn, ExportData } from './types'
 import { buildZip, crc32Update, type ZipEntry } from './zip'
+import {
+  decimalText,
+  parseDecimal,
+  significantDigits,
+} from '../../util/decimal'
+
+/** Значащих цифр числа Excel: дальше он округляет. */
+const EXCEL_DIGITS = 15
 
 export interface BuildXlsxOptions {
   /** Пояс стенного времени дат; по умолчанию — пояс данных выгрузки, иначе браузера. */
@@ -75,6 +83,8 @@ const dateCell = (ref: string, wallMs: number, dateOnly: boolean) =>
 
 interface CellContext {
   kind: DateKind
+  /** Колонка `numberString`: число до 15 значащих цифр, длиннее — текст (TY13). */
+  decimal: boolean
   parse?: (value: unknown) => unknown
   timeZone?: string
 }
@@ -90,6 +100,12 @@ const cellXml = (ref: string, value: unknown, context: CellContext) => {
   }
   if (typeof value === 'number') {
     return Number.isFinite(value) ? `<c r="${ref}"><v>${value}</v></c>` : ''
+  }
+  if (context.decimal && typeof value === 'string') {
+    const decimal = parseDecimal(value)
+    if (decimal && significantDigits(decimal) <= EXCEL_DIGITS) {
+      return `<c r="${ref}"><v>${decimalText(decimal)}</v></c>`
+    }
   }
   if (typeof value === 'boolean') {
     return `<c r="${ref}" t="b"><v>${value ? 1 : 0}</v></c>`
@@ -159,6 +175,7 @@ export const buildXlsx = async (
   const encoder = new TextEncoder()
   const contexts: CellContext[] = columns.map(column => ({
     kind: dateKindOf(column),
+    decimal: column.dataType?.base === 'numberString',
     parse: column.dataType?.parseDate,
     timeZone,
   }))

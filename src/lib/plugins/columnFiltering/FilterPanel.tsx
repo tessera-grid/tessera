@@ -14,7 +14,7 @@ import { Button } from '../../ui/Button'
 import { setColumnFilterByUser } from '../../shared/filtering/filtering'
 import type { ActionPanelControls } from '../../core/headerActions'
 import { useLocalization } from '../../core/localization'
-import { parseLocaleNumber } from '../../util/parseNumber'
+import { parseLocaleDecimal, parseLocaleNumber } from '../../util/parseNumber'
 import { preloadable } from '../../core/preloadable'
 import { useDebouncedCallback } from '../../util/useDebouncedCallback'
 import {
@@ -95,8 +95,19 @@ const needsValue = (operator: Operator) =>
 /** Число из ввода по языку таблицы: `null` — пусто, `NaN` — не число (ADR 0172, DT14). */
 export const parseNumberInput = parseLocaleNumber
 
-const isInvalidNumber = (input: string, locale?: string) =>
-  Number.isNaN(parseNumberInput(input, locale) as number)
+/** Граница из ввода: у `numberString` — десятичная строка без float (ADR 0174, TY11). */
+const boundOf = (
+  input: string,
+  locale: string | undefined,
+  decimal: boolean,
+) => {
+  if (!decimal) return parseNumberInput(input, locale)
+  const value = parseLocaleDecimal(input, locale)
+  return value === undefined ? Number.NaN : value
+}
+
+const isInvalidNumber = (input: string, locale?: string, decimal = false) =>
+  Number.isNaN(boundOf(input, locale, decimal) as number)
 
 interface Draft {
   operator: Operator
@@ -133,6 +144,7 @@ const filterOf = (
   type: 'text' | 'number',
   draft: Draft,
   locale?: string,
+  decimal = false,
 ): ColumnFilterValue | undefined | null => {
   const { operator } = draft
   if (!needsValue(operator)) {
@@ -142,14 +154,14 @@ const filterOf = (
     return { operator, value: draft.value } as ColumnFilterValue
   }
   if (operator === 'between') {
-    const from = parseNumberInput(draft.from, locale)
-    const to = parseNumberInput(draft.to, locale)
-    if (Number.isNaN(from) || Number.isNaN(to)) return null
+    const from = boundOf(draft.from, locale, decimal)
+    const to = boundOf(draft.to, locale, decimal)
+    if (Number.isNaN(from as number) || Number.isNaN(to as number)) return null
     if (from === null && to === null) return undefined
     return { operator, value: [from, to] }
   }
-  const value = parseNumberInput(draft.value, locale)
-  if (Number.isNaN(value)) return null
+  const value = boundOf(draft.value, locale, decimal)
+  if (Number.isNaN(value as number)) return null
   if (value === null) return undefined
   return { operator, value } as ColumnFilterValue
 }
@@ -164,16 +176,20 @@ const ConditionPanel = ({
   const labels = useLocalization()
   const errorId = useId()
   const { locale } = (table as { options: { locale?: string } }).options
+  const decimal =
+    (
+      column as { getDataType?: () => { base: string } | undefined }
+    ).getDataType?.()?.base === 'numberString'
   const filterDraft = useFilterDraft({
     table,
     columnId: column.id,
     current: column.getFilterValue(),
     draftOf: current => draftOf(type, current),
-    filterOf: next => filterOf(type, next, locale),
+    filterOf: next => filterOf(type, next, locale, decimal),
   })
   const { draft, setDraft, server } = filterDraft
   const apply = useDebouncedCallback((next: Draft) => {
-    const filter = filterOf(type, next, locale)
+    const filter = filterOf(type, next, locale, decimal)
     if (filter !== null) setColumnFilterByUser(table, column.id, filter)
   }, debounceMs)
 
@@ -201,7 +217,8 @@ const ConditionPanel = ({
     label: string,
     focusRef?: RefObject<HTMLElement | null>,
   ) => {
-    const invalid = type === 'number' && isInvalidNumber(draft[key], locale)
+    const invalid =
+      type === 'number' && isInvalidNumber(draft[key], locale, decimal)
     return (
       <input
         ref={focusRef as RefObject<HTMLInputElement | null> | undefined}
@@ -229,8 +246,10 @@ const ConditionPanel = ({
   const invalid =
     type === 'number' &&
     (draft.operator === 'between'
-      ? isInvalidNumber(draft.from, locale) || isInvalidNumber(draft.to, locale)
-      : needsValue(draft.operator) && isInvalidNumber(draft.value, locale))
+      ? isInvalidNumber(draft.from, locale, decimal) ||
+        isInvalidNumber(draft.to, locale, decimal)
+      : needsValue(draft.operator) &&
+        isInvalidNumber(draft.value, locale, decimal))
 
   return (
     <div className={styles.panel} data-testid="filter-panel">

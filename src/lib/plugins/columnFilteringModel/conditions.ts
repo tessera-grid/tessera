@@ -7,12 +7,14 @@ import type { ColumnOptionsDef } from '../../core/columnOptions'
 import type { BuiltInDataType, ResolvedDataType } from '../../core/dataTypes'
 import { cellToWall, isInactiveDateFilter, matchesDate, nowWall } from './dates'
 import { matchesOption } from './options'
+import { compareDecimal, parseDecimal } from '../../util/decimal'
 import type {
   BooleanFilter,
   ColumnFilterDef,
   ColumnFilterType,
   ColumnFilterValue,
   DateFilter,
+  NumberBound,
   NumberFilter,
   OptionFilter,
   TextFilter,
@@ -34,6 +36,7 @@ export interface FilterDefColumn {
 
 const KIND: Partial<Record<BuiltInDataType, ColumnFilterType>> = {
   number: 'number',
+  numberString: 'number',
   boolean: 'boolean',
   date: 'date',
   dateString: 'date',
@@ -107,8 +110,26 @@ const toNumber = (value: unknown): number =>
       ? Number(value)
       : Number.NaN
 
-const isBound = (bound: number | null): bound is number =>
-  typeof bound === 'number' && Number.isFinite(bound)
+const isBound = (bound: NumberBound | null): bound is NumberBound =>
+  (typeof bound === 'number' && Number.isFinite(bound)) ||
+  (typeof bound === 'string' && parseDecimal(bound) !== undefined)
+
+/**
+ * Порядок значения и границы: десятичная строка с любой стороны — без float (ADR 0174,
+ * TY11), иначе числом; `undefined` — значение не число.
+ */
+const compareBound = (
+  value: unknown,
+  bound: NumberBound,
+): number | undefined => {
+  if (typeof value === 'string' || typeof bound === 'string') {
+    const a = parseDecimal(value)
+    const b = parseDecimal(bound)
+    return a && b ? compareDecimal(a, b) : undefined
+  }
+  const n = toNumber(value)
+  return Number.isNaN(n) ? undefined : n - (bound as number)
+}
 
 export const matchesNumber = (
   value: unknown,
@@ -116,26 +137,34 @@ export const matchesNumber = (
 ): boolean => {
   if (filter.operator === 'empty') return isEmptyValue(value)
   if (filter.operator === 'notEmpty') return !isEmptyValue(value)
-  const n = toNumber(value)
   if (filter.operator === 'between') {
     const [from, to] = filter.value
     if (!isBound(from) && !isBound(to)) return true
-    return (!isBound(from) || n >= from) && (!isBound(to) || n <= to)
+    const fromOrder = isBound(from) ? compareBound(value, from) : 0
+    const toOrder = isBound(to) ? compareBound(value, to) : 0
+    return (
+      fromOrder !== undefined &&
+      toOrder !== undefined &&
+      fromOrder >= 0 &&
+      toOrder <= 0
+    )
   }
   if (!isBound(filter.value)) return true
+  const order = compareBound(value, filter.value)
+  if (order === undefined) return false
   switch (filter.operator) {
     case 'equals':
-      return n === filter.value
+      return order === 0
     case 'notEquals':
-      return !Number.isNaN(n) && n !== filter.value
+      return order !== 0
     case 'lessThan':
-      return n < filter.value
+      return order < 0
     case 'lessThanOrEqual':
-      return n <= filter.value
+      return order <= 0
     case 'greaterThan':
-      return n > filter.value
+      return order > 0
     case 'greaterThanOrEqual':
-      return n >= filter.value
+      return order >= 0
   }
 }
 
@@ -207,9 +236,12 @@ export const isInactiveFilter = (filter: unknown): boolean => {
     operator === 'before' ||
     operator === 'after' ||
     operator === 'preset' ||
+    // Строковые границы «между» — даты; десятичная строка — граница числа (ADR 0174).
     (operator === 'between' &&
       Array.isArray(value) &&
-      value.some(bound => typeof bound === 'string'))
+      value.some(
+        bound => typeof bound === 'string' && parseDecimal(bound) === undefined,
+      ))
   ) {
     return isInactiveDateFilter(filter as DateFilter)
   }

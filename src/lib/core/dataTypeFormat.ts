@@ -6,6 +6,7 @@
  */
 import { optionTextOf, type ColumnOptionsDef } from './columnOptions'
 import { DEFAULT_LOCALE } from './localization'
+import { parseDecimal } from '../util/decimal'
 import { logWarn } from '../util/logger'
 import {
   type DataTypeAlign,
@@ -241,6 +242,17 @@ export const formatDataTypeValue = (
     case 'dateString':
     case 'dateTimeString':
       return dateText(value, type, locale, timeZone)
+    case 'numberString':
+      // Строку `Intl` форматирует без перевода во float (TY9).
+      return type.definition.format &&
+        (typeof value === 'number' || parseDecimal(value))
+        ? formatterOf(
+            'number',
+            type.definition.format,
+            locale,
+            undefined,
+          ).format(value as number)
+        : String(value)
     case 'multiSelect':
       return Array.isArray(value) ? value.join(', ') : String(value)
     case 'object':
@@ -251,11 +263,17 @@ export const formatDataTypeValue = (
   }
 }
 
-/** Выравнивание колонки: своё у колонки или типа, у `number` — `end` (DT9). */
+/** Числа — `number` и десятичная строка `numberString`: вправо, цифры одной ширины. */
+export const isNumericBase = (base: string | undefined) =>
+  base === 'number' || base === 'numberString'
+
+/** Выравнивание колонки: своё у колонки или типа, у чисел — `end` (DT9, TY9). */
 export const alignOf = (
   table: FormatTable,
   column: FormatColumn,
 ): DataTypeAlign | undefined => {
   const type = resolveDataType(table, column)
-  return type?.definition.align ?? (type?.base === 'number' ? 'end' : undefined)
+  return (
+    type?.definition.align ?? (isNumericBase(type?.base) ? 'end' : undefined)
+  )
 }

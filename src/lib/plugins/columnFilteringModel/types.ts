@@ -53,12 +53,15 @@ export type TextFilter =
   | EmptinessFilter
 
 /** Граница `null` у «между» — открытый интервал с этой стороны. */
+/** Граница числового условия; у колонки `numberString` — десятичная строка (ADR 0174). */
+export type NumberBound = number | string
+
 export type NumberFilter =
   | {
       operator: Exclude<NumberFilterOperator, 'between' | 'empty' | 'notEmpty'>
-      value: number
+      value: NumberBound
     }
-  | { operator: 'between'; value: [number | null, number | null] }
+  | { operator: 'between'; value: [NumberBound | null, NumberBound | null] }
   | EmptinessFilter
 
 /** «Все» — отсутствие фильтра; «Пусто» — вариант булева фильтра. */

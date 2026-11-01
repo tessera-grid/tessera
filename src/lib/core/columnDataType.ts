@@ -1,4 +1,4 @@
-import { parseLocaleNumber } from '../util/parseNumber'
+import { parseLocaleDecimal, parseLocaleNumber } from '../util/parseNumber'
 import type { ColumnOption } from './columnOptions'
 import type { BuiltInDataType } from './dataTypes'
 
@@ -22,6 +22,7 @@ export type ColumnDataType =
   | 'dateTimeString'
   | 'select'
   | 'object'
+  | 'numberString'
 
 /** Язык чисел и варианты колонки — для разбора по типу (DT14). */
 export interface ParseContext {
@@ -59,6 +60,11 @@ export const parseByDataType = (
     case 'number': {
       const value = parseLocaleNumber(trimmed, locale)
       return value !== null && Number.isFinite(value) ? { value } : undefined
+    }
+    case 'numberString': {
+      // Десятичная строка, как набрана, без перевода во float (ADR 0174, TY12).
+      const value = parseLocaleDecimal(trimmed, locale)
+      return typeof value === 'string' ? { value } : undefined
     }
     case 'select': {
       const lower = trimmed.toLowerCase()

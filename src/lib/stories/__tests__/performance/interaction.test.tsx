@@ -1481,6 +1481,97 @@ describe('Отзывчивость — фильтр записи', () => {
   )
 })
 
+// Сортировка десятичных строк (ADR 0174, TY14): первый клик сортировки колонки сумм на
+// 100 000 строк — суммы строкой `numberString` против тех же сумм числом `number`.
+const amountColumns = (decimal: boolean) => [
+  ...mockColumns.slice(0, SEARCH_SIZE.columnCount - 1),
+  {
+    id: 'amount',
+    header: 'Amount',
+    size: 150,
+    dataType: decimal ? 'numberString' : 'number',
+    accessorFn: (row: { total: number; visits: number }) =>
+      decimal
+        ? `${row.total}.${String(row.visits).padStart(2, '0')}`
+        : row.total + row.visits / 100,
+  },
+]
+
+describe('Отзывчивость — сортировка десятичных строк', () => {
+  test(
+    'TY14: сортировка 100 000 строк numberString — против тех же значений типом number',
+    async () => {
+      const measure = async (decimal: boolean) => {
+        const columns = amountColumns(decimal)
+        await renderGrid({
+          ...SEARCH_SIZE,
+          ...ALL_PLUGINS,
+          ...inlineHeaderActions(columns),
+        } as Parameters<typeof renderGrid>[0])
+        await waitForGrid()
+        const button = (columnId: string) =>
+          document.querySelector<HTMLElement>(
+            `.data-grid__head-cell[data-column-id="${columnId}"] .column-sort__button`,
+          )
+        await expect.poll(() => button('amount')).toBeTruthy()
+        // Прогрев сортирует другую колонку: замер — первый клик по колонке сумм.
+        let warmed = false
+        const result = await measureInteractionWork(
+          async () => {
+            const target = warmed ? 'amount' : 'age'
+            warmed = true
+            button(target)!.click()
+          },
+          { afterWarmup: () => expect(sortOf('age')).not.toBe('none') },
+        )
+        expect([sortOf('amount'), sortOf('age')]).toEqual([
+          expect.not.stringMatching(/^none$/),
+          'none',
+        ])
+        await cleanup()
+        return result
+      }
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const decimal = medianRun(runs.variant, r => r.longestMs)
+      // Разбор строки и сравнение цифр против вычитания чисел — запас как у DT11.
+      const ceiling = ceilingOver(base.longestMs, { ratio: 1.5, plusMs: 300 })
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '100 000×10',
+          plugins: 'all',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('TY14-base', 'сортировка сумм числом', base, false)
+      await record('TY14', 'сортировка сумм строкой', decimal, true)
+
+      expect(
+        decimal.longestMs,
+        `строкой longest=${decimal.longestMs.toFixed(1)}ms, база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
 // Своя отсортированная модель (ADR 0064, SM7): построение модели на 100 000 строк —
 // смена направления сортировки и сразу модель — против createSortedRowModel TanStack
 // на тех же данных. Headless-таблицы без рендера: меряется только модель.

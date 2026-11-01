@@ -199,3 +199,27 @@ export const PERSON_TYPES: DataTypeRegistry = {
       `${value.first} ${value.last}`,
   },
 }
+
+/** Суммы строками: у двух первых различается только последняя цифра (ADR 0174, S3, S4). */
+export const AMOUNT_ROWS = (
+  [
+    '98765432109876543.20',
+    '98765432109876543.21',
+    '1500.00',
+    '-250.75',
+    '0.10',
+    '999.99',
+    '0',
+    '12.5',
+    '-0.01',
+    '100000.00',
+  ] as const
+).map((amount, index) => ({ ...productAt(index), amount }))
+
+/** Остаток строкой с двумя знаками: колонка `numberString` в Playground (ADR 0174). */
+export const BALANCE_COLUMN: ColumnDef<any, any> = {
+  id: 'balance',
+  header: 'Balance',
+  dataType: 'numberString',
+  accessorFn: (row: Product) => row.price.toFixed(2),
+}

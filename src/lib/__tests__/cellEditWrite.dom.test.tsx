@@ -38,6 +38,7 @@ interface Item {
   address: { city: string; zip: string }
   total: number
   manager: { id: string; name: string }
+  amount?: string
 }
 
 const itemAt = (i: number): Item => ({
@@ -80,6 +81,7 @@ const COLUMNS = [
   },
   { id: 'weight', accessorKey: 'weight', dataType: 'kilograms' },
   { id: 'manager', accessorKey: 'manager', dataType: 'object' },
+  { id: 'amount', accessorKey: 'amount', dataType: 'numberString' },
   {
     id: 'owner',
     accessorKey: 'manager',
@@ -306,5 +308,21 @@ describe('Итог правки в кэше серверной модели (ADR
 
     await edit('r1', 'owner', 'm2:Bob')
     expect(row('r1').manager).toEqual({ id: 'm2', name: 'Bob' })
+  })
+  it('TY12: разбор правки numberString — по языку таблицы в десятичную строку: «1 234,50» в ru — "1234.50" (ADR 0174)', async () => {
+    act(() => root.unmount())
+    root = createRoot(document.createElement('div'))
+    act(() => root.render(<Grid locale="ru-RU" />))
+    act(() => source().observe!({ first: 0, last: 9, fast: false }))
+    await act(async () => {})
+
+    await edit('r1', 'amount', '1 234,50')
+    expect(row('r1').amount).toBe('1234.50')
+    // Знаки дальше 15-го сохраняются: строка не проходит через float.
+    await edit('r1', 'amount', '12 345 678 901 234 567,89')
+    expect(row('r1').amount).toBe('12345678901234567.89')
+    await edit('r1', 'amount', '1e3')
+    expect(row('r1').amount).toBe('12345678901234567.89')
+    expect(warned()).toBe(true)
   })
 })

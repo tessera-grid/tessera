@@ -17,6 +17,7 @@ export const BUILT_IN_DATA_TYPES = [
   'select',
   'multiSelect',
   'object',
+  'numberString',
 ] as const
 
 export type BuiltInDataType = (typeof BUILT_IN_DATA_TYPES)[number]

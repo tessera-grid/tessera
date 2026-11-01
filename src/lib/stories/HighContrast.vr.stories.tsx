@@ -5250,3 +5250,53 @@ export const HighContrastDataTypesObjectLabelStep2 = {
   name: 'Columns/Data types — Object key and label, шаг 2',
   tags: ['!test'],
 }
+
+export const HighContrastDataTypesNumberStringStep1 = {
+  ...twinStep(
+    columnsDataTypesStories,
+    columnsDataTypesStories.DataTypesNumberString,
+    1,
+  ),
+  name: 'Columns/Data types — Decimal strings, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesNumberStringStep2 = {
+  ...twinStep(
+    columnsDataTypesStories,
+    columnsDataTypesStories.DataTypesNumberString,
+    2,
+  ),
+  name: 'Columns/Data types — Decimal strings, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesNumberStringExportStep1 = {
+  ...twinStep(
+    columnsDataTypesStories,
+    columnsDataTypesStories.DataTypesNumberStringExport,
+    1,
+  ),
+  name: 'Columns/Data types — Decimal strings to Excel, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesNumberStringExportStep2 = {
+  ...twinStep(
+    columnsDataTypesStories,
+    columnsDataTypesStories.DataTypesNumberStringExport,
+    2,
+  ),
+  name: 'Columns/Data types — Decimal strings to Excel, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesNumberStringExportStep3 = {
+  ...twinStep(
+    columnsDataTypesStories,
+    columnsDataTypesStories.DataTypesNumberStringExport,
+    3,
+  ),
+  name: 'Columns/Data types — Decimal strings to Excel, шаг 3',
+  tags: ['!test'],
+}

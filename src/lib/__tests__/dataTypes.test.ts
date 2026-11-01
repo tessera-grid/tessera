@@ -24,6 +24,7 @@ import { csvFormat } from '../plugins/dataExportModel/csv'
 import { collectExportData } from '../plugins/dataExportModel/exportData'
 import { buildXlsx } from '../plugins/dataExportModel/xlsxBuild'
 import { __resetLogger } from '../util/logger'
+import { parseLocaleDecimal } from '../util/parseNumber'
 import { modules, sourceOf } from './importGraph'
 import { hostTable } from './tableHost'
 
@@ -46,7 +47,7 @@ const textOf = (table: any, columnId: string, value: unknown) =>
   formatDataTypeValue(table, table.getColumn(columnId), value, {})
 
 describe('тип данных колонки (ADR 0172)', () => {
-  it('DT1: встроенные типы и вид значения в данных: text — строка, number — число, boolean — булево, date и dateTime — Date, dateString — YYYY-MM-DD, dateTimeString — ISO со временем, select — значение варианта, multiSelect — массив значений, object — запись (ADR 0174)', () => {
+  it('DT1: встроенные типы и вид значения в данных: text — строка, number — число, boolean — булево, date и dateTime — Date, dateString — YYYY-MM-DD, dateTimeString — ISO со временем, select — значение варианта, multiSelect — массив значений, object — запись, numberString — десятичная строка (ADR 0174)', () => {
     expect([...BUILT_IN_DATA_TYPES]).toEqual([
       'text',
       'number',
@@ -58,6 +59,7 @@ describe('тип данных колонки (ADR 0172)', () => {
       'select',
       'multiSelect',
       'object',
+      'numberString',
     ])
     const table = tableWith(
       BUILT_IN_DATA_TYPES.map(type => ({
@@ -691,5 +693,128 @@ describe('тип object (ADR 0174, этап 1)', () => {
     const cell = workbook.worksheets[0]!.getRow(4).getCell(1)
     expect(cell.type).toBe(ExcelJS.ValueType.String)
     expect(cell.value).toBe('Bob')
+  })
+})
+
+describe('тип numberString (ADR 0174, этап 2)', () => {
+  /** Суммы строками: «a» и «b» во float неотличимы. */
+  const AMOUNTS = [
+    { id: 'a', amount: '12345678901234567.89' },
+    { id: 'b', amount: '12345678901234567.88' },
+    { id: 'c', amount: '-0' },
+    { id: 'd', amount: '0.5' },
+    { id: 'e', amount: '-1.25' },
+    { id: 'f', amount: '007' },
+    { id: 'g', amount: 'abc' },
+    { id: 'h', amount: null },
+    { id: 'i', amount: '10' },
+    { id: 'j', amount: '9.999' },
+  ]
+  const amounts = (plugins: unknown[]) =>
+    hostTable({
+      data: AMOUNTS,
+      getRowId: (row: { id: string }) => row.id,
+      columns: [
+        {
+          id: 'amount',
+          accessorKey: 'amount',
+          header: 'Amount',
+          dataType: 'numberString',
+        },
+      ],
+      timeZone: 'UTC',
+      plugins,
+    }) as any
+  const idsOf = (model: { rows: { id: string }[] }) =>
+    model.rows.map(row => row.id)
+
+  it('TY10: сортировка numberString — десятичным сравнением строк без перевода во float: значения, неотличимые во float, упорядочены верно; знак, ведущие нули и "-0" — по значению; нечисловая строка и пусто — в конце', () => {
+    expect(Number(AMOUNTS[0]!.amount)).toBe(Number(AMOUNTS[1]!.amount))
+    const table = amounts([columnSorting()])
+    const sorted = (desc: boolean) => {
+      table.setSorting([{ id: 'amount', desc }])
+      return idsOf(table.getSortedRowModel())
+    }
+    expect(sorted(false)).toEqual([
+      'e',
+      'c',
+      'd',
+      'f',
+      'j',
+      'i',
+      'b',
+      'a',
+      'g',
+      'h',
+    ])
+    expect(sorted(true)).toEqual([
+      'a',
+      'b',
+      'i',
+      'j',
+      'f',
+      'd',
+      'c',
+      'e',
+      'g',
+      'h',
+    ])
+  })
+
+  it('TY11: фильтр numberString — числовой: ввод по языку таблицы, сравнение десятичное без float', () => {
+    const table = amounts([columnFiltering()])
+    expect(columnFilterDefOf(table.getColumn('amount'))).toMatchObject({
+      type: 'number',
+    })
+    const filtered = (value: unknown) => {
+      table.setColumnFilters([{ id: 'amount', value }])
+      return idsOf(table.getFilteredRowModel())
+    }
+    // Граница из ввода по языку — та же десятичная строка, что панель кладёт в срез.
+    const bound = parseLocaleDecimal('12 345 678 901 234 567,88', 'ru-RU')
+    expect(bound).toBe('12345678901234567.88')
+    expect(filtered({ operator: 'greaterThan', value: bound })).toEqual(['a'])
+    expect(filtered({ operator: 'equals', value: bound })).toEqual(['b'])
+    expect(filtered({ operator: 'equals', value: '7' })).toEqual(['f'])
+    expect(filtered({ operator: 'between', value: ['-1.25', '0.5'] })).toEqual([
+      'c',
+      'd',
+      'e',
+    ])
+    expect(filtered({ operator: 'lessThan', value: 0 })).toEqual(['e'])
+  })
+
+  it('TY13: выгрузка numberString: CSV — строкой как есть; xlsx — числом до 15 значащих цифр, длиннее — текстом', async () => {
+    const table = hostTable({
+      data: [
+        { id: 'a', amount: '1234.50' },
+        { id: 'b', amount: '12345678901234567.89' },
+      ],
+      getRowId: (row: { id: string }) => row.id,
+      columns: [
+        {
+          id: 'amount',
+          accessorKey: 'amount',
+          header: 'Amount',
+          dataType: 'numberString',
+        },
+      ],
+    }) as any
+    const data = collectExportData(table)
+    expect(csvFormat().serialize(data).split(/\r?\n/).slice(1, 3)).toEqual([
+      '1234.50',
+      '12345678901234567.89',
+    ])
+    const workbook = new ExcelJS.Workbook()
+    await workbook.xlsx.load(
+      (await (await buildXlsx(data)).arrayBuffer()) as never,
+    )
+    const sheet = workbook.worksheets[0]!
+    const short = sheet.getRow(2).getCell(1)
+    const long = sheet.getRow(3).getCell(1)
+    expect(short.type).toBe(ExcelJS.ValueType.Number)
+    expect(short.value).toBe(1234.5)
+    expect(long.type).toBe(ExcelJS.ValueType.String)
+    expect(long.value).toBe('12345678901234567.89')
   })
 })

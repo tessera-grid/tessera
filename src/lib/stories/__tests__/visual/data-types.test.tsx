@@ -25,7 +25,8 @@ import { waitForGrid } from './core-helpers'
 // агрегате, тултипе и сводке фильтров, выравнивание, примитив `CheckMark`; вид фильтра,
 // сортировка и фильтр настоящими событиями, язык на лету. DT1–DT3, DT7, DT10, DT13–DT14,
 // DT17 — модульные, DT20 — перф в `scroll`, DT11 — в `interaction`. Запись `object` (ADR 0174):
-// подпись в ячейке, группе и тултипе, фильтр по ключу настоящими событиями.
+// подпись в ячейке, группе и тултипе, фильтр по ключу настоящими событиями; numberString —
+// показ строкой и по формату без потери знаков, выравнивание.
 
 const fc = commands as unknown as {
   forcedColors: (active: boolean) => Promise<void>
@@ -782,5 +783,53 @@ describe('Тип данных колонки (ADR 0172)', () => {
     expect(option('1')!.textContent).toContain('2')
     await humanClick(option('1')!.querySelector('[role="checkbox"]')!)
     await expect.poll(rowIds).toEqual(['a', 'b'])
+  })
+
+  test('TY9: встроенный тип numberString: значение — десятичная строка без экспоненты; показ — как есть или Intl.NumberFormat по format строкой, без потери знаков; выравнивание вправо', async () => {
+    const LONG = '12345678901234567.89'
+    const columns = [
+      {
+        id: 'raw',
+        accessorKey: 'raw',
+        header: 'Raw',
+        dataType: 'numberString',
+        size: 240,
+      },
+      {
+        id: 'fmt',
+        accessorKey: 'raw',
+        header: 'Formatted',
+        dataType: 'amount',
+        size: 260,
+      },
+    ]
+    const data = [
+      { id: 'a', raw: LONG },
+      { id: 'b', raw: '-0.50' },
+    ]
+    await render(
+      <Grid
+        columns={columns}
+        data={data}
+        dataTypes={{
+          amount: {
+            extends: 'numberString',
+            format: { minimumFractionDigits: 2 },
+          },
+        }}
+      />,
+    )
+    await waitForGrid()
+    // Как есть — строка данных; с форматом — все знаки, а не float (…568.00).
+    expect(textOf('a', 'raw')).toBe(LONG)
+    expect(textOf('b', 'raw')).toBe('-0.50')
+    expect(textOf('a', 'fmt')).toBe('12,345,678,901,234,567.89')
+    expect(textOf('b', 'fmt')).toBe('-0.50')
+
+    const style = (element: HTMLElement) => getComputedStyle(titleOf(element))
+    for (const element of [cellOf('a', 'raw'), headOf('raw')]) {
+      expect(style(element).textAlign).toBe('end')
+      expect(style(element).fontVariantNumeric).toBe('tabular-nums')
+    }
   })
 })
