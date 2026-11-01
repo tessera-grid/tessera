@@ -8,6 +8,7 @@
   (`columnSortingModel`), фильтр (`columnFilteringModel`), поиск (`quickSearchModel`), выгрузка
   (`dataExportModel`), разбор правки (`cellEditing`); общий разбор и сравнение — `shared/`.
   `ui/` — значок булева `CheckMark`.
+- **Изменено:** [ADR 0174](0174-object-and-number-string-types.md) (2026-11-01) — встроенные типы `object` и `numberString` (DT1).
 - **Изменяет:**
   - [ADR 0139](0139-saved-row-and-column-data-type.md) — `dataType` колонки — не только разбор
     правки: набор типов шире, тип разрешается через реестр (EW2).
