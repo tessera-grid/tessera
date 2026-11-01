@@ -31,6 +31,14 @@ export interface MenuItemModel {
   preload?: () => void
 }
 
+/** Пункт меню ручки перетаскивания или грипа ширины (ADR 0034). */
+export interface HandleMenuItemModel {
+  id: string
+  label: string
+  disabled?: boolean
+  onSelect: () => void
+}
+
 export interface MenuGroupModel {
   key: string
   label?: string

@@ -6,18 +6,11 @@ import {
   useRef,
 } from 'react'
 
-import clsx from 'clsx'
-
 import type { HeaderMenuItem } from '../../core/headerActions'
 import { HandleMenu, useHandleMenu } from '../handleMenu/HandleMenu'
 import { useItemSortableContext } from './ItemSortableContext'
 import { DRAG_ACTIVATION_DISTANCE } from './parameters'
-import { useIcons } from '../../ui/icons'
-import { IconButton } from '../../ui/IconButton'
-import { HiddenButtonContext } from '../../ui/IconButton/iconReveal'
-
-import styles from './DragHandler.module.css'
-import '../../ui/cellControls/buttonVisibility.css'
+import { DragHandle } from '../../ui/DragHandle/DragHandle'
 
 export interface DragHandlerProps {
   id: string
@@ -46,7 +39,6 @@ export const DragHandler = ({
   busy = false,
   failure,
 }: DragHandlerProps) => {
-  const { drag: DragIcon } = useIcons()
   const ref = useRef<HTMLElement | null>(null)
   const pressedAt = useRef<{ x: number; y: number } | null>(null)
   const menu = useHandleMenu(table, () => label ?? '')
@@ -109,13 +101,23 @@ export const DragHandler = ({
   // Квадратная кнопка кита: ожидание и отметка отказа — как у кнопок (ADR 0112, 0114,
   // 0136); отказ загрузки меню — свежее отказа переноса.
   const failed = menu.trigger.failure ?? failure
-  const button = (
-    <IconButton
+  const handleMenu = menu.open && hasMenu && (
+    <HandleMenu
+      anchor={ref}
+      label={label ?? ''}
+      getItems={getMenuItems}
+      onClose={menu.close}
+      table={table}
+      plugin={type === 'row' ? 'rowDragging' : 'columnDragging'}
+    />
+  )
+
+  return (
+    <DragHandle
       ref={setNode}
-      shape="square"
-      size="compact"
+      kind={type === 'row' ? 'row' : 'column'}
+      menu={handleMenu}
       disabled={disabled}
-      className={clsx(styles.handle, 'drag__handler--column')}
       pending={busy || menu.trigger.pending}
       failure={failed}
       {...ownAttributes}
@@ -146,52 +148,7 @@ export const DragHandler = ({
         onClick?.(e)
         listeners?.onTouchStart?.(e)
       }}
-    >
-      {/* Строка раскрывает иконку прозрачностью, колонка — обёрткой по ширине. */}
-      <DragIcon
-        className={clsx(
-          type === 'row' && [
-            'cell__button',
-            'cell__button--hidden',
-            'row__button',
-            'row__button--hidden',
-          ],
-        )}
-      />
-    </IconButton>
-  )
-
-  const handleMenu = menu.open && hasMenu && (
-    <HandleMenu
-      anchor={ref}
-      label={label ?? ''}
-      getItems={getMenuItems}
-      onClose={menu.close}
-      table={table}
-      plugin={type === 'row' ? 'rowDragging' : 'columnDragging'}
     />
-  )
-
-  return type === 'row' ? (
-    <>
-      <HiddenButtonContext.Provider value>
-        {button}
-      </HiddenButtonContext.Provider>
-      {handleMenu}
-    </>
-  ) : (
-    // Ручка колонки шириной 0 до наведения: раскрывается и сдвигает подпись (ADR 0114).
-    // Меню — внутри обёртки: служебные узлы портала не встают в ряд заголовка.
-    <div
-      className={clsx(
-        'cell__button',
-        'cell__button--hidden',
-        styles.columnHandle,
-      )}
-    >
-      {button}
-      {handleMenu}
-    </div>
   )
 }
 

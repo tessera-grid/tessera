@@ -1,16 +1,18 @@
 // HandleMenu: меню команд у ручки перетаскивания или грипа ширины — альтернатива
-// перетаскиванию одним указателем (WCAG 2.5.7, ADR 0034). Рендерится только
-// открытым; попап (Base UI) грузится лениво: при наведении и фокусе на ручке, а
-// нажатие до загрузки открывает меню после неё (ADR 0061, LZ11–LZ14).
+// перетаскиванию одним указателем (WCAG 2.5.7, ADR 0034). Модель: ленивое открытие и канал
+// действий; вид — `ui/Popup/HandleMenuPopup` (ADR 0168). Рендерится только открытым; попап
+// грузится лениво: при наведении и фокусе на ручке, а нажатие до загрузки открывает меню
+// после неё (ADR 0061, LZ11–LZ14).
 import { type RefObject, Suspense, useState } from 'react'
 
+import { reportAction, sourceOf } from '../../core/debugActions'
 import type { HeaderMenuItem } from '../../core/headerActions'
 import { type LazyTriggerState, useLazyOpening } from '../../core/lazyOpening'
 import type { TableLabels } from '../../core/localization'
 import { preloadable } from '../../core/preloadable'
 
 const HandleMenuPopupImpl = preloadable(() =>
-  import('./HandleMenuPopup').then(m => m.HandleMenuPopup),
+  import('../../ui/Popup/HandleMenuPopup').then(m => m.HandleMenuPopup),
 )
 
 /** Модуль попапа меню ручек — для проверки загрузки заранее (LZ11). */
@@ -74,8 +76,13 @@ export const HandleMenu = ({
         label={label}
         items={items}
         onClose={onClose}
-        table={table}
-        plugin={plugin}
+        onItemSelect={(id, event) =>
+          reportAction(table, {
+            plugin,
+            action: `handleMenu:${id}`,
+            source: sourceOf(event),
+          })
+        }
       />
     </Suspense>
   )

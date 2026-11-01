@@ -45,7 +45,7 @@ describe('перетаскивание в плагинах (ADR 0168)', () => {
     ).toEqual([])
   })
 
-  it('DM3: сенсоры и доступность dnd-kit, ручка и её контекст — в shared/dnd, меню ручки — в shared/handleMenu, хуки меню — в ui/; columnSizing берёт меню ручки из shared/; в гриде папок dnd и handleMenu нет', () => {
+  it('DM3: сенсоры и доступность dnd-kit, модель ручки и её контекст — в shared/dnd, модель меню ручки — в shared/handleMenu; вид ручки и попап меню, хуки меню — в ui/; columnSizing берёт меню ручки из shared/; в гриде папок dnd и handleMenu нет', () => {
     const paths = new Set(modules().map(module => module.path))
     expect(
       [
@@ -53,7 +53,8 @@ describe('перетаскивание в плагинах (ADR 0168)', () => {
         'lib/shared/dnd/DragHandler.tsx',
         'lib/shared/dnd/ItemSortableContext.tsx',
         'lib/shared/handleMenu/HandleMenu.tsx',
-        'lib/shared/handleMenu/HandleMenuPopup.tsx',
+        'lib/ui/DragHandle/DragHandle.tsx',
+        'lib/ui/Popup/HandleMenuPopup.tsx',
         'lib/ui/Popup/useCloseOnGridScroll.ts',
         'lib/ui/Popup/useMenuLeave.ts',
       ].filter(path => !paths.has(path)),
@@ -70,5 +71,16 @@ describe('перетаскивание в плагинах (ADR 0168)', () => {
         .map(({ to }) => to.path)
         .filter(path => path.includes('handleMenu')),
     ).toEqual(['lib/shared/handleMenu/HandleMenu.tsx'])
+    // Модель рисует вид кита.
+    const targets = (path: string) =>
+      edges()
+        .filter(({ from }) => from.path === path)
+        .map(({ to }) => to.path)
+    expect(targets('lib/shared/dnd/DragHandler.tsx')).toContain(
+      'lib/ui/DragHandle/DragHandle.tsx',
+    )
+    expect(targets('lib/shared/handleMenu/HandleMenu.tsx')).toContain(
+      'lib/ui/Popup/HandleMenuPopup.tsx',
+    )
   })
 })

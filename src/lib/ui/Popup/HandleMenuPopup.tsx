@@ -1,31 +1,28 @@
-// HandleMenuPopup: меню команд у ручки (Base UI Menu, контролируемый open, якорь —
+// HandleMenuPopup: меню команд у ручки — вид (Base UI Menu, контролируемый open, якорь —
 // сама ручка). Грузится лениво (Base UI тянет floating-ui) — монтируется только
-// открытым. Стили — общие с меню действий. ADR 0034.
-import type { RefObject } from 'react'
+// открытым. Стили — общие с меню действий. ADR 0034, ADR 0168.
+import type { MouseEvent, RefObject } from 'react'
 
 import { Menu } from '@base-ui/react/menu'
 import clsx from 'clsx'
 
-import { usePortalThemeData, usePortalThemeClass } from '../../ui/theme'
-import type { HeaderMenuItem } from '../../core/headerActions'
+import type { HandleMenuItemModel } from '../../util/menuModel'
+import { usePortalThemeData, usePortalThemeClass } from '../theme'
+import { useCloseOnGridScroll } from './useCloseOnGridScroll'
+import { GRID_SCROLL_REASON, useMenuLeave } from './useMenuLeave'
 
-import { useCloseOnGridScroll } from '../../ui/Popup/useCloseOnGridScroll'
-import { GRID_SCROLL_REASON, useMenuLeave } from '../../ui/Popup/useMenuLeave'
-
-import menuStyles from '../../ui/Popup/ActionMenu.module.css'
-import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
-import { reportAction, sourceOf } from '../../core/debugActions'
+import menuStyles from './ActionMenu.module.css'
+import { POPUP_SIDE_OFFSET } from './offset'
 
 export interface HandleMenuPopupProps {
   anchor: RefObject<HTMLElement | null>
   /** Куда вернуть фокус при закрытии; по умолчанию — якорь. */
   focusTarget?: RefObject<HTMLElement | null>
   label: string
-  items: HeaderMenuItem[]
+  items: HandleMenuItemModel[]
   onClose: () => void
-  /** Таблица и плагин-владелец ручки — для канала действий (ADR 0125, AL4). */
-  table?: unknown
-  plugin: string
+  /** Пункт выбран — до его обработчика (канал действий, ADR 0125). */
+  onItemSelect?: (id: string, event: MouseEvent) => void
 }
 
 export const HandleMenuPopup = ({
@@ -34,8 +31,7 @@ export const HandleMenuPopup = ({
   label,
   items,
   onClose,
-  table,
-  plugin,
+  onItemSelect,
 }: HandleMenuPopupProps) => {
   const themeClass = usePortalThemeClass()
   const themeData = usePortalThemeData()
@@ -80,11 +76,7 @@ export const HandleMenuPopup = ({
                   label={item.label}
                   data-item-id={item.id}
                   onClick={event => {
-                    reportAction(table, {
-                      plugin,
-                      action: `handleMenu:${item.id}`,
-                      source: sourceOf(event),
-                    })
+                    onItemSelect?.(item.id, event)
                     item.onSelect()
                   }}
                 >
