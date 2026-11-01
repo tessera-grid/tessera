@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { formatDataTypeValue } from '../core/dataTypeFormat'
 import { BUILT_IN_DATA_TYPES } from '../core/dataTypes'
-import { columnFiltering, columnSorting } from '../plugins'
+import { columnFiltering, columnSorting, quickSearch } from '../plugins'
 import { columnFilterDefOf } from '../plugins/columnFilteringModel/conditions'
 import { csvFormat } from '../plugins/dataExportModel/csv'
 import { collectExportData } from '../plugins/dataExportModel/exportData'
@@ -426,5 +426,89 @@ describe('фичи по типу данных колонки (ADR 0172, этап
       ExcelJS.ValueType.Date,
       ExcelJS.ValueType.Boolean,
     ])
+  })
+})
+
+describe('поиск по типу данных колонки (ADR 0172, этап 3)', () => {
+  it('DT15: быстрый поиск ищет по показанному тексту: формат, подписи вариантов, даты в виде 2026-10-31; булево — вне поиска; текст кешируется на строку и колонку', () => {
+    const shown = vi.fn((value: unknown) => `#${value}`)
+    const table = hostTable({
+      data: [
+        {
+          id: 'a',
+          price: 1234.5,
+          day: '2026-10-31',
+          at: '2026-10-31T14:05:00Z',
+          status: 'z',
+          flag: true,
+          code: 7,
+        },
+        {
+          id: 'b',
+          price: 18.9,
+          day: '2026-01-02',
+          at: '2026-01-02T09:00:00Z',
+          status: 'a',
+          flag: false,
+          code: 8,
+        },
+      ],
+      getRowId: (row: { id: string }) => row.id,
+      columns: [
+        { id: 'price', accessorKey: 'price', dataType: 'money' },
+        { id: 'day', accessorKey: 'day', dataType: 'dateString' },
+        { id: 'at', accessorKey: 'at', dataType: 'dateTimeString' },
+        {
+          id: 'status',
+          accessorKey: 'status',
+          dataType: 'select',
+          options: [
+            { value: 'a', label: 'Active' },
+            { value: 'z', label: 'Archived' },
+          ],
+        },
+        { id: 'flag', accessorKey: 'flag', dataType: 'boolean' },
+        { id: 'code', accessorKey: 'code', dataType: 'tag' },
+      ],
+      dataTypes: {
+        money: {
+          extends: 'number',
+          format: { style: 'currency', currency: 'USD' },
+        },
+        tag: { extends: 'text', formatValue: shown },
+      },
+      timeZone: 'UTC',
+      plugins: [quickSearch()],
+    }) as any
+    const found = (query: string) => {
+      table.setGlobalFilter(query)
+      return table
+        .getFilteredRowModel()
+        .rows.map((row: { id: string }) => row.id)
+    }
+    // Формат типа, а не сырое число.
+    expect(found('$1,234.50')).toEqual(['a'])
+    expect(found('1234.5')).toEqual([])
+    // Подпись варианта, а не его значение; сырое «Z» даты со временем не показано.
+    expect(found('archived')).toEqual(['a'])
+    expect(found('z')).toEqual([])
+    // Даты — в нейтральном виде, дата со временем — в поясе таблицы.
+    expect(found('2026-10-31 14:05')).toEqual(['a'])
+    expect(found('2026-01-02')).toEqual(['b'])
+    // Булево показано значком — поиск его обходит.
+    expect(table.getColumn('flag').getCanGlobalFilter()).toBe(false)
+    expect(found('true')).toEqual([])
+    expect(found('#8')).toEqual(['b'])
+    // Кеш: текст каждой строки и колонки посчитан один раз за все поиски.
+    expect(shown).toHaveBeenCalledTimes(2)
+
+    // Смена языка — новый показанный текст.
+    table.setOptions((prev: object) => ({ ...prev, locale: 'ru-RU' }))
+    const ru = new Intl.NumberFormat('ru-RU', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(1234.5)
+    expect(found(ru)).toEqual(['a'])
+    expect(found('$1,234.50')).toEqual([])
   })
 })

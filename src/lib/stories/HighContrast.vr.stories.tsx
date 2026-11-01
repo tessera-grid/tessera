@@ -5160,3 +5160,33 @@ export const HighContrastDataTypesEditNumberStep3 = {
   name: 'Columns/Data types — Edit a number, шаг 3',
   tags: ['!test'],
 }
+
+export const HighContrastDataTypesSearchStep1 = {
+  ...twinStep(
+    columnsDataTypesStories,
+    columnsDataTypesStories.DataTypesSearch,
+    1,
+  ),
+  name: 'Columns/Data types — Search shown text, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesSearchStep2 = {
+  ...twinStep(
+    columnsDataTypesStories,
+    columnsDataTypesStories.DataTypesSearch,
+    2,
+  ),
+  name: 'Columns/Data types — Search shown text, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesSearchStep3 = {
+  ...twinStep(
+    columnsDataTypesStories,
+    columnsDataTypesStories.DataTypesSearch,
+    3,
+  ),
+  name: 'Columns/Data types — Search shown text, шаг 3',
+  tags: ['!test'],
+}

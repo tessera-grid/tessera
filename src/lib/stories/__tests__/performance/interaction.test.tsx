@@ -1292,6 +1292,98 @@ describe('Отзывчивость — сортировка по типу дан
   )
 })
 
+// Поиск по показанному тексту (ADR 0172, DT16): применение поиска на 100 000 строк в условиях
+// FL35 — колонки с типами и форматом (деньги, числа, вариант с подписями, дата-строка) против
+// тех же колонок без типа. Прогрев считает тексты, замер — следующий запрос по ним.
+const GENDERS = [
+  { value: 'male', label: 'Male' },
+  { value: 'female', label: 'Female' },
+]
+const pad2 = (value: number) => String(value).padStart(2, '0')
+const TYPED_SEARCH: Record<string, Record<string, unknown>> = {
+  age: { dataType: 'number', format: { maximumFractionDigits: 0 } },
+  visits: { dataType: 'number', format: { minimumIntegerDigits: 2 } },
+  total: { dataType: 'number', format: { style: 'currency', currency: 'USD' } },
+  gender: { dataType: 'select', options: GENDERS },
+}
+const searchColumns = (typed: boolean) => [
+  ...makeColumns(SEARCH_SIZE.columnCount - 1).map(column =>
+    typed
+      ? { ...column, ...TYPED_SEARCH[column.id as string] }
+      : { ...column, dataType: undefined },
+  ),
+  {
+    id: 'joined',
+    header: 'Joined',
+    size: 150,
+    accessorFn: (row: { age: number; visits: number }) =>
+      `2026-${pad2((row.visits % 12) + 1)}-${pad2((row.age % 28) + 1)}`,
+    ...(typed ? { dataType: 'dateString' } : {}),
+  },
+]
+
+describe('Отзывчивость — поиск по показанному тексту', () => {
+  test(
+    'DT16: поиск по 100 000 строк с типами и форматом — против тех же строк без типа (база FL35)',
+    async () => {
+      const measure = async (typed: boolean) => {
+        await renderGrid({
+          ...SEARCH_SIZE,
+          ...ALL_PLUGINS,
+          ...SEARCH,
+          columnsOverride: searchColumns(typed),
+        } as Parameters<typeof renderGrid>[0])
+        await waitForGrid()
+        await expect.poll(quickSearchInput).not.toBeNull()
+        const result = await measureInteractionWork(
+          async () => alternate(quickSearchInput()!, 'a', 'e'),
+          { afterWarmup: () => expect(quickSearchInput()!.value).toBe('a') },
+        )
+        expect(quickSearchInput()!.value).toBe('e')
+        await cleanup()
+        return result
+      }
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const typed = medianRun(runs.variant, r => r.longestMs)
+      // Тексты посчитаны прогревом и взяты из кеша: замер — сравнение строк, как у базы.
+      const ceiling = ceilingOver(base.longestMs, { ratio: 1.3, plusMs: 50 })
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '100 000×10',
+          plugins: 'all',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('DT16-base', 'поиск без типов', base, false)
+      await record('DT16', 'поиск по показанному тексту', typed, true)
+
+      expect(
+        typed.longestMs,
+        `по типам longest=${typed.longestMs.toFixed(1)}ms, база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
 // Своя отсортированная модель (ADR 0064, SM7): построение модели на 100 000 строк —
 // смена направления сортировки и сразу модель — против createSortedRowModel TanStack
 // на тех же данных. Headless-таблицы без рендера: меряется только модель.

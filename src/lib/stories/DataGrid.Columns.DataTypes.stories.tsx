@@ -24,6 +24,7 @@ import {
   MEDIUM_DATES,
   MONEY_TYPES,
   SORT_ROWS,
+  STATUS_OPTIONS,
   productColumns,
   productRows,
 } from './__mocks__/dataTypesData'
@@ -634,7 +635,7 @@ const priceText = (root: ParentNode) => {
 }
 
 /** Набрать значение в поле — как ввод с клавиатуры. */
-const typePrice = (input: HTMLInputElement, value: string) => {
+const typeInto = (input: HTMLInputElement, value: string) => {
   Object.getOwnPropertyDescriptor(
     HTMLInputElement.prototype,
     'value',
@@ -645,7 +646,7 @@ const typePrice = (input: HTMLInputElement, value: string) => {
 const draftPrice = (root: HTMLElement) => {
   const input = priceInput(root)
   if (!input) priceEditButton(root)?.click()
-  else if (input.value !== TYPED_PRICE) typePrice(input, TYPED_PRICE)
+  else if (input.value !== TYPED_PRICE) typeInto(input, TYPED_PRICE)
 }
 /** Черновик набран — пользователь сохраняет его клавишей Enter. */
 const savePrice = (root: HTMLElement) => {
@@ -726,6 +727,120 @@ export const DataTypesEditNumber: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await until(() => expect(priceInput(canvas)).toBeNull())
       await expect(priceText(canvas)).toBe(savedText())
+      await settle()
+    })
+  },
+}
+
+// --- S5: поиск по показанному тексту ---------------------------------------------------
+
+const SEARCH_ROWS = productRows(50)
+const SEARCH_DAY = '2026-06-15'
+const ON_SALE = 'On sale'
+/** Подпись варианта отличается от значения: «active» показан как «On sale». */
+const SEARCH_COLUMNS = productColumns('money').map(column =>
+  column.id === 'status'
+    ? {
+        ...column,
+        options: STATUS_OPTIONS.map(option =>
+          option.value === 'active' ? { ...option, label: ON_SALE } : option,
+        ),
+      }
+    : column,
+)
+const searchField = () => byTestId('quick-search') as HTMLInputElement | null
+/** Пользователь набирает запрос в поле поиска. */
+const searchFor = (text: string, done: (root: HTMLElement) => boolean) =>
+  untilDone(done, () => {
+    const field = searchField()
+    if (field && field.value !== text) typeInto(field, text)
+  })
+const statusTexts = (root: HTMLElement) =>
+  orderedRows(root).map(row =>
+    row.querySelector(`${CELL}[data-column-id="status"]`)?.textContent?.trim(),
+  )
+const SEARCH_COUNTS = {
+  day: SEARCH_ROWS.filter(row => row.released === SEARCH_DAY).length,
+  sale: SEARCH_ROWS.filter(row => row.status === 'active').length,
+}
+
+const SEARCH: readonly GuideStoryStep[] = [
+  {
+    title: 'Товары с датами и статусами',
+    hint: 'В таблице есть даты выпуска, статусы и цены. Над таблицей — поле поиска.',
+    props: () => ({
+      columnsOverride: SEARCH_COLUMNS,
+      dataOverride: SEARCH_ROWS,
+      dataTypes: MONEY_TYPES,
+      enableQuickSearch: true,
+      quickSearchFilteredCount: true,
+      timeZone: 'UTC',
+    }),
+  },
+  {
+    title: 'Пользователь ищет дату',
+    hint: 'Пользователь набрал дату так, как она показана в таблице. Остался товар, выпущенный в этот день; нижняя панель называет число найденных строк.',
+    enter: searchFor(
+      SEARCH_DAY,
+      root =>
+        orderedRows(root).length === SEARCH_COUNTS.day &&
+        searchField()?.value === SEARCH_DAY,
+    ),
+  },
+  {
+    title: 'Пользователь ищет статус',
+    hint: 'Пользователь набрал статус так, как он показан в ячейке. Остались товары с этим статусом, хотя в данных статус хранится другим словом.',
+    enter: searchFor(
+      ON_SALE,
+      root =>
+        searchField()?.value === ON_SALE &&
+        statusTexts(root).length > 0 &&
+        statusTexts(root).every(text => text === ON_SALE),
+    ),
+  },
+]
+
+/** ADR 0172, S5: пользователь ищет дату и подпись варианта по показанному тексту. */
+export const DataTypesSearch: StoryObj<StoryProps> = {
+  name: 'Search shown text',
+  parameters: { scenario: '0172/S5', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Поиск по показанному тексту"
+      steps={SEARCH}
+      args={guideArgs({ height: '460' }, args)}
+    />
+  ),
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const labels = storyLabels(args.locale)
+    const total = SEARCH_ROWS.length
+    await step(SEARCH[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(searchField()).not.toBeNull())
+    })
+    await step(SEARCH[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(orderedRows(canvas)).toHaveLength(SEARCH_COUNTS.day),
+      )
+      await expect(textOf(canvas, 0, 'released')).toBe(SEARCH_DAY)
+      await until(() =>
+        expect(byTestId('filtered-rows-count')?.textContent).toBe(
+          labels.filteredRows(SEARCH_COUNTS.day, total),
+        ),
+      )
+    })
+    await step(SEARCH[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(byTestId('filtered-rows-count')?.textContent).toBe(
+          labels.filteredRows(SEARCH_COUNTS.sale, total),
+        ),
+      )
+      await expect(statusTexts(canvas).every(text => text === ON_SALE)).toBe(
+        true,
+      )
       await settle()
     })
   },

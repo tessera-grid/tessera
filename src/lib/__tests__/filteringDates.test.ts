@@ -373,17 +373,24 @@ describe('columnFiltering — условия дат', () => {
 })
 
 describe('даты и соседние плагины', () => {
-  it('DF18: быстрый поиск не обходит колонки date и datetime', () => {
+  it('DF18: быстрый поиск ищет по датам в показанном виде — день 2026-10-03, дата со временем 2026-10-03 22:30 в поясе таблицы, свой формат — разбором типа (ADR 0172)', () => {
     const table = build([columnFiltering(), quickSearch()])
-    expect(table.getColumn('day').getCanGlobalFilter()).toBe(false)
-    expect(table.getColumn('created').getCanGlobalFilter()).toBe(false)
-    expect(table.getColumn('closed').getCanGlobalFilter()).toBe(false)
-    expect(table.getColumn('name').getCanGlobalFilter()).toBe(true)
-    // «2026» есть в каждой дате, но строку находит только имя.
-    table.setGlobalFilter('2026')
+    for (const id of ['day', 'created', 'closed']) {
+      expect(table.getColumn(id).getCanGlobalFilter(), id).toBe(true)
+    }
+    table.setGlobalFilter('2026-02-28')
+    expect(ids(table)).toEqual(['c'])
+    table.setGlobalFilter('22:30')
     expect(ids(table)).toEqual(['a'])
-    table.setGlobalFilter('10')
+    // Свой формат «04.10.2026» показан как 2026-10-04 — его и находит поиск.
+    table.setGlobalFilter('2026-10-04')
+    expect(ids(table)).toEqual(['b'])
+    table.setGlobalFilter('04.10')
     expect(ids(table)).toEqual([])
+    // В поясе таблицы 22:30 UTC — уже следующий день.
+    const tokyo = build([columnFiltering(), quickSearch()], DATA, 'Asia/Tokyo')
+    tokyo.setGlobalFilter('2026-10-04 07:30')
+    expect(ids(tokyo)).toEqual(['a'])
   })
 
   it('DF20: экспорт view учитывает фильтр дат', () => {

@@ -187,7 +187,7 @@ describe('columnFiltering и quickSearch — сочетание', () => {
 })
 
 describe('quickSearch', () => {
-  it('FL14: поиск «содержит» без учёта регистра по видимым колонкам со строкой или числом; enableGlobalFilter: false и служебные колонки не участвуют', () => {
+  it('FL14: поиск «содержит» без учёта регистра по показанному тексту видимых колонок (ADR 0172); enableGlobalFilter: false и служебные колонки не участвуют', () => {
     const table = build([quickSearch(), columnVisibility(), rowSelection()])
     table.setGlobalFilter(' BER ')
     expect(ids(table)).toEqual(['2', '6'])

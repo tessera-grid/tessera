@@ -64,17 +64,32 @@ const mount = (
 }
 
 describe('колонки быстрого поиска', () => {
-  it('QS3: набор живой — скрытие, enableGlobalFilter: false, колонки дат и булевы исключают колонку; возврат возвращает; порядок — отображения', () => {
+  it('QS3: набор живой — скрытие, enableGlobalFilter: false и булевы исключают колонку, колонки дат входят (ADR 0172); возврат возвращает; порядок — отображения', () => {
     mount()
-    expect(searchColumnIdsOf(captured)).toEqual(['name', 'city', 'visits'])
+    expect(searchColumnIdsOf(captured)).toEqual([
+      'name',
+      'city',
+      'born',
+      'visits',
+    ])
 
     act(() => captured.getColumn('city').toggleVisibility(false))
-    expect(searchColumnIdsOf(captured)).toEqual(['name', 'visits'])
+    expect(searchColumnIdsOf(captured)).toEqual(['name', 'born', 'visits'])
     act(() => captured.getColumn('city').toggleVisibility(true))
-    expect(searchColumnIdsOf(captured)).toEqual(['name', 'city', 'visits'])
+    expect(searchColumnIdsOf(captured)).toEqual([
+      'name',
+      'city',
+      'born',
+      'visits',
+    ])
 
     act(() => captured.getColumn('visits').pin('start'))
-    expect(searchColumnIdsOf(captured)).toEqual(['visits', 'name', 'city'])
+    expect(searchColumnIdsOf(captured)).toEqual([
+      'visits',
+      'name',
+      'city',
+      'born',
+    ])
   })
 
   it('QS6: onSearchChange получает вторым аргументом { columnIds } — колонки поиска грида', () => {
@@ -83,7 +98,7 @@ describe('колонки быстрого поиска', () => {
     act(() => setSearchByUser(captured, 'an'))
     expect(onSearchChange).toHaveBeenCalledWith(
       'an',
-      { columnIds: ['name', 'city', 'visits'] },
+      { columnIds: ['name', 'city', 'born', 'visits'] },
       { signal: expect.any(AbortSignal) },
     )
   })
@@ -99,7 +114,7 @@ describe('колонки быстрого поиска', () => {
     act(() => captured.getColumn('city').toggleVisibility(true))
     expect(onSearchChange).toHaveBeenCalledWith(
       'an',
-      { columnIds: ['name', 'city', 'visits'] },
+      { columnIds: ['name', 'city', 'born', 'visits'] },
       { signal: expect.any(AbortSignal) },
     )
   })
