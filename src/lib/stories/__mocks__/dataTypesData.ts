@@ -155,3 +155,47 @@ export const LOCALE_ROWS = (
     ['Блокнот', 1890.1],
   ] as const
 ).map(([name, price], index) => ({ ...productAt(index), name, price }))
+
+/** Менеджеры — записи с номером и именем (ADR 0174, S1). */
+export const MANAGERS = [
+  { id: 'm1', name: 'Ann Lee' },
+  { id: 'm2', name: 'Boris Petrov' },
+  { id: 'm3', name: 'Chen Wei' },
+  { id: 'm4', name: 'Dana Cruz' },
+]
+
+/** Товары с менеджером; у каждой строки — своя копия записи, равенство — по номеру. */
+export const managedRows = (count: number) =>
+  productRows(count).map((row, index) => ({
+    ...row,
+    manager: { ...MANAGERS[(index * 3) % MANAGERS.length]! },
+  }))
+
+/** Колонка менеджера: тип `object`, подпись по умолчанию — поле `name`. */
+export const MANAGER_COLUMN: ColumnDef<any, any> = {
+  id: 'manager',
+  accessorKey: 'manager',
+  header: 'Manager',
+  dataType: 'object',
+}
+
+/** Владельцы — записи без полей по умолчанию: номер `uid`, имя из двух частей (S2). */
+export const ownedRows = (count: number) =>
+  productRows(count).map((row, index) => ({
+    ...row,
+    owner: {
+      uid: `E-${101 + (index % 6)}`,
+      first: ['Ann', 'Boris', 'Chen', 'Dana', 'Eva', 'Femi'][index % 6]!,
+      last: ['Lee', 'Petrov', 'Wei', 'Cruz', 'Novak', 'Ade'][index % 6]!,
+    },
+  }))
+
+/** Тип «человек»: номер — `uid`, подпись — имя и фамилия (S2). */
+export const PERSON_TYPES: DataTypeRegistry = {
+  person: {
+    extends: 'object',
+    getKey: (value: { uid: string }) => value.uid,
+    getLabel: (value: { first: string; last: string }) =>
+      `${value.first} ${value.last}`,
+  },
+}

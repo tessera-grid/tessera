@@ -6,10 +6,20 @@
 import ExcelJS from 'exceljs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { formatDataTypeValue } from '../core/dataTypeFormat'
+import { formatDataTypeValue, objectKeyOf } from '../core/dataTypeFormat'
 import { BUILT_IN_DATA_TYPES } from '../core/dataTypes'
-import { columnFiltering, columnSorting, quickSearch } from '../plugins'
+import {
+  columnFiltering,
+  columnSorting,
+  quickSearch,
+  rowGrouping,
+} from '../plugins'
 import { columnFilterDefOf } from '../plugins/columnFilteringModel/conditions'
+import {
+  filterOptionLabelOf,
+  filterOptionsOf,
+  optionCountsOf,
+} from '../plugins/columnFilteringModel/options'
 import { csvFormat } from '../plugins/dataExportModel/csv'
 import { collectExportData } from '../plugins/dataExportModel/exportData'
 import { buildXlsx } from '../plugins/dataExportModel/xlsxBuild'
@@ -36,7 +46,7 @@ const textOf = (table: any, columnId: string, value: unknown) =>
   formatDataTypeValue(table, table.getColumn(columnId), value, {})
 
 describe('тип данных колонки (ADR 0172)', () => {
-  it('DT1: встроенные типы и вид значения в данных: text — строка, number — число, boolean — булево, date и dateTime — Date, dateString — YYYY-MM-DD, dateTimeString — ISO со временем, select — значение варианта, multiSelect — массив значений', () => {
+  it('DT1: встроенные типы и вид значения в данных: text — строка, number — число, boolean — булево, date и dateTime — Date, dateString — YYYY-MM-DD, dateTimeString — ISO со временем, select — значение варианта, multiSelect — массив значений, object — запись (ADR 0174)', () => {
     expect([...BUILT_IN_DATA_TYPES]).toEqual([
       'text',
       'number',
@@ -47,6 +57,7 @@ describe('тип данных колонки (ADR 0172)', () => {
       'dateTimeString',
       'select',
       'multiSelect',
+      'object',
     ])
     const table = tableWith(
       BUILT_IN_DATA_TYPES.map(type => ({
@@ -510,5 +521,175 @@ describe('поиск по типу данных колонки (ADR 0172, эта
     }).format(1234.5)
     expect(found(ru)).toEqual(['a'])
     expect(found('$1,234.50')).toEqual([])
+  })
+})
+
+describe('тип object (ADR 0174, этап 1)', () => {
+  const ANN = { id: 1, name: 'Ann' }
+  /** Тот же менеджер другим объектом: равенство — по ключу. */
+  const ANN_AGAIN = { id: 1, name: 'Ann' }
+  const BOB = { id: 2, name: 'Bob' }
+  const managers = (plugins: unknown[], extra: Record<string, unknown> = {}) =>
+    hostTable({
+      data: [
+        { id: 'a', m: ANN },
+        { id: 'b', m: ANN_AGAIN },
+        { id: 'c', m: BOB },
+        { id: 'd', m: null },
+      ],
+      getRowId: (row: { id: string }) => row.id,
+      columns: [
+        { id: 'm', accessorKey: 'm', header: 'Manager', dataType: 'object' },
+      ],
+      timeZone: 'UTC',
+      plugins,
+      ...extra,
+    }) as any
+  const rowIdsOf = (model: { rows: { id: string }[] }) =>
+    model.rows.map(row => row.id)
+
+  it('TY1: встроенный тип object: значение — запись; getKey и getLabel у типа или колонки; по умолчанию ключ — поле id, подпись — label, иначе name, иначе ключ строкой; запись без ключа — предупреждение в dev, раз на колонку', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const table = tableWith(
+      [
+        { id: 'plain', accessorKey: 'v', dataType: 'object' },
+        { id: 'person', accessorKey: 'v', dataType: 'person' },
+        {
+          id: 'own',
+          accessorKey: 'v',
+          dataType: 'person',
+          getLabel: (value: { uid: string }) => `#${value.uid}`,
+        },
+      ],
+      {
+        dataTypes: {
+          person: {
+            extends: 'object',
+            getKey: (value: { uid: string }) => value.uid,
+            getLabel: (value: { first: string; last: string }) =>
+              `${value.first} ${value.last}`,
+          },
+        },
+      },
+    )
+    const keyOf = (columnId: string, value: unknown) =>
+      objectKeyOf(table, table.getColumn(columnId), value)
+
+    expect(table.getColumn('plain').getDataType().base).toBe('object')
+    expect(keyOf('plain', { id: 7, label: 'Seven', name: 'x' })).toBe(7)
+    expect(textOf(table, 'plain', { id: 7, label: 'Seven', name: 'x' })).toBe(
+      'Seven',
+    )
+    expect(textOf(table, 'plain', { id: 7, name: 'Ann' })).toBe('Ann')
+    expect(textOf(table, 'plain', { id: 7 })).toBe('7')
+
+    // Ключ и подпись типа; поле колонки главнее поля типа.
+    const person = { uid: 'u1', first: 'Ann', last: 'Lee' }
+    expect(keyOf('person', person)).toBe('u1')
+    expect(textOf(table, 'person', person)).toBe('Ann Lee')
+    expect(keyOf('own', person)).toBe('u1')
+    expect(textOf(table, 'own', person)).toBe('#u1')
+
+    // Запись без ключа — одно предупреждение на колонку.
+    keyOf('plain', { name: 'x' })
+    keyOf('plain', { name: 'y' })
+    const warnings = warn.mock.calls
+      .map(call => String(call[0]))
+      .filter(text => text.includes('record without a key'))
+    expect(warnings).toHaveLength(1)
+    expect(warnings[0]).toContain('"plain"')
+  })
+
+  it('TY3: сортировка записи — по подписи через Intl.Collator языка, пустые в конце при обоих направлениях', () => {
+    const table = hostTable({
+      data: [
+        { id: 'a', m: { id: 2, name: 'bob' } },
+        { id: 'b', m: { id: 1, name: 'Alice' } },
+        { id: 'c', m: null },
+        { id: 'd', m: { id: 3, name: 'carl 10' } },
+        { id: 'e', m: { id: 4, name: 'Carl 9' } },
+      ],
+      getRowId: (row: { id: string }) => row.id,
+      columns: [{ id: 'm', accessorKey: 'm', dataType: 'object' }],
+      plugins: [columnSorting()],
+    }) as any
+    const sorted = (desc: boolean) => {
+      table.setSorting([{ id: 'm', desc }])
+      return rowIdsOf(table.getSortedRowModel())
+    }
+    expect(sorted(false)).toEqual(['b', 'a', 'e', 'd', 'c'])
+    expect(sorted(true)).toEqual(['d', 'e', 'a', 'b', 'c'])
+  })
+
+  it('TY4: фильтр записи — список с флажками по подписям: варианты — уникальные ключи из данных, счётчики — по ключу, справочник — loadOptions колонки или типа; срез хранит ключи и сериализуем', () => {
+    const table = managers([columnFiltering()])
+    const column = table.getColumn('m')
+    expect(columnFilterDefOf(column)).toMatchObject({ type: 'select' })
+    expect(filterOptionsOf(table, column)).toEqual([
+      { value: 1, label: 'Ann' },
+      { value: 2, label: 'Bob' },
+    ])
+    expect([...optionCountsOf(table, column)!]).toEqual([
+      [1, 2],
+      [2, 1],
+    ])
+    table.setColumnFilters([
+      { id: 'm', value: { operator: 'anyOf', value: [1] } },
+    ])
+    expect(rowIdsOf(table.getFilteredRowModel())).toEqual(['a', 'b'])
+    const state = table.atoms.columnFilters.get()
+    expect(JSON.parse(JSON.stringify(state))).toEqual(state)
+
+    const load = async () => []
+    const lookups = tableWith(
+      [
+        { id: 'own', accessorKey: 'm', dataType: 'object', loadOptions: load },
+        { id: 'typed', accessorKey: 'm', dataType: 'manager' },
+      ],
+      { dataTypes: { manager: { extends: 'object', loadOptions: load } } },
+    )
+    for (const id of ['own', 'typed']) {
+      expect(columnFilterDefOf(lookups.getColumn(id))).toMatchObject({
+        type: 'lookup',
+        loadOptions: load,
+      })
+    }
+  })
+
+  it('TY6: группировка по колонке записи — по ключу: разные объекты с одним ключом — одна группа, строка группы показывает подпись', () => {
+    const table = managers([rowGrouping()])
+    table.setGrouping(['m'])
+    const groups = table.getGroupedRowModel().rows
+    expect(groups).toHaveLength(3)
+    expect(groups[0].subRows.map((row: { id: string }) => row.id)).toEqual([
+      'a',
+      'b',
+    ])
+    expect(textOf(table, 'm', groups[0].getValue('m'))).toBe('Ann')
+    expect(textOf(table, 'm', groups[1].getValue('m'))).toBe('Bob')
+  })
+
+  it('TY7: поиск, сводка фильтров, CSV и xlsx — подписью записи', async () => {
+    const table = managers([columnFiltering(), quickSearch()])
+    table.setGlobalFilter('ann')
+    expect(rowIdsOf(table.getFilteredRowModel())).toEqual(['a', 'b'])
+    table.setGlobalFilter('')
+
+    // Сводка фильтров называет отмеченные ключи подписями.
+    expect(filterOptionLabelOf(table, table.getColumn('m'), 2)).toBe('Bob')
+
+    const data = collectExportData(table)
+    expect(csvFormat().serialize(data).split(/\r?\n/).slice(1, 4)).toEqual([
+      'Ann',
+      'Ann',
+      'Bob',
+    ])
+    const workbook = new ExcelJS.Workbook()
+    await workbook.xlsx.load(
+      (await (await buildXlsx(data)).arrayBuffer()) as never,
+    )
+    const cell = workbook.worksheets[0]!.getRow(4).getCell(1)
+    expect(cell.type).toBe(ExcelJS.ValueType.String)
+    expect(cell.value).toBe('Bob')
   })
 })

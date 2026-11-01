@@ -32,12 +32,15 @@ import {
 } from './__mocks__/catalogPlay'
 import {
   calendar,
+  checkOption,
   chooseOperator,
   closePanel,
   filterActive,
   filteredCount,
   openPanel,
   operatorValue,
+  optionChecked,
+  optionOf,
   panel,
   pickDay,
 } from './__mocks__/filterGuide'
@@ -139,22 +142,6 @@ const allMatch = (root: ParentNode, column: string, needle: string) => {
 const busy = (root: HTMLElement) =>
   root.querySelector('.data-grid__container')?.getAttribute('aria-busy') ===
   'true'
-const optionOf = (value: string) =>
-  document.querySelector<HTMLElement>(
-    `[data-testid="filter-panel"] [data-option-index][data-value="${value}"]`,
-  )
-const optionChecked = (value: string) =>
-  optionOf(value)
-    ?.querySelector('[role="checkbox"]')
-    ?.getAttribute('aria-checked') === 'true'
-/** Пользователь отмечает вариант, пока он не отмечен. */
-const checkOption = (value: string, signal: AbortSignal) =>
-  repeat(
-    () => optionChecked(value),
-    () =>
-      optionOf(value)?.querySelector<HTMLElement>('[role="checkbox"]')?.click(),
-    signal,
-  )
 /** Описание поля поиска — колонки, по которым он идёт (ADR 0053). */
 const searchHint = () => {
   const describedBy = byTestId('quick-search')?.getAttribute('aria-describedby')

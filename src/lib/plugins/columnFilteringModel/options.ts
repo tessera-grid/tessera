@@ -1,7 +1,8 @@
 /**
  * Фильтр вариантов (ADR 0048, §2–§3): условия `select` / `multiselect` / `lookup`,
  * варианты из данных и фасетные счётчики — по строкам, прошедшим остальные фильтры и
- * поиск (стоковая фасетная модель строк TanStack без фильтра этой колонки).
+ * поиск (стоковая фасетная модель строк TanStack без фильтра этой колонки). У записи
+ * `object` варианты, счётчики и условия — по ключу, подписи — из записей (ADR 0174, TY4).
  */
 import {
   type ColumnOption,
@@ -11,6 +12,8 @@ import {
   type OptionValue,
 } from '../../core/columnOptions'
 import { dataModeOf } from '../../core/dataMode'
+import { objectKeyOf, objectLabelOf } from '../../core/dataTypeFormat'
+import type { ResolvedDataType } from '../../core/dataTypes'
 import type { ColumnFilterType, OptionFilter } from './types'
 
 export const isOptionType = (type: ColumnFilterType | undefined) =>
@@ -47,7 +50,21 @@ interface FacetColumn {
   id: string
   columnDef: ColumnOptionsDef
   getFacetedRowModel?: () => { flatRows: FacetRow[] }
+  getDataType?: () => ResolvedDataType | undefined
 }
+
+const isObjectColumn = (column: FacetColumn) =>
+  column.getDataType?.()?.base === 'object'
+
+/** Значение для вариантов и условий: у записи `object` — её ключ, у прочих — как есть. */
+export const optionKeyOf = (
+  table: unknown,
+  column: FacetColumn,
+  value: unknown,
+): unknown =>
+  isObjectColumn(column)
+    ? objectKeyOf(table as never, column as never, value)
+    : value
 
 interface FacetTable {
   getPreFilteredRowModel: () => { flatRows: FacetRow[] }
@@ -59,20 +76,53 @@ const filtersOnServer = (table: unknown) =>
 
 const countCache = new WeakMap<FacetRow[], Map<string, Map<unknown, number>>>()
 
-const countValues = (rows: FacetRow[], columnId: string) => {
+const countValues = (table: unknown, rows: FacetRow[], column: FacetColumn) => {
   let byColumn = countCache.get(rows)
   if (!byColumn) countCache.set(rows, (byColumn = new Map()))
-  let counts = byColumn.get(columnId)
+  let counts = byColumn.get(column.id)
   if (counts) return counts
   counts = new Map()
   for (const row of rows) {
-    for (const value of valuesOf(row.getValue(columnId))) {
+    const key = optionKeyOf(table, column, row.getValue(column.id))
+    for (const value of valuesOf(key)) {
       counts.set(value, (counts.get(value) ?? 0) + 1)
     }
   }
-  byColumn.set(columnId, counts)
+  byColumn.set(column.id, counts)
   return counts
 }
+
+const labelCache = new WeakMap<FacetRow[], Map<string, Map<unknown, string>>>()
+
+/** Подписи записей `object` по ключу — из всех строк колонки (TY4, TY7). */
+const objectLabels = (table: unknown, column: FacetColumn) => {
+  const rows = (table as FacetTable).getPreFilteredRowModel().flatRows
+  let byColumn = labelCache.get(rows)
+  if (!byColumn) labelCache.set(rows, (byColumn = new Map()))
+  let labels = byColumn.get(column.id)
+  if (labels) return labels
+  labels = new Map()
+  const definition = column.getDataType!()!.definition
+  for (const row of rows) {
+    const value = row.getValue(column.id)
+    const key = optionKeyOf(table, column, value)
+    if (!isEmptyOptionValue(key) && !labels.has(key)) {
+      labels.set(key, objectLabelOf(definition, value))
+    }
+  }
+  byColumn.set(column.id, labels)
+  return labels
+}
+
+/** Подпись варианта фильтра: у записи — из данных, иначе — подпись варианта колонки. */
+export const filterOptionLabelOf = (
+  table: unknown,
+  column: FacetColumn,
+  value: unknown,
+): string =>
+  (isObjectColumn(column) && !filtersOnServer(table)
+    ? objectLabels(table, column).get(value)
+    : undefined) ?? optionLabelOf(table as object, column, value)
 
 /**
  * Счётчики вариантов: строки, прошедшие остальные фильтры и поиск; строка
@@ -92,7 +142,7 @@ export const optionCountsOf = (
     )
   }
   const rows = column.getFacetedRowModel?.().flatRows
-  return rows ? countValues(rows, column.id) : undefined
+  return rows ? countValues(table, rows, column) : undefined
 }
 
 /**
@@ -106,11 +156,11 @@ export const filterOptionsOf = (
   if (column.columnDef.options) return column.columnDef.options
   const t = table as FacetTable
   if (filtersOnServer(table)) return []
-  const values = countValues(t.getPreFilteredRowModel().flatRows, column.id)
+  const values = countValues(table, t.getPreFilteredRowModel().flatRows, column)
   return [...values.keys()]
     .map(value => ({
       value: value as OptionValue,
-      label: optionLabelOf(table as object, column, value),
+      label: filterOptionLabelOf(table, column, value),
     }))
     .sort((a, b) => a.label.localeCompare(b.label))
 }

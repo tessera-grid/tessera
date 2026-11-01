@@ -5,6 +5,7 @@
  */
 import { isPlaceholderRow } from '../../core/lazyPlaceholder'
 import { type ColumnOptionsDef, optionTextOf } from '../../core/columnOptions'
+import { objectLabelOf } from '../../core/dataTypeFormat'
 import type { ResolvedDataType } from '../../core/dataTypes'
 import { serverRowModelReason } from '../../core/pluginDiagnostics'
 import { rowSourceOf } from '../../core/rowSource'
@@ -208,9 +209,12 @@ export const collectExportData = (
     rows: exportRowsOf(table, rows).map(row =>
       leaves.map(column => {
         const value = row.getValue(column.id)
-        return formatValue
-          ? formatValue({ value, row, column })
-          : (optionTextOf(table as object, column, value) ?? value)
+        if (formatValue) return formatValue({ value, row, column })
+        // Запись `object` выгружается подписью (ADR 0174, TY7).
+        const type = column.getDataType?.()
+        if (type?.base === 'object')
+          return objectLabelOf(type.definition, value)
+        return optionTextOf(table as object, column, value) ?? value
       }),
     ),
   }

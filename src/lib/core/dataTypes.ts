@@ -16,6 +16,7 @@ export const BUILT_IN_DATA_TYPES = [
   'dateTimeString',
   'select',
   'multiSelect',
+  'object',
 ] as const
 
 export type BuiltInDataType = (typeof BUILT_IN_DATA_TYPES)[number]
@@ -46,6 +47,10 @@ export interface DataTypeFields<TData = any> {
   parseDate?: (value: unknown) => DateCellValue
   /** Справочник: варианты фильтра по строке поиска (DT13). */
   loadOptions?: LoadOptions
+  /** Ключ записи `object`: равенство, фильтр и группировка; по умолчанию — поле `id` (TY1). */
+  getKey?: (value: any) => unknown
+  /** Подпись записи `object`; по умолчанию — `label`, иначе `name`, иначе ключ (TY1). */
+  getLabel?: (value: any) => string
 }
 
 /** Запись реестра `dataTypes`: свой тип или замена полей встроенного. */
@@ -75,6 +80,8 @@ const FIELDS = [
   'parseValue',
   'parseDate',
   'loadOptions',
+  'getKey',
+  'getLabel',
 ] as const
 
 const ownFields = (source: object): DataTypeFields =>

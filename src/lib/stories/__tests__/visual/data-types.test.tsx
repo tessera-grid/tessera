@@ -24,7 +24,8 @@ import { waitForGrid } from './core-helpers'
 // Тип данных колонки (ADR 0172): вид по типу, значок булева, текст по типу в группе,
 // агрегате, тултипе и сводке фильтров, выравнивание, примитив `CheckMark`; вид фильтра,
 // сортировка и фильтр настоящими событиями, язык на лету. DT1–DT3, DT7, DT10, DT13–DT14,
-// DT17 — модульные, DT20 — перф в `scroll`, DT11 — в `interaction`.
+// DT17 — модульные, DT20 — перф в `scroll`, DT11 — в `interaction`. Запись `object` (ADR 0174):
+// подпись в ячейке, группе и тултипе, фильтр по ключу настоящими событиями.
 
 const fc = commands as unknown as {
   forcedColors: (active: boolean) => Promise<void>
@@ -696,5 +697,90 @@ describe('Тип данных колонки (ADR 0172)', () => {
     // Тот же экземпляр таблицы и та же строка в DOM — без пересоздания.
     expect(stores.size).toBe(opened)
     expect(row.isConnected).toBe(true)
+  })
+
+  test('TY2: ячейка, строка группы и тултип обрезанного текста показывают подпись записи', async () => {
+    const NAME = 'Annabelle Longname-Smith'
+    const columns = [
+      {
+        id: 'm',
+        accessorKey: 'm',
+        header: 'Manager',
+        dataType: 'object',
+        size: 260,
+      },
+      {
+        id: 'narrow',
+        accessorKey: 'm',
+        header: 'Narrow',
+        dataType: 'object',
+        size: 60,
+      },
+    ]
+    // Тот же менеджер разными объектами и второй менеджер.
+    const data = [
+      { id: 'a', m: { id: 1, name: NAME } },
+      { id: 'b', m: { id: 1, name: NAME } },
+      { id: 'c', m: { id: 2, name: 'Bob' } },
+    ]
+    const first = await render(<Grid columns={columns} data={data} />)
+    await waitForGrid()
+    expect(textOf('a', 'm')).toBe(NAME)
+    expect(textOf('c', 'm')).toBe('Bob')
+
+    const narrow = titleOf(cellOf('a', 'narrow'))
+    expect(narrow.scrollWidth).toBeGreaterThan(narrow.clientWidth)
+    await userEvent.hover(narrow)
+    await expect
+      .poll(() =>
+        [...document.querySelectorAll('[role="presentation"][data-open]')].map(
+          tip => tip.textContent,
+        ),
+      )
+      .toContain(NAME)
+    await first.unmount()
+
+    await render(
+      <Grid
+        columns={columns.slice(0, 1)}
+        data={data}
+        plugins={[rowGrouping({ initialGrouping: ['m'] })]}
+      />,
+    )
+    await waitForGrid()
+    const groups = [
+      ...document.querySelectorAll<HTMLElement>('[data-group-row="true"]'),
+    ]
+    expect(groups).toHaveLength(2)
+    expect(
+      groups[0]!.querySelector('.data-grid__body-cell[data-column-id="m"]')!
+        .textContent,
+    ).toContain(NAME)
+  })
+
+  test('TY5: настоящими событиями: отметка подписи в панели фильтра записи отбирает строки с этим ключом, в том числе разные объекты с одним ключом', async () => {
+    const columns = [
+      { id: 'name', accessorKey: 'name', header: 'Name' },
+      { id: 'm', accessorKey: 'm', header: 'Manager', dataType: 'object' },
+    ]
+    const data = [
+      { id: 'a', name: 'Lamp', m: { id: 1, name: 'Ann' } },
+      { id: 'b', name: 'Mug', m: { id: 1, name: 'Ann' } },
+      { id: 'c', name: 'Desk', m: { id: 2, name: 'Bob' } },
+    ]
+    await render(
+      <Grid columns={columns} data={data} plugins={[columnFiltering()]} />,
+    )
+    await waitForGrid()
+    await revealCellButtons(headOf('m'))
+    await humanClick(headOf('m').querySelector('.column-filter__button')!)
+    const option = (key: string) =>
+      document.querySelector<HTMLElement>(
+        `[data-testid="filter-panel"] [data-option-index][data-value="${key}"]`,
+      )
+    await expect.poll(() => option('1')?.textContent ?? '').toContain('Ann')
+    expect(option('1')!.textContent).toContain('2')
+    await humanClick(option('1')!.querySelector('[role="checkbox"]')!)
+    await expect.poll(rowIds).toEqual(['a', 'b'])
   })
 })

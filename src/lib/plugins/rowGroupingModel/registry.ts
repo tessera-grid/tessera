@@ -22,6 +22,7 @@ import { definePlugin } from '../../core/definePlugin'
 import { serverRowModelReason } from '../../core/pluginDiagnostics'
 import { rowExpandingModel } from '../rowExpandingModel/registry'
 import { createIdleAwareGroupedRowModel } from './groupedRowModel'
+import { objectGroupingFeature } from './objectGrouping'
 
 /** Стандартный набор агрегаций. */
 const aggregationFns = {
@@ -50,6 +51,7 @@ export interface RowGroupingModelOptions {
 export const rowGroupingModelFeatures = {
   columnGroupingFeature,
   rowAggregationFeature,
+  objectGroupingFeature,
   groupedRowModel: createIdleAwareGroupedRowModel(),
   aggregationFns,
 }

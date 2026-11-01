@@ -6,6 +6,7 @@
  */
 import { optionTextOf, type ColumnOptionsDef } from './columnOptions'
 import { DEFAULT_LOCALE } from './localization'
+import { logWarn } from '../util/logger'
 import {
   type DataTypeAlign,
   type DataTypeFormat,
@@ -138,6 +139,58 @@ const dateText = (
 
 const DATE_BASES = new Set(['date', 'dateTime', 'dateString', 'dateTimeString'])
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+
+/** Ключ записи по определению типа; значение не запись — само значение (TY1). */
+const recordKey = (definition: DataTypeFields, value: unknown): unknown => {
+  if (!isRecord(value)) return value
+  return definition.getKey ? definition.getKey(value) : value.id
+}
+
+/** Подпись записи: `getLabel`, иначе `label`, `name`, ключ строкой (TY1). */
+export const objectLabelOf = (
+  definition: DataTypeFields,
+  value: unknown,
+): string => {
+  if (isEmpty(value)) return ''
+  if (!isRecord(value)) return String(value)
+  if (definition.getLabel) return definition.getLabel(value)
+  const label = value.label ?? value.name ?? recordKey(definition, value)
+  return label === undefined || label === null ? '' : String(label)
+}
+
+/**
+ * Ключ значения колонки записи `object`; у прочих колонок — само значение. Запись без
+ * ключа — предупреждение в dev, раз на колонку (TY1).
+ */
+export const objectKeyOf = (
+  table: FormatTable,
+  column: FormatColumn,
+  value: unknown,
+): unknown => {
+  const type = resolveDataType(table, column)
+  if (type?.base !== 'object' || isEmpty(value)) return value
+  return checkedKey(table, column, type.definition, value)
+}
+
+const checkedKey = (
+  table: FormatTable,
+  column: FormatColumn,
+  definition: DataTypeFields,
+  value: unknown,
+) => {
+  const key = recordKey(definition, value)
+  if (key === undefined || key === null) {
+    logWarn(
+      table as never,
+      `dataType object: column "${column.id}" has a record without a key — set getKey on the column or its type`,
+      `dataType-object-key:${column.id}`,
+    )
+  }
+  return key
+}
+
 /**
  * Момент значения колонки с типом даты, в миллисекундах; свой формат — `parseDate` типа.
  * `undefined` — не дата или пусто (DT10, DT13).
@@ -190,6 +243,9 @@ export const formatDataTypeValue = (
       return dateText(value, type, locale, timeZone)
     case 'multiSelect':
       return Array.isArray(value) ? value.join(', ') : String(value)
+    case 'object':
+      checkedKey(table, column, type.definition, value)
+      return objectLabelOf(type.definition, value)
     default:
       return String(value)
   }

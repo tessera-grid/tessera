@@ -10,6 +10,8 @@ export const COLUMN_DEF_FIELDS: Record<string, string> = {
   format: '0172',
   formatValue: '0172',
   enableDragging: '0006',
+  getKey: '0174',
+  getLabel: '0174',
   getOptionLabel: '0048',
   loadOptions: '0172',
   parseDate: '0172',

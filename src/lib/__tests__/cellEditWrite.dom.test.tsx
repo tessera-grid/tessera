@@ -37,6 +37,7 @@ interface Item {
   note: string | null
   address: { city: string; zip: string }
   total: number
+  manager: { id: string; name: string }
 }
 
 const itemAt = (i: number): Item => ({
@@ -49,6 +50,7 @@ const itemAt = (i: number): Item => ({
   note: null,
   address: { city: 'Paris', zip: '75000' },
   total: 1,
+  manager: { id: 'm1', name: 'Ann' },
 })
 
 const COLUMNS = [
@@ -77,6 +79,16 @@ const COLUMNS = [
     ],
   },
   { id: 'weight', accessorKey: 'weight', dataType: 'kilograms' },
+  { id: 'manager', accessorKey: 'manager', dataType: 'object' },
+  {
+    id: 'owner',
+    accessorKey: 'manager',
+    dataType: 'object',
+    parseValue: (text: string) => {
+      const [id, name] = text.split(':')
+      return { id, name }
+    },
+  },
 ]
 const NO_DATA: Item[] = []
 const CLIENT_DATA = [itemAt(0), itemAt(1)]
@@ -279,5 +291,20 @@ describe('Итог правки в кэше серверной модели (ADR
     expect(saved('status')).toBe('z')
     await edit('r1', 'weight', '2')
     expect(saved('weight')).toBe(2000)
+  })
+
+  it('TY8: правку записи пишет только свой parseValue; без него запись в кэш серверной модели отказывает с советом, как EW5 (ADR 0174)', async () => {
+    await edit('r1', 'manager', 'Bob')
+    expect(row('r1').manager).toEqual({ id: 'm1', name: 'Ann' })
+    expect(
+      warn.mock.calls.some((call: unknown[]) =>
+        String(call[0]).includes(
+          'object column is written only by its parseValue',
+        ),
+      ),
+    ).toBe(true)
+
+    await edit('r1', 'owner', 'm2:Bob')
+    expect(row('r1').manager).toEqual({ id: 'm2', name: 'Bob' })
   })
 })

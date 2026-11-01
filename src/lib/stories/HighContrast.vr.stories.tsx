@@ -5190,3 +5190,63 @@ export const HighContrastDataTypesSearchStep3 = {
   name: 'Columns/Data types — Search shown text, шаг 3',
   tags: ['!test'],
 }
+
+export const HighContrastDataTypesObjectStep1 = {
+  ...twinStep(
+    columnsDataTypesStories,
+    columnsDataTypesStories.DataTypesObject,
+    1,
+  ),
+  name: 'Columns/Data types — Object records, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesObjectStep2 = {
+  ...twinStep(
+    columnsDataTypesStories,
+    columnsDataTypesStories.DataTypesObject,
+    2,
+  ),
+  name: 'Columns/Data types — Object records, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesObjectStep3 = {
+  ...twinStep(
+    columnsDataTypesStories,
+    columnsDataTypesStories.DataTypesObject,
+    3,
+  ),
+  name: 'Columns/Data types — Object records, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesObjectStep4 = {
+  ...twinStep(
+    columnsDataTypesStories,
+    columnsDataTypesStories.DataTypesObject,
+    4,
+  ),
+  name: 'Columns/Data types — Object records, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesObjectLabelStep1 = {
+  ...twinStep(
+    columnsDataTypesStories,
+    columnsDataTypesStories.DataTypesObjectLabel,
+    1,
+  ),
+  name: 'Columns/Data types — Object key and label, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesObjectLabelStep2 = {
+  ...twinStep(
+    columnsDataTypesStories,
+    columnsDataTypesStories.DataTypesObjectLabel,
+    2,
+  ),
+  name: 'Columns/Data types — Object key and label, шаг 2',
+  tags: ['!test'],
+}

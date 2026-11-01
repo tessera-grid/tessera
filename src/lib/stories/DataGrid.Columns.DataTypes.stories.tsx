@@ -4,6 +4,7 @@ import { expect } from 'storybook/test'
 import type { CellComponentProps } from '../core/createSlots'
 import type { ServerRowsRequest } from '../plugins'
 import { exportFormats } from '../plugins/dataExport'
+import type { ColumnDef } from '../types'
 import type { StoryProps } from './DataGridStory.types'
 import { StoryComponent } from './DataGridStory'
 import { dataGridMeta } from './dataGridMeta'
@@ -21,10 +22,15 @@ import {
 import { untilDone } from './__mocks__/cellGestures'
 import {
   LOCALE_ROWS,
+  MANAGERS,
+  MANAGER_COLUMN,
   MEDIUM_DATES,
   MONEY_TYPES,
+  PERSON_TYPES,
   SORT_ROWS,
   STATUS_OPTIONS,
+  managedRows,
+  ownedRows,
   productColumns,
   productRows,
 } from './__mocks__/dataTypesData'
@@ -39,11 +45,13 @@ import {
 } from './__mocks__/exportGuide'
 import {
   calendar,
+  checkOption,
   chooseOperator,
   closePanel,
   filterActive,
   filteredCount,
   openPanel,
+  optionOf,
   pickDay,
 } from './__mocks__/filterGuide'
 import { storyLabels } from './__mocks__/storyLabels'
@@ -77,8 +85,8 @@ const OWN_TABLE = 'Строки и колонки задаёт раздел: п�
 export const DataTypesPlayground: StoryObj<StoryProps> = {
   name: 'Playground',
   args: {
-    columnsOverride: productColumns('money'),
-    dataOverride: ROWS,
+    columnsOverride: [...productColumns('money'), MANAGER_COLUMN],
+    dataOverride: managedRows(50),
     dataTypes: MONEY_TYPES,
     timeZone: 'UTC',
   },
@@ -840,6 +848,184 @@ export const DataTypesSearch: StoryObj<StoryProps> = {
       )
       await expect(statusTexts(canvas).every(text => text === ON_SALE)).toBe(
         true,
+      )
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0174, S1: запись в сортировке и фильтре ---------------------------------------
+
+const MANAGED_ROWS = managedRows(40)
+const OBJECT_MANAGER = MANAGERS[1]!
+const managerTexts = (root: HTMLElement) =>
+  orderedRows(root).map(
+    row =>
+      row
+        .querySelector(`${CELL}[data-column-id="manager"]`)
+        ?.textContent?.trim() ?? '',
+  )
+const managerFiltered = (root: HTMLElement) =>
+  filterActive(root, 'manager') &&
+  managerTexts(root).length > 0 &&
+  managerTexts(root).every(text => text === OBJECT_MANAGER.name)
+
+/** Пользователь отмечает менеджера в фильтре и закрывает панель. */
+const filterManager = async (root: HTMLElement, signal: AbortSignal) => {
+  if (!managerFiltered(root)) {
+    await openPanel(root, 'manager', signal)
+    await pollUntil(() => !!byTestId('filter-options'), signal)
+    await checkOption(OBJECT_MANAGER.id, signal)
+    await pollUntil(() => managerFiltered(root), signal)
+  }
+  await closePanel(signal)
+}
+
+const OBJECT: readonly GuideStoryStep[] = [
+  {
+    title: 'Менеджеры — записи',
+    hint: 'У каждой строки в колонке менеджера — запись с номером и именем. Таблица показывает имя.',
+    props: () => ({
+      columnsOverride: [
+        ...columnsOf('number', ['name', 'price']),
+        MANAGER_COLUMN,
+      ],
+      dataOverride: MANAGED_ROWS,
+      enableColumnSorting: true,
+      enableColumnFiltering: true,
+      columnFilteringFilteredCount: true,
+    }),
+  },
+  {
+    title: 'Пользователь отсортировал по менеджеру',
+    hint: 'Пользователь нажал кнопку сортировки дважды. Строки упорядочены по имени менеджера, по алфавиту.',
+    enter: sortTo('manager', 'ascending'),
+  },
+  {
+    title: 'Пользователь открыл фильтр менеджера',
+    hint: 'Панель предлагает список имён с флажками и числом строк у каждого.',
+    states: ['overlay.filterOptions'],
+    enter: stepAction(async (root, { signal }) => {
+      await openPanel(root, 'manager', signal)
+      await pollUntil(() => !!byTestId('filter-options'), signal)
+    }),
+  },
+  {
+    title: 'Пользователь отметил менеджера',
+    hint: 'Остались строки этого менеджера. Записи из разных строк таблица узнаёт по номеру, поэтому все они попали в отбор.',
+    enter: stepAction((root, { signal }) => filterManager(root, signal)),
+  },
+]
+
+/** ADR 0174, S1: пользователь сортирует и фильтрует колонку менеджеров-записей по имени. */
+export const DataTypesObject: StoryObj<StoryProps> = {
+  name: 'Object records',
+  parameters: { scenario: '0174/S1', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Записи в колонке"
+      steps={OBJECT}
+      args={guideArgs({ height: '460' }, args)}
+    />
+  ),
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const labels = storyLabels(args.locale)
+    const total = MANAGED_ROWS.length
+    const count = MANAGED_ROWS.filter(
+      row => row.manager.id === OBJECT_MANAGER.id,
+    ).length
+    await step(OBJECT[0]!.title, async () => {
+      await waitForRows(canvas)
+      await expect(managerTexts(canvas)[0]).toBe(MANAGED_ROWS[0]!.manager.name)
+    })
+    await step(OBJECT[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(sortOf(canvas, 'manager')).toBe('ascending'))
+      const texts = managerTexts(canvas)
+      await expect(texts).toEqual(
+        [...texts].sort(new Intl.Collator('en').compare),
+      )
+      await expect(texts[0]).toBe(MANAGERS[0]!.name)
+    })
+    await step(OBJECT[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(optionOf(OBJECT_MANAGER.id)?.textContent).toContain(
+        OBJECT_MANAGER.name,
+      )
+      await expect(optionOf(OBJECT_MANAGER.id)?.textContent).toContain(
+        String(count),
+      )
+      await settle()
+    })
+    await step(OBJECT[3]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(filteredCount()).toBe(labels.filteredRows(count, total))
+      await expect(managerFiltered(canvas)).toBe(true)
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0174, S2: ключ и составная подпись записи -------------------------------------
+
+const OWNED_ROWS = ownedRows(20)
+const ownerColumn = (dataType: string): ColumnDef<any, any> => ({
+  id: 'owner',
+  accessorKey: 'owner',
+  header: 'Owner',
+  dataType,
+})
+
+const OBJECT_LABEL: readonly GuideStoryStep[] = [
+  {
+    title: 'Запись без настройки',
+    hint: 'Приложение назначило колонке владельца тип записи, но у его записей нет полей, которые таблица понимает сама: номер лежит в другом поле, имя — в двух. Ячейки пусты, в консоли разработчика — предупреждение о записи без номера.',
+    props: () => ({
+      columnsOverride: [
+        ...columnsOf('number', ['name', 'price']),
+        ownerColumn('object'),
+      ],
+      dataOverride: OWNED_ROWS,
+    }),
+  },
+  {
+    title: 'Приложение описало запись',
+    hint: 'Приложение описало свой тип «человек»: где у записи номер и как из её полей собрать подпись. Колонка владельца показывает имя и фамилию.',
+    props: () => ({
+      columnsOverride: [
+        ...columnsOf('number', ['name', 'price']),
+        ownerColumn('person'),
+      ],
+      dataTypes: PERSON_TYPES,
+    }),
+  },
+]
+
+/** ADR 0174, S2: разработчик задаёт ключ и составную подпись своей записи. */
+export const DataTypesObjectLabel: StoryObj<StoryProps> = {
+  name: 'Object key and label',
+  parameters: { scenario: '0174/S2', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Ключ и подпись записи"
+      steps={OBJECT_LABEL}
+      args={guideArgs({ dataCount: 20, height: '360' }, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const { owner } = OWNED_ROWS[0]!
+    await step(OBJECT_LABEL[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(textOf(canvas, 0, 'owner')).toBe(''))
+    })
+    await step(OBJECT_LABEL[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(textOf(canvas, 0, 'owner')).toBe(`${owner.first} ${owner.last}`),
       )
       await settle()
     })

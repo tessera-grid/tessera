@@ -16,6 +16,7 @@ import {
   matchesColumnFilter,
 } from './conditions'
 import { matchesDate, nowWall } from './dates'
+import { optionKeyOf } from './options'
 import type { ColumnFilterDef, ColumnFilterValue, DateFilter } from './types'
 
 declare module '@tanstack/react-table' {
@@ -80,7 +81,9 @@ const columnTypeFilter = ((
       () => nowWall(timeZone),
     )
   }
-  return matchesColumnFilter(type, row.getValue(columnId), filter)
+  // Запись `object` сравнивается по ключу (ADR 0174, TY4).
+  const value = optionKeyOf(row.table, column as never, row.getValue(columnId))
+  return matchesColumnFilter(type, value, filter)
 }) as unknown as FilterFn<any, any>
 
 columnTypeFilter.autoRemove = isInactiveFilter

@@ -1384,6 +1384,103 @@ describe('Отзывчивость — поиск по показанному т
   )
 })
 
+// Фильтр записи с фасетами по ключу (ADR 0174, TY15): отметка варианта на 100 000 строк —
+// колонка менеджера-записи `object` против той же колонки `select` с вариантами (база SF25).
+const GENDER_NAMES: Record<string, string> = { male: 'Male', female: 'Female' }
+const OBJECT_FILTERING = {
+  ...FILTERING,
+  columnsOverride: OPTION_FILTERING.columnsOverride.map(column =>
+    column.id === 'gender'
+      ? {
+          id: 'gender',
+          header: 'Gender',
+          size: 150,
+          dataType: 'object',
+          accessorFn: (row: { gender: string }) => ({
+            id: row.gender,
+            name: GENDER_NAMES[row.gender],
+          }),
+        }
+      : column,
+  ),
+}
+
+describe('Отзывчивость — фильтр записи', () => {
+  test(
+    'TY15: применение фильтра записи с фасетами по ключу на 100 000 строк — против фильтра select (база SF25)',
+    async () => {
+      const measure = async (records: boolean) => {
+        const filtering = records ? OBJECT_FILTERING : OPTION_FILTERING
+        await renderGrid({
+          ...SEARCH_SIZE,
+          ...ALL_PLUGINS,
+          ...filtering,
+          ...inlineHeaderActions(filtering.columnsOverride),
+        } as Parameters<typeof renderGrid>[0])
+        await waitForGrid()
+        await openOptionFilter('gender')()
+        // Прогрев отмечает «male», замер — «female»: оба щелчка применяют фильтр.
+        const result = await measureInteractionWork(
+          async () =>
+            optionCheckbox(
+              optionCheckbox('male')!.getAttribute('aria-checked') === 'true'
+                ? 'female'
+                : 'male',
+            )!.click(),
+          {
+            afterWarmup: () =>
+              expect(optionCheckbox('male')!.getAttribute('aria-checked')).toBe(
+                'true',
+              ),
+          },
+        )
+        expect(optionCheckbox('female')!.getAttribute('aria-checked')).toBe(
+          'true',
+        )
+        await cleanup()
+        return result
+      }
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const records = medianRun(runs.variant, r => r.longestMs)
+      // Ключ записи считается на строку при каждом проходе фасетов и условия.
+      const ceiling = ceilingOver(base.longestMs, { ratio: 1.3, plusMs: 50 })
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '100 000×10',
+          plugins: 'all',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('TY15-base', 'фильтр select', base, false)
+      await record('TY15', 'фильтр записи по ключу', records, true)
+
+      expect(
+        records.longestMs,
+        `запись longest=${records.longestMs.toFixed(1)}ms, база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
 // Своя отсортированная модель (ADR 0064, SM7): построение модели на 100 000 строк —
 // смена направления сортировки и сразу модель — против createSortedRowModel TanStack
 // на тех же данных. Headless-таблицы без рендера: меряется только модель.

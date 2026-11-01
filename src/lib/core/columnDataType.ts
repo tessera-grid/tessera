@@ -10,7 +10,7 @@ import type { BuiltInDataType } from './dataTypes'
 /**
  * Вид разбора: `'date'` и `'dateTime'` — объект `Date`, `'dateString'` — строка
  * `YYYY-MM-DD`, `'dateTimeString'` — ISO со временем, `'select'` — значение варианта по
- * подписи.
+ * подписи, `'object'` — запись: её пишет только свой `parseValue` (ADR 0174, TY8).
  */
 export type ColumnDataType =
   | 'text'
@@ -21,6 +21,7 @@ export type ColumnDataType =
   | 'dateString'
   | 'dateTimeString'
   | 'select'
+  | 'object'
 
 /** Язык чисел и варианты колонки — для разбора по типу (DT14). */
 export interface ParseContext {
@@ -51,6 +52,7 @@ export const parseByDataType = (
   { locale, options }: ParseContext = {},
 ): { value: unknown } | undefined => {
   if (type === 'text') return { value: text }
+  if (type === 'object') return undefined
   const trimmed = text.trim()
   if (trimmed === '') return { value: null }
   switch (type) {

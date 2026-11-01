@@ -41,6 +41,7 @@ const KIND: Partial<Record<BuiltInDataType, ColumnFilterType>> = {
   dateTimeString: 'datetime',
   select: 'select',
   multiSelect: 'multiselect',
+  object: 'select',
 }
 
 /** Вид фильтра по базовому типу: текст и колонка без типа — текстовый. */

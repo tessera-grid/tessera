@@ -20,7 +20,7 @@ import { useIcons } from '../../ui/icons'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 import { ToolbarButton } from '../../ui/ToolbarButton'
 import { Tooltip } from '../../ui/Tooltip'
-import { optionLabelOf } from '../../core/columnOptions'
+import { filterOptionLabelOf } from '../columnFilteringModel/options'
 import { formatDataTypeValue } from '../../core/dataTypeFormat'
 import { describeFilter } from './describeFilter'
 import type { FilterSummaryItem } from './filterSummary'
@@ -82,7 +82,7 @@ export const FilterSummaryPopover = ({
                 const condition = describeFilter(item.filter, labels, {
                   locale,
                   optionLabel: value =>
-                    optionLabelOf(table, item.column, value),
+                    filterOptionLabelOf(table, item.column as never, value),
                   numberText: value =>
                     formatDataTypeValue(table, item.column, value, undefined),
                 })

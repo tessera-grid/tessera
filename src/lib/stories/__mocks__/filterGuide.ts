@@ -92,3 +92,20 @@ export const pickDay = async (
   )
   document.querySelector<HTMLElement>(`[data-day="${day}"] button`)!.click()
 }
+
+export const optionOf = (value: string) =>
+  document.querySelector<HTMLElement>(
+    `[data-testid="filter-panel"] [data-option-index][data-value="${value}"]`,
+  )
+export const optionChecked = (value: string) =>
+  optionOf(value)
+    ?.querySelector('[role="checkbox"]')
+    ?.getAttribute('aria-checked') === 'true'
+/** Пользователь отмечает вариант, пока он не отмечен. */
+export const checkOption = (value: string, signal: AbortSignal) =>
+  repeat(
+    () => optionChecked(value),
+    () =>
+      optionOf(value)?.querySelector<HTMLElement>('[role="checkbox"]')?.click(),
+    signal,
+  )

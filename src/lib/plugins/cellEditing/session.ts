@@ -289,6 +289,14 @@ const warnNotWritten = (table: unknown) =>
     'cellEditing:notWritten',
   )
 
+/** Запись `object` из текста редактора пишет только свой `parseValue` (ADR 0174, TY8). */
+const warnObjectNotWritten = (table: unknown) =>
+  logWarn(
+    table as never,
+    'cellEditing: an object column is written only by its parseValue — return the saved row from onCellEdit or set parseValue on the column or its type',
+    'cellEditing:objectNotWritten',
+  )
+
 /**
  * Серверная модель строк: данных у приложения нет — итог правки пишется в кэш строк
  * (ADR 0139): строка из ответа `onCellEdit`, без неё — текст редактора, разобранный по
@@ -325,7 +333,8 @@ const writeSaved = (
         { locale: t.options.locale, options: column!.columnDef.options },
       )
   if (!parsed) {
-    warnNotWritten(table)
+    if (type?.base === 'object') warnObjectNotWritten(table)
+    else warnNotWritten(table)
     return
   }
   t.setRowData(rowId, data => setAtPath(data, key, parsed.value))

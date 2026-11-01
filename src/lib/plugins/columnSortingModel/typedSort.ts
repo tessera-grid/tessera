@@ -2,16 +2,17 @@
  * Сортировка по типу данных колонки (ADR 0172, DT10): текст — `Intl.Collator` языка таблицы
  * с числами по значению и без учёта регистра, числа, сначала `false`, даты — по моменту,
  * даты-строки — разбором, свой формат — `parseDate` типа; пустые — последними в обе стороны.
- * Колонку с вариантами сортирует подпись (ADR 0063), свою функцию колонки фича не трогает.
+ * Запись `object` — по подписи (ADR 0174, TY3). Колонку с вариантами сортирует подпись
+ * (ADR 0063), свою функцию колонки фича не трогает.
  */
 import { constructSortFn } from '@tanstack/react-table'
 
 import { hasColumnOptions } from '../../core/columnOptions'
-import { dateTypeInstant } from '../../core/dataTypeFormat'
+import { dateTypeInstant, objectLabelOf } from '../../core/dataTypeFormat'
 import type { ResolvedDataType } from '../../core/dataTypes'
 import { DEFAULT_LOCALE } from '../../core/localization'
 
-interface TypedSortColumn {
+export interface TypedSortColumn {
   table: { options: { locale?: string } }
   columnDef: {
     sortFn?: unknown
@@ -59,6 +60,8 @@ const keyOf = (type: ResolvedDataType | undefined, value: unknown) => {
       return dateTypeInstant(type, value) ?? EMPTY
     case 'multiSelect':
       return Array.isArray(value) ? value.join(', ') : String(value)
+    case 'object':
+      return objectLabelOf(type.definition, value) || EMPTY
     default:
       return String(value)
   }
