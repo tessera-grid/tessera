@@ -2919,3 +2919,95 @@ describe('Производительность прокрутки — выдел
     PERF_TIMEOUT * 2,
   )
 })
+
+// Тип данных колонки (ADR 0172, DT20): 1000×1000 без плагинов, у каждой колонки числовое
+// значение; вариант — тип «деньги» с форматом валюты, база — те же колонки без типа.
+const DT20_COST = { ratio: 1.3, plusMs: 4 }
+
+describe('Производительность прокрутки — тип данных колонки', () => {
+  test(
+    'DT20: спокойная прокрутка 1000×1000 со всеми колонками с типом и форматом не дороже тех же без типа больше чем на 30 % (или 4 мс); форматтеры Intl создаются один раз на язык и опции',
+    async () => {
+      const numeric = (typed: boolean) =>
+        makeColumns(LARGE.columnCount).map((column, index) => ({
+          id: column.id!,
+          header: column.header,
+          size: 150,
+          accessorFn: (_row: unknown, rowIndex: number) =>
+            rowIndex * 1.25 + index,
+          ...(typed && { dataType: 'money' }),
+        }))
+      const dataTypes = {
+        money: {
+          extends: 'number',
+          format: { style: 'currency', currency: 'EUR' },
+        },
+      } as const
+      const Original = Intl.NumberFormat
+      let made = 0
+      Intl.NumberFormat = new Proxy(Original, {
+        construct(target, args: [string?, Intl.NumberFormatOptions?]) {
+          if (args[1]?.currency === 'EUR') made++
+          return Reflect.construct(target, args)
+        },
+      })
+      const measure = async (typed: boolean) => {
+        const screen = renderGrid({
+          ...LARGE,
+          ...NO_PLUGINS,
+          columnsOverride: numeric(typed) as never,
+          dataTypes: typed ? dataTypes : undefined,
+        })
+        await waitForGrid()
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        return { y, x }
+      }
+
+      try {
+        const runs = await againstBase(measure)
+        const base = medianAxes(runs.base)
+        const typed = medianAxes(runs.variant)
+        const ceiling = axesCeiling(base, DT20_COST)
+        const record = (
+          id: string,
+          label: string,
+          r: typeof base,
+          gated: boolean,
+        ) =>
+          recordPerf({
+            id,
+            label,
+            operation: 'scroll',
+            size: '1000×1000',
+            plugins: 'none',
+            cpuThrottle: CPU_THROTTLE_RATE,
+            metrics: (['y', 'x'] as const).map(axis => ({
+              axis,
+              kind: 'animation' as const,
+              metric: 'p95' as const,
+              valueMs: r[axis].p95Ms,
+              targetMs: ANIMATION_BUDGET_MS,
+              ceilingMs: gated ? ceiling[axis] : undefined,
+              ...r[axis],
+            })),
+          })
+        await record('DT20-base', 'колонки без типа', base, false)
+        await record('DT20', 'колонки с типом и форматом', typed, true)
+
+        for (const axis of ['y', 'x'] as const) {
+          expect(
+            typed[axis].p95Ms,
+            `${axis} p95=${typed[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
+          ).toBeLessThanOrEqual(ceiling[axis])
+        }
+        // Один язык и одни опции — один форматтер на все ячейки и прогоны.
+        expect(made).toBe(1)
+      } finally {
+        Intl.NumberFormat = Original
+      }
+    },
+    PERF_TIMEOUT * 2,
+  )
+})

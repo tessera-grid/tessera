@@ -424,6 +424,7 @@ const StoryGrid = memo(
       totalRowCount: options.totalRowCount,
       locale: locale === 'ru' ? 'ru-RU' : undefined,
       timeZone: options.timeZone,
+      dataTypes: options.dataTypes,
       loading:
         retry === 'loading'
           ? firstLoad

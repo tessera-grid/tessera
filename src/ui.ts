@@ -38,6 +38,7 @@ export {
   SelectCheckbox,
   type SelectCheckboxProps,
 } from './lib/ui/SelectCheckbox/SelectCheckbox'
+export { CheckMark, type CheckMarkProps } from './lib/ui/CheckMark/CheckMark'
 export {
   ExpandButton,
   type ExpandButtonProps,

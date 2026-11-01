@@ -21,6 +21,8 @@ export const CORE_PLUGIN_ONLY: Record<string, string> = {
  * извне его читают только плагины и `shared/`.
  */
 export const CORE_PLUGIN_API: Record<string, string> = {
+  'lib/core/dataTypes.ts':
+    'тип колонки: разрешает ядро, плагины берут базовый тип для сортировки, фильтра, поиска, выгрузки и правки (ADR 0172)',
   'lib/core/rowChanges.ts':
     'подсказка виртуализатору: пишут модели строк, читает виртуализатор ядра (ADR 0145)',
   'lib/core/rowHierarchy.ts':

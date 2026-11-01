@@ -41,6 +41,7 @@ import columnsHeaderGroupsMeta, {
   HeaderGroupsPlayground,
 } from './DataGrid.Columns.HeaderGroups.stories'
 import * as columnsHeaderGroupsStories from './DataGrid.Columns.HeaderGroups.stories'
+import * as columnsDataTypesStories from './DataGrid.Columns.DataTypes.stories'
 import * as columnsHeaderMenuStories from './DataGrid.Columns.HeaderMenu.stories'
 import * as columnsPinningStories from './DataGrid.Columns.Pinning.stories'
 import * as columnsVisibilityStories from './DataGrid.Columns.Visibility.stories'
@@ -4937,5 +4938,45 @@ export const HighContrastContextMenuWholeTableStep4 = {
     4,
   ),
   name: 'Cells/Context menu — Whole table, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesCustomTypeStep1 = {
+  ...twinStep(
+    columnsDataTypesStories,
+    columnsDataTypesStories.DataTypesCustomType,
+    1,
+  ),
+  name: 'Columns/Data types — Custom type, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesCustomTypeStep2 = {
+  ...twinStep(
+    columnsDataTypesStories,
+    columnsDataTypesStories.DataTypesCustomType,
+    2,
+  ),
+  name: 'Columns/Data types — Custom type, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesOverrideBuiltInStep1 = {
+  ...twinStep(
+    columnsDataTypesStories,
+    columnsDataTypesStories.DataTypesOverrideBuiltIn,
+    1,
+  ),
+  name: 'Columns/Data types — Override built-in type, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesOverrideBuiltInStep2 = {
+  ...twinStep(
+    columnsDataTypesStories,
+    columnsDataTypesStories.DataTypesOverrideBuiltIn,
+    2,
+  ),
+  name: 'Columns/Data types — Override built-in type, шаг 2',
   tags: ['!test'],
 }

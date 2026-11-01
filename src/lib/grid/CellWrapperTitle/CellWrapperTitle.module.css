@@ -11,6 +11,19 @@
   white-space: nowrap;
 }
 
+/* Выравнивание и цифры одной ширины — по типу колонки (ADR 0172, DT9). */
+:global([data-align='end']) .cell__title {
+  text-align: end;
+}
+
+:global([data-align='center']) .cell__title {
+  text-align: center;
+}
+
+:global([data-numeric]) .cell__title {
+  font-variant-numeric: tabular-nums;
+}
+
 /* Без наведения кнопки и грип видны всегда (ADR 0086): в узкой колонке сжимается
    заголовок, а не уезжают под грип кнопки. */
 @media (hover: none) {

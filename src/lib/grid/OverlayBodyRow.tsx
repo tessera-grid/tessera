@@ -2,15 +2,16 @@
 // подстрок); его рисует грид по просьбе плагина перетаскивания (ADR 0168, §2).
 import { type ReactNode, forwardRef, memo } from 'react'
 
-import { flexRender } from '@tanstack/react-table'
 import clsx from 'clsx'
 
 import { inertProp } from '../core/inertProp'
+import { useLocalization } from '../core/localization'
 import type { BodyBoundaryProps } from '../core/pluginWrappers'
 import { Bubble } from '../ui/Bubble'
 import { CellWrapperContent } from '../grid/CellWrapperContent'
 import { CellWrapperTitle } from '../grid/CellWrapperTitle'
 import type { Cell } from '../types'
+import { renderCellContent } from './cellContent'
 
 import styles from '../grid/BodyRow/OverlayBodyRow.module.css'
 
@@ -25,6 +26,7 @@ interface OverlayBodyRowProps {
 export const OverlayBodyRow = memo(
   forwardRef<HTMLDivElement, OverlayBodyRowProps>(
     ({ firstCell, withCount = false, subRowsCount = 0, handle }, ref) => {
+      const labels = useLocalization()
       return (
         <div
           ref={ref}
@@ -39,10 +41,7 @@ export const OverlayBodyRow = memo(
             <CellWrapperContent noPadding>
               {handle}
               <CellWrapperTitle>
-                {flexRender(
-                  firstCell.column.columnDef.cell,
-                  firstCell.getContext(),
-                )}
+                {renderCellContent(firstCell, labels)}
               </CellWrapperTitle>
             </CellWrapperContent>
           </div>

@@ -107,6 +107,9 @@ export interface TableLabels {
   filterAll: string
   filterYes: string
   filterNo: string
+  /** Значение ячейки булевой колонки для скринридера (ADR 0172, DT6) */
+  booleanTrue: string
+  booleanFalse: string
   /** Фильтр дат (ADR 0047): условия, пресеты, поле времени, листание месяцев */
   filterOn: string
   filterBefore: string
@@ -457,6 +460,8 @@ export const DEFAULT_LABELS = {
   filterAll: 'All',
   filterYes: 'Yes',
   filterNo: 'No',
+  booleanTrue: 'Yes',
+  booleanFalse: 'No',
   filterOn: 'On',
   filterBefore: 'Before',
   filterAfter: 'After',

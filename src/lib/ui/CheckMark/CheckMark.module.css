@@ -1,0 +1,38 @@
+/* Значок булева — те же размер, рамка и заливка, что у флажка выбора (ADR 0172, DT18). */
+.mark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: var(--tsr-comp-checkbox-size);
+  height: var(--tsr-comp-checkbox-size);
+  border: 1px solid var(--tsr-comp-control-border);
+  border-radius: var(--tsr-comp-checkbox-radius);
+  color: var(--tsr-comp-checkbox-check-color);
+  vertical-align: middle;
+}
+
+.mark[data-checked] {
+  background-color: var(--tsr-comp-checkbox-checked-bg);
+  border-color: var(--tsr-comp-checkbox-checked-bg);
+}
+
+.icon {
+  width: 14px;
+  height: 14px;
+  stroke-width: 3;
+}
+
+/* Высокая контрастность (ADR 0087): рамка и галочка — системными цветами. */
+@media (forced-colors: active) {
+  .mark {
+    border-color: CanvasText;
+  }
+
+  .mark[data-checked] {
+    border-color: CanvasText;
+    background-color: CanvasText;
+    color: Canvas;
+  }
+}

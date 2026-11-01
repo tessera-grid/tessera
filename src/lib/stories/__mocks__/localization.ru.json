@@ -56,6 +56,8 @@
   "filterAll": "Все",
   "filterYes": "Да",
   "filterNo": "Нет",
+  "booleanTrue": "Да",
+  "booleanFalse": "Нет",
   "filterOn": "В день",
   "filterBefore": "До даты",
   "filterAfter": "После даты",

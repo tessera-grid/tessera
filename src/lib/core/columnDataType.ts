@@ -1,3 +1,5 @@
+import type { BuiltInDataType } from './dataTypes'
+
 /**
  * Тип данных колонки (ADR 0139): разбор текста редактора в значение того же вида, что
  * лежит в данных.
@@ -16,6 +18,17 @@ export const inferDataType = (value: unknown): ColumnDataType =>
       : value instanceof Date
         ? 'date'
         : 'text'
+
+/** Разбор правки по базовому типу (ADR 0172): прочие базовые типы — текстом до этапа 2. */
+export const parseKindOf = (base: BuiltInDataType): ColumnDataType =>
+  base === 'dateTime'
+    ? 'date'
+    : base === 'number' ||
+        base === 'boolean' ||
+        base === 'date' ||
+        base === 'dateString'
+      ? base
+      : 'text'
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
 

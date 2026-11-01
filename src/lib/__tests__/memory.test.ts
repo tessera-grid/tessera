@@ -29,6 +29,9 @@ const BOUNDED: Record<string, string> = {
     'константный набор типов',
   'util/logger.ts:emitted':
     'тексты выданных предупреждений: их набор конечен — по одному на место в коде',
+  'core/dataTypeFormat.ts:partsFormatters':
+    'форматтер частей даты на пояс: поясов конечное число',
+  'core/dataTypes.ts:BUILT_IN': 'константный набор встроенных типов',
   'core/wallTime.ts:formatters':
     'форматтер на часовой пояс: поясов конечное число',
   'core/localization/resolveLabels.ts:COUNT_KEYS':

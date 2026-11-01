@@ -21,6 +21,7 @@ import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 import { ToolbarButton } from '../../ui/ToolbarButton'
 import { Tooltip } from '../../ui/Tooltip'
 import { optionLabelOf } from '../../core/columnOptions'
+import { formatDataTypeValue } from '../../core/dataTypeFormat'
 import { describeFilter } from './describeFilter'
 import type { FilterSummaryItem } from './filterSummary'
 
@@ -82,6 +83,8 @@ export const FilterSummaryPopover = ({
                   locale,
                   optionLabel: value =>
                     optionLabelOf(table, item.column, value),
+                  numberText: value =>
+                    formatDataTypeValue(table, item.column, value, undefined),
                 })
                 return (
                   <li

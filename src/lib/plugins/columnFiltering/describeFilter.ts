@@ -79,6 +79,8 @@ export interface DescribeContext {
   locale?: string
   /** Подпись значения варианта (ADR 0048, §4). */
   optionLabel?: (value: unknown) => string
+  /** Число по типу колонки (ADR 0172, DT8). */
+  numberText?: (value: number) => string
 }
 
 const isDateFilter = (filter: ColumnFilterValue) =>
@@ -96,8 +98,10 @@ export const operatorLabel = (operator: FilterOperator, labels: TableLabels) =>
 export const describeFilter = (
   filter: ColumnFilterValue,
   labels: TableLabels,
-  { locale, optionLabel = String }: DescribeContext = {},
+  { locale, optionLabel = String, numberText = String }: DescribeContext = {},
 ): string => {
+  const bound = (value: unknown) =>
+    typeof value === 'number' ? numberText(value) : (value ?? '…')
   if (!('value' in filter)) {
     return operatorLabel(filter.operator, labels)
   }
@@ -125,8 +129,9 @@ export const describeFilter = (
   }
   if (Array.isArray(value)) {
     const [from, to] = value
-    return `${operatorLabel('between', labels)} ${from ?? '…'}–${to ?? '…'}`
+    return `${operatorLabel('between', labels)} ${bound(from)}–${bound(to)}`
   }
-  const shown = typeof value === 'string' ? `"${value.trim()}"` : String(value)
+  const shown =
+    typeof value === 'string' ? `"${value.trim()}"` : String(bound(value))
   return `${operatorLabel(filter.operator as FilterOperator, labels)} ${shown}`
 }

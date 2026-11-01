@@ -3,7 +3,6 @@
 // от columnDef.cell.
 import { memo, useContext, useMemo } from 'react'
 
-import { flexRender } from '@tanstack/react-table'
 import clsx from 'clsx'
 
 import { useFastScrollSuppressed } from '../core/fastScroll'
@@ -43,6 +42,7 @@ import type { ActionStatus } from '../core/headerActions/actionStatusFeature'
 import { usePluginRenderVersion } from '../core/renderVersion'
 import { CellWrapperContent, getAlignContent } from '../grid/CellWrapperContent'
 import { CellWrapperTitle } from '../grid/CellWrapperTitle'
+import { alignAttrs, renderCellContent } from './cellContent'
 import { renderSkeletonCell, skeletonCellKindOf } from './skeletonCell'
 import type { Cell } from '../types'
 import { RenderCellSlot, RenderSlot } from '../core/renderSlots'
@@ -251,7 +251,7 @@ export const BodyCell = memo(
         )
       }
 
-      const content = flexRender(cell.column.columnDef.cell, cell.getContext())
+      const content = renderCellContent(cell, labels)
 
       // Сервисная колонка — контент без CellWrapperTitle.
       return isActionsColumn ? (
@@ -311,6 +311,7 @@ export const BodyCell = memo(
         data-virtual-cell={absoluteLeft !== undefined || undefined}
         aria-colindex={getDisplayColumnIndex(table, cell.column.id) + 1}
         data-column-id={cell.column.id}
+        {...alignAttrs(cell.column)}
         data-cell-pinned={pinnedSideToDom(isPinnedColumn)}
         data-cell-odd-left-pinned={isStartPinned && rowIndex % 2 !== 0}
         data-cell-odd-right-pinned={isEndPinned && rowIndex % 2 !== 0}

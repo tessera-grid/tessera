@@ -5,7 +5,10 @@
 
 /** Свои поля описания колонки — записи фич Tessera в `ColumnDef_FeatureMap`. */
 export const COLUMN_DEF_FIELDS: Record<string, string> = {
-  dataType: '0139',
+  align: '0172',
+  dataType: '0172',
+  format: '0172',
+  formatValue: '0172',
   enableDragging: '0006',
   filter: '0045',
   getOptionLabel: '0048',
@@ -42,6 +45,7 @@ export const CORE_OPTIONS: Record<string, string> = {
   loadError: '0096',
   loading: '0106',
   locale: '0169',
+  dataTypes: '0172',
   logLevel: '0022',
   onActiveCellChange: '0170',
   onColumnAutoSizingChange: '0010',

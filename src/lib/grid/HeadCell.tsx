@@ -18,6 +18,7 @@ import clsx from 'clsx'
 import { CellWrapperContent, getAlignContent } from '../grid/CellWrapperContent'
 import { CellWrapperTitle } from '../grid/CellWrapperTitle'
 import type { Header } from '../types'
+import { alignAttrs } from './cellContent'
 import type { RegisterSlotParams } from '../core/createSlots'
 import { getDisplayColumnIndex } from '../core/displayColumns'
 import { getHeaderRowStart, isCoveredHeader } from '../core/headerSpans'
@@ -241,6 +242,7 @@ export const HeadCellView = ({
       aria-rowspan={header.rowSpan > 1 ? header.rowSpan : undefined}
       aria-colspan={header.colSpan > 1 ? header.colSpan : undefined}
       data-column-id={header.column.id}
+      {...alignAttrs(header.column)}
       data-virtual-cell={absoluteLeft !== undefined || undefined}
       data-cell-pinned={pinnedSideToDom(headerPinned)}
       data-cell-last-left-pinned={isLastStartPinnedColumn}

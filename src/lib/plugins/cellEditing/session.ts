@@ -16,11 +16,12 @@ import {
 } from '../../core/debugActions'
 import type { RowSource } from '../../core/rowSource'
 import {
-  type ColumnDataType,
   inferDataType,
   parseByDataType,
+  parseKindOf,
   setAtPath,
 } from '../../core/columnDataType'
+import type { ResolvedDataType } from '../../core/dataTypes'
 import { logWarn } from '../../util/logger'
 import { isThenable, rejectionText } from '../../util/thenable'
 import {
@@ -255,9 +256,9 @@ interface SavedTable {
     | {
         columnDef: {
           accessorKey?: unknown
-          dataType?: ColumnDataType
           parseValue?: (text: string, row: unknown) => unknown
         }
+        getDataType: () => ResolvedDataType | undefined
       }
     | undefined
   getRowSource: () => RowSource<{
@@ -301,18 +302,21 @@ const writeSaved = (
     t.setRowData(rowId, () => answer)
     return
   }
-  const def = t.getColumn?.(columnId)?.columnDef
-  const key = def?.accessorKey
+  const column = t.getColumn?.(columnId)
+  const key = column?.columnDef.accessorKey
   const row = t.getRowSource().byId(rowId)
   if (typeof key !== 'string' || !row) {
     warnNotWritten(table)
     return
   }
-  const parsed = def!.parseValue
-    ? { value: def!.parseValue(text, row.original) }
+  const type = column!.getDataType()
+  // Свой разбор колонки действует и без типа (ADR 0139).
+  const parse = type?.definition.parseValue ?? column!.columnDef.parseValue
+  const parsed = parse
+    ? { value: parse(text, row.original) }
     : parseByDataType(
         text,
-        def!.dataType ?? inferDataType(row.getValue(columnId)),
+        type ? parseKindOf(type.base) : inferDataType(row.getValue(columnId)),
       )
   if (!parsed) {
     warnNotWritten(table)

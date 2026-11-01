@@ -9,7 +9,12 @@
  */
 import type { ColumnOptionsDef } from './columnOptions'
 import type { ServiceColumnInfo } from './createColumns'
-import type { ColumnDataType } from './columnDataType'
+import type {
+  DataTypeFields,
+  DataTypeName,
+  DataTypeRegistry,
+  ResolvedDataType,
+} from './dataTypes'
 import type { DataMode } from './dataMode'
 import type { ActionReport, OnDebugAction } from './debugActions'
 import type { SkeletonCellKind } from './skeletonOptions'
@@ -76,6 +81,8 @@ export interface CoreOptions {
   totalRowCount?: number
   /** Язык форм слова, чисел и списков в подписях (BCP 47), по умолчанию `en-US` (ADR 0169, §5). */
   locale?: string
+  /** Свои типы данных колонок и замена полей встроенных (ADR 0172, §1). */
+  dataTypes?: DataTypeRegistry
   /**
    * Пояс дат (IANA или `'UTC'`): сутки, «сегодня», пресеты и стенное время фильтра дат и
    * выгрузки; по умолчанию — пояс браузера (ADR 0169, §5).
@@ -213,12 +220,15 @@ export interface CommonColumnAPI {
   getIsActionsColumn: () => boolean
   /** Сведения служебной колонки; у колонки приложения — `undefined`. */
   getServiceColumn: () => ServiceColumnInfo | undefined
+  /** Тип данных колонки: имя, базовый тип и итоговое определение; без типа — `undefined` (ADR 0172). */
+  getDataType: () => ResolvedDataType | undefined
 }
 
 /** Кастомные поля columnDef Tessera; `options` / `getOptionLabel` — ADR 0048. */
-export interface CommonColumnDef<TData = any> extends ColumnOptionsDef {
-  /** Тип значения колонки: разбор ввода правки (ADR 0139). Без поля — по значению ячейки. */
-  dataType?: ColumnDataType
+export interface CommonColumnDef<TData = any>
+  extends ColumnOptionsDef, Omit<DataTypeFields<TData>, 'parseValue'> {
+  /** Тип данных колонки: встроенный или из реестра `dataTypes` (ADR 0172). */
+  dataType?: DataTypeName
   /** Свой разбор текста редактора, главнее `dataType` (ADR 0139). */
   parseValue?: (text: string, row: TData) => unknown
   /**

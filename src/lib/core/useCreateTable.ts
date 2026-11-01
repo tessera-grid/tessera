@@ -82,6 +82,7 @@ const CORE_OPTION_KEYS: Record<keyof CoreOptions, true> = {
   rowCount: true,
   totalRowCount: true,
   locale: true,
+  dataTypes: true,
   timeZone: true,
   loading: true,
   enableFooter: true,

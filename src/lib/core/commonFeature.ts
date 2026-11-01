@@ -20,7 +20,8 @@ import type { ColumnSizingState, TableFeature, Updater } from '../types'
 import type { CommonOptions } from './commonFeature.types'
 import { announce } from './announcer'
 import { createActionReporter } from './debugActions'
-import { optionTextOf } from './columnOptions'
+import { formatDataTypeValue } from './dataTypeFormat'
+import { resolveDataType } from './dataTypes'
 import {
   createPluginErrorRegistry,
   resolvePluginDiagnostics,
@@ -35,26 +36,34 @@ export type { CommonOptions } from './commonFeature.types'
 export const commonOptionsOf = (table: unknown): CommonOptions =>
   (table as { options: CommonOptions }).options
 
+interface DefaultCellProps {
+  table: object
+  column: { id: string; columnDef: object }
+  row?: { original: unknown }
+  getValue: () => unknown
+  renderValue: () => unknown
+}
+
+/** Ячейка по умолчанию; грид узнаёт её, чтобы нарисовать значок булева (ADR 0172, DT6). */
+export const defaultCell = (props: DefaultCellProps) =>
+  formatDataTypeValue(
+    props.table as never,
+    props.column,
+    // Колонка без типа показывает запасное значение таблицы, как стоковая ячейка.
+    resolveDataType(props.table as never, props.column)
+      ? props.getValue()
+      : props.renderValue(),
+    props.row?.original,
+  ) || null
+
 export const commonFeature: TableFeature = {
   getDefaultTableOptions: () => ({
     skeletonOptions: DEFAULT_SKELETON_OPTIONS,
   }),
 
-  // Ячейка по умолчанию: у колонки с вариантами — подпись (ADR 0048, SF15), иначе как
-  // стоковая. Свой `cell` колонки её перекрывает.
-  getDefaultColumnDef: () => ({
-    cell: (props: {
-      table: object
-      column: { id: string; columnDef: object }
-      getValue: () => unknown
-      renderValue: () => unknown
-    }) =>
-      optionTextOf(props.table, props.column, props.getValue()) ??
-      (
-        props.renderValue() as { toString?: () => string } | null | undefined
-      )?.toString?.() ??
-      null,
-  }),
+  // Ячейка по умолчанию — текст по типу колонки (ADR 0172), у вариантов — подпись
+  // (ADR 0048, SF15). Свой `cell` колонки её перекрывает.
+  getDefaultColumnDef: () => ({ cell: defaultCell }),
 
   constructTableAPIs: table => {
     const options = () => commonOptionsOf(table)
@@ -117,6 +126,10 @@ export const commonFeature: TableFeature = {
       column_getServiceColumn: {
         fn: (column: { columnDef: object }) =>
           serviceColumnOf(column.columnDef),
+      },
+      column_getDataType: {
+        fn: (column: { id: string; columnDef: object }) =>
+          resolveDataType(table as never, column),
       },
     })
   },
