@@ -63,6 +63,7 @@ export const CATALOG_STATES = {
     'contextMenu',
     'filterText',
     'filterDate',
+    'dateEditor',
     'filterOptions',
     'export',
     'columns',

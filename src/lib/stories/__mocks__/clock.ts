@@ -23,9 +23,12 @@ export const pinClock = (now = STORY_NOW) => {
     if (!new.target) {
       return new Real(current()).toString()
     }
-    return args.length === 0
-      ? new Real(current())
-      : new (Real as unknown as new (...values: unknown[]) => Date)(...args)
+    // `new.target` — подкласс `Date` (`TZDate` календаря) получает свой прототип.
+    return Reflect.construct(
+      Real,
+      args.length === 0 ? [current()] : args,
+      new.target === PinnedDate ? Real : new.target,
+    )
   }
   PinnedDate.prototype = Real.prototype
   Object.assign(PinnedDate, {

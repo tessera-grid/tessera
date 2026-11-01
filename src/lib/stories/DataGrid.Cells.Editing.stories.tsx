@@ -24,6 +24,7 @@ import {
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 import {
+  DATE_COLUMNS,
   EDIT_COLUMNS,
   EDIT_ROWS,
   EDIT_TYPES,
@@ -1012,6 +1013,140 @@ export const EditingTypeEditor: StoryObj<StoryProps> = {
       await until(() => expect(priorityEditor(canvas)).toBeNull())
       expect(priorityText(canvas)).toBe(priorityLabel(HIGH))
       expect(consoleText()).toMatch(new RegExp(`value:${HIGH}`))
+      await settle()
+    })
+  },
+}
+
+const dateCellOf = (column: string) =>
+  document.querySelector<HTMLElement>(
+    `.data-grid__body-row[data-row-id="${PRODUCT_ROW}"] .data-grid__body-cell[data-column-id="${column}"]`,
+  )
+const datePopup = () =>
+  document.querySelector<HTMLElement>('[data-testid="edit-date"]')
+const dateDay = (iso: string) =>
+  datePopup()?.querySelector<HTMLButtonElement>(`[data-day="${iso}"] button`) ??
+  null
+const dateTime = () =>
+  datePopup()?.querySelector<HTMLInputElement>('[data-testid="edit-time"]') ??
+  null
+const openDateEdit = (column: string) =>
+  dateCellOf(column)
+    ?.querySelector<HTMLElement>('.cell__button button')
+    ?.click()
+
+const NEW_DAY = '2026-01-20'
+const NEW_MOMENT_DAY = '2026-10-02'
+const NEW_TIME = '14:30'
+
+const EDIT_DATE: readonly GuideStoryStep[] = [
+  {
+    title: 'Даты в таблице',
+    hint: 'Дата выпуска — день, время обновления — день и время. Их можно править: при наведении на ячейку появляется кнопка правки.',
+  },
+  {
+    title: 'Календарь',
+    hint: 'Пользователь нажал кнопку правки даты выпуска. Под ячейкой календарь, в нём выбран день из ячейки.',
+    states: ['body.editing', 'overlay.dateEditor'],
+    enter: untilDone(
+      () => !!dateDay('2026-01-01'),
+      () => openDateEdit('released'),
+    ),
+  },
+  {
+    title: 'День выбран',
+    hint: 'Пользователь выбрал другой день. Календарь закрылся, в ячейке новая дата.',
+    enter: untilDone(
+      () => !datePopup() && /\b20\b/.test(dateText('released')),
+      () => {
+        const day = dateDay(NEW_DAY)
+        if (day) day.click()
+        else if (!datePopup()) openDateEdit('released')
+      },
+    ),
+  },
+  {
+    title: 'Дата и время',
+    hint: 'Пользователь открыл правку времени обновления. Под календарём поле времени — день и время на часах пояса таблицы.',
+    states: ['body.editing', 'overlay.dateEditor'],
+    enter: untilDone(
+      () => !!dateTime(),
+      () => {
+        if (datePopup()) return
+        openDateEdit('updatedAt')
+      },
+    ),
+  },
+  {
+    title: 'Время сохранено',
+    hint: 'Пользователь выбрал день, набрал время и нажал Enter. Календарь закрылся, в ячейке новые день и время.',
+    enter: untilDone(
+      () => !datePopup() && /:30/.test(dateText('updatedAt')),
+      () => {
+        const time = dateTime()
+        if (!time) return openDateEdit('updatedAt')
+        const day = dateDay(NEW_MOMENT_DAY)
+        if (
+          day &&
+          day.getAttribute('aria-label')?.includes('selected') !== true
+        )
+          return day.click()
+        if (time.value !== NEW_TIME) return typeInto(time, NEW_TIME)
+        press(time, 'Enter')
+      },
+    ),
+  },
+]
+
+/** Текст ячейки даты без кнопки правки: новый день — число 20, новое время — минуты 30. */
+const dateText = (column: string) => {
+  const copy = dateCellOf(column)?.cloneNode(true) as HTMLElement | undefined
+  copy?.querySelectorAll('.cell__button').forEach(button => button.remove())
+  return copy?.textContent ?? ''
+}
+
+/** ADR 0175, S3: пользователь выбирает дату, а для даты со временем — и время, в календаре. */
+export const EditingDate: StoryObj<StoryProps> = {
+  name: 'Edit a date',
+  parameters: { scenario: '0175/S3', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Правка даты"
+      steps={EDIT_DATE}
+      args={guideArgs(
+        {
+          ...productArgs,
+          columnsOverride: DATE_COLUMNS,
+          editableColumns: ['released', 'updatedAt'],
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(EDIT_DATE[0]!.title, async () => {
+      await waitForRows(canvas)
+      expect(productEditButton(canvas, 'released')).not.toBeNull()
+    })
+    await step(EDIT_DATE[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(dateDay('2026-01-01')).not.toBeNull())
+      expect(dateTime()).toBeNull()
+    })
+    await step(EDIT_DATE[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(datePopup()).toBeNull())
+      expect(consoleText()).toContain(`value:"${NEW_DAY}"`)
+    })
+    await step(EDIT_DATE[3]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(dateTime()).not.toBeNull())
+    })
+    await step(EDIT_DATE[4]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(datePopup()).toBeNull())
+      expect(consoleText()).toMatch(/value:"2026-10-02T\d\d:30:00\.000Z"/)
       await settle()
     })
   },

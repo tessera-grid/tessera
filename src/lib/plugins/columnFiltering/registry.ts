@@ -5,7 +5,6 @@
  * ей режим данных, пояс дат и срез.
  */
 import type { RowData, TableFeatures } from '@tanstack/react-table'
-import type { DayPickerLocale } from '@daypicker/react'
 
 import { definePlugin } from '../../core/definePlugin'
 import { readPluginHooks } from '../../core/definePlugin'
@@ -41,8 +40,6 @@ export interface ColumnFilteringOptions extends Omit<
    * фильтр (ADR 0116).
    */
   onFilterChange?: FilterChangeHook
-  /** Локаль календаря: месяцы, дни недели, первый день недели (по умолчанию `en-US`). */
-  dateLocale?: DayPickerLocale
 }
 
 /**
@@ -86,7 +83,6 @@ export const columnFiltering = definePlugin<ColumnFilteringOptions>()({
   ],
   options: o => ({
     columnFilteringDebounceMs: o.debounceMs ?? DEFAULT_FILTER_DEBOUNCE_MS,
-    columnFilteringDateLocale: o.dateLocale,
   }),
 })
 
@@ -99,7 +95,6 @@ declare module '@tanstack/react-table' {
   > {
     /** Опции таблицы, которые выставляет плагин (ADR 0167). */
     columnFilteringPlugin: {
-      columnFilteringDateLocale?: ColumnFilteringOptions['dateLocale']
       columnFilteringDebounceMs?: number
     }
   }

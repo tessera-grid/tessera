@@ -50,6 +50,7 @@ export const CORE_OPTIONS: Record<string, string> = {
   loading: '0106',
   locale: '0169',
   dataTypes: '0172',
+  dateLocale: '0175',
   logLevel: '0022',
   onActiveCellChange: '0170',
   onColumnAutoSizingChange: '0010',

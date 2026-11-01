@@ -94,3 +94,8 @@ export const PRIORITY_COLUMNS: ColumnDef<any, any>[] = [
 ]
 
 export { priorityLabel }
+
+/** Дата выпуска — день, обновление — момент со временем (S3). */
+export const DATE_COLUMNS: ColumnDef<any, any>[] = productColumns().filter(
+  column => ['name', 'released', 'updatedAt'].includes(column.id!),
+)

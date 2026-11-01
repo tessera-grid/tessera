@@ -1,4 +1,4 @@
-/* Календарь фильтра дат (ADR 0047): разметка `@daypicker/react`, стили — на токенах. */
+/* Календарь дат фильтра и редактора (ADR 0047, ADR 0175): разметка `@daypicker/react`, стили — на токенах. */
 .calendar {
   position: relative;
   width: max-content;
@@ -178,4 +178,24 @@
 
 .focused {
   position: relative;
+}
+
+/* Поле времени рядом с календарём — как поля панели фильтра. */
+.time {
+  box-sizing: border-box;
+  width: 100%;
+  height: 32px;
+  padding: 0 8px;
+  color: inherit;
+  font: inherit;
+  background-color: transparent;
+  border: 1px solid var(--tsr-comp-control-border);
+  border-radius: var(--tsr-comp-control-radius);
+  outline: none;
+}
+
+.time:focus-visible {
+  border-color: var(--tsr-comp-focus-ring);
+  box-shadow: 0 0 0 calc(var(--tsr-comp-focus-ring-width) - 1px)
+    var(--tsr-comp-focus-ring);
 }

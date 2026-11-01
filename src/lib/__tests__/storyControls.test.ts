@@ -30,7 +30,6 @@ const WITHOUT_CONTROL: Record<string, string> = {
   paginationInitialPagination: 'страница у приложения — своя история',
   paginationModelPagination: 'страница у приложения — своя история',
   paginationModelInitialPagination: 'страница у приложения — своя история',
-  columnFilteringDateLocale: 'локаль календаря — объект с функциями',
   columnFilteringColumnFilters: 'фильтры у приложения — своя история',
   columnFilteringInitialColumnFilters: 'фильтры у приложения — своя история',
   columnFilteringModelColumnFilters: 'фильтры у приложения — своя история',

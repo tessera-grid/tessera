@@ -84,6 +84,7 @@ const CORE_OPTION_KEYS: Record<keyof CoreOptions, true> = {
   locale: true,
   dataTypes: true,
   timeZone: true,
+  dateLocale: true,
   loading: true,
   enableFooter: true,
   footerPosition: true,

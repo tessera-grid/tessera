@@ -9,7 +9,7 @@ import {
 } from '../../core/columnDataType'
 import type { ColumnOption } from '../../core/columnOptions'
 import type { ResolvedDataType } from '../../core/dataTypes'
-import { objectKeyOf } from '../../core/dataTypeFormat'
+import { formatDataTypeValue, objectKeyOf } from '../../core/dataTypeFormat'
 import { compareDecimal, parseDecimal } from '../../util/decimal'
 
 export interface EditColumn {
@@ -27,6 +27,13 @@ export interface EditTable {
 
 const DEFAULT_LOCALE = 'en-US'
 
+const DATE_BASES: readonly string[] = [
+  'date',
+  'dateTime',
+  'dateString',
+  'dateTimeString',
+]
+
 /** Число в поле — десятичный знак языка таблицы, без разрядов и округления (ED4). */
 const numberText = (value: number | string, locale: string) =>
   new Intl.NumberFormat(locale, {
@@ -37,14 +44,25 @@ const numberText = (value: number | string, locale: string) =>
 export const columnOf = (table: unknown, columnId: string) =>
   (table as EditTable).getColumn?.(columnId)
 
-/** Текст значения в поле правки: числа — по языку таблицы, остальное — как есть. */
+/**
+ * Текст значения в правке: числа — по языку таблицы, даты — как в ячейке, остальное — как
+ * есть.
+ */
 export const editTextOf = (
   table: unknown,
   columnId: string,
   value: unknown,
 ): string => {
   if (value === null || value === undefined) return ''
-  const base = columnOf(table, columnId)?.getDataType()?.base
+  const column = columnOf(table, columnId)
+  const base = column?.getDataType()?.base
+  if (base && DATE_BASES.includes(base))
+    return formatDataTypeValue(
+      table as never,
+      column as never,
+      value,
+      undefined,
+    )
   const locale = (table as EditTable).options.locale ?? DEFAULT_LOCALE
   if (base === 'number' && typeof value === 'number' && Number.isFinite(value))
     return numberText(value, locale)

@@ -104,12 +104,12 @@ export const dateFilteringData = makeDateFilteringData()
 
 interface DateCellOptions {
   timeZone?: string
-  columnFilteringDateLocale?: { code?: string }
+  dateLocale?: { code?: string }
 }
 
 /** Момент в поясе и локали фильтра — чтобы смена пояса была видна в ячейке. */
 const formatCreatedAt = (value: string, options: DateCellOptions) =>
-  new Intl.DateTimeFormat(options.columnFilteringDateLocale?.code ?? 'en-US', {
+  new Intl.DateTimeFormat(options.dateLocale?.code ?? 'en-US', {
     dateStyle: 'medium',
     timeStyle: 'short',
     timeZone: options.timeZone,

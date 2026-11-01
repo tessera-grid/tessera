@@ -4231,6 +4231,36 @@ export const HighContrastEditingTypeEditorStep3 = {
   tags: ['!test'],
 }
 
+export const HighContrastEditingDateStep1 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingDate, 1),
+  name: 'Cells/Editing — Edit a date, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingDateStep2 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingDate, 2),
+  name: 'Cells/Editing — Edit a date, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingDateStep3 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingDate, 3),
+  name: 'Cells/Editing — Edit a date, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingDateStep4 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingDate, 4),
+  name: 'Cells/Editing — Edit a date, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingDateStep5 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingDate, 5),
+  name: 'Cells/Editing — Edit a date, шаг 5',
+  tags: ['!test'],
+}
+
 export const HighContrastCellSelectionRangeStep1 = {
   ...twinStep(
     cellsSelectionStories,

@@ -49,7 +49,7 @@ export const FilterSummaryPopover = ({
   const labels = useLocalization()
   const { clear: ClearIcon, hideColumn: HiddenIcon } = useIcons()
   const triggerRef = useRef<HTMLButtonElement>(null)
-  const locale = table.options.columnFilteringDateLocale?.code
+  const locale = table.options.dateLocale?.code
 
   return (
     <Popover.Root open={open} onOpenChange={onOpenChange}>

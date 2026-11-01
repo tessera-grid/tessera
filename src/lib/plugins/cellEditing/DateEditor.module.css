@@ -1,0 +1,20 @@
+/* Редактор даты (ADR 0175, ED6): текст значения в ячейке и поповер с календарём. */
+.anchor {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--tsr-comp-cell-font-size);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.positioner {
+  composes: positioner from '../../ui/Popup/Popup.module.css';
+}
+
+.popup {
+  composes: popup from '../../ui/Popup/Popup.module.css';
+  display: flex;
+  flex-direction: column;
+  gap: var(--tsr-comp-popup-padding);
+}

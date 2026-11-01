@@ -974,8 +974,11 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       текст в колбэках, разбор при сохранении без второго разбора в кэше) и `typedEditors.dom`
       (ED3 — порядок выбора редактора и что он получает), визуальный `typed-editors` (ED4–ED5 —
       поле числа на языке таблицы с ошибкой разбора, булево одним нажатием), гайды
-      «Cells/Editing — Edit a number», «— Toggle a boolean», «— Editor of a data type» (S1, S2, S7)
-      ([ADR 0175](docs/decisions/0175-data-type-editors.md), этап 1).
+      «Cells/Editing — Edit a number», «— Toggle a boolean», «— Editor of a data type» (S1, S2, S7);
+      визуальный `date-editor` (ED6 — календарь в поясе и на языке таблицы, поле времени, Enter,
+      Escape и фокус), модульный `dateEditorChunk` (ED7 — общий календарь `shared/calendar` в
+      ленивом модуле, без модулей фильтров), гайд «— Edit a date» (S3)
+      ([ADR 0175](docs/decisions/0175-data-type-editors.md), этапы 1–2).
     - _Пределы браузера:_ `browser-limits` (BH1–BH3 — замер предела высоты элемента и
       липкой шапки, раз на документ и только для тела выше 8 млн px; ещё и в
       `test:browsers` — у Firefox свои пределы), перф BH7 — в `first-render`

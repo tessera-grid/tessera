@@ -1,26 +1,19 @@
 /**
- * Панель фильтра даты (ADR 0047, §5): условие, пресеты, календарь `@daypicker/react`
- * в поясе `timeZone`, поле времени у `datetime`. Выбор дня, диапазона, пресета и
+ * Панель фильтра даты (ADR 0047, §5): условие, пресеты, общий календарь (`shared/calendar`)
+ * в поясе `timeZone` и на языке `dateLocale` таблицы, поле времени у `datetime`. Выбор дня, диапазона, пресета и
  * условия применяется сразу, ввод времени — через `debounceMs`. Модуль ленивый.
  */
-import { type ComponentProps, useEffect, useId, useRef } from 'react'
+import { useEffect, useId, useRef } from 'react'
 
-import {
-  type DateRange,
-  DayPicker,
-  type DayPickerLocale,
-  labelDayButton,
-  TZDate,
-} from '@daypicker/react'
 import { Radio } from '@base-ui/react/radio'
 import { RadioGroup } from '@base-ui/react/radio-group'
-import { ChevronDown } from 'lucide-react'
 
+import { commonOptionsOf } from '../../core/commonFeature'
 import { setColumnFilterByUser } from '../../shared/filtering/filtering'
 import { useLocalization } from '../../core/localization'
 import { useDebouncedCallback } from '../../util/useDebouncedCallback'
 import { Button } from '../../ui/Button'
-import { useIcons } from '../../ui/icons'
+import { Calendar, TimeField } from '../../shared/calendar/Calendar'
 import { operatorLabel, PRESET_LABEL } from './describeFilter'
 import type { FilterPanelProps } from './FilterPanel'
 import { OperatorSelect } from './OperatorSelect'
@@ -32,7 +25,6 @@ import type {
 } from '../columnFilteringModel/types'
 
 import panelStyles from './FilterPanel.module.css'
-import styles from './DateFilterPanel.module.css'
 import { FilterFailure } from './FilterFailure'
 import { FilterApply } from './FilterApply'
 import { useFilterDraft } from './filterDraft'
@@ -55,10 +47,6 @@ const PRESETS: DateFilterPreset[] = [
   'thisMonth',
   'thisYear',
 ]
-
-// Годы в выпадающем списке календаря.
-const START_MONTH = new Date(1900, 0, 1)
-const END_MONTH = new Date(2100, 11, 31)
 
 interface Draft {
   operator: DateFilterOperator
@@ -149,65 +137,6 @@ const filterOf = (
   }
 }
 
-const pad = (n: number) => String(n).padStart(2, '0')
-
-/** День календаря (в поясе календаря) → `'YYYY-MM-DD'`. */
-const dayOfDate = (date: Date | undefined) =>
-  date
-    ? `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
-    : null
-
-/** `'YYYY-MM-DD'` → полночь этого дня в поясе календаря. */
-const dateOfDay = (day: string | null, timeZone?: string) => {
-  if (!day) return undefined
-  const [year, month, date] = day.split('-').map(Number)
-  return timeZone
-    ? new TZDate(year, month - 1, date, timeZone)
-    : new Date(year, month - 1, date)
-}
-
-type ChevronProps = ComponentProps<
-  NonNullable<ComponentProps<typeof DayPicker>['components']>['Chevron'] &
-    object
->
-
-const CalendarChevron = ({ orientation }: ChevronProps) => {
-  const { previousMonth: Previous, nextMonth: Next } = useIcons()
-  if (orientation === 'left') return <Previous width={16} height={16} />
-  if (orientation === 'right') return <Next width={16} height={16} />
-  return <ChevronDown width={14} height={14} aria-hidden />
-}
-
-const CLASS_NAMES = {
-  root: styles.calendar,
-  months: styles.months,
-  month: styles.month,
-  nav: styles.nav,
-  button_previous: styles.navButton,
-  button_next: styles.navButton,
-  month_caption: styles.caption,
-  caption_label: styles.captionLabel,
-  dropdowns: styles.dropdowns,
-  dropdown_root: styles.dropdownRoot,
-  dropdown: styles.dropdown,
-  chevron: styles.chevron,
-  month_grid: styles.grid,
-  weekdays: styles.weekdays,
-  weekday: styles.weekday,
-  week: styles.week,
-  day: styles.day,
-  day_button: styles.dayButton,
-  today: styles.today,
-  selected: styles.selected,
-  range_start: styles.rangeStart,
-  range_middle: styles.rangeMiddle,
-  range_end: styles.rangeEnd,
-  outside: styles.outside,
-  disabled: styles.disabled,
-  hidden: styles.hidden,
-  focused: styles.focused,
-}
-
 const needsCalendar = (operator: DateFilterOperator) =>
   operator === 'on' ||
   operator === 'before' ||
@@ -228,11 +157,6 @@ const switchOperator = (
   return { operator }
 }
 
-interface DateFilterOptions {
-  timeZone?: string
-  columnFilteringDateLocale?: DayPickerLocale
-}
-
 export const DateFilterPanel = ({
   table,
   column,
@@ -242,9 +166,7 @@ export const DateFilterPanel = ({
   const labels = useLocalization()
   const presetsId = useId()
   const rootRef = useRef<HTMLDivElement>(null)
-  const options = (table as { options: DateFilterOptions }).options
-  const timeZone = options.timeZone
-  const locale = options.columnFilteringDateLocale
+  const { timeZone, dateLocale: locale } = commonOptionsOf(table)
   const timed = type === 'datetime'
   const filterDraft = useFilterDraft({
     table,
@@ -286,21 +208,9 @@ export const DateFilterPanel = ({
   }, [])
 
   const calendarProps = {
-    captionLayout: 'dropdown' as const,
-    startMonth: START_MONTH,
-    endMonth: END_MONTH,
     timeZone,
     locale,
-    classNames: CLASS_NAMES,
-    components: { Chevron: CalendarChevron },
-    labels: {
-      labelPrevious: () => labels.previousMonth,
-      labelNext: () => labels.nextMonth,
-      // Имя дня начинается с видимого числа (WCAG 2.5.3), дальше — полная дата.
-      labelDayButton: (...args: Parameters<typeof labelDayButton>) =>
-        `${args[3]?.format(args[0], 'd') ?? args[0].getDate()}, ${labelDayButton(...args)}`,
-    },
-    'data-testid': 'filter-calendar',
+    testId: 'filter-calendar',
   }
 
   const timeField = (
@@ -308,12 +218,11 @@ export const DateFilterPanel = ({
     label: string,
     testId: string,
   ) => (
-    <input
+    <TimeField
       className={panelStyles.input}
-      type="time"
-      aria-label={label}
+      label={label}
       value={draft[key]}
-      onChange={event => update({ [key]: event.target.value }, false)}
+      onChange={value => update({ [key]: value }, false)}
       onKeyDown={event => {
         // Enter отправляет условие, как «Применить» (ADR 0154).
         if (server && event.key === 'Enter' && filterDraft.dirty) {
@@ -321,7 +230,7 @@ export const DateFilterPanel = ({
           filterDraft.commit()
         }
       }}
-      data-testid={testId}
+      testId={testId}
     />
   )
 
@@ -368,31 +277,20 @@ export const DateFilterPanel = ({
         </>
       )}
       {draft.operator === 'between' ? (
-        <DayPicker
+        <Calendar
           {...calendarProps}
           mode="range"
-          defaultMonth={dateOfDay(draft.from ?? draft.to, timeZone)}
-          selected={{
-            from: dateOfDay(draft.from, timeZone),
-            to: dateOfDay(draft.to, timeZone),
-          }}
-          onSelect={(range: DateRange | undefined) =>
-            update({
-              from: dayOfDate(range?.from),
-              to: dayOfDate(range?.to),
-            })
-          }
+          from={draft.from}
+          to={draft.to}
+          onRange={(from, to) => update({ from, to })}
         />
       ) : (
         needsCalendar(draft.operator) && (
-          <DayPicker
+          <Calendar
             {...calendarProps}
             mode="single"
-            defaultMonth={dateOfDay(draft.day, timeZone)}
-            selected={dateOfDay(draft.day, timeZone)}
-            onSelect={(date: Date | undefined) =>
-              update({ day: dayOfDate(date) })
-            }
+            day={draft.day}
+            onDay={day => update({ day })}
           />
         )
       )}

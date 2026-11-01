@@ -8,8 +8,8 @@ import { columnFiltering } from '../../../plugins'
 import { waitForGrid } from './core-helpers'
 
 // Загрузка панели фильтра до клика (ADR 0045, FL40). Отдельный файл: модули грузятся
-// один раз на документ. Загрузку видно по стилю CSS-модуля панели — dev-сервер Vite
-// вставляет его вместе с модулем.
+// один раз на документ. Загрузку видно по стилю CSS-модуля панели (у даты — календаря):
+// dev-сервер Vite вставляет его вместе с модулем.
 
 const DATA = [{ id: '1', created: '2026-03-15', status: 'lead' }]
 
@@ -51,11 +51,11 @@ describe('Фильтр колонки — загрузка панели зара
   test('FL40: наведение на кнопку фильтра и фокус на ней загружают модуль её панели до клика', async () => {
     await render(<Grid />)
     await waitForGrid()
-    expect(moduleLoaded('DateFilterPanel')()).toBe(false)
+    expect(moduleLoaded('Calendar')()).toBe(false)
     expect(moduleLoaded('OptionFilterPanel')()).toBe(false)
 
     await userEvent.hover(filterButton('created'))
-    await expect.poll(moduleLoaded('DateFilterPanel')).toBe(true)
+    await expect.poll(moduleLoaded('Calendar')).toBe(true)
     expect(moduleLoaded('OptionFilterPanel')()).toBe(false)
 
     filterButton('status').focus()

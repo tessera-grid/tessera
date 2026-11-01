@@ -10,7 +10,7 @@ import { nextFrame, waitForGrid } from './core-helpers'
 
 // Ленивый модуль календаря (ADR 0047, DF14). Отдельный файл: модуль грузится один раз
 // на документ, а каждый файл набора идёт в своём iframe. Загрузку видно по стилю
-// CSS-модуля панели даты — dev-сервер Vite вставляет его вместе с модулем.
+// CSS-модуля календаря — dev-сервер Vite вставляет его вместе с модулем.
 
 const DATA = [{ id: '1', name: 'Alice', created: '2026-03-15' }]
 
@@ -40,9 +40,7 @@ const Grid = ({ withDates }: { withDates: boolean }) => {
 }
 
 const calendarModuleLoaded = () =>
-  !!document.querySelector(
-    'style[data-vite-dev-id*="DateFilterPanel.module.css"]',
-  )
+  !!document.querySelector('style[data-vite-dev-id*="Calendar.module.css"]')
 
 const openFilter = async (columnId: string) => {
   const head = document.querySelector<HTMLElement>(

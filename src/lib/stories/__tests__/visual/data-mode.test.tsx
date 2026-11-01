@@ -248,7 +248,7 @@ describe('режим данных у ядра (ADR 0169)', () => {
       exported: 'Asia/Tokyo',
     })
 
-    // Аргумента timeZone у фильтра нет, dateLocale — аргумент columnFiltering.
+    // Аргументов timeZone и dateLocale у фильтра нет: оба — опции таблицы (ADR 0175).
     const optionsOf = (entry: TesseraFeatureEntry) =>
       foldEntries(expandIncludedModels([entry]).entries).options
     expect(
@@ -260,9 +260,14 @@ describe('режим данных у ядра (ADR 0169)', () => {
         ),
       ),
     ).toBe(JSON.stringify(optionsOf(columnFiltering() as TesseraFeatureEntry)))
-    const dateLocale = { code: 'ru' } as never
     expect(
-      optionsOf(columnFiltering({ dateLocale }) as TesseraFeatureEntry),
-    ).toMatchObject({ columnFilteringDateLocale: dateLocale })
+      JSON.stringify(
+        optionsOf(
+          columnFiltering({
+            dateLocale: { code: 'ru' },
+          } as never) as TesseraFeatureEntry,
+        ),
+      ),
+    ).toBe(JSON.stringify(optionsOf(columnFiltering() as TesseraFeatureEntry)))
   })
 })

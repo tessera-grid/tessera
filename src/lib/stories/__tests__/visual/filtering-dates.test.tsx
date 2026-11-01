@@ -99,6 +99,8 @@ interface GridProps {
   dataMode?: DataMode
   /** Пояс дат таблицы; по умолчанию UTC. */
   timeZone?: string
+  /** Язык календаря таблицы (ADR 0175). */
+  dateLocale?: unknown
   plugins?: readonly unknown[]
   localization?: Record<string, unknown>
   icons?: Record<string, unknown>
@@ -111,6 +113,7 @@ const Grid = ({
   plugins = [columnFiltering({ debounceMs: 0 })],
   dataMode,
   timeZone = 'UTC',
+  dateLocale,
   localization,
   icons,
   colorMode,
@@ -125,6 +128,7 @@ const Grid = ({
     enableToolbar: true,
     dataMode,
     timeZone,
+    dateLocale: dateLocale as never,
     plugins: [...plugins] as never,
   })
   onTable?.(table)
@@ -471,7 +475,8 @@ describe('Фильтр дат — вид', () => {
     const Next = () => <svg data-testid="custom-next" />
     await render(
       <Grid
-        plugins={[columnFiltering({ debounceMs: 0, dateLocale: ru })]}
+        dateLocale={ru}
+        plugins={[columnFiltering({ debounceMs: 0 })]}
         localization={{
           filterOn: 'В день',
           filterBefore: 'До',
@@ -542,12 +547,8 @@ describe('Фильтр дат — вид', () => {
     await render(
       <Grid
         timeZone="Asia/Tokyo"
-        plugins={[
-          columnFiltering({
-            debounceMs: 0,
-            dateLocale: ru,
-          }),
-        ]}
+        dateLocale={ru}
+        plugins={[columnFiltering({ debounceMs: 0 })]}
         onTable={t => (table = t)}
       />,
     )

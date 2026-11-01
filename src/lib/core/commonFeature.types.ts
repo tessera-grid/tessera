@@ -7,6 +7,7 @@
  * существует в типах ровно когда фича включена). Для `HeaderGroup` карты нет —
  * используем прямой merge интерфейса (эскейп).
  */
+import type { DayPickerLocale } from '@daypicker/react'
 import type { ColumnOptionsDef } from './columnOptions'
 import type { ServiceColumnInfo } from './createColumns'
 import type {
@@ -88,6 +89,11 @@ export interface CoreOptions {
    * выгрузки; по умолчанию — пояс браузера (ADR 0169, §5).
    */
   timeZone?: string
+  /**
+   * Язык календарей дат — месяцы, дни недели, первый день недели: объект `Locale`
+   * `date-fns`; по умолчанию `en-US`. Его читают фильтр дат и редактор даты (ADR 0175).
+   */
+  dateLocale?: DayPickerLocale
   /**
    * Загрузка данных сейчас (ADR 0106): `'initial'` — скелет первой загрузки (ADR 0060),
    * `'refresh'` — свечение обновления (ADR 0094), `false` — нет.

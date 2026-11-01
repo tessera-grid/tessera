@@ -1,11 +1,19 @@
 /**
  * Встроенные редакторы по базовому типу колонки и выбор редактора (ADR 0175, §2–§3):
  * `editor` колонки, затем типа, затем аргумент плагина, затем встроенный. Текст и числа —
- * поле ввода, булево — без поля: действие правки сразу переключает значение.
+ * поле ввода, булево — без поля: действие правки сразу переключает значение, даты —
+ * поповер с календарём.
  */
-import { useId, useLayoutEffect, useRef, type KeyboardEvent } from 'react'
+import {
+  Suspense,
+  useId,
+  useLayoutEffect,
+  useRef,
+  type KeyboardEvent,
+} from 'react'
 
 import type { DebugActionSource } from '../../core/debugActions'
+import { preloadable } from '../../core/preloadable'
 import { useLocalization } from '../../core/localization'
 import { CheckMark } from '../../ui/CheckMark/CheckMark'
 import { CellEditInput } from './CellEditInput'
@@ -108,6 +116,18 @@ const BooleanEdit = ({
 
 const booleanEditor: CellEditor = props => <BooleanEdit {...props} />
 
+// Календарь — отдельный ленивый модуль: грузится при первой правке даты (ED7).
+const DateEditor = preloadable(() =>
+  import('./DateEditor').then(module => module.DateEditor),
+)
+
+/** Даты: поповер с календарём; пока модуль грузится, в ячейке — значение. */
+const dateEditor: CellEditor = props => (
+  <Suspense fallback={<span className={styles.pending}>{props.text}</span>}>
+    <DateEditor.Component {...props} />
+  </Suspense>
+)
+
 interface EditorColumn {
   id: string
   columnDef: { editor?: CellEditor }
@@ -136,6 +156,11 @@ export const editorOf = (
     case 'number':
     case 'numberString':
       return numberEditor
+    case 'date':
+    case 'dateTime':
+    case 'dateString':
+    case 'dateTimeString':
+      return dateEditor
     default:
       return textEditor
   }
