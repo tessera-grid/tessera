@@ -20,7 +20,10 @@ import {
   type ServerRowsRequest,
 } from '../plugins'
 import {
-  commitEditSession,
+  cancelEditSession,
+  readEditSession,
+  saveEdit,
+  setEditText,
   startEditSession,
 } from '../plugins/cellEditing/session'
 ;(
@@ -80,6 +83,13 @@ const COLUMNS = [
     ],
   },
   { id: 'weight', accessorKey: 'weight', dataType: 'kilograms' },
+  // Свой разбор колонки главнее разбора её типа (ED2).
+  {
+    id: 'grams',
+    accessorKey: 'weight',
+    dataType: 'kilograms',
+    parseValue: (text: string) => Number(text),
+  },
   { id: 'manager', accessorKey: 'manager', dataType: 'object' },
   { id: 'amount', accessorKey: 'amount', dataType: 'numberString' },
   {
@@ -103,11 +113,9 @@ const getRows = ({ start, end }: ServerRowsRequest) => ({
 })
 
 /** Свой тип с разбором: граммы из килограммов (DT14). */
+const kilograms = vi.fn((text: string) => Number(text) * 1000)
 const DATA_TYPES = {
-  kilograms: {
-    extends: 'number',
-    parseValue: (text: string) => Number(text) * 1000,
-  },
+  kilograms: { extends: 'number', parseValue: kilograms },
 }
 
 const Grid = ({
@@ -146,7 +154,7 @@ const edit = async (
     startEditSession(table, source().byId(rowId) as never, { id: columnId }),
   )
   await act(async () => {
-    commitEditSession(table, { rowId, columnId }, text, { onCellEdit })
+    saveEdit(table, { rowId, columnId }, { text }, { onCellEdit })
   })
 }
 
@@ -238,19 +246,20 @@ describe('Итог правки в кэше серверной модели (ADR
     expect(row('r1').name).toBe('N1')
   })
 
-  it('EW5: колонка с accessorFn или значение, которое не разбирается: кэш не меняется, в консоли браузера совет вернуть строку из onCellEdit или задать dataType/parseValue', async () => {
+  it('EW5: колонка с accessorFn: кэш не меняется, в консоли браузера совет вернуть строку из onCellEdit; значение, которое не разбирается, не сохраняется — ошибка поля, onCellEdit не зовётся', async () => {
     const before = source().byId('r1')
     await edit('r1', 'total', '5')
     expect(source().byId('r1')).toBe(before)
     expect(warned()).toBe(true)
 
-    warn.mockClear()
-    __resetLogger()
-    await edit('r1', 'price', 'abc')
+    const onCellEdit = vi.fn()
+    await edit('r1', 'price', 'abc', onCellEdit)
     expect(source().byId('r1')).toBe(before)
-    await edit('r1', 'vip', 'maybe')
+    expect(readEditSession(table)?.invalid).toBe('Enter a number')
+    await edit('r1', 'vip', 'maybe', onCellEdit)
     expect(source().byId('r1')).toBe(before)
-    expect(warned()).toBe(true)
+    expect(readEditSession(table)?.invalid).toBe('Invalid value')
+    expect(onCellEdit).not.toHaveBeenCalled()
   })
 
   it('EW6: в клиентском режиме ни возвращённая строка, ни разобранное значение никуда не пишутся', async () => {
@@ -295,13 +304,14 @@ describe('Итог правки в кэше серверной модели (ADR
     expect(saved('weight')).toBe(2000)
   })
 
-  it('TY8: правку записи пишет только свой parseValue; без него запись в кэш серверной модели отказывает с советом, как EW5 (ADR 0174)', async () => {
+  it('TY8: набранный текст в запись разбирает только свой parseValue; без него правка не сохраняется — ошибка поля и совет в консоли задать parseValue или редактор (ADR 0174, ADR 0175)', async () => {
     await edit('r1', 'manager', 'Bob')
     expect(row('r1').manager).toEqual({ id: 'm1', name: 'Ann' })
+    expect(readEditSession(table)?.invalid).toBe('Invalid value')
     expect(
       warn.mock.calls.some((call: unknown[]) =>
         String(call[0]).includes(
-          'object column is written only by its parseValue',
+          'object column turns the entered text into a record only by its parseValue',
         ),
       ),
     ).toBe(true)
@@ -323,6 +333,83 @@ describe('Итог правки в кэше серверной модели (ADR
     expect(row('r1').amount).toBe('12345678901234567.89')
     await edit('r1', 'amount', '1e3')
     expect(row('r1').amount).toBe('12345678901234567.89')
-    expect(warned()).toBe(true)
+    expect(readEditSession(table)?.invalid).toBe('Enter a number')
+  })
+})
+
+describe('Значение правки в типе колонки (ADR 0175)', () => {
+  const remount = async (server: boolean) => {
+    act(() => root.unmount())
+    root = createRoot(document.createElement('div'))
+    act(() => root.render(<Grid server={server} locale="ru-RU" />))
+    if (server) act(() => source().observe!({ first: 0, last: 9, fast: false }))
+    await act(async () => {})
+  }
+
+  it('ED1: onCellEdit получает value в типе колонки и text — набранный текст — в клиентском и серверном режимах; validate получает то же значение и текст, onEditCancel.draft — черновик в типе колонки', async () => {
+    for (const server of [false, true]) {
+      await remount(server)
+      const onCellEdit = vi.fn()
+      const validate = vi.fn(() => null)
+      const onEditCancel = vi.fn()
+      act(() =>
+        startEditSession(table, source().byId('r1') as never, { id: 'price' }),
+      )
+      expect(readEditSession(table)).toMatchObject({ draft: 11, text: '11' })
+      act(() => setEditText(table, '12,5'))
+      expect(readEditSession(table)).toMatchObject({
+        draft: 12.5,
+        text: '12,5',
+      })
+      await act(async () => {
+        saveEdit(
+          table,
+          { rowId: 'r1', columnId: 'price' },
+          { text: '12,5' },
+          { onCellEdit, validate },
+        )
+      })
+      expect(validate).toHaveBeenCalledWith(
+        12.5,
+        expect.objectContaining({ row: expect.anything() }),
+        '12,5',
+      )
+      expect(onCellEdit).toHaveBeenCalledWith(
+        expect.objectContaining({ value: 12.5, text: '12,5', original: 11 }),
+      )
+
+      act(() =>
+        startEditSession(table, source().byId('r1') as never, { id: 'note' }),
+      )
+      act(() => setEditText(table, '3'))
+      act(() => cancelEditSession(table, 'cancel', { onEditCancel }))
+      expect(onEditCancel).toHaveBeenCalledWith(
+        expect.objectContaining({ reason: 'cancel', draft: 3, text: '3' }),
+      )
+    }
+  })
+
+  it('ED2: ввод разбирается по базовому типу при сохранении; parseValue колонки главнее parseValue типа, оба — главнее встроенного разбора; серверная модель пишет в кэш то же значение без второго разбора', async () => {
+    const onCellEdit = vi.fn()
+    const saved = (key: string) =>
+      (row('r1') as unknown as Record<string, unknown>)[key]
+    kilograms.mockClear()
+    await edit('r1', 'weight', '2', onCellEdit)
+    expect(onCellEdit).toHaveBeenLastCalledWith(
+      expect.objectContaining({ value: 2000, text: '2' }),
+    )
+    expect(kilograms).toHaveBeenCalledTimes(1)
+    expect(saved('weight')).toBe(2000)
+
+    await edit('r1', 'grams', '5', onCellEdit)
+    expect(onCellEdit).toHaveBeenLastCalledWith(
+      expect.objectContaining({ value: 5 }),
+    )
+    expect(kilograms).toHaveBeenCalledTimes(1)
+
+    await edit('r1', 'when', '2026-10-31T14:05:00Z', onCellEdit)
+    const value = onCellEdit.mock.lastCall![0].value
+    expect(value).toBeInstanceOf(Date)
+    expect(saved('when')).toBe(value)
   })
 })

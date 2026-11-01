@@ -289,6 +289,7 @@ describe('асинхронный контракт бизнес-колбэков'
       columnId: 'name',
       reason: 'cancel',
       draft: 'draft',
+      text: 'draft',
       original: 'A',
       error: 'down',
     })

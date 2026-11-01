@@ -95,7 +95,7 @@ describe('Дерево доступности (AX)', () => {
       document.querySelector<HTMLInputElement>('.data-grid__body-cell input')
     await expect.poll(input).toBeTruthy()
     await userEvent.clear(input()!)
-    await userEvent.type(input()!, 'x{Enter}')
+    await userEvent.type(input()!, '-1{Enter}')
     await expect.poll(() => input()?.getAttribute('aria-invalid')).toBe('true')
 
     expect(pick(await axTree(), ['textbox', 'alert'])).toMatchSnapshot()

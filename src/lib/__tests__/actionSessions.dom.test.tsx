@@ -141,6 +141,7 @@ describe('сессии действий', () => {
       rowId: '1',
       columnId: 'name',
       value: 'B',
+      text: 'B',
       original: 'A',
     })
     expect(onEditCancel).not.toHaveBeenCalled()
@@ -182,14 +183,15 @@ describe('сессии действий', () => {
       columnId: 'name',
       reason: 'unavailable',
       draft: 'draft',
+      text: 'draft',
       original: 'A',
     })
     expect(onCellEdit).not.toHaveBeenCalled()
   })
 
   it('SS6: BYO-редактор получает setDraft; черновик, сообщённый через него, переживает размонтирование', () => {
-    const seen: string[] = []
-    let setDraft: ((value: string) => void) | undefined
+    const seen: unknown[] = []
+    let setDraft: ((value: unknown) => void) | undefined
     const editor: CellEditor = props => {
       seen.push(props.value)
       setDraft = props.setDraft
@@ -248,6 +250,7 @@ describe('сессии действий', () => {
         columnId: 'name',
         reason: 'revoke',
         draft: 'mine',
+        text: 'mine',
       }),
     )
     warn.mockRestore()
@@ -301,6 +304,7 @@ describe('сессии действий', () => {
       rowId: '1',
       columnId: 'name',
       value: 'mine',
+      text: 'mine',
       original: 'A',
       current: 'Z',
     })
@@ -319,6 +323,7 @@ describe('сессии действий', () => {
       columnId: 'name',
       reason: 'conflict',
       draft: 'mine',
+      text: 'mine',
       original: 'A',
       current: 'Z',
     })
@@ -335,6 +340,7 @@ describe('сессии действий', () => {
       columnId: 'name',
       reason: 'cancel',
       draft: 'left behind',
+      text: 'left behind',
       original: 'A',
     })
     expect(session().cell).toEqual({ rowId: '2', columnId: 'name' })

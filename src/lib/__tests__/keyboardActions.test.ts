@@ -23,6 +23,7 @@ describe('keyboardActions — канал клавиатурных действи
       cellEditing(),
     ] as never)
     expect(ids(active.keyboardActions)).toEqual([
+      'cellEditing.toggle',
       'rowSelection.toggle',
       'columnSorting.toggle',
       'rowExpanding.toggle',

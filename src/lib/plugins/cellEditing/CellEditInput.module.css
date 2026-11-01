@@ -45,6 +45,31 @@
   outline: none;
 }
 
+/* Поле числа — как числа в ячейке: вправо, цифры одной ширины (ADR 0175, ED4). */
+.input[inputmode='decimal'] {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Булево в правке — значок кита в фокусе, как флажок (ADR 0175, ED5). */
+.toggle {
+  display: inline-flex;
+  align-self: flex-start;
+  border-radius: var(--tsr-comp-control-radius);
+  outline: none;
+  cursor: pointer;
+}
+
+.toggle:focus-visible {
+  outline: 1px solid var(--tsr-comp-cell-outline-color);
+  outline-offset: 1px;
+}
+
+.toggle[aria-invalid='true'] {
+  outline: 1px solid var(--tsr-sys-danger);
+  outline-offset: 1px;
+}
+
 /* В покое рамки нет (инпут сливается с ячейкой). Фокус — той же обводкой, что и у
    ячейки (BodyCell: outline 1px --tsr-comp-cell-outline-color, offset -1px), чтобы
    цвет/толщина совпадали. Через outline (не border) разметка не сдвигается. */

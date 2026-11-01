@@ -914,7 +914,7 @@ describe('канал действий (ADR 0125)', () => {
         enableCellEditing
         enableKeyboardNavigation
         cellEditingCanEditCell={() => true}
-        cellEditingValidate={(value: string) =>
+        cellEditingValidate={(value: unknown) =>
           value === 'bad' ? 'Not allowed' : null
         }
         onConflict="block"

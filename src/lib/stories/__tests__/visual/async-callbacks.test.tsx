@@ -822,7 +822,8 @@ describe('Носитель правки — кнопка правки при л�
       const [editing, setEditing] = useState<CellEditingState>({
         active: {
           cell: { rowId: 'a', columnId: 'age' },
-          draft: '31',
+          draft: 31,
+          text: '31',
           original: 30,
         },
         submitted: {},

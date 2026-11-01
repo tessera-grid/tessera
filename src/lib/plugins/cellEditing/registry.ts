@@ -17,7 +17,10 @@ import { definePlugin } from '../../core/definePlugin'
 import { neverInert } from '../../core/pluginDiagnostics'
 import { CellEditButton } from './CellEditButton'
 import { CellEditField } from './CellEditField'
-import { editCellKeyboardAction } from './keyboardActions'
+import {
+  editCellKeyboardAction,
+  toggleCellKeyboardAction,
+} from './keyboardActions'
 import { EMPTY_EDITING_STATE, reconcileEditSession } from './session'
 import type { CellComponentProps } from '../../core/createSlots'
 import type { CellEditingHooks, CellEditingState } from './types'
@@ -33,9 +36,9 @@ export interface CellEditingOptions {
   onEditCancel?: CellEditingHooks['onEditCancel']
   /** Значение изменилось извне во время правки: сохранить (по умолчанию) или нет. */
   onConflict?: CellEditingHooks['onConflict']
-  /** Свой редактор ячейки (BYO); не задан — встроенный инлайн-ввод. */
+  /** Свой редактор ячеек; главнее — `editor` колонки и её типа, иначе встроенный по типу. */
   editor?: CellEditingHooks['editor']
-  /** Проверка значения перед коммитом: текст ошибки блокирует коммит. */
+  /** Проверка значения в типе колонки перед коммитом: текст ошибки блокирует коммит. */
   validate?: CellEditingHooks['validate']
   /**
    * Состояние правки у приложения: открытая правка (`active`) и ячейки, ждущие сервера
@@ -65,7 +68,7 @@ export const cellEditing = definePlugin<CellEditingOptions>()({
     editor: o.editor,
     validate: o.validate,
   }),
-  keyboardActions: [editCellKeyboardAction],
+  keyboardActions: [editCellKeyboardAction, toggleCellKeyboardAction],
   slots: [
     {
       id: 'cellEditing',

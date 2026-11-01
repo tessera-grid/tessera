@@ -99,6 +99,7 @@ const StoryGrid = memo(
     showStub,
     headerNesting,
     validateCellEdit,
+    editableColumns = CELL_EDITABLE_COLUMNS,
 
     showBatchToolbar,
     isAllRowsSelected,
@@ -332,8 +333,12 @@ const StoryGrid = memo(
       ...(editingDemo
         ? {
             cellEditingCanEditCell: (ctx: CellComponentProps) =>
-              CELL_EDITABLE_COLUMNS.includes(ctx.column.id),
-            cellEditingValidate: validateCellEdit,
+              editableColumns.includes(ctx.column.id),
+            // Проверка историй — по набранному тексту.
+            cellEditingValidate:
+              validateCellEdit &&
+              ((_value: unknown, _ctx: CellComponentProps, text: string) =>
+                validateCellEdit(text)),
           }
         : {}),
       ...(errorsDemo ? { cellErrorsGetCellError: demoCellError } : {}),

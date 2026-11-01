@@ -189,6 +189,7 @@ describe('Cell editing — состояние у приложения', () => {
       active: {
         cell: { rowId: '1', columnId: 'name' },
         draft: 'A',
+        text: 'A',
         original: 'A',
       },
       submitted: {},

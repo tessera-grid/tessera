@@ -221,6 +221,10 @@ export interface TableLabels {
   resizeColumn: string
   /** Доступное имя поля встроенного редактора ячейки (`column` — имя колонки) */
   editCellValue: (column: string) => string
+  /** Ошибка поля правки: набранное — не число (ADR 0175, ED4) */
+  editInvalidNumber: string
+  /** Ошибка поля правки: набранное не разбирается в тип колонки (ADR 0175, ED2) */
+  editInvalidValue: string
   /** Текст отказа сохранения ячейки, если сервер не прислал свой (ADR 0041) */
   saveFailed: string
   /** Доступное имя точки ошибки ячейки без кнопки правки (ADR 0150) */
@@ -535,6 +539,8 @@ export const DEFAULT_LABELS = {
   editCell: 'Edit cell',
   resizeColumn: 'Resize column',
   editCellValue: 'Edit {column}',
+  editInvalidNumber: 'Enter a number',
+  editInvalidValue: 'Invalid value',
   saveFailed: "Couldn't save",
   cellError: 'Cell error',
   announceSaveFailed: '{column}: {error}',

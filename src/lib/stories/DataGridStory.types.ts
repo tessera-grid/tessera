@@ -102,6 +102,8 @@ export interface StoryProps extends CoreOptions, FeatureToggles {
   showStub: boolean
   /** Проверка значения редактора cellEditing (`validate`). */
   validateCellEdit?: (value: string) => string | null
+  /** Колонки, которые правит демо правки; по умолчанию — возраст, визиты и пол. */
+  editableColumns?: readonly string[]
 
   showBatchToolbar: boolean
   isAllRowsSelected: boolean

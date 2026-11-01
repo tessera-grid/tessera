@@ -11,13 +11,18 @@ import type { CellEditHook } from '../../shared/cellHooks'
  */
 export interface EditSession {
   cell: { rowId: string; columnId: string }
-  /** Введённый текст. */
-  draft: string
+  /**
+   * Черновик в типе колонки (ADR 0175, §1); `undefined` — набранный текст в тип не
+   * разбирается.
+   */
+  draft: unknown
+  /** Черновик текстом: набранное в поле, на старте — значение по языку таблицы. */
+  text: string
   /** Значение ячейки на начало правки. */
   original: unknown
   /** Правка открыта из «ошибки»: текст отказа сервера (ADR 0041). */
   rejected?: { error: string }
-  /** Текст ошибки `validate` последнего сохранения. */
+  /** Текст ошибки последнего сохранения: `validate` или разбор по типу. */
   invalid?: string
 }
 
@@ -31,7 +36,10 @@ export type EditingCell = EditSession | null
 export interface SubmittedCell {
   rowId: string
   columnId: string
-  draft: string
+  /** Отправленное значение в типе колонки. */
+  draft: unknown
+  /** Отправленное значение текстом. */
+  text: string
   original: unknown
   status: 'pending' | 'error'
   /** Текст отказа сервера (для `error`). */
@@ -50,7 +58,10 @@ export interface CellEditingState {
 export interface CellEditCommit {
   rowId: string
   columnId: string
-  value: string
+  /** Новое значение в типе колонки: число, `Date`, запись, массив (ADR 0175, ED1). */
+  value: unknown
+  /** Набранный текст; у редактора без поля — текст значения по языку таблицы. */
+  text: string
   /** Значение ячейки на начало правки. */
   original: unknown
   /** Значение сейчас — есть, только если оно изменилось извне во время правки. */
@@ -65,8 +76,10 @@ export interface CellEditCancel {
   rowId: string
   columnId: string
   reason: EditCancelReason
-  /** Введённый текст — не теряется молча. */
-  draft: string
+  /** Черновик в типе колонки — не теряется молча; `undefined` — текст не разбирается. */
+  draft: unknown
+  /** Черновик текстом. */
+  text: string
   /** Значение ячейки на начало правки. */
   original: unknown
   /** Значение сейчас — для `conflict`. */
@@ -75,24 +88,33 @@ export interface CellEditCancel {
   error?: string
 }
 
-/**
- * Рендер редактора ячейки (BYO — со своей дизайн-системой). Получает черновик
- * сессии (на старте — значение ячейки) и коллбэки `commit`/`cancel` (инкапсулируют запись в локальный слайс и
- * `onCellEdit`), плюс контекст ячейки. По умолчанию — встроенный `CellEditInput`.
- */
-export type CellEditor = (props: {
-  /** Черновик сессии: переживает прокрутку и смену страницы. */
-  value: string
+/** Что получает редактор ячейки (ADR 0175, §3). */
+export interface CellEditorProps {
+  /** Черновик в типе колонки: на старте — значение ячейки; переживает прокрутку. */
+  value: unknown
+  /** Черновик текстом: на старте — значение по языку таблицы. */
+  text: string
   /** Доступное имя поля (`localization.editCellValue` с именем колонки). */
   label: string
-  /** Текст ошибки `validate`; поле — `aria-invalid` и связанный текст ошибки. */
+  /** Текст ошибки `validate` или разбора; поле — `aria-invalid` и связанный текст ошибки. */
   error?: string
-  commit: (value: string) => void
+  /** Сохранить значение в типе колонки. */
+  commit: (value: unknown) => void
+  /** Сохранить набранный текст: его разбирает тип колонки, не разобрался — ошибка поля. */
+  commitText: (text: string) => void
   cancel: () => void
-  /** Сообщить введённый текст: черновик живёт в срезе и уходит в `onEditCancel`. */
-  setDraft: (value: string) => void
+  /** Сообщить черновик в типе колонки: он живёт в срезе и уходит в `onEditCancel`. */
+  setDraft: (value: unknown) => void
+  /** Сообщить набранный текст. */
+  setText: (text: string) => void
   cell: CellComponentProps
-}) => ReactNode
+}
+
+/**
+ * Рендер редактора ячейки (BYO — со своей дизайн-системой). Не задан у колонки, типа и
+ * плагина — встроенный по базовому типу колонки.
+ */
+export type CellEditor = (props: CellEditorProps) => ReactNode
 
 /** `canEditCell` — условие показа кнопки редактирования по контексту ячейки. */
 export interface CellEditingHooks extends CellEditHook {
@@ -110,11 +132,25 @@ export interface CellEditingHooks extends CellEditHook {
    * сохранять, завершить с `conflict`.
    */
   onConflict?: 'commit' | 'block'
-  /** Редактор ячейки (BYO); не задан — встроенный `CellEditInput`. */
+  /** Редактор ячеек по умолчанию; главнее — `editor` колонки и её типа (ADR 0175, ED3). */
   editor?: CellEditor
-  /** Текст ошибки для значения или `null`/`undefined`, если оно допустимо. */
+  /**
+   * Текст ошибки для значения или `null`/`undefined`, если оно допустимо. Значение — в
+   * типе колонки, `text` — набранный текст.
+   */
   validate?: (
-    value: string,
+    value: unknown,
     ctx: CellComponentProps,
+    text: string,
   ) => string | null | undefined
 }
+
+/* eslint-disable @typescript-eslint/no-unused-vars -- параметр типа обязан повторять
+   объявление, иначе declaration merging не склеится */
+declare module '../../core/dataTypes' {
+  interface DataTypeFields<TData> {
+    /** Редактор ячеек колонки или типа; главнее аргумента `editor` плагина (ADR 0175, ED3). */
+    editor?: CellEditor
+  }
+}
+/* eslint-enable @typescript-eslint/no-unused-vars */

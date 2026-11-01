@@ -1,26 +1,44 @@
 /**
- * Клавиатурное действие cellEditing (ADR 0021): `Enter`/`F2` на редактируемой
- * ячейке открывают редактор (как кнопка правки). После коммита/отмены фокус
- * возвращает на ячейку ядро навигации.
+ * Клавиатурные действия cellEditing (ADR 0021): `Enter`/`F2` на редактируемой
+ * ячейке открывают редактор (как кнопка правки), у булева — сразу переключают значение;
+ * `Space` переключает булево (ADR 0175, ED5). После коммита/отмены фокус возвращает на
+ * ячейку ядро навигации.
  */
+import type { CellComponentProps } from '../../core/createSlots'
 import type { CellKeyboardAction } from '../../core/keyboardActions'
 import { readPluginHooks } from '../../core/definePlugin'
-import { isCellPending, startEditSession } from './session'
+import { beginEdit, togglesInPlace } from './editors'
+import { isCellPending } from './session'
 import type { CellEditingHooks } from './types'
+
+const hooksOf = (table: unknown) =>
+  readPluginHooks<Partial<CellEditingHooks>>(table as never, 'cellEditing')
+
+// Кнопка правки живёт только в не-сервисных колонках — те же границы здесь.
+const isEditable = (ctx: CellComponentProps) =>
+  !ctx.column.getIsActionsColumn() &&
+  !isCellPending(ctx.table, ctx.row.id, ctx.column.id) &&
+  (hooksOf(ctx.table).canEditCell?.(ctx) ?? true)
+
+const run = ({ row, column, table }: CellComponentProps) =>
+  beginEdit(table, row, column, hooksOf(table), 'keyboard')
 
 export const editCellKeyboardAction: CellKeyboardAction = {
   id: 'cellEditing.start',
   scope: 'cell',
   keys: ['Enter', 'F2'],
-  // Кнопка правки живёт только в не-сервисных колонках — те же границы здесь.
+  visible: isEditable,
+  run,
+}
+
+// Пробел на булевой ячейке — правка, а не выбор строки: приоритет выше.
+export const toggleCellKeyboardAction: CellKeyboardAction = {
+  id: 'cellEditing.toggle',
+  scope: 'cell',
+  keys: [' '],
+  priority: 1,
   visible: ctx =>
-    !ctx.column.getIsActionsColumn() &&
-    !isCellPending(ctx.table, ctx.row.id, ctx.column.id) &&
-    (readPluginHooks<Partial<CellEditingHooks>>(
-      ctx.table,
-      'cellEditing',
-    ).canEditCell?.(ctx) ??
-      true),
-  run: ({ row, column, table }) =>
-    startEditSession(table, row, column, 'keyboard'),
+    togglesInPlace(ctx.table, ctx.column, hooksOf(ctx.table)) &&
+    isEditable(ctx),
+  run,
 }

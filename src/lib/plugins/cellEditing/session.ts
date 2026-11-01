@@ -15,14 +15,8 @@ import {
   sourceOf,
 } from '../../core/debugActions'
 import type { RowSource } from '../../core/rowSource'
-import {
-  inferDataType,
-  parseByDataType,
-  parseKindOf,
-  setAtPath,
-} from '../../core/columnDataType'
-import type { ColumnOption } from '../../core/columnOptions'
-import type { ResolvedDataType } from '../../core/dataTypes'
+import { inferDataType, setAtPath } from '../../core/columnDataType'
+import { isNumericBase } from '../../core/dataTypeFormat'
 import { logWarn } from '../../util/logger'
 import { isThenable, rejectionText } from '../../util/thenable'
 import {
@@ -32,6 +26,7 @@ import {
 } from '../../core/definePlugin'
 import type { CellComponentProps } from '../../core/createSlots'
 import { flashOutcome } from '../../core/flashes/flashFeature'
+import { columnOf, editTextOf, parseEditText, sameEditValue } from './editValue'
 import type {
   CellEditingHooks,
   CellEditingState,
@@ -51,6 +46,7 @@ export const EMPTY_EDITING_STATE: CellEditingState = {
 
 interface SessionRow {
   id: string
+  original?: unknown
   getValue: (columnId: string) => unknown
 }
 
@@ -158,7 +154,8 @@ export const startEditSession = (
   const original = failed ? failed.original : row.getValue(column.id)
   const session: EditSession = {
     cell: { rowId: row.id, columnId: column.id },
-    draft: failed ? failed.draft : String(original ?? ''),
+    draft: failed ? failed.draft : original,
+    text: failed ? failed.text : editTextOf(table, column.id, original),
     original,
     ...(failed ? { rejected: { error: failed.error ?? '' } } : {}),
   }
@@ -172,19 +169,51 @@ export const startEditSession = (
   })
 }
 
-export const setEditDraft = (table: unknown, draft: string) => {
+const writeDraft = (table: unknown, draft: unknown, text: string) => {
   const state = readEditingState(table)
-  if (state.active && state.active.draft !== draft) {
+  if (
+    state.active &&
+    (state.active.text !== text || !Object.is(state.active.draft, draft))
+  ) {
     reportAction(table, {
       plugin: ID,
       action: 'changeDraft',
-      detail: { draft },
+      detail: { draft, text },
       source: 'keyboard',
     })
     writeEditingState(table, {
       ...state,
-      active: { ...state.active, draft },
+      active: { ...state.active, draft, text },
     })
+  }
+}
+
+/** Черновик в типе колонки; текст — его вид в поле. */
+export const setEditDraft = (table: unknown, draft: unknown) => {
+  const active = readEditSession(table)
+  if (active)
+    writeDraft(table, draft, editTextOf(table, active.cell.columnId, draft))
+}
+
+/** Набранный текст; черновик в типе — его разбор, не разобрался — `undefined`. */
+export const setEditText = (table: unknown, text: string) => {
+  const active = readEditSession(table)
+  if (!active) return
+  const parsed = parseEditText(
+    table,
+    active.cell.columnId,
+    text,
+    rowValuesOf(table, active),
+  )
+  writeDraft(table, parsed?.value, text)
+}
+
+/** Строка данных и прежнее значение ячейки сессии — для разбора. */
+const rowValuesOf = (table: unknown, session: EditSession) => {
+  const row = (table as ReconcileTable).getRowSource().byId(session.cell.rowId)
+  return {
+    original: row?.original,
+    current: row ? row.getValue(session.cell.columnId) : session.original,
   }
 }
 
@@ -219,10 +248,6 @@ export const endEditSession = (table: unknown) => {
   writeEditingState(table, { ...state, active: null })
 }
 
-/** Черновик совпадает с исходным значением ячейки — сохранять нечего (ADR 0040, SS18). */
-export const isUnchangedCommit = (session: EditingCell, value: string) =>
-  !!session && value === String(session.original ?? '')
-
 /** Завершить сессию без сохранения: черновик уходит в `onEditCancel`. */
 export const cancelEditSession = (
   table: unknown,
@@ -241,6 +266,7 @@ export const cancelEditSession = (
     columnId: session.cell.columnId,
     reason,
     draft: session.draft,
+    text: session.text,
     original: session.original,
     ...(current ? { current: current.value } : {}),
     ...(session.rejected ? { error: session.rejected.error } : {}),
@@ -253,23 +279,11 @@ let lastAttempt = 0
 
 interface SavedTable {
   setRowData?: (id: string, updater: (row: unknown) => unknown) => void
-  getColumn?: (id: string) =>
-    | {
-        columnDef: {
-          accessorKey?: unknown
-          options?: ColumnOption[]
-          parseValue?: (text: string, row: unknown) => unknown
-        }
-        getDataType: () => ResolvedDataType | undefined
-      }
-    | undefined
-  getRowSource: () => RowSource<{
-    original: unknown
-    getValue: (columnId: string) => unknown
-  }>
+  getColumn?: (
+    id: string,
+  ) => { columnDef: { accessorKey?: unknown } } | undefined
   options: {
     getRowId?: (row: unknown, index: number) => string
-    locale?: string
   }
 }
 
@@ -285,28 +299,29 @@ const isSavedRow = (t: SavedTable, rowId: string, answer: unknown) => {
 const warnNotWritten = (table: unknown) =>
   logWarn(
     table as never,
-    'cellEditing: the saved value is not written to the server row cache — return the saved row from onCellEdit or set dataType/parseValue on the column',
+    'cellEditing: the saved value is not written to the server row cache — return the saved row from onCellEdit or give the column an accessorKey',
     'cellEditing:notWritten',
   )
 
-/** Запись `object` из текста редактора пишет только свой `parseValue` (ADR 0174, TY8). */
-const warnObjectNotWritten = (table: unknown) =>
+/** Текст в запись `object` разбирает только свой `parseValue` (ADR 0174, TY8). */
+const warnObjectNotParsed = (table: unknown) =>
   logWarn(
     table as never,
-    'cellEditing: an object column is written only by its parseValue — return the saved row from onCellEdit or set parseValue on the column or its type',
+    'cellEditing: an object column turns the entered text into a record only by its parseValue — set parseValue or an editor on the column or its type',
     'cellEditing:objectNotWritten',
   )
 
 /**
  * Серверная модель строк: данных у приложения нет — итог правки пишется в кэш строк
- * (ADR 0139): строка из ответа `onCellEdit`, без неё — текст редактора, разобранный по
- * типу колонки. Без серверной модели метода `setRowData` нет, данные обновляет приложение.
+ * (ADR 0139): строка из ответа `onCellEdit`, без неё — сохранённое значение в типе колонки,
+ * без второго разбора (ADR 0175, ED2). Без серверной модели метода `setRowData` нет, данные
+ * обновляет приложение.
  */
 const writeSaved = (
   table: unknown,
   rowId: string,
   columnId: string,
-  text: string,
+  value: unknown,
   answer: unknown,
 ) => {
   const t = table as SavedTable
@@ -315,29 +330,12 @@ const writeSaved = (
     t.setRowData(rowId, () => answer)
     return
   }
-  const column = t.getColumn?.(columnId)
-  const key = column?.columnDef.accessorKey
-  const row = t.getRowSource().byId(rowId)
-  if (typeof key !== 'string' || !row) {
+  const key = t.getColumn?.(columnId)?.columnDef.accessorKey
+  if (typeof key !== 'string') {
     warnNotWritten(table)
     return
   }
-  const type = column!.getDataType()
-  // Свой разбор колонки действует и без типа (ADR 0139).
-  const parse = type?.definition.parseValue ?? column!.columnDef.parseValue
-  const parsed = parse
-    ? { value: parse(text, row.original) }
-    : parseByDataType(
-        text,
-        type ? parseKindOf(type.base) : inferDataType(row.getValue(columnId)),
-        { locale: t.options.locale, options: column!.columnDef.options },
-      )
-  if (!parsed) {
-    if (type?.base === 'object') warnObjectNotWritten(table)
-    else warnNotWritten(table)
-    return
-  }
-  t.setRowData(rowId, data => setAtPath(data, key, parsed.value))
+  t.setRowData(rowId, data => setAtPath(data, key, value))
 }
 
 const settleSubmitted = (
@@ -377,6 +375,79 @@ const columnNameOf = (table: unknown, columnId: string) => {
   return typeof header === 'string' ? header : columnId
 }
 
+/** Что сохраняет редактор: значение в типе колонки или набранный текст для разбора. */
+export type EditInput = { value: unknown; text?: string } | { text: string }
+
+const contextOf = (table: unknown, { rowId, columnId }: Cell) =>
+  (table as ReconcileTable)
+    .getRowSource()
+    .byId(rowId)
+    ?.getAllCells()
+    .find(item => item.column.id === columnId)
+    ?.getContext() as CellComponentProps | undefined
+
+/**
+ * Сохранить правку (ADR 0175, §1): набранный текст разбирается по типу колонки — не
+ * разобрался — ошибка поля без сохранения; значение не изменилось — правка закрывается без
+ * `onCellEdit` (SS18); `validate` — со значением в типе и текстом; затем коммит.
+ */
+export const saveEdit = (
+  table: unknown,
+  cell: Cell,
+  input: EditInput,
+  hooks: Partial<CellEditingHooks>,
+  ctx = contextOf(table, cell),
+) => {
+  const session = readEditSession(table)
+  if (!isEditingCell(session, cell.rowId, cell.columnId)) {
+    return
+  }
+  let value: unknown
+  let text: string
+  if ('value' in input) {
+    value = input.value
+    text = input.text ?? editTextOf(table, cell.columnId, value)
+    writeDraft(table, value, text)
+  } else {
+    text = input.text
+    const values = rowValuesOf(table, session!)
+    const parsed = parseEditText(table, cell.columnId, text, values)
+    if (text !== session!.text) writeDraft(table, parsed?.value, text)
+    if (!parsed) {
+      const base =
+        columnOf(table, cell.columnId)?.getDataType()?.base ??
+        inferDataType(values.current)
+      if (base === 'object') warnObjectNotParsed(table)
+      const labels = announcerLabels(table) ?? DEFAULT_LABELS
+      setEditError(
+        table,
+        isNumericBase(base)
+          ? labels.editInvalidNumber
+          : labels.editInvalidValue,
+      )
+      return
+    }
+    value = parsed.value
+  }
+  if (sameEditValue(table, cell.columnId, value, session!.original)) {
+    reportAction(table, {
+      plugin: ID,
+      action: 'edit',
+      detail: { ...session!.cell, result: 'unchanged' },
+      source: sourceOf(globalThis.event),
+      phase: 'end',
+    })
+    endEditSession(table)
+    return
+  }
+  const message = ctx && hooks.validate?.(value, ctx, text)
+  if (message) {
+    setEditError(table, message)
+    return
+  }
+  commitEditSession(table, cell, value, hooks, text)
+}
+
 /**
  * Сохранить значение сессии этой ячейки (ADR 0040, §3–§4). Сессии нет — уже
  * завершена (Enter, Escape) и потеря фокуса после неё ничего не делает. Значение
@@ -387,8 +458,9 @@ const columnNameOf = (table: unknown, columnId: string) => {
 export const commitEditSession = (
   table: unknown,
   cell: Cell,
-  value: string,
+  value: unknown,
   hooks: Partial<CellEditingHooks>,
+  text = editTextOf(table, cell.columnId, value),
 ) => {
   const session = readEditSession(table)
   if (!isEditingCell(session, cell.rowId, cell.columnId)) {
@@ -400,7 +472,7 @@ export const commitEditSession = (
   const now = row ? row.getValue(columnId) : original
   const changed = !Object.is(now, original)
   if (changed && hooks.onConflict === 'block') {
-    setEditDraft(table, value)
+    writeDraft(table, value, text)
     cancelEditSession(table, 'conflict', hooks, { value: now })
     return
   }
@@ -409,6 +481,7 @@ export const commitEditSession = (
     rowId,
     columnId,
     value,
+    text,
     original,
     ...(changed ? { current: now } : {}),
   })
@@ -429,6 +502,7 @@ export const commitEditSession = (
         rowId,
         columnId,
         draft: value,
+        text,
         original,
         status: 'pending',
         attempt,
@@ -499,6 +573,7 @@ const reconcileSubmitted = (
         columnId: entry.columnId,
         reason,
         draft: entry.draft,
+        text: entry.text,
         original: entry.original,
         error: entry.error,
       })

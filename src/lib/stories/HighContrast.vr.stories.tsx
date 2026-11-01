@@ -4171,6 +4171,66 @@ export const HighContrastEditingConflictStep2 = {
   tags: ['!test'],
 }
 
+export const HighContrastEditingNumberStep1 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingNumber, 1),
+  name: 'Cells/Editing — Edit a number, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingNumberStep2 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingNumber, 2),
+  name: 'Cells/Editing — Edit a number, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingNumberStep3 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingNumber, 3),
+  name: 'Cells/Editing — Edit a number, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingNumberStep4 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingNumber, 4),
+  name: 'Cells/Editing — Edit a number, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingBooleanStep1 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingBoolean, 1),
+  name: 'Cells/Editing — Toggle a boolean, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingBooleanStep2 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingBoolean, 2),
+  name: 'Cells/Editing — Toggle a boolean, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingBooleanStep3 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingBoolean, 3),
+  name: 'Cells/Editing — Toggle a boolean, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingTypeEditorStep1 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingTypeEditor, 1),
+  name: 'Cells/Editing — Editor of a data type, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingTypeEditorStep2 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingTypeEditor, 2),
+  name: 'Cells/Editing — Editor of a data type, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingTypeEditorStep3 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingTypeEditor, 3),
+  name: 'Cells/Editing — Editor of a data type, шаг 3',
+  tags: ['!test'],
+}
+
 export const HighContrastCellSelectionRangeStep1 = {
   ...twinStep(
     cellsSelectionStories,

@@ -23,6 +23,16 @@ import {
 } from './demos/GuideStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
+import {
+  EDIT_COLUMNS,
+  EDIT_ROWS,
+  EDIT_TYPES,
+  PRIORITY_COLUMNS,
+  PRIORITY_ROWS,
+  PRIORITY_TYPES,
+  priorityLabel,
+} from './__mocks__/editingData'
+import { storyLabels } from './__mocks__/storyLabels'
 
 /** Правка ячеек (ADR 0040, ADR 0041): значение, сервер, черновик и конфликт. */
 const meta = {
@@ -606,7 +616,7 @@ export const EditingSession: StoryObj<StoryProps> = {
       expect(ageText(canvas, SESSION_ROW)).toBe(DRAFT_AGE)
       expect(consoleText()).toMatch(
         new RegExp(
-          `value:"${DRAFT_AGE}",original:\\d+,current:${externalAge()}`,
+          `value:${DRAFT_AGE},text:"${DRAFT_AGE}",original:\\d+,current:${externalAge()}`,
         ),
       )
       await settle()
@@ -681,6 +691,327 @@ export const EditingConflict: StoryObj<StoryProps> = {
       expect(ageText(canvas, SESSION_ROW)).toBe(externalAge())
       await until(() => expect(consoleText()).toContain('onEditCancel'))
       expect(consoleText()).toContain('conflict')
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0175: редакторы по типу -----------------------------------------------------
+
+const PRODUCT_ROW = 'product-1'
+
+const productCellOf = (root: ParentNode, column: string) =>
+  root.querySelector<HTMLElement>(
+    `.data-grid__body-row[data-row-id="${PRODUCT_ROW}"] .data-grid__body-cell[data-column-id="${column}"]`,
+  )
+const productInput = (root: ParentNode, column: string) =>
+  productCellOf(root, column)?.querySelector<HTMLInputElement>('input') ?? null
+const productEditButton = (root: ParentNode, column: string) =>
+  productCellOf(root, column)?.querySelector<HTMLElement>(
+    '.cell__button button',
+  ) ?? null
+/** Значение ячейки без кнопки правки. */
+const productText = (root: ParentNode, column: string) => {
+  const copy = productCellOf(root, column)?.cloneNode(true) as
+    HTMLElement | undefined
+  copy?.querySelectorAll('.cell__button').forEach(button => button.remove())
+  return copy?.textContent?.trim()
+}
+const fieldError = (root: ParentNode, column: string) =>
+  productCellOf(root, column)?.querySelector('[role="alert"]')?.textContent ??
+  ''
+
+/** Открыть правку ячейки, набрать текст и сохранить его Enter — по шагу за раз. */
+const typeAndSave = (root: HTMLElement, column: string, value: string) => {
+  const input = productInput(root, column)
+  if (!input) productEditButton(root, column)?.click()
+  else if (input.value !== value) typeInto(input, value)
+  else press(input, 'Enter')
+}
+
+const localeOf = (args: { locale?: string }) =>
+  args.locale === 'ru' ? 'ru-RU' : 'en-US'
+const dollars = (locale: string, value: number) =>
+  new Intl.NumberFormat(locale, { style: 'currency', currency: 'USD' }).format(
+    value,
+  )
+
+const NOT_A_NUMBER = 'abc'
+const NEW_PRICE = '1250'
+
+const EDIT_NUMBER: readonly GuideStoryStep[] = [
+  {
+    title: 'Цены на языке таблицы',
+    hint: 'Цена — число в формате денег на языке таблицы. Её можно править: при наведении на ячейку появляется кнопка правки.',
+  },
+  {
+    title: 'Поле правки числа',
+    hint: 'Пользователь нажал кнопку правки цены. В поле то же число с десятичным знаком языка таблицы, без знака валюты и разрядов.',
+    states: ['body.editing'],
+    enter: untilDone(
+      root => !!productInput(root, 'price'),
+      root => productEditButton(root, 'price')?.click(),
+    ),
+  },
+  {
+    title: 'Не число',
+    hint: 'Пользователь набрал буквы и нажал Enter. Значение не сохранено: поле осталось открытым, под ним текст ошибки.',
+    states: ['body.editing'],
+    enter: untilDone(
+      root => fieldError(root, 'price') !== '',
+      root => typeAndSave(root, 'price', NOT_A_NUMBER),
+    ),
+  },
+  {
+    title: 'Число сохранено',
+    hint: 'Пользователь набрал число и нажал Enter. Поле закрылось, в ячейке новая цена в формате денег.',
+    enter: untilDone(
+      root =>
+        !productInput(root, 'price') &&
+        productText(root, 'price')?.replace(/\D/g, '').startsWith(NEW_PRICE) ===
+          true,
+      root => typeAndSave(root, 'price', NEW_PRICE),
+    ),
+  },
+]
+
+const productArgs = {
+  enableCellEditing: true,
+  enableKeyboardNavigation: true,
+  columnsOverride: EDIT_COLUMNS,
+  dataOverride: EDIT_ROWS,
+  dataTypes: EDIT_TYPES,
+  editableColumns: ['price', 'inStock'],
+  height: '360',
+} satisfies Partial<StoryProps>
+
+/** ADR 0175, S1: пользователь правит число на языке таблицы и видит ошибку при вводе не числа. */
+export const EditingNumber: StoryObj<StoryProps> = {
+  name: 'Edit a number',
+  parameters: {
+    scenario: '0175/S1',
+    ...guideControls(),
+  },
+  render: args => (
+    <GuideStory
+      title="Правка числа"
+      steps={EDIT_NUMBER}
+      args={guideArgs(productArgs, args)}
+    />
+  ),
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const locale = localeOf(args)
+    const labels = storyLabels(args.locale)
+    const original = EDIT_ROWS[0]!.price
+    await step(EDIT_NUMBER[0]!.title, async () => {
+      await waitForRows(canvas)
+      expect(productText(canvas, 'price')).toBe(dollars(locale, original))
+      expect(productEditButton(canvas, 'price')).not.toBeNull()
+    })
+    await step(EDIT_NUMBER[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(productInput(canvas, 'price')).not.toBeNull())
+      expect(productInput(canvas, 'price')!.value).toBe(
+        new Intl.NumberFormat(locale, { useGrouping: false }).format(original),
+      )
+    })
+    await step(EDIT_NUMBER[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(fieldError(canvas, 'price')).toBe(labels.editInvalidNumber),
+      )
+      expect(productInput(canvas, 'price')!.value).toBe(NOT_A_NUMBER)
+      expect(productInput(canvas, 'price')).toHaveAttribute(
+        'aria-invalid',
+        'true',
+      )
+      expect(consoleText()).not.toContain('onCellEdit')
+    })
+    await step(EDIT_NUMBER[3]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(productInput(canvas, 'price')).toBeNull())
+      expect(productText(canvas, 'price')).toBe(
+        dollars(locale, Number(NEW_PRICE)),
+      )
+      expect(consoleText()).toMatch(
+        new RegExp(`value:${NEW_PRICE},text:"${NEW_PRICE}"`),
+      )
+      await settle()
+    })
+  },
+}
+
+const checkedIn = (root: ParentNode) =>
+  !!productCellOf(root, 'inStock')?.querySelector('.check-mark[data-checked]')
+
+/** Активная ячейка наличия — пробел с клавиатуры. */
+const pressSpaceOnStock = (root: HTMLElement) => {
+  const cell = productCellOf(root, 'inStock')
+  cell?.focus({ preventScroll: true })
+  cell?.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }))
+}
+
+const EDIT_BOOLEAN: readonly GuideStoryStep[] = [
+  {
+    title: 'Флажки наличия',
+    hint: 'Наличие на складе — флажок. Его можно править: при наведении на ячейку появляется кнопка правки.',
+  },
+  {
+    title: 'Флажок переключён',
+    hint: 'Пользователь нажал кнопку правки. Значение сразу переключилось и сохранилось — без поля правки.',
+    enter: untilDone(
+      root => checkedIn(root),
+      root => productEditButton(root, 'inStock')?.click(),
+    ),
+  },
+  {
+    title: 'Пробел с клавиатуры',
+    hint: 'Пользователь перешёл на ячейку клавиатурой и нажал пробел. Значение переключилось обратно и тоже сохранилось.',
+    enter: untilDone(
+      root => !checkedIn(root),
+      root =>
+        checkedIn(root)
+          ? pressSpaceOnStock(root)
+          : productEditButton(root, 'inStock')?.click(),
+    ),
+  },
+]
+
+/** ADR 0175, S2: пользователь переключает булево одним нажатием. */
+export const EditingBoolean: StoryObj<StoryProps> = {
+  name: 'Toggle a boolean',
+  parameters: {
+    scenario: '0175/S2',
+    ...guideControls(),
+  },
+  render: args => (
+    <GuideStory
+      title="Правка флажка"
+      steps={EDIT_BOOLEAN}
+      args={guideArgs(productArgs, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(EDIT_BOOLEAN[0]!.title, async () => {
+      await waitForRows(canvas)
+      expect(checkedIn(canvas)).toBe(false)
+    })
+    await step(EDIT_BOOLEAN[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(checkedIn(canvas)).toBe(true))
+      expect(productInput(canvas, 'inStock')).toBeNull()
+      expect(consoleText()).toMatch(/value:true/)
+    })
+    await step(EDIT_BOOLEAN[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(checkedIn(canvas)).toBe(false))
+      expect(consoleText()).toMatch(/value:false/)
+      await settle()
+    })
+  },
+}
+
+const priorityCell = (root: ParentNode) =>
+  root.querySelector<HTMLElement>(
+    `.data-grid__body-row[data-row-id="${PRODUCT_ROW}"] .data-grid__body-cell[data-column-id="priority"]`,
+  )
+const priorityEditor = (root: ParentNode) =>
+  priorityCell(root)?.querySelector<HTMLElement>('[data-priority-editor]') ??
+  null
+const priorityText = (root: ParentNode) => {
+  const copy = priorityCell(root)?.cloneNode(true) as HTMLElement | undefined
+  copy?.querySelectorAll('.cell__button').forEach(button => button.remove())
+  return copy?.textContent?.trim()
+}
+
+const HIGH = 3
+
+const EDIT_TYPE_EDITOR: readonly GuideStoryStep[] = [
+  {
+    title: 'Приоритет — свой тип',
+    hint: 'Приоритет — тип из реестра типов таблицы: в данных число, в ячейке — слово. Тип задаёт и свой редактор.',
+  },
+  {
+    title: 'Редактор типа',
+    hint: 'Пользователь нажал кнопку правки приоритета. Вместо поля ввода — переключатель из трёх вариантов: его задал тип колонки.',
+    states: ['body.editing'],
+    enter: untilDone(
+      root => !!priorityEditor(root),
+      root =>
+        priorityCell(root)
+          ?.querySelector<HTMLElement>('.cell__button button')
+          ?.click(),
+    ),
+  },
+  {
+    title: 'Вариант сохранён',
+    hint: 'Пользователь выбрал высокий приоритет. Правка закрылась, в ячейке новая подпись, в данных — число.',
+    enter: untilDone(
+      root =>
+        !priorityEditor(root) && priorityText(root) === priorityLabel(HIGH),
+      root => {
+        const editor = priorityEditor(root)
+        if (!editor)
+          priorityCell(root)
+            ?.querySelector<HTMLElement>('.cell__button button')
+            ?.click()
+        else
+          editor.querySelector<HTMLElement>(`[data-value="${HIGH}"]`)?.click()
+      },
+    ),
+  },
+]
+
+/** ADR 0175, S7: разработчик задаёт свой редактор типа в реестре `dataTypes`. */
+export const EditingTypeEditor: StoryObj<StoryProps> = {
+  name: 'Editor of a data type',
+  parameters: {
+    scenario: '0175/S7',
+    ...guideControls(),
+  },
+  render: args => (
+    <GuideStory
+      title="Свой редактор типа"
+      steps={EDIT_TYPE_EDITOR}
+      args={guideArgs(
+        {
+          enableCellEditing: true,
+          enableKeyboardNavigation: true,
+          columnsOverride: PRIORITY_COLUMNS,
+          dataOverride: PRIORITY_ROWS,
+          dataTypes: PRIORITY_TYPES,
+          editableColumns: ['priority'],
+          height: '360',
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(EDIT_TYPE_EDITOR[0]!.title, async () => {
+      await waitForRows(canvas)
+      expect(priorityText(canvas)).toBe(
+        priorityLabel(PRIORITY_ROWS[0]!.priority),
+      )
+    })
+    await step(EDIT_TYPE_EDITOR[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(priorityEditor(canvas)).not.toBeNull())
+      expect(
+        priorityCell(canvas)!.querySelector('input:not([type="radio"])'),
+      ).toBeNull()
+      expect(
+        priorityEditor(canvas)!.querySelector('[role="radiogroup"]'),
+      ).not.toBeNull()
+    })
+    await step(EDIT_TYPE_EDITOR[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(priorityEditor(canvas)).toBeNull())
+      expect(priorityText(canvas)).toBe(priorityLabel(HIGH))
+      expect(consoleText()).toMatch(new RegExp(`value:${HIGH}`))
       await settle()
     })
   },

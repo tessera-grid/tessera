@@ -139,6 +139,7 @@ export type { InfiniteScrollHooks } from './infiniteScroll/types'
 export type {
   CellEditingHooks,
   CellEditor,
+  CellEditorProps,
   CellEditCancel,
   CellEditCommit,
   EditCancelReason,

@@ -166,7 +166,8 @@ describe('Сессии действий', () => {
       expect.objectContaining({
         columnId: 'age',
         reason: 'cancel',
-        draft: '999',
+        draft: 999,
+        text: '999',
       }),
     )
     await edit.unmount()
@@ -243,7 +244,8 @@ describe('Сессии действий', () => {
       expect.objectContaining({
         columnId: 'age',
         reason: 'revoke',
-        draft: '999',
+        draft: 999,
+        text: '999',
       }),
     )
   })
@@ -510,7 +512,7 @@ describe('Сессии действий', () => {
     await expect.poll(draftInput).toBeNull()
     expect(onCellEdit).toHaveBeenCalledTimes(1)
     expect(onCellEdit).toHaveBeenCalledWith(
-      expect.objectContaining({ columnId: 'age', value: '999' }),
+      expect.objectContaining({ columnId: 'age', value: 999, text: '999' }),
     )
     expect(onCellEdit.mock.calls[0][0].original).toBe(Number(original))
     expect(onEditCancel).not.toHaveBeenCalled()
@@ -533,13 +535,13 @@ describe('Сессии действий', () => {
     )
     await expect.poll(draftInput).not.toBeNull()
     await userEvent.clear(draftInput()!)
-    await userEvent.type(draftInput()!, 'abc')
+    await userEvent.type(draftInput()!, '-5')
     await clickAway()
 
     await expect
       .poll(() => draftInput()?.getAttribute('aria-invalid'))
       .toBe('true')
-    expect(draftInput()!.value).toBe('abc')
+    expect(draftInput()!.value).toBe('-5')
     expect(ageCell().querySelector('[role="alert"]')!.textContent).toBe(
       'Digits only',
     )
@@ -595,7 +597,8 @@ describe('Сессии действий', () => {
       expect.objectContaining({
         columnId: 'age',
         reason: 'cancel',
-        draft: '999',
+        draft: 999,
+        text: '999',
       }),
     )
   })

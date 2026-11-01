@@ -970,6 +970,12 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       `accessorKey` вглубь, отказ записи с советом, клиентский режим без записи), визуальный EW7 —
       в `server-row-model`, `play` истории «Data loading/Server row model/Editing — Edit a cell» (S1)
       ([ADR 0139](docs/decisions/0139-saved-row-and-column-data-type.md)).
+    - _Редакторы по типу:_ модульные `cellEditWrite.dom` (ED1–ED2 — значение в типе колонки и
+      текст в колбэках, разбор при сохранении без второго разбора в кэше) и `typedEditors.dom`
+      (ED3 — порядок выбора редактора и что он получает), визуальный `typed-editors` (ED4–ED5 —
+      поле числа на языке таблицы с ошибкой разбора, булево одним нажатием), гайды
+      «Cells/Editing — Edit a number», «— Toggle a boolean», «— Editor of a data type» (S1, S2, S7)
+      ([ADR 0175](docs/decisions/0175-data-type-editors.md), этап 1).
     - _Пределы браузера:_ `browser-limits` (BH1–BH3 — замер предела высоты элемента и
       липкой шапки, раз на документ и только для тела выше 8 млн px; ещё и в
       `test:browsers` — у Firefox свои пределы), перф BH7 — в `first-render`

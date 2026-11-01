@@ -142,7 +142,7 @@ const editProps: GuideStoryStep['props'] = context => ({
   })!(context),
   enableCellEditing: true,
   // «Сервер» округляет возраст до целого и отдаёт сохранённую строку.
-  onCellEdit: ({ rowId, value }: { rowId: string; value: string }) =>
+  onCellEdit: ({ rowId, value }: CellEditCommit) =>
     new Promise<FilteringItem>(resolve => {
       edit.save = () =>
         resolve({

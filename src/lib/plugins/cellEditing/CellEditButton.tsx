@@ -13,11 +13,8 @@ import { useSliceProjection } from '../../core/reactivity'
 import { CellButton } from '../../ui/CellButton/CellButton'
 import { CellInvalid } from '../../ui/cellControls/CellInvalid'
 import { useIcons } from '../../ui/icons'
-import {
-  EDIT_SESSION_KEY,
-  cellEditingViewOf,
-  startEditSession,
-} from './session'
+import { beginEdit } from './editors'
+import { EDIT_SESSION_KEY, cellEditingViewOf } from './session'
 import type { CellErrorHook } from '../../shared/cellHooks'
 import type { CellEditingHooks, CellEditingState } from './types'
 
@@ -57,7 +54,7 @@ export const CellEditButton = (props: PluginCellProps<CellEditingHooks>) => {
         icon={<EditIcon width={16} height={16} />}
         pending={view?.status === 'pending'}
         failure={failure}
-        onClick={event => startEditSession(table, row, column, sourceOf(event))}
+        onClick={event => beginEdit(table, row, column, hooks, sourceOf(event))}
       />
     </>
   )

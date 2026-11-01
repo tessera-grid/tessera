@@ -93,6 +93,14 @@ const ownFields = (source: object): DataTypeFields =>
     }),
   )
 
+/** Поля записи реестра: все, кроме `extends`, — и поля, которые объявили плагины (`editor`). */
+const entryFields = (entry: DataTypeDefinition): DataTypeFields =>
+  Object.fromEntries(
+    Object.entries(entry).filter(
+      ([key, value]) => key !== 'extends' && value !== undefined,
+    ),
+  )
+
 interface TypedColumn {
   columnDef: { dataType?: DataTypeName } & DataTypeFields
 }
@@ -161,7 +169,7 @@ export const resolveDataType = (
     if (found) {
       const definition: DataTypeFields = {}
       for (let i = found.chain.length - 1; i >= 0; i--) {
-        Object.assign(definition, ownFields(found.chain[i]!))
+        Object.assign(definition, entryFields(found.chain[i]!))
       }
       Object.assign(definition, ownFields(columnDef))
       value = { name, base: found.base, definition }

@@ -99,7 +99,7 @@ describe('Эмулятор скринридера (SR)', () => {
 
     const input = document.activeElement as HTMLInputElement
     await userEvent.clear(input)
-    await userEvent.type(input, 'x{Enter}')
+    await userEvent.type(input, '-1{Enter}')
     await settle()
     expect(await spoken()).toContain('assertive: Digits only')
   })

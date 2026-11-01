@@ -21,6 +21,8 @@ interface CellEditInputProps {
   onCommit: (value: string) => void
   onCancel: () => void
   onDraftChange: (value: string) => void
+  /** Клавиатура касания: `decimal` — у полей чисел (ADR 0175, ED4). */
+  inputMode?: 'text' | 'decimal'
 }
 
 export const CellEditInput = ({
@@ -30,6 +32,7 @@ export const CellEditInput = ({
   onCommit,
   onCancel,
   onDraftChange,
+  inputMode,
 }: CellEditInputProps) => {
   const [value, setValue] = useState(initialValue)
   const errorId = useId()
@@ -57,6 +60,7 @@ export const CellEditInput = ({
         ref={input}
         className={styles.input}
         value={value}
+        inputMode={inputMode}
         onChange={event => {
           setValue(event.target.value)
           onDraftChange(event.target.value)

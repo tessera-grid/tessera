@@ -386,7 +386,7 @@ describe('Доступность: остаток WCAG 2.1 AA', () => {
     expect(input()!.hasAttribute('aria-invalid')).toBe(false)
 
     await userEvent.clear(input()!)
-    await userEvent.type(input()!, 'abc{Enter}')
+    await userEvent.type(input()!, '-5{Enter}')
     await expect.poll(() => input()?.getAttribute('aria-invalid')).toBe('true')
     const error = document.getElementById(
       input()!.getAttribute('aria-describedby')!,

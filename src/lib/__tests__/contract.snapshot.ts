@@ -7,6 +7,7 @@
 export const COLUMN_DEF_FIELDS: Record<string, string> = {
   align: '0172',
   dataType: '0172',
+  editor: '0175',
   format: '0172',
   formatValue: '0172',
   enableDragging: '0006',
