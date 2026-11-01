@@ -11,7 +11,7 @@ import { getDisplayColumns } from '../core/displayColumns'
 import { getFooterPosition } from '../core/footer'
 import { getRowWindow } from '../core/pagination'
 import type { RowSource } from '../core/rowSource'
-import { rootAttrsOf } from '../core/bodyContributions'
+import { authorRootAttrsOf, rootAttrsOf } from '../core/bodyContributions'
 import { RenderSlot } from '../core/renderSlots'
 import type { SkeletonRowsRequest } from '../core/createSlots'
 import { useTableState } from '../core/reactivity'
@@ -118,6 +118,8 @@ export const DataGridTable = ({
   const tableAria = skeleton
     ? undefined
     : {
+        // Атрибуты плагинов авторов — под атрибутами грида (ADR 0173, BC3).
+        ...authorRootAttrsOf({ table, navigation: !!keyboardNavigation }),
         role: keyboardNavigation
           ? hierarchical
             ? 'treegrid'

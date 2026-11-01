@@ -37,6 +37,7 @@ import {
   presenceNarrow,
 } from '../servicePresence'
 import { argsKeyOf } from '../pluginArgs'
+import { authorBodyOf, type PluginBody } from '../bodyContributions'
 import {
   pluginStateKey,
   stateChangeOption,
@@ -242,6 +243,12 @@ interface DefinePluginConfig<
    * выключенного плагина (ADR 0040, §2). Должно быть дешёвым без работы.
    */
   reconcile?: (table: unknown, context: PluginReconcileContext) => void
+  /**
+   * Вклад в тело грида (ADR 0173): атрибуты и переменные стиля ячейки и строки по выбору
+   * из состояния, атрибуты, события и хук корня, клавиши навигации. Имена — только
+   * `data-<id>-*`, `aria-*` и `--<id>-*`; исключение выключает вклад.
+   */
+  body?: (opts: TOptions) => PluginBody
 }
 
 /**
@@ -356,6 +363,9 @@ export const definePlugin = <
         }
         if (config.setup) {
           out.setup = config.setup(args)
+        }
+        if (config.body) {
+          out.body = authorBodyOf(config.id, config.body(args))
         }
         const narrow = { ...config.narrow?.(args) }
         // Срез остаётся под сужением и в режиме 'always': иначе TanStack держал бы

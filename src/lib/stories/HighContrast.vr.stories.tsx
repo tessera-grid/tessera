@@ -4719,6 +4719,60 @@ export const HighContrastPluginApiCancelPendingStep3 = {
   tags: ['!test'],
 }
 
+export const HighContrastPluginApiBodyAttributesStep1 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiBodyAttributes, 1),
+  name: 'Plugin API — Body attributes, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiBodyAttributesStep2 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiBodyAttributes, 2),
+  name: 'Plugin API — Body attributes, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiBodyAttributesStep3 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiBodyAttributes, 3),
+  name: 'Plugin API — Body attributes, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiBodyEventsStep1 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiBodyEvents, 1),
+  name: 'Plugin API — Body events, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiBodyEventsStep2 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiBodyEvents, 2),
+  name: 'Plugin API — Body events, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiBodyEventsStep3 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiBodyEvents, 3),
+  name: 'Plugin API — Body events, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiBodyKeysStep1 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiBodyKeys, 1),
+  name: 'Plugin API — Body keys, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiBodyKeysStep2 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiBodyKeys, 2),
+  name: 'Plugin API — Body keys, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiBodyKeysStep3 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiBodyKeys, 3),
+  name: 'Plugin API — Body keys, шаг 3',
+  tags: ['!test'],
+}
+
 export const HighContrastFilteringServerCancelStep1 = {
   ...twinStep(filteringStories, filteringStories.FilteringServerCancel, 1),
   name: 'Filtering — Cancel a server filter, шаг 1',

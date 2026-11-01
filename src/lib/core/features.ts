@@ -186,7 +186,7 @@ export interface PluginReconcileContext {
 export type PluginConfiguration = Partial<
   Pick<
     TesseraFeatureEntry,
-    'options' | 'slots' | 'actionMenu' | 'setup' | 'narrow'
+    'options' | 'slots' | 'actionMenu' | 'setup' | 'narrow' | 'body'
   >
 >
 

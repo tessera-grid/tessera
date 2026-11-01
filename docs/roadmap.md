@@ -327,7 +327,7 @@ loadedCount })` — у края грид просит блок, приложен
   порядок — [research/architecture-audit-2026-10-31.md](research/architecture-audit-2026-10-31.md).
 
 - **Канал вклада в тело — авторам плагинов** —
-  [ADR 0173](decisions/0173-body-channel-for-plugin-authors.md), принят 2026-11-01, код не начат:
+  [ADR 0173](decisions/0173-body-channel-for-plugin-authors.md), принят 2026-11-01, внедрён:
   поле `body` у `definePlugin` — атрибуты и стиль ячейки и строки, события и хук корня, клавиши
   навигации; данные окна и слой остаются внутренними.
 

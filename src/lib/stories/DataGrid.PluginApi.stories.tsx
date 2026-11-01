@@ -58,11 +58,19 @@ import {
   rowIdOrder,
 } from './rowDragging.dnd'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
+import {
+  cellCard,
+  cellKey,
+  changes,
+  keyMarks,
+  MARK_KEY,
+} from './__mocks__/bodyPlugins'
 
 /**
  * API плагинов: `Playground` — аргументы фабрик на лету; S1–S2 ADR 0039 — аргумент и запрет
  * на той же таблице, S4–S5 ADR 0040 — колбэки перетаскивания и протяжки, S1–S2 ADR 0125 —
- * канал действий, S1–S3 ADR 0028 — плагин автора, S1 ADR 0037 — его падение.
+ * канал действий, S1–S3 ADR 0028 — плагин автора, S1 ADR 0037 — его падение, S1–S3 ADR 0173 —
+ * вклад плагина автора в тело: атрибуты, свой жест, своя клавиша.
  */
 const meta = {
   ...dataGridMeta,
@@ -1688,6 +1696,244 @@ export const PluginApiCancelPending: StoryObj<StoryProps> = {
       await expect(failedButton(archiveButton(canvas))).toBe(false)
       await expect(failedButton(exportButtonOf(canvas))).toBe(false)
       await expect(consoleText()).toContain('cancelPending')
+    })
+  },
+}
+
+// --- Вклад в тело для автора плагина (ADR 0173) -------------------------------------------
+
+const CHANGED = [
+  cellKey('item-id-0', 'firstName'),
+  cellKey('item-id-2', 'age'),
+  cellKey('item-id-4', 'lastName'),
+]
+const MORE_CHANGED = [...CHANGED, cellKey('item-id-1', 'visits')]
+
+const bodyCell = (root: ParentNode, rowId: string, columnId: string) =>
+  root.querySelector<HTMLElement>(
+    `.data-grid__body-row[data-row-id="${rowId}"] .data-grid__body-cell[data-column-id="${columnId}"]`,
+  )
+const changedCells = (root: ParentNode) =>
+  [...root.querySelectorAll<HTMLElement>('[data-changes-cell]')].map(
+    cell =>
+      `${cell.closest<HTMLElement>('[data-row-id]')!.dataset.rowId}:${cell.dataset.columnId}`,
+  )
+
+const BODY_ATTRIBUTES: readonly GuideStoryStep[] = [
+  {
+    title: 'Плагин подключён',
+    hint: 'Плагин автора отмечает изменённые ячейки. Изменений пока нет, отметок нет.',
+    props: () => ({ extraPlugins: [changes({ changed: [] })] }),
+  },
+  {
+    title: 'Приложение передало изменённые ячейки',
+    hint: 'Приложение передало плагину три изменённые ячейки. Плагин пометил их и задал цвет метки, полоску у левого края ячейки рисует оформление автора.',
+    props: () => ({ extraPlugins: [changes({ changed: CHANGED })] }),
+  },
+  {
+    title: 'Изменилась ещё одна ячейка',
+    hint: 'Приложение добавило ещё одну ячейку. Метку получила только она, прежние метки остались на месте.',
+    props: () => ({ extraPlugins: [changes({ changed: MORE_CHANGED })] }),
+  },
+]
+
+/** ADR 0173, S1: автор плагина помечает изменённые ячейки атрибутом и стилем. */
+export const PluginApiBodyAttributes: StoryObj<StoryProps> = {
+  name: 'Body attributes',
+  parameters: { scenario: '0173/S1', ...GUIDED },
+  render: guided('Отметки ячеек плагином', BODY_ATTRIBUTES),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(BODY_ATTRIBUTES[0]!.title, async () => {
+      await waitForRows(canvas)
+      expect(changedCells(canvas)).toEqual([])
+    })
+    await step(BODY_ATTRIBUTES[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(changedCells(canvas).sort()).toEqual([...CHANGED].sort()),
+      )
+      const cell = bodyCell(canvas, 'item-id-0', 'firstName')!
+      expect(cell.style.getPropertyValue('--changes-tone')).not.toBe('')
+      expect(getComputedStyle(cell).backgroundImage).not.toBe('none')
+    })
+    await step(BODY_ATTRIBUTES[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(changedCells(canvas).sort()).toEqual([...MORE_CHANGED].sort()),
+      )
+      await settle()
+    })
+  },
+}
+
+const CARD_CELL = { rowId: 'item-id-1', columnId: 'firstName' }
+const cellCardOf = () =>
+  document.querySelector<HTMLElement>('[data-testid="cell-card"]')
+
+const BODY_EVENTS: readonly GuideStoryStep[] = [
+  {
+    title: 'Плагин подключён',
+    hint: 'Плагин автора добавил свой жест: двойной щелчок по ячейке открывает карточку с её значением.',
+    props: () => ({ extraPlugins: [cellCard()] }),
+  },
+  {
+    title: 'Пользователь дважды щёлкнул по ячейке',
+    hint: 'Под ячейкой открылась карточка автора с названием колонки и значением. Ячейка обведена, пока карточка открыта.',
+    enter: untilDone(
+      () => !!cellCardOf(),
+      root =>
+        bodyCell(root, CARD_CELL.rowId, CARD_CELL.columnId)?.dispatchEvent(
+          new MouseEvent('dblclick', { bubbles: true, cancelable: true }),
+        ),
+    ),
+  },
+  {
+    title: 'Пользователь закрыл карточку',
+    hint: 'Карточка закрылась, обводка ячейки снята.',
+    enter: untilDone(
+      root =>
+        !cellCardOf() &&
+        !bodyCell(root, CARD_CELL.rowId, CARD_CELL.columnId)?.hasAttribute(
+          'data-cellcard-open',
+        ),
+      root => {
+        const card = cellCardOf()
+        if (card) card.querySelector<HTMLElement>('button')?.click()
+        else
+          bodyCell(root, CARD_CELL.rowId, CARD_CELL.columnId)?.dispatchEvent(
+            new MouseEvent('dblclick', { bubbles: true, cancelable: true }),
+          )
+      },
+    ),
+  },
+]
+
+/** ADR 0173, S2: автор плагина добавляет свой жест — двойной щелчок открывает его карточку. */
+export const PluginApiBodyEvents: StoryObj<StoryProps> = {
+  name: 'Body events',
+  parameters: { scenario: '0173/S2', ...GUIDED },
+  render: guided('Свой жест над телом', BODY_EVENTS),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const cell = () => bodyCell(canvas, CARD_CELL.rowId, CARD_CELL.columnId)!
+    await step(BODY_EVENTS[0]!.title, async () => {
+      await waitForRows(canvas)
+      expect(cellCardOf()).toBeNull()
+    })
+    await step(BODY_EVENTS[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(cellCardOf()).not.toBeNull())
+      const value = cell().querySelector(
+        '.data-grid__cell-wrapper-title',
+      )!.textContent!
+      expect(cellCardOf()!.textContent).toContain(value)
+      expect(cell().hasAttribute('data-cellcard-open')).toBe(true)
+      await settle()
+    })
+    await step(BODY_EVENTS[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(cellCardOf()).toBeNull())
+      expect(cell().hasAttribute('data-cellcard-open')).toBe(false)
+      await settle()
+    })
+  },
+}
+
+const KEY_CELL = { rowId: 'item-id-1', columnId: 'firstName' }
+const NEXT_CELL = { rowId: 'item-id-2', columnId: 'firstName' }
+const markedCells = (root: ParentNode) =>
+  [...root.querySelectorAll<HTMLElement>('[data-keymarks-cell]')].map(
+    cell =>
+      `${cell.closest<HTMLElement>('[data-row-id]')!.dataset.rowId}:${cell.dataset.columnId}`,
+  )
+const activeCellKey = (root: ParentNode) => {
+  const cell = root.querySelector<HTMLElement>(
+    '.data-grid__body-cell[data-kn-active]',
+  )
+  return cell
+    ? `${cell.closest<HTMLElement>('[data-row-id]')!.dataset.rowId}:${cell.dataset.columnId}`
+    : undefined
+}
+const pressKey = (root: ParentNode, key: string) =>
+  root
+    .querySelector<HTMLElement>('.data-grid__body-cell[data-kn-active]')
+    ?.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }))
+/** Пользователь делает ячейку активной и нажимает клавишу плагина. */
+const markCell = (
+  root: HTMLElement,
+  target: { rowId: string; columnId: string },
+) => {
+  const key = cellKey(target.rowId, target.columnId)
+  if (activeCellKey(root) !== key) {
+    if (activeCellKey(root) === cellKey(KEY_CELL.rowId, KEY_CELL.columnId)) {
+      pressKey(root, 'ArrowDown')
+    } else bodyCell(root, target.rowId, target.columnId)?.focus()
+    return
+  }
+  if (!markedCells(root).includes(key)) pressKey(root, MARK_KEY)
+}
+
+const BODY_KEYS: readonly GuideStoryStep[] = [
+  {
+    title: 'Своя клавиша плагина',
+    hint: 'В таблице включена клавиатурная навигация. Плагин автора назначил свою клавишу: она отмечает активную ячейку.',
+    props: () => ({
+      enableKeyboardNavigation: true,
+      extraPlugins: [keyMarks()],
+    }),
+  },
+  {
+    title: 'Пользователь нажал клавишу плагина',
+    hint: 'Пользователь выбрал ячейку и нажал клавишу плагина. Ячейка отмечена полоской у левого края, активная ячейка осталась на месте: клавишу взял плагин.',
+    enter: untilDone(
+      root =>
+        markedCells(root).includes(cellKey(KEY_CELL.rowId, KEY_CELL.columnId)),
+      root => markCell(root, KEY_CELL),
+    ),
+  },
+  {
+    title: 'Стрелка и снова клавиша плагина',
+    hint: 'Стрелку плагин не берёт: она сдвинула активную ячейку вниз, как обычно. Клавиша плагина отметила и новую ячейку.',
+    enter: untilDone(
+      root =>
+        markedCells(root).includes(
+          cellKey(NEXT_CELL.rowId, NEXT_CELL.columnId),
+        ),
+      root =>
+        markedCells(root).includes(cellKey(KEY_CELL.rowId, KEY_CELL.columnId))
+          ? markCell(root, NEXT_CELL)
+          : markCell(root, KEY_CELL),
+    ),
+  },
+]
+
+/** ADR 0173, S3: автор плагина назначает свою клавишу. */
+export const PluginApiBodyKeys: StoryObj<StoryProps> = {
+  name: 'Body keys',
+  parameters: { scenario: '0173/S3', ...GUIDED },
+  render: guided('Своя клавиша плагина', BODY_KEYS),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const first = cellKey(KEY_CELL.rowId, KEY_CELL.columnId)
+    const next = cellKey(NEXT_CELL.rowId, NEXT_CELL.columnId)
+    await step(BODY_KEYS[0]!.title, async () => {
+      await waitForRows(canvas)
+      expect(markedCells(canvas)).toEqual([])
+    })
+    await step(BODY_KEYS[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(markedCells(canvas)).toEqual([first]))
+      expect(activeCellKey(canvas)).toBe(first)
+      await settle()
+    })
+    await step(BODY_KEYS[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(markedCells(canvas).sort()).toEqual([first, next].sort()),
+      )
+      expect(activeCellKey(canvas)).toBe(next)
+      await settle()
     })
   },
 }

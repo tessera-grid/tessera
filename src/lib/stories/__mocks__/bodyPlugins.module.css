@@ -1,0 +1,47 @@
+/* Вид плагинов автора на канале вклада в тело (ADR 0173): CSS автора, а не грида. */
+
+:global(.data-grid__body-cell[data-changes-cell]) {
+  /* Полоска — фоном: тень у ячейки грида дала бы линию по краю. */
+  background-image: linear-gradient(
+    to right,
+    var(--changes-tone) 3px,
+    transparent 3px
+  );
+}
+
+:global(.data-grid__body-cell[data-keymarks-cell]) {
+  background-image: linear-gradient(
+    to right,
+    var(--tsr-comp-accent) 3px,
+    transparent 3px
+  );
+}
+
+:global(.data-grid__body-cell[data-cellcard-open]) {
+  outline: 2px solid var(--tsr-comp-accent);
+  outline-offset: -2px;
+}
+
+.card {
+  position: fixed;
+  z-index: var(--tsr-comp-z-index-tooltip);
+  display: grid;
+  gap: var(--tsr-comp-popup-padding);
+  min-width: 160px;
+  padding: var(--tsr-comp-popup-padding);
+  border-radius: var(--tsr-comp-control-radius);
+  outline: var(--tsr-comp-popup-outline);
+  background: var(--tsr-comp-popup-bg);
+  color: var(--tsr-comp-popup-color);
+  font-family: var(--tsr-comp-font-family);
+  font-size: var(--tsr-comp-popup-font-size);
+  box-shadow: var(--tsr-comp-shadow-action);
+}
+
+.cardTitle {
+  font-weight: 600;
+}
+
+.cardValue {
+  font-variant-numeric: tabular-nums;
+}

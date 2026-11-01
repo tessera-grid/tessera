@@ -1,7 +1,7 @@
 /**
  * Канал вклада плагинов в тело грида (ADR 0170, §3–§4): что плагин вносит в ячейку и
- * строку тела, в корень грида и в клавиши навигации. Внутренний: в публичный
- * `PluginSlot` не входит.
+ * строку тела, в корень грида и в клавиши навигации. Авторам открыта часть канала — поле
+ * `body` у `definePlugin` (ADR 0173): своё пространство имён, изоляция ошибок, dev-замер.
  */
 import {
   createElement,
@@ -14,6 +14,9 @@ import {
 import { useSelector } from '@tanstack/react-store'
 
 import type { DropPreview } from './dragSession'
+import { PluginErrorBoundary } from './pluginBoundary'
+import { reportPluginError } from './pluginDiagnostics'
+import { isProduction, logWarn } from '../util/logger'
 import type { RowSource } from './rowSource'
 import type { Cell, Row, Table } from '../types'
 
@@ -76,6 +79,8 @@ export interface CellLayer {
  */
 export interface TargetContribution<TContext, TSelected = any> {
   id: string
+  /** Вклад плагина автора (ADR 0173): уже занятые атрибуты он не перезаписывает. */
+  author?: true
   select: (state: Record<string, unknown>, context: TContext) => TSelected
   render: (selected: TSelected, context: TContext) => ContributionOutput | null
 }
@@ -109,6 +114,8 @@ type BodyEventHandler<E> = (event: E, target: BodyEventTarget) => void
 /** События над телом, делегированные от корня грида. */
 export interface BodyEvents {
   mousedown?: BodyEventHandler<MouseEvent>
+  click?: BodyEventHandler<MouseEvent>
+  dblclick?: BodyEventHandler<MouseEvent>
   /** Указатель вошёл в другую ячейку тела. */
   hover?: BodyEventHandler<MouseEvent>
   copy?: BodyEventHandler<ClipboardEvent>
@@ -129,6 +136,8 @@ export interface RootHookProps {
 /** Вклад в корень грида. */
 export interface RootContribution {
   id: string
+  /** Вклад плагина автора (ADR 0173): атрибуты — под атрибутами грида, хук — в границе. */
+  author?: true
   /** Атрибуты корня темы: от них зависят токены темы (ADR 0018). */
   themeAttrs?: () => ContributionOutput['attrs']
   /** Атрибуты элемента таблицы по состоянию: корень перерисовывают срезы раскладки. */
@@ -313,7 +322,11 @@ export const mergeContributions = <TContext>(
   contributions.forEach((item, index) => {
     const output = item.render(selected[index], context)
     if (!output) return
-    if (output.attrs) Object.assign(merged.attrs, output.attrs)
+    if (output.attrs && item.author) {
+      for (const [key, value] of Object.entries(output.attrs)) {
+        if (!(key in merged.attrs)) merged.attrs[key] = value
+      }
+    } else if (output.attrs) Object.assign(merged.attrs, output.attrs)
     if (output.style) merged.style = { ...merged.style, ...output.style }
     if (merged.tabIndex === undefined) merged.tabIndex = output.tabIndex
   })
@@ -329,7 +342,21 @@ export const rootAttrsOf = (
   if (!roots.length) return attrs
   const state = context.table.store.get() as unknown as Record<string, unknown>
   for (const item of roots) {
-    Object.assign(attrs, item.attrs?.({ ...context, state }))
+    if (!item.author) Object.assign(attrs, item.attrs?.({ ...context, state }))
+  }
+  return attrs
+}
+
+/** Атрибуты элемента таблицы от плагинов авторов: грид кладёт свои поверх (ADR 0173). */
+export const authorRootAttrsOf = (
+  context: Omit<RootContributionContext, 'state'>,
+) => {
+  const attrs: NonNullable<ContributionOutput['attrs']> = {}
+  const roots = bodyOf(context.table).root
+  if (!roots.some(item => item.author)) return attrs
+  const state = context.table.store.get() as unknown as Record<string, unknown>
+  for (const item of roots) {
+    if (item.author) Object.assign(attrs, item.attrs?.({ ...context, state }))
   }
   return attrs
 }
@@ -441,22 +468,31 @@ const RootHook = ({
   return use(props) ?? null
 }
 
-/** Хуки вкладчиков корня — компонентом на вкладчика: набор плагинов может смениться. */
+/**
+ * Хуки вкладчиков корня — компонентом на вкладчика: набор плагинов может смениться. Хук
+ * плагина автора — в границе ошибок; выключенный вклад автора не монтируется.
+ */
 export const RootHooks = (props: RootHookProps): ReactNode =>
   createElement(
     Fragment,
     null,
-    ...bodyOf(props.table).root.flatMap(item =>
-      item.useRoot
-        ? [
-            createElement(RootHook, {
-              key: item.id,
-              use: item.useRoot,
-              ...props,
-            }),
-          ]
-        : [],
-    ),
+    ...bodyOf(props.table).root.flatMap((item): ReactNode[] => {
+      if (!item.useRoot) return []
+      const hook = createElement(RootHook, {
+        key: item.id,
+        use: item.useRoot,
+        ...props,
+      })
+      if (!item.author) return [hook]
+      if (isBodyDisabled(props.table, item.id)) return []
+      return [
+        createElement(
+          PluginErrorBoundary,
+          { key: item.id, pluginId: item.id, table: props.table },
+          hook,
+        ),
+      ]
+    }),
   )
 
 const BODY_ROW = '.data-grid__body-row[data-row-id]'
@@ -516,6 +552,8 @@ export const bodyEventHandlers = (table: Table<any, any>) => {
   }
   return {
     onMouseDown: dispatch<MouseEvent>('mousedown'),
+    onClick: dispatch<MouseEvent>('click'),
+    onDoubleClick: dispatch<MouseEvent>('dblclick'),
     onMouseOver: dispatch<MouseEvent>('hover'),
     onCopy: dispatch<ClipboardEvent>('copy'),
     onContextMenu: dispatch<MouseEvent>('contextmenu'),
@@ -538,4 +576,270 @@ export const notifyActiveCellChange = (
   next: { rowIndex: number; columnIndex: number },
 ) => {
   for (const item of bodyOf(table).keys) item.onActiveCellChange?.(table, next)
+}
+
+// --- Канал для авторов плагинов (ADR 0173) --------------------------------------------
+
+/** Вклад автора в ячейку или строку: атрибуты `data-<id>-*` и `aria-*`, переменные `--<id>-*`. */
+export interface PluginBodyOutput {
+  attrs?: Record<string, string | number | boolean | undefined>
+  style?: Record<string, string>
+}
+
+/** Ячейка тела для вклада автора. */
+export interface PluginCellContext {
+  table: Table<any, any>
+  cell: Cell<any, any, unknown>
+  rowIndex: number
+  /** Клавиатурная навигация включена у грида. */
+  navigation: boolean
+}
+
+/** Строка тела для вклада автора. */
+export interface PluginRowContext {
+  table: Table<any, any>
+  row: Row<any, any>
+  rowIndex: number
+  navigation: boolean
+}
+
+/**
+ * Вклад автора в цель тела: выбор из состояния таблицы и вклад по нему. Цель
+ * перерисовывается, только когда выбор изменился.
+ */
+export interface PluginTargetBody<TContext, TSelected = any> {
+  select: (state: Record<string, unknown>, context: TContext) => TSelected
+  render: (selected: TSelected, context: TContext) => PluginBodyOutput | null
+}
+
+/** События над телом, строка и ячейка события, корень и клавиши — для вклада автора. */
+export type PluginBodyEvents = BodyEvents
+export type PluginBodyEventTarget = BodyEventTarget
+export type PluginRootContext = RootContributionContext
+export type PluginRootHookProps = RootHookProps
+export type PluginKeyEvent = NavigationKeyEvent
+export type PluginKeyContext = NavigationKeyContext
+
+/** Вклад автора в корень грида: атрибуты таблицы, события над телом, хук. */
+export interface PluginRootBody {
+  attrs?: (context: RootContributionContext) => PluginBodyOutput['attrs']
+  events?: BodyEvents
+  useRoot?: (props: RootHookProps) => ReactNode | void
+}
+
+/** Вклад автора в клавиши навигации. */
+export type PluginKeysBody = Omit<NavigationKeys, 'id'>
+
+/** Поле `body` записи `definePlugin` (ADR 0173). */
+export interface PluginBody {
+  cell?: PluginTargetBody<PluginCellContext>
+  row?: PluginTargetBody<PluginRowContext>
+  root?: PluginRootBody
+  keys?: PluginKeysBody
+}
+
+/** Выключенные вклады авторов: на таблицу (её store) — id плагинов. */
+const disabledBodies = new WeakMap<object, Set<string>>()
+
+const storeOf = (table: unknown) => (table as { store: object }).store
+
+export const isBodyDisabled = (table: unknown, pluginId: string) =>
+  disabledBodies.get(storeOf(table))?.has(pluginId) ?? false
+
+const disableBody = (table: unknown, pluginId: string, error: unknown) => {
+  const store = storeOf(table)
+  let ids = disabledBodies.get(store)
+  if (!ids) disabledBodies.set(store, (ids = new Set()))
+  ids.add(pluginId)
+  reportPluginError(table, pluginId, error)
+}
+
+/** Средний вызов выбора, после которого в dev — предупреждение, мс (BC5). */
+const SLOW_SELECT_MS = 0.05
+/** Вызовов выбора до суждения о среднем. */
+const SLOW_SELECT_CALLS = 500
+/** Сколько первых вызовов выбор зовётся дважды: новый объект при том же состоянии. */
+const SAME_STATE_CHECKS = 50
+
+const OFF = Symbol('body-off')
+
+/**
+ * Вклад автора как запись канала: имена вне пространства плагина пропускаются с одним
+ * dev-предупреждением на ключ, исключение выключает вклад (`status: 'error'`), в dev —
+ * замер выбора.
+ */
+export const authorBodyOf = (
+  pluginId: string,
+  body: PluginBody,
+): BodyContributions => {
+  const allowed = new Map<string, boolean>()
+  // Имена атрибутов HTML регистр не различает, переменные стиля — различают.
+  const dataPrefix = `data-${pluginId.toLowerCase()}-`
+  const inNamespace = (table: unknown, key: string, style: boolean) => {
+    let ok = allowed.get(key)
+    if (ok === undefined) {
+      const lower = key.toLowerCase()
+      ok = style
+        ? key.startsWith(`--${pluginId}-`)
+        : lower.startsWith(dataPrefix) || lower.startsWith('aria-')
+      allowed.set(key, ok)
+    }
+    if (!ok) {
+      logWarn(
+        table as never,
+        `${pluginId}: body ${style ? 'style variable' : 'attribute'} "${key}" is outside the plugin namespace (data-${pluginId}-*, aria-*, --${pluginId}-*) and is skipped`,
+        `body-name:${pluginId}:${key}`,
+      )
+    }
+    return ok
+  }
+  const filterAttrs = (table: unknown, attrs: PluginBodyOutput['attrs']) => {
+    if (!attrs) return undefined
+    const out: NonNullable<PluginBodyOutput['attrs']> = {}
+    for (const [key, value] of Object.entries(attrs)) {
+      if (inNamespace(table, key, false)) out[key] = value
+    }
+    return out
+  }
+  const filterOutput = (
+    table: unknown,
+    output: PluginBodyOutput | null,
+  ): ContributionOutput | null => {
+    if (!output) return null
+    let style: Record<string, string> | undefined
+    for (const [key, value] of Object.entries(output.style ?? {})) {
+      if (inNamespace(table, key, true)) (style ??= {})[key] = value
+    }
+    return { attrs: filterAttrs(table, output.attrs), style }
+  }
+
+  let calls = 0
+  let spent = 0
+  const measured = <TContext extends { table: unknown }>(
+    select: PluginTargetBody<TContext>['select'],
+  ) => {
+    if (isProduction()) return select
+    return (state: Record<string, unknown>, context: TContext) => {
+      const start = performance.now()
+      const selected = select(state, context)
+      spent += performance.now() - start
+      calls += 1
+      if (
+        calls <= SAME_STATE_CHECKS &&
+        typeof selected === 'object' &&
+        selected
+      ) {
+        if (select(state, context) !== selected) {
+          logWarn(
+            context.table as never,
+            `${pluginId}: body select returns a new object for the same state — return a primitive or a stable object`,
+            `body-select-new:${pluginId}`,
+          )
+        }
+      }
+      if (calls === SLOW_SELECT_CALLS && spent / calls > SLOW_SELECT_MS) {
+        logWarn(
+          context.table as never,
+          `${pluginId}: body select takes ${(spent / calls).toFixed(3)} ms per call on average — keep it under ${SLOW_SELECT_MS} ms`,
+          `body-select-slow:${pluginId}`,
+        )
+      }
+      return selected
+    }
+  }
+
+  const target = <TContext extends { table: unknown }>(
+    part: PluginTargetBody<TContext>,
+  ): TargetContribution<TContext> => {
+    const select = measured(part.select)
+    return {
+      id: pluginId,
+      author: true,
+      select: (state, context) => {
+        if (isBodyDisabled(context.table, pluginId)) return OFF
+        try {
+          return select(state, context)
+        } catch (error) {
+          disableBody(context.table, pluginId, error)
+          return OFF
+        }
+      },
+      render: (selected, context) => {
+        if (selected === OFF || isBodyDisabled(context.table, pluginId))
+          return null
+        try {
+          return filterOutput(context.table, part.render(selected, context))
+        } catch (error) {
+          disableBody(context.table, pluginId, error)
+          return null
+        }
+      },
+    }
+  }
+
+  /** Обработчик автора: исключение выключает вклад, выключенный — не зовётся. */
+  const guarded =
+    <TArgs extends unknown[], TResult>(
+      tableOf: (...args: TArgs) => unknown,
+      fn: (...args: TArgs) => TResult,
+      fallback: TResult,
+    ) =>
+    (...args: TArgs): TResult => {
+      const table = tableOf(...args)
+      if (isBodyDisabled(table, pluginId)) return fallback
+      try {
+        return fn(...args)
+      } catch (error) {
+        disableBody(table, pluginId, error)
+        return fallback
+      }
+    }
+
+  const out: BodyContributions = {}
+  if (body.cell) out.cell = target(body.cell) as CellContribution
+  if (body.row) out.row = target(body.row) as RowContribution
+  if (body.root) {
+    const { attrs, events, useRoot } = body.root
+    out.root = {
+      id: pluginId,
+      author: true,
+      ...(attrs && {
+        attrs: guarded(
+          context => context.table,
+          context => filterAttrs(context.table, attrs(context)),
+          undefined,
+        ),
+      }),
+      ...(events && {
+        events: Object.fromEntries(
+          Object.entries(events).map(([name, handler]) => [
+            name,
+            guarded(
+              (_event: Event, target: BodyEventTarget) => target.table,
+              handler as (event: Event, target: BodyEventTarget) => void,
+              undefined,
+            ),
+          ]),
+        ) as BodyEvents,
+      }),
+      ...(useRoot && { useRoot }),
+    }
+  }
+  if (body.keys) {
+    const { onKey, onActiveCellChange } = body.keys
+    out.keys = {
+      id: pluginId,
+      ...(onKey && {
+        onKey: guarded((_event, context) => context.table, onKey, false),
+      }),
+      ...(onActiveCellChange && {
+        onActiveCellChange: guarded(
+          table => table,
+          onActiveCellChange,
+          undefined,
+        ),
+      }),
+    }
+  }
+  return out
 }

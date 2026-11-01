@@ -79,6 +79,22 @@ export {
   type PluginCellStateProps,
   type PluginCellOwnerProps,
 } from './lib/core/definePlugin'
+// Вклад в тело грида для автора плагина: поле `body` у definePlugin (ADR 0173).
+export type {
+  PluginBody,
+  PluginBodyEvents,
+  PluginBodyEventTarget,
+  PluginBodyOutput,
+  PluginCellContext,
+  PluginKeyContext,
+  PluginKeyEvent,
+  PluginKeysBody,
+  PluginRootBody,
+  PluginRootContext,
+  PluginRootHookProps,
+  PluginRowContext,
+  PluginTargetBody,
+} from './lib/core/bodyContributions'
 // Канал действий грида: опция `onDebugAction`, `table.reportAction` и итог промиса (ADR 0125).
 export {
   reportAction,

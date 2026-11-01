@@ -21,7 +21,7 @@ let productionOverride: boolean | undefined
 // `process` недоступен (browser-ESM без бандлера) — падаем в dev, чтобы сигнал
 // не потерялся молча. Оверрайд — для тестов (среда резолвит NODE_ENV на
 // трансформе, рантайм-стаб её не переопределяет).
-const isProduction = (): boolean => {
+export const isProduction = (): boolean => {
   if (productionOverride !== undefined) return productionOverride
 
   try {

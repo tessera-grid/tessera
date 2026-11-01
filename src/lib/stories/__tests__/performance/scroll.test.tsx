@@ -48,6 +48,7 @@ import type { TesseraFeatureEntry } from '../../../core/features'
 import { CellButton } from '../../../ui/CellButton/CellButton'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
+import { definePlugin } from '../../../core/definePlugin'
 import {
   cellSelectionModel,
   columnFilteringModel,
@@ -1071,6 +1072,84 @@ describe('Производительность прокрутки — вспыш
         }
       } finally {
         hold.remove()
+      }
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Вклад плагина автора в тело (ADR 0173, BC6): 1000×1000 без плагинов, спокойная прокрутка
+// с вкладом автора в каждую ячейку (выбор и атрибут с переменной стиля) против той же
+// выборки без него. Цена — как у вклада встроенных (ADR 0149).
+const BC6_COST = { ratio: 1.3, plusMs: 4 }
+const authorEveryCell = definePlugin<{ enabled?: boolean }>()({
+  id: 'perfBody',
+  body: () => ({
+    cell: {
+      select: (_state, { cell }) => cell.row.index % 2 === 0,
+      render: (even: boolean) => ({
+        attrs: { 'data-perfbody-even': even },
+        style: { '--perfBody-tone': even ? 'a' : 'b' },
+      }),
+    },
+  }),
+})
+
+describe('Производительность прокрутки — вклад автора в тело', () => {
+  test(
+    'BC6: спокойная прокрутка 1000×1000 с вкладом автора в каждую ячейку — против той же без него, гейт против базы',
+    async () => {
+      const measure = async (authored: boolean) => {
+        const screen = renderGrid({
+          ...LARGE,
+          ...NO_PLUGINS,
+          extraPlugins: authored ? [authorEveryCell()] : [],
+        })
+        await waitForGrid()
+        await expect
+          .poll(() => document.querySelector('[data-perfbody-even]') !== null)
+          .toBe(authored)
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        return { y, x }
+      }
+
+      const runs = await againstBase(measure)
+      const base = medianAxes(runs.base)
+      const authored = medianAxes(runs.variant)
+      const ceiling = axesCeiling(base, BC6_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1000×1000',
+          plugins: 'none',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: (['y', 'x'] as const).map(axis => ({
+            axis,
+            kind: 'animation' as const,
+            metric: 'p95' as const,
+            valueMs: r[axis].p95Ms,
+            targetMs: ANIMATION_BUDGET_MS,
+            ceilingMs: gated ? ceiling[axis] : undefined,
+            ...r[axis],
+          })),
+        })
+      await record('BC6-base', 'без вклада автора', base, false)
+      await record('BC6', 'вклад автора в каждую ячейку', authored, true)
+
+      for (const axis of ['y', 'x'] as const) {
+        expect(
+          authored[axis].p95Ms,
+          `${axis} p95=${authored[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
+        ).toBeLessThanOrEqual(ceiling[axis])
       }
     },
     PERF_TIMEOUT * 2,
