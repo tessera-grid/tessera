@@ -64,6 +64,8 @@ export const CATALOG_STATES = {
     'filterText',
     'filterDate',
     'dateEditor',
+    'optionEditor',
+    'multiSelectEditor',
     'filterOptions',
     'export',
     'columns',

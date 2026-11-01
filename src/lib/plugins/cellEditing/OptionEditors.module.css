@@ -1,0 +1,55 @@
+/* Редакторы вариантов (ADR 0175): поповер поля с поиском и окно виртуального списка. */
+.positioner {
+  composes: positioner from '../../ui/Popup/Popup.module.css';
+}
+
+.popup {
+  composes: popup from '../../ui/Popup/Popup.module.css';
+  width: max(var(--anchor-width), var(--tsr-comp-column-menu-width));
+  max-width: calc(100vw - 16px);
+}
+
+.scroller {
+  max-height: min(var(--tsr-comp-column-menu-max-height), var(--_total));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.track {
+  position: relative;
+  width: 100%;
+}
+
+.item {
+  composes: item from '../../ui/Popup/Popup.module.css';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+}
+
+.indicator {
+  display: inline-flex;
+  flex-shrink: 0;
+  width: 14px;
+}
+
+/* Без отметки — то же место, подписи в одну линию. */
+.item:not([data-selected]) .indicator {
+  visibility: hidden;
+}
+
+.label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.multi {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tsr-comp-popup-padding);
+  width: var(--tsr-comp-column-menu-width);
+  max-width: calc(100vw - 16px);
+}

@@ -4,6 +4,7 @@
  */
 import { useLayoutEffect, useRef } from 'react'
 
+import type { ColumnOption, LoadOptions } from '../../core/columnOptions'
 import type { DataTypeRegistry } from '../../core/dataTypes'
 import type { CellEditor } from '../../plugins'
 import type { ColumnDef } from '../../types'
@@ -99,3 +100,84 @@ export { priorityLabel }
 export const DATE_COLUMNS: ColumnDef<any, any>[] = productColumns().filter(
   column => ['name', 'released', 'updatedAt'].includes(column.id!),
 )
+
+/** Статус — один вариант, метки — несколько (S4, S6). */
+export const OPTION_COLUMNS: ColumnDef<any, any>[] = productColumns().filter(
+  column => ['name', 'status', 'tags'].includes(column.id!),
+)
+
+const MANAGERS = ['Ann', 'Bob', 'Cy', 'Dana', 'Eve'].map((name, index) => ({
+  id: `m${index + 1}`,
+  name,
+}))
+
+/**
+ * «Сервер» справочника менеджеров (S5): держит ответ, пока шаг ожидания на виду, отказывает
+ * по команде гайда.
+ */
+export const createDirectory = () => {
+  let mode: 'hold' | 'refuse' | 'answer' = 'answer'
+  const waiting = new Set<{
+    resolve: (options: ColumnOption[]) => void
+    reject: (error: Error) => void
+  }>()
+  const settle = (entry: {
+    resolve: (options: ColumnOption[]) => void
+    reject: (error: Error) => void
+  }) =>
+    mode === 'refuse'
+      ? entry.reject(new Error('Directory is unavailable'))
+      : entry.resolve(
+          MANAGERS.map(record => ({
+            value: record.id,
+            label: record.name,
+            record,
+          })),
+        )
+  const load: LoadOptions = search =>
+    new Promise<ColumnOption[]>((resolve, reject) => {
+      const entry = {
+        resolve: (options: ColumnOption[]) =>
+          resolve(
+            options.filter(option =>
+              option.label.toLowerCase().includes(search.toLowerCase()),
+            ),
+          ),
+        reject,
+      }
+      if (mode === 'hold') waiting.add(entry)
+      else settle(entry)
+    })
+  const release = (next: 'refuse' | 'answer') => {
+    mode = next
+    waiting.forEach(settle)
+    waiting.clear()
+  }
+  return {
+    load,
+    hold: () => {
+      mode = 'hold'
+    },
+    refuse: () => release('refuse'),
+    answer: () => release('answer'),
+  }
+}
+
+export const DIRECTORY = createDirectory()
+
+export const LOOKUP_ROWS = EDIT_ROWS.map((row, index) => ({
+  id: row.id,
+  name: row.name,
+  manager: MANAGERS[index % MANAGERS.length],
+}))
+
+export const LOOKUP_COLUMNS: ColumnDef<any, any>[] = [
+  { id: 'name', accessorKey: 'name', header: 'Name', dataType: 'text' },
+  {
+    id: 'manager',
+    accessorKey: 'manager',
+    header: 'Manager',
+    dataType: 'object',
+    loadOptions: DIRECTORY.load,
+  },
+]

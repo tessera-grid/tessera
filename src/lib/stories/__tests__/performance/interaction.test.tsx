@@ -63,6 +63,7 @@ import { serverRowModel } from '../../../plugins/serverRowModel'
 import { pagination } from '../../../plugins/pagination'
 import { rowDragging } from '../../../plugins/rowDragging'
 import { moveRow } from '../../../plugins/rowDragging/moveRow'
+import { cellEditing } from '../../../plugins/cellEditing'
 import { cellSelection } from '../../../plugins/cellSelection'
 import { rowExpanding } from '../../../plugins/rowExpanding'
 import { rowGrouping } from '../../../plugins/rowGrouping'
@@ -4353,5 +4354,130 @@ describe('Отзывчивость взаимодействий — копиро
       ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,
+  )
+})
+
+// Открытие редакторов по типу (ADR 0175, ED14): поле с поиском на 1000 вариантов и календарь
+// даты против текстового поля той же таблицы.
+const EDIT_OPTIONS = Array.from({ length: 1000 }, (_, i) => ({
+  value: `v${i}`,
+  label: `Value ${String(i).padStart(4, '0')}`,
+}))
+const EDIT_ROWS = Array.from({ length: 200 }, (_, i) => ({
+  id: `r${i}`,
+  name: `Name ${i}`,
+  code: `v${i}`,
+  day: '2026-03-15',
+}))
+const EDIT_COLUMNS = [
+  { id: 'name', accessorKey: 'name', header: 'Name', dataType: 'text' },
+  {
+    id: 'code',
+    accessorKey: 'code',
+    header: 'Code',
+    dataType: 'select',
+    options: EDIT_OPTIONS,
+  },
+  { id: 'day', accessorKey: 'day', header: 'Day', dataType: 'dateString' },
+]
+const EDIT_PLUGINS = [cellEditing({ onCellEdit: () => {} })]
+
+const EditHost = () => {
+  const table = useCreateTable({
+    columns: EDIT_COLUMNS as never,
+    data: EDIT_ROWS,
+    plugins: EDIT_PLUGINS,
+  })
+  return (
+    <div style={{ height: 600 }}>
+      <DataGrid table={table} />
+    </div>
+  )
+}
+
+const editCell = (column: string) =>
+  document.querySelector<HTMLElement>(
+    `.data-grid__body-row[data-row-id="r0"] .data-grid__body-cell[data-column-id="${column}"]`,
+  )!
+/** Редактор ячейки открыт: поле, поле с поиском или календарь. */
+const editorOpen = (column: string) =>
+  column === 'day'
+    ? !!document.querySelector('[data-testid="edit-calendar"]')
+    : !!editCell(column).querySelector('input')
+
+describe('Отзывчивость — редакторы по типу', () => {
+  test(
+    'ED14: открытие редактора с 1000 вариантов и открытие календаря — против текстового поля, гейт против базы',
+    async () => {
+      const measureOpen = async (column: string) => {
+        await render(<EditHost />)
+        await waitForGrid()
+        const open = async () => {
+          editCell(column)
+            .querySelector<HTMLElement>('.cell__button button')!
+            .click()
+          await expect.poll(() => editorOpen(column)).toBe(true)
+        }
+        const close = async () => {
+          document.activeElement?.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+          )
+          await expect.poll(() => editorOpen(column)).toBe(false)
+        }
+        const result = await measureInteractionWork(open, {
+          afterWarmup: close,
+        })
+        expect(editorOpen(column)).toBe(true)
+        await cleanup()
+        return result
+      }
+      for (const [id, column, label] of [
+        ['ED14-select', 'code', 'поле с поиском на 1000 вариантов'],
+        ['ED14-date', 'day', 'календарь даты'],
+      ] as const) {
+        // eslint-disable-next-line no-await-in-loop
+        const runs = await againstBase(variant =>
+          measureOpen(variant ? column : 'name'),
+        )
+        const base = medianRun(runs.base, r => r.longestMs)
+        const editor = medianRun(runs.variant, r => r.longestMs)
+        // Поповер и окно списка или сетка дней месяца с выбором месяца и года — сверх поля
+        // ввода; потолок — в пределах бюджета взаимодействия.
+        const ceiling = ceilingOver(base.longestMs, { ratio: 2, plusMs: 80 })
+        const record = (
+          recordId: string,
+          recordLabel: string,
+          r: typeof base,
+          gated: boolean,
+        ) =>
+          recordPerf({
+            id: recordId,
+            label: recordLabel,
+            operation: 'interaction',
+            size: '200×3',
+            plugins: 'cellEditing',
+            cpuThrottle: CPU_THROTTLE_RATE,
+            metrics: [
+              {
+                kind: 'load',
+                metric: 'longest',
+                valueMs: r.longestMs,
+                targetMs: INTERACTION_BUDGET_MS,
+                ceilingMs: gated ? ceiling : undefined,
+                ...r,
+              },
+            ],
+          })
+        // eslint-disable-next-line no-await-in-loop
+        await record(`${id}-base`, 'текстовое поле', base, false)
+        // eslint-disable-next-line no-await-in-loop
+        await record(id, label, editor, true)
+        expect(
+          editor.longestMs,
+          `${label} longest=${editor.longestMs.toFixed(1)}ms, база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)}ms`,
+        ).toBeLessThanOrEqual(ceiling)
+      }
+    },
+    PERF_TIMEOUT * 4,
   )
 })

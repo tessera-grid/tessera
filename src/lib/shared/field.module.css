@@ -1,0 +1,19 @@
+/* Поле ввода в поповерах календаря и вариантов (ADR 0175) — как поля панели фильтра. */
+.field {
+  box-sizing: border-box;
+  width: 100%;
+  height: 32px;
+  padding: 0 8px;
+  color: inherit;
+  font: inherit;
+  background-color: transparent;
+  border: 1px solid var(--tsr-comp-control-border);
+  border-radius: var(--tsr-comp-control-radius);
+  outline: none;
+}
+
+.field:focus-visible {
+  border-color: var(--tsr-comp-focus-ring);
+  box-shadow: 0 0 0 calc(var(--tsr-comp-focus-ring-width) - 1px)
+    var(--tsr-comp-focus-ring);
+}

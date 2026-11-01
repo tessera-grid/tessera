@@ -88,6 +88,7 @@ export default tseslint.config(
     files: [
       'src/lib/core/virtualization/columnVirtualizer.ts',
       'src/lib/plugins/columnFiltering/OptionFilterPanel.tsx',
+      'src/lib/shared/options/OptionChecklist.tsx',
     ],
     rules: {
       'react-hooks/refs': 'off',

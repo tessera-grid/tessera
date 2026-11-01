@@ -4,23 +4,17 @@
  * поле времени и уход из поповера сохраняют, Escape отменяет; фокус возвращается в ячейку.
  * Модуль ленивый — грузится при первой правке даты (ED7).
  */
-import { type KeyboardEvent, useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 
-import { Popover } from '@base-ui/react/popover'
 import { TZDate } from '@daypicker/react'
-import clsx from 'clsx'
 
 import { commonOptionsOf } from '../../core/commonFeature'
 import { dateTypeInstant } from '../../core/dataTypeFormat'
-import { restoreFocusIfLost } from '../../core/keyboardNavigation/actions'
 import { useLocalization } from '../../core/localization'
 import { cellToWallValue, WALL_TIME } from '../../core/wallTime'
 import { Calendar, TimeField } from '../../shared/calendar/Calendar'
-import { usePortalThemeClass, usePortalThemeData } from '../../ui/theme'
-import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
+import { EditPopover } from './EditPopover'
 import type { CellEditorProps } from './types'
-
-import styles from './DateEditor.module.css'
 
 interface Wall {
   /** `'YYYY-MM-DD'` или `null` — пусто. */
@@ -88,25 +82,11 @@ const valueOf = (
 export const DateEditor = (props: CellEditorProps) => {
   const { cell, label, commit, cancel, setDraft, text } = props
   const labels = useLocalization()
-  const themeClass = usePortalThemeClass()
-  const themeData = usePortalThemeData()
   const { timeZone, dateLocale } = commonOptionsOf(cell.table)
   const base = cell.column.getDataType()?.base ?? 'date'
   const timed = base === 'dateTime' || base === 'dateTimeString'
-  const anchor = useRef<HTMLSpanElement>(null)
-  const popup = useRef<HTMLDivElement>(null)
   const [wall, setWall] = useState(() => wallOf(props, timeZone))
   const original = cell.getValue()
-
-  // Правка закрылась — фокус в ячейку, если он пропал вместе с поповером.
-  useEffect(() => {
-    const element = anchor.current?.closest<HTMLElement>(
-      '.data-grid__body-cell',
-    )
-    return () => {
-      if (element) restoreFocusIfLost(element)
-    }
-  }, [])
 
   const save = (next = wall) => commit(valueOf(base, next, original, timeZone))
   const change = (next: Wall) => {
@@ -114,74 +94,43 @@ export const DateEditor = (props: CellEditorProps) => {
     setDraft(valueOf(base, next, original, timeZone))
   }
 
-  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    // Клавиши поповера — его, а не навигации грида.
-    event.stopPropagation()
-    if (event.key === 'Escape') cancel()
-  }
-
   return (
-    <span ref={anchor} className={styles.anchor}>
-      {text}
-      <Popover.Root
-        open
-        modal={false}
-        onOpenChange={(open, details) => {
-          if (open) return
-          if (details.reason === 'escape-key') cancel()
-          else save()
+    <EditPopover
+      text={text}
+      label={label}
+      testId="edit-date"
+      initialFocus={popup =>
+        popup?.querySelector<HTMLElement>(
+          '[role="grid"] button[tabindex="0"]',
+        ) ?? true
+      }
+      onCancel={cancel}
+      onLeave={() => save()}
+    >
+      <Calendar
+        mode="single"
+        required
+        day={wall.day}
+        timeZone={timeZone}
+        locale={dateLocale}
+        testId="edit-calendar"
+        onDay={day => {
+          const next = { ...wall, day }
+          if (timed) change(next)
+          else save(next)
         }}
-      >
-        <Popover.Portal>
-          <Popover.Positioner
-            anchor={anchor}
-            side="bottom"
-            align="start"
-            sideOffset={POPUP_SIDE_OFFSET}
-            className={clsx(themeClass, styles.positioner)}
-            {...themeData}
-          >
-            <Popover.Popup
-              ref={popup}
-              aria-label={label}
-              initialFocus={() =>
-                popup.current?.querySelector<HTMLElement>(
-                  '[role="grid"] button[tabindex="0"]',
-                ) ?? true
-              }
-              finalFocus={false}
-              className={clsx(themeClass, styles.popup)}
-              data-testid="edit-date"
-              onKeyDown={onKeyDown}
-            >
-              <Calendar
-                mode="single"
-                required
-                day={wall.day}
-                timeZone={timeZone}
-                locale={dateLocale}
-                testId="edit-calendar"
-                onDay={day => {
-                  const next = { ...wall, day }
-                  if (timed) change(next)
-                  else save(next)
-                }}
-              />
-              {timed && (
-                <TimeField
-                  label={labels.filterTime}
-                  value={wall.time}
-                  testId="edit-time"
-                  onChange={time => change({ ...wall, time })}
-                  onKeyDown={event => {
-                    if (event.key === 'Enter') save()
-                  }}
-                />
-              )}
-            </Popover.Popup>
-          </Popover.Positioner>
-        </Popover.Portal>
-      </Popover.Root>
-    </span>
+      />
+      {timed && (
+        <TimeField
+          label={labels.filterTime}
+          value={wall.time}
+          testId="edit-time"
+          onChange={time => change({ ...wall, time })}
+          onKeyDown={event => {
+            if (event.key === 'Enter') save()
+          }}
+        />
+      )}
+    </EditPopover>
   )
 }

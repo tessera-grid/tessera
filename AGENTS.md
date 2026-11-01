@@ -977,8 +977,11 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       «Cells/Editing — Edit a number», «— Toggle a boolean», «— Editor of a data type» (S1, S2, S7);
       визуальный `date-editor` (ED6 — календарь в поясе и на языке таблицы, поле времени, Enter,
       Escape и фокус), модульный `dateEditorChunk` (ED7 — общий календарь `shared/calendar` в
-      ленивом модуле, без модулей фильтров), гайд «— Edit a date» (S3)
-      ([ADR 0175](docs/decisions/0175-data-type-editors.md), этапы 1–2).
+      ленивом модуле, без модулей фильтров), гайд «— Edit a date» (S3); визуальный `option-editors`
+      (ED8–ED12 — поле с поиском, справочник с ожиданием и отказом, список с флажками,
+      1000 вариантов, подписи из словаря, axe и `forced-colors`), ED13 — в `touch`, перф ED14 — в
+      `interaction`, гайды «— Choose an option», «— Choose from a directory», «— Choose several
+      options» (S4–S6) ([ADR 0175](docs/decisions/0175-data-type-editors.md)).
     - _Пределы браузера:_ `browser-limits` (BH1–BH3 — замер предела высоты элемента и
       липкой шапки, раз на документ и только для тела выше 8 млн px; ещё и в
       `test:browsers` — у Firefox свои пределы), перф BH7 — в `first-render`
@@ -1328,7 +1331,7 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
 - **Примечание про линт:** конфиг запускает полный набор `react-hooks@7` (правила React
   Compiler). Узкие исключения — в `eslint.config.js` с причиной:
   `globals`/`immutability` в `__tests__` (хосты отдают тесту экземпляр), `refs` в
-  `columnVirtualizer`/`OptionFilterPanel` (`useVirtualizer` из вендора компилятор не узнаёт как
+  `columnVirtualizer`/`OptionFilterPanel`/`OptionChecklist` (`useVirtualizer` из вендора компилятор не узнаёт как
   несовместимую библиотеку, ADR 0143; переделка — в roadmap). Ref на последнее
   значение — `util/useLatest`, а не запись `ref.current` в рендере; запись в чужой ref —
   `ui/assignRef`. Предупреждения `incompatible-library` (хуки TanStack) ожидаемы.

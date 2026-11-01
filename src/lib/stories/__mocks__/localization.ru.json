@@ -135,6 +135,7 @@
   "editCellValue": "Изменить «{column}»",
   "editInvalidNumber": "Введите число",
   "editInvalidValue": "Недопустимое значение",
+  "editClear": "Очистить значение",
   "saveFailed": "Не удалось сохранить",
   "cellError": "Ошибка в ячейке",
   "announceSaveFailed": "{column}: {error}",

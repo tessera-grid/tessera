@@ -25,6 +25,10 @@ import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 import {
   DATE_COLUMNS,
+  DIRECTORY,
+  LOOKUP_COLUMNS,
+  LOOKUP_ROWS,
+  OPTION_COLUMNS,
   EDIT_COLUMNS,
   EDIT_ROWS,
   EDIT_TYPES,
@@ -1018,8 +1022,8 @@ export const EditingTypeEditor: StoryObj<StoryProps> = {
   },
 }
 
-const dateCellOf = (column: string) =>
-  document.querySelector<HTMLElement>(
+const dateCellOf = (root: ParentNode, column: string) =>
+  root.querySelector<HTMLElement>(
     `.data-grid__body-row[data-row-id="${PRODUCT_ROW}"] .data-grid__body-cell[data-column-id="${column}"]`,
   )
 const datePopup = () =>
@@ -1030,8 +1034,8 @@ const dateDay = (iso: string) =>
 const dateTime = () =>
   datePopup()?.querySelector<HTMLInputElement>('[data-testid="edit-time"]') ??
   null
-const openDateEdit = (column: string) =>
-  dateCellOf(column)
+const openDateEdit = (root: ParentNode, column: string) =>
+  dateCellOf(root, column)
     ?.querySelector<HTMLElement>('.cell__button button')
     ?.click()
 
@@ -1050,18 +1054,18 @@ const EDIT_DATE: readonly GuideStoryStep[] = [
     states: ['body.editing', 'overlay.dateEditor'],
     enter: untilDone(
       () => !!dateDay('2026-01-01'),
-      () => openDateEdit('released'),
+      root => openDateEdit(root, 'released'),
     ),
   },
   {
     title: 'День выбран',
     hint: 'Пользователь выбрал другой день. Календарь закрылся, в ячейке новая дата.',
     enter: untilDone(
-      () => !datePopup() && /\b20\b/.test(dateText('released')),
-      () => {
+      root => !datePopup() && /\b20\b/.test(dateText(root, 'released')),
+      root => {
         const day = dateDay(NEW_DAY)
         if (day) day.click()
-        else if (!datePopup()) openDateEdit('released')
+        else if (!datePopup()) openDateEdit(root, 'released')
       },
     ),
   },
@@ -1070,10 +1074,10 @@ const EDIT_DATE: readonly GuideStoryStep[] = [
     hint: 'Пользователь открыл правку времени обновления. Под календарём поле времени — день и время на часах пояса таблицы.',
     states: ['body.editing', 'overlay.dateEditor'],
     enter: untilDone(
-      () => !!dateTime(),
-      () => {
+      root => !!dateTime(),
+      root => {
         if (datePopup()) return
-        openDateEdit('updatedAt')
+        openDateEdit(root, 'updatedAt')
       },
     ),
   },
@@ -1081,10 +1085,10 @@ const EDIT_DATE: readonly GuideStoryStep[] = [
     title: 'Время сохранено',
     hint: 'Пользователь выбрал день, набрал время и нажал Enter. Календарь закрылся, в ячейке новые день и время.',
     enter: untilDone(
-      () => !datePopup() && /:30/.test(dateText('updatedAt')),
-      () => {
+      root => !datePopup() && /:30/.test(dateText(root, 'updatedAt')),
+      root => {
         const time = dateTime()
-        if (!time) return openDateEdit('updatedAt')
+        if (!time) return openDateEdit(root, 'updatedAt')
         const day = dateDay(NEW_MOMENT_DAY)
         if (
           day &&
@@ -1099,8 +1103,9 @@ const EDIT_DATE: readonly GuideStoryStep[] = [
 ]
 
 /** Текст ячейки даты без кнопки правки: новый день — число 20, новое время — минуты 30. */
-const dateText = (column: string) => {
-  const copy = dateCellOf(column)?.cloneNode(true) as HTMLElement | undefined
+const dateText = (root: ParentNode, column: string) => {
+  const copy = dateCellOf(root, column)?.cloneNode(true) as
+    HTMLElement | undefined
   copy?.querySelectorAll('.cell__button').forEach(button => button.remove())
   return copy?.textContent ?? ''
 }
@@ -1136,7 +1141,8 @@ export const EditingDate: StoryObj<StoryProps> = {
     })
     await step(EDIT_DATE[2]!.title, async () => {
       await guideNext(canvas)
-      await until(() => expect(datePopup()).toBeNull())
+      await until(() => expect(dateText(canvas, 'released')).toMatch(/\b20\b/))
+      expect(datePopup()).toBeNull()
       expect(consoleText()).toContain(`value:"${NEW_DAY}"`)
     })
     await step(EDIT_DATE[3]!.title, async () => {
@@ -1145,8 +1151,343 @@ export const EditingDate: StoryObj<StoryProps> = {
     })
     await step(EDIT_DATE[4]!.title, async () => {
       await guideNext(canvas)
-      await until(() => expect(datePopup()).toBeNull())
+      // Черновик виден в ячейке ещё до сохранения: ждём и закрытия календаря.
+      await until(() => {
+        expect(datePopup()).toBeNull()
+        expect(dateText(canvas, 'updatedAt')).toMatch(/:30/)
+      })
       expect(consoleText()).toMatch(/value:"2026-10-02T\d\d:30:00\.000Z"/)
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0175: варианты -------------------------------------------------------------
+
+/** Последний на странице: таблица прошлой истории каталога может ещё не уйти. */
+const lastOf = <T extends Element>(selector: string) =>
+  [...document.querySelectorAll<T>(selector)].at(-1) ?? null
+const optionCellOf = (root: ParentNode, column: string) =>
+  root.querySelector<HTMLElement>(
+    `.data-grid__body-row[data-row-id="${PRODUCT_ROW}"] .data-grid__body-cell[data-column-id="${column}"]`,
+  )
+const optionCellText = (root: ParentNode, column: string) => {
+  const copy = optionCellOf(root, column)?.cloneNode(true) as
+    HTMLElement | undefined
+  copy?.querySelectorAll('.cell__button').forEach(button => button.remove())
+  return copy?.textContent?.trim() ?? ''
+}
+const openOptionEdit = (root: ParentNode, column: string) =>
+  optionCellOf(root, column)
+    ?.querySelector<HTMLElement>('.cell__button button')
+    ?.click()
+const selectField = () =>
+  lastOf<HTMLInputElement>('[data-testid="edit-select"]')
+const optionsPopup = () => lastOf<HTMLElement>('[data-testid="edit-options"]')
+const optionItem = (value: string) =>
+  optionsPopup()?.querySelector<HTMLElement>(`[data-value="${value}"]`) ?? null
+const highlightedValue = () =>
+  optionsPopup()
+    ?.querySelector('[data-highlighted]')
+    ?.getAttribute('data-value') ?? null
+
+const STATUS_QUERY = 'arch'
+
+const EDIT_SELECT: readonly GuideStoryStep[] = [
+  {
+    title: 'Статусы товаров',
+    hint: 'Статус — один вариант из списка. Его можно править: при наведении на ячейку появляется кнопка правки.',
+  },
+  {
+    title: 'Поле с поиском',
+    hint: 'Пользователь нажал кнопку правки статуса. В ячейке поле поиска, под ним все варианты, текущий отмечен.',
+    states: ['body.editing', 'overlay.optionEditor'],
+    enter: untilDone(
+      root => !!optionItem('active'),
+      root => {
+        if (!selectField()) openOptionEdit(root, 'status')
+      },
+    ),
+  },
+  {
+    title: 'Поиск сужает список',
+    hint: 'Пользователь набрал начало подписи. В списке остались только подходящие варианты.',
+    states: ['body.editing', 'overlay.optionEditor'],
+    enter: untilDone(
+      root => !optionItem('active') && !!optionItem('archived'),
+      root => {
+        const field = selectField()
+        if (!field) return openOptionEdit(root, 'status')
+        if (field.value !== STATUS_QUERY) typeInto(field, STATUS_QUERY)
+      },
+    ),
+  },
+  {
+    title: 'Вариант сохранён',
+    hint: 'Пользователь нажал Enter. Поле закрылось, в ячейке новый статус.',
+    enter: untilDone(
+      root => !selectField() && optionCellText(root, 'status') === 'Archived',
+      root => {
+        const field = selectField()
+        if (!field) return openOptionEdit(root, 'status')
+        if (field.value !== STATUS_QUERY) return typeInto(field, STATUS_QUERY)
+        // Стрелка подсвечивает найденный вариант, Enter выбирает его.
+        if (highlightedValue() !== 'archived') press(field, 'ArrowDown')
+        else press(field, 'Enter')
+      },
+    ),
+  },
+]
+
+const optionArgs = {
+  ...productArgs,
+  columnsOverride: OPTION_COLUMNS,
+  editableColumns: ['status', 'tags'],
+} satisfies Partial<StoryProps>
+
+/** ADR 0175, S4: пользователь выбирает вариант с поиском. */
+export const EditingSelect: StoryObj<StoryProps> = {
+  name: 'Choose an option',
+  parameters: { scenario: '0175/S4', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Выбор варианта"
+      steps={EDIT_SELECT}
+      args={guideArgs(optionArgs, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(EDIT_SELECT[0]!.title, async () => {
+      await waitForRows(canvas)
+      expect(optionCellText(canvas, 'status')).toBe('Draft')
+    })
+    await step(EDIT_SELECT[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(optionItem('active')).not.toBeNull())
+      expect(optionItem('draft')).toHaveAttribute('data-selected')
+    })
+    await step(EDIT_SELECT[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => {
+        expect(optionItem('archived')).not.toBeNull()
+        expect(optionItem('active')).toBeNull()
+      })
+    })
+    await step(EDIT_SELECT[3]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(optionCellText(canvas, 'status')).toBe('Archived'),
+      )
+      expect(selectField()).toBeNull()
+      expect(consoleText()).toContain('value:"archived"')
+      await settle()
+    })
+  },
+}
+
+const lookupStatus = () =>
+  optionsPopup()?.querySelector('[aria-busy="true"]') ? 'loading' : null
+const lookupFailed = () =>
+  !!optionsPopup()?.querySelector('[data-testid="edit-options-retry"]')
+const NEW_MANAGER = 'm4'
+
+const EDIT_LOOKUP: readonly GuideStoryStep[] = [
+  {
+    title: 'Менеджеры из справочника',
+    hint: 'Менеджер — запись из справочника на сервере: в ячейке его имя. Его можно править: при наведении на ячейку появляется кнопка правки.',
+  },
+  {
+    title: 'Справочник загружается',
+    hint: 'Пользователь нажал кнопку правки. Сервер ещё не ответил: под полем — загрузка вариантов.',
+    states: ['body.editing', 'overlay.optionEditor'],
+    enter: untilDone(
+      root => lookupStatus() === 'loading',
+      root => {
+        DIRECTORY.hold()
+        if (!selectField()) openOptionEdit(root, 'manager')
+      },
+    ),
+  },
+  {
+    title: 'Сервер отказал',
+    hint: 'Справочник не загрузился. Под полем — причина и кнопка повтора.',
+    states: ['body.editing', 'overlay.optionEditor'],
+    enter: untilDone(
+      root => lookupFailed(),
+      root => {
+        DIRECTORY.hold()
+        if (!selectField()) return openOptionEdit(root, 'manager')
+        DIRECTORY.refuse()
+      },
+    ),
+  },
+  {
+    title: 'Справочник загружен',
+    hint: 'Пользователь нажал повтор, сервер ответил. В списке записи справочника, текущая отмечена.',
+    states: ['body.editing', 'overlay.optionEditor'],
+    enter: untilDone(
+      root => !!optionItem(NEW_MANAGER),
+      root => {
+        if (!selectField()) {
+          DIRECTORY.answer()
+          return openOptionEdit(root, 'manager')
+        }
+        DIRECTORY.answer()
+        optionsPopup()
+          ?.querySelector<HTMLElement>('[data-testid="edit-options-retry"]')
+          ?.click()
+      },
+    ),
+  },
+  {
+    title: 'Запись сохранена',
+    hint: 'Пользователь выбрал другого менеджера. Поле закрылось, в ячейке его имя, а в данных — вся запись.',
+    enter: untilDone(
+      root => !selectField() && optionCellText(root, 'manager') === 'Dana',
+      root => {
+        DIRECTORY.answer()
+        if (!selectField()) return openOptionEdit(root, 'manager')
+        optionItem(NEW_MANAGER)?.click()
+      },
+    ),
+  },
+]
+
+/** ADR 0175, S5: пользователь выбирает запись справочника с сервера — ответ и отказ загрузки. */
+export const EditingLookup: StoryObj<StoryProps> = {
+  name: 'Choose from a directory',
+  parameters: { scenario: '0175/S5', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Выбор из справочника"
+      steps={EDIT_LOOKUP}
+      args={guideArgs(
+        {
+          ...productArgs,
+          columnsOverride: LOOKUP_COLUMNS,
+          dataOverride: LOOKUP_ROWS,
+          editableColumns: ['manager'],
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(EDIT_LOOKUP[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(optionCellText(canvas, 'manager')).toBe('Ann'))
+    })
+    await step(EDIT_LOOKUP[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(lookupStatus()).toBe('loading'))
+    })
+    await step(EDIT_LOOKUP[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(lookupFailed()).toBe(true))
+    })
+    await step(EDIT_LOOKUP[3]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(optionItem(NEW_MANAGER)).not.toBeNull())
+      expect(optionItem('m1')).toHaveAttribute('data-selected')
+    })
+    await step(EDIT_LOOKUP[4]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(optionCellText(canvas, 'manager')).toBe('Dana'))
+      expect(selectField()).toBeNull()
+      expect(consoleText()).toMatch(/value:\{id:"m4",name:"Dana"\}/)
+      await settle()
+    })
+  },
+}
+
+const multiPopup = () => lastOf<HTMLElement>('[data-testid="edit-multiselect"]')
+const tagBox = (value: string) =>
+  multiPopup()?.querySelector<HTMLElement>(
+    `[data-value="${value}"] [role="checkbox"]`,
+  ) ?? null
+const tagChecked = (value: string) =>
+  tagBox(value)?.getAttribute('aria-checked') === 'true'
+/** Метки первого товара: «new» и «eco» отмечены, «sale» — нет. */
+const ADDED_TAG = 'sale'
+
+const EDIT_MULTI: readonly GuideStoryStep[] = [
+  {
+    title: 'Метки товаров',
+    hint: 'Метки — несколько вариантов из списка. Их можно править: при наведении на ячейку появляется кнопка правки.',
+  },
+  {
+    title: 'Список с флажками',
+    hint: 'Пользователь нажал кнопку правки меток. Под ячейкой поиск и список с флажками, отмечены метки из ячейки.',
+    states: ['body.editing', 'overlay.multiSelectEditor'],
+    enter: untilDone(
+      root => !!tagBox('new'),
+      root => {
+        if (!multiPopup()) openOptionEdit(root, 'tags')
+      },
+    ),
+  },
+  {
+    title: 'Метка отмечена',
+    hint: 'Пользователь отметил ещё одну метку. Под списком ячейка показывает черновик, но правка ещё не сохранена: значение уйдёт в данные по Enter.',
+    states: ['body.editing', 'overlay.multiSelectEditor'],
+    enter: untilDone(
+      root => tagChecked(ADDED_TAG),
+      root => {
+        if (!multiPopup()) return openOptionEdit(root, 'tags')
+        tagBox(ADDED_TAG)?.click()
+      },
+    ),
+  },
+  {
+    title: 'Метки сохранены',
+    hint: 'Пользователь нажал Enter. Список закрылся, в ячейке новые метки.',
+    enter: untilDone(
+      root => !multiPopup() && optionCellText(root, 'tags').includes('Sale'),
+      root => {
+        if (!multiPopup()) return openOptionEdit(root, 'tags')
+        if (!tagChecked(ADDED_TAG)) return tagBox(ADDED_TAG)?.click()
+        const search = multiPopup()!.querySelector<HTMLInputElement>('input')!
+        press(search, 'Enter')
+      },
+    ),
+  },
+]
+
+/** ADR 0175, S6: пользователь выбирает несколько вариантов в списке с флажками. */
+export const EditingMultiSelect: StoryObj<StoryProps> = {
+  name: 'Choose several options',
+  parameters: { scenario: '0175/S6', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Выбор нескольких вариантов"
+      steps={EDIT_MULTI}
+      args={guideArgs(optionArgs, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(EDIT_MULTI[0]!.title, async () => {
+      await waitForRows(canvas)
+      expect(optionCellText(canvas, 'tags')).not.toContain('Sale')
+    })
+    await step(EDIT_MULTI[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(tagChecked('new')).toBe(true))
+      expect(tagChecked(ADDED_TAG)).toBe(false)
+    })
+    await step(EDIT_MULTI[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(tagChecked(ADDED_TAG)).toBe(true))
+      expect(consoleText()).not.toContain('onCellEdit')
+    })
+    await step(EDIT_MULTI[3]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => {
+        expect(multiPopup()).toBeNull()
+        expect(optionCellText(canvas, 'tags')).toContain('Sale')
+      })
       await settle()
     })
   },

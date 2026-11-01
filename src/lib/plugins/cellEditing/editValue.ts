@@ -27,11 +27,15 @@ export interface EditTable {
 
 const DEFAULT_LOCALE = 'en-US'
 
-const DATE_BASES: readonly string[] = [
+/** Без поля ввода: текст значения — как в ячейке. */
+const SHOWN_BASES: readonly string[] = [
   'date',
   'dateTime',
   'dateString',
   'dateTimeString',
+  'select',
+  'multiSelect',
+  'object',
 ]
 
 /** Число в поле — десятичный знак языка таблицы, без разрядов и округления (ED4). */
@@ -45,8 +49,8 @@ export const columnOf = (table: unknown, columnId: string) =>
   (table as EditTable).getColumn?.(columnId)
 
 /**
- * Текст значения в правке: числа — по языку таблицы, даты — как в ячейке, остальное — как
- * есть.
+ * Текст значения в правке: числа — по языку таблицы, даты и варианты — как в ячейке,
+ * остальное — как есть.
  */
 export const editTextOf = (
   table: unknown,
@@ -56,7 +60,7 @@ export const editTextOf = (
   if (value === null || value === undefined) return ''
   const column = columnOf(table, columnId)
   const base = column?.getDataType()?.base
-  if (base && DATE_BASES.includes(base))
+  if (base && SHOWN_BASES.includes(base))
     return formatDataTypeValue(
       table as never,
       column as never,

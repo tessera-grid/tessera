@@ -15,6 +15,7 @@ import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import { columnSorting } from '../../../plugins/columnSorting'
 import {
+  cellEditing,
   columnFiltering,
   columnPinning,
   columnSizing,
@@ -965,6 +966,100 @@ describe('Включённые действия в ряду заголовка (
       )!
       await touch.realTap(center(cell))
       await expect.poll(row).toEqual(['pin', 'menu'])
+    } finally {
+      await screen.unmount()
+    }
+  })
+})
+
+describe('Редакторы по типу пальцем (ADR 0175)', () => {
+  test('ED13: касания — календарь, поле с поиском и список с флажками правятся пальцем', async () => {
+    const saved: unknown[] = []
+    const EditGrid = () => {
+      const table = useCreateTable({
+        columns: [
+          {
+            id: 'day',
+            accessorKey: 'day',
+            header: 'Day',
+            dataType: 'dateString',
+          },
+          {
+            id: 'status',
+            accessorKey: 'status',
+            header: 'Status',
+            dataType: 'select',
+            options: [
+              { value: 'draft', label: 'Draft' },
+              { value: 'active', label: 'Active' },
+            ],
+          },
+          {
+            id: 'tags',
+            accessorKey: 'tags',
+            header: 'Tags',
+            dataType: 'multiSelect',
+            options: [
+              { value: 'new', label: 'New' },
+              { value: 'sale', label: 'Sale' },
+            ],
+          },
+        ] as never,
+        data: [{ id: 'r1', day: '2026-03-15', status: 'draft', tags: ['new'] }],
+        plugins: [
+          cellEditing({ onCellEdit: commit => void saved.push(commit.value) }),
+        ],
+      })
+      return (
+        <div style={{ height: 400 }}>
+          <DataGrid table={table} />
+        </div>
+      )
+    }
+    const screen = await render(<EditGrid />)
+    await waitForGrid()
+    // Строку — заново: после сохранения её узел может смениться.
+    const row = () => rowAt(0)
+    const openEdit = async (columnId: string) => {
+      await tapCell(row(), columnId)
+      const button = () =>
+        cellOf(row(), columnId).querySelector<HTMLElement>(
+          '.cell__button button',
+        )
+      await expect.poll(() => button() && shown(button()!)).toBe(true)
+      // Кнопка раскрывается по ширине — касание в её центр после конца раскрытия.
+      await settle(cellOf(row(), columnId))
+      await touch.realTap(center(button()!))
+    }
+    try {
+      await openEdit('day')
+      const day = () =>
+        document.querySelector<HTMLElement>(
+          '[data-testid="edit-date"] [data-day="2026-03-20"] button',
+        )
+      await expect.poll(day).not.toBeNull()
+      await touch.realTap(center(day()!))
+      await expect.poll(() => saved.at(-1)).toBe('2026-03-20')
+
+      await openEdit('status')
+      const active = () =>
+        document.querySelector<HTMLElement>(
+          '[data-testid="edit-options"] [data-value="active"]',
+        )
+      await expect.poll(active).not.toBeNull()
+      await touch.realTap(center(active()!))
+      await expect.poll(() => saved.at(-1)).toBe('active')
+
+      await openEdit('tags')
+      const sale = () =>
+        document.querySelector<HTMLElement>(
+          '[data-testid="edit-multiselect"] [data-value="sale"] [role="checkbox"]',
+        )
+      await expect.poll(sale).not.toBeNull()
+      await touch.realTap(center(sale()!))
+      await expect.poll(() => sale()?.getAttribute('aria-checked')).toBe('true')
+      await tapCell(row(), 'day')
+      await expect.poll(() => saved.at(-1)).toEqual(['new', 'sale'])
     } finally {
       await screen.unmount()
     }

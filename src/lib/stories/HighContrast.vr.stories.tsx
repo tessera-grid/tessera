@@ -4261,6 +4261,84 @@ export const HighContrastEditingDateStep5 = {
   tags: ['!test'],
 }
 
+export const HighContrastEditingSelectStep1 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingSelect, 1),
+  name: 'Cells/Editing — Choose an option, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingSelectStep2 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingSelect, 2),
+  name: 'Cells/Editing — Choose an option, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingSelectStep3 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingSelect, 3),
+  name: 'Cells/Editing — Choose an option, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingSelectStep4 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingSelect, 4),
+  name: 'Cells/Editing — Choose an option, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingLookupStep1 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingLookup, 1),
+  name: 'Cells/Editing — Choose from a directory, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingLookupStep2 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingLookup, 2),
+  name: 'Cells/Editing — Choose from a directory, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingLookupStep3 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingLookup, 3),
+  name: 'Cells/Editing — Choose from a directory, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingLookupStep4 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingLookup, 4),
+  name: 'Cells/Editing — Choose from a directory, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingLookupStep5 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingLookup, 5),
+  name: 'Cells/Editing — Choose from a directory, шаг 5',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingMultiSelectStep1 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingMultiSelect, 1),
+  name: 'Cells/Editing — Choose several options, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingMultiSelectStep2 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingMultiSelect, 2),
+  name: 'Cells/Editing — Choose several options, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingMultiSelectStep3 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingMultiSelect, 3),
+  name: 'Cells/Editing — Choose several options, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingMultiSelectStep4 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingMultiSelect, 4),
+  name: 'Cells/Editing — Choose several options, шаг 4',
+  tags: ['!test'],
+}
+
 export const HighContrastCellSelectionRangeStep1 = {
   ...twinStep(
     cellsSelectionStories,

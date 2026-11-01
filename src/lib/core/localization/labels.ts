@@ -225,6 +225,8 @@ export interface TableLabels {
   editInvalidNumber: string
   /** Ошибка поля правки: набранное не разбирается в тип колонки (ADR 0175, ED2) */
   editInvalidValue: string
+  /** Пункт поля с поиском, очищающий значение ячейки (ADR 0175, ED8) */
+  editClear: string
   /** Текст отказа сохранения ячейки, если сервер не прислал свой (ADR 0041) */
   saveFailed: string
   /** Доступное имя точки ошибки ячейки без кнопки правки (ADR 0150) */
@@ -541,6 +543,7 @@ export const DEFAULT_LABELS = {
   editCellValue: 'Edit {column}',
   editInvalidNumber: 'Enter a number',
   editInvalidValue: 'Invalid value',
+  editClear: 'Clear value',
   saveFailed: "Couldn't save",
   cellError: 'Cell error',
   announceSaveFailed: '{column}: {error}',

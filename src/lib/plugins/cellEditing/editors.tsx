@@ -2,7 +2,7 @@
  * Встроенные редакторы по базовому типу колонки и выбор редактора (ADR 0175, §2–§3):
  * `editor` колонки, затем типа, затем аргумент плагина, затем встроенный. Текст и числа —
  * поле ввода, булево — без поля: действие правки сразу переключает значение, даты —
- * поповер с календарём.
+ * поповер с календарём, варианты — поле с поиском или список с флажками.
  */
 import {
   Suspense,
@@ -128,6 +128,26 @@ const dateEditor: CellEditor = props => (
   </Suspense>
 )
 
+// Варианты — свой ленивый модуль: поле с поиском и список с флажками (ED8–ED9).
+const SelectEditor = preloadable(() =>
+  import('./OptionEditors').then(module => module.SelectEditor),
+)
+const MultiSelectEditor = preloadable(() =>
+  import('./OptionEditors').then(module => module.MultiSelectEditor),
+)
+
+const selectEditor: CellEditor = props => (
+  <Suspense fallback={<span className={styles.pending}>{props.text}</span>}>
+    <SelectEditor.Component {...props} />
+  </Suspense>
+)
+
+const multiSelectEditor: CellEditor = props => (
+  <Suspense fallback={<span className={styles.pending}>{props.text}</span>}>
+    <MultiSelectEditor.Component {...props} />
+  </Suspense>
+)
+
 interface EditorColumn {
   id: string
   columnDef: { editor?: CellEditor }
@@ -161,6 +181,11 @@ export const editorOf = (
     case 'dateString':
     case 'dateTimeString':
       return dateEditor
+    case 'select':
+    case 'object':
+      return selectEditor
+    case 'multiSelect':
+      return multiSelectEditor
     default:
       return textEditor
   }
