@@ -1,5 +1,6 @@
 import { commands, page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
+import { useState } from 'react'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import { revealedHandleWidth } from '../helpers'
 
@@ -19,8 +20,10 @@ import { HeadCellView } from '../../../grid/HeadCell'
 import { HeadSelectionComponent } from '../../../plugins/rowSelection/HeadSelectionComponent'
 import { RowSelectionComponent } from '../../../plugins/rowSelection/RowSelectionComponent'
 import {
+  cellEditing,
   columnSorting,
   headerActionMenu,
+  rowSelection,
   rowExpanding,
   serverRowModel,
   treeLines,
@@ -443,6 +446,49 @@ describe('Счётчики работы', () => {
     widen(table())
     await expect.poll(content).toBe('400')
     await userEvent.keyboard('{Escape}')
+  })
+})
+
+/** Перерисовка приложения: каждый рендер даёт плагинам новые функции-колбэки. */
+let rerenderApp = () => {}
+const CallbacksApp = () => {
+  const [tick, setTick] = useState(0)
+  rerenderApp = () => setTick(value => value + 1)
+  return (
+    <Grid
+      toggles={{}}
+      plugins={[
+        rowSelection({ onSelectRow: () => void tick }),
+        cellEditing({ onCellEdit: () => void tick }),
+      ]}
+    />
+  )
+}
+
+describe('Счётчики работы — бизнес-колбэки (ADR 0027)', () => {
+  test('H7: новый бизнес-колбэк в аргументах фабрики на каждом рендере приложения не перерисовывает строк, ячеек и шапки грида', async () => {
+    await render(<CallbacksApp />)
+    await waitForQuietDocument()
+    const grid = document.querySelector<HTMLElement>('.data-grid__container')!
+    await expect.poll(() => checkbox(2)).toBeTruthy()
+    const work = await measureWork(grid, () => {
+      rerenderApp()
+      rerenderApp()
+    })
+    expect(work.commits, describeWork(work)).toBeGreaterThan(0)
+    expect(
+      renders(
+        work,
+        BodyRow,
+        BodyRowCells,
+        BodyCell,
+        HeadCellView,
+        FooterCell,
+        RowSelectionComponent,
+        HeadSelectionComponent,
+      ),
+      describeWork(work),
+    ).toBe(0)
   })
 })
 

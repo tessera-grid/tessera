@@ -4,14 +4,7 @@
  * сразу, поиск — через `debounceMs`. У справочника с `loadOptions` варианты
  * загружаются по поиску; прошлый запрос отменяется. Модуль ленивый.
  */
-import {
-  type RefObject,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import clsx from 'clsx'
 
@@ -23,6 +16,7 @@ import {
 import { OptionSearch } from '../../shared/options/OptionSearch'
 import { useLoadedOptions } from '../../shared/options/useLoadedOptions'
 import { setColumnFilterByUser } from '../../shared/filtering/filtering'
+import { assignRef } from '../../ui/assignRef'
 import { useLocalization } from '../../core/localization'
 import { useDebouncedCallback } from '../../util/useDebouncedCallback'
 import { Button } from '../../ui/Button'
@@ -94,8 +88,6 @@ export const OptionFilterPanel = ({
   const labels = useLocalization()
   const listId = useId()
   const rootRef = useRef<HTMLDivElement>(null)
-  const searchRef =
-    controls.initialFocusRef as RefObject<HTMLInputElement | null>
   const t = table as object
   const def = columnFilterDefOf(column as never)
   const loadOptions = typeof def === 'object' ? def.loadOptions : undefined
@@ -180,10 +172,11 @@ export const OptionFilterPanel = ({
     const root = rootRef.current
     if (!root || root.contains(document.activeElement)) return
     ;(
-      searchRef.current ??
-      root.querySelector<HTMLElement>('[data-testid="filter-operator"]')
+      root.querySelector<HTMLElement>(
+        '[data-testid="filter-options-search"]',
+      ) ?? root.querySelector<HTMLElement>('[data-testid="filter-operator"]')
     )?.focus()
-  }, [searchRef])
+  }, [])
 
   const operators = type === 'multiselect' ? MULTI_OPERATORS : OPERATORS
   const statusLabels = {
@@ -219,7 +212,7 @@ export const OptionFilterPanel = ({
             }}
           >
             <input
-              ref={searchRef}
+              ref={node => assignRef(controls.initialFocusRef, node)}
               className={panelStyles.input}
               type="text"
               value={search}

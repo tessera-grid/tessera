@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 
 import {
   type VirtualItem,
@@ -19,15 +19,26 @@ export interface ColumnVirtualizerParams {
 
 const COLUMNS_OVERSCAN = 4
 
-const sameWindow = (a: VirtualItem[], b: VirtualItem[]) =>
-  a.length === b.length &&
-  a.every(
-    (item, i) =>
-      item.key === b[i].key &&
-      item.index === b[i].index &&
-      item.start === b[i].start &&
-      item.size === b[i].size,
-  )
+/** Состав окна: ключ, индекс, начало и ширина каждой колонки. */
+const windowOf = (items: VirtualItem[]) =>
+  items
+    .map(({ key, index, start, size }) => `${key}:${index}:${start}:${size}`)
+    .join(',')
+
+/** Начала колонок с шириной из `sizes` у тех, что в нём есть, иначе — текущей. */
+const startsOf = (
+  columns: Column<any, any, unknown>[],
+  origin: number,
+  sizes?: Map<string, number>,
+) => {
+  const starts: number[] = []
+  let offset = origin
+  for (const column of columns) {
+    starts.push(offset)
+    offset += sizes?.get(column.id) ?? column.getSize()
+  }
+  return { starts, end: offset }
+}
 
 export const useColumnVirtualizer = ({
   table,
@@ -40,23 +51,21 @@ export const useColumnVirtualizer = ({
     table as never,
   ).columns
 
-  const columnsRef = useRef(displayColumns)
-  columnsRef.current = displayColumns
-
+  // Порядок отображения мемоизирован (`getDisplayColumns`): колбэки новые только при его смене.
   const getEstimateSize = useCallback(
-    (index: number) => columnsRef.current[index].getSize(),
-    [],
+    (index: number) => displayColumns[index].getSize(),
+    [displayColumns],
   )
 
   const getItemKey = useCallback(
-    (index: number) => columnsRef.current[index].id,
-    [],
+    (index: number) => displayColumns[index].id,
+    [displayColumns],
   )
 
   const rangeExtractor = useColumnRangeExtractor({ table })
 
   const virtualizer = useVirtualizer<HTMLDivElement, HTMLDivElement>({
-    count: columnsRef.current.length,
+    count: displayColumns.length,
     estimateSize: getEstimateSize,
     getItemKey,
     getScrollElement,
@@ -71,6 +80,13 @@ export const useColumnVirtualizer = ({
   const isResizingColumn = useTableState(
     table,
     state => (state as any).columnResizing?.isResizingColumn ?? false,
+  )
+  // Ширины протягиваемых колонок на начало протяжки — в них стоит последняя отрисовка тела.
+  const sizingStart = useTableState(
+    table,
+    state =>
+      (state as any).columnResizing?.columnSizingStart as
+        Array<[string, number]> | undefined,
   )
   // Ширина, заданная без протяжки (стрелки сплиттера, меню грипа, сброс), тоже
   // сдвигает соседние колонки.
@@ -106,37 +122,32 @@ export const useColumnVirtualizer = ({
     }
   }, [isResizingColumn, columnSizing, virtualizer])
 
-  // Пока тянут грип, тело и шапка не перерисовываются (MemoizedBody) и стоят на
-  // смещениях последней отрисовки до протяжки — смонтированные колонки сдвигаются на
-  // разницу текущего смещения и того (CR18). Снимок — копия: кэш размеров
-  // react-virtual переиспользует один массив и меняет его при пересчёте.
   // Тот же состав окна — прежний массив: строки тела мемоизированы по нему, а
   // react-virtual отдаёт новый при любом пересчёте диапазона (ADR 0099, PF5, PF10).
   const items = virtualizer.getVirtualItems()
-  const stable = useRef(items)
-  if (!sameWindow(stable.current, items)) stable.current = items
-  const virtualColumns = stable.current
-  const rendered = useRef<{ index: number; start: number }[]>([])
-  if (!isResizingColumn) {
-    rendered.current = virtualColumns.map(({ index, start }) => ({
-      index,
-      start,
-    }))
-  }
+  const windowKey = windowOf(items)
+  // Память по составу окна, а не по массиву: `items` новый при каждом пересчёте.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const virtualColumns = useMemo(() => items, [windowKey])
+
+  // Пока тянут грип, тело и шапка не перерисовываются (MemoizedBody): смонтированы колонки
+  // окна начала протяжки, даже если колонки прокрутили (CR21), и стоят на смещениях,
+  // посчитанных с ширинами начала протяжки, — сдвигаются на разницу текущего начала и
+  // того (CR18).
+  const [dragWindow, setDragWindow] = useState<VirtualItem[] | null>(null)
+  if (isResizingColumn && !dragWindow) setDragWindow(virtualColumns)
+  if (!isResizingColumn && dragWindow) setDragWindow(null)
   const columnShifts: Record<string, number> = {}
   let bodyWidth = virtualizer.getTotalSize()
   if (isResizingColumn) {
     const { paddingStart = 0, scrollMargin = 0 } = virtualizer.options
-    const starts: number[] = []
-    let offset = paddingStart + scrollMargin
-    for (const column of columnsRef.current) {
-      starts.push(offset)
-      offset += column.getSize()
-    }
-    bodyWidth = offset - scrollMargin
-    for (const { index, start } of rendered.current) {
-      const column = columnsRef.current[index]
-      const shift = column ? starts[index] - start : 0
+    const origin = paddingStart + scrollMargin
+    const now = startsOf(displayColumns, origin)
+    const before = startsOf(displayColumns, origin, new Map(sizingStart))
+    bodyWidth = now.end - scrollMargin
+    for (const { index } of dragWindow ?? virtualColumns) {
+      const column = displayColumns[index]
+      const shift = column ? now.starts[index] - before.starts[index] : 0
       if (column && shift !== 0) columnShifts[column.id] = shift
     }
   }

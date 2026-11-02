@@ -79,14 +79,21 @@ export const realMouseMove: BrowserCommand<
 
 // Настоящая прокрутка колесом (ADR 0008, FS7): `ticks` щелчков по `deltaY` px через
 // `intervalMs` по часам Node, не дожидаясь обработки каждого: пока главный поток
-// страницы стоит, щелчки копятся и приходят пачкой, как у пользователя.
+// страницы стоит, щелчки копятся и приходят пачкой, как у пользователя. `deltaX` —
+// щелчки по горизонтали.
 export const realWheel: BrowserCommand<
-  [at: Point, deltaY: number, ticks: number, intervalMs: number]
-> = async ({ page }, at, deltaY, ticks, intervalMs) => {
+  [
+    at: Point,
+    deltaY: number,
+    ticks: number,
+    intervalMs: number,
+    deltaX?: number,
+  ]
+> = async ({ page }, at, deltaY, ticks, intervalMs, deltaX = 0) => {
   await page.mouse.move(...(await toPage(page))(at))
   const sent: Promise<void>[] = []
   for (let tick = 0; tick < ticks; tick++) {
-    sent.push(page.mouse.wheel(0, deltaY))
+    sent.push(page.mouse.wheel(deltaX, deltaY))
     await new Promise(resolve => setTimeout(resolve, intervalMs))
   }
   await Promise.all(sent)

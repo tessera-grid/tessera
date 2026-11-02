@@ -535,6 +535,75 @@ describe('Column Resizing — requirements', () => {
     adjacent()
   })
 
+  test('CR21: scrolling sideways mid-drag keeps the mounted columns to the right at its edge — header and body, without gap or overlap', async () => {
+    const container = await renderColumnResizing({ columnCount: 40 })
+    const scroller = container.querySelector<HTMLElement>(
+      '.data-grid__container',
+    )!
+    const first = firstDataCell(container)
+    const before = widthOf(first)
+    const head = (colIndex: string) =>
+      container.querySelector<HTMLElement>(
+        `${HEAD_CELL}[aria-colindex='${colIndex}']`,
+      )
+    // Колонки, смонтированные до протяжки: тело и шапка не перерисовываются, пока тянут грип.
+    const mounted = renderedDataCells(container).map(colIndexOf)
+    /** У каждой пары соседних смонтированных колонок правый край — у левого края следующей. */
+    const adjacent = () => {
+      for (const cellOf of [head, (i: string) => bodyCellAt(container, i)]) {
+        for (let i = 0; i < mounted.length - 1; i++) {
+          const left = cellOf(mounted[i])
+          const right = cellOf(mounted[i + 1])
+          if (!left || !right) continue
+          if (Number(mounted[i + 1]) !== Number(mounted[i]) + 1) continue
+          expect(
+            Math.abs(
+              left.getBoundingClientRect().right -
+                right.getBoundingClientRect().left,
+            ),
+            `${mounted[i]} → ${mounted[i + 1]}`,
+          ).toBeLessThan(1)
+        }
+      }
+    }
+
+    await revealGrip(first)
+    const separator = gripOf(first)
+      .querySelector<HTMLElement>('[role="separator"]')!
+      .getBoundingClientRect()
+    const from = {
+      x: separator.left + separator.width / 2,
+      y: separator.top + separator.height / 2,
+    }
+    const to = { x: from.x + 80, y: from.y }
+    const pointer = commands as unknown as {
+      realDragHold: (from: object, to: object) => Promise<void>
+      realMouseUp: () => Promise<void>
+      realWheel: (
+        at: object,
+        deltaY: number,
+        ticks: number,
+        intervalMs: number,
+        deltaX: number,
+      ) => Promise<void>
+    }
+    await pointer.realDragHold(from, to)
+    try {
+      await expect
+        .poll(() => widthOf(head(colIndexOf(first))!))
+        .toBeGreaterThan(before + 60)
+      // Колесо по горизонтали, не отпуская грип: окно колонок уходит вправо.
+      await pointer.realWheel(to, 0, 4, 30, 300)
+      await expect.poll(() => scroller.scrollLeft).toBeGreaterThan(600)
+      await nextFrame()
+      await nextFrame()
+      expect(container.querySelector('[data-resizing="true"]')).not.toBeNull()
+      adjacent()
+    } finally {
+      await pointer.realMouseUp()
+    }
+  })
+
   test('CR19: the grip line is centred on the header right border — on hover and mid-drag', async () => {
     const container = await renderColumnResizing()
     const cell = firstDataCell(container)

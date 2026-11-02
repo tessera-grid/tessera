@@ -449,7 +449,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       сортировка из прошлой модели — модульный `sortedRowModel` (SM8–SM11 — паритет с
       полной сортировкой при приходе ответов, откат на полную, прежняя модель неизменна),
       перф SM12 — в `interaction` ([ADR 0072](docs/decisions/0072-incremental-sorted-row-model.md)),
-      `column-resizing` (CR1–CR16, CR18 — сдвиг соседей во время протяжки, [ADR 0013](docs/decisions/0013-column-sizing.md);
+      `column-resizing` (CR1–CR16, CR18 — сдвиг соседей во время протяжки, CR21 — и при прокрутке колонок посреди неё, [ADR 0013](docs/decisions/0013-column-sizing.md);
       GB1–GB5, GB10 — грип на границе колонок без маски, сдвиг соседа, закрепление и вложенная
       шапка, прежнее поведение, кнопки не прячутся при протяжке), `action-menu` (GB6 — кнопки в кебаб по ширине), модульный
       `slots` (GB7 — расчёт вместимости), `work-counters` (GB8), `play` истории
@@ -902,6 +902,7 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       наведение; бюджеты через окно виртуализации; открытые кебаб, инлайн-меню и панель
       перечитывают пункты),
       SD19 — приход блока серверной модели перерисовывает только его строки (ADR 0138),
+      H7 — новый бизнес-колбэк на рендере приложения не перерисовывает грид (ADR 0027),
       помощник `measureWork` (`__tests__/work.helpers.ts`)
       ([ADR 0099](docs/decisions/0099-perf-gates-and-ab-compare.md)).
     - _Цена плагинов при прокрутке:_ `work-counters` (PS10–PS13 — сдвиг окна строк и колонок
@@ -1356,9 +1357,7 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
 - **Формат безопасен для мутаций:** `npm run format` его чинит; затем перезапустите `format:check`.
 - **Примечание про линт:** конфиг запускает полный набор `react-hooks@7` (правила React
   Compiler). Узкие исключения — в `eslint.config.js` с причиной:
-  `globals`/`immutability` в `__tests__` (хосты отдают тесту экземпляр), `refs` в
-  `columnVirtualizer`/`OptionFilterPanel`/`OptionChecklist` (`useVirtualizer` из вендора компилятор не узнаёт как
-  несовместимую библиотеку, ADR 0143; переделка — в roadmap). Ref на последнее
+  `globals`/`immutability` в `__tests__` (хосты отдают тесту экземпляр). Ref на последнее
   значение — `util/useLatest`, а не запись `ref.current` в рендере; запись в чужой ref —
   `ui/assignRef`. Предупреждения `incompatible-library` (хуки TanStack) ожидаемы.
 - **UI-изменения:** корректность UI гарантируют visual-тесты, а не ручной осмотр в браузере.
