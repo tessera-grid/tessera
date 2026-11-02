@@ -150,7 +150,6 @@
   "failureLogEmpty": "Отказов нет",
   "failureLogEmptyDescription": "Здесь появятся действия, которые отклонил сервер",
   "failureLogButton": "Отказы: {count}",
-  "failureActions": "Действия с записью",
   "failureClearAll": "Очистить всё",
   "failureShow": "Показать",
   "failureClose": "Закрыть",

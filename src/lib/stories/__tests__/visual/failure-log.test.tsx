@@ -133,22 +133,16 @@ const entries = () => [
 ]
 const entryOf = (key: string) =>
   log()?.querySelector<HTMLElement>(`[data-failure-key="${CSS.escape(key)}"]`)
-const menuItem = (action: string) =>
-  document.querySelector<HTMLElement>(
-    `[role="menuitem"][data-item-id="${action}"]`,
-  )
-/** Открыть кебаб записи; пункты меню — по `data-item-id`. */
-const openEntryMenu = async (entry: HTMLElement) => {
-  await humanClick(
-    entry.querySelector<HTMLElement>('[data-action-menu="failure"]')!,
-  )
-  await expect.poll(() => menuItem('close')).not.toBeNull()
-}
-/** Выбрать действие записи в её кебабе. */
+/** Кнопка записи: `show`, `retry` или `close`. */
+const actionOf = (entry: HTMLElement, action: string) =>
+  entry.querySelector<HTMLElement>(`button[data-action="${action}"]`)
 const choose = async (entry: HTMLElement, action: string) => {
-  await openEntryMenu(entry)
-  await humanClick(menuItem(action)!)
+  await humanClick(actionOf(entry, action)!)
 }
+const tooltipShown = (text: string) =>
+  [...document.querySelectorAll('[data-side]')].some(
+    el => el.textContent?.trim() === text,
+  )
 const clearAll = () =>
   log()?.querySelector<HTMLElement>('[data-action="clear-all"]') ?? null
 const bubbleOf = (button: HTMLElement) =>
@@ -178,7 +172,7 @@ const cellFailure = (row: string, reason = 'Server said no') =>
   })
 
 describe('Журнал отказов (ADR 0177)', () => {
-  test('JR1: плагин failureLog() — кнопка тулбара видна всегда; пока в реестре есть записи — на ней красный бабл-счётчик, без записей — бабла нет, журнал пишет, что отказов нет', async () => {
+  test('JR1: плагин failureLog() — кнопка тулбара видна всегда; пока в реестре есть записи — на ней красный бабл-счётчик, без записей — бабла нет, журнал показывает компактную заглушку: иллюстрацию, «Отказов нет» и пояснение', async () => {
     const screen = await mount()
     try {
       // Без отказов: кнопка на месте, бабла нет, журнал пуст.
@@ -188,7 +182,12 @@ describe('Журнал отказов (ADR 0177)', () => {
         tableLabels.failureLog,
       )
       await openLog()
-      expect(empty()?.textContent).toBe(tableLabels.failureLogEmpty)
+      const stub = empty()!
+      expect(stub.getAttribute('data-size')).toBe('compact')
+      expect(stub.textContent).toContain(tableLabels.failureLogEmpty)
+      expect(stub.textContent).toContain(tableLabels.failureLogEmptyDescription)
+      const media = stub.querySelector('svg')!
+      expect(media.getBoundingClientRect().width).toBeGreaterThan(0)
       await userEvent.keyboard('{Escape}')
       await expect.poll(log).toBeNull()
 
@@ -278,7 +277,7 @@ describe('Журнал отказов (ADR 0177)', () => {
     }
   })
 
-  test('JR3: в кебабе записи: «Показать» прокручивает к цели записи и вспыхивает её — в том числе незагруженную строку серверной модели; «Повторить» — у записи, которая умеет; «Закрыть» снимает запись и отметку ячейки', async () => {
+  test('JR3: кнопки записи — квадратные кнопки-иконки с тултипами: «Показать» закрывает журнал, прокручивает к цели записи и вспыхивает её — в том числе незагруженную строку серверной модели; «Повторить» — у записи, которая умеет, закрывает журнал и повторяет; «Закрыть» снимает запись и отметку ячейки, журнал остаётся открытым', async () => {
     let screen = await mount()
     try {
       // Отказ действия строки — запись с повтором.
@@ -293,17 +292,36 @@ describe('Журнал отказов (ADR 0177)', () => {
       await expect.poll(() => rowEl('r1')).toBeNull()
       await openLog()
       const rowEntry = entries()[0]!
-      await openEntryMenu(rowEntry)
-      expect(menuItem('retry')).not.toBeNull()
-      await humanClick(menuItem('show')!)
+      // Квадратные кнопки-иконки с подписью в тултипе.
+      for (const [action, label] of [
+        ['show', tableLabels.failureShow],
+        ['retry', tableLabels.failureRetry],
+        ['close', tableLabels.failureClose],
+      ] as const) {
+        const button = actionOf(rowEntry, action)!
+        expect(button.getAttribute('data-shape'), action).toBe('square')
+        expect(button.getAttribute('aria-label'), action).toBe(label)
+        expect(button.querySelector('svg'), action).not.toBeNull()
+        await userEvent.hover(button)
+        await expect
+          .poll(() => tooltipShown(label), { timeout: 2000 })
+          .toBe(true)
+      }
+      await choose(rowEntry, 'show')
+      await expect.poll(log).toBeNull()
       await expect
         .poll(() => rowEl('r1')?.getAttribute('data-flash'))
         .toBe('reverted')
-      // «Повторить»: повтор успешен — запись уходит.
+      // «Повторить» закрывает журнал; повтор успешен — запись уходит.
       refuseArchive = false
-      if (!log()) await openLog()
+      await openLog()
       await choose(entries()[0]!, 'retry')
+      await expect.poll(log).toBeNull()
+      await expect.poll(() => table.getFailures().length).toBe(0)
+      await openLog()
       await expect.poll(empty).not.toBeNull()
+      await userEvent.keyboard('{Escape}')
+      await expect.poll(log).toBeNull()
 
       // Без повтора — нет «Повторить»; «Закрыть» снимает запись и треугольник ячейки.
       cellFailure('r2')
@@ -311,13 +329,15 @@ describe('Журнал отказов (ADR 0177)', () => {
         .poll(() => cellEl('r2')?.querySelector('[data-cell-issue]'))
         .not.toBeNull()
       await openLog()
-      await openEntryMenu(entries()[0]!)
-      expect(menuItem('retry')).toBeNull()
-      await humanClick(menuItem('close')!)
+      expect(actionOf(entries()[0]!, 'retry')).toBeNull()
+      await choose(entries()[0]!, 'close')
       await expect
         .poll(() => cellEl('r2')?.querySelector('[data-cell-issue]'))
         .toBeNull()
       expect(table.getFailures()).toEqual([])
+      // «Закрыть» журнал не закрывает.
+      expect(log()).not.toBeNull()
+      await expect.poll(empty).not.toBeNull()
       await screen.unmount()
 
       // Серверная модель: строка вне загруженных блоков — переход по месту отказа.

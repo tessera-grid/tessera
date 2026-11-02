@@ -111,8 +111,8 @@ describe('Журнал отказов (ADR 0177)', () => {
     const keys = [
       'failureLog',
       'failureLogEmpty',
+      'failureLogEmptyDescription',
       'failureLogButton',
-      'failureActions',
       'failureClearAll',
       'failureShow',
       'failureClose',

@@ -17,6 +17,8 @@ import {
   quickSearch,
 } from '../../../plugins'
 import type { TableIcons } from '../../../ui/icons'
+import { EmptyStateIllustration } from '../../../ui/icons/EmptyStateIllustration'
+import { DATA_GRID_THEME_CLASS } from '../../../ui/theme/types'
 import { Stub } from '../../../ui/Stub'
 import { humanClick } from '../helpers'
 import { AXE_OPTIONS } from './a11y-helpers'
@@ -444,6 +446,67 @@ describe('Заглушки пустой таблицы (ADR 0123)', () => {
         media().getBoundingClientRect().top,
         testId,
       ).toBeGreaterThanOrEqual(shown.top)
+      await view.unmount()
+    }
+  })
+
+  test('ES16: Stub size="compact" — отступы и кегль поповера, иллюстрация стороной --tsr-comp-stub-media-size-compact; в рамке по содержимому и под масштабом поповера иллюстрация не прячется', async () => {
+    // Дробная высота строк: целые округления частей превышали бы рамку по содержимому.
+    const Frame = ({ size }: { size: 'default' | 'compact' }) => (
+      <div
+        className={DATA_GRID_THEME_CLASS}
+        style={{ width: 280, transform: 'scale(0.9)', lineHeight: '19.7px' }}
+      >
+        <style>{'[data-testid^="es16"] * { line-height: 19.7px; }'}</style>
+        <Stub
+          size={size}
+          media={<EmptyStateIllustration />}
+          title="No failures"
+          description="Nothing here"
+          data-testid={`es16-${size}`}
+        />
+      </div>
+    )
+    const view = await render(
+      <>
+        <Frame size="default" />
+        <Frame size="compact" />
+      </>,
+    )
+    try {
+      const stub = (size: string) => byTestId(`es16-${size}`)!
+      await expect.poll(() => byTestId('es16-compact')).not.toBeNull()
+      const compact = stub('compact')
+      const media = compact.firstElementChild as HTMLElement
+      // Несколько кадров ResizeObserver: иллюстрация так и не прячется.
+      for (let frame = 0; frame < 5; frame++)
+        await new Promise(requestAnimationFrame)
+      expect(media.hidden).toBe(false)
+      expect(compact.getAttribute('data-media-hidden')).toBeNull()
+
+      const probe = document.createElement('span')
+      probe.style.width = 'var(--tsr-comp-stub-media-size-compact)'
+      probe.style.display = 'block'
+      compact.parentElement!.append(probe)
+      const token = parseFloat(getComputedStyle(probe).width)
+      probe.remove()
+      expect(token).toBeGreaterThan(0)
+      expect(
+        parseFloat(getComputedStyle(media.querySelector('svg')!).height),
+      ).toBe(token)
+
+      const own = getComputedStyle(compact)
+      const base = getComputedStyle(stub('default'))
+      expect(parseFloat(own.paddingTop)).toBeLessThan(
+        parseFloat(base.paddingTop),
+      )
+      expect(parseFloat(own.fontSize)).toBeLessThan(parseFloat(base.fontSize))
+      const popupFont = document.createElement('span')
+      popupFont.style.fontSize = 'var(--tsr-comp-popup-font-size)'
+      compact.parentElement!.append(popupFont)
+      expect(own.fontSize).toBe(getComputedStyle(popupFont).fontSize)
+      popupFont.remove()
+    } finally {
       await view.unmount()
     }
   })

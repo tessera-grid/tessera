@@ -255,8 +255,6 @@ export interface TableLabels {
   failureLogEmptyDescription: string
   /** Кнопка журнала отказов с числом записей. */
   failureLogButton: (count: number) => string
-  /** Кебаб записи журнала — меню её действий. */
-  failureActions: string
   /** Закрыть все записи журнала. */
   failureClearAll: string
   /** Запись журнала: прокрутить к цели. */
@@ -604,7 +602,6 @@ export const DEFAULT_LABELS = {
   failureLogEmpty: 'No failures',
   failureLogEmptyDescription: 'Actions refused by the server will appear here',
   failureLogButton: 'Failures: {count}',
-  failureActions: 'Failure actions',
   failureClearAll: 'Clear all',
   failureShow: 'Show',
   failureClose: 'Close',
