@@ -8,7 +8,7 @@ import { createExpandedRowModel } from '@tanstack/react-table'
 
 import type { RowData, Table, TableFeatures } from '../../types'
 import { dataModeOf, isPaginationActive } from '../../core/dataMode'
-import type { NarrowState } from '../../core/effectiveState'
+import type { NarrowState } from '../../core/definePlugin'
 import { recordRowChange } from '../../core/rowChanges'
 
 interface ExpandRow {

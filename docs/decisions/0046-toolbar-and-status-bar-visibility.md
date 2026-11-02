@@ -2,7 +2,7 @@
 
 - **Статус:** Принято (реализовано 2026-10-03; решения — по итогам прожарки 2026-10-03)
 - **Дата:** 2026-10-03
-- **Изменён:** 2026-10-25 — PB12 доказывает гайд «Panels/Pagination — Own pager» (S2 [ADR 0120](0120-model-and-interface-plugins.md)): история «Panels/Status bar — Off (own pager)» удалена как дубль.
+- **Изменён:** 2026-10-25 — PB12 доказывает гайд «Panels/Pagination — Own pager» (S2 [ADR 0120](0120-model-and-interface-plugins.md)): история «Off (own pager)» раздела «Panels/Status bar» удалена как дубль.
 - **Связано:**
   - [ADR 0035](0035-toolbar-and-column-visibility.md) — тулбар, `toolbarSlot`, флаг
     `enableToolbar`; здесь меняется условие показа (TB3–TB4) и условие инертности
@@ -141,6 +141,7 @@
   отдельный файл: модуль грузится один раз на документ), модульные PB7–PB9 в
   `columnVisibility`, `export`, `filtering`. Переписаны TB3, TB4, SB1, FL15, FL18.
 - **Истории.** `enableToolbar` / `enableStatusBar` — тройной выбор «auto / on / off»;
-  группа Panels: «Panels/Presence — Playground» и «Panels/Status bar — Off (own
-  pager)» (дымовой `visual/panels-stories`, PB12); явные `enableToolbar: true`
+  группа Panels: «Panels/Presence — Playground» и «Off (own pager)» раздела «Panels/Status
+  bar» (дымовой `visual/panels-stories`, PB12; ныне гайд «Panels/Pagination — Own pager»);
+  явные `enableToolbar: true`
   в историях, где тулбар и так вызывают плагины, убраны.

@@ -3,7 +3,7 @@
  * продолжение на следующих листах. Чистая функция без DOM; лист строится кусками с
  * отдачей главного потока, части архива сжимаются вне него (`zip.ts`).
  */
-import { cellToWallValue } from '../../core/wallTime'
+import { cellToWallValue } from '../../shared/wallTime'
 import { toExportText } from './exportData'
 import type { ExportColumn, ExportData } from './types'
 import { buildZip, crc32Update, type ZipEntry } from './zip'

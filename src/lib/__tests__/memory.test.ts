@@ -35,7 +35,7 @@ const BOUNDED: Record<string, string> = {
     'знаки чисел на язык: языков конечное число',
   'plugins/columnSortingModel/typedSort.ts:collators':
     'сравнение текста на язык: языков конечное число',
-  'core/wallTime.ts:formatters':
+  'shared/wallTime.ts:formatters':
     'форматтер на часовой пояс: поясов конечное число',
   'core/localization/resolveLabels.ts:COUNT_KEYS':
     'константный набор подписей с параметром count',
@@ -75,7 +75,7 @@ describe('Память', () => {
   it('LK10: каждая Map/Set уровня модуля в src/lib — WeakMap/WeakSet или записана в список ограниченных с причиной', () => {
     const found = strongCollections()
     // Страж видит коллекции уровня модуля — иначе он ничего не проверяет.
-    expect(found).toContain('core/wallTime.ts:formatters')
+    expect(found).toContain('shared/wallTime.ts:formatters')
     expect(found.filter(key => !(key in BOUNDED))).toEqual([])
     // Список только сокращается: запись без коллекции в коде — устаревшая.
     expect(Object.keys(BOUNDED).filter(key => !found.includes(key))).toEqual([])

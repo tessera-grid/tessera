@@ -6,7 +6,7 @@
  */
 import type { ColumnPinningState } from '@tanstack/react-table'
 
-import type { NarrowState } from '../../core/effectiveState'
+import type { NarrowState } from '../../core/definePlugin'
 
 interface NarrowColumn {
   getLeafColumns: () => { id: string }[]

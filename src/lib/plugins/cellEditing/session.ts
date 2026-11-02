@@ -21,7 +21,7 @@ import {
   registerPending,
 } from '../../core/cancellation'
 import type { RowSource } from '../../core/rowSource'
-import { inferDataType, setAtPath } from '../../core/columnDataType'
+import { inferDataType, setAtPath } from './columnDataType'
 import { isNumericBase } from '../../core/dataTypeFormat'
 import { logWarn } from '../../util/logger'
 import { isThenable, rejectionText } from '../../util/thenable'

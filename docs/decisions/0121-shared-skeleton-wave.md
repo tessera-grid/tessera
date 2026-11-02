@@ -165,5 +165,5 @@ API примитива не меняется.
 ## Сценарии
 
 Новых клиентских сценариев нет: волна — вид скелета первой загрузки, её показывают
-истории сценариев [ADR 0060](0060-initial-loading-skeleton.md) (S1–S3) и `Core/Skeleton —
+истории сценариев [ADR 0060](0060-initial-loading-skeleton.md) (S1–S3) и `Data loading/Skeleton —
 Playground`.

@@ -3,9 +3,12 @@
 - **Статус:** Принято (решения — по итогам прожарки 2026-11-01)
 - **Дата:** 2026-11-01
 - **Изменено:** [ADR 0175](0175-data-type-editors.md) (2026-11-01) — текст правки без своего `parseValue` записи не сохраняется: ошибка поля и совет (TY8).
+- **Изменено:** 2026-11-02 — разбор правки переехал из `core/columnDataType.ts` в
+  `plugins/cellEditing/columnDataType.ts`: его читает только `cellEditing`, ядро — нет (LB2,
+  [ADR 0163](0163-layer-boundaries-and-guards.md)); так и записано в строке «Слой» ADR 0172.
 - **Слой:** `core/` — два встроенных типа в `core/dataTypes.ts`, текст записи и десятичной строки
-  в `core/dataTypeFormat.ts`, разбор правки в `core/columnDataType.ts`: ядро уже владеет
-  системой типов (ADR 0172). Плагины — каждый своё по базовому типу: сортировка
+  в `core/dataTypeFormat.ts`: ядро уже владеет системой типов (ADR 0172); разбор правки — в
+  `plugins/cellEditing/columnDataType.ts`. Плагины — каждый своё по базовому типу: сортировка
   (`columnSortingModel`), фильтр и фасеты по ключу (`columnFilteringModel`), группировка по ключу
   (`rowGroupingModel`), выгрузка (`dataExportModel`); десятичное сравнение строк — `util/`
   (листовая утилита без импортов `src/lib`, её берут ядро и плагины).

@@ -1,6 +1,6 @@
-import { parseLocaleDecimal, parseLocaleNumber } from '../util/parseNumber'
-import type { ColumnOption } from './columnOptions'
-import type { BuiltInDataType } from './dataTypes'
+import { parseLocaleDecimal, parseLocaleNumber } from '../../util/parseNumber'
+import type { ColumnOption } from '../../core/columnOptions'
+import type { BuiltInDataType } from '../../core/dataTypes'
 
 /**
  * Тип данных колонки (ADR 0139): разбор текста редактора в значение того же вида, что

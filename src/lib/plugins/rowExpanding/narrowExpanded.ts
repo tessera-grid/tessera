@@ -6,7 +6,7 @@
  */
 import type { ExpandedState } from '@tanstack/react-table'
 
-import type { NarrowState } from '../../core/effectiveState'
+import type { NarrowState } from '../../core/definePlugin'
 import { serverRowModelReason } from '../../core/pluginDiagnostics'
 import type { Row } from '../../types'
 import type { RowExpandPending } from './rowExpandingPendingFeature'

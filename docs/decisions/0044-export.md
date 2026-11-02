@@ -334,4 +334,4 @@ columns»). Иконка: `download`. Кнопка и панель проход�
   клик при одном варианте (EX1, EX6–EX9, EX23, EX25, EX31–EX32).
 - **Фаза 4 — сервер.** `server`, занятость, отказ, `noOnExport` (EX26–EX29).
 - **Фаза 5 — перформанс и истории.** Кейс EX33; `DataGrid.Export.stories.tsx`:
-  «Export», «Export — presets», «Export — Server» (EX34).
+  «Export», «Export — Settings and quick sets» (тогда — «presets»), «Export — Server» (EX34).

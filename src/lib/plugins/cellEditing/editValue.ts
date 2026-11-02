@@ -2,11 +2,7 @@
  * Значение правки в типе колонки (ADR 0175, §1–§2): текст значения для поля по языку
  * таблицы, разбор набранного текста по типу и сравнение с исходным значением.
  */
-import {
-  inferDataType,
-  parseByDataType,
-  parseKindOf,
-} from '../../core/columnDataType'
+import { inferDataType, parseByDataType, parseKindOf } from './columnDataType'
 import type { ColumnOption } from '../../core/columnOptions'
 import type { ResolvedDataType } from '../../core/dataTypes'
 import { formatDataTypeValue, objectKeyOf } from '../../core/dataTypeFormat'

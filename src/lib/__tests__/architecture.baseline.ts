@@ -8,13 +8,7 @@
 export const LAYER_EDGES: Record<string, string> = {}
 
 /** LB2: модули ядра, которые импортируют только плагины, — долг: модуль переедет. */
-export const CORE_PLUGIN_ONLY: Record<string, string> = {
-  'lib/core/columnDataType.ts':
-    'разбор ввода по типу колонки — находки 1 и 16, прожарка dataType',
-  'lib/core/effectiveState.ts':
-    'помощники сужения ядра в плагинах — край ADR 0039, шаг 8 аудита',
-  'lib/core/wallTime.ts': 'стенное время дат — находка 16, прожарка dataType',
-}
+export const CORE_PLUGIN_ONLY: Record<string, string> = {}
 
 /**
  * LB2: API ядра для плагинов (ADR 0166, §4) — модуль нужен самому ядру и открыт плагинам;

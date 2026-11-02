@@ -4,7 +4,7 @@
  */
 import type { SortingState } from '@tanstack/react-table'
 
-import type { NarrowState } from '../../core/effectiveState'
+import type { NarrowState } from '../../core/definePlugin'
 
 export const narrowSorting =
   (limit: number): NarrowState =>

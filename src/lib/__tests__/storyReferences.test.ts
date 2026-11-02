@@ -16,28 +16,7 @@ const ROOT = join(__dirname, '..', '..', '..')
  * Расхождения на момент ADR 0151: ADR описывает истории на день решения, их потом
  * переименовали. Список только сокращается — исправленная ссылка уходит из него.
  */
-const BASELINE: Record<string, string> = {
-  'docs/decisions/0042-demo-story-smoke-tests.md: «Cells/Editing — Server (async)»':
-    'теперь «Cells/Editing — Server save»',
-  'docs/decisions/0044-export.md: «Export — presets»':
-    'теперь «Export — Settings and quick sets»',
-  'docs/decisions/0046-toolbar-and-status-bar-visibility.md: «Panels/Status bar — Off (own pager)»':
-    'теперь «Panels/Pagination — Own pager»',
-  'docs/decisions/0089-contrast-matrix.md: «Panels/Pagination — Default»':
-    'теперь «Panels/Pagination — Playground»',
-  'docs/decisions/0089-contrast-matrix.md: «Panels/Toolbar — All buttons»':
-    'теперь «Panels/Toolbar — Playground»',
-  'docs/decisions/0093-visual-state-catalog.md: «Core/Stubs — Default»':
-    'теперь «Core/Stubs — Playground»',
-  'docs/decisions/0093-visual-state-catalog.md: «Core/High contrast — Default»':
-    'раздел теперь «Common/High contrast»',
-  'docs/decisions/0093-visual-state-catalog.md: «Cells/Selection — State: cell range»':
-    'истории `State: …` ушли в гайды (ADR 0117): «Cells/Selection — Select and copy»',
-  'docs/decisions/0121-shared-skeleton-wave.md: «Core/Skeleton — Playground»':
-    'раздел теперь «Data loading/Skeleton»',
-  'docs/decisions/0123-empty-state-stubs.md: «Core/Stubs — Default»':
-    'теперь «Core/Stubs — Playground»',
-}
+const BASELINE: Record<string, string> = {}
 
 /** Разделы каталога и имена их историй. */
 const catalog = () => {

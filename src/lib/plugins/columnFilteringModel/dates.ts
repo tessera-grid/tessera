@@ -1,6 +1,6 @@
 /**
  * Даты фильтра (ADR 0047, §2–§4). Значения сравниваются в «стенных минутах» пояса —
- * стенном времени ядра (`core/wallTime`) с точностью до минуты.
+ * общем стенном времени плагинов (`shared/wallTime`) с точностью до минуты.
  */
 import {
   DATE_ONLY,
@@ -8,7 +8,7 @@ import {
   cellToWallValue,
   instantToWallMs,
   wallMsOf,
-} from '../../core/wallTime'
+} from '../../shared/wallTime'
 import type { DateCellValue, DateFilter, DateFilterPreset } from './types'
 
 const MINUTES_PER_DAY = 1440

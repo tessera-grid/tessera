@@ -47,6 +47,9 @@ import {
   type PluginSlotDecl,
 } from './channels'
 
+/** Сужение среза — значение поля `narrow`; его пишут плагины. */
+export type { NarrowState }
+
 export {
   readPluginHooks,
   setPluginState,

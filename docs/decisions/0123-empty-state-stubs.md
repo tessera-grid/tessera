@@ -9,7 +9,7 @@
   - [ADR 0096](0096-load-error.md) — заглушка ошибки первой загрузки (LE8); **изменяется**
     здесь: `errorStub` заменяет `stubs.loadError`.
   - [ADR 0093](0093-visual-state-catalog.md) — каталог состояний: `body.empty` переезжает
-    в `Core/Stubs — Default`.
+    в `Core/Stubs — Playground` (тогда `Default`).
   - [ADR 0035](0035-toolbar-and-column-visibility.md) — CV9 (последнюю видимую колонку
     скрыть нельзя) не меняется; «Показать все» (CV11).
   - [ADR 0133](0133-hide-all-columns.md) — **изменяет** это решение (2026-10-23): CV9
