@@ -72,6 +72,8 @@ export const CATALOG_STATES = {
     'tooltip',
     // Поповер отметки ячейки (ADR 0177, §5).
     'cellIssue',
+    // Журнал отказов (ADR 0177, §7).
+    'failureLog',
   ],
   panel: ['toolbar', 'statusBar', 'pagination', 'narrow'],
   // Перетаскивание (ADR 0130): шаги гайдов историй строк и колонок.

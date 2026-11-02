@@ -65,6 +65,8 @@ const PLUGIN_ARGS: Record<string, GridArgs> = {
   rowActionMenu: { enableRowActionMenu: true, enableRowActions: true },
   pagination: { enablePagination: true },
   backToTop: { enableBackToTop: true, enablePagination: true },
+  // Кнопка журнала видна только с отказами: сам журнал проверяет JR6 (ADR 0177).
+  failureLog: { enableFailureLog: true, enableToolbar: true },
   infiniteScroll: {
     enableInfiniteScroll: true,
     infiniteScrollHasMore: true,

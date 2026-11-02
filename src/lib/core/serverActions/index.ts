@@ -516,6 +516,8 @@ export const runServerAction = (
       target: { table: true },
       reason: serverActionReason({ kind, error }, labels),
       retry,
+      // Запись закрыта в журнале — уходит и плашка (ADR 0177, §7).
+      discard: () => dismissServerActionError(table),
     })
   }
   result.then(

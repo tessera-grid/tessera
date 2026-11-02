@@ -15,6 +15,8 @@ const BUILTIN_GROUP_RANK: Record<string, number> = {
   search: 0,
   view: 1,
   data: 2,
+  // Журнал отказов — последним справа, после групп потребителя (ADR 0177, §7).
+  failures: Number.POSITIVE_INFINITY,
 }
 
 export interface ToolbarGroup {

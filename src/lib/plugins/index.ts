@@ -71,6 +71,7 @@ export {
   type InfiniteScrollLoadContext,
 } from './infiniteScroll'
 export { backToTop, type BackToTopOptions } from './backToTop'
+export { failureLog, type FailureLogOptions } from './failureLog'
 export {
   serverRowModel,
   type ServerRowModelOptions,

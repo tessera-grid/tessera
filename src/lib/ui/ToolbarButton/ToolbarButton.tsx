@@ -38,6 +38,7 @@ export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(
       count,
       activeIcon,
       indicator,
+      indicatorTone,
       className,
       pending,
       failed,
@@ -61,6 +62,7 @@ export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(
           count={count}
           activeIcon={activeIcon}
           indicator={indicator}
+          indicatorTone={indicatorTone}
           pending={pending}
           failed={failed}
           onCancel={onCancel}

@@ -56,6 +56,8 @@ export interface ActiveProps {
   activeIcon?: ReactNode
   /** `false` — без бабла; цвет значка остаётся. */
   indicator?: boolean
+  /** Тон бабла: `error` — счётчик отказов журнала (ADR 0177, JR1). */
+  indicatorTone?: 'active' | 'error'
 }
 
 /** Кнопка ячейки, заголовка или строки (ADR 0128). */
@@ -107,6 +109,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
       count,
       activeIcon,
       indicator = true,
+      indicatorTone = 'active',
       className,
       disabledClassName,
       disabled,
@@ -184,7 +187,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         {active !== undefined && (
           <Bubble
             size={count ? 'sm' : 'dot'}
-            tone="active"
+            tone={indicatorTone}
             className={styles.indicator}
             data-active-indicator=""
             data-count={count || undefined}

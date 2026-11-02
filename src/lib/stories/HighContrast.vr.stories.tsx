@@ -17,6 +17,7 @@ import * as exportStories from './DataGrid.Export.stories'
 import * as filteringStories from './DataGrid.Filtering.stories'
 import * as panelsPaginationStories from './DataGrid.Panels.Pagination.stories'
 import * as panelsToolbarStories from './DataGrid.Panels.Toolbar.stories'
+import panelsFailureLogMeta, * as panelsFailureLogStories from './DataGrid.Panels.FailureLog.stories'
 import * as pluginApiStories from './DataGrid.PluginApi.stories'
 import * as infiniteScrollStories from './DataGrid.DataLoading.InfiniteScroll.stories'
 import * as serverRowModelStories from './DataGrid.DataLoading.ServerRowModel.stories'
@@ -6356,5 +6357,111 @@ export const HighContrastEditingTextStep3 = {
     3,
   ),
   name: 'Columns/Data types/Text — Edit, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastFailureLogPlayground = {
+  ...twin(panelsFailureLogMeta, panelsFailureLogStories.FailureLogPlayground),
+  name: 'Panels/Failure log — Playground',
+  tags: ['!test'],
+}
+
+export const HighContrastFailureLogRowStep1 = {
+  ...twinStep(
+    panelsFailureLogStories,
+    panelsFailureLogStories.FailureLogRow,
+    1,
+  ),
+  name: 'Panels/Failure log — Refused row action, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastFailureLogRowStep2 = {
+  ...twinStep(
+    panelsFailureLogStories,
+    panelsFailureLogStories.FailureLogRow,
+    2,
+  ),
+  name: 'Panels/Failure log — Refused row action, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastFailureLogRowStep3 = {
+  ...twinStep(
+    panelsFailureLogStories,
+    panelsFailureLogStories.FailureLogRow,
+    3,
+  ),
+  name: 'Panels/Failure log — Refused row action, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastFailureLogRowStep4 = {
+  ...twinStep(
+    panelsFailureLogStories,
+    panelsFailureLogStories.FailureLogRow,
+    4,
+  ),
+  name: 'Panels/Failure log — Refused row action, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastFailureLogOffscreenStep1 = {
+  ...twinStep(
+    panelsFailureLogStories,
+    panelsFailureLogStories.FailureLogOffscreen,
+    1,
+  ),
+  name: 'Panels/Failure log — Failures off screen, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastFailureLogOffscreenStep2 = {
+  ...twinStep(
+    panelsFailureLogStories,
+    panelsFailureLogStories.FailureLogOffscreen,
+    2,
+  ),
+  name: 'Panels/Failure log — Failures off screen, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastFailureLogOffscreenStep3 = {
+  ...twinStep(
+    panelsFailureLogStories,
+    panelsFailureLogStories.FailureLogOffscreen,
+    3,
+  ),
+  name: 'Panels/Failure log — Failures off screen, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastFailureLogOffscreenStep4 = {
+  ...twinStep(
+    panelsFailureLogStories,
+    panelsFailureLogStories.FailureLogOffscreen,
+    4,
+  ),
+  name: 'Panels/Failure log — Failures off screen, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastFailureLogOffscreenStep5 = {
+  ...twinStep(
+    panelsFailureLogStories,
+    panelsFailureLogStories.FailureLogOffscreen,
+    5,
+  ),
+  name: 'Panels/Failure log — Failures off screen, шаг 5',
+  tags: ['!test'],
+}
+
+export const HighContrastFailureLogOffscreenStep6 = {
+  ...twinStep(
+    panelsFailureLogStories,
+    panelsFailureLogStories.FailureLogOffscreen,
+    6,
+  ),
+  name: 'Panels/Failure log — Failures off screen, шаг 6',
   tags: ['!test'],
 }

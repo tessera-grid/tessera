@@ -40,6 +40,7 @@ import {
   Pin,
   Info,
   RotateCw,
+  TriangleAlert,
 } from 'lucide-react'
 
 import { EmptyStateIllustration } from './EmptyStateIllustration'
@@ -133,6 +134,8 @@ export interface TableIcons {
   loadFailed: IconComponent
   /** Кнопка «наверх» в нижней панели (ADR 0082) */
   backToTop: IconComponent
+  /** Кнопка журнала отказов в тулбаре (ADR 0177) */
+  failureLog: IconComponent
   /** Кнопка «к первой колонке» в нижней панели (ADR 0105) */
   backToStart: IconComponent
   /** Пункт меню, заблокированный с причиной (ADR 0078) */
@@ -190,6 +193,7 @@ export const DEFAULT_ICONS: TableIcons = {
   emptyState: EmptyStateIllustration,
   loadFailed: CircleAlert,
   backToTop: ArrowUpToLine,
+  failureLog: TriangleAlert,
   backToStart: ArrowLeftToLine,
   actionBlocked: Lock,
   submenu: ChevronRight,

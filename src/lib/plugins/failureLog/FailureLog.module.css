@@ -1,0 +1,71 @@
+/* Журнал отказов (ADR 0177, §7): поповер со списком записей. */
+.positioner {
+  composes: positioner from '../../ui/Popup/Popup.module.css';
+}
+
+.popup {
+  composes: popup from '../../ui/Popup/Popup.module.css';
+  width: var(--tsr-comp-popup-max-width);
+  max-width: calc(100vw - 16px);
+}
+
+.title {
+  margin: 0;
+  padding: var(--tsr-comp-popup-padding) calc(var(--tsr-comp-popup-padding) * 2);
+  font-weight: 600;
+}
+
+/* Окно списка: длинный список виртуализирован (JR2). */
+.scroller {
+  max-height: min(60vh, calc(var(--tsr-comp-popup-item-min-height) * 10));
+  overflow-y: auto;
+}
+
+.list {
+  position: relative;
+  width: 100%;
+}
+
+.entry {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--tsr-comp-popup-padding) / 2);
+  padding: var(--tsr-comp-popup-padding) calc(var(--tsr-comp-popup-padding) * 2);
+  border-block-start: 1px solid var(--tsr-comp-popup-divider-color);
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--tsr-comp-popup-padding);
+}
+
+.label {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.time,
+.target {
+  color: var(--tsr-comp-popup-group-label-color);
+}
+
+.time {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.reason {
+  color: var(--tsr-comp-error-text-color);
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--tsr-comp-popup-padding) / 2);
+}

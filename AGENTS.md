@@ -103,7 +103,7 @@ src/lib/
   plugins/    rowSelection, rowExpanding, rowDragging, rowGrouping, rowActions, cellEditing,
               cellSelection, contextMenu,
               columnPinning, columnSizing, columnSorting, columnDragging, columnVisibility,
-              header/rowActionMenu
+              header/rowActionMenu, failureLog
   grid/       DataGrid + подкомпоненты (Head/Body/Footer, Cell, overlays, DnD-обёртки, layout)
   ui/         примитивы: IconButton, Tooltip, Switch, Skeleton, LinearProgress, Bubble, icons,
               CellButton/RowButton; theme (colorMode → CSS vars, ADR 0166)
@@ -1053,7 +1053,11 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       полоса долгого запроса, занятый объект, отказ строки и колонки, пункты меню отмены и повтора),
       `object-process-failure` (OB2 — выгрузка и ленивый модуль поповера, свой файл),
       `cell-issue` (OB7–OB9, OB12, OB17 — треугольник ячейки), OB10 — в `touch`, перф OB18 — в
-      `scroll`, истории «Cells/Errors» S1–S2 и «Cells/Action status» S3, S5, S8
+      `scroll`, истории «Cells/Errors» S1–S2 и «Cells/Action status» S3, S5, S8; журнал
+      отказов — визуальный `failure-log` (JR1–JR3, JR6 — кнопка со счётчиком, записи и
+      виртуализация, «Показать», «Повторить», «Закрыть», axe и `forced-colors`), модульный
+      `failureLog.dom` (JR4–JR5 — уход решённых и объявление, подписи из словаря), JR7 —
+      `check:tree-shaking`, истории «Panels/Failure log» (S6–S7)
       ([ADR 0177](docs/decisions/0177-pending-and-failure-on-the-object.md)).
     - _Включённые действия в ряду:_ модульный `slots` (KA1–KA2 — по ширине и по порогу
       включённые уходят в кебаб последними, `mode: 'always'` сворачивает все), визуальный

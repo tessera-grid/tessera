@@ -1,5 +1,6 @@
 import {
   backToTop,
+  failureLog,
   cellEditing,
   cellErrors,
   cellSelection,
@@ -86,6 +87,7 @@ const FACTORIES = {
   infiniteScroll,
   serverRowModel,
   backToTop,
+  failureLog,
 }
 
 const FACTORY_NAMES = Object.keys(FACTORIES)
@@ -233,6 +235,7 @@ export const argsToPlugins = (o: FeatureToggles) => {
     infiniteScroll(argsOf(o, 'infiniteScroll')),
     serverRowModel(argsOf(o, 'serverRowModel')),
     backToTop(argsOf(o, 'backToTop')),
+    failureLog(argsOf(o, 'failureLog')),
     // Демо-производитель действий строки как единые дескрипторы (`RowAction`):
     // инлайн — ряд row-кнопок, при `rowActionMenu` схлопываются в overflow-кебаб.
     {

@@ -247,6 +247,22 @@ export interface TableLabels {
   failureRetry: string
   /** Отбросить отклонённое изменение ячейки (ADR 0177). */
   failureDiscard: string
+  /** Журнал отказов: заголовок поповера (ADR 0177, §7). */
+  failureLog: string
+  /** Кнопка журнала отказов с числом записей. */
+  failureLogButton: (count: number) => string
+  /** Запись журнала: прокрутить к цели. */
+  failureShow: string
+  /** Запись журнала: снять запись. */
+  failureClose: string
+  /** Цель записи — ячейка: колонка и номер строки. */
+  failureTargetCell: (column: string, row: number) => string
+  /** Цель записи — строка. */
+  failureTargetRow: (row: number) => string
+  /** Цель записи — запрос данных всей таблицы. */
+  failureTargetTable: string
+  /** Объявление новой записи журнала: число записей. */
+  announceFailureLogged: (count: number) => string
   /** Пункт меню ячейки: повторить отклонённое сохранение (ADR 0177, OB16). */
   retrySave: string
   /** Пункт меню ячейки: отменить ждущее сохранение (ADR 0177, OB16). */
@@ -576,6 +592,14 @@ export const DEFAULT_LABELS = {
   cellError: 'Cell error',
   failureRetry: 'Retry',
   failureDiscard: 'Discard change',
+  failureLog: 'Failure log',
+  failureLogButton: 'Failures: {count}',
+  failureShow: 'Show',
+  failureClose: 'Close',
+  failureTargetCell: '{column} · row {row}',
+  failureTargetRow: 'Row {row}',
+  failureTargetTable: 'Table',
+  announceFailureLogged: 'Failures in the log: {count}',
   retrySave: 'Retry saving',
   cancelSave: 'Cancel saving',
   announceSaveFailed: '{column}: {error}',
