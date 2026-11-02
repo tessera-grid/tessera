@@ -249,8 +249,16 @@ export interface TableLabels {
   failureDiscard: string
   /** Журнал отказов: заголовок поповера (ADR 0177, §7). */
   failureLog: string
+  /** Пустой журнал отказов. */
+  failureLogEmpty: string
+  /** Пояснение пустого журнала отказов. */
+  failureLogEmptyDescription: string
   /** Кнопка журнала отказов с числом записей. */
   failureLogButton: (count: number) => string
+  /** Кебаб записи журнала — меню её действий. */
+  failureActions: string
+  /** Закрыть все записи журнала. */
+  failureClearAll: string
   /** Запись журнала: прокрутить к цели. */
   failureShow: string
   /** Запись журнала: снять запись. */
@@ -593,7 +601,11 @@ export const DEFAULT_LABELS = {
   failureRetry: 'Retry',
   failureDiscard: 'Discard change',
   failureLog: 'Failure log',
+  failureLogEmpty: 'No failures',
+  failureLogEmptyDescription: 'Actions refused by the server will appear here',
   failureLogButton: 'Failures: {count}',
+  failureActions: 'Failure actions',
+  failureClearAll: 'Clear all',
   failureShow: 'Show',
   failureClose: 'Close',
   failureTargetCell: '{column} · row {row}',

@@ -23,15 +23,20 @@ const LOAD_TIMEOUT = 5000
 export const sleep = (ms: number) =>
   new Promise(resolve => setTimeout(resolve, ms))
 
+/** Гайд показывает действие шага (ADR 0117, SN54): повтор и счёт ожидания стоят. */
+const showing = () => !!document.querySelector('[data-guide-showing]')
+
 /** Повторяет `act` с паузой, пока не выполнится `done`: кнопки готовы не сразу. */
 export const repeat = async (
   done: () => boolean,
   act: () => void,
   signal: AbortSignal,
 ) => {
-  for (let tries = 0; !done(); tries += 1) {
-    if (tries > 60) throw new Error(`Шаг гайда не дождался: ${done}`)
-    act()
+  for (let tries = 0; !done();) {
+    if (!showing()) {
+      if (++tries > 61) throw new Error(`Шаг гайда не дождался: ${done}`)
+      act()
+    }
     await sleep(200)
     signal.throwIfAborted()
   }
@@ -59,14 +64,16 @@ export const pollUntil = async (
   signal?: AbortSignal,
   timeout = LOAD_TIMEOUT,
 ) => {
-  const start = performance.now()
+  let waited = 0
   await sleep(0)
   signal?.throwIfAborted()
   while (!check()) {
-    if (performance.now() - start > timeout) {
+    if (waited > timeout) {
       throw new Error(`Шаг гайда не дождался: ${check.toString()}`)
     }
+    const before = performance.now()
     await sleep(16)
+    if (!showing()) waited += performance.now() - before
     signal?.throwIfAborted()
   }
 }

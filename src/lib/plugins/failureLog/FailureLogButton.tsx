@@ -1,6 +1,6 @@
 /**
- * Кнопка журнала отказов в тулбаре (ADR 0177, JR1): видна, только пока в реестре есть записи,
- * красный бабл — их число. Поповер — ленивый модуль (ADR 0061).
+ * Кнопка журнала отказов в тулбаре (ADR 0177, JR1): видна всегда, красный бабл — число
+ * нерешённых отказов, без них бабла нет. Поповер — ленивый модуль (ADR 0061).
  */
 import { Suspense } from 'react'
 
@@ -16,13 +16,15 @@ const FailureLogPopover = preloadable(() =>
   import('./FailureLogPopover').then(module => module.FailureLogPopover),
 )
 
-/** Кнопка с поповером; размонтируется вместе с последней записью — поповер закрыт заново. */
-const FailureLogControl = ({
-  table,
-  count,
-}: ToolbarComponentProps & { count: number }) => {
+export const FailureLogButton = ({ table }: ToolbarComponentProps) => {
   const labels = useLocalization()
   const { failureLog: FailureLogIcon } = useIcons()
+  const count = useSliceProjection(
+    table,
+    'failures',
+    (failures: Record<string, unknown> | undefined) =>
+      Object.keys(failures ?? {}).length,
+  )
   const popover = useLazyPopover(
     table,
     FailureLogPopover,
@@ -30,13 +32,13 @@ const FailureLogControl = ({
     true,
     { plugin: 'failureLog' },
   )
-  const label = labels.failureLogButton(count)
+  const label = count > 0 ? labels.failureLogButton(count) : labels.failureLog
   const icon = <FailureLogIcon width={16} height={16} />
   const placeholder = (
     <ToolbarButton
       label={label}
       icon={icon}
-      active
+      active={count > 0}
       count={count}
       indicatorTone="error"
       aria-haspopup="dialog"
@@ -58,14 +60,4 @@ const FailureLogControl = ({
       />
     </Suspense>
   )
-}
-
-export const FailureLogButton = ({ table }: ToolbarComponentProps) => {
-  const count = useSliceProjection(
-    table,
-    'failures',
-    (failures: Record<string, unknown> | undefined) =>
-      Object.keys(failures ?? {}).length,
-  )
-  return count === 0 ? null : <FailureLogControl table={table} count={count} />
 }

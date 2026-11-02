@@ -546,6 +546,8 @@
   --tsr-comp-button-size: 32px;
   /* Компактная кнопка (ADR 0114): ручки перетаскивания; не меньше зоны нажатия 24×24. */
   --tsr-comp-button-size-compact: 24px;
+  /* Иллюстрация компактной заглушки кита (`Stub size="compact"`) — в поповерах. */
+  --tsr-comp-stub-media-size-compact: 80px;
   /* Кнопки в ячейках шапки, тела и строк (ADR 0135); тулбар и панели — `button-size`. */
   --tsr-comp-grid-button-size: 28px;
   --tsr-comp-button-icon-size: 16px;

@@ -32,9 +32,18 @@ export interface StubProps extends Omit<
   description?: string
   /** Действие — кнопка кита. */
   action?: ReactNode
+  /** `compact` — для поповеров и панелей: меньше отступы, кегль и иллюстрация. */
+  size?: 'default' | 'compact'
 }
 
-/** Высота содержимого без иллюстрации и место, которое она займёт вместе с зазором. */
+/**
+ * Высота содержимого без иллюстрации и место, которое она займёт вместе с зазором. Размеры —
+ * дробные и без трансформаций: округления целых высот в рамке по содержимому и масштаб
+ * поповера на анимации прятали бы иллюстрацию.
+ */
+const layoutHeight = (element: Element) =>
+  parseFloat(getComputedStyle(element).height) || 0
+
 const mediaFits = (
   root: HTMLElement,
   media: HTMLElement,
@@ -44,7 +53,7 @@ const mediaFits = (
   const gap = parseFloat(style.rowGap) || 0
   const rest = [...root.children].filter(child => child !== media)
   const content = rest.reduce(
-    (sum, child) => sum + (child as HTMLElement).offsetHeight,
+    (sum, child) => sum + layoutHeight(child),
     gap * Math.max(rest.length - 1, 0),
   )
   const needed =
@@ -53,11 +62,11 @@ const mediaFits = (
     content +
     mediaHeight +
     gap
-  return needed <= root.clientHeight + 0.5
+  return needed <= parseFloat(style.height) + 0.5
 }
 
 export const Stub = forwardRef<HTMLDivElement, StubProps>(function Stub(
-  { media, title, description, action, className, ...rest },
+  { media, title, description, action, size = 'default', className, ...rest },
   ref,
 ) {
   const rootRef = useRef<HTMLDivElement | null>(null)
@@ -80,7 +89,7 @@ export const Stub = forwardRef<HTMLDivElement, StubProps>(function Stub(
     const mediaNode = mediaRef.current
     if (!root || !mediaNode) return
     const observer = new ResizeObserver(() => {
-      if (!mediaNode.hidden) mediaHeight.current = mediaNode.offsetHeight
+      if (!mediaNode.hidden) mediaHeight.current = layoutHeight(mediaNode)
       const hidden = !mediaFits(root, mediaNode, mediaHeight.current)
       flushSync(() => setMediaHidden(hidden))
     })
@@ -93,6 +102,7 @@ export const Stub = forwardRef<HTMLDivElement, StubProps>(function Stub(
     <div
       ref={setRoot}
       className={clsx(styles.stub, className)}
+      data-size={size}
       data-media-hidden={(hasMedia && mediaHidden) || undefined}
       {...rest}
     >

@@ -14,10 +14,16 @@ import {
   guideArgs,
   stepAction,
 } from '../../demos/GuideStory'
-import { centerOf, dragHold, pollUntil } from '../../__mocks__/catalogPlay'
+import {
+  centerOf,
+  dragHold,
+  pollUntil,
+  repeat,
+} from '../../__mocks__/catalogPlay'
+import { untilDone } from '../../__mocks__/cellGestures'
 import { HANDLE, ROW, rowIdOrder } from '../../rowDragging.dnd'
 
-// Панель гайда историй (ADR 0117, SN14–SN15, SN17, SN21–SN27, SN33–SN35, SN40–SN44) — с
+// Панель гайда историй (ADR 0117, SN14–SN15, SN17, SN21–SN27, SN33–SN35, SN40–SN54) — с
 // движением: каталог гоняет истории с уменьшенным движением, и порядок конфетти и сдвига
 // виден только здесь. SN16, SN18–SN20 — в `play` песочницы `Tessera/Common/Guide panel`.
 
@@ -1103,6 +1109,569 @@ describe('ввод человека посреди гайда (ADR 0117)', () =>
     } finally {
       spacer.remove()
       window.scrollTo(0, 0)
+    }
+  })
+
+  test('SN45: событие действия шага ячейке вне вида таблицы ждёт прокрутки к ней и доходит в прежнем порядке с координатами по новому месту; ячейке в виду — сразу', async () => {
+    const args = guideArgs(
+      { dataCount: 30, columnCount: 20, height: 300 },
+      { colorMode: 'light', locale: 'en' },
+    )
+    const steps: readonly GuideStoryStep[] = [{ title: 'Таблица', hint: '' }]
+    const screen = await render(
+      <GuideStory title="Цель вне вида" steps={steps} args={args} />,
+    )
+    const cells = () => [
+      ...document.querySelectorAll<HTMLElement>(
+        '.data-grid__body-row [data-column-id]',
+      ),
+    ]
+    const centerHit = (cell: HTMLElement) => {
+      const box = cell.getBoundingClientRect()
+      const hit = document.elementFromPoint(
+        box.left + box.width / 2,
+        box.top + box.height / 2,
+      )
+      return !!hit && cell.contains(hit)
+    }
+    const scroller = () =>
+      document.querySelector<HTMLElement>('.data-grid__container')!
+    try {
+      await expect.poll(() => cells().length).toBeGreaterThan(20)
+      // Ячейка в виду: событие доходит, пока идёт dispatchEvent.
+      const near = cells().find(centerHit)!
+      let nearHit = false
+      near.addEventListener('click', () => (nearHit = true), { once: true })
+      near.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      expect(nearHit).toBe(true)
+
+      // Смонтированная ячейка ниже и правее видимой части.
+      const far = cells()
+        .filter(cell => !centerHit(cell))
+        .sort(
+          (a, b) =>
+            b.getBoundingClientRect().bottom +
+            b.getBoundingClientRect().right -
+            (a.getBoundingClientRect().bottom +
+              a.getBoundingClientRect().right),
+        )[0]!
+      const before = far.getBoundingClientRect()
+      expect(before.bottom).toBeGreaterThan(
+        scroller().getBoundingClientRect().bottom,
+      )
+      const order: string[] = []
+      const points: { x: number; y: number }[] = []
+      for (const type of ['pointerover', 'mouseover', 'contextmenu'])
+        far.addEventListener(type, event => {
+          order.push(type)
+          const { clientX: x, clientY: y } = event as MouseEvent
+          points.push({ x, y })
+        })
+      const at = {
+        bubbles: true,
+        cancelable: true,
+        clientX: before.left + 10,
+        clientY: before.top + 10,
+      }
+      far.dispatchEvent(new PointerEvent('pointerover', at))
+      far.dispatchEvent(new MouseEvent('mouseover', at))
+      far.dispatchEvent(new MouseEvent('contextmenu', { ...at, button: 2 }))
+      expect(order).toEqual([])
+      await expect
+        .poll(() => order)
+        .toEqual(['pointerover', 'mouseover', 'contextmenu'])
+      expect(centerHit(far)).toBe(true)
+      expect(scroller().scrollTop).toBeGreaterThan(0)
+      expect(scroller().scrollLeft).toBeGreaterThan(0)
+      // Координаты — по новому месту ячейки.
+      const cell = far.getBoundingClientRect()
+      for (const point of points) {
+        expect(point.x).toBeCloseTo(cell.left + 10, 0)
+        expect(point.y).toBeCloseTo(cell.top + 10, 0)
+      }
+    } finally {
+      await screen.unmount()
+    }
+  })
+})
+
+describe('показ действий шага (ADR 0117)', () => {
+  const args = guideArgs(
+    { dataCount: 10, columnCount: 6, enableCellEditing: true },
+    { colorMode: 'light', locale: 'en' },
+  )
+  const steps: readonly GuideStoryStep[] = [{ title: 'Таблица', hint: '' }]
+  const mount = (showActions?: boolean) =>
+    render(
+      <GuideStory
+        title="Показ действий"
+        steps={steps}
+        args={args}
+        showActions={showActions}
+      />,
+    )
+  const cellAt = (row: number, column: string) =>
+    document.querySelector<HTMLElement>(
+      `.data-grid__body-row[data-index="${row}"] [data-column-id="${column}"]`,
+    )!
+  const middle = (element: Element) => {
+    const box = element.getBoundingClientRect()
+    return { x: box.left + box.width / 2, y: box.top + box.height / 2 }
+  }
+  const mouse = (type: string, at: { x: number; y: number }) =>
+    new (type.startsWith('pointer') ? PointerEvent : MouseEvent)(type, {
+      bubbles: true,
+      cancelable: true,
+      clientX: at.x,
+      clientY: at.y,
+    })
+  const record = (element: EventTarget, types: string[]) => {
+    const seen: string[] = []
+    for (const type of types)
+      element.addEventListener(type, () => seen.push(type))
+    return seen
+  }
+  const hovered = (element: Element) =>
+    element.classList.contains('pseudo-hover')
+  const pressed = (element: Element) =>
+    element.classList.contains('pseudo-active')
+  const rings = () => [...document.querySelectorAll('[data-guide-click]')]
+  const rows = () =>
+    expect.poll(() => document.querySelectorAll('.data-grid__body-row').length)
+
+  test('SN46: нажатие ждёт — цель сперва наведена с событиями наведения, затем нажата и в точке волна; события доходят в прежнем порядке, следующие события жеста — сразу', async () => {
+    const screen = await mount(true)
+    try {
+      await rows().toBeGreaterThan(3)
+      const cell = cellAt(2, 'country')
+      const at = middle(cell)
+      const seen = record(cell, [
+        'pointerover',
+        'mouseover',
+        'pointerdown',
+        'click',
+      ])
+      const started = performance.now()
+      cell.dispatchEvent(mouse('click', at))
+      // Наведение: вид у ячейки и её строки, нажатия ещё нет.
+      expect(hovered(cell)).toBe(true)
+      expect(hovered(cell.closest('.data-grid__body-row')!)).toBe(true)
+      expect(pressed(cell)).toBe(false)
+      expect(seen).toEqual(['pointerover', 'mouseover'])
+      // Нажатие: нажатый вид и волна в точке.
+      await expect.poll(() => pressed(cell), { timeout: 3000 }).toBe(true)
+      expect(rings()).toHaveLength(1)
+      const ring = rings()[0]!.getBoundingClientRect()
+      expect(ring.left + ring.width / 2).toBeCloseTo(at.x, 0)
+      expect(ring.top + ring.height / 2).toBeCloseTo(at.y, 0)
+      await expect
+        .poll(() => seen, { timeout: 3000 })
+        .toEqual(['pointerover', 'mouseover', 'pointerdown', 'click'])
+      expect(performance.now() - started).toBeGreaterThanOrEqual(450)
+      // Тот же жест — сразу: отпускание после показанного нажатия кнопки.
+      const up = record(cell, ['pointerup'])
+      cell.dispatchEvent(mouse('pointerup', at))
+      expect(up).toEqual(['pointerup'])
+
+      // Цель сдвинулась, пока наведена (скрытая кнопка раскрылась): волна — по новому месту.
+      const moving = cellAt(4, 'firstName')
+      moving.addEventListener(
+        'mouseover',
+        () => (moving.style.transform = 'translateX(30px)'),
+        { once: true },
+      )
+      await expect.poll(() => rings().length, { timeout: 3000 }).toBe(0)
+      // Голый `click()` — как мышью: кнопка вниз на нажатом виде, вверх — перед щелчком.
+      const press = record(moving, [
+        'pointerdown',
+        'mousedown',
+        'pointerup',
+        'mouseup',
+        'click',
+      ])
+      let downWhilePressed = false
+      moving.addEventListener(
+        'pointerdown',
+        () => (downWhilePressed = pressed(moving)),
+        { once: true },
+      )
+      // Отпускание ещё раз сдвинуло цель: волна к щелчку — за ней.
+      moving.addEventListener(
+        'pointerup',
+        () => (moving.style.transform = 'translateX(60px)'),
+        { once: true },
+      )
+      let clickAs: Partial<PointerEvent> = {}
+      moving.addEventListener(
+        'click',
+        event => {
+          clickAs = event as PointerEvent
+          const wave = rings().at(-1)!.getBoundingClientRect()
+          waveAtClick = {
+            x: wave.left + wave.width / 2,
+            y: wave.top + wave.height / 2,
+          }
+        },
+        { once: true },
+      )
+      let waveAtClick = { x: 0, y: 0 }
+      moving.click()
+      await expect
+        .poll(() => press, { timeout: 3000 })
+        .toEqual(['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click'])
+      expect(downWhilePressed).toBe(true)
+      const moved = middle(moving)
+      expect(waveAtClick.x).toBeCloseTo(moved.x, 0)
+      expect(waveAtClick.y).toBeCloseTo(moved.y, 0)
+      // Щелчок — как от мыши: Base UI не примет его за клавиатурный.
+      expect(clickAs.detail).toBe(1)
+      expect(clickAs.pointerType).toBe('mouse')
+
+      // У кнопки меню — без нажатия: меню Base UI открывается уже им.
+      const menuButton = document.createElement('button')
+      menuButton.setAttribute('aria-haspopup', 'menu')
+      menuButton.textContent = 'menu'
+      cellAt(5, 'country').append(menuButton)
+      const menuPress = record(menuButton, [
+        'pointerdown',
+        'mousedown',
+        'click',
+      ])
+      menuButton.click()
+      await expect.poll(() => menuPress, { timeout: 3000 }).toEqual(['click'])
+
+      // Прошлый повтор перерисовал цель: следующий — узлу на том же месте.
+      const old = cellAt(6, 'country')
+      const fresh = old.cloneNode(true) as HTMLElement
+      old.addEventListener('contextmenu', () => old.replaceWith(fresh), {
+        once: true,
+      })
+      const reached = record(fresh, ['mouseup'])
+      const spot = middle(old)
+      old.dispatchEvent(mouse('contextmenu', spot))
+      old.dispatchEvent(mouse('mouseup', spot))
+      await expect.poll(() => reached, { timeout: 3000 }).toEqual(['mouseup'])
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('SN47: клавиша действия шага — плашка с её именем у цели: Enter символом, сочетание через «+», одиночный модификатор — без плашки', async () => {
+    const screen = await mount(true)
+    try {
+      await rows().toBeGreaterThan(3)
+      const cell = cellAt(1, 'country')
+      const badges = () =>
+        [...document.querySelectorAll('[data-guide-key]')].map(
+          badge => badge.textContent,
+        )
+      cell.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+      )
+      cell.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'a',
+          ctrlKey: true,
+          bubbles: true,
+        }),
+      )
+      cell.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Shift', bubbles: true }),
+      )
+      expect(badges()).toEqual(['↵', 'Ctrl+A'])
+      const badge = document
+        .querySelector('[data-guide-key]')!
+        .getBoundingClientRect()
+      const box = cell.getBoundingClientRect()
+      expect(badge.left).toBeCloseTo(box.left, 0)
+      expect(badge.top).toBeGreaterThanOrEqual(box.bottom)
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('SN48: наведение ставит цели вид наведения до наведения на другую цель, ухода указателя, движения настоящей мыши или секунды без событий', async () => {
+    const screen = await mount(true)
+    try {
+      await rows().toBeGreaterThan(3)
+      const first = cellAt(1, 'country')
+      const second = cellAt(2, 'country')
+      const seen = record(first, ['pointerover'])
+      first.dispatchEvent(mouse('pointerover', middle(first)))
+      expect(seen).toEqual(['pointerover'])
+      expect(hovered(first)).toBe(true)
+      second.dispatchEvent(mouse('pointerover', middle(second)))
+      expect(hovered(first)).toBe(false)
+      expect(hovered(second)).toBe(true)
+      second.dispatchEvent(mouse('pointerout', middle(second)))
+      expect(hovered(second)).toBe(false)
+
+      first.dispatchEvent(mouse('pointerover', middle(first)))
+      await sleep(600)
+      expect(hovered(first)).toBe(true)
+      await expect.poll(() => hovered(first), { timeout: 2000 }).toBe(false)
+
+      first.dispatchEvent(mouse('pointerover', middle(first)))
+      expect(hovered(first)).toBe(true)
+      // Раньше секунды простоя: снимает именно настоящая мышь.
+      const moved = performance.now()
+      await userEvent.hover(cellAt(4, 'age'))
+      expect(hovered(first)).toBe(false)
+      expect(performance.now() - moved).toBeLessThan(900)
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('SN49: ввод текста действием шага идёт по символу, следующие события шага ждут конца ввода', async () => {
+    const screen = await mount(true)
+    try {
+      await rows().toBeGreaterThan(3)
+      // Своё поле на странице: набор идёт в любое текстовое поле, не только в ячейку.
+      const input = document.createElement('input')
+      document.body.append(input)
+      input.focus()
+      const values: string[] = []
+      const order: string[] = []
+      input.addEventListener('input', () => {
+        values.push(input.value)
+        order.push('input')
+      })
+      input.addEventListener('keydown', () => order.push('keydown'))
+      Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        'value',
+      )!.set!.call(input, 'Zelda')
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+      input.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+      )
+      expect(input.value).not.toBe('Zelda')
+      await expect.poll(() => order.at(-1), { timeout: 3000 }).toBe('keydown')
+      expect(values.at(-1)).toBe('Zelda')
+      expect(values.length).toBeGreaterThanOrEqual(4)
+      for (const value of values) expect('Zelda'.startsWith(value)).toBe(true)
+      expect(order.indexOf('keydown')).toBe(order.length - 1)
+      input.remove()
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('SN50: нажатие кнопки мыши не ждёт — волна сразу, нажатие и движение указателя после него доходят без ожидания', async () => {
+    const screen = await mount(true)
+    try {
+      await rows().toBeGreaterThan(3)
+      // Ячейка в виду: иначе нажатие ждало бы прокрутки к ней (SN45).
+      const cell = cellAt(1, 'country')
+      const at = middle(cell)
+      const seen = record(cell, ['pointerdown'])
+      // Нажатие доходит сразу, волна — тут же.
+      cell.dispatchEvent(mouse('pointerdown', at))
+      expect(seen).toEqual(['pointerdown'])
+      expect(rings().length).toBeGreaterThan(0)
+      // Указатель ведут и по документу (перетаскивание), и по ячейкам (выделение мышью).
+      // Дошло само событие, а не его повтор после ожидания.
+      const moves: Event[] = []
+      document.addEventListener('pointermove', event => moves.push(event))
+      const onDocument = mouse('pointermove', { x: at.x + 40, y: at.y })
+      document.dispatchEvent(onDocument)
+      expect(moves).toContain(onDocument)
+      const over = cellAt(3, 'country')
+      const onCell = mouse('pointermove', middle(over))
+      over.dispatchEvent(onCell)
+      expect(moves).toContain(onCell)
+      document.dispatchEvent(mouse('pointerup', at))
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('SN51: вне живого Storybook показа и задержек нет; при уменьшенном движении волна и плашка — без анимации', async () => {
+    const plain = await mount()
+    try {
+      await rows().toBeGreaterThan(3)
+      const cell = cellAt(2, 'country')
+      const seen = record(cell, ['click'])
+      cell.click()
+      cell.dispatchEvent(mouse('pointerover', middle(cell)))
+      cell.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+      )
+      expect(seen).toEqual(['click'])
+      expect(hovered(cell)).toBe(false)
+      expect(rings()).toEqual([])
+      expect(document.querySelector('[data-guide-key]')).toBeNull()
+    } finally {
+      await plain.unmount()
+    }
+    await motion.reducedMotion(true)
+    const reduced = await mount(true)
+    try {
+      await rows().toBeGreaterThan(3)
+      const cell = cellAt(2, 'country')
+      cell.dispatchEvent(mouse('click', middle(cell)))
+      cell.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+      )
+      await expect
+        .poll(() => rings().length, { timeout: 3000 })
+        .toBeGreaterThan(0)
+      expect(rings().at(-1)!.getAnimations()).toEqual([])
+      // Клавиша ждёт конца нажатия: плашка — когда она доходит.
+      await expect
+        .poll(() => document.querySelector('[data-guide-key]'))
+        .not.toBeNull()
+      expect(
+        document.querySelector('[data-guide-key]')!.getAnimations(),
+      ).toEqual([])
+    } finally {
+      await reduced.unmount()
+      await motion.reducedMotion(false)
+    }
+  })
+
+  test('SN52: нажатый вид снимается вскоре после нажатия; волна и плашка не перехватывают указатель и скрыты от дерева доступности', async () => {
+    const screen = await mount(true)
+    try {
+      await rows().toBeGreaterThan(3)
+      const cell = cellAt(2, 'country')
+      const seen = record(cell, ['click'])
+      cell.dispatchEvent(mouse('click', middle(cell)))
+      cell.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+      )
+      await expect.poll(() => pressed(cell), { timeout: 3000 }).toBe(true)
+      await expect.poll(() => seen, { timeout: 3000 }).toEqual(['click'])
+      await expect
+        .poll(() => document.querySelector('[data-guide-key]'))
+        .not.toBeNull()
+      for (const layer of [
+        rings()[0]!,
+        document.querySelector('[data-guide-key]')!,
+      ]) {
+        expect(getComputedStyle(layer).pointerEvents).toBe('none')
+        expect(layer.getAttribute('aria-hidden')).toBe('true')
+      }
+      await expect.poll(() => pressed(cell), { timeout: 1000 }).toBe(false)
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('SN53: нажатие по панели гайда не закрывает меню таблицы — и после нажатия внутри меню', async () => {
+    const menuArgs = guideArgs(
+      { dataCount: 10, columnCount: 6, enableColumnVisibility: true },
+      { colorMode: 'light', locale: 'en' },
+    )
+    const screen = await render(
+      <GuideStory
+        title="Меню и панель"
+        steps={[
+          { title: 'Таблица', hint: '' },
+          { title: 'Дальше', hint: '' },
+        ]}
+        args={menuArgs}
+      />,
+    )
+    try {
+      await expect
+        .poll(() => {
+          if (!visibilityMenu()) visibilityButton()?.click()
+          return !!visibilityMenu()
+        })
+        .toBe(true)
+      await humanClick(byId('guide-toggle'))
+      await sleep(300)
+      expect(visibilityMenu()).not.toBeNull()
+      // И после нажатия внутри меню: Base UI помнит его и закрыл бы меню щелчком мимо.
+      await humanClick(
+        visibilityMenu()!.querySelectorAll<HTMLElement>(
+          '[role="checkbox"]',
+        )[1]!,
+      )
+      await humanClick(byId('guide-toggle'))
+      await sleep(300)
+      expect(visibilityMenu()).not.toBeNull()
+    } finally {
+      await userEvent.keyboard('{Escape}')
+      await screen.unmount()
+    }
+  })
+
+  test('SN54: пока гайд показывает нажатие, цикл шага его не повторяет — до цели доходит одно нажатие', async () => {
+    const clicks: Event[] = []
+    const cellOf = (root: ParentNode) =>
+      root.querySelector<HTMLElement>(
+        '.data-grid__body-row[data-index="2"] [data-column-id="country"]',
+      )
+    const steps: readonly GuideStoryStep[] = [
+      { title: 'Таблица', hint: '' },
+      {
+        title: 'Нажатие',
+        hint: '',
+        enter: untilDone(
+          () => clicks.length > 0,
+          root => {
+            const cell = cellOf(root)
+            if (!cell) return
+            if (!cell.dataset.counted) {
+              cell.dataset.counted = 'yes'
+              cell.addEventListener('click', event => clicks.push(event))
+            }
+            cell.click()
+          },
+        ),
+      },
+    ]
+    const screen = await render(
+      <GuideStory
+        title="Одно нажатие"
+        steps={steps}
+        args={guideArgs(
+          { dataCount: 10, columnCount: 6 },
+          { colorMode: 'light', locale: 'en' },
+        )}
+        showActions
+      />,
+    )
+    try {
+      await expect
+        .poll(() => document.querySelectorAll('.data-grid__body-row').length)
+        .toBeGreaterThan(3)
+      await expandGuide()
+      button('guide-next').click()
+      await expect.poll(() => clicks.length, { timeout: 3000 }).toBe(1)
+      await sleep(400)
+      expect(clicks).toHaveLength(1)
+      // Повтор того же нажатия сразу после показа, пока таблица отвечает, — отброшен.
+      cellOf(document)!.click()
+      expect(clicks).toHaveLength(1)
+
+      // `repeat` не повторяет и `pollUntil` не тратит время, пока идёт показ.
+      const guide = document.querySelector<HTMLElement>('[data-guide-root]')!
+      guide.setAttribute('data-guide-showing', '')
+      let acts = 0
+      const controller = new AbortController()
+      void repeat(
+        () => acts > 0,
+        () => acts++,
+        controller.signal,
+      )
+      let polled = false
+      const waited = pollUntil(() => polled, controller.signal, 100).then(
+        () => 'done',
+        () => 'timeout',
+      )
+      await sleep(400)
+      expect(acts).toBe(0)
+      polled = true
+      expect(await waited).toBe('done')
+      guide.removeAttribute('data-guide-showing')
+      await expect.poll(() => acts).toBe(1)
+      controller.abort()
+    } finally {
+      await screen.unmount()
     }
   })
 })

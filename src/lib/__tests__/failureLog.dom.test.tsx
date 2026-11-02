@@ -110,7 +110,10 @@ describe('Журнал отказов (ADR 0177)', () => {
     mount()
     const keys = [
       'failureLog',
+      'failureLogEmpty',
       'failureLogButton',
+      'failureActions',
+      'failureClearAll',
       'failureShow',
       'failureClose',
       'failureTargetCell',

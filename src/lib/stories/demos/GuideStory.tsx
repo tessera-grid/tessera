@@ -11,7 +11,18 @@ import {
   useState,
 } from 'react'
 
+import type { TesseraFeatureEntry } from '../../core/features'
+import { scrollToRow } from '../../core/scrollToRow/scrollToRowFeature'
 import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
+import {
+  createGuideDemo,
+  HOVER_MS,
+  isLiveStorybook,
+  keyLabel,
+  PRESS_MS,
+  sleep,
+  TYPE_MS,
+} from './guideDemo'
 import { StoryComponent } from '../DataGridStory'
 import type { StoryProps } from '../DataGridStory.types'
 import { dataGridMeta } from '../dataGridMeta'
@@ -104,12 +115,6 @@ export const stepAction =
     }
   }
 
-/** Открытое меню или поповер таблицы. */
-const OPEN_POPUP = '[role="menu"][data-open], [role="dialog"][data-open]'
-
-const isGuideToggle = (target: EventTarget) =>
-  target instanceof Element && !!target.closest('[data-testid="guide-toggle"]')
-
 /** Клавиши, которые таблицу не меняют: вход по Tab и одиночные модификаторы. */
 const PASSIVE_KEYS = new Set(['Tab', 'Shift', 'Control', 'Alt', 'Meta'])
 
@@ -122,6 +127,216 @@ const SHIELDED = [
   'wheel',
   'keydown',
 ]
+
+/**
+ * События действия шага, которые доходят до ячейки тела только в виду (SN45): нажатие,
+ * меню, наведение, клавиша. Движение и отпускание прокрутку не запускают — иначе
+ * перетаскивание к краю таблицы крутило бы её к ячейкам, — а ждут вместе с ними.
+ */
+const REVEALING = new Set([
+  'pointerdown',
+  'mousedown',
+  'click',
+  'dblclick',
+  'contextmenu',
+  'pointerover',
+  'mouseover',
+  'keydown',
+])
+const HELD = [
+  ...REVEALING,
+  'input',
+  'pointerup',
+  'mouseup',
+  'pointermove',
+  'mousemove',
+  'pointerout',
+  'mouseout',
+]
+
+/** Поля событий, которые переносит повтор: у мыши и указателя — ещё и координаты. */
+const EVENT_FIELDS = [
+  'bubbles',
+  'cancelable',
+  'composed',
+  'detail',
+  'view',
+  'screenX',
+  'screenY',
+  'clientX',
+  'clientY',
+  'button',
+  'buttons',
+  'relatedTarget',
+  'pointerId',
+  'pointerType',
+  'isPrimary',
+  'key',
+  'code',
+  'location',
+  'repeat',
+  'ctrlKey',
+  'shiftKey',
+  'altKey',
+  'metaKey',
+] as const
+
+/** Нажатия: цель сперва показывает наведение и нажатие, в точке — волна (SN46). */
+const CLICKING = new Set(['click', 'dblclick', 'contextmenu'])
+/**
+ * Нажатие кнопки мыши: волна сразу, без ожидания — с него начинаются перетаскивание и
+ * выделение мышью, и задержка сорвала бы их (SN50).
+ */
+const PRESSING = new Set(['pointerdown', 'mousedown'])
+const HOVERING = new Set(['pointerover', 'mouseover'])
+const UNHOVERING = new Set(['pointerout', 'mouseout'])
+/**
+ * После показанного нажатия: события того же жеста на той же цели доходят сразу, а повтор
+ * самого нажатия — пока таблица на него отвечает (ленивый поповер грузится) — отбрасывается, мс.
+ */
+const GESTURE_MS = 1000
+/** Панель гайда и консоль истории: их кнопки доходят сразу. */
+const OWN_CHROME = '[data-testid="guide"], [data-testid="story-console"]'
+
+type TextField = HTMLInputElement | HTMLTextAreaElement
+const TEXT_TYPES = new Set([
+  'text',
+  'search',
+  'number',
+  'email',
+  'tel',
+  'url',
+  'password',
+])
+const isTextField = (target: EventTarget | null): target is TextField =>
+  target instanceof HTMLTextAreaElement ||
+  (target instanceof HTMLInputElement && TEXT_TYPES.has(target.type))
+/** Значение поля мимо React — как ставят его помощники историй. */
+const setFieldValue = (field: TextField, value: string) =>
+  Object.getOwnPropertyDescriptor(
+    Object.getPrototypeOf(field),
+    'value',
+  )!.set!.call(field, value)
+const commonStart = (a: string, b: string) => {
+  let length = 0
+  while (length < a.length && length < b.length && a[length] === b[length])
+    length++
+  return length
+}
+/** Точка события: его координаты со сдвигом прокрутки или середина цели. */
+const pointOf = (
+  event: Event,
+  target: Element | null,
+  dx: number,
+  dy: number,
+) => {
+  const box = target?.getBoundingClientRect()
+  // Координаты события — только если они на цели: шаг шлёт нажатие кнопке с точкой
+  // середины ячейки, а волна должна быть на кнопке.
+  if (event instanceof MouseEvent && (event.clientX || event.clientY)) {
+    const x = event.clientX + dx
+    const y = event.clientY + dy
+    if (
+      !box ||
+      (x >= box.left && x <= box.right && y >= box.top && y <= box.bottom)
+    )
+      return { x, y }
+  }
+  return box
+    ? { x: box.left + box.width / 2, y: box.top + box.height / 2 }
+    : { x: 0, y: 0 }
+}
+/** Где показать клавишу: у цели, а у клавиши странице — у таблицы. */
+const keyBox = (target: Element, area: Element) =>
+  (target === document.body || target === document.documentElement
+    ? (area.querySelector('.data-grid__container') ?? target)
+    : target
+  ).getBoundingClientRect()
+
+/** Ячейка тела (или строка) под целью события. */
+const bodyCellOf = (target: Element) =>
+  // Копия строки в липкой стопке видна над телом всегда: прокручивать к ней нечего.
+  target.closest('[data-sticky-rows]')
+    ? null
+    : (target.closest<HTMLElement>('.data-grid__body-row [data-column-id]') ??
+      target.closest<HTMLElement>('.data-grid__body-row'))
+
+/** Середина ячейки видна: её не закрывают край прокрутки, шапка и закреплённые колонки. */
+const inView = (cell: HTMLElement) => {
+  const box = cell.getBoundingClientRect()
+  const hit = document.elementFromPoint(
+    box.left + box.width / 2,
+    box.top + box.height / 2,
+  )
+  return !!hit && cell.contains(hit)
+}
+
+/** Цель встала на место: два кадра подряд без сдвига, не дольше полсекунды. */
+const settledBox = async (element: Element) => {
+  let last = element.getBoundingClientRect()
+  for (let frames = 0, still = 0; frames < 30 && still < 2; frames++) {
+    await new Promise(resolve => requestAnimationFrame(resolve))
+    const box = element.getBoundingClientRect()
+    still = box.left === last.left && box.top === last.top ? still + 1 : 0
+    last = box
+  }
+}
+
+/** Нажатие по панели гайда, которое не должно закрывать меню и поповеры таблицы. */
+const PANEL_PRESS = ['pointerdown', 'mousedown', 'touchstart']
+
+/**
+ * Состояние цели для повтора нажатия: занятость и отметка. Кнопка стала занятой — второе
+ * нажатие новое («стоп»); раскрытие не в счёт — поповер ещё грузится, а повтор его закрыл бы.
+ */
+const STATE_ATTRS = [
+  'aria-busy',
+  'data-pending',
+  'aria-pressed',
+  'aria-checked',
+]
+const stateOf = (target: Element) =>
+  STATE_ATTRS.map(name => target.getAttribute(name)).join('|')
+
+/** Узел под точкой события мыши; у события без точки — никакого. */
+const hitOf = (event: Event) =>
+  event instanceof MouseEvent && (event.clientX || event.clientY)
+    ? document.elementFromPoint(event.clientX, event.clientY)
+    : null
+
+/** Повтор события на прежней цели: координаты сдвинуты вместе с ней. */
+const replayOf = (
+  event: Event,
+  dx: number,
+  dy: number,
+  mouse?: { x: number; y: number },
+) => {
+  const init: Record<string, unknown> = {}
+  for (const field of EVENT_FIELDS)
+    if (field in event) init[field] = event[field as keyof Event]
+  // Щелчок, показанный нажатием мыши, — щелчок мыши: иначе меню Base UI, открытое
+  // нажатием кнопки, примет его за клавиатурный и закроет.
+  if (mouse)
+    Object.assign(init, {
+      clientX: mouse.x - dx,
+      clientY: mouse.y - dy,
+      screenX: mouse.x - dx,
+      screenY: mouse.y - dy,
+      detail: 1,
+      button: 0,
+      pointerType: 'mouse',
+      pointerId: 1,
+      isPrimary: true,
+    })
+  if (typeof init.clientX === 'number') {
+    init.clientX += dx
+    init.screenX = Number(init.screenX) + dx
+    init.clientY = Number(init.clientY) + dy
+    init.screenY = Number(init.screenY) + dy
+  }
+  const Type = event.constructor as new (type: string, init: object) => Event
+  return new Type(event.type, init)
+}
 
 /** Прокрутка таблицы позже стольких мс после колеса — не от него, мс. */
 const WHEEL_SCROLL_MS = 150
@@ -149,11 +364,15 @@ export const GuideStory = ({
   title,
   steps,
   args,
+  showActions: showActionsProp,
 }: {
   title: string
   steps: readonly GuideStoryStep[]
   args: StoryProps
+  /** Показ действий шага (SN46–SN52); по умолчанию — только в живом Storybook. */
+  showActions?: boolean
 }) => {
+  const [showActions] = useState(() => showActionsProp ?? isLiveStorybook())
   const guide = useGuide(steps.length)
   // Журнал консоли живёт, пока открыта история: «Сначала» его не стирает.
   const [consoleLog] = useState(createConsoleLog)
@@ -212,6 +431,14 @@ export const GuideStory = ({
     setShown(prev => ({ ...prev, rewinds: prev.rewinds + 1, changed: false }))
   const root = useRef<HTMLDivElement>(null)
   const table = useRef<HTMLDivElement>(null)
+  // Экземпляр таблицы — для прокрутки к цели действия шага (SN45).
+  const instance = useRef<unknown>(undefined)
+  const [probe] = useState<TesseraFeatureEntry>(() => ({
+    id: 'guideTable',
+    setup: grid => {
+      instance.current = grid
+    },
+  }))
   const running = () => root.current?.dataset.stepAction === 'running'
   // Ввод человека в таблицу, её меню и поповеры (порталы — по дереву React). Пока идёт
   // действие шага, ввод в саму таблицу гасит щит ниже — он пометки не ставит.
@@ -251,8 +478,316 @@ export const GuideStory = ({
       area.removeEventListener('scroll', scrolled, true)
     }
   }, [])
+  // События действия шага (SN45–SN52): ждут, пока таблица докрутится до ячейки-цели, а
+  // цель нажатия покажет наведение и нажатие, затем доходят в прежнем порядке; ввод в поле
+  // идёт по символу.
+  useEffect(() => {
+    const area = table.current
+    if (!area) return
+    const demo = showActions
+      ? createGuideDemo(
+          window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+        )
+      : undefined
+    const replays = new WeakSet<Event>()
+    // Пока доходят повторы, события, которые порождают их обработчики, не ждут.
+    let replaying = false
+    let held: { event: Event; target: EventTarget }[] = []
+    let busy = false
+    const known = new WeakMap<Element, string>()
+    let typing: { field: TextField; text: string; shown: string } | undefined
+    // Жест, уже показанный нажатием: его следующие события на той же цели не ждут.
+    let gesture:
+      | { target: Element; type: string; state: string; until: number }
+      | undefined
+    // Голые щелчки, показанные нажатием мыши, и точка нажатия.
+    const asMouse = new WeakMap<Event, { x: number; y: number }>()
+
+    const deliver = (event: Event, target: EventTarget) => {
+      replays.add(event)
+      replaying = true
+      try {
+        target.dispatchEvent(event)
+      } finally {
+        replaying = false
+      }
+    }
+    const holdEvent = (event: Event) => {
+      event.stopImmediatePropagation()
+      event.preventDefault()
+      held.push({ event, target: event.target! })
+    }
+    /** Набрать в поле текст по символу, начиная с общего начала с прежним значением. */
+    const typeOut = async (field: TextField, from: string, text: string) => {
+      const state = { field, text, shown: from }
+      typing = state
+      let length = commonStart(from, state.text)
+      setFieldValue(field, state.text.slice(0, length))
+      state.shown = field.value
+      while (state.shown !== state.text) {
+        length = Math.min(length + 1, state.text.length)
+        setFieldValue(field, state.text.slice(0, length))
+        state.shown = field.value
+        deliver(new InputEvent('input', { bubbles: true }), field)
+        await sleep(TYPE_MS)
+      }
+      known.set(field, state.text)
+      typing = undefined
+    }
+    /** Наведение, как от мыши: вид наведения и события, по которым подсвечиваются пункты меню. */
+    const hoverAt = (target: Element, point: { x: number; y: number }) => {
+      if (demo!.hovers(target)) return
+      demo!.hover(target)
+      const at = { bubbles: true, clientX: point.x, clientY: point.y }
+      deliver(new PointerEvent('pointerover', at), target)
+      deliver(new MouseEvent('mouseover', at), target)
+      deliver(new PointerEvent('pointermove', at), target)
+      deliver(new MouseEvent('mousemove', at), target)
+    }
+    // Пока гайд показывает действие, шаг его не повторяет (`untilDone`).
+    const setBusy = (value: boolean) => {
+      busy = value
+      root.current?.toggleAttribute('data-guide-showing', value)
+    }
+    /** Кнопка мыши вниз или вверх в точке, как у настоящего нажатия. */
+    const pressAt = (
+      target: Element,
+      point: { x: number; y: number },
+      phase: 'down' | 'up',
+    ) => {
+      const down = phase === 'down'
+      const at = {
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+        clientX: point.x,
+        clientY: point.y,
+        button: 0,
+        buttons: down ? 1 : 0,
+      }
+      deliver(
+        new PointerEvent(down ? 'pointerdown' : 'pointerup', {
+          ...at,
+          pointerId: 1,
+          pointerType: 'mouse',
+          isPrimary: true,
+        }),
+        target,
+      )
+      deliver(new MouseEvent(down ? 'mousedown' : 'mouseup', at), target)
+    }
+    const run = async (event: Event, target: Element, text?: string) => {
+      setBusy(true)
+      let dx = 0
+      let dy = 0
+      // Волна нажатия: перед самим щелчком встаёт на место цели — нажатие и отпускание
+      // кнопки могли её сдвинуть (раскрылась шапка).
+      let ring: { follow: (at: { x: number; y: number }) => void } | undefined
+      try {
+        const cell =
+          REVEALING.has(event.type) && area.contains(target)
+            ? bodyCellOf(target)
+            : null
+        const rowId = cell
+          ?.closest('.data-grid__body-row')
+          ?.getAttribute('data-row-id')
+        if (cell && rowId && instance.current && !inView(cell)) {
+          // Место — до прокрутки: `scrollToRow` сдвигает таблицу ещё до первого await.
+          const before = cell.getBoundingClientRect()
+          await scrollToRow(instance.current, rowId, {
+            columnId: cell.dataset.columnId,
+          })
+          await settledBox(cell)
+          const after = cell.getBoundingClientRect()
+          dx = after.left - before.left
+          dy = after.top - before.top
+        }
+        if (demo && text !== undefined) {
+          await typeOut(target as TextField, known.get(target) ?? '', text)
+        } else if (demo && CLICKING.has(event.type) && target.isConnected) {
+          hoverAt(target, pointOf(event, target, dx, dy))
+          await sleep(HOVER_MS)
+          // Скрытая до наведения кнопка раскрылась и сдвинулась: точка — по новому месту.
+          await settledBox(target)
+          const point = pointOf(event, target, dx, dy)
+          // Голый `click()` нажимается, как мышью: кнопка вниз — на нажатом виде, вверх —
+          // перед щелчком. Иначе фокус успевает уйти не туда (активная ячейка).
+          // Кроме кнопки меню: меню Base UI открывается уже нажатием кнопки мыши, и
+          // щелчок после него переключил бы его обратно.
+          const bare =
+            event.type === 'click' && !target.closest('[aria-haspopup="menu"]')
+          if (bare) asMouse.set(event, point)
+          // Цель без рамки (ушла из DOM) — без волны.
+          ring =
+            target.getBoundingClientRect().width > 0
+              ? demo.click(point)
+              : undefined
+          demo.press(target)
+          if (bare) pressAt(target, point, 'down')
+          await sleep(PRESS_MS)
+          if (bare) pressAt(target, point, 'up')
+          gesture = {
+            target,
+            type: event.type,
+            state: stateOf(target),
+            until: performance.now() + GESTURE_MS,
+          }
+          window.setTimeout(demo.release, PRESS_MS)
+        }
+      } finally {
+        const queue = held
+        held = []
+        setBusy(false)
+        if (ring && target.isConnected)
+          ring.follow(pointOf(event, target, dx, dy))
+        for (const { event: waiting, target } of queue) {
+          const replay = replayOf(waiting, dx, dy, asMouse.get(waiting))
+          // Прошлый повтор перерисовал цель новым узлом: событие — узлу на том же месте.
+          const to =
+            target instanceof Element && !target.isConnected
+              ? (hitOf(replay) ?? target)
+              : target
+          if (replay.type === 'keydown' && to instanceof Element)
+            showKey(replay, to)
+          deliver(replay, to)
+        }
+      }
+    }
+
+    /** Плашка клавиши — когда клавиша доходит до цели. */
+    function showKey(event: Event, target: Element) {
+      const label = demo && keyLabel(event as KeyboardEvent)
+      if (label) demo.key(label, keyBox(target, area!))
+    }
+    const onEvent = (event: Event) => {
+      if (event.isTrusted) {
+        if (event.type === 'input' && isTextField(event.target))
+          known.set(event.target, event.target.value)
+        return
+      }
+      const target = event.target
+      if (replays.has(event) || replaying || !target) return
+      if (target instanceof Element && target.closest(OWN_CHROME)) return
+      if (busy) {
+        // Набор идёт: поле держит набранное, а не значение, которое поставил помощник.
+        if (event.type === 'input' && typing && target === typing.field) {
+          typing.text = typing.field.value
+          setFieldValue(typing.field, typing.shown)
+          event.stopImmediatePropagation()
+          return
+        }
+        // Повтор того же нажатия циклом шага: оно уже ждёт — второе не нужно.
+        const repeat =
+          CLICKING.has(event.type) &&
+          held.some(
+            item => item.event.type === event.type && item.target === target,
+          )
+        if (repeat) {
+          event.stopImmediatePropagation()
+          event.preventDefault()
+          return
+        }
+        holdEvent(event)
+        return
+      }
+      if (!(target instanceof Element)) return
+      if (event.type === 'keydown') showKey(event, target)
+      if (demo && HOVERING.has(event.type)) demo.hover(target)
+      if (demo && UNHOVERING.has(event.type) && demo.hovers(target))
+        demo.unhover()
+      if (demo && event.type === 'input') {
+        if (!isTextField(target) || target.value === known.get(target)) return
+        // Поле — к прежнему значению до React: набор пойдёт по символу.
+        const text = target.value
+        setFieldValue(target, known.get(target) ?? '')
+        event.stopImmediatePropagation()
+        void run(event, target, text)
+        return
+      }
+      const cell =
+        REVEALING.has(event.type) && area.contains(target)
+          ? bodyCellOf(target)
+          : null
+      const scroll =
+        !!cell &&
+        !!instance.current &&
+        !!cell.closest('.data-grid__body-row') &&
+        !inView(cell)
+      const shown =
+        !!gesture &&
+        gesture.target === target &&
+        performance.now() < gesture.until
+      // Повтор показанного нажатия циклом шага, пока таблица на него не ответила (цель та
+      // же), — лишний. Цель изменилась (кнопка стала занятой) — это новое нажатие: «стоп».
+      if (
+        shown &&
+        event.type === gesture!.type &&
+        stateOf(target) === gesture!.state
+      ) {
+        event.stopImmediatePropagation()
+        event.preventDefault()
+        return
+      }
+      // Нажатие кнопки мыши — волна сразу, событие не ждёт (SN50).
+      if (demo && PRESSING.has(event.type) && !scroll) {
+        demo.click(pointOf(event, target, 0, 0))
+        return
+      }
+      const press = !!demo && CLICKING.has(event.type) && !shown
+      if (!scroll && !press) return
+      holdEvent(event)
+      void run(event, target)
+    }
+    const onFocus = (event: Event) => {
+      if (isTextField(event.target) && !known.has(event.target))
+        known.set(event.target, event.target.value)
+    }
+    // Настоящая мышь — вид наведения уходит: наводит уже человек.
+    const onRealMove = (event: Event) => {
+      if (event.isTrusted) demo?.unhover()
+    }
+    // Нажатие по панели гайда — человеком или тестом каталога — не нажатие мимо таблицы:
+    // её меню и поповеры остаются открытыми. Фокус — у таблицы (SN35).
+    const keepPopups = (event: Event) => {
+      if (!(event.target instanceof Element)) return
+      if (!event.target.closest('[data-testid="guide"]')) return
+      event.stopPropagation()
+      if (event.type === 'mousedown') event.preventDefault()
+      // Base UI помнит любое нажатие при открытом поповере (и внутри него) и закрывает
+      // поповер следующим щелчком мимо; отмена жеста эту отметку снимает.
+      if (event.type === 'pointerdown')
+        document.dispatchEvent(new PointerEvent('pointercancel'))
+    }
+    // Щелчок по панели доходит до её кнопок (React — ниже `body`), но не до документа:
+    // часть поповеров закрывается щелчком мимо, а не нажатием кнопки мыши.
+    const keepPopupsOnClick = (event: Event) => {
+      if (!(event.target instanceof Element)) return
+      if (event.target.closest('[data-testid="guide"]')) event.stopPropagation()
+    }
+    for (const type of HELD) document.addEventListener(type, onEvent, true)
+    for (const type of PANEL_PRESS)
+      window.addEventListener(type, keepPopups, true)
+    document.body.addEventListener('click', keepPopupsOnClick)
+    document.addEventListener('focusin', onFocus, true)
+    document.addEventListener('mousemove', onRealMove, true)
+    return () => {
+      for (const type of HELD) document.removeEventListener(type, onEvent, true)
+      for (const type of PANEL_PRESS)
+        window.removeEventListener(type, keepPopups, true)
+      document.body.removeEventListener('click', keepPopupsOnClick)
+      document.removeEventListener('focusin', onFocus, true)
+      document.removeEventListener('mousemove', onRealMove, true)
+      demo?.dispose()
+    }
+  }, [showActions])
   const mount = `${guide.run}-${mounts}-${shown.rewinds}`
   const live = appProps?.mount === mount ? appProps.props : undefined
+  const ownPlugins =
+    live?.extraPlugins ?? props.extraPlugins ?? args.extraPlugins
+  const plugins = useMemo(
+    () => [...(ownPlugins ?? []), probe],
+    [ownPlugins, probe],
+  )
   useIsomorphicLayoutEffect(() => {
     mountRef.current = mount
   }, [mount])
@@ -275,29 +810,16 @@ export const GuideStory = ({
   }, [consoleLog, guide.step, guide.run, stepTitle])
   useArgsActions(consoleLog, args)
   const enter = steps[guide.step]?.enter
-  // Нажатие на заголовок гайда — мимо поповера таблицы, и он закрывается: шаг с открытым
-  // поповером заново доводит таблицу до своего состояния.
-  const [reentries, setReentries] = useState(0)
-  const popupAtToggle = useRef(false)
   useEffect(() => {
     const leave = root.current ? enter?.(root.current, app) : undefined
     return typeof leave === 'function' ? (leave as () => void) : undefined
-  }, [enter, app, guide.step, guide.run, shown.rewinds, reentries])
+  }, [enter, app, guide.step, guide.run, shown.rewinds])
   return (
     <div
       ref={root}
       data-guide-root=""
       data-guide-step={guide.step}
       style={{ display: 'flex', flexDirection: 'column' }}
-      onPointerDownCapture={event => {
-        popupAtToggle.current =
-          isGuideToggle(event.target) && !!document.querySelector(OPEN_POPUP)
-      }}
-      onClick={event => {
-        if (popupAtToggle.current && isGuideToggle(event.target))
-          setReentries(count => count + 1)
-        popupAtToggle.current = false
-      }}
     >
       <GuidePanel
         title={title}
@@ -329,6 +851,7 @@ export const GuideStory = ({
           {...args}
           {...props}
           {...live}
+          extraPlugins={plugins}
           consoleLog={consoleLog}
         />
       </div>

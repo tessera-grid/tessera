@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Archive } from 'lucide-react'
 import { Meta, StoryObj } from '@storybook/react'
 import { expect } from 'storybook/test'
 import type { StoryProps } from './DataGridStory.types'
@@ -28,7 +29,7 @@ import { createConsoleLog } from './demos/consoleLog'
 
 /**
  * Журнал отказов (ADR 0177, §7): кнопка тулбара со счётчиком нерешённых отказов и поповер
- * записей. `Playground` — журнал с тремя отказами; S6 — отказ действия строки, S7 — отказы
+ * записей. `Playground` — журнал с четырьмя отказами, один с длинными подписью и причиной; S6 — отказ действия строки, S7 — отказы
  * вне экрана.
  */
 const meta = {
@@ -45,6 +46,7 @@ const rowId = (index: number) => ROWS[index]!.id as string
 
 interface LogTable {
   reportFailure: (report: Omit<Failure, 'key' | 'time'>) => string
+  resolveFailure: (key: string) => void
   trackCellAction: (
     target: unknown,
     promise: Promise<unknown>,
@@ -54,7 +56,10 @@ interface LogTable {
 
 // --- Playground -----------------------------------------------------------------------
 
-/** Семя: три нерешённых отказа — значение ячейки, действие строки и выгрузка. */
+/**
+ * Семя: четыре нерешённых отказа — значение ячейки, действие строки, выгрузка и действие
+ * строки с длинными подписью и причиной и с повтором.
+ */
 const FAILURES_SEED = [
   seed<LogTable>('failureLogSeed', table => {
     table.reportFailure({
@@ -67,17 +72,27 @@ const FAILURES_SEED = [
       target: { row: rowId(4) },
       reason: 'Row is locked by another user',
     })
-    table.reportFailure({
+    // Повтор в демо удаётся: запись уходит из журнала.
+    const exportKey = table.reportFailure({
       label: 'Export',
       target: { process: 'export' },
       reason: 'The file is too large',
+      retry: () => table.resolveFailure(exportKey),
+    })
+    const key = table.reportFailure({
+      label:
+        'Recalculate quarterly commission and sync it with the payroll system',
+      target: { row: rowId(7) },
+      reason:
+        "The payroll service rejected the request: the employee's contract was changed after the commission period was closed, so the amount must be confirmed by the finance department before it can be synced again.",
+      retry: () => table.resolveFailure(key),
     })
   }),
 ]
 
 export const FailureLogPlayground: StoryObj<StoryProps> = {
   name: 'Playground',
-  // Журнал с тремя отказами: откройте кнопку справа в тулбаре. Без отказов кнопки нет.
+  // Журнал с четырьмя отказами: откройте кнопку справа в тулбаре. Без отказов на ней нет счётчика.
   args: {
     enableFailureLog: true,
     enableColumnVisibility: true,
@@ -114,10 +129,16 @@ const entryOf = (row: string) =>
   entries().find(entry =>
     entry.getAttribute('data-failure-key')?.includes(row),
   ) ?? null
-const actionIn = (entry: HTMLElement | null, action: string) =>
-  entry?.querySelector<HTMLElement>(`[data-action="${action}"]`) ?? null
+/** Нажать кнопку действия записи; `false` — записи или кнопки нет. */
+const chooseIn = (entry: HTMLElement | null, action: string) => {
+  const button = entry?.querySelector<HTMLElement>(`[data-action="${action}"]`)
+  button?.click()
+  return !!button
+}
 const counter = () =>
   logButton()?.querySelector('[data-active-indicator]')?.textContent ?? ''
+/** Нерешённые отказы есть: на кнопке журнала счётчик. */
+const hasFailures = () => counter() !== ''
 const scroller = (root: ParentNode) =>
   root.querySelector<HTMLElement>('.data-grid__container')
 const rowEl = (root: ParentNode, id: string) =>
@@ -136,7 +157,7 @@ const ARCHIVED = rowId(2)
 const archive: RowAction = {
   id: 'archive',
   slot: 'actionRowSlot',
-  icon: () => <span aria-hidden>⌫</span>,
+  icon: () => <Archive width={16} height={16} />,
   label: () => 'Archive',
   onSelect: () => ARCHIVE_SERVER.save(),
 }
@@ -152,21 +173,21 @@ const archiveButton = (root: ParentNode) =>
 /** Дойти до отказа: «сервер» отказывает, пользователь архивирует строку. */
 const reachArchiveRefusal = (root: HTMLElement) => {
   ARCHIVE_SERVER.answer(false)
-  if (!logButton()) archiveButton(root)?.click()
+  if (!hasFailures()) archiveButton(root)?.click()
 }
 
 const ROW_STEPS: readonly GuideStoryStep[] = [
   {
     title: 'Действия строк',
-    hint: 'У строк есть действие архивации, его выполняет сервер. Журнала в тулбаре нет: отказов пока не было.',
+    hint: 'У строк есть действие архивации, его выполняет сервер. Кнопка журнала в тулбаре без счётчика: отказов пока не было.',
   },
   {
     title: 'Сервер отказал',
-    hint: 'Пользователь архивировал строку, но сервер отказал. Строка коротко вспыхнула тоном отката, в тулбаре появилась кнопка журнала с числом отказов.',
+    hint: 'Пользователь архивировал строку, но сервер отказал. Строка коротко вспыхнула тоном отката, на кнопке журнала появился счётчик отказов.',
     states: ['panel.toolbar'],
     immediate: true,
     enter: untilDone(
-      root => !!logButton() && flashed(rowEl(root, ARCHIVED)),
+      root => hasFailures() && flashed(rowEl(root, ARCHIVED)),
       reachArchiveRefusal,
     ),
   },
@@ -177,7 +198,7 @@ const ROW_STEPS: readonly GuideStoryStep[] = [
     enter: untilDone(
       root => !!entryOf(ARCHIVED) && !rowEl(root, ARCHIVED),
       root => {
-        if (!logButton()) return reachArchiveRefusal(root)
+        if (!hasFailures()) return reachArchiveRefusal(root)
         const area = scroller(root)
         if (area && rowEl(root, ARCHIVED)) area.scrollTop = area.scrollHeight
         else if (!log()) logButton()!.click()
@@ -191,10 +212,8 @@ const ROW_STEPS: readonly GuideStoryStep[] = [
     enter: untilDone(
       root => !!rowEl(root, ARCHIVED) && flashed(rowEl(root, ARCHIVED)),
       root => {
-        if (!logButton()) return reachArchiveRefusal(root)
-        if (actionIn(entryOf(ARCHIVED), 'show'))
-          actionIn(entryOf(ARCHIVED), 'show')!.click()
-        else if (!log()) logButton()!.click()
+        if (!hasFailures()) return reachArchiveRefusal(root)
+        if (!chooseIn(entryOf(ARCHIVED), 'show') && !log()) logButton()!.click()
       },
     ),
   },
@@ -230,13 +249,13 @@ export const FailureLogRow: StoryObj<StoryProps> = {
     const labels = storyLabels(args.locale)
     await step(ROW_STEPS[0]!.title, async () => {
       await waitForRows(canvas)
-      expect(logButton()).toBeNull()
+      await until(() => expect(logButton()).not.toBeNull())
+      expect(hasFailures()).toBe(false)
       await settle()
     })
     await step(ROW_STEPS[1]!.title, async () => {
       await guideNext(canvas)
-      await until(() => expect(logButton()).not.toBeNull())
-      expect(counter()).toBe('1')
+      await until(() => expect(counter()).toBe('1'))
     })
     await step(ROW_STEPS[2]!.title, async () => {
       await guideNext(canvas)
@@ -284,7 +303,7 @@ const saveInBackground = () => {
 const OFFSCREEN_STEPS: readonly GuideStoryStep[] = [
   {
     title: 'Журнал в тулбаре',
-    hint: 'Кнопка журнала появляется в тулбаре, только пока есть нерешённые отказы. Сейчас их нет.',
+    hint: 'Кнопка журнала стоит в тулбаре всегда; счётчик на ней появляется, когда есть нерешённые отказы. Сейчас их нет.',
   },
   {
     title: 'Три отказа',
@@ -311,10 +330,8 @@ const OFFSCREEN_STEPS: readonly GuideStoryStep[] = [
     enter: untilDone(
       root => flashed(cellEl(root, FAR)),
       () => {
-        if (!logButton()) return saveInBackground()
-        if (actionIn(entryOf(FAR), 'show'))
-          actionIn(entryOf(FAR), 'show')!.click()
-        else if (!log()) logButton()!.click()
+        if (!hasFailures()) return saveInBackground()
+        if (!chooseIn(entryOf(FAR), 'show') && !log()) logButton()!.click()
       },
     ),
   },
@@ -326,10 +343,8 @@ const OFFSCREEN_STEPS: readonly GuideStoryStep[] = [
         counter() === '2' &&
         !cellEl(root, FAR)?.querySelector('[data-cell-issue]'),
       () => {
-        if (!logButton()) return saveInBackground()
-        if (actionIn(entryOf(FAR), 'close'))
-          actionIn(entryOf(FAR), 'close')!.click()
-        else if (!log()) logButton()!.click()
+        if (!hasFailures()) return saveInBackground()
+        if (!chooseIn(entryOf(FAR), 'close') && !log()) logButton()!.click()
       },
     ),
   },
@@ -339,12 +354,10 @@ const OFFSCREEN_STEPS: readonly GuideStoryStep[] = [
     enter: untilDone(
       () => counter() === '1' && !!log(),
       () => {
-        if (!logButton()) return saveInBackground()
+        if (!hasFailures()) return saveInBackground()
         // По шагам гайда: запись дальней ячейки закрыта, затем повтор, затем журнал.
         if (counter() === '3') {
-          if (actionIn(entryOf(FAR), 'close'))
-            actionIn(entryOf(FAR), 'close')!.click()
-          else if (!log()) logButton()!.click()
+          if (!chooseIn(entryOf(FAR), 'close') && !log()) logButton()!.click()
         } else if (counter() === '2') {
           void logTable?.trackCellAction(
             { cell: [LOWER, 'firstName'] },
@@ -385,7 +398,8 @@ export const FailureLogOffscreen: StoryObj<StoryProps> = {
     const labels = storyLabels(args.locale)
     await step(OFFSCREEN_STEPS[0]!.title, async () => {
       await waitForRows(canvas)
-      expect(logButton()).toBeNull()
+      await until(() => expect(logButton()).not.toBeNull())
+      expect(hasFailures()).toBe(false)
       await settle()
     })
     await step(OFFSCREEN_STEPS[1]!.title, async () => {

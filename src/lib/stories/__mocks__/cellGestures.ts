@@ -133,8 +133,12 @@ export const untilDone =
     let tries = 0
     let left = false
     const run = () => {
-      if (left || runId !== latestRun || done(root) || ++tries > 80) return
-      act(root, app)
+      if (left || runId !== latestRun || done(root)) return
+      // Гайд показывает нажатие (ADR 0117, SN46): действие ждёт, а не повторяется.
+      if (!root.closest('[data-guide-showing]')) {
+        if (++tries > 80) return
+        act(root, app)
+      }
       setTimeout(run, 100)
     }
     setTimeout(run, 0)

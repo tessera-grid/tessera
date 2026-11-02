@@ -4528,6 +4528,88 @@ export const HighContrastCellFailureDiscardStep4 = {
   tags: ['!test'],
 }
 
+export const HighContrastCellFailureDiscardMenuStep1 = {
+  ...twinStep(cellsErrorsStories, cellsErrorsStories.CellFailureDiscardMenu, 1),
+  name: 'Cells/Errors — Discard from the menu, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastCellFailureDiscardMenuStep2 = {
+  ...twinStep(cellsErrorsStories, cellsErrorsStories.CellFailureDiscardMenu, 2),
+  name: 'Cells/Errors — Discard from the menu, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastCellFailureDiscardMenuStep3 = {
+  ...twinStep(cellsErrorsStories, cellsErrorsStories.CellFailureDiscardMenu, 3),
+  name: 'Cells/Errors — Discard from the menu, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastCellFailureDiscardMenuStep4 = {
+  ...twinStep(cellsErrorsStories, cellsErrorsStories.CellFailureDiscardMenu, 4),
+  name: 'Cells/Errors — Discard from the menu, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastCellFailureExternalChangeStep1 = {
+  ...twinStep(
+    cellsErrorsStories,
+    cellsErrorsStories.CellFailureExternalChange,
+    1,
+  ),
+  name: 'Cells/Errors — Value changed elsewhere, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastCellFailureExternalChangeStep2 = {
+  ...twinStep(
+    cellsErrorsStories,
+    cellsErrorsStories.CellFailureExternalChange,
+    2,
+  ),
+  name: 'Cells/Errors — Value changed elsewhere, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastCellFailureExternalChangeStep3 = {
+  ...twinStep(
+    cellsErrorsStories,
+    cellsErrorsStories.CellFailureExternalChange,
+    3,
+  ),
+  name: 'Cells/Errors — Value changed elsewhere, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastCellFailureExternalChangeStep4 = {
+  ...twinStep(
+    cellsErrorsStories,
+    cellsErrorsStories.CellFailureExternalChange,
+    4,
+  ),
+  name: 'Cells/Errors — Value changed elsewhere, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastCellFailureAppResetStep1 = {
+  ...twinStep(cellsErrorsStories, cellsErrorsStories.CellFailureAppReset, 1),
+  name: 'Cells/Errors — Reset by the application, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastCellFailureAppResetStep2 = {
+  ...twinStep(cellsErrorsStories, cellsErrorsStories.CellFailureAppReset, 2),
+  name: 'Cells/Errors — Reset by the application, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastCellFailureAppResetStep3 = {
+  ...twinStep(cellsErrorsStories, cellsErrorsStories.CellFailureAppReset, 3),
+  name: 'Cells/Errors — Reset by the application, шаг 3',
+  tags: ['!test'],
+}
+
 export const HighContrastContextMenuAsyncItemsStep1 = {
   ...twinStep(
     cellsContextMenuStories,

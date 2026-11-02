@@ -25,6 +25,7 @@ import {
   EyeOff,
   FileText,
   ListFilter,
+  LocateFixed,
   Lock,
   Rows3,
   Square,
@@ -40,7 +41,6 @@ import {
   Pin,
   Info,
   RotateCw,
-  TriangleAlert,
 } from 'lucide-react'
 
 import { EmptyStateIllustration } from './EmptyStateIllustration'
@@ -136,6 +136,10 @@ export interface TableIcons {
   backToTop: IconComponent
   /** Кнопка журнала отказов в тулбаре (ADR 0177) */
   failureLog: IconComponent
+  /** «Показать» записи журнала отказов: прокрутка к цели (ADR 0177) */
+  failureShow: IconComponent
+  /** Иллюстрация пустого журнала отказов (ADR 0177) */
+  failureLogEmpty: IconComponent
   /** Кнопка «к первой колонке» в нижней панели (ADR 0105) */
   backToStart: IconComponent
   /** Пункт меню, заблокированный с причиной (ADR 0078) */
@@ -193,7 +197,9 @@ export const DEFAULT_ICONS: TableIcons = {
   emptyState: EmptyStateIllustration,
   loadFailed: CircleAlert,
   backToTop: ArrowUpToLine,
-  failureLog: TriangleAlert,
+  failureLog: CircleAlert,
+  failureShow: LocateFixed,
+  failureLogEmpty: EmptyStateIllustration,
   backToStart: ArrowLeftToLine,
   actionBlocked: Lock,
   submenu: ChevronRight,

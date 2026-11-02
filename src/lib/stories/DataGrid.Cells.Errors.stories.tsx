@@ -4,11 +4,13 @@ import { expect } from 'storybook/test'
 import type { StoryProps } from './DataGridStory.types'
 import { StoryComponent } from './DataGridStory'
 import { dataGridMeta } from './dataGridMeta'
+import type { Failure } from '../core/failures/failuresFeature'
 import { untilDone } from './__mocks__/cellGestures'
 import { columns as mockColumns } from './__mocks__/columns'
 import { getData } from './__mocks__/data'
 import { guideNext, settle, until, waitForRows } from './__mocks__/catalogPlay'
 import { createHeldServer } from './__mocks__/heldServer'
+import { seed } from './__mocks__/seed'
 import { storyLabels } from './__mocks__/storyLabels'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
@@ -635,6 +637,385 @@ export const CellFailureDiscard: StoryObj<StoryProps> = {
       await until(() => expect(cellIssueOf(stockCell(canvas))).toBeNull())
       expect(issuePopover()).toBeNull()
       expect(stockChecked(canvas)).toBe(STOCK_START)
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0177 S9–S11: как снимается отметка отказа ---------------------------------
+
+/** Две строки без числа `RETRIED_VISITS`: сохранение этого числа — изменение. */
+const [CLEAR_A, CLEAR_B] = getData(DATA_COUNT)
+  .filter(row => String(row.visits) !== RETRIED_VISITS)
+  .map(row => row.id as string)
+const visitsOf = (row: string) =>
+  String(getData(DATA_COUNT).find(item => item.id === row)!.visits)
+
+/** Сохранить в ячейке визитов строки `row` число `value` — по такту на действие. */
+const saveVisitsAt = (root: HTMLElement, row: string, value: string) => {
+  const input =
+    visitsCellOf(root, row)?.querySelector<HTMLInputElement>('input') ?? null
+  if (!input)
+    visitsCellOf(root, row)
+      ?.querySelector<HTMLElement>('.cell__button button')
+      ?.click()
+  else if (input.value !== value) typeInto(input, value)
+  else press(input, 'Enter')
+}
+const editingAt = (root: ParentNode, row: string) =>
+  !!visitsCellOf(root, row)?.querySelector('input')
+
+/** Дойти до отказов в строках `rows`: «сервер» отказывает, пользователь сохраняет по очереди. */
+const reachRefusals = (
+  server: ReturnType<typeof createHeldServer>,
+  root: HTMLElement,
+  rows: readonly string[],
+) => {
+  server.answer(false)
+  const next = rows.find(row => !refusedAt(visitsCellOf(root, row)))
+  if (next) saveVisitsAt(root, next, RETRIED_VISITS)
+}
+const refusedAll = (root: ParentNode, rows: readonly string[]) =>
+  rows.every(row => refusedAt(visitsCellOf(root, row)) && !editingAt(root, row))
+
+/** Контекстное меню ячейки — событием, как правая кнопка мыши. */
+const contextMenuOn = (cell: HTMLElement | null) => {
+  if (!cell) return
+  const box = cell.getBoundingClientRect()
+  cell.dispatchEvent(
+    new MouseEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true,
+      button: 2,
+      clientX: box.left + 10,
+      clientY: box.top + 10,
+    }),
+  )
+}
+const menuItem = (action: string) =>
+  document.querySelector<HTMLElement>(
+    `[role="menuitem"][data-action-id="contextMenu:${action}"]`,
+  )
+
+// --- ADR 0177 S9 ---------------------------------------------------------------------
+
+const MENU_SERVER = createHeldServer()
+const reachMenuRefusal = (root: HTMLElement) =>
+  reachRefusals(MENU_SERVER, root, [CLEAR_A!])
+
+const DISCARD_MENU_STEPS: readonly GuideStoryStep[] = [
+  {
+    title: 'Правка ячеек',
+    hint: 'Число визитов можно править: сохранённое значение уходит на сервер. У ячеек есть контекстное меню.',
+  },
+  {
+    title: 'Сервер отказал',
+    hint: 'Пользователь сохранил новое число визитов, но сервер его отклонил. В ячейке снова значение из данных, в её правом верхнем углу — отметка отказа.',
+    states: ['body.error'],
+    enter: untilDone(root => refusedAll(root, [CLEAR_A!]), reachMenuRefusal),
+  },
+  {
+    title: 'Меню ячейки',
+    hint: 'Пользователь открыл контекстное меню ячейки. В нём два действия с отказом: повторить сохранение и отбросить изменение.',
+    states: ['body.error', 'overlay.contextMenu'],
+    enter: untilDone(
+      () => !!menuItem('discardChange'),
+      root => {
+        if (!refusedAll(root, [CLEAR_A!])) reachMenuRefusal(root)
+        else contextMenuOn(visitsCellOf(root, CLEAR_A))
+      },
+    ),
+  },
+  {
+    title: 'Изменение отброшено',
+    hint: 'Пользователь отбросил изменение. Отметки больше нет; новая правка начнётся со значения из данных, а не с отклонённого.',
+    enter: untilDone(
+      root =>
+        !menuItem('discardChange') &&
+        !cellIssueOf(visitsCellOf(root, CLEAR_A)) &&
+        textOf(visitsCellOf(root, CLEAR_A)) === visitsOf(CLEAR_A!),
+      root => {
+        if (menuItem('discardChange')) menuItem('discardChange')!.click()
+        else if (refusedAll(root, [CLEAR_A!]))
+          contextMenuOn(visitsCellOf(root, CLEAR_A))
+        else reachMenuRefusal(root)
+      },
+    ),
+  },
+]
+
+/** ADR 0177, S9: пользователь отбрасывает отклонённое изменение из контекстного меню. */
+export const CellFailureDiscardMenu: StoryObj<StoryProps> = {
+  name: 'Discard from the menu',
+  parameters: { scenario: '0177/S9', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Отбросить из меню"
+      steps={DISCARD_MENU_STEPS}
+      args={guideArgs(
+        {
+          enableCellEditing: true,
+          enableContextMenu: true,
+          columnCount: 6,
+          dataCount: DATA_COUNT,
+          onCellEdit: MENU_SERVER.save,
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(DISCARD_MENU_STEPS[0]!.title, async () => {
+      await waitForRows(canvas)
+      expect(cellIssueOf(visitsCellOf(canvas, CLEAR_A))).toBeNull()
+      await settle()
+    })
+    await step(DISCARD_MENU_STEPS[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(refusedAll(canvas, [CLEAR_A!])).toBe(true))
+      expect(textOf(visitsCellOf(canvas, CLEAR_A))).toBe(visitsOf(CLEAR_A!))
+      await settle()
+    })
+    await step(DISCARD_MENU_STEPS[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(menuItem('discardChange')).not.toBeNull())
+      expect(menuItem('retrySave')).not.toBeNull()
+      await settle()
+    })
+    await step(DISCARD_MENU_STEPS[3]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(cellIssueOf(visitsCellOf(canvas, CLEAR_A))).toBeNull(),
+      )
+      expect(menuItem('discardChange')).toBeNull()
+      expect(textOf(visitsCellOf(canvas, CLEAR_A))).toBe(visitsOf(CLEAR_A!))
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0177 S10 --------------------------------------------------------------------
+
+const EXTERNAL_SERVER = createHeldServer()
+const BOTH = () => [CLEAR_A!, CLEAR_B!]
+/** Число визитов первой строки, которое прислал «сервер»: другой пользователь его изменил. */
+const EXTERNAL_VISITS = String(Number(visitsOf(CLEAR_A!)) + 1)
+const changedRows = (withoutB = false) =>
+  getData(DATA_COUNT)
+    .filter(row => !withoutB || row.id !== CLEAR_B)
+    .map(row =>
+      row.id === CLEAR_A ? { ...row, visits: Number(EXTERNAL_VISITS) } : row,
+    )
+const rowOf = (root: ParentNode, row: string) =>
+  root.querySelector(`.data-grid__body-row[data-row-id="${row}"]`)
+const failureCount = () =>
+  document.querySelector(
+    '[data-testid="failure-log-button"] [data-active-indicator]',
+  )?.textContent ?? ''
+const reachExternalRefusals = (root: HTMLElement) =>
+  reachRefusals(EXTERNAL_SERVER, root, BOTH())
+
+const EXTERNAL_STEPS: readonly GuideStoryStep[] = [
+  {
+    title: 'Правка ячеек',
+    hint: 'Число визитов можно править: сохранённое значение уходит на сервер.',
+  },
+  {
+    title: 'Сервер отказал дважды',
+    hint: 'Пользователь сохранил новые числа в двух строках, сервер отклонил оба. У обеих ячеек — отметки отказа.',
+    states: ['body.error'],
+    enter: untilDone(root => refusedAll(root, BOTH()), reachExternalRefusals),
+  },
+  {
+    title: 'Пришли новые данные',
+    hint: 'Другой пользователь изменил число визитов в первой строке, и таблица получила новые данные. Отклонённое значение устарело: отметка ушла сама, в ячейке — новое число.',
+    states: ['body.error'],
+    enter: (root, app) => {
+      const changed = { done: false }
+      return untilDone(
+        () =>
+          changed.done &&
+          !cellIssueOf(visitsCellOf(root, CLEAR_A)) &&
+          textOf(visitsCellOf(root, CLEAR_A)) === EXTERNAL_VISITS,
+        () => {
+          if (changed.done) return
+          if (!refusedAll(root, BOTH())) return reachExternalRefusals(root)
+          changed.done = true
+          app.update(props => ({ ...props, dataOverride: changedRows() }))
+        },
+      )(root, app)
+    },
+  },
+  {
+    title: 'Строка удалена',
+    hint: 'Вторую строку удалили на сервере, и она ушла из таблицы. Вместе с ней ушёл и её отказ: в журнале отказов он не остаётся.',
+    enter: (root, app) => {
+      const removed = { done: false }
+      return untilDone(
+        () => removed.done && !rowOf(root, CLEAR_B!) && failureCount() === '',
+        () => {
+          if (removed.done) return
+          if (!refusedAt(visitsCellOf(root, CLEAR_B)))
+            return reachExternalRefusals(root)
+          if (editingAt(root, CLEAR_A!) || editingAt(root, CLEAR_B!)) return
+          removed.done = true
+          app.update(props => ({ ...props, dataOverride: changedRows(true) }))
+        },
+      )(root, app)
+    },
+  },
+]
+
+/** ADR 0177, S10: значение сменилось извне, строку удалили — отметки отказа уходят сами. */
+export const CellFailureExternalChange: StoryObj<StoryProps> = {
+  name: 'Value changed elsewhere',
+  parameters: { scenario: '0177/S10', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Изменение извне"
+      steps={EXTERNAL_STEPS}
+      args={guideArgs(
+        {
+          enableCellEditing: true,
+          enableFailureLog: true,
+          columnCount: 6,
+          dataCount: DATA_COUNT,
+          onCellEdit: EXTERNAL_SERVER.save,
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(EXTERNAL_STEPS[0]!.title, async () => {
+      await waitForRows(canvas)
+      expect(failureCount()).toBe('')
+      await settle()
+    })
+    await step(EXTERNAL_STEPS[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(refusedAll(canvas, BOTH())).toBe(true))
+      expect(failureCount()).toBe('2')
+      await settle()
+    })
+    await step(EXTERNAL_STEPS[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(textOf(visitsCellOf(canvas, CLEAR_A))).toBe(EXTERNAL_VISITS),
+      )
+      expect(cellIssueOf(visitsCellOf(canvas, CLEAR_A))).toBeNull()
+      expect(refusedAt(visitsCellOf(canvas, CLEAR_B))).toBe(true)
+      expect(failureCount()).toBe('1')
+      await settle()
+    })
+    await step(EXTERNAL_STEPS[3]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(rowOf(canvas, CLEAR_B!)).toBeNull())
+      await until(() => expect(failureCount()).toBe(''))
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0177 S11 --------------------------------------------------------------------
+
+interface FailureTable {
+  getFailures: () => Failure[]
+  resolveFailure: (key: string) => void
+}
+
+const RESET_SERVER = createHeldServer()
+let resetTable: FailureTable | undefined
+const RESET_SEED = [
+  seed<FailureTable>('cellFailureResetTable', table => {
+    resetTable = table
+  }),
+]
+/** Сброс в коде приложения: как «Закрыть» журнала — отбросить значение и снять запись. */
+const resetFailures = (table: FailureTable) => {
+  for (const failure of table.getFailures()) {
+    failure.discard?.()
+    table.resolveFailure(failure.key)
+  }
+}
+const reachResetRefusals = (root: HTMLElement) =>
+  reachRefusals(RESET_SERVER, root, BOTH())
+
+const RESET_STEPS: readonly GuideStoryStep[] = [
+  {
+    title: 'Правка ячеек',
+    hint: 'Число визитов можно править: сохранённое значение уходит на сервер.',
+  },
+  {
+    title: 'Сервер отказал',
+    hint: 'Пользователь сохранил новые числа в двух строках, сервер отклонил оба. У обеих ячеек — отметки отказа.',
+    states: ['body.error'],
+    enter: untilDone(root => refusedAll(root, BOTH()), reachResetRefusals),
+  },
+  {
+    title: 'Приложение сбросило отказы',
+    hint: 'Приложение сняло отказы из своего кода, например по своей кнопке сброса. Отметки ушли, в ячейках — значения из данных.',
+    enter: root => {
+      const reset = { done: false }
+      return untilDone(
+        () =>
+          reset.done &&
+          BOTH().every(row => !cellIssueOf(visitsCellOf(root, row))),
+        () => {
+          if (reset.done) return
+          if (!refusedAll(root, BOTH())) return reachResetRefusals(root)
+          if (!resetTable) return
+          reset.done = true
+          resetFailures(resetTable)
+        },
+      )(root, undefined)
+    },
+  },
+]
+
+/** ADR 0177, S11: приложение снимает отказы ячеек из своего кода. */
+export const CellFailureAppReset: StoryObj<StoryProps> = {
+  name: 'Reset by the application',
+  parameters: { scenario: '0177/S11', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Сброс приложением"
+      steps={RESET_STEPS}
+      args={guideArgs(
+        {
+          enableCellEditing: true,
+          columnCount: 6,
+          dataCount: DATA_COUNT,
+          onCellEdit: RESET_SERVER.save,
+          extraPlugins: RESET_SEED,
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(RESET_STEPS[0]!.title, async () => {
+      await waitForRows(canvas)
+      await settle()
+    })
+    await step(RESET_STEPS[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(refusedAll(canvas, BOTH())).toBe(true))
+      await settle()
+    })
+    await step(RESET_STEPS[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(
+          BOTH().every(row => !cellIssueOf(visitsCellOf(canvas, row))),
+        ).toBe(true),
+      )
+      for (const row of BOTH())
+        expect(textOf(visitsCellOf(canvas, row))).toBe(visitsOf(row))
+      expect(resetTable!.getFailures()).toEqual([])
       await settle()
     })
   },

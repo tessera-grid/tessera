@@ -581,7 +581,8 @@ const CANCEL_ACTION: readonly GuideStoryStep[] = [
     title: 'Действие отменено',
     hint: 'Пользователь выбрал этот пункт. Таблица прервала запрос: меню закрылось, ожидание снято, нет ни отметки ошибки, ни вспышки, строка такая же, как до действия.',
     enter: stepAction(async (root, { signal }) => {
-      await cancelItemShown(root, signal)
+      // Меню с ждущим пунктом осталось с прошлого шага — нажать его сразу.
+      if (!cancelItemPending()) await cancelItemShown(root, signal)
       cancelItem()!.click()
       await pollUntil(() => !rowBusy(root) && !openMenu(), signal)
     }),

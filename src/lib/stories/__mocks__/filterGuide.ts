@@ -16,21 +16,24 @@ export const panel = () => byTestId('filter-panel')
 export const closePanel = (signal: AbortSignal) =>
   repeat(() => !panel(), pressEscape, signal)
 
-/** Пользователь открывает панель фильтра колонки нажатием на её кнопку. */
+const filterButton = (root: HTMLElement, column: string) =>
+  headCell(root, column)?.querySelector<HTMLElement>('.column-filter__button')
+
+/**
+ * Пользователь открывает панель фильтра колонки нажатием на её кнопку. Панель этой
+ * колонки уже открыта — остаётся: человек не закрывает её, чтобы открыть снова.
+ */
 export const openPanel = async (
   root: HTMLElement,
   column: string,
   signal: AbortSignal,
 ) => {
+  const own = () =>
+    !!panel() &&
+    filterButton(root, column)?.getAttribute('aria-expanded') === 'true'
+  if (own()) return
   await closePanel(signal)
-  await repeat(
-    () => !!panel(),
-    () =>
-      headCell(root, column)
-        ?.querySelector<HTMLElement>('.column-filter__button')
-        ?.click(),
-    signal,
-  )
+  await repeat(own, () => filterButton(root, column)?.click(), signal)
 }
 
 /** Кнопка фильтра колонки отмечена как включённая. */
