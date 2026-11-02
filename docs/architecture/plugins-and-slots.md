@@ -74,7 +74,10 @@ flowchart TB
 - `table.options.draftKinds` — виды черновиков из поля `draftKinds` записей плагинов (ADR 0178):
   как применить, отбросить, подписать и описать черновик своего вида; черновик вида без включённого
   владельца инертен. Срез черновиков — запись ядра `plugin:drafts`, методы `getDrafts`,
-  `setDraft`, `discardDraft`
+  `setDraft`, `discardDraft`. Вид может применить все свои записи разом (`applyAll` — пакет
+  `onCommitEdits` у `cellValue`) и объявить открытую правку (`openKey`, `isOpen`): пульт
+  считает её и «Применить всё» сначала её завершает. Черновики ячеек снимаются, когда строка
+  ушла из данных; у серверной модели — нет: удалённую строку она не отличает от незагруженной
 - `table.getKeyboardActions()` → `table.options.keyboardActions` (клавиатурные
   действия ячеек: `Space`/`Enter`/`F2`, ADR 0021; упорядочены по `priority`)
 - `table.reportPluginError(id, error)` → реестр ошибок плагинов: `logError` один раз

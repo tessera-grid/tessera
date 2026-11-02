@@ -477,6 +477,11 @@ export const quickSearchFilteredCountType = booleanControl(
 export const enableColumnFilteringType = booleanControl(
   'Фильтры колонок с полем filter: Country и имена — текст, Age, Visits, Total — число (плагин `columnFiltering`)',
 )
+export const cellEditingSaveModeType = radioControl(
+  'Сохранение правок (`saveMode`): `auto` — каждая законченная правка уходит сразу, `manual` — правки копятся черновиками и уходят пакетом по кнопке пульта',
+  ['auto', 'manual'],
+  'auto',
+)
 export const cellEditingSearchDebounceMsType = numberControl(
   'Задержка запроса справочника при поиске в редакторе варианта, мс (`searchDebounceMs`); 0 — на каждый ввод',
   { min: 0, max: 2000, step: 50 },

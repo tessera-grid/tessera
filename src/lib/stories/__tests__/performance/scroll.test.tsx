@@ -29,6 +29,7 @@ import {
   CONTENT_SCROLL,
   FAST_SCROLL,
   submittedCellsSeed,
+  cellDraftsSeed,
   sortAllColumnsSeed,
   actionStatusSeed,
   highlightSeed,
@@ -293,6 +294,7 @@ const KA7_COST = { ratio: 1.3, plusMs: 4 }
 const RH8_COST = { ratio: 1.3, plusMs: 4 }
 const HL19_COST = { ratio: 1.3, plusMs: 4 }
 const OF20_COST = { ratio: 1.3, plusMs: 4 }
+const DR21_COST = { ratio: 1.3, plusMs: 4 }
 const TG11_COST = { ratio: 1.3, plusMs: 4 }
 const TG18_COST = { ratio: 1.3, plusMs: 4 }
 const OT11_COST = { ratio: 1.3, plusMs: 4 }
@@ -991,6 +993,71 @@ describe('Производительность прокрутки — подсв
         })
       await record('HL19-base', 'без подсветки', base, false)
       await record('HL19', '100 строк и колонка', seeded, true)
+
+      for (const axis of ['y', 'x'] as const) {
+        expect(
+          seeded[axis].p95Ms,
+          `${axis} p95=${seeded[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
+        ).toBeLessThanOrEqual(ceiling[axis])
+      }
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Черновики ячеек (ADR 0178, DR21): 1000×1000 с правкой по кнопке, спокойная прокрутка с
+// 1500 черновиками (500 строк × 3 правимые колонки) против той же выборки без них.
+describe('Производительность прокрутки — черновики ячеек', () => {
+  test(
+    'DR21: спокойная прокрутка 1000×1000 с 1500 черновиками ячеек не дороже той же выборки без них больше чем в 1,3 раза (или 4 мс)',
+    async () => {
+      const measure = async (seeded: boolean) => {
+        const screen = renderGrid({
+          ...LARGE,
+          ...NO_PLUGINS,
+          enableCellEditing: true,
+          cellEditingSaveMode: 'manual',
+          extraPlugins: seeded ? [cellDraftsSeed(500)] : [],
+        })
+        await waitForGrid()
+        await expect
+          .poll(() => document.querySelector('[data-cell-draft]') !== null)
+          .toBe(seeded)
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        return { y, x }
+      }
+
+      const runs = await againstBase(measure)
+      const base = medianAxes(runs.base)
+      const seeded = medianAxes(runs.variant)
+      const ceiling = axesCeiling(base, DR21_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1000×1000',
+          plugins: 'cellEditing',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: (['y', 'x'] as const).map(axis => ({
+            axis,
+            kind: 'animation' as const,
+            metric: 'p95' as const,
+            valueMs: r[axis].p95Ms,
+            targetMs: ANIMATION_BUDGET_MS,
+            ceilingMs: gated ? ceiling[axis] : undefined,
+            ...r[axis],
+          })),
+        })
+      await record('DR21-base', 'правка по кнопке без черновиков', base, false)
+      await record('DR21', '1500 черновиков ячеек', seeded, true)
 
       for (const axis of ['y', 'x'] as const) {
         expect(

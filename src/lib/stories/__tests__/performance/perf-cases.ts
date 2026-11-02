@@ -18,6 +18,7 @@ export {
 
 import type { TesseraFeatureEntry } from '../../../core/features'
 import { setPluginState } from '../../../core/definePlugin'
+import { DRAFTS } from '../../../core/drafts/drafts'
 import { cellKey } from '../../../plugins/cellEditing/session'
 import { ROW_ACTIONS_COLUMN_ID } from '../../../plugins/rowActions'
 import {
@@ -204,6 +205,35 @@ const EDITABLE_COLUMNS = ['age', 'visits', 'gender']
 
 /** Общий таймаут перф-теста (большой грид со всеми плагинами монтируется долго). */
 export const PERF_TIMEOUT = 60_000
+
+/**
+ * Засев черновиков ячеек (ADR 0178, DR21): 500 строк × 3 правимые колонки — 1500 записей
+ * вида `cellValue` одним срезом, когда строки собраны. Через правку набирать долго.
+ */
+export const cellDraftsSeed = (rows: number): TesseraFeatureEntry => {
+  let seeded = false
+  return {
+    id: 'perfCellDrafts',
+    reconcile: table => {
+      const t = table as {
+        getCoreRowModel: () => { rows: { id: string }[] }
+      }
+      const available = t.getCoreRowModel().rows
+      if (seeded || available.length === 0) {
+        return
+      }
+      seeded = true
+      const drafts = available.slice(0, rows).flatMap((row, index) =>
+        EDITABLE_COLUMNS.map(columnId => ({
+          kind: 'cellValue',
+          target: { cell: [row.id, columnId] },
+          value: { value: index, text: String(index) },
+        })),
+      )
+      setPluginState(table, DRAFTS, drafts)
+    },
+  }
+}
 
 /**
  * Засев мультисортировки по всем колонкам (ADR 0062, AI10): служебная запись один

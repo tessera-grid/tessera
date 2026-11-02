@@ -43,6 +43,7 @@ export const LABEL_PARAMS = {
   actionDraft: ['action'],
   actionActiveDraft: ['action'],
   unsavedChangesButton: ['count'],
+  cellDraftReason: ['was', 'now'],
   failureLogButton: ['count'],
   failureTargetCell: ['column', 'row'],
   failureTargetRow: ['row'],

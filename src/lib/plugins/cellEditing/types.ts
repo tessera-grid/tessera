@@ -116,6 +116,28 @@ export interface CellEditorProps {
  */
 export type CellEditor = (props: CellEditorProps) => ReactNode
 
+/** Правка одной ячейки в пакете сохранения (ADR 0178, §5). */
+export interface CellEditBatchItem {
+  rowId: string
+  columnId: string
+  /** Значение в типе колонки. */
+  value: unknown
+  /** Набранный текст. */
+  text: string
+  /** Значение в данных сейчас. */
+  original: unknown
+}
+
+/** Пакет сохранения: правки ячеек (строки — этап 3 ADR 0178). */
+export interface CellEditBatch {
+  cells: readonly CellEditBatchItem[]
+}
+
+/** Ответ на пакет: отказы части ячеек с причиной; остальные сохранены. */
+export interface CellEditBatchResult {
+  refused?: readonly { rowId: string; columnId: string; reason: string }[]
+}
+
 /** `canEditCell` — условие показа кнопки редактирования по контексту ячейки. */
 export interface CellEditingHooks extends CellEditHook {
   /**
@@ -130,6 +152,19 @@ export interface CellEditingHooks extends CellEditHook {
   ) => object | void | Promise<unknown>
   /** Правка завершилась без сохранения: Escape, запрет на лету (ADR 0040). */
   onEditCancel?: (end: CellEditCancel) => void
+  /**
+   * Сохранение (ADR 0178, §5): `'auto'` (по умолчанию) — законченная правка уходит в
+   * `onCellEdit`; `'manual'` — становится черновиком ячейки, сохраняет пакет `onCommitEdits`.
+   */
+  saveMode?: 'auto' | 'manual'
+  /**
+   * Сохранить пакет черновиков одним вызовом. Промис — ожидание на ячейках пакета; ответ может
+   * отказать части ячеек (`refused`) — у них отказ на объекте, черновик остаётся.
+   */
+  onCommitEdits?: (
+    batch: CellEditBatch,
+    context: { signal: AbortSignal },
+  ) => CellEditBatchResult | void | PromiseLike<CellEditBatchResult | void>
   /**
    * Значение изменилось извне во время правки: `'commit'` (по умолчанию) —
    * сохранить и отдать `original`/`current` в `onCellEdit`; `'block'` — не

@@ -113,7 +113,7 @@ const CALLBACKS = {
   rowGroupingModel: ['onGroupingChange'],
   columnSizing: ['onColumnResizeEnd', 'onColumnResizeCancel'],
   columnDragging: ['onColumnDragEnd', 'onColumnDragCancel'],
-  cellEditing: ['onCellEdit', 'onEditCancel', 'onConflict'],
+  cellEditing: ['onCellEdit', 'onEditCancel', 'onConflict', 'onCommitEdits'],
   columnFiltering: ['onFilterChange'],
   quickSearch: ['onSearchChange'],
   dataExport: ['onExport', 'onExported'],

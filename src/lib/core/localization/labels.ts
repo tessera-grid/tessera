@@ -273,6 +273,13 @@ export interface TableLabels {
   draftDiscardAll: string
   /** Черновик фильтра, который снимает условие. */
   draftNoFilter: string
+  /** Вид черновика значения ячейки в пульте (ADR 0178, §5). */
+  cellDraftKind: string
+  /** Отметка несохранённого значения ячейки: имя и причина «было, стало». */
+  cellDraft: string
+  cellDraftReason: (was: string, now: string) => string
+  /** Откатить несохранённое значение ячейки. */
+  cellDraftRollback: string
   /** Кнопка журнала отказов с числом записей. */
   failureLogButton: (count: number) => string
   /** Закрыть все записи журнала. */
@@ -634,6 +641,10 @@ export const DEFAULT_LABELS = {
   draftApplyAll: 'Apply all',
   draftDiscardAll: 'Discard all',
   draftNoFilter: 'No filter',
+  cellDraftKind: 'Edit',
+  cellDraft: 'Unsaved change',
+  cellDraftReason: 'Was: {was}. Now: {now}',
+  cellDraftRollback: 'Roll back',
   failureLogButton: 'Failures: {count}',
   failureClearAll: 'Clear all',
   failureShow: 'Show',

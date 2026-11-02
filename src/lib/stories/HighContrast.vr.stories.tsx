@@ -6663,3 +6663,75 @@ export const HighContrastUnsavedChangesApplyStep4 = {
   name: 'Panels/Unsaved changes — Apply from the panel, шаг 4',
   tags: ['!test'],
 }
+
+export const HighContrastManualSaveCellsStep1 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.ManualSaveCells, 1),
+  name: 'Cells/Editing — Save by button, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastManualSaveCellsStep2 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.ManualSaveCells, 2),
+  name: 'Cells/Editing — Save by button, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastManualSaveCellsStep3 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.ManualSaveCells, 3),
+  name: 'Cells/Editing — Save by button, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastManualSaveCellsStep4 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.ManualSaveCells, 4),
+  name: 'Cells/Editing — Save by button, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastManualSavePartialRefusalStep1 = {
+  ...twinStep(
+    cellsEditingStories,
+    cellsEditingStories.ManualSavePartialRefusal,
+    1,
+  ),
+  name: 'Cells/Editing — Refused part of the batch, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastManualSavePartialRefusalStep2 = {
+  ...twinStep(
+    cellsEditingStories,
+    cellsEditingStories.ManualSavePartialRefusal,
+    2,
+  ),
+  name: 'Cells/Editing — Refused part of the batch, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastManualSavePartialRefusalStep3 = {
+  ...twinStep(
+    cellsEditingStories,
+    cellsEditingStories.ManualSavePartialRefusal,
+    3,
+  ),
+  name: 'Cells/Editing — Refused part of the batch, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastCellDraftRollbackStep1 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.CellDraftRollback, 1),
+  name: 'Cells/Editing — Roll back an edit, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastCellDraftRollbackStep2 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.CellDraftRollback, 2),
+  name: 'Cells/Editing — Roll back an edit, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastCellDraftRollbackStep3 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.CellDraftRollback, 3),
+  name: 'Cells/Editing — Roll back an edit, шаг 3',
+  tags: ['!test'],
+}

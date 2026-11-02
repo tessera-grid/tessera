@@ -5,7 +5,12 @@
 import { Suspense } from 'react'
 
 import type { ToolbarComponentProps } from '../../core/createSlots'
-import { DRAFTS_KEY, draftKindsOf, type Draft } from '../../core/drafts/drafts'
+import {
+  DRAFTS_KEY,
+  draftKindsOf,
+  type Draft,
+  useOpenDrafts,
+} from '../../core/drafts/drafts'
 import { useLazyPopover } from '../../core/lazyOpening'
 import { useLocalization } from '../../core/localization'
 import { preloadable } from '../../core/preloadable'
@@ -22,7 +27,7 @@ const UnsavedChangesPopover = preloadable(() =>
 export const UnsavedChangesButton = ({ table }: ToolbarComponentProps) => {
   const labels = useLocalization()
   const { unsavedChanges: UnsavedChangesIcon } = useIcons()
-  const count = useSliceProjection(
+  const drafted = useSliceProjection(
     table,
     DRAFTS_KEY,
     (drafts: readonly Draft[] | undefined) => {
@@ -30,6 +35,8 @@ export const UnsavedChangesButton = ({ table }: ToolbarComponentProps) => {
       return (drafts ?? []).filter(draft => kinds.has(draft.kind)).length
     },
   )
+  // Открытая правка ячейки — тоже несохранённое изменение (ADR 0178, DR18).
+  const count = drafted + useOpenDrafts(table)
   const popover = useLazyPopover(
     table,
     UnsavedChangesPopover,

@@ -33,9 +33,43 @@
   clip-path: polygon(0 0, 100% 0, 100% 100%);
 }
 
+/*
+ * Несохранённое изменение (ADR 0178, §6): полый уголок — из треугольника вырезан меньший
+ * (правило evenodd), остаётся рамка толщины кольца бабла тона черновика.
+ */
+.issue[data-tone='draft'] .mark {
+  --_t: var(--tsr-comp-indicator-outline-width);
+  background-color: var(--tsr-comp-active-indicator);
+  clip-path: polygon(
+    evenodd,
+    0 0,
+    100% 0,
+    100% 100%,
+    0 0,
+    calc(var(--_t) * 2.414) var(--_t),
+    calc(100% - var(--_t)) var(--_t),
+    calc(100% - var(--_t)) calc(100% - var(--_t) * 2.414),
+    calc(var(--_t) * 2.414) var(--_t)
+  );
+}
+
 /* Письмо справа налево — треугольник в левом верхнем углу. */
 :where([dir='rtl']) :is(.issue, .mark) {
   clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+
+:where([dir='rtl']) .issue[data-tone='draft'] .mark {
+  clip-path: polygon(
+    evenodd,
+    100% 0,
+    0 0,
+    0 100%,
+    100% 0,
+    calc(100% - var(--_t) * 2.414) var(--_t),
+    var(--_t) var(--_t),
+    var(--_t) calc(100% - var(--_t) * 2.414),
+    calc(100% - var(--_t) * 2.414) var(--_t)
+  );
 }
 
 .popup {
@@ -49,6 +83,10 @@
   margin: 0;
   padding: var(--tsr-comp-popup-padding) calc(var(--tsr-comp-popup-padding) * 2);
   color: var(--tsr-comp-error-text-color);
+}
+
+.reason[data-tone='draft'] {
+  color: inherit;
 }
 
 .actions {

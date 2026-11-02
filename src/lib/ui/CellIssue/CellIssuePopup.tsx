@@ -19,6 +19,7 @@ export interface CellIssuePopupProps {
   anchor: RefObject<HTMLButtonElement | null>
   reason: string
   actions: readonly CellIssueAction[]
+  tone: 'error' | 'draft'
   onClose: () => void
 }
 
@@ -26,6 +27,7 @@ const CellIssuePopup = ({
   anchor,
   reason,
   actions,
+  tone,
   onClose,
 }: CellIssuePopupProps) => {
   const reasonId = useId()
@@ -54,7 +56,7 @@ const CellIssuePopup = ({
             aria-labelledby={reasonId}
             data-testid="cell-issue-popover"
           >
-            <p id={reasonId} className={styles.reason}>
+            <p id={reasonId} className={styles.reason} data-tone={tone}>
               {reason}
             </p>
             {actions.length > 0 && (

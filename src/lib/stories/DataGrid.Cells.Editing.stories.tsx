@@ -25,6 +25,10 @@ import {
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 import { typeInto, press } from './__mocks__/typeGuides'
+import type {
+  CellEditBatch,
+  CellEditBatchResult,
+} from '../plugins/cellEditing/types'
 
 /** Правка ячеек (ADR 0040, ADR 0041): значение, сервер, черновик и конфликт. */
 const meta = {
@@ -70,7 +74,7 @@ const inputOf = (root: ParentNode, row: string) =>
 const ageText = (root: ParentNode, row: string) => {
   const copy = ageCellOf(root, row)?.cloneNode(true) as HTMLElement | undefined
   copy
-    ?.querySelectorAll('.cell__button, [data-cell-issue]')
+    ?.querySelectorAll('.cell__button, [data-cell-issue], [data-cell-draft]')
     .forEach(button => button.remove())
   return copy?.textContent?.trim()
 }
@@ -638,6 +642,347 @@ export const EditingConflict: StoryObj<StoryProps> = {
       expect(ageText(canvas, SESSION_ROW)).toBe(externalAge())
       await until(() => expect(consoleText()).toContain('onEditCancel'))
       expect(consoleText()).toContain('conflict')
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0178 S5–S7 -----------------------------------------------------------------
+
+/** «Сервер» пакета правок: придерживает ответ и отказывает одной строке, если задано. */
+const batchServer = {
+  held: false,
+  refuseRow: undefined as string | undefined,
+  waiting: [] as (() => void)[],
+  reset: () => {
+    batchServer.held = false
+    batchServer.refuseRow = undefined
+    batchServer.waiting = []
+  },
+  release: () => {
+    batchServer.held = false
+    batchServer.waiting.splice(0).forEach(answer => answer())
+  },
+  save: (batch: CellEditBatch) =>
+    new Promise<CellEditBatchResult | void>(resolve => {
+      const answer = () =>
+        resolve(
+          batchServer.refuseRow
+            ? {
+                refused: batch.cells
+                  .filter(cell => cell.rowId === batchServer.refuseRow)
+                  .map(cell => ({
+                    rowId: cell.rowId,
+                    columnId: cell.columnId,
+                    reason: REFUSAL,
+                  })),
+              }
+            : undefined,
+        )
+      if (batchServer.held) batchServer.waiting.push(answer)
+      else answer()
+    }),
+}
+
+const MANUAL_ARGS = {
+  enableCellEditing: true,
+  enableKeyboardNavigation: true,
+  cellEditingSaveMode: 'manual',
+  enableUnsavedChanges: true,
+  enableToolbar: true,
+  columnCount: 6,
+  dataCount: 10,
+  onCommitEdits: batchServer.save,
+} satisfies Partial<StoryProps>
+
+const MANUAL_EDITS = [
+  ['item-id-1', '77'],
+  ['item-id-2', '5'],
+  ['item-id-3', '40'],
+] as const
+
+const draftMarked = (root: ParentNode, row: string) =>
+  !!ageCellOf(root, row)?.querySelector('[data-cell-draft]')
+const panelButton = (root: ParentNode) =>
+  root.querySelector<HTMLElement>('[data-testid="unsaved-changes-button"]')
+const panelCount = (root: ParentNode) => {
+  const bubble = panelButton(root)?.querySelector('[data-active-indicator]')
+  return bubble?.getAttribute('data-shown') === 'true'
+    ? Number(bubble.textContent)
+    : 0
+}
+const panelOpen = () =>
+  !!document.querySelector('[data-testid="unsaved-changes"]')
+/** Пульт открыт — нажать «Применить всё»; закрыт — открыть. */
+const applyAll = (root: HTMLElement) => {
+  if (!panelOpen()) panelButton(root)?.click()
+  else document.querySelector<HTMLElement>('[data-action="apply-all"]')?.click()
+}
+
+/** Правки набраны и сохранены клавишей Enter: в ячейках черновики. */
+const editsDrafted = (
+  root: HTMLElement,
+  edits: readonly (readonly [string, string])[],
+) => {
+  for (const [row, value] of edits) {
+    if (draftMarked(root, row) && ageText(root, row) === value) continue
+    save(root, row, value)
+    return false
+  }
+  return true
+}
+
+const MANUAL_SAVE: readonly GuideStoryStep[] = [
+  {
+    title: 'Сохранение по кнопке',
+    hint: 'Приложение сохраняет правки не сразу, а пакетом — по кнопке пульта в тулбаре.',
+    enter: () => batchServer.reset(),
+  },
+  {
+    title: 'Три правки',
+    hint: 'Пользователь поправил возраст в трёх строках. Новые значения видны в ячейках, но ещё не сохранены: в углу каждой ячейки полый уголок, на кнопке пульта — число несохранённых изменений.',
+    states: ['body.cellDraft'],
+    enter: untilDone(
+      root => editsDrafted(root, MANUAL_EDITS) && !inputOf(root, 'item-id-3'),
+      root => editsDrafted(root, MANUAL_EDITS),
+    ),
+  },
+  {
+    title: 'Пакет отправлен',
+    hint: 'Пользователь открыл пульт и нажал «Применить всё». Все три правки ушли на сервер одним запросом; пока сервер не ответил, ячейки пакета ждут.',
+    states: ['body.pending'],
+    immediate: true,
+    enter: untilDone(
+      root => MANUAL_EDITS.every(([row]) => pending(root, row)),
+      root => {
+        batchServer.held = true
+        if (MANUAL_EDITS.some(([row]) => !draftMarked(root, row)))
+          editsDrafted(root, MANUAL_EDITS)
+        else applyAll(root)
+      },
+    ),
+  },
+  {
+    title: 'Сервер сохранил',
+    hint: 'Сервер принял пакет. Ожидание снято, уголки исчезли, ячейки коротко вспыхивают тоном успеха; несохранённых изменений не осталось.',
+    enter: untilDone(
+      root =>
+        MANUAL_EDITS.every(
+          ([row, value]) =>
+            !pending(root, row) &&
+            !draftMarked(root, row) &&
+            ageText(root, row) === value,
+        ),
+      root => {
+        if (MANUAL_EDITS.some(([row]) => pending(root, row)))
+          batchServer.release()
+        else if (MANUAL_EDITS.some(([row]) => !draftMarked(root, row)))
+          editsDrafted(root, MANUAL_EDITS)
+        else applyAll(root)
+      },
+    ),
+  },
+]
+
+/** ADR 0178, S5: три правки, «Применить всё» — один запрос, ожидание и ответ сервера. */
+export const ManualSaveCells: StoryObj<StoryProps> = {
+  name: 'Save by button',
+  parameters: { scenario: '0178/S5', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Сохранение по кнопке"
+      steps={MANUAL_SAVE}
+      args={guideArgs(MANUAL_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(MANUAL_SAVE[0]!.title, async () => {
+      await waitForRows(canvas)
+    })
+    await step(MANUAL_SAVE[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(MANUAL_EDITS.every(([row]) => draftMarked(canvas, row))).toBe(
+          true,
+        ),
+      )
+      expect(panelCount(canvas)).toBe(3)
+      expect(consoleText()).not.toContain('onCommitEdits')
+    })
+    await step(MANUAL_SAVE[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(MANUAL_EDITS.every(([row]) => pending(canvas, row))).toBe(true),
+      )
+      expect(consoleText()).toContain('onCommitEdits')
+    })
+    await step(MANUAL_SAVE[3]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(panelCount(canvas)).toBe(0))
+      for (const [row, value] of MANUAL_EDITS) {
+        expect(draftMarked(canvas, row)).toBe(false)
+        expect(ageText(canvas, row)).toBe(value)
+      }
+      await settle()
+    })
+  },
+}
+
+const PARTIAL_EDITS = MANUAL_EDITS.slice(0, 2)
+const REFUSED_ROW = 'item-id-2'
+
+const PARTIAL: readonly GuideStoryStep[] = [
+  {
+    title: 'Сохранение по кнопке',
+    hint: 'Приложение сохраняет правки пакетом по кнопке пульта. Сервер принимает пакет, но одну из строк сейчас отклоняет.',
+    enter: () => {
+      batchServer.reset()
+      batchServer.refuseRow = REFUSED_ROW
+    },
+  },
+  {
+    title: 'Две правки',
+    hint: 'Пользователь поправил возраст в двух строках. В углу обеих ячеек полый уголок: значения ещё не сохранены.',
+    states: ['body.cellDraft'],
+    enter: untilDone(
+      root =>
+        editsDrafted(root, PARTIAL_EDITS) &&
+        !inputOf(root, PARTIAL_EDITS[1]![0]),
+      root => editsDrafted(root, PARTIAL_EDITS),
+    ),
+  },
+  {
+    title: 'Сервер отказал одной ячейке',
+    hint: 'Пользователь применил всё из пульта. Сервер сохранил одну правку и отклонил другую. Сохранённая ячейка вспыхнула тоном успеха; у отклонённой в углу отметка отказа с причиной, а несохранённое значение осталось в ячейке.',
+    states: ['body.error'],
+    enter: untilDone(
+      root => failed(root, REFUSED_ROW) && !draftMarked(root, 'item-id-1'),
+      root => {
+        batchServer.refuseRow = REFUSED_ROW
+        if (PARTIAL_EDITS.some(([row]) => !draftMarked(root, row)))
+          editsDrafted(root, PARTIAL_EDITS)
+        else applyAll(root)
+      },
+    ),
+  },
+]
+
+/** ADR 0178, S6: сервер отказал одной ячейке пакета — отказ на ней, черновик остаётся. */
+export const ManualSavePartialRefusal: StoryObj<StoryProps> = {
+  name: 'Refused part of the batch',
+  parameters: { scenario: '0178/S6', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Отказ части пакета"
+      steps={PARTIAL}
+      args={guideArgs(MANUAL_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(PARTIAL[0]!.title, async () => {
+      await waitForRows(canvas)
+    })
+    await step(PARTIAL[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(panelCount(canvas)).toBe(2))
+    })
+    await step(PARTIAL[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(failed(canvas, REFUSED_ROW)).toBe(true))
+      expect(ageText(canvas, REFUSED_ROW)).toBe(PARTIAL_EDITS[1]![1])
+      expect(draftMarked(canvas, 'item-id-1')).toBe(false)
+      expect(ageText(canvas, 'item-id-1')).toBe(PARTIAL_EDITS[0]![1])
+      expect(panelCount(canvas)).toBe(1)
+      await settle()
+    })
+  },
+}
+
+const ROLLBACK_ROW = 'item-id-1'
+const ROLLBACK_AGE = '77'
+const rollbackPopover = () =>
+  document.querySelector<HTMLElement>('[data-testid="cell-issue-popover"]')
+
+const ROLLBACK: readonly GuideStoryStep[] = [
+  {
+    title: 'Несохранённое значение',
+    hint: 'Приложение сохраняет правки по кнопке пульта. Пользователь поправил возраст: новое значение в ячейке, в её углу полый уголок.',
+    states: ['body.cellDraft'],
+    enter: untilDone(
+      root => draftMarked(root, ROLLBACK_ROW) && !inputOf(root, ROLLBACK_ROW),
+      root => save(root, ROLLBACK_ROW, ROLLBACK_AGE),
+    ),
+  },
+  {
+    title: 'Было и стало',
+    hint: 'Пользователь нажал на уголок. В поповере — прежнее значение, новое и кнопка отката.',
+    states: ['overlay.cellIssue'],
+    enter: untilDone(
+      () => !!rollbackPopover(),
+      root => {
+        if (!draftMarked(root, ROLLBACK_ROW))
+          save(root, ROLLBACK_ROW, ROLLBACK_AGE)
+        else
+          ageCellOf(root, ROLLBACK_ROW)
+            ?.querySelector<HTMLElement>('[data-cell-draft]')
+            ?.click()
+      },
+    ),
+  },
+  {
+    title: 'Значение откачено',
+    hint: 'Пользователь откатил правку. В ячейке снова значение из данных, уголка нет, несохранённых изменений не осталось.',
+    enter: untilDone(
+      root => !draftMarked(root, ROLLBACK_ROW) && !rollbackPopover(),
+      root => {
+        const rollback = rollbackPopover()?.querySelector<HTMLElement>(
+          '[data-action="rollback"]',
+        )
+        if (rollback) rollback.click()
+        else if (!draftMarked(root, ROLLBACK_ROW))
+          save(root, ROLLBACK_ROW, ROLLBACK_AGE)
+        else
+          ageCellOf(root, ROLLBACK_ROW)
+            ?.querySelector<HTMLElement>('[data-cell-draft]')
+            ?.click()
+      },
+    ),
+  },
+]
+
+/** ADR 0178, S7: пользователь откатывает одну несохранённую правку из поповера уголка. */
+export const CellDraftRollback: StoryObj<StoryProps> = {
+  name: 'Roll back an edit',
+  parameters: { scenario: '0178/S7', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Откат правки"
+      steps={ROLLBACK}
+      args={guideArgs(MANUAL_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    let before = ''
+    await step(ROLLBACK[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(draftMarked(canvas, ROLLBACK_ROW)).toBe(true))
+      expect(ageText(canvas, ROLLBACK_ROW)).toBe(ROLLBACK_AGE)
+      before = String(getData(10).find(row => row.id === ROLLBACK_ROW)!.age)
+    })
+    await step(ROLLBACK[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(rollbackPopover()).not.toBeNull())
+      expect(rollbackPopover()!.textContent).toContain(before)
+      expect(rollbackPopover()!.textContent).toContain(ROLLBACK_AGE)
+    })
+    await step(ROLLBACK[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(draftMarked(canvas, ROLLBACK_ROW)).toBe(false))
+      expect(ageText(canvas, ROLLBACK_ROW)).toBe(before)
+      expect(panelCount(canvas)).toBe(0)
       await settle()
     })
   },

@@ -2,7 +2,7 @@
  * Пункты меню занятой и помеченной ячейки (ADR 0177, §5, §8, OB16): отменить ждущее сохранение
  * или действие её строки и колонки, повторить отклонённое сохранение, отбросить изменение. Пункты
  * читают общие срезы ядра — ждущие операции и реестр отказов, — поэтому работают с любым
- * источником.
+ * источником. Несохранённое значение — «Откатить» (ADR 0178, §6).
  */
 import { RotateCcw, Undo2, X } from 'lucide-react'
 
@@ -12,6 +12,7 @@ import {
   cellPendingId,
   hasPending,
 } from '../../core/cancellation'
+import { activeDrafts, discardDraft } from '../../core/drafts/drafts'
 import {
   cellFailureOf,
   readFailures,
@@ -87,9 +88,34 @@ const discardChangeAction: ContextMenuAction = {
   },
 }
 
+/** Несохранённое значение ячейки — черновик любого вида с целью «ячейка» (ADR 0178, §6). */
+const draftOf = (ctx: ContextMenuContext) => {
+  const [rowId, columnId] = cellOf(ctx)
+  return activeDrafts(ctx.table).find(
+    draft =>
+      'cell' in draft.target &&
+      draft.target.cell[0] === rowId &&
+      draft.target.cell[1] === columnId,
+  )
+}
+
+const rollbackDraftAction: ContextMenuAction = {
+  id: 'contextMenu:rollbackDraft',
+  order: -20,
+  icon: () => <Undo2 width={16} height={16} />,
+  label: (_ctx, labels) => labels.cellDraftRollback,
+  // Отказ главнее: у ячейки с отказом — «Отбросить изменение», оно снимает и черновик.
+  visible: ctx => !failureOf(ctx) && !!draftOf(ctx),
+  onSelect: ctx => {
+    const draft = draftOf(ctx)
+    if (draft) discardDraft(ctx.table, draft)
+  },
+}
+
 export const CELL_STATE_ACTIONS: readonly ContextMenuAction[] = [
   cancelSaveAction,
   cancelSlotAction,
   retrySaveAction,
   discardChangeAction,
+  rollbackDraftAction,
 ]

@@ -10,6 +10,7 @@ import { Popover } from '@base-ui/react/popover'
 import clsx from 'clsx'
 
 import {
+  applyAllDrafts,
   applyDraft,
   DRAFTS_KEY,
   type Draft,
@@ -17,6 +18,7 @@ import {
   draftKindOf,
   draftKindsOf,
   discardDraft,
+  useOpenDrafts,
 } from '../../core/drafts/drafts'
 import { reportAction, userSourceOf } from '../../core/debugActions'
 import { useLocalization } from '../../core/localization'
@@ -151,7 +153,9 @@ const DraftList = ({
       return (all ?? []).filter(draft => kinds.has(draft.kind))
     },
   )
-  if (drafts.length === 0)
+  // Открытая правка без черновиков — кнопки внизу остаются: «Применить всё» её сохранит.
+  const open = useOpenDrafts(table)
+  if (drafts.length === 0 && open === 0)
     return (
       <Stub
         size="compact"
@@ -200,7 +204,7 @@ const DraftList = ({
           onClick={event => {
             report(table, 'applyAll', undefined, event)
             onDone()
-            for (const draft of drafts) void applyDraft(table, draft)
+            applyAllDrafts(table)
           }}
         >
           {labels.draftApplyAll}

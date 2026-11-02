@@ -28,9 +28,19 @@ export interface CellIssueProps {
   label: string
   /** Действия поповера — «Повторить», «Отбросить изменение»; без них — только причина. */
   actions?: readonly CellIssueAction[]
+  /**
+   * `error` — отказ или ошибка: залитый треугольник; `draft` — несохранённое изменение
+   * (ADR 0178, §6): полый уголок, причина обычным цветом текста.
+   */
+  tone?: 'error' | 'draft'
 }
 
-export const CellIssue = ({ reason, label, actions = [] }: CellIssueProps) => {
+export const CellIssue = ({
+  reason,
+  label,
+  actions = [],
+  tone = 'error',
+}: CellIssueProps) => {
   const [open, setOpen] = useState(false)
   const reasonId = useId()
   const button = useRef<HTMLButtonElement>(null)
@@ -45,7 +55,9 @@ export const CellIssue = ({ reason, label, actions = [] }: CellIssueProps) => {
           aria-describedby={reasonId}
           aria-haspopup="dialog"
           aria-expanded={open}
-          data-cell-issue=""
+          data-cell-issue={tone === 'error' ? '' : undefined}
+          data-cell-draft={tone === 'draft' ? '' : undefined}
+          data-tone={tone}
           onClick={() => setOpen(true)}
         >
           <span className={styles.mark} aria-hidden />
@@ -60,6 +72,7 @@ export const CellIssue = ({ reason, label, actions = [] }: CellIssueProps) => {
             anchor={button}
             reason={reason}
             actions={actions}
+            tone={tone}
             onClose={() => setOpen(false)}
           />
         </Suspense>

@@ -8,6 +8,7 @@
 import { logWarn } from '../../util/logger'
 import type { TableLabels } from '../localization'
 import { pluginStateKey, setPluginState } from '../definePlugin/channels'
+import { useSyncExternalStore } from 'react'
 import { useSelector } from '@tanstack/react-store'
 
 import { useSliceProjection } from '../reactivity'
@@ -35,6 +36,14 @@ export interface DraftKind {
   describe?: (labels: TableLabels, draft: Draft, table: unknown) => string
   /** Применить черновик; промис — ожидание, его отказ — отказ на объекте (ADR 0177). */
   apply: (table: unknown, draft: Draft) => unknown
+  /** Применить черновики вида одним действием (пакет); без поля — по одному. */
+  applyAll?: (table: unknown, drafts: readonly Draft[]) => unknown
+  /**
+   * Незавершённый ввод вида вне реестра (открытая правка ячейки, ADR 0178, §5): срез и
+   * признак. Пульт считает его, «Применить всё» отдаёт его `applyAll`.
+   */
+  openKey?: string
+  isOpen?: (slice: unknown) => boolean
   /** Отбросить черновик; без поля — только снять запись. */
   discard?: (table: unknown, draft: Draft) => void
   /** Вид работает в этой таблице; `false` — его черновики инертны (DR8). */
@@ -130,6 +139,17 @@ export const warnInertDrafts = (table: unknown) => {
   }
 }
 
+/** Записи среза по ключу пары вида и цели: ячейка находит свою без перебора среза. */
+const indexes = new WeakMap<readonly Draft[], Map<string, Draft>>()
+const indexOf = (drafts: readonly Draft[]) => {
+  let index = indexes.get(drafts)
+  if (!index) {
+    index = new Map(drafts.map(draft => [keyOf(draft), draft]))
+    indexes.set(drafts, index)
+  }
+  return index
+}
+
 /** Черновик вида у цели — перерисовывает только подписчика этой цели. */
 export const useDraft = (
   table: unknown,
@@ -138,14 +158,16 @@ export const useDraft = (
 ): Draft | undefined => {
   const key = draftKeyOf(kind, target)
   return useSliceProjection(table, DRAFTS_KEY, (drafts?: readonly Draft[]) =>
-    (drafts ?? EMPTY).find(item => keyOf(item) === key),
+    indexOf(drafts ?? EMPTY).get(key),
   )
 }
 
 /** Источник без черновиков — у таблицы без записи ядра (хосты тестов). */
 const NO_DRAFTS = {
   get: () => EMPTY,
-  subscribe: () => ({ unsubscribe: () => {} }),
+  subscribe: (_listener?: (value: readonly Draft[]) => void) => ({
+    unsubscribe: () => {},
+  }),
 }
 
 /**
@@ -172,3 +194,36 @@ export const useHasDraftAt = (
                 : false,
           ),
   )
+
+/** Число видов с незавершённым вводом (открытая правка) — подписка на их срезы. */
+export const useOpenDrafts = (table: unknown) => {
+  const kinds = draftKindsOf(table).filter(kind => kind.openKey && kind.isOpen)
+  const atoms = (table as { atoms?: Record<string, typeof NO_DRAFTS> }).atoms
+  const sources = kinds.map(kind => atoms?.[kind.openKey!])
+  return useSyncExternalStore(
+    notify => {
+      const subscriptions = sources.map(source => source?.subscribe(notify))
+      return () => subscriptions.forEach(item => item?.unsubscribe())
+    },
+    () =>
+      kinds.filter((kind, index) => kind.isOpen!(sources[index]?.get())).length,
+  )
+}
+
+/**
+ * Применить всё (ADR 0178, §8): вид с пакетом — одним вызовом, в том числе с одним лишь
+ * незавершённым вводом; прочие — по черновику.
+ */
+export const applyAllDrafts = (table: unknown) => {
+  const drafts = activeDrafts(table)
+  const atoms = (table as { atoms?: Record<string, typeof NO_DRAFTS> }).atoms
+  for (const kind of draftKindsOf(table)) {
+    const own = drafts.filter(draft => draft.kind === kind.kind)
+    const open = !!kind.openKey && !!kind.isOpen?.(atoms?.[kind.openKey]?.get())
+    if (kind.applyAll) {
+      if (own.length > 0 || open) void kind.applyAll(table, own)
+    } else {
+      for (const draft of own) void kind.apply(table, draft)
+    }
+  }
+}

@@ -54,6 +54,7 @@ import {
   enableUnsavedChangesType,
   enableCellEditingType,
   cellEditingSearchDebounceMsType,
+  cellEditingSaveModeType,
   enableCellErrorsType,
   enableCellSelectionModelType,
   enableCellSelectionType,
@@ -304,6 +305,7 @@ export const dataGridArgTypes = {
     enableCellEditing: enableCellEditingType,
     ...when('enableCellEditing', {
       cellEditingSearchDebounceMs: cellEditingSearchDebounceMsType,
+      cellEditingSaveMode: cellEditingSaveModeType,
     }),
     enableCellErrors: enableCellErrorsType,
     enableCellSelectionModel: enableCellSelectionModelType,

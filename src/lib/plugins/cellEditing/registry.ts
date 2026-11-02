@@ -17,6 +17,8 @@ import { definePlugin } from '../../core/definePlugin'
 import { neverInert } from '../../core/pluginDiagnostics'
 import { CellEditButton } from './CellEditButton'
 import { CellEditField } from './CellEditField'
+import { CellDraftMark } from './CellDraftMark'
+import { cellValueDraftKind } from './cellDrafts'
 import {
   editCellKeyboardAction,
   toggleCellKeyboardAction,
@@ -34,6 +36,10 @@ export interface CellEditingOptions {
   onCellEdit?: CellEditingHooks['onCellEdit']
   /** Правка завершилась без сохранения; приходят причина и черновик (ADR 0040). */
   onEditCancel?: CellEditingHooks['onEditCancel']
+  /** `'manual'` — законченная правка становится черновиком, сохраняет пакет (ADR 0178, §5). */
+  saveMode?: CellEditingHooks['saveMode']
+  /** Сохранить пакет черновиков ячеек одним вызовом (ADR 0178, §5). */
+  onCommitEdits?: CellEditingHooks['onCommitEdits']
   /** Значение изменилось извне во время правки: сохранить (по умолчанию) или нет. */
   onConflict?: CellEditingHooks['onConflict']
   /** Свой редактор ячеек; главнее — `editor` колонки и её типа, иначе встроенный по типу. */
@@ -66,18 +72,28 @@ export const cellEditing = definePlugin<CellEditingOptions>()({
     canEditCell: o.canEditCell ?? (() => true),
     onCellEdit: o.onCellEdit ?? (() => {}),
     onEditCancel: o.onEditCancel,
+    saveMode: o.saveMode,
+    onCommitEdits: o.onCommitEdits,
     onConflict: o.onConflict,
     editor: o.editor,
     validate: o.validate,
     searchDebounceMs: o.searchDebounceMs,
   }),
   keyboardActions: [editCellKeyboardAction, toggleCellKeyboardAction],
+  // Значение ячейки до сохранения по кнопке (ADR 0178, §5).
+  draftKinds: [cellValueDraftKind],
   slots: [
     {
       id: 'cellEditing',
       slot: 'rightCellSlot',
       order: 'last',
       component: CellEditButton,
+    },
+    {
+      id: 'cellEditingDraft',
+      slot: 'rightCellSlot',
+      order: 'last',
+      component: CellDraftMark,
     },
     {
       id: 'cellEditing',

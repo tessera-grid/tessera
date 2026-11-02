@@ -31,7 +31,11 @@ import { DATA_GRID_THEME_CLASS } from '../ui/theme'
 import { BatchToolbar } from './BatchToolbar'
 import { groupedColumns, useColumns } from './__mocks__/columns'
 import { useData } from './__mocks__/data'
-import type { CellEditCommit } from '../../lib/plugins/cellEditing/types'
+import type {
+  CellEditBatch,
+  CellEditBatchResult,
+  CellEditCommit,
+} from '../../lib/plugins/cellEditing/types'
 import type { CellComponentProps } from '../../lib/core/createSlots'
 import { useAllRowsSelect } from './__mocks__/useAllRowsSelect'
 import { RU_LABELS } from './__mocks__/localization.ru'
@@ -372,6 +376,26 @@ const StoryGrid = memo(
         return answer
       })
     }
+    // Пакет правок (ADR 0178, §5): сохранённые ячейки — в данные после ответа, отказанные — нет.
+    const demoCommitEdits = (
+      batch: CellEditBatch,
+      context: { signal: AbortSignal },
+    ) => {
+      const write = (answer: CellEditBatchResult | void) => {
+        const refused = new Set(
+          (answer?.refused ?? []).map(
+            item => `${item.rowId}\u0000${item.columnId}`,
+          ),
+        )
+        for (const cell of batch.cells)
+          if (!refused.has(`${cell.rowId}\u0000${cell.columnId}`))
+            writeCell(cell.rowId, cell.columnId, cell.value)
+        return answer
+      }
+      const saved = options.onCommitEdits?.(batch, context)
+      if (!isThenable(saved)) return write(saved)
+      return Promise.resolve(saved).then(write)
+    }
     // Колбэки, переданные гриду, — с записью в консоль истории (ADR 0124, CL2).
     const pluginArgs = {
       ...loggedCallbacks(consoleLog, {
@@ -380,7 +404,9 @@ const StoryGrid = memo(
         ...Object.fromEntries(
           Object.entries(options).filter(([, value]) => value !== undefined),
         ),
-        ...(editingDemo ? { onCellEdit: demoCellEdit } : {}),
+        ...(editingDemo
+          ? { onCellEdit: demoCellEdit, onCommitEdits: demoCommitEdits }
+          : {}),
       }),
     } as FeatureToggles
     const storyPlugins = [...argsToPlugins(pluginArgs), ...(extraPlugins ?? [])]

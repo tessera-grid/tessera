@@ -37,6 +37,8 @@ export const CATALOG_STATES = {
     'menuPending',
     'error',
     'cellError',
+    // Несохранённое значение ячейки: полый уголок (ADR 0178, §6).
+    'cellDraft',
     'highlight',
     'cellRange',
     'refreshing',

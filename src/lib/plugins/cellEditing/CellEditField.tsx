@@ -17,10 +17,13 @@ import { useSliceProjection } from '../../core/reactivity'
 import { alignOf } from '../../core/dataTypeFormat'
 import { SelectCheckbox } from '../../ui/SelectCheckbox/SelectCheckbox'
 import { defaultCell } from '../../core/commonFeature'
+import { useDraft } from '../../core/drafts/drafts'
 import { sourceOf } from '../../core/debugActions'
 import { beginEdit, editorOf, togglesInPlace } from './editors'
 import styles from './CellEditInput.module.css'
 import {
+  CELL_VALUE_DRAFT,
+  type CellDraftValue,
   EDIT_SESSION_KEY,
   cancelEditSession,
   cellEditingViewOf,
@@ -64,6 +67,11 @@ export const CellEditField = (
         : undefined,
   )
 
+  // Несохранённое значение ячейки (ADR 0178, §5): модели считают по данным, ячейка — по нему.
+  const draft = useDraft(table, CELL_VALUE_DRAFT, {
+    cell: [row.id, column.id],
+  })?.value as CellDraftValue | undefined
+
   const header =
     typeof column.columnDef.header === 'string'
       ? column.columnDef.header
@@ -77,7 +85,9 @@ export const CellEditField = (
     const value =
       pending && typeof submitted!.draft === 'boolean'
         ? submitted!.draft
-        : row.getValue(column.id) === true
+        : draft && typeof draft.value === 'boolean'
+          ? draft.value
+          : row.getValue(column.id) === true
     return (
       <span
         className={styles.booleanCell}
@@ -99,6 +109,11 @@ export const CellEditField = (
 
   if (submitted && pending) {
     return <span className={styles.pending}>{submitted.text}</span>
+  }
+
+  // Несохранённое значение — его текст; отметка — полый уголок ячейки.
+  if (view !== 'editing' && draft) {
+    return <span className={styles.draft}>{draft.text}</span>
   }
 
   // Не в правке или сервер отказал — собственный контент ячейки, то есть значение из

@@ -1064,7 +1064,12 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       `filterDrafts.dom` (DR4–DR5, DR8 — вид `columnFilter`, отказ и отмена — черновиком,
       клиентский режим), визуальные `filter-drafts` (DR6–DR7, DR9–DR10, DR12 — кольцо на кнопке
       фильтра, место в ряду, сводка, полая точка кита, axe) и `unsaved-changes` (DR11 — пульт),
-      перф DR13 — в `scroll`, истории «Filtering» S1–S3 и «Panels/Unsaved changes» S4
+      перф DR13 — в `scroll`, истории «Filtering» S1–S3 и «Panels/Unsaved changes» S4; правка
+      по кнопке — модульный `manualSave.dom` (DR14, DR17, DR19 — черновик вместо `onCellEdit`,
+      пакет `onCommitEdits` с отказом части, жизнь по id строки), визуальный `manual-save`
+      (DR15–DR16, DR18, DR20 — значение черновика при модели по данным, полый уголок и
+      «Откатить», открытая правка в пульте и пакете, описание и axe), перф DR21 — в `scroll`,
+      истории «Cells/Editing» S5–S7
       ([ADR 0178](docs/decisions/0178-drafts.md)).
     - _Включённые действия в ряду:_ модульный `slots` (KA1–KA2 — по ширине и по порогу
       включённые уходят в кебаб последними, `mode: 'always'` сворачивает все), визуальный

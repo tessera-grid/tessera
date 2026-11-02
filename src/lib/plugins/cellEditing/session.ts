@@ -42,7 +42,14 @@ import {
   writeActionStatus,
 } from '../../core/headerActions/actionStatusFeature'
 import { columnOf, editTextOf, parseEditText, sameEditValue } from './editValue'
+import {
+  type Draft,
+  readDrafts,
+  removeDraft,
+  setDraft as putDraft,
+} from '../../core/drafts/drafts'
 import type {
+  CellEditBatchResult,
   CellEditingHooks,
   CellEditingState,
   EditCancelReason,
@@ -184,6 +191,13 @@ const retrySubmitted = (table: unknown, key: string) => {
   const entry = readEditingState(table).submitted[key]
   if (!entry || entry.status !== 'error') return
   const hooks = readPluginHooks<Partial<CellEditingHooks>>(table as never, ID)
+  const draft = manual(hooks)
+    ? cellDraftOf(table, entry.rowId, entry.columnId)
+    : undefined
+  if (draft) {
+    commitDrafts(table, [draft])
+    return
+  }
   submitValue(table, entry, entry.draft, entry.text, entry.original, hooks)
 }
 
@@ -192,6 +206,7 @@ const discardSubmitted = (table: unknown, key: string) => {
   const state = readEditingState(table)
   const entry = state.submitted[key]
   if (!entry || entry.status !== 'error') return
+  removeDraft(table, CELL_VALUE_DRAFT, { cell: [entry.rowId, entry.columnId] })
   const submitted = { ...state.submitted }
   delete submitted[key]
   const active = isEditingCell(state.active, entry.rowId, entry.columnId)
@@ -210,6 +225,55 @@ const discardSubmitted = (table: unknown, key: string) => {
     },
   )
 }
+
+/** Вид черновика значения ячейки в режиме сохранения по кнопке (ADR 0178, §5). */
+export const CELL_VALUE_DRAFT = 'cellValue'
+
+/** Значение черновика ячейки: в типе колонки и набранный текст. */
+export interface CellDraftValue {
+  value: unknown
+  text: string
+}
+
+/** Черновик значения ячейки или `undefined`. */
+export const cellDraftOf = (
+  table: unknown,
+  rowId: string,
+  columnId: string,
+): Draft | undefined =>
+  readDrafts(table).find(
+    draft =>
+      draft.kind === CELL_VALUE_DRAFT &&
+      'cell' in draft.target &&
+      draft.target.cell[0] === rowId &&
+      draft.target.cell[1] === columnId,
+  )
+
+const dataValueOf = (table: unknown, rowId: string, columnId: string) =>
+  (table as ReconcileTable).getRowSource().byId(rowId)?.getValue(columnId)
+
+/** Записать черновик ячейки; совпал со значением в данных — снять. */
+const storeCellDraft = (
+  table: unknown,
+  { rowId, columnId }: Cell,
+  value: unknown,
+  text: string,
+) => {
+  if (
+    sameEditValue(table, columnId, value, dataValueOf(table, rowId, columnId))
+  ) {
+    removeDraft(table, CELL_VALUE_DRAFT, { cell: [rowId, columnId] })
+    return
+  }
+  const draft: CellDraftValue = { value, text }
+  putDraft(table, {
+    kind: CELL_VALUE_DRAFT,
+    target: { cell: [rowId, columnId] },
+    value: draft,
+  })
+}
+
+const manual = (hooks: Partial<CellEditingHooks>) => hooks.saveMode === 'manual'
 
 export const readEditSession = (table: unknown): EditingCell =>
   readEditingState(table).active
@@ -272,13 +336,20 @@ export const startEditSession = (
       ),
     )
   }
-  // Из «ошибки» — с отклонённым черновиком и текстом отказа (ADR 0041, §2).
+  // Из «ошибки» — с отклонённым черновиком и текстом отказа (ADR 0041, §2); из черновика
+  // ячейки — с его значением (ADR 0178, §5).
   const failed = readEditingState(table).submitted[cellKey(row.id, column.id)]
+  const saved = cellDraftOf(table, row.id, column.id)?.value as
+    CellDraftValue | undefined
   const original = failed ? failed.original : row.getValue(column.id)
   const session: EditSession = {
     cell: { rowId: row.id, columnId: column.id },
-    draft: failed ? failed.draft : original,
-    text: failed ? failed.text : editTextOf(table, column.id, original),
+    draft: failed ? failed.draft : saved ? saved.value : original,
+    text: failed
+      ? failed.text
+      : saved
+        ? saved.text
+        : editTextOf(table, column.id, original),
     original,
     ...(failed ? { rejected: { error: failed.error ?? '' } } : {}),
   }
@@ -553,6 +624,10 @@ export const saveEdit = (
     value = parsed.value
   }
   if (sameEditValue(table, cell.columnId, value, session!.original)) {
+    if (manual(hooks))
+      removeDraft(table, CELL_VALUE_DRAFT, {
+        cell: [cell.rowId, cell.columnId],
+      })
     reportAction(table, {
       plugin: ID,
       action: 'edit',
@@ -635,6 +710,12 @@ export const commitEditSession = (
     writeDraft(table, value, text)
     cancelEditSession(table, 'conflict', hooks, { value: now })
     refuseOnConflict(table, cell, value, text, now)
+    return
+  }
+  if (manual(hooks)) {
+    reportEditEnd(table, cell, { result: 'draft', value })
+    storeCellDraft(table, cell, value, text)
+    endEditSession(table)
     return
   }
   reportEditEnd(table, cell, { result: 'commit', value })
@@ -722,6 +803,101 @@ const submitValue = (
       if (controller.signal.aborted) return lateAnswer(table, reason)
       unregister()
       settleSubmitted(table, key, attempt, { ok: false, reason })
+    },
+  )
+}
+
+/**
+ * Сохранить черновики ячеек пакетом (ADR 0178, §5, DR17): один вызов `onCommitEdits`; пока
+ * промис не решён, ячейки пакета ждут (ожидание на объекте); сохранённые снимают черновик и
+ * пишут значение в кэш серверной модели, отказанные — отказ на ячейке, черновик остаётся.
+ */
+export const commitDrafts = (table: unknown, drafts: readonly Draft[]) => {
+  const hooks = readPluginHooks<Partial<CellEditingHooks>>(table as never, ID)
+  const cells = drafts.flatMap(draft => {
+    if (draft.kind !== CELL_VALUE_DRAFT || !('cell' in draft.target)) return []
+    const [rowId, columnId] = draft.target.cell
+    const { value, text } = draft.value as CellDraftValue
+    return [
+      {
+        rowId,
+        columnId,
+        value,
+        text,
+        original: dataValueOf(table, rowId, columnId),
+      },
+    ]
+  })
+  if (cells.length === 0) return
+  const controller = new AbortController()
+  const attempt = ++lastAttempt
+  const result = hooks.onCommitEdits?.({ cells }, { signal: controller.signal })
+  reportOutcome(table, { plugin: ID, action: 'commit' }, result)
+
+  const settle = (refused: Map<string, string>, answered: boolean) => {
+    const state = readEditingState(table)
+    const submitted = { ...state.submitted }
+    for (const cell of cells) {
+      const key = cellKey(cell.rowId, cell.columnId)
+      const entry = submitted[key]
+      if (answered && (!entry || entry.attempt !== attempt)) continue
+      const target = { cell: [cell.rowId, cell.columnId] as [string, string] }
+      const error = refused.get(key)
+      if (error !== undefined) {
+        submitted[key] = {
+          rowId: cell.rowId,
+          columnId: cell.columnId,
+          draft: cell.value,
+          text: cell.text,
+          original: cell.original,
+          status: 'error',
+          error,
+          attempt,
+        }
+        flashOutcome(table, target, 'reverted')
+        continue
+      }
+      delete submitted[key]
+      writeSaved(table, cell.rowId, cell.columnId, cell.value, undefined)
+      removeDraft(table, CELL_VALUE_DRAFT, target)
+      flashOutcome(table, target, 'accepted')
+    }
+    writeEditingState(table, { ...state, submitted })
+  }
+  const refusedOf = (answer: unknown) =>
+    new Map(
+      ((answer as CellEditBatchResult | undefined)?.refused ?? []).map(item => [
+        cellKey(item.rowId, item.columnId),
+        item.reason,
+      ]),
+    )
+
+  if (!isThenable(result)) {
+    settle(refusedOf(result), false)
+    return
+  }
+  const state = readEditingState(table)
+  const submitted = { ...state.submitted }
+  for (const cell of cells)
+    submitted[cellKey(cell.rowId, cell.columnId)] = {
+      rowId: cell.rowId,
+      columnId: cell.columnId,
+      draft: cell.value,
+      text: cell.text,
+      original: cell.original,
+      status: 'pending',
+      attempt,
+    }
+  writeEditingState(table, { ...state, submitted })
+  result.then(
+    answer => settle(refusedOf(answer), true),
+    reason => {
+      const labels = announcerLabels(table) ?? DEFAULT_LABELS
+      const error = rejectionText(reason) ?? labels.saveFailed
+      settle(
+        new Map(cells.map(cell => [cellKey(cell.rowId, cell.columnId), error])),
+        true,
+      )
     },
   )
 }
@@ -836,6 +1012,18 @@ const reconcileSubmitted = (
   }
 }
 
+const pruneCellDrafts = (table: ReconcileTable) => {
+  const source = table.getRowSource() as RowSource<ReconcileRow> & {
+    whenLoaded?: unknown
+  }
+  if (source.whenLoaded) return
+  for (const draft of readDrafts(table)) {
+    if (draft.kind !== CELL_VALUE_DRAFT || !('cell' in draft.target)) continue
+    if (!source.byId(draft.target.cell[0]))
+      removeDraft(table, draft.kind, draft.target)
+  }
+}
+
 /**
  * Согласование с таблицей после рендера. Активная сессия: строка или колонка ушла —
  * `unavailable`; плагин выключен или `canEditCell` запретил ячейку — `revoke`. Ячейка вне
@@ -850,6 +1038,7 @@ export const reconcileEditSession = (
   const t = table as ReconcileTable
   syncAppSubmitted(table)
   reconcileSubmitted(t, enabled, cellHooks)
+  pruneCellDrafts(t)
   const session = readEditSession(table)
   if (!session) {
     return
