@@ -67,6 +67,7 @@ Tessera нацелена на **любую систему, которой нуж
 | [virtualization.md](virtualization.md)               | Два виртуализатора, кастомные range extractors, filler-столбцы, динамическое измерение строк          |
 | [dnd.md](dnd.md)                                     | DnD рендер-слоя: обёртки head/body, reorder столбцов и строк, overlay, collision/modifiers            |
 | [theming-and-overrides.md](theming-and-overrides.md) | Контракты переопределения: `colorMode` → CSS-переменные, иконки, локализация                          |
+| [ui-kit.md](ui-kit.md)                               | Как разрабатывать компоненты UI-кита: слой, токены, семейства, состояния, доступность, истории, тесты |
 
 ## Слои
 

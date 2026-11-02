@@ -608,13 +608,15 @@ const indexDemo: TesseraFeatureEntry = {
 
 const INDEX_ACTION = '[data-action-id="asyncBuildIndex"]'
 
+/** Действие колонки ждёт: заняты ячейки колонки, а не кебаб (ADR 0177, §1). */
 const busy = (root: ParentNode, column: string) =>
-  headKebab(root, column)?.getAttribute('aria-busy') === 'true'
-
-const failed = (root: ParentNode, column: string) =>
-  !!headKebab(root, column)?.querySelector(
-    '[data-error-indicator][data-shown="true"]',
+  !!root.querySelector(
+    `.data-grid__body-cell[data-column-id="${column}"][aria-busy="true"]`,
   )
+
+/** Отказ действия колонки — вспышка отката на ней. */
+const refusedFlash = (root: ParentNode, column: string) =>
+  headCellOf(root, column)?.getAttribute('data-column-flash') === 'reverted'
 
 const itemEnabled = (item: HTMLElement | null) =>
   !!item &&
@@ -703,7 +705,7 @@ const ASYNC_ACTIONS: readonly GuideStoryStep[] = [
   },
   {
     title: 'Действие выполняется',
-    hint: 'Пользователь выбрал действие в колонке, где оно доступно. Меню закрылось, а кнопка меню колонки показывает ожидание, пока сервер выполняет действие.',
+    hint: 'Пользователь выбрал действие в колонке, где оно доступно. Меню закрылось, а ячейки колонки показывают ожидание, пока сервер выполняет действие.',
     states: ['head.kebab'],
     enter: afterRows((root, signal) => {
       INDEX_SERVER.checks.release()
@@ -717,14 +719,14 @@ const ASYNC_ACTIONS: readonly GuideStoryStep[] = [
   },
   {
     title: 'Сервер отказал',
-    hint: 'Сервер не выполнил действие. На кнопке меню колонки появляется отметка ошибки, она видна без наведения; подсказка кнопки называет невыполненное действие.',
+    hint: 'Сервер не выполнил действие. Ожидание с ячеек колонки снято, колонка коротко вспыхивает тоном ошибки, подсказка кнопки меню колонки называет невыполненное действие.',
     states: ['head.kebab'],
     enter: afterRows((root, signal) => {
       INDEX_SERVER.checks.release()
       INDEX_SERVER.runs.release()
       inIndexMenu(
         'lastName',
-        root => busy(root, 'lastName') || failed(root, 'lastName'),
+        root => busy(root, 'lastName') || refusedFlash(root, 'lastName'),
         runIndex,
       )(root, signal)
     }),
@@ -793,7 +795,7 @@ export const HeaderMenuAsyncActions: StoryObj<StoryProps> = {
     })
     await step(ASYNC_ACTIONS[4]!.title, async () => {
       await guideNext(canvas)
-      await until(() => expect(failed(canvas, 'lastName')).toBe(true))
+      await until(() => expect(refusedFlash(canvas, 'lastName')).toBe(true))
       await until(() => expect(busy(canvas, 'lastName')).toBe(false))
       await until(() =>
         expect(

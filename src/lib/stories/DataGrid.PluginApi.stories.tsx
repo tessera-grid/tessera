@@ -782,24 +782,18 @@ const FavoriteButton = ({
   state: [{ favorites }, setState],
 }: PluginCellStateProps<FavoriteHooks, FavoriteState>) => {
   const [pending, setPending] = useState(false)
-  const [failure, setFailure] = useState<{ flash: number; text: string }>()
   if (column.id !== FAVORITE_COLUMN) {
     return null
   }
   const on = favorites[row.id] ?? false
   const toggle = async () => {
     setPending(true)
-    setFailure(undefined)
     setState({ favorites: { ...favorites, [row.id]: !on } })
     const refuse = hooks.refuse
     await new Promise(resolve => setTimeout(resolve, SERVER_MS))
     setPending(false)
     if (refuse) {
       setState({ favorites })
-      setFailure(prev => ({
-        flash: (prev?.flash ?? 0) + 1,
-        text: 'Failed: the server refused. Press to retry',
-      }))
       table.flashOutcome({ cell: [row.id, column.id] }, 'reverted')
       return
     }
@@ -814,7 +808,6 @@ const FavoriteButton = ({
       indicator={false}
       revealOnHover={false}
       pending={pending}
-      failure={failure?.text}
       onClick={() => void toggle()}
     />
   )
@@ -874,7 +867,7 @@ const OUTCOME_FLASH: readonly GuideStoryStep[] = [
   },
   {
     title: 'Сервер отказал',
-    hint: 'Теперь сервер отказывает. Нажата кнопка второй строки: отметка возвращается, ячейка с кнопкой вспыхивает тоном отказа, а на кнопке остаётся отметка с причиной — нажатие повторит запрос.',
+    hint: 'Теперь сервер отказывает. Нажата кнопка второй строки: отметка возвращается, ячейка с кнопкой вспыхивает тоном отказа. Повторное нажатие повторит запрос.',
     props: () => ({ extraPlugins: FAVORITE_REFUSES }),
     enter: pressFavorite(1),
     immediate: true,
@@ -931,13 +924,11 @@ export const OutcomeFlashFromApp: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await until(() => expect(flashOf(1)).toBe('reverted'))
       await iconAtRest(1)
-      // Отметка отказа и её описание — разные срезы: React 18 коммитит их по одному.
+      // Отметки отказа на кнопке нет (ADR 0177, §2): она в покое.
       await until(() =>
         expect(button(1).closest('[data-button-active]')).toBeNull(),
       )
-      await until(() =>
-        expect(button(1).getAttribute('aria-describedby')).toBeTruthy(),
-      )
+      expect(button(1).querySelector('[data-failure-indicator]')).toBeNull()
     })
     await settle()
   },
@@ -1601,6 +1592,11 @@ const exportButtonOf = (root: ParentNode) =>
   root.querySelector<HTMLElement>('[data-testid="export-button"]')
 const busyButton = (button: Element | null) =>
   button?.getAttribute('aria-busy') === 'true'
+/** Действие строки ждёт: заняты её ячейки, а не кнопка (ADR 0177, §1). */
+const rowWaits = (root: ParentNode) =>
+  !!root.querySelector(
+    `.data-grid__body-row[data-row-id="${CANCEL_ROW}"] [data-column-id][aria-busy="true"]`,
+  )
 const failedButton = (button: Element | null) =>
   button
     ?.querySelector('[data-failure-indicator]')
@@ -1609,7 +1605,7 @@ const failedButton = (button: Element | null) =>
 /** Действие строки и выгрузка ждут: пользователь нажал обе кнопки. */
 const bothHeld = (root: HTMLElement, signal: AbortSignal) =>
   pollUntil(() => {
-    if (!busyButton(archiveButton(root))) archiveButton(root)?.click()
+    if (!rowWaits(root)) archiveButton(root)?.click()
     else if (!busyButton(exportButtonOf(root))) exportButtonOf(root)?.click()
     else return true
     return false
@@ -1622,7 +1618,7 @@ const CANCEL_ALL: readonly GuideStoryStep[] = [
   },
   {
     title: 'Ждут два действия',
-    hint: 'Пользователь запустил действие строки и выгрузку, обе кнопки показывают ожидание.',
+    hint: 'Пользователь запустил действие строки и выгрузку: ячейки строки чуть темнеют и по ним проходит светлый блик, кнопка выгрузки показывает ожидание.',
     states: ['body.pending'],
     enter: stepAction((root, { signal }) => bothHeld(root, signal)),
   },
@@ -1633,8 +1629,7 @@ const CANCEL_ALL: readonly GuideStoryStep[] = [
       await bothHeld(root, signal)
       root.querySelector<HTMLElement>('[data-testid="cancel-all"]')!.click()
       await pollUntil(
-        () =>
-          !busyButton(archiveButton(root)) && !busyButton(exportButtonOf(root)),
+        () => !rowWaits(root) && !busyButton(exportButtonOf(root)),
         signal,
       )
     }),
@@ -1684,13 +1679,14 @@ export const PluginApiCancelPending: StoryObj<StoryProps> = {
     await step(CANCEL_ALL[1]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(busyButton(archiveButton(canvas))).toBe(true)
+      await expect(rowWaits(canvas)).toBe(true)
+      await expect(canvas.querySelector('[data-pending-wave]')).not.toBeNull()
       await expect(busyButton(exportButtonOf(canvas))).toBe(true)
     })
     await step(CANCEL_ALL[2]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(busyButton(archiveButton(canvas))).toBe(false)
+      await expect(rowWaits(canvas)).toBe(false)
       await expect(busyButton(exportButtonOf(canvas))).toBe(false)
       await settle()
       await expect(failedButton(archiveButton(canvas))).toBe(false)

@@ -58,16 +58,21 @@ const waitForGrid = () =>
 const editButtonOf = (index: number) =>
   ageCell(index).querySelector<HTMLElement>('.cell__button button')
 
-/** Отметка отказа на кнопке правки: есть ли и видна ли. */
+/** Треугольник отказа сохранения на ячейке (ADR 0177, §5). */
 const failureOf = (index: number) =>
-  ageCell(index).querySelector('[data-failure-indicator]')
-const failureShown = (index: number) =>
-  failureOf(index)?.getAttribute('data-shown') === 'true'
+  ageCell(index).querySelector('[data-cell-issue]')
+const failureShown = (index: number) => failureOf(index) !== null
+/** Ячейка занята: ожидание сохранения — волна на ней (ADR 0177, §1). */
+const cellBusy = (index: number) =>
+  ageCell(index).closest('[aria-busy="true"]') ??
+  ageCell(index).querySelector('[aria-busy="true"]')
 
-/** Содержимое ячейки без её кнопок. */
+/** Содержимое ячейки без её кнопок и отметки. */
 const contentOf = (index: number) => {
   const clone = ageCell(index).cloneNode(true) as HTMLElement
-  clone.querySelectorAll('.cell__button').forEach(button => button.remove())
+  clone
+    .querySelectorAll('.cell__button, [data-cell-issue]')
+    .forEach(button => button.remove())
   return clone
 }
 const valueOf = (index: number) => contentOf(index).textContent!.trim()
@@ -112,7 +117,7 @@ describe('Асинхронный контракт бизнес-колбэков'
     await openAndType(0, '999')
     await userEvent.keyboard('{Enter}')
 
-    const busy = () => ageCell(0).querySelector('[aria-busy="true"]')
+    const busy = () => cellBusy(0)
     await expect.poll(busy).not.toBeNull()
     expect(ageCell(0).querySelector('input')).toBeNull()
     expect(valueOf(0)).toBe('999')
@@ -137,13 +142,11 @@ describe('Асинхронный контракт бизнес-колбэков'
     await waitForGrid()
     await openAndType(0, '999')
     await userEvent.keyboard('{Enter}')
-    await expect
-      .poll(() => ageCell(0).querySelector('[aria-busy="true"]'))
-      .not.toBeNull()
+    await expect.poll(() => cellBusy(0)).not.toBeNull()
 
     const input = await openAndType(1, '42')
     expect(input.value).toBe('42')
-    expect(ageCell(0).querySelector('[aria-busy="true"]')).not.toBeNull()
+    expect(cellBusy(0)).not.toBeNull()
   })
 
   test('AS5: промис отклонён — ячейка показывает значение из data, отказ объявлен; активная правка другой ячейки не тронута', async () => {
@@ -227,14 +230,12 @@ describe('Асинхронный контракт бизнес-колбэков'
     await userEvent.keyboard('{Enter}')
     await expect.poll(() => server.settle.length).toBe(3)
     server.settle[2].resolve()
-    await expect
-      .poll(() => ageCell(0).querySelector('[aria-busy="true"]'))
-      .toBeNull()
+    await expect.poll(() => cellBusy(0)).toBeNull()
     expect(failureOf(0)).toBeNull()
     expect(ageCell(0).querySelector('input')).toBeNull()
   })
 
-  test('AS11: onExpandRow вернул промис при раскрытии — кнопка раскрытия в ожидании, строка с aria-busy, повторное нажатие игнорируется', async () => {
+  test('AS11: onExpandRow вернул промис при раскрытии — строка с aria-busy, на кнопке раскрытия ожидания нет, повторное нажатие игнорируется', async () => {
     const onExpandRow = vi.fn(() => new Promise<void>(() => {}))
     const { container } = await render(
       <composed.RowExpandingPlayground onExpandRow={onExpandRow} />,
@@ -252,7 +253,7 @@ describe('Асинхронный контракт бизнес-колбэков'
       .poll(() => firstExpandable().getAttribute('aria-busy'))
       .toBe('true')
     expect(firstExpandable().getAttribute('data-expanded')).toBe('true')
-    expect(toggle().getAttribute('aria-busy')).toBe('true')
+    expect(toggle().hasAttribute('aria-busy')).toBe(false)
 
     await userEvent.click(toggle())
     await new Promise(resolve => requestAnimationFrame(resolve))
@@ -352,7 +353,7 @@ describe('Асинхронный контракт бизнес-колбэков'
     await expect.poll(() => server.settle.length).toBe(2)
     server.settle[1].reject(new Error('Server down'))
     await expect.poll(() => failureShown(1)).toBe(true)
-    expect(ageCell(0).querySelector('[aria-busy="true"]')).not.toBeNull()
+    expect(cellBusy(0)).not.toBeNull()
     await inBothThemes(async () => {
       expect((await run()).violations).toEqual([])
     })
@@ -380,7 +381,7 @@ describe('Асинхронный контракт бизнес-колбэков'
 
 // Обратная связь асинхронной правки (ADR 0057, CF1, CF5–CF6, CF8–CF10): значение в
 // ожидании, вспышка итога на ячейке (ADR 0134, OF14–OF15, OF18); ожидание и отказ — на
-// кнопке правки (ADR 0127). CF7 — модульный (`asyncCallbacks.dom`), CF12 — перф в
+// ячейке: волна и треугольник (ADR 0177). CF7 — модульный (`asyncCallbacks.dom`), CF12 — перф в
 // `scroll`.
 
 const reducedMotion = (
@@ -468,9 +469,7 @@ describe('Асинхронная правка: значение и вспышк�
       ageCell(2).querySelector('.cell__wrapper') ?? ageCell(2),
     ).color
     await saveAge(0, '999')
-    await expect
-      .poll(() => editButtonOf(0)?.getAttribute('aria-busy'))
-      .toBe('true')
+    await expect.poll(() => cellBusy(0)).not.toBeNull()
 
     const value = [...ageCell(0).querySelectorAll<HTMLElement>('*')].find(
       el => el.childElementCount === 0 && el.textContent === '999',
@@ -671,7 +670,7 @@ describe('Асинхронная правка: значение и вспышк�
     server.settle[2].resolve()
     await expect.poll(() => savedAt(2)).toBe(true)
     await expect.poll(() => failureShown(1)).toBe(true)
-    expect(editButtonOf(0)!.getAttribute('aria-busy')).toBe('true')
+    expect(cellBusy(0)).not.toBeNull()
 
     const over = (top: number[], bottom: number[]) => [
       ...[0, 1, 2].map(i => top[i]! * top[3]! + bottom[i]! * (1 - top[3]!)),
@@ -701,94 +700,9 @@ describe('Асинхронная правка: значение и вспышк�
   })
 })
 
-describe('Ожидание и отказ сохранения на кнопке правки (ADR 0127)', () => {
-  let restore = () => {}
-  afterEach(() => {
-    restore()
-    restore = () => {}
-  })
-
-  test('IR16: правка ячейки — пока сохранение ждёт, кнопка правки на месте и в ожидании; отказ — дуга встаёт и отметка на ней, нажатие открывает правку с черновиком; ячейка показывает только значение', async () => {
-    const wrapperOf = (index: number) =>
-      ageCell(index).querySelector<HTMLElement>('.cell__button')!
-    /** Кнопка видна и встала: проявление закончено. */
-    const settled = (index: number) =>
-      getComputedStyle(wrapperOf(index)).opacity === '1' &&
-      wrapperOf(index).getAnimations().length === 0
-    /** Место кнопки относительно ячейки. */
-    const placeOf = (index: number) => {
-      const cell = ageCell(index).getBoundingClientRect()
-      const button = editButtonOf(index)!.getBoundingClientRect()
-      return [
-        Math.round(cell.right - button.right),
-        Math.round(button.top - cell.top),
-        Math.round(button.width),
-      ]
-    }
-    const away = () => userEvent.hover(headCells()[0]!)
-    /** В ячейке, кроме кнопки, — только значение: ни значков, ни меток. */
-    const onlyValue = (index: number) => {
-      const content = contentOf(index)
-      return content.querySelector('svg, [aria-invalid], [aria-busy]') === null
-    }
-
-    for (const keyboard of [false, true]) {
-      const server = controlledServer()
-      const screen = await editableGrid({
-        onCellEdit: server.onCellEdit,
-        enableKeyboardNavigation: keyboard,
-      })
-      await waitForGrid()
-      const original = valueOf(0)
-      await userEvent.hover(ageCell(0))
-      await expect.poll(() => settled(0)).toBe(true)
-      const place = placeOf(0)
-
-      await saveAge(0, '999')
-      await expect
-        .poll(() => editButtonOf(0)?.getAttribute('aria-busy'))
-        .toBe('true')
-      expect(
-        editButtonOf(0)!.querySelector<HTMLElement>('[data-pending-arc]')!
-          .dataset.phase,
-      ).toBe('pending')
-      await away()
-      await expect.poll(() => settled(0)).toBe(true)
-      expect(placeOf(0)).toEqual(place)
-      expect(valueOf(0)).toBe('999')
-      expect(onlyValue(0)).toBe(true)
-
-      server.settle[0].reject(new Error('Server down'))
-      await expect.poll(() => failureShown(0)).toBe(true)
-      expect(
-        editButtonOf(0)!.querySelector<HTMLElement>('[data-pending-arc]')
-          ?.dataset.phase ?? 'stopping',
-      ).toBe('stopping')
-      const described = editButtonOf(0)!
-        .getAttribute('aria-describedby')!
-        .split(' ')[0]!
-      expect(document.getElementById(described)!.textContent).toBe(
-        tableLabels.actionFailedRetry('Server down'),
-      )
-      expect(placeOf(0)).toEqual(place)
-      expect(valueOf(0)).toBe(original)
-      expect(onlyValue(0)).toBe(true)
-
-      await humanClick(editButtonOf(0)!)
-      await expect.poll(() => ageCell(0).querySelector('input')).not.toBeNull()
-      expect(ageCell(0).querySelector<HTMLInputElement>('input')!.value).toBe(
-        '999',
-      )
-      await userEvent.keyboard('{Escape}')
-      await screen.unmount()
-    }
-  })
-})
-
-describe('Носитель правки — кнопка правки при любом запуске (ADR 0127)', () => {
-  test('IR17: правка с клавиатуры (F2, Enter) и по editing приложения — ожидание и отметка отказа на той же кнопке правки', async () => {
-    const pendingOn = (index: number) =>
-      editButtonOf(index)?.getAttribute('aria-busy') === 'true'
+describe('Ожидание и отказ правки — на ячейке при любом запуске (ADR 0177)', () => {
+  test('IR17: правка с клавиатуры (F2, Enter) и по editing приложения — ожидание на ячейке, отказ — треугольник ячейки', async () => {
+    const pendingOn = (index: number) => cellBusy(index) !== null
     // Клавиатура: F2 на ячейке открывает правку, Enter сохраняет.
     const server = controlledServer()
     const screen = await editableGrid({
@@ -859,10 +773,10 @@ describe('Носитель правки — кнопка правки при л�
     await expect.poll(input).not.toBeNull()
     input()!.focus()
     await userEvent.keyboard('{Enter}')
-    const button = () =>
-      cell().querySelector<HTMLElement>('.cell__button button')
-    await expect.poll(() => button()?.getAttribute('aria-busy')).toBe('true')
+    await expect.poll(() => cell().getAttribute('aria-busy')).toBe('true')
     appServer.settle.at(-1)!.reject(new Error('Server down'))
-    await expect.poll(() => failureShownOn(button())).toBe(true)
+    await expect
+      .poll(() => cell().querySelector('[data-cell-issue]'))
+      .not.toBeNull()
   })
 })

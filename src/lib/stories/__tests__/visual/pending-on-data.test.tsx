@@ -180,7 +180,7 @@ const runFromContextMenu = async (cellId: string, label: string) => {
 }
 
 describe('Ожидание на данных (ADR 0155)', () => {
-  test('PW1: волна и подложка на цели — только у действия из контекстного меню; у кебаба, инлайн-кнопки и других видимых инициаторов цель без волны: дуга на инициаторе, aria-busy у ячеек цели, вспышка отказа на цели', async () => {
+  test('PW1: волна на цели у любого инициатора — контекстного меню, инлайн-кнопки и кебаба; на инициаторе дуги нет; aria-busy у ячеек цели, вспышка отказа на цели', async () => {
     // Контекстное меню: инициатора не видно — волна на цели.
     let screen = await mount()
     await runFromContextMenu('r2', 'Recalculate')
@@ -193,12 +193,12 @@ describe('Ожидание на данных (ADR 0155)', () => {
       .poll(() => nameCell('r2').getAttribute('data-flash'))
       .toBe('reverted')
 
-    // Инлайн-кнопка: дуга на кнопке, ячейки цели заняты без волны, отказ — вспышка на цели.
+    // Инлайн-кнопка: волна на строке-цели, на кнопке дуги нет (ADR 0177, §1).
     await userEvent.hover(nameCell('r1'))
     await humanClick(archiveButton())
     await expect.poll(() => rowBusy('r1')).toBe(true)
-    expect(pendingArcOf(archiveButton())).not.toBeNull()
-    expect(waved()).toBe(0)
+    expect(pendingArcOf(archiveButton())).toBeNull()
+    expect(nameCell('r1').hasAttribute('data-pending-wave')).toBe(true)
     lastCall('archive').answer.reject(new Error(REFUSAL))
     await expect.poll(() => flashedRow('r1')).toBe(true)
     await screen.unmount()
@@ -211,8 +211,8 @@ describe('Ожидание на данных (ADR 0155)', () => {
     await expect.poll(() => itemByText('Archive')).toBeTruthy()
     await humanClick(itemByText('Archive')!)
     await expect.poll(() => rowBusy('r3')).toBe(true)
-    expect(pendingArcOf(rowKebab('r3')!)).not.toBeNull()
-    expect(waved()).toBe(0)
+    expect(pendingArcOf(rowKebab('r3')!)).toBeNull()
+    expect(nameCell('r3').hasAttribute('data-pending-wave')).toBe(true)
     lastCall('archive').answer.reject(new Error(REFUSAL))
     await expect.poll(() => flashedRow('r3')).toBe(true)
     await screen.unmount()

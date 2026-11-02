@@ -1,0 +1,66 @@
+/*
+ * Отметка проблемы ячейки (ADR 0177, §5): кнопка — зона нажатия 24×24 в правом верхнем углу
+ * ячейки, видим только малый треугольник в углу. Зона треугольная (`clip-path` обрезает и
+ * попадание): над кнопками ячейки у края, но круглую кнопку правки почти не задевает.
+ */
+.issue {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: 0;
+  z-index: 2;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  outline: 0;
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+}
+
+.issue:focus-visible {
+  box-shadow: inset 0 0 0 var(--tsr-comp-focus-ring-width)
+    var(--tsr-comp-focus-ring);
+}
+
+.mark {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: 0;
+  width: var(--tsr-comp-cell-issue-size);
+  height: var(--tsr-comp-cell-issue-size);
+  background-color: var(--tsr-comp-cell-error-color);
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+}
+
+/* Письмо справа налево — треугольник в левом верхнем углу. */
+:where([dir='rtl']) :is(.issue, .mark) {
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+
+.popup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tsr-comp-popup-padding);
+  max-width: var(--tsr-comp-popup-max-width);
+}
+
+.reason {
+  margin: 0;
+  padding: var(--tsr-comp-popup-padding) calc(var(--tsr-comp-popup-padding) * 2);
+  color: var(--tsr-comp-error-text-color);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--tsr-comp-popup-padding);
+}
+
+/* Высокая контрастность (ADR 0087): треугольник — системный цвет текста. */
+@media (forced-colors: active) {
+  .mark {
+    forced-color-adjust: none;
+    background-color: CanvasText;
+  }
+}

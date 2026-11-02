@@ -198,7 +198,7 @@ describe('Панель действия — загрузка содержимо�
     expect(panel()).toBeNull()
   })
 
-  test('AM30: ошибка preload не открывает поповер — кнопка вспыхивает ошибкой, объявляется loadFailed; следующий клик снова зовёт preload', async () => {
+  test('AM30: ошибка preload не открывает поповер — объявляется loadFailed, отметки на кнопке нет; следующий клик снова зовёт preload', async () => {
     await renderGrid(false)
     const region = document.querySelector<HTMLElement>(
       '[role="status"][aria-live="polite"]',
@@ -216,8 +216,8 @@ describe('Панель действия — загрузка содержимо�
 
     await clickInline()
     load.reject()
-    await expect.poll(() => failureShownOn(inlineButton())).toBe(true)
     await expect.poll(() => messages).toContain(tableLabels.loadFailed('Probe'))
+    expect(failureShownOn(inlineButton())).toBe(false)
     await sleep(100)
     expect(panel()).toBeNull()
     expect(inlineButton().getAttribute('aria-busy')).toBeNull()

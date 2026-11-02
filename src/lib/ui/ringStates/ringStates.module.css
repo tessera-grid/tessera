@@ -22,6 +22,22 @@
 }
 
 /*
+ * Обёртка контрола с дугой вокруг (ADR 0176): совпадает с боксом контрола, дуга — её
+ * ребёнок, поэтому приглушение контрола её не трогает.
+ */
+.pendingHost {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  vertical-align: middle;
+}
+
+/* У дуги вокруг контрола (ADR 0176) кольцо фокуса — снаружи неё, с тем же зазором. */
+.ring[aria-busy='true'][data-pending-outside]:focus-visible {
+  outline-offset: calc(var(--tsr-comp-pending-ring-width) * 3);
+}
+
+/*
  * Дуга кнопки (ADR 0127): средняя линия — на половину толщины внутрь от внешнего края
  * кнопки (`--tsr-ring-border` — рамка кнопки, от которой отсчитан абсолютный слой),
  * радиус ставит `PendingArc`. Длины — доли периметра (`pathLength` 100). Оттенок —
@@ -51,6 +67,16 @@
   height: calc(100% + 2 * var(--_b) - var(--_w));
   overflow: visible;
   pointer-events: none;
+}
+
+/* Дуга вокруг контрола (ADR 0176): средняя линия — на зазор в толщину дуги снаружи его края. */
+.arc[data-placement='outside'] {
+  --_out: calc(var(--_w) * 1.5 + var(--_b));
+
+  top: calc(-1 * var(--_out));
+  left: calc(-1 * var(--_out));
+  width: calc(100% + 2 * var(--_out));
+  height: calc(100% + 2 * var(--_out));
 }
 
 .arc rect {
@@ -116,28 +142,6 @@
   to {
     --tsr-pending-run: 100;
   }
-}
-
-/* Отметка отказа (IR9) — на месте точки включённого действия (ADR 0062). */
-.failure {
-  position: absolute;
-  top: var(--tsr-comp-indicator-inset);
-  right: var(--tsr-comp-indicator-inset);
-  opacity: 0;
-  transform: scale(0.4);
-  transition:
-    opacity var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing),
-    transform var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing);
-}
-
-.failure[data-shown='true'] {
-  opacity: 1;
-  transform: none;
-}
-
-/* Описание отметки для `aria-describedby`: в имя кнопки не входит. */
-.failureText {
-  display: none;
 }
 
 /*

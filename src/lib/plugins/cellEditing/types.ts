@@ -121,9 +121,13 @@ export interface CellEditingHooks extends CellEditHook {
   /**
    * Коммит нового значения ячейки. Промис — сохранение с ожиданием: ячейка ждёт
    * его итога, не блокируя правку других (ADR 0041). Сохранённая строка в ответе —
-   * сразу или промисом — ложится в кэш серверной модели строк (ADR 0139).
+   * сразу или промисом — ложится в кэш серверной модели строк (ADR 0139). `signal`
+   * прерывается, когда человек отменил ждущее сохранение (ADR 0177, §8).
    */
-  onCellEdit: (commit: CellEditCommit) => object | void | Promise<unknown>
+  onCellEdit: (
+    commit: CellEditCommit,
+    context: { signal: AbortSignal },
+  ) => object | void | Promise<unknown>
   /** Правка завершилась без сохранения: Escape, запрет на лету (ADR 0040). */
   onEditCancel?: (end: CellEditCancel) => void
   /**
@@ -132,6 +136,8 @@ export interface CellEditingHooks extends CellEditHook {
    * сохранять, завершить с `conflict`.
    */
   onConflict?: 'commit' | 'block'
+  /** Пауза ввода перед запросом справочника в редакторе вариантов, мс (ADR 0175, ED18). */
+  searchDebounceMs?: number
   /** Редактор ячеек по умолчанию; главнее — `editor` колонки и её типа (ADR 0175, ED3). */
   editor?: CellEditor
   /**

@@ -103,7 +103,7 @@ describe('Button states: pending', () => {
       .toBe(false)
     expect(arc()).toBeNull()
 
-    // Отказ в тот же момент — дуга встаёт и гаснет, а не бежит (ADR 0136).
+    // Отказ в тот же момент — дуга встаёт и гаснет, а не бежит (ADR 0127).
     await screen.rerender(
       <Theme>
         <IconButton aria-label="Load" pending>
@@ -113,7 +113,7 @@ describe('Button states: pending', () => {
     )
     await screen.rerender(
       <Theme>
-        <IconButton aria-label="Load" failure="Failed: offline">
+        <IconButton aria-label="Load" failed>
           {icon}
         </IconButton>
       </Theme>,
@@ -123,7 +123,7 @@ describe('Button states: pending', () => {
 })
 
 describe('Button states: failure', () => {
-  test('BS13: a pending button and a button with a failure mark pass axe with color-contrast in both themes', async () => {
+  test('BS13: a pending button and a button whose arc stops on a failure pass axe with color-contrast in both themes', async () => {
     const options = {
       ...AXE_OPTIONS,
       rules: { ...AXE_OPTIONS.rules, 'color-contrast': { enabled: true } },
@@ -133,15 +133,12 @@ describe('Button states: failure', () => {
         <IconButton aria-label="Load" pending>
           {icon}
         </IconButton>
-        <IconButton aria-label="Retry" failure="Failed: offline">
+        <IconButton aria-label="Retry" pending>
           {icon}
         </IconButton>
       </Theme>,
     )
     const root = button().parentElement!
-    expect(
-      root.querySelector('[data-failure-indicator][data-shown="true"]'),
-    ).not.toBeNull()
     await inBothThemes(async () => {
       expect((await axe.run(root, options)).violations).toEqual([])
     })

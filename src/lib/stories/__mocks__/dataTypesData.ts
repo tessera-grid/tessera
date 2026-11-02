@@ -112,6 +112,8 @@ export const MONEY_TYPES: DataTypeRegistry = {
   money: {
     extends: 'number',
     format: { style: 'currency', currency: 'USD' },
+    // Деньги — вправо, разряды друг под другом: числа по умолчанию — к началу.
+    align: 'end',
   },
 }
 
@@ -201,6 +203,19 @@ export const PERSON_TYPES: DataTypeRegistry = {
 }
 
 /** Суммы строками: у двух первых различается только последняя цифра (ADR 0174, S3, S4). */
+// --- ADR 0174, S3: суммы строками — точный порядок ---------------------------------------
+
+export const AMOUNT_COLUMNS: ColumnDef<any, any>[] = [
+  { id: 'name', accessorKey: 'name', header: 'Name', dataType: 'text' },
+  {
+    id: 'amount',
+    accessorKey: 'amount',
+    header: 'Amount',
+    dataType: 'numberString',
+    size: 240,
+  },
+]
+
 export const AMOUNT_ROWS = (
   [
     '98765432109876543.20',

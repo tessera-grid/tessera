@@ -420,7 +420,7 @@ describe('Отказ пункта контекстного меню на цел�
 })
 
 describe('Отказ кебаба и инлайн-кнопки на цели', () => {
-  test('TG5: кебаб строки, кебаб заголовка и инлайн-кнопка с target — reverted на цели в кадре, где гаснет дуга; без target — ожидание и отказ только на кнопке', async () => {
+  test('TG5: кебаб строки, кебаб заголовка и инлайн-кнопка — reverted на цели в кадре отказа; без target цель — объект слота: строка или колонка; на кнопке отметки нет', async () => {
     holdLong()
     const { probe, screen } = await renderGrid()
     const fromRowMenu = async (label: string, id = 'r1') => {
@@ -434,14 +434,13 @@ describe('Отказ кебаба и инлайн-кнопки на цели', (
       await expect.poll(() => items().length).toBe(0)
     }
 
-    // Без target: отметка на кебабе, на строке вспышки нет.
+    // Без target: цель — строка кебаба (ADR 0177, §1); на кебабе отметки нет.
     await fromRowMenu('Remove')
-    expect(busy(cellEl('r1'))).toBe(false)
+    expect(busy(cellEl('r1'))).toBe(true)
     probe.run('remove').reject(new Error('locked'))
-    await expect.poll(() => kebabFailed('r1')).toBe(true)
-    await sleep(100)
-    expect(flashOf(rowEl('r1'))).toBeNull()
-    expect(flashOf(cellEl('r1'))).toBeNull()
+    await frame()
+    expect(flashOf(rowEl('r1'))).toBe('reverted')
+    expect(kebabFailed('r1')).toBe(false)
 
     // С target строки: вспышка в том же кадре, где кебаб получил отказ.
     await fromRowMenu('Archive', 'r2')
@@ -475,8 +474,9 @@ describe('Отказ кебаба и инлайн-кнопки на цели', (
     await userEvent.hover(cellEl('r4')!)
     await humanClick(button('r4', 'Remove'))
     inline.probe.run('remove').reject(new Error('locked'))
-    await expect.poll(() => failureShownOn(button('r4', 'Remove'))).toBe(true)
-    expect(flashOf(rowEl('r4'))).toBeNull()
+    await frame()
+    expect(flashOf(rowEl('r4'))).toBe('reverted')
+    expect(failureShownOn(button('r4', 'Remove'))).toBe(false)
   })
 })
 

@@ -14,6 +14,12 @@ import {
   reportOutcome,
   sourceOf,
 } from '../../core/debugActions'
+import {
+  type CancelSource,
+  cellPendingId,
+  lateAnswer,
+  registerPending,
+} from '../../core/cancellation'
 import type { RowSource } from '../../core/rowSource'
 import { inferDataType, setAtPath } from '../../core/columnDataType'
 import { isNumericBase } from '../../core/dataTypeFormat'
@@ -26,6 +32,15 @@ import {
 } from '../../core/definePlugin'
 import type { CellComponentProps } from '../../core/createSlots'
 import { flashOutcome } from '../../core/flashes/flashFeature'
+import {
+  cellFailureKey,
+  reportFailure,
+  resolveFailure,
+} from '../../core/failures/failuresFeature'
+import {
+  type ActionStatus,
+  writeActionStatus,
+} from '../../core/headerActions/actionStatusFeature'
 import { columnOf, editTextOf, parseEditText, sameEditValue } from './editValue'
 import type {
   CellEditingHooks,
@@ -85,8 +100,116 @@ export const readEditingState = (table: unknown): CellEditingState =>
   ((table as SessionTable).atoms[EDIT_SESSION_KEY]?.get() as
     CellEditingState | undefined) ?? EMPTY_EDITING_STATE
 
-const writeEditingState = (table: unknown, next: CellEditingState) =>
+const writeEditingState = (table: unknown, next: CellEditingState) => {
+  const prev = readEditingState(table).submitted
   setPluginState(table, ID, next)
+  syncSubmitted(table, prev, next.submitted)
+}
+
+const pendingKey = (key: string) => `cellEdit:${key}`
+
+const sameAttempt = (a: SubmittedCell | undefined, b: SubmittedCell) =>
+  a?.status === b.status && a.attempt === b.attempt
+
+/** Отправленные ячейки, уже переданные срезам ядра, — по store таблицы. */
+const synced = new WeakMap<object, Record<string, SubmittedCell>>()
+
+/**
+ * Срез, заданный приложением (ADR 0028, CE6), минует запись плагина: после рендера он
+ * передаётся срезам ядра так же.
+ */
+const syncAppSubmitted = (table: unknown) => {
+  const { submitted } = readEditingState(table)
+  const last =
+    synced.get((table as { store: object }).store) ??
+    EMPTY_EDITING_STATE.submitted
+  if (last !== submitted) syncSubmitted(table, last, submitted)
+}
+
+/**
+ * Отправленные ячейки — в общих срезах ядра (ADR 0177, §1, §5): ожидание — волна ячейки
+ * (у булева — его флажок, ADR 0176), отказ — запись реестра отказов с повтором и «Отбросить»;
+ * по ней ячейка рисует треугольник.
+ */
+const syncSubmitted = (
+  table: unknown,
+  prev: Record<string, SubmittedCell>,
+  next: Record<string, SubmittedCell>,
+) => {
+  synced.set((table as { store: object }).store, next)
+  if (prev === next) return
+  const pendingGone: string[] = []
+  const pendingNew: SubmittedCell[] = []
+  for (const [key, entry] of Object.entries(prev)) {
+    const now = next[key]
+    if (now && sameAttempt(entry, now)) continue
+    if (entry.status === 'pending') pendingGone.push(key)
+    if (entry.status === 'error' && now?.status !== 'error')
+      resolveFailure(table, cellFailureKey(entry.rowId, entry.columnId))
+  }
+  for (const [key, entry] of Object.entries(next)) {
+    if (sameAttempt(prev[key], entry)) continue
+    if (entry.status === 'pending') pendingNew.push(entry)
+    if (entry.status === 'error') reportCellFailure(table, key, entry)
+  }
+  if (pendingGone.length === 0 && pendingNew.length === 0) return
+  writeActionStatus(table, status => {
+    const out: ActionStatus = { ...status }
+    for (const key of pendingGone) delete out[pendingKey(key)]
+    for (const entry of pendingNew) {
+      const boolean =
+        columnOf(table, entry.columnId)?.getDataType()?.base === 'boolean'
+      out[pendingKey(cellKey(entry.rowId, entry.columnId))] = {
+        pending: true,
+        target: [{ cell: [entry.rowId, entry.columnId] }],
+        ...(boolean ? {} : { wave: true }),
+      }
+    }
+    return out
+  })
+}
+
+const reportCellFailure = (table: unknown, key: string, entry: SubmittedCell) =>
+  reportFailure(table, {
+    label: columnNameOf(table, entry.columnId),
+    target: { cell: [entry.rowId, entry.columnId] },
+    reason:
+      entry.error ?? (announcerLabels(table) ?? DEFAULT_LABELS).saveFailed,
+    retry: () => retrySubmitted(table, key),
+    discard: () => discardSubmitted(table, key),
+  })
+
+/** Повтор отклонённого сохранения из поповера отметки (ADR 0177, §5). */
+const retrySubmitted = (table: unknown, key: string) => {
+  const entry = readEditingState(table).submitted[key]
+  if (!entry || entry.status !== 'error') return
+  const hooks = readPluginHooks<Partial<CellEditingHooks>>(table as never, ID)
+  submitValue(table, entry, entry.draft, entry.text, entry.original, hooks)
+}
+
+/** «Отбросить изменение»: отклонённое значение удаляется, черновик уходит в `onEditCancel`. */
+const discardSubmitted = (table: unknown, key: string) => {
+  const state = readEditingState(table)
+  const entry = state.submitted[key]
+  if (!entry || entry.status !== 'error') return
+  const submitted = { ...state.submitted }
+  delete submitted[key]
+  const active = isEditingCell(state.active, entry.rowId, entry.columnId)
+    ? null
+    : state.active
+  writeEditingState(table, { active, submitted })
+  readPluginHooks<Partial<CellEditingHooks>>(table as never, ID).onEditCancel?.(
+    {
+      rowId: entry.rowId,
+      columnId: entry.columnId,
+      reason: 'cancel',
+      draft: entry.draft,
+      text: entry.text,
+      original: entry.original,
+      ...(entry.error ? { error: entry.error } : {}),
+    },
+  )
+}
 
 export const readEditSession = (table: unknown): EditingCell =>
   readEditingState(table).active
@@ -368,7 +491,7 @@ const settleSubmitted = (
   )
 }
 
-const columnNameOf = (table: unknown, columnId: string) => {
+export const columnNameOf = (table: unknown, columnId: string) => {
   const header = (table as ReconcileTable)
     .getAllLeafColumns()
     .find(column => column.id === columnId)?.columnDef?.header
@@ -449,6 +572,43 @@ export const saveEdit = (
 }
 
 /**
+ * Отклонение из-за изменения извне — как отказ сервера (ADR 0175, ED22): «ошибка» ячейки с
+ * черновиком и причиной, вспышка отката, объявление. Повторная правка начинается от значения,
+ * пришедшего извне.
+ */
+const refuseOnConflict = (
+  table: unknown,
+  { rowId, columnId }: Cell,
+  value: unknown,
+  text: string,
+  now: unknown,
+) => {
+  const labels = announcerLabels(table) ?? DEFAULT_LABELS
+  const error = labels.editConflict
+  const state = readEditingState(table)
+  writeEditingState(table, {
+    ...state,
+    submitted: {
+      ...state.submitted,
+      [cellKey(rowId, columnId)]: {
+        rowId,
+        columnId,
+        draft: value,
+        text,
+        original: now,
+        status: 'error',
+        error,
+        attempt: ++lastAttempt,
+      },
+    },
+  })
+  flashOutcome(table, { cell: [rowId, columnId] }, 'reverted')
+  announceLabel(table, all =>
+    all.announceSaveFailed(columnNameOf(table, columnId), error),
+  )
+}
+
+/**
  * Сохранить значение сессии этой ячейки (ADR 0040, §3–§4). Сессии нет — уже
  * завершена (Enter, Escape) и потеря фокуса после неё ничего не делает. Значение
  * изменилось извне: по умолчанию сохранение проходит с `original`/`current`, при
@@ -474,28 +634,60 @@ export const commitEditSession = (
   if (changed && hooks.onConflict === 'block') {
     writeDraft(table, value, text)
     cancelEditSession(table, 'conflict', hooks, { value: now })
+    refuseOnConflict(table, cell, value, text, now)
     return
   }
   reportEditEnd(table, cell, { result: 'commit', value })
-  const result = hooks.onCellEdit?.({
-    rowId,
-    columnId,
-    value,
-    text,
-    original,
+  submitValue(table, cell, value, text, original, hooks, {
+    session: true,
     ...(changed ? { current: now } : {}),
   })
+}
+
+/**
+ * Отправить значение в `onCellEdit`: закрытием правки (`session`) или повтором отказа — тогда
+ * открытая правка другой ячейки остаётся.
+ */
+const submitValue = (
+  table: unknown,
+  { rowId, columnId }: Cell,
+  value: unknown,
+  text: string,
+  original: unknown,
+  hooks: Partial<CellEditingHooks>,
+  { session = false, current }: { session?: boolean; current?: unknown } = {},
+) => {
+  const controller = new AbortController()
+  const result = hooks.onCellEdit?.(
+    {
+      rowId,
+      columnId,
+      value,
+      text,
+      original,
+      ...(current !== undefined ? { current } : {}),
+    },
+    { signal: controller.signal },
+  )
   reportOutcome(table, { plugin: ID, action: 'save' }, result)
+  const key = cellKey(rowId, columnId)
   if (!isThenable(result)) {
     writeSaved(table, rowId, columnId, value, result)
-    endEditSession(table)
+    if (session) {
+      endEditSession(table)
+      return
+    }
+    const state = readEditingState(table)
+    const submitted = { ...state.submitted }
+    delete submitted[key]
+    writeEditingState(table, { ...state, submitted })
+    flashOutcome(table, { cell: [rowId, columnId] }, 'accepted')
     return
   }
   const state = readEditingState(table)
-  const key = cellKey(rowId, columnId)
   const attempt = ++lastAttempt
   writeEditingState(table, {
-    active: null,
+    active: session ? null : state.active,
     submitted: {
       ...state.submitted,
       [key]: {
@@ -509,10 +701,64 @@ export const commitEditSession = (
       },
     },
   })
+  // «Отменить сохранение» в меню ячейки (ADR 0177, §8).
+  const unregister = registerPending(table, {
+    kind: 'cellEdit',
+    id: cellPendingId(rowId, columnId),
+    cancel: source => {
+      if (controller.signal.aborted) return
+      controller.abort()
+      unregister()
+      cancelSubmitted(table, key, attempt, source, hooks)
+    },
+  })
   result.then(
-    answer => settleSubmitted(table, key, attempt, { ok: true, answer }),
-    reason => settleSubmitted(table, key, attempt, { ok: false, reason }),
+    answer => {
+      if (controller.signal.aborted) return lateAnswer(table)
+      unregister()
+      settleSubmitted(table, key, attempt, { ok: true, answer })
+    },
+    reason => {
+      if (controller.signal.aborted) return lateAnswer(table, reason)
+      unregister()
+      settleSubmitted(table, key, attempt, { ok: false, reason })
+    },
   )
+}
+
+/**
+ * Отмена ждущего сохранения — тихо, как «Отбросить» (ADR 0177, §8): в ячейке снова значение из
+ * данных, черновик — в `onEditCancel` с причиной `cancel`, вспышки и отметки нет.
+ */
+const cancelSubmitted = (
+  table: unknown,
+  key: string,
+  attempt: number,
+  source: CancelSource,
+  hooks: Partial<CellEditingHooks>,
+) => {
+  const state = readEditingState(table)
+  const entry = state.submitted[key]
+  if (!entry || entry.attempt !== attempt || entry.status !== 'pending') return
+  const submitted = { ...state.submitted }
+  delete submitted[key]
+  writeEditingState(table, { ...state, submitted })
+  reportAction(table, {
+    plugin: ID,
+    action: 'cancel',
+    detail: { action: 'save', rowId: entry.rowId, columnId: entry.columnId },
+    source,
+  })
+  const name = columnNameOf(table, entry.columnId)
+  announceLabel(table, all => all.announceActionCancelled(name))
+  hooks.onEditCancel?.({
+    rowId: entry.rowId,
+    columnId: entry.columnId,
+    reason: 'cancel',
+    draft: entry.draft,
+    text: entry.text,
+    original: entry.original,
+  })
 }
 
 interface ReconcileTable extends SessionTable {
@@ -532,8 +778,9 @@ const hasCell = (table: ReconcileTable, { rowId, columnId }: Cell) =>
   table.getAllLeafColumns().some(column => column.id === columnId)
 
 /**
- * Отправленные ячейки, ушедшие из таблицы или выключенного плагина, снимаются;
- * черновик отклонённой уходит в `onEditCancel`. Поздний итог снятого промиса
+ * Отправленные ячейки, ушедшие из таблицы или выключенного плагина, снимаются; отклонённая,
+ * чьё значение изменилось извне, — тоже, с причиной `conflict` (ADR 0177, §5). Черновик
+ * отклонённой уходит в `onEditCancel`. Поздний итог снятого промиса
  * игнорируется (`settleSubmitted`).
  */
 const reconcileSubmitted = (
@@ -556,6 +803,14 @@ const reconcileSubmitted = (
       dropped.push([entry, 'unavailable'])
     } else if (!enabled) {
       dropped.push([entry, 'revoke'])
+    } else if (
+      entry.status === 'error' &&
+      !Object.is(
+        table.getRowSource().byId(entry.rowId)!.getValue(entry.columnId),
+        entry.original,
+      )
+    ) {
+      dropped.push([entry, 'conflict'])
     }
   }
   if (dropped.length === 0) {
@@ -593,6 +848,7 @@ export const reconcileEditSession = (
 ) => {
   const cellHooks = hooks as Partial<CellEditingHooks>
   const t = table as ReconcileTable
+  syncAppSubmitted(table)
   reconcileSubmitted(t, enabled, cellHooks)
   const session = readEditSession(table)
   if (!session) {

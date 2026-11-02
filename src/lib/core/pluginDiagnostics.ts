@@ -72,8 +72,11 @@ export const menuSlotsOf = (table: unknown, candidates: readonly string[]) =>
 /** Контекстное меню без пунктов (ADR 0036, PQ3). */
 export const noContextMenuActionsReason = (
   table: unknown,
+  own: readonly { id: string }[] = [],
 ): PluginInertReason | undefined =>
-  ((table as ActionsTable).options.contextMenuActions?.length ?? 0) > 0
+  ((table as ActionsTable).options.contextMenuActions ?? []).some(
+    action => !own.some(item => item.id === (action as { id?: string }).id),
+  )
     ? undefined
     : 'noActions'
 

@@ -18,6 +18,7 @@ import {
   modelArgsMismatchMessage,
 } from './pluginModels'
 import { foreignSliceMessage } from './coreState'
+import { pruneFailures, readFailures } from './failures/failuresFeature'
 import { pruneFlashes, readFlashes } from './flashes/flashFeature'
 import { pruneHighlights, readHighlights } from './highlights/highlightFeature'
 import { followIndexRanges } from './highlights/followRanges'
@@ -84,7 +85,8 @@ export const useTableEffects = (
 
   // Подсветка и вспышки целей, ушедших из данных или колонок, снимаются (ADR 0080, §1;
   // ADR 0134, §4) — при новой ссылке `data`/`columns`. Скрытые фильтром и страницей
-  // строки остаются в core-модели и их сохраняют.
+  // строки остаются в core-модели и их сохраняют. Отказы значений ячеек ушедших строк и
+  // изменённых извне значений решены (ADR 0177, §5).
   const pruned = useRef<{ data?: unknown; columns?: unknown }>({})
   useIsomorphicLayoutEffect(() => {
     const t = table as {
@@ -96,6 +98,9 @@ export const useTableEffects = (
       return
     }
     pruned.current = { data, columns }
+    if (Object.keys(readFailures(table)).length > 0) {
+      pruneFailures(table)
+    }
     const highlighted = Object.keys(readHighlights(table)).length > 0
     const flashed = Object.keys(readFlashes(table)).length > 0
     if (!highlighted && !flashed) {

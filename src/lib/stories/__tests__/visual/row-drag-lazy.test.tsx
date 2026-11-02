@@ -1,6 +1,6 @@
 import axe from 'axe-core'
 import { useState } from 'react'
-import { server, userEvent } from 'vitest/browser'
+import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
@@ -10,13 +10,8 @@ import { DataGrid } from '../../../grid/DataGrid'
 import { pagination, rowDragging, rowExpanding } from '../../../plugins'
 import type { RowDragEnd } from '../../../plugins'
 import type { Row } from '../../../types'
-import {
-  arcHeadOf,
-  failureShownOn,
-  pendingArcOf,
-  settleRowMotion,
-} from '../helpers'
-import { AXE_OPTIONS, inBothThemes, toRgba } from './a11y-helpers'
+import { failureShownOn, pendingArcOf, settleRowMotion } from '../helpers'
+import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
 import {
   HANDLE,
   container,
@@ -401,7 +396,7 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
     }
   })
 
-  test('LT5: пока промис onRowDragEnd не выполнен — у ленивого и обычного переноса — ручка строки ждёт, у строки aria-busy, строку не переносят ни ручкой, ни меню, ни с клавиатуры; другие строки переносятся', async () => {
+  test('LT5: пока промис onRowDragEnd не выполнен — у ленивого и обычного переноса — у строки aria-busy, на ручке дуги нет, строку не переносят ни ручкой, ни меню, ни с клавиатуры; другие строки переносятся', async () => {
     const screen = await renderTree({ asyncMove: true, keyboard: true })
     try {
       await expand('node-0', 'node-0-2')
@@ -417,8 +412,8 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
         'row-1',
       ])
       for (const id of ['node-0-0', 'row-2']) {
-        expect(handleOf(id).getAttribute('aria-busy'), id).toBe('true')
         expect(rowById(id)!.getAttribute('aria-busy'), id).toBe('true')
+        expect(pendingArcOf(handleOf(id)), id).toBeNull()
       }
       // Ручка не тянется.
       await userEvent.hover(rowById('row-2')!)
@@ -446,16 +441,15 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
       await settleMoves()
       for (const id of ['node-0-0', 'row-2', 'row-1']) {
         await expect
-          .poll(() => handleOf(id).hasAttribute('aria-busy'), { message: id })
+          .poll(() => rowById(id)!.hasAttribute('aria-busy'), { message: id })
           .toBe(false)
-        expect(rowById(id)!.hasAttribute('aria-busy'), id).toBe(false)
       }
     } finally {
       await screen.unmount()
     }
   })
 
-  test('LT6: отказ ленивого переноса — строка возвращается, на ручке отметка отказа, отказ объявлен', async () => {
+  test('LT6: отказ ленивого переноса — строка возвращается, отказ объявлен, на ручке отметки нет', async () => {
     const screen = await renderTree({ asyncMove: true })
     try {
       await expand('node-0', 'node-0-2')
@@ -465,10 +459,10 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
         .poll(() => order().slice(0, 2))
         .toEqual(['node-0', 'node-0-0'])
       expect(depthOf(rowById('node-0-0')!)).toBe(1)
-      await expect.poll(() => failureShownOn(handleOf('node-0-0'))).toBe(true)
       await expect
         .poll(announced)
         .toContain(ENGLISH_LABELS.announceMoveFailed('Server said no'))
+      expect(failureShownOn(handleOf('node-0-0'))).toBe(false)
     } finally {
       await screen.unmount()
     }
@@ -499,7 +493,6 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
         'group-0-1',
       ])
       expect(harness.onRowOrderChange).toHaveBeenCalledTimes(4)
-      await expect.poll(() => failureShownOn(handleOf('group-0-0'))).toBe(true)
     } finally {
       await screen.unmount()
     }
@@ -693,7 +686,7 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
     }
   })
 
-  test('LT15: ручка строки — квадратная кнопка кита, колонка 40px; в ожидании и с отметкой отказа иконка видна без наведения, в покое — только при наведении', async () => {
+  test('LT15: ручка строки — квадратная кнопка кита, колонка 40px; иконка видна только при наведении — и в покое, и в ожидании, и после отказа', async () => {
     const screen = await renderTree({ asyncMove: true })
     /** Значение токена темы в px — тем же расчётом, что у кнопки. */
     const tokenPx = (token: string) => {
@@ -747,31 +740,26 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
         .poll(() => iconOpacity('row-2'), { message: 'наведение' })
         .toBe(1)
 
+      // Ожидание и отказ — на строке, а не на ручке (ADR 0177, §1).
       await dropAfter('row-2', 'group-0', 0, 'row-0')
       await away()
       await sleep(400)
-      expect(handleOf('row-2').getAttribute('aria-busy')).toBe('true')
-      expect(iconOpacity('row-2'), 'ожидание').toBe(1)
+      expect(rowById('row-2')!.getAttribute('aria-busy')).toBe('true')
+      expect(iconOpacity('row-2'), 'ожидание').toBe(0)
 
       await settleMoves(false, new Error('no'))
-      await expect.poll(() => failureShownOn(handleOf('row-2'))).toBe(true)
+      await expect
+        .poll(() => rowById('row-2')!.hasAttribute('aria-busy'))
+        .toBe(false)
       await sleep(400)
-      expect(iconOpacity('row-2'), 'отметка').toBe(1)
+      expect(iconOpacity('row-2'), 'отказ').toBe(0)
     } finally {
       await screen.unmount()
     }
   })
 
-  test('LT13: axe с контрастом в обеих темах во время ожидания и после отказа; высокая контрастность — свет ожидания ручки Highlight', async () => {
+  test('LT13: axe с контрастом в обеих темах во время ожидания и после отказа', async () => {
     const screen = await renderTree({ asyncMove: true })
-    const sys = (color: string) => {
-      const probe = document.createElement('span')
-      probe.style.color = color
-      document.body.append(probe)
-      const value = getComputedStyle(probe).color
-      probe.remove()
-      return toRgba(value)
-    }
     const checkAxe = () =>
       inBothThemes(async () => {
         const result = await axe.run(
@@ -792,21 +780,12 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
       await expand('node-0', 'node-0-2')
       await dropAfter('node-0-0', 'row-0', 0)
       await checkAxe()
-      if (server.browser !== 'webkit') {
-        await pointer.forcedColors(true)
-        // Дуга ожидания ручки (ADR 0127) — цветом Highlight.
-        const arc = pendingArcOf(handleOf('node-0-0'))!
-        expect(getComputedStyle(arc).forcedColorAdjust).toBe('none')
-        expect(toRgba(getComputedStyle(arcHeadOf(arc)).stroke)).toEqual(
-          sys('Highlight'),
-        )
-        await pointer.forcedColors(false)
-      }
       await settleMoves(false, new Error('no'))
-      await expect.poll(() => failureShownOn(handleOf('node-0-0'))).toBe(true)
+      await expect
+        .poll(announced)
+        .toContain(ENGLISH_LABELS.announceMoveFailed('no'))
       await checkAxe()
     } finally {
-      await pointer.forcedColors(false)
       await screen.unmount()
     }
   })

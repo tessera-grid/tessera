@@ -11,6 +11,10 @@ import {
 } from '@tanstack/react-table'
 
 import { type FailedAttempts, withoutGone } from '../../shared/failedAttempts'
+import { announcerLabels } from '../../core/announcer'
+import { mirrorFailures } from '../../core/failures/failuresFeature'
+import { DEFAULT_LABELS } from '../../core/localization'
+import { rejectionText } from '../../util/thenable'
 import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
 
 export type LoadedChildren = Record<string, readonly unknown[]>
@@ -97,13 +101,31 @@ export const setLoadedAnswer = (
   updater: Updater<LoadedChildren>,
 ) => writeSlice(table as LazyTable, 'loadedChildren', updater)
 
+/** Срез отказов раскрытия и его зеркало в реестре отказов (ADR 0177, OB13). */
+const writeExpandFailed = (
+  table: unknown,
+  updater: (prev: RowExpandFailed) => RowExpandFailed,
+) => {
+  const atom = (table as LazyTable).atoms.rowExpandFailed
+  const prev = atom?.get() ?? {}
+  writeSlice<RowExpandFailed>(table as LazyTable, 'rowExpandFailed', updater)
+  mirrorFailures(table, prev, atom?.get() ?? prev, (id, failed) => {
+    const labels = announcerLabels(table) ?? DEFAULT_LABELS
+    return {
+      label: labels.expandRow,
+      target: { row: id },
+      reason: rejectionText(failed.error) ?? labels.loadChildrenFailed,
+    }
+  })
+}
+
 export const markExpandFailed = (
   table: unknown,
   rowId: string,
   attempt: number,
   error: unknown,
 ) =>
-  writeSlice<RowExpandFailed>(table as LazyTable, 'rowExpandFailed', prev => ({
+  writeExpandFailed(table, prev => ({
     ...prev,
     [rowId]: { attempt, error },
   }))
@@ -115,9 +137,7 @@ export const clearExpandFailed = (
 ) => {
   const failed = (table as LazyTable).atoms.rowExpandFailed?.get()
   if (!failed || Object.keys(failed).length === 0) return
-  writeSlice<RowExpandFailed>(table as LazyTable, 'rowExpandFailed', prev =>
-    withoutGone(prev, exists),
-  )
+  writeExpandFailed(table, prev => withoutGone(prev, exists))
 }
 
 /** Свернуть строки, у которых не осталось ответа (срез `expanded: true` не трогаем). */

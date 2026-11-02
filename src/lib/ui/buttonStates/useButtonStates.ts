@@ -103,8 +103,8 @@ const useCancelArm = (ref: RefObject<HTMLElement | null>, active: boolean) => {
 }
 
 /**
- * Ожидание и отказ базовой кнопки (ADR 0127, ADR 0136): `failed` — у кнопки отметка
- * отказа, дуга при конце ожидания останавливается. `busy` — ожидание, которое отметили
+ * Ожидание и отказ базовой кнопки (ADR 0127, ADR 0177): `failed` — ожидание кончилось
+ * отказом, дуга останавливается. `busy` — ожидание, которое отметили
  * снаружи `aria-busy` (серверное действие, ADR 0116): дуга есть, нажатия не глушатся.
  */
 export const useButtonStates = <T extends HTMLElement>(
@@ -150,9 +150,37 @@ export const useButtonStates = <T extends HTMLElement>(
     onClick: handleClick,
     /** Дуга ожидания и отказа — последним ребёнком кнопки. */
     arc: phase && createElement(PendingArc, { phase }),
-    /** Кнопка в ожидании: отметка отказа появится, когда ожидание кончится. */
+    /** Кнопка в ожидании. */
     active: lit,
     /** Отмена взведена: «стоп» при наведении и фокусе, нажатие отменяет. */
     armed,
+  }
+}
+
+/**
+ * Ожидание контрола-значения — флажка и переключателя (ADR 0176): контрол занят и приглушён
+ * так же, как выключенный (`opacity` всего элемента), а дуга — соседний слой в общей
+ * обёртке `host` и не гаснет вместе с ним. После ответа дуга гаснет. Нажатия глушит сам
+ * контрол: у него своё событие смены значения.
+ */
+export const usePendingControl = (pending: boolean) => {
+  const host = useRef<HTMLSpanElement | null>(null)
+  const leaving = usePendingLeave(host, pending)
+  const phase: ArcPhase | undefined = pending
+    ? 'pending'
+    : leaving
+      ? 'leaving'
+      : undefined
+  return {
+    /** Обёртка контрола: бокс контрола, дуга — её ребёнок после контрола. */
+    host: { ref: host, className: styles.pendingHost },
+    /** Атрибуты самого контрола. */
+    control: {
+      className: styles.ring,
+      'aria-busy': pending || undefined,
+      'data-pending-outside': phase ? true : undefined,
+      'data-pending-leaving': leaving || undefined,
+    },
+    arc: phase && createElement(PendingArc, { phase, placement: 'outside' }),
   }
 }

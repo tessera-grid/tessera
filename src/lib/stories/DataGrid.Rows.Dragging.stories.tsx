@@ -639,18 +639,18 @@ const LAZY_TREE: readonly GuideStoryStep[] = [
   },
   {
     title: 'Перенос ждёт сервера',
-    hint: 'Строку бросили в свёрнутую группу: пауза загрузила её детей, перенос сохраняется на сервере — по ручке строки бежит дуга ожидания.',
+    hint: 'Строку бросили в свёрнутую группу: пауза загрузила её детей, перенос сохраняется на сервере — ячейки строки чуть темнеют и по ним проходит светлый блик.',
     states: ['drag.pending'],
     enter: lazyTreeUpTo(3),
   },
   {
     title: 'Сервер сохранил',
-    hint: 'Ответ пришёл: дуга погасла, строка осталась в новой группе и коротко вспыхнула тоном успеха.',
+    hint: 'Ответ пришёл: ожидание снято, строка осталась в новой группе и коротко вспыхнула тоном успеха.',
     enter: lazyTreeUpTo(4),
   },
   {
     title: 'Отказ сервера',
-    hint: 'Следующий перенос сервер отклонил: строка вернулась на прежнее место, ручка отмечена отказом, строка коротко вспыхнула тоном ошибки.',
+    hint: 'Следующий перенос сервер отклонил: строка вернулась на прежнее место и коротко вспыхнула тоном ошибки.',
     states: ['drag.rejected'],
     enter: lazyTreeUpTo(6),
   },
@@ -725,6 +725,15 @@ export const RowDraggingLazyTree: StoryObj<StoryProps> = {
           'true',
         ),
       )
+      // Ожидание — волной на строке, на ручке дуги нет (ADR 0177, §1).
+      await until(() =>
+        expect(
+          rowOf(canvas, 'node-0-0-0')!.querySelector('[data-pending-wave]'),
+        ).not.toBeNull(),
+      )
+      expect(
+        handleOf('node-0-0-0').querySelector('svg[data-pending-arc]'),
+      ).toBeNull()
     })
     await step(LAZY_TREE[2].title, async () => {
       await guideNext(canvas)
@@ -746,16 +755,16 @@ export const RowDraggingLazyTree: StoryObj<StoryProps> = {
         const back = order()
         expect(back.indexOf('node-0-0-1')).toBe(back.indexOf('node-0-0') + 1)
       }, slow)
-      // Ручку ищем заново: после отката строка может смонтироваться новым узлом.
       await until(() =>
-        expect(
-          handleOf('node-0-0-1').querySelector('[data-failure-indicator]'),
-        ).not.toBeNull(),
+        expect(rowOf(canvas, 'node-0-0-1')).toHaveAttribute(
+          'data-flash',
+          'reverted',
+        ),
       )
-      expect(rowOf(canvas, 'node-0-0-1')).toHaveAttribute(
-        'data-flash',
-        'reverted',
-      )
+      // Ручку ищем заново: после отката строка может смонтироваться новым узлом.
+      expect(
+        handleOf('node-0-0-1').querySelector('[data-failure-indicator]'),
+      ).toBeNull()
     })
     await step(LAZY_TREE[4].title, async () => {
       await guideNext(canvas)
@@ -768,13 +777,9 @@ export const RowDraggingLazyTree: StoryObj<StoryProps> = {
       )
       const kept = order()
       expect(kept.indexOf('node-0-0-2')).toBe(kept.indexOf('node-1') + 1)
-      await waitFor(
-        () =>
-          expect(
-            handleOf('node-0-0-2').querySelector('[data-failure-indicator]'),
-          ).not.toBeNull(),
-        slow,
-      )
+      expect(
+        handleOf('node-0-0-2').querySelector('[data-failure-indicator]'),
+      ).toBeNull()
     })
     await settle()
   },

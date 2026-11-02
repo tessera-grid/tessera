@@ -4,6 +4,7 @@
  * загрузок открытого меню. Без DOM — модель для `useMenuSections`.
  */
 import type { TableLabels } from '../localization'
+import { rememberSectionSlot } from './sectionSlots'
 import type { MenuAction } from './types'
 
 export type SectionItems =
@@ -89,8 +90,13 @@ export const sectionItemsOf = (
   loads: SectionLoads,
 ): SectionItems => {
   const { items } = owner.submenu!(ctx, labels)
-  if (Array.isArray(items)) return { status: 'done', items }
-  return loads.get(key) ?? { status: 'loading' }
+  if (Array.isArray(items)) {
+    rememberSectionSlot(owner, items)
+    return { status: 'done', items }
+  }
+  const loaded = loads.get(key) ?? { status: 'loading' }
+  if (loaded.status === 'done') rememberSectionSlot(owner, loaded.items)
+  return loaded
 }
 
 /** Начать загрузку асинхронного раздела (наведение, вход, повтор после отказа). */

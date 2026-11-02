@@ -238,17 +238,29 @@ columnHelper.accessor(row => row[field.name], {
   enableDragging: true,
   // Включить группировку данных по этой колонке
   enableGrouping: true,
-  // Тип значения: правка разбирает ввод в число, булево или дату
+  // Тип значения: вид, сортировка, фильтр, поиск, выгрузка и редактор ячейки
   dataType: 'number',
 })
 ```
 
-`dataType` — тип значения колонки: `'text'`, `'number'`, `'boolean'`, `'date'` (объект `Date`) или
-`'dateString'` (строка `YYYY-MM-DD`). Он нужен правке ячейки в серверной модели строк, где
-данные держит грид: если `onCellEdit` не вернул сохранённую строку, введённый текст
-разбирается по типу и пишется в кэш по пути `accessorKey` (`address.city` — вглубь). Без
-`dataType` тип выводится из прежнего значения ячейки. Свой разбор — `parseValue(text, row)`,
-он главнее типа ([ADR 0139](docs/decisions/0139-saved-row-and-column-data-type.md)).
+`dataType` — тип значения колонки ([ADR 0172](docs/decisions/0172-column-data-type.md),
+[ADR 0174](docs/decisions/0174-object-and-number-string-types.md)): `'text'`, `'number'`,
+`'numberString'` (десятичное число строкой), `'boolean'`, `'date'` и `'dateTime'` (объект
+`Date`), `'dateString'` и `'dateTimeString'` (строки), `'select'`, `'multiSelect'`, `'object'`
+(запись с ключом и подписью) или свой тип из реестра `useCreateTable({ dataTypes })`. По типу
+работают вид ячейки, сортировка, фильтр, поиск, выгрузка и **редактор ячейки**
+([ADR 0175](docs/decisions/0175-data-type-editors.md)): число правится полем на языке таблицы,
+булево — одним нажатием, даты — календарём, варианты — полем с поиском или списком флажков.
+
+Правка отдаёт значение **в типе колонки**: `onCellEdit({ value, text })` получает число,
+`Date`, запись или массив и набранный текст. Текст разбирается при сохранении: свой
+`parseValue(text, row)` колонки или типа главнее встроенного разбора; не разобрался — поле
+показывает ошибку, и правка не сохраняется. В серверной модели строк, где данные держит грид,
+сохранённое значение пишется в кэш по пути `accessorKey` (`address.city` — вглубь), если
+`onCellEdit` не вернул сохранённую строку
+([ADR 0139](docs/decisions/0139-saved-row-and-column-data-type.md)). Тип даты своего формата
+читается полем `parseDate` и пишется обратно полем `formatDate`; запись варианта `object` —
+поле `record` у варианта справочника.
 
 > ⚠️ Подробнее о создании колонок читайте здесь: https://tanstack.com/table/latest/docs/guide/column-defs
 
@@ -476,7 +488,7 @@ const table = useCreateTable({
 | `rowActions()`       | Колонка кнопок действий над строкой                                               | колонка, закреплённая справа                                                | ширина `width` (px, по умолч. 120) и `collapsedWidth` (56) при схлопывании действий                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `headerActionMenu()` | Схлопывает кнопки заголовка в кебаб-меню «⋯»                                      | меню в заголовке                                                            | `mode`: `auto` (по порогу) / `always`; `threshold` (по умолч. 3). Своей колонки/фичи не вносит                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `rowActionMenu()`    | Схлопывает действия строки в кебаб-меню «⋯»                                       | меню в колонке действий строки                                              | `mode`: `auto` / `always`; `threshold` (по умолч. 2). Работает поверх `rowActions()`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `cellEditing()`      | Инлайн-редактирование значения ячейки                                             | кнопка в ячейке (по hover)                                                  | кнопка в ЛЮБОЙ не-сервисной колонке; показ гейтит предикат `canEditCell(ctx)`; `validate(value, ctx)` — текст ошибки блокирует коммит; редактор замещает контент ячейки (`cellSlot`), сменный через `editor`; `Enter` и потеря фокуса сохраняют через `onCellEdit({ value, original, current? })` — промис из него отделяет ячейку в ожидание (`aria-busy`), не блокируя правку других, а отказ оставляет ячейку в «ошибке» с черновиком и текстом отказа ([ADR 0041](docs/decisions/0041-async-business-callbacks.md)), `Escape` отменяет; завершение без сохранения — `onEditCancel({ reason, draft, original })`; `onConflict: 'block'` — не сохранять значение, изменённое извне                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `cellEditing()`      | Инлайн-редактирование значения ячейки                                             | кнопка в ячейке (по hover)                                                  | кнопка в ЛЮБОЙ не-сервисной колонке; показ гейтит предикат `canEditCell(ctx)`; `validate(value, ctx, text)` — текст ошибки блокирует коммит; редактор замещает контент ячейки (`cellSlot`) и выбирается по типу колонки (число, булево, даты, варианты; ADR 0175), сменный через `editor` колонки, её типа или аргумента; `searchDebounceMs` — пауза перед запросом справочника; `Enter` и потеря фокуса сохраняют через `onCellEdit({ value, text, original, current? })` — `value` в типе колонки — промис из него отделяет ячейку в ожидание (`aria-busy`), не блокируя правку других, а отказ оставляет ячейку в «ошибке» с черновиком и текстом отказа ([ADR 0041](docs/decisions/0041-async-business-callbacks.md)), `Escape` отменяет; завершение без сохранения — `onEditCancel({ reason, draft, text, original })`; `onConflict: 'block'` — не сохранять значение, изменённое извне                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `cellSelection()`    | Выделение диапазона ячеек + копирование                                           | клик / Shift / drag / Ctrl-Cmd по ячейкам                                   | `Ctrl/Cmd+C` копирует выделение как TSV и HTML-таблицу; сервисные колонки невыбираемы всегда, `canSelectCell` сужает выбор                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `columnFiltering()`  | Фильтры колонок по типу данных колонки (`dataType`)                               | кнопка фильтра в заголовке с панелью, сводка в тулбаре, «показано N из M»   | фильтры разных колонок объединяются через И; `dataMode: { filtering: 'server' }` у таблицы — фильтрует сервер                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `quickSearch()`      | Быстрый поиск по видимым колонкам                                                 | поле поиска в тулбаре                                                       | с фильтрами колонок — через И; `dataMode: { search: 'server' }` у таблицы — ищет сервер                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
@@ -561,8 +573,9 @@ useCreateTable({
 >   `sorting`, `filtering`, `search`, `pagination`, `export`;
 >   [ADR 0169](docs/decisions/0169-data-mode.md)) — тоже на время жизни: для смены пересоздайте
 >   таблицу, например новым `key`. Итог строк сервера (`rowCount`, `-1` — неизвестен;
->   `totalRowCount` — до фильтров и поиска), язык `locale` и пояс дат `timeZone` — тоже опции
->   `useCreateTable`, они живые;
+>   `totalRowCount` — до фильтров и поиска), язык `locale`, пояс дат `timeZone` и язык
+>   календарей `dateLocale` (объект `Locale` `date-fns`) — тоже опции `useCreateTable`, они
+>   живые;
 > - **начальные значения** (`pagination({ initialPageSize })`) задают только старт,
 >   текущим значением владеет состояние таблицы.
 >
@@ -1159,27 +1172,28 @@ export const MyCell = ({
 > ядро на такой набор выдаёт дев-варн.
 
 Так устроен встроенный `cellEditing`: кнопка правки живёт в `rightCellSlot` (по hover),
-а редактор — во владельце `cellSlot` (замещает значение на время правки). Сам инпут —
-**сменный**: передайте свой через опцию `editor` (BYO — под свою дизайн-систему), не
-задан — используется встроенный:
+а редактор — во владельце `cellSlot` (замещает значение на время правки). Редактор —
+**сменный** (BYO — под свою дизайн-систему): `editor` у колонки, у её типа в реестре
+`dataTypes` или аргументом плагина — по этому порядку; не задан — встроенный по типу колонки:
 
 ```tsx
 import { cellEditing } from '@tessera-grid/tessera'
 import { MyInput } from './design-system'
 
 cellEditing({
-  // editor получает текущее значение, доступное имя поля (label — из
-  // localization.editCellValue с именем колонки), коллбэки commit/cancel (инкапсулируют
-  // запись в приватный слайс и вызов onCellEdit) + контекст ячейки. value — черновик
-  // сессии; setDraft сообщает введённый текст: он переживает прокрутку и смену
-  // страницы, а при отмене приходит в onEditCancel, а не пропадает молча.
-  editor: ({ value, label, commit, cancel, setDraft }) => (
+  // editor получает черновик в типе колонки (value) и текстом (text), доступное имя поля
+  // (label — из localization.editCellValue с именем колонки), сохранение — commit(value)
+  // для значения в типе или commitText(text) для набранного текста (его разбирает тип
+  // колонки), cancel и контекст ячейки. setDraft и setText сообщают черновик: он
+  // переживает прокрутку и смену страницы, а при отмене приходит в onEditCancel.
+  editor: ({ text, label, error, commitText, cancel, setText }) => (
     <MyInput
       aria-label={label}
-      defaultValue={value}
-      onChange={setDraft}
-      onEnter={commit}
-      onBlur={event => commit(event.target.value)}
+      error={error}
+      defaultValue={text}
+      onChange={setText}
+      onEnter={commitText}
+      onBlur={event => commitText(event.target.value)}
       onEscape={cancel}
       autoFocus
     />
@@ -1408,7 +1422,7 @@ const table = useCreateTable({
   строке; `table.scrollToRow(id, { index })` — по id с подсказкой места. Строка другой
   страницы — сначала переход на её страницу.
 - **Правка ячейки.** Верните сохранённую строку из `onCellEdit` — сразу или промисом — и она
-  ляжет в кэш; иначе ввод разбирается по `dataType` колонки (см. [Параметризация
+  ляжет в кэш; иначе в кэш ложится сохранённое значение в типе колонки (см. [Параметризация
   колонок](#columns_settings)).
 - **Выбор и выгрузка.** «Выбрать всё» не грузит строки: срез выбора — `{ all: true, except }`.
   Выгрузка только серверная — `dataMode: { export: 'server' }`, запрос несёт выборку

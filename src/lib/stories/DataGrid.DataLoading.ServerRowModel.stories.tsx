@@ -439,10 +439,6 @@ const nameSort = (root: HTMLElement) =>
     ?.getAttribute('aria-sort')
 const sortBanner = (root: HTMLElement) =>
   root.querySelector<HTMLElement>('[data-testid="load-error-banner"]')
-const sortFailed = (button: HTMLElement | null) =>
-  button
-    ?.querySelector('[data-failure-indicator]')
-    ?.getAttribute('data-shown') === 'true'
 
 /** Пользователь ушёл далеко от начала списка. */
 const browse = async (root: HTMLElement, signal: AbortSignal) => {
@@ -488,7 +484,7 @@ const SORTING: readonly GuideStoryStep[] = [
   },
   {
     title: 'Пользователь отсортировал по имени',
-    hint: 'Новый порядок знает только сервер, поэтому таблица попросила у него начало списка в этом порядке и вернулась к началу. Пока ответ в пути, на экране прежние строки в состоянии обновления данных, а кнопка сортировки ждёт.',
+    hint: 'Новый порядок знает только сервер, поэтому таблица попросила у него начало списка в этом порядке и вернулась к началу. Пока ответ в пути, на экране прежние строки в состоянии обновления данных.',
     states: ['body.refreshing'],
     enter: stepAction(async (root, { signal }) => {
       if (server.held.length > 0) return
@@ -512,10 +508,10 @@ const SORTING: readonly GuideStoryStep[] = [
   },
   {
     title: 'Сервер отказал',
-    hint: 'Пользователь отсортировал по другой колонке, сервер не прислал список в новом порядке. Таблица вернула прежний порядок и строки, кнопка сортировки отмечена отказом, под шапкой — сообщение с причиной и повтором.',
+    hint: 'Пользователь отсортировал по другой колонке, сервер не прислал список в новом порядке. Таблица вернула прежний порядок и строки, под шапкой — сообщение с причиной и повтором.',
     states: ['body.loadError'],
     enter: stepAction(async (root, { signal }) => {
-      if (sortFailed(citySortButton(root))) return
+      if (sortBanner(root)) return
       if (firstRowId(root) !== sortedFirst()) {
         if (server.held.length === 0) await sortByName(root, signal)
         server.hold = false
@@ -531,7 +527,6 @@ const SORTING: readonly GuideStoryStep[] = [
         () =>
           !!sortBanner(root) &&
           !refreshing(root) &&
-          sortFailed(citySortButton(root)) &&
           nameSort(root) === 'descending',
         signal,
       )
@@ -562,7 +557,6 @@ export const ServerRowModelSorting: StoryObj<StoryProps> = {
       await stepDone(canvas)
       await expect(scroller(canvas)!.scrollTop).toBe(0)
       await expect(refreshing(canvas)).toBe(true)
-      await expect(sortButton(canvas)).toHaveAttribute('aria-busy', 'true')
       await expect(firstRowId(canvas)).toBe('item-id-0')
       await expect(server.starts.slice(before)).toContain(0)
     })
@@ -571,14 +565,15 @@ export const ServerRowModelSorting: StoryObj<StoryProps> = {
       await stepDone(canvas)
       await expect(firstRowId(canvas)).toBe(sortedFirst())
       await expect(refreshing(canvas)).toBe(false)
-      await expect(sortButton(canvas)).not.toHaveAttribute('aria-busy')
       await settle()
     })
     await step(SORTING[3]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(sortBanner(canvas)).toHaveTextContent(SORT_REFUSAL)
-      await expect(sortFailed(citySortButton(canvas))).toBe(true)
+      await expect(
+        citySortButton(canvas)?.querySelector('[data-failure-indicator]'),
+      ).toBeNull()
       await expect(nameSort(canvas)).toBe('descending')
       await expect(firstRowId(canvas)).toBe(sortedFirst())
       await settle()

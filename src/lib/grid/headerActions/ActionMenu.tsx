@@ -15,7 +15,7 @@ import { IconButton } from '../../ui/IconButton'
 import { HiddenButtonContext } from '../../ui/IconButton/iconReveal'
 import { useIcons } from '../../ui/icons'
 import { countActiveActions, type SlotAction } from '../../core/headerActions'
-import { ErrorDot, kebabActive } from './ErrorDot'
+import { kebabActive } from './kebabActive'
 import { ActionMenuPopup } from './ActionMenuPopup'
 import { ActionPanelPopup } from './ActionPanelPopup'
 import { useCloseOnGridScroll } from '../../ui/Popup/useCloseOnGridScroll'
@@ -25,10 +25,6 @@ import { usePanelOpening } from './usePanelOpening'
 import { type KebabState } from './useKebabState'
 import { useMenuSections } from '../../core/headerActions'
 import { useStateWhileOpen } from './useStateWhileOpen'
-import {
-  pendingAttributes,
-  useServerActionMarks,
-} from '../../core/serverActions'
 
 import styles from '../../ui/Popup/ActionMenu.module.css'
 import '../../ui/cellControls/buttonVisibility.css'
@@ -97,24 +93,11 @@ export const ActionMenu = ({
     onMenuOpenChange(false, { reason: GRID_SCROLL_REASON }),
   )
 
-  // Свёрнутые включённые действия видны на кебабе: точка, имя и показ без наведения;
-  // ждущие и упавшие — блик, отметка ошибки и имя (ADR 0078).
+  // Свёрнутые включённые действия видны на кебабе: точка, имя и показ без наведения. Ждущее
+  // действие держит кебаб видимым — в меню его пункт отменяет (ADR 0153, §3); ожидание и отказ
+  // — на объекте действия (ADR 0177, §1).
   const activeCount = countActiveActions(actions, context)
-  // Серверное действие, выбранное в кебабе колонки (ADR 0116, §3): свет и отметка здесь.
-  const server = useServerActionMarks(
-    context.table,
-    cause => !!cause.menu && !!cause.columns?.includes(context.column?.id),
-  )
-  const shown =
-    visible ||
-    panelVisible ||
-    activeCount > 0 ||
-    kebab.running ||
-    kebab.failed ||
-    server.pending
-  // Отметка отказа (ADR 0136): действие меню, серверное действие или загрузка панели.
-  const serverFailed = !!server.failure && !server.pending
-  const failed = kebab.failed || serverFailed
+  const shown = visible || panelVisible || activeCount > 0 || kebab.running
   const trigger = (
     <Menu.Trigger
       render={
@@ -123,20 +106,17 @@ export const ActionMenu = ({
           className={styles.trigger}
           label={kebab.title}
           aria-label={kebab.ariaLabel}
+          // Дуга — только загрузка панели, процесс вне таблицы (ADR 0177, §2).
           pending={opening.pending}
-          failure={opening.failure}
-          // Ждущие действия не глушат нажатия: меню открывается, ждущий пункт отменяет (ADR 0153, §3).
-          {...pendingAttributes(server.pending || kebab.running)}
+          failed={opening.failed}
           data-action-menu={variant}
           onPointerEnter={kebab.intent}
           onFocus={kebab.intent}
           onPointerLeave={kebab.leave}
           onBlur={kebab.leave}
           active={kebabActive(actions, activeCount)}
-          indicator={!failed}
         >
           <MenuIcon width={16} height={16} />
-          <ErrorDot shown={failed} />
         </IconButton>
       }
     />

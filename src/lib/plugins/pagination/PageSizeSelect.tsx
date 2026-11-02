@@ -13,7 +13,6 @@ import { usePortalThemeData, usePortalThemeClass } from '../../ui/theme'
 import styles from './Pagination.module.css'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 import { useTriggerWidth } from '../../ui/Popup/useTriggerWidth'
-import { pendingAttributes } from '../../core/serverActions'
 import { SizeTrigger } from './SizeTrigger'
 
 export interface PageSizeSelectProps {
@@ -23,13 +22,6 @@ export interface PageSizeSelectProps {
   onChange: (pageSize: number) => void
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** Ждёт серверное действие смены размера (ADR 0116). */
-  pending?: boolean
-  /** Текст отметки отказа серверного действия (ADR 0136). */
-  failure?: string
-  /** Отмена ждущей смены размера (ADR 0153). */
-  onCancel?: (event: unknown) => void
-  cancelLabel?: string
 }
 
 export const PageSizeSelect = ({
@@ -39,10 +31,6 @@ export const PageSizeSelect = ({
   onChange,
   open,
   onOpenChange,
-  pending = false,
-  failure,
-  onCancel,
-  cancelLabel,
 }: PageSizeSelectProps) => {
   const labelId = useId()
   const triggerId = useId()
@@ -76,14 +64,7 @@ export const PageSizeSelect = ({
         id={triggerId}
         aria-labelledby={`${labelId} ${triggerId}`}
         ref={setTrigger}
-        render={
-          <SizeTrigger
-            failure={failure}
-            onCancel={onCancel}
-            cancelLabel={cancelLabel}
-          />
-        }
-        {...pendingAttributes(pending)}
+        render={<SizeTrigger />}
         data-testid="page-size-select"
       >
         <Select.Value />

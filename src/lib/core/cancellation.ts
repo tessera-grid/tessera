@@ -8,14 +8,18 @@ import { sourceOf } from './debugActions'
 import { logWarn } from '../util/logger'
 
 /** Вид ждущей операции — фильтр `table.cancelPending`. */
-export type PendingKind = 'menu' | 'server' | 'export' | 'children' | 'copy'
+export type PendingKind =
+  'menu' | 'server' | 'export' | 'children' | 'copy' | 'cellEdit'
 
 /** Источник отмены — в канал действий (ADR 0125). */
 export type CancelSource = 'pointer' | 'keyboard' | 'api'
 
 export interface CancelPendingFilter {
   kind?: PendingKind
-  /** Id действия меню, формата выгрузки, строки ленивых детей или вид серверного действия. */
+  /**
+   * Id действия меню, формата выгрузки, строки ленивых детей, ячейки сохранения или вид
+   * серверного действия.
+   */
   id?: string
 }
 
@@ -50,6 +54,26 @@ export const registerPending = (
   }
   registry.add(operation)
   return () => registry.delete(operation)
+}
+
+/** Id ждущей операции ячейки — общий у плагина-источника и меню ячейки. */
+export const cellPendingId = (rowId: string, columnId: string) =>
+  `${rowId}\u0000${columnId}`
+
+/** Ждёт ли операция по виду и id — для пункта «Отменить» в меню её объекта. */
+export const hasPending = (
+  table: unknown,
+  filter: CancelPendingFilter = {},
+): boolean => {
+  const store = storeOf(table)
+  const registry = store && registries.get(store)
+  if (!registry) return false
+  for (const operation of registry) {
+    if (filter.kind !== undefined && operation.kind !== filter.kind) continue
+    if (filter.id !== undefined && operation.id !== filter.id) continue
+    return true
+  }
+  return false
 }
 
 /** Отменить ждущие операции — все или по виду и id; возвращает число отменённых. */

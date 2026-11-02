@@ -513,6 +513,7 @@ describe('Сессии действий', () => {
     expect(onCellEdit).toHaveBeenCalledTimes(1)
     expect(onCellEdit).toHaveBeenCalledWith(
       expect.objectContaining({ columnId: 'age', value: 999, text: '999' }),
+      { signal: expect.any(AbortSignal) },
     )
     expect(onCellEdit.mock.calls[0][0].original).toBe(Number(original))
     expect(onEditCancel).not.toHaveBeenCalled()

@@ -4,7 +4,7 @@
  * ожидание; отказ откатывает сортировку и страницу к состоянию до первого действия
  * цепочки ожидания. Общий модуль четырёх плагинов — вне их папок (IV3).
  */
-import { announceLabel } from '../announcer'
+import { announceLabel, announcerLabels } from '../announcer'
 import {
   type CancelSource,
   cancelSourceOf,
@@ -14,7 +14,9 @@ import {
 } from '../cancellation'
 import { dataModeOf } from '../dataMode'
 import { reportAction } from '../debugActions'
+import { reportFailure, resolveFailure } from '../failures/failuresFeature'
 import type { TableLabels } from '../localization'
+import { ENGLISH_LABELS } from '../localization/resolveLabels'
 import { serverRowModelReason } from '../pluginDiagnostics'
 import type { RowSource } from '../rowSource'
 import {
@@ -23,6 +25,7 @@ import {
   type RowSelectionValue,
 } from '../rowSelectionAll'
 import { isThenable, rejectionText } from '../../util/thenable'
+import { serverActionReason } from './reason'
 import {
   readServerAction,
   type ServerActionCause,
@@ -347,7 +350,14 @@ const restore = (t: ServerTable, snapshot: Snapshot) => {
   }
 }
 
+/** Отказ запроса данных — одна запись реестра таблицы (ADR 0177, §1, OB4). */
+const SERVER_FAILURE_KEY = 'serverAction'
+
+const resolveServerFailure = (table: unknown) =>
+  resolveFailure(table, SERVER_FAILURE_KEY)
+
 const settleIdle = (table: unknown) => {
+  resolveServerFailure(table)
   const status = readServerAction(table)
   if (status.pending || status.failed) {
     writeServerAction(table, () => ({}))
@@ -442,6 +452,7 @@ export const runServerAction = (
     restoreFilters(t, confirmed)
     markLoadCancelled(table)
     writeServerAction(table, () => ({}))
+    resolveServerFailure(table)
     announceLabel(table, labels =>
       labels.announceActionCancelled(serverActionName(kind, labels)),
     )
@@ -498,6 +509,14 @@ export const runServerAction = (
     writeServerAction(table, () => ({
       failed: { kind, attempt, error, cause, retry },
     }))
+    const labels = announcerLabels(table) ?? ENGLISH_LABELS
+    reportFailure(table, {
+      key: SERVER_FAILURE_KEY,
+      label: serverActionName(kind, labels),
+      target: { table: true },
+      reason: serverActionReason({ kind, error }, labels),
+      retry,
+    })
   }
   result.then(
     () => settle(true),
@@ -510,6 +529,7 @@ export const dismissServerActionError = (table: unknown) => {
   if (readServerAction(table).failed) {
     writeServerAction(table, ({ pending }) => (pending ? { pending } : {}))
   }
+  resolveServerFailure(table)
 }
 
 /** Размонтирование грида (по store таблицы): ожидающее действие прерывается. */

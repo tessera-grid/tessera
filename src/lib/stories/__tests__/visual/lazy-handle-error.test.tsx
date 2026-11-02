@@ -24,17 +24,17 @@ afterEach(() => releaseModule(MODULE.handleMenu))
 const failed = () => failureShownOn(columnHandle())
 
 describe('Меню ручек — ошибка загрузки', () => {
-  test('LZ14: ошибка загрузки меню — на ручке отметка отказа, у грипа отметки нет; объявление с подписью ручки или грипа; следующая попытка снова отвечает', async () => {
+  test('LZ14: ошибка загрузки меню — ни на ручке, ни у грипа отметки нет; объявление с подписью ручки или грипа; следующая попытка снова отвечает', async () => {
     await failModule(MODULE.handleMenu)
     await renderHandleGrid()
     const announcements = recordAnnouncements()
 
     await userEvent.hover(handleCell())
     await humanClick(columnHandle())
-    await expect.poll(failed).toBe(true)
     await expect
       .poll(() => announcements.messages)
       .toContain(tableLabels.loadFailed(tableLabels.moveColumn))
+    expect(failed()).toBe(false)
     await sleep(100)
     expect(handleMenu()).toBeNull()
 
@@ -51,7 +51,7 @@ describe('Меню ручек — ошибка загрузки', () => {
     await expect
       .poll(() => announcements.messages.length)
       .toBeGreaterThan(before)
-    await expect.poll(failed).toBe(true)
+    expect(failed()).toBe(false)
     announcements.stop()
     expect(handleMenu()).toBeNull()
   })

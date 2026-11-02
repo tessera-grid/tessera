@@ -38,6 +38,8 @@ export interface CellEditingOptions {
   onConflict?: CellEditingHooks['onConflict']
   /** Свой редактор ячеек; главнее — `editor` колонки и её типа, иначе встроенный по типу. */
   editor?: CellEditingHooks['editor']
+  /** Пауза ввода перед запросом справочника `loadOptions` в редакторе, мс; без неё — на каждый ввод. */
+  searchDebounceMs?: number
   /** Проверка значения в типе колонки перед коммитом: текст ошибки блокирует коммит. */
   validate?: CellEditingHooks['validate']
   /**
@@ -67,6 +69,7 @@ export const cellEditing = definePlugin<CellEditingOptions>()({
     onConflict: o.onConflict,
     editor: o.editor,
     validate: o.validate,
+    searchDebounceMs: o.searchDebounceMs,
   }),
   keyboardActions: [editCellKeyboardAction, toggleCellKeyboardAction],
   slots: [

@@ -4,7 +4,14 @@
  * ключу «цель + действие»; проверка доступности — в сессии открытого меню.
  */
 import { actionDetailOf, actionOwnerOf } from '../actionOwners'
-import { announceLabel } from '../announcer'
+import { slotOfAction } from './sectionSlots'
+import { announceLabel, announcerLabels } from '../announcer'
+import {
+  failureKeyOf,
+  reportFailure,
+  resolveFailure,
+  type FailureTarget,
+} from '../failures/failuresFeature'
 import { reportAction, reportOutcome, sourceOf } from '../debugActions'
 import { flashOutcome } from '../flashes/flashFeature'
 import {
@@ -19,6 +26,7 @@ import {
   registerPending,
 } from '../cancellation'
 import type { TableLabels } from '../localization'
+import { ENGLISH_LABELS } from '../localization/resolveLabels'
 import { isThenable, rejectionText } from '../../util/thenable'
 import {
   type ActionStatus,
@@ -26,7 +34,12 @@ import {
   readActionStatus,
   writeActionStatus,
 } from './actionStatusFeature'
-import type { DisabledResult, DisabledState, MenuAction } from './types'
+import type {
+  DisabledResult,
+  DisabledState,
+  MenuAction,
+  SlotName,
+} from './types'
 
 interface TargetContext {
   row?: { id: string }
@@ -87,8 +100,35 @@ export const defaultActionTarget = (
   return { cell: [row.id, column.id] }
 }
 
+/**
+ * Объект действия кебаба и инлайн-кнопки по его слоту (ADR 0177, §1): строка, колонка или
+ * ячейка — ожидание волной на нём, отказ — его вспышкой.
+ */
+const slotTarget = (
+  action: MenuAction,
+  ctx: unknown,
+): FlashTarget | undefined => {
+  const { row, column, header } = ctx as ContextMenuTargetContext & {
+    header?: { column?: { id: string } }
+  }
+  switch (slotOfAction(action) as SlotName | undefined) {
+    case 'actionRowSlot':
+      return row && { row: row.id }
+    case 'leftHeaderSlot':
+    case 'rightHeaderSlot': {
+      const id = (column ?? header?.column)?.id
+      return id === undefined ? undefined : { column: id }
+    }
+    case 'leftCellSlot':
+    case 'rightCellSlot':
+      return row && column && { cell: [row.id, column.id] }
+    default:
+      return undefined
+  }
+}
+
 const targetOf = (action: MenuAction, ctx: unknown) => {
-  const fallback = defaultActionTarget(ctx)
+  const fallback = defaultActionTarget(ctx) ?? slotTarget(action, ctx)
   return action.target ? action.target(ctx, fallback) : fallback
 }
 
@@ -104,10 +144,6 @@ export const actionTargets = (
   action: MenuAction,
   ctx: unknown,
 ): readonly FlashTarget[] => targetsOf(targetOf(action, ctx))
-
-/** Пункт открыт в контекстном меню: меню закрывается, инициатора не видно (ADR 0155, §1). */
-const fromContextMenu = (ctx: unknown) =>
-  !!(ctx as ContextMenuTargetContext).selection
 
 interface Running {
   cancel: (source: CancelSource) => void
@@ -125,6 +161,33 @@ const runningOf = (table: unknown) => {
   }
   return map
 }
+
+/**
+ * Ждущее действие слота — кебаба или инлайн-кнопки, — чья цель содержит ячейку (ADR 0177,
+ * §8): его отменяет пункт контекстного меню. Действия самого контекстного меню (без слота) свою
+ * отмену несут в своём пункте (ADR 0153, §3).
+ */
+export const runningSlotActionAt = (
+  table: unknown,
+  rowId: string,
+  columnId: string,
+) => {
+  const runs = runningOf(table)
+  for (const [key, entry] of Object.entries(readActionStatus(table))) {
+    const slot = (entry.action as { slot?: unknown } | undefined)?.slot
+    if (!entry.pending || !slot || !entry.target || !runs.has(key)) continue
+    if (entry.target.some(item => targetContains(table, item, rowId, columnId)))
+      return { key, action: entry.action! }
+  }
+  return undefined
+}
+
+/** Отменить ждущее действие по ключу записи его ожидания. */
+export const cancelRunningAction = (
+  table: unknown,
+  key: string,
+  source: CancelSource,
+) => runningOf(table).get(key)?.cancel(source)
 
 /** Отменить ждущее действие меню в цели (ADR 0153, §2–§3). */
 export const cancelMenuAction = (
@@ -171,7 +234,8 @@ export const runMenuAction = (
   const targets = targetsOf(raw)
   const target = targets.length > 0 ? targets : undefined
   const whole = raw === 'table' || undefined
-  const wave = (!!target && fromContextMenu(ctx)) || undefined
+  // Ожидание — на объекте действия, откуда бы его ни начали (ADR 0177, §1).
+  const wave = !!target || undefined
   writeActionStatus(table, status => ({
     ...status,
     [key]: { pending: true, action, menu, target, wave, table: whole },
@@ -197,6 +261,9 @@ export const runMenuAction = (
     })
     announceLabel(table, labels => labels.announceActionCancelled(name(labels)))
   }
+  const failureTargets: readonly FailureTarget[] = whole
+    ? [{ table: true }]
+    : (target ?? [])
   const unregister = registerPending(table, {
     kind: 'menu',
     id: action.id,
@@ -208,6 +275,8 @@ export const runMenuAction = (
       if (controller.signal.aborted) return lateAnswer(table)
       done()
       writeActionStatus(table, status => without(status, [key]))
+      for (const item of failureTargets)
+        resolveFailure(table, failureKeyOf(item))
       announceLabel(table, labels => labels.announceActionDone(name(labels)))
     },
     (error: unknown) => {
@@ -227,6 +296,15 @@ export const runMenuAction = (
         }),
       }
       writeActionStatus(table, status => ({ ...status, [key]: entry }))
+      // Отказ — в реестр по каждой цели (ADR 0177, §6): у ячейки — треугольник.
+      const labels = announcerLabels(table) ?? ENGLISH_LABELS
+      for (const item of failureTargets)
+        reportFailure(table, {
+          label: name(labels),
+          target: item,
+          reason: actionErrorText(action, ctx, error, labels),
+          retry: () => runMenuAction(action, ctx, undefined, { keepError }),
+        })
       // Отказ — на цели в кадре, где кнопка-инициатор гасит дугу (ADR 0152, §2).
       if (target) flashOutcome(table, target, 'reverted')
       announceLabel(table, labels =>

@@ -128,7 +128,8 @@ export const toggleRowSelection = (
 export const toggleRowKeyboardAction: CellKeyboardAction = {
   id: 'rowSelection.toggle',
   scope: 'cell',
-  keys: [' '],
+  // Shift+Space — выбор строки и на ячейке, где пробел занят её действием (ADR 0175, ED20).
+  keys: [' ', 'Shift+ '],
   visible: ({ row, table }) =>
     getCanToggleRow(
       row,

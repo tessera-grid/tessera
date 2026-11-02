@@ -17,6 +17,7 @@ import type {
   ResolvedDataType,
 } from './dataTypes'
 import type { DataMode } from './dataMode'
+import type { Failure } from './failures/failuresFeature'
 import type { ActionReport, OnDebugAction } from './debugActions'
 import type { SkeletonCellKind } from './skeletonOptions'
 import type { RowSource } from './rowSource'
@@ -140,6 +141,8 @@ export interface CoreOptions {
   onRetry?: () => unknown
   /** Канал действий грида: что сделал пользователь, приложение или грид (ADR 0125). */
   onDebugAction?: OnDebugAction
+  /** Новый отказ в реестре отказов (ADR 0177, §6) — например, для своего трекера ошибок. */
+  onFailure?: (failure: Failure) => void
   /** Высота строк тела, футера и скелета, px; по умолчанию 50, не ниже 40 (ADR 0077). */
   rowHeight?: number
   /** Высота каждой строки шапки, px; по умолчанию — как `rowHeight`, не ниже 36. */

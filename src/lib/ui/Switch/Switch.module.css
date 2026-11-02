@@ -36,9 +36,13 @@
   box-shadow: 0 0 0 var(--tsr-comp-focus-ring-width) var(--tsr-comp-focus-ring);
 }
 
-/* base-ui выставляет [data-disabled] (не всегда нативный :disabled). */
+/*
+ * base-ui выставляет [data-disabled] (не всегда нативный :disabled). Занятый переключатель
+ * приглушён так же, как выключенный (ADR 0176; ADR 0127, IR31).
+ */
 .switch:disabled,
-.switch[data-disabled] {
+.switch[data-disabled],
+.switch[aria-busy='true'] {
   opacity: var(--tsr-comp-disabled-opacity, 0.5);
   cursor: default;
 }

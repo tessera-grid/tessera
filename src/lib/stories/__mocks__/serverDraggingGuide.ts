@@ -248,9 +248,14 @@ export const rowOf = (root: ParentNode, id: string) =>
 /** Место строки в списке. */
 export const indexOfRow = (root: ParentNode, id: string) =>
   Number(rowOf(root, id)?.dataset.index ?? -1)
-/** По ручке строки бежит дуга ожидания. */
-export const movePending = (root: ParentNode, id: string) =>
-  rowOf(root, id)?.getAttribute('aria-busy') === 'true'
+/** Перенос ждёт: строка занята, по её ячейкам идёт волна ожидания (ADR 0177, §1). */
+export const movePending = (root: ParentNode, id: string) => {
+  const row = rowOf(root, id)
+  return (
+    row?.getAttribute('aria-busy') === 'true' &&
+    !!row.querySelector('[data-pending-wave]')
+  )
+}
 
 const centerOf = (el: Element) => {
   const box = el.getBoundingClientRect()

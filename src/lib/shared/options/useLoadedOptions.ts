@@ -10,11 +10,12 @@ import {
   type LoadOptions,
   rememberOptionLabels,
 } from '../../core/columnOptions'
+import { rejectionText } from '../../util/thenable'
 
 export type LoadedOptions =
   | { status: 'loading'; options: ColumnOption[] }
   | { status: 'ready'; options: ColumnOption[] }
-  | { status: 'error'; options: ColumnOption[] }
+  | { status: 'error'; options: ColumnOption[]; reason?: string }
 
 export const useLoadedOptions = (
   table: object,
@@ -45,9 +46,13 @@ export const useLoadedOptions = (
         rememberOptionLabels(table, columnId, options)
         setLoaded({ status: 'ready', options })
       },
-      () => {
+      (error: unknown) => {
         if (controller.signal.aborted) return
-        setLoaded(prev => ({ status: 'error', options: prev.options }))
+        setLoaded(prev => ({
+          status: 'error',
+          options: prev.options,
+          reason: rejectionText(error),
+        }))
       },
     )
     return () => controller.abort()

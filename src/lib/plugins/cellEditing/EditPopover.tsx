@@ -1,16 +1,19 @@
 /**
  * Поповер правки под ячейкой (ADR 0175): в ячейке — текст значения, под ней — поповер
- * редактора. Escape отменяет правку, уход из поповера — `onLeave`; клавиши поповера не
- * доходят до навигации грида, фокус после закрытия возвращается в ячейку.
+ * редактора. Escape и прокрутка таблицы отменяют правку (ED23), уход из поповера — `onLeave`;
+ * клавиши поповера не доходят до навигации грида, фокус после закрытия возвращается в ячейку.
  */
-import { type ReactNode, useEffect, useRef } from 'react'
+import { type ReactNode, type RefObject, useEffect, useRef } from 'react'
 
 import { Popover } from '@base-ui/react/popover'
 import clsx from 'clsx'
 
 import { restoreFocusIfLost } from '../../core/keyboardNavigation/actions'
+import { useLocalization } from '../../core/localization'
+import { Button } from '../../ui/Button'
 import { usePortalThemeClass, usePortalThemeData } from '../../ui/theme'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
+import { useCloseOnGridScroll } from '../../ui/Popup/useCloseOnGridScroll'
 
 import styles from './EditPopover.module.css'
 
@@ -21,6 +24,29 @@ import styles from './EditPopover.module.css'
 export const movedFocus = (details: { reason: string; event?: Event }) =>
   details.reason === 'focus-out' &&
   !!(details.event as FocusEvent | undefined)?.relatedTarget
+
+/** Правка закрылась — фокус в ячейку якоря, если он пропал вместе с поповером. */
+export const useFocusReturn = (anchor: RefObject<HTMLElement | null>) =>
+  useEffect(() => {
+    const element = anchor.current?.closest<HTMLElement>(
+      '.data-grid__body-cell',
+    )
+    return () => {
+      if (element) restoreFocusIfLost(element)
+    }
+  }, [anchor])
+
+/** «Очистить значение» — внизу поповера правки, отдельно от списка (ED16). */
+export const ClearValue = ({ onClear }: { onClear: () => void }) => {
+  const labels = useLocalization()
+  return (
+    <div className={styles.footer}>
+      <Button variant="ghost" onClick={onClear} data-testid="edit-clear-value">
+        {labels.editClear}
+      </Button>
+    </div>
+  )
+}
 
 export const EditPopover = ({
   text,
@@ -46,16 +72,8 @@ export const EditPopover = ({
   const themeData = usePortalThemeData()
   const anchor = useRef<HTMLSpanElement>(null)
   const popup = useRef<HTMLDivElement>(null)
-
-  // Правка закрылась — фокус в ячейку, если он пропал вместе с поповером.
-  useEffect(() => {
-    const element = anchor.current?.closest<HTMLElement>(
-      '.data-grid__body-cell',
-    )
-    return () => {
-      if (element) restoreFocusIfLost(element)
-    }
-  }, [])
+  useFocusReturn(anchor)
+  useCloseOnGridScroll(true, onCancel)
 
   return (
     <span ref={anchor} className={styles.anchor}>

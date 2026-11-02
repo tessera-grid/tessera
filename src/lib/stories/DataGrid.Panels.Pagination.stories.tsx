@@ -12,7 +12,6 @@ import {
   guideNext,
   headCell,
   orderedRows,
-  pointAt,
   pollUntil,
   settle,
   stepDone,
@@ -356,10 +355,13 @@ export const PaginationOwnPager: StoryObj<StoryProps> = {
 const NEXT_PAGE = '[data-testid="pagination"] [data-page-action="next"]'
 const nextButton = (root: HTMLElement) =>
   root.querySelector<HTMLElement>(NEXT_PAGE)
+/** Переход ждёт сервера: ожидание — свечение под шапкой (ADR 0177, §1). */
 const pageWaits = (root: HTMLElement) =>
-  nextButton(root)?.getAttribute('aria-busy') === 'true'
-const pageArmed = (root: HTMLElement) =>
-  !!nextButton(root)?.hasAttribute('data-cancel-armed')
+  !!root.querySelector('.data-grid-theme[data-refreshing]')
+const pendingBannerOf = (root: HTMLElement) =>
+  root.querySelector<HTMLElement>('[data-testid="pending-action-banner"]')
+const pendingCancelOf = (root: HTMLElement) =>
+  root.querySelector<HTMLElement>('[data-testid="pending-action-cancel"]')
 
 /**
  * «Сервер» гайда отмены перехода: страницу не присылает, пока его не отменят; запрос
@@ -388,10 +390,10 @@ const pageHeld = (root: HTMLElement, signal: AbortSignal) =>
     return false
   }, signal)
 
-/** Занятая кнопка перехода готова к отмене. */
-const pageCancelArmed = async (root: HTMLElement, signal: AbortSignal) => {
+/** Переход ждёт дольше порога: под шапкой плашка с кнопкой отмены. */
+const pageLong = async (root: HTMLElement, signal: AbortSignal) => {
   await pageHeld(root, signal)
-  await pollUntil(() => pageArmed(root), signal)
+  await pollUntil(() => !!pendingCancelOf(root), signal)
 }
 
 const CANCEL_PAGE: readonly GuideStoryStep[] = [
@@ -406,35 +408,34 @@ const CANCEL_PAGE: readonly GuideStoryStep[] = [
   },
   {
     title: 'Страница грузится',
-    hint: 'Пользователь нажал переход на следующую страницу. Кнопка показывает ожидание.',
+    hint: 'Пользователь нажал переход на следующую страницу. Пока сервер готовит её строки, под шапкой светится полоса обновления.',
     states: ['body.refreshing'],
     enter: stepAction((root, { signal }) => pageHeld(root, signal)),
   },
   {
-    title: 'Кнопка предлагает отмену',
-    hint: 'Пользователь навёл указатель на кнопку. Появился знак остановки, подсказка предлагает отменить переход.',
+    title: 'Страница грузится долго',
+    hint: 'Сервер не ответил за секунду. Под шапкой появилась плашка о загрузке страницы с кнопкой отмены.',
     states: ['body.refreshing'],
-    pseudo: { hover: NEXT_PAGE },
-    enter: stepAction(async (root, { signal, onLeave }) => {
-      await pageCancelArmed(root, signal)
-      onLeave(pointAt(nextButton(root)!))
-    }),
+    enter: stepAction((root, { signal }) => pageLong(root, signal)),
   },
   {
     title: 'Переход отменён',
-    hint: 'Пользователь нажал на кнопку. Вернулась прежняя страница с её строками.',
+    hint: 'Пользователь нажал отмену в плашке. Вернулась прежняя страница с её строками, плашка и свечение ушли.',
     enter: stepAction(async (root, { signal }) => {
-      await pageCancelArmed(root, signal)
-      nextButton(root)!.click()
+      await pageLong(root, signal)
+      pendingCancelOf(root)!.click()
       await pollUntil(
-        () => !pageWaits(root) && rangeText().startsWith('1–'),
+        () =>
+          !pageWaits(root) &&
+          !pendingBannerOf(root) &&
+          rangeText().startsWith('1–'),
         signal,
       )
     }),
   },
 ]
 
-/** ADR 0153, S8: серверная страница грузится — человек отменяет переход. */
+/** ADR 0153, S8: серверная страница грузится — человек отменяет переход в плашке под шапкой. */
 export const PaginationServerCancel: StoryObj<StoryProps> = {
   name: 'Cancel a page change',
   parameters: { scenario: '0153/S8', ...guideControls() },
@@ -473,11 +474,11 @@ export const PaginationServerCancel: StoryObj<StoryProps> = {
     await step(CANCEL_PAGE[2]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(pageArmed(canvas)).toBe(true)
-      await expect(nextButton(canvas)).toHaveAttribute(
-        'aria-label',
-        labels.cancelAction(labels.nextPage),
+      await expect(pendingBannerOf(canvas)).toHaveTextContent(
+        labels.pendingPage,
       )
+      await expect(pendingCancelOf(canvas)).toHaveTextContent(labels.cancel)
+      await settle()
     })
     await step(CANCEL_PAGE[3]!.title, async () => {
       await guideNext(canvas)

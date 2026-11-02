@@ -250,12 +250,12 @@ describe('Button system (ADR 0098)', () => {
         <IconButton aria-label="Probe">{icon}</IconButton>
         <Button>Rest</Button>
         <Button pending>Pending</Button>
-        <Button failure="Failed: offline">Error</Button>
+        <Button failed>Error</Button>
         <Button disabled>Off</Button>
       </Theme>,
     )
     expect(pendingArcOf(error!)?.dataset.phase).toBe('stopping')
-    expect(failureShownOn(error)).toBe(true)
+    expect(failureShownOn(error)).toBe(false)
     expect(style(off!).color).toBe(
       token(host, '--tsr-comp-control-disabled-color', 'color'),
     )

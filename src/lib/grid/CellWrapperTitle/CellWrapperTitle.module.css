@@ -11,6 +11,11 @@
   white-space: nowrap;
 }
 
+/* Дуга ожидания вокруг контрола в ячейке (ADR 0176) выходит за край обёртки — не обрезать её. */
+.cell__title:has([data-pending-arc][data-placement='outside']) {
+  overflow: visible;
+}
+
 /* Выравнивание и цифры одной ширины — по типу колонки (ADR 0172, DT9). */
 :global([data-align='end']) .cell__title {
   text-align: end;

@@ -45,9 +45,8 @@
   outline: none;
 }
 
-/* Поле числа — как числа в ячейке: вправо, цифры одной ширины (ADR 0175, ED4). */
+/* Поле числа — как числа в ячейке: цифры одной ширины (ADR 0175, ED4). */
 .input[inputmode='decimal'] {
-  text-align: end;
   font-variant-numeric: tabular-nums;
 }
 
@@ -98,4 +97,38 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/*
+ * Булево с правкой — флажок кита во всю ячейку (ADR 0175, ED21): нажатие в любом месте
+ * ячейки, флажок у левого края, как текст; своё выравнивание колонки — по `align`.
+ */
+.booleanCell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  align-self: stretch;
+  width: 100%;
+  min-height: 100%;
+  cursor: pointer;
+}
+
+/* Зона нажатия — вся ячейка, с её отступами: слой от ячейки (`contain` — её блок). */
+.booleanCell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+/* Флажок ждёт сохранения — ячейка занята, как кнопка (ADR 0176). */
+.booleanCell:has([aria-busy='true']) {
+  cursor: default;
+}
+
+.booleanCell[data-align='center'] {
+  justify-content: center;
+}
+
+.booleanCell[data-align='end'] {
+  justify-content: flex-end;
 }

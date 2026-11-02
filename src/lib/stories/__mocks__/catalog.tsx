@@ -70,6 +70,8 @@ export const CATALOG_STATES = {
     'export',
     'columns',
     'tooltip',
+    // Поповер отметки ячейки (ADR 0177, §5).
+    'cellIssue',
   ],
   panel: ['toolbar', 'statusBar', 'pagination', 'narrow'],
   // Перетаскивание (ADR 0130): шаги гайдов историй строк и колонок.

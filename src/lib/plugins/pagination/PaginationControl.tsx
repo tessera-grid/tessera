@@ -14,18 +14,12 @@ import { preloadable } from '../../core/preloadable'
 import type { StatusBarComponentProps } from '../../core/createSlots'
 import { useLocalization } from '../../core/localization'
 import { useTableState } from '../../core/reactivity'
-import {
-  serverActionReason,
-  serverCancelProps,
-  useServerActionMarks,
-} from '../../core/serverActions'
 import { isSkeletonShown } from '../../core/skeletonOptions'
 import { Skeleton } from '../../ui/Skeleton'
 import { useIcons } from '../../ui/icons'
 import {
   changePageByUser,
   clampedPageIndex,
-  pageControl,
   pageRange,
   resolvePageSizes,
 } from './model'
@@ -82,10 +76,6 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
   )
   const sizeLabelId = useId()
   const sizeTriggerId = useId()
-  const sizeServer = useServerActionMarks(
-    table,
-    cause => cause.control === pageControl('size'),
-  )
 
   // Строк стало меньше, а страница осталась прежней — к последней существующей.
   useEffect(() => {
@@ -172,17 +162,6 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
                 onChange={changeSize}
                 open={sizeSelect.open}
                 onOpenChange={sizeSelect.onOpenChange}
-                pending={sizeServer.pending}
-                {...serverCancelProps(table, sizeServer.pending, () =>
-                  labels.cancelAction(labels.rowsPerPage),
-                )}
-                failure={
-                  sizeServer.failure && !sizeServer.pending
-                    ? labels.actionFailedRetry(
-                        serverActionReason(sizeServer.failure, labels),
-                      )
-                    : undefined
-                }
               />
             </Suspense>
           ) : (
@@ -204,7 +183,6 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
       </span>
       <div className={styles.buttons}>
         <PageButton
-          table={table}
           action="first"
           label={labels.firstPage}
           icon={<icons.firstPage width={ICON_SIZE} height={ICON_SIZE} />}
@@ -212,7 +190,6 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
           onClick={() => goTo(0, 'first')}
         />
         <PageButton
-          table={table}
           action="previous"
           label={labels.previousPage}
           icon={<icons.previousPage width={ICON_SIZE} height={ICON_SIZE} />}
@@ -220,7 +197,6 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
           onClick={() => goTo(pageIndex - 1, 'previous')}
         />
         <PageButton
-          table={table}
           action="next"
           label={labels.nextPage}
           icon={<icons.nextPage width={ICON_SIZE} height={ICON_SIZE} />}
@@ -228,7 +204,6 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
           onClick={() => goTo(pageIndex + 1, 'next')}
         />
         <PageButton
-          table={table}
           action="last"
           label={labels.lastPage}
           icon={<icons.lastPage width={ICON_SIZE} height={ICON_SIZE} />}

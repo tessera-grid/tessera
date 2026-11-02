@@ -1,17 +1,12 @@
 import axe from 'axe-core'
-import { commands, server, userEvent } from 'vitest/browser'
+import { commands, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
-import {
-  arcHeadOf,
-  failureShownOn,
-  pendingArcOf,
-  revealedHandleWidth,
-} from '../helpers'
+import { failureShownOn, pendingArcOf, revealedHandleWidth } from '../helpers'
 
 import { ENGLISH_LABELS } from '../../../core/localization'
 import { composed } from '../stories'
-import { AXE_OPTIONS, inBothThemes, toRgba } from './a11y-helpers'
+import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
 import { withWideViewport } from './column-pinning-helpers'
 import {
   ColumnDraggingGrid,
@@ -133,18 +128,10 @@ const dragAfter = async (id: string, targetId: string) => {
 /** Группа «Info» шапки историй: подгруппа и листья, вспыхивающие с ней. */
 const GROUP_NODES = ['info', 'more-info', 'age', 'gender', 'visits']
 
-const ROW_HANDLE = '.drag__handler--column'
-/** Дуга кнопки остановилась после отказа и гаснет (ADR 0136). */
-const stopping = (button: Element | null | undefined) =>
-  !!button && pendingArcOf(button)?.dataset.phase === 'stopping'
 const rowAt = (index: number) =>
   document.querySelector<HTMLElement>(
     `.data-grid__body-row[data-index="${index}"]`,
   )!
-const rowById = (id: string) =>
-  document.querySelector<HTMLElement>(
-    `.data-grid__body-row[data-row-id="${id}"]`,
-  )
 
 /** Переставить первую строку вниз с клавиатуры: Alt+Shift+↓ на её ячейке. */
 const moveRowDown = async () => {
@@ -211,18 +198,14 @@ describe('Асинхронный перенос колонок (ADR 0114)', () =
         const [a, b, c, d] = order()
         await dragAfter(a!, b!)
         expect(order().indexOf(a!)).toBe(1)
-        expect(handleOf(a!).getAttribute('aria-busy'), 'мышь').toBe('true')
+        expect(head(a!).getAttribute('aria-busy'), 'мышь').toBe('true')
         await settleMoves()
-        await expect
-          .poll(() => handleOf(a!).hasAttribute('aria-busy'))
-          .toBe(false)
+        await expect.poll(() => head(a!).hasAttribute('aria-busy')).toBe(false)
 
         head(c!).focus()
         await userEvent.keyboard('{Alt>}{Shift>}{ArrowRight}{/Shift}{/Alt}')
         await expect.poll(() => order().indexOf(c!)).toBe(3)
-        expect(handleOf(c!).getAttribute('aria-busy'), 'клавиатура').toBe(
-          'true',
-        )
+        expect(head(c!).getAttribute('aria-busy'), 'клавиатура').toBe('true')
         await settleMoves()
 
         await reveal(d!)
@@ -230,17 +213,16 @@ describe('Асинхронный перенос колонок (ADR 0114)', () =
         await expect.poll(menu).toBeTruthy()
         await userEvent.click(menuItem(ENGLISH_LABELS.moveRight))
         await expect.poll(() => order().indexOf(d!)).toBeGreaterThan(2)
-        expect(handleOf(d!).getAttribute('aria-busy'), 'меню').toBe('true')
+        expect(head(d!).getAttribute('aria-busy'), 'меню').toBe('true')
         await settleMoves()
 
         asyncMoves = false
         const before = order()
         await dragAfter(before[0]!, before[1]!)
         expect(order().indexOf(before[0]!)).toBeGreaterThan(0)
-        expect(
-          handleOf(before[0]!).hasAttribute('aria-busy'),
-          'синхронно',
-        ).toBe(false)
+        expect(head(before[0]!).hasAttribute('aria-busy'), 'синхронно').toBe(
+          false,
+        )
         expect(onColumnDragEnd).toHaveBeenCalledTimes(4)
       } finally {
         await screen.unmount()
@@ -248,14 +230,14 @@ describe('Асинхронный перенос колонок (ADR 0114)', () =
     })
   })
 
-  test('CO2: пока промис не выполнен — ручка ждёт, у заголовка aria-busy; колонку не переносят ни ручкой, ни меню, ни с клавиатуры; другие колонки переносятся', async () => {
+  test('CO2: пока промис не выполнен — у заголовка aria-busy, на ручке дуги нет; колонку не переносят ни ручкой, ни меню, ни с клавиатуры; другие колонки переносятся', async () => {
     await withWideViewport(async () => {
       const screen = await renderGrid()
       try {
         const [a, b, c, d] = order()
         await dragAfter(a!, b!)
-        expect(handleOf(a!).getAttribute('aria-busy')).toBe('true')
         expect(head(a!).getAttribute('aria-busy')).toBe('true')
+        expect(pendingArcOf(handleOf(a!))).toBeNull()
         const pending = order()
 
         // Ручка не тянется.
@@ -286,7 +268,7 @@ describe('Асинхронный перенос колонок (ADR 0114)', () =
     })
   })
 
-  test('CO3: отказ — узел, лист или группа, возвращается к прежним соседям по id, переносы других колонок сохраняются; на ручке отметка отказа, отказ объявляется', async () => {
+  test('CO3: отказ — узел, лист или группа, возвращается к прежним соседям по id, переносы других колонок сохраняются; на ручке отметки нет, отказ объявляется', async () => {
     await withWideViewport(async () => {
       let screen = await renderGrid()
       try {
@@ -303,10 +285,10 @@ describe('Асинхронный перенос колонок (ADR 0114)', () =
           .poll(() => order().indexOf(b!) - order().indexOf(a!))
           .toBe(1)
         expect(order().filter(id => id !== a)).toEqual(others)
-        await expect.poll(() => failureShownOn(handleOf(a!))).toBe(true)
         await expect
           .poll(announced)
           .toContain(ENGLISH_LABELS.announceColumnMoveFailed('Server said no'))
+        expect(failureShownOn(handleOf(a!))).toBe(false)
         await screen.unmount()
 
         // Группа под вложенной шапкой возвращается блоком листьев.
@@ -335,7 +317,7 @@ describe('Асинхронный перенос колонок (ADR 0114)', () =
         await expect.poll(order).not.toEqual(leavesBefore)
         await settleMoves(false, new Error('no'))
         await expect.poll(order).toEqual(leavesBefore)
-        await expect.poll(() => failureShownOn(handleOf(group!))).toBe(true)
+        expect(failureShownOn(handleOf(group!))).toBe(false)
       } finally {
         await screen.unmount()
       }
@@ -457,108 +439,6 @@ describe('Асинхронный перенос колонок (ADR 0114)', () =
     })
   })
 
-  test('FB4: вспышка reverted цели встроенного носителя — кнопки правки, ручки строки и колонки, тоггла раскрытия — начинается в кадре, где останавливается дуга кнопки', async () => {
-    await withWideViewport(async () => {
-      const rowMoves: Deferred[] = []
-      const edits: Deferred[] = []
-      const screen = await renderGrid(
-        {
-          onRowDragEnd: () =>
-            new Promise<void>((resolve, reject) =>
-              rowMoves.push({ resolve, reject }),
-            ),
-          enableCellEditing: true,
-          cellEditingCanEditCell: () => true,
-          onCellEdit: () =>
-            new Promise<void>((resolve, reject) =>
-              edits.push({ resolve, reject }),
-            ),
-        },
-        HeaderGroupsDraggingGrid,
-      )
-      try {
-        // Колонка: отказ переноса — вспышка заголовка и остановка дуги ручки.
-        await moveGroupLeft('info')
-        await expect.poll(() => moves.length).toBe(1)
-        const column = await framesOf(
-          () => tone('info') === 'reverted',
-          () => stopping(handleOf('info')),
-          () => moves.splice(0)[0]!.reject(new Error('no')),
-        )
-        expect(column.target, 'колонка').toBe(column.button)
-
-        // Строка: отказ перестановки — вспышка строки и остановка дуги её ручки.
-        const moved = rowAt(0).dataset.rowId!
-        await moveRowDown()
-        await expect.poll(() => rowMoves.length).toBe(1)
-        const row = await framesOf(
-          () => rowById(moved)?.getAttribute('data-flash') === 'reverted',
-          () => stopping(rowById(moved)?.querySelector(ROW_HANDLE)),
-          () => rowMoves[0]!.reject(new Error('no')),
-        )
-        expect(row.target, 'строка').toBe(row.button)
-
-        // Ячейка: отказ сохранения — вспышка ячейки и остановка дуги кнопки правки.
-        const cell = () =>
-          rowAt(2).querySelector<HTMLElement>(
-            '.data-grid__body-cell[data-column-id="age"]',
-          )!
-        await userEvent.hover(cell())
-        await expect
-          .poll(() => cell().querySelector('.cell__button button'))
-          .not.toBeNull()
-        await userEvent.click(
-          cell().querySelector<HTMLElement>('.cell__button button')!,
-        )
-        await expect.poll(() => cell().querySelector('input')).not.toBeNull()
-        await userEvent.keyboard('{Control>}a{/Control}77{Enter}')
-        await expect.poll(() => edits.length).toBe(1)
-        const edit = await framesOf(
-          () => cell().getAttribute('data-flash') === 'reverted',
-          () => stopping(cell().querySelector('.cell__button button')),
-          () => edits[0]!.reject(new Error('no')),
-        )
-        expect(edit.target, 'ячейка').toBe(edit.button)
-      } finally {
-        await screen.unmount()
-      }
-    })
-
-    // Тоггл раскрытия: отказ onExpandRow — вспышка строки и остановка дуги тоггла.
-    const expands: Deferred[] = []
-    const tree = await render(
-      <composed.RowExpandingPlayground
-        onExpandRow={(_row: unknown, expanding: boolean) =>
-          expanding
-            ? new Promise<void>((resolve, reject) =>
-                expands.push({ resolve, reject }),
-              )
-            : undefined
-        }
-      />,
-    )
-    try {
-      const expandable = () =>
-        [
-          ...document.querySelectorAll<HTMLElement>('.data-grid__body-row'),
-        ].find(row => row.querySelector('.row-expand-button'))!
-      await expect.poll(expandable).toBeTruthy()
-      const target = expandable()
-      const toggle = () =>
-        target.querySelector<HTMLElement>('.row-expand-button')
-      await userEvent.click(toggle()!)
-      await expect.poll(() => expands.length).toBe(1)
-      const expand = await framesOf(
-        () => target.getAttribute('data-flash') === 'reverted',
-        () => stopping(toggle()),
-        () => expands[0]!.reject(new Error('no')),
-      )
-      expect(expand.target, 'тоггл').toBe(expand.button)
-    } finally {
-      await tree.unmount()
-    }
-  })
-
   test('CO6: ручка — компактная квадратная кнопка кита, в покое не видна и шириной 0, подпись на отступе содержимого; при наведении и клавиатурном фокусе раскрывается переходом размера, заходит в отступ и сдвигает подпись; во время прокрутки и при уменьшенном движении — сразу', async () => {
     await withWideViewport(async () => {
       const screen = await renderGrid()
@@ -650,58 +530,9 @@ describe('Асинхронный перенос колонок (ADR 0114)', () =
     })
   })
 
-  test('CO7: в ожидании и с отметкой отказа ручка раскрыта и видна без наведения; отметку снял новый перенос — ручка снова скрыта', async () => {
+  test('CO11: axe с контрастом в обеих темах во время ожидания и после отказа', async () => {
     await withWideViewport(async () => {
       const screen = await renderGrid()
-      try {
-        const [a, b] = order()
-        await dragAfter(a!, b!)
-        await away()
-        await sleep(400)
-        expect(handleOf(a!).getAttribute('aria-busy')).toBe('true')
-        expect(wrapperOf(a!).getBoundingClientRect().width, 'ожидание').toBe(
-          revealedHandleWidth(handleOf(a!)),
-        )
-        expect(getComputedStyle(wrapperOf(a!)).opacity).toBe('1')
-
-        await settleMoves(false, new Error('no'))
-        await expect.poll(() => failureShownOn(handleOf(a!))).toBe(true)
-        await sleep(400)
-        expect(wrapperOf(a!).getBoundingClientRect().width, 'отметка').toBe(
-          revealedHandleWidth(handleOf(a!)),
-        )
-        expect(getComputedStyle(wrapperOf(a!)).opacity).toBe('1')
-
-        // Новый перенос той же колонки снимает отметку — ручка снова скрыта.
-        asyncMoves = false
-        head(a!).focus()
-        await userEvent.keyboard('{Alt>}{Shift>}{ArrowRight}{/Shift}{/Alt}')
-        await expect
-          .poll(() => handleOf(a!).querySelector('[data-failure-indicator]'))
-          .toBeNull()
-        // Фокус заголовка раскрывает ручку сам по себе — уводим его.
-        ;(document.activeElement as HTMLElement | null)?.blur()
-        await away()
-        await expect
-          .poll(() => wrapperOf(a!).getBoundingClientRect().width)
-          .toBe(0)
-      } finally {
-        await screen.unmount()
-      }
-    })
-  })
-
-  test('CO11: axe с контрастом в обеих темах во время ожидания и после отказа; высокая контрастность — свет ожидания ручки Highlight', async () => {
-    await withWideViewport(async () => {
-      const screen = await renderGrid()
-      const sys = (color: string) => {
-        const probe = document.createElement('span')
-        probe.style.color = color
-        document.body.append(probe)
-        const value = getComputedStyle(probe).color
-        probe.remove()
-        return toRgba(value)
-      }
       const checkAxe = () =>
         inBothThemes(async () => {
           const result = await axe.run(
@@ -722,21 +553,12 @@ describe('Асинхронный перенос колонок (ADR 0114)', () =
         const [a, b] = order()
         await dragAfter(a!, b!)
         await checkAxe()
-        if (server.browser !== 'webkit') {
-          await pointer.forcedColors(true)
-          // Дуга ожидания ручки (ADR 0127) — цветом Highlight.
-          const arc = pendingArcOf(handleOf(a!))!
-          expect(getComputedStyle(arc).forcedColorAdjust).toBe('none')
-          expect(toRgba(getComputedStyle(arcHeadOf(arc)).stroke)).toEqual(
-            sys('Highlight'),
-          )
-          await pointer.forcedColors(false)
-        }
         await settleMoves(false, new Error('no'))
-        await expect.poll(() => failureShownOn(handleOf(a!))).toBe(true)
+        await expect
+          .poll(announced)
+          .toContain(ENGLISH_LABELS.announceColumnMoveFailed('no'))
         await checkAxe()
       } finally {
-        await pointer.forcedColors(false)
         await screen.unmount()
       }
     })

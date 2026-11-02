@@ -38,7 +38,7 @@ const pagination = () =>
   document.querySelector<HTMLElement>('nav[data-testid="pagination"]')!
 
 describe('Ленивые поповеры — доступность состояний', () => {
-  test('LZ17: ожидание и отметка отказа ручки перетаскивания и кнопки выбора размера страницы проходят axe с color-contrast в светлой и тёмной теме', async () => {
+  test('LZ17: ожидание и отказ загрузки ручки перетаскивания и кнопки выбора размера страницы проходят axe с color-contrast в светлой и тёмной теме', async () => {
     await holdModule(MODULE.pageSize)
     await holdModule(MODULE.handleMenu)
     renderGrid({
@@ -65,16 +65,22 @@ describe('Ленивые поповеры — доступность состо�
     await passesAxe(handleCell())
     await userEvent.keyboard('{Escape}')
 
-    // Отметка отказа.
+    // Отказ загрузки: дуга остановилась, отметки нет (ADR 0177, §2).
     await humanClick(pageSizeButton())
     await failModule(MODULE.pageSize)
-    await expect.poll(() => failureShownOn(pageSizeButton())).toBe(true)
+    await expect
+      .poll(() => pageSizeButton().hasAttribute('aria-busy'))
+      .toBe(false)
+    expect(failureShownOn(pageSizeButton())).toBe(false)
     await passesAxe(pagination())
 
     await userEvent.hover(handleCell())
     await humanClick(columnHandle())
     await failModule(MODULE.handleMenu)
-    await expect.poll(() => failureShownOn(columnHandle())).toBe(true)
+    await expect
+      .poll(() => columnHandle().hasAttribute('aria-busy'))
+      .toBe(false)
+    expect(failureShownOn(columnHandle())).toBe(false)
     await passesAxe(handleCell())
   })
 })

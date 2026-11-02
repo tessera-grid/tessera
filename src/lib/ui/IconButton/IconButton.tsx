@@ -13,10 +13,8 @@ import { Bubble } from '../Bubble'
 import { Tooltip, type TooltipSide } from '../Tooltip'
 import {
   type ButtonStatesProps,
-  FailureMark,
   type FailureProps,
   useButtonStates,
-  useFailure,
 } from '../buttonStates'
 import { useActiveNameCheck } from './useActiveNameCheck'
 import { RevealedIcon } from './iconReveal'
@@ -35,8 +33,8 @@ export interface ButtonTooltipProps {
 }
 
 /**
- * Общие пропсы производных кнопок кита (ADR 0128): занятость, отказ и тултип
- * выключенной — как у базы.
+ * Общие пропсы производных кнопок кита (ADR 0128): занятость, остановка дуги при отказе и
+ * тултип выключенной — как у базы.
  */
 export interface DerivedButtonProps extends ButtonStatesProps, FailureProps {
   disabled?: boolean
@@ -62,7 +60,7 @@ export interface ActiveProps {
 
 /** Кнопка ячейки, заголовка или строки (ADR 0128). */
 export interface RevealProps {
-  /** Скрыта до наведения на своё место; включённая, занятая и с отметкой отказа видна всегда. */
+  /** Скрыта до наведения на своё место; включённая и занятая видна всегда. */
   revealOnHover?: boolean
 }
 
@@ -114,7 +112,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
       disabled,
       focusableWhenDisabled,
       pending,
-      failure,
+      failed,
       onClick,
       onCancel,
       cancelLabel,
@@ -126,11 +124,10 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
     const busy = rest['aria-busy'] === true || rest['aria-busy'] === 'true'
     const states = useButtonStates(
       forwardedRef,
-      { pending, failed: failure !== undefined, onCancel },
+      { pending, failed, onCancel },
       onClick,
       busy,
     )
-    const described = useFailure(failure, rest['aria-describedby'])
     const accessibleName = rest['aria-label'] ?? label
     const ownState =
       rest['aria-pressed'] !== undefined ||
@@ -144,7 +141,6 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
       !!active ||
       !!pending ||
       busy ||
-      failure !== undefined ||
       states.active ||
       !!states['data-pending-leaving']
 
@@ -162,7 +158,6 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         focusableWhenDisabled={focusableWhenDisabled || tooltipWhenDisabled}
         {...rest}
         aria-label={ariaName}
-        aria-describedby={described.describedBy}
         ref={states.ref}
         aria-busy={states['aria-busy'] ?? rest['aria-busy']}
         data-pending-leaving={states['data-pending-leaving']}
@@ -193,20 +188,11 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
             className={styles.indicator}
             data-active-indicator=""
             data-count={count || undefined}
-            data-shown={
-              active && indicator && !states.active && failure === undefined
-            }
+            data-shown={active && indicator && !states.active}
             aria-hidden
           >
             {count ? countText(count) : null}
           </Bubble>
-        )}
-        {failure !== undefined && (
-          <FailureMark
-            id={described.id}
-            text={failure}
-            shown={!states.active}
-          />
         )}
         {states.armed && (
           <span className={styles.cancelIcon} aria-hidden data-cancel-icon="">
@@ -217,12 +203,11 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
       </BaseButton>
     )
 
-    // Без подписи тултипа нет — и обёртки тоже: кнопок в гриде много; отметка отказа без
-    // подписи — только описание. Занятая кнопка тултип не показывает; с отметкой отказа
-    // тултип — её текст.
+    // Без подписи тултипа нет — и обёртки тоже: кнопок в гриде много. Занятая кнопка тултип
+    // не показывает.
     return name ? (
       <Tooltip
-        title={states.armed ? name : (failure ?? name)}
+        title={name}
         side={tooltipSide}
         disabled={
           !states.armed &&

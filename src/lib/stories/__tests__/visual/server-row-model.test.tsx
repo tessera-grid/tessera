@@ -858,12 +858,14 @@ describe('Серверная модель строк (ADR 0138)', () => {
     try {
       await expect.poll(() => rowAt(0)?.dataset.rowId).toBe('r0')
 
-      // Свет у причины, пока окно новой выборки в пути; приход гасит его.
+      // Свечение, пока окно новой выборки в пути; приход гасит его. У кнопки-причины
+      // ожидания нет (ADR 0177, §1).
       await userEvent.click(sortButton()!)
-      await expect.poll(() => lit(sortButton())).toBe(true)
+      await expect.poll(glowing).toBe(true)
+      expect(lit(sortButton())).toBe(false)
       const first = await answerHeld()
       await expect.poll(() => rowAt(0)?.dataset.rowId).toBe(`${first}0`)
-      await expect.poll(() => lit(sortButton())).toBe(false)
+      await expect.poll(glowing).toBe(false)
       const confirmed = ariaSort()
 
       // Отказ: сортировка — к подтверждённой, на экране прежние строки, плашка с причиной.
@@ -954,11 +956,9 @@ describe('Серверная модель строк (ADR 0138)', () => {
 
       // Пока сохранение в пути, ячейка показывает черновик (ADR 0057): значение из кэша
       // сверяется после итога.
-      expect(nameCell()!.querySelector('[aria-busy="true"]')).not.toBeNull()
+      expect(nameCell()!.getAttribute('aria-busy')).toBe('true')
       save!()
-      await expect
-        .poll(() => nameCell()!.querySelector('[aria-busy="true"]'))
-        .toBeNull()
+      await expect.poll(() => nameCell()!.getAttribute('aria-busy')).toBeNull()
       expect(nameCell()?.textContent?.trim()).toBe('Edited')
 
       // Успех без промиса — то же: значение из кэша сразу.

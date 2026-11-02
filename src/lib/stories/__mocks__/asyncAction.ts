@@ -6,45 +6,35 @@ import { settle, until } from './catalogPlay'
 /** Сколько «сервер» думает перед ответом в демо асинхронного действия. */
 export const ASYNC_ACTION_MS = 1500
 
-/** Чем кончается действие: отказом (отметка) или успехом (просто покой). */
+/** Чем кончается действие: отказом или успехом. */
 export type AsyncOutcome = 'fail' | 'succeed'
 
-/** Текст отметки отказа в демо (ADR 0127): причина и подсказка повтора. */
-export const ASYNC_FAILURE = 'Failed: the server is unavailable. Click to retry'
-
 /**
- * Демо асинхронного действия кнопки (ADR 0098, ADR 0127, ADR 0136): нажатие — ожидание,
- * через {@link ASYNC_ACTION_MS} — ответ: отказ с отметкой или успех; следующее нажатие —
- * повтор, отметка снимается. Во время ожидания кнопка нажатия игнорирует сама.
+ * Демо асинхронного действия кнопки (ADR 0098, ADR 0127, ADR 0177 §2): нажатие — ожидание,
+ * через {@link ASYNC_ACTION_MS} — ответ: при отказе дуга встаёт и гаснет, при успехе гаснет на
+ * бегу; отметки отказа на кнопке нет. Во время ожидания кнопка нажатия игнорирует сама.
  */
 export const useAsyncAction = (outcome: AsyncOutcome) => {
   const [pending, setPending] = useState(false)
-  const [failure, setFailure] = useState<string>()
+  const [failed, setFailed] = useState(false)
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   useEffect(() => () => clearTimeout(timer.current), [])
 
   const onClick = () => {
     setPending(true)
-    setFailure(undefined)
+    setFailed(false)
     timer.current = setTimeout(() => {
       setPending(false)
-      if (outcome === 'fail') {
-        setFailure(ASYNC_FAILURE)
-      }
+      setFailed(outcome === 'fail')
     }, ASYNC_ACTION_MS)
   }
 
-  return { pending, failure, onClick, 'data-outcome': outcome }
+  return { pending, failed, onClick, 'data-outcome': outcome }
 }
 
 const outcomeButton = (canvas: HTMLElement, outcome: AsyncOutcome) =>
   canvas.querySelector<HTMLButtonElement>(`button[data-outcome="${outcome}"]`)!
-
-/** Показана ли отметка отказа кнопки (ADR 0127). */
-const failureShown = (button: HTMLElement) =>
-  button.querySelector<HTMLElement>('[data-failure-indicator]')?.dataset
-    .shown === 'true'
 
 /** Фаза дуги ожидания кнопки (ADR 0127, ADR 0136). */
 const arcPhase = (button: HTMLElement) =>
@@ -52,9 +42,8 @@ const arcPhase = (button: HTMLElement) =>
     .phase
 
 /**
- * Сценарий историй «Async action»: отказ — дуга ожидания, затем она встаёт и гаснет, а
- * отметка отказа появляется сразу; повтор снимает отметку; успех — дуга гаснет на бегу,
- * отметки нет. История заканчивается в покое.
+ * Сценарий историй «Async action»: дуга ожидания; при отказе она встаёт и гаснет, при успехе
+ * гаснет на бегу; отметки отказа на кнопке нет. История заканчивается в покое.
  */
 export const playAsyncAction = async (canvas: HTMLElement) => {
   const failing = outcomeButton(canvas, 'fail')
@@ -66,19 +55,17 @@ export const playAsyncAction = async (canvas: HTMLElement) => {
     expect(arcPhase(button)).toBe('pending')
   }
   await until(() => expect(failing).not.toHaveAttribute('aria-busy'))
-  expect(failureShown(failing)).toBe(true)
+  expect(arcPhase(failing)).toBe('stopping')
   await until(() => expect(succeeding).not.toHaveAttribute('aria-busy'))
   await until(() => expect(arcPhase(failing)).toBeUndefined())
   await until(() => expect(arcPhase(succeeding)).toBeUndefined())
-  expect(failing).toHaveAccessibleDescription(ASYNC_FAILURE)
-  expect(failureShown(succeeding)).toBe(false)
+  for (const button of [failing, succeeding])
+    expect(button.querySelector('[data-failure-indicator]')).toBeNull()
 
-  // Повтор снимает отметку на время ожидания; отказ возвращает её.
+  // Повтор — снова ожидание.
   await userEvent.click(failing)
   await until(() => expect(failing).toHaveAttribute('aria-busy', 'true'))
-  expect(failureShown(failing)).toBe(false)
   await until(() => expect(failing).not.toHaveAttribute('aria-busy'))
-  await until(() => expect(failureShown(failing)).toBe(true))
   await until(() => expect(arcPhase(failing)).toBeUndefined())
   // Нажатия сценария оставляют фокус на кнопке — покой истории без кольца фокуса.
   const focused = canvas.ownerDocument.activeElement

@@ -8,13 +8,15 @@ import { type KeyboardEvent, useEffect, useRef, useState } from 'react'
 import { Checkbox } from '@base-ui/react/checkbox'
 
 import type { ColumnOption, OptionValue } from '../../core/columnOptions'
-import { useLocalization } from '../../core/localization'
-import { Button } from '../../ui/Button'
+import { LoadErrorBlock } from '../../ui/LoadMoreError/LoadMoreError'
+import { Skeleton } from '../../ui/Skeleton'
+import { Stub } from '../../ui/Stub'
 import { useIcons } from '../../ui/icons'
 import { Tooltip } from '../../ui/Tooltip'
 import { useVirtualizer } from '../../../vendor/tanstack-virtual/react-virtual'
 
 import checkboxStyles from '../../ui/SelectCheckbox/SelectCheckbox.module.css'
+import hidden from '../../ui/visuallyHidden.module.css'
 import styles from './OptionChecklist.module.css'
 
 const ROW_HEIGHT = 32
@@ -158,31 +160,63 @@ const CheckIcon = () => {
   return <Icon className={checkboxStyles.icon} />
 }
 
-/** Загрузка, «нет вариантов» или отказ загрузки с повтором — вместо списка. */
+/** Подписи состояний списка — от владельца: фильтра или редактора. */
+export interface OptionStatusLabels {
+  loading: string
+  empty: string
+  error: string
+  retry: string
+}
+
+/** Строк-скелетов на месте списка, пока варианты загружаются. */
+const SKELETON_ROWS = 4
+
+/**
+ * Загрузка, «нет вариантов» или отказ загрузки — вместо списка, компонентами кита (ADR 0175,
+ * ED24): строки-скелеты, заглушка `Stub`, блок ошибки загрузки с повтором.
+ */
 export const OptionStatus = ({
   status,
+  labels,
   onRetry,
+  reason,
   retryTestId,
 }: {
   status: 'loading' | 'empty' | 'error'
+  labels: OptionStatusLabels
   onRetry?: () => void
+  /** Причина отказа загрузки — из ответа справочника. */
+  reason?: string
   retryTestId: string
 }) => {
-  const labels = useLocalization()
   if (status === 'error')
     return (
-      <div className={styles.status} role="alert">
-        <span>{labels.filterOptionsError}</span>
-        <Button variant="ghost" onClick={onRetry} data-testid={retryTestId}>
-          {labels.filterRetry}
-        </Button>
+      <div className={styles.error} role="alert">
+        <LoadErrorBlock
+          title={labels.error}
+          reason={reason}
+          retryLabel={labels.retry}
+          onRetry={() => onRetry?.()}
+          testId={retryTestId}
+        />
       </div>
     )
+  if (status === 'empty')
+    return (
+      <Stub
+        className={styles.stub}
+        title={labels.empty}
+        data-testid="options-empty"
+      />
+    )
   return (
-    <p className={styles.status} aria-busy={status === 'loading' || undefined}>
-      {status === 'loading'
-        ? labels.filterLoadingOptions
-        : labels.filterNoOptions}
-    </p>
+    <div className={styles.skeleton} role="status" aria-busy="true">
+      <span className={hidden['visually-hidden']}>{labels.loading}</span>
+      {Array.from({ length: SKELETON_ROWS }, (_, index) => (
+        <div key={index} className={styles.skeletonRow}>
+          <Skeleton width={`${70 - index * 10}%`} height={10} />
+        </div>
+      ))}
+    </div>
   )
 }

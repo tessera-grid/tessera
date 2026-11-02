@@ -4,38 +4,6 @@
   max-width: calc(100vw - 16px);
 }
 
-.searchRow {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.clearSearch {
-  position: absolute;
-  right: 4px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  color: var(--tsr-comp-control-color);
-  background-color: transparent;
-  border: 0;
-  border-radius: var(--tsr-comp-popup-item-radius);
-  cursor: pointer;
-  transition: var(--tsr-comp-action-button-transition);
-}
-
-.clearSearch:hover {
-  background-color: var(--tsr-comp-control-hover-bg);
-}
-
-.clearSearch:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 var(--tsr-comp-focus-ring-width) var(--tsr-comp-focus-ring);
-}
-
 .bulk {
   display: flex;
   justify-content: space-between;

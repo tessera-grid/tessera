@@ -19,14 +19,12 @@ import {
   guideNext,
   headCell,
   orderedRows,
-  pointAt,
   pollUntil,
   repeat,
   pressEscape,
   settle,
   sleep,
   stepDone,
-  tooltipText,
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
@@ -1400,12 +1398,14 @@ const FILTER_BUTTON =
   '.data-grid__head-cell[data-column-id="name"] .column-filter__button'
 const filterButtonOf = (root: HTMLElement) =>
   root.querySelector<HTMLElement>(FILTER_BUTTON)
-const filterWaits = (root: HTMLElement) =>
-  filterButtonOf(root)?.getAttribute('aria-busy') === 'true'
-const filterArmed = (root: HTMLElement) =>
-  !!filterButtonOf(root)?.hasAttribute('data-cancel-armed')
 const refreshingGrid = (root: HTMLElement) =>
   !!root.querySelector('.data-grid-theme[data-refreshing]')
+/** Запрос фильтра ждёт сервера: ожидание — свечение под шапкой (ADR 0177, §1). */
+const filterWaits = refreshingGrid
+const pendingBannerOf = (root: HTMLElement) =>
+  root.querySelector<HTMLElement>('[data-testid="pending-action-banner"]')
+const pendingCancelOf = (root: HTMLElement) =>
+  root.querySelector<HTMLElement>('[data-testid="pending-action-cancel"]')
 
 /**
  * «Сервер» гайда отмены фильтра: отвечает только тогда, когда его не отменили; запрос
@@ -1443,10 +1443,10 @@ const filterHeld = async (root: HTMLElement, signal: AbortSignal) => {
     filterButtonOf(root)?.blur()
 }
 
-/** Занятая кнопка фильтра готова к отмене. */
-const filterCancelArmed = async (root: HTMLElement, signal: AbortSignal) => {
+/** Фильтр ждёт дольше порога: под шапкой плашка с кнопкой отмены. */
+const filterLong = async (root: HTMLElement, signal: AbortSignal) => {
   await filterHeld(root, signal)
-  await pollUntil(() => filterArmed(root), signal)
+  await pollUntil(() => !!pendingCancelOf(root), signal)
 }
 
 const CANCEL_FILTER: readonly GuideStoryStep[] = [
@@ -1457,31 +1457,27 @@ const CANCEL_FILTER: readonly GuideStoryStep[] = [
   },
   {
     title: 'Фильтр ждёт',
-    hint: 'Пользователь задал условие в панели фильтра, применил его и закрыл панель. Кнопка фильтра показывает ожидание.',
+    hint: 'Пользователь задал условие в панели фильтра, применил его и закрыл панель. Пока сервер фильтрует строки, под шапкой светится полоса обновления.',
     states: ['body.refreshing'],
     immediate: true,
     enter: stepAction((root, { signal }) => filterHeld(root, signal)),
   },
   {
-    title: 'Кнопка предлагает отмену',
-    hint: 'Пользователь навёл указатель на кнопку фильтра. Появился знак остановки, подсказка предлагает отменить фильтр.',
+    title: 'Фильтр идёт долго',
+    hint: 'Сервер не ответил за секунду. Под шапкой появилась плашка о фильтрации с кнопкой отмены.',
     states: ['body.refreshing'],
-    pseudo: { hover: FILTER_BUTTON },
-    enter: stepAction(async (root, { signal, onLeave }) => {
-      await filterCancelArmed(root, signal)
-      onLeave(pointAt(filterButtonOf(root)!))
-    }),
+    enter: stepAction((root, { signal }) => filterLong(root, signal)),
   },
   {
     title: 'Фильтр отменён',
-    hint: 'Пользователь нажал на кнопку. Условие снято, кнопка снова без отметки включённого фильтра, строки прежние.',
+    hint: 'Пользователь нажал отмену в плашке. Условие снято, кнопка фильтра снова без отметки включённого фильтра, плашка и свечение ушли, строки прежние.',
     enter: stepAction(async (root, { signal }) => {
-      await filterCancelArmed(root, signal)
-      filterButtonOf(root)!.click()
+      await filterLong(root, signal)
+      pendingCancelOf(root)!.click()
       await pollUntil(
         () =>
-          !filterWaits(root) &&
           !filterActive(root, 'name') &&
+          !pendingBannerOf(root) &&
           !refreshingGrid(root),
         signal,
       )
@@ -1489,7 +1485,7 @@ const CANCEL_FILTER: readonly GuideStoryStep[] = [
   },
 ]
 
-/** ADR 0153, S7: серверный фильтр колонки ждёт — человек отменяет его кнопкой фильтра. */
+/** ADR 0153, S7: серверный фильтр колонки ждёт — человек отменяет его в плашке под шапкой. */
 export const FilteringServerCancel: StoryObj<StoryProps> = {
   name: 'Cancel a server filter',
   parameters: { scenario: '0153/S7', ...guideControls() },
@@ -1528,15 +1524,11 @@ export const FilteringServerCancel: StoryObj<StoryProps> = {
     await step(CANCEL_FILTER[2]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(filterArmed(canvas)).toBe(true)
-      await expect(
-        filterButtonOf(canvas)!
-          .getAttribute('aria-label')!
-          .startsWith(labels.cancelAction('')),
-      ).toBe(true)
-      await until(() =>
-        expect(tooltipText()).toBe(labels.cancelAction(labels.filter)),
+      await expect(pendingBannerOf(canvas)).toHaveTextContent(
+        labels.pendingFiltering,
       )
+      await expect(pendingCancelOf(canvas)).toHaveTextContent(labels.cancel)
+      await settle()
     })
     await step(CANCEL_FILTER[3]!.title, async () => {
       await guideNext(canvas)
@@ -1635,7 +1627,7 @@ const APPLY: readonly GuideStoryStep[] = [
   },
   {
     title: 'Условие применено',
-    hint: 'Пользователь нажал кнопку применения. Запрос ушёл серверу один раз, панель осталась открытой, кнопка фильтра показывает ожидание.',
+    hint: 'Пользователь нажал кнопку применения. Запрос ушёл серверу один раз, панель осталась открытой, под шапкой светится полоса обновления.',
     states: ['overlay.filterText', 'body.refreshing'],
     enter: stepAction((root, { signal }) => nameApplied(root, signal)),
   },
@@ -1716,20 +1708,17 @@ export const FilteringServerApply: StoryObj<StoryProps> = {
 
 // --- ADR 0154 S2 ---------------------------------------------------------------------
 
-/** Фильтр отменён «стопом», панель закрыта. */
+/** Фильтр отменён в плашке под шапкой, панель закрыта. */
 const filterCancelled = async (root: HTMLElement, signal: AbortSignal) => {
-  if (filterActive(root, 'name') || filterWaits(root)) {
-    await filterCancelArmed(root, signal)
-    filterButtonOf(root)!.click()
-  } else if (!panel()) {
-    await filterCancelArmed(root, signal)
-    filterButtonOf(root)!.click()
+  if (filterActive(root, 'name') || filterWaits(root) || !panel()) {
+    await filterLong(root, signal)
+    pendingCancelOf(root)!.click()
   }
   await pollUntil(
     () =>
       !filterWaits(root) &&
       !filterActive(root, 'name') &&
-      !refreshingGrid(root),
+      !pendingBannerOf(root),
     signal,
   )
 }
@@ -1760,14 +1749,14 @@ const REAPPLY: readonly GuideStoryStep[] = [
   },
   {
     title: 'Фильтр ждёт',
-    hint: 'Пользователь задал условие, применил его и закрыл панель. Кнопка фильтра показывает ожидание.',
+    hint: 'Пользователь задал условие, применил его и закрыл панель. Пока сервер фильтрует строки, под шапкой светится полоса обновления.',
     states: ['body.refreshing'],
     immediate: true,
     enter: stepAction((root, { signal }) => filterHeld(root, signal)),
   },
   {
     title: 'Фильтр отменён',
-    hint: 'Пользователь отменил фильтр кнопкой фильтра. Фильтр снят, строки прежние.',
+    hint: 'Сервер не ответил за секунду, и пользователь отменил фильтр в плашке под шапкой. Фильтр снят, строки прежние.',
     enter: stepAction((root, { signal }) => filterCancelled(root, signal)),
   },
   {
@@ -1778,7 +1767,7 @@ const REAPPLY: readonly GuideStoryStep[] = [
   },
   {
     title: 'Условие применено снова',
-    hint: 'Пользователь нажал кнопку применения. Запрос ушёл серверу, кнопка фильтра показывает ожидание.',
+    hint: 'Пользователь нажал кнопку применения. Запрос ушёл серверу, под шапкой снова светится полоса обновления.',
     states: ['overlay.filterText', 'body.refreshing'],
     enter: stepAction(async (root, { signal }) => {
       if (!filterWaits(root)) await draftShown(root, signal)

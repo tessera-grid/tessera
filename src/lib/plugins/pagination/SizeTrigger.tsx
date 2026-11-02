@@ -1,7 +1,6 @@
 /**
  * Кнопка выбора размера страницы — и заглушка до загрузки списка, и его триггер:
- * ожидание дугой по контуру и отметка отказа (ADR 0127, ADR 0136). Ожидание серверного
- * действия — `aria-busy` и `data-pending` снаружи: оно нажатий не глушит (ADR 0116).
+ * ожидание загрузки списка дугой по контуру, отказ её останавливает (ADR 0127, ADR 0177, §2).
  * Взведённая отмена (ADR 0153) — «стоп» поверх значения, нажатие отменяет, а не открывает.
  */
 import { type ButtonHTMLAttributes, forwardRef } from 'react'
@@ -10,10 +9,8 @@ import clsx from 'clsx'
 
 import {
   type ButtonStatesProps,
-  FailureMark,
   type FailureProps,
   useButtonStates,
-  useFailure,
 } from '../../ui/buttonStates'
 import { useIcons } from '../../ui/icons'
 import styles from './Pagination.module.css'
@@ -25,7 +22,7 @@ export const SizeTrigger = forwardRef<
   (
     {
       pending,
-      failure,
+      failed,
       onCancel,
       cancelLabel,
       onClick,
@@ -41,16 +38,15 @@ export const SizeTrigger = forwardRef<
       className: ringClassName,
       'aria-busy': busy,
       arc,
-      active,
+      active: _active,
       armed,
       ...states
     } = useButtonStates(
       forwardedRef,
-      { pending, failed: failure !== undefined, onCancel },
+      { pending, failed, onCancel },
       onClick,
       marked,
     )
-    const described = useFailure(failure, rest['aria-describedby'])
     const CancelIcon = useIcons().cancelAction
     // Взведённая кнопка — своё имя, а нажатие не открывает список: его открывают
     // `pointerdown`, `mousedown` и клавиши Base UI.
@@ -71,15 +67,11 @@ export const SizeTrigger = forwardRef<
         {...states}
         {...cancelOverrides}
         aria-busy={busy ?? rest['aria-busy']}
-        aria-describedby={described.describedBy}
         data-cancel-armed={armed || undefined}
         ref={setButton}
         className={clsx(styles.trigger, ringClassName, className)}
       >
         {children}
-        {failure !== undefined && (
-          <FailureMark id={described.id} text={failure} shown={!active} />
-        )}
         {armed && (
           <span className={styles.cancelIcon} aria-hidden data-cancel-icon="">
             <CancelIcon />

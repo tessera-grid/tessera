@@ -202,11 +202,13 @@ const chooseOperator = async (operator: string) => {
 const answer = async (call = lastCall()) => {
   call.answer.resolve()
   await expect
-    .poll(() => filterButton().getAttribute('aria-busy'))
-    .not.toBe('true')
+    .poll(() => !!document.querySelector('[data-refreshing]'))
+    .toBe(false)
 }
-const busy = (id = 'name') =>
-  filterButton(id).getAttribute('aria-busy') === 'true'
+/** Запрос фильтра ждёт: свечение под шапкой, у кнопки ожидания нет (ADR 0177, §1). */
+const busy = () => !!document.querySelector('[data-refreshing]')
+const pendingCancel = () =>
+  document.querySelector<HTMLElement>('[data-testid="pending-action-cancel"]')
 const active = (id = 'name') => filterButton(id).hasAttribute('data-active')
 
 describe('Применение серверного фильтра (ADR 0154)', () => {
@@ -267,13 +269,14 @@ describe('Применение серверного фильтра (ADR 0154)', 
     expect(applyEnabled()).toBe(false)
   })
 
-  test('FD3: после «Применить» панель остаётся открытой, кнопка фильтра колонки показывает ожидание', async () => {
+  test('FD3: после «Применить» панель остаётся открытой, под шапкой светится полоса обновления, у кнопки фильтра ожидания нет', async () => {
     await mount()
     await openPanel()
     await typeName('Name 1')
     await humanClick(apply()!)
     await expect.poll(() => calls.length).toBe(1)
     await expect.poll(() => busy()).toBe(true)
+    expect(filterButton().hasAttribute('aria-busy')).toBe(false)
     await sleep(300)
     expect(panel()).not.toBeNull()
     expect(field()!.value).toBe('Name 1')
@@ -281,7 +284,7 @@ describe('Применение серверного фильтра (ADR 0154)', 
     expect(panel()).not.toBeNull()
   })
 
-  test('FD4: отмена «стопом» снимает фильтр, условие остаётся в панели; «Применить» отправляет его снова', async () => {
+  test('FD4: отмена в плашке под шапкой снимает фильтр, условие остаётся в панели; «Применить» отправляет его снова', async () => {
     await mount()
     await openPanel()
     await typeName('Name 1')
@@ -289,10 +292,8 @@ describe('Применение серверного фильтра (ADR 0154)', 
     await expect.poll(() => calls.length).toBe(1)
     const first = lastCall()
     await closePanel()
-    await expect
-      .poll(() => filterButton().hasAttribute('data-cancel-armed'))
-      .toBe(true)
-    await humanClick(filterButton())
+    await expect.poll(pendingCancel, { timeout: 3000 }).not.toBeNull()
+    await humanClick(pendingCancel()!)
     await expect.poll(() => first.signal.aborted).toBe(true)
     await expect.poll(() => busy()).toBe(false)
     expect(active()).toBe(false)

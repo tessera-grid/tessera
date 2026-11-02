@@ -1,12 +1,13 @@
 // @vitest-environment happy-dom
 /**
- * Ошибка в ячейке (ADR 0150): подпись одиночной точки из словаря (ER8); плагин работает
+ * Ошибка в ячейке (ADR 0150): подпись треугольника из словаря (ER8); плагин работает
  * без `cellEditing` и не тянет его в сборку (ER10).
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
+import { createAtom } from '@tanstack/react-store'
 import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -30,13 +31,13 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
-/** Точка ячейки с ошибкой; `hooks` — хуки плагинов таблицы по id. */
+/** Треугольник ячейки с ошибкой; `hooks` — хуки плагинов таблицы по id. */
 const mountMark = (labels = ENGLISH_LABELS, hooks: object = {}) => {
   const host = document.createElement('div')
   document.body.append(host)
   root = createRoot(host)
   const props = {
-    table: { getHooks: () => hooks },
+    table: { getHooks: () => hooks, atoms: { failures: createAtom({}) } },
     row: { id: 'r1' },
     column: { id: 'age' },
     hooks: { getCellError: () => 'Too young' },
@@ -54,7 +55,7 @@ const mountMark = (labels = ENGLISH_LABELS, hooks: object = {}) => {
 }
 
 describe('Ошибка в ячейке (ADR 0150)', () => {
-  it('ER8: подпись одиночной точки — ключ cellError словаря localization', () => {
+  it('ER8: подпись треугольника — ключ cellError словаря localization', () => {
     expect(ENGLISH_LABELS.cellError).toBe('Cell error')
     const host = mountMark(
       resolveLabels({ cellError: 'Ошибка в ячейке' }, 'ru-RU'),
@@ -65,14 +66,14 @@ describe('Ошибка в ячейке (ADR 0150)', () => {
   })
 
   it('ER10: cellErrors работает без cellEditing и его импорт не тянет cellEditing', () => {
-    // Без cellEditing точка стоит одна; с правимой ячейкой её несёт кнопка правки.
+    // Треугольник — у ячейки, с cellEditing и без него (ADR 0177, §5).
     expect(mountMark().querySelector('button')).not.toBeNull()
     act(() => root!.unmount())
     root = undefined
     const editable = mountMark(ENGLISH_LABELS, {
       cellEditing: { canEditCell: () => true },
     })
-    expect(editable.querySelector('button')).toBeNull()
+    expect(editable.querySelector('button[data-cell-issue]')).not.toBeNull()
 
     expect(cellErrors({ getCellError: () => undefined }).id).toBe('cellErrors')
     // Модули плагина ссылаются на cellEditing только типами: сборка его не берёт.

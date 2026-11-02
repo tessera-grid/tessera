@@ -263,17 +263,12 @@ export const formatDataTypeValue = (
   }
 }
 
-/** Числа — `number` и десятичная строка `numberString`: вправо, цифры одной ширины. */
+/** Числа — `number` и десятичная строка `numberString`: цифры одной ширины. */
 export const isNumericBase = (base: string | undefined) =>
   base === 'number' || base === 'numberString'
 
-/** Выравнивание колонки: своё у колонки или типа, у чисел — `end` (DT9, TY9). */
+/** Выравнивание колонки: своё у колонки или типа; по умолчанию — к началу (DT9). */
 export const alignOf = (
   table: FormatTable,
   column: FormatColumn,
-): DataTypeAlign | undefined => {
-  const type = resolveDataType(table, column)
-  return (
-    type?.definition.align ?? (isNumericBase(type?.base) ? 'end' : undefined)
-  )
-}
+): DataTypeAlign | undefined => resolveDataType(table, column)?.definition.align

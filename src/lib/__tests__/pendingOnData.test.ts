@@ -37,8 +37,9 @@ describe('Ожидание на данных (ADR 0155)', () => {
     const rows = ruleRows(text)
     const howOf = (pattern: RegExp) =>
       rows.find(([what]) => pattern.test(what))?.[1]
-    expect(howOf(/кебаб.*инлайн-кнопка/)).toMatch(/дуга на инициаторе/)
-    expect(howOf(/контекстного меню/)).toMatch(/волна/)
+    // Действие над данными — волна на цели у любого инициатора (ADR 0177, §1).
+    expect(howOf(/кебаб.*инлайн-кнопка.*контекстного меню/)).toMatch(/волна/)
+    expect(howOf(/выгрузка/)).toMatch(/дуга/)
     expect(howOf(/вся таблица.*'table'/)).toMatch(
       /свечение под шапкой.*приглушение/,
     )

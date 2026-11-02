@@ -340,25 +340,6 @@ describe('Включённое состояние кнопок (ADR 0129)', () =
     await screen.unmount()
   })
 
-  test('AV7: пока на кнопке отметка отказа, на месте бабла (точки или числа) — красная точка отказа, цвет значка остаётся включённым; отметку сняли — бабл вернулся', async () => {
-    const failure = () =>
-      kit().querySelector<HTMLElement>('[data-failure-indicator]')!
-    for (const count of [undefined, 3]) {
-      const screen = await render(
-        <Kit active count={count} failure="Failed: offline" />,
-      )
-      settle()
-      expect(shown(kit()), `count=${count}`).toBe(false)
-      expect(getComputedStyle(failure()).opacity).toBe('1')
-      expect(getComputedStyle(kit()).color).toBe(
-        tokenColor('--tsr-comp-control-active-color'),
-      )
-      await screen.rerender(<Kit active count={count} />)
-      expect(shown(kit()), `count=${count}: снята`).toBe(true)
-      await screen.unmount()
-    }
-  })
-
   test('AV10: бабл-точка, число и свой значок: forced-colors и axe с color-contrast в обеих темах', async () => {
     const Buttons = () => (
       <UiCanvas>
@@ -439,29 +420,24 @@ const tokenOf = (name: string) =>
   getComputedStyle(kit()).getPropertyValue(name).trim()
 
 describe('Место бабла (ADR 0136)', () => {
-  test('FB8: бабл-точка и отметка отказа на её месте стоят от правого и верхнего края кнопки на --tsr-comp-indicator-inset', async () => {
+  test('FB8: бабл-точка стоит от правого и верхнего края кнопки на --tsr-comp-indicator-inset', async () => {
     /** Отступ знака от правого и верхнего края кнопки. */
     const gaps = (mark: Element) => {
       const button = box(kit())
       const dot = box(mark)
       return [button.right - dot.right, dot.top - button.top]
     }
-    for (const failure of [undefined, 'Failed: offline']) {
-      const screen = await render(<Kit active failure={failure} />)
-      settle()
-      const mark = () =>
-        failure
-          ? kit().querySelector<HTMLElement>('[data-failure-indicator]')!
-          : bubbleOf(kit())!
-      expect(getComputedStyle(mark()).opacity, `failure=${failure}`).toBe('1')
-      const inset = parseFloat(tokenOf('--tsr-comp-indicator-inset'))
-      expect(inset).toBe(1)
-      for (const gap of gaps(mark())) expect(gap).toBeCloseTo(inset, 0)
-      // Тема меняет место токеном.
-      kit().style.setProperty('--tsr-comp-indicator-inset', '5px')
-      for (const gap of gaps(mark())) expect(gap).toBeCloseTo(5, 0)
-      await screen.unmount()
-    }
+    const screen = await render(<Kit active />)
+    settle()
+    const mark = () => bubbleOf(kit())!
+    expect(getComputedStyle(mark()).opacity).toBe('1')
+    const inset = parseFloat(tokenOf('--tsr-comp-indicator-inset'))
+    expect(inset).toBe(1)
+    for (const gap of gaps(mark())) expect(gap).toBeCloseTo(inset, 0)
+    // Тема меняет место токеном.
+    kit().style.setProperty('--tsr-comp-indicator-inset', '5px')
+    for (const gap of gaps(mark())) expect(gap).toBeCloseTo(5, 0)
+    await screen.unmount()
   })
 
   test('FB9: бабл с числом сдвинут за угол кнопки на --tsr-comp-indicator-count-offset; размер кнопки и раскладка не меняются', async () => {

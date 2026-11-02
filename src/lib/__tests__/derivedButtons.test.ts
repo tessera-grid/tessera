@@ -42,7 +42,7 @@ const COMMON = [
   'disabled',
   'tooltipWhenDisabled',
   'pending',
-  'failure',
+  'failed',
   'onClick',
   'data-testid',
 ]
@@ -114,10 +114,11 @@ describe('Производные кнопки кита (ADR 0128)', () => {
     }
   })
 
-  it('FB3: у кнопок кита и производных нет пропа errorFlash — отказ задаёт failure', () => {
+  it('FB3: у кнопок кита и производных нет пропов errorFlash и failure — отказ только останавливает дугу пропом failed', () => {
     for (const button of ['IconButton', 'Button', ...BUTTONS]) {
       const props = names(button)
-      expect(props, button).toContain('failure')
+      expect(props, button).toContain('failed')
+      expect(props, button).not.toContain('failure')
       expect(props, button).not.toContain('errorFlash')
     }
   })

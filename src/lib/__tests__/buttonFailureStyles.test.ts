@@ -22,7 +22,6 @@ const BUTTON_CSS = [
         !path.startsWith('theme'),
     )
     .map(path => `ui/${path}`),
-  'grid/headerActions/ActionButton.module.css',
   'plugins/pagination/Pagination.module.css',
 ]
 

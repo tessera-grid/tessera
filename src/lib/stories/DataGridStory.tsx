@@ -14,6 +14,7 @@ import {
   Updater,
   functionalUpdate,
 } from '@tanstack/react-table'
+import { ru as ruDateLocale } from '@daypicker/react/locale/ru'
 import { Grid } from './_shims'
 import { loadingArg, panelFlag } from './__mocks__/utils/dataGridControls'
 import type { RowSelectionValue } from '../../lib/core/rowSelectionAll'
@@ -41,6 +42,7 @@ import {
 import type { StoryProps } from './DataGridStory.types'
 import { sizeArg } from './__mocks__/utils/normalizeArgs'
 import { ConsoleContext } from './demos/consoleContext'
+import { StoryRowsContext, type WriteStoryCell } from './demos/storyRows'
 import { loggedCallback, loggedCallbacks } from './demos/consoleLog'
 import { useTableConsole } from './demos/useTableConsole'
 
@@ -343,17 +345,24 @@ const StoryGrid = memo(
         : {}),
       ...(errorsDemo ? { cellErrorsGetCellError: demoCellError } : {}),
     }
-    // Сохранение истории — промисом: значение пишется в данные после ответа. Ответ
-    // приложения — сохранённая строка (ADR 0139) — проходит насквозь.
-    const demoCellEdit = (commit: CellEditCommit) => {
-      const { rowId, columnId, value } = commit
-      const write = () =>
+    const writeCell = useCallback<WriteStoryCell>(
+      (rowId, columnId, value) =>
         setData(prev =>
           prev.map(row =>
             row.id === rowId ? { ...row, [columnId]: value } : row,
           ),
-        )
-      const saved = options.onCellEdit?.(commit)
+        ),
+      [setData],
+    )
+    // Сохранение истории — промисом: значение пишется в данные после ответа. Ответ
+    // приложения — сохранённая строка (ADR 0139) — проходит насквозь.
+    const demoCellEdit = (
+      commit: CellEditCommit,
+      context: { signal: AbortSignal },
+    ) => {
+      const { rowId, columnId, value } = commit
+      const write = () => writeCell(rowId, columnId, value)
+      const saved = options.onCellEdit?.(commit, context)
       if (!isThenable(saved)) {
         write()
         return saved
@@ -428,6 +437,8 @@ const StoryGrid = memo(
       rowCount: options.rowCount,
       totalRowCount: options.totalRowCount,
       locale: locale === 'ru' ? 'ru-RU' : undefined,
+      // Календари дат — на языке истории (ADR 0175, §3).
+      dateLocale: locale === 'ru' ? ruDateLocale : undefined,
       timeZone: options.timeZone,
       dataTypes: options.dataTypes,
       loading:
@@ -511,17 +522,19 @@ const StoryGrid = memo(
             Панель приложения · {appPanelHeight}px
           </div>
         )}
-        <DataGrid
-          className={gridClassName}
-          table={table as never}
-          height={sizeArg(height)}
-          maxHeight={sizeArg(maxHeight)}
-          colorMode={colorMode}
-          contrast={contrast}
-          localization={labels}
-          icons={icons}
-          stubs={stubs}
-        />
+        <StoryRowsContext value={writeCell}>
+          <DataGrid
+            className={gridClassName}
+            table={table as never}
+            height={sizeArg(height)}
+            maxHeight={sizeArg(maxHeight)}
+            colorMode={colorMode}
+            contrast={contrast}
+            localization={labels}
+            icons={icons}
+            stubs={stubs}
+          />
+        </StoryRowsContext>
       </>
     )
 

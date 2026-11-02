@@ -35,6 +35,18 @@ export type {
 } from './lib/core/highlights/highlightFeature'
 // Отмена длительных операций (ADR 0153): `table.cancelPending`.
 export type { CancelPendingFilter, PendingKind } from './lib/core/cancellation'
+// Ожидание и итог действия на ячейке (ADR 0176): `table.trackCellAction` и хук контрола.
+export {
+  useCellPending,
+  type TrackCellActionOptions,
+} from './lib/core/headerActions/cellActions'
+// Реестр отказов (ADR 0177): `table.getFailures()`, `onFailure`, отметка ячейки.
+export {
+  useCellFailure,
+  type Failure,
+  type FailureReport,
+  type FailureTarget,
+} from './lib/core/failures/failuresFeature'
 // Вспышка итога на цели асинхронного действия (ADR 0134): `table.flashOutcome`.
 export type { FlashOutcome } from './lib/core/flashes/flashFeature'
 // Прокрутка к строке (ADR 0104): `table.scrollToRow`.

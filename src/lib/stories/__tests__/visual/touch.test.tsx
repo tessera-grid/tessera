@@ -17,6 +17,7 @@ import { columnSorting } from '../../../plugins/columnSorting'
 import {
   cellEditing,
   columnFiltering,
+  dataExport,
   columnPinning,
   columnSizing,
   headerActionMenu,
@@ -783,15 +784,18 @@ describe('Касания в растянутой области', () => {
 
 describe('«Стоп» на касаниях (ADR 0153)', () => {
   test('CA7: сенсорный экран (pointer: coarse): у занятой кнопки «стоп» виден сразу', async () => {
+    // «Стоп» — у кнопки процесса вне таблицы, выгрузки (ADR 0177, §2).
     const signals: AbortSignal[] = []
-    const SortGrid = () => {
+    const ExportGrid = () => {
       const table = useCreateTable({
         columns: [{ id: 'name', accessorKey: 'name', header: 'Name' }] as never,
         data: [{ id: '1', name: 'Bob' }],
-        dataMode: { sorting: 'server' },
+        // Выгрузку собирает сервер: `onExport` с промисом и `signal`.
+        dataMode: 'server',
         plugins: [
-          columnSorting({
-            onToggleColumnSort: (...args: unknown[]) => {
+          dataExport({
+            allow: { rows: ['all'], columns: ['all'], formats: ['csv'] },
+            onExport: (...args: unknown[]) => {
               signals.push((args.at(-1) as { signal: AbortSignal }).signal)
               return new Promise<void>(() => {})
             },
@@ -804,13 +808,15 @@ describe('«Стоп» на касаниях (ADR 0153)', () => {
         </div>
       )
     }
-    const screen = await render(<SortGrid />)
+    const screen = await render(<ExportGrid />)
     try {
       await waitForGrid()
       const button = () =>
-        document.querySelector<HTMLElement>(
-          `${HEAD_CELL}[data-column-id="name"] .column-sort__button`,
-        )!
+        document.querySelector<HTMLElement>('[data-testid="export-button"]')!
+      // Тулбар — ленивый модуль (ADR 0061).
+      await expect
+        .poll(() => document.querySelector('[data-testid="export-button"]'))
+        .not.toBeNull()
       expect(matchMedia('(pointer: coarse)').matches).toBe(true)
       await touch.realTap(center(button()))
       await expect.poll(() => signals.length).toBe(1)
@@ -1060,6 +1066,152 @@ describe('Редакторы по типу пальцем (ADR 0175)', () => {
       await expect.poll(() => sale()?.getAttribute('aria-checked')).toBe('true')
       await tapCell(row(), 'day')
       await expect.poll(() => saved.at(-1)).toEqual(['new', 'sale'])
+    } finally {
+      await screen.unmount()
+    }
+  })
+})
+
+// Треугольник отказа ячейки на касаниях (ADR 0177, OB10): кнопка в углу открывает поповер
+// нажатием, касанием и Enter, касание угла булевой ячейки флажок не переключает.
+
+interface IssueRow {
+  id: string
+  name: string
+  inStock: boolean
+}
+
+const ISSUE_DATA: IssueRow[] = Array.from({ length: 6 }, (_, i) => ({
+  id: `r${i}`,
+  name: `Row ${i}`,
+  inStock: i % 2 === 0,
+}))
+
+let issueTable: {
+  trackCellAction: (
+    target: unknown,
+    promise: Promise<unknown>,
+    options?: { retry?: () => unknown },
+  ) => Promise<unknown>
+}
+let issueEdits = 0
+
+const IssueGrid = () => {
+  const table = useCreateTable({
+    enableKeyboardNavigation: true,
+    columns: [
+      { id: 'name', accessorKey: 'name', header: 'Name', size: 240 },
+      {
+        id: 'inStock',
+        accessorKey: 'inStock',
+        header: 'In stock',
+        dataType: 'boolean',
+        size: 120,
+      },
+    ] as never,
+    data: ISSUE_DATA,
+    getRowId: (row: IssueRow) => row.id,
+    plugins: [
+      cellEditing({
+        canEditCell: ctx => ctx.column.id === 'inStock',
+        onCellEdit: () => {
+          issueEdits++
+          return Promise.reject(new Error('Server said no'))
+        },
+      }),
+    ] as never,
+  })
+  issueTable = table as never
+  return (
+    <div style={{ width: 500, height: 360 }}>
+      <DataGrid table={table as never} />
+    </div>
+  )
+}
+
+describe('Треугольник отказа ячейки на касаниях (ADR 0177)', () => {
+  test('OB10: треугольник — кнопка с зоной 24×24; нажатие, касание и Enter открывают поповер с причиной, «Отбросить изменение» и «Повторить», если источник умеет повторять; касание угла не переключает флажок булевой ячейки', async () => {
+    issueEdits = 0
+    const screen = await render(<IssueGrid />)
+    try {
+      await waitForGrid()
+      const cell = (id: string, column: string) =>
+        cellOf(
+          document.querySelector<HTMLElement>(
+            `${BODY_ROW}[data-row-id='${id}']`,
+          )!,
+          column,
+        )
+      const issue = (id: string, column: string) =>
+        cell(id, column).querySelector<HTMLElement>('button[data-cell-issue]')
+      const box = () =>
+        cell('r1', 'inStock').querySelector<HTMLElement>('[role="checkbox"]')!
+      const popover = () =>
+        document.querySelector<HTMLElement>(
+          '[data-testid="cell-issue-popover"]',
+        )
+      const actionsOf = () =>
+        [...popover()!.querySelectorAll<HTMLElement>('[data-action]')].map(
+          el => el.dataset.action,
+        )
+      const close = async () => {
+        await userEvent.keyboard('{Escape}')
+        await expect.poll(popover).toBeNull()
+      }
+
+      // Отказ встроенного флажка: треугольник в углу ячейки.
+      const before = box().getAttribute('aria-checked')
+      await touch.realTap(center(box()))
+      await expect.poll(() => issue('r1', 'inStock')).not.toBeNull()
+      await expect.poll(() => box().getAttribute('aria-checked')).toBe(before)
+      const zone = issue('r1', 'inStock')!.getBoundingClientRect()
+      expect(Math.min(zone.width, zone.height)).toBeGreaterThanOrEqual(24)
+
+      // Касание угла: поповер с причиной, «Повторить» и «Отбросить»; флажок не переключён.
+      const edits = issueEdits
+      await touch.realTap({ x: zone.right - 3, y: zone.top + 3 })
+      await expect.poll(popover).not.toBeNull()
+      expect(popover()!.textContent).toContain('Server said no')
+      expect(actionsOf()).toEqual(['retry', 'discard'])
+      expect(box().getAttribute('aria-checked')).toBe(before)
+      expect(issueEdits).toBe(edits)
+      await close()
+
+      // Нажатие.
+      await humanClick(issue('r1', 'inStock')!)
+      await expect.poll(popover).not.toBeNull()
+      await close()
+
+      // Enter на кнопке треугольника.
+      issue('r1', 'inStock')!.focus()
+      await userEvent.keyboard('{Enter}')
+      await expect.poll(popover).not.toBeNull()
+      expect(actionsOf()).toEqual(['retry', 'discard'])
+      await close()
+
+      // Источник без повтора — только «Отбросить»; с повтором — и «Повторить».
+      void issueTable
+        .trackCellAction(
+          { cell: ['r2', 'name'] },
+          Promise.reject(new Error('No')),
+        )
+        .catch(() => {})
+      void issueTable
+        .trackCellAction(
+          { cell: ['r3', 'name'] },
+          Promise.reject(new Error('No')),
+          { retry: () => {} },
+        )
+        .catch(() => {})
+      await expect.poll(() => issue('r3', 'name')).not.toBeNull()
+      await touch.realTap(center(issue('r2', 'name')!))
+      await expect.poll(popover).not.toBeNull()
+      expect(actionsOf()).toEqual(['discard'])
+      await close()
+      await touch.realTap(center(issue('r3', 'name')!))
+      await expect.poll(popover).not.toBeNull()
+      expect(actionsOf()).toEqual(['retry', 'discard'])
+      await close()
     } finally {
       await screen.unmount()
     }

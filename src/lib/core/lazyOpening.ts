@@ -1,11 +1,16 @@
 // Открытие ленивого поповера или меню после загрузки его модуля (ADR 0061, ADR 0024
 // AM28–AM30): нажатие до загрузки не теряется, долгое ожидание видно, его можно
-// отменить, ошибка загрузки не открывает поповер — на элементе отметка отказа, текст
-// объявляется (ADR 0136).
+// отменить, ошибка загрузки не открывает поповер: дуга на элементе останавливается, текст
+// объявляется, отказ — запись реестра отказов с повтором (ADR 0177, §2).
 import { reportAction, userSourceOf } from './debugActions'
 import { type KeyboardEvent, useEffect, useRef, useState } from 'react'
 
 import { announceLabel } from './announcer'
+import {
+  failureKeyOf,
+  reportFailure,
+  resolveFailure,
+} from './failures/failuresFeature'
 import { type Preloadable, usePreloaded } from './preloadable'
 import { type TableLabels, useLocalization } from './localization'
 
@@ -23,7 +28,7 @@ export interface LazyLoad {
 export const useLazyOpening = (table: unknown) => {
   const labels = useLocalization()
   const [pending, setPending] = useState(false)
-  const [failure, setFailure] = useState<string>()
+  const [failed, setFailed] = useState(false)
   const stop = useRef<() => void>(undefined)
 
   const cancel = () => {
@@ -39,8 +44,10 @@ export const useLazyOpening = (table: unknown) => {
     onFail?: () => void,
   ) => {
     cancel()
-    // Новая попытка — повтор: отметка прошлого отказа снимается (IR13).
-    setFailure(undefined)
+    // Новая попытка — повтор: прошлый отказ снимается.
+    setFailed(false)
+    const process = { process: `lazy:${lazy?.label(labels) ?? ''}` }
+    if (lazy && table) resolveFailure(table, failureKeyOf(process))
     if (!lazy || lazy.isReady?.()) {
       open()
       return
@@ -84,9 +91,15 @@ export const useLazyOpening = (table: unknown) => {
         if (!active) return
         finish()
         onFail?.()
-        setFailure(labels.loadFailed(lazy.label(labels)))
+        setFailed(true)
         if (table) {
           announceLabel(table, labels => labels.loadFailed(lazy.label(labels)))
+          reportFailure(table, {
+            label: lazy.label(labels),
+            target: process,
+            reason: labels.loadFailed(lazy.label(labels)),
+            retry: () => request(lazy, open, onFail),
+          })
         }
       },
     )
@@ -94,14 +107,14 @@ export const useLazyOpening = (table: unknown) => {
 
   useEffect(() => () => stop.current?.(), [])
 
-  return { request, cancel, pending, failure }
+  return { request, cancel, pending, failed }
 }
 
 /** Состояние ленивого открытия для элемента, который его запускает. */
 export interface LazyTriggerState {
   pending: boolean
-  /** Текст отметки отказа загрузки модуля. */
-  failure?: string
+  /** Загрузка модуля отказала: дуга останавливается. */
+  failed?: boolean
   /** Наведение или фокус: пора грузить модуль. */
   onIntent?: () => void
   /** Escape или уход фокуса: отменить ожидание. */
@@ -163,7 +176,9 @@ export const useLazyPopover = (
 
   const trigger = {
     pending: opening.pending,
-    failure: opening.failure,
+    failed: opening.failed,
+    // «Стоп» на кнопке-доме процесса (ADR 0177, §2).
+    onCancel: opening.cancel,
     'aria-expanded': open,
     onClick: (event?: unknown) => onOpenChange(true, event),
     ...lazyTriggerHandlers({

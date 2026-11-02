@@ -24,7 +24,7 @@ const kebab = () =>
 const failed = () => failureShownOn(kebab())
 
 describe('Кебаб заголовка — ошибка загрузки', () => {
-  test('LZ22: ошибка загрузки модуля кебаба — меню не открывается, отметка отказа, объявление с подписью headerMenu; следующий клик снова отвечает', async () => {
+  test('LZ22: ошибка загрузки модуля кебаба — меню не открывается, объявление с подписью headerMenu, отметки на кебабе нет; следующий клик снова отвечает', async () => {
     await failModule(MODULE.kebab)
     renderGrid({
       columnCount: 4,
@@ -38,10 +38,10 @@ describe('Кебаб заголовка — ошибка загрузки', () =
 
     await userEvent.hover(head())
     await humanClick(kebab())
-    await expect.poll(failed).toBe(true)
     await expect
       .poll(() => announcements.messages)
       .toContain(tableLabels.loadFailed(tableLabels.headerMenu))
+    expect(failed()).toBe(false)
     await sleep(100)
     expect(document.querySelector('[role="menu"]')).toBeNull()
 
@@ -51,7 +51,7 @@ describe('Кебаб заголовка — ошибка загрузки', () =
     await expect
       .poll(() => announcements.messages.length)
       .toBeGreaterThan(before)
-    await expect.poll(failed).toBe(true)
+    expect(failed()).toBe(false)
     announcements.stop()
   })
 })

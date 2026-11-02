@@ -39,6 +39,7 @@ export const LABEL_PARAMS = {
   announceMenuSection: ['section'],
   editCellValue: ['column'],
   announceSaveFailed: ['column', 'error'],
+  announceStillSaving: ['name'],
   announceExpandFailed: ['error'],
   announceMoveFailed: ['error'],
   announceColumnMoveFailed: ['error'],

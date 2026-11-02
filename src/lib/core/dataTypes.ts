@@ -40,12 +40,14 @@ export interface DataTypeFields<TData = any> {
   format?: DataTypeFormat
   /** Текст значения; главнее `format` (DT7). */
   formatValue?: (value: unknown, row: TData) => string
-  /** Выравнивание в ячейке и заголовке; у `number` по умолчанию — `end` (DT9). */
+  /** Выравнивание в ячейке и заголовке; по умолчанию — к началу (DT9). */
   align?: DataTypeAlign
   /** Свой разбор текста редактора (ADR 0139). */
   parseValue?: (text: string, row: TData) => unknown
   /** Значение ячейки своего формата → дата: вид, сортировка, фильтр и выгрузка (DT10, DT13). */
   parseDate?: (value: unknown) => DateCellValue
+  /** Дата → значение ячейки своего формата: так пишет редактор даты (ADR 0175, ED15). */
+  formatDate?: (date: Date) => unknown
   /** Справочник: варианты фильтра по строке поиска (DT13). */
   loadOptions?: LoadOptions
   /** Ключ записи `object`: равенство, фильтр и группировка; по умолчанию — поле `id` (TY1). */
@@ -80,6 +82,7 @@ const FIELDS = [
   'align',
   'parseValue',
   'parseDate',
+  'formatDate',
   'loadOptions',
   'getKey',
   'getLabel',

@@ -51,6 +51,7 @@ import {
   enableAnnouncementsType,
   enableBackToTopType,
   enableCellEditingType,
+  cellEditingSearchDebounceMsType,
   enableCellErrorsType,
   enableCellSelectionModelType,
   enableCellSelectionType,
@@ -299,6 +300,9 @@ export const dataGridArgTypes = {
   ),
   ...inCategory('Ячейки и клавиатура', {
     enableCellEditing: enableCellEditingType,
+    ...when('enableCellEditing', {
+      cellEditingSearchDebounceMs: cellEditingSearchDebounceMsType,
+    }),
     enableCellErrors: enableCellErrorsType,
     enableCellSelectionModel: enableCellSelectionModelType,
     enableCellSelection: enableCellSelectionType,

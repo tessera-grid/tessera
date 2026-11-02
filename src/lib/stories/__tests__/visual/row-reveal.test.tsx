@@ -12,7 +12,7 @@ import { waitForGrid } from './core-helpers'
 
 const COLUMN = 'age'
 
-/** Своя скрытая кнопка ячейки: в строке 1 включена, во 2 ждёт, в 3 — с отметкой отказа. */
+/** Своя скрытая кнопка ячейки: в строке 1 включена, во 2 ждёт. */
 const markSeed: TesseraFeatureEntry = {
   id: 'revealMarks',
   slots: [
@@ -32,7 +32,6 @@ const markSeed: TesseraFeatureEntry = {
             icon={<svg data-mark-icon="" width={16} height={16} />}
             active={row.index === 1 || undefined}
             pending={row.index === 2}
-            failure={row.index === 3 ? 'Refused' : undefined}
           />
         ) : null,
     },
@@ -69,13 +68,13 @@ const mount = async (keyboard: boolean) => {
 }
 
 describe('Значки скрытых кнопок по месту показа (ADR 0149)', () => {
-  test('PS4: значок скрытой кнопки ячейки и строки монтируется только у строки под указателем, с фокусом внутри, тронутой пальцем или с открытым меню своей кнопки, а у включённой, ждущей и упавшей кнопки — всегда; узел кнопки и её имя — у каждой строки', async () => {
+  test('PS4: значок скрытой кнопки ячейки и строки монтируется только у строки под указателем, с фокусом внутри, тронутой пальцем или с открытым меню своей кнопки, а у включённой и ждущей кнопки — всегда; узел кнопки и её имя — у каждой строки', async () => {
     await mount(false)
     const rows = document.querySelectorAll('.data-grid__body-row').length
     expect(document.querySelectorAll('[aria-label^="Mark"]').length).toBe(rows)
-    await expect.poll(() => [4, 5, 6, 7, 8].some(iconShown)).toBe(false)
+    await expect.poll(() => [3, 4, 5, 6, 7, 8].some(iconShown)).toBe(false)
     // Своё состояние кнопки видно без наведения — значок при нём есть.
-    expect([1, 2, 3].map(iconShown)).toEqual([true, true, true])
+    expect([1, 2].map(iconShown)).toEqual([true, true])
 
     await userEvent.hover(cellAt(5, 'firstName'))
     await expect.poll(() => iconShown(5)).toBe(true)

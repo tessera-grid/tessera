@@ -21,7 +21,7 @@ import {
   preloadActionPanel,
   type SlotAction,
 } from '../../core/headerActions'
-import { ErrorDot, kebabActive } from './ErrorDot'
+import { kebabActive } from './kebabActive'
 import type { ActionMenuProps } from './ActionMenu'
 import type { ActionInlineMenuProps } from './ActionInlineMenu'
 import type { ActionPanelProps } from './ActionPanel'
@@ -54,7 +54,7 @@ const loadingOf = (
   popover: ReturnType<typeof useLazyPopover>,
 ): PanelButtonState => ({
   pending: popover.trigger.pending,
-  failure: popover.trigger.failure,
+  failed: popover.trigger.failed,
   onIntent: () => {},
   onCancel: popover.opening.cancel,
 })
@@ -91,15 +91,13 @@ const KebabPlaceholder = ({
       onClick={onOpen}
       onPointerLeave={kebab.leave}
       active={active}
-      indicator={!kebab.failed}
       {...panelButtonProps(loading)}
     >
       <MenuIcon width={16} height={16} />
-      <ErrorDot shown={kebab.failed} />
     </IconButton>
   )
 
-  const shown = open || loading.pending || activeCount > 0 || kebab.failed
+  const shown = open || loading.pending || activeCount > 0 || kebab.running
   return variant === 'row' ? (
     <div className={clsx('row__button', !shown && 'row__button--hidden')}>
       <HiddenButtonContext.Provider value={!shown}>
@@ -208,8 +206,8 @@ export const ActionMenu = ({
     menu.onOpenChange,
   )
   const loading: PanelButtonState = {
-    pending: menu.trigger.pending || kebab.running,
-    failure: menu.trigger.failure,
+    pending: menu.trigger.pending,
+    failed: menu.trigger.failed,
     onIntent: kebab.intent,
     onCancel: () => {
       menu.opening.cancel()
@@ -305,7 +303,7 @@ export const ActionPanel = ({
   }
   const loading: PanelButtonState = {
     pending: opening.pending,
-    failure: opening.failure,
+    failed: opening.failed,
     onIntent: () => preloadActionPanel(action, context),
     onCancel: opening.cancel,
   }

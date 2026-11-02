@@ -3,6 +3,7 @@ import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import { type TwinSource, forced } from './__mocks__/catalog'
 import { forcedStep } from './__mocks__/catalogPlay'
+import * as cellsActionStatusStories from './DataGrid.Cells.ActionStatus.stories'
 import * as cellsSelectionStories from './DataGrid.Cells.Selection.stories'
 import * as columnsSortingStories from './DataGrid.Columns.Sorting.stories'
 import * as coreFooterStories from './DataGrid.Core.Footer.stories'
@@ -35,13 +36,22 @@ import * as rowsSelectionStories from './DataGrid.Rows.Selection.stories'
 import * as rowsTreeDataStories from './DataGrid.Rows.TreeData.stories'
 import * as cellsContextMenuStories from './DataGrid.Cells.ContextMenu.stories'
 import * as cellsEditingStories from './DataGrid.Cells.Editing.stories'
+import * as columnsDataTypesStories from './DataGrid.Columns.DataTypes.stories'
+import * as columnsDataTypesBooleanStories from './DataGrid.Columns.DataTypes.Boolean.stories'
+import * as columnsDataTypesDateStories from './DataGrid.Columns.DataTypes.Date.stories'
+import * as columnsDataTypesDateTimeStories from './DataGrid.Columns.DataTypes.DateTime.stories'
+import * as columnsDataTypesDecimalStringStories from './DataGrid.Columns.DataTypes.DecimalString.stories'
+import * as columnsDataTypesMultiSelectStories from './DataGrid.Columns.DataTypes.MultiSelect.stories'
+import * as columnsDataTypesNumberStories from './DataGrid.Columns.DataTypes.Number.stories'
+import * as columnsDataTypesObjectStories from './DataGrid.Columns.DataTypes.Object.stories'
+import * as columnsDataTypesSelectStories from './DataGrid.Columns.DataTypes.Select.stories'
+import * as columnsDataTypesTextStories from './DataGrid.Columns.DataTypes.Text.stories'
 import * as cellsErrorsStories from './DataGrid.Cells.Errors.stories'
 import * as cellsKeyboardStories from './DataGrid.Cells.Keyboard.stories'
 import columnsHeaderGroupsMeta, {
   HeaderGroupsPlayground,
 } from './DataGrid.Columns.HeaderGroups.stories'
 import * as columnsHeaderGroupsStories from './DataGrid.Columns.HeaderGroups.stories'
-import * as columnsDataTypesStories from './DataGrid.Columns.DataTypes.stories'
 import * as columnsHeaderMenuStories from './DataGrid.Columns.HeaderMenu.stories'
 import * as columnsPinningStories from './DataGrid.Columns.Pinning.stories'
 import * as columnsVisibilityStories from './DataGrid.Columns.Visibility.stories'
@@ -4171,174 +4181,6 @@ export const HighContrastEditingConflictStep2 = {
   tags: ['!test'],
 }
 
-export const HighContrastEditingNumberStep1 = {
-  ...twinStep(cellsEditingStories, cellsEditingStories.EditingNumber, 1),
-  name: 'Cells/Editing — Edit a number, шаг 1',
-  tags: ['!test'],
-}
-
-export const HighContrastEditingNumberStep2 = {
-  ...twinStep(cellsEditingStories, cellsEditingStories.EditingNumber, 2),
-  name: 'Cells/Editing — Edit a number, шаг 2',
-  tags: ['!test'],
-}
-
-export const HighContrastEditingNumberStep3 = {
-  ...twinStep(cellsEditingStories, cellsEditingStories.EditingNumber, 3),
-  name: 'Cells/Editing — Edit a number, шаг 3',
-  tags: ['!test'],
-}
-
-export const HighContrastEditingNumberStep4 = {
-  ...twinStep(cellsEditingStories, cellsEditingStories.EditingNumber, 4),
-  name: 'Cells/Editing — Edit a number, шаг 4',
-  tags: ['!test'],
-}
-
-export const HighContrastEditingBooleanStep1 = {
-  ...twinStep(cellsEditingStories, cellsEditingStories.EditingBoolean, 1),
-  name: 'Cells/Editing — Toggle a boolean, шаг 1',
-  tags: ['!test'],
-}
-
-export const HighContrastEditingBooleanStep2 = {
-  ...twinStep(cellsEditingStories, cellsEditingStories.EditingBoolean, 2),
-  name: 'Cells/Editing — Toggle a boolean, шаг 2',
-  tags: ['!test'],
-}
-
-export const HighContrastEditingBooleanStep3 = {
-  ...twinStep(cellsEditingStories, cellsEditingStories.EditingBoolean, 3),
-  name: 'Cells/Editing — Toggle a boolean, шаг 3',
-  tags: ['!test'],
-}
-
-export const HighContrastEditingTypeEditorStep1 = {
-  ...twinStep(cellsEditingStories, cellsEditingStories.EditingTypeEditor, 1),
-  name: 'Cells/Editing — Editor of a data type, шаг 1',
-  tags: ['!test'],
-}
-
-export const HighContrastEditingTypeEditorStep2 = {
-  ...twinStep(cellsEditingStories, cellsEditingStories.EditingTypeEditor, 2),
-  name: 'Cells/Editing — Editor of a data type, шаг 2',
-  tags: ['!test'],
-}
-
-export const HighContrastEditingTypeEditorStep3 = {
-  ...twinStep(cellsEditingStories, cellsEditingStories.EditingTypeEditor, 3),
-  name: 'Cells/Editing — Editor of a data type, шаг 3',
-  tags: ['!test'],
-}
-
-export const HighContrastEditingDateStep1 = {
-  ...twinStep(cellsEditingStories, cellsEditingStories.EditingDate, 1),
-  name: 'Cells/Editing — Edit a date, шаг 1',
-  tags: ['!test'],
-}
-
-export const HighContrastEditingDateStep2 = {
-  ...twinStep(cellsEditingStories, cellsEditingStories.EditingDate, 2),
-  name: 'Cells/Editing — Edit a date, шаг 2',
-  tags: ['!test'],
-}
-
-export const HighContrastEditingDateStep3 = {
-  ...twinStep(cellsEditingStories, cellsEditingStories.EditingDate, 3),
-  name: 'Cells/Editing — Edit a date, шаг 3',
-  tags: ['!test'],
-}
-
-export const HighContrastEditingDateStep4 = {
-  ...twinStep(cellsEditingStories, cellsEditingStories.EditingDate, 4),
-  name: 'Cells/Editing — Edit a date, шаг 4',
-  tags: ['!test'],
-}
-
-export const HighContrastEditingDateStep5 = {
-  ...twinStep(cellsEditingStories, cellsEditingStories.EditingDate, 5),
-  name: 'Cells/Editing — Edit a date, шаг 5',
-  tags: ['!test'],
-}
-
-export const HighContrastEditingSelectStep1 = {
-  ...twinStep(cellsEditingStories, cellsEditingStories.EditingSelect, 1),
-  name: 'Cells/Editing — Choose an option, шаг 1',
-  tags: ['!test'],
-}
-
-export const HighContrastEditingSelectStep2 = {
-  ...twinStep(cellsEditingStories, cellsEditingStories.EditingSelect, 2),
-  name: 'Cells/Editing — Choose an option, шаг 2',
-  tags: ['!test'],
-}
-
-export const HighContrastEditingSelectStep3 = {
-  ...twinStep(cellsEditingStories, cellsEditingStories.EditingSelect, 3),
-  name: 'Cells/Editing — Choose an option, шаг 3',
-  tags: ['!test'],
-}
-
-export const HighContrastEditingSelectStep4 = {
-  ...twinStep(cellsEditingStories, cellsEditingStories.EditingSelect, 4),
-  name: 'Cells/Editing — Choose an option, шаг 4',
-  tags: ['!test'],
-}
-
-export const HighContrastEditingLookupStep1 = {
-  ...twinStep(cellsEditingStories, cellsEditingStories.EditingLookup, 1),
-  name: 'Cells/Editing — Choose from a directory, шаг 1',
-  tags: ['!test'],
-}
-
-export const HighContrastEditingLookupStep2 = {
-  ...twinStep(cellsEditingStories, cellsEditingStories.EditingLookup, 2),
-  name: 'Cells/Editing — Choose from a directory, шаг 2',
-  tags: ['!test'],
-}
-
-export const HighContrastEditingLookupStep3 = {
-  ...twinStep(cellsEditingStories, cellsEditingStories.EditingLookup, 3),
-  name: 'Cells/Editing — Choose from a directory, шаг 3',
-  tags: ['!test'],
-}
-
-export const HighContrastEditingLookupStep4 = {
-  ...twinStep(cellsEditingStories, cellsEditingStories.EditingLookup, 4),
-  name: 'Cells/Editing — Choose from a directory, шаг 4',
-  tags: ['!test'],
-}
-
-export const HighContrastEditingLookupStep5 = {
-  ...twinStep(cellsEditingStories, cellsEditingStories.EditingLookup, 5),
-  name: 'Cells/Editing — Choose from a directory, шаг 5',
-  tags: ['!test'],
-}
-
-export const HighContrastEditingMultiSelectStep1 = {
-  ...twinStep(cellsEditingStories, cellsEditingStories.EditingMultiSelect, 1),
-  name: 'Cells/Editing — Choose several options, шаг 1',
-  tags: ['!test'],
-}
-
-export const HighContrastEditingMultiSelectStep2 = {
-  ...twinStep(cellsEditingStories, cellsEditingStories.EditingMultiSelect, 2),
-  name: 'Cells/Editing — Choose several options, шаг 2',
-  tags: ['!test'],
-}
-
-export const HighContrastEditingMultiSelectStep3 = {
-  ...twinStep(cellsEditingStories, cellsEditingStories.EditingMultiSelect, 3),
-  name: 'Cells/Editing — Choose several options, шаг 3',
-  tags: ['!test'],
-}
-
-export const HighContrastEditingMultiSelectStep4 = {
-  ...twinStep(cellsEditingStories, cellsEditingStories.EditingMultiSelect, 4),
-  name: 'Cells/Editing — Choose several options, шаг 4',
-  tags: ['!test'],
-}
-
 export const HighContrastCellSelectionRangeStep1 = {
   ...twinStep(
     cellsSelectionStories,
@@ -4628,6 +4470,60 @@ export const HighContrastCellErrorsRefusalStep2 = {
 export const HighContrastCellErrorsRefusalStep3 = {
   ...twinStep(cellsErrorsStories, cellsErrorsStories.CellErrorsRefusal, 3),
   name: 'Cells/Errors — Refusal and data error, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastCellFailureRetryStep1 = {
+  ...twinStep(cellsErrorsStories, cellsErrorsStories.CellFailureRetry, 1),
+  name: 'Cells/Errors — Refused edit and retry, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastCellFailureRetryStep2 = {
+  ...twinStep(cellsErrorsStories, cellsErrorsStories.CellFailureRetry, 2),
+  name: 'Cells/Errors — Refused edit and retry, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastCellFailureRetryStep3 = {
+  ...twinStep(cellsErrorsStories, cellsErrorsStories.CellFailureRetry, 3),
+  name: 'Cells/Errors — Refused edit and retry, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastCellFailureRetryStep4 = {
+  ...twinStep(cellsErrorsStories, cellsErrorsStories.CellFailureRetry, 4),
+  name: 'Cells/Errors — Refused edit and retry, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastCellFailureRetryStep5 = {
+  ...twinStep(cellsErrorsStories, cellsErrorsStories.CellFailureRetry, 5),
+  name: 'Cells/Errors — Refused edit and retry, шаг 5',
+  tags: ['!test'],
+}
+
+export const HighContrastCellFailureDiscardStep1 = {
+  ...twinStep(cellsErrorsStories, cellsErrorsStories.CellFailureDiscard, 1),
+  name: 'Cells/Errors — Refused checkbox, discard, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastCellFailureDiscardStep2 = {
+  ...twinStep(cellsErrorsStories, cellsErrorsStories.CellFailureDiscard, 2),
+  name: 'Cells/Errors — Refused checkbox, discard, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastCellFailureDiscardStep3 = {
+  ...twinStep(cellsErrorsStories, cellsErrorsStories.CellFailureDiscard, 3),
+  name: 'Cells/Errors — Refused checkbox, discard, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastCellFailureDiscardStep4 = {
+  ...twinStep(cellsErrorsStories, cellsErrorsStories.CellFailureDiscard, 4),
+  name: 'Cells/Errors — Refused checkbox, discard, шаг 4',
   tags: ['!test'],
 }
 
@@ -5163,13 +5059,243 @@ export const HighContrastContextMenuWholeTableStep4 = {
   tags: ['!test'],
 }
 
+export const HighContrastActionStatusCheckboxStep1 = {
+  ...twinStep(
+    cellsActionStatusStories,
+    cellsActionStatusStories.ActionStatusCheckbox,
+    1,
+  ),
+  name: 'Cells/Action status — Checkbox in a cell, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastActionStatusCheckboxStep2 = {
+  ...twinStep(
+    cellsActionStatusStories,
+    cellsActionStatusStories.ActionStatusCheckbox,
+    2,
+  ),
+  name: 'Cells/Action status — Checkbox in a cell, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastActionStatusCheckboxStep3 = {
+  ...twinStep(
+    cellsActionStatusStories,
+    cellsActionStatusStories.ActionStatusCheckbox,
+    3,
+  ),
+  name: 'Cells/Action status — Checkbox in a cell, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastActionStatusSwitchStep1 = {
+  ...twinStep(
+    cellsActionStatusStories,
+    cellsActionStatusStories.ActionStatusSwitch,
+    1,
+  ),
+  name: 'Cells/Action status — Switch refused by the server, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastActionStatusSwitchStep2 = {
+  ...twinStep(
+    cellsActionStatusStories,
+    cellsActionStatusStories.ActionStatusSwitch,
+    2,
+  ),
+  name: 'Cells/Action status — Switch refused by the server, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastActionStatusSwitchStep3 = {
+  ...twinStep(
+    cellsActionStatusStories,
+    cellsActionStatusStories.ActionStatusSwitch,
+    3,
+  ),
+  name: 'Cells/Action status — Switch refused by the server, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastActionStatusSwitchStep4 = {
+  ...twinStep(
+    cellsActionStatusStories,
+    cellsActionStatusStories.ActionStatusSwitch,
+    4,
+  ),
+  name: 'Cells/Action status — Switch refused by the server, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastActionStatusDoubleClickStep1 = {
+  ...twinStep(
+    cellsActionStatusStories,
+    cellsActionStatusStories.ActionStatusDoubleClick,
+    1,
+  ),
+  name: 'Cells/Action status — Double-click without a control, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastActionStatusDoubleClickStep2 = {
+  ...twinStep(
+    cellsActionStatusStories,
+    cellsActionStatusStories.ActionStatusDoubleClick,
+    2,
+  ),
+  name: 'Cells/Action status — Double-click without a control, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastActionStatusDoubleClickStep3 = {
+  ...twinStep(
+    cellsActionStatusStories,
+    cellsActionStatusStories.ActionStatusDoubleClick,
+    3,
+  ),
+  name: 'Cells/Action status — Double-click without a control, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastBusyObjectIgnoredStep1 = {
+  ...twinStep(
+    cellsActionStatusStories,
+    cellsActionStatusStories.BusyObjectIgnored,
+    1,
+  ),
+  name: 'Cells/Action status — Change while saving, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastBusyObjectIgnoredStep2 = {
+  ...twinStep(
+    cellsActionStatusStories,
+    cellsActionStatusStories.BusyObjectIgnored,
+    2,
+  ),
+  name: 'Cells/Action status — Change while saving, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastBusyObjectIgnoredStep3 = {
+  ...twinStep(
+    cellsActionStatusStories,
+    cellsActionStatusStories.BusyObjectIgnored,
+    3,
+  ),
+  name: 'Cells/Action status — Change while saving, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastBusyObjectIgnoredStep4 = {
+  ...twinStep(
+    cellsActionStatusStories,
+    cellsActionStatusStories.BusyObjectIgnored,
+    4,
+  ),
+  name: 'Cells/Action status — Change while saving, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastBusyObjectIgnoredStep5 = {
+  ...twinStep(
+    cellsActionStatusStories,
+    cellsActionStatusStories.BusyObjectIgnored,
+    5,
+  ),
+  name: 'Cells/Action status — Change while saving, шаг 5',
+  tags: ['!test'],
+}
+
+export const HighContrastActionStatusRetryStep1 = {
+  ...twinStep(
+    cellsActionStatusStories,
+    cellsActionStatusStories.ActionStatusRetry,
+    1,
+  ),
+  name: 'Cells/Action status — Retry from the mark, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastActionStatusRetryStep2 = {
+  ...twinStep(
+    cellsActionStatusStories,
+    cellsActionStatusStories.ActionStatusRetry,
+    2,
+  ),
+  name: 'Cells/Action status — Retry from the mark, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastActionStatusRetryStep3 = {
+  ...twinStep(
+    cellsActionStatusStories,
+    cellsActionStatusStories.ActionStatusRetry,
+    3,
+  ),
+  name: 'Cells/Action status — Retry from the mark, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastActionStatusRetryStep4 = {
+  ...twinStep(
+    cellsActionStatusStories,
+    cellsActionStatusStories.ActionStatusRetry,
+    4,
+  ),
+  name: 'Cells/Action status — Retry from the mark, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastCellSaveCancelMenuStep1 = {
+  ...twinStep(
+    cellsActionStatusStories,
+    cellsActionStatusStories.CellSaveCancelMenu,
+    1,
+  ),
+  name: 'Cells/Action status — Cancel saving from the menu, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastCellSaveCancelMenuStep2 = {
+  ...twinStep(
+    cellsActionStatusStories,
+    cellsActionStatusStories.CellSaveCancelMenu,
+    2,
+  ),
+  name: 'Cells/Action status — Cancel saving from the menu, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastCellSaveCancelMenuStep3 = {
+  ...twinStep(
+    cellsActionStatusStories,
+    cellsActionStatusStories.CellSaveCancelMenu,
+    3,
+  ),
+  name: 'Cells/Action status — Cancel saving from the menu, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastCellSaveCancelMenuStep4 = {
+  ...twinStep(
+    cellsActionStatusStories,
+    cellsActionStatusStories.CellSaveCancelMenu,
+    4,
+  ),
+  name: 'Cells/Action status — Cancel saving from the menu, шаг 4',
+  tags: ['!test'],
+}
+
 export const HighContrastDataTypesCustomTypeStep1 = {
   ...twinStep(
     columnsDataTypesStories,
     columnsDataTypesStories.DataTypesCustomType,
     1,
   ),
-  name: 'Columns/Data types — Custom type, шаг 1',
+  name: 'Columns/Data types/Overview — Custom type, шаг 1',
   tags: ['!test'],
 }
 
@@ -5179,7 +5305,7 @@ export const HighContrastDataTypesCustomTypeStep2 = {
     columnsDataTypesStories.DataTypesCustomType,
     2,
   ),
-  name: 'Columns/Data types — Custom type, шаг 2',
+  name: 'Columns/Data types/Overview — Custom type, шаг 2',
   tags: ['!test'],
 }
 
@@ -5189,7 +5315,7 @@ export const HighContrastDataTypesOverrideBuiltInStep1 = {
     columnsDataTypesStories.DataTypesOverrideBuiltIn,
     1,
   ),
-  name: 'Columns/Data types — Override built-in type, шаг 1',
+  name: 'Columns/Data types/Overview — Override built-in type, шаг 1',
   tags: ['!test'],
 }
 
@@ -5199,127 +5325,7 @@ export const HighContrastDataTypesOverrideBuiltInStep2 = {
     columnsDataTypesStories.DataTypesOverrideBuiltIn,
     2,
   ),
-  name: 'Columns/Data types — Override built-in type, шаг 2',
-  tags: ['!test'],
-}
-
-export const HighContrastDataTypesSortStep1 = {
-  ...twinStep(
-    columnsDataTypesStories,
-    columnsDataTypesStories.DataTypesSort,
-    1,
-  ),
-  name: 'Columns/Data types — Sort by type, шаг 1',
-  tags: ['!test'],
-}
-
-export const HighContrastDataTypesSortStep2 = {
-  ...twinStep(
-    columnsDataTypesStories,
-    columnsDataTypesStories.DataTypesSort,
-    2,
-  ),
-  name: 'Columns/Data types — Sort by type, шаг 2',
-  tags: ['!test'],
-}
-
-export const HighContrastDataTypesSortStep3 = {
-  ...twinStep(
-    columnsDataTypesStories,
-    columnsDataTypesStories.DataTypesSort,
-    3,
-  ),
-  name: 'Columns/Data types — Sort by type, шаг 3',
-  tags: ['!test'],
-}
-
-export const HighContrastDataTypesSortStep4 = {
-  ...twinStep(
-    columnsDataTypesStories,
-    columnsDataTypesStories.DataTypesSort,
-    4,
-  ),
-  name: 'Columns/Data types — Sort by type, шаг 4',
-  tags: ['!test'],
-}
-
-export const HighContrastDataTypesSortStep5 = {
-  ...twinStep(
-    columnsDataTypesStories,
-    columnsDataTypesStories.DataTypesSort,
-    5,
-  ),
-  name: 'Columns/Data types — Sort by type, шаг 5',
-  tags: ['!test'],
-}
-
-export const HighContrastDataTypesFilterStep1 = {
-  ...twinStep(
-    columnsDataTypesStories,
-    columnsDataTypesStories.DataTypesFilter,
-    1,
-  ),
-  name: 'Columns/Data types — Filter by type, шаг 1',
-  tags: ['!test'],
-}
-
-export const HighContrastDataTypesFilterStep2 = {
-  ...twinStep(
-    columnsDataTypesStories,
-    columnsDataTypesStories.DataTypesFilter,
-    2,
-  ),
-  name: 'Columns/Data types — Filter by type, шаг 2',
-  tags: ['!test'],
-}
-
-export const HighContrastDataTypesFilterStep3 = {
-  ...twinStep(
-    columnsDataTypesStories,
-    columnsDataTypesStories.DataTypesFilter,
-    3,
-  ),
-  name: 'Columns/Data types — Filter by type, шаг 3',
-  tags: ['!test'],
-}
-
-export const HighContrastDataTypesFilterStep4 = {
-  ...twinStep(
-    columnsDataTypesStories,
-    columnsDataTypesStories.DataTypesFilter,
-    4,
-  ),
-  name: 'Columns/Data types — Filter by type, шаг 4',
-  tags: ['!test'],
-}
-
-export const HighContrastDataTypesExportXlsxStep1 = {
-  ...twinStep(
-    columnsDataTypesStories,
-    columnsDataTypesStories.DataTypesExportXlsx,
-    1,
-  ),
-  name: 'Columns/Data types — Export to Excel, шаг 1',
-  tags: ['!test'],
-}
-
-export const HighContrastDataTypesExportXlsxStep2 = {
-  ...twinStep(
-    columnsDataTypesStories,
-    columnsDataTypesStories.DataTypesExportXlsx,
-    2,
-  ),
-  name: 'Columns/Data types — Export to Excel, шаг 2',
-  tags: ['!test'],
-}
-
-export const HighContrastDataTypesExportXlsxStep3 = {
-  ...twinStep(
-    columnsDataTypesStories,
-    columnsDataTypesStories.DataTypesExportXlsx,
-    3,
-  ),
-  name: 'Columns/Data types — Export to Excel, шаг 3',
+  name: 'Columns/Data types/Overview — Override built-in type, шаг 2',
   tags: ['!test'],
 }
 
@@ -5329,7 +5335,7 @@ export const HighContrastDataTypesLocaleStep1 = {
     columnsDataTypesStories.DataTypesLocale,
     1,
   ),
-  name: 'Columns/Data types — Switch language, шаг 1',
+  name: 'Columns/Data types/Overview — Switch language, шаг 1',
   tags: ['!test'],
 }
 
@@ -5339,7 +5345,7 @@ export const HighContrastDataTypesLocaleStep2 = {
     columnsDataTypesStories.DataTypesLocale,
     2,
   ),
-  name: 'Columns/Data types — Switch language, шаг 2',
+  name: 'Columns/Data types/Overview — Switch language, шаг 2',
   tags: ['!test'],
 }
 
@@ -5349,37 +5355,7 @@ export const HighContrastDataTypesLocaleStep3 = {
     columnsDataTypesStories.DataTypesLocale,
     3,
   ),
-  name: 'Columns/Data types — Switch language, шаг 3',
-  tags: ['!test'],
-}
-
-export const HighContrastDataTypesEditNumberStep1 = {
-  ...twinStep(
-    columnsDataTypesStories,
-    columnsDataTypesStories.DataTypesEditNumber,
-    1,
-  ),
-  name: 'Columns/Data types — Edit a number, шаг 1',
-  tags: ['!test'],
-}
-
-export const HighContrastDataTypesEditNumberStep2 = {
-  ...twinStep(
-    columnsDataTypesStories,
-    columnsDataTypesStories.DataTypesEditNumber,
-    2,
-  ),
-  name: 'Columns/Data types — Edit a number, шаг 2',
-  tags: ['!test'],
-}
-
-export const HighContrastDataTypesEditNumberStep3 = {
-  ...twinStep(
-    columnsDataTypesStories,
-    columnsDataTypesStories.DataTypesEditNumber,
-    3,
-  ),
-  name: 'Columns/Data types — Edit a number, шаг 3',
+  name: 'Columns/Data types/Overview — Switch language, шаг 3',
   tags: ['!test'],
 }
 
@@ -5389,7 +5365,7 @@ export const HighContrastDataTypesSearchStep1 = {
     columnsDataTypesStories.DataTypesSearch,
     1,
   ),
-  name: 'Columns/Data types — Search shown text, шаг 1',
+  name: 'Columns/Data types/Overview — Search shown text, шаг 1',
   tags: ['!test'],
 }
 
@@ -5399,7 +5375,7 @@ export const HighContrastDataTypesSearchStep2 = {
     columnsDataTypesStories.DataTypesSearch,
     2,
   ),
-  name: 'Columns/Data types — Search shown text, шаг 2',
+  name: 'Columns/Data types/Overview — Search shown text, шаг 2',
   tags: ['!test'],
 }
 
@@ -5409,116 +5385,976 @@ export const HighContrastDataTypesSearchStep3 = {
     columnsDataTypesStories.DataTypesSearch,
     3,
   ),
-  name: 'Columns/Data types — Search shown text, шаг 3',
+  name: 'Columns/Data types/Overview — Search shown text, шаг 3',
   tags: ['!test'],
 }
 
-export const HighContrastDataTypesObjectStep1 = {
+export const HighContrastEditingTypeEditorStep1 = {
   ...twinStep(
     columnsDataTypesStories,
-    columnsDataTypesStories.DataTypesObject,
+    columnsDataTypesStories.EditingTypeEditor,
     1,
   ),
-  name: 'Columns/Data types — Object records, шаг 1',
+  name: 'Columns/Data types/Overview — Editor of a data type, шаг 1',
   tags: ['!test'],
 }
 
-export const HighContrastDataTypesObjectStep2 = {
+export const HighContrastEditingTypeEditorStep2 = {
   ...twinStep(
     columnsDataTypesStories,
-    columnsDataTypesStories.DataTypesObject,
+    columnsDataTypesStories.EditingTypeEditor,
     2,
   ),
-  name: 'Columns/Data types — Object records, шаг 2',
+  name: 'Columns/Data types/Overview — Editor of a data type, шаг 2',
   tags: ['!test'],
 }
 
-export const HighContrastDataTypesObjectStep3 = {
+export const HighContrastEditingTypeEditorStep3 = {
   ...twinStep(
     columnsDataTypesStories,
-    columnsDataTypesStories.DataTypesObject,
+    columnsDataTypesStories.EditingTypeEditor,
     3,
   ),
-  name: 'Columns/Data types — Object records, шаг 3',
+  name: 'Columns/Data types/Overview — Editor of a data type, шаг 3',
   tags: ['!test'],
 }
 
-export const HighContrastDataTypesObjectStep4 = {
+export const HighContrastEditingBooleanStep1 = {
   ...twinStep(
-    columnsDataTypesStories,
-    columnsDataTypesStories.DataTypesObject,
-    4,
-  ),
-  name: 'Columns/Data types — Object records, шаг 4',
-  tags: ['!test'],
-}
-
-export const HighContrastDataTypesObjectLabelStep1 = {
-  ...twinStep(
-    columnsDataTypesStories,
-    columnsDataTypesStories.DataTypesObjectLabel,
+    columnsDataTypesBooleanStories,
+    columnsDataTypesBooleanStories.EditingBoolean,
     1,
   ),
-  name: 'Columns/Data types — Object key and label, шаг 1',
+  name: 'Columns/Data types/Boolean — Toggle, шаг 1',
   tags: ['!test'],
 }
 
-export const HighContrastDataTypesObjectLabelStep2 = {
+export const HighContrastEditingBooleanStep2 = {
   ...twinStep(
-    columnsDataTypesStories,
-    columnsDataTypesStories.DataTypesObjectLabel,
+    columnsDataTypesBooleanStories,
+    columnsDataTypesBooleanStories.EditingBoolean,
     2,
   ),
-  name: 'Columns/Data types — Object key and label, шаг 2',
+  name: 'Columns/Data types/Boolean — Toggle, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingBooleanStep3 = {
+  ...twinStep(
+    columnsDataTypesBooleanStories,
+    columnsDataTypesBooleanStories.EditingBoolean,
+    3,
+  ),
+  name: 'Columns/Data types/Boolean — Toggle, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingBooleanKeyboardStep1 = {
+  ...twinStep(
+    columnsDataTypesBooleanStories,
+    columnsDataTypesBooleanStories.EditingBooleanKeyboard,
+    1,
+  ),
+  name: 'Columns/Data types/Boolean — Toggle and select with the keyboard, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingBooleanKeyboardStep2 = {
+  ...twinStep(
+    columnsDataTypesBooleanStories,
+    columnsDataTypesBooleanStories.EditingBooleanKeyboard,
+    2,
+  ),
+  name: 'Columns/Data types/Boolean — Toggle and select with the keyboard, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingBooleanKeyboardStep3 = {
+  ...twinStep(
+    columnsDataTypesBooleanStories,
+    columnsDataTypesBooleanStories.EditingBooleanKeyboard,
+    3,
+  ),
+  name: 'Columns/Data types/Boolean — Toggle and select with the keyboard, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesBooleanFilterStep1 = {
+  ...twinStep(
+    columnsDataTypesBooleanStories,
+    columnsDataTypesBooleanStories.DataTypesBooleanFilter,
+    1,
+  ),
+  name: 'Columns/Data types/Boolean — Filter, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesBooleanFilterStep2 = {
+  ...twinStep(
+    columnsDataTypesBooleanStories,
+    columnsDataTypesBooleanStories.DataTypesBooleanFilter,
+    2,
+  ),
+  name: 'Columns/Data types/Boolean — Filter, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesBooleanFilterStep3 = {
+  ...twinStep(
+    columnsDataTypesBooleanStories,
+    columnsDataTypesBooleanStories.DataTypesBooleanFilter,
+    3,
+  ),
+  name: 'Columns/Data types/Boolean — Filter, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesBooleanFilterStep4 = {
+  ...twinStep(
+    columnsDataTypesBooleanStories,
+    columnsDataTypesBooleanStories.DataTypesBooleanFilter,
+    4,
+  ),
+  name: 'Columns/Data types/Boolean — Filter, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesFilterStep1 = {
+  ...twinStep(
+    columnsDataTypesDateStories,
+    columnsDataTypesDateStories.DataTypesFilter,
+    1,
+  ),
+  name: 'Columns/Data types/Date — Filter, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesFilterStep2 = {
+  ...twinStep(
+    columnsDataTypesDateStories,
+    columnsDataTypesDateStories.DataTypesFilter,
+    2,
+  ),
+  name: 'Columns/Data types/Date — Filter, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesFilterStep3 = {
+  ...twinStep(
+    columnsDataTypesDateStories,
+    columnsDataTypesDateStories.DataTypesFilter,
+    3,
+  ),
+  name: 'Columns/Data types/Date — Filter, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesFilterStep4 = {
+  ...twinStep(
+    columnsDataTypesDateStories,
+    columnsDataTypesDateStories.DataTypesFilter,
+    4,
+  ),
+  name: 'Columns/Data types/Date — Filter, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingDateStep1 = {
+  ...twinStep(
+    columnsDataTypesDateStories,
+    columnsDataTypesDateStories.EditingDate,
+    1,
+  ),
+  name: 'Columns/Data types/Date — Edit, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingDateStep2 = {
+  ...twinStep(
+    columnsDataTypesDateStories,
+    columnsDataTypesDateStories.EditingDate,
+    2,
+  ),
+  name: 'Columns/Data types/Date — Edit, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingDateStep3 = {
+  ...twinStep(
+    columnsDataTypesDateStories,
+    columnsDataTypesDateStories.EditingDate,
+    3,
+  ),
+  name: 'Columns/Data types/Date — Edit, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingDateClearStep1 = {
+  ...twinStep(
+    columnsDataTypesDateStories,
+    columnsDataTypesDateStories.EditingDateClear,
+    1,
+  ),
+  name: 'Columns/Data types/Date — Clear, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingDateClearStep2 = {
+  ...twinStep(
+    columnsDataTypesDateStories,
+    columnsDataTypesDateStories.EditingDateClear,
+    2,
+  ),
+  name: 'Columns/Data types/Date — Clear, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingDateClearStep3 = {
+  ...twinStep(
+    columnsDataTypesDateStories,
+    columnsDataTypesDateStories.EditingDateClear,
+    3,
+  ),
+  name: 'Columns/Data types/Date — Clear, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesDateSortStep1 = {
+  ...twinStep(
+    columnsDataTypesDateStories,
+    columnsDataTypesDateStories.DataTypesDateSort,
+    1,
+  ),
+  name: 'Columns/Data types/Date — Sort, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesDateSortStep2 = {
+  ...twinStep(
+    columnsDataTypesDateStories,
+    columnsDataTypesDateStories.DataTypesDateSort,
+    2,
+  ),
+  name: 'Columns/Data types/Date — Sort, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesDateSortStep3 = {
+  ...twinStep(
+    columnsDataTypesDateStories,
+    columnsDataTypesDateStories.DataTypesDateSort,
+    3,
+  ),
+  name: 'Columns/Data types/Date — Sort, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesDateExcelStep1 = {
+  ...twinStep(
+    columnsDataTypesDateStories,
+    columnsDataTypesDateStories.DataTypesDateExcel,
+    1,
+  ),
+  name: 'Columns/Data types/Date — Export to Excel, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesDateExcelStep2 = {
+  ...twinStep(
+    columnsDataTypesDateStories,
+    columnsDataTypesDateStories.DataTypesDateExcel,
+    2,
+  ),
+  name: 'Columns/Data types/Date — Export to Excel, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesDateExcelStep3 = {
+  ...twinStep(
+    columnsDataTypesDateStories,
+    columnsDataTypesDateStories.DataTypesDateExcel,
+    3,
+  ),
+  name: 'Columns/Data types/Date — Export to Excel, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingDateTimeStep1 = {
+  ...twinStep(
+    columnsDataTypesDateTimeStories,
+    columnsDataTypesDateTimeStories.EditingDateTime,
+    1,
+  ),
+  name: 'Columns/Data types/Date & time — Edit, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingDateTimeStep2 = {
+  ...twinStep(
+    columnsDataTypesDateTimeStories,
+    columnsDataTypesDateTimeStories.EditingDateTime,
+    2,
+  ),
+  name: 'Columns/Data types/Date & time — Edit, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingDateTimeStep3 = {
+  ...twinStep(
+    columnsDataTypesDateTimeStories,
+    columnsDataTypesDateTimeStories.EditingDateTime,
+    3,
+  ),
+  name: 'Columns/Data types/Date & time — Edit, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesDateTimeFilterStep1 = {
+  ...twinStep(
+    columnsDataTypesDateTimeStories,
+    columnsDataTypesDateTimeStories.DataTypesDateTimeFilter,
+    1,
+  ),
+  name: 'Columns/Data types/Date & time — Filter, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesDateTimeFilterStep2 = {
+  ...twinStep(
+    columnsDataTypesDateTimeStories,
+    columnsDataTypesDateTimeStories.DataTypesDateTimeFilter,
+    2,
+  ),
+  name: 'Columns/Data types/Date & time — Filter, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesDateTimeFilterStep3 = {
+  ...twinStep(
+    columnsDataTypesDateTimeStories,
+    columnsDataTypesDateTimeStories.DataTypesDateTimeFilter,
+    3,
+  ),
+  name: 'Columns/Data types/Date & time — Filter, шаг 3',
   tags: ['!test'],
 }
 
 export const HighContrastDataTypesNumberStringStep1 = {
   ...twinStep(
-    columnsDataTypesStories,
-    columnsDataTypesStories.DataTypesNumberString,
+    columnsDataTypesDecimalStringStories,
+    columnsDataTypesDecimalStringStories.DataTypesNumberString,
     1,
   ),
-  name: 'Columns/Data types — Decimal strings, шаг 1',
+  name: 'Columns/Data types/Decimal string — Exact order, шаг 1',
   tags: ['!test'],
 }
 
 export const HighContrastDataTypesNumberStringStep2 = {
   ...twinStep(
-    columnsDataTypesStories,
-    columnsDataTypesStories.DataTypesNumberString,
+    columnsDataTypesDecimalStringStories,
+    columnsDataTypesDecimalStringStories.DataTypesNumberString,
     2,
   ),
-  name: 'Columns/Data types — Decimal strings, шаг 2',
+  name: 'Columns/Data types/Decimal string — Exact order, шаг 2',
   tags: ['!test'],
 }
 
 export const HighContrastDataTypesNumberStringExportStep1 = {
   ...twinStep(
-    columnsDataTypesStories,
-    columnsDataTypesStories.DataTypesNumberStringExport,
+    columnsDataTypesDecimalStringStories,
+    columnsDataTypesDecimalStringStories.DataTypesNumberStringExport,
     1,
   ),
-  name: 'Columns/Data types — Decimal strings to Excel, шаг 1',
+  name: 'Columns/Data types/Decimal string — Export to Excel, шаг 1',
   tags: ['!test'],
 }
 
 export const HighContrastDataTypesNumberStringExportStep2 = {
   ...twinStep(
-    columnsDataTypesStories,
-    columnsDataTypesStories.DataTypesNumberStringExport,
+    columnsDataTypesDecimalStringStories,
+    columnsDataTypesDecimalStringStories.DataTypesNumberStringExport,
     2,
   ),
-  name: 'Columns/Data types — Decimal strings to Excel, шаг 2',
+  name: 'Columns/Data types/Decimal string — Export to Excel, шаг 2',
   tags: ['!test'],
 }
 
 export const HighContrastDataTypesNumberStringExportStep3 = {
   ...twinStep(
-    columnsDataTypesStories,
-    columnsDataTypesStories.DataTypesNumberStringExport,
+    columnsDataTypesDecimalStringStories,
+    columnsDataTypesDecimalStringStories.DataTypesNumberStringExport,
     3,
   ),
-  name: 'Columns/Data types — Decimal strings to Excel, шаг 3',
+  name: 'Columns/Data types/Decimal string — Export to Excel, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingDecimalStringStep1 = {
+  ...twinStep(
+    columnsDataTypesDecimalStringStories,
+    columnsDataTypesDecimalStringStories.EditingDecimalString,
+    1,
+  ),
+  name: 'Columns/Data types/Decimal string — Edit, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingDecimalStringStep2 = {
+  ...twinStep(
+    columnsDataTypesDecimalStringStories,
+    columnsDataTypesDecimalStringStories.EditingDecimalString,
+    2,
+  ),
+  name: 'Columns/Data types/Decimal string — Edit, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingDecimalStringStep3 = {
+  ...twinStep(
+    columnsDataTypesDecimalStringStories,
+    columnsDataTypesDecimalStringStories.EditingDecimalString,
+    3,
+  ),
+  name: 'Columns/Data types/Decimal string — Edit, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingMultiSelectStep1 = {
+  ...twinStep(
+    columnsDataTypesMultiSelectStories,
+    columnsDataTypesMultiSelectStories.EditingMultiSelect,
+    1,
+  ),
+  name: 'Columns/Data types/Multi select — Choose several, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingMultiSelectStep2 = {
+  ...twinStep(
+    columnsDataTypesMultiSelectStories,
+    columnsDataTypesMultiSelectStories.EditingMultiSelect,
+    2,
+  ),
+  name: 'Columns/Data types/Multi select — Choose several, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingMultiSelectStep3 = {
+  ...twinStep(
+    columnsDataTypesMultiSelectStories,
+    columnsDataTypesMultiSelectStories.EditingMultiSelect,
+    3,
+  ),
+  name: 'Columns/Data types/Multi select — Choose several, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingMultiSelectStep4 = {
+  ...twinStep(
+    columnsDataTypesMultiSelectStories,
+    columnsDataTypesMultiSelectStories.EditingMultiSelect,
+    4,
+  ),
+  name: 'Columns/Data types/Multi select — Choose several, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesMultiSelectFilterStep1 = {
+  ...twinStep(
+    columnsDataTypesMultiSelectStories,
+    columnsDataTypesMultiSelectStories.DataTypesMultiSelectFilter,
+    1,
+  ),
+  name: 'Columns/Data types/Multi select — Filter, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesMultiSelectFilterStep2 = {
+  ...twinStep(
+    columnsDataTypesMultiSelectStories,
+    columnsDataTypesMultiSelectStories.DataTypesMultiSelectFilter,
+    2,
+  ),
+  name: 'Columns/Data types/Multi select — Filter, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesMultiSelectFilterStep3 = {
+  ...twinStep(
+    columnsDataTypesMultiSelectStories,
+    columnsDataTypesMultiSelectStories.DataTypesMultiSelectFilter,
+    3,
+  ),
+  name: 'Columns/Data types/Multi select — Filter, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesEditNumberStep1 = {
+  ...twinStep(
+    columnsDataTypesNumberStories,
+    columnsDataTypesNumberStories.DataTypesEditNumber,
+    1,
+  ),
+  name: 'Columns/Data types/Number — Edit with a decimal comma, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesEditNumberStep2 = {
+  ...twinStep(
+    columnsDataTypesNumberStories,
+    columnsDataTypesNumberStories.DataTypesEditNumber,
+    2,
+  ),
+  name: 'Columns/Data types/Number — Edit with a decimal comma, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesEditNumberStep3 = {
+  ...twinStep(
+    columnsDataTypesNumberStories,
+    columnsDataTypesNumberStories.DataTypesEditNumber,
+    3,
+  ),
+  name: 'Columns/Data types/Number — Edit with a decimal comma, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingNumberStep1 = {
+  ...twinStep(
+    columnsDataTypesNumberStories,
+    columnsDataTypesNumberStories.EditingNumber,
+    1,
+  ),
+  name: 'Columns/Data types/Number — Edit, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingNumberStep2 = {
+  ...twinStep(
+    columnsDataTypesNumberStories,
+    columnsDataTypesNumberStories.EditingNumber,
+    2,
+  ),
+  name: 'Columns/Data types/Number — Edit, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingNumberStep3 = {
+  ...twinStep(
+    columnsDataTypesNumberStories,
+    columnsDataTypesNumberStories.EditingNumber,
+    3,
+  ),
+  name: 'Columns/Data types/Number — Edit, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingNumberStep4 = {
+  ...twinStep(
+    columnsDataTypesNumberStories,
+    columnsDataTypesNumberStories.EditingNumber,
+    4,
+  ),
+  name: 'Columns/Data types/Number — Edit, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesNumberSortStep1 = {
+  ...twinStep(
+    columnsDataTypesNumberStories,
+    columnsDataTypesNumberStories.DataTypesNumberSort,
+    1,
+  ),
+  name: 'Columns/Data types/Number — Sort, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesNumberSortStep2 = {
+  ...twinStep(
+    columnsDataTypesNumberStories,
+    columnsDataTypesNumberStories.DataTypesNumberSort,
+    2,
+  ),
+  name: 'Columns/Data types/Number — Sort, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesNumberSortStep3 = {
+  ...twinStep(
+    columnsDataTypesNumberStories,
+    columnsDataTypesNumberStories.DataTypesNumberSort,
+    3,
+  ),
+  name: 'Columns/Data types/Number — Sort, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesNumberFilterStep1 = {
+  ...twinStep(
+    columnsDataTypesNumberStories,
+    columnsDataTypesNumberStories.DataTypesNumberFilter,
+    1,
+  ),
+  name: 'Columns/Data types/Number — Filter, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesNumberFilterStep2 = {
+  ...twinStep(
+    columnsDataTypesNumberStories,
+    columnsDataTypesNumberStories.DataTypesNumberFilter,
+    2,
+  ),
+  name: 'Columns/Data types/Number — Filter, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesNumberFilterStep3 = {
+  ...twinStep(
+    columnsDataTypesNumberStories,
+    columnsDataTypesNumberStories.DataTypesNumberFilter,
+    3,
+  ),
+  name: 'Columns/Data types/Number — Filter, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesNumberExcelStep1 = {
+  ...twinStep(
+    columnsDataTypesNumberStories,
+    columnsDataTypesNumberStories.DataTypesNumberExcel,
+    1,
+  ),
+  name: 'Columns/Data types/Number — Export to Excel, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesNumberExcelStep2 = {
+  ...twinStep(
+    columnsDataTypesNumberStories,
+    columnsDataTypesNumberStories.DataTypesNumberExcel,
+    2,
+  ),
+  name: 'Columns/Data types/Number — Export to Excel, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesNumberExcelStep3 = {
+  ...twinStep(
+    columnsDataTypesNumberStories,
+    columnsDataTypesNumberStories.DataTypesNumberExcel,
+    3,
+  ),
+  name: 'Columns/Data types/Number — Export to Excel, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesObjectStep1 = {
+  ...twinStep(
+    columnsDataTypesObjectStories,
+    columnsDataTypesObjectStories.DataTypesObject,
+    1,
+  ),
+  name: 'Columns/Data types/Object — Sort and filter records, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesObjectStep2 = {
+  ...twinStep(
+    columnsDataTypesObjectStories,
+    columnsDataTypesObjectStories.DataTypesObject,
+    2,
+  ),
+  name: 'Columns/Data types/Object — Sort and filter records, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesObjectStep3 = {
+  ...twinStep(
+    columnsDataTypesObjectStories,
+    columnsDataTypesObjectStories.DataTypesObject,
+    3,
+  ),
+  name: 'Columns/Data types/Object — Sort and filter records, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesObjectStep4 = {
+  ...twinStep(
+    columnsDataTypesObjectStories,
+    columnsDataTypesObjectStories.DataTypesObject,
+    4,
+  ),
+  name: 'Columns/Data types/Object — Sort and filter records, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesObjectLabelStep1 = {
+  ...twinStep(
+    columnsDataTypesObjectStories,
+    columnsDataTypesObjectStories.DataTypesObjectLabel,
+    1,
+  ),
+  name: 'Columns/Data types/Object — Key and label, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesObjectLabelStep2 = {
+  ...twinStep(
+    columnsDataTypesObjectStories,
+    columnsDataTypesObjectStories.DataTypesObjectLabel,
+    2,
+  ),
+  name: 'Columns/Data types/Object — Key and label, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingLookupStep1 = {
+  ...twinStep(
+    columnsDataTypesObjectStories,
+    columnsDataTypesObjectStories.EditingLookup,
+    1,
+  ),
+  name: 'Columns/Data types/Object — Choose from a directory, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingLookupStep2 = {
+  ...twinStep(
+    columnsDataTypesObjectStories,
+    columnsDataTypesObjectStories.EditingLookup,
+    2,
+  ),
+  name: 'Columns/Data types/Object — Choose from a directory, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingLookupStep3 = {
+  ...twinStep(
+    columnsDataTypesObjectStories,
+    columnsDataTypesObjectStories.EditingLookup,
+    3,
+  ),
+  name: 'Columns/Data types/Object — Choose from a directory, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingLookupStep4 = {
+  ...twinStep(
+    columnsDataTypesObjectStories,
+    columnsDataTypesObjectStories.EditingLookup,
+    4,
+  ),
+  name: 'Columns/Data types/Object — Choose from a directory, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingLookupStep5 = {
+  ...twinStep(
+    columnsDataTypesObjectStories,
+    columnsDataTypesObjectStories.EditingLookup,
+    5,
+  ),
+  name: 'Columns/Data types/Object — Choose from a directory, шаг 5',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingRecordFromDataStep1 = {
+  ...twinStep(
+    columnsDataTypesObjectStories,
+    columnsDataTypesObjectStories.EditingRecordFromData,
+    1,
+  ),
+  name: 'Columns/Data types/Object — Choose a record from the table, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingRecordFromDataStep2 = {
+  ...twinStep(
+    columnsDataTypesObjectStories,
+    columnsDataTypesObjectStories.EditingRecordFromData,
+    2,
+  ),
+  name: 'Columns/Data types/Object — Choose a record from the table, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingRecordFromDataStep3 = {
+  ...twinStep(
+    columnsDataTypesObjectStories,
+    columnsDataTypesObjectStories.EditingRecordFromData,
+    3,
+  ),
+  name: 'Columns/Data types/Object — Choose a record from the table, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingSelectStep1 = {
+  ...twinStep(
+    columnsDataTypesSelectStories,
+    columnsDataTypesSelectStories.EditingSelect,
+    1,
+  ),
+  name: 'Columns/Data types/Select — Choose, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingSelectStep2 = {
+  ...twinStep(
+    columnsDataTypesSelectStories,
+    columnsDataTypesSelectStories.EditingSelect,
+    2,
+  ),
+  name: 'Columns/Data types/Select — Choose, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingSelectStep3 = {
+  ...twinStep(
+    columnsDataTypesSelectStories,
+    columnsDataTypesSelectStories.EditingSelect,
+    3,
+  ),
+  name: 'Columns/Data types/Select — Choose, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingSelectStep4 = {
+  ...twinStep(
+    columnsDataTypesSelectStories,
+    columnsDataTypesSelectStories.EditingSelect,
+    4,
+  ),
+  name: 'Columns/Data types/Select — Choose, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesSelectFilterStep1 = {
+  ...twinStep(
+    columnsDataTypesSelectStories,
+    columnsDataTypesSelectStories.DataTypesSelectFilter,
+    1,
+  ),
+  name: 'Columns/Data types/Select — Filter, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesSelectFilterStep2 = {
+  ...twinStep(
+    columnsDataTypesSelectStories,
+    columnsDataTypesSelectStories.DataTypesSelectFilter,
+    2,
+  ),
+  name: 'Columns/Data types/Select — Filter, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesSelectFilterStep3 = {
+  ...twinStep(
+    columnsDataTypesSelectStories,
+    columnsDataTypesSelectStories.DataTypesSelectFilter,
+    3,
+  ),
+  name: 'Columns/Data types/Select — Filter, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesTextSortStep1 = {
+  ...twinStep(
+    columnsDataTypesTextStories,
+    columnsDataTypesTextStories.DataTypesTextSort,
+    1,
+  ),
+  name: 'Columns/Data types/Text — Sort, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesTextSortStep2 = {
+  ...twinStep(
+    columnsDataTypesTextStories,
+    columnsDataTypesTextStories.DataTypesTextSort,
+    2,
+  ),
+  name: 'Columns/Data types/Text — Sort, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesTextSortStep3 = {
+  ...twinStep(
+    columnsDataTypesTextStories,
+    columnsDataTypesTextStories.DataTypesTextSort,
+    3,
+  ),
+  name: 'Columns/Data types/Text — Sort, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesTextFilterStep1 = {
+  ...twinStep(
+    columnsDataTypesTextStories,
+    columnsDataTypesTextStories.DataTypesTextFilter,
+    1,
+  ),
+  name: 'Columns/Data types/Text — Filter, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesTextFilterStep2 = {
+  ...twinStep(
+    columnsDataTypesTextStories,
+    columnsDataTypesTextStories.DataTypesTextFilter,
+    2,
+  ),
+  name: 'Columns/Data types/Text — Filter, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesTextFilterStep3 = {
+  ...twinStep(
+    columnsDataTypesTextStories,
+    columnsDataTypesTextStories.DataTypesTextFilter,
+    3,
+  ),
+  name: 'Columns/Data types/Text — Filter, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastDataTypesTextFilterStep4 = {
+  ...twinStep(
+    columnsDataTypesTextStories,
+    columnsDataTypesTextStories.DataTypesTextFilter,
+    4,
+  ),
+  name: 'Columns/Data types/Text — Filter, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingTextStep1 = {
+  ...twinStep(
+    columnsDataTypesTextStories,
+    columnsDataTypesTextStories.EditingText,
+    1,
+  ),
+  name: 'Columns/Data types/Text — Edit, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingTextStep2 = {
+  ...twinStep(
+    columnsDataTypesTextStories,
+    columnsDataTypesTextStories.EditingText,
+    2,
+  ),
+  name: 'Columns/Data types/Text — Edit, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingTextStep3 = {
+  ...twinStep(
+    columnsDataTypesTextStories,
+    columnsDataTypesTextStories.EditingText,
+    3,
+  ),
+  name: 'Columns/Data types/Text — Edit, шаг 3',
   tags: ['!test'],
 }

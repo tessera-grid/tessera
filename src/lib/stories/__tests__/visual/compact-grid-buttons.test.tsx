@@ -434,7 +434,7 @@ describe('Вместимость, служебные колонки и сост�
     expect(box(second).left - box(first).right).toBeGreaterThanOrEqual(width)
   })
 
-  test('GZ9: бабл включённой кнопки и точка отказа помещаются в кнопку 28px и не обрезаются ячейкой', async () => {
+  test('GZ9: бабл включённой кнопки помещается в кнопку 28px и не обрезается ячейкой', async () => {
     const screen = await render(
       <div className="data-grid-theme" style={{ padding: 24 }}>
         <div
@@ -443,11 +443,6 @@ describe('Вместимость, служебные колонки и сост�
         >
           <div className={wrapperStyles.cell__wrapper}>
             <span style={{ flex: 1 }}>Text</span>
-            <span className="cell__button">
-              <IconButton label="Failed" failure="Failed: offline">
-                {icon}
-              </IconButton>
-            </span>
             <span className="cell__button">
               <IconButton label="Sorted, 3" active count={3}>
                 {icon}
@@ -460,15 +455,11 @@ describe('Вместимость, служебные колонки и сост�
     const wrapper = screen.container.querySelector(
       `.${wrapperStyles.cell__wrapper}`,
     )!
-    const failed = screen.container.querySelector('[aria-label="Failed"]')!
-    const dot = failed.querySelector('[data-failure-indicator]')!
-    await expect.poll(() => getComputedStyle(dot).opacity).toBe('1')
     const inside = (inner: DOMRect, outer: DOMRect) =>
       inner.left >= outer.left - 0.5 &&
       inner.right <= outer.right + 0.5 &&
       inner.top >= outer.top - 0.5 &&
       inner.bottom <= outer.bottom + 0.5
-    expect(inside(box(dot), box(failed)), 'точка в кнопке').toBe(true)
     const sorted = screen.container.querySelector('[aria-label="Sorted, 3"]')!
     const bubble = sorted.querySelector('[data-active-indicator]')!
     await expect.poll(() => getComputedStyle(bubble).opacity).toBe('1')

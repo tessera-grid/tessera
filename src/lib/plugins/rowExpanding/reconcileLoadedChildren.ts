@@ -9,6 +9,7 @@ import {
   setLoadedAnswer,
 } from './lazyChildrenFeature'
 import type { RowExpandPending } from './rowExpandingPendingFeature'
+import { setObjectPending } from '../../shared/objectPending'
 
 interface ReconcileTable {
   store: object
@@ -55,7 +56,8 @@ export const reconcileLoadedChildren = (table: unknown) => {
   )
   if (gone.length > 0) {
     t.setRowExpandPending?.(prev => without(prev, gone))
+    gone.forEach(id => setObjectPending(table, `rowExpand:${id}`, undefined))
   }
-  // Отметка отказа строки, ушедшей из данных, снимается (IR14).
+  // Отказ строки, ушедшей из данных, снимается (ADR 0177, OB11).
   clearExpandFailed(table, id => !!rowsById[id])
 }

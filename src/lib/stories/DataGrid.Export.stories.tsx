@@ -262,8 +262,11 @@ const EXPORT_REFUSAL = 'The export service is unavailable'
 const exportServer = (() => {
   let held = true
   let refusing = false
+  let refusals = 0
   const waiting = new Set<() => void>()
   return {
+    /** Сколько выгрузок «сервер» отклонил. */
+    refusals: () => refusals,
     hold: () => {
       held = true
       refusing = false
@@ -278,27 +281,23 @@ const exportServer = (() => {
       held = false
       refusing = true
     },
-    onExport: () =>
-      refusing
-        ? Promise.reject(new Error(EXPORT_REFUSAL))
-        : new Promise<void>(resolve => {
-            if (held) waiting.add(resolve)
-            else resolve()
-          }),
+    onExport: (): Promise<void> => {
+      if (refusing) {
+        refusals++
+        return Promise.reject(new Error(EXPORT_REFUSAL))
+      }
+      return new Promise<void>(resolve => {
+        if (held) waiting.add(resolve)
+        else resolve()
+      })
+    },
   }
 })()
 
 const exportBusy = () => exportButton()?.getAttribute('aria-busy') === 'true'
-const exportFailed = () =>
-  exportButton()
-    ?.querySelector('[data-failure-indicator]')
-    ?.getAttribute('data-shown') === 'true'
-const exportDescription = () =>
-  exportButton()
-    ?.getAttribute('aria-describedby')
-    ?.split(' ')
-    .map(id => document.getElementById(id)?.textContent)
-    .join(' ') ?? ''
+/** Отметки отказа на кнопке выгрузки нет (ADR 0177, §2). */
+const exportMarked = () =>
+  !!exportButton()?.querySelector('[data-failure-indicator]')
 
 /** Пользователь выгружает все строки: запрос уходит серверу. */
 const exportAll = async (root: HTMLElement, signal: AbortSignal) => {
@@ -348,15 +347,15 @@ const SERVER: readonly GuideStoryStep[] = [
   },
   {
     title: 'Сервер не собрал файл',
-    hint: 'Пользователь снова выгрузил все строки, но сервер отказал. Файла нет: кнопка выгрузки отмечена отказом, её подсказка — причина. Таблица не изменилась, поэтому сообщения под шапкой нет.',
+    hint: 'Пользователь снова выгрузил все строки, но сервер отказал. Файла нет: ожидание на кнопке выгрузки остановилось, отметки на кнопке нет. Таблица не изменилась, поэтому сообщения под шапкой нет.',
     enter: stepAction(async (root, { signal }) => {
-      if (exportFailed()) return
+      const before = exportServer.refusals()
       exportServer.refuse()
       // Отказ приходит сразу: ожидание кнопки шаг не застаёт.
       await openExportPanel(root, signal)
       await chooseAxis('rows', 'all', signal)
       await repeat(
-        () => exportFailed(),
+        () => exportServer.refusals() > before && !exportBusy(),
         () => byTestId('export-run')?.click(),
         signal,
       )
@@ -424,8 +423,8 @@ export const ExportServer: StoryObj<StoryProps> = {
       await step(SERVER[4]!.title, async () => {
         await guideNext(canvas)
         await stepDone(canvas)
-        await expect(exportFailed()).toBe(true)
-        await expect(exportDescription()).toContain(EXPORT_REFUSAL)
+        await expect(exportBusy()).toBe(false)
+        await expect(exportMarked()).toBe(false)
         await expect(download.names).toEqual(['export.csv'])
         await expect(
           canvas.querySelector('[data-testid="load-error-banner"]'),
@@ -446,13 +445,16 @@ const EXCEL_REFUSAL = 'The workbook could not be built'
 const excel = (() => {
   const base = exportFormats.xlsx()
   let refusing = false
+  const state = { refusals: 0 }
   return {
+    state,
     format: {
       ...base,
-      serialize: (data: Parameters<typeof base.serialize>[0]) =>
-        refusing
-          ? Promise.reject(new Error(EXCEL_REFUSAL))
-          : base.serialize(data),
+      serialize: (data: Parameters<typeof base.serialize>[0]) => {
+        if (!refusing) return base.serialize(data)
+        state.refusals++
+        return Promise.reject(new Error(EXCEL_REFUSAL))
+      },
     },
     allow: () => {
       refusing = false
@@ -490,14 +492,14 @@ const EXCEL: readonly GuideStoryStep[] = [
   },
   {
     title: 'Файл не собран',
-    hint: 'Пользователь снова выгрузил Excel, но собрать файл не удалось. Файла нет: кнопка выгрузки отмечена отказом, её подсказка — причина.',
+    hint: 'Пользователь снова выгрузил Excel, но собрать файл не удалось. Файла нет: ожидание на кнопке выгрузки остановилось, отметки на кнопке нет.',
     enter: stepAction(async (root, { signal }) => {
-      if (exportFailed()) return
+      const before = excel.state.refusals
       excel.refuse()
       await openExportPanel(root, signal)
       await chooseAxis('format', 'xlsx', signal)
       await repeat(
-        () => exportFailed(),
+        () => excel.state.refusals > before && !exportBusy(),
         () => byTestId('export-run')?.click(),
         signal,
       )
@@ -557,8 +559,8 @@ export const ExportExcel: StoryObj<StoryProps> = {
       await step(EXCEL[3]!.title, async () => {
         await guideNext(canvas)
         await stepDone(canvas)
-        await expect(exportFailed()).toBe(true)
-        await expect(exportDescription()).toContain(EXCEL_REFUSAL)
+        await expect(exportBusy()).toBe(false)
+        await expect(exportMarked()).toBe(false)
         await expect(download.names).toEqual(['export.xlsx'])
       })
     } finally {
@@ -829,7 +831,7 @@ export const ExportCancel: StoryObj<StoryProps> = {
         await guideNext(canvas)
         await stepDone(canvas)
         await expect(exportWaits()).toBe(false)
-        await expect(exportFailed()).toBe(false)
+        await expect(exportMarked()).toBe(false)
         await settle()
         await expect(download.names).toEqual([])
       })

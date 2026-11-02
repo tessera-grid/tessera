@@ -111,8 +111,9 @@ const ageText = (root: ParentNode) => {
   copy?.querySelectorAll('.cell__button').forEach(button => button.remove())
   return copy?.textContent?.trim()
 }
+/** Ожидание сохранения — на ячейке (ADR 0177, §1). */
 const agePending = (root: ParentNode) =>
-  ageEditButton(root)?.getAttribute('aria-busy') === 'true'
+  ageCellOf(root)?.getAttribute('aria-busy') === 'true'
 
 /** Набрать значение в поле — как ввод с клавиатуры. */
 const typeAge = (input: HTMLInputElement, value: string) => {
@@ -163,7 +164,7 @@ const EDIT_CELL: readonly GuideStoryStep[] = [
   },
   {
     title: 'Пользователь сохранил правку',
-    hint: 'Пользователь поправил возраст и сохранил. Пока сервер отвечает, кнопка правки ждёт, а в ячейке — введённое значение.',
+    hint: 'Пользователь поправил возраст и сохранил. Пока сервер отвечает, в ячейке — введённое значение, ячейка чуть темнеет и по ней проходит светлый блик.',
     states: ['body.pending'],
     enter: untilDone(agePending, saveAge),
   },

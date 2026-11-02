@@ -7,8 +7,6 @@
  */
 import type { HeaderComponentProps } from '../../core/createSlots'
 import { useLocalization } from '../../core/localization'
-import type { FailedAttempt } from '../../shared/failedAttempts'
-import { rejectionText } from '../../util/thenable'
 import { useSlice, useTableState } from '../../core/reactivity'
 import { DragHandler } from '../../shared/dnd'
 import {
@@ -27,17 +25,14 @@ export const ColumnDraggingComponent = ({
   useSlice(table, 'columnDraggingActiveId')
   const labels = useLocalization()
 
-  // Ожидание и отказ переноса (ADR 0114) — только этого узла.
-  const { busy, failed } = useTableState(table, (state: unknown) => {
-    const s = state as {
-      columnMoves?: Record<string, unknown>
-      columnMoveFailed?: Record<string, FailedAttempt>
-    }
-    return {
-      busy: !!s.columnMoves?.[column.id],
-      failed: s.columnMoveFailed?.[column.id],
-    }
-  }) as { busy: boolean; failed?: FailedAttempt }
+  // Ожидание переноса (ADR 0114) — только этого узла: меню ручки не открывается.
+  const busy = useTableState(
+    table,
+    (state: unknown) =>
+      !!(state as { columnMoves?: Record<string, unknown> }).columnMoves?.[
+        column.id
+      ],
+  ) as boolean
 
   if (!column.getCanDrag() || zoneOf(header as never) !== false) {
     return null
@@ -55,12 +50,6 @@ export const ColumnDraggingComponent = ({
       id={column.id}
       type="column"
       busy={busy}
-      failure={
-        failed &&
-        labels.actionFailedRetry(
-          rejectionText(failed.error) ?? labels.moveColumnFailed,
-        )
-      }
       label={labels.moveColumn}
       table={table}
       getMenuItems={() => [

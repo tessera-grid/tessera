@@ -9,6 +9,7 @@ import {
 import { reportAction, reportOutcome } from '../../core/debugActions'
 import { rowSourceOf } from '../../core/rowSource'
 import { flashOutcome } from '../../core/flashes/flashFeature'
+import { setObjectPending } from '../../shared/objectPending'
 import { inOneCommit } from '../../util/oneCommit'
 import { isThenable, rejectionText } from '../../util/thenable'
 import {
@@ -119,12 +120,17 @@ export const toggleRowExpanded = (
   }
   const attempt = ++lastAttempt
   setPending(prev => ({ ...prev, [row.id]: attempt }))
-  const clearPending = () =>
+  // Ожидание промиса раскрытия — волна строки; у ленивой — строка-заглушка детей (ADR 0155).
+  const waveKey = `rowExpand:${row.id}`
+  if (!lazy) setObjectPending(table, waveKey, [{ row: row.id }])
+  const clearPending = () => {
+    setObjectPending(table, waveKey, undefined)
     setPending(prev => {
       const next = { ...prev }
       delete next[row.id]
       return next
     })
+  }
   // Отмена тихая (ADR 0153, §4): строка без ответа сворачивается без вспышки и отметки.
   const cancel = (source: CancelSource) => {
     if (controller.signal.aborted) return

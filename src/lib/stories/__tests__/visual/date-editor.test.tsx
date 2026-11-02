@@ -95,6 +95,7 @@ describe('редактор даты (ADR 0175)', () => {
     await expect.poll(popup).toBeNull()
     expect(onCellEdit).toHaveBeenLastCalledWith(
       expect.objectContaining({ columnId: 'day', value: '2026-03-20' }),
+      { signal: expect.any(AbortSignal) },
     )
     await expect.poll(() => document.activeElement).toBe(cellOf('day'))
 
@@ -121,6 +122,7 @@ describe('редактор даты (ADR 0175)', () => {
         columnId: 'stamp',
         value: '2026-03-16T01:45:00.000Z',
       }),
+      { signal: expect.any(AbortSignal) },
     )
     await expect.poll(() => document.activeElement).toBe(cellOf('stamp'))
 

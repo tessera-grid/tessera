@@ -376,6 +376,7 @@ describe('Значение правки в типе колонки (ADR 0175)', 
       )
       expect(onCellEdit).toHaveBeenCalledWith(
         expect.objectContaining({ value: 12.5, text: '12,5', original: 11 }),
+        { signal: expect.any(AbortSignal) },
       )
 
       act(() =>
@@ -397,6 +398,7 @@ describe('Значение правки в типе колонки (ADR 0175)', 
     await edit('r1', 'weight', '2', onCellEdit)
     expect(onCellEdit).toHaveBeenLastCalledWith(
       expect.objectContaining({ value: 2000, text: '2' }),
+      { signal: expect.any(AbortSignal) },
     )
     expect(kilograms).toHaveBeenCalledTimes(1)
     expect(saved('weight')).toBe(2000)
@@ -404,6 +406,7 @@ describe('Значение правки в типе колонки (ADR 0175)', 
     await edit('r1', 'grams', '5', onCellEdit)
     expect(onCellEdit).toHaveBeenLastCalledWith(
       expect.objectContaining({ value: 5 }),
+      { signal: expect.any(AbortSignal) },
     )
     expect(kilograms).toHaveBeenCalledTimes(1)
 

@@ -23,10 +23,8 @@ export interface DragHandlerProps {
   disabled?: boolean
   /** Таблица — для объявления ошибки загрузки меню (ADR 0061). */
   table?: unknown
-  /** Перенос ждёт промиса `onRowDragEnd`: свет ожидания, меню не открывается (ADR 0112). */
+  /** Перенос ждёт промиса: меню не открывается; ожидание — волной на объекте (ADR 0177, §1). */
   busy?: boolean
-  /** Текст отметки отказа переноса (ADR 0136). */
-  failure?: string
 }
 
 export const DragHandler = ({
@@ -37,7 +35,6 @@ export const DragHandler = ({
   getMenuItems,
   table,
   busy = false,
-  failure,
 }: DragHandlerProps) => {
   const ref = useRef<HTMLElement | null>(null)
   const pressedAt = useRef<{ x: number; y: number } | null>(null)
@@ -98,9 +95,6 @@ export const DragHandler = ({
     ref.current = node
     setActivatorNodeRef(node)
   }
-  // Квадратная кнопка кита: ожидание и отметка отказа — как у кнопок (ADR 0112, 0114,
-  // 0136); отказ загрузки меню — свежее отказа переноса.
-  const failed = menu.trigger.failure ?? failure
   const handleMenu = menu.open && hasMenu && (
     <HandleMenu
       anchor={ref}
@@ -118,12 +112,11 @@ export const DragHandler = ({
       kind={type === 'row' ? 'row' : 'column'}
       menu={handleMenu}
       disabled={disabled}
-      pending={busy || menu.trigger.pending}
-      failure={failed}
+      // Дуга — только загрузка меню ручки, процесс вне таблицы (ADR 0177, §2).
+      pending={menu.trigger.pending}
+      failed={menu.trigger.failed}
       {...ownAttributes}
       aria-label={label}
-      // Подсказка ручки — только причина отказа (ADR 0127, IR10): без отказа её нет.
-      label={failed === undefined ? undefined : label}
       {...(hasMenu && {
         'aria-haspopup': 'menu' as const,
         'aria-expanded': menu.open,

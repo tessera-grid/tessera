@@ -5,6 +5,7 @@
 // внутри него, а правый клик до загрузки открывает меню после неё (ADR 0061, LZ6–LZ10).
 // ADR 0030.
 import { type DebugActionSource, reportAction } from '../../core/debugActions'
+import { CELL_STATE_ACTIONS } from './cellStateActions'
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 
 import { useLazyOpening } from '../../core/lazyOpening'
@@ -189,8 +190,10 @@ export const ContextMenu = ({ table, getScrollElement }: ContextMenuProps) => {
   // долгое нажатие принадлежит меню (ADR 0086, TU8).
   useEffect(() => {
     const scroller = getScrollElement()
-    const has = ((table as ContextMenuTable).getContextMenuActions?.() ?? [])
-      .length
+    // Свои пункты занятой и помеченной ячейки видны не всегда — их не считаем.
+    const has = (
+      (table as ContextMenuTable).getContextMenuActions?.() ?? []
+    ).some(action => !CELL_STATE_ACTIONS.includes(action))
     if (!scroller || !has) return
     scroller.setAttribute('data-context-menu-touch', '')
     return () => scroller.removeAttribute('data-context-menu-touch')

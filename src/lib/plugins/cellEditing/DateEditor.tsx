@@ -1,7 +1,8 @@
 /**
  * Редактор даты (ADR 0175, ED6): поповер с общим календарём в поясе и на языке таблицы, у
  * даты со временем — поле времени. Выбор дня у даты без времени сохраняет сразу; Enter в
- * поле времени и уход из поповера сохраняют, Escape отменяет; фокус возвращается в ячейку.
+ * поле времени и уход из поповера сохраняют, Escape отменяет, «Очистить значение» сохраняет
+ * пустое значение; фокус возвращается в ячейку.
  * Модуль ленивый — грузится при первой правке даты (ED7).
  */
 import { useState } from 'react'
@@ -13,10 +14,10 @@ import { dateTypeInstant } from '../../core/dataTypeFormat'
 import { useLocalization } from '../../core/localization'
 import { cellToWallValue, WALL_TIME } from '../../core/wallTime'
 import { Calendar, TimeField } from '../../shared/calendar/Calendar'
-import { EditPopover } from './EditPopover'
+import { ClearValue, EditPopover } from './EditPopover'
 import type { CellEditorProps } from './types'
 
-interface Wall {
+export interface Wall {
   /** `'YYYY-MM-DD'` или `null` — пусто. */
   day: string | null
   /** `'HH:mm'`. */
@@ -32,7 +33,8 @@ const wallOf = (props: CellEditorProps, timeZone: string | undefined): Wall => {
       ? cellToWallValue(props.value, timeZone)
       : ms === undefined
         ? null
-        : cellToWallValue(ms, timeZone)
+        : // `dateString` показывается сутками по UTC — так же и читается.
+          cellToWallValue(ms, type?.base === 'dateString' ? 'UTC' : timeZone)
   if (!wall) return { day: null, time: '' }
   const iso = new Date(wall.ms).toISOString()
   return { day: iso.slice(0, 10), time: wall.dateOnly ? '' : iso.slice(11, 16) }
@@ -60,13 +62,21 @@ const instantOf = (day: string, time: string, timeZone: string | undefined) => {
  * Значение в типе колонки: `dateString` — день, `dateTimeString` — стенное время, если оно
  * было без смещения, иначе ISO-момент; `date` и `dateTime` — `Date`.
  */
-const valueOf = (
+export const dateValueOf = (
   base: string,
   wall: Wall,
   original: unknown,
   timeZone: string | undefined,
+  formatDate?: (date: Date) => unknown,
 ): unknown => {
   if (!wall.day) return null
+  // Свой формат: `dateString` — полночь дня по UTC, остальные — момент в поясе таблицы.
+  if (formatDate)
+    return formatDate(
+      base === 'dateString'
+        ? new Date(`${wall.day}T00:00:00Z`)
+        : instantOf(wall.day, base === 'date' ? '' : wall.time, timeZone),
+    )
   switch (base) {
     case 'dateString':
       return wall.day
@@ -83,15 +93,18 @@ export const DateEditor = (props: CellEditorProps) => {
   const { cell, label, commit, cancel, setDraft, text } = props
   const labels = useLocalization()
   const { timeZone, dateLocale } = commonOptionsOf(cell.table)
-  const base = cell.column.getDataType()?.base ?? 'date'
+  const type = cell.column.getDataType()
+  const base = type?.base ?? 'date'
+  const formatDate = type?.definition.formatDate
   const timed = base === 'dateTime' || base === 'dateTimeString'
   const [wall, setWall] = useState(() => wallOf(props, timeZone))
   const original = cell.getValue()
 
-  const save = (next = wall) => commit(valueOf(base, next, original, timeZone))
+  const save = (next = wall) =>
+    commit(dateValueOf(base, next, original, timeZone, formatDate))
   const change = (next: Wall) => {
     setWall(next)
-    setDraft(valueOf(base, next, original, timeZone))
+    setDraft(dateValueOf(base, next, original, timeZone, formatDate))
   }
 
   return (
@@ -131,6 +144,7 @@ export const DateEditor = (props: CellEditorProps) => {
           }}
         />
       )}
+      <ClearValue onClear={() => commit(null)} />
     </EditPopover>
   )
 }

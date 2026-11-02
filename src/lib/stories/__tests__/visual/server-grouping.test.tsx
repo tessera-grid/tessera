@@ -308,11 +308,12 @@ describe('Серверная группировка (ADR 0144)', () => {
       scroller().scrollTop = 500 * rowHeight()
       await expect.poll(() => rowOf('r500')).not.toBeNull()
 
-      // Группировка: «сервер» держит ответ — прежние строки под свечением, кнопка ждёт.
+      // Группировка: «сервер» держит ответ — прежние строки под свечением, у кнопки ожидания
+      // нет (ADR 0177, §1).
       hold = true
       await clickGroup()
       await expect.poll(glowing).toBe(true)
-      expect(lit(groupButton())).toBe(true)
+      expect(lit(groupButton())).toBe(false)
       // Прежняя выборка ещё догружает окно: её запросы могут прийти после запроса новой.
       // Запрос новой выборки уходит с окном — под нагрузкой позже свечения.
       await expect

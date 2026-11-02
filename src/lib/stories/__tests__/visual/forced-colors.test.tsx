@@ -688,16 +688,16 @@ describe('Высокая контрастность (ADR 0087)', () => {
     }
   })
 
-  test('FB7: forced-colors — дуга ожидания кнопки цветом Highlight; отметка отказа видна цветом Mark; заливки Mark у кнопки в отказе нет', async () => {
+  test('FB7: forced-colors — дуга ожидания кнопки цветом Highlight; у кнопки в отказе нет ни отметки, ни заливки Mark', async () => {
     const Button = ({
       pending,
-      failure,
+      failed,
     }: {
       pending: boolean
-      failure?: string
+      failed?: boolean
     }) => (
       <div className="data-grid-theme" style={{ padding: 20 }}>
-        <IconButton aria-label="Load" pending={pending} failure={failure}>
+        <IconButton aria-label="Load" pending={pending} failed={failed}>
           <SvgIcon width={20} height={20} />
         </IconButton>
       </div>
@@ -716,13 +716,9 @@ describe('Высокая контрастность (ADR 0087)', () => {
     // Дорожки нет: бледный `Highlight` — не системный цвет.
     expect(toRgba(style(arcTrackOf(arc())).stroke)[3]).toBe(0)
     await frame()
-    await screen.rerender(<Button pending={false} failure="Failed: offline" />)
-    const mark = button().querySelector<HTMLElement>(
-      '[data-failure-indicator]',
-    )!
-    expect(mark.dataset.shown).toBe('true')
+    await screen.rerender(<Button pending={false} failed />)
+    expect(button().querySelector('[data-failure-indicator]')).toBeNull()
     const markRgb = toRgba(sys('Mark'))
-    expect(toRgba(style(mark).backgroundColor)).toEqual(markRgb)
     // У кнопки нет ни заливки, ни контура Mark — сигнал момента на цели.
     expect(toRgba(style(button()).backgroundColor)).not.toEqual(markRgb)
     await expect.poll(() => pendingArcOf(button())).toBeNull()

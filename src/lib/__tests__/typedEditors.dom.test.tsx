@@ -136,6 +136,7 @@ describe('выбор редактора (ADR 0175)', () => {
     act(() => seen.plugin!.at(-1)!.commit(8))
     expect(onCellEdit).toHaveBeenCalledWith(
       expect.objectContaining({ columnId: 'plain', value: 8, text: '8' }),
+      { signal: expect.any(AbortSignal) },
     )
   })
 })

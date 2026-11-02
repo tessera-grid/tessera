@@ -96,7 +96,7 @@ const deferredFormat = () => {
 }
 
 describe('dataExport — Excel', () => {
-  test('XL7: serialize с Promise — кнопка ждёт до скачивания; отказ не логируется, на кнопке отметка отказа, onExported не вызван', async () => {
+  test('XL7: serialize с Promise — кнопка ждёт до скачивания; отказ не логируется, отметки на кнопке нет, onExported не вызван', async () => {
     const downloads = captureDownloads()
     const onExported = vi.fn()
     const ok = deferredFormat()
@@ -124,11 +124,8 @@ describe('dataExport — Excel', () => {
     await expect.poll(() => button()!.getAttribute('aria-busy')).toBe('true')
     failing.control.reject(new Error('sheet broke'))
     await expect.poll(() => button()!.hasAttribute('aria-busy')).toBe(false)
-    await expect.poll(() => failureShownOn(button())).toBe(true)
+    expect(failureShownOn(button())).toBe(false)
     expect(error).not.toHaveBeenCalled()
-    expect(button()).toHaveAccessibleDescription(
-      tableLabels.actionFailedRetry('sheet broke'),
-    )
     expect(downloads).toHaveLength(1)
     expect(onExported).toHaveBeenCalledTimes(1)
   })
@@ -160,8 +157,8 @@ describe('dataExport — Excel', () => {
   })
 })
 
-describe('dataExport — итог только на кнопке (ADR 0136)', () => {
-  test('FB6: выгрузка с промисом — ожидание и отметка отказа только на кнопке; при успехе ни кнопка, ни таблица не вспыхивают', async () => {
+describe('dataExport — ожидание только на кнопке (ADR 0136, ADR 0177)', () => {
+  test('FB6: выгрузка с промисом — ожидание только на кнопке; ни успех, ни отказ не дают вспышек и отметок', async () => {
     const flashes = () =>
       document.querySelectorAll(
         '[data-flash], [data-column-flash], [class*="linear-progress"][data-error-flash]',
@@ -183,13 +180,12 @@ describe('dataExport — итог только на кнопке (ADR 0136)', ()
     await renderGrid({ ...DIRECT, formats: [failing.format] })
     await humanClick(button()!)
     failing.control.reject(new Error('sheet broke'))
-    await expect.poll(() => failureShownOn(button())).toBe(true)
+    await expect.poll(() => button()!.hasAttribute('aria-busy')).toBe(false)
     expect(flashes(), 'отказ').toBe(0)
     expect(
-      document.querySelectorAll('[data-failure-indicator][data-shown="true"]')
-        .length,
-      'отметка только на кнопке',
-    ).toBe(1)
+      document.querySelectorAll('[data-failure-indicator]').length,
+      'отметок нет',
+    ).toBe(0)
     error.mockRestore()
   })
 })

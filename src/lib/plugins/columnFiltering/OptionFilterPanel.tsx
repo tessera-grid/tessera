@@ -20,12 +20,12 @@ import {
   OptionChecklist,
   OptionStatus,
 } from '../../shared/options/OptionChecklist'
+import { OptionSearch } from '../../shared/options/OptionSearch'
 import { useLoadedOptions } from '../../shared/options/useLoadedOptions'
 import { setColumnFilterByUser } from '../../shared/filtering/filtering'
 import { useLocalization } from '../../core/localization'
 import { useDebouncedCallback } from '../../util/useDebouncedCallback'
 import { Button } from '../../ui/Button'
-import { useIcons } from '../../ui/icons'
 import { operatorLabel } from './describeFilter'
 import type { FilterPanelProps } from './FilterPanel'
 import { OperatorSelect } from './OperatorSelect'
@@ -92,7 +92,6 @@ export const OptionFilterPanel = ({
   type,
 }: FilterPanelProps & { type: 'select' | 'multiselect' | 'lookup' }) => {
   const labels = useLocalization()
-  const { clear: ClearIcon } = useIcons()
   const listId = useId()
   const rootRef = useRef<HTMLDivElement>(null)
   const searchRef =
@@ -187,6 +186,12 @@ export const OptionFilterPanel = ({
   }, [searchRef])
 
   const operators = type === 'multiselect' ? MULTI_OPERATORS : OPERATORS
+  const statusLabels = {
+    loading: labels.filterLoadingOptions,
+    empty: labels.filterNoOptions,
+    error: labels.filterOptionsError,
+    retry: labels.filterRetry,
+  }
   const hasList = loaded?.status !== 'error' && options.length > 0
   const busy = loaded?.status === 'loading'
 
@@ -205,7 +210,14 @@ export const OptionFilterPanel = ({
       />
       {needsValues(draft.operator) && (
         <>
-          <div className={styles.searchRow}>
+          <OptionSearch
+            value={search}
+            onClear={() => {
+              setSearch('')
+              applySearch.cancel()
+              setQuery('')
+            }}
+          >
             <input
               ref={searchRef}
               className={panelStyles.input}
@@ -220,21 +232,7 @@ export const OptionFilterPanel = ({
               }}
               data-testid="filter-options-search"
             />
-            {search !== '' && (
-              <button
-                type="button"
-                className={styles.clearSearch}
-                aria-label={labels.clearSearch}
-                onClick={() => {
-                  setSearch('')
-                  applySearch.cancel()
-                  setQuery('')
-                }}
-              >
-                <ClearIcon width={14} height={14} />
-              </button>
-            )}
-          </div>
+          </OptionSearch>
           <div className={styles.bulk}>
             <Button
               variant="ghost"
@@ -257,11 +255,14 @@ export const OptionFilterPanel = ({
             <OptionStatus
               status="error"
               onRetry={loaded.retry}
+              reason={loaded.reason}
+              labels={statusLabels}
               retryTestId="filter-options-retry"
             />
           ) : options.length === 0 ? (
             <OptionStatus
               status={busy ? 'loading' : 'empty'}
+              labels={statusLabels}
               retryTestId="filter-options-retry"
             />
           ) : (

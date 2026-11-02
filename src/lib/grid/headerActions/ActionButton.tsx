@@ -1,26 +1,19 @@
 /**
- * ActionButton: инлайн-подача действия слота (иконка-кнопка с тултипом).
- * Реактивность даёт родительская ActionsZone (подписка на состояние).
+ * ActionButton: инлайн-подача действия слота (иконка-кнопка с тултипом). Ожидание и отказ
+ * действия кнопка не показывает — они на объекте действия (ADR 0177, §1); пока действие ждёт,
+ * кнопка видна без наведения, повторное нажатие не принимается. Реактивность даёт родительская
+ * ActionsZone (подписка на состояние).
  */
 import clsx from 'clsx'
 
-import { cancelSourceOf } from '../../core/cancellation'
 import { useLocalization } from '../../core/localization'
 import { logWarn } from '../../util/logger'
-import { useActionStatus } from '../../core/headerActions'
-import {
-  pendingAttributes,
-  serverActionReason,
-  serverCancelProps,
-  useServerActionMarks,
-} from '../../core/serverActions'
 import { IconButton } from '../../ui/IconButton'
 import { HiddenButtonContext } from '../../ui/IconButton/iconReveal'
 import {
-  actionErrorText,
   actionStatusKey,
-  cancelMenuAction,
   readSyncDisabled,
+  useActionStatus,
   runMenuAction,
   type ActionStatus,
   type SlotAction,
@@ -47,24 +40,6 @@ export const ActionButton = ({
     context.table,
     (status: ActionStatus) => status[actionStatusKey(action, context)],
   )
-  // Серверное действие, начатое этой кнопкой (ADR 0116, §3): свет и отметка отказа.
-  const server = useServerActionMarks(
-    context.table,
-    cause =>
-      cause.control === action.id &&
-      !cause.menu &&
-      !!cause.columns?.includes(context.column?.id),
-  )
-  // Отметка отказа (ADR 0136): своего действия или серверного; снимают повтор и успех.
-  const failure =
-    entry?.failed && !entry.pending
-      ? labels.actionFailedRetry(
-          actionErrorText(action, context, entry.error, labels),
-        )
-      : server.failure && !server.pending
-        ? labels.actionFailedRetry(serverActionReason(server.failure, labels))
-        : undefined
-
   if (action.visible?.(context) === false) {
     return null
   }
@@ -90,17 +65,6 @@ export const ActionButton = ({
       onClick={event =>
         runMenuAction(action, context, event, { keepError: false })
       }
-      pending={entry?.pending}
-      {...serverCancelProps(context.table, server.pending, () =>
-        labels.cancelAction(label),
-      )}
-      {...(entry?.pending && {
-        onCancel: event =>
-          cancelMenuAction(action, context, cancelSourceOf(event)),
-        cancelLabel: labels.cancelAction(label),
-      })}
-      failure={failure}
-      {...pendingAttributes(server.pending)}
       disabled={disabled}
       aria-disabled={disabled}
       label={label}
@@ -118,11 +82,9 @@ export const ActionButton = ({
   return (
     <div
       className={wrapperClassName}
-      data-button-active={active || !!entry?.pending || server.pending}
+      data-button-active={active || !!entry?.pending}
     >
-      <HiddenButtonContext.Provider
-        value={!(active || !!entry?.pending || server.pending)}
-      >
+      <HiddenButtonContext.Provider value={!(active || !!entry?.pending)}>
         {button}
       </HiddenButtonContext.Provider>
     </div>

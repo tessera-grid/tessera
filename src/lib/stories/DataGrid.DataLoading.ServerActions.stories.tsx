@@ -13,7 +13,6 @@ import {
   guideNext,
   headCell,
   orderedRows,
-  pointAt,
   pollUntil,
   pressEscape,
   settle,
@@ -193,8 +192,6 @@ const pageButton = (root: HTMLElement, action: 'next' | 'previous') =>
   root.querySelector<HTMLButtonElement>(
     `[data-testid="pagination"] [data-page-action="${action}"]`,
   )
-const waits = (button: Element | null | undefined) =>
-  button?.getAttribute('aria-busy') === 'true'
 const failed = (button: Element | null | undefined) =>
   button
     ?.querySelector<HTMLElement>('[data-failure-indicator]')
@@ -237,7 +234,7 @@ const type = (input: HTMLInputElement | null, text: string) => {
 /** Пользователь сортирует по имени; «сервер» отвечает по режиму шага. */
 const sortByName = (root: HTMLElement, signal: AbortSignal) =>
   pollUntil(() => {
-    if (ariaSort(root) !== 'none' && !waits(sortButton(root))) {
+    if (ariaSort(root) !== 'none' && !server.holding()) {
       return firstRowText(root, 'name') === firstSortedName(root)
     }
     if (server.holding()) server.release()
@@ -256,11 +253,9 @@ const filterPanel = () =>
   document.querySelector<HTMLElement>('[data-testid="filter-panel"]')
 const filterValue = () =>
   document.querySelector<HTMLInputElement>('[data-testid="filter-value"]')
-/** Отметка отказа кнопки фильтра — точка ошибки (ADR 0116, SA18). */
-const filterFailed = (root: HTMLElement) =>
-  filterButton(root)
-    ?.querySelector('[data-error-indicator]')
-    ?.getAttribute('data-shown') === 'true'
+/** Значок ошибки в открытой панели фильтра (ADR 0116, SA18). */
+const filterFailed = () =>
+  !!document.querySelector('[data-testid="filter-failure"]')
 const refusedWith = (part: string) =>
   guide.lastReply.startsWith('refused') && guide.lastReply.includes(part)
 
@@ -269,7 +264,7 @@ const refuseFilter = (root: HTMLElement, signal: AbortSignal) => {
   guide.mode = 'refuse'
   return pollUntil(() => {
     if (refusedWith('filter name=') && banner(root) && !refreshing(root))
-      return filterFailed(root)
+      return filterFailed()
     if (!filterPanel()) filterButton(root)?.click()
     else {
       type(filterValue(), FILTER)
@@ -314,12 +309,12 @@ const REFUSED: readonly GuideStoryStep[] = [
   },
   {
     title: 'Сортировка ждёт ответа',
-    hint: 'Пользователь отсортировал строки по имени, запрос ушёл серверу, ответа пока нет. Кнопка сортировки показывает ожидание, под шапкой идёт обновление данных; строки прежние, таблица доступна.',
+    hint: 'Пользователь отсортировал строки по имени, запрос ушёл серверу, ответа пока нет. Под шапкой идёт обновление данных; строки прежние, таблица доступна.',
     states: ['body.refreshing'],
     enter: stepAction(async (root, { signal }) => {
       guide.mode = 'hold'
       await pollUntil(() => {
-        if (waits(sortButton(root))) return refreshing(root)
+        if (server.holding()) return refreshing(root)
         if (ariaSort(root) === 'none') sortButton(root)?.click()
         return false
       }, signal)
@@ -336,7 +331,7 @@ const REFUSED: readonly GuideStoryStep[] = [
   },
   {
     title: 'Сервер отказал',
-    hint: 'Пользователь открыл следующую страницу и, не дождавшись ответа, сменил направление сортировки. Сервер отказал. Таблица вернула сортировку и страницу к последнему ответу сервера, кнопка сортировки отмечена отказом, под шапкой — сообщение с причиной и повтором.',
+    hint: 'Пользователь открыл следующую страницу и, не дождавшись ответа, сменил направление сортировки. Сервер отказал. Таблица вернула сортировку и страницу к последнему ответу сервера, под шапкой — сообщение с причиной и повтором.',
     states: ['body.loadError'],
     enter: stepAction(async (root, { signal }) => {
       guide.mode = 'answer'
@@ -344,8 +339,8 @@ const REFUSED: readonly GuideStoryStep[] = [
       const answered = ariaSort(root)
       guide.mode = 'hold'
       await pollUntil(() => {
-        if (waits(pageButton(root, 'next'))) return true
-        if (!server.holding()) pageButton(root, 'next')?.click()
+        if (server.holding()) return true
+        pageButton(root, 'next')?.click()
         return false
       }, signal)
       sortButton(root)?.click()
@@ -354,10 +349,7 @@ const REFUSED: readonly GuideStoryStep[] = [
       server.release()
       await pollUntil(
         () =>
-          !!banner(root) &&
-          ariaSort(root) === answered &&
-          onFirstPage(root) &&
-          failed(sortButton(root)),
+          !!banner(root) && ariaSort(root) === answered && onFirstPage(root),
         signal,
       )
     }),
@@ -392,13 +384,13 @@ const REFUSED: readonly GuideStoryStep[] = [
   },
   {
     title: 'Фильтр не применился',
-    hint: 'Пользователь отфильтровал колонку по значению, сервер отказал. Условие осталось в панели фильтра, кнопка фильтра колонки отмечена отказом, под шапкой — сообщение с причиной и повтором.',
+    hint: 'Пользователь отфильтровал колонку по значению, сервер отказал. Условие осталось в панели фильтра, рядом с ним — значок ошибки, под шапкой — сообщение с причиной и повтором.',
     states: ['body.loadError', 'overlay.filterText'],
     enter: stepAction((root, { signal }) => refuseFilter(root, signal)),
   },
   {
     title: 'Страница не открылась',
-    hint: 'Пользователь открыл следующую страницу, сервер снова отказал. Таблица осталась на прежней странице, кнопка следующей страницы отмечена отказом, сообщение под шапкой называет причину.',
+    hint: 'Пользователь открыл следующую страницу, сервер снова отказал. Таблица осталась на прежней странице, сообщение под шапкой называет причину.',
     states: ['body.loadError'],
     enter: stepAction(async (root, { signal }) => {
       if (!refusedWith('filter name=') && !refusedWith('page 2'))
@@ -411,8 +403,8 @@ const REFUSED: readonly GuideStoryStep[] = [
       guide.mode = 'refuse'
       await pollUntil(() => {
         if (refusedWith('page 2') && banner(root) && !refreshing(root))
-          return failed(pageButton(root, 'next')) && onFirstPage(root)
-        if (!waits(pageButton(root, 'next')) && !refusedWith('page 2'))
+          return onFirstPage(root)
+        if (!server.holding() && !refusedWith('page 2'))
           pageButton(root, 'next')?.click()
         return false
       }, signal)
@@ -458,7 +450,7 @@ export const ServerActionsRefused: StoryObj<StoryProps> = {
     await step(REFUSED[1]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(waits(sortButton(canvas))).toBe(true)
+      await expect(server.holding()).toBe(true)
       await expect(refreshing(canvas)).toBe(true)
       await expect(firstRowText(canvas, 'name')).toBe(first.rows[0]!.name)
       await expect(consoleText()).toContain('onToggleColumnSort')
@@ -466,7 +458,7 @@ export const ServerActionsRefused: StoryObj<StoryProps> = {
     await step(REFUSED[2]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(waits(sortButton(canvas))).toBe(false)
+      await expect(server.holding()).toBe(false)
       await expect(refreshing(canvas)).toBe(false)
       await expect(firstRowText(canvas, 'name')).toBe(firstSortedName(canvas))
       await expect(consoleText()).toContain('by name')
@@ -479,7 +471,7 @@ export const ServerActionsRefused: StoryObj<StoryProps> = {
       // Откат: сортировка и страница — как в последнем ответе.
       await expect(ariaSort(canvas)).toBe(answered)
       await expect(onFirstPage(canvas)).toBe(true)
-      await expect(failed(sortButton(canvas))).toBe(true)
+      await expect(failed(sortButton(canvas))).toBe(false)
       await expect(consoleText()).toContain('onPageChange')
       await until(() =>
         expect(canvas.querySelector('[data-error-flash]')).toBeNull(),
@@ -513,9 +505,9 @@ export const ServerActionsRefused: StoryObj<StoryProps> = {
     await step(REFUSED[6]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      // Черновик: условие осталось в панели, кнопка фильтра отмечена отказом.
+      // Черновик: условие осталось в панели, рядом — значок ошибки.
       await expect(filterValue()!.value).toBe(FILTER)
-      await expect(filterFailed(canvas)).toBe(true)
+      await expect(filterFailed()).toBe(true)
       await expect(banner(canvas)).toHaveTextContent(ACTION_SERVER_REFUSAL)
       await expect(consoleText()).toContain('onFilterChange')
       await settle()
@@ -524,7 +516,7 @@ export const ServerActionsRefused: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(onFirstPage(canvas)).toBe(true)
-      await expect(failed(pageButton(canvas, 'next'))).toBe(true)
+      await expect(failed(pageButton(canvas, 'next'))).toBe(false)
       await expect(banner(canvas)).toHaveTextContent(ACTION_SERVER_REFUSAL)
       await settle()
     })
@@ -554,14 +546,10 @@ const cancelReset: TesseraFeatureEntry = {
   },
 }
 
-const SORT_BUTTON =
-  '.data-grid__head-cell[data-column-id="name"] .column-sort__button'
 const pendingBanner = (root: HTMLElement) =>
   root.querySelector<HTMLElement>('[data-testid="pending-action-banner"]')
 const pendingCancel = (root: HTMLElement) =>
   root.querySelector<HTMLElement>('[data-testid="pending-action-cancel"]')
-const armed = (button: Element | null | undefined) =>
-  !!button?.hasAttribute('data-cancel-armed')
 
 /** Первый шаг гайдов отмены: «сервер» отвечает в данные приложения и консоль. */
 const cancelServerStep = (title: string, hint: string): GuideStoryStep => ({
@@ -692,16 +680,10 @@ export const ServerActionsCancelSearch: StoryObj<StoryProps> = {
 const sortHeld = (root: HTMLElement, signal: AbortSignal) => {
   cancelGuide.mode = 'hold'
   return pollUntil(() => {
-    if (waits(sortButton(root))) return refreshing(root)
+    if (cancelServer.holding()) return refreshing(root)
     if (ariaSort(root) === 'none') sortButton(root)?.click()
     return false
   }, signal)
-}
-
-/** Занятая кнопка сортировки готова к отмене. */
-const sortArmed = async (root: HTMLElement, signal: AbortSignal) => {
-  await sortHeld(root, signal)
-  await pollUntil(() => armed(sortButton(root)), signal)
 }
 
 const CANCEL_SORT: readonly GuideStoryStep[] = [
@@ -711,31 +693,31 @@ const CANCEL_SORT: readonly GuideStoryStep[] = [
   ),
   {
     title: 'Сортировка ждёт',
-    hint: 'Пользователь нажал кнопку сортировки колонки. Кнопка показывает ожидание, под шапкой светится полоса обновления.',
+    hint: 'Пользователь нажал кнопку сортировки колонки. Колонка уже отсортирована, а пока сервер сортирует строки, под шапкой светится полоса обновления.',
     states: ['body.refreshing'],
     immediate: true,
     enter: stepAction((root, { signal }) => sortHeld(root, signal)),
   },
   {
-    title: 'Кнопка предлагает отмену',
-    hint: 'Пользователь навёл указатель на занятую кнопку. Появился знак остановки, подсказка предлагает отменить сортировку.',
+    title: 'Сортировка идёт долго',
+    hint: 'Сервер не ответил за секунду. Под шапкой появилась плашка о сортировке с кнопкой отмены.',
     states: ['body.refreshing'],
-    pseudo: { hover: SORT_BUTTON },
-    enter: stepAction(async (root, { signal, onLeave }) => {
-      await sortArmed(root, signal)
-      onLeave(pointAt(sortButton(root)!))
+    enter: stepAction(async (root, { signal }) => {
+      await sortHeld(root, signal)
+      await pollUntil(() => !!pendingCancel(root), signal)
     }),
   },
   {
     title: 'Сортировка отменена',
-    hint: 'Пользователь нажал на кнопку. Колонка снова без сортировки, свечение ушло, плашки отказа нет.',
+    hint: 'Пользователь нажал отмену в плашке. Колонка снова без сортировки, плашка и свечение ушли, плашки отказа нет.',
     enter: stepAction(async (root, { signal }) => {
-      await sortArmed(root, signal)
-      sortButton(root)!.click()
+      await sortHeld(root, signal)
+      await pollUntil(() => !!pendingCancel(root), signal)
+      pendingCancel(root)!.click()
       await pollUntil(
         () =>
           ariaSort(root) === 'none' &&
-          !waits(sortButton(root)) &&
+          !pendingBanner(root) &&
           !refreshing(root),
         signal,
       )
@@ -743,7 +725,7 @@ const CANCEL_SORT: readonly GuideStoryStep[] = [
   },
 ]
 
-/** ADR 0153, S6: серверная сортировка ждёт — человек отменяет её кнопкой сортировки. */
+/** ADR 0153, S6: серверная сортировка ждёт — человек отменяет её в плашке под шапкой. */
 export const ServerActionsCancelSort: StoryObj<StoryProps> = {
   name: 'Cancel sorting',
   parameters: { scenario: '0153/S6', ...guideControls() },
@@ -765,17 +747,18 @@ export const ServerActionsCancelSort: StoryObj<StoryProps> = {
     await step(CANCEL_SORT[1]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(waits(sortButton(canvas))).toBe(true)
+      await expect(ariaSort(canvas)).not.toBe('none')
       await expect(refreshing(canvas)).toBe(true)
+      await expect(pendingBanner(canvas)).toBeNull()
     })
     await step(CANCEL_SORT[2]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      const button = sortButton(canvas)!
-      await expect(armed(button)).toBe(true)
-      await expect(
-        button.getAttribute('aria-label')!.startsWith(labels.cancelAction('')),
-      ).toBe(true)
+      await expect(pendingBanner(canvas)).toHaveTextContent(
+        labels.pendingSorting,
+      )
+      await expect(pendingCancel(canvas)).toHaveTextContent(labels.cancel)
+      await settle()
     })
     await step(CANCEL_SORT[3]!.title, async () => {
       await guideNext(canvas)

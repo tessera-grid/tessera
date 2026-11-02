@@ -24,6 +24,11 @@ import type {
   Updater,
 } from '../../types'
 import type { ColumnMoveFailed, ColumnMoves } from './commitColumnMove'
+import { announcerLabels } from '../../core/announcer'
+import { mirrorFailures } from '../../core/failures/failuresFeature'
+import { mirrorPending } from '../../shared/objectPending'
+import { DEFAULT_LABELS } from '../../core/localization'
+import { rejectionText } from '../../util/thenable'
 import type { DragOverlayState } from './types'
 
 interface ColumnDraggingStateSlice {
@@ -137,18 +142,22 @@ type SliceAtom<T> = { get: () => T; set: (value: T) => void }
 
 /** Сеттер среза: обработчик опций, иначе атом напрямую. */
 const sliceSetter =
-  <T>(table: unknown, key: string, handler: string) =>
+  <T>(
+    table: unknown,
+    key: string,
+    handler: string,
+    onChange?: (prev: T, next: T) => void,
+  ) =>
   (updater: Updater<T>) => {
     const own = (table as { options: Record<string, unknown> }).options[
       handler
     ] as ((u: Updater<T>) => void) | undefined
-    if (own) {
-      own(updater)
-      return
-    }
     const atom = (table as { atoms: Record<string, SliceAtom<T> | undefined> })
       .atoms[key]
-    atom?.set(functionalUpdate(updater, atom.get()))
+    const prev = atom?.get()
+    if (own) own(updater)
+    else atom?.set(functionalUpdate(updater, atom.get()))
+    if (onChange && atom && prev !== undefined) onChange(prev, atom.get())
   }
 
 export const columnDraggingFeature: TableFeature = {
@@ -195,6 +204,11 @@ export const columnDraggingFeature: TableFeature = {
           table,
           'columnMoves',
           'onColumnMovesChange',
+          // Ожидание переноса — волна колонок узла, а не дуга ручки (ADR 0177, §1).
+          (prev, next) =>
+            mirrorPending(table, 'columnMove', prev, next, (_, move) =>
+              move.leaves.map(column => ({ column })),
+            ),
         ),
       },
       table_setColumnMoveFailed: {
@@ -202,6 +216,15 @@ export const columnDraggingFeature: TableFeature = {
           table,
           'columnMoveFailed',
           'onColumnMoveFailedChange',
+          (prev, next) =>
+            mirrorFailures(table, prev, next, (id, failed) => {
+              const labels = announcerLabels(table) ?? DEFAULT_LABELS
+              return {
+                label: labels.moveColumn,
+                target: { column: id },
+                reason: rejectionText(failed.error) ?? labels.moveColumnFailed,
+              }
+            }),
         ),
       },
     })

@@ -12,11 +12,16 @@ export type ArcPhase = 'pending' | 'leaving' | 'stopping'
 const TAIL = Array.from({ length: 8 }, (_, i) => i + 1)
 
 /**
- * Радиус средней линии — радиус кнопки без половины толщины дуги; у круга — половина
- * стороны. Читается из вычисленного стиля кнопки при монтировании дуги.
+ * Радиус средней линии — радиус кнопки без половины толщины дуги; у дуги снаружи — радиус
+ * контрола плюс зазор и половина толщины; у круга — половина стороны. Читается из
+ * вычисленного стиля контрола при монтировании дуги.
  */
 const fitRadius = (svg: SVGSVGElement | null) => {
-  const button = svg?.parentElement
+  const button =
+    svg?.dataset.placement === 'outside'
+      ? // Контрол — первый в обёртке: за ним Base UI ставит скрытое поле формы.
+        (svg.parentElement?.firstElementChild ?? svg.parentElement)
+      : svg?.parentElement
   if (!svg || !button) {
     return
   }
@@ -25,24 +30,47 @@ const fitRadius = (svg: SVGSVGElement | null) => {
     parseFloat(
       getComputedStyle(svg).getPropertyValue('--tsr-comp-pending-ring-width'),
     ) || 1
+  const outside = svg.dataset.placement === 'outside'
+  // Не больше половины меньшей стороны: иначе SVG скругляет эллипсом, а не капсулой.
+  const box = getComputedStyle(svg)
+  const half =
+    Math.min(parseFloat(box.width), parseFloat(box.height)) / 2 || Infinity
   const rx = radius.endsWith('%')
     ? '50%'
-    : String(Math.max(0, parseFloat(radius) - width / 2))
+    : String(
+        Math.min(
+          half,
+          Math.max(
+            0,
+            outside
+              ? parseFloat(radius) + width * 1.5
+              : parseFloat(radius) - width / 2,
+          ),
+        ),
+      )
   svg.querySelectorAll('rect').forEach(rect => rect.setAttribute('rx', rx))
 }
 
 /**
  * Дуга ожидания кнопки (ADR 0127): над бледной дорожкой по контуру бежит дуга с хвостом и
  * повторяет форму кнопки; при отказе дуга встаёт и гаснет вместе с дорожкой (ADR 0136).
- * Смонтирована, пока у кнопки есть фаза.
+ * Смонтирована, пока у кнопки есть фаза. `outside` — дуга вокруг контрола с зазором, а не
+ * по его краю: у флажка и переключателя край занят заливкой и рамкой (ADR 0176).
  */
-export const PendingArc = ({ phase }: { phase: ArcPhase }) => {
+export const PendingArc = ({
+  phase,
+  placement,
+}: {
+  phase: ArcPhase
+  placement?: 'outside'
+}) => {
   return (
     <svg
       ref={fitRadius}
       className={styles.arc}
       data-pending-arc=""
       data-phase={phase}
+      data-placement={placement}
       aria-hidden
       focusable="false"
     >

@@ -14,8 +14,11 @@ import type { ReactNode } from 'react'
 import type { PluginCellProps } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
 import { useSliceProjection } from '../../core/reactivity'
-import { CheckMark } from '../../ui/CheckMark/CheckMark'
-import { editorOf } from './editors'
+import { alignOf } from '../../core/dataTypeFormat'
+import { SelectCheckbox } from '../../ui/SelectCheckbox/SelectCheckbox'
+import { defaultCell } from '../../core/commonFeature'
+import { sourceOf } from '../../core/debugActions'
+import { beginEdit, editorOf, togglesInPlace } from './editors'
 import styles from './CellEditInput.module.css'
 import {
   EDIT_SESSION_KEY,
@@ -28,6 +31,17 @@ import {
   setEditText,
 } from './session'
 import type { CellEditingHooks, CellEditingState } from './types'
+
+const noop = () => {}
+
+/** Булево правится встроенным флажком: своя ячейка колонки не задана, правка разрешена. */
+export const booleanToggle = (
+  props: PluginCellProps<CellEditingHooks>,
+): boolean =>
+  props.column.columnDef.cell === defaultCell &&
+  props.column.getDataType()?.base === 'boolean' &&
+  togglesInPlace(props.table, props.column, props.hooks) &&
+  props.hooks.canEditCell(props)
 
 export const CellEditField = (
   props: PluginCellProps<CellEditingHooks> & { content: ReactNode },
@@ -50,23 +64,41 @@ export const CellEditField = (
         : undefined,
   )
 
+  const header =
+    typeof column.columnDef.header === 'string'
+      ? column.columnDef.header
+      : column.id
   const submitted = view && view !== 'editing' ? view : null
   const pending = submitted?.status === 'pending'
   // Сохранение ждёт сервера — отправленное значение; ожидание показывает кнопка правки.
-  if (submitted && pending) {
+  // Редактируемое булево — флажок кита во всю ячейку: нажатие сохраняет сразу, ожидание —
+  // дугой на флажке, отказ — вспышкой отката (ED21, ADR 0176).
+  if (view !== 'editing' && booleanToggle(props)) {
+    const value =
+      pending && typeof submitted!.draft === 'boolean'
+        ? submitted!.draft
+        : row.getValue(column.id) === true
     return (
-      <span className={styles.pending}>
-        {typeof submitted.draft === 'boolean' &&
-        column.getDataType()?.base === 'boolean' ? (
-          <CheckMark
-            checked={submitted.draft}
-            label={submitted.draft ? labels.booleanTrue : labels.booleanFalse}
-          />
-        ) : (
-          submitted.text
-        )}
+      <span
+        className={styles.booleanCell}
+        data-align={alignOf(table as never, column as never)}
+        onClick={event => {
+          if (!pending) beginEdit(table, row, column, hooks, sourceOf(event))
+        }}
+      >
+        <SelectCheckbox
+          selected={value}
+          label={header}
+          tabIndex={-1}
+          pending={pending}
+          onClick={noop}
+        />
       </span>
     )
+  }
+
+  if (submitted && pending) {
+    return <span className={styles.pending}>{submitted.text}</span>
   }
 
   // Не в правке или сервер отказал — собственный контент ячейки, то есть значение из
@@ -87,11 +119,7 @@ export const CellEditField = (
   )({
     value: session?.draft,
     text: session?.text ?? '',
-    label: labels.editCellValue(
-      typeof column.columnDef.header === 'string'
-        ? column.columnDef.header
-        : column.id,
-    ),
+    label: labels.editCellValue(header),
     error: error ?? serverError,
     commit: value => saveEdit(table, cell, { value }, hooks, props),
     commitText: text => saveEdit(table, cell, { text }, hooks, props),

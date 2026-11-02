@@ -21,16 +21,16 @@ afterEach(() => releaseModule(MODULE.pageSize))
 const failed = () => failureShownOn(pageSizeButton())
 
 describe('Размер страницы — ошибка загрузки', () => {
-  test('LZ16: ошибка загрузки выбора размера страницы — список не открывается, отметка отказа, объявление с подписью rowsPerPage; следующий клик снова грузит', async () => {
+  test('LZ16: ошибка загрузки выбора размера страницы — список не открывается, объявление с подписью rowsPerPage, отметки на кнопке нет; следующий клик снова грузит', async () => {
     await failModule(MODULE.pageSize)
     await renderToolbarGrid()
     const announcements = recordAnnouncements()
 
     await humanClick(pageSizeButton())
-    await expect.poll(failed).toBe(true)
     await expect
       .poll(() => announcements.messages)
       .toContain(tableLabels.loadFailed(tableLabels.rowsPerPage))
+    expect(failed()).toBe(false)
     await sleep(100)
     expect(pageSizeOptions()).toBe(0)
 
@@ -39,7 +39,7 @@ describe('Размер страницы — ошибка загрузки', () =
     await expect
       .poll(() => announcements.messages.length)
       .toBeGreaterThan(before)
-    await expect.poll(failed).toBe(true)
+    expect(failed()).toBe(false)
     announcements.stop()
   })
 })

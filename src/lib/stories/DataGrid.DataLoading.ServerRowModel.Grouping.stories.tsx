@@ -121,7 +121,7 @@ const GROUP_BY: readonly GuideStoryStep[] = [
   },
   {
     title: 'Пользователь сгруппировал по городу',
-    hint: 'Группы по всем строкам знает только сервер, поэтому таблица попросила у него группы и вернулась к началу. Пока ответ в пути, на экране прежние строки в состоянии обновления данных, а кнопка группировки ждёт.',
+    hint: 'Группы по всем строкам знает только сервер, поэтому таблица попросила у него группы и вернулась к началу. Пока ответ в пути, на экране прежние строки в состоянии обновления данных.',
     states: ['body.refreshing'],
     enter: stepAction(async (root, { signal }) => {
       if (server.held.length > 0 || groupRows(root).length > 0) return
@@ -166,7 +166,7 @@ export const ServerRowModelGroupBy: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(refreshing(canvas)).toBe(true)
-      await expect(groupButton(canvas)).toHaveAttribute('aria-busy', 'true')
+      await expect(server.held.length).toBeGreaterThan(0)
     })
     await step(GROUP_BY[2]!.title, async () => {
       await guideNext(canvas)
@@ -390,7 +390,7 @@ const GROUPING_REFUSED: readonly GuideStoryStep[] = [
   },
   {
     title: 'Пользователь сгруппировал по городу',
-    hint: 'Таблица попросила у сервера группы. Пока ответ в пути, на экране прежние строки в состоянии обновления данных, а кнопка группировки ждёт.',
+    hint: 'Таблица попросила у сервера группы. Пока ответ в пути, на экране прежние строки в состоянии обновления данных.',
     states: ['body.refreshing'],
     enter: stepAction(async (root, { signal }) => {
       groupServer.refuse = true
@@ -434,7 +434,7 @@ export const ServerRowModelGroupingRefused: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(refreshing(canvas)).toBe(true)
-      await expect(groupButton(canvas)).toHaveAttribute('aria-busy', 'true')
+      await expect(server.held.length).toBeGreaterThan(0)
     })
     await step(GROUPING_REFUSED[2]!.title, async () => {
       await guideNext(canvas)

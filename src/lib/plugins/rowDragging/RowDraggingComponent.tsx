@@ -8,8 +8,6 @@ import { useSelector } from '@tanstack/react-store'
 import type { CellComponentProps } from '../../core/createSlots'
 import { useLocalization } from '../../core/localization'
 import { hasRowHierarchy } from '../../core/rowHierarchy'
-import type { FailedAttempt } from '../../shared/failedAttempts'
-import { rejectionText } from '../../util/thenable'
 import { DragHandler } from '../../shared/dnd'
 import {
   type RowMoveDirection,
@@ -26,20 +24,16 @@ import {
 import { type RowMoveEdge, serverMoveSource } from './serverMove'
 
 type MoveAtoms = {
-  atoms: { rowDragging: unknown; rowMoves: unknown; rowMoveFailed: unknown }
+  atoms: { rowDragging: unknown; rowMoves: unknown }
 }
 
 export const RowDraggingComponent = ({ row, table }: CellComponentProps) => {
   const { atoms } = table as unknown as MoveAtoms
   useSelector(atoms.rowDragging as never)
-  // Ожидание и отказ переноса (ADR 0112) — только этой строки.
+  // Ожидание переноса (ADR 0112) — только этой строки: меню ручки не открывается.
   const busy = useSelector(
     atoms.rowMoves as never,
     (moves: Record<string, { pending: boolean }>) => !!moves[row.id]?.pending,
-  )
-  const failed = useSelector(
-    atoms.rowMoveFailed as never,
-    (fails: Record<string, FailedAttempt>) => fails[row.id],
   )
   const labels = useLocalization()
 
@@ -97,12 +91,6 @@ export const RowDraggingComponent = ({ row, table }: CellComponentProps) => {
       label={labels.moveRow}
       table={table}
       busy={busy}
-      failure={
-        failed &&
-        labels.actionFailedRetry(
-          rejectionText(failed.error) ?? labels.moveRowFailed,
-        )
-      }
       getMenuItems={isMovableRow(row, table) ? getMenuItems : undefined}
     />
   )

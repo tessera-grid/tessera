@@ -19,25 +19,22 @@ import { tableLabels } from '../labels'
 afterEach(() => releaseModule(MODULE.columns))
 
 describe('Ленивые поповеры — ошибка загрузки', () => {
-  test('LZ5: ошибка загрузки у кнопки тулбара — поповер не открывается, отметка отказа с текстом, объявление с подписью кнопки; следующий клик снова пытается загрузить', async () => {
+  test('LZ5: ошибка загрузки у кнопки тулбара — поповер не открывается, объявление с подписью кнопки, отметки на кнопке нет; следующий клик снова пытается загрузить', async () => {
     await failModule(MODULE.columns)
     await renderToolbarGrid()
     const announcements = recordAnnouncements()
 
     await humanClick(columnsButton())
-    await expect.poll(() => failureShownOn(columnsButton())).toBe(true)
-    expect(columnsButton()).toHaveAccessibleDescription(
-      tableLabels.loadFailed(tableLabels.columns),
-    )
     await expect
       .poll(() => announcements.messages)
       .toContain(tableLabels.loadFailed(tableLabels.columns))
+    expect(failureShownOn(columnsButton())).toBe(false)
     await sleep(100)
     expect(columnsPopover()).toBeNull()
     expect(columnsButton().getAttribute('aria-busy')).toBeNull()
 
     // Следующий клик — новая попытка, а не мёртвый клик: модуль снова грузится, отказ
-    // объявляется ещё раз, отметка остаётся.
+    // объявляется ещё раз.
     await humanClick(columnsButton())
     await expect
       .poll(
@@ -47,7 +44,7 @@ describe('Ленивые поповеры — ошибка загрузки', ()
           ).length,
       )
       .toBeGreaterThanOrEqual(2)
-    await expect.poll(() => failureShownOn(columnsButton())).toBe(true)
+    expect(failureShownOn(columnsButton())).toBe(false)
     announcements.stop()
   })
 })

@@ -103,6 +103,7 @@ const CORE_OPTION_KEYS: Record<keyof CoreOptions, true> = {
   loadError: true,
   onRetry: true,
   onDebugAction: true,
+  onFailure: true,
   rowHeight: true,
   headerHeight: true,
 }

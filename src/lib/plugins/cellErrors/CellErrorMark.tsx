@@ -1,37 +1,27 @@
 /**
- * Точка ошибки ячейки (ADR 0150, §2): кнопка кита без значка — отметка отказа с текстом
- * ошибки в тултипе и описании. У ячейки, которую можно править, точку несёт кнопка правки
- * `cellEditing`, и этой кнопки нет.
+ * Треугольник ошибки данных ячейки (ADR 0150; ADR 0177, §5): тот же, что у отказа сохранения,
+ * в правом верхнем углу ячейки при любом её содержимом. Пока у ячейки есть отказ сохранения,
+ * треугольник один — отказа (его причина первой), этот не рисуется.
  */
-import { readPluginHooks, type PluginCellProps } from '../../core/definePlugin'
+import type { PluginCellProps } from '../../core/definePlugin'
+import { useCellFailure } from '../../core/failures/failuresFeature'
 import { useLocalization } from '../../core/localization'
-import { CellButton } from '../../ui/CellButton/CellButton'
+import { CellIssue } from '../../ui/CellIssue'
 import { CellInvalid } from '../../ui/cellControls/CellInvalid'
-import type { CellEditHook } from '../../shared/cellHooks'
 import type { CellErrorsHooks } from './types'
 
-const ignore = () => {}
-
 export const CellErrorMark = (props: PluginCellProps<CellErrorsHooks>) => {
-  const { table, hooks } = props
+  const { table, row, column, hooks } = props
   const labels = useLocalization()
   const error = hooks.getCellError(props)
-  const editing = readPluginHooks<Partial<CellEditHook>>(
-    table as never,
-    'cellEditing',
-  )
-  if (!error || editing.canEditCell?.(props)) {
+  const failure = useCellFailure(table, row.id, column.id)
+  if (!error || failure) {
     return null
   }
   return (
     <>
       <CellInvalid />
-      <CellButton
-        label={labels.cellError}
-        icon={null}
-        failure={error}
-        onClick={ignore}
-      />
+      <CellIssue reason={error} label={labels.cellError} />
     </>
   )
 }

@@ -39,6 +39,8 @@ import {
 } from '../core/flashes/flashFeature'
 import { cellPendingOf } from '../core/headerActions/actionStatus'
 import type { ActionStatus } from '../core/headerActions/actionStatusFeature'
+import { cellFailureOf, type Failures } from '../core/failures/failuresFeature'
+import { CellFailureMark } from './CellFailureMark'
 import { usePluginRenderVersion } from '../core/renderVersion'
 import { CellWrapperContent, getAlignContent } from '../grid/CellWrapperContent'
 import { CellWrapperTitle } from '../grid/CellWrapperTitle'
@@ -121,6 +123,7 @@ export const BodyCell = memo(
       cellFlash,
       columnFlash,
       busy,
+      failure,
       navActive,
       contributions,
     } = useContributionNode(table, contributors, contributionContext, state => {
@@ -128,6 +131,7 @@ export const BodyCell = memo(
         highlights?: Highlights
         flashes?: Flashes
         actionStatus?: ActionStatus
+        failures?: Failures
       }
       return {
         columnPinning: s.columnPinning,
@@ -145,6 +149,9 @@ export const BodyCell = memo(
         columnFlash: s.flashes?.[columnKey] as FlashEntry | undefined,
         busy: cellPendingOf(table, s.actionStatus, rowId, columnId) as
           'wave' | 'busy' | undefined,
+        failure: s.failures
+          ? cellFailureOf(s.failures, rowId, columnId)
+          : undefined,
         navActive: selectNavigationCell(table, s, {
           rowIndex,
           columnId,
@@ -351,6 +358,7 @@ export const BodyCell = memo(
             {canRenderSlots && (
               <RenderSlot slot={rightCellSlot} context={cell.getContext()} />
             )}
+            {failure && <CellFailureMark table={table} failure={failure} />}
           </CellWrapperContent>
         </IconRevealContext.Provider>
       </div>

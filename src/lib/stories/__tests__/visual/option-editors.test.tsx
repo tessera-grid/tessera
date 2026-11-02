@@ -7,14 +7,19 @@ import { describe, expect, test, vi } from 'vitest'
 import type { ColumnOption, LoadOptions } from '../../../core/columnOptions'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
-import { cellEditing, type CellEditCommit } from '../../../plugins'
+import {
+  cellEditing,
+  columnFiltering,
+  type CellEditCommit,
+} from '../../../plugins'
 import { humanClick, revealCellButtons } from '../helpers'
 import { tableLabels } from '../labels'
 import { inBothThemes } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
 
-// Редакторы вариантов (ADR 0175, ED8–ED10) настоящими событиями: поле с поиском у `select` и
-// `object`, справочник с ожиданием и отказом, список с флажками у `multiSelect`, 1000 вариантов.
+// Редакторы вариантов (ADR 0175, ED8–ED10, ED16, ED23–ED26) настоящими событиями: поповер с полем
+// поиска у `select` и `object`, справочник с ожиданием и отказом, список с флажками у
+// `multiSelect`, 1000 вариантов, очистка значения и поиска, закрытие прокруткой.
 
 const fc = commands as unknown as {
   forcedColors: (active: boolean) => Promise<void>
@@ -63,6 +68,7 @@ const ROWS = [
     tags: ['new'],
     code: 'v0',
     price: 12.5,
+    released: '2024-03-01',
   },
   {
     id: 'r2',
@@ -72,6 +78,7 @@ const ROWS = [
     tags: [],
     code: 'v1',
     price: 3,
+    released: '2024-05-10',
   },
 ]
 
@@ -103,11 +110,16 @@ const Grid = ({
   onEditCancel,
   load,
   localization,
+  searchDebounceMs,
+  filtering,
 }: {
   onCellEdit: (commit: CellEditCommit) => void
-  onEditCancel: () => void
+  onEditCancel: (end: unknown) => void
   load: LoadOptions
   localization?: Record<string, string>
+  searchDebounceMs?: number
+  /** Панель фильтра вариантов у справочника — тот же вид загрузки (ED24). */
+  filtering?: boolean
 }) => {
   const columns = useMemo(
     () => [
@@ -150,6 +162,32 @@ const Grid = ({
         dataType: 'number',
       },
       {
+        id: 'released',
+        accessorKey: 'released',
+        header: 'Released',
+        dataType: 'date',
+      },
+      // Фильтр вариантов со справочником; кнопки шапки — в ряд, не в кебабе.
+      ...(filtering
+        ? [
+            {
+              id: 'lookup',
+              accessorKey: 'status',
+              header: 'Lookup',
+              dataType: 'select',
+              loadOptions: load,
+              size: 220,
+            },
+          ]
+        : []),
+      // Запись без справочника: варианты — записи из строк.
+      {
+        id: 'boss',
+        accessorKey: 'manager',
+        header: 'Boss',
+        dataType: 'object',
+      },
+      {
         id: 'code',
         accessorKey: 'code',
         header: 'Code',
@@ -157,13 +195,17 @@ const Grid = ({
         options: MANY,
       },
     ],
-    [load],
+    [load, filtering],
   )
   const table = useCreateTable({
     columns: columns as never,
     data: ROWS,
+    defaultColumn: { size: 110 },
     enableKeyboardNavigation: true,
-    plugins: [cellEditing({ onCellEdit, onEditCancel })],
+    plugins: [
+      cellEditing({ onCellEdit, onEditCancel, searchDebounceMs }),
+      ...(filtering ? [columnFiltering()] : []),
+    ],
   })
   return (
     <div style={{ height: 400 }}>
@@ -180,6 +222,13 @@ const field = () =>
   document.querySelector<HTMLInputElement>('[data-testid="edit-select"]')
 const popup = () =>
   document.querySelector<HTMLElement>('[data-testid="edit-options"]')
+/** Поле, которое видит пользователь: скрытое поле формы Combobox — не оно. */
+const VISIBLE_INPUT = 'input:not([type="hidden"]):not([aria-hidden="true"])'
+const clearValue = () =>
+  document.querySelector<HTMLElement>('[data-testid="edit-clear-value"]')
+/** Строки-скелеты загрузки вариантов: подпись — у их группы. */
+const loadingLabel = (root: ParentNode | null | undefined) =>
+  root?.querySelector('[role="status"][aria-busy="true"]')?.textContent ?? null
 const itemOf = (value: string) =>
   popup()?.querySelector<HTMLElement>(`[data-value="${value}"]`) ?? null
 
@@ -206,7 +255,7 @@ const renderGrid = async () => {
 }
 
 describe('редакторы вариантов (ADR 0175)', () => {
-  test('ED8: select и object — поле с поиском сужает варианты набором, выбор стрелками и Enter; варианты из options, справочник из loadOptions с ожиданием, отказом и повтором; object выбирает запись по getKey и подписывает по getLabel; значение очищается отдельным пунктом', async () => {
+  test('ED8: select и object — поповер с полем поиска сужает варианты набором, выбор стрелками и Enter; варианты из options, справочник из loadOptions с ожиданием, отказом и повтором; object сохраняет запись варианта, без неё — запись с тем же ключом из данных; подпись по getLabel', async () => {
     const { onCellEdit, onEditCancel, server } = await renderGrid()
 
     // Набор сужает варианты, Enter выбирает подсвеченный.
@@ -221,9 +270,10 @@ describe('редакторы вариантов (ADR 0175)', () => {
     await expect.poll(field).toBeNull()
     expect(onCellEdit).toHaveBeenLastCalledWith(
       expect.objectContaining({ columnId: 'status', value: 'archived' }),
+      { signal: expect.any(AbortSignal) },
     )
 
-    // Стрелки ходят по вариантам; отдельный пункт очищает значение.
+    // Стрелки ходят по вариантам, Enter выбирает.
     await openEdit('status', 'r2')
     await expect.poll(() => itemOf('draft')).not.toBeNull()
     await userEvent.keyboard('{ArrowDown}')
@@ -234,13 +284,12 @@ describe('редакторы вариантов (ADR 0175)', () => {
           ?.getAttribute('data-value'),
       )
       .toBeTruthy()
-    const clear = popup()!.querySelector<HTMLElement>('[data-clear]')!
-    expect(clear.textContent).toBe(tableLabels.editClear)
-    await humanClick(clear)
+    await userEvent.keyboard('{Enter}')
     await expect.poll(field).toBeNull()
-    expect(onCellEdit).toHaveBeenLastCalledWith(
-      expect.objectContaining({ columnId: 'status', rowId: 'r2', value: null }),
-    )
+    expect(onCellEdit.mock.lastCall![0]).toMatchObject({
+      columnId: 'status',
+      rowId: 'r2',
+    })
 
     // Escape — без сохранения.
     onCellEdit.mockClear()
@@ -254,12 +303,12 @@ describe('редакторы вариантов (ADR 0175)', () => {
     // Справочник: ожидание, отказ с повтором, ответ; сохраняется запись варианта.
     await openEdit('manager')
     await expect
-      .poll(() => popup()?.textContent)
-      .toContain(tableLabels.filterLoadingOptions)
+      .poll(() => loadingLabel(popup()))
+      .toBe(tableLabels.editLoadingOptions)
     server.refuse()
     await expect
       .poll(() => popup()?.querySelector('[role="alert"]')?.textContent)
-      .toContain(tableLabels.filterOptionsError)
+      .toContain(tableLabels.editOptionsError)
     await humanClick(
       popup()!.querySelector<HTMLElement>(
         '[data-testid="edit-options-retry"]',
@@ -307,6 +356,7 @@ describe('редакторы вариантов (ADR 0175)', () => {
         columnId: 'tags',
         value: ['new', 'sale', 'eco'],
       }),
+      { signal: expect.any(AbortSignal) },
     )
 
     onCellEdit.mockClear()
@@ -331,19 +381,12 @@ describe('редакторы вариантов (ADR 0175)', () => {
     await expect.poll(field).toBeNull()
     expect(onCellEdit).toHaveBeenLastCalledWith(
       expect.objectContaining({ columnId: 'code', value: 'v999' }),
+      { signal: expect.any(AbortSignal) },
     )
   })
 
-  test('ED11: подписи редакторов — ключи словаря: ошибка числа, поиск, «нет вариантов», загрузка, отказ загрузки, очистка', async () => {
-    const words = {
-      editInvalidNumber: 'Только число',
-      filterSearchOptions: 'Найти',
-      filterNoOptions: 'Пусто',
-      filterLoadingOptions: 'Ждём',
-      filterOptionsError: 'Сбой',
-      filterRetry: 'Ещё раз',
-      editClear: 'Стереть',
-    }
+  test('ED11: подпись ошибки разбора числа — ключ словаря editInvalidNumber; подпись очистки — editClear', async () => {
+    const words = { editInvalidNumber: 'Только число', editClear: 'Стереть' }
     const server = directory()
     await render(
       <Grid
@@ -366,29 +409,64 @@ describe('редакторы вариантов (ADR 0175)', () => {
     await userEvent.keyboard('{Escape}')
 
     await openEdit('status')
+    await expect.poll(() => clearValue()?.textContent).toBe(words.editClear)
+  })
+
+  test('ED19: подписи редакторов — свои ключи словаря edit*: поиск, «нет вариантов», загрузка, отказ загрузки, повтор, очистка; ключи фильтра вариантов редакторы не читают', async () => {
+    const words = {
+      editSearchOptions: 'Найти',
+      editNoOptions: 'Пусто',
+      editLoadingOptions: 'Ждём',
+      editOptionsError: 'Сбой',
+      editRetry: 'Ещё раз',
+      editClear: 'Стереть',
+      // Подписи фильтра — другие: редактор их не показывает.
+      filterSearchOptions: 'ФИЛЬТР поиск',
+      filterNoOptions: 'ФИЛЬТР пусто',
+      filterLoadingOptions: 'ФИЛЬТР загрузка',
+      filterOptionsError: 'ФИЛЬТР сбой',
+      filterRetry: 'ФИЛЬТР повтор',
+    }
+    const server = directory()
+    await render(
+      <Grid
+        onCellEdit={() => {}}
+        onEditCancel={() => {}}
+        load={server.load}
+        localization={words}
+      />,
+    )
+    await waitForGrid()
+
+    await openEdit('status')
     await expect.poll(field).not.toBeNull()
-    expect(field()!.placeholder).toBe('Draft')
-    await expect
-      .poll(() => popup()?.querySelector('[data-clear]')?.textContent)
-      .toBe(words.editClear)
+    expect(clearValue()!.textContent).toBe(words.editClear)
     await userEvent.type(field()!, 'zzz')
-    await expect
-      .poll(() => popup()?.textContent)
-      .toContain(words.filterNoOptions)
+    await expect.poll(() => popup()?.textContent).toContain(words.editNoOptions)
     await userEvent.keyboard('{Escape}')
 
     await openEdit('manager')
     await expect
-      .poll(() => popup()?.textContent)
-      .toContain(words.filterLoadingOptions)
-    expect(field()!.placeholder).toBe(words.filterSearchOptions)
+      .poll(() => loadingLabel(popup()))
+      .toBe(words.editLoadingOptions)
+    expect(field()!.placeholder).toBe(words.editSearchOptions)
     server.refuse()
     await expect
       .poll(() => popup()?.textContent)
-      .toContain(words.filterOptionsError)
+      .toContain(words.editOptionsError)
     expect(
       popup()!.querySelector('[data-testid="edit-options-retry"]')!.textContent,
-    ).toBe(words.filterRetry)
+    ).toBe(words.editRetry)
+    expect(popup()!.textContent).not.toContain('ФИЛЬТР')
+    await userEvent.keyboard('{Escape}')
+
+    await openEdit('tags')
+    const multi = () =>
+      document.querySelector<HTMLElement>('[data-testid="edit-multiselect"]')
+    await expect.poll(multi).not.toBeNull()
+    expect(multi()!.querySelector<HTMLInputElement>('input')!.placeholder).toBe(
+      words.editSearchOptions,
+    )
   })
 
   test('ED12: редакторы проходят axe с color-contrast в обеих темах; роли combobox, listbox, dialog, aria-invalid у ошибки; вид в forced-colors', async () => {
@@ -444,5 +522,223 @@ describe('редакторы вариантов (ADR 0175)', () => {
     await userEvent.type(price()!, 'abc{Enter}')
     await expect.poll(() => price()?.getAttribute('aria-invalid')).toBe('true')
     await axeOn(cellOf('price'))
+  })
+
+  test('ED17: object без options и loadOptions — варианты: уникальные записи колонки в загруженных строках по ключу, подпись по getLabel; выбор сохраняет эту запись', async () => {
+    const { onCellEdit } = await renderGrid()
+    await openEdit('boss')
+    await expect.poll(() => itemOf('m2')).not.toBeNull()
+    expect(itemOf('m1')!.textContent).toContain('Ann')
+    expect(itemOf('m2')!.textContent).toContain('Bob')
+    expect(popup()!.querySelectorAll('[data-value="m1"]').length).toBe(1)
+    expect(itemOf('m1')).toHaveAttribute('data-selected')
+    await humanClick(itemOf('m2')!)
+    await expect.poll(field).toBeNull()
+    expect(onCellEdit.mock.lastCall![0].value).toBe(BOB)
+  })
+
+  test('ED18: необязательная задержка поиска справочника cellEditing({ searchDebounceMs }) — запрос loadOptions после паузы ввода; без аргумента — на каждый ввод', async () => {
+    const searches = async (delay?: number) => {
+      const asked: string[] = []
+      const load: LoadOptions = search => {
+        asked.push(search)
+        return Promise.resolve([{ value: 'm1', label: 'Ann', record: ANN }])
+      }
+      const screen = await render(
+        <Grid
+          onCellEdit={() => {}}
+          onEditCancel={() => {}}
+          load={load}
+          searchDebounceMs={delay}
+        />,
+      )
+      await waitForGrid()
+      await openEdit('manager')
+      await expect.poll(field).not.toBeNull()
+      await userEvent.type(field()!, 'bo')
+      await new Promise(resolve => setTimeout(resolve, (delay ?? 0) + 200))
+      await userEvent.keyboard('{Escape}')
+      await screen.unmount()
+      // StrictMode повторяет эффект первого запроса — подряд одинаковые считаются за один.
+      return asked.filter((search, index) => search !== asked[index - 1])
+    }
+    expect(await searches()).toEqual(['', 'b', 'bo'])
+    expect(await searches(300)).toEqual(['', 'bo'])
+  })
+
+  test('ED16: внизу поповеров даты, варианта и нескольких вариантов — кнопка «Очистить значение»: сохраняет пустое значение', async () => {
+    const { onCellEdit } = await renderGrid()
+    const cases: [column: string, empty: unknown][] = [
+      ['released', null],
+      ['status', null],
+      ['tags', []],
+    ]
+    for (const [column, empty] of cases) {
+      await openEdit(column)
+      await expect.poll(clearValue).not.toBeNull()
+      // Кнопка — под чертой, отдельно от списка.
+      expect(
+        clearValue()!.closest('[role="listbox"], [role="group"]'),
+      ).toBeNull()
+      expect(clearValue()!.textContent).toBe(tableLabels.editClear)
+      await humanClick(clearValue()!)
+      await expect.poll(clearValue).toBeNull()
+      expect(onCellEdit.mock.lastCall![0]).toMatchObject({ columnId: column })
+      expect(onCellEdit.mock.lastCall![0].value).toEqual(empty)
+    }
+  })
+
+  test('ED23: прокрутка таблицы закрывает поповер редактора даты и вариантов; правка отменяется, onEditCancel получает причину cancel', async () => {
+    const { onCellEdit, onEditCancel } = await renderGrid()
+    const scroller = () =>
+      document.querySelector<HTMLElement>('.data-grid__container')!
+    const opened = {
+      released: () => document.querySelector('[data-testid="edit-date"]'),
+      status: popup,
+      tags: () => document.querySelector('[data-testid="edit-multiselect"]'),
+    }
+    for (const [column, open] of Object.entries(opened)) {
+      onEditCancel.mockClear()
+      await openEdit(column)
+      await expect.poll(open).not.toBeNull()
+      scroller().dispatchEvent(
+        new WheelEvent('wheel', { deltaY: 40, bubbles: true }),
+      )
+      await expect.poll(open).toBeNull()
+      expect(onEditCancel).toHaveBeenCalledWith(
+        expect.objectContaining({ columnId: column, reason: 'cancel' }),
+      )
+    }
+    expect(onCellEdit).not.toHaveBeenCalled()
+  })
+
+  test('ED24: загрузка вариантов — строки-скелеты кита, отказ — блок ошибки кита с причиной и повтором, пустой список — заглушка Stub; так же в панели фильтра вариантов', async () => {
+    const server = directory()
+    await render(
+      <Grid
+        onCellEdit={() => {}}
+        onEditCancel={() => {}}
+        load={server.load}
+        filtering
+      />,
+    )
+    await waitForGrid()
+    const skeletons = (root: ParentNode | null | undefined) =>
+      root?.querySelectorAll('[aria-busy="true"] [data-tsr-skeleton-wave]')
+        .length ?? 0
+    const errorBlock = (root: ParentNode | null | undefined, retry: string) =>
+      root?.querySelector<HTMLElement>(
+        `[role="alert"]:has([data-testid="${retry}"])`,
+      ) ?? null
+
+    // Редактор: скелеты, блок ошибки с повтором, заглушка пустого ответа.
+    await openEdit('manager')
+    await expect.poll(() => skeletons(popup())).toBeGreaterThan(0)
+    server.refuse()
+    await expect
+      .poll(() => errorBlock(popup(), 'edit-options-retry'))
+      .not.toBeNull()
+    expect(errorBlock(popup(), 'edit-options-retry')!.textContent).toContain(
+      tableLabels.editOptionsError,
+    )
+    expect(errorBlock(popup(), 'edit-options-retry')!.textContent).toContain(
+      'down',
+    )
+    await humanClick(
+      popup()!.querySelector<HTMLElement>(
+        '[data-testid="edit-options-retry"]',
+      )!,
+    )
+    await expect.poll(() => skeletons(popup())).toBeGreaterThan(0)
+    server.answer()
+    await expect.poll(() => itemOf('m4')).not.toBeNull()
+    await userEvent.keyboard('{Escape}')
+
+    // Пустой ответ поиска — заглушка кита.
+    await openEdit('status')
+    await expect.poll(field).not.toBeNull()
+    await userEvent.type(field()!, 'zzz')
+    await expect
+      .poll(
+        () =>
+          popup()?.querySelector('[data-testid="options-empty"]')?.textContent,
+      )
+      .toContain(tableLabels.editNoOptions)
+    expect(skeletons(popup())).toBe(0)
+    await userEvent.keyboard('{Escape}')
+
+    // Панель фильтра вариантов — тот же вид.
+    const lookupHead = document.querySelector<HTMLElement>(
+      '.data-grid__head-cell[data-column-id="lookup"]',
+    )!
+    await userEvent.hover(lookupHead)
+    await humanClick(
+      lookupHead.querySelector<HTMLElement>('.column-filter__button')!,
+    )
+    const panel = () =>
+      document.querySelector<HTMLElement>('[data-testid="filter-panel"]')
+    await expect.poll(() => skeletons(panel())).toBeGreaterThan(0)
+    server.refuse()
+    await expect
+      .poll(() => errorBlock(panel(), 'filter-options-retry'))
+      .not.toBeNull()
+  })
+
+  test('ED25: поиск у редакторов вариантов — в поповере; в ячейке на время правки — текст значения', async () => {
+    await renderGrid()
+    await openEdit('status')
+    await expect.poll(field).not.toBeNull()
+    expect(popup()!.contains(field())).toBe(true)
+    expect(cellOf('status').querySelector(VISIBLE_INPUT)).toBeNull()
+    expect(cellOf('status').textContent).toContain('Draft')
+    await userEvent.keyboard('{Escape}')
+
+    await openEdit('tags')
+    const multi = () =>
+      document.querySelector<HTMLElement>('[data-testid="edit-multiselect"]')
+    await expect.poll(multi).not.toBeNull()
+    expect(
+      multi()!.querySelector('[data-testid="edit-options-search"]'),
+    ).not.toBeNull()
+    expect(cellOf('tags').querySelector(VISIBLE_INPUT)).toBeNull()
+    expect(cellOf('tags').textContent).toContain('New')
+  })
+
+  test('ED26: у поля поиска вариантов — кнопка очистки: стирает строку и возвращает весь список', async () => {
+    await renderGrid()
+    const clearSearch = () =>
+      document.querySelector<HTMLElement>(
+        '[data-testid="edit-options-clear-search"]',
+      )
+    await openEdit('status')
+    await expect.poll(field).not.toBeNull()
+    expect(clearSearch()).toBeNull()
+    await userEvent.type(field()!, 'arch')
+    await expect.poll(() => itemOf('active')).toBeNull()
+    expect(clearSearch()).toHaveAttribute('aria-label', tableLabels.clearSearch)
+    await humanClick(clearSearch()!)
+    await expect.poll(() => itemOf('active')).not.toBeNull()
+    expect(field()!.value).toBe('')
+    expect(document.activeElement).toBe(field())
+    await userEvent.keyboard('{Escape}')
+
+    await openEdit('tags')
+    const search = () =>
+      document.querySelector<HTMLInputElement>(
+        '[data-testid="edit-options-search"]',
+      )
+    await expect.poll(search).not.toBeNull()
+    await userEvent.type(search()!, 'ec')
+    await expect.poll(() => clearSearch()).not.toBeNull()
+    await humanClick(clearSearch()!)
+    expect(search()!.value).toBe('')
+    await expect
+      .poll(
+        () =>
+          document.querySelectorAll(
+            '[data-testid="edit-multiselect"] [role="checkbox"]',
+          ).length,
+      )
+      .toBe(3)
   })
 })

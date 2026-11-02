@@ -53,8 +53,8 @@ export const usePanelOpening = (context: Context) => {
 /** Состояние открытия панели для её кнопки. */
 export interface PanelButtonState {
   pending: boolean
-  /** Текст отметки отказа загрузки содержимого. */
-  failure?: string
+  /** Загрузка содержимого отказала: дуга останавливается. */
+  failed?: boolean
   /** Наведение или фокус: пора грузить содержимое. */
   onIntent: () => void
   /** Escape или уход фокуса: отменить ожидание. */
@@ -65,6 +65,6 @@ export interface PanelButtonState {
 export const panelButtonProps = (state: PanelButtonState | undefined) =>
   state && {
     pending: state.pending,
-    failure: state.failure,
+    failed: state.failed,
     ...lazyTriggerHandlers(state),
   }

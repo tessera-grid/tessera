@@ -139,7 +139,7 @@ const tooltipText = () =>
     .find(Boolean)
 
 describe('Производные кнопки кита (ADR 0128)', () => {
-  test('DB1: все семь кнопок принимают disabled, tooltipWhenDisabled, pending, failure, onClick с событием и data-testid; занятая — aria-busy и дуга, нажатия не доходят; failure — дуга встаёт, отметка и её текст; выключенная с tooltipWhenDisabled — тултип при наведении', async () => {
+  test('DB1: все семь кнопок принимают disabled, tooltipWhenDisabled, pending, failed, onClick с событием и data-testid; занятая — aria-busy и дуга, нажатия не доходят; failed — дуга встаёт, отметки нет; выключенная с tooltipWhenDisabled — тултип при наведении', async () => {
     for (const item of CASES) {
       const onClick = vi.fn()
       const base: Props = {
@@ -161,18 +161,13 @@ describe('Производные кнопки кита (ADR 0128)', () => {
       expect(onClick, `${item.name}: занятая`).toHaveBeenCalledTimes(1)
 
       await screen.rerender(
-        <View item={item} props={{ ...base, failure: 'Failed: offline' }} />,
+        <View item={item} props={{ ...base, failed: true }} />,
       )
       expect(pendingArcOf(button())?.dataset.phase, item.name).toBe('stopping')
       expect(
         button().querySelector('[data-failure-indicator]'),
         item.name,
-      ).not.toBeNull()
-      const described = button()
-        .getAttribute('aria-describedby')!
-        .split(' ')
-        .map(id => document.getElementById(id)?.textContent)
-      expect(described, item.name).toContain('Failed: offline')
+      ).toBeNull()
 
       await screen.rerender(
         <View
@@ -192,7 +187,7 @@ describe('Производные кнопки кита (ADR 0128)', () => {
     }
   })
 
-  test('DB2: revealOnHover у кнопок ячейки, заголовка и строки — по умолчанию скрыта и видна при наведении на своё место; false — видна всегда; включённая, занятая и с отметкой отказа видна без наведения', async () => {
+  test('DB2: revealOnHover у кнопок ячейки, заголовка и строки — по умолчанию скрыта и видна при наведении на своё место; false — видна всегда; включённая и занятая видна без наведения', async () => {
     for (const item of CASES.filter(entry => entry.reveals)) {
       const base: Props = { 'data-testid': 'kit' }
       const screen = await render(<View item={item} props={base} />)
@@ -218,7 +213,6 @@ describe('Производные кнопки кита (ADR 0128)', () => {
       }
       await visible({ revealOnHover: false }, 'revealOnHover=false')
       await visible({ pending: true }, 'занятая')
-      await visible({ failure: 'Failed: offline' }, 'отметка отказа')
       if (item.stateful) await visible({ on: true }, 'включённая')
       await screen.unmount()
     }

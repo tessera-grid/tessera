@@ -1,6 +1,7 @@
 /**
- * Редакторы вариантов (ADR 0175, ED8–ED10): `select` и `object` — поле с поиском (Combobox
- * Base UI), `multiSelect` — поповер со списком флажков. Варианты — `options` колонки,
+ * Редакторы вариантов (ADR 0175, ED8–ED10, ED25): в ячейке — текст значения, под ней поповер
+ * с полем поиска: у `select` и `object` — список (Combobox Base UI), у `multiSelect` —
+ * флажки; внизу — «Очистить значение». Варианты — `options` колонки,
  * справочник — `loadOptions` с ожиданием, отказом и повтором; длинный список виртуализирован.
  * Модуль ленивый — грузится при первой правке варианта.
  */
@@ -8,9 +9,9 @@ import {
   type CSSProperties,
   type RefObject,
   useCallback,
+  useEffect,
   useId,
   useImperativeHandle,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -20,7 +21,8 @@ import { Combobox } from '@base-ui/react/combobox'
 import clsx from 'clsx'
 
 import type { ColumnOption, OptionValue } from '../../core/columnOptions'
-import { objectKeyOf } from '../../core/dataTypeFormat'
+import { objectKeyOf, objectLabelOf } from '../../core/dataTypeFormat'
+import { readPluginHooks } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
 import type { RowSource } from '../../core/rowSource'
 import {
@@ -28,14 +30,22 @@ import {
   OptionStatus,
 } from '../../shared/options/OptionChecklist'
 import { useLoadedOptions } from '../../shared/options/useLoadedOptions'
+import { OptionSearch } from '../../shared/options/OptionSearch'
 import { useIcons } from '../../ui/icons'
 import { usePortalThemeClass, usePortalThemeData } from '../../ui/theme'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
+import { useCloseOnGridScroll } from '../../ui/Popup/useCloseOnGridScroll'
+import { useDebouncedCallback } from '../../util/useDebouncedCallback'
 import { useVirtualizer } from '../../../vendor/tanstack-virtual/react-virtual'
-import { EditPopover, movedFocus } from './EditPopover'
-import type { CellEditorProps } from './types'
+import {
+  ClearValue,
+  EditPopover,
+  movedFocus,
+  useFocusReturn,
+} from './EditPopover'
+import type { CellEditingHooks, CellEditorProps } from './types'
 
-import inputStyles from './CellEditInput.module.css'
+import popoverStyles from './EditPopover.module.css'
 import checklistStyles from '../../shared/options/OptionChecklist.module.css'
 import styles from './OptionEditors.module.css'
 
@@ -44,32 +54,60 @@ const OVERSCAN = 8
 
 type Cell = CellEditorProps['cell']
 
-/** Пункт «очистить значение» — первым в списке. */
-const CLEAR = {
-  value: '\u0000clear',
-  label: '',
-} as const satisfies ColumnOption
-
 const loadOptionsOf = (cell: Cell) =>
   cell.column.getDataType()?.definition.loadOptions ??
   cell.column.columnDef.loadOptions
 
-/** Варианты колонки: ответ справочника или `options`, отфильтрованные поиском. */
+/** Записи колонки `object` в загруженных строках — по ключу, подпись по `getLabel` (ED17). */
+const recordsInData = (cell: Cell): ColumnOption[] => {
+  const definition = cell.column.getDataType()!.definition
+  const source = rowSourceOf(cell)
+  const byKey = new Map<unknown, ColumnOption>()
+  for (let index = 0; index < source.count(); index++) {
+    const value = source.at(index)?.getValue(cell.column.id)
+    if (value === null || value === undefined) continue
+    const key = keyOf(cell, value)
+    if (!byKey.has(key))
+      byKey.set(key, {
+        value: key as OptionValue,
+        label: objectLabelOf(definition, value),
+        record: value,
+      })
+  }
+  return [...byKey.values()]
+}
+
+/**
+ * Варианты колонки: ответ справочника, иначе `options`, у `object` без них — записи из
+ * данных; без справочника — отфильтрованные поиском. Запрос справочника идёт после паузы
+ * ввода `searchDebounceMs` (ED18).
+ */
 const useEditOptions = (cell: Cell, query: string) => {
+  const delay = readPluginHooks<Partial<CellEditingHooks>>(
+    cell.table as never,
+    'cellEditing',
+  ).searchDebounceMs
+  const [requested, setRequested] = useState(query)
+  const request = useDebouncedCallback(setRequested, delay ?? 0)
+  useEffect(() => {
+    if (delay) request.schedule(query)
+  }, [delay, query, request])
   const loaded = useLoadedOptions(
     cell.table,
     cell.column.id,
     loadOptionsOf(cell),
-    query,
+    delay ? requested : query,
   )
+  const own = cell.column.columnDef.options
+  const object = cell.column.getDataType()?.base === 'object'
   const options = useMemo(() => {
     if (loaded) return loaded.options
-    const all = cell.column.columnDef.options ?? []
+    const all = own ?? (object ? recordsInData(cell) : [])
     const needle = query.trim().toLowerCase()
     return needle === ''
       ? all
       : all.filter(option => option.label.toLowerCase().includes(needle))
-  }, [loaded, cell.column.columnDef.options, query])
+  }, [loaded, own, object, cell, query])
   return { loaded, options }
 }
 
@@ -79,13 +117,16 @@ const keyOf = (cell: Cell, value: unknown) =>
     ? objectKeyOf(cell.table as never, cell.column as never, value)
     : value
 
-/** Запись с этим ключом среди строк, загруженных в таблицу. */
-const recordInData = (cell: Cell, key: unknown) => {
-  const source = (
+const rowSourceOf = (cell: Cell) =>
+  (
     cell.table as unknown as {
       getRowSource: () => RowSource<{ getValue: (id: string) => unknown }>
     }
   ).getRowSource()
+
+/** Запись с этим ключом среди строк, загруженных в таблицу. */
+const recordInData = (cell: Cell, key: unknown) => {
+  const source = rowSourceOf(cell)
   for (let index = 0; index < source.count(); index++) {
     const value = source.at(index)?.getValue(cell.column.id)
     if (value !== undefined && Object.is(keyOf(cell, value), key)) return value
@@ -98,13 +139,19 @@ const recordInData = (cell: Cell, key: unknown) => {
  * из данных, иначе текст ключа разбирает свой `parseValue` (ED8).
  */
 const saveOption = (props: CellEditorProps, option: ColumnOption) => {
-  if (option.value === CLEAR.value) return props.commit(null)
   if (props.cell.column.getDataType()?.base !== 'object')
     return props.commit(option.value)
   const record = option.record ?? recordInData(props.cell, option.value)
   if (record !== undefined) props.commit(record)
   else props.commitText(String(option.value))
 }
+
+const editStatusLabels = (labels: ReturnType<typeof useLocalization>) => ({
+  loading: labels.editLoadingOptions,
+  empty: labels.editNoOptions,
+  error: labels.editOptionsError,
+  retry: labels.editRetry,
+})
 
 type Virtualizer = ReturnType<typeof useVirtualizer<HTMLDivElement, Element>>
 
@@ -114,7 +161,6 @@ const VirtualOptions = ({
   virtualizerRef: RefObject<Virtualizer | null>
 }) => {
   const items = Combobox.useFilteredItems<ColumnOption>()
-  const labels = useLocalization()
   const { checkboxChecked: CheckIcon } = useIcons()
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const virtualizer = useVirtualizer({
@@ -156,7 +202,6 @@ const VirtualOptions = ({
               aria-setsize={items.length}
               aria-posinset={row.index + 1}
               data-value={String(item.value)}
-              data-clear={item === CLEAR || undefined}
               style={{
                 height: row.size,
                 transform: `translateY(${row.start}px)`,
@@ -165,9 +210,7 @@ const VirtualOptions = ({
               <Combobox.ItemIndicator keepMounted className={styles.indicator}>
                 <CheckIcon width={14} height={14} aria-hidden />
               </Combobox.ItemIndicator>
-              <span className={styles.label}>
-                {item.value === CLEAR.value ? labels.editClear : item.label}
-              </span>
+              <span className={styles.label}>{item.label}</span>
             </Combobox.Item>
           )
         })}
@@ -176,46 +219,48 @@ const VirtualOptions = ({
   )
 }
 
-/** `select` и `object`: поле с поиском; выбор сохраняет, Escape и уход отменяют (ED8). */
+const statusOf = (
+  loaded: ReturnType<typeof useEditOptions>['loaded'],
+  count: number,
+) =>
+  loaded?.status === 'error'
+    ? 'error'
+    : count > 0
+      ? undefined
+      : loaded?.status === 'loading'
+        ? 'loading'
+        : 'empty'
+
+/**
+ * `select` и `object`: в ячейке — текст значения, под ней поповер с полем поиска и списком;
+ * выбор сохраняет, Escape, нажатие мимо и прокрутка таблицы отменяют (ED8, ED23, ED25).
+ */
 export const SelectEditor = (props: CellEditorProps) => {
-  const { cell, label, cancel, value, error } = props
+  const { cell, label, cancel, value, text } = props
   const labels = useLocalization()
   const themeClass = usePortalThemeClass()
   const themeData = usePortalThemeData()
+  const anchor = useRef<HTMLSpanElement>(null)
   const input = useRef<HTMLInputElement>(null)
   const virtualizerRef = useRef<Virtualizer | null>(null)
   const [query, setQuery] = useState('')
   const { loaded, options } = useEditOptions(cell, query)
-  // «Очистить» — без поиска: с поиском первым подсвечивается найденный вариант.
-  const items = useMemo(
-    () => (query.trim() === '' ? [CLEAR, ...options] : options),
-    [options, query],
-  )
   const currentKey = keyOf(cell, value)
   const selected =
     options.find(option => Object.is(option.value, currentKey)) ?? null
-
-  useLayoutEffect(() => {
-    input.current?.focus({ preventScroll: true })
-  }, [])
-
-  const status =
-    loaded?.status === 'error'
-      ? 'error'
-      : options.length > 0
-        ? undefined
-        : loaded?.status === 'loading'
-          ? 'loading'
-          : 'empty'
+  const status = statusOf(loaded, options.length)
+  useCloseOnGridScroll(true, cancel)
+  useFocusReturn(anchor)
 
   return (
-    <span className={inputStyles.field}>
+    <span ref={anchor} className={popoverStyles.anchor}>
+      {text}
       <Combobox.Root
         open
         virtualized
         autoHighlight
-        items={items}
-        filteredItems={items}
+        items={options}
+        filteredItems={options}
         value={selected}
         inputValue={query}
         onInputValueChange={setQuery}
@@ -251,21 +296,9 @@ export const SelectEditor = (props: CellEditorProps) => {
             )
         }}
       >
-        <Combobox.Input
-          ref={input}
-          className={inputStyles.input}
-          aria-label={label}
-          placeholder={selected?.label || labels.filterSearchOptions}
-          aria-invalid={error ? true : undefined}
-          data-testid="edit-select"
-          // Клавиши поля — его, а не навигации грида.
-          onKeyDown={event => event.stopPropagation()}
-        />
-        <span role="alert" className={inputStyles.error}>
-          {error}
-        </span>
         <Combobox.Portal>
           <Combobox.Positioner
+            anchor={anchor}
             side="bottom"
             align="start"
             sideOffset={POPUP_SIDE_OFFSET}
@@ -273,19 +306,45 @@ export const SelectEditor = (props: CellEditorProps) => {
             {...themeData}
           >
             <Combobox.Popup
+              aria-label={label}
+              initialFocus={input}
+              finalFocus={false}
               className={clsx(themeClass, styles.popup)}
               data-testid="edit-options"
+              // Клавиши поповера — его, а не навигации грида.
+              onKeyDown={event => event.stopPropagation()}
             >
+              <OptionSearch
+                value={query}
+                onClear={() => {
+                  setQuery('')
+                  input.current?.focus()
+                }}
+                clearTestId="edit-options-clear-search"
+              >
+                <Combobox.Input
+                  ref={input}
+                  className={checklistStyles.search}
+                  aria-label={labels.editSearchOptions}
+                  placeholder={labels.editSearchOptions}
+                  data-testid="edit-select"
+                />
+              </OptionSearch>
               {status && (
                 <OptionStatus
                   status={status}
                   onRetry={loaded?.retry}
+                  reason={
+                    loaded?.status === 'error' ? loaded.reason : undefined
+                  }
+                  labels={editStatusLabels(labels)}
                   retryTestId="edit-options-retry"
                 />
               )}
               <Combobox.List>
                 <VirtualOptions virtualizerRef={virtualizerRef} />
               </Combobox.List>
+              <ClearValue onClear={() => props.commit(null)} />
             </Combobox.Popup>
           </Combobox.Positioner>
         </Combobox.Portal>
@@ -294,7 +353,10 @@ export const SelectEditor = (props: CellEditorProps) => {
   )
 }
 
-/** `multiSelect`: поповер со списком флажков; Enter и уход сохраняют, Escape отменяет (ED9). */
+/**
+ * `multiSelect`: поповер с полем поиска и списком флажков; Enter и уход сохраняют, Escape и
+ * прокрутка таблицы отменяют (ED9, ED23).
+ */
 export const MultiSelectEditor = (props: CellEditorProps) => {
   const { cell, label, text, commit, cancel, setDraft, value } = props
   const labels = useLocalization()
@@ -304,6 +366,7 @@ export const MultiSelectEditor = (props: CellEditorProps) => {
     Array.isArray(value) ? (value as OptionValue[]) : [],
   )
   const { loaded, options } = useEditOptions(cell, query)
+  const status = statusOf(loaded, options.length)
 
   const toggle = (option: OptionValue, checked: boolean) => {
     const next = checked
@@ -312,14 +375,6 @@ export const MultiSelectEditor = (props: CellEditorProps) => {
     setSelected(next)
     setDraft(next)
   }
-  const status =
-    loaded?.status === 'error'
-      ? 'error'
-      : options.length > 0
-        ? undefined
-        : loaded?.status === 'loading'
-          ? 'loading'
-          : 'empty'
 
   return (
     <EditPopover
@@ -337,20 +392,28 @@ export const MultiSelectEditor = (props: CellEditorProps) => {
           if (event.key === 'Escape') cancel()
         }}
       >
-        <input
-          className={checklistStyles.search}
-          type="text"
+        <OptionSearch
           value={query}
-          placeholder={labels.filterSearchOptions}
-          aria-label={labels.filterSearchOptions}
-          aria-controls={options.length > 0 ? listId : undefined}
-          onChange={event => setQuery(event.target.value)}
-          data-testid="edit-options-search"
-        />
+          onClear={() => setQuery('')}
+          clearTestId="edit-options-clear-search"
+        >
+          <input
+            className={checklistStyles.search}
+            type="text"
+            value={query}
+            placeholder={labels.editSearchOptions}
+            aria-label={labels.editSearchOptions}
+            aria-controls={options.length > 0 ? listId : undefined}
+            onChange={event => setQuery(event.target.value)}
+            data-testid="edit-options-search"
+          />
+        </OptionSearch>
         {status ? (
           <OptionStatus
             status={status}
             onRetry={loaded?.retry}
+            reason={loaded?.status === 'error' ? loaded.reason : undefined}
+            labels={editStatusLabels(labels)}
             retryTestId="edit-options-retry"
           />
         ) : (
@@ -364,6 +427,7 @@ export const MultiSelectEditor = (props: CellEditorProps) => {
             testId="edit-options"
           />
         )}
+        <ClearValue onClear={() => commit([])} />
       </div>
     </EditPopover>
   )

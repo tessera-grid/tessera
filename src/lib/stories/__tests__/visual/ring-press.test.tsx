@@ -39,14 +39,14 @@ describe('Дуга кнопки и нажатие', () => {
   test('BS18: смена фазы посреди нажатия клик не теряет — во всех движках; дуга ожидания и её остановка при отказе появляются и уходят, не отнимая нажатие', async () => {
     let clicks = 0
     // Ожидание снаружи (`aria-busy`, ADR 0116): дуга есть, нажатия не глушатся.
-    const view = (busy: boolean, failure?: string) => (
+    const view = (busy: boolean, failed?: boolean) => (
       <div className="data-grid-theme" style={{ padding: 20, ...SHORT }}>
         <div>
           <IconButton
             aria-label="Load"
             onClick={() => clicks++}
             aria-busy={busy || undefined}
-            failure={failure}
+            failed={failed}
           >
             <SvgIcon width={20} height={20} />
           </IconButton>
@@ -67,7 +67,7 @@ describe('Дуга кнопки и нажатие', () => {
       await screen.rerender(view(true))
       expect(pendingArcOf(button()), `нажатие ${i}`).not.toBeNull()
       await mouse.realMouseUp()
-      await screen.rerender(view(false, `Failed ${i}`))
+      await screen.rerender(view(false, true))
       // Дуга уходит: следующее нажатие начинается без неё.
       await expect
         .poll(() => pendingArcOf(button()), { timeout: 2000 })
@@ -80,7 +80,7 @@ describe('Дуга кнопки и нажатие', () => {
     // Дуга уходит посреди нажатия: нажатие во время остановки, отпускание — после.
     for (let i = presses + 1; i <= presses * 2; i++) {
       await screen.rerender(view(true))
-      await screen.rerender(view(false, `Failed ${i}`))
+      await screen.rerender(view(false, true))
       expect(pendingArcOf(button())?.dataset.phase).toBe('stopping')
       await mouse.realMouseDown(center())
       await expect

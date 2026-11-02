@@ -429,10 +429,10 @@ describe('Pending arc: dimmed label', () => {
 })
 
 describe('Pending arc: failure', () => {
-  test('FB1: a failure on IconButton, ToolbarButton and Button stops the arc and fades it with the track within --tsr-comp-pending-stop-duration; the contour does not turn red; the failure mark shows in the frame the arc starts to fade', async () => {
-    const view = (pending: boolean, failure?: string) => (
+  test('FB1: a failure on IconButton, ToolbarButton and Button stops the arc and fades it with the track within --tsr-comp-pending-stop-duration; the contour does not turn red; the button carries no failure mark', async () => {
+    const view = (pending: boolean, failed?: boolean) => (
       <Theme>
-        <IconButton aria-label="Icon" pending={pending} failure={failure}>
+        <IconButton aria-label="Icon" pending={pending} failed={failed}>
           {icon}
         </IconButton>
         <Toolbar.Root>
@@ -440,28 +440,26 @@ describe('Pending arc: failure', () => {
             label="Toolbar"
             icon={icon}
             pending={pending}
-            failure={failure}
+            failed={failed}
           />
         </Toolbar.Root>
-        <Button data-label="Text" pending={pending} failure={failure}>
+        <Button data-label="Text" pending={pending} failed={failed}>
           Retry
         </Button>
       </Theme>
     )
     const labels = ['Icon', 'Toolbar', 'Text']
-    const mark = (label: string) =>
-      byLabel(label).querySelector<HTMLElement>('[data-failure-indicator]')
     const screen = await render(view(true))
     for (const label of labels) {
       expect(arcOf(byLabel(label))!.dataset.phase, label).toBe('pending')
     }
-    await screen.rerender(view(false, 'Failed: offline'))
+    await screen.rerender(view(false, true))
     for (const label of labels) {
       const el = byLabel(label)
       const arc = arcOf(el)!
-      // Кадр конца ожидания: дуга встала и гаснет, отметка уже показана.
+      // Кадр конца ожидания: дуга встала и гаснет, отметки отказа на кнопке нет.
       expect(arc.dataset.phase, label).toBe('stopping')
-      expect(mark(label)!.dataset.shown, label).toBe('true')
+      expect(el.querySelector('[data-failure-indicator]'), label).toBeNull()
       expect(
         arc
           .getAnimations()
@@ -499,46 +497,20 @@ describe('Pending arc: failure', () => {
       await expect
         .poll(() => arcOf(byLabel(label)), { timeout: 2000 })
         .toBeNull()
-      expect(getComputedStyle(mark(label)!).opacity, label).toBe('1')
     }
   })
 
-  test('FB2: a failure without pending shows the failure mark at once, without a contour and without an arc', async () => {
-    const screen = await render(
-      <Theme>
-        <IconButton aria-label="Load">{icon}</IconButton>
-      </Theme>,
-    )
-    await frame()
-    await screen.rerender(
-      <Theme>
-        <IconButton aria-label="Load" failure="Failed: offline">
-          {icon}
-        </IconButton>
-      </Theme>,
-    )
-    const el = byLabel('Load')
-    expect(arcOf(el)).toBeNull()
-    const dot = el.querySelector<HTMLElement>('[data-failure-indicator]')!
-    expect(dot.dataset.shown).toBe('true')
-    expect(parseFloat(getComputedStyle(dot).transitionDelay)).toBe(0)
-    const ring = getComputedStyle(el)
-    expect(ring.outlineStyle).toBe('none')
-    await frame()
-    expect(arcOf(el)).toBeNull()
-  })
-
   test('IR32: the outline border of Button and the page size trigger leaves while pending and comes back as the arc fades after a failure', async () => {
-    const view = (pending: boolean, failure?: string) => (
+    const view = (pending: boolean, failed?: boolean) => (
       <Theme>
-        <Button data-label="Text" pending={pending} failure={failure}>
+        <Button data-label="Text" pending={pending} failed={failed}>
           Retry
         </Button>
         <SizeTrigger
           data-label="Size"
           className={paginationStyles.trigger}
           pending={pending}
-          failure={failure}
+          failed={failed}
         >
           25
         </SizeTrigger>
@@ -556,7 +528,7 @@ describe('Pending arc: failure', () => {
         })
         .toBe('rgba(0, 0, 0, 0)')
     }
-    await screen.rerender(view(false, 'Failed: offline'))
+    await screen.rerender(view(false, true))
     // Фазы — сразу у обеих: пока ждём рамку первой, дуга второй успевает погаснуть.
     expect(labels.map(label => arcOf(byLabel(label))?.dataset.phase)).toEqual(
       labels.map(() => 'stopping'),
@@ -570,45 +542,11 @@ describe('Pending arc: failure', () => {
     }
   })
 
-  test('IR10: a kit button with `failure` shows the failure text as its tooltip instead of the label and as its description; the accessible name stays the label', async () => {
-    const openTooltip = () => document.querySelector('[data-side]')
-    await render(
-      <Theme>
-        <IconButton
-          label="Pin column"
-          failure="Failed: offline. Click to retry"
-        >
-          {icon}
-        </IconButton>
-        <Button
-          data-label="Retry"
-          tooltip="Retry loading"
-          failure="Failed: timeout"
-        >
-          Retry
-        </Button>
-      </Theme>,
-    )
-    const cases = [
-      ['Pin column', 'Failed: offline. Click to retry'],
-      ['Retry', 'Failed: timeout'],
-    ] as const
-    for (const [name, text] of cases) {
-      const el = page.getByRole('button', { name, exact: true })
-      await expect.element(el).toBeInTheDocument()
-      await expect.element(el).toHaveAccessibleDescription(text)
-      await userEvent.hover(el)
-      await expect.poll(() => openTooltip()?.textContent ?? '').toBe(text)
-      await userEvent.unhover(el)
-      await expect.poll(() => openTooltip()).toBeNull()
-    }
-  })
-
-  test('IR11: with reduced motion the arc with its tail and the track are visible and still; a failure drops the arc without a transition and shows the failure mark at once', async () => {
+  test('IR11: with reduced motion the arc with its tail and the track are visible and still; a failure drops the arc without a transition', async () => {
     await reducedMotion(true)
-    const view = (pending: boolean, failure?: string) => (
+    const view = (pending: boolean, failed?: boolean) => (
       <Theme>
-        <IconButton aria-label="Load" pending={pending} failure={failure}>
+        <IconButton aria-label="Load" pending={pending} failed={failed}>
           {icon}
         </IconButton>
       </Theme>
@@ -632,9 +570,7 @@ describe('Pending arc: failure', () => {
     const first = toRgba(token(el, '--tsr-comp-pending-spinner-1'))
     expect(strokeOf(headOf(el))).toEqual(first)
     expect(strokeOf(trackOf(el))[3]).toBeCloseTo(0.15, 1)
-    await screen.rerender(view(false, 'Failed: offline'))
-    const dot = el.querySelector<HTMLElement>('[data-failure-indicator]')!
-    expect(dot.dataset.shown).toBe('true')
+    await screen.rerender(view(false, true))
     if (arcOf(el)) {
       for (const part of getComputedStyle(arcOf(el)!).transitionDuration.split(
         ',',

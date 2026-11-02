@@ -343,7 +343,7 @@ describe('Тип данных колонки (ADR 0172)', () => {
     )
   })
 
-  test('DT9: number выровнен вправо в ячейке и заголовке, цифры одной ширины; align (start, center, end) у колонки или типа главнее', async () => {
+  test('DT9: числа — цифры одной ширины; выравнивание по умолчанию — к началу, как у текста; align (start, center, end) у колонки или типа задаёт своё', async () => {
     const columns = [
       {
         id: 'num',
@@ -372,26 +372,26 @@ describe('Тип данных колонки (ADR 0172)', () => {
       <Grid
         columns={columns}
         data={[{ id: 'a', num: 7, mid: 7, own: 7 }]}
-        dataTypes={{ qty: { extends: 'number', align: 'start' } }}
+        dataTypes={{ qty: { extends: 'number', align: 'end' } }}
       />,
     )
     await waitForGrid()
     const style = (element: HTMLElement) => getComputedStyle(titleOf(element))
     for (const element of [cellOf('a', 'num'), headOf('num')]) {
-      expect(style(element).textAlign).toBe('end')
+      expect(style(element).textAlign).toBe('start')
       expect(style(element).fontVariantNumeric).toBe('tabular-nums')
-      // Текст прижат к правому краю: его правая граница — у края обёртки.
+      // Текст прижат к левому краю, как текст.
       const title = titleOf(element)
       const range = document.createRange()
       range.selectNodeContents(title)
       expect(
-        title.getBoundingClientRect().right -
-          range.getBoundingClientRect().right,
+        range.getBoundingClientRect().left - title.getBoundingClientRect().left,
       ).toBeLessThan(2)
     }
     expect(style(cellOf('a', 'mid')).textAlign).toBe('center')
     expect(style(headOf('mid')).textAlign).toBe('center')
-    expect(style(cellOf('a', 'own')).textAlign).toBe('start')
+    expect(style(cellOf('a', 'own')).textAlign).toBe('end')
+    expect(style(headOf('own')).textAlign).toBe('end')
   })
 
   test('DT18: примитив кита CheckMark — неинтерактивный значок флажка на токенах флажка выбора, галочка — иконка checkboxChecked из icons; публичный в /ui и в каталоге UI.CheckMark; axe и контраст в обеих темах и в forced-colors', async () => {
@@ -785,7 +785,7 @@ describe('Тип данных колонки (ADR 0172)', () => {
     await expect.poll(rowIds).toEqual(['a', 'b'])
   })
 
-  test('TY9: встроенный тип numberString: значение — десятичная строка без экспоненты; показ — как есть или Intl.NumberFormat по format строкой, без потери знаков; выравнивание вправо', async () => {
+  test('TY9: встроенный тип numberString: значение — десятичная строка без экспоненты; показ — как есть или Intl.NumberFormat по format строкой, без потери знаков; выравнивание к началу, как у чисел', async () => {
     const LONG = '12345678901234567.89'
     const columns = [
       {
@@ -828,7 +828,7 @@ describe('Тип данных колонки (ADR 0172)', () => {
 
     const style = (element: HTMLElement) => getComputedStyle(titleOf(element))
     for (const element of [cellOf('a', 'raw'), headOf('raw')]) {
-      expect(style(element).textAlign).toBe('end')
+      expect(style(element).textAlign).toBe('start')
       expect(style(element).fontVariantNumeric).toBe('tabular-nums')
     }
   })

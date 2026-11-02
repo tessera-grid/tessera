@@ -181,3 +181,14 @@ export const LOOKUP_COLUMNS: ColumnDef<any, any>[] = [
     loadOptions: DIRECTORY.load,
   },
 ]
+
+/** Менеджер без справочника: варианты — записи из строк (S9). */
+export const RECORD_COLUMNS: ColumnDef<any, any>[] = [
+  { id: 'name', accessorKey: 'name', header: 'Name', dataType: 'text' },
+  {
+    id: 'manager',
+    accessorKey: 'manager',
+    header: 'Manager',
+    dataType: 'object',
+  },
+]

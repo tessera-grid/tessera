@@ -137,13 +137,16 @@ describe('сессии действий', () => {
     act(() => setEditDraft(captured, 'B'))
     render({ plugins, probe: 'edit' })
     key(container!.querySelector('input')!, 'Enter')
-    expect(onCellEdit).toHaveBeenCalledWith({
-      rowId: '1',
-      columnId: 'name',
-      value: 'B',
-      text: 'B',
-      original: 'A',
-    })
+    expect(onCellEdit).toHaveBeenCalledWith(
+      {
+        rowId: '1',
+        columnId: 'name',
+        value: 'B',
+        text: 'B',
+        original: 'A',
+      },
+      { signal: expect.any(AbortSignal) },
+    )
     expect(onEditCancel).not.toHaveBeenCalled()
     unmount()
 
@@ -300,14 +303,17 @@ describe('сессии действий', () => {
 
     const plugins = [cellEditing({ onCellEdit, onEditCancel })]
     editAndChange(plugins)
-    expect(onCellEdit).toHaveBeenCalledWith({
-      rowId: '1',
-      columnId: 'name',
-      value: 'mine',
-      text: 'mine',
-      original: 'A',
-      current: 'Z',
-    })
+    expect(onCellEdit).toHaveBeenCalledWith(
+      {
+        rowId: '1',
+        columnId: 'name',
+        value: 'mine',
+        text: 'mine',
+        original: 'A',
+        current: 'Z',
+      },
+      { signal: expect.any(AbortSignal) },
+    )
     expect(onEditCancel).not.toHaveBeenCalled()
     unmount()
 

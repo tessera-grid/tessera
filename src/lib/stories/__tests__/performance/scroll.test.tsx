@@ -2175,9 +2175,7 @@ describe('Производительность прокрутки — ошибк
         })
         await waitForGrid()
         await expect
-          .poll(
-            () => document.querySelector('[data-failure-indicator]') !== null,
-          )
+          .poll(() => document.querySelector('[data-cell-issue]') !== null)
           .toBe(errors)
         const y = await measureScrollWork('y', CONTENT_SCROLL.y)
         const x = await measureScrollWork('x', CONTENT_SCROLL.x)
@@ -2219,6 +2217,93 @@ describe('Производительность прокрутки — ошибк
         expect(
           errors[axis].p95Ms,
           `${axis} p95=${errors[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
+        ).toBeLessThanOrEqual(ceiling[axis])
+      }
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Треугольник отказа ячейки (ADR 0177, OB18): отказы значений второй колонки каждой строки и
+// третьей — каждой чётной, 1500 ячеек в реестре отказов. Против того же набора без отказов.
+const OB18_COST = { ratio: 1.3, plusMs: 0 }
+const seedFailures = definePlugin()({
+  id: 'perfFailures',
+  setup: () => table => {
+    const t = table as {
+      getCoreRowModel: () => { rows: { id: string; index: number }[] }
+      getAllLeafColumns: () => { id: string }[]
+      reportFailure: (report: {
+        label: string
+        target: { cell: [string, string] }
+        reason: string
+      }) => string
+    }
+    const [, second, third] = t.getAllLeafColumns()
+    for (const row of t.getCoreRowModel().rows) {
+      for (const column of row.index % 2 === 0 ? [second!, third!] : [second!])
+        t.reportFailure({
+          label: column.id,
+          target: { cell: [row.id, column.id] },
+          reason: 'Server said no',
+        })
+    }
+  },
+})
+
+describe('Производительность прокрутки — треугольник отказа ячейки', () => {
+  test(
+    'OB18: спокойная прокрутка 1000×1000 с треугольником в 1500 ячейках не дороже той же выборки без них больше чем в 1,3 раза',
+    async () => {
+      const measure = async (seed: boolean) => {
+        const screen = renderPluginsGrid({
+          ...LARGE,
+          plugins: seed ? [seedFailures()] : [],
+        })
+        await waitForGrid()
+        await expect
+          .poll(() => document.querySelector('[data-cell-issue]') !== null)
+          .toBe(seed)
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        return { y, x }
+      }
+
+      const runs = await againstBase(measure)
+      const base = medianAxes(runs.base)
+      const marked = medianAxes(runs.variant)
+      const ceiling = axesCeiling(base, OB18_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1000×1000',
+          plugins: 'none',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: (['y', 'x'] as const).map(axis => ({
+            axis,
+            kind: 'animation' as const,
+            metric: 'p95' as const,
+            valueMs: r[axis].p95Ms,
+            targetMs: ANIMATION_BUDGET_MS,
+            ceilingMs: gated ? ceiling[axis] : undefined,
+            ...r[axis],
+          })),
+        })
+      await record('OB18-base', 'отказов нет', base, false)
+      await record('OB18', '1500 ячеек с треугольником', marked, true)
+
+      for (const axis of ['y', 'x'] as const) {
+        expect(
+          marked[axis].p95Ms,
+          `${axis} p95=${marked[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
         ).toBeLessThanOrEqual(ceiling[axis])
       }
     },

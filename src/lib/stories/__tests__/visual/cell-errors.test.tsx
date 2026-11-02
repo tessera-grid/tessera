@@ -25,8 +25,8 @@ import {
 } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
 
-// Ошибка в ячейке (ADR 0150, ER1–ER7): красная точка у ячейки с ошибкой приложения — одна,
-// если кнопки правки нет, или на кнопке правки; отказ сохранения — первым.
+// Ошибка в ячейке (ADR 0150, ER1–ER7): красный треугольник в правом верхнем углу ячейки с
+// ошибкой приложения, один при любом содержимом (ADR 0177, §5); отказ сохранения — первым.
 
 const ERROR_ROW = 'item-id-3'
 const ERROR = 'Age must be 18 or more'
@@ -44,23 +44,23 @@ const cellOf = (id: string, column = 'age') =>
   rowOf(id)?.querySelector<HTMLElement>(
     `.data-grid__body-cell[data-column-id="${column}"]`,
   ) ?? null
-/** Кнопка с точкой ошибки в ячейке: одиночная или кнопка правки. */
+/** Треугольник ячейки — кнопка отметки (ADR 0177, §5). */
 const markOf = (id: string) =>
-  cellOf(id)?.querySelector<HTMLElement>(
-    '.cell__button:has([data-failure-indicator]) button',
-  ) ?? null
-const lone = (id: string) =>
-  cellOf(id)?.querySelector<HTMLElement>(
-    `button[aria-label="${tableLabels.cellError}"]`,
-  ) ?? null
+  cellOf(id)?.querySelector<HTMLElement>('button[data-cell-issue]') ?? null
+const lone = markOf
+/** Видимая часть треугольника. */
+const triangleOf = (id: string) =>
+  markOf(id)?.querySelector<HTMLElement>('span[aria-hidden]') ?? null
 const dotShown = (id: string) => {
-  const dot = markOf(id)?.querySelector<HTMLElement>('[data-failure-indicator]')
-  return (
-    dot?.dataset.shown === 'true' &&
-    Number(getComputedStyle(markOf(id)!.closest('.cell__button')!).opacity) ===
-      1
-  )
+  const triangle = triangleOf(id)
+  return !!triangle && triangle.getBoundingClientRect().width > 0
 }
+const editOf = (id: string) =>
+  cellOf(id)?.querySelector<HTMLElement>(
+    `button[aria-label="${tableLabels.editCell}"]`,
+  ) ?? null
+const issuePopover = () =>
+  document.querySelector<HTMLElement>('[data-testid="cell-issue-popover"]')
 const description = (button: HTMLElement) =>
   button
     .getAttribute('aria-describedby')!
@@ -91,22 +91,23 @@ const renderErrors = (props: Record<string, unknown> = {}) =>
   )
 
 describe('Ошибка в ячейке (ADR 0150)', () => {
-  test('ER1: getCellError(ctx) возвращает текст или undefined; у ячейки с текстом справа красная точка, видная без наведения; без текста — ни точки, ни её узла', async () => {
+  test('ER1: getCellError(ctx) возвращает текст или undefined; у ячейки с текстом в правом верхнем углу красный треугольник, видный без наведения; без текста — ни треугольника, ни его узла', async () => {
     await renderErrors()
     await waitForGrid()
     await away()
     await expect.poll(() => dotShown(ERROR_ROW)).toBe(true)
     const cell = cellOf(ERROR_ROW)!.getBoundingClientRect()
-    const dot = markOf(ERROR_ROW)!.getBoundingClientRect()
-    expect(dot.right).toBeGreaterThan(cell.left + cell.width / 2)
-    expect(cellOf('item-id-4')!.querySelector('.cell__button')).toBeNull()
+    const triangle = triangleOf(ERROR_ROW)!.getBoundingClientRect()
+    expect(Math.abs(triangle.right - cell.right)).toBeLessThanOrEqual(1)
+    expect(Math.abs(triangle.top - cell.top)).toBeLessThanOrEqual(1)
+    expect(cellOf('item-id-4')!.querySelector('[data-cell-issue]')).toBeNull()
     expect(
-      cellOf(ERROR_ROW, 'firstName')!.querySelector('.cell__button'),
+      cellOf(ERROR_ROW, 'firstName')!.querySelector('[data-cell-issue]'),
     ).toBeNull()
   })
 
   for (const keyboard of [false, true]) {
-    test(`ER2: без кнопки правки точка — кнопка кита без значка: зона нажатия не меньше 24×24, фокус Tab без keyboardNavigation и режимом действия с ней, тултип с текстом при наведении и клавиатурном фокусе; нажатие ничего не делает (keyboardNavigation ${keyboard ? 'вкл' : 'выкл'})`, async () => {
+    test(`ER2: треугольник — кнопка кита без значка: зона нажатия не меньше 24×24, фокус Tab без keyboardNavigation и режимом действия с ней, тултип с текстом при наведении и клавиатурном фокусе; нажатие открывает поповер с причиной, правку не начинает (keyboardNavigation ${keyboard ? 'вкл' : 'выкл'})`, async () => {
       await renderErrors({ enableKeyboardNavigation: keyboard })
       await waitForGrid()
       await away()
@@ -140,15 +141,16 @@ describe('Ошибка в ячейке (ADR 0150)', () => {
 
       await userEvent.keyboard('{Enter}')
       await humanClick(mark())
+      await expect.poll(issuePopover).not.toBeNull()
+      expect(issuePopover()!.textContent).toContain(ERROR)
       expect(cellOf(ERROR_ROW)!.querySelector('input')).toBeNull()
       expect(dotShown(ERROR_ROW)).toBe(true)
-      expect(
-        document.querySelectorAll('[role="dialog"], [role="menu"]').length,
-      ).toBe(0)
+      await userEvent.keyboard('{Escape}')
+      await expect.poll(issuePopover).toBeNull()
     })
   }
 
-  test('ER3: ячейка с ошибкой — приложения или отказом сохранения — несёт aria-invalid="true"; текст ошибки — описание кнопки с точкой; в ролях grid, table и treegrid', async () => {
+  test('ER3: ячейка с ошибкой — приложения или отказом сохранения — несёт aria-invalid="true"; текст ошибки — описание треугольника; в ролях grid, table и treegrid', async () => {
     for (const [role, props] of [
       ['table', {}],
       ['grid', { enableKeyboardNavigation: true }],
@@ -199,7 +201,7 @@ describe('Ошибка в ячейке (ADR 0150)', () => {
     await screen.unmount()
   })
 
-  test('ER4: с cellEditing у правимой ячейки отдельной точки нет: точка — на кнопке правки, тултип — текст ошибки, кнопка видна без наведения, нажатие открывает правку', async () => {
+  test('ER4: с cellEditing у правимой ячейки тот же треугольник ячейки, а не отметка на кнопке правки; кнопка правки открывает правку', async () => {
     await renderErrors({
       enableCellEditing: true,
       cellEditingCanEditCell: (ctx: CellComponentProps) =>
@@ -208,13 +210,12 @@ describe('Ошибка в ячейке (ADR 0150)', () => {
     await waitForGrid()
     await away()
     await expect.poll(() => dotShown(ERROR_ROW)).toBe(true)
-    expect(lone(ERROR_ROW)).toBeNull()
-    const edit = markOf(ERROR_ROW)!
-    expect(edit.getAttribute('aria-label')).toBe(tableLabels.editCell)
-    expect(edit.querySelector('svg')).not.toBeNull()
-    expect(description(edit)).toBe(ERROR)
-    await userEvent.hover(edit)
-    await expect.poll(tooltip).toBe(ERROR)
+    expect(description(markOf(ERROR_ROW)!)).toBe(ERROR)
+    await userEvent.hover(cellOf(ERROR_ROW)!)
+    await expect.poll(() => editOf(ERROR_ROW)).not.toBeNull()
+    const edit = editOf(ERROR_ROW)!
+    expect(edit.querySelector('[data-failure-indicator]')).toBeNull()
+    expect(edit.hasAttribute('aria-describedby')).toBe(false)
     await humanClick(edit)
     await expect
       .poll(() => cellOf(ERROR_ROW)!.querySelector('input'))
@@ -222,7 +223,7 @@ describe('Ошибка в ячейке (ADR 0150)', () => {
     await userEvent.keyboard('{Escape}')
   })
 
-  test('ER5: при отказе сохранения и ошибке приложения тултип и описание показывают отказ; снятый успехом или отменой отказ открывает ошибку приложения', async () => {
+  test('ER5: при отказе сохранения и ошибке приложения треугольник один — тултип и описание показывают отказ; снятый успехом или отменой отказ открывает ошибку приложения', async () => {
     const settle: { resolve: () => void; reject: (reason: unknown) => void }[] =
       []
     await renderErrors({
@@ -236,7 +237,9 @@ describe('Ошибка в ячейке (ADR 0150)', () => {
     })
     await waitForGrid()
     const save = async (value: string) => {
-      await humanClick(markOf(ERROR_ROW)!)
+      await userEvent.hover(cellOf(ERROR_ROW)!)
+      await expect.poll(() => editOf(ERROR_ROW)).not.toBeNull()
+      await humanClick(editOf(ERROR_ROW)!)
       await expect
         .poll(() => cellOf(ERROR_ROW)!.querySelector('input'))
         .not.toBeNull()
@@ -244,16 +247,20 @@ describe('Ошибка в ячейке (ADR 0150)', () => {
       await userEvent.clear(input)
       await userEvent.type(input, `${value}{Enter}`)
     }
-    const refused = tableLabels.actionFailedRetry('Server down')
+    const refused = 'Server down'
 
     await save('17')
     settle.at(-1)!.reject(new Error('Server down'))
     await expect.poll(() => description(markOf(ERROR_ROW)!)).toBe(refused)
+    expect(
+      cellOf(ERROR_ROW)!.querySelectorAll('[data-cell-issue]').length,
+    ).toBe(1)
     await userEvent.hover(markOf(ERROR_ROW)!)
     await expect.poll(tooltip).toBe(refused)
 
     // Отмена: повтор открывает черновик, Escape снимает отказ.
-    await humanClick(markOf(ERROR_ROW)!)
+    await userEvent.hover(cellOf(ERROR_ROW)!)
+    await humanClick(editOf(ERROR_ROW)!)
     await expect
       .poll(() => cellOf(ERROR_ROW)!.querySelector('input'))
       .not.toBeNull()
@@ -271,7 +278,7 @@ describe('Ошибка в ячейке (ADR 0150)', () => {
       .toBe(ERROR)
   })
 
-  test('ER6: getCellError — живой аргумент: новая функция или новые данные пересчитывают точки; точка следует за ячейкой при сортировке, смене страницы, уходе из окна виртуализации и возврате, на загруженных строках SSRM', async () => {
+  test('ER6: getCellError — живой аргумент: новая функция или новые данные пересчитывают треугольники; треугольник следует за ячейкой при сортировке, смене страницы, уходе из окна виртуализации и возврате, на загруженных строках SSRM', async () => {
     let table: {
       setSorting: (sorting: { id: string; desc: boolean }[]) => void
       setPageIndex: (index: number) => void
@@ -318,14 +325,14 @@ describe('Ошибка в ячейке (ADR 0150)', () => {
     const byAge = (ctx: CellComponentProps) =>
       ctx.column.id === 'age' && ctx.getValue() === 7 ? ERROR : undefined
     await screen.rerender(<Host getCellError={byAge} rows={data} />)
-    expect(document.querySelectorAll('[data-failure-indicator]').length).toBe(0)
+    expect(document.querySelectorAll('[data-cell-issue]').length).toBe(0)
     const changed = data.map(row =>
       row.id === 'item-id-6' ? { ...row, age: 7 } : row,
     )
     await screen.rerender(<Host getCellError={byAge} rows={changed} />)
     await expect.poll(() => markOf('item-id-6')).not.toBeNull()
 
-    // Сортировка: строка уходит на другое место, точка — с ней.
+    // Сортировка: строка уходит на другое место, треугольник — с ней.
     await screen.rerender(
       <Host getCellError={errorAt('item-id-5')} rows={data} />,
     )
@@ -341,7 +348,7 @@ describe('Ошибка в ячейке (ADR 0150)', () => {
     // Страница: на второй странице ошибки нет, возврат на первую — есть.
     table!.setPageIndex(1)
     await expect.poll(() => rowOf('item-id-5')).toBeNull()
-    expect(document.querySelectorAll('[data-failure-indicator]').length).toBe(0)
+    expect(document.querySelectorAll('[data-cell-issue]').length).toBe(0)
     table!.setPageIndex(0)
     await expect.poll(() => markOf('item-id-5')).not.toBeNull()
 
@@ -355,7 +362,7 @@ describe('Ошибка в ячейке (ADR 0150)', () => {
     await expect.poll(() => markOf('item-id-5')).not.toBeNull()
     await screen.unmount()
 
-    // SSRM: точка на загруженной строке.
+    // SSRM: треугольник на загруженной строке.
     const Server = () => {
       const created = useCreateTable({
         columns: mockColumns as never,
@@ -384,7 +391,7 @@ describe('Ошибка в ячейке (ADR 0150)', () => {
     await ssrm.unmount()
   })
 
-  test('ER7: контраст точки не ниже 3:1 в обеих темах; в forced-colors — как отметка отказа кнопок (ADR 0087); axe с color-contrast', async () => {
+  test('ER7: контраст треугольника не ниже 3:1 в обеих темах; в forced-colors — CanvasText (ADR 0087); axe с color-contrast', async () => {
     await renderErrors({
       enableCellEditing: true,
       cellEditingCanEditCell: () => false,
@@ -392,8 +399,7 @@ describe('Ошибка в ячейке (ADR 0150)', () => {
     await waitForGrid()
     await away()
     await expect.poll(() => dotShown(ERROR_ROW)).toBe(true)
-    const dot = () =>
-      markOf(ERROR_ROW)!.querySelector<HTMLElement>('[data-failure-indicator]')!
+    const dot = () => triangleOf(ERROR_ROW)!
     await inBothThemes(async () => {
       const ratio = contrast(
         toRgba(getComputedStyle(dot()).backgroundColor),
@@ -414,7 +420,7 @@ describe('Ошибка в ячейке (ADR 0150)', () => {
     await fc.forcedColors(true)
     try {
       const probe = document.createElement('span')
-      probe.style.color = 'Mark'
+      probe.style.color = 'CanvasText'
       document.body.append(probe)
       const mark = getComputedStyle(probe).color
       probe.remove()

@@ -22,7 +22,6 @@ import {
 } from './__mocks__/catalogPlay'
 import { storyLabels } from './__mocks__/storyLabels'
 import { createDemoServer } from './__mocks__/plugins/asyncActionsDemo/asyncActionsDemo'
-import { PENDING_WAVE_ANIMATION } from '../grid/useSkeletonWave'
 import { nestedRowActions } from './__mocks__/plugins/nestedActionsDemo/nestedActionsDemo'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
@@ -374,17 +373,23 @@ const archiveDemo: TesseraFeatureEntry = {
   slotActions: [archiveAction],
 }
 
-const kebabBusy = (root: ParentNode) =>
-  kebabOf(root)?.getAttribute('aria-busy') === 'true'
-const kebabFailed = (root: ParentNode) =>
-  !!kebabOf(root)?.querySelector('[data-error-indicator][data-shown="true"]')
+/** Действие строки ждёт: заняты ячейки строки, а не кебаб (ADR 0177, §1). */
+const rowBusy = (root: ParentNode) =>
+  !!root.querySelector(
+    `.data-grid__body-row[data-row-id="${MENU_ROW}"] [data-column-id][aria-busy="true"]`,
+  )
+/** Отказ действия строки — вспышка отката на ней. */
+const rowRefused = (root: ParentNode) =>
+  root
+    .querySelector(`.data-grid__body-row[data-row-id="${MENU_ROW}"]`)
+    ?.getAttribute('data-flash') === 'reverted'
 
 /** Пользователь выбирает архивирование в меню строки, пока не выполнится `done`. */
 const archive = (root: HTMLElement, done: () => boolean, signal: AbortSignal) =>
   repeat(
     done,
     () => {
-      if (kebabBusy(root)) return
+      if (rowBusy(root)) return
       if (!openMenu()) {
         if (!document.querySelector('[role="menu"]')) kebabOf(root)?.click()
       } else itemOf(archiveAction.id)?.click()
@@ -399,31 +404,31 @@ const ASYNC_ACTION: readonly GuideStoryStep[] = [
   },
   {
     title: 'Действие выполняется',
-    hint: 'Пользователь выбрал архивирование в меню строки. Меню закрылось; пока сервер выполняет действие, кнопка меню строки показывает ожидание.',
+    hint: 'Пользователь выбрал архивирование в меню строки. Меню закрылось; пока сервер выполняет действие, ячейки строки чуть темнеют и по ним проходит светлый блик.',
     states: ['body.pending'],
     enter: stepAction((root, { signal }) => {
       archiveRefused = false
       ARCHIVE_SERVER.runs.hold()
-      return archive(root, () => kebabBusy(root) && !openMenu(), signal)
+      return archive(root, () => rowBusy(root) && !openMenu(), signal)
     }),
   },
   {
     title: 'Сервер отказал',
-    hint: 'Сервер не выполнил действие. Строка коротко вспыхивает тоном отказа, а на кнопке меню строки остаётся отметка ошибки, видная без наведения; подсказка кнопки называет невыполненное действие.',
+    hint: 'Сервер не выполнил действие. Ожидание со строки снято, строка коротко вспыхивает тоном отказа, подсказка кнопки меню строки называет невыполненное действие.',
     states: ['body.error'],
     enter: stepAction(async (root, { signal }) => {
       archiveRefused = true
       ARCHIVE_SERVER.runs.release()
       await archive(
         root,
-        () => kebabFailed(root) && !kebabBusy(root) && !openMenu(),
+        () => rowRefused(root) && !rowBusy(root) && !openMenu(),
         signal,
       )
     }),
   },
 ]
 
-/** ADR 0078, S3: действие меню строки выполняет сервер — ожидание и отказ на кнопке меню строки. */
+/** ADR 0078, S3: действие меню строки выполняет сервер — ожидание и отказ на строке. */
 export const RowActionsAsync: StoryObj<StoryProps> = {
   name: 'Async action',
   parameters: {
@@ -455,7 +460,7 @@ export const RowActionsAsync: StoryObj<StoryProps> = {
     await step(ASYNC_ACTION[0]!.title, async () => {
       await waitForRows(canvas)
       await until(() => expect(kebabOf(canvas)).not.toBeNull())
-      await expect(kebabBusy(canvas)).toBe(false)
+      await expect(rowBusy(canvas)).toBe(false)
     })
     const rowCells = () =>
       canvas.querySelectorAll<HTMLElement>(
@@ -464,21 +469,17 @@ export const RowActionsAsync: StoryObj<StoryProps> = {
     await step(ASYNC_ACTION[1]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(kebabBusy(canvas)).toBe(true)
       await expect(openMenu()).toBeNull()
       const cells = [...rowCells()]
       await expect(cells.length).toBeGreaterThan(0)
       for (const cell of cells) {
         await expect(cell).toHaveAttribute('aria-busy', 'true')
       }
-      // Инициатор виден — волны на строке нет, ожидание на кнопке (ADR 0155, §1).
-      await settle()
+      // Ожидание — волной на строке, на кебабе дуги нет (ADR 0177, §1).
+      await expect(canvas.querySelector('[data-pending-wave]')).not.toBeNull()
       await expect(
-        document
-          .getAnimations()
-          .filter(animation => animation.id === PENDING_WAVE_ANIMATION).length,
-      ).toBe(0)
-      await expect(canvas.querySelector('[data-pending-wave]')).toBeNull()
+        kebabOf(canvas)?.querySelector('svg[data-pending-arc]'),
+      ).toBeNull()
     })
     await step(ASYNC_ACTION[2]!.title, async () => {
       const flash = watchFlash(
@@ -493,8 +494,9 @@ export const RowActionsAsync: StoryObj<StoryProps> = {
       for (const cell of rowCells()) {
         await expect(cell).not.toHaveAttribute('aria-busy')
       }
-      await expect(kebabFailed(canvas)).toBe(true)
-      await expect(kebabBusy(canvas)).toBe(false)
+      await expect(
+        kebabOf(canvas)?.querySelector('[data-failure-indicator]'),
+      ).toBeNull()
       await expect(kebabOf(canvas)?.getAttribute('aria-label')).toContain(
         labels.actionsFailed('Archive'),
       )
@@ -534,9 +536,9 @@ const cancelItemPending = () => !!cancelItem()?.hasAttribute('data-pending')
 const archiveHeld = async (root: HTMLElement, signal: AbortSignal) => {
   CANCEL_SERVER.runs.hold()
   await repeat(
-    () => kebabBusy(root) && !openMenu(),
+    () => rowBusy(root) && !openMenu(),
     () => {
-      if (kebabBusy(root)) return
+      if (rowBusy(root)) return
       if (!openMenu()) {
         if (!document.querySelector('[role="menu"]')) kebabOf(root)?.click()
       } else itemOf(cancelAction.id)?.click()
@@ -565,7 +567,7 @@ const CANCEL_ACTION: readonly GuideStoryStep[] = [
   },
   {
     title: 'Действие выполняется',
-    hint: 'Пользователь выбрал архивирование в меню строки. Пока сервер работает, кнопка меню показывает ожидание.',
+    hint: 'Пользователь выбрал архивирование в меню строки. Пока сервер работает, ячейки строки чуть темнеют и по ним проходит светлый блик.',
     states: ['body.pending'],
     enter: stepAction((root, { signal }) => archiveHeld(root, signal)),
   },
@@ -581,7 +583,7 @@ const CANCEL_ACTION: readonly GuideStoryStep[] = [
     enter: stepAction(async (root, { signal }) => {
       await cancelItemShown(root, signal)
       cancelItem()!.click()
-      await pollUntil(() => !kebabBusy(root) && !openMenu(), signal)
+      await pollUntil(() => !rowBusy(root) && !openMenu(), signal)
     }),
   },
 ]
@@ -622,12 +624,12 @@ export const RowActionsCancel: StoryObj<StoryProps> = {
     await step(CANCEL_ACTION[0]!.title, async () => {
       await waitForRows(canvas)
       await until(() => expect(kebabOf(canvas)).not.toBeNull())
-      await expect(kebabBusy(canvas)).toBe(false)
+      await expect(rowBusy(canvas)).toBe(false)
     })
     await step(CANCEL_ACTION[1]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(kebabBusy(canvas)).toBe(true)
+      await expect(canvas.querySelector('[data-pending-wave]')).not.toBeNull()
       for (const cell of rowCells()) {
         await expect(cell).toHaveAttribute('aria-busy', 'true')
       }
@@ -649,8 +651,10 @@ export const RowActionsCancel: StoryObj<StoryProps> = {
       )
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(kebabBusy(canvas)).toBe(false)
-      await expect(kebabFailed(canvas)).toBe(false)
+      await expect(rowBusy(canvas)).toBe(false)
+      await expect(
+        kebabOf(canvas)?.querySelector('[data-failure-indicator]'),
+      ).toBeNull()
       for (const cell of rowCells()) {
         await expect(cell).not.toHaveAttribute('aria-busy')
       }

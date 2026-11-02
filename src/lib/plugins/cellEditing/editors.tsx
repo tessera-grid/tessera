@@ -13,13 +13,20 @@ import {
 } from 'react'
 
 import type { DebugActionSource } from '../../core/debugActions'
+import { ignoreBusyChange } from '../../core/failures/failuresFeature'
+import { isCellBusy } from '../../shared/objectPending'
 import { preloadable } from '../../core/preloadable'
 import { useLocalization } from '../../core/localization'
 import { CheckMark } from '../../ui/CheckMark/CheckMark'
 import { CellEditInput } from './CellEditInput'
 import styles from './CellEditInput.module.css'
 import { columnOf } from './editValue'
-import { readEditSession, saveEdit, startEditSession } from './session'
+import {
+  columnNameOf,
+  readEditSession,
+  saveEdit,
+  startEditSession,
+} from './session'
 import type { CellEditingHooks, CellEditor } from './types'
 
 /** Текст: поле ввода; Enter и потеря фокуса сохраняют, Escape отменяет. */
@@ -209,6 +216,16 @@ export const beginEdit = (
   hooks: Partial<CellEditingHooks>,
   source: DebugActionSource,
 ) => {
+  // Ячейка занята — своим сохранением или действием строки или колонки: изменение не
+  // принимается (ADR 0177, OB5, OB6).
+  if (isCellBusy(table, row.id, column.id)) {
+    ignoreBusyChange(
+      table,
+      { cell: [row.id, column.id] },
+      columnNameOf(table, column.id),
+    )
+    return
+  }
   startEditSession(table, row, column, source)
   if (!togglesInPlace(table, column, hooks)) return
   const session = readEditSession(table)

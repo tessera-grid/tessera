@@ -1,6 +1,7 @@
 /**
  * Ячейка колонки раскрытия. Реактивность на срезе `expanded` (`useSlice`), на
- * ожидании и на неудаче своей строки; бизнес-колбэк — из пропса `hooks` (инъекция
+ * ожидании и на неудаче своей строки; отказ — вспышкой строки и в реестре, без отметки на
+ * переключателе (ADR 0177, OB13); бизнес-колбэк — из пропса `hooks` (инъекция
  * definePlugin).
  */
 import { useEffect } from 'react'
@@ -20,7 +21,6 @@ import {
   useTableState,
 } from '../../core/reactivity'
 import { rowSourceOf } from '../../core/rowSource'
-import { rejectionText } from '../../util/thenable'
 import { ExpandButton } from '../../plugins/rowExpanding/ExpandButton'
 import { readLoadedChildren } from './lazyChildrenFeature'
 import {
@@ -63,7 +63,11 @@ export const RowExpandingComponent = ({
         : undefined,
     [branchLoading, table, row],
   )
-  const waiting = pending || branchLoading
+  // Загрузка детей — дуга и «стоп» на переключателе (ADR 0155, §3); ожидание промиса
+  // раскрытия без загрузки — волна строки (ADR 0177, §1).
+  const loadsChildren =
+    !!hooks.loadChildren && isLazyRow(row, hooks.hasChildren)
+  const waiting = (pending && loadsChildren) || branchLoading
 
   // Человек раскрыл всё кнопкой (ADR 0160, §2): ленивая строка окна грузит детей, когда
   // её ячейка появилась, — и при прокрутке.
@@ -94,12 +98,6 @@ export const RowExpandingComponent = ({
     <ExpandButton
       expanded={row.getIsExpanded()}
       pending={waiting}
-      failure={
-        failed &&
-        labels.actionFailedRetry(
-          rejectionText(failed.error) ?? labels.loadChildrenFailed,
-        )
-      }
       onClick={onExpand}
       {...(waiting && {
         onCancel: event =>

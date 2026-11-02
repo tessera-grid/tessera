@@ -143,8 +143,9 @@ export const handleGridKeyDown = (
     // Пробел не должен прокручивать контейнер, даже если действия нет.
     event.preventDefault()
     const actionTarget = resolveActionTarget(t, active)
-    const action =
-      actionTarget && findKeyboardAction(t, actionTarget, event.key)
+    // Shift+Space — своё действие (выбор строки, WAI-ARIA APG), не пробел ячейки (ADR 0175, ED20).
+    const key = event.key === ' ' && event.shiftKey ? 'Shift+ ' : event.key
+    const action = actionTarget && findKeyboardAction(t, actionTarget, key)
     if (action && actionTarget) {
       runKeyboardAction(t, action, actionTarget.ctx, event)
       restoreFocusIfLost(cell)

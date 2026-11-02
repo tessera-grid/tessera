@@ -2,15 +2,22 @@
  * Кнопка «Экспорт» в тулбаре (ADR 0044, EX1, EX6, EX28). Одна доступная комбинация —
  * клик выгружает сразу; иначе открывает панель настроек (лениво). Пока серверный
  * `onExport` или асинхронный формат (XL7) в ожидании, кнопка `aria-busy` с бликом,
- * серверная выгрузка заблокирована; отказ формата — вспышка. До прихода данных
+ * серверная выгрузка заблокирована; отказ останавливает дугу, объявляется и пишется в реестр
+ * отказов (ADR 0177, §2). До прихода данных
  * клиентская выгрузка — скелет кнопки, серверная доступна (ADR 0122).
  */
+import { announceLabel } from '../../core/announcer'
 import { cancelPending, cancelSourceOf } from '../../core/cancellation'
 import { reportAction, sourceOf } from '../../core/debugActions'
 import { Suspense, useRef, useState } from 'react'
 
 import type { ToolbarComponentProps } from '../../core/createSlots'
 import { useLazyPopover } from '../../core/lazyOpening'
+import {
+  failureKeyOf,
+  reportFailure,
+  resolveFailure,
+} from '../../core/failures/failuresFeature'
 import { useLocalization } from '../../core/localization'
 import { preloadable } from '../../core/preloadable'
 import { useTableState } from '../../core/reactivity'
@@ -33,13 +40,15 @@ const ExportPanel = preloadable(() =>
   import('./ExportPanel').then(module => module.ExportPanel),
 )
 
+const EXPORT_PROCESS = { process: 'export' }
+
 export const ExportButton = ({ table }: ToolbarComponentProps) => {
   const labels = useLocalization()
   const { download: DownloadIcon } = useIcons()
   // Серверная выгрузка не блокирует кнопку (можно выгрузить страницу), клиентская — блокирует.
   const [busy, setBusy] = useState<false | 'server' | 'client'>(false)
-  // Отказ выгрузки (XL7) — отметка на кнопке до повтора или успеха (ADR 0136).
-  const [failure, setFailure] = useState<string>()
+  // Отказ выгрузки (XL7): дуга останавливается, запись — в реестре отказов (ADR 0177, §2).
+  const [failed, setFailed] = useState(false)
   // Ref, а не state: два клика подряд до перерисовки не должны запустить вторую выгрузку.
   const running = useRef<false | 'server' | 'client'>(false)
 
@@ -70,18 +79,26 @@ export const ExportButton = ({ table }: ToolbarComponentProps) => {
       source: sourceOf(globalThis.event),
     })
     const pending = runExport(table, settings, { ...report, cause: id })
-    setFailure(undefined)
+    setFailed(false)
+    resolveFailure(table, failureKeyOf(EXPORT_PROCESS))
     if (pending) {
       running.current = isServer ? 'server' : 'client'
       setBusy(isServer ? 'server' : 'client')
       pending
-        .catch((error: unknown) =>
-          setFailure(
-            labels.actionFailedRetry(
-              rejectionText(error) ?? labels.actionFailedFallback,
-            ),
-          ),
-        )
+        .catch((error: unknown) => {
+          const reason = rejectionText(error) ?? labels.actionFailedFallback
+          setFailed(true)
+          reportFailure(table, {
+            label: labels.export,
+            target: EXPORT_PROCESS,
+            reason,
+            retry: () => start(settings, isServer),
+          })
+          // Отметки на кнопке нет — отказ слышен объявлением (ADR 0177, OB2).
+          announceLabel(table, all =>
+            all.announceActionFailed(all.export, reason),
+          )
+        })
         .finally(() => {
           running.current = false
           setBusy(false)
@@ -123,7 +140,7 @@ export const ExportButton = ({ table }: ToolbarComponentProps) => {
         label={labels.export}
         icon={icon}
         pending={busy === 'client'}
-        failure={failure}
+        failed={failed}
         aria-busy={!!busy || undefined}
         {...cancel}
         data-testid="export-button"
@@ -150,7 +167,7 @@ export const ExportButton = ({ table }: ToolbarComponentProps) => {
         axes={axes}
         busy={!!busy}
         pending={busy === 'client'}
-        failure={failure}
+        failed={failed}
         open={popover.open}
         onOpenChange={popover.onOpenChange}
         onRun={start}

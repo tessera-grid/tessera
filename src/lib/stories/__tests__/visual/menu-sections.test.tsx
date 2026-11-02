@@ -628,7 +628,7 @@ describe('Асинхронный раздел', () => {
     await closeMenu()
   })
 
-  test('NM13: пункты раздела получают состояния ADR 0078 — проверку доступности при входе, ожидание действия и его отображение на кебабе', async () => {
+  test('NM13: пункты раздела получают состояния ADR 0078 — проверку доступности при входе, ожидание действия на строке и в имени кебаба', async () => {
     const probe = await renderGrid()
     await openRowMenu()
     await enter('Move to')
@@ -647,7 +647,12 @@ describe('Асинхронный раздел', () => {
     await expect
       .poll(() => rowKebab()!.getAttribute('aria-label'))
       .toBe('Row options. Running: Sync')
-    expect(rowKebab()!.getAttribute('aria-busy')).toBe('true')
+    // Ожидание — на строке-цели, а не на кебабе (ADR 0177, §1).
+    expect(
+      rowKebab()!
+        .closest('.data-grid__body-row')!
+        .querySelector('[aria-busy="true"]'),
+    ).not.toBeNull()
     probe.runs[0]!.resolve()
     await expect
       .poll(() => rowKebab()!.getAttribute('aria-label'))

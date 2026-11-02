@@ -225,14 +225,36 @@ export interface TableLabels {
   editInvalidNumber: string
   /** Ошибка поля правки: набранное не разбирается в тип колонки (ADR 0175, ED2) */
   editInvalidValue: string
+  /** Причина отклонения правки: значение изменилось во время правки (ADR 0175, ED22) */
+  editConflict: string
   /** Пункт поля с поиском, очищающий значение ячейки (ADR 0175, ED8) */
   editClear: string
+  /** Поиск по вариантам в редакторе ячейки (ADR 0175, ED19) */
+  editSearchOptions: string
+  /** Редактор ячейки: вариантов нет */
+  editNoOptions: string
+  /** Редактор ячейки: варианты справочника загружаются */
+  editLoadingOptions: string
+  /** Редактор ячейки: варианты справочника не загрузились */
+  editOptionsError: string
+  /** Редактор ячейки: повторить загрузку вариантов */
+  editRetry: string
   /** Текст отказа сохранения ячейки, если сервер не прислал свой (ADR 0041) */
   saveFailed: string
   /** Доступное имя точки ошибки ячейки без кнопки правки (ADR 0150) */
   cellError: string
+  /** Повтор отклонённого сохранения в поповере отметки ячейки (ADR 0177). */
+  failureRetry: string
+  /** Отбросить отклонённое изменение ячейки (ADR 0177). */
+  failureDiscard: string
+  /** Пункт меню ячейки: повторить отклонённое сохранение (ADR 0177, OB16). */
+  retrySave: string
+  /** Пункт меню ячейки: отменить ждущее сохранение (ADR 0177, OB16). */
+  cancelSave: string
   /** Объявление отказа сохранения ячейки (`column` — имя колонки) */
   announceSaveFailed: (column: string, error: string) => string
+  /** Изменение занятого объекта не принято: он ещё сохраняется (ADR 0177, OB6). */
+  announceStillSaving: (name: string) => string
   /** Текст отказа загрузки детей строки, если сервер не прислал свой (ADR 0054) */
   loadChildrenFailed: string
   /** Объявление отказа раскрытия строки */
@@ -544,9 +566,20 @@ export const DEFAULT_LABELS = {
   editInvalidNumber: 'Enter a number',
   editInvalidValue: 'Invalid value',
   editClear: 'Clear value',
+  editConflict: 'The value changed while you were editing — not saved',
+  editSearchOptions: 'Search values',
+  editNoOptions: 'No values',
+  editLoadingOptions: 'Loading…',
+  editOptionsError: "Couldn't load values",
+  editRetry: 'Retry',
   saveFailed: "Couldn't save",
   cellError: 'Cell error',
+  failureRetry: 'Retry',
+  failureDiscard: 'Discard change',
+  retrySave: 'Retry saving',
+  cancelSave: 'Cancel saving',
   announceSaveFailed: '{column}: {error}',
+  announceStillSaving: '{name} is still saving — the change was not applied',
   loadChildrenFailed: 'Unknown error',
   announceExpandFailed: "Couldn't load: {error}",
   moveRowFailed: 'Unknown error',

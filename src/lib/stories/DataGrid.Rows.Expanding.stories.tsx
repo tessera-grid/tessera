@@ -123,7 +123,7 @@ const CONFIRMED: readonly GuideStoryStep[] = [
   },
   {
     title: 'Раскрытие ждёт сервера',
-    hint: 'Пользователь раскрыл строку. Строка сразу раскрыта, а кнопка раскрытия показывает ожидание ответа сервера.',
+    hint: 'Пользователь раскрыл строку. Строка сразу раскрыта, а пока сервер не ответил, ячейки строки чуть темнеют и по ним проходит светлый блик.',
     states: ['body.pending'],
     enter: untilDone(
       root => isPending(confirmRow(root)),
@@ -135,7 +135,7 @@ const CONFIRMED: readonly GuideStoryStep[] = [
   },
   {
     title: 'Сервер подтвердил',
-    hint: 'Сервер ответил. Ожидание на кнопке погасло, строка остаётся раскрытой.',
+    hint: 'Сервер ответил. Ожидание со строки снято, строка остаётся раскрытой.',
     enter: untilDone(
       root => isExpanded(confirmRow(root)) && !isPending(confirmRow(root)),
       root => {
@@ -181,9 +181,12 @@ export const ExpandingConfirmed: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await until(() => expect(isPending(confirmRow(canvas))).toBe(true))
       await expect(isExpanded(confirmRow(canvas))).toBe(true)
-      await expect(toggleIn(confirmRow(canvas))).toHaveAttribute(
+      // Ожидание — волной на строке, на кнопке раскрытия дуги нет (ADR 0177, §1).
+      await expect(
+        confirmRow(canvas)!.querySelector('[data-pending-wave]'),
+      ).not.toBeNull()
+      await expect(toggleIn(confirmRow(canvas))).not.toHaveAttribute(
         'aria-busy',
-        'true',
       )
     })
     await step(CONFIRMED[2]!.title, async () => {
@@ -263,10 +266,14 @@ const hasChildRows = (root: HTMLElement) =>
   rowsInOrder(root).some(row =>
     row.dataset.rowId?.startsWith(`${CHILDREN.first}-`),
   )
-const failedShown = (root: HTMLElement) =>
-  !!toggleIn(rowOf(root, CHILDREN.failed))?.querySelector(
-    '[data-failure-indicator]',
+/** Отказ раскрытия — вспышка отката на строке, отметки на кнопке нет (ADR 0177, §2). */
+const failedShown = (root: HTMLElement) => {
+  const row = rowOf(root, CHILDREN.failed)
+  return (
+    row?.getAttribute('data-flash') === 'reverted' &&
+    !toggleIn(row)?.querySelector('[data-failure-indicator]')
   )
+}
 
 /** Пользователь раскрывает строку `id`, если она ещё не раскрыта и не ждёт ответа. */
 const expandRow = (root: HTMLElement, id: string) => {
@@ -319,7 +326,7 @@ const LAZY_CHILDREN: readonly GuideStoryStep[] = [
   },
   {
     title: 'Загрузка не удалась',
-    hint: 'Сервер не ответил на раскрытие третьей строки. Строка свёрнута, кнопка раскрытия отмечена отказом.',
+    hint: 'Сервер не ответил на раскрытие третьей строки. Строка свёрнута и коротко вспыхнула тоном ошибки.',
     immediate: true,
     enter: untilDone(
       root => childrenArrived(root) && emptyIsLeaf(root) && failedShown(root),
@@ -454,7 +461,7 @@ const EXPAND_REJECTED: readonly GuideStoryStep[] = [
   },
   {
     title: 'Раскрытие ждёт сервера',
-    hint: 'Пользователь раскрыл строку. Строка сразу раскрыта, а кнопка раскрытия показывает ожидание ответа сервера.',
+    hint: 'Пользователь раскрыл строку. Строка сразу раскрыта, а пока сервер не ответил, ячейки строки чуть темнеют и по ним проходит светлый блик.',
     states: ['body.pending'],
     enter: untilDone(expandPending, root => {
       EXPAND_SERVER.hold()
@@ -463,7 +470,7 @@ const EXPAND_REJECTED: readonly GuideStoryStep[] = [
   },
   {
     title: 'Сервер отказал',
-    hint: 'Сервер отклонил раскрытие. Строка свёрнута обратно и коротко вспыхивает тоном ошибки, кнопка раскрытия отмечена отказом.',
+    hint: 'Сервер отклонил раскрытие. Строка свёрнута обратно и коротко вспыхивает тоном ошибки.',
     immediate: true,
     enter: untilDone(
       root => expandableOf(root)?.getAttribute('data-flash') === 'reverted',
@@ -512,7 +519,10 @@ export const ExpandingRejected: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await until(() => expect(expandPending(canvas)).toBe(true))
       expect(expandableOf(canvas)).toHaveAttribute('data-expanded', 'true')
-      expect(toggleOf(canvas)).toHaveAttribute('aria-busy', 'true')
+      expect(
+        expandableOf(canvas)!.querySelector('[data-pending-wave]'),
+      ).not.toBeNull()
+      expect(toggleOf(canvas)).not.toHaveAttribute('aria-busy')
     })
     await step(EXPAND_REJECTED[2]!.title, async () => {
       await guideNext(canvas)
@@ -522,7 +532,7 @@ export const ExpandingRejected: StoryObj<StoryProps> = {
       expect(expandableOf(canvas)).not.toHaveAttribute('data-expanded', 'true')
       expect(
         toggleOf(canvas)!.querySelector('[data-failure-indicator]'),
-      ).not.toBeNull()
+      ).toBeNull()
       await settle()
     })
   },

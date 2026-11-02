@@ -5,11 +5,16 @@ import { Switch } from '../ui/Switch'
 import { UiCanvas } from './__mocks__/UiCanvas'
 import { defaultControls, noControls } from './__mocks__/utils/dataGridControls'
 
-/** Переключатель на Base UI в теме грида (ADR 0017): включён, выключен, недоступен. */
+/** Переключатель на Base UI в теме грида (ADR 0017): включён, выключен, недоступен, ждёт сохранения (ADR 0176). */
 const meta = {
   title: 'Tessera/UI/Switch',
   component: Switch,
-  args: { 'aria-label': 'Dense rows', checked: false, disabled: false },
+  args: {
+    'aria-label': 'Dense rows',
+    checked: false,
+    disabled: false,
+    pending: false,
+  },
   render: function Render(args) {
     const [, updateArgs] = useArgs()
     return (
@@ -29,7 +34,7 @@ type Story = StoryObj<typeof meta>
 
 export const SwitchPlayground: Story = {
   name: 'Playground',
-  parameters: defaultControls('checked', 'disabled'),
+  parameters: defaultControls('checked', 'disabled', 'pending'),
 }
 
 export const SwitchChecked: Story = {
@@ -42,4 +47,10 @@ export const SwitchDisabled: Story = {
   name: 'Disabled',
   parameters: noControls(),
   args: { checked: true, disabled: true },
+}
+
+export const SwitchPending: Story = {
+  name: 'Pending',
+  parameters: noControls(),
+  args: { checked: true, pending: true },
 }

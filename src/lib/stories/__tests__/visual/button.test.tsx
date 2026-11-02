@@ -216,7 +216,7 @@ describe('Button (ADR 0097)', () => {
     expect(onClick).toHaveBeenCalledTimes(1)
   })
 
-  test('BN4: pending shows the pending arc and aria-busy and ignores presses, the outline border fades out meanwhile; a failure stops the arc and shows the failure mark', async () => {
+  test('BN4: pending shows the pending arc and aria-busy and ignores presses, the outline border fades out meanwhile; a failure stops the arc without a failure mark', async () => {
     const onClick = vi.fn()
     const screen = await render(
       <Theme>
@@ -246,11 +246,11 @@ describe('Button (ADR 0097)', () => {
         <Button pending onClick={onClick}>
           Retry
         </Button>
-        <Button failure="Failed: offline">Save</Button>
+        <Button failed>Save</Button>
       </Theme>,
     )
     expect(pendingArcOf(flashing!)?.dataset.phase).toBe('stopping')
-    expect(failureShownOn(flashing)).toBe(true)
+    expect(failureShownOn(flashing)).toBe(false)
     // Рамка возвращается, пока дуга гаснет.
     await expect
       .poll(() => style(flashing!).borderTopColor, { timeout: 2000 })

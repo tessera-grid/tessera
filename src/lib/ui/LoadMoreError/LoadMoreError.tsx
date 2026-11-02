@@ -37,6 +37,59 @@ export interface LoadMoreErrorProps {
   testId?: string
 }
 
+/**
+ * Содержимое ошибки загрузки — значок, причина и повтор (ADR 0081, ADR 0175 ED24): строка
+ * ошибки таблицы и список вариантов поповера показывают отказ одинаково.
+ */
+export const LoadErrorBlock = ({
+  title,
+  reason,
+  retryLabel,
+  onRetry,
+  onRetryKeyDown,
+  retryProps,
+  testId,
+}: Pick<
+  LoadMoreErrorProps,
+  | 'title'
+  | 'reason'
+  | 'retryLabel'
+  | 'onRetry'
+  | 'onRetryKeyDown'
+  | 'retryProps'
+> & { testId?: string }) => {
+  const { loadMoreFailed: FailedIcon, retry: RetryIcon } = useIcons()
+  return (
+    <>
+      <div className={styles['error-message']}>
+        <FailedIcon
+          className={styles['error-icon']}
+          width={18}
+          height={18}
+          aria-hidden="true"
+        />
+        <div className={styles['error-text']}>
+          <div className={styles['error-title']}>{title}</div>
+          {reason && (
+            <Tooltip title={reason} overflowOnly>
+              <div className={styles['error-reason']}>{reason}</div>
+            </Tooltip>
+          )}
+        </div>
+      </div>
+      <Button
+        onClick={onRetry}
+        onKeyDown={onRetryKeyDown}
+        icon={<RetryIcon width={16} height={16} aria-hidden="true" />}
+        data-testid={testId}
+        {...retryProps}
+      >
+        {retryLabel}
+      </Button>
+    </>
+  )
+}
+
 export const LoadMoreError = ({
   title,
   reason,
@@ -51,7 +104,6 @@ export const LoadMoreError = ({
   className,
   testId,
 }: LoadMoreErrorProps) => {
-  const { loadMoreFailed: FailedIcon, retry: RetryIcon } = useIcons()
   const ownRef = useRef<HTMLDivElement>(null)
 
   // Блок ошибки — по центру видимой ширины области прокрутки, а не всей таблицы.
@@ -93,30 +145,14 @@ export const LoadMoreError = ({
             : undefined
         }
       >
-        <div className={styles['error-message']}>
-          <FailedIcon
-            className={styles['error-icon']}
-            width={18}
-            height={18}
-            aria-hidden="true"
-          />
-          <div className={styles['error-text']}>
-            <div className={styles['error-title']}>{title}</div>
-            {reason && (
-              <Tooltip title={reason} overflowOnly>
-                <div className={styles['error-reason']}>{reason}</div>
-              </Tooltip>
-            )}
-          </div>
-        </div>
-        <Button
-          onClick={onRetry}
-          onKeyDown={onRetryKeyDown}
-          icon={<RetryIcon width={16} height={16} aria-hidden="true" />}
-          {...retryProps}
-        >
-          {retryLabel}
-        </Button>
+        <LoadErrorBlock
+          title={title}
+          reason={reason}
+          retryLabel={retryLabel}
+          onRetry={onRetry}
+          onRetryKeyDown={onRetryKeyDown}
+          retryProps={retryProps}
+        />
       </div>
     </div>
   )

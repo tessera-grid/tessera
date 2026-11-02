@@ -25,6 +25,7 @@ import {
 import { commonFeature } from './commonFeature'
 import { expandIncludedModels } from './pluginModels'
 import { actionStatusFeature } from './headerActions/actionStatusFeature'
+import { failuresFeature } from './failures/failuresFeature'
 import { flashFeature } from './flashes/flashFeature'
 import { highlightFeature } from './highlights/highlightFeature'
 import { scrollToRowFeature } from './scrollToRow/scrollToRowFeature'
@@ -444,6 +445,7 @@ type MergeFeatures<T extends readonly TablePlugin[]> = UnionToIntersection<
 export type TesseraFeatures<T extends readonly TablePlugin[]> = {
   commonFeature: typeof commonFeature
   actionStatusFeature: typeof actionStatusFeature
+  failuresFeature: typeof failuresFeature
   highlightFeature: typeof highlightFeature
   flashFeature: typeof flashFeature
   scrollToRowFeature: typeof scrollToRowFeature
@@ -468,6 +470,7 @@ export const buildTesseraFeatures = <
   const merged: Record<string, unknown> = {
     commonFeature,
     actionStatusFeature,
+    failuresFeature,
     highlightFeature,
     flashFeature,
     scrollToRowFeature,

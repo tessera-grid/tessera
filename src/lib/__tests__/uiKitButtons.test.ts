@@ -1,5 +1,5 @@
 /**
- * Страж UI-кита (ADR 0097, BN8): каждый `<button>` в грида и плагинах — в списке
+ * Страж UI-кита (ADR 0097, BN8): каждый `<button>` в гриде, плагинах и общем коде — в списке
  * исключений с причиной. Кнопка, собранная по месту, роняет тест: новый контрол
  * берётся из `src/lib/ui` или добавляется туда (AGENTS.md §6 «UI-кит»).
  * Запуск: npx vitest run --config vitest.node.config.ts
@@ -18,10 +18,6 @@ const BUTTON_EXCEPTIONS: Record<string, { count: number; why: string }> = {
     count: 1,
     why: 'крестик снятия фильтра в строке сводки — кнопка-иконка 14px внутри строки, не кнопка с подписью',
   },
-  'plugins/columnFiltering/OptionFilterPanel.tsx': {
-    count: 1,
-    why: 'крестик очистки поиска внутри поля ввода — часть поля, не отдельный контрол',
-  },
   'plugins/dataExport/ExportPanel.tsx': {
     count: 1,
     why: 'быстрые наборы — пункты меню панели (вид пункта поповера, ADR 0074), не кнопки',
@@ -29,6 +25,10 @@ const BUTTON_EXCEPTIONS: Record<string, { count: number; why: string }> = {
   'plugins/pagination/SizeTrigger.tsx': {
     count: 1,
     why: 'триггер списка размера страницы — заглушка и рендер-проп Base UI Select, вид контрола выбора',
+  },
+  'shared/options/OptionSearch.tsx': {
+    count: 1,
+    why: 'крестик очистки поиска внутри поля ввода — часть поля, не отдельный контрол',
   },
 }
 
@@ -39,10 +39,10 @@ const sources = (dir: string): string[] =>
     return entry.name.endsWith('.tsx') ? [path] : []
   })
 
-/** Нативные `<button>` по файлам `grid` и `plugins`. */
+/** Нативные `<button>` по файлам `grid`, `plugins` и `shared`. */
 const nativeButtons = (lib = LIB) =>
   Object.fromEntries(
-    ['grid', 'plugins']
+    ['grid', 'plugins', 'shared']
       .flatMap(dir => sources(join(lib, dir)))
       .map(
         file =>
@@ -55,7 +55,7 @@ const nativeButtons = (lib = LIB) =>
   )
 
 describe('страж UI-кита', () => {
-  it('BN8: каждый <button> в grid и plugins — в списке исключений с причиной; кнопка по месту роняет тест', () => {
+  it('BN8: каждый <button> в grid, plugins и shared — в списке исключений с причиной; кнопка по месту роняет тест', () => {
     const found = nativeButtons()
     const unexpected = Object.entries(found)
       .filter(([file, count]) => count > (BUTTON_EXCEPTIONS[file]?.count ?? 0))

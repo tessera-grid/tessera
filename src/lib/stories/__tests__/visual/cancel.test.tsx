@@ -239,22 +239,11 @@ interface Carrier {
   label: string | RegExp
   start: () => Promise<void>
   method: Method
-  /** У триггера списка подсказка — `title`, у кнопок кита — тултип. */
-  nativeTitle?: boolean
 }
 
+// «Стоп» — у кнопки процесса вне таблицы (ADR 0177, §2); запрос данных отменяет полоса
+// под шапкой (CA5), действие строки — пункт меню (CA3).
 const carriers = (): Carrier[] => [
-  {
-    name: 'инлайн-кнопка',
-    kind: 'archive',
-    button: () => archiveButton(),
-    label: tableLabels.cancelAction('Archive'),
-    start: async () => {
-      await userEvent.hover(nameCell('r1'))
-      await humanClick(archiveButton())
-    },
-    method: 'pointer',
-  },
   {
     name: 'выгрузка',
     kind: 'export',
@@ -264,51 +253,6 @@ const carriers = (): Carrier[] => [
     method: 'Enter',
   },
   {
-    name: 'сортировка',
-    kind: 'sort',
-    button: sortButton,
-    label: new RegExp(`^${tableLabels.cancelAction('')}`),
-    start: async () => {
-      await userEvent.hover(headCell())
-      await humanClick(sortButton())
-    },
-    method: 'Space',
-  },
-  {
-    name: 'фильтр',
-    kind: 'filter',
-    button: filterButton,
-    label: tableLabels.cancelAction(tableLabels.filter),
-    start: async () => {
-      setColumnFilterByUser(captured, 'name', {
-        operator: 'contains',
-        value: 'Row 1',
-      })
-    },
-    method: 'pointer',
-  },
-  {
-    name: 'страница',
-    kind: 'page',
-    button: nextPage,
-    label: tableLabels.cancelAction(tableLabels.nextPage),
-    start: () => humanClick(nextPage()),
-    method: 'Enter',
-  },
-  {
-    name: 'размер страницы',
-    kind: 'page',
-    button: sizeTrigger,
-    label: tableLabels.cancelAction(tableLabels.rowsPerPage),
-    start: async () => {
-      await humanClick(sizeTrigger())
-      await expect.poll(() => sizeOption('50')).toBeTruthy()
-      await humanClick(sizeOption('50')!)
-    },
-    method: 'Space',
-    nativeTitle: true,
-  },
-  {
     name: 'тоггл ленивых детей',
     kind: 'children',
     button: toggle,
@@ -316,11 +260,23 @@ const carriers = (): Carrier[] => [
     start: () => humanClick(toggle()),
     method: 'pointer',
   },
+  {
+    name: 'тоггл ленивых детей, Space',
+    kind: 'children',
+    button: toggle,
+    label: tableLabels.cancelAction(tableLabels.expandRow),
+    start: () => humanClick(toggle()),
+    method: 'Space',
+  },
 ]
 
 describe('Отмена длительных операций (ADR 0153)', () => {
-  test('CA2: занятая кнопка одного действия — инлайн-кнопка, выгрузка, сортировка, фильтр, страница и размер страницы, тоггл ленивых детей — при наведении и фокусе показывает «стоп» внутри дуги, имя и тултип «Отменить: ‹имя›»; нажатие мышью, Enter и Space прерывает signal и снимает ожидание; «стоп» — не раньше --tsr-comp-cancel-arm-delay после старта', async () => {
+  test('CA2: занятая кнопка процесса вне таблицы — выгрузка и тоггл ленивых детей — при наведении и фокусе показывает «стоп» внутри дуги, имя и тултип «Отменить: ‹имя›»; нажатие мышью, Enter и Space прерывает signal и снимает ожидание; «стоп» — не раньше --tsr-comp-cancel-arm-delay после старта', async () => {
     await mount()
+    // Кнопка выгрузки — из ленивого модуля тулбара.
+    await expect
+      .poll(() => document.querySelector('[data-testid="export-button"]'))
+      .not.toBeNull()
     for (const carrier of carriers()) {
       const count = calls.length
       await carrier.start()
@@ -346,13 +302,9 @@ describe('Отмена длительных операций (ADR 0153)', () => 
       if (typeof carrier.label === 'string') {
         expect(name, carrier.name).toBe(carrier.label)
       } else expect(name, carrier.name).toMatch(carrier.label)
-      if (carrier.nativeTitle) {
-        expect(carrier.button().getAttribute('title')).toBe(name)
-      } else {
-        await expect
-          .poll(() => tooltipShown(name), { message: carrier.name })
-          .toBe(true)
-      }
+      await expect
+        .poll(() => tooltipShown(name), { message: carrier.name })
+        .toBe(true)
 
       // Фокус с клавиатуры без наведения — тоже «стоп».
       await parkPointer()
@@ -420,29 +372,39 @@ describe('Отмена длительных операций (ADR 0153)', () => 
   })
 
   test('CA4: отмена тихая — ни отметки отказа, ни вспышки на цели; серверные срезы возвращаются к прежним без красного света и плашки отказа; объявление «‹имя›: отменено»', async () => {
-    await mount()
+    await mount(true)
 
-    // Пункт меню: цель без вспышки, на кнопке — без отметки отказа.
+    // Действие строки: отмена пунктом кебаба — цель без вспышки и отметки.
     await userEvent.hover(nameCell('r1'))
-    await humanClick(archiveButton())
-    const archive = lastCall('archive')!
-    await sleep(ARM)
-    await humanClick(archiveButton())
-    await expect.poll(() => archive.signal.aborted).toBe(true)
+    await humanClick(rowKebab()!)
+    await expect.poll(() => itemByText('Remove')).toBeTruthy()
+    await humanClick(itemByText('Remove')!)
+    await expect.poll(() => items().length).toBe(0)
+    const remove = lastCall('remove')!
+    await userEvent.hover(nameCell('r1'))
+    await humanClick(rowKebab()!)
+    const cancelRemove = tableLabels.cancelAction('Remove')
+    await expect.poll(() => itemByText(cancelRemove)).toBeTruthy()
+    await humanClick(itemByText(cancelRemove)!)
+    await expect.poll(() => remove.signal.aborted).toBe(true)
     await expect
       .poll(() => liveRegion().textContent)
-      .toContain(tableLabels.announceActionCancelled('Archive'))
+      .toContain(tableLabels.announceActionCancelled('Remove'))
     await sleep(300)
     expect(document.querySelector('[data-flash]')).toBeNull()
-    expect(failureShownOn(archiveButton())).toBe(false)
+    expect(document.querySelector('[data-failure-indicator]')).toBeNull()
 
     // Серверная сортировка: срез к прежнему, без красного света и плашки.
     await userEvent.hover(headCell())
     await humanClick(sortButton())
     const sort = lastCall('sort')!
     expect(headCell().getAttribute('aria-sort')).not.toBe('none')
-    await sleep(ARM)
-    await humanClick(sortButton())
+    await expect.poll(() => pendingBanner(), { timeout: 3000 }).not.toBeNull()
+    await humanClick(
+      document.querySelector<HTMLElement>(
+        '[data-testid="pending-action-cancel"]',
+      )!,
+    )
     await expect.poll(() => sort.signal.aborted).toBe(true)
     await expect.poll(() => headCell().getAttribute('aria-sort')).toBe('none')
     await expect
@@ -451,7 +413,6 @@ describe('Отмена длительных операций (ADR 0153)', () => 
     await sleep(300)
     expect(loadBanner()).toBeNull()
     expect(document.querySelector('[data-error-flash="true"]')).toBeNull()
-    expect(failureShownOn(sortButton())).toBe(false)
   })
 
   test('CA5: серверное действие дольше --tsr-comp-cancel-hint-delay — плашка Alert под шапкой «Идёт поиск…» с кнопкой «Отменить»; Escape в поле поиска и в теле отменяет; поиск возвращает прежний запрос в поле', async () => {
@@ -515,11 +476,12 @@ describe('Отмена длительных операций (ADR 0153)', () => 
     await userEvent.hover(headCell())
     await humanClick(sortButton())
     await expect.poll(() => pendingBanner(), { timeout: 3000 }).not.toBeNull()
-    await expect.poll(() => armed(sortButton())).toBe(true)
-    await userEvent.hover(sortButton())
-    await expect.poll(() => stopShown(sortButton())).toBe(true)
+    await humanClick(exportButton())
+    await expect.poll(() => armed(exportButton())).toBe(true)
+    await userEvent.hover(exportButton())
+    await expect.poll(() => stopShown(exportButton())).toBe(true)
 
-    const contexts = () => [sortButton(), pendingBanner()!]
+    const contexts = () => [exportButton(), pendingBanner()!]
     await inBothThemes(async () => {
       for (const context of contexts()) {
         const { violations } = await axe.run(context, {
@@ -528,10 +490,10 @@ describe('Отмена длительных операций (ADR 0153)', () => 
         expect(violations.map(v => v.id)).toEqual([])
       }
       const stop =
-        sortButton().querySelector<HTMLElement>('[data-cancel-icon]')!
+        exportButton().querySelector<HTMLElement>('[data-cancel-icon]')!
       const ratio = contrast(
         toRgba(getComputedStyle(stop).color),
-        backgroundOf(sortButton()),
+        backgroundOf(exportButton()),
       )
       expect(ratio).toBeGreaterThanOrEqual(3)
     })
@@ -539,11 +501,11 @@ describe('Отмена длительных операций (ADR 0153)', () => 
     await commands.forcedColors(true)
     try {
       const stop =
-        sortButton().querySelector<HTMLElement>('[data-cancel-icon]')!
+        exportButton().querySelector<HTMLElement>('[data-cancel-icon]')!
       expect(toRgba(getComputedStyle(stop).color)).toEqual(
         toRgba('HighlightText'),
       )
-      expect(toRgba(getComputedStyle(sortButton()).backgroundColor)).toEqual(
+      expect(toRgba(getComputedStyle(exportButton()).backgroundColor)).toEqual(
         toRgba('Highlight'),
       )
       const cancel = document.querySelector<HTMLElement>(

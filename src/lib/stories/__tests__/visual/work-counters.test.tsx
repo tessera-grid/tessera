@@ -575,7 +575,7 @@ describe('Счётчики работы — ручка колонки (ADR 0114)
     expect(renders(work, HeadCellView), describeWork(work)).toBe(0)
   })
 
-  test('SA16: вход в ожидание серверного действия и выход из него перерисовывают причину и свечение, но не строки тела', async () => {
+  test('SA16: вход в ожидание серверного действия и выход из него перерисовывают свечение, но не строки тела', async () => {
     let answer!: () => void
     const { measure } = await mountGrid(
       {},
@@ -595,8 +595,7 @@ describe('Счётчики работы — ручка колонки (ADR 0114)
       '.data-grid__head-cell [aria-label^="Sort"]',
     )!
     const glowing = () => !!document.querySelector('[data-refreshing]')
-    const expectCauseAndGlowOnly = (work: Work) => {
-      expect(renders(work, ActionButton), describeWork(work)).toBeGreaterThan(0)
+    const expectGlowOnly = (work: Work) => {
       expect(renders(work, LinearProgress), describeWork(work)).toBeGreaterThan(
         0,
       )
@@ -610,15 +609,13 @@ describe('Счётчики работы — ручка колонки (ADR 0114)
       await userEvent.click(button)
       await expect.poll(glowing).toBe(true)
     })
-    expect(button).toHaveAttribute('aria-busy', 'true')
-    expectCauseAndGlowOnly(entry)
+    expectGlowOnly(entry)
 
     const exit = await measure(async () => {
       answer()
       await expect.poll(glowing).toBe(false)
     })
-    expect(button).not.toHaveAttribute('aria-busy')
-    expectCauseAndGlowOnly(exit)
+    expectGlowOnly(exit)
   })
 
   test('AL26: слушатель канала действий не добавляет гриду работы — коммиты, отрисовки и пересборки моделей при сортировке те же, что без него', async () => {

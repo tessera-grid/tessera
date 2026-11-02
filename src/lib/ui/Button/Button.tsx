@@ -7,10 +7,8 @@ import { type ButtonTooltipProps } from '../IconButton'
 import { Tooltip } from '../Tooltip'
 import {
   type ButtonStatesProps,
-  FailureMark,
   type FailureProps,
   useButtonStates,
-  useFailure,
 } from '../buttonStates'
 
 import styles from './Button.module.css'
@@ -49,7 +47,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       disabled,
       focusableWhenDisabled,
       pending,
-      failure,
+      failed,
       onClick,
       children,
       ...rest
@@ -59,11 +57,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const busy = rest['aria-busy'] === true || rest['aria-busy'] === 'true'
     const states = useButtonStates(
       forwardedRef,
-      { pending, failed: failure !== undefined },
+      { pending, failed },
       onClick,
       busy,
     )
-    const described = useFailure(failure, rest['aria-describedby'])
 
     const button = (
       <BaseButton
@@ -71,7 +68,6 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={disabled}
         focusableWhenDisabled={focusableWhenDisabled || tooltipWhenDisabled}
         {...rest}
-        aria-describedby={described.describedBy}
         ref={states.ref}
         aria-busy={states['aria-busy'] ?? rest['aria-busy']}
         data-pending-leaving={states['data-pending-leaving']}
@@ -87,23 +83,15 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       >
         {icon}
         {children}
-        {failure !== undefined && (
-          <FailureMark
-            id={described.id}
-            text={failure}
-            shown={!states.active}
-          />
-        )}
         {states.arc}
       </BaseButton>
     )
 
-    // Обёртка — всегда: тултип отметки отказа появляется посреди жизни кнопки и не
-    // должен её перемонтировать (без заголовка `Tooltip` рисует один триггер). Занятая
-    // кнопка тултип не показывает; с отметкой отказа тултип — её текст.
+    // Обёртка — всегда: тултип появляется посреди жизни кнопки и не должен её перемонтировать
+    // (без заголовка `Tooltip` рисует один триггер). Занятая кнопка тултип не показывает.
     return (
       <Tooltip
-        title={failure ?? tooltip}
+        title={tooltip}
         side={tooltipSide}
         disabled={(!!disabled && !tooltipWhenDisabled) || pending || busy}
       >

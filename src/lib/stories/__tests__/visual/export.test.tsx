@@ -398,7 +398,7 @@ describe('dataExport — серверный режим', () => {
     expect(onExport).not.toHaveBeenCalled()
   })
 
-  test('EX28: while onExport is pending the button is aria-busy and server export is blocked; a rejection clears the busy state and marks the button with the reason, without a console error', async () => {
+  test('EX28: while onExport is pending the button is aria-busy and server export is blocked; a rejection clears the busy state without a failure mark on the button and without a console error', async () => {
     let finish!: () => void
     const onExport = vi.fn(
       () => new Promise<void>(resolve => (finish = resolve)),
@@ -424,18 +424,14 @@ describe('dataExport — серверный режим', () => {
     await expect.poll(() => button()!.hasAttribute('aria-busy')).toBe(false)
     await pending.unmount()
 
-    // Отказ промиса снимает занятость и отмечает кнопку причиной; в консоль не пишется.
+    // Отказ промиса снимает занятость; отметки на кнопке нет (ADR 0177, §2), в консоль не пишется.
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const rejected = vi.fn(() => Promise.reject(new Error('server down')))
     await serverGrid({ onExport: rejected })
     await openPanel()
     await runExport()
     await expect.poll(() => button()!.hasAttribute('aria-busy')).toBe(false)
-    await expect.poll(() => failureShownOn(button())).toBe(true)
-    const reason = button()!.getAttribute('aria-describedby')!.split(' ')[0]!
-    expect(document.getElementById(reason)!.textContent).toContain(
-      'server down',
-    )
+    expect(failureShownOn(button())).toBe(false)
     expect(error).not.toHaveBeenCalled()
     error.mockRestore()
   })

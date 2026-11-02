@@ -252,6 +252,44 @@ describe('серверные действия (ADR 0116)', () => {
     expect(page().pageIndex).toBe(0)
   })
 
+  it('OB4: новый запрос данных заменяет ждущий; под шапкой одновременно не больше одной полосы ожидания или отказа', async () => {
+    const { calls } = mount({ answer: 'pending' })
+    const tableFailures = () =>
+      (table().getFailures() as { target: object }[]).filter(
+        failure => 'table' in failure.target,
+      )
+
+    // Ждущий запрос прерывается новым: ожидание одно — последнего.
+    sort()
+    filter()
+    search()
+    expect(calls.map(call => call.signal.aborted)).toEqual([true, true, false])
+    expect(status()).toEqual({
+      pending: expect.objectContaining({ kind: 'search' }),
+    })
+
+    // Отказ — одна запись запроса в реестре; следующий отказ её заменяет.
+    await settle(() => calls[2].deferred!.reject(SERVER_ERROR))
+    expect(status().pending).toBeUndefined()
+    expect(tableFailures()).toEqual([
+      expect.objectContaining({
+        target: { table: true },
+        reason: 'Server error',
+      }),
+    ])
+    goToPage(2)
+    await settle(() => calls[3].deferred!.reject(new Error('Timeout')))
+    expect(tableFailures()).toEqual([
+      expect.objectContaining({ reason: 'Timeout' }),
+    ])
+
+    // Успех следующего запроса снимает отказ.
+    sort()
+    await settle(() => calls[4].deferred!.resolve())
+    expect(status()).toEqual({})
+    expect(tableFailures()).toEqual([])
+  })
+
   it('SA10: `revertOnReject: false` у `columnSorting` и `pagination` — состояние остаётся новым с отметкой ошибки; аргумент живой', async () => {
     const { calls, rerender } = mount({
       answer: 'pending',

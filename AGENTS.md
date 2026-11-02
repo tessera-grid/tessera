@@ -130,6 +130,7 @@ docs/architecture/   contributor deep-dive (source of truth — see below)
 - `docs/architecture/virtualization.md` — виртуализаторы, range extractors, filler-столбцы
 - `docs/architecture/dnd.md` — DnD рендер-слоя: обёртки, overlay, collision/modifiers
 - `docs/architecture/theming-and-overrides.md` — colorMode/CSS-переменные, иконки, локализация
+- `docs/architecture/ui-kit.md` — как разрабатывать компоненты UI-кита (гайд)
 
 ### Известные проблемы (не баги, которые надо «обнаружить»)
 
@@ -459,7 +460,7 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       `columnNodes.dom` (ND8–ND9), `columnDragging` (ND6), `pluginDiagnostics` (ND11),
       перф ND14 — в `interaction` — перетаскивание под вложенной шапкой
       ([ADR 0052](docs/decisions/0052-dnd-under-nested-headers.md));
-      `column-drag-async` (CO1–CO3, CO6–CO7, CO11, CO13, CO18 — промис `onColumnDragEnd`,
+      `column-drag-async` (CO1–CO3, CO6, CO11, CO13, CO18 — промис `onColumnDragEnd`,
       ожидание и запрет переноса, откат к прежним соседям, ручка-кнопка с раскрытием по
       ширине, axe, вспышка после переноса, `danger` при отказе), `touch` (CO8),
       `row-drag-lazy` (CO14, CO16 — откат обычной строки, `danger` строки), модульные
@@ -539,9 +540,9 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       `action-panel-loading` (AM28–AM30 — ожидание загрузки панели, отмена, ошибка),
       `header-action-tooltips` (AM31–AM32 — тултип кнопок с панелью и мини-меню, кебабов заголовка и строки),
       история «Columns/Header menu — Actions in menu» (S1), [ADR 0024](docs/decisions/0024-slot-action-descriptor-and-menu.md).
-    - _Асинхронные пункты меню:_ `menu-actions-async` (MI1–MI14, MI16–MI21, MI24–MI28 —
+    - _Асинхронные пункты меню:_ `menu-actions-async` (MI1–MI11, MI14, MI16–MI21, MI24–MI28 —
       проверка доступности промисом, причина блокировки, клавиатура, ожидание и отказ
-      действия на кебабе и в пункте, контекстное меню, виртуализация, инлайн-кнопка,
+      действия в пункте, контекстное меню, виртуализация, инлайн-кнопка,
       axe, демо-истории, свет кнопок стоит во время прокрутки; гайд «Columns/Header menu — Async actions», S1), модульный `menuActionStatus`
       (MI15, MI22 — текст отказа, синхронный контракт), перф MI23 — в `scroll`
       ([ADR 0078](docs/decisions/0078-async-menu-actions.md)).
@@ -628,8 +629,8 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       объявлений), модульный `flashes.dom` (OF1–OF3, OF5, OF13 — API и массив целей, срез
       отдельно от `highlights`, перезапуск и замена, время жизни и один таймер, перерисовка
       только цели; OF19 — токены темы), встроенные носители — `async-callbacks` (OF14–OF15,
-      OF18 — правка ячейки и отказ раскрытия), `column-drag-async` (OF16–OF17 — `accepted`
-      переносов строки и колонки, отказ в одном кадре с кнопкой-инициатором), перф OF20 —
+      OF18 — правка ячейки и отказ раскрытия), `column-drag-async` (OF16 — `accepted`
+      переносов строки и колонки), перф OF20 —
       в `scroll`, `play` истории «Plugin API — Outcome flash» (OF21), истории сценариев
       S1 «Cells/Editing — Refused while editing another cell» и S3 «Rows/Expanding — Expand
       refused by the server» ([ADR 0134](docs/decisions/0134-outcome-flash.md)).
@@ -867,8 +868,7 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       ожидании, вспышка сохранения, виртуализация, уменьшенное движение, объявления,
       контраст), модульный `asyncCallbacks` (CF7 — итог в срезе вспышек), перф
       CF12 — в `scroll` ([ADR 0057](docs/decisions/0057-async-cell-edit-feedback.md));
-      ожидание и отказ на кнопке правки — визуальный `async-callbacks` (IR16), модульный
-      `asyncCallbacks` (IR21 — света по периметру нет)
+      света по периметру ячейки нет — модульный `asyncCallbacks` (IR21)
       ([ADR 0127](docs/decisions/0127-initiator-pending-and-failure.md)).
     - _Демо-истории:_ `play` историй Cells/Editing, Rows/Expanding, Plugin API (DS1–DS5 —
       сценарий истории в интерфейсе и журнале колбэков,
@@ -886,10 +886,10 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       закреплёнными, фокус не трогается, новый вызов побеждает, `reveal` подсветки),
       перф SV11 — в `interaction`, `play` истории «Rows/Scroll to row» (SV12)
       ([ADR 0104](docs/decisions/0104-scroll-to-row.md)).
-    - _Серверные действия:_ `server-actions` (SA4–SA9, SA11–SA13, SA18–SA20 — свет у
-      причины, свечение без `loading`, виртуализация, откат сортировки со сбросом страницы и
-      страницы с её размером, черновик полей, плашка с повтором, вспышка и объявление,
-      клавиатура, поиск свечением и плашкой, отметка отказа кнопки фильтра и её снятие),
+    - _Серверные действия:_ `server-actions` (SA5, SA7–SA9, SA11, SA13, SA18–SA19 —
+      свечение без `loading`, откат сортировки со сбросом страницы и страницы с её размером,
+      черновик полей, плашка с повтором, клавиатура, поиск свечением и плашкой, отказ фильтра
+      без отметки на кнопке),
       модульный `serverActions.dom` (SA1–SA3, SA10 — промис, `signal`, замена ожидающего
       действия, `revertOnReject`); SA14–SA15 — лента, axe и высокая контрастность — в
       `server-actions`, SA16 — в `work-counters`, `play` истории «Data loading/Server
@@ -960,8 +960,8 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       строка», `Space`, axe и `forced-colors`), перф NS11 — в `scroll`, истории «Data
       loading/Server row model/Selection — Select a tree branch» (S1) и «Rows/Selection — Each
       row on its own» (S2) ([ADR 0162](docs/decisions/0162-nested-row-selection.md)).
-    - _Ошибка в ячейке:_ `cell-errors` (ER1–ER7 — точка у ячейки с ошибкой, одна или на кнопке
-      правки, тултип и описание, `aria-invalid` в трёх ролях, отказ сохранения первым, живая
+    - _Ошибка в ячейке:_ `cell-errors` (ER1–ER7 — треугольник в углу ячейки с ошибкой, один с
+      кнопкой правки и без неё, тултип, поповер и описание, `aria-invalid` в трёх ролях, отказ сохранения первым, живая
       функция и сортировка, страница, виртуализация, SSRM, контраст и `forced-colors`),
       модульный `cellErrors.dom` (ER8 — подпись из словаря, ER10 — без `cellEditing`), перф ER9 —
       в `scroll`, истории «Cells/Errors» S1–S3 ([ADR 0150](docs/decisions/0150-cell-errors.md)).
@@ -973,15 +973,31 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
     - _Редакторы по типу:_ модульные `cellEditWrite.dom` (ED1–ED2 — значение в типе колонки и
       текст в колбэках, разбор при сохранении без второго разбора в кэше) и `typedEditors.dom`
       (ED3 — порядок выбора редактора и что он получает), визуальный `typed-editors` (ED4–ED5 —
-      поле числа на языке таблицы с ошибкой разбора, булево одним нажатием), гайды
-      «Cells/Editing — Edit a number», «— Toggle a boolean», «— Editor of a data type» (S1, S2, S7);
+      поле числа на языке таблицы с ошибкой разбора, булево одним нажатием); гайды S1–S13 — в
+      разделах своих типов «Columns/Data types/<Тип>», свой редактор типа — в «Overview»;
       визуальный `date-editor` (ED6 — календарь в поясе и на языке таблицы, поле времени, Enter,
       Escape и фокус), модульный `dateEditorChunk` (ED7 — общий календарь `shared/calendar` в
-      ленивом модуле, без модулей фильтров), гайд «— Edit a date» (S3); визуальный `option-editors`
+      ленивом модуле, без модулей фильтров); визуальный `option-editors`
       (ED8–ED12 — поле с поиском, справочник с ожиданием и отказом, список с флажками,
       1000 вариантов, подписи из словаря, axe и `forced-colors`), ED13 — в `touch`, перф ED14 — в
-      `interaction`, гайды «— Choose an option», «— Choose from a directory», «— Choose several
-      options» (S4–S6) ([ADR 0175](docs/decisions/0175-data-type-editors.md)).
+      `interaction`; этап 4 — модульный `dateEditValue` (ED15 — `formatDate`), `date-editor` (ED16 —
+      очистка даты), `option-editors` (ED17–ED19 — записи из данных, задержка поиска, свои
+      подписи), `typed-editors` (ED20–ED21 — `Shift+Space` и флажок булевой ячейки);
+      этап 5 — `option-editors` (ED16, ED23–ED26 — «Очистить значение» внизу поповеров, закрытие
+      прокруткой, скелеты, блок ошибки и заглушка кита — и в панели фильтра, поиск в поповере и его
+      крестик), `typed-editors` (ED22 — отклонение конфликта как отказ сервера)
+      ([ADR 0175](docs/decisions/0175-data-type-editors.md)).
+    - _Истории типов данных:_ по разделу на тип — «Columns/Data types/Text», «Number», «Decimal
+      string», «Boolean», «Date», «Date & time», «Select», «Multi select», «Object» и «Overview»
+      (свой тип, вид встроенного, язык, поиск, свой редактор): у каждого `Playground` и сценарии
+      типа — вид, сортировка, фильтр, правка, выгрузка; помощники гайдов — `__mocks__/typeGuides.tsx`
+      (ADR 0172, ADR 0174, ADR 0175, «Сценарии»).
+    - _Ожидание действия на ячейке:_ модульный `cellActions.dom` (AC1, AC3–AC4 —
+      `table.trackCellAction`: ожидание и итог, вспышка и объявление отказа, `useCellPending`
+      перерисовывает только свою ячейку), визуальный `cell-action-status` (AC2 — волна у события
+      без контрола и без неё у контрола, AC5 — проп `pending` флажка и переключателя кита), AC6 —
+      каталог историй «Cells/Action status» (S1–S3)
+      ([ADR 0176](docs/decisions/0176-cell-action-status.md)).
     - _Пределы браузера:_ `browser-limits` (BH1–BH3 — замер предела высоты элемента и
       липкой шапки, раз на документ и только для тела выше 8 млн px; ещё и в
       `test:browsers` — у Firefox свои пределы), перф BH7 — в `first-render`
@@ -1027,10 +1043,18 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       клиентский режим, подпись и axe), модульный `filterDraft.dom` (FD6 — когда черновик
       забывается), истории S1–S2
       ([ADR 0154](docs/decisions/0154-server-filter-apply-and-draft.md)).
-    - _Ожидание на данных:_ визуальный `pending-on-data` (PW1–PW3 — волна только у контекстного
-      меню, цель `'table'` — свечение и плашка, строка-заглушка ленивых детей), PW4 — в
+    - _Ожидание на данных:_ визуальный `pending-on-data` (PW1–PW3 — волна на цели у любого
+      инициатора, цель `'table'` — свечение и плашка, строка-заглушка ленивых детей), PW4 — в
       `server-row-model`, модульный `pendingOnData` (PW5 — правило в `rendering.md`), история
       S1 ([ADR 0155](docs/decisions/0155-pending-on-data.md)).
+    - _Ожидание и отказ на объекте:_ модульные `failures.dom` (OB11, OB14–OB15 — снятие отметки,
+      реестр отказов, повтор `trackCellAction`), OB4 — в `serverActions.dom`; визуальные
+      `object-pending` (OB1, OB3, OB5–OB6, OB13, OB16 — кнопки-источники без дуги и отметки,
+      полоса долгого запроса, занятый объект, отказ строки и колонки, пункты меню отмены и повтора),
+      `object-process-failure` (OB2 — выгрузка и ленивый модуль поповера, свой файл),
+      `cell-issue` (OB7–OB9, OB12, OB17 — треугольник ячейки), OB10 — в `touch`, перф OB18 — в
+      `scroll`, истории «Cells/Errors» S1–S2 и «Cells/Action status» S3, S5, S8
+      ([ADR 0177](docs/decisions/0177-pending-and-failure-on-the-object.md)).
     - _Включённые действия в ряду:_ модульный `slots` (KA1–KA2 — по ширине и по порогу
       включённые уходят в кебаб последними, `mode: 'always'` сворачивает все), визуальный
       `active-actions-row` (KA3, KA5–KA6 — точка на кебабе, включение из кебаба мышью и
@@ -1171,7 +1195,7 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       отмеченной кнопки; DB5 — `active` у `CellButton` и `RowButton`), модульный
       `derivedButtons` (DB3–DB4 — имена в публичных типах `/ui`, устройство историй)
       ([ADR 0128](docs/decisions/0128-derived-button-contract.md)); `active-state` (AV1–AV3,
-      AV5–AV7, AV10 — бабл включённой кнопки в базе `IconButton`: точка, число `count` на
+      AV5–AV6, AV10 — бабл включённой кнопки в базе `IconButton`: точка, число `count` на
       углу кнопки, свой значок, `indicator`, производные кнопки и счётчики тулбара,
       раскрытие без бабла, ожидание и отказ главнее, контраст и `forced-colors`), модульный
       `activeState.dom` (AV4, AV8–AV9 — узел бабла только с `active`, предупреждение о
@@ -1183,15 +1207,13 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       BS13, BS19 — занятость `pending`, отметка отказа, угасание и остановка дуги),
       `ring-press` (BS18 — смена фазы дуги посреди нажатия не теряет клик, ещё и в
       `test:browsers`) ([ADR 0055](docs/decisions/0055-button-pending-and-error-flash.md));
-      `pending-arc` (IR1–IR6, IR10–IR11, IR31–IR32 — дуга по контуру кнопки, её длина и
-      круг, рамка и тень, занятость без наведения, кольцо фокуса снаружи, текст отметки
-      `failure`, уменьшенное движение, приглушённая подпись занятой кнопки, рамка после
-      остановки дуги; FB1–FB2 — отказ: дуга встаёт и гаснет, отметка сразу, без контура),
-      `play` истории «UI/IconButton — Async action» (IR12); отметки у носителей —
-      `failure-marks` (IR13, IR19–IR20 — снятие повтором и успехом, текст у каждого
-      носителя, виртуализация, сортировка, страница), IR14 — модульный в
+      `pending-arc` (IR1–IR6, IR11, IR31–IR32 — дуга по контуру кнопки, её длина и
+      круг, рамка и тень, занятость без наведения, кольцо фокуса снаружи, уменьшенное
+      движение, приглушённая подпись занятой кнопки, рамка после остановки дуги; FB1 — отказ:
+      дуга встаёт и гаснет, без отметки и контура),
+      `play` истории «UI/IconButton — Async action» (IR12); IR14 — модульный в
       `serverActions.dom`, IR17 — в `async-callbacks`, IR18 — в `menu-actions-async`;
-      итог на цели, а не на кнопке — FB4 в `column-drag-async`, FB5 в `server-actions`,
+      итог на цели, а не на кнопке — FB5 в `server-actions`,
       FB6 в `export-xlsx`, FB7 в `forced-colors`, FB8–FB9 в `active-state`, модульные FB3
       (`derivedButtons`) и FB10 (`buttonFailureStyles`); помощники `pendingArcOf` и
       `failureShownOn` из `__tests__/helpers.tsx`
@@ -1568,7 +1590,7 @@ ADR и не с кода.** Прожарка — короткий диалог с
 ### UI-кит — каждый новый компонент
 
 **Каждый новый визуальный компонент (кнопка, поле, плашка, бейдж и т. п.) добавляется в
-UI-кит `src/lib/ui`, а не собирается по месту в плагине или гриде.**
+UI-кит `src/lib/ui`, а не собирается по месту в плагине или гриде.** Полный гайд — [docs/architecture/ui-kit.md](docs/architecture/ui-kit.md).
 
 - **Сначала — существующий примитив.** Перед вёрсткой проверьте `src/lib/ui` и
   соседние плагины: подходит готовый — используйте его, а не копию с похожими стилями.

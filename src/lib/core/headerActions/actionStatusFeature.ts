@@ -15,6 +15,7 @@ import { cancelPending, type CancelPendingFilter } from '../cancellation'
 import { reportAction } from '../debugActions'
 import type { TableLabels } from '../localization'
 import type { MenuAction } from './types'
+import { trackCellAction, type TrackCellActionOptions } from './cellActions'
 
 export interface ActionStatusEntry {
   /** Действие записи — для имени на кебабе (пункт раздела в корне меню не виден). */
@@ -57,6 +58,15 @@ interface ActionStatusTableAPI {
    * отмены человеком.
    */
   cancelPending: (filter?: CancelPendingFilter) => void
+  /**
+   * Ожидание промиса на ячейке, строке, колонке или диапазоне и его итог (ADR 0176):
+   * `indicator: 'cell'` — волна на ячейках, `'control'` — ожидание рисует контрол сам.
+   */
+  trackCellAction: <T>(
+    target: FlashTarget | readonly FlashTarget[],
+    promise: Promise<T> | T,
+    options?: TrackCellActionOptions,
+  ) => Promise<T>
 }
 
 /* eslint-disable @typescript-eslint/no-unused-vars -- generics карт обязаны
@@ -109,6 +119,13 @@ export const actionStatusFeature: TableFeature = {
           const atom = (table as unknown as StatusTable).atoms.actionStatus
           atom?.set(functionalUpdate(updater, atom.get()))
         },
+      },
+      table_trackCellAction: {
+        fn: <T>(
+          target: FlashTarget | readonly FlashTarget[],
+          promise: Promise<T> | T,
+          options?: TrackCellActionOptions,
+        ) => trackCellAction(table, target, promise, options),
       },
       table_cancelPending: {
         fn: (filter?: CancelPendingFilter) => {

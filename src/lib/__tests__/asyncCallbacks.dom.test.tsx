@@ -17,7 +17,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { TesseraFeatureEntry } from '../core/features'
 import { useCreateTable } from '../core/useCreateTable'
 import { cellEditing, rowExpanding } from '../plugins'
+import { cellFailureOf, readFailures } from '../core/failures/failuresFeature'
 import { readFlashes } from '../core/flashes/flashFeature'
+import { cellPendingOf } from '../core/headerActions/actionStatus'
+import { readActionStatus } from '../core/headerActions/actionStatusFeature'
 import { targetKey } from '../core/highlights/highlightFeature'
 import {
   commitEditSession,
@@ -61,7 +64,7 @@ const Host = ({ plugins, data = rows, probe = false }: HostProps) => {
   const slots = captured.getRenderSlots()
   const own = (entries: { id: string; component: never }[]) =>
     entries.find(entry => entry.id === 'cellEditing')!.component
-  // Содержимое ячейки и кнопка правки — носитель ожидания и отказа (ADR 0127, §6).
+  // Содержимое ячейки и кнопка правки; ожидание и отказ — в срезах ядра (ADR 0177).
   return createElement(
     Fragment,
     null,
@@ -83,14 +86,11 @@ const render = (props: HostProps) => {
 }
 
 const state = () => captured.atoms['plugin:cellEditing'].get()
-const busy = () => container!.querySelector('button[aria-busy="true"]')
-/** Описание отметки отказа на кнопке правки. */
-const failed = () => {
-  const ids = container!
-    .querySelector('button[aria-describedby]')
-    ?.getAttribute('aria-describedby')
-  return ids ? document.getElementById(ids.split(' ')[0]!) : null
-}
+/** Ожидание сохранения — на ячейке в срезе ядра (ADR 0177, §1). */
+const busy = () =>
+  cellPendingOf(captured, readActionStatus(captured), '1', 'name') ?? null
+/** Отказ сохранения — запись реестра отказов (ADR 0177, §6). */
+const failed = () => cellFailureOf(readFailures(captured), '1', 'name') ?? null
 
 /** Открыть правку первой ячейки и сохранить `value` через Enter. */
 const editAndCommit = (value: string) => {
@@ -130,6 +130,7 @@ describe('асинхронный контракт бизнес-колбэков'
     editAndCommit('new')
     expect(onCellEdit).toHaveBeenCalledWith(
       expect.objectContaining({ value: 'new' }),
+      { signal: expect.any(AbortSignal) },
     )
     expect(state()).toEqual({ active: null, submitted: {} })
     expect(busy()).toBeNull()
@@ -173,7 +174,7 @@ describe('асинхронный контракт бизнес-колбэков'
     expect(container!.textContent).toBe('kept')
 
     render({ plugins, probe: false })
-    expect(busy()).toBeNull()
+    expect(busy()).not.toBeNull()
     render({ plugins, probe: true })
     expect(busy()).not.toBeNull()
     expect(container!.textContent).toBe('kept')
@@ -181,9 +182,9 @@ describe('асинхронный контракт бизнес-колбэков'
     save.reject(new Error('down'))
     await flush()
     render({ plugins, probe: false })
-    expect(failed()).toBeNull()
+    expect(failed()).not.toBeNull()
     render({ plugins, probe: true })
-    expect(failed()?.textContent).toContain('down')
+    expect(failed()?.reason).toContain('down')
     expect(Object.values(state().submitted)).toEqual([
       expect.objectContaining({ status: 'error', draft: 'kept' }),
     ])
@@ -373,7 +374,7 @@ describe('асинхронный контракт бизнес-колбэков'
   })
 })
 
-describe('ожидание и отказ у кнопки правки (ADR 0127)', () => {
+describe('ожидание и отказ правки без света ячейки (ADR 0127)', () => {
   it('IR21: света по периметру ячейки нет — у ячейки в ожидании и после отказа нет слоя света, токенов --tsr-comp-cell-pending-glow-* в теме нет', async () => {
     const save = deferred()
     render({
@@ -386,7 +387,7 @@ describe('ожидание и отказ у кнопки правки (ADR 0127)
 
     save.reject(new Error('down'))
     await flush()
-    expect(failed()?.textContent).toContain('down')
+    expect(failed()?.reason).toContain('down')
     expect(container!.querySelector('.cell-edit-feedback')).toBeNull()
 
     const theme = readFileSync(
