@@ -71,6 +71,10 @@ flowchart TB
 - `table.options.stubEntries` — записи реестра заглушек пустой таблицы из поля `stubs`
   записей плагинов (ADR 0123); грид сводит их с записями ядра (`stubEntriesOf`) и
   показывает первую по приоритету с выполненным `when`
+- `table.options.draftKinds` — виды черновиков из поля `draftKinds` записей плагинов (ADR 0178):
+  как применить, отбросить, подписать и описать черновик своего вида; черновик вида без включённого
+  владельца инертен. Срез черновиков — запись ядра `plugin:drafts`, методы `getDrafts`,
+  `setDraft`, `discardDraft`
 - `table.getKeyboardActions()` → `table.options.keyboardActions` (клавиатурные
   действия ячеек: `Space`/`Enter`/`F2`, ADR 0021; упорядочены по `priority`)
 - `table.reportPluginError(id, error)` → реестр ошибок плагинов: `logError` один раз

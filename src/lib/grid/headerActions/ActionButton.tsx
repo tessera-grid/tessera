@@ -20,6 +20,7 @@ import {
 } from '../../core/headerActions'
 
 import '../../ui/cellControls/buttonVisibility.css'
+import { actionLook } from './actionLook'
 
 interface ActionButtonProps {
   action: SlotAction
@@ -53,14 +54,17 @@ export const ActionButton = ({
     )
   }
   const disabled = syncDisabled !== false
-  const active = action.active?.(context)
-  const label = action.label(context, labels)
-  const ariaLabel = action.ariaLabel?.(context, labels) ?? label
+  const { active, draft, shown, label, ariaLabel } = actionLook(
+    action,
+    context,
+    labels,
+  )
 
   const button = (
     <IconButton
       className={action.className?.(context)}
       active={active}
+      draft={draft}
       count={action.count?.(context)}
       onClick={event =>
         runMenuAction(action, context, event, { keepError: false })
@@ -82,9 +86,9 @@ export const ActionButton = ({
   return (
     <div
       className={wrapperClassName}
-      data-button-active={active || !!entry?.pending}
+      data-button-active={shown || !!entry?.pending}
     >
-      <HiddenButtonContext.Provider value={!(active || !!entry?.pending)}>
+      <HiddenButtonContext.Provider value={!(shown || !!entry?.pending)}>
         {button}
       </HiddenButtonContext.Provider>
     </div>

@@ -41,6 +41,8 @@ import {
   Pin,
   Info,
   RotateCw,
+  PencilLine,
+  Undo2,
 } from 'lucide-react'
 
 import { EmptyStateIllustration } from './EmptyStateIllustration'
@@ -140,6 +142,14 @@ export interface TableIcons {
   failureShow: IconComponent
   /** Иллюстрация пустого журнала отказов (ADR 0177) */
   failureLogEmpty: IconComponent
+  /** Кнопка пульта черновиков в тулбаре (ADR 0178) */
+  unsavedChanges: IconComponent
+  /** «Применить» черновика в пульте (ADR 0178) */
+  draftApply: IconComponent
+  /** «Отбросить» черновика в пульте (ADR 0178) */
+  draftDiscard: IconComponent
+  /** Иллюстрация пустого пульта черновиков (ADR 0178) */
+  unsavedChangesEmpty: IconComponent
   /** Кнопка «к первой колонке» в нижней панели (ADR 0105) */
   backToStart: IconComponent
   /** Пункт меню, заблокированный с причиной (ADR 0078) */
@@ -200,6 +210,10 @@ export const DEFAULT_ICONS: TableIcons = {
   failureLog: CircleAlert,
   failureShow: LocateFixed,
   failureLogEmpty: EmptyStateIllustration,
+  unsavedChanges: PencilLine,
+  draftApply: Check,
+  draftDiscard: Undo2,
+  unsavedChangesEmpty: EmptyStateIllustration,
   backToStart: ArrowLeftToLine,
   actionBlocked: Lock,
   submenu: ChevronRight,

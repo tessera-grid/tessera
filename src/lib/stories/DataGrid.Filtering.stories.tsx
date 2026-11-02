@@ -1834,3 +1834,350 @@ export const FilteringServerReapply: StoryObj<StoryProps> = {
     })
   },
 }
+
+// --- ADR 0178 S1–S3 -----------------------------------------------------------------
+
+/** «Сервер» гайдов черновиков: отвечает строками или отказывает — режим задаёт шаг. */
+const draftServer = {
+  mode: 'answer' as 'answer' | 'refuse',
+  requests: 0,
+  table: undefined as unknown,
+}
+
+const draftServerReset: TesseraFeatureEntry = {
+  id: 'filterDraftReset',
+  setup: table => {
+    const store = (table as { store: unknown }).store
+    if (draftServer.table === store) return
+    draftServer.table = store
+    draftServer.mode = 'answer'
+    draftServer.requests = 0
+  },
+}
+
+const draftAnswers =
+  (app: GuideApp, log: ConsoleLog) => (filters: ServerFilters) => {
+    draftServer.requests += 1
+    log.log('server', `filter ${JSON.stringify(filters)}`)
+    if (draftServer.mode === 'refuse') {
+      log.log('server', 'refused')
+      return Promise.reject(
+        new Error('Filtering by name is unavailable right now'),
+      )
+    }
+    const rows = queryFiltering(filters, '', [])
+    log.log('server', `${rows.length} of ${SERVER_TOTAL} rows`)
+    app.update(props => ({
+      ...props,
+      dataOverride: rows,
+      rowCount: rows.length,
+    }))
+    return Promise.resolve()
+  }
+
+const DRAFT_GRID = {
+  ...GRID,
+  dataOverride: SERVER_DATA,
+  dataMode: { filtering: 'server' },
+  rowCount: SERVER_TOTAL,
+  totalRowCount: SERVER_TOTAL,
+  extraPlugins: [draftServerReset],
+} satisfies Partial<StoryProps>
+
+const filterButtonAt = (root: HTMLElement, column: string) =>
+  root.querySelector<HTMLElement>(
+    `.data-grid__head-cell[data-column-id="${column}"] .column-filter__button`,
+  )
+/** У колонки неприменённое условие: кольцо на кнопке фильтра, фильтр не действует. */
+const draftRing = (root: HTMLElement, column = 'name') =>
+  filterButtonAt(root, column)?.getAttribute('data-draft') === 'true' &&
+  !filterActive(root, column)
+const loadBanner = (root: HTMLElement) =>
+  root.querySelector<HTMLElement>('[data-testid="load-error-banner"]')
+
+/** Панель закрыта; Escape вернул фокус кнопке фильтра — его снимаем, кольцо видно. */
+const panelClosed = async (root: HTMLElement, signal: AbortSignal) => {
+  await closePanel(signal)
+  if (document.activeElement === filterButtonAt(root, 'name'))
+    filterButtonAt(root, 'name')?.blur()
+}
+
+/** Имя набрано, панель закрыта: на кнопке фильтра имён кольцо. */
+const nameDrafted = async (root: HTMLElement, signal: AbortSignal) => {
+  if (!draftRing(root)) await nameTyped(root, signal)
+  await panelClosed(root, signal)
+  await pollUntil(() => draftRing(root), signal)
+}
+
+/** Условие колонки имён применено кнопкой панели, сервер ответил, панель закрыта. */
+const nameFiltered = async (root: HTMLElement, signal: AbortSignal) => {
+  await pollUntil(() => {
+    if (filterActive(root, 'name') && !filterWaits(root)) return true
+    if (!panel()) filterButtonAt(root, 'name')?.click()
+    else if (applyEnabled()) applyButton()!.click()
+    return false
+  }, signal)
+  await pollUntil(() => allMatch(root, 'name', NAME), signal)
+  await panelClosed(root, signal)
+}
+
+const FILTER_DRAFT: readonly GuideStoryStep[] = [
+  {
+    title: 'Фильтр на сервере',
+    hint: 'Условия фильтра колонки применяет сервер: набранное условие уходит кнопкой применения.',
+    props: ({ app, log }) => ({ onFilterChange: draftAnswers(app, log) }),
+  },
+  {
+    title: 'Условие набрано',
+    hint: 'Пользователь открыл панель фильтра имён и ввёл имя, но не применил его. Строки прежние.',
+    states: ['overlay.filterText'],
+    enter: stepAction((root, { signal }) => nameTyped(root, signal)),
+  },
+  {
+    title: 'Панель закрыта',
+    hint: 'Пользователь закрыл панель. Условие не действует, но не потеряно: кнопка фильтра колонки видна без наведения, на ней кольцо. Подсказка кнопки говорит, что условие не применено.',
+    states: ['head.draft'],
+    enter: stepAction((root, { signal }) => nameDrafted(root, signal)),
+  },
+  {
+    title: 'Условие применено',
+    hint: 'Пользователь открыл панель и применил условие. Сервер прислал строки с этим именем, кольцо сменилось точкой: фильтр действует.',
+    states: ['head.activeIndicator'],
+    enter: stepAction(async (root, { signal }) => {
+      if (!filterActive(root, 'name')) await nameDrafted(root, signal)
+      await nameFiltered(root, signal)
+    }),
+  },
+]
+
+/** ADR 0178, S1: набранное и не применённое условие — кольцо на кнопке фильтра колонки. */
+export const FilterDraftClosedPanel: StoryObj<StoryProps> = {
+  name: 'Unapplied condition',
+  parameters: { scenario: '0178/S1', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Неприменённое условие"
+      steps={FILTER_DRAFT}
+      args={guideArgs(DRAFT_GRID, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    let firstName = ''
+    await step(FILTER_DRAFT[0]!.title, async () => {
+      await waitForRows(canvas)
+      firstName = cellsOf(canvas, 'name')[0]!
+    })
+    await step(FILTER_DRAFT[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(filterValueText()).toBe(NAME)
+      await expect(draftServer.requests).toBe(0)
+    })
+    await step(FILTER_DRAFT[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(panel()).toBeNull()
+      await expect(draftRing(canvas)).toBe(true)
+      await expect(cellsOf(canvas, 'name')[0]).toBe(firstName)
+    })
+    await step(FILTER_DRAFT[3]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(filterActive(canvas, 'name')).toBe(true)
+      await expect(draftRing(canvas)).toBe(false)
+      await expect(allMatch(canvas, 'name', NAME)).toBe(true)
+      await settle()
+    })
+  },
+}
+
+/** Условие применено, сервер отказал: под шапкой сообщение, панель открыта. */
+const nameRefused = async (root: HTMLElement, signal: AbortSignal) => {
+  if (loadBanner(root)) return
+  draftServer.mode = 'refuse'
+  if (!panel() || filterValueText() !== NAME) await nameTyped(root, signal)
+  await pollUntil(() => {
+    if (loadBanner(root) && !filterWaits(root)) return true
+    if (applyEnabled()) applyButton()!.click()
+    return false
+  }, signal)
+}
+
+/** Сообщение под шапкой и панель закрыты, на кнопке фильтра — кольцо. */
+const refusalDismissed = async (root: HTMLElement, signal: AbortSignal) => {
+  if (!draftRing(root) || loadBanner(root)) await nameRefused(root, signal)
+  await panelClosed(root, signal)
+  await pollUntil(() => {
+    const banner = loadBanner(root)
+    if (!banner) return draftRing(root)
+    banner
+      .querySelector<HTMLElement>(
+        'button:not([data-testid="load-error-retry"])',
+      )
+      ?.click()
+    return false
+  }, signal)
+}
+
+const REFUSED_DRAFT: readonly GuideStoryStep[] = [
+  {
+    title: 'Фильтр на сервере',
+    hint: 'Условия фильтра колонки применяет сервер. Сейчас он отказывает в фильтре по имени.',
+    props: ({ app, log }) => ({ onFilterChange: draftAnswers(app, log) }),
+  },
+  {
+    title: 'Сервер отказал',
+    hint: 'Пользователь ввёл имя и применил условие, сервер отказал. Фильтр не действует: строки прежние, под шапкой — сообщение с причиной. Набранное условие осталось в панели.',
+    states: ['body.loadError', 'overlay.filterText'],
+    enter: stepAction((root, { signal }) => nameRefused(root, signal)),
+  },
+  {
+    title: 'Сообщение закрыто',
+    hint: 'Пользователь закрыл панель и сообщение под шапкой. Кнопка фильтра колонки видна без наведения, на ней кольцо: условие набрано, но сервер его не применил.',
+    states: ['head.draft'],
+    enter: stepAction((root, { signal }) => refusalDismissed(root, signal)),
+  },
+  {
+    title: 'Условие применено',
+    hint: 'Сервер снова отвечает. Пользователь открыл панель и применил то же условие: пришли строки с этим именем, кольцо сменилось точкой.',
+    states: ['head.activeIndicator'],
+    enter: stepAction(async (root, { signal }) => {
+      if (!filterActive(root, 'name')) await refusalDismissed(root, signal)
+      draftServer.mode = 'answer'
+      await nameFiltered(root, signal)
+    }),
+  },
+]
+
+/** ADR 0178, S2: отказанное условие — черновик; после закрытия сообщения его видно на кнопке. */
+export const FilterDraftAfterRefusal: StoryObj<StoryProps> = {
+  name: 'Refused condition',
+  parameters: { scenario: '0178/S2', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Отказанное условие"
+      steps={REFUSED_DRAFT}
+      args={guideArgs(DRAFT_GRID, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    let firstName = ''
+    await step(REFUSED_DRAFT[0]!.title, async () => {
+      await waitForRows(canvas)
+      firstName = cellsOf(canvas, 'name')[0]!
+    })
+    await step(REFUSED_DRAFT[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(loadBanner(canvas)).not.toBeNull()
+      await expect(filterActive(canvas, 'name')).toBe(false)
+      await expect(filterValueText()).toBe(NAME)
+      await expect(cellsOf(canvas, 'name')[0]).toBe(firstName)
+    })
+    await step(REFUSED_DRAFT[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(loadBanner(canvas)).toBeNull()
+      await expect(panel()).toBeNull()
+      await expect(draftRing(canvas)).toBe(true)
+    })
+    await step(REFUSED_DRAFT[3]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(filterActive(canvas, 'name')).toBe(true)
+      await expect(draftRing(canvas)).toBe(false)
+      await settle()
+    })
+  },
+}
+
+/** Условия из адреса страницы: имя и город. */
+const URL_DRAFTS = [
+  {
+    kind: 'columnFilter',
+    target: { column: 'name' },
+    value: { operator: 'contains', value: NAME },
+  },
+  {
+    kind: 'columnFilter',
+    target: { column: 'city' },
+    value: { operator: 'contains', value: CITY },
+  },
+]
+
+const URL_STEPS: readonly GuideStoryStep[] = [
+  {
+    title: 'Адрес страницы',
+    hint: 'Приложение хранит неприменённые условия фильтров в адресе страницы. Пользователь набрал два условия и обновил страницу. Строки пока все.',
+    props: ({ app, log }) => ({
+      onFilterChange: draftAnswers(app, log),
+      onDraftsChange: (next: readonly unknown[]) => {
+        log.log('app', `drafts in the address: ${next.length}`)
+        app.update(props => ({ ...props, drafts: next as never }))
+      },
+    }),
+  },
+  {
+    title: 'Условия восстановлены',
+    hint: 'Приложение прочитало адрес и вернуло таблице оба условия — по имени и по городу. На кнопках фильтра этих колонок кольца: условия набраны, но не действуют.',
+    states: ['head.draft'],
+    enter: stepAction((root, { signal }, app) => {
+      app.update(props => ({ ...props, drafts: URL_DRAFTS }))
+      return pollUntil(
+        () => draftRing(root, 'name') && draftRing(root, 'city'),
+        signal,
+      )
+    }),
+  },
+  {
+    title: 'Условие на месте',
+    hint: 'Пользователь открыл панель фильтра имён: в поле — условие из адреса, кнопка применения доступна.',
+    states: ['overlay.filterText'],
+    enter: stepAction(async (root, { signal }, app) => {
+      if (!draftRing(root, 'name'))
+        app.update(props => ({ ...props, drafts: URL_DRAFTS }))
+      await pollUntil(() => draftRing(root, 'name'), signal)
+      await namePanelOpen(root, signal)
+      await pollUntil(
+        () => filterValueText() === NAME && applyEnabled(),
+        signal,
+      )
+    }),
+  },
+]
+
+/** ADR 0178, S3: приложение возвращает таблице неприменённые условия из адреса страницы. */
+export const DraftsFromUrl: StoryObj<StoryProps> = {
+  name: 'Restore unapplied conditions',
+  parameters: { scenario: '0178/S3', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Условия из адреса страницы"
+      steps={URL_STEPS}
+      args={guideArgs({ ...DRAFT_GRID, drafts: [] }, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(URL_STEPS[0]!.title, async () => {
+      await waitForRows(canvas)
+      await expect(draftRing(canvas, 'name')).toBe(false)
+    })
+    await step(URL_STEPS[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(draftRing(canvas, 'name')).toBe(true)
+      await expect(draftRing(canvas, 'city')).toBe(true)
+    })
+    await step(URL_STEPS[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(filterValueText()).toBe(NAME)
+      await expect(applyEnabled()).toBe(true)
+      await expect(draftServer.requests).toBe(0)
+      await settle()
+    })
+  },
+}

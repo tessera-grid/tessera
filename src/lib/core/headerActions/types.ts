@@ -73,6 +73,8 @@ export interface MenuAction<TCtx = any> {
   ) => string | undefined
   /** Состояние-тумблер (закреплено/отсортировано/сгруппировано). */
   active?: (ctx: TCtx) => boolean
+  /** Есть неприменённое (ADR 0178, §3): кольцо на кнопке, кнопка держится в ряду. */
+  draft?: (ctx: TCtx) => boolean
   /** Разворот действия в НЕСКОЛЬКО пунктов меню (напр. сортировка asc/desc/сброс). */
   menuItems?: (ctx: TCtx, labels: TableLabels) => HeaderMenuItem[]
   /** Необязательный заголовок подгруппы действия в меню (`Menu.GroupLabel`). */

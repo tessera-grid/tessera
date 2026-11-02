@@ -18,6 +18,7 @@ import * as filteringStories from './DataGrid.Filtering.stories'
 import * as panelsPaginationStories from './DataGrid.Panels.Pagination.stories'
 import * as panelsToolbarStories from './DataGrid.Panels.Toolbar.stories'
 import panelsFailureLogMeta, * as panelsFailureLogStories from './DataGrid.Panels.FailureLog.stories'
+import panelsUnsavedChangesMeta, * as panelsUnsavedChangesStories from './DataGrid.Panels.UnsavedChanges.stories'
 import * as pluginApiStories from './DataGrid.PluginApi.stories'
 import * as infiniteScrollStories from './DataGrid.DataLoading.InfiniteScroll.stories'
 import * as serverRowModelStories from './DataGrid.DataLoading.ServerRowModel.stories'
@@ -6545,5 +6546,120 @@ export const HighContrastFailureLogOffscreenStep6 = {
     6,
   ),
   name: 'Panels/Failure log — Failures off screen, шаг 6',
+  tags: ['!test'],
+}
+
+export const HighContrastFilterDraftClosedPanelStep1 = {
+  ...twinStep(filteringStories, filteringStories.FilterDraftClosedPanel, 1),
+  name: 'Filtering — Unapplied condition, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastFilterDraftClosedPanelStep2 = {
+  ...twinStep(filteringStories, filteringStories.FilterDraftClosedPanel, 2),
+  name: 'Filtering — Unapplied condition, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastFilterDraftClosedPanelStep3 = {
+  ...twinStep(filteringStories, filteringStories.FilterDraftClosedPanel, 3),
+  name: 'Filtering — Unapplied condition, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastFilterDraftClosedPanelStep4 = {
+  ...twinStep(filteringStories, filteringStories.FilterDraftClosedPanel, 4),
+  name: 'Filtering — Unapplied condition, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastFilterDraftAfterRefusalStep1 = {
+  ...twinStep(filteringStories, filteringStories.FilterDraftAfterRefusal, 1),
+  name: 'Filtering — Refused condition, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastFilterDraftAfterRefusalStep2 = {
+  ...twinStep(filteringStories, filteringStories.FilterDraftAfterRefusal, 2),
+  name: 'Filtering — Refused condition, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastFilterDraftAfterRefusalStep3 = {
+  ...twinStep(filteringStories, filteringStories.FilterDraftAfterRefusal, 3),
+  name: 'Filtering — Refused condition, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastFilterDraftAfterRefusalStep4 = {
+  ...twinStep(filteringStories, filteringStories.FilterDraftAfterRefusal, 4),
+  name: 'Filtering — Refused condition, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastDraftsFromUrlStep1 = {
+  ...twinStep(filteringStories, filteringStories.DraftsFromUrl, 1),
+  name: 'Filtering — Restore unapplied conditions, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastDraftsFromUrlStep2 = {
+  ...twinStep(filteringStories, filteringStories.DraftsFromUrl, 2),
+  name: 'Filtering — Restore unapplied conditions, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastDraftsFromUrlStep3 = {
+  ...twinStep(filteringStories, filteringStories.DraftsFromUrl, 3),
+  name: 'Filtering — Restore unapplied conditions, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastUnsavedChangesPlayground = {
+  ...twin(
+    panelsUnsavedChangesMeta,
+    panelsUnsavedChangesStories.UnsavedChangesPlayground,
+  ),
+  name: 'Panels/Unsaved changes — Playground',
+  tags: ['!test'],
+}
+
+export const HighContrastUnsavedChangesApplyStep1 = {
+  ...twinStep(
+    panelsUnsavedChangesStories,
+    panelsUnsavedChangesStories.UnsavedChangesApply,
+    1,
+  ),
+  name: 'Panels/Unsaved changes — Apply from the panel, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastUnsavedChangesApplyStep2 = {
+  ...twinStep(
+    panelsUnsavedChangesStories,
+    panelsUnsavedChangesStories.UnsavedChangesApply,
+    2,
+  ),
+  name: 'Panels/Unsaved changes — Apply from the panel, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastUnsavedChangesApplyStep3 = {
+  ...twinStep(
+    panelsUnsavedChangesStories,
+    panelsUnsavedChangesStories.UnsavedChangesApply,
+    3,
+  ),
+  name: 'Panels/Unsaved changes — Apply from the panel, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastUnsavedChangesApplyStep4 = {
+  ...twinStep(
+    panelsUnsavedChangesStories,
+    panelsUnsavedChangesStories.UnsavedChangesApply,
+    4,
+  ),
+  name: 'Panels/Unsaved changes — Apply from the panel, шаг 4',
   tags: ['!test'],
 }

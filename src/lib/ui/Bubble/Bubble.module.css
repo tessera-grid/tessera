@@ -4,24 +4,26 @@
   justify-content: center;
   border-radius: 32px;
   box-shadow: var(--tsr-comp-shadow-drop-bubble);
+  background-color: var(--_bubble-tone);
+  color: var(--_bubble-tone-fg);
   font-variant-numeric: tabular-nums;
   user-select: none;
   pointer-events: none;
 }
 
 .accent {
-  background-color: var(--tsr-comp-accent);
-  color: var(--tsr-comp-accent-fg);
+  --_bubble-tone: var(--tsr-comp-accent);
+  --_bubble-tone-fg: var(--tsr-comp-accent-fg);
 }
 
 .active {
-  background-color: var(--tsr-comp-active-indicator);
-  color: var(--tsr-comp-active-indicator-fg);
+  --_bubble-tone: var(--tsr-comp-active-indicator);
+  --_bubble-tone-fg: var(--tsr-comp-active-indicator-fg);
 }
 
 .error {
-  background-color: var(--tsr-comp-action-error-color);
-  color: var(--tsr-sys-surface);
+  --_bubble-tone: var(--tsr-comp-action-error-color);
+  --_bubble-tone-fg: var(--tsr-sys-surface);
 }
 
 .sm {
@@ -41,6 +43,13 @@
   box-shadow: none;
 }
 
+/* Полая форма (ADR 0178, §4): кольцо того же тона и размера. */
+.outline {
+  background-color: transparent;
+  box-shadow: inset 0 0 0 var(--tsr-comp-indicator-outline-width)
+    var(--_bubble-tone);
+}
+
 /*
  * Высокая контрастность (ADR 0136, FB7): отметка отказа — системный `Mark`. Цвет темы
  * режим перекрашивает в `Canvas` — на кнопке `Canvas` точку не видно.
@@ -50,5 +59,13 @@
     forced-color-adjust: none;
     background-color: Mark;
     color: MarkText;
+  }
+
+  /* Тени режим снимает: кольцо — рамкой системного цвета текста. */
+  .outline {
+    forced-color-adjust: none;
+    box-sizing: border-box;
+    background-color: transparent;
+    border: var(--tsr-comp-indicator-outline-width) solid CanvasText;
   }
 }

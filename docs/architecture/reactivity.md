@@ -54,6 +54,11 @@ flowchart TB
 Обе построены на `useSelector` из `@tanstack/react-store`. Гранулярность — это
 bail-out на стороне React по изменению снимка селектора, а не адресная доставка.
 
+**Ловушка: срезы плагинов общий store не оповещают.** Срез записи `definePlugin` (`plugin:<id>`,
+в том числе черновики ядра `plugin:drafts`) живёт своим атомом: `table.store.get()` вернёт его
+свежее значение, но подписка `useTableState` на его смену не сработает. Подписывайтесь на атом —
+`useSliceProjection(table, 'plugin:<id>', …)` или `useHasDraftAt` для черновиков (ADR 0178, §3).
+
 Корень `DataGrid` держит единственную подписку `useTableState(table, s => …)`
 (отдельного `SubscriptionStoreProvider` больше нет).
 

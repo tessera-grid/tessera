@@ -343,7 +343,10 @@ describe('Применение серверного фильтра (ADR 0154)', 
     await openPanel()
     await typeName('Name 1')
     expect(active()).toBe(false)
-    expect(filterButton().getAttribute('aria-label')).toBe(tableLabels.filter)
+    // Имя — невключённой кнопки с неприменённым условием (ADR 0178, §3).
+    expect(filterButton().getAttribute('aria-label')).toBe(
+      tableLabels.actionDraft(tableLabels.filter),
+    )
     await closePanel()
     expect(active()).toBe(false)
 

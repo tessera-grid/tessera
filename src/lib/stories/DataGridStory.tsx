@@ -436,6 +436,10 @@ const StoryGrid = memo(
       dataMode: options.dataMode,
       rowCount: options.rowCount,
       totalRowCount: options.totalRowCount,
+      // Черновики у приложения (ADR 0178): истории ведут их сами.
+      drafts: options.drafts,
+      onDraftsChange: options.onDraftsChange,
+      initialDrafts: options.initialDrafts,
       locale: locale === 'ru' ? 'ru-RU' : undefined,
       // Календари дат — на языке истории (ADR 0175, §3).
       dateLocale: locale === 'ru' ? ruDateLocale : undefined,

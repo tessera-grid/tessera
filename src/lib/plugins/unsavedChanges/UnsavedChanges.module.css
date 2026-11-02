@@ -1,0 +1,66 @@
+/* Пульт черновиков (ADR 0178, §8): поповер со списком черновиков. */
+.positioner {
+  composes: positioner from '../../ui/Popup/Popup.module.css';
+}
+
+.popup {
+  composes: popup from '../../ui/Popup/Popup.module.css';
+  width: var(--tsr-comp-popup-max-width);
+  max-width: calc(100vw - 16px);
+}
+
+.title {
+  margin: 0;
+  padding: var(--tsr-comp-popup-padding) calc(var(--tsr-comp-popup-padding) * 2);
+  font-weight: 600;
+}
+
+.scroller {
+  max-height: min(60vh, calc(var(--tsr-comp-popup-item-min-height) * 10));
+  overflow-y: auto;
+}
+
+/* Запись: подпись вида, значение, затем цель и кнопки. */
+.entry {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tsr-comp-popup-padding);
+  padding: calc(var(--tsr-comp-popup-padding) * 2);
+  border-block-start: 1px solid var(--tsr-comp-popup-divider-color);
+}
+
+.label {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.value {
+  overflow-wrap: anywhere;
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--tsr-comp-popup-padding) * 2);
+}
+
+.target {
+  flex: 1;
+  min-width: 0;
+  color: var(--tsr-comp-popup-group-label-color);
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  flex: none;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--tsr-comp-popup-padding);
+  padding: var(--tsr-comp-popup-padding) calc(var(--tsr-comp-popup-padding) * 2)
+    0;
+  border-block-start: 1px solid var(--tsr-comp-popup-divider-color);
+}

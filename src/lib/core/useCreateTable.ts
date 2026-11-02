@@ -69,6 +69,7 @@ import {
 import { useTableEffects } from './useTableEffects'
 import { useIsomorphicLayoutEffect } from '../util/useIsomorphicLayoutEffect'
 import { keyboardNavigationEntry } from './keyboardNavigation/entry'
+import { draftsEntry } from './drafts/entry'
 
 // Видимость служебных колонок сужается с первого рендера (ADR 0050).
 const INITIAL_EFFECTIVE_STATE = { columnVisibility: {} }
@@ -95,6 +96,9 @@ const CORE_OPTION_KEYS: Record<keyof CoreOptions, true> = {
   activeCell: true,
   onActiveCellChange: true,
   initialActiveCell: true,
+  drafts: true,
+  onDraftsChange: true,
+  initialDrafts: true,
   enableOverflowTooltip: true,
   enableRowAnimation: true,
   enableColumnAnimation: true,
@@ -169,6 +173,12 @@ export const useCreateTable = <
       activeCell: coreOptions.activeCell,
       onActiveCellChange: coreOptions.onActiveCellChange,
       initialActiveCell: coreOptions.initialActiveCell,
+    }),
+    // Срез черновиков — запись ядра в каждой таблице (ADR 0178, §1).
+    draftsEntry({
+      drafts: coreOptions.drafts,
+      onDraftsChange: coreOptions.onDraftsChange,
+      initialDrafts: coreOptions.initialDrafts,
     }),
     ...withModels,
   ]
@@ -399,6 +409,7 @@ export const useCreateTable = <
     slotActions: folded.slotActions,
     contextMenuActions: folded.contextMenuActions,
     stubEntries: folded.stubEntries,
+    draftKinds: folded.draftKinds,
     keyboardActions: folded.keyboardActions,
     pluginDiagnostics: folded.pluginDiagnostics,
     pluginRenderVersion: argsStore.renderVersion,

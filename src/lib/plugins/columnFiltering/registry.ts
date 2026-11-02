@@ -21,6 +21,12 @@ import {
 } from '../columnFilteringModel/registry'
 import { DEFAULT_FILTER_DEBOUNCE_MS } from '../columnFilteringModel/conditions'
 import { filterHeaderAction } from './filterHeaderAction'
+import { declareRejectHandler } from '../../core/serverActions'
+import {
+  columnFilterDraftKind,
+  followFilterDrafts,
+  rejectFilterDrafts,
+} from './filterDraft'
 import { FilterSummaryButton } from './FilterSummaryButton'
 import { filteredRowsCountSlot } from '../../shared/filtering/FilteredRowsCount'
 
@@ -68,6 +74,18 @@ export const columnFiltering = definePlugin<ColumnFilteringOptions>()({
   features: columnFilteringModelFeatures,
   hooks: o => ({ onFilterChange: o.onFilterChange }),
   slotActions: [filterHeaderAction],
+  draftKinds: [columnFilterDraftKind],
+  // Черновики условий (ADR 0178, §2): уходят со сменой фильтра колонки, отказ кладёт их обратно.
+  setup: () => table => {
+    const unfollow = followFilterDrafts(table)
+    const unhandle = declareRejectHandler(table, 'filtering', slices =>
+      rejectFilterDrafts(table, slices),
+    )
+    return () => {
+      unfollow?.()
+      unhandle()
+    }
+  },
   // Счётчик — opt-in: у гридов с фильтрами нижняя панель не появляется сама.
   slots: o => [
     {

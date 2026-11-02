@@ -238,6 +238,7 @@ export interface PerfRecord {
     | 'all'
     | 'cellEditing'
     | 'cellErrors'
+    | 'columnFiltering'
     | 'rowExpanding'
     | 'rowActions'
     | 'columnFiltering, rowGrouping'

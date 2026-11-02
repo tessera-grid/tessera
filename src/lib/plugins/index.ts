@@ -72,6 +72,7 @@ export {
 } from './infiniteScroll'
 export { backToTop, type BackToTopOptions } from './backToTop'
 export { failureLog, type FailureLogOptions } from './failureLog'
+export { unsavedChanges, type UnsavedChangesOptions } from './unsavedChanges'
 export {
   serverRowModel,
   type ServerRowModelOptions,

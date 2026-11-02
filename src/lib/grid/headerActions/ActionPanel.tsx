@@ -16,6 +16,7 @@ import { type PanelButtonState, panelButtonProps } from './usePanelOpening'
 import { useStateWhileOpen } from './useStateWhileOpen'
 
 import '../../ui/cellControls/buttonVisibility.css'
+import { actionLook } from './actionLook'
 
 export interface ActionPanelProps {
   action: SlotAction
@@ -40,9 +41,11 @@ export const ActionPanel = ({
   const [visible, onOpenChangeComplete] = useClosingVisible(open)
   useStateWhileOpen(context.table, visible)
 
-  const label = action.label(context, labels)
-  const ariaLabel = action.ariaLabel?.(context, labels) ?? label
-  const active = action.active?.(context)
+  const { active, draft, shown, label, ariaLabel } = actionLook(
+    action,
+    context,
+    labels,
+  )
 
   const button = (
     <Popover.Trigger
@@ -51,6 +54,7 @@ export const ActionPanel = ({
           ref={triggerRef}
           className={action.className?.(context)}
           active={active}
+          draft={draft}
           count={action.count?.(context)}
           label={label}
           aria-label={ariaLabel}
@@ -74,10 +78,10 @@ export const ActionPanel = ({
     >
       <div
         className={clsx(wrapperBase, hiddenClass)}
-        data-button-active={active || visible || !!loading?.pending}
+        data-button-active={shown || visible || !!loading?.pending}
       >
         <HiddenButtonContext.Provider
-          value={!(active || visible || !!loading?.pending)}
+          value={!(shown || visible || !!loading?.pending)}
         >
           {button}
         </HiddenButtonContext.Provider>

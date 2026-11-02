@@ -132,6 +132,35 @@ export const declareRevertOnReject = (
 
 const revertsOnReject = (t: ServerTable, slice: RevertedSlice) =>
   revertPolicies.get(t.store)?.get(slice) !== false
+
+/** Срезы отказавшего запроса и подтверждённые до него. */
+export interface RejectedSlices {
+  attempted: { columnFilters?: unknown; globalFilter?: unknown }
+  confirmed: { columnFilters?: unknown; globalFilter?: unknown }
+}
+
+const rejectHandlers = new WeakMap<
+  object,
+  Map<ServerActionKind, (slices: RejectedSlices) => void>
+>()
+
+/**
+ * Плагин принимает отказ своего действия сам (ADR 0178, §2): фильтр колонки возвращает срез к
+ * подтверждённому и кладёт отказанное условие черновиком. Объявляется в `setup`.
+ */
+export const declareRejectHandler = (
+  table: unknown,
+  kind: ServerActionKind,
+  handler: (slices: RejectedSlices) => void,
+) => {
+  const { store } = table as { store: object }
+  const handlers = rejectHandlers.get(store) ?? new Map()
+  rejectHandlers.set(store, handlers)
+  handlers.set(kind, handler)
+  return () => {
+    if (handlers.get(kind) === handler) handlers.delete(kind)
+  }
+}
 let lastAttempt = 0
 
 let neverAborted: AbortSignal | undefined
@@ -448,8 +477,11 @@ export const runServerAction = (
       source,
       cause: request,
     })
+    const attempted = snapshotOf(t)
     revert(t, confirmed, true)
     restoreFilters(t, confirmed)
+    // Отменённое условие остаётся черновиком, как отказанное (ADR 0154, §2; ADR 0178, §2).
+    rejectHandlers.get(t.store)?.get(kind)?.({ attempted, confirmed })
     markLoadCancelled(table)
     writeServerAction(table, () => ({}))
     resolveServerFailure(table)
@@ -506,6 +538,7 @@ export const runServerAction = (
     const retry = () =>
       runServerAction(table, kind, () => restore(t, attempted), notify, cause)
     revert(t, confirmed)
+    rejectHandlers.get(t.store)?.get(kind)?.({ attempted, confirmed })
     writeServerAction(table, () => ({
       failed: { kind, attempt, error, cause, retry },
     }))

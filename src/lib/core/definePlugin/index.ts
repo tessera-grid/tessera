@@ -31,6 +31,7 @@ import type { KeyboardAction } from '../keyboardActions'
 import type { PluginDiagnose } from '../pluginDiagnostics'
 import type { NarrowState } from '../effectiveState'
 import type { StubEntry } from '../stubs'
+import type { DraftKind } from '../drafts/drafts'
 import {
   type ServiceColumnMode,
   type ServicePresence,
@@ -228,6 +229,8 @@ interface DefinePluginConfig<
   slotActions?: SlotAction[]
   /** Заглушки пустой таблицы плагина — записи реестра (ADR 0123, ES14). */
   stubs?: StubEntry[]
+  /** Виды черновиков плагина: как применить, отбросить и подписать (ADR 0178, §1). */
+  draftKinds?: DraftKind[]
   /** Декларативные пункты контекстного меню (ADR 0030). */
   contextMenuActions?: ContextMenuAction[]
   /** Клавиатурные действия на ячейках (ADR 0021). */
@@ -440,6 +443,9 @@ export const definePlugin = <
       }
       if (config.stubs) {
         entry.stubs = config.stubs
+      }
+      if (config.draftKinds) {
+        entry.draftKinds = config.draftKinds
       }
       if (config.contextMenuActions) {
         entry.contextMenuActions = config.contextMenuActions

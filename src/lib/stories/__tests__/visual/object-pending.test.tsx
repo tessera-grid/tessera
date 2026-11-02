@@ -369,8 +369,8 @@ const sources = (): Source[] => {
       },
       kind: 'filter',
       shown: () => filterButton().hasAttribute('data-active'),
-      // Условие — черновик поля: после отказа кнопка показывает его (ADR 0116, SA9).
-      reverted: () => filterButton().hasAttribute('data-active'),
+      // Отказанное условие — черновик: кнопка показывает подтверждённое (ADR 0178, §2).
+      reverted: () => !filterButton().hasAttribute('data-active'),
     },
     {
       name: 'пейджер',

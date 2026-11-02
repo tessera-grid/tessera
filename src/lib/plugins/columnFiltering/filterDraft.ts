@@ -1,37 +1,176 @@
 /**
- * Черновик фильтра колонки (ADR 0154): в серверном режиме условие уходит кнопкой
- * «Применить», а набранное хранится по колонке, пока его не применили, не сбросили и фильтр
- * колонки не сменили снаружи — так оно переживает закрытие панели, отмену и отказ. В
- * клиентском режиме панель применяет условие сама, черновик не хранится.
+ * Черновик фильтра колонки (ADR 0154, ADR 0178, §2): в серверном режиме условие уходит кнопкой
+ * «Применить», а набранное лежит в реестре черновиков ядра записью вида `columnFilter` с целью
+ * «колонка», пока его не применили, не сбросили и фильтр колонки не сменили снаружи — так оно
+ * переживает закрытие панели, отмену и отказ. Запись есть, только пока условие отличается от
+ * действующего. В клиентском режиме панель применяет условие сама, черновика нет.
  */
 import { useState } from 'react'
 
+import {
+  activeDrafts,
+  type Draft,
+  type DraftKind,
+  readDrafts,
+  removeDraft,
+  setDraft as putDraft,
+} from '../../core/drafts/drafts'
 import { setColumnFilterByUser } from '../../shared/filtering/filtering'
 import { useTableState } from '../../core/reactivity'
-import { isServerAction } from '../../core/serverActions'
+import { isServerAction, type RejectedSlices } from '../../core/serverActions'
 import type { ColumnFilterValue } from '../columnFilteringModel/types'
+import { filterOptionLabelOf } from '../columnFilteringModel/options'
+import { formatDataTypeValue } from '../../core/dataTypeFormat'
+import { describeFilter } from './describeFilter'
 
-interface Entry {
-  draft: unknown
-  /** Действующий фильтр, когда черновик начат: к нему откатывает отмена. */
-  base: string
-  /** Отправленное кнопкой «Применить». */
-  sent?: string
-}
-
-const drafts = new WeakMap<object, Map<string, Entry>>()
+export const COLUMN_FILTER_DRAFT = 'columnFilter'
 
 const keyOf = (value: unknown) => JSON.stringify(value ?? null)
 
-const entriesOf = (table: unknown) => {
-  const store = (table as { store?: object }).store
-  if (!store) return undefined
-  let entries = drafts.get(store)
-  if (!entries) {
-    entries = new Map()
-    drafts.set(store, entries)
+type FilterTable = {
+  atoms?: { columnFilters?: { get: () => unknown } }
+  getColumn?: (id: string) =>
+    | {
+        getFilterFn?: () => { autoRemove?: (value: unknown) => boolean }
+      }
+    | undefined
+}
+
+const appliedOf = (table: unknown, columnId: string) =>
+  (
+    ((table as FilterTable).atoms?.columnFilters?.get() as
+      { id: string; value: unknown }[] | undefined) ?? []
+  ).find(filter => filter.id === columnId)?.value
+
+/** Условие, которое фильтр колонки снял бы (пустой текст), — это «нет фильтра». */
+const normalized = (table: unknown, columnId: string, value: unknown) => {
+  const autoRemove = (table as FilterTable)
+    .getColumn?.(columnId)
+    ?.getFilterFn?.()?.autoRemove
+  return value === undefined || value === null || autoRemove?.(value)
+    ? undefined
+    : value
+}
+
+const draftOfColumn = (table: unknown, columnId: string) =>
+  readDrafts(table).find(
+    draft =>
+      draft.kind === COLUMN_FILTER_DRAFT &&
+      'column' in draft.target &&
+      draft.target.column === columnId,
+  )
+
+/** Записать черновик колонки; совпал с действующим — снять запись (DR5). */
+export const storeFilterDraft = (
+  table: unknown,
+  columnId: string,
+  value: unknown,
+) => {
+  const target = normalized(table, columnId, value)
+  if (keyOf(target) === keyOf(appliedOf(table, columnId))) {
+    removeDraft(table, COLUMN_FILTER_DRAFT, { column: columnId })
+    return
   }
-  return entries
+  putDraft(table, {
+    kind: COLUMN_FILTER_DRAFT,
+    target: { column: columnId },
+    value: target ?? null,
+  })
+}
+
+type Filters = readonly { id: string; value: unknown }[] | undefined
+
+const appliedKeys = (filters: Filters) =>
+  new Map((filters ?? []).map(filter => [filter.id, keyOf(filter.value)]))
+
+/**
+ * Действующий фильтр колонки сменился — применением черновика или снаружи (ADR 0154, FD6):
+ * черновик колонки уходит. Отказ сервера кладёт его обратно (`rejectFilterDrafts`).
+ */
+export const followFilterDrafts = (table: unknown) => {
+  const atom = (
+    table as {
+      atoms?: {
+        columnFilters?: {
+          get: () => unknown
+          subscribe: (listener: () => void) => { unsubscribe: () => void }
+        }
+      }
+    }
+  ).atoms?.columnFilters
+  if (!atom) return undefined
+  let before = appliedKeys(atom.get() as Filters)
+  const subscription = atom.subscribe(() => {
+    const now = appliedKeys(atom.get() as Filters)
+    for (const draft of readDrafts(table)) {
+      if (draft.kind !== COLUMN_FILTER_DRAFT || !('column' in draft.target))
+        continue
+      const columnId = draft.target.column
+      if (now.get(columnId) !== before.get(columnId))
+        removeDraft(table, COLUMN_FILTER_DRAFT, draft.target)
+    }
+    before = now
+  })
+  return () => subscription.unsubscribe()
+}
+
+/**
+ * Сервер отказал фильтру (ADR 0178, §2): срез фильтров — к подтверждённому, отказанные условия
+ * колонок — черновиками; кнопка фильтра показывает подтверждённое.
+ */
+export const rejectFilterDrafts = (
+  table: unknown,
+  { attempted, confirmed }: RejectedSlices,
+) => {
+  const tried = new Map(
+    ((attempted.columnFilters as Filters) ?? []).map(f => [f.id, f.value]),
+  )
+  const was = appliedKeys(confirmed.columnFilters as Filters)
+  ;(
+    table as { setColumnFilters?: (filters: never) => void }
+  ).setColumnFilters?.(((confirmed.columnFilters as Filters) ?? []) as never)
+  for (const columnId of new Set([...tried.keys(), ...was.keys()])) {
+    if (keyOf(tried.get(columnId)) === (was.get(columnId) ?? keyOf(undefined)))
+      continue
+    putDraft(table, {
+      kind: COLUMN_FILTER_DRAFT,
+      target: { column: columnId },
+      value: tried.get(columnId) ?? null,
+    })
+  }
+}
+
+/** Черновик условия колонки работает: серверный режим, вид включён (ADR 0178, §3). */
+export const hasColumnFilterDraft = (table: unknown, columnId: string) =>
+  activeDrafts(table).some(
+    draft =>
+      draft.kind === COLUMN_FILTER_DRAFT &&
+      'column' in draft.target &&
+      draft.target.column === columnId,
+  )
+
+/** Вид черновика `columnFilter` (ADR 0178, §2): применяет «Применить» панели. */
+export const columnFilterDraftKind: DraftKind = {
+  kind: COLUMN_FILTER_DRAFT,
+  label: labels => labels.filter,
+  describe: (labels, draft, table) => {
+    if (draft.value === null || !('column' in draft.target))
+      return labels.draftNoFilter
+    const column = (
+      table as { getColumn?: (id: string) => unknown }
+    ).getColumn?.(draft.target.column)
+    return describeFilter(draft.value as ColumnFilterValue, labels, {
+      locale: (table as { options: { locale?: string } }).options.locale,
+      optionLabel: value => filterOptionLabelOf(table, column as never, value),
+      numberText: value =>
+        formatDataTypeValue(table as never, column as never, value, undefined),
+    })
+  },
+  apply: (table, draft: Draft) => {
+    if (!('column' in draft.target)) return
+    setColumnFilterByUser(table, draft.target.column, draft.value ?? undefined)
+  },
+  active: table => isServerAction(table, 'filtering'),
 }
 
 interface FilterDraftArgs<D> {
@@ -61,47 +200,25 @@ export const useFilterDraft = <D>({
       ).find(filter => filter.id === columnId)?.value,
   )
   const [draft, setLocal] = useState<D>(() => {
-    const entries = entriesOf(table)
-    const entry = server ? entries?.get(columnId) : undefined
-    const now = keyOf(current)
-    // Черновик жив, пока действующий фильтр — его начало или им же отправленное.
-    if (
-      entry &&
-      (entry.base === now || entry.sent === now) &&
-      keyOf(filterOf(entry.draft as D)) !== now
-    ) {
-      return entry.draft as D
-    }
-    entries?.delete(columnId)
-    return draftOf(current as ColumnFilterValue | undefined)
+    const saved = server ? draftOfColumn(table, columnId) : undefined
+    return draftOf(
+      (saved ? (saved.value ?? undefined) : current) as
+        ColumnFilterValue | undefined,
+    )
   })
+
+  const built = filterOf(draft)
+  const target =
+    built === null ? null : (normalized(table, columnId, built) as unknown)
 
   const setDraft = (next: D) => {
     setLocal(next)
     if (!server) return
-    const entries = entriesOf(table)
-    const entry = entries?.get(columnId)
-    entries?.set(columnId, {
-      draft: next,
-      base: entry?.base ?? keyOf(applied),
-      sent: entry?.sent,
-    })
+    const value = filterOf(next)
+    // Ввод не применим (число с ошибкой) — в реестре остаётся прежнее условие.
+    if (value !== null) storeFilterDraft(table, columnId, value)
   }
 
-  const built = filterOf(draft)
-  // Условие, которое фильтр колонки снял бы (пустой текст), — это «нет фильтра».
-  const autoRemove = (
-    table as {
-      getColumn?: (
-        id: string,
-      ) =>
-        | { getFilterFn?: () => { autoRemove?: (value: unknown) => boolean } }
-        | undefined
-    }
-  )
-    .getColumn?.(columnId)
-    ?.getFilterFn?.()?.autoRemove
-  const target = built && autoRemove?.(built) ? undefined : built
   return {
     server,
     draft,
@@ -111,11 +228,9 @@ export const useFilterDraft = <D>({
     /** «Применить»: отправить условие черновика. */
     commit: () => {
       if (target === null) return
-      const entry = entriesOf(table)?.get(columnId)
-      if (entry) entry.sent = keyOf(target)
       setColumnFilterByUser(table, columnId, target)
     },
     /** «Сбросить»: черновика больше нет. */
-    forget: () => entriesOf(table)?.delete(columnId),
+    forget: () => removeDraft(table, COLUMN_FILTER_DRAFT, { column: columnId }),
   }
 }

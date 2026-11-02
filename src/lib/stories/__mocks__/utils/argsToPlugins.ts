@@ -1,6 +1,7 @@
 import {
   backToTop,
   failureLog,
+  unsavedChanges,
   cellEditing,
   cellErrors,
   cellSelection,
@@ -88,6 +89,7 @@ const FACTORIES = {
   serverRowModel,
   backToTop,
   failureLog,
+  unsavedChanges,
 }
 
 const FACTORY_NAMES = Object.keys(FACTORIES)
@@ -236,6 +238,7 @@ export const argsToPlugins = (o: FeatureToggles) => {
     serverRowModel(argsOf(o, 'serverRowModel')),
     backToTop(argsOf(o, 'backToTop')),
     failureLog(argsOf(o, 'failureLog')),
+    unsavedChanges(argsOf(o, 'unsavedChanges')),
     // Демо-производитель действий строки как единые дескрипторы (`RowAction`):
     // инлайн — ряд row-кнопок, при `rowActionMenu` схлопываются в overflow-кебаб.
     {

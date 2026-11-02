@@ -51,6 +51,7 @@ import { DataGrid } from '../../../grid/DataGrid'
 import { definePlugin } from '../../../core/definePlugin'
 import {
   cellSelectionModel,
+  columnFiltering,
   columnFilteringModel,
   columnSortingModel,
   dataExportModel,
@@ -3170,6 +3171,81 @@ describe('Производительность прокрутки — тип д�
         expect(made).toBe(1)
       } finally {
         Intl.NumberFormat = Original
+      }
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Черновики фильтра (ADR 0178, DR13): 1000×1000, серверный фильтр колонок; черновики у
+// каждой второй колонки — 500 кнопок с кольцом. Против того же набора без черновиков.
+const DR13_COST = { ratio: 1.3, plusMs: 0 }
+const DRAFTED_COLUMNS = makeColumns(LARGE.columnCount)
+  .filter((_, index) => index % 2 === 0)
+  .map(column => ({
+    kind: 'columnFilter',
+    target: { column: (column as { id: string }).id },
+    value: { operator: 'contains', value: 'a' },
+  }))
+
+describe('Производительность прокрутки — черновики фильтра', () => {
+  test(
+    'DR13: спокойная прокрутка 1000×1000 с черновиками фильтра у 500 колонок не дороже той же выборки без них больше чем в 1,3 раза',
+    async () => {
+      const measure = async (drafted: boolean) => {
+        const screen = renderPluginsGrid({
+          ...LARGE,
+          dataMode: { filtering: 'server' },
+          initialDrafts: drafted ? DRAFTED_COLUMNS : [],
+          plugins: [
+            columnFiltering({ onFilterChange: () => Promise.resolve() }),
+          ],
+        })
+        await waitForGrid()
+        await expect
+          .poll(() => document.querySelector('[data-draft]') !== null)
+          .toBe(drafted)
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        return { y, x }
+      }
+
+      const runs = await againstBase(measure)
+      const base = medianAxes(runs.base)
+      const drafted = medianAxes(runs.variant)
+      const ceiling = axesCeiling(base, DR13_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1000×1000',
+          plugins: 'columnFiltering',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: (['y', 'x'] as const).map(axis => ({
+            axis,
+            kind: 'animation' as const,
+            metric: 'p95' as const,
+            valueMs: r[axis].p95Ms,
+            targetMs: ANIMATION_BUDGET_MS,
+            ceilingMs: gated ? ceiling[axis] : undefined,
+            ...r[axis],
+          })),
+        })
+      await record('DR13-base', 'черновиков нет', base, false)
+      await record('DR13', 'черновики у 500 колонок', drafted, true)
+
+      for (const axis of ['y', 'x'] as const) {
+        expect(
+          drafted[axis].p95Ms,
+          `${axis} p95=${drafted[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
+        ).toBeLessThanOrEqual(ceiling[axis])
       }
     },
     PERF_TIMEOUT * 2,

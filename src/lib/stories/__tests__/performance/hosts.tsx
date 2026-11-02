@@ -6,6 +6,8 @@ import { useColumns } from '../../__mocks__/columns'
 import { useCreateTable } from '../../../core/useCreateTable'
 import type { TesseraFeatureEntry } from '../../../core/features'
 import { DataGrid } from '../../../grid/DataGrid'
+import type { DataMode } from '../../../core/dataMode'
+import type { Draft } from '../../../core/drafts/drafts'
 import type { LabelDictionary } from '../../../core/localization'
 
 interface PluginsGridProps {
@@ -17,6 +19,10 @@ interface PluginsGridProps {
   /** Словарь подписей и язык (ADR 0132, LC11). */
   localization?: LabelDictionary
   locale?: string
+  /** Режим данных (ADR 0169) — серверный фильтр для черновиков (ADR 0178, DR13). */
+  dataMode?: DataMode
+  /** Черновики при монтировании (ADR 0178). */
+  initialDrafts?: readonly Draft[]
 }
 
 /**
@@ -31,6 +37,8 @@ const PluginsGrid = ({
   dataOverride,
   localization,
   locale,
+  dataMode,
+  initialDrafts,
 }: PluginsGridProps) => {
   const columns = useColumns(columnCount)
   const data = useMemo(
@@ -41,6 +49,8 @@ const PluginsGrid = ({
     columns: columns as never,
     data,
     locale,
+    dataMode,
+    initialDrafts,
     plugins: plugins as never,
   })
   return (

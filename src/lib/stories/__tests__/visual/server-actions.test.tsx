@@ -93,6 +93,13 @@ interface Harness {
   options: Options
   calls: Call[]
   onSortingChange: ReturnType<typeof vi.fn<(sorting: SortingState) => void>>
+  table?: {
+    getDrafts: () => readonly {
+      kind: string
+      target: unknown
+      value: unknown
+    }[]
+  }
 }
 
 let harness: Harness
@@ -153,6 +160,7 @@ const Grid = () => {
       ...(options.menu ? [headerActionMenu({ mode: 'always' })] : []),
     ],
   })
+  harness.table = table as never
   return (
     <div style={{ height: 500, width: 700 }}>
       <DataGrid table={table as never} />
@@ -298,7 +306,7 @@ describe('серверные действия (ADR 0116)', () => {
     expect(fieldMarks()).toBe(0)
   })
 
-  test('SA9: отказ поиска или фильтра колонки оставляет текст и значения; следующая правка или повтор отправляют их снова', async () => {
+  test('SA9: отказ поиска или фильтра колонки оставляет текст и значения в поле; следующая правка или повтор отправляют их снова; срез фильтра колонки возвращается к подтверждённому, условие — черновиком', async () => {
     await mount({
       paginationServer: true,
       pageSize: 25,
@@ -319,6 +327,14 @@ describe('серверные действия (ADR 0116)', () => {
     lastCall().answer.reject(SERVER_ERROR)
     await expect.poll(panelFailure).not.toBeNull()
     expect(value().value).toBe('x')
+    // Срез — к подтверждённому: кнопка без фильтра, условие — черновик колонки (ADR 0178).
+    expect(filterButton().hasAttribute('data-active')).toBe(false)
+    expect(
+      harness.table!.getDrafts().map(draft => [draft.kind, draft.target]),
+    ).toEqual([['columnFilter', { column: 'name' }]])
+    expect(JSON.stringify(harness.table!.getDrafts()[0]!.value)).toContain(
+      '"x"',
+    )
     await userEvent.type(value(), 'y')
     // Правка уходит кнопкой «Применить» (ADR 0154).
     await humanClick(

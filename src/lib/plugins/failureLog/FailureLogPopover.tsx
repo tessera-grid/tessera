@@ -25,7 +25,11 @@ import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 import { usePortalThemeClass, usePortalThemeData } from '../../ui/theme'
 import { ToolbarButton } from '../../ui/ToolbarButton'
 import { useVirtualizer } from '../../../vendor/tanstack-virtual/react-virtual'
-import { canShowFailure, failureTargetText, showFailure } from './failureTarget'
+import {
+  canShowTarget,
+  objectTargetText,
+  showTarget,
+} from '../../shared/objectTarget'
 
 import styles from './FailureLog.module.css'
 
@@ -88,7 +92,7 @@ const FailureEntry = ({
   const icons = useIcons()
   const time = new Date(failure.time)
   const { retry } = failure
-  const target = failureTargetText(table, failure, labels)
+  const target = objectTargetText(table, failure.target, labels)
   return (
     <>
       <div className={styles.head}>
@@ -108,7 +112,7 @@ const FailureEntry = ({
       <div className={styles.foot}>
         <span className={styles.target}>{target}</span>
         <div className={styles.actions}>
-          {canShowFailure(failure) && (
+          {canShowTarget(failure.target) && (
             <IconButton
               shape="square"
               label={labels.failureShow}
@@ -116,7 +120,7 @@ const FailureEntry = ({
               onClick={event => {
                 report(table, 'show', failure, event)
                 onDone()
-                void showFailure(table, failure)
+                void showTarget(table, failure.target)
               }}
             >
               <icons.failureShow />

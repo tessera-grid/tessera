@@ -26,6 +26,7 @@ import { commonFeature } from './commonFeature'
 import { expandIncludedModels } from './pluginModels'
 import { actionStatusFeature } from './headerActions/actionStatusFeature'
 import { failuresFeature } from './failures/failuresFeature'
+import { draftsFeature } from './drafts/draftsFeature'
 import { flashFeature } from './flashes/flashFeature'
 import { highlightFeature } from './highlights/highlightFeature'
 import { scrollToRowFeature } from './scrollToRow/scrollToRowFeature'
@@ -48,6 +49,7 @@ import {
 } from './headerActions'
 import type { NarrowMap, NarrowState } from './effectiveState'
 import type { StubEntry } from './stubs'
+import type { DraftKind } from './drafts/drafts'
 import {
   type FoldedWrappers,
   type PluginWrappers,
@@ -99,6 +101,8 @@ export interface TablePlugin<TFeatures extends object = object> {
   slotActions?: SlotAction[]
   /** Заглушки пустой таблицы плагина — записи реестра (ADR 0123). */
   stubs?: StubEntry[]
+  /** Виды черновиков плагина (ADR 0178, §1). */
+  draftKinds?: DraftKind[]
   /** Декларативные пункты контекстного меню (ADR 0030). */
   contextMenuActions?: ContextMenuAction[]
   /** Клавиатурные действия на ячейках (ADR 0021). */
@@ -199,6 +203,8 @@ export interface FoldedEntryConfig {
   contextMenuActions: ContextMenuAction[]
   /** Заглушки пустой таблицы активных записей (ADR 0123). */
   stubEntries: StubEntry[]
+  /** Виды черновиков активных записей (ADR 0178). */
+  draftKinds: DraftKind[]
   keyboardActions: KeyboardAction[]
   actionMenu: SlotActionMenu
   serviceColumns: ServiceColumn[]
@@ -297,6 +303,7 @@ export const foldEntries = (
   const slotActions = createEmptySlotActions()
   const contextMenuActions: ContextMenuAction[] = []
   const stubEntries: StubEntry[] = []
+  const draftKinds: DraftKind[] = []
   const keyboardActions: KeyboardAction[] = []
   const actionMenu: SlotActionMenu = {}
   const serviceColumns: ServiceColumn[] = []
@@ -357,6 +364,7 @@ export const foldEntries = (
     })
 
     if (entry.stubs) stubEntries.push(...entry.stubs)
+    if (entry.draftKinds) draftKinds.push(...entry.draftKinds)
 
     entry.keyboardActions?.forEach(action => setActionOwner(action, entry.id))
     registerKeyboardActionsInto(keyboardActions, entry.keyboardActions)
@@ -392,6 +400,7 @@ export const foldEntries = (
     slotActions,
     contextMenuActions,
     stubEntries,
+    draftKinds,
     keyboardActions: sortKeyboardActionsByPriority(keyboardActions),
     actionMenu,
     serviceColumns,
@@ -446,6 +455,7 @@ export type TesseraFeatures<T extends readonly TablePlugin[]> = {
   commonFeature: typeof commonFeature
   actionStatusFeature: typeof actionStatusFeature
   failuresFeature: typeof failuresFeature
+  draftsFeature: typeof draftsFeature
   highlightFeature: typeof highlightFeature
   flashFeature: typeof flashFeature
   scrollToRowFeature: typeof scrollToRowFeature
@@ -471,6 +481,7 @@ export const buildTesseraFeatures = <
     commonFeature,
     actionStatusFeature,
     failuresFeature,
+    draftsFeature,
     highlightFeature,
     flashFeature,
     scrollToRowFeature,

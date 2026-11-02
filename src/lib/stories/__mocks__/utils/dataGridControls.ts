@@ -51,6 +51,7 @@ import {
   enableAnnouncementsType,
   enableBackToTopType,
   enableFailureLogType,
+  enableUnsavedChangesType,
   enableCellEditingType,
   cellEditingSearchDebounceMsType,
   enableCellErrorsType,
@@ -349,6 +350,7 @@ export const dataGridArgTypes = {
       serverRowModelMaxBlocks: serverRowModelMaxBlocksType,
     }),
     enableFailureLog: enableFailureLogType,
+    enableUnsavedChanges: enableUnsavedChangesType,
     enableBackToTop: enableBackToTopType,
     ...when('enableBackToTop', {
       backToTopThreshold: backToTopThresholdType,
@@ -542,6 +544,7 @@ export const dataGridDefaultArgs = {
   serverRowModelMaxBlocks: 100,
   enableBackToTop: false,
   enableFailureLog: false,
+  enableUnsavedChanges: false,
   enableDataExport: false,
   enableDataExportModel: false,
 } as const

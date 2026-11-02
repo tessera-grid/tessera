@@ -39,6 +39,7 @@ import type {
 } from './headerActions'
 import type { KeyboardAction } from './keyboardActions'
 import type { ActiveCell } from './keyboardNavigation/model'
+import type { Draft, DraftKind } from './drafts/drafts'
 import type {
   PluginDiagnostic,
   PluginDiagnosticSource,
@@ -123,6 +124,12 @@ export interface CoreOptions {
   onActiveCellChange?: (next: ActiveCell) => void
   /** Активная ячейка при монтировании, если её не ведёт приложение (EF10). */
   initialActiveCell?: ActiveCell
+  /** Черновики у приложения (ADR 0178, §1): введённое, но не применённое. */
+  drafts?: readonly Draft[]
+  /** Черновики сменились — изнутри грида или API таблицы. */
+  onDraftsChange?: (next: readonly Draft[]) => void
+  /** Черновики при монтировании, если их не ведёт приложение. */
+  initialDrafts?: readonly Draft[]
   /** `false` — без тултипа у обрезанного текста ячеек (ADR 0075). */
   enableOverflowTooltip?: boolean
   /** `false` — смены модели строк мгновенны, без движения (ADR 0107). */
@@ -157,6 +164,8 @@ export interface CommonOptions extends CoreOptions {
   contextMenuActions?: ContextMenuAction[]
   /** Заглушки пустой таблицы плагинов (ADR 0123). */
   stubEntries?: StubEntry[]
+  /** Виды черновиков включённых плагинов (ADR 0178, §1). */
+  draftKinds?: DraftKind[]
   keyboardActions?: KeyboardAction[]
   pluginDiagnostics?: PluginDiagnosticSource[]
   actionMenu?: SlotActionMenuV9

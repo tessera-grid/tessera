@@ -22,6 +22,7 @@ import {
 import { useStateWhileOpen } from './useStateWhileOpen'
 
 import '../../ui/cellControls/buttonVisibility.css'
+import { actionLook } from './actionLook'
 
 export interface ActionInlineMenuProps {
   action: SlotAction
@@ -73,9 +74,11 @@ export const ActionInlineMenu = ({
     onMenuOpenChange(false, { reason: GRID_SCROLL_REASON }),
   )
 
-  const label = action.label(context, labels)
-  const ariaLabel = action.ariaLabel?.(context, labels) ?? label
-  const active = action.active?.(context)
+  const { active, draft, shown, label, ariaLabel } = actionLook(
+    action,
+    context,
+    labels,
+  )
 
   const button = (
     <Menu.Trigger
@@ -83,6 +86,7 @@ export const ActionInlineMenu = ({
         <IconButton
           className={action.className?.(context)}
           active={active}
+          draft={draft}
           count={action.count?.(context)}
           label={label}
           aria-label={ariaLabel}
@@ -110,9 +114,9 @@ export const ActionInlineMenu = ({
       {/* Попап — внутри обёртки: служебные узлы портала не встают между кнопками ряда. */}
       <div
         className={clsx(wrapperBase, !visible && hiddenClass)}
-        data-button-active={active}
+        data-button-active={shown}
       >
-        <HiddenButtonContext.Provider value={!visible && !active}>
+        <HiddenButtonContext.Provider value={!visible && !shown}>
           {button}
         </HiddenButtonContext.Provider>
         {section ? (

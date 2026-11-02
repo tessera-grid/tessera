@@ -56,6 +56,8 @@ export const CATALOG_STATES = {
     'kebab',
     'resizeHandle',
     'footer',
+    // Неприменённое условие: кольцо на кнопке заголовка (ADR 0178, §3).
+    'draft',
   ],
   overlay: [
     'menu',
@@ -74,6 +76,8 @@ export const CATALOG_STATES = {
     'cellIssue',
     // Журнал отказов (ADR 0177, §7).
     'failureLog',
+    // Пульт черновиков (ADR 0178, §8).
+    'unsavedChanges',
   ],
   panel: ['toolbar', 'statusBar', 'pagination', 'narrow'],
   // Перетаскивание (ADR 0130): шаги гайдов историй строк и колонок.

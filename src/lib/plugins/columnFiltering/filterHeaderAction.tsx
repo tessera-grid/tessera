@@ -7,6 +7,7 @@ import { Suspense } from 'react'
 
 import type { HeaderAction } from '../../core/headerActions'
 import { preloadable } from '../../core/preloadable'
+import { hasColumnFilterDraft } from './filterDraft'
 import { useIcons } from '../../ui/icons'
 import {
   columnFilterDefOf,
@@ -47,6 +48,8 @@ export const filterHeaderAction: HeaderAction = {
   ariaLabel: ({ column }, labels) =>
     column.getIsFiltered() ? labels.filterActive : labels.filter,
   active: ({ column }) => column.getIsFiltered(),
+  // Неприменённое условие колонки (ADR 0178, §3).
+  draft: ({ column, table }) => hasColumnFilterDraft(table, column.id),
   className: () => 'column-filter__button',
   // Действие с панелью: выбор открывает поповер, а не вызывает обработчик.
   onSelect: () => {},

@@ -33,6 +33,7 @@ import {
 import { type KebabState, useKebabState } from './useKebabState'
 
 import styles from '../../ui/Popup/ActionMenu.module.css'
+import { actionLook } from './actionLook'
 import '../../ui/cellControls/buttonVisibility.css'
 
 const ActionMenuImpl = preloadable(() =>
@@ -136,14 +137,17 @@ const InlinePlaceholder = ({
 }) => {
   const labels = useLocalization()
 
-  const label = action.label(context, labels)
-  const ariaLabel = action.ariaLabel?.(context, labels) ?? label
-  const active = action.active?.(context)
+  const { active, draft, shown, label, ariaLabel } = actionLook(
+    action,
+    context,
+    labels,
+  )
 
   const button = (
     <IconButton
       className={action.className?.(context)}
       active={active}
+      draft={draft}
       count={action.count?.(context)}
       label={label}
       aria-label={ariaLabel}
@@ -163,10 +167,10 @@ const InlinePlaceholder = ({
   return (
     <div
       className={clsx(wrapperBase, !open && hiddenClass)}
-      data-button-active={active || !!loading?.pending}
+      data-button-active={shown || !!loading?.pending}
     >
       <HiddenButtonContext.Provider
-        value={!open && !(active || !!loading?.pending)}
+        value={!open && !(shown || !!loading?.pending)}
       >
         {button}
       </HiddenButtonContext.Provider>

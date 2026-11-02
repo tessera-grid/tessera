@@ -1,11 +1,12 @@
 /**
- * Цель записи журнала отказов (ADR 0177, §7): подпись и переход к ней. Номер строки — по
- * текущему порядку; место вытесненной строки серверной модели помнит сама модель (ADR 0138).
+ * Цель записи журнала отказов и пульта черновиков (ADR 0177, §7; ADR 0178, §8): подпись и
+ * переход к ней. Номер строки — по текущему порядку; место вытесненной строки серверной модели
+ * помнит сама модель (ADR 0138).
  */
-import type { Failure } from '../../core/failures/failuresFeature'
-import { flashOutcome } from '../../core/flashes/flashFeature'
-import type { FlashTarget } from '../../core/highlights/highlightFeature'
-import type { TableLabels } from '../../core/localization'
+import type { FailureTarget } from '../core/failures/failuresFeature'
+import { type FlashOutcome, flashOutcome } from '../core/flashes/flashFeature'
+import type { FlashTarget } from '../core/highlights/highlightFeature'
+import type { TableLabels } from '../core/localization'
 
 interface LogTable {
   getRowSource: () => { indexOf: (id: string) => number }
@@ -34,12 +35,11 @@ const rowNumberOf = (table: unknown, rowId: string) => {
 }
 
 /** Подпись цели записи. */
-export const failureTargetText = (
+export const objectTargetText = (
   table: unknown,
-  failure: Failure,
+  target: FailureTarget,
   labels: TableLabels,
 ): string => {
-  const { target } = failure
   if ('cell' in target) {
     const [rowId, columnId] = target.cell
     const row = rowNumberOf(table, rowId)
@@ -57,12 +57,15 @@ export const failureTargetText = (
 }
 
 /** К цели можно перейти: ячейка, строка или колонка. */
-export const canShowFailure = ({ target }: Failure) =>
+export const canShowTarget = (target: FailureTarget) =>
   'cell' in target || 'row' in target || 'column' in target
 
 /** Прокрутить к цели записи и вспыхнуть её (JR3). */
-export const showFailure = async (table: unknown, failure: Failure) => {
-  const { target } = failure
+export const showTarget = async (
+  table: unknown,
+  target: FailureTarget,
+  outcome: FlashOutcome = 'reverted',
+) => {
   const t = table as LogTable
   if ('cell' in target || 'row' in target) {
     const rowId = 'cell' in target ? target.cell[0] : target.row
@@ -73,5 +76,5 @@ export const showFailure = async (table: unknown, failure: Failure) => {
       ...('cell' in target ? { columnId: target.cell[1] } : {}),
     })
   }
-  flashOutcome(table, target as FlashTarget, 'reverted')
+  flashOutcome(table, target as FlashTarget, outcome)
 }

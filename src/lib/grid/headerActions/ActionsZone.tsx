@@ -16,6 +16,7 @@ import {
 } from '../../core/headerActions'
 import { useLocalization } from '../../core/localization'
 import { useTableState } from '../../core/reactivity'
+import { useHasDraftAt } from '../../core/drafts/drafts'
 import { ActionButton } from './ActionButton'
 import { ActionInlineMenu, ActionMenu, ActionPanel } from './ActionMenu.lazy'
 import { HeaderMetricsContext, headerCapacityOf } from './headerCapacity'
@@ -58,11 +59,26 @@ export const ActionsZone = memo(
         ? headerCapacityOf(context.header, metrics)
         : undefined
 
+    // Черновик колонки или строки меняет вид кнопки и её место в ряду (ADR 0178, §3).
+    useHasDraftAt(
+      table,
+      context.column
+        ? { column: context.column.id }
+        : context.row
+          ? { row: context.row.id }
+          : undefined,
+    )
+
     // Включённые уходят в кебаб последними; смену включённости ряд принимает, когда
     // заголовок не тронут (ADR 0156).
     const liveActive = useTableState(table, () =>
       descriptors
-        .filter(action => action.active?.(context) === true)
+        // Кнопка с черновиком держится в ряду, как включённая (ADR 0178, §3).
+        .filter(
+          action =>
+            action.active?.(context) === true ||
+            action.draft?.(context) === true,
+        )
         .map(action => action.id)
         .sort()
         .join(','),

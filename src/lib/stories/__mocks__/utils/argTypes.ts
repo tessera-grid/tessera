@@ -522,6 +522,9 @@ export const serverRowModelMaxBlocksType = numberControl(
 export const enableFailureLogType = booleanControl(
   'Журнал отказов в тулбаре: кнопка со счётчиком, пока есть нерешённые отказы, встаёт только в уже показанный тулбар (плагин `failureLog`)',
 )
+export const enableUnsavedChangesType = booleanControl(
+  'Пульт черновиков в тулбаре: кнопка со счётчиком неприменённых изменений и их список, встаёт только в уже показанный тулбар (плагин `unsavedChanges`)',
+)
 export const enableBackToTopType = booleanControl(
   'Кнопки «наверх» и «к первой колонке» в нижней панели: видны после прокрутки на два экрана, встают только в уже показанную панель (плагин `backToTop`)',
 )

@@ -253,6 +253,26 @@ export interface TableLabels {
   failureLogEmpty: string
   /** Пояснение пустого журнала отказов. */
   failureLogEmptyDescription: string
+  /** Кнопка действия с неприменённым черновиком (ADR 0178, §3). */
+  actionDraft: (action: string) => string
+  /** Включённое действие, у которого есть неприменённое изменение. */
+  actionActiveDraft: (action: string) => string
+  /** Пульт черновиков (ADR 0178, §8): кнопка тулбара и заголовок поповера. */
+  unsavedChanges: string
+  /** Кнопка пульта с числом черновиков. */
+  unsavedChangesButton: (count: number) => string
+  /** Пустой пульт. */
+  unsavedChangesEmpty: string
+  unsavedChangesEmptyDescription: string
+  /** Кнопки записи пульта. */
+  draftShow: string
+  draftApply: string
+  draftDiscard: string
+  /** Кнопки внизу пульта. */
+  draftApplyAll: string
+  draftDiscardAll: string
+  /** Черновик фильтра, который снимает условие. */
+  draftNoFilter: string
   /** Кнопка журнала отказов с числом записей. */
   failureLogButton: (count: number) => string
   /** Закрыть все записи журнала. */
@@ -601,6 +621,19 @@ export const DEFAULT_LABELS = {
   failureLog: 'Failure log',
   failureLogEmpty: 'No failures',
   failureLogEmptyDescription: 'Actions refused by the server will appear here',
+  actionDraft: '{action}, not applied',
+  actionActiveDraft: '{action}, a change is not applied',
+  unsavedChanges: 'Unsaved changes',
+  unsavedChangesButton: 'Unsaved changes: {count}',
+  unsavedChangesEmpty: 'No unsaved changes',
+  unsavedChangesEmptyDescription:
+    'Changes you have not applied yet will appear here',
+  draftShow: 'Show',
+  draftApply: 'Apply',
+  draftDiscard: 'Discard',
+  draftApplyAll: 'Apply all',
+  draftDiscardAll: 'Discard all',
+  draftNoFilter: 'No filter',
   failureLogButton: 'Failures: {count}',
   failureClearAll: 'Clear all',
   failureShow: 'Show',

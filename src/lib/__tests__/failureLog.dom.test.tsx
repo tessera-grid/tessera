@@ -17,7 +17,7 @@ import {
 } from '../core/localization/resolveLabels'
 import { useCreateTable } from '../core/useCreateTable'
 import { failureLog } from '../plugins'
-import { failureTargetText } from '../plugins/failureLog/failureTarget'
+import { objectTargetText } from '../shared/objectTarget'
 import ru from '../stories/__mocks__/localization.ru.json'
 
 ;(
@@ -144,14 +144,18 @@ describe('Журнал отказов (ADR 0177)', () => {
       time: 0,
     })
     expect(
-      failureTargetText(captured, failure({ cell: ['r2', 'name'] }), labels),
+      objectTargetText(
+        captured,
+        failure({ cell: ['r2', 'name'] }).target,
+        labels,
+      ),
     ).toBe('Name / №2')
-    expect(failureTargetText(captured, failure({ row: 'r3' }), labels)).toBe(
-      'Ряд 3',
-    )
-    expect(failureTargetText(captured, failure({ table: true }), labels)).toBe(
-      'Вся таблица',
-    )
+    expect(
+      objectTargetText(captured, failure({ row: 'r3' }).target, labels),
+    ).toBe('Ряд 3')
+    expect(
+      objectTargetText(captured, failure({ table: true }).target, labels),
+    ).toBe('Вся таблица')
     expect(labels.failureLogButton(4)).toBe('Ошибок: 4')
   })
 })

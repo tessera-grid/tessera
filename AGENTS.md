@@ -1060,6 +1060,12 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       `failureLog.dom` (JR4–JR5 — уход решённых и объявление, подписи из словаря), JR7 —
       `check:tree-shaking`, истории «Panels/Failure log» (S6–S7)
       ([ADR 0177](docs/decisions/0177-pending-and-failure-on-the-object.md)).
+    - _Черновики:_ модульные `drafts.dom` (DR1–DR3 — срез, опции ядра, виды плагинов) и
+      `filterDrafts.dom` (DR4–DR5, DR8 — вид `columnFilter`, отказ и отмена — черновиком,
+      клиентский режим), визуальные `filter-drafts` (DR6–DR7, DR9–DR10, DR12 — кольцо на кнопке
+      фильтра, место в ряду, сводка, полая точка кита, axe) и `unsaved-changes` (DR11 — пульт),
+      перф DR13 — в `scroll`, истории «Filtering» S1–S3 и «Panels/Unsaved changes» S4
+      ([ADR 0178](docs/decisions/0178-drafts.md)).
     - _Включённые действия в ряду:_ модульный `slots` (KA1–KA2 — по ширине и по порогу
       включённые уходят в кебаб последними, `mode: 'always'` сворачивает все), визуальный
       `active-actions-row` (KA3, KA5–KA6 — точка на кебабе, включение из кебаба мышью и

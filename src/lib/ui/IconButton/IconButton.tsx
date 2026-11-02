@@ -58,6 +58,11 @@ export interface ActiveProps {
   indicator?: boolean
   /** Тон бабла: `error` — счётчик отказов журнала (ADR 0177, JR1). */
   indicatorTone?: 'active' | 'error'
+  /**
+   * Есть неприменённое (ADR 0178, §4): кольцо вместо точки, кнопка видна без наведения. С
+   * `active` главнее включённое — сплошная точка.
+   */
+  draft?: boolean
 }
 
 /** Кнопка ячейки, заголовка или строки (ADR 0128). */
@@ -110,6 +115,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
       activeIcon,
       indicator = true,
       indicatorTone = 'active',
+      draft,
       className,
       disabledClassName,
       disabled,
@@ -142,11 +148,14 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
     // Своё состояние кнопки видно и без наведения — значок при нём есть (ADR 0149, §4).
     const ownStateShown =
       !!active ||
+      !!draft ||
       !!pending ||
       busy ||
       states.active ||
       !!states['data-pending-leaving']
 
+    // Неприменённое без включённого — кольцо; включённое главнее.
+    const ringed = !active && !!draft
     const icons = useIcons()
     const CancelIcon = icons.cancelAction
     const name = states.armed ? (cancelLabel ?? label) : label
@@ -169,6 +178,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         data-size={size === 'compact' ? size : undefined}
         data-bare={children == null || undefined}
         data-active={active || undefined}
+        data-draft={draft || undefined}
         data-cancel-armed={states.armed || undefined}
         onClick={states.onClick}
         // Взведённый «стоп» отменяет, а не открывает меню, которое триггер открыл бы нажатием.
@@ -184,17 +194,19 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         <RevealedIcon always={ownStateShown} holding={expanded}>
           {active && activeIcon !== undefined ? activeIcon : children}
         </RevealedIcon>
-        {active !== undefined && (
+        {(active !== undefined || draft !== undefined) && (
           <Bubble
-            size={count ? 'sm' : 'dot'}
+            size={count && !ringed ? 'sm' : 'dot'}
             tone={indicatorTone}
+            fill={ringed ? 'outline' : 'solid'}
             className={styles.indicator}
             data-active-indicator=""
-            data-count={count || undefined}
-            data-shown={active && indicator && !states.active}
+            data-count={(!ringed && count) || undefined}
+            data-fill={ringed ? 'outline' : undefined}
+            data-shown={(!!active || !!draft) && indicator && !states.active}
             aria-hidden
           >
-            {count ? countText(count) : null}
+            {count && !ringed ? countText(count) : null}
           </Bubble>
         )}
         {states.armed && (
