@@ -24,8 +24,6 @@ import {
   beginDrag,
   firePointer,
   nextFrame,
-  rowSignatures,
-  sortedRows,
 } from './rowDragging.dnd'
 import {
   type HeldRow,
@@ -55,54 +53,9 @@ const meta = {
 export default meta
 
 /**
- * Демо одной перестановки для панели Interactions. Требования (ручка, облако, ширина,
- * автопрокрутка) — именованные тесты `__tests__/row-dragging.test.tsx`; хореография
- * указателя у демо и тестов общая — `rowDragging.dnd.ts`.
+ * Перетаскивание строк в покое: тяните строку за ручку; таблица выше окна по обеим осям —
+ * у края включается автопрокрутка. Перестановку по шагам показывает гайд «Move».
  */
-const rowDraggingPlay: NonNullable<StoryObj<StoryProps>['play']> = async ({
-  args,
-  canvasElement,
-  globals,
-  step,
-}) => {
-  if (globals.catalog !== true) return
-  // Во время скелета первой загрузки строк данных нет — тянуть нечего.
-  if (!args.enableRowDragging || args.loading === 'initial') return
-
-  const canvas = canvasElement
-
-  await waitFor(() =>
-    expect(canvas.querySelectorAll(ROW).length).toBeGreaterThan(3),
-  )
-
-  await step('drag the first row onto a lower row and drop', async () => {
-    const before = rowSignatures(canvas)
-    const rows = sortedRows(canvas)
-    const handle = rows[0].querySelector<HTMLElement>(HANDLE)!
-    const target = rows[3]
-
-    // Keep x fixed (no horizontal drift) so nesting depth stays 0 on flat data.
-    const { hx } = await beginDrag(handle)
-    const tr = target.getBoundingClientRect()
-    const ty = tr.top + tr.height / 2
-    firePointer('pointermove', document, hx, ty) // over the target row
-    await nextFrame()
-    await nextFrame()
-    firePointer('pointermove', document, hx, ty + 1) // settle collision/over
-    await nextFrame()
-    await nextFrame()
-    firePointer('pointerup', document, hx, ty + 1)
-
-    // Sanity for the demo: the drop reordered the rows.
-    await waitFor(() =>
-      expect(rowSignatures(canvas).join('¦')).not.toBe(before.join('¦')),
-    )
-    // История заканчивается в покое: облако долетело, слот строки снова обычный —
-    // по нему каталог проверяет axe и снимает снимок (ADR 0093).
-    await waitFor(() => expect(canvas.querySelector(OVERLAY)).toBeNull())
-  })
-}
-
 export const RowDraggingPlayground: StoryObj<StoryProps> = {
   name: 'Playground',
   parameters: showControls([
@@ -112,14 +65,11 @@ export const RowDraggingPlayground: StoryObj<StoryProps> = {
   ]),
   args: {
     enableRowDragging: true,
-    // Sized to overflow on both axes so the play's auto-scroll steps (D12–D14)
-    // have real vertical + horizontal scroll to exercise.
     dataCount: 60,
     containerHeight: '400',
     height: '300',
     maxHeight: '300',
   },
-  play: rowDraggingPlay,
 }
 
 // Группы с детьми и плоские корни: строку есть куда вложить и откуда вынести

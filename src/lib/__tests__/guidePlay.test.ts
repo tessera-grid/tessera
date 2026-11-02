@@ -270,10 +270,7 @@ describe('play истории сценария (ADR 0117)', () => {
  * `Playground`, чей `play` ещё делает событие (ADR 0117, SN39): список только
  * сокращается — переведённая история уходит из него, иначе страж падает.
  */
-const PLAYGROUND_BASELINE: Record<string, string> = {
-  'DataGrid.Rows.Dragging.stories.tsx RowDraggingPlayground':
-    'файл в работе по ADR 0137 — перевод после её коммита',
-}
+const PLAYGROUND_BASELINE: Record<string, string> = {}
 
 describe('форма раздела (ADR 0117)', () => {
   it('SN38: история сценария проигрывает гайд — её render, сам или через функции своего файла, рисует GuideStory', async () => {
