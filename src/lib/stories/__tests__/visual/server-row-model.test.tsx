@@ -87,7 +87,11 @@ interface QueryTable {
   ) => Promise<boolean>
   scrollToRow: (
     id: string,
-    options?: { index?: number; align?: 'auto' | 'start' | 'center' | 'end' },
+    options?: {
+      index?: number
+      align?: 'auto' | 'start' | 'center' | 'end'
+      expandParents?: boolean
+    },
   ) => Promise<boolean>
 }
 
@@ -1289,6 +1293,45 @@ describe('Серверная модель строк (ADR 0138)', () => {
         await scrollToIndex(0)
         await expect.poll(() => branch('r1').length).toBe(2)
         await expect.poll(() => rowAt(2)?.dataset.rowId).toBe('r1.0')
+      } finally {
+        await screen.unmount()
+      }
+    })
+
+    test('SD53: scrollToRow к загруженной строке свёрнутой ветки — с expandParents раскрывает предков и прокручивает к строке, без него — false без раскрытия', async () => {
+      const { getRows } = server(treeAnswer)
+      let table: QueryTable | undefined
+      const screen = await render(
+        <Grid
+          getRows={getRows}
+          rowCount={1000}
+          plugins={[rowExpanding({ hasChildren })]}
+          onTable={t => (table = t)}
+        />,
+      )
+      try {
+        await scrollToIndex(300)
+        await expect.poll(() => toggleOf('r300')).not.toBeNull()
+        await humanClick(toggleOf('r300')!)
+        await expect.poll(() => rowOf('r300.4')).not.toBeNull()
+        await humanClick(toggleOf('r300')!)
+        await expect.poll(() => rowOf('r300.4')).toBeNull()
+        await scrollToIndex(0)
+
+        expect(await table!.scrollToRow('r300.4')).toBe(false)
+        expect(rowOf('r300.4')).toBeNull()
+        expect(rowOf('r300')).toBeNull()
+
+        expect(
+          await table!.scrollToRow('r300.4', {
+            expandParents: true,
+            align: 'start',
+          }),
+        ).toBe(true)
+        const row = rowOf('r300.4')!.getBoundingClientRect()
+        const area = scroller().getBoundingClientRect()
+        expect(row.top).toBeGreaterThanOrEqual(area.top)
+        expect(row.bottom).toBeLessThanOrEqual(area.bottom)
       } finally {
         await screen.unmount()
       }

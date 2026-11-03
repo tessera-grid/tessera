@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 /**
- * Показ служебных колонок по условию (ADR 0050, SC1–SC2, SC6, SC8–SC9, SC11): условие
+ * Показ служебных колонок по условию (ADR 0050, SC1–SC2, SC6, SC8–SC9, SC11–SC12): условие
  * смотрит на исходные данные, скрытие — эффективное состояние видимости, сохранённый
  * срез не переписывается.
  * Запуск: npx vitest run --config vitest.node.config.ts
@@ -18,6 +18,7 @@ import {
   rowActions,
   rowExpanding,
   rowSelection,
+  serverRowModel,
 } from '../plugins'
 import { COLUMN_EXPANDING_ID } from '../plugins/rowExpanding/rowExpandingColumn'
 import { COLUMN_SELECTION_ID } from '../plugins/rowSelection/rowSelectionColumn'
@@ -72,6 +73,28 @@ const Host = ({ data, plugins, state, handlers }: Props) => {
 const visible = (id: string) => captured.getColumn(id).getIsVisible()
 
 describe('показ служебных колонок', () => {
+  it('SC12: в серверной модели строк колонка раскрытия при maxDepth < 1 не показана, как в клиентской; при maxDepth ≥ 1 и hasChildren — показана', () => {
+    const getRows = () => new Promise<never>(() => {})
+    const hasChildren = () => true
+    for (const [maxDepth, shown] of [
+      [0, false],
+      [1, true],
+    ] as const) {
+      mount(
+        <Host
+          data={[]}
+          plugins={[
+            serverRowModel({ getRows }),
+            rowExpanding({ hasChildren, maxDepth }),
+          ]}
+        />,
+      )
+      expect(visible(COLUMN_EXPANDING_ID)).toBe(shown)
+      act(() => root?.unmount())
+      root = undefined
+    }
+  })
+
   it('SC1: колонка без presence видна всегда; с presence — только когда условие истинно', () => {
     mount(<Host data={flat} plugins={[rowSelection(), rowExpanding()]} />)
     expect(visible(COLUMN_SELECTION_ID)).toBe(true)

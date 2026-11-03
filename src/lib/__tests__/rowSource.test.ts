@@ -211,7 +211,7 @@ const MODEL_READERS: Record<string, string> = {
   'plugins/columnFilteringModel/options.ts':
     'варианты и счётчики фильтра из данных клиентского режима (ADR 0048)',
   'core/scrollToRow/scrollToRowFeature.ts':
-    'путь до строки в дереве и страница по корню (ADR 0104); незагруженные строки SSRM — этап 3',
+    'путь до строки в дереве и страница по корню клиентского режима (ADR 0104); в SSRM — предки и сквозной индекс источника (SD53)',
   'core/servicePresence.ts':
     'есть ли подстроки в данных — показ служебной колонки (ADR 0050)',
   'plugins/rowDragging/BodyBoundary.tsx':
@@ -239,11 +239,11 @@ const MODEL_READERS: Record<string, string> = {
   'plugins/infiniteScroll/LoadedRowsCount.tsx':
     'лента считает строки в data приложения (ADR 0081); в SSRM инертна (SD26)',
   'plugins/rowExpanding/answerBatch.ts':
-    'ленивые дети клиентского режима (ADR 0066); в SSRM — этап 5',
+    'ленивые дети клиентского режима (ADR 0066); в SSRM дети — блоки ветки источника (ADR 0138, §14)',
   'plugins/rowExpanding/narrowExpanded.ts':
-    'сужение раскрытия по дереву данных (ADR 0039); в SSRM — этап 5',
+    'сужение раскрытия по дереву данных (ADR 0039); в SSRM не сужает (ADR 0160, §1)',
   'plugins/rowExpanding/reconcileLoadedChildren.ts':
-    'согласование ответов ленивых детей с данными (ADR 0054); в SSRM — этап 5',
+    'согласование ответов ленивых детей с данными (ADR 0054); в SSRM дети — блоки ветки источника (ADR 0138, §14)',
   'plugins/rowExpanding/registry.ts':
-    'ленивые дети клиентского режима (ADR 0054); в SSRM — этап 5',
+    'ленивые дети клиентского режима (ADR 0054); в SSRM — hasChildren и ветки источника (ADR 0138, §14)',
 }

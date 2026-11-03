@@ -1,10 +1,13 @@
 /**
  * Хранилище блоков серверной модели строк (ADR 0138; SD7–SD8, SD39, SD47–SD48): очередь
  * запросов, отмена блоков, ушедших из окна, автоповтор отказавшего блока, словарь мест
- * строк дерева и хранилища свёрнутых веток.
+ * строк дерева и хранилища свёрнутых веток; `aria-*` дерева — паритет с клиентским счётом
+ * (SD54).
  * Запуск: npx vitest run --config vitest.node.config.ts serverRowModel
  */
 import { describe, expect, it } from 'vitest'
+
+import { getTreeAria } from '../grid/treeAria'
 
 import {
   type BlockRequest,
@@ -266,5 +269,92 @@ describe('Дерево хранилищ (ADR 0138)', () => {
     await setExpanded(['r1'])
     expect(asked).toEqual(['r1', 'r2', 'r1'])
     expect(tree.rowAt(2)?.id).toBe('r1.0')
+  })
+})
+
+/** Детерминированный генератор: тест воспроизводим. */
+const random = (seed: number) => () => {
+  seed = (seed * 1664525 + 1013904223) % 4294967296
+  return seed / 4294967296
+}
+
+/** Дети узла по id (у корней — ключ `''`), до четырёх уровней. */
+const treeSpec = (next: () => number) => {
+  const children = new Map<string, number>()
+  const grow = (id: string, depth: number) => {
+    const count =
+      depth === 0 ? 3 + Math.floor(next() * 8) : Math.floor(next() * 6)
+    if (depth > 0 && (count === 0 || depth > 3)) return
+    children.set(id, count)
+    for (let k = 0; k < count; k++) {
+      if (next() < 0.5) grow(depth === 0 ? `n${k}` : `${id}.${k}`, depth + 1)
+    }
+  }
+  grow('', 0)
+  return children
+}
+
+const settleAnswers = async () => {
+  for (let tick = 0; tick < 20; tick++) await Promise.resolve()
+}
+
+describe('aria-* дерева серверной модели (ADR 0138, §14)', () => {
+  it('SD54: уровень, место среди соседей и их число у каждой строки раскрытого дерева совпадают с клиентским счётом тела на тех же строках', async () => {
+    const next = random(11)
+    for (let round = 0; round < 100; round++) {
+      const children = treeSpec(next)
+      const idOf = (parent: string | undefined, k: number) =>
+        parent === undefined ? `n${k}` : `${parent}.${k}`
+      const expanded = new Set([...children.keys()].filter(id => id !== ''))
+      const tree = new BlockTree<Item, Item, string>({
+        blockSize: 4,
+        maxBlocks: Number.POSITIVE_INFINITY,
+        rowCount: children.get(''),
+        query: () => 'q',
+        getRows: ({ start, end, parentId }) => {
+          const total = children.get(parentId ?? '') ?? 0
+          return {
+            rows: Array.from(
+              { length: Math.max(0, Math.min(end, total) - start) },
+              (_, i) => ({ id: idOf(parentId, start + i) }),
+            ),
+            rowCount: total,
+          }
+        },
+        toRows: data => data,
+        idOf: row => row.id,
+        expanded: () => expanded,
+        onChange: () => {},
+      })
+      for (let pass = 0, size = -1; size !== tree.count(); pass++) {
+        size = tree.count()
+        tree.setWindow(0, size - 1)
+        await settleAnswers()
+        if (pass > 200) throw new Error('раскладка не устоялась')
+      }
+
+      // Строки тела клиентского режима: то же дерево обходом в глубину.
+      const rows: { id: string; depth: number; parentId?: string }[] = []
+      const walk = (parent: string | undefined, depth: number) => {
+        for (let k = 0; k < (children.get(parent ?? '') ?? 0); k++) {
+          const id = idOf(parent, k)
+          rows.push({ id, depth, parentId: parent })
+          if (expanded.has(id)) walk(id, depth + 1)
+        }
+      }
+      walk(undefined, 0)
+      const client = getTreeAria(rows)
+
+      expect(tree.count()).toBe(rows.length)
+      rows.forEach((row, index) => {
+        const where = `round ${round}, index ${index}`
+        expect(tree.rowAt(index)?.id, where).toBe(row.id)
+        expect(tree.ariaAt(index), where).toEqual({
+          level: row.depth + 1,
+          posInSet: client.posInSet(index),
+          setSize: client.setSize(index),
+        })
+      })
+    }
   })
 })

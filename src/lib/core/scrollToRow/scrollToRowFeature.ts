@@ -146,8 +146,18 @@ const settle = async (
 const indexOf = (table: ScrollTable, rowId: string) =>
   table.getRowSource().indexOf(rowId)
 
-/** Путь от корня до строки в модели до раскрытия: отфильтрованной там нет. */
+/**
+ * Путь от корня до строки в модели до раскрытия: отфильтрованной там нет. У серверной модели
+ * строк — предки загруженной строки из источника (ADR 0138, SD53).
+ */
 const pathTo = (table: ScrollTable, rowId: string): AnyRow[] | undefined => {
+  const source = table.getRowSource()
+  if (source.ancestors) {
+    const row = source.byId(rowId)
+    if (!row) return undefined
+    const path = source.ancestors(rowId).map(id => source.byId(id))
+    return path.every(Boolean) ? [...(path as AnyRow[]), row] : undefined
+  }
   const walk = (rows: AnyRow[], path: AnyRow[]): AnyRow[] | undefined => {
     for (const row of rows) {
       if (row.id === rowId) return [...path, row]
@@ -659,12 +669,26 @@ export const scrollToRow = async (
             },
       )
     }
-    // Строка в модели и в виртуализаторе: грид перерисовался после смены состояния.
+    // Строка в модели и в виртуализаторе: грид перерисовался после смены состояния. На
+    // другой странице серверной модели — по её сквозному индексу (ADR 0158).
+    let pageIndex = -1
     const arrived = await until(() => {
       index = indexOf(table, rowId)
-      return index !== -1 && viewport.rows.options.count > index
+      if (index === -1) {
+        pageIndex = table.getRowSource().listIndexOf?.(rowId) ?? -1
+        return pageIndex !== -1
+      }
+      return viewport.rows.options.count > index
     }, alive)
     if (!arrived) return false
+    if (index === -1) {
+      return toIndex(table, viewport, scroller, pageIndex, alive, {
+        align,
+        behavior,
+        columnId: column?.getIsPinned() ? undefined : columnId,
+        rowId,
+      })
+    }
   }
 
   const placed = await place(

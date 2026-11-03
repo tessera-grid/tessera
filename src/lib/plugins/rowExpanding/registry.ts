@@ -93,13 +93,11 @@ const hasExpandableRows: ServicePresence<RowExpandingOptions> = (
   context,
   o,
 ) => {
-  // Серверная модель строк: строк в модели нет, раскрываемы строки с `hasChildren`
-  // (ADR 0138, §14) и строки-группы серверной группировки (ADR 0144).
-  if (typeof context.options.getRowSource === 'function') {
-    return !!o.hasChildren || context.options.enableGrouping === true
-  }
   if (context.options.enableGrouping === true) return true
   if ((o.maxDepth ?? DEFAULT_MAX_EXPANDING_DEPTH) < 1) return false
+  // Серверная модель строк: строк в модели нет, раскрываемы строки с `hasChildren`
+  // (ADR 0138, §14); строки-группы серверной группировки — выше (ADR 0144).
+  if (typeof context.options.getRowSource === 'function') return !!o.hasChildren
   // Скелет первой загрузки: данных ещё нет, включённое раскрытие держит колонку (SL25).
   if (context.options.loading === 'initial') return true
   if (!table) return undefined
