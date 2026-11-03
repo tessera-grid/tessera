@@ -171,8 +171,12 @@ const nameApplied = async (root: HTMLElement, signal: AbortSignal) => {
     .find(entry => entry.textContent?.includes(NAME))
     ?.querySelector<HTMLElement>('[data-action="apply"]')
     ?.click()
+  // Пульт закрывается после «Применить» анимацией выхода — шаг ждёт её конца.
   await pollUntil(
-    () => filterActive(root, 'name') && allMatch(root, 'name', NAME),
+    () =>
+      filterActive(root, 'name') &&
+      allMatch(root, 'name', NAME) &&
+      !panelOpen(),
     signal,
   )
 }
@@ -210,7 +214,8 @@ const APPLY: readonly GuideStoryStep[] = [
         () =>
           filterActive(root, 'city') &&
           allMatch(root, 'city', CITY) &&
-          countOf() === 0,
+          countOf() === 0 &&
+          !panelOpen(),
         signal,
       )
     }),

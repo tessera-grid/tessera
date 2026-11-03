@@ -49,9 +49,6 @@
   margin-inline-end: calc(-1 * var(--tsr-comp-popup-padding));
   overflow-y: auto;
   scrollbar-gutter: stable;
-  --tsr-comp-popup-scroll-inset: calc(
-    var(--tsr-comp-popup-padding) * 3 - var(--tsr-comp-scrollbar-width)
-  );
 }
 
 /* Тонкий скроллбар у поповера и его списков — как у таблицы (--tsr-comp-scrollbar-width). */

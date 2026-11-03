@@ -209,8 +209,10 @@ const ROW_STEPS: readonly GuideStoryStep[] = [
     title: 'Переход к строке',
     hint: 'Пользователь выбрал переход к строке. Таблица прокрутилась к ней, строка вспыхнула.',
     immediate: true,
+    // Журнал закрывается после перехода анимацией выхода — шаг ждёт её конца.
     enter: untilDone(
-      root => !!rowEl(root, ARCHIVED) && flashed(rowEl(root, ARCHIVED)),
+      root =>
+        !!rowEl(root, ARCHIVED) && flashed(rowEl(root, ARCHIVED)) && !log(),
       root => {
         if (!hasFailures()) return reachArchiveRefusal(root)
         if (!chooseIn(entryOf(ARCHIVED), 'show') && !log()) logButton()!.click()
@@ -270,6 +272,7 @@ export const FailureLogRow: StoryObj<StoryProps> = {
     await step(ROW_STEPS[3]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(flashed(rowEl(canvas, ARCHIVED))).toBe(true))
+      await until(() => expect(log()).toBeNull())
     })
   },
 }
@@ -328,7 +331,7 @@ const OFFSCREEN_STEPS: readonly GuideStoryStep[] = [
     hint: 'Пользователь выбрал переход к ячейке ниже видимой области. Таблица прокрутилась к ней, ячейка вспыхнула; в её углу — отметка отказа.',
     immediate: true,
     enter: untilDone(
-      root => flashed(cellEl(root, FAR)),
+      root => flashed(cellEl(root, FAR)) && !log(),
       () => {
         if (!hasFailures()) return saveInBackground()
         if (!chooseIn(entryOf(FAR), 'show') && !log()) logButton()!.click()
@@ -423,6 +426,7 @@ export const FailureLogOffscreen: StoryObj<StoryProps> = {
     await step(OFFSCREEN_STEPS[3]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(flashed(cellEl(canvas, FAR))).toBe(true))
+      await until(() => expect(log()).toBeNull())
       expect(
         cellEl(canvas, FAR)!.querySelector('[data-cell-issue]'),
       ).not.toBeNull()

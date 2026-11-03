@@ -653,6 +653,10 @@
   --tsr-comp-popup-max-width: 320px;
   /* Наименьшая ширина поповера с подвалом кнопок (ADR 0178, §6). */
   --tsr-comp-popup-min-width: 240px;
+  /* Правый отступ записи прокручиваемого списка: край текста — как у заголовка, полоса — в поле. */
+  --tsr-comp-popup-scroll-inset: calc(
+    var(--tsr-comp-popup-padding) * 3 - var(--tsr-comp-scrollbar-width)
+  );
   /* Разделители внутри меню и панелей: мягче границы контролов. */
   --tsr-comp-popup-divider-color: var(--tsr-sys-border);
   /* Рамка поверхности и пункта под указателем (ADR 0088) — `outline` целиком. */
