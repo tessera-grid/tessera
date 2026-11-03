@@ -36,6 +36,47 @@ export const LARGE = { columnCount: 1000, dataCount: 1000 } as const
 export const PAGED = { columnCount: 30, dataCount: 100_000 } as const
 
 /**
+ * Строки до сохранения (ADR 0178, DR36): `count` новых строк — по одной за каждой
+ * десятой строкой данных, с её значениями, — и `count` удалённых строк между ними.
+ */
+export const rowDraftsSeed = (count: number): TesseraFeatureEntry => {
+  let seeded = false
+  return {
+    id: 'perfRowDrafts',
+    reconcile: table => {
+      const t = table as {
+        getCoreRowModel: () => { rows: { id: string; original: object }[] }
+      }
+      const available = t.getCoreRowModel().rows
+      if (seeded || available.length === 0) {
+        return
+      }
+      seeded = true
+      const drafts = Array.from({ length: count }, (_, i) => {
+        const above = available[i * 10]!
+        return [
+          {
+            kind: 'rowInsert',
+            target: { row: `tsr-new-row:perf-${i}` },
+            value: {
+              values: { ...above.original },
+              index: i * 11 + 1,
+              after: above.id,
+            },
+          },
+          {
+            kind: 'rowDelete',
+            target: { row: available[i * 10 + 5]!.id },
+            value: null,
+          },
+        ]
+      }).flat()
+      setPluginState(table, DRAFTS, drafts)
+    },
+  }
+}
+
+/**
  * Обвязка историй без включённых плагинов: выключенные фабрики в наборе — база гейтов
  * «фича против базы». Край матрицы «без плагинов» — `renderPluginsGrid` (ADR 0004).
  */

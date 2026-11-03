@@ -520,6 +520,15 @@ const opacityOf = (el: Element) => {
 }
 
 /** Элемент виден: есть размер, не скрыт, прозрачность не ниже `min`. */
+/**
+ * Содержимое ячеек удалённой строки (ADR 0178, §7) приглушено, как тело при обновлении
+ * (ADR 0094): текст держит 3:1, а не 4,5:1; колонка действий не приглушена.
+ */
+const DELETED_ROW_CONTENT =
+  '[data-row-draft="deleted"] > .data-grid__body-cell:not([data-actions-column-cell="true"]) > *'
+/** Меньше этой непрозрачности приглушённый узел не виден. */
+const DELETED_ROW_MIN_OPACITY = 0.5
+
 const visible = (el: Element, min = 0.9) => {
   const rect = el.getBoundingClientRect()
   if (rect.width <= 1 || rect.height <= 1) return false
@@ -648,10 +657,12 @@ export const auditRoots = (
       if (disabled(el)) continue
       // Прозрачная краска не рисует ничего: так скрыты кнопки строки до наведения.
       const painted = (color: string) => toRgba(color)[3]! > 0
-      const dimmed = dim !== undefined && !!el.closest('.data-grid__body')
+      const deleted = !!el.closest(DELETED_ROW_CONTENT)
+      const dimmed =
+        (dim !== undefined && !!el.closest('.data-grid__body')) || deleted
       const dimmedBg =
         dimmed &&
-        visible(el, dim * 0.9) &&
+        visible(el, dim !== undefined ? dim * 0.9 : DELETED_ROW_MIN_OPACITY) &&
         ownText(el) &&
         painted(style(el).color)
           ? background(el, 'text')
@@ -845,7 +856,7 @@ export interface AxeOutcome {
 /**
  * axe с `color-contrast` (в повышенном режиме — `color-contrast-enhanced`) по корням,
  * CX7. `dimmed` — тело приглушено обновлением (ADR 0094, GL12): его держит 3:1 аудит
- * узлов, пороги axe к нему не относятся.
+ * узлов, пороги axe к нему не относятся; то же — содержимое удалённой строки (ADR 0178, §7).
  */
 export const runAxe = async (
   label: string,
@@ -857,7 +868,10 @@ export const runAxe = async (
     combo.mode === 'more' ? 'color-contrast-enhanced' : 'color-contrast'
   const outcome: AxeOutcome = { violations: [], problems: [] }
   for (const root of roots) {
-    const exclude = dimmed ? [...root.querySelectorAll('.data-grid__body')] : []
+    const exclude = [
+      ...(dimmed ? root.querySelectorAll('.data-grid__body') : []),
+      ...root.querySelectorAll(DELETED_ROW_CONTENT),
+    ]
     const result = await axe.run(
       { include: [root], exclude },
       { runOnly: [rule] },

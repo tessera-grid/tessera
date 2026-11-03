@@ -283,6 +283,11 @@ export interface TableLabels {
   cellNotSaved: string
   /** Откатить несохранённое значение ячейки. */
   cellDraftRollback: string
+  /** Строки до сохранения (ADR 0178, §7): виды в пульте и откат в колонке действий. */
+  rowInsertDraftKind: string
+  rowDeleteDraftKind: string
+  rowInsertDiscard: string
+  rowDeleteDiscard: string
   /** Кнопка журнала отказов с числом записей. */
   failureLogButton: (count: number) => string
   /** Закрыть все записи журнала. */
@@ -651,6 +656,10 @@ export const DEFAULT_LABELS = {
   draftNow: 'Now',
   cellNotSaved: 'Not saved',
   cellDraftRollback: 'Roll back',
+  rowInsertDraftKind: 'New row',
+  rowDeleteDraftKind: 'Deleted row',
+  rowInsertDiscard: 'Remove row',
+  rowDeleteDiscard: 'Restore row',
   failureLogButton: 'Failures: {count}',
   failureClearAll: 'Clear all',
   failureShow: 'Show',

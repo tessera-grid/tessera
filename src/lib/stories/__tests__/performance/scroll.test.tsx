@@ -30,6 +30,7 @@ import {
   FAST_SCROLL,
   submittedCellsSeed,
   cellDraftsSeed,
+  rowDraftsSeed,
   sortAllColumnsSeed,
   actionStatusSeed,
   highlightSeed,
@@ -295,6 +296,7 @@ const RH8_COST = { ratio: 1.3, plusMs: 4 }
 const HL19_COST = { ratio: 1.3, plusMs: 4 }
 const OF20_COST = { ratio: 1.3, plusMs: 4 }
 const DR21_COST = { ratio: 1.3, plusMs: 4 }
+const DR36_COST = { ratio: 1.3, plusMs: 4 }
 const TG11_COST = { ratio: 1.3, plusMs: 4 }
 const TG18_COST = { ratio: 1.3, plusMs: 4 }
 const OT11_COST = { ratio: 1.3, plusMs: 4 }
@@ -1058,6 +1060,83 @@ describe('Производительность прокрутки — черно
         })
       await record('DR21-base', 'правка по кнопке без черновиков', base, false)
       await record('DR21', '1500 черновиков ячеек', seeded, true)
+
+      for (const axis of ['y', 'x'] as const) {
+        expect(
+          seeded[axis].p95Ms,
+          `${axis} p95=${seeded[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
+        ).toBeLessThanOrEqual(ceiling[axis])
+      }
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Строки до сохранения (ADR 0178, DR36): 1000×1000 с правкой по кнопке и колонкой действий
+// строки, спокойная прокрутка со 100 новыми и 100 удалёнными строками против той же выборки
+// без них.
+describe('Производительность прокрутки — строки до сохранения', () => {
+  test(
+    'DR36: спокойная прокрутка 1000×1000 со 100 новыми и 100 удалёнными строками не дороже той же выборки без них больше чем в 1,3 раза (или 4 мс)',
+    async () => {
+      const measure = async (seeded: boolean) => {
+        const screen = renderGrid({
+          ...LARGE,
+          ...NO_PLUGINS,
+          enableCellEditing: true,
+          cellEditingSaveMode: 'manual',
+          enableRowActions: true,
+          actionsDemo: 'none',
+          extraPlugins: seeded ? [rowDraftsSeed(100)] : [],
+        })
+        await waitForGrid()
+        await expect
+          .poll(
+            () =>
+              document.querySelector('[data-row-draft="inserted"]') !== null &&
+              document.querySelector('[data-row-draft="deleted"]') !== null,
+          )
+          .toBe(seeded)
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        return { y, x }
+      }
+
+      const runs = await againstBase(measure)
+      const base = medianAxes(runs.base)
+      const seeded = medianAxes(runs.variant)
+      const ceiling = axesCeiling(base, DR36_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1000×1000',
+          plugins: 'cellEditing',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: (['y', 'x'] as const).map(axis => ({
+            axis,
+            kind: 'animation' as const,
+            metric: 'p95' as const,
+            valueMs: r[axis].p95Ms,
+            targetMs: ANIMATION_BUDGET_MS,
+            ceilingMs: gated ? ceiling[axis] : undefined,
+            ...r[axis],
+          })),
+        })
+      await record(
+        'DR36-base',
+        'правка по кнопке без строк до сохранения',
+        base,
+        false,
+      )
+      await record('DR36', '100 новых и 100 удалённых строк', seeded, true)
 
       for (const axis of ['y', 'x'] as const) {
         expect(

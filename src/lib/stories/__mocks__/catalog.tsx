@@ -39,6 +39,8 @@ export const CATALOG_STATES = {
     'cellError',
     // Несохранённое значение ячейки: уголок цвета несохранённого (ADR 0178, §6).
     'cellDraft',
+    // Строки до сохранения: новая залита, удалённая приглушена (ADR 0178, §7).
+    'rowDraft',
     'highlight',
     'cellRange',
     'refreshing',

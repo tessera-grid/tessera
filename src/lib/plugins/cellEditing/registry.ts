@@ -18,7 +18,10 @@ import { neverInert } from '../../core/pluginDiagnostics'
 import { CellEditButton } from './CellEditButton'
 import { CellEditField } from './CellEditField'
 import { CellDraftMark } from './CellDraftMark'
-import { cellValueDraftKind } from './cellDrafts'
+import { cellValueDraftKind, rowDeleteKind, rowInsertKind } from './cellDrafts'
+import { rowDraftAction } from './rowDraftActions'
+import { rowDraftsLayer } from './rowDrafts'
+import { rowDraftsFeature } from './rowDraftsFeature'
 import {
   editCellKeyboardAction,
   toggleCellKeyboardAction,
@@ -61,6 +64,10 @@ export interface CellEditingOptions {
 
 export const cellEditing = definePlugin<CellEditingOptions>()({
   id: 'cellEditing',
+  // Методы addRow и removeRow строк до сохранения (ADR 0178, §7).
+  features: { rowDraftsFeature },
+  // Новые строки показывает слой поверх источника строк, а не модель строк.
+  options: () => ({ rowSourceLayer: rowDraftsLayer }),
   // Предикат влияет на отрисовку ячеек: новая ссылка — перерисовка (ADR 0039).
   refreshOn: ['canEditCell'],
   diagnose: neverInert,
@@ -81,7 +88,9 @@ export const cellEditing = definePlugin<CellEditingOptions>()({
   }),
   keyboardActions: [editCellKeyboardAction, toggleCellKeyboardAction],
   // Значение ячейки до сохранения по кнопке (ADR 0178, §5).
-  draftKinds: [cellValueDraftKind],
+  // Строки до сохранения — тем же пакетом (ADR 0178, §7).
+  draftKinds: [cellValueDraftKind, rowInsertKind, rowDeleteKind],
+  slotActions: [rowDraftAction],
   slots: [
     {
       id: 'cellEditing',

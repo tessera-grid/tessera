@@ -794,6 +794,20 @@
   /* Несохранённое (ADR 0178, §4): уголок ячейки, кольцо кнопки, бабл пульта. */
   --tsr-comp-draft-color: var(--tsr-sys-unsaved);
   --tsr-comp-draft-color-fg: var(--tsr-sys-surface);
+  /* Строки до сохранения (ADR 0178, §7): новая залита фоном строки в тоне несохранённого,
+   * закреплённые ячейки — со ступенью тона, как обычные; содержимое удалённой приглушено, как
+   * тело при обновлении данных (ADR 0094): текст держит 3:1. */
+  --tsr-comp-row-new-bg: color-mix(
+    in oklch,
+    var(--tsr-sys-surface),
+    var(--tsr-sys-unsaved) 10%
+  );
+  --tsr-comp-row-new-pinned-bg: color-mix(
+    in oklch,
+    var(--tsr-comp-row-new-bg),
+    var(--tsr-sys-fg) var(--tsr-sys-tint-pinned)
+  );
+  --tsr-comp-row-deleted-opacity: var(--tsr-comp-loader-dim-opacity);
   /* Место бабла (ADR 0136): точка и отметка отказа — отступ от угла внутри кнопки,
    * число — сдвиг за угол долями своего размера по горизонтали и вертикали. */
   --tsr-comp-indicator-inset: 1px;

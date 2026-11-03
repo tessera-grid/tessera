@@ -12,7 +12,11 @@ import {
   cellPendingId,
   hasPending,
 } from '../../core/cancellation'
-import { activeDrafts, discardDraft } from '../../core/drafts/drafts'
+import {
+  activeDrafts,
+  discardDraft,
+  draftKindOf,
+} from '../../core/drafts/drafts'
 import {
   cellFailureOf,
   readFailures,
@@ -112,10 +116,35 @@ const rollbackDraftAction: ContextMenuAction = {
   },
 }
 
+/** Черновик строки, меняющий её вид: новая или удалённая (ADR 0178, §7). */
+const rowDraftOf = (ctx: ContextMenuContext) =>
+  activeDrafts(ctx.table).find(
+    draft =>
+      'row' in draft.target &&
+      draft.target.row === ctx.row.id &&
+      !!draftKindOf(ctx.table, draft.kind)?.rowMark,
+  )
+
+const rollbackRowDraftAction: ContextMenuAction = {
+  id: 'contextMenu:rollbackRowDraft',
+  order: -20,
+  icon: () => <Undo2 width={16} height={16} />,
+  label: (ctx, labels) =>
+    draftKindOf(ctx.table, rowDraftOf(ctx)?.kind ?? '')?.rowMark === 'inserted'
+      ? labels.rowInsertDiscard
+      : labels.rowDeleteDiscard,
+  visible: ctx => !!rowDraftOf(ctx),
+  onSelect: ctx => {
+    const draft = rowDraftOf(ctx)
+    if (draft) discardDraft(ctx.table, draft)
+  },
+}
+
 export const CELL_STATE_ACTIONS: readonly ContextMenuAction[] = [
   cancelSaveAction,
   cancelSlotAction,
   retrySaveAction,
   discardChangeAction,
   rollbackDraftAction,
+  rollbackRowDraftAction,
 ]

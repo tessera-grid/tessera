@@ -75,6 +75,11 @@ export interface MenuAction<TCtx = any> {
   active?: (ctx: TCtx) => boolean
   /** Есть неприменённое (ADR 0178, §3): кольцо на кнопке, кнопка держится в ряду. */
   draft?: (ctx: TCtx) => boolean
+  /**
+   * Кнопка видна без наведения и держится в ряду, без отметки на ней: её цель уже выделена
+   * своим видом (откат строки до сохранения, ADR 0178, §7).
+   */
+  shown?: (ctx: TCtx) => boolean
   /** Разворот действия в НЕСКОЛЬКО пунктов меню (напр. сортировка asc/desc/сброс). */
   menuItems?: (ctx: TCtx, labels: TableLabels) => HeaderMenuItem[]
   /** Необязательный заголовок подгруппы действия в меню (`Menu.GroupLabel`). */

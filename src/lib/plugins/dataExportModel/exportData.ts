@@ -8,7 +8,7 @@ import { type ColumnOptionsDef, optionTextOf } from '../../core/columnOptions'
 import { objectLabelOf } from '../../core/dataTypeFormat'
 import type { ResolvedDataType } from '../../core/dataTypes'
 import { serverRowModelReason } from '../../core/pluginDiagnostics'
-import { rowSourceOf } from '../../core/rowSource'
+import { dataRowSourceOf } from '../../core/rowSource'
 import { rowSelectionValueOf } from '../../core/rowSelectionAll'
 import { serverAggregationsOf } from '../../shared/serverAggregations'
 import type {
@@ -120,7 +120,8 @@ export const exportRowsOf = (
     walk(source.getCoreRowModel().rows, push)
   } else if (scope === 'page') {
     // Строки страницы уже плоские (раскрытые дети — отдельные строки): без обхода.
-    const rows = rowSourceOf<ExportRow>(table)
+    // Строки до сохранения не выгружаются: только данные (ADR 0178, DR34).
+    const rows = dataRowSourceOf<ExportRow>(table)
     for (let index = 0; index < rows.count(); index++) {
       const row = rows.at(index)
       if (row && !row.getIsGrouped?.() && !isPlaceholderRow(row)) push(row)

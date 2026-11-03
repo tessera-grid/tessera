@@ -62,7 +62,11 @@ export interface DraftKind {
    * затем вид (ADR 0178, §5); без поля — данные.
    */
   stage?: 'data' | 'view'
+  /** Черновик строки меняет её вид в теле: новая или удалённая (ADR 0178, §7). */
+  rowMark?: RowDraftMark
 }
+
+export type RowDraftMark = 'inserted' | 'deleted'
 
 export const DRAFTS = 'drafts'
 export const DRAFTS_KEY = pluginStateKey(DRAFTS)
@@ -185,6 +189,32 @@ export const useDraft = (
     indexOf(drafts ?? EMPTY).get(key),
   )
 }
+
+const markOf = (
+  table: unknown,
+  drafts: readonly Draft[] | undefined,
+  rowId: string,
+): RowDraftMark | undefined => {
+  const index = indexOf(drafts ?? EMPTY)
+  for (const kind of draftKindsOf(table)) {
+    if (kind.rowMark && index.has(draftKeyOf(kind.kind, { row: rowId })))
+      return kind.rowMark
+  }
+  return undefined
+}
+
+/** Строка — новая или удалённая черновиком; иначе `undefined`. */
+export const rowDraftMarkOf = (table: unknown, rowId: string) =>
+  markOf(table, readDrafts(table), rowId)
+
+/** Пометка строки черновиком — перерисовывает только строку, чья пометка сменилась. */
+export const useRowDraftMark = (table: unknown, rowId: string) =>
+  useSelector(
+    (table as { atoms?: Record<string, typeof NO_DRAFTS> }).atoms?.[
+      DRAFTS_KEY
+    ] ?? NO_DRAFTS,
+    (drafts?: readonly Draft[]) => markOf(table, drafts, rowId),
+  )
 
 /** Источник без черновиков — у таблицы без записи ядра (хосты тестов). */
 const NO_DRAFTS = {

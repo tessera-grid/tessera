@@ -23,7 +23,7 @@ export const actionLook = (
     active,
     draft,
     /** Кнопка видна без наведения. */
-    shown: !!active || draft,
+    shown: !!active || draft || action.shown?.(context) === true,
     label: named(plain),
     ariaLabel: named(action.ariaLabel?.(context, labels) ?? plain),
   }

@@ -62,10 +62,10 @@ export const ActionsZone = memo(
     // Черновик колонки или строки меняет вид кнопки и её место в ряду (ADR 0178, §3).
     useHasDraftAt(
       table,
-      context.column
-        ? { column: context.column.id }
-        : context.row
-          ? { row: context.row.id }
+      context.row
+        ? { row: context.row.id }
+        : context.column
+          ? { column: context.column.id }
           : undefined,
     )
 
@@ -77,7 +77,8 @@ export const ActionsZone = memo(
         .filter(
           action =>
             action.active?.(context) === true ||
-            action.draft?.(context) === true,
+            action.draft?.(context) === true ||
+            action.shown?.(context) === true,
         )
         .map(action => action.id)
         .sort()

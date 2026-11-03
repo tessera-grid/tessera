@@ -50,8 +50,19 @@ import {
   removeDrafts,
   setDraft as putDraft,
 } from '../../core/drafts/drafts'
+import { commonOptionsOf } from '../../core/commonFeature'
+import {
+  ROW_DELETE_DRAFT,
+  ROW_INSERT_DRAFT,
+  type RowInsertValue,
+  baseIndexOfNewRow,
+  isDeletedRow,
+  isNewRow,
+  writeNewRowValues,
+} from './rowDrafts'
 import type {
   CellEditBatchResult,
+  RowInsertBatchItem,
   CellEditingHooks,
   CellEditingState,
   EditCancelReason,
@@ -261,6 +272,20 @@ const storeCellDraft = (
   value: unknown,
   text: string,
 ) => {
+  if (isNewRow(table, rowId)) {
+    const key = (table as SavedTable).getColumn?.(columnId)?.columnDef
+      .accessorKey
+    if (typeof key !== 'string') {
+      warnNotWritten(table)
+      return
+    }
+    writeNewRowValues(
+      table,
+      rowId,
+      values => setAtPath(values, key, value) as Record<string, unknown>,
+    )
+    return
+  }
   if (
     sameEditValue(table, columnId, value, dataValueOf(table, rowId, columnId))
   ) {
@@ -324,7 +349,8 @@ export const startEditSession = (
   column: { id: string },
   source: DebugActionSource = 'api',
 ) => {
-  if (isCellPending(table, row.id, column.id)) {
+  // Ячейки удалённой строки не правятся (DR28).
+  if (isCellPending(table, row.id, column.id) || isDeletedRow(table, row.id)) {
     return
   }
   const open = readEditSession(table)
@@ -829,24 +855,91 @@ const submitValue = (
   )
 }
 
+/** Черновики строк в полёте по ключу: повторное «Применить всё» их не шлёт (ADR 0178, §5). */
+const rowsInFlight = new WeakMap<object, Set<string>>()
+const inFlightOf = (table: unknown) => {
+  let keys = rowsInFlight.get(table as object)
+  if (!keys) {
+    keys = new Set()
+    rowsInFlight.set(table as object, keys)
+  }
+  return keys
+}
+
+const rowKeyOf = (draft: Draft) =>
+  `${draft.kind}\u0000${(draft.target as { row: string }).row}`
+
+const isRowDraft = (draft: Draft) =>
+  (draft.kind === ROW_INSERT_DRAFT || draft.kind === ROW_DELETE_DRAFT) &&
+  'row' in draft.target
+
+const isServerRows = (table: unknown) =>
+  typeof commonOptionsOf(table).getRowSource === 'function'
+
+type TransactionTable = {
+  applyRowTransaction?: (transaction: {
+    add?: unknown[]
+    index?: number
+    remove?: string[]
+  }) => unknown
+  getRowId?: (row: unknown, index: number) => string
+}
+
+const committing = new WeakSet<object>()
+
+/** Все черновики пакета: открытая правка, ячейки и строки (ADR 0178, §7). */
+export const commitAllDrafts = (table: unknown) => {
+  // «Применить всё» зовёт каждый вид пакета: пакет уходит один раз за проход.
+  if (committing.has(table as object)) return
+  committing.add(table as object)
+  queueMicrotask(() => committing.delete(table as object))
+  const session = readEditSession(table)
+  if (session)
+    saveEdit(
+      table,
+      session.cell,
+      { value: session.draft, text: session.text },
+      readPluginHooks<Partial<CellEditingHooks>>(table as never, ID),
+    )
+  commitDrafts(
+    table,
+    readDrafts(table).filter(
+      draft => draft.kind === CELL_VALUE_DRAFT || isRowDraft(draft),
+    ),
+  )
+}
+
 /**
- * Сохранить черновики ячеек пакетом (ADR 0178, §5, DR17): один вызов `onCommitEdits`; пока
- * промис не решён, ячейки пакета ждут (ожидание на объекте); сохранённые снимают черновик и
- * пишут значение в кэш серверной модели, отказанные — отказ на ячейке, черновик остаётся.
+ * Сохранить черновики пакетом (ADR 0178, §5, §7; DR17, DR30): один вызов `onCommitEdits` —
+ * правки ячеек, новые и удалённые строки; пока промис не решён, ячейки пакета ждут
+ * (ожидание на объекте); сохранённое снимает черновик и пишется в кэш серверной модели,
+ * отказанное — отказ на объекте, черновик остаётся.
  */
 export const commitDrafts = (table: unknown, drafts: readonly Draft[]) => {
   const hooks = readPluginHooks<Partial<CellEditingHooks>>(table as never, ID)
   const inFlight = readEditingState(table).submitted
+  const rowsFlying = inFlightOf(table)
   // Ушедший в пакет и неизменённый черновик повторно не отправляется (ADR 0178, §5).
   const sent = drafts.filter(draft => {
     if (draft.kind !== CELL_VALUE_DRAFT || !('cell' in draft.target))
       return false
+    // Черновики ячеек удалённой строки держатся, но в пакет не идут (DR28).
+    if (isDeletedRow(table, draft.target.cell[0])) return false
     const entry = inFlight[cellKey(...draft.target.cell)]
     return !(
       entry?.status === 'pending' &&
       entry.text === (draft.value as CellDraftValue).text
     )
   })
+  const rowDrafts = drafts.filter(
+    draft => isRowDraft(draft) && !rowsFlying.has(rowKeyOf(draft)),
+  )
+  const insertDrafts = rowDrafts.filter(
+    draft => draft.kind === ROW_INSERT_DRAFT,
+  )
+  const deleteDrafts = rowDrafts.filter(
+    draft => draft.kind === ROW_DELETE_DRAFT,
+  )
   const cells = sent.map(draft => {
     const [rowId, columnId] = (draft.target as { cell: [string, string] }).cell
     const { value, text } = draft.value as CellDraftValue
@@ -858,14 +951,39 @@ export const commitDrafts = (table: unknown, drafts: readonly Draft[]) => {
       original: dataValueOf(table, rowId, columnId),
     }
   })
-  if (cells.length === 0) return
+  const inserts: RowInsertBatchItem[] = insertDrafts.map(draft => {
+    const rowId = (draft.target as { row: string }).row
+    const { values, after } = draft.value as RowInsertValue
+    const index = (table as ReconcileTable).getRowSource().indexOf(rowId)
+    return { rowId, values, index, ...(after ? { after } : {}) }
+  })
+  const deletes = deleteDrafts.map(draft => ({
+    rowId: (draft.target as { row: string }).row,
+  }))
+  if (cells.length === 0 && inserts.length === 0 && deletes.length === 0) return
+  // Место новой строки в кэше серверной модели — до ответа, пока строка стоит в списке.
+  const cacheIndex = new Map(
+    inserts.map(item => [item.rowId, baseIndexOfNewRow(table, item.rowId)]),
+  )
   const controller = new AbortController()
   const attempt = ++lastAttempt
-  const result = hooks.onCommitEdits?.({ cells }, { signal: controller.signal })
+  const result = hooks.onCommitEdits?.(
+    {
+      cells,
+      ...(inserts.length > 0 ? { inserts } : {}),
+      ...(deletes.length > 0 ? { deletes } : {}),
+    },
+    { signal: controller.signal },
+  )
   reportOutcome(table, { plugin: ID, action: 'commit' }, result)
 
   // Ответ — одной записью в каждый срез: ожидание, черновики, вспышки, кэш строк (DR26).
-  const settle = (refused: Map<string, string>, answered: boolean) => {
+  const settle = (
+    refused: Map<string, string>,
+    answered: boolean,
+    savedRows: Map<string, unknown>,
+  ) => {
+    for (const draft of rowDrafts) rowsFlying.delete(rowKeyOf(draft))
     const state = readEditingState(table)
     const submitted = { ...state.submitted }
     const accepted: FlashTarget[] = []
@@ -899,25 +1017,71 @@ export const commitDrafts = (table: unknown, drafts: readonly Draft[]) => {
       rows.set(cell.rowId, row)
       accepted.push(target)
     })
+    // Строки: принятая снимает свой черновик по ключу, удалённая — и черновики своих ячеек.
+    const settledRows = new Set<string>()
+    const add: { row: unknown; index: number | undefined }[] = []
+    const remove: string[] = []
+    for (const draft of rowDrafts) {
+      const rowId = (draft.target as { row: string }).row
+      const error = refused.get(rowId)
+      if (error !== undefined) {
+        reverted.push({ row: rowId })
+        reportRowFailure(table, draft, error)
+        continue
+      }
+      settledRows.add(rowId)
+      if (draft.kind === ROW_DELETE_DRAFT) {
+        remove.push(rowId)
+        continue
+      }
+      const row = savedRows.get(rowId) ?? (draft.value as RowInsertValue).values
+      add.push({ row, index: cacheIndex.get(rowId) })
+      const id = (table as TransactionTable).getRowId?.(row, 0)
+      if (savedRows.has(rowId) && id) accepted.push({ row: id })
+    }
     writeEditingState(table, { ...state, submitted })
     for (const [rowId, values] of rows) writeSavedRow(table, rowId, values)
-    // Снимается только ушедший черновик: переправленный за время ожидания остаётся.
-    removeDrafts(table, draft => saved.has(draft))
+    const t = table as TransactionTable
+    if (isServerRows(table) && t.applyRowTransaction) {
+      for (const { row, index } of add)
+        t.applyRowTransaction({
+          add: [row],
+          ...(index !== undefined ? { index } : {}),
+        })
+      if (remove.length > 0) t.applyRowTransaction({ remove })
+    }
+    // Снимается только ушедший черновик ячейки: переправленный за время ожидания остаётся.
+    removeDrafts(table, draft => {
+      if (saved.has(draft)) return true
+      const target = draft.target
+      if ('row' in target)
+        return isRowDraft(draft) && settledRows.has(target.row)
+      return 'cell' in target && remove.includes(target.cell[0])
+    })
     flashOutcome(table, reverted, 'reverted')
     flashOutcome(table, accepted, 'accepted')
   }
-  const refusedOf = (answer: unknown) =>
-    new Map(
-      ((answer as CellEditBatchResult | undefined)?.refused ?? []).map(item => [
-        cellKey(item.rowId, item.columnId),
-        item.reason,
-      ]),
-    )
+  const answerOf = (answer: unknown) => {
+    const batch = answer as CellEditBatchResult | undefined
+    return {
+      refused: new Map(
+        (batch?.refused ?? []).map(item => [
+          item.columnId === undefined
+            ? item.rowId
+            : cellKey(item.rowId, item.columnId),
+          item.reason,
+        ]),
+      ),
+      saved: new Map((batch?.saved ?? []).map(item => [item.rowId, item.row])),
+    }
+  }
 
   if (!isThenable(result)) {
-    settle(refusedOf(result), false)
+    const { refused, saved } = answerOf(result)
+    settle(refused, false, saved)
     return
   }
+  for (const draft of rowDrafts) rowsFlying.add(rowKeyOf(draft))
   const state = readEditingState(table)
   const submitted = { ...state.submitted }
   for (const cell of cells)
@@ -932,16 +1096,51 @@ export const commitDrafts = (table: unknown, drafts: readonly Draft[]) => {
     }
   writeEditingState(table, { ...state, submitted })
   result.then(
-    answer => settle(refusedOf(answer), true),
+    answer => {
+      const { refused, saved } = answerOf(answer)
+      settle(refused, true, saved)
+    },
     reason => {
       const labels = announcerLabels(table) ?? DEFAULT_LABELS
       const error = rejectionText(reason) ?? labels.saveFailed
       settle(
-        new Map(cells.map(cell => [cellKey(cell.rowId, cell.columnId), error])),
+        new Map([
+          ...cells.map(
+            cell => [cellKey(cell.rowId, cell.columnId), error] as const,
+          ),
+          ...rowDrafts.map(
+            draft => [(draft.target as { row: string }).row, error] as const,
+          ),
+        ]),
         true,
+        new Map(),
       )
     },
   )
+}
+
+/** Отказ строки пакета — отказ на объекте с повтором и откатом (ADR 0177). */
+const reportRowFailure = (table: unknown, draft: Draft, reason: string) => {
+  const labels = announcerLabels(table) ?? DEFAULT_LABELS
+  const rowId = (draft.target as { row: string }).row
+  const label =
+    draft.kind === ROW_INSERT_DRAFT
+      ? labels.rowInsertDraftKind
+      : labels.rowDeleteDraftKind
+  // Отметки у строки нет — вспышка отката, объявление и запись реестра (ADR 0177, OB13).
+  announceLabel(table, all => all.announceSaveFailed(label, reason))
+  reportFailure(table, {
+    label,
+    target: { row: rowId },
+    reason,
+    retry: () => {
+      const current = readDrafts(table).find(
+        item => item.kind === draft.kind && rowKeyOf(item) === rowKeyOf(draft),
+      )
+      if (current) commitDrafts(table, [current])
+    },
+    discard: () => removeDraft(table, draft.kind, { row: rowId }),
+  })
 }
 
 /**

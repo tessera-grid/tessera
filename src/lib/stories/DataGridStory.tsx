@@ -390,6 +390,33 @@ const StoryGrid = memo(
         for (const cell of batch.cells)
           if (!refused.has(`${cell.rowId}\u0000${cell.columnId}`))
             writeCell(cell.rowId, cell.columnId, cell.value)
+        // Строки (ADR 0178, §7): удалённые уходят, новые встают за строкой над ними.
+        const rowRefused = new Set(
+          (answer?.refused ?? [])
+            .filter(item => item.columnId === undefined)
+            .map(item => item.rowId),
+        )
+        const deletes = (batch.deletes ?? []).filter(
+          item => !rowRefused.has(item.rowId),
+        )
+        const inserts = (batch.inserts ?? []).filter(
+          item => !rowRefused.has(item.rowId),
+        )
+        if (deletes.length > 0 || inserts.length > 0)
+          setData(prev => {
+            const removed = new Set(deletes.map(item => item.rowId))
+            const next = prev.filter(row => !removed.has(row.id))
+            for (const item of inserts) {
+              const row =
+                answer?.saved?.find(saved => saved.rowId === item.rowId)?.row ??
+                ({ ...item.values, id: `${item.rowId}:saved` } as never)
+              const at = item.after
+                ? next.findIndex(other => other.id === item.after) + 1
+                : 0
+              next.splice(at, 0, row)
+            }
+            return next
+          })
         return answer
       }
       const saved = options.onCommitEdits?.(batch, context)

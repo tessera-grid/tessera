@@ -72,6 +72,7 @@ export const CORE_OPTIONS: Record<string, string> = {
   refreshOptions: '0094',
   rowCount: '0169',
   rowHeight: '0077',
+  rowSourceLayer: '0178',
   skeletonOptions: '0060',
   slotActions: '0024',
   serverRowCount: '0169',

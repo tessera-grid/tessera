@@ -20,6 +20,7 @@ import {
   type WindowRow,
 } from '../core/bodyContributions'
 import { hasExpandToggle } from '../core/keyboardActions'
+import { useRowDraftMark } from '../core/drafts/drafts'
 import {
   type Highlights,
   type HighlightTargetState,
@@ -255,6 +256,8 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
     contributions,
     contributionContext,
   )
+  // Строка до сохранения: новая или удалённая черновиком (ADR 0178, §7).
+  const draftMark = useRowDraftMark(table, row.id)
   const highlighted = highlightRender([{ layer: 'row', state: highlight }])
   const flashed = flashRender([{ layer: 'row', entry: flash }])
   const navRow = useKeyboardNavigationRow(
@@ -320,6 +323,7 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
       data-selected={row.getIsSelected?.() ?? false}
       data-expanded={canExpand ? isExpanded : undefined}
       data-group-row={row.getIsGrouped?.() ?? false}
+      data-row-draft={draftMark}
       {...highlighted.attrs}
       {...flashed.attrs}
       data-row-odd={virtualRow.index % 2 !== 0}

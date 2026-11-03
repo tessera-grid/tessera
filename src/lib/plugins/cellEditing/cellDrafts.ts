@@ -6,31 +6,19 @@
 import { readPluginHooks } from '../../core/definePlugin'
 import { rowSourceOf } from '../../core/rowSource'
 import { editTextOf } from './editValue'
-import { type DraftKind, readDrafts } from '../../core/drafts/drafts'
+import type { DraftKind } from '../../core/drafts/drafts'
 import {
   CELL_VALUE_DRAFT,
   type CellDraftValue,
   EDIT_SESSION_KEY,
+  commitAllDrafts,
   commitDrafts,
-  readEditSession,
-  saveEdit,
 } from './session'
+import { rowDeleteDraftKind, rowInsertDraftKind } from './rowDrafts'
 import type { CellEditingHooks, CellEditingState } from './types'
 
 const hooksOf = (table: unknown) =>
   readPluginHooks<Partial<CellEditingHooks>>(table as never, 'cellEditing')
-
-/** Открытая правка — в черновик: её значение и текст, как при Enter. */
-const finishOpenEdit = (table: unknown) => {
-  const session = readEditSession(table)
-  if (!session) return
-  saveEdit(
-    table,
-    session.cell,
-    { value: session.draft, text: session.text },
-    hooksOf(table),
-  )
-}
 
 export const cellValueDraftKind: DraftKind = {
   kind: CELL_VALUE_DRAFT,
@@ -46,14 +34,13 @@ export const cellValueDraftKind: DraftKind = {
     return row ? editTextOf(table, columnId, row.getValue(columnId)) : undefined
   },
   apply: (table, draft) => commitDrafts(table, [draft]),
-  applyAll: table => {
-    finishOpenEdit(table)
-    commitDrafts(
-      table,
-      readDrafts(table).filter(draft => draft.kind === CELL_VALUE_DRAFT),
-    )
-  },
+  // Один пакет на ячейки и строки; открытая правка завершается первой (ADR 0178, §7).
+  applyAll: commitAllDrafts,
   openKey: EDIT_SESSION_KEY,
   isOpen: state => !!(state as CellEditingState | undefined)?.active,
   active: table => hooksOf(table).saveMode === 'manual',
 }
+
+/** Виды строк до сохранения — тем же пакетом (ADR 0178, §7). */
+export const rowInsertKind = rowInsertDraftKind(commitDrafts, commitAllDrafts)
+export const rowDeleteKind = rowDeleteDraftKind(commitDrafts, commitAllDrafts)

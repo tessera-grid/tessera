@@ -187,6 +187,11 @@ export interface CommonOptions extends CoreOptions {
   getTotalRowCount?: (table: unknown) => number | undefined
   /** Свой источник строк тела (серверная модель строк, ADR 0138); один объект на таблицу. */
   getRowSource?: (table: unknown) => RowSource
+  /**
+   * Слой поверх источника строк (ADR 0178, §7): строки до сохранения показывает он, а не
+   * модель строк. Нечего показать — тот же источник.
+   */
+  rowSourceLayer?: (source: RowSource, table: unknown) => RowSource
   /** Тело ждёт данных плагина: `aria-busy` таблицы (ADR 0081). */
   getBodyBusy?: (state: object) => boolean
   /** В `data` загружена только часть строк сервера (лента, ADR 0081). */

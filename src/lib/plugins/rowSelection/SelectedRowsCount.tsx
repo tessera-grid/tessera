@@ -8,7 +8,7 @@ import type { RowSelectionState } from '@tanstack/react-table'
 import type { StatusBarComponentProps } from '../../core/createSlots'
 import { pluginStateKey } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
-import { GROUP_ROW_PREFIX, type RowSource } from '../../core/rowSource'
+import { GROUP_ROW_PREFIX, dataRowSourceOf } from '../../core/rowSource'
 import {
   allSelectionOf,
   countSelectionIn,
@@ -50,7 +50,7 @@ export const countHiddenSelectedRows = (
  * серверной группировке — строки данных выборки из ответа; без них — `undefined` (ADR 0144).
  */
 const listTotalOf = (table: unknown) => {
-  const source = (table as { getRowSource: () => RowSource }).getRowSource()
+  const source = dataRowSourceOf(table)
   if (source.leafCount && groupingLength(table) > 0) return source.leafCount()
   // С `subRows` «Выбрать всё» берёт и вложенные строки — строки всего дерева (ADR 0162, §4).
   if (source.subtreeSize && subRowsOf(table))
@@ -67,7 +67,7 @@ const listTotalOf = (table: unknown) => {
 const groupSizeOf = (table: unknown) => (keys: readonly unknown[]) => {
   if (keys.length === 0) return listTotalOf(table)
   if (keys.length !== groupingLength(table)) return undefined
-  const source = (table as { getRowSource: () => RowSource }).getRowSource()
+  const source = dataRowSourceOf(table)
   const row = source.byId(GROUP_ROW_PREFIX + JSON.stringify(keys))
   return row === undefined ? undefined : source.groupChildCount?.(row)
 }
@@ -95,7 +95,7 @@ export const SelectedRowsCount = ({ table }: StatusBarComponentProps) => {
   }
 
   const all = allSelectionOf(selection)
-  const source = (table as { getRowSource: () => RowSource }).getRowSource()
+  const source = dataRowSourceOf(table)
   const exact = all
     ? countSelectionIn(all, groupSizeOf(table), id => source.subtreeSize?.(id))
     : undefined

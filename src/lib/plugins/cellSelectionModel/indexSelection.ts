@@ -76,8 +76,14 @@ interface SelectionTable {
 
 type Method = (...args: never[]) => unknown
 
-export const isIndexSelection = (table: unknown): boolean =>
-  rowSourceOf(table).keyByIndex === true
+/**
+ * По индексам источника — в серверной модели и пока над источником стоит слой строк до
+ * сохранения (ADR 0178, §7): диапазон идёт по видимому списку, а не по модели строк.
+ */
+export const isIndexSelection = (table: unknown): boolean => {
+  const source = rowSourceOf(table)
+  return source.keyByIndex === true || source.base !== undefined
+}
 
 const hasIndexes = (range: CellSelectionRange) =>
   typeof range.anchorRowIndex === 'number' &&
@@ -108,15 +114,19 @@ const selectableColumnIds = (t: SelectionTable): string[] =>
         id => t.getColumn(id)?.columnDef.enableCellSelection !== false,
       )
 
-const rowIndexes = new WeakMap<object, { key: string; index: number }>()
+const rowIndexes = new WeakMap<
+  object,
+  { key: string; list: unknown; index: number }
+>()
 
-/** Место строки в списке; кэш до смены выборки или раскладки. */
+/** Место строки в списке; кэш до смены выборки, раскладки или клиентского списка. */
 const rowIndexOf = (source: RowSource, row: Row): number => {
   const key = `${source.epoch?.() ?? 0}:${source.version?.() ?? 0}`
+  const list = source.rows?.()
   const known = rowIndexes.get(row)
-  if (known?.key === key) return known.index
+  if (known?.key === key && known.list === list) return known.index
   const index = source.indexOf(row.id)
-  rowIndexes.set(row, { key, index })
+  rowIndexes.set(row, { key, list, index })
   return index
 }
 
@@ -133,8 +143,52 @@ const createIndexSelection = (t: SelectionTable) => {
     | undefined
   let warned = false
 
-  const bounds = (): SelectionBounds[] => {
+  /** Серверная модель: диапазон — индексы; клиентская — id строк, индексы по источнику. */
+  const byIndex = () => source().keyByIndex === true
+  const resolve = (range: CellSelectionRange): CellSelectionRange | null => {
+    if (byIndex()) return range
+    const anchorRowIndex =
+      range.anchorRowId !== undefined
+        ? indexOfId(range.anchorRowId)
+        : (range.anchorRowIndex ?? -1)
+    const focusRowIndex =
+      range.focusRowId !== undefined
+        ? indexOfId(range.focusRowId)
+        : (range.focusRowIndex ?? -1)
+    if (anchorRowIndex < 0 || focusRowIndex < 0) return null
+    return { ...range, anchorRowIndex, focusRowIndex }
+  }
+  let resolved:
+    | { ranges: CellSelectionState; list: unknown; value: CellSelectionState }
+    | undefined
+  /** Диапазоны с индексами по видимому списку — одни на срез и список. */
+  const live = (): CellSelectionState => {
     const ranges = rangesOf(t)
+    if (byIndex()) return ranges
+    const list = source().rows?.()
+    if (resolved?.ranges !== ranges || resolved.list !== list) {
+      resolved = {
+        ranges,
+        list,
+        value: ranges.flatMap(range => resolve(range) ?? []),
+      }
+    }
+    return resolved.value
+  }
+  /** Клиентский диапазон хранит и id строк: без слоя его читает стоковая фича. */
+  const withIds = (ranges: CellSelectionState): CellSelectionState =>
+    byIndex()
+      ? ranges
+      : ranges.map(range => ({
+          ...range,
+          anchorRowId: source().at(range.anchorRowIndex ?? -1)?.id,
+          focusRowId: source().at(range.focusRowIndex ?? -1)?.id,
+        }))
+  const write = (updater: (old: CellSelectionState) => CellSelectionState) =>
+    t.setCellSelection(old => withIds(updater(byIndex() ? old : live())))
+
+  const bounds = (): SelectionBounds[] => {
+    const ranges = live()
     const columns = t.getCellSelectionColumnIndexes()
     const count = source().count()
     if (
@@ -147,7 +201,7 @@ const createIndexSelection = (t: SelectionTable) => {
     const operations: BoundsOperation[] = []
     for (const range of ranges) {
       if (!hasIndexes(range)) {
-        if (!warned) {
+        if (!warned && byIndex()) {
           warned = true
           logWarn(
             t as never,
@@ -185,7 +239,7 @@ const createIndexSelection = (t: SelectionTable) => {
   }
 
   const select = (range: CellSelectionRange, mode = 'replace') =>
-    t.setCellSelection(old => {
+    write(old => {
       const next: CellSelectionRange = {
         anchorRowIndex: range.anchorRowIndex,
         focusRowIndex: range.focusRowIndex,
@@ -233,7 +287,7 @@ const createIndexSelection = (t: SelectionTable) => {
     return { rowIndex: nextRow, columnId: landing }
   }
 
-  const activeRange = () => rangesOf(t).at(-1)
+  const activeRange = () => live().at(-1)
 
   const table: Record<string, Method> = {
     getCellSelectionBounds: () => bounds(),
@@ -294,7 +348,7 @@ const createIndexSelection = (t: SelectionTable) => {
       }
       const next = step(active.focusRowIndex!, active.focusColumnId, direction)
       if (!next) return
-      t.setCellSelection(old =>
+      write(old =>
         old.length
           ? [
               ...old.slice(0, -1),
@@ -436,7 +490,7 @@ const createIndexSelection = (t: SelectionTable) => {
         if (rowIndex < 0) return
         const columnId = c.column.id
         const exclude = multi && (cell.getIsSelected!(c) as boolean)
-        t.setCellSelection(old => {
+        write(old => {
           const active = old.at(-1)
           if (range && active && hasIndexes(active)) {
             return [
@@ -468,7 +522,7 @@ const createIndexSelection = (t: SelectionTable) => {
         ) {
           return
         }
-        t.setCellSelection(old =>
+        write(old =>
           old.length
             ? [
                 ...old.slice(0, -1),

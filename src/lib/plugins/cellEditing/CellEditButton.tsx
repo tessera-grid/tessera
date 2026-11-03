@@ -8,6 +8,7 @@
  */
 import { sourceOf } from '../../core/debugActions'
 import type { PluginCellProps } from '../../core/definePlugin'
+import { useRowDraftMark } from '../../core/drafts/drafts'
 import { useLocalization } from '../../core/localization'
 import { useSliceProjection } from '../../core/reactivity'
 import { CellButton } from '../../ui/CellButton/CellButton'
@@ -27,8 +28,11 @@ export const CellEditButton = (props: PluginCellProps<CellEditingHooks>) => {
     (state: CellEditingState) => cellEditingViewOf(state, row.id, column.id),
   )
 
+  // Ячейки удалённой строки не правятся (ADR 0178, §7).
+  const deleted = useRowDraftMark(table, row.id) === 'deleted'
+
   // Ячейка уже в правке — кнопка не нужна.
-  if (view === 'editing') {
+  if (view === 'editing' || deleted) {
     return null
   }
 

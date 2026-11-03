@@ -128,6 +128,8 @@ export interface RowSource<TRow = unknown> {
     last: number,
     signal: AbortSignal,
   ) => Promise<readonly (TRow | undefined)[]>
+  /** Источник под слоем строк до сохранения (ADR 0178, §7): строки данных без новых. */
+  base?: RowSource<TRow>
 }
 
 /** Смена списка: в месте `at` вставлено `delta` строк, при `delta < 0` — удалено. */
@@ -189,3 +191,11 @@ export const createClientRowSource = (table: unknown): RowSource => {
 /** Источник строк таблицы (метод `commonFeature`). */
 export const rowSourceOf = <TRow = unknown>(table: unknown): RowSource<TRow> =>
   (table as { getRowSource: () => RowSource<TRow> }).getRowSource()
+
+/** Строки данных: выгрузка и счётчики не видят строк до сохранения (ADR 0178, §7). */
+export const dataRowSourceOf = <TRow = unknown>(
+  table: unknown,
+): RowSource<TRow> => {
+  const source = rowSourceOf<TRow>(table)
+  return source.base ?? source
+}

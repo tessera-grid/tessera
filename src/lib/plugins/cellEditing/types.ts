@@ -128,14 +128,31 @@ export interface CellEditBatchItem {
   original: unknown
 }
 
-/** Пакет сохранения: правки ячеек (строки — этап 3 ADR 0178). */
-export interface CellEditBatch {
-  cells: readonly CellEditBatchItem[]
+/** Новая строка в пакете (ADR 0178, §7): временный id, значения и место. */
+export interface RowInsertBatchItem {
+  /** Временный id: по нему ответ возвращает сохранённую строку и отказы. */
+  rowId: string
+  values: Record<string, unknown>
+  /** Место в видимом списке. */
+  index: number
+  /** Строка над новой; нет — новая первая. */
+  after?: string
 }
 
-/** Ответ на пакет: отказы части ячеек с причиной; остальные сохранены. */
+/** Пакет сохранения: правки ячеек, новые и удалённые строки. */
+export interface CellEditBatch {
+  cells: readonly CellEditBatchItem[]
+  inserts?: readonly RowInsertBatchItem[]
+  deletes?: readonly { rowId: string }[]
+}
+
+/**
+ * Ответ на пакет: отказы с причиной — по ячейке или, без `columnId`, по строке; остальное
+ * сохранено. `saved` — сохранённые новые строки по временному id.
+ */
 export interface CellEditBatchResult {
-  refused?: readonly { rowId: string; columnId: string; reason: string }[]
+  refused?: readonly { rowId: string; columnId?: string; reason: string }[]
+  saved?: readonly { rowId: string; row: unknown }[]
 }
 
 /** `canEditCell` — условие показа кнопки редактирования по контексту ячейки. */

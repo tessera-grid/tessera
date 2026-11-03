@@ -19,6 +19,7 @@ import * as panelsPaginationStories from './DataGrid.Panels.Pagination.stories'
 import * as panelsToolbarStories from './DataGrid.Panels.Toolbar.stories'
 import panelsFailureLogMeta, * as panelsFailureLogStories from './DataGrid.Panels.FailureLog.stories'
 import panelsUnsavedChangesMeta, * as panelsUnsavedChangesStories from './DataGrid.Panels.UnsavedChanges.stories'
+import rowsEditingMeta, * as rowsEditingStories from './DataGrid.Rows.Editing.stories'
 import * as pluginApiStories from './DataGrid.PluginApi.stories'
 import * as infiniteScrollStories from './DataGrid.DataLoading.InfiniteScroll.stories'
 import * as serverRowModelStories from './DataGrid.DataLoading.ServerRowModel.stories'
@@ -6733,5 +6734,71 @@ export const HighContrastCellDraftRollbackStep2 = {
 export const HighContrastCellDraftRollbackStep3 = {
   ...twinStep(cellsEditingStories, cellsEditingStories.CellDraftRollback, 3),
   name: 'Cells/Editing — Roll back an edit, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastRowEditingPlayground = {
+  ...twin(rowsEditingMeta, rowsEditingStories.RowEditingPlayground),
+  name: 'Rows/Editing — Playground',
+  tags: ['!test'],
+}
+
+export const HighContrastRowDraftInsertStep1 = {
+  ...twinStep(rowsEditingStories, rowsEditingStories.RowDraftInsert, 1),
+  name: 'Rows/Editing — Add a row, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastRowDraftInsertStep2 = {
+  ...twinStep(rowsEditingStories, rowsEditingStories.RowDraftInsert, 2),
+  name: 'Rows/Editing — Add a row, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastRowDraftInsertStep3 = {
+  ...twinStep(rowsEditingStories, rowsEditingStories.RowDraftInsert, 3),
+  name: 'Rows/Editing — Add a row, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastRowDraftInsertStep4 = {
+  ...twinStep(rowsEditingStories, rowsEditingStories.RowDraftInsert, 4),
+  name: 'Rows/Editing — Add a row, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastRowDraftDeleteStep1 = {
+  ...twinStep(rowsEditingStories, rowsEditingStories.RowDraftDelete, 1),
+  name: 'Rows/Editing — Delete and restore a row, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastRowDraftDeleteStep2 = {
+  ...twinStep(rowsEditingStories, rowsEditingStories.RowDraftDelete, 2),
+  name: 'Rows/Editing — Delete and restore a row, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastRowDraftDeleteStep3 = {
+  ...twinStep(rowsEditingStories, rowsEditingStories.RowDraftDelete, 3),
+  name: 'Rows/Editing — Delete and restore a row, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastRowDraftsCommitRefusedStep1 = {
+  ...twinStep(rowsEditingStories, rowsEditingStories.RowDraftsCommitRefused, 1),
+  name: 'Rows/Editing — Refused new row, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastRowDraftsCommitRefusedStep2 = {
+  ...twinStep(rowsEditingStories, rowsEditingStories.RowDraftsCommitRefused, 2),
+  name: 'Rows/Editing — Refused new row, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastRowDraftsCommitRefusedStep3 = {
+  ...twinStep(rowsEditingStories, rowsEditingStories.RowDraftsCommitRefused, 3),
+  name: 'Rows/Editing — Refused new row, шаг 3',
   tags: ['!test'],
 }

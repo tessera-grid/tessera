@@ -115,6 +115,26 @@
 }
 
 /*
+ * Строки до сохранения (ADR 0178, §7): новая залита фоном строки — наведение, выбор и
+ * подсветка ложатся поверх (ADR 0126). У удалённой приглушено всё содержимое ячеек — текст,
+ * значки, свои ячейки, — а не сами ячейки: закреплённые по-прежнему закрывают прокрутку.
+ */
+.body__row[data-row-draft='inserted'] {
+  --tsr-comp-row-bg: var(--tsr-comp-row-new-bg);
+  --tsr-comp-row-odd-bg: var(--tsr-comp-row-new-bg);
+  --tsr-comp-cell-pinned-left-bg: var(--tsr-comp-row-new-pinned-bg);
+  --tsr-comp-cell-pinned-right-bg: var(--tsr-comp-row-new-pinned-bg);
+  --tsr-comp-cell-odd-pinned-left-bg: var(--tsr-comp-row-new-pinned-bg);
+  --tsr-comp-cell-odd-pinned-right-bg: var(--tsr-comp-row-new-pinned-bg);
+}
+
+.body__row[data-row-draft='deleted']
+  > :global(.data-grid__body-cell):not([data-actions-column-cell='true'])
+  > * {
+  opacity: var(--tsr-comp-row-deleted-opacity);
+}
+
+/*
  * Высокая контрастность (ADR 0087): выбор — текст `HighlightText` на `Highlight`,
  * подсветка — `Mark`, наведение — контур без заливки: слой состояния браузер снимает. Кольцо
  * фокуса на `Highlight` — `HighlightText`. Слой прихода не рисуется; из вспышек итога
@@ -192,6 +212,29 @@
 
   .body__row[data-selected='true']:hover::after {
     border-color: HighlightText;
+  }
+
+  /* Новая строка — пунктирная граница, удалённая — текст `GrayText` (ADR 0178, §7). */
+  .body__row[data-row-draft='inserted']::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    pointer-events: none;
+    border: 1px dashed CanvasText;
+  }
+
+  /* Системные цвета не тускнеют полупрозрачностью — вместо неё `GrayText`. */
+  .body__row[data-row-draft='deleted']
+    > :global(.data-grid__body-cell):not([data-actions-column-cell='true'])
+    > * {
+    opacity: 1;
+  }
+
+  .body__row[data-row-draft='deleted']
+    > :global(.data-grid__body-cell):not([data-actions-column-cell='true'])
+    * {
+    color: GrayText;
   }
 }
 
