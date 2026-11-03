@@ -1524,6 +1524,32 @@ describe('показ действий шага (ADR 0117)', () => {
     }
   })
 
+  test('SN62: стирание поля действием шага и до пустой строки доходит событием input со стёртым значением', async () => {
+    const screen = await mount(true)
+    try {
+      await rows().toBeGreaterThan(3)
+      const input = document.createElement('input')
+      document.body.append(input)
+      const setValue = (value: string) =>
+        Object.getOwnPropertyDescriptor(
+          HTMLInputElement.prototype,
+          'value',
+        )!.set!.call(input, value)
+      // Поле уже держит текст: гайд запоминает его при фокусе.
+      setValue('Zelda')
+      input.focus()
+      const values: string[] = []
+      input.addEventListener('input', () => values.push(input.value))
+      setValue('')
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+      await expect.poll(() => values.at(-1), { timeout: 3000 }).toBe('')
+      expect(input.value).toBe('')
+      input.remove()
+    } finally {
+      await screen.unmount()
+    }
+  })
+
   test('SN50: нажатие кнопки мыши не ждёт — волна сразу, нажатие и движение указателя после него доходят без ожидания', async () => {
     const screen = await mount(true)
     try {

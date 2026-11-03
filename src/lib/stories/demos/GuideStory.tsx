@@ -561,6 +561,9 @@ export const GuideStory = ({
       let length = commonStart(from, state.text)
       setFieldValue(field, state.text.slice(0, length))
       state.shown = field.value
+      // Стирание — тоже ввод: без события поле очистилось бы только на вид (SN62).
+      if (state.shown !== from)
+        deliver(new InputEvent('input', { bubbles: true }), field)
       while (state.shown !== state.text) {
         length = Math.min(length + 1, state.text.length)
         setFieldValue(field, state.text.slice(0, length))
