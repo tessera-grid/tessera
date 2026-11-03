@@ -959,6 +959,11 @@
       var(--tsr-sys-unsaved) 70%,
       var(--tsr-sys-fg)
     );
+    --tsr-comp-action-error-color: color-mix(
+      in oklch,
+      var(--tsr-sys-danger) 55%,
+      var(--tsr-sys-fg)
+    );
   }
 }
 
@@ -1023,6 +1028,11 @@
   --tsr-comp-draft-color: color-mix(
     in oklch,
     var(--tsr-sys-unsaved) 70%,
+    var(--tsr-sys-fg)
+  );
+  --tsr-comp-action-error-color: color-mix(
+    in oklch,
+    var(--tsr-sys-danger) 55%,
     var(--tsr-sys-fg)
   );
 }

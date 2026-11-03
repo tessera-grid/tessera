@@ -9,7 +9,12 @@ import themeCss from '../../../ui/theme/theme.css?raw'
 import type { ContrastMode } from '../../../ui/theme'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
-import { columnPinning, infiniteScroll, rowSelection } from '../../../plugins'
+import {
+  columnPinning,
+  failureLog,
+  infiniteScroll,
+  rowSelection,
+} from '../../../plugins'
 import { Segments } from '@/lib/ui/Segments'
 import { Switch } from '@/lib/ui/Switch'
 import { humanClick, renderGrid, rowState } from '../helpers'
@@ -547,6 +552,35 @@ describe('Повышенный контраст (ADR 0088)', () => {
       expect(await enhanced(reason()!)).toEqual([])
     })
     await feed.unmount()
+
+    // Число на бабле отказов: текст на тоне ошибки. Бабл скрыт от дерева доступности —
+    // контраст по вычисленным цветам.
+    let report: ((failure: object) => void) | undefined
+    const Failures = () => {
+      const table = useCreateTable({
+        columns: COLUMNS as never,
+        data: [{ id: 'r0', a: 'A0', b: 'B0', c: 'C0' }],
+        getRowId: (row: Item) => row.id,
+        plugins: [failureLog()] as never,
+      })
+      report = (table as unknown as { reportFailure: typeof report })
+        .reportFailure
+      return <DataGrid table={table as never} contrast="more" />
+    }
+    const failures = await render(<Failures />)
+    report!({ label: 'A', target: { cell: ['r0', 'a'] }, reason: 'No' })
+    const bubble = () =>
+      document.querySelector<HTMLElement>(
+        '[data-testid="failure-log-button"] [data-active-indicator][data-shown="true"]',
+      )
+    await expect.poll(bubble).not.toBeNull()
+    await inBothThemes(async () => {
+      const s = getComputedStyle(bubble()!)
+      expect(
+        contrast(toRgba(s.color), toRgba(s.backgroundColor)),
+      ).toBeGreaterThanOrEqual(7)
+    })
+    await failures.unmount()
 
     // Пункт меню под клавиатурой.
     const { screen: menuGrid, menu } = await openKebabMenu('more')
