@@ -10,7 +10,7 @@ const defaultHooks = {
   columnSorting: { onToggleColumnSort: () => null },
   rowSelection: {
     onSelectRow: () => null,
-    onSelectAllRowsOnPage: () => null,
+    onSelectAllRows: () => null,
     isAllRowsSelected: false,
   },
   rowExpanding: {

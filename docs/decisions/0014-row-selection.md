@@ -220,15 +220,15 @@ Chromium), перформанс — кейсы выбора I1–I2 в перф-
 | RS6 | Переключение строки зовёт hook `onSelectRow(row, selected)` со строкой и следующим состоянием | ✔ `RS6: toggling a row calls …`             |
 | RS7 | Выбранная строка визуально маркируется отдельным фоном                                        | ✔ `RS7: a selected row is visually …`       |
 
-**Чекбокс шапки (выбрать все на странице)**
+**Чекбокс шапки (выбрать все строки охвата `selectAll`, ADR 0179)**
 
 | ID   | Требование                                                               | Тест                                       |
 | ---- | ------------------------------------------------------------------------ | ------------------------------------------ |
-| RS8  | Клик по чекбоксу шапки выбирает все строки страницы                      | ✔ `RS8: the header checkbox selects …`     |
-| RS9  | Когда выбраны все строки страницы — чекбокс шапки `checked`              | ✔ `RS9: when all page rows are selected …` |
+| RS8  | Клик по чекбоксу шапки выбирает все строки охвата                        | ✔ `RS8: the header checkbox selects …`     |
+| RS9  | Когда выбраны все строки охвата — чекбокс шапки `checked`                | ✔ `RS9: when all page rows are selected …` |
 | RS10 | Когда выбрана часть строк — чекбокс шапки `indeterminate` (иконка minus) | ✔ `RS10: when only some page rows …`       |
-| RS11 | Переключение шапки зовёт hook `onSelectAllRowsOnPage(selected)`          | ✔ `RS11: toggling the header calls …`      |
-| RS12 | Клик по `checked`-шапке очищает выбор страницы                           | ✔ `RS12: clicking a checked header …`      |
+| RS11 | Переключение шапки зовёт hook `onSelectAllRows(selected, scope)`         | ✔ `RS11: toggling the header calls …`      |
+| RS12 | Клик по `checked`-шапке очищает выбор строк охвата                       | ✔ `RS12: clicking a checked header …`      |
 
 **Блокировка при внешнем «выбрать всё»**
 

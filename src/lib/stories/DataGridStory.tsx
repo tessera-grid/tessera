@@ -125,7 +125,7 @@ const StoryGrid = memo(
     onTogglePin,
     onToggleColumnSort,
     onSelectRow,
-    onSelectAllRowsOnPage,
+    onSelectAllRows,
     onExpandRow,
     onToggleColumnVisibility,
     onPageChange,
@@ -314,7 +314,7 @@ const StoryGrid = memo(
     // заданные историей аргументы главнее. В консоли истории — под своими именами.
     const demo = loggedCallbacks(consoleLog, {
       onSelectRow: onSelectRow ?? ((): null => null),
-      onSelectAllRowsOnPage: onSelectAllRowsOnPage ?? ((): null => null),
+      onSelectAllRows: onSelectAllRows ?? ((): null => null),
       onTogglePin,
       onToggleColumnSort,
       onExpandRow,
@@ -329,7 +329,7 @@ const StoryGrid = memo(
       options.enableCellErrors && !options.cellErrorsGetCellError
     const demoArgs = {
       rowSelectionOnSelectRow: demo.onSelectRow,
-      rowSelectionOnSelectAllRowsOnPage: demo.onSelectAllRowsOnPage,
+      rowSelectionOnSelectAllRows: demo.onSelectAllRows,
       rowSelectionIsAllRowsSelected: isAllRowsSelected,
       columnPinningOnTogglePin: demo.onTogglePin,
       columnSortingOnToggleColumnSort: demo.onToggleColumnSort,

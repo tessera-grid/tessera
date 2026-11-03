@@ -4580,3 +4580,82 @@ describe('Применить всё — много черновиков', () => 
     PERF_TIMEOUT * 2,
   )
 })
+
+// Охват «Выбрать всё» (ADR 0179, SE16): флажок шапки на 100 000 строк по 100 на странице —
+// охват 'filtered' (все страницы) против 'currentPage' той же выборки. Прогрев выбирает
+// строки охвата, замер снимает выбор.
+const headSelectAll = () =>
+  document.querySelector<HTMLElement>(
+    '.data-grid__head-cell .row-select-checkbox',
+  )
+
+describe('Отзывчивость — охват «Выбрать всё»', () => {
+  test(
+    "SE16: флажок шапки с охватом 'filtered' на 100 000 строк — против 'currentPage' той же выборки",
+    async () => {
+      const measure = async (filtered: boolean) => {
+        await renderGrid({
+          ...PAGED,
+          ...ALL_PLUGINS,
+          ...PAGINATION,
+          paginationInitialPageSize: 100,
+          rowSelectionSelectAll: filtered ? 'filtered' : 'currentPage',
+        } as Parameters<typeof renderGrid>[0])
+        await waitForGrid()
+        await expect.poll(headSelectAll).toBeTruthy()
+        const result = await measureInteractionWork(
+          async () => headSelectAll()!.click(),
+          {
+            afterWarmup: () =>
+              expect(headSelectAll()!.hasAttribute('data-checked')).toBe(true),
+          },
+        )
+        expect(headSelectAll()!.hasAttribute('data-checked')).toBe(false)
+        await cleanup()
+        return result
+      }
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const filtered = medianRun(runs.variant, r => r.longestMs)
+      // Снятие выбора со 100 000 строк — один проход по ним и одна запись среза.
+      const ceiling = ceilingOver(base.longestMs, { ratio: 2, plusMs: 150 })
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '100 000×30',
+          plugins: 'all',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record(
+        'SE16-base',
+        "флажок шапки, охват 'currentPage'",
+        base,
+        false,
+      )
+      await record('SE16', "флажок шапки, охват 'filtered'", filtered, true)
+
+      expect(
+        filtered.longestMs,
+        `'filtered' longest=${filtered.longestMs.toFixed(1)}ms, база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})

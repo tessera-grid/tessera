@@ -1,14 +1,14 @@
 /**
- * «Выбрать все» в шапке колонки выбора. Реактивность на срезе `rowSelection`
- * (`useSlice`); бизнес-колбэки — из пропса `hooks`; группировка/«можно выбрать» —
- * хелперы. Индетерминантность = some && !all: getIsSomePageRowsSelected возвращает
- * true и когда выбраны ВСЕ, поэтому исключаем all явно.
+ * «Выбрать все» в шапке колонки выбора: строки охвата `selectAll` (ADR 0179). Реактивность на
+ * срезе `rowSelection` (`useSlice`); бизнес-колбэки — из пропса `hooks`.
  */
+import type { RowSelectionState } from '@tanstack/react-table'
+
 import { reportAction, sourceOf } from '../../core/debugActions'
 import type { PluginHeaderProps } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
 import { serverRowModelReason } from '../../core/pluginDiagnostics'
-import { useSlice } from '../../core/reactivity'
+import { useSlice, useTableState } from '../../core/reactivity'
 import {
   isWholeSelection,
   rowSelectionValueOf,
@@ -16,10 +16,13 @@ import {
   tableAllSelection,
 } from '../../core/rowSelectionAll'
 import { SelectCheckbox } from '../../ui/SelectCheckbox/SelectCheckbox'
+import { isGroupingActive } from '../rowSelectionModel/selectionHelpers'
 import {
-  getCanSomeRowsSelect,
-  isGroupingActive,
-} from '../rowSelectionModel/selectionHelpers'
+  scopeRowsOf,
+  scopeSelectionOf,
+  selectAllScopeOf,
+  setScopeSelected,
+} from './selectAllScope'
 import type { RowSelectionHooks } from './types'
 
 export const HeadSelectionComponent = ({
@@ -28,14 +31,20 @@ export const HeadSelectionComponent = ({
 }: PluginHeaderProps<Partial<RowSelectionHooks>>) => {
   const labels = useLocalization()
 
-  useSlice(table, 'rowSelection')
+  const selection = (useSlice(table, 'rowSelection') ?? {}) as RowSelectionState
+  // Строки охвата меняются с фильтрами, поиском, страницей и порядком строк.
+  useTableState(table, state => {
+    const { columnFilters, globalFilter, pagination, sorting } =
+      state as unknown as Record<string, unknown>
+    return [columnFilters, globalFilter, pagination, sorting]
+  })
 
   // Активная группировка делает выбор недоступным: прячем «выбрать все».
   if (isGroupingActive(table)) {
     return null
   }
 
-  const { isAllRowsSelected = false, onSelectAllRowsOnPage } = hooks
+  const { isAllRowsSelected = false, onSelectAllRows } = hooks
 
   // Серверная модель строк: «Выбрать всё» — весь итог без загрузки, снятые флажки —
   // исключения (ADR 0138, §9); узлы групп и веток оно сбрасывает (ADR 0148, §2; ADR 0162).
@@ -50,7 +59,7 @@ export const HeadSelectionComponent = ({
         source: sourceOf(event),
       })
       setAllRowsSelected(table, !allSelected)
-      onSelectAllRowsOnPage?.(!allSelected)
+      onSelectAllRows?.(!allSelected, 'all')
     }
     return (
       <SelectCheckbox
@@ -67,27 +76,29 @@ export const HeadSelectionComponent = ({
     )
   }
 
-  const selected = table.getIsAllPageRowsSelected()
-  const indeterminate =
-    table.getIsSomePageRowsSelected() && !table.getIsAllPageRowsSelected()
-  const disabled = isAllRowsSelected || !getCanSomeRowsSelect(table)
+  const scope = selectAllScopeOf(table)
+  const rows = scopeRowsOf(table, scope)
+  const { all, some } = scopeSelectionOf(rows, selection)
+  const selected = all
+  const indeterminate = some && !all
+  const disabled = isAllRowsSelected || rows.length === 0
 
-  const handleSelectAllPageRows = (event: unknown) => {
+  const handleSelectAll = (event: unknown) => {
     reportAction(table, {
       plugin: 'rowSelection',
-      action: 'toggleAllPageRows',
-      detail: { selected: !table.getIsAllPageRowsSelected() },
+      action: scope === 'currentPage' ? 'toggleAllPageRows' : 'toggleAllRows',
+      detail: { selected: !all, scope },
       source: sourceOf(event),
     })
-    table.getToggleAllPageRowsSelectedHandler()(event)
-    onSelectAllRowsOnPage?.(!table.getIsAllPageRowsSelected())
+    setScopeSelected(table, scopeRowsOf(table, scope), !all)
+    onSelectAllRows?.(!all, scope)
   }
 
   return (
     <SelectCheckbox
       selected={selected}
       indeterminate={indeterminate}
-      onClick={handleSelectAllPageRows}
+      onClick={handleSelectAll}
       disabled={disabled}
       label={labels.selectAll}
     />

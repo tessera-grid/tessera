@@ -124,12 +124,12 @@ export interface StoryProps extends CoreOptions, FeatureToggles {
 
   /**
    * Проброс hooks выбора строк (`rowSelection.onSelectRow` /
-   * `onSelectAllRowsOnPage`) наружу. Нужны визуальным тестам, чтобы наблюдать
+   * `onSelectAllRows`) наружу. Нужны визуальным тестам, чтобы наблюдать
    * вызов hook при переключении строки и «выбрать все на странице».
    * В обычных историях не задаются (дефолт — no-op).
    */
   onSelectRow?: RowSelectionHooks['onSelectRow']
-  onSelectAllRowsOnPage?: RowSelectionHooks['onSelectAllRowsOnPage']
+  onSelectAllRows?: RowSelectionHooks['onSelectAllRows']
 
   /**
    * Проброс hook раскрытия строки (`rowExpanding.onExpandRow`) наружу. Нужен

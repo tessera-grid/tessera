@@ -228,6 +228,8 @@ const MODEL_READERS: Record<string, string> = {
     'объявление числа строк после фильтра клиентского режима (ADR 0045)',
   'shared/filtering/FilteredRowsCount.tsx':
     'счётчик «показано N из M» по данным клиентского режима (ADR 0045)',
+  'plugins/rowSelection/selectAllScope.ts':
+    'строки охвата «Выбрать всё» клиентского режима (ADR 0179); в SSRM — срез «всё, кроме»',
   'plugins/rowSelection/SelectedRowsCount.tsx':
     'выбранные строки, скрытые фильтром, по данным клиентского режима (ADR 0045)',
   'plugins/dataExport/ExportPanel.tsx':

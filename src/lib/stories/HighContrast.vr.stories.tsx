@@ -3160,6 +3160,86 @@ export const HighContrastSelectionByRowClickStep3 = {
   tags: ['!test'],
 }
 
+export const HighContrastRowsSelectionSelectAllFilteredStep1 = {
+  ...twinStep(
+    rowsSelectionStories,
+    rowsSelectionStories.RowsSelectionSelectAllFiltered,
+    1,
+  ),
+  name: 'Rows/Selection — Select all found rows, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastRowsSelectionSelectAllFilteredStep2 = {
+  ...twinStep(
+    rowsSelectionStories,
+    rowsSelectionStories.RowsSelectionSelectAllFiltered,
+    2,
+  ),
+  name: 'Rows/Selection — Select all found rows, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastRowsSelectionSelectAllFilteredStep3 = {
+  ...twinStep(
+    rowsSelectionStories,
+    rowsSelectionStories.RowsSelectionSelectAllFiltered,
+    3,
+  ),
+  name: 'Rows/Selection — Select all found rows, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastRowsSelectionSelectAllFilteredStep4 = {
+  ...twinStep(
+    rowsSelectionStories,
+    rowsSelectionStories.RowsSelectionSelectAllFiltered,
+    4,
+  ),
+  name: 'Rows/Selection — Select all found rows, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastRowsSelectionSelectAllFilteredStep5 = {
+  ...twinStep(
+    rowsSelectionStories,
+    rowsSelectionStories.RowsSelectionSelectAllFiltered,
+    5,
+  ),
+  name: 'Rows/Selection — Select all found rows, шаг 5',
+  tags: ['!test'],
+}
+
+export const HighContrastRowsSelectionSelectAllCurrentPageStep1 = {
+  ...twinStep(
+    rowsSelectionStories,
+    rowsSelectionStories.RowsSelectionSelectAllCurrentPage,
+    1,
+  ),
+  name: 'Rows/Selection — Select all on the page, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastRowsSelectionSelectAllCurrentPageStep2 = {
+  ...twinStep(
+    rowsSelectionStories,
+    rowsSelectionStories.RowsSelectionSelectAllCurrentPage,
+    2,
+  ),
+  name: 'Rows/Selection — Select all on the page, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastRowsSelectionSelectAllCurrentPageStep3 = {
+  ...twinStep(
+    rowsSelectionStories,
+    rowsSelectionStories.RowsSelectionSelectAllCurrentPage,
+    3,
+  ),
+  name: 'Rows/Selection — Select all on the page, шаг 3',
+  tags: ['!test'],
+}
+
 export const HighContrastTreeDataReadOnlyStep1 = {
   ...twinStep(rowsTreeDataStories, rowsTreeDataStories.TreeDataReadOnly, 1),
   name: 'Rows/Tree data — Read only, шаг 1',

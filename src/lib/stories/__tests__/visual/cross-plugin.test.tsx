@@ -541,8 +541,11 @@ async function toSecondPage(container: HTMLElement) {
 }
 
 describe('Cross-plugin — pagination', () => {
-  test('X7: the header checkbox selects rows of the current page; the selection survives a page change', async () => {
-    const container = await renderPaged({ enableRowSelection: true })
+  test("X7: with the 'currentPage' scope the selection by id survives a page change and comes back on the previous page", async () => {
+    const container = await renderPaged({
+      enableRowSelection: true,
+      rowSelectionSelectAll: 'currentPage',
+    })
     const headCheckbox = container.querySelector<HTMLElement>(
       `${HEAD_CELL} ${CHECKBOX}`,
     )!

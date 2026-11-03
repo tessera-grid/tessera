@@ -393,8 +393,8 @@ describe('канал действий (ADR 0125)', () => {
       q('.data-grid__head-cell .row-select-checkbox') as HTMLElement,
     )
     await expect
-      .poll(() => lastOf('rowSelection', 'toggleAllPageRows'))
-      .toMatchObject({ source: 'pointer' })
+      .poll(() => lastOf('rowSelection', 'toggleAllRows'))
+      .toMatchObject({ source: 'pointer', detail: { scope: 'filtered' } })
     await humanClick(cellOf(bodyRows()[3]!, 'firstName'))
     await userEvent.keyboard(' ')
     await expect

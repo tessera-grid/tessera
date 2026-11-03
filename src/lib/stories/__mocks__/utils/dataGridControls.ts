@@ -130,6 +130,7 @@ import {
   enableRowExpandingModelType,
   enableTreeLinesType,
   rowHeightType,
+  rowSelectionSelectAllType,
   rowSelectionSelectedCountType,
   rowSelectionModelSubRowsType,
   rowSelectionSubRowsType,
@@ -242,6 +243,7 @@ export const dataGridArgTypes = {
       enableRowSelection: enableRowSelectionType,
       ...when('enableRowSelection', {
         rowSelectionSubRows: rowSelectionSubRowsType,
+        rowSelectionSelectAll: rowSelectionSelectAllType,
         rowSelectionSelectedCount: rowSelectionSelectedCountType,
       }),
       enableRowSelectionModel: enableRowSelectionModelType,
@@ -492,6 +494,7 @@ export const dataGridDefaultArgs = {
   enableRowSelectionModel: false,
   rowSelectionModelSubRows: false,
   rowSelectionSubRows: false,
+  rowSelectionSelectAll: 'filtered',
   rowSelectionSelectedCount: false,
   enableRowExpanding: false,
   rowExpandingMaxDepth: DEFAULT_MAX_EXPANDING_DEPTH,

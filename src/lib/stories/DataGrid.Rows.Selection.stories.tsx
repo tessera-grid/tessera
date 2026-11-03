@@ -7,6 +7,8 @@ import { dataGridMeta } from './dataGridMeta'
 import { vrModes, vrStates } from './__mocks__/catalog'
 import { pressCell, untilDone } from './__mocks__/cellGestures'
 import { makeData } from './__mocks__/data'
+import { filteringColumns, makeFilteringData } from './__mocks__/filteringData'
+import { typeInto } from './__mocks__/typeGuides'
 import {
   bodyRow,
   byTestId,
@@ -29,7 +31,8 @@ import {
 /**
  * Выбор строк (ADR 0014): `Playground` — выбранные строки в покое; S1 — выбор всех
  * строк и смена страницы, S2 — родитель вместе с детьми; выбор щелчком без флажков —
- * S5 ADR 0120; каждая строка дерева сама — S2 ADR 0162.
+ * S5 ADR 0120; каждая строка дерева сама — S2 ADR 0162; охват флажка в заголовке — S1–S2
+ * ADR 0179.
  */
 const meta = {
   ...dataGridMeta,
@@ -70,6 +73,7 @@ export const RowSelectionPlayground: StoryObj<StoryProps> = {
     ...showControls([
       'enableRowSelection',
       'rowSelectionSubRows',
+      'rowSelectionSelectAll',
       'rowSelectionSelectedCount',
     ]),
   },
@@ -175,6 +179,8 @@ export const BatchRowSelection: StoryObj<StoryProps> = {
       args={guideArgs(
         {
           enableRowSelection: true,
+          // Флажок в заголовке — страница: все строки выбирает кнопка приложения.
+          rowSelectionSelectAll: 'currentPage',
           showBatchToolbar: true,
           isAllRowsSelected: false,
           enablePagination: true,
@@ -492,5 +498,195 @@ export const SelectionByRowClick: StoryObj<StoryProps> = {
       expect(rowSelected(canvas, FIRST_CLICKED)).toBe(false)
     })
     await settle()
+  },
+}
+
+// --- ADR 0179, S1–S2 -----------------------------------------------------------------
+
+const SCOPE_ROWS = makeFilteringData(50)
+const SCOPE_PAGE = 5
+const SCOPE_QUERY = 'Paris'
+const FOUND = SCOPE_ROWS.filter(row => row.city === SCOPE_QUERY).length
+const SCOPE_GRID = {
+  columnsOverride: filteringColumns,
+  dataOverride: SCOPE_ROWS,
+  enableRowSelection: true,
+  rowSelectionSelectedCount: true,
+  enablePagination: true,
+  paginationInitialPageSize: SCOPE_PAGE,
+}
+
+const searchField = () => byTestId('quick-search') as HTMLInputElement | null
+const selectedCount = () =>
+  byTestId('selected-rows-count')?.textContent?.trim() ?? ''
+const headChecked = (root: HTMLElement) =>
+  headCheckbox(root)?.getAttribute('aria-checked') === 'true'
+const pageStart = (root: HTMLElement) => rangeText(root).split('–')[0]
+const pagesOfFound = (root: HTMLElement) =>
+  rangeText(root).endsWith(` ${FOUND}`)
+
+/** Пользователь набирает запрос в поле поиска или очищает его. */
+const searchFor = (text: string, done: (root: HTMLElement) => boolean) =>
+  untilDone(done, () => {
+    const field = searchField()
+    if (field && field.value !== text) typeInto(field, text)
+  })
+/** Пользователь отмечает флажок в заголовке, пока строки охвата не выбраны. */
+const checkHead = (root: HTMLElement) => {
+  if (!headChecked(root)) headCheckbox(root)?.click()
+}
+/** Пользователь листает к странице, которая начинается строкой `start`. */
+const toPage = (start: string) => (root: HTMLElement) => {
+  if (pageStart(root) === start) return
+  const action = start === '1' ? 'previous' : 'next'
+  root
+    .querySelector<HTMLElement>(
+      `[data-testid="pagination"] [data-page-action="${action}"]`,
+    )
+    ?.click()
+}
+
+const SELECT_FOUND: readonly GuideStoryStep[] = [
+  {
+    title: 'Строки на страницах',
+    hint: 'Таблица разбита на страницы по пять строк, ни одна строка не выбрана. Над таблицей — поле поиска.',
+    props: () => ({ enableQuickSearch: true, quickSearchDebounceMs: 0 }),
+  },
+  {
+    title: 'Пользователь нашёл строки',
+    hint: 'Пользователь набрал город в поле поиска. Остались строки этого города — на двух страницах.',
+    enter: searchFor(
+      SCOPE_QUERY,
+      root => pagesOfFound(root) && searchField()?.value === SCOPE_QUERY,
+    ),
+  },
+  {
+    title: 'Пользователь выбрал все найденные',
+    hint: 'Пользователь отметил флажок в заголовке. Выбраны все найденные строки — и на другой странице; нижняя панель называет их число.',
+    states: ['body.selection'],
+    enter: untilDone(
+      root => headChecked(root) && selectedCount().includes(String(FOUND)),
+      checkHead,
+    ),
+  },
+  {
+    title: 'Пользователь перешёл на другую страницу',
+    hint: 'Найденные строки следующей страницы тоже выбраны, флажок в заголовке остаётся отмеченным.',
+    states: ['body.selection'],
+    enter: untilDone(
+      root =>
+        pageStart(root) === String(SCOPE_PAGE + 1) &&
+        orderedRows(root).every(selected),
+      toPage(String(SCOPE_PAGE + 1)),
+    ),
+  },
+  {
+    title: 'Пользователь очистил поиск',
+    hint: 'Пользователь очистил поле поиска. Видны все строки; выбраны только найденные, нижняя панель называет то же число.',
+    states: ['body.selection'],
+    enter: untilDone(
+      root => !pagesOfFound(root) && searchField()?.value === '',
+      () => byTestId('quick-search-clear')?.click(),
+    ),
+  },
+]
+
+/** ADR 0179, S1: пользователь находит строки поиском и выбирает все найденные. */
+export const RowsSelectionSelectAllFiltered: StoryObj<StoryProps> = {
+  name: 'Select all found rows',
+  parameters: { scenario: '0179/S1', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Выбор всех найденных строк"
+      steps={SELECT_FOUND}
+      args={guideArgs(SCOPE_GRID, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(SELECT_FOUND[0]!.title, async () => {
+      await waitForRows(canvas)
+      await expect(orderedRows(canvas).some(selected)).toBe(false)
+    })
+    await step(SELECT_FOUND[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(pagesOfFound(canvas)).toBe(true))
+    })
+    await step(SELECT_FOUND[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(selectedCount()).toContain(String(FOUND)))
+      await expect(orderedRows(canvas).every(selected)).toBe(true)
+    })
+    await step(SELECT_FOUND[3]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(pageStart(canvas)).toBe(String(SCOPE_PAGE + 1)))
+      await until(() => expect(orderedRows(canvas).every(selected)).toBe(true))
+      await expect(headChecked(canvas)).toBe(true)
+    })
+    await step(SELECT_FOUND[4]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(pagesOfFound(canvas)).toBe(false))
+      await expect(orderedRows(canvas).every(selected)).toBe(false)
+      await expect(selectedCount()).toContain(String(FOUND))
+      await settle()
+    })
+  },
+}
+
+const SELECT_PAGE: readonly GuideStoryStep[] = [
+  {
+    title: 'Строки на страницах',
+    hint: 'Флажок в заголовке выбирает строки только текущей страницы. Ни одна строка не выбрана.',
+    props: () => ({ rowSelectionSelectAll: 'currentPage' }),
+  },
+  {
+    title: 'Пользователь выбрал строки страницы',
+    hint: 'Пользователь отметил флажок в заголовке. Выбраны пять строк этой страницы, нижняя панель называет их число.',
+    states: ['body.selection'],
+    enter: untilDone(headChecked, checkHead),
+  },
+  {
+    title: 'Пользователь перешёл на другую страницу',
+    hint: 'Строки следующей страницы не выбраны, флажок в заголовке не отмечен. Выбор первой страницы сохранился.',
+    enter: untilDone(
+      root =>
+        pageStart(root) === String(SCOPE_PAGE + 1) &&
+        orderedRows(root).length > 0 &&
+        !orderedRows(root).some(selected),
+      toPage(String(SCOPE_PAGE + 1)),
+    ),
+  },
+]
+
+/** ADR 0179, S2: разработчик ограничивает «Выбрать всё» текущей страницей. */
+export const RowsSelectionSelectAllCurrentPage: StoryObj<StoryProps> = {
+  name: 'Select all on the page',
+  parameters: { scenario: '0179/S2', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Выбор строк страницы"
+      steps={SELECT_PAGE}
+      args={guideArgs(SCOPE_GRID, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(SELECT_PAGE[0]!.title, async () => {
+      await waitForRows(canvas)
+      await expect(orderedRows(canvas).some(selected)).toBe(false)
+    })
+    await step(SELECT_PAGE[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(headChecked(canvas)).toBe(true))
+      await expect(orderedRows(canvas).every(selected)).toBe(true)
+      await expect(selectedCount()).toContain(String(SCOPE_PAGE))
+    })
+    await step(SELECT_PAGE[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(pageStart(canvas)).toBe(String(SCOPE_PAGE + 1)))
+      await expect(orderedRows(canvas).some(selected)).toBe(false)
+      await expect(headChecked(canvas)).toBe(false)
+      await settle()
+    })
   },
 }

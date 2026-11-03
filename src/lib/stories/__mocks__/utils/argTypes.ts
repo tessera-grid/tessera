@@ -332,6 +332,11 @@ export const rowSelectionModelSubRowsType = subRowsControl(
 export const rowSelectionSubRowsType = subRowsControl(
   'Флажки у вложенных строк (`subRows`): `true` — выбор с потомками, `self` — каждая строка сама',
 )
+export const rowSelectionSelectAllType = radioControl(
+  'Что выбирает флажок в шапке: строки после фильтров на всех страницах, текущей страницы или все строки данных (`selectAll`)',
+  ['filtered', 'currentPage', 'all'],
+  'filtered',
+)
 export const rowSelectionSelectedCountType = booleanControl(
   'Счётчик выбранных строк в нижней панели (`selectedCount`)',
 )

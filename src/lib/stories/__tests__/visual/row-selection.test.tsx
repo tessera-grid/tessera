@@ -209,8 +209,8 @@ describe('Row Selection — row checkbox', () => {
   })
 })
 
-describe('Row Selection — header (select all on page)', () => {
-  test('RS8: the header checkbox selects every row on the page', async () => {
+describe('Row Selection — header (select all in the scope)', () => {
+  test('RS8: the header checkbox selects every row in the select-all scope', async () => {
     const container = await renderRowSelection()
     await userEvent.click(headCheckbox(container)!)
 
@@ -225,7 +225,7 @@ describe('Row Selection — header (select all on page)', () => {
       .toBe(false)
   })
 
-  test('RS9: when all page rows are selected the header checkbox is checked', async () => {
+  test('RS9: when all rows in the scope are selected the header checkbox is checked', async () => {
     const container = await renderRowSelection()
     await userEvent.click(headCheckbox(container)!)
 
@@ -260,23 +260,23 @@ describe('Row Selection — header (select all on page)', () => {
       .toBe(false)
   })
 
-  test('RS11: toggling the header calls the `onSelectAllRowsOnPage` hook', async () => {
-    const onSelectAllRowsOnPage = vi.fn()
-    const container = await renderRowSelection({ onSelectAllRowsOnPage })
+  test('RS11: toggling the header calls the `onSelectAllRows` hook with the scope', async () => {
+    const onSelectAllRows = vi.fn()
+    const container = await renderRowSelection({ onSelectAllRows })
 
     await userEvent.click(headCheckbox(container)!)
     await expect
-      .poll(() => onSelectAllRowsOnPage.mock.calls.at(-1)?.[0])
-      .toBe(true)
+      .poll(() => onSelectAllRows.mock.calls.at(-1))
+      .toEqual([true, 'filtered'])
 
     // Clear again → hook fires with false (also restores state).
     await userEvent.click(headCheckbox(container)!)
     await expect
-      .poll(() => onSelectAllRowsOnPage.mock.calls.at(-1)?.[0])
-      .toBe(false)
+      .poll(() => onSelectAllRows.mock.calls.at(-1))
+      .toEqual([false, 'filtered'])
   })
 
-  test('RS12: clicking a checked header checkbox clears the page selection', async () => {
+  test('RS12: clicking a checked header checkbox clears the selection in the scope', async () => {
     const container = await renderRowSelection()
     // Select all…
     await userEvent.click(headCheckbox(container)!)

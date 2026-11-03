@@ -102,7 +102,7 @@ describe('rowSelection', () => {
     ) as any
     expect(resolved.rowSelection.onSelectRow).toBe(onSelectRow)
     // Незаданные ключи scope дополнены дефолтами, а не затёрты частичным слайсом.
-    expect(typeof resolved.rowSelection.onSelectAllRowsOnPage).toBe('function')
+    expect(typeof resolved.rowSelection.onSelectAllRows).toBe('function')
     expect(resolved.rowSelection.isAllRowsSelected).toBe(false)
   })
 
@@ -112,7 +112,7 @@ describe('rowSelection', () => {
     const hooks = table.getHooks() as any
     expect(hooks.rowSelection.onSelectRow).toBe(onSelectRow)
     // Дефолты остального scope на месте.
-    expect(typeof hooks.rowSelection.onSelectAllRowsOnPage).toBe('function')
+    expect(typeof hooks.rowSelection.onSelectAllRows).toBe('function')
   })
 
   it('H3: отключённый плагин (enabled: false) не вносит хуков', () => {

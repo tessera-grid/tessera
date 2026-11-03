@@ -606,7 +606,7 @@ describe('Лента: итог и доступность', () => {
     const own = await mount({
       plugins: [
         rowSelection({
-          onSelectAllRowsOnPage: value => {
+          onSelectAllRows: value => {
             pageSelected = value
           },
         }),
