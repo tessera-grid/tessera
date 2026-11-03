@@ -1,5 +1,5 @@
 import { composeStories } from '@storybook/react'
-import { commands, userEvent } from 'vitest/browser'
+import { commands, page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 import { humanClick } from '../helpers'
@@ -1238,6 +1238,8 @@ describe('показ действий шага (ADR 0117)', () => {
   const pressed = (element: Element) =>
     element.classList.contains('pseudo-active')
   const rings = () => [...document.querySelectorAll('[data-guide-click]')]
+  const guidePanel = () =>
+    document.querySelector<HTMLElement>('[data-testid="guide"]')!
   const rows = () =>
     expect.poll(() => document.querySelectorAll('.data-grid__body-row').length)
 
@@ -1392,7 +1394,7 @@ describe('показ действий шага (ADR 0117)', () => {
     }
   })
 
-  test('SN48: наведение ставит цели вид наведения до наведения на другую цель, ухода указателя, движения настоящей мыши или секунды без событий', async () => {
+  test('SN48: наведение ставит цели вид наведения до наведения на другую цель, ухода указателя, движения настоящей мыши над таблицей или секунды без событий; мышь над панелью его не снимает', async () => {
     const screen = await mount(true)
     try {
       await rows().toBeGreaterThan(3)
@@ -1415,12 +1417,74 @@ describe('показ действий шага (ADR 0117)', () => {
 
       first.dispatchEvent(mouse('pointerover', middle(first)))
       expect(hovered(first)).toBe(true)
-      // Раньше секунды простоя: снимает именно настоящая мышь.
+      // Мышь над панелью гайда — не над таблицей: вид остаётся.
+      await userEvent.hover(guidePanel())
+      expect(hovered(first)).toBe(true)
+      // Раньше секунды простоя: снимает именно настоящая мышь над таблицей.
       const moved = performance.now()
       await userEvent.hover(cellAt(4, 'age'))
       expect(hovered(first)).toBe(false)
       expect(performance.now() - moved).toBeLessThan(900)
     } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('SN60: пока гайд показывает нажатие, настоящая мышь вне таблицы не снимает вид наведения цели и наведение её строки — скрытая кнопка видна до щелчка', async () => {
+    const screen = await mount(true)
+    try {
+      await rows().toBeGreaterThan(3)
+      const button = cellAt(2, 'age').querySelector<HTMLElement>(
+        '.cell__button button',
+      )!
+      // Части панели: переход с одной на другую — `pointerover` вне таблицы.
+      const parts = [
+        ...guidePanel().querySelectorAll<HTMLElement>('button'),
+      ].filter(part => part.getBoundingClientRect().width > 0)
+      expect(parts.length).toBeGreaterThan(1)
+      button.click()
+      await expect.poll(() => hovered(button)).toBe(true)
+      await userEvent.hover(parts[0]!)
+      await userEvent.hover(parts[1]!)
+      expect(pressed(button)).toBe(false)
+      expect(hovered(button)).toBe(true)
+      // Значок скрытой кнопки — только у строки под указателем (ADR 0149, §4).
+      expect(button.querySelector('svg')).not.toBeNull()
+      await expect.poll(() => pressed(button)).toBe(true)
+      expect(button.querySelector('svg')).not.toBeNull()
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('SN61: цель нажатия вне окна страницы сперва прокручивается в окно, затем показ нажатия — по её новому месту', async () => {
+    const { innerWidth: width, innerHeight: height } = window
+    const screen = await mount(true)
+    try {
+      await rows().toBeGreaterThan(3)
+      const cell = cellAt(3, 'country')
+      // Окно ниже ячейки: таблица её показывает, страница — нет.
+      await page.viewport(
+        width,
+        Math.floor(cell.getBoundingClientRect().top) - 20,
+      )
+      scrollTo(0, 0)
+      expect(cell.getBoundingClientRect().bottom).toBeGreaterThan(innerHeight)
+      cell.click()
+      await expect.poll(() => pressed(cell), { timeout: 4000 }).toBe(true)
+      const box = cell.getBoundingClientRect()
+      expect(box.top).toBeGreaterThanOrEqual(0)
+      expect(box.bottom).toBeLessThanOrEqual(innerHeight)
+      const ring = rings().at(-1)!.getBoundingClientRect()
+      const ringX = ring.left + ring.width / 2
+      const ringY = ring.top + ring.height / 2
+      expect(ringX).toBeGreaterThanOrEqual(box.left)
+      expect(ringX).toBeLessThanOrEqual(box.right)
+      expect(ringY).toBeGreaterThanOrEqual(box.top)
+      expect(ringY).toBeLessThanOrEqual(box.bottom)
+    } finally {
+      await page.viewport(width, height)
+      scrollTo(0, 0)
       await screen.unmount()
     }
   })

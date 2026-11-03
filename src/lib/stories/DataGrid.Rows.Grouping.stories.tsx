@@ -246,7 +246,9 @@ const STICKY: readonly GuideStoryStep[] = [
       root => {
         const scroller = scrollerOf(root)
         if (!scroller) return
-        if (stickyIds(root).length === 0) {
+        // Липкую строку выталкивает следующая группа — шеврон наполовину под шапкой:
+        // сперва прокрутка к месту, где она стоит под шапкой целиком.
+        if (stickyIds(root).length === 0 || stickyTop(root) < 0) {
           scroller.scrollTop = rowHeightOf(root) * 3
           return
         }

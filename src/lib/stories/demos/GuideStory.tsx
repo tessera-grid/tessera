@@ -294,6 +294,17 @@ const inView = (cell: HTMLElement) => {
   return !!hit && cell.contains(hit)
 }
 
+/** Цель целиком или частью вне окна страницы. */
+const outsideWindow = (element: Element) => {
+  const box = element.getBoundingClientRect()
+  return (
+    box.top < 0 ||
+    box.left < 0 ||
+    box.bottom > innerHeight ||
+    box.right > innerWidth
+  )
+}
+
 /** Цель встала на место: два кадра подряд без сдвига, не дольше полсекунды. */
 const settledBox = async (element: Element) => {
   let last = element.getBoundingClientRect()
@@ -517,6 +528,9 @@ export const GuideStory = ({
     let replaying = false
     let held: { event: Event; target: EventTarget }[] = []
     let busy = false
+    /** Цель и точка показанного наведения — пока гайд показывает нажатие. */
+    let showing:
+      { target: Element; point: { x: number; y: number } } | undefined
     const known = new WeakMap<Element, string>()
     let typing: { field: TextField; text: string; shown: string } | undefined
     // Жест, уже показанный нажатием: его следующие события на той же цели не ждут.
@@ -561,6 +575,7 @@ export const GuideStory = ({
     const hoverAt = (target: Element, point: { x: number; y: number }) => {
       if (demo!.hovers(target)) return
       demo!.hover(target)
+      showing = { target, point }
       const at = { bubbles: true, clientX: point.x, clientY: point.y }
       deliver(new PointerEvent('pointerover', at), target)
       deliver(new MouseEvent('mouseover', at), target)
@@ -625,6 +640,31 @@ export const GuideStory = ({
           dx = after.left - before.left
           dy = after.top - before.top
         }
+        // Цель вне окна страницы — сперва страница прокручивается к ней (SN61).
+        if (
+          demo &&
+          CLICKING.has(event.type) &&
+          target.isConnected &&
+          outsideWindow(target)
+        ) {
+          const before = target.getBoundingClientRect()
+          target.scrollIntoView({
+            block: 'nearest',
+            inline: 'nearest',
+            behavior: matchMedia('(prefers-reduced-motion: reduce)').matches
+              ? 'auto'
+              : 'smooth',
+          })
+          // Плавная прокрутка дольше полусекунды одного ожидания — ждём до остановки.
+          for (let wait = 0; wait < 4; wait++) {
+            const moving = target.getBoundingClientRect()
+            await settledBox(target)
+            if (target.getBoundingClientRect().top === moving.top) break
+          }
+          const after = target.getBoundingClientRect()
+          dx += after.left - before.left
+          dy += after.top - before.top
+        }
         if (demo && text !== undefined) {
           await typeOut(target as TextField, known.get(target) ?? '', text)
         } else if (demo && CLICKING.has(event.type) && target.isConnected) {
@@ -668,6 +708,7 @@ export const GuideStory = ({
           pressAt(target, point, 'up')
         }
       } finally {
+        showing = undefined
         const queue = held
         held = []
         setBusy(false)
@@ -778,9 +819,23 @@ export const GuideStory = ({
       if (isTextField(event.target) && !known.has(event.target))
         known.set(event.target, event.target.value)
     }
-    // Настоящая мышь — вид наведения уходит: наводит уже человек.
+    // Настоящая мышь над таблицей — вид наведения уходит: наводит уже человек. Указатель,
+    // который шевелится над панелью гайда, показу нажатия не мешает.
     const onRealMove = (event: Event) => {
-      if (event.isTrusted) demo?.unhover()
+      if (event.isTrusted && area.contains(event.target as Node))
+        demo?.unhover()
+    }
+    // Указатель перешёл на другой элемент вне таблицы — грид снял наведение строки и спрятал
+    // её кнопки; пока гайд показывает нажатие, наведение строки возвращается.
+    const onRealOver = (event: Event) => {
+      if (!event.isTrusted || !showing || area.contains(event.target as Node))
+        return
+      const at = {
+        bubbles: true,
+        clientX: showing.point.x,
+        clientY: showing.point.y,
+      }
+      deliver(new PointerEvent('pointerover', at), showing.target)
     }
     // Нажатие по панели гайда — человеком или тестом каталога — не закрывает меню и
     // поповеры таблицы (SN53). Фокус в поле ввода и поповере остаётся (SN35), иначе он
@@ -809,6 +864,7 @@ export const GuideStory = ({
     document.body.addEventListener('click', keepPopupsOnClick)
     document.addEventListener('focusin', onFocus, true)
     document.addEventListener('mousemove', onRealMove, true)
+    document.addEventListener('pointerover', onRealOver, true)
     return () => {
       for (const type of HELD) document.removeEventListener(type, onEvent, true)
       for (const type of PANEL_PRESS)
@@ -816,6 +872,7 @@ export const GuideStory = ({
       document.body.removeEventListener('click', keepPopupsOnClick)
       document.removeEventListener('focusin', onFocus, true)
       document.removeEventListener('mousemove', onRealMove, true)
+      document.removeEventListener('pointerover', onRealOver, true)
       demo?.dispose()
     }
   }, [showActions])
