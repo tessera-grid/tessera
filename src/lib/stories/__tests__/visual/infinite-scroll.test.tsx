@@ -601,41 +601,6 @@ describe('Лента: итог и доступность', () => {
     expect(document.activeElement).toBe(before)
   })
 
-  test('IS13: «выбрать всё» — с isAllRowsSelected серверный контракт, без него только загруженные строки', async () => {
-    let pageSelected: boolean | undefined
-    const own = await mount({
-      plugins: [
-        rowSelection({
-          onSelectAllRows: value => {
-            pageSelected = value
-          },
-        }),
-      ],
-    })
-    const head = () =>
-      document.querySelector<HTMLElement>(
-        '.data-grid__head [role="checkbox"], .data-grid__head input[type="checkbox"]',
-      )!
-    await humanClick(head())
-    await frames()
-    const selection = table.store.get().rowSelection as Record<string, boolean>
-    expect(Object.keys(selection)).toHaveLength(30)
-    expect(Object.keys(selection).sort(), JSON.stringify(selection)).toEqual(
-      itemsFrom(0, 30)
-        .map(row => row.id)
-        .sort(),
-    )
-    expect(pageSelected).toBeDefined()
-    await own.unmount()
-
-    await mount({ plugins: [rowSelection({ isAllRowsSelected: true })] })
-    expect(
-      head().getAttribute('aria-disabled') === 'true' ||
-        head().hasAttribute('disabled') ||
-        head().hasAttribute('data-disabled'),
-    ).toBe(true)
-  })
-
   test('IS14: выгрузка — на сервере (dataMode.export) серверная, без него вариант all подписан «Loaded rows (N)»', async () => {
     const rowsLabel = async () => {
       await userEvent.click(

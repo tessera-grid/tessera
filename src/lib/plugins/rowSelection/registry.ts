@@ -7,6 +7,10 @@ import type { RowData, TableFeatures } from '@tanstack/react-table'
 
 import { definePlugin } from '../../core/definePlugin'
 import {
+  serverRowModelReason,
+  warnPluginInert,
+} from '../../core/pluginDiagnostics'
+import {
   rowSelectionModel,
   rowSelectionModelFeatures,
   type RowSelectionModelOptions,
@@ -38,7 +42,6 @@ export interface RowSelectionOptions extends Omit<
    */
   onSelectRow?: RowSelectionHooks['onSelectRow']
   onSelectAllRows?: RowSelectionHooks['onSelectAllRows']
-  isAllRowsSelected?: RowSelectionHooks['isAllRowsSelected']
 }
 
 // TOptions (RowSelectionOptions) задаётся ОДИН раз дженериком; `o` в полях выводится.
@@ -56,10 +59,20 @@ export const rowSelection = definePlugin<RowSelectionOptions>()({
   features: rowSelectionModelFeatures,
   hooks: o => ({
     onSelectRow: o.onSelectRow,
-    onSelectAllRows: o.onSelectAllRows,
-    isAllRowsSelected: o.isAllRowsSelected, // undefined-ключи отбросит definePlugin
+    onSelectAllRows: o.onSelectAllRows, // undefined-ключи отбросит definePlugin
   }),
   options: o => ({ rowSelectionSelectAll: o.selectAll ?? 'filtered' }),
+  // Охват серверной модели строк — весь итог выборки (ADR 0179, §4): страница не охват.
+  setup: o => table => {
+    if (o.selectAll === 'currentPage' && serverRowModelReason(table)) {
+      warnPluginInert(
+        table,
+        'rowSelection',
+        'serverRowModel',
+        `selectAll: 'currentPage' acts as 'all' with the server row model`,
+      )
+    }
+  },
   keyboardActions: [toggleRowKeyboardAction],
   // Opt-in: у гридов с выбором строк нижняя панель не появляется сама.
   slots: o =>

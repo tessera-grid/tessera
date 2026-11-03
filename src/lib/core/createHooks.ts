@@ -11,7 +11,6 @@ const defaultHooks = {
   rowSelection: {
     onSelectRow: () => null,
     onSelectAllRows: () => null,
-    isAllRowsSelected: false,
   },
   rowExpanding: {
     onExpandRow: () => null,

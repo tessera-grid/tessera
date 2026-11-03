@@ -9,7 +9,10 @@ import { objectLabelOf } from '../../core/dataTypeFormat'
 import type { ResolvedDataType } from '../../core/dataTypes'
 import { serverRowModelReason } from '../../core/pluginDiagnostics'
 import { dataRowSourceOf } from '../../core/rowSource'
-import { rowSelectionValueOf } from '../../core/rowSelectionAll'
+import {
+  rowSelectionValueOf,
+  tableAllSelection,
+} from '../../core/rowSelectionAll'
 import { serverAggregationsOf } from '../../shared/serverAggregations'
 import type {
   ExportColumn,
@@ -144,12 +147,16 @@ export const exportRowsOf = (
 /** Id выбранных строк из среза `rowSelection` — по всем страницам, в том числе не загруженным. */
 /**
  * Серверная модель строк (ADR 0138, §10): серверу нужна выборка и срез выбора, строк у
- * грида нет. Без неё — пусто.
+ * грида нет. Без неё — срез «всё, кроме» страницы с сервера и ленты (ADR 0179, §3), иначе
+ * пусто.
  */
 export const serverRowsRequestOf = (
   table: unknown,
 ): Pick<ExportRequest, 'query' | 'selection'> => {
-  if (!serverRowModelReason(table)) return {}
+  if (!serverRowModelReason(table)) {
+    const all = tableAllSelection(table)
+    return all ? { selection: all } : {}
+  }
   const state = (
     table as { store: { get: () => Record<string, unknown> } }
   ).store.get()

@@ -4,6 +4,7 @@
  */
 import type { RowSelectionState } from '@tanstack/react-table'
 
+import { knownCount, partialRowsReason, rowCountOf } from '../../core/dataMode'
 import type { TableLabels } from '../../core/localization'
 import {
   allSelectionOf,
@@ -20,8 +21,12 @@ export const countSelectedRows = (selection: RowSelectionState | undefined) =>
 /**
  * Строк в списке для «всё, кроме»: итог, а пока он неизвестен — строк в списке. При
  * серверной группировке — строки данных выборки из ответа; без них — `undefined` (ADR 0144).
+ * Страница с сервера и лента — итог `rowCount` таблицы, неизвестен — `undefined` (ADR 0179).
  */
 const listTotalOf = (table: unknown) => {
+  const partial = partialRowsReason(table)
+  if (partial === 'serverPage' || partial === 'feed')
+    return knownCount(rowCountOf(table))
   const source = dataRowSourceOf(table)
   if (source.leafCount && groupingLength(table) > 0) return source.leafCount()
   // С `subRows` «Выбрать всё» берёт и вложенные строки — строки всего дерева (ADR 0162, §4).

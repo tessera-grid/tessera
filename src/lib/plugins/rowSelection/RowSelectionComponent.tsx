@@ -44,8 +44,6 @@ export const RowSelectionComponent = ({
     return null
   }
 
-  const { isAllRowsSelected = false } = hooks
-
   const handleSelectRow = (event: unknown) => {
     reportAction(table, {
       plugin: 'rowSelection',
@@ -68,7 +66,7 @@ export const RowSelectionComponent = ({
       selected={selected}
       indeterminate={indeterminate}
       onClick={handleSelectRow}
-      disabled={!canSelect || isAllRowsSelected}
+      disabled={!canSelect}
       label={group ? labels.selectGroup : labels.selectRow}
     />
   )

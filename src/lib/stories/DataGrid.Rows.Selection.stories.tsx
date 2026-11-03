@@ -106,38 +106,23 @@ const pageSelected = (root: HTMLElement) => {
 }
 const rangeText = (root: HTMLElement) =>
   root.querySelector('[data-testid="pagination-range"]')?.textContent ?? ''
-const batchButton = () =>
-  byTestId('batch-toolbar')?.querySelector<HTMLButtonElement>('button') ?? null
-const allSelected = () => !!batchButton()?.textContent?.includes(String(ROWS))
+const countText = () =>
+  byTestId('selected-rows-count')?.textContent?.trim() ?? ''
+const allSelected = () => countText().includes(String(ROWS))
 
-/** Пользователь отмечает флажок в заголовке, пока строки страницы не выбраны. */
-const selectPage = (root: HTMLElement) => {
-  if (!pageSelected(root)) headCheckbox(root)?.click()
-}
-/** Пользователь выбирает все строки кнопкой приложения. */
+/** Пользователь отмечает флажок в заголовке, пока строки не выбраны. */
 const selectAll = (root: HTMLElement) => {
-  if (!pageSelected(root)) selectPage(root)
-  else if (!allSelected()) batchButton()?.click()
+  if (!pageSelected(root)) headCheckbox(root)?.click()
 }
 
 const ALL_ROWS: readonly GuideStoryStep[] = [
   {
     title: 'Строки не выбраны',
     hint: 'Таблица разбита на страницы, ни одна строка не выбрана.',
-    // Приложение хранит признак «выбраны все» и обновляет его по кнопке.
-    props: ({ app }) => ({
-      updateArgs: change => app.update(prev => ({ ...prev, ...change })),
-    }),
-  },
-  {
-    title: 'Пользователь выбрал строки на странице',
-    hint: 'Пользователь отметил флажок в заголовке. Выбраны строки текущей страницы, приложение предлагает выбрать все строки.',
-    states: ['body.selection'],
-    enter: untilDone(pageSelected, selectPage),
   },
   {
     title: 'Пользователь выбрал все строки',
-    hint: 'Выбраны все строки таблицы, приложение показывает их число.',
+    hint: 'Пользователь отметил флажок в заголовке. Выбраны все строки таблицы — и на других страницах; нижняя панель называет их число.',
     states: ['body.selection'],
     enter: untilDone(root => pageSelected(root) && allSelected(), selectAll),
   },
@@ -179,10 +164,7 @@ export const BatchRowSelection: StoryObj<StoryProps> = {
       args={guideArgs(
         {
           enableRowSelection: true,
-          // Флажок в заголовке — страница: все строки выбирает кнопка приложения.
-          rowSelectionSelectAll: 'currentPage',
-          showBatchToolbar: true,
-          isAllRowsSelected: false,
+          rowSelectionSelectedCount: true,
           enablePagination: true,
           paginationInitialPageSize: PAGE,
           dataCount: ROWS,
@@ -199,16 +181,10 @@ export const BatchRowSelection: StoryObj<StoryProps> = {
     })
     await step(ALL_ROWS[1]!.title, async () => {
       await guideNext(canvas)
-      await until(() => expect(pageSelected(canvas)).toBe(true))
-      await expect(batchButton()).not.toBeNull()
-      await expect(allSelected()).toBe(false)
-    })
-    await step(ALL_ROWS[2]!.title, async () => {
-      await guideNext(canvas)
       await until(() => expect(allSelected()).toBe(true))
       await expect(pageSelected(canvas)).toBe(true)
     })
-    await step(ALL_ROWS[3]!.title, async () => {
+    await step(ALL_ROWS[2]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(rangeText(canvas)).toMatch(/^6–/)

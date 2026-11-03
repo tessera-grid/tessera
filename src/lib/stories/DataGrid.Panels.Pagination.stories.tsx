@@ -2,11 +2,14 @@ import { Meta, StoryObj } from '@storybook/react'
 import { expect } from 'storybook/test'
 
 import type { TesseraFeatureEntry } from '../core/features'
+import { isAllSelection } from '../core/rowSelectionAll'
+import type { ExportRequest } from '../plugins'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import { vrStates } from './__mocks__/catalog'
 import {
   byTestId,
+  bodyRow,
   consoleText,
   firstRowText,
   guideNext,
@@ -18,6 +21,8 @@ import {
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
+import { untilDone } from './__mocks__/cellGestures'
+import { chooseAxis, openExportPanel } from './__mocks__/exportGuide'
 import { filteringColumns } from './__mocks__/filteringData'
 import { storyLabels } from './__mocks__/storyLabels'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
@@ -487,6 +492,161 @@ export const PaginationServerCancel: StoryObj<StoryProps> = {
       await expect(firstRowText(canvas, 'name')).toBe(firstName)
       await expect(byTestId('load-error-banner')).toBeNull()
       await expect(consoleText()).toContain('cancelled')
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0179, S3 --------------------------------------------------------------------
+
+const EXCEPT_PAGE = queryPage(0, SERVER_PAGE, undefined)
+const UNCHECKED = [EXCEPT_PAGE[1]!.id, EXCEPT_PAGE[3]!.id]
+/** Выгрузки выбранного, ушедшие «серверу». */
+const exportedSelections: unknown[] = []
+
+/** Число выбранных строк в нижней панели — цифрами, без разделителей языка. */
+const selectedCount = () =>
+  (byTestId('selected-rows-count')?.textContent ?? '').replace(/\D/g, '')
+const rowChecked = (root: HTMLElement, id: string) =>
+  bodyRow(root, id)
+    ?.querySelector('[role="checkbox"]')
+    ?.getAttribute('aria-checked') === 'true'
+const allChecked = (root: HTMLElement) =>
+  orderedRows(root).length > 0 &&
+  orderedRows(root).every(row =>
+    rowChecked(root, row.getAttribute('data-row-id')!),
+  )
+const headChecked = (root: HTMLElement) =>
+  root
+    .querySelector('[role="columnheader"] [role="checkbox"]')
+    ?.getAttribute('aria-checked') === 'true'
+
+/** Пользователь отмечает флажок в заголовке, пока выбраны не все строки. */
+const checkAll = (root: HTMLElement) => {
+  if (!allChecked(root) && !headChecked(root))
+    root
+      .querySelector<HTMLElement>('[role="columnheader"] [role="checkbox"]')
+      ?.click()
+}
+const uncheckedDone = (root: HTMLElement) =>
+  UNCHECKED.every(id => !rowChecked(root, id)) &&
+  orderedRows(root).filter(row =>
+    rowChecked(root, row.getAttribute('data-row-id')!),
+  ).length ===
+    orderedRows(root).length - UNCHECKED.length
+/** Пользователь снимает флажки двух строк после «Выбрать всё». */
+const uncheckTwo = (root: HTMLElement) => {
+  const someChecked = orderedRows(root).some(row =>
+    rowChecked(root, row.getAttribute('data-row-id')!),
+  )
+  if (!someChecked) return checkAll(root)
+  const id = UNCHECKED.find(row => rowChecked(root, row))
+  if (id)
+    bodyRow(root, id)?.querySelector<HTMLElement>('[role="checkbox"]')?.click()
+}
+
+const SELECT_ALL_EXCEPT: readonly GuideStoryStep[] = [
+  {
+    title: 'Страница с сервера',
+    hint: 'Таблица показывает одну страницу из ответа сервера, остальные строки лежат на сервере. Ни одна строка не выбрана.',
+    props: ({ log }) => ({
+      onExport: (request: ExportRequest) => {
+        exportedSelections.push(request.selection)
+        const except = isAllSelection(request.selection)
+          ? request.selection.except.length
+          : 0
+        log.log('server', `export all except ${except}`)
+        return Promise.resolve()
+      },
+    }),
+  },
+  {
+    title: 'Пользователь выбрал все строки',
+    hint: 'Пользователь отметил флажок в заголовке. Выбраны все строки на сервере, а не только этой страницы; нижняя панель называет их число.',
+    states: ['body.selection'],
+    enter: untilDone(
+      root => allChecked(root) && selectedCount() === String(PAGE_SERVER_TOTAL),
+      checkAll,
+    ),
+  },
+  {
+    title: 'Пользователь снял две строки',
+    hint: 'Пользователь снял флажки двух строк. Остальные строки на сервере выбраны, нижняя панель называет их число без снятых.',
+    states: ['body.selection'],
+    enter: untilDone(uncheckedDone, uncheckTwo),
+  },
+  {
+    title: 'Пользователь выгрузил выбранные',
+    hint: 'Пользователь выгрузил выбранные строки. Серверу ушёл выбор целиком — все строки, кроме двух снятых, — и сервер собрал файл.',
+    enter: stepAction(async (root, { signal }) => {
+      const before = exportedSelections.length
+      await pollUntil(() => {
+        if (uncheckedDone(root)) return true
+        uncheckTwo(root)
+        return false
+      }, signal)
+      await openExportPanel(root, signal)
+      await chooseAxis('rows', 'selected', signal)
+      await pollUntil(() => {
+        if (exportedSelections.length > before) return true
+        byTestId('export-run')?.click()
+        return false
+      }, signal)
+    }),
+  },
+]
+
+/** ADR 0179, S3: при серверной пагинации пользователь выбирает всё, кроме нескольких, и выгружает. */
+export const PaginationServerSelectAllExcept: StoryObj<StoryProps> = {
+  name: 'Server, select all except',
+  parameters: { scenario: '0179/S3', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Выбор всего, кроме нескольких"
+      steps={SELECT_ALL_EXCEPT}
+      args={guideArgs(
+        {
+          containerHeight: '560',
+          height: '460',
+          maxHeight: '460',
+          columnsOverride: filteringColumns,
+          dataOverride: EXCEPT_PAGE,
+          enablePagination: true,
+          dataMode: { pagination: 'server', export: 'server' },
+          rowCount: PAGE_SERVER_TOTAL,
+          paginationInitialPageSize: SERVER_PAGE,
+          enableRowSelection: true,
+          rowSelectionSelectedCount: true,
+          enableDataExport: true,
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(SELECT_ALL_EXCEPT[0]!.title, async () => {
+      await waitForRows(canvas)
+      await expect(allChecked(canvas)).toBe(false)
+    })
+    await step(SELECT_ALL_EXCEPT[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(selectedCount()).toBe(String(PAGE_SERVER_TOTAL)))
+      await expect(allChecked(canvas)).toBe(true)
+    })
+    await step(SELECT_ALL_EXCEPT[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(uncheckedDone(canvas)).toBe(true))
+      await expect(selectedCount()).toBe(String(PAGE_SERVER_TOTAL - 2))
+    })
+    await step(SELECT_ALL_EXCEPT[3]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(exportedSelections.at(-1)).toEqual({
+        all: true,
+        except: UNCHECKED,
+      })
+      await expect(consoleText()).toContain('export all except 2')
       await settle()
     })
   },

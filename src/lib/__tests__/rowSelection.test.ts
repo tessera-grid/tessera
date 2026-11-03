@@ -103,7 +103,6 @@ describe('rowSelection', () => {
     expect(resolved.rowSelection.onSelectRow).toBe(onSelectRow)
     // Незаданные ключи scope дополнены дефолтами, а не затёрты частичным слайсом.
     expect(typeof resolved.rowSelection.onSelectAllRows).toBe('function')
-    expect(resolved.rowSelection.isAllRowsSelected).toBe(false)
   })
 
   it('H1: колбэк из аргументов фабрики доступен через table.getHooks()', () => {

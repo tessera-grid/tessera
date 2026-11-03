@@ -11,5 +11,4 @@ export interface RowSelectionHooks {
   onSelectRow: (row: Row<any, any>, selected: boolean) => void
   /** Флажок шапки выбрал (`true`) или снял строки охвата `scope`. */
   onSelectAllRows: (selected: boolean, scope: SelectAllScope) => void
-  isAllRowsSelected: boolean
 }

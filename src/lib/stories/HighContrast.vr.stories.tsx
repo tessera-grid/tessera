@@ -2050,12 +2050,6 @@ export const HighContrastBatchRowSelectionStep3 = {
   tags: ['!test'],
 }
 
-export const HighContrastBatchRowSelectionStep4 = {
-  ...twinStep(rowsSelectionStories, rowsSelectionStories.BatchRowSelection, 4),
-  name: 'Rows/Selection — Select all rows, шаг 4',
-  tags: ['!test'],
-}
-
 export const HighContrastSubRowSelectionStep1 = {
   ...twinStep(rowsSelectionStories, rowsSelectionStories.SubRowSelection, 1),
   name: 'Rows/Selection — Parent with children, шаг 1',
@@ -6880,5 +6874,75 @@ export const HighContrastRowDraftsCommitRefusedStep2 = {
 export const HighContrastRowDraftsCommitRefusedStep3 = {
   ...twinStep(rowsEditingStories, rowsEditingStories.RowDraftsCommitRefused, 3),
   name: 'Rows/Editing — Refused new row, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastPaginationServerSelectAllExceptStep1 = {
+  ...twinStep(
+    panelsPaginationStories,
+    panelsPaginationStories.PaginationServerSelectAllExcept,
+    1,
+  ),
+  name: 'Panels/Pagination — Server, select all except, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastPaginationServerSelectAllExceptStep2 = {
+  ...twinStep(
+    panelsPaginationStories,
+    panelsPaginationStories.PaginationServerSelectAllExcept,
+    2,
+  ),
+  name: 'Panels/Pagination — Server, select all except, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastPaginationServerSelectAllExceptStep3 = {
+  ...twinStep(
+    panelsPaginationStories,
+    panelsPaginationStories.PaginationServerSelectAllExcept,
+    3,
+  ),
+  name: 'Panels/Pagination — Server, select all except, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastPaginationServerSelectAllExceptStep4 = {
+  ...twinStep(
+    panelsPaginationStories,
+    panelsPaginationStories.PaginationServerSelectAllExcept,
+    4,
+  ),
+  name: 'Panels/Pagination — Server, select all except, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastInfiniteScrollSelectAllStep1 = {
+  ...twinStep(
+    infiniteScrollStories,
+    infiniteScrollStories.InfiniteScrollSelectAll,
+    1,
+  ),
+  name: 'Data loading/Infinite scroll — Select all, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastInfiniteScrollSelectAllStep2 = {
+  ...twinStep(
+    infiniteScrollStories,
+    infiniteScrollStories.InfiniteScrollSelectAll,
+    2,
+  ),
+  name: 'Data loading/Infinite scroll — Select all, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastInfiniteScrollSelectAllStep3 = {
+  ...twinStep(
+    infiniteScrollStories,
+    infiniteScrollStories.InfiniteScrollSelectAll,
+    3,
+  ),
+  name: 'Data loading/Infinite scroll — Select all, шаг 3',
   tags: ['!test'],
 }

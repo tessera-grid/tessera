@@ -292,20 +292,6 @@ describe('Row Selection — header (select all in the scope)', () => {
   })
 })
 
-describe('Row Selection — select-all-across-pages lock', () => {
-  test('RS13: with `isAllRowsSelected` every row checkbox is disabled', async () => {
-    const container = await renderRowSelection({ isAllRowsSelected: true })
-    const rows = rowsTopDown(container)
-    expect(rows.length).toBeGreaterThan(0)
-    expect(rows.every(row => isDisabled(rowCheckbox(row)!))).toBe(true)
-  })
-
-  test('RS14: with `isAllRowsSelected` the header checkbox is disabled', async () => {
-    const container = await renderRowSelection({ isAllRowsSelected: true })
-    expect(isDisabled(headCheckbox(container)!)).toBe(true)
-  })
-})
-
 describe('Row Selection — appearance', () => {
   test('RS15: the checkbox indicator icon is 14×14', async () => {
     const container = await renderRowSelection()

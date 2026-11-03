@@ -105,9 +105,6 @@ export interface StoryProps extends CoreOptions, FeatureToggles {
   /** Колонки, которые правит демо правки; по умолчанию — возраст, визиты и пол. */
   editableColumns?: readonly string[]
 
-  showBatchToolbar: boolean
-  isAllRowsSelected: boolean
-
   /**
    * Проброс hook закрепления столбца (`columnPinning.onTogglePin`) наружу.
    * Нужен визуальным тестам, чтобы наблюдать вызов hook при переключении пина.
@@ -144,5 +141,5 @@ export interface StoryProps extends CoreOptions, FeatureToggles {
   /** Проброс колбэка пагинации (`pagination`) наружу — для визуальных тестов. */
   onPageChange?: PaginationHooks['onPageChange']
 
-  updateArgs: (args: Partial<Pick<StoryProps, 'isAllRowsSelected'>>) => void
+  updateArgs: (args: Partial<StoryProps>) => void
 }

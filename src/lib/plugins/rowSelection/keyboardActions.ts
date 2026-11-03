@@ -28,15 +28,8 @@ import {
 import type { RowSelectionHooks } from './types'
 
 /** Может ли строка переключаться сейчас (те же гейты, что у чекбокса строки). */
-export const getCanToggleRow = (
-  row: Row<any, any>,
-  table: unknown,
-  hooks: Partial<RowSelectionHooks>,
-): boolean =>
-  !isGroupingActive(table) &&
-  isSelectableInList(row) &&
-  row.getCanSelect() &&
-  !hooks.isAllRowsSelected
+export const getCanToggleRow = (row: Row<any, any>, table: unknown): boolean =>
+  !isGroupingActive(table) && isSelectableInList(row) && row.getCanSelect()
 
 /** Состояние флажка строки-группы по срезу (ADR 0148, §1). */
 export const groupSelectionOfRow = (row: Row<any, any>) => {
@@ -130,12 +123,7 @@ export const toggleRowKeyboardAction: CellKeyboardAction = {
   scope: 'cell',
   // Shift+Space — выбор строки и на ячейке, где пробел занят её действием (ADR 0175, ED20).
   keys: [' ', 'Shift+ '],
-  visible: ({ row, table }) =>
-    getCanToggleRow(
-      row,
-      table,
-      readPluginHooks<Partial<RowSelectionHooks>>(table, 'rowSelection'),
-    ),
+  visible: ({ row, table }) => getCanToggleRow(row, table),
   run: ({ row, table }, event) =>
     toggleRowSelection(
       row,

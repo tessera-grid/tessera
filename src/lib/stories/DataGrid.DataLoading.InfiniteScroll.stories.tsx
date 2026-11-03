@@ -16,6 +16,7 @@ import {
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
+import { untilDone } from './__mocks__/cellGestures'
 import { filteringColumns } from './__mocks__/filteringData'
 import { storyLabels } from './__mocks__/storyLabels'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
@@ -39,7 +40,8 @@ import {
 
 /**
  * Бесконечная прокрутка — лента (ADR 0081): `Playground` — лента в покое, режимы —
- * контролами; S1 — итог неизвестен, S2 — сбой и повтор, S3 — сортировка на сервере.
+ * контролами; S1 — итог неизвестен, S2 — сбой и повтор, S3 — сортировка на сервере; выбор
+ * всего до прихода строк — S4 ADR 0179.
  */
 const meta = {
   ...dataGridMeta,
@@ -448,6 +450,94 @@ export const InfiniteScrollServerQuery: StoryObj<StoryProps> = {
       await expect(scroller(canvas)!.scrollTop).toBe(0)
       await expect(loadedText()).toBe(labels.loadedRowsOf(BLOCK, SERVER_TOTAL))
       await expect(consoleText()).toContain('onToggleColumnSort')
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0179 S4 ---------------------------------------------------------------------
+
+/** Число выбранных строк в нижней панели — цифрами, без разделителей языка. */
+const selectedCount = () =>
+  (byTestId('selected-rows-count')?.textContent ?? '').replace(/\D/g, '')
+const headBox = (root: HTMLElement) =>
+  root.querySelector<HTMLElement>('[role="columnheader"] [role="checkbox"]')
+const everyChecked = (root: HTMLElement) =>
+  orderedRows(root).length > 0 &&
+  orderedRows(root).every(
+    row =>
+      row.querySelector('[role="checkbox"]')?.getAttribute('aria-checked') ===
+      'true',
+  )
+
+const SELECT_ALL: readonly GuideStoryStep[] = [
+  {
+    title: 'Первая порция',
+    hint: 'Таблица показала первый блок строк, остальные придут при прокрутке. Ни одна строка не выбрана.',
+    props: context => ({
+      ...feedProps({})!(context),
+      enableRowSelection: true,
+      rowSelectionSelectedCount: true,
+    }),
+  },
+  {
+    title: 'Пользователь выбрал все строки',
+    hint: 'Пользователь отметил флажок в заголовке. Выбраны все строки ленты, и ещё не загруженные; нижняя панель называет их число.',
+    states: ['body.selection'],
+    enter: untilDone(
+      root => everyChecked(root) && selectedCount() === String(SERVER_TOTAL),
+      root => {
+        if (headBox(root)?.getAttribute('aria-checked') !== 'true')
+          headBox(root)?.click()
+      },
+    ),
+  },
+  {
+    title: 'Пришли следующие строки',
+    hint: 'Пользователь докрутил до края, и сервер прислал следующий блок. Пришедшие строки тоже выбраны.',
+    states: ['body.selection'],
+    enter: stepAction(async (root, { signal }) => {
+      await pollUntil(() => {
+        if (selectedCount() === String(SERVER_TOTAL)) return true
+        headBox(root)?.click()
+        return false
+      }, signal)
+      await scrollToEnd(root, signal)
+      await pollUntil(() => settledAt(root, BLOCK * 2), signal)
+      await scrollToEnd(root, signal)
+      await pollUntil(() => everyChecked(root), signal)
+    }),
+  },
+]
+
+/** ADR 0179, S4: пользователь выбирает всё в ленте до прихода остальных строк. */
+export const InfiniteScrollSelectAll: StoryObj<StoryProps> = {
+  name: 'Select all',
+  parameters: { scenario: '0179/S4', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Выбор всего в ленте"
+      steps={SELECT_ALL}
+      args={guideArgs(layout, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(SELECT_ALL[0]!.title, async () => {
+      await waitForRows(canvas)
+      await expect(everyChecked(canvas)).toBe(false)
+    })
+    await step(SELECT_ALL[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(selectedCount()).toBe(String(SERVER_TOTAL)))
+      await expect(everyChecked(canvas)).toBe(true)
+    })
+    await step(SELECT_ALL[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(feed.rows.length).toBe(BLOCK * 2)
+      await expect(everyChecked(canvas)).toBe(true)
+      await expect(selectedCount()).toBe(String(SERVER_TOTAL))
       await settle()
     })
   },

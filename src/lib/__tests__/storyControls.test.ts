@@ -66,7 +66,6 @@ const WITHOUT_CONTROL: Record<string, string> = {
     'раскрытие у приложения — истории задают его `expandAll`',
   rowExpandingModelInitialExpanded:
     'раскрытие у приложения — истории задают его `expandAll`',
-  rowSelectionIsAllRowsSelected: 'выбор всех строк ведёт демо-панель истории',
   cellSelectionCellSelection: 'выделение у приложения — своя история',
   cellSelectionInitialCellSelection: 'выделение у приложения — своя история',
   cellSelectionModelCellSelection: 'выделение у приложения — своя история',

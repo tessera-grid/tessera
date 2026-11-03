@@ -135,7 +135,7 @@ export type { ColumnVisibilityHooks } from './columnVisibility/types'
 export type { ExportHooks } from './dataExportModel/types'
 export type { RowDragEnd, RowDraggingHooks } from './rowDragging/types'
 export type { RowExpandingHooks } from './rowExpanding/types'
-export type { RowSelectionHooks } from './rowSelection/types'
+export type { RowSelectionHooks, SelectAllScope } from './rowSelection/types'
 export type { PaginationHooks } from './pagination/types'
 export type { InfiniteScrollHooks } from './infiniteScroll/types'
 export type {

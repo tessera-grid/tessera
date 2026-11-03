@@ -28,7 +28,6 @@ import { isThenable } from '../util/thenable'
 import { useLatest } from '../util/useLatest'
 import { DataGrid } from '../../lib/grid/DataGrid'
 import { DATA_GRID_THEME_CLASS } from '../ui/theme'
-import { BatchToolbar } from './BatchToolbar'
 import { groupedColumns, useColumns } from './__mocks__/columns'
 import { useData } from './__mocks__/data'
 import type {
@@ -37,7 +36,6 @@ import type {
   CellEditCommit,
 } from '../../lib/plugins/cellEditing/types'
 import type { CellComponentProps } from '../../lib/core/createSlots'
-import { useAllRowsSelect } from './__mocks__/useAllRowsSelect'
 import { RU_LABELS } from './__mocks__/localization.ru'
 import {
   argsToPlugins,
@@ -106,9 +104,6 @@ const StoryGrid = memo(
     headerNesting,
     validateCellEdit,
     editableColumns = CELL_EDITABLE_COLUMNS,
-
-    showBatchToolbar,
-    isAllRowsSelected,
 
     dataOverride,
     columnsOverride,
@@ -285,10 +280,6 @@ const StoryGrid = memo(
     }
 
     const [rowSelection, onRowSelectionChange] = useState<RowSelectionValue>({})
-    const { getSelectedData, selectedDataCount } = useAllRowsSelect({
-      data,
-      rowSelection,
-    })
 
     // Срезы плагинов — аргументами их фабрик (ADR 0120, §4): по умолчанию — состояние
     // истории, заданные историей аргументы главнее.
@@ -330,7 +321,6 @@ const StoryGrid = memo(
     const demoArgs = {
       rowSelectionOnSelectRow: demo.onSelectRow,
       rowSelectionOnSelectAllRows: demo.onSelectAllRows,
-      rowSelectionIsAllRowsSelected: isAllRowsSelected,
       columnPinningOnTogglePin: demo.onTogglePin,
       columnSortingOnToggleColumnSort: demo.onToggleColumnSort,
       rowExpandingOnExpandRow: demo.onExpandRow,
@@ -544,22 +534,6 @@ const StoryGrid = memo(
     } as const
     const body = (
       <>
-        {showBatchToolbar && (
-          <BatchToolbar
-            disabled={
-              !options.enableRowSelection || !!options.enableRowExpanding
-            }
-            onSelect={() => {
-              onRowSelectionChange(getSelectedData(!isAllRowsSelected))
-
-              updateArgs({
-                isAllRowsSelected: !isAllRowsSelected,
-              })
-            }}
-            isAllRowsSelected={isAllRowsSelected}
-            selectedDataCount={selectedDataCount}
-          />
-        )}
         {appPanelHeight !== undefined && (
           <div
             data-testid="app-panel"
