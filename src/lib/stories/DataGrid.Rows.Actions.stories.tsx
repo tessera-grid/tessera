@@ -529,10 +529,7 @@ const cancelDemo: TesseraFeatureEntry = {
 const cancelItem = () => itemOf(cancelAction.id)
 const cancelItemPending = () => !!cancelItem()?.hasAttribute('data-pending')
 
-/**
- * Архивирование ждёт ответа: запускается, если ещё не идёт. Меню, закрываясь, вернуло
- * фокус кнопке меню с кольцом, как после клавиатуры; после мыши его нет — снимаем.
- */
+/** Архивирование ждёт ответа: запускается, если ещё не идёт. */
 const archiveHeld = async (root: HTMLElement, signal: AbortSignal) => {
   CANCEL_SERVER.runs.hold()
   await repeat(
@@ -545,7 +542,6 @@ const archiveHeld = async (root: HTMLElement, signal: AbortSignal) => {
     },
     signal,
   )
-  if (document.activeElement === kebabOf(root)) kebabOf(root)?.blur()
 }
 
 /** Меню строки открыто, ждущий пункт предлагает отмену. */

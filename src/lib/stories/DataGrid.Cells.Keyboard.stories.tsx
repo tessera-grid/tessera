@@ -145,6 +145,7 @@ const MOVE: readonly GuideStoryStep[] = [
   AT_REST,
   {
     title: 'Фокус в таблице',
+    keyboard: true,
     hint: 'Пользователь перешёл в таблицу клавишей Tab. Фокус встал на заголовок первой колонки, он обведён кольцом фокуса.',
     enter: untilDone(
       root => !!focusedActive(root),
@@ -153,6 +154,7 @@ const MOVE: readonly GuideStoryStep[] = [
   },
   {
     title: 'Переход в конец таблицы',
+    keyboard: true,
     hint: 'Пользователь нажал Ctrl+End. Таблица прокрутилась к последней строке, фокус на её последней ячейке.',
     states: ['body.focus'],
     enter: untilDone(
@@ -249,6 +251,7 @@ const ACTIONS: readonly GuideStoryStep[] = [
   AT_REST,
   {
     title: 'Сортировка с заголовка',
+    keyboard: true,
     hint: 'Пользователь перешёл стрелками на заголовок колонки и нажал Enter. Строки отсортированы по этой колонке, заголовок показывает направление сортировки.',
     states: ['head.sorting'],
     enter: untilDone(
@@ -258,12 +261,14 @@ const ACTIONS: readonly GuideStoryStep[] = [
   },
   {
     title: 'Выбор строки пробелом',
+    keyboard: true,
     hint: 'Пользователь спустился стрелкой в первую строку и нажал пробел. Строка выбрана, её флажок отмечен.',
     states: ['body.selection'],
     enter: untilDone(firstSelected, selectByKeyboard),
   },
   {
     title: 'Контекстное меню с клавиатуры',
+    keyboard: true,
     hint: 'Пользователь нажал Shift+F10. У активной ячейки открылось контекстное меню, фокус перешёл в него.',
     states: ['overlay.contextMenu'],
     enter: untilDone(

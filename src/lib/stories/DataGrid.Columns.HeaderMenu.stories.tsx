@@ -133,7 +133,7 @@ const pinned = (root: ParentNode) =>
 
 /**
  * Закрепить колонку пунктом меню. Включённое закрепление встаёт в заголовок кнопкой
- * (ADR 0156); фокус, который программный выбор вернул кнопке меню с кольцом, снимается.
+ * (ADR 0156).
  */
 const pinFromMenu = async (root: HTMLElement, signal: AbortSignal) => {
   let chosen = false
@@ -149,8 +149,6 @@ const pinFromMenu = async (root: HTMLElement, signal: AbortSignal) => {
     chosen = true
     return false
   }, signal)
-  const focused = document.activeElement
-  if (focused instanceof HTMLElement && root.contains(focused)) focused.blur()
 }
 
 const IN_MENU: readonly GuideStoryStep[] = [
@@ -455,14 +453,6 @@ const sortFromMenu = async (root: HTMLElement, signal: AbortSignal) => {
     return false
   }, signal)
   await pollUntil(() => !openMenu(), signal)
-  // Программный выбор возвращает фокус на кнопку меню с кольцом, мышь — без него.
-  const focused = document.activeElement
-  if (
-    focused instanceof HTMLElement &&
-    headCellOf(root, NARROW_COLUMN)?.contains(focused)
-  ) {
-    focused.blur()
-  }
 }
 
 const NARROW_HOVER = {

@@ -213,6 +213,7 @@ const RANGE_SELECTION: readonly GuideStoryStep[] = [
   },
   {
     title: 'Диапазон на экраны вниз',
+    keyboard: true,
     hint: 'Пользователь трижды нажал Shift+PageDown. Диапазон вырос на три экрана, и таблица прокрутилась к его краю. Строки, которые теперь на экране, ещё в пути с сервера: их скелеты внутри диапазона залиты так же.',
     states: ['body.skeleton', 'body.cellRange'],
     enter: stepAction(async (root, { signal }) => {

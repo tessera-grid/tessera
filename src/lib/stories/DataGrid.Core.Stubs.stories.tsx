@@ -175,8 +175,7 @@ export const StubsNoColumns: StoryObj<StoryProps> = {
 
 /**
  * Пользователь снимает флажок всех колонок в меню «Колонки» и закрывает меню, как
- * `Escape`: заглушку ничто не заслоняет (ADR 0133). Закрытое меню возвращает фокус на
- * кнопку «Колонки» — шаг его снимает, как если бы пользователь ушёл к заглушке.
+ * `Escape`: заглушку ничто не заслоняет (ADR 0133).
  */
 const hideAllFromMenu = (root: HTMLElement) => {
   const menu = () =>
@@ -185,10 +184,6 @@ const hideAllFromMenu = (root: HTMLElement) => {
     )
   const button = () =>
     root.querySelector<HTMLElement>('[data-testid="column-visibility-button"]')
-  const blurWhenClosed = () => {
-    if (menu()) return requestAnimationFrame(blurWhenClosed)
-    if (document.activeElement === button()) button()!.blur()
-  }
   const run = () => {
     const box = menu()?.querySelector<HTMLElement>(
       '[data-testid="column-visibility-all"] [role="checkbox"]',
@@ -196,7 +191,6 @@ const hideAllFromMenu = (root: HTMLElement) => {
     if (box && menu()!.hasAttribute('data-open')) {
       box.click()
       pressEscape()
-      requestAnimationFrame(blurWhenClosed)
       return
     }
     if (button()?.hasAttribute('data-base-ui-click-trigger') && !menu())

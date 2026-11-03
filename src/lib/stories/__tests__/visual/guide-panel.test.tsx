@@ -18,12 +18,13 @@ import {
   centerOf,
   dragHold,
   pollUntil,
+  pressEscape,
   repeat,
 } from '../../__mocks__/catalogPlay'
-import { untilDone } from '../../__mocks__/cellGestures'
+import { pressCell, untilDone } from '../../__mocks__/cellGestures'
 import { HANDLE, ROW, rowIdOrder } from '../../rowDragging.dnd'
 
-// Панель гайда историй (ADR 0117, SN14–SN15, SN17, SN21–SN27, SN33–SN35, SN40–SN54) — с
+// Панель гайда историй (ADR 0117, SN14–SN15, SN17, SN21–SN27, SN33–SN35, SN40–SN58) — с
 // движением: каталог гоняет истории с уменьшенным движением, и порядок конфетти и сдвига
 // виден только здесь. SN16, SN18–SN20 — в `play` песочницы `Tessera/Common/Guide panel`.
 
@@ -924,7 +925,8 @@ describe('ввод человека посреди гайда (ADR 0117)', () =>
       await expect.poll(changed).toBeNull()
       await opened()
 
-      // Клавиша в таблице.
+      // Клавиша в таблице. Человек взялся за клавиатуру — фокус дальше его (SN58).
+      await userEvent.keyboard('{Shift}')
       visibilityButton().focus()
       await userEvent.keyboard('{ArrowDown}')
       await expect.poll(changed).not.toBeNull()
@@ -1593,6 +1595,11 @@ describe('показ действий шага (ADR 0117)', () => {
       await humanClick(byId('guide-toggle'))
       await sleep(300)
       expect(visibilityMenu()).not.toBeNull()
+      // И когда фокус вне открытого меню: нажатие по панели его не забирает.
+      ;(document.activeElement as HTMLElement).blur()
+      await humanClick(byId('guide-toggle'))
+      await sleep(300)
+      expect(visibilityMenu()).not.toBeNull()
     } finally {
       await userEvent.keyboard('{Escape}')
       await screen.unmount()
@@ -1672,6 +1679,327 @@ describe('показ действий шага (ADR 0117)', () => {
       controller.abort()
     } finally {
       await screen.unmount()
+    }
+  })
+})
+
+// Стенд фокуса (SN55–SN58): поле вне таблицы, нажатие ячейки, меню, закрытое Escape.
+const field = () => document.querySelector<HTMLInputElement>('#guide-field')!
+const focusCell = () =>
+  document.querySelector<HTMLElement>(
+    `${ROW}[data-index="1"] [data-column-id="country"]`,
+  )!
+const modality = () => document.documentElement.getAttribute('data-tsr-input')
+/** Ни один элемент таблицы и её поповеров не в фокусе. */
+const tableReleased = () => {
+  const active = document.activeElement
+  return (
+    !active ||
+    active === document.body ||
+    active === field() ||
+    !!active.closest('[data-testid="guide"]')
+  )
+}
+const FOCUS_STEPS: readonly GuideStoryStep[] = [
+  { title: 'Таблица', hint: '' },
+  {
+    title: 'Нажатие ячейки',
+    hint: '',
+    // Нажатие сделало ячейку активной; фокус с неё гайд снимает.
+    enter: untilDone(
+      () => focusCell()?.dataset.knActive === 'true',
+      () => {
+        const cell = focusCell()
+        if (cell) pressCell(cell)
+      },
+    ),
+  },
+  {
+    title: 'Меню закрыто',
+    hint: '',
+    enter: stepAction(async (_root, { signal }) => {
+      await pollUntil(() => {
+        if (!visibilityMenu()) visibilityButton().click()
+        return !!visibilityMenu()
+      }, signal)
+      pressEscape()
+      await pollUntil(
+        () =>
+          !visibilityMenu() && document.activeElement === visibilityButton(),
+        signal,
+      )
+    }),
+  },
+  { title: 'Поле', hint: '', enter: () => field().focus() },
+]
+const KEY_STEPS: readonly GuideStoryStep[] = [
+  { title: 'Таблица', hint: '' },
+  {
+    title: 'Стрелка вниз',
+    hint: '',
+    keyboard: true,
+    enter: untilDone(
+      () => !!document.activeElement?.closest(`${ROW}[data-index="2"]`),
+      () => {
+        const cell = focusCell()
+        cell?.focus()
+        cell?.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }),
+        )
+      },
+    ),
+  },
+]
+const focusArgs = guideArgs(
+  {
+    dataCount: 20,
+    columnCount: 6,
+    enableColumnVisibility: true,
+    enableKeyboardNavigation: true,
+  },
+  { colorMode: 'light', locale: 'en' },
+)
+/** Гайд со своим полем вне таблицы: фокус в поле шаг держит. */
+const mountFocusGuide = async (steps: readonly GuideStoryStep[]) => {
+  const input = document.createElement('input')
+  input.id = 'guide-field'
+  document.body.append(input)
+  const screen = await render(
+    <GuideStory title="Фокус" steps={steps} args={focusArgs} />,
+  )
+  await expect.poll(() => !!focusCell()).toBe(true)
+  await humanClick(byId('guide-toggle'))
+  await sleep(600)
+  return {
+    unmount: async () => {
+      await screen.unmount()
+      input.remove()
+    },
+  }
+}
+const stepIs = (n: number) =>
+  expect
+    .poll(() => guideRoot().dataset.guideStep, { timeout: 5000 })
+    .toBe(String(n - 1))
+/** Сторож фокуса дождался тишины после действия шага. */
+const quiet = () => sleep(500)
+
+describe('фокус после шага (ADR 0117)', () => {
+  test('SN55: нажатие по панели вне поля и поповера — как нажатие мимо таблицы: фокус на кнопке панели без кольца, признак ввода — указатель', async () => {
+    const guide = await mountFocusGuide([
+      { title: 'Таблица', hint: '' },
+      { title: 'Дальше', hint: '' },
+    ])
+    try {
+      focusCell().focus()
+      pressEscape()
+      expect(modality()).toBe('keyboard')
+      await humanClick(byId('guide-toggle'))
+      expect(document.activeElement).toBe(byId('guide-toggle'))
+      expect(byId('guide-toggle').matches(':focus-visible')).toBe(false)
+      expect(modality()).toBe('pointer')
+    } finally {
+      await guide.unmount()
+    }
+  })
+
+  test('SN56: после шага не про клавиатуру фокус действия и закрытого меню уходит на кнопку панели, признак ввода прежний — «Далее», «Назад», шаг, воспроизведение; поле и открытый поповер фокус держат', async () => {
+    const guide = await mountFocusGuide(FOCUS_STEPS)
+    try {
+      // «Далее»: нажатие ячейки фокуса не оставляет.
+      await humanClick(button('guide-next'))
+      await stepIs(2)
+      await quiet()
+      expect(tableReleased()).toBe(true)
+
+      // Закрытое Escape меню вернуло фокус кнопке «Колонки» — он уходит уже к отметке
+      // `done`, признак ввода — указатель, как до клавиши шага.
+      let releasedAtDone: boolean | undefined
+      const done = new MutationObserver(() => {
+        if (guideRoot().dataset.stepAction === 'done:2')
+          releasedAtDone ??= tableReleased() && modality() === 'pointer'
+      })
+      done.observe(guideRoot(), { attributeFilter: ['data-step-action'] })
+      await humanClick(button('guide-next'))
+      await stepIs(3)
+      await expect
+        .poll(() => guideRoot().dataset.stepAction, { timeout: 5000 })
+        .toBe('done:2')
+      done.disconnect()
+      expect(releasedAtDone).toBe(true)
+      await quiet()
+      expect(tableReleased()).toBe(true)
+      expect(modality()).toBe('pointer')
+
+      // Поле держит фокус и после нажатия по панели.
+      await humanClick(button('guide-next'))
+      await stepIs(4)
+      await quiet()
+      expect(document.activeElement).toBe(field())
+      await humanClick(byId('guide-toggle'))
+      await humanClick(byId('guide-toggle'))
+      await sleep(600)
+      expect(document.activeElement).toBe(field())
+      // Контрол формы — сегмент редактора — держит фокус, как поле.
+      const segment = document.createElement('span')
+      segment.setAttribute('role', 'radio')
+      segment.tabIndex = 0
+      document.body.append(segment)
+      segment.focus()
+      await quiet()
+      expect(document.activeElement).toBe(segment)
+      segment.remove()
+      field().focus()
+
+      // Нажатие на шаг: таблица открывается заново, ячейку нажимает действие шага.
+      await humanClick(
+        document.querySelector<HTMLElement>('[data-step-button="1"]')!,
+      )
+      await stepIs(2)
+      await quiet()
+      expect(tableReleased()).toBe(true)
+
+      // «Назад» и снова «Далее».
+      await humanClick(button('guide-back'))
+      await stepIs(1)
+      await humanClick(button('guide-next'))
+      await stepIs(2)
+      await quiet()
+      expect(tableReleased()).toBe(true)
+
+      // Открытое меню держит фокус.
+      await expect
+        .poll(() => {
+          if (!visibilityMenu()) visibilityButton().click()
+          return !!visibilityMenu()
+        })
+        .toBe(true)
+      await expect
+        .poll(() => visibilityMenu()!.contains(document.activeElement))
+        .toBe(true)
+      await quiet()
+      expect(visibilityMenu()!.contains(document.activeElement)).toBe(true)
+      pressEscape()
+      await expect.poll(visibilityMenu).toBeNull()
+
+      // Воспроизведение с начала: фокус, который нажатие ячейки и закрытое меню забрали у
+      // «Пауза», возвращается на неё без кольца.
+      await humanClick(byId('guide-restart'))
+      await stepIs(1)
+      await humanClick(byId('guide-play'))
+      await stepIs(2)
+      await quiet()
+      expect(document.activeElement).toBe(byId('guide-play'))
+      expect(byId('guide-play').matches(':focus-visible')).toBe(false)
+      await expect
+        .poll(() => guideRoot().dataset.stepAction, { timeout: 10_000 })
+        .toBe('done:2')
+      await quiet()
+      expect(document.activeElement).toBe(byId('guide-play'))
+      expect(modality()).toBe('pointer')
+    } finally {
+      await guide.unmount()
+    }
+  })
+
+  test('SN57: шаг про клавиатуру оставляет фокус своего действия и клавиатурный признак ввода — кольцо видно', async () => {
+    const guide = await mountFocusGuide(KEY_STEPS)
+    try {
+      await humanClick(button('guide-next'))
+      await stepIs(2)
+      await expect
+        .poll(() => document.activeElement?.closest(`${ROW}[data-index="2"]`))
+        .not.toBeNull()
+      await quiet()
+      const active = document.activeElement as HTMLElement
+      expect(active.closest(`${ROW}[data-index="2"]`)).not.toBeNull()
+      expect(modality()).toBe('keyboard')
+      expect(getComputedStyle(active).outlineStyle).toBe('solid')
+    } finally {
+      await guide.unmount()
+    }
+  })
+
+  test('SN58: фокус, поставленный нажатием человека в таблице, гайд не снимает', async () => {
+    const guide = await mountFocusGuide([
+      { title: 'Таблица', hint: '' },
+      { title: 'Дальше', hint: '' },
+    ])
+    try {
+      await humanClick(button('guide-next'))
+      await stepIs(2)
+      await userEvent.click(focusCell())
+      await expect.poll(() => document.activeElement).toBe(focusCell())
+      await quiet()
+      expect(document.activeElement).toBe(focusCell())
+
+      // Tab с панели в таблицу (тулбар): фокус человека.
+      await humanClick(button('guide-back'))
+      await stepIs(1)
+      byId('guide-restart').focus()
+      for (let tabs = 0; tabs < 20 && tableReleased(); tabs++)
+        await userEvent.keyboard('{Tab}')
+      expect(tableReleased()).toBe(false)
+      const tabbed = document.activeElement
+      await quiet()
+      expect(document.activeElement).toBe(tabbed)
+    } finally {
+      await guide.unmount()
+    }
+  })
+  test('SN59: вне живого Storybook голый щелчок шага в гриде доходит как от мыши — кнопка вниз и вверх, щелчок с одним нажатием; у кнопки меню и вне грида — без нажатия', async () => {
+    const seen: string[] = []
+    // StrictMode входит в шаг дважды: щелчки — один раз.
+    let clicked = false
+    const menuButton = document.createElement('button')
+    menuButton.setAttribute('aria-haspopup', 'menu')
+    const outside = document.createElement('button')
+    document.body.append(outside)
+    const track = (element: Element, name: string) => {
+      for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup'])
+        element.addEventListener(type, () => seen.push(`${name}:${type}`))
+      element.addEventListener('click', event =>
+        seen.push(`${name}:click:${(event as MouseEvent).detail}`),
+      )
+    }
+    const guide = await mountFocusGuide([
+      { title: 'Таблица', hint: '' },
+      {
+        title: 'Щелчки',
+        hint: '',
+        enter: () => {
+          if (clicked) return
+          clicked = true
+          const cell = focusCell()
+          cell.closest('[role="grid"]')!.append(menuButton)
+          for (const [element, name] of [
+            [cell, 'cell'],
+            [menuButton, 'menu'],
+            [outside, 'outside'],
+          ] as const) {
+            track(element, name)
+            element.click()
+          }
+        },
+      },
+    ])
+    try {
+      await humanClick(button('guide-next'))
+      await stepIs(2)
+      await expect.poll(() => seen.includes('outside:click:0')).toBe(true)
+      expect(seen).toEqual([
+        'cell:pointerdown',
+        'cell:mousedown',
+        'cell:pointerup',
+        'cell:mouseup',
+        'cell:click:1',
+        'menu:click:0',
+        'outside:click:0',
+      ])
+    } finally {
+      await guide.unmount()
+      menuButton.remove()
+      outside.remove()
     }
   })
 })

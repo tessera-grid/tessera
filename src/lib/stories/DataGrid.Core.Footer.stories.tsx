@@ -370,7 +370,8 @@ export const FooterPositionSwitch: StoryObj<StoryProps> = {
     await step(SWITCH[0].title, async () => {
       await stepDone(canvas)
       expect(scrollerOf(canvas).scrollTop).toBeGreaterThan(0)
-      cell = document.activeElement as HTMLElement
+      // Ячейку нажало действие шага; фокус с неё гайд снимает (ADR 0117, SN56).
+      cell = firstVisibleCell(canvas)!
       await until(() => expect(cell!.dataset.knActive).toBe('true'))
       await settle()
       scrollTop = scrollerOf(canvas).scrollTop
@@ -422,11 +423,13 @@ const pressArrowDown = (root: HTMLElement) => {
 const KEYBOARD: readonly GuideStoryStep[] = [
   {
     title: 'Фокус на последней строке',
+    keyboard: true,
     hint: 'Строка футера отображается следом за последней строкой и сейчас скрыта за нижним краем таблицы.',
     enter: focusLastRow,
   },
   {
     title: 'Стрелка вниз',
+    keyboard: true,
     hint: 'Фокус переходит на строку футера, таблица автоматически прокручивается до конца.',
     enter: pressArrowDown,
   },

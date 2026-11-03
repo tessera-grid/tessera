@@ -15,6 +15,7 @@ import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
 import { useLatest } from '../../util/useLatest'
 import { Button } from '../../ui/Button'
 import { useIcons } from '../../ui/icons'
+import { keepsFocus } from './guideFocus'
 
 export interface GuideStep {
   title: string
@@ -586,9 +587,11 @@ export const GuidePanel = ({
         aria-label={`Scenario: ${title}`}
         data-testid="guide"
         data-busy={blocking || undefined}
-        // Нажатие на панель не забирает фокус у таблицы: открытая правка не сохраняется
-        // потерей фокуса, состояние шага остаётся (SN35).
-        onMouseDown={event => event.preventDefault()}
+        // Нажатие на панель не забирает фокус у поля ввода и поповера таблицы: открытая
+        // правка не сохраняется потерей фокуса, состояние шага остаётся (SN35).
+        onMouseDown={event => {
+          if (keepsFocus()) event.preventDefault()
+        }}
         style={{
           position: 'relative',
           display: 'flex',

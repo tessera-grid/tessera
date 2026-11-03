@@ -12,8 +12,10 @@ import {
 } from 'react'
 
 import type { TesseraFeatureEntry } from '../../core/features'
+import { INPUT_MODALITY_ATTR } from '../../core/inputModality'
 import { scrollToRow } from '../../core/scrollToRow/scrollToRowFeature'
 import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
+import { useLatest } from '../../util/useLatest'
 import {
   createGuideDemo,
   HOVER_MS,
@@ -30,6 +32,13 @@ import type { CatalogState } from '../__mocks__/catalog'
 import { getData } from '../__mocks__/data'
 import { normalizeArgs } from '../__mocks__/utils/normalizeArgs'
 import { type GuideStep, GuidePanel, useGuide } from './GuidePanel'
+import {
+  createFocusGuard,
+  type FocusGuard,
+  keepsFocus,
+  OWN_CHROME,
+  STEP_ACTION_DONE,
+} from './guideFocus'
 import { StoryConsole } from './StoryConsole'
 import { type ConsoleLog, createConsoleLog } from './consoleLog'
 import { useArgsActions } from './useArgsActions'
@@ -66,6 +75,11 @@ export interface GuideStoryStep extends GuideStep {
   pseudo?: Record<string, string | string[]>
   /** Короткое состояние (вспышка): матрица контраста проверяет его сразу после шага. */
   immediate?: boolean
+  /**
+   * Шаг про клавиатуру: фокус, который поставило его действие, и признак клавиатурного
+   * ввода остаются — кольцо фокуса входит в состояние шага (SN57).
+   */
+  keyboard?: boolean
 }
 
 /**
@@ -101,6 +115,7 @@ export const stepAction =
     run(root, { signal: controller.signal, onLeave: fn => undo.push(fn) }, app)
       .then(() => {
         if (!controller.signal.aborted) {
+          root.dispatchEvent(new Event(STEP_ACTION_DONE))
           root.setAttribute('data-step-action', `done:${step}`)
         }
       })
@@ -188,6 +203,16 @@ const CLICKING = new Set(['click', 'dblclick', 'contextmenu'])
  * выделение мышью, и задержка сорвала бы их (SN50).
  */
 const PRESSING = new Set(['pointerdown', 'mousedown'])
+/**
+ * Щелчок без нажатия кнопки мыши (`click()`) в гриде: без нажатия фокус, вошедший в грид
+ * извне, клавиатурная навигация примет за вход по Tab (SN59). Кроме кнопки меню: меню
+ * Base UI открывается уже нажатием кнопки, и щелчок после него переключил бы его обратно.
+ */
+const isBareGridClick = (event: Event, target: Element) =>
+  event.type === 'click' &&
+  (event as MouseEvent).detail === 0 &&
+  !!target.closest('[role="grid"], [role="treegrid"], [role="table"]') &&
+  !target.closest('[aria-haspopup="menu"]')
 const HOVERING = new Set(['pointerover', 'mouseover'])
 const UNHOVERING = new Set(['pointerout', 'mouseout'])
 /**
@@ -195,8 +220,6 @@ const UNHOVERING = new Set(['pointerout', 'mouseout'])
  * самого нажатия — пока таблица на него отвечает (ленивый поповер грузится) — отбрасывается, мс.
  */
 const GESTURE_MS = 1000
-/** Панель гайда и консоль истории: их кнопки доходят сразу. */
-const OWN_CHROME = '[data-testid="guide"], [data-testid="story-console"]'
 
 type TextField = HTMLInputElement | HTMLTextAreaElement
 const TEXT_TYPES = new Set([
@@ -633,6 +656,16 @@ export const GuideStory = ({
             until: performance.now() + GESTURE_MS,
           }
           window.setTimeout(demo.release, PRESS_MS)
+        } else if (
+          !demo &&
+          isBareGridClick(event, target) &&
+          target.isConnected
+        ) {
+          // Вне живого Storybook — то же нажатие мышью, без показа и задержек (SN59).
+          const point = pointOf(event, target, dx, dy)
+          asMouse.set(event, point)
+          pressAt(target, point, 'down')
+          pressAt(target, point, 'up')
         }
       } finally {
         const queue = held
@@ -733,7 +766,10 @@ export const GuideStory = ({
         demo.click(pointOf(event, target, 0, 0))
         return
       }
-      const press = !!demo && CLICKING.has(event.type) && !shown
+      const press =
+        CLICKING.has(event.type) &&
+        !shown &&
+        (!!demo || isBareGridClick(event, target))
       if (!scroll && !press) return
       holdEvent(event)
       void run(event, target)
@@ -746,17 +782,20 @@ export const GuideStory = ({
     const onRealMove = (event: Event) => {
       if (event.isTrusted) demo?.unhover()
     }
-    // Нажатие по панели гайда — человеком или тестом каталога — не нажатие мимо таблицы:
-    // её меню и поповеры остаются открытыми. Фокус — у таблицы (SN35).
+    // Нажатие по панели гайда — человеком или тестом каталога — не закрывает меню и
+    // поповеры таблицы (SN53). Фокус в поле ввода и поповере остаётся (SN35), иначе он
+    // уходит на кнопку панели, как от нажатия мимо таблицы (SN55).
     const keepPopups = (event: Event) => {
       if (!(event.target instanceof Element)) return
       if (!event.target.closest('[data-testid="guide"]')) return
       event.stopPropagation()
-      if (event.type === 'mousedown') event.preventDefault()
-      // Base UI помнит любое нажатие при открытом поповере (и внутри него) и закрывает
-      // поповер следующим щелчком мимо; отмена жеста эту отметку снимает.
-      if (event.type === 'pointerdown')
+      if (event.type === 'mousedown' && keepsFocus()) event.preventDefault()
+      if (event.type === 'pointerdown') {
+        document.documentElement.setAttribute(INPUT_MODALITY_ATTR, 'pointer')
+        // Base UI помнит любое нажатие при открытом поповере (и внутри него) и закрывает
+        // поповер следующим щелчком мимо; отмена жеста эту отметку снимает.
         document.dispatchEvent(new PointerEvent('pointercancel'))
+      }
     }
     // Щелчок по панели доходит до её кнопок (React — ниже `body`), но не до документа:
     // часть поповеров закрывается щелчком мимо, а не нажатием кнопки мыши.
@@ -809,6 +848,18 @@ export const GuideStory = ({
     })
   }, [consoleLog, guide.step, guide.run, stepTitle])
   useArgsActions(consoleLog, args)
+  // Фокус после шага (SN56–SN58): сторож — до действия шага, его эффект ниже.
+  const keyboardStep = useLatest(steps[guide.step]?.keyboard === true)
+  const focusGuard = useRef<FocusGuard>(undefined)
+  useEffect(() => {
+    if (!root.current) return
+    const guard = createFocusGuard(root.current, () => keyboardStep.current)
+    focusGuard.current = guard
+    return guard.dispose
+  }, [keyboardStep])
+  useEffect(() => {
+    focusGuard.current?.stepChanged()
+  }, [guide.step, guide.run, shown.rewinds])
   const enter = steps[guide.step]?.enter
   useEffect(() => {
     const leave = root.current ? enter?.(root.current, app) : undefined

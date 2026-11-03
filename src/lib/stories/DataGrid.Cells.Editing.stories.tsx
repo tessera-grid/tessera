@@ -752,8 +752,9 @@ const MANUAL_SAVE: readonly GuideStoryStep[] = [
     hint: 'Пользователь открыл пульт и нажал «Применить всё». Все три правки ушли на сервер одним запросом; пока сервер не ответил, ячейки пакета ждут.',
     states: ['body.pending'],
     immediate: true,
+    // Пакет ушёл, и пульт, закрывшись после «Применить всё», вернул фокус кнопке.
     enter: untilDone(
-      root => MANUAL_EDITS.every(([row]) => pending(root, row)),
+      root => MANUAL_EDITS.every(([row]) => pending(root, row)) && !panelOpen(),
       root => {
         batchServer.held = true
         if (MANUAL_EDITS.some(([row]) => !draftMarked(root, row)))
@@ -815,6 +816,7 @@ export const ManualSaveCells: StoryObj<StoryProps> = {
       await until(() =>
         expect(MANUAL_EDITS.every(([row]) => pending(canvas, row))).toBe(true),
       )
+      await until(() => expect(panelOpen()).toBe(false))
       expect(consoleText()).toContain('onCommitEdits')
     })
     await step(MANUAL_SAVE[3]!.title, async () => {

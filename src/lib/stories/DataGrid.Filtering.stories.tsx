@@ -1438,9 +1438,6 @@ const filterHeld = async (root: HTMLElement, signal: AbortSignal) => {
     }, signal)
   }
   await closePanel(signal)
-  // Escape вернул фокус кнопке с кольцом; закрытие нажатием мимо панели его не оставляет.
-  if (document.activeElement === filterButtonOf(root))
-    filterButtonOf(root)?.blur()
 }
 
 /** Фильтр ждёт дольше порога: под шапкой плашка с кнопкой отмены. */
@@ -1895,17 +1892,10 @@ const draftRing = (root: HTMLElement, column = 'name') =>
 const loadBanner = (root: HTMLElement) =>
   root.querySelector<HTMLElement>('[data-testid="load-error-banner"]')
 
-/** Панель закрыта; Escape вернул фокус кнопке фильтра — его снимаем, кольцо видно. */
-const panelClosed = async (root: HTMLElement, signal: AbortSignal) => {
-  await closePanel(signal)
-  if (document.activeElement === filterButtonAt(root, 'name'))
-    filterButtonAt(root, 'name')?.blur()
-}
-
 /** Имя набрано, панель закрыта: на кнопке фильтра имён кольцо. */
 const nameDrafted = async (root: HTMLElement, signal: AbortSignal) => {
   if (!draftRing(root)) await nameTyped(root, signal)
-  await panelClosed(root, signal)
+  await closePanel(signal)
   await pollUntil(() => draftRing(root), signal)
 }
 
@@ -1918,7 +1908,7 @@ const nameFiltered = async (root: HTMLElement, signal: AbortSignal) => {
     return false
   }, signal)
   await pollUntil(() => allMatch(root, 'name', NAME), signal)
-  await panelClosed(root, signal)
+  await closePanel(signal)
 }
 
 const FILTER_DRAFT: readonly GuideStoryStep[] = [
@@ -2007,7 +1997,7 @@ const nameRefused = async (root: HTMLElement, signal: AbortSignal) => {
 /** Сообщение под шапкой и панель закрыты, на кнопке фильтра — кольцо. */
 const refusalDismissed = async (root: HTMLElement, signal: AbortSignal) => {
   if (!draftRing(root) || loadBanner(root)) await nameRefused(root, signal)
-  await panelClosed(root, signal)
+  await closePanel(signal)
   await pollUntil(() => {
     const banner = loadBanner(root)
     if (!banner) return draftRing(root)

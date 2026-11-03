@@ -102,6 +102,7 @@ const EDIT_BOOLEAN: readonly GuideStoryStep[] = [
   },
   {
     title: 'Пробел с клавиатуры',
+    keyboard: true,
     hint: 'Пользователь перешёл на ячейку клавиатурой и нажал пробел. Значение переключилось обратно и тоже сохранилось.',
     enter: untilDone(
       root => !checkedIn(root),
@@ -169,6 +170,7 @@ const EDIT_BOOLEAN_KEYBOARD: readonly GuideStoryStep[] = [
   },
   {
     title: 'Пробел переключает флажок',
+    keyboard: true,
     hint: 'Пользователь перешёл на ячейку наличия клавиатурой и нажал пробел. Флажок переключился и сохранился, строка не выбрана.',
     enter: untilDone(
       root => stockToggle(root)?.getAttribute('aria-checked') === 'true',
@@ -177,6 +179,7 @@ const EDIT_BOOLEAN_KEYBOARD: readonly GuideStoryStep[] = [
   },
   {
     title: 'Shift+Space выбирает строку',
+    keyboard: true,
     hint: 'На той же ячейке пользователь нажал пробел с Shift. Строка выбрана, флажок не изменился.',
     states: ['body.selection'],
     enter: untilDone(

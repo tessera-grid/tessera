@@ -806,6 +806,7 @@ const MILLION_ROWS: readonly GuideStoryStep[] = [
   },
   {
     title: 'Пользователь перешёл к началу клавишами',
+    keyboard: true,
     hint: 'Пользователь выбрал ячейку последней строки, нажал Ctrl+Home и стрелку вниз. Активная ячейка перешла в первую строку, и таблица вернулась к началу списка: клавиши проходят его целиком.',
     enter: stepAction(async (root, { signal }) => {
       if (!hasRow(root, MILLION_LAST)) await dragToEnd(root, signal)
