@@ -1,7 +1,7 @@
 // LiveRegion: визуально скрытая область role="status" грида (ADR 0032, W9) —
-// принимает table.announce и сама объявляет сортировку, число выбранных строк,
-// окончание загрузки, пустой результат и число строк после фильтра или поиска (если
-// enableAnnouncements !== false).
+// принимает table.announce и сама объявляет сортировку, окончание загрузки, пустой
+// результат и число строк после фильтра или поиска (если enableAnnouncements !== false).
+// Число выбранных строк объявляет модель выбора (ADR 0138, SD51).
 import { type RefObject, useEffect, useRef, useState } from 'react'
 
 import { announceLabel, registerAnnouncer } from '../core/announcer'
@@ -86,14 +86,6 @@ export const LiveRegion = ({
       .sorting?.[0]
     return first ? `${first.id}:${first.desc}` : ''
   }) as string
-  const selected = useTableState(
-    table as never,
-    state =>
-      Object.values(
-        (state as { rowSelection?: Record<string, boolean> }).rowSelection ??
-          {},
-      ).filter(Boolean).length,
-  ) as number
 
   // Коммит после отмены (ADR 0153, §4): объявлена отмена, а не откат и конец загрузки.
   // Эффект первым — эффекты ниже читают флаг.
@@ -137,9 +129,6 @@ export const LiveRegion = ({
     announceLabel(table, l => l.announceFilteredRows(count))
   })
 
-  useOnChange(selected, count =>
-    announceLabel(table, l => l.announceSelection(count)),
-  )
   const loadingEnded = useRef(false)
   useOnChange(loading, (isLoading, wasLoading) => {
     if (cancelled.current || isLoading) return

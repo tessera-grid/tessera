@@ -2,10 +2,11 @@
  * «Показано N из M» в нижней панели (ADR 0045, §7, FL16): слот общий для
  * `columnFiltering` и `quickSearch` (дедупликация по `id`). Есть, пока активен фильтр
  * колонки или поиск; N — строки верхнего уровня после фильтрации, M — до неё. С сервером
- * числа — из итогов таблицы `rowCount` и `totalRowCount` (FL30, ADR 0169); без них элемента
- * нет.
+ * числа — из итогов таблицы `rowCount` и `totalRowCount` (FL30, ADR 0169), а N серверной
+ * модели строк — из её ответов (ADR 0138, SD52); без них элемента нет.
  */
 import type { StatusBarComponentProps } from '../../core/createSlots'
+import { pluginStateKey } from '../../core/definePlugin'
 import {
   dataModeOf,
   knownCount,
@@ -15,6 +16,7 @@ import {
 import { isFilteringActive } from './filtering'
 import { useLocalization } from '../../core/localization'
 import { useTableState } from '../../core/reactivity'
+import { dataRowSourceOf } from '../../core/rowSource'
 import { StatusBarCount } from '../../ui/StatusBarCount/StatusBarCount'
 
 export const FILTERED_ROWS_COUNT_SLOT_ID = 'filteredRowsCount'
@@ -32,6 +34,21 @@ const narrowsOnClient = (table: CountTable) => {
     (!!columnFilters?.length && dataModeOf(table, 'filtering') === 'client') ||
     (!!globalFilter && dataModeOf(table, 'search') === 'client')
   )
+}
+
+/**
+ * Строк выборки с сервера: у серверной модели строк — по её ответам (строк данных при
+ * группировке, иначе — строк верхнего уровня), иначе — итог `rowCount`; неизвестен — `undefined`.
+ */
+const serverRowCount = (table: CountTable) => {
+  const source = dataRowSourceOf(table)
+  if (!source.total) return knownCount(rowCountOf(table))
+  const leaves = source.leafCount?.()
+  if (leaves !== undefined) return leaves
+  if (source.rootCount && source.rootCountKnown?.() !== false) {
+    return source.rootCount()
+  }
+  return knownCount(source.total())
 }
 
 /**
@@ -54,7 +71,7 @@ const countsOf = (table: CountTable) => {
   const total = knownCount(totalRowCountOf(table))
   const filtered = narrowsOnClient(table)
     ? clientRows()?.filtered
-    : knownCount(rowCountOf(table))
+    : serverRowCount(table)
   return filtered === undefined || total === undefined
     ? undefined
     : { filtered, total }
@@ -63,6 +80,14 @@ const countsOf = (table: CountTable) => {
 export const FilteredRowsCount = ({ table }: StatusBarComponentProps) => {
   const labels = useLocalization()
   const filtering = useTableState(table, isFilteringActive)
+  // Итог серверной модели строк меняется с приходом блоков (ADR 0138, SD52).
+  useTableState(
+    table,
+    state =>
+      (state as unknown as Record<string, unknown>)[
+        pluginStateKey('serverRowModel')
+      ],
+  )
   const counts = filtering
     ? countsOf(table as unknown as CountTable)
     : undefined

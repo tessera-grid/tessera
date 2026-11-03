@@ -164,6 +164,7 @@ const Grid = ({
   onDebugAction,
   footer = false,
   groupCounts = true,
+  dataTypes,
 }: {
   getRows: ReturnType<typeof server>['getRows']
   plugins?: readonly TesseraFeatureEntry[]
@@ -178,6 +179,7 @@ const Grid = ({
   footer?: boolean
   /** Сервер присылает число строк групп. */
   groupCounts?: boolean
+  dataTypes?: Record<string, object>
 }) => {
   const table = useCreateTable({
     enableKeyboardNavigation: keyboard,
@@ -185,6 +187,7 @@ const Grid = ({
     data: NO_DATA,
     getRowId: (row: Item) => row.id,
     enableFooter: footer,
+    dataTypes: dataTypes as never,
     onDebugAction: onDebugAction as never,
     // Свечение обновления сразу, без задержки показа (ADR 0094).
     refreshOptions: { delayMs: 0, minDurationMs: 0 },
@@ -599,6 +602,36 @@ describe('Серверная группировка (ADR 0144)', () => {
       setSearchByUser(table as never, 'N1')
       await expect.poll(() => footerOf('amount')).toBe(String(sumOf(found)))
       expect(footerOf('name')).toBe(`Rows: ${found.length}`)
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('GS14: итог колонки без footer показан текстом по её типу — как значение её ячейки, с форматом и языком таблицы', async () => {
+    const { getRows } = server(request => answerOf(request))
+    const money = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    })
+    const screen = await render(
+      <Grid
+        getRows={getRows}
+        columns={COLUMNS.map(column =>
+          column.id === 'amount' ? { ...column, dataType: 'money' } : column,
+        )}
+        dataTypes={{
+          money: {
+            extends: 'number',
+            format: { style: 'currency', currency: 'USD' },
+          },
+        }}
+        footer
+      />,
+    )
+    try {
+      await expect
+        .poll(() => footerOf('amount'))
+        .toBe(money.format(sumOf(allItems())))
     } finally {
       await screen.unmount()
     }

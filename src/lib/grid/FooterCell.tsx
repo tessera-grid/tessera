@@ -6,6 +6,7 @@ import clsx from 'clsx'
 
 import { CellWrapperContent } from '../grid/CellWrapperContent'
 import { CellWrapperTitle } from '../grid/CellWrapperTitle'
+import { formatDataTypeValue } from '../core/dataTypeFormat'
 import { getDisplayColumnIndex } from '../core/displayColumns'
 import {
   NAV_CELL_ATTR,
@@ -47,7 +48,8 @@ export const FooterCell = memo(
     const highlighted = highlightRender([
       { layer: 'column', state: columnHighlight, describe: false },
     ])
-    // Итог колонки серверной выборки (ADR 0144, §4): без своего `footer` — его значение.
+    // Итог колонки серверной выборки (ADR 0144, §4): без своего `footer` — его значение
+    // текстом по типу колонки, как в её ячейке (GS14).
     const total = rowSourceOf(table).totals?.()?.[header.column.id]
     const { footer } = header.column.columnDef
     const flashed = flashRender([
@@ -99,7 +101,12 @@ export const FooterCell = memo(
                 ? flexRender(footer, header.getContext())
                 : total === undefined || total === null
                   ? null
-                  : String(total)}
+                  : formatDataTypeValue(
+                      table as never,
+                      header.column,
+                      total,
+                      undefined,
+                    )}
           </CellWrapperTitle>
         </CellWrapperContent>
       </div>

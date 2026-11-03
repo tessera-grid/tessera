@@ -13,6 +13,7 @@ import {
 } from '@tanstack/react-table'
 
 import type { Row, Table } from '../../types'
+import { announceLabel } from '../../core/announcer'
 import { type BodyContributions, withBody } from '../../core/bodyContributions'
 import { definePlugin } from '../../core/definePlugin'
 import {
@@ -25,6 +26,11 @@ import {
   warnPluginInert,
 } from '../../core/pluginDiagnostics'
 import { GROUP_ROW_PREFIX, type RowSource } from '../../core/rowSource'
+import {
+  type SelectionSummary,
+  selectionPartsLabel,
+  selectionSummaryOf,
+} from './selectionCount'
 import { groupingLength, isGroupingActive, subRowsOf } from './selectionHelpers'
 
 export interface RowSelectionModelOptions {
@@ -118,11 +124,41 @@ const resetOnSelectionChange = (table: unknown) => {
   if (previous !== undefined && previous !== key) t.resetRowSelection(true)
 }
 
+interface SelectionAtom {
+  get: () => RowSelectionState | undefined
+  subscribe: (listener: () => void) => { unsubscribe: () => void }
+}
+
+/**
+ * Смена выбора объявляется числом выбранных строк — тем же, что у счётчика нижней панели
+ * (ADR 0032, W9; ADR 0138, SD51). Срез пересчитан без смены числа — объявления нет.
+ */
+const announceSelection = (table: unknown) => {
+  const atom = (table as { atoms: { rowSelection?: SelectionAtom } }).atoms
+    .rowSelection
+  if (!atom) return undefined
+  const keyOf = (summary: SelectionSummary) => JSON.stringify(summary)
+  let last = keyOf(selectionSummaryOf(table, atom.get()))
+  const subscription = atom.subscribe(() => {
+    const summary = selectionSummaryOf(table, atom.get())
+    const key = keyOf(summary)
+    if (key === last) return
+    last = key
+    announceLabel(table, labels =>
+      'count' in summary
+        ? labels.announceSelection(summary.count)
+        : selectionPartsLabel(labels, summary),
+    )
+  })
+  return () => subscription.unsubscribe()
+}
+
 const rowSelectionModelEntry = definePlugin<RowSelectionModelOptions>()({
   id: 'rowSelectionModel',
   features: rowSelectionModelFeatures,
   slices: ['rowSelection'],
   reconcile: resetOnSelectionChange,
+  setup: () => table => announceSelection(table),
   // Выключенная модель не показывает выбор: эффективный срез пуст, сохранённый не
   // меняется (ADR 0039) — включили снова, выбор вернулся. «Всё, кроме» TanStack видит
   // объектом, где выбрана каждая строка вне исключений (ADR 0138, §9).

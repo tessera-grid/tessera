@@ -17,6 +17,7 @@ import {
   infiniteScroll,
   rowGrouping,
   columnSortingModel,
+  quickSearch,
   quickSearchModel,
   rowExpanding,
   rowSelection,
@@ -136,6 +137,7 @@ const server = (reply: (request: ServerRowsRequest) => Answer | undefined) => {
 const Grid = ({
   getRows,
   rowCount,
+  totalRowCount,
   plugins = [],
   keyboard,
   state,
@@ -146,6 +148,7 @@ const Grid = ({
 }: {
   getRows: ReturnType<typeof server>['getRows']
   rowCount?: number
+  totalRowCount?: number
   plugins?: readonly TesseraFeatureEntry[]
   /** Клавиатурная навигация (ADR 0170, §1). */
   keyboard?: boolean
@@ -158,6 +161,7 @@ const Grid = ({
   const table = useCreateTable({
     enableKeyboardNavigation: keyboard,
     rowCount,
+    totalRowCount,
     columns: columns as never,
     data: NO_DATA,
     getRowId: (row: Item) => row.id,
@@ -1114,6 +1118,64 @@ describe('Серверная модель строк (ADR 0138)', () => {
       await userEvent.click(checkbox(501)!)
       await expect.poll(() => changes.at(-1)).toEqual({ all: true, except: [] })
       expect(checked(checkbox(501))).toBe(true)
+    } finally {
+      await screen.unmount()
+    }
+  })
+  test('SD51: выбор строк SSRM объявляется числом, как у счётчика нижней панели: «Выбрать всё» — итогом, снятый флажок — итогом без исключения', async () => {
+    const { getRows } = server(({ start, end }) => ({
+      rows: rowsOf(start, end),
+    }))
+    const screen = await render(
+      <Grid
+        getRows={getRows}
+        rowCount={1000}
+        plugins={[rowSelection({ selectedCount: true })]}
+      />,
+    )
+    const checkbox = (index: number) =>
+      rowAt(index)?.querySelector<HTMLElement>('.row-select-checkbox') ?? null
+    const live = () =>
+      document
+        .querySelector('[role="status"][aria-live="polite"]')
+        ?.textContent?.trim() ?? ''
+    try {
+      await expect.poll(() => checkbox(0)).not.toBeNull()
+
+      await userEvent.click(q('.data-grid__head-cell .row-select-checkbox')!)
+      await expect.poll(live).toBe(tableLabels.announceSelection(1000))
+
+      await userEvent.click(checkbox(1)!)
+      await expect.poll(live).toBe(tableLabels.announceSelection(999))
+    } finally {
+      await screen.unmount()
+    }
+  })
+  test('SD52: «Показано N из M» при поиске — N из ответа сервера, как у пейджера и aria-rowcount, а не начальный rowCount таблицы', async () => {
+    const FOUND = 40
+    const { getRows } = server(request => ({
+      rows: rowsOf(request.start, Math.min(request.end, FOUND)),
+      rowCount: FOUND,
+    }))
+    const screen = await render(
+      <Grid
+        getRows={getRows}
+        rowCount={1000}
+        totalRowCount={1000}
+        plugins={[
+          quickSearch({ filteredCount: true, initialGlobalFilter: 'N' }),
+        ]}
+      />,
+    )
+    const count = () =>
+      q('[data-testid="filtered-rows-count"]')?.textContent?.trim() ?? ''
+    try {
+      await expect
+        .poll(() =>
+          q('[role="grid"], [role="table"]')?.getAttribute('aria-rowcount'),
+        )
+        .toBe(String(FOUND + 1))
+      await expect.poll(count).toBe(tableLabels.filteredRows(FOUND, 1000))
     } finally {
       await screen.unmount()
     }
