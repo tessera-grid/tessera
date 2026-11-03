@@ -11,7 +11,7 @@ export interface BubbleProps extends HTMLAttributes<HTMLSpanElement> {
    * `active` — знак включённого состояния (ADR 0062), `error` — отказ действия
    * (ADR 0078), `accent` — прочие счётчики.
    */
-  tone?: 'accent' | 'active' | 'error'
+  tone?: 'accent' | 'active' | 'draft' | 'error'
   /** `outline` — кольцо вместо заливки: неприменённое (ADR 0178, §4). */
   fill?: 'solid' | 'outline'
   children?: ReactNode

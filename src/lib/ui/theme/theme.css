@@ -39,6 +39,8 @@
   --tsr-ref-red-500: #ee0000;
   --tsr-ref-amber-400: #fbbf24;
   --tsr-ref-amber-500: #f59e0b;
+  --tsr-ref-orange-400: #fb923c;
+  --tsr-ref-orange-700: #c2410c;
   --tsr-ref-green-400: #4ade80;
   --tsr-ref-green-500: #22c55e;
   --tsr-ref-sky-400: #38bdf8;
@@ -88,6 +90,8 @@
   );
   /* Тоны подсветки (ADR 0080): внимание и подтверждение. */
   --tsr-sys-warning: var(--warning, var(--tsr-ref-amber-500));
+  /* Несохранённое (ADR 0178, §4): черновики — не ниже 3:1 к фону, цифры на нём — 4,5:1. */
+  --tsr-sys-unsaved: var(--tsr-ref-orange-700);
   --tsr-sys-success: var(--success, var(--tsr-ref-green-500));
 
   /* Схема темы (ADR 0090): `color-scheme` грида и порталов — нативные полосы
@@ -176,6 +180,7 @@
     transparent
   );
   --tsr-sys-warning: var(--warning, var(--tsr-ref-amber-400));
+  --tsr-sys-unsaved: var(--tsr-ref-orange-400);
   --tsr-sys-success: var(--success, var(--tsr-ref-green-400));
   --tsr-sys-elevated: color-mix(
     in oklch,
@@ -646,6 +651,8 @@
   --tsr-comp-popup-item-radius: calc(var(--tsr-comp-control-radius) - 2px);
   /* Предел ширины меню: длинная подпись пункта переносится (ADR 0083, TX1). */
   --tsr-comp-popup-max-width: 320px;
+  /* Наименьшая ширина поповера с подвалом кнопок (ADR 0178, §6). */
+  --tsr-comp-popup-min-width: 240px;
   /* Разделители внутри меню и панелей: мягче границы контролов. */
   --tsr-comp-popup-divider-color: var(--tsr-sys-border);
   /* Рамка поверхности и пункта под указателем (ADR 0088) — `outline` целиком. */
@@ -780,6 +787,9 @@
    * загрузки. Цифры — цветом поверхности: белые на синем тёмной темы не держат 4,5:1. */
   --tsr-comp-active-indicator: var(--tsr-comp-loader-bar);
   --tsr-comp-active-indicator-fg: var(--tsr-sys-surface);
+  /* Несохранённое (ADR 0178, §4): уголок ячейки, кольцо кнопки, бабл пульта. */
+  --tsr-comp-draft-color: var(--tsr-sys-unsaved);
+  --tsr-comp-draft-color-fg: var(--tsr-sys-surface);
   /* Место бабла (ADR 0136): точка и отметка отказа — отступ от угла внутри кнопки,
    * число — сдвиг за угол долями своего размера по горизонтали и вертикали. */
   --tsr-comp-indicator-inset: 1px;
@@ -944,6 +954,11 @@
       var(--tsr-sys-info) 55%,
       var(--tsr-sys-fg)
     );
+    --tsr-comp-draft-color: color-mix(
+      in oklch,
+      var(--tsr-sys-unsaved) 70%,
+      var(--tsr-sys-fg)
+    );
   }
 }
 
@@ -1003,6 +1018,11 @@
   --tsr-comp-active-indicator: color-mix(
     in oklch,
     var(--tsr-sys-info) 55%,
+    var(--tsr-sys-fg)
+  );
+  --tsr-comp-draft-color: color-mix(
+    in oklch,
+    var(--tsr-sys-unsaved) 70%,
     var(--tsr-sys-fg)
   );
 }

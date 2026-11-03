@@ -129,6 +129,30 @@ const applyColumnFilters = (table: unknown, filters: ColumnFilterEntry[]) => {
   )
 }
 
+/**
+ * Фильтры с условием колонки: `undefined` или неприменимое значение снимает его; без перемен —
+ * те же фильтры.
+ */
+export const withColumnFilter = (
+  table: unknown,
+  current: ColumnFilterEntry[],
+  columnId: string,
+  value: unknown,
+): ColumnFilterEntry[] => {
+  const t = table as FilteringTable
+  const autoRemove = t.getColumn?.(columnId)?.getFilterFn?.()?.autoRemove
+  const remove = value === undefined || !!autoRemove?.(value)
+  const index = current.findIndex(filter => filter.id === columnId)
+  if (remove && index === -1) return current
+  return remove
+    ? current.filter(filter => filter.id !== columnId)
+    : index === -1
+      ? [...current, { id: columnId, value }]
+      : current.map(filter =>
+          filter.id === columnId ? { id: columnId, value } : filter,
+        )
+}
+
 /** Фильтр одной колонки; `undefined` или неприменимое значение снимает его. */
 export const setColumnFilterByUser = (
   table: unknown,
@@ -139,15 +163,8 @@ export const setColumnFilterByUser = (
   const autoRemove = t.getColumn?.(columnId)?.getFilterFn?.()?.autoRemove
   const remove = value === undefined || !!autoRemove?.(value)
   const current = columnFiltersOf(table)
-  const index = current.findIndex(filter => filter.id === columnId)
-  const next = remove
-    ? current.filter(filter => filter.id !== columnId)
-    : index === -1
-      ? [...current, { id: columnId, value }]
-      : current.map(filter =>
-          filter.id === columnId ? { id: columnId, value } : filter,
-        )
-  if (remove && index === -1) return
+  const next = withColumnFilter(table, current, columnId, value)
+  if (next === current) return
   reportAction(table, {
     plugin: 'columnFiltering',
     action: remove ? 'removeFilter' : 'setFilter',

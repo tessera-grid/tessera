@@ -64,6 +64,9 @@ import { pagination } from '../../../plugins/pagination'
 import { rowDragging } from '../../../plugins/rowDragging'
 import { moveRow } from '../../../plugins/rowDragging/moveRow'
 import { cellEditing } from '../../../plugins/cellEditing'
+import { renderPluginsGrid } from './hosts'
+import { DRAFTS, applyAllDrafts, readDrafts } from '../../../core/drafts/drafts'
+import { setPluginState } from '../../../core/definePlugin'
 import { cellSelection } from '../../../plugins/cellSelection'
 import { rowExpanding } from '../../../plugins/rowExpanding'
 import { rowGrouping } from '../../../plugins/rowGrouping'
@@ -4479,5 +4482,101 @@ describe('Отзывчивость — редакторы по типу', () => 
       }
     },
     PERF_TIMEOUT * 4,
+  )
+})
+
+// «Применить всё» при многих черновиках (ADR 0178, DR26): 10 000 черновиков ячеек против 1000
+// с синхронным ответом — разбор ответа одной записью в каждый срез, работа растёт линейно.
+const DR26_RATIO = 20
+const DR26_COLUMNS = Array.from({ length: 10 }, (_, i) => `col_${i}`)
+describe('Применить всё — много черновиков', () => {
+  test(
+    'DR26: «Применить всё» с 10 000 черновиками ячеек и синхронным ответом не дороже, чем с 1000, больше чем в 20 раз',
+    async () => {
+      const measure = async (rows: number) => {
+        let table: unknown
+        const screen = renderPluginsGrid({
+          ...LARGE,
+          plugins: [
+            cellEditing({
+              saveMode: 'manual',
+              onCommitEdits: () => undefined,
+            } as never),
+            {
+              id: 'perfDrafts',
+              setup: t => {
+                table = t
+              },
+            },
+          ],
+        })
+        await expect.poll(() => table).toBeTruthy()
+        const seed = () =>
+          setPluginState(
+            table,
+            DRAFTS,
+            Array.from({ length: rows }, (_, row) =>
+              DR26_COLUMNS.map(column => ({
+                kind: 'cellValue',
+                target: { cell: [`item-id-${row}`, column] },
+                value: { value: `v${row}`, text: `v${row}` },
+              })),
+            ).flat(),
+          )
+        seed()
+        const result = await measureInteractionWork(
+          async () => {
+            applyAllDrafts(table)
+          },
+          {
+            afterWarmup: () => {
+              // Прогрев применил все черновики — замер повторяет то же на новом наборе.
+              expect(readDrafts(table)).toHaveLength(0)
+              seed()
+            },
+          },
+        )
+        expect(readDrafts(table)).toHaveLength(0)
+        ;(await screen).unmount()
+        return result
+      }
+
+      const runs = await againstBase(isMany => measure(isMany ? 1000 : 100))
+      const base = medianRun(runs.base, r => r.longestMs)
+      const many = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = base.longestMs * DR26_RATIO
+      const record = (
+        id: string,
+        label: string,
+        r: typeof many,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '1000×1000',
+          plugins: 'cellEditing',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('DR26-base', '1000 черновиков', base, false)
+      await record('DR26', '10 000 черновиков', many, true)
+
+      expect(
+        many.longestMs,
+        `10 000: longest=${many.longestMs.toFixed(1)}ms, 1000: ${base.longestMs.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
   )
 })

@@ -34,6 +34,15 @@ export interface DraftKind {
   label: (labels: TableLabels, draft: Draft) => string
   /** Значение черновика одной строкой — для пульта; без поля пульт значение не пишет. */
   describe?: (labels: TableLabels, draft: Draft, table: unknown) => string
+  /**
+   * Что действует сейчас, одной строкой: значение в данных, действующее условие. С ним пульт
+   * пишет «Было» и «Стало»; `undefined` — прежнего не знаем, только «Стало».
+   */
+  previous?: (
+    labels: TableLabels,
+    draft: Draft,
+    table: unknown,
+  ) => string | undefined
   /** Применить черновик; промис — ожидание, его отказ — отказ на объекте (ADR 0177). */
   apply: (table: unknown, draft: Draft) => unknown
   /** Применить черновики вида одним действием (пакет); без поля — по одному. */
@@ -48,6 +57,11 @@ export interface DraftKind {
   discard?: (table: unknown, draft: Draft) => void
   /** Вид работает в этой таблице; `false` — его черновики инертны (DR8). */
   active?: (table: unknown) => boolean
+  /**
+   * Что меняет черновик: данные или вид выборки. «Применить всё» применяет сначала данные,
+   * затем вид (ADR 0178, §5); без поля — данные.
+   */
+  stage?: 'data' | 'view'
 }
 
 export const DRAFTS = 'drafts'
@@ -83,6 +97,16 @@ export const setDraft = (table: unknown, draft: Draft) => {
   const next =
     at < 0 ? [...prev, draft] : prev.map((item, i) => (i === at ? draft : item))
   setPluginState(table, DRAFTS, next)
+}
+
+/** Снять записи, отобранные условием, одной записью в срез; нечего снимать — ничего. */
+export const removeDrafts = (
+  table: unknown,
+  remove: (draft: Draft) => boolean,
+) => {
+  const prev = readDrafts(table)
+  const next = prev.filter(draft => !remove(draft))
+  if (next.length !== prev.length) setPluginState(table, DRAFTS, next)
 }
 
 /** Снять запись вида и цели; нет записи — ничего. */
@@ -217,7 +241,12 @@ export const useOpenDrafts = (table: unknown) => {
 export const applyAllDrafts = (table: unknown) => {
   const drafts = activeDrafts(table)
   const atoms = (table as { atoms?: Record<string, typeof NO_DRAFTS> }).atoms
-  for (const kind of draftKindsOf(table)) {
+  const kinds = draftKindsOf(table)
+  const ordered = [
+    ...kinds.filter(kind => kind.stage !== 'view'),
+    ...kinds.filter(kind => kind.stage === 'view'),
+  ]
+  for (const kind of ordered) {
     const own = drafts.filter(draft => draft.kind === kind.kind)
     const open = !!kind.openKey && !!kind.isOpen?.(atoms?.[kind.openKey]?.get())
     if (kind.applyAll) {

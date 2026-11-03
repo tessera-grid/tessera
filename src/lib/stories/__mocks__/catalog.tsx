@@ -37,7 +37,7 @@ export const CATALOG_STATES = {
     'menuPending',
     'error',
     'cellError',
-    // Несохранённое значение ячейки: полый уголок (ADR 0178, §6).
+    // Несохранённое значение ячейки: уголок цвета несохранённого (ADR 0178, §6).
     'cellDraft',
     'highlight',
     'cellRange',

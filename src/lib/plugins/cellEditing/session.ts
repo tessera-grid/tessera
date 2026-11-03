@@ -32,6 +32,7 @@ import {
 } from '../../core/definePlugin'
 import type { CellComponentProps } from '../../core/createSlots'
 import { flashOutcome } from '../../core/flashes/flashFeature'
+import type { FlashTarget } from '../../core/highlights/highlightFeature'
 import {
   cellFailureKey,
   reportFailure,
@@ -46,6 +47,7 @@ import {
   type Draft,
   readDrafts,
   removeDraft,
+  removeDrafts,
   setDraft as putDraft,
 } from '../../core/drafts/drafts'
 import type {
@@ -532,6 +534,26 @@ const writeSaved = (
   t.setRowData(rowId, data => setAtPath(data, key, value))
 }
 
+/** Сохранённые значения ячеек строки — одной записью в кэш строк (серверная модель). */
+const writeSavedRow = (
+  table: unknown,
+  rowId: string,
+  values: readonly { columnId: string; value: unknown }[],
+) => {
+  const t = table as SavedTable
+  if (!t.setRowData) return
+  const paths = values.flatMap(({ columnId, value }) => {
+    const key = t.getColumn?.(columnId)?.columnDef.accessorKey
+    if (typeof key === 'string') return [{ key, value }]
+    warnNotWritten(table)
+    return []
+  })
+  if (paths.length === 0) return
+  t.setRowData(rowId, data =>
+    paths.reduce((row, { key, value }) => setAtPath(row, key, value), data),
+  )
+}
+
 const settleSubmitted = (
   table: unknown,
   key: string,
@@ -814,19 +836,27 @@ const submitValue = (
  */
 export const commitDrafts = (table: unknown, drafts: readonly Draft[]) => {
   const hooks = readPluginHooks<Partial<CellEditingHooks>>(table as never, ID)
-  const cells = drafts.flatMap(draft => {
-    if (draft.kind !== CELL_VALUE_DRAFT || !('cell' in draft.target)) return []
-    const [rowId, columnId] = draft.target.cell
+  const inFlight = readEditingState(table).submitted
+  // Ушедший в пакет и неизменённый черновик повторно не отправляется (ADR 0178, §5).
+  const sent = drafts.filter(draft => {
+    if (draft.kind !== CELL_VALUE_DRAFT || !('cell' in draft.target))
+      return false
+    const entry = inFlight[cellKey(...draft.target.cell)]
+    return !(
+      entry?.status === 'pending' &&
+      entry.text === (draft.value as CellDraftValue).text
+    )
+  })
+  const cells = sent.map(draft => {
+    const [rowId, columnId] = (draft.target as { cell: [string, string] }).cell
     const { value, text } = draft.value as CellDraftValue
-    return [
-      {
-        rowId,
-        columnId,
-        value,
-        text,
-        original: dataValueOf(table, rowId, columnId),
-      },
-    ]
+    return {
+      rowId,
+      columnId,
+      value,
+      text,
+      original: dataValueOf(table, rowId, columnId),
+    }
   })
   if (cells.length === 0) return
   const controller = new AbortController()
@@ -834,13 +864,18 @@ export const commitDrafts = (table: unknown, drafts: readonly Draft[]) => {
   const result = hooks.onCommitEdits?.({ cells }, { signal: controller.signal })
   reportOutcome(table, { plugin: ID, action: 'commit' }, result)
 
+  // Ответ — одной записью в каждый срез: ожидание, черновики, вспышки, кэш строк (DR26).
   const settle = (refused: Map<string, string>, answered: boolean) => {
     const state = readEditingState(table)
     const submitted = { ...state.submitted }
-    for (const cell of cells) {
+    const accepted: FlashTarget[] = []
+    const reverted: FlashTarget[] = []
+    const saved = new Set<Draft>()
+    const rows = new Map<string, { columnId: string; value: unknown }[]>()
+    cells.forEach((cell, index) => {
       const key = cellKey(cell.rowId, cell.columnId)
       const entry = submitted[key]
-      if (answered && (!entry || entry.attempt !== attempt)) continue
+      if (answered && (!entry || entry.attempt !== attempt)) return
       const target = { cell: [cell.rowId, cell.columnId] as [string, string] }
       const error = refused.get(key)
       if (error !== undefined) {
@@ -854,15 +889,22 @@ export const commitDrafts = (table: unknown, drafts: readonly Draft[]) => {
           error,
           attempt,
         }
-        flashOutcome(table, target, 'reverted')
-        continue
+        reverted.push(target)
+        return
       }
       delete submitted[key]
-      writeSaved(table, cell.rowId, cell.columnId, cell.value, undefined)
-      removeDraft(table, CELL_VALUE_DRAFT, target)
-      flashOutcome(table, target, 'accepted')
-    }
+      saved.add(sent[index]!)
+      const row = rows.get(cell.rowId) ?? []
+      row.push({ columnId: cell.columnId, value: cell.value })
+      rows.set(cell.rowId, row)
+      accepted.push(target)
+    })
     writeEditingState(table, { ...state, submitted })
+    for (const [rowId, values] of rows) writeSavedRow(table, rowId, values)
+    // Снимается только ушедший черновик: переправленный за время ожидания остаётся.
+    removeDrafts(table, draft => saved.has(draft))
+    flashOutcome(table, reverted, 'reverted')
+    flashOutcome(table, accepted, 'accepted')
   }
   const refusedOf = (answer: unknown) =>
     new Map(

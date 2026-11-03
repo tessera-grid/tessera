@@ -21,6 +21,11 @@
   --_bubble-tone-fg: var(--tsr-comp-active-indicator-fg);
 }
 
+.draft {
+  --_bubble-tone: var(--tsr-comp-draft-color);
+  --_bubble-tone-fg: var(--tsr-comp-draft-color-fg);
+}
+
 .error {
   --_bubble-tone: var(--tsr-comp-action-error-color);
   --_bubble-tone-fg: var(--tsr-sys-surface);

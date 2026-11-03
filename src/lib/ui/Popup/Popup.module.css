@@ -26,6 +26,34 @@
   transition: var(--tsr-comp-tooltip-transition);
 }
 
+/*
+ * Разделитель над блоком поповера — по ширине содержимого: от края текста до края кнопок
+ * (ADR 0178, DR38). Блок задаёт `position`; отступы концов линии — `--_divider-start` и
+ * `--_divider-end`, по умолчанию — поле содержимого.
+ */
+.divided::before {
+  content: '';
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: var(--_divider-start, calc(var(--tsr-comp-popup-padding) * 2))
+    var(--_divider-end, calc(var(--tsr-comp-popup-padding) * 2));
+  border-block-start: 1px solid var(--tsr-comp-popup-divider-color);
+}
+
+/*
+ * Прокручиваемый список записей в поповере: полоса прокрутки — в правом поле поповера, место под
+ * неё отведено всегда. Запись отступает справа на `--tsr-comp-popup-scroll-inset` — край её
+ * содержимого совпадает с краем заголовка и подвала, есть полоса или нет.
+ */
+.scrollList {
+  margin-inline-end: calc(-1 * var(--tsr-comp-popup-padding));
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  --tsr-comp-popup-scroll-inset: calc(
+    var(--tsr-comp-popup-padding) * 3 - var(--tsr-comp-scrollbar-width)
+  );
+}
+
 /* Тонкий скроллбар у поповера и его списков — как у таблицы (--tsr-comp-scrollbar-width). */
 .popup::-webkit-scrollbar,
 .popup ::-webkit-scrollbar {

@@ -15,13 +15,19 @@ import {
   removeDraft,
   setDraft as putDraft,
 } from '../../core/drafts/drafts'
-import { setColumnFilterByUser } from '../../shared/filtering/filtering'
+import {
+  columnFiltersOf,
+  setColumnFilterByUser,
+  setColumnFiltersByUser,
+  withColumnFilter,
+} from '../../shared/filtering/filtering'
 import { useTableState } from '../../core/reactivity'
 import { isServerAction, type RejectedSlices } from '../../core/serverActions'
 import type { ColumnFilterValue } from '../columnFilteringModel/types'
 import { filterOptionLabelOf } from '../columnFilteringModel/options'
 import { formatDataTypeValue } from '../../core/dataTypeFormat'
 import { describeFilter } from './describeFilter'
+import type { TableLabels } from '../../core/localization'
 
 export const COLUMN_FILTER_DRAFT = 'columnFilter'
 
@@ -149,27 +155,68 @@ export const hasColumnFilterDraft = (table: unknown, columnId: string) =>
       draft.target.column === columnId,
   )
 
+/** Условие фильтра колонки одной строкой; без условия — «Нет фильтра». */
+const conditionText = (
+  labels: TableLabels,
+  table: unknown,
+  columnId: string,
+  value: unknown,
+) => {
+  if (value === null || value === undefined) return labels.draftNoFilter
+  const column = (table as { getColumn?: (id: string) => unknown }).getColumn?.(
+    columnId,
+  )
+  return describeFilter(value as ColumnFilterValue, labels, {
+    locale: (table as { options: { locale?: string } }).options.locale,
+    optionLabel: item => filterOptionLabelOf(table, column as never, item),
+    numberText: item =>
+      formatDataTypeValue(table as never, column as never, item, undefined),
+  })
+}
+
 /** Вид черновика `columnFilter` (ADR 0178, §2): применяет «Применить» панели. */
 export const columnFilterDraftKind: DraftKind = {
   kind: COLUMN_FILTER_DRAFT,
   label: labels => labels.filter,
-  describe: (labels, draft, table) => {
-    if (draft.value === null || !('column' in draft.target))
-      return labels.draftNoFilter
-    const column = (
-      table as { getColumn?: (id: string) => unknown }
-    ).getColumn?.(draft.target.column)
-    return describeFilter(draft.value as ColumnFilterValue, labels, {
-      locale: (table as { options: { locale?: string } }).options.locale,
-      optionLabel: value => filterOptionLabelOf(table, column as never, value),
-      numberText: value =>
-        formatDataTypeValue(table as never, column as never, value, undefined),
-    })
-  },
+  describe: (labels, draft, table) =>
+    'column' in draft.target
+      ? conditionText(labels, table, draft.target.column, draft.value)
+      : labels.draftNoFilter,
+  // Действующее условие колонки; без него — «Нет фильтра».
+  previous: (labels, draft, table) =>
+    'column' in draft.target
+      ? conditionText(
+          labels,
+          table,
+          draft.target.column,
+          columnFiltersOf(table).find(
+            filter =>
+              'column' in draft.target && filter.id === draft.target.column,
+          )?.value ?? null,
+        )
+      : undefined,
   apply: (table, draft: Draft) => {
     if (!('column' in draft.target)) return
     setColumnFilterByUser(table, draft.target.column, draft.value ?? undefined)
   },
+  // Все условия — одним серверным действием, после данных (ADR 0178, §5).
+  applyAll: (table, drafts) => {
+    const current = columnFiltersOf(table)
+    const next = drafts.reduce(
+      (filters, draft) =>
+        'column' in draft.target
+          ? withColumnFilter(
+              table,
+              filters,
+              draft.target.column,
+              draft.value ?? undefined,
+            )
+          : filters,
+      current,
+    )
+    if (next !== current) setColumnFiltersByUser(table, next)
+  },
+  stage: 'view',
   active: table => isServerAction(table, 'filtering'),
 }
 

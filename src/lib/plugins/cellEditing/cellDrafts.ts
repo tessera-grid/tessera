@@ -4,6 +4,8 @@
  * открытую правку.
  */
 import { readPluginHooks } from '../../core/definePlugin'
+import { rowSourceOf } from '../../core/rowSource'
+import { editTextOf } from './editValue'
 import { type DraftKind, readDrafts } from '../../core/drafts/drafts'
 import {
   CELL_VALUE_DRAFT,
@@ -34,6 +36,15 @@ export const cellValueDraftKind: DraftKind = {
   kind: CELL_VALUE_DRAFT,
   label: labels => labels.cellDraftKind,
   describe: (_labels, draft) => (draft.value as CellDraftValue).text,
+  // Значение из данных; строка не загружена (серверная модель) — прежнего не знаем.
+  previous: (_labels, draft, table) => {
+    if (!('cell' in draft.target)) return undefined
+    const [rowId, columnId] = draft.target.cell
+    const row = rowSourceOf<{ getValue: (id: string) => unknown }>(table).byId(
+      rowId,
+    )
+    return row ? editTextOf(table, columnId, row.getValue(columnId)) : undefined
+  },
   apply: (table, draft) => commitDrafts(table, [draft]),
   applyAll: table => {
     finishOpenEdit(table)

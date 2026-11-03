@@ -53,6 +53,7 @@ export const UnsavedChangesButton = ({ table }: ToolbarComponentProps) => {
       icon={icon}
       active={count > 0}
       count={count}
+      indicatorTone="draft"
       aria-haspopup="dialog"
       data-testid="unsaved-changes-button"
       {...popover.trigger}

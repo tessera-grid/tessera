@@ -278,6 +278,9 @@ export interface TableLabels {
   /** Отметка несохранённого значения ячейки: имя и причина «было, стало». */
   cellDraft: string
   cellDraftReason: (was: string, now: string) => string
+  draftWas: string
+  draftNow: string
+  cellNotSaved: string
   /** Откатить несохранённое значение ячейки. */
   cellDraftRollback: string
   /** Кнопка журнала отказов с числом записей. */
@@ -644,6 +647,9 @@ export const DEFAULT_LABELS = {
   cellDraftKind: 'Edit',
   cellDraft: 'Unsaved change',
   cellDraftReason: 'Was: {was}. Now: {now}',
+  draftWas: 'Was',
+  draftNow: 'Now',
+  cellNotSaved: 'Not saved',
   cellDraftRollback: 'Roll back',
   failureLogButton: 'Failures: {count}',
   failureClearAll: 'Clear all',

@@ -11,14 +11,15 @@
 
 .title {
   margin: 0;
-  padding: var(--tsr-comp-popup-padding) calc(var(--tsr-comp-popup-padding) * 2);
+  padding: var(--tsr-comp-popup-padding) calc(var(--tsr-comp-popup-padding) * 2)
+    calc(var(--tsr-comp-popup-padding) * 2);
   font-weight: 600;
 }
 
 /* Окно списка: длинный список виртуализирован (JR2). */
 .scroller {
+  composes: scrollList from '../../ui/Popup/Popup.module.css';
   max-height: min(60vh, calc(var(--tsr-comp-popup-item-min-height) * 10));
-  overflow-y: auto;
 }
 
 .list {
@@ -28,15 +29,16 @@
 
 /* Запись: подпись и время, причина, затем цель и кнопки. */
 .entry {
+  composes: divided from '../../ui/Popup/Popup.module.css';
   position: absolute;
   inset-inline: 0;
   top: 0;
   display: flex;
   flex-direction: column;
   gap: var(--tsr-comp-popup-padding);
-  padding: calc(var(--tsr-comp-popup-padding) * 2)
-    calc(var(--tsr-comp-popup-padding) * 2);
-  border-block-start: 1px solid var(--tsr-comp-popup-divider-color);
+  padding: calc(var(--tsr-comp-popup-padding) * 2);
+  padding-inline-end: var(--tsr-comp-popup-scroll-inset);
+  --_divider-end: var(--tsr-comp-popup-scroll-inset);
 }
 
 .head {
@@ -86,9 +88,11 @@
 }
 
 .footer {
+  composes: divided from '../../ui/Popup/Popup.module.css';
+  position: relative;
   display: flex;
   justify-content: flex-end;
-  padding: var(--tsr-comp-popup-padding) calc(var(--tsr-comp-popup-padding) * 2)
-    0;
-  border-block-start: 1px solid var(--tsr-comp-popup-divider-color);
+  /* Сверху, у линии и у нижнего края — один отступ: двойное поле поповера. */
+  padding: calc(var(--tsr-comp-popup-padding) * 2)
+    calc(var(--tsr-comp-popup-padding) * 2) var(--tsr-comp-popup-padding);
 }

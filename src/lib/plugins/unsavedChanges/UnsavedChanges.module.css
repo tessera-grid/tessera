@@ -11,22 +11,26 @@
 
 .title {
   margin: 0;
-  padding: var(--tsr-comp-popup-padding) calc(var(--tsr-comp-popup-padding) * 2);
+  padding: var(--tsr-comp-popup-padding) calc(var(--tsr-comp-popup-padding) * 2)
+    calc(var(--tsr-comp-popup-padding) * 2);
   font-weight: 600;
 }
 
 .scroller {
+  composes: scrollList from '../../ui/Popup/Popup.module.css';
   max-height: min(60vh, calc(var(--tsr-comp-popup-item-min-height) * 10));
-  overflow-y: auto;
 }
 
 /* Запись: подпись вида, значение, затем цель и кнопки. */
 .entry {
+  composes: divided from '../../ui/Popup/Popup.module.css';
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--tsr-comp-popup-padding);
   padding: calc(var(--tsr-comp-popup-padding) * 2);
-  border-block-start: 1px solid var(--tsr-comp-popup-divider-color);
+  padding-inline-end: var(--tsr-comp-popup-scroll-inset);
+  --_divider-end: var(--tsr-comp-popup-scroll-inset);
 }
 
 .label {
@@ -36,6 +40,23 @@
 
 .value {
   overflow-wrap: anywhere;
+}
+
+/* «Было» и «Стало» строками: подпись слева, значение переносится. */
+.compare {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0 calc(var(--tsr-comp-popup-padding) * 2);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.compare dt {
+  color: var(--tsr-comp-popup-group-label-color);
+}
+
+.compare dd {
+  margin: 0;
 }
 
 .foot {
@@ -57,10 +78,12 @@
 }
 
 .footer {
+  composes: divided from '../../ui/Popup/Popup.module.css';
+  position: relative;
   display: flex;
   justify-content: flex-end;
   gap: var(--tsr-comp-popup-padding);
-  padding: var(--tsr-comp-popup-padding) calc(var(--tsr-comp-popup-padding) * 2)
-    0;
-  border-block-start: 1px solid var(--tsr-comp-popup-divider-color);
+  /* Сверху, у линии и у нижнего края — один отступ: двойное поле поповера. */
+  padding: calc(var(--tsr-comp-popup-padding) * 2)
+    calc(var(--tsr-comp-popup-padding) * 2) var(--tsr-comp-popup-padding);
 }

@@ -33,24 +33,9 @@
   clip-path: polygon(0 0, 100% 0, 100% 100%);
 }
 
-/*
- * Несохранённое изменение (ADR 0178, §6): полый уголок — из треугольника вырезан меньший
- * (правило evenodd), остаётся рамка толщины кольца бабла тона черновика.
- */
+/* Несохранённое изменение (ADR 0178, §6): тот же треугольник в цвете несохранённого. */
 .issue[data-tone='draft'] .mark {
-  --_t: var(--tsr-comp-indicator-outline-width);
-  background-color: var(--tsr-comp-active-indicator);
-  clip-path: polygon(
-    evenodd,
-    0 0,
-    100% 0,
-    100% 100%,
-    0 0,
-    calc(var(--_t) * 2.414) var(--_t),
-    calc(100% - var(--_t)) var(--_t),
-    calc(100% - var(--_t)) calc(100% - var(--_t) * 2.414),
-    calc(var(--_t) * 2.414) var(--_t)
-  );
+  background-color: var(--tsr-comp-draft-color);
 }
 
 /* Письмо справа налево — треугольник в левом верхнем углу. */
@@ -58,41 +43,62 @@
   clip-path: polygon(0 0, 100% 0, 0 100%);
 }
 
-:where([dir='rtl']) .issue[data-tone='draft'] .mark {
-  clip-path: polygon(
-    evenodd,
-    100% 0,
-    0 0,
-    0 100%,
-    100% 0,
-    calc(100% - var(--_t) * 2.414) var(--_t),
-    var(--_t) var(--_t),
-    var(--_t) calc(100% - var(--_t) * 2.414),
-    calc(100% - var(--_t) * 2.414) var(--_t)
-  );
-}
-
+/*
+ * Поповер (ADR 0178, §6): заголовок, тело обычным текстом, под разделителем — кнопки справа;
+ * отступы и разделитель — как у пульта черновиков и журнала отказов.
+ */
 .popup {
-  display: flex;
-  flex-direction: column;
-  gap: var(--tsr-comp-popup-padding);
+  min-width: min(var(--tsr-comp-popup-min-width), calc(100vw - 16px));
   max-width: var(--tsr-comp-popup-max-width);
+  overflow-wrap: anywhere;
 }
 
-.reason {
+.title {
   margin: 0;
   padding: var(--tsr-comp-popup-padding) calc(var(--tsr-comp-popup-padding) * 2);
-  color: var(--tsr-comp-error-text-color);
+  font-weight: 600;
 }
 
-.reason[data-tone='draft'] {
-  color: inherit;
+/* Причина отказа и ошибки — цветом текста ошибки, как в журнале отказов. */
+.reason {
+  margin: 0;
+  color: var(--tsr-comp-error-text-color);
+  padding: 0 calc(var(--tsr-comp-popup-padding) * 2)
+    var(--tsr-comp-popup-padding);
+}
+
+.details {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0 calc(var(--tsr-comp-popup-padding) * 2);
+  margin: 0;
+  padding: 0 calc(var(--tsr-comp-popup-padding) * 2)
+    var(--tsr-comp-popup-padding);
+}
+
+.detail {
+  display: contents;
+}
+
+.detail dt {
+  color: var(--tsr-comp-popup-group-label-color);
+}
+
+.detail dd {
+  margin: 0;
 }
 
 .actions {
+  composes: divided from '../Popup/Popup.module.css';
+  position: relative;
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-end;
   gap: var(--tsr-comp-popup-padding);
+  margin-block-start: var(--tsr-comp-popup-padding);
+  /* Сверху, у линии и у нижнего края — один отступ: двойное поле поповера. */
+  padding: calc(var(--tsr-comp-popup-padding) * 2)
+    calc(var(--tsr-comp-popup-padding) * 2) var(--tsr-comp-popup-padding);
 }
 
 /* Высокая контрастность (ADR 0087): треугольник — системный цвет текста. */

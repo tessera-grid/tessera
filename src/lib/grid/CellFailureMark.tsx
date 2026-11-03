@@ -19,7 +19,14 @@ export const CellFailureMark = ({
   const { retry, discard } = failure
   const actions = [
     ...(retry
-      ? [{ id: 'retry', label: labels.failureRetry, onSelect: () => retry() }]
+      ? [
+          {
+            id: 'retry',
+            label: labels.failureRetry,
+            onSelect: () => retry(),
+            primary: true,
+          },
+        ]
       : []),
     {
       id: 'discard',
@@ -36,6 +43,7 @@ export const CellFailureMark = ({
       <CellIssue
         reason={failure.reason}
         label={labels.cellError}
+        title={labels.cellNotSaved}
         actions={actions}
       />
     </>

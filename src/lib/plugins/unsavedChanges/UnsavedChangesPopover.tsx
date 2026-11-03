@@ -79,14 +79,24 @@ const DraftEntry = ({
   const kind = draftKindOf(table, draft.kind)
   if (!kind) return null
   const target = objectTargetText(table, draft.target, labels)
+  const now = kind.describe?.(labels, draft, table)
+  const was =
+    now === undefined ? undefined : kind.previous?.(labels, draft, table)
   return (
     <>
       <span className={styles.label}>{kind.label(labels, draft)}</span>
-      {kind.describe && (
-        <span className={styles.value}>
-          {kind.describe(labels, draft, table)}
-        </span>
-      )}
+      {now !== undefined &&
+        (was === undefined ? (
+          <span className={styles.value}>{now}</span>
+        ) : (
+          // Было и стало — решение «применить или отбросить» видно без перехода к цели.
+          <dl className={styles.compare}>
+            <dt>{labels.draftWas}</dt>
+            <dd>{was}</dd>
+            <dt>{labels.draftNow}</dt>
+            <dd>{now}</dd>
+          </dl>
+        ))}
       <div className={styles.foot}>
         <span className={styles.target}>{target}</span>
         <div className={styles.actions}>
@@ -238,6 +248,7 @@ export const UnsavedChangesPopover = ({
         icon={icon}
         active={count > 0}
         count={count}
+        indicatorTone="draft"
         data-testid="unsaved-changes-button"
         render={<Popover.Trigger />}
       />

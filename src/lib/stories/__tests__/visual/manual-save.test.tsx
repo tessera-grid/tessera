@@ -7,7 +7,9 @@ import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import {
   cellEditing,
+  cellErrors,
   columnFiltering,
+  serverRowModel,
   columnSorting,
   contextMenu,
   dataExportModel,
@@ -24,7 +26,14 @@ import {
 } from '../../../plugins/cellEditing/session'
 import { humanClick } from '../helpers'
 import { tableLabels } from '../labels'
-import { AXE_OPTIONS, inBothThemes, toRgba } from './a11y-helpers'
+import {
+  AXE_OPTIONS,
+  backgroundOf,
+  contrast,
+  inBothThemes,
+  resolveColor,
+  toRgba,
+} from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
 
 declare module 'vitest/browser' {
@@ -33,9 +42,10 @@ declare module 'vitest/browser' {
   }
 }
 
-// Сохранение правок по кнопке (ADR 0178, §5–§6; DR15, DR16, DR18, DR20): ячейка показывает
-// черновик, модели считают по данным; полый уголок, «Откатить»; открытая правка в пульте;
-// доступность. DR14, DR17, DR19 — модульные (`manualSave.dom`), DR21 — перф в `scroll`.
+// Сохранение правок по кнопке (ADR 0178, §4–§6; DR15, DR16, DR18, DR20, DR22, DR23): ячейка
+// показывает черновик, модели считают по данным; уголок и «Откатить»; открытая правка в пульте;
+// доступность; цвет несохранённого; общий поповер отметки. DR14, DR17, DR19, DR24, DR25 —
+// модульные (`manualSave.dom`), DR21 — перф в `scroll`, DR26 — в `interaction`.
 
 const COLUMNS = [
   {
@@ -107,6 +117,12 @@ const text = (rowId: string) => {
 }
 const popover = () =>
   document.querySelector<HTMLElement>('[data-testid="cell-issue-popover"]')
+/** Строки тела поповера: подпись и значение. */
+const details = () =>
+  [...(popover()?.querySelectorAll('dt') ?? [])].map(term => [
+    term.textContent,
+    term.nextElementSibling?.textContent,
+  ])
 const pultButton = () =>
   document.querySelector<HTMLElement>('[data-testid="unsaved-changes-button"]')
 const pultCount = () => {
@@ -199,7 +215,7 @@ describe('Сохранение по кнопке (ADR 0178)', () => {
     }
   })
 
-  test('DR16: ячейка с черновиком — полый уголок кита на месте треугольника отказа, отказ главнее; нажатие — поповер «было, стало, Откатить»; «Откатить» — и в контекстном меню', async () => {
+  test('DR16: ячейка с черновиком — уголок кита на месте треугольника отказа, отказ главнее; нажатие — поповер «было, стало, Откатить»; «Откатить» — и в контекстном меню', async () => {
     const screen = await mount()
     try {
       await draftAge('1', '77')
@@ -214,9 +230,10 @@ describe('Сохранение по кнопке (ADR 0178)', () => {
       // Поповер: было, стало, «Откатить».
       await humanClick(mark)
       await expect.poll(popover).not.toBeNull()
-      expect(popover()!.textContent).toContain(
-        tableLabels.cellDraftReason('21', '77'),
-      )
+      expect(details()).toEqual([
+        [tableLabels.draftWas, '21'],
+        [tableLabels.draftNow, '77'],
+      ])
       await humanClick(
         popover()!.querySelector<HTMLElement>('[data-action="rollback"]')!,
       )
@@ -357,6 +374,374 @@ describe('Сохранение по кнопке (ADR 0178)', () => {
       expect(shape.getBoundingClientRect().width).toBeGreaterThan(0)
     } finally {
       await screen.unmount()
+    }
+  })
+
+  test('DR22: уголок черновика — залитый треугольник; уголок, кольцо фильтра с черновиком и бабл пульта — токеном --tsr-comp-draft-color, не ниже 3:1 к фону ячейки и кнопки в обеих темах', async () => {
+    const Host = () => {
+      const table = useCreateTable({
+        columns: COLUMNS as never,
+        data: DATA,
+        getRowId: (row: (typeof DATA)[number]) => row.id,
+        dataMode: { filtering: 'server' },
+        plugins: [
+          cellEditing({ saveMode: 'manual', onCommitEdits: () => {} } as never),
+          columnFiltering({ onFilterChange: () => Promise.resolve() }),
+          unsavedChanges(),
+        ] as never,
+      })
+      api = table
+      return (
+        <div style={{ width: 700, height: 520 }}>
+          <DataGrid table={table as never} height={480} />
+        </div>
+      )
+    }
+    const screen = await render(<Host />)
+    await waitForGrid()
+    try {
+      await draftAge('1', '77')
+      api.setDraft({
+        kind: 'columnFilter',
+        target: { column: 'name' },
+        value: { operator: 'contains', value: 'Bob' },
+      })
+      const ring = await expect
+        .poll(() =>
+          document.querySelector<HTMLElement>(
+            '.data-grid__head-cell[data-column-id="name"] [data-draft] [data-fill="outline"]',
+          ),
+        )
+        .toBeTruthy()
+      void ring
+      await expect.poll(pultCount).toBe('2')
+      await inBothThemes(async () => {
+        const root = document.querySelector('.data-grid-theme')!
+        const draft = resolveColor(root, 'var(--tsr-comp-draft-color)')
+        // Уголок — залитый треугольник без выреза, цвета несохранённого.
+        const shape = corner('1')!.querySelector<HTMLElement>('span')!
+        const style = getComputedStyle(shape)
+        expect(style.backgroundColor).toBe(draft)
+        expect(style.clipPath).not.toContain('evenodd')
+        expect(
+          contrast(toRgba(draft), backgroundOf(cell('1'))),
+        ).toBeGreaterThanOrEqual(3)
+        // Кольцо на кнопке фильтра — тем же цветом.
+        const outline = document.querySelector<HTMLElement>(
+          '.data-grid__head-cell[data-column-id="name"] [data-fill="outline"]',
+        )!
+        expect(getComputedStyle(outline).boxShadow).toContain(draft)
+        expect(
+          contrast(toRgba(draft), backgroundOf(outline.parentElement)),
+        ).toBeGreaterThanOrEqual(3)
+        // Бабл пульта — заливка цветом несохранённого.
+        const bubble = pultButton()!.querySelector<HTMLElement>(
+          '[data-active-indicator]',
+        )!
+        expect(getComputedStyle(bubble).backgroundColor).toBe(draft)
+        expect(
+          contrast(toRgba(draft), backgroundOf(pultButton())),
+        ).toBeGreaterThanOrEqual(3)
+      })
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('DR23: поповер отметки ячейки один у отказа, ошибки данных и черновика: заголовок без отметки, причина — цветом текста ошибки, «Было» и «Стало» — обычным, под разделителем кнопки справа, главная — с рамкой; не уже --tsr-comp-popup-min-width', async () => {
+    const Host = () => {
+      const table = useCreateTable({
+        columns: COLUMNS as never,
+        data: DATA,
+        getRowId: (row: (typeof DATA)[number]) => row.id,
+        plugins: [
+          cellEditing({ saveMode: 'manual', onCommitEdits: () => {} } as never),
+          cellErrors({
+            getCellError: ({
+              row,
+              column,
+            }: {
+              row: { id: string }
+              column: { id: string }
+            }) =>
+              row.id === '5' && column.id === 'age' ? 'Too old' : undefined,
+          } as never),
+        ] as never,
+      })
+      api = table
+      return (
+        <div style={{ width: 700, height: 520 }}>
+          <DataGrid table={table as never} height={480} />
+        </div>
+      )
+    }
+    const screen = await render(<Host />)
+    await waitForGrid()
+    const open = async (mark: HTMLElement) => {
+      await humanClick(mark)
+      await expect.poll(popover).not.toBeNull()
+      return popover()!
+    }
+    const close = async () => {
+      await userEvent.keyboard('{Escape}')
+      await expect.poll(popover).toBeNull()
+    }
+    /** Заголовок, цвет тела, кнопки слева направо и разделитель над ними. */
+    const layout = (pop: HTMLElement) => {
+      const title = pop.querySelector<HTMLElement>('[id]')!
+      const body = title.nextElementSibling as HTMLElement
+      const buttons = [...pop.querySelectorAll<HTMLElement>('[data-action]')]
+      return {
+        title: title.textContent,
+        labelled: pop.getAttribute('aria-labelledby') === title.id,
+        // Отметки у заголовка нет: только текст.
+        markless: title.children.length === 0,
+        bodyColor: getComputedStyle(body).color,
+        popColor: getComputedStyle(pop).color,
+        buttons: buttons.map(button => [
+          button.dataset.action,
+          button.dataset.variant,
+        ]),
+        right:
+          buttons.length > 0
+            ? pop.getBoundingClientRect().right -
+              buttons.at(-1)!.getBoundingClientRect().right
+            : undefined,
+        justify: buttons[0]
+          ? getComputedStyle(buttons[0].parentElement!).justifyContent
+          : undefined,
+        // Разделитель — линия над рядом кнопок, по ширине содержимого.
+        divider: buttons[0]
+          ? (() => {
+              const row = buttons[0].parentElement!
+              const line = getComputedStyle(row, '::before')
+              const box = row.getBoundingClientRect()
+              const outer = pop.getBoundingClientRect()
+              return {
+                line: `${line.borderTopStyle} ${line.borderTopColor}`,
+                inset: [
+                  Math.round(box.left + parseFloat(line.left) - outer.left),
+                  Math.round(outer.right - box.right + parseFloat(line.right)),
+                ],
+                above: box.top >= body.getBoundingClientRect().bottom,
+              }
+            })()
+          : undefined,
+        // Край содержимого: начало текста заголовка.
+        content: Math.round(
+          title.getBoundingClientRect().left +
+            parseFloat(getComputedStyle(title).paddingLeft) -
+            pop.getBoundingClientRect().left,
+        ),
+        width: pop.getBoundingClientRect().width,
+      }
+    }
+    try {
+      const root = document.querySelector('.data-grid-theme')!
+      const divider = `solid ${resolveColor(root, 'var(--tsr-comp-popup-divider-color)')}`
+      const probe = document.createElement('span')
+      probe.style.color = 'var(--tsr-comp-error-text-color)'
+      probe.style.width = 'var(--tsr-comp-popup-min-width)'
+      probe.style.display = 'block'
+      root.append(probe)
+      const errorColor = getComputedStyle(probe).color
+      const minWidth = parseFloat(getComputedStyle(probe).width)
+      probe.remove()
+
+      // Отказ с повтором: «Не сохранено», причина цветом ошибки, «Повторить» — справа с рамкой.
+      api.reportFailure({
+        label: 'Age',
+        target: { cell: ['3', 'age'] },
+        reason: 'Locked',
+        retry: () => {},
+      })
+      const failed = await expect
+        .poll(() => cell('3')!.querySelector<HTMLElement>('[data-cell-issue]'))
+        .toBeTruthy()
+      void failed
+      let view = layout(
+        await open(cell('3')!.querySelector<HTMLElement>('[data-cell-issue]')!),
+      )
+      expect(view.title).toBe(tableLabels.cellNotSaved)
+      expect(view.labelled).toBe(true)
+      expect(view.markless).toBe(true)
+      expect(view.bodyColor).toBe(errorColor)
+      // Разделитель над кнопками — по ширине содержимого, как у пульта и журнала.
+      expect(view.divider).toEqual({
+        line: divider,
+        inset: [view.content, view.content],
+        above: true,
+      })
+      expect(view.width).toBeGreaterThanOrEqual(minWidth - 0.5)
+      expect(view.buttons).toEqual([
+        ['discard', 'ghost'],
+        ['retry', 'outline'],
+      ])
+      const failureRight = view.right!
+      expect(view.justify).toBe('flex-end')
+      await close()
+
+      // Ошибка данных: тот же поповер без кнопок.
+      view = layout(
+        await open(cell('5')!.querySelector<HTMLElement>('[data-cell-issue]')!),
+      )
+      expect(view.title).toBe(tableLabels.cellError)
+      expect(view.markless).toBe(true)
+      expect(view.bodyColor).toBe(errorColor)
+      expect(view.buttons).toEqual([])
+      await close()
+
+      // Черновик: «Было» и «Стало», под разделителем «Откатить» — справа с рамкой.
+      await draftAge('1', '77')
+      view = layout(await open(corner('1')!))
+      expect(view.title).toBe(tableLabels.cellDraft)
+      expect(view.markless).toBe(true)
+      expect(view.bodyColor).toBe(view.popColor)
+      expect(view.divider?.line).toBe(divider)
+      expect(view.divider?.inset).toEqual([view.content, view.content])
+      // Узкое содержимое не сужает поповер: кнопка справа, а не посередине.
+      expect(view.width).toBeGreaterThanOrEqual(minWidth - 0.5)
+      expect(view.buttons).toEqual([['rollback', 'outline']])
+      expect(view.justify).toBe('flex-end')
+      expect(view.right!).toBeCloseTo(failureRight, 0)
+      expect(details()).toEqual([
+        [tableLabels.draftWas, '21'],
+        [tableLabels.draftNow, '77'],
+      ])
+      await close()
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('DR39: запись пульта показывает «Было» и «Стало» строками: у значения ячейки — значение в данных и черновика, у условия фильтра — действующее условие или «Нет фильтра» и неприменённое; прежнего не знаем — только значение', async () => {
+    const Host = () => {
+      const table = useCreateTable({
+        columns: COLUMNS as never,
+        data: DATA,
+        getRowId: (row: (typeof DATA)[number]) => row.id,
+        dataMode: { filtering: 'server' },
+        plugins: [
+          cellEditing({ saveMode: 'manual', onCommitEdits: () => {} } as never),
+          columnFiltering({ onFilterChange: () => Promise.resolve() }),
+          unsavedChanges(),
+        ] as never,
+      })
+      api = table
+      return (
+        <div style={{ width: 700, height: 520 }}>
+          <DataGrid table={table as never} height={480} />
+        </div>
+      )
+    }
+    const screen = await render(<Host />)
+    await waitForGrid()
+    /** Строки записей пульта: подпись и пары «Было»/«Стало» или одно значение. */
+    const entries = () =>
+      [
+        ...(dialog()?.querySelectorAll<HTMLElement>('[class*="entry"]') ?? []),
+      ].map(entry => {
+        const pairs = [...entry.querySelectorAll('dt')].map(term => [
+          term.textContent,
+          term.nextElementSibling?.textContent,
+        ])
+        return pairs.length > 0
+          ? pairs
+          : entry.querySelector('[class*="value"]')?.textContent
+      })
+    const dialog = () =>
+      [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].at(-1) ??
+      null
+    try {
+      await draftAge('1', '77')
+      // Действующее условие у колонки возраста — «было» у её черновика.
+      api.setColumnFilters([
+        { id: 'age', value: { operator: 'greaterThan', value: 30 } },
+      ])
+      api.setDraft({
+        kind: 'columnFilter',
+        target: { column: 'age' },
+        value: { operator: 'greaterThan', value: 40 },
+      })
+      api.setDraft({
+        kind: 'columnFilter',
+        target: { column: 'name' },
+        value: { operator: 'contains', value: 'Bob' },
+      })
+      // Тулбар грузится лениво (ADR 0061).
+      await expect.poll(pultButton).toBeTruthy()
+      await humanClick(pultButton()!)
+      await expect.poll(dialog).not.toBeNull()
+      const rows = await expect.poll(entries).toHaveLength(3)
+      void rows
+      const [cellEntry, ageFilter, nameFilter] = entries() as [
+        string[][],
+        string[][],
+        string[][],
+      ]
+      expect(cellEntry).toEqual([
+        [tableLabels.draftWas, '21'],
+        [tableLabels.draftNow, '77'],
+      ])
+      expect(ageFilter[0]![0]).toBe(tableLabels.draftWas)
+      expect(ageFilter[0]![1]).toContain('30')
+      expect(ageFilter[1]![0]).toBe(tableLabels.draftNow)
+      expect(ageFilter[1]![1]).toContain('40')
+      expect(nameFilter[0]).toEqual([
+        tableLabels.draftWas,
+        tableLabels.draftNoFilter,
+      ])
+      expect(nameFilter[1]![1]).toContain('Bob')
+    } finally {
+      await screen.unmount()
+    }
+
+    // Серверная модель: строки нет в кэше — прежнего не знаем, в записи только значение.
+    const ServerHost = () => {
+      const table = useCreateTable({
+        columns: COLUMNS as never,
+        data: [],
+        plugins: [
+          serverRowModel({
+            blockSize: 10,
+            maxBlocks: 1,
+            getRows: ({ start, end }: { start: number; end: number }) => ({
+              rows: Array.from({ length: end - start }, (_, i) => ({
+                id: String(start + i),
+                name: `Name ${start + i}`,
+                age: 20 + start + i,
+              })),
+              rowCount: 1000,
+            }),
+          }),
+          cellEditing({ saveMode: 'manual', onCommitEdits: () => {} } as never),
+          unsavedChanges(),
+        ] as never,
+      })
+      api = table
+      return (
+        <div style={{ width: 700, height: 520 }}>
+          <DataGrid table={table as never} height={480} />
+        </div>
+      )
+    }
+    const server = await render(<ServerHost />)
+    await waitForGrid()
+    try {
+      await expect.poll(() => api.getRowSource().byId('0')).toBeTruthy()
+      expect(api.getRowSource().byId('900')).toBeUndefined()
+      api.setDraft({
+        kind: 'cellValue',
+        target: { cell: ['900', 'age'] },
+        value: { value: 5, text: '5' },
+      })
+      // Тулбар грузится лениво (ADR 0061).
+      await expect.poll(pultButton).toBeTruthy()
+      await humanClick(pultButton()!)
+      await expect.poll(dialog).not.toBeNull()
+      await expect.poll(entries).toEqual(['5'])
+    } finally {
+      await server.unmount()
     }
   })
 })

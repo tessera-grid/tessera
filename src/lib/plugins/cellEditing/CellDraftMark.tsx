@@ -29,11 +29,16 @@ export const CellDraftMark = (props: PluginCellProps<CellEditingHooks>) => {
       tone="draft"
       reason={labels.cellDraftReason(was, now)}
       label={labels.cellDraft}
+      details={[
+        { label: labels.draftWas, value: was },
+        { label: labels.draftNow, value: now },
+      ]}
       actions={[
         {
           id: 'rollback',
           label: labels.cellDraftRollback,
           onSelect: () => discardDraft(table, draft),
+          primary: true,
         },
       ]}
     />

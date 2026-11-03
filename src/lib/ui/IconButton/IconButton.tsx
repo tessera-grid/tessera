@@ -57,7 +57,7 @@ export interface ActiveProps {
   /** `false` — без бабла; цвет значка остаётся. */
   indicator?: boolean
   /** Тон бабла: `error` — счётчик отказов журнала (ADR 0177, JR1). */
-  indicatorTone?: 'active' | 'error'
+  indicatorTone?: 'active' | 'draft' | 'error'
   /**
    * Есть неприменённое (ADR 0178, §4): кольцо вместо точки, кнопка видна без наведения. С
    * `active` главнее включённое — сплошная точка.
@@ -197,7 +197,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         {(active !== undefined || draft !== undefined) && (
           <Bubble
             size={count && !ringed ? 'sm' : 'dot'}
-            tone={indicatorTone}
+            tone={ringed ? 'draft' : indicatorTone}
             fill={ringed ? 'outline' : 'solid'}
             className={styles.indicator}
             data-active-indicator=""

@@ -1,18 +1,20 @@
 // @vitest-environment happy-dom
 /**
- * Сохранение правок по кнопке (ADR 0178, §5; DR14, DR17, DR19): черновик ячейки вместо
- * `onCellEdit`, пакет `onCommitEdits`, жизнь черновика по id строки.
+ * Сохранение правок по кнопке (ADR 0178, §5; DR14, DR17, DR19, DR24, DR25): черновик ячейки
+ * вместо `onCellEdit`, пакет `onCommitEdits`, жизнь черновика по id строки, порядок
+ * «Применить всё» и черновики в полёте.
  * Запуск: npx vitest run --config vitest.node.config.ts manualSave
  */
 import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import type { Draft } from '../core/drafts/drafts'
+import { applyAllDrafts, type Draft } from '../core/drafts/drafts'
 import { cellFailureKey, readFailures } from '../core/failures/failuresFeature'
 import { useCreateTable } from '../core/useCreateTable'
 import {
   cellEditing,
+  columnFiltering,
   columnSortingModel,
   paginationModel,
   serverRowModel,
@@ -274,5 +276,114 @@ describe('сохранение по кнопке (ADR 0178)', () => {
     act(() => root!.render(createElement(ServerHost)))
     expect(captured.getRowSource().byId('25')).toBeUndefined()
     expect(cellDrafts()).toHaveLength(1)
+  })
+
+  it('DR24: «Применить всё» — сначала один пакет onCommitEdits со всеми черновиками данных, затем одно серверное действие со всеми условиями фильтров, не дожидаясь ответа на пакет', () => {
+    const calls: string[] = []
+    const commit = deferred()
+    const onCommitEdits = vi.fn(() => {
+      calls.push('commit')
+      return commit.promise
+    })
+    const onFilterChange = vi.fn(() => {
+      calls.push('filter')
+      return new Promise(() => {})
+    })
+    const FilterHost = () => {
+      captured = useCreateTable({
+        columns: columns as never,
+        data: ROWS,
+        getRowId: (row: Row) => row.id,
+        dataMode: { filtering: 'server' },
+        plugins: [
+          // Вид фильтра — раньше вида ячеек: порядок задаёт «Применить всё», а не набор.
+          columnFiltering({ onFilterChange }),
+          cellEditing({ saveMode: 'manual', onCommitEdits } as never),
+        ],
+      } as never)
+      return null
+    }
+    container = document.createElement('div')
+    document.body.append(container)
+    root = createRoot(container)
+    act(() => root!.render(createElement(FilterHost)))
+    edit('1', '77')
+    edit('2', '5')
+    act(() => {
+      captured.setDraft({
+        kind: 'columnFilter',
+        target: { column: 'name' },
+        value: { operator: 'contains', value: 'Name 1' },
+      })
+      captured.setDraft({
+        kind: 'columnFilter',
+        target: { column: 'age' },
+        value: { operator: 'equals', value: 21 },
+      })
+    })
+
+    act(() => applyAllDrafts(captured))
+    // Пакет и фильтры — без ожидания ответа на пакет: промис пакета ещё не решён.
+    expect(calls).toEqual(['commit', 'filter'])
+    expect(onCommitEdits).toHaveBeenCalledTimes(1)
+    expect(
+      (onCommitEdits.mock.calls[0] as unknown as [CellEditBatch])[0].cells.map(
+        cell => cell.rowId,
+      ),
+    ).toEqual(['1', '2'])
+    expect(onFilterChange).toHaveBeenCalledTimes(1)
+    expect(
+      (onFilterChange.mock.calls[0] as unknown as [{ id: string }[]])[0].map(
+        filter => filter.id,
+      ),
+    ).toEqual(['name', 'age'])
+  })
+
+  it('DR25: черновик в пакете без ответа повторно не отправляется; ответ снимает черновик, только если значение не менялось после отправки', async () => {
+    const answer = deferred()
+    const later = deferred()
+    const onCommitEdits = vi
+      .fn()
+      .mockImplementationOnce(() => answer.promise)
+      .mockImplementationOnce(() => later.promise)
+    render({ onCommitEdits })
+    edit('1', '77')
+    edit('2', '5')
+    act(() => void cellValueDraftKind.applyAll!(captured, cellDrafts()))
+    expect(onCommitEdits).toHaveBeenCalledTimes(1)
+
+    // Повторное «Применить всё», пока пакет ждёт: тех же черновиков нет в новом пакете.
+    act(() => void cellValueDraftKind.applyAll!(captured, cellDrafts()))
+    expect(onCommitEdits).toHaveBeenCalledTimes(1)
+
+    // Ячейка в ожидании не правится, но черновик ей задало приложение — значение сменилось
+    // после отправки.
+    act(() =>
+      captured.setDraft({
+        kind: 'cellValue',
+        target: { cell: ['1', 'age'] },
+        value: { value: 80, text: '80' },
+      }),
+    )
+
+    // Ответ на пакет: черновик ячейки 2 снят, сменившийся черновик ячейки 1 — на месте.
+    answer.resolve()
+    await flush()
+    expect(cellDrafts()).toEqual([
+      {
+        kind: 'cellValue',
+        target: { cell: ['1', 'age'] },
+        value: { value: 80, text: '80' },
+      },
+    ])
+
+    // Он — новый черновик: следующее «Применить» отправляет его.
+    act(() => void cellValueDraftKind.applyAll!(captured, cellDrafts()))
+    expect(onCommitEdits).toHaveBeenCalledTimes(2)
+    expect(
+      (onCommitEdits.mock.calls[1] as unknown as [CellEditBatch])[0].cells.map(
+        cell => [cell.rowId, cell.value],
+      ),
+    ).toEqual([['1', 80]])
   })
 })

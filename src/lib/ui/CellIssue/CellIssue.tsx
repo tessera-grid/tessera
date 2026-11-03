@@ -19,6 +19,14 @@ export interface CellIssueAction {
   id: string
   label: string
   onSelect: () => void
+  /** Главное действие — справа, кнопка с рамкой. */
+  primary?: boolean
+}
+
+/** Строка тела поповера: подпись и значение («Было», «Стало»). */
+export interface CellIssueDetail {
+  label: string
+  value: string
 }
 
 export interface CellIssueProps {
@@ -26,11 +34,15 @@ export interface CellIssueProps {
   reason: string
   /** Доступное имя отметки. */
   label: string
+  /** Заголовок поповера; без него — доступное имя. */
+  title?: string
+  /** Тело поповера строками вместо причины. */
+  details?: readonly CellIssueDetail[]
   /** Действия поповера — «Повторить», «Отбросить изменение»; без них — только причина. */
   actions?: readonly CellIssueAction[]
   /**
-   * `error` — отказ или ошибка: залитый треугольник; `draft` — несохранённое изменение
-   * (ADR 0178, §6): полый уголок, причина обычным цветом текста.
+   * `error` — отказ или ошибка: красный треугольник; `draft` — несохранённое изменение
+   * (ADR 0178, §6): треугольник цвета несохранённого.
    */
   tone?: 'error' | 'draft'
 }
@@ -38,6 +50,8 @@ export interface CellIssueProps {
 export const CellIssue = ({
   reason,
   label,
+  title = label,
+  details,
   actions = [],
   tone = 'error',
 }: CellIssueProps) => {
@@ -70,7 +84,9 @@ export const CellIssue = ({
         <Suspense fallback={null}>
           <CellIssuePopup
             anchor={button}
+            title={title}
             reason={reason}
+            details={details}
             actions={actions}
             tone={tone}
             onClose={() => setOpen(false)}

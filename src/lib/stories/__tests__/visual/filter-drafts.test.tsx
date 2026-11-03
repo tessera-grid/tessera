@@ -240,7 +240,11 @@ describe('Неприменённое условие в заголовке (ADR 0
 
 describe('Полая точка кита (ADR 0178, §4)', () => {
   const Kit = () => (
-    <div className={DATA_GRID_THEME_CLASS} style={{ padding: 16 }}>
+    // Фон — поверхность темы: кольцо сравнивается с фоном кнопки в каждой теме.
+    <div
+      className={DATA_GRID_THEME_CLASS}
+      style={{ padding: 16, background: 'var(--tsr-sys-surface)' }}
+    >
       <IconButton label="Draft" draft data-testid="draft">
         <span aria-hidden>F</span>
       </IconButton>
