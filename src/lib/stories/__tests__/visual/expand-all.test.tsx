@@ -127,8 +127,8 @@ describe('«Раскрыть всё» кнопкой в шапке (ADR 0160)', 
             table={table as never}
             {...(own && {
               localization: {
-                expandAll: 'Open everything',
-                collapseAll: 'Close everything',
+                'rowExpanding.expandAll': 'Open everything',
+                'rowExpanding.collapseAll': 'Close everything',
               } as never,
               icons: { expandAll: ExpandAllIcon } as never,
             })}

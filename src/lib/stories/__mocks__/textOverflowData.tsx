@@ -75,5 +75,6 @@ export const textOverflowPlugins: TesseraFeatureEntry[] = [
 ]
 
 export const textOverflowLocalization = {
-  search: 'Search accounts, managers, regions and contract numbers',
+  'quickSearch.search':
+    'Search accounts, managers, regions and contract numbers',
 }

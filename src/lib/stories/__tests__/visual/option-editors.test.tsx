@@ -388,7 +388,12 @@ describe('редакторы вариантов (ADR 0175)', () => {
   })
 
   test('ED11: подпись ошибки разбора числа — ключ словаря editInvalidNumber; подпись очистки — editClear', async () => {
-    const words = { editInvalidNumber: 'Только число', editClear: 'Стереть' }
+    const number = 'Только число'
+    const clear = 'Стереть'
+    const words = {
+      'cellEditing.editInvalidNumber': number,
+      'cellEditing.editClear': clear,
+    }
     const server = directory()
     await render(
       <Grid
@@ -407,27 +412,35 @@ describe('редакторы вариантов (ADR 0175)', () => {
     await userEvent.type(price()!, 'abc{Enter}')
     await expect
       .poll(() => cellOf('price').querySelector('[role="alert"]')?.textContent)
-      .toBe(words.editInvalidNumber)
+      .toBe(number)
     await userEvent.keyboard('{Escape}')
 
     await openEdit('status')
-    await expect.poll(() => clearValue()?.textContent).toBe(words.editClear)
+    await expect.poll(() => clearValue()?.textContent).toBe(clear)
   })
 
   test('ED19: подписи редакторов — свои ключи словаря edit*: поиск, «нет вариантов», загрузка, отказ загрузки, повтор, очистка; ключи фильтра вариантов редакторы не читают', async () => {
+    const edit = {
+      search: 'Найти',
+      none: 'Пусто',
+      loading: 'Ждём',
+      error: 'Сбой',
+      retry: 'Ещё раз',
+      clear: 'Стереть',
+    }
     const words = {
-      editSearchOptions: 'Найти',
-      editNoOptions: 'Пусто',
-      editLoadingOptions: 'Ждём',
-      editOptionsError: 'Сбой',
-      editRetry: 'Ещё раз',
-      editClear: 'Стереть',
+      'cellEditing.editSearchOptions': edit.search,
+      'cellEditing.editNoOptions': edit.none,
+      'cellEditing.editLoadingOptions': edit.loading,
+      'cellEditing.editOptionsError': edit.error,
+      'cellEditing.editRetry': edit.retry,
+      'cellEditing.editClear': edit.clear,
       // Подписи фильтра — другие: редактор их не показывает.
-      filterSearchOptions: 'ФИЛЬТР поиск',
-      filterNoOptions: 'ФИЛЬТР пусто',
-      filterLoadingOptions: 'ФИЛЬТР загрузка',
-      filterOptionsError: 'ФИЛЬТР сбой',
-      filterRetry: 'ФИЛЬТР повтор',
+      'columnFiltering.filterSearchOptions': 'ФИЛЬТР поиск',
+      'columnFiltering.filterNoOptions': 'ФИЛЬТР пусто',
+      'columnFiltering.filterLoadingOptions': 'ФИЛЬТР загрузка',
+      'columnFiltering.filterOptionsError': 'ФИЛЬТР сбой',
+      'columnFiltering.filterRetry': 'ФИЛЬТР повтор',
     }
     const server = directory()
     await render(
@@ -442,23 +455,19 @@ describe('редакторы вариантов (ADR 0175)', () => {
 
     await openEdit('status')
     await expect.poll(field).not.toBeNull()
-    expect(clearValue()!.textContent).toBe(words.editClear)
+    expect(clearValue()!.textContent).toBe(edit.clear)
     await userEvent.type(field()!, 'zzz')
-    await expect.poll(() => popup()?.textContent).toContain(words.editNoOptions)
+    await expect.poll(() => popup()?.textContent).toContain(edit.none)
     await userEvent.keyboard('{Escape}')
 
     await openEdit('manager')
-    await expect
-      .poll(() => loadingLabel(popup()))
-      .toBe(words.editLoadingOptions)
-    expect(field()!.placeholder).toBe(words.editSearchOptions)
+    await expect.poll(() => loadingLabel(popup())).toBe(edit.loading)
+    expect(field()!.placeholder).toBe(edit.search)
     server.refuse()
-    await expect
-      .poll(() => popup()?.textContent)
-      .toContain(words.editOptionsError)
+    await expect.poll(() => popup()?.textContent).toContain(edit.error)
     expect(
       popup()!.querySelector('[data-testid="edit-options-retry"]')!.textContent,
-    ).toBe(words.editRetry)
+    ).toBe(edit.retry)
     expect(popup()!.textContent).not.toContain('ФИЛЬТР')
     await userEvent.keyboard('{Escape}')
 
@@ -467,7 +476,7 @@ describe('редакторы вариантов (ADR 0175)', () => {
       document.querySelector<HTMLElement>('[data-testid="edit-multiselect"]')
     await expect.poll(multi).not.toBeNull()
     expect(multi()!.querySelector<HTMLInputElement>('input')!.placeholder).toBe(
-      words.editSearchOptions,
+      edit.search,
     )
   })
 

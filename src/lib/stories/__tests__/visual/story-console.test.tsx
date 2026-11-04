@@ -347,7 +347,7 @@ describe('консоль историй (ADR 0124)', () => {
     ]
     await expect
       .poll(() => actionRows().at(-1)?.textContent)
-      .toMatch(/#\d+ columnSorting \{column:"country"\} · мышь/)
+      .toMatch(/#\d+ columnSorting «[^»]+» \{column:"country"\} · мышь/)
     const sorted = actionRows().at(-1)!
     expect(sorted.dataset.consoleChild).toBeUndefined()
     // Итог ссылается на номер исходного действия.

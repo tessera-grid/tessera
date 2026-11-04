@@ -8,6 +8,10 @@ import {
   type LabelDictionary,
   unknownLabelKeys,
 } from '../../../core/localization'
+import {
+  type LabelSet,
+  labelSetKeys,
+} from '../../../core/localization/pluginLabels'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import { pagination, quickSearch, rowSelection } from '../../../plugins'
@@ -21,6 +25,20 @@ const NBSP = ' '
 const ROWS = 12_340
 
 const columns = [{ id: 'name', accessorKey: 'name', header: 'Name' }]
+
+/** Ключи всех владельцев подписей: словарь историй задаёт и плагины не этого стенда. */
+const OWNED_KEYS = Object.values(
+  import.meta.glob<Record<string, unknown>>(
+    '../../../{plugins,shared}/**/labels.ts',
+    { eager: true },
+  ),
+)
+  .flatMap(module => Object.values(module))
+  .filter(
+    (value): value is LabelSet =>
+      typeof value === 'function' && 'params' in value,
+  )
+  .flatMap(labelSetKeys)
 
 interface HostProps {
   localization?: LabelDictionary
@@ -135,7 +153,7 @@ describe('Словарь подписей на таблице', () => {
     expect(
       Object.values(RU_LABELS).filter(value => typeof value !== 'string'),
     ).toEqual([])
-    expect(unknownLabelKeys(RU_LABELS)).toEqual([])
+    expect(unknownLabelKeys(RU_LABELS, OWNED_KEYS)).toEqual([])
     await render(<Host localization={RU_LABELS} locale="ru-RU" selection />)
     await expect.poll(range).toBe(`1–25 из 12${NBSP}340`)
     expect(
@@ -156,7 +174,7 @@ describe('Словарь подписей на таблице', () => {
   })
 
   test('LC5: опция locale таблицы задаёт язык форм числа, чисел и списков; по умолчанию en-US', async () => {
-    const localization = { pageRange: '{from}–{to} из {total}' }
+    const localization = { 'pagination.pageRange': '{from}–{to} из {total}' }
     const view = await render(<Host localization={localization} />)
     await expect.poll(range).toBe('1–25 из 12,340')
 
@@ -181,16 +199,16 @@ describe('Словарь подписей на таблице', () => {
       ...typo,
     }
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    await render(<Host localization={typed} />)
+    await render(<Host localization={typed} selection />)
     await expect.poll(range).toBe('1–25')
     const warned = warn.mock.calls.map(([message]) => String(message))
     expect(warned).toContain(
-      '[tessera] localization: unknown label key "pageRange_one"',
+      '[tessera] localization: unknown label key "pagination.pageRange_one"',
     )
     expect(warned).toContain(
       '[tessera] localization: unknown label key "pageRang"',
     )
-    expect(warned.join('\n')).not.toContain('"selectedRows_few"')
-    expect(warned.join('\n')).not.toContain('"pageRange"')
+    expect(warned.join('\n')).not.toContain('"rowSelection.selectedRows_few"')
+    expect(warned.join('\n')).not.toContain('"pagination.pageRange"')
   })
 })

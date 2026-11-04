@@ -414,7 +414,9 @@ describe('Применение серверного фильтра (ADR 0154)', 
   })
 
   test('FD10: подпись «Применить» — ключ словаря; axe и контраст кнопки в обеих темах', async () => {
-    const screen = await mount({ localization: { filterApply: 'Send' } })
+    const screen = await mount({
+      localization: { 'columnFiltering.filterApply': 'Send' },
+    })
     await openPanel()
     expect(apply()!.textContent).toBe('Send')
     await closePanel()

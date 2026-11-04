@@ -669,12 +669,12 @@ describe('Фильтр вариантов — подписи и вид', () => {
     await render(
       <Grid
         localization={{
-          filterAnyOf: 'Любое из',
-          filterSearchOptions: 'Найти значение',
-          filterSelectAll: 'Выбрать все',
-          filterClearSelection: 'Снять',
-          filterNoOptions: 'Нет значений',
-          clearSearch: 'Очистить',
+          'columnFiltering.filterAnyOf': 'Любое из',
+          'columnFiltering.filterSearchOptions': 'Найти значение',
+          'columnFiltering.filterSelectAll': 'Выбрать все',
+          'columnFiltering.filterClearSelection': 'Снять',
+          'columnFiltering.filterNoOptions': 'Нет значений',
+          'options.clearSearch': 'Очистить',
         }}
         icons={{ clear: CustomClear }}
       />,

@@ -102,7 +102,7 @@ describe('Отказ процесса вне таблицы (ADR 0177)', () => {
       )
     expect(failures()).toEqual([
       expect.objectContaining({
-        label: dataExportLabels(tableLabels).export,
+        action: { plugin: 'dataExport', action: 'export' },
         target: { process: 'export' },
         reason: 'Disk full',
         retry: expect.any(Function),
