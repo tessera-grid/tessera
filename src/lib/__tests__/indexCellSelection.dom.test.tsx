@@ -180,7 +180,7 @@ afterEach(() => {
 })
 
 describe('Выделение и копирование в серверной модели строк (ADR 0146)', () => {
-  it('XC1: в SSRM выделение не инертно — диапазон индексами строк и id колонок в срезе; диапазон без индексов не применяется, одно предупреждение', async () => {
+  it('XC1: в SSRM выделение не инертно — диапазон индексами строк и id колонок в срезе, id загруженных углов рядом; диапазон только с id незагруженных строк не применяется, одно предупреждение', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const onCellSelectionChange = vi.fn()
     server([], { onCellSelectionChange })
@@ -204,6 +204,17 @@ describe('Выделение и копирование в серверной м�
       }),
     )
     act(() => table.extendCellSelection('down'))
+    // Запись грида: индексы углов и id загруженных углов рядом (ADR 0180).
+    expect(onCellSelectionChange).toHaveBeenLastCalledWith([
+      {
+        anchorRowIndex: 2,
+        focusRowIndex: 3,
+        anchorRowId: 'r2',
+        focusRowId: 'r3',
+        anchorColumnId: 'name',
+        focusColumnId: 'city',
+      },
+    ])
     select(2, 500)
     expect(onCellSelectionChange).toHaveBeenLastCalledWith([
       {
@@ -216,13 +227,13 @@ describe('Выделение и копирование в серверной м�
     expect(table.getSelectedCellCount()).toBe(499 * 2)
     expect(source().at(500)).toBeUndefined()
 
-    // Диапазон по id строк серверная модель не применяет.
+    // Диапазон по id незагруженных строк серверная модель не применяет.
     for (let i = 0; i < 2; i++) {
       act(() =>
         table.setCellSelection(() => [
           {
-            anchorRowId: 'r1',
-            focusRowId: 'r3',
+            anchorRowId: 'r700',
+            focusRowId: 'r800',
             anchorColumnId: 'name',
             focusColumnId: 'city',
           },

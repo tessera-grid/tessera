@@ -10,9 +10,9 @@ import type { RowListChange } from '../rowSource'
 import { readHighlights } from './highlightFeature'
 import {
   isIndexRows,
-  rangeHighlightKey,
   rangeOfKey,
-  type RangeTarget,
+  type RangeSpan,
+  spanKey,
 } from './targetRanges'
 
 type Slice = Record<string, unknown>
@@ -24,9 +24,9 @@ const indexRangeKeys = (slice: Slice) =>
   })
 
 const shiftTarget = (
-  target: RangeTarget,
+  target: RangeSpan,
   change: RowListChange,
-): RangeTarget | null => {
+): RangeSpan | null => {
   const { rows, columns } = target.range
   if (!isIndexRows(rows)) return target
   const [from, to] = rows.indexes
@@ -49,7 +49,7 @@ const moved = <T extends Slice>(
     const [target] = batches
       ? (followSpans([rangeOfKey(key)!], batches, shiftTarget) ?? [])
       : []
-    const nextKey = target && rangeHighlightKey(target)
+    const nextKey = target && spanKey(target)
     if (nextKey === key) continue
     changed = true
     const value = slice[key]

@@ -369,8 +369,10 @@ const rangeMark = () =>
   marksTable?.highlight(
     {
       range: {
-        rows: [RANGE_ROWS[0]!, RANGE_ROWS[1]!],
-        columns: [RANGE_COLUMNS[0], RANGE_COLUMNS[1]],
+        anchorRowId: RANGE_ROWS[0]!,
+        focusRowId: RANGE_ROWS[1]!,
+        anchorColumnId: RANGE_COLUMNS[0],
+        focusColumnId: RANGE_COLUMNS[1],
       },
     },
     { key: 'range', tone: 'danger' },

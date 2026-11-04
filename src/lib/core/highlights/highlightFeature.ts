@@ -27,6 +27,7 @@ import {
   rangeHighlightKey,
   rangeOfKey,
   type RangeTarget,
+  spanOf,
 } from './targetRanges'
 
 export type { RangeTarget } from './targetRanges'
@@ -377,7 +378,7 @@ const revealTarget = (table: unknown, target: HighlightTarget) => {
     return scrollToRow(table, target.cell[0], { columnId: target.cell[1] })
   }
   if ('column' in target) return revealColumn(table, target.column)
-  const { rows, columns } = target.range
+  const { rows, columns } = spanOf(target).range
   return isIndexRows(rows)
     ? scrollToRowIndex(table, rows.indexes[0], { columnId: columns[0] })
     : scrollToRow(table, rows[0], { columnId: columns[0] })

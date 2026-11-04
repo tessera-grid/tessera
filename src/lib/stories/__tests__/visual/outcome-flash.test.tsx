@@ -723,10 +723,20 @@ describe('Вспышка и подсветка диапазона: вид (ADR 0
       .poll(() => cellEl('r4', 'b').getAttribute('data-cell-selected'))
       .toBe('true')
     const flashRange = {
-      range: { rows: ['r1', 'r2'], columns: ['a', 'c'] },
+      range: {
+        anchorRowId: 'r1',
+        focusRowId: 'r2',
+        anchorColumnId: 'a',
+        focusColumnId: 'c',
+      },
     } as unknown as HighlightTarget
     const highlightRange = {
-      range: { rows: ['r4', 'r5'], columns: ['a', 'c'] },
+      range: {
+        anchorRowId: 'r4',
+        focusRowId: 'r5',
+        anchorColumnId: 'a',
+        focusColumnId: 'c',
+      },
     } as unknown as HighlightTarget
     const cells = (rows: string[]) =>
       rows.flatMap(rowId => ['a', 'b', 'c'].map(c => cellEl(rowId, c)))

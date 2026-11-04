@@ -28,6 +28,9 @@ import {
 } from './demos/GuideStory'
 import { SERVER_FAILURE } from './demos/serverRowModelDemos'
 import { StoryComponent } from './DataGridStory'
+import type { TesseraFeatureEntry } from '../core/features'
+import type { CellSelectionRangeView } from '../plugins/cellSelectionModel/indexSelection'
+import type { ConsoleLog } from './demos/consoleLog'
 import {
   layout,
   bodyRows,
@@ -45,7 +48,8 @@ import {
 /**
  * Выделение и копирование в серверной модели (ADR 0146): `Playground` — строки с «сервера»
  * с выделением ячеек, объём и предел копирования — контролами; S1 — диапазон через
- * незагруженные строки, S2 — копирование с догрузкой, S3 — сверх предела, S4 — отказ сервера.
+ * незагруженные строки, S2 — копирование с догрузкой, S3 — сверх предела, S4 — отказ сервера;
+ * чтение выделения приложением одной формой — S1 ADR 0180.
  */
 const meta = {
   ...dataGridMeta,
@@ -645,6 +649,133 @@ export const ServerCopyCancel: StoryObj<StoryProps> = {
         true,
       )
       await expect(consoleText()).toContain('cancel')
+    })
+  },
+}
+
+// --- ADR 0180, S1 --------------------------------------------------------------------
+
+/** Диапазон для консоли: места строк с единицы, колонки, строки-углы; неизвестный угол — «—». */
+const describeRange = (range: CellSelectionRangeView) =>
+  `rows ${range.minRowIndex + 1}–${range.maxRowIndex + 1} · ${range.columnIds[0]}…${range.columnIds.at(-1)} · corners ${range.anchorRowId ?? '—'} → ${range.focusRowId ?? '—'}`
+
+/** Приложение читает выделение одной функцией таблицы и пишет его в консоль. */
+const rangeReader = (log: ConsoleLog): TesseraFeatureEntry => ({
+  id: 'appRangeReader',
+  setup: table => {
+    const t = table as unknown as {
+      store: {
+        get: () => { cellSelection?: unknown }
+        subscribe: (listener: () => void) => { unsubscribe: () => void }
+      }
+      getCellSelectionRanges: () => CellSelectionRangeView[]
+    }
+    let seen = t.store.get().cellSelection
+    const subscription = t.store.subscribe(() => {
+      const next = t.store.get().cellSelection
+      if (next === seen) return
+      seen = next
+      const ranges = t.getCellSelectionRanges()
+      if (ranges.length) log.log('app', ranges.map(describeRange).join('; '))
+    })
+    return () => subscription.unsubscribe()
+  },
+})
+
+const READ_BLOCK = 10
+
+const READ_RANGES: readonly GuideStoryStep[] = [
+  {
+    title: 'Строки с сервера',
+    hint: 'Таблица показывает строки с сервера. Приложение читает выделение одной функцией таблицы — той же, что в клиентском режиме, — и пишет его в консоль.',
+    props: context => {
+      const props = serverProps({
+        total: RANGE_TOTAL,
+        knownTotal: true,
+        blockSize: READ_BLOCK,
+        selection: true,
+      })!(context)
+      return {
+        ...props,
+        extraPlugins: [...(props.extraPlugins ?? []), rangeReader(context.log)],
+      }
+    },
+    enter: () => {
+      server.hold = false
+      release()
+    },
+  },
+  {
+    title: 'Пользователь выделил диапазон',
+    hint: 'Пользователь протянул выделение на три строки и три колонки. Консоль показывает места строк, колонки и строки-углы.',
+    states: ['body.cellRange'],
+    enter: stepAction(async (root, { signal }) => {
+      server.hold = false
+      release()
+      if (layerOf(root).top() > 0) layerOf(root).scrollTo({ top: 0 })
+      await pollUntil(() => !!cellAt(root, 2, 'age'), signal)
+      await nextFrame()
+      dragCells(cellAt(root, 0, 'name')!, cellAt(root, 2, 'age')!)
+      await pollUntil(() => selectedCellCount(root) === 9, signal)
+    }),
+  },
+  {
+    title: 'Угол ушёл в незагруженные строки',
+    keyboard: true,
+    hint: 'Пользователь трижды нажал Shift+PageDown. Второй угол диапазона — на строке, которая ещё в пути с сервера: её место известно, а сама строка — ещё нет, и консоль второй угол не называет.',
+    states: ['body.skeleton', 'body.cellRange'],
+    enter: stepAction(async (root, { signal }) => {
+      if (selectedPending(root) > 0) return
+      if (layerOf(root).top() > 0) layerOf(root).scrollTo({ top: 0 })
+      await pollUntil(() => !!cellAt(root, 2, 'age'), signal)
+      await nextFrame()
+      if (selectedCellCount(root) !== 9) {
+        dragCells(cellAt(root, 0, 'name')!, cellAt(root, 2, 'age')!)
+      }
+      server.hold = true
+      cellAt(root, 0, 'name')!.focus({ preventScroll: true })
+      for (let page = 0; page < RANGE_PAGES; page++) {
+        press(document.activeElement as HTMLElement, 'PageDown', {
+          shiftKey: true,
+        })
+      }
+      await pollUntil(() => selectedPending(root) > 0, signal)
+    }),
+  },
+]
+
+/** ADR 0180, S1: приложение читает выделенный диапазон одной функцией в серверной модели. */
+export const CellSelectionRangesAnyMode: StoryObj<StoryProps> = {
+  name: 'Read the selection',
+  parameters: { scenario: '0180/S1', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Чтение выделения приложением"
+      steps={READ_RANGES}
+      args={guideArgs(layout, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(READ_RANGES[0]!.title, async () => {
+      await until(() => expect(hasRow(canvas, 0)).toBe(true))
+    })
+    await step(READ_RANGES[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await until(() =>
+        expect(consoleText()).toContain(
+          'rows 1–3 · name…age · corners item-id-0 → item-id-2',
+        ),
+      )
+    })
+    await step(READ_RANGES[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await until(() => expect(consoleText()).toMatch(/corners item-id-0 → —/))
+      server.hold = false
+      release()
+      await settle()
     })
   },
 }

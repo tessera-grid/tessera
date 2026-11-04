@@ -167,6 +167,9 @@ interface ModelTable {
   getCoreRowModel: () => ById
 }
 
+/** Места строк по `id` — одна карта на список: выделение ищет места на каждой отрисовке. */
+const listIndexes = new WeakMap<readonly ModelRow[], Map<string, number>>()
+
 /** Источник клиентского режима: список — `getRowModel().rows`. */
 export const createClientRowSource = (table: unknown): RowSource => {
   const t = table as ModelTable
@@ -182,7 +185,12 @@ export const createClientRowSource = (table: unknown): RowSource => {
       // Строка стоит на своём индексе (плоский список без сортировки) — без обхода списка.
       const row = rowsById[id]
       if (row && rows[row.index] === row) return row.index
-      return rows.findIndex(item => item.id === id)
+      let indexes = listIndexes.get(rows)
+      if (!indexes) {
+        indexes = new Map(rows.map((item, index) => [item.id, index]))
+        listIndexes.set(rows, indexes)
+      }
+      return indexes.get(id) ?? -1
     },
     rows: () => t.getRowModel().rows,
   }

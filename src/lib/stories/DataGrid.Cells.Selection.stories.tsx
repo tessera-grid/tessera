@@ -26,7 +26,10 @@ import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 
-/** Выделение ячеек (ADR 0029); выделение командой приложения без жестов (ADR 0120). */
+/**
+ * Выделение ячеек (ADR 0029); выделение командой приложения без жестов (ADR 0120); выделение
+ * едет с углами при сортировке (ADR 0180, S2).
+ */
 const meta = {
   ...dataGridMeta,
   parameters: { ...dataGridMeta.parameters },
@@ -344,5 +347,90 @@ export const CellSelectionByCommand: StoryObj<StoryProps> = {
       expect(selectedCellIds(canvas).sort()).toEqual(found)
     })
     await settle()
+  },
+}
+
+// --- ADR 0180, S2 --------------------------------------------------------------------
+
+const CORNER_A = { row: 'item-id-1', column: 'firstName' }
+const CORNER_B = { row: 'item-id-3', column: 'age' }
+
+const cornersSelected = (root: HTMLElement) =>
+  isSelected(at(root, CORNER_A)) && isSelected(at(root, CORNER_B))
+const sortOf = (root: HTMLElement) =>
+  root
+    .querySelector('.data-grid__head-cell[data-column-id="firstName"]')
+    ?.getAttribute('aria-sort') ?? 'none'
+const rowIndexOf = (root: HTMLElement, rowId: string) =>
+  root
+    .querySelector<HTMLElement>(`.data-grid__body-row[data-row-id="${rowId}"]`)
+    ?.getAttribute('aria-rowindex')
+
+/** От одной выделенной ячейки — диапазон с Shift; иначе выделение начинается заново. */
+const selectCorners = (root: HTMLElement) => {
+  if (isSelected(at(root, CORNER_A)) && selectedCells(root) === 1)
+    pressCell(at(root, CORNER_B), { shiftKey: true })
+  else pressCell(at(root, CORNER_A))
+}
+
+const FOLLOWS_SORT: readonly GuideStoryStep[] = [
+  {
+    title: 'Диапазон выделен',
+    hint: 'Пользователь выделил прямоугольник между двумя ячейками. Строки идут в исходном порядке.',
+    states: ['body.cellRange'],
+    props: () => ({ enableColumnSorting: true }),
+    enter: untilDone(cornersSelected, selectCorners),
+  },
+  {
+    title: 'Пользователь отсортировал таблицу',
+    hint: 'Пользователь отсортировал таблицу по имени. Строки переехали, и выделение переехало вместе с ними: прямоугольник стоит между теми же строками-углами на их новых местах.',
+    states: ['body.cellRange'],
+    enter: untilDone(
+      root => sortOf(root) !== 'none' && cornersSelected(root),
+      root => {
+        if (!cornersSelected(root)) return selectCorners(root)
+        root
+          .querySelector<HTMLElement>(
+            '.data-grid__head-cell[data-column-id="firstName"] .column-sort__button',
+          )
+          ?.click()
+      },
+    ),
+  },
+]
+
+/** ADR 0180, S2: пользователь выделил диапазон и отсортировал — выделение едет с углами. */
+export const CellSelectionFollowsSort: StoryObj<StoryProps> = {
+  name: 'Follows sorting',
+  parameters: { scenario: '0180/S2', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Выделение едет со строками"
+      steps={FOLLOWS_SORT}
+      // Все строки на экране: углы видны и после сортировки.
+      args={guideArgs(
+        { ...GRID, dataCount: 8, height: '460', enableCellSelection: true },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    let before: (string | null | undefined)[] = []
+    await step(FOLLOWS_SORT[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(cornersSelected(canvas)).toBe(true))
+      before = [CORNER_A.row, CORNER_B.row].map(id => rowIndexOf(canvas, id))
+    })
+    await step(FOLLOWS_SORT[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(sortOf(canvas)).not.toBe('none'))
+      await until(() => expect(cornersSelected(canvas)).toBe(true))
+      // Углы переехали вместе со строками.
+      expect(
+        [CORNER_A.row, CORNER_B.row].map(id => rowIndexOf(canvas, id)),
+      ).not.toEqual(before)
+      await settle()
+    })
   },
 }

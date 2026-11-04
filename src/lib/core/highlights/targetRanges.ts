@@ -5,8 +5,24 @@
 import { getDisplayColumns } from '../displayColumns'
 import { rowSourceOf } from '../rowSource'
 
-/** Прямоугольник ячеек: углы строк — id (клиентская модель) или индексы (серверная). */
+/**
+ * Прямоугольник ячеек — той же формы, что диапазон выделения (ADR 0180, §6): углы строк
+ * `id` или индексами, колонки по `id`. Заданы оба `id` углов — диапазон держится за
+ * строки, иначе — за индексы.
+ */
 export interface RangeTarget {
+  range: {
+    anchorRowIndex?: number
+    focusRowIndex?: number
+    anchorRowId?: string
+    focusRowId?: string
+    anchorColumnId: string
+    focusColumnId: string
+  }
+}
+
+/** Диапазон в срезе подсветки: углы строк — `id` или индексы, колонки — `id`. */
+export interface RangeSpan {
   range: {
     rows:
       | readonly [from: string, to: string]
@@ -14,6 +30,19 @@ export interface RangeTarget {
     columns: readonly [from: string, to: string]
   }
 }
+
+/** Диапазон цели в виде среза: `id` углов главнее индексов. */
+export const spanOf = ({ range }: RangeTarget): RangeSpan => ({
+  range: {
+    rows:
+      range.anchorRowId !== undefined && range.focusRowId !== undefined
+        ? [range.anchorRowId, range.focusRowId]
+        : {
+            indexes: [range.anchorRowIndex ?? -1, range.focusRowIndex ?? -1],
+          },
+    columns: [range.anchorColumnId, range.focusColumnId],
+  },
+})
 
 export interface RangeBounds {
   minRow: number
@@ -25,20 +54,24 @@ export interface RangeBounds {
 const SEP = '\u0000'
 
 export const isIndexRows = (
-  rows: RangeTarget['range']['rows'],
+  rows: RangeSpan['range']['rows'],
 ): rows is { indexes: readonly [number, number] } => 'indexes' in rows
 
-export const rangeHighlightKey = ({ range }: RangeTarget): string => {
+/** Ключ диапазона в срезе. */
+export const spanKey = ({ range }: RangeSpan): string => {
   const [c1, c2] = range.columns
   return isIndexRows(range.rows)
     ? ['g', 'i', ...range.rows.indexes, c1, c2].join(SEP)
     : ['g', 'd', ...range.rows, c1, c2].join(SEP)
 }
 
+export const rangeHighlightKey = (target: RangeTarget): string =>
+  spanKey(spanOf(target))
+
 export const isRangeKey = (key: string) => key.startsWith(`g${SEP}`)
 
 /** Диапазон по ключу; `undefined` — ключ не диапазона. */
-export const rangeOfKey = (key: string): RangeTarget | undefined => {
+export const rangeOfKey = (key: string): RangeSpan | undefined => {
   if (!isRangeKey(key)) return undefined
   const [, kind, a, b, c1, c2] = key.split(SEP) as string[]
   const columns = [c1!, c2!] as const
@@ -76,7 +109,7 @@ export const rangeColumnIndex = (table: unknown, columnId: string): number =>
 /** Границы диапазона в текущем порядке; `undefined` — угол не на виду или ушёл. */
 export const rangeBounds = (
   table: unknown,
-  { range }: RangeTarget,
+  { range }: RangeSpan,
 ): RangeBounds | undefined => {
   const [r1, r2] = isIndexRows(range.rows)
     ? range.rows.indexes
@@ -163,11 +196,13 @@ export const selectionRangeTargets = (table: unknown): RangeTarget[] => {
     const c1 = columns[bound.minColumnIndex]
     const c2 = columns[bound.maxColumnIndex]
     if (c1 === undefined || c2 === undefined) continue
+    const columnIds = { anchorColumnId: c1, focusColumnId: c2 }
     if (byIndex) {
       targets.push({
         range: {
-          rows: { indexes: [bound.minRowIndex, bound.maxRowIndex] },
-          columns: [c1, c2],
+          anchorRowIndex: bound.minRowIndex,
+          focusRowIndex: bound.maxRowIndex,
+          ...columnIds,
         },
       })
       continue
@@ -175,7 +210,9 @@ export const selectionRangeTargets = (table: unknown): RangeTarget[] => {
     const r1 = rows?.[bound.minRowIndex]?.id
     const r2 = rows?.[bound.maxRowIndex]?.id
     if (r1 === undefined || r2 === undefined) continue
-    targets.push({ range: { rows: [r1, r2], columns: [c1, c2] } })
+    targets.push({
+      range: { anchorRowId: r1, focusRowId: r2, ...columnIds },
+    })
   }
   return targets
 }
@@ -187,7 +224,7 @@ export const rangeContains = (
   rowId: string,
   columnId: string,
 ): boolean => {
-  const bounds = rangeBounds(table, target)
+  const bounds = rangeBounds(table, spanOf(target))
   if (!bounds) return false
   return within(
     bounds,

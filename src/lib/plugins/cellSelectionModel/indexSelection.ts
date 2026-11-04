@@ -1,8 +1,9 @@
 /**
- * Выделение ячеек по индексам строк (ADR 0146, §1–§2). У источника с ключами по индексу
- * (серверная модель строк) методы фичи TanStack работают по индексам источника: строки
- * могут быть не загружены, их id неизвестны. Иначе — стоковые методы.
+ * Выделение ячеек по индексам строк во всех режимах (ADR 0146, §1–§2; ADR 0180): методы фичи
+ * TanStack работают по индексам источника. В срезе — индексы углов и `id` углов, где строка
+ * известна; на клиенте место угла — по его `id`, выделение едет со строками.
  */
+import type { RowData, TableFeatures } from '@tanstack/react-table'
 import { logWarn } from '../../util/logger'
 import {
   followRowList as followRows,
@@ -22,7 +23,7 @@ import {
   type SelectionBounds,
 } from './selectionGeometry'
 
-/** Диапазон выделения: в серверной модели — индексы строк, иначе — id строк. */
+/** Диапазон выделения: индексы строк-углов и их `id`, где строка известна (ADR 0180, §1). */
 export interface CellSelectionRange {
   anchorRowId?: string
   focusRowId?: string
@@ -76,14 +77,37 @@ interface SelectionTable {
 
 type Method = (...args: never[]) => unknown
 
-/**
- * По индексам источника — в серверной модели и пока над источником стоит слой строк до
- * сохранения (ADR 0178, §7): диапазон идёт по видимому списку, а не по модели строк.
- */
-export const isIndexSelection = (table: unknown): boolean => {
-  const source = rowSourceOf(table)
-  return source.keyByIndex === true || source.base !== undefined
+/** Диапазон для чтения приложением — одна форма во всех режимах (ADR 0180, §5). */
+export interface CellSelectionRangeView {
+  minRowIndex: number
+  maxRowIndex: number
+  /** `id` строк-углов, где строка известна. */
+  anchorRowId?: string
+  focusRowId?: string
+  /** Колонки диапазона в порядке экрана. */
+  columnIds: string[]
+  operation: 'include' | 'exclude'
 }
+
+interface IndexSelectionTableAPI {
+  /** Диапазоны выделения одной формой в клиентском и серверном режимах (ADR 0180, §5). */
+  getCellSelectionRanges: () => CellSelectionRangeView[]
+}
+
+/* eslint-disable @typescript-eslint/no-unused-vars -- generics карт обязаны
+   повторять сигнатуры v9, иначе declaration merging не склеится */
+declare module '@tanstack/react-table' {
+  interface Plugins {
+    indexCellSelectionFeature: TableFeature
+  }
+  interface Table_FeatureMap<
+    in out TFeatures extends TableFeatures,
+    in out TData extends RowData,
+  > {
+    indexCellSelectionFeature: IndexSelectionTableAPI
+  }
+}
+/* eslint-enable @typescript-eslint/no-unused-vars */
 
 const hasIndexes = (range: CellSelectionRange) =>
   typeof range.anchorRowIndex === 'number' &&
@@ -143,19 +167,28 @@ const createIndexSelection = (t: SelectionTable) => {
     | undefined
   let warned = false
 
-  /** Серверная модель: диапазон — индексы; клиентская — id строк, индексы по источнику. */
+  /**
+   * Серверная модель: главнее индексы, `id` — у диапазона без них (загруженные строки).
+   * Клиент: главнее `id` — выделение едет со строками; без них — индексы (ADR 0180, §3–§4).
+   */
   const byIndex = () => source().keyByIndex === true
   const resolve = (range: CellSelectionRange): CellSelectionRange | null => {
-    if (byIndex()) return range
-    const anchorRowIndex =
-      range.anchorRowId !== undefined
-        ? indexOfId(range.anchorRowId)
-        : (range.anchorRowIndex ?? -1)
-    const focusRowIndex =
-      range.focusRowId !== undefined
-        ? indexOfId(range.focusRowId)
-        : (range.focusRowIndex ?? -1)
-    if (anchorRowIndex < 0 || focusRowIndex < 0) return null
+    if (byIndex() && hasIndexes(range)) return range
+    const corner = (id: string | undefined, index: number | undefined) =>
+      byIndex() || id !== undefined ? indexOfId(id) : (index ?? -1)
+    const anchorRowIndex = corner(range.anchorRowId, range.anchorRowIndex)
+    const focusRowIndex = corner(range.focusRowId, range.focusRowIndex)
+    if (anchorRowIndex < 0 || focusRowIndex < 0) {
+      if (byIndex() && !warned) {
+        warned = true
+        logWarn(
+          t as never,
+          'cellSelection: with serverRowModel a range needs anchorRowIndex and focusRowIndex or ids of loaded rows, it is ignored',
+          'cellSelection:rowIndex',
+        )
+      }
+      return null
+    }
     return { ...range, anchorRowIndex, focusRowIndex }
   }
   let resolved:
@@ -164,7 +197,7 @@ const createIndexSelection = (t: SelectionTable) => {
   /** Диапазоны с индексами по видимому списку — одни на срез и список. */
   const live = (): CellSelectionState => {
     const ranges = rangesOf(t)
-    if (byIndex()) return ranges
+    if (byIndex() && ranges.every(hasIndexes)) return ranges
     const list = source().rows?.()
     if (resolved?.ranges !== ranges || resolved.list !== list) {
       resolved = {
@@ -175,17 +208,20 @@ const createIndexSelection = (t: SelectionTable) => {
     }
     return resolved.value
   }
-  /** Клиентский диапазон хранит и id строк: без слоя его читает стоковая фича. */
+  /** `id` строк-углов рядом с индексами, где строка известна (ADR 0180, §1). */
   const withIds = (ranges: CellSelectionState): CellSelectionState =>
-    byIndex()
-      ? ranges
-      : ranges.map(range => ({
-          ...range,
-          anchorRowId: source().at(range.anchorRowIndex ?? -1)?.id,
-          focusRowId: source().at(range.focusRowIndex ?? -1)?.id,
-        }))
+    ranges.map(range => {
+      const { anchorRowId: _anchor, focusRowId: _focus, ...rest } = range
+      const anchorRowId = source().at(range.anchorRowIndex ?? -1)?.id
+      const focusRowId = source().at(range.focusRowIndex ?? -1)?.id
+      return {
+        ...rest,
+        ...(anchorRowId !== undefined && { anchorRowId }),
+        ...(focusRowId !== undefined && { focusRowId }),
+      }
+    })
   const write = (updater: (old: CellSelectionState) => CellSelectionState) =>
-    t.setCellSelection(old => withIds(updater(byIndex() ? old : live())))
+    t.setCellSelection(() => withIds(updater(live())))
 
   const bounds = (): SelectionBounds[] => {
     const ranges = live()
@@ -200,17 +236,6 @@ const createIndexSelection = (t: SelectionTable) => {
     }
     const operations: BoundsOperation[] = []
     for (const range of ranges) {
-      if (!hasIndexes(range)) {
-        if (!warned && byIndex()) {
-          warned = true
-          logWarn(
-            t as never,
-            'cellSelection: with serverRowModel a range needs anchorRowIndex and focusRowIndex — it is ignored',
-            'cellSelection:rowIndex',
-          )
-        }
-        continue
-      }
       const anchorColumn = columns[range.anchorColumnId] ?? -1
       const focusColumn = columns[range.focusColumnId] ?? -1
       const top = Math.min(range.anchorRowIndex!, range.focusRowIndex!)
@@ -403,6 +428,27 @@ const createIndexSelection = (t: SelectionTable) => {
       }
       return ids
     },
+    getCellSelectionRanges: () => {
+      const columns = columnIdsOf(t)
+      const indexes = t.getCellSelectionColumnIndexes()
+      return live().flatMap((range): CellSelectionRangeView[] => {
+        const a = indexes[range.anchorColumnId] ?? -1
+        const b = indexes[range.focusColumnId] ?? -1
+        if (a < 0 || b < 0) return []
+        const anchorRowId = source().at(range.anchorRowIndex!)?.id
+        const focusRowId = source().at(range.focusRowIndex!)?.id
+        return [
+          {
+            minRowIndex: Math.min(range.anchorRowIndex!, range.focusRowIndex!),
+            maxRowIndex: Math.max(range.anchorRowIndex!, range.focusRowIndex!),
+            ...(anchorRowId !== undefined && { anchorRowId }),
+            ...(focusRowId !== undefined && { focusRowId }),
+            columnIds: columns.slice(Math.min(a, b), Math.max(a, b) + 1),
+            operation: range.operation ?? 'include',
+          },
+        ]
+      })
+    },
     getSelectedCellIds: () => {
       const columns = columnIdsOf(t)
       const ids: string[] = []
@@ -553,28 +599,23 @@ const engineOf = (table: unknown) => {
 }
 
 /**
- * Фича поверх `cellSelectionFeature`: при ключах строк по индексу её методы таблицы и
- * ячейки — по индексам источника. Стоит в наборе после стоковой фичи.
+ * Фича поверх `cellSelectionFeature`: её методы таблицы и ячейки — по индексам источника во
+ * всех режимах (ADR 0180, §2). Стоит в наборе после стоковой фичи: срез, опции и сброс при
+ * смене `data` — стоковые.
  */
 export const indexCellSelectionFeature: TableFeature = {
   constructTableAPIs: table => {
     const t = table as unknown as Record<string, Method>
     for (const name of Object.keys(engineOf(table).table)) {
-      const stock = t[name]
       t[name] = ((...args: never[]) =>
-        isIndexSelection(table)
-          ? engineOf(table).table[name]!(...args)
-          : stock?.(...args)) as Method
+        engineOf(table).table[name]!(...args)) as Method
     }
   },
   assignCellPrototype: (prototype, table) => {
     const p = prototype as Record<string, Method>
     for (const name of Object.keys(engineOf(table).cell)) {
-      const stock = p[name]
       p[name] = function (this: Cell, ...args: never[]) {
-        return isIndexSelection(table)
-          ? engineOf(table).cell[name]!(this, ...args)
-          : stock?.apply(this, args)
+        return engineOf(table).cell[name]!(this, ...args)
       } as Method
     }
   },
@@ -601,20 +642,70 @@ const shiftRange = (
 }
 
 interface FollowTable {
-  store: { get: () => Record<string, unknown> }
+  store: {
+    get: () => Record<string, unknown>
+    subscribe: (listener: () => void) => { unsubscribe: () => void }
+  }
   setCellSelection: (
     updater: (old: CellSelectionState) => CellSelectionState,
   ) => void
 }
 
+/** Индексы углов по их `id` в текущем списке; угол не на виду — без индекса. */
+const followIds = (
+  range: CellSelectionRange,
+  source: RowSource,
+): CellSelectionRange => {
+  if (range.anchorRowId === undefined || range.focusRowId === undefined)
+    return range
+  const anchor = source.indexOf(range.anchorRowId)
+  const focus = source.indexOf(range.focusRowId)
+  const anchorRowIndex = anchor < 0 ? undefined : anchor
+  const focusRowIndex = focus < 0 ? undefined : focus
+  if (
+    anchorRowIndex === range.anchorRowIndex &&
+    focusRowIndex === range.focusRowIndex
+  )
+    return range
+  const { anchorRowIndex: _anchor, focusRowIndex: _focus, ...rest } = range
+  return {
+    ...rest,
+    ...(anchorRowIndex !== undefined && { anchorRowIndex }),
+    ...(focusRowIndex !== undefined && { focusRowIndex }),
+  }
+}
+
+/**
+ * Клиент: смена порядка строк — сортировка, фильтр, страница — пересчитывает индексы углов по
+ * их `id` (ADR 0180, §3). Угол не на виду — индексов нет, диапазон остаётся в срезе.
+ */
+const followClientOrder = (t: FollowTable, table: unknown) => {
+  let list: unknown
+  const check = () => {
+    const source = rowSourceOf(table)
+    if (source.keyByIndex) return
+    const next = source.rows?.()
+    if (next === list) return
+    list = next
+    const ranges = (t.store.get().cellSelection ?? []) as CellSelectionState
+    const moved = ranges.map(range => followIds(range, source))
+    if (moved.some((range, index) => range !== ranges[index]))
+      t.setCellSelection(() => moved)
+  }
+  const subscription = t.store.subscribe(check)
+  return () => subscription.unsubscribe()
+}
+
 /**
  * Выделение по индексам следует за списком (ADR 0146, §6): новая выборка сбрасывает его,
- * смена строк выше диапазона сдвигает, внутри — сбрасывает.
+ * смена строк выше диапазона сдвигает, внутри — сбрасывает. На клиенте индексы следуют за
+ * `id` углов (ADR 0180, §3).
  */
 export const followRowList = (table: unknown) => {
   const t = table as FollowTable
   const ranges = () => (t.store.get().cellSelection ?? []) as CellSelectionState
-  return followRows(table, {
+  const clientOrder = followClientOrder(t, table)
+  const serverList = followRows(table, {
     active: () => ranges().length > 0,
     reset: () => t.setCellSelection(() => []),
     shift: batches => {
@@ -626,4 +717,8 @@ export const followRowList = (table: unknown) => {
       }
     },
   })
+  return () => {
+    clientOrder()
+    serverList()
+  }
 }

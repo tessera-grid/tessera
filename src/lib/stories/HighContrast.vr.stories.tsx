@@ -6946,3 +6946,53 @@ export const HighContrastInfiniteScrollSelectAllStep3 = {
   name: 'Data loading/Infinite scroll — Select all, шаг 3',
   tags: ['!test'],
 }
+
+export const HighContrastCellSelectionRangesAnyModeStep1 = {
+  ...twinStep(
+    serverCellSelectionStories,
+    serverCellSelectionStories.CellSelectionRangesAnyMode,
+    1,
+  ),
+  name: 'Data loading/Server row model/Cell selection — Read the selection, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastCellSelectionRangesAnyModeStep2 = {
+  ...twinStep(
+    serverCellSelectionStories,
+    serverCellSelectionStories.CellSelectionRangesAnyMode,
+    2,
+  ),
+  name: 'Data loading/Server row model/Cell selection — Read the selection, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastCellSelectionRangesAnyModeStep3 = {
+  ...twinStep(
+    serverCellSelectionStories,
+    serverCellSelectionStories.CellSelectionRangesAnyMode,
+    3,
+  ),
+  name: 'Data loading/Server row model/Cell selection — Read the selection, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastCellSelectionFollowsSortStep1 = {
+  ...twinStep(
+    cellsSelectionStories,
+    cellsSelectionStories.CellSelectionFollowsSort,
+    1,
+  ),
+  name: 'Cells/Selection — Follows sorting, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastCellSelectionFollowsSortStep2 = {
+  ...twinStep(
+    cellsSelectionStories,
+    cellsSelectionStories.CellSelectionFollowsSort,
+    2,
+  ),
+  name: 'Cells/Selection — Follows sorting, шаг 2',
+  tags: ['!test'],
+}

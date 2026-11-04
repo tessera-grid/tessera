@@ -82,10 +82,19 @@ const action = (target?: MenuAction['target'], id = 'archive'): MenuAction => ({
   target,
 })
 
+/** Диапазон углами строк — `id` или индексами — и колонками (ADR 0180, §6). */
 const range = (
-  rows: RangeTarget['range']['rows'],
+  rows: readonly [string, string] | { indexes: readonly [number, number] },
   cols: readonly [string, string],
-): RangeTarget => ({ range: { rows, columns: cols } })
+): RangeTarget => ({
+  range: {
+    ...('indexes' in rows
+      ? { anchorRowIndex: rows.indexes[0], focusRowIndex: rows.indexes[1] }
+      : { anchorRowId: rows[0], focusRowId: rows[1] }),
+    anchorColumnId: cols[0],
+    focusColumnId: cols[1],
+  },
+})
 
 describe('Итог пункта меню на цели: поле target', () => {
   it('TG1: target(ctx, defaultTarget) — поле действия меню в публичных типах; его принимают кебабы, инлайн-кнопки и контекстное меню; у контекстного меню defaultTarget — цель по умолчанию, у остальных — undefined', () => {

@@ -355,8 +355,10 @@ export const rangeFlashSeed = (rows: number) => {
     table!.flashOutcome(
       {
         range: {
-          rows: ['item-id-0', `item-id-${rows - 1}`],
-          columns: [columns[0]!.id, columns.at(-1)!.id],
+          anchorRowId: 'item-id-0',
+          focusRowId: `item-id-${rows - 1}`,
+          anchorColumnId: columns[0]!.id,
+          focusColumnId: columns.at(-1)!.id,
         },
       },
       'reverted',
@@ -391,8 +393,10 @@ export const pendingWaveSeed = (rows: number) => {
         target: [
           {
             range: {
-              rows: ['item-id-0', `item-id-${rows - 1}`],
-              columns: [columns[0]!.id, columns.at(-1)!.id],
+              anchorRowId: 'item-id-0',
+              focusRowId: `item-id-${rows - 1}`,
+              anchorColumnId: columns[0]!.id,
+              focusColumnId: columns.at(-1)!.id,
             },
           },
         ],

@@ -364,7 +364,12 @@ describe('Подсветка: цели', () => {
   test('TG9: highlight и flashOutcome с диапазоном заливают все его ячейки в окне, закреплённые слева и справа — сплошной полосой; текст и кромки выделения не тонированы', async () => {
     await mount({ pinned: true, cells: true })
     const range = {
-      range: { rows: ['r1', 'r3'], columns: ['a', 'c'] },
+      range: {
+        anchorRowId: 'r1',
+        focusRowId: 'r3',
+        anchorColumnId: 'a',
+        focusColumnId: 'c',
+      },
     } as unknown as HighlightTarget
     const inside = ['r1', 'r2', 'r3'].flatMap(rowId =>
       ['a', 'b', 'c'].map(columnId => cellEl(rowId, columnId)),

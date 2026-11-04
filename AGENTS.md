@@ -946,6 +946,13 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       таблицы), перф XC14 — в `scroll`, XC15 — в `interaction`,
       истории «Data loading/Server row model/Cell selection» S1–S4
       ([ADR 0146](docs/decisions/0146-cell-selection-in-ssrm.md)).
+    - _Единая форма диапазона выделения:_ модульный `unifiedRange.dom` (UR1–UR2, UR4–UR7 —
+      индексы и `id` углов в срезе, паритет со стоковой фичей, диапазон от приложения, сброс
+      при смене `data`, `getCellSelectionRanges`, цель `range` подсветки), визуальный
+      `unified-range` (UR3 — выделение едет с углами при сортировке и поиске), перф UR8 — в
+      `scroll`, истории «Data loading/Server row model/Cell selection — Read the selection»
+      (S1) и «Cells/Selection — Follows sorting» (S2)
+      ([ADR 0180](docs/decisions/0180-unified-cell-range.md)).
     - _Серверная группировка:_ модульный `serverGrouping.dom` (GS1–GS2, GS10–GS11 — поля запроса,
       строки-группы и ветки, запрос выгрузки, инертность клиентской модели и ленивых детей),
       визуальный `server-grouping` (GS3–GS9 — кнопка серверным действием с откатом, число строк

@@ -1007,6 +1007,96 @@ describe('Производительность прокрутки — подсв
   )
 })
 
+// Выделение ячеек по индексам на клиенте (ADR 0180, UR8): 1000×1000 с выделенным
+// диапазоном на весь список против той же выборки без выделения.
+const UR8_COST = { ratio: 1.1, plusMs: 2 }
+
+/** Выделение всей таблицы, как только пришли строки. */
+const cellRangeSeed: TesseraFeatureEntry = {
+  id: 'perfCellRange',
+  setup: table => {
+    const t = table as {
+      getRowModel: () => { rows: unknown[] }
+      selectAllCells: () => void
+    }
+    let frame = 0
+    const apply = () => {
+      if (t.getRowModel().rows.length === 0) {
+        frame = requestAnimationFrame(apply)
+        return
+      }
+      t.selectAllCells()
+    }
+    apply()
+    return () => cancelAnimationFrame(frame)
+  },
+}
+
+describe('Производительность прокрутки — выделение ячеек', () => {
+  test(
+    'UR8: прокрутка 1000×1000 с выделенным диапазоном на клиенте не дороже той же прокрутки без выделения больше чем на 10 %',
+    async () => {
+      const measure = async (selected: boolean) => {
+        const screen = renderGrid({
+          ...LARGE,
+          ...NO_PLUGINS,
+          enableCellSelectionModel: true,
+          extraPlugins: selected ? [cellRangeSeed] : [],
+        })
+        await waitForGrid()
+        await expect
+          .poll(
+            () =>
+              document.querySelector('[data-cell-selected="true"]') !== null,
+          )
+          .toBe(selected)
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        return { y, x }
+      }
+
+      const runs = await againstBase(measure)
+      const base = medianAxes(runs.base)
+      const selected = medianAxes(runs.variant)
+      const ceiling = axesCeiling(base, UR8_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1000×1000',
+          plugins: 'none',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: (['y', 'x'] as const).map(axis => ({
+            axis,
+            kind: 'animation' as const,
+            metric: 'p95' as const,
+            valueMs: r[axis].p95Ms,
+            targetMs: ANIMATION_BUDGET_MS,
+            ceilingMs: gated ? ceiling[axis] : undefined,
+            ...r[axis],
+          })),
+        })
+      await record('UR8-base', 'без выделения', base, false)
+      await record('UR8', 'выделена вся таблица', selected, true)
+
+      for (const axis of ['y', 'x'] as const) {
+        expect(
+          selected[axis].p95Ms,
+          `${axis} p95=${selected[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
+        ).toBeLessThanOrEqual(ceiling[axis])
+      }
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
 // Черновики ячеек (ADR 0178, DR21): 1000×1000 с правкой по кнопке, спокойная прокрутка с
 // 1500 черновиками (500 строк × 3 правимые колонки) против той же выборки без них.
 describe('Производительность прокрутки — черновики ячеек', () => {

@@ -245,7 +245,7 @@ describe('Выделение ячеек в серверной модели ст�
       await userEvent.click(cellAt(503, 'city')!, { modifiers: ['Shift'] })
       await expect
         .poll(() => rangesOf(table))
-        .toEqual([
+        .toMatchObject([
           {
             anchorRowIndex: 0,
             focusRowIndex: 503,
