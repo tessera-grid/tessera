@@ -667,32 +667,36 @@ export const GuidePanel = ({
             <span style={{ ...ellipsis, flex: '1 1 0', minWidth: 0 }}>
               {!expanded && !finished && steps[step]?.title}
             </span>
+            {/*
+             * Пометка — в сжимаемой части шапки: она не переносит шапку на вторую строку и
+             * не сдвигает таблицу посреди щелчка (SN67). Подпись сжимается первой.
+             */}
+            {changed && (
+              <>
+                <span
+                  data-testid="guide-changed"
+                  style={{
+                    ...ellipsis,
+                    flex: '0 1000 auto',
+                    minWidth: 0,
+                    color: 'var(--muted-foreground)',
+                  }}
+                >
+                  Таблица изменена
+                </span>
+                <Button
+                  variant="ghost"
+                  data-testid="guide-restore"
+                  onClick={onRestore}
+                  tooltip="Таблица изменена: открыть шаг заново"
+                  icon={<Undo2 aria-hidden="true" />}
+                  style={{ flex: 'none' }}
+                >
+                  Вернуть шаг
+                </Button>
+              </>
+            )}
           </div>
-          {changed && (
-            <div
-              style={{
-                display: 'flex',
-                gap: 8,
-                alignItems: 'center',
-                flex: 'none',
-              }}
-            >
-              <span
-                data-testid="guide-changed"
-                style={{ color: 'var(--muted-foreground)' }}
-              >
-                Таблица изменена
-              </span>
-              <Button
-                variant="ghost"
-                data-testid="guide-restore"
-                onClick={onRestore}
-                icon={<Undo2 aria-hidden="true" />}
-              >
-                Вернуть шаг
-              </Button>
-            </div>
-          )}
           <Button
             data-testid="guide-play"
             aria-pressed={playing}

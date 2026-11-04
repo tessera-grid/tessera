@@ -1,7 +1,7 @@
 import { composeStories } from '@storybook/react'
 import { commands, page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import { humanClick } from '../helpers'
 
 import * as editingStories from '../../DataGrid.Cells.Editing.stories'
@@ -15,6 +15,7 @@ import {
   stepAction,
 } from '../../demos/GuideStory'
 import {
+  afterRows,
   centerOf,
   dragHold,
   pollUntil,
@@ -1197,6 +1198,172 @@ describe('ввод человека посреди гайда (ADR 0117)', () =>
   })
 })
 
+// Стенд остановки шага вводом человека (SN66–SN68).
+const loop = { acts: 0, clicks: 0, leaking: false }
+const cellOfRow = (index: number) =>
+  document.querySelector<HTMLElement>(
+    `${ROW}[data-index="${index}"] [data-column-id="country"]`,
+  )!
+const STOP_ARGS = guideArgs(
+  { dataCount: 10, columnCount: 6 },
+  { colorMode: 'light', locale: 'en' },
+)
+const tableTop = () =>
+  document.querySelector('.data-grid__container')!.getBoundingClientRect().top
+
+describe('остановка шага вводом человека (ADR 0117)', () => {
+  test('SN66: ввод человека останавливает действие шага — цикл шага больше не действует, задержанный щелчок шага не доходит, показ нажатия снят', async () => {
+    loop.acts = 0
+    const looping = await render(
+      <GuideStory
+        title="Цикл шага"
+        steps={[
+          {
+            title: 'Цикл',
+            hint: '',
+            enter: untilDone(
+              () => false,
+              () => {
+                loop.acts++
+              },
+            ),
+          },
+        ]}
+        args={STOP_ARGS}
+      />,
+    )
+    try {
+      await expect.poll(() => loop.acts).toBeGreaterThan(2)
+      await userEvent.click(cellOfRow(1))
+      await expect.poll(changed).not.toBeNull()
+      const acts = loop.acts
+      await sleep(500)
+      expect(loop.acts).toBe(acts)
+    } finally {
+      await looping.unmount()
+    }
+
+    const clicks: Event[] = []
+    const showing = await render(
+      <GuideStory
+        title="Показ шага"
+        steps={[
+          {
+            title: 'Нажатие',
+            hint: '',
+            enter: afterRows(root => {
+              const cell = root.querySelector<HTMLElement>(
+                `${ROW}[data-index="3"] [data-column-id="country"]`,
+              )!
+              cell.addEventListener('click', event => clicks.push(event))
+              cell.click()
+            }),
+          },
+        ]}
+        args={STOP_ARGS}
+        showActions
+      />,
+    )
+    try {
+      // Гайд навёл указатель на цель шага и ждёт, прежде чем нажать.
+      await expect
+        .poll(() => cellOfRow(3)?.classList.contains('pseudo-hover'))
+        .toBe(true)
+      await userEvent.click(cellOfRow(1))
+      await sleep(1500)
+      expect(clicks).toEqual([])
+      expect(cellOfRow(3).classList.contains('pseudo-hover')).toBe(false)
+      expect(cellOfRow(3).classList.contains('pseudo-active')).toBe(false)
+      expect(document.querySelectorAll('[data-guide-click]')).toHaveLength(0)
+    } finally {
+      await showing.unmount()
+    }
+  })
+
+  test('SN67: пометка «Таблица изменена» не сдвигает таблицу в узкой панели, свёрнутой и раскрытой; подпись — подсказкой у кнопки «Вернуть шаг»', async () => {
+    run.release = false
+    const screen = await render(<InputGuide />)
+    try {
+      await opened()
+      expect(innerWidth).toBeLessThan(500)
+      const collapsed = tableTop()
+      await userEvent.click(bodyCell())
+      await expect.poll(changed).not.toBeNull()
+      expect(tableTop()).toBe(collapsed)
+      await humanClick(byId('guide-restore'))
+      await expect.poll(changed).toBeNull()
+      await opened()
+
+      await expandGuide()
+      const expanded = tableTop()
+      await userEvent.click(bodyCell())
+      await expect.poll(changed).not.toBeNull()
+      expect(tableTop()).toBe(expanded)
+
+      await userEvent.hover(byId('guide-restore'))
+      await expect
+        .poll(() => document.body.textContent)
+        .toContain('Таблица изменена: открыть шаг заново')
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('SN68: пока шаг остановлен, событие его действия до таблицы не доходит и в консоли ошибка; переход снимает остановку', async () => {
+    loop.clicks = 0
+    loop.leaking = true
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    // Действие без отмены: щёлкает ячейку, пока тест его не остановит.
+    const leak = (root: HTMLElement) => {
+      const tick = () => {
+        if (!loop.leaking) return
+        const cell = root.querySelector<HTMLElement>(
+          `${ROW}[data-index="3"] [data-column-id="country"]`,
+        )
+        if (cell && !cell.dataset.counted) {
+          cell.dataset.counted = ''
+          cell.addEventListener('click', () => loop.clicks++)
+        }
+        cell?.click()
+        setTimeout(tick, 100)
+      }
+      setTimeout(tick, 0)
+    }
+    const screen = await render(
+      <GuideStory
+        title="Шаг без отмены"
+        steps={[
+          { title: 'Утечка', hint: '', enter: leak },
+          { title: 'Дальше', hint: '' },
+        ]}
+        args={STOP_ARGS}
+      />,
+    )
+    try {
+      await expect.poll(() => loop.clicks).toBeGreaterThan(1)
+      await userEvent.click(cellOfRow(1))
+      await expect.poll(changed).not.toBeNull()
+      await sleep(150)
+      const clicks = loop.clicks
+      await sleep(500)
+      expect(loop.clicks).toBe(clicks)
+      expect(errors).toHaveBeenCalledWith(
+        'Гайд: действие остановленного шага шлёт «click» (ADR 0117, SN68)',
+      )
+      // Переход открывает таблицу заново и снимает остановку: щелчки снова доходят.
+      await expandGuide()
+      await humanClick(byId('guide-next'))
+      await expect.poll(changed).toBeNull()
+      const after = loop.clicks
+      await expect.poll(() => loop.clicks).toBeGreaterThan(after)
+    } finally {
+      loop.leaking = false
+      errors.mockRestore()
+      await screen.unmount()
+    }
+  })
+})
+
 describe('показ действий шага (ADR 0117)', () => {
   const args = guideArgs(
     { dataCount: 10, columnCount: 6, enableCellEditing: true },
@@ -1547,6 +1714,45 @@ describe('показ действий шага (ADR 0117)', () => {
       input.remove()
     } finally {
       await screen.unmount()
+    }
+  })
+
+  test('SN65: щелчок человека по флажку строки доходит сразу и без показа — скрытое поле, которое щёлкает флажок, гайд за действие шага не принимает', async () => {
+    const { innerWidth: width, innerHeight: height } = window
+    // Шапка панели в одну строку: пометка «Таблица изменена» не сдвигает таблицу посреди щелчка.
+    await page.viewport(1000, height)
+    const screen = await render(
+      <GuideStory
+        title="Показ действий"
+        steps={steps}
+        args={guideArgs(
+          { dataCount: 10, columnCount: 6, enableRowSelection: true },
+          { colorMode: 'light', locale: 'en' },
+        )}
+        showActions
+      />,
+    )
+    try {
+      await rows().toBeGreaterThan(3)
+      const box = document.querySelector<HTMLElement>(
+        '.data-grid__body-row[data-index="2"] [role="checkbox"]',
+      )!
+      const hidden = box
+        .closest('.data-grid__body-cell')!
+        .querySelector('input[type="checkbox"]')!
+      const clicks: boolean[] = []
+      hidden.addEventListener('click', event => clicks.push(event.isTrusted))
+      await userEvent.click(box)
+      // Показ нажатия ждал бы наведения и нажатия — дольше секунды.
+      await expect
+        .poll(() => box.getAttribute('aria-checked'), { timeout: 300 })
+        .toBe('true')
+      expect(clicks).toEqual([false])
+      expect(rings()).toHaveLength(0)
+      expect(hovered(box.closest('.data-grid__body-cell')!)).toBe(false)
+    } finally {
+      await screen.unmount()
+      await page.viewport(width, height)
     }
   })
 

@@ -320,6 +320,29 @@ const settledBox = async (element: Element) => {
 const PANEL_PRESS = ['pointerdown', 'mousedown', 'touchstart']
 
 /**
+ * Ввод человека, на который компоненты порождают свои события (SN65). Наведения и движения
+ * нет: оно приходит и от неподвижного курсора, когда под ним меняется вёрстка.
+ */
+const HUMAN = [
+  'pointerdown',
+  'pointerup',
+  'mousedown',
+  'mouseup',
+  'click',
+  'dblclick',
+  'contextmenu',
+  'keydown',
+  'keyup',
+  'input',
+  'change',
+  'touchstart',
+  'touchend',
+]
+
+/** Показ нажатия прерван: шаг остановлен вводом человека (SN66). */
+const STOPPED = Symbol('stopped')
+
+/**
  * Состояние цели для повтора нажатия: занятость и отметка. Кнопка стала занятой — второе
  * нажатие новое («стоп»); раскрытие не в счёт — поповер ещё грузится, а повтор его закрыл бы.
  */
@@ -459,8 +482,19 @@ export const GuideStory = ({
       changed: false,
     })
   }
-  const markChanged = () =>
+  // Остановка действия шага и его показа — тем же путём, что уход с шага (SN66).
+  const leaveStep = useRef<(() => void) | undefined>(undefined)
+  const showControl = useRef<{ stop: () => void; resume: () => void }>(
+    undefined,
+  )
+  const markChanged = () => {
+    const leave = leaveStep.current
+    leaveStep.current = undefined
+    leave?.()
+    showControl.current?.stop()
     setShown(prev => (prev.changed ? prev : { ...prev, changed: true }))
+  }
+  const markChangedRef = useLatest(markChanged)
   const restore = () =>
     setShown(prev => ({ ...prev, rewinds: prev.rewinds + 1, changed: false }))
   const root = useRef<HTMLDivElement>(null)
@@ -498,7 +532,7 @@ export const GuideStory = ({
     // Колесо меняет таблицу, только если прокрутило её: иначе оно листает страницу.
     const scrolled = () => {
       if (performance.now() - wheelAt.current < WHEEL_SCROLL_MS)
-        setShown(prev => (prev.changed ? prev : { ...prev, changed: true }))
+        markChangedRef.current()
     }
     for (const type of SHIELDED)
       guideRoot.addEventListener(type, shield, {
@@ -511,7 +545,7 @@ export const GuideStory = ({
         guideRoot.removeEventListener(type, shield, { capture: true })
       area.removeEventListener('scroll', scrolled, true)
     }
-  }, [])
+  }, [markChangedRef])
   // События действия шага (SN45–SN52): ждут, пока таблица докрутится до ячейки-цели, а
   // цель нажатия покажет наведение и нажатие, затем доходят в прежнем порядке; ввод в поле
   // идёт по символу.
@@ -539,6 +573,9 @@ export const GuideStory = ({
       | undefined
     // Голые щелчки, показанные нажатием мыши, и точка нажатия.
     const asMouse = new WeakMap<Event, { x: number; y: number }>()
+    // Шаг остановлен вводом человека (SN66): показ, начатый до остановки, — другой эпохи.
+    let stopped = false
+    let epoch = 0
 
     const deliver = (event: Event, target: EventTarget) => {
       replays.add(event)
@@ -570,6 +607,7 @@ export const GuideStory = ({
         state.shown = field.value
         deliver(new InputEvent('input', { bubbles: true }), field)
         await sleep(TYPE_MS)
+        if (typing !== state) throw STOPPED
       }
       known.set(field, state.text)
       typing = undefined
@@ -619,6 +657,11 @@ export const GuideStory = ({
     }
     const run = async (event: Event, target: Element, text?: string) => {
       setBusy(true)
+      const mine = epoch
+      // Ввод человека остановил шаг посреди показа (SN66): дальше показ не идёт.
+      const alive = () => {
+        if (epoch !== mine) throw STOPPED
+      }
       let dx = 0
       let dy = 0
       // Волна нажатия: перед самим щелчком встаёт на место цели — нажатие и отпускание
@@ -639,6 +682,7 @@ export const GuideStory = ({
             columnId: cell.dataset.columnId,
           })
           await settledBox(cell)
+          alive()
           const after = cell.getBoundingClientRect()
           dx = after.left - before.left
           dy = after.top - before.top
@@ -664,6 +708,7 @@ export const GuideStory = ({
             await settledBox(target)
             if (target.getBoundingClientRect().top === moving.top) break
           }
+          alive()
           const after = target.getBoundingClientRect()
           dx += after.left - before.left
           dy += after.top - before.top
@@ -675,6 +720,7 @@ export const GuideStory = ({
           await sleep(HOVER_MS)
           // Скрытая до наведения кнопка раскрылась и сдвинулась: точка — по новому месту.
           await settledBox(target)
+          alive()
           const point = pointOf(event, target, dx, dy)
           // Голый `click()` нажимается, как мышью: кнопка вниз — на нажатом виде, вверх —
           // перед щелчком. Иначе фокус успевает уйти не туда (активная ячейка).
@@ -691,6 +737,7 @@ export const GuideStory = ({
           demo.press(target)
           if (bare) pressAt(target, point, 'down')
           await sleep(PRESS_MS)
+          alive()
           if (bare) pressAt(target, point, 'up')
           gesture = {
             target,
@@ -710,25 +757,55 @@ export const GuideStory = ({
           pressAt(target, point, 'down')
           pressAt(target, point, 'up')
         }
+      } catch (error) {
+        if (error !== STOPPED) throw error
       } finally {
-        showing = undefined
-        const queue = held
-        held = []
-        setBusy(false)
-        if (ring && target.isConnected)
-          ring.follow(pointOf(event, target, dx, dy))
-        for (const { event: waiting, target } of queue) {
-          const replay = replayOf(waiting, dx, dy, asMouse.get(waiting))
-          // Прошлый повтор перерисовал цель новым узлом: событие — узлу на том же месте.
-          const to =
-            target instanceof Element && !target.isConnected
-              ? (hitOf(replay) ?? target)
-              : target
-          if (replay.type === 'keydown' && to instanceof Element)
-            showKey(replay, to)
-          deliver(replay, to)
-        }
+        // Остановка уже сняла показ и отбросила задержанные события шага.
+        if (epoch === mine) deliverHeld(event, target, ring, dx, dy)
       }
+    }
+    const deliverHeld = (
+      event: Event,
+      target: Element,
+      ring: { follow: (at: { x: number; y: number }) => void } | undefined,
+      dx: number,
+      dy: number,
+    ) => {
+      showing = undefined
+      const queue = held
+      held = []
+      setBusy(false)
+      if (ring && target.isConnected)
+        ring.follow(pointOf(event, target, dx, dy))
+      for (const { event: waiting, target } of queue) {
+        const replay = replayOf(waiting, dx, dy, asMouse.get(waiting))
+        // Прошлый повтор перерисовал цель новым узлом: событие — узлу на том же месте.
+        const to =
+          target instanceof Element && !target.isConnected
+            ? (hitOf(replay) ?? target)
+            : target
+        if (replay.type === 'keydown' && to instanceof Element)
+          showKey(replay, to)
+        deliver(replay, to)
+      }
+    }
+
+    showControl.current = {
+      stop: () => {
+        if (stopped) return
+        stopped = true
+        epoch++
+        held = []
+        showing = undefined
+        typing = undefined
+        gesture = undefined
+        setBusy(false)
+        demo?.unhover()
+        demo?.release()
+      },
+      resume: () => {
+        stopped = false
+      },
     }
 
     /** Плашка клавиши — когда клавиша доходит до цели. */
@@ -736,6 +813,18 @@ export const GuideStory = ({
       const label = demo && keyLabel(event as KeyboardEvent)
       if (label) demo.key(label, keyBox(target, area!))
     }
+    // Пока доходит ввод человека не в обвязку гайда, события, которые порождают на него
+    // компоненты (флажок Base UI щёлкает своё скрытое поле), — тоже его ввод, а не действие
+    // шага (SN65).
+    // Порождённое — только пока настоящее событие ещё идёт по дереву.
+    let humanEvent: Event | undefined
+    const onHumanStart = (event: Event) => {
+      if (!event.isTrusted) return
+      if (event.target instanceof Element && event.target.closest(OWN_CHROME))
+        return
+      humanEvent = event
+    }
+    const human = () => !!humanEvent && humanEvent.eventPhase !== Event.NONE
     const onEvent = (event: Event) => {
       if (event.isTrusted) {
         if (event.type === 'input' && isTextField(event.target))
@@ -743,7 +832,16 @@ export const GuideStory = ({
         return
       }
       const target = event.target
-      if (replays.has(event) || replaying || !target) return
+      if (human() || replays.has(event) || replaying || !target) return
+      // Шаг остановлен: его действие таблицу не трогает, а шаг без отмены виден (SN68).
+      if (stopped && target instanceof Element && !target.closest(OWN_CHROME)) {
+        event.stopImmediatePropagation()
+        event.preventDefault()
+        console.error(
+          `Гайд: действие остановленного шага шлёт «${event.type}» (ADR 0117, SN68)`,
+        )
+        return
+      }
       if (target instanceof Element && target.closest(OWN_CHROME)) return
       if (busy) {
         // Набор идёт: поле держит набранное, а не значение, которое поставил помощник.
@@ -861,6 +959,7 @@ export const GuideStory = ({
       if (!(event.target instanceof Element)) return
       if (event.target.closest('[data-testid="guide"]')) event.stopPropagation()
     }
+    for (const type of HUMAN) window.addEventListener(type, onHumanStart, true)
     for (const type of HELD) document.addEventListener(type, onEvent, true)
     for (const type of PANEL_PRESS)
       window.addEventListener(type, keepPopups, true)
@@ -869,6 +968,8 @@ export const GuideStory = ({
     document.addEventListener('mousemove', onRealMove, true)
     document.addEventListener('pointerover', onRealOver, true)
     return () => {
+      for (const type of HUMAN)
+        window.removeEventListener(type, onHumanStart, true)
       for (const type of HELD) document.removeEventListener(type, onEvent, true)
       for (const type of PANEL_PRESS)
         window.removeEventListener(type, keepPopups, true)
@@ -876,6 +977,7 @@ export const GuideStory = ({
       document.removeEventListener('focusin', onFocus, true)
       document.removeEventListener('mousemove', onRealMove, true)
       document.removeEventListener('pointerover', onRealOver, true)
+      showControl.current = undefined
       demo?.dispose()
     }
   }, [showActions])
@@ -922,8 +1024,21 @@ export const GuideStory = ({
   }, [guide.step, guide.run, shown.rewinds])
   const enter = steps[guide.step]?.enter
   useEffect(() => {
+    showControl.current?.resume()
     const leave = root.current ? enter?.(root.current, app) : undefined
-    return typeof leave === 'function' ? (leave as () => void) : undefined
+    leaveStep.current = undefined
+    if (typeof leave !== 'function') return
+    let left = false
+    const stop = () => {
+      if (left) return
+      left = true
+      ;(leave as () => void)()
+    }
+    leaveStep.current = stop
+    return () => {
+      if (leaveStep.current === stop) leaveStep.current = undefined
+      stop()
+    }
   }, [enter, app, guide.step, guide.run, shown.rewinds])
   return (
     <div
