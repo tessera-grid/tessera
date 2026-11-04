@@ -22,6 +22,8 @@ import {
 import { humanClick, revealCellButtons } from '../helpers'
 import { tableLabels } from '../labels'
 import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
+import { rowSelectionLabels } from '../../../plugins/rowSelection/labels'
+import { rowSelectionModelLabels } from '../../../plugins/rowSelectionModel/labels'
 
 // Серверная группировка на гриде (ADR 0144, GS3–GS9): кнопка группировки серверным
 // действием, строки-группы с числом строк и агрегатами, ветки групп, вложенные уровни,
@@ -679,8 +681,8 @@ describe('Серверная группировка (ADR 0144)', () => {
           .poll(count)
           .toBe(
             totals
-              ? tableLabels.selectedRows(TOTAL - 1)
-              : tableLabels.selectedAllExcept(1),
+              ? rowSelectionLabels(tableLabels).selectedRows(TOTAL - 1)
+              : rowSelectionModelLabels(tableLabels).selectedAllExcept(1),
           )
       } finally {
         await screen.unmount()
@@ -874,10 +876,12 @@ describe('Выбор группы целиком (ADR 0148)', () => {
           .poll(count)
           .toBe(
             groupCounts
-              ? tableLabels.selectedRows(cityCount('C1') - 1 + 1)
-              : tableLabels.selectedRowsAndGroups(
+              ? rowSelectionLabels(tableLabels).selectedRows(
+                  cityCount('C1') - 1 + 1,
+                )
+              : rowSelectionModelLabels(tableLabels).selectedRowsAndGroups(
                   1,
-                  tableLabels.selectedGroupsCount(1),
+                  rowSelectionModelLabels(tableLabels).selectedGroupsCount(1),
                 ),
           )
       } finally {

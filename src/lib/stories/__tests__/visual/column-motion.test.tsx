@@ -9,6 +9,7 @@ import { DataGrid } from '../../../grid/DataGrid'
 import { columnDragging, columnPinning, columnSizing } from '../../../plugins'
 import { humanClick, revealedHandleWidth } from '../helpers'
 import { measureWork } from '../work.helpers'
+import { columnDraggingLabels } from '../../../plugins/columnDragging/labels'
 
 // Движение колонок (ADR 0115, CN1–CN11). Позиции ячеек шапки, тела и футера снимаются
 // каждый кадр, пока меняется порядок колонок: видно и переезд, и его конец.
@@ -209,7 +210,11 @@ const moveRightByMenu = async (id: string) => {
   await expect.poll(() => document.querySelector('[role="menu"]')).toBeTruthy()
   const item = [
     ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
-  ].find(entry => entry.textContent?.trim() === ENGLISH_LABELS.moveRight)!
+  ].find(
+    entry =>
+      entry.textContent?.trim() ===
+      columnDraggingLabels(ENGLISH_LABELS).moveRight,
+  )!
   await userEvent.click(item)
 }
 

@@ -14,6 +14,7 @@ import {
   DRAFTS_KEY,
   type Draft,
   draftKeyOf,
+  draftKindLabel,
   draftKindOf,
   draftKindsOf,
   discardDraft,
@@ -40,6 +41,7 @@ import {
 
 import { type DraftSection, draftSections } from './sections'
 import styles from './UnsavedChanges.module.css'
+import { unsavedChangesLabels } from './labels'
 
 export interface UnsavedChangesPopoverProps {
   table: unknown
@@ -107,7 +109,7 @@ const DraftEntry = ({
       mark={<Bubble size="dot" tone="draft" />}
       label={
         <>
-          {operation && <span>{kind.label(labels, draft)} </span>}
+          {operation && <span>{draftKindLabel(table, kind, labels)} </span>}
           {target && <span className={styles.target}>{target} </span>}
           {now !== undefined && (
             <span className={styles.value}>
@@ -130,7 +132,7 @@ const DraftEntry = ({
           <IconButton
             shape="square"
             size="compact"
-            label={labels.draftApply}
+            label={unsavedChangesLabels(labels).draftApply}
             data-action="apply"
             onClick={event => {
               report(table, 'apply', draft, event)
@@ -143,7 +145,7 @@ const DraftEntry = ({
           <IconButton
             shape="square"
             size="compact"
-            label={labels.draftDiscard}
+            label={unsavedChangesLabels(labels).draftDiscard}
             data-action="discard"
             onClick={event => {
               report(table, 'discard', draft, event)
@@ -199,7 +201,7 @@ const Section = ({
     <>
       <p id={id} className={styles.sectionTitle}>
         {kind?.sectionLabel?.(labels) ??
-          kind?.label(labels, section.drafts[0]!)}
+          (kind && draftKindLabel(table, kind, labels))}
       </p>
       <EntryList
         table={table}
@@ -233,8 +235,10 @@ const DraftList = ({
       <Stub
         size="compact"
         media={<icons.unsavedChangesEmpty />}
-        title={labels.unsavedChangesEmpty}
-        description={labels.unsavedChangesEmptyDescription}
+        title={unsavedChangesLabels(labels).unsavedChangesEmpty}
+        description={
+          unsavedChangesLabels(labels).unsavedChangesEmptyDescription
+        }
         data-testid="unsaved-changes-empty"
       />
     )
@@ -247,7 +251,7 @@ const DraftList = ({
           <EntryList
             table={table}
             drafts={data}
-            aria-label={labels.unsavedChanges}
+            aria-label={unsavedChangesLabels(labels).unsavedChanges}
             {...handlers}
           />
         )}
@@ -270,7 +274,7 @@ const DraftList = ({
             onDiscarded()
           }}
         >
-          {labels.draftDiscardAll}
+          {unsavedChangesLabels(labels).draftDiscardAll}
         </Button>
         <Button
           variant="outline"
@@ -281,7 +285,7 @@ const DraftList = ({
             applyAllDrafts(table)
           }}
         >
-          {labels.draftApplyAll}
+          {unsavedChangesLabels(labels).draftApplyAll}
         </Button>
       </div>
     </>
@@ -325,13 +329,15 @@ export const UnsavedChangesPopover = ({
           {...themeData}
         >
           <Popover.Popup
-            aria-label={labels.unsavedChanges}
+            aria-label={unsavedChangesLabels(labels).unsavedChanges}
             ref={popupRef}
             finalFocus={triggerRef}
             className={clsx(themeClass, styles.popup)}
             data-testid="unsaved-changes"
           >
-            <p className={styles.title}>{labels.unsavedChanges}</p>
+            <p className={styles.title}>
+              {unsavedChangesLabels(labels).unsavedChanges}
+            </p>
             <DraftList
               table={table}
               onDiscarded={keepFocus}

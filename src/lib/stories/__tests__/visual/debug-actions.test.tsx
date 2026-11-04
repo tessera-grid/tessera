@@ -45,6 +45,9 @@ import {
 import { composed } from '../stories'
 import { tableLabels } from '../labels'
 import { ColumnDraggingGrid } from './columns-fixtures'
+import { rowDraggingLabels } from '../../../plugins/rowDragging/labels'
+import { columnVisibilityLabels } from '../../../plugins/columnVisibility/labels'
+import { filteringLabels } from '../../../shared/filtering/labels'
 
 // Канал действий грида (ADR 0125): действия ядра и плагинов на настоящих событиях
 // браузера. AL1–AL2 — в `play` историй «Plugin API», AL3, AL7–AL8 — модульные
@@ -252,8 +255,10 @@ describe('канал действий (ADR 0125)', () => {
     await humanClick(
       rowEl('r3')!.querySelector<HTMLElement>('.drag__handler--column')!,
     )
-    await expect.poll(() => menuItem(tableLabels.moveDown)).toBeTruthy()
-    await humanClick(menuItem(tableLabels.moveDown)!)
+    await expect
+      .poll(() => menuItem(rowDraggingLabels(tableLabels).moveDown))
+      .toBeTruthy()
+    await humanClick(menuItem(rowDraggingLabels(tableLabels).moveDown)!)
     await expect
       .poll(() => lastOf('rowDragging', 'handleMenu:moveDown'))
       .toMatchObject({ source: 'pointer' })
@@ -540,7 +545,7 @@ describe('канал действий (ADR 0125)', () => {
       [...menu.querySelectorAll<HTMLButtonElement>('button')].find(
         each => each.textContent === label,
       )!
-    await humanClick(button(tableLabels.resetColumns))
+    await humanClick(button(columnVisibilityLabels(tableLabels).resetColumns))
     await expect.poll(() => lastOf('columnVisibility', 'reset')).toBeTruthy()
   })
 
@@ -1248,7 +1253,9 @@ describe('канал действий (ADR 0125)', () => {
     const reset = () =>
       [
         ...(q('[data-testid="filter-stub"]')?.querySelectorAll('button') ?? []),
-      ].find(each => each.textContent === tableLabels.resetFilters)
+      ].find(
+        each => each.textContent === filteringLabels(tableLabels).resetFilters,
+      )
     await expect.poll(reset).toBeTruthy()
     await humanClick(reset()!)
     await expect

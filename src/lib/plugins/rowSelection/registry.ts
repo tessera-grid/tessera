@@ -25,6 +25,7 @@ import { HeadSelectionComponent } from './HeadSelectionComponent'
 import { RowSelectionComponent } from './RowSelectionComponent'
 import { isGroupingActive } from '../rowSelectionModel/selectionHelpers'
 import type { RowSelectionHooks, SelectAllScope } from './types'
+import { rowSelectionLabels } from './labels'
 
 export interface RowSelectionOptions extends Omit<
   RowSelectionModelOptions,
@@ -47,6 +48,15 @@ export interface RowSelectionOptions extends Omit<
 // TOptions (RowSelectionOptions) задаётся ОДИН раз дженериком; `o` в полях выводится.
 export const rowSelection = definePlugin<RowSelectionOptions>()({
   id: 'rowSelection',
+  labels: [rowSelectionLabels],
+  actions: {
+    toggleRow: labels => rowSelectionLabels(labels).selectRow,
+    toggleGroup: labels => rowSelectionLabels(labels).selectGroup,
+    toggleAllRows: labels => rowSelectionLabels(labels).selectAll,
+    toggleAllPageRows: labels =>
+      rowSelectionLabels(labels).actionToggleAllPageRows,
+    'rowSelection.toggle': labels => rowSelectionLabels(labels).selectRow,
+  },
   model: {
     plugin: rowSelectionModel,
     keys: [

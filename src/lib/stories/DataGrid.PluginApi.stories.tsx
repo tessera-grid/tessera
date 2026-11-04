@@ -36,6 +36,8 @@ import { getData, makeData } from './__mocks__/data'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { canEditDemoCell, type ServerFailMode } from './demos/sessionDemos'
 import { argsUpdater } from './__mocks__/catalog'
+import { createHeldServer } from './__mocks__/heldServer'
+import { defineLabels } from '../core/localization'
 import { cellOf, clickByMouse, untilDone } from './__mocks__/cellGestures'
 import {
   bodyRow,
@@ -1932,6 +1934,123 @@ export const PluginApiBodyKeys: StoryObj<StoryProps> = {
         expect(markedCells(canvas).sort()).toEqual([first, next].sort()),
       )
       expect(activeCellKey(canvas)).toBe(next)
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0182 S2 ----------------------------------------------------------------------
+
+/** Подписи стороннего плагина: ключи словаря таблицы `archiveRows.<ключ>`. */
+const archiveRowsLabels = defineLabels<{ archive: string }>()(
+  'archiveRows',
+  { archive: 'Archive' },
+  {},
+)
+const ARCHIVE_NAMES_SERVER = createHeldServer()
+const ARCHIVED_NAMES_ROW = getData(30)[1]!.id as string
+/** Действие строки называет справочник: подпись плагина на языке таблицы. */
+const archiveNamed: RowAction = {
+  id: 'archive',
+  slot: 'actionRowSlot',
+  icon: () => <Archive width={16} height={16} />,
+  onSelect: () => ARCHIVE_NAMES_SERVER.save(),
+}
+const ARCHIVE_ROWS = [
+  definePlugin()({
+    id: 'archiveRows',
+    labels: [archiveRowsLabels],
+    actions: { archive: labels => archiveRowsLabels(labels).archive },
+    slotActions: [archiveNamed],
+  })(),
+]
+/** Перевод приложения: свой ключ плагина в том же словаре, что подписи таблицы. */
+const ARCHIVE_RU = { 'archiveRows.archive': 'Архивировать' }
+
+const archiveNamedButton = (root: ParentNode) =>
+  root.querySelector<HTMLElement>(
+    `.data-grid__body-row[data-row-id="${ARCHIVED_NAMES_ROW}"] button:is([aria-label$="Archive"], [aria-label$="Архивировать"])`,
+  )
+const namesLog = () =>
+  document.querySelector<HTMLElement>('[data-testid="failure-log"]')
+const namesLogButton = () =>
+  document.querySelector<HTMLElement>('[data-testid="failure-log-button"]')
+
+const ACTION_NAMES_STEPS: readonly GuideStoryStep[] = [
+  {
+    title: 'Действие плагина',
+    hint: 'Плагин добавил строкам действие архивации и объявил его подпись. Кнопка строки называет действие по-английски.',
+  },
+  {
+    title: 'Перевод приложения',
+    hint: 'Приложение переключило язык и перевело подпись плагина в своём словаре. Кнопка строки называет действие по-русски.',
+    props: () => ({ locale: 'ru', localization: ARCHIVE_RU }),
+  },
+  {
+    title: 'Сервер отказал',
+    hint: 'Пользователь архивировал строку, сервер отказал. Пользователь открыл журнал: запись называет действие той же переведённой подписью.',
+    states: ['overlay.failureLog'],
+    props: () => ({ locale: 'ru', localization: ARCHIVE_RU }),
+    enter: untilDone(
+      () => !!namesLog()?.textContent?.includes('Архивировать'),
+      root => {
+        ARCHIVE_NAMES_SERVER.answer(false)
+        const counted = namesLogButton()?.querySelector(
+          '[data-active-indicator]',
+        )?.textContent
+        if (!counted) archiveNamedButton(root)?.click()
+        else if (!namesLog()) namesLogButton()?.click()
+      },
+    ),
+  },
+]
+
+/** ADR 0182, S2: автор плагина объявляет действие и ключи, приложение переводит их. */
+export const PluginApiActionNames: StoryObj<StoryProps> = {
+  name: 'Action names',
+  parameters: { scenario: '0182/S2', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Подписи действий плагина"
+      steps={ACTION_NAMES_STEPS}
+      args={guideArgs(
+        {
+          enableFailureLog: true,
+          enableRowActions: true,
+          actionsDemo: 'none',
+          columnCount: 6,
+          dataCount: 30,
+          extraPlugins: ARCHIVE_ROWS,
+        },
+        { colorMode: args.colorMode, locale: 'en' },
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(ACTION_NAMES_STEPS[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() =>
+        expect(
+          archiveNamedButton(canvas)?.getAttribute('aria-label'),
+        ).toContain('Archive'),
+      )
+      await settle()
+    })
+    await step(ACTION_NAMES_STEPS[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(
+          archiveNamedButton(canvas)?.getAttribute('aria-label'),
+        ).toContain('Архивировать'),
+      )
+      await settle()
+    })
+    await step(ACTION_NAMES_STEPS[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(namesLog()?.textContent).toContain('Архивировать'),
+      )
       await settle()
     })
   },

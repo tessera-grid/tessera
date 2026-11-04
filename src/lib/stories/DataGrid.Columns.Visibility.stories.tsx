@@ -14,6 +14,7 @@ import { untilDone } from './__mocks__/cellGestures'
 import { storyLabels } from './__mocks__/storyLabels'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import { columnVisibilityLabels } from '../plugins/columnVisibility/labels'
 
 /**
  * Видимость колонок (ADR 0035, ADR 0133): `Playground` — кнопка списка колонок; S1 ADR 0133 —
@@ -173,7 +174,9 @@ export const ColumnVisibilityToggleAll: StoryObj<StoryProps> = {
       await waitForRows(canvas)
       await until(() => expect(rootBoxOf()).not.toBeNull())
       await expect(rootBoxOf()).toHaveAttribute('aria-checked', 'true')
-      await expect(count()).toBe(labels.selectedColumns(5))
+      await expect(count()).toBe(
+        columnVisibilityLabels(labels).selectedColumns(5),
+      )
       await settle()
     })
     await step(TOGGLE_ALL[1].title, async () => {
@@ -184,7 +187,9 @@ export const ColumnVisibilityToggleAll: StoryObj<StoryProps> = {
         ).not.toBeNull(),
       )
       await expect(rootBoxOf()).toHaveAttribute('aria-checked', 'false')
-      await expect(count()).toBe(labels.selectedColumns(0))
+      await expect(count()).toBe(
+        columnVisibilityLabels(labels).selectedColumns(0),
+      )
       await settle()
     })
     await step(TOGGLE_ALL[2].title, async () => {

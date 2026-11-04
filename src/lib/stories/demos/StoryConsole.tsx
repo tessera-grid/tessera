@@ -151,6 +151,11 @@ const paintEntry = (row: HTMLTableRowElement, entry: ConsoleEntry) => {
     event.append(span(`#${entry.actionId} `, { color: MUTED }))
   }
   event.append(name)
+  if (entry.label) {
+    const label = span(` «${entry.label}»`, { color: MUTED })
+    label.dataset.consoleLabel = ''
+    event.append(label)
+  }
   if (entry.detail) event.append(` ${entry.detail}`)
   if (entry.count > 1) event.append(span(` ×${entry.count}`, { color: MUTED }))
   if (entry.source) {

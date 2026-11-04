@@ -20,6 +20,7 @@ import {
   toRgba,
 } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
+import { cellEditingLabels } from '../../../plugins/cellEditing/labels'
 
 declare module 'vitest/browser' {
   interface BrowserCommands {
@@ -178,7 +179,7 @@ const openEditor = async (cell: HTMLElement) => {
   await revealCellButtons(cell)
   await humanClick(
     cell.querySelector<HTMLElement>(
-      `button[aria-label="${tableLabels.editCell}"]`,
+      `button[aria-label="${cellEditingLabels(tableLabels).editCell}"]`,
     )!,
   )
   await expect.poll(() => editorOf(cell)).not.toBeNull()

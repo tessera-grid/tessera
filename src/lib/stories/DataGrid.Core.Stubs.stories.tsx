@@ -18,6 +18,7 @@ import { storyLabels } from './__mocks__/storyLabels'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
 import type { ConsoleLog } from './demos/consoleLog'
+import { columnVisibilityLabels } from '../plugins/columnVisibility/labels'
 
 /**
  * Заглушки пустой таблицы (ADR 0123): реестр причин — нет данных, нет колонок, все
@@ -253,7 +254,7 @@ export const StubsColumnsHidden: StoryObj<StoryProps> = {
         canvas.querySelectorAll('[role="columnheader"]'),
       ).toHaveLength(0)
       await expect(byTestId('columns-hidden-show-all')).toHaveTextContent(
-        labels.showAllColumns,
+        columnVisibilityLabels(labels).showAllColumns,
       )
       await expect(disabled('column-visibility-button')).toBe(false)
       await expect(byTestId('column-visibility-button')).toHaveAttribute(

@@ -26,6 +26,8 @@ import { describeFilter } from './describeFilter'
 import type { FilterSummaryItem } from './filterSummary'
 
 import styles from './FilterSummary.module.css'
+import { columnFilteringLabels } from './labels'
+import { filteringLabels } from '../../shared/filtering/labels'
 
 interface FilterSummaryPopoverProps {
   table: Table<any, any>
@@ -72,7 +74,7 @@ export const FilterSummaryPopover = ({
           {...themeData}
         >
           <Popover.Popup
-            aria-label={labels.filters}
+            aria-label={columnFilteringLabels(labels).filters}
             finalFocus={triggerRef}
             className={clsx(themeClass, styles.popup)}
             data-testid="filter-summary"
@@ -101,14 +103,16 @@ export const FilterSummaryPopover = ({
                       {item.hidden && (
                         <span className={styles.hidden}>
                           <HiddenIcon width={14} height={14} aria-hidden />
-                          {labels.columnHidden}
+                          {columnFilteringLabels(labels).columnHidden}
                         </span>
                       )}
                     </span>
                     <button
                       type="button"
                       className={styles.remove}
-                      aria-label={labels.removeFilter(item.header)}
+                      aria-label={columnFilteringLabels(labels).removeFilter(
+                        item.header,
+                      )}
                       onClick={() =>
                         setColumnFilterByUser(table, item.columnId, undefined)
                       }
@@ -126,7 +130,7 @@ export const FilterSummaryPopover = ({
                 onClick={() => setColumnFiltersByUser(table, [])}
                 data-testid="filter-summary-reset"
               >
-                {labels.resetFilters}
+                {filteringLabels(labels).resetFilters}
               </Button>
             </div>
           </Popover.Popup>

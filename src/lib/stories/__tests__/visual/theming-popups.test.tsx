@@ -18,6 +18,7 @@ import {
 import { revealCellButtons } from '../helpers'
 import { composed } from '../stories'
 import { tableLabels } from '../labels'
+import { columnFilteringLabels } from '../../../plugins/columnFiltering/labels'
 
 // Контракт единого вида поповеров (ADR 0017, PP1–PP3): кебаб, меню колонок, панель
 // экспорта, панель фильтра со списком условий и список размера страницы делят
@@ -103,7 +104,8 @@ const openFilterPanel = async (columnId: string) => {
   if (anchor.getAttribute('aria-label') === tableLabels.headerMenu) {
     const item = () =>
       query('[role="menuitem"]').find(
-        el => el.textContent?.trim() === tableLabels.filter,
+        el =>
+          el.textContent?.trim() === columnFilteringLabels(tableLabels).filter,
       )
     await expect.poll(item).toBeTruthy()
     await userEvent.click(item()!)

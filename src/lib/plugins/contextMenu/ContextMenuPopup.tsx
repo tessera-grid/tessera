@@ -22,6 +22,7 @@ import { GRID_SCROLL_REASON, useMenuLeave } from '../../ui/Popup/useMenuLeave'
 
 import menuStyles from '../../ui/Popup/ActionMenu.module.css'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
+import { contextMenuLabels } from './labels'
 
 export interface ContextMenuPopupProps {
   /** Координаты курсора (виртуальный якорь позиционера). */
@@ -92,7 +93,9 @@ export const ContextMenuPopup = ({
         >
           <Menu.Popup
             aria-label={
-              sections.depth > 0 ? sections.level.title : labels.contextMenu
+              sections.depth > 0
+                ? sections.level.title
+                : contextMenuLabels(labels).contextMenu
             }
             className={clsx(themeClass, menuStyles.popup)}
             finalFocus={leave.returnFocus}

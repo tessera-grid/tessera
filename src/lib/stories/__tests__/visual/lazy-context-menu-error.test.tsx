@@ -12,13 +12,16 @@ import {
   sleep,
 } from './lazy-helpers'
 import { tableLabels } from '../labels'
+import { contextMenuLabels } from '../../../plugins/contextMenu/labels'
 
 // Ошибка загрузки модуля контекстного меню (ADR 0061, LZ10). Отдельный файл: модуль
 // грузится один раз на документ.
 
 afterEach(() => releaseModule(MODULE.contextMenu))
 
-const MESSAGE = tableLabels.loadFailed(tableLabels.contextMenu)
+const MESSAGE = tableLabels.loadFailed(
+  contextMenuLabels(tableLabels).contextMenu,
+)
 
 describe('Контекстное меню — ошибка загрузки', () => {
   test('LZ10: ошибка загрузки контекстного меню — меню не открывается, объявление с подписью меню; следующий правый клик снова отвечает', async () => {

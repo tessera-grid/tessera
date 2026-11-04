@@ -11,6 +11,7 @@ import {
   type RowGroupingModelOptions,
 } from '../rowGroupingModel/registry'
 import { groupHeaderAction } from './groupHeaderAction'
+import { rowGroupingLabels } from './labels'
 
 export interface RowGroupingOptions extends Omit<
   RowGroupingModelOptions,
@@ -27,6 +28,11 @@ export interface RowGroupingOptions extends Omit<
 
 export const rowGrouping = definePlugin<RowGroupingOptions>()({
   id: 'rowGrouping',
+  labels: [rowGroupingLabels],
+  actions: {
+    group: labels => rowGroupingLabels(labels).group,
+    ungroup: labels => rowGroupingLabels(labels).ungroup,
+  },
   // В серверной модели строк группирует сервер (ADR 0144); клиентская модель там инертна.
   diagnose: neverInert,
   model: {

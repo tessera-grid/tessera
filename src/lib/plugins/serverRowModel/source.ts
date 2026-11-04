@@ -42,6 +42,7 @@ import type {
   ServerRowsResponse,
 } from './types'
 import type { Updater } from '../../types'
+import { serverRowModelLabels } from './labels'
 
 export const SERVER_ROW_MODEL = 'serverRowModel'
 
@@ -609,8 +610,12 @@ const createServerSource = (table: unknown): ServerSource => {
     if (arrived.length || removed) {
       announceLabel(table, labels =>
         [
-          arrived.length ? labels.announceRowsAdded(arrived.length) : '',
-          removed ? labels.announceRowsRemoved(removed) : '',
+          arrived.length
+            ? serverRowModelLabels(labels).announceRowsAdded(arrived.length)
+            : '',
+          removed
+            ? serverRowModelLabels(labels).announceRowsRemoved(removed)
+            : '',
         ]
           .filter(Boolean)
           .join('. '),

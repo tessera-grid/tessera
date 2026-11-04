@@ -63,7 +63,7 @@ describe('contextMenu — плагин и канал', () => {
     ] as never)
     const dup = folded.contextMenuActions.filter(x => x.id === 'dup')
     expect(dup).toHaveLength(1)
-    expect(dup[0].label(undefined as never, undefined as never)).toBe('B')
+    expect(dup[0].label?.(undefined as never)).toBe('B')
   })
 })
 

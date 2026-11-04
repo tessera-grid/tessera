@@ -24,6 +24,7 @@ import {
   toRgba,
 } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
+import { columnFilteringLabels } from '../../../plugins/columnFiltering/labels'
 
 declare module 'vitest/browser' {
   interface BrowserCommands {
@@ -162,7 +163,9 @@ describe('Неприменённое условие в заголовке (ADR 0
       const name = filterButton('name')!
       expect(draftDot(name)).toBe(true)
       expect(name.hasAttribute('data-active')).toBe(false)
-      const draftName = tableLabels.actionDraft(tableLabels.filter)
+      const draftName = tableLabels.actionDraft(
+        columnFilteringLabels(tableLabels).filter,
+      )
       expect(name.getAttribute('aria-label')).toBe(draftName)
       await userEvent.hover(name)
       await expect.poll(() => tooltipShown(draftName)).toBe(true)
@@ -173,7 +176,9 @@ describe('Неприменённое условие в заголовке (ADR 0
       api.setDraft(draftOn('city', { operator: 'contains', value: 'Rome' }))
       await expect.poll(() => activeDot(filterButton('city')!)).toBe(true)
       expect(filterButton('city')!.getAttribute('aria-label')).toBe(
-        tableLabels.actionActiveDraft(tableLabels.filterActive),
+        tableLabels.actionActiveDraft(
+          columnFilteringLabels(tableLabels).filterActive,
+        ),
       )
       // Действует без черновика: прежняя точка и имя.
       api.setColumnFilters([
@@ -181,7 +186,7 @@ describe('Неприменённое условие в заголовке (ADR 0
       ])
       await expect.poll(() => activeDot(filterButton('age')!)).toBe(true)
       expect(filterButton('age')!.getAttribute('aria-label')).toBe(
-        tableLabels.filterActive,
+        columnFilteringLabels(tableLabels).filterActive,
       )
     } finally {
       await screen.unmount()

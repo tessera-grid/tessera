@@ -9,6 +9,7 @@ import {
   setColumnsVisible,
 } from './applyVisibility'
 import { getShowAll } from './columnTree'
+import { columnVisibilityLabels } from './labels'
 
 /**
  * Таблицы, где последнюю колонку скрыли из кебаба заголовка: фокус — на кнопку
@@ -32,11 +33,11 @@ export const COLUMNS_HIDDEN_STUB: StubEntry = {
   placement: 'grid',
   when: ({ table }) =>
     dataColumnsOf(table).length > 0 && !hasVisibleDataColumns(table),
-  title: labels => labels.columnsHiddenTitle,
+  title: labels => columnVisibilityLabels(labels).columnsHiddenTitle,
   media: 'emptyState',
   mediaSize: ILLUSTRATION_SIZE,
   action: ({ table }, labels) => ({
-    label: labels.showAllColumns,
+    label: columnVisibilityLabels(labels).showAllColumns,
     run: () => {
       const control = table as VisibilityControlTable
       setColumnsVisible(control, getShowAll(control), true)

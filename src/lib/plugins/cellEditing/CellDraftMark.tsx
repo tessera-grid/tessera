@@ -11,6 +11,7 @@ import { CellIssue } from '../../ui/CellIssue'
 import { editTextOf } from './editValue'
 import { CELL_VALUE_DRAFT, type CellDraftValue } from './session'
 import type { CellEditingHooks } from './types'
+import { cellEditingLabels } from './labels'
 
 export const CellDraftMark = (props: PluginCellProps<CellEditingHooks>) => {
   const { table, row, column } = props
@@ -27,8 +28,8 @@ export const CellDraftMark = (props: PluginCellProps<CellEditingHooks>) => {
   return (
     <CellIssue
       tone="draft"
-      reason={labels.cellDraftReason(was, now)}
-      label={labels.cellDraft}
+      reason={cellEditingLabels(labels).cellDraftReason(was, now)}
+      label={cellEditingLabels(labels).cellDraft}
       details={[
         { label: labels.draftWas, value: was },
         { label: labels.draftNow, value: now },
@@ -36,7 +37,7 @@ export const CellDraftMark = (props: PluginCellProps<CellEditingHooks>) => {
       actions={[
         {
           id: 'rollback',
-          label: labels.cellDraftRollback,
+          label: cellEditingLabels(labels).cellDraftRollback,
           onSelect: () => discardDraft(table, draft),
           primary: true,
         },

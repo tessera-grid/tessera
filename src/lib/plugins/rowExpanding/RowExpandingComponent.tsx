@@ -29,6 +29,7 @@ import {
   toggleRowExpanded,
 } from './toggleRowExpanded'
 import type { RowExpandingHooks } from './types'
+import { rowExpandingLabels } from './labels'
 
 export const RowExpandingComponent = ({
   row,
@@ -108,7 +109,7 @@ export const RowExpandingComponent = ({
                 cancelSourceOf(event),
               )
             : cancelBranchLoad(row, cancelSourceOf(event)),
-        cancelLabel: labels.cancelAction(labels.expandRow),
+        cancelLabel: labels.cancelAction(rowExpandingLabels(labels).expandRow),
       })}
     />
   )

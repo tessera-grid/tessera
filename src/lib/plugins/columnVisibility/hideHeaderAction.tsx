@@ -18,6 +18,7 @@ import {
   setColumnsVisible,
   type VisibilityControlTable,
 } from './applyVisibility'
+import { columnVisibilityLabels } from './labels'
 
 const HideIcon = () => {
   const { hideColumn: Icon } = useIcons()
@@ -40,7 +41,8 @@ export const hideHeaderAction: HeaderAction = {
     columnVisibilityInertReason(ctx.table) === undefined &&
     hideIds(ctx) !== null,
   icon: () => <HideIcon />,
-  label: (ctx, labels) => (isGroup(ctx) ? labels.hideGroup : labels.hideColumn),
+  label: labels => columnVisibilityLabels(labels).hideColumn,
+  action: ctx => (isGroup(ctx) ? 'hideGroup' : 'hide'),
   onSelect: ctx => {
     const ids = hideIds(ctx)
     if (!ids) return

@@ -63,6 +63,7 @@ import {
   dateText,
   OWN_TABLE,
 } from './__mocks__/typeGuides'
+import { filteringLabels } from '../shared/filtering/labels'
 
 const meta = {
   ...dataGridMeta,
@@ -200,7 +201,7 @@ export const DataTypesFilter: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(filteredCount()).toBe(
-        labels.filteredRows(RELEASED.on, total),
+        filteringLabels(labels).filteredRows(RELEASED.on, total),
       )
       await expect(orderedRows(canvas).map(row => row.dataset.rowId)).toEqual(
         FILTER_ROWS.filter(row => row.released === FILTER_DAY).map(
@@ -212,7 +213,7 @@ export const DataTypesFilter: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(filteredCount()).toBe(
-        labels.filteredRows(RELEASED.after, total),
+        filteringLabels(labels).filteredRows(RELEASED.after, total),
       )
       await settle()
     })

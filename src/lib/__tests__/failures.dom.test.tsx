@@ -23,6 +23,7 @@ import {
   paginationModel,
 } from '../plugins'
 import { startEditSession } from '../plugins/cellEditing/session'
+import { cellEditingLabels } from '../plugins/cellEditing/labels'
 
 ;(
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -248,13 +249,17 @@ describe('Реестр отказов (ADR 0177)', () => {
     expect(saved).toEqual(
       expect.objectContaining({
         key: cellFailureKey('1', 'name'),
-        // Подпись — действие, а не колонка: колонку называет цель.
-        label: ENGLISH_LABELS.cellDraftKind,
+        // Имя — действие справочника, а не колонка: колонку называет цель (ADR 0182).
+        action: { plugin: 'cellEditing', action: 'edit' },
         target: { cell: ['1', 'name'] },
         reason: 'Server down',
         retry: expect.any(Function),
         discard: expect.any(Function),
       }),
+    )
+    expect(saved.label).toBeUndefined()
+    expect(captured.getActionLabel(saved.action!)).toBe(
+      cellEditingLabels(ENGLISH_LABELS).cellDraftKind,
     )
     expect(saved.time).toBeGreaterThanOrEqual(before)
     expect(onFailure).toHaveBeenLastCalledWith(saved)

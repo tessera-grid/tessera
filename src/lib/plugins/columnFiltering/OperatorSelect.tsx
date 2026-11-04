@@ -11,6 +11,7 @@ import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 import { useTriggerWidth } from '../../ui/Popup/useTriggerWidth'
 
 import styles from './FilterPanel.module.css'
+import { columnFilteringLabels } from './labels'
 
 interface OperatorSelectProps<T extends string> {
   value: T
@@ -49,7 +50,7 @@ export const OperatorSelect = <T extends string>({
           if (triggerRef) triggerRef.current = node
         }}
         className={styles.trigger}
-        aria-label={labels.filterCondition}
+        aria-label={columnFilteringLabels(labels).filterCondition}
         data-testid="filter-operator"
       >
         <Select.Value>{labelOf(value)}</Select.Value>

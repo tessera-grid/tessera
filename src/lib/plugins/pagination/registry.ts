@@ -16,6 +16,7 @@ import { declareRevertOnReject } from '../../core/serverActions'
 import { paginationInertReason } from '../paginationModel/model'
 import { PaginationControl } from './PaginationControl'
 import type { PaginationHooks } from './types'
+import { paginationLabels } from './labels'
 
 export { DEFAULT_PAGE_SIZE }
 export const DEFAULT_PAGE_SIZES = [10, 25, 50, 100]
@@ -39,6 +40,11 @@ export interface PaginationOptions extends Omit<
 
 export const pagination = definePlugin<PaginationOptions>()({
   id: 'pagination',
+  labels: [paginationLabels],
+  actions: {
+    changePage: labels => paginationLabels(labels).actionChangePage,
+    changePageSize: labels => paginationLabels(labels).actionChangePageSize,
+  },
   diagnose: paginationInertReason,
   model: {
     plugin: paginationModel,

@@ -13,6 +13,7 @@ import { useTableState } from '../../core/reactivity'
 import { useIcons } from '../../ui/icons'
 import { ToolbarButton } from '../../ui/ToolbarButton'
 import { filterSummaryOf } from './filterSummary'
+import { columnFilteringLabels } from './labels'
 
 const FilterSummaryPopover = preloadable(() =>
   import('./FilterSummaryPopover').then(module => module.FilterSummaryPopover),
@@ -26,10 +27,13 @@ export const FilterSummaryButton = ({ table }: ToolbarComponentProps) => {
   const hidden = items.filter(item => item.hidden).length
   const label =
     items.length === 0
-      ? labels.filters
+      ? columnFilteringLabels(labels).filters
       : hidden > 0
-        ? labels.filtersActiveHidden(items.length, hidden)
-        : labels.filtersActive(items.length)
+        ? columnFilteringLabels(labels).filtersActiveHidden(
+            items.length,
+            hidden,
+          )
+        : columnFilteringLabels(labels).filtersActive(items.length)
   const icon = <FilterIcon width={16} height={16} />
   const popover = useLazyPopover(
     table,

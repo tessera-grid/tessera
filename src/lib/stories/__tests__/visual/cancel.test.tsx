@@ -23,6 +23,8 @@ import { failureShownOn, humanClick, pendingArcOf } from '../helpers'
 import { tableLabels } from '../labels'
 import { backgroundOf, contrast, inBothThemes, toRgba } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
+import { dataExportLabels } from '../../../plugins/dataExport/labels'
+import { rowExpandingLabels } from '../../../plugins/rowExpanding/labels'
 
 // Отмена длительных операций (ADR 0153; CA2–CA5, CA10): «стоп» занятой кнопки, ждущий
 // пункт меню, тихая отмена и плашка серверного действия — настоящими событиями браузера.
@@ -248,7 +250,7 @@ const carriers = (): Carrier[] => [
     name: 'выгрузка',
     kind: 'export',
     button: exportButton,
-    label: tableLabels.cancelAction(tableLabels.export),
+    label: tableLabels.cancelAction(dataExportLabels(tableLabels).export),
     start: () => humanClick(exportButton()),
     method: 'Enter',
   },
@@ -256,7 +258,7 @@ const carriers = (): Carrier[] => [
     name: 'тоггл ленивых детей',
     kind: 'children',
     button: toggle,
-    label: tableLabels.cancelAction(tableLabels.expandRow),
+    label: tableLabels.cancelAction(rowExpandingLabels(tableLabels).expandRow),
     start: () => humanClick(toggle()),
     method: 'pointer',
   },
@@ -264,7 +266,7 @@ const carriers = (): Carrier[] => [
     name: 'тоггл ленивых детей, Space',
     kind: 'children',
     button: toggle,
-    label: tableLabels.cancelAction(tableLabels.expandRow),
+    label: tableLabels.cancelAction(rowExpandingLabels(tableLabels).expandRow),
     start: () => humanClick(toggle()),
     method: 'Space',
   },

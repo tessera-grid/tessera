@@ -7,6 +7,7 @@ import { Undo2 } from 'lucide-react'
 import { discardDraft, readDrafts } from '../../core/drafts/drafts'
 import type { RowAction } from '../../core/headerActions'
 import { ROW_DELETE_DRAFT, ROW_INSERT_DRAFT, isNewRow } from './rowDrafts'
+import { cellEditingLabels } from './labels'
 
 const rowDraftOf = (table: unknown, rowId: string) =>
   readDrafts(table).find(
@@ -21,8 +22,9 @@ export const rowDraftAction: RowAction = {
   slot: 'actionRowSlot',
   order: -10,
   icon: () => <Undo2 width={16} height={16} />,
-  label: ({ table, row }, labels) =>
-    isNewRow(table, row.id) ? labels.rowInsertDiscard : labels.rowDeleteDiscard,
+  label: labels => cellEditingLabels(labels).actionRowDraftDiscard,
+  action: ({ table, row }) =>
+    isNewRow(table, row.id) ? 'rowInsertDiscard' : 'rowDeleteDiscard',
   visible: ({ table, row }) => !!rowDraftOf(table, row.id),
   // Видна без наведения, без точки черновика: строку и так выдаёт её вид.
   shown: () => true,

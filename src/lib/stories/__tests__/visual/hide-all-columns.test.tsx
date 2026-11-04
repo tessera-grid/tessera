@@ -10,6 +10,7 @@ import { columnFiltering, columnVisibility } from '../../../plugins'
 import { Stories, humanClick, revealCellButtons } from '../helpers'
 import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
 import { tableLabels } from '../labels'
+import { columnVisibilityLabels } from '../../../plugins/columnVisibility/labels'
 
 // Скрытие всех колонок и корень «Все колонки» меню (ADR 0133, HA1–HA3, HA6–HA7, HA9,
 // HA11–HA12).
@@ -85,7 +86,9 @@ const hideFromKebab = async (id: string) => {
   await userEvent.click(kebabOf(id)!)
   const item = () =>
     [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(
-      each => each.textContent?.trim() === tableLabels.hideColumn,
+      each =>
+        each.textContent?.trim() ===
+        columnVisibilityLabels(tableLabels).hideColumn,
     )
   await expect.poll(item).toBeTruthy()
   await userEvent.click(item()!)
@@ -176,24 +179,32 @@ describe('Скрытие всех колонок', () => {
   test('HA6: в подвале меню — «Выбрано N колонок» и «Сбросить», без «Показать все»; N — видимые колонки всей таблицы, поиск его не меняет', async () => {
     await mount(grid(['a', 'b', 'c', 'locked'], { locked: ['locked'] }))
     await openMenu()
-    expect(count()).toBe(tableLabels.selectedColumns(4))
+    expect(count()).toBe(columnVisibilityLabels(tableLabels).selectedColumns(4))
     const footerButtons = () =>
       [...menu()!.querySelectorAll('button')].map(each => each.textContent)
-    expect(footerButtons()).toEqual([tableLabels.resetColumns])
+    expect(footerButtons()).toEqual([
+      columnVisibilityLabels(tableLabels).resetColumns,
+    ])
 
     await userEvent.click(checkbox('a'))
-    await expect.poll(count).toBe(tableLabels.selectedColumns(3))
+    await expect
+      .poll(count)
+      .toBe(columnVisibilityLabels(tableLabels).selectedColumns(3))
     await userEvent.type(menu()!.querySelector('input')!, 'b')
     await expect
       .poll(() => menu()!.querySelectorAll('[data-column-id]').length)
       .toBe(1)
-    expect(count()).toBe(tableLabels.selectedColumns(3))
+    expect(count()).toBe(columnVisibilityLabels(tableLabels).selectedColumns(3))
     await userEvent.clear(menu()!.querySelector('input')!)
     // Промежуточный корень показывает все, отмеченный — скрывает все, кроме защищённой.
     await userEvent.click(root()!)
-    await expect.poll(count).toBe(tableLabels.selectedColumns(4))
+    await expect
+      .poll(count)
+      .toBe(columnVisibilityLabels(tableLabels).selectedColumns(4))
     await userEvent.click(root()!)
-    await expect.poll(count).toBe(tableLabels.selectedColumns(1))
+    await expect
+      .poll(count)
+      .toBe(columnVisibilityLabels(tableLabels).selectedColumns(1))
   })
 
   test('HA7: скрыта последняя колонка — заглушка «все колонки скрыты»; после кебаба заголовка фокус на её кнопке', async () => {

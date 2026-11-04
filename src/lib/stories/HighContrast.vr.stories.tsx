@@ -7008,3 +7008,71 @@ export const HighContrastCellSelectionFollowsSortStep2 = {
   name: 'Cells/Selection — Follows sorting, шаг 2',
   tags: ['!test'],
 }
+
+export const HighContrastFailureLogLanguageSwitchStep1 = {
+  ...twinStep(
+    panelsFailureLogStories,
+    panelsFailureLogStories.FailureLogLanguageSwitch,
+    1,
+  ),
+  name: 'Panels/Failure log — Switch language, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastFailureLogLanguageSwitchStep2 = {
+  ...twinStep(
+    panelsFailureLogStories,
+    panelsFailureLogStories.FailureLogLanguageSwitch,
+    2,
+  ),
+  name: 'Panels/Failure log — Switch language, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiActionNamesStep1 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiActionNames, 1),
+  name: 'Plugin API — Action names, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiActionNamesStep2 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiActionNames, 2),
+  name: 'Plugin API — Action names, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiActionNamesStep3 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiActionNames, 3),
+  name: 'Plugin API — Action names, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastActionStatusOwnLabelStep1 = {
+  ...twinStep(
+    cellsActionStatusStories,
+    cellsActionStatusStories.ActionStatusOwnLabel,
+    1,
+  ),
+  name: 'Cells/Action status — Own action label, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastActionStatusOwnLabelStep2 = {
+  ...twinStep(
+    cellsActionStatusStories,
+    cellsActionStatusStories.ActionStatusOwnLabel,
+    2,
+  ),
+  name: 'Cells/Action status — Own action label, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastActionStatusOwnLabelStep3 = {
+  ...twinStep(
+    cellsActionStatusStories,
+    cellsActionStatusStories.ActionStatusOwnLabel,
+    3,
+  ),
+  name: 'Cells/Action status — Own action label, шаг 3',
+  tags: ['!test'],
+}

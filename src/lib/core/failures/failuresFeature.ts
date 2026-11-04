@@ -15,6 +15,8 @@ import type { FlashTarget } from '../highlights/highlightFeature'
 import { announceLabel } from '../announcer'
 import { flashOutcome } from '../flashes/flashFeature'
 import { useSliceProjection } from '../reactivity'
+import { type ActionRef, actionLabelOf } from '../actions'
+import type { TableLabels } from '../localization'
 
 /** Объект отказа: ячейка, строка, колонка, диапазон, вся таблица или процесс вне таблицы. */
 export type FailureTarget = FlashTarget | { table: true } | { process: string }
@@ -22,8 +24,13 @@ export type FailureTarget = FlashTarget | { table: true } | { process: string }
 export interface Failure {
   /** Один отказ одного объекта: новый отказ того же объекта заменяет запись. */
   key: string
-  /** Имя действия — для журнала и объявлений. */
-  label: string
+  /**
+   * Действие справочника (ADR 0182, §5): журнал и объявления называют запись его подписью
+   * по текущему словарю. Встроенный код пишет только его.
+   */
+  action?: ActionRef
+  /** Имя действия от приложения — его переводом, как есть; без `action`. */
+  label?: string
   target: FailureTarget
   /** Причина из ответа. */
   reason: string
@@ -36,6 +43,16 @@ export interface Failure {
 }
 
 export type Failures = Record<string, Failure>
+
+/** Имя записи: подпись действия справочника или имя от приложения. */
+export const failureName = (
+  table: unknown,
+  failure: Pick<Failure, 'action' | 'label'>,
+  labels?: TableLabels,
+): string =>
+  failure.action
+    ? actionLabelOf(table, failure.action, labels)
+    : (failure.label ?? '')
 
 export type FailureReport = Omit<Failure, 'key' | 'time'> & {
   key?: string

@@ -371,7 +371,8 @@ export const pinHeaderAction: HeaderAction = {
   order: 0,
   visible: ({ column }) => column.getCanPin(), // применимость (и участие в пороге)
   icon: () => <PinActionIcon />, // компонент — доступ к useIcons
-  label: (ctx, labels) => (isPinned(ctx) ? labels.unpin : labels.pin), // labels инъектируются
+  label: labels => columnPinningLabels(labels).pin, // подпись своего действия в справочнике
+  action: ctx => (isPinned(ctx) ? 'unpin' : 'pin'), // состояние — другое действие справочника
   active: isPinned, // подсветка инлайн + галочка в меню
   onSelect: togglePin,
 }
@@ -381,7 +382,12 @@ export const pinHeaderAction: HeaderAction = {
 > уже выделена своим видом (откат строки до сохранения, ADR 0178, §7); `draft` и `active` к
 > тому же рисуют точку и бабл.
 >
-> Поля `visible`/`active`/`label` — чистые функции контекста; их реактивность
+> Подпись пункта — действие справочника (ADR 0182, §4): `label(labels)` без контекста
+> объявляет действие `<владелец>/<id>`, `action(ctx)` выбирает действие по состоянию, его
+> подписи — в `actions` записи плагина. Меню, журнал отказов, объявления и канал действий
+> называют операцию одной подписью.
+>
+> Поля `visible`/`active`/`action` — чистые функции контекста; их реактивность
 > обеспечивает сам компонент действия, подписываясь на нужный срез через
 > `useSlice`/`useTableState`. Прежнее поле `subscribe` (ключи Pub-Sub) в v9 убрано.
 

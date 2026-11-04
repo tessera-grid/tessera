@@ -41,6 +41,7 @@ import { downloadFile } from '../plugins/dataExportModel/download'
 import { readLoadedChildren } from '../plugins/rowExpanding/lazyChildrenFeature'
 import { toggleRowExpanded } from '../plugins/rowExpanding/toggleRowExpanded'
 import { RU_LABELS } from '../stories/__mocks__/localization.ru'
+import { rowExpandingLabels } from '../plugins/rowExpanding/labels'
 
 vi.mock('../plugins/dataExportModel/download', () => ({
   downloadFile: vi.fn(),
@@ -313,7 +314,9 @@ describe('Отмена длительных операций: signal и cancelPe
     expect(said).toEqual(
       expect.arrayContaining([
         ENGLISH_LABELS.announceActionCancelled('Archive'),
-        ENGLISH_LABELS.announceActionCancelled(ENGLISH_LABELS.expandRow),
+        ENGLISH_LABELS.announceActionCancelled(
+          rowExpandingLabels(ENGLISH_LABELS).expandRow,
+        ),
         ENGLISH_LABELS.announceActionCancelled(ENGLISH_LABELS.actionSorting),
       ]),
     )

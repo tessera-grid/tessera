@@ -19,6 +19,7 @@ import { serviceColumnOf } from './createColumns'
 import type { ColumnSizingState, TableFeature, Updater } from '../types'
 import type { CommonOptions } from './commonFeature.types'
 import { announce } from './announcer'
+import { type ActionRef, actionLabelOf } from './actions'
 import { createActionReporter } from './debugActions'
 import { formatDataTypeValue } from './dataTypeFormat'
 import { resolveDataType } from './dataTypes'
@@ -72,6 +73,9 @@ export const commonFeature: TableFeature = {
 
     assignTableAPIs('commonFeature', table, {
       table_getHooks: { fn: () => options().hooks },
+      table_getActionLabel: {
+        fn: (action: ActionRef) => actionLabelOf(table, action),
+      },
       table_getRowSource: {
         fn: () => {
           const source = options().getRowSource?.(table) ?? rowSource

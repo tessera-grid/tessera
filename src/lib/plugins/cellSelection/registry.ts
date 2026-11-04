@@ -19,10 +19,18 @@ import { cellSelectionBody } from './body'
 import { copyContextAction } from './contextActions'
 import { DEFAULT_MAX_COPY_ROWS } from './copy'
 import type { CellSelectionOptions } from './types'
+import { cellSelectionLabels } from './labels'
 
 // TOptions задаётся ОДИН раз дженериком; `o` в полях выводится (DP12).
 const cellSelectionEntry = definePlugin<CellSelectionOptions>()({
   id: 'cellSelection',
+  labels: [cellSelectionLabels],
+  actions: {
+    select: labels => cellSelectionLabels(labels).actionSelect,
+    extendSelection: labels =>
+      cellSelectionLabels(labels).actionExtendSelection,
+    copy: labels => cellSelectionLabels(labels).copy,
+  },
   diagnose: neverInert,
   model: {
     plugin: cellSelectionModel,

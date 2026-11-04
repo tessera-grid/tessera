@@ -5,6 +5,8 @@ import { reportAction, sourceOf } from '../../core/debugActions'
 import { lazyTriggerHandlers, useLazyOpening } from '../../core/lazyOpening'
 import type { Preloadable } from '../../core/preloadable'
 import type { SlotAction } from '../../core/headerActions'
+import { actionRefOf, menuActionLabel } from '../../core/actions'
+import { useLocalization } from '../../core/localization'
 
 interface Context {
   table: unknown
@@ -12,6 +14,7 @@ interface Context {
 
 export const usePanelOpening = (context: Context) => {
   const opening = useLazyOpening(context.table)
+  const labels = useLocalization()
 
   /**
    * Открыть панель `action`, когда загрузятся её содержимое и, если ещё не пришёл,
@@ -39,7 +42,8 @@ export const usePanelOpening = (context: Context) => {
                 loadModule ? module.reload() : undefined,
                 action.preload?.(context),
               ]),
-            label: labels => action.label(context, labels),
+            label: labels => menuActionLabel(action, context, labels),
+            action: actionRefOf(action, context, labels),
           }
         : undefined,
       open,

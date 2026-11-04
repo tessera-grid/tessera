@@ -7,6 +7,7 @@ import type { MouseEvent, ReactNode, RefObject } from 'react'
 
 import type { TableLabels } from '../../core/localization'
 import type { CellComponentProps, HeaderComponentProps } from '../createSlots'
+import type { NamedAction } from '../actions'
 import type { FlashTarget } from '../highlights/highlightFeature'
 
 /** Все слоты, в которых может жить действие (шапка + ячейка + строка действий). */
@@ -25,15 +26,13 @@ export type HeaderActionSlot = 'leftHeaderSlot' | 'rightHeaderSlot'
  * контекстного меню (ADR 0030). Достаточно для `resolveMenuItems`; инлайн-подача
  * (кнопка в слоте) и `slot` живут в наследнике `SlotAction`.
  */
-export interface MenuAction<TCtx = any> {
-  /** Уникальный id действия — ключ дедупликации при сборке. */
+export interface MenuAction<TCtx = any> extends NamedAction<TCtx> {
+  /** Уникальный id действия — ключ дедупликации при сборке и имя действия справочника. */
   id: string
   /** Порядок: число — индекс вставки, `'last'`/`undefined` — в конец. */
   order?: number | 'last'
   /** Иконка действия (инлайн-кнопка и строка меню). */
   icon: (ctx: TCtx) => ReactNode
-  /** Подпись: `aria-label`/тултип инлайн-кнопки и текст строки меню. */
-  label: (ctx: TCtx, labels: TableLabels) => string
   /**
    * Обработчик выбора (клик по инлайн-кнопке/пункту). `event` — для модификаторов.
    * Промис — долгое действие: ожидание и отказ видны на кебабе и пункте (ADR 0078).

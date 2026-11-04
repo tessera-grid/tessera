@@ -18,6 +18,7 @@ import type {
   ExportSettings,
   ExportValueContext,
 } from './types'
+import { dataExportModelLabels } from './labels'
 
 const DEFAULT_FORMATS = [csvFormat()]
 
@@ -49,6 +50,10 @@ export const dataExportModelFeatures = { dataExportFeature }
 
 export const dataExportModel = definePlugin<DataExportModelOptions>()({
   id: 'dataExportModel',
+  labels: [dataExportModelLabels],
+  actions: {
+    exportData: labels => dataExportModelLabels(labels).exportData,
+  },
   diagnose: exportInertReason,
   features: dataExportModelFeatures,
   hooks: o => ({ onExport: o.onExport, onExported: o.onExported }),

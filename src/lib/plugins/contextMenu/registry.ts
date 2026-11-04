@@ -13,9 +13,21 @@ import { noContextMenuActionsReason } from '../../core/pluginDiagnostics'
 import { CELL_STATE_ACTIONS } from './cellStateActions'
 import { contextMenuBody } from './body'
 import type { ContextMenuOptions } from './types'
+import { contextMenuLabels } from './labels'
 
 const contextMenuEntry = definePlugin<ContextMenuOptions>()({
   id: 'contextMenu',
+  labels: [contextMenuLabels],
+  actions: {
+    'contextMenu:rollbackDraft': {
+      plugin: 'cellEditing',
+      action: 'cellDraftRollback',
+    },
+    'contextMenu:rollbackRowDraft': {
+      plugin: 'cellEditing',
+      action: 'rowDraftDiscard',
+    },
+  },
   // Свои пункты меню видны не всегда: без чужих пунктов меню по-прежнему пустое.
   diagnose: table => noContextMenuActionsReason(table, CELL_STATE_ACTIONS),
   contextMenuActions: [...CELL_STATE_ACTIONS],

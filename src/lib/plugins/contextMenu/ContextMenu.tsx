@@ -9,7 +9,8 @@ import { CELL_STATE_ACTIONS } from './cellStateActions'
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 
 import { useLazyOpening } from '../../core/lazyOpening'
-import { useLocalization } from '../../core/localization'
+import { type TableLabels, useLocalization } from '../../core/localization'
+import { contextMenuLabels } from './labels'
 import { preloadable } from '../../core/preloadable'
 import type { RowSource } from '../../core/rowSource'
 import {
@@ -28,7 +29,8 @@ const ContextMenuPopupImpl = preloadable(() =>
 const MENU_LOAD = {
   load: ContextMenuPopupImpl.reload,
   isReady: ContextMenuPopupImpl.isLoaded,
-  label: (labels: { contextMenu: string }) => labels.contextMenu,
+  label: (labels: TableLabels) => contextMenuLabels(labels).contextMenu,
+  action: { plugin: 'contextMenu', action: 'openMenu' },
 }
 
 const CELL = '.data-grid__body-cell[data-column-id]'

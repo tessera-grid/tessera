@@ -36,6 +36,8 @@ export interface ConsoleEntry {
   actionId?: number
   /** Итог: номер исходного действия грида. */
   cause?: number
+  /** Действие грида: подпись справочника на языке таблицы (ADR 0182, AN8). */
+  label?: string
 }
 
 export interface ConsoleAction {
@@ -47,6 +49,8 @@ export interface ConsoleAction {
   /** Номер действия в канале грида. */
   id?: number
   cause?: number
+  /** Подпись действия из справочника таблицы (ADR 0182, AN8). */
+  label?: string
 }
 
 export interface ConsoleLog {
@@ -216,6 +220,7 @@ export const createConsoleLog = (
       source: input.source ?? 'api',
       ...(input.id !== undefined && { actionId: input.id }),
       ...(input.cause !== undefined && { cause: input.cause }),
+      ...(input.label !== undefined && { label: input.label }),
     }
     // Внутри жеста — его запись: смена цели, конец жеста, вложенные действия.
     if (group?.gesture && input.phase !== 'start') {

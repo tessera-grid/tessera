@@ -39,6 +39,9 @@ import {
 import { SelectedRowsCount } from '../plugins/rowSelection/SelectedRowsCount'
 import { isSelectableInList } from '../plugins/rowSelectionModel/selectionHelpers'
 import { captureInertWarnings } from './inertWarnings'
+import { rowSelectionModelLabels } from '../plugins/rowSelectionModel/labels'
+import { rowSelectionLabels } from '../plugins/rowSelection/labels'
+
 ;(
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true
@@ -319,9 +322,11 @@ describe('выбор вложенных строк (ADR 0162)', () => {
     show(0, 9)
     await answer(calls.at(-1)!, 3)
     toggle('r1')
-    const approximate = ENGLISH_LABELS.selectedRowsAndGroups(
+    const approximate = rowSelectionModelLabels(
+      ENGLISH_LABELS,
+    ).selectedRowsAndGroups(
       1,
-      ENGLISH_LABELS.selectedBranchesCount(1),
+      rowSelectionModelLabels(ENGLISH_LABELS).selectedBranchesCount(1),
     )
     // Ветка не загружена — её размер неизвестен.
     expect(host.textContent).toBe(approximate)
@@ -344,10 +349,14 @@ describe('выбор вложенных строк (ADR 0162)', () => {
         })),
       })
     })
-    expect(host.textContent).toBe(ENGLISH_LABELS.selectedRows(16))
+    expect(host.textContent).toBe(
+      rowSelectionLabels(ENGLISH_LABELS).selectedRows(16),
+    )
     // Снятая строка ветки — точный счёт на одну меньше.
     toggle('r1.3')
-    expect(host.textContent).toBe(ENGLISH_LABELS.selectedRows(15))
+    expect(host.textContent).toBe(
+      rowSelectionLabels(ENGLISH_LABELS).selectedRows(15),
+    )
   })
 
   it('NS7: сортировка, фильтр и поиск выбор не сбрасывают; серверная выгрузка получает срез с узлами веток', async () => {

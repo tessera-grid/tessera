@@ -17,6 +17,7 @@ import { booleanToggle } from './CellEditField'
 import { beginEdit } from './editors'
 import { EDIT_SESSION_KEY, cellEditingViewOf } from './session'
 import type { CellEditingHooks, CellEditingState } from './types'
+import { cellEditingLabels } from './labels'
 
 export const CellEditButton = (props: PluginCellProps<CellEditingHooks>) => {
   const { row, column, table, hooks } = props
@@ -45,7 +46,7 @@ export const CellEditButton = (props: PluginCellProps<CellEditingHooks>) => {
   if (booleanToggle(props)) return null
   return (
     <CellButton
-      label={labels.editCell}
+      label={cellEditingLabels(labels).editCell}
       icon={<EditIcon width={16} height={16} />}
       onClick={event => beginEdit(table, row, column, hooks, sourceOf(event))}
     />

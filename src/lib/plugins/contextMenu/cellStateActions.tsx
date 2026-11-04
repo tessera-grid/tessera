@@ -28,6 +28,8 @@ import {
   cancelRunningAction,
   runningSlotActionAt,
 } from '../../core/headerActions'
+import { contextMenuLabels } from './labels'
+import { menuActionLabel } from '../../core/actions'
 
 const cellOf = ({ row, column }: ContextMenuContext) =>
   [row.id, column.id] as const
@@ -44,7 +46,7 @@ const cancelSaveAction: ContextMenuAction = {
   id: 'contextMenu:cancelSave',
   order: -30,
   icon: () => <X width={16} height={16} />,
-  label: (_ctx, labels) => labels.cancelSave,
+  label: labels => contextMenuLabels(labels).cancelSave,
   visible: ctx => hasPending(ctx.table, saving(ctx)),
   onSelect: (ctx, event) => {
     cancelPending(ctx.table, saving(ctx), cancelSourceOf(event))
@@ -55,9 +57,10 @@ const cancelSlotAction: ContextMenuAction = {
   id: 'contextMenu:cancelAction',
   order: -30,
   icon: () => <X width={16} height={16} />,
-  label: (ctx, labels) => {
+  label: (labels, params) => labels.cancelAction(String(params?.name ?? '')),
+  params: (ctx, labels) => {
     const running = runningSlotActionAt(ctx.table, ...cellOf(ctx))
-    return labels.cancelAction(running ? running.action.label(ctx, labels) : '')
+    return { name: running ? menuActionLabel(running.action, ctx, labels) : '' }
   },
   visible: ctx => !!runningSlotActionAt(ctx.table, ...cellOf(ctx)),
   onSelect: (ctx, event) => {
@@ -71,7 +74,7 @@ const retrySaveAction: ContextMenuAction = {
   id: 'contextMenu:retrySave',
   order: -20,
   icon: () => <RotateCcw width={16} height={16} />,
-  label: (_ctx, labels) => labels.retrySave,
+  label: labels => contextMenuLabels(labels).retrySave,
   visible: ctx => !!failureOf(ctx)?.retry,
   onSelect: ctx => {
     void failureOf(ctx)?.retry?.()
@@ -82,7 +85,7 @@ const discardChangeAction: ContextMenuAction = {
   id: 'contextMenu:discardChange',
   order: -20,
   icon: () => <Undo2 width={16} height={16} />,
-  label: (_ctx, labels) => labels.failureDiscard,
+  label: labels => labels.failureDiscard,
   visible: ctx => !!failureOf(ctx),
   onSelect: ctx => {
     const failure = failureOf(ctx)
@@ -107,7 +110,8 @@ const rollbackDraftAction: ContextMenuAction = {
   id: 'contextMenu:rollbackDraft',
   order: -20,
   icon: () => <Undo2 width={16} height={16} />,
-  label: (_ctx, labels) => labels.cellDraftRollback,
+  // Чужое действие — подпись плагина правки по id (ADR 0182, §8).
+  action: () => ({ plugin: 'cellEditing', action: 'cellDraftRollback' }),
   // Отказ главнее: у ячейки с отказом — «Отбросить изменение», оно снимает и черновик.
   visible: ctx => !failureOf(ctx) && !!draftOf(ctx),
   onSelect: ctx => {
@@ -129,10 +133,14 @@ const rollbackRowDraftAction: ContextMenuAction = {
   id: 'contextMenu:rollbackRowDraft',
   order: -20,
   icon: () => <Undo2 width={16} height={16} />,
-  label: (ctx, labels) =>
-    draftKindOf(ctx.table, rowDraftOf(ctx)?.kind ?? '')?.rowMark === 'inserted'
-      ? labels.rowInsertDiscard
-      : labels.rowDeleteDiscard,
+  action: ctx => ({
+    plugin: 'cellEditing',
+    action:
+      draftKindOf(ctx.table, rowDraftOf(ctx)?.kind ?? '')?.rowMark ===
+      'inserted'
+        ? 'rowInsertDiscard'
+        : 'rowDeleteDiscard',
+  }),
   visible: ctx => !!rowDraftOf(ctx),
   onSelect: ctx => {
     const draft = rowDraftOf(ctx)

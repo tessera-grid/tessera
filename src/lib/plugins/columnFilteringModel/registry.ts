@@ -16,6 +16,7 @@ import { FILTERED_STUB } from '../../shared/filtering/filtering'
 import { createSearchAwareFilteredRowModel } from '../../shared/rowModels/filteredRowModel'
 import { neverInert } from '../../core/pluginDiagnostics'
 import { columnFilterTypesFeature } from './columnFilterTypesFeature'
+import { filteringLabels } from '../../shared/filtering/labels'
 
 export interface ColumnFilteringModelOptions {
   /** `false` — плагин отключён: фильтры колонок не применяются. */
@@ -43,6 +44,7 @@ const NO_FILTERS: never[] = []
 export const columnFilteringModel = definePlugin<ColumnFilteringModelOptions>()(
   {
     id: 'columnFilteringModel',
+    labels: [filteringLabels],
     diagnose: neverInert,
     stubs: [FILTERED_STUB],
     features: columnFilteringModelFeatures,

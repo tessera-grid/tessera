@@ -12,6 +12,7 @@ import {
 } from '../dataExportModel/registry'
 import { exportInertReason } from '../dataExportModel/inertReason'
 import { ExportButton } from './ExportButton'
+import { dataExportLabels } from './labels'
 
 export const EXPORT_TOOLBAR_GROUP = 'data'
 
@@ -19,6 +20,11 @@ export type ExportOptions = DataExportModelOptions
 
 export const dataExport = definePlugin<ExportOptions>()({
   id: 'dataExport',
+  labels: [dataExportLabels],
+  actions: {
+    export: labels => dataExportLabels(labels).export,
+    chooseSettings: labels => dataExportLabels(labels).actionChooseSettings,
+  },
   diagnose: exportInertReason,
   model: {
     plugin: dataExportModel,

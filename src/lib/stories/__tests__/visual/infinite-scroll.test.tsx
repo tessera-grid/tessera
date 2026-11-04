@@ -29,6 +29,8 @@ import {
   toRgba,
 } from './a11y-helpers'
 import { tableLabels } from '../labels'
+import { infiniteScrollLabels } from '../../../plugins/infiniteScroll/labels'
+import { dataExportLabels } from '../../../plugins/dataExport/labels'
 
 // Бесконечная прокрутка — лента (ADR 0081; IS1–IS4, IS7, IS9–IS15): ответы
 // «сервера» держит тест — промис каждого вызова `onLoadMore` в очереди `calls`.
@@ -375,7 +377,9 @@ describe('Лента: хвост ожидания и ответ', () => {
       rowEl('r29')!.getBoundingClientRect().width,
       0,
     )
-    expect(errorRow()!.textContent).toContain(tableLabels.loadMoreFailed)
+    expect(errorRow()!.textContent).toContain(
+      infiniteScrollLabels(tableLabels).loadMoreFailed,
+    )
     expect(errorRow()!.textContent).toContain('Server error')
     const icon = errorRow()!.querySelector<SVGElement>('svg')!
     expect(icon.getBoundingClientRect().width).toBeGreaterThan(0)
@@ -454,7 +458,9 @@ describe('Лента: смена условия выборки', () => {
       call.reject(new Error('late'))
       await frames(4)
       expect(errorRow(), name).toBeNull()
-      expect(liveText(), name).not.toContain(tableLabels.loadMoreFailed)
+      expect(liveText(), name).not.toContain(
+        infiniteScrollLabels(tableLabels).loadMoreFailed,
+      )
       await cleanup()
       calls = []
     }
@@ -478,15 +484,21 @@ describe('Лента: итог и доступность', () => {
 
   test('IS9: loadedCount — «Loaded N of M» при известном итоге, «Loaded N» без него; без опции панели нет', async () => {
     const known = await mount({ loadedCount: true })
-    expect(counter()?.textContent).toBe(tableLabels.loadedRowsOf(30, 100))
+    expect(counter()?.textContent).toBe(
+      infiniteScrollLabels(tableLabels).loadedRowsOf(30, 100),
+    )
     await scrollToEnd()
     await pendingCall()
     await respond(20)
-    expect(counter()?.textContent).toBe(tableLabels.loadedRowsOf(50, 100))
+    expect(counter()?.textContent).toBe(
+      infiniteScrollLabels(tableLabels).loadedRowsOf(50, 100),
+    )
     await known.unmount()
 
     const unknown = await mount({ loadedCount: true, knownTotal: false })
-    expect(counter()?.textContent).toBe(tableLabels.loadedRows(30))
+    expect(counter()?.textContent).toBe(
+      infiniteScrollLabels(tableLabels).loadedRows(30),
+    )
     await unknown.unmount()
 
     await mount()
@@ -510,13 +522,17 @@ describe('Лента: итог и доступность', () => {
     await scrollToEnd()
     await pendingCall()
     await respond(20)
-    await expect.poll(liveText).toContain(tableLabels.announceMoreLoaded(20))
+    await expect
+      .poll(liveText)
+      .toContain(infiniteScrollLabels(tableLabels).announceMoreLoaded(20))
     scroller().scrollTop = scroller().scrollHeight
     await frames(4)
     expect(rowEl('r49')!.getAttribute('aria-rowindex')).toBe('51')
     await pendingCall()
     await fail()
-    await expect.poll(liveText).toContain(tableLabels.loadMoreFailed)
+    await expect
+      .poll(liveText)
+      .toContain(infiniteScrollLabels(tableLabels).loadMoreFailed)
     expect(errorRow()!.getAttribute('aria-rowindex')).toBe('52')
   })
 
@@ -615,7 +631,9 @@ describe('Лента: итог и доступность', () => {
     }
 
     const client = await mount({ plugins: [dataExport()] })
-    expect(await rowsLabel()).toContain(tableLabels.exportLoaded(30))
+    expect(await rowsLabel()).toContain(
+      dataExportLabels(tableLabels).exportLoaded(30),
+    )
     await userEvent.keyboard('{Escape}')
     await client.unmount()
 
@@ -624,7 +642,7 @@ describe('Лента: итог и доступность', () => {
       plugins: [dataExport({ onExport: async () => {} })],
     })
     const label = await rowsLabel()
-    expect(label).toContain(tableLabels.exportAll)
+    expect(label).toContain(dataExportLabels(tableLabels).exportAll)
     expect(label).not.toContain('Loaded')
   })
 

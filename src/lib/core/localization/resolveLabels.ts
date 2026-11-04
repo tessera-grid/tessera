@@ -4,6 +4,7 @@
  * вызывают как функции.
  */
 import { DEFAULT_LABELS, type TableLabels } from './labels'
+import type { LabelSet, PluginDictionary } from './pluginLabels'
 
 /** Язык форм слова, чисел и списков подписей по умолчанию (ADR 0132, LC5). */
 export const DEFAULT_LOCALE = 'en-US'
@@ -21,11 +22,6 @@ type FunctionKey = {
  * получает `{имя}`. Число, от которого зависит форма слова, всегда `count`.
  */
 export const LABEL_PARAMS = {
-  sortPriority: ['position', 'total'],
-  columnsWithHidden: ['count'],
-  selectedColumns: ['count'],
-  exportView: ['features'],
-  exportLoaded: ['count'],
   withActiveCount: ['name', 'count'],
   loadFailed: ['name'],
   actionFailedRetry: ['reason'],
@@ -37,60 +33,18 @@ export const LABEL_PARAMS = {
   announceActionCancelled: ['name'],
   menuBack: ['section'],
   announceMenuSection: ['section'],
-  editCellValue: ['column'],
-  announceSaveFailed: ['column', 'error'],
   announceStillSaving: ['name'],
   actionDraft: ['action'],
   actionActiveDraft: ['action'],
-  unsavedChangesButton: ['count'],
-  cellDraftReason: ['was', 'now'],
-  failureLogButton: ['count'],
   failureTargetCell: ['column', 'row'],
   failureTargetRow: ['row'],
-  announceFailureLogged: ['count'],
-  announceExpandFailed: ['error'],
-  announceMoveFailed: ['error'],
-  announceColumnMoveFailed: ['error'],
-  announceChildrenLoaded: ['count'],
   announceSortAscending: ['column'],
   announceSortDescending: ['column'],
-  announceSelection: ['count'],
-  announceCopy: ['count'],
-  announceCopyLoading: ['count'],
-  announceRowsAdded: ['count'],
-  rowInsertDraftMore: ['values', 'count'],
-  announceRowsRemoved: ['count'],
-  copyTooManyRows: ['count', 'max'],
   announceLoaded: ['count'],
-  pageRange: ['from', 'to', 'total'],
-  pageRangeOfMany: ['from', 'to'],
-  pageAnnouncement: ['page', 'pages'],
-  pageAnnouncementOfMany: ['page'],
-  loadedRows: ['count'],
-  loadedRowsOf: ['count', 'total'],
-  loadedRowsShort: ['count'],
-  loadedRowsOfShort: ['count', 'total'],
-  selectedRowsShort: ['count'],
-  selectedRowsHiddenShort: ['count'],
-  filteredRowsShort: ['shown', 'total'],
   groupRowCount: ['count'],
   announceLoadErrorReason: ['reason'],
   announceLoadFailedReason: ['reason'],
-  announceMoreLoaded: ['count'],
-  selectedRows: ['count'],
-  selectedAllExcept: ['count'],
-  selectedAllExceptShort: ['count'],
-  selectedRowsAndGroups: ['count', 'groups'],
-  selectedRowsAndGroupsShort: ['count', 'groups'],
-  selectedGroupsCount: ['count'],
-  selectedBranchesCount: ['count'],
-  selectedRowsHidden: ['count'],
-  searchColumnsHint: ['columns'],
-  filtersActive: ['count'],
-  filtersActiveHidden: ['count', 'hidden'],
-  removeFilter: ['column'],
   announceFilteredRows: ['count'],
-  filteredRows: ['shown', 'total'],
 } as const satisfies Record<FunctionKey, readonly string[]>
 
 /** Формы слова по числу (`Intl.PluralRules`) и `zero` для нуля в любом языке. */
@@ -114,15 +68,14 @@ type CountKey = {
 
 /**
  * Словарь подписей приложения: значение — строка-шаблон с `{имя}` или функция, как в
- * `TableLabels`; у подписей с `count` — ещё ключи форм слова `<ключ>_<форма>`.
+ * `TableLabels`; у подписей с `count` — ещё ключи форм слова `<ключ>_<форма>`; подписи
+ * владельцев — ключами `<владелец>.<ключ>` (ADR 0182, §8).
  */
 export type LabelDictionary = {
   [K in LabelKey]?: TableLabels[K] | string
 } & {
   [K in `${CountKey}_${PluralForm}`]?: string
-}
-
-const isFunctionKey = (key: string): key is FunctionKey => key in LABEL_PARAMS
+} & PluginDictionary
 
 const COUNT_KEYS = new Set<string>(
   Object.entries(LABEL_PARAMS)
@@ -145,11 +98,24 @@ const LABEL_KEYS = Object.keys(DEFAULT_LABELS).filter(
   key => !isFormKey(key),
 ) as LabelKey[]
 
-/** Ключи словаря, которых у таблицы нет: опечатки словаря из JSON (LC8). */
-export const unknownLabelKeys = (dictionary: object): string[] =>
-  Object.keys(dictionary).filter(
-    key => !(LABEL_KEYS as string[]).includes(key) && !isFormKey(key),
+/**
+ * Ключи словаря, которых у таблицы нет: опечатки словаря из JSON (LC8); `known` — ключи
+ * владельцев, включённых в таблицу (ADR 0182, AN10).
+ */
+export const unknownLabelKeys = (
+  dictionary: object,
+  known: readonly string[] = [],
+): string[] => {
+  const owned = new Set(known)
+  return Object.keys(dictionary).filter(
+    key =>
+      !(LABEL_KEYS as string[]).includes(key) &&
+      !isFormKey(key) &&
+      !owned.has(key),
   )
+}
+
+export type { LabelSet }
 
 const numberFormats = new Map<string, Intl.NumberFormat>()
 const listFormats = new Map<string, Intl.ListFormat>()
@@ -215,38 +181,80 @@ const pickTemplate = (
   return typeof value === 'string' ? value : undefined
 }
 
+/** Словарь приложения и язык, по которым разрешены подписи: наборы владельцев читают их же. */
+export const LABEL_SOURCE = Symbol('tessera.labelSource')
+
+export interface LabelSource {
+  own: Record<string, unknown>
+  locale: string
+}
+
+/** Источник подписей: у объекта без него — английский словарь. */
+export const labelSourceOf = (labels: object): LabelSource =>
+  (labels as { [LABEL_SOURCE]?: LabelSource })[LABEL_SOURCE] ?? {
+    own: {},
+    locale: DEFAULT_LOCALE,
+  }
+
+/**
+ * Подписи одного владельца: ключ словаря — `<prefix><ключ>`, без значения в словаре —
+ * английское значение владельца; подписи с параметрами — функции с позиционными параметрами.
+ */
+export const resolveOwnLabels = (
+  source: LabelSource,
+  prefix: string,
+  keys: readonly string[],
+  defaults: Record<string, unknown>,
+  params: Record<string, readonly string[]>,
+): Record<string, unknown> => {
+  const { own, locale } = source
+  const labels: Record<string, unknown> = {}
+  for (const key of keys) {
+    const value = own[prefix + key]
+    if (typeof value === 'function') {
+      labels[key] = value
+    } else if (!(key in params)) {
+      labels[key] = typeof value === 'string' ? value : defaults[key]
+    } else {
+      const names = params[key]!
+      labels[key] = (...args: unknown[]) => {
+        const values = Object.fromEntries(
+          names.map((name, index) => [name, args[index]]),
+        )
+        const template =
+          pickTemplate(own, prefix + key, values.count, locale) ??
+          pickTemplate(defaults, key, values.count, locale) ??
+          ''
+        return formatTemplate(template, values, locale)
+      }
+    }
+  }
+  return labels
+}
+
 /**
  * Подписи таблицы: словарь приложения поверх английского словаря-шаблона. Подписи с
- * параметрами — функции с позиционными параметрами, как в `TableLabels`.
+ * параметрами — функции с позиционными параметрами, как в `TableLabels`. Подписи плагинов
+ * разрешает их набор (`defineLabels`) из того же словаря.
  */
 export const resolveLabels = (
   dictionary: LabelDictionary | undefined,
   locale: string,
 ): TableLabels => {
-  const own = (dictionary ?? {}) as Record<string, unknown>
-  const defaults = DEFAULT_LABELS as Record<string, unknown>
-  const labels: Record<string, unknown> = {}
-  for (const key of LABEL_KEYS) {
-    const value = own[key]
-    if (typeof value === 'function') {
-      labels[key] = value
-    } else if (!isFunctionKey(key)) {
-      labels[key] = typeof value === 'string' ? value : defaults[key]
-    } else {
-      const names: readonly string[] = LABEL_PARAMS[key]
-      labels[key] = (...args: unknown[]) => {
-        const params = Object.fromEntries(
-          names.map((name, index) => [name, args[index]]),
-        )
-        const template =
-          pickTemplate(own, key, params.count, locale) ??
-          pickTemplate(defaults, key, params.count, locale) ??
-          ''
-        return formatTemplate(template, params, locale)
-      }
-    }
+  const source: LabelSource = {
+    own: (dictionary ?? {}) as Record<string, unknown>,
+    locale,
   }
-  return labels as unknown as TableLabels
+  const labels = resolveOwnLabels(
+    source,
+    '',
+    LABEL_KEYS,
+    DEFAULT_LABELS as Record<string, unknown>,
+    LABEL_PARAMS,
+  )
+  return Object.assign(labels, {
+    [LABEL_SOURCE]: source,
+  }) as unknown as TableLabels
 }
 
 /** Английские подписи таблицы без словаря приложения. */

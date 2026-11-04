@@ -8,6 +8,8 @@ import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
 import { pinViaPopover } from './column-pinning-helpers'
 import { PINNING_NESTED, SHALLOW_LEAVES } from './header-fixtures'
 import { tableLabels } from '../labels'
+import { columnPinningLabels } from '../../../plugins/columnPinning/labels'
+import { columnVisibilityLabels } from '../../../plugins/columnVisibility/labels'
 
 // Нативные спаны вложенной шапки (ADR 0049, HS2–HS6, HS9, HS11–HS13). HS1, HS7–HS8, HS14 —
 // модульные (`src/lib/__tests__/headerSpans.test.ts`), HS10 — в `keyboard-wcag`.
@@ -211,7 +213,7 @@ describe('Нативные спаны вложенной шапки', () => {
       <Stories.ColumnPinningPlayground {...PINNING_NESTED} {...GRID} />,
     )
     await expect.poll(() => headCells('total').length).toBe(1)
-    await pinViaPopover(head('total'), tableLabels.pinLeft)
+    await pinViaPopover(head('total'), columnPinningLabels(tableLabels).pinLeft)
     await expect
       .poll(() => head('total').getAttribute('data-cell-pinned'))
       .toBe('left')
@@ -263,7 +265,9 @@ describe('Нативные спаны вложенной шапки', () => {
     const stretched = await actionsOf('visits')
     const regular = await actionsOf('age')
     expect(stretched).toEqual(regular)
-    expect(stretched.items).toContain(tableLabels.hideColumn)
-    expect(stretched.buttons).toContain(tableLabels.pin)
+    expect(stretched.items).toContain(
+      columnVisibilityLabels(tableLabels).hideColumn,
+    )
+    expect(stretched.buttons).toContain(columnPinningLabels(tableLabels).pin)
   })
 })

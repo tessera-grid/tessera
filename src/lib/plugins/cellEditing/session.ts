@@ -70,6 +70,9 @@ import type {
   EditSession,
   SubmittedCell,
 } from './types'
+import { cellEditingLabels } from './labels'
+import { actionLabelOf } from '../../core/actions'
+import { objectTargetText } from '../../shared/objectTarget'
 
 const ID = 'cellEditing'
 export const EDIT_SESSION_KEY = pluginStateKey(ID)
@@ -190,6 +193,9 @@ const syncSubmitted = (
 }
 
 /** Подпись записи — действие «Правка»: колонку и строку называет цель (ADR 0177, §7). */
+/** Правка ячейки в справочнике действий (ADR 0182). */
+const EDIT_ACTION = { plugin: 'cellEditing', action: 'edit' }
+
 const reportCellFailure = (
   table: unknown,
   key: string,
@@ -197,7 +203,7 @@ const reportCellFailure = (
 ) => {
   const labels = announcerLabels(table) ?? ENGLISH_LABELS
   return reportFailure(table, {
-    label: labels.cellDraftKind,
+    action: EDIT_ACTION,
     target: { cell: [entry.rowId, entry.columnId] },
     reason: entry.error ?? labels.saveFailed,
     retry: () => retrySubmitted(table, key),
@@ -612,7 +618,11 @@ const settleSubmitted = (
   // Значение в ячейке вернулось к данным — в том же кадре, что отказ на кнопке правки.
   flashOutcome(table, { cell: [entry.rowId, entry.columnId] }, 'reverted')
   announceLabel(table, all =>
-    all.announceSaveFailed(columnNameOf(table, entry.columnId), error),
+    cellEditingLabels(all).announceSaveFailed(
+      actionLabelOf(table, EDIT_ACTION, all),
+      objectTargetText(table, { cell: [entry.rowId, entry.columnId] }, all),
+      error,
+    ),
   )
 }
 
@@ -670,8 +680,8 @@ export const saveEdit = (
       setEditError(
         table,
         isNumericBase(base)
-          ? labels.editInvalidNumber
-          : labels.editInvalidValue,
+          ? cellEditingLabels(labels).editInvalidNumber
+          : cellEditingLabels(labels).editInvalidValue,
       )
       return
     }
@@ -713,7 +723,7 @@ const refuseOnConflict = (
   now: unknown,
 ) => {
   const labels = announcerLabels(table) ?? ENGLISH_LABELS
-  const error = labels.editConflict
+  const error = cellEditingLabels(labels).editConflict
   const state = readEditingState(table)
   writeEditingState(table, {
     ...state,
@@ -733,7 +743,11 @@ const refuseOnConflict = (
   })
   flashOutcome(table, { cell: [rowId, columnId] }, 'reverted')
   announceLabel(table, all =>
-    all.announceSaveFailed(columnNameOf(table, columnId), error),
+    cellEditingLabels(all).announceSaveFailed(
+      actionLabelOf(table, EDIT_ACTION, all),
+      objectTargetText(table, { cell: [rowId, columnId] }, all),
+      error,
+    ),
   )
 }
 
@@ -1186,16 +1200,21 @@ export const commitDrafts = (table: unknown, drafts: readonly Draft[]) => {
 
 /** Отказ строки пакета — отказ на объекте с повтором и откатом (ADR 0177). */
 const reportRowFailure = (table: unknown, draft: Draft, reason: string) => {
-  const labels = announcerLabels(table) ?? ENGLISH_LABELS
   const rowId = (draft.target as { row: string }).row
-  const label =
-    draft.kind === ROW_INSERT_DRAFT
-      ? labels.rowInsertDraftKind
-      : labels.rowDeleteDraftKind
+  const action = {
+    plugin: 'cellEditing',
+    action: draft.kind === ROW_INSERT_DRAFT ? 'rowInsert' : 'rowDelete',
+  }
   // Отметки у строки нет — вспышка отката, объявление и запись реестра (ADR 0177, OB13).
-  announceLabel(table, all => all.announceSaveFailed(label, reason))
+  announceLabel(table, all =>
+    cellEditingLabels(all).announceSaveFailed(
+      actionLabelOf(table, action, all),
+      objectTargetText(table, { row: rowId }, all),
+      reason,
+    ),
+  )
   reportFailure(table, {
-    label,
+    action,
     target: { row: rowId },
     reason,
     retry: () => {

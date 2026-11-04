@@ -12,6 +12,7 @@ import type {
   OptionFilterOperator,
   TextFilterOperator,
 } from '../columnFilteringModel/types'
+import { type ColumnFilteringLabels, columnFilteringLabels } from './labels'
 
 export type FilterOperator =
   | TextFilterOperator
@@ -19,7 +20,10 @@ export type FilterOperator =
   | DateFilterOperator
   | OptionFilterOperator
 
-export const OPERATOR_LABEL: Record<FilterOperator, keyof TableLabels> = {
+export const OPERATOR_LABEL: Record<
+  FilterOperator,
+  keyof ColumnFilteringLabels
+> = {
   contains: 'filterContains',
   equals: 'filterEquals',
   notEquals: 'filterNotEquals',
@@ -41,7 +45,10 @@ export const OPERATOR_LABEL: Record<FilterOperator, keyof TableLabels> = {
   noneOf: 'filterNoneOf',
 }
 
-export const PRESET_LABEL: Record<DateFilterPreset, keyof TableLabels> = {
+export const PRESET_LABEL: Record<
+  DateFilterPreset,
+  keyof ColumnFilteringLabels
+> = {
   today: 'filterPresetToday',
   yesterday: 'filterPresetYesterday',
   last7Days: 'filterPresetLast7Days',
@@ -89,7 +96,7 @@ const isDateFilter = (filter: ColumnFilterValue) =>
     filter.value.some(bound => typeof bound === 'string'))
 
 export const operatorLabel = (operator: FilterOperator, labels: TableLabels) =>
-  labels[OPERATOR_LABEL[operator]] as string
+  columnFilteringLabels(labels)[OPERATOR_LABEL[operator]] as string
 
 /**
  * Условие и значение одной строкой: «Contains "ali"», «Between 25–30», «Yes»,
@@ -113,7 +120,7 @@ export const describeFilter = (
   }
   if (isDateFilter(filter)) {
     if (filter.operator === 'preset') {
-      return labels[PRESET_LABEL[filter.value]] as string
+      return columnFilteringLabels(labels)[PRESET_LABEL[filter.value]] as string
     }
     if (Array.isArray(filter.value)) {
       const [from, to] = filter.value as (string | null)[]
@@ -125,7 +132,9 @@ export const describeFilter = (
   }
   const { value } = filter
   if (typeof value === 'boolean') {
-    return value ? labels.filterYes : labels.filterNo
+    return value
+      ? columnFilteringLabels(labels).filterYes
+      : columnFilteringLabels(labels).filterNo
   }
   if (Array.isArray(value)) {
     const [from, to] = value

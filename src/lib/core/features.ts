@@ -50,6 +50,13 @@ import {
 import type { NarrowMap, NarrowState } from './effectiveState'
 import type { StubEntry } from './stubs'
 import type { DraftKind } from './drafts/drafts'
+import type { LabelSet } from './localization'
+import {
+  type ActionCatalog,
+  type ActionLabels,
+  foldActionCatalog,
+} from './actions'
+import { CORE_ACTIONS } from './actions/coreActions'
 import {
   type FoldedWrappers,
   type PluginWrappers,
@@ -103,6 +110,10 @@ export interface TablePlugin<TFeatures extends object = object> {
   stubs?: StubEntry[]
   /** Виды черновиков плагина (ADR 0178, §1). */
   draftKinds?: DraftKind[]
+  /** Наборы подписей плагина и общих модулей, которые он рисует (ADR 0182, §8). */
+  labels?: readonly LabelSet[]
+  /** Действия плагина в справочнике: имя → подпись или ссылка (ADR 0182, §1). */
+  actions?: ActionLabels
   /** Декларативные пункты контекстного меню (ADR 0030). */
   contextMenuActions?: ContextMenuAction[]
   /** Клавиатурные действия на ячейках (ADR 0021). */
@@ -205,6 +216,12 @@ export interface FoldedEntryConfig {
   stubEntries: StubEntry[]
   /** Виды черновиков активных записей (ADR 0178). */
   draftKinds: DraftKind[]
+  /** Подписи всех присутствующих записей (ADR 0182, §8). */
+  labelSets: LabelSet[]
+  /** Справочник действий: ядро и все присутствующие записи (ADR 0182). */
+  actionCatalog: ActionCatalog
+  /** Повторно объявленные действия (ADR 0182, AN1). */
+  actionDuplicates: string[]
   keyboardActions: KeyboardAction[]
   actionMenu: SlotActionMenu
   serviceColumns: ServiceColumn[]
@@ -304,6 +321,10 @@ export const foldEntries = (
   const contextMenuActions: ContextMenuAction[] = []
   const stubEntries: StubEntry[] = []
   const draftKinds: DraftKind[] = []
+  const labelSets: LabelSet[] = []
+  const actionOwners: Parameters<typeof foldActionCatalog>[0][number][] = [
+    { id: 'core', actions: CORE_ACTIONS },
+  ]
   const keyboardActions: KeyboardAction[] = []
   const actionMenu: SlotActionMenu = {}
   const serviceColumns: ServiceColumn[] = []
@@ -328,6 +349,19 @@ export const foldEntries = (
     // наборе) фичу. Слоты/колонки/действия/setup — только у активных (реактивный UI).
     // Опции модели выставляет только её запись (ADR 0120): от порядка они не зависят.
     Object.assign(options, entry.options)
+
+    // Ключи словаря выключенного плагина — тоже ключи таблицы: словарь приложения их знает.
+    for (const set of entry.labels ?? [])
+      if (!labelSets.includes(set)) labelSets.push(set)
+    // Действия выключенного плагина — тоже: его отказы и черновики остаются названными.
+    actionOwners.push({
+      id: entry.id,
+      actions: entry.actions,
+      named: [
+        ...(entry.slotActions ?? []),
+        ...(entry.contextMenuActions ?? []),
+      ],
+    })
 
     // Сужение — тоже от всех записей: выключенный плагин гасит свой срез (фильтры —
     // ADR 0045), не теряя сохранённого значения.
@@ -364,7 +398,10 @@ export const foldEntries = (
     })
 
     if (entry.stubs) stubEntries.push(...entry.stubs)
-    if (entry.draftKinds) draftKinds.push(...entry.draftKinds)
+    for (const kind of entry.draftKinds ?? []) {
+      setActionOwner(kind, entry.id)
+      draftKinds.push(kind)
+    }
 
     entry.keyboardActions?.forEach(action => setActionOwner(action, entry.id))
     registerKeyboardActionsInto(keyboardActions, entry.keyboardActions)
@@ -401,6 +438,11 @@ export const foldEntries = (
     contextMenuActions,
     stubEntries,
     draftKinds,
+    labelSets,
+    ...(() => {
+      const { catalog, duplicates } = foldActionCatalog(actionOwners)
+      return { actionCatalog: catalog, actionDuplicates: duplicates }
+    })(),
     keyboardActions: sortKeyboardActionsByPriority(keyboardActions),
     actionMenu,
     serviceColumns,

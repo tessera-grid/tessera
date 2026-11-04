@@ -22,6 +22,7 @@ import { logWarn } from '../../util/logger'
 import { randomId } from '../../util/randomId'
 import { editTextOf } from './editValue'
 import type { CellEditingHooks } from './types'
+import { cellEditingLabels } from './labels'
 
 export const ROW_INSERT_DRAFT = 'rowInsert'
 export const ROW_DELETE_DRAFT = 'rowDelete'
@@ -447,7 +448,9 @@ const valuesText = (
     else more++
   }
   const text = shown.join(', ')
-  return more > 0 ? labels.rowInsertDraftMore(text, more) : text
+  return more > 0
+    ? cellEditingLabels(labels).rowInsertDraftMore(text, more)
+    : text
 }
 
 const rowsActive = (table: unknown) => rowDraftsInertReason(table) === undefined
@@ -458,7 +461,7 @@ export const rowInsertDraftKind = (
   commitAll: (table: unknown) => void,
 ): DraftKind => ({
   kind: ROW_INSERT_DRAFT,
-  label: labels => labels.rowInsertDraftKind,
+  action: 'rowInsert',
   describe: (labels, draft, table) =>
     valuesText(labels, table, (draft.value as RowInsertValue).values),
   apply: (table, draft) => commit(table, [draft]),
@@ -473,7 +476,7 @@ export const rowDeleteDraftKind = (
   commitAll: (table: unknown) => void,
 ): DraftKind => ({
   kind: ROW_DELETE_DRAFT,
-  label: labels => labels.rowDeleteDraftKind,
+  action: 'rowDelete',
   apply: (table, draft) => commit(table, [draft]),
   applyAll: table => commitAll(table),
   active: rowsActive,

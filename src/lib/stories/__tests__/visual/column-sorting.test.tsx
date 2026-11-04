@@ -4,6 +4,7 @@ import { describe, expect, test, vi } from 'vitest'
 
 import { composed } from '../stories'
 import { tableLabels } from '../labels'
+import { columnSortingLabels } from '../../../plugins/columnSorting/labels'
 
 // Every Column Sorting requirement is its own named test, prefixed with its spec
 // ID (CS1–CS13 from the requirements table in docs/decisions/0012-column-sorting.md).
@@ -252,21 +253,27 @@ describe('Column Sorting — requirements', () => {
     // Unsorted → next action is "Sort descending" (sortDescFirst).
     let button = await revealSort(cell)
     await userEvent.hover(button)
-    expect(await waitForBodyText(tableLabels.sortDescending)).toBe(true)
+    expect(
+      await waitForBodyText(columnSortingLabels(tableLabels).sortDescending),
+    ).toBe(true)
 
     // After first click the column is desc → next action is "Sort ascending".
     await userEvent.click(button)
     await userEvent.hover(renderedDataCells(container)[2])
     button = sortButtonOf(firstDataCell(container))
     await userEvent.hover(button)
-    expect(await waitForBodyText(tableLabels.sortAscending)).toBe(true)
+    expect(
+      await waitForBodyText(columnSortingLabels(tableLabels).sortAscending),
+    ).toBe(true)
 
     // After second click it is asc → next action clears the sort.
     await userEvent.click(button)
     await userEvent.hover(renderedDataCells(container)[2])
     button = sortButtonOf(firstDataCell(container))
     await userEvent.hover(button)
-    expect(await waitForBodyText(tableLabels.clearSort)).toBe(true)
+    expect(
+      await waitForBodyText(columnSortingLabels(tableLabels).clearSort),
+    ).toBe(true)
   })
 
   test('CS8: the icon reflects the current direction', async () => {
@@ -557,7 +564,7 @@ describe('Column Sorting — multi-sort requirements', () => {
     const label = sortButtonOf(dataCell(container, 0)).getAttribute(
       'aria-label',
     )
-    expect(label).toContain(tableLabels.sortPriority(1, 2))
+    expect(label).toContain(columnSortingLabels(tableLabels).sortPriority(1, 2))
   })
 
   test('CS23: server multi-sort keeps row order but tracks every sorted column', async () => {

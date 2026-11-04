@@ -22,6 +22,8 @@ import {
   toRgba,
 } from './a11y-helpers'
 import { tableLabels } from '../labels'
+import { rowExpandingLabels } from '../../../plugins/rowExpanding/labels'
+import { paginationLabels } from '../../../plugins/pagination/labels'
 
 // Ленивые дети строк (ADR 0054): RE17–RE18, RE20, RE23–RE25, RE30–RE33, RE37, RE40;
 // подсветка прихода (ADR 0056): RE42, RE45–RE49; склейка ответов (ADR 0066): RE66.
@@ -159,7 +161,9 @@ describe('Row expanding: lazy children', () => {
     await humanClick(toggleOf('lazy')!)
     await expect
       .poll(liveText)
-      .toContain(tableLabels.announceExpandFailed('Server down'))
+      .toContain(
+        rowExpandingLabels(tableLabels).announceExpandFailed('Server down'),
+      )
     expect(rowOf('lazy')!.getAttribute('data-expanded')).toBe('false')
     expect(failureShownOn(toggleOf('lazy'))).toBe(false)
   })
@@ -177,7 +181,9 @@ describe('Row expanding: lazy children', () => {
     await humanClick(toggleOf('lazy')!)
     await expect
       .poll(liveText)
-      .toContain(tableLabels.announceExpandFailed('Timeout'))
+      .toContain(
+        rowExpandingLabels(tableLabels).announceExpandFailed('Timeout'),
+      )
     expect(rowOf('lazy')!.getAttribute('data-expanded')).toBe('true')
     expect(rowOf('lazy-c1')).not.toBeNull()
     expect(failureShownOn(toggleOf('lazy'))).toBe(false)
@@ -274,13 +280,13 @@ describe('Row expanding: lazy children', () => {
     await waitRow('lazy-c1')
     await humanClick(
       document.querySelector<HTMLElement>(
-        `[aria-label="${tableLabels.nextPage}"]`,
+        `[aria-label="${paginationLabels(tableLabels).nextPage}"]`,
       )!,
     )
     await expect.poll(() => rowOf('lazy')).toBeNull()
     await humanClick(
       document.querySelector<HTMLElement>(
-        `[aria-label="${tableLabels.previousPage}"]`,
+        `[aria-label="${paginationLabels(tableLabels).previousPage}"]`,
       )!,
     )
     await waitRow('lazy-c1')
@@ -325,7 +331,9 @@ describe('Row expanding: lazy children', () => {
     await humanClick(toggleOf('p')!)
     await expect
       .poll(liveText)
-      .toContain(tableLabels.announceExpandFailed('No access'))
+      .toContain(
+        rowExpandingLabels(tableLabels).announceExpandFailed('No access'),
+      )
     expect(rowOf('p')!.getAttribute('data-expanded')).toBe('false')
     expect(failureShownOn(toggleOf('p'))).toBe(false)
   })
@@ -505,17 +513,23 @@ describe('Row expanding: arrival flash', () => {
     const first = await renderLazy(asyncKids(2))
     await waitRow('lazy')
     await humanClick(toggleOf('lazy')!)
-    await expect.poll(liveText).toBe(tableLabels.announceChildrenLoaded(2))
+    await expect
+      .poll(liveText)
+      .toBe(rowExpandingLabels(tableLabels).announceChildrenLoaded(2))
     await first.unmount()
 
     const empty = await renderLazy(() => Promise.resolve([]))
     await waitRow('lazy')
     await humanClick(toggleOf('lazy')!)
-    await expect.poll(liveText).toBe(tableLabels.announceChildrenLoaded(0))
+    await expect
+      .poll(liveText)
+      .toBe(rowExpandingLabels(tableLabels).announceChildrenLoaded(0))
     await empty.unmount()
 
     const custom = await renderLazy(asyncKids(1), {
-      localization: { announceChildrenLoaded: count => `Got ${count}` },
+      localization: {
+        'rowExpanding.announceChildrenLoaded': count => `Got ${count}`,
+      },
     })
     await waitRow('lazy')
     await humanClick(toggleOf('lazy')!)

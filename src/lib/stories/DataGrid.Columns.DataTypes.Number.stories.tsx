@@ -66,6 +66,7 @@ import {
   CELL,
   moneyIn,
 } from './__mocks__/typeGuides'
+import { cellEditingLabels } from '../plugins/cellEditing/labels'
 
 const meta = {
   ...dataGridMeta,
@@ -290,7 +291,9 @@ export const EditingNumber: StoryObj<StoryProps> = {
     await step(EDIT_NUMBER[2]!.title, async () => {
       await guideNext(canvas)
       await until(() =>
-        expect(fieldError(canvas, 'price')).toBe(labels.editInvalidNumber),
+        expect(fieldError(canvas, 'price')).toBe(
+          cellEditingLabels(labels).editInvalidNumber,
+        ),
       )
       expect(productInput(canvas, 'price')!.value).toBe(NOT_A_NUMBER)
       expect(productInput(canvas, 'price')).toHaveAttribute(

@@ -24,6 +24,8 @@ const noop = () => {}
 export const useHandleMenu = (
   table: unknown,
   label: (labels: TableLabels) => string,
+  /** Владелец ручки: отказ загрузки меню — действие `<владелец>/handleMenu` (ADR 0182). */
+  plugin: string,
 ) => {
   const [open, setOpen] = useState(false)
   const opening = useLazyOpening(table)
@@ -33,6 +35,7 @@ export const useHandleMenu = (
         load: HandleMenuPopupImpl.reload,
         isReady: HandleMenuPopupImpl.isLoaded,
         label,
+        action: { plugin, action: 'handleMenu' },
       },
       () => setOpen(true),
     )

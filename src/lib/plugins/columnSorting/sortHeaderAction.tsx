@@ -15,6 +15,7 @@ import { runServerAction } from '../../core/serverActions'
 import type { ColumnSortingHooks } from './types'
 
 import '../../ui/cellControls/buttonVisibility.css'
+import { columnSortingLabels } from './labels'
 
 type SortDir = 'asc' | 'desc' | 'none'
 
@@ -45,23 +46,19 @@ const getMultiSortPosition = ({
 }
 
 /** Тултип (без приоритета): по СЛЕДУЮЩЕЙ операции. */
-const getTitle = (
-  { column }: HeaderComponentProps,
-  labels: TableLabels,
-): string => {
+/** Что сделает нажатие: разные состояния — разные действия справочника (ADR 0182, §4). */
+const getSortAction = ({
+  column,
+}: HeaderComponentProps): 'sortAscending' | 'sortDescending' | 'clearSort' => {
   const operation = column.getIsSorted()
   const next = column.getNextSortingOrder()
-
-  if (!operation && next === 'desc') {
-    return labels.sortDescending
-  }
-
-  if (!next) {
-    return labels.clearSort
-  }
-
-  return next === 'asc' ? labels.sortAscending : labels.sortDescending
+  if (!operation && next === 'desc') return 'sortDescending'
+  if (!next) return 'clearSort'
+  return next === 'asc' ? 'sortAscending' : 'sortDescending'
 }
+
+const getTitle = (ctx: HeaderComponentProps, labels: TableLabels): string =>
+  columnSortingLabels(labels)[getSortAction(ctx)]
 
 export const sortHeaderAction: HeaderAction = {
   id: 'columnSorting',
@@ -71,13 +68,14 @@ export const sortHeaderAction: HeaderAction = {
   icon: ctx => (
     <SortActionIcon direction={ctx.column.getIsSorted() || 'none'} />
   ),
-  label: getTitle,
+  label: labels => columnSortingLabels(labels).actionSort,
+  action: getSortAction,
   ariaLabel: (ctx, labels) => {
     const title = getTitle(ctx, labels)
     const multi = getMultiSortPosition(ctx)
 
     return multi
-      ? `${title}, ${labels.sortPriority(multi.position, multi.total)}`
+      ? `${title}, ${columnSortingLabels(labels).sortPriority(multi.position, multi.total)}`
       : title
   },
   active: ({ column }) => !!column.getIsSorted(),
@@ -123,14 +121,14 @@ export const sortHeaderAction: HeaderAction = {
     const items: HeaderMenuItem[] = [
       {
         id: 'asc',
-        label: labels.sortAscending,
+        label: columnSortingLabels(labels).sortAscending,
         icon: <SortActionIcon direction="asc" />,
         active: current === 'asc',
         onSelect: () => setDirection(false, 'asc'),
       },
       {
         id: 'desc',
-        label: labels.sortDescending,
+        label: columnSortingLabels(labels).sortDescending,
         icon: <SortActionIcon direction="desc" />,
         active: current === 'desc',
         onSelect: () => setDirection(true, 'desc'),
@@ -140,7 +138,7 @@ export const sortHeaderAction: HeaderAction = {
     if (table.options.enableSortingRemoval) {
       items.push({
         id: 'clear',
-        label: labels.clearSort,
+        label: columnSortingLabels(labels).clearSort,
         icon: <SortActionIcon direction="none" />,
         disabled: !current,
         onSelect: () =>

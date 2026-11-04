@@ -40,6 +40,8 @@ import type {
 import type { KeyboardAction } from './keyboardActions'
 import type { ActiveCell } from './keyboardNavigation/model'
 import type { Draft, DraftKind } from './drafts/drafts'
+import type { LabelSet } from './localization'
+import type { ActionCatalog, ActionRef } from './actions'
 import type {
   PluginDiagnostic,
   PluginDiagnosticSource,
@@ -166,6 +168,10 @@ export interface CommonOptions extends CoreOptions {
   stubEntries?: StubEntry[]
   /** Виды черновиков включённых плагинов (ADR 0178, §1). */
   draftKinds?: DraftKind[]
+  /** Подписи плагинов таблицы (ADR 0182, §8). */
+  labelSets?: LabelSet[]
+  /** Справочник действий таблицы (ADR 0182, §1). */
+  actionCatalog?: ActionCatalog
   keyboardActions?: KeyboardAction[]
   pluginDiagnostics?: PluginDiagnosticSource[]
   actionMenu?: SlotActionMenuV9
@@ -222,6 +228,8 @@ export interface CommonTableAPI<
   /** Строки тела по индексу и по id (ADR 0138, §2). */
   getRowSource: () => RowSource<Row<TFeatures, TData>>
   getHooks: () => CommonHooks | undefined
+  /** Подпись действия справочника по текущему словарю таблицы (ADR 0182, AN8). */
+  getActionLabel: (action: ActionRef) => string
   getRenderSlots: () => RenderSlotsV9 | undefined
   getSlotActions: () => SlotActionsV9 | undefined
   getContextMenuActions: () => ContextMenuAction[] | undefined

@@ -11,7 +11,7 @@ import type { FailedAttempts } from '../../shared/failedAttempts'
 import { announcerLabels } from '../../core/announcer'
 import { mirrorFailures } from '../../core/failures/failuresFeature'
 import { mirrorPending } from '../../shared/objectPending'
-import { DEFAULT_LABELS } from '../../core/localization'
+import { ENGLISH_LABELS } from '../../core/localization'
 import { rejectionText } from '../../util/thenable'
 import {
   assignPrototypeAPIs,
@@ -40,6 +40,7 @@ import {
   DEFAULT_ROW_DRAG_OVERLAY_STATE,
   type RowDragOverlayState,
 } from './types'
+import { rowDraggingLabels } from './labels'
 
 /** Отказы переноса: строка → попытка и ошибка (отметка на ручке, ADR 0136). */
 export type RowMoveFailed = FailedAttempts
@@ -269,11 +270,13 @@ export const rowDraggingFeature: TableFeature = {
           'onRowMoveFailedChange',
           (prev, next) =>
             mirrorFailures(table, prev, next, (id, failed) => {
-              const labels = announcerLabels(table) ?? DEFAULT_LABELS
+              const labels = announcerLabels(table) ?? ENGLISH_LABELS
               return {
-                label: labels.moveRow,
+                action: { plugin: 'rowDragging', action: 'drag' },
                 target: { row: id },
-                reason: rejectionText(failed.error) ?? labels.moveRowFailed,
+                reason:
+                  rejectionText(failed.error) ??
+                  rowDraggingLabels(labels).moveRowFailed,
               }
             }),
         ),

@@ -7,6 +7,7 @@ import { describe, expect, test } from 'vitest'
 import { toolbarDemoPlugins } from '../../toolbarDemo'
 import { Stories, getScroller } from '../helpers'
 import { tableLabels } from '../labels'
+import { dataExportLabels } from '../../../plugins/dataExport/labels'
 
 // Рамка грида и верхний тулбар (ADR 0035, TB1–TB7, TB10–TB15). Каждый тест — одно
 // требование, назван по его ID. Состояние читается из DOM/ARIA-контракта (role,
@@ -184,15 +185,15 @@ describe('Toolbar', () => {
     await userEvent.keyboard('{ArrowRight}')
     expect(label()).toBe('Settings')
     await userEvent.keyboard('{ArrowRight}')
-    expect(label()).toBe(tableLabels.export)
+    expect(label()).toBe(dataExportLabels(tableLabels).export)
     await userEvent.keyboard('{ArrowRight}')
     expect(label()).toBe('Density')
     await userEvent.keyboard('{ArrowLeft}')
-    expect(label()).toBe(tableLabels.export)
+    expect(label()).toBe(dataExportLabels(tableLabels).export)
     await userEvent.keyboard('{Home}')
     expect(label()).toBe('Density')
     await userEvent.keyboard('{End}')
-    expect(label()).toBe(tableLabels.export)
+    expect(label()).toBe(dataExportLabels(tableLabels).export)
 
     await userEvent.keyboard('{Tab}')
     expect(toolbar()!.contains(document.activeElement)).toBe(false)

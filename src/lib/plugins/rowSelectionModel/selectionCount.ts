@@ -13,6 +13,7 @@ import {
 } from '../../core/rowSelectionAll'
 import { dataRowSourceOf, GROUP_ROW_PREFIX } from '../../core/rowSource'
 import { groupingLength, subRowsOf } from './selectionHelpers'
+import { rowSelectionModelLabels } from './labels'
 
 /** Выбранные `id` среза, а не строки модели: выбор на других страницах тоже считается. */
 export const countSelectedRows = (selection: RowSelectionState | undefined) =>
@@ -77,14 +78,17 @@ export const selectionPartsLabel = (
 ) => {
   const groups =
     parts.branches > 0
-      ? labels.selectedBranchesCount(parts.branches)
-      : labels.selectedGroupsCount(parts.groups)
+      ? rowSelectionModelLabels(labels).selectedBranchesCount(parts.branches)
+      : rowSelectionModelLabels(labels).selectedGroupsCount(parts.groups)
   if (parts.all) {
     return short
-      ? labels.selectedAllExceptShort(parts.excluded)
-      : labels.selectedAllExcept(parts.excluded)
+      ? rowSelectionModelLabels(labels).selectedAllExceptShort(parts.excluded)
+      : rowSelectionModelLabels(labels).selectedAllExcept(parts.excluded)
   }
   return short
-    ? labels.selectedRowsAndGroupsShort(parts.rows, groups)
-    : labels.selectedRowsAndGroups(parts.rows, groups)
+    ? rowSelectionModelLabels(labels).selectedRowsAndGroupsShort(
+        parts.rows,
+        groups,
+      )
+    : rowSelectionModelLabels(labels).selectedRowsAndGroups(parts.rows, groups)
 }

@@ -1,6 +1,6 @@
 import type { Row } from '../../types'
 import { announceLabel, announcerLabels } from '../../core/announcer'
-import { DEFAULT_LABELS } from '../../core/localization'
+import { ENGLISH_LABELS } from '../../core/localization'
 import {
   type CancelSource,
   lateAnswer,
@@ -20,6 +20,7 @@ import {
 } from './lazyChildrenFeature'
 import { type BatchTable, enqueueAnswer } from './answerBatch'
 import type { RowExpandingHooks } from './types'
+import { rowExpandingLabels } from './labels'
 
 type PendingRow = Row<any, any> & {
   getIsExpandPending?: () => boolean
@@ -64,7 +65,9 @@ export const cancelBranchLoad = (row: Row<any, any>, source: CancelSource) => {
     detail: { action: 'loadChildren', rowId: row.id },
     source,
   })
-  announceLabel(table, all => all.announceActionCancelled(all.expandRow))
+  announceLabel(table, all =>
+    all.announceActionCancelled(rowExpandingLabels(all).expandRow),
+  )
 }
 
 // Номер попытки сквозной: итог прежнего раскрытия не спутать с новым.
@@ -146,7 +149,9 @@ export const toggleRowExpanded = (
       clearPending()
       if (!(row.id in readLoadedChildren(table))) row.toggleExpanded(false)
     })
-    announceLabel(table, all => all.announceActionCancelled(all.expandRow))
+    announceLabel(table, all =>
+      all.announceActionCancelled(rowExpandingLabels(all).expandRow),
+    )
   }
   const unregister = lazy
     ? registerPending(table, { kind: 'children', id: row.id, cancel })
@@ -175,9 +180,12 @@ export const toggleRowExpanded = (
       flashOutcome(table, { row: row.id }, 'reverted')
     }
     markExpandFailed(table, row.id, attempt, value)
-    const labels = announcerLabels(table) ?? DEFAULT_LABELS
-    const error = rejectionText(value) ?? labels.loadChildrenFailed
-    announceLabel(table, all => all.announceExpandFailed(error))
+    const labels = announcerLabels(table) ?? ENGLISH_LABELS
+    const error =
+      rejectionText(value) ?? rowExpandingLabels(labels).loadChildrenFailed
+    announceLabel(table, all =>
+      rowExpandingLabels(all).announceExpandFailed(error),
+    )
   }
   // Снятие ожидания и сворачивание при отказе — одним коммитом.
   result.then(

@@ -1,5 +1,6 @@
 import type { TableLabels } from '../../core/localization'
 import type { ExportViewFeature } from '../dataExportModel/settings'
+import { dataExportLabels } from './labels'
 
 /**
  * Подпись значения оси «Строки»; `view` называет то, что учитывается (EX10).
@@ -14,20 +15,20 @@ export const rowLabel = (
   switch (value) {
     case 'all':
       return loaded === undefined
-        ? labels.exportAll
-        : labels.exportLoaded(loaded)
+        ? dataExportLabels(labels).exportAll
+        : dataExportLabels(labels).exportLoaded(loaded)
     case 'view':
-      return labels.exportView(
+      return dataExportLabels(labels).exportView(
         viewBy.map(feature =>
           feature === 'sorting'
-            ? labels.exportViewSorting
-            : labels.exportViewFiltering,
+            ? dataExportLabels(labels).exportViewSorting
+            : dataExportLabels(labels).exportViewFiltering,
         ),
       )
     case 'page':
-      return labels.exportPage
+      return dataExportLabels(labels).exportPage
     case 'selected':
-      return labels.exportSelected
+      return dataExportLabels(labels).exportSelected
     default:
       return value
   }

@@ -32,6 +32,8 @@ import type { PluginDiagnose } from '../pluginDiagnostics'
 import type { NarrowState } from '../effectiveState'
 import type { StubEntry } from '../stubs'
 import type { DraftKind } from '../drafts/drafts'
+import type { LabelSet } from '../localization'
+import type { ActionLabels } from '../actions'
 import {
   type ServiceColumnMode,
   type ServicePresence,
@@ -231,6 +233,17 @@ interface DefinePluginConfig<
   stubs?: StubEntry[]
   /** Виды черновиков плагина: как применить, отбросить и подписать (ADR 0178, §1). */
   draftKinds?: DraftKind[]
+  /**
+   * Наборы подписей плагина (ADR 0182, §8): `defineLabels` с id плагина — ключи словаря
+   * таблицы `<id>.<ключ>`, приложение переводит их через `localization`; и наборы общих
+   * модулей, которые плагин рисует.
+   */
+  labels?: readonly LabelSet[]
+  /**
+   * Действия плагина в справочнике (ADR 0182, §1): имя → подпись; одно имя действия для меню,
+   * журнала, пульта, объявлений и канала действий.
+   */
+  actions?: ActionLabels
   /** Декларативные пункты контекстного меню (ADR 0030). */
   contextMenuActions?: ContextMenuAction[]
   /** Клавиатурные действия на ячейках (ADR 0021). */
@@ -446,6 +459,12 @@ export const definePlugin = <
       }
       if (config.draftKinds) {
         entry.draftKinds = config.draftKinds
+      }
+      if (config.labels) {
+        entry.labels = config.labels
+      }
+      if (config.actions) {
+        entry.actions = config.actions
       }
       if (config.contextMenuActions) {
         entry.contextMenuActions = config.contextMenuActions

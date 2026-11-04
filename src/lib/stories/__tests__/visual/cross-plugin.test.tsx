@@ -18,6 +18,10 @@ import {
 } from '../../rowDragging.dnd'
 import { tableLabels } from '../labels'
 import { ColumnDraggingGrid } from './columns-fixtures'
+import { columnPinningLabels } from '../../../plugins/columnPinning/labels'
+import { columnSortingLabels } from '../../../plugins/columnSorting/labels'
+import { rowGroupingLabels } from '../../../plugins/rowGrouping/labels'
+import { rowDraggingLabels } from '../../../plugins/rowDragging/labels'
 
 // Cross-plugin (сквозные) requirements live here, prefixed `X<n>`, one named test
 // per requirement (docs/decisions/0023-cross-plugin-interactions.md). Unlike the
@@ -157,9 +161,9 @@ describe('Cross-plugin — headerActionMenu × rowActionMenu', () => {
       .poll(() => menuTexts())
       .toEqual(
         expect.arrayContaining([
-          tableLabels.pin,
-          tableLabels.sortAscending,
-          tableLabels.group,
+          columnPinningLabels(tableLabels).pin,
+          columnSortingLabels(tableLabels).sortAscending,
+          rowGroupingLabels(tableLabels).group,
         ]),
       )
     await userEvent.keyboard('{Escape}')
@@ -346,8 +350,12 @@ describe('Cross-plugin — columnPinning × columnSizing', () => {
     await userEvent.click(
       await revealControl(headCellById(container, 'firstName'), PIN_BUTTON),
     )
-    await expect.poll(() => menuItemByText(tableLabels.pinLeft)).toBeTruthy()
-    await userEvent.click(menuItemByText(tableLabels.pinLeft)!)
+    await expect
+      .poll(() => menuItemByText(columnPinningLabels(tableLabels).pinLeft))
+      .toBeTruthy()
+    await userEvent.click(
+      menuItemByText(columnPinningLabels(tableLabels).pinLeft)!,
+    )
     await expect
       .poll(() =>
         headCellById(container, 'firstName').getAttribute('data-cell-pinned'),
@@ -597,13 +605,17 @@ describe('Cross-plugin — pagination', () => {
     const moveDown = await expect
       .poll(() =>
         [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(
-          item => item.textContent?.trim() === ENGLISH_LABELS.moveDown,
+          item =>
+            item.textContent?.trim() ===
+            rowDraggingLabels(ENGLISH_LABELS).moveDown,
         ),
       )
       .toBeTruthy()
       .then(() =>
         [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(
-          item => item.textContent?.trim() === ENGLISH_LABELS.moveDown,
+          item =>
+            item.textContent?.trim() ===
+            rowDraggingLabels(ENGLISH_LABELS).moveDown,
         )!,
       )
     await userEvent.click(moveDown)

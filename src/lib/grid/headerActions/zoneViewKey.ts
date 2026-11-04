@@ -12,6 +12,7 @@ import {
   type SlotAction,
   type SlotMenuConfig,
 } from '../../core/headerActions'
+import { menuActionLabel } from '../../core/actions'
 
 /** Номер типа компонента: два разных компонента с одним именем различаются. */
 const typeIds = new WeakMap<object, number>()
@@ -50,7 +51,7 @@ const inlineView = (action: SlotAction, ctx: unknown, labels: TableLabels) => {
   return [
     action.id,
     action.active?.(ctx) ?? null,
-    action.label(ctx, labels),
+    menuActionLabel(action, ctx, labels),
     action.ariaLabel?.(ctx, labels) ?? null,
     action.hint?.(ctx, labels) ?? null,
     action.className?.(ctx) ?? null,
@@ -70,7 +71,11 @@ const inlineView = (action: SlotAction, ctx: unknown, labels: TableLabels) => {
 const menuView = (action: SlotAction, ctx: unknown, labels: TableLabels) =>
   action.visible?.(ctx) === false
     ? [action.id, false]
-    : [action.id, action.active?.(ctx) ?? null, action.label(ctx, labels)]
+    : [
+        action.id,
+        action.active?.(ctx) ?? null,
+        menuActionLabel(action, ctx, labels),
+      ]
 
 export const zoneViewKey = ({
   actions,

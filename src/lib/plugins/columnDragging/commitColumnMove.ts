@@ -4,7 +4,7 @@
  * броска, клавиатуры и меню ручки.
  */
 import { announceLabel, announcerLabels } from '../../core/announcer'
-import { DEFAULT_LABELS } from '../../core/localization'
+import { ENGLISH_LABELS } from '../../core/localization'
 import {
   type FlashOutcome,
   flashOutcome,
@@ -16,6 +16,7 @@ import {
   withoutFailure,
   withoutGone,
 } from '../../shared/failedAttempts'
+import { columnDraggingLabels } from './labels'
 
 /** Перенос узла в ожидании: его листья и соседи до переноса. */
 export interface ColumnMoveEntry {
@@ -116,9 +117,12 @@ const reject = (
     ...prev,
     [columnId]: { attempt: entry.attempt, error: reason },
   }))
-  const labels = announcerLabels(table) ?? DEFAULT_LABELS
-  const error = rejectionText(reason) ?? labels.moveColumnFailed
-  announceLabel(table, all => all.announceColumnMoveFailed(error))
+  const labels = announcerLabels(table) ?? ENGLISH_LABELS
+  const error =
+    rejectionText(reason) ?? columnDraggingLabels(labels).moveColumnFailed
+  announceLabel(table, all =>
+    columnDraggingLabels(all).announceColumnMoveFailed(error),
+  )
 }
 
 // Номер попытки сквозной: итог прежнего переноса не спутать с новым.

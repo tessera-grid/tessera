@@ -22,7 +22,7 @@ const hooksOf = (table: unknown) =>
 
 export const cellValueDraftKind: DraftKind = {
   kind: CELL_VALUE_DRAFT,
-  label: labels => labels.cellDraftKind,
+  action: 'edit',
   describe: (_labels, draft) => (draft.value as CellDraftValue).text,
   // Значение из данных; строка не загружена (серверная модель) — прежнего не знаем.
   previous: (_labels, draft, table) => {

@@ -32,6 +32,10 @@ import { humanClick, pendingArcOf, revealCellButtons } from '../helpers'
 import { tableLabels } from '../labels'
 import { toRgba } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
+import { cellEditingLabels } from '../../../plugins/cellEditing/labels'
+import { columnDraggingLabels } from '../../../plugins/columnDragging/labels'
+import { rowDraggingLabels } from '../../../plugins/rowDragging/labels'
+import { contextMenuLabels } from '../../../plugins/contextMenu/labels'
 
 declare module 'vitest/browser' {
   interface BrowserCommands {
@@ -307,7 +311,7 @@ const pressEdit = async (cell: HTMLElement) => {
   await revealCellButtons(cell)
   await humanClick(
     cell.querySelector<HTMLElement>(
-      `button[aria-label="${tableLabels.editCell}"]`,
+      `button[aria-label="${cellEditingLabels(tableLabels).editCell}"]`,
     )!,
   )
 }
@@ -449,8 +453,12 @@ const sources = (): Source[] => {
         await expect.poll(() => columnHandle()).toBeTruthy()
         columnHandle().focus()
         await userEvent.keyboard('{Enter}')
-        await expect.poll(() => itemByText(tableLabels.moveRight)).toBeTruthy()
-        await humanClick(itemByText(tableLabels.moveRight)!)
+        await expect
+          .poll(() => itemByText(columnDraggingLabels(tableLabels).moveRight))
+          .toBeTruthy()
+        await humanClick(
+          itemByText(columnDraggingLabels(tableLabels).moveRight)!,
+        )
       },
       kind: 'columnMove',
       shown: () => columnOrder()[0] !== before[0],
@@ -464,8 +472,10 @@ const sources = (): Source[] => {
         before = rowOrder()
         rowHandle('r0').focus()
         await userEvent.keyboard('{Enter}')
-        await expect.poll(() => itemByText(tableLabels.moveDown)).toBeTruthy()
-        await humanClick(itemByText(tableLabels.moveDown)!)
+        await expect
+          .poll(() => itemByText(rowDraggingLabels(tableLabels).moveDown))
+          .toBeTruthy()
+        await humanClick(itemByText(rowDraggingLabels(tableLabels).moveDown)!)
       },
       kind: 'rowMove',
       shown: () => rowOrder()[0] !== before[0],
@@ -719,8 +729,10 @@ describe('Ожидание и отказ на объекте (ADR 0177)', () => 
       await userEvent.keyboard('{Control>}a{/Control}Saved{Enter}')
       await expect.poll(() => calls.some(c => c.kind === 'edit')).toBe(true)
       await openContextMenu(cellEl('r1', 'name'))
-      expect(itemByText(tableLabels.retrySave)).toBeUndefined()
-      await humanClick(itemByText(tableLabels.cancelSave)!)
+      expect(
+        itemByText(contextMenuLabels(tableLabels).retrySave),
+      ).toBeUndefined()
+      await humanClick(itemByText(contextMenuLabels(tableLabels).cancelSave)!)
       await expect.poll(() => lastCall('edit').signal!.aborted).toBe(true)
       await expect
         .poll(() => cellEl('r1', 'name').getAttribute('aria-busy'))
@@ -761,10 +773,12 @@ describe('Ожидание и отказ на объекте (ADR 0177)', () => 
         .poll(() => cellEl('r3', 'name').querySelector('[data-cell-issue]'))
         .not.toBeNull()
       await openContextMenu(cellEl('r3', 'name'))
-      expect(itemByText(tableLabels.cancelSave)).toBeUndefined()
+      expect(
+        itemByText(contextMenuLabels(tableLabels).cancelSave),
+      ).toBeUndefined()
       expect(itemByText(tableLabels.failureDiscard)).toBeTruthy()
       const edits = calls.filter(c => c.kind === 'edit').length
-      await humanClick(itemByText(tableLabels.retrySave)!)
+      await humanClick(itemByText(contextMenuLabels(tableLabels).retrySave)!)
       await expect
         .poll(() => calls.filter(c => c.kind === 'edit').length)
         .toBe(edits + 1)

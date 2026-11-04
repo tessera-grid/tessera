@@ -8,6 +8,7 @@ import { columnFiltering, headerActionMenu } from '../../../plugins'
 import { humanClick } from '../helpers'
 import { waitForGrid } from './core-helpers'
 import { tableLabels } from '../labels'
+import { columnFilteringLabels } from '../../../plugins/columnFiltering/labels'
 
 // Первое открытие фильтра колонки (ADR 0045, FL38–FL39): поповер появляется уже с
 // панелью, без пустого кадра и заглушки загрузки. Отдельный файл: ленивые модули
@@ -120,7 +121,8 @@ describe('Фильтр колонки — первое открытие', () => 
     )
     const item = () =>
       [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(
-        el => el.textContent?.trim() === tableLabels.filter,
+        el =>
+          el.textContent?.trim() === columnFilteringLabels(tableLabels).filter,
       )
     await expect.poll(item).toBeTruthy()
     await humanClick(item()!)

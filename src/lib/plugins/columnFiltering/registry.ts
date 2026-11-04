@@ -29,6 +29,10 @@ import {
 } from './filterDraft'
 import { FilterSummaryButton } from './FilterSummaryButton'
 import { filteredRowsCountSlot } from '../../shared/filtering/FilteredRowsCount'
+import { columnFilteringLabels } from './labels'
+import { filteringLabels } from '../../shared/filtering/labels'
+import { calendarLabels } from '../../shared/calendar/labels'
+import { optionsLabels } from '../../shared/options/labels'
 
 export interface ColumnFilteringOptions extends Omit<
   ColumnFilteringModelOptions,
@@ -66,6 +70,19 @@ const columnFilteringInertReason = (
 
 export const columnFiltering = definePlugin<ColumnFilteringOptions>()({
   id: 'columnFiltering',
+  labels: [
+    columnFilteringLabels,
+    filteringLabels,
+    calendarLabels,
+    optionsLabels,
+  ],
+  actions: {
+    filter: labels => columnFilteringLabels(labels).filter,
+    setFilter: labels => columnFilteringLabels(labels).filter,
+    setFilters: labels => columnFilteringLabels(labels).actionSetFilters,
+    removeFilter: labels => columnFilteringLabels(labels).actionRemoveFilter,
+    clearFilters: labels => columnFilteringLabels(labels).actionClearFilters,
+  },
   diagnose: columnFilteringInertReason,
   model: {
     plugin: columnFilteringModel,

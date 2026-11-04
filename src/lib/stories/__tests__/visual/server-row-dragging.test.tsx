@@ -29,6 +29,7 @@ import {
   sleep,
   slot,
 } from './row-drop-helpers'
+import { rowDraggingLabels } from '../../../plugins/rowDragging/labels'
 
 // Перетаскивание строк в серверной модели настоящей мышью (ADR 0159): бросок на месте в
 // кэше (MV2), промис и откат (MV3), незагруженные строки (MV4), автопрокрутка (MV5), ветки
@@ -245,7 +246,11 @@ describe('перетаскивание строк в серверной моде
       expect(rowById('r1')!.hasAttribute('aria-busy')).toBe(false)
       await expect
         .poll(announced)
-        .toContain(ENGLISH_LABELS.announceMoveFailed('Order is locked'))
+        .toContain(
+          rowDraggingLabels(ENGLISH_LABELS).announceMoveFailed(
+            'Order is locked',
+          ),
+        )
 
       await dragOver('r2', 'r5', 0)
       await release()

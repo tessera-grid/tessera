@@ -32,6 +32,7 @@ import {
 } from './applyVisibility'
 
 import styles from './ColumnVisibilityMenu.module.css'
+import { columnVisibilityLabels } from './labels'
 
 const ROW_HEIGHT = 32
 const OVERSCAN = 8
@@ -165,8 +166,8 @@ export const ColumnVisibilityMenu = ({
         className={styles.search}
         type="search"
         value={query}
-        placeholder={labels.searchColumns}
-        aria-label={labels.searchColumns}
+        placeholder={columnVisibilityLabels(labels).searchColumns}
+        aria-label={columnVisibilityLabels(labels).searchColumns}
         onChange={event => {
           reportAction(table, {
             plugin: 'columnVisibility',
@@ -182,7 +183,7 @@ export const ColumnVisibilityMenu = ({
           <div className={styles.root} data-testid="column-visibility-all">
             <CheckRow
               node={getRootNode(found)}
-              label={labels.allColumns}
+              label={columnVisibilityLabels(labels).allColumns}
               table={control}
               action="toggleAll"
             />
@@ -192,7 +193,7 @@ export const ColumnVisibilityMenu = ({
             <ul
               className={styles.tree}
               style={{ height: virtualizer.getTotalSize() }}
-              aria-label={labels.columns}
+              aria-label={columnVisibilityLabels(labels).columns}
             >
               {virtualizer.getVirtualItems().map(item => (
                 <ColumnRow
@@ -207,12 +208,14 @@ export const ColumnVisibilityMenu = ({
         </div>
       ) : (
         <p className={styles.empty} role="status">
-          {labels.noColumnsFound}
+          {columnVisibilityLabels(labels).noColumnsFound}
         </p>
       )}
       <div className={styles.footer}>
         <span className={styles.count} data-testid="column-visibility-count">
-          {labels.selectedColumns(countVisibleColumns(control))}
+          {columnVisibilityLabels(labels).selectedColumns(
+            countVisibleColumns(control),
+          )}
         </span>
         <Button
           variant="ghost"
@@ -225,7 +228,7 @@ export const ColumnVisibilityMenu = ({
             resetColumnsVisibility(control)
           }}
         >
-          {labels.resetColumns}
+          {columnVisibilityLabels(labels).resetColumns}
         </Button>
       </div>
     </div>

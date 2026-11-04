@@ -25,6 +25,7 @@ import {
   guideArgs,
   stepAction,
 } from './demos/GuideStory'
+import { rowExpandingLabels } from '../plugins/rowExpanding/labels'
 
 /**
  * Раскрытие строк (ADR 0015): `Playground` — дерево, глубина и колонка раскрытия;
@@ -656,7 +657,7 @@ export const ExpandingCancel: StoryObj<StoryProps> = {
       await until(() => expect(toggleArmed(canvas)).toBe(true))
       await expect(cancelToggle(canvas)).toHaveAttribute(
         'aria-label',
-        labels.cancelAction(labels.expandRow),
+        labels.cancelAction(rowExpandingLabels(labels).expandRow),
       )
     })
     await step(CANCEL_EXPAND[3]!.title, async () => {
@@ -737,7 +738,7 @@ export const ExpandingExpandAll: StoryObj<StoryProps> = {
       await until(() => expect(expandAllButton(canvas)).not.toBeNull())
       await expect(noneExpanded(canvas)).toBe(true)
       await expect(expandAllButton(canvas)).toHaveAccessibleName(
-        labels.expandAll,
+        rowExpandingLabels(labels).expandAll,
       )
     })
     await step(EXPAND_ALL[1]!.title, async () => {
@@ -748,14 +749,14 @@ export const ExpandingExpandAll: StoryObj<StoryProps> = {
         ).toBe(true),
       )
       await expect(expandAllButton(canvas)).toHaveAccessibleName(
-        labels.collapseAll,
+        rowExpandingLabels(labels).collapseAll,
       )
     })
     await step(EXPAND_ALL[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(noneExpanded(canvas)).toBe(true))
       await expect(expandAllButton(canvas)).toHaveAccessibleName(
-        labels.expandAll,
+        rowExpandingLabels(labels).expandAll,
       )
       await settle()
     })

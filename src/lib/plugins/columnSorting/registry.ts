@@ -14,6 +14,7 @@ import { declareRevertOnReject } from '../../core/serverActions'
 import { sortKeyboardAction } from './keyboardActions'
 import { sortHeaderAction } from './sortHeaderAction'
 import type { ColumnSortingHooks } from './types'
+import { columnSortingLabels } from './labels'
 
 /** Тонкая настройка мультисортировки. */
 export interface ColumnMultiSortOptions {
@@ -59,6 +60,13 @@ const resolveMultiSortEvent = (
 
 export const columnSorting = definePlugin<ColumnSortingOptions>()({
   id: 'columnSorting',
+  labels: [columnSortingLabels],
+  actions: {
+    sortAscending: labels => columnSortingLabels(labels).sortAscending,
+    sortDescending: labels => columnSortingLabels(labels).sortDescending,
+    clearSort: labels => columnSortingLabels(labels).clearSort,
+    'columnSorting.toggle': labels => columnSortingLabels(labels).actionSort,
+  },
   diagnose: neverInert,
   model: {
     plugin: columnSortingModel,

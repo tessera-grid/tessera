@@ -22,6 +22,7 @@ import { composed } from './column-pinning-helpers'
 import { luminance, toRgba } from './a11y-helpers'
 import { parkPointer } from '../pointer'
 import { tableLabels } from '../labels'
+import { columnPinningLabels } from '../../../plugins/columnPinning/labels'
 
 const pointer = commands as unknown as {
   realWheel: (
@@ -112,7 +113,9 @@ describe('Column Pinning — requirements', () => {
     await userEvent.hover(cell)
     const button = pinButtonOf(cell)
     await userEvent.hover(button)
-    expect(await waitForBodyText(tableLabels.pin)).toBe(true)
+    expect(await waitForBodyText(columnPinningLabels(tableLabels).pin)).toBe(
+      true,
+    )
 
     // Pin it, then the same trigger's tooltip flips to "Unpin column".
     await userEvent.click(button)
@@ -126,7 +129,9 @@ describe('Column Pinning — requirements', () => {
     // fires a fresh enter and re-opens the tooltip with its flipped label.
     await userEvent.hover(renderedDataCells(container)[3])
     await userEvent.hover(pinnedButton)
-    expect(await waitForBodyText(tableLabels.unpin)).toBe(true)
+    expect(await waitForBodyText(columnPinningLabels(tableLabels).unpin)).toBe(
+      true,
+    )
   })
 
   test('CP7: clicking pins the column left; clicking again unpins it', async () => {

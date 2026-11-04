@@ -8,6 +8,7 @@ import { overflowColumns, overflowData } from '../../__mocks__/overflowColumns'
 import { humanClick } from '../helpers'
 import { composed } from '../stories'
 import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
+import { columnSortingLabels } from '../../../plugins/columnSorting/labels'
 
 // Тултип у обрезанного текста ячейки (ADR 0075, OT1–OT10). Наведение — настоящий
 // указатель Playwright; узкие колонки мока `overflowColumns` обрезают длинный текст.
@@ -158,7 +159,7 @@ describe('Overflow tooltip — тултип у обрезанного текст
       .closest('.data-grid__head-cell')!
       .querySelector<HTMLElement>('.column-sort__button')!
     await userEvent.hover(button)
-    await tipShown(ENGLISH_LABELS.sortDescending)
+    await tipShown(columnSortingLabels(ENGLISH_LABELS).sortDescending)
     expect(openTips()).not.toContain(LONG_HEADER)
   })
 

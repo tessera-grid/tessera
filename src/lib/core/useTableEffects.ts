@@ -186,6 +186,17 @@ export const useTableEffects = (
     )
   }, [duplicateIds, host])
 
+  // Дев-варн: действие справочника объявлено дважды — действует первое (ADR 0182, AN1).
+  const actionDuplicatesKey = folded.actionDuplicates.join(',')
+  useEffect(() => {
+    if (!actionDuplicatesKey) return
+    logWarn(
+      host,
+      `actions: duplicate action ${actionDuplicatesKey} — the first declaration is used`,
+      `dup-action:${actionDuplicatesKey}`,
+    )
+  }, [actionDuplicatesKey, host])
+
   // Дев-варн: опцию или хуки плагина перезаписал другой плагин (ADR 0140). Считается по
   // значению аргументов фабрик, а не на каждой перерисовке.
   const overwrites = useMemo(

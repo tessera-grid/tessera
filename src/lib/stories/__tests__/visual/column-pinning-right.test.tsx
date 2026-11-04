@@ -26,6 +26,8 @@ import {
 import { openPopup } from '../../__mocks__/catalogPlay'
 import { rowNestedArgs } from '../stories'
 import { tableLabels } from '../labels'
+import { columnPinningLabels } from '../../../plugins/columnPinning/labels'
+import { rowActionsLabels } from '../../../plugins/rowActions/labels'
 
 // CP20–CP27, CP29, CP34, CP37: закрепление справа, колонка действий, виртуализация.
 // Каждое требование — отдельный тест с ID из таблицы требований
@@ -40,8 +42,12 @@ describe('Column Pinning — right side', () => {
     // two directional items, and clicking the trigger does not pin on its own.
     const both = headCellById(container, 'firstName')
     await userEvent.click(await revealPin(both))
-    await expect.poll(() => menuItemByText(tableLabels.pinLeft)).toBeTruthy()
-    expect(menuItemByText(tableLabels.pinRight)).toBeTruthy()
+    await expect
+      .poll(() => menuItemByText(columnPinningLabels(tableLabels).pinLeft))
+      .toBeTruthy()
+    expect(
+      menuItemByText(columnPinningLabels(tableLabels).pinRight),
+    ).toBeTruthy()
     expect(both.getAttribute('data-cell-pinned')).toBe('false')
     await userEvent.keyboard('{Escape}')
     await expect.poll(() => menuItems().length).toBe(0)
@@ -66,7 +72,7 @@ describe('Column Pinning — right side', () => {
     // (the range extractor re-windows on the pinning change).
     await pinViaPopover(
       headCellById(container, 'firstName'),
-      tableLabels.pinRight,
+      columnPinningLabels(tableLabels).pinRight,
     )
 
     const rightHead = () =>
@@ -91,7 +97,7 @@ describe('Column Pinning — right side', () => {
     const container = await renderColumnPinning()
     await pinViaPopover(
       headCellById(container, 'firstName'),
-      tableLabels.pinRight,
+      columnPinningLabels(tableLabels).pinRight,
     )
 
     const body = container.querySelector<HTMLElement>(
@@ -174,7 +180,7 @@ describe('Column Pinning — right side', () => {
     // and joins the pinned block with the same backing (body).
     await pinViaPopover(
       headCellById(container, 'firstName'),
-      tableLabels.pinRight,
+      columnPinningLabels(tableLabels).pinRight,
     )
     await expect
       .poll(() =>
@@ -188,7 +194,9 @@ describe('Column Pinning — right side', () => {
     const head = actionsHead(container)
     await expect.poll(() => isOpaque(head)).toBe(true)
     expect(getComputedStyle(head).position).toBe('sticky')
-    expect(head.textContent).toBe(ENGLISH_LABELS.rowActionsColumn)
+    expect(head.textContent).toBe(
+      rowActionsLabels(ENGLISH_LABELS).rowActionsColumn,
+    )
     expect(
       Array.from(head.querySelectorAll<HTMLElement>('*')).some(
         el =>
@@ -211,7 +219,7 @@ describe('Column Pinning — right side', () => {
     const container = await renderColumnPinning({ enableRowActions: true })
     await pinViaPopover(
       headCellById(container, 'firstName'),
-      tableLabels.pinRight,
+      columnPinningLabels(tableLabels).pinRight,
     )
 
     const userPin = container.querySelector<HTMLElement>(
@@ -308,11 +316,11 @@ describe('Column Pinning — right side', () => {
       const container = await renderColumnPinning({ columnCount: 5 })
       await pinViaPopover(
         headCellById(container, 'lastName'),
-        tableLabels.pinRight,
+        columnPinningLabels(tableLabels).pinRight,
       )
       await pinViaPopover(
         headCellById(container, 'firstName'),
-        tableLabels.pinRight,
+        columnPinningLabels(tableLabels).pinRight,
       )
       await expect
         .poll(

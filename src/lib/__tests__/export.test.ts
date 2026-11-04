@@ -10,7 +10,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { injectServiceColumns } from '../core/createColumns'
 import { resolveHooks } from '../core/createHooks'
 import { buildTesseraFeatures, foldEntries, foldHooks } from '../core/features'
-import { ENGLISH_LABELS } from '../core/localization'
+import { ENGLISH_LABELS, resolveLabels } from '../core/localization'
 import { columnPinning } from '../plugins/columnPinning'
 import { columnSorting } from '../plugins/columnSorting'
 import { dataExport } from '../plugins/dataExport'
@@ -230,10 +230,13 @@ describe('dataExport — оси настроек', () => {
     expect(rowLabel(ENGLISH_LABELS, 'selected', [])).toBe('Selected rows')
     expect(
       rowLabel(
-        {
-          ...ENGLISH_LABELS,
-          exportView: features => `С учётом: ${features.join(', ')}`,
-        },
+        resolveLabels(
+          {
+            'dataExport.exportView': features =>
+              `С учётом: ${features.join(', ')}`,
+          },
+          'en-US',
+        ),
         'view',
         ['sorting'],
       ),

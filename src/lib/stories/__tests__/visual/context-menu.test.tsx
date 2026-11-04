@@ -4,6 +4,7 @@ import { describe, expect, test } from 'vitest'
 import { composed } from '../stories'
 import { COLUMN_SELECTION_ID } from '../../../../lib/plugins/rowSelection'
 import { tableLabels } from '../labels'
+import { cellSelectionLabels } from '../../../plugins/cellSelection/labels'
 
 // Каждое требование contextMenu — свой именованный тест `CM<n>` (ADR 0030).
 // Гоняет историю `ContextMenuPlayground` (contextMenu + cellSelection). Меню портируется в
@@ -96,7 +97,7 @@ describe('Context Menu', () => {
     const container = await renderContextMenu()
     rightClick(cellAt(container, 1, 0))
     await expect.poll(() => menuItems().length).toBeGreaterThan(0)
-    expect(menuItems()).toContain(tableLabels.copy)
+    expect(menuItems()).toContain(cellSelectionLabels(tableLabels).copy)
   })
 
   test('CM7: right-clicking a non-selected cell selects it first', async () => {

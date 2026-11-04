@@ -20,6 +20,7 @@ import {
 } from './column-pinning-helpers'
 import { tableLabels } from '../labels'
 import { PINNING_NESTED } from './header-fixtures'
+import { columnPinningLabels } from '../../../plugins/columnPinning/labels'
 
 // CP13–CP19, CP30: вложенная шапка и сервисные столбцы.
 // Каждое требование — отдельный тест с ID из таблицы требований
@@ -90,7 +91,7 @@ describe('Column Pinning — nested headers and service columns', () => {
     // The `name` group spans the firstName + lastName leaves (see the mock).
     // Group headers default to `both` sides → pin via the inline popover.
     const nameGroup = headCellById(container, 'name')
-    await pinViaPopover(nameGroup, tableLabels.pinLeft)
+    await pinViaPopover(nameGroup, columnPinningLabels(tableLabels).pinLeft)
 
     // The group header itself goes sticky-left…
     await expect
@@ -116,7 +117,7 @@ describe('Column Pinning — nested headers and service columns', () => {
   test('CP19: a pinned group and its leaves stick to the left edge with the correct offset', async () => {
     const container = await renderHeaderGroupsPinning()
     const nameGroup = headCellById(container, 'name')
-    await pinViaPopover(nameGroup, tableLabels.pinLeft)
+    await pinViaPopover(nameGroup, columnPinningLabels(tableLabels).pinLeft)
     await expect
       .poll(() =>
         headCellById(container, 'name').getAttribute('data-cell-pinned'),
@@ -226,7 +227,10 @@ describe('Column Pinning — nested headers and service columns', () => {
   test('CP30: under nested headers, with free space on the right, a right-pinned group and its leaves line up with their body columns', async () => {
     await withWideViewport(async () => {
       const container = await renderHeaderGroupsPinning()
-      await pinViaPopover(headCellById(container, 'name'), tableLabels.pinRight)
+      await pinViaPopover(
+        headCellById(container, 'name'),
+        columnPinningLabels(tableLabels).pinRight,
+      )
       await expect
         .poll(() =>
           headCellById(container, 'name').getAttribute('data-cell-pinned'),

@@ -24,6 +24,7 @@ import {
   toRgba,
 } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
+import { cellEditingLabels } from '../../../plugins/cellEditing/labels'
 
 // Ошибка в ячейке (ADR 0150, ER1–ER7): красный треугольник в правом верхнем углу ячейки с
 // ошибкой приложения, один при любом содержимом (ADR 0177, §5); отказ сохранения — первым.
@@ -57,7 +58,7 @@ const dotShown = (id: string) => {
 }
 const editOf = (id: string) =>
   cellOf(id)?.querySelector<HTMLElement>(
-    `button[aria-label="${tableLabels.editCell}"]`,
+    `button[aria-label="${cellEditingLabels(tableLabels).editCell}"]`,
   ) ?? null
 const issuePopover = () =>
   document.querySelector<HTMLElement>('[data-testid="cell-issue-popover"]')
@@ -186,7 +187,7 @@ describe('Ошибка в ячейке (ADR 0150)', () => {
     await waitForGrid()
     await userEvent.hover(cellOf('item-id-2')!)
     const edit = cellOf('item-id-2')!.querySelector<HTMLElement>(
-      `button[aria-label="${tableLabels.editCell}"]`,
+      `button[aria-label="${cellEditingLabels(tableLabels).editCell}"]`,
     )!
     await humanClick(edit)
     const input = await expect

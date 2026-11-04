@@ -18,6 +18,7 @@ import { HandleMenu, useHandleMenu } from '../../shared/handleMenu/HandleMenu'
 import { reportAction } from '../../core/debugActions'
 import styles from './ResizeHandler.module.css'
 import '../../ui/cellControls/buttonVisibility.css'
+import { columnSizingLabels } from './labels'
 
 /** Шаг изменения ширины стрелкой и Shift+стрелкой, px. */
 const KEY_STEP = 10
@@ -74,7 +75,11 @@ export const ResizeHandler = memo(
     /** Касание без сдвига уже открыло меню — `click` после него не повторяет. */
     const tapped = useRef(false)
     // Грип тонкий — контура ожидания на нём не видно: `aria-busy` и курсор `progress`.
-    const menu = useHandleMenu(table, all => all.columnWidth)
+    const menu = useHandleMenu(
+      table,
+      all => columnSizingLabels(all).columnWidth,
+      'columnSizing',
+    )
     const menuOpen = menu.open
 
     const onResizeStart = useCallback(
@@ -173,19 +178,19 @@ export const ResizeHandler = memo(
     const getMenuItems = () => [
       {
         id: 'widen',
-        label: labels.widenColumn,
+        label: columnSizingLabels(labels).widenColumn,
         disabled: maxSize !== undefined && size >= maxSize,
         onSelect: () => onResizeBy(LARGE_KEY_STEP),
       },
       {
         id: 'narrow',
-        label: labels.narrowColumn,
+        label: columnSizingLabels(labels).narrowColumn,
         disabled: size <= minSize,
         onSelect: () => onResizeBy(-LARGE_KEY_STEP),
       },
       {
         id: 'reset',
-        label: labels.resetColumnWidth,
+        label: columnSizingLabels(labels).resetColumnWidth,
         onSelect: () => onResetSize(undefined),
       },
     ]
@@ -218,7 +223,7 @@ export const ResizeHandler = memo(
               ref={separatorRef}
               role="separator"
               tabIndex={disabled ? -1 : 0}
-              aria-label={labels.resizeColumn}
+              aria-label={columnSizingLabels(labels).resizeColumn}
               aria-orientation="vertical"
               aria-valuenow={Math.round(size)}
               aria-valuemin={minSize}
@@ -236,7 +241,7 @@ export const ResizeHandler = memo(
             <HandleMenu
               anchor={wrapperRef}
               focusTarget={separatorRef}
-              label={labels.columnWidth}
+              label={columnSizingLabels(labels).columnWidth}
               getItems={getMenuItems}
               onClose={menu.close}
               table={table}

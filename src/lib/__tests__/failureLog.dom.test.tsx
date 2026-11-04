@@ -15,10 +15,12 @@ import {
   resolveLabels,
   unknownLabelKeys,
 } from '../core/localization/resolveLabels'
+import { labelSetKeys } from '../core/localization/pluginLabels'
 import { useCreateTable } from '../core/useCreateTable'
 import { failureLog } from '../plugins'
 import { objectTargetText } from '../shared/objectTarget'
 import ru from '../stories/__mocks__/localization.ru.json'
+import { failureLogLabels } from '../plugins/failureLog/labels'
 
 ;(
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -86,8 +88,8 @@ describe('Журнал отказов (ADR 0177)', () => {
     await tick()
     const logged = said.filter(text => text.startsWith('Failures in the log'))
     expect(logged).toEqual([
-      ENGLISH_LABELS.announceFailureLogged(1),
-      ENGLISH_LABELS.announceFailureLogged(3),
+      failureLogLabels(ENGLISH_LABELS).announceFailureLogged(1),
+      failureLogLabels(ENGLISH_LABELS).announceFailureLogged(3),
     ])
 
     // Решённый отказ уходит сам и объявления не даёт.
@@ -108,31 +110,35 @@ describe('Журнал отказов (ADR 0177)', () => {
 
   it('JR5: подписи журнала — ключи словаря localization', () => {
     mount()
+    // Ключи журнала — у плагина (ADR 0182, §8), цели — у ядра.
     const keys = [
-      'failureLog',
-      'failureLogEmpty',
-      'failureLogEmptyDescription',
-      'failureLogButton',
-      'failureClearAll',
-      'failureShow',
-      'failureClose',
+      'failureLog.failureLog',
+      'failureLog.failureLogEmpty',
+      'failureLog.failureLogEmptyDescription',
+      'failureLog.failureLogButton',
+      'failureLog.failureClearAll',
+      'failureLog.failureShow',
+      'failureLog.failureClose',
       'failureTargetCell',
       'failureTargetRow',
       'failureTargetTable',
-      'announceFailureLogged',
+      'failureLog.announceFailureLogged',
     ]
     // Словарь знает ключи журнала; русский словарь историй задаёт каждый.
     expect(
-      unknownLabelKeys(Object.fromEntries(keys.map(k => [k, 'x']))),
+      unknownLabelKeys(
+        Object.fromEntries(keys.map(k => [k, 'x'])),
+        labelSetKeys(failureLogLabels),
+      ),
     ).toEqual([])
-    for (const key of keys) expect(ru).toHaveProperty(key)
+    for (const key of keys) expect(ru).toHaveProperty([key])
 
     const labels = resolveLabels(
       {
         failureTargetCell: '{column} / №{row}',
         failureTargetRow: 'Ряд {row}',
         failureTargetTable: 'Вся таблица',
-        failureLogButton: 'Ошибок: {count}',
+        'failureLog.failureLogButton': 'Ошибок: {count}',
       },
       'ru-RU',
     )
@@ -156,6 +162,6 @@ describe('Журнал отказов (ADR 0177)', () => {
     expect(
       objectTargetText(captured, failure({ table: true }).target, labels),
     ).toBe('Вся таблица')
-    expect(labels.failureLogButton(4)).toBe('Ошибок: 4')
+    expect(failureLogLabels(labels).failureLogButton(4)).toBe('Ошибок: 4')
   })
 })

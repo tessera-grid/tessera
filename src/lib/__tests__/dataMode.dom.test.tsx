@@ -36,6 +36,7 @@ import { FOREIGN_OPTION_READS } from './architecture.baseline'
 import { builtinPluginEntries, pluginFactories } from './builtinPlugins'
 import { FilteredRowsCount } from '../shared/filtering/FilteredRowsCount'
 import { captureInertWarnings } from './inertWarnings'
+import { filteringLabels } from '../shared/filtering/labels'
 
 ;(
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -414,17 +415,17 @@ describe('режим данных (ADR 0169)', () => {
       return text
     }
     expect(shown({ rowCount: 3, totalRowCount: 40 })).toBe(
-      ENGLISH_LABELS.filteredRows(3, 40),
+      filteringLabels(ENGLISH_LABELS).filteredRows(3, 40),
     )
     expect(shown({ rowCount: 3 })).toBe('')
     // Фильтры на сервере, клиент ответ не сужает: N — итог сервера.
     expect(
       shown({ rowCount: 4, totalRowCount: 40 }, { filtering: 'server' }, ''),
-    ).toBe(ENGLISH_LABELS.filteredRows(4, 40))
+    ).toBe(filteringLabels(ENGLISH_LABELS).filteredRows(4, 40))
     // Фильтры на сервере, поиск на клиенте: N — строки ответа после поиска.
     expect(
       shown({ rowCount: 4, totalRowCount: 40 }, { filtering: 'server' }),
-    ).toBe(ENGLISH_LABELS.filteredRows(2, 40))
+    ).toBe(filteringLabels(ENGLISH_LABELS).filteredRows(2, 40))
 
     // Аргументы итога у фабрик ничего не меняют.
     const optionsOf = (entry: TesseraFeatureEntry) =>

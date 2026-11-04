@@ -14,17 +14,20 @@ import {
   type TableLabels,
   useLocalization,
 } from '../core/localization'
+import { infiniteScrollLabels } from '../plugins/infiniteScroll/labels'
+import { rowSelectionLabels } from '../plugins/rowSelection/labels'
+import { filteringLabels } from '../shared/filtering/labels'
 
 ;(
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true
 
 const shortForms = (labels: TableLabels) => [
-  labels.loadedRowsOfShort(12_340, 100_000),
-  labels.loadedRowsShort(12_340),
-  labels.selectedRowsShort(12),
-  labels.selectedRowsHiddenShort(3),
-  labels.filteredRowsShort(12, 100),
+  infiniteScrollLabels(labels).loadedRowsOfShort(12_340, 100_000),
+  infiniteScrollLabels(labels).loadedRowsShort(12_340),
+  rowSelectionLabels(labels).selectedRowsShort(12),
+  rowSelectionLabels(labels).selectedRowsHiddenShort(3),
+  filteringLabels(labels).filteredRowsShort(12, 100),
 ]
 
 describe('Короткие формы счётчиков', () => {
@@ -47,11 +50,12 @@ describe('Короткие формы счётчиков', () => {
       root.render(
         <LocalizationProvider
           localization={{
-            loadedRowsShort: count => `L${count}`,
-            loadedRowsOfShort: count => `L${count}`,
-            selectedRowsShort: count => `S${count}`,
-            selectedRowsHiddenShort: count => `H${count}`,
-            filteredRowsShort: (shown, total) => `F${shown}/${total}`,
+            'infiniteScroll.loadedRowsShort': count => `L${count}`,
+            'infiniteScroll.loadedRowsOfShort': count => `L${count}`,
+            'rowSelection.selectedRowsShort': count => `S${count}`,
+            'rowSelection.selectedRowsHiddenShort': count => `H${count}`,
+            'filtering.filteredRowsShort': (shown, total) =>
+              `F${shown}/${total}`,
           }}
         >
           <Probe />

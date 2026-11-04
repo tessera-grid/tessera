@@ -36,6 +36,7 @@ import type { ExportSettings } from '../dataExportModel/types'
 import styles from './ExportPanel.module.css'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 import { useFinalFocus } from '../../ui/Popup/finalFocus'
+import { dataExportLabels } from './labels'
 
 export interface ExportPanelProps {
   table: Table<any, any>
@@ -191,7 +192,9 @@ export const ExportPanel = ({
       : undefined
 
   const columnLabel = (value: string) =>
-    value === 'all' ? labels.exportColumnsAll : labels.exportColumnsVisible
+    value === 'all'
+      ? dataExportLabels(labels).exportColumnsAll
+      : dataExportLabels(labels).exportColumnsVisible
   const formatLabel = (value: string) =>
     config.formats.find(format => format.id === value)?.label ?? value
 
@@ -201,7 +204,7 @@ export const ExportPanel = ({
     <Popover.Root open={open} onOpenChange={onOpenChange}>
       <ToolbarButton
         ref={triggerRef}
-        label={labels.export}
+        label={dataExportLabels(labels).export}
         icon={<DownloadIcon width={16} height={16} />}
         pending={pending}
         failed={failed}
@@ -219,7 +222,7 @@ export const ExportPanel = ({
           {...themeData}
         >
           <Popover.Popup
-            aria-label={labels.export}
+            aria-label={dataExportLabels(labels).export}
             ref={popupRef}
             finalFocus={finalFocus}
             className={clsx(themeClass, styles.popup)}
@@ -229,10 +232,10 @@ export const ExportPanel = ({
               <div
                 className={styles.group}
                 role="group"
-                aria-label={labels.exportPresets}
+                aria-label={dataExportLabels(labels).exportPresets}
               >
                 <span className={styles.groupLabel} aria-hidden>
-                  {labels.exportPresets}
+                  {dataExportLabels(labels).exportPresets}
                 </span>
                 {config.presets.map(preset => (
                   <button
@@ -249,7 +252,7 @@ export const ExportPanel = ({
             )}
             {axes.formats.length > 1 && (
               <FormatGroup
-                label={labels.exportFormat}
+                label={dataExportLabels(labels).exportFormat}
                 choices={axes.formats}
                 value={settings.format}
                 labelOf={formatLabel}
@@ -257,7 +260,7 @@ export const ExportPanel = ({
               />
             )}
             <AxisGroup
-              label={labels.exportRows}
+              label={dataExportLabels(labels).exportRows}
               testId="export-axis-rows"
               choices={axes.rows}
               value={settings.rows}
@@ -271,7 +274,7 @@ export const ExportPanel = ({
               }
             />
             <AxisGroup
-              label={labels.exportColumns}
+              label={dataExportLabels(labels).exportColumns}
               testId="export-axis-columns"
               choices={axes.columns}
               value={settings.columns}
@@ -300,7 +303,7 @@ export const ExportPanel = ({
                   onOpenChange(false)
                 }}
               >
-                {labels.exportRun}
+                {dataExportLabels(labels).exportRun}
               </Button>
             </div>
           </Popover.Popup>

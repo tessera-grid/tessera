@@ -13,6 +13,7 @@ import { ROW_NESTING_INDENT_PX } from '../../../core/rowNesting'
 import { COLUMN_EXPANDING_ID } from '../../../../lib/plugins/rowExpanding'
 import { ExpandButton } from '../../../plugins/rowExpanding/ExpandButton'
 import { UiCanvas } from '../../__mocks__/UiCanvas'
+import { rowExpandingLabels } from '../../../plugins/rowExpanding/labels'
 
 // Each Row Expanding requirement is its own named test, prefixed with its spec ID
 // (RE1–RE11, RE41, RE74 from the requirements table in docs/decisions/0015-row-expanding.md).
@@ -400,19 +401,27 @@ describe('Row Expanding — accessibility', () => {
     const container = await renderRowExpanding()
     const toggle = () => rowToggle(firstExpandableRow(container))!
 
-    expect(toggle().getAttribute('aria-label')).toBe(ENGLISH_LABELS.expandRow)
+    expect(toggle().getAttribute('aria-label')).toBe(
+      rowExpandingLabels(ENGLISH_LABELS).expandRow,
+    )
     expect(toggle().getAttribute('aria-expanded')).toBe('false')
     await userEvent.hover(toggle())
-    expect(await waitForBodyText(ENGLISH_LABELS.expandRow)).toBe(true)
+    expect(
+      await waitForBodyText(rowExpandingLabels(ENGLISH_LABELS).expandRow),
+    ).toBe(true)
 
     await userEvent.click(toggle())
     await expect.poll(() => toggle().getAttribute('aria-expanded')).toBe('true')
-    expect(toggle().getAttribute('aria-label')).toBe(ENGLISH_LABELS.collapseRow)
+    expect(toggle().getAttribute('aria-label')).toBe(
+      rowExpandingLabels(ENGLISH_LABELS).collapseRow,
+    )
     await settleRowMotion(container)
     // Указатель уходит и возвращается — тултип открывается заново, уже раскрытой строки.
     await userEvent.hover(rowsTopDown(container).at(-1)!)
     await userEvent.hover(toggle())
-    expect(await waitForBodyText(ENGLISH_LABELS.collapseRow)).toBe(true)
+    expect(
+      await waitForBodyText(rowExpandingLabels(ENGLISH_LABELS).collapseRow),
+    ).toBe(true)
 
     // Restore.
     await userEvent.click(toggle())

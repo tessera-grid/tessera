@@ -63,6 +63,7 @@ import {
   sortTo,
   columnsOf,
 } from './__mocks__/typeGuides'
+import { filteringLabels } from '../shared/filtering/labels'
 
 const meta = {
   ...dataGridMeta,
@@ -210,7 +211,9 @@ export const DataTypesObject: StoryObj<StoryProps> = {
     await step(OBJECT[3]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(filteredCount()).toBe(labels.filteredRows(count, total))
+      await expect(filteredCount()).toBe(
+        filteringLabels(labels).filteredRows(count, total),
+      )
       await expect(managerFiltered(canvas)).toBe(true)
       await settle()
     })

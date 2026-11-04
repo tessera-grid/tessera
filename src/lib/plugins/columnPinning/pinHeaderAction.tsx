@@ -15,6 +15,7 @@ import { warnPluginInert } from '../../core/pluginDiagnostics'
 import type { ColumnPinningHooks, PinSides } from './types'
 
 import '../../ui/cellControls/buttonVisibility.css'
+import { columnPinningLabels } from './labels'
 
 type PinSide = 'start' | 'end'
 type PinningState = { start: string[]; end: string[] }
@@ -174,10 +175,9 @@ export const pinHeaderAction: HeaderAction = {
       pinned={!!getSegmentPinnedSide(getSegmentLeafColumns(ctx))}
     />
   ),
-  label: (ctx, labels) =>
-    getSegmentPinnedSide(getSegmentLeafColumns(ctx))
-      ? labels.unpin
-      : labels.pin,
+  label: labels => columnPinningLabels(labels).pin,
+  action: ctx =>
+    getSegmentPinnedSide(getSegmentLeafColumns(ctx)) ? 'unpin' : 'pin',
   active: ctx => !!getSegmentPinnedSide(getSegmentLeafColumns(ctx)),
   className: () => 'column-pin__button',
   // Инлайн-поповер только когда доступны обе стороны — клик неоднозначен.
@@ -196,7 +196,9 @@ export const pinHeaderAction: HeaderAction = {
       return [
         {
           id: side,
-          label: current ? labels.unpin : labels.pin,
+          label: current
+            ? columnPinningLabels(labels).unpin
+            : columnPinningLabels(labels).pin,
           icon: <PinActionIcon />,
           active: current === side,
           onSelect: () => togglePin(ctx, side),
@@ -207,14 +209,14 @@ export const pinHeaderAction: HeaderAction = {
     return [
       {
         id: 'start',
-        label: labels.pinLeft,
+        label: columnPinningLabels(labels).pinLeft,
         icon: <PinActionIcon />,
         active: current === 'start',
         onSelect: () => togglePin(ctx, 'start'),
       },
       {
         id: 'end',
-        label: labels.pinRight,
+        label: columnPinningLabels(labels).pinRight,
         icon: <PinActionIcon />,
         active: current === 'end',
         onSelect: () => togglePin(ctx, 'end'),

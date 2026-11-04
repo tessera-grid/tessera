@@ -12,6 +12,8 @@ import { useSyncExternalStore } from 'react'
 import { useSelector } from '@tanstack/react-store'
 
 import { useSliceProjection } from '../reactivity'
+import { actionLabelOf } from '../actions'
+import { actionOwnerOf } from '../actionOwners'
 
 /** Цель черновика: ячейка, строка или колонка. */
 export type DraftTarget =
@@ -27,11 +29,26 @@ export interface Draft {
   value: unknown
 }
 
+/** Подпись вида черновика: действие справочника его владельца (ADR 0182, §5). */
+export const draftKindLabel = (
+  table: unknown,
+  kind: DraftKind,
+  labels?: TableLabels,
+): string =>
+  actionLabelOf(
+    table,
+    { plugin: actionOwnerOf(kind), action: kind.action },
+    labels,
+  )
+
 /** Поведение вида черновика (ADR 0178, §1, DR3). */
 export interface DraftKind {
   kind: string
-  /** Подпись записи по словарю таблицы: что это за черновик. */
-  label: (labels: TableLabels, draft: Draft) => string
+  /**
+   * Действие справочника у владельца вида (ADR 0182, §5): им пульт называет запись — что это
+   * за черновик.
+   */
+  action: string
   /** Значение черновика одной строкой — для пульта; без поля пульт значение не пишет. */
   describe?: (labels: TableLabels, draft: Draft, table: unknown) => string
   /**

@@ -33,6 +33,7 @@ import {
 import { type PageAction, PageButton } from './PageButton'
 import { SizeTrigger } from './SizeTrigger'
 import styles from './Pagination.module.css'
+import { paginationLabels } from './labels'
 
 const PageSizeSelect = preloadable(() =>
   import('./PageSizeSelect').then(module => module.PageSizeSelect),
@@ -70,7 +71,7 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
   const sizeSelect = useLazyPopover(
     table,
     PageSizeSelect,
-    all => all.rowsPerPage,
+    all => paginationLabels(all).rowsPerPage,
     true,
     { plugin: 'pagination', detail: () => ({ menu: 'pageSize' }) },
   )
@@ -100,8 +101,8 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
   const announcePage = (index: number, pages: number | undefined) =>
     announceLabel(table, all =>
       pages === undefined
-        ? all.pageAnnouncementOfMany(index + 1)
-        : all.pageAnnouncement(index + 1, pages),
+        ? paginationLabels(all).pageAnnouncementOfMany(index + 1)
+        : paginationLabels(all).pageAnnouncement(index + 1, pages),
     )
 
   const goTo = (index: number, control: PageAction) => {
@@ -123,7 +124,7 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
   const sizePlaceholder = (
     <>
       <span id={sizeLabelId} className={styles.label}>
-        {labels.rowsPerPage}
+        {paginationLabels(labels).rowsPerPage}
       </span>
       {/* Имя — подпись и видимое значение, как у настоящего списка (WCAG 2.5.3). */}
       <SizeTrigger
@@ -147,7 +148,7 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
 
   return (
     <nav
-      aria-label={labels.pagination}
+      aria-label={paginationLabels(labels).pagination}
       className={styles.pagination}
       data-testid="pagination"
     >
@@ -156,7 +157,7 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
           {sizeSelect.ready ? (
             <Suspense fallback={sizePlaceholder}>
               <PageSizeSelect.Component
-                label={labels.rowsPerPage}
+                label={paginationLabels(labels).rowsPerPage}
                 pageSize={pageSize}
                 pageSizes={resolvePageSizes(pageSizesOption ?? [], pageSize)}
                 onChange={changeSize}
@@ -176,36 +177,36 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
             height="var(--tsr-comp-skeleton-text-height)"
           />
         ) : known ? (
-          labels.pageRange(from, to, rowCount)
+          paginationLabels(labels).pageRange(from, to, rowCount)
         ) : (
-          labels.pageRangeOfMany(from, to)
+          paginationLabels(labels).pageRangeOfMany(from, to)
         )}
       </span>
       <div className={styles.buttons}>
         <PageButton
           action="first"
-          label={labels.firstPage}
+          label={paginationLabels(labels).firstPage}
           icon={<icons.firstPage width={ICON_SIZE} height={ICON_SIZE} />}
           disabled={atStart}
           onClick={() => goTo(0, 'first')}
         />
         <PageButton
           action="previous"
-          label={labels.previousPage}
+          label={paginationLabels(labels).previousPage}
           icon={<icons.previousPage width={ICON_SIZE} height={ICON_SIZE} />}
           disabled={atStart}
           onClick={() => goTo(pageIndex - 1, 'previous')}
         />
         <PageButton
           action="next"
-          label={labels.nextPage}
+          label={paginationLabels(labels).nextPage}
           icon={<icons.nextPage width={ICON_SIZE} height={ICON_SIZE} />}
           disabled={atEnd}
           onClick={() => goTo(pageIndex + 1, 'next')}
         />
         <PageButton
           action="last"
-          label={labels.lastPage}
+          label={paginationLabels(labels).lastPage}
           icon={<icons.lastPage width={ICON_SIZE} height={ICON_SIZE} />}
           disabled={atEnd || !known}
           onClick={() => goTo(lastIndex, 'last')}

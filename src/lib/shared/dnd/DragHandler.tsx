@@ -38,7 +38,11 @@ export const DragHandler = ({
 }: DragHandlerProps) => {
   const ref = useRef<HTMLElement | null>(null)
   const pressedAt = useRef<{ x: number; y: number } | null>(null)
-  const menu = useHandleMenu(table, () => label ?? '')
+  const menu = useHandleMenu(
+    table,
+    () => label ?? '',
+    type === 'row' ? 'rowDragging' : 'columnDragging',
+  )
 
   const { setActivatorNodeRef, attributes, listeners } =
     useItemSortableContext()

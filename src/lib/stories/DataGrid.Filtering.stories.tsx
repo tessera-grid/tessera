@@ -61,6 +61,9 @@ import {
   queryFiltering,
   queryOptions,
 } from './demos/filteringDemos'
+import { filteringLabels } from '../shared/filtering/labels'
+import { quickSearchLabels } from '../plugins/quickSearch/labels'
+import { columnFilteringLabels } from '../plugins/columnFiltering/labels'
 
 /**
  * Фильтрация (ADR 0045, ADR 0047, ADR 0048): фильтры колонок по типам — текст, число,
@@ -220,7 +223,7 @@ export const FilteringText: StoryObj<StoryProps> = {
       const shown = filteringData.filter(row => row.name.includes(NAME)).length
       await expect(allMatch(canvas, 'name', NAME)).toBe(true)
       await expect(filteredCount()).toBe(
-        labels.filteredRows(shown, filteringData.length),
+        filteringLabels(labels).filteredRows(shown, filteringData.length),
       )
       await expect(filterActive(canvas, 'name')).toBe(true)
       await settle()
@@ -477,7 +480,7 @@ export const FilteringServer: StoryObj<StoryProps> = {
       await expect(consoleText()).toContain('onFilterChange')
       await expect(allMatch(canvas, 'name', NAME)).toBe(true)
       await expect(filteredCount()).toBe(
-        labels.filteredRows(count('', []), SERVER_TOTAL),
+        filteringLabels(labels).filteredRows(count('', []), SERVER_TOTAL),
       )
     })
     await step(SERVER[2]!.title, async () => {
@@ -486,17 +489,25 @@ export const FilteringServer: StoryObj<StoryProps> = {
       const columns = ['name', 'city', 'age', 'visits']
       await expect(consoleText()).toContain('onSearchChange')
       await expect(filteredCount()).toBe(
-        labels.filteredRows(count(SEARCH, columns), SERVER_TOTAL),
+        filteringLabels(labels).filteredRows(
+          count(SEARCH, columns),
+          SERVER_TOTAL,
+        ),
       )
       await expect(searchHint()).toBe(
-        labels.searchColumnsHint(['Name', 'City', 'Age', 'Visits']),
+        quickSearchLabels(labels).searchColumnsHint([
+          'Name',
+          'City',
+          'Age',
+          'Visits',
+        ]),
       )
     })
     await step(SERVER[3]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(searchHint()).toBe(
-        labels.searchColumnsHint(['Name', 'City', 'Visits']),
+        quickSearchLabels(labels).searchColumnsHint(['Name', 'City', 'Visits']),
       )
       await settle()
     })
@@ -595,7 +606,7 @@ export const FilteringServerFiltersClientSearch: StoryObj<StoryProps> = {
       await stepDone(canvas)
       await expect(allMatch(canvas, 'city', SEARCH)).toBe(true)
       await expect(filteredCount()).toBe(
-        labels.filteredRows(
+        filteringLabels(labels).filteredRows(
           queryFiltering([], SEARCH, columns).length,
           SERVER_TOTAL,
         ),
@@ -608,7 +619,7 @@ export const FilteringServerFiltersClientSearch: StoryObj<StoryProps> = {
       await expect(consoleText()).toContain('onFilterChange')
       await expect(allMatch(canvas, 'name', NAME)).toBe(true)
       await expect(filteredCount()).toBe(
-        labels.filteredRows(
+        filteringLabels(labels).filteredRows(
           queryFiltering(nameFilter as ServerFilters, SEARCH, columns).length,
           SERVER_TOTAL,
         ),
@@ -892,20 +903,28 @@ export const FilteringDates: StoryObj<StoryProps> = {
     await step(DATE_STEPS[2]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(filteredCount()).toBe(labels.filteredRows(20, total))
+      await expect(filteredCount()).toBe(
+        filteringLabels(labels).filteredRows(20, total),
+      )
     })
     await step(DATE_STEPS[3]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() =>
-        expect(filteredCount()).toBe(labels.filteredRows(14, total)),
+        expect(filteredCount()).toBe(
+          filteringLabels(labels).filteredRows(14, total),
+        ),
       )
     })
     await step(DATE_STEPS[4]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(filteredCount()).toMatch(
-        labelPattern(args.locale, n => labels.filteredRows(n, total), '[1-9]'),
+        labelPattern(
+          args.locale,
+          n => filteringLabels(labels).filteredRows(n, total),
+          '[1-9]',
+        ),
       )
       await expect(createdFiltered(canvas) && birthFiltered(canvas)).toBe(true)
       await settle()
@@ -1008,7 +1027,9 @@ export const FilteringOptions: StoryObj<StoryProps> = {
       await stepDone(canvas)
       await expect(new Set(cellsOf(canvas, 'status')).size).toBe(1)
       await expect(filteredCount()).toMatch(
-        labelPattern(args.locale, n => labels.filteredRows(n, total)),
+        labelPattern(args.locale, n =>
+          filteringLabels(labels).filteredRows(n, total),
+        ),
       )
     })
     await step(OPTION_STEPS[3]!.title, async () => {
@@ -1023,7 +1044,9 @@ export const FilteringOptions: StoryObj<StoryProps> = {
       ).length
       await expect(both).toBeGreaterThan(0)
       await until(() =>
-        expect(filteredCount()).toBe(labels.filteredRows(both, total)),
+        expect(filteredCount()).toBe(
+          filteringLabels(labels).filteredRows(both, total),
+        ),
       )
       await expect(count('vip')).toBeLessThan(
         optionFilteringData.filter(row =>
@@ -1208,7 +1231,7 @@ export const FilteringLookupServer: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(byTestId('filter-summary')).toHaveTextContent(
-        `${labels.filterAnyOf}: Alice Moss`,
+        `${columnFilteringLabels(labels).filterAnyOf}: Alice Moss`,
       )
       await settle()
     })
@@ -1680,7 +1703,9 @@ export const FilteringServerApply: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(filterValueText()).toBe(NAME)
-      await expect(applyButton()).toHaveTextContent(labels.filterApply)
+      await expect(applyButton()).toHaveTextContent(
+        columnFilteringLabels(labels).filterApply,
+      )
       await expect(applyEnabled()).toBe(true)
       await expect(applyServer.requests).toBe(0)
       await expect(cellsOf(canvas, 'name')[0]).toBe(firstName)

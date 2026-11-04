@@ -43,6 +43,7 @@ import {
   guideArgs,
   stepAction,
 } from './demos/GuideStory'
+import { dataExportLabels } from '../plugins/dataExport/labels'
 
 /** Экспорт данных (ADR 0044, ADR 0073): панель настроек, быстрые наборы, Excel, серверный режим; своя кнопка приложения (ADR 0120). */
 
@@ -824,7 +825,7 @@ export const ExportCancel: StoryObj<StoryProps> = {
         await expect(exportArmed()).toBe(true)
         await expect(exportButton()).toHaveAttribute(
           'aria-label',
-          labels.cancelAction(labels.export),
+          labels.cancelAction(dataExportLabels(labels).export),
         )
       })
       await step(CANCEL_EXPORT[3]!.title, async () => {

@@ -17,6 +17,7 @@ import { preloadable } from '../../core/preloadable'
 import { useSliceProjection } from '../../core/reactivity'
 import { useIcons } from '../../ui/icons'
 import { ToolbarButton } from '../../ui/ToolbarButton'
+import { unsavedChangesLabels } from './labels'
 
 const UnsavedChangesPopover = preloadable(() =>
   import('./UnsavedChangesPopover').then(
@@ -40,12 +41,14 @@ export const UnsavedChangesButton = ({ table }: ToolbarComponentProps) => {
   const popover = useLazyPopover(
     table,
     UnsavedChangesPopover,
-    all => all.unsavedChanges,
+    all => unsavedChangesLabels(all).unsavedChanges,
     true,
     { plugin: 'unsavedChanges' },
   )
   const label =
-    count > 0 ? labels.unsavedChangesButton(count) : labels.unsavedChanges
+    count > 0
+      ? unsavedChangesLabels(labels).unsavedChangesButton(count)
+      : unsavedChangesLabels(labels).unsavedChanges
   const icon = <UnsavedChangesIcon width={16} height={16} />
   const placeholder = (
     <ToolbarButton

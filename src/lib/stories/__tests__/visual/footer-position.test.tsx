@@ -22,6 +22,7 @@ import {
   scrollerOf,
 } from './column-pinning-helpers'
 import { tableLabels } from '../labels'
+import { columnPinningLabels } from '../../../plugins/columnPinning/labels'
 
 // Футер колонок и его положение (ADR 0118, FT1–FT2, FT4–FT13, FT15–FT17): закреплённый
 // у низа области, незакреплённый за последней строкой. FT3 — `play` истории
@@ -355,11 +356,11 @@ describe('Положение футера', () => {
     s.scrollTop = 0
     await pinViaPopover(
       headCellById(container, 'firstName'),
-      tableLabels.pinLeft,
+      columnPinningLabels(tableLabels).pinLeft,
     )
     await pinViaPopover(
       headCellById(container, 'lastName'),
-      tableLabels.pinRight,
+      columnPinningLabels(tableLabels).pinRight,
     )
     await expect
       .poll(() => footerCell('lastName').getAttribute('data-cell-pinned'))

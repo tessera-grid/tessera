@@ -51,23 +51,26 @@ describe('служебные колонки по метке ядра (ADR 0165)'
       services.map(column => {
         const { pluginId, label, controlSized, fill } =
           column.getServiceColumn()!
-        return [pluginId, { label, controlSized, fill }]
+        return [
+          pluginId,
+          { label: label?.(ENGLISH_LABELS), controlSized, fill },
+        ]
       }),
     )
     expect(info).toEqual({
       rowSelection: { label: undefined, controlSized: true, fill: undefined },
       rowExpanding: {
-        label: 'expandColumn',
+        label: 'Expand',
         controlSized: true,
         fill: undefined,
       },
       rowDragging: {
-        label: 'reorderColumn',
+        label: 'Reorder',
         controlSized: undefined,
         fill: undefined,
       },
       rowActions: {
-        label: 'rowActionsColumn',
+        label: 'Actions',
         controlSized: undefined,
         fill: true,
       },

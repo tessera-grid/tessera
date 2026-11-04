@@ -34,6 +34,7 @@ import { type KebabState, useKebabState } from './useKebabState'
 
 import styles from '../../ui/Popup/ActionMenu.module.css'
 import { actionLook } from './actionLook'
+import { menuActionLabel } from '../../core/actions'
 import '../../ui/cellControls/buttonVisibility.css'
 
 const ActionMenuImpl = preloadable(() =>
@@ -254,7 +255,7 @@ export const ActionInlineMenu = ({
   const menu = useLazyPopover(
     context.table,
     ActionInlineMenuImpl,
-    labels => action.label(context, labels),
+    labels => menuActionLabel(action, context, labels),
     true,
     {
       plugin: actionOwnerOf(action),

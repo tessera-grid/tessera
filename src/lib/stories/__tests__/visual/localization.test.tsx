@@ -168,15 +168,15 @@ describe('Словарь подписей на таблице', () => {
     // Лишнее свойство литерала TypeScript отмечает одно на литерал: по литералу на случай.
     const formWithoutCount: LabelDictionary = {
       // @ts-expect-error — у подписи без `count` форм слова нет
-      pageRange_one: 'одна',
+      'pagination.pageRange_one': 'одна',
     }
     const typo: LabelDictionary = {
       // @ts-expect-error — такой подписи у таблицы нет
       pageRang: 'опечатка',
     }
     const typed: LabelDictionary = {
-      pageRange: '{from}–{to}',
-      selectedRows_few: 'Выбрано {count} строки',
+      'pagination.pageRange': '{from}–{to}',
+      'rowSelection.selectedRows_few': 'Выбрано {count} строки',
       ...formWithoutCount,
       ...typo,
     }

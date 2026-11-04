@@ -13,9 +13,10 @@ import {
 import { type FailedAttempts, withoutGone } from '../../shared/failedAttempts'
 import { announcerLabels } from '../../core/announcer'
 import { mirrorFailures } from '../../core/failures/failuresFeature'
-import { DEFAULT_LABELS } from '../../core/localization'
+import { ENGLISH_LABELS } from '../../core/localization'
 import { rejectionText } from '../../util/thenable'
 import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
+import { rowExpandingLabels } from './labels'
 
 export type LoadedChildren = Record<string, readonly unknown[]>
 /** Отказы раскрытия: строка → попытка и ошибка (отметка на тоггле, ADR 0136). */
@@ -110,11 +111,13 @@ const writeExpandFailed = (
   const prev = atom?.get() ?? {}
   writeSlice<RowExpandFailed>(table as LazyTable, 'rowExpandFailed', updater)
   mirrorFailures(table, prev, atom?.get() ?? prev, (id, failed) => {
-    const labels = announcerLabels(table) ?? DEFAULT_LABELS
+    const labels = announcerLabels(table) ?? ENGLISH_LABELS
     return {
-      label: labels.expandRow,
+      action: { plugin: 'rowExpanding', action: 'toggleRow' },
       target: { row: id },
-      reason: rejectionText(failed.error) ?? labels.loadChildrenFailed,
+      reason:
+        rejectionText(failed.error) ??
+        rowExpandingLabels(labels).loadChildrenFailed,
     }
   })
 }

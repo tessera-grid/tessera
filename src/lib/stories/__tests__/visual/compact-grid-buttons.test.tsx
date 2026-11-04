@@ -31,6 +31,7 @@ import {
   TREE,
   verticalAt,
 } from './tree-lines-helpers'
+import { columnVisibilityLabels } from '../../../plugins/columnVisibility/labels'
 
 // Кнопки грида 28px, отступ ячейки 12px и подпись под грипом (ADR 0135, GZ1–GZ16).
 // Размеры и положения — из раскладки и токенов темы, состояние — из ARIA и стилей.
@@ -243,7 +244,7 @@ describe('Кнопки грида 28px (ADR 0135)', () => {
       '[aria-label="Move row"]',
     )!
     const columns = document.querySelector<HTMLElement>(
-      `[role="toolbar"] [aria-label="${tableLabels.columns}"]`,
+      `[role="toolbar"] [aria-label="${columnVisibilityLabels(tableLabels).columns}"]`,
     )!
     const sizes = () =>
       [kebab, edit, handle, rowHandle, columns].map(b => box(b).width)

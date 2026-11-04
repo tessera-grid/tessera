@@ -64,6 +64,7 @@ import { pagination } from '../../../plugins/pagination'
 import { rowDragging } from '../../../plugins/rowDragging'
 import { moveRow } from '../../../plugins/rowDragging/moveRow'
 import { cellEditing } from '../../../plugins/cellEditing'
+import { failureLog } from '../../../plugins/failureLog'
 import { renderPluginsGrid } from './hosts'
 import { DRAFTS, applyAllDrafts, readDrafts } from '../../../core/drafts/drafts'
 import { setPluginState } from '../../../core/definePlugin'
@@ -4654,6 +4655,100 @@ describe('Отзывчивость — охват «Выбрать всё»', ()
       expect(
         filtered.longestMs,
         `'filtered' longest=${filtered.longestMs.toFixed(1)}ms, база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Подпись записи журнала — по справочнику при показе (ADR 0182, AN11): открытие журнала с 1000
+// записями-действиями против тех же записей с готовым именем от приложения.
+const AN11_COST = { ratio: 1.1, plusMs: 8 }
+describe('Справочник действий — открытие журнала', () => {
+  test(
+    'AN11: открытие журнала с 1000 записями-действиями не дороже тех же записей с именем от приложения больше чем на 10 %',
+    async () => {
+      const measure = async (named: boolean) => {
+        let table: any
+        const screen = renderPluginsGrid({
+          ...LARGE,
+          plugins: [
+            failureLog(),
+            {
+              id: 'perfFailures',
+              setup: (t: unknown) => {
+                table = t
+              },
+            },
+          ],
+        })
+        await expect.poll(() => table).toBeTruthy()
+        for (let i = 0; i < 1000; i++)
+          table.reportFailure({
+            key: `perf-${i}`,
+            ...(named
+              ? { action: { plugin: 'core', action: 'search' } }
+              : { label: 'Search' }),
+            target: { row: `item-id-${i}` },
+            reason: 'Server down',
+          })
+        const log = () =>
+          document.querySelector<HTMLElement>('[data-testid="failure-log"]')
+        const button = () =>
+          document.querySelector<HTMLElement>(
+            '[data-testid="failure-log-button"]',
+          )!
+        await expect.poll(button).toBeTruthy()
+        const result = await measureInteractionWork(
+          async () => {
+            button().click()
+            await expect.poll(log).not.toBeNull()
+          },
+          {
+            afterWarmup: async () => {
+              expect(log()!.textContent).toContain('Search')
+              button().click()
+              await expect.poll(log).toBeNull()
+            },
+          },
+        )
+        expect(log()!.textContent).toContain('Search')
+        ;(await screen).unmount()
+        return result
+      }
+      const runs = await againstBase(isNamed => measure(isNamed))
+      const base = medianRun(runs.base, r => r.longestMs)
+      const named = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = ceilingOver(base.longestMs, AN11_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof named,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '1000×1000',
+          plugins: 'failureLog',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('AN11-base', '1000 записей с именем', base, false)
+      await record('AN11', '1000 записей-действий', named, true)
+      expect(
+        named.longestMs,
+        `действия: ${named.longestMs.toFixed(1)}ms, имена: ${base.longestMs.toFixed(1)}ms`,
       ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,

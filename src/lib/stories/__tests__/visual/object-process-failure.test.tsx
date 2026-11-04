@@ -19,6 +19,8 @@ import {
   releaseModule,
   sleep,
 } from './lazy-helpers'
+import { dataExportLabels } from '../../../plugins/dataExport/labels'
+import { columnVisibilityLabels } from '../../../plugins/columnVisibility/labels'
 
 // Отказ процесса вне таблицы (ADR 0177, OB2): выгрузка и ленивый модуль поповера — дуга и
 // «стоп» на своей кнопке, отказ — без отметки, объявлением и записью реестра. Отдельный
@@ -93,11 +95,14 @@ describe('Отказ процесса вне таблицы (ADR 0177)', () => {
     await expect
       .poll(() => announcements.messages)
       .toContain(
-        tableLabels.announceActionFailed(tableLabels.export, 'Disk full'),
+        tableLabels.announceActionFailed(
+          dataExportLabels(tableLabels).export,
+          'Disk full',
+        ),
       )
     expect(failures()).toEqual([
       expect.objectContaining({
-        label: tableLabels.export,
+        label: dataExportLabels(tableLabels).export,
         target: { process: 'export' },
         reason: 'Disk full',
         retry: expect.any(Function),
@@ -120,10 +125,12 @@ describe('Отказ процесса вне таблицы (ADR 0177)', () => {
     ).toBeNull()
     await expect
       .poll(() => announcements.messages)
-      .toContain(tableLabels.loadFailed(tableLabels.columns))
+      .toContain(
+        tableLabels.loadFailed(columnVisibilityLabels(tableLabels).columns),
+      )
     expect(failures().map(failure => failure.target)).toEqual([
       { process: 'export' },
-      { process: `lazy:${tableLabels.columns}` },
+      { process: `lazy:${columnVisibilityLabels(tableLabels).columns}` },
     ])
     announcements.stop()
   })

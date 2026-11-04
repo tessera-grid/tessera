@@ -15,6 +15,7 @@ import {
   moveColumn,
 } from './moveColumn'
 import { zoneOf } from '../../core/columnNodes'
+import { columnDraggingLabels } from './labels'
 
 export const ColumnDraggingComponent = ({
   header,
@@ -50,11 +51,11 @@ export const ColumnDraggingComponent = ({
       id={column.id}
       type="column"
       busy={busy}
-      label={labels.moveColumn}
+      label={columnDraggingLabels(labels).moveColumn}
       table={table}
       getMenuItems={() => [
-        item('moveLeft', labels.moveLeft, -1),
-        item('moveRight', labels.moveRight, 1),
+        item('moveLeft', columnDraggingLabels(labels).moveLeft, -1),
+        item('moveRight', columnDraggingLabels(labels).moveRight, 1),
       ]}
     />
   )

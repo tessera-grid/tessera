@@ -1165,6 +1165,14 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       SH2 — код плагинов и свои модели строк в `shared/`, SH3 — тема в `ui/theme` без рёбер
       ядро ↔ кит, SH4 — компоненты грида для плагинов в `ui/`, экспорты `/ui` прежние)
       ([ADR 0166](docs/decisions/0166-shared-layer-utils-and-kit.md)).
+    - _Справочник действий и словарь по владельцам:_ модульный `actionCatalog.dom` (AN1, AN3–AN10,
+      AN12–AN13 — действия `{ plugin, action }` с одной подписью, отказы и черновики по id, литерал
+      приложения, объявления «действие, цель», пункты меню по состоянию, страж канала действий,
+      ключи `<владелец>.<ключ>` с формами числа, неизвестные id и ключи, стражи слоёв и графа
+      `DataGrid`), визуальный `action-names` (AN2 — смена языка переводит журнал и пульт), перф AN11
+      — в `interaction`, истории «Panels/Failure log — Switch language» (S1), «Plugin API — Action
+      names» (S2), «Cells/Action status — Own action label» (S3)
+      ([ADR 0182](docs/decisions/0182-action-catalog.md)).
     - _Опции плагинов в типах:_ модульные `pluginOptions` (PO1 — каждый ключ `options` объявлен
       в карте фич или `CommonOptions`, PO2 — база LB9 пуста, PO4 — стоковый ключ фичи у плагина,
       который её приносит, и читатели `shared/`, PO6 — у записи базы LB5 шаг аудита),

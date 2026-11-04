@@ -8,6 +8,7 @@ import { COLUMN_DRAGGING_ID } from '../../../../lib/plugins/rowDragging'
 import { ROW_ACTIONS_COLUMN_ID } from '../../../plugins/rowActions'
 import { tableLabels } from '../labels'
 import { LEAF_PINNING } from './header-fixtures'
+import { columnPinningLabels } from '../../../plugins/columnPinning/labels'
 
 // Reorder-out (LP1–LP10): под вложенной шапкой за opt-in флагом
 // `columnPinningLeafPinning` закрепляется любая единица — лист или группа любого уровня.
@@ -85,7 +86,7 @@ const menuItemByText = (text: string) =>
  */
 const pinLeafViaPopover = async (
   cell: HTMLElement,
-  item: string = tableLabels.pinLeft,
+  item: string = columnPinningLabels(tableLabels).pinLeft,
 ) => {
   await userEvent.click(await revealLeafPin(cell))
   await expect.poll(() => menuItemByText(item)).toBeTruthy()
@@ -375,7 +376,7 @@ describe('Column Leaf Pinning (PoC) — reorder-out', () => {
     // Pin the `lastName` leaf RIGHT via its popover (symmetric to LP2's left pin).
     await pinLeafViaPopover(
       leafHeadCell(container, 'lastName'),
-      tableLabels.pinRight,
+      columnPinningLabels(tableLabels).pinRight,
     )
 
     // The leaf's body cell is now sticky at the right edge.

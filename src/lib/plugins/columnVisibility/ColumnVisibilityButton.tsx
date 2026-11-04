@@ -16,6 +16,7 @@ import { dataColumnsOf } from '../../core/stubs'
 import { useIcons } from '../../ui/icons'
 import { ToolbarButton, ToolbarSkeleton } from '../../ui/ToolbarButton'
 import { getShowAll, type VisibilityTable } from './columnTree'
+import { columnVisibilityLabels } from './labels'
 
 const ColumnVisibilityPopover = preloadable(() =>
   import('./ColumnVisibilityPopover').then(
@@ -29,7 +30,7 @@ export const ColumnVisibilityButton = ({ table }: ToolbarComponentProps) => {
   const popover = useLazyPopover(
     table,
     ColumnVisibilityPopover,
-    all => all.columns,
+    all => columnVisibilityLabels(all).columns,
     true,
     { plugin: 'columnVisibility' },
   )
@@ -37,7 +38,9 @@ export const ColumnVisibilityButton = ({ table }: ToolbarComponentProps) => {
   useTableState(table, state => state.columnVisibility)
   const hidden = getShowAll(table as unknown as VisibilityTable).length
   const active = hidden > 0
-  const label = active ? labels.columnsWithHidden(hidden) : labels.columns
+  const label = active
+    ? columnVisibilityLabels(labels).columnsWithHidden(hidden)
+    : columnVisibilityLabels(labels).columns
   const icon = <ColumnsIcon width={16} height={16} />
 
   if (isWaitingForColumns(table)) {

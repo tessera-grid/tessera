@@ -17,6 +17,7 @@ import { neverInert } from '../../core/pluginDiagnostics'
 import { moveColumnKeyboardAction } from './keyboardActions'
 import { reconcileColumnMoves } from './commitColumnMove'
 import type { ColumnDraggingHooks } from './types'
+import { columnDraggingLabels } from './labels'
 
 export interface ColumnDraggingOptions {
   /** `false` — плагин отключён. */
@@ -37,6 +38,14 @@ export interface ColumnDraggingOptions {
 
 const columnDraggingEntry = definePlugin<ColumnDraggingOptions>()({
   id: 'columnDragging',
+  labels: [columnDraggingLabels],
+  actions: {
+    drag: labels => columnDraggingLabels(labels).moveColumn,
+    dragCancel: labels => columnDraggingLabels(labels).actionDragCancel,
+    drop: labels => columnDraggingLabels(labels).actionDrop,
+    'columnDragging.move': labels => columnDraggingLabels(labels).moveColumn,
+    handleMenu: labels => columnDraggingLabels(labels).actionHandleMenu,
+  },
   features: { columnDraggingFeature, columnOrderingFeature },
   hooks: o => ({
     onColumnDragEnd: o.onColumnDragEnd,

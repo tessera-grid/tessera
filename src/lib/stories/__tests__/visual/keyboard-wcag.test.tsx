@@ -8,6 +8,10 @@ import { composed, plainGroupingArgs } from '../stories'
 import { PINNING_NESTED, SHALLOW_LEAVES } from './header-fixtures'
 import { tableLabels } from '../labels'
 import { ColumnDraggingGrid } from './columns-fixtures'
+import { columnPinningLabels } from '../../../plugins/columnPinning/labels'
+import { columnVisibilityLabels } from '../../../plugins/columnVisibility/labels'
+import { columnSizingLabels } from '../../../plugins/columnSizing/labels'
+import { contextMenuLabels } from '../../../plugins/contextMenu/labels'
 
 // Соответствие WCAG 2.1.1: каждое требование — свой именованный тест `KB<n>`
 // (таблица требований в docs/decisions/0031-wcag-keyboard.md). Ввод — реальные
@@ -165,7 +169,10 @@ describe('WCAG 2.1.1 (Keyboard)', () => {
     const item = () =>
       Array.from(
         document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
-      ).find(el => el.textContent?.trim() === tableLabels.pinLeft)
+      ).find(
+        el =>
+          el.textContent?.trim() === columnPinningLabels(tableLabels).pinLeft,
+      )
     await expect.poll(item).toBeTruthy()
     // Меню, открытое с клавиатуры, держит фокус на пункте; стрелкой — до «Pin left».
     await expect.poll(() => active().getAttribute('role')).toBe('menuitem')
@@ -221,7 +228,7 @@ describe('WCAG 2.1.1 (Keyboard)', () => {
           item.textContent?.trim(),
         ),
       )
-      .toContain(tableLabels.hideColumn)
+      .toContain(columnVisibilityLabels(tableLabels).hideColumn)
   })
 
   test('KB2: ширина колонки меняется с клавиатуры через фокусируемый separator', async () => {
@@ -238,7 +245,7 @@ describe('WCAG 2.1.1 (Keyboard)', () => {
     const valueNow = () => Number(separator.getAttribute('aria-valuenow'))
 
     expect(separator.getAttribute('aria-label')).toBe(
-      ENGLISH_LABELS.resizeColumn,
+      columnSizingLabels(ENGLISH_LABELS).resizeColumn,
     )
     const min = Number(separator.getAttribute('aria-valuemin'))
     const max = Number(separator.getAttribute('aria-valuemax') ?? Infinity)
@@ -577,7 +584,7 @@ describe('WCAG 2.1.1 (Keyboard)', () => {
       .poll(() =>
         document.querySelector('[role="menu"]')?.getAttribute('aria-label'),
       )
-      .toBe(ENGLISH_LABELS.contextMenu)
+      .toBe(contextMenuLabels(ENGLISH_LABELS).contextMenu)
 
     await press('{Escape}')
     await expect.poll(() => document.querySelector('[role="menu"]')).toBeNull()

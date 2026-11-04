@@ -8,6 +8,7 @@ import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import { rowExpanding } from '../../../plugins'
 import { tableLabels } from '../labels'
+import { rowExpandingLabels } from '../../../plugins/rowExpanding/labels'
 
 // «Раскрыть всё» кнопкой в шапке колонки раскрытия (ADR 0160): ленивые строки окна грузят
 // детей по нажатию и при прокрутке (EA3), имя, подсказка, мышь, клавиатура, словарь и
@@ -139,33 +140,45 @@ describe('«Раскрыть всё» кнопкой в шапке (ADR 0160)', 
     const screen = await render(<Grid />)
     try {
       await expect.poll(button).not.toBeNull()
-      expect(button()).toHaveAccessibleName(tableLabels.expandAll)
+      expect(button()).toHaveAccessibleName(
+        rowExpandingLabels(tableLabels).expandAll,
+      )
       // Мышь: раскрыто всё на всех уровнях, имя и тултип — «Свернуть всё».
       await userEvent.click(button()!)
       await expect.poll(() => rowOf('a11')).not.toBeNull()
       expect(rowOf('b1')).not.toBeNull()
-      expect(button()).toHaveAccessibleName(tableLabels.collapseAll)
+      expect(button()).toHaveAccessibleName(
+        rowExpandingLabels(tableLabels).collapseAll,
+      )
       // Указатель уже над кнопкой после нажатия: уводим и наводим снова.
       await userEvent.hover(rowOf('c')!)
       await userEvent.hover(button()!)
-      await expect.poll(tooltipShown(tableLabels.collapseAll)).toBe(true)
+      await expect
+        .poll(tooltipShown(rowExpandingLabels(tableLabels).collapseAll))
+        .toBe(true)
 
       // Свёрнута одна строка — снова «Раскрыть всё».
       await userEvent.click(
         rowOf('b')!.querySelector<HTMLElement>('.row-expand-button')!,
       )
       await expect.poll(() => rowOf('b1')).toBeNull()
-      expect(button()).toHaveAccessibleName(tableLabels.expandAll)
+      expect(button()).toHaveAccessibleName(
+        rowExpandingLabels(tableLabels).expandAll,
+      )
 
       // Клавиатура: Enter на кнопке раскрывает всё, ещё раз — сворачивает всё.
       button()!.focus()
       await userEvent.keyboard('{Enter}')
       await expect.poll(() => rowOf('b1')).not.toBeNull()
-      expect(button()).toHaveAccessibleName(tableLabels.collapseAll)
+      expect(button()).toHaveAccessibleName(
+        rowExpandingLabels(tableLabels).collapseAll,
+      )
       await userEvent.keyboard('{Enter}')
       await expect.poll(() => rowOf('a1')).toBeNull()
       expect(rowOf('b1')).toBeNull()
-      expect(button()).toHaveAccessibleName(tableLabels.expandAll)
+      expect(button()).toHaveAccessibleName(
+        rowExpandingLabels(tableLabels).expandAll,
+      )
     } finally {
       await screen.unmount()
     }

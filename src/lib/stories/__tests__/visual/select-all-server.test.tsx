@@ -21,6 +21,8 @@ import {
 import { humanClick } from '../helpers'
 import { tableLabels } from '../labels'
 import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
+import { rowSelectionLabels } from '../../../plugins/rowSelection/labels'
+import { rowSelectionModelLabels } from '../../../plugins/rowSelectionModel/labels'
 
 interface Item {
   id: string
@@ -133,13 +135,17 @@ describe('«Выбрать всё» без строк у грида (ADR 0179)',
     await expect.poll(() => changes.at(-1)).toEqual({ all: true, except: [] })
     await expect.poll(checkedRows).toBe(5)
     expect(bodyRows()).toBe(5)
-    await expect.poll(count).toBe(tableLabels.selectedRows(100))
+    await expect
+      .poll(count)
+      .toBe(rowSelectionLabels(tableLabels).selectedRows(100))
 
     await humanClick(rowCheckbox('r2'))
     await expect
       .poll(() => changes.at(-1))
       .toEqual({ all: true, except: ['r2'] })
-    await expect.poll(count).toBe(tableLabels.selectedRows(99))
+    await expect
+      .poll(count)
+      .toBe(rowSelectionLabels(tableLabels).selectedRows(99))
     expect(headState()).toBe('mixed')
     expect(checkedRows()).toBe(4)
     await known.unmount()
@@ -148,7 +154,9 @@ describe('«Выбрать всё» без строк у грида (ADR 0179)',
     await humanClick(head())
     await expect.poll(checkedRows).toBe(5)
     await humanClick(rowCheckbox('r1'))
-    await expect.poll(count).toBe(tableLabels.selectedAllExcept(1))
+    await expect
+      .poll(count)
+      .toBe(rowSelectionModelLabels(tableLabels).selectedAllExcept(1))
     await unknown.unmount()
   })
 
@@ -158,13 +166,17 @@ describe('«Выбрать всё» без строк у грида (ADR 0179)',
     await humanClick(head())
     await expect.poll(() => changes.at(-1)).toEqual({ all: true, except: [] })
     await expect.poll(checkedRows).toBe(5)
-    await expect.poll(count).toBe(tableLabels.selectedRows(100))
+    await expect
+      .poll(count)
+      .toBe(rowSelectionLabels(tableLabels).selectedRows(100))
 
     await humanClick(rowCheckbox('r0'))
     await expect
       .poll(() => changes.at(-1))
       .toEqual({ all: true, except: ['r0'] })
-    await expect.poll(count).toBe(tableLabels.selectedRows(99))
+    await expect
+      .poll(count)
+      .toBe(rowSelectionLabels(tableLabels).selectedRows(99))
     await screen.unmount()
   })
 
@@ -188,11 +200,11 @@ describe('«Выбрать всё» без строк у грида (ADR 0179)',
       // eslint-disable-next-line no-await-in-loop
       await expect
         .poll(count, { message: label })
-        .toBe(tableLabels.selectedRows(selected))
+        .toBe(rowSelectionLabels(tableLabels).selectedRows(selected))
       // eslint-disable-next-line no-await-in-loop
       await expect
         .poll(live, { message: label })
-        .toBe(tableLabels.announceSelection(selected))
+        .toBe(rowSelectionModelLabels(tableLabels).announceSelection(selected))
       // eslint-disable-next-line no-await-in-loop
       await screen.unmount()
     }

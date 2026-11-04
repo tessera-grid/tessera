@@ -21,6 +21,7 @@ import {
   scrollsHorizontally,
   watchThreshold,
 } from './model'
+import { backToTopLabels } from './labels'
 
 const ICON_SIZE = 16
 
@@ -94,7 +95,11 @@ const EdgeButton = ({
     >
       <IconButton
         ref={ref}
-        label={horizontal ? labels.backToStart : labels.backToTop}
+        label={
+          horizontal
+            ? backToTopLabels(labels).backToStart
+            : backToTopLabels(labels).backToTop
+        }
         shape="square"
         disabled={!past}
         tooltipWhenDisabled

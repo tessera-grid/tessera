@@ -12,6 +12,7 @@ import type {
   SlotMenuConfig,
 } from './types'
 import { readSyncDisabled } from './actionStatus'
+import { menuActionLabel } from '../actions'
 
 export * from './actionStatus'
 export * from './menuSections'
@@ -282,7 +283,7 @@ export const resolveMenuItems = (
   return [
     {
       id: action.id,
-      label: action.label(context, labels),
+      label: menuActionLabel(action, context, labels),
       icon: action.icon(context),
       onSelect: () => action.onSelect(context),
       disabled: readSyncDisabled(action, context) !== false,

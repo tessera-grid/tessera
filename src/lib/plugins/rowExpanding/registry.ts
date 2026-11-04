@@ -42,6 +42,7 @@ import {
   type RowExpandingModelOptions,
 } from '../rowExpandingModel/registry'
 import type { RowExpandingHooks } from './types'
+import { rowExpandingLabels } from './labels'
 
 export const DEFAULT_MAX_EXPANDING_DEPTH = 1
 
@@ -112,6 +113,13 @@ const hasExpandableRows: ServicePresence<RowExpandingOptions> = (
 
 export const rowExpanding = definePlugin<RowExpandingOptions>()({
   id: 'rowExpanding',
+  labels: [rowExpandingLabels],
+  actions: {
+    toggleRow: labels => rowExpandingLabels(labels).actionToggleRow,
+    expandAll: labels => rowExpandingLabels(labels).expandAll,
+    collapseAll: labels => rowExpandingLabels(labels).collapseAll,
+    'rowExpanding.toggle': labels => rowExpandingLabels(labels).actionToggleRow,
+  },
   diagnose: neverInert,
   // Модель дерева — своя запись; срез `expanded` — её аргумент (ADR 0120).
   model: {
@@ -150,7 +158,7 @@ export const rowExpanding = definePlugin<RowExpandingOptions>()({
     side: 'leading',
     order: 2,
     pin: { side: 'start', when: 'with-user' },
-    label: 'expandColumn',
+    label: labels => rowExpandingLabels(labels).expandColumn,
     controlSized: true,
     presence: hasExpandableRows,
   },

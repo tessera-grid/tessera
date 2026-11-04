@@ -27,6 +27,8 @@ import {
   toRgba,
 } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
+import { cellEditingLabels } from '../../../plugins/cellEditing/labels'
+import { rowSelectionLabels } from '../../../plugins/rowSelection/labels'
 
 declare module 'vitest/browser' {
   interface BrowserCommands {
@@ -167,7 +169,9 @@ const root = () => document.querySelector<HTMLElement>('.data-grid-theme')!
 /** Открыть правку ячейки кнопкой, набрать текст и сохранить Enter. */
 const editCell = async (id: string, column: string, text: string) => {
   await userEvent.hover(cellOf(id, column)!)
-  await humanClick(buttonIn(cellOf(id, column), tableLabels.editCell)!)
+  await humanClick(
+    buttonIn(cellOf(id, column), cellEditingLabels(tableLabels).editCell)!,
+  )
   await expect
     .poll(() => cellOf(id, column)?.querySelector('input'))
     .toBeTruthy()
@@ -270,13 +274,15 @@ describe('строки до сохранения (ADR 0178, §7)', () => {
       const id = await addRow()
       api.removeRow('5')
       await expect
-        .poll(() => buttonIn(rowOf('5'), tableLabels.rowDeleteDiscard))
+        .poll(() =>
+          buttonIn(rowOf('5'), cellEditingLabels(tableLabels).rowDeleteDiscard),
+        )
         .not.toBeNull()
       // Видны без наведения: указатель вне таблицы.
       await userEvent.hover(document.body)
       for (const [row, label] of [
-        [id, tableLabels.rowInsertDiscard],
-        ['5', tableLabels.rowDeleteDiscard],
+        [id, cellEditingLabels(tableLabels).rowInsertDiscard],
+        ['5', cellEditingLabels(tableLabels).rowDeleteDiscard],
       ] as const) {
         const button = buttonIn(rowOf(row), label)!
         expect(button.closest('[data-button-active]')).not.toBeNull()
@@ -303,16 +309,24 @@ describe('строки до сохранения (ADR 0178, §7)', () => {
         .poll(() => document.querySelector('[data-testid="unsaved-changes"]'))
         .not.toBeNull()
       const pult = document.querySelector('[data-testid="unsaved-changes"]')!
-      expect(pult.textContent).toContain(tableLabels.rowInsertDraftKind)
-      expect(pult.textContent).toContain(tableLabels.rowDeleteDraftKind)
+      expect(pult.textContent).toContain(
+        cellEditingLabels(tableLabels).rowInsertDraftKind,
+      )
+      expect(pult.textContent).toContain(
+        cellEditingLabels(tableLabels).rowDeleteDraftKind,
+      )
       await userEvent.keyboard('{Escape}')
       await expect
         .poll(() => document.querySelector('[data-testid="unsaved-changes"]'))
         .toBeNull()
       // Кнопкой: новая строка уходит, удалённая возвращается.
-      await humanClick(buttonIn(rowOf(id), tableLabels.rowInsertDiscard)!)
+      await humanClick(
+        buttonIn(rowOf(id), cellEditingLabels(tableLabels).rowInsertDiscard)!,
+      )
       await expect.poll(() => rowOf(id)).toBeNull()
-      await humanClick(buttonIn(rowOf('5'), tableLabels.rowDeleteDiscard)!)
+      await humanClick(
+        buttonIn(rowOf('5'), cellEditingLabels(tableLabels).rowDeleteDiscard)!,
+      )
       await expect
         .poll(() => rowOf('5')?.hasAttribute('data-row-draft'))
         .toBe(false)
@@ -324,7 +338,10 @@ describe('строки до сохранения (ADR 0178, §7)', () => {
       await userEvent.click(cellOf('5')!, { button: 'right' })
       const item = () =>
         [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(
-          node => node.textContent?.includes(tableLabels.rowDeleteDiscard),
+          node =>
+            node.textContent?.includes(
+              cellEditingLabels(tableLabels).rowDeleteDiscard,
+            ),
         )
       await expect.poll(item).toBeTruthy()
       await humanClick(item()!)
@@ -384,7 +401,7 @@ describe('строки до сохранения (ADR 0178, §7)', () => {
         box.getAttribute('aria-disabled') ?? box.hasAttribute('data-disabled'),
       ).toBeTruthy()
       const all = document.querySelector<HTMLElement>(
-        `[role="checkbox"][aria-label="${tableLabels.selectAll}"]`,
+        `[role="checkbox"][aria-label="${rowSelectionLabels(tableLabels).selectAll}"]`,
       )!
       await humanClick(all)
       await expect

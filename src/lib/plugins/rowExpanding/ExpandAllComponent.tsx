@@ -17,6 +17,7 @@ import { useIcons } from '../../ui/icons'
 import styles from './ExpandButton.module.css'
 import type { Row } from '../../types'
 import type { RowExpandingHooks } from './types'
+import { rowExpandingLabels } from './labels'
 
 interface ExpandAllTable {
   getPreExpandedRowModel: () => { flatRows: Row<any, any>[] }
@@ -48,7 +49,9 @@ export const ExpandAllComponent = ({
     (isExpandedAll(value)
       ? value.except.length === 0
       : !server && (!!session || !hasCollapsedRows(t)))
-  const label = allOpen ? labels.collapseAll : labels.expandAll
+  const label = allOpen
+    ? rowExpandingLabels(labels).collapseAll
+    : rowExpandingLabels(labels).expandAll
   // Как у кнопки строки: свой значок «свернуть всё» заменяет шеврон и не поворачивается.
   const swapped = allOpen && CollapseAllIcon !== ExpandAllIcon
   const Icon = swapped ? CollapseAllIcon : ExpandAllIcon

@@ -444,3 +444,90 @@ export const FailureLogOffscreen: StoryObj<StoryProps> = {
     })
   },
 }
+
+// --- ADR 0182 S1 ----------------------------------------------------------------------
+
+/** Семя: отказы двух действий таблицы — поиска на сервере и сохранения ячейки. */
+const NAMED_SEED = [
+  seed<LogTable>('failureLogNamed', table => {
+    table.reportFailure({
+      action: { plugin: 'core', action: 'search' },
+      target: { table: true },
+      reason: 'The server is unavailable',
+    })
+    table.reportFailure({
+      action: { plugin: 'core', action: 'save' },
+      target: { cell: [rowId(1), 'firstName'] },
+      reason: 'The server refused the value',
+    })
+  }),
+]
+
+const LANGUAGE_STEPS: readonly GuideStoryStep[] = [
+  {
+    title: 'Журнал на английском',
+    hint: 'Поиск на сервере и сохранение ячейки не удались. Пользователь открыл журнал: записи называют действия на языке таблицы.',
+    states: ['overlay.failureLog'],
+    enter: untilDone(
+      () => entries().length === 2,
+      () => {
+        if (!log()) logButton()?.click()
+      },
+    ),
+  },
+  {
+    title: 'Русский интерфейс',
+    hint: 'Приложение переключило язык. Те же записи называют действия по-русски, журнал и таблица не пересоздаются.',
+    states: ['overlay.failureLog'],
+    props: () => ({ locale: 'ru' }),
+    enter: untilDone(
+      () => entries().length === 2,
+      () => {
+        if (!log()) logButton()?.click()
+      },
+    ),
+  },
+]
+
+/** ADR 0182, S1: пользователь меняет язык таблицы — записи журнала переводятся на месте. */
+export const FailureLogLanguageSwitch: StoryObj<StoryProps> = {
+  name: 'Switch language',
+  parameters: { scenario: '0182/S1', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Смена языка у записей журнала"
+      steps={LANGUAGE_STEPS}
+      args={guideArgs(
+        {
+          enableFailureLog: true,
+          columnCount: 6,
+          dataCount: DATA_COUNT,
+          containerHeight: '560',
+          height: '460',
+          maxHeight: '460',
+          extraPlugins: NAMED_SEED,
+        },
+        { colorMode: args.colorMode, locale: 'en' },
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const en = storyLabels('en')
+    const ru = storyLabels('ru')
+    await step(LANGUAGE_STEPS[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(entries()).toHaveLength(2))
+      expect(log()!.textContent).toContain(en.actionSearch)
+      expect(log()!.textContent).toContain(en.actionSave)
+      await settle()
+    })
+    await step(LANGUAGE_STEPS[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(log()?.textContent).toContain(ru.actionSearch))
+      expect(log()!.textContent).toContain(ru.actionSave)
+      expect(log()!.textContent).not.toContain(en.actionSearch)
+      await settle()
+    })
+  },
+}

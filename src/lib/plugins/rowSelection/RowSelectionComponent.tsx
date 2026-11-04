@@ -17,6 +17,7 @@ import {
   isServerGroupRow,
 } from '../rowSelectionModel/selectionHelpers'
 import type { RowSelectionHooks } from './types'
+import { rowSelectionLabels } from './labels'
 
 export const RowSelectionComponent = ({
   row,
@@ -67,7 +68,11 @@ export const RowSelectionComponent = ({
       indeterminate={indeterminate}
       onClick={handleSelectRow}
       disabled={!canSelect}
-      label={group ? labels.selectGroup : labels.selectRow}
+      label={
+        group
+          ? rowSelectionLabels(labels).selectGroup
+          : rowSelectionLabels(labels).selectRow
+      }
     />
   )
 }

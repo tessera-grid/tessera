@@ -545,7 +545,7 @@ export const runServerAction = (
     const labels = announcerLabels(table) ?? ENGLISH_LABELS
     reportFailure(table, {
       key: SERVER_FAILURE_KEY,
-      label: serverActionName(kind, labels),
+      action: { plugin: 'core', action: kind },
       target: { table: true },
       reason: serverActionReason({ kind, error }, labels),
       retry,

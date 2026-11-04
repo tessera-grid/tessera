@@ -22,6 +22,11 @@ import {
   columnSizing,
   headerActionMenu,
 } from '../../../plugins'
+import { columnSizingLabels } from '../../../plugins/columnSizing/labels'
+import { columnDraggingLabels } from '../../../plugins/columnDragging/labels'
+import { rowDraggingLabels } from '../../../plugins/rowDragging/labels'
+import { cellEditingLabels } from '../../../plugins/cellEditing/labels'
+import { columnPinningLabels } from '../../../plugins/columnPinning/labels'
 
 // Касания (ADR 0086, TU1–TU12, TU14): проект `touch` в `npm test` — Chromium без
 // наведения и с грубым указателем — и проект `mobile` в `test:engines` (iPhone, Pixel).
@@ -226,7 +231,9 @@ describe('Касания (ADR 0086)', () => {
     const grip = headById(dataColumn()).querySelector<HTMLElement>(GRIP)!
     await touch.realTap(center(grip))
     await expect.poll(menu, { timeout: 5000 }).toBeTruthy()
-    expect(menu()!.textContent).toContain(tableLabels.widenColumn)
+    expect(menu()!.textContent).toContain(
+      columnSizingLabels(tableLabels).widenColumn,
+    )
     await closeMenu()
   })
 
@@ -454,13 +461,17 @@ describe('Касания (ADR 0086)', () => {
     await expect
       .poll(menu, { timeout: 5000, message: 'ручка колонки' })
       .toBeTruthy()
-    expect(menu()!.textContent).toContain(tableLabels.moveRight)
+    expect(menu()!.textContent).toContain(
+      columnDraggingLabels(tableLabels).moveRight,
+    )
     await closeMenu()
 
     const rowHandle = rowAt(2).querySelector<HTMLElement>(HANDLE)!
     await touch.realTap(center(rowHandle))
     await expect.poll(menu, { timeout: 5000 }).toBeTruthy()
-    expect(menu()!.textContent).toContain(tableLabels.moveDown)
+    expect(menu()!.textContent).toContain(
+      rowDraggingLabels(tableLabels).moveDown,
+    )
     await closeMenu()
   })
 
@@ -537,7 +548,7 @@ describe('Касания (ADR 0086)', () => {
     const atAge = zones()
     expect(
       atAge.targets.some(el =>
-        el.matches(`[aria-label="${tableLabels.editCell}"]`),
+        el.matches(`[aria-label="${cellEditingLabels(tableLabels).editCell}"]`),
       ),
     ).toBe(true)
     expect(atAge.failures).toEqual([])
@@ -708,7 +719,10 @@ describe('Ручка колонки на касаниях (ADR 0114)', () => {
     }
 
     // Закреплённый узел ручки не получает.
-    await pinViaPopover(headById('lastName'), tableLabels.pinLeft)
+    await pinViaPopover(
+      headById('lastName'),
+      columnPinningLabels(tableLabels).pinLeft,
+    )
     const pinned = () =>
       document.querySelector(
         `${HEAD_CELL}[data-column-id='lastName'][data-cell-pinned='left']`,

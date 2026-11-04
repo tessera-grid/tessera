@@ -35,6 +35,8 @@ import {
 } from './a11y-helpers'
 import { rowsTopDown, waitForGrid } from './core-helpers'
 import { tableLabels } from '../labels'
+import { columnSortingLabels } from '../../../plugins/columnSorting/labels'
+import { paginationLabels } from '../../../plugins/pagination/labels'
 
 // Асинхронные и заблокированные пункты меню действий (ADR 0078, MI1–MI14,
 // MI16–MI21, MI24): проверка доступности промисом из `disabled`, причина блокировки,
@@ -754,7 +756,11 @@ describe('Контекстное меню, виртуализация, инла�
     await userEvent.hover(headCell())
     await humanClick(headKebab())
     await humanClick(
-      items().find(el => el.textContent?.includes(tableLabels.sortDescending))!,
+      items().find(el =>
+        el.textContent?.includes(
+          columnSortingLabels(tableLabels).sortDescending,
+        ),
+      )!,
     )
     await expect.poll(() => rowEl('r1')).toBeNull()
     probe.lastRun('remove').done.reject(new Error('locked'))
@@ -762,7 +768,9 @@ describe('Контекстное меню, виртуализация, инла�
     await userEvent.hover(headCell())
     await humanClick(headKebab())
     await humanClick(
-      items().find(el => el.textContent?.includes(tableLabels.clearSort))!,
+      items().find(el =>
+        el.textContent?.includes(columnSortingLabels(tableLabels).clearSort),
+      )!,
     )
     await expect.poll(() => rowEl('r1')).not.toBeNull()
     expect(rowBusy()).toBe(false)
@@ -773,13 +781,13 @@ describe('Контекстное меню, виртуализация, инла�
     await runFromMenu('Remove')
     await humanClick(
       document.querySelector<HTMLElement>(
-        `[aria-label="${tableLabels.nextPage}"]`,
+        `[aria-label="${paginationLabels(tableLabels).nextPage}"]`,
       )!,
     )
     await expect.poll(() => rowEl('r1')).toBeNull()
     await humanClick(
       document.querySelector<HTMLElement>(
-        `[aria-label="${tableLabels.previousPage}"]`,
+        `[aria-label="${paginationLabels(tableLabels).previousPage}"]`,
       )!,
     )
     await expect.poll(() => rowBusy()).toBe(true)

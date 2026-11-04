@@ -8,14 +8,16 @@ import {
   failureKeyOf,
   reportFailure,
   resolveFailure,
+  failureName,
 } from '../failures/failuresFeature'
-import { DEFAULT_LABELS } from '../localization'
+import { ENGLISH_LABELS } from '../localization'
 import { flashOutcome } from '../flashes/flashFeature'
 import type { FlashTarget } from '../highlights/highlightFeature'
 import { useSliceProjection } from '../reactivity'
 import { isThenable, rejectionText } from '../../util/thenable'
 import { cellPendingOf } from './actionStatus'
 import { writeActionStatus } from './actionStatusFeature'
+import type { ActionRef } from '../actions'
 
 export interface TrackCellActionOptions {
   /**
@@ -23,7 +25,9 @@ export interface TrackCellActionOptions {
    * без контрола; `'control'` — контрол в ячейке сам, ячейка несёт только `aria-busy`.
    */
   indicator?: 'cell' | 'control'
-  /** Имя действия в объявлении итога. */
+  /** Действие справочника — имя записи отказа и объявления итога (ADR 0182, §5). */
+  action?: ActionRef
+  /** Имя действия от приложения — его переводом; без `action` и `label` — «Сохранение». */
   label?: string
   /** Вспышка `accepted` на цели после успеха. */
   flashOnSuccess?: boolean
@@ -51,6 +55,7 @@ export const trackCellAction = <T>(
   promise: Promise<T> | T,
   {
     indicator = 'cell',
+    action,
     label,
     flashOnSuccess,
     retry,
@@ -76,24 +81,32 @@ export const trackCellAction = <T>(
       // Успех снимает прежний отказ той же цели (ADR 0177, OB11).
       for (const item of targets) resolveFailure(table, failureKeyOf(item))
       if (flashOnSuccess) flashOutcome(table, targets, 'accepted')
-      if (label)
-        announceLabel(table, labels => labels.announceActionDone(label))
+      if (action || label)
+        announceLabel(table, labels =>
+          labels.announceActionDone(
+            failureName(table, { action, label }, labels),
+          ),
+        )
     },
     (error: unknown) => {
       removeEntry(table, key)
       flashOutcome(table, targets, 'reverted')
-      const labels = announcerLabels(table) ?? DEFAULT_LABELS
+      const labels = announcerLabels(table) ?? ENGLISH_LABELS
+      const named =
+        action || label !== undefined
+          ? { action, label }
+          : { action: { plugin: 'core', action: 'save' } }
       for (const item of targets)
         reportFailure(table, {
           key: failureKeyOf(item),
-          label: label ?? labels.saveFailed,
+          ...named,
           target: item,
           reason: rejectionText(error) ?? labels.actionFailedFallback,
           ...(retry ? { retry } : {}),
         })
       announceLabel(table, labels =>
         labels.announceActionFailed(
-          label ?? labels.saveFailed,
+          failureName(table, named, labels),
           rejectionText(error) ?? labels.actionFailedFallback,
         ),
       )

@@ -6,6 +6,7 @@
 import { definePlugin } from '../../core/definePlugin'
 import { neverInert } from '../../core/pluginDiagnostics'
 import { UnsavedChangesButton } from './UnsavedChangesButton'
+import { unsavedChangesLabels } from './labels'
 
 /** Группа тулбара: перед журналом отказов, после групп потребителя (ранг — `core/toolbar`). */
 export const UNSAVED_CHANGES_TOOLBAR_GROUP = 'drafts'
@@ -17,6 +18,14 @@ export interface UnsavedChangesOptions {
 
 export const unsavedChanges = definePlugin<UnsavedChangesOptions>()({
   id: 'unsavedChanges',
+  labels: [unsavedChangesLabels],
+  actions: {
+    apply: labels => unsavedChangesLabels(labels).draftApply,
+    applyAll: labels => unsavedChangesLabels(labels).draftApplyAll,
+    discard: labels => unsavedChangesLabels(labels).draftDiscard,
+    discardAll: labels => unsavedChangesLabels(labels).draftDiscardAll,
+    show: labels => unsavedChangesLabels(labels).draftShow,
+  },
   diagnose: neverInert,
   slots: [
     {

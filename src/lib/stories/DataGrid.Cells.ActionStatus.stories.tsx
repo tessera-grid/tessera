@@ -960,3 +960,108 @@ export const CellSaveCancelMenu: StoryObj<StoryProps> = {
     })
   },
 }
+
+// --- ADR 0182 S3 ----------------------------------------------------------------------
+
+interface OwnLabelTable {
+  trackCellAction: (
+    target: unknown,
+    promise: Promise<unknown>,
+    options?: { label?: string },
+  ) => Promise<unknown>
+}
+let ownLabelTable: OwnLabelTable | undefined
+/** Своё имя действия приложения — его переводом; таблица показывает его как есть. */
+const OWN_LABEL = 'Recalculate the priority'
+const OWN_LABEL_SEED = [
+  definePlugin()({
+    id: 'ownLabelSeed',
+    setup: () => table => {
+      ownLabelTable = table as OwnLabelTable
+    },
+  })(),
+]
+const ownLog = () =>
+  document.querySelector<HTMLElement>('[data-testid="failure-log"]')
+const ownLogButton = () =>
+  document.querySelector<HTMLElement>('[data-testid="failure-log-button"]')
+const ownCounter = () =>
+  ownLogButton()?.querySelector('[data-active-indicator]')?.textContent ?? ''
+
+const OWN_LABEL_STEPS: readonly GuideStoryStep[] = [
+  {
+    title: 'Товары',
+    hint: 'Приложение показывает товары с приоритетом. Кнопка журнала в тулбаре без счётчика: отказов пока не было.',
+  },
+  {
+    title: 'Пересчёт в фоне',
+    hint: 'Приложение пересчитало приоритет в фоне и назвало действие своей подписью. Сервер отказал: на кнопке журнала появился счётчик.',
+    states: ['panel.toolbar'],
+    enter: untilDone(
+      () => ownCounter() === '1',
+      () => {
+        if (ownCounter()) return
+        void ownLabelTable
+          ?.trackCellAction(
+            { cell: [PRODUCTS[1]!.id, 'priority'] },
+            Promise.reject(new Error('The priority list is locked')),
+            { label: OWN_LABEL },
+          )
+          .catch(() => {})
+      },
+    ),
+  },
+  {
+    title: 'Журнал',
+    hint: 'Пользователь открыл журнал. Запись называет действие подписью приложения как есть, причина — из ответа сервера.',
+    states: ['overlay.failureLog'],
+    enter: untilDone(
+      () => !!ownLog()?.textContent?.includes(OWN_LABEL),
+      () => {
+        if (!ownLog()) ownLogButton()?.click()
+      },
+    ),
+  },
+]
+
+/** ADR 0182, S3: приложение пишет отказ своей подписью — журнал показывает её как есть. */
+export const ActionStatusOwnLabel: StoryObj<StoryProps> = {
+  name: 'Own action label',
+  parameters: { scenario: '0182/S3', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Своя подпись действия"
+      steps={OWN_LABEL_STEPS}
+      args={guideArgs(
+        {
+          columnsOverride: RETRY_COLUMNS,
+          dataOverride: PRODUCTS,
+          enableFailureLog: true,
+          enableToolbar: true,
+          extraPlugins: OWN_LABEL_SEED,
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(OWN_LABEL_STEPS[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(ownLogButton()).not.toBeNull())
+      expect(ownCounter()).toBe('')
+      await settle()
+    })
+    await step(OWN_LABEL_STEPS[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(ownCounter()).toBe('1'))
+      await settle()
+    })
+    await step(OWN_LABEL_STEPS[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(ownLog()?.textContent).toContain(OWN_LABEL))
+      expect(ownLog()!.textContent).toContain('The priority list is locked')
+      await settle()
+    })
+  },
+}

@@ -26,6 +26,8 @@ import {
   sleep,
   slot,
 } from './row-drop-helpers'
+import { rowDraggingLabels } from '../../../plugins/rowDragging/labels'
+import { paginationLabels } from '../../../plugins/pagination/labels'
 
 // Перенос строк в ленивом дереве (ADR 0112): дети групп — ответ `loadChildren`, перенос
 // ждёт промиса `onRowDragEnd`. Промисами загрузки и переноса управляет тест; порядок
@@ -261,7 +263,7 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
       )
       await settleRowMotion()
 
-      await fromHandleMenu('row-2', ENGLISH_LABELS.indentRow)
+      await fromHandleMenu('row-2', rowDraggingLabels(ENGLISH_LABELS).indentRow)
       expect(lastEnd(), 'вложить').toEqual(
         expect.objectContaining({
           rowId: 'row-2',
@@ -270,7 +272,10 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
           index: 2,
         }),
       )
-      await fromHandleMenu('row-2', ENGLISH_LABELS.outdentRow)
+      await fromHandleMenu(
+        'row-2',
+        rowDraggingLabels(ENGLISH_LABELS).outdentRow,
+      )
       expect(lastEnd(), 'вынести').toEqual(
         expect.objectContaining({
           rowId: 'row-2',
@@ -279,7 +284,7 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
           index: 3,
         }),
       )
-      await fromHandleMenu('row-2', ENGLISH_LABELS.moveDown)
+      await fromHandleMenu('row-2', rowDraggingLabels(ENGLISH_LABELS).moveDown)
       expect(lastEnd(), 'вниз').toEqual(
         expect.objectContaining({
           rowId: 'row-2',
@@ -287,7 +292,7 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
           index: 4,
         }),
       )
-      await fromHandleMenu('row-2', ENGLISH_LABELS.moveUp)
+      await fromHandleMenu('row-2', rowDraggingLabels(ENGLISH_LABELS).moveUp)
       expect(lastEnd(), 'вверх').toEqual(
         expect.objectContaining({
           rowId: 'row-2',
@@ -461,7 +466,11 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
       expect(depthOf(rowById('node-0-0')!)).toBe(1)
       await expect
         .poll(announced)
-        .toContain(ENGLISH_LABELS.announceMoveFailed('Server said no'))
+        .toContain(
+          rowDraggingLabels(ENGLISH_LABELS).announceMoveFailed(
+            'Server said no',
+          ),
+        )
       expect(failureShownOn(handleOf('node-0-0'))).toBe(false)
     } finally {
       await screen.unmount()
@@ -667,13 +676,13 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
       const page = order()
       await userEvent.click(
         document.querySelector<HTMLElement>(
-          `[aria-label="${ENGLISH_LABELS.nextPage}"]`,
+          `[aria-label="${paginationLabels(ENGLISH_LABELS).nextPage}"]`,
         )!,
       )
       await expect.poll(() => rowById('node-0-0')).toBeNull()
       await userEvent.click(
         document.querySelector<HTMLElement>(
-          `[aria-label="${ENGLISH_LABELS.previousPage}"]`,
+          `[aria-label="${paginationLabels(ENGLISH_LABELS).previousPage}"]`,
         )!,
       )
       await expect.poll(() => rowById('node-0-0')).not.toBeNull()
@@ -783,7 +792,7 @@ describe('Перенос строк в ленивом дереве (ADR 0112)', 
       await settleMoves(false, new Error('no'))
       await expect
         .poll(announced)
-        .toContain(ENGLISH_LABELS.announceMoveFailed('no'))
+        .toContain(rowDraggingLabels(ENGLISH_LABELS).announceMoveFailed('no'))
       await checkAxe()
     } finally {
       await screen.unmount()

@@ -34,6 +34,7 @@ import styles from './FilterPanel.module.css'
 import { FilterApply } from './FilterApply'
 import { FilterFailure } from './FilterFailure'
 import { useFilterDraft } from './filterDraft'
+import { columnFilteringLabels } from './labels'
 
 export interface FilterColumn extends FilterDefColumn {
   id: string
@@ -261,22 +262,30 @@ const ConditionPanel = ({
       />
       {draft.operator === 'between' ? (
         <div className={styles.range}>
-          {numberField('from', labels.filterFrom, controls.initialFocusRef)}
-          {numberField('to', labels.filterTo)}
+          {numberField(
+            'from',
+            columnFilteringLabels(labels).filterFrom,
+            controls.initialFocusRef,
+          )}
+          {numberField('to', columnFilteringLabels(labels).filterTo)}
         </div>
       ) : (
         needsValue(draft.operator) &&
-        numberField('value', labels.filterValue, controls.initialFocusRef)
+        numberField(
+          'value',
+          columnFilteringLabels(labels).filterValue,
+          controls.initialFocusRef,
+        )
       )}
       {invalid && (
         <span id={errorId} className={styles.error} role="alert">
-          {labels.filterInvalidNumber}
+          {columnFilteringLabels(labels).filterInvalidNumber}
         </span>
       )}
       <div className={styles.footer}>
         <FilterFailure table={table} columnId={column.id} />
         <Button variant="ghost" onClick={reset} data-testid="filter-reset">
-          {labels.filterReset}
+          {columnFilteringLabels(labels).filterReset}
         </Button>
         {server && <FilterApply {...filterDraft} />}
       </div>
@@ -320,18 +329,23 @@ const BooleanPanel = ({ table, column, controls }: FilterPanelProps) => {
   })
   const { draft: value, server } = filterDraft
   const choices: [BooleanChoice, string][] = [
-    ['all', labels.filterAll],
-    ['yes', labels.filterYes],
-    ['no', labels.filterNo],
+    ['all', columnFilteringLabels(labels).filterAll],
+    ['yes', columnFilteringLabels(labels).filterYes],
+    ['no', columnFilteringLabels(labels).filterNo],
     ...(nullable
-      ? [['empty', labels.filterEmpty] as [BooleanChoice, string]]
+      ? [
+          ['empty', columnFilteringLabels(labels).filterEmpty] as [
+            BooleanChoice,
+            string,
+          ],
+        ]
       : []),
   ]
 
   return (
     <div className={styles.panel} data-testid="filter-panel">
       <span id={labelId} hidden>
-        {labels.filterValue}
+        {columnFilteringLabels(labels).filterValue}
       </span>
       <RadioGroup
         value={value}

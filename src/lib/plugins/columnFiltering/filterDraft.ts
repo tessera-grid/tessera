@@ -28,6 +28,7 @@ import { filterOptionLabelOf } from '../columnFilteringModel/options'
 import { formatDataTypeValue } from '../../core/dataTypeFormat'
 import { describeFilter } from './describeFilter'
 import type { TableLabels } from '../../core/localization'
+import { columnFilteringLabels } from './labels'
 
 export const COLUMN_FILTER_DRAFT = 'columnFilter'
 
@@ -162,7 +163,8 @@ const conditionText = (
   columnId: string,
   value: unknown,
 ) => {
-  if (value === null || value === undefined) return labels.draftNoFilter
+  if (value === null || value === undefined)
+    return columnFilteringLabels(labels).draftNoFilter
   const column = (table as { getColumn?: (id: string) => unknown }).getColumn?.(
     columnId,
   )
@@ -177,11 +179,11 @@ const conditionText = (
 /** Вид черновика `columnFilter` (ADR 0178, §2): применяет «Применить» панели. */
 export const columnFilterDraftKind: DraftKind = {
   kind: COLUMN_FILTER_DRAFT,
-  label: labels => labels.filter,
+  action: 'filter',
   describe: (labels, draft, table) =>
     'column' in draft.target
       ? conditionText(labels, table, draft.target.column, draft.value)
-      : labels.draftNoFilter,
+      : columnFilteringLabels(labels).draftNoFilter,
   // Действующее условие колонки; без него — «Нет фильтра».
   previous: (labels, draft, table) =>
     'column' in draft.target
@@ -201,7 +203,7 @@ export const columnFilterDraftKind: DraftKind = {
   },
   // Все условия — одним серверным действием, после данных (ADR 0178, §5).
   applyAll: (table, drafts) => applyFilterDrafts(table, drafts),
-  sectionLabel: labels => labels.filters,
+  sectionLabel: labels => columnFilteringLabels(labels).filters,
   stage: 'view',
   active: table => isServerAction(table, 'filtering'),
 }

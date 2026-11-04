@@ -24,6 +24,11 @@ import { bodyRows, humanClick, revealCellButtons, Stories } from '../helpers'
 import { nextFrame, waitForGrid } from './core-helpers'
 import { tokenPx } from './tree-lines-helpers'
 import { tableLabels } from '../labels'
+import { columnFilteringLabels } from '../../../plugins/columnFiltering/labels'
+import { quickSearchLabels } from '../../../plugins/quickSearch/labels'
+import { optionsLabels } from '../../../shared/options/labels'
+import { filteringLabels } from '../../../shared/filtering/labels'
+import { rowSelectionLabels } from '../../../plugins/rowSelection/labels'
 
 // Фильтрация (ADR 0045): кнопка фильтра в заголовке, панель условия, дебаунс,
 // кебаб, клавиатура. Условия по значениям (FL2, FL4–FL6, FL14, FL26) — модульные
@@ -149,7 +154,9 @@ describe('Фильтрация — фильтры колонок', () => {
       .poll(() => field('value')!.getAttribute('aria-invalid'))
       .toBe('true')
     const error = panel()!.querySelector('[role="alert"]')!
-    expect(error.textContent).toBe(tableLabels.filterInvalidNumber)
+    expect(error.textContent).toBe(
+      columnFilteringLabels(tableLabels).filterInvalidNumber,
+    )
     expect(field('value')!.getAttribute('aria-describedby')).toBe(error.id)
     await new Promise(resolve => setTimeout(resolve, 400))
     expect(rowIds()).toEqual(ALL)
@@ -187,7 +194,7 @@ describe('Фильтрация — фильтры колонок', () => {
   test('FL9: кнопка открывает панель (условие, значение, «Сбросить»); активный фильтр виден по индикации и доступному имени; при headerActionMenu — пункт кебаба', async () => {
     const inline = await renderFiltering()
     expect(filterButton('name')!.getAttribute('aria-label')).toBe(
-      tableLabels.filter,
+      columnFilteringLabels(tableLabels).filter,
     )
     await openFilter('name')
     expect(panel()!.closest('[role="dialog"]')).not.toBeNull()
@@ -203,7 +210,7 @@ describe('Фильтрация — фильтры колонок', () => {
     await expect.poll(rowIds).toEqual(['0', '7'])
     await expect
       .poll(() => filterButton('name')!.getAttribute('aria-label'))
-      .toBe(tableLabels.filterActive)
+      .toBe(columnFilteringLabels(tableLabels).filterActive)
     await userEvent.keyboard('{Escape}')
     await expect.poll(panel).toBeNull()
     expect(
@@ -217,7 +224,7 @@ describe('Фильтрация — фильтры колонок', () => {
     await expect.poll(rowIds).toEqual(ALL)
     await expect
       .poll(() => filterButton('name')!.getAttribute('aria-label'))
-      .toBe(tableLabels.filter)
+      .toBe(columnFilteringLabels(tableLabels).filter)
     await userEvent.keyboard('{Escape}')
     await inline.unmount()
 
@@ -235,7 +242,8 @@ describe('Фильтрация — фильтры колонок', () => {
     )
     const item = () =>
       [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(
-        el => el.textContent?.trim() === tableLabels.filter,
+        el =>
+          el.textContent?.trim() === columnFilteringLabels(tableLabels).filter,
       )
     await expect.poll(item).toBeTruthy()
     await humanClick(item()!)
@@ -365,14 +373,14 @@ describe('Фильтрация — тулбар и нижняя панель', (
     await renderFiltering(TOOLBAR)
     expect(summaryButton()!.getAttribute('aria-disabled')).toBe('true')
     expect(summaryButton()!.getAttribute('aria-label')).toBe(
-      tableLabels.filters,
+      columnFilteringLabels(tableLabels).filters,
     )
 
     await applyTextFilter('name', 'a')
     await applyTextFilter('city', 'r')
     await expect
       .poll(() => summaryButton()!.getAttribute('aria-label'))
-      .toBe(tableLabels.filtersActive(2))
+      .toBe(columnFilteringLabels(tableLabels).filtersActive(2))
     expect(summaryButton()!.getAttribute('aria-disabled')).not.toBe('true')
     expect(summaryButton()!.textContent).toContain('2')
 
@@ -385,13 +393,13 @@ describe('Фильтрация — тулбар и нижняя панель', (
 
     await humanClick(
       items()[1].querySelector(
-        `[aria-label="${tableLabels.removeFilter('City')}"]`,
+        `[aria-label="${columnFilteringLabels(tableLabels).removeFilter('City')}"]`,
       )!,
     )
     await expect.poll(() => items().length).toBe(1)
     await expect
       .poll(() => summaryButton()!.getAttribute('aria-label'))
-      .toBe(tableLabels.filtersActive(1))
+      .toBe(columnFilteringLabels(tableLabels).filtersActive(1))
 
     await humanClick(
       summary()!.querySelector('[data-testid="filter-summary-reset"]')!,
@@ -427,20 +435,24 @@ describe('Фильтрация — тулбар и нижняя панель', (
 
     await expect
       .poll(() => summaryButton()!.getAttribute('aria-label'))
-      .toBe(tableLabels.filtersActiveHidden(1, 1))
+      .toBe(columnFilteringLabels(tableLabels).filtersActiveHidden(1, 1))
     await humanClick(summaryButton()!)
     await expect.poll(summary).not.toBeNull()
     const item = summary()!.querySelector<HTMLElement>(
       '[data-column-id="city"]',
     )!
     expect(item.hasAttribute('data-hidden-column')).toBe(true)
-    expect(item.textContent).toContain(tableLabels.columnHidden)
+    expect(item.textContent).toContain(
+      columnFilteringLabels(tableLabels).columnHidden,
+    )
   })
 
   test('FL15: поле поиска слева в тулбаре с кнопкой очистки', async () => {
     await renderFiltering(TOOLBAR)
     const input = searchInput()!
-    expect(input.getAttribute('aria-label')).toBe(tableLabels.search)
+    expect(input.getAttribute('aria-label')).toBe(
+      quickSearchLabels(tableLabels).search,
+    )
     expect(input.getBoundingClientRect().right).toBeLessThan(
       summaryButton()!.getBoundingClientRect().left,
     )
@@ -450,7 +462,9 @@ describe('Фильтрация — тулбар и нижняя панель', (
 
     await userEvent.type(input, 'paris')
     await expect.poll(rowIds).toEqual(['0', '5', '10'])
-    expect(clear()!.getAttribute('aria-label')).toBe(tableLabels.clearSearch)
+    expect(clear()!.getAttribute('aria-label')).toBe(
+      optionsLabels(tableLabels).clearSearch,
+    )
     await humanClick(clear()!)
     await expect.poll(rowIds).toEqual(ALL)
     expect(searchInput()!.value).toBe('')
@@ -501,9 +515,13 @@ describe('Фильтрация — тулбар и нижняя панель', (
     })
     expect(filteredCount()).toBeNull()
     await applyTextFilter('name', 'alice')
-    await expect.poll(filteredCount).toBe(tableLabels.filteredRows(2, 12))
+    await expect
+      .poll(filteredCount)
+      .toBe(filteringLabels(tableLabels).filteredRows(2, 12))
     await userEvent.type(searchInput()!, 'rome')
-    await expect.poll(filteredCount).toBe(tableLabels.filteredRows(1, 12))
+    await expect
+      .poll(filteredCount)
+      .toBe(filteringLabels(tableLabels).filteredRows(1, 12))
     expect(
       document.querySelectorAll('[data-testid="filtered-rows-count"]'),
     ).toHaveLength(1)
@@ -529,14 +547,16 @@ describe('Фильтрация — тулбар и нижняя панель', (
       )!
     await humanClick(checkbox('0'))
     await humanClick(checkbox('1'))
-    await expect.poll(counter).toBe(tableLabels.selectedRows(2))
+    await expect
+      .poll(counter)
+      .toBe(rowSelectionLabels(tableLabels).selectedRows(2))
 
     await applyTextFilter('name', 'alice')
     await expect.poll(rowIds).toEqual(['0', '7'])
     await expect
       .poll(counter)
       .toBe(
-        `${tableLabels.selectedRows(2)}, ${tableLabels.selectedRowsHidden(1)}`,
+        `${rowSelectionLabels(tableLabels).selectedRows(2)}, ${rowSelectionLabels(tableLabels).selectedRowsHidden(1)}`,
       )
 
     await humanClick(summaryButton()!)
@@ -544,7 +564,9 @@ describe('Фильтрация — тулбар и нижняя панель', (
     await humanClick(
       summary()!.querySelector('[data-testid="filter-summary-reset"]')!,
     )
-    await expect.poll(counter).toBe(tableLabels.selectedRows(2))
+    await expect
+      .poll(counter)
+      .toBe(rowSelectionLabels(tableLabels).selectedRows(2))
   })
 })
 
@@ -822,7 +844,9 @@ describe('Фильтрация — пустой результат, сервер
     await userEvent.type(searchInput()!, 'zzz')
     await expect.poll(stub).not.toBeNull()
     expect(rowIds()).toEqual([])
-    expect(stub()!.textContent).toContain(tableLabels.noRowsMatchFilters)
+    expect(stub()!.textContent).toContain(
+      filteringLabels(tableLabels).noRowsMatchFilters,
+    )
     expect(filterButton('name')).not.toBeNull()
 
     await humanClick(
@@ -988,11 +1012,13 @@ describe('Фильтрация — пустой результат, сервер
     )!
     await humanClick(checkbox)
     await applyTextFilter('name', 'alice')
-    await expect.poll(filteredCount).toBe(tableLabels.filteredRows(3, 40))
+    await expect
+      .poll(filteredCount)
+      .toBe(filteringLabels(tableLabels).filteredRows(3, 40))
     expect(
       document.querySelector('[data-testid="selected-rows-count"]')!
         .textContent,
-    ).toBe(tableLabels.selectedRows(1))
+    ).toBe(rowSelectionLabels(tableLabels).selectedRows(1))
     await counted.unmount()
 
     await render(
@@ -1047,12 +1073,12 @@ describe('Фильтрация — пустой результат, сервер
       <DirectGrid
         plugins={[columnFiltering({ debounceMs: 0 }), quickSearch()]}
         localization={{
-          filter: 'Фильтр',
-          filters: 'Фильтры',
-          search: 'Поиск',
-          filterCondition: 'Условие',
-          noRowsMatchFilters: 'Ничего не найдено',
-          resetFilters: 'Сбросить фильтры',
+          'columnFiltering.filter': 'Фильтр',
+          'columnFiltering.filters': 'Фильтры',
+          'quickSearch.search': 'Поиск',
+          'columnFiltering.filterCondition': 'Условие',
+          'filtering.noRowsMatchFilters': 'Ничего не найдено',
+          'filtering.resetFilters': 'Сбросить фильтры',
         }}
         icons={{ filter: CustomFilter }}
       />,

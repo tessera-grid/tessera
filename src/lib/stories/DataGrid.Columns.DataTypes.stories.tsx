@@ -52,6 +52,8 @@ import {
   columnsOf,
   moneyIn,
 } from './__mocks__/typeGuides'
+import { columnSortingLabels } from '../plugins/columnSorting/labels'
+import { filteringLabels } from '../shared/filtering/labels'
 
 /**
  * Типы данных колонок (ADR 0172): вид значения, выравнивание и формат по типу колонки,
@@ -267,7 +269,7 @@ export const DataTypesLocale: StoryObj<StoryProps> = {
       await until(() => expect(rowIds(canvas)).toEqual(nameOrder('en-US')))
       await expect(
         sortButtonOf(canvas, 'name')?.getAttribute('aria-label'),
-      ).toBe(storyLabels('en').clearSort)
+      ).toBe(columnSortingLabels(storyLabels('en')).clearSort)
     })
     await step(LOCALE[2]!.title, async () => {
       await guideNext(canvas)
@@ -279,7 +281,7 @@ export const DataTypesLocale: StoryObj<StoryProps> = {
       )
       await expect(
         sortButtonOf(canvas, 'name')?.getAttribute('aria-label'),
-      ).toBe(storyLabels('ru').clearSort)
+      ).toBe(columnSortingLabels(storyLabels('ru')).clearSort)
       await settle()
     })
   },
@@ -380,7 +382,7 @@ export const DataTypesSearch: StoryObj<StoryProps> = {
       await expect(textOf(canvas, 0, 'released')).toBe(SEARCH_DAY)
       await until(() =>
         expect(byTestId('filtered-rows-count')?.textContent).toBe(
-          labels.filteredRows(SEARCH_COUNTS.day, total),
+          filteringLabels(labels).filteredRows(SEARCH_COUNTS.day, total),
         ),
       )
     })
@@ -388,7 +390,7 @@ export const DataTypesSearch: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await until(() =>
         expect(byTestId('filtered-rows-count')?.textContent).toBe(
-          labels.filteredRows(SEARCH_COUNTS.sale, total),
+          filteringLabels(labels).filteredRows(SEARCH_COUNTS.sale, total),
         ),
       )
       await expect(statusTexts(canvas).every(text => text === ON_SALE)).toBe(

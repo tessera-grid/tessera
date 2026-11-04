@@ -9,6 +9,7 @@ import { useLocalization } from '../../core/localization'
 import { useIcons } from '../../ui/icons'
 
 import styles from './OptionChecklist.module.css'
+import { optionsLabels } from './labels'
 
 export const OptionSearch = ({
   children,
@@ -30,7 +31,7 @@ export const OptionSearch = ({
         <button
           type="button"
           className={styles.clearSearch}
-          aria-label={labels.clearSearch}
+          aria-label={optionsLabels(labels).clearSearch}
           data-testid={clearTestId}
           onClick={onClear}
         >

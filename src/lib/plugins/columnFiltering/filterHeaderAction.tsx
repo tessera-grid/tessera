@@ -16,6 +16,7 @@ import {
 } from '../columnFilteringModel/conditions'
 
 import '../../ui/cellControls/buttonVisibility.css'
+import { columnFilteringLabels } from './labels'
 
 const loadFilterPanelModule = () => import('./FilterPanel')
 
@@ -44,9 +45,11 @@ export const filterHeaderAction: HeaderAction = {
     (table.options as FilteringOptions).enableColumnFilters !== false &&
     !!filterTypeOf(filterDefOf(column)),
   icon: ({ column }) => <FilterIcon active={column.getIsFiltered()} />,
-  label: (_, labels) => labels.filter,
+  label: labels => columnFilteringLabels(labels).filter,
   ariaLabel: ({ column }, labels) =>
-    column.getIsFiltered() ? labels.filterActive : labels.filter,
+    column.getIsFiltered()
+      ? columnFilteringLabels(labels).filterActive
+      : columnFilteringLabels(labels).filter,
   active: ({ column }) => column.getIsFiltered(),
   // Неприменённое условие колонки (ADR 0178, §3).
   draft: ({ column, table }) => hasColumnFilterDraft(table, column.id),

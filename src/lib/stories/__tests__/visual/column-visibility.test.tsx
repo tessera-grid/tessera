@@ -12,6 +12,7 @@ import axe from 'axe-core'
 
 import { AXE_OPTIONS } from './a11y-helpers'
 import { tableLabels } from '../labels'
+import { columnVisibilityLabels } from '../../../plugins/columnVisibility/labels'
 
 // Плагин columnVisibility (ADR 0035, CV1–CV3, CV5, CV8, CV14–CV18 визуальные).
 // Модель меню (CV4, CV6, CV7, CV10–CV13) — модульные тесты
@@ -58,11 +59,11 @@ const LocalizedGrid = () => {
       <DataGrid
         table={table as never}
         localization={{
-          columns: 'Колонки',
-          searchColumns: 'Поиск',
-          allColumns: 'Все колонки',
-          selectedColumns: 'Выбрано {count}',
-          resetColumns: 'Сбросить',
+          'columnVisibility.columns': 'Колонки',
+          'columnVisibility.searchColumns': 'Поиск',
+          'columnVisibility.allColumns': 'Все колонки',
+          'columnVisibility.selectedColumns': 'Выбрано {count}',
+          'columnVisibility.resetColumns': 'Сбросить',
         }}
         icons={{ columns: CustomColumnsIcon }}
       />
@@ -121,7 +122,9 @@ describe('columnVisibility', () => {
     await off.unmount()
 
     await renderPlugin()
-    expect(button()!.getAttribute('aria-label')).toBe(tableLabels.columns)
+    expect(button()!.getAttribute('aria-label')).toBe(
+      columnVisibilityLabels(tableLabels).columns,
+    )
     expect(document.querySelector('[role="toolbar"]')!.contains(button())).toBe(
       true,
     )
@@ -131,10 +134,12 @@ describe('columnVisibility', () => {
     await renderPlugin()
     await openMenu()
     expect(menu()!.getAttribute('role')).toBe('dialog')
-    expect(menu()!.getAttribute('aria-label')).toBe(tableLabels.columns)
+    expect(menu()!.getAttribute('aria-label')).toBe(
+      columnVisibilityLabels(tableLabels).columns,
+    )
     await expect
       .poll(() => document.activeElement?.getAttribute('aria-label'))
-      .toBe(tableLabels.searchColumns)
+      .toBe(columnVisibilityLabels(tableLabels).searchColumns)
 
     await userEvent.keyboard('{Escape}')
     await expect
@@ -261,7 +266,9 @@ describe('columnVisibility', () => {
       onToggleColumnVisibility: onToggle,
     })
     await openKebab('firstName')
-    await userEvent.click(menuItem(tableLabels.hideColumn)!)
+    await userEvent.click(
+      menuItem(columnVisibilityLabels(tableLabels).hideColumn)!,
+    )
     await expect.poll(() => headIds()).not.toContain('firstName')
     expect(onToggle).toHaveBeenCalledWith(['firstName'], false)
     await flat.unmount()
@@ -271,8 +278,12 @@ describe('columnVisibility', () => {
       headerNesting: 'nested',
     })
     await openKebab('name')
-    expect(menuItem(tableLabels.hideColumn)).toBeUndefined()
-    await userEvent.click(menuItem(tableLabels.hideGroup)!)
+    expect(
+      menuItem(columnVisibilityLabels(tableLabels).hideColumn),
+    ).toBeUndefined()
+    await userEvent.click(
+      menuItem(columnVisibilityLabels(tableLabels).hideGroup)!,
+    )
     await expect.poll(() => headIds()).not.toContain('firstName')
     expect(headIds()).not.toContain('lastName')
     await nested.unmount()
@@ -289,10 +300,14 @@ describe('columnVisibility', () => {
     })
     expect(kebabOf('a')).toBeNull()
     await openKebab('b')
-    await userEvent.click(menuItem(tableLabels.hideColumn)!)
+    await userEvent.click(
+      menuItem(columnVisibilityLabels(tableLabels).hideColumn)!,
+    )
     await expect.poll(() => headIds()).not.toContain('b')
     await openKebab('c')
-    expect(menuItem(tableLabels.hideColumn)).toBeTruthy()
+    expect(
+      menuItem(columnVisibilityLabels(tableLabels).hideColumn),
+    ).toBeTruthy()
     await userEvent.keyboard('{Escape}')
   })
 

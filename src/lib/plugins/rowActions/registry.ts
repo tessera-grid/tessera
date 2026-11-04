@@ -10,6 +10,7 @@ import { noSlotActionsReason } from '../../core/pluginDiagnostics'
 import type { ServiceColumnMode } from '../../core/servicePresence'
 import type { SlotActionMenu } from '../../core/headerActions'
 import type { ColumnSizingState, Updater } from '../../types'
+import { rowActionsLabels } from './labels'
 import {
   DEFAULT_ROW_ACTIONS_OPTIONS,
   ROW_ACTIONS_COLUMN_ID,
@@ -37,6 +38,7 @@ type RowActionsTable = {
 
 export const rowActions = definePlugin<RowActionsPluginOptions>()({
   id: 'rowActions',
+  labels: [rowActionsLabels],
   diagnose: table => noSlotActionsReason(table, ['actionRowSlot']),
   features: {},
   column: {
@@ -46,7 +48,7 @@ export const rowActions = definePlugin<RowActionsPluginOptions>()({
     order: 0,
     // Колонка действий закреплена всегда справа (логическая сторона end в v9).
     pin: { side: 'end', when: 'always' },
-    label: 'rowActionsColumn',
+    label: labels => rowActionsLabels(labels).rowActionsColumn,
     fill: true,
     // То же условие, что у диагностики 'noActions'.
     presence: (_table, context) =>

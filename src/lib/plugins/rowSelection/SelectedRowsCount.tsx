@@ -18,6 +18,7 @@ import {
   selectionPartsLabel,
   selectionSummaryOf,
 } from '../rowSelectionModel/selectionCount'
+import { rowSelectionLabels } from './labels'
 
 export { countSelectedRows }
 
@@ -79,14 +80,19 @@ export const SelectedRowsCount = ({ table }: StatusBarComponentProps) => {
 
   // Пустой счётчик держит место слота: панель не теряет строку (RS21, SB14).
   if (count === 0) return <span data-testid="selected-rows-count" />
-  const hiddenFull = hidden > 0 ? `, ${labels.selectedRowsHidden(hidden)}` : ''
+  const hiddenFull =
+    hidden > 0
+      ? `, ${rowSelectionLabels(labels).selectedRowsHidden(hidden)}`
+      : ''
   const hiddenShort =
-    hidden > 0 ? `, ${labels.selectedRowsHiddenShort(hidden)}` : ''
+    hidden > 0
+      ? `, ${rowSelectionLabels(labels).selectedRowsHiddenShort(hidden)}`
+      : ''
   return (
     <StatusBarCount
       data-testid="selected-rows-count"
-      full={labels.selectedRows(count) + hiddenFull}
-      short={labels.selectedRowsShort(count) + hiddenShort}
+      full={rowSelectionLabels(labels).selectedRows(count) + hiddenFull}
+      short={rowSelectionLabels(labels).selectedRowsShort(count) + hiddenShort}
     />
   )
 }

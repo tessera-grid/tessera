@@ -62,11 +62,12 @@ const rerender = (props: HostProps) =>
 
 const noteKind: DraftKind = {
   kind: 'note',
-  label: () => 'Note',
+  action: 'note',
   apply: () => {},
 }
 const notes = definePlugin<{ enabled?: boolean }>()({
   id: 'notes',
+  actions: { note: () => 'Note' },
   draftKinds: [noteKind],
 })
 

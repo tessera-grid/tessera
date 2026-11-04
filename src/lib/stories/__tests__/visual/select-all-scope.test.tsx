@@ -10,6 +10,7 @@ import { makeFilteringData } from '../../__mocks__/filteringData'
 import { bodyRows, humanClick, revealCellButtons, Stories } from '../helpers'
 import { waitForGrid } from './core-helpers'
 import { tableLabels } from '../labels'
+import { rowSelectionLabels } from '../../../plugins/rowSelection/labels'
 
 // 12 строк, по две на странице; поиск «Paris» оставляет 0, 5 и 10 — две страницы.
 const DATA = makeFilteringData(12)
@@ -93,7 +94,9 @@ describe('Охват «Выбрать всё» (ADR 0179)', () => {
     await humanClick(headCheckbox())
     await expect.poll(checkedRows).toEqual(['0', '5'])
     expect(headState()).toBe('true')
-    await expect.poll(count).toBe(tableLabels.selectedRows(FOUND.length))
+    await expect
+      .poll(count)
+      .toBe(rowSelectionLabels(tableLabels).selectedRows(FOUND.length))
 
     // Вторая страница выбрана тем же нажатием, флажок шапки — по всему охвату.
     await humanClick(next())
@@ -118,7 +121,9 @@ describe('Охват «Выбрать всё» (ADR 0179)', () => {
 
     // Без поиска выбраны только найденные строки — минус снятая.
     await clearSearch()
-    await expect.poll(count).toBe(tableLabels.selectedRows(FOUND.length - 1))
+    await expect
+      .poll(count)
+      .toBe(rowSelectionLabels(tableLabels).selectedRows(FOUND.length - 1))
     await screen.unmount()
   })
 
@@ -133,7 +138,9 @@ describe('Охват «Выбрать всё» (ADR 0179)', () => {
     await expect.poll(shown).toEqual(['10'])
     expect(checkedRows()).toEqual([])
     expect(headState()).toBe('false')
-    await expect.poll(count).toBe(tableLabels.selectedRows(2))
+    await expect
+      .poll(count)
+      .toBe(rowSelectionLabels(tableLabels).selectedRows(2))
 
     await humanClick(previous())
     await expect.poll(checkedRows).toEqual(['0', '5'])
@@ -149,11 +156,13 @@ describe('Охват «Выбрать всё» (ADR 0179)', () => {
     await expect
       .poll(count)
       .toBe(
-        `${tableLabels.selectedRows(DATA.length)}, ${tableLabels.selectedRowsHidden(DATA.length - FOUND.length)}`,
+        `${rowSelectionLabels(tableLabels).selectedRows(DATA.length)}, ${rowSelectionLabels(tableLabels).selectedRowsHidden(DATA.length - FOUND.length)}`,
       )
 
     await clearSearch()
-    await expect.poll(count).toBe(tableLabels.selectedRows(DATA.length))
+    await expect
+      .poll(count)
+      .toBe(rowSelectionLabels(tableLabels).selectedRows(DATA.length))
     expect(headState()).toBe('true')
     await screen.unmount()
   })

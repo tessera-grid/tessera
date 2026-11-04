@@ -21,6 +21,7 @@ import { readFlashes } from '../core/flashes/flashFeature'
 import { targetIdsOf } from '../core/highlights/highlightFeature'
 import { toggleRowExpanded } from '../plugins/rowExpanding/toggleRowExpanded'
 import type { RowExpandingHooks } from '../plugins/rowExpanding'
+import { rowExpandingLabels } from '../plugins/rowExpanding/labels'
 
 ;(
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -461,7 +462,7 @@ describe('Склейка ответов loadChildren (ADR 0066)', () => {
     expect(coreRow('c').getIsExpanded()).toBe(false)
     expect(Object.keys(captured.atoms.rowExpandFailed.get())).toEqual(['c'])
     expect(say).toHaveBeenCalledWith(
-      ENGLISH_LABELS.announceExpandFailed('down'),
+      rowExpandingLabels(ENGLISH_LABELS).announceExpandFailed('down'),
     )
   })
 
@@ -476,7 +477,9 @@ describe('Склейка ответов loadChildren (ADR 0066)', () => {
     toggle('c')
     await tick()
     await tick(FRAME)
-    expect(say.mock.calls).toEqual([[ENGLISH_LABELS.announceChildrenLoaded(5)]])
+    expect(say.mock.calls).toEqual([
+      [rowExpandingLabels(ENGLISH_LABELS).announceChildrenLoaded(5)],
+    ])
   })
 
   it('RE70: ответ строки, ушедшей из data до кадра, не применяется, даже если строка вернулась', async () => {

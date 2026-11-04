@@ -337,8 +337,8 @@ const OVERRIDES: readonly GuideStoryStep[] = [
     hint: 'Приложение меняет две подписи: поле «Find a person», диапазон «Rows 1–25 of 1,000». Остальные — по умолчанию: «Rows per page».',
     props: () => ({
       localization: {
-        search: 'Find a person',
-        pageRange: 'Rows {from}–{to} of {total}',
+        'quickSearch.search': 'Find a person',
+        'pagination.pageRange': 'Rows {from}–{to} of {total}',
       },
     }),
   },
@@ -409,7 +409,9 @@ const FUNCTION: readonly GuideStoryStep[] = [
   {
     title: 'Подпись функцией',
     hint: 'Порог шаблоном не выразить — приложение передаёт функцию: «99+ rows selected».',
-    props: () => ({ localization: { selectedRows: selectedRowsCapped } }),
+    props: () => ({
+      localization: { 'rowSelection.selectedRows': selectedRowsCapped },
+    }),
   },
 ]
 

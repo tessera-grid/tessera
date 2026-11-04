@@ -7,6 +7,7 @@ import type { RowData, TableFeatures } from '@tanstack/react-table'
 import { definePlugin } from '../../core/definePlugin'
 import { BackToStartButton, BackToTopButton } from './BackToTopButton'
 import { BACK_TO_TOP, backToTopInertReason } from './model'
+import { backToTopLabels } from './labels'
 
 export interface BackToTopOptions {
   /** `false` — плагин отключён. */
@@ -21,6 +22,11 @@ export interface BackToTopOptions {
 
 export const backToTop = definePlugin<BackToTopOptions>()({
   id: BACK_TO_TOP,
+  labels: [backToTopLabels],
+  actions: {
+    scrollToTop: labels => backToTopLabels(labels).backToTop,
+    scrollToStart: labels => backToTopLabels(labels).backToStart,
+  },
   diagnose: backToTopInertReason,
   options: o => ({
     backToTopThreshold: o.enabled === false ? undefined : o.threshold,

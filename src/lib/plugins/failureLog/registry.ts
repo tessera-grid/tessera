@@ -7,6 +7,7 @@ import { announceLabel } from '../../core/announcer'
 import { definePlugin } from '../../core/definePlugin'
 import { neverInert } from '../../core/pluginDiagnostics'
 import { FailureLogButton } from './FailureLogButton'
+import { failureLogLabels } from './labels'
 
 /** Группа тулбара: последней справа, после групп потребителя (ранг — `core/toolbar`). */
 export const FAILURE_LOG_TOOLBAR_GROUP = 'failures'
@@ -39,7 +40,9 @@ const announceNewRecords = (table: unknown) => {
     if (!added) return
     clearTimeout(timer)
     timer = setTimeout(() =>
-      announceLabel(table, labels => labels.announceFailureLogged(known.size)),
+      announceLabel(table, labels =>
+        failureLogLabels(labels).announceFailureLogged(known.size),
+      ),
     )
   })
   return () => {
@@ -50,6 +53,13 @@ const announceNewRecords = (table: unknown) => {
 
 export const failureLog = definePlugin<FailureLogOptions>()({
   id: 'failureLog',
+  labels: [failureLogLabels],
+  actions: {
+    clearAll: labels => failureLogLabels(labels).failureClearAll,
+    close: labels => failureLogLabels(labels).failureClose,
+    show: labels => failureLogLabels(labels).failureShow,
+    retry: labels => labels.failureRetry,
+  },
   diagnose: neverInert,
   setup: () => table => announceNewRecords(table),
   slots: [

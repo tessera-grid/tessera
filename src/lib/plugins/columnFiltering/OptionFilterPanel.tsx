@@ -39,6 +39,7 @@ import styles from './OptionFilterPanel.module.css'
 import { FilterFailure } from './FilterFailure'
 import { FilterApply } from './FilterApply'
 import { useFilterDraft } from './filterDraft'
+import { columnFilteringLabels } from './labels'
 
 const OPERATORS: OptionFilterOperator[] = [
   'anyOf',
@@ -180,10 +181,10 @@ export const OptionFilterPanel = ({
 
   const operators = type === 'multiselect' ? MULTI_OPERATORS : OPERATORS
   const statusLabels = {
-    loading: labels.filterLoadingOptions,
-    empty: labels.filterNoOptions,
-    error: labels.filterOptionsError,
-    retry: labels.filterRetry,
+    loading: columnFilteringLabels(labels).filterLoadingOptions,
+    empty: columnFilteringLabels(labels).filterNoOptions,
+    error: columnFilteringLabels(labels).filterOptionsError,
+    retry: columnFilteringLabels(labels).filterRetry,
   }
   const hasList = loaded?.status !== 'error' && options.length > 0
   const busy = loaded?.status === 'loading'
@@ -216,8 +217,8 @@ export const OptionFilterPanel = ({
               className={panelStyles.input}
               type="text"
               value={search}
-              placeholder={labels.filterSearchOptions}
-              aria-label={labels.filterSearchOptions}
+              placeholder={columnFilteringLabels(labels).filterSearchOptions}
+              aria-label={columnFilteringLabels(labels).filterSearchOptions}
               aria-controls={hasList ? listId : undefined}
               onChange={event => {
                 setSearch(event.target.value)
@@ -233,7 +234,7 @@ export const OptionFilterPanel = ({
               onClick={selectAll}
               data-testid="filter-select-all"
             >
-              {labels.filterSelectAll}
+              {columnFilteringLabels(labels).filterSelectAll}
             </Button>
             <Button
               variant="ghost"
@@ -241,7 +242,7 @@ export const OptionFilterPanel = ({
               onClick={clearVisible}
               data-testid="filter-clear-selection"
             >
-              {labels.filterClearSelection}
+              {columnFilteringLabels(labels).filterClearSelection}
             </Button>
           </div>
           {loaded?.status === 'error' ? (
@@ -275,7 +276,7 @@ export const OptionFilterPanel = ({
       <div className={panelStyles.footer}>
         <FilterFailure table={table} columnId={column.id} />
         <Button variant="ghost" onClick={reset} data-testid="filter-reset">
-          {labels.filterReset}
+          {columnFilteringLabels(labels).filterReset}
         </Button>
         {server && <FilterApply {...filterDraft} />}
       </div>

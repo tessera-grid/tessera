@@ -16,6 +16,8 @@ import { humanClick, revealCellButtons } from '../helpers'
 import { tableLabels } from '../labels'
 import { inBothThemes } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
+import { cellEditingLabels } from '../../../plugins/cellEditing/labels'
+import { optionsLabels } from '../../../shared/options/labels'
 
 // Редакторы вариантов (ADR 0175, ED8–ED10, ED16, ED23–ED26) настоящими событиями: поповер с полем
 // поиска у `select` и `object`, справочник с ожиданием и отказом, список с флажками у
@@ -304,11 +306,11 @@ describe('редакторы вариантов (ADR 0175)', () => {
     await openEdit('manager')
     await expect
       .poll(() => loadingLabel(popup()))
-      .toBe(tableLabels.editLoadingOptions)
+      .toBe(cellEditingLabels(tableLabels).editLoadingOptions)
     server.refuse()
     await expect
       .poll(() => popup()?.querySelector('[role="alert"]')?.textContent)
-      .toContain(tableLabels.editOptionsError)
+      .toContain(cellEditingLabels(tableLabels).editOptionsError)
     await humanClick(
       popup()!.querySelector<HTMLElement>(
         '[data-testid="edit-options-retry"]',
@@ -580,7 +582,9 @@ describe('редакторы вариантов (ADR 0175)', () => {
       expect(
         clearValue()!.closest('[role="listbox"], [role="group"]'),
       ).toBeNull()
-      expect(clearValue()!.textContent).toBe(tableLabels.editClear)
+      expect(clearValue()!.textContent).toBe(
+        cellEditingLabels(tableLabels).editClear,
+      )
       await humanClick(clearValue()!)
       await expect.poll(clearValue).toBeNull()
       expect(onCellEdit.mock.lastCall![0]).toMatchObject({ columnId: column })
@@ -639,7 +643,7 @@ describe('редакторы вариантов (ADR 0175)', () => {
       .poll(() => errorBlock(popup(), 'edit-options-retry'))
       .not.toBeNull()
     expect(errorBlock(popup(), 'edit-options-retry')!.textContent).toContain(
-      tableLabels.editOptionsError,
+      cellEditingLabels(tableLabels).editOptionsError,
     )
     expect(errorBlock(popup(), 'edit-options-retry')!.textContent).toContain(
       'down',
@@ -663,7 +667,7 @@ describe('редакторы вариантов (ADR 0175)', () => {
         () =>
           popup()?.querySelector('[data-testid="options-empty"]')?.textContent,
       )
-      .toContain(tableLabels.editNoOptions)
+      .toContain(cellEditingLabels(tableLabels).editNoOptions)
     expect(skeletons(popup())).toBe(0)
     await userEvent.keyboard('{Escape}')
 
@@ -715,7 +719,10 @@ describe('редакторы вариантов (ADR 0175)', () => {
     expect(clearSearch()).toBeNull()
     await userEvent.type(field()!, 'arch')
     await expect.poll(() => itemOf('active')).toBeNull()
-    expect(clearSearch()).toHaveAttribute('aria-label', tableLabels.clearSearch)
+    expect(clearSearch()).toHaveAttribute(
+      'aria-label',
+      optionsLabels(tableLabels).clearSearch,
+    )
     await humanClick(clearSearch()!)
     await expect.poll(() => itemOf('active')).not.toBeNull()
     expect(field()!.value).toBe('')

@@ -4,6 +4,7 @@
  */
 import type { TableLabels } from '../../core/localization'
 import type { SlotAction } from '../../core/headerActions'
+import { menuActionLabel } from '../../core/actions'
 
 export const actionLook = (
   action: SlotAction,
@@ -18,7 +19,7 @@ export const actionLook = (
       : active
         ? labels.actionActiveDraft(name)
         : labels.actionDraft(name)
-  const plain = action.label(context, labels)
+  const plain = menuActionLabel(action, context, labels)
   return {
     active,
     draft,

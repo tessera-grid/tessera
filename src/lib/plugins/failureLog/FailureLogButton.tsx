@@ -11,6 +11,7 @@ import { preloadable } from '../../core/preloadable'
 import { useSliceProjection } from '../../core/reactivity'
 import { useIcons } from '../../ui/icons'
 import { ToolbarButton } from '../../ui/ToolbarButton'
+import { failureLogLabels } from './labels'
 
 const FailureLogPopover = preloadable(() =>
   import('./FailureLogPopover').then(module => module.FailureLogPopover),
@@ -28,11 +29,14 @@ export const FailureLogButton = ({ table }: ToolbarComponentProps) => {
   const popover = useLazyPopover(
     table,
     FailureLogPopover,
-    all => all.failureLog,
+    all => failureLogLabels(all).failureLog,
     true,
     { plugin: 'failureLog' },
   )
-  const label = count > 0 ? labels.failureLogButton(count) : labels.failureLog
+  const label =
+    count > 0
+      ? failureLogLabels(labels).failureLogButton(count)
+      : failureLogLabels(labels).failureLog
   const icon = <FailureLogIcon width={16} height={16} />
   const placeholder = (
     <ToolbarButton

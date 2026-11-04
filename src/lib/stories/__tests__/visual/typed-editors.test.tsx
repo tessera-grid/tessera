@@ -24,6 +24,7 @@ import {
 } from '../helpers'
 import { RU_LABELS } from '../../__mocks__/localization.ru'
 import { storyLabels } from '../../__mocks__/storyLabels'
+import { cellEditingLabels } from '../../../plugins/cellEditing/labels'
 
 // Встроенные редакторы по типу (ADR 0175, ED4–ED5) настоящими событиями: поле числа на
 // языке таблицы, булево одним нажатием. ED1–ED3 — модульные (`cellEditWrite.dom`,
@@ -168,7 +169,7 @@ describe('редакторы по типу (ADR 0175)', () => {
       .poll(() => inputOf('price')?.getAttribute('aria-invalid'))
       .toBe('true')
     expect(cellOf('price').querySelector('[role="alert"]')!.textContent).toBe(
-      ru.editInvalidNumber,
+      cellEditingLabels(ru).editInvalidNumber,
     )
     expect(onCellEdit).not.toHaveBeenCalled()
 
@@ -355,16 +356,16 @@ describe('редакторы по типу (ADR 0175)', () => {
       ?.split(' ')
       .map(id => document.getElementById(id)?.textContent)
       .join(' ')
-    expect(description).toContain(RU_LABELS.editConflict)
+    expect(description).toContain(RU_LABELS['cellEditing.editConflict'])
     await expect
       .poll(() => document.querySelector('[aria-live]')?.textContent)
-      .toContain(RU_LABELS.editConflict)
+      .toContain(RU_LABELS['cellEditing.editConflict'])
 
     // Повторная правка — черновик и причина.
     await openEdit('name')
     await expect.poll(() => inputOf('name')?.value).toBe('Lantern')
     expect(cellOf('name').querySelector('[role="alert"]')?.textContent).toBe(
-      RU_LABELS.editConflict,
+      RU_LABELS['cellEditing.editConflict'],
     )
   })
 })

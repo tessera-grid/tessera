@@ -40,6 +40,8 @@ import {
   groupRowOf,
   parisItems,
 } from './__mocks__/serverRowModelGuide'
+import { rowSelectionLabels } from '../plugins/rowSelection/labels'
+import { rowSelectionModelLabels } from '../plugins/rowSelectionModel/labels'
 
 /**
  * Выбор строк в серверной модели (ADR 0138, ADR 0148): `Playground` — десять тысяч строк с
@@ -237,7 +239,9 @@ export const ServerRowModelSelectAllExcept: StoryObj<StoryProps> = {
       await expect(isChecked(headCheckbox(canvas))).toBe(true)
       await expect(isChecked(rowCheckbox(canvas, 2))).toBe(true)
       await until(() =>
-        expect(selectedCount(canvas)).toBe(labels.selectedRows(SELECT_TOTAL)),
+        expect(selectedCount(canvas)).toBe(
+          rowSelectionLabels(labels).selectedRows(SELECT_TOTAL),
+        ),
       )
       await expect(server.starts.length).toBe(before)
     })
@@ -251,7 +255,9 @@ export const ServerRowModelSelectAllExcept: StoryObj<StoryProps> = {
       await expect(isChecked(rowCheckbox(canvas, 2))).toBe(true)
       await until(() =>
         expect(selectedCount(canvas)).toBe(
-          labels.selectedRows(SELECT_TOTAL - UNCHECKED.length),
+          rowSelectionLabels(labels).selectedRows(
+            SELECT_TOTAL - UNCHECKED.length,
+          ),
         ),
       )
     })
@@ -416,7 +422,9 @@ export const ServerGroupSelection: StoryObj<StoryProps> = {
       await stepDone(canvas)
       await expect(isChecked(groupCheckbox(canvas, 'Paris'))).toBe(true)
       await until(() =>
-        expect(selectedCount(canvas)).toBe(labels.selectedRows(paris)),
+        expect(selectedCount(canvas)).toBe(
+          rowSelectionLabels(labels).selectedRows(paris),
+        ),
       )
       await expect(server.parents.length).toBe(parents)
     })
@@ -426,7 +434,9 @@ export const ServerGroupSelection: StoryObj<StoryProps> = {
       await expect(isPartial(groupCheckbox(canvas, 'Paris'))).toBe(true)
       await expect(isChecked(dataRowCheckbox(canvas))).toBe(false)
       await until(() =>
-        expect(selectedCount(canvas)).toBe(labels.selectedRows(paris - 1)),
+        expect(selectedCount(canvas)).toBe(
+          rowSelectionLabels(labels).selectedRows(paris - 1),
+        ),
       )
     })
     await step(GROUP_SELECTION[3]!.title, async () => {
@@ -574,7 +584,10 @@ export const ServerGroupSelectCount: StoryObj<StoryProps> = {
       await stepDone(canvas)
       await until(() =>
         expect(selectedCount(canvas)).toBe(
-          labels.selectedRowsAndGroups(0, labels.selectedGroupsCount(1)),
+          rowSelectionModelLabels(labels).selectedRowsAndGroups(
+            0,
+            rowSelectionModelLabels(labels).selectedGroupsCount(1),
+          ),
         ),
       )
     })
@@ -583,7 +596,10 @@ export const ServerGroupSelectCount: StoryObj<StoryProps> = {
       await stepDone(canvas)
       await until(() =>
         expect(selectedCount(canvas)).toBe(
-          labels.selectedRowsAndGroups(1, labels.selectedGroupsCount(1)),
+          rowSelectionModelLabels(labels).selectedRowsAndGroups(
+            1,
+            rowSelectionModelLabels(labels).selectedGroupsCount(1),
+          ),
         ),
       )
       await settle()
@@ -730,7 +746,10 @@ export const ServerTreeSelectBranch: StoryObj<StoryProps> = {
       await expect(isChecked(treeCheckbox(canvas, BRANCH_PARENT))).toBe(true)
       await until(() =>
         expect(selectedCount(canvas)).toBe(
-          labels.selectedRowsAndGroups(1, labels.selectedBranchesCount(1)),
+          rowSelectionModelLabels(labels).selectedRowsAndGroups(
+            1,
+            rowSelectionModelLabels(labels).selectedBranchesCount(1),
+          ),
         ),
       )
       await expect(server.parents).not.toContain(BRANCH_PARENT)
@@ -754,7 +773,7 @@ export const ServerTreeSelectBranch: StoryObj<StoryProps> = {
       }
       await until(() =>
         expect(selectedCount(canvas)).toBe(
-          labels.selectedRows(1 + TREE_CHILDREN),
+          rowSelectionLabels(labels).selectedRows(1 + TREE_CHILDREN),
         ),
       )
     })
@@ -766,7 +785,9 @@ export const ServerTreeSelectBranch: StoryObj<StoryProps> = {
         false,
       )
       await until(() =>
-        expect(selectedCount(canvas)).toBe(labels.selectedRows(TREE_CHILDREN)),
+        expect(selectedCount(canvas)).toBe(
+          rowSelectionLabels(labels).selectedRows(TREE_CHILDREN),
+        ),
       )
       await settle()
     })

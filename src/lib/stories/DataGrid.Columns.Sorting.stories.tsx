@@ -21,6 +21,7 @@ import { untilDone } from './__mocks__/cellGestures'
 import { storyLabels } from './__mocks__/storyLabels'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import { columnSortingLabels } from '../plugins/columnSorting/labels'
 
 /**
  * Сортировка колонок (ADR 0012, ADR 0063): `Playground` — кнопки в заголовках; несколько колонок,
@@ -197,9 +198,10 @@ export const ColumnMultiSorting: StoryObj<StoryProps> = {
     await step(MULTI_SORT[1]!.title, async () => {
       await guideNext(canvas)
       await until(() =>
-        expect([labels.sortAscending, labels.sortDescending]).toContain(
-          openTooltip(),
-        ),
+        expect([
+          columnSortingLabels(labels).sortAscending,
+          columnSortingLabels(labels).sortDescending,
+        ]).toContain(openTooltip()),
       )
       await settle()
     })

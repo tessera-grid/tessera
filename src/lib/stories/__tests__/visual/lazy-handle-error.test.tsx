@@ -15,6 +15,8 @@ import {
   sleep,
 } from './lazy-helpers'
 import { tableLabels } from '../labels'
+import { columnDraggingLabels } from '../../../plugins/columnDragging/labels'
+import { columnSizingLabels } from '../../../plugins/columnSizing/labels'
 
 // Ошибка загрузки меню ручек (ADR 0061, LZ14). Отдельный файл: модуль грузится один
 // раз на документ.
@@ -33,7 +35,9 @@ describe('Меню ручек — ошибка загрузки', () => {
     await humanClick(columnHandle())
     await expect
       .poll(() => announcements.messages)
-      .toContain(tableLabels.loadFailed(tableLabels.moveColumn))
+      .toContain(
+        tableLabels.loadFailed(columnDraggingLabels(tableLabels).moveColumn),
+      )
     expect(failed()).toBe(false)
     await sleep(100)
     expect(handleMenu()).toBeNull()
@@ -42,7 +46,9 @@ describe('Меню ручек — ошибка загрузки', () => {
     await humanClick(gripWrapper())
     await expect
       .poll(() => announcements.messages)
-      .toContain(tableLabels.loadFailed(tableLabels.columnWidth))
+      .toContain(
+        tableLabels.loadFailed(columnSizingLabels(tableLabels).columnWidth),
+      )
     expect(gripWrapper().querySelector('[data-failure-indicator]')).toBeNull()
 
     const before = announcements.messages.length

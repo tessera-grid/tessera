@@ -11,6 +11,7 @@ import { bodyRows, humanClick } from '../helpers'
 import { tableLabels } from '../labels'
 import { inBothThemes } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
+import { columnFilteringLabels } from '../../../plugins/columnFiltering/labels'
 
 // Кнопка «Применить» и черновик серверного фильтра (ADR 0154; FD1–FD5, FD7–FD10) —
 // настоящими событиями браузера. FD6 — модульный (`src/lib/__tests__/filterDraft.dom.test.tsx`).
@@ -218,7 +219,9 @@ describe('Применение серверного фильтра (ADR 0154)', 
     const applyBox = apply()!.getBoundingClientRect()
     const resetBox = reset()!.getBoundingClientRect()
     const panelBox = panel()!.getBoundingClientRect()
-    expect(apply()!.textContent).toBe(tableLabels.filterApply)
+    expect(apply()!.textContent).toBe(
+      columnFilteringLabels(tableLabels).filterApply,
+    )
     expect(applyBox.left).toBeGreaterThanOrEqual(resetBox.right)
     expect(Math.abs(applyBox.top - resetBox.top)).toBeLessThanOrEqual(1)
     expect(applyBox.bottom).toBeGreaterThan(panelBox.top + panelBox.height / 2)
@@ -345,7 +348,7 @@ describe('Применение серверного фильтра (ADR 0154)', 
     expect(active()).toBe(false)
     // Имя — невключённой кнопки с неприменённым условием (ADR 0178, §3).
     expect(filterButton().getAttribute('aria-label')).toBe(
-      tableLabels.actionDraft(tableLabels.filter),
+      tableLabels.actionDraft(columnFilteringLabels(tableLabels).filter),
     )
     await closePanel()
     expect(active()).toBe(false)

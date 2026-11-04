@@ -16,6 +16,7 @@ import { ColumnVisibilityMenu } from './ColumnVisibilityMenu'
 
 import styles from './ColumnVisibilityMenu.module.css'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
+import { columnVisibilityLabels } from './labels'
 
 export interface ColumnVisibilityPopoverProps {
   table: Table<any, any>
@@ -64,7 +65,7 @@ export const ColumnVisibilityPopover = ({
           {...themeData}
         >
           <Popover.Popup
-            aria-label={labels.columns}
+            aria-label={columnVisibilityLabels(labels).columns}
             initialFocus={searchRef}
             finalFocus={triggerRef}
             className={clsx(themeClass, styles.popup)}

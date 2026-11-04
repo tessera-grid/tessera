@@ -22,6 +22,7 @@ import {
   unnestRow,
 } from './moveRow'
 import { type RowMoveEdge, serverMoveSource } from './serverMove'
+import { rowDraggingLabels } from './labels'
 
 type MoveAtoms = {
   atoms: { rowDragging: unknown; rowMoves: unknown }
@@ -57,26 +58,26 @@ export const RowDraggingComponent = ({ row, table }: CellComponentProps) => {
 
   const server = !!serverMoveSource(table)
   const getMenuItems = () => [
-    move('moveUp', labels.moveUp, -1),
-    move('moveDown', labels.moveDown, 1),
+    move('moveUp', rowDraggingLabels(labels).moveUp, -1),
+    move('moveDown', rowDraggingLabels(labels).moveDown, 1),
     // В серверной модели — к краям ветки; вложение и вынос — только броском (ADR 0159, §6).
     ...(server
       ? [
-          edge('moveToStart', labels.moveToStart, 'start'),
-          edge('moveToEnd', labels.moveToEnd, 'end'),
+          edge('moveToStart', rowDraggingLabels(labels).moveToStart, 'start'),
+          edge('moveToEnd', rowDraggingLabels(labels).moveToEnd, 'end'),
         ]
       : []),
     ...(!server && hasRowHierarchy(table, 'tree')
       ? [
           {
             id: 'indent',
-            label: labels.indentRow,
+            label: rowDraggingLabels(labels).indentRow,
             disabled: !canNestRow(row, table),
             onSelect: () => nestRow(row, table),
           },
           {
             id: 'outdent',
-            label: labels.outdentRow,
+            label: rowDraggingLabels(labels).outdentRow,
             disabled: !canUnnestRow(row, table),
             onSelect: () => unnestRow(row, table),
           },
@@ -88,7 +89,7 @@ export const RowDraggingComponent = ({ row, table }: CellComponentProps) => {
     <DragHandler
       id={row.id}
       type="row"
-      label={labels.moveRow}
+      label={rowDraggingLabels(labels).moveRow}
       table={table}
       busy={busy}
       getMenuItems={isMovableRow(row, table) ? getMenuItems : undefined}

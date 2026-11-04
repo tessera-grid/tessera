@@ -16,6 +16,7 @@ import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 import { useCloseOnGridScroll } from '../../ui/Popup/useCloseOnGridScroll'
 
 import styles from './EditPopover.module.css'
+import { cellEditingLabels } from './labels'
 
 /**
  * Фокус ушёл на другой элемент страницы. Снятый фокус (`blur` в никуда — так его снимает и
@@ -42,7 +43,7 @@ export const ClearValue = ({ onClear }: { onClear: () => void }) => {
   return (
     <div className={styles.footer}>
       <Button variant="ghost" onClick={onClear} data-testid="edit-clear-value">
-        {labels.editClear}
+        {cellEditingLabels(labels).editClear}
       </Button>
     </div>
   )

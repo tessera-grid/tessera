@@ -14,6 +14,7 @@ import {
 } from './source'
 import { serverRowModelFeature } from './serverRowModelFeature'
 import type { ServerRowModelHooks } from './types'
+import { serverRowModelLabels } from './labels'
 
 export interface ServerRowModelOptions {
   /** `false` — плагин отключён. */
@@ -36,6 +37,11 @@ const sourceOfTable = (table: unknown) =>
 
 export const serverRowModel = definePlugin<ServerRowModelOptions>()({
   id: SERVER_ROW_MODEL,
+  labels: [serverRowModelLabels],
+  actions: {
+    loadBlock: labels => serverRowModelLabels(labels).actionLoadBlock,
+    rowTransaction: labels => serverRowModelLabels(labels).actionRowTransaction,
+  },
   lifetime: ['blockSize'],
   // Без загрузчика строк брать неоткуда (ADR 0138, SD37).
   diagnose: table =>

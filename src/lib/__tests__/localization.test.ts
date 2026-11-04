@@ -15,6 +15,14 @@ import {
 import { serverActionReason } from '../core/serverActions/reason'
 import { rowLabel } from '../plugins/dataExport/rowLabel'
 import { RU_LABELS } from '../stories/__mocks__/localization.ru'
+import { rowExpandingLabels } from '../plugins/rowExpanding/labels'
+import { rowSelectionLabels } from '../plugins/rowSelection/labels'
+import { paginationLabels } from '../plugins/pagination/labels'
+import { columnFilteringLabels } from '../plugins/columnFiltering/labels'
+import { cellSelectionLabels } from '../plugins/cellSelection/labels'
+import { infiniteScrollLabels } from '../plugins/infiniteScroll/labels'
+import { quickSearchLabels } from '../plugins/quickSearch/labels'
+import { columnVisibilityLabels } from '../plugins/columnVisibility/labels'
 
 /** Неразрывный пробел — разделитель тысяч в русском `Intl.NumberFormat`. */
 const NBSP = ' '
@@ -23,46 +31,54 @@ describe('Разрешитель подписей', () => {
   it('LC1: значение подписи — строка или функция: строка без подстановок выводится как есть, функция вызывается с позиционными параметрами, как раньше', () => {
     const labels = resolveLabels(
       {
-        expandRow: 'Развернуть строку',
-        selectedRowsShort: 'выбрано',
-        pageRange: (from, to, total) => `${from}..${to}/${total}`,
+        'rowExpanding.expandRow': 'Развернуть строку',
+        'rowSelection.selectedRowsShort': 'выбрано',
+        'pagination.pageRange': (from, to, total) => `${from}..${to}/${total}`,
       },
       'ru',
     )
-    expect(labels.expandRow).toBe('Развернуть строку')
-    expect(labels.selectedRowsShort(3)).toBe('выбрано')
-    expect(labels.pageRange(1, 10, 25)).toBe('1..10/25')
+    expect(rowExpandingLabels(labels).expandRow).toBe('Развернуть строку')
+    expect(rowSelectionLabels(labels).selectedRowsShort(3)).toBe('выбрано')
+    expect(paginationLabels(labels).pageRange(1, 10, 25)).toBe('1..10/25')
     // Чего нет в словаре — английское умолчание.
-    expect(labels.collapseRow).toBe(DEFAULT_LABELS.collapseRow)
-    expect(labels.pageAnnouncement(2, 5)).toBe('Page 2 of 5')
+    expect(rowExpandingLabels(labels).collapseRow).toBe(
+      rowExpandingLabels.defaults.collapseRow,
+    )
+    expect(paginationLabels(labels).pageAnnouncement(2, 5)).toBe('Page 2 of 5')
   })
 
   it('LC2: {имя} в строке заменяется значением параметра подписи с тем же именем; подстановка без такого параметра остаётся текстом', () => {
     const labels = resolveLabels(
       {
-        pageRange: 'Строки {from}–{to} из {total}',
-        removeFilter: 'Снять фильтр {column} {unknown}',
+        'pagination.pageRange': 'Строки {from}–{to} из {total}',
+        'columnFiltering.removeFilter': 'Снять фильтр {column} {unknown}',
       },
       'ru',
     )
-    expect(labels.pageRange(1, 10, 25)).toBe('Строки 1–10 из 25')
-    expect(labels.removeFilter('Город')).toBe('Снять фильтр Город {unknown}')
+    expect(paginationLabels(labels).pageRange(1, 10, 25)).toBe(
+      'Строки 1–10 из 25',
+    )
+    expect(columnFilteringLabels(labels).removeFilter('Город')).toBe(
+      'Снять фильтр Город {unknown}',
+    )
   })
 
   it('LC3: у подписи с count ключ ищется с суффиксом формы Intl.PluralRules, затем без суффикса; при count = 0 сначала _zero в любом языке', () => {
     const ru = resolveLabels(
       {
-        selectedRows_zero: 'Ничего не выбрано',
-        selectedRows_one: 'Выбрана {count} строка',
-        selectedRows_few: 'Выбрано {count} строки',
-        selectedRows_many: 'Выбрано {count} строк',
-        announceCopy: 'Скопировано ячеек: {count}',
-        announceCopy_one: 'Скопирована {count} ячейка',
+        'rowSelection.selectedRows_zero': 'Ничего не выбрано',
+        'rowSelection.selectedRows_one': 'Выбрана {count} строка',
+        'rowSelection.selectedRows_few': 'Выбрано {count} строки',
+        'rowSelection.selectedRows_many': 'Выбрано {count} строк',
+        'cellSelection.announceCopy': 'Скопировано ячеек: {count}',
+        'cellSelection.announceCopy_one': 'Скопирована {count} ячейка',
       },
       'ru',
     )
     expect(
-      [0, 1, 2, 5, 21, 22, 25].map(count => ru.selectedRows(count)),
+      [0, 1, 2, 5, 21, 22, 25].map(count =>
+        rowSelectionLabels(ru).selectedRows(count),
+      ),
     ).toEqual([
       'Ничего не выбрано',
       'Выбрана 1 строка',
@@ -73,89 +89,92 @@ describe('Разрешитель подписей', () => {
       'Выбрано 25 строк',
     ])
     // Формы нет — ключ без суффикса.
-    expect(ru.announceCopy(1)).toBe('Скопирована 1 ячейка')
-    expect(ru.announceCopy(7)).toBe('Скопировано ячеек: 7')
+    expect(cellSelectionLabels(ru).announceCopy(1)).toBe('Скопирована 1 ячейка')
+    expect(cellSelectionLabels(ru).announceCopy(7)).toBe('Скопировано ячеек: 7')
 
     // `_zero` — при нуле и в языке без такой формы.
     const en = resolveLabels(
       {
-        announceMoreLoaded_zero: 'Nothing more',
-        announceMoreLoaded_one: 'One more row',
-        announceMoreLoaded_other: '{count} more rows',
+        'infiniteScroll.announceMoreLoaded_zero': 'Nothing more',
+        'infiniteScroll.announceMoreLoaded_one': 'One more row',
+        'infiniteScroll.announceMoreLoaded_other': '{count} more rows',
       },
       'en-US',
     )
-    expect([0, 1, 3].map(count => en.announceMoreLoaded(count))).toEqual([
-      'Nothing more',
-      'One more row',
-      '3 more rows',
-    ])
+    expect(
+      [0, 1, 3].map(count =>
+        infiniteScrollLabels(en).announceMoreLoaded(count),
+      ),
+    ).toEqual(['Nothing more', 'One more row', '3 more rows'])
   })
 
   it('LC4: числа в подстановках — Intl.NumberFormat(locale), списки — Intl.ListFormat(locale)', () => {
     const dictionary = {
-      pageRange: '{from}–{to} / {total}',
-      searchColumnsHint: 'Поиск: {columns}',
+      'pagination.pageRange': '{from}–{to} / {total}',
+      'quickSearch.searchColumnsHint': 'Поиск: {columns}',
     }
     const ru = resolveLabels(dictionary, 'ru')
     const en = resolveLabels(dictionary, 'en-US')
-    expect(ru.pageRange(1, 10, 12_340)).toBe(`1–10 / 12${NBSP}340`)
-    expect(en.pageRange(1, 10, 12_340)).toBe('1–10 / 12,340')
-    expect(ru.searchColumnsHint(['Имя', 'Город', 'Возраст'])).toBe(
-      'Поиск: Имя, Город и Возраст',
+    expect(paginationLabels(ru).pageRange(1, 10, 12_340)).toBe(
+      `1–10 / 12${NBSP}340`,
     )
-    expect(en.searchColumnsHint(['Name', 'City', 'Age'])).toBe(
-      'Поиск: Name, City, and Age',
-    )
+    expect(paginationLabels(en).pageRange(1, 10, 12_340)).toBe('1–10 / 12,340')
+    expect(
+      quickSearchLabels(ru).searchColumnsHint(['Имя', 'Город', 'Возраст']),
+    ).toBe('Поиск: Имя, Город и Возраст')
+    expect(
+      quickSearchLabels(en).searchColumnsHint(['Name', 'City', 'Age']),
+    ).toBe('Поиск: Name, City, and Age')
   })
 
   it('LC6: составные подписи — отдельными ключами, каждый выражается шаблоном без условий; названия возможностей exportView переводятся', () => {
     // Словарь только из строк: каждую ветку бывшей составной подписи задаёт свой ключ.
     const labels = resolveLabels(
       {
-        filters: 'Фильтры',
-        filtersActive: 'Фильтры: {count}',
-        filtersActiveHidden: 'Фильтры: {count}, на скрытых: {hidden}',
+        'columnFiltering.filters': 'Фильтры',
+        'columnFiltering.filtersActive': 'Фильтры: {count}',
+        'columnFiltering.filtersActiveHidden':
+          'Фильтры: {count}, на скрытых: {hidden}',
         announceSortAscending: '«{column}» по возрастанию',
         announceSortDescending: '«{column}» по убыванию',
         announceSortCleared: 'Сортировка снята',
-        loadedRows: 'Загружено {count}',
-        loadedRowsOf: 'Загружено {count} из {total}',
-        loadedRowsShort: '{count}',
-        loadedRowsOfShort: '{count} / {total}',
+        'infiniteScroll.loadedRows': 'Загружено {count}',
+        'infiniteScroll.loadedRowsOf': 'Загружено {count} из {total}',
+        'infiniteScroll.loadedRowsShort': '{count}',
+        'infiniteScroll.loadedRowsOfShort': '{count} / {total}',
         announceLoadError: 'Не обновлено',
         announceLoadErrorReason: 'Не обновлено: {reason}',
         announceLoadFailed: 'Не загружено',
         announceLoadFailedReason: 'Не загружено: {reason}',
-        exportView: 'С {features}',
-        exportViewSorting: 'сортировкой',
-        exportViewFiltering: 'фильтрами',
+        'dataExport.exportView': 'С {features}',
+        'dataExport.exportViewSorting': 'сортировкой',
+        'dataExport.exportViewFiltering': 'фильтрами',
         serverActionFailedSorting: 'Сортировка не применена',
         serverActionFailedFiltering: 'Фильтры не применены',
         serverActionFailedSearch: 'Поиск не применён',
         serverActionFailedPagination: 'Страница не сменилась',
-        announceChildrenLoaded_zero: 'Строк нет',
-        announceChildrenLoaded: 'Загружено строк: {count}',
+        'rowExpanding.announceChildrenLoaded_zero': 'Строк нет',
+        'rowExpanding.announceChildrenLoaded': 'Загружено строк: {count}',
       },
       'ru',
     )
     expect([
-      labels.filters,
-      labels.filtersActive(2),
-      labels.filtersActiveHidden(2, 1),
+      columnFilteringLabels(labels).filters,
+      columnFilteringLabels(labels).filtersActive(2),
+      columnFilteringLabels(labels).filtersActiveHidden(2, 1),
       labels.announceSortAscending('Город'),
       labels.announceSortDescending('Город'),
       labels.announceSortCleared,
-      labels.loadedRows(50),
-      labels.loadedRowsOf(50, 1000),
-      labels.loadedRowsShort(50),
-      labels.loadedRowsOfShort(50, 1000),
+      infiniteScrollLabels(labels).loadedRows(50),
+      infiniteScrollLabels(labels).loadedRowsOf(50, 1000),
+      infiniteScrollLabels(labels).loadedRowsShort(50),
+      infiniteScrollLabels(labels).loadedRowsOfShort(50, 1000),
       labels.announceLoadError,
       labels.announceLoadErrorReason('таймаут'),
       labels.announceLoadFailed,
       labels.announceLoadFailedReason('таймаут'),
-      labels.announceChildrenLoaded(0),
-      labels.announceChildrenLoaded(3),
+      rowExpandingLabels(labels).announceChildrenLoaded(0),
+      rowExpandingLabels(labels).announceChildrenLoaded(3),
     ]).toEqual([
       'Фильтры',
       'Фильтры: 2',
@@ -200,7 +219,9 @@ describe('Разрешитель подписей', () => {
       'en-US',
     )
     const english = resolveLabels(undefined, 'en-US')
-    expect(fromJson.pageRange(1, 25, 1000)).toBe(english.pageRange(1, 25, 1000))
+    expect(paginationLabels(fromJson).pageRange(1, 25, 1000)).toBe(
+      paginationLabels(english).pageRange(1, 25, 1000),
+    )
     // Каждая подстановка шаблона — параметр своей подписи.
     const params: Record<string, readonly string[]> = LABEL_PARAMS
     const dangling = values.flatMap(([key, template]) =>
@@ -212,12 +233,12 @@ describe('Разрешитель подписей', () => {
     expect(dangling).toEqual([])
     // Английский текст прежний: форма числа, ноль, ветки бывших составных подписей.
     expect([
-      english.selectedRows(1),
-      english.selectedRows(3),
-      english.announceChildrenLoaded(0),
-      english.filtersActiveHidden(2, 1),
+      rowSelectionLabels(english).selectedRows(1),
+      rowSelectionLabels(english).selectedRows(3),
+      rowExpandingLabels(english).announceChildrenLoaded(0),
+      columnFilteringLabels(english).filtersActiveHidden(2, 1),
       english.announceSortDescending('City'),
-      english.loadedRowsOf(12_340, 100_000),
+      infiniteScrollLabels(english).loadedRowsOf(12_340, 100_000),
     ]).toEqual([
       '1 row selected',
       '3 rows selected',
@@ -229,16 +250,24 @@ describe('Разрешитель подписей', () => {
   })
 
   it('HA8: подписи allColumns и selectedColumns — шаблонами в словаре, selectedColumns — с формами числа', () => {
-    expect(DEFAULT_LABELS.allColumns).toBe('All columns')
-    expect(typeof DEFAULT_LABELS.selectedColumns).toBe('string')
-    expect(LABEL_PARAMS.selectedColumns).toEqual(['count'])
+    expect(columnVisibilityLabels.defaults.allColumns).toBe('All columns')
+    expect(typeof columnVisibilityLabels.defaults.selectedColumns).toBe(
+      'string',
+    )
+    expect(columnVisibilityLabels.params.selectedColumns).toEqual(['count'])
     const en = resolveLabels(undefined, 'en-US')
-    expect(en.allColumns).toBe('All columns')
-    expect(en.selectedColumns(1)).toBe('1 column selected')
-    expect(en.selectedColumns(3)).toBe('3 columns selected')
+    expect(columnVisibilityLabels(en).allColumns).toBe('All columns')
+    expect(columnVisibilityLabels(en).selectedColumns(1)).toBe(
+      '1 column selected',
+    )
+    expect(columnVisibilityLabels(en).selectedColumns(3)).toBe(
+      '3 columns selected',
+    )
     const ru = resolveLabels(RU_LABELS, 'ru-RU')
-    expect(ru.allColumns).toBe('Все колонки')
-    expect([1, 3, 5, 21].map(ru.selectedColumns)).toEqual([
+    expect(columnVisibilityLabels(ru).allColumns).toBe('Все колонки')
+    expect(
+      [1, 3, 5, 21].map(columnVisibilityLabels(ru).selectedColumns),
+    ).toEqual([
       'Выбрано: 1 колонка',
       'Выбрано: 3 колонки',
       'Выбрано: 5 колонок',

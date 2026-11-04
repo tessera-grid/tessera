@@ -11,6 +11,7 @@ import { FILTERED_STUB } from '../../shared/filtering/filtering'
 import { createSearchAwareFilteredRowModel } from '../../shared/rowModels/filteredRowModel'
 import { neverInert } from '../../core/pluginDiagnostics'
 import { canSearchColumn, quickSearchFilter } from './search'
+import { filteringLabels } from '../../shared/filtering/labels'
 
 export interface QuickSearchModelOptions {
   /** `false` — плагин отключён: поиск не применяется. */
@@ -31,6 +32,7 @@ export const quickSearchModelFeatures = {
 
 export const quickSearchModel = definePlugin<QuickSearchModelOptions>()({
   id: 'quickSearchModel',
+  labels: [filteringLabels],
   diagnose: neverInert,
   stubs: [FILTERED_STUB],
   features: quickSearchModelFeatures,

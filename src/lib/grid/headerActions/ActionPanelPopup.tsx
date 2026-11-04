@@ -13,6 +13,7 @@ import type { ActionPanelControls, SlotAction } from '../../core/headerActions'
 import styles from '../../grid/headerActions/ActionPanel.module.css'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 import { useFinalFocus } from '../../ui/Popup/finalFocus'
+import { menuActionLabel } from '../../core/actions'
 
 interface ActionPanelPopupProps {
   action: SlotAction
@@ -58,7 +59,7 @@ export const ActionPanelPopup = ({
         {...themeData}
       >
         <Popover.Popup
-          aria-label={action.label(context, labels)}
+          aria-label={menuActionLabel(action, context, labels)}
           initialFocus={() => initialFocusRef.current ?? true}
           ref={popupRef}
           finalFocus={finalFocus}

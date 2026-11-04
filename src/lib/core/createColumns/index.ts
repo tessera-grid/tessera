@@ -7,10 +7,8 @@ import type { ColumnDef } from '../../types'
 import type { TableLabels } from '../localization'
 import { withPluginBoundary } from '../pluginBoundary'
 
-/** Ключ словаря со строкой: скрытая подпись шапки служебной колонки. */
-export type ServiceColumnLabel = {
-  [K in keyof TableLabels]: TableLabels[K] extends string ? K : never
-}[keyof TableLabels]
+/** Скрытая подпись шапки служебной колонки — подписью владельца (ADR 0182, §8). */
+export type ServiceColumnLabel = (labels: TableLabels) => string
 
 /**
  * Привязка сервисной колонки плагина к сборке колонок (pre-table инъекция).
@@ -34,7 +32,7 @@ export interface ServiceColumn {
     side: 'start' | 'end'
     when: 'always' | 'with-user'
   }
-  /** Скрытая подпись шапки — ключ `localization` (ADR 0165). */
+  /** Скрытая подпись шапки (ADR 0165): плагин берёт её из своих подписей. */
   label?: ServiceColumnLabel
   /** Ширина — по кнопке грида из темы (ADR 0135). */
   controlSized?: boolean

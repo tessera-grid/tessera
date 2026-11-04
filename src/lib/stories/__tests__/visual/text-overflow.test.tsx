@@ -30,6 +30,9 @@ import {
 } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
 import { tableLabels } from '../labels'
+import { rowSelectionLabels } from '../../../plugins/rowSelection/labels'
+import { filteringLabels } from '../../../shared/filtering/labels'
+import { infiniteScrollLabels } from '../../../plugins/infiniteScroll/labels'
 
 // Длинный текст (ADR 0083; TX1–TX7, TX9–TX11, TX13). Модульный TX8 — в
 // `textOverflow`, перф TX12 — в `interaction`.
@@ -143,7 +146,8 @@ const Grid = ({ width = 720 }: { width?: number }) => {
       <DataGrid
         table={table}
         localization={{
-          search: 'Search accounts, managers, regions and contract numbers',
+          'quickSearch.search':
+            'Search accounts, managers, regions and contract numbers',
         }}
       />
     </div>
@@ -461,19 +465,19 @@ describe('Длинный текст', () => {
     }
     expect(layout()).toBe('full')
     expect(shownForm(count('selected-rows-count'))).toBe(
-      `${tableLabels.selectedRows(25)}, ${tableLabels.selectedRowsHidden(12)}`,
+      `${rowSelectionLabels(tableLabels).selectedRows(25)}, ${rowSelectionLabels(tableLabels).selectedRowsHidden(12)}`,
     )
 
     await narrowUntil('compact')
     expect(shownForm(count('selected-rows-count'))).toBe(
-      `${tableLabels.selectedRowsShort(25)}, ${tableLabels.selectedRowsHiddenShort(12)}`,
+      `${rowSelectionLabels(tableLabels).selectedRowsShort(25)}, ${rowSelectionLabels(tableLabels).selectedRowsHiddenShort(12)}`,
     )
     expect(shownForm(count('filtered-rows-count'))).toBe(
-      tableLabels.filteredRowsShort(60, 120),
+      filteringLabels(tableLabels).filteredRowsShort(60, 120),
     )
     // Доступный текст — полная форма; короткая из него исключена.
     expect(count('selected-rows-count').textContent).toBe(
-      `${tableLabels.selectedRows(25)}, ${tableLabels.selectedRowsHidden(12)}`,
+      `${rowSelectionLabels(tableLabels).selectedRows(25)}, ${rowSelectionLabels(tableLabels).selectedRowsHidden(12)}`,
     )
     expect(
       shortOf(count('selected-rows-count'))!.getAttribute('aria-hidden'),
@@ -486,10 +490,16 @@ describe('Длинный текст', () => {
       statusBar().querySelector<HTMLElement>(
         '[data-testid="loaded-rows-count"]',
       )!
-    expect(shownForm(loaded())).toBe(tableLabels.loadedRowsOf(30, 100000))
+    expect(shownForm(loaded())).toBe(
+      infiniteScrollLabels(tableLabels).loadedRowsOf(30, 100000),
+    )
     await narrowUntil('compact')
-    expect(shownForm(loaded())).toBe(tableLabels.loadedRowsOfShort(30, 100000))
-    expect(loaded().textContent).toBe(tableLabels.loadedRowsOf(30, 100000))
+    expect(shownForm(loaded())).toBe(
+      infiniteScrollLabels(tableLabels).loadedRowsOfShort(30, 100000),
+    )
+    expect(loaded().textContent).toBe(
+      infiniteScrollLabels(tableLabels).loadedRowsOf(30, 100000),
+    )
   })
 
   test('TX7: числа счётчиков и диапазон пагинации не обрезаются ни в одном виде панели', async () => {

@@ -25,6 +25,9 @@ import {
 } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
 import { Tooltip } from '../../../ui/Tooltip'
+import { cellEditingLabels } from '../../../plugins/cellEditing/labels'
+import { rowSelectionModelLabels } from '../../../plugins/rowSelectionModel/labels'
+import { cellSelectionLabels } from '../../../plugins/cellSelection/labels'
 
 // W1–W17: остаток WCAG 2.1 AA (ADR 0032). Каждое требование — отдельный
 // именованный тест `W<n>` (docs/decisions/0009-test-coverage-visual-and-performance.md).
@@ -51,7 +54,9 @@ describe('Доступность: остаток WCAG 2.1 AA', () => {
       cell => cell.getAttribute('data-column-id') === columnId,
     )!
     expect(label).toBe(
-      ENGLISH_LABELS.editCellValue(header.textContent!.trim() || columnId),
+      cellEditingLabels(ENGLISH_LABELS).editCellValue(
+        header.textContent!.trim() || columnId,
+      ),
     )
     await userEvent.keyboard('{Escape}')
   })
@@ -262,7 +267,9 @@ describe('Доступность: остаток WCAG 2.1 AA', () => {
     await userEvent.click(
       bodyRows()[0].querySelector<HTMLElement>('.row-select-checkbox')!,
     )
-    await expect.poll(live).toBe(ENGLISH_LABELS.announceSelection(1))
+    await expect
+      .poll(live)
+      .toBe(rowSelectionModelLabels(ENGLISH_LABELS).announceSelection(1))
 
     // Копирование выделения ячеек.
     const cell = bodyRows()[1].querySelector<HTMLElement>(
@@ -275,7 +282,9 @@ describe('Доступность: остаток WCAG 2.1 AA', () => {
         clipboardData: new DataTransfer(),
       }),
     )
-    await expect.poll(live).toBe(ENGLISH_LABELS.announceCopy(1))
+    await expect
+      .poll(live)
+      .toBe(cellSelectionLabels(ENGLISH_LABELS).announceCopy(1))
 
     // Пустой результат.
     await screen.rerender(

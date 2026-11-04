@@ -7,6 +7,9 @@ import { firePointer, nextFrame } from '../../rowDragging.dnd'
 import { Stories, renderGrid, settleRowMotion } from '../helpers'
 import { waitForGrid } from './core-helpers'
 import { ColumnResizingGrid, ColumnDraggingGrid } from './columns-fixtures'
+import { columnDraggingLabels } from '../../../plugins/columnDragging/labels'
+import { rowDraggingLabels } from '../../../plugins/rowDragging/labels'
+import { columnSizingLabels } from '../../../plugins/columnSizing/labels'
 
 // WCAG 2.2 AA (ADR 0034): альтернатива перетаскиванию одним указателем (2.5.7,
 // `DA<n>`) и размер целей (2.5.8, `TS<n>`). Каждое требование — свой тест.
@@ -79,16 +82,20 @@ describe('WCAG 2.5.7 — альтернатива перетаскиванию (
     const handle = cell.querySelector<HTMLElement>(HANDLE)!
 
     expect(handle.getAttribute('role')).toBe('button')
-    expect(handle.getAttribute('aria-label')).toBe(ENGLISH_LABELS.moveColumn)
+    expect(handle.getAttribute('aria-label')).toBe(
+      columnDraggingLabels(ENGLISH_LABELS).moveColumn,
+    )
     expect(handle.getAttribute('aria-haspopup')).toBe('menu')
     expect(handle.hasAttribute('aria-describedby')).toBe(false)
     expect(handle.hasAttribute('aria-roledescription')).toBe(false)
 
     await openHandleMenu(cell, handle)
-    expect(menu()!.getAttribute('aria-label')).toBe(ENGLISH_LABELS.moveColumn)
+    expect(menu()!.getAttribute('aria-label')).toBe(
+      columnDraggingLabels(ENGLISH_LABELS).moveColumn,
+    )
     expect(menuLabels()).toEqual([
-      ENGLISH_LABELS.moveLeft,
-      ENGLISH_LABELS.moveRight,
+      columnDraggingLabels(ENGLISH_LABELS).moveLeft,
+      columnDraggingLabels(ENGLISH_LABELS).moveRight,
     ])
     expect(handle.getAttribute('aria-expanded')).toBe('true')
 
@@ -111,8 +118,12 @@ describe('WCAG 2.5.7 — альтернатива перетаскиванию (
 
     await openHandleMenu(headById(first), handleOf(first))
     // Первая перемещаемая колонка: левее — только закреплённые и служебные.
-    expect(isDisabled(menuItem(ENGLISH_LABELS.moveLeft))).toBe(true)
-    await userEvent.click(menuItem(ENGLISH_LABELS.moveRight))
+    expect(
+      isDisabled(menuItem(columnDraggingLabels(ENGLISH_LABELS).moveLeft)),
+    ).toBe(true)
+    await userEvent.click(
+      menuItem(columnDraggingLabels(ENGLISH_LABELS).moveRight),
+    )
     await expect.poll(menu).toBeNull()
     await expect.poll(() => left(first) > left(second)).toBe(true)
     expect(onColumnDragEnd).toHaveBeenCalledTimes(1)
@@ -124,7 +135,9 @@ describe('WCAG 2.5.7 — альтернатива перетаскиванию (
     })
 
     await openHandleMenu(headById(first), handleOf(first))
-    await userEvent.click(menuItem(ENGLISH_LABELS.moveLeft))
+    await userEvent.click(
+      menuItem(columnDraggingLabels(ENGLISH_LABELS).moveLeft),
+    )
     await expect.poll(() => left(first) < left(second)).toBe(true)
     expect(onColumnDragEnd).toHaveBeenCalledTimes(2)
   })
@@ -137,22 +150,26 @@ describe('WCAG 2.5.7 — альтернатива перетаскиванию (
       Number(rowById(id)?.getAttribute('data-index'))
     const handle = () => rowById(moved)!.querySelector<HTMLElement>(HANDLE)!
 
-    expect(handle().getAttribute('aria-label')).toBe(ENGLISH_LABELS.moveRow)
+    expect(handle().getAttribute('aria-label')).toBe(
+      rowDraggingLabels(ENGLISH_LABELS).moveRow,
+    )
     handle().focus()
     await userEvent.keyboard('{Enter}')
     await expect.poll(menu).toBeTruthy()
     expect(menuLabels()).toEqual([
-      ENGLISH_LABELS.moveUp,
-      ENGLISH_LABELS.moveDown,
+      rowDraggingLabels(ENGLISH_LABELS).moveUp,
+      rowDraggingLabels(ENGLISH_LABELS).moveDown,
     ])
-    expect(isDisabled(menuItem(ENGLISH_LABELS.moveUp))).toBe(true)
+    expect(isDisabled(menuItem(rowDraggingLabels(ENGLISH_LABELS).moveUp))).toBe(
+      true,
+    )
 
-    await userEvent.click(menuItem(ENGLISH_LABELS.moveDown))
+    await userEvent.click(menuItem(rowDraggingLabels(ENGLISH_LABELS).moveDown))
     await expect.poll(() => indexOf(moved)).toBe(1)
     await settleRowMotion()
 
     await openHandleMenu(rowById(moved)!, handle())
-    await userEvent.click(menuItem(ENGLISH_LABELS.moveUp))
+    await userEvent.click(menuItem(rowDraggingLabels(ENGLISH_LABELS).moveUp))
     await expect.poll(() => indexOf(moved)).toBe(0)
   })
 
@@ -173,18 +190,24 @@ describe('WCAG 2.5.7 — альтернатива перетаскиванию (
 
     await openHandleMenu(rowById('item-id-1')!, handleOf(rowById('item-id-1')!))
     expect(menuLabels()).toEqual([
-      ENGLISH_LABELS.moveUp,
-      ENGLISH_LABELS.moveDown,
-      ENGLISH_LABELS.indentRow,
-      ENGLISH_LABELS.outdentRow,
+      rowDraggingLabels(ENGLISH_LABELS).moveUp,
+      rowDraggingLabels(ENGLISH_LABELS).moveDown,
+      rowDraggingLabels(ENGLISH_LABELS).indentRow,
+      rowDraggingLabels(ENGLISH_LABELS).outdentRow,
     ])
-    expect(isDisabled(menuItem(ENGLISH_LABELS.outdentRow))).toBe(true)
-    await userEvent.click(menuItem(ENGLISH_LABELS.indentRow))
+    expect(
+      isDisabled(menuItem(rowDraggingLabels(ENGLISH_LABELS).outdentRow)),
+    ).toBe(true)
+    await userEvent.click(menuItem(rowDraggingLabels(ENGLISH_LABELS).indentRow))
     await expect.poll(level).toBe('2')
 
     await openHandleMenu(rowById('item-id-1')!, handleOf(rowById('item-id-1')!))
-    expect(isDisabled(menuItem(ENGLISH_LABELS.indentRow))).toBe(true)
-    await userEvent.click(menuItem(ENGLISH_LABELS.outdentRow))
+    expect(
+      isDisabled(menuItem(rowDraggingLabels(ENGLISH_LABELS).indentRow)),
+    ).toBe(true)
+    await userEvent.click(
+      menuItem(rowDraggingLabels(ENGLISH_LABELS).outdentRow),
+    )
     await expect.poll(level).toBe('1')
   })
 
@@ -266,19 +289,23 @@ describe('WCAG 2.5.7 — альтернатива перетаскиванию (
       )
 
     await openHandleMenu(headById(id), grip())
-    expect(menu()!.getAttribute('aria-label')).toBe(ENGLISH_LABELS.columnWidth)
+    expect(menu()!.getAttribute('aria-label')).toBe(
+      columnSizingLabels(ENGLISH_LABELS).columnWidth,
+    )
     expect(menuLabels()).toEqual([
-      ENGLISH_LABELS.widenColumn,
-      ENGLISH_LABELS.narrowColumn,
-      ENGLISH_LABELS.resetColumnWidth,
+      columnSizingLabels(ENGLISH_LABELS).widenColumn,
+      columnSizingLabels(ENGLISH_LABELS).narrowColumn,
+      columnSizingLabels(ENGLISH_LABELS).resetColumnWidth,
     ])
     // Ширина на minSize — сужать некуда.
-    expect(isDisabled(menuItem(ENGLISH_LABELS.narrowColumn))).toBe(
-      initial <= min,
-    )
+    expect(
+      isDisabled(menuItem(columnSizingLabels(ENGLISH_LABELS).narrowColumn)),
+    ).toBe(initial <= min)
     const nextId = next()!.getAttribute('data-column-id')
     onColumnResizeEnd.mockClear()
-    await userEvent.click(menuItem(ENGLISH_LABELS.widenColumn))
+    await userEvent.click(
+      menuItem(columnSizingLabels(ENGLISH_LABELS).widenColumn),
+    )
     await expect.poll(width).toBe(initial + 50)
     expect(onColumnResizeEnd).toHaveBeenLastCalledWith({
       id,
@@ -287,8 +314,12 @@ describe('WCAG 2.5.7 — альтернатива перетаскиванию (
     await expect.poll(() => next()?.getAttribute('data-column-id')).toBe(nextId)
 
     await openHandleMenu(headById(id), grip())
-    expect(isDisabled(menuItem(ENGLISH_LABELS.narrowColumn))).toBe(false)
-    await userEvent.click(menuItem(ENGLISH_LABELS.narrowColumn))
+    expect(
+      isDisabled(menuItem(columnSizingLabels(ENGLISH_LABELS).narrowColumn)),
+    ).toBe(false)
+    await userEvent.click(
+      menuItem(columnSizingLabels(ENGLISH_LABELS).narrowColumn),
+    )
     await expect.poll(width).toBe(initial)
 
     // Протяжка грипа вправо меняет ширину и меню не открывает, даже если

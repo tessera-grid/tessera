@@ -5,6 +5,7 @@ import { describe, expect, test } from 'vitest'
 import { Stories, getScroller } from '../helpers'
 import { composed, selectedCountArgs } from '../stories'
 import { tableLabels } from '../labels'
+import { rowSelectionLabels } from '../../../plugins/rowSelection/labels'
 
 // Нижняя панель грида (ADR 0038, SB1–SB4, SB6, SB15). Каждый тест — одно требование,
 // назван по его ID. Состояние читается из DOM-контракта (data-*) и вычисленных
@@ -146,7 +147,7 @@ describe('Status bar', () => {
       statusBar()?.querySelector<HTMLElement>('[data-status-count]')
     await expect
       .poll(() => count()?.textContent)
-      .toBe(tableLabels.selectedRows(1))
+      .toBe(rowSelectionLabels(tableLabels).selectedRows(1))
     const range = byTestId('pagination-range')
     const size = resolveToken('--tsr-comp-status-bar-font-size', 'font-size')
     expect(size).toBe(resolveToken('--tsr-comp-cell-font-size', 'font-size'))

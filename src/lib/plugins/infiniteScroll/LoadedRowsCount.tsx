@@ -8,6 +8,7 @@ import { useLocalization } from '../../core/localization'
 import { isSkeletonShown } from '../../core/skeletonOptions'
 import { StatusBarCount } from '../../ui/StatusBarCount/StatusBarCount'
 import { Skeleton } from '../../ui/Skeleton'
+import { infiniteScrollLabels } from './labels'
 
 export const LoadedRowsCount = ({ table }: StatusBarComponentProps) => {
   const labels = useLocalization()
@@ -25,13 +26,13 @@ export const LoadedRowsCount = ({ table }: StatusBarComponentProps) => {
       data-testid="loaded-rows-count"
       full={
         rowCount === undefined
-          ? labels.loadedRows(loaded)
-          : labels.loadedRowsOf(loaded, rowCount)
+          ? infiniteScrollLabels(labels).loadedRows(loaded)
+          : infiniteScrollLabels(labels).loadedRowsOf(loaded, rowCount)
       }
       short={
         rowCount === undefined
-          ? labels.loadedRowsShort(loaded)
-          : labels.loadedRowsOfShort(loaded, rowCount)
+          ? infiniteScrollLabels(labels).loadedRowsShort(loaded)
+          : infiniteScrollLabels(labels).loadedRowsOfShort(loaded, rowCount)
       }
     />
   )

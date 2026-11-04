@@ -18,6 +18,7 @@ import { useLocalization } from '../../core/localization'
 import { useIcons } from '../../ui/icons'
 
 import styles from './Calendar.module.css'
+import { calendarLabels } from './labels'
 
 export type { DateRange }
 
@@ -120,8 +121,8 @@ export const Calendar = (props: CalendarProps) => {
     classNames: CLASS_NAMES,
     components: { Chevron: CalendarChevron },
     labels: {
-      labelPrevious: () => labels.previousMonth,
-      labelNext: () => labels.nextMonth,
+      labelPrevious: () => calendarLabels(labels).previousMonth,
+      labelNext: () => calendarLabels(labels).nextMonth,
       // Имя дня начинается с видимого числа (WCAG 2.5.3), дальше — полная дата.
       labelDayButton: (...args: Parameters<typeof labelDayButton>) =>
         `${args[3]?.format(args[0], 'd') ?? args[0].getDate()}, ${labelDayButton(...args)}`,

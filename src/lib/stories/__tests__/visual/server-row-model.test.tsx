@@ -40,6 +40,10 @@ import {
   inBothThemes,
   toRgba,
 } from './a11y-helpers'
+import { rowSelectionLabels } from '../../../plugins/rowSelection/labels'
+import { rowSelectionModelLabels } from '../../../plugins/rowSelectionModel/labels'
+import { filteringLabels } from '../../../shared/filtering/labels'
+import { rowExpandingLabels } from '../../../plugins/rowExpanding/labels'
 
 // Серверная модель строк на гриде (ADR 0138, этап 2): высота на весь итог, скелеты
 // незагруженных строк, блоки по окну прокрутки, неизвестный итог, отказы блока и списка.
@@ -1102,7 +1106,9 @@ describe('Серверная модель строк (ADR 0138)', () => {
       await expect.poll(() => checked(checkbox(0))).toBe(true)
       expect(checked(head())).toBe(true)
       expect(calls.length).toBe(requested)
-      await expect.poll(count).toBe(tableLabels.selectedRows(1000))
+      await expect
+        .poll(count)
+        .toBe(rowSelectionLabels(tableLabels).selectedRows(1000))
 
       // Строки блока, пришедшего позже, — тоже выбраны.
       await scrollToIndex(500)
@@ -1116,7 +1122,9 @@ describe('Серверная модель строк (ADR 0138)', () => {
       expect(checked(checkbox(501))).toBe(false)
       expect(checked(checkbox(500))).toBe(true)
       expect(head().hasAttribute('data-indeterminate')).toBe(true)
-      await expect.poll(count).toBe(tableLabels.selectedRows(999))
+      await expect
+        .poll(count)
+        .toBe(rowSelectionLabels(tableLabels).selectedRows(999))
 
       // Флажок снова поставлен — исключения нет.
       await userEvent.click(checkbox(501)!)
@@ -1147,10 +1155,14 @@ describe('Серверная модель строк (ADR 0138)', () => {
       await expect.poll(() => checkbox(0)).not.toBeNull()
 
       await userEvent.click(q('.data-grid__head-cell .row-select-checkbox')!)
-      await expect.poll(live).toBe(tableLabels.announceSelection(1000))
+      await expect
+        .poll(live)
+        .toBe(rowSelectionModelLabels(tableLabels).announceSelection(1000))
 
       await userEvent.click(checkbox(1)!)
-      await expect.poll(live).toBe(tableLabels.announceSelection(999))
+      await expect
+        .poll(live)
+        .toBe(rowSelectionModelLabels(tableLabels).announceSelection(999))
     } finally {
       await screen.unmount()
     }
@@ -1179,7 +1191,9 @@ describe('Серверная модель строк (ADR 0138)', () => {
           q('[role="grid"], [role="table"]')?.getAttribute('aria-rowcount'),
         )
         .toBe(String(FOUND + 1))
-      await expect.poll(count).toBe(tableLabels.filteredRows(FOUND, 1000))
+      await expect
+        .poll(count)
+        .toBe(filteringLabels(tableLabels).filteredRows(FOUND, 1000))
     } finally {
       await screen.unmount()
     }
@@ -1374,7 +1388,7 @@ describe('Серверная модель строк (ADR 0138)', () => {
           toggleOf('r1')!.querySelector<HTMLElement>('[data-cancel-icon]')!
         await expect.poll(() => getComputedStyle(stop).display).toBe('flex')
         expect(toggleOf('r1')!.getAttribute('aria-label')).toBe(
-          tableLabels.cancelAction(tableLabels.expandRow),
+          tableLabels.cancelAction(rowExpandingLabels(tableLabels).expandRow),
         )
 
         // Отмена: строка свёрнута, запрос блока прерван, скелетов нет.
@@ -1514,7 +1528,9 @@ describe('Серверная модель строк (ADR 0138)', () => {
         await expect
           .poll(() => plain.changes.at(-1))
           .toEqual({ all: true, except: [] })
-        await expect.poll(count).toBe(tableLabels.selectedRows(1000))
+        await expect
+          .poll(count)
+          .toBe(rowSelectionLabels(tableLabels).selectedRows(1000))
         expect(rowOf('r1.0')!.getAttribute('data-selected')).toBe('false')
       } finally {
         await plain.screen.unmount()

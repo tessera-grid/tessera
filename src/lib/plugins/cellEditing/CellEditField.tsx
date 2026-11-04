@@ -34,6 +34,7 @@ import {
   setEditText,
 } from './session'
 import type { CellEditingHooks, CellEditingState } from './types'
+import { cellEditingLabels } from './labels'
 
 const noop = () => {}
 
@@ -134,7 +135,7 @@ export const CellEditField = (
   )({
     value: session?.draft,
     text: session?.text ?? '',
-    label: labels.editCellValue(header),
+    label: cellEditingLabels(labels).editCellValue(header),
     error: error ?? serverError,
     commit: value => saveEdit(table, cell, { value }, hooks, props),
     commitText: text => saveEdit(table, cell, { text }, hooks, props),

@@ -23,6 +23,7 @@ import {
   verticalAt,
 } from './tree-lines-helpers'
 import { tableLabels } from '../labels'
+import { paginationLabels } from '../../../plugins/pagination/labels'
 
 // Линии дерева: ветки со скруглёнными поворотами (ADR 0102, TL1–TL6) и общие гарантии
 // ADR 0058 (RE53, RE55–RE58) и шаг ADR 0059 (RE62). Линии проверяются по пикселям
@@ -425,7 +426,7 @@ describe('Row expanding: tree lines', () => {
     await waitTree()
     await humanClick(
       document.querySelector<HTMLElement>(
-        `[aria-label="${tableLabels.nextPage}"]`,
+        `[aria-label="${paginationLabels(tableLabels).nextPage}"]`,
       )!,
     )
     await expect.poll(() => rowEl('node-2-0')).not.toBeNull()

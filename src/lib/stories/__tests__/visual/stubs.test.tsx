@@ -6,7 +6,7 @@ import { useState } from 'react'
 
 import { definePlugin } from '../../../core/definePlugin'
 import { ILLUSTRATION_SIZE, type StubsOverride } from '../../../core/stubs'
-import type { TableLabels } from '../../../core/localization'
+import type { LabelDictionary } from '../../../core/localization'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import {
@@ -23,6 +23,7 @@ import { Stub } from '../../../ui/Stub'
 import { humanClick } from '../helpers'
 import { AXE_OPTIONS } from './a11y-helpers'
 import { tableLabels } from '../labels'
+import { columnVisibilityLabels } from '../../../plugins/columnVisibility/labels'
 
 // Заглушки пустой таблицы (ADR 0123, ES4–ES15): реестр причин, тексты из `localization`,
 // иллюстрация из `icons`, проп `stubs`, тулбар без колонок. ES1–ES3 — модульные `stubs`.
@@ -69,7 +70,7 @@ interface HostProps {
   initialColumnFilters?: unknown[]
   withOffline?: boolean
   stubs?: StubsOverride
-  localization?: Partial<TableLabels>
+  localization?: LabelDictionary
   icons?: Partial<TableIcons>
   colorMode?: 'light' | 'dark'
   gridHeight?: number
@@ -185,13 +186,13 @@ const STUBS = {
 
 describe('Заглушки пустой таблицы (ADR 0123)', () => {
   test('ES4: заголовки, описания и подписи действий заглушек — из localization', async () => {
-    const localization: Partial<TableLabels> = {
+    const localization: LabelDictionary = {
       noData: 'Пусто',
       noColumnsTitle: 'Колонок нет',
-      columnsHiddenTitle: 'Всё скрыто',
-      showAllColumns: 'Показать',
-      noRowsMatchFilters: 'Ничего',
-      resetFilters: 'Сбросить',
+      'columnVisibility.columnsHiddenTitle': 'Всё скрыто',
+      'columnVisibility.showAllColumns': 'Показать',
+      'filtering.noRowsMatchFilters': 'Ничего',
+      'filtering.resetFilters': 'Сбросить',
       loadFailedTitle: 'Не загрузилось',
       loadRetry: 'Ещё раз',
     }
@@ -233,7 +234,9 @@ describe('Заглушки пустой таблицы (ADR 0123)', () => {
     await render(<OwnVisibility />)
     await expect.poll(() => byTestId('columns-hidden-stub')).not.toBeNull()
     const stub = byTestId('columns-hidden-stub')!
-    expect(stub.textContent).toContain(tableLabels.columnsHiddenTitle)
+    expect(stub.textContent).toContain(
+      columnVisibilityLabels(tableLabels).columnsHiddenTitle,
+    )
     expect(byTestId('no-columns-stub')).toBeNull()
     await humanClick(byTestId('columns-hidden-show-all')!)
     await expect.poll(() => bodyRows().length).toBe(2)
@@ -379,7 +382,9 @@ describe('Заглушки пустой таблицы (ADR 0123)', () => {
     await humanClick(byTestId('columns-hidden-show-all')!)
     await expect.poll(() => bodyRows().length).toBe(2)
     await humanClick(byTestId('hide-all')!)
-    await expect.poll(liveText).toContain(tableLabels.columnsHiddenTitle)
+    await expect
+      .poll(liveText)
+      .toContain(columnVisibilityLabels(tableLabels).columnsHiddenTitle)
   })
 
   test('ES13: axe с color-contrast у каждой встроенной заглушки в светлой и тёмной темах', async () => {

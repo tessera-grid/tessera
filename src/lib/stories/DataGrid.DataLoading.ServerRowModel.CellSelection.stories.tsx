@@ -44,6 +44,7 @@ import {
   nextFrame,
   press,
 } from './__mocks__/serverRowModelGuide'
+import { cellSelectionLabels } from '../plugins/cellSelection/labels'
 
 /**
  * Выделение и копирование в серверной модели (ADR 0146): `Playground` — строки с «сервера»
@@ -444,7 +445,9 @@ export const ServerCopyOverLimit: StoryObj<StoryProps> = {
       await stepDone(canvas)
       const text = banner(canvas)!.textContent
       await expect(text).toContain(labels.serverActionFailedCopy)
-      await expect(text).toContain(labels.copyTooManyRows(LIMIT_TOTAL, 10_000))
+      await expect(text).toContain(
+        cellSelectionLabels(labels).copyTooManyRows(LIMIT_TOTAL, 10_000),
+      )
       await expect(server.starts.length).toBe(asked)
       await settle()
     })

@@ -11,6 +11,7 @@ import { pagination } from '../../../plugins/pagination'
 import { Stories, bodyRows, getScroller } from '../helpers'
 import { AXE_OPTIONS } from './a11y-helpers'
 import { tableLabels } from '../labels'
+import { paginationLabels } from '../../../plugins/pagination/labels'
 
 // Пагинация в нижней панели (ADR 0038, PG2–PG4, PG6, PG11–PG18). Каждый тест —
 // одно требование, назван по его ID. Состояние читается из DOM-контракта (role,
@@ -80,10 +81,11 @@ const LocalizedGrid = () => {
       <DataGrid
         table={table as never}
         localization={{
-          pagination: 'Страницы',
-          rowsPerPage: 'Строк на странице',
-          nextPage: 'Следующая',
-          pageRange: (from, to, total) => `${from}–${to} из ${total}`,
+          'pagination.pagination': 'Страницы',
+          'pagination.rowsPerPage': 'Строк на странице',
+          'pagination.nextPage': 'Следующая',
+          'pagination.pageRange': (from, to, total) =>
+            `${from}–${to} из ${total}`,
         }}
         icons={{ nextPage: CustomNextIcon }}
       />
@@ -232,16 +234,18 @@ describe('Pagination', () => {
   test('PG13: the control is a labelled navigation; buttons are labelled, disabled ones stay focusable; the size choice has a label', async () => {
     await renderPagination()
     expect(nav()!.tagName).toBe('NAV')
-    expect(nav()!.getAttribute('aria-label')).toBe(tableLabels.pagination)
+    expect(nav()!.getAttribute('aria-label')).toBe(
+      paginationLabels(tableLabels).pagination,
+    )
     expect(
       (['first', 'previous', 'next', 'last'] as const).map(action =>
         pageButton(action).getAttribute('aria-label'),
       ),
     ).toEqual([
-      tableLabels.firstPage,
-      tableLabels.previousPage,
-      tableLabels.nextPage,
-      tableLabels.lastPage,
+      paginationLabels(tableLabels).firstPage,
+      paginationLabels(tableLabels).previousPage,
+      paginationLabels(tableLabels).nextPage,
+      paginationLabels(tableLabels).lastPage,
     ])
 
     const first = pageButton('first')
@@ -252,7 +256,7 @@ describe('Pagination', () => {
     await expect.poll(sizeTrigger).not.toBeNull()
     const [labelId] = sizeTrigger()!.getAttribute('aria-labelledby')!.split(' ')
     expect(document.getElementById(labelId!)!.textContent).toBe(
-      tableLabels.rowsPerPage,
+      paginationLabels(tableLabels).rowsPerPage,
     )
   })
 
@@ -278,9 +282,13 @@ describe('Pagination', () => {
   test('PG14: a page change is announced in the live region: "Page N of M"', async () => {
     await renderPagination()
     await userEvent.click(pageButton('next'))
-    await expect.poll(live).toBe(tableLabels.pageAnnouncement(2, 40))
+    await expect
+      .poll(live)
+      .toBe(paginationLabels(tableLabels).pageAnnouncement(2, 40))
     await userEvent.click(pageButton('last'))
-    await expect.poll(live).toBe(tableLabels.pageAnnouncement(40, 40))
+    await expect
+      .poll(live)
+      .toBe(paginationLabels(tableLabels).pageAnnouncement(40, 40))
   })
 
   test('PG15: aria-rowcount counts rows of all pages, aria-rowindex runs through the page offset', async () => {

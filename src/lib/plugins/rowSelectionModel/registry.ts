@@ -32,6 +32,7 @@ import {
   selectionSummaryOf,
 } from './selectionCount'
 import { groupingLength, isGroupingActive, subRowsOf } from './selectionHelpers'
+import { rowSelectionModelLabels } from './labels'
 
 export interface RowSelectionModelOptions {
   /** `false` — плагин отключён. */
@@ -146,7 +147,7 @@ const announceSelection = (table: unknown) => {
     last = key
     announceLabel(table, labels =>
       'count' in summary
-        ? labels.announceSelection(summary.count)
+        ? rowSelectionModelLabels(labels).announceSelection(summary.count)
         : selectionPartsLabel(labels, summary),
     )
   })
@@ -155,6 +156,7 @@ const announceSelection = (table: unknown) => {
 
 const rowSelectionModelEntry = definePlugin<RowSelectionModelOptions>()({
   id: 'rowSelectionModel',
+  labels: [rowSelectionModelLabels],
   features: rowSelectionModelFeatures,
   slices: ['rowSelection'],
   reconcile: resetOnSelectionChange,

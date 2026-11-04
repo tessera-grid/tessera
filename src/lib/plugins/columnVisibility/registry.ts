@@ -10,6 +10,7 @@ import { COLUMNS_HIDDEN_STUB } from './columnsHiddenStub'
 import { hideHeaderAction } from './hideHeaderAction'
 import { columnVisibilityInertReason } from './inertReason'
 import type { ColumnVisibilityHooks } from './types'
+import { columnVisibilityLabels } from './labels'
 
 export const COLUMN_VISIBILITY_TOOLBAR_GROUP = 'view'
 
@@ -22,6 +23,15 @@ export interface ColumnVisibilityOptions {
 
 export const columnVisibility = definePlugin<ColumnVisibilityOptions>()({
   id: 'columnVisibility',
+  labels: [columnVisibilityLabels],
+  actions: {
+    reset: labels => columnVisibilityLabels(labels).resetColumns,
+    searchColumns: labels => columnVisibilityLabels(labels).searchColumns,
+    toggleAll: labels => columnVisibilityLabels(labels).allColumns,
+    toggleColumn: labels => columnVisibilityLabels(labels).actionToggleColumn,
+    hide: labels => columnVisibilityLabels(labels).hideColumn,
+    hideGroup: labels => columnVisibilityLabels(labels).hideGroup,
+  },
   diagnose: columnVisibilityInertReason,
   hooks: o => ({ onToggleColumnVisibility: o.onToggleColumnVisibility }),
   slotActions: [hideHeaderAction],

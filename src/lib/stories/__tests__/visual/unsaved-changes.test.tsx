@@ -9,6 +9,8 @@ import { columnFiltering, unsavedChanges } from '../../../plugins'
 import { humanClick } from '../helpers'
 import { tableLabels } from '../labels'
 import { waitForGrid } from './core-helpers'
+import { unsavedChangesLabels } from '../../../plugins/unsavedChanges/labels'
+import { columnFilteringLabels } from '../../../plugins/columnFiltering/labels'
 
 // Пульт черновиков (ADR 0178, §8; DR11): кнопка тулбара со счётчиком, поповер черновиков,
 // переход к цели, применение, отбрасывание, «Применить всё» и «Отменить всё».
@@ -110,13 +112,13 @@ describe('Пульт черновиков (ADR 0178)', () => {
       // Без черновиков: без счётчика, пустой пульт — компактная заглушка.
       expect(count()).toBe('0')
       expect(button()!.getAttribute('aria-label')).toBe(
-        tableLabels.unsavedChanges,
+        unsavedChangesLabels(tableLabels).unsavedChanges,
       )
       await openPanel()
       expect(
         popover()!.querySelector('[data-testid="unsaved-changes-empty"]')
           ?.textContent,
-      ).toContain(tableLabels.unsavedChangesEmpty)
+      ).toContain(unsavedChangesLabels(tableLabels).unsavedChangesEmpty)
       await userEvent.keyboard('{Escape}')
       await expect.poll(popover).toBeNull()
 
@@ -124,19 +126,21 @@ describe('Пульт черновиков (ADR 0178)', () => {
       api.setDraft(draftOn('city', 'Rome'))
       await expect.poll(count).toBe('2')
       expect(button()!.getAttribute('aria-label')).toBe(
-        tableLabels.unsavedChangesButton(2),
+        unsavedChangesLabels(tableLabels).unsavedChangesButton(2),
       )
 
       // Записи — в разделе фильтров: текст записи — кнопка перехода, колонка и условие, две кнопки с подписями из словаря.
       await openPanel()
       expect(entries()).toHaveLength(2)
-      expect(popover()!.textContent).toContain(tableLabels.filters)
+      expect(popover()!.textContent).toContain(
+        columnFilteringLabels(tableLabels).filters,
+      )
       const name = entryOf('Name 1')
       expect(actionOf(name, 'show').textContent).toContain('Name')
       expect(actionOf(name, 'show').textContent).toContain('Name 1')
       for (const [action, label] of [
-        ['apply', tableLabels.draftApply],
-        ['discard', tableLabels.draftDiscard],
+        ['apply', unsavedChangesLabels(tableLabels).draftApply],
+        ['discard', unsavedChangesLabels(tableLabels).draftDiscard],
       ] as const) {
         expect(actionOf(name, action).getAttribute('aria-label')).toBe(label)
       }

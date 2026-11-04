@@ -20,6 +20,7 @@ import {
   toRgba,
 } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
+import { columnSortingLabels } from '../../../plugins/columnSorting/labels'
 
 // Тип данных колонки (ADR 0172): вид по типу, значок булева, текст по типу в группе,
 // агрегате, тултипе и сводке фильтров, выравнивание, примитив `CheckMark`; вид фильтра,
@@ -683,7 +684,7 @@ describe('Тип данных колонки (ADR 0172)', () => {
     await humanClick(sortButton())
     await expect.poll(rowIds).toEqual(desc('en-US'))
     expect(sortButton().getAttribute('aria-label')).toBe(
-      storyLabels('en').sortAscending,
+      columnSortingLabels(storyLabels('en')).sortAscending,
     )
     const row = cellOf('a', 'name').closest('.data-grid__body-row')!
 
@@ -693,7 +694,7 @@ describe('Тип данных колонки (ADR 0172)', () => {
     expect(desc('ru-RU')).not.toEqual(desc('en-US'))
     expect(headOf('name').getAttribute('aria-sort')).toBe('descending')
     expect(sortButton().getAttribute('aria-label')).toBe(
-      storyLabels('ru').sortAscending,
+      columnSortingLabels(storyLabels('ru')).sortAscending,
     )
     // Тот же экземпляр таблицы и та же строка в DOM — без пересоздания.
     expect(stores.size).toBe(opened)

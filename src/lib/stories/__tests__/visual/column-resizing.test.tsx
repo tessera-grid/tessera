@@ -12,6 +12,7 @@ import {
   scrollerOf,
 } from './column-pinning-helpers'
 import { ColumnResizingGrid } from './columns-fixtures'
+import { columnSizingLabels } from '../../../plugins/columnSizing/labels'
 
 // Every Column Resizing requirement is its own named test, prefixed with its spec
 // ID (CR1–CR16 from the requirements table in docs/decisions/0013-column-sizing.md).
@@ -335,7 +336,9 @@ describe('Column Resizing — requirements', () => {
       Array.from(
         document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
       ).find(
-        item => item.textContent?.trim() === ENGLISH_LABELS.resetColumnWidth,
+        item =>
+          item.textContent?.trim() ===
+          columnSizingLabels(ENGLISH_LABELS).resetColumnWidth,
       )
     await expect.poll(reset).toBeTruthy()
     onColumnResizeEnd.mockClear()
@@ -901,7 +904,9 @@ describe('Грип ширины на границе колонок (ADR 0111)', 
     await expect
       .poll(() =>
         [...document.querySelectorAll('[role="menuitem"]')].some(
-          item => item.textContent?.trim() === ENGLISH_LABELS.resetColumnWidth,
+          item =>
+            item.textContent?.trim() ===
+            columnSizingLabels(ENGLISH_LABELS).resetColumnWidth,
         ),
       )
       .toBe(true)

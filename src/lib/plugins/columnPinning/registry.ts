@@ -17,6 +17,7 @@ import { columnPinSidesFeature } from './columnPinSidesFeature'
 import { narrowLeafPinning } from './narrowPinning'
 import { pinHeaderAction } from './pinHeaderAction'
 import type { ColumnPinningHooks } from './types'
+import { columnPinningLabels } from './labels'
 
 export interface ColumnPinningOptions {
   /** `false` — плагин отключён. */
@@ -29,6 +30,13 @@ export interface ColumnPinningOptions {
 
 export const columnPinning = definePlugin<ColumnPinningOptions>()({
   id: 'columnPinning',
+  labels: [columnPinningLabels],
+  actions: {
+    pin: labels => columnPinningLabels(labels).pin,
+    unpin: labels => columnPinningLabels(labels).unpin,
+    pinLeft: labels => columnPinningLabels(labels).pinLeft,
+    pinRight: labels => columnPinningLabels(labels).pinRight,
+  },
   diagnose: neverInert,
   features: { columnPinningFeature, columnPinSidesFeature },
   hooks: o => ({ onTogglePin: o.onTogglePin }),

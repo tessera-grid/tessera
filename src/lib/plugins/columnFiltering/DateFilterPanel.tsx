@@ -28,6 +28,7 @@ import panelStyles from './FilterPanel.module.css'
 import { FilterFailure } from './FilterFailure'
 import { FilterApply } from './FilterApply'
 import { useFilterDraft } from './filterDraft'
+import { columnFilteringLabels } from './labels'
 
 const OPERATORS: DateFilterOperator[] = [
   'on',
@@ -250,7 +251,7 @@ export const DateFilterPanel = ({
       {draft.operator === 'preset' && (
         <>
           <span id={presetsId} hidden>
-            {labels.filterPreset}
+            {columnFilteringLabels(labels).filterPreset}
           </span>
           <RadioGroup
             value={draft.preset ?? ''}
@@ -270,7 +271,13 @@ export const DateFilterPanel = ({
                 >
                   <Radio.Indicator className={panelStyles.dot} />
                 </Radio.Root>
-                <span>{labels[PRESET_LABEL[preset]] as string}</span>
+                <span>
+                  {
+                    columnFilteringLabels(labels)[
+                      PRESET_LABEL[preset]
+                    ] as string
+                  }
+                </span>
               </label>
             ))}
           </RadioGroup>
@@ -296,17 +303,29 @@ export const DateFilterPanel = ({
       )}
       {timed &&
         (draft.operator === 'before' || draft.operator === 'after') &&
-        timeField('time', labels.filterTime, 'filter-time')}
+        timeField(
+          'time',
+          columnFilteringLabels(labels).filterTime,
+          'filter-time',
+        )}
       {timed && draft.operator === 'between' && (
         <div className={panelStyles.range}>
-          {timeField('fromTime', labels.filterTimeFrom, 'filter-time-from')}
-          {timeField('toTime', labels.filterTimeTo, 'filter-time-to')}
+          {timeField(
+            'fromTime',
+            columnFilteringLabels(labels).filterTimeFrom,
+            'filter-time-from',
+          )}
+          {timeField(
+            'toTime',
+            columnFilteringLabels(labels).filterTimeTo,
+            'filter-time-to',
+          )}
         </div>
       )}
       <div className={panelStyles.footer}>
         <FilterFailure table={table} columnId={column.id} />
         <Button variant="ghost" onClick={reset} data-testid="filter-reset">
-          {labels.filterReset}
+          {columnFilteringLabels(labels).filterReset}
         </Button>
         {server && <FilterApply {...filterDraft} />}
       </div>

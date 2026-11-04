@@ -410,6 +410,8 @@ export const useCreateTable = <
     contextMenuActions: folded.contextMenuActions,
     stubEntries: folded.stubEntries,
     draftKinds: folded.draftKinds,
+    labelSets: folded.labelSets,
+    actionCatalog: folded.actionCatalog,
     keyboardActions: folded.keyboardActions,
     pluginDiagnostics: folded.pluginDiagnostics,
     pluginRenderVersion: argsStore.renderVersion,

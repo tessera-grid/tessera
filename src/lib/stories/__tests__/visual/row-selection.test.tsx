@@ -8,6 +8,7 @@ import { COLUMN_SELECTION_ID } from '../../../../lib/plugins/rowSelection'
 import { AXE_OPTIONS } from './a11y-helpers'
 import { rowState } from '../helpers'
 import { tableLabels } from '../labels'
+import { rowSelectionLabels } from '../../../plugins/rowSelection/labels'
 
 // Each Row Selection requirement is its own named test, prefixed with its spec ID
 // (RS1–RS18 from the requirements table in docs/decisions/0014-row-selection.md).
@@ -398,7 +399,7 @@ describe('Row Selection — selected count', () => {
     await userEvent.click(rowCheckbox(rowsTopDown(container)[0])!)
     await expect
       .poll(() => counter()!.textContent)
-      .toBe(tableLabels.selectedRows(1))
+      .toBe(rowSelectionLabels(tableLabels).selectedRows(1))
     expect(counter()!.closest('[data-align]')!.getAttribute('data-align')).toBe(
       'start',
     )
@@ -410,7 +411,7 @@ describe('Row Selection — selected count', () => {
     await userEvent.click(rowCheckbox(rowsTopDown(container)[0])!)
     await expect
       .poll(() => counter()!.textContent)
-      .toBe(tableLabels.selectedRows(2))
+      .toBe(rowSelectionLabels(tableLabels).selectedRows(2))
   })
 
   test('RS21: with nothing selected the text is empty and the panel stays (the grid height does not change)', async () => {
@@ -429,7 +430,7 @@ describe('Row Selection — selected count', () => {
     await userEvent.click(checkbox)
     await expect
       .poll(() => counter()!.textContent)
-      .toBe(tableLabels.selectedRows(1))
+      .toBe(rowSelectionLabels(tableLabels).selectedRows(1))
     await userEvent.click(checkbox)
     await expect.poll(() => counter()!.textContent).toBe('')
 
@@ -445,7 +446,7 @@ describe('Row Selection — selected count', () => {
     await userEvent.click(rowCheckbox(rowsTopDown(container)[0])!)
     await expect
       .poll(() => counter()!.textContent)
-      .toBe(tableLabels.selectedRows(1))
+      .toBe(rowSelectionLabels(tableLabels).selectedRows(1))
 
     const { violations } = await axe.run(statusBar()!, AXE_OPTIONS)
     expect(violations).toEqual([])

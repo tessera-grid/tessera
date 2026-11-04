@@ -9,6 +9,7 @@ import { announceLabel } from '../../core/announcer'
 import { flashOutcome } from '../../core/flashes/flashFeature'
 import { readLoadedChildren, setLoadedAnswer } from './lazyChildrenFeature'
 import type { RowExpandPending } from './rowExpandingPendingFeature'
+import { rowExpandingLabels } from './labels'
 
 export interface BatchTable {
   store: object
@@ -81,7 +82,9 @@ const apply = (table: BatchTable, answers: readonly Answer[]) => {
     arrived.map(row => ({ row })),
     'arrived',
   )
-  announceLabel(table, all => all.announceChildrenLoaded(count))
+  announceLabel(table, all =>
+    rowExpandingLabels(all).announceChildrenLoaded(count),
+  )
 }
 
 /** Поставить успешный асинхронный ответ строки в очередь таблицы до кадра. */

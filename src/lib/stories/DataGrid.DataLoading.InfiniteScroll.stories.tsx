@@ -37,6 +37,7 @@ import {
   SERVER_TOTAL,
   select,
 } from './demos/infiniteScrollDemos'
+import { infiniteScrollLabels } from '../plugins/infiniteScroll/labels'
 
 /**
  * Бесконечная прокрутка — лента (ADR 0081): `Playground` — лента в покое, режимы —
@@ -255,7 +256,11 @@ export const InfiniteScrollUnknownTotal: StoryObj<StoryProps> = {
     const labels = storyLabels(args.locale)
     await step(UNKNOWN_TOTAL[0]!.title, async () => {
       await waitForRows(canvas)
-      await until(() => expect(loadedText()).toBe(labels.loadedRows(BLOCK)))
+      await until(() =>
+        expect(loadedText()).toBe(
+          infiniteScrollLabels(labels).loadedRows(BLOCK),
+        ),
+      )
     })
     await step(UNKNOWN_TOTAL[1]!.title, async () => {
       await guideNext(canvas)
@@ -267,7 +272,11 @@ export const InfiniteScrollUnknownTotal: StoryObj<StoryProps> = {
       const top = scroller(canvas)!.scrollTop
       await guideNext(canvas)
       await stepDone(canvas)
-      await until(() => expect(loadedText()).toBe(labels.loadedRows(BLOCK * 2)))
+      await until(() =>
+        expect(loadedText()).toBe(
+          infiniteScrollLabels(labels).loadedRows(BLOCK * 2),
+        ),
+      )
       await expect(scroller(canvas)!.scrollTop).toBe(top)
       await settle()
     })
@@ -332,21 +341,25 @@ export const InfiniteScrollErrors: StoryObj<StoryProps> = {
     await step(ERRORS[0]!.title, async () => {
       await waitForRows(canvas)
       await until(() =>
-        expect(loadedText()).toBe(labels.loadedRowsOf(BLOCK, SERVER_TOTAL)),
+        expect(loadedText()).toBe(
+          infiniteScrollLabels(labels).loadedRowsOf(BLOCK, SERVER_TOTAL),
+        ),
       )
     })
     await step(ERRORS[1]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(errorRow(canvas)).toHaveTextContent(FAILURE)
-      await expect(loadedText()).toBe(labels.loadedRowsOf(BLOCK, SERVER_TOTAL))
+      await expect(loadedText()).toBe(
+        infiniteScrollLabels(labels).loadedRowsOf(BLOCK, SERVER_TOTAL),
+      )
     })
     await step(ERRORS[2]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(errorRow(canvas)).toBeNull()
       await expect(loadedText()).toBe(
-        labels.loadedRowsOf(BLOCK * 2, SERVER_TOTAL),
+        infiniteScrollLabels(labels).loadedRowsOf(BLOCK * 2, SERVER_TOTAL),
       )
       await settle()
     })
@@ -441,14 +454,16 @@ export const InfiniteScrollServerQuery: StoryObj<StoryProps> = {
       await waitForRows(canvas)
       await stepDone(canvas)
       await expect(loadedText()).toBe(
-        labels.loadedRowsOf(BLOCK * 2, SERVER_TOTAL),
+        infiniteScrollLabels(labels).loadedRowsOf(BLOCK * 2, SERVER_TOTAL),
       )
     })
     await step(SERVER_QUERY[1]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(scroller(canvas)!.scrollTop).toBe(0)
-      await expect(loadedText()).toBe(labels.loadedRowsOf(BLOCK, SERVER_TOTAL))
+      await expect(loadedText()).toBe(
+        infiniteScrollLabels(labels).loadedRowsOf(BLOCK, SERVER_TOTAL),
+      )
       await expect(consoleText()).toContain('onToggleColumnSort')
       await settle()
     })

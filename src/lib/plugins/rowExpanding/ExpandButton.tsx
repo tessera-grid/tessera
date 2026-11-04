@@ -5,6 +5,7 @@ import { IconButton, type DerivedButtonProps } from '../../ui/IconButton'
 import { useIcons } from '../../ui/icons'
 
 import styles from './ExpandButton.module.css'
+import { rowExpandingLabels } from './labels'
 
 export interface ExpandButtonProps extends DerivedButtonProps {
   expanded: boolean
@@ -21,7 +22,9 @@ export const ExpandButton = ({
   const ExpandIcon = swapped ? expandedIcon : expand
 
   const labels = useLocalization()
-  const label = expanded ? labels.collapseRow : labels.expandRow
+  const label = expanded
+    ? rowExpandingLabels(labels).collapseRow
+    : rowExpandingLabels(labels).expandRow
 
   return (
     <div>

@@ -8,6 +8,7 @@ import { announceLabel } from '../../core/announcer'
 import { scrollLayer } from '../../core/scrollStretch'
 import { IDLE, shouldLoadMore, tailRowCount } from './model'
 import type { InfiniteScrollHooks, InfiniteScrollState } from './types'
+import { infiniteScrollLabels } from './labels'
 
 const SCROLLER_SELECTOR = '.data-grid__container'
 const FALLBACK_ROW_HEIGHT = 50
@@ -183,7 +184,9 @@ export class InfiniteLoader {
       this.phase = 'error'
       this.input?.setValue({ status: 'error', tailRows: 0, reason })
       announceLabel(this.input?.table, labels =>
-        reason ? `${labels.loadMoreFailed}. ${reason}` : labels.loadMoreFailed,
+        reason
+          ? `${infiniteScrollLabels(labels).loadMoreFailed}. ${reason}`
+          : infiniteScrollLabels(labels).loadMoreFailed,
       )
     }
     let result: Promise<void> | void
@@ -217,7 +220,7 @@ export class InfiniteLoader {
     if (added > 0) {
       this.stalledAt = null
       announceLabel(this.input.table, labels =>
-        labels.announceMoreLoaded(added),
+        infiniteScrollLabels(labels).announceMoreLoaded(added),
       )
     } else {
       this.stalledAt = this.measure(this.sentinel)?.scrollTop ?? 0

@@ -30,6 +30,9 @@ import {
   rightClick,
 } from '../visual/lazy-helpers'
 import { tableLabels } from '../labels'
+import { columnFilteringLabels } from '../../../plugins/columnFiltering/labels'
+import { cellEditingLabels } from '../../../plugins/cellEditing/labels'
+import { rowExpandingLabels } from '../../../plugins/rowExpanding/labels'
 
 // Утечки при размонтировании (ADR 0092, LK1–LK4): грид со всеми плагинами монтируется
 // и размонтируется в разных состояниях; после сборки мусора таблица и корень грида
@@ -238,7 +241,9 @@ describe('Утечки при размонтировании', () => {
             head.querySelector<HTMLElement>('.column-filter__button')!,
           )
           await waitFor(
-            () => tooltip()?.textContent?.trim() === tableLabels.filter,
+            () =>
+              tooltip()?.textContent?.trim() ===
+              columnFilteringLabels(tableLabels).filter,
           )
         },
       ],
@@ -258,7 +263,7 @@ describe('Утечки при размонтировании', () => {
           await hover(cell)
           await click(
             cell.querySelector<HTMLElement>(
-              `[aria-label="${tableLabels.editCell}"]`,
+              `[aria-label="${cellEditingLabels(tableLabels).editCell}"]`,
             )!,
           )
           await waitFor(() => cell.querySelector('input') !== null)
@@ -328,7 +333,7 @@ describe('Утечки при размонтировании', () => {
           async ({ container }) => {
             container
               .querySelector<HTMLElement>(
-                `[aria-label="${tableLabels.expandRow}"]`,
+                `[aria-label="${rowExpandingLabels(tableLabels).expandRow}"]`,
               )!
               .click()
             await waitFor(() => childrenAsked > 0)
@@ -356,7 +361,7 @@ describe('Утечки при размонтировании', () => {
             await hover(cell)
             await click(
               cell.querySelector<HTMLElement>(
-                `[aria-label="${tableLabels.editCell}"]`,
+                `[aria-label="${cellEditingLabels(tableLabels).editCell}"]`,
               )!,
             )
             await waitFor(() => cell.querySelector('input') !== null)

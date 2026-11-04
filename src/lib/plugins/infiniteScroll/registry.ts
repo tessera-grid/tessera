@@ -17,6 +17,7 @@ import {
   ariaRowCountOf,
 } from './model'
 import type { InfiniteScrollHooks, InfiniteScrollState } from './types'
+import { infiniteScrollLabels } from './labels'
 
 export interface InfiniteScrollOptions {
   /** `false` — плагин отключён. */
@@ -33,6 +34,10 @@ export interface InfiniteScrollOptions {
 
 export const infiniteScroll = definePlugin<InfiniteScrollOptions>()({
   id: INFINITE_SCROLL,
+  labels: [infiniteScrollLabels],
+  actions: {
+    loadMore: labels => infiniteScrollLabels(labels).actionLoadMore,
+  },
   diagnose: infiniteScrollInertReason,
   hooks: o => ({ onLoadMore: o.onLoadMore }),
   state: (): InfiniteScrollState => IDLE,

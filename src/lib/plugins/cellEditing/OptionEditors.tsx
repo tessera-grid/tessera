@@ -48,6 +48,7 @@ import type { CellEditingHooks, CellEditorProps } from './types'
 import popoverStyles from './EditPopover.module.css'
 import checklistStyles from '../../shared/options/OptionChecklist.module.css'
 import styles from './OptionEditors.module.css'
+import { cellEditingLabels } from './labels'
 
 const ROW_HEIGHT = 32
 const OVERSCAN = 8
@@ -147,10 +148,10 @@ const saveOption = (props: CellEditorProps, option: ColumnOption) => {
 }
 
 const editStatusLabels = (labels: ReturnType<typeof useLocalization>) => ({
-  loading: labels.editLoadingOptions,
-  empty: labels.editNoOptions,
-  error: labels.editOptionsError,
-  retry: labels.editRetry,
+  loading: cellEditingLabels(labels).editLoadingOptions,
+  empty: cellEditingLabels(labels).editNoOptions,
+  error: cellEditingLabels(labels).editOptionsError,
+  retry: cellEditingLabels(labels).editRetry,
 })
 
 type Virtualizer = ReturnType<typeof useVirtualizer<HTMLDivElement, Element>>
@@ -325,8 +326,8 @@ export const SelectEditor = (props: CellEditorProps) => {
                 <Combobox.Input
                   ref={input}
                   className={checklistStyles.search}
-                  aria-label={labels.editSearchOptions}
-                  placeholder={labels.editSearchOptions}
+                  aria-label={cellEditingLabels(labels).editSearchOptions}
+                  placeholder={cellEditingLabels(labels).editSearchOptions}
                   data-testid="edit-select"
                 />
               </OptionSearch>
@@ -401,8 +402,8 @@ export const MultiSelectEditor = (props: CellEditorProps) => {
             className={checklistStyles.search}
             type="text"
             value={query}
-            placeholder={labels.editSearchOptions}
-            aria-label={labels.editSearchOptions}
+            placeholder={cellEditingLabels(labels).editSearchOptions}
+            aria-label={cellEditingLabels(labels).editSearchOptions}
             aria-controls={options.length > 0 ? listId : undefined}
             onChange={event => setQuery(event.target.value)}
             data-testid="edit-options-search"

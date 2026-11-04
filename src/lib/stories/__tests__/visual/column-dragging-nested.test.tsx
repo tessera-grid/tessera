@@ -10,6 +10,8 @@ import { composed } from '../stories'
 import { pinViaPopover, withWideViewport } from './column-pinning-helpers'
 import { tableLabels } from '../labels'
 import { HeaderGroupsDraggingGrid } from './columns-fixtures'
+import { columnDraggingLabels } from '../../../plugins/columnDragging/labels'
+import { columnPinningLabels } from '../../../plugins/columnPinning/labels'
 
 // Перетаскивание под вложенной шапкой (ADR 0052): ND1–ND5, ND7, ND10, ND12–ND13,
 // ND15. ND6, ND8–ND9, ND11 — модульные; ND14 — перф в `interaction`.
@@ -204,13 +206,19 @@ describe('DnD under nested headers', () => {
       await expect.poll(() => leafOrder().indexOf('firstName')).toBe(4)
 
       await openMenu('firstName')
-      expect(isDisabled(menuItem(ENGLISH_LABELS.moveLeft))).toBe(true)
-      await userEvent.click(menuItem(ENGLISH_LABELS.moveRight))
+      expect(
+        isDisabled(menuItem(columnDraggingLabels(ENGLISH_LABELS).moveLeft)),
+      ).toBe(true)
+      await userEvent.click(
+        menuItem(columnDraggingLabels(ENGLISH_LABELS).moveRight),
+      )
       await expect
         .poll(() => leafOrder().slice(4, 6))
         .toEqual(['lastName', 'firstName'])
       await openMenu('firstName')
-      expect(isDisabled(menuItem(ENGLISH_LABELS.moveRight))).toBe(true)
+      expect(
+        isDisabled(menuItem(columnDraggingLabels(ENGLISH_LABELS).moveRight)),
+      ).toBe(true)
       await userEvent.keyboard('{Escape}')
     })
   })
@@ -218,7 +226,10 @@ describe('DnD under nested headers', () => {
   test('ND7: pinned nodes do not move; with leafPinning a group segment moves only within its zone', async () => {
     await withWideViewport(async () => {
       const pinned = await mount({ enableColumnPinning: true })
-      await pinViaPopover(head('name'), tableLabels.pinLeft)
+      await pinViaPopover(
+        head('name'),
+        columnPinningLabels(tableLabels).pinLeft,
+      )
       await expect
         .poll(() => head('name', 'left').getAttribute('data-cell-pinned'))
         .toBe('left')
@@ -227,7 +238,10 @@ describe('DnD under nested headers', () => {
       await pinned.unmount()
 
       await mount({ enableColumnPinning: true, columnPinningLeafPinning: true })
-      await pinViaPopover(head('gender'), tableLabels.pinLeft)
+      await pinViaPopover(
+        head('gender'),
+        columnPinningLabels(tableLabels).pinLeft,
+      )
       await expect.poll(() => leafOrder()[0]).toBe('gender')
       // Незакреплённый сегмент `info` — к левому краю центральной зоны, не дальше.
       await dragTo('info', 2)
@@ -270,7 +284,9 @@ describe('DnD under nested headers', () => {
   test('ND12: a group handle is a named menu button with a target of at least 24×24', async () => {
     await mount()
     const handle = handleOf('info')
-    expect(handle.getAttribute('aria-label')).toBe(ENGLISH_LABELS.moveColumn)
+    expect(handle.getAttribute('aria-label')).toBe(
+      columnDraggingLabels(ENGLISH_LABELS).moveColumn,
+    )
     expect(handle.getAttribute('aria-haspopup')).toBe('menu')
     // Как TS1: квадрат 24×24 вокруг ручки целиком её, либо до соседних целей
     // не ближе половины квадрата.

@@ -12,6 +12,7 @@ import clsx from 'clsx'
 import {
   type Failure,
   type Failures,
+  failureName,
   resolveFailure,
 } from '../../core/failures/failuresFeature'
 import { reportAction, userSourceOf } from '../../core/debugActions'
@@ -34,6 +35,7 @@ import {
 } from '../../shared/objectTarget'
 
 import styles from './FailureLog.module.css'
+import { failureLogLabels } from './labels'
 
 const ENTRY_ESTIMATE = 96
 const OVERSCAN = 4
@@ -100,7 +102,7 @@ const FailureEntry = ({
       mark={<Bubble size="dot" tone="error" />}
       label={
         <>
-          {failure.label}
+          {failureName(table, failure, labels)}
           {target && <span className={styles.target}> {target}</span>}
         </>
       }
@@ -145,7 +147,7 @@ const FailureEntry = ({
           <IconButton
             shape="square"
             size="compact"
-            label={labels.failureClose}
+            label={failureLogLabels(labels).failureClose}
             data-action="close"
             onClick={event => {
               report(table, 'close', failure, event)
@@ -189,8 +191,8 @@ const FailureList = ({
       <Stub
         size="compact"
         media={<icons.failureLogEmpty />}
-        title={labels.failureLogEmpty}
-        description={labels.failureLogEmptyDescription}
+        title={failureLogLabels(labels).failureLogEmpty}
+        description={failureLogLabels(labels).failureLogEmptyDescription}
         data-testid="failure-log-empty"
       />
     )
@@ -199,7 +201,7 @@ const FailureList = ({
       <div ref={scrollRef} className={styles.scroller}>
         <div
           role="list"
-          aria-label={labels.failureLog}
+          aria-label={failureLogLabels(labels).failureLog}
           className={styles.list}
           style={{ height: virtualizer.getTotalSize() }}
         >
@@ -237,7 +239,7 @@ const FailureList = ({
             onClosed()
           }}
         >
-          {labels.failureClearAll}
+          {failureLogLabels(labels).failureClearAll}
         </Button>
       </div>
     </>
@@ -281,13 +283,15 @@ export const FailureLogPopover = ({
           {...themeData}
         >
           <Popover.Popup
-            aria-label={labels.failureLog}
+            aria-label={failureLogLabels(labels).failureLog}
             ref={popupRef}
             finalFocus={triggerRef}
             className={clsx(themeClass, styles.popup)}
             data-testid="failure-log"
           >
-            <p className={styles.title}>{labels.failureLog}</p>
+            <p className={styles.title}>
+              {failureLogLabels(labels).failureLog}
+            </p>
             <FailureList
               table={table}
               onClosed={keepFocus}

@@ -12,6 +12,7 @@ import {
   ColumnDraggingGrid,
   HeaderGroupsDraggingGrid,
 } from './columns-fixtures'
+import { columnDraggingLabels } from '../../../plugins/columnDragging/labels'
 
 // Асинхронный перенос колонок (ADR 0114): промис `onColumnDragEnd` — ожидание на ручке,
 // отказ возвращает колонку к прежним соседям; ручка — кнопка кита, раскрывается по ширине.
@@ -176,7 +177,7 @@ const moveGroupLeft = async (id: string) => {
   await reveal(id)
   await userEvent.click(handleOf(id))
   await expect.poll(menu).toBeTruthy()
-  await userEvent.click(menuItem(ENGLISH_LABELS.moveLeft))
+  await userEvent.click(menuItem(columnDraggingLabels(ENGLISH_LABELS).moveLeft))
   await expect.poll(order).not.toEqual(before)
 }
 
@@ -211,7 +212,9 @@ describe('Асинхронный перенос колонок (ADR 0114)', () =
         await reveal(d!)
         await userEvent.click(handleOf(d!))
         await expect.poll(menu).toBeTruthy()
-        await userEvent.click(menuItem(ENGLISH_LABELS.moveRight))
+        await userEvent.click(
+          menuItem(columnDraggingLabels(ENGLISH_LABELS).moveRight),
+        )
         await expect.poll(() => order().indexOf(d!)).toBeGreaterThan(2)
         expect(head(d!).getAttribute('aria-busy'), 'меню').toBe('true')
         await settleMoves()
@@ -287,7 +290,11 @@ describe('Асинхронный перенос колонок (ADR 0114)', () =
         expect(order().filter(id => id !== a)).toEqual(others)
         await expect
           .poll(announced)
-          .toContain(ENGLISH_LABELS.announceColumnMoveFailed('Server said no'))
+          .toContain(
+            columnDraggingLabels(ENGLISH_LABELS).announceColumnMoveFailed(
+              'Server said no',
+            ),
+          )
         expect(failureShownOn(handleOf(a!))).toBe(false)
         await screen.unmount()
 
@@ -313,7 +320,9 @@ describe('Асинхронный перенос колонок (ADR 0114)', () =
         await reveal(group!)
         await userEvent.click(handleOf(group!))
         await expect.poll(menu).toBeTruthy()
-        await userEvent.click(menuItem(ENGLISH_LABELS.moveRight))
+        await userEvent.click(
+          menuItem(columnDraggingLabels(ENGLISH_LABELS).moveRight),
+        )
         await expect.poll(order).not.toEqual(leavesBefore)
         await settleMoves(false, new Error('no'))
         await expect.poll(order).toEqual(leavesBefore)
@@ -343,7 +352,9 @@ describe('Асинхронный перенос колонок (ADR 0114)', () =
         await reveal(d!)
         await userEvent.click(handleOf(d!))
         await expect.poll(menu).toBeTruthy()
-        await userEvent.click(menuItem(ENGLISH_LABELS.moveRight))
+        await userEvent.click(
+          menuItem(columnDraggingLabels(ENGLISH_LABELS).moveRight),
+        )
         await expect.poll(() => tone(d!), { message: 'меню' }).toBe('arrived')
         await settleMoves()
         await expect.poll(() => tone(a!), { timeout: 4000 }).toBeNull()
@@ -556,7 +567,9 @@ describe('Асинхронный перенос колонок (ADR 0114)', () =
         await settleMoves(false, new Error('no'))
         await expect
           .poll(announced)
-          .toContain(ENGLISH_LABELS.announceColumnMoveFailed('no'))
+          .toContain(
+            columnDraggingLabels(ENGLISH_LABELS).announceColumnMoveFailed('no'),
+          )
         await checkAxe()
       } finally {
         await screen.unmount()

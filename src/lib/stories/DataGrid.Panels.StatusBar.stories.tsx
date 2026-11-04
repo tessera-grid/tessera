@@ -25,6 +25,7 @@ import {
   guideArgs,
   stepAction,
 } from './demos/GuideStory'
+import { rowSelectionLabels } from '../plugins/rowSelection/labels'
 
 /**
  * Нижняя панель (ADR 0038): `Playground` — слоты панели в покое; S2 — счётчик выбранных
@@ -160,14 +161,18 @@ export const SelectedCount: StoryObj<StoryProps> = {
     })
     await step(COUNT_STEPS[1]!.title, async () => {
       await guideNext(canvas)
-      await until(() => expect(counterText()).toBe(labels.selectedRows(2)))
+      await until(() =>
+        expect(counterText()).toBe(rowSelectionLabels(labels).selectedRows(2)),
+      )
     })
     await step(COUNT_STEPS[2]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(onSecondPage()).toBe(true)
       await expect(FIRST_PAGE.some(id => bodyRow(canvas, id))).toBe(false)
-      await expect(counterText()).toBe(labels.selectedRows(3))
+      await expect(counterText()).toBe(
+        rowSelectionLabels(labels).selectedRows(3),
+      )
       await settle()
     })
   },

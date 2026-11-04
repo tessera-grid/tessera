@@ -12,6 +12,7 @@ import {
   sleep,
 } from './lazy-helpers'
 import { tableLabels } from '../labels'
+import { columnVisibilityLabels } from '../../../plugins/columnVisibility/labels'
 
 // Ошибка загрузки модуля поповера (ADR 0061, LZ5). Отдельный файл: модуль грузится
 // один раз на документ.
@@ -27,7 +28,9 @@ describe('Ленивые поповеры — ошибка загрузки', ()
     await humanClick(columnsButton())
     await expect
       .poll(() => announcements.messages)
-      .toContain(tableLabels.loadFailed(tableLabels.columns))
+      .toContain(
+        tableLabels.loadFailed(columnVisibilityLabels(tableLabels).columns),
+      )
     expect(failureShownOn(columnsButton())).toBe(false)
     await sleep(100)
     expect(columnsPopover()).toBeNull()
@@ -40,7 +43,11 @@ describe('Ленивые поповеры — ошибка загрузки', ()
       .poll(
         () =>
           announcements.messages.filter(
-            text => text === tableLabels.loadFailed(tableLabels.columns),
+            text =>
+              text ===
+              tableLabels.loadFailed(
+                columnVisibilityLabels(tableLabels).columns,
+              ),
           ).length,
       )
       .toBeGreaterThanOrEqual(2)

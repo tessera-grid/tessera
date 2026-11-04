@@ -40,6 +40,7 @@ import type {
   MenuAction,
   SlotName,
 } from './types'
+import { actionRefOf, menuActionLabel } from '../actions'
 
 interface TargetContext {
   row?: { id: string }
@@ -228,7 +229,7 @@ export const runMenuAction = (
   // Вне грида (кнопка без таблицы) ожидать некому и объявлять негде.
   if (!isThenable(result) || !table) return
 
-  const name = (labels: TableLabels) => action.label(ctx, labels)
+  const name = (labels: TableLabels) => menuActionLabel(action, ctx, labels)
   const menu = keepError
   const raw = targetOf(action, ctx)
   const targets = targetsOf(raw)
@@ -300,7 +301,7 @@ export const runMenuAction = (
       const labels = announcerLabels(table) ?? ENGLISH_LABELS
       for (const item of failureTargets)
         reportFailure(table, {
-          label: name(labels),
+          action: actionRefOf(action, ctx, labels),
           target: item,
           reason: actionErrorText(action, ctx, error, labels),
           retry: () => runMenuAction(action, ctx, undefined, { keepError }),
@@ -433,7 +434,7 @@ export const kebabLabel = (
   labels: TableLabels,
 ): string => {
   const names = (list: MenuAction[]) =>
-    list.map(action => action.label(ctx, labels)).join(', ')
+    list.map(action => menuActionLabel(action, ctx, labels)).join(', ')
   return [
     base,
     running.length > 0 && labels.actionsRunning(names(running)),

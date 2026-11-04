@@ -35,6 +35,8 @@ import {
   toRgba,
 } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
+import { cellEditingLabels } from '../../../plugins/cellEditing/labels'
+import { columnFilteringLabels } from '../../../plugins/columnFiltering/labels'
 
 declare module 'vitest/browser' {
   interface BrowserCommands {
@@ -220,7 +222,9 @@ describe('Сохранение по кнопке (ADR 0178)', () => {
     try {
       await draftAge('1', '77')
       const mark = corner('1')!
-      expect(mark.getAttribute('aria-label')).toBe(tableLabels.cellDraft)
+      expect(mark.getAttribute('aria-label')).toBe(
+        cellEditingLabels(tableLabels).cellDraft,
+      )
       // Уголок — в правом верхнем углу ячейки, как треугольник отказа.
       const box = cell('1')!.getBoundingClientRect()
       const at = mark.getBoundingClientRect()
@@ -246,14 +250,20 @@ describe('Сохранение по кнопке (ADR 0178)', () => {
       const item = await expect
         .poll(() =>
           [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(
-            node => node.textContent?.includes(tableLabels.cellDraftRollback),
+            node =>
+              node.textContent?.includes(
+                cellEditingLabels(tableLabels).cellDraftRollback,
+              ),
           ),
         )
         .toBeTruthy()
       void item
       await humanClick(
         [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(
-          node => node.textContent?.includes(tableLabels.cellDraftRollback),
+          node =>
+            node.textContent?.includes(
+              cellEditingLabels(tableLabels).cellDraftRollback,
+            ),
         )!,
       )
       await expect.poll(() => corner('2')).toBeNull()
@@ -345,7 +355,7 @@ describe('Сохранение по кнопке (ADR 0178)', () => {
         mark.getAttribute('aria-describedby')!,
       )
       expect(described?.textContent).toBe(
-        tableLabels.cellDraftReason('21', '77'),
+        cellEditingLabels(tableLabels).cellDraftReason('21', '77'),
       )
 
       // С клавиатуры: фокус на отметке, Enter — поповер, Tab до «Откатить», Enter.
@@ -589,7 +599,7 @@ describe('Сохранение по кнопке (ADR 0178)', () => {
       // Черновик: «Было» и «Стало», под разделителем «Откатить» — справа с рамкой.
       await draftAge('1', '77')
       view = layout(await open(corner('1')!))
-      expect(view.title).toBe(tableLabels.cellDraft)
+      expect(view.title).toBe(cellEditingLabels(tableLabels).cellDraft)
       expect(view.markless).toBe(true)
       expect(view.bodyColor).toBe(view.popColor)
       expect(view.divider?.line).toBe(divider)
@@ -691,7 +701,9 @@ describe('Сохранение по кнопке (ADR 0178)', () => {
         ),
       )
       expect(nameFilter!.shown).toMatch(
-        new RegExp(`^${tableLabels.draftNoFilter} → .*Bob`),
+        new RegExp(
+          `^${columnFilteringLabels(tableLabels).draftNoFilter} → .*Bob`,
+        ),
       )
     } finally {
       await screen.unmount()

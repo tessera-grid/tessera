@@ -12,6 +12,7 @@ import { useIcons } from '../../ui/icons'
 
 import styles from './PinButton.module.css'
 import '../../ui/cellControls/buttonVisibility.css'
+import { columnPinningLabels } from './labels'
 
 export interface PinButtonProps extends DerivedButtonProps, RevealProps {
   pinned: boolean
@@ -28,7 +29,9 @@ export const PinButton = memo(
 
     const labels = useLocalization()
 
-    const title = pinned ? labels.unpin : labels.pin
+    const title = pinned
+      ? columnPinningLabels(labels).unpin
+      : columnPinningLabels(labels).pin
 
     return (
       <div

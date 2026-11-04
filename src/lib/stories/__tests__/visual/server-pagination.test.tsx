@@ -21,6 +21,7 @@ import {
 import { humanClick } from '../helpers'
 import { tableLabels } from '../labels'
 import { AXE_OPTIONS } from './a11y-helpers'
+import { paginationLabels } from '../../../plugins/pagination/labels'
 
 // Пагинация в серверной модели строк на гриде (ADR 0158): переход и кэш страниц (SP2),
 // неизвестный итог (SP4), первая страница при смене выборки и размера (SP5), черновик
@@ -165,7 +166,9 @@ describe('пагинация в серверной модели строк (ADR 
       await expect.poll(() => rowById('r0')).not.toBeNull()
       await userEvent.click(pageButton('last'))
       // Страница — сразу, ответ ещё в пути: на месте строк скелеты.
-      expect(range()).toBe(tableLabels.pageRange(976, 1000, 1000))
+      expect(range()).toBe(
+        paginationLabels(tableLabels).pageRange(976, 1000, 1000),
+      )
       await expect.poll(skeletons).toBeGreaterThan(0)
       expect(dataRows()).toBe(0)
       expect(starts()).toContain(900)
@@ -196,7 +199,7 @@ describe('пагинация в серверной модели строк (ADR 
     )
     try {
       await expect.poll(() => rowById('r0')).not.toBeNull()
-      expect(range()).toBe(tableLabels.pageRangeOfMany(1, 50))
+      expect(range()).toBe(paginationLabels(tableLabels).pageRangeOfMany(1, 50))
       expect(off('last')).toBe(true)
       expect(off('next')).toBe(false)
       // Вперёд, пока не придёт короткий блок.
@@ -204,10 +207,14 @@ describe('пагинация в серверной модели строк (ADR 
         await userEvent.click(pageButton('next'))
         await expect.poll(() => rowById(`r${first}`)).not.toBeNull()
       }
-      await expect.poll(range).toBe(tableLabels.pageRange(201, 230, 230))
+      await expect
+        .poll(range)
+        .toBe(paginationLabels(tableLabels).pageRange(201, 230, 230))
       expect(off('next')).toBe(true)
       await userEvent.click(pageButton('first'))
-      await expect.poll(range).toBe(tableLabels.pageRange(1, 50, 230))
+      await expect
+        .poll(range)
+        .toBe(paginationLabels(tableLabels).pageRange(1, 50, 230))
       expect(off('last')).toBe(false)
       await userEvent.click(pageButton('last'))
       await expect.poll(() => rowById('r200')).not.toBeNull()
@@ -234,10 +241,14 @@ describe('пагинация в серверной модели строк (ADR 
     const thirdPage = async () => {
       await userEvent.click(pageButton('next'))
       await userEvent.click(pageButton('next'))
-      await expect.poll(range).toBe(tableLabels.pageRange(51, 75, 1000))
+      await expect
+        .poll(range)
+        .toBe(paginationLabels(tableLabels).pageRange(51, 75, 1000))
     }
     const firstPage = () =>
-      expect.poll(range).toBe(tableLabels.pageRange(1, PAGE, 1000))
+      expect
+        .poll(range)
+        .toBe(paginationLabels(tableLabels).pageRange(1, PAGE, 1000))
     try {
       await expect.poll(() => rowById('r0')).not.toBeNull()
       await thirdPage()
@@ -264,7 +275,9 @@ describe('пагинация в серверной модели строк (ADR 
         return item
       })
       await userEvent.click(option)
-      await expect.poll(range).toBe(tableLabels.pageRange(1, 50, 1000))
+      await expect
+        .poll(range)
+        .toBe(paginationLabels(tableLabels).pageRange(1, 50, 1000))
     } finally {
       await screen.unmount()
     }
@@ -325,11 +338,15 @@ describe('пагинация в серверной модели строк (ADR 
       await expect.poll(() => rowById('r0')).not.toBeNull()
       // Строка загружена, но на четвёртой странице.
       await expect(table.scrollToRow('r80')).resolves.toBe(true)
-      expect(range()).toBe(tableLabels.pageRange(76, 100, 1000))
+      expect(range()).toBe(
+        paginationLabels(tableLabels).pageRange(76, 100, 1000),
+      )
       expect(rowById('r80')).not.toBeNull()
       // Строка не загружена: сквозной индекс — страница 21.
       await expect(table.scrollToRowIndex(520)).resolves.toBe(true)
-      expect(range()).toBe(tableLabels.pageRange(501, 525, 1000))
+      expect(range()).toBe(
+        paginationLabels(tableLabels).pageRange(501, 525, 1000),
+      )
       await expect.poll(() => rowById('r520')).not.toBeNull()
     } finally {
       await screen.unmount()
@@ -364,7 +381,9 @@ describe('пагинация в серверной модели строк (ADR 
           .toBe(true)
         await userEvent.keyboard('{ArrowDown}')
         await expect.poll(focusedIndex).toBe(PAGE - 1)
-        expect(range()).toBe(tableLabels.pageRange(26, 50, 1000))
+        expect(range()).toBe(
+          paginationLabels(tableLabels).pageRange(26, 50, 1000),
+        )
 
         const { violations } = await axe.run(q('.data-grid-theme')!, {
           ...AXE_OPTIONS,

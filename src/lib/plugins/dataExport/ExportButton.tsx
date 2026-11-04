@@ -35,6 +35,7 @@ import {
   whereOf,
 } from '../dataExportModel/settings'
 import type { ExportSettings } from '../dataExportModel/types'
+import { dataExportLabels } from './labels'
 
 const ExportPanel = preloadable(() =>
   import('./ExportPanel').then(module => module.ExportPanel),
@@ -64,7 +65,7 @@ export const ExportButton = ({ table }: ToolbarComponentProps) => {
   const popover = useLazyPopover(
     table,
     ExportPanel,
-    all => all.export,
+    all => dataExportLabels(all).export,
     !!axes && !single,
     { plugin: 'dataExport' },
   )
@@ -89,14 +90,14 @@ export const ExportButton = ({ table }: ToolbarComponentProps) => {
           const reason = rejectionText(error) ?? labels.actionFailedFallback
           setFailed(true)
           reportFailure(table, {
-            label: labels.export,
+            action: { plugin: 'dataExport', action: 'export' },
             target: EXPORT_PROCESS,
             reason,
             retry: () => start(settings, isServer),
           })
           // Отметки на кнопке нет — отказ слышен объявлением (ADR 0177, OB2).
           announceLabel(table, all =>
-            all.announceActionFailed(all.export, reason),
+            all.announceActionFailed(dataExportLabels(all).export, reason),
           )
         })
         .finally(() => {
@@ -111,7 +112,7 @@ export const ExportButton = ({ table }: ToolbarComponentProps) => {
     ? {
         onCancel: (event: unknown) =>
           cancelPending(table, { kind: 'export' }, cancelSourceOf(event)),
-        cancelLabel: labels.cancelAction(labels.export),
+        cancelLabel: labels.cancelAction(dataExportLabels(labels).export),
       }
     : undefined
 
@@ -126,7 +127,7 @@ export const ExportButton = ({ table }: ToolbarComponentProps) => {
   if (!hasVisibleDataColumns(table)) {
     return (
       <ToolbarButton
-        label={labels.export}
+        label={dataExportLabels(labels).export}
         icon={icon}
         disabled
         data-testid="export-button"
@@ -137,7 +138,7 @@ export const ExportButton = ({ table }: ToolbarComponentProps) => {
     const isServer = whereOf(table, single) === 'server'
     return (
       <ToolbarButton
-        label={labels.export}
+        label={dataExportLabels(labels).export}
         icon={icon}
         pending={busy === 'client'}
         failed={failed}
@@ -151,7 +152,7 @@ export const ExportButton = ({ table }: ToolbarComponentProps) => {
 
   const placeholder = (
     <ToolbarButton
-      label={labels.export}
+      label={dataExportLabels(labels).export}
       icon={icon}
       aria-haspopup="dialog"
       data-testid="export-button"

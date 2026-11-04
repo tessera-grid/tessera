@@ -24,6 +24,9 @@ import {
   toRgba,
 } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
+import { cellEditingLabels } from '../../../plugins/cellEditing/labels'
+import { failureLogLabels } from '../../../plugins/failureLog/labels'
+import { dataExportLabels } from '../../../plugins/dataExport/labels'
 
 declare module 'vitest/browser' {
   interface BrowserCommands {
@@ -166,7 +169,7 @@ const openLog = async () => {
 
 const cellFailure = (row: string, reason = 'Server said no') =>
   table.reportFailure({
-    label: tableLabels.cellDraftKind,
+    label: cellEditingLabels(tableLabels).cellDraftKind,
     target: { cell: [row, 'name'] },
     reason,
   })
@@ -179,13 +182,17 @@ describe('Журнал отказов (ADR 0177)', () => {
       await expect.poll(logButton).not.toBeNull()
       expect(shown()).toBe(false)
       expect(logButton()!.getAttribute('aria-label')).toBe(
-        tableLabels.failureLog,
+        failureLogLabels(tableLabels).failureLog,
       )
       await openLog()
       const stub = empty()!
       expect(stub.getAttribute('data-size')).toBe('compact')
-      expect(stub.textContent).toContain(tableLabels.failureLogEmpty)
-      expect(stub.textContent).toContain(tableLabels.failureLogEmptyDescription)
+      expect(stub.textContent).toContain(
+        failureLogLabels(tableLabels).failureLogEmpty,
+      )
+      expect(stub.textContent).toContain(
+        failureLogLabels(tableLabels).failureLogEmptyDescription,
+      )
       const media = stub.querySelector('svg')!
       expect(media.getBoundingClientRect().width).toBeGreaterThan(0)
       await userEvent.keyboard('{Escape}')
@@ -197,7 +204,7 @@ describe('Журнал отказов (ADR 0177)', () => {
       await expect.poll(() => bubbleOf(logButton()!).textContent).toBe('2')
       expect(bubbleOf(logButton()!).getAttribute('data-shown')).toBe('true')
       expect(logButton()!.getAttribute('aria-label')).toBe(
-        tableLabels.failureLogButton(2),
+        failureLogLabels(tableLabels).failureLogButton(2),
       )
       // Красный: тон бабла — цвет отказа темы, а не синий включённого действия.
       const bubble = toRgba(
@@ -239,14 +246,16 @@ describe('Журнал отказов (ADR 0177)', () => {
         reason: 'Row is locked',
       })
       table.reportFailure({
-        label: tableLabels.export,
+        label: dataExportLabels(tableLabels).export,
         target: { process: 'export' },
         reason: 'Disk full',
       })
       await openLog()
       // Новые сверху; подпись, цель, причина, время.
       const [newest, , oldest] = entries()
-      expect(newest!.textContent).toContain(tableLabels.export)
+      expect(newest!.textContent).toContain(
+        dataExportLabels(tableLabels).export,
+      )
       expect(newest!.textContent).toContain('Disk full')
       expect(entries()[1]!.textContent).toContain(
         tableLabels.failureTargetRow(6),
@@ -315,7 +324,7 @@ describe('Журнал отказов (ADR 0177)', () => {
       )
       for (const [action, label] of [
         ['retry', tableLabels.failureRetry],
-        ['close', tableLabels.failureClose],
+        ['close', failureLogLabels(tableLabels).failureClose],
       ] as const) {
         const button = actionOf(rowEntry, action)!
         expect(button.getAttribute('data-shape'), action).toBe('square')
@@ -400,13 +409,13 @@ describe('Журнал отказов (ADR 0177)', () => {
       const discarded: string[] = []
       for (const row of ['r1', 'r2'])
         table.reportFailure({
-          label: tableLabels.cellDraftKind,
+          label: cellEditingLabels(tableLabels).cellDraftKind,
           target: { cell: [row, 'name'] },
           reason: 'Server said no',
           discard: () => discarded.push(row),
         } as never)
       table.reportFailure({
-        label: tableLabels.export,
+        label: dataExportLabels(tableLabels).export,
         target: { process: 'export' },
         reason: 'Disk full',
       })
@@ -437,7 +446,7 @@ describe('Журнал отказов (ADR 0177)', () => {
       cellFailure('r1')
       await expect.poll(shown).toBe(true)
       table.reportFailure({
-        label: tableLabels.export,
+        label: dataExportLabels(tableLabels).export,
         target: { process: 'export' },
         reason: 'Disk full',
         retry: () => {},

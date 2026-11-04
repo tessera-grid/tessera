@@ -33,6 +33,7 @@ import type {
   ExportRequest,
   ExportSettings,
 } from './types'
+import { actionLabelOf } from '../../core/actions'
 
 type HooksTable = { getHooks?: () => Record<string, unknown> | undefined }
 
@@ -121,7 +122,13 @@ const cancellable = (
       cause: outcome?.cause,
     })
     announceLabel(table, labels =>
-      labels.announceActionCancelled(labels.export),
+      labels.announceActionCancelled(
+        actionLabelOf(
+          table,
+          { plugin: 'dataExportModel', action: 'exportData' },
+          labels,
+        ),
+      ),
     )
     cancelled!()
   }

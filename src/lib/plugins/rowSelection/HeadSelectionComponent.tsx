@@ -25,6 +25,7 @@ import {
   setScopeSelected,
 } from './selectAllScope'
 import type { RowSelectionHooks } from './types'
+import { rowSelectionLabels } from './labels'
 
 export const HeadSelectionComponent = ({
   table,
@@ -74,7 +75,7 @@ export const HeadSelectionComponent = ({
             : Object.values(rowSelectionValueOf(table)).some(Boolean)
         }
         onClick={handleSelectAll}
-        label={labels.selectAll}
+        label={rowSelectionLabels(labels).selectAll}
       />
     )
   }
@@ -102,7 +103,7 @@ export const HeadSelectionComponent = ({
       indeterminate={indeterminate}
       onClick={handleSelectAll}
       disabled={disabled}
-      label={labels.selectAll}
+      label={rowSelectionLabels(labels).selectAll}
     />
   )
 }

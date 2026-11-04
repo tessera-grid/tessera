@@ -12,6 +12,7 @@ import { useIcons } from '../../ui/icons'
 
 import styles from './GroupButton.module.css'
 import '../../ui/cellControls/buttonVisibility.css'
+import { rowGroupingLabels } from './labels'
 
 export interface GroupButtonProps extends DerivedButtonProps, RevealProps {
   grouped: boolean
@@ -28,7 +29,9 @@ export const GroupButton = memo(
 
     const labels = useLocalization()
 
-    const title = grouped ? labels.ungroup : labels.group
+    const title = grouped
+      ? rowGroupingLabels(labels).ungroup
+      : rowGroupingLabels(labels).group
 
     return (
       <div

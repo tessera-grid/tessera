@@ -10,12 +10,18 @@ import { filteringColumns, filteringData } from '../../__mocks__/filteringData'
 import { bodyRows } from '../helpers'
 import { composed } from '../stories'
 import { tableLabels } from '../labels'
+import { quickSearchLabels } from '../../../plugins/quickSearch/labels'
 
 // Подсказка быстрого поиска (ADR 0053): QS1–QS2, QS4–QS5, QS8. QS3, QS6–QS7 —
 // модульные (`src/lib/__tests__/quickSearchHint.dom.test.tsx`), QS9 — `play` истории
 // «Filtering — Server».
 
-const HINT = tableLabels.searchColumnsHint(['Name', 'City', 'Age', 'Visits'])
+const HINT = quickSearchLabels(tableLabels).searchColumnsHint([
+  'Name',
+  'City',
+  'Age',
+  'Visits',
+])
 
 const input = () =>
   document.querySelector<HTMLInputElement>('[data-testid="quick-search"]')
@@ -90,9 +96,9 @@ describe('Quick search hint', () => {
           <DataGrid
             table={table as never}
             localization={{
-              searchColumnsHint: (columns: string[]) =>
+              'quickSearch.searchColumnsHint': (columns: string[]) =>
                 `Ищем: ${columns.join(' / ')}`,
-              searchNoColumns: 'Нечего искать',
+              'quickSearch.searchNoColumns': 'Нечего искать',
             }}
             icons={{ info: () => <svg data-testid="custom-info" /> }}
           />
@@ -127,7 +133,7 @@ describe('Quick search hint', () => {
     await toggleColumn('name')
     await expect.poll(() => isDisabled()).toBe(true)
     expect(input()!.value).toBe('Alice')
-    expect(description()).toBe(tableLabels.searchNoColumns)
+    expect(description()).toBe(quickSearchLabels(tableLabels).searchNoColumns)
     await expect.poll(() => bodyRows().length).toBe(total)
 
     await toggleColumn('name')

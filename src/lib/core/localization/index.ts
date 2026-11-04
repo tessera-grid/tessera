@@ -14,3 +14,11 @@ export {
   unknownLabelKeys,
   type LabelDictionary,
 } from './resolveLabels'
+export {
+  defineLabels,
+  labelSetKeys,
+  type LabelSet,
+  type PluginDictionary,
+  type PluginLabelKey,
+  type PluginLabels,
+} from './pluginLabels'

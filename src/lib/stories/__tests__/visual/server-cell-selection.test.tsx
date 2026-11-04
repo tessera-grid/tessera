@@ -20,6 +20,7 @@ import {
 import { humanClick } from '../helpers'
 import { tableLabels } from '../labels'
 import { AXE_OPTIONS } from './a11y-helpers'
+import { cellSelectionLabels } from '../../../plugins/cellSelection/labels'
 
 // Выделение ячеек и копирование в серверной модели строк (ADR 0146): мышь и клавиши по
 // всему итогу, автопрокрутка, синхронное и асинхронное копирование, отказы, строки-группы,
@@ -400,7 +401,7 @@ describe('Выделение ячеек в серверной модели ст�
       copyFrom(cellAt(1, 'name')!)
       await expect
         .poll(() => liveRegion().textContent)
-        .toContain(tableLabels.announceCopyLoading(300))
+        .toContain(cellSelectionLabels(tableLabels).announceCopyLoading(300))
       // Запросы догрузки уходят кусками, после уступки потока.
       await expect.poll(() => calls.length).toBeGreaterThan(first)
       const pending = calls.slice(first)
@@ -571,7 +572,9 @@ describe('Выделение ячеек в серверной модели ст�
       written = stubClipboard(true)
       copyFrom(cellAt(1, 'name')!)
       await expect.poll(banner).not.toBeNull()
-      expect(banner()!.textContent).toContain(tableLabels.copyClipboardDenied)
+      expect(banner()!.textContent).toContain(
+        cellSelectionLabels(tableLabels).copyClipboardDenied,
+      )
       expect(written).toEqual([])
     } finally {
       vi.restoreAllMocks()
@@ -618,7 +621,9 @@ describe('Выделение ячеек в серверной модели ст�
         () => {
           const found = [
             ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
-          ].find(el => el.textContent?.includes(tableLabels.copy))
+          ].find(el =>
+            el.textContent?.includes(cellSelectionLabels(tableLabels).copy),
+          )
           if (!found) throw new Error('no copy item')
           return found
         },

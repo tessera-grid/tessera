@@ -237,6 +237,7 @@ export interface PerfRecord {
     | 'none'
     | 'all'
     | 'cellEditing'
+    | 'failureLog'
     | 'cellErrors'
     | 'columnFiltering'
     | 'rowExpanding'

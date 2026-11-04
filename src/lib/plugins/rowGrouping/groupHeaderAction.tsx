@@ -15,6 +15,7 @@ import {
 import { runServerAction } from '../../core/serverActions'
 
 import '../../ui/cellControls/buttonVisibility.css'
+import { rowGroupingLabels } from './labels'
 
 /** Тематизируемая иконка группировки; `grouped` — у сгруппированной колонки (ADR 0062, AI13). */
 const GroupActionIcon = ({ grouped = false }: { grouped?: boolean }) => {
@@ -58,7 +59,8 @@ export const groupHeaderAction: HeaderAction = {
   order: 2,
   visible: ({ column }) => column.getCanGroup(),
   icon: ctx => <GroupActionIcon grouped={isGrouped(ctx)} />,
-  label: (ctx, labels) => (isGrouped(ctx) ? labels.ungroup : labels.group),
+  label: labels => rowGroupingLabels(labels).group,
+  action: ctx => (isGrouped(ctx) ? 'ungroup' : 'group'),
   active: isGrouped,
   className: () => 'column-group__button',
   onSelect: ctx => toggleGrouping(ctx),
@@ -66,7 +68,9 @@ export const groupHeaderAction: HeaderAction = {
   menuItems: (ctx, labels) => [
     {
       id: 'rowGrouping',
-      label: isGrouped(ctx) ? labels.ungroup : labels.group,
+      label: isGrouped(ctx)
+        ? rowGroupingLabels(labels).ungroup
+        : rowGroupingLabels(labels).group,
       icon: <GroupActionIcon />,
       onSelect: () => toggleGrouping(ctx, true),
       active: isGrouped(ctx),

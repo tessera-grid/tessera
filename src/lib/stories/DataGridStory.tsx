@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 import {
@@ -431,6 +432,10 @@ const StoryGrid = memo(
     // Канал действий грида — в консоль истории (ADR 0125, ADR 0124 CL15).
     // Слушатель истории или теста (`onDebugAction` аргументом) — рядом с консолью.
     const listener = useLatest(options.onDebugAction)
+    // Таблица для подписи действия в консоли: слушатель зовут после её создания.
+    const tableRef = useRef<{ getActionLabel?: (id: DebugAction) => string }>(
+      undefined,
+    )
     const hasListener = !!options.onDebugAction
     const onDebugAction = useMemo(
       () =>
@@ -444,6 +449,7 @@ const StoryGrid = memo(
                 phase: event.phase,
                 id: event.id,
                 cause: event.cause,
+                label: tableRef.current?.getActionLabel?.(event),
               })
               listener.current?.(event)
             }
@@ -516,6 +522,9 @@ const StoryGrid = memo(
       // настоящие фабрики. Бизнес-хуки демо — через hook-слайс пользовательской
       // записи, без верхнего параметра hooks.
       plugins: storyPlugins,
+    })
+    useEffect(() => {
+      tableRef.current = table as never
     })
 
     useTableConsole(consoleLog, table, {

@@ -17,6 +17,7 @@ import { ENGLISH_LABELS } from '../../core/localization'
 import { rowSourceOf } from '../../core/rowSource'
 import { timeSlicer } from '../../util/timeSlice'
 import { readServerAction, writeServerAction } from '../../core/serverActions'
+import { cellSelectionLabels } from './labels'
 
 /** Предел строк выделения для буфера по умолчанию (ADR 0146, §5). */
 export const DEFAULT_MAX_COPY_ROWS = 10_000
@@ -185,7 +186,7 @@ export const copyCellSelection = (
   })
   if (rows > max) {
     const labels = announcerLabels(table) ?? ENGLISH_LABELS
-    const message = labels.copyTooManyRows(rows, max)
+    const message = cellSelectionLabels(labels).copyTooManyRows(rows, max)
     refuse(table, new Error(message), retry, cause)
     return 'refused'
   }
@@ -212,7 +213,9 @@ export const copyCellSelection = (
       void writeClipboard(tsv, html).catch(() => {})
     }
     clearRefusal(table)
-    announceLabel(table, l => l.announceCopy(countCells(regions)))
+    announceLabel(table, l =>
+      cellSelectionLabels(l).announceCopy(countCells(regions)),
+    )
     return 'copied'
   }
 
@@ -220,7 +223,7 @@ export const copyCellSelection = (
   const controller = new AbortController()
   waiting.set(t.store, controller)
   const watch = t.atoms.cellSelection?.subscribe(() => controller.abort())
-  announceLabel(table, l => l.announceCopyLoading(rows))
+  announceLabel(table, l => cellSelectionLabels(l).announceCopyLoading(rows))
   writeServerAction(table, status => ({
     ...status,
     copying: { since: performance.now() },
@@ -275,7 +278,7 @@ export const copyCellSelection = (
         await writeClipboard(cellRangesToTsv(data), cellRangesToHtml(data))
       } catch {
         const labels = announcerLabels(table) ?? ENGLISH_LABELS
-        throw new Error(labels.copyClipboardDenied)
+        throw new Error(cellSelectionLabels(labels).copyClipboardDenied)
       }
       finish()
       if (controller.signal.aborted) return
@@ -286,7 +289,9 @@ export const copyCellSelection = (
         cause,
       })
       clearRefusal(table)
-      announceLabel(table, l => l.announceCopy(countCells(data)))
+      announceLabel(table, l =>
+        cellSelectionLabels(l).announceCopy(countCells(data)),
+      )
     })
     .catch((error: unknown) => {
       finish()

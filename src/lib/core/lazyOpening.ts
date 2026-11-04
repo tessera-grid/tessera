@@ -13,6 +13,7 @@ import {
 } from './failures/failuresFeature'
 import { type Preloadable, usePreloaded } from './preloadable'
 import { type TableLabels, useLocalization } from './localization'
+import type { ActionRef } from './actions'
 
 /** Ожидание короче этого не показывается — блик не мелькает на каждом нажатии. */
 export const LAZY_PENDING_DELAY_MS = 150
@@ -23,6 +24,8 @@ export interface LazyLoad {
   isReady?: () => boolean
   /** Подпись элемента для объявления ошибки. */
   label: (labels: TableLabels) => string
+  /** Действие, открытие которого не удалось, — имя записи отказа (ADR 0182, §5). */
+  action: ActionRef
 }
 
 export const useLazyOpening = (table: unknown) => {
@@ -95,7 +98,7 @@ export const useLazyOpening = (table: unknown) => {
         if (table) {
           announceLabel(table, labels => labels.loadFailed(lazy.label(labels)))
           reportFailure(table, {
-            label: lazy.label(labels),
+            action: lazy.action,
             target: process,
             reason: labels.loadFailed(lazy.label(labels)),
             retry: () => request(lazy, open, onFail),
@@ -165,7 +168,12 @@ export const useLazyPopover = (
     }
     if (next) {
       opening.request(
-        { load: module.reload, isReady: module.isLoaded, label },
+        {
+          load: module.reload,
+          isReady: module.isLoaded,
+          label,
+          action: { plugin: owner?.plugin ?? 'core', action: 'openMenu' },
+        },
         () => setOpen(true),
       )
     } else {

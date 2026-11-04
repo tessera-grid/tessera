@@ -21,6 +21,9 @@ import {
 import { serverRowModel } from '../../../plugins'
 import { rightClick } from '../visual/lazy-helpers'
 import { tableLabels } from '../labels'
+import { rowExpandingLabels } from '../../../plugins/rowExpanding/labels'
+import { cellEditingLabels } from '../../../plugins/cellEditing/labels'
+import { columnFilteringLabels } from '../../../plugins/columnFiltering/labels'
 
 // Долгая сессия (ADR 0092, LK7–LK9, LK13): живой грид повторяет одно и то же
 // действие; после прогрева узлы, обработчики, куча и состояние таблицы не растут с
@@ -116,7 +119,7 @@ const mountSession = async () => {
     // Приход ленивых детей и их сброс.
     container
       .querySelector<HTMLElement>(
-        `.data-grid__body-row[data-row-id="item-id-1"] [aria-label="${tableLabels.expandRow}"]`,
+        `.data-grid__body-row[data-row-id="item-id-1"] [aria-label="${rowExpandingLabels(tableLabels).expandRow}"]`,
       )!
       .click()
     await waitFor(
@@ -124,7 +127,7 @@ const mountSession = async () => {
     )
     container
       .querySelector<HTMLElement>(
-        `.data-grid__body-row[data-row-id="item-id-1"] [aria-label="${tableLabels.collapseRow}"]`,
+        `.data-grid__body-row[data-row-id="item-id-1"] [aria-label="${rowExpandingLabels(tableLabels).collapseRow}"]`,
       )!
       .click()
     await frames(2)
@@ -135,7 +138,7 @@ const mountSession = async () => {
     await hover(cell)
     await click(
       cell.querySelector<HTMLElement>(
-        `[aria-label="${tableLabels.editCell}"]`,
+        `[aria-label="${cellEditingLabels(tableLabels).editCell}"]`,
       )!,
     )
     await waitFor(() => cell.querySelector('input') !== null)
@@ -229,7 +232,9 @@ describe('Утечки в долгой сессии', () => {
       )
       await waitFor(() =>
         [...document.querySelectorAll('[data-side]')].some(
-          el => el.textContent?.trim() === tableLabels.filter,
+          el =>
+            el.textContent?.trim() ===
+            columnFilteringLabels(tableLabels).filter,
         ),
       )
       await parkPointer()

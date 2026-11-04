@@ -13,6 +13,7 @@ import {
   type ServerActionContext,
   type ServerActionResult,
 } from '../../core/serverActions'
+import { filteringLabels } from './labels'
 
 export interface ColumnFilterEntry {
   id: string
@@ -220,11 +221,11 @@ export const FILTERED_STUB: StubEntry = {
   when: ({ table, rowCount }) =>
     rowCount === 0 &&
     (columnFiltersOf(table).length > 0 || searchOf(table).trim() !== ''),
-  title: labels => labels.noRowsMatchFilters,
+  title: labels => filteringLabels(labels).noRowsMatchFilters,
   media: 'emptyState',
   mediaSize: ILLUSTRATION_SIZE,
   action: ({ table }, labels) => ({
-    label: labels.resetFilters,
+    label: filteringLabels(labels).resetFilters,
     run: () => resetFiltersByUser(table),
     testId: 'filter-stub-reset',
   }),

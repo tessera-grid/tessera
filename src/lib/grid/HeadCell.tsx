@@ -134,7 +134,7 @@ export const HeadCellView = ({
         {content}
         {serviceLabel && (
           <span className={hidden['visually-hidden']}>
-            {labels[serviceLabel]}
+            {serviceLabel(labels)}
           </span>
         )}
       </>

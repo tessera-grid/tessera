@@ -27,6 +27,8 @@ import { DEFAULT_SEARCH_DEBOUNCE_MS } from '../quickSearchModel/search'
 
 import styles from './SearchField.module.css'
 import hidden from '../../ui/visuallyHidden.module.css'
+import { quickSearchLabels } from './labels'
+import { optionsLabels } from '../../shared/options/labels'
 
 interface SearchTable {
   options: { quickSearchDebounceMs?: number }
@@ -56,8 +58,10 @@ export const SearchField = ({ table }: ToolbarComponentProps) => {
   const columns = searchColumnsOf(table)
   const hint =
     columns.length > 0
-      ? labels.searchColumnsHint(columns.map(searchColumnLabel))
-      : labels.searchNoColumns
+      ? quickSearchLabels(labels).searchColumnsHint(
+          columns.map(searchColumnLabel),
+        )
+      : quickSearchLabels(labels).searchNoColumns
 
   const apply = useDebouncedCallback((value: string) => {
     lastApplied.current = value
@@ -92,9 +96,9 @@ export const SearchField = ({ table }: ToolbarComponentProps) => {
         ref={inputRef}
         type="search"
         className={styles.input}
-        aria-label={labels.search}
+        aria-label={quickSearchLabels(labels).search}
         aria-describedby={hintId}
-        placeholder={labels.search}
+        placeholder={quickSearchLabels(labels).search}
         disabled={columns.length === 0}
         value={text}
         onChange={event => {
@@ -131,7 +135,7 @@ export const SearchField = ({ table }: ToolbarComponentProps) => {
         <Toolbar.Button
           type="button"
           className={styles.clear}
-          aria-label={labels.clearSearch}
+          aria-label={optionsLabels(labels).clearSearch}
           onClick={clear}
           data-testid="quick-search-clear"
         >

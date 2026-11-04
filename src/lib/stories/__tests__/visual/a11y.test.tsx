@@ -6,6 +6,7 @@ import { ENGLISH_LABELS } from '../../../core/localization'
 import { bodyRows, headCells, renderGrid } from '../helpers'
 import { byRule, gridRoot, violations } from './a11y-helpers'
 import { bodyCellsOf, waitForGrid } from './core-helpers'
+import { cellEditingLabels } from '../../../plugins/cellEditing/labels'
 
 // A1–A10: доступность (a11y, ADR 0020). axe-core прогоняется в реальном Chromium
 // (см. vitest.config.ts). Каждое требование — отдельный именованный тест `A<n>`
@@ -167,7 +168,9 @@ describe('Доступность (a11y)', () => {
     )
     expect(buttons.length).toBeGreaterThan(0)
     buttons.forEach(button =>
-      expect(button.getAttribute('aria-label')).toBe(ENGLISH_LABELS.editCell),
+      expect(button.getAttribute('aria-label')).toBe(
+        cellEditingLabels(ENGLISH_LABELS).editCell,
+      ),
     )
     expect(byRule(await violations(), 'button-name')).toEqual([])
   })

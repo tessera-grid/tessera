@@ -22,6 +22,7 @@ import { LoadMoreError } from '../../ui/LoadMoreError/LoadMoreError'
 import { loaderOf } from './loader'
 import { infiniteScrollInertReason } from './model'
 import type { InfiniteScrollState } from './types'
+import { infiniteScrollLabels } from './labels'
 
 type InfiniteErrorRowProps = BodyEndComponentProps & {
   state: [InfiniteScrollState, (next: InfiniteScrollState) => void]
@@ -132,7 +133,7 @@ export const InfiniteErrorRow = ({
   return (
     <div ref={rowRef} role="rowgroup">
       <LoadMoreError
-        title={labels.loadMoreFailed}
+        title={infiniteScrollLabels(labels).loadMoreFailed}
         reason={value.reason}
         retryLabel={labels.loadMoreRetry}
         onRetry={retry}

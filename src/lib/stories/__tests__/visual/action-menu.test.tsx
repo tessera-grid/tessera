@@ -12,6 +12,8 @@ import {
 } from './column-pinning-helpers'
 import { composed, rowMenuArgs } from '../stories'
 import { tableLabels } from '../labels'
+import { columnSortingLabels } from '../../../plugins/columnSorting/labels'
+import { columnPinningLabels } from '../../../plugins/columnPinning/labels'
 
 // Визуальные тесты схлопывания действий слота в кебаб-меню (AM10–AM18).
 // Чёрный ящик над раскладкой: истории `HeaderMenuPlayground` / `RowActionMenu` через
@@ -92,9 +94,9 @@ describe('Action menu — header', () => {
     expect(document.querySelectorAll('[role="group"]').length).toBe(3)
     expect(labels).toEqual(
       expect.arrayContaining([
-        tableLabels.sortAscending,
-        tableLabels.sortDescending,
-        tableLabels.clearSort,
+        columnSortingLabels(tableLabels).sortAscending,
+        columnSortingLabels(tableLabels).sortDescending,
+        columnSortingLabels(tableLabels).clearSort,
       ]),
     )
 
@@ -136,8 +138,10 @@ describe('Action menu — header', () => {
     const colId = firstCol.getAttribute('data-column-id')!
 
     await userEvent.click(firstCol.querySelector<HTMLElement>(KEBAB)!)
-    await expect.poll(() => menuItemByText(tableLabels.pin)).toBeTruthy()
-    await userEvent.click(menuItemByText(tableLabels.pin)!)
+    await expect
+      .poll(() => menuItemByText(columnPinningLabels(tableLabels).pin))
+      .toBeTruthy()
+    await userEvent.click(menuItemByText(columnPinningLabels(tableLabels).pin)!)
 
     const pinnedCell = () =>
       container.querySelector<HTMLElement>(
@@ -149,7 +153,9 @@ describe('Action menu — header', () => {
 
     // Переоткрываем меню того же столбца — подпись стала «Unpin column».
     await userEvent.click(pinnedCell()!.querySelector<HTMLElement>(KEBAB)!)
-    await expect.poll(() => menuItemByText(tableLabels.unpin)).toBeTruthy()
+    await expect
+      .poll(() => menuItemByText(columnPinningLabels(tableLabels).unpin))
+      .toBeTruthy()
 
     await closeMenu()
   })
@@ -183,7 +189,9 @@ describe('Action menu — header', () => {
       `${HEAD_CELL} .column-pin__button`,
     )!
     expect(pin).toBeTruthy()
-    expect(pin.getAttribute('aria-label')).toBe(tableLabels.pin)
+    expect(pin.getAttribute('aria-label')).toBe(
+      columnPinningLabels(tableLabels).pin,
+    )
     expect(pin.querySelector('svg')).toBeTruthy()
     expect(
       pin.closest('.cell__button')?.getAttribute('data-button-active'),

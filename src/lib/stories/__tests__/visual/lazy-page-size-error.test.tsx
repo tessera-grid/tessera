@@ -12,6 +12,7 @@ import {
   sleep,
 } from './lazy-helpers'
 import { tableLabels } from '../labels'
+import { paginationLabels } from '../../../plugins/pagination/labels'
 
 // Ошибка загрузки выбора размера страницы (ADR 0061, LZ16). Отдельный файл: модуль
 // грузится один раз на документ.
@@ -29,7 +30,9 @@ describe('Размер страницы — ошибка загрузки', () =
     await humanClick(pageSizeButton())
     await expect
       .poll(() => announcements.messages)
-      .toContain(tableLabels.loadFailed(tableLabels.rowsPerPage))
+      .toContain(
+        tableLabels.loadFailed(paginationLabels(tableLabels).rowsPerPage),
+      )
     expect(failed()).toBe(false)
     await sleep(100)
     expect(pageSizeOptions()).toBe(0)

@@ -24,6 +24,7 @@ import { Stories, humanClick, settleRowMotion } from '../helpers'
 import { measureWork } from '../work.helpers'
 import { AXE_OPTIONS, resolveColor } from './a11y-helpers'
 import { dragOver, release, settleSlotAfter } from './row-drop-helpers'
+import { rowDraggingLabels } from '../../../plugins/rowDragging/labels'
 
 // Движение строк (ADR 0107, RM1–RM17, RM19, RM22, RM30). Позиции, прозрачность и призраки
 // снимаются каждый кадр, пока идёт смена модели: видно и переезд, и его конец.
@@ -777,7 +778,8 @@ describe('Движение строк (ADR 0107)', () => {
     await userEvent.keyboard('{Enter}')
     const item = () =>
       [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(
-        node => node.textContent?.trim() === ENGLISH_LABELS.moveUp,
+        node =>
+          node.textContent?.trim() === rowDraggingLabels(ENGLISH_LABELS).moveUp,
       )
     await expect.poll(item).toBeTruthy()
     const menu = await sampleFrames(
@@ -1160,7 +1162,8 @@ describe('Приземление перестановки вспышкой (ADR 
     await userEvent.keyboard('{Enter}')
     const item = () =>
       [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(
-        node => node.textContent?.trim() === ENGLISH_LABELS.moveUp,
+        node =>
+          node.textContent?.trim() === rowDraggingLabels(ENGLISH_LABELS).moveUp,
       )
     await expect.poll(item).toBeTruthy()
     await userEvent.click(item()!)

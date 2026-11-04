@@ -12,6 +12,7 @@ import { definePlugin } from '../../core/definePlugin'
 import { neverInert } from '../../core/pluginDiagnostics'
 import { ColumnSizingComponent } from './ColumnSizingComponent'
 import type { ColumnSizingHooks } from './types'
+import { columnSizingLabels } from './labels'
 
 export interface ColumnSizingOptions {
   /** `false` — плагин отключён. */
@@ -24,6 +25,13 @@ export interface ColumnSizingOptions {
 
 export const columnSizing = definePlugin<ColumnSizingOptions>()({
   id: 'columnSizing',
+  labels: [columnSizingLabels],
+  actions: {
+    resize: labels => columnSizingLabels(labels).resizeColumn,
+    resizeBy: labels => columnSizingLabels(labels).resizeColumn,
+    resizeCancel: labels => columnSizingLabels(labels).actionResizeCancel,
+    handleMenu: labels => columnSizingLabels(labels).columnWidth,
+  },
   diagnose: neverInert,
   features: { columnSizingFeature, columnResizingFeature },
   hooks: o => ({

@@ -7,6 +7,7 @@ import { Stories, bodyRows, renderGrid } from '../helpers'
 import { plainGroupingArgs } from '../stories'
 import { waitForGrid } from './core-helpers'
 import { tableLabels } from '../labels'
+import { rowSelectionModelLabels } from '../../../plugins/rowSelectionModel/labels'
 
 // Уровень 2 (ADR 0033): эмулятор скринридера `@guidepup/virtual-screen-reader`
 // слушает фокус и live-области реального DOM; грид ведётся реальными клавишами,
@@ -72,7 +73,7 @@ describe('Эмулятор скринридера (SR)', () => {
     await userEvent.keyboard(' ')
     await settle()
     expect(await spoken()).toContain(
-      `polite: ${tableLabels.announceSelection(1)}`,
+      `polite: ${rowSelectionModelLabels(tableLabels).announceSelection(1)}`,
     )
   })
 

@@ -29,6 +29,11 @@ import {
 } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
 import { tableLabels } from '../labels'
+import { columnFilteringLabels } from '../../../plugins/columnFiltering/labels'
+import { columnPinningLabels } from '../../../plugins/columnPinning/labels'
+import { columnSortingLabels } from '../../../plugins/columnSorting/labels'
+import { columnVisibilityLabels } from '../../../plugins/columnVisibility/labels'
+import { rowGroupingLabels } from '../../../plugins/rowGrouping/labels'
 
 // Индикатор активного действия (ADR 0062, AI1–AI8): точка на инлайн-кнопке
 // заголовка, номер приоритета сортировки на её месте, точка и имя кебаба со
@@ -178,7 +183,7 @@ const filterName = async (value: string) => {
   await userEvent.type(field()!, value)
   await expect
     .poll(() => button('name', 'column-filter__button').ariaLabel)
-    .toBe(tableLabels.filterActive)
+    .toBe(columnFilteringLabels(tableLabels).filterActive)
   await userEvent.keyboard('{Escape}')
   await expect
     .poll(() => document.querySelector('[data-testid="filter-panel"]'))
@@ -222,8 +227,12 @@ describe('Индикатор активного действия', () => {
         () => button('city', 'column-pin__button'),
         async () => {
           await pressInHead('city', () => button('city', 'column-pin__button'))
-          await expect.poll(() => menuItem(tableLabels.pinLeft)).toBeTruthy()
-          await userEvent.click(menuItem(tableLabels.pinLeft))
+          await expect
+            .poll(() => menuItem(columnPinningLabels(tableLabels).pinLeft))
+            .toBeTruthy()
+          await userEvent.click(
+            menuItem(columnPinningLabels(tableLabels).pinLeft),
+          )
         },
       ],
       [
@@ -289,16 +298,22 @@ describe('Индикатор активного действия', () => {
     expect(dotShown(kebab('age'))).toBe(false)
 
     await pressInHead('age', () => kebab('age'))
-    await expect.poll(() => menuItem(tableLabels.sortAscending)).toBeTruthy()
-    await userEvent.click(menuItem(tableLabels.sortAscending))
+    await expect
+      .poll(() => menuItem(columnSortingLabels(tableLabels).sortAscending))
+      .toBeTruthy()
+    await userEvent.click(
+      menuItem(columnSortingLabels(tableLabels).sortAscending),
+    )
     blur()
     await userEvent.unhover(head('age'))
     await expect.poll(() => dotShown(kebab('age'))).toBe(true)
     await expect.poll(() => opacity(wrapper())).toBe('1')
 
     await pressInHead('age', () => kebab('age'))
-    await expect.poll(() => menuItem(tableLabels.clearSort)).toBeTruthy()
-    await userEvent.click(menuItem(tableLabels.clearSort))
+    await expect
+      .poll(() => menuItem(columnSortingLabels(tableLabels).clearSort))
+      .toBeTruthy()
+    await userEvent.click(menuItem(columnSortingLabels(tableLabels).clearSort))
     blur()
     await userEvent.unhover(head('age'))
     await expect.poll(() => dotShown(kebab('age'))).toBe(false)
@@ -310,8 +325,12 @@ describe('Индикатор активного действия', () => {
     await waitForGrid()
     expect(kebab('age').ariaLabel).toBe(tableLabels.headerMenu)
     await pressInHead('age', () => kebab('age'))
-    await expect.poll(() => menuItem(tableLabels.sortAscending)).toBeTruthy()
-    await userEvent.click(menuItem(tableLabels.sortAscending))
+    await expect
+      .poll(() => menuItem(columnSortingLabels(tableLabels).sortAscending))
+      .toBeTruthy()
+    await userEvent.click(
+      menuItem(columnSortingLabels(tableLabels).sortAscending),
+    )
     await expect
       .poll(() => kebab('age').ariaLabel)
       .toBe(tableLabels.withActiveCount(tableLabels.headerMenu, 1))
@@ -333,8 +352,12 @@ describe('Индикатор активного действия', () => {
     )
     await waitForGrid()
     await pressInHead('age', () => kebab('age'))
-    await expect.poll(() => menuItem(tableLabels.sortAscending)).toBeTruthy()
-    await userEvent.click(menuItem(tableLabels.sortAscending))
+    await expect
+      .poll(() => menuItem(columnSortingLabels(tableLabels).sortAscending))
+      .toBeTruthy()
+    await userEvent.click(
+      menuItem(columnSortingLabels(tableLabels).sortAscending),
+    )
     await expect
       .poll(() => kebab('age').ariaLabel)
       .toBe('Column options (1 on)')
@@ -435,20 +458,24 @@ describe('Индикатор активного действия', () => {
       [...columns().querySelectorAll<HTMLElement>('[aria-hidden]')].find(el =>
         el.textContent?.trim(),
       )
-    expect(columns().ariaLabel).toBe(tableLabels.columns)
+    expect(columns().ariaLabel).toBe(
+      columnVisibilityLabels(tableLabels).columns,
+    )
     expect(count()).toBeUndefined()
 
     await hideCity()
     await expect
       .poll(() => columns().ariaLabel)
-      .toBe(tableLabels.columnsWithHidden(1))
+      .toBe(columnVisibilityLabels(tableLabels).columnsWithHidden(1))
     expect(count()!.textContent).toBe('1')
     expect(getComputedStyle(count()!).backgroundColor).toBe(
       tokenColor('--tsr-comp-active-indicator'),
     )
 
     await hideCity()
-    await expect.poll(() => columns().ariaLabel).toBe(tableLabels.columns)
+    await expect
+      .poll(() => columns().ariaLabel)
+      .toBe(columnVisibilityLabels(tableLabels).columns)
     expect(count()).toBeUndefined()
   })
 
@@ -518,8 +545,10 @@ describe('Индикатор активного действия', () => {
     const pin = (id: string) => button(id, 'column-pin__button')
     const pinFromMenu = async (id: string) => {
       await pressInHead(id, () => pin(id))
-      await expect.poll(() => menuItem(tableLabels.pinLeft)).toBeTruthy()
-      await userEvent.click(menuItem(tableLabels.pinLeft))
+      await expect
+        .poll(() => menuItem(columnPinningLabels(tableLabels).pinLeft))
+        .toBeTruthy()
+      await userEvent.click(menuItem(columnPinningLabels(tableLabels).pinLeft))
       await expect
         .poll(() => head(id).getAttribute('data-cell-pinned'))
         .toBe('left')
@@ -544,7 +573,9 @@ describe('Индикатор активного действия', () => {
     await pinFromMenu('city')
     expect(customIn(pin('city'), 'custom-pinned')).toBe(true)
     await pressInHead('city', () => pin('city'))
-    await expect.poll(() => menuItem(tableLabels.pinLeft)).toBeTruthy()
+    await expect
+      .poll(() => menuItem(columnPinningLabels(tableLabels).pinLeft))
+      .toBeTruthy()
     const items = [...document.querySelectorAll('[role^="menuitem"]')]
     expect(items.some(item => customIn(item, 'custom-pinned'))).toBe(false)
     await userEvent.keyboard('{Escape}')
@@ -563,7 +594,9 @@ describe('Индикатор активного действия', () => {
     await waitForGrid()
     const plain = group().querySelector('svg')!.outerHTML
     await pressInHead('city', group)
-    await expect.poll(() => group().ariaLabel).toBe(tableLabels.ungroup)
+    await expect
+      .poll(() => group().ariaLabel)
+      .toBe(rowGroupingLabels(tableLabels).ungroup)
     expect(group().querySelector('svg')!.outerHTML).toBe(plain)
     await screen.unmount()
 
@@ -585,13 +618,20 @@ describe('Индикатор активного действия', () => {
     )
     await waitForGrid()
     await pressInHead('city', () => kebab('city'))
-    await expect.poll(() => menuItem(tableLabels.group)).toBeTruthy()
-    await userEvent.click(menuItem(tableLabels.group))
+    await expect
+      .poll(() => menuItem(rowGroupingLabels(tableLabels).group))
+      .toBeTruthy()
+    await userEvent.click(menuItem(rowGroupingLabels(tableLabels).group))
     await pressInHead('city', () => kebab('city'))
-    await expect.poll(() => menuItem(tableLabels.ungroup)).toBeTruthy()
-    expect(customIn(menuItem(tableLabels.ungroup), 'custom-grouped')).toBe(
-      false,
-    )
+    await expect
+      .poll(() => menuItem(rowGroupingLabels(tableLabels).ungroup))
+      .toBeTruthy()
+    expect(
+      customIn(
+        menuItem(rowGroupingLabels(tableLabels).ungroup),
+        'custom-grouped',
+      ),
+    ).toBe(false)
     await userEvent.keyboard('{Escape}')
   })
 

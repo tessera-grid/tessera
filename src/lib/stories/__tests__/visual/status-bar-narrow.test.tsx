@@ -9,6 +9,7 @@ import { pagination, rowSelection } from '../../../plugins'
 import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
 import { nextFrame, waitForGrid } from './core-helpers'
 import { tableLabels } from '../labels'
+import { paginationLabels } from '../../../plugins/pagination/labels'
 
 // Нижняя панель на узкой ширине (ADR 0038, SB7–SB13). Ширина задаётся обёрткой грида
 // напрямую, без перерисовки React; вид панели — атрибут `data-status-bar-layout`.
@@ -140,7 +141,7 @@ describe('Нижняя панель — узкая ширина', () => {
     const label = document.getElementById(
       trigger.getAttribute('aria-labelledby')!.split(' ')[0],
     )!
-    expect(label.textContent).toBe(tableLabels.rowsPerPage)
+    expect(label.textContent).toBe(paginationLabels(tableLabels).rowsPerPage)
     expect(label.getBoundingClientRect().width).toBeLessThanOrEqual(1)
     expect(getComputedStyle(label).clipPath).toBe('inset(50%)')
   })

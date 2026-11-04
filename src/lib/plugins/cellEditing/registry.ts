@@ -29,6 +29,9 @@ import {
 import { EMPTY_EDITING_STATE, reconcileEditSession } from './session'
 import type { CellComponentProps } from '../../core/createSlots'
 import type { CellEditingHooks, CellEditingState } from './types'
+import { cellEditingLabels } from './labels'
+import { calendarLabels } from '../../shared/calendar/labels'
+import { optionsLabels } from '../../shared/options/labels'
 
 export interface CellEditingOptions {
   /** `false` — плагин отключён. */
@@ -64,6 +67,21 @@ export interface CellEditingOptions {
 
 export const cellEditing = definePlugin<CellEditingOptions>()({
   id: 'cellEditing',
+  labels: [cellEditingLabels, calendarLabels, optionsLabels],
+  actions: {
+    edit: labels => cellEditingLabels(labels).cellDraftKind,
+    changeDraft: labels => cellEditingLabels(labels).actionChangeDraft,
+    validationFailed: labels =>
+      cellEditingLabels(labels).actionValidationFailed,
+    'cellEditing.start': labels => cellEditingLabels(labels).editCell,
+    'cellEditing.toggle': labels => cellEditingLabels(labels).actionToggle,
+    rowInsert: labels => cellEditingLabels(labels).rowInsertDraftKind,
+    rowDelete: labels => cellEditingLabels(labels).rowDeleteDraftKind,
+    rowInsertDiscard: labels => cellEditingLabels(labels).rowInsertDiscard,
+    rowDeleteDiscard: labels => cellEditingLabels(labels).rowDeleteDiscard,
+    cellDraftRollback: labels => cellEditingLabels(labels).cellDraftRollback,
+    rowDraftDiscard: labels => cellEditingLabels(labels).actionRowDraftDiscard,
+  },
   // Методы addRow и removeRow строк до сохранения (ADR 0178, §7).
   features: { rowDraftsFeature },
   // Новые строки показывает слой поверх источника строк, а не модель строк.

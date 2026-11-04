@@ -44,6 +44,8 @@ import {
   type Work,
 } from '../work.helpers'
 import { tableLabels } from '../labels'
+import { paginationLabels } from '../../../plugins/pagination/labels'
+import { rowExpandingLabels } from '../../../plugins/rowExpanding/labels'
 
 // Счётчики работы (ADR 0099, этап 2, PF2–PF11): работа ключевых действий считается —
 // коммиты React, отрисованные компоненты, узлы, раскладки, пересборки моделей строк.
@@ -254,7 +256,7 @@ describe('Счётчики работы', () => {
       () =>
         userEvent.click(
           document.querySelector<HTMLElement>(
-            `[aria-label="${tableLabels.nextPage}"]`,
+            `[aria-label="${paginationLabels(tableLabels).nextPage}"]`,
           )!,
         ),
       { models: ['coreRowModel', 'paginatedRowModel'] },
@@ -279,7 +281,7 @@ describe('Счётчики работы', () => {
     })
     await userEvent.click(
       document.querySelector<HTMLElement>(
-        `[data-row-id="item-id-2"] [aria-label="${tableLabels.expandRow}"]`,
+        `[data-row-id="item-id-2"] [aria-label="${rowExpandingLabels(tableLabels).expandRow}"]`,
       )!,
     )
     await expect.poll(() => answer).toBeDefined()

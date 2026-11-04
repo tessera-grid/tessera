@@ -16,6 +16,7 @@ import { cellToWallValue, WALL_TIME } from '../../shared/wallTime'
 import { Calendar, TimeField } from '../../shared/calendar/Calendar'
 import { ClearValue, EditPopover } from './EditPopover'
 import type { CellEditorProps } from './types'
+import { cellEditingLabels } from './labels'
 
 export interface Wall {
   /** `'YYYY-MM-DD'` или `null` — пусто. */
@@ -135,7 +136,7 @@ export const DateEditor = (props: CellEditorProps) => {
       />
       {timed && (
         <TimeField
-          label={labels.filterTime}
+          label={cellEditingLabels(labels).time}
           value={wall.time}
           testId="edit-time"
           onChange={time => change({ ...wall, time })}

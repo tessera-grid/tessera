@@ -10,7 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { registerAnnouncer } from '../core/announcer'
 import type { DebugAction } from '../core/debugActions'
-import { ENGLISH_LABELS } from '../core/localization'
+import { ENGLISH_LABELS, resolveLabels } from '../core/localization'
 import type { RowSource } from '../core/rowSource'
 import {
   countSelectionIn,
@@ -27,6 +27,8 @@ import {
 } from '../plugins'
 import { toggleRowSelection } from '../plugins/rowSelection/keyboardActions'
 import { captureInertWarnings } from './inertWarnings'
+import { serverRowModelLabels } from '../plugins/serverRowModel/labels'
+
 ;(
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true
@@ -333,11 +335,13 @@ describe('транзакции строк серверной модели (ADR 0
     const say = vi.fn()
     registerAnnouncer(table, {
       say,
-      labels: {
-        ...ENGLISH_LABELS,
-        announceRowsAdded: count => `+${count}`,
-        announceRowsRemoved: count => `-${count}`,
-      },
+      labels: resolveLabels(
+        {
+          'serverRowModel.announceRowsAdded': count => `+${count}`,
+          'serverRowModel.announceRowsRemoved': count => `-${count}`,
+        },
+        'en-US',
+      ),
     })
     transact({ add: [item('n1'), item('n2')], index: 0 })
     await flush()
@@ -345,8 +349,12 @@ describe('транзакции строк серверной модели (ADR 0
     transact({ remove: ['r3'] })
     await flush()
     expect(say).toHaveBeenLastCalledWith('-1')
-    expect(ENGLISH_LABELS.announceRowsAdded(1)).toBe('Added 1 row')
-    expect(ENGLISH_LABELS.announceRowsRemoved(3)).toBe('Removed 3 rows')
+    expect(serverRowModelLabels(ENGLISH_LABELS).announceRowsAdded(1)).toBe(
+      'Added 1 row',
+    )
+    expect(serverRowModelLabels(ENGLISH_LABELS).announceRowsRemoved(3)).toBe(
+      'Removed 3 rows',
+    )
   })
 
   it('RT11: транзакции одного кадра применяются вместе одной задачей после кадра — до неё список прежний, после одно объявление', async () => {

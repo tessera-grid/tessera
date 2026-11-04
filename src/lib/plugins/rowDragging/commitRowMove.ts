@@ -5,7 +5,7 @@
  */
 import { reportOutcome } from '../../core/debugActions'
 import { announceLabel, announcerLabels } from '../../core/announcer'
-import { DEFAULT_LABELS } from '../../core/localization'
+import { ENGLISH_LABELS } from '../../core/localization'
 import {
   type Answers,
   hasLazyMoves,
@@ -24,6 +24,7 @@ import type { RowMoveFailed } from './rowDraggingFeature'
 import { flashOutcome } from '../../core/flashes/flashFeature'
 import { withoutFailure } from '../../shared/failedAttempts'
 import type { RowDraggingHooks } from './types'
+import { rowDraggingLabels } from './labels'
 
 type Updater<T> = (prev: T) => T
 
@@ -226,9 +227,9 @@ const reject = (
     ...prev,
     [rowId]: { attempt: entry.attempt, error: reason },
   }))
-  const labels = announcerLabels(table) ?? DEFAULT_LABELS
-  const error = rejectionText(reason) ?? labels.moveRowFailed
-  announceLabel(table, all => all.announceMoveFailed(error))
+  const labels = announcerLabels(table) ?? ENGLISH_LABELS
+  const error = rejectionText(reason) ?? rowDraggingLabels(labels).moveRowFailed
+  announceLabel(table, all => rowDraggingLabels(all).announceMoveFailed(error))
 }
 
 // Номер попытки сквозной: итог прежнего переноса не спутать с новым.

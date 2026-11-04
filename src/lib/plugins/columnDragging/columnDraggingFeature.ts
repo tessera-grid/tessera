@@ -27,9 +27,10 @@ import type { ColumnMoveFailed, ColumnMoves } from './commitColumnMove'
 import { announcerLabels } from '../../core/announcer'
 import { mirrorFailures } from '../../core/failures/failuresFeature'
 import { mirrorPending } from '../../shared/objectPending'
-import { DEFAULT_LABELS } from '../../core/localization'
+import { ENGLISH_LABELS } from '../../core/localization'
 import { rejectionText } from '../../util/thenable'
 import type { DragOverlayState } from './types'
+import { columnDraggingLabels } from './labels'
 
 interface ColumnDraggingStateSlice {
   columnDraggingActiveId: DragOverlayState
@@ -218,11 +219,13 @@ export const columnDraggingFeature: TableFeature = {
           'onColumnMoveFailedChange',
           (prev, next) =>
             mirrorFailures(table, prev, next, (id, failed) => {
-              const labels = announcerLabels(table) ?? DEFAULT_LABELS
+              const labels = announcerLabels(table) ?? ENGLISH_LABELS
               return {
-                label: labels.moveColumn,
+                action: { plugin: 'columnDragging', action: 'drag' },
                 target: { column: id },
-                reason: rejectionText(failed.error) ?? labels.moveColumnFailed,
+                reason:
+                  rejectionText(failed.error) ??
+                  columnDraggingLabels(labels).moveColumnFailed,
               }
             }),
         ),

@@ -22,6 +22,7 @@ import { ENGLISH_LABELS } from '../core/localization'
 import { useCreateTable } from '../core/useCreateTable'
 import { cellEditing, serverRowModel } from '../plugins'
 import type { CellEditBatch } from '../plugins/cellEditing/types'
+import { serverRowModelLabels } from '../plugins/serverRowModel/labels'
 
 ;(
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -246,7 +247,9 @@ describe('id новой строки задаёт таблица (ADR 0181)', ()
     expect(rowsWith(id)).toHaveLength(1)
     expect(table.getRowSource().indexOf(id)).toBe(at)
     expect(readFlashes(table)[rowHighlightKey(id)]?.outcome).toBe('accepted')
-    expect(say).not.toHaveBeenCalledWith(ENGLISH_LABELS.announceRowsAdded(1))
+    expect(say).not.toHaveBeenCalledWith(
+      serverRowModelLabels(ENGLISH_LABELS).announceRowsAdded(1),
+    )
   })
 
   it('NI4: сохранённая новая строка под другим id — предупреждение в разработке с обоими id; с тем же id — без предупреждения', async () => {

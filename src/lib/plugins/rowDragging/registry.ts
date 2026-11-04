@@ -20,6 +20,7 @@ import {
 } from './rowDraggingFeature'
 import { reconcileRowMoves } from './reconcileRowMoves'
 import type { RowDraggingHooks } from './types'
+import { rowDraggingLabels } from './labels'
 import { DEFAULT_ROW_DRAG_EXPAND_DELAY } from './getRowDraggingEvents'
 
 export interface RowDraggingOptions {
@@ -53,6 +54,17 @@ export interface RowDraggingOptions {
 
 const rowDraggingEntry = definePlugin<RowDraggingOptions>()({
   id: 'rowDragging',
+  labels: [rowDraggingLabels],
+  actions: {
+    drag: labels => rowDraggingLabels(labels).moveRow,
+    dragCancel: labels => rowDraggingLabels(labels).actionDragCancel,
+    dragOver: labels => rowDraggingLabels(labels).actionDragOver,
+    drop: labels => rowDraggingLabels(labels).actionDrop,
+    expandOnHover: labels => rowDraggingLabels(labels).actionExpandOnHover,
+    'rowDragging.move': labels => rowDraggingLabels(labels).moveRow,
+    'rowDragging.nest': labels => rowDraggingLabels(labels).actionNest,
+    handleMenu: labels => rowDraggingLabels(labels).actionHandleMenu,
+  },
   // Предикат влияет на отрисовку ячеек: новая ссылка — перерисовка (ADR 0039).
   refreshOn: ['canDragRow'],
   features: { rowDraggingFeature },
@@ -69,7 +81,7 @@ const rowDraggingEntry = definePlugin<RowDraggingOptions>()({
     side: 'leading',
     order: 0,
     pin: { side: 'start', when: 'with-user' },
-    label: 'reorderColumn',
+    label: labels => rowDraggingLabels(labels).reorderColumn,
   },
   options: o => ({
     enableRowDragging: o.enabled === false ? false : (o.canDragRow ?? true),

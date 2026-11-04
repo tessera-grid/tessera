@@ -10,6 +10,8 @@ import { composed, rowMenuArgs } from '../stories'
 import { headCellById, renderColumnPinning } from './column-pinning-helpers'
 import { waitForGrid } from './core-helpers'
 import { tableLabels } from '../labels'
+import { columnFilteringLabels } from '../../../plugins/columnFiltering/labels'
+import { columnPinningLabels } from '../../../plugins/columnPinning/labels'
 
 // Тултип инлайн-кнопок, открывающих поповер (ADR 0024, AM31): с панелью (фильтр) и с
 // мини-меню (закрепление с обеих сторон) — как у обычной кнопки действия; тултип и
@@ -46,13 +48,17 @@ describe('Тултипы инлайн-кнопок с поповером', () =>
     // Кнопка раскрывается по ширине (ADR 0076): наведение — после раскрытия.
     await revealCellButtons(head)
     await userEvent.hover(filter())
-    await expect.poll(tooltipShown(tableLabels.filter)).toBe(true)
+    await expect
+      .poll(tooltipShown(columnFilteringLabels(tableLabels).filter))
+      .toBe(true)
 
     await humanClick(filter())
     await expect
       .poll(() => document.querySelector('[data-testid="filter-panel"]'))
       .not.toBeNull()
-    await expect.poll(tooltipShown(tableLabels.filter)).toBe(false)
+    await expect
+      .poll(tooltipShown(columnFilteringLabels(tableLabels).filter))
+      .toBe(false)
     await userEvent.keyboard('{Escape}')
     await screen.unmount()
 
@@ -61,13 +67,17 @@ describe('Тултипы инлайн-кнопок с поповером', () =>
     const pin = () => cell.querySelector<HTMLElement>('.column-pin__button')!
     await revealCellButtons(cell)
     await userEvent.hover(pin())
-    await expect.poll(tooltipShown(tableLabels.pin)).toBe(true)
+    await expect
+      .poll(tooltipShown(columnPinningLabels(tableLabels).pin))
+      .toBe(true)
 
     await humanClick(pin())
     await expect
       .poll(() => document.querySelectorAll('[role="menuitem"]').length)
       .toBeGreaterThan(0)
-    await expect.poll(tooltipShown(tableLabels.pin)).toBe(false)
+    await expect
+      .poll(tooltipShown(columnPinningLabels(tableLabels).pin))
+      .toBe(false)
     await userEvent.keyboard('{Escape}')
   })
 

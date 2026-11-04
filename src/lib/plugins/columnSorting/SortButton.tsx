@@ -13,6 +13,7 @@ import { useIcons } from '../../ui/icons'
 
 import styles from './SortButton.module.css'
 import '../../ui/cellControls/buttonVisibility.css'
+import { columnSortingLabels } from './labels'
 
 export interface SortButtonProps extends DerivedButtonProps, RevealProps {
   operation: SortDirection | false
@@ -43,16 +44,16 @@ export const SortButton = memo(
 
     const title = useMemo(() => {
       if (!operation && nextOperation === 'desc') {
-        return labels.sortDescending
+        return columnSortingLabels(labels).sortDescending
       }
 
       if (!nextOperation) {
-        return labels.clearSort
+        return columnSortingLabels(labels).clearSort
       }
 
       return nextOperation === 'asc'
-        ? labels.sortAscending
-        : labels.sortDescending
+        ? columnSortingLabels(labels).sortAscending
+        : columnSortingLabels(labels).sortDescending
     }, [labels, nextOperation, operation])
 
     const showIndex = sortIndex !== undefined
@@ -60,7 +61,7 @@ export const SortButton = memo(
 
     // Номер приоритета — число бабла (ADR 0129); скринридеру его несёт aria-label.
     const ariaLabel = showIndex
-      ? `${title}, ${labels.sortPriority(position, sortCount)}`
+      ? `${title}, ${columnSortingLabels(labels).sortPriority(position, sortCount)}`
       : title
 
     return (

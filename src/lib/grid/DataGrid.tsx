@@ -45,6 +45,8 @@ import {
   LocalizationContext,
   resolveLabels,
   unknownLabelKeys,
+  labelSetKeys,
+  type LabelSet,
 } from '../core/localization'
 import { logWarn } from '../util/logger'
 import { LiveRegion } from './LiveRegion'
@@ -257,15 +259,20 @@ export const DataGrid = ({
     [localization, locale],
   )
   // Опечатка в словаре из JSON молча оставила бы английскую подпись (ADR 0132, LC8).
+  const labelSets = (table as { options: { labelSets?: LabelSet[] } }).options
+    .labelSets
   useEffect(() => {
-    for (const key of localization ? unknownLabelKeys(localization) : []) {
+    const known = (labelSets ?? []).flatMap(labelSetKeys)
+    for (const key of localization
+      ? unknownLabelKeys(localization, known)
+      : []) {
       logWarn(
         table,
         `localization: unknown label key "${key}"`,
         `localization:${key}`,
       )
     }
-  }, [table, localization])
+  }, [table, localization, labelSets])
   const tableLabel = labels.table
   // Заглушка той же высоты, пока грузится чанк: раскладка не прыгает.
   const toolbar = enableToolbar && (
