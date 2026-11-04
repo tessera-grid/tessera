@@ -6817,6 +6817,18 @@ export const HighContrastRowEditingPlayground = {
   tags: ['!test'],
 }
 
+export const HighContrastRowDraftSaveInPlaceStep1 = {
+  ...twinStep(rowsEditingStories, rowsEditingStories.RowDraftSaveInPlace, 1),
+  name: 'Rows/Editing — Save a row in place, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastRowDraftSaveInPlaceStep2 = {
+  ...twinStep(rowsEditingStories, rowsEditingStories.RowDraftSaveInPlace, 2),
+  name: 'Rows/Editing — Save a row in place, шаг 2',
+  tags: ['!test'],
+}
+
 export const HighContrastRowDraftInsertStep1 = {
   ...twinStep(rowsEditingStories, rowsEditingStories.RowDraftInsert, 1),
   name: 'Rows/Editing — Add a row, шаг 1',

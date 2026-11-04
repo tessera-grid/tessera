@@ -217,8 +217,8 @@ describe('строки до сохранения (ADR 0178, §7)', () => {
     expect(Object.values(readFailures(table)).map(f => f.target)).toEqual(
       expect.arrayContaining([{ row: id }]),
     )
-    // Повтор — сервер принял строку и вернул её под постоянным id.
-    answer = { saved: [{ rowId: id, row: { id: 'n1', name: 'Zed', age: 99 } }] }
+    // Повтор — сервер принял строку и вернул её под id, который выдала таблица (ADR 0181).
+    answer = { saved: [{ rowId: id, row: { id, name: 'Zed', age: 99 } }] }
     act(() => table.getDrafts().length && applyAllDrafts(table))
     expect(kinds()).not.toContain('rowInsert')
     act(() => root?.unmount())
@@ -249,7 +249,7 @@ describe('строки до сохранения (ADR 0178, §7)', () => {
           return {
             saved: (batch.inserts ?? []).map(item => ({
               rowId: item.rowId,
-              row: { id: 'n1', name: 'Zed', age: 99 },
+              row: { id: item.rowId, name: 'Zed', age: 99 },
             })),
           }
         }),
@@ -266,7 +266,7 @@ describe('строки до сохранения (ADR 0178, §7)', () => {
     act(() => table.removeRow('4'))
     act(() => applyAllDrafts(table))
     await act(() => new Promise(resolve => setTimeout(resolve, 150)))
-    expect(ids().slice(0, 5)).toEqual(['0', '1', 'n1', '2', '3'])
+    expect(ids().slice(0, 5)).toEqual(['0', '1', serverId, '2', '3'])
     expect(source().byId('4')).toBeUndefined()
     expect(drafts()).toEqual([])
   })

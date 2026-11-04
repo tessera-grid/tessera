@@ -879,6 +879,55 @@ const isRowDraft = (draft: Draft) =>
   (draft.kind === ROW_INSERT_DRAFT || draft.kind === ROW_DELETE_DRAFT) &&
   'row' in draft.target
 
+/**
+ * Сохранённая новая строка — под тем же id, что выдала ей таблица (ADR 0181, NI4): другой id для
+ * таблицы — другая строка; в разработке — предупреждение. Строка без id — не та же.
+ */
+const keepsRowId = (table: unknown, rowId: string, row: unknown) => {
+  const id = (
+    table as {
+      options: { getRowId?: (row: unknown, index: number) => unknown }
+    }
+  ).options.getRowId?.(row, 0)
+  if (id === rowId) return true
+  if (id === undefined) return false
+  logWarn(
+    table as never,
+    `cellEditing: the saved new row came back with id "${String(id)}" instead of "${rowId}" — keep the id the table gave the new row: with another id it is another row to the table`,
+    `cellEditing:savedRowId:${rowId}`,
+  )
+  return false
+}
+
+/**
+ * Черновики новых строк серверной модели снимаются, когда их строка легла в кэш: транзакция —
+ * после кадра (ADR 0157), а строка не должна пропасть между ответом и записью (ADR 0181, NI3).
+ */
+const removeWhenCached = (table: unknown, ids: readonly string[]) => {
+  if (ids.length === 0) return
+  const t = table as {
+    store: { subscribe: (listener: () => void) => { unsubscribe: () => void } }
+    getRowSource: () => RowSource<{ id: string }>
+  }
+  let left = [...ids]
+  const check = () => {
+    const source = t.getRowSource()
+    const base = source.base ?? source
+    const arrived = left.filter(id => base.byId(id))
+    if (arrived.length === 0) return
+    left = left.filter(id => !arrived.includes(id))
+    removeDrafts(
+      table,
+      draft =>
+        draft.kind === ROW_INSERT_DRAFT &&
+        'row' in draft.target &&
+        arrived.includes(draft.target.row),
+    )
+    if (left.length === 0) subscription.unsubscribe()
+  }
+  const subscription = t.store.subscribe(check)
+}
+
 const isServerRows = (table: unknown) =>
   typeof commonOptionsOf(table).getRowSource === 'function'
 
@@ -1025,6 +1074,8 @@ export const commitDrafts = (table: unknown, drafts: readonly Draft[]) => {
     })
     // Строки: принятая снимает свой черновик по ключу, удалённая — и черновики своих ячеек.
     const settledRows = new Set<string>()
+    // Новые строки серверной модели с местом в кэше: черновик — до записи строки (ADR 0181, NI3).
+    const cached: string[] = []
     const add: { row: unknown; index: number | undefined }[] = []
     const remove: string[] = []
     for (const draft of rowDrafts) {
@@ -1044,6 +1095,9 @@ export const commitDrafts = (table: unknown, drafts: readonly Draft[]) => {
       add.push({ row, index: cacheIndex.get(rowId) })
       const id = (table as TransactionTable).getRowId?.(row, 0)
       if (savedRows.has(rowId) && id) accepted.push({ row: id })
+      const kept = savedRows.has(rowId) && keepsRowId(table, rowId, row)
+      if (kept && isServerRows(table) && cacheIndex.get(rowId) !== undefined)
+        cached.push(rowId)
     }
     writeEditingState(table, { ...state, submitted })
     for (const [rowId, values] of rows) writeSavedRow(table, rowId, values)
@@ -1061,9 +1115,14 @@ export const commitDrafts = (table: unknown, drafts: readonly Draft[]) => {
       if (saved.has(draft)) return true
       const target = draft.target
       if ('row' in target)
-        return isRowDraft(draft) && settledRows.has(target.row)
+        return (
+          isRowDraft(draft) &&
+          settledRows.has(target.row) &&
+          !cached.includes(target.row)
+        )
       return 'cell' in target && remove.includes(target.cell[0])
     })
+    removeWhenCached(table, cached)
     flashOutcome(table, reverted, 'reverted')
     flashOutcome(table, accepted, 'accepted')
   }

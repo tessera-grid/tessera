@@ -19,6 +19,7 @@ import {
 import type { TableLabels } from '../../core/localization'
 import type { RowSource } from '../../core/rowSource'
 import { logWarn } from '../../util/logger'
+import { randomId } from '../../util/randomId'
 import { editTextOf } from './editValue'
 import type { CellEditingHooks } from './types'
 
@@ -33,9 +34,6 @@ export interface RowInsertValue {
   /** Строка над новой; нет — новая первая. */
   after?: string
 }
-
-const NEW_ROW_PREFIX = 'tsr-new-row:'
-let lastNewRow = 0
 
 const hooksOf = (table: unknown) =>
   readPluginHooks<Partial<CellEditingHooks>>(table as never, 'cellEditing')
@@ -78,9 +76,19 @@ const insertsOf = (drafts: readonly Draft[]) =>
 export const insertDraftOf = (table: unknown, rowId: string) =>
   insertsOf(readDrafts(table)).find(draft => draft.target.row === rowId)
 
+/** Id новых строк среза: строка ищет себя без перебора черновиков. */
+const insertIds = new WeakMap<readonly Draft[], Set<string>>()
+
 /** Строка — новая, ещё не сохранённая. */
-export const isNewRow = (table: unknown, rowId: string) =>
-  rowId.startsWith(NEW_ROW_PREFIX) && !!insertDraftOf(table, rowId)
+export const isNewRow = (table: unknown, rowId: string) => {
+  const drafts = readDrafts(table)
+  let ids = insertIds.get(drafts)
+  if (!ids) {
+    ids = new Set(insertsOf(drafts).map(draft => draft.target.row))
+    insertIds.set(drafts, ids)
+  }
+  return ids.has(rowId)
+}
 
 /** Строка удалена черновиком. */
 export const isDeletedRow = (table: unknown, rowId: string) =>
@@ -91,7 +99,10 @@ export const isDeletedRow = (table: unknown, rowId: string) =>
       draft.target.row === rowId,
   )
 
-/** Добавить строку до сохранения; вернуть её временный id (DR27). */
+/**
+ * Добавить строку до сохранения; вернуть её id (DR27). Id выдаёт таблица — уникальный и
+ * постоянный: сервер сохраняет строку под ним (ADR 0181, NI1).
+ */
 export const addRow = (
   table: unknown,
   values: Record<string, unknown>,
@@ -103,7 +114,7 @@ export const addRow = (
   ).getRowSource()
   const at = Math.max(0, Math.min(index ?? source.count(), source.count()))
   const after = at > 0 ? source.at(at - 1)?.id : undefined
-  const rowId = `${NEW_ROW_PREFIX}${++lastNewRow}`
+  const rowId = randomId()
   const value: RowInsertValue = {
     values,
     index: at,
@@ -219,6 +230,8 @@ const buildPlan = (
   for (const draft of inserts) {
     const value = draft.value as RowInsertValue
     const id = (draft.target as { row: string }).row
+    // Строка уже в данных или кэше — сохранённая, та же строка: слой её не рисует (ADR 0181, NI2).
+    if (base.byId(id)) continue
     let key: number
     let at = 0
     if (value.after !== undefined && groupOf.has(value.after)) {

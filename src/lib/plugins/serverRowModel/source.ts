@@ -624,6 +624,16 @@ const createServerSource = (table: unknown): ServerSource => {
     const batch = queued
     queued = []
     const arrived: string[] = []
+    // Строка уже на экране (новая строка под тем же id, ADR 0181) — не «пришла».
+    const source = (
+      table as { getRowSource?: () => { byId: (id: string) => unknown } }
+    ).getRowSource?.()
+    const shownBefore = new Set(
+      batch
+        .flatMap(transaction => transaction.add ?? [])
+        .map(data => t.getRowId(data, 0))
+        .filter(id => !!source?.byId(id)),
+    )
     let removed = 0
     const gone = new Set<string>()
     for (const transaction of batch) {
@@ -638,7 +648,8 @@ const createServerSource = (table: unknown): ServerSource => {
       })
       if (result === 'branchNotLoaded') continue
       for (const data of transaction.add ?? []) {
-        arrived.push(t.getRowId(data, 0))
+        const id = t.getRowId(data, 0)
+        if (!shownBefore.has(id)) arrived.push(id)
       }
       // Итог задан приложением — удалены и незагруженные строки.
       removed +=

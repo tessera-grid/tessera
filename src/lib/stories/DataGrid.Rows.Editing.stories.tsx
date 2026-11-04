@@ -75,10 +75,9 @@ const DELETE_PLUGIN = definePlugin()({
   slotActions: [deleteRow],
 })()
 
-/** «Сервер» пакета: сохраняет новые строки под своими id или отказывает им, если задано. */
+/** «Сервер» пакета: сохраняет новые строки под id из таблицы или отказывает им, если задано. */
 const rowServer = {
   refuseInserts: false,
-  saved: 0,
   reset: () => {
     rowServer.refuseInserts = false
   },
@@ -94,7 +93,8 @@ const rowServer = {
         : {
             saved: (batch.inserts ?? []).map(item => ({
               rowId: item.rowId,
-              row: { ...item.values, id: `item-id-new-${++rowServer.saved}` },
+              // Сервер сохраняет строку под id, который выдала таблица (ADR 0181).
+              row: { ...item.values, id: item.rowId },
             })),
           },
     ),
@@ -461,6 +461,67 @@ export const RowDraftsCommitRefused: StoryObj<StoryProps> = {
       expect(newRow(canvas)).not.toBeNull()
       expect(textOf(cellOf(rowEl(canvas, EDITED), 'age'))).toBe(EDITED_AGE)
       expect(panelCount(canvas)).toBe(1)
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0181 S1 ----------------------------------------------------------------------
+
+/** Место новой строки в теле — индекс среди строк. */
+const placeOf = (root: ParentNode, row: HTMLElement | null) =>
+  row ? [...root.querySelectorAll('.data-grid__body-row')].indexOf(row) : -1
+
+const SAVE_IN_PLACE: readonly GuideStoryStep[] = [
+  {
+    title: 'Новая строка заполнена',
+    hint: 'Приложение сохраняет изменения по кнопке пульта. Пользователь добавил строку под второй и вписал имя и возраст: строка залита тоном несохранённого.',
+    states: ['body.rowDraft'],
+    enter: untilDone(newRowFilled, root => {
+      rowServer.reset()
+      fillNewRow(root)
+    }),
+  },
+  {
+    title: 'Строка сохранена на месте',
+    hint: 'Пользователь применил всё из пульта. Сервер сохранил строку под тем же номером, что выдала ей таблица, — это та же строка: она осталась на месте, не погасла и не появилась заново, а коротко вспыхнула тоном успеха.',
+    immediate: true,
+    enter: untilDone(
+      root => !!savedRow(root) && !newRow(root) && !panelOpen(),
+      root => {
+        if (savedRow(root)) return
+        if (!newRowFilled(root)) fillNewRow(root)
+        else applyAll(root)
+      },
+    ),
+  },
+]
+
+/** ADR 0181, S1: пользователь сохраняет новую строку — она остаётся на месте. */
+export const RowDraftSaveInPlace: StoryObj<StoryProps> = {
+  name: 'Save a row in place',
+  parameters: { scenario: '0181/S1', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Сохранение на месте"
+      steps={SAVE_IN_PLACE}
+      args={guideArgs(ROWS_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    let place = -1
+    await step(SAVE_IN_PLACE[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(newRowFilled(canvas)).toBe(true))
+      place = placeOf(canvas, newRow(canvas))
+    })
+    await step(SAVE_IN_PLACE[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(savedRow(canvas)).not.toBeNull())
+      expect(newRow(canvas)).toBeNull()
+      expect(placeOf(canvas, savedRow(canvas))).toBe(place)
+      expect(canvas.querySelector('[data-row-ghost]')).toBeNull()
       await settle()
     })
   },

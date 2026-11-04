@@ -399,7 +399,7 @@ const StoryGrid = memo(
             for (const item of inserts) {
               const row =
                 answer?.saved?.find(saved => saved.rowId === item.rowId)?.row ??
-                ({ ...item.values, id: `${item.rowId}:saved` } as never)
+                ({ ...item.values, id: item.rowId } as never)
               const at = item.after
                 ? next.findIndex(other => other.id === item.after) + 1
                 : 0
