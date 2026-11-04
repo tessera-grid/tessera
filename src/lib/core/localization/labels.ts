@@ -286,6 +286,8 @@ export interface TableLabels {
   /** Строки до сохранения (ADR 0178, §7): виды в пульте и откат в колонке действий. */
   rowInsertDraftKind: string
   rowDeleteDraftKind: string
+  /** Сводка новой строки в пульте: первые значения и сколько ещё (DR43). */
+  rowInsertDraftMore: (values: string, count: number) => string
   rowInsertDiscard: string
   rowDeleteDiscard: string
   /** Кнопка журнала отказов с числом записей. */
@@ -658,6 +660,7 @@ export const DEFAULT_LABELS = {
   cellDraftRollback: 'Roll back',
   rowInsertDraftKind: 'New row',
   rowDeleteDraftKind: 'Deleted row',
+  rowInsertDraftMore: '{values} and {count} more',
   rowInsertDiscard: 'Remove row',
   rowDeleteDiscard: 'Restore row',
   failureLogButton: 'Failures: {count}',

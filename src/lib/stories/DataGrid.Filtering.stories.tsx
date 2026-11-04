@@ -1885,14 +1885,14 @@ const filterButtonAt = (root: HTMLElement, column: string) =>
   root.querySelector<HTMLElement>(
     `.data-grid__head-cell[data-column-id="${column}"] .column-filter__button`,
   )
-/** У колонки неприменённое условие: кольцо на кнопке фильтра, фильтр не действует. */
+/** У колонки неприменённое условие: оранжевая точка на кнопке фильтра, фильтр не действует. */
 const draftRing = (root: HTMLElement, column = 'name') =>
   filterButtonAt(root, column)?.getAttribute('data-draft') === 'true' &&
   !filterActive(root, column)
 const loadBanner = (root: HTMLElement) =>
   root.querySelector<HTMLElement>('[data-testid="load-error-banner"]')
 
-/** Имя набрано, панель закрыта: на кнопке фильтра имён кольцо. */
+/** Имя набрано, панель закрыта: на кнопке фильтра имён отметка неприменённого. */
 const nameDrafted = async (root: HTMLElement, signal: AbortSignal) => {
   if (!draftRing(root)) await nameTyped(root, signal)
   await closePanel(signal)
@@ -1925,13 +1925,13 @@ const FILTER_DRAFT: readonly GuideStoryStep[] = [
   },
   {
     title: 'Панель закрыта',
-    hint: 'Пользователь закрыл панель. Условие не действует, но не потеряно: кнопка фильтра колонки видна без наведения, на ней кольцо. Подсказка кнопки говорит, что условие не применено.',
+    hint: 'Пользователь закрыл панель. Условие не действует, но не потеряно: кнопка фильтра колонки видна без наведения, на ней отметка неприменённого условия. Подсказка кнопки говорит, что условие не применено.',
     states: ['head.draft'],
     enter: stepAction((root, { signal }) => nameDrafted(root, signal)),
   },
   {
     title: 'Условие применено',
-    hint: 'Пользователь открыл панель и применил условие. Сервер прислал строки с этим именем, кольцо сменилось точкой: фильтр действует.',
+    hint: 'Пользователь открыл панель и применил условие. Сервер прислал строки с этим именем, отметка на кнопке сменилась отметкой действующего фильтра.',
     states: ['head.activeIndicator'],
     enter: stepAction(async (root, { signal }) => {
       if (!filterActive(root, 'name')) await nameDrafted(root, signal)
@@ -1940,7 +1940,7 @@ const FILTER_DRAFT: readonly GuideStoryStep[] = [
   },
 ]
 
-/** ADR 0178, S1: набранное и не применённое условие — кольцо на кнопке фильтра колонки. */
+/** ADR 0178, S1: набранное и не применённое условие — оранжевая точка на кнопке фильтра колонки. */
 export const FilterDraftClosedPanel: StoryObj<StoryProps> = {
   name: 'Unapplied condition',
   parameters: { scenario: '0178/S1', ...guideControls() },
@@ -1994,7 +1994,7 @@ const nameRefused = async (root: HTMLElement, signal: AbortSignal) => {
   }, signal)
 }
 
-/** Сообщение под шапкой и панель закрыты, на кнопке фильтра — кольцо. */
+/** Сообщение под шапкой и панель закрыты, на кнопке фильтра — отметка неприменённого. */
 const refusalDismissed = async (root: HTMLElement, signal: AbortSignal) => {
   if (!draftRing(root) || loadBanner(root)) await nameRefused(root, signal)
   await closePanel(signal)
@@ -2024,13 +2024,13 @@ const REFUSED_DRAFT: readonly GuideStoryStep[] = [
   },
   {
     title: 'Сообщение закрыто',
-    hint: 'Пользователь закрыл панель и сообщение под шапкой. Кнопка фильтра колонки видна без наведения, на ней кольцо: условие набрано, но сервер его не применил.',
+    hint: 'Пользователь закрыл панель и сообщение под шапкой. Кнопка фильтра колонки видна без наведения, на ней отметка неприменённого условия: условие набрано, но сервер его не применил.',
     states: ['head.draft'],
     enter: stepAction((root, { signal }) => refusalDismissed(root, signal)),
   },
   {
     title: 'Условие применено',
-    hint: 'Сервер снова отвечает. Пользователь открыл панель и применил то же условие: пришли строки с этим именем, кольцо сменилось точкой.',
+    hint: 'Сервер снова отвечает. Пользователь открыл панель и применил то же условие: пришли строки с этим именем, отметка на кнопке сменилась отметкой действующего фильтра.',
     states: ['head.activeIndicator'],
     enter: stepAction(async (root, { signal }) => {
       if (!filterActive(root, 'name')) await refusalDismissed(root, signal)
@@ -2111,7 +2111,7 @@ const URL_STEPS: readonly GuideStoryStep[] = [
   },
   {
     title: 'Условия восстановлены',
-    hint: 'Приложение прочитало адрес и вернуло таблице оба условия — по имени и по городу. На кнопках фильтра этих колонок кольца: условия набраны, но не действуют.',
+    hint: 'Приложение прочитало адрес и вернуло таблице оба условия — по имени и по городу. На кнопках фильтра этих колонок отметки неприменённого: условия набраны, но не действуют.',
     states: ['head.draft'],
     enter: stepAction((root, { signal }, app) => {
       app.update(props => ({ ...props, drafts: URL_DRAFTS }))

@@ -8,12 +8,10 @@ export interface BubbleProps extends HTMLAttributes<HTMLSpanElement> {
   /** `sm` — счётчик, `dot` — точка без содержимого. */
   size?: 'sm' | 'dot'
   /**
-   * `active` — знак включённого состояния (ADR 0062), `error` — отказ действия
-   * (ADR 0078), `accent` — прочие счётчики.
+   * `active` — знак включённого состояния (ADR 0062), `draft` — неприменённое (ADR 0178),
+   * `error` — отказ действия (ADR 0078), `accent` — прочие счётчики.
    */
   tone?: 'accent' | 'active' | 'draft' | 'error'
-  /** `outline` — кольцо вместо заливки: неприменённое (ADR 0178, §4). */
-  fill?: 'solid' | 'outline'
   children?: ReactNode
 }
 
@@ -22,19 +20,12 @@ export const Bubble = memo(
   ({
     size = 'sm',
     tone = 'accent',
-    fill = 'solid',
     className,
     children,
     ...rest
   }: BubbleProps) => (
     <span
-      className={clsx(
-        styles.bubble,
-        styles[size],
-        styles[tone],
-        fill === 'outline' && styles.outline,
-        className,
-      )}
+      className={clsx(styles.bubble, styles[size], styles[tone], className)}
       {...rest}
     >
       {children}

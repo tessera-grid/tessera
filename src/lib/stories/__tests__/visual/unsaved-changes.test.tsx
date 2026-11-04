@@ -66,7 +66,7 @@ const button = () =>
 const popover = () =>
   document.querySelector<HTMLElement>('[data-testid="unsaved-changes"]')
 const entries = () => [
-  ...(popover()?.querySelectorAll<HTMLElement>('[role="listitem"]') ?? []),
+  ...(popover()?.querySelectorAll<HTMLElement>('[data-draft-kind]') ?? []),
 ]
 const entryOf = (text: string) =>
   entries().find(entry => entry.textContent?.includes(text))!
@@ -104,7 +104,7 @@ const mount = async () => {
 }
 
 describe('Пульт черновиков (ADR 0178)', () => {
-  test('DR11: плагин unsavedChanges() — кнопка тулбара со счётчиком; поповер — список с «Показать», «Применить», «Отбросить» у записи и «Применить всё», «Отменить всё» внизу; «Показать» и применение закрывают поповер', async () => {
+  test('DR11: плагин unsavedChanges() — кнопка тулбара со счётчиком; поповер — список с переходом к цели нажатием на запись, «Применить», «Отбросить» у записи и «Применить всё», «Отменить всё» внизу; переход и применение закрывают поповер', async () => {
     const screen = await mount()
     try {
       // Без черновиков: без счётчика, пустой пульт — компактная заглушка.
@@ -127,21 +127,21 @@ describe('Пульт черновиков (ADR 0178)', () => {
         tableLabels.unsavedChangesButton(2),
       )
 
-      // Запись: подпись вида, значение, цель и три кнопки с подписями из словаря.
+      // Записи — в разделе фильтров: текст записи — кнопка перехода, колонка и условие, две кнопки с подписями из словаря.
       await openPanel()
       expect(entries()).toHaveLength(2)
+      expect(popover()!.textContent).toContain(tableLabels.filters)
       const name = entryOf('Name 1')
-      expect(name.textContent).toContain(tableLabels.filter)
-      expect(name.textContent).toContain('Name')
+      expect(actionOf(name, 'show').textContent).toContain('Name')
+      expect(actionOf(name, 'show').textContent).toContain('Name 1')
       for (const [action, label] of [
-        ['show', tableLabels.draftShow],
         ['apply', tableLabels.draftApply],
         ['discard', tableLabels.draftDiscard],
       ] as const) {
         expect(actionOf(name, action).getAttribute('aria-label')).toBe(label)
       }
 
-      // «Показать» закрывает пульт и вспыхивает колонку.
+      // Переход к цели закрывает пульт и вспыхивает колонку.
       await humanClick(actionOf(name, 'show'))
       await expect.poll(popover).toBeNull()
       await expect.poll(() => columnFlashed('name')).toBe(true)

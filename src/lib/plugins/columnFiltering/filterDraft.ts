@@ -200,24 +200,28 @@ export const columnFilterDraftKind: DraftKind = {
     setColumnFilterByUser(table, draft.target.column, draft.value ?? undefined)
   },
   // Все условия — одним серверным действием, после данных (ADR 0178, §5).
-  applyAll: (table, drafts) => {
-    const current = columnFiltersOf(table)
-    const next = drafts.reduce(
-      (filters, draft) =>
-        'column' in draft.target
-          ? withColumnFilter(
-              table,
-              filters,
-              draft.target.column,
-              draft.value ?? undefined,
-            )
-          : filters,
-      current,
-    )
-    if (next !== current) setColumnFiltersByUser(table, next)
-  },
+  applyAll: (table, drafts) => applyFilterDrafts(table, drafts),
+  sectionLabel: labels => labels.filters,
   stage: 'view',
   active: table => isServerAction(table, 'filtering'),
+}
+
+/** Условия черновиков — одним серверным действием (ADR 0178, §5). */
+const applyFilterDrafts = (table: unknown, drafts: readonly Draft[]) => {
+  const current = columnFiltersOf(table)
+  const next = drafts.reduce(
+    (filters, draft) =>
+      'column' in draft.target
+        ? withColumnFilter(
+            table,
+            filters,
+            draft.target.column,
+            draft.value ?? undefined,
+          )
+        : filters,
+    current,
+  )
+  if (next !== current) setColumnFiltersByUser(table, next)
 }
 
 interface FilterDraftArgs<D> {

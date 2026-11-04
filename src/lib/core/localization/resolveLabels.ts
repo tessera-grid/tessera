@@ -58,6 +58,7 @@ export const LABEL_PARAMS = {
   announceCopy: ['count'],
   announceCopyLoading: ['count'],
   announceRowsAdded: ['count'],
+  rowInsertDraftMore: ['values', 'count'],
   announceRowsRemoved: ['count'],
   copyTooManyRows: ['count', 'max'],
   announceLoaded: ['count'],

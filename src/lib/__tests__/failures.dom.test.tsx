@@ -14,6 +14,7 @@ import {
   type Failure,
   readFailures,
 } from '../core/failures/failuresFeature'
+import { ENGLISH_LABELS } from '../core/localization'
 import { useCreateTable } from '../core/useCreateTable'
 import {
   cellEditing,
@@ -247,7 +248,8 @@ describe('Реестр отказов (ADR 0177)', () => {
     expect(saved).toEqual(
       expect.objectContaining({
         key: cellFailureKey('1', 'name'),
-        label: 'Name',
+        // Подпись — действие, а не колонка: колонку называет цель.
+        label: ENGLISH_LABELS.cellDraftKind,
         target: { cell: ['1', 'name'] },
         reason: 'Server down',
         retry: expect.any(Function),

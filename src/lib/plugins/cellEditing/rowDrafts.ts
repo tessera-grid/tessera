@@ -16,8 +16,10 @@ import {
   removeDrafts,
   setDraft,
 } from '../../core/drafts/drafts'
+import type { TableLabels } from '../../core/localization'
 import type { RowSource } from '../../core/rowSource'
 import { logWarn } from '../../util/logger'
+import { editTextOf } from './editValue'
 import type { CellEditingHooks } from './types'
 
 export const ROW_INSERT_DRAFT = 'rowInsert'
@@ -405,11 +407,35 @@ export const rowDraftsLayer = (base: RowSource, table: unknown): RowSource => {
   return layerOf(table as object, base as RowSource<LayerRow>).source
 }
 
-const valuesText = (values: Record<string, unknown>) =>
-  Object.values(values)
-    .filter(value => value !== undefined && value !== null && value !== '')
-    .map(String)
-    .join(', ')
+/** Сколько значений новой строки показывает пульт (DR43). */
+const SUMMARY_VALUES = 3
+
+interface SummaryColumn {
+  id: string
+  accessorFn?: (row: unknown, index: number) => unknown
+}
+
+/** Первые заполненные значения видимых колонок в виде ячейки, остальные — числом (DR43). */
+const valuesText = (
+  labels: TableLabels,
+  table: unknown,
+  values: Record<string, unknown>,
+) => {
+  const shown: string[] = []
+  let more = 0
+  const columns = (
+    table as { getVisibleLeafColumns: () => SummaryColumn[] }
+  ).getVisibleLeafColumns()
+  for (const column of columns) {
+    if (!column.accessorFn) continue
+    const text = editTextOf(table, column.id, column.accessorFn(values, 0))
+    if (text === '') continue
+    if (shown.length < SUMMARY_VALUES) shown.push(text)
+    else more++
+  }
+  const text = shown.join(', ')
+  return more > 0 ? labels.rowInsertDraftMore(text, more) : text
+}
 
 const rowsActive = (table: unknown) => rowDraftsInertReason(table) === undefined
 
@@ -420,8 +446,8 @@ export const rowInsertDraftKind = (
 ): DraftKind => ({
   kind: ROW_INSERT_DRAFT,
   label: labels => labels.rowInsertDraftKind,
-  describe: (_labels, draft) =>
-    valuesText((draft.value as RowInsertValue).values),
+  describe: (labels, draft, table) =>
+    valuesText(labels, table, (draft.value as RowInsertValue).values),
   apply: (table, draft) => commit(table, [draft]),
   applyAll: table => commitAll(table),
   active: rowsActive,

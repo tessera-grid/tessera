@@ -166,7 +166,7 @@ const openLog = async () => {
 
 const cellFailure = (row: string, reason = 'Server said no') =>
   table.reportFailure({
-    label: 'Name',
+    label: tableLabels.cellDraftKind,
     target: { cell: [row, 'name'] },
     reason,
   })
@@ -228,7 +228,7 @@ describe('Журнал отказов (ADR 0177)', () => {
     }
   })
 
-  test('JR2: поповер журнала — записи с подписью действия, целью, причиной и временем; длинный список виртуализирован', async () => {
+  test('JR2: поповер журнала — записи с подписью действия, целью, причиной и временем: время — в строке подписи, цель — строкой под ней, причина — ниже; длинный список виртуализирован', async () => {
     const screen = await mount()
     try {
       const first = cellFailure('r3', 'First reason')
@@ -260,6 +260,23 @@ describe('Журнал отказов (ADR 0177)', () => {
       const time = oldest!.querySelector('time')!
       expect(time.textContent).toMatch(/\d{1,2}:\d{2}/)
       expect(new Date(time.dateTime).getTime()).toBeGreaterThan(0)
+      // Время — в строке подписи, цель — строкой под ней, причина — ниже.
+      const show = oldest!.querySelector<HTMLElement>('[data-action="show"]')!
+      expect(show.textContent).toContain(
+        tableLabels.failureTargetCell('Name', 4),
+      )
+      expect(show.textContent).not.toContain('First reason')
+      const lineOf = (text: string) => {
+        const node = [...oldest!.querySelectorAll<HTMLElement>('span')].find(
+          span =>
+            span.childElementCount === 0 && span.textContent?.includes(text),
+        )!
+        return node.getBoundingClientRect().top
+      }
+      const top = time.getBoundingClientRect().top
+      const target = lineOf(tableLabels.failureTargetCell('Name', 4))
+      expect(target).toBeGreaterThan(top + 8)
+      expect(lineOf('First reason')).toBeGreaterThan(target + 8)
       await userEvent.keyboard('{Escape}')
       await expect.poll(log).toBeNull()
 
@@ -277,7 +294,7 @@ describe('Журнал отказов (ADR 0177)', () => {
     }
   })
 
-  test('JR3: кнопки записи — квадратные кнопки-иконки с тултипами: «Показать» закрывает журнал, прокручивает к цели записи и вспыхивает её — в том числе незагруженную строку серверной модели; «Повторить» — у записи, которая умеет, закрывает журнал и повторяет; «Закрыть» снимает запись и отметку ячейки, журнал остаётся открытым', async () => {
+  test('JR3: кнопки записи — квадратные кнопки-иконки с тултипами; нажатие на запись закрывает журнал, прокручивает к цели записи и вспыхивает её — в том числе незагруженную строку серверной модели; «Повторить» — у записи, которая умеет, закрывает журнал и повторяет; «Закрыть» снимает запись и отметку ячейки, журнал остаётся открытым', async () => {
     let screen = await mount()
     try {
       // Отказ действия строки — запись с повтором.
@@ -292,9 +309,11 @@ describe('Журнал отказов (ADR 0177)', () => {
       await expect.poll(() => rowEl('r1')).toBeNull()
       await openLog()
       const rowEntry = entries()[0]!
-      // Квадратные кнопки-иконки с подписью в тултипе.
+      // Подпись и цель записи — переход к цели; кнопки — квадратные кнопки-иконки с подписью в тултипе.
+      expect(actionOf(rowEntry, 'show')!.textContent).toBe(
+        `Archive ${tableLabels.failureTargetRow(2)}`,
+      )
       for (const [action, label] of [
-        ['show', tableLabels.failureShow],
         ['retry', tableLabels.failureRetry],
         ['close', tableLabels.failureClose],
       ] as const) {
@@ -381,7 +400,7 @@ describe('Журнал отказов (ADR 0177)', () => {
       const discarded: string[] = []
       for (const row of ['r1', 'r2'])
         table.reportFailure({
-          label: 'Name',
+          label: tableLabels.cellDraftKind,
           target: { cell: [row, 'name'] },
           reason: 'Server said no',
           discard: () => discarded.push(row),
@@ -452,7 +471,7 @@ describe('Журнал отказов (ADR 0177)', () => {
       ).toBeGreaterThan(0)
       expect(log()!.getBoundingClientRect().height).toBeGreaterThan(0)
       const reason = log()!.querySelector<HTMLElement>(
-        '[role="listitem"] > span:last-of-type',
+        '[role="listitem"] [class*="reason"]',
       )!
       expect(toRgba(getComputedStyle(reason).color)).not.toEqual(
         toRgba(getComputedStyle(log()!).backgroundColor),

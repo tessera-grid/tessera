@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 /**
- * Сохранение правок по кнопке (ADR 0178, §5; DR14, DR17, DR19, DR24, DR25): черновик ячейки
+ * Сохранение правок по кнопке (ADR 0178, §5; DR14, DR17, DR19, DR24, DR25, DR49): черновик ячейки
  * вместо `onCellEdit`, пакет `onCommitEdits`, жизнь черновика по id строки, порядок
  * «Применить всё» и черновики в полёте.
  * Запуск: npx vitest run --config vitest.node.config.ts manualSave
@@ -65,6 +65,8 @@ interface HostProps {
     batch: CellEditBatch,
   ) => CellEditBatchResult | void | Promise<CellEditBatchResult | void>
   onDraftsChange?: (next: readonly Draft[]) => void
+  initialDrafts?: readonly Draft[]
+  loading?: 'initial' | false
 }
 
 const Host = ({
@@ -73,12 +75,16 @@ const Host = ({
   onCellEdit = () => {},
   onCommitEdits,
   onDraftsChange,
+  initialDrafts,
+  loading,
 }: HostProps) => {
   captured = useCreateTable({
     columns: columns as never,
     data,
     getRowId: (row: Row) => row.id,
     ...(onDraftsChange ? { onDraftsChange } : {}),
+    ...(initialDrafts ? { initialDrafts } : {}),
+    ...(loading === undefined ? {} : { loading }),
     plugins: [
       cellEditing({ saveMode, onCellEdit, onCommitEdits } as never),
       columnSortingModel(),
@@ -218,6 +224,52 @@ describe('сохранение по кнопке (ADR 0178)', () => {
     await flush()
     expect(cellDrafts()).toEqual([])
     expect(readFailures(captured)[cellFailureKey('2', 'age')]).toBeUndefined()
+  })
+
+  it("DR49: черновик ячейки, который приложение вернуло опцией drafts или initialDrafts, переживает первую загрузку: пока loading: 'initial', черновики строк, которых ещё нет в данных, не снимаются; после загрузки черновик строки, ушедшей из данных, снимается, как прежде", async () => {
+    const restored: Draft[] = [
+      {
+        kind: 'cellValue',
+        target: { cell: ['3', 'age'] },
+        value: { value: 77, text: '77' },
+      },
+      {
+        kind: 'cellValue',
+        target: { cell: ['4', 'age'] },
+        value: { value: 5, text: '5' },
+      },
+    ]
+    const onDraftsChange = vi.fn()
+    // Первая загрузка: строк ещё нет, черновики восстановлены приложением.
+    render({
+      data: [],
+      loading: 'initial',
+      initialDrafts: restored,
+      onDraftsChange,
+    })
+    await flush()
+    expect(cellDrafts()).toHaveLength(2)
+    expect(onDraftsChange).not.toHaveBeenCalled()
+    // Строки пришли — черновики на месте.
+    render({
+      data: ROWS,
+      loading: false,
+      initialDrafts: restored,
+      onDraftsChange,
+    })
+    await flush()
+    expect(draftAt('3')).toBeDefined()
+    expect(draftAt('4')).toBeDefined()
+    // После загрузки строка ушла из данных — её черновик снимается.
+    render({
+      data: ROWS.filter(row => row.id !== '4'),
+      loading: false,
+      initialDrafts: restored,
+      onDraftsChange,
+    })
+    await flush()
+    expect(draftAt('3')).toBeDefined()
+    expect(draftAt('4')).toBeUndefined()
   })
 
   it('DR19: черновики ячеек живут по id строки — переживают виртуализацию, страницу, сортировку, вытеснение блока серверной модели; строка ушла из данных — её черновики снимаются с onDraftsChange', () => {

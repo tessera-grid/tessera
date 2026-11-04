@@ -51,6 +51,32 @@
   scrollbar-gutter: stable;
 }
 
+/*
+ * Поповер со списком облачков (ADR 0178, DR42): заголовок, облачка и кнопки внизу — на двойном
+ * поле от краёв поповера со всех сторон; полоса прокрутки — справа от облачков через поле.
+ */
+.cardsTitle {
+  margin: 0;
+  padding: var(--tsr-comp-popup-padding) var(--tsr-comp-popup-padding)
+    calc(var(--tsr-comp-popup-padding) * 2);
+  font-size: var(--tsr-comp-popup-title-font-size);
+  font-weight: 600;
+}
+
+.cardsScroll {
+  overflow-y: auto;
+  padding-inline: var(--tsr-comp-popup-padding);
+  max-height: min(60vh, calc(var(--tsr-comp-popup-item-min-height) * 10));
+}
+
+.cardsFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--tsr-comp-popup-padding);
+  padding: calc(var(--tsr-comp-popup-padding) * 2) var(--tsr-comp-popup-padding)
+    var(--tsr-comp-popup-padding);
+}
+
 /* Тонкий скроллбар у поповера и его списков — как у таблицы (--tsr-comp-scrollbar-width). */
 .popup::-webkit-scrollbar,
 .popup ::-webkit-scrollbar {

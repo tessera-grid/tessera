@@ -646,6 +646,8 @@
   --tsr-comp-popup-bg: var(--tsr-sys-elevated);
   --tsr-comp-popup-padding: 4px;
   --tsr-comp-popup-font-size: 0.8125rem;
+  /* Заголовок поповера со списком — мельче пунктов. */
+  --tsr-comp-popup-title-font-size: 0.75rem;
   --tsr-comp-popup-color: var(--tsr-comp-control-color);
   --tsr-comp-popup-item-min-height: 32px;
   --tsr-comp-popup-item-radius: calc(var(--tsr-comp-control-radius) - 2px);
@@ -659,6 +661,18 @@
   );
   /* Разделители внутри меню и панелей: мягче границы контролов. */
   --tsr-comp-popup-divider-color: var(--tsr-sys-border);
+  /* Облачко записи в списке поповера (ADR 0178, §8): подложка поверх поверхности. */
+  --tsr-comp-popup-card-bg: color-mix(
+    in oklch,
+    var(--tsr-sys-fg) var(--tsr-sys-tint-hover),
+    transparent
+  );
+  --tsr-comp-popup-card-hover-bg: color-mix(
+    in oklch,
+    var(--tsr-sys-fg) calc(var(--tsr-sys-tint-hover) * 2),
+    transparent
+  );
+  --tsr-comp-popup-card-outline: none;
   /* Рамка поверхности и пункта под указателем (ADR 0088) — `outline` целиком. */
   --tsr-comp-popup-outline: none;
   --tsr-comp-popup-item-highlighted-outline: none;
@@ -811,8 +825,6 @@
   /* Место бабла (ADR 0136): точка и отметка отказа — отступ от угла внутри кнопки,
    * число — сдвиг за угол долями своего размера по горизонтали и вертикали. */
   --tsr-comp-indicator-inset: 1px;
-  /* Толщина кольца неприменённого (ADR 0178, §4). */
-  --tsr-comp-indicator-outline-width: 1.5px;
   --tsr-comp-indicator-count-offset: 38% -38%;
 
   /* Tooltip — инверсная поверхность: тёмный пузырёк на light, светлый на dark
@@ -967,6 +979,7 @@
     --tsr-comp-row-selected-outline: 1px solid var(--tsr-sys-accent);
     --tsr-comp-popup-outline: 1px solid var(--tsr-sys-line);
     --tsr-comp-popup-item-highlighted-outline: 1px solid var(--tsr-sys-line);
+    --tsr-comp-popup-card-outline: 1px solid var(--tsr-sys-line);
     --tsr-comp-active-indicator: color-mix(
       in oklch,
       var(--tsr-sys-info) 55%,
@@ -1038,6 +1051,7 @@
   --tsr-comp-row-selected-outline: 1px solid var(--tsr-sys-accent);
   --tsr-comp-popup-outline: 1px solid var(--tsr-sys-line);
   --tsr-comp-popup-item-highlighted-outline: 1px solid var(--tsr-sys-line);
+  --tsr-comp-popup-card-outline: 1px solid var(--tsr-sys-line);
   --tsr-comp-active-indicator: color-mix(
     in oklch,
     var(--tsr-sys-info) 55%,
@@ -1133,6 +1147,8 @@
     --tsr-comp-row-selected-outline: none;
     --tsr-comp-popup-outline: none;
     --tsr-comp-popup-item-highlighted-outline: none;
+    /* Подложку облачка режим снимает: границу держит контур. */
+    --tsr-comp-popup-card-outline: 1px solid CanvasText;
     --tsr-comp-segments-track-outline: none;
   }
 }

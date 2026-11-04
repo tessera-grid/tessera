@@ -13,6 +13,7 @@ import {
   pollUntil,
   settle,
   stepDone,
+  until,
   waitForRows,
 } from './__mocks__/catalogPlay'
 import { filterActive } from './__mocks__/filterGuide'
@@ -37,7 +38,7 @@ import {
 
 /**
  * Пульт черновиков (ADR 0178, §8): кнопка тулбара со счётчиком неприменённых изменений и их
- * список. `Playground` — два неприменённых условия фильтра; S4 — пользователь применяет их из
+ * список. `Playground` — все виды изменений: ячейки, строки и условия фильтров; S4 — пользователь применяет их из
  * пульта.
  */
 const meta = {
@@ -80,16 +81,63 @@ const GRID = {
   initialDrafts: DRAFTS,
 } satisfies Partial<StoryProps>
 
+/**
+ * Все виды изменений сразу: правки ячеек (две — в одной строке), новая и удалённая строки —
+ * списком данных; условия фильтров — разделом ниже.
+ */
+const PLAYGROUND_DRAFTS: Draft[] = [
+  {
+    kind: 'cellValue',
+    target: { cell: ['item-id-0', 'name'] },
+    value: { value: 'Alice Smith', text: 'Alice Smith' },
+  },
+  {
+    kind: 'cellValue',
+    target: { cell: ['item-id-0', 'age'] },
+    value: { value: 30, text: '30' },
+  },
+  {
+    kind: 'cellValue',
+    target: { cell: ['item-id-2', 'city'] },
+    value: { value: 'Lima', text: 'Lima' },
+  },
+  {
+    kind: 'rowInsert',
+    target: { row: '5b0d6c1e-3f2a-4c8e-9a71-2d4e6f8a0b13' },
+    value: {
+      values: { name: 'Ada Lovelace', city: 'London', age: 36, vip: true },
+      index: 4,
+      after: 'item-id-3',
+    },
+  },
+  { kind: 'rowDelete', target: { row: 'item-id-5' }, value: null },
+  ...DRAFTS,
+]
+
 // --- Playground -----------------------------------------------------------------------
 
 export const UnsavedChangesPlayground: StoryObj<StoryProps> = {
   name: 'Playground',
-  // Два неприменённых условия фильтра: откройте кнопку справа в тулбаре. Без них на ней нет счётчика.
-  args: GRID,
+  // Все виды изменений: правки ячеек, новая и удалённая строки, условия фильтров. Откройте
+  // кнопку справа в тулбаре; без сохранения по кнопке в пульте остаются только фильтры.
+  args: {
+    ...GRID,
+    enableCellEditing: true,
+    cellEditingSaveMode: 'manual',
+    editableColumns: ['name', 'city', 'age'],
+    initialDrafts: PLAYGROUND_DRAFTS,
+  },
   parameters: {
-    ...vrStates('panel.toolbar', 'head.draft'),
+    ...vrStates(
+      'panel.toolbar',
+      'head.draft',
+      'body.cellDraft',
+      'body.rowDraft',
+    ),
     ...showControls([
       'enableUnsavedChanges',
+      'enableCellEditing',
+      'cellEditingSaveMode',
       'enableColumnFiltering',
       'dataMode',
       'enableToolbar',
@@ -135,9 +183,10 @@ const answers =
 
 const panelButton = () => byTestId('unsaved-changes-button')
 const panelOpen = () => !!byTestId('unsaved-changes')
+/** Записи пульта. */
 const entries = () => [
   ...(byTestId('unsaved-changes')?.querySelectorAll<HTMLElement>(
-    '[role="listitem"]',
+    '[data-draft-kind]',
   ) ?? []),
 ]
 const countOf = () =>
@@ -184,13 +233,13 @@ const nameApplied = async (root: HTMLElement, signal: AbortSignal) => {
 const APPLY: readonly GuideStoryStep[] = [
   {
     title: 'Два условия не применены',
-    hint: 'Пользователь набрал условия фильтров двух колонок и не применил их. На кнопке пульта в тулбаре — число неприменённых изменений, на кнопках фильтра этих колонок — кольца.',
+    hint: 'Пользователь набрал условия фильтров двух колонок и не применил их. На кнопке пульта в тулбаре — число неприменённых изменений, на кнопках фильтра этих колонок — отметки неприменённого.',
     states: ['head.draft'],
     props: ({ app, log }) => ({ onFilterChange: answers(app, log) }),
   },
   {
     title: 'Пульт открыт',
-    hint: 'Пользователь открыл пульт: в нём оба условия — что задано и для какой колонки, у каждого — переход к колонке, применение и отказ от изменения.',
+    hint: 'Пользователь открыл пульт: оба условия — в разделе фильтров, у каждого — колонка и что задано, переход к колонке, применение и отказ от изменения.',
     states: ['overlay.unsavedChanges'],
     enter: stepAction((_root, { signal }) => openPanel(signal)),
   },

@@ -48,13 +48,6 @@
   box-shadow: none;
 }
 
-/* Полая форма (ADR 0178, §4): кольцо того же тона и размера. */
-.outline {
-  background-color: transparent;
-  box-shadow: inset 0 0 0 var(--tsr-comp-indicator-outline-width)
-    var(--_bubble-tone);
-}
-
 /*
  * Высокая контрастность (ADR 0136, FB7): отметка отказа — системный `Mark`. Цвет темы
  * режим перекрашивает в `Canvas` — на кнопке `Canvas` точку не видно.
@@ -64,13 +57,5 @@
     forced-color-adjust: none;
     background-color: Mark;
     color: MarkText;
-  }
-
-  /* Тени режим снимает: кольцо — рамкой системного цвета текста. */
-  .outline {
-    forced-color-adjust: none;
-    box-sizing: border-box;
-    background-color: transparent;
-    border: var(--tsr-comp-indicator-outline-width) solid CanvasText;
   }
 }

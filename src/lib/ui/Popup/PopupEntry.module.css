@@ -1,0 +1,95 @@
+/*
+ * Облачко записи поповера со списком (ADR 0178, §8; DR42): точка слева, справа от неё подпись с
+ * кнопками и содержимое; внутри поле одно со всех сторон.
+ */
+.entry {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--tsr-comp-popup-padding) calc(var(--tsr-comp-popup-padding) * 2);
+  box-sizing: border-box;
+  align-content: start;
+  padding: calc(var(--tsr-comp-popup-padding) * 2);
+  border-radius: var(--tsr-comp-popup-item-radius);
+  background-color: var(--tsr-comp-popup-card-bg);
+  outline: var(--tsr-comp-popup-card-outline);
+  outline-offset: -1px;
+  transition: var(--tsr-comp-popup-item-transition);
+}
+
+/* Облачка с содержимым одной высоты — подпись и две его строки, даже когда строка одна. */
+.entry:has(.body) {
+  min-height: calc(3lh + var(--tsr-comp-popup-padding) * 6);
+}
+
+.entry:has(.show:hover) {
+  background-color: var(--tsr-comp-popup-card-hover-bg);
+}
+
+.entry:has(.show:focus-visible) {
+  box-shadow: inset 0 0 0 var(--tsr-comp-focus-ring-width)
+    var(--tsr-comp-focus-ring);
+}
+
+/* Точка — по центру первой строки подписи. */
+.mark {
+  display: flex;
+  align-items: center;
+  height: 1lh;
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  gap: calc(var(--tsr-comp-popup-padding) * 2);
+  font-weight: 600;
+}
+
+.label,
+.show {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Подпись-кнопка перехода к цели: её область растянута на всё облачко. */
+.show {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  outline: none;
+}
+
+.show::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--tsr-comp-popup-item-radius);
+}
+
+/* Кнопки записи — поверх области перехода, по центру первой строки, высоту строки не растят. */
+.actions {
+  position: relative;
+  display: flex;
+  flex: none;
+  margin-block: calc((1lh - var(--tsr-comp-button-size-compact)) / 2);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tsr-comp-popup-padding);
+  grid-column: 2;
+}
+
+/* Высокая контрастность (ADR 0087): облачко под указателем — контуром `Highlight`. */
+@media (forced-colors: active) {
+  .entry:has(.show:hover) {
+    outline-color: Highlight;
+  }
+}

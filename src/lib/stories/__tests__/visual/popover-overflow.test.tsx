@@ -113,6 +113,8 @@ const overflowOf = (pop: HTMLElement) => {
   for (const el of pop.querySelectorAll<HTMLElement>('*')) {
     const rect = el.getBoundingClientRect()
     if (rect.width === 0) continue
+    // Текст только для скринридера обрезан нарочно.
+    if (el.closest('[class*="visually-hidden"]')) continue
     const name = (el.textContent ?? '').slice(0, 24)
     if (rect.right > box.right + 0.5 || rect.left < box.left - 0.5)
       found.push(`за рамкой: ${el.tagName} «${name}»`)
@@ -261,7 +263,7 @@ describe('Длинный текст в поповерах черновиков �
     }
   })
 
-  test('DR38: в пульте и журнале отказов край записей совпадает с краем заголовка и подвала — с полосой прокрутки списка и без неё; разделители в поповерах отметки, пульта и журнала — по ширине содержимого, отступ от верхнего края до заголовка, от содержимого до разделителя, от разделителя до содержимого и от кнопок до нижнего края — один: двойное поле поповера', async () => {
+  test('DR38: в поповере отметки ячейки разделитель — по ширине содержимого, отступ от верхнего края до заголовка, от содержимого до разделителя, от разделителя до содержимого и от кнопок до нижнего края — один: двойное поле поповера', async () => {
     await page.viewport(1024, 700)
     const screen = await render(<Grid width={760} />)
     await waitForGrid()
@@ -325,70 +327,7 @@ describe('Длинный текст в поповерах черновиков �
         }
       }
 
-      /** Края содержимого: заголовок, записи и подвал от края поповера. */
-      const edges = (pop: HTMLElement) => {
-        const box = pop.getBoundingClientRect()
-        const title = pop.querySelector<HTMLElement>('[class*="title"]')!
-        const contentLeft = (el: HTMLElement) =>
-          Math.round(
-            el.getBoundingClientRect().left +
-              parseFloat(getComputedStyle(el).paddingLeft) -
-              box.left,
-          )
-        const contentRight = (el: HTMLElement) =>
-          Math.round(
-            box.right -
-              (el.getBoundingClientRect().right -
-                parseFloat(getComputedStyle(el).paddingRight)),
-          )
-        const entries = [
-          ...pop.querySelectorAll<HTMLElement>(
-            '[class*="scroller"] [class*="entry"]',
-          ),
-        ]
-        const buttons = [...pop.querySelectorAll<HTMLElement>('button')]
-        const footer = buttons.at(-1)!
-        // Разделители: линии `::before` записей и подвала — их концы от края поповера.
-        const lines = [...entries, footer.parentElement!].map(el => {
-          const line = getComputedStyle(el, '::before')
-          const rect = el.getBoundingClientRect()
-          return [
-            Math.round(rect.left + parseFloat(line.left) - box.left),
-            Math.round(box.right - rect.right + parseFloat(line.right)),
-          ]
-        })
-        const row = footer.parentElement!
-        return {
-          lines: [...new Set(lines.map(line => line.join()))],
-          gap: Math.round(
-            footer.getBoundingClientRect().top -
-              row.getBoundingClientRect().top,
-          ),
-          field: parseFloat(getComputedStyle(pop).paddingLeft),
-          title: contentLeft(title),
-          entriesLeft: [...new Set(entries.map(contentLeft))],
-          entriesRight: [...new Set(entries.map(contentRight))],
-          footerRight: Math.round(
-            box.right - footer.getBoundingClientRect().right,
-          ),
-        }
-      }
-      const check = async (button: () => HTMLElement, name: string) => {
-        const pop = await openList(button)
-        const at = edges(pop)
-        expect(at.entriesLeft, `${name} слева`).toEqual([at.title])
-        expect(at.entriesRight, `${name} справа`).toEqual([at.footerRight])
-        expect(at.lines, `${name} разделители`).toEqual([
-          `${at.title},${at.footerRight}`,
-        ])
-        expect(at.gap, `${name} отступ до кнопок`).toBe(at.field * 2)
-        if (name.endsWith('без полосы'))
-          expectEven(verticalGaps(pop), at.field, name)
-        await userEvent.keyboard('{Escape}')
-        await expect.poll(dialog).toBeNull()
-      }
-
-      // Без полосы прокрутки: одна запись в каждом списке.
+      // Отказ ячейки — поповер её отметки с причиной и кнопками.
       api.reportFailure({
         label: 'Age',
         target: { cell: ['3', 'age'] },
@@ -399,8 +338,6 @@ describe('Длинный текст в поповерах черновиков �
         target: { cell: ['2', 'age'] },
         value: { value: 5, text: '5' },
       })
-      await check(pultButton, 'пульт без полосы')
-      await check(logButton, 'журнал без полосы')
 
       // Поповер отметки ячейки: те же отступы вокруг линии над кнопками.
       cell('3', 'age')?.scrollIntoView({ block: 'center' })
@@ -422,11 +359,6 @@ describe('Длинный текст в поповерах черновиков �
       )
       await userEvent.keyboard('{Escape}')
       await expect.poll(cellPopover).toBeNull()
-
-      // С полосой прокрутки: длинные списки.
-      await seed()
-      await check(pultButton, 'пульт с полосой')
-      await check(logButton, 'журнал с полосой')
     } finally {
       await screen.unmount()
     }

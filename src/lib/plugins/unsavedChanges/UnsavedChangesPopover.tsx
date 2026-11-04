@@ -1,10 +1,9 @@
 /**
- * Поповер пульта черновиков (ADR 0178, §8; DR11): черновики в порядке появления — подпись вида,
- * значение и цель; у записи — «Показать», «Применить», «Отбросить»; внизу «Применить всё» и
- * «Отменить всё». «Показать» и применение закрывают пульт. Отдельный чанк: открытием управляет
- * эагерная кнопка (`UnsavedChangesButton`).
+ * Поповер пульта черновиков (ADR 0178, §8; DR11, DR42–DR47): изменения данных облачками в порядке
+ * появления, черновики колонок — разделом ниже; у записи «Применить» и «Откатить», нажатие на неё
+ * показывает цель; внизу «Применить всё» и «Отменить всё». Переход и применение закрывают пульт. Отдельный чанк: открытием управляет эагерная кнопка (`UnsavedChangesButton`).
  */
-import { type ReactNode, useRef } from 'react'
+import { type ReactNode, useId, useRef } from 'react'
 
 import { Popover } from '@base-ui/react/popover'
 import clsx from 'clsx'
@@ -23,11 +22,14 @@ import {
 import { reportAction, userSourceOf } from '../../core/debugActions'
 import { useLocalization } from '../../core/localization'
 import { useSliceProjection } from '../../core/reactivity'
+import { Bubble } from '../../ui/Bubble'
 import { Button } from '../../ui/Button'
 import { IconButton } from '../../ui/IconButton'
 import { Stub } from '../../ui/Stub'
 import { useIcons } from '../../ui/icons'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
+import { PopupEntry } from '../../ui/Popup/PopupEntry'
+import hidden from '../../ui/visuallyHidden.module.css'
 import { usePortalThemeClass, usePortalThemeData } from '../../ui/theme'
 import { ToolbarButton } from '../../ui/ToolbarButton'
 import {
@@ -36,6 +38,7 @@ import {
   showTarget,
 } from '../../shared/objectTarget'
 
+import { type DraftSection, draftSections } from './sections'
 import styles from './UnsavedChanges.module.css'
 
 export interface UnsavedChangesPopoverProps {
@@ -61,61 +64,72 @@ const report = (
     source: userSourceOf(event),
   })
 
+/** Значение записи: «было → стало»; скринридер читает «Было», «Стало» словами. */
+const ChangeValue = ({ was, now }: { was?: string; now: string }) => {
+  const labels = useLocalization()
+  if (was === undefined) return <>{now}</>
+  return (
+    <>
+      <span className={hidden['visually-hidden']}>{labels.draftWas} </span>
+      {was}
+      <span aria-hidden> → </span>
+      <span className={hidden['visually-hidden']}> {labels.draftNow} </span>
+      {now}
+    </>
+  )
+}
+
+interface EntryHandlers {
+  /** Черновик снят: его кнопки ушли вместе с фокусом. */
+  onDiscarded: () => void
+  /** Переход к цели и «Применить» закрывают пульт. */
+  onDone: () => void
+}
+
 const DraftEntry = ({
   table,
   draft,
   onDiscarded,
   onDone,
-}: {
-  table: unknown
-  draft: Draft
-  /** Запись отброшена: её кнопки ушли вместе с фокусом. */
-  onDiscarded: () => void
-  /** «Показать» и «Применить» уводят к цели — пульт закрывается. */
-  onDone: () => void
-}) => {
+}: { table: unknown; draft: Draft } & EntryHandlers) => {
   const labels = useLocalization()
   const icons = useIcons()
   const kind = draftKindOf(table, draft.kind)
   if (!kind) return null
-  const target = objectTargetText(table, draft.target, labels)
   const now = kind.describe?.(labels, draft, table)
   const was =
     now === undefined ? undefined : kind.previous?.(labels, draft, table)
+  const target = objectTargetText(table, draft.target, labels)
+  // Операция над строкой названа видом; правка ячейки и колонки — целью и значением.
+  const operation = 'row' in draft.target
   return (
-    <>
-      <span className={styles.label}>{kind.label(labels, draft)}</span>
-      {now !== undefined &&
-        (was === undefined ? (
-          <span className={styles.value}>{now}</span>
-        ) : (
-          // Было и стало — решение «применить или отбросить» видно без перехода к цели.
-          <dl className={styles.compare}>
-            <dt>{labels.draftWas}</dt>
-            <dd>{was}</dd>
-            <dt>{labels.draftNow}</dt>
-            <dd>{now}</dd>
-          </dl>
-        ))}
-      <div className={styles.foot}>
-        <span className={styles.target}>{target}</span>
-        <div className={styles.actions}>
-          {canShowTarget(draft.target) && (
-            <IconButton
-              shape="square"
-              label={labels.draftShow}
-              data-action="show"
-              onClick={event => {
-                report(table, 'show', draft, event)
-                onDone()
-                void showTarget(table, draft.target, 'arrived')
-              }}
-            >
-              <icons.failureShow />
-            </IconButton>
+    <PopupEntry
+      mark={<Bubble size="dot" tone="draft" />}
+      label={
+        <>
+          {operation && <span>{kind.label(labels, draft)} </span>}
+          {target && <span className={styles.target}>{target} </span>}
+          {now !== undefined && (
+            <span className={styles.value}>
+              <ChangeValue was={was} now={now} />
+            </span>
           )}
+        </>
+      }
+      onShow={
+        canShowTarget(draft.target)
+          ? event => {
+              report(table, 'show', draft, event)
+              onDone()
+              void showTarget(table, draft.target, 'arrived')
+            }
+          : undefined
+      }
+      actions={
+        <>
           <IconButton
             shape="square"
+            size="compact"
             label={labels.draftApply}
             data-action="apply"
             onClick={event => {
@@ -128,6 +142,7 @@ const DraftEntry = ({
           </IconButton>
           <IconButton
             shape="square"
+            size="compact"
             label={labels.draftDiscard}
             data-action="discard"
             onClick={event => {
@@ -138,8 +153,60 @@ const DraftEntry = ({
           >
             <icons.draftDiscard />
           </IconButton>
+        </>
+      }
+    />
+  )
+}
+
+const EntryList = ({
+  table,
+  drafts,
+  ...handlers
+}: { table: unknown; drafts: readonly Draft[] } & EntryHandlers &
+  ({ 'aria-label': string } | { 'aria-labelledby': string })) => {
+  const { onDiscarded, onDone, ...named } = handlers
+  return (
+    <div role="list" className={styles.list} {...named}>
+      {drafts.map(draft => (
+        <div
+          key={draftKeyOf(draft.kind, draft.target)}
+          role="listitem"
+          data-draft-kind={draft.kind}
+        >
+          <DraftEntry
+            table={table}
+            draft={draft}
+            onDiscarded={onDiscarded}
+            onDone={onDone}
+          />
         </div>
-      </div>
+      ))}
+    </div>
+  )
+}
+
+/** Раздел черновиков с целью-колонкой: заголовок вида и его записи (DR44). */
+const Section = ({
+  table,
+  section,
+  ...handlers
+}: { table: unknown; section: DraftSection } & EntryHandlers) => {
+  const labels = useLocalization()
+  const id = useId()
+  const kind = draftKindOf(table, section.kind)
+  return (
+    <>
+      <p id={id} className={styles.sectionTitle}>
+        {kind?.sectionLabel?.(labels) ??
+          kind?.label(labels, section.drafts[0]!)}
+      </p>
+      <EntryList
+        table={table}
+        drafts={section.drafts}
+        aria-labelledby={id}
+        {...handlers}
+      />
     </>
   )
 }
@@ -148,11 +215,7 @@ const DraftList = ({
   table,
   onDiscarded,
   onDone,
-}: {
-  table: unknown
-  onDiscarded: () => void
-  onDone: () => void
-}) => {
+}: { table: unknown } & EntryHandlers) => {
   const labels = useLocalization()
   const icons = useIcons()
   const drafts = useSliceProjection(
@@ -175,26 +238,27 @@ const DraftList = ({
         data-testid="unsaved-changes-empty"
       />
     )
+  const { data, sections } = draftSections(drafts)
+  const handlers = { onDiscarded, onDone }
   return (
     <>
       <div className={styles.scroller}>
-        <div role="list" aria-label={labels.unsavedChanges}>
-          {drafts.map(draft => (
-            <div
-              key={draftKeyOf(draft.kind, draft.target)}
-              role="listitem"
-              data-draft-kind={draft.kind}
-              className={styles.entry}
-            >
-              <DraftEntry
-                table={table}
-                draft={draft}
-                onDiscarded={onDiscarded}
-                onDone={onDone}
-              />
-            </div>
-          ))}
-        </div>
+        {data.length > 0 && (
+          <EntryList
+            table={table}
+            drafts={data}
+            aria-label={labels.unsavedChanges}
+            {...handlers}
+          />
+        )}
+        {sections.map(section => (
+          <Section
+            key={section.kind}
+            table={table}
+            section={section}
+            {...handlers}
+          />
+        ))}
       </div>
       <div className={styles.footer}>
         <Button

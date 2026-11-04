@@ -59,8 +59,8 @@ export interface ActiveProps {
   /** Тон бабла: `error` — счётчик отказов журнала (ADR 0177, JR1). */
   indicatorTone?: 'active' | 'draft' | 'error'
   /**
-   * Есть неприменённое (ADR 0178, §4): кольцо вместо точки, кнопка видна без наведения. С
-   * `active` главнее включённое — сплошная точка.
+   * Есть неприменённое (ADR 0178, §4): точка цвета несохранённого, кнопка видна без наведения.
+   * С `active` главнее включённое — точка включённого.
    */
   draft?: boolean
 }
@@ -154,8 +154,8 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
       states.active ||
       !!states['data-pending-leaving']
 
-    // Неприменённое без включённого — кольцо; включённое главнее.
-    const ringed = !active && !!draft
+    // Неприменённое без включённого — точка несохранённого; включённое главнее.
+    const drafted = !active && !!draft
     const icons = useIcons()
     const CancelIcon = icons.cancelAction
     const name = states.armed ? (cancelLabel ?? label) : label
@@ -196,17 +196,15 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         </RevealedIcon>
         {(active !== undefined || draft !== undefined) && (
           <Bubble
-            size={count && !ringed ? 'sm' : 'dot'}
-            tone={ringed ? 'draft' : indicatorTone}
-            fill={ringed ? 'outline' : 'solid'}
+            size={count && !drafted ? 'sm' : 'dot'}
+            tone={drafted ? 'draft' : indicatorTone}
             className={styles.indicator}
             data-active-indicator=""
-            data-count={(!ringed && count) || undefined}
-            data-fill={ringed ? 'outline' : undefined}
+            data-count={(!drafted && count) || undefined}
             data-shown={(!!active || !!draft) && indicator && !states.active}
             aria-hidden
           >
-            {count && !ringed ? countText(count) : null}
+            {count && !drafted ? countText(count) : null}
           </Bubble>
         )}
         {states.armed && (

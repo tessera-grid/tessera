@@ -63,7 +63,7 @@ interface LogTable {
 const FAILURES_SEED = [
   seed<LogTable>('failureLogSeed', table => {
     table.reportFailure({
-      label: 'First Name',
+      label: 'Save value',
       target: { cell: [rowId(1), 'firstName'] },
       reason: 'The server refused the value',
     })
@@ -298,7 +298,7 @@ const saveInBackground = () => {
       ?.trackCellAction(
         { cell: [row, 'firstName'] },
         Promise.reject(new Error('The server refused the value')),
-        { label: 'First Name' },
+        { label: 'Save value' },
       )
       .catch(() => {})
 }
@@ -365,7 +365,7 @@ const OFFSCREEN_STEPS: readonly GuideStoryStep[] = [
           void logTable?.trackCellAction(
             { cell: [LOWER, 'firstName'] },
             Promise.resolve(),
-            { label: 'First Name' },
+            { label: 'Save value' },
           )
         } else if (!log()) logButton()!.click()
       },

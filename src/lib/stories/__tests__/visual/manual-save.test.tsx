@@ -377,7 +377,7 @@ describe('Сохранение по кнопке (ADR 0178)', () => {
     }
   })
 
-  test('DR22: уголок черновика — залитый треугольник; уголок, кольцо фильтра с черновиком и бабл пульта — токеном --tsr-comp-draft-color, не ниже 3:1 к фону ячейки и кнопки в обеих темах', async () => {
+  test('DR22: уголок черновика — залитый треугольник; уголок, точка на кнопке фильтра с черновиком и бабл пульта — заливкой токеном --tsr-comp-draft-color, не ниже 3:1 к фону ячейки и кнопки в обеих темах', async () => {
     const Host = () => {
       const table = useCreateTable({
         columns: COLUMNS as never,
@@ -406,14 +406,11 @@ describe('Сохранение по кнопке (ADR 0178)', () => {
         target: { column: 'name' },
         value: { operator: 'contains', value: 'Bob' },
       })
-      const ring = await expect
-        .poll(() =>
-          document.querySelector<HTMLElement>(
-            '.data-grid__head-cell[data-column-id="name"] [data-draft] [data-fill="outline"]',
-          ),
+      const filterDot = () =>
+        document.querySelector<HTMLElement>(
+          '.data-grid__head-cell[data-column-id="name"] [data-draft] [data-active-indicator][data-shown="true"]',
         )
-        .toBeTruthy()
-      void ring
+      await expect.poll(filterDot).toBeTruthy()
       await expect.poll(pultCount).toBe('2')
       await inBothThemes(async () => {
         const root = document.querySelector('.data-grid-theme')!
@@ -426,13 +423,11 @@ describe('Сохранение по кнопке (ADR 0178)', () => {
         expect(
           contrast(toRgba(draft), backgroundOf(cell('1'))),
         ).toBeGreaterThanOrEqual(3)
-        // Кольцо на кнопке фильтра — тем же цветом.
-        const outline = document.querySelector<HTMLElement>(
-          '.data-grid__head-cell[data-column-id="name"] [data-fill="outline"]',
-        )!
-        expect(getComputedStyle(outline).boxShadow).toContain(draft)
+        // Точка на кнопке фильтра — заливка тем же цветом.
+        const dot = filterDot()!
+        expect(getComputedStyle(dot).backgroundColor).toBe(draft)
         expect(
-          contrast(toRgba(draft), backgroundOf(outline.parentElement)),
+          contrast(toRgba(draft), backgroundOf(dot.parentElement)),
         ).toBeGreaterThanOrEqual(3)
         // Бабл пульта — заливка цветом несохранённого.
         const bubble = pultButton()!.querySelector<HTMLElement>(
@@ -614,7 +609,7 @@ describe('Сохранение по кнопке (ADR 0178)', () => {
     }
   })
 
-  test('DR39: запись пульта показывает «Было» и «Стало» строками: у значения ячейки — значение в данных и черновика, у условия фильтра — действующее условие или «Нет фильтра» и неприменённое; прежнего не знаем — только значение', async () => {
+  test('DR39: правка пульта показывает «было → стало», скринридер читает «Было» и «Стало» словами: у значения ячейки — значение в данных и черновика, у условия фильтра — действующее условие или «Нет фильтра» и неприменённое; прежнего не знаем — только значение', async () => {
     const Host = () => {
       const table = useCreateTable({
         columns: COLUMNS as never,
@@ -636,18 +631,23 @@ describe('Сохранение по кнопке (ADR 0178)', () => {
     }
     const screen = await render(<Host />)
     await waitForGrid()
-    /** Строки записей пульта: подпись и пары «Было»/«Стало» или одно значение. */
+    /** Значение правки пульта: что видно и что читает скринридер. */
+    const textWithout = (el: Element, hidden: string) => {
+      const copy = el.cloneNode(true) as Element
+      copy.querySelectorAll(hidden).forEach(node => node.remove())
+      return (copy.textContent ?? '').replace(/\s+/g, ' ').trim()
+    }
     const entries = () =>
       [
-        ...(dialog()?.querySelectorAll<HTMLElement>('[class*="entry"]') ?? []),
+        ...(dialog()?.querySelectorAll<HTMLElement>('[data-draft-kind]') ?? []),
       ].map(entry => {
-        const pairs = [...entry.querySelectorAll('dt')].map(term => [
-          term.textContent,
-          term.nextElementSibling?.textContent,
-        ])
-        return pairs.length > 0
-          ? pairs
-          : entry.querySelector('[class*="value"]')?.textContent
+        const value = entry.querySelector('[class*="value"]')
+        return value
+          ? {
+              shown: textWithout(value, '[class*="visually-hidden"]'),
+              spoken: textWithout(value, '[aria-hidden]'),
+            }
+          : undefined
       })
     const dialog = () =>
       [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].at(-1) ??
@@ -674,24 +674,25 @@ describe('Сохранение по кнопке (ADR 0178)', () => {
       await expect.poll(dialog).not.toBeNull()
       const rows = await expect.poll(entries).toHaveLength(3)
       void rows
-      const [cellEntry, ageFilter, nameFilter] = entries() as [
-        string[][],
-        string[][],
-        string[][],
-      ]
-      expect(cellEntry).toEqual([
-        [tableLabels.draftWas, '21'],
-        [tableLabels.draftNow, '77'],
-      ])
-      expect(ageFilter[0]![0]).toBe(tableLabels.draftWas)
-      expect(ageFilter[0]![1]).toContain('30')
-      expect(ageFilter[1]![0]).toBe(tableLabels.draftNow)
-      expect(ageFilter[1]![1]).toContain('40')
-      expect(nameFilter[0]).toEqual([
-        tableLabels.draftWas,
-        tableLabels.draftNoFilter,
-      ])
-      expect(nameFilter[1]![1]).toContain('Bob')
+      // Записи — в порядке появления: правка ячейки, затем раздел фильтров — возраст, имя.
+      const [cellEntry, ageFilter, nameFilter] = entries() as {
+        shown: string
+        spoken: string
+      }[]
+      // Видно «было → стало», скринридер читает «Было» и «Стало» словами.
+      expect(cellEntry).toEqual({
+        shown: '21 → 77',
+        spoken: `${tableLabels.draftWas} 21 ${tableLabels.draftNow} 77`,
+      })
+      expect(ageFilter!.shown).toMatch(/30.* → .*40/)
+      expect(ageFilter!.spoken).toMatch(
+        new RegExp(
+          `^${tableLabels.draftWas} .*30.* ${tableLabels.draftNow} .*40`,
+        ),
+      )
+      expect(nameFilter!.shown).toMatch(
+        new RegExp(`^${tableLabels.draftNoFilter} → .*Bob`),
+      )
     } finally {
       await screen.unmount()
     }
@@ -739,7 +740,7 @@ describe('Сохранение по кнопке (ADR 0178)', () => {
       await expect.poll(pultButton).toBeTruthy()
       await humanClick(pultButton()!)
       await expect.poll(dialog).not.toBeNull()
-      await expect.poll(entries).toEqual(['5'])
+      await expect.poll(entries).toEqual([{ shown: '5', spoken: '5' }])
     } finally {
       await server.unmount()
     }

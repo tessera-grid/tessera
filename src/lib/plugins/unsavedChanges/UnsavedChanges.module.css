@@ -1,4 +1,4 @@
-/* Пульт черновиков (ADR 0178, §8): поповер со списком черновиков. */
+/* Пульт черновиков (ADR 0178, §8): поповер с черновиками плоским списком облачков (DR42). */
 .positioner {
   composes: positioner from '../../ui/Popup/Popup.module.css';
 }
@@ -10,80 +10,40 @@
 }
 
 .title {
-  margin: 0;
-  padding: var(--tsr-comp-popup-padding) calc(var(--tsr-comp-popup-padding) * 2)
-    calc(var(--tsr-comp-popup-padding) * 2);
-  font-weight: 600;
+  composes: cardsTitle from '../../ui/Popup/Popup.module.css';
 }
 
 .scroller {
-  composes: scrollList from '../../ui/Popup/Popup.module.css';
-  max-height: min(60vh, calc(var(--tsr-comp-popup-item-min-height) * 10));
+  composes: cardsScroll from '../../ui/Popup/Popup.module.css';
 }
 
-/* Запись: подпись вида, значение, затем цель и кнопки. */
-.entry {
-  composes: divided from '../../ui/Popup/Popup.module.css';
-  position: relative;
+.list {
   display: flex;
   flex-direction: column;
   gap: var(--tsr-comp-popup-padding);
-  padding: calc(var(--tsr-comp-popup-padding) * 2);
-  padding-inline-end: var(--tsr-comp-popup-scroll-inset);
-  --_divider-end: var(--tsr-comp-popup-scroll-inset);
 }
 
-.label {
+/* Заголовок раздела — по краю облачков, мельче записей, как заголовок поповера. */
+.sectionTitle {
+  margin: 0;
+  padding: calc(var(--tsr-comp-popup-padding) * 2) 0
+    var(--tsr-comp-popup-padding);
+  font-size: var(--tsr-comp-popup-title-font-size);
   font-weight: 600;
-  overflow-wrap: anywhere;
+}
+
+/* Текст записи: цель — своей приглушённой строкой под подписью вида, значение — ниже. */
+.target {
+  display: block;
+  color: var(--tsr-comp-popup-group-label-color);
+  font-weight: normal;
 }
 
 .value {
-  overflow-wrap: anywhere;
-}
-
-/* «Было» и «Стало» строками: подпись слева, значение переносится. */
-.compare {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 0 calc(var(--tsr-comp-popup-padding) * 2);
-  margin: 0;
-  overflow-wrap: anywhere;
-}
-
-.compare dt {
-  color: var(--tsr-comp-popup-group-label-color);
-}
-
-.compare dd {
-  margin: 0;
-}
-
-.foot {
-  display: flex;
-  align-items: center;
-  gap: calc(var(--tsr-comp-popup-padding) * 2);
-}
-
-.target {
-  flex: 1;
-  min-width: 0;
-  color: var(--tsr-comp-popup-group-label-color);
-  overflow-wrap: anywhere;
-}
-
-.actions {
-  display: flex;
-  flex: none;
+  display: block;
+  font-weight: normal;
 }
 
 .footer {
-  composes: divided from '../../ui/Popup/Popup.module.css';
-  position: relative;
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--tsr-comp-popup-padding);
-  /* Сверху, у линии и у нижнего края — один отступ: двойное поле поповера. */
-  padding: calc(var(--tsr-comp-popup-padding) * 2)
-    calc(var(--tsr-comp-popup-padding) * 2) var(--tsr-comp-popup-padding);
+  composes: cardsFooter from '../../ui/Popup/Popup.module.css';
 }

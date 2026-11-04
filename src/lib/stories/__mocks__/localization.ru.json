@@ -169,6 +169,7 @@
   "cellNotSaved": "Не сохранено",
   "cellDraftRollback": "Откатить",
   "rowInsertDraftKind": "Новая строка",
+  "rowInsertDraftMore": "{values} и ещё {count}",
   "rowDeleteDraftKind": "Удалённая строка",
   "rowInsertDiscard": "Убрать строку",
   "rowDeleteDiscard": "Вернуть строку",

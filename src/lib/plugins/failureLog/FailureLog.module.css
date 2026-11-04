@@ -1,4 +1,4 @@
-/* Журнал отказов (ADR 0177, §7): поповер со списком записей. */
+/* Журнал отказов (ADR 0177, §7): поповер со списком записей облачками (ADR 0178, DR42). */
 .positioner {
   composes: positioner from '../../ui/Popup/Popup.module.css';
 }
@@ -10,16 +10,12 @@
 }
 
 .title {
-  margin: 0;
-  padding: var(--tsr-comp-popup-padding) calc(var(--tsr-comp-popup-padding) * 2)
-    calc(var(--tsr-comp-popup-padding) * 2);
-  font-weight: 600;
+  composes: cardsTitle from '../../ui/Popup/Popup.module.css';
 }
 
 /* Окно списка: длинный список виртуализирован (JR2). */
 .scroller {
-  composes: scrollList from '../../ui/Popup/Popup.module.css';
-  max-height: min(60vh, calc(var(--tsr-comp-popup-item-min-height) * 10));
+  composes: cardsScroll from '../../ui/Popup/Popup.module.css';
 }
 
 .list {
@@ -27,41 +23,23 @@
   width: 100%;
 }
 
-/* Запись: подпись и время, причина, затем цель и кнопки. */
+/* Место записи в окне; зазор между облачками — её верхнее поле, у первой его нет. */
 .entry {
-  composes: divided from '../../ui/Popup/Popup.module.css';
   position: absolute;
   inset-inline: 0;
   top: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--tsr-comp-popup-padding);
-  padding: calc(var(--tsr-comp-popup-padding) * 2);
-  padding-inline-end: var(--tsr-comp-popup-scroll-inset);
-  --_divider-end: var(--tsr-comp-popup-scroll-inset);
+  padding-block-start: var(--tsr-comp-popup-padding);
 }
 
-.head {
-  display: flex;
-  align-items: baseline;
-  gap: calc(var(--tsr-comp-popup-padding) * 2);
+.entry[data-index='0'] {
+  padding-block-start: 0;
 }
 
-.label {
-  flex: 1;
-  min-width: 0;
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-
-.time,
-.target {
-  color: var(--tsr-comp-popup-group-label-color);
-}
-
-/* Время у правого края — на одной вертикали во всех записях. */
+/* Время у правого края, перед кнопками, — на одной вертикали во всех записях. */
 .time {
   flex: none;
+  color: var(--tsr-comp-popup-group-label-color);
+  font-weight: normal;
   font-variant-numeric: tabular-nums;
 }
 
@@ -70,29 +48,14 @@
   overflow-wrap: anywhere;
 }
 
-.foot {
-  display: flex;
-  align-items: center;
-  gap: calc(var(--tsr-comp-popup-padding) * 2);
-}
-
+/* Цель — своей приглушённой строкой под подписью, как в пульте черновиков. */
 .target {
-  flex: 1;
-  min-width: 0;
+  display: block;
+  color: var(--tsr-comp-popup-group-label-color);
+  font-weight: normal;
   overflow-wrap: anywhere;
 }
 
-.actions {
-  display: flex;
-  flex: none;
-}
-
 .footer {
-  composes: divided from '../../ui/Popup/Popup.module.css';
-  position: relative;
-  display: flex;
-  justify-content: flex-end;
-  /* Сверху, у линии и у нижнего края — один отступ: двойное поле поповера. */
-  padding: calc(var(--tsr-comp-popup-padding) * 2)
-    calc(var(--tsr-comp-popup-padding) * 2) var(--tsr-comp-popup-padding);
+  composes: cardsFooter from '../../ui/Popup/Popup.module.css';
 }

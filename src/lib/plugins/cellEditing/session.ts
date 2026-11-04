@@ -7,7 +7,7 @@
  */
 import { announceLabel, announcerLabels } from '../../core/announcer'
 import type { PluginReconcileContext } from '../../core/features'
-import { DEFAULT_LABELS } from '../../core/localization'
+import { ENGLISH_LABELS } from '../../core/localization'
 import {
   type DebugActionSource,
   reportAction,
@@ -189,15 +189,21 @@ const syncSubmitted = (
   })
 }
 
-const reportCellFailure = (table: unknown, key: string, entry: SubmittedCell) =>
-  reportFailure(table, {
-    label: columnNameOf(table, entry.columnId),
+/** Подпись записи — действие «Правка»: колонку и строку называет цель (ADR 0177, §7). */
+const reportCellFailure = (
+  table: unknown,
+  key: string,
+  entry: SubmittedCell,
+) => {
+  const labels = announcerLabels(table) ?? ENGLISH_LABELS
+  return reportFailure(table, {
+    label: labels.cellDraftKind,
     target: { cell: [entry.rowId, entry.columnId] },
-    reason:
-      entry.error ?? (announcerLabels(table) ?? DEFAULT_LABELS).saveFailed,
+    reason: entry.error ?? labels.saveFailed,
     retry: () => retrySubmitted(table, key),
     discard: () => discardSubmitted(table, key),
   })
+}
 
 /** Повтор отклонённого сохранения из поповера отметки (ADR 0177, §5). */
 const retrySubmitted = (table: unknown, key: string) => {
@@ -599,7 +605,7 @@ const settleSubmitted = (
     flashOutcome(table, { cell: [entry.rowId, entry.columnId] }, 'accepted')
     return
   }
-  const labels = announcerLabels(table) ?? DEFAULT_LABELS
+  const labels = announcerLabels(table) ?? ENGLISH_LABELS
   const error = rejectionText(outcome.reason) ?? labels.saveFailed
   submitted[key] = { ...entry, status: 'error', error }
   writeEditingState(table, { ...state, submitted })
@@ -660,7 +666,7 @@ export const saveEdit = (
         columnOf(table, cell.columnId)?.getDataType()?.base ??
         inferDataType(values.current)
       if (base === 'object') warnObjectNotParsed(table)
-      const labels = announcerLabels(table) ?? DEFAULT_LABELS
+      const labels = announcerLabels(table) ?? ENGLISH_LABELS
       setEditError(
         table,
         isNumericBase(base)
@@ -706,7 +712,7 @@ const refuseOnConflict = (
   text: string,
   now: unknown,
 ) => {
-  const labels = announcerLabels(table) ?? DEFAULT_LABELS
+  const labels = announcerLabels(table) ?? ENGLISH_LABELS
   const error = labels.editConflict
   const state = readEditingState(table)
   writeEditingState(table, {
@@ -1101,7 +1107,7 @@ export const commitDrafts = (table: unknown, drafts: readonly Draft[]) => {
       settle(refused, true, saved)
     },
     reason => {
-      const labels = announcerLabels(table) ?? DEFAULT_LABELS
+      const labels = announcerLabels(table) ?? ENGLISH_LABELS
       const error = rejectionText(reason) ?? labels.saveFailed
       settle(
         new Map([
@@ -1121,7 +1127,7 @@ export const commitDrafts = (table: unknown, drafts: readonly Draft[]) => {
 
 /** Отказ строки пакета — отказ на объекте с повтором и откатом (ADR 0177). */
 const reportRowFailure = (table: unknown, draft: Draft, reason: string) => {
-  const labels = announcerLabels(table) ?? DEFAULT_LABELS
+  const labels = announcerLabels(table) ?? ENGLISH_LABELS
   const rowId = (draft.target as { row: string }).row
   const label =
     draft.kind === ROW_INSERT_DRAFT
@@ -1258,6 +1264,8 @@ const pruneCellDrafts = (table: ReconcileTable) => {
     whenLoaded?: unknown
   }
   if (source.whenLoaded) return
+  // Строк первой загрузки ещё нет: черновики, восстановленные приложением, ждут их (DR49).
+  if (commonOptionsOf(table).loading === 'initial') return
   for (const draft of readDrafts(table)) {
     if (draft.kind !== CELL_VALUE_DRAFT || !('cell' in draft.target)) continue
     if (!source.byId(draft.target.cell[0]))

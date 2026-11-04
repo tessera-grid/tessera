@@ -1074,8 +1074,8 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       ([ADR 0177](docs/decisions/0177-pending-and-failure-on-the-object.md)).
     - _Черновики:_ модульные `drafts.dom` (DR1–DR3 — срез, опции ядра, виды плагинов) и
       `filterDrafts.dom` (DR4–DR5, DR8 — вид `columnFilter`, отказ и отмена — черновиком,
-      клиентский режим), визуальные `filter-drafts` (DR6–DR7, DR9–DR10, DR12 — кольцо на кнопке
-      фильтра, место в ряду, сводка, полая точка кита, axe) и `unsaved-changes` (DR11 — пульт),
+      клиентский режим), визуальные `filter-drafts` (DR6–DR7, DR9–DR10, DR12 — точка неприменённого на
+      кнопке фильтра, место в ряду, сводка, точка кита, axe) и `unsaved-changes` (DR11 — пульт),
       перф DR13 — в `scroll`, истории «Filtering» S1–S3 и «Panels/Unsaved changes» S4; правка
       по кнопке — модульный `manualSave.dom` (DR14, DR17, DR19 — черновик вместо `onCellEdit`,
       пакет `onCommitEdits` с отказом части, жизнь по id строки), визуальный `manual-save`

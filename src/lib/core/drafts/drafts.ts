@@ -47,6 +47,8 @@ export interface DraftKind {
   apply: (table: unknown, draft: Draft) => unknown
   /** Применить черновики вида одним действием (пакет); без поля — по одному. */
   applyAll?: (table: unknown, drafts: readonly Draft[]) => unknown
+  /** Заголовок раздела пульта для черновиков вида с целью-колонкой (DR44); без поля — подпись вида. */
+  sectionLabel?: (labels: TableLabels) => string
   /**
    * Незавершённый ввод вида вне реестра (открытая правка ячейки, ADR 0178, §5): срез и
    * признак. Пульт считает его, «Применить всё» отдаёт его `applyAll`.

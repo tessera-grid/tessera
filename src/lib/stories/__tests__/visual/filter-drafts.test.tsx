@@ -13,7 +13,6 @@ import {
   columnSorting,
   headerActionMenu,
 } from '../../../plugins'
-import { Bubble } from '../../../ui/Bubble'
 import { IconButton } from '../../../ui/IconButton'
 import { DATA_GRID_THEME_CLASS } from '../../../ui/theme/types'
 import { tableLabels } from '../labels'
@@ -33,7 +32,7 @@ declare module 'vitest/browser' {
 }
 
 // Неприменённое условие фильтра в заголовке (ADR 0178, §3–§4; DR6, DR7, DR9, DR10, DR12):
-// кольцо на кнопке фильтра, место в ряду, сводка фильтров, кольцо кита, доступность. DR11 —
+// точка неприменённого на кнопке фильтра, место в ряду, сводка фильтров, точка кита, доступность. DR11 —
 // `unsaved-changes`, DR13 — перф в `scroll`.
 
 const COLUMNS = [
@@ -111,12 +110,27 @@ const visible = (button: HTMLElement | null) => {
     wrapper.getBoundingClientRect().width > 0
   )
 }
-const ringed = (button: HTMLElement) =>
-  bubbleOf(button).getAttribute('data-shown') === 'true' &&
-  bubbleOf(button).getAttribute('data-fill') === 'outline'
-const solid = (button: HTMLElement) =>
-  bubbleOf(button).getAttribute('data-shown') === 'true' &&
-  !bubbleOf(button).hasAttribute('data-fill')
+/** Цвет токена темы в месте кнопки. */
+const tokenColor = (near: HTMLElement, token: string) => {
+  const probe = document.createElement('span')
+  probe.style.backgroundColor = `var(${token})`
+  near.append(probe)
+  const color = getComputedStyle(probe).backgroundColor
+  probe.remove()
+  return color
+}
+/** Видна сплошная точка тона `token`. */
+const dotOf = (button: HTMLElement, token: string) => {
+  const dot = bubbleOf(button)
+  return (
+    dot.getAttribute('data-shown') === 'true' &&
+    getComputedStyle(dot).backgroundColor === tokenColor(button, token)
+  )
+}
+const draftDot = (button: HTMLElement) =>
+  dotOf(button, '--tsr-comp-draft-color')
+const activeDot = (button: HTMLElement) =>
+  dotOf(button, '--tsr-comp-active-indicator')
 const away = () => userEvent.hover(document.body, { position: { x: 1, y: 1 } })
 const tooltipShown = (text: string) =>
   [...document.querySelectorAll('[data-side]')].some(
@@ -137,7 +151,7 @@ const mount = async (role?: 'grid') => {
 }
 
 describe('Неприменённое условие в заголовке (ADR 0178)', () => {
-  test('DR6: кнопка фильтра с черновиком видна без наведения, на ней полая точка; при действующем фильтре — сплошная; тултип и имя кнопки из словаря говорят, что условие не применено', async () => {
+  test('DR6: кнопка фильтра с черновиком видна без наведения, на ней точка цвета несохранённого; при действующем фильтре — точка включённого; тултип и имя кнопки из словаря говорят, что условие не применено', async () => {
     const screen = await mount()
     try {
       // Без черновика и фильтра кнопка спрятана до наведения.
@@ -146,7 +160,7 @@ describe('Неприменённое условие в заголовке (ADR 0
       api.setDraft(draftOn('name'))
       await expect.poll(() => visible(filterButton('name'))).toBe(true)
       const name = filterButton('name')!
-      expect(ringed(name)).toBe(true)
+      expect(draftDot(name)).toBe(true)
       expect(name.hasAttribute('data-active')).toBe(false)
       const draftName = tableLabels.actionDraft(tableLabels.filter)
       expect(name.getAttribute('aria-label')).toBe(draftName)
@@ -154,10 +168,10 @@ describe('Неприменённое условие в заголовке (ADR 0
       await expect.poll(() => tooltipShown(draftName)).toBe(true)
       await away()
 
-      // Действует фильтр и есть иной черновик: сплошная точка, имя — про оба.
+      // Действует фильтр и есть иной черновик: точка включённого, имя — про оба.
       api.setColumnFilters([{ id: 'city', value: BOB }])
       api.setDraft(draftOn('city', { operator: 'contains', value: 'Rome' }))
-      await expect.poll(() => solid(filterButton('city')!)).toBe(true)
+      await expect.poll(() => activeDot(filterButton('city')!)).toBe(true)
       expect(filterButton('city')!.getAttribute('aria-label')).toBe(
         tableLabels.actionActiveDraft(tableLabels.filterActive),
       )
@@ -165,7 +179,7 @@ describe('Неприменённое условие в заголовке (ADR 0
       api.setColumnFilters([
         { id: 'age', value: { operator: 'equals', value: 21 } },
       ])
-      await expect.poll(() => solid(filterButton('age')!)).toBe(true)
+      await expect.poll(() => activeDot(filterButton('age')!)).toBe(true)
       expect(filterButton('age')!.getAttribute('aria-label')).toBe(
         tableLabels.filterActive,
       )
@@ -187,7 +201,7 @@ describe('Неприменённое условие в заголовке (ADR 0
       expect(row('name')).not.toContain('filter')
       api.setDraft(draftOn('name'))
       await expect.poll(() => row('name')).toEqual(['filter', 'menu'])
-      expect(ringed(filterButton('name')!)).toBe(true)
+      expect(draftDot(filterButton('name')!)).toBe(true)
     } finally {
       await screen.unmount()
     }
@@ -206,7 +220,7 @@ describe('Неприменённое условие в заголовке (ADR 0
           : '0'
       api.setDraft(draftOn('name'))
       api.setDraft(draftOn('city'))
-      await expect.poll(() => ringed(filterButton('city')!)).toBe(true)
+      await expect.poll(() => draftDot(filterButton('city')!)).toBe(true)
       expect(count()).toBe('0')
       expect(
         document.querySelector('[data-testid="filtered-rows-count"]'),
@@ -221,12 +235,12 @@ describe('Неприменённое условие в заголовке (ADR 0
     }
   })
 
-  test('DR12: axe с color-contrast у кнопок с полой точкой в обеих темах и в ролях table, grid, treegrid', async () => {
+  test('DR12: axe с color-contrast у кнопок с точкой неприменённого в обеих темах и в ролях table, grid, treegrid', async () => {
     for (const role of [undefined, 'grid'] as const) {
       const screen = await mount(role)
       try {
         api.setDraft(draftOn('name'))
-        await expect.poll(() => ringed(filterButton('name')!)).toBe(true)
+        await expect.poll(() => draftDot(filterButton('name')!)).toBe(true)
         await inBothThemes(async () => {
           const result = await axe.run(head('name'), AXE_OPTIONS)
           expect(result.violations.map(v => v.id)).toEqual([])
@@ -238,9 +252,9 @@ describe('Неприменённое условие в заголовке (ADR 0
   })
 })
 
-describe('Полая точка кита (ADR 0178, §4)', () => {
+describe('Точка неприменённого в ките (ADR 0178, §4)', () => {
   const Kit = () => (
-    // Фон — поверхность темы: кольцо сравнивается с фоном кнопки в каждой теме.
+    // Фон — поверхность темы: точка сравнивается с фоном кнопки в каждой теме.
     <div
       className={DATA_GRID_THEME_CLASS}
       style={{ padding: 16, background: 'var(--tsr-sys-surface)' }}
@@ -251,59 +265,42 @@ describe('Полая точка кита (ADR 0178, §4)', () => {
       <IconButton label="Both" draft active data-testid="both">
         <span aria-hidden>F</span>
       </IconButton>
-      <Bubble size="dot" tone="active" fill="outline" data-testid="bubble" />
     </div>
   )
   const byId = (id: string) =>
     document.querySelector<HTMLElement>(`[data-testid="${id}"]`)!
-  /** Цвет кольца — из тени-обводки. */
-  const ringColor = (bubble: HTMLElement) => {
-    const match = /rgba?\([^)]+\)/.exec(getComputedStyle(bubble).boxShadow)
-    return match ? toRgba(match[0]) : undefined
-  }
-
-  test("DR10: Bubble — fill: 'solid' или 'outline'; IconButton — draft: кольцо, кнопка видна без наведения, значок как у невключённой, с active главнее сплошная точка; кольцо на токенах кита, не ниже 3:1 к фону кнопки в обеих темах, видно в forced-colors", async () => {
+  test('DR10: IconButton — draft: сплошная точка цвета несохранённого, кнопка видна без наведения, значок как у невключённой, с active главнее точка включённого; точка на токене кита, не ниже 3:1 к фону кнопки в обеих темах, видна в forced-colors', async () => {
     const screen = await render(<Kit />)
     try {
-      const bubble = byId('bubble')
-      expect(getComputedStyle(bubble).backgroundColor).toBe('rgba(0, 0, 0, 0)')
-      expect(ringColor(bubble)).toBeDefined()
-      // Толщина кольца — токен кита.
-      const probe = document.createElement('span')
-      probe.style.width = 'var(--tsr-comp-indicator-outline-width)'
-      probe.style.display = 'block'
-      bubble.parentElement!.append(probe)
-      const width = getComputedStyle(probe).width
-      probe.remove()
-      expect(getComputedStyle(bubble).boxShadow).toContain(`${width} inset`)
-
       const draft = byId('draft')
       expect(draft.hasAttribute('data-active')).toBe(false)
       expect(draft.getAttribute('data-draft')).toBe('true')
-      expect(bubbleOf(draft).getAttribute('data-fill')).toBe('outline')
-      expect(bubbleOf(draft).getAttribute('data-shown')).toBe('true')
+      expect(draftDot(draft)).toBe(true)
+      expect(toRgba(getComputedStyle(bubbleOf(draft)).backgroundColor)[3]).toBe(
+        1,
+      )
       const both = byId('both')
       expect(both.hasAttribute('data-active')).toBe(true)
-      expect(bubbleOf(both).hasAttribute('data-fill')).toBe(false)
+      expect(activeDot(both)).toBe(true)
 
       await inBothThemes(async () => {
-        const ring = bubbleOf(draft)
-        const ratio = contrast(ringColor(ring)!, effectiveBg(draft))
+        const dot = bubbleOf(draft)
+        const ratio = contrast(
+          toRgba(getComputedStyle(dot).backgroundColor),
+          effectiveBg(draft),
+        )
         expect(ratio).toBeGreaterThanOrEqual(3)
       })
 
       if (server.browser === 'webkit') return
       await commands.forcedColors(true)
-      await expect
-        .poll(() => getComputedStyle(bubbleOf(draft)).borderTopStyle)
-        .toBe('solid')
-      const ring = bubbleOf(draft)
-      expect(parseFloat(getComputedStyle(ring).borderTopWidth)).toBeGreaterThan(
-        0,
-      )
-      expect(toRgba(getComputedStyle(ring).borderTopColor)).not.toEqual(
-        toRgba(getComputedStyle(document.body).backgroundColor),
-      )
+      const dotColor = () =>
+        toRgba(getComputedStyle(bubbleOf(draft)).backgroundColor)
+      const canvas = () =>
+        toRgba(getComputedStyle(document.body).backgroundColor)
+      await expect.poll(() => dotColor()[3]).toBe(1)
+      expect(dotColor()).not.toEqual(canvas())
+      expect(contrast(dotColor(), effectiveBg(draft))).toBeGreaterThanOrEqual(3)
     } finally {
       await screen.unmount()
     }

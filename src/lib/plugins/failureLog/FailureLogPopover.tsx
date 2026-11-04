@@ -1,7 +1,7 @@
 /**
- * Поповер журнала отказов (ADR 0177, §7; JR2–JR3, JR8): записи реестра отказов — новые сверху,
- * подпись действия, цель, причина и время; у записи — кнопки «Показать», «Повторить»,
- * «Закрыть»; внизу — «Очистить всё». Отдельный чанк: открытием управляет эагерная кнопка
+ * Поповер журнала отказов (ADR 0177, §7; JR2–JR3, JR8; ADR 0178, DR42): записи реестра отказов
+ * облачками — новые сверху; подпись действия и время, под подписью цель, ниже причина; нажатие на облачко показывает
+ * цель, у записи — «Повторить» и «Закрыть»; внизу — «Очистить всё». Отдельный чанк: открытием управляет эагерная кнопка
  * (`FailureLogButton`).
  */
 import { type ReactNode, useRef } from 'react'
@@ -17,11 +17,13 @@ import {
 import { reportAction, userSourceOf } from '../../core/debugActions'
 import { useLocalization } from '../../core/localization'
 import { useSliceProjection } from '../../core/reactivity'
+import { Bubble } from '../../ui/Bubble'
 import { Button } from '../../ui/Button'
 import { IconButton } from '../../ui/IconButton'
 import { Stub } from '../../ui/Stub'
 import { useIcons } from '../../ui/icons'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
+import { PopupEntry } from '../../ui/Popup/PopupEntry'
 import { usePortalThemeClass, usePortalThemeData } from '../../ui/theme'
 import { ToolbarButton } from '../../ui/ToolbarButton'
 import { useVirtualizer } from '../../../vendor/tanstack-virtual/react-virtual'
@@ -85,7 +87,7 @@ const FailureEntry = ({
   locale: string | undefined
   /** Запись закрыта: её кнопки ушли вместе с фокусом. */
   onClosed: () => void
-  /** «Показать» и «Повторить» уводят к цели — журнал закрывается. */
+  /** Переход к цели и «Повторить» закрывают журнал. */
   onDone: () => void
 }) => {
   const labels = useLocalization()
@@ -94,9 +96,24 @@ const FailureEntry = ({
   const { retry } = failure
   const target = objectTargetText(table, failure.target, labels)
   return (
-    <>
-      <div className={styles.head}>
-        <span className={styles.label}>{failure.label}</span>
+    <PopupEntry
+      mark={<Bubble size="dot" tone="error" />}
+      label={
+        <>
+          {failure.label}
+          {target && <span className={styles.target}> {target}</span>}
+        </>
+      }
+      onShow={
+        canShowTarget(failure.target)
+          ? event => {
+              report(table, 'show', failure, event)
+              onDone()
+              void showTarget(table, failure.target)
+            }
+          : undefined
+      }
+      aside={
         <time
           className={styles.time}
           dateTime={time.toISOString()}
@@ -107,28 +124,13 @@ const FailureEntry = ({
             minute: '2-digit',
           })}
         </time>
-      </div>
-      <span className={styles.reason}>{failure.reason}</span>
-      <div className={styles.foot}>
-        <span className={styles.target}>{target}</span>
-        <div className={styles.actions}>
-          {canShowTarget(failure.target) && (
-            <IconButton
-              shape="square"
-              label={labels.failureShow}
-              data-action="show"
-              onClick={event => {
-                report(table, 'show', failure, event)
-                onDone()
-                void showTarget(table, failure.target)
-              }}
-            >
-              <icons.failureShow />
-            </IconButton>
-          )}
+      }
+      actions={
+        <>
           {retry && (
             <IconButton
               shape="square"
+              size="compact"
               label={labels.failureRetry}
               data-action="retry"
               onClick={event => {
@@ -142,6 +144,7 @@ const FailureEntry = ({
           )}
           <IconButton
             shape="square"
+            size="compact"
             label={labels.failureClose}
             data-action="close"
             onClick={event => {
@@ -152,9 +155,11 @@ const FailureEntry = ({
           >
             <icons.clear />
           </IconButton>
-        </div>
-      </div>
-    </>
+        </>
+      }
+    >
+      <span className={styles.reason}>{failure.reason}</span>
+    </PopupEntry>
   )
 }
 
