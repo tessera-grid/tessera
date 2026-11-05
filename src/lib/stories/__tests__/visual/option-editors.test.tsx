@@ -5,11 +5,15 @@ import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
 import type { ColumnOption, LoadOptions } from '../../../core/columnOptions'
+import type { RowSource } from '../../../core/rowSource'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import {
   cellEditing,
   columnFiltering,
+  pagination,
+  rowExpanding,
+  serverRowModel,
   type CellEditCommit,
 } from '../../../plugins'
 import { humanClick, revealCellButtons } from '../helpers'
@@ -254,6 +258,76 @@ const renderGrid = async () => {
   )
   await waitForGrid()
   return { onCellEdit, onEditCancel, server }
+}
+
+const BOSS_COLUMNS = [
+  { id: 'boss', accessorKey: 'manager', header: 'Boss', dataType: 'object' },
+]
+
+interface BossRow {
+  id: string
+  manager: { id: string; name: string }
+  subRows?: BossRow[]
+}
+
+const BOSS_ROWS: BossRow[] = [
+  { id: 'r1', manager: ANN },
+  { id: 'r2', manager: BOB },
+  // Третья строка — на второй странице, её подстрока в свёрнутой ветке.
+  { id: 'r3', manager: DANA, subRows: [{ id: 'r3.1', manager: CY }] },
+]
+
+/** Клиентская таблица, где часть записей колонки вне показанного списка. */
+const PagedBossGrid = () => {
+  const table = useCreateTable({
+    columns: BOSS_COLUMNS as never,
+    data: BOSS_ROWS,
+    getSubRows: (row: BossRow) => row.subRows,
+    plugins: [
+      pagination({ initialPageSize: 2 }),
+      rowExpanding(),
+      cellEditing({ onCellEdit: () => {}, onEditCancel: () => {} }),
+    ] as never,
+  })
+  return (
+    <div style={{ height: 300 }}>
+      <DataGrid table={table as never} />
+    </div>
+  )
+}
+
+/** Строка блока: менеджер чередуется, чтобы записей было две. */
+const bossAnswer = ({ start, end }: { start: number; end: number }) =>
+  Promise.resolve({
+    rows: Array.from({ length: end - start }, (_, i) => ({
+      id: `r${start + i + 1}`,
+      manager: (start + i) % 2 === 0 ? ANN : BOB,
+    })),
+  })
+
+const NO_BOSS_ROWS: BossRow[] = []
+
+const MillionBossGrid = ({
+  onTable,
+}: {
+  onTable: (table: { getRowSource: () => RowSource }) => void
+}) => {
+  const table = useCreateTable({
+    columns: BOSS_COLUMNS as never,
+    data: NO_BOSS_ROWS,
+    getRowId: (row: BossRow) => row.id,
+    rowCount: 1_000_000,
+    plugins: [
+      serverRowModel({ getRows: bossAnswer as never, blockSize: 50 }),
+      cellEditing({ onCellEdit: () => {}, onEditCancel: () => {} }),
+    ] as never,
+  })
+  onTable(table as never)
+  return (
+    <div style={{ height: 300 }}>
+      <DataGrid table={table as never} />
+    </div>
+  )
 }
 
 describe('редакторы вариантов (ADR 0175)', () => {
@@ -715,6 +789,31 @@ describe('редакторы вариантов (ADR 0175)', () => {
     ).not.toBeNull()
     expect(cellOf('tags').querySelector(VISIBLE_INPUT)).toBeNull()
     expect(cellOf('tags').textContent).toContain('New')
+  })
+
+  test('ED27: записи object без справочника — из всех загруженных строк, и с другой страницы, и из свёрнутой ветки; в серверной модели открытие редактора не обходит итог строк', async () => {
+    const paged = await render(<PagedBossGrid />)
+    await waitForGrid()
+    await openEdit('boss')
+    await expect.poll(() => itemOf('m2')).not.toBeNull()
+    expect(itemOf('m4')?.textContent).toContain('Dana')
+    expect(itemOf('m3')?.textContent).toContain('Cy')
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(field).toBeNull()
+    await paged.unmount()
+
+    let table!: { getRowSource: () => RowSource }
+    const server = await render(
+      <MillionBossGrid onTable={next => (table = next)} />,
+    )
+    await waitForGrid()
+    const read = vi.spyOn(table.getRowSource(), 'at')
+    await openEdit('boss')
+    await expect.poll(() => itemOf('m2')).not.toBeNull()
+    expect(read.mock.calls.length).toBeLessThan(1000)
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(field).toBeNull()
+    await server.unmount()
   })
 
   test('ED26: у поля поиска вариантов — кнопка очистки: стирает строку и возвращает весь список', async () => {

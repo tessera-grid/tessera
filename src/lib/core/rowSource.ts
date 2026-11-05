@@ -27,6 +27,8 @@ export interface RowSource<TRow = unknown> {
   byId: (id: string) => TRow | undefined
   /** Индекс строки в списке; `-1` — её нет в списке. */
   indexOf: (id: string) => number
+  /** Строки данных, что есть у грида, и вне списка: другая страница, свёрнутая ветка. */
+  loadedRows: () => Iterable<TRow>
   /** Ветка раскрытой строки ждёт первого ответа источника (ADR 0155, §3). */
   branchLoading?: (id: string) => boolean
   /** Отменить загрузку ветки: человек отменил раскрытие. */
@@ -164,7 +166,7 @@ type ById = { rowsById: Record<string, ModelRow | undefined> }
 interface ModelTable {
   getRowModel: () => { rows: ModelRow[] } & ById
   getPrePaginatedRowModel: () => ById
-  getCoreRowModel: () => ById
+  getCoreRowModel: () => ById & { flatRows: ModelRow[] }
 }
 
 /** Места строк по `id` — одна карта на список: выделение ищет места на каждой отрисовке. */
@@ -192,6 +194,7 @@ export const createClientRowSource = (table: unknown): RowSource => {
       }
       return indexes.get(id) ?? -1
     },
+    loadedRows: () => t.getCoreRowModel().flatRows,
     rows: () => t.getRowModel().rows,
   }
 }

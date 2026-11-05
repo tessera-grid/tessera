@@ -320,6 +320,13 @@ export class BlockTree<TData, TRow, TQuery> {
     return place && place.node.store.rowAt(place.local)
   }
 
+  /** Загруженные строки всех веток. */
+  *loadedRows(): Generator<TRow> {
+    for (const node of this.nodes.values()) {
+      for (const [, row] of node.store.knownRows()) yield row
+    }
+  }
+
   rowById(id: string): TRow | undefined {
     const position = this.positions.get(id)
     return position && this.nodes.get(position.parent)?.store.rowById(id)

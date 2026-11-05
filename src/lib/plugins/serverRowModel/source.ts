@@ -781,6 +781,7 @@ const createServerSource = (table: unknown): ServerSource => {
       return index < start || index >= end ? -1 : index - start
     },
     listIndexOf: id => shown.store.indexOf(id),
+    loadedRows: () => shown.store.loadedRows(),
     branchSize: parentId => shown.store.branchSize(parentId),
     // Перенос — транзакция строк (ADR 0157): удаление и вставка одной пачкой, итог тот же.
     moveRow: (id, { parentId, index }, original) => {

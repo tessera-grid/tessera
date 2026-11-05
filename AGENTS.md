@@ -996,9 +996,10 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       `interaction`; этап 4 — модульный `dateEditValue` (ED15 — `formatDate`), `date-editor` (ED16 —
       очистка даты), `option-editors` (ED17–ED19 — записи из данных, задержка поиска, свои
       подписи), `typed-editors` (ED20–ED21 — `Shift+Space` и флажок булевой ячейки);
-      этап 5 — `option-editors` (ED16, ED23–ED26 — «Очистить значение» внизу поповеров, закрытие
+      этап 5 — `option-editors` (ED16, ED23–ED27 — «Очистить значение» внизу поповеров, закрытие
       прокруткой, скелеты, блок ошибки и заглушка кита — и в панели фильтра, поиск в поповере и его
-      крестик), `typed-editors` (ED22 — отклонение конфликта как отказ сервера)
+      крестик, записи `object` из всех загруженных строк), `typed-editors` (ED22 — отклонение
+      конфликта как отказ сервера)
       ([ADR 0175](docs/decisions/0175-data-type-editors.md)).
     - _Истории типов данных:_ по разделу на тип — «Columns/Data types/Text», «Number», «Decimal
       string», «Boolean», «Date», «Date & time», «Select», «Multi select», «Object» и «Overview»

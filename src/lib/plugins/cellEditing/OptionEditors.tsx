@@ -58,10 +58,9 @@ const loadOptionsOf = (cell: Cell) =>
 /** Записи колонки `object` в загруженных строках — по ключу, подпись по `getLabel` (ED17). */
 const recordsInData = (cell: Cell): ColumnOption[] => {
   const definition = cell.column.getDataType()!.definition
-  const source = rowSourceOf(cell)
   const byKey = new Map<unknown, ColumnOption>()
-  for (let index = 0; index < source.count(); index++) {
-    const value = source.at(index)?.getValue(cell.column.id)
+  for (const row of rowSourceOf(cell).loadedRows()) {
+    const value = row.getValue(cell.column.id)
     if (value === null || value === undefined) continue
     const key = keyOf(cell, value)
     if (!byKey.has(key))
@@ -97,14 +96,17 @@ const useEditOptions = (cell: Cell, query: string) => {
   )
   const own = cell.column.columnDef.options
   const object = cell.column.getDataType()?.base === 'object'
+  const all = useMemo(
+    () => (loaded ? [] : (own ?? (object ? recordsInData(cell) : []))),
+    [loaded, own, object, cell],
+  )
   const options = useMemo(() => {
     if (loaded) return loaded.options
-    const all = own ?? (object ? recordsInData(cell) : [])
     const needle = query.trim().toLowerCase()
     return needle === ''
       ? all
       : all.filter(option => option.label.toLowerCase().includes(needle))
-  }, [loaded, own, object, cell, query])
+  }, [loaded, all, query])
   return { loaded, options }
 }
 
@@ -123,9 +125,8 @@ const rowSourceOf = (cell: Cell) =>
 
 /** Запись с этим ключом среди строк, загруженных в таблицу. */
 const recordInData = (cell: Cell, key: unknown) => {
-  const source = rowSourceOf(cell)
-  for (let index = 0; index < source.count(); index++) {
-    const value = source.at(index)?.getValue(cell.column.id)
+  for (const row of rowSourceOf(cell).loadedRows()) {
+    const value = row.getValue(cell.column.id)
     if (value !== undefined && Object.is(keyOf(cell, value), key)) return value
   }
   return undefined
