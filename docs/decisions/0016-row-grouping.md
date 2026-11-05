@@ -76,8 +76,9 @@ false` и контракт DOM, — плюс таблицу требований
 состояния группировки — он читает `column.getIsGrouped()` / `getCanGroup()` и
 делегирует переключение `column.toggleGrouping()`. Группировка возвращается в
 дерево через штатный срез `grouping`, сгруппированные строки даёт
-`getGroupedRowModel()`, агрегаты — `aggregationFn` колонок (`sum`, счётчик через
-`aggregatedCell`).
+`getGroupedRowModel()`, агрегаты — `aggregationFn` колонок (`sum`, `count`). Значение агрегата
+в строке группы рисует `cell` колонки: `aggregatedCell` TanStack грид не рисует ни в одной
+модели ([ADR 0144](0144-server-side-grouping.md), §2).
 
 Опции таблицы (`core/useCreateTable.ts`):
 
