@@ -156,4 +156,47 @@ describe('Плашка кита Alert (ADR 0096)', () => {
     expect(getComputedStyle(alert()!).pointerEvents).toBe('none')
     await expect.poll(alert, { timeout: 2000 }).toBeNull()
   })
+  test('LE22: плашка шире своего содержимого — действие и закрытие у правого края, свободное место за текстом', async () => {
+    // Плашку растягивает раскладка потребителя: сетка тянет её на всю ширину.
+    await render(
+      <Harness description="503" style={{ display: 'grid', width: 640 }} />,
+    )
+    const box = alert()!.getBoundingClientRect()
+    const padding = parseFloat(getComputedStyle(alert()!).paddingRight)
+    expect(box.width).toBeGreaterThan(560)
+    expect(
+      Math.abs(dismiss().getBoundingClientRect().right - (box.right - padding)),
+    ).toBeLessThan(1)
+    const action = alert()!.querySelector('[data-testid="alert-action"]')!
+    const gap = parseFloat(getComputedStyle(alert()!).columnGap)
+    expect(
+      Math.abs(
+        action.getBoundingClientRect().right +
+          gap -
+          dismiss().getBoundingClientRect().left,
+      ),
+    ).toBeLessThan(1)
+  })
+  test('LE23: у квадратных кнопок (скругление 0) угол плашки тоже квадратный, у скруглённых — их скругление плюс отступ', async () => {
+    const square = await render(
+      <Harness
+        style={{ ['--tsr-comp-button-radius-square' as string]: '0px' }}
+      />,
+    )
+    await expect.poll(() => alert()).not.toBeNull()
+    expect(getComputedStyle(dismiss()).borderTopLeftRadius).toBe('0px')
+    expect(getComputedStyle(alert()!).borderTopLeftRadius).toBe('0px')
+    await square.unmount()
+
+    const rounded = await render(
+      <Harness
+        style={{ ['--tsr-comp-button-radius-square' as string]: '10px' }}
+      />,
+    )
+    await expect.poll(() => alert()).not.toBeNull()
+    expect(getComputedStyle(alert()!).borderTopLeftRadius).toBe(
+      `${10 + parseFloat(getComputedStyle(alert()!).paddingTop)}px`,
+    )
+    await rounded.unmount()
+  })
 })

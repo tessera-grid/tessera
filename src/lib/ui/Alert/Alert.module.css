@@ -48,7 +48,9 @@
   color: var(--tsr-comp-alert-icon-color);
 }
 
+/* Плашка шире содержимого — свободное место за текстом, кнопки у правого края (LE22). */
 .text {
+  flex: 1 1 auto;
   display: flex;
   align-items: baseline;
   gap: calc(var(--tsr-ref-space-1) * 2);
