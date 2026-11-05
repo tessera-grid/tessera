@@ -83,7 +83,7 @@ expandParents })` — один прыжок без скелетов, стран�
   (`table.atoms` / `table.store`, хелперы `useSlice`/`useTableState`), собственный
   Pub-Sub удалён (отменяет [ADR 0007](decisions/0007-reactivity-pubsub.md)). Условие
   V9-1 (перф не хуже v8-базлайна) подтверждено. RnD, план и спайк —
-  [docs/research/](research/); спайк удалён после миграции (коммит `891df05`).
+  [docs/research/](research/); спайк удалён после миграции (коммит `cf87a36`).
 
 - **Упаковочные фиксы перед публичным релизом — завершены.**
   `@tanstack/react-store` (рантайм-зависимость `src/lib/core/reactivity.ts`)

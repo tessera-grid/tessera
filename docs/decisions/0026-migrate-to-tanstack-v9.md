@@ -15,12 +15,12 @@
 `spike/tanstack-v9/`). Собраны два входа для решения.
 
 > Спайк удалён после завершения миграции; последний коммит, где он есть, —
-> `891df05` (`git show 891df05:spike/tanstack-v9/README.md`).
+> `cf87a36` (`git show cf87a36:spike/tanstack-v9/README.md`).
 
 ### Вход 1 — v8-базлайн производительности (доказательство проблемы)
 
 `npm run perf`, Chromium, throttle CPU 4×. Полный снимок —
-`spike/tanstack-v9/perf-baseline-v8.json` в коммите `891df05` (снят 2026-09-12).
+`spike/tanstack-v9/perf-baseline-v8.json` в коммите `cf87a36` (снят 2026-09-12).
 
 | Сценарий (размер / плагины) | Render, longest (бюджет 1000 мс) | Scroll Y p95 (бюджет 16.67 мс) | Scroll X p95              |
 | --------------------------- | -------------------------------- | ------------------------------ | ------------------------- |
@@ -38,7 +38,7 @@
 
 `@tanstack/react-table@9.2.4` (алиас `@tanstack/table-v9`, сосуществует с v8). Все пять
 открытых вопросов [плана](../research/tanstack-table-v9-migration-plan.md) закрыты, см.
-`spike/tanstack-v9/README.md` (коммит `891df05`):
+`spike/tanstack-v9/README.md` (коммит `cf87a36`):
 
 - **Реактивность / снос Pub-Sub — подтверждено запускаемым тестом (3/3).** Состояние v9
   живёт в TanStack Store; `table.atoms.<slice>` слайс-адресуемо (незатронутый срез
