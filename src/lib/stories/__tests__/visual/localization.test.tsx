@@ -8,14 +8,11 @@ import {
   type LabelDictionary,
   unknownLabelKeys,
 } from '../../../core/localization'
-import {
-  type LabelSet,
-  labelSetKeys,
-} from '../../../core/localization/pluginLabels'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import { pagination, quickSearch, rowSelection } from '../../../plugins'
 import { RU_LABELS } from '../../__mocks__/localization.ru'
+import { allLabelSets } from '../../../../labelSets'
 
 // Словарь подписей на таблице (ADR 0132): перевод из JSON, язык чисел и форм слова,
 // проверка ключей.
@@ -25,20 +22,6 @@ const NBSP = ' '
 const ROWS = 12_340
 
 const columns = [{ id: 'name', accessorKey: 'name', header: 'Name' }]
-
-/** Ключи всех владельцев подписей: словарь историй задаёт и плагины не этого стенда. */
-const OWNED_KEYS = Object.values(
-  import.meta.glob<Record<string, unknown>>(
-    '../../../{plugins,shared}/**/labels.ts',
-    { eager: true },
-  ),
-)
-  .flatMap(module => Object.values(module))
-  .filter(
-    (value): value is LabelSet =>
-      typeof value === 'function' && 'params' in value,
-  )
-  .flatMap(labelSetKeys)
 
 interface HostProps {
   localization?: LabelDictionary
@@ -153,7 +136,7 @@ describe('Словарь подписей на таблице', () => {
     expect(
       Object.values(RU_LABELS).filter(value => typeof value !== 'string'),
     ).toEqual([])
-    expect(unknownLabelKeys(RU_LABELS, OWNED_KEYS)).toEqual([])
+    expect(unknownLabelKeys(RU_LABELS, allLabelSets)).toEqual([])
     await render(<Host localization={RU_LABELS} locale="ru-RU" selection />)
     await expect.poll(range).toBe(`1–25 из 12${NBSP}340`)
     expect(
@@ -182,7 +165,7 @@ describe('Словарь подписей на таблице', () => {
     await expect.poll(range).toBe(`1–25 из 12${NBSP}340`)
   })
 
-  test('LC8: тип словаря — плоские ключи подписей и ключи форм числа у подписей с count; неизвестный ключ переданного словаря — предупреждение в dev', async () => {
+  test('LC8: тип словаря — плоские ключи подписей и ключи форм числа у подписей с count; неизвестный ключ переданного словаря (ADR 0182, AN14) — предупреждение в dev', async () => {
     // Лишнее свойство литерала TypeScript отмечает одно на литерал: по литералу на случай.
     const formWithoutCount: LabelDictionary = {
       // @ts-expect-error — у подписи без `count` форм слова нет
@@ -210,5 +193,26 @@ describe('Словарь подписей на таблице', () => {
     )
     expect(warned.join('\n')).not.toContain('"rowSelection.selectedRows_few"')
     expect(warned.join('\n')).not.toContain('"pagination.pageRange"')
+  })
+
+  test('AN15: общий словарь приложения на таблице с одним плагином не даёт ни одного предупреждения; опечатка в том же словаре — ровно одно', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const unknownKeys = () =>
+      warn.mock.calls
+        .map(([message]) => String(message))
+        .filter(message => message.includes('unknown label key'))
+    const view = await render(<Host localization={RU_LABELS} locale="ru-RU" />)
+    await expect.poll(range).toBe(`1–25 из 12${NBSP}340`)
+    expect(unknownKeys()).toEqual([])
+
+    const typo = { 'pagination.pageRang': 'опечатка' }
+    await view.rerender(
+      <Host localization={{ ...RU_LABELS, ...typo }} locale="ru-RU" />,
+    )
+    await expect
+      .poll(unknownKeys)
+      .toEqual([
+        '[tessera] localization: unknown label key "pagination.pageRang"',
+      ])
   })
 })

@@ -58,10 +58,51 @@ export interface Fixture {
   commands: string[][]
 }
 
+/**
+ * Словарь глазами потребителя (ADR 0182, AN18–AN19): ключ встроенного плагина, опечатка в нём
+ * и ключ стороннего плагина через дополнение `PluginLabels` с корня пакета.
+ */
+const DICTIONARY = `const notesLabels = defineLabels<{ note: string }>()(
+  'notes',
+  { note: 'Note' },
+  {},
+)
+declare module '@tessera-grid/tessera' {
+  interface PluginLabels {
+    notes: typeof notesLabels
+  }
+}
+export const notes = definePlugin()({ id: 'notes', labels: [notesLabels] })
+export const dictionary: LabelDictionary = {
+  'pagination.pageRange': '{from}–{to}',
+  'notes.note': 'Note',
+}
+// @ts-expect-error — такой подписи у встроенного плагина нет.
+export const builtInTypo: LabelDictionary = { 'pagination.pageRang': 'x' }
+// @ts-expect-error — такой подписи у стороннего плагина нет.
+export const ownTypo: LabelDictionary = { 'notes.not': 'x' }
+`
+
+/** Проверка словаря целиком в Node: опечатка в префиксе владельца (AN16). */
+const DICTIONARY_CHECK = `const unknown = unknownLabelKeys({ 'paginaton.pageRange': 'x' }, allLabelSets)
+if (unknown.length !== 1) throw new Error('unknownLabelKeys: ' + unknown)
+`
+
 /** Код потребителя: все входы, хук, грид, плагин и примитив; типы — не `any`. */
-const APP = `import { DataGrid, useCreateTable } from '@tessera-grid/tessera'
+const APP = `import {
+  DataGrid,
+  defineLabels,
+  definePlugin,
+  useCreateTable,
+  type LabelDictionary,
+} from '@tessera-grid/tessera'
 import { rowSelection } from '@tessera-grid/tessera/plugins'
 import { Switch } from '@tessera-grid/tessera/ui'
+
+import dictionaryCorrect from './dictionary.json'
+import dictionaryTypo from './dictionary-typo.json'
+
+${DICTIONARY}
 
 interface Row {
   id: string
@@ -78,7 +119,9 @@ export const App = () => {
   })
   return (
     <>
-      <DataGrid table={table} colorMode="auto" />
+      <DataGrid table={table} colorMode="auto" localization={dictionaryCorrect} />
+      {/* @ts-expect-error — JSON с опечаткой в префиксе владельца (AN22). */}
+      <DataGrid table={table} localization={dictionaryTypo} />
       {/* @ts-expect-error — типы пакета разрешены: число вместо таблицы — ошибка. */}
       <DataGrid table={42} />
       <Switch aria-label="On" />
@@ -88,10 +131,17 @@ export const App = () => {
 `
 
 /** Входы в Node: ESM (\`.mts\`) и CJS (\`.cts\`, импорт компилируется в require). */
-const NODE_ENTRIES = `import { DataGrid, useCreateTable } from '@tessera-grid/tessera'
+const NODE_ENTRIES = `import {
+  DataGrid,
+  defineLabels,
+  definePlugin,
+  useCreateTable,
+  type LabelDictionary,
+} from '@tessera-grid/tessera'
 import { rowSelection } from '@tessera-grid/tessera/plugins'
 import { Switch } from '@tessera-grid/tessera/ui'
 
+${DICTIONARY}
 export const entries = [DataGrid, useCreateTable, rowSelection, Switch]
 // @ts-expect-error — типы пакета разрешены: DataGrid не строка.
 export const wrong: string = DataGrid
@@ -143,7 +193,16 @@ const tsconfig = (options: Record<string, unknown>, include: string[]) =>
     2,
   )
 
-const BUNDLER = { module: 'ESNext', moduleResolution: 'bundler' }
+const BUNDLER = {
+  module: 'ESNext',
+  moduleResolution: 'bundler',
+  resolveJsonModule: true,
+}
+/** Словари `app.tsx`: ключ есть в типе и опечатка в префиксе владельца. */
+const DICTIONARIES = {
+  'dictionary.json': JSON.stringify({ 'pagination.rowsPerPage': 'Rows' }),
+  'dictionary-typo.json': JSON.stringify({ 'paginaton.rowsPerPage': 'Rows' }),
+}
 const REACT_TABLE = '^9'
 const TYPESCRIPT = '^5'
 
@@ -161,6 +220,7 @@ export const FIXTURES: Fixture[] = [
     },
     files: {
       'app.tsx': APP,
+      ...DICTIONARIES,
       'main.tsx': `import '@tessera-grid/tessera/style.css'
 import { createRoot } from 'react-dom/client'
 
@@ -183,18 +243,18 @@ createRoot(document.getElementById('root')!).render(<App />)
       'esm.mts': NODE_ENTRIES,
       'cjs.cts': NODE_ENTRIES,
       'tsc.mjs': TSC,
-      'runtime-esm.mjs': `import { DataGrid, useCreateTable } from '@tessera-grid/tessera'
-import { rowSelection } from '@tessera-grid/tessera/plugins'
+      'runtime-esm.mjs': `import { DataGrid, unknownLabelKeys, useCreateTable } from '@tessera-grid/tessera'
+import { allLabelSets, rowSelection } from '@tessera-grid/tessera/plugins'
 import { Switch } from '@tessera-grid/tessera/ui'
 
 const entries = { DataGrid, useCreateTable, rowSelection, Switch }
-${RUNTIME_CHECK}`,
-      'runtime-cjs.cjs': `const { DataGrid, useCreateTable } = require('@tessera-grid/tessera')
-const { rowSelection } = require('@tessera-grid/tessera/plugins')
+${RUNTIME_CHECK}${DICTIONARY_CHECK}`,
+      'runtime-cjs.cjs': `const { DataGrid, unknownLabelKeys, useCreateTable } = require('@tessera-grid/tessera')
+const { allLabelSets, rowSelection } = require('@tessera-grid/tessera/plugins')
 const { Switch } = require('@tessera-grid/tessera/ui')
 
 const entries = { DataGrid, useCreateTable, rowSelection, Switch }
-${RUNTIME_CHECK}`,
+${RUNTIME_CHECK}${DICTIONARY_CHECK}`,
       'check-css.mjs': `import { readdirSync } from 'node:fs'
 
 const css = readdirSync('dist/assets').filter(file => file.endsWith('.css'))
@@ -223,6 +283,7 @@ if (css.length === 0) throw new Error('style.css не попал в сборку
     },
     files: {
       'app.tsx': APP,
+      ...DICTIONARIES,
       'tsc.mjs': TSC,
       'tsconfig.json': tsconfig(BUNDLER, ['app.tsx']),
     },

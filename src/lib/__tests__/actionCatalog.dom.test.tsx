@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 /**
- * Справочник действий и словарь по владельцам (ADR 0182; AN1, AN3–AN10, AN12–AN13): одно имя
+ * Справочник действий и словарь по владельцам (ADR 0182; AN1, AN3–AN10, AN12–AN14, AN16, AN23–AN24): одно имя
  * действия для журнала, пульта, меню, объявлений и канала, подписи владельцев ключами
  * `<владелец>.<ключ>`, ядро — только механизм.
  * Запуск: npx vitest run --config vitest.node.config.ts actionCatalog
@@ -12,7 +12,8 @@ import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { hasActionLabel, menuActionLabel } from '../core/actions'
+import { actionOwnerOf } from '../core/actionOwners'
+import { actionRefOf, hasActionLabel, menuActionLabel } from '../core/actions'
 import { registerAnnouncer } from '../core/announcer'
 import { definePlugin } from '../core/definePlugin'
 import { draftKindLabel, type DraftKind } from '../core/drafts/drafts'
@@ -20,18 +21,29 @@ import type { TesseraFeatureEntry } from '../core/features'
 import { failureName } from '../core/failures/failuresFeature'
 import { trackCellAction } from '../core/headerActions/cellActions'
 import {
+  createSectionLoads,
+  loadSection,
+  resolveMenuLevel,
+  sectionKey,
+} from '../core/headerActions/menuSections'
+import {
   DEFAULT_LABELS,
   defineLabels,
   ENGLISH_LABELS,
   labelSetKeys,
   resolveLabels,
   unknownLabelKeys,
+  unknownTableLabelKeys,
+  type LabelSet,
 } from '../core/localization'
 import { useCreateTable } from '../core/useCreateTable'
 import * as builtIns from '../plugins'
-import { cellEditing } from '../plugins'
+import { cellEditing, pagination } from '../plugins'
 import { cellEditingLabels } from '../plugins/cellEditing/labels'
 import { startEditSession } from '../plugins/cellEditing/session'
+import ru from '../stories/__mocks__/localization.ru.json'
+import { watchUnknownActions } from '../../../.storybook/consoleErrors'
+import { allLabelSets } from '../../labelSets'
 
 ;(
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -98,21 +110,35 @@ const rel = (path: string) => relative(LIB, path).replace(/\\/g, '/')
 const areaOf = (path: string) => rel(path).split('/')[0]!
 const pluginOf = (path: string) => rel(path).split('/')[1]!
 
-/** Пары `{ plugin, action }` литералами в вызовах канала действий. */
+/** Имена действий в выражении: операнд сравнения в условии — не имя действия. */
+const actionNames = (expression: string) =>
+  [...expression.matchAll(/(?<![=!]==\s*)'([\w:]+)'/g)].map(name => name[1]!)
+
+/**
+ * Пары `{ plugin, action }` в вызовах канала действий и его итогов: из объекта вызова, из
+ * объекта `report`, из обёртки плагина с именем действия аргументом (`report('resetSize')`).
+ * Владелец не литералом (`plugin: ID`) — плагин по папке файла.
+ */
 const literalChannelActions = () =>
   sources(LIB).flatMap(path => {
     const text = readFileSync(path, 'utf8')
-    return [...text.matchAll(/reportAction\(/g)].flatMap(match => {
+    const owner = areaOf(path) === 'plugins' ? pluginOf(path) : undefined
+    const fromObjects = [
+      ...text.matchAll(/\b(?:reportAction|reportOutcome)\(|const report = \{/g),
+    ].flatMap(match => {
       const call = text.slice(match.index, match.index + 400)
-      const plugin = /plugin: '(\w+)'/.exec(call)?.[1]
+      const plugin = /plugin: '(\w+)'/.exec(call)?.[1] ?? owner
       const action = /action: ([^,\n]+)/.exec(call)?.[1]
       if (!plugin || !action) return []
-      // Операнд сравнения в условии — не имя действия.
-      return [...action.matchAll(/(?<![=!]==\s*)'([\w:]+)'/g)].map(name => ({
-        plugin,
-        action: name[1]!,
-      }))
+      return actionNames(action).map(name => ({ plugin, action: name }))
     })
+    if (!owner) return fromObjects
+    const fromWrappers = [
+      ...text.matchAll(/\b(?:report|this\.load)\(([^\n]*)/g),
+    ].flatMap(match =>
+      actionNames(match[1]!).map(name => ({ plugin: owner, action: name })),
+    )
+    return [...fromObjects, ...fromWrappers]
   })
 
 describe('Справочник действий (ADR 0182)', () => {
@@ -344,6 +370,97 @@ describe('Справочник действий (ADR 0182)', () => {
     ).toBe('Закрепить')
   })
 
+  it('AN23: Пункт раздела меню принадлежит владельцу раздела: канал, отказ и журнал называют его этим владельцем; подпись пункта и его итога — в справочнике с показа раздела, и у пунктов, пришедших загрузкой, и после пересборки справочника; объявленное в `actions` главнее', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const item = (id: string, label: string) => ({
+      id,
+      icon: () => null,
+      label: () => label,
+      onSelect: () => {},
+    })
+    const archive = item('archive', 'Archive')
+    const hold = item('hold', 'Hold')
+    const flagged = item('flagged', 'Flagged')
+    const section = (id: string, items: unknown) => ({
+      ...item(id, id),
+      submenu: () => ({ title: id, items }),
+    })
+    const moved = section('moved', [
+      section('deep', [hold]),
+      archive,
+      item('declared', 'From the section'),
+    ])
+    const flags = section('flags', async () => [flagged])
+    const notes = definePlugin()({
+      id: 'notes',
+      actions: { declared: () => 'Declared' },
+      slotActions: [
+        { ...moved, slot: 'actionRowSlot' },
+        { ...flags, slot: 'actionRowSlot' },
+      ] as never,
+    })
+    mount([notes()])
+    const menu = table.getSlotActions().actionRowSlot
+    const ctx = { table }
+    const loads = createSectionLoads(() => {})
+    const show = (path: string[]) =>
+      resolveMenuLevel(menu, path, ctx, ENGLISH_LABELS, loads)
+
+    show(['moved', 'deep'])
+    expect(actionOwnerOf(archive)).toBe('notes')
+    expect(actionOwnerOf(hold)).toBe('notes')
+    expect(actionRefOf(archive as never, ctx, ENGLISH_LABELS)).toEqual({
+      plugin: 'notes',
+      action: 'archive',
+    })
+    expect(table.getActionLabel({ plugin: 'notes', action: 'archive' })).toBe(
+      'Archive',
+    )
+    expect(
+      table.getActionLabel({ plugin: 'notes', action: 'archiveRejected' }),
+    ).toBe('Archive')
+    expect(table.getActionLabel({ plugin: 'notes', action: 'hold' })).toBe(
+      'Hold',
+    )
+
+    loadSection(menu[1], sectionKey(['flags']), ctx, ENGLISH_LABELS, loads)
+    await flush()
+    show(['flags'])
+    expect(actionOwnerOf(flagged)).toBe('notes')
+    expect(
+      table.getActionLabel({ plugin: 'notes', action: 'flaggedResolved' }),
+    ).toBe('Flagged')
+    expect(table.getActionLabel({ plugin: 'notes', action: 'declared' })).toBe(
+      'Declared',
+    )
+
+    // Новый набор плагинов — новый справочник, таблица и показанные пункты те же.
+    const before = table.options.actionCatalog
+    act(() =>
+      root!.render(createElement(Host, { plugins: [notes(), pagination()] })),
+    )
+    expect(table.options.actionCatalog).not.toBe(before)
+    expect(table.getActionLabel({ plugin: 'notes', action: 'archive' })).toBe(
+      'Archive',
+    )
+    expect(warn.mock.calls.flat().join(' ')).not.toContain('unknown action')
+  })
+
+  it('AN24: Предупреждение `unknown action` роняет браузерный тест и тест истории; другие предупреждения их не роняют', () => {
+    for (const setup of ['vitest.setup.ts', '.storybook/vitest.setup.ts'])
+      expect(readFileSync(resolve(LIB, '../..', setup), 'utf8')).toMatch(
+        /watchUnknownActions\(\)[\s\S]*beforeEach\(unknownActions\.start\)[\s\S]*afterEach\(unknownActions\.stop\)/,
+      )
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const watch = watchUnknownActions()
+    watch.start()
+    console.warn('[tessera] localization: unknown label key "x"')
+    expect(watch.stop).not.toThrow()
+    watch.start()
+    console.warn('[tessera] unknown action "notes/missing"')
+    expect(watch.stop).toThrow('notes/missing')
+  })
+
   it('AN9: плагин — встроенный и сторонний одинаково — объявляет ключи словаря с английскими значениями в definePlugin({ labels }); в словаре таблицы ключ — <plugin>.<key>; приложение переводит его через localization, с подстановками и формами числа; тип — PluginLabels', () => {
     interface NotesLabels {
       note: string
@@ -384,7 +501,7 @@ describe('Справочник действий (ADR 0182)', () => {
     ).toBe('Править')
   })
 
-  it('AN10: неизвестный id действия или ключ словаря — предупреждение в разработке, вместо подписи — id plugin/action или ключ', () => {
+  it('AN10: неизвестный id действия или ключ словаря — предупреждение в разработке, вместо подписи — id plugin/action или ключ; ключ неизвестен, если это не ключ ядра и не ключ переданных наборов', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     mount([])
     expect(table.getActionLabel({ plugin: 'notes', action: 'missing' })).toBe(
@@ -400,10 +517,65 @@ describe('Справочник действий (ADR 0182)', () => {
     )
     expect(
       unknownLabelKeys(
-        { 'notes.note': 'x', 'notes.typo': 'x', expandRow: 'x' },
-        labelSetKeys(notesLabels),
+        {
+          'notes.note': 'x',
+          'notes.typo': 'x',
+          'pagination.pageRange': 'x',
+          expandRow: 'x',
+          table: 'x',
+        },
+        [notesLabels],
+      ),
+    ).toEqual(['notes.typo', 'pagination.pageRange', 'expandRow'])
+  })
+
+  it('AN14: таблица считает неизвестным ключ без точки, который не ключ ядра, и ключ с префиксом своего владельца, которого нет в его наборе; ключ владельца не из таблицы — нет; выключенный плагин — владелец таблицы', () => {
+    const notesLabels = defineLabels<{ note: string }>()(
+      'notes',
+      { note: 'Note' },
+      {},
+    )
+    expect(
+      unknownTableLabelKeys(
+        {
+          'notes.note': 'x',
+          'notes.typo': 'x',
+          'pagination.pageRange': 'x',
+          'pagination.typo': 'x',
+          expandRow: 'x',
+          table: 'x',
+        },
+        [notesLabels],
       ),
     ).toEqual(['notes.typo', 'expandRow'])
+
+    mount([pagination({ enabled: false })])
+    expect(
+      unknownTableLabelKeys(
+        { 'pagination.typo': 'x', 'cellEditing.typo': 'x' },
+        table.options.labelSets,
+      ),
+    ).toEqual(['pagination.typo'])
+  })
+
+  it('AN16: unknownLabelKeys(dictionary, allLabelSets) находит опечатку в префиксе владельца; allLabelSets содержит наборы всех модулей labels.ts плагинов и shared/ — страж', () => {
+    expect(unknownLabelKeys(ru, allLabelSets)).toEqual([])
+    expect(
+      unknownLabelKeys({ ...ru, 'paginaton.pageRange': 'x' }, allLabelSets),
+    ).toEqual(['paginaton.pageRange'])
+
+    const declared = Object.values(
+      import.meta.glob<Record<string, unknown>>(
+        '../{plugins,shared}/**/labels.ts',
+        { eager: true },
+      ),
+    )
+      .flatMap(module => Object.values(module))
+      .filter(
+        (value): value is LabelSet =>
+          typeof value === 'function' && 'params' in value,
+      )
+    expect(new Set(allLabelSets)).toEqual(new Set(declared))
   })
 
   it('AN12: ключи словаря ядра — только ключи возможностей ядра; ядро и грид не читают ключей плагинов, плагин — ключей другого плагина; подпись чужого действия — только по id через ядро — страж слоёв', () => {

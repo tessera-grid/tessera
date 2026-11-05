@@ -20,3 +20,25 @@ export const expectConsoleErrors = (errors: ConsoleErrors | undefined) => {
 
 export const isExpectedConsoleError = (message: string) =>
   (holder.__tesseraConsoleErrors ?? []).some(pattern => pattern.test(message))
+
+/** Действие без записи справочника роняет тест, а не теряется в выводе (ADR 0182, AN24). */
+export const watchUnknownActions = () => {
+  const original = console.warn
+  const found: string[] = []
+  return {
+    start: () => {
+      found.length = 0
+      console.warn = (...args: unknown[]) => {
+        const message = args.map(String).join(' ')
+        if (message.includes('unknown action "')) found.push(message)
+        original(...args)
+      }
+    },
+    stop: () => {
+      console.warn = original
+      if (found.length > 0) {
+        throw new Error(`Действие без справочника:\n${found.join('\n')}`)
+      }
+    },
+  }
+}

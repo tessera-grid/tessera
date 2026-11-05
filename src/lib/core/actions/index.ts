@@ -40,34 +40,66 @@ export const actionKey = (id: ActionId) => `${id.plugin}/${id.action}`
 /** Итог действия в канале — фаза исходного: подпись у них одна (ADR 0182, §7). */
 const OUTCOME = /(Resolved|Rejected|Cancelled|Empty)$/
 
-type CatalogHost = { options?: { actionCatalog?: ActionCatalog } }
+type CatalogHost = {
+  options?: { actionCatalog?: ActionCatalog }
+  reportAction?: object
+}
 
 const catalogOf = (table: unknown): ActionCatalog =>
   (table as CatalogHost | undefined)?.options?.actionCatalog ?? {}
+
+/**
+ * Пункты разделов меню: приходят при открытии раздела и в сборку таблицы не входят. Ключ —
+ * метод `reportAction`: он один у экземпляра и у его копий и переживает пересборку
+ * справочника (ADR 0182, AN23).
+ */
+const sectionActions = new WeakMap<object, ActionCatalog>()
+
+const sectionActionsOf = (table: unknown): ActionCatalog | undefined => {
+  const key = (table as CatalogHost | undefined)?.reportAction
+  return key && sectionActions.get(key)
+}
+
+/** Подписи показанных пунктов раздела владельца `plugin`; объявленное в сборке главнее. */
+export const declareSectionActions = (
+  table: unknown,
+  plugin: string,
+  items: readonly { id: string; label?: ActionLabel }[],
+) => {
+  const key = (table as CatalogHost | undefined)?.reportAction
+  if (!key) return
+  const shown = sectionActions.get(key) ?? {}
+  sectionActions.set(key, shown)
+  for (const item of items)
+    if (item.label) shown[actionKey({ plugin, action: item.id })] = item.label
+}
 
 /**
  * Подпись действия из справочника: сам id, итог — по исходному действию, вариант
  * `<действие>:<вариант>` — по действию; механизм ядра от имени плагина — подписью ядра.
  */
 const findLabel = (
-  catalog: ActionCatalog,
+  table: unknown,
   id: ActionId,
   depth = 0,
 ): ActionLabel | undefined => {
+  const catalog = catalogOf(table)
+  const shown = sectionActionsOf(table)
   const base = id.action.replace(OUTCOME, '')
   const head = base.split(':')[0]!
   for (const action of new Set([id.action, base, head]))
     for (const plugin of new Set([id.plugin, 'core'])) {
-      const entry = catalog[`${plugin}/${action}`]
+      const key = `${plugin}/${action}`
+      const entry = catalog[key] ?? shown?.[key]
       if (typeof entry === 'function') return entry
-      if (entry && depth < 4) return findLabel(catalog, entry, depth + 1)
+      if (entry && depth < 4) return findLabel(table, entry, depth + 1)
     }
   return undefined
 }
 
 /** Есть ли у действия подпись в справочнике таблицы. */
 export const hasActionLabel = (table: unknown, id: ActionId): boolean =>
-  !!findLabel(catalogOf(table), id)
+  !!findLabel(table, id)
 
 /**
  * Подпись действия по текущему словарю: `labels` — подписи, в которых рисует потребитель;
@@ -79,7 +111,7 @@ export const actionLabelOf = (
   id: ActionRef,
   labels?: TableLabels,
 ): string => {
-  const label = findLabel(catalogOf(table), id)
+  const label = findLabel(table, id)
   if (!label) {
     const key = actionKey(id)
     logWarn(table as never, `unknown action "${key}"`, `action:${key}`)

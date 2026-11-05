@@ -11,12 +11,14 @@ export {
   PLURAL_FORMS,
   formatTemplate,
   resolveLabels,
-  unknownLabelKeys,
+  type ExactLabelDictionary,
   type LabelDictionary,
 } from './resolveLabels'
 export {
   defineLabels,
   labelSetKeys,
+  unknownLabelKeys,
+  unknownTableLabelKeys,
   type LabelSet,
   type PluginDictionary,
   type PluginLabelKey,

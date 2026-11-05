@@ -1,10 +1,11 @@
-// Декларации пакета для потребителя (ADR 0091, EV7–EV8): относительные импорты `.d.ts`
-// с расширением — их находит `moduleResolution: node16`; копия дерева в `.d.cts` —
-// типы для `require`.
+// Декларации пакета для потребителя (ADR 0091, EV7–EV8): относительные импорты и
+// `declare module` в `.d.ts` с расширением (ADR 0182, AN20) — их находит
+// `moduleResolution: node16`; копия дерева в `.d.cts` — типы для `require`.
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 
-const SPECIFIER = /(\bfrom\s*|\bimport\s*\(\s*)(['"])(\.{1,2}\/[^'"]*)\2/g
+const SPECIFIER =
+  /(\bfrom\s*|\bimport\s*\(\s*|\bdeclare module\s*)(['"])(\.{1,2}\/[^'"]*)\2/g
 
 const SOURCE_EXTENSIONS = ['.ts', '.tsx', '.d.ts']
 

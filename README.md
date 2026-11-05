@@ -1480,6 +1480,64 @@ useCreateTable({
 })
 ```
 
+#### Словарь подписей
+
+Подписи таблицы переводит словарь `localization`, язык чисел и форм слова — опция таблицы
+`locale`. Ключи ядра — плоские (`table`), ключи плагинов — `<плагин>.<ключ>`
+(`'pagination.rowsPerPage'`); значение — строка-шаблон с `{имя}` или функция.
+
+```tsx
+const ru: LabelDictionary = { table: 'Таблица', 'pagination.rowsPerPage': 'Строк на странице' }
+
+const table = useCreateTable({ columns, data, plugins, locale: 'ru' })
+
+<DataGrid table={table} localization={ru} />
+```
+
+Ключ, которого нет в типе словаря, — ошибка компиляции на `<DataGrid localization={ru} />`, в том
+числе у словаря из JSON (`resolveJsonModule`). Тип не видит ключей словаря, загруженного в рантайме
+(`fetch`, i18n-бэкенд), и такой словарь проходит. В разработке таблица предупреждает об опечатке в
+ключе ядра и в ключе своего плагина, а ключи плагинов, которых в ней нет, не проверяет: словарь
+обычно один на всё приложение. Опечатка в имени плагина (`'paginaton.rowsPerPage'`) в таком словаре
+молча оставит английскую подпись, поэтому проверяйте его целиком в тесте приложения:
+
+```ts
+import { unknownLabelKeys } from '@tessera-grid/tessera'
+import { allLabelSets } from '@tessera-grid/tessera/plugins'
+
+test('словарь без опечаток', () => {
+  expect(
+    unknownLabelKeys(ru, [...allLabelSets, ...(myPlugin().labels ?? [])]),
+  ).toEqual([])
+})
+```
+
+Свой плагин объявляет подписи набором `defineLabels` и дополняет тип словаря:
+
+```ts
+import { defineLabels, definePlugin } from '@tessera-grid/tessera'
+
+const archiveRowsLabels = defineLabels<{ archive: string }>()(
+  'archiveRows', // id плагина — префикс ключей в словаре
+  { archive: 'Archive' }, // английские значения
+  {}, // имена параметров подписей-функций
+)
+
+declare module '@tessera-grid/tessera' {
+  interface PluginLabels {
+    archiveRows: typeof archiveRowsLabels
+  }
+}
+
+export const archiveRows = definePlugin()({
+  id: 'archiveRows',
+  labels: [archiveRowsLabels],
+})
+```
+
+Вызов набора с подписями таблицы даёт подписи плагина на её языке:
+`archiveRowsLabels(labels).archive`.
+
 #### Внешние зависимости для таблицы
 
 1. Не создавайте внешние зависимости для функции создания колонок, ячеек и заголовков. Это ведет к пересозданию всей таблицы и сильно влияет на производительность.

@@ -44,8 +44,8 @@ import {
   DEFAULT_LOCALE,
   LocalizationContext,
   resolveLabels,
-  unknownLabelKeys,
-  labelSetKeys,
+  unknownTableLabelKeys,
+  type LabelDictionary,
   type LabelSet,
 } from '../core/localization'
 import { logWarn } from '../util/logger'
@@ -140,7 +140,7 @@ const localeOf = (table: unknown): string =>
  * Основной компонент таблицы. Ожидает инстанс таблицы (useCreateTable) и высоту;
  * заглушки пустой таблицы — из реестра причин, свой вид — пропом `stubs` (ADR 0123).
  */
-export const DataGrid = ({
+export const DataGrid = <D extends LabelDictionary = LabelDictionary>({
   table: tableProp,
   height = '100%',
   maxHeight = '100%',
@@ -151,7 +151,7 @@ export const DataGrid = ({
   localization,
   className,
   style,
-}: DataGridProps) => {
+}: DataGridProps<D>) => {
   const table = tableProp as unknown as Table<any, any>
   const options = commonOptionsOf(table)
   // Язык подписей — опция таблицы (ADR 0169, §5).
@@ -262,9 +262,8 @@ export const DataGrid = ({
   const labelSets = (table as { options: { labelSets?: LabelSet[] } }).options
     .labelSets
   useEffect(() => {
-    const known = (labelSets ?? []).flatMap(labelSetKeys)
     for (const key of localization
-      ? unknownLabelKeys(localization, known)
+      ? unknownTableLabelKeys(localization, labelSets)
       : []) {
       logWarn(
         table,
@@ -277,7 +276,12 @@ export const DataGrid = ({
   // Заглушка той же высоты, пока грузится чанк: раскладка не прыгает.
   const toolbar = enableToolbar && (
     <Suspense
-      fallback={<div className={dataGridStyles['toolbar-placeholder']} />}
+      fallback={
+        <div
+          className={dataGridStyles['toolbar-placeholder']}
+          data-toolbar-placeholder=""
+        />
+      }
     >
       <Toolbar table={table} label={labels.toolbar} />
     </Suspense>
@@ -549,6 +553,7 @@ export const DataGrid = ({
                         dataGridStyles['table__theme-wrapper'],
                         themeClassName,
                       )}
+                      data-tsr-grid=""
                       data-tsr-contrast={contrastAttr}
                       data-tsr-color-mode={colorModeAttr}
                       data-toolbar={enableToolbar || undefined}
@@ -625,6 +630,7 @@ export const DataGrid = ({
                                 showSkeleton,
                             },
                           )}
+                          data-skeleton={showSkeleton || undefined}
                           ref={scrollableNodeRef}
                           // Firefox держит прокручиваемую область в порядке Tab (KN32).
                           tabIndex={keyboardNavigation ? -1 : undefined}

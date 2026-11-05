@@ -165,5 +165,9 @@ export {
 export {
   type TableLabels,
   type LabelDictionary,
+  type LabelSet,
+  type PluginLabels,
+  defineLabels,
   DEFAULT_LABELS,
+  unknownLabelKeys,
 } from './lib/core/localization'

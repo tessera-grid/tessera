@@ -329,6 +329,8 @@ export const RowActionsNested: StoryObj<StoryProps> = {
       await stepDone(canvas)
       await expect(openMenu()).toBeNull()
       await until(() => expect(consoleText()).toContain(`status:${STATUS}`))
+      // Пункт раздела назван своей подписью, а не id (ADR 0182, AN23).
+      await expect(consoleText()).toContain(`«${STATUS}»`)
     })
     await step(NESTED[3]!.title, async () => {
       await guideNext(canvas)

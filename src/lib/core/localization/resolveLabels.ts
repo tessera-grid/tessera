@@ -77,6 +77,17 @@ export type LabelDictionary = {
   [K in `${CountKey}_${PluralForm}`]?: string
 } & PluginDictionary
 
+/**
+ * Словарь без ключей, которых нет в `LabelDictionary`: лишнее свойство TypeScript отмечает
+ * только у литерала, а так — и у JSON-модуля (ADR 0182, AN21). Тип с произвольными ключами
+ * (`Record<string, string>`) проходит: его проверяет таблица в разработке.
+ */
+export type ExactLabelDictionary<D> = D & {
+  [K in Exclude<keyof D, keyof LabelDictionary>]: string extends K
+    ? unknown
+    : never
+}
+
 const COUNT_KEYS = new Set<string>(
   Object.entries(LABEL_PARAMS)
     .filter(([, params]) => (params as readonly string[]).includes('count'))
@@ -98,22 +109,9 @@ const LABEL_KEYS = Object.keys(DEFAULT_LABELS).filter(
   key => !isFormKey(key),
 ) as LabelKey[]
 
-/**
- * Ключи словаря, которых у таблицы нет: опечатки словаря из JSON (LC8); `known` — ключи
- * владельцев, включённых в таблицу (ADR 0182, AN10).
- */
-export const unknownLabelKeys = (
-  dictionary: object,
-  known: readonly string[] = [],
-): string[] => {
-  const owned = new Set(known)
-  return Object.keys(dictionary).filter(
-    key =>
-      !(LABEL_KEYS as string[]).includes(key) &&
-      !isFormKey(key) &&
-      !owned.has(key),
-  )
-}
+/** Ключ словаря ядра: подпись ядра или её форма слова. */
+export const isCoreLabelKey = (key: string) =>
+  (LABEL_KEYS as string[]).includes(key) || isFormKey(key)
 
 export type { LabelSet }
 

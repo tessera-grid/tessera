@@ -1,5 +1,5 @@
 /**
- * Пакет глазами потребителя (ADR 0091, EV7–EV9): фикстуры `check:package`, декларации
+ * Пакет глазами потребителя (ADR 0091, EV7–EV9; ADR 0182, AN20): фикстуры `check:package`, декларации
  * для node16 и `require`, директива `'use client'` во входах. Сам архив проверяет
  * `npm run check:package` после сборки.
  * Запуск: npx vitest run --config vitest.node.config.ts
@@ -83,6 +83,25 @@ describe('Пакет глазами потребителя', () => {
     expect(ownTypeErrors(output)).toEqual([
       "app.tsx(3,1): error TS2322: Type 'number' is not assignable.",
       'node_modules/@tessera-grid/tessera/dist/index.d.ts(1,1): error TS2307: Cannot find module.',
+    ])
+  })
+
+  it('AN20: относительный путь declare module в декларациях получает расширение: .js в .d.ts, .cjs в .d.cts', () => {
+    const src = tempDir()
+    writeFileSync(join(src, 'pluginLabels.ts'), '')
+    const declaration = [
+      "declare module './pluginLabels' {}",
+      "declare module '@tanstack/react-table' {}",
+    ].join('\n')
+
+    const node16 = withExtensions(declaration, src)
+    expect(node16.split('\n')).toEqual([
+      "declare module './pluginLabels.js' {}",
+      "declare module '@tanstack/react-table' {}",
+    ])
+    expect(toCommonJs(node16).split('\n')).toEqual([
+      "declare module './pluginLabels.cjs' {}",
+      "declare module '@tanstack/react-table' {}",
     ])
   })
 

@@ -1,7 +1,10 @@
 import type { StubsOverride } from '../core/stubs'
 import type { CSSProperties } from 'react'
 
-import type { LabelDictionary } from '../core/localization'
+import type {
+  ExactLabelDictionary,
+  LabelDictionary,
+} from '../core/localization'
 import type { ColorMode, ContrastMode } from '../ui/theme'
 import type { TableIcons } from '../ui/icons'
 import type { PluginDiagnostic } from '../core/pluginDiagnostics'
@@ -14,7 +17,7 @@ export interface DataGridTable {
   getPluginDiagnostics: () => PluginDiagnostic[]
 }
 
-export interface DataGridProps {
+export interface DataGridProps<D extends LabelDictionary = LabelDictionary> {
   /** Инстанс таблицы, возвращаемый useCreateTable. */
   table: DataGridTable
   /**
@@ -34,7 +37,7 @@ export interface DataGridProps {
    * Подписи таблицы: строка-шаблон с `{имя}` или функция; формы слова — ключами
    * `<ключ>_<форма>` (ADR 0132).
    */
-  localization?: LabelDictionary
+  localization?: ExactLabelDictionary<D>
   /**
    * number — высота в px; string — в процентах (50%, 100%); auto — контейнер по
    * flexbox с flex: 1.

@@ -41,6 +41,7 @@ const columnDraggingEntry = definePlugin<ColumnDraggingOptions>()({
   labels: [columnDraggingLabels],
   actions: {
     drag: labels => columnDraggingLabels(labels).moveColumn,
+    commitMove: labels => columnDraggingLabels(labels).moveColumn,
     dragCancel: labels => columnDraggingLabels(labels).actionDragCancel,
     drop: labels => columnDraggingLabels(labels).actionDrop,
     'columnDragging.move': labels => columnDraggingLabels(labels).moveColumn,

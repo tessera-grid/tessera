@@ -1166,11 +1166,14 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       ядро ↔ кит, SH4 — компоненты грида для плагинов в `ui/`, экспорты `/ui` прежние)
       ([ADR 0166](docs/decisions/0166-shared-layer-utils-and-kit.md)).
     - _Справочник действий и словарь по владельцам:_ модульный `actionCatalog.dom` (AN1, AN3–AN10,
-      AN12–AN13 — действия `{ plugin, action }` с одной подписью, отказы и черновики по id, литерал
+      AN12–AN14, AN16, AN23–AN24 — действия `{ plugin, action }` с одной подписью, отказы и черновики по id, литерал
       приложения, объявления «действие, цель», пункты меню по состоянию, страж канала действий,
-      ключи `<владелец>.<ключ>` с формами числа, неизвестные id и ключи, стражи слоёв и графа
-      `DataGrid`), визуальный `action-names` (AN2 — смена языка переводит журнал и пульт), перф AN11
-      — в `interaction`, истории «Panels/Failure log — Switch language» (S1), «Plugin API — Action
+      ключи `<владелец>.<ключ>` с формами числа, неизвестные id и ключи, ключи владельцев не из таблицы, полная проверка словаря, стражи слоёв и
+      графа `DataGrid`), визуальные `action-names` (AN2 — смена языка переводит журнал и пульт) и
+      `localization` (AN15 — общий словарь без ложных предупреждений), модульные `dictionaryProp` (AN21 —
+      точный тип пропа `localization`) и `packageChecks` (AN20 —
+      расширение в `declare module`), AN17 — `check:tree-shaking`, AN18–AN19, AN22 — `check:package`, перф
+      AN11 — в `interaction`, истории «Panels/Failure log — Switch language» (S1), «Plugin API — Action
       names» (S2), «Cells/Action status — Own action label» (S3)
       ([ADR 0182](docs/decisions/0182-action-catalog.md)).
     - _Опции плагинов в типах:_ модульные `pluginOptions` (PO1 — каждый ключ `options` объявлен

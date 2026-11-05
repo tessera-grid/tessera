@@ -37,6 +37,7 @@ export const infiniteScroll = definePlugin<InfiniteScrollOptions>()({
   labels: [infiniteScrollLabels],
   actions: {
     loadMore: labels => infiniteScrollLabels(labels).actionLoadMore,
+    retryLoadMore: labels => infiniteScrollLabels(labels).actionLoadMore,
   },
   diagnose: infiniteScrollInertReason,
   hooks: o => ({ onLoadMore: o.onLoadMore }),

@@ -28,6 +28,7 @@ export const columnSizing = definePlugin<ColumnSizingOptions>()({
   labels: [columnSizingLabels],
   actions: {
     resize: labels => columnSizingLabels(labels).resizeColumn,
+    resetSize: labels => columnSizingLabels(labels).resetColumnWidth,
     resizeBy: labels => columnSizingLabels(labels).resizeColumn,
     resizeCancel: labels => columnSizingLabels(labels).actionResizeCancel,
     handleMenu: labels => columnSizingLabels(labels).columnWidth,

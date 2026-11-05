@@ -70,6 +70,7 @@ export const cellEditing = definePlugin<CellEditingOptions>()({
   labels: [cellEditingLabels, calendarLabels, optionsLabels],
   actions: {
     edit: labels => cellEditingLabels(labels).cellDraftKind,
+    commit: { plugin: 'core', action: 'save' },
     changeDraft: labels => cellEditingLabels(labels).actionChangeDraft,
     validationFailed: labels =>
       cellEditingLabels(labels).actionValidationFailed,

@@ -13,9 +13,8 @@ import type { Failure } from '../core/failures/failuresFeature'
 import {
   ENGLISH_LABELS,
   resolveLabels,
-  unknownLabelKeys,
 } from '../core/localization/resolveLabels'
-import { labelSetKeys } from '../core/localization/pluginLabels'
+import { unknownLabelKeys } from '../core/localization/pluginLabels'
 import { useCreateTable } from '../core/useCreateTable'
 import { failureLog } from '../plugins'
 import { objectTargetText } from '../shared/objectTarget'
@@ -126,10 +125,9 @@ describe('Журнал отказов (ADR 0177)', () => {
     ]
     // Словарь знает ключи журнала; русский словарь историй задаёт каждый.
     expect(
-      unknownLabelKeys(
-        Object.fromEntries(keys.map(k => [k, 'x'])),
-        labelSetKeys(failureLogLabels),
-      ),
+      unknownLabelKeys(Object.fromEntries(keys.map(k => [k, 'x'])), [
+        failureLogLabels,
+      ]),
     ).toEqual([])
     for (const key of keys) expect(ru).toHaveProperty([key])
 

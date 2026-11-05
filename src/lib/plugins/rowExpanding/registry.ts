@@ -116,6 +116,8 @@ export const rowExpanding = definePlugin<RowExpandingOptions>()({
   labels: [rowExpandingLabels],
   actions: {
     toggleRow: labels => rowExpandingLabels(labels).actionToggleRow,
+    expandRow: labels => rowExpandingLabels(labels).actionToggleRow,
+    loadChildren: labels => rowExpandingLabels(labels).actionToggleRow,
     expandAll: labels => rowExpandingLabels(labels).expandAll,
     collapseAll: labels => rowExpandingLabels(labels).collapseAll,
     'rowExpanding.toggle': labels => rowExpandingLabels(labels).actionToggleRow,

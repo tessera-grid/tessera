@@ -51,6 +51,7 @@ const makeTable = (extra: any[] = []) => {
     },
     slots: folded.slots,
     slotActions: folded.slotActions,
+    actionCatalog: folded.actionCatalog,
     actionMenu: folded.actionMenu,
     ...folded.options,
   } as never) as any

@@ -57,6 +57,7 @@ const rowDraggingEntry = definePlugin<RowDraggingOptions>()({
   labels: [rowDraggingLabels],
   actions: {
     drag: labels => rowDraggingLabels(labels).moveRow,
+    commitMove: labels => rowDraggingLabels(labels).moveRow,
     dragCancel: labels => rowDraggingLabels(labels).actionDragCancel,
     dragOver: labels => rowDraggingLabels(labels).actionDragOver,
     drop: labels => rowDraggingLabels(labels).actionDrop,

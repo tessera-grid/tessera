@@ -1,7 +1,11 @@
 import { composeStory } from '@storybook/react'
 import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest'
 
-import { expectConsoleErrors, isExpectedConsoleError } from './consoleErrors'
+import {
+  expectConsoleErrors,
+  isExpectedConsoleError,
+  watchUnknownActions,
+} from './consoleErrors'
 import { collectGarbage } from './collectGarbage'
 
 // История каталога рендерится без `console.error` (ADR 0093, VR1): ошибка React или
@@ -22,6 +26,10 @@ beforeAll(collectGarbage)
 afterAll(() =>
   composeStory({ render: () => null }, { title: 'Teardown' }).run(),
 )
+
+const unknownActions = watchUnknownActions()
+beforeEach(unknownActions.start)
+afterEach(unknownActions.stop)
 
 const errors: string[] = []
 const original = console.error

@@ -960,6 +960,7 @@ const StarButton = ({ table }: ToolbarComponentProps) => {
 
 const starRows = definePlugin()({
   id: 'starRows',
+  actions: { starAll: () => 'Star rows' },
   slots: [{ id: 'starRows', slot: 'toolbarSlot', component: StarButton }],
 })
 /** Одна запись на историю: смена набора плагинов — только когда её добавляет шаг. */
@@ -2015,10 +2016,10 @@ export const PluginApiActionNames: StoryObj<StoryProps> = {
       steps={ACTION_NAMES_STEPS}
       args={guideArgs(
         {
+          ...GRID,
           enableFailureLog: true,
           enableRowActions: true,
           actionsDemo: 'none',
-          columnCount: 6,
           dataCount: 30,
           extraPlugins: ARCHIVE_ROWS,
         },

@@ -2,12 +2,13 @@
 import './src/lib/stories/__tests__/reactCommits'
 
 import { setProjectAnnotations } from '@storybook/react-vite'
-import { afterAll, beforeAll, beforeEach } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest'
 import { cleanup, configure } from 'vitest-browser-react/pure'
 
 import { parkPointer } from './src/lib/stories/__tests__/pointer'
 
 import { collectGarbage } from './.storybook/collectGarbage'
+import { watchUnknownActions } from './.storybook/consoleErrors'
 import preview from './.storybook/preview'
 
 // Wire the Storybook preview annotations into portable stories so
@@ -23,6 +24,10 @@ beforeAll(collectGarbage)
 // `cleanup` идёт только перед тестом: последний рендер файла остался бы смонтированным, и
 // обработчики его поповера на окне оркестратора удержали бы iframe файла.
 afterAll(cleanup)
+
+const unknownActions = watchUnknownActions()
+beforeEach(unknownActions.start)
+afterEach(unknownActions.stop)
 
 // StrictMode по умолчанию (ADR 0091, EV3): эффекты и рендер запускаются дважды, как в
 // разработке у потребителя. В перф-прогоне React продовый — там StrictMode ничего не делает.

@@ -3,6 +3,8 @@
  * корня; раздел разрешается заново на каждом рендере, асинхронные пункты берутся из
  * загрузок открытого меню. Без DOM — модель для `useMenuSections`.
  */
+import { actionOwnerOf, setActionOwner } from '../actionOwners'
+import { declareSectionActions } from '../actions'
 import type { TableLabels } from '../localization'
 import { rememberSectionSlot } from './sectionSlots'
 import type { MenuAction } from './types'
@@ -81,7 +83,19 @@ export const enterSection = (path: readonly string[], id: string) => [
 
 export const leaveSection = (path: readonly string[]) => path.slice(0, -1)
 
-/** Пункты раздела действия: сразу или из загрузки. Чистая — загрузку не начинает. */
+/** Показанные пункты наследуют от раздела слот и владельца (ADR 0182, AN23). */
+const adoptSectionItems = (
+  owner: MenuAction,
+  items: readonly MenuAction[],
+  ctx: unknown,
+) => {
+  rememberSectionSlot(owner, items)
+  const plugin = actionOwnerOf(owner)
+  for (const item of items) setActionOwner(item, plugin)
+  declareSectionActions((ctx as { table?: unknown }).table, plugin, items)
+}
+
+/** Пункты раздела действия: сразу или из загрузки. Загрузку не начинает. */
 export const sectionItemsOf = (
   owner: MenuAction,
   key: string,
@@ -91,11 +105,11 @@ export const sectionItemsOf = (
 ): SectionItems => {
   const { items } = owner.submenu!(ctx, labels)
   if (Array.isArray(items)) {
-    rememberSectionSlot(owner, items)
+    adoptSectionItems(owner, items, ctx)
     return { status: 'done', items }
   }
   const loaded = loads.get(key) ?? { status: 'loading' }
-  if (loaded.status === 'done') rememberSectionSlot(owner, loaded.items)
+  if (loaded.status === 'done') adoptSectionItems(owner, loaded.items, ctx)
   return loaded
 }
 

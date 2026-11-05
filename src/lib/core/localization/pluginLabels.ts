@@ -6,6 +6,7 @@
 import {
   type LabelSource,
   PLURAL_FORMS,
+  isCoreLabelKey,
   labelSourceOf,
   resolveOwnLabels,
 } from './resolveLabels'
@@ -136,5 +137,31 @@ export const labelSetKeys = (set: LabelSet): string[] => {
     key => `${set.id}.${key}`,
   )
 }
+
+/**
+ * Ключи словаря, которых нет ни у ядра, ни в наборах `sets`. С `allLabelSets` проверяет
+ * словарь приложения целиком (ADR 0182, §9).
+ */
+export const unknownLabelKeys = (
+  dictionary: object,
+  sets: readonly LabelSet[] = [],
+): string[] => {
+  const owned = new Set(sets.flatMap(labelSetKeys))
+  return Object.keys(dictionary).filter(
+    key => !isCoreLabelKey(key) && !owned.has(key),
+  )
+}
+
+/**
+ * Неизвестные ключи, о которых таблица может судить (AN14): словарь общий на все таблицы,
+ * поэтому ключ владельца не из её наборов — не опечатка.
+ */
+export const unknownTableLabelKeys = (
+  dictionary: object,
+  sets: readonly LabelSet[] = [],
+): string[] =>
+  unknownLabelKeys(dictionary, sets).filter(
+    key => !key.includes('.') || sets.some(set => key.startsWith(`${set.id}.`)),
+  )
 
 export type { LabelSource }

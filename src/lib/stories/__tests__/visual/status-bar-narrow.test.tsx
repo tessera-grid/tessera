@@ -320,8 +320,7 @@ describe('Нижняя панель — узкая ширина', () => {
     await render(
       <Grid
         localization={{
-          selectedRowsShort: (count: number) =>
-            `${count} selected on this page`,
+          'rowSelection.selectedRowsShort': '{count} selected on this page',
         }}
       />,
     )
