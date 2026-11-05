@@ -19,6 +19,7 @@ import { readPluginHooks } from '../../core/definePlugin'
 import {
   GROUP_ROW_PREFIX,
   groupKeysOf,
+  type BranchArrival,
   type RowListChange,
   type RowLoadError,
   type RowSource,
@@ -313,6 +314,35 @@ const createServerSource = (table: unknown): ServerSource => {
           SERVER_ROW_MODEL,
         ).getGroupRowCount?.(row.original) ?? groupChildCount(row))
 
+  /** Ветки, которые раскрыл человек: ждут первого ответа (SD55–SD60). */
+  const branchWaits = new Map<
+    string,
+    {
+      generation: Generation
+      done: (arrival: BranchArrival) => void
+      /** Запрос ветки ушёл: его отмена окном или сворачиванием снимает ожидание. */
+      asked?: boolean
+    }
+  >()
+  const settleBranchWaits = () => {
+    for (const [id, wait] of branchWaits) {
+      const answer =
+        wait.generation === shown ? shown.store.branchAnswer(id) : 'gone'
+      if (answer === undefined) {
+        if (shown.store.branchLoading(id)) wait.asked = true
+        else if (wait.asked) branchWaits.delete(id)
+        continue
+      }
+      branchWaits.delete(id)
+      if (answer !== 'gone') {
+        wait.done({
+          rowIds: answer.rows.map(row => row.id),
+          count: answer.count,
+        })
+      }
+    }
+  }
+
   const createGeneration = (query: Query): Generation => {
     const generation = { query, waiters: [] } as unknown as Generation
     generation.store = new BlockTree<unknown, SourceRow, Query>({
@@ -376,6 +406,7 @@ const createServerSource = (table: unknown): ServerSource => {
         if (generation === shown) {
           settleShown()
           changed()
+          settleBranchWaits()
         } else if (generation === next) settleNext()
       },
       onLayoutChange: changes => {
@@ -783,6 +814,11 @@ const createServerSource = (table: unknown): ServerSource => {
     keyByIndex: true,
     branchLoading: id => shown.store.branchLoading(id),
     cancelBranch: id => shown.store.cancelBranch(id),
+    whenBranchArrives: (id, done) => {
+      if (!shown.store.branchCached(id)) {
+        branchWaits.set(id, { generation: shown, done })
+      }
+    },
     byId: id => shown.store.rowById(id),
     indexOf: id => {
       const index = shown.store.indexOf(id)

@@ -5,14 +5,22 @@
  * канал действий.
  * Запуск: npx vitest run --config vitest.node.config.ts serverRowModel
  */
-import { act } from 'react'
+import { act, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { registerAnnouncer } from '../core/announcer'
 import { pluginStateKey, setPluginState } from '../core/definePlugin'
+import { readFlashes } from '../core/flashes/flashFeature'
+import { ENGLISH_LABELS } from '../core/localization'
+import {
+  cancelBranchLoad,
+  toggleRowExpanded,
+} from '../plugins/rowExpanding/toggleRowExpanded'
 import type { DataMode } from '../core/dataMode'
 import type { DebugAction } from '../core/debugActions'
 import type { RowSource } from '../core/rowSource'
+import type { ExpandedState } from '@tanstack/react-table'
 import { rowSelectionValueOf } from '../core/rowSelectionAll'
 import { resolveAxes } from '../plugins/dataExportModel/settings'
 import { useCreateTable } from '../core/useCreateTable'
@@ -567,6 +575,183 @@ describe('серверная модель строк на таблице (ADR 01
     }
     const branchCalls = (parentId: string) =>
       calls.filter(call => call.request.parentId === parentId)
+
+    /** Раскрытие или сворачивание человеком и окно ветки. */
+    const human = async (id: string) => {
+      act(() => toggleRowExpanded(source().byId(id) as never, {}))
+      source().count()
+      await act(async () => {})
+    }
+    /** Новая выборка: корень встаёт на экран, затем отвечают раскрытые ветки. */
+    const requery = async (change: () => void) => {
+      const before = calls.length
+      act(change)
+      act(() => source().sync!())
+      show(0, 9)
+      await answer(
+        calls.slice(before).find(call => !call.request.parentId),
+        25,
+      )
+      await act(async () => {})
+      for (const call of calls.slice(before)) {
+        if (call.request.parentId) await answer(call, 3)
+      }
+    }
+    const watchArrivals = () => {
+      const say = vi.fn()
+      registerAnnouncer(table, { say, labels: ENGLISH_LABELS })
+      return {
+        said: () =>
+          say.mock.calls
+            .map(([text]) => String(text))
+            .filter(text => /^(Loaded|No rows)/.test(text)),
+        loaded: () =>
+          say.mock.calls.filter(([text]) =>
+            /^(Loaded|No rows)/.test(String(text)),
+          ),
+        flashed: (id: string) =>
+          Object.keys(readFlashes(table)).some(key => key.includes(id)),
+      }
+    }
+
+    it('SD56: без вспышки и объявления — блоки при прокрутке внутри ветки, уход от ветки до ответа, перезапрос, смена выборки, «Раскрыть всё», раскрытие приложением, повторное раскрытие из кэша', async () => {
+      tree(20, [columnSortingModel()])
+      show(0, 9)
+      await answer()
+      const { loaded, flashed } = watchArrivals()
+
+      // Раскрытие приложением.
+      await expand({ r1: true })
+      await answer(branchCalls('r1')[0], 2)
+      expect(loaded()).toHaveLength(0)
+      expect(flashed('r1.0')).toBe(false)
+
+      // Раскрытие человеком: одно объявление.
+      await human('r2')
+      await answer(branchCalls('r2')[0], 25)
+      expect(loaded()).toHaveLength(1)
+      expect(flashed('r2.0')).toBe(true)
+
+      // Блоки при прокрутке внутри ветки.
+      const parent = source().indexOf('r2')
+      show(parent + 12, parent + 21)
+      await act(async () => {})
+      await answer(branchCalls('r2')[1], 25)
+      expect(loaded()).toHaveLength(1)
+      expect(flashed('r2.10')).toBe(false)
+
+      // Повторное раскрытие из кэша.
+      await human('r2')
+      await human('r2')
+      expect(loaded()).toHaveLength(1)
+      // Следующий блок той же ветки — не приход повторного раскрытия.
+      show(parent + 22, parent + 24)
+      await act(async () => {})
+      expect(branchCalls('r2').length).toBeGreaterThan(2)
+      for (const call of branchCalls('r2').slice(2)) await answer(call, 25)
+      expect(loaded()).toHaveLength(1)
+
+      // Ушли от ветки до ответа: её ответ при возврате — уже не итог того нажатия.
+      show(0, 9)
+      await act(async () => {})
+      await human('r2')
+      await human('r3')
+      expect(branchCalls('r3')).toHaveLength(1)
+      show(200, 209)
+      await act(async () => {})
+      show(0, 9)
+      await act(async () => {})
+      expect(branchCalls('r3')).toHaveLength(2)
+      await answer(branchCalls('r3').at(-1), 3)
+      expect(loaded()).toHaveLength(1)
+      expect(flashed('r3.0')).toBe(false)
+
+      // Новая выборка, пока ветка ждёт ответа: её ответ — уже не приход этого раскрытия.
+      show(0, 9)
+      await act(async () => {})
+      await human('r0')
+      expect(branchCalls('r0')).toHaveLength(1)
+      await requery(() => table.setSorting([{ id: 'name', desc: false }]))
+      expect(branchCalls('r0').length).toBeGreaterThan(1)
+      expect(loaded()).toHaveLength(1)
+
+      await requery(() => table.refreshRows())
+      expect(loaded()).toHaveLength(1)
+
+      // «Раскрыть всё» — срез, а не нажатие на строку.
+      const before = calls.length
+      act(() => table.setExpanded(true))
+      source().count()
+      show(0, 19)
+      await act(async () => {})
+      const branches = calls.slice(before).filter(c => c.request.parentId)
+      expect(branches.length).toBeGreaterThan(0)
+      for (const call of branches) await answer(call, 3)
+      expect(loaded()).toHaveLength(1)
+    })
+
+    it('SD60: срез expanded у приложения даёт тот же приход; пустая ветка объявляется как пустая', async () => {
+      const Controlled = () => {
+        const [expanded, setExpanded] = useState<ExpandedState>({})
+        return (
+          <Grid
+            maxBlocks={20}
+            extra={[
+              rowExpanding({
+                hasChildren: row => row.depth === 0,
+                expanded,
+                onExpandedChange: setExpanded,
+              }),
+            ]}
+          />
+        )
+      }
+      act(() => root.render(<Controlled />))
+      show(0, 9)
+      await answer()
+      const { said, flashed } = watchArrivals()
+
+      await human('r1')
+      await answer(branchCalls('r1')[0], 2)
+      expect(said()).toEqual(['Loaded 2 rows'])
+      expect(flashed('r1.0')).toBe(true)
+
+      await human('r0')
+      await answer(branchCalls('r0')[0], 0)
+      expect(said()).toEqual(['Loaded 2 rows', 'No rows'])
+    })
+
+    it('SD57: отказ первого ответа ни вспышки, ни объявления прихода не даёт; отмена и сворачивание до ответа тоже', async () => {
+      tree(20)
+      show(0, 9)
+      await answer()
+      const { loaded, flashed } = watchArrivals()
+
+      await human('r2')
+      expect(branchCalls('r2')).toHaveLength(1)
+      act(() => cancelBranchLoad(source().byId('r2') as never, 'pointer'))
+      await act(async () => {})
+      // Раскрытие приложением после отмены — уже не раскрытие человека.
+      await expand({ r2: true })
+      await answer(branchCalls('r2').at(-1), 3)
+      expect(loaded()).toHaveLength(0)
+
+      await human('r3')
+      expect(branchCalls('r3')).toHaveLength(1)
+      await human('r3')
+      await expand({ r3: true })
+      await answer(branchCalls('r3').at(-1), 3)
+      expect(loaded()).toHaveLength(0)
+      expect(flashed('r3.0')).toBe(false)
+
+      await human('r1')
+      expect(branchCalls('r1')).toHaveLength(1)
+      await act(async () => branchCalls('r1')[0]!.reject(new Error('down')))
+      await act(async () => {})
+      expect(loaded()).toHaveLength(0)
+      expect(flashed('r1.0')).toBe(false)
+      expect(flashed('r3.0')).toBe(false)
+    })
 
     it('SD36: свёрнутая строка отдаёт блоки детей вытеснению первыми, раньше блоков на экране; повторное раскрытие запрашивает только недостающие', async () => {
       tree(3)

@@ -102,6 +102,17 @@ export const toggleRowExpanded = (
     return
   }
   const { table } = pendingRow
+  // Дети ветки серверной модели — как ответ ленивой строки (ADR 0056; ADR 0138, SD55).
+  rowSourceOf(table).whenBranchArrives?.(row.id, ({ rowIds, count }) => {
+    flashOutcome(
+      table,
+      rowIds.map(id => ({ row: id })),
+      'arrived',
+    )
+    announceLabel(table, all =>
+      rowExpandingLabels(all).announceChildrenLoaded(count),
+    )
+  })
   const lazy = !!hooks.loadChildren && isLazyRow(row, hooks.hasChildren)
   const controller = new AbortController()
   const result = lazy

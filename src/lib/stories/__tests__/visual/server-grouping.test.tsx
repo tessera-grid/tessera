@@ -19,6 +19,7 @@ import {
   type ServerRowsRequest,
   type ServerRowsResponse,
 } from '../../../plugins'
+import { rowExpandingLabels } from '../../../plugins/rowExpanding/labels'
 import { humanClick, revealCellButtons } from '../helpers'
 import { tableLabels } from '../labels'
 import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
@@ -568,6 +569,33 @@ describe('Серверная группировка (ADR 0144)', () => {
       await expect.poll(branchRequests).toBe(was + 1)
       expect(calls.at(-1)!.request.globalFilter).toBe('N1')
       expect(table!.store.get().expanded).toEqual({ [groupId('C1')]: true })
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('SD59: серверная группа раскрывается так же, как ветка дерева: строки вспыхивают arrived, скринридер слышит их число', async () => {
+    const { getRows } = server(request => answerOf(request))
+    const screen = await render(<Grid getRows={getRows} grouping={['city']} />)
+    const members = allItems().filter(item => item.city === 'C1')
+    const flashing = () =>
+      [
+        ...document.querySelectorAll(
+          '.data-grid__body-row[data-flash="arrived"]',
+        ),
+      ].map(row => row.getAttribute('data-row-id'))
+    try {
+      await expect.poll(() => toggleOf(groupId('C1'))).not.toBeNull()
+      await humanClick(toggleOf(groupId('C1'))!)
+      await expect.poll(flashing).toContain(members[0]!.id)
+      expect(flashing()).not.toContain(groupId('C1'))
+      await expect
+        .poll(() => q('[role="status"][aria-live]')?.textContent?.trim())
+        .toBe(
+          rowExpandingLabels(tableLabels).announceChildrenLoaded(
+            members.length,
+          ),
+        )
     } finally {
       await screen.unmount()
     }

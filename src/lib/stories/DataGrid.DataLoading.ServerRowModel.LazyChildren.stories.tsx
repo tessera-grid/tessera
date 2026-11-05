@@ -1,6 +1,7 @@
 import { Meta, StoryObj } from '@storybook/react'
 import { expect } from 'storybook/test'
 import type { ServerRowsRequest, ServerRowsResponse } from '../plugins'
+import { rowExpandingLabels } from '../plugins/rowExpanding/labels'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import {
@@ -15,6 +16,7 @@ import {
   filteringColumns,
   filteringItemAt,
 } from './__mocks__/filteringData'
+import { storyLabels } from './__mocks__/storyLabels'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
@@ -142,7 +144,7 @@ const LAZY_CHILDREN: readonly GuideStoryStep[] = [
   },
   {
     title: 'Сервер ответил',
-    hint: 'Вложенные строки встали под родителем с отступом уровня. Их столько, сколько сообщил сервер, — строки ниже подтянулись вплотную.',
+    hint: 'Вложенные строки встали под родителем с отступом уровня и коротко вспыхнули, а скринридер сообщил их число. Их столько, сколько сообщил сервер, — строки ниже подтянулись вплотную.',
     enter: stepAction(async (root, { signal }) => {
       if (server.held.length === 0 && !childShown(root)) {
         await expandParent(root, signal)
@@ -168,7 +170,7 @@ export const ServerRowModelLazyChildren: StoryObj<StoryProps> = {
       args={guideArgs(layout, args)}
     />
   ),
-  play: async ({ canvasElement: canvas, globals, step }) => {
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(LAZY_CHILDREN[0]!.title, async () => {
       await stepDone(canvas)
@@ -195,6 +197,13 @@ export const ServerRowModelLazyChildren: StoryObj<StoryProps> = {
       )
       await expect(rows[parent + 1 + TREE_CHILDREN]?.dataset.rowId).toBe(
         'item-id-2',
+      )
+      await expect(
+        canvas.querySelector('[role="status"][aria-live]')?.textContent?.trim(),
+      ).toBe(
+        rowExpandingLabels(storyLabels(args.locale)).announceChildrenLoaded(
+          TREE_CHILDREN,
+        ),
       )
       await settle()
     })

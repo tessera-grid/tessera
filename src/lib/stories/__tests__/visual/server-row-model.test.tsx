@@ -1364,6 +1364,114 @@ describe('Серверная модель строк (ADR 0138)', () => {
       }
     })
 
+    test('SD55: первый ответ ветки после раскрытия человеком кнопкой или клавишей — пришедшие строки вспыхивают arrived, скринридер слышит число строк ветки', async () => {
+      const { getRows } = server(treeAnswer)
+      const screen = await render(
+        <Grid
+          getRows={getRows}
+          rowCount={1000}
+          plugins={[rowExpanding({ hasChildren })]}
+        />,
+      )
+      const live = () =>
+        q('[role="status"][aria-live]')?.textContent?.trim() ?? ''
+      const said =
+        rowExpandingLabels(tableLabels).announceChildrenLoaded(CHILDREN)
+      try {
+        await expect.poll(() => toggleOf('r2')).not.toBeNull()
+        await humanClick(toggleOf('r2')!)
+        await expect
+          .poll(() => rowOf('r2.0')?.getAttribute('data-flash'))
+          .toBe('arrived')
+        await expect.poll(live).toBe(said)
+
+        toggleOf('r0')!.focus()
+        await userEvent.keyboard('{Enter}')
+        await expect
+          .poll(() => rowOf('r0.0')?.getAttribute('data-flash'))
+          .toBe('arrived')
+      } finally {
+        await screen.unmount()
+      }
+    })
+
+    test('SD58: при уменьшенном движении вспышка прихода снимается без перехода, в forced-colors объявление остаётся; axe с color-contrast в обеих темах', async ({
+      skip,
+    }) => {
+      const motion = commands as unknown as {
+        reducedMotion: (reduce: boolean) => Promise<void>
+      }
+      const style = document.createElement('style')
+      style.textContent =
+        '.data-grid-theme.data-grid-theme { --tsr-comp-flash-duration: 400ms; --tsr-comp-flash-fade-duration: 2000ms; }'
+      document.head.append(style)
+      await motion.reducedMotion(true)
+      const { getRows } = server(treeAnswer)
+      const screen = await render(
+        <Grid
+          getRows={getRows}
+          rowCount={1000}
+          plugins={[rowExpanding({ hasChildren })]}
+        />,
+      )
+      const flash = (id: string) => rowOf(id)?.getAttribute('data-flash')
+      const live = () =>
+        q('[role="status"][aria-live]')?.textContent?.trim() ?? ''
+      const fading = (id: string) => rowOf(id)?.hasAttribute('data-flash-out')
+      const flashAlpha = (id: string) => {
+        const probe = document.createElement('span')
+        probe.style.backgroundColor =
+          getComputedStyle(rowOf(id)!).getPropertyValue('--tsr-flash-row') ||
+          'transparent'
+        rowOf(id)!.append(probe)
+        const color = getComputedStyle(probe).backgroundColor
+        probe.remove()
+        return toRgba(color)[3]
+      }
+      const check = () =>
+        inBothThemes(async () => {
+          const { violations } = await axe.run(q('.data-grid-theme')!, {
+            ...AXE_OPTIONS,
+            rules: {
+              ...AXE_OPTIONS.rules,
+              'color-contrast': { enabled: true },
+            },
+          })
+          expect(violations).toEqual([])
+        })
+      try {
+        await expect.poll(() => toggleOf('r3')).not.toBeNull()
+        await humanClick(toggleOf('r3')!)
+        await expect.poll(() => flash('r3.0')).toBe('arrived')
+        await check()
+        // С переходом вспышка гасла бы ещё две секунды.
+        await expect.poll(() => fading('r3.0')).toBe(true)
+        expect(flashAlpha('r3.0')).toBe(0)
+        await humanClick(toggleOf('r3')!)
+
+        skip(
+          browser.browser === 'webkit',
+          'WebKit не подменяет цвета в forced-colors',
+        )
+        await fc.forcedColors(true)
+        try {
+          await humanClick(toggleOf('r1')!)
+          await expect
+            .poll(live)
+            .toBe(
+              rowExpandingLabels(tableLabels).announceChildrenLoaded(CHILDREN),
+            )
+          await check()
+        } finally {
+          await fc.forcedColors(false)
+        }
+      } finally {
+        await motion.reducedMotion(false)
+        style.remove()
+        await screen.unmount()
+      }
+    })
+
     test('PW4: ленивые дети в серверной модели — блок скелетов под строкой, на кнопке раскрытия дуга и «стоп» до первого ответа; отмена сворачивает строку и прерывает запрос блока', async () => {
       const { calls, getRows } = server(request =>
         request.parentId ? undefined : treeAnswer(request),

@@ -34,6 +34,14 @@ export interface RowSource<TRow = unknown> {
   /** Отменить загрузку ветки: человек отменил раскрытие. */
   cancelBranch?: (id: string) => void
   /**
+   * Позвать `done` на первый ответ ветки, которую раскрыл человек; ветка уже в кэше, отказ,
+   * отмена запроса окном или сворачиванием, новая выборка — вызова нет (ADR 0138, SD55–SD60).
+   */
+  whenBranchArrives?: (
+    id: string,
+    done: (arrival: BranchArrival) => void,
+  ) => void
+  /**
    * Весь список массивом, если он загружен целиком (клиентский режим). Без него дерево,
    * линии, движение строк и место броска в теле не считаются.
    */
@@ -136,6 +144,12 @@ export interface RowSource<TRow = unknown> {
   base?: RowSource<TRow>
   /** Новые строки слоя и их места в списке; журнал смен о них не знает (ADR 0178, DR50). */
   newRows?: () => readonly NewRowPlace[]
+}
+
+/** Первый ответ ветки: пришедшие строки и итог ветки, а если он неизвестен — их число. */
+export interface BranchArrival {
+  rowIds: readonly string[]
+  count: number
 }
 
 /** Новая строка и её место в списке. */

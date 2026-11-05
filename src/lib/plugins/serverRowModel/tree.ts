@@ -549,6 +549,29 @@ export class BlockTree<TData, TRow, TQuery> {
     )
   }
 
+  /** У ветки есть загруженные строки: раскрытие берёт их из кэша. */
+  branchCached(id: string): boolean {
+    return !!this.nodes.get(id)?.store.hasLoaded()
+  }
+
+  /** Ответ ветки; `'gone'` — отказ, `undefined` — ответа ещё нет. */
+  branchAnswer(
+    id: string,
+  ): { rows: TRow[]; count: number } | 'gone' | undefined {
+    const node = this.nodes.get(id)
+    if (!node?.store.hasLoaded()) {
+      return node && node.store.failures().length > 0 ? 'gone' : undefined
+    }
+    const rows = node.store
+      .knownRows()
+      .sort(([a], [b]) => a - b)
+      .map(([, row]) => row)
+    return {
+      rows,
+      count: node.store.isTotalKnown() ? node.store.count() : rows.length,
+    }
+  }
+
   /** Отменить запросы ветки: человек отменил раскрытие. */
   cancelBranch(id: string) {
     this.nodes.get(id)?.store.cancelInFlight()
