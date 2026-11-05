@@ -31,6 +31,7 @@ import {
   rowIdOf,
 } from '../../shared/rowMoves'
 import { commitRowMove } from './commitRowMove'
+import { commitGroupMove, isClientGrouped } from './groupMove'
 import { reportAction } from '../../core/debugActions'
 import { inOneCommit } from '../../util/oneCommit'
 import { findDropParent, indexBeforeMove } from '../../core/dragSession'
@@ -269,10 +270,21 @@ export const getRowDraggingEvents = (
     (isLazyParent(activeRow.getParentRow()) ||
       isLazyParent(rows.at(findDropParent(rows, { from, to, depth }, 0))))
 
-  const serverGrouped = () =>
-    rows.server &&
+  const grouped = () =>
     ((table.atoms as { grouping?: { get: () => unknown[] } }).grouping?.get()
       .length ?? 0) > 0
+
+  /** Клиентская группа: перестановки внутри неё нет (ADR 0186, §4). */
+  const inOwnGroup = (
+    activeRow: Row<any, any>,
+    from: number,
+    to: number,
+    depth: number,
+  ) =>
+    isClientGrouped(table) &&
+    from !== to &&
+    dropPlace(rows, activeRow, { from, to, depth }).parent?.id ===
+      activeRow.parentId
 
   /**
    * Место броска в серверной модели (ADR 0159, §4): ветка раскрыта, её строки пришли, сестра
@@ -407,8 +419,9 @@ export const getRowDraggingEvents = (
       const validDepth = getValidDepth(currentDepth, minDepth, maxDepth)
       const blocked = (depth: number) =>
         lazyBlocked(activeRow, activeVirtualIndex, overVirtualIndex, depth) ||
-        // Серверные группы: лист — только в группу того же уровня (ADR 0159, §5).
-        (serverGrouped() && depth !== activeRow.depth)
+        // Группы: лист — только в группу того же уровня (ADR 0159, §5; ADR 0186, §4).
+        (grouped() && depth !== activeRow.depth) ||
+        inOwnGroup(activeRow, activeVirtualIndex, overVirtualIndex, depth)
       if (
         lazyBlocked(activeRow, activeVirtualIndex, overVirtualIndex, validDepth)
       ) {
@@ -536,6 +549,37 @@ export const getRowDraggingEvents = (
             'rowDragging',
           ).onRowDragEnd,
         )
+        return resetDragState()
+      }
+      // Клиентская группировка (ADR 0186, §2): лист меняет группу, значение пишет приложение.
+      if (isClientGrouped(table)) {
+        const group = dropPlace(rows, activeRow, {
+          from: activeVirtualIndex,
+          to: overVirtualIndex,
+          depth: currentDepth,
+        }).parent
+        if (!group || group.id === activeRow.parentId) {
+          return cancel(active.id, 'cancel')
+        }
+        reportAction(table, {
+          plugin: 'rowDragging',
+          action: 'drop',
+          detail: { rowId, parentId: group.id },
+          source: 'pointer',
+          phase: 'end',
+        })
+        commitGroupMove(
+          table,
+          activeRow,
+          group,
+          { from: activeVirtualIndex, to: overVirtualIndex },
+          releaseSessionHooks<Partial<RowDraggingHooks>>(
+            table as never,
+            'rowDragging',
+          ).onRowDragEnd,
+        )
+        if (!group.getIsExpanded()) setExpandedByUser(group, true)
+        collapseOpenedByDelay(lineageOf(group.id))
         return resetDragState()
       }
       const activeParentId = activeRow.parentId

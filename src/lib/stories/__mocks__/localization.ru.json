@@ -245,6 +245,7 @@
   "rowDragging.moveDown": "Вниз",
   "rowDragging.moveToStart": "В начало",
   "rowDragging.moveToEnd": "В конец",
+  "rowDragging.moveToGroup": "В группу",
   "rowDragging.indentRow": "Вложить в строку выше",
   "rowDragging.outdentRow": "Вынести на уровень выше",
   "columnSizing.columnWidth": "Ширина колонки",

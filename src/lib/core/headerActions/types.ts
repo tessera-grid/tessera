@@ -210,6 +210,8 @@ export interface HeaderMenuItem {
   disabled?: boolean
   /** Отмечен ли пункт (галочка). */
   active?: boolean
+  /** Пункты раздела: пункт открывает их, а не выполняется (ADR 0186, §5). */
+  items?: HeaderMenuItem[]
 }
 
 /** Свёрнутый по всем слотам набор действий (аналог `RenderSlots`). */

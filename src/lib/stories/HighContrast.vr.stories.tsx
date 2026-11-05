@@ -2073,6 +2073,42 @@ export const HighContrastGroupSelectRegroupStep3 = {
   tags: ['!test'],
 }
 
+export const HighContrastGroupDragMoveStep1 = {
+  ...twinStep(rowsDraggingStories, rowsDraggingStories.GroupDragMove, 1),
+  name: 'Rows/Dragging — Move to another group, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastGroupDragMoveStep2 = {
+  ...twinStep(rowsDraggingStories, rowsDraggingStories.GroupDragMove, 2),
+  name: 'Rows/Dragging — Move to another group, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastGroupDragMoveStep3 = {
+  ...twinStep(rowsDraggingStories, rowsDraggingStories.GroupDragMove, 3),
+  name: 'Rows/Dragging — Move to another group, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastGroupDragRefusedStep1 = {
+  ...twinStep(rowsDraggingStories, rowsDraggingStories.GroupDragRefused, 1),
+  name: 'Rows/Dragging — Move refused by the server, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastGroupDragRefusedStep2 = {
+  ...twinStep(rowsDraggingStories, rowsDraggingStories.GroupDragRefused, 2),
+  name: 'Rows/Dragging — Move refused by the server, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastGroupDragRefusedStep3 = {
+  ...twinStep(rowsDraggingStories, rowsDraggingStories.GroupDragRefused, 3),
+  name: 'Rows/Dragging — Move refused by the server, шаг 3',
+  tags: ['!test'],
+}
+
 export const HighContrastRowMotionTreeStep1 = {
   ...twinStep(rowsMotionStories, rowsMotionStories.RowMotionTree, 1),
   name: 'Rows/Motion — Tree, шаг 1',
@@ -2106,6 +2142,18 @@ export const HighContrastRowMotionSearchStep2 = {
 export const HighContrastRowMotionSearchStep3 = {
   ...twinStep(rowsMotionStories, rowsMotionStories.RowMotionSearch, 3),
   name: 'Rows/Motion — Sort and search, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastRowMotionDeleteStep1 = {
+  ...twinStep(rowsMotionStories, rowsMotionStories.RowMotionDelete, 1),
+  name: 'Rows/Motion — Delete a row, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastRowMotionDeleteStep2 = {
+  ...twinStep(rowsMotionStories, rowsMotionStories.RowMotionDelete, 2),
+  name: 'Rows/Motion — Delete a row, шаг 2',
   tags: ['!test'],
 }
 
@@ -2251,18 +2299,6 @@ export const HighContrastSortingExternalControlsStep2 = {
   ...twinStep(
     columnsSortingStories,
     columnsSortingStories.SortingExternalControls,
-export const HighContrastRowMotionDeleteStep1 = {
-  ...twinStep(rowsMotionStories, rowsMotionStories.RowMotionDelete, 1),
-  name: 'Rows/Motion — Delete a row, шаг 1',
-  tags: ['!test'],
-}
-
-export const HighContrastRowMotionDeleteStep2 = {
-  ...twinStep(rowsMotionStories, rowsMotionStories.RowMotionDelete, 2),
-  name: 'Rows/Motion — Delete a row, шаг 2',
-  tags: ['!test'],
-}
-
     2,
   ),
   name: 'Columns/Sorting — External controls, шаг 2',

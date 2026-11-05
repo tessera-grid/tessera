@@ -73,6 +73,8 @@ import { setPluginState } from '../../../core/definePlugin'
 import { cellSelection } from '../../../plugins/cellSelection'
 import { rowExpanding } from '../../../plugins/rowExpanding'
 import { rowGrouping } from '../../../plugins/rowGrouping'
+import { moveRowToGroup } from '../../../plugins/rowDragging/groupMove'
+import { rowSelection } from '../../../plugins/rowSelection'
 import { columnSorting } from '../../../plugins/columnSorting'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
@@ -4676,6 +4678,114 @@ describe('Отзывчивость — флажок группы', () => {
       expect(
         group.longestMs,
         `флажок группы longest=${group.longestMs.toFixed(1)}ms, база ${base.longestMs.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Перенос между группами (ADR 0186, GM10): стадия модели группировки на 100 000 строк в 100 группах
+// против той же смены значения записью в данные: стадия пересобирает группировку, запись — ещё и
+// исходную модель. Строка ходит между двумя группами, прогрев и замер — по одному переносу.
+const GM10_ROWS = Array.from({ length: 100_000 }, (_, i) => ({
+  id: `r${i}`,
+  group: `g${Math.floor(i / 1000)}`,
+  name: `Name ${i}`,
+}))
+type GM10Row = (typeof GM10_ROWS)[number]
+let gm10: {
+  table: unknown
+  setData: (change: (rows: GM10Row[]) => GM10Row[]) => void
+}
+const GroupMoveGrid = () => {
+  const [data, setData] = useState(GM10_ROWS)
+  const table = useCreateTable({
+    columns: CG13_COLUMNS as never,
+    data,
+    getRowId: (row: GM10Row) => row.id,
+    plugins: [
+      rowExpanding({ initialExpanded: true }),
+      rowGrouping({ initialGrouping: ['group'] }),
+      rowDragging({ onRowDragEnd: () => Promise.resolve() }),
+    ] as never,
+  })
+  gm10 = { table, setData }
+  return (
+    <div style={{ padding: 16, height: 600 }}>
+      <DataGrid table={table as never} height={500} />
+    </div>
+  )
+}
+
+describe('Отзывчивость — перенос между группами', () => {
+  test(
+    'GM10: бросок на 100 000 строк в группах не дороже той же смены значения записью в данные, больше чем на цену прохода группировки',
+    async () => {
+      const measure = async (staged: boolean) => {
+        const screen = render(<GroupMoveGrid />)
+        const leaf = () =>
+          document.querySelector('.data-grid__body-row[data-row-id="r0"]')
+        await expect.poll(leaf).toBeTruthy()
+        let target = 'g1'
+        const result = await measureInteractionWork(async () => {
+          const value = target
+          target = target === 'g1' ? 'g0' : 'g1'
+          if (!staged) {
+            gm10.setData(rows =>
+              rows.map(row =>
+                row.id === 'r0' ? { ...row, group: value } : row,
+              ),
+            )
+            return
+          }
+          const table = gm10.table as {
+            getRow: (id: string, loose: boolean) => never
+            getRowModel: () => { rowsById: Record<string, never> }
+          }
+          moveRowToGroup(
+            table,
+            table.getRow('r0', true),
+            table.getRowModel().rowsById[`group:${value}`]!,
+          )
+        })
+        ;(await screen).unmount()
+        await cleanup()
+        return result
+      }
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const staged = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = ceilingOver(base.longestMs, { ratio: 1.3, plusMs: 100 })
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '100 000×2',
+          plugins: 'rowGrouping, rowExpanding, rowDragging',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('GM10-base', 'смена значения записью в данные', base, false)
+      await record('GM10', 'перенос со стадией', staged, true)
+
+      expect(
+        staged.longestMs,
+        `стадия longest=${staged.longestMs.toFixed(1)}ms, база ${base.longestMs.toFixed(1)}ms`,
       ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,

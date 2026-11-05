@@ -141,10 +141,12 @@ export const rowDraggingInertReason = (
   table: unknown,
 ): PluginInertReason | undefined => {
   const t = table as DraggableTable
-  // Серверная группировка — лист переносится между группами (ADR 0159, §5).
+  // Лист переносится между группами: серверными (ADR 0159, §5) и клиентскими, если приложению
+  // есть чем записать значение (ADR 0186, §1).
   if (
     (t.atoms.grouping?.get() ?? []).length > 0 &&
-    !serverRowModelReason(table)
+    !serverRowModelReason(table) &&
+    !canMoveInLazyTree(table)
   ) {
     return 'grouping'
   }
@@ -174,7 +176,7 @@ export const canDragRow = (row: DraggableRow): boolean => {
     warnPluginInert(row.table, 'rowDragging', reason)
     return false
   }
-  // Строки-группы серверной группировки не переносятся (ADR 0159, §5).
+  // Строки-группы не переносятся (ADR 0159, §5).
   if (row.groupingColumnId !== undefined) {
     return false
   }

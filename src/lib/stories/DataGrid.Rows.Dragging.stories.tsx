@@ -734,3 +734,210 @@ export const RowDraggingLazyTree: StoryObj<StoryProps> = {
     await settle()
   },
 }
+
+// --- ADR 0186, S1–S2: перенос между клиентскими группами ------------------------------
+
+interface GroupItem {
+  id: string
+  team: string
+  name: string
+}
+
+const GROUP_ITEMS: GroupItem[] = ['Alpha', 'Beta'].flatMap((team, t) =>
+  Array.from({ length: 3 }, (_, i) => ({
+    id: `task-${t * 3 + i}`,
+    team,
+    name: `Task ${t * 3 + i + 1}`,
+  })),
+)
+const GROUP_COLUMNS = [
+  { id: 'team', accessorKey: 'team', header: 'Team', enableGrouping: true },
+  { id: 'name', accessorKey: 'name', header: 'Name' },
+]
+const GROUP_LEAF = 'task-1'
+const FROM_GROUP = 'team:Alpha'
+const TO_GROUP = 'team:Beta'
+
+/** «Сервер» отвечает на перенос, когда шаг отпустит ответ. */
+const groupServer = {
+  move: undefined as
+    { resolve: () => void; reject: (reason: Error) => void } | undefined,
+  onRowDragEnd: (_end: RowDragEnd) =>
+    new Promise<void>((resolve, reject) => {
+      groupServer.move = { resolve, reject }
+    }),
+}
+
+const GROUP_GRID = {
+  columnsOverride: GROUP_COLUMNS,
+  dataOverride: GROUP_ITEMS,
+  enableRowGrouping: true,
+  initialGrouping: ['team'],
+  enableRowExpanding: true,
+  initialExpanded: true,
+  enableRowDragging: true,
+  onRowDragEnd: groupServer.onRowDragEnd,
+  containerHeight: '520',
+  height: '420',
+  maxHeight: '420',
+} satisfies Partial<StoryProps>
+
+const positionOf = (root: HTMLElement, id: string) =>
+  Number(rowOf(root, id)?.dataset.index ?? -1)
+const inOtherGroup = (root: HTMLElement) =>
+  positionOf(root, GROUP_LEAF) > positionOf(root, TO_GROUP)
+const waitingOnServer = (root: HTMLElement) =>
+  rowOf(root, GROUP_LEAF)?.getAttribute('aria-busy') === 'true'
+const refusedInGroup = (root: HTMLElement) =>
+  !inOtherGroup(root) &&
+  rowOf(root, GROUP_LEAF)?.getAttribute('data-flash') === 'reverted'
+
+/** Пользователь переносит строку первой в другую группу: уровень строки, слот под группой. */
+const dropInOtherGroup = async (root: HTMLElement, run: StepRun) => {
+  if (inOtherGroup(root)) return
+  groupServer.move = undefined
+  const held: HeldRow = await holdRowAtLevel(
+    root,
+    GROUP_LEAF,
+    TO_GROUP,
+    1,
+    run,
+    'name',
+  )
+  let y = rowOf(root, TO_GROUP)!.getBoundingClientRect().bottom
+  for (let tries = 0; ; tries++) {
+    await layoutStill(rowOf(root, TO_GROUP)!)
+    run.signal.throwIfAborted()
+    const slot = root.querySelector(DRAG_FILL)!.getBoundingClientRect()
+    const group = rowOf(root, TO_GROUP)!.getBoundingClientRect()
+    if (Math.abs(slot.top - group.bottom) < 2) break
+    if (tries === 12) throw new Error(`Слот не под группой ${TO_GROUP}`)
+    y += slot.top < group.top ? 6 : -6
+    await held.moveTo({ x: held.xAt(1), y }, 2)
+  }
+  await held.release()
+}
+
+const GROUP_INTRO: GuideStoryStep = {
+  title: 'Строки по командам',
+  hint: 'Строки сгруппированы по команде. Чтобы сменить команду, строку переносят в другую группу.',
+}
+const GROUP_DROPPED: GuideStoryStep = {
+  title: 'Пользователь перенёс строку в другую группу',
+  hint: 'Строка встала в другой группе, а сервер ещё сохраняет перенос: строка занята.',
+  states: ['drag.pending'],
+  enter: stepAction(async (root, run) => {
+    await dropInOtherGroup(root, run)
+    await pollUntil(() => waitingOnServer(root), run.signal)
+  }),
+}
+
+const GROUP_MOVE: readonly GuideStoryStep[] = [
+  GROUP_INTRO,
+  GROUP_DROPPED,
+  {
+    title: 'Сервер подтвердил',
+    hint: 'Сервер сохранил перенос, и приложение записало новую команду в свои данные. Строка осталась в новой группе.',
+    enter: stepAction(async (root, run, app) => {
+      await dropInOtherGroup(root, run)
+      await pollUntil(() => !!groupServer.move, run.signal)
+      app.update(props => ({
+        ...props,
+        dataOverride: GROUP_ITEMS.map(item =>
+          item.id === GROUP_LEAF ? { ...item, team: 'Beta' } : item,
+        ),
+      }))
+      groupServer.move?.resolve()
+      await pollUntil(
+        () => !waitingOnServer(root) && inOtherGroup(root),
+        run.signal,
+      )
+    }),
+  },
+]
+
+/** ADR 0186, S1: строка переносится в другую группу, сервер подтверждает. */
+export const GroupDragMove: StoryObj<StoryProps> = {
+  name: 'Move to another group',
+  parameters: { scenario: '0186/S1', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Перенос в другую группу"
+      steps={GROUP_MOVE}
+      args={guideArgs(GROUP_GRID, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(GROUP_MOVE[0]!.title, async () => {
+      await until(() => expect(rowOf(canvas, TO_GROUP)).toBeTruthy())
+      await expect(inOtherGroup(canvas)).toBe(false)
+    })
+    await step(GROUP_MOVE[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await until(() => expect(document.querySelector(OVERLAY)).toBeNull())
+      await expect(inOtherGroup(canvas)).toBe(true)
+      await expect(waitingOnServer(canvas)).toBe(true)
+    })
+    await step(GROUP_MOVE[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(inOtherGroup(canvas)).toBe(true)
+      await expect(waitingOnServer(canvas)).toBe(false)
+      await settle()
+    })
+  },
+}
+
+const GROUP_REFUSED: readonly GuideStoryStep[] = [
+  GROUP_INTRO,
+  GROUP_DROPPED,
+  {
+    title: 'Сервер отказал',
+    hint: 'Сервер не принял перенос. Данные приложения не менялись, поэтому строка вернулась в свою группу и коротко вспыхнула.',
+    immediate: true,
+    enter: stepAction(async (root, run) => {
+      await dropInOtherGroup(root, run)
+      await pollUntil(() => !!groupServer.move, run.signal)
+      groupServer.move?.reject(new Error('Server unavailable'))
+      await pollUntil(() => refusedInGroup(root), run.signal)
+    }),
+  },
+]
+
+/** ADR 0186, S2: сервер отказал — строка возвращается в свою группу. */
+export const GroupDragRefused: StoryObj<StoryProps> = {
+  name: 'Move refused by the server',
+  parameters: { scenario: '0186/S2', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Отказ в переносе"
+      steps={GROUP_REFUSED}
+      args={guideArgs(GROUP_GRID, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(GROUP_REFUSED[0]!.title, async () => {
+      await until(() => expect(rowOf(canvas, TO_GROUP)).toBeTruthy())
+    })
+    await step(GROUP_REFUSED[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await until(() => expect(document.querySelector(OVERLAY)).toBeNull())
+      await expect(inOtherGroup(canvas)).toBe(true)
+    })
+    await step(GROUP_REFUSED[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(inOtherGroup(canvas)).toBe(false)
+      await until(() =>
+        expect(rowOf(canvas, FROM_GROUP)?.getAttribute('aria-busy')).not.toBe(
+          'true',
+        ),
+      )
+      await settle()
+    })
+  },
+}

@@ -234,6 +234,8 @@ export const BodyCell = memo(
       table.options.groupRowCount !== false
         ? rowSourceOf(table).groupRowCount?.(cell.row)
         : undefined
+    // Значение меняется и без смены данных: стадия переноса между группами (ADR 0186, §3).
+    const value = cell.getValue()
     const render = useMemo(() => {
       if (showSkeleton) {
         return renderSkeletonCell(
@@ -258,7 +260,7 @@ export const BodyCell = memo(
         )
       }
 
-      const content = renderCellContent(cell, labels)
+      const content = renderCellContent(cell, labels, value)
 
       // Сервисная колонка — контент без CellWrapperTitle.
       return isActionsColumn ? (
@@ -281,6 +283,7 @@ export const BodyCell = memo(
       )
     }, [
       cell,
+      value,
       groupCount,
       labels,
       isActionsColumn,

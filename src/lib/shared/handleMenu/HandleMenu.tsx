@@ -8,7 +8,7 @@ import { type RefObject, Suspense, useState } from 'react'
 import { reportAction, sourceOf } from '../../core/debugActions'
 import type { HeaderMenuItem } from '../../core/headerActions'
 import { type LazyTriggerState, useLazyOpening } from '../../core/lazyOpening'
-import type { TableLabels } from '../../core/localization'
+import { type TableLabels, useLocalization } from '../../core/localization'
 import { preloadable } from '../../core/preloadable'
 
 const HandleMenuPopupImpl = preloadable(() =>
@@ -71,6 +71,7 @@ export const HandleMenu = ({
   plugin,
 }: HandleMenuProps) => {
   const [items] = useState(getItems)
+  const labels = useLocalization()
   return (
     <Suspense fallback={null}>
       <HandleMenuPopupImpl.Component
@@ -78,6 +79,7 @@ export const HandleMenu = ({
         focusTarget={focusTarget}
         label={label}
         items={items}
+        backLabel={labels.menuBack}
         onClose={onClose}
         onItemSelect={(id, event) =>
           reportAction(table, {

@@ -11,13 +11,13 @@ import { CheckboxView } from '../ui/Checkbox/CheckboxView'
 export const renderCellContent = (
   cell: Cell<any, any, unknown>,
   labels: TableLabels,
+  value: unknown = cell.getValue(),
 ) => {
   const { column } = cell
   if (
     column.columnDef.cell === defaultCell &&
     column.getDataType()?.base === 'boolean'
   ) {
-    const value = cell.getValue()
     if (typeof value === 'boolean') {
       return (
         <CheckboxView

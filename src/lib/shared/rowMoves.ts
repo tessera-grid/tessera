@@ -24,6 +24,8 @@ export interface RowMoveEntry {
   attempt: number
   /** Промис `onRowDragEnd` не выполнен. */
   pending: boolean
+  /** Перенос между группами: значения колонок группировки цели (ADR 0186, §3). */
+  group?: Readonly<Record<string, unknown>>
   /** Ленивый перенос: виден стадией модели, пока итог не записан. */
   lazy?: LazyRowMove
 }
@@ -46,6 +48,13 @@ const NO_MOVES: RowMoves = {}
 export const hasLazyMoves = (moves: RowMoves) => {
   for (const rowId in moves) if (moves[rowId]!.lazy) return true
   return false
+}
+
+/** Строки в стадии переноса между группами: при смене модель группировки пересобирается. */
+export const groupMovesKey = (moves: RowMoves) => {
+  let key = ''
+  for (const rowId in moves) if (moves[rowId]!.group) key += `${rowId}\u0000`
+  return key
 }
 
 export const readRowMoves = (table: unknown): RowMoves =>

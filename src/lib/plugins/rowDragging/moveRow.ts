@@ -10,6 +10,7 @@ import { readPluginHooks } from '../../core/definePlugin'
 import { readRowMoves } from '../../shared/rowMoves'
 import { commitRowMove, type RowMoveCommit } from './commitRowMove'
 import { canNestInto } from './draggingHelpers'
+import { isClientGrouped } from './groupMove'
 import {
   moveServerRow,
   type RowMoveEdge,
@@ -61,7 +62,9 @@ const onRowOrderChangeOf = (table: unknown) =>
 export const isMovableRow = (row: unknown, table: unknown) =>
   (row as MoveRow).getCanDrag() &&
   // Порядок серверной модели — в её кэше, `onRowOrderChange` не нужен (ADR 0159, §2).
-  (!!onRowOrderChangeOf(table) || !!serverMoveSource(table)) &&
+  (!!onRowOrderChangeOf(table) ||
+    !!serverMoveSource(table) ||
+    isClientGrouped(table)) &&
   !((row as MoveRow).id in readRowMoves(table))
 
 const isLazy = (row: MoveRow | undefined) => !!row?.getIsLazyParent?.()
@@ -138,6 +141,8 @@ export const canMoveRow = (
       serverMoveTarget(server, (row as MoveRow).id, direction) !== undefined
     )
   }
+  // Перестановки внутри клиентской группы нет (ADR 0186, §4).
+  if (isClientGrouped(table)) return false
   const r = row as MoveRow
   const to = r.index + direction
   return to >= 0 && to < siblingsOf(r, table).length
@@ -234,7 +239,7 @@ export const nestRow = (row: unknown, table: unknown) => {
 
 /** Выносится только подстрока корневой группы. */
 export const canUnnestRow = (row: unknown, table: unknown) => {
-  if (serverMoveSource(table)) return false
+  if (serverMoveSource(table) || isClientGrouped(table)) return false
   const parent = (row as MoveRow).getParentRow()
   return !!parent && parent.depth === 0
 }

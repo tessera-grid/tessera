@@ -16,6 +16,8 @@ export interface RowDraggingLabels {
   /** Меню ручки строки в серверной модели: к краям списка (ADR 0159, §6) */
   moveToStart: string
   moveToEnd: string
+  /** Раздел меню ручки при группировке (ADR 0186, §5). */
+  moveToGroup: string
   indentRow: string
   outdentRow: string
   /** Действие: отмена переноса строки */
@@ -43,6 +45,7 @@ export const rowDraggingLabels = defineLabels<RowDraggingLabels>()(
     moveDown: 'Move down',
     moveToStart: 'Move to start',
     moveToEnd: 'Move to end',
+    moveToGroup: 'Move to group',
     indentRow: 'Indent',
     outdentRow: 'Outdent',
     actionDragCancel: 'Cancel moving',

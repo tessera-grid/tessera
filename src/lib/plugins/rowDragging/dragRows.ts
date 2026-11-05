@@ -23,6 +23,12 @@ interface ModelTable {
   }
 }
 
+/** Все строки модели группировки, в том числе в свёрнутых группах (ADR 0186, §5). */
+export const groupedRowsOf = (table: unknown) =>
+  (
+    table as { getGroupedRowModel: () => { flatRows: AnyRow[] } }
+  ).getGroupedRowModel().flatRows
+
 /** `rows` — строки модели TanStack, если они уже прочитаны. */
 export const dragRowsOf = (
   table: unknown,

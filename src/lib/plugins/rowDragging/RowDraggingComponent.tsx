@@ -21,6 +21,12 @@ import {
   nestRow,
   unnestRow,
 } from './moveRow'
+import {
+  groupMoveTargets,
+  groupPathLabel,
+  isClientGrouped,
+  moveRowToGroup,
+} from './groupMove'
 import { type RowMoveEdge, serverMoveSource } from './serverMove'
 import { rowDraggingLabels } from './labels'
 
@@ -57,6 +63,23 @@ export const RowDraggingComponent = ({ row, table }: CellComponentProps) => {
   })
 
   const server = !!serverMoveSource(table)
+  // Клиентская группа: строка только меняет группу (ADR 0186, §5).
+  const getGroupItems = () => {
+    const targets = groupMoveTargets(row, table)
+    return [
+      {
+        id: 'moveToGroup',
+        label: rowDraggingLabels(labels).moveToGroup,
+        disabled: targets.length === 0,
+        onSelect: () => {},
+        items: targets.map(group => ({
+          id: group.id,
+          label: groupPathLabel(group),
+          onSelect: () => moveRowToGroup(table, row, group),
+        })),
+      },
+    ]
+  }
   const getMenuItems = () => [
     move('moveUp', rowDraggingLabels(labels).moveUp, -1),
     move('moveDown', rowDraggingLabels(labels).moveDown, 1),
@@ -92,7 +115,13 @@ export const RowDraggingComponent = ({ row, table }: CellComponentProps) => {
       label={rowDraggingLabels(labels).moveRow}
       table={table}
       busy={busy}
-      getMenuItems={isMovableRow(row, table) ? getMenuItems : undefined}
+      getMenuItems={
+        !isMovableRow(row, table)
+          ? undefined
+          : isClientGrouped(table)
+            ? getGroupItems
+            : getMenuItems
+      }
     />
   )
 }

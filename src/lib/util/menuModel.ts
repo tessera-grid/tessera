@@ -37,6 +37,8 @@ export interface HandleMenuItemModel {
   label: string
   disabled?: boolean
   onSelect: () => void
+  /** Пункты раздела: пункт открывает их, а не выполняется. */
+  items?: HandleMenuItemModel[]
 }
 
 export interface MenuGroupModel {

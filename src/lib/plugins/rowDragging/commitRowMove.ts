@@ -18,6 +18,7 @@ import {
   withoutRow,
   withRowNear,
 } from '../../shared/rowMoves'
+import type { RenderVersionAtom } from '../../core/renderVersion'
 import { inOneCommit } from '../../util/oneCommit'
 import { isThenable, rejectionText } from '../../util/thenable'
 import type { RowMoveFailed } from './rowDraggingFeature'
@@ -61,6 +62,8 @@ export interface RowMoveCommit {
   /** Значения колонок группировки групп после и до переноса (ADR 0159, §5). */
   groupValues?: Record<string, unknown>
   previousGroupValues?: Record<string, unknown>
+  /** Перенос между клиентскими группами: стадия до итога промиса (ADR 0186, §3). */
+  group?: Record<string, unknown>
 }
 
 const withoutEntry = (moves: RowMoves, rowId: string): RowMoves => {
@@ -232,6 +235,17 @@ const reject = (
   announceLabel(table, all => rowDraggingLabels(all).announceMoveFailed(error))
 }
 
+/**
+ * Стадия меняет значение ячейки без смены данных, а ячейки запомнены по строке: версия
+ * отрисовки заставляет их перечитать значение (ADR 0186, §3).
+ */
+const refreshStagedCells = (table: unknown) => {
+  const version = (
+    table as { options: { pluginRenderVersion?: RenderVersionAtom } }
+  ).options.pluginRenderVersion
+  version?.set(version.get() + 1)
+}
+
 // Номер попытки сквозной: итог прежнего переноса не спутать с новым.
 let lastAttempt = 0
 
@@ -283,8 +297,14 @@ export const commitRowMove = (
     }
     return
   }
-  const entry: RowMoveEntry = { attempt, pending: true, lazy }
+  const entry: RowMoveEntry = {
+    attempt,
+    pending: true,
+    lazy,
+    group: commit.group,
+  }
   t.setRowMoves?.(prev => ({ ...prev, [rowId]: entry }))
+  if (commit.group) refreshStagedCells(table)
   const settle = (ok: boolean, reason?: unknown) => {
     if (readRowMoves(table)[rowId]?.attempt !== attempt) {
       return
@@ -295,6 +315,7 @@ export const commitRowMove = (
     } else {
       reject(t, commit, entry, reason)
     }
+    if (commit.group) refreshStagedCells(table)
   }
   // Стадия модели и `data` приложения меняются одним коммитом: строка не пропадает.
   result.then(

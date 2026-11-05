@@ -539,6 +539,10 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       `row-grouping` (RG1–RG11, [ADR 0016](docs/decisions/0016-row-grouping.md)),
       `row-dragging` (D1–D15, [ADR 0006](docs/decisions/0006-dnd-with-dnd-kit.md); D33–D34 — модульный `rowDragging`;
       `row-dragging-window` — D35–D36, перетаскивание через границу окна настоящей мышью),
+      перенос между клиентскими группами — `row-group-move` (GM2, GM4–GM9 — бросок, отказ, своя
+      группа, пауза над свёрнутой, раздел меню ручки, канал действий, axe), модульный
+      `clientGroupMove.dom` (GM1, GM3 — когда активен, стадия до итога), перф GM10 — в `interaction`,
+      истории «Rows/Dragging» S1–S2 ([ADR 0186](docs/decisions/0186-row-move-between-client-groups.md)),
       `row-actions` (RA1–RA2, [ADR 0025](docs/decisions/0025-row-actions.md)).
     - _Клавиатура:_ `keyboard-navigation` (KN1–KN28, KN30–KN31 — роль grid, roving tabindex, режим действия, Tab-выход,
       стрелки/Home/End/Page, пиновка под виртуализацией, фокус от указателя до конца нажатия,
