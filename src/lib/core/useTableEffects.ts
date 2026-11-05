@@ -31,8 +31,10 @@ import {
 } from './pluginDiagnostics'
 import { useIsomorphicLayoutEffect } from '../util/useIsomorphicLayoutEffect'
 
+/** `instance` — сам экземпляр таблицы: подписки живут дольше рендера, а опции копии `table` — нет. */
 export const useTableEffects = (
   table: unknown,
+  instance: unknown,
   plugins: readonly TesseraFeatureEntry[],
   folded: FoldedEntryConfig,
   signature: string,
@@ -45,10 +47,10 @@ export const useTableEffects = (
 
   // Императивный сетап плагинов (generic-escape) — единым эффектом; перезапускается
   // только при смене состава набора или значения аргументов фабрик (ADR 0039, RX24).
-  // `table` в зависимости не входит: обёртка useTable новая на каждом рендере.
+  // Подписки `setup` читают живые опции экземпляра (RX28).
   useEffect(
     () => {
-      const cleanups = folded.setups.map(setup => setup(table))
+      const cleanups = folded.setups.map(setup => setup(instance))
       return () => {
         cleanups.forEach(cleanup => cleanup?.())
       }
@@ -121,7 +123,7 @@ export const useTableEffects = (
   // Диапазоны подсветки и вспышки на индексах следуют за списком строк (ADR 0152, §4). Держим по
   // `store`: подписка на новый объект таблицы не увидела бы смену списка в эффекте потомка (TG21).
   // eslint-disable-next-line react-hooks/exhaustive-deps -- таблица живёт вместе со store
-  useEffect(() => followIndexRanges(table), [store])
+  useEffect(() => followIndexRanges(instance), [store])
 
   // Дев-варн статической инертности плагинов (ADR 0036, PQ2) — на смену набора.
   useEffect(
@@ -141,15 +143,15 @@ export const useTableEffects = (
   // набора (MD4); клиентская операция над частью строк — на смену срезов (MD5).
   useEffect(
     () => {
-      warnDataModeInServerRows(table)
-      warnClientOverPartialRows(table)
+      warnDataModeInServerRows(instance)
+      warnClientOverPartialRows(instance)
       const subscription = (
-        table as {
+        instance as {
           store: {
             subscribe: (listener: () => void) => { unsubscribe: () => void }
           }
         }
-      ).store.subscribe(() => warnClientOverPartialRows(table))
+      ).store.subscribe(() => warnClientOverPartialRows(instance))
       return () => subscription.unsubscribe()
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- держим по значению аргументов

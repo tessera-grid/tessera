@@ -445,6 +445,7 @@ export const useCreateTable = <
 
   useTableEffects(
     table,
+    sliceStore.table(),
     entries,
     folded,
     signature,

@@ -864,7 +864,7 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       `plugin-errors` (PE1–PE2 — падение рендера плагина не роняет грид), модульные
       `pluginErrors` (PE3–PE6 — `setup`, `diagnose`, `reconcile`, статус `error`),
       [ADR 0037](docs/decisions/0037-plugin-error-isolation.md); модульные
-      `reactiveArgs` (RX1–RX3, RX21, RX24 — живые аргументы фабрик, `setup` раз на
+      `reactiveArgs` (RX1–RX3, RX21, RX24, RX28 — живые аргументы фабрик, `setup` с живыми опциями раз на
       значение аргументов), `pluginLifetime`
       (RX4–RX7 — договоры на время жизни и `initialPageSize`), `effectiveState`
       (RX9–RX10, RX12–RX13, RX25–RX27 — эффективное состояние, пересчёт при смене данных и колонок, снятие сужения на лету, в том числе у среза ядра), визуальные `reactive-args`

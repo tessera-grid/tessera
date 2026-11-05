@@ -1,15 +1,16 @@
 // @vitest-environment happy-dom
 /**
- * Живые аргументы фабрик плагинов (ADR 0039, RX1–RX3, RX21, RX24): смена значения
+ * Живые аргументы фабрик плагинов (ADR 0039, RX1–RX3, RX21, RX24, RX28): смена значения
  * применяется без пересоздания таблицы, функции живые при стабильной ссылке, новый
  * объект с теми же значениями — не смена; политика сортировки меняется на лету;
- * `setup` — раз на значение аргументов.
+ * `setup` — раз на значение аргументов и с живыми опциями таблицы.
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
-import { act } from 'react'
+import { act, StrictMode, useEffect } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { registerAnnouncer } from '../core/announcer'
 import { definePlugin } from '../core/definePlugin'
 import { useCreateTable } from '../core/useCreateTable'
 import { cellSelection, columnSorting, rowSelection } from '../plugins'
@@ -231,5 +232,52 @@ describe('перезапуск setup', () => {
     expect(cleanup.mock.invocationCallOrder[0]).toBeLessThan(
       setup.mock.invocationCallOrder[1],
     )
+  })
+
+  it('RX28: setup держит таблицу с живыми опциями: опция, сменённая после монтирования без смены аргументов, действует в его подписках', () => {
+    const said: string[] = []
+    let held: any
+    const probe = definePlugin<{ enabled?: boolean }>()({
+      id: 'optionsProbe',
+      setup: () => table => {
+        held = table
+      },
+    })
+    const plugins = [rowSelection(), probe()]
+    const OptionsHost = ({ announcements }: { announcements: boolean }) => {
+      captured = useCreateTable({
+        columns: columns as never,
+        data,
+        enableAnnouncements: announcements,
+        plugins,
+      })
+      useEffect(
+        () =>
+          registerAnnouncer(captured, {
+            labels: {} as never,
+            say: text => said.push(text),
+          }),
+        [],
+      )
+      return null
+    }
+    const render = (announcements: boolean) =>
+      act(() =>
+        root!.render(
+          <StrictMode>
+            <OptionsHost announcements={announcements} />
+          </StrictMode>,
+        ),
+      )
+    root = createRoot(document.createElement('div'))
+    render(true)
+    act(() => captured.getRowModel().rows[0].toggleSelected())
+    expect(said).toHaveLength(1)
+
+    render(false)
+    expect(held.store).toBe(captured.store)
+    expect(held.options.enableAnnouncements).toBe(false)
+    act(() => captured.getRowModel().rows[1].toggleSelected())
+    expect(said).toHaveLength(1)
   })
 })
