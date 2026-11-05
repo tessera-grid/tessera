@@ -555,7 +555,7 @@ const REGIONS: [string, string][] = [
   ['popup', '[data-side]'],
   ['toolbar', '[role="toolbar"]'],
   ['head', '.data-grid__head-cell'],
-  ['footer', '[class*="footer"]'],
+  ['footer', '.data-grid__footer, [data-popup-footer]'],
   ['row', '.data-grid__body-row'],
 ]
 
@@ -727,6 +727,8 @@ export const ALLOWED_INCOMPLETE: Record<string, string> = {
     'номер приоритета и счётчики из одной-двух цифр; их контраст считает CX3–CX4',
   bgOverlap:
     'в стопке под текстом — прозрачный слой блика ячейки или грид под непрозрачным поповером; фон — у предков, его складывает effectiveBg, CX1–CX5',
+  nonBmp:
+    'узел из одних символов — стрелка «было → стало» в пульте: axe такой текст не считает, его считает аудит узлов, CX1–CX5',
 }
 
 const reasonOf = (node: axe.NodeResult) => {
@@ -835,9 +837,7 @@ export const loadStories = async (): Promise<CatalogStory[]> => {
 }
 
 export const gridsAndPopups = (container: HTMLElement) => {
-  const grids = [
-    ...container.querySelectorAll('.data-grid-theme[class*="theme-wrapper"]'),
-  ]
+  const grids = [...container.querySelectorAll('[data-tsr-grid]')]
   const popups = [
     ...document.querySelectorAll('[role="menu"], [role="dialog"], [data-side]'),
   ].filter(el => !container.contains(el))

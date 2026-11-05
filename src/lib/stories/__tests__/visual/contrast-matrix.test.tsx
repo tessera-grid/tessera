@@ -198,10 +198,7 @@ describe('Матрица контраста (ADR 0089) по каталогу (AD
   test('CX6: матрица идёт на двух палитрах — запасной и палитре историй', async () => {
     const [{ Story }] = await catalogStories()
     const screen = await render(<Story />)
-    const wrapper = () =>
-      screen.container.querySelector(
-        '.data-grid-theme[class*="theme-wrapper"]',
-      )!
+    const wrapper = () => screen.container.querySelector('[data-tsr-grid]')!
     await expect.poll(wrapper).toBeTruthy()
     const border = async (palette: Palette) => {
       await applyCombo({ palette, theme: 'light', mode: 'more' })

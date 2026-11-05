@@ -95,14 +95,19 @@ class StopReplay extends Error {}
 
 /** Вспышка итога (ADR 0134): живёт по таймеру, переходом её не довести. */
 const FLASHES = '[data-flash], [data-column-flash]'
-/** Предел ожидания конца вспышек шага, мс (CX19). */
-const FLASH_WAIT = 5000
+/**
+ * Быстрая прокрутка (ADR 0008): ячейки — скелеты, пока режим не кончится. Прокрутка рывком в
+ * шаге и возврат прокрутки после axe её включают.
+ */
+const FAST_SCROLL = '[data-fast-scrolling]'
+/** Предел ожидания конца вспышек и быстрой прокрутки, мс (CX19–CX20). */
+const SETTLE_WAIT = 5000
 
-/** Вспышки в гриде кончились; `false` — не за предел. */
-const settleFlashes = async (container: HTMLElement) => {
+/** Узлов `selector` в гриде не осталось; `false` — не за предел. */
+const settled = async (container: HTMLElement, selector: string) => {
   const started = performance.now()
-  while (container.querySelector(FLASHES)) {
-    if (performance.now() - started > FLASH_WAIT) return false
+  while (container.querySelector(selector)) {
+    if (performance.now() - started > SETTLE_WAIT) return false
     await new Promise(resolve => setTimeout(resolve, 20))
   }
   return true
@@ -145,16 +150,25 @@ const auditStep = async (
   }
   // Обычный шаг — в покое (CX19): иначе сочетания застанут разные фазы вспышки, а снимок
   // режима и цвет текста из стилей — разные моменты.
-  if (finish && !(await settleFlashes(container))) {
+  if (finish && !(await settled(container, FLASHES))) {
     result.guard.push(
-      `${label}: вспышка итога не кончилась за ${FLASH_WAIT} мс`,
+      `${label}: вспышка итога не кончилась за ${SETTLE_WAIT} мс`,
     )
+  }
+  // Перед каждым сочетанием (CX20): снимок застал бы скелеты, а текст прочитан из стилей.
+  const scrollProblem = `${label}: быстрая прокрутка не кончилась за ${SETTLE_WAIT} мс`
+  const settleScroll = async () => {
+    if (!finish || result.guard.includes(scrollProblem)) return
+    if (!(await settled(container, FAST_SCROLL))) {
+      result.guard.push(scrollProblem)
+    }
   }
   // Псевдо-состояние: снимки режима до него, затем классы `pseudo-*`.
   const before = new Map<string, Shot | null>()
   if (step.pseudo) {
     for (const combo of combos.filter(c => c.mode === 'forced')) {
       await applyCombo(combo, { finish })
+      await settleScroll()
       // Действие шага наводит указатель само (`pointAt`), и смена сочетания может
       // повторить его: база — без наведения.
       for (const el of document.querySelectorAll(
@@ -169,6 +183,7 @@ const auditStep = async (
   }
   for (const combo of combos) {
     await applyCombo(combo, { finish })
+    await settleScroll()
     const { grids, popups } = gridsAndPopups(container)
     const roots = [...grids, ...popups]
     const body = container.querySelector('.data-grid__body')
@@ -334,11 +349,14 @@ const stand = (
           .cx14-custom.pseudo-hover { forced-color-adjust: none; outline: 2px solid rgb(255, 0, 255); }
           .cx15-flash { forced-color-adjust: none; background: white; }
           .cx19-flash { forced-color-adjust: none; background: white; color: black; }
+          .cx20-scroll { forced-color-adjust: none; background: white; color: black; }
         }
         .cx19-flash[data-flash] { color: #d0d0d0; }
+        .cx20-scroll[data-fast-scrolling] { color: #d0d0d0; }
       `}</style>
       <div
         className="data-grid-theme theme-wrapper cx-stand"
+        data-tsr-grid=""
         style={{ height }}
       >
         {children}
@@ -611,6 +629,48 @@ describe('Шаги гайдов в матрице контраста (ADR 0089, 
     const endless = await walk(false)
     expect(endless.guard).toEqual([
       'Стенд CX19 false › Отказ: вспышка итога не кончилась за 5000 мс',
+    ])
+  }, 30_000)
+
+  test('CX20: шаг без immediate проверяется после конца быстрой прокрутки перед каждым своим сочетанием; режим, не кончившийся за предел, — сбой стража', async () => {
+    // Режим: текст светлый, пока на узле `data-fast-scrolling`; таймер снимает его через
+    // 300 мс, смена темы включает снова — как возврат прокрутки после axe.
+    let watch: MutationObserver | undefined
+    const scroll = (ends: boolean) => (root: HTMLElement) => {
+      const el = root.querySelector('.cx20-scroll')!
+      const start = () => {
+        el.setAttribute('data-fast-scrolling', '')
+        if (ends)
+          setTimeout(() => el.removeAttribute('data-fast-scrolling'), 300)
+      }
+      start()
+      if (!ends) return
+      watch = new MutationObserver(start)
+      watch.observe(document.documentElement, { attributeFilter: ['class'] })
+    }
+    const walk = (ends: boolean) =>
+      walkGuide(
+        `Стенд CX20 ${ends}`,
+        stand(
+          [REST, { title: 'Рывок', hint: '', enter: scroll(ends) }],
+          <div className="cx20-scroll">Row text</div>,
+        ),
+      )
+    const quiet = await walk(true)
+    watch?.disconnect()
+    expect(quiet.guard).toEqual([])
+    const audit = quiet.audits.find(a => a.step === 'Рывок')!
+    for (const label of STEP_LABELS) {
+      expect(audit.checked[label], label).toBeGreaterThan(0)
+    }
+    expect(
+      quiet.findings
+        .filter(f => f.key.includes('Рывок') && checked(f.key))
+        .map(f => f.key),
+    ).toEqual([])
+    const endless = await walk(false)
+    expect(endless.guard).toEqual([
+      'Стенд CX20 false › Рывок: быстрая прокрутка не кончилась за 5000 мс',
     ])
   }, 30_000)
 
