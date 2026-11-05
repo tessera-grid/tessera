@@ -577,7 +577,7 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       их фона); наведение и выбор — слой `--tsr-row-state` поверх фона строки, помощник
       `rowState` из `__tests__/helpers.tsx`
       ([ADR 0126](docs/decisions/0126-cell-fill-precedence.md)).
-    - _Повышенный контраст:_ `increased-contrast` (MC1–MC9, MC11 — рычаги тонов,
+    - _Повышенный контраст:_ `increased-contrast` (MC1–MC9, MC11–MC12 — рычаги тонов,
       тона без текста и рамки не ниже 3:1, контур там, где заливка за текстом не даёт
       3:1, тексты 7:1, правило приложения главнее, проп `contrast` и атрибут на предке,
       порталы, вид вне режима и `forced-colors` поверх, истории), перф MC10 —

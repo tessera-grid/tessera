@@ -28,7 +28,7 @@ import {
 } from './a11y-helpers'
 import { tableLabels } from '../labels'
 
-// Повышенный контраст (ADR 0088, MC1–MC9, MC11): рычаги тонов, надстройка по
+// Повышенный контраст (ADR 0088, MC1–MC9, MC11–MC12): рычаги тонов, надстройка по
 // `prefers-contrast: more` (эмуляция Playwright) и пропу `contrast`. Контраст — по
 // вычисленным цветам в обеих темах. Перф MC10 — `performance/increased-contrast`.
 
@@ -117,10 +117,7 @@ const mount = async (selected: string[] = [], mode?: ContrastMode) => {
   return screen
 }
 
-const wrapper = () =>
-  document.querySelector<HTMLElement>(
-    '.data-grid-theme[class*="theme-wrapper"]',
-  )!
+const wrapper = () => document.querySelector<HTMLElement>('[data-tsr-grid]')!
 const rowEl = (id: string) =>
   document.querySelector<HTMLElement>(
     `.data-grid__body-row[data-row-id="${id}"]`,
@@ -153,7 +150,7 @@ const treeCell = () =>
 const skeletonStripe = () =>
   [
     ...document.querySelectorAll<HTMLElement>(
-      '.data-grid__body-cell--skeleton [class*="skeleton"]',
+      '.data-grid__body-cell--skeleton [data-skeleton]',
     ),
   ].find(el => el.getBoundingClientRect().width > 10)
 
@@ -736,6 +733,77 @@ describe('Повышенный контраст (ADR 0088)', () => {
     } finally {
       await cmd.forcedColors(false)
     }
+    await screen.unmount()
+  })
+
+  test('MC12: запись поповера под указателем в режиме отличима контуром не ниже 3:1, тон облачка прежний, тексты на ней — 7:1', async () => {
+    let report: ((failure: object) => void) | undefined
+    const Failures = () => {
+      const table = useCreateTable({
+        columns: COLUMNS as never,
+        data: [
+          { id: 'r0', a: 'A0', b: 'B0', c: 'C0' },
+          { id: 'r1', a: 'A1', b: 'B1', c: 'C1' },
+        ],
+        getRowId: (row: Item) => row.id,
+        plugins: [failureLog()] as never,
+      })
+      report = (table as unknown as { reportFailure: typeof report })
+        .reportFailure
+      return <DataGrid table={table as never} contrast="more" />
+    }
+    const screen = await render(<Failures />)
+    await waitRows()
+    report!({ label: 'Save', target: { cell: ['r0', 'a'] }, reason: 'Refused' })
+    report!({ label: 'Save', target: { cell: ['r1', 'a'] }, reason: 'Refused' })
+    const button = '[data-testid="failure-log-button"]'
+    const log = '[data-testid="failure-log"]'
+    await expect
+      .poll(() => document.querySelector(`${button} [data-active-indicator]`))
+      .not.toBeNull()
+    await humanClick(document.querySelector<HTMLElement>(button)!)
+    await expect
+      .poll(
+        () => document.querySelectorAll(`${log} [data-action="show"]`).length,
+      )
+      .toBe(2)
+    const [hoveredShow, restShow] = [
+      ...document.querySelectorAll<HTMLElement>(`${log} [data-action="show"]`),
+    ]
+    const cardOf = (show: HTMLElement) =>
+      show.closest('[data-index]')!.firstElementChild!
+    const hovered = cardOf(hoveredShow!)
+    const rest = cardOf(restShow!)
+    await userEvent.hover(hoveredShow!)
+    await inBothThemes(async () => {
+      await settle()
+      const bg = effectiveBg(hovered)
+      expect(bg, 'тон облачка').toEqual(effectiveBg(rest))
+      expect(style(hovered).outlineStyle).toBe('solid')
+      expect(style(hovered).outlineColor).not.toBe(style(rest).outlineColor)
+      expect(
+        ratio(style(hovered).outlineColor, bg),
+        'контур',
+      ).toBeGreaterThanOrEqual(3)
+      const texts = [...hovered.querySelectorAll('*')].filter(el =>
+        [...el.childNodes].some(
+          node => node.nodeType === Node.TEXT_NODE && node.textContent!.trim(),
+        ),
+      )
+      expect(texts.length).toBeGreaterThan(1)
+      for (const el of texts) {
+        expect(
+          ratio(style(el).color, bg),
+          el.textContent!,
+        ).toBeGreaterThanOrEqual(7)
+      }
+      const { violations } = await axe.run(hovered, {
+        runOnly: ['color-contrast-enhanced'],
+      })
+      expect(violations.flatMap(v => v.nodes.map(n => n.html))).toEqual([])
+    })
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => document.querySelector(log)).toBeNull()
     await screen.unmount()
   })
 })

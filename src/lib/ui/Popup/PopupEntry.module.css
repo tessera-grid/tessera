@@ -24,6 +24,7 @@
 
 .entry:has(.show:hover) {
   background-color: var(--tsr-comp-popup-card-hover-bg);
+  outline: var(--tsr-comp-popup-card-hover-outline);
 }
 
 .entry:has(.show:focus-visible) {
