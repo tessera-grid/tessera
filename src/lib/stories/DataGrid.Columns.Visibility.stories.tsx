@@ -376,7 +376,7 @@ export const ColumnVisibilityNestedTree: StoryObj<StoryProps> = {
     // В Storybook сценарий проходит человек; `play` — только в тестах каталога.
     if (globals.catalog !== true) return
     const elbows = () =>
-      menuOf()!.querySelectorAll('[data-column-id] span[class*="lbow"]').length
+      menuOf()!.querySelectorAll('[data-column-id] [data-tree-elbow]').length
     await step(NESTED_TREE[0].title, async () => {
       await waitForRows(canvas)
       await until(() => expect(rootBoxOf()).not.toBeNull())

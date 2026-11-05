@@ -23,7 +23,7 @@ const pointer = commands as unknown as {
   ) => Promise<void>
 }
 
-const SKELETON = '[class*="skeleton"]'
+const SKELETON = '[data-skeleton]'
 const nextFrame = () => new Promise(requestAnimationFrame)
 const hasSkeleton = (row: Element) => row.querySelector(SKELETON) !== null
 
@@ -159,7 +159,7 @@ describe('Быстрая прокрутка', () => {
     expect(
       [
         ...document.querySelectorAll<HTMLElement>(
-          '.data-grid__body-row:not(:has([class*="skeleton"]))',
+          '.data-grid__body-row:not(:has([data-skeleton]))',
         ),
       ].length,
       'строки до входа — с содержимым',

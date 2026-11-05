@@ -256,9 +256,9 @@ describe('слой ячейки (ADR 0170)', () => {
     )
     // Ячейки сессии быстрой прокрутки — скелет вместо содержимого, слой на месте.
     expect(fastCells.length).toBeGreaterThan(0)
-    expect(
-      fastCells.some(cell => cell.querySelector('[class*="skeleton"]')),
-    ).toBe(true)
+    expect(fastCells.some(cell => cell.querySelector('[data-skeleton]'))).toBe(
+      true,
+    )
     expect(
       fastCells.every(cell => cell.querySelector('[data-probe-layer]')),
     ).toBe(true)

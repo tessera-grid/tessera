@@ -327,9 +327,7 @@ describe('Модель дерева rowExpandingModel (ADR 0119)', () => {
     expect(depths().has('1')).toBe(true)
     expect(
       skeletonRows().some(row =>
-        row.querySelector(
-          '[data-column-id*="rowExpanding"] [class*="skeleton"]',
-        ),
+        row.querySelector('[data-column-id*="rowExpanding"] [data-skeleton]'),
       ),
     ).toBe(true)
 

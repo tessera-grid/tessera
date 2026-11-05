@@ -19,7 +19,7 @@ export const pointer = commands as unknown as Pointer
 export const BODY_ROW = '.data-grid__body-row'
 export const HANDLE = '.drag__handler--column'
 export const INDENT = '[data-column-id="country"]'
-export const SKELETON = '[class*="skeleton"]'
+export const SKELETON = '[data-skeleton]'
 
 export const rowById = (id: string) =>
   document.querySelector<HTMLElement>(

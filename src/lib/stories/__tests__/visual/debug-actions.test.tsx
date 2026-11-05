@@ -95,7 +95,7 @@ const menuItem = (label: string) =>
   qa('[role="menuitem"]').find(
     item =>
       (
-        item.querySelector('[class*="itemLabel"]') ?? item
+        item.querySelector('[data-popup-item-label]') ?? item
       ).textContent?.trim() === label,
   )
 const rowEl = (id: string) => q(`.data-grid__body-row[data-row-id="${id}"]`)

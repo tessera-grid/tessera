@@ -156,7 +156,7 @@ const retryButton = () =>
   q<HTMLButtonElement>('[data-testid="load-error-retry"]')
 const dismissButton = () =>
   q<HTMLButtonElement>('[data-testid="load-error-banner"] [data-alert-dismiss]')
-const loader = () => q('[class*="linear-progress"]')!
+const loader = () => q('[data-linear-progress]')!
 const flashPhase = () => loader().getAttribute('data-error-flash')
 const red = () => getComputedStyle(loader(), '::after')
 /** Рост красного света «языками»: наименьшее из пятен маски и заливки, %. */
@@ -197,7 +197,7 @@ describe('Ошибка обновления: свет и плашка', () => {
     await waitRows()
     await update({ loading: 'refresh' })
     await expect
-      .poll(() => q('[class*="linear-progress"] > [class*="glows"]'))
+      .poll(() => q('[data-linear-progress] > [data-loader-glows]'))
       .not.toBeNull()
     await pause(200)
     await update({ loading: false, loadError: SERVER_DOWN })
@@ -207,7 +207,7 @@ describe('Ошибка обновления: свет и плашка', () => {
     expect(redGrowth()).toBeLessThan(100)
     await expect.poll(redGrowth).toBe(100)
     expect(red().backgroundColor).not.toBe('rgba(0, 0, 0, 0)')
-    const glows = q('[class*="linear-progress"] > [class*="glows"]')
+    const glows = q('[data-linear-progress] > [data-loader-glows]')
     expect(glows === null || getComputedStyle(glows).opacity === '0').toBe(true)
     await expect.poll(flashPhase, { timeout: 2000 }).toBe('off')
     await expect.poll(flashPhase, { timeout: 2000 }).toBeNull()
@@ -228,7 +228,7 @@ describe('Ошибка обновления: свет и плашка', () => {
     await expect.poll(flashPhase).toBeNull()
     expect(performance.now() - started).toBeLessThan(400)
     expect(
-      q('[class*="linear-progress"] > [class*="glows"]')?.hasAttribute(
+      q('[data-linear-progress] > [data-loader-glows]')?.hasAttribute(
         'data-leaving',
       ),
     ).toBe(false)
@@ -403,7 +403,7 @@ describe('Ошибка первой загрузки: заглушка', () => {
     expect(stubEl()!.textContent).toContain('Server responded 503')
     expect(retryButton()).not.toBeNull()
     expect(q('[data-testid="app-stub"]')).toBeNull()
-    expect(q('[class*="skeleton"]')).toBeNull()
+    expect(q('[data-skeleton]')).toBeNull()
     expect(document.querySelectorAll('.data-grid__head-cell').length).toBe(3)
     const head = q('.data-grid__head-cell')!.getBoundingClientRect()
     const stubBox = stubEl()!.getBoundingClientRect()
@@ -440,11 +440,11 @@ describe('Ошибка первой загрузки: заглушка', () => {
   test('LE9: ошибка без данных главнее скелета, заглушки «нет данных» и пустого фильтра; без ошибки — как раньше', async () => {
     const skeleton = await mount({ data: EMPTY, loading: 'initial' })
     await expect
-      .poll(() => q('.data-grid__container[class*="skeleton"]'))
+      .poll(() => q('.data-grid__container[data-skeleton]'))
       .not.toBeNull()
     await skeleton.update({ loadError: SERVER_DOWN })
     await expect.poll(stubEl).not.toBeNull()
-    expect(q('.data-grid__container[class*="skeleton"]')).toBeNull()
+    expect(q('.data-grid__container[data-skeleton]')).toBeNull()
     await skeleton.screen.unmount()
 
     const own = await mount({
@@ -692,7 +692,7 @@ describe('Подписи, режимы, доступность, перерисо
   })
 
   test('LE20: обновление, закончившееся посреди роста свечения, гасит его от текущих значений — в первом кадре ухода свет не ниже, чем перед ним, дальше убывает без скачка', async () => {
-    const glows = () => q('[class*="linear-progress"] > [class*="glows"]')
+    const glows = () => q('[data-linear-progress] > [data-loader-glows]')
     /** Рост синего свечения «языками»: сумма пятен маски и заливки, %. */
     const blueGrowth = () => {
       const style = getComputedStyle(glows()!)
@@ -727,7 +727,7 @@ describe('Подписи, режимы, доступность, перерисо
   })
 
   test('LE17: плашка проявляется и уходит за --tsr-comp-motion-duration, свечение — за --tsr-comp-loader-grow-duration; уходя, плашка держит причину и не ловит указатель; без движения — сразу', async () => {
-    const glows = () => q('[class*="linear-progress"] > [class*="glows"]')
+    const glows = () => q('[data-linear-progress] > [data-loader-glows]')
     const view = await mount()
     await waitRows()
     await view.update({ loading: 'refresh' })

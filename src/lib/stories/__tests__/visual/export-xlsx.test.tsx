@@ -161,7 +161,7 @@ describe('dataExport — ожидание только на кнопке (ADR 01
   test('FB6: выгрузка с промисом — ожидание только на кнопке; ни успех, ни отказ не дают вспышек и отметок', async () => {
     const flashes = () =>
       document.querySelectorAll(
-        '[data-flash], [data-column-flash], [class*="linear-progress"][data-error-flash]',
+        '[data-flash], [data-column-flash], [data-linear-progress][data-error-flash]',
       ).length
     captureDownloads()
     const ok = deferredFormat()

@@ -101,7 +101,7 @@ const frames = async (count: number) => {
     await new Promise(resolve => requestAnimationFrame(resolve))
 }
 const skeletonCount = () =>
-  document.querySelectorAll('.data-grid__body-row [class*="skeleton"]').length
+  document.querySelectorAll('.data-grid__body-row [data-skeleton]').length
 const idle = () =>
   new Promise(resolve => setTimeout(resolve, IDLE_DELAY + MIN_DURATION + 100))
 

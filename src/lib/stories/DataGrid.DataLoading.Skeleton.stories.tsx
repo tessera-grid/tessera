@@ -379,7 +379,7 @@ export const SkeletonDataArrives: StoryObj<StoryProps> = {
         ),
       ).toEqual(footerShapes)
       // Скелетов не осталось нигде, панели тоже.
-      await expect(canvas.querySelector('[class*="skeleton" i]')).toBeNull()
+      await expect(canvas.querySelector('[data-skeleton]')).toBeNull()
       // «Экспорт» — на месте своего скелета.
       await until(() => expect(toolbarPart('export-button')).not.toBeNull())
       await expect(inToolbar(toolbarPart('export-button')!)).toEqual(exportSlot)

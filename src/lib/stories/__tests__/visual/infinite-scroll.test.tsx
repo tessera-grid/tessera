@@ -421,7 +421,7 @@ describe('Лента: хвост ожидания и ответ', () => {
     await fail(null)
     await expect.poll(errorRow).not.toBeNull()
     expect(errorRow()!.textContent).not.toContain('Server error')
-    expect(errorRow()!.querySelector('[class*="error-reason"]')).toBeNull()
+    expect(errorRow()!.querySelector('[data-load-error-reason]')).toBeNull()
   })
 })
 
@@ -678,7 +678,7 @@ describe('Лента: итог и доступность', () => {
       await run('error')
       await inBothThemes(async () => {
         for (const text of errorRow()!.querySelectorAll<HTMLElement>(
-          '[class*="error-title"], [class*="error-reason"]',
+          '[data-load-error-title], [data-load-error-reason]',
         )) {
           expect(
             contrast(toRgba(getComputedStyle(text).color), backgroundOf(text)),
@@ -730,7 +730,7 @@ describe('Лента: хвост скелетов', () => {
             ? cell.dataset.columnId === id
             : cell.dataset.columnId!.includes(id),
         )!
-        .querySelector<HTMLElement>('[class*="skeleton"]')
+        .querySelector<HTMLElement>('[data-skeleton]')
     for (const id of ['a', 'b', 'c']) {
       const cell = row.querySelector<HTMLElement>(`[data-column-id="${id}"]`)!
       const wrapper = cell.firstElementChild as HTMLElement
@@ -753,9 +753,7 @@ describe('Лента: хвост скелетов', () => {
       control,
       control,
     ])
-    for (const shape of row.querySelectorAll<HTMLElement>(
-      '[class*="skeleton"]',
-    )) {
+    for (const shape of row.querySelectorAll<HTMLElement>('[data-skeleton]')) {
       expect(getComputedStyle(shape, '::after').animationName).toBe('none')
     }
   })
@@ -775,6 +773,6 @@ describe('Лента: хвост скелетов', () => {
     expect(tailRows()).toHaveLength(0)
     const counter = document.querySelector('[data-testid="loaded-rows-count"]')!
     expect(counter.textContent).toBe('')
-    expect(counter.querySelector('[class*="skeleton"]')).not.toBeNull()
+    expect(counter.querySelector('[data-skeleton]')).not.toBeNull()
   })
 })

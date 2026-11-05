@@ -480,7 +480,7 @@ describe('Журнал отказов (ADR 0177)', () => {
       ).toBeGreaterThan(0)
       expect(log()!.getBoundingClientRect().height).toBeGreaterThan(0)
       const reason = log()!.querySelector<HTMLElement>(
-        '[role="listitem"] [class*="reason"]',
+        '[role="listitem"] [data-failure-reason]',
       )!
       expect(toRgba(getComputedStyle(reason).color)).not.toEqual(
         toRgba(getComputedStyle(log()!).backgroundColor),

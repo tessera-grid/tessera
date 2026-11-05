@@ -208,7 +208,7 @@ const shown = () =>
   button() !== null && getComputedStyle(button()!).visibility === 'visible'
 const rect = (el: Element) => el.getBoundingClientRect()
 const skeletonCount = () =>
-  document.querySelectorAll('.data-grid__body-row [class*="skeleton"]').length
+  document.querySelectorAll('.data-grid__body-row [data-skeleton]').length
 
 const scrollTo = async (top: number, left?: number) => {
   scroller().scrollTo({ top, left, behavior: 'instant' })
@@ -467,7 +467,7 @@ describe('Кнопка «наверх»', () => {
     const Icon = () => <svg data-testid="custom-back-to-top" />
     await mount({
       pageSize: 100,
-      localization: { backToTop: 'Вверх' },
+      localization: { 'backToTop.backToTop': 'Вверх' },
       icons: { backToTop: Icon },
     })
     expect(button()!.getAttribute('aria-label')).toBe('Вверх')
@@ -653,7 +653,7 @@ describe('Кнопка «наверх»', () => {
       pageSize: 100,
       wide: true,
       width: 480,
-      localization: { backToStart: 'К началу строки' },
+      localization: { 'backToTop.backToStart': 'К началу строки' },
       icons: { backToStart: Icon },
     })
     expect(startButton()!.getAttribute('aria-label')).toBe('К началу строки')

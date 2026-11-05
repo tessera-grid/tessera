@@ -204,7 +204,7 @@ const scroller = () =>
 const glowing = () => !!document.querySelector('[data-refreshing]')
 const redLight = () =>
   document
-    .querySelector('[class*="linear-progress"]')
+    .querySelector('[data-linear-progress]')
     ?.getAttribute('data-error-flash')
 const banner = () =>
   document.querySelector<HTMLElement>('[data-testid="load-error-banner"]')

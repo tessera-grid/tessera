@@ -169,7 +169,7 @@ describe('Асинхронный контракт бизнес-колбэков'
     server.settle[0].reject(new Error('Server down'))
     await expect
       .poll(() => liveRegion().textContent)
-      .toContain('Age: Server down')
+      .toContain(`${tableLabels.failureTargetCell('Age', 1)}: Server down`)
     expect(valueOf(0)).toBe(original)
 
     expect(ageCell(1).querySelector('input')).toBe(active)
@@ -612,7 +612,7 @@ describe('Асинхронная правка: значение и вспышк�
     getScroller().scrollTop = 0
     await expect.poll(cellGone).toBe(false)
     await expect
-      .poll(() => ageCell(0).querySelector('[class*="skeleton"]'))
+      .poll(() => ageCell(0).querySelector('[data-skeleton]'))
       .toBeNull()
     expect(flashOf(0)).toBeNull()
   })
@@ -654,7 +654,7 @@ describe('Асинхронная правка: значение и вспышк�
     server.settle[1].reject(new Error('Server down'))
     await expect
       .poll(() => liveRegion().textContent)
-      .toContain('Age: Server down')
+      .toContain(`${tableLabels.failureTargetCell('Age', 2)}: Server down`)
   })
 
   test('CF10: ячейки в ожидании, в «ошибке» и со вспышкой проходят axe; текст над вспышкой держит 4.5:1 в обеих темах', async () => {

@@ -134,7 +134,8 @@ const Grid = ({ width = 720 }: { width?: number }) => {
       columnVisibility(),
       columnFiltering({ filteredCount: true }),
       quickSearch(),
-      rowSelection({ selectedCount: true }),
+      // Флажок шапки — страница (ADR 0179): счётчики TX6 — по 25 строкам страницы.
+      rowSelection({ selectedCount: true, selectAll: 'currentPage' }),
       pagination(),
       dataExport({
         presets: [{ id: 'long', label: `Only ${LONG_SUB}` }],
@@ -216,7 +217,7 @@ const items = () => [
   ),
 ]
 const labelOf = (el: Element) =>
-  el.querySelector<HTMLElement>('[class*="itemLabel"]')!
+  el.querySelector<HTMLElement>('[data-popup-item-label]')!
 const itemByText = (text: string) =>
   items().find(el => labelOf(el)?.textContent === text)!
 const rowEl = (id: string) =>
@@ -334,9 +335,9 @@ describe('Длинный текст', () => {
     expect(isWrapped(move)).toBe(true)
     const firstLine = rect(label).top + lineHeight(label) / 2
     const center = (el: Element) => (rect(el).top + rect(el).bottom) / 2
-    const hint = move.querySelector<HTMLElement>('[class*="itemHint"]')!
-    const chevron = move.querySelector<HTMLElement>('[class*="itemCheck"]')!
-    const glyph = move.querySelector<HTMLElement>('[class*="itemIcon"]')!
+    const hint = move.querySelector<HTMLElement>('[data-popup-item-hint]')!
+    const chevron = move.querySelector<HTMLElement>('[data-popup-item-mark]')!
+    const glyph = move.querySelector<HTMLElement>('[data-popup-item-icon]')!
     expect(hint.textContent).toBe('North')
     expect(rect(hint).height).toBeLessThan(lineHeight(label) * 1.5)
     expect(rect(hint).left).toBeGreaterThanOrEqual(rect(label).right - 0.5)
@@ -345,7 +346,7 @@ describe('Длинный текст', () => {
       expect(Math.abs(center(el) - firstLine)).toBeLessThan(2)
 
     const pinned = itemByText(`Keep ${LONG_SUB} pinned`)
-    const check = pinned.querySelector<HTMLElement>('[class*="itemCheck"]')!
+    const check = pinned.querySelector<HTMLElement>('[data-popup-item-mark]')!
     expect(check.querySelector('svg')).not.toBeNull()
     expect(
       Math.abs(
@@ -365,7 +366,7 @@ describe('Длинный текст', () => {
     await settle()
     const popup = menu()!
     const level = popup.querySelector<HTMLElement>('[data-menu-level]')!
-    const sections = popup.querySelector<HTMLElement>('[class*="sections"]')!
+    const sections = popup.querySelector<HTMLElement>('[data-menu-sections]')!
     expect(isWrapped(itemByText(LONG_SUB))).toBe(true)
     expect(Math.abs(rect(sections).height - rect(level).height)).toBeLessThan(1)
     expect(rect(itemByText('South')).bottom).toBeLessThanOrEqual(
@@ -384,7 +385,7 @@ describe('Длинный текст', () => {
     await userEvent.click(columnsButton()!)
     const columnLabel = (id: string) =>
       document.querySelector<HTMLElement>(
-        `[data-testid="column-visibility-menu"] [data-column-id="${id}"] [class*="label"]`,
+        `[data-testid="column-visibility-menu"] [data-column-id="${id}"] [data-option-label]`,
       )
     await expect.poll(() => columnLabel('account')).not.toBeNull()
     await settle()
@@ -409,7 +410,7 @@ describe('Длинный текст', () => {
     await humanClick(filterButton()!)
     const optionLabel = (value: string) =>
       document.querySelector<HTMLElement>(
-        `[data-testid="filter-panel"] [data-value="${value}"] [class*="label"]`,
+        `[data-testid="filter-panel"] [data-value="${value}"] [data-option-label]`,
       )
     await expect.poll(() => optionLabel('review')).not.toBeNull()
     await settle()
@@ -436,7 +437,7 @@ describe('Длинный текст', () => {
     await humanClick(button()!)
     const condition = () =>
       document.querySelector<HTMLElement>(
-        '[data-testid="filter-summary"] [data-column-id="status"] [class*="condition"]',
+        '[data-testid="filter-summary"] [data-column-id="status"] [data-filter-condition]',
       )
     await expect.poll(condition).not.toBeNull()
     await settle()
@@ -563,11 +564,11 @@ describe('Длинный текст', () => {
     await expect.poll(errorRow).not.toBeNull()
     await frames()
     const reason = errorRow()!.querySelector<HTMLElement>(
-      '[class*="error-reason"]',
+      '[data-load-error-reason]',
     )!
     expect(rect(reason).height).toBeLessThanOrEqual(lineHeight(reason) * 2 + 1)
     expect(clipped(reason)).toBe(true)
-    const row = errorRow()!.closest<HTMLElement>('[class*="error-row"]')!
+    const row = errorRow()!.closest<HTMLElement>('[data-load-error-row]')!
     const token = getComputedStyle(row).getPropertyValue(
       '--tsr-comp-load-more-height',
     )
@@ -621,7 +622,7 @@ describe('Длинный текст', () => {
     await settle()
     await run(summary()!, 'сводка')
     await textContrast(
-      summary()!.querySelector<HTMLElement>('[class*="condition"]')!,
+      summary()!.querySelector<HTMLElement>('[data-filter-condition]')!,
       'условие',
     )
     await userEvent.keyboard('{Escape}')

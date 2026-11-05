@@ -2389,7 +2389,8 @@ describe('Отзывчивость — разделы меню', () => {
 
       const menuItem = (label: string) =>
         [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(
-          el => el.querySelector('[class*="itemLabel"]')?.textContent === label,
+          el =>
+            el.querySelector('[data-popup-item-label]')?.textContent === label,
         )
       const items = () => document.querySelectorAll('[role="menuitem"]').length
       const backRow = () =>
@@ -2697,7 +2698,7 @@ describe('Отзывчивость — длинные подписи меню', 
         )
         expect(open()).toBe(true)
         if (long) {
-          const label = document.querySelector('[class*="itemLabel"]')!
+          const label = document.querySelector('[data-popup-item-label]')!
           expect(label.getBoundingClientRect().height).toBeGreaterThan(
             parseFloat(getComputedStyle(label).lineHeight) * 1.5,
           )

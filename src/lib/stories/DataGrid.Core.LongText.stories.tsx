@@ -246,7 +246,7 @@ export const LongTextMenus: StoryObj<StoryProps> = {
         320.5,
       )
       const label = [
-        ...menu.querySelectorAll<HTMLElement>('[class*="itemLabel"]'),
+        ...menu.querySelectorAll<HTMLElement>('[data-popup-item-label]'),
       ].find(el => el.textContent === LONG_ITEM)!
       await expect(label.getBoundingClientRect().height).toBeGreaterThan(
         lineHeight(label) * 1.5,

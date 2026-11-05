@@ -123,7 +123,7 @@ const mount = async (props: Parameters<typeof Scene>[0] = {}) => {
 }
 
 const q = (selector: string) => document.querySelector<HTMLElement>(selector)!
-const wrapper = () => q('.data-grid-theme[class*="theme-wrapper"]')
+const wrapper = () => q('[data-tsr-grid]')
 const row = () => q('.data-grid__body-row[data-row-id="r1"]')
 const pinnedCell = () =>
   row().querySelector<HTMLElement>('[data-column-id="a"]')!

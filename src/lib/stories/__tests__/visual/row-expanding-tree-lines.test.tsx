@@ -389,8 +389,7 @@ describe('Row expanding: tree lines', () => {
     await expect.poll(() => rowEl(TREE.zimbabwe)).not.toBeNull()
     await expect
       .poll(
-        () =>
-          indentOf(TREE.zimbabwe).querySelector('[class*="skeleton"]') ?? null,
+        () => indentOf(TREE.zimbabwe).querySelector('[data-skeleton]') ?? null,
       )
       .toBeNull()
     await showRow(TREE.zimbabwe)

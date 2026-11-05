@@ -341,7 +341,7 @@ export async function measureIdleWork(ms: number): Promise<ScrollWorkResult> {
 }
 
 /** Скелет ячейки тела при быстрой прокрутке. */
-const SKELETON_CELL = '.data-grid__body-cell [class*="skeleton"]'
+const SKELETON_CELL = '.data-grid__body-cell [data-skeleton]'
 
 /**
  * Measure the REAL main-thread work of the INITIAL render (mount → first paint)

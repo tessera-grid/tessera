@@ -78,9 +78,9 @@ describe('сессия перетаскивания (ADR 0168)', () => {
 
     // Слот — сама строка `b`, нарисованная полосками скелета.
     await expect
-      .poll(() => rowById('b')?.querySelector('[class*="skeleton"]'))
+      .poll(() => rowById('b')?.querySelector('[data-skeleton]'))
       .not.toBeNull()
-    expect(rowById('a')?.querySelector('[class*="skeleton"]')).toBeNull()
+    expect(rowById('a')?.querySelector('[data-skeleton]')).toBeNull()
     // Будущий родитель слота — `a`; dnd-kit на странице нет.
     expect(rowById('a')?.dataset.rowDropParent).toBe('true')
     expect(rowById('a1')?.dataset.rowDropParent).toBeUndefined()

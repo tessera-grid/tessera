@@ -757,7 +757,7 @@ describe('Высокая контрастность (ADR 0087)', () => {
     const stripe = () =>
       [
         ...document.querySelectorAll<HTMLElement>(
-          '.data-grid__body-cell--skeleton [class*="skeleton"]',
+          '.data-grid__body-cell--skeleton [data-skeleton]',
         ),
       ].find(el => el.getBoundingClientRect().width > 10)
     await expect.poll(stripe).toBeTruthy()
@@ -791,7 +791,7 @@ describe('Высокая контрастность (ADR 0087)', () => {
     const screen = await render(<Primitives />)
     const canvas = toRgba(sys('Canvas'))
     const indicator = document.querySelector<HTMLElement>(
-      '[class*="indicator"]',
+      '[data-segments-indicator]',
     )!
     expect(style(indicator).backgroundColor).toBe(sys('Highlight'))
     const checked = document.querySelector<HTMLElement>(

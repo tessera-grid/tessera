@@ -21,7 +21,7 @@ const shapes = (match: (columnId: string) => boolean) =>
     row =>
       !!Array.from(row.querySelectorAll<HTMLElement>(SKELETON_CELL))
         .find(cell => match(cell.dataset.columnId ?? ''))!
-        .querySelector('[class*="skeleton"]'),
+        .querySelector('[data-skeleton]'),
   )
 
 const COLUMNS = [

@@ -111,7 +111,7 @@ const menuItem = (label: string) =>
   [...document.querySelectorAll('[role="menuitem"]')].find(
     item =>
       (
-        item.querySelector('[class*="itemLabel"]') ?? item
+        item.querySelector('[data-popup-item-label]') ?? item
       ).textContent?.trim() === label,
   )
 

@@ -71,7 +71,7 @@ const renderScope = async (scope?: 'filtered' | 'currentPage' | 'all') => {
   )
   await waitForGrid()
   await expect
-    .poll(() => document.querySelector('[class*="toolbar-placeholder"]'))
+    .poll(() => document.querySelector('[data-toolbar-placeholder]'))
     .toBeNull()
   await expect.poll(pageRange).toBe('1–2 of 12')
   return screen

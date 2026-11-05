@@ -253,7 +253,7 @@ const items = () => [
 ]
 const item = (label: string) =>
   items().find(
-    el => el.querySelector('[class*="itemLabel"]')?.textContent === label,
+    el => el.querySelector('[data-popup-item-label]')?.textContent === label,
   )
 const description = (el: Element | null | undefined) => {
   const id = el?.getAttribute('aria-describedby')
@@ -318,7 +318,7 @@ describe('Проверка доступности пунктов', () => {
     expect(isDisabled(archive)).toBe(true)
     expect(description(archive)).toBe(tableLabels.availabilityChecking)
     const spinner = archive.querySelector<HTMLElement>('[data-item-spinner]')!
-    expect(spinner.closest('[class*="itemCheck"]')).not.toBeNull()
+    expect(spinner.closest('[data-popup-item-mark]')).not.toBeNull()
     expect(getComputedStyle(spinner).animationName).not.toBe('none')
     expect(getComputedStyle(archive, '::after').content).toBe('none')
     expect(isDisabled(item('Edit'))).toBe(false)
@@ -420,7 +420,9 @@ describe('Проверка доступности пунктов', () => {
   test('MI5: пока проверки завершаются, пункты не появляются, не исчезают, не меняют порядок и высоту — при любом ответе', async () => {
     const { probe } = await renderGrid()
     const labels = () =>
-      items().map(el => el.querySelector('[class*="itemLabel"]')?.textContent)
+      items().map(
+        el => el.querySelector('[data-popup-item-label]')?.textContent,
+      )
     const heights = () => items().map(el => el.offsetHeight)
     const menuHeight = () =>
       document.querySelector<HTMLElement>('[role="menu"]')!.offsetHeight
@@ -479,7 +481,7 @@ describe('Причина блокировки и клавиатура', () => {
     await openRowMenu()
     const locked = item('Locked')!
     const icon = locked.querySelector<HTMLElement>('[data-action-blocked]')!
-    expect(icon.className).toMatch(/itemCheck/)
+    expect(icon.hasAttribute('data-popup-item-mark')).toBe(true)
     expect(icon.querySelector('svg')).not.toBeNull()
     expect(isDisabled(locked)).toBe(true)
     expect(locked.textContent).toBe('LLocked')
@@ -488,7 +490,7 @@ describe('Причина блокировки и клавиатура', () => {
     await expect.poll(() => isPending(item('Archive'))).toBe(false)
     expect(isDisabled(item('Archive'))).toBe(true)
     expect(
-      item('Archive')!.querySelector('[class*="itemCheck"] svg'),
+      item('Archive')!.querySelector('[data-popup-item-mark] svg'),
     ).toBeNull()
     await closeMenu()
 
@@ -497,7 +499,7 @@ describe('Причина блокировки и клавиатура', () => {
     await expect.poll(() => isPending(item('Archive'))).toBe(false)
     expect(isDisabled(item('Archive'))).toBe(true)
     expect(
-      item('Archive')!.querySelector('[class*="itemCheck"] svg'),
+      item('Archive')!.querySelector('[data-popup-item-mark] svg'),
     ).toBeNull()
     expect(item('Edit')!.querySelector('[data-action-blocked]')).toBeNull()
     await closeMenu()
@@ -660,7 +662,7 @@ describe('Отказ действия', () => {
     await openRowMenu()
     const remove = item('Remove')!
     const icon = failedIcon(remove)!
-    expect(icon.className).toMatch(/itemCheck/)
+    expect(icon.hasAttribute('data-popup-item-mark')).toBe(true)
     expect(icon.querySelector('svg')).not.toBeNull()
     expect(isDisabled(remove)).toBe(false)
     expect(description(remove)).toBe('Row is locked by another user')

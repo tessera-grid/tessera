@@ -22,7 +22,7 @@ import {
 } from './demos/GuideStory'
 
 const gridTheme = (canvas: HTMLElement) =>
-  canvas.querySelector<HTMLElement>('.data-grid-theme[class*="theme-wrapper"]')!
+  canvas.querySelector<HTMLElement>('[data-tsr-grid]')!
 
 /** Две выбранные строки — один раз, как только появились строки. */
 const selectionDemo: TesseraFeatureEntry = {

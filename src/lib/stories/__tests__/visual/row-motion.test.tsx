@@ -233,7 +233,7 @@ const dragFrame = (scroller: HTMLElement) => {
     neighbourLag: Math.max(0, ...rows.filter(row => row !== slot).map(lagOf)),
     // Скелеты пришедших строк; слот — скелет всегда (ADR 0108).
     skeletons: document.querySelectorAll(
-      `${BODY_ROW}:not([data-row-draggable="true"]) [class*="skeleton"]`,
+      `${BODY_ROW}:not([data-row-draggable="true"]) [data-skeleton]`,
     ).length,
   }
 }

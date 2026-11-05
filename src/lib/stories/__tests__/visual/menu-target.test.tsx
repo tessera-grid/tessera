@@ -260,7 +260,7 @@ const items = () => [
 ]
 const item = (label: string) =>
   items().find(
-    el => el.querySelector('[class*="itemLabel"]')?.textContent === label,
+    el => el.querySelector('[data-popup-item-label]')?.textContent === label,
   )
 const failedIcon = (el: Element | undefined) =>
   el?.querySelector('[data-action-failed]') ?? null

@@ -29,7 +29,7 @@ const glows = () => [
   ...document.querySelectorAll<HTMLElement>('.data-grid__loader-glow'),
 ]
 const line = () => el('.data-grid__loader-line')!
-const wrapper = () => el('.data-grid-theme[class*="theme-wrapper"]')!
+const wrapper = () => el('[data-tsr-grid]')!
 const body = () => el('.data-grid__body')!
 const footerRow = () => el('.data-grid__footer')!.firstElementChild!
 const rows = () => [

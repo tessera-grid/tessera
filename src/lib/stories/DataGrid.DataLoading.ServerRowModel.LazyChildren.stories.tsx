@@ -299,7 +299,7 @@ const childRow = (root: HTMLElement, k: number) =>
 /** У строки линия поворачивает и кончается: она последняя в ветке. */
 const endsBranch = (row: HTMLElement | null) =>
   !!row?.querySelector(
-    '[data-tree-depth] [aria-hidden] > span[class*="elbow"]:not([class*="joined"])',
+    '[data-tree-depth] [aria-hidden] > [data-tree-elbow="plain"]',
   )
 const linesScroller = (root: HTMLElement) =>
   root.querySelector<HTMLElement>('.data-grid__container')!

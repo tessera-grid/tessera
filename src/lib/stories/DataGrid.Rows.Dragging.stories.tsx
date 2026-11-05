@@ -141,7 +141,7 @@ export const RowDraggingTreeLines: StoryObj<StoryProps> = {
         firePointer('pointermove', document, hx + levelStep, ty + 1)
         await waitFor(() => {
           const slot = canvas.querySelector<HTMLElement>(DRAG_FILL)!
-          expect(slot.querySelector('[class*="skeleton"]')).not.toBeNull()
+          expect(slot.querySelector('[data-skeleton]')).not.toBeNull()
           expect(
             parseFloat(
               getComputedStyle(
@@ -252,7 +252,7 @@ export const RowDraggingMove: StoryObj<StoryProps> = {
       await stepDone(canvas)
       await until(() =>
         expect(
-          canvas.querySelector(`${DRAG_FILL} [class*="skeleton"]`),
+          canvas.querySelector(`${DRAG_FILL} [data-skeleton]`),
         ).not.toBeNull(),
       )
       // Слот — на уровне детей группы, отступом глубже корня.

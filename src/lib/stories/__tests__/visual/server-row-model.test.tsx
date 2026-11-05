@@ -303,7 +303,7 @@ describe('Серверная модель строк (ADR 0138)', () => {
       const leaves = document.querySelectorAll('.data-grid__head-cell').length
       expect(cells.length).toBe(leaves)
       expect(
-        cells.filter(cell => cell.querySelector('[class*="skeleton"]')).length,
+        cells.filter(cell => cell.querySelector('[data-skeleton]')).length,
       ).toBeGreaterThanOrEqual(COLUMNS.length)
       expect(
         cells.some(cell => getComputedStyle(cell).position === 'sticky'),
@@ -734,7 +734,7 @@ describe('Серверная модель строк (ADR 0138)', () => {
         expect(violations, colorMode).toEqual([])
         // Под липкой строкой ошибки axe фон не определяет (incomplete) — меряем сами.
         for (const text of errorRow()!.querySelectorAll<HTMLElement>(
-          '[class*="error-title"], [class*="error-reason"], button',
+          '[data-load-error-title], [data-load-error-reason], button',
         )) {
           const ratio = contrast(
             toRgba(getComputedStyle(text).color),

@@ -317,7 +317,7 @@ describe('Немодальные меню', () => {
       ].find(
         each =>
           (
-            each.querySelector('[class*="itemLabel"]') ?? each
+            each.querySelector('[data-popup-item-label]') ?? each
           ).textContent?.trim() === label,
       )!
       await humanClick(item)

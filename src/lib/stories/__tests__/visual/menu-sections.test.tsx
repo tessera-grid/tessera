@@ -280,15 +280,15 @@ const items = () => [
 ]
 const item = (label: string) =>
   items().find(
-    el => el.querySelector('[class*="itemLabel"]')?.textContent === label,
+    el => el.querySelector('[data-popup-item-label]')?.textContent === label,
   )
 const backRow = () =>
   document.querySelector<HTMLElement>('[role="menuitem"][data-menu-back]')
 const menu = () => document.querySelector<HTMLElement>('[role="menu"]')
-const wrap = () => menu()?.querySelector<HTMLElement>('[class*="sections"]')
+const wrap = () => menu()?.querySelector<HTMLElement>('[data-menu-sections]')
 const level = () => menu()?.querySelector<HTMLElement>('[data-menu-level]')
 const ghost = () =>
-  menu()?.querySelector<HTMLElement>('[class*="ghostHost"] > *') ?? null
+  menu()?.querySelector<HTMLElement>('[data-menu-ghost] > *') ?? null
 const liveRegion = () =>
   document.querySelector<HTMLElement>('[role="status"][aria-live="polite"]')!
 const tooltipShown = (text: string) => () =>
@@ -339,9 +339,9 @@ describe('Раздел и смена содержимого', () => {
     await openRowMenu()
     const pin = item('Pin')!
     expect(pin.getAttribute('aria-haspopup')).toBe('menu')
-    const check = pin.querySelector('[class*="itemCheck"]')!
+    const check = pin.querySelector('[data-popup-item-mark]')!
     expect(check.querySelector('svg')).not.toBeNull()
-    const hint = pin.querySelector<HTMLElement>('[class*="itemHint"]')!
+    const hint = pin.querySelector<HTMLElement>('[data-popup-item-hint]')!
     expect(hint.textContent).toBe('Left')
     expect(hint.getBoundingClientRect().right).toBeLessThanOrEqual(
       check.getBoundingClientRect().left,
@@ -612,7 +612,9 @@ describe('Асинхронный раздел', () => {
       menu()?.querySelector<HTMLElement>('[data-section-failed]')
     await expect.poll(failed).not.toBeNull()
     expect(failed()!.textContent).toBe(tableLabels.sectionLoadFailed)
-    expect(failed()!.querySelector('[class*="itemFailed"] svg')).not.toBeNull()
+    expect(
+      failed()!.querySelector('[data-popup-item-mark="failed"] svg'),
+    ).not.toBeNull()
     const describedBy = failed()!.getAttribute('aria-describedby')!
     expect(document.getElementById(describedBy)!.textContent).toBe(
       'Folder service is down',
@@ -772,11 +774,11 @@ describe('Где работает, доступность', () => {
       await check()
       const bg = backgroundOf(menu())
       const pin = item('Pin')!
-      const chevron = pin.querySelector('[class*="itemCheck"]')!
+      const chevron = pin.querySelector('[data-popup-item-mark]')!
       expect(
         contrast(toRgba(getComputedStyle(chevron).color), bg),
       ).toBeGreaterThanOrEqual(3)
-      const hint = pin.querySelector('[class*="itemHint"]')!
+      const hint = pin.querySelector('[data-popup-item-hint]')!
       expect(
         contrast(toRgba(getComputedStyle(hint).color), bg),
       ).toBeGreaterThanOrEqual(4.5)
@@ -839,7 +841,7 @@ describe('Демо-история', () => {
     await humanClick(kebab()!)
     await expect.poll(() => item('Status')).toBeTruthy()
     expect(
-      item('Status')!.querySelector('[class*="itemHint"]')!.textContent,
+      item('Status')!.querySelector('[data-popup-item-hint]')!.textContent,
     ).toBe('Active')
     await settle()
     await enter('Status')
@@ -850,7 +852,8 @@ describe('Демо-история', () => {
     await humanClick(kebab()!)
     await expect
       .poll(
-        () => item('Status')?.querySelector('[class*="itemHint"]')?.textContent,
+        () =>
+          item('Status')?.querySelector('[data-popup-item-hint]')?.textContent,
       )
       .toBe('Paused')
     await closeMenu()
@@ -895,11 +898,11 @@ describe('Меню, которое не закрывается', () => {
   test('NM23: после выбора без закрытия состояние пункта обновляется сразу, даже если оно живёт у приложения; при возврате — и hint родителя', async () => {
     await renderGrid()
     await openRowMenu()
-    expect(item('Labels')!.querySelector('[class*="itemHint"]')).toBeNull()
+    expect(item('Labels')!.querySelector('[data-popup-item-hint]')).toBeNull()
     await enter('Labels')
     await settle()
     const check = () =>
-      item('VIP')!.querySelector('[class*="itemCheck"] svg') !== null
+      item('VIP')!.querySelector('[data-popup-item-mark] svg') !== null
     expect(check()).toBe(false)
     await humanClick(item('VIP')!)
     await expect.poll(check).toBe(true)
@@ -911,7 +914,7 @@ describe('Меню, которое не закрывается', () => {
     await humanClick(backRow()!)
     await settle()
     expect(
-      item('Labels')!.querySelector('[class*="itemHint"]')!.textContent,
+      item('Labels')!.querySelector('[data-popup-item-hint]')!.textContent,
     ).toBe('1')
     await closeMenu()
   })

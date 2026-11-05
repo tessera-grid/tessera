@@ -471,7 +471,7 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
     )
     /** Вид ячейки по содержимому: полоска, квадрат или пусто. */
     const kindOf = (cell: HTMLElement) => {
-      const shape = cell.querySelector<HTMLElement>('[class*="skeleton"]')
+      const shape = cell.querySelector<HTMLElement>('[data-skeleton]')
       if (!shape) return 'none'
       const r = shape.getBoundingClientRect()
       return Math.round(r.width) === control && Math.round(r.height) === control
@@ -566,7 +566,7 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
       await waitSkeleton()
       const row = skeletonRows()[0]
       const bar = row.querySelector<HTMLElement>(
-        '[data-column-id="firstName"] [class*="skeleton"]',
+        '[data-column-id="firstName"] [data-skeleton]',
       )!
       expect(Math.round(bar.getBoundingClientRect().height)).toBe(22)
       expect(getComputedStyle(bar).borderTopLeftRadius).toBe('7px')
@@ -574,13 +574,13 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
         row.querySelectorAll<HTMLElement>('[data-column-id]'),
       )
         .find(cell => cell.dataset.columnId!.includes('rowSelection'))!
-        .querySelector<HTMLElement>('[class*="skeleton"]')!
+        .querySelector<HTMLElement>('[data-skeleton]')!
       const sq = square.getBoundingClientRect()
       expect([Math.round(sq.width), Math.round(sq.height)]).toEqual([20, 20])
       for (const id of ['pagination-range', 'selected-rows-count']) {
         const text = document
           .querySelector(`[data-testid="${id}"]`)!
-          .querySelector<HTMLElement>('[class*="skeleton"]')!
+          .querySelector<HTMLElement>('[data-skeleton]')!
         expect(Math.round(text.getBoundingClientRect().height), id).toBe(11)
       }
       // Волна: проход рамки и пауза — от базовой длительности движения (×16 и ×10/3,
@@ -630,7 +630,7 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
       await humanClick(moveTo()!)
       const menuRow = () =>
         document.querySelector<HTMLElement>(
-          '[data-menu-skeleton] [class*="skeleton"]',
+          '[data-menu-skeleton] [data-skeleton]',
         )
       await expect.poll(menuRow).not.toBeNull()
       expect(Math.round(menuRow()!.getBoundingClientRect().height)).toBe(9)
@@ -680,7 +680,7 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
         Math.round(
           cellsOf(row, SKELETON_CELL)
             .find(cell => cell.dataset.columnId === 'country')!
-            .querySelector<HTMLElement>('[class*="skeleton"]')!
+            .querySelector<HTMLElement>('[data-skeleton]')!
             .getBoundingClientRect().left,
         ),
       )
@@ -871,7 +871,7 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
       Math.round(
         cellsOf(row, SKELETON_CELL)
           .find(cell => cell.dataset.columnId === 'country')!
-          .querySelector<HTMLElement>('[class*="skeleton"]')!
+          .querySelector<HTMLElement>('[data-skeleton]')!
           .getBoundingClientRect().left,
       ),
     )
@@ -880,7 +880,7 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
       row =>
         !!cellsOf(row, SKELETON_CELL)
           .find(cell => cell.dataset.columnId?.includes('rowExpanding'))!
-          .querySelector('[class*="skeleton"]'),
+          .querySelector('[data-skeleton]'),
     )
     const parents = lefts.map(
       (left, index) =>
@@ -912,7 +912,7 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
         row =>
           !!cellsOf(row, SKELETON_CELL)
             .find(cell => cell.dataset.columnId?.includes('rowExpanding'))!
-            .querySelector('[class*="skeleton"]'),
+            .querySelector('[data-skeleton]'),
       )
     const scattered = flatSquares()
     expect(scattered).toEqual(scattered.map((_, i) => isSkeletonParentRow(i)))
