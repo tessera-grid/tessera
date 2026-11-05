@@ -10,11 +10,16 @@ import type { RowMoves } from '../shared/rowMoves'
 import {
   DEFAULT_ROW_DRAG_OVERLAY_STATE,
   getRowDraggingEvents,
+  rowDragging,
 } from '../plugins/rowDragging'
 import { commitRowMove } from '../plugins/rowDragging/commitRowMove'
 import { dropPlace } from '../plugins/rowDragging/dropPlace'
 import { reconcileRowMoves } from '../plugins/rowDragging/reconcileRowMoves'
-import { canDragRow } from '../plugins/rowDragging/rowDraggingFeature'
+import {
+  canDragRow,
+  canMoveInLazyTree,
+} from '../plugins/rowDragging/rowDraggingFeature'
+import { hostTable } from './tableHost'
 import { __resetLogger } from '../util/logger'
 import { captureInertWarnings } from './inertWarnings'
 
@@ -159,14 +164,17 @@ describe('Перенос в ленивом дереве (ADR 0112)', () => {
 
     /** Сессия перетаскивания строки `active` над строками `rows` с хуками `hooks`. */
     const lazyDrag = (rows: FakeRow[], active: FakeRow) => {
-      let hooks: Record<string, unknown> = {}
       let state = { ...DEFAULT_ROW_DRAG_OVERLAY_STATE, activeId: active.id }
       const table = {
-        options: { enableRowDragging: true, rowDragExpandDelay: 0 },
+        options: {
+          enableRowDragging: true,
+          rowDragExpandDelay: 0,
+          rowDragReportsMoves: false,
+        },
         getHeaderGroups: () => [],
         // Переключатель rowExpanding есть: свёрнутая ленивая группа принимает детей (ADR 0109, §5).
         getKeyboardActions: () => [{ expands: true }],
-        getHooks: () => ({ rowDragging: hooks }),
+        getHooks: () => ({}),
         getRowModel: () => ({
           rows,
           rowsById: Object.fromEntries(rows.map(r => [r.id, r])),
@@ -197,7 +205,9 @@ describe('Перенос в ленивом дереве (ADR 0112)', () => {
       return {
         table,
         hold,
-        setHooks: (next: Record<string, unknown>) => (hooks = next),
+        reportMoves: () => {
+          table.options.rowDragReportsMoves = true
+        },
       }
     }
 
@@ -212,7 +222,7 @@ describe('Перенос в ленивом дереве (ADR 0112)', () => {
     }
 
     it('LT9: без onRowDragEnd уровень в ленивую группу недопустим и ленивые дети не тянутся; в dev — предупреждение rowDragging:lazyTree', () => {
-      const { table, hold, setHooks } = underLazyGroup()
+      const { table, hold, reportMoves } = underLazyGroup()
       const child = (parent: object) => ({
         table,
         getParentRow: () => parent,
@@ -232,7 +242,23 @@ describe('Перенос в ленивом дереве (ADR 0112)', () => {
         true,
       )
 
-      setHooks({ onRowDragEnd: () => {} })
+      // Настоящая таблица: хуки в ней дополнены пустым колбэком, он не считается заданным.
+      const columns = [{ id: 'name', accessorKey: 'name' }]
+      expect(
+        canMoveInLazyTree(hostTable({ columns, plugins: [rowDragging()] })),
+        'таблица без колбэка',
+      ).toBe(false)
+      expect(
+        canMoveInLazyTree(
+          hostTable({
+            columns,
+            plugins: [rowDragging({ onRowDragEnd: () => {} })],
+          }),
+        ),
+        'таблица с колбэком',
+      ).toBe(true)
+
+      reportMoves()
       expect(canDragRow(child(lazyParent) as never), 'с колбэком').toBe(true)
       expect(hold(1, 1), 'с колбэком').toMatchObject({
         depth: 1,
@@ -264,7 +290,7 @@ describe('Перенос в ленивом дереве (ADR 0112)', () => {
       const inside = lazyDrag([group, first, second, active], active)
       expect(inside.hold(2, 0)).toMatchObject({ depth: 1, acceptable: false })
       expect(lazyWarnings(), 'место недопустимо').toHaveLength(2)
-      inside.setHooks({ onRowDragEnd: () => {} })
+      inside.reportMoves()
       expect(inside.hold(2, 0), 'с колбэком').toMatchObject({
         depth: 1,
         acceptable: true,

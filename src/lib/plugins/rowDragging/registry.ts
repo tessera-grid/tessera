@@ -88,6 +88,7 @@ const rowDraggingEntry = definePlugin<RowDraggingOptions>()({
     enableRowDragging: o.enabled === false ? false : (o.canDragRow ?? true),
     rowDragExpandDelay: o.expandDelay ?? DEFAULT_ROW_DRAG_EXPAND_DELAY,
     rowDragRevertOnReject: o.revertOnReject !== false,
+    rowDragReportsMoves: !!o.onRowDragEnd,
     onRowOrderChange: o.onRowOrderChange,
   }),
 })

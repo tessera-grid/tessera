@@ -20,7 +20,6 @@ import {
   makeStateUpdater,
 } from '@tanstack/react-table'
 
-import { readPluginHooks } from '../../core/definePlugin'
 import { type LoggerHost, logWarn } from '../../util/logger'
 import {
   type PluginInertReason,
@@ -53,6 +52,8 @@ interface RowDraggingStateSlice {
 interface RowDraggingOptions {
   enableRowDragging?: boolean | ((row: unknown) => boolean)
   rowDragRevertOnReject?: boolean
+  /** Приложение задало `onRowDragEnd`: хуки дополнены пустым, по ним это не узнать. */
+  rowDragReportsMoves?: boolean
   onRowOrderChange?: RowDraggingArgs['onRowOrderChange']
   /** Пауза над свёрнутой группой до её раскрытия, мс (ADR 0109). */
   rowDragExpandDelay?: number
@@ -102,6 +103,8 @@ declare module '@tanstack/react-table' {
 type DraggableTable = {
   options: {
     enableRowDragging?: boolean | ((row: unknown) => boolean)
+    /** Приложение задало `onRowDragEnd`: хуки дополнены пустым, по ним это не узнать. */
+    rowDragReportsMoves?: boolean
   }
   getHeaderGroups: () => unknown[]
   atoms: {
@@ -121,8 +124,7 @@ type DraggableRow = {
 
 /** Ленивый перенос без `onRowDragEnd` недопустим (ADR 0112, §2). */
 export const canMoveInLazyTree = (table: unknown) =>
-  !!readPluginHooks<{ onRowDragEnd?: unknown }>(table as never, 'rowDragging')
-    .onRowDragEnd
+  !!(table as DraggableTable).options.rowDragReportsMoves
 
 export const warnLazyTree = (table: unknown) =>
   logWarn(
