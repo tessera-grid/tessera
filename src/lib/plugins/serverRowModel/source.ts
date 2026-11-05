@@ -835,19 +835,16 @@ const createServerSource = (table: unknown): ServerSource => {
     loadedRows: () => shown.store.loadedRows(),
     branchSize: parentId => shown.store.branchSize(parentId),
     // Перенос — транзакция строк (ADR 0157): удаление и вставка одной пачкой, итог тот же.
-    moveRow: (id, { parentId, index }, original) => {
+    moveRow: (id, { parentId, index }, stray) => {
       const row = shown.store.rowById(id)
-      // Строки уже нет в кэше (ушла за окно): встаёт по данным, итог ветки прежний.
-      if (!row && original === undefined) return false
+      if (!row && !stray) return false
       const from = shown.store.ancestorsOf(id)
+      // Строки уже нет в кэше (ушла за окно): её место закрывается, встаёт она по данным.
+      if (!row) shown.store.closePlace(stray!.from.parentId, stray!.from.index)
       const result = shown.store.applyTransaction(
         row
           ? { parentId, remove: [id], add: { data: [row.original], index } }
-          : {
-              parentId,
-              add: { data: [original], index },
-              rowCount: shown.store.branchSize(parentId)?.count,
-            },
+          : { parentId, add: { data: [stray!.original], index } },
       )
       if (result === 'branchNotLoaded') return false
       // Выбор строки и её ветки идёт за ней (ADR 0162, §4).

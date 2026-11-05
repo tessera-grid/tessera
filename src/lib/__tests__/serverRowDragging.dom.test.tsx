@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 /**
- * Перетаскивание строк в серверной модели на таблице (ADR 0159; MV1, MV8–MV10).
+ * Перетаскивание строк в серверной модели на таблице (ADR 0159; MV1, MV8–MV10, MV13).
  * Запуск: npx vitest run --config vitest.node.config.ts serverRowDragging
  */
 import { act } from 'react'
@@ -16,6 +16,7 @@ import {
   pagination,
   quickSearchModel,
   rowDragging,
+  rowExpanding,
   type RowDragEnd,
   serverRowModel,
   type ServerRowsRequest,
@@ -29,6 +30,7 @@ import {
   moveRow,
   moveRowToEdge,
 } from '../plugins/rowDragging/moveRow'
+import { commitServerMove } from '../plugins/rowDragging/serverMove'
 import { captureInertWarnings } from './inertWarnings'
 ;(
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -74,9 +76,11 @@ const onRowDragEnd = (end: RowDragEnd) => {
 const Grid = ({
   extra = [],
   knownTotal = true,
+  maxBlocks,
 }: {
   extra?: readonly unknown[]
   knownTotal?: boolean
+  maxBlocks?: number
 }) => {
   table = useCreateTable({
     rowCount: knownTotal ? TOTAL : undefined,
@@ -88,6 +92,7 @@ const Grid = ({
       serverRowModel({
         getRows,
         blockSize: BLOCK,
+        maxBlocks,
       }),
       rowDragging({ onRowDragEnd }),
       ...extra,
@@ -232,6 +237,70 @@ describe('перетаскивание строк в серверной моде
     expect(canMoveRowToEdge(rowOf('r3'), table, 'end')).toBe(false)
     expect(canMoveRowToEdge(rowOf('r3'), table, 'start')).toBe(true)
     expect(canMoveRow(rowOf('r0'), table, -1)).toBe(false)
+  })
+
+  it('MV13: откат переноса между ветками у строки, ушедшей из кэша: строка на прежнем месте прежней ветки, итоги обеих веток как до переноса, загруженные строки ниже — на своих местах', async () => {
+    const BRANCH = 30
+    const branches = [rowExpanding({ hasChildren: row => row.depth === 0 })]
+    const answerBranches = async () => {
+      while (calls.length > 0) {
+        const call = calls.shift()!
+        const { start, end, parentId, signal } = call.request
+        if (signal.aborted) continue
+        await act(async () => {
+          call.resolve(
+            parentId
+              ? {
+                  rows: Array.from(
+                    { length: Math.min(end, BRANCH) - start },
+                    (_, k) => ({
+                      id: `${parentId}.${start + k}`,
+                      name: `N${start + k}`,
+                    }),
+                  ),
+                  rowCount: BRANCH,
+                }
+              : { rows: items.slice(start, end), rowCount: TOTAL },
+          )
+        })
+      }
+    }
+    act(() => root.render(<Grid extra={branches} maxBlocks={8} />))
+    show(0, 9)
+    await answerBranches()
+    act(() => table.setExpanded({ r1: true, r2: true }))
+    source().count()
+    await act(async () => {})
+    await answerBranches()
+    show(12, 45)
+    await answerBranches()
+
+    act(() =>
+      commitServerMove(
+        table,
+        'r2.3',
+        { from: 0, to: 0 },
+        { parentId: 'r1', index: 15 },
+        onRowDragEnd,
+      ),
+    )
+    expect(source().branchSize!('r1')?.count).toBe(BRANCH + 1)
+    expect(source().branchSize!('r2')?.count).toBe(BRANCH - 1)
+    expect(rowOf('r1.25').index).toBe(26)
+
+    // Блок со строкой вытеснен; блок ветки ниже неё и прежняя ветка — в окне.
+    show(23, 43)
+    act(() => root.render(<Grid extra={branches} maxBlocks={1} />))
+    expect(rowOf('r2.3')).toBeUndefined()
+    expect(rowOf('r1.25')).toBeDefined()
+
+    await act(async () => settleMove?.(false))
+    expect(source().branchSize!('r1')?.count).toBe(BRANCH)
+    expect(source().branchSize!('r2')?.count).toBe(BRANCH)
+    expect(source().count()).toBe(TOTAL + 2 * BRANCH)
+    expect(rowOf('r2.3')).toMatchObject({ parentId: 'r2', index: 3 })
+    expect(rowOf('r2.4').index).toBe(4)
+    expect(rowOf('r1.25').index).toBe(25)
   })
 
   it('MV9: блок, запрошенный до переноса и пришедший после, сверяется по id — ни дублей, ни пропусков', async () => {

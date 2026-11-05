@@ -688,6 +688,35 @@ export class BlockTree<TData, TRow, TQuery> {
     return { removed: [...removals.values()].flat().length }
   }
 
+  /**
+   * Закрыть место незагруженной строки, которую уносит откат переноса (ADR 0159, §2): итог
+   * ветки меньше на неё, строки ниже поднимаются. Занято другой строкой — место уже сдвинули
+   * транзакции, меняется только итог.
+   */
+  closePlace(parentId: string | undefined, local: number) {
+    const node = this.nodes.get(parentId)
+    if (!node || !this.openNodes().has(node)) return
+    this.layout()
+    const at = this.globalOf(parentId, local)
+    const removed = node.store.rowAt(local) ? [] : [local]
+    for (const [id, position] of this.positions) {
+      if (position.parent !== parentId) continue
+      const next = editedIndex(position.local, removed)
+      if (next === -1) this.positions.delete(id)
+      else position.local = next
+    }
+    node.store.applyEdits({
+      remove: removed,
+      rowCount: node.store.isTotalKnown() ? node.store.count() - 1 : undefined,
+    })
+    this.version++
+    this.cache = null
+    this.layout()
+    this.options.onLayoutChange?.([{ at, delta: -1 }])
+    this.scheduleWindow()
+    this.options.onChange()
+  }
+
   /** Ветка `parentId` в раскладке: корень или раскрытая строка с хранилищем. */
   hasBranch(parentId: string | undefined): boolean {
     const node = this.nodes.get(parentId)

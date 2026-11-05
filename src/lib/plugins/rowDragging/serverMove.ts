@@ -101,8 +101,9 @@ export const commitServerMove = (
   const row = source.byId(rowId) as
     (PlacedRow & { original?: unknown }) | undefined
   const before = { parentId: row?.parentId, index: row?.index ?? 0 }
-  // Перенос за окно уносит строку из кэша: откат ставит её по данным (ADR 0159, §2).
-  const original = row?.original
+  // Перенос за окно уносит строку из кэша: откат ставит её по данным и закрывает новое место
+  // (ADR 0159, §2).
+  const stray = row && { original: row.original, from: place }
   const grouping =
     (
       table as { atoms: { grouping?: { get: () => string[] } } }
@@ -121,7 +122,7 @@ export const commitServerMove = (
         previousGroupValues: groupValuesOf(before.parentId, grouping),
       }),
       write: () => source.moveRow?.(rowId, place),
-      revert: () => source.moveRow?.(rowId, before, original),
+      revert: () => source.moveRow?.(rowId, before, stray),
     },
     onRowDragEnd,
   )

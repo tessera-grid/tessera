@@ -109,13 +109,16 @@ export interface RowSource<TRow = unknown> {
   ) => { count: number; known: boolean } | undefined
   /**
    * Перенести строку на место `index` в ветке `parentId` (без него — среди корней) — сразу,
-   * без запроса (ADR 0159, §2, §4). Строки нет в кэше — встаёт по данным `original`, итог
-   * ветки прежний; без них — `false`. Ветка не загружена — `false`.
+   * без запроса (ADR 0159, §2, §4). Строки нет в кэше — встаёт по данным `stray.original`, а
+   * её место `stray.from` закрывается; без них — `false`. Ветка не загружена — `false`.
    */
   moveRow?: (
     id: string,
     place: { parentId?: string; index: number },
-    original?: unknown,
+    stray?: {
+      original: unknown
+      from: { parentId?: string; index: number }
+    },
   ) => boolean
   /** Строк в группе по строке-группе (серверная группировка, ADR 0144); иначе — нет. */
   groupChildCount?(row: TRow): number | undefined

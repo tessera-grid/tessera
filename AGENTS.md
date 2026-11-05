@@ -1126,7 +1126,7 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       `scrollToRow` к другой странице, клавиши и `aria-*`), перф SP11 — в `interaction`, истории
       «Data loading/Server row model/Pagination» (S1–S4)
       ([ADR 0158](docs/decisions/0158-ssrm-pagination.md)).
-    - _Перетаскивание строк в SSRM:_ модульный `serverRowDragging.dom` (MV1, MV8–MV10 — активен
+    - _Перетаскивание строк в SSRM:_ модульный `serverRowDragging.dom` (MV1, MV8–MV10, MV13 — активен
       и инертен при серверной сортировке и фильтре, меню ручки и клавиши, блок в пути, канал
       действий), визуальный `server-row-dragging` (MV2–MV7 — бросок в кэше, промис и откат,
       незагруженные строки, автопрокрутка в растянутой области, ветки: пауза раскрывает,
