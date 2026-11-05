@@ -19,7 +19,7 @@ import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
 /**
  * Движение строк (ADR 0107): раскрытие, сортировка, поиск и перестановка двигают строки
  * к новым местам, уходящие гаснут. `Playground` — функции и флаг движения; S1 —
- * раскрытие и сворачивание, S2 — сортировка и поиск.
+ * раскрытие и сворачивание, S2 — сортировка и поиск, S3 — удаление строки.
  */
 const meta = {
   ...dataGridMeta,
@@ -240,6 +240,55 @@ export const RowMotionSearch: StoryObj<StoryProps> = {
       await until(() => expect(ghost(canvas)).toBeNull())
       await expect(orderedRows(canvas).length).toBeLessThanOrEqual(rows)
       await expect(isAscending(namesOf(canvas))).toBe(true)
+      await settle()
+    })
+  },
+}
+
+// --- S3 ------------------------------------------------------------------------------
+
+const REMOVED = 'item-id-3'
+const NEXT = 'item-id-4'
+
+const DELETE: readonly GuideStoryStep[] = [
+  {
+    title: 'Строки на своих местах',
+    hint: 'Таблица показывает данные приложения.',
+  },
+  {
+    title: 'Приложение удалило строку',
+    hint: 'Строки больше нет в данных. Она погасла на своём месте, затем строки ниже плавно поднялись и закрыли щель.',
+    props: ({ rows }) => ({
+      dataOverride: rows.filter(row => row.id !== REMOVED),
+    }),
+  },
+]
+
+/** S3: приложение удаляет строку из данных — она гаснет на месте, затем строки закрывают щель. */
+export const RowMotionDelete: StoryObj<StoryProps> = {
+  name: 'Delete a row',
+  parameters: {
+    scenario: '0107/S3',
+    ...guideControls(),
+  },
+  render: args => (
+    <GuideStory
+      title="Удаление строки"
+      steps={DELETE}
+      args={guideArgs(GRID, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(DELETE[0]!.title, async () => {
+      await waitForRows(canvas)
+      await expect(bodyRow(canvas, REMOVED)).toBeTruthy()
+    })
+    await step(DELETE[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(bodyRow(canvas, REMOVED)).toBeFalsy())
+      await until(() => expect(ghost(canvas)).toBeNull())
+      await expect(bodyRow(canvas, NEXT)).toBeTruthy()
       await settle()
     })
   },

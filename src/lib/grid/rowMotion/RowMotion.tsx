@@ -320,16 +320,18 @@ export class RowMotion extends Component<RowMotionProps> {
       Math.min(from, to) < viewport.bottom &&
       Math.max(from, to) + rowSize > viewport.top
 
-    // Строки, удалённые транзакцией серверной модели, сперва гаснут на своём месте, затем
-    // строки закрывают щель (ADR 0157, §4): иначе соседи наезжают на призрак и удаления
-    // не видно.
+    // Строки, удалённые из данных, сперва гаснут на своём месте, затем строки закрывают щель
+    // (ADR 0157, §4): иначе соседи наезжают на призрак и удаления не видно. Строки фильтра,
+    // поиска и свёрнутые в источнике остаются.
+    const { source } = this.props
     const removing =
-      !!this.props.source?.keyByIndex &&
+      !!source &&
       plan.exits.some(
         exit =>
           exit.to === null &&
           leaving.has(exit.id) &&
-          seen(exit.from, exit.from),
+          seen(exit.from, exit.from) &&
+          !source.byId(exit.id),
       )
     const settle = removing
       ? { ...timing, delay: duration, fill: 'backwards' as const }

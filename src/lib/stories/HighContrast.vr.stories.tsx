@@ -2145,6 +2145,18 @@ export const HighContrastSortingExternalControlsStep2 = {
   ...twinStep(
     columnsSortingStories,
     columnsSortingStories.SortingExternalControls,
+export const HighContrastRowMotionDeleteStep1 = {
+  ...twinStep(rowsMotionStories, rowsMotionStories.RowMotionDelete, 1),
+  name: 'Rows/Motion — Delete a row, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastRowMotionDeleteStep2 = {
+  ...twinStep(rowsMotionStories, rowsMotionStories.RowMotionDelete, 2),
+  name: 'Rows/Motion — Delete a row, шаг 2',
+  tags: ['!test'],
+}
+
     2,
   ),
   name: 'Columns/Sorting — External controls, шаг 2',

@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import axe from 'axe-core'
 import { commands, page, server, userEvent } from 'vitest/browser'
@@ -7,6 +7,7 @@ import { render } from 'vitest-browser-react'
 import { afterEach, describe, expect, onTestFinished, test } from 'vitest'
 
 import { ENGLISH_LABELS } from '../../../core/localization'
+import { quickSearchModel, rowExpanding } from '../../../plugins'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import { columns } from '../../__mocks__/columns'
@@ -1338,5 +1339,98 @@ describe('Движение строк — прокрутка после пере
       1,
     )
     expect(ghostFrames.filter(frame => frame.shown > 0)).toEqual([])
+  })
+
+  test('RM32: строка, ушедшая из data, сперва гаснет на месте, затем строки закрывают щель; строки поиска и сворачивания уходят, как прежде; замена целиком и уменьшенное движение — без анимации', async () => {
+    type Item = { id: string; name: string; subRows?: Item[] }
+    const rows = (prefix: string): Item[] =>
+      Array.from({ length: 40 }, (_, k) => ({
+        id: `${prefix}${k}`,
+        name: k % 2 ? `odd ${k}` : `even ${k}`,
+        ...(k === 0 && {
+          subRows: [
+            { id: `${prefix}c1`, name: 'child one' },
+            { id: `${prefix}c2`, name: 'child two' },
+          ],
+        }),
+      }))
+    const FIELDS = [{ id: 'name', accessorKey: 'name', header: 'Name' }]
+    let table!: {
+      setGlobalFilter: (value: string) => void
+      setExpanded: (value: Record<string, boolean>) => void
+    }
+    let setData!: (change: (rows: Item[]) => Item[]) => void
+    const Grid = () => {
+      const [data, set] = useState(() => rows('r'))
+      setData = set
+      const created = useCreateTable({
+        columns: FIELDS as never,
+        data,
+        getRowId: (row: Item) => row.id,
+        getSubRows: (row: Item) => row.subRows,
+        plugins: [quickSearchModel(), rowExpanding()] as never,
+      })
+      table = created as unknown as typeof table
+      return (
+        <div style={{ width: 600, height: 420 }}>
+          <DataGrid table={created as never} />
+        </div>
+      )
+    }
+    const without = (id: string) => (list: Item[]) =>
+      list.filter(row => row.id !== id)
+    /** Анимация сдвига строки движением строк. */
+    const slideOf = (id: string) =>
+      bodyOf()
+        .querySelector<HTMLElement>(`:scope > [data-row-id="${id}"]`)
+        ?.getAnimations()
+        .find(animation =>
+          (animation.effect as KeyframeEffect)
+            .getKeyframes()
+            .some(frame => frame.translate !== undefined),
+        )
+    const timingOf = (id: string) => slideOf(id)!.effect!.getTiming()
+
+    await render(<Grid />)
+    await expect.poll(() => rowById('r5')).not.toBeNull()
+
+    // Удаление: призрак гаснет на месте, соседи ждут его конца.
+    setData(without('r3'))
+    await expect.poll(() => ghosts().length).toBeGreaterThan(0)
+    expect(Number(timingOf('r4').delay)).toBeGreaterThan(0)
+    expect(timingOf('r4').delay).toBe(timingOf('r4').duration)
+    await settleRowMotion()
+    await expect.poll(() => ghosts().length).toBe(0)
+
+    // Поиск: строки остаются в данных — соседи едут сразу.
+    table.setGlobalFilter('odd')
+    await expect.poll(() => ghosts().length).toBeGreaterThan(0)
+    expect(timingOf('r5').delay).toBe(0)
+    await settleRowMotion()
+    table.setGlobalFilter('')
+    await settleRowMotion()
+
+    // Сворачивание: дети остаются в данных — строки ниже поднимаются сразу.
+    table.setExpanded({ r0: true })
+    await expect.poll(() => rowById('rc1')).not.toBeNull()
+    await settleRowMotion()
+    table.setExpanded({})
+    await expect.poll(() => ghosts().length).toBeGreaterThan(0)
+    expect(timingOf('r1').delay).toBe(0)
+    await settleRowMotion()
+
+    // Замена целиком — без анимации.
+    setData(() => rows('n'))
+    await expect.poll(() => rowById('n5')).not.toBeNull()
+    expect(ghosts()).toHaveLength(0)
+    expect(slideOf('n5')).toBeUndefined()
+
+    // Уменьшенное движение — без анимации.
+    await pointer.reducedMotion(true)
+    onTestFinished(() => pointer.reducedMotion(false))
+    setData(without('n3'))
+    await expect.poll(() => rowById('n3')).toBeNull()
+    expect(ghosts()).toHaveLength(0)
+    expect(slideOf('n4')).toBeUndefined()
   })
 })
