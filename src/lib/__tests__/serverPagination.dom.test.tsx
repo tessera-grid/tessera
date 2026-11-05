@@ -1,11 +1,11 @@
 // @vitest-environment happy-dom
 /**
- * Пагинация в серверной модели строк на таблице (ADR 0158; SP1, SP3, SP9, SP10).
+ * Пагинация в серверной модели строк на таблице (ADR 0158; SP1, SP3, SP9, SP10, SP12).
  * Запуск: npx vitest run --config vitest.node.config.ts serverPagination
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { DataMode } from '../core/dataMode'
 import type { RowSource } from '../core/rowSource'
@@ -16,8 +16,10 @@ import {
 } from '../core/rowSelectionAll'
 import { isServerAction } from '../core/serverActions'
 import { useCreateTable } from '../core/useCreateTable'
+import { downloadFile } from '../plugins/dataExportModel/download'
 import {
   columnSortingModel,
+  dataExport,
   pagination,
   rowExpanding,
   rowSelection,
@@ -27,6 +29,11 @@ import {
 } from '../plugins'
 import { toggleRowSelection } from '../plugins/rowSelection/keyboardActions'
 import { captureInertWarnings } from './inertWarnings'
+
+vi.mock('../plugins/dataExportModel/download', () => ({
+  downloadFile: vi.fn(),
+}))
+
 ;(
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true
@@ -39,6 +46,7 @@ interface Item {
 interface Call {
   request: ServerRowsRequest
   resolve: (response: ServerRowsResponse<Item>) => void
+  reject: (reason: Error) => void
 }
 
 const COLUMNS = [{ id: 'name', accessorKey: 'name' }]
@@ -53,8 +61,8 @@ let table: any
 let calls: Call[]
 
 const getRows = (request: ServerRowsRequest) =>
-  new Promise<ServerRowsResponse<Item>>(resolve => {
-    calls.push({ request, resolve })
+  new Promise<ServerRowsResponse<Item>>((resolve, reject) => {
+    calls.push({ request, resolve, reject })
   })
 
 const Grid = ({
@@ -112,6 +120,7 @@ const flush = () =>
 beforeEach(() => {
   calls = []
   root = createRoot(document.createElement('div'))
+  vi.mocked(downloadFile).mockClear()
 })
 
 afterEach(() => {
@@ -258,5 +267,57 @@ describe('пагинация в серверной модели строк (ADR 
     // Сортировка возвращает на первую страницу, как без флага.
     act(() => table.setSorting([{ id: 'name', desc: true }]))
     expect(table.store.get().pagination.pageIndex).toBe(0)
+  })
+
+  it('SP12: выгрузка страницы с незагруженными строками догружает их блоками и собирает файл из всех строк страницы; отказ блока отклоняет выгрузку без файла, отмена прерывает догрузку', async () => {
+    act(() =>
+      root.render(
+        <Grid
+          dataMode={{ export: 'server' }}
+          extra={[
+            pagination({ initialPageSize: 30 }),
+            dataExport({ onExport: () => {} }),
+          ]}
+        />,
+      ),
+    )
+    /** На странице загружен только блок окна; выгрузка просит два остальных. */
+    const startExport = async (pageIndex: number) => {
+      page(pageIndex)
+      show(0, 9)
+      await answerAll()
+      const asked = calls.length
+      let done!: Promise<void>
+      act(() => {
+        done = table.exportData({ rows: 'page' })
+      })
+      await vi.waitFor(() => expect(calls.length).toBe(asked + 2))
+      return { done, blocks: calls.slice(asked) }
+    }
+
+    const { done, blocks } = await startExport(1)
+    expect(startsOf(blocks)).toEqual([40, 50])
+    for (const block of blocks) await answer(block)
+    await act(() => done)
+    expect(downloadFile).toHaveBeenCalledTimes(1)
+    const lines = (vi.mocked(downloadFile).mock.calls[0]![0] as string)
+      .trim()
+      .split(/\r?\n/)
+      .slice(1)
+    expect(lines).toEqual(Array.from({ length: 30 }, (_, i) => `N${30 + i}`))
+
+    const refused = await startExport(2)
+    const rejection = expect(refused.done).rejects.toThrow('down')
+    await act(async () => {
+      refused.blocks[0]!.reject(new Error('down'))
+      await rejection
+    })
+    expect(downloadFile).toHaveBeenCalledTimes(1)
+
+    const cancelled = await startExport(3)
+    act(() => table.cancelPending({ kind: 'export' }))
+    expect(cancelled.blocks[0]!.request.signal.aborted).toBe(true)
+    await act(() => cancelled.done)
+    expect(downloadFile).toHaveBeenCalledTimes(1)
   })
 })

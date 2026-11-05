@@ -93,6 +93,10 @@ export const headerOf = (column: ExportSourceColumn): string =>
     ? column.columnDef.header
     : column.id
 
+/** Строка страницы — данные: без строк-групп и скелетов ленивых детей. */
+const isPageRow = (row: ExportRow) =>
+  !row.getIsGrouped?.() && !isPlaceholderRow(row)
+
 /** Данные в глубину по `subRows`; строки-группы пропускаются, их дети — нет. */
 const walk = (rows: ExportRow[], visit: (row: ExportRow) => void) => {
   for (const row of rows) {
@@ -127,7 +131,7 @@ export const exportRowsOf = (
     const rows = dataRowSourceOf<ExportRow>(table)
     for (let index = 0; index < rows.count(); index++) {
       const row = rows.at(index)
-      if (row && !row.getIsGrouped?.() && !isPlaceholderRow(row)) push(row)
+      if (row && isPageRow(row)) push(row)
     }
   } else {
     walk(viewRows(source), row => {
@@ -142,6 +146,25 @@ export const exportRowsOf = (
     }
   }
   return out
+}
+
+/**
+ * Загрузка строк страницы серверной модели, если часть их не пришла (ADR 0158, SP12);
+ * `undefined` — страница уже у грида целиком.
+ */
+export const pageRowsLoaderOf = (table: unknown, scope: ExportRows) => {
+  if (scope !== 'page') return undefined
+  const source = dataRowSourceOf<ExportRow>(table)
+  if (!source.loadRange) return undefined
+  const count = source.count()
+  for (let index = 0; index < count; index++) {
+    if (source.at(index)) continue
+    return async (signal: AbortSignal) => {
+      const rows = await source.loadRange!(0, count - 1, signal)
+      return rows.filter((row): row is ExportRow => !!row && isPageRow(row))
+    }
+  }
+  return undefined
 }
 
 /** Id выбранных строк из среза `rowSelection` — по всем страницам, в том числе не загруженным. */
@@ -201,6 +224,8 @@ const dataTypeOf = (
 export const collectExportData = (
   table: unknown,
   { rows = 'all', columns = 'visible', formatValue }: ExportCollectOptions = {},
+  /** Уже загруженные строки вместо строк охвата `rows`. */
+  loaded?: readonly ExportRow[],
 ): ExportData => {
   const leaves = exportColumnsOf(table, columns)
   const exportColumns: ExportColumn[] = leaves.map(column => ({
@@ -214,7 +239,7 @@ export const collectExportData = (
   return {
     columns: exportColumns,
     ...(timeZone ? { timeZone } : {}),
-    rows: exportRowsOf(table, rows).map(row =>
+    rows: (loaded ?? exportRowsOf(table, rows)).map(row =>
       leaves.map(column => {
         const value = row.getValue(column.id)
         if (formatValue) return formatValue({ value, row, column })

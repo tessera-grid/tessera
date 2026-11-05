@@ -21,6 +21,7 @@ import {
   collectExportData,
   exportColumnsOf,
   headerOf,
+  pageRowsLoaderOf,
   selectedRowIdsOf,
   serverRowsRequestOf,
 } from './exportData'
@@ -192,32 +193,47 @@ export const runExport = (
     )
   }
 
-  const data = collectExportData(table, {
-    rows: settings.rows,
-    columns: settings.columns,
-    formatValue: config.formatValue,
-  })
-  const filename = filenameOf(table, settings, format)
-  const finish = (content: ExportContent) => {
-    downloadFile(content, filename, format)
-    return invoke(table, hooks.onExported, {
-      settings,
-      format,
-      columns: data.columns,
-      rowCount: data.rows.length,
-      filename,
-    })
-  }
-  return cancellable(table, format, outcome, context => {
+  const write = (
+    context: ExportContext,
+    loaded?: Parameters<typeof collectExportData>[2],
+  ) => {
+    const data = collectExportData(
+      table,
+      {
+        rows: settings.rows,
+        columns: settings.columns,
+        formatValue: config.formatValue,
+      },
+      loaded,
+    )
+    const filename = filenameOf(table, settings, format)
+    const finish = (content: ExportContent) => {
+      downloadFile(content, filename, format)
+      return invoke(table, hooks.onExported, {
+        settings,
+        format,
+        columns: data.columns,
+        rowCount: data.rows.length,
+        filename,
+      })
+    }
     const content = format.serialize(data, context)
     if (!isThenable(content)) return finish(content)
     // Асинхронный формат (xlsx): кнопка ждёт; отказ отклоняет промис — его причина на
     // отметке кнопки (ADR 0136, FB6). После отмены файл не скачивается.
-    const built = Promise.resolve(content).then(resolved =>
+    return Promise.resolve(content).then(resolved =>
       context.signal.aborted ? undefined : finish(resolved),
     )
-    if (outcome) reportOutcome(table, outcome, built)
-    return built
+  }
+  const loadPage = pageRowsLoaderOf(table, settings.rows)
+  return cancellable(table, format, outcome, context => {
+    const result = loadPage
+      ? loadPage(context.signal).then(rows =>
+          context.signal.aborted ? undefined : write(context, rows),
+        )
+      : write(context)
+    if (outcome && (loadPage || result)) reportOutcome(table, outcome, result)
+    return result
   })
 }
 

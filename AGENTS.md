@@ -1111,9 +1111,9 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       правка держатся за строку; движение, вспышка, двухфазный уход, вне окна и уменьшенное
       движение), перф RT12 — в `interaction`, истории «Data loading/Server row
       model/Transactions» (S1–S4) ([ADR 0157](docs/decisions/0157-ssrm-row-transactions.md)).
-    - _Пагинация в SSRM:_ модульный `serverPagination.dom` (SP1, SP3, SP9–SP10 — страница из
+    - _Пагинация в SSRM:_ модульный `serverPagination.dom` (SP1, SP3, SP9–SP10, SP12 — страница из
       корней с ветками, отмена блоков ушедшей страницы, выбор, диапазон и транзакции по сквозному
-      списку, `server: true`), визуальный `server-pagination` (SP2, SP4–SP8 — скелеты и кэш
+      списку, `server: true`, выгрузка страницы с догрузкой строк), визуальный `server-pagination` (SP2, SP4–SP8 — скелеты и кэш
       страниц, «из многих», первая страница при смене выборки и размера, черновик правки,
       `scrollToRow` к другой странице, клавиши и `aria-*`), перф SP11 — в `interaction`, истории
       «Data loading/Server row model/Pagination» (S1–S4)
