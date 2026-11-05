@@ -4,7 +4,9 @@
   gap: var(--tsr-comp-toolbar-gap);
   box-sizing: border-box;
   height: var(--tsr-comp-toolbar-height);
-  padding: 0 var(--tsr-comp-toolbar-padding-x);
+  /* Разделитель снизу уравновешен полем 1px сверху: контролы — на целых пикселях,
+   * на равном расстоянии от краёв. */
+  padding: 1px var(--tsr-comp-toolbar-padding-x) 0;
   background-color: var(--tsr-comp-toolbar-bg);
   border-bottom: 1px solid var(--tsr-comp-toolbar-divider-color);
 }

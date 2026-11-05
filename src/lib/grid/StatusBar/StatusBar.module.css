@@ -3,7 +3,9 @@
   align-items: center;
   box-sizing: border-box;
   height: var(--tsr-comp-status-bar-height);
-  padding: 0 var(--tsr-comp-status-bar-padding-x);
+  /* Разделитель сверху уравновешен полем 1px снизу: контролы — на целых пикселях,
+   * на равном расстоянии от краёв. */
+  padding: 0 var(--tsr-comp-status-bar-padding-x) 1px;
   gap: var(--tsr-comp-status-bar-gap);
   font-size: var(--tsr-comp-status-bar-font-size);
   background-color: var(--tsr-comp-status-bar-bg);
@@ -27,6 +29,8 @@
   align-items: stretch;
   gap: 0;
   height: auto;
+  /* Строки по высоте панели — каждая на целых пикселях без поля снизу. */
+  padding-bottom: 0;
 
   & > .status-bar__side {
     min-height: var(--tsr-comp-status-bar-height);

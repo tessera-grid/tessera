@@ -275,6 +275,7 @@ columnVisibility({
 | TB13 | `ToolbarButton` квадратная, радиус `--tsr-comp-button-radius-square`, размер `--tsr-comp-toolbar-button-size` (≥ 24×24)        | visual |
 | TB14 | Цвета состояний F4: покой, hover, активное, disabled (`control-disabled-color`), фокус (`focus-ring`); переход — единый (TC-2) | visual |
 | TB15 | Подпись кнопки — тултип и доступное имя                                                                                        | visual |
+| TB21 | Контролы тулбара — на целых пикселях, на равном расстоянии от верха и низа: нижний разделитель уравновешен полем 1px сверху    | visual |
 
 **Плагин `columnVisibility`**
 
