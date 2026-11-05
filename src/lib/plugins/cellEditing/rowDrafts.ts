@@ -333,6 +333,10 @@ const layerOf = (table: object, base: RowSource<LayerRow>): Layer => {
       if (positions[at] === index) return rows[at]
       return base.at(index - at)
     },
+    newRows: () => {
+      const { positions, rows } = plan()
+      return rows.map((row, i) => ({ id: row.id, index: positions[i]! }))
+    },
     byId: id => plan().byId.get(id)?.row ?? base.byId(id),
     indexOf: id => {
       const own = plan().byId.get(id)

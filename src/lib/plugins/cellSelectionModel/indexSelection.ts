@@ -6,6 +6,7 @@
 import type { RowData, TableFeatures } from '@tanstack/react-table'
 import { logWarn } from '../../util/logger'
 import {
+  followIndex,
   followRowList as followRows,
   followSpans,
   shiftIndexSpan,
@@ -641,6 +642,28 @@ const shiftRange = (
   }
 }
 
+/**
+ * Углы диапазона после смены списка: известную строку ведёт её `id`, прочие — сдвиг. Так новая
+ * строка внутри диапазона расширяет его, как на клиенте (ADR 0178, DR50).
+ */
+const followCorners = (
+  range: CellSelectionRange,
+  source: RowSource<Row>,
+  batches: readonly (readonly RowListChange[])[],
+): CellSelectionRange => {
+  if (!hasIndexes(range)) return range
+  const place = (id: string | undefined, index: number) => {
+    const known = id === undefined ? -1 : source.indexOf(id)
+    return known >= 0 ? known : followIndex(index, batches)
+  }
+  const anchorRowIndex = place(range.anchorRowId, range.anchorRowIndex!)
+  const focusRowIndex = place(range.focusRowId, range.focusRowIndex!)
+  return anchorRowIndex === range.anchorRowIndex &&
+    focusRowIndex === range.focusRowIndex
+    ? range
+    : { ...range, anchorRowIndex, focusRowIndex }
+}
+
 interface FollowTable {
   store: {
     get: () => Record<string, unknown>
@@ -710,9 +733,22 @@ export const followRowList = (table: unknown) => {
     reset: () => t.setCellSelection(() => []),
     shift: batches => {
       const current = ranges()
-      const next = followSpans(current, batches, shiftRange)
-      if (next === null) t.setCellSelection(() => [])
-      else if (next.some((range, index) => range !== current[index])) {
+      const shifted = followSpans(current, batches, shiftRange)
+      if (shifted === null) {
+        t.setCellSelection(() => [])
+        return
+      }
+      const source = rowSourceOf<Row>(table)
+      const next = shifted.map(range => followCorners(range, source, []))
+      if (next.some((range, index) => range !== current[index])) {
+        t.setCellSelection(() => next)
+      }
+    },
+    newRows: batches => {
+      const current = ranges()
+      const source = rowSourceOf<Row>(table)
+      const next = current.map(range => followCorners(range, source, batches))
+      if (next.some((range, index) => range !== current[index])) {
         t.setCellSelection(() => next)
       }
     },

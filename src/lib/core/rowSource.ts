@@ -134,6 +134,14 @@ export interface RowSource<TRow = unknown> {
   ) => Promise<readonly (TRow | undefined)[]>
   /** Источник под слоем строк до сохранения (ADR 0178, §7): строки данных без новых. */
   base?: RowSource<TRow>
+  /** Новые строки слоя и их места в списке; журнал смен о них не знает (ADR 0178, DR50). */
+  newRows?: () => readonly NewRowPlace[]
+}
+
+/** Новая строка и её место в списке. */
+export interface NewRowPlace {
+  id: string
+  index: number
 }
 
 /** Смена списка: в месте `at` вставлено `delta` строк, при `delta < 0` — удалено. */

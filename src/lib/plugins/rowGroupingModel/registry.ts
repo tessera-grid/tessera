@@ -39,7 +39,7 @@ const NO_GROUPING: string[] = []
 
 export const rowGroupingModel = definePlugin<RowGroupingModelOptions>()({
   id: 'rowGroupingModel',
-  // Группировка и дерево на сервере — вне объёма и этап 5 (ADR 0138, §13).
+  // В серверной модели группирует сервер (ADR 0144): модели здесь группировать нечего.
   diagnose: serverRowModelReason,
   // Группы раскрывает модель дерева; её срез `expanded` — её аргумент (MP10).
   model: { plugin: rowExpandingModel, keys: [] },

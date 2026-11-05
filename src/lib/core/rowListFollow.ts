@@ -3,7 +3,7 @@
  * то, что стоит на индексах строк, смена строк выше сдвигает, внутри — сбрасывает. Им
  * пользуются выделение по индексам и диапазоны подсветки и вспышки (ADR 0152, §4).
  */
-import { type RowListChange, rowSourceOf } from './rowSource'
+import { type NewRowPlace, type RowListChange, rowSourceOf } from './rowSource'
 
 /** Сдвиг промежутка `[top, bottom]` сменой списка: число строк или `null` — смена внутри. */
 export const shiftIndexSpan = (
@@ -85,6 +85,26 @@ export const priorIndex = (
   return current
 }
 
+const NO_NEW_ROWS: readonly NewRowPlace[] = []
+
+/** Смена новых строк пачками: сначала ушедшие, затем пришедшие (ADR 0178, DR50). */
+export const newRowChanges = (
+  previous: readonly NewRowPlace[],
+  next: readonly NewRowPlace[],
+): RowListChange[][] => {
+  const before = new Set(previous.map(row => row.id))
+  const after = new Set(next.map(row => row.id))
+  const removed = previous
+    .filter(row => !after.has(row.id))
+    .map(row => ({ at: row.index, delta: -1 }))
+  // Место пришедшей — среди пришедших выше: пачка считается в индексах до неё.
+  const added = next
+    .filter(row => !before.has(row.id))
+    .sort((a, b) => a.index - b.index)
+    .map((row, position) => ({ at: row.index - position, delta: 1 }))
+  return [removed, added].filter(batch => batch.length > 0)
+}
+
 interface FollowTable {
   store: {
     get: () => Record<string, unknown>
@@ -102,12 +122,21 @@ export interface RowListFollower {
   reset: () => void
   /** Смены списка пачками после прошлой раскладки. */
   shift: (batches: readonly (readonly RowListChange[])[]) => void
+  /** Новые строки слоя пришли или ушли; журнал смен о них не знает (ADR 0178, DR50). */
+  newRows?: (batches: readonly (readonly RowListChange[])[]) => void
 }
 
 /** Подписка на смены списка серверной модели; у клиентского источника — без действия. */
 export const followRowList = (table: unknown, follower: RowListFollower) => {
   const t = table as FollowTable
-  let seen: { epoch: number; version: number; query: unknown[] } | undefined
+  let seen:
+    | {
+        epoch: number
+        version: number
+        query: unknown[]
+        newRows: readonly NewRowPlace[]
+      }
+    | undefined
   const check = () => {
     const source = rowSourceOf(table)
     if (!source.keyByIndex) {
@@ -118,8 +147,9 @@ export const followRowList = (table: unknown, follower: RowListFollower) => {
     const query = QUERY_SLICES.map(key => state[key])
     const epoch = source.epoch?.() ?? 0
     const version = source.version?.() ?? 0
+    const newRows = source.newRows?.() ?? NO_NEW_ROWS
     const before = seen
-    seen = { epoch, version, query }
+    seen = { epoch, version, query, newRows }
     if (!before || !follower.active()) return
     if (
       before.epoch !== epoch ||
@@ -128,10 +158,14 @@ export const followRowList = (table: unknown, follower: RowListFollower) => {
       follower.reset()
       return
     }
-    if (before.version === version) return
-    const batches = source.changesSince?.(before.version)
-    if (batches) follower.shift(batches)
-    else follower.reset()
+    const moved = newRowChanges(before.newRows, newRows)
+    const batches =
+      before.version === version ? [] : source.changesSince?.(before.version)
+    if (!batches) follower.reset()
+    // Новая строка ушла из слоя в кэш: уход и запись — одна смена, а не вставка в диапазон.
+    else if (moved.length > 0 && follower.newRows)
+      follower.newRows([...moved, ...batches])
+    else if (batches.length > 0) follower.shift(batches)
   }
   const subscription = t.store.subscribe(check)
   return () => subscription.unsubscribe()

@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 /**
- * Строки до сохранения (ADR 0178, §7; DR27, DR28, DR30, DR33, DR41): место новой строки,
+ * Строки до сохранения (ADR 0178, §7; DR27, DR28, DR30, DR33, DR41, DR50): место новой строки,
  * удаление, пакет со вставками и удалениями, режимы, где строки инертны, копирование диапазона.
  * Запуск: npx vitest run --config vitest.node.config.ts rowDrafts
  */
@@ -362,5 +362,86 @@ describe('строки до сохранения (ADR 0178, §7)', () => {
       serverId,
       ...Array.from({ length: 10 }, (_, i) => String(i + 2)),
     ])
+  })
+
+  it('DR50: в серверной модели диапазон выделения следует за новой строкой, как на клиенте: вставка выше сдвигает, внутри расширяет до тех же углов, откат возвращает; угол без id — тоже', async () => {
+    mount(
+      [
+        serverRowModel({
+          blockSize: 10,
+          maxBlocks: 5,
+          getRows: ({ start, end }: { start: number; end: number }) =>
+            Promise.resolve({ rows: ROWS.slice(start, end), rowCount: 30 }),
+        }),
+        manual(batch => ({
+          saved: (batch.inserts ?? []).map(item => ({
+            rowId: item.rowId,
+            row: { id: item.rowId, name: 'Saved', age: 1 },
+          })),
+        })),
+        cellSelectionModel(),
+      ],
+      { data: [], rowCount: 30 },
+    )
+    await act(async () => {
+      source().observe!({ first: 0, last: 9, fast: false })
+      await new Promise(resolve => setTimeout(resolve, 0))
+    })
+    const COLUMNS = { anchorColumnId: 'name', focusColumnId: 'age' }
+    const span = () => {
+      const [range] = table.getCellSelectionRanges()
+      return [range.minRowIndex, range.maxRowIndex]
+    }
+    const rowsOfRange = () =>
+      [span()[0]!, span()[1]!].map(index => source().at(index)?.id)
+
+    act(() =>
+      table.selectCellRange({ anchorRowId: '3', focusRowId: '5', ...COLUMNS }),
+    )
+    expect(span()).toEqual([3, 5])
+
+    // Выше диапазона: те же строки на новых местах.
+    const above = add({ name: 'Zed', age: 99 }, 1)!
+    expect(span()).toEqual([4, 6])
+    expect(rowsOfRange()).toEqual(['3', '5'])
+
+    // Внутри диапазона: те же углы, новая строка — в нём.
+    const inside = add({ name: 'Yan', age: 98 }, 5)!
+    expect(span()).toEqual([4, 7])
+    expect(rowsOfRange()).toEqual(['3', '5'])
+    expect(source().at(5)?.id).toBe(inside)
+
+    // Откат новых строк возвращает диапазон на место.
+    act(() => table.removeRow(inside))
+    act(() => table.removeRow(above))
+    expect(span()).toEqual([3, 5])
+    expect(rowsOfRange()).toEqual(['3', '5'])
+
+    // Угол в незагруженной части — без id: его ведёт сдвиг списка.
+    act(() =>
+      table.selectCellRange({
+        anchorRowIndex: 3,
+        focusRowIndex: 25,
+        ...COLUMNS,
+      }),
+    )
+    expect(span()).toEqual([3, 25])
+    const unloaded = add({ name: 'Xan', age: 97 }, 0)!
+    expect(span()).toEqual([4, 26])
+    act(() => table.removeRow(unloaded))
+
+    // Сохранение новой строки внутри диапазона: строка переходит в кэш, углы те же.
+    act(() =>
+      table.selectCellRange({ anchorRowId: '3', focusRowId: '5', ...COLUMNS }),
+    )
+    add({ name: 'Wen', age: 96 }, 4)
+    expect(rowsOfRange()).toEqual(['3', '5'])
+    act(() => applyAllDrafts(table))
+    for (let i = 0; i < 50 && drafts().length > 0; i++) {
+      await act(() => new Promise(resolve => setTimeout(resolve, 20)))
+    }
+    expect(drafts()).toEqual([])
+    expect(table.getCellSelectionRanges()).toHaveLength(1)
+    expect(rowsOfRange()).toEqual(['3', '5'])
   })
 })
