@@ -22,10 +22,12 @@ type SortDir = 'asc' | 'desc' | 'none'
 /** Тематизируемая иконка направления сортировки (читает `useIcons`). */
 const SortActionIcon = ({ direction }: { direction: SortDir }) => {
   const { sort, sortAsc, sortDesc } = useIcons()
-  const Icon =
-    direction === 'asc' ? sortAsc : direction === 'desc' ? sortDesc : sort
+  const key =
+    direction === 'asc' ? 'sortAsc' : direction === 'desc' ? 'sortDesc' : 'sort'
+  const Icon = { sort, sortAsc, sortDesc }[key]
 
-  return <Icon width={16} height={16} />
+  // Ключ иконки из `icons`: какая показана, видно и при своём наборе иконок.
+  return <Icon data-icon={key} width={16} height={16} />
 }
 
 /** Число сортируемых столбцов (в v9 читаем из атома, не из getState). */

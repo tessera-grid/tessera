@@ -1,8 +1,9 @@
 .switch {
-  --_track-w: 32px;
-  --_track-h: 18px;
-  --_thumb: 14px;
-  --_gap: 2px;
+  /* Литералы-фолбэки: примитив держит размер и вне слоя темы (ADR 0017). */
+  --_track-w: var(--tsr-comp-switch-width, 32px);
+  --_track-h: var(--tsr-comp-switch-height, 18px);
+  --_thumb: var(--tsr-comp-switch-thumb-size, 16px);
+  --_gap: calc((var(--_track-h) - var(--_thumb)) / 2);
 
   display: inline-flex;
   align-items: center;
@@ -53,7 +54,7 @@
   height: var(--_thumb);
   border-radius: 50%;
   background-color: var(--tsr-comp-switch-thumb-off);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--tsr-comp-switch-thumb-shadow);
   transform: translateX(var(--_gap));
   transition: transform var(--tsr-comp-motion-duration)
     var(--tsr-comp-motion-easing);

@@ -54,6 +54,7 @@ export const LinearProgress = memo(
           shown && 'data-grid__loader',
           styles['linear-progress'],
         )}
+        data-linear-progress=""
         role={active ? 'progressbar' : undefined}
         aria-label={active ? label : undefined}
         data-error-flash={flash}
@@ -62,6 +63,7 @@ export const LinearProgress = memo(
           <div
             ref={glows.ref}
             className={styles.glows}
+            data-loader-glows=""
             data-entering={entering || undefined}
             data-leaving={glows.leaving || undefined}
           >

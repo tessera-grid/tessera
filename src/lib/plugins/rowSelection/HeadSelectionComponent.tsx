@@ -16,7 +16,7 @@ import {
   setAllRowsSelected,
   tableAllSelection,
 } from '../../core/rowSelectionAll'
-import { SelectCheckbox } from '../../ui/SelectCheckbox/SelectCheckbox'
+import { Checkbox } from '../../ui/Checkbox/Checkbox'
 import { isGroupingActive } from '../rowSelectionModel/selectionHelpers'
 import {
   scopeRowsOf,
@@ -67,14 +67,15 @@ export const HeadSelectionComponent = ({
       onSelectAllRows?.(!allSelected, scope)
     }
     return (
-      <SelectCheckbox
-        selected={allSelected}
+      <Checkbox
+        className="row-select-checkbox"
+        checked={allSelected}
         indeterminate={
           all
             ? !allSelected
             : Object.values(rowSelectionValueOf(table)).some(Boolean)
         }
-        onClick={handleSelectAll}
+        onCheckedChange={(_, event) => handleSelectAll(event)}
         label={rowSelectionLabels(labels).selectAll}
       />
     )
@@ -98,10 +99,11 @@ export const HeadSelectionComponent = ({
   }
 
   return (
-    <SelectCheckbox
-      selected={selected}
+    <Checkbox
+      className="row-select-checkbox"
+      checked={selected}
       indeterminate={indeterminate}
-      onClick={handleSelectAll}
+      onCheckedChange={(_, event) => handleSelectAll(event)}
       disabled={disabled}
       label={rowSelectionLabels(labels).selectAll}
     />

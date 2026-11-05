@@ -150,6 +150,51 @@ describe('Tooltip', () => {
       .toContain('Hint text')
   })
 
+  test('TT8: the tooltip text is 12px with 6×12px padding — kit tokens, as in shadcn', async () => {
+    const { container } = await render(
+      <div className="data-grid-theme">
+        <Tooltip title="Hint text" delayDuration={0}>
+          <button>trigger</button>
+        </Tooltip>
+      </div>,
+    )
+    await userEvent.hover(container.querySelector('button')!)
+    await expect
+      .poll(() => openTooltip()?.textContent ?? '')
+      .toContain('Hint text')
+    // Подложка подсказки — её модульный класс `content`, а не позиционер.
+    const popup = document.querySelector('[data-tooltip-popup]')!
+    const style = getComputedStyle(popup)
+    expect(style.fontSize).toBe('12px')
+    expect([style.paddingTop, style.paddingLeft]).toEqual(['6px', '12px'])
+  })
+
+  test('TT7: the tooltip uses the theme font, not the page font: its portal lives outside the grid', async () => {
+    document.body.style.fontFamily = 'serif'
+    try {
+      const { container } = await render(
+        <Tooltip title="Hint text" delayDuration={0}>
+          <button>trigger</button>
+        </Tooltip>,
+      )
+      await userEvent.hover(container.querySelector('button')!)
+      await expect
+        .poll(() => openTooltip()?.textContent ?? '')
+        .toContain('Hint text')
+      const probe = document.createElement('span')
+      probe.className = 'data-grid-theme'
+      probe.style.fontFamily = 'var(--tsr-comp-font-family)'
+      document.body.append(probe)
+      const themeFont = getComputedStyle(probe).fontFamily
+      probe.remove()
+      expect(themeFont).not.toBe('serif')
+      const popup = [...document.querySelectorAll('[data-side]')].at(-1)!
+      expect(getComputedStyle(popup).fontFamily).toBe(themeFont)
+    } finally {
+      document.body.style.fontFamily = ''
+    }
+  })
+
   test('TT3: leaving hides the tooltip', async () => {
     const { container } = await render(
       <Tooltip title="Hint text" delayDuration={0}>
@@ -260,6 +305,26 @@ describe('Switch', () => {
     expect(style.height).toBe('18px')
     expect(style.flexGrow).toBe('0')
     expect(style.flexShrink).toBe('0')
+  })
+})
+
+describe('Switch thumb', () => {
+  test('SW5: the thumb is 16px with a 1px gap to the track edge in both positions — kit tokens, as in shadcn', async () => {
+    const { container } = await render(
+      <div className="data-grid-theme">
+        <Switch />
+      </div>,
+    )
+    const track = container.querySelector<HTMLElement>('[role="switch"]')!
+    const thumb = track.querySelector<HTMLElement>('[data-switch-thumb]')!
+    const gaps = () => {
+      const t = track.getBoundingClientRect()
+      const b = thumb.getBoundingClientRect()
+      return [b.width, b.left - t.left, t.right - b.right, b.top - t.top]
+    }
+    expect(gaps()).toEqual([16, 1, 15, 1])
+    await userEvent.click(track)
+    await expect.poll(() => gaps()).toEqual([16, 15, 1, 1])
   })
 })
 

@@ -1,6 +1,6 @@
 import { Skeleton } from '../Skeleton'
+import styles from './ToolbarSkeleton.module.css'
 
-const BUTTON = 'var(--tsr-comp-toolbar-button-size)'
 const ICON = 'var(--tsr-comp-button-icon-size)'
 
 /**
@@ -16,30 +16,15 @@ export const ToolbarSkeleton = ({
   'data-testid'?: string
 }) =>
   kind === 'field' ? (
-    <span aria-hidden data-testid={testId} style={{ display: 'flex' }}>
+    <span aria-hidden data-testid={testId} className={styles.field}>
       <Skeleton
         width="var(--tsr-comp-quick-search-width)"
-        height={BUTTON}
-        style={{
-          maxWidth: '100%',
-          flex: 'none',
-          borderRadius: 'var(--tsr-comp-control-radius)',
-        }}
+        height="var(--tsr-comp-toolbar-button-size)"
+        className={styles.fieldBar}
       />
     </span>
   ) : (
-    <span
-      aria-hidden
-      data-testid={testId}
-      style={{
-        display: 'flex',
-        flex: 'none',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: BUTTON,
-        height: BUTTON,
-      }}
-    >
+    <span aria-hidden data-testid={testId} className={styles.button}>
       <Skeleton width={ICON} height={ICON} />
     </span>
   )

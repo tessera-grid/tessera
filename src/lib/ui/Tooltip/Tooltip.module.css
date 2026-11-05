@@ -10,11 +10,13 @@
 .content {
   background-color: var(--tsr-comp-tooltip-bg);
   color: var(--tsr-comp-tooltip-fg);
-  padding: 5px 9px;
+  padding: var(--tsr-comp-tooltip-padding);
   border-radius: var(--tsr-comp-tooltip-radius);
-  font-size: 0.6875rem;
+  /* Портал вне грида: шрифт — темы, а не страницы (ADR 0017, TT7). */
+  font-family: var(--tsr-comp-font-family);
+  font-size: var(--tsr-comp-tooltip-font-size);
   line-height: 1.4;
-  max-width: 300px;
+  max-width: var(--tsr-comp-tooltip-max-width);
   /* Длинное слово без пробелов переносится, а не вылезает за подложку. */
   overflow-wrap: anywhere;
   box-shadow: var(--tsr-comp-tooltip-shadow);

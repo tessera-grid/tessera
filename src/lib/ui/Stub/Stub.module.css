@@ -10,7 +10,7 @@
   overflow: hidden;
   color: var(--tsr-comp-control-color);
   font-family: var(--tsr-comp-font-family);
-  font-size: 0.875rem;
+  font-size: var(--tsr-comp-stub-font-size);
   text-align: center;
 }
 

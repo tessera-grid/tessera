@@ -7,9 +7,12 @@
  */
 import { type RefObject, Suspense, useId } from 'react'
 
-import { Radio } from '@base-ui/react/radio'
 import { RadioGroup } from '@base-ui/react/radio-group'
 
+import { Field, FieldError } from '../../ui/Field/Field'
+import { Radio } from '../../ui/Radio/Radio'
+import { PopupItem } from '../../ui/Popup/PopupItem'
+import { PopupPanel } from '../../ui/Popup/PopupPanel'
 import { Button } from '../../ui/Button'
 import { setColumnFilterByUser } from '../../shared/filtering/filtering'
 import type { ActionPanelControls } from '../../core/headerActions'
@@ -221,14 +224,13 @@ const ConditionPanel = ({
     const invalid =
       type === 'number' && isInvalidNumber(draft[key], locale, decimal)
     return (
-      <input
+      <Field
         ref={focusRef as RefObject<HTMLInputElement | null> | undefined}
-        className={styles.input}
         type="text"
         inputMode={type === 'number' ? 'decimal' : undefined}
         aria-label={label}
         placeholder={label}
-        aria-invalid={invalid || undefined}
+        invalid={invalid}
         aria-describedby={invalid ? errorId : undefined}
         value={draft[key]}
         onChange={event => update({ [key]: event.target.value })}
@@ -253,43 +255,49 @@ const ConditionPanel = ({
         isInvalidNumber(draft.value, locale, decimal))
 
   return (
-    <div className={styles.panel} data-testid="filter-panel">
-      <OperatorSelect
-        value={draft.operator}
-        operators={operators}
-        labelOf={labelOf}
-        onChange={operator => update({ operator }, true)}
-      />
-      {draft.operator === 'between' ? (
-        <div className={styles.range}>
-          {numberField(
-            'from',
-            columnFilteringLabels(labels).filterFrom,
+    <PopupPanel
+      data-testid="filter-panel"
+      footer={
+        <>
+          <FilterFailure table={table} columnId={column.id} />
+          <Button variant="ghost" onClick={reset} data-testid="filter-reset">
+            {columnFilteringLabels(labels).filterReset}
+          </Button>
+          {server && <FilterApply {...filterDraft} />}
+        </>
+      }
+    >
+      <div className={styles.content}>
+        <OperatorSelect
+          value={draft.operator}
+          operators={operators}
+          labelOf={labelOf}
+          onChange={operator => update({ operator }, true)}
+        />
+        {draft.operator === 'between' ? (
+          <div className={styles.range}>
+            {numberField(
+              'from',
+              columnFilteringLabels(labels).filterFrom,
+              controls.initialFocusRef,
+            )}
+            {numberField('to', columnFilteringLabels(labels).filterTo)}
+          </div>
+        ) : (
+          needsValue(draft.operator) &&
+          numberField(
+            'value',
+            columnFilteringLabels(labels).filterValue,
             controls.initialFocusRef,
-          )}
-          {numberField('to', columnFilteringLabels(labels).filterTo)}
-        </div>
-      ) : (
-        needsValue(draft.operator) &&
-        numberField(
-          'value',
-          columnFilteringLabels(labels).filterValue,
-          controls.initialFocusRef,
-        )
-      )}
-      {invalid && (
-        <span id={errorId} className={styles.error} role="alert">
-          {columnFilteringLabels(labels).filterInvalidNumber}
-        </span>
-      )}
-      <div className={styles.footer}>
-        <FilterFailure table={table} columnId={column.id} />
-        <Button variant="ghost" onClick={reset} data-testid="filter-reset">
-          {columnFilteringLabels(labels).filterReset}
-        </Button>
-        {server && <FilterApply {...filterDraft} />}
+          )
+        )}
+        {invalid && (
+          <FieldError id={errorId} role="alert">
+            {columnFilteringLabels(labels).filterInvalidNumber}
+          </FieldError>
+        )}
       </div>
-    </div>
+    </PopupPanel>
   )
 }
 
@@ -343,50 +351,56 @@ const BooleanPanel = ({ table, column, controls }: FilterPanelProps) => {
   ]
 
   return (
-    <div className={styles.panel} data-testid="filter-panel">
-      <span id={labelId} hidden>
-        {columnFilteringLabels(labels).filterValue}
-      </span>
-      <RadioGroup
-        value={value}
-        onValueChange={next => {
-          const nextChoice = next as BooleanChoice
-          filterDraft.setDraft(nextChoice)
-          if (!server) {
-            setColumnFilterByUser(table, column.id, filterOfChoice(nextChoice))
-          }
-        }}
-        aria-labelledby={labelId}
-        className={styles.options}
-        data-testid="filter-boolean"
-      >
-        {choices.map(([id, label]) => (
-          <label key={id} className={styles.option}>
-            <Radio.Root
-              value={id}
-              className={styles.radio}
-              data-value={id}
-              ref={
-                id === value
-                  ? (controls.initialFocusRef as RefObject<HTMLButtonElement | null>)
-                  : undefined
-              }
-            >
-              <Radio.Indicator className={styles.dot} />
-            </Radio.Root>
-            <span>{label}</span>
-          </label>
-        ))}
-      </RadioGroup>
-      {server ? (
-        <div className={styles.footer}>
-          <FilterFailure table={table} columnId={column.id} />
-          <FilterApply {...filterDraft} />
-        </div>
-      ) : (
-        <FilterFailure table={table} columnId={column.id} footer />
-      )}
-    </div>
+    <PopupPanel
+      data-testid="filter-panel"
+      footer={
+        server ? (
+          <>
+            <FilterFailure table={table} columnId={column.id} />
+            <FilterApply {...filterDraft} />
+          </>
+        ) : undefined
+      }
+    >
+      <div className={styles.content}>
+        <span id={labelId} hidden>
+          {columnFilteringLabels(labels).filterValue}
+        </span>
+        <RadioGroup
+          value={value}
+          onValueChange={next => {
+            const nextChoice = next as BooleanChoice
+            filterDraft.setDraft(nextChoice)
+            if (!server) {
+              setColumnFilterByUser(
+                table,
+                column.id,
+                filterOfChoice(nextChoice),
+              )
+            }
+          }}
+          aria-labelledby={labelId}
+          className={styles.options}
+          data-testid="filter-boolean"
+        >
+          {choices.map(([id, label]) => (
+            <PopupItem key={id} render={<label />}>
+              <Radio
+                value={id}
+                data-value={id}
+                ref={
+                  id === value
+                    ? (controls.initialFocusRef as RefObject<HTMLButtonElement | null>)
+                    : undefined
+                }
+              />
+              <span>{label}</span>
+            </PopupItem>
+          ))}
+        </RadioGroup>
+      </div>
+      {!server && <FilterFailure table={table} columnId={column.id} footer />}
+    </PopupPanel>
   )
 }
 
@@ -400,7 +414,7 @@ export const FilterPanel = (props: FilterPanelProps) => {
       <Suspense
         fallback={
           <div
-            className={styles.panel}
+            className={styles.content}
             aria-busy="true"
             data-testid="filter-options-loading"
           />
@@ -415,7 +429,7 @@ export const FilterPanel = (props: FilterPanelProps) => {
       <Suspense
         fallback={
           <div
-            className={styles.panel}
+            className={styles.content}
             aria-busy="true"
             data-testid="filter-date-loading"
           />

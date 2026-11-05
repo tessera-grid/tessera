@@ -73,27 +73,44 @@ export const pickDay = async (
   day: string,
   signal: AbortSignal,
 ) => {
-  await pollUntil(() => !!calendar()?.querySelector('select'), signal)
-  const change = (select: HTMLSelectElement, value: string) => {
-    if (select.value === value) return
-    Object.getOwnPropertyDescriptor(
-      HTMLSelectElement.prototype,
-      'value',
-    )!.set!.call(select, value)
-    select.dispatchEvent(new Event('change', { bubbles: true }))
+  // Месяц и год — списки кита (ADR 0183, PK19): кнопка открывает список, пункт выбирает.
+  const lists = () =>
+    calendar()?.querySelectorAll<HTMLElement>('[role="combobox"]') ?? []
+  // Закрытый список Base UI держит пункты в DOM — берём только пункты открытого.
+  const options = () => [
+    ...document.querySelectorAll<HTMLElement>('[data-open] [role="option"]'),
+  ]
+  const choose = async (
+    list: () => HTMLElement | undefined,
+    pick: (all: HTMLElement[]) => HTMLElement | undefined,
+  ) => {
+    list()?.click()
+    await pollUntil(() => !!pick(options()), signal)
+    pick(options())!.click()
+    await pollUntil(
+      () => list()?.getAttribute('aria-expanded') !== 'true',
+      signal,
+    )
   }
-  const selects = () =>
-    calendar()!.querySelectorAll<HTMLSelectElement>('select')
+  await pollUntil(() => lists().length === 2, signal)
+  const dayButton = () =>
+    document.querySelector<HTMLElement>(`[data-day="${day}"] button`)
   // Календарь перерисовывается и после смены условия — выбор повторяется, пока не виден день.
-  await repeat(
-    () => !!document.querySelector(`[data-day="${day}"] button`),
-    () => {
-      change(selects()[1]!, year)
-      change(selects()[0]!, String(month))
-    },
-    signal,
-  )
-  document.querySelector<HTMLElement>(`[data-day="${day}"] button`)!.click()
+  while (!dayButton()) {
+    if (lists()[1]?.textContent?.trim() !== year) {
+      await choose(
+        () => lists()[1],
+        all => all.find(option => option.textContent?.trim() === year),
+      )
+      continue
+    }
+    await choose(
+      () => lists()[0],
+      all => all[month],
+    )
+    await pollUntil(() => lists().length === 2, signal)
+  }
+  dayButton()!.click()
 }
 
 export const optionOf = (value: string) =>

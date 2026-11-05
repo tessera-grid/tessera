@@ -48,6 +48,40 @@ const RUNTIME_ALLOWLIST = new Set([
   '--tsr-comp-grid-max-height',
 ])
 
+// Исходники TS/TSX библиотеки без историй и тестов — стили в `style` (TI-08).
+const librarySources = import.meta.glob(
+  ['../../../**/*.{ts,tsx}', '!../../../stories/**', '!../../../__tests__/**'],
+  { query: '?raw', import: 'default', eager: true },
+) as Record<string, string>
+
+const stripComments = (css: string) => css.replace(/\/\*[\s\S]*?\*\//g, '')
+
+/** Токен компонента в значении — с литералом-фолбэком или без. */
+const COMP_VAR = /var\(\s*--tsr-comp-[a-z0-9-]+\s*(?:,[^()]*)?\)/g
+
+/** Скругление без литерала длины: токены и `calc` над ними, `inherit`, `0`, круг `50%`. */
+const isTokenRadius = (value: string) => {
+  const v = value.trim()
+  if (/^(0|50%|inherit)$/.test(v)) return true
+  const rest = v.replace(COMP_VAR, '§').replace(/calc/g, '')
+  return rest.includes('§') && /^[§\s()+\-*/]*$/.test(rest)
+}
+
+// Постоянные радиусы — формы и геометрия, а не скругление темы (T-R11).
+const FIXED_RADII: Record<string, string> = {
+  '--tsr-comp-radius-pill':
+    'форма: пилюля переключателя, бабла и полосы прокрутки',
+  '--tsr-comp-button-radius-circle': 'форма: круглая кнопка (ADR 0098)',
+  '--tsr-comp-radio-radius': 'форма: кружок радио (ADR 0183)',
+  '--tsr-comp-resize-handler-radius': 'форма: концы черты грипа (ADR 0017)',
+  '--tsr-comp-checkbox-radius':
+    'флажок 16px держит 4px при любом радиусе темы, как у shadcn (ADR 0017)',
+  '--tsr-comp-skeleton-radius':
+    'полоска скелета — штрих текста, а не контрол (ADR 0017, SK3)',
+  '--tsr-comp-tree-line-radius':
+    'геометрия: поворот ветки 10px (ADR 0102, ADR 0133)',
+}
+
 const matchAll = (css: string, re: RegExp) =>
   [...css.matchAll(re)].map(m => m[1])
 
@@ -149,5 +183,86 @@ describe('Token architecture — static invariants', () => {
     )
     expect(refs.filter(ref => !ref.startsWith('--tsr-sys-'))).toEqual([])
     expect(refs).not.toContain('--tsr-sys-info')
+  })
+
+  test('TI-08: border-radius in library CSS and TSX styles is a token, inherit, 0 or 50% — no length literal', () => {
+    const fromCss = Object.entries(allCss)
+      .filter(([path]) => !path.includes('/stories/'))
+      .flatMap(([path, css]) =>
+        [
+          ...stripComments(css).matchAll(
+            /(?<![\w-])border(?:-[a-z]+)*-radius\s*:\s*([^;{}]+)/g,
+          ),
+        ].map(m => [path, m[1]!.trim()] as const),
+      )
+    const fromTsx = Object.entries(librarySources).flatMap(([path, source]) =>
+      [...source.matchAll(/\bborderRadius\s*:\s*([^,\n}]+)/g)].map(m => {
+        const quoted = /^(['"`])([^$]*)\1$/.exec(m[1]!.trim())
+        return [path, quoted ? quoted[2]! : m[1]!.trim()] as const
+      }),
+    )
+    // Страж видит скругления CSS и просматривает исходники TSX.
+    expect(fromCss.length).toBeGreaterThan(10)
+    expect(Object.keys(librarySources).length).toBeGreaterThan(100)
+    expect(
+      [...fromCss, ...fromTsx]
+        .filter(([, value]) => !isTokenRadius(value))
+        .map(([path, value]) => `${path}: ${value}`),
+    ).toEqual([])
+  })
+
+  test('TI-10: font-size in library CSS is a --tsr-comp-* token or inherit — no literal', () => {
+    const sizes = Object.entries(allCss)
+      .filter(([path]) => !path.includes('/stories/'))
+      .flatMap(([path, css]) =>
+        [
+          ...stripComments(css).matchAll(
+            /(?<![\w-])font-size\s*:\s*([^;{}]+)/g,
+          ),
+        ].map(m => [path, m[1]!.trim()] as const),
+      )
+    expect(sizes.length).toBeGreaterThan(10)
+    const tokenOnly = (value: string) => {
+      if (value === 'inherit') return true
+      const rest = value.replace(COMP_VAR, '§').replace(/calc/g, '')
+      return rest.includes('§') && /^[§\s()+\-*/0-9.]*$/.test(rest)
+    }
+    expect(
+      sizes
+        .filter(([, value]) => !tokenOnly(value))
+        .map(([path, value]) => `${path}: ${value}`),
+    ).toEqual([])
+  })
+
+  test('TI-09: component radius tokens derive from a --tsr-sys-radius* role; fixed ones are listed with a reason', () => {
+    const tokens = [
+      ...stripComments(themeCss).matchAll(
+        /(--tsr-comp-[a-z0-9-]*radius[a-z0-9-]*)\s*:\s*([^;]+);/g,
+      ),
+    ].map(m => [m[1]!, m[2]!] as const)
+    const names = tokens.map(([name]) => name)
+    expect(Object.keys(FIXED_RADII).filter(n => !names.includes(n))).toEqual([])
+
+    // Токен следует за темой, если доходит ссылками до роли скругления `--tsr-sys-radius*`.
+    const fromTheme = new Set(
+      [...themeCss.matchAll(/(--tsr-sys-radius[a-z-]*)s*:/g)].map(m => m[1]!),
+    )
+    expect(fromTheme.size).toBeGreaterThanOrEqual(3)
+    for (let grew = true; grew;) {
+      grew = false
+      for (const [name, value] of tokens) {
+        if (fromTheme.has(name)) continue
+        const refs = [...value.matchAll(/var\(\s*(--[a-z0-9-]+)/g)]
+        if (refs.some(r => fromTheme.has(r[1]!))) {
+          fromTheme.add(name)
+          grew = true
+        }
+      }
+    }
+    expect(names.filter(n => !fromTheme.has(n) && !(n in FIXED_RADII))).toEqual(
+      [],
+    )
+    // Запись списка, ставшая производной от темы, — устаревшая.
+    expect(Object.keys(FIXED_RADII).filter(n => fromTheme.has(n))).toEqual([])
   })
 })

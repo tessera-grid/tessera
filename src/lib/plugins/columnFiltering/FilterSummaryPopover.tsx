@@ -6,18 +6,19 @@
 import { type ReactNode, useRef } from 'react'
 
 import { Popover } from '@base-ui/react/popover'
-import clsx from 'clsx'
 
 import {
   setColumnFilterByUser,
   setColumnFiltersByUser,
 } from '../../shared/filtering/filtering'
+import { PopupItem } from '../../ui/Popup/PopupItem'
+import { PopupPanel } from '../../ui/Popup/PopupPanel'
+import { PopupSurface } from '../../ui/Popup/PopupSurface'
 import { useLocalization } from '../../core/localization'
-import { usePortalThemeData, usePortalThemeClass } from '../../ui/theme'
 import type { Table } from '../../types'
 import { Button } from '../../ui/Button'
+import { IconButton } from '../../ui/IconButton'
 import { useIcons } from '../../ui/icons'
-import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 import { ToolbarButton } from '../../ui/ToolbarButton'
 import { Tooltip } from '../../ui/Tooltip'
 import { filterOptionLabelOf } from '../columnFilteringModel/options'
@@ -46,8 +47,6 @@ export const FilterSummaryPopover = ({
   open,
   onOpenChange,
 }: FilterSummaryPopoverProps) => {
-  const themeClass = usePortalThemeClass()
-  const themeData = usePortalThemeData()
   const labels = useLocalization()
   const { clear: ClearIcon, hideColumn: HiddenIcon } = useIcons()
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -66,18 +65,27 @@ export const FilterSummaryPopover = ({
         render={<Popover.Trigger />}
       />
       <Popover.Portal>
-        <Popover.Positioner
-          side="bottom"
-          align="end"
-          sideOffset={POPUP_SIDE_OFFSET}
-          className={clsx(themeClass, styles.positioner)}
-          {...themeData}
+        <PopupSurface
+          positioner={<Popover.Positioner side="bottom" align="end" />}
+          popup={
+            <Popover.Popup
+              aria-label={columnFilteringLabels(labels).filters}
+              finalFocus={triggerRef}
+              data-testid="filter-summary"
+            />
+          }
+          className={styles.popup}
         >
-          <Popover.Popup
-            aria-label={columnFilteringLabels(labels).filters}
-            finalFocus={triggerRef}
-            className={clsx(themeClass, styles.popup)}
-            data-testid="filter-summary"
+          <PopupPanel
+            footer={
+              <Button
+                variant="ghost"
+                onClick={() => setColumnFiltersByUser(table, [])}
+                data-testid="filter-summary-reset"
+              >
+                {filteringLabels(labels).resetFilters}
+              </Button>
+            }
           >
             <ul className={styles.list}>
               {items.map(item => {
@@ -89,16 +97,37 @@ export const FilterSummaryPopover = ({
                     formatDataTypeValue(table, item.column, value, undefined),
                 })
                 return (
-                  <li
+                  <PopupItem
                     key={item.columnId}
+                    render={<li />}
                     className={styles.item}
                     data-column-id={item.columnId}
                     data-hidden-column={item.hidden || undefined}
+                    end={
+                      <IconButton
+                        shape="square"
+                        size="compact"
+                        label={columnFilteringLabels(labels).removeFilter(
+                          item.header,
+                        )}
+                        onClick={() =>
+                          setColumnFilterByUser(table, item.columnId, undefined)
+                        }
+                        data-testid="filter-summary-remove"
+                      >
+                        <ClearIcon />
+                      </IconButton>
+                    }
                   >
                     <span className={styles.text}>
                       <span className={styles.header}>{item.header}</span>
                       <Tooltip title={condition} overflowOnly>
-                        <span className={styles.condition}>{condition}</span>
+                        <span
+                          className={styles.condition}
+                          data-filter-condition=""
+                        >
+                          {condition}
+                        </span>
                       </Tooltip>
                       {item.hidden && (
                         <span className={styles.hidden}>
@@ -107,34 +136,12 @@ export const FilterSummaryPopover = ({
                         </span>
                       )}
                     </span>
-                    <button
-                      type="button"
-                      className={styles.remove}
-                      aria-label={columnFilteringLabels(labels).removeFilter(
-                        item.header,
-                      )}
-                      onClick={() =>
-                        setColumnFilterByUser(table, item.columnId, undefined)
-                      }
-                      data-testid="filter-summary-remove"
-                    >
-                      <ClearIcon width={14} height={14} />
-                    </button>
-                  </li>
+                  </PopupItem>
                 )
               })}
             </ul>
-            <div className={styles.footer}>
-              <Button
-                variant="ghost"
-                onClick={() => setColumnFiltersByUser(table, [])}
-                data-testid="filter-summary-reset"
-              >
-                {filteringLabels(labels).resetFilters}
-              </Button>
-            </div>
-          </Popover.Popup>
-        </Popover.Positioner>
+          </PopupPanel>
+        </PopupSurface>
       </Popover.Portal>
     </Popover.Root>
   )

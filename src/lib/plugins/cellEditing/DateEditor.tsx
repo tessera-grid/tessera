@@ -13,7 +13,8 @@ import { commonOptionsOf } from '../../core/commonFeature'
 import { dateTypeInstant } from '../../core/dataTypeFormat'
 import { useLocalization } from '../../core/localization'
 import { cellToWallValue, WALL_TIME } from '../../shared/wallTime'
-import { Calendar, TimeField } from '../../shared/calendar/Calendar'
+import { calendarLabels, timeFieldLabels } from '../../shared/calendar/labels'
+import { Calendar, TimeField } from '../../ui/Calendar/Calendar'
 import { ClearValue, EditPopover } from './EditPopover'
 import type { CellEditorProps } from './types'
 import { cellEditingLabels } from './labels'
@@ -122,6 +123,7 @@ export const DateEditor = (props: CellEditorProps) => {
       onLeave={() => save()}
     >
       <Calendar
+        labels={calendarLabels(labels)}
         mode="single"
         required
         day={wall.day}
@@ -137,6 +139,8 @@ export const DateEditor = (props: CellEditorProps) => {
       {timed && (
         <TimeField
           label={cellEditingLabels(labels).time}
+          labels={timeFieldLabels(labels)}
+          locale={dateLocale?.code}
           value={wall.time}
           testId="edit-time"
           onChange={time => change({ ...wall, time })}

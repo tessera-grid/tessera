@@ -31,7 +31,10 @@ import {
   TREE,
   verticalAt,
 } from './tree-lines-helpers'
+import { cellEditingLabels } from '../../../plugins/cellEditing/labels'
 import { columnVisibilityLabels } from '../../../plugins/columnVisibility/labels'
+import { rowDraggingLabels } from '../../../plugins/rowDragging/labels'
+import { rowExpandingLabels } from '../../../plugins/rowExpanding/labels'
 
 // Кнопки грида 28px, отступ ячейки 12px и подпись под грипом (ADR 0135, GZ1–GZ16).
 // Размеры и положения — из раскладки и токенов темы, состояние — из ARIA и стилей.
@@ -145,7 +148,9 @@ describe('Кнопки грида 28px (ADR 0135)', () => {
 
     const cell = editableCell()
     await revealCellButtons(cell)
-    const edit = cell.querySelector<HTMLElement>('[aria-label="Edit cell"]')!
+    const edit = cell.querySelector<HTMLElement>(
+      `[aria-label="${cellEditingLabels(tableLabels).editCell}"]`,
+    )!
     // Указатель — на раскрытой кнопке, как у пользователя, который к ней тянется.
     await userEvent.hover(edit)
     await check(edit)
@@ -153,12 +158,12 @@ describe('Кнопки грида 28px (ADR 0135)', () => {
     const row = cell.closest<HTMLElement>(SEL.bodyRow)!
     await userEvent.hover(row)
     const toggle = document.querySelector<HTMLElement>(
-      '[aria-label="Expand row"]',
+      `[aria-label="${rowExpandingLabels(tableLabels).expandRow}"]`,
     )!
     await revealCellButtons(toggle.closest(SEL.bodyCell)!)
     await check(toggle)
     const options = row.querySelector<HTMLElement>(
-      '[aria-label="Row options"]',
+      `[aria-label="${tableLabels.rowMenu}"]`,
     )!
     await revealCellButtons(options.closest(SEL.bodyCell)!)
     await check(options)
@@ -239,9 +244,11 @@ describe('Кнопки грида 28px (ADR 0135)', () => {
     const handle = head.querySelector<HTMLElement>('.drag__handler--column')!
     const cell = editableCell()
     await revealCellButtons(cell)
-    const edit = cell.querySelector<HTMLElement>('[aria-label="Edit cell"]')!
+    const edit = cell.querySelector<HTMLElement>(
+      `[aria-label="${cellEditingLabels(tableLabels).editCell}"]`,
+    )!
     const rowHandle = document.querySelector<HTMLElement>(
-      '[aria-label="Move row"]',
+      `[aria-label="${rowDraggingLabels(tableLabels).moveRow}"]`,
     )!
     const columns = document.querySelector<HTMLElement>(
       `[role="toolbar"] [aria-label="${columnVisibilityLabels(tableLabels).columns}"]`,
@@ -442,7 +449,10 @@ describe('Вместимость, служебные колонки и сост�
           className="data-grid__body-cell"
           style={{ width: 160, height: 50, display: 'flex' }}
         >
-          <div className={wrapperStyles.cell__wrapper}>
+          <div
+            className={wrapperStyles.cell__wrapper}
+            data-testid="cell-wrapper"
+          >
             <span style={{ flex: 1 }}>Text</span>
             <span className="cell__button">
               <IconButton label="Sorted, 3" active count={3}>
@@ -454,7 +464,7 @@ describe('Вместимость, служебные колонки и сост�
       </div>,
     )
     const wrapper = screen.container.querySelector(
-      `.${wrapperStyles.cell__wrapper}`,
+      '[data-testid="cell-wrapper"]',
     )!
     const inside = (inner: DOMRect, outer: DOMRect) =>
       inner.left >= outer.left - 0.5 &&
@@ -483,7 +493,7 @@ describe('Вместимость, служебные колонки и сост�
     expect(verticalAt(shot, x, r.top + r.height * 0.25)).toBe(true)
 
     const toggle = rowEl(TREE.zimbabwe)!.querySelector<HTMLElement>(
-      '[aria-label="Collapse row"], [aria-label="Expand row"]',
+      `[aria-label="${rowExpandingLabels(tableLabels).collapseRow}"], [aria-label="${rowExpandingLabels(tableLabels).expandRow}"]`,
     )!
     const column = box(toggle.closest(SEL.bodyCell)!)
     const t = box(toggle)

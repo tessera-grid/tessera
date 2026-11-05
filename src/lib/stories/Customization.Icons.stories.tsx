@@ -11,6 +11,7 @@ import {
   SlidersHorizontal,
 } from 'lucide-react'
 import { expect } from 'storybook/test'
+import type { IconComponent } from '../ui/icons'
 import type { StoryProps } from './DataGridStory.types'
 import { StoryComponent } from './DataGridStory'
 import { dataGridMeta } from './dataGridMeta'
@@ -37,15 +38,21 @@ export default meta
 const NOT_ICONS = 'На иконки не влияет'
 
 /** Свой набор приложения: сортировка, фильтр, перетаскивание, меню, выгрузка. */
+/** Иконка набора приложения с меткой: по ней видно, что таблица показала свою иконку. */
+const own = (Icon: IconComponent): IconComponent =>
+  function OwnIcon(props) {
+    return <Icon {...props} data-own-icon="" />
+  }
+
 const OWN_ICONS = {
-  sort: ArrowUpDown,
-  sortAsc: ArrowUpNarrowWide,
-  sortDesc: ArrowDownWideNarrow,
-  filter: SlidersHorizontal,
-  filterActive: ListFilter,
-  drag: Grip,
-  menu: Ellipsis,
-  download: FileDown,
+  sort: own(ArrowUpDown),
+  sortAsc: own(ArrowUpNarrowWide),
+  sortDesc: own(ArrowDownWideNarrow),
+  filter: own(SlidersHorizontal),
+  filterActive: own(ListFilter),
+  drag: own(Grip),
+  menu: own(Ellipsis),
+  download: own(FileDown),
 }
 
 /** Плагины, у кнопок которых есть иконки. */
@@ -84,17 +91,9 @@ export const IconsPlayground: StoryObj<StoryProps> = {
 
 // --- S1 ------------------------------------------------------------------------------
 
-/** Иконки набора приложения в таблице — по их именам: встроенные по тем же ключам другие. */
-const OWN_ICON_CLASSES = [
-  'lucide-arrow-up-down',
-  'lucide-sliders-horizontal',
-  'lucide-grip',
-  'lucide-ellipsis',
-  'lucide-file-down',
-]
+/** Иконки набора приложения в таблице — по их метке: встроенные по тем же ключам другие. */
 const ownIcons = (root: ParentNode) =>
-  root.querySelectorAll(OWN_ICON_CLASSES.map(name => `svg.${name}`).join(', '))
-    .length
+  root.querySelectorAll('svg[data-own-icon]').length
 
 const OWN_SET: readonly GuideStoryStep[] = [
   {

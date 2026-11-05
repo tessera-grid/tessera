@@ -1,29 +1,8 @@
-.positioner {
-  composes: positioner from '../../ui/Popup/Popup.module.css';
-}
-
 .popup {
-  composes: popup from '../../ui/Popup/Popup.module.css';
-  min-width: 240px;
+  min-width: min(var(--tsr-comp-popup-min-width), calc(100vw - 16px));
   max-width: min(var(--tsr-comp-popup-max-width), calc(100vw - 16px));
   display: flex;
   flex-direction: column;
-}
-
-/* Группы — как в меню действий (ADR 0074, EP2): подпись и разделитель между группами. */
-.group {
-  composes: group from '../../ui/Popup/ActionMenu.module.css';
-}
-
-.group + .group,
-.footer {
-  margin-top: 4px;
-  padding-top: 4px;
-  border-top: 1px solid var(--tsr-comp-popup-divider-color);
-}
-
-.groupLabel {
-  composes: groupLabel from '../../ui/Popup/ActionMenu.module.css';
 }
 
 .items {
@@ -31,8 +10,8 @@
   flex-direction: column;
 }
 
+/* Пункт — кнопка или радио: свой фон и рамка браузера сброшены (ADR 0074, EP2). */
 .item {
-  composes: item from '../../ui/Popup/ActionMenu.module.css';
   width: 100%;
   color: inherit;
   /* Шрифт кнопки — от панели; высоту строки задаёт пункт поповера. */
@@ -71,18 +50,6 @@
   }
 }
 
-.itemIcon {
-  composes: itemIcon from '../../ui/Popup/ActionMenu.module.css';
-}
-
-.itemLabel {
-  composes: itemLabel from '../../ui/Popup/ActionMenu.module.css';
-}
-
-.itemCheck {
-  composes: itemCheck from '../../ui/Popup/ActionMenu.module.css';
-}
-
 /* Галочка всегда в разметке и проявляется у выбранного пункта (ADR 0074, EP5). */
 .check {
   display: inline-flex;
@@ -99,9 +66,4 @@
 /* Край дорожки — по подписи группы и иконкам пунктов (отступ пункта поповера). */
 .segments {
   margin: 2px 8px 4px;
-}
-
-.footer {
-  display: flex;
-  justify-content: flex-end;
 }

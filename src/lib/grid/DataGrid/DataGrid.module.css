@@ -45,35 +45,6 @@
 }
 
 /*
- * Тонкий скроллбар фиксированной ширины (--tsr-comp-scrollbar-width).
- * Используем только webkit-псевдоэлементы: стандартное scrollbar-width в
- * Chromium перебивает их и даёт другую ширину, из-за чего линейный прогресс
- * (100% - scrollbar-width) переставал совпадать с краем контента.
- */
-.table__container::-webkit-scrollbar {
-  width: var(--tsr-comp-scrollbar-width);
-  height: var(--tsr-comp-scrollbar-width);
-}
-
-.table__container::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-/* Угол, где сходятся полосы: без правила Chromium закрашивает его белым. */
-.table__container::-webkit-scrollbar-corner {
-  background: transparent;
-}
-
-.table__container::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background-color: var(--tsr-comp-scrollbar-thumb);
-}
-
-.table__container::-webkit-scrollbar-thumb:hover {
-  background-color: var(--tsr-comp-scrollbar-thumb-hover);
-}
-
-/*
  * Заглушка под шапкой (ADR 0123: ошибка загрузки, пустой результат фильтра — FL41) —
  * во всю видимую ширину, а не сбоку от узкой таблицы.
  */

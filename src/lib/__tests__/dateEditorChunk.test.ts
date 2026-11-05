@@ -1,5 +1,5 @@
 /**
- * Календарь редактора даты (ADR 0175, ED7): общий модуль `shared/calendar`, в плагин правки
+ * Календарь редактора даты (ADR 0175, ED7): общий календарь кита `ui/Calendar` (ADR 0183), в плагин правки
  * попадает только ленивым модулем редактора, модулей фильтров плагин правки не тянет.
  * Запуск: npx vitest run --config vitest.node.config.ts dateEditorChunk
  */
@@ -39,10 +39,10 @@ const staticGraph = (entry: string) => {
   return [...seen].map(file => relative(root, file).replaceAll('\\', '/'))
 }
 
-const CALENDAR = 'shared/calendar/Calendar.tsx'
+const CALENDAR = 'ui/Calendar/Calendar.tsx'
 
 describe('календарь редактора даты (ADR 0175)', () => {
-  it('ED7: календарь лежит в shared/ и грузится при первой правке даты — ленивым модулем редактора; cellEditing не тянет модули фильтров', () => {
+  it('ED7: календарь лежит в ките (ui/Calendar) и грузится при первой правке даты — ленивым модулем редактора; cellEditing не тянет модули фильтров', () => {
     const plugin = staticGraph('plugins/cellEditing/index.ts')
     expect(plugin).toContain('plugins/cellEditing/editors.tsx')
     expect(plugin).not.toContain(CALENDAR)

@@ -44,6 +44,8 @@ export default defineConfig({
       '@base-ui/react/popover',
       '@base-ui/react/combobox',
       '@base-ui/react/checkbox',
+      // Кит поповеров и контролов (ADR 0183) рисует элементы примитивов через `useRender`.
+      '@base-ui/react/use-render',
       '@tanstack/react-table',
       '@tanstack/react-store',
       // Помощники историй каталога (ADR 0093) — как в vitest.config.ts.

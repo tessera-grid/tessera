@@ -9,7 +9,7 @@ import { RowButton } from '../../../ui/RowButton/RowButton'
 // (иначе токены не определены и сравнения проходят ложно — обе стороны transparent).
 import '../../../ui/theme/theme.css'
 import type { ColorMode } from '../../../ui/theme'
-import { SelectCheckbox } from '../../../ui/SelectCheckbox/SelectCheckbox'
+import { Checkbox } from '../../../ui/Checkbox/Checkbox'
 import { IconButton } from '../../../ui/IconButton'
 import { Switch } from '../../../ui/Switch'
 
@@ -64,10 +64,10 @@ describe('Theming matrix — form controls', () => {
   describe.each(MODES)('mode=%s', mode => {
     const dark = mode === 'dark'
 
-    // --- Checkbox (SelectCheckbox) ---------------------------------------------
+    // --- Checkbox ---------------------------------------------
     test('TT-22 checkbox base border = --tsr-comp-control-border', async () => {
       const c = await renderThemed(
-        <SelectCheckbox selected={false} onClick={() => {}} />,
+        <Checkbox className="row-select-checkbox" checked={false} />,
         dark,
       )
       const cb = c.querySelector('[role="checkbox"]')!
@@ -78,7 +78,7 @@ describe('Theming matrix — form controls', () => {
 
     test('TT-23 checkbox checked bg = --tsr-comp-checkbox-checked-bg', async () => {
       const c = await renderThemed(
-        <SelectCheckbox selected onClick={() => {}} />,
+        <Checkbox className="row-select-checkbox" checked />,
         dark,
       )
       const cb = c.querySelector('[role="checkbox"]')!
@@ -89,7 +89,11 @@ describe('Theming matrix — form controls', () => {
 
     test('TT-23b checkbox indeterminate bg = --tsr-comp-checkbox-checked-bg', async () => {
       const c = await renderThemed(
-        <SelectCheckbox selected={false} indeterminate onClick={() => {}} />,
+        <Checkbox
+          className="row-select-checkbox"
+          checked={false}
+          indeterminate
+        />,
         dark,
       )
       const cb = c.querySelector('[role="checkbox"]')!
@@ -100,7 +104,7 @@ describe('Theming matrix — form controls', () => {
 
     test('TT-25 checkbox hover border = --tsr-comp-control-active-color', async () => {
       const c = await renderThemed(
-        <SelectCheckbox selected={false} onClick={() => {}} />,
+        <Checkbox className="row-select-checkbox" checked={false} />,
         dark,
       )
       const cb = c.querySelector<HTMLElement>('[role="checkbox"]')!

@@ -1,0 +1,181 @@
+/* Календарь дат фильтра и редактора (ADR 0047, ADR 0175): разметка `@daypicker/react`, стили — на токенах. */
+.calendar {
+  position: relative;
+  width: max-content;
+}
+
+.months {
+  display: flex;
+}
+
+.month {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nav {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  gap: 2px;
+}
+
+.navButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tsr-comp-calendar-day-size);
+  height: var(--tsr-comp-calendar-day-size);
+  padding: 0;
+  color: var(--tsr-comp-control-color);
+  background-color: transparent;
+  border: 0;
+  border-radius: var(--tsr-comp-popup-item-radius);
+  cursor: pointer;
+  transition: var(--tsr-comp-action-button-transition);
+}
+
+.navButton:hover:not([aria-disabled='true']) {
+  background-color: var(--tsr-comp-control-hover-bg);
+}
+
+.navButton[aria-disabled='true'] {
+  color: var(--tsr-comp-control-disabled-color);
+  cursor: default;
+}
+
+.caption {
+  display: flex;
+  align-items: center;
+  height: var(--tsr-comp-calendar-day-size);
+  /* Место под кнопки листания справа. */
+  padding-right: calc(var(--tsr-comp-calendar-day-size) * 2 + 4px);
+}
+
+.captionLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: 600;
+}
+
+.dropdowns {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Нативный select поверх подписи: подпись видна, выбор — у select. */
+/*
+ * Кнопка месяца и года — `SelectTrigger` кита без рамки в покое: подпись календаря, а не поле
+ * (PK19). Вес двух классов — над классом кнопки кита.
+ */
+.dropdowns .dropdownTrigger {
+  min-width: 0;
+  height: 28px;
+  padding: 0 6px;
+  border-color: transparent;
+  font-weight: 600;
+}
+
+.dropdowns .dropdownTrigger:focus-visible {
+  border-color: var(--tsr-comp-focus-ring);
+}
+
+/* Список года длинный — поповер прокручивается, полоса — темы (PK17). */
+.dropdownPopup {
+  max-height: var(--tsr-comp-column-menu-max-height);
+  overflow-y: auto;
+}
+
+.chevron {
+  display: inline-flex;
+}
+
+.grid {
+  border-collapse: collapse;
+}
+
+.weekday {
+  width: var(--tsr-comp-calendar-day-size);
+  height: 24px;
+  color: var(--tsr-comp-control-color);
+  font-size: var(--tsr-comp-caption-font-size);
+  font-weight: 400;
+}
+
+.day {
+  width: var(--tsr-comp-calendar-day-size);
+  height: var(--tsr-comp-calendar-day-size);
+  padding: 0;
+  text-align: center;
+}
+
+.dayButton {
+  box-sizing: border-box;
+  width: var(--tsr-comp-calendar-day-size);
+  height: var(--tsr-comp-calendar-day-size);
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  background-color: transparent;
+  border: 0;
+  border-radius: var(--tsr-comp-popup-item-radius);
+  cursor: pointer;
+  /* Конец диапазона, ставший серединой, теряет углы вместе с заливкой (PK23). */
+  transition:
+    var(--tsr-comp-action-button-transition),
+    border-radius var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing);
+}
+
+.dayButton:hover {
+  background-color: var(--tsr-comp-control-hover-bg);
+}
+
+.dayButton:focus-visible,
+:root[data-tsr-input='keyboard'] .dayButton:focus {
+  outline: none;
+  box-shadow: 0 0 0 var(--tsr-comp-focus-ring-width) var(--tsr-comp-focus-ring);
+}
+
+.today .dayButton {
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.rangeMiddle {
+  background-color: var(--tsr-comp-calendar-range-bg);
+}
+
+.rangeMiddle .dayButton {
+  border-radius: 0;
+}
+
+.selected:not(.rangeMiddle) .dayButton,
+.rangeStart .dayButton,
+.rangeEnd .dayButton {
+  color: var(--tsr-comp-calendar-day-selected-fg);
+  background-color: var(--tsr-comp-calendar-day-selected-bg);
+}
+
+.outside {
+  color: var(--tsr-comp-control-disabled-color);
+}
+
+.disabled .dayButton {
+  color: var(--tsr-comp-control-disabled-color);
+  cursor: default;
+}
+
+.hidden {
+  visibility: hidden;
+}
+
+.focused {
+  position: relative;
+}
+
+/* Поле времени рядом с календарём. */

@@ -9,8 +9,7 @@ import { Button } from '@/lib/ui/Button'
 import { IconButton } from '@/lib/ui/IconButton'
 import { ToolbarButton } from '@/lib/ui/ToolbarButton'
 import { SvgIcon } from '@/lib/ui/icons'
-import { SizeTrigger } from '@/lib/plugins/pagination/SizeTrigger'
-import paginationStyles from '@/lib/plugins/pagination/Pagination.module.css'
+import { SelectTrigger } from '@/lib/ui/SelectTrigger/SelectTrigger'
 import { arcHeadOf, arcTailOf, arcTrackOf, pendingArcOf } from '../helpers'
 import { toRgba } from './a11y-helpers'
 
@@ -506,14 +505,9 @@ describe('Pending arc: failure', () => {
         <Button data-label="Text" pending={pending} failed={failed}>
           Retry
         </Button>
-        <SizeTrigger
-          data-label="Size"
-          className={paginationStyles.trigger}
-          pending={pending}
-          failed={failed}
-        >
+        <SelectTrigger data-label="Size" pending={pending} failed={failed}>
           25
-        </SizeTrigger>
+        </SelectTrigger>
       </Theme>
     )
     const labels = ['Text', 'Size']

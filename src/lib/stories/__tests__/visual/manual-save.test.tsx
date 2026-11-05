@@ -453,7 +453,7 @@ describe('Сохранение по кнопке (ADR 0178)', () => {
     }
   })
 
-  test('DR23: поповер отметки ячейки один у отказа, ошибки данных и черновика: заголовок без отметки, причина — цветом текста ошибки, «Было» и «Стало» — обычным, под разделителем кнопки справа, главная — с рамкой; не уже --tsr-comp-popup-min-width', async () => {
+  test('DR23: поповер отметки ячейки один у отказа, ошибки данных и черновика: заголовок без отметки, причина — цветом текста ошибки, «Было» и «Стало» — обычным, внизу кнопки справа, без разделителя над ними, главная — с рамкой; не уже --tsr-comp-popup-min-width', async () => {
     const Host = () => {
       const table = useCreateTable({
         columns: COLUMNS as never,
@@ -515,35 +515,26 @@ describe('Сохранение по кнопке (ADR 0178)', () => {
         justify: buttons[0]
           ? getComputedStyle(buttons[0].parentElement!).justifyContent
           : undefined,
-        // Разделитель — линия над рядом кнопок, по ширине содержимого.
+        // Над рядом кнопок линии нет — ни рамкой, ни псевдоэлементом (ADR 0017, PP12).
         divider: buttons[0]
           ? (() => {
               const row = buttons[0].parentElement!
               const line = getComputedStyle(row, '::before')
-              const box = row.getBoundingClientRect()
-              const outer = pop.getBoundingClientRect()
-              return {
-                line: `${line.borderTopStyle} ${line.borderTopColor}`,
-                inset: [
-                  Math.round(box.left + parseFloat(line.left) - outer.left),
-                  Math.round(outer.right - box.right + parseFloat(line.right)),
-                ],
-                above: box.top >= body.getBoundingClientRect().bottom,
-              }
+              return (
+                parseFloat(getComputedStyle(row).borderTopWidth) > 0 ||
+                (line.content !== 'none' && parseFloat(line.borderTopWidth) > 0)
+              )
             })()
           : undefined,
-        // Край содержимого: начало текста заголовка.
-        content: Math.round(
-          title.getBoundingClientRect().left +
-            parseFloat(getComputedStyle(title).paddingLeft) -
-            pop.getBoundingClientRect().left,
-        ),
+        below: buttons[0]
+          ? buttons[0].getBoundingClientRect().top >=
+            body.getBoundingClientRect().bottom
+          : undefined,
         width: pop.getBoundingClientRect().width,
       }
     }
     try {
       const root = document.querySelector('.data-grid-theme')!
-      const divider = `solid ${resolveColor(root, 'var(--tsr-comp-popup-divider-color)')}`
       const probe = document.createElement('span')
       probe.style.color = 'var(--tsr-comp-error-text-color)'
       probe.style.width = 'var(--tsr-comp-popup-min-width)'
@@ -571,12 +562,9 @@ describe('Сохранение по кнопке (ADR 0178)', () => {
       expect(view.labelled).toBe(true)
       expect(view.markless).toBe(true)
       expect(view.bodyColor).toBe(errorColor)
-      // Разделитель над кнопками — по ширине содержимого, как у пульта и журнала.
-      expect(view.divider).toEqual({
-        line: divider,
-        inset: [view.content, view.content],
-        above: true,
-      })
+      // Кнопки — под телом, без разделителя, как у пульта и журнала.
+      expect(view.divider).toBe(false)
+      expect(view.below).toBe(true)
       expect(view.width).toBeGreaterThanOrEqual(minWidth - 0.5)
       expect(view.buttons).toEqual([
         ['discard', 'ghost'],
@@ -596,14 +584,13 @@ describe('Сохранение по кнопке (ADR 0178)', () => {
       expect(view.buttons).toEqual([])
       await close()
 
-      // Черновик: «Было» и «Стало», под разделителем «Откатить» — справа с рамкой.
+      // Черновик: «Было» и «Стало», внизу «Откатить» — справа с рамкой.
       await draftAge('1', '77')
       view = layout(await open(corner('1')!))
       expect(view.title).toBe(cellEditingLabels(tableLabels).cellDraft)
       expect(view.markless).toBe(true)
       expect(view.bodyColor).toBe(view.popColor)
-      expect(view.divider?.line).toBe(divider)
-      expect(view.divider?.inset).toEqual([view.content, view.content])
+      expect(view.divider).toBe(false)
       // Узкое содержимое не сужает поповер: кнопка справа, а не посередине.
       expect(view.width).toBeGreaterThanOrEqual(minWidth - 0.5)
       expect(view.buttons).toEqual([['rollback', 'outline']])
@@ -651,10 +638,10 @@ describe('Сохранение по кнопке (ADR 0178)', () => {
       [
         ...(dialog()?.querySelectorAll<HTMLElement>('[data-draft-kind]') ?? []),
       ].map(entry => {
-        const value = entry.querySelector('[class*="value"]')
+        const value = entry.querySelector('[data-draft-value]')
         return value
           ? {
-              shown: textWithout(value, '[class*="visually-hidden"]'),
+              shown: textWithout(value, '[data-visually-hidden]'),
               spoken: textWithout(value, '[aria-hidden]'),
             }
           : undefined

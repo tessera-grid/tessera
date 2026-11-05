@@ -6,7 +6,7 @@ import { defaultCell } from '../core/commonFeature'
 import { alignOf, isNumericBase } from '../core/dataTypeFormat'
 import type { TableLabels } from '../core/localization'
 import type { Cell, Column } from '../types'
-import { CheckMark } from '../ui/CheckMark/CheckMark'
+import { CheckboxView } from '../ui/Checkbox/CheckboxView'
 
 export const renderCellContent = (
   cell: Cell<any, any, unknown>,
@@ -20,7 +20,7 @@ export const renderCellContent = (
     const value = cell.getValue()
     if (typeof value === 'boolean') {
       return (
-        <CheckMark
+        <CheckboxView
           checked={value}
           label={value ? labels.booleanTrue : labels.booleanFalse}
         />

@@ -6,14 +6,12 @@
 import { useId } from 'react'
 
 import { Select } from '@base-ui/react/select'
-import clsx from 'clsx'
-import { Check, ChevronDown } from 'lucide-react'
 
-import { usePortalThemeData, usePortalThemeClass } from '../../ui/theme'
+import { PopupItem, PopupItemMark } from '../../ui/Popup/PopupItem'
+import { PopupSurface } from '../../ui/Popup/PopupSurface'
 import styles from './Pagination.module.css'
-import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 import { useTriggerWidth } from '../../ui/Popup/useTriggerWidth'
-import { SizeTrigger } from './SizeTrigger'
+import { SelectTrigger } from '../../ui/SelectTrigger/SelectTrigger'
 
 export interface PageSizeSelectProps {
   label: string
@@ -34,8 +32,6 @@ export const PageSizeSelect = ({
 }: PageSizeSelectProps) => {
   const labelId = useId()
   const triggerId = useId()
-  const themeClass = usePortalThemeClass()
-  const themeData = usePortalThemeData()
   const {
     setTrigger,
     onOpenChange: measureTrigger,
@@ -64,39 +60,40 @@ export const PageSizeSelect = ({
         id={triggerId}
         aria-labelledby={`${labelId} ${triggerId}`}
         ref={setTrigger}
-        render={<SizeTrigger />}
+        render={<SelectTrigger />}
         data-testid="page-size-select"
       >
         <Select.Value />
-        <Select.Icon className={styles.triggerIcon}>
-          <ChevronDown width={14} height={14} />
-        </Select.Icon>
       </Select.Trigger>
       <Select.Portal>
-        <Select.Positioner
-          side="bottom"
-          align="end"
-          sideOffset={POPUP_SIDE_OFFSET}
-          alignItemWithTrigger={false}
-          className={clsx(themeClass, styles.positioner)}
-          {...themeData}
+        <PopupSurface
+          positioner={
+            <Select.Positioner
+              side="bottom"
+              align="end"
+              alignItemWithTrigger={false}
+            />
+          }
+          popup={<Select.Popup style={{ minWidth }} />}
         >
-          <Select.Popup
-            className={clsx(themeClass, styles.popup)}
-            style={{ minWidth }}
-          >
-            <Select.List>
-              {pageSizes.map(size => (
-                <Select.Item key={size} value={size} className={styles.item}>
-                  <Select.ItemText>{size}</Select.ItemText>
-                  <Select.ItemIndicator className={styles.itemCheck}>
-                    <Check width={14} height={14} />
-                  </Select.ItemIndicator>
-                </Select.Item>
-              ))}
-            </Select.List>
-          </Select.Popup>
-        </Select.Positioner>
+          <Select.List>
+            {pageSizes.map(size => (
+              <PopupItem
+                key={size}
+                render={<Select.Item value={size} />}
+                label={
+                  <Select.ItemText render={<span />}>{size}</Select.ItemText>
+                }
+                end={
+                  <PopupItemMark
+                    render={<Select.ItemIndicator />}
+                    status="checked"
+                  />
+                }
+              />
+            ))}
+          </Select.List>
+        </PopupSurface>
       </Select.Portal>
     </Select.Root>
   )

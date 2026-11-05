@@ -83,9 +83,13 @@ export const SortButton = memo(
           aria-label={ariaLabel}
           {...button}
         >
-          {operation === 'asc' && <SortAscIcon width={16} height={16} />}
-          {operation === 'desc' && <SortDescIcon width={16} height={16} />}
-          {!operation && <SortIcon width={16} height={16} />}
+          {operation === 'asc' && (
+            <SortAscIcon data-icon="sortAsc" width={16} height={16} />
+          )}
+          {operation === 'desc' && (
+            <SortDescIcon data-icon="sortDesc" width={16} height={16} />
+          )}
+          {!operation && <SortIcon data-icon="sort" width={16} height={16} />}
         </IconButton>
       </div>
     )

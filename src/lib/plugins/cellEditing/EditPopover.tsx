@@ -6,13 +6,12 @@
 import { type ReactNode, type RefObject, useEffect, useRef } from 'react'
 
 import { Popover } from '@base-ui/react/popover'
-import clsx from 'clsx'
 
 import { restoreFocusIfLost } from '../../core/keyboardNavigation/actions'
 import { useLocalization } from '../../core/localization'
 import { Button } from '../../ui/Button'
-import { usePortalThemeClass, usePortalThemeData } from '../../ui/theme'
-import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
+import { PopupFooter } from '../../ui/Popup/PopupPanel'
+import { PopupSurface } from '../../ui/Popup/PopupSurface'
 import { useCloseOnGridScroll } from '../../ui/Popup/useCloseOnGridScroll'
 
 import styles from './EditPopover.module.css'
@@ -41,11 +40,11 @@ export const useFocusReturn = (anchor: RefObject<HTMLElement | null>) =>
 export const ClearValue = ({ onClear }: { onClear: () => void }) => {
   const labels = useLocalization()
   return (
-    <div className={styles.footer}>
+    <PopupFooter className={styles.footer}>
       <Button variant="ghost" onClick={onClear} data-testid="edit-clear-value">
         {cellEditingLabels(labels).editClear}
       </Button>
-    </div>
+    </PopupFooter>
   )
 }
 
@@ -69,8 +68,6 @@ export const EditPopover = ({
   onLeave: () => void
   children: ReactNode
 }) => {
-  const themeClass = usePortalThemeClass()
-  const themeData = usePortalThemeData()
   const anchor = useRef<HTMLSpanElement>(null)
   const popup = useRef<HTMLDivElement>(null)
   useFocusReturn(anchor)
@@ -90,27 +87,25 @@ export const EditPopover = ({
         }}
       >
         <Popover.Portal>
-          <Popover.Positioner
-            anchor={anchor}
-            side="bottom"
-            align="start"
-            sideOffset={POPUP_SIDE_OFFSET}
-            className={clsx(themeClass, styles.positioner)}
-            {...themeData}
+          <PopupSurface
+            positioner={
+              <Popover.Positioner anchor={anchor} side="bottom" align="start" />
+            }
+            popup={
+              <Popover.Popup
+                ref={popup}
+                aria-label={label}
+                initialFocus={() => initialFocus(popup.current)}
+                finalFocus={false}
+                data-testid={testId}
+                // Клавиши поповера — его, а не навигации грида.
+                onKeyDown={event => event.stopPropagation()}
+              />
+            }
+            className={styles.popup}
           >
-            <Popover.Popup
-              ref={popup}
-              aria-label={label}
-              initialFocus={() => initialFocus(popup.current)}
-              finalFocus={false}
-              className={clsx(themeClass, styles.popup)}
-              data-testid={testId}
-              // Клавиши поповера — его, а не навигации грида.
-              onKeyDown={event => event.stopPropagation()}
-            >
-              {children}
-            </Popover.Popup>
-          </Popover.Positioner>
+            {children}
+          </PopupSurface>
         </Popover.Portal>
       </Popover.Root>
     </span>

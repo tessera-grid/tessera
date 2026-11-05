@@ -1,0 +1,18 @@
+/* Группа пунктов поповера (ADR 0183, PK4): подпись и разделитель между группами. */
+.group {
+  display: flex;
+  flex-direction: column;
+}
+
+.divided {
+  margin-top: var(--tsr-comp-popup-padding);
+  padding-top: var(--tsr-comp-popup-padding);
+  border-top: 1px solid var(--tsr-comp-popup-divider-color);
+}
+
+/* Подпись — стилем заголовка поповера (PK4), по краю подписей пунктов. */
+.label {
+  padding: 4px 8px 2px;
+  font-size: var(--tsr-comp-popup-title-font-size);
+  font-weight: 600;
+}

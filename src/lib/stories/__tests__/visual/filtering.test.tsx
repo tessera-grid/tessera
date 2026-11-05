@@ -67,7 +67,7 @@ const radio = (value: string) =>
  */
 const waitForToolbar = () =>
   expect
-    .poll(() => document.querySelector('[class*="toolbar-placeholder"]'))
+    .poll(() => document.querySelector('[data-toolbar-placeholder]'))
     .toBeNull()
 
 const renderFiltering = async (args: Record<string, unknown> = {}) => {
@@ -407,6 +407,58 @@ describe('Фильтрация — тулбар и нижняя панель', (
     await expect.poll(rowIds).toEqual(ALL)
     await expect.poll(summary).toBeNull()
     expect(summaryButton()!.getAttribute('aria-disabled')).toBe('true')
+  })
+
+  test('FL43: кнопка снятия фильтра в сводке — квадратная кнопка-иконка кита: подпись — её имя и тултип, с клавиатуры — кольцо фокуса; фокус не меняет раскладку строки и не рисует линию над ней', async () => {
+    await renderFiltering(TOOLBAR)
+    await applyTextFilter('name', 'a')
+    await humanClick(summaryButton()!)
+    await expect.poll(summary).not.toBeNull()
+    const item = summary()!.querySelector<HTMLElement>('li')!
+    const remove = item.querySelector<HTMLButtonElement>(
+      '[data-testid="filter-summary-remove"]',
+    )!
+    const label = columnFilteringLabels(tableLabels).removeFilter('Name')
+    expect(remove.getAttribute('aria-label')).toBe(label)
+    expect(remove.dataset.shape).toBe('square')
+
+    const settled = (el: Element) =>
+      Promise.all(el.getAnimations({ subtree: true }).map(a => a.finished))
+    await settled(summary()!)
+    const before = item.getBoundingClientRect()
+    const removeBefore = remove.getBoundingClientRect()
+    // Фокус — клавишами: с «Сбросить фильтры» назад на крестик.
+    const reset = summary()!.querySelector(
+      '[data-testid="filter-summary-reset"]',
+    )
+    for (let i = 0; i < 5 && document.activeElement !== reset; i++)
+      await userEvent.keyboard('{Tab}')
+    await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
+    expect(document.activeElement).toBe(remove)
+    expect(remove.matches(':focus-visible')).toBe(true)
+    await settled(summary()!)
+    const style = getComputedStyle(remove)
+    expect(style.boxShadow).toContain(
+      `0px 0px 0px ${tokenPx('--tsr-comp-focus-ring-width')}px`,
+    )
+    expect(style.borderTopWidth).toBe('0px')
+    const after = item.getBoundingClientRect()
+    const removeAfter = remove.getBoundingClientRect()
+    expect([after.top, after.height]).toEqual([before.top, before.height])
+    expect([removeAfter.top, removeAfter.left]).toEqual([
+      removeBefore.top,
+      removeBefore.left,
+    ])
+
+    await userEvent.hover(remove)
+    await expect
+      .poll(() =>
+        [...document.querySelectorAll('[data-side]')].some(
+          el => el.textContent?.trim() === label,
+        ),
+      )
+      .toBe(true)
+    await userEvent.keyboard('{Escape}')
   })
 
   test('FL13: фильтр скрытой колонки остаётся активным и в сводке помечен «колонка скрыта»; доступное имя называет число таких фильтров', async () => {

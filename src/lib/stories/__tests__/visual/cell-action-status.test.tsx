@@ -8,7 +8,7 @@ import { useCellPending } from '../../../core/headerActions/cellActions'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import type { CellContext } from '../../../types'
-import { SelectCheckbox } from '../../../ui/SelectCheckbox/SelectCheckbox'
+import { Checkbox } from '../../../ui/Checkbox/Checkbox'
 import { Switch } from '../../../ui/Switch'
 import { humanClick, pendingArcOf } from '../helpers'
 import { inBothThemes } from './a11y-helpers'
@@ -85,11 +85,12 @@ const FlagCell = ({
 }) => {
   const { value, pending, commit } = useSave<boolean>(context, save, 'control')
   return (
-    <SelectCheckbox
-      selected={value}
+    <Checkbox
+      className="row-select-checkbox"
+      checked={value}
       pending={pending}
       label={`${context.row.original.name} flag`}
-      onClick={(_event, checked) => commit(checked)}
+      onCheckedChange={checked => commit(checked)}
     />
   )
 }

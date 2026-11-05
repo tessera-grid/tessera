@@ -1,0 +1,119 @@
+/* Флажок кита (ADR 0183, PK15) поверх Base UI `Checkbox`: отмечен, частично, выключен, ожидание. */
+.checkbox {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  appearance: none;
+  -webkit-appearance: none;
+  width: var(--tsr-comp-checkbox-size);
+  height: var(--tsr-comp-checkbox-size);
+  padding: 0;
+  margin: 0;
+  border: 1px solid var(--tsr-comp-control-border);
+  border-radius: var(--tsr-comp-checkbox-radius, 4px);
+  background-color: transparent;
+  color: var(--tsr-comp-checkbox-check-color);
+  cursor: pointer;
+  outline: 0;
+  -webkit-tap-highlight-color: transparent;
+  transition: var(--tsr-comp-button-cell-transition);
+}
+
+/* Прозрачная зона нажатия не меньше 24×24 (WCAG 2.5.8, ADR 0034); вид не меняется. */
+.checkbox::before {
+  content: '';
+  position: absolute;
+  inset: min(0px, calc((100% - 24px) / 2));
+}
+
+.checkbox:hover:not(:disabled, [aria-busy='true'], [data-readonly]) {
+  border-color: var(--tsr-comp-control-active-color);
+}
+
+/* base-ui выставляет data-checked / data-indeterminate (не radix data-state) */
+.checkbox[data-checked],
+.checkbox[data-indeterminate] {
+  background-color: var(--tsr-comp-checkbox-checked-bg);
+  border-color: var(--tsr-comp-checkbox-checked-bg);
+}
+
+/* Рамка 1px перекрашивается в цвет кольца, кольцо добирает остаток до ширины токена. */
+.checkbox:focus-visible {
+  border-color: var(--tsr-comp-focus-ring);
+  box-shadow: 0 0 0 calc(var(--tsr-comp-focus-ring-width) - 1px)
+    var(--tsr-comp-focus-ring);
+}
+
+/*
+ * base-ui выставляет [data-disabled] (не всегда нативный :disabled). Занятый флажок приглушён
+ * так же, как выключенный (ADR 0176; ADR 0127, IR31).
+ */
+.checkbox:disabled,
+.checkbox[data-disabled],
+.checkbox[aria-busy='true'] {
+  opacity: var(--tsr-comp-disabled-opacity, 0.5);
+  cursor: default;
+}
+
+.indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--tsr-comp-checkbox-check-color);
+}
+
+.indicator .icon {
+  width: 14px;
+  height: 14px;
+  stroke-width: 3;
+}
+
+/*
+ * Высокая контрастность (ADR 0087): рамку не системного цвета браузер красит цветом
+ * галочки — пустой флажок пропал бы; залитый различим и на выбранной строке.
+ */
+@media (forced-colors: active) {
+  .checkbox {
+    border-color: CanvasText;
+  }
+
+  .checkbox:hover:not(:disabled, [aria-busy='true']) {
+    border-color: Highlight;
+  }
+
+  .checkbox[data-checked],
+  .checkbox[data-indeterminate] {
+    border-color: HighlightText;
+  }
+}
+
+/* Значение не принято (правка булевой ячейки, ADR 0175): рамка цветом ошибки. */
+.checkbox[aria-invalid='true'] {
+  border-color: var(--tsr-comp-cell-error-color);
+}
+
+/* Только значение (PK18; ADR 0172, DT18): не нажимается — обычный курсор, в строке не сжимается. */
+.checkbox[data-readonly] {
+  flex: none;
+  cursor: inherit;
+  vertical-align: middle;
+}
+
+.checkbox[data-readonly]::before {
+  content: none;
+}
+
+/* Высокая контрастность (ADR 0087): значение — заливкой цвета текста, галочка — цветом фона. */
+@media (forced-colors: active) {
+  .checkbox[data-readonly][data-checked] {
+    border-color: CanvasText;
+    background-color: CanvasText;
+    color: Canvas;
+  }
+
+  .checkbox[data-readonly][data-checked] .indicator {
+    color: Canvas;
+  }
+}

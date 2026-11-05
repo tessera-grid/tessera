@@ -114,7 +114,7 @@ const overflowOf = (pop: HTMLElement) => {
     const rect = el.getBoundingClientRect()
     if (rect.width === 0) continue
     // Текст только для скринридера обрезан нарочно.
-    if (el.closest('[class*="visually-hidden"]')) continue
+    if (el.closest('[data-visually-hidden]')) continue
     const name = (el.textContent ?? '').slice(0, 24)
     if (rect.right > box.right + 0.5 || rect.left < box.left - 0.5)
       found.push(`за рамкой: ${el.tagName} «${name}»`)
@@ -187,7 +187,7 @@ const openList = async (button: () => HTMLElement | null | undefined) => {
   await expect.poll(dialog).not.toBeNull()
   const pop = dialog()!
   const list = await expect
-    .poll(() => pop.querySelector<HTMLElement>('[class*="scroller"]'))
+    .poll(() => pop.querySelector<HTMLElement>('[data-popup-scroller]'))
     .toBeTruthy()
   void list
   return pop
@@ -245,7 +245,7 @@ describe('Длинный текст в поповерах черновиков �
           ['журнал', logButton],
         ] as const) {
           const pop = await openList(button)
-          const list = pop.querySelector<HTMLElement>('[class*="scroller"]')!
+          const list = pop.querySelector<HTMLElement>('[data-popup-scroller]')!
           expect(list.scrollHeight).toBeGreaterThan(list.clientHeight)
           for (const at of [0, 0.5, 1]) {
             list.scrollTop = (list.scrollHeight - list.clientHeight) * at
@@ -263,14 +263,14 @@ describe('Длинный текст в поповерах черновиков �
     }
   })
 
-  test('DR38: в поповере отметки ячейки разделитель — по ширине содержимого, отступ от верхнего края до заголовка, от содержимого до разделителя, от разделителя до содержимого и от кнопок до нижнего края — один: двойное поле поповера', async () => {
+  test('DR38: поповер отметки ячейки — поповер-панель: над кнопками разделителя нет; от верхнего края до заголовка, от заголовка до содержимого, от содержимого до кнопок и от кнопок до нижнего края — один отступ: двойное поле поповера', async () => {
     await page.viewport(1024, 700)
     const screen = await render(<Grid width={760} />)
     await waitForGrid()
     try {
       /**
-       * Отступы по вертикали: от верхнего края до первого текста, от содержимого до каждой
-       * линии и от линии до содержимого, от последней кнопки до нижнего края.
+       * Отступы по вертикали: от верхнего края до заголовка, от заголовка до содержимого, от
+       * содержимого до кнопок, от кнопок до нижнего края; линий над кнопками нет.
        */
       const verticalGaps = (pop: HTMLElement) => {
         const box = pop.getBoundingClientRect()
@@ -279,7 +279,7 @@ describe('Длинный текст в поповерах черновиков �
         for (let node = walker.nextNode(); node; node = walker.nextNode()) {
           const parent = node.parentElement!
           if (!node.textContent?.trim() || parent.closest('button')) continue
-          if (parent.closest('[class*="visually-hidden"]')) continue
+          if (parent.closest('[data-visually-hidden]')) continue
           // Строки текста — блок без полей: межстрочный интервал входит в строку, как в раскладке.
           const rect = parent.getBoundingClientRect()
           const style = getComputedStyle(parent)
@@ -289,28 +289,38 @@ describe('Длинный текст в поповерах черновиков �
               bottom: rect.bottom - parseFloat(style.paddingBottom),
             })
         }
-        for (const button of pop.querySelectorAll('button'))
-          blocks.push(button.getBoundingClientRect())
-        const lines = [...pop.querySelectorAll<HTMLElement>('*')]
-          .filter(el => {
-            const line = getComputedStyle(el, '::before')
-            return (
-              line.content !== 'none' && parseFloat(line.borderTopWidth) > 0
-            )
-          })
-          .map(el => el.getBoundingClientRect().top)
+        const buttons = [...pop.querySelectorAll('button')].map(button =>
+          button.getBoundingClientRect(),
+        )
+        // Линия — рамка сверху или псевдоэлемент у блока, а не рамка кнопки.
+        const lines = [...pop.querySelectorAll<HTMLElement>('*')].filter(el => {
+          if (el.closest('button')) return false
+          const line = getComputedStyle(el, '::before')
+          return (
+            parseFloat(getComputedStyle(el).borderTopWidth) > 0 ||
+            (line.content !== 'none' && parseFloat(line.borderTopWidth) > 0)
+          )
+        })
+        expect(lines).toEqual([])
+        const all = [...blocks, ...buttons]
+        const title = Math.min(...blocks.map(block => block.top))
+        const titleBottom = Math.max(
+          ...blocks.filter(b => b.top <= title + 0.5).map(b => b.bottom),
+        )
         const gaps = [
-          Math.min(...blocks.map(block => block.top)) - box.top,
-          box.bottom - Math.max(...blocks.map(block => block.bottom)),
+          title - box.top,
+          Math.min(
+            ...blocks.filter(b => b.top >= titleBottom - 0.5).map(b => b.top),
+          ) - titleBottom,
+          box.bottom - Math.max(...all.map(block => block.bottom)),
         ]
-        for (const y of lines) {
+        if (buttons.length > 0) {
+          const row = Math.min(...buttons.map(b => b.top))
           gaps.push(
-            y -
+            row -
               Math.max(
-                ...blocks.filter(b => b.bottom <= y + 0.5).map(b => b.bottom),
+                ...blocks.filter(b => b.bottom <= row + 0.5).map(b => b.bottom),
               ),
-            Math.min(...blocks.filter(b => b.top >= y - 0.5).map(b => b.top)) -
-              y,
           )
         }
         return gaps.map(Math.round)
@@ -339,7 +349,7 @@ describe('Длинный текст в поповерах черновиков �
         value: { value: 5, text: '5' },
       })
 
-      // Поповер отметки ячейки: те же отступы вокруг линии над кнопками.
+      // Поповер отметки ячейки: отступы поповера-панели.
       cell('3', 'age')?.scrollIntoView({ block: 'center' })
       const found = await expect
         .poll(() =>

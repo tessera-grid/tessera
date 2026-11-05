@@ -56,7 +56,7 @@
 
   --tsr-ref-radius-sm: 6px;
   --tsr-ref-radius-md: 8px;
-  --tsr-ref-radius-lg: 12px;
+  --tsr-ref-radius-lg: 10px;
 }
 
 /* ============================================================================
@@ -98,8 +98,24 @@
    * прокрутки и поля; по ней же порталы и проверка палитры узнают фактическую тему. */
   --tsr-sys-scheme: light;
 
-  /* Размерные роли — t-shirt из ref, мост к shadcn `--radius-md`. */
+  /* Шрифт — шрифт приложения (`--font-sans` shadcn и Tailwind), без него — системный. */
+  --tsr-sys-font-family: var(
+    --font-sans,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    Arial,
+    sans-serif
+  );
+
+  /* Размерные роли — t-shirt из ref, мост к шкале скруглений shadcn. */
   --tsr-sys-radius: var(--radius-md, var(--tsr-ref-radius-md));
+  /* Элемент внутри поверхности — пункт меню, день календаря (`rounded-sm` shadcn). */
+  --tsr-sys-radius-inner: var(--radius-sm, var(--tsr-ref-radius-sm));
+  /* Крупный край блока — конец липких строк и закреплённых колонок. */
+  --tsr-sys-radius-outer: var(--radius-lg, var(--tsr-ref-radius-lg));
 
   /* Рычаги тонов грида (ADR 0088): доля цвета текста в смешении. Из них выводятся
    * наведение, выбор, подложка закреплённых, линии дерева и заливки без текста. */
@@ -206,6 +222,8 @@
 
   --tsr-comp-opacity: 0.99;
   --tsr-comp-draggable-opacity: 0.95;
+  /* Скругление облачка перетаскивания строки и колонки — как у поповера (ADR 0183, PK21). */
+  --tsr-comp-drag-cloud-radius: var(--tsr-comp-control-radius);
 
   /* Скроллбар */
   --tsr-comp-scrollbar-width: 6px;
@@ -329,7 +347,9 @@
     var(--tsr-sys-muted),
     var(--tsr-sys-fg) calc(var(--tsr-sys-tint-hover) * 2)
   );
-  --tsr-comp-draggable-cell-bg: var(--tsr-sys-bg);
+  /* Облачко перетаскивания — приподнятая поверхность, как поповер (ADR 0183, PK21): видно и
+   * на строках, и на странице; в тёмной теме светлее фона. */
+  --tsr-comp-draggable-cell-bg: var(--tsr-sys-elevated);
 
   /* Строки */
   --tsr-comp-row-bg: var(--tsr-sys-surface);
@@ -374,7 +394,8 @@
   --tsr-comp-cell-issue-size: 8px;
   /*
    * Красный текст ошибки у поля правки — причина отказа, ошибка проверки значения:
-   * тон ошибки, подмешанный к тексту, держит 4.5:1; в повышенном контрасте — 7:1.
+   * тон ошибки, подмешанный к тексту, держит 4.5:1; в повышенном контрасте — 7:1, и на
+   * облачке записи поповера: режим поднимает его тон.
    */
   --tsr-comp-error-text-color: color-mix(
     in oklch,
@@ -466,11 +487,8 @@
   --tsr-comp-tree-line-inset: var(--tsr-comp-cell-content-padding-x);
   /* Зазор между концом поворота и текстом строки. */
   --tsr-comp-tree-line-gap: calc(var(--tsr-ref-space-1) * 3);
-  /* Typography — theme-agnostic default (system stack); override to use a
-   * custom face. Numeric feature aligns digits in columns. */
-  --tsr-comp-font-family:
-    system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial,
-    sans-serif;
+  /* Шрифт грида и его порталов — роль темы; цифры в колонках — одной ширины. */
+  --tsr-comp-font-family: var(--tsr-sys-font-family);
   --tsr-comp-numeric-font-feature: tabular-nums;
   /* Закреплённые ячейки (ADR 0011, CP28): фон строки плюс ступень тона текста —
    * непрозрачно, маскирует прокручиваемый контент; наведение и выбор ложатся слоем
@@ -494,7 +512,7 @@
   --tsr-comp-sticky-row-bg: var(--tsr-comp-cell-pinned-left-bg);
   --tsr-comp-sticky-row-border-color: var(--tsr-comp-cell-pinned-border-color);
   /* Скругление края у конца липкого блока: строк под шапкой и закреплённых колонок. */
-  --tsr-comp-sticky-radius: calc(2 * var(--tsr-sys-radius));
+  --tsr-comp-sticky-radius: var(--tsr-sys-radius-outer);
 
   /* DnD строк: облако на месте, куда бросить нельзя (ADR 0137). */
   --tsr-comp-row-drop-invalid-overlay-bg: color-mix(
@@ -553,6 +571,8 @@
   --tsr-comp-button-size-compact: 24px;
   /* Иллюстрация компактной заглушки кита (`Stub size="compact"`) — в поповерах. */
   --tsr-comp-stub-media-size-compact: 80px;
+  /* Текст заглушки в теле таблицы; компактная — кеглем поповера. */
+  --tsr-comp-stub-font-size: 0.875rem;
   /* Кнопки в ячейках шапки, тела и строк (ADR 0135); тулбар и панели — `button-size`. */
   --tsr-comp-grid-button-size: 28px;
   --tsr-comp-button-icon-size: 16px;
@@ -570,7 +590,7 @@
   /* Рамка `outline` — цвет границ грида: не спорит со светом ожидания. */
   --tsr-comp-button-border: var(--tsr-sys-border);
 
-  /* Формы радиуса (shape): кнопки — `--tsr-comp-button-radius-*`; switch — pill. */
+  /* Формы радиуса (shape): кнопки — `--tsr-comp-button-radius-*`; пилюля — переключатель, бабл, полоса прокрутки. */
   --tsr-comp-radius-pill: 999px;
   --tsr-comp-resize-handler-radius: 2px;
 
@@ -588,6 +608,10 @@
   --tsr-comp-checkbox-checked-bg: var(--tsr-sys-accent);
   --tsr-comp-checkbox-check-color: var(--tsr-sys-accent-fg);
 
+  /* Radio (ADR 0183, PK14) — кружок размером флажка, точка выбранного — вполовину. */
+  --tsr-comp-radio-size: var(--tsr-comp-checkbox-size);
+  --tsr-comp-radio-radius: 50%;
+
   /* Switch — монохром: accent-трек во включённом, thumb цвета surface. */
   --tsr-comp-switch-track-off: color-mix(
     in oklch,
@@ -597,6 +621,11 @@
   --tsr-comp-switch-track-on: var(--tsr-sys-accent);
   --tsr-comp-switch-thumb: var(--tsr-sys-surface);
   --tsr-comp-switch-thumb-off: var(--tsr-comp-switch-thumb);
+  --tsr-comp-switch-thumb-shadow: 0 1px 2px var(--tsr-sys-shadow-elevated);
+  /* Дорожка и бегунок — как у shadcn: бегунок на 2px ниже дорожки, по 1px зазора. */
+  --tsr-comp-switch-width: 32px;
+  --tsr-comp-switch-height: 18px;
+  --tsr-comp-switch-thumb-size: 16px;
   /* Контур выключенного (ADR 0088) — `outline` целиком. */
   --tsr-comp-switch-off-outline: none;
 
@@ -646,11 +675,19 @@
   --tsr-comp-popup-bg: var(--tsr-sys-elevated);
   --tsr-comp-popup-padding: 4px;
   --tsr-comp-popup-font-size: 0.8125rem;
+  /* Поле ввода кита (ADR 0183, PK5): свой кегль — одинаково в поповере, тулбаре и на холсте. */
+  --tsr-comp-field-font-size: var(--tsr-comp-popup-font-size);
+  /* Отступ текста поля от рамки — как подписи `Button` (и у полей shadcn). */
+  --tsr-comp-field-padding-x: var(--tsr-comp-button-padding-x);
   /* Заголовок поповера со списком — мельче пунктов. */
   --tsr-comp-popup-title-font-size: 0.75rem;
+  /* Вспомогательный текст рядом с основным: подсказка пункта, день недели, ошибка поля. */
+  --tsr-comp-caption-font-size: 0.75rem;
+  /* Он же в ячейке — строка не растёт. */
+  --tsr-comp-caption-font-size-compact: 0.6875rem;
   --tsr-comp-popup-color: var(--tsr-comp-control-color);
   --tsr-comp-popup-item-min-height: 32px;
-  --tsr-comp-popup-item-radius: calc(var(--tsr-comp-control-radius) - 2px);
+  --tsr-comp-popup-item-radius: var(--tsr-sys-radius-inner);
   /* Предел ширины меню: длинная подпись пункта переносится (ADR 0083, TX1). */
   --tsr-comp-popup-max-width: 320px;
   /* Наименьшая ширина поповера с подвалом кнопок (ADR 0178, §6). */
@@ -673,6 +710,7 @@
     transparent
   );
   --tsr-comp-popup-card-outline: none;
+  --tsr-comp-popup-card-hover-outline: var(--tsr-comp-popup-card-outline);
   /* Рамка поверхности и пункта под указателем (ADR 0088) — `outline` целиком. */
   --tsr-comp-popup-outline: none;
   --tsr-comp-popup-item-highlighted-outline: none;
@@ -792,9 +830,11 @@
   /* Плашка — примитив кита Alert (ADR 0096, §9). */
   --tsr-comp-alert-bg: var(--tsr-comp-popup-bg);
   --tsr-comp-alert-shadow: var(--tsr-comp-shadow-action);
-  /* Угол параллелен углам кнопок внутри: их скругление плюс отступ плашки. */
+  /* Угол параллелен углам кнопок внутри: их скругление плюс отступ плашки; у квадратных
+   * кнопок — квадратный: добавка не больше их скругления. */
   --tsr-comp-alert-radius: calc(
-    var(--tsr-comp-button-radius-square) + var(--tsr-ref-space-1)
+    var(--tsr-comp-button-radius-square) +
+      min(var(--tsr-ref-space-1), var(--tsr-comp-button-radius-square))
   );
   --tsr-comp-alert-max-width: 36rem;
   --tsr-comp-alert-icon-color: var(--tsr-sys-danger);
@@ -826,6 +866,8 @@
    * число — сдвиг за угол долями своего размера по горизонтали и вертикали. */
   --tsr-comp-indicator-inset: 1px;
   --tsr-comp-indicator-count-offset: 38% -38%;
+  /* Число бабла — мельче подписи кнопки, под которой стоит. */
+  --tsr-comp-bubble-font-size: 0.625rem;
 
   /* Tooltip — инверсная поверхность: тёмный пузырёк на light, светлый на dark
    * (роли fg/bg меняются местами). Полупрозрачность сохранена через color-mix. */
@@ -836,6 +878,10 @@
   );
   --tsr-comp-tooltip-fg: var(--tsr-sys-bg);
   --tsr-comp-tooltip-radius: var(--tsr-sys-radius);
+  /* Кегль и поля подсказки — как у shadcn (`text-xs`, `px-3 py-1.5`). */
+  --tsr-comp-tooltip-font-size: 0.75rem;
+  --tsr-comp-tooltip-padding: 6px 12px;
+  --tsr-comp-tooltip-max-width: 300px;
   --tsr-comp-tooltip-shadow:
     0 4px 12px var(--tsr-comp-shadow-color),
     0 1px 3px var(--tsr-comp-shadow-color);
@@ -862,13 +908,45 @@
   --tsr-comp-shadow-grip-width: calc(
     var(--tsr-comp-resize-handler-width) / 2 + var(--tsr-comp-head-grip-gap)
   );
-  --tsr-comp-shadow-drag: var(--tsr-comp-shadow-color) 0 2px 4px 2px;
+  /* Тень облачка — плотностью приподнятой поверхности: тень строк (10 %) облачко не отделяет. */
+  --tsr-comp-shadow-drag: 0 2px 6px 2px var(--tsr-sys-shadow-elevated);
   --tsr-comp-shadow-drop-bubble: 0 1px 2px 0 rgba(0, 0, 0, 0.08);
   --tsr-comp-shadow-action: 0px 0px 4px 2px var(--tsr-sys-shadow-elevated);
 }
 
 :where(.data-grid-theme) {
   color-scheme: var(--tsr-sys-scheme);
+}
+
+/*
+ * Полоса прокрутки — одна на всё (ADR 0183): таблица, порталы поповеров и меню, списки кита.
+ * Своих полос прокрутки компоненты не объявляют. Только webkit-псевдоэлементы: стандартное
+ * `scrollbar-width` в Chromium перебивает их и даёт другую ширину, и линейный прогресс
+ * (100% - ширина полосы) перестаёт совпадать с краем содержимого.
+ */
+:where(.data-grid-theme)::-webkit-scrollbar,
+:where(.data-grid-theme) ::-webkit-scrollbar {
+  width: var(--tsr-comp-scrollbar-width);
+  height: var(--tsr-comp-scrollbar-width);
+}
+
+/* Дорожка и угол, где сходятся полосы, — прозрачные: иначе Chromium красит угол белым. */
+:where(.data-grid-theme)::-webkit-scrollbar-track,
+:where(.data-grid-theme) ::-webkit-scrollbar-track,
+:where(.data-grid-theme)::-webkit-scrollbar-corner,
+:where(.data-grid-theme) ::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+:where(.data-grid-theme)::-webkit-scrollbar-thumb,
+:where(.data-grid-theme) ::-webkit-scrollbar-thumb {
+  border-radius: var(--tsr-comp-radius-pill);
+  background-color: var(--tsr-comp-scrollbar-thumb);
+}
+
+:where(.data-grid-theme)::-webkit-scrollbar-thumb:hover,
+:where(.data-grid-theme) ::-webkit-scrollbar-thumb:hover {
+  background-color: var(--tsr-comp-scrollbar-thumb-hover);
 }
 
 /* Смена темы (ADR 0090): на кадр смены грид гасит переходы, и цвета темы меняются
@@ -953,7 +1031,7 @@
     );
     --tsr-comp-error-text-color: color-mix(
       in oklch,
-      var(--tsr-sys-danger) 55%,
+      var(--tsr-sys-danger) 40%,
       var(--tsr-sys-fg)
     );
     --tsr-comp-popup-group-label-color: color-mix(
@@ -980,6 +1058,8 @@
     --tsr-comp-popup-outline: 1px solid var(--tsr-sys-line);
     --tsr-comp-popup-item-highlighted-outline: 1px solid var(--tsr-sys-line);
     --tsr-comp-popup-card-outline: 1px solid var(--tsr-sys-line);
+    --tsr-comp-popup-card-hover-bg: var(--tsr-comp-popup-card-bg);
+    --tsr-comp-popup-card-hover-outline: 1px solid var(--tsr-sys-accent);
     --tsr-comp-active-indicator: color-mix(
       in oklch,
       var(--tsr-sys-info) 55%,
@@ -1025,7 +1105,7 @@
   );
   --tsr-comp-error-text-color: color-mix(
     in oklch,
-    var(--tsr-sys-danger) 55%,
+    var(--tsr-sys-danger) 40%,
     var(--tsr-sys-fg)
   );
   --tsr-comp-popup-group-label-color: color-mix(
@@ -1052,6 +1132,8 @@
   --tsr-comp-popup-outline: 1px solid var(--tsr-sys-line);
   --tsr-comp-popup-item-highlighted-outline: 1px solid var(--tsr-sys-line);
   --tsr-comp-popup-card-outline: 1px solid var(--tsr-sys-line);
+  --tsr-comp-popup-card-hover-bg: var(--tsr-comp-popup-card-bg);
+  --tsr-comp-popup-card-hover-outline: 1px solid var(--tsr-sys-accent);
   --tsr-comp-active-indicator: color-mix(
     in oklch,
     var(--tsr-sys-info) 55%,
@@ -1149,6 +1231,7 @@
     --tsr-comp-popup-item-highlighted-outline: none;
     /* Подложку облачка режим снимает: границу держит контур. */
     --tsr-comp-popup-card-outline: 1px solid CanvasText;
+    --tsr-comp-popup-card-hover-outline: 1px solid CanvasText;
     --tsr-comp-segments-track-outline: none;
   }
 }

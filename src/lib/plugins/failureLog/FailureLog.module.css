@@ -1,16 +1,7 @@
 /* Журнал отказов (ADR 0177, §7): поповер со списком записей облачками (ADR 0178, DR42). */
-.positioner {
-  composes: positioner from '../../ui/Popup/Popup.module.css';
-}
-
 .popup {
-  composes: popup from '../../ui/Popup/Popup.module.css';
   width: var(--tsr-comp-popup-max-width);
   max-width: calc(100vw - 16px);
-}
-
-.title {
-  composes: cardsTitle from '../../ui/Popup/Popup.module.css';
 }
 
 /* Окно списка: длинный список виртуализирован (JR2). */
@@ -54,8 +45,4 @@
   color: var(--tsr-comp-popup-group-label-color);
   font-weight: normal;
   overflow-wrap: anywhere;
-}
-
-.footer {
-  composes: cardsFooter from '../../ui/Popup/Popup.module.css';
 }

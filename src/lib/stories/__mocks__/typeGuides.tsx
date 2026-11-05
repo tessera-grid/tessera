@@ -57,8 +57,29 @@ export const typeInto = (input: HTMLInputElement, value: string) => {
   input.dispatchEvent(new Event('input', { bubbles: true }))
 }
 
-export const press = (input: HTMLInputElement, key: string) =>
+export const press = (input: HTMLElement, key: string) =>
   input.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }))
+
+/**
+ * Набрать время `HH:mm` в поле времени кита (ADR 0183, PK20) — цифрами по сегментам, как с
+ * клавиатуры; у 12-часового формата — ещё половина суток.
+ */
+export const typeTime = (field: HTMLElement, value: string) => {
+  const [hours, minutes] = value.split(':').map(Number) as [number, number]
+  const segment = (name: string) =>
+    field.querySelector<HTMLElement>(`[data-segment="${name}"]`)
+  const period = segment('period')
+  const shown = period ? hours % 12 || 12 : hours
+  for (const digit of String(shown).padStart(2, '0'))
+    press(segment('hours')!, digit)
+  for (const digit of String(minutes).padStart(2, '0'))
+    press(segment('minutes')!, digit)
+  if (period) press(period, hours >= 12 ? 'p' : 'a')
+}
+
+/** Значение поля времени кита: `HH:mm` или пустая строка. */
+export const timeValue = (field: HTMLElement) =>
+  field.getAttribute('data-value') ?? ''
 
 // --- ADR 0175: редакторы по типу -----------------------------------------------------
 
@@ -127,8 +148,7 @@ export const dateDay = (iso: string) =>
   datePopup()?.querySelector<HTMLButtonElement>(`[data-day="${iso}"] button`) ??
   null
 export const dateTime = () =>
-  datePopup()?.querySelector<HTMLInputElement>('[data-testid="edit-time"]') ??
-  null
+  datePopup()?.querySelector<HTMLElement>('[data-testid="edit-time"]') ?? null
 export const openDateEdit = (root: ParentNode, column: string) =>
   dateCellOf(root, column)
     ?.querySelector<HTMLElement>('.cell__button button')

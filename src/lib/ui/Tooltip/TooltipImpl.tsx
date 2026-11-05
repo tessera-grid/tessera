@@ -57,6 +57,7 @@ const TooltipPopup = ({
         >
           <BaseTooltip.Popup
             className={clsx(themeClass, styles.content)}
+            data-tooltip-popup=""
             onPointerEnter={interactive ? onPointerEnter : undefined}
             onPointerLeave={interactive ? onPointerLeave : undefined}
           >

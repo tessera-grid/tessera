@@ -1,7 +1,7 @@
 .skeleton {
   display: block;
   background-color: var(--tsr-comp-skeleton-bg);
-  border-radius: var(--tsr-comp-skeleton-radius);
+  border-radius: var(--tsr-comp-skeleton-radius, 4px);
 }
 
 .wave {

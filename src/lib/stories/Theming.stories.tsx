@@ -1001,7 +1001,7 @@ export const Palette: StoryObj<ThemingArgs> = {
 
 // --- ADR 0090 S1 ---------------------------------------------------------------------
 
-const THEME_WRAPPER = '.data-grid-theme[class*="theme-wrapper"]'
+const THEME_WRAPPER = '[data-tsr-grid]'
 const wrapperOf = (root: ParentNode) =>
   root.querySelector<HTMLElement>(THEME_WRAPPER)
 /** Тема, в которой таблица нарисована сейчас. */
@@ -1014,7 +1014,7 @@ const schemeOf = (root: ParentNode) => {
 const SOURCE_CONTAINER = 'theming-source-container'
 const SOURCE_CONTAINER_CSS = `.${SOURCE_CONTAINER} {
   padding: 16px;
-  border-radius: 8px;
+  border-radius: var(--radius-md, 8px);
   background: var(--background);
 }`
 

@@ -27,20 +27,6 @@
 }
 
 /*
- * Разделитель над блоком поповера — по ширине содержимого: от края текста до края кнопок
- * (ADR 0178, DR38). Блок задаёт `position`; отступы концов линии — `--_divider-start` и
- * `--_divider-end`, по умолчанию — поле содержимого.
- */
-.divided::before {
-  content: '';
-  position: absolute;
-  inset-block-start: 0;
-  inset-inline: var(--_divider-start, calc(var(--tsr-comp-popup-padding) * 2))
-    var(--_divider-end, calc(var(--tsr-comp-popup-padding) * 2));
-  border-block-start: 1px solid var(--tsr-comp-popup-divider-color);
-}
-
-/*
  * Прокручиваемый список записей в поповере: полоса прокрутки — в правом поле поповера, место под
  * неё отведено всегда. Запись отступает справа на `--tsr-comp-popup-scroll-inset` — край её
  * содержимого совпадает с краем заголовка и подвала, есть полоса или нет.
@@ -52,10 +38,17 @@
 }
 
 /*
- * Поповер со списком облачков (ADR 0178, DR42): заголовок, облачка и кнопки внизу — на двойном
- * поле от краёв поповера со всех сторон; полоса прокрутки — справа от облачков через поле.
+ * Раскладка поповера-панели (ADR 0017, PP11–PP13; образец — ADR 0178, DR42): заголовок,
+ * содержимое и кнопки внизу — на двойном поле от краёв поповера со всех сторон, над кнопками
+ * разделителя нет; полоса прокрутки — справа от облачков через поле.
  */
-.cardsTitle {
+.panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.panelTitle {
   margin: 0;
   padding: var(--tsr-comp-popup-padding) var(--tsr-comp-popup-padding)
     calc(var(--tsr-comp-popup-padding) * 2);
@@ -69,37 +62,12 @@
   max-height: min(60vh, calc(var(--tsr-comp-popup-item-min-height) * 10));
 }
 
-.cardsFooter {
+.panelFooter {
   display: flex;
   justify-content: flex-end;
   gap: var(--tsr-comp-popup-padding);
   padding: calc(var(--tsr-comp-popup-padding) * 2) var(--tsr-comp-popup-padding)
     var(--tsr-comp-popup-padding);
-}
-
-/* Тонкий скроллбар у поповера и его списков — как у таблицы (--tsr-comp-scrollbar-width). */
-.popup::-webkit-scrollbar,
-.popup ::-webkit-scrollbar {
-  width: var(--tsr-comp-scrollbar-width);
-  height: var(--tsr-comp-scrollbar-width);
-}
-
-.popup::-webkit-scrollbar-track,
-.popup ::-webkit-scrollbar-track,
-.popup::-webkit-scrollbar-corner,
-.popup ::-webkit-scrollbar-corner {
-  background: transparent;
-}
-
-.popup::-webkit-scrollbar-thumb,
-.popup ::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background-color: var(--tsr-comp-scrollbar-thumb);
-}
-
-.popup::-webkit-scrollbar-thumb:hover,
-.popup ::-webkit-scrollbar-thumb:hover {
-  background-color: var(--tsr-comp-scrollbar-thumb-hover);
 }
 
 .popup[data-starting-style],
@@ -127,7 +95,9 @@
   transition: var(--tsr-comp-popup-item-transition);
 }
 
-.item[data-highlighted] {
+/* Пункт-подпись флажка или радио (ADR 0183, PK14) подсвечивается наведением: подсветки меню у него нет. */
+.item[data-highlighted],
+label.item:not(:has([data-disabled])):hover {
   background-color: var(--tsr-comp-control-hover-bg);
   outline: var(--tsr-comp-popup-item-highlighted-outline);
   outline-offset: -1px;

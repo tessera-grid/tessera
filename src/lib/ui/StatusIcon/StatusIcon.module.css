@@ -1,0 +1,15 @@
+/* Значок состояния (ADR 0183, PK16): фокусируемый, причина — в тултипе и имени. */
+.icon {
+  display: inline-flex;
+  color: var(--tsr-comp-control-color);
+  border-radius: var(--tsr-comp-control-radius);
+  outline: none;
+}
+
+.icon[data-tone='error'] {
+  color: var(--tsr-comp-action-error-color);
+}
+
+.icon:focus-visible {
+  outline: var(--tsr-comp-focus-ring-width) solid var(--tsr-comp-focus-ring);
+}

@@ -13,7 +13,7 @@ export const CheckboxOutlineIcon = (props: SvgIconProps) => (
       y="3"
       width="18"
       height="18"
-      rx="4"
+      rx="4.5"
       fill="none"
       stroke="currentColor"
       strokeWidth="2"

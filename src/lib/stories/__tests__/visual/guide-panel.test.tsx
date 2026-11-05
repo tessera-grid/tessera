@@ -1956,7 +1956,7 @@ describe('показ действий шага (ADR 0117)', () => {
       guide.setAttribute('data-guide-showing', '')
       let acts = 0
       const controller = new AbortController()
-      void repeat(
+      const repeated = repeat(
         () => acts > 0,
         () => acts++,
         controller.signal,
@@ -1971,8 +1971,8 @@ describe('показ действий шага (ADR 0117)', () => {
       polled = true
       expect(await waited).toBe('done')
       guide.removeAttribute('data-guide-showing')
-      await expect.poll(() => acts).toBe(1)
-      controller.abort()
+      await repeated
+      expect(acts).toBe(1)
     } finally {
       await screen.unmount()
     }

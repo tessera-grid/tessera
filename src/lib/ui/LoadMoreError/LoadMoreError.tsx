@@ -69,10 +69,14 @@ export const LoadErrorBlock = ({
           aria-hidden="true"
         />
         <div className={styles['error-text']}>
-          <div className={styles['error-title']}>{title}</div>
+          <div className={styles['error-title']} data-load-error-title="">
+            {title}
+          </div>
           {reason && (
             <Tooltip title={reason} overflowOnly>
-              <div className={styles['error-reason']}>{reason}</div>
+              <div className={styles['error-reason']} data-load-error-reason="">
+                {reason}
+              </div>
             </Tooltip>
           )}
         </div>
@@ -127,6 +131,7 @@ export const LoadMoreError = ({
         assignRef(rowRef, node)
       }}
       role="row"
+      data-load-error-row=""
       aria-rowindex={ariaRowIndex}
       className={
         className ? `${styles['error-row']} ${className}` : styles['error-row']

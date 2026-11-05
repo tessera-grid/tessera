@@ -44,8 +44,8 @@
 }
 
 /*
- * Поповер (ADR 0178, §6): заголовок, тело обычным текстом, под разделителем — кнопки справа;
- * отступы и разделитель — как у пульта черновиков и журнала отказов.
+ * Поповер (ADR 0178, §6): заголовок, тело обычным текстом, внизу — кнопки справа; раскладка
+ * поповера-панели, как у пульта черновиков и журнала отказов (ADR 0017, PP11–PP13; DR38).
  */
 .popup {
   min-width: min(var(--tsr-comp-popup-min-width), calc(100vw - 16px));
@@ -53,18 +53,11 @@
   overflow-wrap: anywhere;
 }
 
-.title {
-  margin: 0;
-  padding: var(--tsr-comp-popup-padding) calc(var(--tsr-comp-popup-padding) * 2);
-  font-weight: 600;
-}
-
 /* Причина отказа и ошибки — цветом текста ошибки, как в журнале отказов. */
 .reason {
   margin: 0;
   color: var(--tsr-comp-error-text-color);
-  padding: 0 calc(var(--tsr-comp-popup-padding) * 2)
-    var(--tsr-comp-popup-padding);
+  padding: 0 var(--tsr-comp-popup-padding);
 }
 
 .details {
@@ -72,8 +65,12 @@
   grid-template-columns: auto minmax(0, 1fr);
   gap: 0 calc(var(--tsr-comp-popup-padding) * 2);
   margin: 0;
-  padding: 0 calc(var(--tsr-comp-popup-padding) * 2)
-    var(--tsr-comp-popup-padding);
+  padding: 0 var(--tsr-comp-popup-padding);
+}
+
+/* Без кнопок от тела до нижнего края — двойное поле поповера. */
+:is(.reason, .details):last-child {
+  padding-block-end: var(--tsr-comp-popup-padding);
 }
 
 .detail {
@@ -88,17 +85,9 @@
   margin: 0;
 }
 
+/* Кнопки внизу переносятся на узком поповере. */
 .actions {
-  composes: divided from '../Popup/Popup.module.css';
-  position: relative;
-  display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: var(--tsr-comp-popup-padding);
-  margin-block-start: var(--tsr-comp-popup-padding);
-  /* Сверху, у линии и у нижнего края — один отступ: двойное поле поповера. */
-  padding: calc(var(--tsr-comp-popup-padding) * 2)
-    calc(var(--tsr-comp-popup-padding) * 2) var(--tsr-comp-popup-padding);
 }
 
 /* Высокая контрастность (ADR 0087): треугольник — системный цвет текста. */

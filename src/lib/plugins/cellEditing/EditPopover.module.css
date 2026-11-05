@@ -8,22 +8,14 @@
   white-space: nowrap;
 }
 
-.positioner {
-  composes: positioner from '../../ui/Popup/Popup.module.css';
-}
-
 .popup {
-  composes: popup from '../../ui/Popup/Popup.module.css';
   display: flex;
   flex-direction: column;
   gap: var(--tsr-comp-popup-padding);
 }
 
-/* Низ поповера: «Очистить значение» — под чертой, отдельно от списка (ED16). */
+/* Низ поповера: «Очистить значение» — кнопкой поповера-панели (ED16; ADR 0017, PP12). */
 .footer {
-  display: flex;
-  margin: 0 calc(var(--tsr-comp-popup-padding) * -1)
-    calc(var(--tsr-comp-popup-padding) * -1);
-  padding: var(--tsr-comp-popup-padding);
-  border-top: 1px solid var(--tsr-comp-popup-divider-color);
+  /* Поповеры правки разводят детей зазором в поле: от содержимого до кнопки — одно двойное поле. */
+  margin-block-start: calc(var(--tsr-comp-popup-padding) * -1);
 }

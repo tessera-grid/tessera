@@ -362,10 +362,9 @@ describe('Заглушки пустой таблицы (ADR 0123)', () => {
     await expect.poll(() => byTestId('no-data-stub')).not.toBeNull()
     const kit = byTestId('kit-stub')!
     expect(kit.textContent).toBe('TitleDetailsAct')
-    // Встроенная — тот же примитив: тот же класс корня.
-    expect(byTestId('no-data-stub')!.className).toContain(
-      kit.className.split(' ')[0],
-    )
+    // Встроенная — тот же примитив: корень с меткой примитива.
+    expect(kit.hasAttribute('data-stub')).toBe(true)
+    expect(byTestId('no-data-stub')!.hasAttribute('data-stub')).toBe(true)
     const probe = document.createElement('span')
     probe.style.width = 'calc(var(--tsr-ref-space-1) * 2)'
     probe.style.position = 'absolute'

@@ -6,16 +6,14 @@
 import { type ReactNode, useRef } from 'react'
 
 import { Popover } from '@base-ui/react/popover'
-import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
-import { usePortalThemeData, usePortalThemeClass } from '../../ui/theme'
+import { PopupSurface } from '../../ui/Popup/PopupSurface'
 import type { Table } from '../../types'
 import { ToolbarButton } from '../../ui/ToolbarButton'
 import { ColumnVisibilityMenu } from './ColumnVisibilityMenu'
 
 import styles from './ColumnVisibilityMenu.module.css'
-import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 import { columnVisibilityLabels } from './labels'
 
 export interface ColumnVisibilityPopoverProps {
@@ -39,8 +37,6 @@ export const ColumnVisibilityPopover = ({
   open,
   onOpenChange,
 }: ColumnVisibilityPopoverProps) => {
-  const themeClass = usePortalThemeClass()
-  const themeData = usePortalThemeData()
   const labels = useLocalization()
   const triggerRef = useRef<HTMLButtonElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
@@ -57,23 +53,20 @@ export const ColumnVisibilityPopover = ({
         render={<Popover.Trigger />}
       />
       <Popover.Portal>
-        <Popover.Positioner
-          side="bottom"
-          align="end"
-          sideOffset={POPUP_SIDE_OFFSET}
-          className={clsx(themeClass, styles.positioner)}
-          {...themeData}
+        <PopupSurface
+          positioner={<Popover.Positioner side="bottom" align="end" />}
+          popup={
+            <Popover.Popup
+              aria-label={columnVisibilityLabels(labels).columns}
+              initialFocus={searchRef}
+              finalFocus={triggerRef}
+              data-testid="column-visibility-menu"
+            />
+          }
+          className={styles.popup}
         >
-          <Popover.Popup
-            aria-label={columnVisibilityLabels(labels).columns}
-            initialFocus={searchRef}
-            finalFocus={triggerRef}
-            className={clsx(themeClass, styles.popup)}
-            data-testid="column-visibility-menu"
-          >
-            <ColumnVisibilityMenu table={table} searchRef={searchRef} />
-          </Popover.Popup>
-        </Popover.Positioner>
+          <ColumnVisibilityMenu table={table} searchRef={searchRef} />
+        </PopupSurface>
       </Popover.Portal>
     </Popover.Root>
   )

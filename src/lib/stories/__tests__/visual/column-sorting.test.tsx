@@ -23,9 +23,10 @@ import { columnSortingLabels } from '../../../plugins/columnSorting/labels'
 const SORT_ICON_SIZE = 16
 
 /** Default lucide icon classes per direction (`ui/icons/IconsContext.tsx`). */
-const ICON_UNSORTED = 'lucide-chevrons-up-down'
-const ICON_ASC = 'lucide-chevron-up'
-const ICON_DESC = 'lucide-chevron-down'
+// Ключи иконок из `icons` (ADR 0018): какая иконка показана, а не чья она.
+const ICON_UNSORTED = 'sort'
+const ICON_ASC = 'sortAsc'
+const ICON_DESC = 'sortDesc'
 
 const HEAD_CELL = '.data-grid__head-cell'
 const BODY_CELL = '.data-grid__body-cell'
@@ -281,26 +282,30 @@ describe('Column Sorting — requirements', () => {
     const cell = firstDataCell(container)
 
     // Unsorted → the neutral sort icon.
-    expect(iconOf(sortButtonOf(cell)).classList).toContain(ICON_UNSORTED)
+    expect(iconOf(sortButtonOf(cell)).getAttribute('data-icon')).toBe(
+      ICON_UNSORTED,
+    )
 
     // First click → desc icon.
     const button = await revealSort(cell)
     await userEvent.click(button)
     await expect
-      .poll(() =>
-        iconOf(sortButtonOf(firstDataCell(container))).classList.contains(
-          ICON_DESC,
-        ),
+      .poll(
+        () =>
+          iconOf(sortButtonOf(firstDataCell(container))).getAttribute(
+            'data-icon',
+          ) === ICON_DESC,
       )
       .toBe(true)
 
     // Second click → asc icon.
     await userEvent.click(sortButtonOf(firstDataCell(container)))
     await expect
-      .poll(() =>
-        iconOf(sortButtonOf(firstDataCell(container))).classList.contains(
-          ICON_ASC,
-        ),
+      .poll(
+        () =>
+          iconOf(sortButtonOf(firstDataCell(container))).getAttribute(
+            'data-icon',
+          ) === ICON_ASC,
       )
       .toBe(true)
   })

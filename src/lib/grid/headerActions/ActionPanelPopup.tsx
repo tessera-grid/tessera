@@ -4,14 +4,12 @@
 import { type RefObject, useRef } from 'react'
 
 import { Popover } from '@base-ui/react/popover'
-import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
-import { usePortalThemeData, usePortalThemeClass } from '../../ui/theme'
+import { PopupSurface } from '../../ui/Popup/PopupSurface'
 import type { ActionPanelControls, SlotAction } from '../../core/headerActions'
 
 import styles from '../../grid/headerActions/ActionPanel.module.css'
-import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 import { useFinalFocus } from '../../ui/Popup/finalFocus'
 import { menuActionLabel } from '../../core/actions'
 
@@ -42,40 +40,36 @@ export const ActionPanelPopup = ({
   anchorRef,
   close,
 }: ActionPanelPopupProps) => {
-  const themeClass = usePortalThemeClass()
-  const themeData = usePortalThemeData()
   const labels = useLocalization()
   const initialFocusRef = useRef<HTMLElement | null>(null)
   const { popupRef, finalFocus } = useFinalFocus(anchorRef)
 
   return (
     <Popover.Portal>
-      <Popover.Positioner
-        anchor={anchorRef}
-        side="bottom"
-        align="end"
-        sideOffset={POPUP_SIDE_OFFSET}
-        className={clsx(themeClass, styles.positioner)}
-        {...themeData}
+      <PopupSurface
+        positioner={
+          <Popover.Positioner anchor={anchorRef} side="bottom" align="end" />
+        }
+        popup={
+          <Popover.Popup
+            aria-label={menuActionLabel(action, context, labels)}
+            initialFocus={() => initialFocusRef.current ?? true}
+            ref={popupRef}
+            finalFocus={finalFocus}
+            data-action-panel={action.id}
+          />
+        }
+        className={styles.popup}
       >
-        <Popover.Popup
-          aria-label={menuActionLabel(action, context, labels)}
-          initialFocus={() => initialFocusRef.current ?? true}
-          ref={popupRef}
-          finalFocus={finalFocus}
-          className={clsx(themeClass, styles.popup)}
-          data-action-panel={action.id}
-        >
-          {action.panel && (
-            <PanelContent
-              panel={action.panel}
-              context={context}
-              close={close}
-              initialFocusRef={initialFocusRef}
-            />
-          )}
-        </Popover.Popup>
-      </Popover.Positioner>
+        {action.panel && (
+          <PanelContent
+            panel={action.panel}
+            context={context}
+            close={close}
+            initialFocusRef={initialFocusRef}
+          />
+        )}
+      </PopupSurface>
     </Popover.Portal>
   )
 }

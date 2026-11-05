@@ -3,16 +3,14 @@
 import type { Ref } from 'react'
 
 import { Menu } from '@base-ui/react/menu'
-import clsx from 'clsx'
 
-import { usePortalThemeData, usePortalThemeClass } from '../../ui/theme'
+import { PopupSurface } from '../../ui/Popup/PopupSurface'
 import type { SlotAction } from '../../core/headerActions'
 import { ActionMenuItems, type ActionMenuItemsProps } from './ActionMenuItems'
 import { ActionMenuSections } from './ActionMenuSections'
 import type { MenuSections } from '../../core/headerActions'
 
 import styles from '../../ui/Popup/ActionMenu.module.css'
-import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 
 interface ActionMenuPopupProps {
   actions: SlotAction[]
@@ -40,45 +38,39 @@ export const ActionMenuPopup = ({
   finalFocus,
   popupRef,
 }: ActionMenuPopupProps) => {
-  const themeClass = usePortalThemeClass()
-  const themeData = usePortalThemeData()
-
   return (
     <Menu.Portal>
-      <Menu.Positioner
-        side="bottom"
-        align="end"
-        sideOffset={POPUP_SIDE_OFFSET}
-        className={clsx(themeClass, styles.positioner)}
-        {...themeData}
+      <PopupSurface
+        positioner={<Menu.Positioner side="bottom" align="end" />}
+        popup={
+          <Menu.Popup
+            ref={popupRef}
+            finalFocus={finalFocus}
+            aria-label={
+              sections && sections.depth > 0 ? sections.level.title : undefined
+            }
+          />
+        }
+        className={styles.popup}
       >
-        <Menu.Popup
-          ref={popupRef}
-          className={clsx(themeClass, styles.popup)}
-          finalFocus={finalFocus}
-          aria-label={
-            sections && sections.depth > 0 ? sections.level.title : undefined
-          }
-        >
-          {sections ? (
-            <ActionMenuSections
-              sections={sections}
-              context={context}
-              session={session}
-              close={close}
-              onOpenPanel={onOpenPanel}
-            />
-          ) : (
-            <ActionMenuItems
-              actions={actions}
-              context={context}
-              session={session}
-              close={close}
-              onOpenPanel={onOpenPanel}
-            />
-          )}
-        </Menu.Popup>
-      </Menu.Positioner>
+        {sections ? (
+          <ActionMenuSections
+            sections={sections}
+            context={context}
+            session={session}
+            close={close}
+            onOpenPanel={onOpenPanel}
+          />
+        ) : (
+          <ActionMenuItems
+            actions={actions}
+            context={context}
+            session={session}
+            close={close}
+            onOpenPanel={onOpenPanel}
+          />
+        )}
+      </PopupSurface>
     </Menu.Portal>
   )
 }

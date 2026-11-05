@@ -50,7 +50,13 @@ export const Segments = <V extends string>({
       {...rest}
     >
       {/* Рамка выбранного — одна на дорожку и ездит к выбранному сегменту (SG4). */}
-      {index >= 0 && <span className={styles.indicator} aria-hidden />}
+      {index >= 0 && (
+        <span
+          className={styles.indicator}
+          data-segments-indicator=""
+          aria-hidden
+        />
+      )}
       {/* Обрезанная подпись — целиком в тултипе при наведении и фокусе (SG7). */}
       {options.map(option => (
         <Tooltip key={option.value} title={option.label} overflowOnly>

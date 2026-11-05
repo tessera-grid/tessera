@@ -196,7 +196,11 @@ export const DataGridTable = ({
         rootRef={rootRef}
       >
         {skeleton && (
-          <span role="status" className={hidden['visually-hidden']}>
+          <span
+            role="status"
+            className={hidden['visually-hidden']}
+            data-visually-hidden=""
+          >
             {loadingLabel}
           </span>
         )}

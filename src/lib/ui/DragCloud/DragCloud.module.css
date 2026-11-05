@@ -1,0 +1,57 @@
+/*
+ * Облачко перетаскивания (ADR 0183, PK21): одно у строки и колонки — приподнятая поверхность
+ * (фон и тень как у поповера), скругление и прозрачность перетаскивания; где бросить нельзя — тон ошибки (ADR 0137).
+ */
+.cloud {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  padding: 0;
+  border: none;
+  user-select: none;
+  overflow: hidden;
+  border-radius: var(--tsr-comp-drag-cloud-radius);
+  box-shadow: var(--tsr-comp-shadow-drag);
+  opacity: var(--tsr-comp-draggable-opacity) !important;
+  background-color: var(--tsr-comp-draggable-cell-bg);
+  /* В режиме контраста — контур, как у поповера (ADR 0088). */
+  outline: var(--tsr-comp-popup-outline);
+  outline-offset: -1px;
+}
+
+/* Облачко строки — карточка высотой строки; бабл счётчика — в её правом верхнем углу. */
+.row {
+  position: relative;
+  width: 200px;
+  height: var(--tsr-comp-row-height);
+}
+
+.row > .cloud {
+  height: 100%;
+}
+
+.bubble {
+  position: absolute;
+  top: 0;
+  right: 0;
+  transform: translate(50%, -50%);
+}
+
+/*
+ * Место, куда бросить нельзя: облачко в тоне ошибки (ADR 0137) — пропом или атрибутом
+ * контейнера грида, который ставит плагин без перерисовки облачка.
+ */
+.cloud[data-invalid],
+:global([data-row-drop-invalid]) .row > .cloud {
+  background-color: var(--tsr-comp-row-drop-invalid-overlay-bg);
+}
+
+/* Высокая контрастность (ADR 0087): текст на `Mark` — `MarkText`; без
+ * `forced-color-adjust: none` Chromium кладёт под него подложку Canvas. */
+@media (forced-colors: active) {
+  .cloud[data-invalid] *,
+  :global([data-row-drop-invalid]) .row > .cloud * {
+    forced-color-adjust: none;
+    color: MarkText;
+  }
+}

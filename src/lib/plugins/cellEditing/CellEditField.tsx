@@ -15,7 +15,7 @@ import type { PluginCellProps } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
 import { useSliceProjection } from '../../core/reactivity'
 import { alignOf } from '../../core/dataTypeFormat'
-import { SelectCheckbox } from '../../ui/SelectCheckbox/SelectCheckbox'
+import { Checkbox } from '../../ui/Checkbox/Checkbox'
 import { defaultCell } from '../../core/commonFeature'
 import { useDraft } from '../../core/drafts/drafts'
 import { sourceOf } from '../../core/debugActions'
@@ -35,8 +35,6 @@ import {
 } from './session'
 import type { CellEditingHooks, CellEditingState } from './types'
 import { cellEditingLabels } from './labels'
-
-const noop = () => {}
 
 /** Булево правится встроенным флажком: своя ячейка колонки не задана, правка разрешена. */
 export const booleanToggle = (
@@ -97,12 +95,12 @@ export const CellEditField = (
           if (!pending) beginEdit(table, row, column, hooks, sourceOf(event))
         }}
       >
-        <SelectCheckbox
-          selected={value}
+        <Checkbox
+          className="row-select-checkbox"
+          checked={value}
           label={header}
           tabIndex={-1}
           pending={pending}
-          onClick={noop}
         />
       </span>
     )

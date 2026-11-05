@@ -1,0 +1,22 @@
+/* Скелет контрола тулбара до прихода данных (ADR 0122): место — как у контрола. */
+.field {
+  display: flex;
+}
+
+/* У поля видно всё поле — его скругление, а не полоски скелета; два класса — главнее
+ * правила `Skeleton` при любом порядке модулей в сборке. */
+.field > .fieldBar {
+  flex: none;
+  max-width: 100%;
+  border-radius: var(--tsr-comp-control-radius);
+}
+
+/* У кнопки фон прозрачный — видна иконка: квадрат иконки в центре места кнопки. */
+.button {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--tsr-comp-toolbar-button-size);
+  height: var(--tsr-comp-toolbar-button-size);
+}

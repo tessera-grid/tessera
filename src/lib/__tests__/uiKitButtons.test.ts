@@ -14,21 +14,9 @@ const LIB = fileURLToPath(new URL('..', import.meta.url))
 
 /** Нативные `<button>` вне кита: файл → число кнопок и причина. */
 const BUTTON_EXCEPTIONS: Record<string, { count: number; why: string }> = {
-  'plugins/columnFiltering/FilterSummaryPopover.tsx': {
-    count: 1,
-    why: 'крестик снятия фильтра в строке сводки — кнопка-иконка 14px внутри строки, не кнопка с подписью',
-  },
   'plugins/dataExport/ExportPanel.tsx': {
     count: 1,
     why: 'быстрые наборы — пункты меню панели (вид пункта поповера, ADR 0074), не кнопки',
-  },
-  'plugins/pagination/SizeTrigger.tsx': {
-    count: 1,
-    why: 'триггер списка размера страницы — заглушка и рендер-проп Base UI Select, вид контрола выбора',
-  },
-  'shared/options/OptionSearch.tsx': {
-    count: 1,
-    why: 'крестик очистки поиска внутри поля ввода — часть поля, не отдельный контрол',
   },
 }
 
@@ -134,7 +122,7 @@ describe('страж UI-кита', () => {
 /** `Toolbar.Button` вне кнопки тулбара: файл → причина. */
 const TOOLBAR_EXCEPTIONS: Record<string, string> = {
   'plugins/quickSearch/SearchField.tsx':
-    'значок «i» и крестик очистки внутри поля поиска — часть поля, не кнопки кита',
+    'кнопки поля поиска — IconButton кита элементом композита тулбара через render (ADR 0183, PK12)',
 }
 
 /** Компоненты `*Button`, которые не рендерят базу: файл → причина. */

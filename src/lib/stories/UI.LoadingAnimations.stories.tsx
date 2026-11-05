@@ -5,12 +5,13 @@ import { Meta, StoryObj } from '@storybook/react'
 
 import '../ui/theme/theme.css'
 import { DATA_GRID_THEME_CLASS } from '../ui/theme'
-import menu from '../ui/Popup/ActionMenu.module.css'
 import { IconButton } from '../ui/IconButton'
 import { LinearProgress } from '../ui/LinearProgress'
 import popup from '../ui/Popup/Popup.module.css'
+import { PopupItem, PopupItemMark } from '../ui/Popup/PopupItem'
 import { ToolbarButton } from '../ui/ToolbarButton'
 import { useIcons } from '../ui/icons'
+import { useStoryLabels } from './__mocks__/storyLocale'
 
 // Анимации загрузки в одном месте: свечение под шапкой (ADR 0094), дуга ожидания кнопок
 // (ADR 0127) и спиннер пункта меню (ADR 0078) — одни оттенки и один ритм.
@@ -68,7 +69,7 @@ const GridHeadWithGlow = ({ width = 560 }: { width?: number }) => (
         height: 120,
         overflow: 'hidden',
         border: '1px solid var(--tsr-sys-border)',
-        borderRadius: 6,
+        borderRadius: 'var(--tsr-comp-frame-radius)',
         background: 'var(--tsr-comp-row-bg)',
       } as CSSProperties
     }
@@ -87,7 +88,7 @@ const GridHeadWithGlow = ({ width = 560 }: { width?: number }) => (
     </div>
     {/* Полоса сама сдвигается на высоту шапки от верха контейнера, как в гриде. */}
     <div style={{ position: 'absolute', top: 0, left: 0, right: 0 }}>
-      <LinearProgress label="Loading" />
+      <LinearProgress label={useStoryLabels().loading} />
     </div>
   </div>
 )
@@ -141,38 +142,18 @@ const MenuWithPendingItem = () => {
   return (
     <div className={popup.popup} role="menu" style={{ width: 220 }}>
       {items.map(item => (
-        <div key={item.label} className={menu.item} role="menuitem">
-          <span className={menu.itemIcon} aria-hidden>
-            {item.icon}
-          </span>
-          <span className={menu.itemLabel}>{item.label}</span>
-          <span className={menu.itemCheck} aria-hidden>
-            {item.pending && <span className={menu.itemSpinner} />}
-          </span>
-        </div>
+        <PopupItem
+          key={item.label}
+          wrap
+          role="menuitem"
+          icon={item.icon}
+          label={item.label}
+          end={<PopupItemMark status={item.pending ? 'pending' : undefined} />}
+        />
       ))}
     </div>
   )
 }
-
-const ScaledSpinners = () => (
-  <Row>
-    {[1, 3, 6].map(scale => (
-      <span key={scale} style={{ width: 12 * scale, height: 12 * scale }}>
-        {/* Масштаб — на обёртке: свой transform спиннера занят вращением. */}
-        <span
-          style={{
-            display: 'block',
-            transform: `scale(${scale})`,
-            transformOrigin: '0 0',
-          }}
-        >
-          <span className={menu.itemSpinner} style={{ display: 'block' }} />
-        </span>
-      </span>
-    ))}
-  </Row>
-)
 
 const SideBySideDemo = ({ slowdown }: LoadingAnimationsProps) => (
   <Canvas slowdown={slowdown}>
@@ -194,32 +175,6 @@ const SideBySideDemo = ({ slowdown }: LoadingAnimationsProps) => (
   </Canvas>
 )
 
-const LargeButtonsDemo = ({ slowdown }: LoadingAnimationsProps) => (
-  <Canvas slowdown={slowdown}>
-    <div>
-      <Caption>Round icon buttons</Caption>
-      <RoundButtons sizes={[32, 48, 72]} />
-    </div>
-    <div>
-      <Caption>Square toolbar buttons</Caption>
-      <SquareButtons sizes={[48, 72, 112]} />
-    </div>
-  </Canvas>
-)
-
-const MenuSpinnerDemo = ({ slowdown }: LoadingAnimationsProps) => (
-  <Canvas slowdown={slowdown}>
-    <div>
-      <Caption>Menu with an item in progress</Caption>
-      <MenuWithPendingItem />
-    </div>
-    <div>
-      <Caption>Spinner enlarged ×1, ×3, ×6</Caption>
-      <ScaledSpinners />
-    </div>
-  </Canvas>
-)
-
 const meta = {
   title: 'Tessera/UI/Loading animations',
   component: SideBySideDemo,
@@ -234,18 +189,3 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const LoadingAnimationsSideBySide: Story = { name: 'Side by side' }
-
-export const LoadingAnimationsSlowMotion: Story = {
-  name: 'Side by side — slow motion',
-  args: { slowdown: 4 },
-}
-
-export const LoadingAnimationsLargeButtons: Story = {
-  name: 'Large buttons',
-  render: args => <LargeButtonsDemo {...args} />,
-}
-
-export const LoadingAnimationsMenuSpinner: Story = {
-  name: 'Menu item spinner',
-  render: args => <MenuSpinnerDemo {...args} />,
-}

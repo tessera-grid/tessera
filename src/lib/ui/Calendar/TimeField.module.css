@@ -1,0 +1,90 @@
+/* Поле времени кита (ADR 0183, PK20): сегменты в рамке поля и кнопка списка справа. */
+.field {
+  display: flex;
+  align-items: center;
+  gap: var(--tsr-ref-space-1);
+  padding-inline-end: var(--tsr-ref-space-1);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Фокус у сегмента — кольцо у всего поля, как у поля ввода. */
+.field:focus-within {
+  border-color: var(--tsr-comp-focus-ring);
+  box-shadow: 0 0 0 calc(var(--tsr-comp-focus-ring-width) - 1px)
+    var(--tsr-comp-focus-ring);
+}
+
+.segments {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  min-width: 0;
+}
+
+.segment {
+  padding: 0 1px;
+  border-radius: var(--tsr-comp-popup-item-radius);
+  outline: none;
+  cursor: text;
+}
+
+.segment[data-empty] {
+  color: var(--tsr-comp-control-color);
+}
+
+/* Сегмент в фокусе — заливкой акцента: видно, что стрелки и цифры меняют его. */
+.segment:focus {
+  background-color: var(--tsr-comp-accent);
+  color: var(--tsr-comp-accent-fg);
+}
+
+.segment[data-segment='period'] {
+  margin-inline-start: var(--tsr-ref-space-1);
+}
+
+.open {
+  flex: none;
+}
+
+/* Колонки часов, минут и половины суток — прокручиваются по отдельности. */
+.columns {
+  display: flex;
+  gap: var(--tsr-comp-popup-padding);
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  min-width: 56px;
+  max-height: var(--tsr-comp-column-menu-max-height);
+  overflow-y: auto;
+}
+
+.option {
+  width: 100%;
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+  text-align: start;
+  background-color: transparent;
+  border: 0;
+}
+
+.option:hover {
+  background-color: var(--tsr-comp-control-hover-bg);
+}
+
+.option:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 var(--tsr-comp-focus-ring-width)
+    var(--tsr-comp-focus-ring);
+}
+
+/* Высокая контрастность (ADR 0087): сегмент в фокусе — системным выделением. */
+@media (forced-colors: active) {
+  .segment:focus {
+    forced-color-adjust: none;
+    background-color: Highlight;
+    color: HighlightText;
+  }
+}

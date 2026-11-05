@@ -343,7 +343,12 @@ const DELETE: readonly GuideStoryStep[] = [
       root => {
         const row = rowEl(root, DELETED)
         if (!deletedRow(root, DELETED)) actionOf(row, 'Delete')?.click()
-        else actionOf(row, 'Restore row')?.click()
+        else
+          row
+            ?.querySelector<HTMLElement>(
+              '[data-action-id="cellEditing:rowDraftDiscard"]',
+            )
+            ?.click()
       },
     ),
   },

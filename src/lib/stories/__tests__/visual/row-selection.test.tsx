@@ -28,8 +28,8 @@ const BODY_ROW = '.data-grid__body-row'
 /** The row/header selection checkbox (stable class on `SelectCheckbox`). */
 const CHECKBOX = '.row-select-checkbox'
 /** lucide icon classes for the two checkbox indicators (IconsContext defaults). */
-const ICON_CHECK = 'lucide-check'
-const ICON_MINUS = 'lucide-minus'
+const ICON_CHECK = 'checkboxChecked'
+const ICON_MINUS = 'checkboxIndeterminate'
 /** Indicator icon size per `SelectCheckbox.module.css` (`.indicator .icon`). */
 const CHECKBOX_ICON_SIZE = 14
 
@@ -233,7 +233,8 @@ describe('Row Selection — header (select all in the scope)', () => {
     await expect.poll(() => isChecked(headCheckbox(container)!)).toBe(true)
     expect(isIndeterminate(headCheckbox(container)!)).toBe(false)
     expect(
-      iconOf(headCheckbox(container)!)?.classList.contains(ICON_CHECK),
+      iconOf(headCheckbox(container)!)?.getAttribute('data-icon') ===
+        ICON_CHECK,
     ).toBe(true)
 
     // Restore.
@@ -251,7 +252,8 @@ describe('Row Selection — header (select all in the scope)', () => {
       .toBe(true)
     expect(isChecked(headCheckbox(container)!)).toBe(false)
     expect(
-      iconOf(headCheckbox(container)!)?.classList.contains(ICON_MINUS),
+      iconOf(headCheckbox(container)!)?.getAttribute('data-icon') ===
+        ICON_MINUS,
     ).toBe(true)
 
     // Restore.

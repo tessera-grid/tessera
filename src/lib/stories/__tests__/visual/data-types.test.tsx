@@ -3,7 +3,7 @@ import { commands, server, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { afterEach, describe, expect, test } from 'vitest'
 
-import { CheckMark } from '../../../../ui'
+import { Checkbox } from '../../../../ui'
 import { useCreateTable } from '../../../core/useCreateTable'
 import type { DataTypeRegistry } from '../../../core/dataTypes'
 import { DataGrid } from '../../../grid/DataGrid'
@@ -395,14 +395,17 @@ describe('Тип данных колонки (ADR 0172)', () => {
     expect(style(headOf('own')).textAlign).toBe('end')
   })
 
-  test('DT18: примитив кита CheckMark — неинтерактивный значок флажка на токенах флажка выбора, галочка — иконка checkboxChecked из icons; публичный в /ui и в каталоге UI.CheckMark; axe и контраст в обеих темах и в forced-colors', async () => {
+  test('DT18: значение булевой ячейки — флажок кита Checkbox в режиме readOnly (ADR 0183, PK18): тот же вид, не нажимается и не в порядке фокуса, галочка — иконка checkboxChecked из icons; публичный в /ui и в каталоге UI.Checkbox; axe и контраст в обеих темах и в forced-colors', async () => {
     // Публичный экспорт `/ui` рисует то же, что ячейка булева.
     const kit = await render(
       <UiCanvas>
-        <CheckMark checked label="Yes" />
+        <Checkbox readOnly checked label="Yes" />
       </UiCanvas>,
     )
-    expect(document.querySelector('.check-mark svg')).not.toBeNull()
+    const view = document.querySelector<HTMLElement>('.check-mark')!
+    expect(view.querySelector('svg')).not.toBeNull()
+    expect(view.getAttribute('role')).toBe('img')
+    expect(view.getAttribute('tabindex')).toBeNull()
     await kit.unmount()
 
     // Контраст — на фоне ячейки таблицы, где значок живёт.
@@ -608,10 +611,25 @@ describe('Тип данных колонки (ADR 0172)', () => {
     )
     const calendar = () =>
       document.querySelector<HTMLElement>('[data-testid="filter-calendar"]')
-    await expect.poll(() => calendar()?.querySelector('select')).toBeTruthy()
-    const [month, year] = calendar()!.querySelectorAll('select')
-    await userEvent.selectOptions(year!, '2026')
-    await userEvent.selectOptions(month!, '2')
+    // Месяц и год — списки кита (ADR 0183, PK19).
+    const lists = () =>
+      calendar()?.querySelectorAll<HTMLElement>('[role="combobox"]') ?? []
+    const choose = async (index: number, label: string) => {
+      if (lists()[index]!.textContent?.trim() === label) return
+      await humanClick(lists()[index]!)
+      const option = () =>
+        [
+          ...document.querySelectorAll<HTMLElement>(
+            '[data-open] [role="option"]',
+          ),
+        ].find(item => item.textContent?.trim() === label)
+      await expect.poll(option).toBeTruthy()
+      await humanClick(option()!)
+      await expect.poll(() => lists()[index]!.textContent?.trim()).toBe(label)
+    }
+    await expect.poll(() => lists().length).toBe(2)
+    await choose(1, '2026')
+    await choose(0, 'March')
     const day = () =>
       document.querySelector<HTMLElement>('[data-day="2026-03-14"] button')
     await expect.poll(day).toBeTruthy()

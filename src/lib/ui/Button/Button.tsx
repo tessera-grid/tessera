@@ -32,8 +32,8 @@ export interface ButtonProps
 
 /**
  * Кнопка с подписью (ADR 0097) на базе Base UI Button: скруглённый квадрат; размер,
- * иконка, форма и палитра — общие с `IconButton` токены (ADR 0098); ожидание и
- * вспышка ошибки — как у кнопок кита (ADR 0055).
+ * иконка, форма и палитра — общие с `IconButton` токены (ADR 0098); ожидание и отказ —
+ * дуга, как у кнопок кита (ADR 0127, ADR 0136).
  */
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (

@@ -1,16 +1,7 @@
 /* Пульт черновиков (ADR 0178, §8): поповер с черновиками плоским списком облачков (DR42). */
-.positioner {
-  composes: positioner from '../../ui/Popup/Popup.module.css';
-}
-
 .popup {
-  composes: popup from '../../ui/Popup/Popup.module.css';
   width: var(--tsr-comp-popup-max-width);
   max-width: calc(100vw - 16px);
-}
-
-.title {
-  composes: cardsTitle from '../../ui/Popup/Popup.module.css';
 }
 
 .scroller {
@@ -42,8 +33,4 @@
 .value {
   display: block;
   font-weight: normal;
-}
-
-.footer {
-  composes: cardsFooter from '../../ui/Popup/Popup.module.css';
 }

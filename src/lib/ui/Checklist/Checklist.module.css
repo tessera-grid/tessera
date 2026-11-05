@@ -1,0 +1,65 @@
+/* Список вариантов с флажками (ADR 0183, PK6; ADR 0048, ADR 0175): строки фиксированной высоты в окне. */
+.scroller {
+  max-height: var(--tsr-comp-column-menu-max-height);
+  overflow-y: auto;
+}
+
+.list {
+  position: relative;
+}
+
+.item {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+}
+
+.row {
+  height: var(--tsr-comp-popup-item-min-height);
+}
+
+.row:hover {
+  background-color: var(--tsr-comp-control-hover-bg);
+}
+
+.label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.count {
+  flex-shrink: 0;
+  color: var(--tsr-comp-control-color);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Загрузка — строки-скелеты высотой пункта списка (ADR 0175, ED24). */
+.skeleton {
+  display: flex;
+  flex-direction: column;
+}
+
+.skeletonRow {
+  display: flex;
+  align-items: center;
+  height: var(--tsr-comp-popup-item-min-height);
+  padding: 0 var(--tsr-comp-popup-padding);
+}
+
+/* Отказ — блок ошибки загрузки кита по центру. */
+.error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--tsr-comp-popup-padding);
+  padding: var(--tsr-comp-popup-padding);
+  font-size: var(--tsr-comp-cell-font-size);
+}
+
+/* Пусто — заглушка кита на высоту нескольких пунктов. */
+.stub {
+  min-height: calc(var(--tsr-comp-popup-item-min-height) * 3);
+}

@@ -18,7 +18,7 @@ import { createConsoleLog } from './demos/consoleLog'
 import { useWriteStoryCell } from './demos/storyRows'
 import { definePlugin } from '../core/definePlugin'
 import { useCellPending } from '../core/headerActions/cellActions'
-import { SelectCheckbox } from '../ui/SelectCheckbox/SelectCheckbox'
+import { Checkbox } from '../ui/Checkbox/Checkbox'
 import { Switch } from '../ui/Switch'
 
 /**
@@ -104,11 +104,11 @@ const useCellSave = <T,>(
 const CheckboxCell = (props: CellProps) => {
   const { value, pending, commit } = useCellSave<boolean>(props, 'control')
   return (
-    <SelectCheckbox
-      selected={value}
+    <Checkbox
+      checked={value}
       pending={pending}
       label={`${props.context.row.original.name}: in stock`}
-      onClick={(_event, checked) => commit(checked)}
+      onCheckedChange={checked => commit(checked)}
     />
   )
 }

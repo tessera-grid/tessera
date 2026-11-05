@@ -13,8 +13,12 @@ import { useLocalization } from '../../core/localization'
 import { TreeLines } from '../../ui/TreeLines/TreeLinesLayer'
 import { useTableState } from '../../core/reactivity'
 import type { Table } from '../../types'
+import { optionsLabels } from '../../shared/options/labels'
 import { Button } from '../../ui/Button'
-import { SelectCheckbox } from '../../ui/SelectCheckbox/SelectCheckbox'
+import { Field, SearchField } from '../../ui/Field/Field'
+import { PopupItem } from '../../ui/Popup/PopupItem'
+import { PopupPanel } from '../../ui/Popup/PopupPanel'
+import { Checkbox } from '../../ui/Checkbox/Checkbox'
 import { Tooltip } from '../../ui/Tooltip'
 import {
   type ColumnTreeNode,
@@ -73,21 +77,23 @@ const CheckRow = ({
   const toggle = getToggle(node)
 
   return (
-    <label
+    <PopupItem
+      render={<label />}
       className={styles.row}
       style={{
         paddingInlineStart: `calc(8px + ${node.depth + 1} * var(--tsr-tree-indent))`,
       }}
       data-disabled={toggle === null || undefined}
     >
-      <SelectCheckbox
-        selected={state === 'checked'}
+      <Checkbox
+        className="row-select-checkbox"
+        checked={state === 'checked'}
         indeterminate={state === 'indeterminate'}
         disabled={toggle === null}
         label={label}
         // Меню — в композите тулбара: без tabIndex галочки выпали бы из порядка Tab.
         tabIndex={toggle === null ? undefined : 0}
-        onClick={event => {
+        onCheckedChange={(_, event) => {
           if (!toggle) return
           reportAction(table, {
             plugin: 'columnVisibility',
@@ -99,9 +105,11 @@ const CheckRow = ({
         }}
       />
       <Tooltip title={label} overflowOnly>
-        <span className={styles.label}>{label}</span>
+        <span className={styles.label} data-option-label="">
+          {label}
+        </span>
       </Tooltip>
-    </label>
+    </PopupItem>
   )
 }
 
@@ -160,24 +168,64 @@ export const ColumnVisibilityMenu = ({
   })
 
   return (
-    <div className={styles.menu}>
-      <input
-        ref={searchRef}
+    <PopupPanel
+      className={styles.menu}
+      footerClassName={styles.footer}
+      footer={
+        <>
+          <span className={styles.count} data-testid="column-visibility-count">
+            {columnVisibilityLabels(labels).selectedColumns(
+              countVisibleColumns(control),
+            )}
+          </span>
+          <Button
+            variant="ghost"
+            onClick={event => {
+              reportAction(table, {
+                plugin: 'columnVisibility',
+                action: 'reset',
+                source: sourceOf(event),
+              })
+              resetColumnsVisibility(control)
+            }}
+          >
+            {columnVisibilityLabels(labels).resetColumns}
+          </Button>
+        </>
+      }
+    >
+      <SearchField
         className={styles.search}
-        type="search"
-        value={query}
-        placeholder={columnVisibilityLabels(labels).searchColumns}
-        aria-label={columnVisibilityLabels(labels).searchColumns}
-        onChange={event => {
-          reportAction(table, {
-            plugin: 'columnVisibility',
-            action: 'searchColumns',
-            detail: { query: event.target.value },
-            source: 'keyboard',
-          })
-          setQuery(event.target.value)
-        }}
-      />
+        clear={
+          query === ''
+            ? undefined
+            : {
+                label: optionsLabels(labels).clearSearch,
+                onClick: () => {
+                  setQuery('')
+                  searchRef?.current?.focus()
+                },
+                'data-testid': 'column-visibility-clear-search',
+              }
+        }
+      >
+        <Field
+          ref={searchRef}
+          type="search"
+          value={query}
+          placeholder={columnVisibilityLabels(labels).searchColumns}
+          aria-label={columnVisibilityLabels(labels).searchColumns}
+          onChange={event => {
+            reportAction(table, {
+              plugin: 'columnVisibility',
+              action: 'searchColumns',
+              detail: { query: event.target.value },
+              source: 'keyboard',
+            })
+            setQuery(event.target.value)
+          }}
+        />
+      </SearchField>
       {rows.length > 0 ? (
         <div className={styles.columns}>
           <div className={styles.root} data-testid="column-visibility-all">
@@ -189,7 +237,11 @@ export const ColumnVisibilityMenu = ({
             />
             <TreeLines branch="" open />
           </div>
-          <div ref={scrollRef} className={styles.scroller}>
+          <div
+            ref={scrollRef}
+            className={styles.scroller}
+            data-popup-scroller=""
+          >
             <ul
               className={styles.tree}
               style={{ height: virtualizer.getTotalSize() }}
@@ -211,26 +263,6 @@ export const ColumnVisibilityMenu = ({
           {columnVisibilityLabels(labels).noColumnsFound}
         </p>
       )}
-      <div className={styles.footer}>
-        <span className={styles.count} data-testid="column-visibility-count">
-          {columnVisibilityLabels(labels).selectedColumns(
-            countVisibleColumns(control),
-          )}
-        </span>
-        <Button
-          variant="ghost"
-          onClick={event => {
-            reportAction(table, {
-              plugin: 'columnVisibility',
-              action: 'reset',
-              source: sourceOf(event),
-            })
-            resetColumnsVisibility(control)
-          }}
-        >
-          {columnVisibilityLabels(labels).resetColumns}
-        </Button>
-      </div>
-    </div>
+    </PopupPanel>
   )
 }

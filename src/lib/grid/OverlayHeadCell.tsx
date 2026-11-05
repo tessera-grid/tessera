@@ -1,4 +1,4 @@
-// OverlayHeadCell: ячейка заголовка в DragOverlay при перетаскивании колонки.
+// OverlayHeadCell: призрак колонки в DragOverlay — облачко кита `DragCloud` (ADR 0183, PK21).
 // Контент через flexRender, кнопки — та же ActionsZone, что у ячейки заголовка;
 // ширина — переменная заголовка (у группы — по header.id).
 import { type CSSProperties, memo, useMemo } from 'react'
@@ -12,6 +12,7 @@ import type { Header } from '../types'
 import type { RegisterSlotParams } from '../core/createSlots'
 import { getHeaderSizeVariable } from './columnSizes'
 import { ActionsZone } from './headerActions/ActionsZone'
+import { DragCloud } from '../ui/DragCloud/DragCloud'
 
 import styles from '../grid/HeadCell/OverlayHeadCell.module.css'
 import { inertProp } from '../core/inertProp'
@@ -45,7 +46,8 @@ export const OverlayHeadCell = memo(
     )
 
     return (
-      <div
+      <DragCloud
+        kind="column"
         className={clsx(
           'data-grid-head__cell--overlay',
           styles['head__cell--overlay'],
@@ -76,7 +78,7 @@ export const OverlayHeadCell = memo(
             />
           )}
         </CellWrapperContent>
-      </div>
+      </DragCloud>
     )
   },
 )

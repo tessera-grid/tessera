@@ -38,95 +38,6 @@
   max-width: 100%;
 }
 
-.trigger {
-  display: inline-flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 4px;
-  box-sizing: border-box;
-  min-width: 64px;
-  height: var(--tsr-comp-toolbar-button-size);
-  padding: 0 8px;
-  border: 1px solid var(--tsr-comp-control-border);
-  /* Дуга ожидания отсчитывает внешний край кнопки от рамки (ADR 0127). */
-  --tsr-ring-border: 1px;
-  border-radius: var(--tsr-comp-control-radius);
-  background-color: transparent;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-  outline: 0;
-  transition: var(--tsr-comp-action-button-transition);
-}
-
-.trigger:not([aria-busy='true']):hover {
-  background-color: var(--tsr-comp-control-hover-bg);
-}
-
-/* Ожидание: рамка уходит — форму кнопки рисует дуга (IR32). */
-.trigger[aria-busy='true'] {
-  border-color: transparent;
-}
-
-/*
- * Отмена ждущей смены размера (ADR 0153): «стоп» вместо значения при наведении и фокусе,
- * на сенсорном экране — сразу.
- */
-.cancelIcon {
-  position: absolute;
-  inset: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  color: var(--tsr-comp-button-color);
-  pointer-events: none;
-}
-
-.cancelIcon > svg {
-  width: var(--tsr-comp-button-icon-size, 16px);
-  height: var(--tsr-comp-button-icon-size, 16px);
-}
-
-.trigger[data-cancel-armed] {
-  cursor: pointer;
-}
-
-.trigger[data-cancel-armed]:hover {
-  background-color: var(--tsr-comp-control-hover-bg);
-}
-
-.trigger[data-cancel-armed]:is(:hover, :focus-visible) > .cancelIcon {
-  display: flex;
-}
-
-.trigger[data-cancel-armed]:is(:hover, :focus-visible)
-  > :not(.cancelIcon, [data-pending-arc], [data-failure-indicator]) {
-  visibility: hidden;
-}
-
-@media (pointer: coarse) {
-  .trigger[data-cancel-armed] > .cancelIcon {
-    display: flex;
-  }
-
-  .trigger[data-cancel-armed]
-    > :not(.cancelIcon, [data-pending-arc], [data-failure-indicator]) {
-    visibility: hidden;
-  }
-}
-
-/* Рамка 1px перекрашивается в цвет кольца, кольцо добирает остаток до ширины токена. */
-.trigger:focus-visible {
-  border-color: var(--tsr-comp-focus-ring);
-  box-shadow: 0 0 0 calc(var(--tsr-comp-focus-ring-width) - 1px)
-    var(--tsr-comp-focus-ring);
-}
-
-.triggerIcon {
-  display: inline-flex;
-  flex-shrink: 0;
-}
-
 .range {
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
@@ -136,23 +47,4 @@
   display: flex;
   align-items: center;
   gap: 4px;
-}
-
-.positioner {
-  composes: positioner from '../../ui/Popup/Popup.module.css';
-}
-
-.popup {
-  composes: popup from '../../ui/Popup/Popup.module.css';
-}
-
-.item {
-  composes: item from '../../ui/Popup/Popup.module.css';
-  justify-content: space-between;
-}
-
-.itemCheck {
-  display: inline-flex;
-  width: 14px;
-  color: var(--tsr-comp-accent);
 }

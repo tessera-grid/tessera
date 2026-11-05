@@ -75,7 +75,11 @@ export const CellIssue = ({
           onClick={() => setOpen(true)}
         >
           <span className={styles.mark} aria-hidden />
-          <span id={reasonId} className={hidden['visually-hidden']}>
+          <span
+            id={reasonId}
+            className={hidden['visually-hidden']}
+            data-visually-hidden=""
+          >
             {reason}
           </span>
         </button>

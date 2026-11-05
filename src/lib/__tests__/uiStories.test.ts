@@ -32,7 +32,70 @@ const uiStoryTitles = () => {
     )
 }
 
+/** Модули кита с компонентом: файл `ui/**` с именем с заглавной буквы. */
+const kitModules = (dir = '../ui/'): string[] =>
+  readdirSync(new URL(dir, import.meta.url), { withFileTypes: true }).flatMap(
+    entry =>
+      entry.isDirectory()
+        ? kitModules(`${dir}${entry.name}/`)
+        : /^[A-Z]\w*\.tsx$/.test(entry.name)
+          ? [`${dir.slice('../ui/'.length)}${entry.name.slice(0, -4)}`]
+          : [],
+  )
+
+/** Имена, под которыми история покрывает модуль: имя файла и его компонентов. */
+const coveringNames = (module: string) => [
+  module.split('/').at(-1)!,
+  ...[...read(`../ui/${module}.tsx`).matchAll(/export const ([A-Z]\w*)/g)].map(
+    match => match[1]!,
+  ),
+]
+
+/** Последняя часть подписи истории и все её части слитно: `Popup/Group` — `Group`, `PopupGroup`. */
+const titleNames = (title: string) => {
+  const parts = title.slice('Tessera/UI/'.length).split('/')
+  return [parts.at(-1)!, parts.join('')]
+}
+
+/** Модули кита без своей истории — с причиной. */
+const WITHOUT_STORY: Record<string, string> = {
+  'Checkbox/CheckboxView':
+    'вид флажка только для чтения — история Checkbox «Read only»',
+  'CellIssue/CellIssuePopup':
+    'ленивый поповер отметки — история CellIssue «Popover open»',
+  'Tooltip/TooltipImpl': 'ленивый попап подсказки — история Tooltip «Open»',
+  'buttonStates/PendingArc':
+    'дуга ожидания кнопок — история «Loading animations»',
+  'cellControls/CellInvalid':
+    'невидимая метка: ставит ячейке aria-invalid, вида у неё нет',
+  'icons/IconsContext': 'контекст набора иконок, не компонент вида',
+  'icons/SvgIcon': 'обёртка значков набора — истории кнопок и Stub',
+  'icons/EmptyStateIllustration':
+    'иллюстрация заглушки — история Stub «Playground»',
+}
+
 describe('истории UI-примитивов', () => {
+  it('PK22: у каждого модуля кита ui/ с компонентом есть история Tessera/UI/… или причина без неё', () => {
+    const modules = kitModules()
+    expect(modules.length).toBeGreaterThanOrEqual(40)
+    const covered = new Set(uiStoryTitles().flatMap(titleNames))
+    expect(
+      modules.filter(
+        module =>
+          !(module in WITHOUT_STORY) &&
+          !coveringNames(module).some(name => covered.has(name)),
+      ),
+    ).toEqual([])
+    // Список без устаревших записей: модуль существует и своей истории у него нет.
+    expect(
+      Object.keys(WITHOUT_STORY).filter(
+        module =>
+          !modules.includes(module) ||
+          coveringNames(module).some(name => covered.has(name)),
+      ),
+    ).toEqual([])
+  })
+
   it('у каждого компонента /ui есть история Tessera/UI/<Компонент>', () => {
     const components = uiExports()
     expect(components.length).toBeGreaterThanOrEqual(10)

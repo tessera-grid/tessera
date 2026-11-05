@@ -1,0 +1,79 @@
+/*
+ * Пункт поповера (ADR 0183, PK3): значок, подпись, подсказка и метка справа поверх общего пункта
+ * (ADR 0017, PP2). С переносом подписи (ADR 0083, TX2) значки и подсказка — по первой строке,
+ * высота однострочного пункта прежняя за счёт поля сверху и снизу.
+ */
+.item {
+  composes: item from './Popup.module.css';
+  --_line: calc(1.2 * var(--tsr-comp-popup-font-size));
+}
+
+.wrap {
+  composes: item;
+  --_item-align: flex-start;
+  --_item-padding-block: calc(
+    (var(--tsr-comp-popup-item-min-height) - var(--_line)) / 2
+  );
+}
+
+/* Заблокированный пункт с причиной принимает наведение — ради тултипа (ADR 0078). */
+.item[data-disabled][data-has-tooltip] {
+  pointer-events: auto;
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  height: var(--_line);
+  color: currentColor;
+}
+
+.label {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.hint {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  height: var(--_line);
+  font-size: var(--tsr-comp-caption-font-size);
+  color: var(--tsr-comp-control-color);
+  white-space: nowrap;
+}
+
+/* Метка справа: галочка, шеврон раздела, ожидание, отказ, замок. */
+.mark {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  width: 14px;
+  height: var(--_line);
+  color: var(--tsr-comp-accent);
+}
+
+.failed {
+  color: var(--tsr-comp-action-error-color);
+}
+
+/* Значок причины читается и на погашенном пункте. */
+.blocked {
+  color: var(--tsr-comp-control-color);
+}
+
+/* Ожидание пункта (ADR 0078): пятна света по кольцу, как у кнопок и ячеек. */
+.spinner {
+  composes: spinner from '../ringStates/ringStates.module.css';
+  width: 12px;
+  height: 12px;
+}
+
+/* Высокая контрастность (ADR 0087): кольцо — градиенты, браузер снял бы их. */
+@media (forced-colors: active) {
+  .spinner {
+    forced-color-adjust: none;
+  }
+}

@@ -5,15 +5,18 @@
  */
 import { useEffect, useId, useRef } from 'react'
 
-import { Radio } from '@base-ui/react/radio'
 import { RadioGroup } from '@base-ui/react/radio-group'
 
+import { PopupPanel } from '../../ui/Popup/PopupPanel'
+import { Radio } from '../../ui/Radio/Radio'
+import { PopupItem } from '../../ui/Popup/PopupItem'
 import { commonOptionsOf } from '../../core/commonFeature'
 import { setColumnFilterByUser } from '../../shared/filtering/filtering'
 import { useLocalization } from '../../core/localization'
 import { useDebouncedCallback } from '../../util/useDebouncedCallback'
 import { Button } from '../../ui/Button'
-import { Calendar, TimeField } from '../../shared/calendar/Calendar'
+import { calendarLabels, timeFieldLabels } from '../../shared/calendar/labels'
+import { Calendar, TimeField } from '../../ui/Calendar/Calendar'
 import { operatorLabel, PRESET_LABEL } from './describeFilter'
 import type { FilterPanelProps } from './FilterPanel'
 import { OperatorSelect } from './OperatorSelect'
@@ -209,6 +212,7 @@ export const DateFilterPanel = ({
   }, [])
 
   const calendarProps = {
+    labels: calendarLabels(labels),
     timeZone,
     locale,
     testId: 'filter-calendar',
@@ -220,8 +224,9 @@ export const DateFilterPanel = ({
     testId: string,
   ) => (
     <TimeField
-      className={panelStyles.input}
       label={label}
+      labels={timeFieldLabels(labels)}
+      locale={locale?.code}
       value={draft[key]}
       onChange={value => update({ [key]: value }, false)}
       onKeyDown={event => {
@@ -236,99 +241,96 @@ export const DateFilterPanel = ({
   )
 
   return (
-    <div
+    <PopupPanel
       ref={rootRef}
-      className={panelStyles.panel}
       data-testid="filter-panel"
       data-filter-type={type}
-    >
-      <OperatorSelect
-        value={draft.operator}
-        operators={OPERATORS}
-        labelOf={operator => operatorLabel(operator, labels)}
-        onChange={operator => update(switchOperator(draft, operator))}
-      />
-      {draft.operator === 'preset' && (
+      footer={
         <>
-          <span id={presetsId} hidden>
-            {columnFilteringLabels(labels).filterPreset}
-          </span>
-          <RadioGroup
-            value={draft.preset ?? ''}
-            onValueChange={value =>
-              update({ preset: value as DateFilterPreset })
-            }
-            aria-labelledby={presetsId}
-            className={panelStyles.options}
-            data-testid="filter-presets"
-          >
-            {PRESETS.map(preset => (
-              <label key={preset} className={panelStyles.option}>
-                <Radio.Root
-                  value={preset}
-                  className={panelStyles.radio}
-                  data-value={preset}
-                >
-                  <Radio.Indicator className={panelStyles.dot} />
-                </Radio.Root>
-                <span>
-                  {
-                    columnFilteringLabels(labels)[
-                      PRESET_LABEL[preset]
-                    ] as string
-                  }
-                </span>
-              </label>
-            ))}
-          </RadioGroup>
+          <FilterFailure table={table} columnId={column.id} />
+          <Button variant="ghost" onClick={reset} data-testid="filter-reset">
+            {columnFilteringLabels(labels).filterReset}
+          </Button>
+          {server && <FilterApply {...filterDraft} />}
         </>
-      )}
-      {draft.operator === 'between' ? (
-        <Calendar
-          {...calendarProps}
-          mode="range"
-          from={draft.from}
-          to={draft.to}
-          onRange={(from, to) => update({ from, to })}
+      }
+    >
+      <div className={panelStyles.content}>
+        <OperatorSelect
+          value={draft.operator}
+          operators={OPERATORS}
+          labelOf={operator => operatorLabel(operator, labels)}
+          onChange={operator => update(switchOperator(draft, operator))}
         />
-      ) : (
-        needsCalendar(draft.operator) && (
+        {draft.operator === 'preset' && (
+          <>
+            <span id={presetsId} hidden>
+              {columnFilteringLabels(labels).filterPreset}
+            </span>
+            <RadioGroup
+              value={draft.preset ?? ''}
+              onValueChange={value =>
+                update({ preset: value as DateFilterPreset })
+              }
+              aria-labelledby={presetsId}
+              className={panelStyles.options}
+              data-testid="filter-presets"
+            >
+              {PRESETS.map(preset => (
+                <PopupItem key={preset} render={<label />}>
+                  <Radio value={preset} data-value={preset} />
+                  <span>
+                    {
+                      columnFilteringLabels(labels)[
+                        PRESET_LABEL[preset]
+                      ] as string
+                    }
+                  </span>
+                </PopupItem>
+              ))}
+            </RadioGroup>
+          </>
+        )}
+        {draft.operator === 'between' ? (
           <Calendar
             {...calendarProps}
-            mode="single"
-            day={draft.day}
-            onDay={day => update({ day })}
+            mode="range"
+            from={draft.from}
+            to={draft.to}
+            onRange={(from, to) => update({ from, to })}
           />
-        )
-      )}
-      {timed &&
-        (draft.operator === 'before' || draft.operator === 'after') &&
-        timeField(
-          'time',
-          columnFilteringLabels(labels).filterTime,
-          'filter-time',
+        ) : (
+          needsCalendar(draft.operator) && (
+            <Calendar
+              {...calendarProps}
+              mode="single"
+              day={draft.day}
+              onDay={day => update({ day })}
+            />
+          )
         )}
-      {timed && draft.operator === 'between' && (
-        <div className={panelStyles.range}>
-          {timeField(
-            'fromTime',
-            columnFilteringLabels(labels).filterTimeFrom,
-            'filter-time-from',
+        {timed &&
+          (draft.operator === 'before' || draft.operator === 'after') &&
+          timeField(
+            'time',
+            columnFilteringLabels(labels).filterTime,
+            'filter-time',
           )}
-          {timeField(
-            'toTime',
-            columnFilteringLabels(labels).filterTimeTo,
-            'filter-time-to',
-          )}
-        </div>
-      )}
-      <div className={panelStyles.footer}>
-        <FilterFailure table={table} columnId={column.id} />
-        <Button variant="ghost" onClick={reset} data-testid="filter-reset">
-          {columnFilteringLabels(labels).filterReset}
-        </Button>
-        {server && <FilterApply {...filterDraft} />}
+        {timed && draft.operator === 'between' && (
+          <div className={panelStyles.range}>
+            {timeField(
+              'fromTime',
+              columnFilteringLabels(labels).filterTimeFrom,
+              'filter-time-from',
+            )}
+            {timeField(
+              'toTime',
+              columnFilteringLabels(labels).filterTimeTo,
+              'filter-time-to',
+            )}
+          </div>
+        )}
       </div>
-    </div>
+    </PopupPanel>
   )
 }

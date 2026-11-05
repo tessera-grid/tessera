@@ -26,6 +26,7 @@ export const Skeleton = memo(
         animation === 'wave' && styles.wave,
         className,
       )}
+      data-skeleton=""
       {...(animation === 'wave' && { [SKELETON_WAVE_ATTRIBUTE]: '' })}
       style={{ width, height, ...style }}
     />

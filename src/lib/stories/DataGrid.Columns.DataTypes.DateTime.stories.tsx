@@ -34,7 +34,8 @@ import {
   press,
   productArgs,
   shownCount,
-  typeInto,
+  timeValue,
+  typeTime,
 } from './__mocks__/typeGuides'
 import { useState } from 'react'
 import { Meta, StoryObj } from '@storybook/react'
@@ -123,7 +124,7 @@ const EDIT_DATE_TIME: readonly GuideStoryStep[] = [
           day.getAttribute('aria-label')?.includes('selected') !== true
         )
           return day.click()
-        if (time.value !== NEW_TIME) return typeInto(time, NEW_TIME)
+        if (timeValue(time) !== NEW_TIME) return typeTime(time, NEW_TIME)
         press(time, 'Enter')
       },
     ),

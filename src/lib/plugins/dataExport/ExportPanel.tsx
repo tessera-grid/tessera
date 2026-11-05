@@ -9,14 +9,16 @@ import { type ReactNode, useId, useRef, useState } from 'react'
 import { Popover } from '@base-ui/react/popover'
 import { Radio } from '@base-ui/react/radio'
 import { RadioGroup } from '@base-ui/react/radio-group'
-import clsx from 'clsx'
 import { Check } from 'lucide-react'
 
 import { useLocalization } from '../../core/localization'
-import { usePortalThemeData, usePortalThemeClass } from '../../ui/theme'
 import type { Table } from '../../types'
 import { Button } from '../../ui/Button'
 import { type TableIcons, useIcons } from '../../ui/icons'
+import { PopupGroup } from '../../ui/Popup/PopupGroup'
+import { PopupItem, PopupItemMark } from '../../ui/Popup/PopupItem'
+import { PopupFooter } from '../../ui/Popup/PopupPanel'
+import { PopupSurface } from '../../ui/Popup/PopupSurface'
 import { Segments } from '../../ui/Segments'
 import type { ButtonStatesProps } from '../../ui/buttonStates'
 import { ToolbarButton } from '../../ui/ToolbarButton'
@@ -34,7 +36,6 @@ import {
 import type { ExportSettings } from '../dataExportModel/types'
 
 import styles from './ExportPanel.module.css'
-import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 import { useFinalFocus } from '../../ui/Popup/finalFocus'
 import { dataExportLabels } from './labels'
 
@@ -59,6 +60,8 @@ interface GroupProps {
   value: string
   labelOf: (value: string) => ReactNode
   onChange: (value: string) => void
+  /** Линия над группой — у всех, кроме первой. */
+  divided: boolean
 }
 
 /** Ось «Формат» — сегментами: вариантов немного и подписи короткие (ADR 0074, EP1). */
@@ -68,13 +71,16 @@ const FormatGroup = ({
   value,
   labelOf,
   onChange,
+  divided,
 }: GroupProps) => {
   const labelId = useId()
   return (
-    <div className={styles.group} data-testid="export-axis-format">
-      <span id={labelId} className={styles.groupLabel}>
-        {label}
-      </span>
+    <PopupGroup
+      divided={divided}
+      label={label}
+      labelRender={<span id={labelId} />}
+      data-testid="export-axis-format"
+    >
       <Segments
         value={value}
         options={choices.map(choice => ({
@@ -86,7 +92,7 @@ const FormatGroup = ({
         aria-labelledby={labelId}
         className={styles.segments}
       />
-    </div>
+    </PopupGroup>
   )
 }
 
@@ -102,13 +108,16 @@ const AxisGroup = ({
   iconOf,
   onChange,
   testId,
+  divided,
 }: GroupProps & { iconOf: (value: string) => ReactNode; testId: string }) => {
   const labelId = useId()
   return (
-    <div className={styles.group} data-testid={testId}>
-      <span id={labelId} className={styles.groupLabel}>
-        {label}
-      </span>
+    <PopupGroup
+      divided={divided}
+      label={label}
+      labelRender={<span id={labelId} />}
+      data-testid={testId}
+    >
       <RadioGroup
         value={value}
         onValueChange={next => onChange(String(next))}
@@ -116,26 +125,27 @@ const AxisGroup = ({
         className={styles.items}
       >
         {choices.map(choice => (
-          <Radio.Root
+          <PopupItem
             key={choice.value}
-            value={choice.value}
-            disabled={choice.disabled}
+            wrap
+            render={
+              <Radio.Root value={choice.value} disabled={choice.disabled} />
+            }
             className={styles.item}
             data-value={choice.value}
-          >
-            <span className={styles.itemIcon} aria-hidden>
-              {iconOf(choice.value)}
-            </span>
-            <span className={styles.itemLabel}>{labelOf(choice.value)}</span>
-            <span className={styles.itemCheck} aria-hidden>
-              <Radio.Indicator className={styles.check} keepMounted>
-                <Check width={14} height={14} />
-              </Radio.Indicator>
-            </span>
-          </Radio.Root>
+            icon={iconOf(choice.value)}
+            label={labelOf(choice.value)}
+            end={
+              <PopupItemMark>
+                <Radio.Indicator className={styles.check} keepMounted>
+                  <Check width={14} height={14} />
+                </Radio.Indicator>
+              </PopupItemMark>
+            }
+          />
         ))}
       </RadioGroup>
-    </div>
+    </PopupGroup>
   )
 }
 
@@ -160,8 +170,6 @@ export const ExportPanel = ({
   onRun,
   cancel,
 }: ExportPanelProps) => {
-  const themeClass = usePortalThemeClass()
-  const themeData = usePortalThemeData()
   const labels = useLocalization()
   const icons = useIcons()
   const DownloadIcon = icons.download
@@ -199,6 +207,8 @@ export const ExportPanel = ({
     config.formats.find(format => format.id === value)?.label ?? value
 
   warnUnusablePresets(table, axes, config.presets)
+  const hasPresets = !!config.presets && config.presets.length > 0
+  const hasFormat = axes.formats.length > 1
 
   return (
     <Popover.Root open={open} onOpenChange={onOpenChange}>
@@ -214,100 +224,98 @@ export const ExportPanel = ({
         render={<Popover.Trigger />}
       />
       <Popover.Portal>
-        <Popover.Positioner
-          side="bottom"
-          align="end"
-          sideOffset={POPUP_SIDE_OFFSET}
-          className={clsx(themeClass, styles.positioner)}
-          {...themeData}
+        <PopupSurface
+          positioner={<Popover.Positioner side="bottom" align="end" />}
+          popup={
+            <Popover.Popup
+              aria-label={dataExportLabels(labels).export}
+              ref={popupRef}
+              finalFocus={finalFocus}
+              data-testid="export-panel"
+            />
+          }
+          className={styles.popup}
         >
-          <Popover.Popup
-            aria-label={dataExportLabels(labels).export}
-            ref={popupRef}
-            finalFocus={finalFocus}
-            className={clsx(themeClass, styles.popup)}
-            data-testid="export-panel"
-          >
-            {config.presets && config.presets.length > 0 && (
-              <div
-                className={styles.group}
-                role="group"
-                aria-label={dataExportLabels(labels).exportPresets}
-              >
-                <span className={styles.groupLabel} aria-hidden>
-                  {dataExportLabels(labels).exportPresets}
-                </span>
-                {config.presets.map(preset => (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    className={styles.item}
-                    data-testid={`export-preset-${preset.id}`}
-                    onClick={() => choose(applyPreset(axes, settings, preset))}
-                  >
-                    <span className={styles.itemLabel}>{preset.label}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-            {axes.formats.length > 1 && (
-              <FormatGroup
-                label={dataExportLabels(labels).exportFormat}
-                choices={axes.formats}
-                value={settings.format}
-                labelOf={formatLabel}
-                onChange={format => choose({ ...settings, format })}
-              />
-            )}
-            <AxisGroup
-              label={dataExportLabels(labels).exportRows}
-              testId="export-axis-rows"
-              choices={axes.rows}
-              value={settings.rows}
-              labelOf={value => rowLabel(labels, value, axes.viewBy, loaded)}
-              iconOf={value => {
-                const Icon = ROW_ICONS[value as ExportSettings['rows']](icons)
-                return <Icon width={16} height={16} />
-              }}
-              onChange={rows =>
-                choose({ ...settings, rows: rows as ExportSettings['rows'] })
-              }
+          {hasPresets && (
+            <PopupGroup
+              role="group"
+              aria-label={dataExportLabels(labels).exportPresets}
+              label={dataExportLabels(labels).exportPresets}
+              labelRender={<span aria-hidden />}
+            >
+              {config.presets!.map(preset => (
+                <PopupItem
+                  key={preset.id}
+                  wrap
+                  render={<button type="button" />}
+                  className={styles.item}
+                  data-testid={`export-preset-${preset.id}`}
+                  onClick={() => choose(applyPreset(axes, settings, preset))}
+                  label={preset.label}
+                />
+              ))}
+            </PopupGroup>
+          )}
+          {hasFormat && (
+            <FormatGroup
+              divided={hasPresets}
+              label={dataExportLabels(labels).exportFormat}
+              choices={axes.formats}
+              value={settings.format}
+              labelOf={formatLabel}
+              onChange={format => choose({ ...settings, format })}
             />
-            <AxisGroup
-              label={dataExportLabels(labels).exportColumns}
-              testId="export-axis-columns"
-              choices={axes.columns}
-              value={settings.columns}
-              labelOf={columnLabel}
-              iconOf={value => {
-                const Icon =
-                  value === 'all'
-                    ? icons.exportColumnsAll
-                    : icons.exportColumnsVisible
-                return <Icon width={16} height={16} />
+          )}
+          <AxisGroup
+            divided={hasPresets || hasFormat}
+            label={dataExportLabels(labels).exportRows}
+            testId="export-axis-rows"
+            choices={axes.rows}
+            value={settings.rows}
+            labelOf={value => rowLabel(labels, value, axes.viewBy, loaded)}
+            iconOf={value => {
+              const Icon = ROW_ICONS[value as ExportSettings['rows']](icons)
+              return <Icon width={16} height={16} />
+            }}
+            onChange={rows =>
+              choose({ ...settings, rows: rows as ExportSettings['rows'] })
+            }
+          />
+          <AxisGroup
+            divided
+            label={dataExportLabels(labels).exportColumns}
+            testId="export-axis-columns"
+            choices={axes.columns}
+            value={settings.columns}
+            labelOf={columnLabel}
+            iconOf={value => {
+              const Icon =
+                value === 'all'
+                  ? icons.exportColumnsAll
+                  : icons.exportColumnsVisible
+              return <Icon width={16} height={16} />
+            }}
+            onChange={columns =>
+              choose({
+                ...settings,
+                columns: columns as ExportSettings['columns'],
+              })
+            }
+          />
+          <PopupFooter>
+            <Button
+              variant="ghost"
+              disabled={busy && isServer}
+              data-testid="export-run"
+              onClick={() => {
+                onRun(settings, isServer)
+                onOpenChange(false)
               }}
-              onChange={columns =>
-                choose({
-                  ...settings,
-                  columns: columns as ExportSettings['columns'],
-                })
-              }
-            />
-            <div className={styles.footer}>
-              <Button
-                variant="ghost"
-                disabled={busy && isServer}
-                data-testid="export-run"
-                onClick={() => {
-                  onRun(settings, isServer)
-                  onOpenChange(false)
-                }}
-              >
-                {dataExportLabels(labels).exportRun}
-              </Button>
-            </div>
-          </Popover.Popup>
-        </Popover.Positioner>
+            >
+              {dataExportLabels(labels).exportRun}
+            </Button>
+          </PopupFooter>
+        </PopupSurface>
       </Popover.Portal>
     </Popover.Root>
   )

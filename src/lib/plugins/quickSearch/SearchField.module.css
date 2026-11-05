@@ -1,83 +1,10 @@
+/* Быстрый поиск тулбара (ADR 0045, §6): поле поиска кита (ADR 0183, PK12) шириной токена. */
 .field {
-  --button-size: 24px;
-  --button-inset: var(--tsr-comp-quick-search-button-inset);
-  position: relative;
-  display: flex;
-  align-items: center;
   width: var(--tsr-comp-quick-search-width);
   max-width: 100%;
-  min-width: 0;
 }
 
-.icon {
-  position: absolute;
-  left: 8px;
-  display: inline-flex;
-  color: var(--tsr-comp-control-color);
-  pointer-events: none;
-}
-
-.input {
-  box-sizing: border-box;
-  width: 100%;
-  height: var(--tsr-comp-toolbar-button-size);
-  padding: 0 calc(var(--button-size) + var(--button-inset) * 2) 0 30px;
-  color: inherit;
-  font: inherit;
-  font-size: 0.8125rem;
-  background-color: transparent;
-  border: 1px solid var(--tsr-comp-control-border);
-  border-radius: var(--tsr-comp-control-radius);
-  outline: none;
-  /* Плейсхолдер в суженном поле — с многоточием (ADR 0083, TX9). */
-  text-overflow: ellipsis;
-}
-
-/* Свой крестик поля: нативную кнопку очистки `type="search"` прячем. */
-.input::-webkit-search-cancel-button {
-  appearance: none;
-}
-
-/* Рамка 1px перекрашивается в цвет кольца, кольцо добирает остаток до ширины токена. */
-.input:focus-visible {
-  border-color: var(--tsr-comp-focus-ring);
-  box-shadow: 0 0 0 calc(var(--tsr-comp-focus-ring-width) - 1px)
-    var(--tsr-comp-focus-ring);
-}
-
-/* С кнопкой очистки справа две кнопки — поле резервирует место под обе. */
-.field[data-has-clear] .input {
-  padding-right: calc(var(--button-size) * 2 + var(--button-inset) * 2);
-}
-
-.clear,
-.info {
-  position: absolute;
-  right: var(--button-inset);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--button-size);
-  height: var(--button-size);
-  padding: 0;
-  color: var(--tsr-comp-control-color);
-  background-color: transparent;
-  border: 0;
-  border-radius: var(--tsr-comp-control-radius);
-  cursor: pointer;
-}
-
-.field[data-has-clear] .info {
-  right: calc(var(--button-inset) + var(--button-size));
-}
-
-.clear:hover,
-.info:hover {
-  background-color: var(--tsr-comp-control-hover-bg);
-}
-
-.clear:focus-visible,
-.info:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 var(--tsr-comp-focus-ring-width) var(--tsr-comp-focus-ring);
+/* Отступ кнопок от края — свой токен быстрого поиска; атрибут поднимает вес над умолчанием кита. */
+.field[data-buttons] {
+  --_button-inset: var(--tsr-comp-quick-search-button-inset);
 }

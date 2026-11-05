@@ -159,6 +159,30 @@ const calendar = () =>
   panel()?.querySelector<HTMLElement>('[data-testid="filter-calendar"]') ?? null
 const day = (iso: string) =>
   calendar()!.querySelector<HTMLButtonElement>(`[data-day="${iso}"] button`)!
+/** Списки месяца и года календаря — список кита (ADR 0183, PK19): кнопка-триггер и пункты. */
+const calendarLists = () => [
+  ...calendar()!.querySelectorAll<HTMLElement>('[role="combobox"]'),
+]
+const chooseInList = async (list: HTMLElement, label: string) => {
+  await humanClick(list)
+  const option = await expect
+    .poll(() =>
+      [
+        ...document.querySelectorAll<HTMLElement>(
+          '[data-open] [role="option"]',
+        ),
+      ].find(item => item.textContent?.trim() === label),
+    )
+    .toBeTruthy()
+  void option
+  await humanClick(
+    [
+      ...document.querySelectorAll<HTMLElement>('[data-open] [role="option"]'),
+    ].find(item => item.textContent?.trim() === label)!,
+  )
+  await expect.poll(() => list.textContent?.trim()).toBe(label)
+}
+
 const dayCell = (iso: string) =>
   calendar()!.querySelector<HTMLElement>(`[data-day="${iso}"]`)!
 const byTestId = (id: string) =>
@@ -244,10 +268,7 @@ describe('Фильтр дат — панель', () => {
     await openFilter('closed')
     await humanClick(day('2026-03-15'))
     await expect.poll(rowIds).toEqual([])
-    await userEvent.selectOptions(
-      calendar()!.querySelectorAll('select')[1],
-      '1990',
-    )
+    await chooseInList(calendarLists()[1]!, '1990')
     await humanClick(day('1990-03-15'))
     await expect.poll(rowIds).toEqual(['1'])
   })
@@ -257,10 +278,10 @@ describe('Фильтр дат — панель', () => {
     await render(<Grid plugins={[columnFiltering({ debounceMs: 5000 })]} />)
     await waitForGrid()
     await openFilter('created')
-    const selects = calendar()!.querySelectorAll('select')
-    expect(selects).toHaveLength(2)
-    expect(selects[0].value).toBe('2')
-    expect(selects[1].value).toBe('2026')
+    const lists = calendarLists()
+    expect(lists).toHaveLength(2)
+    expect(lists[0]!.textContent?.trim()).toBe('March')
+    expect(lists[1]!.textContent?.trim()).toBe('2026')
 
     await humanClick(day('2026-03-15'))
     await expect.poll(rowIds).toEqual(['0', '1', '2', '3'])
@@ -274,7 +295,7 @@ describe('Фильтр дат — панель', () => {
     expect(dayCell('2026-03-16').getAttribute('aria-selected')).toBe('true')
 
     // Месяц и год — выпадающими списками.
-    await userEvent.selectOptions(selects[0], '1')
+    await chooseInList(calendarLists()[0]!, 'February')
     await expect
       .poll(() => calendar()!.querySelector('[data-day="2026-02-01"]'))
       .not.toBeNull()
@@ -307,7 +328,12 @@ describe('Фильтр дат — панель', () => {
     await chooseOperator('before')
     await humanClick(day('2026-03-15'))
     await expect.poll(rowIds).toEqual(['5'])
-    await userEvent.fill(byTestId('filter-time')!, '10:00')
+    await humanClick(
+      byTestId('filter-time')!.querySelector<HTMLElement>(
+        '[data-segment="hours"]',
+      )!,
+    )
+    await userEvent.keyboard('1000a')
     await new Promise(resolve => setTimeout(resolve, 100))
     expect(rowIds()).toEqual(['5'])
     await expect.poll(rowIds).toEqual(['0', '1', '5'])
@@ -468,9 +494,7 @@ describe('Фильтр дат — вид', () => {
     await waitForGrid()
     await openFilter('created')
     expect(weekdays()[0]).toBe('Su')
-    expect(
-      calendar()!.querySelectorAll('select')[0].selectedOptions[0].textContent,
-    ).toBe('March')
+    expect(calendarLists()[0]!.textContent?.trim()).toBe('March')
     await english.unmount()
 
     const Prev = () => <svg data-testid="custom-prev" />
@@ -480,13 +504,14 @@ describe('Фильтр дат — вид', () => {
         dateLocale={ru}
         plugins={[columnFiltering({ debounceMs: 0 })]}
         localization={{
-          filterOn: 'В день',
-          filterBefore: 'До',
-          filterPreset: 'Период',
-          filterPresetToday: 'Сегодня',
-          filterTime: 'Время',
-          previousMonth: 'Предыдущий месяц',
-          nextMonth: 'Следующий месяц',
+          // Ключи владельцев (ADR 0182, §8): фильтр колонки и календарь.
+          'columnFiltering.filterOn': 'В день',
+          'columnFiltering.filterBefore': 'До',
+          'columnFiltering.filterPreset': 'Период',
+          'columnFiltering.filterPresetToday': 'Сегодня',
+          'columnFiltering.filterTime': 'Время',
+          'calendar.previousMonth': 'Предыдущий месяц',
+          'calendar.nextMonth': 'Следующий месяц',
         }}
         icons={{ previousMonth: Prev, nextMonth: Next }}
       />,
@@ -494,9 +519,7 @@ describe('Фильтр дат — вид', () => {
     await waitForGrid()
     await openFilter('created')
     expect(weekdays()[0]).toBe('пн')
-    expect(
-      calendar()!.querySelectorAll('select')[0].selectedOptions[0].textContent,
-    ).toMatch(/^март/)
+    expect(calendarLists()[0]!.textContent?.trim()).toMatch(/^март/)
     const operator = panel()!.querySelector('[data-testid="filter-operator"]')!
     expect(operator.textContent).toContain('В день')
     const prev = calendar()!.querySelector('[aria-label="Предыдущий месяц"]')!

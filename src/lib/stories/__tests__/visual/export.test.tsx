@@ -15,6 +15,7 @@ import {
 import { pagination } from '../../../plugins/pagination'
 import { rowSelection } from '../../../plugins/rowSelection'
 import { AXE_OPTIONS } from './a11y-helpers'
+import { tokenPx } from './tree-lines-helpers'
 import { failureShownOn } from '../helpers'
 
 // Плагин dataExport (ADR 0044): кнопка тулбара, панель настроек, скачивание, серверный
@@ -487,14 +488,23 @@ describe('dataExport — вид панели (ADR 0074)', () => {
     await fullPanel()
     await openPanel()
     const all = groups()
+    // Линия — между группами; над кнопкой внизу её нет (ADR 0017, PP12).
     for (const [index, group] of all.entries()) {
       const style = getComputedStyle(group)
       expect(style.backgroundColor).toBe('rgba(0, 0, 0, 0)')
-      expect(style.borderTopWidth).toBe(index === 0 ? '0px' : '1px')
+      expect(style.borderTopWidth).toBe(
+        index === 0 || index === all.length - 1 ? '0px' : '1px',
+      )
     }
+    // Подпись группы — как в меню действий: стилем заголовка поповера (ADR 0183, PK4).
+    const titleSize = `${tokenPx('--tsr-comp-popup-title-font-size')}px`
     for (const group of all.slice(0, -1)) {
-      const label = group.firstElementChild as HTMLElement
-      expect(getComputedStyle(label).textTransform).toBe('uppercase')
+      const label = getComputedStyle(group.firstElementChild as HTMLElement)
+      expect([label.fontSize, label.fontWeight, label.textTransform]).toEqual([
+        titleSize,
+        '600',
+        'none',
+      ])
     }
     // Видимый край: у подписи — начало текста (после её отступа), у дорожки и иконки —
     // внешний край.
@@ -618,10 +628,11 @@ describe('dataExport — подписи и доступность', () => {
     await renderGrid({
       extraPlugins: WITH_SCOPES,
       localization: {
-        export: 'Выгрузить',
-        exportRows: 'Строки',
-        exportRun: 'Скачать',
-        exportAll: 'Все данные',
+        // Ключи плагина — с его id (ADR 0182).
+        'dataExport.export': 'Выгрузить',
+        'dataExport.exportRows': 'Строки',
+        'dataExport.exportRun': 'Скачать',
+        'dataExport.exportAll': 'Все данные',
       },
       icons: { download: CustomDownloadIcon },
     })

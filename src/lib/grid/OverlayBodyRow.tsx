@@ -1,19 +1,16 @@
-// OverlayBodyRow: облако перетаскиваемой строки (первая ячейка + ручка + счётчик
-// подстрок); его рисует грид по просьбе плагина перетаскивания (ADR 0168, §2).
+// OverlayBodyRow: облако перетаскиваемой строки — облачко кита `DragCloud` (ADR 0183, PK21) с
+// ручкой, первой ячейкой и счётчиком подстрок; его рисует грид по просьбе плагина перетаскивания
+// (ADR 0168, §2).
 import { type ReactNode, forwardRef, memo } from 'react'
-
-import clsx from 'clsx'
 
 import { inertProp } from '../core/inertProp'
 import { useLocalization } from '../core/localization'
 import type { BodyBoundaryProps } from '../core/pluginWrappers'
-import { Bubble } from '../ui/Bubble'
+import { DragCloud } from '../ui/DragCloud/DragCloud'
 import { CellWrapperContent } from '../grid/CellWrapperContent'
 import { CellWrapperTitle } from '../grid/CellWrapperTitle'
 import type { Cell } from '../types'
 import { renderCellContent } from './cellContent'
-
-import styles from '../grid/BodyRow/OverlayBodyRow.module.css'
 
 interface OverlayBodyRowProps {
   firstCell: Cell<any, any, unknown>
@@ -28,27 +25,21 @@ export const OverlayBodyRow = memo(
     ({ firstCell, withCount = false, subRowsCount = 0, handle }, ref) => {
       const labels = useLocalization()
       return (
-        <div
+        <DragCloud
           ref={ref}
-          className={clsx(
-            'data-grid-body__row',
-            styles['body__row--overlay__container'],
-          )}
+          kind="row"
+          className="data-grid-body__row"
+          count={withCount ? subRowsCount : undefined}
           // Облако — визуальный клон: ни в дереве доступности, ни в фокусе (ADR 0006, D37).
           {...inertProp(true)}
         >
-          <div className={styles['body__row--overlay']}>
-            <CellWrapperContent noPadding>
-              {handle}
-              <CellWrapperTitle>
-                {renderCellContent(firstCell, labels)}
-              </CellWrapperTitle>
-            </CellWrapperContent>
-          </div>
-          {withCount && (
-            <Bubble className={styles.bubble}>{subRowsCount}</Bubble>
-          )}
-        </div>
+          <CellWrapperContent noPadding>
+            {handle}
+            <CellWrapperTitle>
+              {renderCellContent(firstCell, labels)}
+            </CellWrapperTitle>
+          </CellWrapperContent>
+        </DragCloud>
       )
     },
   ),

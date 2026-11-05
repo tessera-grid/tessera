@@ -73,6 +73,7 @@ export const ActionButton = ({
       aria-disabled={disabled}
       label={label}
       aria-label={ariaLabel}
+      data-action-id={action.id}
     >
       {action.icon(context)}
     </IconButton>

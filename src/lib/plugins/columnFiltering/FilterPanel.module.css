@@ -1,14 +1,16 @@
-.panel {
+/*
+ * Содержимое панели фильтра — на двойном поле поповера от краёв (ADR 0017, PP13); кнопки внизу —
+ * подвалом `PopupPanel` (ADR 0183, PK2).
+ */
+.content {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 4px;
+  gap: calc(var(--tsr-comp-popup-padding) * 2);
+  padding: var(--tsr-comp-popup-padding) var(--tsr-comp-popup-padding) 0;
 }
 
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.content:last-child {
+  padding-bottom: var(--tsr-comp-popup-padding);
 }
 
 .range {
@@ -16,133 +18,12 @@
   gap: 8px;
 }
 
-.input,
+/* Кнопка условия — во всю ширину панели (ADR 0183, PK13). */
 .trigger {
-  box-sizing: border-box;
   width: 100%;
-  height: 32px;
-  padding: 0 8px;
-  color: inherit;
-  font: inherit;
-  background-color: transparent;
-  border: 1px solid var(--tsr-comp-control-border);
-  border-radius: var(--tsr-comp-control-radius);
-  outline: none;
-}
-
-.trigger {
-  display: inline-flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 4px;
-  cursor: pointer;
-}
-
-.trigger:hover {
-  background-color: var(--tsr-comp-control-hover-bg);
-}
-
-/* Рамка 1px перекрашивается в цвет кольца, кольцо добирает остаток до ширины токена. */
-.input:focus-visible,
-.trigger:focus-visible {
-  border-color: var(--tsr-comp-focus-ring);
-  box-shadow: 0 0 0 calc(var(--tsr-comp-focus-ring-width) - 1px)
-    var(--tsr-comp-focus-ring);
-}
-
-.input[aria-invalid='true'] {
-  border-color: var(--tsr-comp-cell-error-color);
-}
-
-.error {
-  color: var(--tsr-comp-cell-error-color);
-  font-size: 0.75rem;
-}
-
-.triggerIcon {
-  display: inline-flex;
-  flex-shrink: 0;
-}
-
-.selectPositioner {
-  composes: positioner from '../../ui/Popup/Popup.module.css';
-}
-
-.selectPopup {
-  composes: popup from '../../ui/Popup/Popup.module.css';
-}
-
-.selectItem {
-  composes: item from '../../ui/Popup/Popup.module.css';
-  justify-content: space-between;
-}
-
-.itemCheck {
-  display: inline-flex;
-  width: 14px;
-  color: var(--tsr-comp-accent);
 }
 
 .options {
   display: flex;
   flex-direction: column;
-}
-
-.option {
-  composes: item from '../../ui/Popup/Popup.module.css';
-}
-
-.option:hover {
-  background-color: var(--tsr-comp-control-hover-bg);
-}
-
-.radio {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  box-sizing: border-box;
-  width: 16px;
-  height: 16px;
-  padding: 0;
-  background-color: transparent;
-  border: 1px solid var(--tsr-comp-control-border);
-  border-radius: 50%;
-  cursor: inherit;
-}
-
-.radio[data-checked] {
-  border-color: var(--tsr-comp-control-active-color);
-}
-
-.radio:focus-visible {
-  outline: none;
-  border-color: var(--tsr-comp-focus-ring);
-  box-shadow: 0 0 0 calc(var(--tsr-comp-focus-ring-width) - 1px)
-    var(--tsr-comp-focus-ring);
-}
-
-.dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: var(--tsr-comp-control-active-color);
-}
-
-.footer {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: calc(var(--tsr-ref-space-1) * 2);
-}
-
-/* Отказ серверного фильтра колонки (ADR 0116): иконка с тултипом причины. */
-.failure {
-  display: inline-flex;
-  color: var(--tsr-comp-action-error-color);
-  border-radius: var(--tsr-comp-control-radius);
-}
-
-.failure:focus-visible {
-  outline: var(--tsr-comp-focus-ring-width) solid var(--tsr-comp-focus-ring);
 }

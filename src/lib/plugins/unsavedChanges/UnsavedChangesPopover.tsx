@@ -6,7 +6,6 @@
 import { type ReactNode, useId, useRef } from 'react'
 
 import { Popover } from '@base-ui/react/popover'
-import clsx from 'clsx'
 
 import {
   applyAllDrafts,
@@ -20,6 +19,8 @@ import {
   discardDraft,
   useOpenDrafts,
 } from '../../core/drafts/drafts'
+import { PopupFooter, PopupPanel } from '../../ui/Popup/PopupPanel'
+import { PopupSurface } from '../../ui/Popup/PopupSurface'
 import { reportAction, userSourceOf } from '../../core/debugActions'
 import { useLocalization } from '../../core/localization'
 import { useSliceProjection } from '../../core/reactivity'
@@ -28,10 +29,8 @@ import { Button } from '../../ui/Button'
 import { IconButton } from '../../ui/IconButton'
 import { Stub } from '../../ui/Stub'
 import { useIcons } from '../../ui/icons'
-import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 import { PopupEntry } from '../../ui/Popup/PopupEntry'
 import hidden from '../../ui/visuallyHidden.module.css'
-import { usePortalThemeClass, usePortalThemeData } from '../../ui/theme'
 import { ToolbarButton } from '../../ui/ToolbarButton'
 import {
   canShowTarget,
@@ -72,10 +71,15 @@ const ChangeValue = ({ was, now }: { was?: string; now: string }) => {
   if (was === undefined) return <>{now}</>
   return (
     <>
-      <span className={hidden['visually-hidden']}>{labels.draftWas} </span>
+      <span className={hidden['visually-hidden']} data-visually-hidden="">
+        {labels.draftWas}{' '}
+      </span>
       {was}
       <span aria-hidden> → </span>
-      <span className={hidden['visually-hidden']}> {labels.draftNow} </span>
+      <span className={hidden['visually-hidden']} data-visually-hidden="">
+        {' '}
+        {labels.draftNow}{' '}
+      </span>
       {now}
     </>
   )
@@ -112,7 +116,7 @@ const DraftEntry = ({
           {operation && <span>{draftKindLabel(table, kind, labels)} </span>}
           {target && <span className={styles.target}>{target} </span>}
           {now !== undefined && (
-            <span className={styles.value}>
+            <span className={styles.value} data-draft-value="">
               <ChangeValue was={was} now={now} />
             </span>
           )}
@@ -246,7 +250,7 @@ const DraftList = ({
   const handlers = { onDiscarded, onDone }
   return (
     <>
-      <div className={styles.scroller}>
+      <div className={styles.scroller} data-popup-scroller="">
         {data.length > 0 && (
           <EntryList
             table={table}
@@ -264,7 +268,7 @@ const DraftList = ({
           />
         ))}
       </div>
-      <div className={styles.footer}>
+      <PopupFooter>
         <Button
           variant="ghost"
           data-action="discard-all"
@@ -287,7 +291,7 @@ const DraftList = ({
         >
           {unsavedChangesLabels(labels).draftApplyAll}
         </Button>
-      </div>
+      </PopupFooter>
     </>
   )
 }
@@ -300,8 +304,6 @@ export const UnsavedChangesPopover = ({
   open,
   onOpenChange,
 }: UnsavedChangesPopoverProps) => {
-  const themeClass = usePortalThemeClass()
-  const themeData = usePortalThemeData()
   const labels = useLocalization()
   const triggerRef = useRef<HTMLButtonElement>(null)
   const popupRef = useRef<HTMLDivElement>(null)
@@ -321,30 +323,26 @@ export const UnsavedChangesPopover = ({
         render={<Popover.Trigger />}
       />
       <Popover.Portal>
-        <Popover.Positioner
-          side="bottom"
-          align="end"
-          sideOffset={POPUP_SIDE_OFFSET}
-          className={clsx(themeClass, styles.positioner)}
-          {...themeData}
+        <PopupSurface
+          positioner={<Popover.Positioner side="bottom" align="end" />}
+          popup={
+            <Popover.Popup
+              aria-label={unsavedChangesLabels(labels).unsavedChanges}
+              ref={popupRef}
+              finalFocus={triggerRef}
+              data-testid="unsaved-changes"
+            />
+          }
+          className={styles.popup}
         >
-          <Popover.Popup
-            aria-label={unsavedChangesLabels(labels).unsavedChanges}
-            ref={popupRef}
-            finalFocus={triggerRef}
-            className={clsx(themeClass, styles.popup)}
-            data-testid="unsaved-changes"
-          >
-            <p className={styles.title}>
-              {unsavedChangesLabels(labels).unsavedChanges}
-            </p>
+          <PopupPanel title={unsavedChangesLabels(labels).unsavedChanges}>
             <DraftList
               table={table}
               onDiscarded={keepFocus}
               onDone={() => onOpenChange(false)}
             />
-          </Popover.Popup>
-        </Popover.Positioner>
+          </PopupPanel>
+        </PopupSurface>
       </Popover.Portal>
     </Popover.Root>
   )

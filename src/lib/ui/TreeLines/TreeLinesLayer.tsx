@@ -12,6 +12,8 @@ interface Part {
   key: string
   className: string
   level: number
+  /** Поворот к строке: свой или продолжение линии родителя. */
+  elbow?: 'plain' | 'joined'
 }
 
 const partsOf = (branch: string, open: boolean): Part[] => {
@@ -27,6 +29,7 @@ const partsOf = (branch: string, open: boolean): Part[] => {
     parts.push({
       key: `${joined ? 'joined' : 'elbow'}${depth}`,
       className: joined ? styles.joinedElbow : styles.elbow,
+      elbow: joined ? 'joined' : 'plain',
       level: depth,
     })
     if (joined)
@@ -77,6 +80,7 @@ const Line = ({
     <span
       ref={ref}
       data-leaving={leaving || undefined}
+      data-tree-elbow={part.elbow}
       className={part.className}
       style={{ '--tsr-tree-level': part.level } as CSSProperties}
     />

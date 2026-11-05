@@ -271,4 +271,34 @@ describe('Theming — external customization + token tiers', () => {
       readVar('--tsr-sys-accent', { vars: { '--primary': 'rgb(9, 9, 9)' } }),
     ).toBe('rgb(9, 9, 9)')
   })
+
+  test('TK6: --font-sans of the app is the font of the grid and its portals; without it — the system stack', () => {
+    expect(
+      readVar('--tsr-comp-font-family', {
+        vars: { '--font-sans': 'Inter, sans-serif' },
+      }),
+    ).toBe('Inter, sans-serif')
+    expect(
+      readVar('--tsr-comp-font-family', { vars: { '--font-sans': 'initial' } }),
+    ).toMatch(/^system-ui,/)
+  })
+
+  test('TK5: --radius-sm and --radius-lg of the app round popover items and the sticky block edge; without them — the primitive scale', () => {
+    const radius = (token: string, vars: Record<string, string>) => {
+      const el = document.createElement('div')
+      el.className = 'data-grid-theme'
+      Object.entries(vars).forEach(([k, v]) => el.style.setProperty(k, v))
+      el.style.borderTopLeftRadius = `var(${token})`
+      document.body.appendChild(el)
+      const value = getComputedStyle(el).borderTopLeftRadius
+      el.remove()
+      return value
+    }
+    const app = { '--radius-sm': '3px', '--radius-lg': '17px' }
+    expect(radius('--tsr-comp-popup-item-radius', app)).toBe('3px')
+    expect(radius('--tsr-comp-sticky-radius', app)).toBe('17px')
+    const none = { '--radius-sm': 'initial', '--radius-lg': 'initial' }
+    expect(radius('--tsr-comp-popup-item-radius', none)).toBe('6px')
+    expect(radius('--tsr-comp-sticky-radius', none)).toBe('10px')
+  })
 })

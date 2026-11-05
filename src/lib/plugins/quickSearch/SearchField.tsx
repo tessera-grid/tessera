@@ -20,7 +20,7 @@ import {
 } from '../../shared/filtering/searchColumns'
 import { isWaitingForColumns } from '../../core/skeletonOptions'
 import { ToolbarSkeleton } from '../../ui/ToolbarButton'
-import { Tooltip } from '../../ui/Tooltip'
+import { Field, SearchField as KitSearchField } from '../../ui/Field/Field'
 import { useDebouncedCallback } from '../../util/useDebouncedCallback'
 import { useIcons } from '../../ui/icons'
 import { DEFAULT_SEARCH_DEBOUNCE_MS } from '../quickSearchModel/search'
@@ -36,7 +36,7 @@ interface SearchTable {
 
 export const SearchField = ({ table }: ToolbarComponentProps) => {
   const labels = useLocalization()
-  const { search: SearchIcon, clear: ClearIcon, info: InfoIcon } = useIcons()
+  const { search: SearchIcon, info: InfoIcon } = useIcons()
   const searchTable = table as unknown as SearchTable
   const applied = useTableState(table, state =>
     typeof state.globalFilter === 'string' ? state.globalFilter : '',
@@ -88,14 +88,30 @@ export const SearchField = ({ table }: ToolbarComponentProps) => {
   }
 
   return (
-    <div className={styles.field} data-has-clear={text !== '' || undefined}>
-      <span className={styles.icon} aria-hidden>
-        <SearchIcon width={16} height={16} />
-      </span>
-      <Toolbar.Input
+    <KitSearchField
+      className={styles.field}
+      icon={<SearchIcon width={16} height={16} />}
+      hint={{
+        label: hint,
+        icon: <InfoIcon width={14} height={14} />,
+        render: <Toolbar.Button />,
+        'data-testid': 'quick-search-hint',
+      }}
+      clear={
+        text === ''
+          ? undefined
+          : {
+              label: optionsLabels(labels).clearSearch,
+              onClick: clear,
+              render: <Toolbar.Button />,
+              'data-testid': 'quick-search-clear',
+            }
+      }
+    >
+      <Field
         ref={inputRef}
+        render={<Toolbar.Input />}
         type="search"
-        className={styles.input}
         aria-label={quickSearchLabels(labels).search}
         aria-describedby={hintId}
         placeholder={quickSearchLabels(labels).search}
@@ -118,30 +134,13 @@ export const SearchField = ({ table }: ToolbarComponentProps) => {
         }}
         data-testid="quick-search"
       />
-      <span id={hintId} className={hidden['visually-hidden']}>
+      <span
+        id={hintId}
+        className={hidden['visually-hidden']}
+        data-visually-hidden=""
+      >
         {hint}
       </span>
-      <Tooltip title={hint}>
-        <Toolbar.Button
-          type="button"
-          className={styles.info}
-          aria-label={hint}
-          data-testid="quick-search-hint"
-        >
-          <InfoIcon width={14} height={14} />
-        </Toolbar.Button>
-      </Tooltip>
-      {text !== '' && (
-        <Toolbar.Button
-          type="button"
-          className={styles.clear}
-          aria-label={optionsLabels(labels).clearSearch}
-          onClick={clear}
-          data-testid="quick-search-clear"
-        >
-          <ClearIcon width={14} height={14} />
-        </Toolbar.Button>
-      )}
-    </div>
+    </KitSearchField>
   )
 }

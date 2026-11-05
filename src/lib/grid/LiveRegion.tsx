@@ -161,6 +161,7 @@ export const LiveRegion = ({
       aria-live="polite"
       aria-atomic="true"
       className={hidden['visually-hidden']}
+      data-visually-hidden=""
     >
       <span key={message.id}>{message.text}</span>
     </div>

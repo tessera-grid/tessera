@@ -1,0 +1,94 @@
+/* Поле ввода кита (ADR 0183, PK5): рамка, кольцо фокуса, ошибка. */
+.field {
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--tsr-comp-button-size);
+  padding: 0 var(--tsr-comp-field-padding-x);
+  color: inherit;
+  font: inherit;
+  font-size: var(--tsr-comp-field-font-size);
+  background-color: transparent;
+  border: 1px solid var(--tsr-comp-control-border);
+  border-radius: var(--tsr-comp-control-radius);
+  outline: none;
+  /* Плейсхолдер в узком поле — с многоточием (ADR 0083, TX9). */
+  text-overflow: ellipsis;
+}
+
+/* Свой крестик поля поиска: нативную кнопку очистки `type="search"` прячем. */
+.field::-webkit-search-cancel-button {
+  appearance: none;
+}
+
+/* Рамка 1px перекрашивается в цвет кольца, кольцо добирает остаток до ширины токена. */
+.field:focus-visible {
+  border-color: var(--tsr-comp-focus-ring);
+  box-shadow: 0 0 0 calc(var(--tsr-comp-focus-ring-width) - 1px)
+    var(--tsr-comp-focus-ring);
+}
+
+.field[aria-invalid='true'] {
+  border-color: var(--tsr-comp-cell-error-color);
+}
+
+/* Текст ошибки под полем. */
+.error {
+  color: var(--tsr-comp-error-text-color);
+  font-size: var(--tsr-comp-caption-font-size);
+}
+
+/* В ячейке — мельче и в одну строку: строка не растёт. */
+.error[data-compact] {
+  font-size: var(--tsr-comp-caption-font-size-compact);
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/*
+ * Поле поиска (ADR 0183, PK12): лупа слева, кнопки справа поверх поля; поле оставляет под них
+ * место.
+ */
+.search {
+  --_button-inset: var(--tsr-ref-space-1);
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.searchIcon {
+  position: absolute;
+  inset-inline-start: var(--tsr-comp-field-padding-x);
+  display: inline-flex;
+  color: var(--tsr-comp-control-color);
+  pointer-events: none;
+}
+
+.search[data-icon] > .field {
+  /* Лупа и промежуток до текста — как иконка и подпись `Button`. */
+  padding-inline-start: calc(
+    var(--tsr-comp-field-padding-x) + var(--tsr-comp-button-icon-size) +
+      var(--tsr-comp-button-gap)
+  );
+}
+
+.search[data-buttons='1'] > .field {
+  padding-inline-end: calc(
+    var(--tsr-comp-button-size-compact) + var(--_button-inset) * 2
+  );
+}
+
+.search[data-buttons='2'] > .field {
+  padding-inline-end: calc(
+    var(--tsr-comp-button-size-compact) * 2 + var(--_button-inset) * 2
+  );
+}
+
+.searchButtons {
+  position: absolute;
+  inset-inline-end: var(--_button-inset);
+  display: flex;
+  align-items: center;
+}

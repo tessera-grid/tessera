@@ -50,6 +50,8 @@ const DIRECT_SCROLL: Record<string, string> = {
     'читает scrollTop области — фасада слоя, а не элемента',
   'plugins/infiniteScroll/loader.ts':
     'scrollTop геометрии края — виртуальная позиция из слоя',
+  'ui/Calendar/TimeField.tsx':
+    'колонка списка часов и минут в поповере ставит выбранное значение в середину — это не прокрутка грида',
 }
 
 describe('Растяжка высоты', () => {

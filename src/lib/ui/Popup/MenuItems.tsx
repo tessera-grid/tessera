@@ -4,35 +4,44 @@
 import { useId } from 'react'
 
 import { Menu } from '@base-ui/react/menu'
-import { Check } from 'lucide-react'
-import clsx from 'clsx'
 
 import type { MenuGroupModel, MenuItemModel } from '../../util/menuModel'
 import { Tooltip } from '../Tooltip'
-import { useIcons } from '../icons'
+import { PopupGroup } from './PopupGroup'
+import { PopupItem, PopupItemMark, type PopupItemStatus } from './PopupItem'
 
-import styles from './ActionMenu.module.css'
+const statusOf = (item: MenuItemModel): PopupItemStatus | undefined =>
+  item.pending
+    ? 'pending'
+    : item.failed || item.checkFailed
+      ? 'failed'
+      : item.locked
+        ? 'blocked'
+        : item.section
+          ? 'submenu'
+          : item.done || item.active
+            ? 'checked'
+            : undefined
 
 const MenuItem = ({ item }: { item: MenuItemModel }) => {
-  const {
-    actionFailed: FailedIcon,
-    actionBlocked: BlockedIcon,
-    submenu: SubmenuIcon,
-  } = useIcons()
   const descriptionId = useId()
   const { tooltip, description } = item
 
   const node = (
-    <Menu.Item
-      className={styles.item}
+    <PopupItem
+      wrap
+      render={
+        <Menu.Item
+          disabled={item.disabled}
+          label={item.label}
+          closeOnClick={item.closeOnClick}
+          onClick={item.onClick}
+        />
+      }
       data-has-tooltip={tooltip ? '' : undefined}
       data-pending={item.pending || undefined}
       aria-busy={item.pending || undefined}
       aria-describedby={description ? descriptionId : undefined}
-      disabled={item.disabled}
-      label={item.label}
-      closeOnClick={item.closeOnClick}
-      onClick={item.onClick}
       onPointerEnter={item.preload}
       onFocus={item.preload}
       onKeyDown={item.onKeyDown}
@@ -44,41 +53,19 @@ const MenuItem = ({ item }: { item: MenuItemModel }) => {
       })}
       data-action-id={item.actionId}
       data-item-id={item.itemId}
-    >
-      <span className={styles.itemIcon} aria-hidden>
-        {item.icon}
-      </span>
-      <span className={styles.itemLabel}>{item.label}</span>
-      {item.hint && (
-        <span className={styles.itemHint} aria-hidden>
-          {item.hint}
-        </span>
-      )}
-      <span
-        className={clsx(
-          styles.itemCheck,
-          (item.failed || item.checkFailed) && styles.itemFailed,
-          item.locked && styles.itemBlocked,
-        )}
-        aria-hidden
-        data-action-failed={item.failed || undefined}
-        data-check-failed={item.checkFailed || undefined}
-        data-action-done={item.done || undefined}
-        data-action-blocked={item.locked || undefined}
-      >
-        {item.pending ? (
-          <span className={styles.itemSpinner} data-item-spinner="" />
-        ) : item.failed || item.checkFailed ? (
-          <FailedIcon width={14} height={14} />
-        ) : item.locked ? (
-          <BlockedIcon width={14} height={14} />
-        ) : item.section ? (
-          <SubmenuIcon width={14} height={14} />
-        ) : (
-          (item.done || item.active) && <Check width={14} height={14} />
-        )}
-      </span>
-    </Menu.Item>
+      icon={item.icon ?? null}
+      label={item.label}
+      hint={item.hint}
+      end={
+        <PopupItemMark
+          status={statusOf(item)}
+          data-action-failed={item.failed || undefined}
+          data-check-failed={item.checkFailed || undefined}
+          data-action-done={item.done || undefined}
+          data-action-blocked={item.locked || undefined}
+        />
+      }
+    />
   )
 
   return (
@@ -97,17 +84,15 @@ const MenuItem = ({ item }: { item: MenuItemModel }) => {
 
 export const MenuItems = ({ groups }: { groups: MenuGroupModel[] }) =>
   groups.map(group => (
-    <Menu.Group
+    <PopupGroup
       key={group.key}
-      className={clsx(styles.group, group.divided && styles.divided)}
+      render={<Menu.Group />}
+      label={group.label || undefined}
+      labelRender={<Menu.GroupLabel />}
+      divided={group.divided}
     >
-      {group.label && (
-        <Menu.GroupLabel className={styles.groupLabel}>
-          {group.label}
-        </Menu.GroupLabel>
-      )}
       {group.items.map(item => (
         <MenuItem key={item.key} item={item} />
       ))}
-    </Menu.Group>
+    </PopupGroup>
   ))

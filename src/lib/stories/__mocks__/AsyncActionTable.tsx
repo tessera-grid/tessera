@@ -15,7 +15,7 @@ export interface AsyncActionRow {
  */
 export const AsyncActionTable = ({ rows }: { rows: AsyncActionRow[] }) => (
   <VariantGrid
-    columns={['Fails — error flash', 'Succeeds — arc fades']}
+    columns={['Fails — arc stops and fades', 'Succeeds — arc fades']}
     rows={rows.map(({ label, fails, succeeds }) => ({
       label,
       cells: [fails, succeeds],

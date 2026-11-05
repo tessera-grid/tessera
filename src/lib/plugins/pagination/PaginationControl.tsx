@@ -6,7 +6,6 @@
 import { Suspense, useEffect, useId } from 'react'
 
 import type { PaginationState } from '@tanstack/react-table'
-import { ChevronDown } from 'lucide-react'
 
 import { announceLabel } from '../../core/announcer'
 import { useLazyPopover } from '../../core/lazyOpening'
@@ -31,7 +30,7 @@ import {
   type PaginationTable,
 } from '../paginationModel/model'
 import { type PageAction, PageButton } from './PageButton'
-import { SizeTrigger } from './SizeTrigger'
+import { SelectTrigger } from '../../ui/SelectTrigger/SelectTrigger'
 import styles from './Pagination.module.css'
 import { paginationLabels } from './labels'
 
@@ -127,15 +126,14 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
         {paginationLabels(labels).rowsPerPage}
       </span>
       {/* Имя — подпись и видимое значение, как у настоящего списка (WCAG 2.5.3). */}
-      <SizeTrigger
+      <SelectTrigger
         id={sizeTriggerId}
         aria-labelledby={`${sizeLabelId} ${sizeTriggerId}`}
         aria-haspopup="listbox"
         {...sizeSelect.trigger}
       >
         {pageSize}
-        <ChevronDown width={14} height={14} className={styles.triggerIcon} />
-      </SizeTrigger>
+      </SelectTrigger>
     </>
   )
 

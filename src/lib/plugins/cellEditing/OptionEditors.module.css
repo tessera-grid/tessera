@@ -1,15 +1,15 @@
 /* Редакторы вариантов (ADR 0175): поповер с полем поиска, окно виртуального списка и низ. */
-.positioner {
-  composes: positioner from '../../ui/Popup/Popup.module.css';
-}
-
 .popup {
-  composes: popup from '../../ui/Popup/Popup.module.css';
   display: flex;
   flex-direction: column;
   gap: var(--tsr-comp-popup-padding);
   width: max(var(--anchor-width), var(--tsr-comp-column-menu-width));
   max-width: calc(100vw - 16px);
+}
+
+/* Поле поиска — на двойном поле поповера от краёв и до списка (ADR 0017, PP13). */
+.search {
+  margin: var(--tsr-comp-popup-padding);
 }
 
 .scroller {
@@ -24,7 +24,6 @@
 }
 
 .item {
-  composes: item from '../../ui/Popup/Popup.module.css';
   position: absolute;
   top: 0;
   left: 0;

@@ -12,7 +12,7 @@ import { contrastAttribute, portalThemeClass } from '../../ui/theme/portalTheme'
 import type { ContrastMode } from '../../ui/theme/types'
 import { Button } from '../../ui/Button'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
-import { SelectCheckbox } from '../../ui/SelectCheckbox/SelectCheckbox'
+import { Checkbox } from '../../ui/Checkbox/Checkbox'
 import type { ConsoleKind } from './consoleLog'
 
 import styles from './ConsoleFilters.module.css'
@@ -88,10 +88,10 @@ export const ConsoleFilters = ({
                 {kinds.map(kind => (
                   <li key={kind}>
                     <label className={styles.row} data-console-filter={kind}>
-                      <SelectCheckbox
-                        selected={!hidden.has(kind)}
+                      <Checkbox
+                        checked={!hidden.has(kind)}
                         label={labels[kind]}
-                        onClick={() => onToggle(kind)}
+                        onCheckedChange={() => onToggle(kind)}
                       />
                       <span
                         aria-hidden="true"

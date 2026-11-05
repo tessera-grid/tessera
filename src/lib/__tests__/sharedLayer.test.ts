@@ -26,15 +26,15 @@ const strays = (names: string[], layers: string[]) =>
     .map(module => module.path)
     .filter(path => names.some(name => path.endsWith(`/${name}`)))
 
-/** Экспорты `/ui` (ADR 0166, SH4): переезд кита их не меняет; `CheckMark` — ADR 0172. */
+/** Экспорты `/ui` (ADR 0166, SH4): переезд кита их не меняет; один `Checkbox` вместо `SelectCheckbox` и `CheckMark` — ADR 0183, PK18. */
 const UI_EXPORTS = [
   'ActiveProps',
   'Button',
   'ButtonProps',
   'CellButton',
   'CellButtonProps',
-  'CheckMark',
-  'CheckMarkProps',
+  'Checkbox',
+  'CheckboxProps',
   'DerivedButtonProps',
   'ExpandButton',
   'ExpandButtonProps',
@@ -51,8 +51,6 @@ const UI_EXPORTS = [
   'SegmentOption',
   'Segments',
   'SegmentsProps',
-  'SelectCheckbox',
-  'SelectCheckboxProps',
   'Skeleton',
   'SkeletonProps',
   'SortButton',

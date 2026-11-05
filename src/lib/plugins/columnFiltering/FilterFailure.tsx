@@ -8,9 +8,8 @@ import {
   useServerActionMarks,
 } from '../../core/serverActions'
 import { useIcons } from '../../ui/icons'
-import { Tooltip } from '../../ui/Tooltip'
-
-import styles from './FilterPanel.module.css'
+import { PopupFooter } from '../../ui/Popup/PopupPanel'
+import { StatusIcon } from '../../ui/StatusIcon/StatusIcon'
 
 export const FilterFailure = ({
   table,
@@ -35,17 +34,11 @@ export const FilterFailure = ({
   }
   const reason = serverActionReason(failure, labels)
   const mark = (
-    <Tooltip title={reason}>
-      <span
-        className={styles.failure}
-        role="img"
-        aria-label={reason}
-        tabIndex={0}
-        data-testid="filter-failure"
-      >
-        <FailedIcon width={16} height={16} aria-hidden="true" />
-      </span>
-    </Tooltip>
+    <StatusIcon
+      reason={reason}
+      icon={<FailedIcon width={16} height={16} aria-hidden="true" />}
+      data-testid="filter-failure"
+    />
   )
-  return footer ? <div className={styles.footer}>{mark}</div> : mark
+  return footer ? <PopupFooter>{mark}</PopupFooter> : mark
 }

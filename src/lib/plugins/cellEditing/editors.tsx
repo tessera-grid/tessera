@@ -16,8 +16,8 @@ import type { DebugActionSource } from '../../core/debugActions'
 import { ignoreBusyChange } from '../../core/failures/failuresFeature'
 import { isCellBusy } from '../../shared/objectPending'
 import { preloadable } from '../../core/preloadable'
-import { useLocalization } from '../../core/localization'
-import { CheckMark } from '../../ui/CheckMark/CheckMark'
+import { Checkbox } from '../../ui/Checkbox/Checkbox'
+import { FieldError } from '../../ui/Field/Field'
 import { CellEditInput } from './CellEditInput'
 import styles from './CellEditInput.module.css'
 import { columnOf } from './editValue'
@@ -69,8 +69,8 @@ const numberEditor: CellEditor = ({
 )
 
 /**
- * Булево в открытой правке: значок в фокусе, Space и Enter переключают и сохраняют,
- * Escape и потеря фокуса отменяют. Открыта правка, когда сохранение отклонила `validate`
+ * Булево в открытой правке: флажок кита в фокусе (ADR 0183, PK15), Space и Enter переключают
+ * и сохраняют, Escape и потеря фокуса отменяют. Открыта правка, когда сохранение отклонила `validate`
  * или правку открыло приложение (ED5).
  */
 const BooleanEdit = ({
@@ -80,15 +80,15 @@ const BooleanEdit = ({
   commit,
   cancel,
 }: Parameters<CellEditor>[0]) => {
-  const labels = useLocalization()
   const errorId = useId()
-  const toggle = useRef<HTMLSpanElement>(null)
+  const toggle = useRef<HTMLElement>(null)
   useLayoutEffect(() => {
     toggle.current?.focus({ preventScroll: true })
   }, [])
   const checked = value === true
-  const onKeyDown = (event: KeyboardEvent<HTMLSpanElement>) => {
-    if (event.key === ' ' || event.key === 'Enter') {
+  // Space переключает сам флажок (Base UI), Enter — здесь: флажок Enter не переключает.
+  const onKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (event.key === 'Enter') {
       event.preventDefault()
       commit(!checked)
     }
@@ -96,27 +96,19 @@ const BooleanEdit = ({
   }
   return (
     <span className={styles.field}>
-      <span
+      <Checkbox
         ref={toggle}
-        role="checkbox"
-        tabIndex={0}
-        aria-checked={checked}
-        aria-label={label}
-        aria-invalid={error ? true : undefined}
+        checked={checked}
+        label={label}
+        invalid={!!error}
         aria-describedby={error ? errorId : undefined}
-        className={styles.toggle}
+        onCheckedChange={commit}
         onKeyDown={onKeyDown}
-        onClick={() => commit(!checked)}
         onBlur={cancel}
-      >
-        <CheckMark
-          checked={checked}
-          label={checked ? labels.booleanTrue : labels.booleanFalse}
-        />
-      </span>
-      <span id={errorId} role="alert" className={styles.error}>
+      />
+      <FieldError id={errorId} role="alert" compact className={styles.error}>
         {error}
-      </span>
+      </FieldError>
     </span>
   )
 }

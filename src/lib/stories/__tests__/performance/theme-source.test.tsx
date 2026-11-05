@@ -20,9 +20,8 @@ import {
 const TM11_COST = { ratio: 1.3, plusMs: 40 }
 
 const isDark = () =>
-  getComputedStyle(
-    document.querySelector('.data-grid-theme[class*="theme-wrapper"]')!,
-  ).colorScheme === 'dark'
+  getComputedStyle(document.querySelector('[data-tsr-grid]')!).colorScheme ===
+  'dark'
 
 describe('Отзывчивость — смена темы', () => {
   test(

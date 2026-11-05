@@ -286,7 +286,7 @@ export const UnsavedChangesApply: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     await step(APPLY[0]!.title, async () => {
       await waitForRows(canvas)
-      await expect(countOf()).toBe(2)
+      await until(() => expect(countOf()).toBe(2))
     })
     await step(APPLY[1]!.title, async () => {
       await guideNext(canvas)

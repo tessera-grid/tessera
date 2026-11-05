@@ -8,6 +8,11 @@
 `--tsr-comp-row-hovered-bg` и `-selected-bg` — цвет слоя поверх фона строки; токены
 `--tsr-comp-cell-pinned-bg`, `-pinned-hovered-bg`, `-pinned-selected-hovered-bg` удалены
 (ломающее изменение).
+2026-11-04 — T-R4: мост к `--font-sans` (TK6) и список осознанно не связанных имён shadcn;
+TI-10: кегли только токенами. T-R11, TI-08, TI-09, TK5: скругление только токенами; роли `--tsr-sys-radius-inner`
+(пункт поповера) и `-outer` (край липкого блока) — мост к `--radius-sm` и `--radius-lg` shadcn,
+`--tsr-ref-radius-lg` — 10px, как `--radius-lg` shadcn по умолчанию; облачко перетаскивания
+следует за `--tsr-sys-radius`, `Bubble` и полоса прокрутки — пилюля `--tsr-comp-radius-pill`.
 
 ## Контекст
 
@@ -53,7 +58,13 @@ Tier 3  COMPONENT   --tsr-comp-*   привязка к части грида; с
   Primitive ни на что не ссылается. Проверяется TI-06/TI-06b.
 - **T-R4. Мост к shadcn — только в Semantic.** Единственное место, где встречаются
   апстрим-имена (`--foreground`/`--card`/`--muted`/`--primary`/`--info`/`--border`/
-  `--ring`/`--destructive`/`--radius-md`): `--tsr-sys-x: var(--<shadcn>, <ref>)`.
+  `--ring`/`--destructive`/`--radius-sm`/`--radius-md`/`--radius-lg`/`--font-sans`):
+  `--tsr-sys-x: var(--<shadcn>, <ref>)`. Осознанно **не** мостятся: `--popover` — поповер
+  без рамки в тёмной теме отделяет от грида только тон светлее карточки (`--tsr-sys-elevated`),
+  а у shadcn `--popover` равен `--card`; `--accent` — наведение и выбор считаются от тона
+  текста, на них держатся рычаги контраста (ADR 0088); `--input` — рамка контрола не ниже
+  3:1 к фону (WCAG 1.4.11), у shadcn она бледнее; `--muted-foreground` — приглушённый
+  текст не ниже 4,5:1 (ADR 0089). Приложение меняет их ролями `--tsr-sys-*`.
 - **T-R5. Тема-зависимость — только в Semantic.** light/dark переключаются в
   `--tsr-sys-*` сменой того, какой primitive играет роль. Primitive и component
   БЕЗ `.dark`-блоков. Селекторы dark: `:where(.data-grid-theme.dark)` и
@@ -79,6 +90,14 @@ Tier 3  COMPONENT   --tsr-comp-*   привязка к части грида; с
   (CSS Modules захешируют классы). Инвариант сборки:
   `grep -c '_data-grid-theme_' dist/style.css` = 0 И есть литеральный
   `:where(.data-grid-theme)`.
+- **T-R11. Скругление — только токенами.** В CSS и стилях TSX библиотеки значение
+  `border-radius` — `var(--tsr-comp-*)` (и `calc` над ними), `inherit`, `0` или круг `50%`;
+  литерала длины нет. Component-токен скругления выводится из роли скругления `--tsr-sys-radius*`
+  (`--tsr-sys-radius` — контрол и поверхность, `-inner` — элемент внутри поверхности, `-outer` —
+  крупный край блока; роли названы по смыслу, а не t-shirt, T-R6) — прямо или через другой
+  токен скругления, — поэтому следует за `--radius` приложения.
+  Постоянный радиус — только у форм и геометрии из списка стража с причиной: пилюля,
+  круг, черта грипа, чекбокс, скелет, поворот линии дерева. Проверяется TI-08, TI-09.
 
 ### Примеры по уровням
 
@@ -133,54 +152,59 @@ Tier 3  COMPONENT   --tsr-comp-*   привязка к части грида; с
 Расширяет матрицу TH из ADR 0018 (те же тесты, переименованные токены). Новые —
 на уровни и однонаправленность.
 
-| ID  | Требование                                                                        | Тест                               |
-| --- | --------------------------------------------------------------------------------- | ---------------------------------- |
-| TK1 | Primitive-шкала присутствует и мода-независима (`--tsr-ref-*` не меняется в dark) | ✔ `TK1: primitive scale is …`      |
-| TK2 | Semantic флипается в dark, подставляя другой primitive (`--tsr-sys-fg`)           | ✔ `TK2: semantic role flips …`     |
-| TK3 | Component ссылается на semantic: `--tsr-sys-accent` перекрывает группу            | ✔ `TK3: overriding a semantic …`   |
-| TK4 | Мост shadcn в semantic: `--primary` потребителя выигрывает у primitive-дефолта    | ✔ `TK4: a shadcn upstream token …` |
+| ID  | Требование                                                                                                                                                 | Тест                                   |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| TK1 | Primitive-шкала присутствует и мода-независима (`--tsr-ref-*` не меняется в dark)                                                                          | ✔ `TK1: primitive scale is …`          |
+| TK2 | Semantic флипается в dark, подставляя другой primitive (`--tsr-sys-fg`)                                                                                    | ✔ `TK2: semantic role flips …`         |
+| TK3 | Component ссылается на semantic: `--tsr-sys-accent` перекрывает группу                                                                                     | ✔ `TK3: overriding a semantic …`       |
+| TK4 | Мост shadcn в semantic: `--primary` потребителя выигрывает у primitive-дефолта                                                                             | ✔ `TK4: a shadcn upstream token …`     |
+| TK5 | Мост shadcn для скруглений: `--radius-sm` и `--radius-lg` приложения скругляют пункт поповера и край липкого блока; без них — шкала primitive (6px и 10px) | ✔ `TK5: --radius-sm and --radius-lg …` |
+| TK6 | Мост shadcn для шрифта: `--font-sans` приложения — шрифт грида и его порталов; без него — системный набор                                                  | ✔ `TK6: --font-sans of the app …`      |
 
 **Матрица и инварианты токенов.** Каждое — в light и dark, где тест проходит оба
 режима; этапы и найденные ими дефекты — ниже.
 
-| ID     | Требование                                                                                                 | Тест                                 |
-| ------ | ---------------------------------------------------------------------------------------------------------- | ------------------------------------ |
-| TI-05  | Каждый `var(--tsr-comp-*)`, используемый в CSS, определён в `theme.css`                                    | ✔ `theming-invariants.test.tsx`      |
-| TI-06  | Component-токены ссылаются только на semantic — не на shadcn и не на цветовой primitive                    | ✔ `theming-invariants.test.tsx`      |
-| TI-06b | Semantic-токены не ссылаются на component (нет ссылок вверх)                                               | ✔ `theming-invariants.test.tsx`      |
-| TI-07  | Каждая тема-зависимая semantic-роль определена в тёмном блоке                                              | ✔ `theming-invariants.test.tsx`      |
-| TT-01  | Фон строки тела = `--tsr-comp-row-bg`                                                                      | ✔ `theming-matrix.test.tsx`          |
-| TT-02  | Фон нечётной строки = `--tsr-comp-row-odd-bg`                                                              | ✔ `theming-matrix.test.tsx`          |
-| TT-03  | Слой строки при наведении поверх её фона = `--tsr-comp-row-hovered-bg` (ADR 0126)                          | ✔ `theming-matrix.test.tsx`          |
-| TT-04  | Слой выбранной строки поверх её фона = `--tsr-comp-row-selected-bg` (ADR 0126)                             | ✔ `theming-matrix.test.tsx`          |
-| TT-12  | Фон шапки = `--tsr-comp-head-bg`                                                                           | ✔ `theming-matrix.test.tsx`          |
-| TT-13  | Фон ячейки шапки при наведении = `--tsr-comp-head-cell-hovered-bg`                                         | ✔ `theming-matrix.test.tsx`          |
-| TT-16  | Цвет кнопки сортировки = `--tsr-comp-control-color`                                                        | ✔ `theming-header-controls.test.tsx` |
-| TT-17  | Цвет кнопки сортировки при активной сортировке = `--tsr-comp-control-active-color`                         | ✔ `theming-header-controls.test.tsx` |
-| TT-18  | Фон активной кнопки сортировки при наведении = `--tsr-comp-control-active-hover-bg`                        | ✔ `theming-header-controls.test.tsx` |
-| TT-19p | Цвет кнопки закрепления у закреплённой колонки = `--tsr-comp-control-active-color`                         | ✔ `theming-header-controls.test.tsx` |
-| TT-19g | Цвет активной кнопки группировки = `--tsr-comp-control-active-color`                                       | ✔ `theming-header-controls.test.tsx` |
-| TT-20  | Цвет ручки перетаскивания = `--tsr-comp-control-color`                                                     | ✔ `theming-header-controls.test.tsx` |
-| TT-20d | Цвет выключенной ручки перетаскивания = `--tsr-comp-control-disabled-color`                                | ✔ `theming-header-controls.test.tsx` |
-| TT-21  | Цвет грипа ширины = `--tsr-comp-control-color`                                                             | ✔ `theming-header-controls.test.tsx` |
-| TT-22  | Рамка чекбокса = `--tsr-comp-control-border`                                                               | ✔ `theming-controls.test.tsx`        |
-| TT-23  | Фон отмеченного чекбокса = `--tsr-comp-checkbox-checked-bg`                                                | ✔ `theming-controls.test.tsx`        |
-| TT-23b | Фон частично отмеченного чекбокса = `--tsr-comp-checkbox-checked-bg`                                       | ✔ `theming-controls.test.tsx`        |
-| TT-25  | Рамка чекбокса при наведении = `--tsr-comp-control-active-color`                                           | ✔ `theming-controls.test.tsx`        |
-| TT-26  | Трек выключенного переключателя = `--tsr-comp-switch-track-off`                                            | ✔ `theming-controls.test.tsx`        |
-| TT-27  | Трек включённого переключателя = `--tsr-comp-switch-track-on`                                              | ✔ `theming-controls.test.tsx`        |
-| TT-27t | Бегунок переключателя = `--tsr-comp-switch-thumb`                                                          | ✔ `theming-controls.test.tsx`        |
-| TT-29  | Цвет и фон кнопки действия строки — из токенов контрола                                                    | ✔ `theming-controls.test.tsx`        |
-| TT-32  | Фон иконки-кнопки при наведении = `--tsr-comp-control-hover-bg`                                            | ✔ `theming-controls.test.tsx`        |
-| TT-33  | Трек `LinearProgress` = `--tsr-comp-loader-track` (дорожки нет с ADR 0094)                                 | → GL11                               |
-| TT-33b | Бар `LinearProgress` = `--tsr-comp-loader-bar`                                                             | ✔ `theming-loading.test.tsx`         |
-| TT-34  | Фон `Skeleton` = `--tsr-comp-skeleton-bg`                                                                  | ✔ `theming-loading.test.tsx`         |
-| TT-35  | Оверлей перетаскивания строки: `--tsr-comp-draggable-cell-bg`, прозрачность и `--tsr-comp-shadow-drag`     | ✔ `theming-overlays.test.tsx`        |
-| TT-36  | Фон бабла перетаскивания = `--tsr-comp-accent`                                                             | ✔ `theming-overlays.test.tsx`        |
-| TT-37  | Оверлей перетаскивания колонки: `--tsr-comp-draggable-cell-bg` и `--tsr-comp-shadow-drag`                  | ✔ `theming-overlays.test.tsx`        |
-| TT-38  | Недопустимое место броска строки (ADR 0137): токен облака определён и отличим от фона облака в обеих темах | ✔ `theming-overlays.test.tsx`        |
-| TT-40  | Токен бегунка скроллбара определён и флипается light↔dark                                                  | ✔ `theming-overlays.test.tsx`        |
-| TT-41  | Угол, где сходятся полосы прокрутки контейнера грида, прозрачен, как и дорожки: без белого квадрата        | ✔ `theming-overlays.test.tsx`        |
+| ID     | Требование                                                                                                                          | Тест                                 |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| TI-05  | Каждый `var(--tsr-comp-*)`, используемый в CSS, определён в `theme.css`                                                             | ✔ `theming-invariants.test.tsx`      |
+| TI-06  | Component-токены ссылаются только на semantic — не на shadcn и не на цветовой primitive                                             | ✔ `theming-invariants.test.tsx`      |
+| TI-06b | Semantic-токены не ссылаются на component (нет ссылок вверх)                                                                        | ✔ `theming-invariants.test.tsx`      |
+| TI-07  | Каждая тема-зависимая semantic-роль определена в тёмном блоке                                                                       | ✔ `theming-invariants.test.tsx`      |
+| TI-08  | `border-radius` в CSS и стилях TSX библиотеки — токен `--tsr-comp-*`, `inherit`, `0` или `50%`, без литерала длины (T-R11)          | ✔ `theming-invariants.test.tsx`      |
+| TI-09  | Component-токен скругления выводится из роли `--tsr-sys-radius*`; постоянный — только из списка форм и геометрии с причиной (T-R11) | ✔ `theming-invariants.test.tsx`      |
+| TI-10  | `font-size` в CSS библиотеки — токен `--tsr-comp-*` (и `calc` над ним) или `inherit`, без литерала                                  | ✔ `theming-invariants.test.tsx`      |
+| TT-01  | Фон строки тела = `--tsr-comp-row-bg`                                                                                               | ✔ `theming-matrix.test.tsx`          |
+| TT-02  | Фон нечётной строки = `--tsr-comp-row-odd-bg`                                                                                       | ✔ `theming-matrix.test.tsx`          |
+| TT-03  | Слой строки при наведении поверх её фона = `--tsr-comp-row-hovered-bg` (ADR 0126)                                                   | ✔ `theming-matrix.test.tsx`          |
+| TT-04  | Слой выбранной строки поверх её фона = `--tsr-comp-row-selected-bg` (ADR 0126)                                                      | ✔ `theming-matrix.test.tsx`          |
+| TT-12  | Фон шапки = `--tsr-comp-head-bg`                                                                                                    | ✔ `theming-matrix.test.tsx`          |
+| TT-13  | Фон ячейки шапки при наведении = `--tsr-comp-head-cell-hovered-bg`                                                                  | ✔ `theming-matrix.test.tsx`          |
+| TT-16  | Цвет кнопки сортировки = `--tsr-comp-control-color`                                                                                 | ✔ `theming-header-controls.test.tsx` |
+| TT-17  | Цвет кнопки сортировки при активной сортировке = `--tsr-comp-control-active-color`                                                  | ✔ `theming-header-controls.test.tsx` |
+| TT-18  | Фон активной кнопки сортировки при наведении = `--tsr-comp-control-active-hover-bg`                                                 | ✔ `theming-header-controls.test.tsx` |
+| TT-19p | Цвет кнопки закрепления у закреплённой колонки = `--tsr-comp-control-active-color`                                                  | ✔ `theming-header-controls.test.tsx` |
+| TT-19g | Цвет активной кнопки группировки = `--tsr-comp-control-active-color`                                                                | ✔ `theming-header-controls.test.tsx` |
+| TT-20  | Цвет ручки перетаскивания = `--tsr-comp-control-color`                                                                              | ✔ `theming-header-controls.test.tsx` |
+| TT-20d | Цвет выключенной ручки перетаскивания = `--tsr-comp-control-disabled-color`                                                         | ✔ `theming-header-controls.test.tsx` |
+| TT-21  | Цвет грипа ширины = `--tsr-comp-control-color`                                                                                      | ✔ `theming-header-controls.test.tsx` |
+| TT-22  | Рамка чекбокса = `--tsr-comp-control-border`                                                                                        | ✔ `theming-controls.test.tsx`        |
+| TT-23  | Фон отмеченного чекбокса = `--tsr-comp-checkbox-checked-bg`                                                                         | ✔ `theming-controls.test.tsx`        |
+| TT-23b | Фон частично отмеченного чекбокса = `--tsr-comp-checkbox-checked-bg`                                                                | ✔ `theming-controls.test.tsx`        |
+| TT-25  | Рамка чекбокса при наведении = `--tsr-comp-control-active-color`                                                                    | ✔ `theming-controls.test.tsx`        |
+| TT-26  | Трек выключенного переключателя = `--tsr-comp-switch-track-off`                                                                     | ✔ `theming-controls.test.tsx`        |
+| TT-27  | Трек включённого переключателя = `--tsr-comp-switch-track-on`                                                                       | ✔ `theming-controls.test.tsx`        |
+| TT-27t | Бегунок переключателя = `--tsr-comp-switch-thumb`                                                                                   | ✔ `theming-controls.test.tsx`        |
+| TT-29  | Цвет и фон кнопки действия строки — из токенов контрола                                                                             | ✔ `theming-controls.test.tsx`        |
+| TT-32  | Фон иконки-кнопки при наведении = `--tsr-comp-control-hover-bg`                                                                     | ✔ `theming-controls.test.tsx`        |
+| TT-33  | Трек `LinearProgress` = `--tsr-comp-loader-track` (дорожки нет с ADR 0094)                                                          | → GL11                               |
+| TT-33b | Бар `LinearProgress` = `--tsr-comp-loader-bar`                                                                                      | ✔ `theming-loading.test.tsx`         |
+| TT-34  | Фон `Skeleton` = `--tsr-comp-skeleton-bg`                                                                                           | ✔ `theming-loading.test.tsx`         |
+| TT-35  | Оверлей перетаскивания строки: `--tsr-comp-draggable-cell-bg`, прозрачность и `--tsr-comp-shadow-drag`                              | ✔ `theming-overlays.test.tsx`        |
+| TT-36  | Фон бабла перетаскивания = `--tsr-comp-accent`                                                                                      | ✔ `theming-overlays.test.tsx`        |
+| TT-37  | Оверлей перетаскивания колонки: `--tsr-comp-draggable-cell-bg` и `--tsr-comp-shadow-drag`                                           | ✔ `theming-overlays.test.tsx`        |
+| TT-38  | Недопустимое место броска строки (ADR 0137): токен облака определён и отличим от фона облака в обеих темах                          | ✔ `theming-overlays.test.tsx`        |
+| TT-40  | Токен бегунка скроллбара определён и флипается light↔dark                                                                           | ✔ `theming-overlays.test.tsx`        |
+| TT-41  | Угол, где сходятся полосы прокрутки контейнера грида, прозрачен, как и дорожки: без белого квадрата                                 | ✔ `theming-overlays.test.tsx`        |
 
 Существующие TH1–TH9 (ADR 0018 + токенизация Tooltip) сохраняются с
 переименованными токенами (`theming.test.tsx`).

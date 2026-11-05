@@ -8,7 +8,7 @@ import { reportAction, sourceOf } from '../../core/debugActions'
 import type { PluginCellProps } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
 import { useTableState } from '../../core/reactivity'
-import { SelectCheckbox } from '../../ui/SelectCheckbox/SelectCheckbox'
+import { Checkbox } from '../../ui/Checkbox/Checkbox'
 import { rowCheckboxOf, toggleRowSelection } from './keyboardActions'
 import {
   groupKeysOfRow,
@@ -63,10 +63,14 @@ export const RowSelectionComponent = ({
   }
 
   return (
-    <SelectCheckbox
-      selected={selected}
+    <Checkbox
+      className="row-select-checkbox"
+      checked={selected}
       indeterminate={indeterminate}
-      onClick={handleSelectRow}
+      onCheckedChange={(checked, event) =>
+        // Переключатель TanStack читает `target.checked` события изменения.
+        handleSelectRow({ target: { checked }, nativeEvent: event })
+      }
       disabled={!canSelect}
       label={
         group

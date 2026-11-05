@@ -102,6 +102,7 @@ export const Stub = forwardRef<HTMLDivElement, StubProps>(function Stub(
     <div
       ref={setRoot}
       className={clsx(styles.stub, className)}
+      data-stub=""
       data-size={size}
       data-media-hidden={(hasMedia && mediaHidden) || undefined}
       {...rest}

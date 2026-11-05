@@ -34,7 +34,7 @@ export const Switch = forwardRef<
         }}
         {...rest}
       >
-        <BaseSwitch.Thumb className={styles.thumb} />
+        <BaseSwitch.Thumb className={styles.thumb} data-switch-thumb="" />
       </BaseSwitch.Root>
       {busy.arc}
     </span>

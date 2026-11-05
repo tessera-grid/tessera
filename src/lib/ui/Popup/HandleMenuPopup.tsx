@@ -4,15 +4,15 @@
 import type { MouseEvent, RefObject } from 'react'
 
 import { Menu } from '@base-ui/react/menu'
-import clsx from 'clsx'
 
 import type { HandleMenuItemModel } from '../../util/menuModel'
-import { usePortalThemeData, usePortalThemeClass } from '../theme'
+import { PopupGroup } from './PopupGroup'
+import { PopupItem } from './PopupItem'
+import { PopupSurface } from './PopupSurface'
 import { useCloseOnGridScroll } from './useCloseOnGridScroll'
 import { GRID_SCROLL_REASON, useMenuLeave } from './useMenuLeave'
 
 import menuStyles from './ActionMenu.module.css'
-import { POPUP_SIDE_OFFSET } from './offset'
 
 export interface HandleMenuPopupProps {
   anchor: RefObject<HTMLElement | null>
@@ -33,8 +33,6 @@ export const HandleMenuPopup = ({
   onClose,
   onItemSelect,
 }: HandleMenuPopupProps) => {
-  const themeClass = usePortalThemeClass()
-  const themeData = usePortalThemeData()
   const leave = useMenuLeave()
   useCloseOnGridScroll(true, () => {
     leave.track(false, GRID_SCROLL_REASON)
@@ -52,40 +50,41 @@ export const HandleMenuPopup = ({
       }}
     >
       <Menu.Portal>
-        <Menu.Positioner
-          anchor={anchor}
-          side="bottom"
-          align="start"
-          sideOffset={POPUP_SIDE_OFFSET}
-          className={clsx(themeClass, menuStyles.positioner)}
-          {...themeData}
+        <PopupSurface
+          positioner={
+            <Menu.Positioner anchor={anchor} side="bottom" align="start" />
+          }
+          popup={
+            <Menu.Popup
+              aria-label={label}
+              finalFocus={() =>
+                leave.returnFocus() && (focusTarget.current ?? true)
+              }
+            />
+          }
+          className={menuStyles.popup}
         >
-          <Menu.Popup
-            aria-label={label}
-            finalFocus={() =>
-              leave.returnFocus() && (focusTarget.current ?? true)
-            }
-            className={clsx(themeClass, menuStyles.popup)}
-          >
-            <Menu.Group className={menuStyles.group}>
-              {items.map(item => (
-                <Menu.Item
-                  key={item.id}
-                  className={menuStyles.item}
-                  disabled={item.disabled}
-                  label={item.label}
-                  data-item-id={item.id}
-                  onClick={event => {
-                    onItemSelect?.(item.id, event)
-                    item.onSelect()
-                  }}
-                >
-                  <span className={menuStyles.itemLabel}>{item.label}</span>
-                </Menu.Item>
-              ))}
-            </Menu.Group>
-          </Menu.Popup>
-        </Menu.Positioner>
+          <PopupGroup render={<Menu.Group />}>
+            {items.map(item => (
+              <PopupItem
+                key={item.id}
+                wrap
+                render={
+                  <Menu.Item
+                    disabled={item.disabled}
+                    label={item.label}
+                    onClick={event => {
+                      onItemSelect?.(item.id, event)
+                      item.onSelect()
+                    }}
+                  />
+                }
+                data-item-id={item.id}
+                label={item.label}
+              />
+            ))}
+          </PopupGroup>
+        </PopupSurface>
       </Menu.Portal>
     </Menu.Root>
   )

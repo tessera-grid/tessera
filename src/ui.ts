@@ -34,11 +34,7 @@ export {
   ResizeHandler,
   type ResizeSplitterProps,
 } from './lib/plugins/columnSizing/ResizeHandler'
-export {
-  SelectCheckbox,
-  type SelectCheckboxProps,
-} from './lib/ui/SelectCheckbox/SelectCheckbox'
-export { CheckMark, type CheckMarkProps } from './lib/ui/CheckMark/CheckMark'
+export { Checkbox, type CheckboxProps } from './lib/ui/Checkbox/Checkbox'
 export {
   ExpandButton,
   type ExpandButtonProps,

@@ -1,17 +1,8 @@
+/* Призрак колонки: вид — облачко кита `DragCloud` (ADR 0183, PK21), здесь — раскладка заголовка. */
 .head__cell--overlay {
-  display: flex;
   will-change: width, transform;
-  padding: 0;
-  border: none;
-  user-select: none;
-  overflow: hidden;
 
-  border-radius: 8px;
-  box-shadow: var(--tsr-comp-shadow-drag);
-  opacity: var(--tsr-comp-draggable-opacity) !important;
-  background-color: var(--tsr-comp-draggable-cell-bg);
-
-  /* Padding for resizable cell wrapper */
+  /* Место под грип ширины у правого края. */
 
   &:is([data-column-resizable='true'])
     :global(.data-grid__cell-wrapper-content) {

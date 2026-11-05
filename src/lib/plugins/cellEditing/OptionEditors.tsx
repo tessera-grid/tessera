@@ -18,22 +18,19 @@ import {
 } from 'react'
 
 import { Combobox } from '@base-ui/react/combobox'
-import clsx from 'clsx'
 
 import type { ColumnOption, OptionValue } from '../../core/columnOptions'
 import { objectKeyOf, objectLabelOf } from '../../core/dataTypeFormat'
 import { readPluginHooks } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
 import type { RowSource } from '../../core/rowSource'
-import {
-  OptionChecklist,
-  OptionStatus,
-} from '../../shared/options/OptionChecklist'
+import { optionsLabels } from '../../shared/options/labels'
 import { useLoadedOptions } from '../../shared/options/useLoadedOptions'
-import { OptionSearch } from '../../shared/options/OptionSearch'
+import { Checklist, ChecklistStatus } from '../../ui/Checklist/Checklist'
+import { Field, SearchField } from '../../ui/Field/Field'
 import { useIcons } from '../../ui/icons'
-import { usePortalThemeClass, usePortalThemeData } from '../../ui/theme'
-import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
+import { PopupItem } from '../../ui/Popup/PopupItem'
+import { PopupSurface } from '../../ui/Popup/PopupSurface'
 import { useCloseOnGridScroll } from '../../ui/Popup/useCloseOnGridScroll'
 import { useDebouncedCallback } from '../../util/useDebouncedCallback'
 import { useVirtualizer } from '../../../vendor/tanstack-virtual/react-virtual'
@@ -46,7 +43,6 @@ import {
 import type { CellEditingHooks, CellEditorProps } from './types'
 
 import popoverStyles from './EditPopover.module.css'
-import checklistStyles from '../../shared/options/OptionChecklist.module.css'
 import styles from './OptionEditors.module.css'
 import { cellEditingLabels } from './labels'
 
@@ -185,6 +181,7 @@ const VirtualOptions = ({
       role="presentation"
       ref={onScrollRef}
       className={styles.scroller}
+      data-popup-scroller=""
       style={{ '--_total': `${total}px` } as CSSProperties}
     >
       <div
@@ -195,10 +192,9 @@ const VirtualOptions = ({
         {virtualizer.getVirtualItems().map(row => {
           const item = items[row.index]!
           return (
-            <Combobox.Item
+            <PopupItem
               key={String(item.value)}
-              index={row.index}
-              value={item}
+              render={<Combobox.Item index={row.index} value={item} />}
               className={styles.item}
               aria-setsize={items.length}
               aria-posinset={row.index + 1}
@@ -207,12 +203,17 @@ const VirtualOptions = ({
                 height: row.size,
                 transform: `translateY(${row.start}px)`,
               }}
+              icon={
+                <Combobox.ItemIndicator
+                  keepMounted
+                  className={styles.indicator}
+                >
+                  <CheckIcon width={14} height={14} aria-hidden />
+                </Combobox.ItemIndicator>
+              }
             >
-              <Combobox.ItemIndicator keepMounted className={styles.indicator}>
-                <CheckIcon width={14} height={14} aria-hidden />
-              </Combobox.ItemIndicator>
               <span className={styles.label}>{item.label}</span>
-            </Combobox.Item>
+            </PopupItem>
           )
         })}
       </div>
@@ -239,8 +240,6 @@ const statusOf = (
 export const SelectEditor = (props: CellEditorProps) => {
   const { cell, label, cancel, value, text } = props
   const labels = useLocalization()
-  const themeClass = usePortalThemeClass()
-  const themeData = usePortalThemeData()
   const anchor = useRef<HTMLSpanElement>(null)
   const input = useRef<HTMLInputElement>(null)
   const virtualizerRef = useRef<Virtualizer | null>(null)
@@ -298,56 +297,63 @@ export const SelectEditor = (props: CellEditorProps) => {
         }}
       >
         <Combobox.Portal>
-          <Combobox.Positioner
-            anchor={anchor}
-            side="bottom"
-            align="start"
-            sideOffset={POPUP_SIDE_OFFSET}
-            className={clsx(themeClass, styles.positioner)}
-            {...themeData}
+          <PopupSurface
+            positioner={
+              <Combobox.Positioner
+                anchor={anchor}
+                side="bottom"
+                align="start"
+              />
+            }
+            popup={
+              <Combobox.Popup
+                aria-label={label}
+                initialFocus={input}
+                finalFocus={false}
+                data-testid="edit-options"
+                // Клавиши поповера — его, а не навигации грида.
+                onKeyDown={event => event.stopPropagation()}
+              />
+            }
+            className={styles.popup}
           >
-            <Combobox.Popup
-              aria-label={label}
-              initialFocus={input}
-              finalFocus={false}
-              className={clsx(themeClass, styles.popup)}
-              data-testid="edit-options"
-              // Клавиши поповера — его, а не навигации грида.
-              onKeyDown={event => event.stopPropagation()}
+            <SearchField
+              className={styles.search}
+              clear={
+                query === ''
+                  ? undefined
+                  : {
+                      label: optionsLabels(labels).clearSearch,
+                      onClick: () => {
+                        setQuery('')
+                        input.current?.focus()
+                      },
+                      'data-testid': 'edit-options-clear-search',
+                    }
+              }
             >
-              <OptionSearch
-                value={query}
-                onClear={() => {
-                  setQuery('')
-                  input.current?.focus()
-                }}
-                clearTestId="edit-options-clear-search"
-              >
-                <Combobox.Input
-                  ref={input}
-                  className={checklistStyles.search}
-                  aria-label={cellEditingLabels(labels).editSearchOptions}
-                  placeholder={cellEditingLabels(labels).editSearchOptions}
-                  data-testid="edit-select"
-                />
-              </OptionSearch>
-              {status && (
-                <OptionStatus
-                  status={status}
-                  onRetry={loaded?.retry}
-                  reason={
-                    loaded?.status === 'error' ? loaded.reason : undefined
-                  }
-                  labels={editStatusLabels(labels)}
-                  retryTestId="edit-options-retry"
-                />
-              )}
-              <Combobox.List>
-                <VirtualOptions virtualizerRef={virtualizerRef} />
-              </Combobox.List>
-              <ClearValue onClear={() => props.commit(null)} />
-            </Combobox.Popup>
-          </Combobox.Positioner>
+              <Field
+                ref={input}
+                render={<Combobox.Input />}
+                aria-label={cellEditingLabels(labels).editSearchOptions}
+                placeholder={cellEditingLabels(labels).editSearchOptions}
+                data-testid="edit-select"
+              />
+            </SearchField>
+            {status && (
+              <ChecklistStatus
+                status={status}
+                onRetry={loaded?.retry}
+                reason={loaded?.status === 'error' ? loaded.reason : undefined}
+                labels={editStatusLabels(labels)}
+                retryTestId="edit-options-retry"
+              />
+            )}
+            <Combobox.List>
+              <VirtualOptions virtualizerRef={virtualizerRef} />
+            </Combobox.List>
+            <ClearValue onClear={() => props.commit(null)} />
+          </PopupSurface>
         </Combobox.Portal>
       </Combobox.Root>
     </span>
@@ -393,13 +399,19 @@ export const MultiSelectEditor = (props: CellEditorProps) => {
           if (event.key === 'Escape') cancel()
         }}
       >
-        <OptionSearch
-          value={query}
-          onClear={() => setQuery('')}
-          clearTestId="edit-options-clear-search"
+        <SearchField
+          className={styles.search}
+          clear={
+            query === ''
+              ? undefined
+              : {
+                  label: optionsLabels(labels).clearSearch,
+                  onClick: () => setQuery(''),
+                  'data-testid': 'edit-options-clear-search',
+                }
+          }
         >
-          <input
-            className={checklistStyles.search}
+          <Field
             type="text"
             value={query}
             placeholder={cellEditingLabels(labels).editSearchOptions}
@@ -408,9 +420,9 @@ export const MultiSelectEditor = (props: CellEditorProps) => {
             onChange={event => setQuery(event.target.value)}
             data-testid="edit-options-search"
           />
-        </OptionSearch>
+        </SearchField>
         {status ? (
-          <OptionStatus
+          <ChecklistStatus
             status={status}
             onRetry={loaded?.retry}
             reason={loaded?.status === 'error' ? loaded.reason : undefined}
@@ -418,7 +430,7 @@ export const MultiSelectEditor = (props: CellEditorProps) => {
             retryTestId="edit-options-retry"
           />
         ) : (
-          <OptionChecklist
+          <Checklist
             id={listId}
             options={options}
             isSelected={option => selected.includes(option)}

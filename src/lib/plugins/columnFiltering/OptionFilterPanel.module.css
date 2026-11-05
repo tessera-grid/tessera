@@ -1,4 +1,4 @@
-/* Чек-лист фильтра вариантов (ADR 0048): поиск, массовые действия, список со счётчиками. */
+/* Фильтр вариантов (ADR 0048): ширина панели и массовые действия над списком кита `Checklist`. */
 .panel {
   width: var(--tsr-comp-column-menu-width);
   max-width: calc(100vw - 16px);
@@ -8,52 +8,4 @@
   display: flex;
   justify-content: space-between;
   gap: 8px;
-}
-
-.scroller {
-  max-height: var(--tsr-comp-column-menu-max-height);
-  overflow-y: auto;
-}
-
-.list {
-  position: relative;
-}
-
-.item {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-}
-
-.row {
-  composes: item from '../../ui/Popup/Popup.module.css';
-  height: var(--tsr-comp-popup-item-min-height);
-}
-
-.row:hover {
-  background-color: var(--tsr-comp-control-hover-bg);
-}
-
-.label {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.count {
-  flex-shrink: 0;
-  color: var(--tsr-comp-control-color);
-  font-variant-numeric: tabular-nums;
-}
-
-.status {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin: 0;
-  padding: 8px;
-  color: var(--tsr-comp-control-color);
 }

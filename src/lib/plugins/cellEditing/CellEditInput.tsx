@@ -12,6 +12,7 @@ import {
   type KeyboardEvent,
 } from 'react'
 
+import { FieldError } from '../../ui/Field/Field'
 import styles from './CellEditInput.module.css'
 
 interface CellEditInputProps {
@@ -73,9 +74,9 @@ export const CellEditInput = ({
       />
       {/* Всегда в DOM: скринридеры надёжно объявляют смену текста alert-области,
           а не вставку новой. */}
-      <span id={errorId} role="alert" className={styles.error}>
+      <FieldError id={errorId} role="alert" compact className={styles.error}>
         {error}
-      </span>
+      </FieldError>
     </span>
   )
 }

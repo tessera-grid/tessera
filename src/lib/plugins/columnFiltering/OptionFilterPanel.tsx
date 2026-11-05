@@ -6,14 +6,11 @@
  */
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 
-import clsx from 'clsx'
-
 import { optionLabelOf, type OptionValue } from '../../core/columnOptions'
-import {
-  OptionChecklist,
-  OptionStatus,
-} from '../../shared/options/OptionChecklist'
-import { OptionSearch } from '../../shared/options/OptionSearch'
+import { optionsLabels } from '../../shared/options/labels'
+import { Checklist, ChecklistStatus } from '../../ui/Checklist/Checklist'
+import { Field, SearchField } from '../../ui/Field/Field'
+import { PopupPanel } from '../../ui/Popup/PopupPanel'
 import { useLoadedOptions } from '../../shared/options/useLoadedOptions'
 import { setColumnFilterByUser } from '../../shared/filtering/filtering'
 import { assignRef } from '../../ui/assignRef'
@@ -190,96 +187,105 @@ export const OptionFilterPanel = ({
   const busy = loaded?.status === 'loading'
 
   return (
-    <div
+    <PopupPanel
       ref={rootRef}
-      className={clsx(panelStyles.panel, styles.panel)}
+      className={styles.panel}
       data-testid="filter-panel"
       data-filter-type={type}
-    >
-      <OperatorSelect
-        value={draft.operator}
-        operators={operators}
-        labelOf={operator => operatorLabel(operator, labels)}
-        onChange={operator => update({ operator })}
-      />
-      {needsValues(draft.operator) && (
+      footer={
         <>
-          <OptionSearch
-            value={search}
-            onClear={() => {
-              setSearch('')
-              applySearch.cancel()
-              setQuery('')
-            }}
-          >
-            <input
-              ref={node => assignRef(controls.initialFocusRef, node)}
-              className={panelStyles.input}
-              type="text"
-              value={search}
-              placeholder={columnFilteringLabels(labels).filterSearchOptions}
-              aria-label={columnFilteringLabels(labels).filterSearchOptions}
-              aria-controls={hasList ? listId : undefined}
-              onChange={event => {
-                setSearch(event.target.value)
-                applySearch.schedule(event.target.value)
-              }}
-              data-testid="filter-options-search"
-            />
-          </OptionSearch>
-          <div className={styles.bulk}>
-            <Button
-              variant="ghost"
-              disabled={options.length === 0}
-              onClick={selectAll}
-              data-testid="filter-select-all"
-            >
-              {columnFilteringLabels(labels).filterSelectAll}
-            </Button>
-            <Button
-              variant="ghost"
-              disabled={!options.some(option => isSelected(option.value))}
-              onClick={clearVisible}
-              data-testid="filter-clear-selection"
-            >
-              {columnFilteringLabels(labels).filterClearSelection}
-            </Button>
-          </div>
-          {loaded?.status === 'error' ? (
-            <OptionStatus
-              status="error"
-              onRetry={loaded.retry}
-              reason={loaded.reason}
-              labels={statusLabels}
-              retryTestId="filter-options-retry"
-            />
-          ) : options.length === 0 ? (
-            <OptionStatus
-              status={busy ? 'loading' : 'empty'}
-              labels={statusLabels}
-              retryTestId="filter-options-retry"
-            />
-          ) : (
-            <OptionChecklist
-              id={listId}
-              options={options}
-              isSelected={isSelected}
-              onToggle={toggle}
-              label={header}
-              busy={busy}
-              counts={counts}
-              testId="filter-options"
-            />
-          )}
+          <FilterFailure table={table} columnId={column.id} />
+          <Button variant="ghost" onClick={reset} data-testid="filter-reset">
+            {columnFilteringLabels(labels).filterReset}
+          </Button>
+          {server && <FilterApply {...filterDraft} />}
         </>
-      )}
-      <div className={panelStyles.footer}>
-        <FilterFailure table={table} columnId={column.id} />
-        <Button variant="ghost" onClick={reset} data-testid="filter-reset">
-          {columnFilteringLabels(labels).filterReset}
-        </Button>
-        {server && <FilterApply {...filterDraft} />}
+      }
+    >
+      <div className={panelStyles.content}>
+        <OperatorSelect
+          value={draft.operator}
+          operators={operators}
+          labelOf={operator => operatorLabel(operator, labels)}
+          onChange={operator => update({ operator })}
+        />
+        {needsValues(draft.operator) && (
+          <>
+            <SearchField
+              clear={
+                search === ''
+                  ? undefined
+                  : {
+                      label: optionsLabels(labels).clearSearch,
+                      onClick: () => {
+                        setSearch('')
+                        applySearch.cancel()
+                        setQuery('')
+                      },
+                    }
+              }
+            >
+              <Field
+                ref={node => assignRef(controls.initialFocusRef, node)}
+                type="text"
+                value={search}
+                placeholder={columnFilteringLabels(labels).filterSearchOptions}
+                aria-label={columnFilteringLabels(labels).filterSearchOptions}
+                aria-controls={hasList ? listId : undefined}
+                onChange={event => {
+                  setSearch(event.target.value)
+                  applySearch.schedule(event.target.value)
+                }}
+                data-testid="filter-options-search"
+              />
+            </SearchField>
+            <div className={styles.bulk}>
+              <Button
+                variant="ghost"
+                disabled={options.length === 0}
+                onClick={selectAll}
+                data-testid="filter-select-all"
+              >
+                {columnFilteringLabels(labels).filterSelectAll}
+              </Button>
+              <Button
+                variant="ghost"
+                disabled={!options.some(option => isSelected(option.value))}
+                onClick={clearVisible}
+                data-testid="filter-clear-selection"
+              >
+                {columnFilteringLabels(labels).filterClearSelection}
+              </Button>
+            </div>
+            {loaded?.status === 'error' ? (
+              <ChecklistStatus
+                status="error"
+                onRetry={loaded.retry}
+                reason={loaded.reason}
+                labels={statusLabels}
+                retryTestId="filter-options-retry"
+              />
+            ) : options.length === 0 ? (
+              <ChecklistStatus
+                status={busy ? 'loading' : 'empty'}
+                labels={statusLabels}
+                retryTestId="filter-options-retry"
+              />
+            ) : (
+              <Checklist
+                id={listId}
+                options={options}
+                isSelected={isSelected}
+                onToggle={toggle}
+                label={header}
+                busy={busy}
+                counts={counts}
+                testId="filter-options"
+              />
+            )}
+          </>
+        )}
       </div>
-    </div>
+    </PopupPanel>
   )
 }

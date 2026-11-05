@@ -12,7 +12,7 @@ import { ActionButton } from '../../../grid/headerActions/ActionButton'
 import { PinButton } from '../../../plugins/columnPinning/PinButton'
 import { SortButton } from '../../../plugins/columnSorting/SortButton'
 import { GroupButton } from '../../../plugins/rowGrouping/GroupButton'
-import { SelectCheckbox } from '../../../ui/SelectCheckbox/SelectCheckbox'
+import { Checkbox } from '../../../ui/Checkbox/Checkbox'
 import { Button } from '../../../ui/Button'
 import { IconButton } from '../../../ui/IconButton'
 import { Switch } from '../../../ui/Switch'
@@ -354,7 +354,7 @@ describe('Style contract by component family', () => {
   test('TC-4 form controls share ONE disabled opacity = --tsr-comp-disabled-opacity', async () => {
     const cb = (
       await renderThemed(
-        <SelectCheckbox selected={false} disabled onClick={noop} />,
+        <Checkbox className="row-select-checkbox" checked={false} disabled />,
       )
     ).querySelector<HTMLElement>('[role="checkbox"]')!
     const sw = (
@@ -366,7 +366,9 @@ describe('Style contract by component family', () => {
 
   test('TC-5 form controls share ONE transition', async () => {
     const cb = (
-      await renderThemed(<SelectCheckbox selected={false} onClick={noop} />)
+      await renderThemed(
+        <Checkbox className="row-select-checkbox" checked={false} />,
+      )
     ).querySelector<HTMLElement>('[role="checkbox"]')!
     const sw = (
       await renderThemed(<Switch defaultChecked={false} />)

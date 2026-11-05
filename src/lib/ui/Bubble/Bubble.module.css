@@ -2,7 +2,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 32px;
+  border-radius: var(--tsr-comp-radius-pill, 999px);
   box-shadow: var(--tsr-comp-shadow-drop-bubble);
   background-color: var(--_bubble-tone);
   color: var(--_bubble-tone-fg);
@@ -37,7 +37,7 @@
   height: 15px;
   /* bottom 1px — оптический сдвиг цифр к центру (у цифр descent=0). */
   padding: 0 4px 1px;
-  font-size: 0.625rem;
+  font-size: var(--tsr-comp-bubble-font-size);
   font-weight: 600;
   line-height: 1;
 }

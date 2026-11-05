@@ -92,16 +92,19 @@ describe('Theming matrix — DnD overlays & edges', () => {
   describe.each(MODES)('mode=%s', mode => {
     const dark = mode === 'dark'
 
-    test('TT-35 row drag overlay — draggable-cell-bg + opacity + shadow-drag', async () => {
+    test('TT-35 row drag overlay — draggable-cell-bg + opacity + shadow-drag of the elevated surface', async () => {
       const { container } = await render(<RowOverlayHarness colorMode={mode} />)
       const overlay = byDraggableOpacity(container)
       expect(read(overlay, 'background-color')).toBe(
         resolveColor('--tsr-comp-draggable-cell-bg', dark),
       )
       expect(read(overlay, 'opacity')).toBe('0.95')
-      // Тень drag завязана на --tsr-comp-shadow-color.
+      // Облачко — приподнятая поверхность (ADR 0183, PK21): тень её плотности, фон не фон страницы.
       expect(read(overlay, 'box-shadow')).toContain(
-        resolveColor('--tsr-comp-shadow-color', dark),
+        resolveColor('--tsr-sys-shadow-elevated', dark),
+      )
+      expect(read(overlay, 'background-color')).toBe(
+        resolveColor('--tsr-sys-elevated', dark),
       )
     })
 
@@ -127,7 +130,7 @@ describe('Theming matrix — DnD overlays & edges', () => {
         resolveColor('--tsr-comp-draggable-cell-bg', dark),
       )
       expect(read(overlay, 'box-shadow')).toContain(
-        resolveColor('--tsr-comp-shadow-color', dark),
+        resolveColor('--tsr-sys-shadow-elevated', dark),
       )
     })
   })
@@ -159,7 +162,8 @@ describe('Theming matrix — DnD overlays & edges', () => {
   // TT-41: угол, где сходятся полосы прокрутки, — пустая область контейнера, как и
   // дорожки: без своего правила Chromium закрашивает его белым квадратом. Headless
   // Chromium тестов полосы прячет, а псевдоэлементы недоступны getComputedStyle (как
-  // TT-40), поэтому сверяем правила загруженных таблиц стилей.
+  // TT-40), поэтому сверяем правила загруженных таблиц стилей. Правило полос одно на тему
+  // (ADR 0183, PK17): элемент темы или его потомок — `:where(.data-grid-theme) ::…`.
   test('TT-41 scrollbar corner of the grid container is transparent like the tracks', async () => {
     const Grid = () => {
       const table = useCreateTable({
@@ -173,6 +177,13 @@ describe('Theming matrix — DnD overlays & edges', () => {
       .poll(() => document.querySelector<HTMLElement>('.data-grid__container'))
       .not.toBeNull()
       .then(() => document.querySelector<HTMLElement>('.data-grid__container')!)
+    const appliesTo = (selector: string, pseudo: string) => {
+      if (!selector.endsWith(pseudo)) return false
+      const prefix = selector.slice(0, -pseudo.length)
+      return prefix.endsWith(' ')
+        ? container.parentElement?.closest(prefix.trim()) != null
+        : container.matches(prefix)
+    }
     const pseudoBackground = (pseudo: string) =>
       [...document.styleSheets]
         .flatMap(sheet => {
@@ -185,8 +196,9 @@ describe('Theming matrix — DnD overlays & edges', () => {
         .filter(
           (rule): rule is CSSStyleRule =>
             rule instanceof CSSStyleRule &&
-            rule.selectorText.endsWith(pseudo) &&
-            container.matches(rule.selectorText.slice(0, -pseudo.length)),
+            rule.selectorText
+              .split(',')
+              .some(part => appliesTo(part.trim(), pseudo)),
         )
         .map(rule => rule.style.backgroundColor || rule.style.background)
     const transparent = (value: string) =>

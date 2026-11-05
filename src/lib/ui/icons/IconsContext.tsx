@@ -19,6 +19,7 @@ import {
   ChevronsDown,
   ChevronsUpDown,
   CircleAlert,
+  Clock,
   Columns3,
   Download,
   Eye,
@@ -121,6 +122,8 @@ export interface TableIcons {
   /** Листание месяцев в календаре фильтра дат (ADR 0047) */
   previousMonth: IconComponent
   nextMonth: IconComponent
+  /** Кнопка списка часов и минут у поля времени (ADR 0183, PK20) */
+  chooseTime: IconComponent
   /** Метка ячейки, сохранение которой отклонено сервером */
   saveFailed: IconComponent
   /** Пункт меню, чьё действие отклонено (ADR 0078) */
@@ -199,6 +202,7 @@ export const DEFAULT_ICONS: TableIcons = {
   lastPage: ChevronsRight,
   previousMonth: ChevronLeft,
   nextMonth: ChevronRight,
+  chooseTime: Clock,
   saveFailed: CircleAlert,
   actionFailed: CircleAlert,
   cancelAction: Square,

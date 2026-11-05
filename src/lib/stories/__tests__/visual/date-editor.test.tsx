@@ -67,7 +67,9 @@ const popup = () =>
 const day = (iso: string) =>
   popup()!.querySelector<HTMLButtonElement>(`[data-day="${iso}"] button`)!
 const time = () =>
-  popup()?.querySelector<HTMLInputElement>('[data-testid="edit-time"]') ?? null
+  popup()?.querySelector<HTMLElement>('[data-testid="edit-time"]') ?? null
+/** Значение поля времени кита (ADR 0183, PK20). */
+const timeValue = () => time()?.getAttribute('data-value')
 
 const openEdit = async (column: string) => {
   await revealCellButtons(cellOf(column))
@@ -110,11 +112,14 @@ describe('редактор даты (ADR 0175)', () => {
 
     // Момент строкой: день и время на часах пояса таблицы, Enter в поле времени сохраняет.
     await openEdit('stamp')
-    expect(time()!.value).toBe('09:30')
+    expect(timeValue()).toBe('09:30')
     await humanClick(day('2026-03-16'))
     expect(popup()).not.toBeNull()
-    await userEvent.clear(time()!)
-    await userEvent.type(time()!, '1045')
+    // Время — сегментами: часы, минуты, половина суток (en-US — 12 часов).
+    await humanClick(
+      time()!.querySelector<HTMLElement>('[data-segment="hours"]')!,
+    )
+    await userEvent.keyboard('1045a')
     await userEvent.keyboard('{Enter}')
     await expect.poll(popup).toBeNull()
     expect(onCellEdit).toHaveBeenLastCalledWith(
@@ -136,7 +141,7 @@ describe('редактор даты (ADR 0175)', () => {
 
     // `dateTime` — `Date` из дня и времени; уход из поповера тоже сохраняет.
     await openEdit('meet')
-    expect(time()!.value).toBe('12:00')
+    expect(timeValue()).toBe('12:00')
     await humanClick(day('2026-03-17'))
     await humanClick(cellOf('name'))
     await expect.poll(popup).toBeNull()

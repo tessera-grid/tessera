@@ -19,6 +19,7 @@ import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
 import { Skeleton } from '../Skeleton'
 import { Tooltip } from '../Tooltip'
 import { useIcons } from '../icons'
+import { PopupItem, PopupItemMark } from './PopupItem'
 
 import styles from './ActionMenu.module.css'
 
@@ -60,7 +61,7 @@ export const MenuSections = <TAction,>({
   onBack,
   children,
 }: MenuSectionsProps<TAction>) => {
-  const { menuBack: BackIcon, actionFailed: FailedIcon } = useIcons()
+  const { menuBack: BackIcon } = useIcons()
   const errorId = useId()
   const wrapRef = useRef<HTMLDivElement>(null)
   const { level, depth, direction, returnTo, levelRef, ghostRef } = sections
@@ -115,8 +116,13 @@ export const MenuSections = <TAction,>({
   const errorText = error === undefined ? undefined : rejectionText(error)
 
   return (
-    <div ref={wrapRef} className={styles.sections}>
-      <div ref={ghostRef} className={styles.ghostHost} {...GHOST_CLASSES} />
+    <div ref={wrapRef} className={styles.sections} data-menu-sections="">
+      <div
+        ref={ghostRef}
+        className={styles.ghostHost}
+        data-menu-ghost=""
+        {...GHOST_CLASSES}
+      />
       <div
         key={levelKey}
         ref={levelRef}
@@ -129,18 +135,15 @@ export const MenuSections = <TAction,>({
       >
         {depth > 0 && (
           <>
-            <Menu.Item
-              className={clsx(styles.item, styles.backItem)}
+            <PopupItem
+              wrap
+              render={<Menu.Item closeOnClick={false} onClick={onBack} />}
+              className={styles.backItem}
               aria-label={backLabel}
-              closeOnClick={false}
-              onClick={onBack}
               data-menu-back=""
-            >
-              <span className={styles.itemIcon} aria-hidden>
-                <BackIcon width={16} height={16} />
-              </span>
-              <span className={styles.itemLabel}>{level.title}</span>
-            </Menu.Item>
+              icon={<BackIcon width={16} height={16} />}
+              label={level.title}
+            />
             <Menu.Separator className={styles.separator} />
           </>
         )}
@@ -160,23 +163,18 @@ export const MenuSections = <TAction,>({
         {level.items.status === 'failed' && (
           <>
             <Tooltip title={errorText} side="right">
-              <Menu.Item
-                className={styles.item}
-                closeOnClick={false}
-                onClick={sections.retry}
+              <PopupItem
+                wrap
+                render={
+                  <Menu.Item closeOnClick={false} onClick={sections.retry} />
+                }
                 aria-describedby={errorText ? errorId : undefined}
                 data-has-tooltip={errorText ? '' : undefined}
                 data-section-failed=""
-              >
-                <span className={styles.itemIcon} aria-hidden />
-                <span className={styles.itemLabel}>{failedLabel}</span>
-                <span
-                  className={clsx(styles.itemCheck, styles.itemFailed)}
-                  aria-hidden
-                >
-                  <FailedIcon width={14} height={14} />
-                </span>
-              </Menu.Item>
+                icon={null}
+                label={failedLabel}
+                end={<PopupItemMark status="failed" />}
+              />
             </Tooltip>
             {errorText && (
               <span id={errorId} hidden>

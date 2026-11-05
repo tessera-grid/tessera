@@ -204,7 +204,7 @@ const control = {
   height: 28,
   padding: '0 10px',
   border: '1px solid var(--border)',
-  borderRadius: 'calc(var(--radius) - 2px)',
+  borderRadius: RADIUS,
   background: 'var(--background)',
   color: 'var(--foreground)',
   font: 'inherit',

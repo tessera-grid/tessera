@@ -902,7 +902,7 @@ describe('Включённые действия в ряду заголовка (
     const row = () =>
       [
         ...nameHead().querySelectorAll<HTMLElement>(
-          '[class*="column-"][class*="__button"], [data-action-menu]',
+          '.column-sort__button, .column-pin__button, .column-group__button, .column-filter__button, [data-action-menu]',
         ),
       ].map(button =>
         button.hasAttribute('data-action-menu')
@@ -1186,7 +1186,7 @@ describe('Треугольник отказа ячейки на касаниях
       await touch.realTap({ x: zone.right - 3, y: zone.top + 3 })
       await expect.poll(popover).not.toBeNull()
       expect(popover()!.textContent).toContain('Server said no')
-      expect(actionsOf()).toEqual(['retry', 'discard'])
+      expect(actionsOf()).toEqual(['discard', 'retry'])
       expect(box().getAttribute('aria-checked')).toBe(before)
       expect(issueEdits).toBe(edits)
       await close()
@@ -1200,7 +1200,7 @@ describe('Треугольник отказа ячейки на касаниях
       issue('r1', 'inStock')!.focus()
       await userEvent.keyboard('{Enter}')
       await expect.poll(popover).not.toBeNull()
-      expect(actionsOf()).toEqual(['retry', 'discard'])
+      expect(actionsOf()).toEqual(['discard', 'retry'])
       await close()
 
       // Источник без повтора — только «Отбросить»; с повтором — и «Повторить».
@@ -1224,7 +1224,7 @@ describe('Треугольник отказа ячейки на касаниях
       await close()
       await touch.realTap(center(issue('r3', 'name')!))
       await expect.poll(popover).not.toBeNull()
-      expect(actionsOf()).toEqual(['retry', 'discard'])
+      expect(actionsOf()).toEqual(['discard', 'retry'])
       await close()
     } finally {
       await screen.unmount()

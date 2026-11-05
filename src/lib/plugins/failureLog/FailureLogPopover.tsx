@@ -7,7 +7,6 @@
 import { type ReactNode, useRef } from 'react'
 
 import { Popover } from '@base-ui/react/popover'
-import clsx from 'clsx'
 
 import {
   type Failure,
@@ -15,6 +14,7 @@ import {
   failureName,
   resolveFailure,
 } from '../../core/failures/failuresFeature'
+import { PopupSurface } from '../../ui/Popup/PopupSurface'
 import { reportAction, userSourceOf } from '../../core/debugActions'
 import { useLocalization } from '../../core/localization'
 import { useSliceProjection } from '../../core/reactivity'
@@ -23,9 +23,8 @@ import { Button } from '../../ui/Button'
 import { IconButton } from '../../ui/IconButton'
 import { Stub } from '../../ui/Stub'
 import { useIcons } from '../../ui/icons'
-import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 import { PopupEntry } from '../../ui/Popup/PopupEntry'
-import { usePortalThemeClass, usePortalThemeData } from '../../ui/theme'
+import { PopupFooter, PopupPanel } from '../../ui/Popup/PopupPanel'
 import { ToolbarButton } from '../../ui/ToolbarButton'
 import { useVirtualizer } from '../../../vendor/tanstack-virtual/react-virtual'
 import {
@@ -160,7 +159,9 @@ const FailureEntry = ({
         </>
       }
     >
-      <span className={styles.reason}>{failure.reason}</span>
+      <span className={styles.reason} data-failure-reason="">
+        {failure.reason}
+      </span>
     </PopupEntry>
   )
 }
@@ -198,7 +199,7 @@ const FailureList = ({
     )
   return (
     <>
-      <div ref={scrollRef} className={styles.scroller}>
+      <div ref={scrollRef} className={styles.scroller} data-popup-scroller="">
         <div
           role="list"
           aria-label={failureLogLabels(labels).failureLog}
@@ -229,7 +230,7 @@ const FailureList = ({
           })}
         </div>
       </div>
-      <div className={styles.footer}>
+      <PopupFooter>
         <Button
           variant="ghost"
           data-action="clear-all"
@@ -241,7 +242,7 @@ const FailureList = ({
         >
           {failureLogLabels(labels).failureClearAll}
         </Button>
-      </div>
+      </PopupFooter>
     </>
   )
 }
@@ -254,8 +255,6 @@ export const FailureLogPopover = ({
   open,
   onOpenChange,
 }: FailureLogPopoverProps) => {
-  const themeClass = usePortalThemeClass()
-  const themeData = usePortalThemeData()
   const labels = useLocalization()
   const triggerRef = useRef<HTMLButtonElement>(null)
   const popupRef = useRef<HTMLDivElement>(null)
@@ -275,30 +274,26 @@ export const FailureLogPopover = ({
         render={<Popover.Trigger />}
       />
       <Popover.Portal>
-        <Popover.Positioner
-          side="bottom"
-          align="end"
-          sideOffset={POPUP_SIDE_OFFSET}
-          className={clsx(themeClass, styles.positioner)}
-          {...themeData}
+        <PopupSurface
+          positioner={<Popover.Positioner side="bottom" align="end" />}
+          popup={
+            <Popover.Popup
+              aria-label={failureLogLabels(labels).failureLog}
+              ref={popupRef}
+              finalFocus={triggerRef}
+              data-testid="failure-log"
+            />
+          }
+          className={styles.popup}
         >
-          <Popover.Popup
-            aria-label={failureLogLabels(labels).failureLog}
-            ref={popupRef}
-            finalFocus={triggerRef}
-            className={clsx(themeClass, styles.popup)}
-            data-testid="failure-log"
-          >
-            <p className={styles.title}>
-              {failureLogLabels(labels).failureLog}
-            </p>
+          <PopupPanel title={failureLogLabels(labels).failureLog}>
             <FailureList
               table={table}
               onClosed={keepFocus}
               onDone={() => onOpenChange(false)}
             />
-          </Popover.Popup>
-        </Popover.Positioner>
+          </PopupPanel>
+        </PopupSurface>
       </Popover.Portal>
     </Popover.Root>
   )

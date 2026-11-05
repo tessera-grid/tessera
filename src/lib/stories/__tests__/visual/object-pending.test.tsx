@@ -4,6 +4,7 @@ import { render } from 'vitest-browser-react'
 import { afterEach, describe, expect, test } from 'vitest'
 
 import { definePlugin } from '../../../core/definePlugin'
+import type { ActionRef } from '../../../core/actions'
 import type { Failure } from '../../../core/failures/failuresFeature'
 import type {
   ContextMenuAction,
@@ -157,7 +158,12 @@ const COLUMNS = [
   },
 ]
 
-let captured: { getFailures: () => Failure[] } | undefined
+let captured:
+  | {
+      getFailures: () => Failure[]
+      getActionLabel: (action: ActionRef) => string
+    }
+  | undefined
 
 /** Запрос данных — на «сервере»; переносы и правка — колбэки в руках теста. */
 const Grid = ({ server = true }: { server?: boolean }) => {
@@ -285,7 +291,7 @@ const liveText = () =>
 const glowing = () => !!document.querySelector('[data-refreshing]')
 const redLight = () =>
   document
-    .querySelector('[class*="linear-progress"]')
+    .querySelector('[data-linear-progress]')
     ?.getAttribute('data-error-flash')
 const pendingBanner = () =>
   document.querySelector<HTMLElement>('.data-grid__pending-action')
@@ -702,8 +708,9 @@ describe('Ожидание и отказ на объекте (ADR 0177)', () => 
         plain(actionButton(rowEl('r1'), 'Archive') ?? rowKebab('r1')),
       ).toBe(true)
       expect(
-        failures().map(({ label, target, reason }) => ({
-          label,
+        // Имя записи — подпись действия справочника по словарю (ADR 0182, §5).
+        failures().map(({ action, label, target, reason }) => ({
+          label: action ? captured!.getActionLabel(action) : label,
           target,
           reason,
         })),

@@ -1,0 +1,55 @@
+/* Радио кита (ADR 0183, PK14) поверх Base UI `Radio`: кружок с точкой выбранного. */
+.radio {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  width: var(--tsr-comp-radio-size, 16px);
+  height: var(--tsr-comp-radio-size, 16px);
+  padding: 0;
+  background-color: transparent;
+  border: 1px solid var(--tsr-comp-control-border);
+  /* Литерал-фолбэк: форма держится и вне слоя темы (ADR 0017). */
+  border-radius: var(--tsr-comp-radio-radius, 50%);
+  cursor: inherit;
+}
+
+.radio[data-checked] {
+  border-color: var(--tsr-comp-control-active-color);
+}
+
+.radio[data-disabled] {
+  opacity: var(--tsr-comp-disabled-opacity, 0.5);
+}
+
+/* Рамка 1px перекрашивается в цвет кольца, кольцо добирает остаток до ширины токена. */
+.radio:focus-visible {
+  outline: none;
+  border-color: var(--tsr-comp-focus-ring);
+  box-shadow: 0 0 0 calc(var(--tsr-comp-focus-ring-width) - 1px)
+    var(--tsr-comp-focus-ring);
+}
+
+.dot {
+  width: calc(var(--tsr-comp-radio-size, 16px) / 2);
+  height: calc(var(--tsr-comp-radio-size, 16px) / 2);
+  /* Точка — той же формы, что кружок. */
+  border-radius: inherit;
+  background-color: var(--tsr-comp-control-active-color);
+}
+
+/*
+ * Высокая контрастность (ADR 0087): заливку точки браузер снял бы — точка системным цветом
+ * выделения, рамка — цветом текста.
+ */
+@media (forced-colors: active) {
+  .radio {
+    border-color: CanvasText;
+  }
+
+  .dot {
+    forced-color-adjust: none;
+    background-color: Highlight;
+  }
+}

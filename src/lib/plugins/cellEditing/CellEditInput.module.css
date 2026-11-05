@@ -13,17 +13,9 @@
   min-width: 0;
 }
 
+/* Пустая строка ошибки не добавляет зазор под полем. */
 .error:empty {
   margin-top: -2px;
-}
-
-.error {
-  color: var(--tsr-comp-error-text-color);
-  font-size: 0.6875rem;
-  line-height: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .input {
@@ -48,25 +40,6 @@
 /* Поле числа — как числа в ячейке: цифры одной ширины (ADR 0175, ED4). */
 .input[inputmode='decimal'] {
   font-variant-numeric: tabular-nums;
-}
-
-/* Булево в правке — значок кита в фокусе, как флажок (ADR 0175, ED5). */
-.toggle {
-  display: inline-flex;
-  align-self: flex-start;
-  border-radius: var(--tsr-comp-control-radius);
-  outline: none;
-  cursor: pointer;
-}
-
-.toggle:focus-visible {
-  outline: 1px solid var(--tsr-comp-cell-outline-color);
-  outline-offset: 1px;
-}
-
-.toggle[aria-invalid='true'] {
-  outline: 1px solid var(--tsr-sys-danger);
-  outline-offset: 1px;
 }
 
 /* В покое рамки нет (инпут сливается с ячейкой). Фокус — той же обводкой, что и у

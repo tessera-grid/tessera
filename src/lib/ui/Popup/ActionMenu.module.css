@@ -2,98 +2,10 @@
   flex-shrink: 0;
 }
 
-.positioner {
-  composes: positioner from './Popup.module.css';
-}
-
+/* Меню действий (ADR 0024): поверхность — `PopupSurface`, пункты и группы — `PopupItem`, `PopupGroup`. */
 .popup {
-  composes: popup from './Popup.module.css';
   min-width: 180px;
   max-width: min(var(--tsr-comp-popup-max-width), calc(100vw - 16px));
-}
-
-.group {
-  display: flex;
-  flex-direction: column;
-}
-
-.divided {
-  margin-top: 4px;
-  padding-top: 4px;
-  border-top: 1px solid var(--tsr-comp-popup-divider-color);
-}
-
-.groupLabel {
-  padding: 4px 8px 2px;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: var(--tsr-comp-popup-group-label-color);
-}
-
-/*
- * Подпись переносится (ADR 0083, TX2): значки и подсказка — по первой строке, высота
- * однострочного пункта прежняя за счёт поля сверху и снизу.
- */
-.item {
-  composes: item from './Popup.module.css';
-  --_line: calc(1.2 * var(--tsr-comp-popup-font-size));
-  --_item-align: flex-start;
-  --_item-padding-block: calc(
-    (var(--tsr-comp-popup-item-min-height) - var(--_line)) / 2
-  );
-}
-
-.itemIcon {
-  display: inline-flex;
-  align-items: center;
-  flex-shrink: 0;
-  height: var(--_line);
-  color: currentColor;
-}
-
-.itemLabel {
-  flex: 1;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-/* Заблокированный пункт с причиной принимает наведение — ради тултипа (ADR 0078). */
-.item[data-disabled][data-has-tooltip] {
-  pointer-events: auto;
-}
-
-/* Значок причины читается и на погашенном пункте. */
-.itemBlocked {
-  color: var(--tsr-comp-control-color);
-}
-
-.itemCheck {
-  display: inline-flex;
-  align-items: center;
-  flex-shrink: 0;
-  width: 14px;
-  height: var(--_line);
-  color: var(--tsr-comp-accent);
-}
-
-.itemFailed {
-  color: var(--tsr-comp-action-error-color);
-}
-
-/* Ожидание пункта (ADR 0078): пятна света по кольцу, как у кнопок и ячеек. */
-.itemSpinner {
-  composes: spinner from '../ringStates/ringStates.module.css';
-  width: 12px;
-  height: 12px;
-}
-
-/* Высокая контрастность (ADR 0087): кольцо — градиенты, браузер снял бы их. */
-@media (forced-colors: active) {
-  .itemSpinner {
-    forced-color-adjust: none;
-  }
 }
 
 /* Разделы меню (ADR 0079): окно следует размеру уровня переходом. */
@@ -182,16 +94,6 @@
   height: 1px;
   margin: 4px 0;
   background-color: var(--tsr-comp-popup-divider-color);
-}
-
-.itemHint {
-  display: inline-flex;
-  align-items: center;
-  flex-shrink: 0;
-  height: var(--_line);
-  font-size: 0.75rem;
-  color: var(--tsr-comp-control-color);
-  white-space: nowrap;
 }
 
 .skeletonRow {
