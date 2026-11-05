@@ -1,5 +1,6 @@
 import { Meta, StoryObj } from '@storybook/react'
 
+import { cellEditingLabels } from '../plugins/cellEditing/labels'
 import { CellButton } from '../ui/CellButton/CellButton'
 import { useIcons } from '../ui/icons'
 import {
@@ -11,19 +12,29 @@ import {
   DISABLED_ARGS,
 } from './__mocks__/derivedButton'
 import { UiCanvas } from './__mocks__/UiCanvas'
+import { useStoryLabels } from './__mocks__/storyLocale'
 import { defaultControls, noControls } from './__mocks__/utils/dataGridControls'
 
 /**
  * Кнопка в ячейке для своих слотов (ADR 0128): скрыта до наведения на ячейку — наведите
  * на неё; `revealOnHover`, `active`, ожидание, отказ и выключение — из контролов.
  */
-const CellButtonDemo = (
-  props: Omit<Parameters<typeof CellButton>[0], 'icon'>,
-) => {
+const CellButtonDemo = ({
+  label,
+  ...props
+}: Omit<Parameters<typeof CellButton>[0], 'icon' | 'label'> & {
+  /** Пусто — подпись из словаря таблицы. */
+  label?: string
+}) => {
   const { edit: Edit } = useIcons()
+  const editCell = cellEditingLabels(useStoryLabels()).editCell
   return (
     <UiCanvas host="cell" column="Age" caption="42" width={200}>
-      <CellButton {...props} icon={<Edit width={16} height={16} />} />
+      <CellButton
+        {...props}
+        label={label || editCell}
+        icon={<Edit width={16} height={16} />}
+      />
     </UiCanvas>
   )
 }
@@ -34,7 +45,6 @@ const meta = {
   argTypes: { ...DERIVED_BUTTON_ARG_TYPES, ...ACTIVE_ARG_TYPES },
   args: {
     ...DERIVED_BUTTON_ARGS,
-    label: 'Edit cell',
     revealOnHover: true,
     ...ACTIVE_ARGS,
   },
@@ -69,6 +79,11 @@ export const CellButtonAlwaysVisible: Story = {
   args: { revealOnHover: false },
 }
 
+/**
+ * Ожидание на самой кнопке — только для действия без цели в данных: открыть внешнюю систему,
+ * отправить письмо, выгрузить ячейки в файл. Действие над данными ячейки ждёт на самих данных —
+ * волной на цели (ADR 0155; `table.trackCellAction`, ADR 0176), а не на кнопке.
+ */
 export const CellButtonPending: Story = {
   name: 'Pending',
   parameters: noControls(),

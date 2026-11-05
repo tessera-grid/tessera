@@ -1,12 +1,21 @@
 // Холст историй UI-примитивов `/ui`: тема грида и, по выбору, кусок грида — рамка, строка
 // шапки и строка тела на токенах темы; кнопка стоит в заголовке, ячейке или строке и
 // проявляется при наведении, как в гриде; заглушка — в пустом теле под шапкой.
-import type { CSSProperties, ReactNode } from 'react'
+import {
+  type CSSProperties,
+  type ReactNode,
+  type RefObject,
+  useRef,
+} from 'react'
 
+import { LocalizationProvider } from '../../core/localization'
 import '../../ui/theme/theme.css'
-import { DATA_GRID_THEME_CLASS } from '../../ui/theme'
+import { DATA_GRID_THEME_CLASS, ThemeScope } from '../../ui/theme'
 
 import styles from './UiCanvas.module.css'
+import { RU_LABELS } from './localization.ru'
+import { storyGridLocale } from './storyLabels'
+import { useStoryLocale } from './storyLocale'
 
 const HOSTS = {
   cell: { className: 'data-grid__body-cell', 'data-cell-interact': 'true' },
@@ -130,8 +139,43 @@ const Grid = ({
   </div>
 )
 
-export const UiCanvas = ({ host, width, children, ...rest }: UiCanvasProps) => (
+/** Хост логгера темы: предупреждение о смеси палитр — для грида, не для холста историй. */
+const SILENT = { options: { logLevel: 'silent' as const } }
+
+/**
+ * Тема порталов (поповеры, тултипы) — как у грида: `.dark` у предка холста (тумблер темы
+ * Storybook) делает тёмными и их (ADR 0090). Подписи компонентов, которые читают словарь
+ * таблицы, — на языке тулбара, как в таблице историй.
+ */
+export const UiCanvas = (props: UiCanvasProps) => {
+  const rootRef = useRef<HTMLDivElement>(null)
+  const locale = useStoryLocale()
+  return (
+    <LocalizationProvider
+      localization={locale === 'ru' ? RU_LABELS : undefined}
+      locale={storyGridLocale(locale)}
+    >
+      <ThemeScope
+        colorMode="auto"
+        contrast="auto"
+        rootRef={rootRef}
+        host={SILENT}
+      >
+        <Canvas rootRef={rootRef} {...props} />
+      </ThemeScope>
+    </LocalizationProvider>
+  )
+}
+
+const Canvas = ({
+  host,
+  width,
+  children,
+  rootRef,
+  ...rest
+}: UiCanvasProps & { rootRef: RefObject<HTMLDivElement | null> }) => (
   <div
+    ref={rootRef}
     className={DATA_GRID_THEME_CLASS}
     style={{
       display: 'flex',

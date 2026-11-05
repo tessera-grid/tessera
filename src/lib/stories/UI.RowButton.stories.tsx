@@ -11,6 +11,7 @@ import {
   DISABLED_ARGS,
 } from './__mocks__/derivedButton'
 import { UiCanvas } from './__mocks__/UiCanvas'
+import { useStoryLabels } from './__mocks__/storyLocale'
 import { defaultControls, noControls } from './__mocks__/utils/dataGridControls'
 
 /**
@@ -18,10 +19,15 @@ import { defaultControls, noControls } from './__mocks__/utils/dataGridControls'
  * наведения на строку — наведите на неё; `revealOnHover`, `active`, ожидание, отказ и выключение
  * — из контролов.
  */
-const RowButtonDemo = (
-  props: Omit<Parameters<typeof RowButton>[0], 'icon'>,
-) => {
+const RowButtonDemo = ({
+  label,
+  ...props
+}: Omit<Parameters<typeof RowButton>[0], 'icon' | 'label'> & {
+  /** Пусто — подпись из словаря таблицы. */
+  label?: string
+}) => {
   const { menu: Menu } = useIcons()
+  const rowMenu = useStoryLabels().rowMenu
   return (
     <UiCanvas
       host="row"
@@ -29,7 +35,11 @@ const RowButtonDemo = (
       caption="Alice 0 · Berlin · 34"
       width={320}
     >
-      <RowButton {...props} icon={<Menu width={16} height={16} />} />
+      <RowButton
+        {...props}
+        label={label || rowMenu}
+        icon={<Menu width={16} height={16} />}
+      />
     </UiCanvas>
   )
 }
@@ -40,7 +50,6 @@ const meta = {
   argTypes: { ...DERIVED_BUTTON_ARG_TYPES, ...ACTIVE_ARG_TYPES },
   args: {
     ...DERIVED_BUTTON_ARGS,
-    label: 'Row options',
     revealOnHover: true,
     ...ACTIVE_ARGS,
   },
@@ -75,6 +84,11 @@ export const RowButtonAlwaysVisible: Story = {
   args: { revealOnHover: false },
 }
 
+/**
+ * Ожидание на самой кнопке — только для действия без цели в данных: открыть внешнюю систему,
+ * отправить письмо, выгрузить строки в файл. Действие над данными строки ждёт на самих данных —
+ * волной на цели (ADR 0155; `table.trackCellAction`, ADR 0176), а не на кнопке.
+ */
 export const RowButtonPending: Story = {
   name: 'Pending',
   parameters: noControls(),

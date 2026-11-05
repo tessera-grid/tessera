@@ -1,24 +1,51 @@
 import { Meta, StoryObj } from '@storybook/react'
+import type { ReactNode } from 'react'
+
 import { fn } from 'storybook/test'
 
+import { columnFilteringLabels } from '../plugins/columnFiltering/labels'
 import { Button } from '../ui/Button'
 import { useIcons } from '../ui/icons'
 import { AsyncActionTable } from './__mocks__/AsyncActionTable'
 import { UiCanvas } from './__mocks__/UiCanvas'
 import { VariantGrid } from './__mocks__/VariantGrid'
 import { playAsyncAction, useAsyncAction } from './__mocks__/asyncAction'
+import { useStoryLabels } from './__mocks__/storyLocale'
 import { defaultControls, noControls } from './__mocks__/utils/dataGridControls'
 
 /**
  * Кнопка с подписью (ADR 0097): `outline` — на поверхности грида, `ghost` — в
  * поповерах. Иконка, ожидание, вспышка ошибки и выключение — из контролов.
  */
-type ButtonDemoProps = Omit<Parameters<typeof Button>[0], 'icon'> & {
+type ButtonDemoProps = Omit<
+  Parameters<typeof Button>[0],
+  'icon' | 'children'
+> & {
   withIcon: boolean
+  /** Пусто — подпись из словаря таблицы по `text`. */
+  children?: ReactNode
+  /** Подпись из словаря: повтор загрузки или сброс фильтра. */
+  text?: 'retry' | 'reset'
 }
 
-const DemoButton = ({ withIcon, ...props }: ButtonDemoProps) => {
+/** Подписи кнопок историй: «повторить» и «сбросить» — на языке тулбара. */
+const useButtonTexts = () => {
+  const labels = useStoryLabels()
+  return {
+    retry: labels.loadRetry,
+    reset: columnFilteringLabels(labels).filterReset,
+    save: labels.actionSave,
+  }
+}
+
+const DemoButton = ({
+  withIcon,
+  children,
+  text = 'retry',
+  ...props
+}: ButtonDemoProps) => {
   const { retry: RetryIcon } = useIcons()
+  const texts = useButtonTexts()
   return (
     <Button
       {...props}
@@ -27,7 +54,9 @@ const DemoButton = ({ withIcon, ...props }: ButtonDemoProps) => {
           <RetryIcon width={16} height={16} aria-hidden="true" />
         ) : undefined
       }
-    />
+    >
+      {children || texts[text]}
+    </Button>
   )
 }
 
@@ -69,7 +98,6 @@ const meta = {
     tooltipWhenDisabled: { if: { arg: 'disabled' } },
   },
   args: {
-    children: 'Retry',
     variant: 'outline',
     withIcon: true,
     disabled: false,
@@ -100,7 +128,23 @@ export const ButtonPlayground: Story = {
 export const ButtonGhost: Story = {
   name: 'Ghost',
   parameters: noControls(),
-  args: { variant: 'ghost', withIcon: false, children: 'Reset' },
+  args: { variant: 'ghost', withIcon: false, text: 'reset' },
+}
+
+/** Иконка слева от подписи — в обоих вариантах. */
+export const ButtonWithIcon: Story = {
+  name: 'With icon',
+  parameters: noControls(),
+  args: { withIcon: true, text: 'retry' },
+  ...inBothVariants,
+}
+
+/** Только подпись — в обоих вариантах. */
+export const ButtonWithoutIcon: Story = {
+  name: 'Without icon',
+  parameters: noControls(),
+  args: { withIcon: false, text: 'reset' },
+  ...inBothVariants,
 }
 
 export const ButtonPending: Story = {
@@ -127,6 +171,7 @@ export const ButtonVariants: Story = {
   render: function Render() {
     const { retry: RetryIcon } = useIcons()
     const icon = <RetryIcon width={16} height={16} aria-hidden="true" />
+    const texts = useButtonTexts()
     return (
       <UiCanvas>
         <VariantGrid
@@ -134,15 +179,15 @@ export const ButtonVariants: Story = {
           rows={(['outline', 'ghost'] as const).map(variant => ({
             label: VARIANT_LABELS[variant],
             cells: [
-              <Button variant={variant}>Reset</Button>,
+              <Button variant={variant}>{texts.reset}</Button>,
               <Button variant={variant} icon={icon}>
-                Retry
+                {texts.retry}
               </Button>,
               <Button variant={variant} icon={icon} pending>
-                Retry
+                {texts.retry}
               </Button>,
               <Button variant={variant} disabled>
-                Reset
+                {texts.reset}
               </Button>,
             ],
           }))}
@@ -167,6 +212,7 @@ export const ButtonAsyncAction: Story = {
     const outlineSucceeds = useAsyncAction('succeed')
     const ghostFails = useAsyncAction('fail')
     const ghostSucceeds = useAsyncAction('succeed')
+    const texts = useButtonTexts()
     return (
       <UiCanvas>
         <AsyncActionTable
@@ -175,12 +221,12 @@ export const ButtonAsyncAction: Story = {
               label: 'Outline',
               fails: (
                 <Button {...outlineFails} icon={icon}>
-                  Retry
+                  {texts.retry}
                 </Button>
               ),
               succeeds: (
                 <Button {...outlineSucceeds} icon={icon}>
-                  Retry
+                  {texts.retry}
                 </Button>
               ),
             },
@@ -188,12 +234,12 @@ export const ButtonAsyncAction: Story = {
               label: 'Ghost',
               fails: (
                 <Button {...ghostFails} variant="ghost">
-                  Save
+                  {texts.save}
                 </Button>
               ),
               succeeds: (
                 <Button {...ghostSucceeds} variant="ghost">
-                  Save
+                  {texts.save}
                 </Button>
               ),
             },
@@ -202,5 +248,9 @@ export const ButtonAsyncAction: Story = {
       </UiCanvas>
     )
   },
-  play: ({ canvasElement }) => playAsyncAction(canvasElement),
+  // Сценарий нажимает кнопки — только в тестах каталога, у человека история стоит в покое.
+  play: async ({ canvasElement, globals }) => {
+    if (globals.catalog !== true) return
+    await playAsyncAction(canvasElement)
+  },
 }

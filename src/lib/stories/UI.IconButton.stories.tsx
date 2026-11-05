@@ -1,10 +1,12 @@
 import { Meta, StoryObj } from '@storybook/react'
 import { fn } from 'storybook/test'
 
+import { columnPinningLabels } from '../plugins/columnPinning/labels'
 import { IconButton } from '../ui/IconButton'
 import { useIcons } from '../ui/icons'
 import { AsyncActionTable } from './__mocks__/AsyncActionTable'
 import { UiCanvas } from './__mocks__/UiCanvas'
+import { useStoryLabels } from './__mocks__/storyLocale'
 import { VariantGrid } from './__mocks__/VariantGrid'
 import { playAsyncAction, useAsyncAction } from './__mocks__/asyncAction'
 import { defaultControls, noControls } from './__mocks__/utils/dataGridControls'
@@ -17,16 +19,26 @@ import { defaultControls, noControls } from './__mocks__/utils/dataGridControls'
  */
 const IconButtonDemo = ({
   withActiveIcon,
+  label,
   ...props
-}: Omit<Parameters<typeof IconButton>[0], 'children' | 'activeIcon'> & {
+}: Omit<
+  Parameters<typeof IconButton>[0],
+  'children' | 'activeIcon' | 'label'
+> & {
+  /** Пусто — «Закрепить колонку» из словаря таблицы, с числом включённых при `count`. */
+  label?: string
   /** Свой значок включённой кнопки — `activeIcon`. */
   withActiveIcon?: boolean
 }) => {
   const { pin: PinIcon, actionBlocked: LockIcon } = useIcons()
+  const pin = usePinLabel()
+  const labels = useStoryLabels()
+  const count = props.active ? (props.count ?? 0) : 0
   return (
     <UiCanvas>
       <IconButton
         {...props}
+        label={label || (count > 0 ? labels.withActiveCount(pin, count) : pin)}
         activeIcon={
           withActiveIcon ? <LockIcon width={16} height={16} /> : undefined
         }
@@ -36,6 +48,9 @@ const IconButtonDemo = ({
     </UiCanvas>
   )
 }
+
+/** Подпись кнопок истории — «Закрепить колонку» на языке тулбара. */
+const usePinLabel = () => columnPinningLabels(useStoryLabels()).pin
 
 const meta = {
   title: 'Tessera/UI/IconButton',
@@ -50,7 +65,6 @@ const meta = {
     tooltipWhenDisabled: { if: { arg: 'disabled' } },
   },
   args: {
-    label: 'Pin column',
     shape: 'circle',
     size: 'default',
     variant: 'ghost',
@@ -97,7 +111,7 @@ export const IconButtonActive: Story = {
 export const IconButtonActiveCount: Story = {
   name: 'Active — count',
   parameters: noControls(),
-  args: { active: true, count: 3, label: 'Pin column, 3 pinned' },
+  args: { active: true, count: 3 },
 }
 
 // Свой значок включённой кнопки; бабл остаётся.
@@ -178,6 +192,7 @@ export const IconButtonAsyncAction: Story = {
     const squareSucceeds = useAsyncAction('succeed')
     const overlayFails = useAsyncAction('fail')
     const overlaySucceeds = useAsyncAction('succeed')
+    const pin = usePinLabel()
     return (
       <UiCanvas>
         <AsyncActionTable
@@ -185,12 +200,12 @@ export const IconButtonAsyncAction: Story = {
             {
               label: 'Circle',
               fails: (
-                <IconButton {...circleFails} label="Pin column">
+                <IconButton {...circleFails} label={pin}>
                   {icon}
                 </IconButton>
               ),
               succeeds: (
-                <IconButton {...circleSucceeds} label="Pin column">
+                <IconButton {...circleSucceeds} label={pin}>
                   {icon}
                 </IconButton>
               ),
@@ -198,16 +213,12 @@ export const IconButtonAsyncAction: Story = {
             {
               label: 'Square',
               fails: (
-                <IconButton {...squareFails} shape="square" label="Pin column">
+                <IconButton {...squareFails} shape="square" label={pin}>
                   {icon}
                 </IconButton>
               ),
               succeeds: (
-                <IconButton
-                  {...squareSucceeds}
-                  shape="square"
-                  label="Pin column"
-                >
+                <IconButton {...squareSucceeds} shape="square" label={pin}>
                   {icon}
                 </IconButton>
               ),
@@ -215,20 +226,12 @@ export const IconButtonAsyncAction: Story = {
             {
               label: 'Overlay',
               fails: (
-                <IconButton
-                  {...overlayFails}
-                  variant="overlay"
-                  label="Pin column"
-                >
+                <IconButton {...overlayFails} variant="overlay" label={pin}>
                   {icon}
                 </IconButton>
               ),
               succeeds: (
-                <IconButton
-                  {...overlaySucceeds}
-                  variant="overlay"
-                  label="Pin column"
-                >
+                <IconButton {...overlaySucceeds} variant="overlay" label={pin}>
                   {icon}
                 </IconButton>
               ),
@@ -238,5 +241,9 @@ export const IconButtonAsyncAction: Story = {
       </UiCanvas>
     )
   },
-  play: ({ canvasElement }) => playAsyncAction(canvasElement),
+  // Сценарий нажимает кнопки — только в тестах каталога, у человека история стоит в покое.
+  play: async ({ canvasElement, globals }) => {
+    if (globals.catalog !== true) return
+    await playAsyncAction(canvasElement)
+  },
 }

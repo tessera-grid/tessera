@@ -5,8 +5,8 @@ import {
 } from '../../core/localization/resolveLabels'
 import { RU_LABELS } from './localization.ru'
 
-/** Язык грида по аргументу `locale` истории — как в `DataGridStory`. */
-const gridLocale = (locale?: string) =>
+/** Язык чисел и дат таблицы по языку истории — как в `DataGridStory`. */
+export const storyGridLocale = (locale?: string) =>
   locale === 'ru' ? 'ru-RU' : DEFAULT_LOCALE
 
 /**
@@ -15,7 +15,7 @@ const gridLocale = (locale?: string) =>
  */
 export const storyLabels = (locale?: string) =>
   locale === 'ru'
-    ? resolveLabels(RU_LABELS, gridLocale(locale))
+    ? resolveLabels(RU_LABELS, storyGridLocale(locale))
     : ENGLISH_LABELS
 
 const MARKER = 424242
@@ -31,7 +31,7 @@ export const labelPattern = (
 ) =>
   new RegExp(
     `^${render(MARKER)
-      .split(new Intl.NumberFormat(gridLocale(locale)).format(MARKER))
+      .split(new Intl.NumberFormat(storyGridLocale(locale)).format(MARKER))
       .map(part => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
       .join(number)}$`,
   )

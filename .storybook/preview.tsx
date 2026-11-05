@@ -17,6 +17,7 @@ import {
   PlayArgs,
 } from '../src/lib/stories/__mocks__/catalog'
 import { pinClock } from '../src/lib/stories/__mocks__/clock'
+import { StoryLocaleProvider } from '../src/lib/stories/__mocks__/storyLocale'
 import { type ConsoleErrors, expectConsoleErrors } from './consoleErrors'
 import './catalog.css'
 
@@ -73,7 +74,7 @@ const preview: Preview = {
     },
     // Язык подписей таблицы (ADR 0132): английские умолчания или русский словарь историй.
     locale: {
-      description: 'Language of the table labels',
+      description: 'Language of the table and UI kit labels',
       defaultValue: 'en',
       toolbar: {
         title: 'Language',
@@ -157,10 +158,10 @@ const preview: Preview = {
       if ('colorMode' in context.argTypes) {
         context.args.colorMode = theme === 'dark' ? 'dark' : 'auto'
       }
-      // Язык подписей — из тулбара, как и тема; аргумент `locale` есть у историй таблицы.
-      if ('locale' in context.args) {
-        context.args.locale = context.globals.locale === 'ru' ? 'ru' : 'en'
-      }
+      // Язык подписей — из тулбара, как и тема: историям таблицы — аргументом `locale`,
+      // историям кита — контекстом `StoryLocaleProvider`.
+      const locale = context.globals.locale === 'ru' ? 'ru' : 'en'
+      if ('locale' in context.args) context.args.locale = locale
 
       return (
         // Класс `dark` активирует токены .dark из global.css для всего канваса —
@@ -175,20 +176,22 @@ const preview: Preview = {
               background: 'var(--background)',
               color: 'var(--foreground)',
               fontFamily: INTER_STACK,
-              // Грид в демо использует Inter (переопределяет системный дефолт
-              // библиотеки через собственный токен).
-              '--data-grid-font-family': INTER_STACK,
+              // Шрифт приложения историй — Inter: грид берёт его через `--font-sans`, как
+              // в приложении на shadcn и Tailwind (ADR 0019, TK6).
+              '--font-sans': INTER_STACK,
             } as CSSProperties
           }
         >
           <CatalogEnvironment catalog={catalog} palette={palette}>
-            {catalog ? (
-              <PlayArgs storyId={context.id}>
-                {updates => <Story args={{ ...context.args, ...updates }} />}
-              </PlayArgs>
-            ) : (
-              <Story />
-            )}
+            <StoryLocaleProvider value={locale}>
+              {catalog ? (
+                <PlayArgs storyId={context.id}>
+                  {updates => <Story args={{ ...context.args, ...updates }} />}
+                </PlayArgs>
+              ) : (
+                <Story />
+              )}
+            </StoryLocaleProvider>
           </CatalogEnvironment>
         </div>
       )
