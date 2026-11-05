@@ -160,6 +160,8 @@ export interface CoreOptions {
 
 /** Опции `commonFeature`: опции ядра и каналы сборки и плагинов (ADR 0164). */
 export interface CommonOptions extends CoreOptions {
+  /** `false` — без числа строк в строке группы (ADR 0184, §8). */
+  groupRowCount?: boolean
   /** Итог колонки на клиенте: с ним футер есть без флага (ADR 0184, §4, §7). */
   columnTotalOf?: (table: unknown, columnId: string) => unknown
   hooks?: CommonHooks

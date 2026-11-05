@@ -27,6 +27,8 @@ export interface ServerRowModelOptions {
   maxBlocks?: number
   /** Строк в группе — из строки-группы ответа (ADR 0144); читается живо. */
   getGroupChildCount?: ServerRowModelHooks['getGroupChildCount']
+  /** Строк данных в группе для подписи (ADR 0184); читается живо. */
+  getGroupRowCount?: ServerRowModelHooks['getGroupRowCount']
 }
 
 /** Источник таблицы; у клиентского (плагин выключен или инертен) хранилища нет. */
@@ -54,6 +56,7 @@ export const serverRowModel = definePlugin<ServerRowModelOptions>()({
   hooks: o => ({
     getRows: o.getRows,
     getGroupChildCount: o.getGroupChildCount,
+    getGroupRowCount: o.getGroupRowCount,
   }),
   state: () => 0,
   // Отключённый плагин отдаёт нейтральные значения: v9 сливает опции с прежними.

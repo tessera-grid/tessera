@@ -290,6 +290,7 @@ const CF12_COST = { ratio: 3, plusMs: 4 }
 const MI23_COST = { ratio: 1.3, plusMs: 4 }
 const TL8_COST = { ratio: 1.3, plusMs: 4 }
 const EA10_COST = { ratio: 1.3, plusMs: 4 }
+const GC7_COST = { ratio: 1.2, plusMs: 3 }
 const AI10_COST = { ratio: 1.3, plusMs: 4 }
 const KA7_COST = { ratio: 1.3, plusMs: 4 }
 const RH8_COST = { ratio: 1.3, plusMs: 4 }
@@ -3481,6 +3482,74 @@ describe('Производительность прокрутки — черно
         expect(
           drafted[axis].p95Ms,
           `${axis} p95=${drafted[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
+        ).toBeLessThanOrEqual(ceiling[axis])
+      }
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Число строк группы (ADR 0184, GC7): 100 000 строк в раскрытых группах с подписью против той же
+// выборки без неё. Строки группы — в окне только у начала, поэтому мерим обе оси от верха.
+describe('Производительность прокрутки — число строк группы', () => {
+  test(
+    'GC7: прокрутка 100 000 строк, сгруппированных с подписью, против той же без неё',
+    async () => {
+      const measure = async (shown: boolean) => {
+        const screen = renderGrid({
+          dataCount: 100_000,
+          columnCount: 30,
+          ...NO_PLUGINS,
+          enableRowGrouping: true,
+          initialGrouping: ['gender'],
+          enableRowExpanding: true,
+          initialExpanded: true,
+          rowGroupingGroupRowCount: shown,
+        } as Parameters<typeof renderGrid>[0])
+        await waitForGrid()
+        await expect
+          .poll(() => document.querySelector('[data-group-count]') !== null)
+          .toBe(shown)
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        return { y, x }
+      }
+
+      const runs = await againstBase(measure)
+      const base = medianAxes(runs.base)
+      const shown = medianAxes(runs.variant)
+      const ceiling = axesCeiling(base, GC7_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '100 000×30',
+          plugins: 'rowGrouping',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: (['y', 'x'] as const).map(axis => ({
+            axis,
+            kind: 'animation' as const,
+            metric: 'p95' as const,
+            valueMs: r[axis].p95Ms,
+            targetMs: ANIMATION_BUDGET_MS,
+            ceilingMs: gated ? ceiling[axis] : undefined,
+            ...r[axis],
+          })),
+        })
+      await record('GC7-base', 'группы без числа строк', base, false)
+      await record('GC7', 'группы с числом строк', shown, true)
+
+      for (const axis of ['y', 'x'] as const) {
+        expect(
+          shown[axis].p95Ms,
+          `${axis.toUpperCase()} p95=${shown[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms)`,
         ).toBeLessThanOrEqual(ceiling[axis])
       }
     },

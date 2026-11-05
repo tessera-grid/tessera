@@ -299,3 +299,130 @@ export const GroupingStickyRows: StoryObj<StoryProps> = {
     })
   },
 }
+
+// --- ADR 0184, S5–S6 --------------------------------------------------------------------
+
+const STAFF = [
+  ['s1', 'Anna', 'Paris', 'Sales'],
+  ['s2', 'Boris', 'Paris', 'Sales'],
+  ['s3', 'Clara', 'Paris', 'Support'],
+  ['s4', 'Denis', 'Paris', 'Support'],
+  ['s5', 'Elena', 'Paris', 'Support'],
+  ['s6', 'Fedor', 'Rome', 'Sales'],
+  ['s7', 'Galina', 'Rome', 'Support'],
+].map(([id, name, city, team]) => ({ id, name, city, team }))
+
+const STAFF_ARGS = {
+  containerHeight: '460',
+  height: '360',
+  maxHeight: '360',
+  columnsOverride: [
+    { id: 'city', accessorKey: 'city', header: 'City', size: 220 },
+    { id: 'team', accessorKey: 'team', header: 'Team', size: 220 },
+    { id: 'name', accessorKey: 'name', header: 'Name', size: 200 },
+  ] as never,
+  dataOverride: STAFF,
+  enableRowGrouping: true,
+  enableRowExpanding: true,
+  initialGrouping: ['city', 'team'],
+  initialExpanded: true,
+} satisfies Partial<StoryProps>
+
+/** Числа первых групп: город и его первая подгруппа. */
+const groupCounts = (canvas: HTMLElement) =>
+  [...canvas.querySelectorAll('[data-group-count]')]
+    .slice(0, 2)
+    .map(element => element.textContent?.trim())
+
+/** Ввод в поле поиска — как набор пользователя: React слышит событие `input`. */
+const typeSearch = (text: string) => (root: HTMLElement) => {
+  const input = root.querySelector<HTMLInputElement>(
+    '[data-testid="quick-search"]',
+  )
+  if (!input) return
+  Object.getOwnPropertyDescriptor(
+    HTMLInputElement.prototype,
+    'value',
+  )!.set!.call(input, text)
+  input.dispatchEvent(new Event('input', { bubbles: true }))
+}
+
+const FILTERED_COUNT: readonly GuideStoryStep[] = [
+  {
+    title: 'Сколько строк в группах',
+    hint: 'Рядом со значением группы стоит число строк данных внутри неё, а не число подгрупп.',
+  },
+  {
+    title: 'Найдена часть строк',
+    hint: 'Поиск оставил часть строк, поэтому число в группах уменьшилось: оно считает только то, что осталось.',
+    enter: typeSearch('Support'),
+  },
+]
+
+/** ADR 0184, S5: число строк группы следует за поиском. */
+export const GroupRowCountFiltered: StoryObj<StoryProps> = {
+  name: 'Row count — search',
+  parameters: { scenario: '0184/S5', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Число строк группы и поиск"
+      steps={FILTERED_COUNT}
+      args={guideArgs(
+        { ...STAFF_ARGS, enableQuickSearch: true, quickSearchDebounceMs: 0 },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(FILTERED_COUNT[0]!.title, async () => {
+      await until(() => expect(groupCounts(canvas)).toEqual(['(5)', '(2)']))
+      await until(() =>
+        expect(
+          canvas.querySelector('[data-testid="quick-search"]'),
+        ).not.toBeNull(),
+      )
+    })
+    await step(FILTERED_COUNT[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(groupCounts(canvas)).toEqual(['(3)', '(3)']))
+    })
+    await settle()
+  },
+}
+
+const COUNT_OFF: readonly GuideStoryStep[] = [
+  {
+    title: 'Число строк видно',
+    hint: 'По умолчанию строка группы показывает число строк данных.',
+  },
+  {
+    title: 'Число строк скрыто',
+    hint: 'Приложение отключило число: в строке группы осталось только её значение.',
+    props: () => ({ rowGroupingGroupRowCount: false }),
+  },
+]
+
+/** ADR 0184, S6: разработчик отключает подпись. */
+export const GroupRowCountOff: StoryObj<StoryProps> = {
+  name: 'Row count — off',
+  parameters: { scenario: '0184/S6', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Без числа строк"
+      steps={COUNT_OFF}
+      args={guideArgs(STAFF_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(COUNT_OFF[0]!.title, async () => {
+      await until(() => expect(groupCounts(canvas)).toEqual(['(5)', '(2)']))
+    })
+    await step(COUNT_OFF[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(groupCounts(canvas)).toEqual([]))
+    })
+    await settle()
+  },
+}

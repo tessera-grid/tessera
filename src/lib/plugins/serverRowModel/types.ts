@@ -54,4 +54,6 @@ export interface ServerRowModelHooks<TData = any> {
   ) => PromiseLike<ServerRowsResponse<TData>> | ServerRowsResponse<TData>
   /** Строк в группе — из строки-группы ответа (ADR 0144, §2); читается живо. */
   getGroupChildCount?: (row: TData) => number | undefined
+  /** Строк данных в группе на всех уровнях — для подписи (ADR 0184); читается живо. */
+  getGroupRowCount?: (row: TData) => number | undefined
 }

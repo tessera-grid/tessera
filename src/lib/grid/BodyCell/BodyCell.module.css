@@ -465,3 +465,28 @@
 .body__cell[data-cell-pinned='right'] {
   order: var(--tsr-virtual-end-order, 0);
 }
+
+/* Строка группы: `…` режет значение, число строк целое (ADR 0184, §8). */
+.group {
+  display: flex;
+  min-width: 0;
+}
+
+:global([data-align='end']) .group {
+  justify-content: flex-end;
+}
+
+:global([data-align='center']) .group {
+  justify-content: center;
+}
+
+.group-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.group-count {
+  flex: none;
+  white-space: pre;
+}

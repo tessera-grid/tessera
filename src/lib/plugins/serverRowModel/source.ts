@@ -304,6 +304,15 @@ const createServerSource = (table: unknown): ServerSource => {
           SERVER_ROW_MODEL,
         ).getGroupChildCount?.(row.original)
 
+  /** Подпись группы: строки данных, без них — прямые дети (ADR 0184, §8). */
+  const groupRowCount = (row: SourceRow | undefined) =>
+    row?.groupingColumnId === undefined
+      ? undefined
+      : (readPluginHooks<ServerRowModelHooks>(
+          t as never,
+          SERVER_ROW_MODEL,
+        ).getGroupRowCount?.(row.original) ?? groupChildCount(row))
+
   const createGeneration = (query: Query): Generation => {
     const generation = { query, waiters: [] } as unknown as Generation
     generation.store = new BlockTree<unknown, SourceRow, Query>({
@@ -883,6 +892,7 @@ const createServerSource = (table: unknown): ServerSource => {
     // «Выбрать всё» в дереве — итог корней (§14).
     rootCount: () => shown.store.rootCount(),
     groupChildCount,
+    groupRowCount,
     totals: () => shown.totals,
     leafCount: () => shown.leafCount,
     epoch: () => epoch,

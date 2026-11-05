@@ -215,6 +215,8 @@ export const groupingColumns = filteringColumns.map(column =>
 /** Строка-группа «сервера»: значение группы, агрегаты и число строк в ней. */
 export interface GroupItem extends FilteringItem {
   count?: number
+  /** Прямых детей: подгрупп или строк данных последнего уровня. */
+  children?: number
 }
 
 export let groupItems: FilteringItem[] | undefined
@@ -279,6 +281,7 @@ export const groupAnswer = (
       if (members) members.push(item)
       else groups.set(item[column], [item])
     }
+    const next = request.grouping[level + 1] as keyof FilteringItem | undefined
     rows = [...groups]
       .sort(([a], [b]) => String(a).localeCompare(String(b)))
       .map(([value, members]) => ({
@@ -288,6 +291,9 @@ export const groupAnswer = (
         vip: column === 'vip' ? (value as boolean | null) : null,
         ...aggregate(members),
         count: members.length,
+        children: next
+          ? new Set(members.map(item => item[next])).size
+          : members.length,
       }))
   }
   return {
@@ -307,11 +313,14 @@ export const groupProps =
     grouping = [],
     search = false,
     counts = true,
+    rowCounts,
   }: {
     grouping?: string[]
     search?: boolean
     /** Сервер присылает число строк групп. */
     counts?: boolean
+    /** `false` — сервер присылает только прямых детей, `true` — и строки данных. */
+    rowCounts?: boolean
   }): GuideStoryStep['props'] =>
   () => ({
     columnsOverride: groupingColumns,
@@ -319,6 +328,9 @@ export const groupProps =
     enableServerRowModel: true,
     serverRowModelBlockSize: GROUP_BLOCK,
     serverRowModelGetGroupChildCount: counts
+      ? (row: GroupItem) => (rowCounts === undefined ? row.count : row.children)
+      : undefined,
+    serverRowModelGetGroupRowCount: rowCounts
       ? (row: GroupItem) => row.count
       : undefined,
     enableRowGrouping: true,

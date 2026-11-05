@@ -124,6 +124,7 @@ import {
   rowExpandingMaxDepthType,
   rowExpandingExpandAllType,
   rowExpandingStickyRowsType,
+  rowGroupingGroupRowCountType,
   rowGroupingStickyRowsType,
   rowDraggingExpandDelayType,
   rowDraggingRevertOnRejectType,
@@ -281,6 +282,7 @@ export const dataGridArgTypes = {
       enableRowGrouping: enableRowGroupingType,
       ...when('enableRowGrouping', {
         rowGroupingStickyRows: rowGroupingStickyRowsType,
+        rowGroupingGroupRowCount: rowGroupingGroupRowCountType,
       }),
       enableRowGroupingModel: enableRowGroupingModelType,
     },
@@ -510,6 +512,7 @@ export const dataGridDefaultArgs = {
   rowDraggingRevertOnReject: true,
   enableRowGrouping: false,
   rowGroupingStickyRows: false,
+  rowGroupingGroupRowCount: true,
   enableRowGroupingModel: false,
   enableRowActions: false,
   rowActionsWidth: DEFAULT_ROW_ACTIONS_OPTIONS.width,

@@ -24,6 +24,8 @@ export interface RowGroupingOptions extends Omit<
    * (ADR 0160, §3). По умолчанию выключено.
    */
   stickyRows?: boolean
+  /** `false` — без числа строк данных в строке группы (ADR 0184, §8). */
+  groupRowCount?: boolean
 }
 
 export const rowGrouping = definePlugin<RowGroupingOptions>()({
@@ -43,5 +45,8 @@ export const rowGrouping = definePlugin<RowGroupingOptions>()({
   // Единый дескриптор: ядро решает подачу (инлайн-кнопка / строка меню).
   slotActions: [groupHeaderAction],
   // Липкие строки групп — факт ядра (ADR 0170, §2).
-  options: o => ({ stickyGroupRows: o.enabled !== false && !!o.stickyRows }),
+  options: o => ({
+    stickyGroupRows: o.enabled !== false && !!o.stickyRows,
+    groupRowCount: o.groupRowCount !== false,
+  }),
 })

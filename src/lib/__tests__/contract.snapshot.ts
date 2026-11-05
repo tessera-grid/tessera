@@ -46,6 +46,7 @@ export const CORE_OPTIONS: Record<string, string> = {
   getBodyBusy: '0081',
   getRowSource: '0138',
   getTotalRowCount: '0081',
+  groupRowCount: '0184',
   groupRows: '0170',
   headerHeight: '0077',
   hooks: '0027',

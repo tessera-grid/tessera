@@ -5,7 +5,8 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 const loadPopup = () => import('../ui/Tooltip/TooltipImpl')
 const TooltipPopup = lazy(loadPopup)
 
-const TITLE = '.data-grid__cell-wrapper-title'
+// Значение строки группы обрезается отдельно от числа строк (ADR 0184, §8).
+const TITLE = '[data-group-value], .data-grid__cell-wrapper-title'
 const INTERACTIVE =
   'button, a, input, select, textarea, [role="button"], [contenteditable="true"]'
 const OPEN_DELAY = 200

@@ -228,12 +228,12 @@ export const BodyCell = memo(
       contributionContext,
     )
     const labels = useLocalization()
-    // Число строк группы серверной группировки (ADR 0144, §2) — рядом с её значением.
-    const groupCount = (
-      cell as { getIsGrouped?: () => boolean }
-    ).getIsGrouped?.()
-      ? rowSourceOf(table).groupChildCount?.(cell.row)
-      : undefined
+    // Число строк данных группы (ADR 0184, §8) — рядом с её значением, `…` режет только значение.
+    const groupCount =
+      (cell as { getIsGrouped?: () => boolean }).getIsGrouped?.() &&
+      table.options.groupRowCount !== false
+        ? rowSourceOf(table).groupRowCount?.(cell.row)
+        : undefined
     const render = useMemo(() => {
       if (showSkeleton) {
         return renderSkeletonCell(
@@ -265,9 +265,17 @@ export const BodyCell = memo(
         content
       ) : (
         <CellWrapperTitle>
-          {content}
-          {groupCount !== undefined && (
-            <span data-group-count=""> {labels.groupRowCount(groupCount)}</span>
+          {groupCount === undefined ? (
+            content
+          ) : (
+            <span className={styles.group}>
+              <span className={styles['group-value']} data-group-value="">
+                {content}
+              </span>
+              <span className={styles['group-count']} data-group-count="">
+                {` ${labels.groupRowCount(groupCount)}`}
+              </span>
+            </span>
           )}
         </CellWrapperTitle>
       )

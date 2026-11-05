@@ -355,6 +355,9 @@ export const rowExpandingExpandAllType = booleanControl(
 export const rowExpandingStickyRowsType = booleanControl(
   'Строка ветки держится под шапкой, пока видны её дети (`stickyRows`)',
 )
+export const rowGroupingGroupRowCountType = booleanControl(
+  'Число строк данных в строке группы',
+)
 export const rowGroupingStickyRowsType = booleanControl(
   'Строка группы держится под шапкой, пока видны её строки (`stickyRows`)',
 )

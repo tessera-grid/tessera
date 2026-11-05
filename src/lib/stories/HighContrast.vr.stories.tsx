@@ -7157,3 +7157,55 @@ export const HighContrastColumnTotalsServerPageStep2 = {
   name: 'Core/Column totals — Server page, шаг 2',
   tags: ['!test'],
 }
+
+export const HighContrastGroupRowCountFilteredStep1 = {
+  ...twinStep(
+    rowsGroupingStories,
+    rowsGroupingStories.GroupRowCountFiltered,
+    1,
+  ),
+  name: 'Rows/Grouping — Row count, search, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastGroupRowCountFilteredStep2 = {
+  ...twinStep(
+    rowsGroupingStories,
+    rowsGroupingStories.GroupRowCountFiltered,
+    2,
+  ),
+  name: 'Rows/Grouping — Row count, search, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastGroupRowCountOffStep1 = {
+  ...twinStep(rowsGroupingStories, rowsGroupingStories.GroupRowCountOff, 1),
+  name: 'Rows/Grouping — Row count, off, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastGroupRowCountOffStep2 = {
+  ...twinStep(rowsGroupingStories, rowsGroupingStories.GroupRowCountOff, 2),
+  name: 'Rows/Grouping — Row count, off, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerGroupRowCountStep1 = {
+  ...twinStep(
+    serverGroupingStories,
+    serverGroupingStories.ServerGroupRowCount,
+    1,
+  ),
+  name: 'Server row model/Grouping — Row count, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerGroupRowCountStep2 = {
+  ...twinStep(
+    serverGroupingStories,
+    serverGroupingStories.ServerGroupRowCount,
+    2,
+  ),
+  name: 'Server row model/Grouping — Row count, шаг 2',
+  tags: ['!test'],
+}

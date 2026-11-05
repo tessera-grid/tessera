@@ -9,6 +9,7 @@ import {
   stepDone,
   until,
 } from './__mocks__/catalogPlay'
+import { storyLabels } from './__mocks__/storyLabels'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
@@ -548,5 +549,64 @@ export const ServerGroupingExpandAll: StoryObj<StoryProps> = {
       await expect(firstGroupLoaded(canvas)).toBe(true)
       await settle()
     })
+  },
+}
+
+// --- ADR 0184, S7 ----------------------------------------------------------------------
+
+const NESTED_GROUPS = ['city', 'vip']
+
+const groupCountOf = (canvas: HTMLElement) =>
+  groupRowOf(canvas, 'Paris')
+    ?.querySelector('[data-group-count]')
+    ?.textContent?.trim()
+
+const ROW_COUNT: readonly GuideStoryStep[] = [
+  {
+    title: 'Сервер прислал число подгрупп',
+    hint: 'Рядом с городом стоит число его подгрупп: сервер сообщил только их, этого хватает, чтобы раскрыть группу.',
+    props: groupProps({ grouping: NESTED_GROUPS, rowCounts: false }),
+    enter: stepAction(async (root, { signal }) => {
+      await pollUntil(() => !!groupRowOf(root, 'Paris'), signal)
+    }),
+  },
+  {
+    title: 'Сервер прислал число строк',
+    hint: 'Теперь сервер сообщает и число строк данных, поэтому рядом с городом стоит оно: человеку важнее, сколько записей внутри.',
+    props: groupProps({ grouping: NESTED_GROUPS, rowCounts: true }),
+    remount: true,
+    enter: stepAction(async (root, { signal }) => {
+      await pollUntil(() => !!groupRowOf(root, 'Paris'), signal)
+    }),
+  },
+]
+
+/** ADR 0184, S7: подпись группы считает строки данных на всех уровнях. */
+export const ServerGroupRowCount: StoryObj<StoryProps> = {
+  name: 'Row count of a group',
+  parameters: { scenario: '0184/S7', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Число строк группы"
+      steps={ROW_COUNT}
+      args={guideArgs(layout, args)}
+    />
+  ),
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(ROW_COUNT[0]!.title, async () => {
+      await stepDone(canvas)
+      await expect(groupCountOf(canvas)).toBe('(3)')
+    })
+    await step(ROW_COUNT[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await until(() =>
+        expect(groupCountOf(canvas)).toBe(
+          storyLabels(args.locale).groupRowCount(parisItems().length),
+        ),
+      )
+    })
+    await settle()
   },
 }

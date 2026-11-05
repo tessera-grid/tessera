@@ -744,7 +744,10 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       ([ADR 0118](docs/decisions/0118-column-footer.md)); итоги колонок — визуальный `column-totals`
       (CT2–CT3, CT10 — итог по типу, свой `footer` в обоих режимах, axe), модульный `columnTotals.dom`
       (CT1, CT4–CT9 — включение футера, строки итога, дерево, черновики, часть строк, SSRM, без плагина),
-      перф CT11 — в `interaction`, CT12 — `check:tree-shaking`, истории «Core/Column totals» (S1–S4)
+      перф CT11 — в `interaction`, CT12 — `check:tree-shaking`, истории «Core/Column totals» (S1–S4);
+      число строк группы — визуальный `group-row-count` (GC1, GC4–GC6 — поиск, отключение на лету, узкая
+      ячейка, серверные группы и липкие строки), модульный `groupRowCount.dom` (GC2–GC3), перф GC7 — в
+      `scroll`, истории «Rows/Grouping» (S5–S6) и «Data loading/Server row model/Grouping» (S7)
       ([ADR 0184](docs/decisions/0184-column-totals-and-group-row-count.md)).
     - _Экспорт:_ `export` (EX1, EX6–EX9, EX23, EX25–EX28, EX31–EX32 — кнопка тулбара,
       панель настроек по осям, быстрые наборы, скачивание, серверный режим, axe),

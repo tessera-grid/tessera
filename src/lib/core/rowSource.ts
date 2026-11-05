@@ -111,6 +111,8 @@ export interface RowSource<TRow = unknown> {
   ) => boolean
   /** Строк в группе по строке-группе (серверная группировка, ADR 0144); иначе — нет. */
   groupChildCount?(row: TRow): number | undefined
+  /** Строк данных в группе — для подписи (ADR 0184, §8); неизвестно — `undefined`. */
+  groupRowCount?(row: TRow): number | undefined
   /** Итоги колонок выборки — из ответа сервера (ADR 0144, §4). */
   totals?: () => Record<string, unknown> | undefined
   /** Строк данных в выборке при серверной группировке (ADR 0144, §5). */
@@ -160,7 +162,11 @@ export interface RowWindow {
   fast: boolean
 }
 
-type ModelRow = { id: string; index: number }
+type ModelRow = {
+  id: string
+  index: number
+  getLeafRows?: () => readonly { getIsGrouped?: () => boolean }[]
+}
 type ById = { rowsById: Record<string, ModelRow | undefined> }
 
 interface ModelTable {
@@ -171,6 +177,21 @@ interface ModelTable {
 
 /** Места строк по `id` — одна карта на список: выделение ищет места на каждой отрисовке. */
 const listIndexes = new WeakMap<readonly ModelRow[], Map<string, number>>()
+
+const groupDataRows = new WeakMap<readonly object[], number>()
+
+/** Строк данных в группе: потомки без строк-подгрупп; счёт — один на модель. */
+const dataRowsInGroup = (row: ModelRow) => {
+  const descendants = row.getLeafRows?.()
+  if (!descendants) return undefined
+  let count = groupDataRows.get(descendants)
+  if (count === undefined) {
+    count = 0
+    for (const item of descendants) if (!item.getIsGrouped?.()) count++
+    groupDataRows.set(descendants, count)
+  }
+  return count
+}
 
 /** Источник клиентского режима: список — `getRowModel().rows`. */
 export const createClientRowSource = (table: unknown): RowSource => {
@@ -195,6 +216,7 @@ export const createClientRowSource = (table: unknown): RowSource => {
       return indexes.get(id) ?? -1
     },
     loadedRows: () => t.getCoreRowModel().flatRows,
+    groupRowCount: row => dataRowsInGroup(row as ModelRow),
     rows: () => t.getRowModel().rows,
   }
 }
