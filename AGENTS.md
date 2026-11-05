@@ -537,7 +537,7 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       `scroll` (свой хост без обвязки историй), `play` историй S1–S8
       ([ADR 0120](docs/decisions/0120-model-and-interface-plugins.md)),
       `row-grouping` (RG1–RG11, [ADR 0016](docs/decisions/0016-row-grouping.md)),
-      `row-dragging` (D1–D15, [ADR 0006](docs/decisions/0006-dnd-with-dnd-kit.md); D33–D34 — модульный `rowDragging`;
+      `row-dragging` (D1–D15, D40, [ADR 0006](docs/decisions/0006-dnd-with-dnd-kit.md); D33–D34 — модульный `rowDragging`;
       `row-dragging-window` — D35–D36, перетаскивание через границу окна настоящей мышью),
       перенос между клиентскими группами — `row-group-move` (GM2, GM4–GM9 — бросок, отказ, своя
       группа, пауза над свёрнутой, раздел меню ручки, канал действий, axe), модульный

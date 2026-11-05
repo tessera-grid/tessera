@@ -21,7 +21,9 @@ import {
   rowIdOrder,
   sortedRows,
 } from '../../rowDragging.dnd'
+import { settleRowMotion } from '../helpers'
 import { violations } from './a11y-helpers'
+import * as drop from './row-drop-helpers'
 
 // Every Row Dragging requirement is its own named test, prefixed with its spec ID
 // (D1–D14, the row block of the shared drag & drop requirements table in
@@ -409,6 +411,71 @@ describe('Row Dragging — nested rows (subrows)', () => {
         )
       })
       .toBe(true)
+  })
+})
+
+// Дерево истории «Tree lines», раскрытое целиком (`initialExpanded: true`):
+// группы node-0…node-3 с детьми node-<n>-0…2. Перетаскивание — настоящей мышью (TQ3).
+
+describe('Row Dragging — group in a fully expanded tree', () => {
+  const renderExpanded = async () => {
+    const screen = await render(
+      <composed.RowDraggingTreeLines
+        containerHeight={760}
+        height={700}
+        maxHeight={700}
+      />,
+    )
+    await expect.poll(() => drop.rowById('node-2-0')).not.toBeNull()
+    return screen
+  }
+  const shown = (...ids: string[]) =>
+    ids.filter(id => drop.rowById(id) !== null)
+
+  test('D40: взятая группа сворачивается одна и при раскрытом всём — остальные группы раскрыты; после отмены и после броска раскрыты все', async () => {
+    let screen = await renderExpanded()
+    try {
+      // Отмена — Escape.
+      await drop.dragOver('node-1', 'node-2', 0)
+      await expect.poll(() => drop.rowById('node-1-0')).toBeNull()
+      expect(shown('node-0-0', 'node-2-0'), 'во время сессии').toEqual([
+        'node-0-0',
+        'node-2-0',
+      ])
+      await userEvent.keyboard('{Escape}')
+      await expect.poll(() => drop.slot()).toBeNull()
+      await expect.poll(() => drop.rowById('node-1-0')).not.toBeNull()
+      expect(shown('node-0-0', 'node-2-0'), 'после отмены').toEqual([
+        'node-0-0',
+        'node-2-0',
+      ])
+      await drop.pointer.realMouseUp()
+      await settleRowMotion()
+      await screen.unmount()
+
+      // Бросок — группа встаёт между плоскими корнями.
+      screen = await renderExpanded()
+      const dragged = await drop.dragOver('node-1', 'row-0', 0)
+      await expect.poll(() => drop.rowById('node-1-0')).toBeNull()
+      expect(shown('node-0-0', 'node-2-0'), 'во время сессии').toEqual([
+        'node-0-0',
+        'node-2-0',
+      ])
+      await drop.settleSlotAfter('row-0', dragged.at)
+      await drop.release()
+      const order = drop.rowsInOrder().map(row => row.dataset.rowId)
+      expect(order.indexOf('node-1'), 'место броска').toBe(
+        order.indexOf('row-0') + 1,
+      )
+      await expect.poll(() => drop.rowById('node-1-0')).not.toBeNull()
+      expect(shown('node-0-0', 'node-2-0'), 'после броска').toEqual([
+        'node-0-0',
+        'node-2-0',
+      ])
+    } finally {
+      await drop.pointer.realMouseUp()
+      await screen.unmount()
+    }
   })
 })
 
