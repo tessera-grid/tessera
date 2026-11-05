@@ -83,6 +83,7 @@ interface Call {
 interface QueryTable {
   setColumnFilters: (filters: { id: string; value: unknown }[]) => void
   setGlobalFilter: (value: string) => void
+  setExpanded: (value: unknown) => void
   store: { get: () => Record<string, unknown> }
   getPluginDiagnostics: () => unknown[]
   scrollToRowIndex: (
@@ -1312,7 +1313,7 @@ describe('Серверная модель строк (ADR 0138)', () => {
       }
     })
 
-    test('SD53: scrollToRow к загруженной строке свёрнутой ветки — с expandParents раскрывает предков и прокручивает к строке, без него — false без раскрытия', async () => {
+    test('SD53: scrollToRow к загруженной строке свёрнутой ветки — с expandParents раскрывает предков и прокручивает к строке, и когда раскрыто всё, кроме этой ветки; без него — false без раскрытия', async () => {
       const { getRows } = server(treeAnswer)
       let table: QueryTable | undefined
       const screen = await render(
@@ -1346,6 +1347,18 @@ describe('Серверная модель строк (ADR 0138)', () => {
         const area = scroller().getBoundingClientRect()
         expect(row.top).toBeGreaterThanOrEqual(area.top)
         expect(row.bottom).toBeLessThanOrEqual(area.bottom)
+
+        // Раскрыто всё, кроме ветки строки: «раскрыть всё» и ручное сворачивание.
+        table!.setExpanded({ all: true, except: ['r300'] })
+        await expect.poll(() => rowOf('r300.4')).toBeNull()
+        await scrollToIndex(0)
+        expect(
+          await table!.scrollToRow('r300.4', {
+            expandParents: true,
+            align: 'start',
+          }),
+        ).toBe(true)
+        await expect.poll(() => rowOf('r300.4')).not.toBeNull()
       } finally {
         await screen.unmount()
       }

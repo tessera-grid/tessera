@@ -15,6 +15,7 @@ import {
 } from '../keyboardNavigation/geometry'
 import type { Row, RowData, TableFeature, TableFeatures } from '../../types'
 import { dataModeOf, isPaginationActive } from '../dataMode'
+import { withRowExpanded } from '../expandAll'
 import type { RowSource } from '../rowSource'
 import { type ScrollTarget, scrollGridTo } from '../scrollGridTo'
 import { scrollLayer } from '../scrollStretch'
@@ -82,11 +83,7 @@ interface ScrollTable {
   getRowSource: () => RowSource<AnyRow>
   getPreExpandedRowModel: () => { rows: AnyRow[] }
   setPageIndex?: (index: number) => void
-  setExpanded?: (
-    updater: (
-      old: true | Record<string, boolean>,
-    ) => true | Record<string, boolean>,
-  ) => void
+  setExpanded?: (updater: (old: unknown) => unknown) => void
   getColumn: (
     id: string,
   ) =>
@@ -663,10 +660,10 @@ export const scrollToRow = async (
       table.setExpanded?.(old =>
         old === true
           ? true
-          : {
-              ...old,
-              ...Object.fromEntries(collapsed.map(row => [row.id, true])),
-            },
+          : collapsed.reduce(
+              (next, row) => withRowExpanded(next, row.id, true),
+              old,
+            ),
       )
     }
     // Строка в модели и в виртуализаторе: грид перерисовался после смены состояния. На
