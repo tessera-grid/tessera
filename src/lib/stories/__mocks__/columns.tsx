@@ -52,11 +52,6 @@ export const columns: any[] = [
     // Демо `pinSides`: только левое закрепление — инлайн даёт прямой
     // тумблер без поповера.
     pinSides: 'start',
-    aggregatedCell: cell => {
-      return cell.table.options.enableGrouping
-        ? getNamesWithCounter(cell.row, 'country')
-        : cell.getValue()
-    },
     cell: cell => {
       return cell.row.getIsGrouped()
         ? getNamesWithCounter(cell.row, 'country')
@@ -75,11 +70,6 @@ export const columns: any[] = [
   columnHelper.accessor('firstName', {
     id: 'firstName',
     header: 'First Name',
-    aggregatedCell: cell => {
-      return cell.table.options.enableGrouping
-        ? getNamesWithCounter(cell.row, 'firstName')
-        : cell.getValue()
-    },
     cell: cell => {
       return cell.row.getIsGrouped()
         ? getNamesWithCounter(cell.row, 'firstName')
@@ -97,11 +87,6 @@ export const columns: any[] = [
   columnHelper.accessor('lastName', {
     id: 'lastName',
     header: 'Last Name',
-    aggregatedCell: cell => {
-      return cell.table.options.enableGrouping
-        ? getNamesWithCounter(cell.row, 'lastName')
-        : cell.getValue()
-    },
     cell: cell => {
       return cell.row.getIsGrouped()
         ? getNamesWithCounter(cell.row, 'lastName')
@@ -120,11 +105,6 @@ export const columns: any[] = [
     id: 'age',
     dataType: 'number',
     header: 'Age',
-    aggregatedCell: cell => {
-      return cell.table.options.enableGrouping
-        ? getNamesWithCounter(cell.row, 'age')
-        : cell.getValue()
-    },
     cell: cell => {
       return cell.row.getIsGrouped()
         ? getNamesWithCounter(cell.row, 'age')
@@ -301,7 +281,6 @@ export const groupedColumns: any[] = [
   columnHelper.accessor('total', {
     id: 'total',
     header: 'Total',
-    aggregatedCell: cell => `${cell.getValue()}$`,
     cell: cell => `${cell.getValue()}$`,
     footer: sumFooter('total', '$'),
     size: 150,

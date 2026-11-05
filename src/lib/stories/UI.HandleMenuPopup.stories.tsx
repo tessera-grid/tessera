@@ -10,7 +10,7 @@ import { HandleMenuPopup } from '../ui/Popup/HandleMenuPopup'
 import type { HandleMenuItemModel } from '../util/menuModel'
 import { UiCanvas } from './__mocks__/UiCanvas'
 import { useNoInitialPopupFocus } from './__mocks__/PopupCanvas'
-import { defaultControls } from './__mocks__/utils/dataGridControls'
+import { defaultControls, noControls } from './__mocks__/utils/dataGridControls'
 import { useStoryLabels } from './__mocks__/storyLocale'
 
 /**
@@ -52,7 +52,25 @@ const itemsOf = (
   }))
 }
 
-const HandleMenuStory = ({ kind, atStart }: HandleMenuStoryArgs) => {
+/** Раздел при группировке: пункт открывает список групп. */
+const sectionItems = (labels: TableLabels): HandleMenuItemModel[] => [
+  {
+    id: 'moveToGroup',
+    label: rowDraggingLabels(labels).moveToGroup,
+    onSelect: () => {},
+    items: ['Alpha', 'Beta', 'Gamma'].map(group => ({
+      id: group,
+      label: group,
+      onSelect: () => {},
+    })),
+  },
+]
+
+const HandleMenuStory = ({
+  kind,
+  atStart,
+  section = false,
+}: HandleMenuStoryArgs & { section?: boolean }) => {
   useNoInitialPopupFocus()
   const [handle, setHandle] = useState<HTMLButtonElement | null>(null)
   const anchor = useMemo(() => ({ current: handle }), [handle])
@@ -74,7 +92,10 @@ const HandleMenuStory = ({ kind, atStart }: HandleMenuStoryArgs) => {
             <HandleMenuPopup
               anchor={anchor}
               label={moveLabel}
-              items={itemsOf(kind, atStart, labels)}
+              items={
+                section ? sectionItems(labels) : itemsOf(kind, atStart, labels)
+              }
+              backLabel={labels.menuBack}
               onClose={() => {}}
             />
           )
@@ -123,4 +144,11 @@ type Story = StoryObj<typeof meta>
 export const HandleMenuPopupPlayground: Story = {
   name: 'Playground',
   parameters: defaultControls('kind', 'atStart'),
+}
+
+/** Пункт с разделом: нажатие открывает список групп, строка «назад» возвращает к пунктам. */
+export const HandleMenuPopupSection: Story = {
+  name: 'Section',
+  parameters: noControls(),
+  render: () => <HandleMenuStory kind="row" atStart={false} section />,
 }
