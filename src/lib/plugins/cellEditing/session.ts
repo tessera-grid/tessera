@@ -875,13 +875,17 @@ const submitValue = (
   )
 }
 
-/** Черновики строк в полёте по ключу: повторное «Применить всё» их не шлёт (ADR 0178, §5). */
+/**
+ * Черновики строк в полёте по ключу: повторное «Применить всё» их не шлёт (ADR 0178, §5, DR54).
+ * Ключ — `store`: кнопка пульта нового рендера держит другой объект таблицы.
+ */
 const rowsInFlight = new WeakMap<object, Set<string>>()
 const inFlightOf = (table: unknown) => {
-  let keys = rowsInFlight.get(table as object)
+  const { store } = table as { store: object }
+  let keys = rowsInFlight.get(store)
   if (!keys) {
     keys = new Set()
-    rowsInFlight.set(table as object, keys)
+    rowsInFlight.set(store, keys)
   }
   return keys
 }

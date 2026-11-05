@@ -118,8 +118,10 @@ export const useTableEffects = (
     }
   })
 
-  // Диапазоны подсветки и вспышки на индексах следуют за списком строк (ADR 0152, §4).
-  useEffect(() => followIndexRanges(table), [table])
+  // Диапазоны подсветки и вспышки на индексах следуют за списком строк (ADR 0152, §4). Держим по
+  // `store`: подписка на новый объект таблицы не увидела бы смену списка в эффекте потомка (TG21).
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- таблица живёт вместе со store
+  useEffect(() => followIndexRanges(table), [store])
 
   // Дев-варн статической инертности плагинов (ADR 0036, PQ2) — на смену набора.
   useEffect(

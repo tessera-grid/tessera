@@ -51,8 +51,13 @@ const labelMapOf = (options: ColumnOption[]) => {
   return map
 }
 
-/** Подписи, загруженные фильтром справочника: на таблицу и колонку. */
+/**
+ * Подписи, загруженные фильтром справочника: на таблицу и колонку. Ключ — `store`: панель
+ * получает таблицу из контекста колонки, а сводка тулбара — другой её объект.
+ */
 const loadedLabels = new WeakMap<object, Map<string, Map<unknown, string>>>()
+
+const storeOf = (table: object) => (table as { store: object }).store
 
 /** Запомнить подписи вариантов, загруженных `loadOptions` (ADR 0048, §5). */
 export const rememberOptionLabels = (
@@ -60,8 +65,9 @@ export const rememberOptionLabels = (
   columnId: string,
   options: readonly ColumnOption[],
 ) => {
-  let byColumn = loadedLabels.get(table)
-  if (!byColumn) loadedLabels.set(table, (byColumn = new Map()))
+  const store = storeOf(table)
+  let byColumn = loadedLabels.get(store)
+  if (!byColumn) loadedLabels.set(store, (byColumn = new Map()))
   let labels = byColumn.get(columnId)
   if (!labels) byColumn.set(columnId, (labels = new Map()))
   for (const option of options) labels.set(option.value, option.label)
@@ -83,7 +89,7 @@ export const extraOptionLabel = (
   value: unknown,
 ): string | undefined =>
   column.columnDef.getOptionLabel?.(value as OptionValue) ??
-  loadedLabels.get(table)?.get(column.id)?.get(value)
+  loadedLabels.get(storeOf(table))?.get(column.id)?.get(value)
 
 /** Подпись одного значения; `undefined` — подписи нет. */
 export const knownOptionLabel = (

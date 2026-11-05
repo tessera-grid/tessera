@@ -1,10 +1,11 @@
 // @vitest-environment happy-dom
 /**
- * Строки до сохранения (ADR 0178, §7; DR27, DR28, DR30, DR33, DR41, DR50): место новой строки,
- * удаление, пакет со вставками и удалениями, режимы, где строки инертны, копирование диапазона.
+ * Строки до сохранения (ADR 0178, §7; DR27, DR28, DR30, DR33, DR41, DR50, DR54): место новой
+ * строки, удаление, пакет со вставками и удалениями, режимы, где строки инертны, копирование
+ * диапазона. Диапазон на индексах и смена списка в эффекте коммита (ADR 0152, TG21).
  * Запуск: npx vitest run --config vitest.node.config.ts rowDrafts
  */
-import { act, createElement } from 'react'
+import { act, createElement, useEffect } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -68,6 +69,17 @@ type Commit = (
   batch: CellEditBatch,
 ) => CellEditBatchResult | void | Promise<CellEditBatchResult | void>
 
+/** Работа в эффекте дочернего компонента: он идёт раньше эффектов таблицы того же коммита. */
+let inChildEffect: (() => void) | undefined
+const Child = () => {
+  useEffect(() => {
+    const work = inChildEffect
+    inChildEffect = undefined
+    work?.()
+  })
+  return null
+}
+
 const mount = (
   plugins: readonly unknown[],
   options: Record<string, unknown> = {},
@@ -80,7 +92,7 @@ const mount = (
       ...options,
       plugins: plugins as never,
     } as never)
-    return null
+    return createElement(Child)
   }
   root = createRoot(document.createElement('div'))
   act(() => root!.render(createElement(Host)))
@@ -492,6 +504,55 @@ describe('строки до сохранения (ADR 0178, §7)', () => {
     edit('4', '53')
     act(() => table.removeRow('4'))
     await saveDrafts()
+  })
+
+  it('TG21: диапазон на индексах следует за сменой списка в эффекте того же коммита, что и новый объект таблицы', async () => {
+    await mountServer()
+    const target = {
+      range: {
+        anchorRowIndex: 3,
+        focusRowIndex: 5,
+        anchorColumnId: 'name',
+        focusColumnId: 'age',
+      },
+    }
+    const span = () =>
+      Object.keys(readHighlights(table))
+        .map(key => rangeOfKey(key)?.range.rows)
+        .filter(Boolean)
+    act(() => table.highlight(target))
+    expect(span()).toEqual([{ indexes: [3, 5] }])
+
+    // Подсветка строки — новый объект таблицы, а эффект дочернего компонента сдвигает список.
+    const before = table
+    act(() => {
+      inChildEffect = () => table.addRow({ name: 'Zed', age: 99 }, { index: 1 })
+      table.highlight({ row: '20' })
+    })
+    expect(table).not.toBe(before)
+    expect(source().at(1)?.id).not.toBe('1')
+    expect(span()).toEqual([{ indexes: [4, 6] }])
+  })
+
+  it('DR54: новая и удалённая строка в пакете без ответа не уходят повторно, с какого объекта таблицы ни пришло «Применить всё»', async () => {
+    const answers: (() => void)[] = []
+    const onCommitEdits = vi.fn(
+      () => new Promise<void>(resolve => answers.push(resolve)),
+    )
+    mount([manual(onCommitEdits)])
+    add({ name: 'Zed', age: 99 }, 1)
+    act(() => table.removeRow('5'))
+    act(() => applyAllDrafts(table))
+    expect(onCommitEdits).toHaveBeenCalledTimes(1)
+
+    // Кнопка пульта живёт в новом рендере: у неё другой объект таблицы.
+    const before = table
+    act(() => table.highlight({ row: '20' }))
+    expect(table).not.toBe(before)
+    act(() => applyAllDrafts(table))
+    expect(onCommitEdits).toHaveBeenCalledTimes(1)
+
+    await act(async () => answers.forEach(resolve => resolve()))
   })
 
   it('DR52: в серверной модели активная ячейка держит свою строку при новой строке выше, её откате и сохранении', async () => {

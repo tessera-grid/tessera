@@ -789,7 +789,7 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       `filteringDates` (DF2–DF8, DF18, DF20 — разбор значений, условия, пресеты, пояс,
       сериализуемый срез, поиск, экспорт), `play` истории «Filtering — Dates» (DF21), перф DF22 — в `interaction`,
       [ADR 0047](docs/decisions/0047-date-filtering.md).
-    - _Фильтр вариантов:_ `filtering-options` (SF1, SF6–SF7, SF9–SF13, SF15, SF18–SF21 —
+    - _Фильтр вариантов:_ `filtering-options` (SF1, SF6–SF7, SF9–SF13, SF15, SF18–SF21, SF27 —
       чек-лист, поиск, счётчики, виртуализация, клавиатура, справочник, подписи в
       ячейке и сводке, сервер, локализация, axe), `option-filter-chunk` (SF22 —
       ленивый модуль панели), модульные `filteringOptions` (SF2–SF5, SF8, SF14, SF16–SF17
@@ -1061,7 +1061,8 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       на цели `target`, у кебабов и инлайн-кнопки, `aria-busy` ожидания, успех без
       вспышки; TG13–TG17, TG19 — подложка и светлый блик ожидания по пикселям, одна подложка при
       уменьшенном движении и сверх порога, пунктир в `forced-colors`, контраст, токены), TG20 — в
-      `pending-on-data` (волна цели-строки на всю ширину строки), TG9 — в
+      `pending-on-data` (волна цели-строки на всю ширину строки), модульный TG21 — в `rowDrafts.dom`
+      (смена списка в эффекте того же коммита), TG9 — в
       `highlight`, TG10 — в `outcome-flash`, перф TG11 и TG18 — в `scroll`,
       история «Cells/Context menu — Refused on a selection» (S1)
       ([ADR 0152](docs/decisions/0152-menu-action-outcome-on-target.md)).
@@ -1107,7 +1108,7 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       (DR27–DR28, DR30, DR33 — место новой строки, удаление, пакет со вставками и удалениями,
       инертность в дереве, группировке и ленте), визуальный `row-drafts` (DR29, DR31–DR32,
       DR34–DR35, DR40 — правка новой строки, заливка и приглушение, откат, счёт по данным, axe и
-      `forced-colors`, диапазон по видимому списку), DR41, DR50–DR53 — модульные (копирование новой строки, диапазон выделения и подсветки и активная ячейка за новой строкой),
+      `forced-colors`, диапазон по видимому списку), DR41, DR50–DR54 — модульные (копирование новой строки, диапазон выделения и подсветки и активная ячейка за новой строкой),
       перф DR36 — в `scroll`, истории «Rows/Editing» S8–S10,
       истории «Cells/Editing» S5–S7
       ([ADR 0178](docs/decisions/0178-drafts.md)).

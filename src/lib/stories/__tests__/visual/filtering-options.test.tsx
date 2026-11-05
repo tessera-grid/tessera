@@ -624,6 +624,45 @@ describe('Фильтр вариантов — подписи и вид', () => {
     )
   })
 
+  test('SF27: сводка «Фильтры» называет вариант справочника подписью из его ответа, когда у колонки нет своих подписей', async () => {
+    const load = async () => [
+      { value: 'm9', label: 'Dana Fox' },
+      { value: 'm8', label: 'Evan Wu' },
+    ]
+    await render(
+      <Grid
+        columns={columnsWith({
+          extra: [
+            {
+              id: 'owner',
+              accessorKey: 'manager',
+              header: 'Owner',
+              dataType: 'select',
+              loadOptions: load,
+            },
+          ],
+        })}
+      />,
+    )
+    await waitForGrid()
+    await openFilter('owner')
+    await expect.poll(() => option('m9')).not.toBeNull()
+    await humanClick(checkbox('m9'))
+    await closePanel()
+
+    const summaryButton = () =>
+      document.querySelector<HTMLElement>(
+        '[data-testid="filter-summary-button"]',
+      )
+    await expect.poll(summaryButton).not.toBeNull()
+    await humanClick(summaryButton()!)
+    const item = () =>
+      document.querySelector(
+        '[data-testid="filter-summary"] [data-column-id="owner"]',
+      )?.textContent ?? null
+    await expect.poll(item).toContain('Dana Fox')
+  })
+
   test('SF19: server — грид не фильтрует; onFilterChange получает значения как есть; счётчики — только из option.count', async () => {
     const onFilterChange = vi.fn()
     await render(
