@@ -14,6 +14,7 @@ import {
   TOUCH_BLINK_SETTINGS,
   TOUCH_SUITE,
 } from './src/lib/stories/__tests__/engines.ts'
+import { EXPOSE_GC } from './.storybook/collectGarbage.ts'
 import { testCommands } from './vitest.commands.ts'
 
 // Tests run in a real browser (Playwright/Chromium) because Tessera's
@@ -44,6 +45,8 @@ export default defineConfig({
       '@base-ui/react/popover',
       '@base-ui/react/combobox',
       '@base-ui/react/checkbox',
+      // Кит поповеров и контролов (ADR 0183) рисует элементы примитивов через `useRender`.
+      '@base-ui/react/use-render',
       '@tanstack/react-table',
       '@tanstack/react-store',
       // Помощники историй каталога (ADR 0093): без пребандла Vite перестраивает зависимости
@@ -83,7 +86,7 @@ export default defineConfig({
             headless: true,
             // Реальный Chromium headless — визуальные тесты сверяют настоящий рендер.
             provider: playwright({
-              launchOptions: { channel: 'chromium' },
+              launchOptions: { channel: 'chromium', args: [EXPOSE_GC] },
             }),
             instances: [{ browser: 'chromium' }],
             commands: testCommands,
@@ -104,7 +107,7 @@ export default defineConfig({
             provider: playwright({
               launchOptions: {
                 channel: 'chromium',
-                args: [TOUCH_BLINK_SETTINGS],
+                args: [TOUCH_BLINK_SETTINGS, EXPOSE_GC],
               },
               contextOptions: { hasTouch: true },
             }),
@@ -129,7 +132,10 @@ export default defineConfig({
               enabled: true,
               headless: true,
               provider: playwright({
-                launchOptions: { channel: 'chromium' },
+                launchOptions: {
+                  channel: 'chromium',
+                  args: [EXPOSE_GC],
+                },
                 // Холст каталога — с уменьшенным движением, как снимки Chromatic (VR16).
                 contextOptions: { reducedMotion: 'reduce' },
               }),
