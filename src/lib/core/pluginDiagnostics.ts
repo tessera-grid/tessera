@@ -15,6 +15,8 @@ export type PluginInertReason =
   | 'filtering'
   | 'noToolbar'
   | 'noStatusBar'
+  | 'noFooter'
+  | 'partialRows'
   | 'noActions'
   | 'noRowCount'
   | 'noGetRows'
@@ -171,6 +173,9 @@ const INERT_MESSAGES: Record<string, string> = {
     'тулбар запрещён (enableToolbar: false) — у плагина нет поверхности',
   noStatusBar:
     'нижняя панель запрещена (enableStatusBar: false) — у плагина нет поверхности',
+  noFooter: 'футер запрещён (enableFooter: false) — у плагина нет поверхности',
+  partialRows:
+    'у грида только часть строк: их сумма — не итог, покажите итог сервера своим footer',
   noActions: 'нечего показать: ни один плагин не добавил действий',
   noRowCount:
     'в серверном режиме нужен rowCount (0, пока ответ сервера не пришёл)',

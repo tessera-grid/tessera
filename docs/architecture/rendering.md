@@ -298,7 +298,10 @@ start` — кнопка держит свою ширину, обёртка её 
 
 ## Футер колонок
 
-Строка итогов (`enableFooter`, ADR [0118](../decisions/0118-column-footer.md)) — одна
+Строка под колонками (`enableFooter`, ADR [0118](../decisions/0118-column-footer.md)) — шаблон
+колонки, итог — один из источников содержимого: свой `footer`, затем `table.getColumnTotal` (ответ
+серверной модели или плагин `columnTotals`, [ADR 0184](../decisions/0184-column-totals-and-group-row-count.md)),
+затем пустая ячейка. С плагином футер есть без флага, `enableFooter: false` его запрещает. Это одна
 строка первой группы футеров TanStack, ячейка в каждой листовой колонке (`FooterCell`,
 содержимое — `columnDef.footer`). Положение — `footerPosition`, атрибут `data-position`
 строки и `data-footer-position` таблицы:

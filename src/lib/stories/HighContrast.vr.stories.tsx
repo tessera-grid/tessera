@@ -6,6 +6,7 @@ import { forcedStep } from './__mocks__/catalogPlay'
 import * as cellsActionStatusStories from './DataGrid.Cells.ActionStatus.stories'
 import * as cellsSelectionStories from './DataGrid.Cells.Selection.stories'
 import * as columnsSortingStories from './DataGrid.Columns.Sorting.stories'
+import * as coreColumnTotalsStories from './DataGrid.Core.ColumnTotals.stories'
 import * as coreFooterStories from './DataGrid.Core.Footer.stories'
 import * as customizationLocalizationStories from './Customization.Localization.stories'
 import * as coreIncreasedContrastStories from './Customization.IncreasedContrast.stories'
@@ -7074,5 +7075,85 @@ export const HighContrastActionStatusOwnLabelStep3 = {
     3,
   ),
   name: 'Cells/Action status — Own action label, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnTotalsSearchStep1 = {
+  ...twinStep(
+    coreColumnTotalsStories,
+    coreColumnTotalsStories.ColumnTotalsSearch,
+    1,
+  ),
+  name: 'Core/Column totals — Search changes the total, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnTotalsSearchStep2 = {
+  ...twinStep(
+    coreColumnTotalsStories,
+    coreColumnTotalsStories.ColumnTotalsSearch,
+    2,
+  ),
+  name: 'Core/Column totals — Search changes the total, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnTotalsOwnFooterStep1 = {
+  ...twinStep(
+    coreColumnTotalsStories,
+    coreColumnTotalsStories.ColumnTotalsOwnFooter,
+    1,
+  ),
+  name: 'Core/Column totals — Own footer, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnTotalsOwnFooterStep2 = {
+  ...twinStep(
+    coreColumnTotalsStories,
+    coreColumnTotalsStories.ColumnTotalsOwnFooter,
+    2,
+  ),
+  name: 'Core/Column totals — Own footer, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnTotalsTreeStep1 = {
+  ...twinStep(
+    coreColumnTotalsStories,
+    coreColumnTotalsStories.ColumnTotalsTree,
+    1,
+  ),
+  name: 'Core/Column totals — Tree, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnTotalsTreeStep2 = {
+  ...twinStep(
+    coreColumnTotalsStories,
+    coreColumnTotalsStories.ColumnTotalsTree,
+    2,
+  ),
+  name: 'Core/Column totals — Tree, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnTotalsServerPageStep1 = {
+  ...twinStep(
+    coreColumnTotalsStories,
+    coreColumnTotalsStories.ColumnTotalsServerPage,
+    1,
+  ),
+  name: 'Core/Column totals — Server page, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnTotalsServerPageStep2 = {
+  ...twinStep(
+    coreColumnTotalsStories,
+    coreColumnTotalsStories.ColumnTotalsServerPage,
+    2,
+  ),
+  name: 'Core/Column totals — Server page, шаг 2',
   tags: ['!test'],
 }

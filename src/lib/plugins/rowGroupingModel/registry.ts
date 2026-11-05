@@ -5,36 +5,16 @@
  * включает. Кнопка группировки в заголовке — у `rowGrouping`.
  */
 import {
-  aggregationFn_count,
-  aggregationFn_extent,
-  aggregationFn_max,
-  aggregationFn_mean,
-  aggregationFn_median,
-  aggregationFn_min,
-  aggregationFn_sum,
-  aggregationFn_unique,
   columnGroupingFeature,
   type GroupingState,
-  rowAggregationFeature,
 } from '@tanstack/react-table'
 
 import { definePlugin } from '../../core/definePlugin'
 import { serverRowModelReason } from '../../core/pluginDiagnostics'
+import { aggregationFeatures } from '../../shared/aggregation'
 import { rowExpandingModel } from '../rowExpandingModel/registry'
 import { createIdleAwareGroupedRowModel } from './groupedRowModel'
 import { objectGroupingFeature } from './objectGrouping'
-
-/** Стандартный набор агрегаций. */
-const aggregationFns = {
-  sum: aggregationFn_sum,
-  count: aggregationFn_count,
-  min: aggregationFn_min,
-  max: aggregationFn_max,
-  extent: aggregationFn_extent,
-  mean: aggregationFn_mean,
-  median: aggregationFn_median,
-  unique: aggregationFn_unique,
-}
 
 export interface RowGroupingModelOptions {
   /** `false` — плагин отключён. */
@@ -50,10 +30,9 @@ export interface RowGroupingModelOptions {
 /** Фичи модели группировки; интерфейс несёт те же — по ним выводится тип среза. */
 export const rowGroupingModelFeatures = {
   columnGroupingFeature,
-  rowAggregationFeature,
   objectGroupingFeature,
   groupedRowModel: createIdleAwareGroupedRowModel(),
-  aggregationFns,
+  ...aggregationFeatures,
 }
 
 const NO_GROUPING: string[] = []

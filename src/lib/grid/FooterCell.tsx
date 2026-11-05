@@ -12,7 +12,6 @@ import {
   NAV_CELL_ATTR,
   useKeyboardNavigationCell,
 } from '../core/keyboardNavigation'
-import { rowSourceOf } from '../core/rowSource'
 import type { Header } from '../types'
 import { getCellPinningParams, pinnedSideToDom } from './cellPinningParams'
 import { getHeaderSizeVariable, getVirtualCellLeft } from './columnSizes'
@@ -29,6 +28,21 @@ export interface FooterCellProps {
   /** Строки и состояние таблицы — ключи перерисовки мемо, ячейка их не читает. */
   rows?: unknown
   state?: unknown
+}
+
+/** Итог текстом: массив (`extent`, `unique`) — через запятую, объект читает свой `footer`. */
+const totalText = (
+  table: Parameters<typeof formatDataTypeValue>[0],
+  column: Parameters<typeof formatDataTypeValue>[1],
+  total: unknown,
+) => {
+  const text = (value: unknown) =>
+    formatDataTypeValue(table, column, value, undefined)
+  if (total === undefined || total === null) return null
+  if (Array.isArray(total)) return total.map(text).join(', ')
+  return typeof total === 'object' && !(total instanceof Date)
+    ? null
+    : text(total)
 }
 
 // Мемо: сдвиг окна колонок перерисовывает футер, но не его прежние ячейки (ADR 0149, PS13).
@@ -48,9 +62,9 @@ export const FooterCell = memo(
     const highlighted = highlightRender([
       { layer: 'column', state: columnHighlight, describe: false },
     ])
-    // Итог колонки серверной выборки (ADR 0144, §4): без своего `footer` — его значение
-    // текстом по типу колонки, как в её ячейке (GS14).
-    const total = rowSourceOf(table).totals?.()?.[header.column.id]
+    // Итог колонки (ADR 0184, §4): без своего `footer` — текст по типу колонки, как в её
+    // ячейке (GS14).
+    const total = table.getColumnTotal(header.column.id)
     const { footer } = header.column.columnDef
     const flashed = flashRender([
       { layer: 'column', entry: useColumnFlash(table, header.column.id) },
@@ -99,14 +113,7 @@ export const FooterCell = memo(
               ? null
               : footer !== undefined
                 ? flexRender(footer, header.getContext())
-                : total === undefined || total === null
-                  ? null
-                  : formatDataTypeValue(
-                      table as never,
-                      header.column,
-                      total,
-                      undefined,
-                    )}
+                : totalText(table, header.column, total)}
           </CellWrapperTitle>
         </CellWrapperContent>
       </div>

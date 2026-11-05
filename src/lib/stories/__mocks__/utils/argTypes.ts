@@ -529,6 +529,9 @@ export const serverRowModelMaxBlocksType = numberControl(
   { min: 1, max: 200, step: 1 },
   '100',
 )
+export const enableColumnTotalsType = booleanControl(
+  'Итоги колонок с явным агрегатом в футере',
+)
 export const enableFailureLogType = booleanControl(
   'Журнал отказов в тулбаре: кнопка со счётчиком, пока есть нерешённые отказы, встаёт только в уже показанный тулбар (плагин `failureLog`)',
 )

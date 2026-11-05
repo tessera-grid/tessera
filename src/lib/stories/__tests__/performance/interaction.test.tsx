@@ -64,6 +64,8 @@ import { pagination } from '../../../plugins/pagination'
 import { rowDragging } from '../../../plugins/rowDragging'
 import { moveRow } from '../../../plugins/rowDragging/moveRow'
 import { cellEditing } from '../../../plugins/cellEditing'
+import { columnTotals } from '../../../plugins/columnTotals'
+import { quickSearchModel } from '../../../plugins/quickSearchModel'
 import { failureLog } from '../../../plugins/failureLog'
 import { renderPluginsGrid } from './hosts'
 import { DRAFTS, applyAllDrafts, readDrafts } from '../../../core/drafts/drafts'
@@ -4750,6 +4752,113 @@ describe('Справочник действий — открытие журна�
       expect(
         named.longestMs,
         `действия: ${named.longestMs.toFixed(1)}ms, имена: ${base.longestMs.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Итоги колонок (ADR 0184, CT11): смена поиска на 100 000 строк с тремя итогами против той же
+// без них; футер есть в обоих замерах. Итог — проход по найденным строкам на колонку.
+const CT11_COST = { ratio: 1.3, plusMs: 30 }
+const TOTALS_ROWS = Array.from({ length: 100_000 }, (_, index) => ({
+  id: `r${index}`,
+  name: `Name ${index % 10}`,
+  a: index,
+  b: index * 2,
+  c: index * 3,
+}))
+const TOTALS_COLUMNS = [
+  { id: 'name', accessorKey: 'name', header: 'Name', enableGlobalFilter: true },
+  ...['a', 'b', 'c'].map(id => ({
+    id,
+    accessorKey: id,
+    header: id,
+    aggregationFn: 'sum',
+    enableGlobalFilter: false,
+  })),
+]
+let totalsTable: {
+  setGlobalFilter: (value: string) => void
+  getColumnTotal: (columnId: string) => unknown
+}
+const TotalsGrid = ({ totals }: { totals: boolean }) => {
+  const table = useCreateTable({
+    columns: TOTALS_COLUMNS as never,
+    data: TOTALS_ROWS,
+    getRowId: (row: { id: string }) => row.id,
+    enableFooter: true,
+    plugins: [quickSearchModel(), ...(totals ? [columnTotals()] : [])] as never,
+  })
+  totalsTable = table as never
+  return (
+    <div style={{ height: 600 }}>
+      <DataGrid table={table as never} />
+    </div>
+  )
+}
+
+describe('Отзывчивость — итоги колонок', () => {
+  test(
+    'CT11: смена поиска на 100 000 строк с тремя итогами — против той же без них',
+    async () => {
+      const measure = async (totals: boolean) => {
+        await render(<TotalsGrid totals={totals} />)
+        await waitForGrid()
+        let query = 0
+        const footerA = () =>
+          document
+            .querySelector('.data-grid__footer-cell[data-column-id="a"]')
+            ?.textContent?.trim()
+        const result = await measureInteractionWork(
+          async () => totalsTable.setGlobalFilter(`Name ${++query}`),
+          {
+            afterWarmup: () => {
+              if (totals) return expect.poll(footerA).not.toBe('')
+              return undefined
+            },
+          },
+        )
+        expect(totalsTable.getColumnTotal('a')).toEqual(
+          totals ? expect.any(Number) : undefined,
+        )
+        await cleanup()
+        return result
+      }
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const withTotals = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = ceilingOver(base.longestMs, CT11_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '100 000×4',
+          plugins: 'footer',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('CT11-base', 'поиск без итогов', base, false)
+      await record('CT11', 'поиск с тремя итогами', withTotals, true)
+
+      expect(
+        withTotals.longestMs,
+        `итоги longest=${withTotals.longestMs.toFixed(1)}ms, база ${base.longestMs.toFixed(1)}ms`,
       ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,

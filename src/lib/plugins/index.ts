@@ -71,6 +71,7 @@ export {
   type InfiniteScrollLoadContext,
 } from './infiniteScroll'
 export { backToTop, type BackToTopOptions } from './backToTop'
+export { columnTotals, type ColumnTotalsOptions } from './columnTotals'
 export { failureLog, type FailureLogOptions } from './failureLog'
 export { unsavedChanges, type UnsavedChangesOptions } from './unsavedChanges'
 export {

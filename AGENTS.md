@@ -741,7 +741,11 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       после футера, скелет, движение строк, axe, грид без высоты, строка ошибки ленты в
       виду после отказа у края), `play` истории
       «Core/Footer — Position switch» (FT3), перф FT14 — в `scroll`
-      ([ADR 0118](docs/decisions/0118-column-footer.md)).
+      ([ADR 0118](docs/decisions/0118-column-footer.md)); итоги колонок — визуальный `column-totals`
+      (CT2–CT3, CT10 — итог по типу, свой `footer` в обоих режимах, axe), модульный `columnTotals.dom`
+      (CT1, CT4–CT9 — включение футера, строки итога, дерево, черновики, часть строк, SSRM, без плагина),
+      перф CT11 — в `interaction`, CT12 — `check:tree-shaking`, истории «Core/Column totals» (S1–S4)
+      ([ADR 0184](docs/decisions/0184-column-totals-and-group-row-count.md)).
     - _Экспорт:_ `export` (EX1, EX6–EX9, EX23, EX25–EX28, EX31–EX32 — кнопка тулбара,
       панель настроек по осям, быстрые наборы, скачивание, серверный режим, axe),
       модульные `export` (EX2–EX5, EX10–EX22, EX24, EX29–EX30 — оси по плагинам, `allow`,

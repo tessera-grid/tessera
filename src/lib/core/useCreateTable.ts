@@ -419,6 +419,10 @@ export const useCreateTable = <
     pluginBody: folded.body,
     actionMenu: folded.actionMenu,
     ...coreOptionsOf(coreOptions),
+    // Итоги колонок включают футер, флаг его запрещает (ADR 0184, §7).
+    enableFooter:
+      coreOptions.enableFooter ??
+      (folded.options.columnTotalOf ? true : undefined),
     dataMode,
     // Стоковые `manual*` выставляет ядро по режиму, плагины их не задают (ADR 0169, §1).
     ...manualOptionsOf({ ...folded.options, dataMode }),

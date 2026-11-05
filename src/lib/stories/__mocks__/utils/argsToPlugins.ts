@@ -1,5 +1,6 @@
 import {
   backToTop,
+  columnTotals,
   failureLog,
   unsavedChanges,
   cellEditing,
@@ -88,6 +89,7 @@ const FACTORIES = {
   infiniteScroll,
   serverRowModel,
   backToTop,
+  columnTotals,
   failureLog,
   unsavedChanges,
 }
@@ -237,6 +239,7 @@ export const argsToPlugins = (o: FeatureToggles) => {
     infiniteScroll(argsOf(o, 'infiniteScroll')),
     serverRowModel(argsOf(o, 'serverRowModel')),
     backToTop(argsOf(o, 'backToTop')),
+    columnTotals(argsOf(o, 'columnTotals')),
     failureLog(argsOf(o, 'failureLog')),
     unsavedChanges(argsOf(o, 'unsavedChanges')),
     // Демо-производитель действий строки как единые дескрипторы (`RowAction`):

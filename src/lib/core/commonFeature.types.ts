@@ -160,6 +160,8 @@ export interface CoreOptions {
 
 /** Опции `commonFeature`: опции ядра и каналы сборки и плагинов (ADR 0164). */
 export interface CommonOptions extends CoreOptions {
+  /** Итог колонки на клиенте: с ним футер есть без флага (ADR 0184, §4, §7). */
+  columnTotalOf?: (table: unknown, columnId: string) => unknown
   hooks?: CommonHooks
   slots?: RenderSlotsV9
   slotActions?: SlotActionsV9
@@ -227,6 +229,8 @@ export interface CommonTableAPI<
 > {
   /** Строки тела по индексу и по id (ADR 0138, §2). */
   getRowSource: () => RowSource<Row<TFeatures, TData>>
+  /** Итог колонки: ответа сервера или плагина `columnTotals`; нет — `undefined`. */
+  getColumnTotal: (columnId: string) => unknown
   getHooks: () => CommonHooks | undefined
   /** Подпись действия справочника по текущему словарю таблицы (ADR 0182, AN8). */
   getActionLabel: (action: ActionRef) => string

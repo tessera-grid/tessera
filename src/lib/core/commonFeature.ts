@@ -82,6 +82,15 @@ export const commonFeature: TableFeature = {
           return options().rowSourceLayer?.(source, table) ?? source
         },
       },
+      // Итог выборки сервера, иначе итог плагина (ADR 0184, §4).
+      table_getColumnTotal: {
+        fn: (columnId: string) => {
+          const totals = rowSourceOf(table).totals?.()
+          return totals
+            ? totals[columnId]
+            : options().columnTotalOf?.(table, columnId)
+        },
+      },
       table_getRenderSlots: { fn: () => options().slots },
       table_getSlotActions: { fn: () => options().slotActions },
       table_getContextMenuActions: { fn: () => options().contextMenuActions },

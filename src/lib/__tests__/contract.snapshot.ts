@@ -37,6 +37,7 @@ export const CORE_OPTIONS: Record<string, string> = {
   enableColumnAnimation: '0115',
   enableFooter: '0106',
   enableKeyboardNavigation: '0170',
+  columnTotalOf: '0184',
   enableOverflowTooltip: '0075',
   enableRowAnimation: '0107',
   enableStatusBar: '0046',

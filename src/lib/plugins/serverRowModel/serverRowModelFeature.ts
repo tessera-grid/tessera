@@ -26,8 +26,6 @@ interface ServerRowModelTableAPI<TData> {
   applyRowTransaction: (
     transaction: ServerRowTransaction<TData>,
   ) => ServerRowTransactionResult | undefined
-  /** Итог колонки выборки из ответа сервера (ADR 0144, §4); без него — `undefined`. */
-  getColumnTotal: (columnId: string) => unknown
 }
 
 /* eslint-disable @typescript-eslint/no-unused-vars -- generics карт обязаны
@@ -54,9 +52,6 @@ export const serverRowModelFeature: TableFeature = {
       table_refreshRows: {
         fn: (options?: RefreshRowsOptions) =>
           serverSource(table).refresh?.(options),
-      },
-      table_getColumnTotal: {
-        fn: (columnId: string) => serverSource(table).totals?.()?.[columnId],
       },
       table_applyRowTransaction: {
         fn: (transaction: ServerRowTransaction) => {
