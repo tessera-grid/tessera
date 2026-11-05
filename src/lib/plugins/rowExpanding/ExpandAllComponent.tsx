@@ -1,13 +1,13 @@
 /**
  * Кнопка «Раскрыть всё / Свернуть всё» в шапке колонки раскрытия (ADR 0160, §2): «Раскрыть
  * всё», если есть свёрнутые строки, иначе «Свернуть всё». В серверной модели строк
- * раскрытие всего — срез «всё, кроме»; в клиентском — `expanded: true` и сессия, в которой
+ * раскрытие всего — срез «всё, кроме»; в клиентском — `expanded: true`, с которым
  * ленивые строки окна грузят детей.
  */
 import clsx from 'clsx'
 
 import { reportAction, sourceOf } from '../../core/debugActions'
-import type { PluginHeaderProps } from '../../core/definePlugin'
+import { type PluginHeaderProps, savedSliceOf } from '../../core/definePlugin'
 import { isExpandedAll } from '../../core/expandAll'
 import { useLocalization } from '../../core/localization'
 import { serverRowModelReason } from '../../core/pluginDiagnostics'
@@ -22,7 +22,6 @@ import { rowExpandingLabels } from './labels'
 interface ExpandAllTable {
   getPreExpandedRowModel: () => { flatRows: Row<any, any>[] }
   setExpanded: (value: unknown) => void
-  setRowExpandAll?: (on: boolean) => void
 }
 
 /** Есть раскрываемая строка, показанная свёрнутой. */
@@ -34,9 +33,8 @@ const hasCollapsedRows = (table: ExpandAllTable) =>
 export const ExpandAllComponent = ({
   table,
 }: PluginHeaderProps<Partial<RowExpandingHooks>>) => {
-  const value = useSlice(table, 'expanded') as unknown
-  const session = useSlice(table, 'rowExpandAll' as never) as
-    boolean | undefined
+  useSlice(table, 'expanded')
+  const value = savedSliceOf(table, 'expanded')
   const labels = useLocalization()
   const { expandAll: ExpandAllIcon, collapseAll: CollapseAllIcon } = useIcons()
   const t = table as unknown as ExpandAllTable
@@ -48,7 +46,7 @@ export const ExpandAllComponent = ({
     value === true ||
     (isExpandedAll(value)
       ? value.except.length === 0
-      : !server && (!!session || !hasCollapsedRows(t)))
+      : !server && !hasCollapsedRows(t))
   const label = allOpen
     ? rowExpandingLabels(labels).collapseAll
     : rowExpandingLabels(labels).expandAll
@@ -65,7 +63,6 @@ export const ExpandAllComponent = ({
       source: sourceOf(event),
     })
     if (allOpen) {
-      t.setRowExpandAll?.(false)
       t.setExpanded({})
       return
     }
@@ -74,7 +71,6 @@ export const ExpandAllComponent = ({
       return
     }
     t.setExpanded(true)
-    t.setRowExpandAll?.(true)
   }
 
   return (

@@ -231,6 +231,75 @@ describe('Производительность первой отрисовки �
   )
 })
 
+// Раскрытые ленивые строки (ADR 0054, RE79): монтирование 100 000 строк со срезом `expanded: true`
+// против той же выборки без него. Сужение обходит все строки, запросы делает только окно.
+describe('Производительность первой отрисовки — раскрытые ленивые строки', () => {
+  test(
+    'RE79: монтирование 100 000 ленивых строк с expanded: true не хуже той же выборки без него',
+    async () => {
+      const dataOverride = makeData({
+        shape: 'flat',
+        count: PAGED.dataCount,
+      })
+      const measure = async (expanded: boolean) => {
+        const result = await measureRenderWork(
+          () =>
+            renderGrid({
+              ...PAGED,
+              ...NO_PLUGINS,
+              enableRowExpanding: true,
+              dataOverride,
+              rowExpandingHasChildren: () => true,
+              rowExpandingLoadChildren: () => new Promise(() => {}),
+              ...(expanded ? { initialExpanded: true } : {}),
+            }),
+          () => headCells().length > 0,
+          { warmup: false },
+        )
+        await cleanup()
+        return result
+      }
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const lazy = medianRun(runs.variant, r => r.longestMs)
+      // Цена фичи — один проход модели строк при начале загрузки, как приход детей в RE38.
+      const ceiling = ceilingOver(base.longestMs, { ratio: 1.3, plusMs: 250 })
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'render',
+          size: '30×100 000',
+          plugins: 'rowExpanding',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: LOAD_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('RE79-base', 'ленивые строки свёрнуты', base, false)
+      await record('RE79', 'ленивые строки раскрыты в срезе', lazy, true)
+
+      expect(
+        lazy.longestMs,
+        `с expanded: true longest=${lazy.longestMs.toFixed(1)}ms, база ${base.longestMs.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
 // Скелет первой загрузки (ADR 0060, SL14): монтирование со скелетом против того же
 // грида, смонтированного сразу с данными, — скелет не дороже строк.
 describe('Производительность первой отрисовки — скелет', () => {

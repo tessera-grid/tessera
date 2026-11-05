@@ -69,6 +69,7 @@ export const CORE_OPTIONS: Record<string, string> = {
   pluginDiagnostics: '0022',
   pluginNarrowContext: '0171',
   pluginNarrows: '0171',
+  pluginSavedSlice: '0054',
   pluginRenderVersion: '0039',
   pluginWrappers: '0168',
   refreshOptions: '0094',

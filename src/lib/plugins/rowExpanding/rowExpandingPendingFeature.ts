@@ -4,6 +4,7 @@
  * номер попытки: поздний итог прежней попытки игнорируется. Row-метод
  * `setExpandedByUser` — путь клика для других плагинов (раскрытие паузой, ADR 0109),
  * `getIsLazyParent` — признак ленивого родителя для переноса строк (ADR 0112).
+ * `queueLazyLoad` — очередь загрузок строк, раскрытых без нажатия на них (ADR 0054, §5).
  */
 import {
   assignPrototypeAPIs,
@@ -34,15 +35,9 @@ export type RowExpandPending = Record<string, number>
 
 interface RowExpandPendingStateSlice {
   rowExpandPending: RowExpandPending
-  /**
-   * Человек раскрыл всё кнопкой (ADR 0160, §2): ленивые строки окна грузят детей при
-   * появлении. Программное `expanded: true` сессию не начинает.
-   */
-  rowExpandAll: boolean
 }
 interface RowExpandPendingOptions {
   onRowExpandPendingChange?: (updater: Updater<RowExpandPending>) => void
-  onRowExpandAllChange?: (updater: Updater<boolean>) => void
 }
 interface RowExpandPendingRowAPI {
   getIsExpandPending: () => boolean
@@ -56,7 +51,14 @@ interface RowExpandPendingRowAPI {
 }
 interface RowExpandPendingTableAPI {
   setRowExpandPending: (updater: Updater<RowExpandPending>) => void
-  setRowExpandAll: (on: boolean) => void
+  /**
+   * Поставить загрузку строки в очередь: `start` зовётся, когда есть место, и сообщает конец
+   * загрузки вызовом `done`. Возвращает снятие из очереди; начатая загрузка не снимается.
+   */
+  queueLazyLoad: (
+    rowId: string,
+    start: (done: () => void) => void,
+  ) => () => void
 }
 
 /* eslint-disable @typescript-eslint/no-unused-vars -- generics карт обязаны
@@ -97,11 +99,12 @@ type PendingAtom = {
 type PendingTable = {
   atoms: {
     rowExpandPending?: PendingAtom
-    rowExpandAll?: { get: () => boolean }
   }
 }
 
 const EMPTY: RowExpandPending = {}
+/** Загрузок строк, раскрытых без нажатия на них, одновременно — как блоков серверной модели. */
+const MAX_LAZY_LOADS = 2
 
 const hasOwnSubRows = (row: Row<any, any>) =>
   !!row.table.options.getSubRows?.(row.original, row.index)?.length
@@ -117,14 +120,29 @@ interface AllRow {
 export const rowExpandingPendingFeature: TableFeature = {
   getInitialState: state => ({
     rowExpandPending: EMPTY,
-    rowExpandAll: false,
     ...state,
   }),
   getDefaultTableOptions: table => ({
     onRowExpandPendingChange: makeStateUpdater('rowExpandPending', table),
-    onRowExpandAllChange: makeStateUpdater('rowExpandAll', table),
   }),
   constructTableAPIs: table => {
+    // Очередь живёт с таблицей: объект `useTable` меняется от рендера к рендеру.
+    const waiting = new Map<string, (done: () => void) => void>()
+    let running = 0
+    const pump = () => {
+      while (running < MAX_LAZY_LOADS && waiting.size > 0) {
+        const [rowId, start] = waiting.entries().next().value!
+        waiting.delete(rowId)
+        running++
+        let finished = false
+        start(() => {
+          if (finished) return
+          finished = true
+          running--
+          pump()
+        })
+      }
+    }
     assignTableAPIs('rowExpandingPendingFeature', table, {
       table_setRowExpandPending: {
         fn: (updater: Updater<RowExpandPending>) => {
@@ -137,11 +155,13 @@ export const rowExpandingPendingFeature: TableFeature = {
           atom?.set(functionalUpdate(updater, atom.get()))
         },
       },
-      table_setRowExpandAll: {
-        fn: (on: boolean) => {
-          const atom = (table as unknown as PendingTable).atoms.rowExpandAll
-          if (atom?.get() === on) return
-          ;(table.options as RowExpandPendingOptions).onRowExpandAllChange?.(on)
+      table_queueLazyLoad: {
+        fn: (rowId: string, start: (done: () => void) => void) => {
+          waiting.set(rowId, start)
+          pump()
+          return () => {
+            if (waiting.get(rowId) === start) waiting.delete(rowId)
+          }
         },
       },
     })

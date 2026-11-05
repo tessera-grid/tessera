@@ -395,6 +395,7 @@ export const useCreateTable = <
     atoms: effective.atoms,
     pluginNarrows: narrow,
     pluginNarrowContext: narrowContext,
+    pluginSavedSlice: sliceStore.saved,
     onColumnPinningChange,
     onColumnSizingChange,
     onColumnAutoSizingChange,

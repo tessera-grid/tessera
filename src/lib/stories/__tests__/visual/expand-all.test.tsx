@@ -53,7 +53,6 @@ describe('«Раскрыть всё» кнопкой в шапке (ADR 0160)', 
         getRowId: (row: Item) => row.id,
         plugins: [
           rowExpanding({
-            initialExpanded: true,
             hasChildren: () => true,
             loadChildren: (row: { id: string }) => {
               asked.push(row.id)
@@ -72,7 +71,7 @@ describe('«Раскрыть всё» кнопкой в шапке (ADR 0160)', 
     try {
       await expect.poll(() => rowOf('r3')).not.toBeNull()
       for (let i = 0; i < 4; i++) await nextFrame()
-      // `expanded: true` приложения — без загрузки.
+      // Без раскрытия — без загрузки.
       expect(asked).toEqual([])
 
       await userEvent.click(button()!)

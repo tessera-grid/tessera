@@ -1,9 +1,15 @@
+import { useState } from 'react'
+
 import axe from 'axe-core'
 import { commands, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 
 import { COLUMN_EXPANDING_ID } from '../../../../lib/plugins/rowExpanding'
+import { savedSliceOf } from '../../../core/definePlugin'
+import { useCreateTable } from '../../../core/useCreateTable'
+import { DataGrid } from '../../../grid/DataGrid'
+import { rowExpanding } from '../../../plugins'
 import { composed } from '../stories'
 import {
   getScroller,
@@ -336,6 +342,180 @@ describe('Row expanding: lazy children', () => {
       )
     expect(rowOf('p')!.getAttribute('data-expanded')).toBe('false')
     expect(failureShownOn(toggleOf('p'))).toBe(false)
+  })
+})
+
+describe('expanded rows load their children in the window (ADR 0054, §5)', () => {
+  const ROWS = Array.from({ length: 400 }, (_, i) => person(`r${i}`, 1))
+  const FIELDS = [{ id: 'firstName', accessorKey: 'firstName', header: 'Name' }]
+  type Answer = ReturnType<typeof deferred<Person[]>>
+  type Load = (
+    row: { id: string },
+    context: { signal: AbortSignal },
+  ) => Person[] | Promise<Person[]>
+  let captured: { setExpanded: (value: unknown) => void }
+
+  const Lazy = ({
+    loadChildren,
+    ...slice
+  }: {
+    loadChildren: Load
+    expanded?: unknown
+    initialExpanded?: unknown
+  }) => {
+    const table = useCreateTable({
+      columns: FIELDS as never,
+      data: ROWS,
+      getRowId: (row: Person) => row.id,
+      plugins: [
+        rowExpanding({ hasChildren, loadChildren, ...slice } as never),
+      ] as never,
+    })
+    captured = table as never
+    return (
+      <div style={{ width: 360, height: 320 }}>
+        <DataGrid table={table as never} />
+      </div>
+    )
+  }
+  const shown = () =>
+    [...document.querySelectorAll<HTMLElement>('.data-grid__body-row')].map(
+      row => row.dataset.rowId!,
+    )
+  const scroller = () =>
+    document.querySelector<HTMLElement>('.data-grid__container')!
+  const frames = async () => {
+    for (let i = 0; i < 4; i++) {
+      await new Promise(resolve => requestAnimationFrame(resolve))
+    }
+  }
+  /** Загрузчик, чьими ответами управляет тест. */
+  const manual = () => {
+    const calls: { id: string; answer: Answer }[] = []
+    const loadChildren: Load = row => {
+      const answer = deferred<Person[]>()
+      calls.push({ id: row.id, answer })
+      return answer.promise
+    }
+    return { calls, loadChildren }
+  }
+
+  test('RE75: a lazy row expanded in the slice — true, { all } or by id — calls loadChildren when it appears in the window; rows outside the window do not; so does a slice changed on the fly', async () => {
+    for (const expanded of [
+      true,
+      { all: true, except: ['r1'] },
+      { r0: true, r2: true, r300: true },
+    ]) {
+      const asked: string[] = []
+      const screen = await render(
+        <Lazy
+          initialExpanded={expanded}
+          loadChildren={row => {
+            asked.push(row.id)
+            return kids(row.id, 1)
+          }}
+        />,
+      )
+      await waitRow('r0')
+      await expect.poll(() => asked).toContain('r0')
+      await expect.poll(() => asked).toContain('r2')
+      await expect.poll(() => rowOf('r0-c0')).not.toBeNull()
+      expect(asked).not.toContain('r300')
+      expect(asked).not.toContain('r399')
+      if (expanded !== true) expect(asked).not.toContain('r1')
+      await screen.unmount()
+    }
+
+    // Срез сменился на лету: вид не меняется, пока нет ответа, — и у своего среза таблицы…
+    const asked: string[] = []
+    const load: Load = row => {
+      asked.push(row.id)
+      return kids(row.id, 1)
+    }
+    const own = await render(<Lazy loadChildren={load} />)
+    await waitRow('r0')
+    await frames()
+    expect(asked).toEqual([])
+    captured.setExpanded(true)
+    await expect.poll(() => asked).toContain('r0')
+    await own.unmount()
+
+    // …и у среза приложения.
+    asked.length = 0
+    let setExpanded!: (value: unknown) => void
+    const Host = () => {
+      const [expanded, set] = useState<unknown>({})
+      setExpanded = set
+      return <Lazy loadChildren={load} expanded={expanded} />
+    }
+    const app = await render(<Host />)
+    await waitRow('r0')
+    await frames()
+    expect(asked).toEqual([])
+    setExpanded(true)
+    await expect.poll(() => asked).toContain('r0')
+    await app.unmount()
+  })
+
+  test('RE76: no more than two requests at once, the rest wait in a queue; the same for the expand-all button', async () => {
+    for (const viaButton of [false, true]) {
+      const { calls, loadChildren } = manual()
+      const screen = await render(
+        <Lazy
+          loadChildren={loadChildren}
+          {...(viaButton ? {} : { initialExpanded: true })}
+        />,
+      )
+      await waitRow('r3')
+      if (viaButton) {
+        await userEvent.click(
+          document.querySelector<HTMLElement>('.row-expand-all-button')!,
+        )
+      }
+      await expect.poll(() => calls.length).toBe(2)
+      await frames()
+      expect(calls).toHaveLength(2)
+      calls[0]!.answer.resolve(kids(calls[0]!.id, 1))
+      await expect.poll(() => calls.length).toBe(3)
+      await frames()
+      expect(calls).toHaveLength(3)
+      await screen.unmount()
+    }
+  })
+
+  test('RE77: a failure is not repeated by itself: the row is collapsed, the slice stays, the queue moves on', async () => {
+    const { calls, loadChildren } = manual()
+    const slice = { r0: true, r1: true, r2: true }
+    const screen = await render(
+      <Lazy initialExpanded={slice} loadChildren={loadChildren} />,
+    )
+    await expect.poll(() => calls.length).toBe(2)
+    const failed = calls[0]!.id
+    calls[0]!.answer.reject(new Error('refused'))
+    await expect.poll(() => calls.length).toBe(3)
+    await expect
+      .poll(() => rowOf(failed)!.getAttribute('data-expanded'))
+      .toBe('false')
+    expect(savedSliceOf(captured, 'expanded')).toEqual(slice)
+    await frames()
+    expect(calls.filter(call => call.id === failed)).toHaveLength(1)
+    await screen.unmount()
+  })
+
+  test('RE78: a row that left the window before its request started makes no request', async () => {
+    const { calls, loadChildren } = manual()
+    const screen = await render(
+      <Lazy initialExpanded loadChildren={loadChildren} />,
+    )
+    await expect.poll(() => calls.length).toBe(2)
+    const queued = shown().filter(id => !calls.some(call => call.id === id))
+    expect(queued.length).toBeGreaterThan(0)
+    scroller().scrollTop = scroller().scrollHeight
+    await expect.poll(() => rowOf('r399')).not.toBeNull()
+    for (const call of [...calls]) call.answer.resolve([])
+    await expect.poll(() => calls.length).toBe(4)
+    expect(calls.filter(call => queued.includes(call.id))).toEqual([])
+    await screen.unmount()
   })
 })
 

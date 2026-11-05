@@ -484,8 +484,10 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       `row-expanding-lazy` (RE17–RE18, RE20, RE23–RE25, RE30–RE32, RE37, RE40 — ленивые
       дети: `hasChildren`/`loadChildren`, ожидание и вспышка тоггла, история) и модульные
       `lazyChildren.dom` (RE19, RE21–RE22, RE26–RE29, RE34–RE36 — ответ по строке, его
-      согласование с данными, `setLoadedChildren`/`resetLoadedChildren`), перф RE38 — в
-      `interaction`, RE39 — в `first-render` ([ADR 0054](docs/decisions/0054-lazy-row-children.md));
+      согласование с данными, `setLoadedChildren`/`resetLoadedChildren`), `row-expanding-lazy`
+      (RE75–RE78 — строка, раскрытая в срезе, грузит детей в окне очередью из двух запросов), перф
+      RE38 — в `interaction`, RE39 и RE79 — в `first-render`
+      ([ADR 0054](docs/decisions/0054-lazy-row-children.md));
       вспышка прихода — `row-expanding-lazy` (RE42, RE45–RE49 — вспышка `arrived`,
       виртуализация, уменьшенное движение, объявление, контраст), модульные
       `lazyChildren.dom` (RE43–RE44, RE51 — вспышки прихода), перф RE50 — в `interaction`

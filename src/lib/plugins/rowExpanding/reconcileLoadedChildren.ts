@@ -5,6 +5,7 @@
  */
 import {
   clearExpandFailed,
+  collapseRows,
   readLoadedChildren,
   setLoadedAnswer,
 } from './lazyChildrenFeature'
@@ -48,6 +49,11 @@ export const reconcileLoadedChildren = (table: unknown) => {
     if (stale.length === 0) {
       break
     }
+    // Пустой ответ снят: строка снова с переключателем, а не раскрытая, что грузит детей.
+    collapseRows(
+      table,
+      stale.filter(id => rowsById[id]),
+    )
     setLoadedAnswer(table, prev => without(prev, stale))
   }
   const { rowsById } = t.getCoreRowModel()

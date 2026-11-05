@@ -144,8 +144,8 @@ export const clearExpandFailed = (
 }
 
 /** Свернуть строки, у которых не осталось ответа (срез `expanded: true` не трогаем). */
-const collapse = (table: LazyTable, rowIds: readonly string[]) => {
-  table.setExpanded((prev: unknown) => {
+export const collapseRows = (table: unknown, rowIds: readonly string[]) => {
+  ;(table as LazyTable).setExpanded((prev: unknown) => {
     if (prev === true || !prev || typeof prev !== 'object') {
       return prev
     }
@@ -205,7 +205,7 @@ export const rowExpandingLazyFeature: TableFeature = {
             ids.forEach(id => delete next[id])
             return next
           })
-          collapse(lazy, ids)
+          collapseRows(lazy, ids)
         },
       },
     })

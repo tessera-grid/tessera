@@ -235,7 +235,7 @@ describe('Ленивые дети строк (ADR 0054)', () => {
     expect(grouped).not.toHaveBeenCalled()
   })
 
-  it('RE34: expanded: true не зовёт loadChildren; строка с ответом раскрыта, без ответа — свёрнута; срез не меняется', () => {
+  it('RE34: начальное и программное раскрытие без ячейки строки в окне loadChildren не зовут; строка с ответом раскрыта, без ответа — свёрнута; срез не меняется', () => {
     const loadChildren = vi.fn(() => [node('a1')])
     const onExpandedChange = vi.fn()
     const plugins = [rowExpanding({ hasChildren, loadChildren })]

@@ -229,7 +229,7 @@ const createChildrenServer = () => {
     }) as ServerNode[],
   )
   let held = false
-  const waiting = new Set<() => void>()
+  const waiting = new Map<string, () => void>()
   const empty = roots[3]!.id
   const failed = roots[2]!.id
   return {
@@ -245,6 +245,11 @@ const createChildrenServer = () => {
       waiting.forEach(answer => answer())
       waiting.clear()
     },
+    /** Ответить на запрос одной строки; прочие ответы по-прежнему держатся. */
+    answer: (id: string) => {
+      waiting.get(id)?.()
+      waiting.delete(id)
+    },
     hasChildren: (row: Row<any, any>) =>
       ((row.original as ServerNode).childCount ?? 0) > 0,
     loadChildren: (row: Row<any, any>) =>
@@ -254,7 +259,7 @@ const createChildrenServer = () => {
           else
             resolve(row.id === empty ? [] : strip(children.get(row.id) ?? []))
         }
-        if (held) waiting.add(answer)
+        if (held) waiting.set(row.id, answer)
         else answer()
       }),
   }
@@ -759,6 +764,100 @@ export const ExpandingExpandAll: StoryObj<StoryProps> = {
         rowExpandingLabels(labels).expandAll,
       )
       await settle()
+    })
+  },
+}
+
+// --- ADR 0054 S2 ---------------------------------------------------------------------
+
+/** «Сервер» держит ответы, пока шаг не отпустит: строки открываются в ожидании. */
+const RESTORED = (() => {
+  const server = createChildrenServer()
+  server.hold()
+  return server
+})()
+
+const restoredChildren = (root: HTMLElement) =>
+  rowsInOrder(root).some(row =>
+    row.dataset.rowId?.startsWith(`${RESTORED.first}-`),
+  )
+/** Отказ — строка свернулась и больше не ждёт. */
+const restoredRefused = (root: HTMLElement) => {
+  const row = rowOf(root, RESTORED.failed)
+  return !!row && !isPending(row) && !isExpanded(row)
+}
+
+const LAZY_RESTORED: readonly GuideStoryStep[] = [
+  {
+    title: 'Таблица открылась с раскрытыми строками',
+    hint: 'Приложение вернуло раскрытие, сохранённое в прошлый раз. Детей этих строк в данных нет, и таблица сама запросила их у сервера: кнопки раскрытия заняты, под строками стоят скелеты.',
+    states: ['body.pending'],
+    remount: true,
+  },
+  {
+    title: 'Дети пришли',
+    hint: 'Сервер вернул детей первой строки. Они встали под строкой и коротко вспыхнули.',
+    immediate: true,
+    enter: untilDone(restoredChildren, () => RESTORED.answer(RESTORED.first)),
+  },
+  {
+    title: 'Загрузка не удалась',
+    hint: 'Сервер не ответил на запрос другой строки. Она свернулась и коротко вспыхнула; повторить запрос можно кнопкой раскрытия.',
+    immediate: true,
+    enter: untilDone(
+      root => restoredChildren(root) && restoredRefused(root),
+      () => {
+        RESTORED.answer(RESTORED.first)
+        RESTORED.answer(RESTORED.failed)
+      },
+    ),
+  },
+]
+
+/** ADR 0054, S2: приложение открывает таблицу с раскрытыми строками — дети приходят сами. */
+export const ExpandingLazyRestored: StoryObj<StoryProps> = {
+  name: 'Expanded on open',
+  parameters: {
+    scenario: '0054/S2',
+    ...guideControls(),
+  },
+  render: args => (
+    <GuideStory
+      title="Раскрытые строки при открытии"
+      steps={LAZY_RESTORED}
+      args={guideArgs(
+        {
+          ...GRID,
+          enableRowExpanding: true,
+          rowExpandingMaxDepth: 2,
+          dataOverride: RESTORED.roots,
+          rowExpandingHasChildren: RESTORED.hasChildren,
+          rowExpandingLoadChildren: RESTORED.loadChildren,
+          initialExpanded: { [RESTORED.first]: true, [RESTORED.failed]: true },
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(LAZY_RESTORED[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() =>
+        expect(isPending(rowOf(canvas, RESTORED.first))).toBe(true),
+      )
+      await until(() =>
+        expect(isPending(rowOf(canvas, RESTORED.failed))).toBe(true),
+      )
+    })
+    await step(LAZY_RESTORED[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(restoredChildren(canvas)).toBe(true))
+    })
+    await step(LAZY_RESTORED[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(restoredRefused(canvas)).toBe(true))
+      await expect(isExpanded(rowOf(canvas, RESTORED.failed))).toBe(false)
     })
   },
 }

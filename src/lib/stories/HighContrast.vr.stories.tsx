@@ -1853,6 +1853,36 @@ export const HighContrastExpandingConfirmedStep3 = {
   tags: ['!test'],
 }
 
+export const HighContrastExpandingLazyRestoredStep1 = {
+  ...twinStep(
+    rowsExpandingStories,
+    rowsExpandingStories.ExpandingLazyRestored,
+    1,
+  ),
+  name: 'Rows/Expanding — Expanded on open, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastExpandingLazyRestoredStep2 = {
+  ...twinStep(
+    rowsExpandingStories,
+    rowsExpandingStories.ExpandingLazyRestored,
+    2,
+  ),
+  name: 'Rows/Expanding — Expanded on open, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastExpandingLazyRestoredStep3 = {
+  ...twinStep(
+    rowsExpandingStories,
+    rowsExpandingStories.ExpandingLazyRestored,
+    3,
+  ),
+  name: 'Rows/Expanding — Expanded on open, шаг 3',
+  tags: ['!test'],
+}
+
 export const HighContrastExpandingLazyChildrenStep1 = {
   ...twinStep(
     rowsExpandingStories,

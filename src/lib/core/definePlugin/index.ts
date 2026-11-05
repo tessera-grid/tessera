@@ -62,6 +62,7 @@ export {
   type PluginCellStateProps,
   type PluginCellOwnerProps,
   type PluginSlotDecl,
+  savedSliceOf,
 } from './channels'
 
 /**

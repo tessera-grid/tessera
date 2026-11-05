@@ -41,6 +41,15 @@ export const readPluginHooks = <THooks>(
 }
 
 /**
+ * Сохранённое значение среза таблицы: до сужения. Подписка — на сам срез: смена сохранённого
+ * меняет ссылку эффективного значения.
+ */
+export const savedSliceOf = (table: unknown, key: string): unknown =>
+  (
+    table as { options: { pluginSavedSlice?: (key: string) => unknown } }
+  ).options.pluginSavedSlice?.(key)
+
+/**
  * Пропсы компонента ячейки плагина с ЛОКАЛЬНЫМ состоянием: hooks-слайс + пара
  * `state: [value, setter]`. `TState` выводится из декларации `state` плагина;
  * состояние приватно (читается пропсом, а не общим `getState`).

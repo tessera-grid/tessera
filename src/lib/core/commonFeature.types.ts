@@ -190,6 +190,8 @@ export interface CommonOptions extends CoreOptions {
   pluginNarrows?: NarrowMap
   /** Свёртка набора для сужения: опции и действия слотов (ADR 0171, §1). */
   pluginNarrowContext?: NarrowContext
+  /** Сохранённое значение среза, до сужения (ADR 0054, §5). */
+  pluginSavedSlice?: (key: string) => unknown
   /**
    * Строк данных на сервере для `aria-rowcount`; `-1` — итог неизвестен,
    * `undefined` — строк столько, сколько в `data` (ADR 0081).

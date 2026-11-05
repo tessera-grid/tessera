@@ -94,13 +94,28 @@ export const toggleRowExpanded = (
   // бы строку, которую сужение показывает свёрнутой (ленивую без ответа).
   row.toggleExpanded(expanding)
   const notified = hooks.onExpandRow?.(row, expanding)
-  if (!expanding) {
-    // Свернули строку — «раскрыто всё» кончилось: ленивые строки больше не грузятся сами.
-    ;(
-      pendingRow.table as { setRowExpandAll?: (on: boolean) => void }
-    ).setRowExpandAll?.(false)
-    return
-  }
+  if (expanding) startExpand(row, hooks, notified)
+}
+
+/**
+ * Загрузить детей строки, раскрытой в срезе без нажатия на неё (ADR 0054, §5): путь нажатия
+ * без переключения и `onExpandRow`. Отказ среза не меняет: строку сворачивает сужение.
+ * `done` — конец загрузки: ответ, отказ или отмена.
+ */
+export const loadExpandedRow = (
+  row: Row<any, any>,
+  hooks: Partial<RowExpandingHooks>,
+  done: () => void,
+) => startExpand(row, hooks, undefined, done)
+
+const startExpand = (
+  row: Row<any, any>,
+  hooks: Partial<RowExpandingHooks>,
+  notified: unknown,
+  /** Загрузка без нажатия: конец загрузки; срез она не пишет. */
+  done?: () => void,
+) => {
+  const pendingRow = row as PendingRow
   const { table } = pendingRow
   // Дети ветки серверной модели — как ответ ленивой строки (ADR 0056; ADR 0138, SD55).
   rowSourceOf(table).whenBranchArrives?.(row.id, ({ rowIds, count }) => {
@@ -126,10 +141,12 @@ export const toggleRowExpanded = (
   )
   if (lazy && !isThenable(result)) {
     storeAnswer(table, row.id, result)
+    done?.()
     return
   }
   const setPending = table.setRowExpandPending
   if (!isThenable(result) || !setPending) {
+    done?.()
     return
   }
   const attempt = ++lastAttempt
@@ -149,6 +166,7 @@ export const toggleRowExpanded = (
   const cancel = (source: CancelSource) => {
     if (controller.signal.aborted) return
     controller.abort()
+    done?.()
     unregister()
     reportAction(table, {
       plugin: 'rowExpanding',
@@ -156,9 +174,10 @@ export const toggleRowExpanded = (
       detail: { action: 'loadChildren', rowId: row.id },
       source,
     })
+    // Сперва срез: без ожидания строку уже свернуло сужение, и переключатель ничего не пишет.
     inOneCommit(() => {
-      clearPending()
       if (!(row.id in readLoadedChildren(table))) row.toggleExpanded(false)
+      clearPending()
     })
     announceLabel(table, all =>
       all.announceActionCancelled(rowExpandingLabels(all).expandRow),
@@ -168,6 +187,7 @@ export const toggleRowExpanded = (
     ? registerPending(table, { kind: 'children', id: row.id, cancel })
     : () => {}
   const settle = (ok: boolean, value: unknown) => {
+    done?.()
     if (controller.signal.aborted) {
       lateAnswer(table, ok ? undefined : value)
       return
@@ -181,15 +201,15 @@ export const toggleRowExpanded = (
       enqueueAnswer(table, row.id, attempt, value)
       return
     }
+    const collapses = !ok && !(lazy && row.id in readLoadedChildren(table))
+    // Сперва срез, как при отмене; загрузка без нажатия среза не пишет.
+    if (collapses && !done) row.toggleExpanded(false)
     clearPending()
     if (ok) {
       return
     }
-    if (!(lazy && row.id in readLoadedChildren(table))) {
-      row.toggleExpanded(false)
-      // Строка свёрнута обратно — в том же кадре, что отказ на переключателе.
-      flashOutcome(table, { row: row.id }, 'reverted')
-    }
+    // Строка свёрнута обратно — в том же кадре, что отказ на переключателе.
+    if (collapses) flashOutcome(table, { row: row.id }, 'reverted')
     markExpandFailed(table, row.id, attempt, value)
     const labels = announcerLabels(table) ?? ENGLISH_LABELS
     const error =

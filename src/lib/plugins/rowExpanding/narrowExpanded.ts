@@ -7,6 +7,7 @@
 import type { ExpandedState } from '@tanstack/react-table'
 
 import type { NarrowState } from '../../core/definePlugin'
+import { isExpandedAll } from '../../core/expandAll'
 import { serverRowModelReason } from '../../core/pluginDiagnostics'
 import type { Row } from '../../types'
 import type { RowExpandPending } from './rowExpandingPendingFeature'
@@ -72,6 +73,17 @@ export const narrowExpanded =
       )
     }
     // Неизвестная строка (группа, новые данные) остаётся как есть.
+    if (isExpandedAll(value)) {
+      const except = new Set(value.except)
+      for (const row of flatRows) {
+        if (row.subRows.length > 0 ? row.depth >= maxDepth : !allowed(row)) {
+          except.add(row.id)
+        }
+      }
+      return except.size === value.except.length
+        ? value
+        : { all: true, except: [...except] }
+    }
     const kept = Object.entries(value).filter(([id]) => allowed(rowsById[id]))
     return kept.length === Object.keys(value).length
       ? value

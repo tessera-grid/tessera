@@ -12,7 +12,8 @@ import {
   registerPending,
 } from '../../core/cancellation'
 import { reportAction, sourceOf } from '../../core/debugActions'
-import type { PluginCellProps } from '../../core/definePlugin'
+import { type PluginCellProps, savedSliceOf } from '../../core/definePlugin'
+import { isRowExpandedIn } from '../../core/expandAll'
 import type { FailedAttempt } from '../../shared/failedAttempts'
 import { useLocalization } from '../../core/localization'
 import {
@@ -26,6 +27,7 @@ import { readLoadedChildren } from './lazyChildrenFeature'
 import {
   cancelBranchLoad,
   isLazyRow,
+  loadExpandedRow,
   toggleRowExpanded,
 } from './toggleRowExpanded'
 import type { RowExpandingHooks } from './types'
@@ -70,16 +72,24 @@ export const RowExpandingComponent = ({
     !!hooks.loadChildren && isLazyRow(row, hooks.hasChildren)
   const waiting = (pending && loadsChildren) || branchLoading
 
-  // Человек раскрыл всё кнопкой (ADR 0160, §2): ленивая строка окна грузит детей, когда
-  // её ячейка появилась, — и при прокрутке.
-  const expandAll = useSlice(table, 'rowExpandAll' as never) as
-    boolean | undefined
+  // Строка раскрыта в срезе (ADR 0054, §5): ленивая грузит детей, когда её ячейка появилась
+  // в окне, — и при прокрутке. Ответ ждёт в очереди, ушла из окна до запроса — запроса нет.
+  const inSlice = isRowExpandedIn(savedSliceOf(table, 'expanded'), row.id)
   useEffect(() => {
-    if (!expandAll || failed || !hooks.loadChildren) return
+    if (!inSlice || failed || !hooks.loadChildren || !row.getCanExpand()) return
     if (!isLazyRow(row, hooks.hasChildren) || row.getIsExpanded()) return
     if (row.id in readLoadedChildren(table)) return
-    toggleRowExpanded(row, hooks)
-  }, [expandAll, failed, hooks, row, table])
+    // Согласование ответов могло снять строку со среза после рендера.
+    if (!isRowExpandedIn(savedSliceOf(table, 'expanded'), row.id)) return
+    return (
+      table as unknown as {
+        queueLazyLoad: (
+          id: string,
+          start: (done: () => void) => void,
+        ) => () => void
+      }
+    ).queueLazyLoad(row.id, done => loadExpandedRow(row, hooks, done))
+  }, [inSlice, failed, hooks, row, table])
 
   if (!row.getCanExpand()) {
     return null

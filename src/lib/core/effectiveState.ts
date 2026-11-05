@@ -229,6 +229,18 @@ export const createSliceStore = () => {
       },
     },
     table: () => table.get(),
+    /** Сохранённое значение среза: приложения или ядра, до сужения. */
+    saved: (key: string) => {
+      const instance = table.get()
+      const external = externalOf(instance, key)
+      const slice = slices.get(key)
+      if (external !== undefined) {
+        // Новое значение ушло приложению, перерисовки ещё не было.
+        const sent = slice?.sent
+        return sent && sent.from === external ? sent.value : external
+      }
+      return slice ? savedOf(key, slice) : instance?.atoms[key]?.get()
+    },
     /**
      * Внешние атомы для опций таблицы. Срезы первого рендера — до создания таблицы; новые
      * срезы позже добавляет эффект коммита.
