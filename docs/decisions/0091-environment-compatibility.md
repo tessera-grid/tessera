@@ -176,7 +176,7 @@ StrictMode не включён ни в историях, ни в тестах. �
     RowDraggingLazyTree;
   - запись атома и состояния приложения из таймера или промиса — раскрытие паузой
     (ADR 0109), итог `loadChildren` и `onExpandRow`, итог промиса `onRowDragEnd` —
-    идёт через `core/oneCommit` (`flushSync` в React 18): NX1, NX3, NX7, LT3, AL10;
+    идёт через `util/oneCommit` (`flushSync` в React 18): NX1, NX3, NX7, LT3, AL10;
   - старт перетаскивания dnd-kit коммитится позже атома `rowDragging`: слот-скелет
     строки следует `isDragging` dnd-kit, как `data-row-draggable` (RM27);
   - `setOver` dnd-kit — в полосе по умолчанию, место броска из `onDragOver` в атоме —
