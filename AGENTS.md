@@ -1162,6 +1162,10 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       (EA8), перф EA10 — в `scroll`, истории «Rows/Grouping — Sticky group rows» (S3) и «Data
       loading/Server row model/Lazy children — Sticky branches» (S4)
       ([ADR 0160](docs/decisions/0160-expand-all-and-sticky-rows.md)).
+    - _Паритет моделей строк:_ модульный `modelParity` (PY1–PY5 — база аргументов фабрик
+      `modelParity.baseline.ts`, различия с причиной и ADR, долг по «Известным проблемам», диагностика на
+      обеих моделях, различия поведения; новый аргумент фабрики — запись в базе)
+      ([ADR 0187](docs/decisions/0187-model-parity-guard.md)).
     - _Сверка требований:_ модульный `checkRequirements` (TQ10 — пропуск, дубль,
       неизвестный ID, коллизия, устаревшая запись базы; TQ11 — источники из рабочего
       дерева, удалённый непроиндексированный файл не роняет сверку,
