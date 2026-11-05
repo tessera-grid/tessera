@@ -132,6 +132,14 @@ export const removeDrafts = (
   if (next.length !== prev.length) setPluginState(table, DRAFTS, next)
 }
 
+/** Снять черновики строк `rowIds`: цели-строки и ячейки этих строк. */
+export const removeRowDrafts = (table: unknown, rowIds: ReadonlySet<string>) =>
+  removeDrafts(table, ({ target }) =>
+    'cell' in target
+      ? rowIds.has(target.cell[0])
+      : 'row' in target && rowIds.has(target.row),
+  )
+
 /** Снять запись вида и цели; нет записи — ничего. */
 export const removeDraft = (
   table: unknown,

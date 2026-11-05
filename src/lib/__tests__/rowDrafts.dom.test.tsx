@@ -449,6 +449,51 @@ describe('строки до сохранения (ADR 0178, §7)', () => {
     expect(corners()).toEqual(['3', '5'])
   })
 
+  it('DR53: транзакция remove серверной модели снимает черновики ячеек и строк удалённых id с onDraftsChange — и загруженных, и незагруженных; id, добавленный той же пачкой, и чужие строки черновики сохраняют; сохранённое удаление не оставляет черновиков своих ячеек', async () => {
+    const onDraftsChange = vi.fn()
+    await mountServer({ onDraftsChange })
+    const settle = () =>
+      act(() => new Promise(resolve => setTimeout(resolve, 150)))
+    const cell = (rowId: string) => ({
+      kind: 'cellValue',
+      target: { cell: [rowId, 'age'] },
+      value: { value: 1, text: '1' },
+    })
+    edit('1', '50')
+    edit('2', '51')
+    edit('3', '52')
+    act(() => table.removeRow('2'))
+    act(() => table.setDraft(cell('25')))
+    expect(kinds().sort()).toEqual([
+      'cellValue',
+      'cellValue',
+      'cellValue',
+      'cellValue',
+      'rowDelete',
+    ])
+
+    onDraftsChange.mockClear()
+    await act(async () => {
+      table.applyRowTransaction({ remove: ['2', '25'] })
+      table.applyRowTransaction({
+        remove: ['3'],
+        add: [ROWS[3]],
+        index: 2,
+      })
+    })
+    await settle()
+    expect(drafts().map(draft => draft.target)).toEqual([
+      { cell: ['1', 'age'] },
+      { cell: ['3', 'age'] },
+    ])
+    expect(onDraftsChange).toHaveBeenLastCalledWith(drafts())
+
+    // Удаление через пульт: черновик ячейки той же строки в пакет не уходит (DR28).
+    edit('4', '53')
+    act(() => table.removeRow('4'))
+    await saveDrafts()
+  })
+
   it('DR52: в серверной модели активная ячейка держит свою строку при новой строке выше, её откате и сохранении', async () => {
     await mountServer({ enableKeyboardNavigation: true })
     const activeRow = () =>

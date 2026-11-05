@@ -34,6 +34,7 @@ import {
 import { serverAggregationsOf } from '../../shared/serverAggregations'
 import { isThenable } from '../../util/thenable'
 import { BlockTree, type ExpandedRows } from './tree'
+import { removeRowDrafts } from '../../core/drafts/drafts'
 import { isExpandedAll } from '../../core/expandAll'
 import type {
   ServerRowModelHooks,
@@ -706,6 +707,11 @@ const createServerSource = (table: unknown): ServerSource => {
     const selection = rowSelectionValueOf(table)
     const kept = dropRowsIn(selection, gone)
     if (kept !== selection) setRowSelectionValue(table, kept)
+    // Строка, добавленная той же пачкой, осталась в списке: её черновики живут (ADR 0178).
+    for (const transaction of batch) {
+      for (const data of transaction.add ?? []) gone.delete(t.getRowId(data, 0))
+    }
+    removeRowDrafts(table, gone)
     announceArrivals(arrived, removed)
   }
   const scheduleTransactions = () => {
