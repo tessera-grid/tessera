@@ -1060,7 +1060,8 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       следуют за списком), визуальный `menu-target` (TG2–TG7 — отказ на ячейке, на выделении,
       на цели `target`, у кебабов и инлайн-кнопки, `aria-busy` ожидания, успех без
       вспышки; TG13–TG17, TG19 — подложка и светлый блик ожидания по пикселям, одна подложка при
-      уменьшенном движении и сверх порога, пунктир в `forced-colors`, контраст, токены), TG9 — в
+      уменьшенном движении и сверх порога, пунктир в `forced-colors`, контраст, токены), TG20 — в
+      `pending-on-data` (волна цели-строки на всю ширину строки), TG9 — в
       `highlight`, TG10 — в `outcome-flash`, перф TG11 и TG18 — в `scroll`,
       история «Cells/Context menu — Refused on a selection» (S1)
       ([ADR 0152](docs/decisions/0152-menu-action-outcome-on-target.md)).

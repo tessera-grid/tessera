@@ -37,6 +37,8 @@ import {
 import { BodyCell } from './BodyCell'
 import { ColumnWindowContext } from './columnWindow'
 import { VirtualCenterSpacer } from './VirtualCenterSpacer'
+import { rowHasWave } from '../core/headerActions/actionStatus'
+import type { ActionStatus } from '../core/headerActions/actionStatusFeature'
 import { RightFillerBodyColumn } from './RightFillerBodyColumn'
 import { needsRightFiller } from './layout'
 
@@ -79,6 +81,8 @@ export interface TableBodyRowProps {
 }
 
 interface BodyRowCellsProps extends TableBodyRowProps {
+  /** Строка — цель ждущего действия с волной. */
+  rowWave?: boolean
   isRowInteract: boolean
 }
 
@@ -105,9 +109,11 @@ const useRowStateSubscription = (
         rowMoves?: Record<string, { pending: boolean }>
         highlights?: Highlights
         flashes?: Flashes
+        actionStatus?: ActionStatus
       }
       const move = s.rowMoves?.[row.id]
       return {
+        rowWave: rowHasWave(s.actionStatus, row.id),
         selected: s.rowSelection?.[row.id] ?? false,
         expanded: isRowExpandedIn(s.expanded, row.id),
         grouping: s.grouping,
@@ -122,6 +128,7 @@ const useRowStateSubscription = (
         flash?: FlashEntry
         moving: boolean
         movePending: boolean
+        rowWave: boolean
       }
     },
   )
@@ -143,6 +150,7 @@ export const BodyRowCells = ({
   isVirtualColumns,
   isRowInteract,
   copy,
+  rowWave,
 }: BodyRowCellsProps) => {
   const virtualColumns =
     useContext(ColumnWindowContext) ?? virtualColumnsProp ?? []
@@ -194,6 +202,10 @@ export const BodyRowCells = ({
             <BodyCell key={cell.id} {...cellProps(cell)} />
           )),
         ]}
+        {/* Ячейки вне потока: свободное место занимает заполнитель только под волной. */}
+        {rowWave && needsRightFiller(row.getVisibleCells().at(-1)?.column) && (
+          <RightFillerBodyColumn wave order={2} />
+        )}
       </>
     )
   }
@@ -223,6 +235,7 @@ export const BodyRowCells = ({
         <RightFillerBodyColumn
           hasBorderTop={!row.getIsFirstRow()}
           hasBorderRight
+          wave={rowWave}
         />
       )}
     </>
@@ -246,7 +259,7 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
     navigation: navigation && !props.copy,
     window: props.window,
   }
-  const { highlight, flash, contributions } = useRowStateSubscription(
+  const { highlight, flash, rowWave, contributions } = useRowStateSubscription(
     row,
     contributionContext,
   )
@@ -348,6 +361,7 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
         {...props}
         slotDepth={slotDepth}
         isRowInteract={interacting}
+        rowWave={rowWave}
       />
     </div>
   )

@@ -15,6 +15,7 @@ import {
   rowExpanding,
   rowSelection,
 } from '../../../plugins'
+import { setObjectPending } from '../../../shared/objectPending'
 import { humanClick, pendingArcOf } from '../helpers'
 import { tableLabels } from '../labels'
 import { waitForGrid } from './core-helpers'
@@ -305,5 +306,76 @@ describe('Ожидание на данных (ADR 0155)', () => {
     await captured.exportData()
     expect(exported).toEqual([DATA.length])
     await userEvent.hover(document.body, { position: { x: 1, y: 1 } })
+  })
+
+  test('TG20: волна на цели-строке занимает всю ширину строки и при колонках уже таблицы, в том числе при виртуализации колонок; у цели-колонки свободное место справа без волны', async () => {
+    let table: unknown
+    const Narrow = ({
+      columnVirtualization,
+    }: {
+      columnVirtualization: boolean
+    }) => {
+      table = useCreateTable({
+        columns: [
+          { id: 'id', accessorKey: 'id', header: 'Id', size: 120 },
+          { id: 'name', accessorKey: 'name', header: 'Name', size: 120 },
+        ] as never,
+        data: [
+          { id: 'a', name: 'Alice' },
+          { id: 'b', name: 'Bob' },
+        ],
+        getRowId: (row: { id: string }) => row.id,
+        ...(columnVirtualization ? {} : { enableColumnVirtualization: false }),
+      } as never)
+      return (
+        <div style={{ width: 720, height: 300 }}>
+          <DataGrid table={table as never} />
+        </div>
+      )
+    }
+    const rowOf = (id: string) =>
+      document.querySelector<HTMLElement>(
+        `.data-grid__body-row[data-row-id="${id}"]`,
+      )!
+    const waveRight = (id: string) =>
+      Math.max(
+        ...[...rowOf(id).querySelectorAll('[data-pending-wave]')].map(
+          element => element.getBoundingClientRect().right,
+        ),
+      )
+    for (const columnVirtualization of [true, false]) {
+      const screen = await render(
+        <Narrow columnVirtualization={columnVirtualization} />,
+      )
+      await expect.poll(() => rowOf('a')).not.toBeNull()
+      setObjectPending(table, 'row', [{ row: 'a' }])
+      await expect
+        .poll(() => rowOf('a').querySelectorAll('[data-pending-wave]').length)
+        .toBeGreaterThan(0)
+      const row = rowOf('a').getBoundingClientRect()
+      await expect.poll(() => waveRight('a')).toBeCloseTo(row.right, 0)
+      // Блик идёт и по свободному месту: у него своя анимация.
+      await expect
+        .poll(
+          () =>
+            rowOf('a')
+              .getAnimations({ subtree: true })
+              .filter(animation => animation.id === 'tsr-pending-wave').length,
+        )
+        .toBeGreaterThan(
+          rowOf('a').querySelectorAll(
+            '.data-grid__body-cell[data-pending-wave]',
+          ).length,
+        )
+      setObjectPending(table, 'row', undefined)
+
+      setObjectPending(table, 'column', [{ column: 'name' }])
+      await expect
+        .poll(() => rowOf('b').querySelectorAll('[data-pending-wave]').length)
+        .toBe(1)
+      expect(waveRight('b')).toBeLessThan(row.right - 100)
+      setObjectPending(table, 'column', undefined)
+      await screen.unmount()
+    }
   })
 })

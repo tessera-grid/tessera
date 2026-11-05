@@ -198,18 +198,23 @@
  * обрезал бы её по внутреннему краю границы, поэтому обрезка — clip-path по внешнему
  * краю (overflow-clip-margin нет в Safari).
  */
+/* Заполнитель строки: свободное место за колонками идёт под волной вместе со строкой. */
+.body__filler {
+  position: relative;
+}
+
 /*
  * Волна ожидания на цели действия из контекстного меню (ADR 0152, §3; ADR 0155, §1): полоса общей волны (ADR 0121) по фону
  * ячейки, под текстом — слой ниже содержимого в изолированной ячейке. Едет анимацией WAAPI
  * (usePendingWave): путь в координатах содержимого, общий `startTime`; в покое — за левым
  * краем. Уменьшенное движение и большая цель — неподвижный слабый свет.
  */
-.body__cell[data-pending-wave] {
+:is(.body__cell, .body__filler)[data-pending-wave] {
   isolation: isolate;
 }
 
 /* Подложка занятой ячейки: блик идёт поверх неё. */
-.body__cell[data-pending-wave]::after {
+:is(.body__cell, .body__filler)[data-pending-wave]::after {
   content: '';
   position: absolute;
   z-index: -2;
@@ -218,7 +223,7 @@
   background: var(--tsr-comp-pending-bg);
 }
 
-.body__cell[data-pending-wave]::before {
+:is(.body__cell, .body__filler)[data-pending-wave]::before {
   content: '';
   position: absolute;
   z-index: -1;
@@ -243,7 +248,8 @@
 }
 
 /* Без блика — одна подложка: уменьшенное движение или цель больше порога (usePendingWave). */
-:global([data-pending-wave-still]) .body__cell[data-pending-wave]::before {
+:global([data-pending-wave-still])
+  :is(.body__cell, .body__filler)[data-pending-wave]::before {
   display: none;
 }
 
@@ -348,11 +354,11 @@
    * полосы. `forced-color-adjust: none` — только у него: свойство наследуется, на ячейке оно
    * сняло бы подмену цветов и с текста.
    */
-  .body__cell[data-pending-wave]::after {
+  :is(.body__cell, .body__filler)[data-pending-wave]::after {
     display: none;
   }
 
-  .body__cell[data-pending-wave]::before {
+  :is(.body__cell, .body__filler)[data-pending-wave]::before {
     display: block;
     forced-color-adjust: none;
     inset: 0;

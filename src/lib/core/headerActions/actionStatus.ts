@@ -339,6 +339,13 @@ const busyTargetsOf = (status: ActionStatus): readonly BusyTarget[] => {
   return targets
 }
 
+/** Волна на строке как на цели: она идёт и по свободному месту за колонками (ADR 0152, TG20). */
+export const rowHasWave = (status: ActionStatus | undefined, rowId: string) =>
+  !!status &&
+  busyTargetsOf(status).some(
+    ({ target, wave }) => wave && 'row' in target && target.row === rowId,
+  )
+
 /** Есть ли ждущее действие с волной на цели (ADR 0155, §1). */
 export const hasWaveTargets = (status: ActionStatus | undefined) =>
   !!status && busyTargetsOf(status).some(busy => busy.wave)
