@@ -1,11 +1,17 @@
 /**
  * Диапазоны подсветки и вспышки на индексах серверной модели следуют за списком, как
  * выделение (ADR 0152, §4; ADR 0146, §6): новая выборка снимает их, смена строк выше
- * сдвигает, внутри — снимает.
+ * сдвигает, внутри — снимает. Новая строка слоя ведёт углы по отдельности: внутри диапазона он
+ * растёт, а её уход и запись в кэш оставляют те же углы (ADR 0178, DR51).
  */
 import type { Updater } from '../../types'
 import { readFlashes } from '../flashes/flashFeature'
-import { followRowList, followSpans, shiftIndexSpan } from '../rowListFollow'
+import {
+  followIndex,
+  followRowList,
+  followSpans,
+  shiftIndexSpan,
+} from '../rowListFollow'
 import type { RowListChange } from '../rowSource'
 import { readHighlights } from './highlightFeature'
 import {
@@ -36,19 +42,29 @@ const shiftTarget = (
   return { range: { rows: { indexes: [from + delta, to + delta] }, columns } }
 }
 
+type Batches = readonly (readonly RowListChange[])[]
+type Follow = (target: RangeSpan) => RangeSpan | undefined
+
+const followCorners = (target: RangeSpan, batches: Batches): RangeSpan => {
+  const { rows, columns } = target.range
+  if (!isIndexRows(rows)) return target
+  const [from, to] = rows.indexes
+  return {
+    range: {
+      rows: { indexes: [followIndex(from, batches), followIndex(to, batches)] },
+      columns,
+    },
+  }
+}
+
 /** Срез с диапазонами на новых местах; ушедшие — убраны. */
-const moved = <T extends Slice>(
-  slice: T,
-  batches: readonly (readonly RowListChange[])[] | undefined,
-): T => {
+const moved = <T extends Slice>(slice: T, follow: Follow): T => {
   const keys = indexRangeKeys(slice)
   if (keys.length === 0) return slice
   const next: Slice = { ...slice }
   let changed = false
   for (const key of keys) {
-    const [target] = batches
-      ? (followSpans([rangeOfKey(key)!], batches, shiftTarget) ?? [])
-      : []
+    const target = follow(rangeOfKey(key)!)
     const nextKey = target && spanKey(target)
     if (nextKey === key) continue
     changed = true
@@ -66,19 +82,21 @@ type FollowTable = {
 
 export const followIndexRanges = (table: unknown) => {
   const t = table as FollowTable
-  const apply = (batches?: readonly (readonly RowListChange[])[]) => {
+  const apply = (follow: Follow) => {
     if (indexRangeKeys(readHighlights(table)).length > 0) {
-      t.setHighlights?.(prev => moved(prev, batches))
+      t.setHighlights?.(prev => moved(prev, follow))
     }
     if (indexRangeKeys(readFlashes(table)).length > 0) {
-      t.setFlashes?.(prev => moved(prev, batches))
+      t.setFlashes?.(prev => moved(prev, follow))
     }
   }
   return followRowList(table, {
     active: () =>
       indexRangeKeys(readHighlights(table)).length > 0 ||
       indexRangeKeys(readFlashes(table)).length > 0,
-    reset: () => apply(),
-    shift: batches => apply(batches),
+    reset: () => apply(() => undefined),
+    shift: batches =>
+      apply(target => followSpans([target], batches, shiftTarget)?.[0]),
+    newRows: batches => apply(target => followCorners(target, batches)),
   })
 }

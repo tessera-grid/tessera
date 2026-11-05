@@ -167,6 +167,8 @@ export const followRowList = (table: unknown, follower: RowListFollower) => {
       follower.newRows([...moved, ...batches])
     else if (batches.length > 0) follower.shift(batches)
   }
+  // Отправная точка: подписка может обновиться прямо перед сменой списка.
+  check()
   const subscription = t.store.subscribe(check)
   return () => subscription.unsubscribe()
 }

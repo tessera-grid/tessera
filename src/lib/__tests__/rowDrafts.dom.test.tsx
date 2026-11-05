@@ -8,8 +8,13 @@ import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { pluginStateKey, setPluginState } from '../core/definePlugin'
 import { applyAllDrafts, type Draft } from '../core/drafts/drafts'
 import { readFailures } from '../core/failures/failuresFeature'
+import { readFlashes } from '../core/flashes/flashFeature'
+import { readHighlights } from '../core/highlights/highlightFeature'
+import { rangeOfKey } from '../core/highlights/targetRanges'
+import { KEYBOARD_NAVIGATION } from '../core/keyboardNavigation/model'
 import type { RowSource } from '../core/rowSource'
 import { useCreateTable } from '../core/useCreateTable'
 import {
@@ -109,6 +114,39 @@ const edit = (rowId: string, text: string) => {
       table.getHooks().cellEditing,
     ),
   )
+}
+
+/** Серверная модель со страницей строк, загруженной в окно. */
+const mountServer = async (options: Record<string, unknown> = {}) => {
+  mount(
+    [
+      serverRowModel({
+        blockSize: 10,
+        maxBlocks: 5,
+        getRows: ({ start, end }: { start: number; end: number }) =>
+          Promise.resolve({ rows: ROWS.slice(start, end), rowCount: 30 }),
+      }),
+      manual(batch => ({
+        saved: (batch.inserts ?? []).map(item => ({
+          rowId: item.rowId,
+          row: { id: item.rowId, name: 'Saved', age: 1 },
+        })),
+      })),
+    ],
+    { data: [], rowCount: 30, ...options },
+  )
+  await act(async () => {
+    source().observe!({ first: 0, last: 9, fast: false })
+    await new Promise(resolve => setTimeout(resolve, 0))
+  })
+}
+
+const saveDrafts = async () => {
+  act(() => applyAllDrafts(table))
+  for (let i = 0; i < 50 && drafts().length > 0; i++) {
+    await act(() => new Promise(resolve => setTimeout(resolve, 20)))
+  }
+  expect(drafts()).toEqual([])
 }
 
 describe('строки до сохранения (ADR 0178, §7)', () => {
@@ -362,6 +400,75 @@ describe('строки до сохранения (ADR 0178, §7)', () => {
       serverId,
       ...Array.from({ length: 10 }, (_, i) => String(i + 2)),
     ])
+  })
+
+  it('DR51: в серверной модели диапазон подсветки и вспышки на индексах следует за новой строкой: выше сдвигается, внутри растёт, откат и сохранение оставляют те же углы', async () => {
+    await mountServer()
+    const target = {
+      range: {
+        anchorRowIndex: 3,
+        focusRowIndex: 5,
+        anchorColumnId: 'name',
+        focusColumnId: 'age',
+      },
+    }
+    const spans = (slice: Record<string, unknown>) =>
+      Object.keys(slice)
+        .map(key => rangeOfKey(key)?.range.rows)
+        .filter(Boolean)
+    const span = (from: number, to: number) => [{ indexes: [from, to] }]
+    const corners = () => {
+      const [rows] = spans(readHighlights(table)) as [
+        { indexes: [number, number] },
+      ]
+      return rows.indexes.map(index => source().at(index)?.id)
+    }
+    act(() => {
+      table.highlight(target)
+      table.flashOutcome(target, 'reverted')
+    })
+    expect(spans(readHighlights(table))).toEqual(span(3, 5))
+
+    const above = add({ name: 'Zed', age: 99 }, 1)!
+    expect(spans(readHighlights(table))).toEqual(span(4, 6))
+    expect(spans(readFlashes(table))).toEqual(span(4, 6))
+    expect(corners()).toEqual(['3', '5'])
+
+    const inside = add({ name: 'Yan', age: 98 }, 5)!
+    expect(spans(readHighlights(table))).toEqual(span(4, 7))
+    expect(corners()).toEqual(['3', '5'])
+
+    act(() => table.removeRow(inside))
+    act(() => table.removeRow(above))
+    expect(spans(readHighlights(table))).toEqual(span(3, 5))
+    expect(corners()).toEqual(['3', '5'])
+
+    add({ name: 'Wen', age: 96 }, 4)
+    expect(corners()).toEqual(['3', '5'])
+    await saveDrafts()
+    expect(corners()).toEqual(['3', '5'])
+  })
+
+  it('DR52: в серверной модели активная ячейка держит свою строку при новой строке выше, её откате и сохранении', async () => {
+    await mountServer({ enableKeyboardNavigation: true })
+    const activeRow = () =>
+      table.store.get()[pluginStateKey(KEYBOARD_NAVIGATION)].rowIndex
+    act(() =>
+      setPluginState(table, KEYBOARD_NAVIGATION, {
+        rowIndex: 5,
+        columnIndex: 0,
+      }),
+    )
+    const added = add({ name: 'Zed', age: 99 }, 1)!
+    expect(activeRow()).toBe(6)
+    expect(source().at(activeRow())?.id).toBe('5')
+
+    act(() => table.removeRow(added))
+    expect(activeRow()).toBe(5)
+
+    add({ name: 'Wen', age: 96 }, 1)
+    await saveDrafts()
+    expect(source().at(activeRow())?.id).toBe('5')
   })
 
   it('DR50: в серверной модели диапазон выделения следует за новой строкой, как на клиенте: вставка выше сдвигает, внутри расширяет до тех же углов, откат возвращает; угол без id — тоже', async () => {

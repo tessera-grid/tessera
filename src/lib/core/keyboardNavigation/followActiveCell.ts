@@ -5,7 +5,7 @@
  */
 import { pluginStateKey, setPluginState } from '../definePlugin'
 import { followIndex, followRowList } from '../rowListFollow'
-import { rowSourceOf } from '../rowSource'
+import { type RowListChange, rowSourceOf } from '../rowSource'
 import { trackingOf } from './focus'
 import { type ActiveCell, KEYBOARD_NAVIGATION, type NavTable } from './model'
 
@@ -22,21 +22,23 @@ export const followActiveCell = (table: unknown) => {
    * новая строка, ушедшая из слоя в кэш под тем же `id` (ADR 0181), иначе сдвинула бы ячейку.
    */
   let held: string | undefined
+  const shift = (batches: readonly (readonly RowListChange[])[]) => {
+    const current = active()!
+    const own = held === undefined ? -1 : rowSourceOf(table).indexOf(held)
+    const rowIndex = own >= 0 ? own : followIndex(current.rowIndex, batches)
+    if (rowIndex === current.rowIndex) return
+    const tracking = trackingOf(t)
+    if (tracking.within) {
+      tracking.pending = true
+      tracking.quiet = true
+    }
+    setPluginState(t, KEYBOARD_NAVIGATION, { ...current, rowIndex })
+  }
   const unfollow = followRowList(table, {
     active: () => (active()?.rowIndex ?? -1) >= 0,
     reset: () => {},
-    shift: batches => {
-      const current = active()!
-      const own = held === undefined ? -1 : rowSourceOf(table).indexOf(held)
-      const rowIndex = own >= 0 ? own : followIndex(current.rowIndex, batches)
-      if (rowIndex === current.rowIndex) return
-      const tracking = trackingOf(t)
-      if (tracking.within) {
-        tracking.pending = true
-        tracking.quiet = true
-      }
-      setPluginState(t, KEYBOARD_NAVIGATION, { ...current, rowIndex })
-    },
+    shift,
+    newRows: shift,
   })
   // После слежения за списком — запомнить строку ячейки для следующей смены.
   const remember = () => {
