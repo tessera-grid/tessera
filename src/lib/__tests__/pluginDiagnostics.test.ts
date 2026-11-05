@@ -59,7 +59,7 @@ describe('getPluginDiagnostics — снимок активности плаги�
   it('PC13: встроенные плагины сообщают причину инертности из своих гейтов (grouping / sorting)', () => {
     const grouped = build([rowGrouping(), rowSelection(), rowDragging()])
     grouped.setGrouping(['cat'])
-    expect(statusOf(grouped, 'rowSelection').reason).toBe('grouping')
+    expect(statusOf(grouped, 'rowSelection').status).toBe('active')
     expect(statusOf(grouped, 'rowDragging').reason).toBe('grouping')
     expect(statusOf(grouped, 'rowGrouping').status).toBe('active')
 

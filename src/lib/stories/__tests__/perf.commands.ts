@@ -252,6 +252,7 @@ export interface PerfRecord {
     | 'serverRowModel'
     | 'serverRowModel, rowExpanding'
     | 'serverRowModel, rowGrouping, rowExpanding'
+    | 'rowGrouping, rowExpanding, rowSelection'
     | 'serverRowModel, rowGrouping, rowExpanding, rowSelection'
     | 'cellSelection'
     | 'serverRowModel, cellSelection'

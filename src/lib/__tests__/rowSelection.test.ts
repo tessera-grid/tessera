@@ -122,7 +122,7 @@ describe('rowSelection', () => {
     expect(folded).toEqual({})
   })
 
-  it('PC11: активная группировка делает rowSelection инертным и предупреждает', () => {
+  it('PC11: активная группировка не делает rowSelection инертным: строки данных доступны для выбора (ADR 0185)', () => {
     const { folded } = makeTable()
     const enableRowSelection = (folded.options as any).enableRowSelection
 
@@ -134,10 +134,8 @@ describe('rowSelection', () => {
     expect(warnings()).toHaveLength(0)
 
     const grouped = { table: { atoms: { grouping: { get: () => ['name'] } } } }
-    expect(enableRowSelection(grouped)).toBe(false)
-    enableRowSelection(grouped)
-    expect(warnings()).toHaveLength(1)
-    expect(warnings()[0]).toContain('rowSelection')
+    expect(enableRowSelection(grouped)).toBe(true)
+    expect(warnings()).toHaveLength(0)
 
     // Плагин отключён → опция жёстко false, гейт с варном не вызывается.
     expect(makeTable({ enabled: false }).folded.options).toMatchObject({

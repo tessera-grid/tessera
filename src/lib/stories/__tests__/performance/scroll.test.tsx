@@ -3082,6 +3082,104 @@ describe('Производительность прокрутки — выбор
   )
 })
 
+// Выбор при клиентской группировке (ADR 0185, CG12): спокойная прокрутка 100 000 строк в 100
+// раскрытых группах, все группы выбраны, против той же выборки без выбора. Цена — заливка
+// выбранных строк и флажки групп; проход по листьям запоминается на значение среза.
+const CG12_GROUPS = 100
+const CG12_GROUP_SIZE = 1000
+const CG12_ROWS = Array.from(
+  { length: CG12_GROUPS * CG12_GROUP_SIZE },
+  (_, i) => ({
+    id: `r${i}`,
+    group: `g${Math.floor(i / CG12_GROUP_SIZE)}`,
+    name: `Name ${i}`,
+  }),
+)
+const CG12_COLUMNS = [
+  { id: 'group', accessorKey: 'group', header: 'Group' },
+  { id: 'name', accessorKey: 'name', header: 'Name' },
+]
+const CG12_SELECTION = Object.fromEntries(
+  CG12_ROWS.map(row => [row.id, true as const]),
+)
+const ClientGroupsGrid = ({ selected }: { selected: boolean }) => {
+  const table = useCreateTable({
+    columns: CG12_COLUMNS as never,
+    data: CG12_ROWS,
+    getRowId: (row: { id: string }) => row.id,
+    plugins: [
+      rowExpanding({ initialExpanded: true }),
+      rowGrouping({ initialGrouping: ['group'] }),
+      rowSelection({ initialRowSelection: selected ? CG12_SELECTION : {} }),
+    ] as never,
+  })
+  return (
+    <div style={{ padding: 16, height: 600 }}>
+      <DataGrid table={table as never} height={500} />
+    </div>
+  )
+}
+
+describe('Производительность прокрутки — выбор при клиентской группировке', () => {
+  test(
+    'CG12: прокрутка 100 000 строк в группах со 100 выбранными группами не хуже той же выборки без выбора',
+    async () => {
+      const measure = async (selected: boolean) => {
+        const screen = render(<ClientGroupsGrid selected={selected} />)
+        const group = () =>
+          document.querySelector('.data-grid__body-row[data-row-id="group:g0"]')
+        await expect.poll(group).not.toBeNull()
+        expect(group()!.getAttribute('data-selected')).toBe(String(selected))
+        const y = await measureScrollWork('y', {
+          ...CONTENT_SCROLL.y,
+          fast: false,
+          wheel: true,
+        })
+        ;(await screen).unmount()
+        return y
+      }
+
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.p95Ms)
+      const selected = medianRun(runs.variant, r => r.p95Ms)
+      const ceiling = ceilingOver(base.p95Ms, { ratio: 1.3, plusMs: 6 })
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '100 100×2',
+          plugins: 'rowGrouping, rowExpanding, rowSelection',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              axis: 'y' as const,
+              kind: 'animation' as const,
+              metric: 'p95' as const,
+              valueMs: r.p95Ms,
+              targetMs: ANIMATION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('CG12-base', 'группы без выбора', base, false)
+      await record('CG12', 'все группы выбраны', selected, true)
+
+      expect(
+        selected.p95Ms,
+        `с выбором p95=${selected.p95Ms.toFixed(1)}ms, база ${base.p95Ms.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
 // Выбор группы целиком (ADR 0148, GX12): спокойная прокрутка 1 000 000 строк в ста
 // раскрытых группах, каждая выбрана узлом с исключениями, против той же выборки, выбранной
 // целиком без узлов: заливка выбранных строк одна, разница — поиск узла по пути групп.

@@ -4585,6 +4585,103 @@ describe('Применить всё — много черновиков', () => 
   )
 })
 
+// Флажок группы (ADR 0185, CG13): группа со 100 000 строк против «Выбрать всё» той же выборки:
+// один проход по строкам и одна запись среза. Прогрев выбирает, замер снимает.
+const CG13_ROWS = Array.from({ length: 100_000 }, (_, i) => ({
+  id: `r${i}`,
+  group: 'g',
+  name: `Name ${i}`,
+}))
+const CG13_COLUMNS = [
+  { id: 'group', accessorKey: 'group', header: 'Group' },
+  { id: 'name', accessorKey: 'name', header: 'Name' },
+]
+const groupFlag = () =>
+  document.querySelector<HTMLElement>(
+    '.data-grid__body-row[data-row-id="group:g"] .row-select-checkbox',
+  )
+const headFlag = () =>
+  document.querySelector<HTMLElement>(
+    '.data-grid__head-cell .row-select-checkbox',
+  )
+const WholeGroupGrid = () => {
+  const table = useCreateTable({
+    columns: CG13_COLUMNS as never,
+    data: CG13_ROWS,
+    getRowId: (row: { id: string }) => row.id,
+    plugins: [
+      rowExpanding(),
+      rowGrouping({ initialGrouping: ['group'] }),
+      rowSelection(),
+    ] as never,
+  })
+  return (
+    <div style={{ padding: 16, height: 600 }}>
+      <DataGrid table={table as never} height={500} />
+    </div>
+  )
+}
+
+describe('Отзывчивость — флажок группы', () => {
+  test(
+    'CG13: нажатие на флажок группы со 100 000 потомков не дороже «Выбрать всё» на той же выборке',
+    async () => {
+      const measure = async (group: boolean) => {
+        const screen = render(<WholeGroupGrid />)
+        await expect.poll(groupFlag).toBeTruthy()
+        const flag = group ? groupFlag : headFlag
+        const result = await measureInteractionWork(
+          async () => flag()!.click(),
+          {
+            afterWarmup: () =>
+              expect(flag()!.getAttribute('aria-checked')).toBe('true'),
+          },
+        )
+        expect(flag()!.getAttribute('aria-checked')).toBe('false')
+        ;(await screen).unmount()
+        await cleanup()
+        return result
+      }
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const group = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = ceilingOver(base.longestMs, { ratio: 1.5, plusMs: 50 })
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '100 000×2',
+          plugins: 'rowGrouping, rowExpanding, rowSelection',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('CG13-base', '«Выбрать всё»', base, false)
+      await record('CG13', 'флажок группы', group, true)
+
+      expect(
+        group.longestMs,
+        `флажок группы longest=${group.longestMs.toFixed(1)}ms, база ${base.longestMs.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
 // Охват «Выбрать всё» (ADR 0179, SE16): флажок шапки на 100 000 строк по 100 на странице —
 // охват 'filtered' (все страницы) против 'currentPage' той же выборки. Прогрев выбирает
 // строки охвата, замер снимает выбор.

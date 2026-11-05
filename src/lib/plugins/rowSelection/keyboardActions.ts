@@ -17,19 +17,21 @@ import {
 } from '../../core/rowSelectionAll'
 import type { Row } from '../../types'
 import {
+  clientGroupStateOf,
   groupKeysOfRow,
   isBranchCascade,
-  isGroupingActive,
+  isClientGroupRow,
   isSelectableInList,
   isServerGroupRow,
   rowPathOf,
   subRowsOf,
 } from '../rowSelectionModel/selectionHelpers'
+import { setScopeSelected } from './selectAllScope'
 import type { RowSelectionHooks } from './types'
 
 /** Может ли строка переключаться сейчас (те же гейты, что у чекбокса строки). */
-export const getCanToggleRow = (row: Row<any, any>, table: unknown): boolean =>
-  !isGroupingActive(table) && isSelectableInList(row) && row.getCanSelect()
+export const getCanToggleRow = (row: Row<any, any>): boolean =>
+  isSelectableInList(row) && row.getCanSelect()
 
 /** Состояние флажка строки-группы по срезу (ADR 0148, §1). */
 export const groupSelectionOfRow = (row: Row<any, any>) => {
@@ -80,6 +82,12 @@ export const toggleRowSelection = (
   hooks: Partial<RowSelectionHooks>,
   event: unknown,
 ): void => {
+  // Клиентская группа — не в срезе: выбор ложится на её строки одной записью (ADR 0185, §2).
+  if (isClientGroupRow(row)) {
+    const { rows, state } = clientGroupStateOf(row)
+    setScopeSelected(row.table, rows, state !== 'all')
+    return
+  }
   if (isServerGroupRow(row)) {
     setGroupSelected(
       row.table,
@@ -123,7 +131,7 @@ export const toggleRowKeyboardAction: CellKeyboardAction = {
   scope: 'cell',
   // Shift+Space — выбор строки и на ячейке, где пробел занят её действием (ADR 0175, ED20).
   keys: [' ', 'Shift+ '],
-  visible: ({ row, table }) => getCanToggleRow(row, table),
+  visible: ({ row }) => getCanToggleRow(row),
   run: ({ row, table }, event) =>
     toggleRowSelection(
       row,

@@ -23,7 +23,6 @@ import {
 } from './rowSelectionColumn'
 import { HeadSelectionComponent } from './HeadSelectionComponent'
 import { RowSelectionComponent } from './RowSelectionComponent'
-import { isGroupingActive } from '../rowSelectionModel/selectionHelpers'
 import type { RowSelectionHooks, SelectAllScope } from './types'
 import { rowSelectionLabels } from './labels'
 
@@ -96,7 +95,7 @@ export const rowSelection = definePlugin<RowSelectionOptions>()({
           },
         ]
       : [],
-  diagnose: table => (isGroupingActive(table) ? 'grouping' : undefined),
+  diagnose: () => undefined,
   column: {
     id: COLUMN_SELECTION_ID,
     cell: RowSelectionComponent,

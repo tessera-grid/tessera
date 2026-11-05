@@ -13,6 +13,7 @@ import {
   bodyRow,
   byTestId,
   guideNext,
+  headCell,
   orderedRows,
   pollUntil,
   settle,
@@ -32,7 +33,7 @@ import {
  * Выбор строк (ADR 0014): `Playground` — выбранные строки в покое; S1 — выбор всех
  * строк и смена страницы, S2 — родитель вместе с детьми; выбор щелчком без флажков —
  * S5 ADR 0120; каждая строка дерева сама — S2 ADR 0162; охват флажка в заголовке — S1–S2
- * ADR 0179.
+ * ADR 0179; выбор при группировке — S1–S3 ADR 0185.
  */
 const meta = {
   ...dataGridMeta,
@@ -662,6 +663,242 @@ export const RowsSelectionSelectAllCurrentPage: StoryObj<StoryProps> = {
       await until(() => expect(pageStart(canvas)).toBe(String(SCOPE_PAGE + 1)))
       await expect(orderedRows(canvas).some(selected)).toBe(false)
       await expect(headChecked(canvas)).toBe(false)
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0185, S1–S3 -----------------------------------------------------------------
+
+const GROUP_ROWS = Array.from({ length: 12 }, (_, i) => ({
+  id: `task-${i}`,
+  team: i < 6 ? 'Alpha' : 'Beta',
+  city: i % 2 ? 'Paris' : 'Rome',
+  name: `Task ${i + 1}`,
+}))
+const GROUP_COLUMNS = [
+  { id: 'team', accessorKey: 'team', header: 'Team', enableGrouping: true },
+  { id: 'city', accessorKey: 'city', header: 'City', enableGrouping: true },
+  { id: 'name', accessorKey: 'name', header: 'Name' },
+]
+const GROUP_GRID = {
+  columnsOverride: GROUP_COLUMNS,
+  dataOverride: GROUP_ROWS,
+  enableRowSelection: true,
+  rowSelectionSelectedCount: true,
+  enableRowGrouping: true,
+  initialGrouping: ['team'],
+  enableRowExpanding: true,
+  initialExpanded: true,
+  containerHeight: '620',
+  height: '520',
+  maxHeight: '520',
+} satisfies Partial<StoryProps>
+const ALPHA = 'team:Alpha'
+const IN_ALPHA = 'task-1'
+const HIDDEN_IN_ALPHA = 'task-0'
+const GROUP_QUERY = 'Paris'
+
+const flagOf = (root: HTMLElement, id: string) =>
+  checkboxOf(bodyRow(root, id))?.getAttribute('aria-checked')
+const pressFlag = (root: HTMLElement, id: string) =>
+  checkboxOf(bodyRow(root, id))?.click()
+const selectAlpha = (root: HTMLElement) => {
+  if (flagOf(root, ALPHA) !== 'true') pressFlag(root, ALPHA)
+}
+const groupedBy = (root: HTMLElement, column: string) =>
+  orderedRows(root).some(row => row.dataset.rowId?.startsWith(`${column}:`))
+/** Пользователь снимает группировку другой колонки и группирует по этой. */
+const groupBy = (column: string, other: string) => (root: HTMLElement) => {
+  const button = (id: string) =>
+    headCell(root, id)?.querySelector<HTMLElement>('.column-group__button')
+  if (groupedBy(root, other)) button(other)?.click()
+  else if (!groupedBy(root, column)) button(column)?.click()
+}
+
+const GROUP_SELECT: readonly GuideStoryStep[] = [
+  {
+    title: 'Строки сгруппированы',
+    hint: 'Строки разбиты на группы, ничего не выбрано.',
+  },
+  {
+    title: 'Пользователь выбрал группу',
+    hint: 'Пользователь отметил флажок группы. Выбраны все её строки, счётчик показывает их число.',
+    states: ['body.selection'],
+    enter: untilDone(root => flagOf(root, ALPHA) === 'true', selectAlpha),
+  },
+  {
+    title: 'Пользователь снял одну строку',
+    hint: 'Строка вышла из выбора. Флажок группы стал частичным, остальные строки группы выбраны.',
+    states: ['body.selection'],
+    enter: untilDone(
+      root => flagOf(root, ALPHA) === 'mixed',
+      root => {
+        if (flagOf(root, ALPHA) === 'true') pressFlag(root, IN_ALPHA)
+        else if (flagOf(root, ALPHA) === 'false') selectAlpha(root)
+      },
+    ),
+  },
+]
+
+/** ADR 0185, S1: пользователь выбирает группу целиком и снимает одну её строку. */
+export const GroupSelection: StoryObj<StoryProps> = {
+  name: 'Select a group',
+  parameters: { scenario: '0185/S1', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Выбор группы"
+      steps={GROUP_SELECT}
+      args={guideArgs(GROUP_GRID, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(GROUP_SELECT[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(flagOf(canvas, ALPHA)).toBe('false'))
+    })
+    await step(GROUP_SELECT[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(flagOf(canvas, ALPHA)).toBe('true'))
+      await expect(selectedCount()).toContain('6')
+      await expect(selected(bodyRow(canvas, ALPHA))).toBe(true)
+    })
+    await step(GROUP_SELECT[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(flagOf(canvas, ALPHA)).toBe('mixed'))
+      await expect(selectedCount()).toContain('5')
+      await settle()
+    })
+  },
+}
+
+const GROUP_FILTERED: readonly GuideStoryStep[] = [
+  {
+    title: 'Строки сгруппированы',
+    hint: 'Строки разбиты на группы, ничего не выбрано.',
+    props: () => ({ enableQuickSearch: true, quickSearchDebounceMs: 0 }),
+  },
+  {
+    title: 'Пользователь нашёл строки',
+    hint: 'Пользователь набрал город в поле поиска. В группах остались только найденные строки.',
+    enter: searchFor(GROUP_QUERY, root => !bodyRow(root, HIDDEN_IN_ALPHA)),
+  },
+  {
+    title: 'Пользователь выбрал группу',
+    hint: 'Пользователь отметил флажок группы. Выбраны только показанные строки группы.',
+    states: ['body.selection'],
+    enter: untilDone(
+      root =>
+        searchField()?.value === GROUP_QUERY && flagOf(root, ALPHA) === 'true',
+      root => {
+        const field = searchField()
+        if (field && field.value !== GROUP_QUERY) {
+          typeInto(field, GROUP_QUERY)
+        } else if (!bodyRow(root, HIDDEN_IN_ALPHA)) {
+          selectAlpha(root)
+        }
+      },
+    ),
+  },
+  {
+    title: 'Пользователь очистил поиск',
+    hint: 'Скрытые поиском строки вернулись невыбранными, поэтому флажок группы стал частичным.',
+    states: ['body.selection'],
+    enter: searchFor('', root => flagOf(root, ALPHA) === 'mixed'),
+  },
+]
+
+/** ADR 0185, S2: группа выбирается при поиске — выбраны только показанные строки. */
+export const GroupSelectFiltered: StoryObj<StoryProps> = {
+  name: 'Select a group while searching',
+  parameters: { scenario: '0185/S2', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Выбор группы при поиске"
+      steps={GROUP_FILTERED}
+      args={guideArgs(GROUP_GRID, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(GROUP_FILTERED[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(bodyRow(canvas, HIDDEN_IN_ALPHA)).toBeTruthy())
+    })
+    await step(GROUP_FILTERED[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(bodyRow(canvas, HIDDEN_IN_ALPHA)).toBeFalsy())
+    })
+    await step(GROUP_FILTERED[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(flagOf(canvas, ALPHA)).toBe('true'))
+      await expect(selectedCount()).toContain('3')
+    })
+    await step(GROUP_FILTERED[3]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(flagOf(canvas, ALPHA)).toBe('mixed'))
+      await expect(selected(bodyRow(canvas, HIDDEN_IN_ALPHA))).toBe(false)
+      await expect(selectedCount()).toContain('3')
+      await settle()
+    })
+  },
+}
+
+const GROUP_REGROUP: readonly GuideStoryStep[] = [
+  {
+    title: 'Строки сгруппированы',
+    hint: 'Строки разбиты на группы по одной колонке, ничего не выбрано.',
+  },
+  {
+    title: 'Пользователь выбрал группу',
+    hint: 'Пользователь отметил флажок группы. Выбраны все её строки.',
+    states: ['body.selection'],
+    enter: untilDone(
+      root => groupedBy(root, 'team') && flagOf(root, ALPHA) === 'true',
+      root => {
+        groupBy('team', 'city')(root)
+        if (groupedBy(root, 'team')) selectAlpha(root)
+      },
+    ),
+  },
+  {
+    title: 'Пользователь сгруппировал по другой колонке',
+    hint: 'Группы стали другими, но выбор остался: те же строки выбраны и в новых группах, их флажки частичные.',
+    states: ['body.selection'],
+    enter: untilDone(
+      root => groupedBy(root, 'city') && !groupedBy(root, 'team'),
+      groupBy('city', 'team'),
+    ),
+  },
+]
+
+/** ADR 0185, S3: пользователь меняет группировку — выбор остаётся. */
+export const GroupSelectRegroup: StoryObj<StoryProps> = {
+  name: 'Change grouping with a selection',
+  parameters: { scenario: '0185/S3', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Смена группировки"
+      steps={GROUP_REGROUP}
+      args={guideArgs(GROUP_GRID, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(GROUP_REGROUP[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(flagOf(canvas, ALPHA)).toBe('false'))
+    })
+    await step(GROUP_REGROUP[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(flagOf(canvas, ALPHA)).toBe('true'))
+    })
+    await step(GROUP_REGROUP[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(groupedBy(canvas, 'city')).toBe(true))
+      await expect(selectedCount()).toContain('6')
+      await expect(flagOf(canvas, 'city:Paris')).toBe('mixed')
       await settle()
     })
   },

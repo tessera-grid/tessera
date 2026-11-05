@@ -217,7 +217,7 @@ describe('выбор группы целиком в SSRM (ADR 0148)', () => {
     })
   })
 
-  it("GX14: в клиентской модели при группировке выбор по-прежнему инертен с причиной 'grouping'", () => {
+  it("GX14: в клиентской модели группировка выбор не гасит: у плагина нет причины 'grouping' (ADR 0185)", () => {
     const ClientGrid = () => {
       table = useCreateTable({
         columns: COLUMNS as never,
@@ -233,11 +233,11 @@ describe('выбор группы целиком в SSRM (ADR 0148)', () => {
     act(() => root.render(<ClientGrid />))
     const groupRow = table.getRowModel().rows[0]
     expect(groupRow.getIsGrouped()).toBe(true)
-    expect(groupRow.getCanSelect()).toBe(false)
+    expect(groupRow.getCanSelect()).toBe(true)
     expect(
       table
         .getPluginDiagnostics()
         .find((entry: { id: string }) => entry.id === 'rowSelection'),
-    ).toMatchObject({ status: 'inert', reason: 'grouping' })
+    ).toMatchObject({ status: 'active' })
   })
 })

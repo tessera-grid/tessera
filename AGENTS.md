@@ -479,7 +479,11 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       SE14–SE15 — «всё, кроме» страницы с сервера и ленты), модульный `selectAllScope.dom` (SE1,
       SE5, SE8–SE13), перф SE16 — в `interaction`, истории «Rows/Selection» S1–S2, «Panels/Pagination» S3,
       «Data loading/Infinite scroll» S4,
-      [ADR 0179](docs/decisions/0179-select-all-scope.md)),
+      [ADR 0179](docs/decisions/0179-select-all-scope.md);
+      выбор при клиентской группировке — `group-selection` (CG1–CG3, CG8, CG10), модульный
+      `clientGroupSelection.dom` (CG4–CG7, CG9, CG11), перф CG12 — в `scroll`, CG13 — в
+      `interaction`, истории «Rows/Selection» S1–S3,
+      [ADR 0185](docs/decisions/0185-selection-with-client-grouping.md)),
       `row-expanding` (RE1–RE13, RE41 — анимация шеврона, [ADR 0015](docs/decisions/0015-row-expanding.md)),
       `row-expanding-lazy` (RE17–RE18, RE20, RE23–RE25, RE30–RE32, RE37, RE40 — ленивые
       дети: `hasChildren`/`loadChildren`, ожидание и вспышка тоггла, история) и модульные

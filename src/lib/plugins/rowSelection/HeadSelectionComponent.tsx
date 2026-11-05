@@ -17,7 +17,6 @@ import {
   tableAllSelection,
 } from '../../core/rowSelectionAll'
 import { Checkbox } from '../../ui/Checkbox/Checkbox'
-import { isGroupingActive } from '../rowSelectionModel/selectionHelpers'
 import {
   scopeRowsOf,
   scopeSelectionOf,
@@ -40,11 +39,6 @@ export const HeadSelectionComponent = ({
       state as unknown as Record<string, unknown>
     return [columnFilters, globalFilter, pagination, sorting]
   })
-
-  // Активная группировка делает выбор недоступным: прячем «выбрать все».
-  if (isGroupingActive(table)) {
-    return null
-  }
 
   const { onSelectAllRows } = hooks
   const partial = partialRowsReason(table)

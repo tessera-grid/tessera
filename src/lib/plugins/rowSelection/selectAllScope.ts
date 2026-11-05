@@ -6,7 +6,11 @@
 import type { RowSelectionState } from '@tanstack/react-table'
 
 import type { Row } from '../../types'
-import { subRowsOf } from '../rowSelectionModel/selectionHelpers'
+import {
+  isClientGroupRow,
+  isGroupingActive,
+  subRowsOf,
+} from '../rowSelectionModel/selectionHelpers'
 import type { SelectAllScope } from './types'
 
 interface ScopeTable {
@@ -44,8 +48,14 @@ export const scopeRowsOf = (
       : scope === 'filtered'
         ? t.getFilteredRowModel().flatRows
         : pageRows(t)
-  const nested = !!subRowsOf(table)
-  return rows.filter(row => (nested || row.depth === 0) && row.getCanSelect())
+  // При группировке строки данных вложены в группы, а строки выбора — только они (ADR 0185, §5).
+  const nested = !!subRowsOf(table) || isGroupingActive(table)
+  return rows.filter(
+    row =>
+      (nested || row.depth === 0) &&
+      !isClientGroupRow(row) &&
+      row.getCanSelect(),
+  )
 }
 
 /** Выбраны ли все строки охвата и хотя бы одна. */

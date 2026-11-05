@@ -1,8 +1,8 @@
 /**
  * Чекбокс выбора строки. Подписка — на свой вид: выбор другой строки его не
  * перерисовывает (ADR 0099, PF5). Бизнес-колбэки — из пропса `hooks` (инъекция
- * definePlugin); группировка — хелпер. У строки-группы серверной группировки флажок
- * выбирает группу целиком и бывает частичным (ADR 0148).
+ * definePlugin). У строки-группы флажок выбирает группу целиком и бывает частичным (ADR 0148,
+ * ADR 0185).
  */
 import { reportAction, sourceOf } from '../../core/debugActions'
 import type { PluginCellProps } from '../../core/definePlugin'
@@ -12,7 +12,7 @@ import { Checkbox } from '../../ui/Checkbox/Checkbox'
 import { rowCheckboxOf, toggleRowSelection } from './keyboardActions'
 import {
   groupKeysOfRow,
-  isGroupingActive,
+  isClientGroupRow,
   isSelectableInList,
   isServerGroupRow,
 } from '../rowSelectionModel/selectionHelpers'
@@ -25,21 +25,12 @@ export const RowSelectionComponent = ({
   hooks,
 }: PluginCellProps<Partial<RowSelectionHooks>>) => {
   const labels = useLocalization()
-  const group = isServerGroupRow(row)
+  const group = isServerGroupRow(row) || isClientGroupRow(row)
 
-  const { grouped, canSelect, selected, indeterminate } = useTableState(
-    table,
-    () => ({
-      grouped: isGroupingActive(table),
-      canSelect: row.getCanSelect(),
-      ...rowCheckboxOf(row),
-    }),
-  )
-
-  // Активная группировка делает выбор недоступным: прячем чекбокс.
-  if (grouped) {
-    return null
-  }
+  const { canSelect, selected, indeterminate } = useTableState(table, () => ({
+    canSelect: row.getCanSelect(),
+    ...rowCheckboxOf(row),
+  }))
 
   if (!isSelectableInList(row)) {
     return null

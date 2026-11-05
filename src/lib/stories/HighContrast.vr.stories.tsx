@@ -1997,6 +1997,82 @@ export const HighContrastHighlightMarksStep4 = {
   tags: ['!test'],
 }
 
+export const HighContrastGroupSelectionStep1 = {
+  ...twinStep(rowsSelectionStories, rowsSelectionStories.GroupSelection, 1),
+  name: 'Rows/Selection — Select a group, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastGroupSelectionStep2 = {
+  ...twinStep(rowsSelectionStories, rowsSelectionStories.GroupSelection, 2),
+  name: 'Rows/Selection — Select a group, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastGroupSelectionStep3 = {
+  ...twinStep(rowsSelectionStories, rowsSelectionStories.GroupSelection, 3),
+  name: 'Rows/Selection — Select a group, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastGroupSelectFilteredStep1 = {
+  ...twinStep(
+    rowsSelectionStories,
+    rowsSelectionStories.GroupSelectFiltered,
+    1,
+  ),
+  name: 'Rows/Selection — Select a group while searching, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastGroupSelectFilteredStep2 = {
+  ...twinStep(
+    rowsSelectionStories,
+    rowsSelectionStories.GroupSelectFiltered,
+    2,
+  ),
+  name: 'Rows/Selection — Select a group while searching, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastGroupSelectFilteredStep3 = {
+  ...twinStep(
+    rowsSelectionStories,
+    rowsSelectionStories.GroupSelectFiltered,
+    3,
+  ),
+  name: 'Rows/Selection — Select a group while searching, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastGroupSelectFilteredStep4 = {
+  ...twinStep(
+    rowsSelectionStories,
+    rowsSelectionStories.GroupSelectFiltered,
+    4,
+  ),
+  name: 'Rows/Selection — Select a group while searching, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastGroupSelectRegroupStep1 = {
+  ...twinStep(rowsSelectionStories, rowsSelectionStories.GroupSelectRegroup, 1),
+  name: 'Rows/Selection — Change grouping with a selection, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastGroupSelectRegroupStep2 = {
+  ...twinStep(rowsSelectionStories, rowsSelectionStories.GroupSelectRegroup, 2),
+  name: 'Rows/Selection — Change grouping with a selection, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastGroupSelectRegroupStep3 = {
+  ...twinStep(rowsSelectionStories, rowsSelectionStories.GroupSelectRegroup, 3),
+  name: 'Rows/Selection — Change grouping with a selection, шаг 3',
+  tags: ['!test'],
+}
+
 export const HighContrastRowMotionTreeStep1 = {
   ...twinStep(rowsMotionStories, rowsMotionStories.RowMotionTree, 1),
   name: 'Rows/Motion — Tree, шаг 1',

@@ -6,13 +6,14 @@
  */
 import { isPlaceholderRow } from '../../core/lazyPlaceholder'
 import {
+  assignPrototypeAPIs,
   type RowSelectionState,
   rowSelectionFeature,
   type RowData,
   type TableFeatures,
 } from '@tanstack/react-table'
 
-import type { Row, Table } from '../../types'
+import type { Row, Table, TableFeature } from '../../types'
 import { announceLabel } from '../../core/announcer'
 import { type BodyContributions, withBody } from '../../core/bodyContributions'
 import { definePlugin } from '../../core/definePlugin'
@@ -21,17 +22,19 @@ import {
   isAllSelection,
   type RowSelectionValue,
 } from '../../core/rowSelectionAll'
-import {
-  serverRowModelReason,
-  warnPluginInert,
-} from '../../core/pluginDiagnostics'
+import { serverRowModelReason } from '../../core/pluginDiagnostics'
 import { GROUP_ROW_PREFIX, type RowSource } from '../../core/rowSource'
 import {
   type SelectionSummary,
   selectionPartsLabel,
   selectionSummaryOf,
 } from './selectionCount'
-import { groupingLength, isGroupingActive, subRowsOf } from './selectionHelpers'
+import {
+  clientGroupStateOf,
+  groupingLength,
+  isClientGroupRow,
+  subRowsOf,
+} from './selectionHelpers'
 import { rowSelectionModelLabels } from './labels'
 
 export interface RowSelectionModelOptions {
@@ -54,8 +57,48 @@ export interface RowSelectionModelOptions {
   initialRowSelection?: RowSelectionValue
 }
 
+/* eslint-disable @typescript-eslint/no-unused-vars -- generics карт обязаны
+   повторять сигнатуры v9, иначе declaration merging не склеится */
+declare module '@tanstack/react-table' {
+  interface Plugins {
+    rowGroupSelectionFeature: TableFeature
+  }
+}
+/* eslint-enable @typescript-eslint/no-unused-vars */
+
+/**
+ * Клиентская строка-группа не в срезе (ADR 0185, §1): выбрана ли она, скажут её листья. Заливка,
+ * `aria-selected` и флажок читают обычные методы строки.
+ */
+const rowGroupSelectionFeature: TableFeature = {
+  assignRowPrototype: (prototype, table) => {
+    const stock = prototype as {
+      getIsSelected: (this: unknown) => boolean
+      getIsSomeSelected: (this: unknown) => boolean
+    }
+    const { getIsSelected, getIsSomeSelected } = stock
+    assignPrototypeAPIs('rowGroupSelectionFeature', prototype, table, {
+      row_getIsSelected: {
+        fn: (row: Row<any, any>) =>
+          isClientGroupRow(row)
+            ? clientGroupStateOf(row).state === 'all'
+            : getIsSelected.call(row),
+      },
+      row_getIsSomeSelected: {
+        fn: (row: Row<any, any>) =>
+          isClientGroupRow(row)
+            ? clientGroupStateOf(row).state === 'some'
+            : getIsSomeSelected.call(row),
+      },
+    })
+  },
+}
+
 /** Фичи модели выбора; интерфейс несёт те же — по ним выводится тип среза. */
-export const rowSelectionModelFeatures = { rowSelectionFeature }
+export const rowSelectionModelFeatures = {
+  rowSelectionFeature,
+  rowGroupSelectionFeature,
+}
 
 /**
  * Строка, которую выбирает «всё, кроме»: в дереве серверной модели — корень, а с `subRows` —
@@ -85,18 +128,13 @@ const rowGroupOf = (table: unknown) => (id: string) =>
     : undefined
 
 /**
- * Выбор недоступен при АКТИВНОЙ группировке: сгруппированная модель производна,
- * выбором владеет группировка. Функциональный `enableRowSelection` согласует и
- * агрегаты (getIsAllPageRowsSelected и т.п.).
+ * Что можно выбрать. Функциональный `enableRowSelection` согласует и агрегаты
+ * (getIsAllPageRowsSelected и т.п.). Строка-группа доступна, если есть что выбрать (ADR 0185, §2).
  */
 const enableRowSelection = (row: Row<any, any>): boolean => {
   // Скелет-строка ленивых детей — не данные (ADR 0155, §3).
   if (isPlaceholderRow(row)) return false
-  if (!isGroupingActive(row.table)) {
-    return true
-  }
-  warnPluginInert(row.table, 'rowSelectionModel', 'grouping')
-  return false
+  return !isClientGroupRow(row) || clientGroupStateOf(row).rows.length > 0
 }
 
 /**
@@ -200,7 +238,7 @@ const rowSelectionModelEntry = definePlugin<RowSelectionModelOptions>()({
     // Клик по флажку не выделяет диапазон: выбор диапазоном — не жест грида.
     enableRowRangeSelection: false,
   }),
-  diagnose: table => (isGroupingActive(table) ? 'grouping' : undefined),
+  diagnose: () => undefined,
 })
 
 /**
