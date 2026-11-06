@@ -11,7 +11,8 @@ import {
   setColumnFilterByUser,
   setColumnFiltersByUser,
 } from '../../shared/filtering/filtering'
-import { PopupItem } from '../../ui/Popup/PopupItem'
+import { Bubble } from '../../ui/Bubble/Bubble'
+import { PopupEntry } from '../../ui/Popup/PopupEntry'
 import { PopupPanel } from '../../ui/Popup/PopupPanel'
 import { PopupSurface } from '../../ui/Popup/PopupSurface'
 import { useLocalization } from '../../core/localization'
@@ -77,6 +78,7 @@ export const FilterSummaryPopover = ({
           className={styles.popup}
         >
           <PopupPanel
+            title={columnFilteringLabels(labels).filters}
             footer={
               <Button
                 variant="ghost"
@@ -97,30 +99,35 @@ export const FilterSummaryPopover = ({
                     formatDataTypeValue(table, item.column, value, undefined),
                 })
                 return (
-                  <PopupItem
+                  <li
                     key={item.columnId}
-                    render={<li />}
-                    className={styles.item}
                     data-column-id={item.columnId}
                     data-hidden-column={item.hidden || undefined}
-                    end={
-                      <IconButton
-                        shape="square"
-                        size="compact"
-                        label={columnFilteringLabels(labels).removeFilter(
-                          item.header,
-                        )}
-                        onClick={() =>
-                          setColumnFilterByUser(table, item.columnId, undefined)
-                        }
-                        data-testid="filter-summary-remove"
-                      >
-                        <ClearIcon />
-                      </IconButton>
-                    }
                   >
-                    <span className={styles.text}>
-                      <span className={styles.header}>{item.header}</span>
+                    <PopupEntry
+                      fit
+                      mark={<Bubble size="dot" tone="active" />}
+                      label={item.header}
+                      actions={
+                        <IconButton
+                          shape="square"
+                          size="compact"
+                          label={columnFilteringLabels(labels).removeFilter(
+                            item.header,
+                          )}
+                          onClick={() =>
+                            setColumnFilterByUser(
+                              table,
+                              item.columnId,
+                              undefined,
+                            )
+                          }
+                          data-testid="filter-summary-remove"
+                        >
+                          <ClearIcon />
+                        </IconButton>
+                      }
+                    >
                       <Tooltip title={condition} overflowOnly>
                         <span
                           className={styles.condition}
@@ -135,8 +142,8 @@ export const FilterSummaryPopover = ({
                           {columnFilteringLabels(labels).columnHidden}
                         </span>
                       )}
-                    </span>
-                  </PopupItem>
+                    </PopupEntry>
+                  </li>
                 )
               })}
             </ul>

@@ -4,26 +4,12 @@
 }
 
 .list {
+  composes: cardsScroll from '../../ui/Popup/Popup.module.css';
   display: flex;
   flex-direction: column;
+  gap: var(--tsr-comp-popup-padding);
   margin: 0;
-  padding: 0;
   list-style: none;
-}
-
-.item {
-  --_item-cursor: default;
-}
-
-.text {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.header {
-  font-weight: 600;
 }
 
 /* Условие — не больше двух строк, полный текст — в тултипе (ADR 0083, TX5). */

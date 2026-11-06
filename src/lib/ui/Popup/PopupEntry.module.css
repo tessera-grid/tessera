@@ -18,7 +18,7 @@
 }
 
 /* Облачка с содержимым одной высоты — подпись и две его строки, даже когда строка одна. */
-.entry:has(.body) {
+.entry:has(.body):not([data-fit]) {
   min-height: calc(3lh + var(--tsr-comp-popup-padding) * 6);
 }
 

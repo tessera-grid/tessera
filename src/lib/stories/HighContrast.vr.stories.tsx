@@ -11,6 +11,7 @@ import * as coreFooterStories from './DataGrid.Core.Footer.stories'
 import * as customizationLocalizationStories from './Customization.Localization.stories'
 import * as coreIncreasedContrastStories from './Customization.IncreasedContrast.stories'
 import * as themingStories from './Theming.stories'
+import * as uiPopupAssembledStories from './UI.PopupAssembled.stories'
 import * as coreSizingStories from './DataGrid.Core.Sizing.stories'
 import * as coreSkeletonStories from './DataGrid.DataLoading.Skeleton.stories'
 import * as coreStubsStories from './DataGrid.Core.Stubs.stories'
@@ -7632,5 +7633,227 @@ export const HighContrastExportServerRowsRefusedStep2 = {
     2,
   ),
   name: 'Data loading/Server row model/Export — Refused by the server, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastPopupAssembledStep1 = {
+  ...twinStep(
+    uiPopupAssembledStories,
+    uiPopupAssembledStories.PopupAssembled,
+    1,
+  ),
+  name: 'UI/Popup/Assembled — Popups assembled, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastPopupAssembledStep2 = {
+  ...twinStep(
+    uiPopupAssembledStories,
+    uiPopupAssembledStories.PopupAssembled,
+    2,
+  ),
+  name: 'UI/Popup/Assembled — Popups assembled, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastPopupAssembledStep3 = {
+  ...twinStep(
+    uiPopupAssembledStories,
+    uiPopupAssembledStories.PopupAssembled,
+    3,
+  ),
+  name: 'UI/Popup/Assembled — Popups assembled, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastPopupAssembledStep4 = {
+  ...twinStep(
+    uiPopupAssembledStories,
+    uiPopupAssembledStories.PopupAssembled,
+    4,
+  ),
+  name: 'UI/Popup/Assembled — Popups assembled, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastPopupAssembledStep5 = {
+  ...twinStep(
+    uiPopupAssembledStories,
+    uiPopupAssembledStories.PopupAssembled,
+    5,
+  ),
+  name: 'UI/Popup/Assembled — Popups assembled, шаг 5',
+  tags: ['!test'],
+}
+
+export const HighContrastPopupAssembledStep6 = {
+  ...twinStep(
+    uiPopupAssembledStories,
+    uiPopupAssembledStories.PopupAssembled,
+    6,
+  ),
+  name: 'UI/Popup/Assembled — Popups assembled, шаг 6',
+  tags: ['!test'],
+}
+
+export const HighContrastPopupAssembledStep7 = {
+  ...twinStep(
+    uiPopupAssembledStories,
+    uiPopupAssembledStories.PopupAssembled,
+    7,
+  ),
+  name: 'UI/Popup/Assembled — Popups assembled, шаг 7',
+  tags: ['!test'],
+}
+
+export const HighContrastPopupAssembledStep8 = {
+  ...twinStep(
+    uiPopupAssembledStories,
+    uiPopupAssembledStories.PopupAssembled,
+    8,
+  ),
+  name: 'UI/Popup/Assembled — Popups assembled, шаг 8',
+  tags: ['!test'],
+}
+
+export const HighContrastPopupAssembledStep9 = {
+  ...twinStep(
+    uiPopupAssembledStories,
+    uiPopupAssembledStories.PopupAssembled,
+    9,
+  ),
+  name: 'UI/Popup/Assembled — Popups assembled, шаг 9',
+  tags: ['!test'],
+}
+
+export const HighContrastPopupAssembledStep10 = {
+  ...twinStep(
+    uiPopupAssembledStories,
+    uiPopupAssembledStories.PopupAssembled,
+    10,
+  ),
+  name: 'UI/Popup/Assembled — Popups assembled, шаг 10',
+  tags: ['!test'],
+}
+
+export const HighContrastPopupAssembledStep11 = {
+  ...twinStep(
+    uiPopupAssembledStories,
+    uiPopupAssembledStories.PopupAssembled,
+    11,
+  ),
+  name: 'UI/Popup/Assembled — Popups assembled, шаг 11',
+  tags: ['!test'],
+}
+
+export const HighContrastPopupAssembledStep12 = {
+  ...twinStep(
+    uiPopupAssembledStories,
+    uiPopupAssembledStories.PopupAssembled,
+    12,
+  ),
+  name: 'UI/Popup/Assembled — Popups assembled, шаг 12',
+  tags: ['!test'],
+}
+
+export const HighContrastPopupAssembledStep13 = {
+  ...twinStep(
+    uiPopupAssembledStories,
+    uiPopupAssembledStories.PopupAssembled,
+    13,
+  ),
+  name: 'UI/Popup/Assembled — Popups assembled, шаг 13',
+  tags: ['!test'],
+}
+
+export const HighContrastPopupAssembledStep14 = {
+  ...twinStep(
+    uiPopupAssembledStories,
+    uiPopupAssembledStories.PopupAssembled,
+    14,
+  ),
+  name: 'UI/Popup/Assembled — Popups assembled, шаг 14',
+  tags: ['!test'],
+}
+
+export const HighContrastPopupAssembledStep15 = {
+  ...twinStep(
+    uiPopupAssembledStories,
+    uiPopupAssembledStories.PopupAssembled,
+    15,
+  ),
+  name: 'UI/Popup/Assembled — Popups assembled, шаг 15',
+  tags: ['!test'],
+}
+
+export const HighContrastPopupAssembledStep16 = {
+  ...twinStep(
+    uiPopupAssembledStories,
+    uiPopupAssembledStories.PopupAssembled,
+    16,
+  ),
+  name: 'UI/Popup/Assembled — Popups assembled, шаг 16',
+  tags: ['!test'],
+}
+
+export const HighContrastPopupAssembledStep17 = {
+  ...twinStep(
+    uiPopupAssembledStories,
+    uiPopupAssembledStories.PopupAssembled,
+    17,
+  ),
+  name: 'UI/Popup/Assembled — Popups assembled, шаг 17',
+  tags: ['!test'],
+}
+
+export const HighContrastPopupAssembledStep18 = {
+  ...twinStep(
+    uiPopupAssembledStories,
+    uiPopupAssembledStories.PopupAssembled,
+    18,
+  ),
+  name: 'UI/Popup/Assembled — Popups assembled, шаг 18',
+  tags: ['!test'],
+}
+
+export const HighContrastThemingDefaultPaletteStep1 = {
+  ...twinStep(themingStories, themingStories.ThemingDefaultPalette, 1),
+  name: 'Theming — Default palette, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastThemingDefaultPaletteStep2 = {
+  ...twinStep(themingStories, themingStories.ThemingDefaultPalette, 2),
+  name: 'Theming — Default palette, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastThemingShadcnPaletteStep1 = {
+  ...twinStep(themingStories, themingStories.ThemingShadcnPalette, 1),
+  name: 'Theming — App palette, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastThemingShadcnPaletteStep2 = {
+  ...twinStep(themingStories, themingStories.ThemingShadcnPalette, 2),
+  name: 'Theming — App palette, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastThemingShadcnPaletteStep3 = {
+  ...twinStep(themingStories, themingStories.ThemingShadcnPalette, 3),
+  name: 'Theming — App palette, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastThemingUnsavedRoleStep1 = {
+  ...twinStep(themingStories, themingStories.ThemingUnsavedRole, 1),
+  name: 'Theming — Unsaved role, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastThemingUnsavedRoleStep2 = {
+  ...twinStep(themingStories, themingStories.ThemingUnsavedRole, 2),
+  name: 'Theming — Unsaved role, шаг 2',
   tags: ['!test'],
 }

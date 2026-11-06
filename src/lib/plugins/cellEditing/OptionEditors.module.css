@@ -30,17 +30,6 @@
   width: 100%;
 }
 
-.indicator {
-  display: inline-flex;
-  flex-shrink: 0;
-  width: 14px;
-}
-
-/* Без отметки — то же место, подписи в одну линию. */
-.item:not([data-selected]) .indicator {
-  visibility: hidden;
-}
-
 .label {
   flex: 1;
   overflow: hidden;

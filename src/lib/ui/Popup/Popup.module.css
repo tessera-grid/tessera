@@ -95,8 +95,14 @@
   transition: var(--tsr-comp-popup-item-transition);
 }
 
-/* Пункт-подпись флажка или радио (ADR 0183, PK14) подсвечивается наведением: подсветки меню у него нет. */
+/*
+ * Выбранный пункт — облачко, как пункт под указателем (ADR 0183, PK27). Пункт-подпись флажка или
+ * радио (PK14) подсвечивается наведением: подсветки меню у него нет.
+ */
 .item[data-highlighted],
+.item[data-selected],
+.item[data-checked],
+.item:has(> [data-popup-item-mark='checked']),
 label.item:not(:has([data-disabled])):hover {
   background-color: var(--tsr-comp-control-hover-bg);
   outline: var(--tsr-comp-popup-item-highlighted-outline);

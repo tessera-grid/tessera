@@ -28,8 +28,7 @@ import { optionsLabels } from '../../shared/options/labels'
 import { useLoadedOptions } from '../../shared/options/useLoadedOptions'
 import { Checklist, ChecklistStatus } from '../../ui/Checklist/Checklist'
 import { Field, SearchField } from '../../ui/Field/Field'
-import { useIcons } from '../../ui/icons'
-import { PopupItem } from '../../ui/Popup/PopupItem'
+import { PopupItem, PopupItemMark } from '../../ui/Popup/PopupItem'
 import { PopupSurface } from '../../ui/Popup/PopupSurface'
 import { useCloseOnGridScroll } from '../../ui/Popup/useCloseOnGridScroll'
 import { useDebouncedCallback } from '../../util/useDebouncedCallback'
@@ -159,7 +158,6 @@ const VirtualOptions = ({
   virtualizerRef: RefObject<Virtualizer | null>
 }) => {
   const items = Combobox.useFilteredItems<ColumnOption>()
-  const { checkboxChecked: CheckIcon } = useIcons()
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const virtualizer = useVirtualizer({
     count: items.length,
@@ -204,13 +202,11 @@ const VirtualOptions = ({
                 height: row.size,
                 transform: `translateY(${row.start}px)`,
               }}
-              icon={
-                <Combobox.ItemIndicator
-                  keepMounted
-                  className={styles.indicator}
-                >
-                  <CheckIcon width={14} height={14} aria-hidden />
-                </Combobox.ItemIndicator>
+              end={
+                <PopupItemMark
+                  render={<Combobox.ItemIndicator />}
+                  status="checked"
+                />
               }
             >
               <span className={styles.label}>{item.label}</span>

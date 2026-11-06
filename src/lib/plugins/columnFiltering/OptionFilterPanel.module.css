@@ -1,7 +1,10 @@
 /* Фильтр вариантов (ADR 0048): ширина панели и массовые действия над списком кита `Checklist`. */
 .panel {
-  width: var(--tsr-comp-column-menu-width);
-  max-width: calc(100vw - 16px);
+  /* Панель лежит в поверхности с полями: ширина поповера — вместе с ними. */
+  width: calc(
+    var(--tsr-comp-column-menu-width) - var(--tsr-comp-popup-padding) * 2
+  );
+  max-width: calc(100vw - 16px - var(--tsr-comp-popup-padding) * 2);
 }
 
 .bulk {

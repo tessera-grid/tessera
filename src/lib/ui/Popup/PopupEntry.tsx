@@ -16,6 +16,8 @@ export interface PopupEntryProps {
   /** Справа от подписи, перед кнопками: время записи. */
   aside?: ReactNode
   actions?: ReactNode
+  /** Высота по содержимому: иначе облачка одной высоты, на две строки содержимого. */
+  fit?: boolean
   children?: ReactNode
 }
 
@@ -25,11 +27,12 @@ export const PopupEntry = ({
   onShow,
   aside,
   actions,
+  fit,
   children,
 }: PopupEntryProps) => {
   const id = useId()
   return (
-    <div className={styles.entry}>
+    <div className={styles.entry} data-fit={fit || undefined}>
       <span className={styles.mark} aria-hidden>
         {mark}
       </span>

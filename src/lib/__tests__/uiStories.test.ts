@@ -74,6 +74,41 @@ const WITHOUT_STORY: Record<string, string> = {
     'иллюстрация заглушки — история Stub «Playground»',
 }
 
+/** Компоненты кита поповеров и контролы этапа 2 (ADR 0183, PK8). */
+const POPUP_KIT = [
+  'PopupSurface',
+  'PopupPanel',
+  'PopupItem',
+  'PopupGroup',
+  'PopupEntry',
+  'MenuItems',
+  'MenuSections',
+  'HandleMenuPopup',
+  'Field',
+  'SearchField',
+  'Checklist',
+  'Calendar',
+  'SelectTrigger',
+  'Radio',
+  'Checkbox',
+  'StatusIcon',
+]
+
+/** Файлы с попапом Base UI в `src/lib/<dir>`: путь от `src/lib` без расширения. */
+const popupFiles = (dir: string): string[] =>
+  readdirSync(new URL(`../${dir}/`, import.meta.url), {
+    withFileTypes: true,
+  }).flatMap(entry =>
+    entry.isDirectory()
+      ? popupFiles(`${dir}/${entry.name}`)
+      : entry.name.endsWith('.tsx') &&
+          /@base-ui\/react\/(popover|menu|combobox|select|context-menu)'/.test(
+            read(`../${dir}/${entry.name}`),
+          )
+        ? [`${dir}/${entry.name.slice(0, -4)}`]
+        : [],
+  )
+
 describe('истории UI-примитивов', () => {
   it('PK22: у каждого модуля кита ui/ с компонентом есть история Tessera/UI/… или причина без неё', () => {
     const modules = kitModules()
@@ -94,6 +129,39 @@ describe('истории UI-примитивов', () => {
           coveringNames(module).some(name => covered.has(name)),
       ),
     ).toEqual([])
+  })
+
+  it('PK8: у компонентов кита поповеров и контролов этапа 2 есть история: первой Playground с контролами, состояния без контролов', () => {
+    const covered = new Set(uiStoryTitles().flatMap(titleNames))
+    expect(POPUP_KIT.filter(name => !covered.has(name))).toEqual([])
+    for (const name of POPUP_KIT) {
+      const file = `../stories/UI.${name}.stories.tsx`
+      const story = read(file)
+      const exports = [...story.matchAll(/^export const (\w+)/gm)].map(
+        match => match[1]!,
+      )
+      expect(exports[0], name).toMatch(/Playground$/)
+      const rest = story.slice(story.indexOf(`export const ${exports[1]}`))
+      expect(rest, name).not.toMatch(/defaultControls\(/)
+    }
+  })
+
+  it('PK9: каждый файл с попапом Base UI в grid/ и plugins/ — на шаге гайда PopupAssembled, у каждого поповера гайда есть шаг', () => {
+    const guide = read('../stories/UI.PopupAssembled.stories.tsx')
+    const named = [...guide.matchAll(/'((?:grid|plugins)\/[\w./-]+)'/g)].map(
+      match => match[1]!,
+    )
+    const files = popupFiles('grid').concat(popupFiles('plugins'))
+    expect(files.length).toBeGreaterThanOrEqual(14)
+    expect(files.filter(file => !named.includes(file))).toEqual([])
+    expect(named.filter(file => !files.includes(file))).toEqual([])
+    const ids = [...guide.matchAll(/^ {4}id: '(\w+)',/gm)].map(
+      match => match[1]!,
+    )
+    const steps = [...guide.matchAll(/expectPopup\(canvas, '(\w+)'\)/g)].map(
+      match => match[1]!,
+    )
+    expect(steps).toEqual(ids)
   })
 
   it('у каждого компонента /ui есть история Tessera/UI/<Компонент>', () => {
