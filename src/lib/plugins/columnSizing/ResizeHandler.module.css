@@ -1,42 +1,20 @@
 .wrapper {
   position: absolute;
   display: flex;
-  /* Зона по центру правой границы колонки, черта — на границе (ADR 0111). */
-  justify-content: center;
+  /* Зона в соседней колонке и в отступе своей, черта — на границе (ADR 0111). */
+  justify-content: flex-start;
+  --tsr-resize-line-self: start;
+  --tsr-resize-line-shift: -50%;
+  --tsr-resize-line-inset: var(--tsr-comp-head-grip-start);
   height: 100%;
-  right: calc(var(--tsr-comp-resize-handler-width) / -2);
+  right: calc(
+    var(--tsr-comp-head-grip-start) - var(--tsr-comp-resize-handler-width)
+  );
   color: var(--tsr-comp-control-color);
   z-index: 1;
   width: var(--tsr-comp-resize-handler-width);
   /* Палец тянет грип за всю обёртку, а не прокручивает грид (ADR 0086). */
   touch-action: none;
-}
-
-/*
- * Пока черта видна, от неё влево ложится затемнение без краёв — на подпись и кнопку рядом:
- * видно, что грип лежит над ними (ADR 0135). Проявляется вместе с чертой — прозрачностью
- * обёртки; высота — заголовка, на строки тела не ложится.
- */
-.wrapper::before {
-  content: '';
-  position: absolute;
-  inset-block: 0;
-  right: 50%;
-  width: var(--tsr-comp-shadow-grip-width);
-  /* Гуще всего у черты, к обоим концам — в прозрачность: резкой границы нет нигде. */
-  background: linear-gradient(
-    to left,
-    transparent,
-    var(--tsr-comp-shadow-grip-color) 4px,
-    transparent
-  );
-  pointer-events: none;
-}
-
-@media (forced-colors: active) {
-  .wrapper::before {
-    display: none;
-  }
 }
 
 .wrapper:hover .handler:not([aria-disabled='true']) {
@@ -63,7 +41,9 @@
 
 .background {
   display: inherit;
-  justify-self: center;
+  justify-self: var(--tsr-resize-line-self);
+  margin-inline-start: var(--tsr-resize-line-inset);
+  transform: translateX(var(--tsr-resize-line-shift));
 }
 
 .handler {

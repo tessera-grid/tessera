@@ -267,7 +267,6 @@ describe('Кнопки грида 28px (ADR 0135)', () => {
   test('GZ4: иконка кнопки у края стоит на линии текста соседних ячеек; справа в заголовке колонки с грипом кнопка не заходит в зону грипа — при любом наборе кнопок', async () => {
     let screen = await renderGrid({ ...ALL_BUTTONS, enableColumnSizing: false })
     await waitForGrid()
-    const gap = tokenPx('--tsr-comp-head-grip-gap')
     const cell = editableCell()
     await revealCellButtons(cell)
     const c = box(cell)
@@ -285,8 +284,7 @@ describe('Кнопки грида 28px (ADR 0135)', () => {
     expect(box(head).right - box(iconOf(last)).right).toBeCloseTo(text, 0)
     await screen.unmount()
 
-    // С грипом: кебаб (грип перед ним) и инлайн-кнопки (грип после них) — левее зоны
-    // на промежуток до грипа.
+    // С грипом: кебаб и инлайн-кнопки кончаются вплотную к зоне грипа.
     for (const args of [
       { ...ALL_BUTTONS },
       {
@@ -305,7 +303,7 @@ describe('Кнопки грида 28px (ADR 0135)', () => {
       expect(
         gripZone(head).left - box(edge).right,
         edge.getAttribute('aria-label')!,
-      ).toBeCloseTo(gap, 0)
+      ).toBeCloseTo(0, 0)
       await screen.unmount()
     }
   })
@@ -659,7 +657,7 @@ describe('Отступ ячейки и подпись под грипом (ADR 0
     expect(tokenPx('--tsr-comp-tree-line-inset')).toBe(padding)
   })
 
-  test('GZ14: подпись колонки с грипом заходит под зону до 4px от края, кнопки — нет; конец подписи — в прозрачность маской; затемнение у черты; между кнопками — --tsr-comp-head-button-gap', async () => {
+  test('GZ14: подпись и кнопки колонки с грипом кончаются у зоны грипа, у последней колонки подпись затухает под зоной; затемнения у черты нет', async () => {
     await renderGrid({
       columnCount: 4,
       dataCount: 10,
@@ -672,19 +670,19 @@ describe('Отступ ячейки и подпись под грипом (ADR 0
     await waitForGrid()
     const head = headCell('lastName')
     const title = titleOf(head)
-    // В покое: подпись — до 4px от края (скрытые кнопки промежутков не занимают), под
-    // зоной грипа, маска на её конце.
-    expect(box(head).right - box(title).right).toBeCloseTo(
-      tokenPx('--tsr-comp-drag-handle-inset'),
-      0,
+    // Подпись кончается у зоны, маски нет: зона лежит в отступах колонок.
+    expect(box(title).right).toBeLessThanOrEqual(gripZone(head).left)
+    expect(getComputedStyle(title).maskImage).toBe('none')
+    // У последней колонки зона внутри неё: подпись заходит под зону, конец затухает.
+    const lastTitle = titleOf(
+      document.querySelector<HTMLElement>('[data-last-header-in-row="true"]')!,
     )
-    expect(box(title).right).toBeGreaterThan(gripZone(head).left)
-    expect(getComputedStyle(title).maskImage).toContain('linear-gradient')
+    expect(getComputedStyle(lastTitle).maskImage).toContain('linear-gradient')
 
     await revealCellButtons(head)
     const buttons = visibleButtons(head)
     // Кнопки — левее зоны, между ними — промежуток кнопок.
-    expect(box(buttons.at(-1)!).right).toBeLessThan(gripZone(head).left)
+    expect(box(buttons.at(-1)!).right).toBeLessThanOrEqual(gripZone(head).left)
     const gap = tokenPx('--tsr-comp-head-button-gap')
     for (let i = 1; i < buttons.length; i++) {
       expect(box(buttons[i]!).left - box(buttons[i - 1]!).right).toBeCloseTo(
@@ -692,18 +690,8 @@ describe('Отступ ячейки и подпись под грипом (ADR 0
         0,
       )
     }
-    // Раскрытые кнопки — подпись кончается у них, маски нет.
-    expect(getComputedStyle(title).maskImage).toBe('none')
-    // У черты — затемнение без краёв, цветом тени грипа.
+    // У черты затемнения нет.
     const grip = head.querySelector('.resize__handler--column')!
-    const shade = getComputedStyle(grip, '::before')
-    expect(shade.backgroundImage).toMatch(/^linear-gradient/)
-    expect(parseFloat(shade.width)).toBe(
-      tokenPx('--tsr-comp-resize-handler-width') / 2 +
-        tokenPx('--tsr-comp-head-grip-gap'),
-    )
-    // В forced-colors затемнения нет.
-    await pointer.forcedColors(true)
-    expect(getComputedStyle(grip, '::before').display).toBe('none')
+    expect(getComputedStyle(grip, '::before').content).toBe('none')
   })
 })

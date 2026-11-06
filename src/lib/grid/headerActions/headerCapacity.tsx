@@ -45,6 +45,7 @@ const readHeaderMetrics = (probe: HTMLElement): HeaderMetrics => {
     padding,
   )
   const half = length('--tsr-comp-resize-handler-width') / 2
+  const gripStart = length('--tsr-comp-head-grip-start')
   const gap = length('--tsr-comp-cell-content-gap')
   // Между кнопками — свой промежуток, меньше, чем до подписи (ADR 0135).
   const buttonGap = length('--tsr-comp-head-button-gap')
@@ -61,7 +62,7 @@ const readHeaderMetrics = (probe: HTMLElement): HeaderMetrics => {
     half,
     gripGap: length('--tsr-comp-head-grip-gap'),
     handle: handleShift(length('--tsr-comp-drag-handle-inset')),
-    handleAfterGrip: handleShift(half),
+    handleAfterGrip: handleShift(half * 2 - gripStart),
   }
 }
 
@@ -107,7 +108,7 @@ export const headerCapacityOf = (
 ): number | undefined => {
   if (!header?.getSize || !metrics) return undefined
   const headers = header.headerGroup?.headers
-  // Грип соседа слева лежит в отступе содержимого (ADR 0111, ADR 0135).
+  // Зона грипа соседа слева — в этой колонке (ADR 0111).
   const previous = headers?.[header.index - 1]
   const afterResizable = previous?.column.getCanResize?.() ?? false
   // Раскрытая ручка перетаскивания — кнопка перед подписью (ADR 0114); после гриповой
@@ -115,17 +116,16 @@ export const headerCapacityOf = (
   const handle =
     !!header.column?.getCanDrag?.() && !header.column.getIsPinned?.()
   const handleShift = afterResizable ? metrics.handleAfterGrip : metrics.handle
-  // Кнопки стоят левее зоны своего грипа: у последней колонки и перед правыми
-  // закреплёнными зона целиком внутри колонки (ADR 0111, ADR 0135).
+  // Своя зона грипа есть только у последней колонки и перед правыми закреплёнными.
   const next = headers?.[header.index + 1]
   const gripInside =
     headers &&
     (!next || (isEndPinned(next.column) && !isEndPinned(header.column)))
-      ? metrics.half * 2
+  const right = !header.column?.getCanResize?.()
+    ? metrics.right
+    : gripInside
+      ? metrics.half * 2 + metrics.gripGap
       : metrics.half
-  const right = header.column?.getCanResize?.()
-    ? gripInside + metrics.gripGap
-    : metrics.right
   return buttonCapacity({
     width: header.getSize(),
     reserve: metrics.reserve + right + (handle ? handleShift : 0),

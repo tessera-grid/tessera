@@ -769,8 +769,8 @@ describe('Грип ширины на границе колонок (ADR 0111)', 
     const titleEl = first.querySelector<HTMLElement>(
       '.data-grid__cell-wrapper-title',
     )!
-    // В покое подпись заходит под зону грипа своей колонки.
-    expect(titleEl.getBoundingClientRect().right).toBeGreaterThan(
+    // Подпись кончается у зоны своего грипа: зона — в свободных отступах двух колонок.
+    expect(titleEl.getBoundingClientRect().right).toBeLessThanOrEqual(
       zoneOf(first).left,
     )
     const before = getComputedStyle(content).paddingRight
@@ -788,13 +788,13 @@ describe('Грип ширины на границе колонок (ADR 0111)', 
       expect(r.right).toBeLessThanOrEqual(zoneOf(first).left)
       expect(r.left).toBeGreaterThanOrEqual(first.getBoundingClientRect().left)
     }
-    // При видимой черте у неё — затемнение, сам контейнер грипа без фона.
+    // У черты нет ни заливки, ни затемнения.
     expect(getComputedStyle(wrapperOf(gripOf(first))).backgroundColor).toBe(
       'rgba(0, 0, 0, 0)',
     )
-    expect(
-      getComputedStyle(wrapperOf(gripOf(first)), '::before').backgroundImage,
-    ).toMatch(/^linear-gradient/)
+    expect(getComputedStyle(wrapperOf(gripOf(first)), '::before').content).toBe(
+      'none',
+    )
   })
 
   test('GB3: у соседа ручка перетаскивания колонки и подпись правее зоны грипа слева; зоны нажатия не пересекаются', async () => {

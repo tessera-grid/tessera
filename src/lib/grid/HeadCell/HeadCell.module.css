@@ -133,11 +133,13 @@
   }
 
   /*
-   * Зона грипа соседа слева лежит в отступе содержимого: подпись — на линии текста тела,
-   * раскрытая ручка — сразу за зоной, зоны нажатия не пересекаются (ADR 0111, ADR 0135).
+   * Зона грипа соседа слева целиком в этой колонке (ADR 0111): поверх отступа и начала подписи,
+   * раскрытая ручка — сразу за ней, зоны нажатия не пересекаются.
    */
   &[data-after-resizable] {
-    --tsr-head-handle-inset: calc(var(--tsr-comp-resize-handler-width) / 2);
+    --tsr-head-handle-inset: calc(
+      var(--tsr-comp-resize-handler-width) - var(--tsr-comp-head-grip-start)
+    );
   }
 
   /*
@@ -181,11 +183,15 @@
   }
 
   /*
-   * Подпись, дошедшая до зоны своего грипа, уходит в прозрачность маской — как лента
+   * Подпись, дошедшая до своей зоны грипа, уходит в прозрачность:
    * шагов гайда у края прокрутки: видно, что грип её перекрывает (ADR 0135). Пока кнопки
    * раскрыты, подпись кончается у них, и маски нет.
    */
-  &[data-column-resizable='true'] :global(.data-grid__cell-wrapper-title) {
+  &:is(
+      [data-last-header-in-row='true'],
+      :has(+ .head__cell[data-cell-first-right-pinned='true'])
+    )[data-column-resizable='true']
+    :global(.data-grid__cell-wrapper-title) {
     mask-image: linear-gradient(
       to right,
       #000 calc(100% - var(--tsr-comp-head-grip-fade)),
@@ -209,8 +215,13 @@
   &[data-after-resizable] :global(.data-grid__cell-wrapper-content) {
     --tsr-cell-edge-limit-start: calc(
       var(--tsr-comp-cell-content-padding-x) -
-        var(--tsr-comp-resize-handler-width) / 2
+        var(--tsr-comp-resize-handler-width) + var(--tsr-comp-head-grip-start)
     );
+  }
+
+  /* Кнопка на краю стоит левее зоны своего грипа: в отступ не заходит. */
+  &[data-column-resizable='true'] :global(.data-grid__cell-wrapper-content) {
+    --tsr-cell-edge-limit-end: 0px;
   }
 
   /* Последний заголовок и заголовок перед правыми закреплёнными: грип целиком внутри. */
@@ -220,6 +231,10 @@
     )
     :global(.resize__handler--column) {
     right: 0;
+    justify-content: center;
+    --tsr-resize-line-self: center;
+    --tsr-resize-line-shift: 0;
+    --tsr-resize-line-inset: 0;
   }
 
   /* Бэкграунд заголовка при наведении и протяжке ширины */
@@ -238,19 +253,15 @@
   }
 
   /*
-   * Под зону своего грипа заходит подпись — до черты, где она затухает в фон; кнопка на
-   * краю стоит левее зоны, зоны нажатия не пересекаются (ADR 0135).
+   * Своя зона грипа — только там, где соседа нет: у последнего заголовка и перед правыми
+   * закреплёнными. Кнопка на краю стоит левее неё, подпись заходит под неё до черты.
    */
-  --tsr-head-grip-inside: calc(var(--tsr-comp-resize-handler-width) / 2);
-
   &:is(
-    [data-last-header-in-row='true'],
-    :has(+ .head__cell[data-cell-first-right-pinned='true'])
-  ) {
+      [data-last-header-in-row='true'],
+      :has(+ .head__cell[data-cell-first-right-pinned='true'])
+    )[data-column-resizable='true']
+    :global(.data-grid__cell-wrapper-content) {
     --tsr-head-grip-inside: var(--tsr-comp-resize-handler-width);
-  }
-
-  &[data-column-resizable='true'] :global(.data-grid__cell-wrapper-content) {
     padding-inline-end: calc(
       var(--tsr-head-grip-inside) - var(--tsr-comp-resize-handler-width) / 2 +
         var(--tsr-comp-drag-handle-inset)

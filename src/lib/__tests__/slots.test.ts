@@ -518,12 +518,12 @@ describe('Вместимость кнопок заголовка — кнопк�
       column,
       headerGroup: { headers: [resizable, { column }, resizable] },
     })
-    expect(headerCapacityOf(header(135), metrics)).toBe(0)
-    expect(headerCapacityOf(header(136), metrics)).toBe(1)
-    expect(headerCapacityOf(header(165), metrics)).toBe(1)
-    expect(headerCapacityOf(header(166), metrics)).toBe(2)
-    expect(headerCapacityOf(header(195), metrics)).toBe(2)
-    expect(headerCapacityOf(header(196), metrics)).toBe(3)
+    expect(headerCapacityOf(header(127), metrics)).toBe(0)
+    expect(headerCapacityOf(header(128), metrics)).toBe(1)
+    expect(headerCapacityOf(header(157), metrics)).toBe(1)
+    expect(headerCapacityOf(header(158), metrics)).toBe(2)
+    expect(headerCapacityOf(header(187), metrics)).toBe(2)
+    expect(headerCapacityOf(header(188), metrics)).toBe(3)
     // У последней колонки зона грипа целиком внутри: место справа — вся зона.
     const last = {
       ...header(166),

@@ -386,6 +386,8 @@
   /* От последней кнопки заголовка до зоны грипа: нажатие кнопки не попадает в грип. */
   --tsr-comp-head-grip-gap: 4px;
   /* Подпись под зоной грипа уходит в прозрачность на этой длине, как лента шагов гайда. */
+  /* Часть зоны грипа в своей колонке: зона целиком в свободных отступах двух колонок. */
+  --tsr-comp-head-grip-start: calc(var(--tsr-comp-resize-handler-width) / 2);
   --tsr-comp-head-grip-fade: 16px;
   --tsr-comp-cell-font-size: 0.8125rem;
   /* Метка ячейки, сохранение которой отклонено сервером (ADR 0041). */
@@ -901,15 +903,6 @@
      прячет затухание на стыках строк. */
   --tsr-comp-shadow-pinned-left: -4px 0 8px 8px var(--tsr-comp-shadow-color);
   --tsr-comp-shadow-pinned-right: 4px 0 8px 8px var(--tsr-comp-shadow-color);
-  /* Затемнение от черты грипа ширины влево — до кнопок, на подпись (ADR 0135). */
-  --tsr-comp-shadow-grip-color: color-mix(
-    in srgb,
-    var(--tsr-comp-shadow-color) 50%,
-    transparent
-  );
-  --tsr-comp-shadow-grip-width: calc(
-    var(--tsr-comp-resize-handler-width) / 2 + var(--tsr-comp-head-grip-gap)
-  );
   /* Тень облачка — плотностью приподнятой поверхности: тень строк (10 %) облачко не отделяет. */
   --tsr-comp-shadow-drag: 0 2px 6px 2px var(--tsr-sys-shadow-elevated);
   --tsr-comp-shadow-drop-bubble: 0 1px 2px 0 rgba(0, 0, 0, 0.08);
