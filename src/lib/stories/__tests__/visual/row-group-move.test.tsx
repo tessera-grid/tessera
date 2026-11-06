@@ -83,7 +83,7 @@ const Grid = ({
     ] as never,
   })
   return (
-    <div style={{ width: 720, height: 460 }}>
+    <div style={{ width: 400, height: 460 }}>
       <DataGrid table={table as never} colorMode={colorMode} />
     </div>
   )
@@ -252,7 +252,7 @@ describe('перенос между клиентскими группами (ADR
     await expect.poll(() => menuItem('moveToGroup')).not.toBeNull()
     menuItem('moveToGroup')!.focus()
     await userEvent.keyboard('{ArrowRight}')
-    await expect.poll(() => menuItem(DE)).not.toBeNull()
+    await expect.poll(() => document.activeElement === menuItem(DE)).toBe(true)
     await userEvent.keyboard('{ArrowLeft}')
     await expect.poll(() => menuItem('moveToGroup')).not.toBeNull()
     await userEvent.keyboard('{ArrowRight}')

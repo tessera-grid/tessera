@@ -19,7 +19,7 @@ import {
   rowActions,
   rowExpanding,
 } from '../../../plugins'
-import { failureShownOn, humanClick, pendingArcOf } from '../helpers'
+import { failureShownOn, humanClick, pendingArcOf, tabInto } from '../helpers'
 import { tableLabels } from '../labels'
 import { backgroundOf, contrast, inBothThemes, toRgba } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
@@ -310,8 +310,7 @@ describe('Отмена длительных операций (ADR 0153)', () => 
 
       // Фокус с клавиатуры без наведения — тоже «стоп».
       await parkPointer()
-      await userEvent.keyboard('{Shift}')
-      carrier.button().focus()
+      await tabInto(carrier.button())
       await expect
         .poll(() => stopShown(carrier.button()), { message: carrier.name })
         .toBe(true)

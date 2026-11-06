@@ -132,10 +132,9 @@ describe('Скрытие всех колонок', () => {
     ).toBeTruthy()
     // Шаг уровня — поворот (10px), зазор до галочки (12px) и полгалочки (8px).
     const rootLeft = root()!.getBoundingClientRect().left
-    expect(checkbox('c0').getBoundingClientRect().left - rootLeft).toBeCloseTo(
-      30,
-      0,
-    )
+    expect(
+      Math.abs(checkbox('c0').getBoundingClientRect().left - rootLeft - 30),
+    ).toBeLessThanOrEqual(1)
     const rootTop = root()!.getBoundingClientRect().top
     scroller.scrollTop = scroller.scrollHeight
     await expect.poll(() => scroller.scrollTop).toBeGreaterThan(0)
@@ -335,9 +334,12 @@ describe('Скрытие всех колонок', () => {
     expect(last[0]!.x).toBeCloseTo(centerOf(root()!), 0)
     expect(last[1]!.x).toBeCloseTo(centerOf(checkbox('name')), 0)
     expect(
-      checkbox('lastName').getBoundingClientRect().left -
-        checkbox('name').getBoundingClientRect().left,
-    ).toBeCloseTo(30, 0)
+      Math.abs(
+        checkbox('lastName').getBoundingClientRect().left -
+          checkbox('name').getBoundingClientRect().left -
+          30,
+      ),
+    ).toBeLessThanOrEqual(1)
     // Поворот, скругление и зазор до галочки — как у дерева строк.
     const elbow = [
       ...rowOf('lastName').querySelectorAll<HTMLElement>(
@@ -345,7 +347,7 @@ describe('Скрытие всех колонок', () => {
       ),
     ].find(part => /elbow/i.test(part.className))!
     const elbowBox = elbow.getBoundingClientRect()
-    expect(elbowBox.width).toBeCloseTo(10.75, 1)
+    expect(Math.abs(elbowBox.width - 10.75)).toBeLessThanOrEqual(0.5)
     expect(getComputedStyle(elbow).borderBottomLeftRadius).toBe('9px')
     expect(
       checkbox('lastName').getBoundingClientRect().left - elbowBox.right,

@@ -977,6 +977,9 @@ export const GuideStory = ({
       document.removeEventListener('focusin', onFocus, true)
       document.removeEventListener('mousemove', onRealMove, true)
       document.removeEventListener('pointerover', onRealOver, true)
+      // Идущий показ не доходит до таблицы, которая встала на это место (SN61).
+      epoch++
+      held = []
       showControl.current = undefined
       demo?.dispose()
     }

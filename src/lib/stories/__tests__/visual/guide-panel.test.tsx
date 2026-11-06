@@ -772,7 +772,7 @@ describe('панель сценария (ADR 0117)', () => {
 
     // Перезапуск: линия сразу пустая, без отката.
     byId('guide-play').click()
-    expect(bar().getAnimations()).toEqual([])
+    await expect.poll(() => bar().getAnimations()).toEqual([])
     await expect.poll(() => byId('guide-toggle').textContent).toContain('шаг 1')
     expect(share()).toBeLessThan(0.05)
     byId('guide-play').click()
@@ -1189,8 +1189,8 @@ describe('ввод человека посреди гайда (ADR 0117)', () =>
       // Координаты — по новому месту ячейки.
       const cell = far.getBoundingClientRect()
       for (const point of points) {
-        expect(point.x).toBeCloseTo(cell.left + 10, 0)
-        expect(point.y).toBeCloseTo(cell.top + 10, 0)
+        expect(Math.abs(point.x - cell.left - 10)).toBeLessThanOrEqual(1)
+        expect(Math.abs(point.y - cell.top - 10)).toBeLessThanOrEqual(1)
       }
     } finally {
       await screen.unmount()

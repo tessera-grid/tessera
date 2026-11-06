@@ -129,6 +129,8 @@ export const realSwipe: BrowserCommand<
       }),
     })
   }
+  // Палец замирает перед отпусканием: бросок по инерции погасил бы следующее нажатие.
+  await page.waitForTimeout(150)
   await session.send('Input.dispatchTouchEvent', {
     type: 'touchEnd',
     touchPoints: [],

@@ -1,4 +1,4 @@
-import { commands, userEvent } from 'vitest/browser'
+import { commands, server as browser, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 import { useState } from 'react'
@@ -111,7 +111,13 @@ const reactHandlers = (element: Element) => {
 }
 
 describe('канал вклада в тело (ADR 0170)', () => {
-  test('CH6: смена среза перерисовывает только ячейки и строки, чей вклад изменился, — по счётчикам работы', async () => {
+  test('CH6: смена среза перерисовывает только ячейки и строки, чей вклад изменился, — по счётчикам работы', async ({
+    skip,
+  }) => {
+    skip(
+      browser.browser !== 'chromium',
+      'счётчики работы — трейс CDP, только Chromium',
+    )
     await render(<Grid />)
     await waitForGrid()
     const grid = document.querySelector('[role="grid"]')!

@@ -11,7 +11,7 @@ import {
   columnSorting,
   headerActionMenu,
 } from '../../../plugins'
-import { humanClick } from '../helpers'
+import { humanClick, tabInto } from '../helpers'
 import { waitForGrid } from './core-helpers'
 
 // Включённые действия уходят в кебаб последними (ADR 0156; KA3, KA5, KA6): отметка на
@@ -143,13 +143,15 @@ describe('Включённые действия уходят в кебаб по�
     // Клавиатура: после выбора фокус на кебабе — ряд ждёт, пока фокус не уйдёт.
     api.setSorting([])
     await expect.poll(row).toEqual(['pin', 'menu'])
-    kebab()!.focus()
+    await tabInto(kebab()!)
     await userEvent.keyboard('{Enter}')
     await expect.poll(ascItem).not.toBeNull()
     await expect
       .poll(() => document.activeElement?.closest('[role="menu"]'))
       .toBeTruthy()
-    ascItem()!.focus()
+    for (let i = 0; i < 10 && document.activeElement !== ascItem(); i++) {
+      await userEvent.keyboard('{ArrowDown}')
+    }
     await userEvent.keyboard('{Enter}')
     await expect.poll(sorted).toBe('ascending')
     await expect.poll(() => document.querySelector('[role="menu"]')).toBeNull()

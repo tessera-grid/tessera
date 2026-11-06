@@ -695,7 +695,7 @@ export const BusyObjectIgnored: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await until(() => expect(waved(canvas, 'name')).toBe(true))
       expect(waved(canvas, 'priority')).toBe(false)
-      expect(textIn(canvas, 'name')).toBe(RENAMED)
+      await until(() => expect(textIn(canvas, 'name')).toBe(RENAMED))
     })
     await step(BUSY_STEPS[2]!.title, async () => {
       await guideNext(canvas)
@@ -716,7 +716,7 @@ export const BusyObjectIgnored: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await until(() => expect(waved(canvas, 'priority')).toBe(true))
       expect(waved(canvas, 'name')).toBe(true)
-      expect(textIn(canvas, 'name')).toBe(RENAMED)
+      await until(() => expect(textIn(canvas, 'name')).toBe(RENAMED))
     })
     await step(BUSY_STEPS[4]!.title, async () => {
       await guideNext(canvas)
@@ -945,7 +945,7 @@ export const CellSaveCancelMenu: StoryObj<StoryProps> = {
     await step(CANCEL_STEPS[1]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(waved(canvas, 'name')).toBe(true))
-      expect(textIn(canvas, 'name')).toBe(RENAMED)
+      await until(() => expect(textIn(canvas, 'name')).toBe(RENAMED))
     })
     await step(CANCEL_STEPS[2]!.title, async () => {
       await guideNext(canvas)

@@ -444,11 +444,14 @@ describe('Фильтрация — тулбар и нижняя панель', (
     expect(style.borderTopWidth).toBe('0px')
     const after = item.getBoundingClientRect()
     const removeAfter = remove.getBoundingClientRect()
-    expect([after.top, after.height]).toEqual([before.top, before.height])
-    expect([removeAfter.top, removeAfter.left]).toEqual([
-      removeBefore.top,
-      removeBefore.left,
-    ])
+    // WebKit округляет блок под фокусом до пикселя: сдвига раскладки это не значит.
+    const near = (a: number, b: number) => Math.abs(a - b) <= 1
+    expect(near(after.top, before.top)).toBe(true)
+    expect(near(after.height, before.height)).toBe(true)
+    expect([
+      near(removeAfter.top, removeBefore.top),
+      near(removeAfter.left, removeBefore.left),
+    ]).toEqual([true, true])
 
     await userEvent.hover(remove)
     await expect

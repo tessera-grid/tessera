@@ -1,5 +1,5 @@
 import axe from 'axe-core'
-import { commands, userEvent } from 'vitest/browser'
+import { commands, server as browser, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { afterEach, describe, expect, test } from 'vitest'
 
@@ -685,11 +685,14 @@ describe('Волна ожидания на цели', () => {
     expect(ring.borderTopStyle).toBe('dotted')
     expect(ring.borderTopColor).toBe(sys('Highlight'))
     // Текст ячейки по-прежнему под режимом: цвета системные.
-    expect(
-      getComputedStyle(
-        cell.querySelector('.data-grid__cell-wrapper-content') ?? cell,
-      ).forcedColorAdjust,
-    ).toBe('auto')
+    // WebKit свойство не знает: forced-colors в нём нет (ADR 0087).
+    if (browser.browser !== 'webkit') {
+      expect(
+        getComputedStyle(
+          cell.querySelector('.data-grid__cell-wrapper-content') ?? cell,
+        ).forcedColorAdjust,
+      ).toBe('auto')
+    }
     expect(getComputedStyle(cellEl('r4', 'ink')!, '::before').content).toBe(
       'none',
     )

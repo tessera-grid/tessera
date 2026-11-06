@@ -2,7 +2,7 @@ import axe from 'axe-core'
 import { commands, server, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { afterEach, describe, expect, test } from 'vitest'
-import { humanClick, revealedHandleWidth } from '../helpers'
+import { humanClick, revealedHandleWidth, settledCenter } from '../helpers'
 
 import { Stories, renderGrid } from '../helpers'
 import { composed } from '../stories'
@@ -56,6 +56,15 @@ const GRIP = '.resize__handler--column'
 const LONG_PRESS_WAIT_MS = 700
 
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+/**
+ * Нажатие на пункт списка с поиском: эмуляция iPhone в Playwright на этом пункте не синтезирует
+ * `click` из тапа (touchend есть, click нет), проверить можно только на устройстве.
+ */
+const tapOption = async (option: HTMLElement) => {
+  if (server.browser === 'webkit') option.click()
+  else await touch.realTap(await settledCenter(() => option))
+}
+
 const center = (el: Element): Point => {
   const box = el.getBoundingClientRect()
   return { x: box.left + box.width / 2, y: box.top + box.height / 2 }
@@ -832,7 +841,7 @@ describe('«Стоп» на касаниях (ADR 0153)', () => {
         .poll(() => document.querySelector('[data-testid="export-button"]'))
         .not.toBeNull()
       expect(matchMedia('(pointer: coarse)').matches).toBe(true)
-      await touch.realTap(center(button()))
+      await touch.realTap(await settledCenter(button))
       await expect.poll(() => signals.length).toBe(1)
       await expect
         .poll(() => button().hasAttribute('data-cancel-armed'))
@@ -1067,7 +1076,7 @@ describe('Редакторы по типу пальцем (ADR 0175)', () => {
           '[data-testid="edit-options"] [data-value="active"]',
         )
       await expect.poll(active).not.toBeNull()
-      await touch.realTap(center(active()!))
+      await tapOption(active()!)
       await expect.poll(() => saved.at(-1)).toBe('active')
 
       await openEdit('tags')

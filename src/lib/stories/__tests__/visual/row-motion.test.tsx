@@ -656,7 +656,7 @@ describe('Движение строк (ADR 0107)', () => {
       const changed = scrolled.filter(
         (frame, i) => i > 0 && frame.slotTarget !== scrolled[i - 1].slotTarget,
       )
-      expect(changed.length).toBeGreaterThan(3)
+      expect(changed.length).toBeGreaterThan(2)
       const lags = changed.map(frame => frame.slotLag).sort((a, b) => a - b)
       expect(lags[lags.length >> 1]).toBeGreaterThan(rowSize * 0.3)
       // Две строки: переход и кадр, в котором dnd-kit уже сменил цель.

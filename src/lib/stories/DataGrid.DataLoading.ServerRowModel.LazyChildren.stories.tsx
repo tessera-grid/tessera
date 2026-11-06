@@ -198,11 +198,15 @@ export const ServerRowModelLazyChildren: StoryObj<StoryProps> = {
       await expect(rows[parent + 1 + TREE_CHILDREN]?.dataset.rowId).toBe(
         'item-id-2',
       )
-      await expect(
-        canvas.querySelector('[role="status"][aria-live]')?.textContent?.trim(),
-      ).toBe(
-        rowExpandingLabels(storyLabels(args.locale)).announceChildrenLoaded(
-          TREE_CHILDREN,
+      await until(() =>
+        expect(
+          canvas
+            .querySelector('[role="status"][aria-live]')
+            ?.textContent?.trim(),
+        ).toBe(
+          rowExpandingLabels(storyLabels(args.locale)).announceChildrenLoaded(
+            TREE_CHILDREN,
+          ),
         ),
       )
       await settle()

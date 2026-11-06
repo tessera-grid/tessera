@@ -824,7 +824,7 @@ export const ManualSaveCells: StoryObj<StoryProps> = {
       await until(() => expect(panelCount(canvas)).toBe(0))
       for (const [row, value] of MANUAL_EDITS) {
         expect(draftMarked(canvas, row)).toBe(false)
-        expect(ageText(canvas, row)).toBe(value)
+        await until(() => expect(ageText(canvas, row)).toBe(value))
       }
       await settle()
     })
@@ -895,7 +895,9 @@ export const ManualSavePartialRefusal: StoryObj<StoryProps> = {
       await until(() => expect(failed(canvas, REFUSED_ROW)).toBe(true))
       expect(ageText(canvas, REFUSED_ROW)).toBe(PARTIAL_EDITS[1]![1])
       expect(draftMarked(canvas, 'item-id-1')).toBe(false)
-      expect(ageText(canvas, 'item-id-1')).toBe(PARTIAL_EDITS[0]![1])
+      await until(() =>
+        expect(ageText(canvas, 'item-id-1')).toBe(PARTIAL_EDITS[0]![1]),
+      )
       expect(panelCount(canvas)).toBe(1)
       await settle()
     })

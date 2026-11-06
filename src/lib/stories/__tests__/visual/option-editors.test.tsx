@@ -337,7 +337,7 @@ describe('редакторы вариантов (ADR 0175)', () => {
     // Набор сужает варианты, Enter выбирает подсвеченный.
     await openEdit('status')
     await expect.poll(field).not.toBeNull()
-    expect(document.activeElement).toBe(field())
+    await expect.poll(() => document.activeElement === field()).toBe(true)
     await expect.poll(() => itemOf('active')).not.toBeNull()
     await userEvent.type(field()!, 'arch')
     await expect.poll(() => itemOf('active')).toBeNull()

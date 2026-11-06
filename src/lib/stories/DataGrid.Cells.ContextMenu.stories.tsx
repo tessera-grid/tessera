@@ -351,7 +351,9 @@ const ASYNC_ITEMS: readonly GuideStoryStep[] = [
         root =>
           still(at(root, ASYNC_TARGET)) &&
           menuAt(at(root, ASYNC_TARGET)) &&
-          !!recalculate(),
+          !!recalculate() &&
+          // Проверка доступности пунктов кончилась: вид меню больше не изменится.
+          !openMenu()?.querySelector('[data-pending]'),
         root => openAt(at(root, ASYNC_TARGET)),
       )(root, undefined)
     },

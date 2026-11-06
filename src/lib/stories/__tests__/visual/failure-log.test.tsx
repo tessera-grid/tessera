@@ -455,8 +455,12 @@ describe('Журнал отказов (ADR 0177)', () => {
       await inBothThemes(async () => {
         const result = await axe.run(log()!, AXE_OPTIONS)
         expect(result.violations.map(v => v.id)).toEqual([])
+        // Стражи фокуса Base UI скрыты и фокусируемы намеренно: WebKit у axe их находит.
         const toolbar = await axe.run(
-          document.querySelector('[role="toolbar"]')!,
+          {
+            include: [['[role="toolbar"]']],
+            exclude: [['[data-base-ui-focus-guard]']],
+          },
           AXE_OPTIONS,
         )
         expect(toolbar.violations.map(v => v.id)).toEqual([])

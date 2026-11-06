@@ -100,10 +100,11 @@ export const CoreStateHoveredRow: StoryObj<StoryProps> = {
           `.data-grid__body-row[data-row-id="${row}"] .row__button--hidden > button`,
         )!,
       ).color
-    await waitFor(() =>
-      expect(chipColor('item-id-2')).not.toBe('rgba(0, 0, 0, 0)'),
-    )
-    expect(chipColor('item-id-3')).toBe('rgba(0, 0, 0, 0)')
+    await waitFor(() => {
+      expect(chipColor('item-id-2')).not.toBe('rgba(0, 0, 0, 0)')
+      // Указатель мог стоять над этой строкой, пока щелчок не увёл его к флажку.
+      expect(chipColor('item-id-3')).toBe('rgba(0, 0, 0, 0)')
+    })
   },
 }
 

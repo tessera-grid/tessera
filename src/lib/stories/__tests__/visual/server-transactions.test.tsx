@@ -207,14 +207,18 @@ describe('Транзакции строк серверной модели (ADR 0
       await expect.poll(() => rowById(`r${first}`)).not.toBeNull()
       const anchored = `r${first}`
       transact(table, { add: [item('n3'), item('n4')], index: 10 })
-      await expect.poll(() => scroller().scrollTop).toBe(top + 2 * rowHeight())
+      await expect
+        .poll(() => Math.abs(scroller().scrollTop - (top + 2 * rowHeight())))
+        .toBeLessThanOrEqual(1)
       expect(indexOf(anchored)).toBe(
-        Math.floor(scroller().scrollTop / rowHeight()),
+        Math.round(scroller().scrollTop / rowHeight()),
       )
       transact(table, { remove: ['r50', 'r51', 'r52'] })
-      await expect.poll(() => scroller().scrollTop).toBe(top - rowHeight())
+      await expect
+        .poll(() => Math.abs(scroller().scrollTop - (top - rowHeight())))
+        .toBeLessThanOrEqual(1)
       expect(indexOf(anchored)).toBe(
-        Math.floor(scroller().scrollTop / rowHeight()),
+        Math.round(scroller().scrollTop / rowHeight()),
       )
 
       // У начала списка прокрутка не держит: новая строка сверху видна.

@@ -692,6 +692,8 @@ describe('Клавиатурная навигация — опция ядра (A
     await render(<ToggledNavigation />)
     await expect.poll(() => gridRoot()?.getAttribute('role')).toBe('table')
     const root = gridRoot()
+    // StrictMode на React 18 создаёт таблицу на монтировании дважды: важно, что дальше новых нет.
+    const created = navToggle.stores.size
     expect(document.querySelectorAll(NAV_CELL)).toHaveLength(0)
 
     navToggle.set!(true)
@@ -711,6 +713,6 @@ describe('Клавиатурная навигация — опция ядра (A
     expect(document.querySelector('[data-kn-active]')).toBeNull()
     await press('{ArrowDown}')
     expect(document.querySelector('[data-kn-active]')).toBeNull()
-    expect(navToggle.stores.size).toBe(1)
+    expect(navToggle.stores.size).toBe(created)
   })
 })

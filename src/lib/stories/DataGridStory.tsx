@@ -562,7 +562,7 @@ const StoryGrid = memo(
             Панель приложения · {appPanelHeight}px
           </div>
         )}
-        <StoryRowsContext value={writeCell}>
+        <StoryRowsContext.Provider value={writeCell}>
           <DataGrid
             className={gridClassName}
             table={table as never}
@@ -574,7 +574,7 @@ const StoryGrid = memo(
             icons={icons}
             stubs={stubs}
           />
-        </StoryRowsContext>
+        </StoryRowsContext.Provider>
       </>
     )
 

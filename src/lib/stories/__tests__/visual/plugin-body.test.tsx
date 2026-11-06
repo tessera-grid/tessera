@@ -5,7 +5,7 @@
  */
 import axe from 'axe-core'
 import { useState } from 'react'
-import { userEvent } from 'vitest/browser'
+import { server as browser, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { afterEach, describe, expect, test } from 'vitest'
 
@@ -70,7 +70,13 @@ const cellOf = (rowId: string, columnId: string) =>
   )!
 
 describe('Канал вклада в тело для авторов (ADR 0173)', () => {
-  test('BC2: вклад автора идёт тем же путём, что встроенных: одна подписка на ячейку, перерисовываются только ячейки, чей выбор изменился, — по счётчикам работы; события — делегированием от корня', async () => {
+  test('BC2: вклад автора идёт тем же путём, что встроенных: одна подписка на ячейку, перерисовываются только ячейки, чей выбор изменился, — по счётчикам работы; события — делегированием от корня', async ({
+    skip,
+  }) => {
+    skip(
+      browser.browser !== 'chromium',
+      'счётчики работы — трейс CDP, только Chromium',
+    )
     const seen: { target: PluginBodyEventTarget; currentTarget: unknown }[] = []
     const watcher = definePlugin<{ enabled?: boolean }>()({
       id: 'watcher',

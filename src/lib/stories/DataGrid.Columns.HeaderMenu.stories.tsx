@@ -559,7 +559,8 @@ export const HeaderMenuNarrowActive: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await until(() => expect(marked(sortButton(canvas))).toBe(true))
       await expect(pinButton(canvas)).toBeNull()
-      await expect(marked(kebab())).toBe(false)
+      // Отметка уходит с кнопки меню переходом.
+      await until(() => expect(marked(kebab())).toBe(false))
       await settle()
     })
     await step(NARROW[2]!.title, async () => {

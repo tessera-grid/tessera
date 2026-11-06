@@ -777,14 +777,29 @@ const RESTORED = (() => {
   return server
 })()
 
+/** Кнопка раскрытия вышла из ожидания: цвет занятой кнопки и дуга угасли. */
+const toggleSettled = (root: HTMLElement, id: string) => {
+  const toggle = rowOf(root, id)?.querySelector('.row-expand-button')
+  return (
+    !!toggle &&
+    toggle.getAttribute('aria-busy') !== 'true' &&
+    !toggle.hasAttribute('data-pending-leaving') &&
+    toggle.getAnimations().length === 0
+  )
+}
 const restoredChildren = (root: HTMLElement) =>
   rowsInOrder(root).some(row =>
     row.dataset.rowId?.startsWith(`${RESTORED.first}-`),
-  )
+  ) && toggleSettled(root, RESTORED.first)
 /** Отказ — строка свернулась и больше не ждёт. */
 const restoredRefused = (root: HTMLElement) => {
   const row = rowOf(root, RESTORED.failed)
-  return !!row && !isPending(row) && !isExpanded(row)
+  return (
+    !!row &&
+    !isPending(row) &&
+    !isExpanded(row) &&
+    toggleSettled(root, RESTORED.failed)
+  )
 }
 
 const LAZY_RESTORED: readonly GuideStoryStep[] = [

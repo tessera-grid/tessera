@@ -340,6 +340,8 @@ describe('консоль историй (ADR 0124)', () => {
     const log = createConsoleLog()
     await mountHost(log)
     toggle().click()
+    // Скрытая кнопка заголовка шириной ноль, пока указатель не на заголовке.
+    await userEvent.hover(sortButton().closest('.data-grid__head-cell')!)
     await userEvent.hover(sortButton())
     await humanClick(sortButton())
     const actionRows = () => [

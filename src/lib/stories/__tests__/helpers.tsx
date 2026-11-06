@@ -2,6 +2,7 @@ import type { ComponentProps } from 'react'
 
 import { commands } from '@vitest/browser/context'
 import { userEvent } from 'vitest/browser'
+import { expect } from 'vitest'
 import { cleanup, render } from 'vitest-browser-react'
 
 import { composed } from './stories'
@@ -21,6 +22,35 @@ export const HUMAN_PRESS_MS = 100
  */
 export const humanClick = (element: Element) =>
   userEvent.click(element, { delay: HUMAN_PRESS_MS })
+
+/**
+ * Фокус настоящим Tab: Firefox и WebKit не дают `:focus-visible` фокусу из скрипта после
+ * мыши. Опорная кнопка перед целью живёт только на время нажатия.
+ */
+export const tabInto = async (target: HTMLElement) => {
+  const anchor = document.createElement('button')
+  anchor.style.cssText = 'position:fixed;top:0;left:0;opacity:0'
+  target.before(anchor)
+  anchor.focus()
+  await userEvent.keyboard('{Tab}')
+  anchor.remove()
+}
+
+/** Точка в центре элемента, когда он перестал двигаться: поповер ещё едет, тулбар догружается. */
+export const settledCenter = async (element: () => HTMLElement) => {
+  let previous = ''
+  await expect
+    .poll(() => {
+      const box = element().getBoundingClientRect()
+      const now = `${box.left},${box.top},${box.width},${box.height}`
+      const same = now === previous
+      previous = now
+      return same
+    })
+    .toBe(true)
+  const box = element().getBoundingClientRect()
+  return { x: box.left + box.width / 2, y: box.top + box.height / 2 }
+}
 
 /**
  * Дуга ожидания и отказа кнопки кита (ADR 0127): слой SVG последним ребёнком кнопки,
