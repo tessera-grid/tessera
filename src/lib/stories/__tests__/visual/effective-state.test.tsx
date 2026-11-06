@@ -1,5 +1,4 @@
 import { useLayoutEffect, useState } from 'react'
-import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
@@ -57,11 +56,8 @@ describe('эффективное состояние (ADR 0171)', () => {
     }
     await render(<Grid />)
     await waitForGrid()
-    expect(rowOf('p')!.getAttribute('data-expanded')).toBe('false')
-    expect(rowOf('c')).toBeNull()
 
-    // Нажатие на шеврон грузит детей; данные приложения прежние.
-    await userEvent.click(rowOf('p')!.querySelector('.row-expand-button')!)
+    // Строка в срезе сама грузит детей (ADR 0054, §5); данные приложения прежние.
     await expect.poll(() => rowOf('c')).not.toBeNull()
     expect(rowOf('p')!.getAttribute('data-expanded')).toBe('true')
     expect('refreshNarrowing' in options).toBe(false)

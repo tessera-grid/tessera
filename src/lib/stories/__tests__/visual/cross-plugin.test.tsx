@@ -474,7 +474,7 @@ describe('Cross-plugin — columnDragging × columnSorting', () => {
 })
 
 describe('Cross-plugin — rowSelection × rowGrouping', () => {
-  test('X6: row selection is inert only under ACTIVE grouping, not when the plugin is merely enabled', async () => {
+  test('X6: row selection works with the grouping plugin enabled, under active grouping and after ungrouping', async () => {
     const { container } = await render(
       <composed.RowGroupingPlayground
         {...plainGroupingArgs}
@@ -499,12 +499,14 @@ describe('Cross-plugin — rowSelection × rowGrouping', () => {
     )
     await expect.poll(() => groupRows(container).length).toBeGreaterThan(1)
 
-    // Under ACTIVE grouping selection is inert — owned by rowGrouping, since the
-    // aggregated row model is derived and temporary (synthetic group ids). No
-    // checkbox renders anywhere: neither per-row nor the header select-all.
-    await expect.poll(() => container.querySelectorAll(CHECKBOX).length).toBe(0)
+    // Under ACTIVE grouping selection stays (ADR 0185): the header select-all and
+    // the checkboxes of group rows are present.
+    expect(headCheckbox(container)).not.toBeNull()
+    await expect
+      .poll(() => container.querySelectorAll(`${BODY_ROW} ${CHECKBOX}`).length)
+      .toBeGreaterThan(0)
 
-    // Ungroup → selection returns (the plugin presence never disabled it).
+    // Ungroup → selection is still there.
     await userEvent.click(
       await revealControl(headCellById(container, 'gender'), GROUP_BUTTON),
     )
