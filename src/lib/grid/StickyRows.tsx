@@ -34,6 +34,11 @@ interface StickyTable {
 
 /** Глубже не бывает: стопка ограничена, даже если дерево глубже. */
 const MAX_LEVELS = 10
+/**
+ * Запас на шаг прокрутки, px: Firefox при дробном масштабе округляет позицию вниз, и строка,
+ * вставшая к краю, иначе считалась бы ещё не дошедшей до него.
+ */
+const SCROLL_SNAP = 1.5
 const NONE: readonly StickyRow[] = []
 
 /** Липкие строки групп или веток — факт ядра от плагинов (ADR 0170, §2). */
@@ -103,7 +108,7 @@ export const stickyStack = (
   const stack: StickyRow[] = []
   for (let level = 0; level < MAX_LEVELS; level++) {
     const y = offset + level * rowHeight
-    const index = indexAt(y)
+    const index = indexAt(y + SCROLL_SNAP)
     const row = index < 0 ? undefined : source.at(index)
     if (!row) break
     const chain = ancestorsOf(row)
