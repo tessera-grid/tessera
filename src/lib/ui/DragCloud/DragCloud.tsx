@@ -33,6 +33,7 @@ export const DragCloud = forwardRef<HTMLDivElement, DragCloudProps>(
     const cloud = (
       <div
         className={clsx(styles.cloud, cloudClassName)}
+        data-drag-cloud=""
         data-invalid={invalid || undefined}
       >
         {children}
@@ -44,6 +45,7 @@ export const DragCloud = forwardRef<HTMLDivElement, DragCloudProps>(
           {...rest}
           ref={ref}
           className={clsx(styles.cloud, className, cloudClassName)}
+          data-drag-cloud=""
           data-invalid={invalid || undefined}
         >
           {children}

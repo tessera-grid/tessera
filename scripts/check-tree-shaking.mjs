@@ -142,6 +142,9 @@ const FLAG_MECHANICS = [
   ['выделения ячеек', /cellSelection|clipboard/i],
   ['контекстного меню', /contextMenu/i],
   ['линий дерева', /treeLines|treeBranches/i],
+  // PK11: список вариантов и календарь кита — только у плагинов (ADR 0183).
+  ['списка вариантов кита', /\/ui\/Checklist\//],
+  ['календаря кита', /\/ui\/Calendar\//],
 ]
 for (const id of grid.modules) {
   const path = id.split('\\').join('/')

@@ -934,6 +934,11 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       меню, плавное проявление, клавиатура), перф PS8 — в `scroll` (средний интервал кадра
       со всеми плагинами против без них, `frameMs` у `measureScrollWork`)
       ([ADR 0149](docs/decisions/0149-plugin-cost-on-scroll.md)).
+    - _Кит поповеров:_ `popup-kit` (PK2–PK6, PK12–PK16, PK18–PK21, PK27–PK30 — блоки поповера и
+      контролы по историям `Tessera/UI/*`, потребители по исходникам; PP11–PP13 ADR 0017 — раскладка
+      панели), модульный `popupKit` (PK1, PK7 — поверхность только `PopupSurface`, календарь без
+      ядра и только в ленивых модулях), PK11 — `check:tree-shaking`, перф PK10 — в `interaction`
+      ([ADR 0183](docs/decisions/0183-popup-kit.md)).
     - _Заполнитель поля:_ `field-placeholder` (PK26 — токен и порог текста, CX21 — аудит матрицы считает
       заполнитель) ([ADR 0183](docs/decisions/0183-popup-kit.md), [ADR 0089](docs/decisions/0089-contrast-matrix.md)).
     - _Кроссбраузерность:_ модульные `browserTargets` (CB1–CB2 — порог `browserslist` и

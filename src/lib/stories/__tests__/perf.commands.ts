@@ -250,6 +250,7 @@ export interface PerfRecord {
     | 'disabled'
     | 'infiniteScroll'
     | 'serverRowModel'
+    | 'headerActionMenu'
     | 'serverRowModel, rowExpanding'
     | 'serverRowModel, rowGrouping, rowExpanding'
     | 'rowGrouping, rowExpanding, rowSelection'

@@ -45,7 +45,11 @@ import {
   TBT_TARGET_MS,
 } from '../perf.constants'
 import { againstBase, ceilingOver, medianRun } from './baseline'
-import type { MenuAction, RowAction } from '../../../core/headerActions'
+import type {
+  HeaderAction,
+  MenuAction,
+  RowAction,
+} from '../../../core/headerActions'
 import { createTesseraSortedRowModel } from '../../../plugins/columnSortingModel/sortedRowModel'
 import { getTreeAria } from '../../../grid/treeAria'
 import { createLazyCoreRowModel } from '../../../plugins/rowExpanding/lazyCoreRowModel'
@@ -2753,6 +2757,111 @@ describe('Отзывчивость — длинные подписи меню', 
       ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 4,
+  )
+})
+
+// Кит поповеров (ADR 0183, PK10): меню колонки с 20 пунктами и «Колонки» на 1000 колонок. Предел —
+// 10 % к ревизии до кита: сверяет `npm run perf:compare -- <ref> --cases PK10`, здесь — запись и цель.
+describe('Отзывчивость — кит поповеров', () => {
+  test(
+    'PK10: открытие меню колонки с 20 пунктами и «Колонок» на 1000 колонок укладывается в цель',
+    async () => {
+      const actions: HeaderAction[] = Array.from({ length: 20 }, (_, i) => ({
+        id: `kitAction${i}`,
+        slot: 'rightHeaderSlot',
+        order: i,
+        icon: () => null,
+        label: () => `Action ${i}`,
+        onSelect: () => {},
+      }))
+      const measureMenu = async () => {
+        const screen = renderGrid({
+          ...SMALL,
+          enableHeaderActionMenu: true,
+          headerActionMenuMode: 'always',
+          extraPlugins: [{ id: 'kitActions', slotActions: actions }],
+        } as Parameters<typeof renderGrid>[0])
+        await waitForGrid()
+        const kebab = () =>
+          document.querySelector<HTMLElement>(
+            `[aria-label^="${tableLabels.headerMenu}"]`,
+          )
+        const open = () =>
+          document.querySelectorAll('[role="menuitem"]').length >= 20
+        await expect.poll(kebab).not.toBeNull()
+        const result = await measureInteractionWork(
+          async () => kebab()!.click(),
+          {
+            afterWarmup: async () => {
+              expect(open()).toBe(true)
+              ;(document.activeElement as HTMLElement | null)?.dispatchEvent(
+                new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+              )
+              await expect.poll(open).toBe(false)
+            },
+          },
+        )
+        expect(open()).toBe(true)
+        ;(await screen).unmount()
+        return result
+      }
+      const measureColumns = async () => {
+        const screen = renderGrid({
+          ...LARGE,
+          ...ALL_PLUGINS,
+          ...COLUMN_VISIBILITY,
+        })
+        await waitForColumnsButton()
+        const result = await measureInteractionWork(
+          async () => columnsButton()!.click(),
+          {
+            afterWarmup: async () => {
+              expect(isColumnsMenuOpen()).toBe(true)
+              columnsButton()!.click()
+              await expect.poll(columnsMenu).toBeNull()
+            },
+          },
+        )
+        expect(isColumnsMenuOpen()).toBe(true)
+        ;(await screen).unmount()
+        return result
+      }
+      for (const [id, label, size, plugins, result] of [
+        [
+          'PK10',
+          'меню колонки с 20 пунктами на компонентах кита',
+          '30×500',
+          'headerActionMenu',
+          await measureMenu(),
+        ],
+        [
+          'PK10-columns',
+          '«Колонки» на 1000 колонок на компонентах кита',
+          '1000×1000',
+          'all',
+          await measureColumns(),
+        ],
+      ] as const) {
+        await recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size,
+          plugins,
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: result.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ...result,
+            },
+          ],
+        })
+      }
+    },
+    PERF_TIMEOUT * 2,
   )
 })
 
