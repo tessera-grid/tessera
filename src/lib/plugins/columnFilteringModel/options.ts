@@ -12,6 +12,7 @@ import {
   type OptionValue,
 } from '../../core/columnOptions'
 import { dataModeOf } from '../../core/dataMode'
+import { logWarn } from '../../util/logger'
 import { objectKeyOf, objectLabelOf } from '../../core/dataTypeFormat'
 import type { ResolvedDataType } from '../../core/dataTypes'
 import type { ColumnFilterType, OptionFilter } from './types'
@@ -155,7 +156,14 @@ export const filterOptionsOf = (
 ): ColumnOption[] => {
   if (column.columnDef.options) return column.columnDef.options
   const t = table as FacetTable
-  if (filtersOnServer(table)) return []
+  if (filtersOnServer(table)) {
+    logWarn(
+      table as never,
+      `columnFiltering: column "${column.id}" filters on the server without options: pass options or loadOptions`,
+      `columnFiltering:noOptions:${column.id}`,
+    )
+    return []
+  }
   const values = countValues(table, t.getPreFilteredRowModel().flatRows, column)
   return [...values.keys()]
     .map(value => ({

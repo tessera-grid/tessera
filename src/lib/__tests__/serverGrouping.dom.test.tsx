@@ -7,10 +7,12 @@
  */
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { RowSource } from '../core/rowSource'
 import { useCreateTable } from '../core/useCreateTable'
+import { serverAggregationsOf } from '../shared/serverAggregations'
+import { __resetLogger } from '../util/logger'
 import {
   dataExport,
   type ExportRequest,
@@ -116,6 +118,41 @@ afterEach(() => {
 
 describe('серверная группировка на таблице (ADR 0144)', () => {
   const warnings = captureInertWarnings()
+
+  it('GS15: функция, список или определение { aggregate } в aggregationFn дают dev-warn с id колонки', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    __resetLogger()
+    try {
+      const host = {
+        options: {},
+        getAllLeafColumns: () => [
+          { id: 'fn', columnDef: { aggregationFn: () => 1 } },
+          { id: 'list', columnDef: { aggregationFn: ['sum', 'mean'] } },
+          { id: 'def', columnDef: { aggregationFn: { aggregate: () => 1 } } },
+          { id: 'auto', columnDef: { aggregationFn: 'auto' } },
+          { id: 'plain', columnDef: {} },
+        ],
+      }
+      expect(serverAggregationsOf(host)).toEqual({})
+      const said = warn.mock.calls.flat().map(String).join(' ')
+      for (const id of ['fn', 'list', 'def']) expect(said).toContain(`"${id}"`)
+      expect(said).not.toContain('"auto"')
+      expect(said).not.toContain('"plain"')
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('GS16: своё строковое имя агрегата доходит до сервера в aggregations', () => {
+    expect(
+      serverAggregationsOf({
+        options: {},
+        getAllLeafColumns: () => [
+          { id: 'amount', columnDef: { aggregationFn: 'p95' } },
+        ],
+      }),
+    ).toEqual({ amount: 'p95' })
+  })
 
   it('GS1: запрос getRows несёт grouping, groupKeys и aggregations из явных строковых aggregationFn колонок — и без группировки; без группировки grouping и groupKeys пустые', async () => {
     act(() => root.render(<Grid plugins={[rowGrouping()]} />))

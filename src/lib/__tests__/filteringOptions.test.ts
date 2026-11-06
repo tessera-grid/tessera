@@ -5,9 +5,10 @@
  */
 import { constructTable } from '@tanstack/react-table'
 import { storeReactivityBindings } from '../../../node_modules/@tanstack/table-core/dist/store-reactivity-bindings.js'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { optionLabelOf, rememberOptionLabels } from '../core/columnOptions'
+import { __resetLogger } from '../util/logger'
 import { injectServiceColumns } from '../core/createColumns'
 import { resolveHooks } from '../core/createHooks'
 import { type DataMode, manualOptionsOf } from '../core/dataMode'
@@ -83,7 +84,11 @@ const COLUMNS = [
   { id: 'city', accessorKey: 'city', header: 'City', dataType: 'select' },
 ]
 
-const build = (plugins: any[] = [columnFiltering()], dataMode?: DataMode) => {
+const build = (
+  plugins: any[] = [columnFiltering()],
+  dataMode?: DataMode,
+  logLevel = 'error',
+) => {
   const entries = [
     {
       id: 'reactivity',
@@ -102,7 +107,7 @@ const build = (plugins: any[] = [columnFiltering()], dataMode?: DataMode) => {
     ...manualOptionsOf({ ...folded.options, dataMode }),
     hooks: resolveHooks(foldHooks(entries)),
     pluginDiagnostics: folded.pluginDiagnostics,
-    logLevel: 'error',
+    logLevel,
   } as never) as any
 }
 
@@ -116,6 +121,22 @@ const filtered = (columnId: string, filter: ColumnFilterValue) => {
 }
 
 describe('columnFiltering — варианты', () => {
+  it('SF28: фильтр варианта на сервере без options и loadOptions даёт dev-warn с id колонки', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    __resetLogger()
+    try {
+      const table = build([columnFiltering()], { filtering: 'server' }, 'warn')
+      filterOptionsOf(table, table.getColumn('status'))
+      expect(warn).not.toHaveBeenCalled()
+      expect(filterOptionsOf(table, table.getColumn('city'))).toEqual([])
+      const said = warn.mock.calls.flat().map(String).join(' ')
+      expect(said).toContain('"city"')
+      expect(said).toContain('loadOptions')
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
   it('SF2: без options варианты — уникальные значения колонки; значение вне options показано сырым; в серверном режиме варианты из данных не собираются', () => {
     const table = build()
     expect(filterOptionsOf(table, table.getColumn('city'))).toEqual([
