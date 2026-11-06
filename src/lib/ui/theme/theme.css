@@ -682,6 +682,8 @@
   /* Заголовок поповера со списком — мельче пунктов. */
   --tsr-comp-popup-title-font-size: 0.75rem;
   /* Вспомогательный текст рядом с основным: подсказка пункта, день недели, ошибка поля. */
+  /* Подпись-заполнитель пустого поля: текст, порог 4.5:1 (ADR 0183, PK26). */
+  --tsr-comp-field-placeholder-color: var(--tsr-comp-control-color);
   --tsr-comp-caption-font-size: 0.75rem;
   /* Он же в ячейке — строка не растёт. */
   --tsr-comp-caption-font-size-compact: 0.6875rem;

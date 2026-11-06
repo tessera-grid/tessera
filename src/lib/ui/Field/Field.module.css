@@ -15,6 +15,10 @@
   text-overflow: ellipsis;
 }
 
+.field::placeholder {
+  color: var(--tsr-comp-field-placeholder-color);
+}
+
 /* Свой крестик поля поиска: нативную кнопку очистки `type="search"` прячем. */
 .field::-webkit-search-cancel-button {
   appearance: none;

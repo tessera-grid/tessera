@@ -934,6 +934,8 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       меню, плавное проявление, клавиатура), перф PS8 — в `scroll` (средний интервал кадра
       со всеми плагинами против без них, `frameMs` у `measureScrollWork`)
       ([ADR 0149](docs/decisions/0149-plugin-cost-on-scroll.md)).
+    - _Заполнитель поля:_ `field-placeholder` (PK26 — токен и порог текста, CX21 — аудит матрицы считает
+      заполнитель) ([ADR 0183](docs/decisions/0183-popup-kit.md), [ADR 0089](docs/decisions/0089-contrast-matrix.md)).
     - _Кроссбраузерность:_ модульные `browserTargets` (CB1–CB2 — порог `browserslist` и
       цели сборки, проверка CSS), `engines` (CB3 — наборы и команды движков); `mobile`
       (CB4 — только `test:engines`, эмуляция iPhone и Pixel), `focus-modality` (CB5 —

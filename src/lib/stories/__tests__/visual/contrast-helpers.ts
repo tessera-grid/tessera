@@ -685,6 +685,15 @@ export const auditRoots = (
         const fg = toRgba(style(el).color)
         report('text', el, contrast(fg, textBg), cap(fg, textBg, need))
       }
+      // Заполнитель пустого поля — текст, но узла у него нет: цвет из псевдоэлемента (CX21).
+      if (!dimmed && el.matches(':placeholder-shown')) {
+        const fg = toRgba(getComputedStyle(el, '::placeholder').color)
+        const bg = background(el, 'text')
+        if (bg) {
+          const need = isLarge(el) ? (more ? 4.5 : 3) : more ? 7 : 4.5
+          report('placeholder', el, contrast(fg, bg), cap(fg, bg, need))
+        }
+      }
       // Иконка контрола — WCAG 1.4.11; декоративная графика (стрелка поповера) — нет.
       // Слой дуги ожидания и отказа — не иконка: его контраст — IR28–IR29 ADR 0127.
       if (
@@ -730,6 +739,8 @@ export const ALLOWED_INCOMPLETE: Record<string, string> = {
     'в стопке под текстом — прозрачный слой блика ячейки или грид под непрозрачным поповером; фон — у предков, его складывает effectiveBg, CX1–CX5',
   nonBmp:
     'узел из одних символов — стрелка «было → стало» в пульте: axe такой текст не считает, его считает аудит узлов, CX1–CX5',
+  emptyValue:
+    'пустое поле: текста нет, считать нечего; так axe отвечает, когда поле накрыто открытым списком и цветов ему не определить',
 }
 
 const reasonOf = (node: axe.NodeResult) => {
