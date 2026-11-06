@@ -270,6 +270,7 @@ describe('строки до сохранения (ADR 0178, §7)', () => {
     // Повтор — сервер принял строку и вернул её под id, который выдала таблица (ADR 0181).
     answer = { saved: [{ rowId: id, row: { id, name: 'Zed', age: 99 } }] }
     act(() => table.getDrafts().length && applyAllDrafts(table))
+    await act(() => new Promise(resolve => setTimeout(resolve)))
     expect(kinds()).not.toContain('rowInsert')
     act(() => root?.unmount())
 

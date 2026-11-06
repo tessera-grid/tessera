@@ -62,6 +62,8 @@ const mount = (element: ReturnType<typeof createElement>) => {
 }
 
 const flush = () => act(async () => {})
+/** Черновик сохранённой новой строки снимается задачей после ответа. */
+const afterTask = () => act(() => new Promise(resolve => setTimeout(resolve)))
 
 /** Ответ «сервера»: новая строка сохранена под id, который ей выдала таблица. */
 const keepId = (batch: CellEditBatch) => ({
@@ -218,7 +220,7 @@ describe('id новой строки задаёт таблица (ADR 0181)', ()
       const id = addRow()
       const at = table.getRowSource().indexOf(id)
       act(() => applyAllDrafts(table))
-      await flush()
+      await afterTask()
       if (early) expect(earlyFrame, 'ранний рендер').toBe(1)
       expect(rowsWith(id), String(early)).toHaveLength(1)
       expect(table.getRowSource().indexOf(id)).toBe(at)

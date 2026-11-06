@@ -946,6 +946,24 @@ const removeWhenCached = (table: unknown, ids: readonly string[]) => {
   const subscription = t.store.subscribe(check)
 }
 
+/**
+ * Черновик сохранённой новой строки клиентского режима снимается задачей после ответа: запись
+ * `data` приложением на React 18 идёт отдельным коммитом после снятия, и строка пропала бы на
+ * один коммит (ADR 0181, NI5). Пока оба есть, слой новую строку не рисует (NI2).
+ */
+const removeAfterAppData = (table: unknown, ids: readonly string[]) => {
+  if (ids.length === 0) return
+  setTimeout(() => {
+    removeDrafts(
+      table,
+      draft =>
+        draft.kind === ROW_INSERT_DRAFT &&
+        'row' in draft.target &&
+        ids.includes(draft.target.row),
+    )
+  })
+}
+
 const isServerRows = (table: unknown) =>
   typeof commonOptionsOf(table).getRowSource === 'function'
 
@@ -1094,6 +1112,7 @@ export const commitDrafts = (table: unknown, drafts: readonly Draft[]) => {
     const settledRows = new Set<string>()
     // Новые строки серверной модели с местом в кэше: черновик — до записи строки (ADR 0181, NI3).
     const cached: string[] = []
+    const handedOver: string[] = []
     const add: { row: unknown; index: number | undefined }[] = []
     const remove: string[] = []
     for (const draft of rowDrafts) {
@@ -1114,8 +1133,8 @@ export const commitDrafts = (table: unknown, drafts: readonly Draft[]) => {
       const id = (table as TransactionTable).getRowId?.(row, 0)
       if (savedRows.has(rowId) && id) accepted.push({ row: id })
       const kept = savedRows.has(rowId) && keepsRowId(table, rowId, row)
-      if (kept && isServerRows(table) && cacheIndex.get(rowId) !== undefined)
-        cached.push(rowId)
+      if (kept && !isServerRows(table)) handedOver.push(rowId)
+      else if (kept && cacheIndex.get(rowId) !== undefined) cached.push(rowId)
     }
     writeEditingState(table, { ...state, submitted })
     for (const [rowId, values] of rows) writeSavedRow(table, rowId, values)
@@ -1136,11 +1155,13 @@ export const commitDrafts = (table: unknown, drafts: readonly Draft[]) => {
         return (
           isRowDraft(draft) &&
           settledRows.has(target.row) &&
-          !cached.includes(target.row)
+          !cached.includes(target.row) &&
+          !handedOver.includes(target.row)
         )
       return 'cell' in target && remove.includes(target.cell[0])
     })
     removeWhenCached(table, cached)
+    removeAfterAppData(table, handedOver)
     flashOutcome(table, reverted, 'reverted')
     flashOutcome(table, accepted, 'accepted')
   }
