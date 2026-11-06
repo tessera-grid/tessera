@@ -5,7 +5,7 @@
  * до-расширение делаем сами.
  *
  * Хук корня плагина cellSelection (ADR 0170, §5): активен, только пока открыта
- * drag-сессия (`_isSelectingCells`). Расширение — публичным
+ * drag-сессия (`getIsSelectingCells`). Расширение — публичным
  * `selectCellRange` к ячейке под клампнутым в границы контейнера курсором: точно и
  * самокорректируемо (следует за прокруткой без синтеза событий). См. ADR 0029.
  *
@@ -21,7 +21,7 @@ import { useLatest } from '../../util/useLatest'
 
 interface AutoScrollTable {
   getSelectedCellRangesData?: () => unknown
-  _isSelectingCells?: boolean
+  getIsSelectingCells?: () => boolean
   getFocusedCell?: () =>
     { row: { id: string }; column: { id: string } } | undefined
   selectCellRange?: (range: {
@@ -143,7 +143,7 @@ export const useCellSelectionAutoScroll = (
       const t = tableRef.current as AutoScrollTable
       const scroller = getScrollRef.current()
       // Ждём реальной drag-сессии фичи (mousedown без протяжки её не открывает).
-      if (!scroller || !t._isSelectingCells) {
+      if (!scroller || !t.getIsSelectingCells?.()) {
         return
       }
       const r = scroller.getBoundingClientRect()

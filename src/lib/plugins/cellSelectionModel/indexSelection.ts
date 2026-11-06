@@ -316,6 +316,8 @@ const createIndexSelection = (t: SelectionTable) => {
   const activeRange = () => live().at(-1)
 
   const table: Record<string, Method> = {
+    // Копия таблицы на рендер хранит поле на момент рендера: признак — только отсюда.
+    getIsSelectingCells: () => !!t._isSelectingCells,
     getCellSelectionBounds: () => bounds(),
     setFocusedCell: ((rowId: string, columnId: string) => {
       const rowIndex = indexOfId(rowId)

@@ -2,6 +2,7 @@ import { commands } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
+import { humanClick } from '../helpers'
 import { composed } from '../stories'
 
 // Каждое требование cellSelection — свой именованный тест `CR<n>` (таблица
@@ -132,6 +133,25 @@ describe('Cell Selection — mouse', () => {
     await expect.poll(() => isSelected(cellAt(container, 1, 1))).toBe(true)
     expect(selectedCount(container)).toBe(1)
     expect(isSelected(cellAt(container, 0, 0))).toBe(false)
+  })
+
+  test('CRS25: нажатие на ручку строки у края таблицы не меняет выделение — автопрокрутка идёт только во время протяжки', async () => {
+    const container = await renderCellSelection({ enableRowDragging: true })
+    const cell = cellAt(container, 3, 2)
+    await humanClick(cell)
+    await expect.poll(() => selectedCount(container)).toBe(1)
+
+    const handle = rowsTopDown(container)[0]!.querySelector<HTMLElement>(
+      '.drag__handler--column',
+    )!
+    await humanClick(handle)
+    await expect
+      .poll(() => document.querySelector('[role="menu"][data-open]'))
+      .not.toBeNull()
+    // Сбой приходил кадром автопрокрутки: кадры проходят, выделение на месте.
+    await new Promise(resolve => setTimeout(resolve, 100))
+    expect(selectedCount(container)).toBe(1)
+    expect(isSelected(cell)).toBe(true)
   })
 
   test('CRS2: shift-click extends a rectangular range from the anchor', async () => {
