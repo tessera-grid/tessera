@@ -18,6 +18,8 @@ export const rowLabel = (
         ? dataExportLabels(labels).exportAll
         : dataExportLabels(labels).exportLoaded(loaded)
     case 'view':
+      // Серверная модель без сортировки и фильтров: `view` — весь список (ADR 0190).
+      if (viewBy.length === 0) return dataExportLabels(labels).exportAll
       return dataExportLabels(labels).exportView(
         viewBy.map(feature =>
           feature === 'sorting'

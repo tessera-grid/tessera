@@ -25,6 +25,7 @@ import * as pluginApiStories from './DataGrid.PluginApi.stories'
 import * as infiniteScrollStories from './DataGrid.DataLoading.InfiniteScroll.stories'
 import * as serverRowModelStories from './DataGrid.DataLoading.ServerRowModel.stories'
 import * as serverGroupingStories from './DataGrid.DataLoading.ServerRowModel.Grouping.stories'
+import * as serverExportStories from './DataGrid.DataLoading.ServerRowModel.Export.stories'
 import * as serverSelectionStories from './DataGrid.DataLoading.ServerRowModel.Selection.stories'
 import * as serverCellSelectionStories from './DataGrid.DataLoading.ServerRowModel.CellSelection.stories'
 import * as serverEditingStories from './DataGrid.DataLoading.ServerRowModel.Editing.stories'
@@ -7361,5 +7362,275 @@ export const HighContrastServerGroupRowCountStep2 = {
     2,
   ),
   name: 'Server row model/Grouping — Row count, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerPageSelectAllStep1 = {
+  ...twinStep(
+    serverSelectionStories,
+    serverSelectionStories.ServerPageSelectAll,
+    1,
+  ),
+  name: 'Data loading/Server row model/Selection — Select the page, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerPageSelectAllStep2 = {
+  ...twinStep(
+    serverSelectionStories,
+    serverSelectionStories.ServerPageSelectAll,
+    2,
+  ),
+  name: 'Data loading/Server row model/Selection — Select the page, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerPageSelectAllStep3 = {
+  ...twinStep(
+    serverSelectionStories,
+    serverSelectionStories.ServerPageSelectAll,
+    3,
+  ),
+  name: 'Data loading/Server row model/Selection — Select the page, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerPageSelectAllStep4 = {
+  ...twinStep(
+    serverSelectionStories,
+    serverSelectionStories.ServerPageSelectAll,
+    4,
+  ),
+  name: 'Data loading/Server row model/Selection — Select the page, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastServerPageSelectAllWaitsStep1 = {
+  ...twinStep(
+    serverSelectionStories,
+    serverSelectionStories.ServerPageSelectAllWaits,
+    1,
+  ),
+  name: 'Data loading/Server row model/Selection — Page still loading, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerPageSelectAllWaitsStep2 = {
+  ...twinStep(
+    serverSelectionStories,
+    serverSelectionStories.ServerPageSelectAllWaits,
+    2,
+  ),
+  name: 'Data loading/Server row model/Selection — Page still loading, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerPageSelectAllWaitsStep3 = {
+  ...twinStep(
+    serverSelectionStories,
+    serverSelectionStories.ServerPageSelectAllWaits,
+    3,
+  ),
+  name: 'Data loading/Server row model/Selection — Page still loading, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerPageSelectAllRefusedStep1 = {
+  ...twinStep(
+    serverSelectionStories,
+    serverSelectionStories.ServerPageSelectAllRefused,
+    1,
+  ),
+  name: 'Data loading/Server row model/Selection — Page refused, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerPageSelectAllRefusedStep2 = {
+  ...twinStep(
+    serverSelectionStories,
+    serverSelectionStories.ServerPageSelectAllRefused,
+    2,
+  ),
+  name: 'Data loading/Server row model/Selection — Page refused, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerPageSelectAllRefusedStep3 = {
+  ...twinStep(
+    serverSelectionStories,
+    serverSelectionStories.ServerPageSelectAllRefused,
+    3,
+  ),
+  name: 'Data loading/Server row model/Selection — Page refused, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerPageSelectAllRefusedStep4 = {
+  ...twinStep(
+    serverSelectionStories,
+    serverSelectionStories.ServerPageSelectAllRefused,
+    4,
+  ),
+  name: 'Data loading/Server row model/Selection — Page refused, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowIndentStep1 = {
+  ...twinStep(serverDraggingStories, serverDraggingStories.ServerRowIndent, 1),
+  name: 'Data loading/Server row model/Dragging — Indent a row, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowIndentStep2 = {
+  ...twinStep(serverDraggingStories, serverDraggingStories.ServerRowIndent, 2),
+  name: 'Data loading/Server row model/Dragging — Indent a row, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowIndentStep3 = {
+  ...twinStep(serverDraggingStories, serverDraggingStories.ServerRowIndent, 3),
+  name: 'Data loading/Server row model/Dragging — Indent a row, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowIndentStep4 = {
+  ...twinStep(serverDraggingStories, serverDraggingStories.ServerRowIndent, 4),
+  name: 'Data loading/Server row model/Dragging — Indent a row, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowOutdentStep1 = {
+  ...twinStep(serverDraggingStories, serverDraggingStories.ServerRowOutdent, 1),
+  name: 'Data loading/Server row model/Dragging — Outdent a row, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowOutdentStep2 = {
+  ...twinStep(serverDraggingStories, serverDraggingStories.ServerRowOutdent, 2),
+  name: 'Data loading/Server row model/Dragging — Outdent a row, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowOutdentStep3 = {
+  ...twinStep(serverDraggingStories, serverDraggingStories.ServerRowOutdent, 3),
+  name: 'Data loading/Server row model/Dragging — Outdent a row, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowIndentRefusedStep1 = {
+  ...twinStep(
+    serverDraggingStories,
+    serverDraggingStories.ServerRowIndentRefused,
+    1,
+  ),
+  name: 'Data loading/Server row model/Dragging — Branch refused, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowIndentRefusedStep2 = {
+  ...twinStep(
+    serverDraggingStories,
+    serverDraggingStories.ServerRowIndentRefused,
+    2,
+  ),
+  name: 'Data loading/Server row model/Dragging — Branch refused, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowIndentRefusedStep3 = {
+  ...twinStep(
+    serverDraggingStories,
+    serverDraggingStories.ServerRowIndentRefused,
+    3,
+  ),
+  name: 'Data loading/Server row model/Dragging — Branch refused, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowNextGroupStep1 = {
+  ...twinStep(
+    serverDraggingStories,
+    serverDraggingStories.ServerRowNextGroup,
+    1,
+  ),
+  name: 'Data loading/Server row model/Dragging — Move to the next group, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowNextGroupStep2 = {
+  ...twinStep(
+    serverDraggingStories,
+    serverDraggingStories.ServerRowNextGroup,
+    2,
+  ),
+  name: 'Data loading/Server row model/Dragging — Move to the next group, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowNextGroupStep3 = {
+  ...twinStep(
+    serverDraggingStories,
+    serverDraggingStories.ServerRowNextGroup,
+    3,
+  ),
+  name: 'Data loading/Server row model/Dragging — Move to the next group, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastExportServerRowsViewStep1 = {
+  ...twinStep(serverExportStories, serverExportStories.ExportServerRowsView, 1),
+  name: 'Data loading/Server row model/Export — Export the result, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastExportServerRowsViewStep2 = {
+  ...twinStep(serverExportStories, serverExportStories.ExportServerRowsView, 2),
+  name: 'Data loading/Server row model/Export — Export the result, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastExportServerRowsViewStep3 = {
+  ...twinStep(serverExportStories, serverExportStories.ExportServerRowsView, 3),
+  name: 'Data loading/Server row model/Export — Export the result, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastExportServerRowsLimitStep1 = {
+  ...twinStep(
+    serverExportStories,
+    serverExportStories.ExportServerRowsLimit,
+    1,
+  ),
+  name: 'Data loading/Server row model/Export — Over the limit, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastExportServerRowsLimitStep2 = {
+  ...twinStep(
+    serverExportStories,
+    serverExportStories.ExportServerRowsLimit,
+    2,
+  ),
+  name: 'Data loading/Server row model/Export — Over the limit, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastExportServerRowsRefusedStep1 = {
+  ...twinStep(
+    serverExportStories,
+    serverExportStories.ExportServerRowsRefused,
+    1,
+  ),
+  name: 'Data loading/Server row model/Export — Refused by the server, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastExportServerRowsRefusedStep2 = {
+  ...twinStep(
+    serverExportStories,
+    serverExportStories.ExportServerRowsRefused,
+    2,
+  ),
+  name: 'Data loading/Server row model/Export — Refused by the server, шаг 2',
   tags: ['!test'],
 }

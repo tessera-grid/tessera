@@ -21,6 +21,7 @@ import {
   collectExportData,
   exportColumnsOf,
   headerOf,
+  listRowsLoaderOf,
   pageRowsLoaderOf,
   selectedRowIdsOf,
   serverRowsRequestOf,
@@ -225,14 +226,16 @@ export const runExport = (
       context.signal.aborted ? undefined : finish(resolved),
     )
   }
-  const loadPage = pageRowsLoaderOf(table, settings.rows)
+  const load =
+    pageRowsLoaderOf(table, settings.rows) ??
+    listRowsLoaderOf(table, settings.rows)
   return cancellable(table, format, outcome, context => {
-    const result = loadPage
-      ? loadPage(context.signal).then(rows =>
+    const result = load
+      ? load(context.signal).then(rows =>
           context.signal.aborted ? undefined : write(context, rows),
         )
       : write(context)
-    if (outcome && (loadPage || result)) reportOutcome(table, outcome, result)
+    if (outcome && (load || result)) reportOutcome(table, outcome, result)
     return result
   })
 }

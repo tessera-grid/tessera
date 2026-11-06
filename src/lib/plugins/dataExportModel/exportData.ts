@@ -7,13 +7,17 @@ import { isPlaceholderRow } from '../../core/lazyPlaceholder'
 import { type ColumnOptionsDef, optionTextOf } from '../../core/columnOptions'
 import { objectLabelOf } from '../../core/dataTypeFormat'
 import type { ResolvedDataType } from '../../core/dataTypes'
+import { announcerLabels } from '../../core/announcer'
+import { cancelPending } from '../../core/cancellation'
+import { ENGLISH_LABELS } from '../../core/localization'
 import { serverRowModelReason } from '../../core/pluginDiagnostics'
-import { dataRowSourceOf } from '../../core/rowSource'
+import { dataRowSourceOf, LIST_SLICES, watchSlices } from '../../core/rowSource'
 import {
   rowSelectionValueOf,
   tableAllSelection,
 } from '../../core/rowSelectionAll'
 import { serverAggregationsOf } from '../../shared/serverAggregations'
+import { dataExportModelLabels } from './labels'
 import type {
   ExportColumn,
   ExportData,
@@ -165,6 +169,36 @@ export const pageRowsLoaderOf = (table: unknown, scope: ExportRows) => {
     }
   }
   return undefined
+}
+
+export const DEFAULT_MAX_LOADED_ROWS = 10_000
+
+interface ExportLimitTable {
+  options: { exportOptions?: { maxLoadedRows?: number } }
+}
+
+/**
+ * Загрузка всей выборки серверной модели (ADR 0190): `view` без серверной выгрузки. Строк
+ * больше предела — отказ с причиной, неполного файла нет.
+ */
+export const listRowsLoaderOf = (table: unknown, scope: ExportRows) => {
+  if (scope !== 'view') return undefined
+  const source = dataRowSourceOf<ExportRow>(table)
+  if (!source.loadList) return undefined
+  const { exportOptions } = (table as ExportLimitTable).options
+  const max = exportOptions?.maxLoadedRows ?? DEFAULT_MAX_LOADED_ROWS
+  return async (signal: AbortSignal) => {
+    // Смена выборки: строки уже не те, файл не нужен (ADR 0190, §3).
+    const unwatch = watchSlices(table, LIST_SLICES, () =>
+      cancelPending(table, { kind: 'export' }, 'api'),
+    )
+    const rows = await source.loadList!(max, signal).finally(unwatch)
+    if (!rows) {
+      const labels = announcerLabels(table) ?? ENGLISH_LABELS
+      throw new Error(dataExportModelLabels(labels).exportTooManyRows(max))
+    }
+    return rows.filter(isPageRow)
+  }
 }
 
 /** Id выбранных строк из среза `rowSelection` — по всем страницам, в том числе не загруженным. */

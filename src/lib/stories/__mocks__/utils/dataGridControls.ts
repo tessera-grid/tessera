@@ -46,6 +46,7 @@ import {
   dataCountType,
   dataExportAllowType,
   dataExportFilenameType,
+  dataExportMaxLoadedRowsType,
   dataNestingType,
   defaultColumnType,
   enableAnnouncementsType,
@@ -369,6 +370,7 @@ export const dataGridArgTypes = {
     ...when('enableDataExport', {
       dataExportAllow: dataExportAllowType,
       dataExportFilename: dataExportFilenameType,
+      dataExportMaxLoadedRows: dataExportMaxLoadedRowsType,
     }),
     enableDataExportModel: enableDataExportModelType,
   }),

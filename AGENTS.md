@@ -792,8 +792,9 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
     - _Фильтр вариантов:_ `filtering-options` (SF1, SF6–SF7, SF9–SF13, SF15, SF18–SF21, SF27 —
       чек-лист, поиск, счётчики, виртуализация, клавиатура, справочник, подписи в
       ячейке и сводке, сервер, локализация, axe), `option-filter-chunk` (SF22 —
-      ленивый модуль панели), модульные `filteringOptions` (SF2–SF5, SF8, SF14, SF16–SF17
-      — варианты из данных, условия, срез, фасеты, подписи в поиске и экспорте),
+      ленивый модуль панели), модульные `filteringOptions` (SF2–SF5, SF8, SF14, SF16–SF17, SF28
+      — варианты из данных, условия, срез, фасеты, подписи в поиске и экспорте, предупреждение
+      о фильтре на сервере без вариантов),
       `play` историй «Filtering — Select & multiselect» и «Filtering — Lookup (server)»
       (SF23–SF24), перф SF25–SF26 — в `interaction`,
       [ADR 0048](docs/decisions/0048-option-filtering.md).
@@ -970,8 +971,9 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       `scroll`, истории «Data loading/Server row model/Cell selection — Read the selection»
       (S1) и «Cells/Selection — Follows sorting» (S2)
       ([ADR 0180](docs/decisions/0180-unified-cell-range.md)).
-    - _Серверная группировка:_ модульный `serverGrouping.dom` (GS1–GS2, GS10–GS11 — поля запроса,
-      строки-группы и ветки, запрос выгрузки, инертность клиентской модели и ленивых детей),
+    - _Серверная группировка:_ модульный `serverGrouping.dom` (GS1–GS2, GS10–GS11, GS15–GS16 — поля
+      запроса, строки-группы и ветки, запрос выгрузки, инертность клиентской модели и ленивых детей,
+      предупреждение об агрегате не строкой, своё имя агрегата),
       визуальный `server-grouping` (GS3–GS9 — кнопка серверным действием с откатом, число строк
       и агрегаты группы, ветка группы, вложенные уровни и `aria-*`, раскрытие при смене выборки,
       итог в футере, выбор строк данных; GS14 — итог по типу колонки), перф GS12 — в `interaction`, GS13 — в `scroll`,
@@ -1131,6 +1133,15 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       правка держатся за строку; движение, вспышка, двухфазный уход, вне окна и уменьшенное
       движение), перф RT12 — в `interaction`, истории «Data loading/Server row
       model/Transactions» (S1–S4) ([ADR 0157](docs/decisions/0157-ssrm-row-transactions.md)).
+    - _Охват страницы в SSRM:_ модульный `serverPageSelection.dom` (PA1–PA3, PA7–PA8 — строки страницы
+      по `id`, весь итог без пагинации, «всё, кроме», ветка и группа, канал действий), визуальный
+      `server-page-selection` (PA4–PA6, PA9 — ожидание флажка с отменой и сменой страницы, плашка с
+      повтором, «выбран» и «частично», axe и `forced-colors`), перф PA10 — в `interaction`
+      ([ADR 0188](docs/decisions/0188-current-page-scope-in-ssrm.md)).
+    - _Выгрузка в SSRM без сервера:_ модульный `serverExport.dom` (XV1–XV5, XV8 — оси, страница и вся
+      выборка с раскрытыми ветками, предел, неизвестный итог, `table.exportData`), визуальный
+      `server-export` (XV6–XV7, XV9 — занятая кнопка, отмена и смена выборки, отказ блока, axe панели),
+      перф XV10 — в `interaction` ([ADR 0190](docs/decisions/0190-client-export-in-ssrm.md)).
     - _Пагинация в SSRM:_ модульный `serverPagination.dom` (SP1, SP3, SP9–SP10, SP12 — страница из
       корней с ветками, отмена блоков ушедшей страницы, выбор, диапазон и транзакции по сквозному
       списку, `server: true`, выгрузка страницы с догрузкой строк), визуальный `server-pagination` (SP2, SP4–SP8 — скелеты и кэш
@@ -1147,6 +1158,11 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       строки-группы по пути значений), перф MV11 — в `interaction`, истории «Data
       loading/Server row model/Dragging» (S1–S4)
       ([ADR 0159](docs/decisions/0159-ssrm-row-dragging.md)).
+    - _Вложение и соседние группы в SSRM:_ модульный `serverRowShift.dom` (NT1–NT3, NT6–NT7, NT10–NT11 —
+      вложение и вынос, колбэк и откат, конец ветки, недоступная цель и соседняя группа, канал
+      действий), визуальный `server-row-shift` (NT4–NT5, NT8–NT9, NT12 — свёрнутая цель, отказ ветки,
+      фокус, соседняя группа, axe и `forced-colors`), перф NT13 — в `interaction`
+      ([ADR 0189](docs/decisions/0189-nest-and-adjacent-groups-in-ssrm.md)).
     - _Линии дерева в SSRM:_ модульный `serverTreeLines` (TL9 — маска по раскладке без чтения
       строк, паритет с клиентским проходом), визуальный `server-tree-lines` (TL10–TL13 —
       незагруженные строки с линиями, неизвестный размер ветки и короткий блок, серверные

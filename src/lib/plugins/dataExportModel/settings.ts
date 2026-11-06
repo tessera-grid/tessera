@@ -44,6 +44,7 @@ const COLUMNS_ORDER: ExportColumns[] = ['visible', 'all']
 /** Опции выгрузки в опциях таблицы (кладёт плагин). */
 export interface ResolvedExportOptions {
   formats: ExportFormat[]
+  maxLoadedRows?: number
   allow?: ExportAllow
   presets?: ExportPreset[]
   filename?:
@@ -111,19 +112,23 @@ export const resolveAxes = (table: unknown): ExportAxes | undefined => {
     .filter((feature, index, all) => all.indexOf(feature) === index)
   const noSelection =
     !tableAllSelection(table) && selectedRowIdsOf(table).length === 0
-  // Строк у грида нет — их выгружает только сервер (ADR 0138, §10).
+  // Строк у грида нет: `all` и `selected` выгружает только сервер (ADR 0190, §1).
   const serverRows = exportsOnServer(table)
     ? undefined
     : serverRowModelReason(table)
 
+  // Без сортировки и фильтров `view` серверной модели — весь список: `all` повторял бы его.
+  const onlyList = !!serverRows && viewBy.length === 0
   const present = (rows: ExportRows) =>
     rows === 'view'
-      ? viewBy.length > 0
-      : !ROWS_PLUGINS[rows] || ROWS_PLUGINS[rows].some(id => active.has(id))
+      ? viewBy.length > 0 || !!serverRows
+      : rows === 'all'
+        ? !onlyList
+        : !ROWS_PLUGINS[rows] || ROWS_PLUGINS[rows].some(id => active.has(id))
 
   return {
     rows: ROWS_ORDER.filter(present).map(rows =>
-      serverRows
+      serverRows && (rows === 'all' || rows === 'selected')
         ? { value: rows, disabled: true, reason: serverRows }
         : choice(rows, config.allow?.rows, rows === 'selected' && noSelection),
     ),

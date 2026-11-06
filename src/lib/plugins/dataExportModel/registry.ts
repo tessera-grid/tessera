@@ -43,6 +43,8 @@ export interface DataExportModelOptions {
   onExport?: ExportHooks['onExport']
   /** Файл скачан клиентом. */
   onExported?: ExportHooks['onExported']
+  /** Предел строк, которые выгрузка загружает из серверной модели (по умолчанию 10 000). */
+  maxLoadedRows?: number
 }
 
 /** Фичи модели выгрузки; интерфейс несёт те же — по ним выводится тип API. */
@@ -64,6 +66,7 @@ export const dataExportModel = definePlugin<DataExportModelOptions>()({
       presets: o.presets,
       filename: o.filename,
       formatValue: o.formatValue,
+      maxLoadedRows: o.maxLoadedRows,
     } satisfies ResolvedExportOptions,
   }),
 })

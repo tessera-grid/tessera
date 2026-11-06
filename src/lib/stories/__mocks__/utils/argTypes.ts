@@ -447,6 +447,11 @@ export const cellSelectionRangeSelectionType = booleanControl(
   'Диапазон Shift-кликом (`rangeSelection`)',
   true,
 )
+export const dataExportMaxLoadedRowsType = numberControl(
+  'Больше строк выгрузка из серверной модели не загружает (`maxLoadedRows`)',
+  { min: 1, max: 1_000_000, step: 1 },
+  '10000',
+)
 export const cellSelectionDragSelectionType = booleanControl(
   'Диапазон протяжкой мыши (`dragSelection`)',
   true,

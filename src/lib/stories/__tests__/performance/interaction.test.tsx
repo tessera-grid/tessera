@@ -57,12 +57,16 @@ import {
   rowExpandingLazyFeature,
   setLoadedAnswer,
 } from '../../../plugins/rowExpanding/lazyChildrenFeature'
-import { exportFormats } from '../../../plugins/dataExport'
+import { dataExport, exportFormats } from '../../../plugins/dataExport'
 import { infiniteScroll } from '../../../plugins/infiniteScroll'
 import { serverRowModel } from '../../../plugins/serverRowModel'
 import { pagination } from '../../../plugins/pagination'
 import { rowDragging } from '../../../plugins/rowDragging'
-import { moveRow } from '../../../plugins/rowDragging/moveRow'
+import {
+  moveRow,
+  nestRow,
+  unnestRow,
+} from '../../../plugins/rowDragging/moveRow'
 import { cellEditing } from '../../../plugins/cellEditing'
 import { columnTotals } from '../../../plugins/columnTotals'
 import { quickSearchModel } from '../../../plugins/quickSearchModel'
@@ -1492,19 +1496,24 @@ describe('Отзывчивость — фильтр записи', () => {
 
 // Сортировка десятичных строк (ADR 0174, TY14): первый клик сортировки колонки сумм на
 // 100 000 строк — суммы строкой `numberString` против тех же сумм числом `number`.
-const amountColumns = (decimal: boolean) => [
-  ...mockColumns.slice(0, SEARCH_SIZE.columnCount - 1),
-  {
-    id: 'amount',
-    header: 'Amount',
-    size: 150,
-    dataType: decimal ? 'numberString' : 'number',
-    accessorFn: (row: { total: number; visits: number }) =>
-      decimal
-        ? `${row.total}.${String(row.visits).padStart(2, '0')}`
-        : row.total + row.visits / 100,
-  },
-]
+const amountColumns = (decimal: boolean) => {
+  const others = mockColumns.slice(0, SEARCH_SIZE.columnCount - 1)
+  // Обе колонки замера — первыми: широкие колонки справа уходят за окно виртуализации.
+  return [
+    {
+      id: 'amount',
+      header: 'Amount',
+      size: 150,
+      dataType: decimal ? 'numberString' : 'number',
+      accessorFn: (row: { total: number; visits: number }) =>
+        decimal
+          ? `${row.total}.${String(row.visits).padStart(2, '0')}`
+          : row.total + row.visits / 100,
+    },
+    ...others.filter(column => column.id === 'age'),
+    ...others.filter(column => column.id !== 'age'),
+  ]
+}
 
 describe('Отзывчивость — сортировка десятичных строк', () => {
   test(
@@ -5067,6 +5076,297 @@ describe('Отзывчивость — итоги колонок', () => {
         withTotals.longestMs,
         `итоги longest=${withTotals.longestMs.toFixed(1)}ms, база ${base.longestMs.toFixed(1)}ms`,
       ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Различия серверной модели с клиентом (ADR 0188–0190): нажатие на флажок страницы, вложение и
+// сборка файла против той же работы в базе без догрузки.
+const headBox = () =>
+  document.querySelector<HTMLElement>(
+    '.data-grid__head-cell .row-select-checkbox',
+  )
+const rowIdAt = (index: number) =>
+  document.querySelector<HTMLElement>(
+    `.data-grid__body-row[data-index="${index}"]`,
+  )?.dataset.rowId
+const recordGap = (
+  id: string,
+  label: string,
+  size: string,
+  plugins: string,
+  r: Awaited<ReturnType<typeof measureInteractionWork>>,
+  ceilingMs?: number,
+) =>
+  recordPerf({
+    id,
+    label,
+    operation: 'interaction',
+    size,
+    plugins: plugins as never,
+    cpuThrottle: CPU_THROTTLE_RATE,
+    metrics: [
+      {
+        kind: 'load',
+        metric: 'longest',
+        valueMs: r.longestMs,
+        targetMs: INTERACTION_BUDGET_MS,
+        ceilingMs,
+        ...r,
+      },
+    ],
+  })
+
+const PAGE_SIZE = 100
+const PageSelectGrid = ({ server }: { server: boolean }) => {
+  const table = useCreateTable({
+    rowCount: 1_000_000,
+    columns: FEED_COLUMNS as never,
+    data: server ? NO_FEED : feedRows(0, 1000),
+    getRowId: (row: FeedRow) => row.id,
+    plugins: [
+      ...(server
+        ? [
+            serverRowModel({
+              blockSize: PAGE_SIZE,
+              getRows: ({ start, end }) =>
+                Promise.resolve({ rows: feedRows(start, end - start) }),
+            }),
+          ]
+        : []),
+      pagination({ initialPageSize: PAGE_SIZE }),
+      rowSelection({ selectAll: 'currentPage' }),
+    ] as never,
+  })
+  return (
+    <div style={{ height: 600 }}>
+      <DataGrid table={table as never} />
+    </div>
+  )
+}
+
+describe('Отзывчивость взаимодействий — флажок страницы SSRM', () => {
+  test(
+    'PA10: нажатие на флажок шапки при итоге 1 000 000 против той же страницы на клиенте',
+    async () => {
+      const measure = async (server: boolean) => {
+        await render(<PageSelectGrid server={server} />)
+        await expect.poll(() => rowIdAt(0)).toBe('f0')
+        await expect.poll(headBox).not.toBeNull()
+        const result = await measureInteractionWork(async () => {
+          const was = headBox()!.hasAttribute('data-checked')
+          headBox()!.click()
+          await expect
+            .poll(() => headBox()!.hasAttribute('data-checked'))
+            .toBe(!was)
+        })
+        await cleanup()
+        return result
+      }
+      const runs = await againstBase(server => measure(server))
+      const base = medianRun(runs.base, r => r.longestMs)
+      const paged = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = ceilingOver(base.longestMs, { ratio: 1.3, plusMs: 10 })
+      await recordGap(
+        'PA10-base',
+        'флажок страницы на клиенте',
+        '1000×3',
+        'pagination, rowSelection',
+        base,
+      )
+      await recordGap(
+        'PA10',
+        'флажок страницы SSRM',
+        '1 000 000×3',
+        'serverRowModel, pagination, rowSelection',
+        paged,
+        ceiling,
+      )
+      expect(
+        paged.longestMs,
+        `longest=${paged.longestMs.toFixed(1)}ms (база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+let nestTable: unknown
+const NestGrid = () => {
+  const table = useCreateTable({
+    rowCount: 1_000_000,
+    columns: FEED_COLUMNS as never,
+    data: NO_FEED,
+    getRowId: (row: FeedRow) => row.id,
+    plugins: [
+      serverRowModel({
+        blockSize: 100,
+        getRows: ({ start, end, parentId }) =>
+          Promise.resolve(
+            parentId
+              ? { rows: feedRows(2_000_000, 2), rowCount: 2 }
+              : { rows: feedRows(start, end - start) },
+          ),
+      }),
+      rowDragging(),
+      rowExpanding({
+        hasChildren: row => (row as { id: string }).id === 'f1',
+      }),
+    ] as never,
+  })
+  nestTable = table
+  return (
+    <div style={{ height: 600 }}>
+      <DataGrid table={table as never} />
+    </div>
+  )
+}
+
+describe('Отзывчивость взаимодействий — вложение строки SSRM', () => {
+  test(
+    'NT13: вложение при итоге 1 000 000 не дороже броска при том же итоге',
+    async () => {
+      const rowOf = (id: string) =>
+        (nestTable as { getRowSource: () => { byId: (id: string) => any } })
+          .getRowSource()
+          .byId(id)
+      const measure = async (nest: boolean) => {
+        await render(<NestGrid />)
+        await expect.poll(() => rowIdAt(1)).toBe('f1')
+        rowOf('f1').toggleExpanded(true)
+        await expect.poll(() => rowOf('f2000000')).toBeTruthy()
+        let inside = false
+        let down = true
+        const result = await measureInteractionWork(async () => {
+          if (nest) {
+            if (inside) unnestRow(rowOf('f2'), nestTable)
+            else nestRow(rowOf('f2'), nestTable)
+            inside = !inside
+            await expect
+              .poll(() => rowOf('f2').parentId)
+              .toBe(inside ? 'f1' : undefined)
+            return
+          }
+          const index = rowOf('f3').index
+          moveRow(rowOf('f3'), nestTable, down ? 1 : -1)
+          await expect
+            .poll(() => rowOf('f3').index)
+            .toBe(index + (down ? 1 : -1))
+          down = !down
+        })
+        await cleanup()
+        return result
+      }
+      const runs = await againstBase(nest => measure(nest))
+      const base = medianRun(runs.base, r => r.longestMs)
+      const nested = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = ceilingOver(base.longestMs, { ratio: 1.3, plusMs: 10 })
+      await recordGap(
+        'NT13-base',
+        'перенос среди соседей SSRM',
+        '1 000 000×3',
+        'serverRowModel, rowDragging, rowExpanding',
+        base,
+      )
+      await recordGap(
+        'NT13',
+        'вложение и вынос SSRM',
+        '1 000 000×3',
+        'serverRowModel, rowDragging, rowExpanding',
+        nested,
+        ceiling,
+      )
+      expect(
+        nested.longestMs,
+        `longest=${nested.longestMs.toFixed(1)}ms (база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+let viewExports = 0
+const ViewExportGrid = ({ server }: { server: boolean }) => {
+  const table = useCreateTable({
+    rowCount: XC15_ROWS,
+    columns: XC15_COLUMNS as never,
+    data: server ? NO_COPY_ROWS : copyRowsOf(),
+    getRowId: (row: CopyRow) => row.id,
+    plugins: [
+      ...(server
+        ? [
+            serverRowModel({
+              blockSize: 1000,
+              getRows: ({ start, end }) => ({
+                rows: copyRowsOf().slice(start, end),
+              }),
+            }),
+          ]
+        : []),
+      columnSorting(),
+      dataExport({
+        onExported: () => {
+          viewExports++
+        },
+      }),
+    ] as never,
+  })
+  viewTable = table as never
+  return (
+    <div style={{ height: 600 }}>
+      <DataGrid table={table as never} />
+    </div>
+  )
+}
+let viewTable:
+  { exportData: (settings: { rows: 'view' }) => Promise<void> } | undefined
+
+describe('Отзывчивость взаимодействий — выгрузка выборки SSRM', () => {
+  test(
+    'XV10: сборка 10 000 загруженных строк против той же сборки на клиенте',
+    async () => {
+      const click = HTMLAnchorElement.prototype.click
+      HTMLAnchorElement.prototype.click = () => {}
+      try {
+        const measure = async (server: boolean) => {
+          await render(<ViewExportGrid server={server} />)
+          await waitForGrid()
+          viewExports = 0
+          const result = await measureInteractionWork(async () => {
+            await viewTable!.exportData({ rows: 'view' })
+          })
+          expect(viewExports).toBeGreaterThan(0)
+          await cleanup()
+          return result
+        }
+        const runs = await againstBase(server => measure(server))
+        const base = medianRun(runs.base, r => r.longestMs)
+        const loaded = medianRun(runs.variant, r => r.longestMs)
+        // Обход блоков вместо модели — около 42 мс под троттлингом, в бюджете взаимодействия.
+        const ceiling = ceilingOver(base.longestMs, { ratio: 1.3, plusMs: 60 })
+        await recordGap(
+          'XV10-base',
+          'выгрузка выборки на клиенте',
+          '10 000×10',
+          'dataExport',
+          base,
+        )
+        await recordGap(
+          'XV10',
+          'выгрузка выборки SSRM',
+          '10 000×10',
+          'serverRowModel, dataExport',
+          loaded,
+          ceiling,
+        )
+        expect(
+          loaded.longestMs,
+          `longest=${loaded.longestMs.toFixed(1)}ms (база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
+        ).toBeLessThanOrEqual(ceiling)
+      } finally {
+        HTMLAnchorElement.prototype.click = click
+      }
     },
     PERF_TIMEOUT * 2,
   )

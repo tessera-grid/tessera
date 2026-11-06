@@ -31,6 +31,7 @@ export const dataExport = definePlugin<ExportOptions>()({
     keys: [
       'formats',
       'allow',
+      'maxLoadedRows',
       'presets',
       'filename',
       'formatValue',

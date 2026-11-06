@@ -22,7 +22,6 @@ import type { DebugAction } from '../core/debugActions'
 import type { RowSource } from '../core/rowSource'
 import type { ExpandedState } from '@tanstack/react-table'
 import { rowSelectionValueOf } from '../core/rowSelectionAll'
-import { resolveAxes } from '../plugins/dataExportModel/settings'
 import { useCreateTable } from '../core/useCreateTable'
 import {
   cellEditing,
@@ -483,7 +482,7 @@ describe('серверная модель строк на таблице (ADR 01
     }
   })
 
-  it('SD30: выгрузка в SSRM — серверная, onExport получает состояние запроса и выбора; без серверной выгрузки — dev-warn, значения all, view, selected недоступны с причиной', async () => {
+  it('SD30: серверная выгрузка в SSRM — onExport получает состояние запроса и выбора', async () => {
     const exports: ExportRequest[] = []
     act(() =>
       root.render(
@@ -515,42 +514,8 @@ describe('серверная модель строк на таблице (ADR 01
       aggregations: {},
     })
     expect(exports[0]!.selection).toEqual({ all: true, except: ['r3'] })
-
-    // Без серверной выгрузки строк у грида нет: значения строк недоступны с причиной.
-    act(() => root.unmount())
-    root = createRoot(document.createElement('div'))
-    act(() =>
-      root.render(
-        <Grid
-          extra={[
-            rowSelection(),
-            columnSortingModel(),
-            columnFilteringModel(),
-            dataExport(),
-          ]}
-        />,
-      ),
-    )
-    const rows = resolveAxes(table)!.rows
-    expect(rows.map(choice => choice.value)).toEqual([
-      'all',
-      'view',
-      'selected',
-    ])
-    for (const choice of rows) {
-      expect(choice).toMatchObject({ disabled: true, reason: 'serverRowModel' })
-    }
-    expect(table.getPluginDiagnostics()).toContainEqual({
-      id: 'dataExport',
-      status: 'inert',
-      reason: 'serverRowModel',
-    })
-    expect(
-      warnings().some(
-        text => text.includes('dataExport') && text.includes('serverRowModel'),
-      ),
-    ).toBe(true)
   })
+
   describe('ленивые дети (этап 5)', () => {
     const tree = (maxBlocks: number, more: unknown[] = []) =>
       act(() =>

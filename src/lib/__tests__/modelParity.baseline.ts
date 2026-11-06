@@ -15,8 +15,9 @@ export const MODEL_PARITY: ParityBase = {
     ],
     differs: {
       selectAll: {
-        reason: "`'currentPage'` в SSRM действует как весь итог выборки",
-        adr: 179,
+        reason:
+          "`'currentPage'` в SSRM без пагинации действует как весь итог, строки страницы догружаются",
+        adr: 188,
       },
       rowSelection: {
         reason:
@@ -290,17 +291,39 @@ export const MODEL_PARITY: ParityBase = {
     ],
   },
   dataExport: {
-    inertOnServer: {
-      reason:
-        'Выгрузка в SSRM только серверная: без `server: true` плагин инертен, строк у клиента нет',
-      adr: 138,
+    same: [
+      'enabled',
+      'formats',
+      'allow',
+      'presets',
+      'filename',
+      'formatValue',
+      'onExport',
+      'onExported',
+    ],
+    differs: {
+      maxLoadedRows: {
+        reason: 'Предел загрузки строк есть только у серверной модели',
+        adr: 190,
+      },
     },
   },
   dataExportModel: {
-    inertOnServer: {
-      reason:
-        'Выгрузка в SSRM только серверная: без `server: true` плагин инертен, строк у клиента нет',
-      adr: 138,
+    same: [
+      'enabled',
+      'formats',
+      'allow',
+      'presets',
+      'filename',
+      'formatValue',
+      'onExport',
+      'onExported',
+    ],
+    differs: {
+      maxLoadedRows: {
+        reason: 'Предел загрузки строк есть только у серверной модели',
+        adr: 190,
+      },
     },
   },
 }
@@ -310,13 +333,14 @@ export const BEHAVIOUR_DIFFERENCES: readonly BehaviourDifference[] = [
   {
     name: 'nestFromHandleMenu',
     reason:
-      'Пунктов «вложить» и «вынести» в меню ручки SSRM нет: только броском',
-    adr: 159,
+      'Вложение в SSRM — в любую сестру-ветку на любой глубине, на клиенте — только с корня',
+    adr: 189,
   },
   {
     name: 'exportWithoutServerFlag',
-    reason: 'В SSRM выгрузка без `server: true` инертна: строк у клиента нет',
-    adr: 138,
+    reason:
+      'Без серверной выгрузки в SSRM доступны только `page` и `view` до предела строк',
+    adr: 190,
   },
   {
     name: 'optionFilterWithoutOptions',
