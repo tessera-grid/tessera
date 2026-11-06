@@ -58,13 +58,14 @@ Tier 3  COMPONENT   --tsr-comp-*   привязка к части грида; с
   Primitive ни на что не ссылается. Проверяется TI-06/TI-06b.
 - **T-R4. Мост к shadcn — только в Semantic.** Единственное место, где встречаются
   апстрим-имена (`--foreground`/`--card`/`--muted`/`--primary`/`--info`/`--border`/
-  `--ring`/`--destructive`/`--radius-sm`/`--radius-md`/`--radius-lg`/`--font-sans`):
+  `--destructive`/`--radius-sm`/`--radius-md`/`--radius-lg`/`--font-sans`):
   `--tsr-sys-x: var(--<shadcn>, <ref>)`. Осознанно **не** мостятся: `--popover` — поповер
   без рамки в тёмной теме отделяет от грида только тон светлее карточки (`--tsr-sys-elevated`),
   а у shadcn `--popover` равен `--card`; `--accent` — наведение и выбор считаются от тона
   текста, на них держатся рычаги контраста (ADR 0088); `--input` — рамка контрола не ниже
   3:1 к фону (WCAG 1.4.11), у shadcn она бледнее; `--muted-foreground` — приглушённый
-  текст не ниже 4,5:1 (ADR 0089). Приложение меняет их ролями `--tsr-sys-*`.
+  текст не ниже 4,5:1 (ADR 0089); `--ring` — кольцо фокуса не ниже 3:1, у shadcn на белом 2,58:1
+  (ADR 0191). Приложение меняет их ролями `--tsr-sys-*`.
 - **T-R5. Тема-зависимость — только в Semantic.** light/dark переключаются в
   `--tsr-sys-*` сменой того, какой primitive играет роль. Primitive и component
   БЕЗ `.dark`-блоков. Селекторы dark: `:where(.data-grid-theme.dark)` и
@@ -160,8 +161,8 @@ Tier 3  COMPONENT   --tsr-comp-*   привязка к части грида; с
 | TK4 | Мост shadcn в semantic: `--primary` потребителя выигрывает у primitive-дефолта                                                                             | ✔ `TK4: a shadcn upstream token …`     |
 | TK5 | Мост shadcn для скруглений: `--radius-sm` и `--radius-lg` приложения скругляют пункт поповера и край липкого блока; без них — шкала primitive (6px и 10px) | ✔ `TK5: --radius-sm and --radius-lg …` |
 | TK6 | Мост shadcn для шрифта: `--font-sans` приложения — шрифт грида и его порталов; без него — системный набор                                                  | ✔ `TK6: --font-sans of the app …`      |
-
 | TK7 | Сброс браузерных стилей — только под корнем темы: внутри таблицы поля, рамки и списки сброшены без Tailwind, страница приложения не меняется               | ☑ visual                               |
+
 **Матрица и инварианты токенов.** Каждое — в light и dark, где тест проходит оба
 режима; этапы и найденные ими дефекты — ниже.
 

@@ -329,7 +329,7 @@ describe('Источник темы и её смена (ADR 0090)', () => {
     expect(schemeOf(wrapper())).toBe('light')
     expect(wrapper().getAttribute('data-tsr-color-mode')).toBe('light')
     expect(resolveColor(wrapper(), 'var(--tsr-sys-fg)')).toBe(
-      resolveColor(wrapper(), 'var(--tsr-ref-neutral-900)'),
+      resolveColor(wrapper(), 'var(--tsr-ref-neutral-950)'),
     )
     expect(resolveColor(wrapper(), 'var(--tsr-sys-surface)')).toBe(
       resolveColor(wrapper(), 'var(--tsr-ref-neutral-0)'),

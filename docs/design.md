@@ -460,6 +460,10 @@ Surfaces use a four-step ladder: `{colors.canvas}` (`#ffffff` pure white for car
 
 ## Colors
 
+> **Устарело для Tessera.** Цвета таблицы и Storybook больше не следуют этому разделу: палитра — роли
+> стандартной темы shadcn и шкала Tailwind v4 ([ADR 0191](decisions/0191-palette-on-shadcn-and-tailwind.md)).
+> Раздел оставлен как описание исходного образца.
+
 ### Brand & Accent
 
 - **Ink** (`{colors.primary}` — `#171717`): The single primary CTA color. Black-near-pure ink that carries every Sign Up pill, every footer CTA, the dark-band polarity-flip. Used as text color throughout the page on light surfaces. (Resolved from `--ds-gray-1000`.)

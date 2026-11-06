@@ -115,7 +115,6 @@ export const PALETTE_ROLES = [
   '--primary',
   '--primary-foreground',
   '--border',
-  '--ring',
   '--destructive',
   '--info',
   '--warning',

@@ -99,10 +99,10 @@ describe('Theming — external customization + token tiers', () => {
     // Ядро фикса: без shadcn (гасим `--card`) роль surface флипается классом
     // `.dark` на самой обёртке через primitive-дефолт.
     const vars = { '--card': 'initial' }
-    expect(readVar('--tsr-sys-surface', { vars })).toBe('#ffffff')
+    expect(readVar('--tsr-sys-surface', { vars })).toBe('#fff')
     expect(
       readVar('--tsr-sys-surface', { className: 'data-grid-theme dark', vars }),
-    ).toBe('#171717')
+    ).toBe('oklch(20.5% 0 none)')
   })
 
   test('TH7: the dark layer also flips when `.dark` sits on an ancestor', () => {
@@ -117,7 +117,7 @@ describe('Theming — external customization + token tiers', () => {
 
     expect(
       getComputedStyle(wrapper).getPropertyValue('--tsr-sys-fg').trim(),
-    ).toBe('#fafafa')
+    ).toBe('oklch(98.5% 0 none)')
 
     ancestor.remove()
   })
@@ -130,7 +130,7 @@ describe('Theming — external customization + token tiers', () => {
         className: 'data-grid-theme dark',
         vars: { '--card': 'initial' },
       }),
-    ).toBe('#171717')
+    ).toBe('oklch(20.5% 0 none)')
   })
 
   test('TH9: tooltip is tokenized and theme-aware (inverse surface flips light↔dark)', () => {
@@ -166,8 +166,8 @@ describe('Theming — external customization + token tiers', () => {
       )
     }
     for (const [colorMode, fg] of [
-      ['light', 'rgb(23, 23, 23)'],
-      ['dark', 'rgb(250, 250, 250)'],
+      ['light', 'oklch(0.145 0 none)'],
+      ['dark', 'oklch(0.985 0 none)'],
     ] as const) {
       const { container, unmount } = await render(
         <Grid colorMode={colorMode} />,
@@ -242,19 +242,19 @@ describe('Theming — external customization + token tiers', () => {
 
   test('TK1: primitive scale is mode-independent (`--tsr-ref-*` is not themed)', () => {
     // Primitive — сырые значения без light/dark: одинаковы в обоих режимах.
-    expect(readVar('--tsr-ref-neutral-900')).toBe('#171717')
+    expect(readVar('--tsr-ref-neutral-900')).toBe('oklch(20.5% 0 none)')
     expect(
       readVar('--tsr-ref-neutral-900', { className: 'data-grid-theme dark' }),
-    ).toBe('#171717')
+    ).toBe('oklch(20.5% 0 none)')
   })
 
   test('TK2: a semantic role flips light↔dark via the primitive fallback', () => {
     // Без shadcn (гасим `--foreground`) роль fg берёт разные primitive в light/dark.
     const vars = { '--foreground': 'initial' }
-    expect(readVar('--tsr-sys-fg', { vars })).toBe('#171717')
+    expect(readVar('--tsr-sys-fg', { vars })).toBe('oklch(14.5% 0 none)')
     expect(
       readVar('--tsr-sys-fg', { className: 'data-grid-theme dark', vars }),
-    ).toBe('#fafafa')
+    ).toBe('oklch(98.5% 0 none)')
   })
 
   test('TK3: a component token references its semantic role (override sys → comp follows)', () => {

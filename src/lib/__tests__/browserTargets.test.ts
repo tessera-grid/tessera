@@ -39,7 +39,7 @@ describe('Порог браузеров', () => {
       firefox: '128',
       safari: '17.1',
       ios: '17.1',
-      opera: '97',
+      opera: '98',
     })
     expect(SAMSUNG_TARGET).toBe('22')
     expect(

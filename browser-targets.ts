@@ -7,7 +7,7 @@ export const BROWSER_TARGETS = {
   firefox: '128',
   safari: '17.1',
   ios: '17.1',
-  opera: '97',
+  opera: '98',
 } as const
 
 /** Samsung Internet 22 — Chromium 111; цели сборки для него нет, его покрывает `chrome`. */

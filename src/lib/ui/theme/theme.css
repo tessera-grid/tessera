@@ -24,31 +24,30 @@
  * t-shirt для радиуса. Мода-НЕЗАВИСИМЫ. Не публичная поверхность переопределения.
  * ========================================================================== */
 :where(.data-grid-theme) {
-  --tsr-ref-neutral-0: #ffffff;
-  --tsr-ref-neutral-50: #fafafa;
-  --tsr-ref-neutral-100: #f5f5f5;
-  --tsr-ref-neutral-200: #ebebeb;
-  --tsr-ref-neutral-300: #e5e5e5;
-  --tsr-ref-neutral-800: #262626;
-  --tsr-ref-neutral-900: #171717;
-  --tsr-ref-neutral-950: #0a0a0a;
+  --tsr-ref-neutral-0: #fff;
+  --tsr-ref-neutral-50: oklch(98.5% 0 none);
+  --tsr-ref-neutral-100: oklch(97% 0 none);
+  --tsr-ref-neutral-200: oklch(92.2% 0 none);
+  --tsr-ref-neutral-800: oklch(26.9% 0 none);
+  --tsr-ref-neutral-900: oklch(20.5% 0 none);
+  --tsr-ref-neutral-950: oklch(14.5% 0 none);
 
-  --tsr-ref-blue-400: #3b82f6;
-  --tsr-ref-blue-500: #0070f3;
-  --tsr-ref-red-400: #ff4d4d;
-  --tsr-ref-red-500: #ee0000;
-  --tsr-ref-amber-400: #fbbf24;
-  --tsr-ref-amber-500: #f59e0b;
-  --tsr-ref-orange-400: #fb923c;
-  --tsr-ref-orange-700: #c2410c;
-  --tsr-ref-green-400: #4ade80;
-  --tsr-ref-green-500: #22c55e;
-  --tsr-ref-sky-400: #38bdf8;
-  --tsr-ref-sky-500: #0ea5e9;
-  --tsr-ref-indigo-400: #818cf8;
-  --tsr-ref-indigo-500: #6366f1;
-  --tsr-ref-violet-400: #a78bfa;
-  --tsr-ref-violet-500: #8b5cf6;
+  --tsr-ref-blue-400: oklch(70.7% 0.165 254.624);
+  --tsr-ref-blue-600: oklch(54.6% 0.245 262.881);
+  --tsr-ref-red-400: oklch(70.4% 0.191 22.216);
+  --tsr-ref-red-600: oklch(57.7% 0.245 27.325);
+  --tsr-ref-amber-400: oklch(82.8% 0.189 84.429);
+  --tsr-ref-amber-500: oklch(76.9% 0.188 70.08);
+  --tsr-ref-amber-700: oklch(55.5% 0.163 48.998);
+  --tsr-ref-orange-400: oklch(75% 0.183 55.934);
+  --tsr-ref-green-400: oklch(79.2% 0.209 151.711);
+  --tsr-ref-green-500: oklch(72.3% 0.219 149.579);
+  --tsr-ref-sky-400: oklch(74.6% 0.16 232.661);
+  --tsr-ref-sky-500: oklch(68.5% 0.169 237.323);
+  --tsr-ref-indigo-400: oklch(67.3% 0.182 276.935);
+  --tsr-ref-indigo-500: oklch(58.5% 0.233 277.117);
+  --tsr-ref-violet-400: oklch(70.2% 0.183 293.541);
+  --tsr-ref-violet-500: oklch(60.6% 0.25 292.717);
 
   --tsr-ref-space-1: 4px;
   --tsr-ref-space-3: 12px;
@@ -66,16 +65,17 @@
 :where(.data-grid-theme) {
   /* Базовые роли (light). Первый слот — токен shadcn потребителя, второй —
    * primitive-дефалт. В dark-блоке ниже меняется только второй слот. */
-  --tsr-sys-fg: var(--foreground, var(--tsr-ref-neutral-900));
-  --tsr-sys-bg: var(--background, var(--tsr-ref-neutral-50));
+  --tsr-sys-fg: var(--foreground, var(--tsr-ref-neutral-950));
+  --tsr-sys-bg: var(--background, var(--tsr-ref-neutral-0));
   --tsr-sys-surface: var(--card, var(--tsr-ref-neutral-0));
   --tsr-sys-muted: var(--muted, var(--tsr-ref-neutral-100));
   --tsr-sys-accent: var(--primary, var(--tsr-ref-neutral-900));
-  --tsr-sys-accent-fg: var(--primary-foreground, var(--tsr-ref-neutral-0));
+  --tsr-sys-accent-fg: var(--primary-foreground, var(--tsr-ref-neutral-50));
   --tsr-sys-border: var(--border, var(--tsr-ref-neutral-200));
-  --tsr-sys-ring: var(--ring, var(--tsr-ref-neutral-900));
-  --tsr-sys-danger: var(--destructive, var(--tsr-ref-red-500));
-  --tsr-sys-info: var(--info, var(--tsr-ref-blue-500));
+  /* Кольцо фокуса — из текста, без моста `--ring`: стандартное кольцо shadcn на белом 2,58:1 (ADR 0191). */
+  --tsr-sys-ring: var(--tsr-sys-fg);
+  --tsr-sys-danger: var(--destructive, var(--tsr-ref-red-600));
+  --tsr-sys-info: var(--info, var(--tsr-ref-blue-600));
   /* Оттенки свечения загрузки рядом с info (ADR 0094). */
   --tsr-sys-info-sky: var(--tsr-ref-sky-500);
   --tsr-sys-info-indigo: var(--tsr-ref-indigo-500);
@@ -91,7 +91,7 @@
   /* Тоны подсветки (ADR 0080): внимание и подтверждение. */
   --tsr-sys-warning: var(--warning, var(--tsr-ref-amber-500));
   /* Несохранённое (ADR 0178, §4): черновики — не ниже 3:1 к фону, цифры на нём — 4,5:1. */
-  --tsr-sys-unsaved: var(--tsr-ref-orange-700);
+  --tsr-sys-unsaved: var(--tsr-ref-amber-700);
   --tsr-sys-success: var(--success, var(--tsr-ref-green-500));
 
   /* Схема темы (ADR 0090): `color-scheme` грида и порталов — нативные полосы
@@ -176,13 +176,13 @@
   --tsr-sys-bg: var(--background, var(--tsr-ref-neutral-950));
   --tsr-sys-surface: var(--card, var(--tsr-ref-neutral-900));
   --tsr-sys-muted: var(--muted, var(--tsr-ref-neutral-800));
-  --tsr-sys-accent: var(--primary, var(--tsr-ref-neutral-50));
+  --tsr-sys-accent: var(--primary, var(--tsr-ref-neutral-200));
   --tsr-sys-accent-fg: var(--primary-foreground, var(--tsr-ref-neutral-900));
   --tsr-sys-border: var(
     --border,
     color-mix(in oklch, var(--tsr-ref-neutral-0) 10%, transparent)
   );
-  --tsr-sys-ring: var(--ring, var(--tsr-ref-neutral-300));
+  --tsr-sys-ring: var(--tsr-sys-fg);
   --tsr-sys-danger: var(--destructive, var(--tsr-ref-red-400));
   --tsr-sys-info: var(--info, var(--tsr-ref-blue-400));
   /* Оттенки свечения загрузки рядом с info (ADR 0094). */
@@ -386,9 +386,9 @@
   --tsr-comp-head-button-gap: 2px;
   /* От последней кнопки заголовка до зоны грипа: нажатие кнопки не попадает в грип. */
   --tsr-comp-head-grip-gap: 4px;
-  /* Подпись под зоной грипа уходит в прозрачность на этой длине, как лента шагов гайда. */
   /* Часть зоны грипа в своей колонке: зона целиком в свободных отступах двух колонок. */
   --tsr-comp-head-grip-start: calc(var(--tsr-comp-resize-handler-width) / 2);
+  /* Подпись под зоной грипа уходит в прозрачность на этой длине, как лента шагов гайда. */
   --tsr-comp-head-grip-fade: 16px;
   --tsr-comp-cell-font-size: 0.8125rem;
   /* Метка ячейки, сохранение которой отклонено сервером (ADR 0041). */
@@ -682,11 +682,11 @@
   --tsr-comp-field-font-size: var(--tsr-comp-popup-font-size);
   /* Отступ текста поля от рамки — как подписи `Button` (и у полей shadcn). */
   --tsr-comp-field-padding-x: var(--tsr-comp-button-padding-x);
+  /* Подпись-заполнитель пустого поля: текст, порог 4.5:1 (ADR 0183, PK26). */
+  --tsr-comp-field-placeholder-color: var(--tsr-comp-control-color);
   /* Заголовок поповера со списком — мельче пунктов. */
   --tsr-comp-popup-title-font-size: 0.75rem;
   /* Вспомогательный текст рядом с основным: подсказка пункта, день недели, ошибка поля. */
-  /* Подпись-заполнитель пустого поля: текст, порог 4.5:1 (ADR 0183, PK26). */
-  --tsr-comp-field-placeholder-color: var(--tsr-comp-control-color);
   --tsr-comp-caption-font-size: 0.75rem;
   /* Он же в ячейке — строка не растёт. */
   --tsr-comp-caption-font-size-compact: 0.6875rem;
@@ -1159,21 +1159,20 @@
       [data-tsr-color-mode='light'] *
     )
 ) {
-  --tsr-sys-fg: var(--tsr-ref-neutral-900);
-  --tsr-sys-bg: var(--tsr-ref-neutral-50);
+  --tsr-sys-fg: var(--tsr-ref-neutral-950);
+  --tsr-sys-bg: var(--tsr-ref-neutral-0);
   --tsr-sys-surface: var(--tsr-ref-neutral-0);
   --tsr-sys-muted: var(--tsr-ref-neutral-100);
   --tsr-sys-accent: var(--tsr-ref-neutral-900);
-  --tsr-sys-accent-fg: var(--tsr-ref-neutral-0);
+  --tsr-sys-accent-fg: var(--tsr-ref-neutral-50);
   /* ~`neutral-200` на белом; в повышенном контрасте (ADR 0088) — рычаг линий, 3:1. */
   --tsr-sys-border: color-mix(
     in oklch,
     var(--tsr-sys-fg) max(9%, var(--tsr-sys-tint-line)),
     transparent
   );
-  --tsr-sys-ring: var(--tsr-ref-neutral-900);
-  --tsr-sys-danger: var(--tsr-ref-red-500);
-  --tsr-sys-info: var(--tsr-ref-blue-500);
+  --tsr-sys-danger: var(--tsr-ref-red-600);
+  --tsr-sys-info: var(--tsr-ref-blue-600);
   /* Оттенки свечения загрузки рядом с info (ADR 0094). */
   --tsr-sys-info-sky: var(--tsr-ref-sky-500);
   --tsr-sys-info-indigo: var(--tsr-ref-indigo-500);
@@ -1301,6 +1300,11 @@
 
 .data-grid-theme [data-flash-out] {
   --tsr-flash-time: var(--tsr-comp-flash-fade-duration);
+}
+
+.data-grid-theme [data-column-flash-out] {
+  --tsr-column-flash-time: var(--tsr-comp-flash-fade-duration);
+}
 
 /*
  * Сброс браузерных стилей внутри таблицы (ADR 0019, TK7): только под корнем темы, страницу
@@ -1352,9 +1356,4 @@
   :where(.data-grid-theme) ::placeholder {
     opacity: 1;
   }
-}
-}
-
-.data-grid-theme [data-column-flash-out] {
-  --tsr-column-flash-time: var(--tsr-comp-flash-fade-duration);
 }

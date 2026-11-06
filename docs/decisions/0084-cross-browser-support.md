@@ -2,6 +2,8 @@
 
 - **Статус:** Принято (решения — по итогам прожарки 2026-10-10)
 - **Дата:** 2026-10-10
+- **Изменено:** 2026-11-06 — порог Opera поднят с 97 до 98: токены палитры записаны `oklch()`, он работает
+  с Opera 98 ([ADR 0191](0191-palette-on-shadcn-and-tailwind.md)).
 - **Связано:**
   - [ADR 0003](0003-formalize-tech-stack.md) — стек; Tailwind v4 задаёт фактический
     нижний порог браузеров.
@@ -65,8 +67,8 @@ Firefox 114, Safari 16.4.
 ### 1. Порог
 
 Поддерживаются **Chrome и Edge ≥ 111, Firefox ≥ 128, Safari и iOS Safari ≥ 17.1,
-Opera ≥ 97, Samsung Internet ≥ 22, Chrome и Opera на Android — последние**. Opera 97
-и Samsung Internet 22 — тот же Chromium 111, что и порог Chrome: кода они не требуют,
+Opera ≥ 98, Samsung Internet ≥ 22, Chrome и Opera на Android — последние**. Opera 98 — с неё работает `oklch()` токенов палитры,
+Samsung Internet 22 — тот же Chromium 111, что и порог Chrome: кода он не требует,
 только записи в пороге. У Samsung Internet нет цели сборки esbuild — его покрывает
 `chrome111`. Chrome, Edge и Firefox — по Tailwind v4: ниже
 библиотека всё равно не опустится. Safari строже Tailwind (16.4): строки шапки стоят
@@ -187,7 +189,7 @@ Playwright даёт только свежие движки — Safari 17.1 ил�
 
 | ID  | Требование                                                                                                                                                                                                                      | Вид    |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| CB1 | `browserslist` в `package.json` фиксирует порог — Chrome и Edge ≥ 111, Firefox ≥ 128, Safari и iOS Safari ≥ 17.1, Opera ≥ 97, Samsung Internet ≥ 22, Chrome и Opera на Android последние; `build.target` сборки с ним совпадает | unit   |
+| CB1 | `browserslist` в `package.json` фиксирует порог — Chrome и Edge ≥ 111, Firefox ≥ 128, Safari и iOS Safari ≥ 17.1, Opera ≥ 98, Samsung Internet ≥ 22, Chrome и Opera на Android последние; `build.target` сборки с ним совпадает | unit   |
 | CB2 | `check:browsers`: `dist/style.css` не использует CSS вне порога по данным caniuse, кроме списка исключений с причиной; `interpolate-size` в CSS — красный                                                                       | unit   |
 | CB3 | `test:engines` гоняет все визуальные наборы в Firefox и WebKit, кроме исключений с причиной; команды тестов те же, что у проекта Chromium                                                                                       | unit   |
 | CB4 | В эмуляции iPhone (WebKit) и Pixel (Chromium) грид рисуется, прокручивается касанием, касание выбирает строку                                                                                                                   | visual |

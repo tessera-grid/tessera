@@ -23,7 +23,7 @@ import {
   rowSelection,
 } from '../../lib/plugins'
 import { useColumns } from './__mocks__/columns'
-import { useData } from './__mocks__/data'
+import { getData, useData } from './__mocks__/data'
 import { rowActionsDemo } from './__mocks__/plugins/rowActionsDemo/rowActionsDemo'
 import { expect, userEvent } from 'storybook/test'
 import { guideNext, settle, until } from './__mocks__/catalogPlay'
@@ -97,12 +97,6 @@ const PALETTE: TokenControl[] = [
     arg: 'border',
     label: 'border',
     desc: 'Цвет hairline-границ. Задаёт границы контролов и разделитель закреплённых колонок.',
-  },
-  {
-    token: '--ring',
-    arg: 'ring',
-    label: 'ring',
-    desc: 'База цвета кольца фокуса (клавиатурный фокус контролов).',
   },
   {
     token: '--destructive',
@@ -1113,6 +1107,236 @@ export const ThemeSources: StoryObj<ThemingArgs> = {
       expect(wrapperOf(canvas)!.parentElement!.classList).not.toContain('dark')
     })
     await settle()
+  },
+}
+
+// --- ADR 0191 -------------------------------------------------------------------------
+
+/** Роли приложения с мостом: история снимает их, чтобы таблица осталась без палитры. */
+const APP_ROLES = [
+  '--foreground',
+  '--background',
+  '--card',
+  '--muted',
+  '--primary',
+  '--primary-foreground',
+  '--border',
+  '--destructive',
+  '--info',
+]
+const APP_PRIMARY = 'oklch(0.42 0.16 262)'
+const APP_RING = 'rgb(255, 0, 200)'
+const APP_UNSAVED = 'rgb(0, 95, 115)'
+
+const setRoles = (root: HTMLElement, roles: Record<string, string>) => {
+  for (const [role, value] of Object.entries(roles)) {
+    root.style.setProperty(role, value)
+  }
+  return () => {
+    for (const role of Object.keys(roles)) root.style.removeProperty(role)
+  }
+}
+const withoutPalette = (root: HTMLElement) =>
+  setRoles(root, Object.fromEntries(APP_ROLES.map(role => [role, 'initial'])))
+const rawToken = (canvas: HTMLElement, token: string) =>
+  getComputedStyle(wrapperOf(canvas)!).getPropertyValue(token).trim()
+
+const PALETTE_GRID = {
+  enableRowSelection: true,
+  enableColumnSorting: true,
+  columnCount: 5,
+  dataCount: 20,
+  containerHeight: '460',
+  height: '360',
+  maxHeight: '360',
+} satisfies Partial<StoryProps>
+
+const DEFAULT_PALETTE: readonly GuideStoryStep[] = [
+  {
+    title: 'Приложение без палитры',
+    hint: 'Приложение не задаёт свои цвета. Таблица берёт встроенную палитру: нейтральные поверхности и линии, акцент выбора и загрузки.',
+    enter: withoutPalette,
+  },
+  {
+    title: 'Тёмная тема',
+    hint: 'Приложение включило таблице тёмную тему. Встроенная палитра сменила все цвета разом, текст и линии остались читаемыми.',
+    props: () => ({ colorMode: 'dark' }),
+    enter: withoutPalette,
+  },
+]
+
+/** ADR 0191, S1: приложение без shadcn получает готовую палитру. */
+export const ThemingDefaultPalette: StoryObj<ThemingArgs> = {
+  name: 'Default palette',
+  args: { locale: 'en' },
+  parameters: { scenario: '0191/S1', ...guideControls() },
+  render: storyArgs => (
+    <GuideStory
+      title="Палитра по умолчанию"
+      steps={DEFAULT_PALETTE}
+      args={guideArgs(
+        PALETTE_GRID,
+        storyArgs as Pick<StoryProps, 'colorMode' | 'locale'>,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(DEFAULT_PALETTE[0]!.title, async () => {
+      await until(() => expect(wrapperOf(canvas)).not.toBeNull())
+      const shade = globals.theme === 'dark' ? 'oklch(70.7%' : 'oklch(54.6%'
+      await until(() =>
+        expect(rawToken(canvas, '--tsr-sys-info')).toContain(shade),
+      )
+      await settle()
+    })
+    await step(DEFAULT_PALETTE[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(schemeOf(canvas)).toBe('dark'))
+      await until(() =>
+        expect(rawToken(canvas, '--tsr-sys-info')).toContain('oklch(70.7%'),
+      )
+      await settle()
+    })
+  },
+}
+
+const quickSearchField = (root: ParentNode) =>
+  root.querySelector<HTMLInputElement>('input[data-testid="quick-search"]')
+
+const SHADCN_PALETTE: readonly GuideStoryStep[] = [
+  {
+    title: 'Палитра приложения',
+    hint: 'Приложение использует стандартную тему shadcn. Таблица берёт из неё текст, поверхности, линии и цвет ошибки и выглядит частью приложения.',
+  },
+  {
+    title: 'Приложение сменило акцент',
+    hint: 'Приложение задало свой основной цвет. Флажки выбора и включённые кнопки таблицы приняли его без настройки самой таблицы.',
+    enter: root => setRoles(root, { '--primary': APP_PRIMARY }),
+  },
+  {
+    title: 'Кольцо фокуса таблицы',
+    hint: 'Приложение задало и свой цвет кольца фокуса, но таблица оставила своё: его выводит цвет текста, поэтому оно заметно на любом фоне. Пользователь перешёл к полю поиска.',
+    keyboard: true,
+    enter: root => {
+      const undo = setRoles(root, {
+        '--primary': APP_PRIMARY,
+        '--ring': APP_RING,
+      })
+      quickSearchField(root)?.focus()
+      return undo
+    },
+  },
+]
+
+/** ADR 0191, S2: таблица берёт цвета приложения, контраст и кольцо фокуса держатся. */
+export const ThemingShadcnPalette: StoryObj<ThemingArgs> = {
+  name: 'App palette',
+  args: { locale: 'en' },
+  parameters: { scenario: '0191/S2', ...guideControls() },
+  render: storyArgs => (
+    <GuideStory
+      title="Палитра приложения"
+      steps={SHADCN_PALETTE}
+      args={guideArgs(
+        { ...PALETTE_GRID, enableQuickSearch: true },
+        storyArgs as Pick<StoryProps, 'colorMode' | 'locale'>,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(SHADCN_PALETTE[0]!.title, async () => {
+      await until(() => expect(wrapperOf(canvas)).not.toBeNull())
+      await settle()
+    })
+    await step(SHADCN_PALETTE[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(rawToken(canvas, '--tsr-sys-accent')).toBe(APP_PRIMARY),
+      )
+      await settle()
+    })
+    await step(SHADCN_PALETTE[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(document.activeElement).toBe(quickSearchField(canvas)),
+      )
+      expect(rawToken(canvas, '--tsr-sys-ring')).not.toContain(APP_RING)
+      await settle()
+    })
+  },
+}
+
+/** Тема приложения: свой цвет несохранённого. */
+const OWN_UNSAVED = 'theming-own-unsaved'
+const OWN_UNSAVED_CSS = `
+.${OWN_UNSAVED}.${DATA_GRID_THEME_CLASS} { --tsr-sys-unsaved: ${APP_UNSAVED}; }
+`
+const UNSAVED_ROW = getData(PALETTE_GRID.dataCount)[1]!.id as string
+
+const UNSAVED_ROLE: readonly GuideStoryStep[] = [
+  {
+    title: 'Несохранённая правка',
+    hint: 'В таблице есть правка, которую ещё не сохранили. Уголок ячейки и счётчик на кнопке показывают её своим цветом, отдельным от цвета ошибок.',
+  },
+  {
+    title: 'Приложение задало свой цвет',
+    hint: 'Приложение переопределило роль несохранённого в своей теме. Уголок ячейки и счётчик сменили цвет вместе.',
+    props: () => ({ gridClassName: OWN_UNSAVED }),
+  },
+]
+
+/** ADR 0191, S3: приложение меняет цвет несохранённого своей ролью. */
+export const ThemingUnsavedRole: StoryObj<ThemingArgs> = {
+  name: 'Unsaved role',
+  args: { locale: 'en' },
+  parameters: { scenario: '0191/S3', ...guideControls() },
+  render: storyArgs => (
+    <>
+      <style>{OWN_UNSAVED_CSS}</style>
+      <GuideStory
+        title="Цвет несохранённого"
+        steps={UNSAVED_ROLE}
+        args={guideArgs(
+          {
+            ...PALETTE_GRID,
+            enableCellEditing: true,
+            cellEditingSaveMode: 'manual',
+            enableUnsavedChanges: true,
+            editableColumns: ['firstName'],
+            initialDrafts: [
+              {
+                kind: 'cellValue',
+                target: { cell: [UNSAVED_ROW, 'firstName'] },
+                value: { value: 'Ada', text: 'Ada' },
+              },
+            ],
+          },
+          storyArgs as Pick<StoryProps, 'colorMode' | 'locale'>,
+        )}
+      />
+    </>
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(UNSAVED_ROLE[0]!.title, async () => {
+      await until(() =>
+        expect(
+          canvas.querySelector(
+            '[data-testid="unsaved-changes-button"] [data-active-indicator]',
+          ),
+        ).not.toBeNull(),
+      )
+      await settle()
+    })
+    await step(UNSAVED_ROLE[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(rawToken(canvas, '--tsr-sys-unsaved')).toBe(APP_UNSAVED),
+      )
+      await settle()
+    })
   },
 }
 
