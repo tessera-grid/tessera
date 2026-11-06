@@ -9,7 +9,7 @@ import type { StatusBarComponentProps } from '../../core/createSlots'
 import { pluginStateKey } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
 import { allSelectionOf } from '../../core/rowSelectionAll'
-import { useSlice, useTableState } from '../../core/reactivity'
+import { useKeyedSlice, useTableState } from '../../core/reactivity'
 import { isSkeletonShown } from '../../core/skeletonOptions'
 import { StatusBarCount } from '../../ui/StatusBarCount/StatusBarCount'
 import { Skeleton } from '../../ui/Skeleton'
@@ -43,8 +43,7 @@ export const countHiddenSelectedRows = (
 export const SelectedRowsCount = ({ table }: StatusBarComponentProps) => {
   const labels = useLocalization()
   // Атом среза: в нём эффективное значение, и для «всё, кроме» (ADR 0138, §9).
-  const selection = useSlice(table, 'rowSelection') as
-    RowSelectionState | undefined
+  const selection = useKeyedSlice<RowSelectionState>(table, 'rowSelection')
   useTableState(table, state => [state.columnFilters, state.globalFilter])
   // Итог серверной модели строк меняется с приходом блоков (ADR 0138, §9).
   useTableState(

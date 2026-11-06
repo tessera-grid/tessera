@@ -63,6 +63,27 @@ export const useSlice = <
 }
 
 /**
+ * Подписка на срез-словарь со строкой на ключ (выбор строк): сравнение только по ссылке.
+ * Поверхностное сравнение на сотнях тысяч ключей дороже перерисовки подписчика.
+ */
+export const useKeyedSlice = <T>(
+  table: unknown,
+  key: string,
+): T | undefined => {
+  const atoms = (table as { atoms: Record<string, SliceSource<T | undefined>> })
+    .atoms
+  return useSelector(atoms[key] ?? NO_SLICE, (value: T | undefined) => value, {
+    compare: Object.is,
+  })
+}
+
+/** Среза нет: его фича не подключена. */
+const NO_SLICE = {
+  get: () => undefined,
+  subscribe: () => ({ unsubscribe: () => {} }),
+}
+
+/**
  * Подписка на ПРОЕКЦИЮ одного среза: ре-рендер только при смене проекции, а не
  * всего среза (напр. «редактируется ли эта ячейка» вместо всей сессии правки).
  */

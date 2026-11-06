@@ -106,6 +106,15 @@ describe('perf:compare', () => {
     ).toThrow('npm ci упал')
     expect(existsSync(failedDir)).toBe(false)
     expect(worktrees(repo)).toHaveLength(1)
+
+    // git дерево не удалил (на Windows — снимки с длинными именами): каталог всё равно уходит.
+    const stuck = prepareWorktree(repo, 'HEAD', {
+      install: true,
+      npmCi: () => {},
+    })
+    git(repo, 'worktree', 'lock', stuck.dir)
+    removeWorktree(repo, stuck)
+    expect(existsSync(stuck.dir)).toBe(false)
   })
 
   it('PF13: раунды вперемешку — порядок сторон чередуется; минимум 5 раундов, кейс с неопределённым вердиктом добирает до 15', async () => {

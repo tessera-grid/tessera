@@ -205,6 +205,10 @@ const indexOf = (drafts: readonly Draft[]) => {
   return index
 }
 
+/** Есть ли запись вида у цели; поиск по указателю среза, без перебора. */
+export const hasDraft = (table: unknown, kind: string, target: DraftTarget) =>
+  indexOf(readDrafts(table)).has(draftKeyOf(kind, target))
+
 /** Черновик вида у цели — перерисовывает только подписчика этой цели. */
 export const useDraft = (
   table: unknown,

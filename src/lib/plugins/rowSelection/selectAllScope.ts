@@ -66,6 +66,7 @@ export const scopeSelectionOf = (
   let selected = 0
   for (const row of rows) if (selection[row.id]) selected++
   return {
+    count: selected,
     all: rows.length > 0 && selected === rows.length,
     some: selected > 0,
   }
@@ -78,6 +79,12 @@ export const setScopeSelected = (
   selected: boolean,
 ) =>
   (table as ScopeTable).setRowSelection(old => {
+    // Снять весь выбор — без копии среза: на сотнях тысяч строк копия дороже всего нажатия.
+    if (
+      !selected &&
+      scopeSelectionOf(rows, old).count === Object.keys(old).length
+    )
+      return {}
     const next = { ...old }
     for (const row of rows) {
       if (selected) next[row.id] = true

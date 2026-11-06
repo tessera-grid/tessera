@@ -290,6 +290,9 @@ export const removeWorktree = (repo: string, { dir, linked }: Worktree) => {
   }
   try {
     git(repo, ['worktree', 'remove', '--force', dir])
+  } catch {
+    // Снимки упавших тестов с длинными именами git на Windows не удаляет, Node — удаляет.
+    rmSync(dir, { recursive: true, force: true })
   } finally {
     git(repo, ['worktree', 'prune'])
   }

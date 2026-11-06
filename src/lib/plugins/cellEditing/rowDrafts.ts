@@ -11,6 +11,7 @@ import { flashOutcome } from '../../core/flashes/flashFeature'
 import {
   type Draft,
   type DraftKind,
+  hasDraft,
   readDrafts,
   removeDraft,
   removeDrafts,
@@ -67,11 +68,22 @@ const inert = (table: unknown, call: string) => {
   return true
 }
 
-const insertsOf = (drafts: readonly Draft[]) =>
-  drafts.filter(
-    (draft): draft is Draft & { target: { row: string } } =>
-      draft.kind === ROW_INSERT_DRAFT && 'row' in draft.target,
-  )
+type InsertDraft = Draft & { target: { row: string } }
+
+/** Новые строки среза: `getRowSource` спрашивает их на каждый вызов, срез — один на пачку. */
+const inserts = new WeakMap<readonly Draft[], InsertDraft[]>()
+
+const insertsOf = (drafts: readonly Draft[]) => {
+  let list = inserts.get(drafts)
+  if (!list) {
+    list = drafts.filter(
+      (draft): draft is InsertDraft =>
+        draft.kind === ROW_INSERT_DRAFT && 'row' in draft.target,
+    )
+    inserts.set(drafts, list)
+  }
+  return list
+}
 
 /** Черновик новой строки по её временному id. */
 export const insertDraftOf = (table: unknown, rowId: string) =>
@@ -93,12 +105,7 @@ export const isNewRow = (table: unknown, rowId: string) => {
 
 /** Строка удалена черновиком. */
 export const isDeletedRow = (table: unknown, rowId: string) =>
-  readDrafts(table).some(
-    draft =>
-      draft.kind === ROW_DELETE_DRAFT &&
-      'row' in draft.target &&
-      draft.target.row === rowId,
-  )
+  hasDraft(table, ROW_DELETE_DRAFT, { row: rowId })
 
 /**
  * Добавить строку до сохранения; вернуть её id (DR27). Id выдаёт таблица — уникальный и

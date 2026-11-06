@@ -20,7 +20,7 @@ import {
 } from '../../core/failures/failuresFeature'
 import { useLocalization } from '../../core/localization'
 import { preloadable } from '../../core/preloadable'
-import { useTableState } from '../../core/reactivity'
+import { useKeyedSlice, useTableState } from '../../core/reactivity'
 import { rejectionText } from '../../util/thenable'
 import { isSkeletonShown } from '../../core/skeletonOptions'
 import { hasVisibleDataColumns } from '../../core/stubs'
@@ -54,7 +54,7 @@ export const ExportButton = ({ table }: ToolbarComponentProps) => {
   const running = useRef<false | 'server' | 'client'>(false)
 
   // Выбор строк меняет доступность значений оси «Строки».
-  useTableState(table, state => state.rowSelection)
+  useKeyedSlice(table, 'rowSelection')
   useTableState(table, state => state.columnVisibility)
   const resolved = resolveAxes(table)
   const beforeData = isSkeletonShown(table)

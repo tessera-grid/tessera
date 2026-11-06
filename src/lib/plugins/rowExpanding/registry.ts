@@ -178,6 +178,12 @@ export const rowExpanding = definePlugin<RowExpandingOptions>()({
       const canDefault =
         !!row.subRows.length ||
         !!(row as { getIsGrouped?: () => boolean }).getIsGrouped?.()
+      // Лист без детей — большинство строк: срез группировки ему не нужен.
+      const lazy =
+        !canDefault && row.depth < maxDepth && isLazyRow(row, o.hasChildren)
+      if (!canDefault && !lazy) {
+        return false
+      }
 
       const groupingActive =
         ((
@@ -207,10 +213,7 @@ export const rowExpanding = definePlugin<RowExpandingOptions>()({
         return true
       }
       // Ленивая строка; пустой ответ делает её листом до смены данных.
-      return (
-        isLazyRow(row, o.hasChildren) &&
-        readLoadedChildren(row.table)[row.id]?.length !== 0
-      )
+      return readLoadedChildren(row.table)[row.id]?.length !== 0
     }
 
     // Опции модели выставляет rowExpandingModel; выключенный интерфейс предела не задаёт.
