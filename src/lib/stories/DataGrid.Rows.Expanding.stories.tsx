@@ -797,13 +797,11 @@ const LAZY_RESTORED: readonly GuideStoryStep[] = [
   {
     title: 'Дети пришли',
     hint: 'Сервер вернул детей первой строки. Они встали под строкой и коротко вспыхнули.',
-    immediate: true,
     enter: untilDone(restoredChildren, () => RESTORED.answer(RESTORED.first)),
   },
   {
     title: 'Загрузка не удалась',
     hint: 'Сервер не ответил на запрос другой строки. Она свернулась и коротко вспыхнула; повторить запрос можно кнопкой раскрытия.',
-    immediate: true,
     enter: untilDone(
       root => restoredChildren(root) && restoredRefused(root),
       () => {

@@ -406,7 +406,8 @@ export const fitSnapshot = async (roots: Element[], { finish = true } = {}) => {
   const outer = box()
   const width = outer.right - outer.left
   const height = outer.bottom - outer.top
-  if (height > innerHeight || width > innerWidth) {
+  // Доля пикселя — округление раскладки: рамка снимка всё равно не выходит за окно.
+  if (Math.floor(height) > innerHeight || Math.floor(width) > innerWidth) {
     throw new FitError(
       `проверяемая область больше окна: ${Math.round(width)}×${Math.round(height)} > ${innerWidth}×${innerHeight} px`,
     )
