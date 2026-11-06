@@ -272,7 +272,7 @@
   --tsr-comp-skeleton-wave-width: 560px;
   --tsr-comp-skeleton-wave-tilt: 0.3;
   /* Больше стольких ячеек в окне — у волны ожидания неподвижный свет (ADR 0152, §3). */
-  --tsr-comp-pending-wave-limit: 60;
+  --tsr-comp-pending-wave-limit: 40;
   /* Проход блика волны ожидания — чаще волны скелета. */
   --tsr-comp-pending-wave-duration: calc(var(--tsr-comp-motion-duration) * 10);
   /* Отмена (ADR 0153): «стоп» занятой кнопки взводится не сразу — двойной клик не
