@@ -375,6 +375,7 @@
   );
   /* Сплошной: край выделения — индикатор состояния, контраст ≥ 3:1 (WCAG 1.4.11). */
   --tsr-comp-cell-selected-border-color: var(--tsr-sys-info);
+  --tsr-comp-cell-selected-border-width: 2px;
   --tsr-comp-body-cell-outline-color: var(--tsr-sys-accent);
   --tsr-comp-cell-content-padding-x: var(--tsr-ref-space-3);
   --tsr-comp-cell-content-padding: 0px var(--tsr-comp-cell-content-padding-x);

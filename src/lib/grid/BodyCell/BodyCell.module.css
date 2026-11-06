@@ -82,10 +82,14 @@
     /* Кромки по внешней границе выделения — inset box-shadow (без сдвига модели
        бокса); цвет стороны приходит инлайн-переменной, transparent для внутренних. */
     box-shadow:
-      inset 0 2px 0 0 var(--tsr-sel-edge-top, transparent),
-      inset -2px 0 0 0 var(--tsr-sel-edge-right, transparent),
-      inset 0 -2px 0 0 var(--tsr-sel-edge-bottom, transparent),
-      inset 2px 0 0 0 var(--tsr-sel-edge-left, transparent),
+      inset 0 var(--tsr-comp-cell-selected-border-width) 0 0
+        var(--tsr-sel-edge-top, transparent),
+      inset calc(-1 * var(--tsr-comp-cell-selected-border-width)) 0 0 0
+        var(--tsr-sel-edge-right, transparent),
+      inset 0 calc(-1 * var(--tsr-comp-cell-selected-border-width)) 0 0
+        var(--tsr-sel-edge-bottom, transparent),
+      inset var(--tsr-comp-cell-selected-border-width) 0 0 0
+        var(--tsr-sel-edge-left, transparent),
       var(--tsr-pinned-edge-shadow, 0 0 transparent);
   }
 

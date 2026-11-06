@@ -34,6 +34,12 @@
   clip-path: polygon(0 0, 100% 0, 100% 100%);
 }
 
+/* В выделенной ячейке треугольник — внутри рамки выделения: на ней он сливается с её цветом. */
+:where([data-cell-selected='true']) .mark {
+  inset-block-start: var(--tsr-comp-cell-selected-border-width);
+  inset-inline-end: var(--tsr-comp-cell-selected-border-width);
+}
+
 /* Несохранённое изменение (ADR 0178, §6): тот же треугольник в цвете несохранённого. */
 .issue[data-tone='draft'] .mark {
   background-color: var(--tsr-comp-draft-color);
