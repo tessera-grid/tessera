@@ -1,7 +1,7 @@
 /**
  * Плашка ожидания серверного действия (ADR 0153, §5): действие, ждущее дольше
  * `--tsr-comp-cancel-hint-delay`, — «Идёт поиск…» и кнопка «Отменить» под шапкой, на месте
- * плашки отказа. Плашка одна: отменяет все ждущие серверные действия и копирование.
+ * плашки отказа. Плашка одна: отменяет все ждущие серверные действия и догрузку строк.
  */
 import { type RefObject, useEffect, useState } from 'react'
 
@@ -31,11 +31,11 @@ interface PendingActionBannerProps {
   onCancelled: () => void
 }
 
-/** Ждущее действие и его попытка; копирование — по времени начала. */
+/** Ждущее действие и его попытка; догрузка строк — по времени начала. */
 const pendingOf = (status: ServerActionStatus | undefined) => {
   const kind: ServerActionKind | undefined =
-    status?.pending?.kind ?? (status?.copying ? 'copy' : undefined)
-  const attempt = status?.pending?.attempt ?? status?.copying?.since
+    status?.pending?.kind ?? status?.loadingRows?.kind
+  const attempt = status?.pending?.attempt ?? status?.loadingRows?.since
   return { kind, attempt }
 }
 
@@ -44,7 +44,8 @@ export const cancelServerPending = (table: unknown, event?: unknown) => {
   const source = cancelSourceOf(event)
   return (
     cancelPending(table, { kind: 'server' }, source) +
-    cancelPending(table, { kind: 'copy' }, source)
+    cancelPending(table, { kind: 'copy' }, source) +
+    cancelPending(table, { kind: 'selectPage' }, source)
   )
 }
 

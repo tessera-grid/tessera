@@ -10,6 +10,7 @@ const FAILED_LABEL = {
   pagination: 'serverActionFailedPagination',
   grouping: 'serverActionFailedGrouping',
   copy: 'serverActionFailedCopy',
+  selectPage: 'serverActionFailedSelectPage',
 } as const satisfies Record<ServerActionKind, keyof TableLabels>
 
 /** Причина отказа серверного действия: текст сервера (AS10), иначе подпись действия. */

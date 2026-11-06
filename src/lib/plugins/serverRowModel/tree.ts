@@ -788,6 +788,11 @@ export class BlockTree<TData, TRow, TQuery> {
     return { count: node.store.count(), known: node.store.isTotalKnown() }
   }
 
+  /** Загруженная строка на месте `local` ветки `parentId`. */
+  rowIn(parentId: string | undefined, local: number): TRow | undefined {
+    return local < 0 ? undefined : this.nodes.get(parentId)?.store.rowAt(local)
+  }
+
   /** Итог корней известен: задан, пришёл в ответе или найден коротким блоком. */
   isRootCountKnown(): boolean {
     return this.root.store.isTotalKnown()
@@ -888,6 +893,57 @@ export class BlockTree<TData, TRow, TQuery> {
     }
     await Promise.all(Array.from({ length: LOAD_RANGE_CONCURRENCY }, next))
     return rows
+  }
+
+  /**
+   * Все строки списка по порядку, с раскрытыми ветками (ADR 0190): блок за блоком, пока ветка не
+   * кончится; итог ветки может быть неизвестен. Больше `limit` строк — `undefined`.
+   */
+  async loadList(
+    limit: number,
+    signal: AbortSignal,
+  ): Promise<TRow[] | undefined> {
+    if (this.root.store.isTotalKnown() && this.count() > limit) return undefined
+    const size = this.options.blockSize
+    const out: TRow[] = []
+    const open = this.openNodes()
+    const collect = async (
+      node: TreeNode<TData, TRow, TQuery>,
+    ): Promise<boolean> => {
+      for (let start = 0; ; start += size) {
+        const known = node.store.isTotalKnown()
+        if (known && start >= node.store.count()) return true
+        let block: (TRow | undefined)[] = []
+        for (let local = start; local < start + size; local++) {
+          block.push(node.store.rowAt(local))
+        }
+        if (block.some(row => !row)) {
+          const response = await this.options.getRows({
+            start,
+            end: start + size,
+            query: this.options.query(),
+            signal,
+            ...(node.parentId === undefined ? {} : { parentId: node.parentId }),
+          })
+          signal.throwIfAborted()
+          block = this.options.toRows(
+            response.rows,
+            start,
+            node.depth,
+            node.parentId,
+          )
+        }
+        const rows = block.filter((row): row is TRow => !!row)
+        for (const row of rows) {
+          out.push(row)
+          if (out.length > limit) return false
+          const child = this.nodes.get(this.options.idOf(row))
+          if (child && open.has(child) && !(await collect(child))) return false
+        }
+        if (rows.length < size) return true
+      }
+    }
+    return (await collect(this.root)) ? out : undefined
   }
 }
 

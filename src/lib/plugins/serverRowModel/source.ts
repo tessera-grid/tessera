@@ -834,6 +834,7 @@ const createServerSource = (table: unknown): ServerSource => {
     listIndexOf: id => shown.store.indexOf(id),
     loadedRows: () => shown.store.loadedRows(),
     branchSize: parentId => shown.store.branchSize(parentId),
+    rowIn: (parentId, index) => shown.store.rowIn(parentId, index),
     // Перенос — транзакция строк (ADR 0157): удаление и вставка одной пачкой, итог тот же.
     moveRow: (id, { parentId, index }, stray) => {
       const row = shown.store.rowById(id)
@@ -950,6 +951,21 @@ const createServerSource = (table: unknown): ServerSource => {
         ...batches,
         ...(after ? [[{ at: 0, delta: -after }]] : []),
       ]
+    },
+    loadList: (limit, signal) => shown.store.loadList(limit, signal),
+    pageRootIndexes: () => {
+      const { start, end } = pageBounds()
+      const store = shown.store
+      const page = activePageOf(table)
+      const roots = store.rootCount()
+      const first = page ? page.pageIndex * page.pageSize : 0
+      const count = page ? Math.min(page.pageSize, roots - first) : roots
+      const indexes: number[] = []
+      for (let local = first; local < first + count; local++) {
+        const index = store.rootIndex(local)
+        if (index < end) indexes.push(index - start)
+      }
+      return indexes
     },
     loadRange: (first, last, signal) => {
       const { start } = pageBounds()

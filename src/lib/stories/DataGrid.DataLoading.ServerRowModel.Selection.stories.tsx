@@ -23,13 +23,13 @@ import {
 import { StoryComponent } from './DataGridStory'
 import {
   layout,
+  release,
   bodyRows,
   hasRow,
   server,
   serverReset,
   serverProps,
   refreshing,
-  release,
   skeletonRows,
   TREE_CHILDREN,
   treeProps,
@@ -47,7 +47,8 @@ import { rowSelectionModelLabels } from '../plugins/rowSelectionModel/labels'
  * Выбор строк в серверной модели (ADR 0138, ADR 0148): `Playground` — десять тысяч строк с
  * флажками, группировка и число строк групп — контролами; S6 ADR 0138 — выбрать всё, кроме
  * нескольких строк, и выгрузить; S1–S3 ADR 0148 — выбор группы целиком, сброс сменой
- * группировки, счётчик без размеров групп; S1 ADR 0162 — выбор ветки дерева целиком.
+ * группировки, счётчик без размеров групп; S1 ADR 0162 — выбор ветки дерева целиком; S1–S3
+ * ADR 0188 — выбор страницы, её догрузка и отказ.
  */
 const meta = {
   ...dataGridMeta,
@@ -787,6 +788,299 @@ export const ServerTreeSelectBranch: StoryObj<StoryProps> = {
       await until(() =>
         expect(selectedCount(canvas)).toBe(
           rowSelectionLabels(labels).selectedRows(TREE_CHILDREN),
+        ),
+      )
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0188: выбор страницы --------------------------------------------------------
+
+const PAGE_TOTAL = 10_000
+const PAGE_SIZE = 25
+/** Страница длиннее блока: окно таблицы загружает только её начало. */
+const LONG_PAGE = 60
+const SHORT_BLOCK = 10
+/** Блок страницы, который окно таблицы не просит. */
+const FAILED_BLOCK = 50
+
+const pageProps =
+  (
+    pageSize: number,
+    blockSize: number,
+    failBlock?: number,
+  ): GuideStoryStep['props'] =>
+  context => ({
+    ...serverProps({
+      total: PAGE_TOTAL,
+      knownTotal: true,
+      blockSize,
+      failBlock,
+    })!(context),
+    enablePagination: true,
+    paginationInitialPageSize: pageSize,
+    enableRowSelection: true,
+    rowSelectionSelectedCount: true,
+    rowSelectionSelectAll: 'currentPage',
+  })
+
+const nextPage = (root: HTMLElement) =>
+  root.querySelector<HTMLButtonElement>('[data-page-action="next"]')
+const headWaits = (root: HTMLElement) =>
+  headCheckbox(root)?.getAttribute('aria-busy') === 'true'
+
+/** Пользователь отметил флажок шапки, строки страницы уже у таблицы. */
+const selectPage = async (root: HTMLElement, signal: AbortSignal) => {
+  await pollUntil(() => !!rowCheckbox(root, 0), signal)
+  if (!isChecked(headCheckbox(root))) headCheckbox(root)!.click()
+  await pollUntil(() => isChecked(headCheckbox(root)), signal)
+}
+
+/** Первая страница выбрана, пользователь перешёл на вторую. */
+const toSecondPage = async (root: HTMLElement, signal: AbortSignal) => {
+  if (!hasRow(root, PAGE_SIZE)) {
+    await selectPage(root, signal)
+    nextPage(root)!.click()
+  }
+  await pollUntil(() => hasRow(root, PAGE_SIZE), signal)
+}
+
+const SELECT_PAGE: readonly GuideStoryStep[] = [
+  {
+    title: 'Список страницами',
+    hint: 'Сервер отдаёт строки страницами, у каждой строки есть флажок. Флажок в шапке относится к текущей странице.',
+    props: pageProps(PAGE_SIZE, PAGE_SIZE),
+    enter: stepAction(async (root, { signal }) => {
+      await pollUntil(() => !!rowCheckbox(root, 0), signal)
+    }),
+  },
+  {
+    title: 'Пользователь выбрал страницу',
+    hint: 'Флажок в шапке выбрал строки этой страницы. Нижняя панель считает только их.',
+    states: ['body.selection'],
+    enter: stepAction(async (root, { signal }) => {
+      await selectPage(root, signal)
+    }),
+  },
+  {
+    title: 'Пользователь перешёл на вторую страницу',
+    hint: 'Здесь ничего не выбрано, флажок в шапке пуст, счётчик прежний.',
+    enter: stepAction(async (root, { signal }) => {
+      await toSecondPage(root, signal)
+    }),
+  },
+  {
+    title: 'Пользователь выбрал вторую страницу',
+    hint: 'Выбор прибавился к первой, счётчик показывает строки двух страниц.',
+    enter: stepAction(async (root, { signal }) => {
+      await toSecondPage(root, signal)
+      await selectPage(root, signal)
+    }),
+  },
+]
+
+/** ADR 0188, S1: пользователь выбирает строки страницы, другие страницы не затронуты. */
+export const ServerPageSelectAll: StoryObj<StoryProps> = {
+  name: 'Select the page',
+  parameters: { scenario: '0188/S1', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Выбор страницы"
+      steps={SELECT_PAGE}
+      args={guideArgs(layout, args)}
+    />
+  ),
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const labels = storyLabels(args.locale)
+    const counted = (rows: number) =>
+      until(() =>
+        expect(selectedCount(canvas)).toBe(
+          rowSelectionLabels(labels).selectedRows(rows),
+        ),
+      )
+    await step(SELECT_PAGE[0]!.title, async () => {
+      await stepDone(canvas)
+      await expect(isChecked(headCheckbox(canvas))).toBe(false)
+    })
+    await step(SELECT_PAGE[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await counted(PAGE_SIZE)
+    })
+    await step(SELECT_PAGE[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await until(() => expect(isChecked(headCheckbox(canvas))).toBe(false))
+      await counted(PAGE_SIZE)
+    })
+    await step(SELECT_PAGE[3]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await counted(PAGE_SIZE * 2)
+      await settle()
+    })
+  },
+}
+
+/** Пользователь нажал флажок шапки, «сервер» держит недостающие строки. */
+const pressWaitingHead = async (root: HTMLElement, signal: AbortSignal) => {
+  await pollUntil(() => !!rowCheckbox(root, 0), signal)
+  if (headWaits(root)) return
+  server.hold = true
+  headCheckbox(root)!.click()
+  await pollUntil(() => headWaits(root), signal)
+}
+
+const WAITS: readonly GuideStoryStep[] = [
+  {
+    title: 'Часть страницы загружена',
+    hint: 'Страница длиннее блока, остальные строки сервер ещё не присылал.',
+    props: pageProps(LONG_PAGE, SHORT_BLOCK),
+    enter: stepAction(async (root, { signal }) => {
+      await pollUntil(() => !!rowCheckbox(root, 0), signal)
+    }),
+  },
+  {
+    title: 'Пользователь нажал флажок',
+    hint: 'Незагруженные строки выбрать нельзя, поэтому таблица запросила их. Флажок ждёт, выбор пока не изменился.',
+    enter: stepAction(async (root, { signal }) => {
+      await pressWaitingHead(root, signal)
+    }),
+  },
+  {
+    title: 'Строки пришли',
+    hint: 'Сервер ответил, выбрана вся страница, и счётчик это показывает.',
+    enter: stepAction(async (root, { signal }) => {
+      await pressWaitingHead(root, signal)
+      server.hold = false
+      release()
+      await pollUntil(() => isChecked(headCheckbox(root)), signal)
+    }),
+  },
+]
+
+/** ADR 0188, S2: страница ещё грузится — флажок ждёт, строки выбираются после ответа. */
+export const ServerPageSelectAllWaits: StoryObj<StoryProps> = {
+  name: 'Page still loading',
+  parameters: { scenario: '0188/S2', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Страница ещё грузится"
+      steps={WAITS}
+      args={guideArgs(layout, args)}
+    />
+  ),
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const labels = storyLabels(args.locale)
+    await step(WAITS[0]!.title, async () => {
+      await stepDone(canvas)
+      await expect(selectedCount(canvas)).toBe('')
+    })
+    await step(WAITS[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(headWaits(canvas)).toBe(true)
+      await expect(selectedCount(canvas)).toBe('')
+    })
+    await step(WAITS[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await until(() =>
+        expect(selectedCount(canvas)).toBe(
+          rowSelectionLabels(labels).selectedRows(LONG_PAGE),
+        ),
+      )
+      await settle()
+    })
+  },
+}
+
+const failureBanner = (root: HTMLElement) =>
+  root.querySelector<HTMLElement>('[data-testid="load-error-banner"]')
+
+/** Флажок ждал, «сервер» отказал в блоке страницы. */
+const refusePage = async (root: HTMLElement, signal: AbortSignal) => {
+  if (failureBanner(root)) return
+  await pressWaitingHead(root, signal)
+  server.hold = false
+  release()
+  await pollUntil(() => !!failureBanner(root), signal)
+}
+
+const PAGE_REFUSED: readonly GuideStoryStep[] = [
+  {
+    title: 'Часть страницы загружена',
+    hint: 'Остальные строки сервер ещё не присылал.',
+    props: pageProps(LONG_PAGE, SHORT_BLOCK, FAILED_BLOCK),
+    enter: stepAction(async (root, { signal }) => {
+      server.failed.delete(FAILED_BLOCK)
+      await pollUntil(() => !!rowCheckbox(root, 0), signal)
+    }),
+  },
+  {
+    title: 'Пользователь нажал флажок',
+    hint: 'Таблица запросила недостающие строки, флажок ждёт.',
+    enter: stepAction(async (root, { signal }) => {
+      await pressWaitingHead(root, signal)
+    }),
+  },
+  {
+    title: 'Сервер отказал',
+    hint: 'Выбор остался прежним, плашка называет причину и предлагает повторить.',
+    enter: stepAction(async (root, { signal }) => {
+      await refusePage(root, signal)
+    }),
+  },
+  {
+    title: 'Пользователь повторил',
+    hint: 'Строки пришли, выбрана вся страница.',
+    enter: stepAction(async (root, { signal }) => {
+      await refusePage(root, signal)
+      root
+        .querySelector<HTMLElement>('[data-testid="load-error-retry"]')!
+        .click()
+      await pollUntil(() => isChecked(headCheckbox(root)), signal)
+    }),
+  },
+]
+
+/** ADR 0188, S3: сервер отказал в строках страницы, выбор прежний. */
+export const ServerPageSelectAllRefused: StoryObj<StoryProps> = {
+  name: 'Page refused',
+  parameters: { scenario: '0188/S3', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Отказ в строках страницы"
+      steps={PAGE_REFUSED}
+      args={guideArgs(layout, args)}
+    />
+  ),
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const labels = storyLabels(args.locale)
+    await step(PAGE_REFUSED[0]!.title, async () => {
+      await stepDone(canvas)
+    })
+    await step(PAGE_REFUSED[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(headWaits(canvas)).toBe(true)
+    })
+    await step(PAGE_REFUSED[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(failureBanner(canvas)).not.toBeNull()
+      await expect(selectedCount(canvas)).toBe('')
+    })
+    await step(PAGE_REFUSED[3]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await until(() =>
+        expect(selectedCount(canvas)).toBe(
+          rowSelectionLabels(labels).selectedRows(LONG_PAGE),
         ),
       )
       await settle()

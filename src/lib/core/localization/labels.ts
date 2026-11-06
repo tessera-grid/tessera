@@ -51,6 +51,7 @@ export interface TableLabels {
   pendingPage: string
   pendingGrouping: string
   pendingCopy: string
+  pendingSelectPage: string
   /** Имя серверного действия в объявлении отмены (ADR 0153, §8) */
   actionSorting: string
   actionFiltering: string
@@ -58,6 +59,7 @@ export interface TableLabels {
   actionPage: string
   actionGrouping: string
   actionCopy: string
+  actionSelectPage: string
   /** Доступное имя строки «назад» раздела меню (ADR 0079) */
   menuBack: (section: string) => string
   /** Объявление: открыт раздел меню */
@@ -125,6 +127,7 @@ export interface TableLabels {
   serverActionFailedPagination: string
   serverActionFailedGrouping: string
   serverActionFailedCopy: string
+  serverActionFailedSelectPage: string
   /** Объявление числа строк после применения фильтра или поиска */
   announceFilteredRows: (count: number) => string
   /** Действие: переход активной ячейки */
@@ -199,12 +202,14 @@ export const DEFAULT_LABELS = {
   pendingPage: 'Loading the page…',
   pendingGrouping: 'Grouping…',
   pendingCopy: 'Copying…',
+  pendingSelectPage: 'Selecting the page…',
   actionSorting: 'Sorting',
   actionFiltering: 'Filtering',
   actionSearch: 'Search',
   actionPage: 'Page loading',
   actionGrouping: 'Grouping',
   actionCopy: 'Copying',
+  actionSelectPage: 'Selecting the page',
   menuBack: 'Back, {section}',
   announceMenuSection: '{section} menu',
   sectionLoadFailed: "Couldn't load",
@@ -241,6 +246,7 @@ export const DEFAULT_LABELS = {
   serverActionFailedPagination: "The page didn't change",
   serverActionFailedGrouping: "Grouping wasn't applied",
   serverActionFailedCopy: "The cells weren't copied",
+  serverActionFailedSelectPage: "The page rows weren't selected",
   announceLoadError: "Couldn't refresh the data",
   announceLoadErrorReason: "Couldn't refresh the data: {reason}",
   announceLoadFailed: "Couldn't load the data",

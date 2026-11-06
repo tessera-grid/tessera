@@ -12,9 +12,18 @@ import {
 import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
 
 /** Срез, который меняет серверное действие. */
-/** `copy` — копирование выделения с догрузкой строк (ADR 0146): только отказ, без отката. */
+/**
+ * `copy` — копирование выделения с догрузкой строк (ADR 0146), `selectPage` — выбор страницы с
+ * догрузкой (ADR 0188): только отказ, без отката.
+ */
 export type ServerActionKind =
-  'sorting' | 'filtering' | 'search' | 'pagination' | 'grouping' | 'copy'
+  | 'sorting'
+  | 'filtering'
+  | 'search'
+  | 'pagination'
+  | 'grouping'
+  | 'copy'
+  | 'selectPage'
 
 /** Контрол, начавший действие: на нём свет ожидания и вспышка отказа (ADR 0116, §3). */
 export interface ServerActionCause {
@@ -43,10 +52,10 @@ export interface ServerActionStatus {
     retry: () => void
   }
   /**
-   * Копирование ждёт догрузки строк (ADR 0146): плашка ожидания и Escape (ADR 0153, §5), без
+   * Действие ждёт догрузки строк (ADR 0146, ADR 0188): плашка ожидания и Escape (ADR 0153, §5), без
    * свечения обновления. Обновления среза без этого поля его не трогают.
    */
-  copying?: { since: number }
+  loadingRows?: { kind: 'copy' | 'selectPage'; since: number }
 }
 
 interface ServerActionStateSlice {
@@ -118,7 +127,7 @@ export const serverActionFeature: TableFeature = {
 export const readServerAction = (table: unknown): ServerActionStatus =>
   (table as StatusTable | undefined)?.atoms?.serverAction?.get() ?? IDLE
 
-/** Обновить срез; без фичи — ничего. Ожидание копирования меняет только тот, кто его назвал. */
+/** Обновить срез; без фичи — ничего. Ожидание строк меняет только тот, кто его назвал. */
 export const writeServerAction = (
   table: unknown,
   updater: (prev: ServerActionStatus) => ServerActionStatus,
@@ -129,7 +138,7 @@ export const writeServerAction = (
       | undefined
   )?.setServerAction?.(prev => {
     const next = updater(prev)
-    return prev.copying && !('copying' in next)
-      ? { ...next, copying: prev.copying }
+    return prev.loadingRows && !('loadingRows' in next)
+      ? { ...next, loadingRows: prev.loadingRows }
       : next
   })

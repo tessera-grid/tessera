@@ -9,7 +9,7 @@ import { logWarn } from '../util/logger'
 
 /** Вид ждущей операции — фильтр `table.cancelPending`. */
 export type PendingKind =
-  'menu' | 'server' | 'export' | 'children' | 'copy' | 'cellEdit'
+  'menu' | 'server' | 'export' | 'children' | 'copy' | 'cellEdit' | 'selectPage'
 
 /** Источник отмены — в канал действий (ADR 0125). */
 export type CancelSource = 'pointer' | 'keyboard' | 'api'

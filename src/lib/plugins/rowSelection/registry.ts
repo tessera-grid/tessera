@@ -5,6 +5,7 @@
  */
 import type { RowData, TableFeatures } from '@tanstack/react-table'
 
+import { isPaginationActive } from '../../core/dataMode'
 import { definePlugin } from '../../core/definePlugin'
 import {
   serverRowModelReason,
@@ -54,6 +55,12 @@ export const rowSelection = definePlugin<RowSelectionOptions>()({
     toggleAllRows: labels => rowSelectionLabels(labels).selectAll,
     toggleAllPageRows: labels =>
       rowSelectionLabels(labels).actionToggleAllPageRows,
+    selectPageResolved: labels =>
+      rowSelectionLabels(labels).actionToggleAllPageRows,
+    selectPageRejected: labels =>
+      rowSelectionLabels(labels).actionToggleAllPageRows,
+    selectPageCancelled: labels =>
+      rowSelectionLabels(labels).actionToggleAllPageRows,
     'rowSelection.toggle': labels => rowSelectionLabels(labels).selectRow,
   },
   model: {
@@ -71,14 +78,18 @@ export const rowSelection = definePlugin<RowSelectionOptions>()({
     onSelectAllRows: o.onSelectAllRows, // undefined-ключи отбросит definePlugin
   }),
   options: o => ({ rowSelectionSelectAll: o.selectAll ?? 'filtered' }),
-  // Охват серверной модели строк — весь итог выборки (ADR 0179, §4): страница не охват.
+  // Охват серверной модели строк без пагинации — весь итог выборки (ADR 0179, §4; ADR 0188).
   setup: o => table => {
-    if (o.selectAll === 'currentPage' && serverRowModelReason(table)) {
+    if (
+      o.selectAll === 'currentPage' &&
+      serverRowModelReason(table) &&
+      !isPaginationActive(table)
+    ) {
       warnPluginInert(
         table,
         'rowSelection',
         'serverRowModel',
-        `selectAll: 'currentPage' acts as 'all' with the server row model`,
+        `selectAll: 'currentPage' acts as 'all' with the server row model without pagination`,
       )
     }
   },

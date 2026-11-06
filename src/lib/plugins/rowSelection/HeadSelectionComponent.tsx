@@ -6,16 +6,17 @@
 import type { RowSelectionState } from '@tanstack/react-table'
 
 import { reportAction, sourceOf } from '../../core/debugActions'
-import type { PluginHeaderProps } from '../../core/definePlugin'
+import { pluginStateKey, type PluginHeaderProps } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
 import { partialRowsReason } from '../../core/dataMode'
-import { useSlice, useTableState } from '../../core/reactivity'
+import { useKeyedSlice, useTableState } from '../../core/reactivity'
 import {
   isWholeSelection,
   rowSelectionValueOf,
   setAllRowsSelected,
   tableAllSelection,
 } from '../../core/rowSelectionAll'
+import type { ServerActionStatus } from '../../core/serverActions'
 import { Checkbox } from '../../ui/Checkbox/Checkbox'
 import {
   scopeRowsOf,
@@ -23,6 +24,11 @@ import {
   selectAllScopeOf,
   setScopeSelected,
 } from './selectAllScope'
+import {
+  selectsServerPage,
+  serverPageSelectionOf,
+  toggleServerPage,
+} from './serverPageSelection'
 import type { RowSelectionHooks } from './types'
 import { rowSelectionLabels } from './labels'
 
@@ -32,7 +38,8 @@ export const HeadSelectionComponent = ({
 }: PluginHeaderProps<Partial<RowSelectionHooks>>) => {
   const labels = useLocalization()
 
-  const selection = (useSlice(table, 'rowSelection') ?? {}) as RowSelectionState
+  const selection =
+    useKeyedSlice<RowSelectionState>(table, 'rowSelection') ?? {}
   // Строки охвата меняются с фильтрами, поиском, страницей и порядком строк.
   useTableState(table, state => {
     const { columnFilters, globalFilter, pagination, sorting } =
@@ -42,7 +49,39 @@ export const HeadSelectionComponent = ({
 
   const { onSelectAllRows } = hooks
   const partial = partialRowsReason(table)
-  // Серверная модель строк — весь итог при любом охвате (ADR 0179, §4).
+  // Страница серверной модели: строки приходят по нажатию (ADR 0188).
+  const serverPage = selectsServerPage(table)
+  const pageWaits = useTableState(table, state => {
+    const { serverAction } = state as unknown as {
+      serverAction?: ServerActionStatus
+    }
+    return serverAction?.loadingRows?.kind === 'selectPage'
+  })
+  // Строки страницы приходят блоками: состояние флажка меняется с ними.
+  useTableState(table, state =>
+    serverPage
+      ? (state as unknown as Record<string, unknown>)[
+          pluginStateKey('serverRowModel')
+        ]
+      : undefined,
+  )
+  if (serverPage) {
+    const { all, some, disabled } = serverPageSelectionOf(table)
+    return (
+      <Checkbox
+        className="row-select-checkbox"
+        checked={all}
+        indeterminate={some && !all}
+        pending={pageWaits}
+        disabled={disabled}
+        onCheckedChange={(_, event) =>
+          toggleServerPage(table, hooks, sourceOf(event))
+        }
+        label={rowSelectionLabels(labels).selectAll}
+      />
+    )
+  }
+  // Серверная модель строк без пагинации — весь итог при любом охвате (ADR 0179, §4).
   const scope = partial === 'serverRowModel' ? 'all' : selectAllScopeOf(table)
 
   // Строк нет у грида: «Выбрать всё» — весь итог без загрузки, снятые флажки — исключения

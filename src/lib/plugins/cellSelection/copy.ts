@@ -226,7 +226,7 @@ export const copyCellSelection = (
   announceLabel(table, l => cellSelectionLabels(l).announceCopyLoading(rows))
   writeServerAction(table, status => ({
     ...status,
-    copying: { since: performance.now() },
+    loadingRows: { kind: 'copy', since: performance.now() },
   }))
   // Отмена человеком или приложением (ADR 0153): тихо, буфер не меняется.
   let cancelled = false
@@ -266,9 +266,9 @@ export const copyCellSelection = (
     if (current === controller) waiting.delete(t.store)
     // Новое копирование уже ждёт — его ожидание не снимается.
     else if (current) return
-    writeServerAction(table, ({ copying: _copying, ...status }) => ({
+    writeServerAction(table, ({ loadingRows: _rows, ...status }) => ({
       ...status,
-      copying: undefined,
+      loadingRows: undefined,
     }))
   }
   regions

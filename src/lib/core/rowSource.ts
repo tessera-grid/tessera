@@ -96,6 +96,8 @@ export interface RowSource<TRow = unknown> {
    * индексы — от её начала.
    */
   offset?: () => number
+  /** Индексы строк верхнего уровня текущей страницы, от её начала (ADR 0188). */
+  pageRootIndexes?: () => number[]
   /** Страница, где стоит строка со сквозным индексом; `undefined` — такой строки нет. */
   pageOf?: (listIndex: number) => number | undefined
   /** Сквозной индекс строки, в том числе на другой странице; `-1` — её нет в списке. */
@@ -107,6 +109,8 @@ export interface RowSource<TRow = unknown> {
   branchSize?: (
     parentId: string | undefined,
   ) => { count: number; known: boolean } | undefined
+  /** Загруженная строка на месте `index` ветки `parentId` (без него — корней); нет — `undefined`. */
+  rowIn?: (parentId: string | undefined, index: number) => TRow | undefined
   /**
    * Перенести строку на место `index` в ветке `parentId` (без него — среди корней) — сразу,
    * без запроса (ADR 0159, §2, §4). Строки нет в кэше — встаёт по данным `stray.original`, а
@@ -143,10 +147,54 @@ export interface RowSource<TRow = unknown> {
     last: number,
     signal: AbortSignal,
   ) => Promise<readonly (TRow | undefined)[]>
+  /**
+   * Все строки списка на всех страницах: загруженные и запросом мимо кэша (ADR 0190). Строк
+   * больше `limit` — `undefined`: известный итог проверяется до запросов.
+   */
+  loadList?: (
+    limit: number,
+    signal: AbortSignal,
+  ) => Promise<readonly TRow[] | undefined>
   /** Источник под слоем строк до сохранения (ADR 0178, §7): строки данных без новых. */
   base?: RowSource<TRow>
   /** Новые строки слоя и их места в списке; журнал смен о них не знает (ADR 0178, DR50). */
   newRows?: () => readonly NewRowPlace[]
+}
+
+/** Срезы, смена которых начинает новую выборку серверной модели (ADR 0138, §6). */
+export const LIST_SLICES = [
+  'sorting',
+  'columnFilters',
+  'globalFilter',
+  'grouping',
+] as const
+
+interface WatchedAtom {
+  get: () => unknown
+  subscribe: (listener: () => void) => { unsubscribe: () => void }
+}
+
+/**
+ * Позвать `changed`, когда значение срезов сменилось: производные атомы оповещают и о новом
+ * объекте с тем же значением. Возвращает снятие подписки.
+ */
+export const watchSlices = (
+  table: unknown,
+  slices: readonly string[],
+  changed: () => void,
+) => {
+  const atoms = (table as { atoms: Record<string, WatchedAtom | undefined> })
+    .atoms
+  const keyOf = () => JSON.stringify(slices.map(name => atoms[name]?.get()))
+  const key = keyOf()
+  const subscriptions = slices.map(name =>
+    atoms[name]?.subscribe(() => {
+      if (keyOf() !== key) changed()
+    }),
+  )
+  return () => {
+    for (const subscription of subscriptions) subscription?.unsubscribe()
+  }
 }
 
 /** Первый ответ ветки: пришедшие строки и итог ветки, а если он неизвестен — их число. */

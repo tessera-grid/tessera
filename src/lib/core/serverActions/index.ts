@@ -180,6 +180,7 @@ const isServer = (t: ServerTable, kind: ServerActionKind) => {
     // Группирует сервер только в серверной модели строк (ADR 0144).
     case 'grouping':
     case 'copy':
+    case 'selectPage':
       return false
     default:
       return dataModeOf(t, kind) === 'server'
@@ -321,6 +322,8 @@ export const serverActionName = (
       return labels.actionGrouping
     case 'copy':
       return labels.actionCopy
+    case 'selectPage':
+      return labels.actionSelectPage
   }
 }
 
@@ -342,6 +345,8 @@ export const serverActionPendingTitle = (
       return labels.pendingGrouping
     case 'copy':
       return labels.pendingCopy
+    case 'selectPage':
+      return labels.pendingSelectPage
   }
 }
 
@@ -406,6 +411,7 @@ const SERVER_ACTION_PLUGIN: Record<ServerActionKind, string> = {
   pagination: 'pagination',
   grouping: 'rowGrouping',
   copy: 'cellSelection',
+  selectPage: 'rowSelection',
 }
 
 export const runServerAction = (
