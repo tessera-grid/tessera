@@ -68,6 +68,8 @@ export const dragServer = {
   /** Ответы с вложенными строками «сервер» держит до шага гайда. */
   holdChildren: false,
   held: [] as (() => void)[],
+  /** Вложенные строки «сервер» отдать не может (ADR 0189, S3). */
+  failChildren: false,
   /** Переносы «сервер» подтверждает сам — без шага гайда. */
   auto: false,
   /** Ответ на перенос — отказ. */
@@ -147,6 +149,7 @@ export const releaseChildren = () => {
 }
 
 export const MOVE_REFUSAL = 'The server could not save the new order'
+export const BRANCH_REFUSAL = 'The server could not load the branch'
 
 /** Ответить на ждущий перенос: подтверждение переставляет строку у «сервера». */
 export const answerMove = (ok: boolean) => {
@@ -179,6 +182,7 @@ const dragReset: TesseraFeatureEntry = {
     dragServer.items = initialItems()
     dragServer.children = new Map()
     dragServer.holdChildren = false
+    dragServer.failChildren = false
     dragServer.held = []
     for (const move of dragServer.moves) move.reject(new Error('reset'))
     dragServer.moves = []
@@ -194,6 +198,7 @@ export const dragProps =
     delayMs = SERVER_DELAY_MS,
     tree = false,
     groups = false,
+    blockSize = DRAG_BLOCK,
   } = {}): GuideStoryStep['props'] =>
   () => {
     dragServer.groups = groups
@@ -201,7 +206,7 @@ export const dragProps =
       columnsOverride: groups ? groupingColumns : filteringColumns,
       dataOverride: [],
       enableServerRowModel: true,
-      serverRowModelBlockSize: DRAG_BLOCK,
+      serverRowModelBlockSize: blockSize,
       ...(groups
         ? {
             serverRowModelGetGroupChildCount: (row: GroupItem) => row.count,
@@ -212,9 +217,13 @@ export const dragProps =
           }
         : { rowCount: DRAG_TOTAL }),
       serverRowModelGetRows: (request: ServerRowsRequest) =>
-        new Promise<ServerRowsResponse<FilteringItem>>(resolve => {
+        new Promise<ServerRowsResponse<FilteringItem>>((resolve, reject) => {
           const { start, end, parentId } = request
           const answer = () => {
+            if (parentId && dragServer.failChildren) {
+              reject(new Error(BRANCH_REFUSAL))
+              return
+            }
             if (request.grouping.length > 0) {
               resolve(groupAnswer(request))
               return

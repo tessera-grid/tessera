@@ -5,6 +5,7 @@ import { dataGridMeta } from './dataGridMeta'
 import {
   guideNext,
   pollUntil,
+  repeat,
   settle,
   stepDone,
   until,
@@ -36,12 +37,14 @@ import {
   rowIndent,
   rowOf,
 } from './__mocks__/rowDragHold'
-import { DRAG_FILL, OVERLAY } from './rowDragging.dnd'
+import { DRAG_FILL, HANDLE, OVERLAY } from './rowDragging.dnd'
 
 /**
  * Перетаскивание строк в серверной модели (ADR 0159): `Playground` — строки с «сервера»
  * с ручным порядком, ответ «сервера» на перенос и ветки — контролами; S1 — перенос
  * подтверждён, S2 — отказ, S3 — перенос в ветку, S4 — перенос в другую серверную группу.
+ * ADR 0189, без перетаскивания: S1 — вложить, S2 — вынести, S3 — ветка не загрузилась, S4 —
+ * соседняя группа.
  */
 const meta = {
   ...dataGridMeta,
@@ -521,6 +524,331 @@ export const ServerDragGroups: StoryObj<StoryProps> = {
       await expect(visitsOf(canvas, FROM_GROUP)).toBe('17')
       await expect(visitsOf(canvas, TO_GROUP)).toBe('28')
       await expect(movePending(canvas, GROUPED_LEAF)).toBe(false)
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0189: перенос без перетаскивания ---------------------------------------------
+
+/** Строка под свёрнутой веткой `BRANCH`. */
+const NEXT_TO_BRANCH = 'item-id-4'
+const CHILD = `${BRANCH}.1`
+const BRANCH_BLOCK = 4
+
+const openMenuOf = () => document.querySelector('[role="menu"]')
+const menuItem = (id: string) =>
+  document.querySelector<HTMLElement>(
+    `[role="menuitem"][data-action-id="${id}"]`,
+  )
+const nested = (root: HTMLElement, id: string) =>
+  rowIndent(root, id, 'name') > rowIndent(root, BRANCH, 'name')
+
+/** Пользователь открыл меню ручки строки. */
+const openHandleMenu = async (
+  root: HTMLElement,
+  id: string,
+  signal: AbortSignal,
+) => {
+  await pollUntil(() => !!rowOf(root, id), signal)
+  await repeat(
+    () => !!openMenuOf(),
+    () => rowOf(root, id)!.querySelector<HTMLElement>(HANDLE)!.click(),
+    signal,
+  )
+}
+
+/** Пользователь выбрал вложение: ветка раскрылась, строка ждёт её строк. */
+const indentRow = async (root: HTMLElement, signal: AbortSignal) => {
+  if (branchOpen(root)) return
+  dragServer.holdChildren = true
+  await openHandleMenu(root, NEXT_TO_BRANCH, signal)
+  menuItem('indent')!.click()
+  await pollUntil(
+    () => branchOpen(root) && movePending(root, NEXT_TO_BRANCH),
+    signal,
+  )
+}
+
+const collapsedBranch: GuideStoryStep = {
+  title: 'Дерево со свёрнутыми ветками',
+  hint: 'Рядом со строкой свёрнутая ветка, её строки сервер ещё не присылал.',
+  // Блок короче экрана: скелеты ветки не уводят строку из виду.
+  props: dragProps({ tree: true, blockSize: BRANCH_BLOCK }),
+  enter: stepAction(async (root, { signal }) => {
+    dragServer.auto = true
+    releaseChildren()
+    await pollUntil(() => !!toggleOf(root, BRANCH), signal)
+  }),
+}
+
+const INDENT: readonly GuideStoryStep[] = [
+  collapsedBranch,
+  {
+    title: 'Пользователь открыл меню ручки',
+    hint: 'Перенос доступен и без перетаскивания: меню предлагает вложить строку в ветку выше.',
+    enter: stepAction(async (root, { signal }) => {
+      await openHandleMenu(root, NEXT_TO_BRANCH, signal)
+    }),
+  },
+  {
+    title: 'Строка ждёт ветку',
+    hint: 'Таблица раскрыла ветку и запросила её строки. Пока они идут, строка занята.',
+    states: ['drag.pending'],
+    enter: stepAction(async (root, { signal }) => {
+      await indentRow(root, signal)
+    }),
+  },
+  {
+    title: 'Строка вложена',
+    hint: 'Сервер прислал ветку, строка встала в ней последней и коротко вспыхнула.',
+    enter: stepAction(async (root, { signal }) => {
+      await indentRow(root, signal)
+      releaseChildren()
+      await pollUntil(
+        () =>
+          nested(root, NEXT_TO_BRANCH) && !movePending(root, NEXT_TO_BRANCH),
+        signal,
+      )
+    }),
+  },
+]
+
+/** ADR 0189, S1: строка вкладывается без перетаскивания, свёрнутая ветка раскрывается. */
+export const ServerRowIndent: StoryObj<StoryProps> = {
+  name: 'Indent a row',
+  parameters: { scenario: '0189/S1', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Вложить строку"
+      steps={INDENT}
+      args={guideArgs(layout, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(INDENT[0]!.title, async () => {
+      await stepDone(canvas)
+      await expect(branchOpen(canvas)).toBe(false)
+    })
+    await step(INDENT[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(menuItem('indent')).not.toBeNull()
+      await expect(menuItem('outdent')).toHaveAttribute('aria-disabled', 'true')
+    })
+    await step(INDENT[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(branchOpen(canvas)).toBe(true)
+      await expect(movePending(canvas, NEXT_TO_BRANCH)).toBe(true)
+    })
+    await step(INDENT[3]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(nested(canvas, NEXT_TO_BRANCH)).toBe(true)
+      await settle()
+    })
+  },
+}
+
+const OUTDENT: readonly GuideStoryStep[] = [
+  {
+    title: 'Раскрытая ветка',
+    hint: 'Строка лежит внутри ветки.',
+    props: dragProps({ tree: true }),
+    enter: stepAction(async (root, { signal }) => {
+      dragServer.auto = true
+      releaseChildren()
+      await pollUntil(() => !!toggleOf(root, BRANCH), signal)
+      if (!branchOpen(root)) toggleOf(root, BRANCH)!.click()
+      await pollUntil(() => !!rowOf(root, CHILD), signal)
+    }),
+  },
+  {
+    title: 'Пользователь открыл меню ручки',
+    hint: 'У вложенной строки меню предлагает вынести её.',
+    enter: stepAction(async (root, { signal }) => {
+      await openHandleMenu(root, CHILD, signal)
+    }),
+  },
+  {
+    title: 'Строка вынесена',
+    hint: 'Строка встала сразу за прежней веткой, на её уровень.',
+    enter: stepAction(async (root, { signal }) => {
+      if (nested(root, CHILD)) {
+        await openHandleMenu(root, CHILD, signal)
+        menuItem('outdent')!.click()
+      }
+      await pollUntil(
+        () => !nested(root, CHILD) && !movePending(root, CHILD),
+        signal,
+      )
+    }),
+  },
+]
+
+/** ADR 0189, S2: строка выносится на уровень выше без перетаскивания. */
+export const ServerRowOutdent: StoryObj<StoryProps> = {
+  name: 'Outdent a row',
+  parameters: { scenario: '0189/S2', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Вынести строку"
+      steps={OUTDENT}
+      args={guideArgs(layout, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(OUTDENT[0]!.title, async () => {
+      await stepDone(canvas)
+      await expect(nested(canvas, CHILD)).toBe(true)
+    })
+    await step(OUTDENT[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(menuItem('outdent')).not.toHaveAttribute(
+        'aria-disabled',
+        'true',
+      )
+    })
+    await step(OUTDENT[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(nested(canvas, CHILD)).toBe(false)
+      await settle()
+    })
+  },
+}
+
+const INDENT_REFUSED: readonly GuideStoryStep[] = [
+  collapsedBranch,
+  {
+    title: 'Строка ждёт ветку',
+    hint: 'Таблица раскрыла ветку и запросила её строки.',
+    states: ['drag.pending'],
+    enter: stepAction(async (root, { signal }) => {
+      await indentRow(root, signal)
+    }),
+  },
+  {
+    title: 'Ветка не загрузилась',
+    hint: 'Сервер не отдал строки. Перенос отменён, строка на месте, вспышка и объявление говорят об отказе.',
+    immediate: true,
+    enter: stepAction(async (root, { signal }) => {
+      await indentRow(root, signal)
+      dragServer.failChildren = true
+      releaseChildren()
+      await pollUntil(() => !movePending(root, NEXT_TO_BRANCH), signal)
+    }),
+  },
+]
+
+/** ADR 0189, S3: ветка не загрузилась, строка осталась на месте. */
+export const ServerRowIndentRefused: StoryObj<StoryProps> = {
+  name: 'Branch refused',
+  parameters: { scenario: '0189/S3', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Ветка не загрузилась"
+      steps={INDENT_REFUSED}
+      args={guideArgs(layout, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(INDENT_REFUSED[0]!.title, async () => {
+      await stepDone(canvas)
+    })
+    await step(INDENT_REFUSED[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(movePending(canvas, NEXT_TO_BRANCH)).toBe(true)
+    })
+    await step(INDENT_REFUSED[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(movePending(canvas, NEXT_TO_BRANCH)).toBe(false)
+      await expect(nested(canvas, NEXT_TO_BRANCH)).toBe(false)
+      await settle()
+    })
+  },
+}
+
+const openFromGroup = async (root: HTMLElement, signal: AbortSignal) => {
+  await pollUntil(() => !!toggleOf(root, FROM_GROUP), signal)
+  if (toggleOf(root, FROM_GROUP)!.getAttribute('aria-expanded') !== 'true') {
+    toggleOf(root, FROM_GROUP)!.click()
+  }
+  await pollUntil(() => !!rowOf(root, GROUPED_LEAF), signal)
+}
+
+const NEXT_GROUP: readonly GuideStoryStep[] = [
+  {
+    title: 'Раскрытая группа',
+    hint: 'Строка лежит в группе, рядом другая группа того же уровня.',
+    props: dragProps({ groups: true }),
+    enter: stepAction(async (root, { signal }) => {
+      dragServer.auto = true
+      await openFromGroup(root, signal)
+    }),
+  },
+  {
+    title: 'Пользователь открыл меню ручки',
+    hint: 'Лист можно перенести в соседнюю группу без перетаскивания.',
+    enter: stepAction(async (root, { signal }) => {
+      await openHandleMenu(root, GROUPED_LEAF, signal)
+    }),
+  },
+  {
+    title: 'Строка в соседней группе',
+    hint: 'Группа раскрылась, строка встала в неё, приложение получило значения обеих групп.',
+    enter: stepAction(async (root, { signal }) => {
+      if (cityOf(root, GROUPED_LEAF) !== 'Lima') {
+        await openHandleMenu(root, GROUPED_LEAF, signal)
+        menuItem('moveToNextGroup')!.click()
+      }
+      await pollUntil(
+        () =>
+          cityOf(root, GROUPED_LEAF) === 'Lima' &&
+          !movePending(root, GROUPED_LEAF),
+        signal,
+      )
+    }),
+  },
+]
+
+/** ADR 0189, S4: лист переносится в соседнюю группу из меню ручки. */
+export const ServerRowNextGroup: StoryObj<StoryProps> = {
+  name: 'Move to the next group',
+  parameters: { scenario: '0189/S4', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="В соседнюю группу"
+      steps={NEXT_GROUP}
+      args={guideArgs(layout, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(NEXT_GROUP[0]!.title, async () => {
+      await stepDone(canvas)
+      await expect(cityOf(canvas, GROUPED_LEAF)).toBe('Berlin')
+    })
+    await step(NEXT_GROUP[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(menuItem('moveToNextGroup')).not.toBeNull()
+      await expect(menuItem('moveToPreviousGroup')).toHaveAttribute(
+        'aria-disabled',
+        'true',
+      )
+    })
+    await step(NEXT_GROUP[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(cityOf(canvas, GROUPED_LEAF)).toBe('Lima')
       await settle()
     })
   },

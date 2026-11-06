@@ -12,10 +12,12 @@ import { commitRowMove, type RowMoveCommit } from './commitRowMove'
 import { canNestInto } from './draggingHelpers'
 import { isClientGrouped } from './groupMove'
 import {
+  canShiftServerRow,
   moveServerRow,
   type RowMoveEdge,
   serverMoveSource,
   serverMoveTarget,
+  shiftServerRow,
 } from './serverMove'
 import type { RowDraggingHooks } from './types'
 
@@ -184,21 +186,24 @@ export const moveRow = (
 
 /** Предыдущая корневая строка-группа, в которую вкладывается строка. */
 const nestTargetOf = (row: MoveRow, table: unknown) => {
-  // В серверной модели вложение и вынос — только броском (ADR 0159, §6).
-  if (serverMoveSource(table) || row.getParentRow() || row.subRows.length > 0) {
-    return undefined
-  }
+  if (row.getParentRow() || row.subRows.length > 0) return undefined
   const target = (table as MoveTable).getCoreRowModel().rows[row.index - 1]
   return target && canNestInto(target, table) ? target : undefined
 }
 
 /** Корневая строка без подстрок вкладывается в предыдущую группу — не группа в группу. */
 export const canNestRow = (row: unknown, table: unknown) =>
-  !!nestTargetOf(row as MoveRow, table)
+  serverMoveSource(table)
+    ? canShiftServerRow(table, (row as MoveRow).id, 'in')
+    : !!nestTargetOf(row as MoveRow, table)
 
 /** Строка становится последней подстрокой предыдущей корневой группы. */
 export const nestRow = (row: unknown, table: unknown) => {
   const r = row as MoveRow
+  if (serverMoveSource(table)) {
+    shiftServerRow(table, r.id, 'in')
+    return
+  }
   const target = nestTargetOf(r, table)
   if (!target) {
     return
@@ -239,7 +244,10 @@ export const nestRow = (row: unknown, table: unknown) => {
 
 /** Выносится только подстрока корневой группы. */
 export const canUnnestRow = (row: unknown, table: unknown) => {
-  if (serverMoveSource(table) || isClientGrouped(table)) return false
+  if (serverMoveSource(table)) {
+    return canShiftServerRow(table, (row as MoveRow).id, 'out')
+  }
+  if (isClientGrouped(table)) return false
   const parent = (row as MoveRow).getParentRow()
   return !!parent && parent.depth === 0
 }
@@ -250,6 +258,10 @@ export const unnestRow = (row: unknown, table: unknown) => {
     return
   }
   const r = row as MoveRow
+  if (serverMoveSource(table)) {
+    shiftServerRow(table, r.id, 'out')
+    return
+  }
   const parent = r.getParentRow()!
   const shown = (table as MoveTable).getRowModel().rows
   const dragIndex = shown.findIndex(item => item.id === r.id)

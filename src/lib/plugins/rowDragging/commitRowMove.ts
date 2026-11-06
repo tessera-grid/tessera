@@ -66,6 +66,9 @@ export interface RowMoveCommit {
   group?: Record<string, unknown>
 }
 
+// Номер попытки сквозной: итог прежнего переноса не спутать с новым.
+let lastAttempt = 0
+
 const withoutEntry = (moves: RowMoves, rowId: string): RowMoves => {
   if (!(rowId in moves)) {
     return moves
@@ -195,6 +198,30 @@ const confirm = (table: MoveTable, rowId: string, entry: RowMoveEntry) => {
   }))
 }
 
+/** Ручка ждёт до начала переноса: ветка цели ещё идёт (ADR 0189, §3). */
+export const markMoveWaiting = (table: unknown, rowId: string) =>
+  (table as MoveTable).setRowMoves?.(prev => ({
+    ...prev,
+    [rowId]: { attempt: ++lastAttempt, pending: true },
+  }))
+
+/** Вспышка `reverted`, отметка на ручке и объявление отказа. */
+export const markMoveFailed = (
+  table: unknown,
+  rowId: string,
+  attempt: number,
+  reason: unknown,
+) => {
+  flashOutcome(table, { row: rowId }, 'reverted')
+  ;(table as MoveTable).setRowMoveFailed?.(prev => ({
+    ...prev,
+    [rowId]: { attempt, error: reason },
+  }))
+  const labels = announcerLabels(table) ?? ENGLISH_LABELS
+  const error = rejectionText(reason) ?? rowDraggingLabels(labels).moveRowFailed
+  announceLabel(table, all => rowDraggingLabels(all).announceMoveFailed(error))
+}
+
 /**
  * Отказ (ADR 0114, §4): при `revertOnReject` ленивый перенос снимается, обычный —
  * откатывается в `data` по id; без отката ленивый записывается, как при успехе. Ручка
@@ -225,14 +252,7 @@ const reject = (
       original: commit.original,
     })
   }
-  flashOutcome(table, { row: rowId }, 'reverted')
-  table.setRowMoveFailed?.(prev => ({
-    ...prev,
-    [rowId]: { attempt: entry.attempt, error: reason },
-  }))
-  const labels = announcerLabels(table) ?? ENGLISH_LABELS
-  const error = rejectionText(reason) ?? rowDraggingLabels(labels).moveRowFailed
-  announceLabel(table, all => rowDraggingLabels(all).announceMoveFailed(error))
+  markMoveFailed(table, rowId, entry.attempt, reason)
 }
 
 /**
@@ -245,9 +265,6 @@ const refreshStagedCells = (table: unknown) => {
   ).options.pluginRenderVersion
   version?.set(version.get() + 1)
 }
-
-// Номер попытки сквозной: итог прежнего переноса не спутать с новым.
-let lastAttempt = 0
 
 /**
  * Перенос сделан: обычный пишется в `data`, ленивый становится стадией модели; строка

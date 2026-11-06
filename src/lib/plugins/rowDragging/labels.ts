@@ -20,6 +20,9 @@ export interface RowDraggingLabels {
   moveToGroup: string
   indentRow: string
   outdentRow: string
+  /** Меню ручки при серверной группировке: соседняя группа (ADR 0189, §5). */
+  moveToPreviousGroup: string
+  moveToNextGroup: string
   /** Действие: отмена переноса строки */
   actionDragCancel: string
   /** Действие: смена места броска */
@@ -28,6 +31,8 @@ export interface RowDraggingLabels {
   actionDrop: string
   /** Действие: раскрытие группы паузой над ней */
   actionExpandOnHover: string
+  /** Действие: ожидание ветки цели перед переносом */
+  actionAwaitBranch: string
   /** Действие: вложить строку клавишей */
   actionNest: string
   /** Действие: пункт меню ручки строки */
@@ -48,10 +53,13 @@ export const rowDraggingLabels = defineLabels<RowDraggingLabels>()(
     moveToGroup: 'Move to group',
     indentRow: 'Indent',
     outdentRow: 'Outdent',
+    moveToPreviousGroup: 'Move to previous group',
+    moveToNextGroup: 'Move to next group',
     actionDragCancel: 'Cancel moving',
     actionDragOver: 'Choose a place',
     actionDrop: 'Drop a row',
     actionExpandOnHover: 'Expand while dragging',
+    actionAwaitBranch: 'Wait for the branch',
     actionNest: 'Nest a row',
     actionHandleMenu: 'Row handle menu',
   },

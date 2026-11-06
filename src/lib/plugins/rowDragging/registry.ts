@@ -62,6 +62,7 @@ const rowDraggingEntry = definePlugin<RowDraggingOptions>()({
     dragOver: labels => rowDraggingLabels(labels).actionDragOver,
     drop: labels => rowDraggingLabels(labels).actionDrop,
     expandOnHover: labels => rowDraggingLabels(labels).actionExpandOnHover,
+    awaitBranch: labels => rowDraggingLabels(labels).actionAwaitBranch,
     'rowDragging.move': labels => rowDraggingLabels(labels).moveRow,
     'rowDragging.nest': labels => rowDraggingLabels(labels).actionNest,
     handleMenu: labels => rowDraggingLabels(labels).actionHandleMenu,

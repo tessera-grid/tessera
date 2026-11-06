@@ -27,7 +27,11 @@ import {
   isClientGrouped,
   moveRowToGroup,
 } from './groupMove'
-import { type RowMoveEdge, serverMoveSource } from './serverMove'
+import {
+  isServerGrouped,
+  type RowMoveEdge,
+  serverMoveSource,
+} from './serverMove'
 import { rowDraggingLabels } from './labels'
 
 type MoveAtoms = {
@@ -83,14 +87,31 @@ export const RowDraggingComponent = ({ row, table }: CellComponentProps) => {
   const getMenuItems = () => [
     move('moveUp', rowDraggingLabels(labels).moveUp, -1),
     move('moveDown', rowDraggingLabels(labels).moveDown, 1),
-    // В серверной модели — к краям ветки; вложение и вынос — только броском (ADR 0159, §6).
+    // В серверной модели — к краям ветки (ADR 0159, §6).
     ...(server
       ? [
           edge('moveToStart', rowDraggingLabels(labels).moveToStart, 'start'),
           edge('moveToEnd', rowDraggingLabels(labels).moveToEnd, 'end'),
         ]
       : []),
-    ...(!server && hasRowHierarchy(table, 'tree')
+    // Лист серверной группы: соседние группы вместо вложения (ADR 0189, §5).
+    ...(isServerGrouped(table)
+      ? [
+          {
+            id: 'moveToPreviousGroup',
+            label: rowDraggingLabels(labels).moveToPreviousGroup,
+            disabled: !canUnnestRow(row, table),
+            onSelect: () => unnestRow(row, table),
+          },
+          {
+            id: 'moveToNextGroup',
+            label: rowDraggingLabels(labels).moveToNextGroup,
+            disabled: !canNestRow(row, table),
+            onSelect: () => nestRow(row, table),
+          },
+        ]
+      : []),
+    ...(!isServerGrouped(table) && hasRowHierarchy(table, 'tree')
       ? [
           {
             id: 'indent',
