@@ -4,7 +4,6 @@ import { fileURLToPath } from 'node:url'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import dts from 'vite-plugin-dts'
-import tailwindcss from '@tailwindcss/vite'
 
 import { BUILD_TARGET } from './browser-targets.ts'
 import {
@@ -28,7 +27,6 @@ export default defineConfig({
   },
   plugins: [
     react(),
-    tailwindcss(),
     !isStorybook &&
       dts({
         tsconfigPath: './tsconfig.json',
@@ -81,8 +79,8 @@ export default defineConfig({
     },
     rollupOptions: {
       // Внешние оставляем только peer-зависимости и крупные раннеры (их приносит
-      // потребитель). shadcn-примитивы (@base-ui/react, cva, tailwind-merge,
-      // clsx, lucide-react) БАНДЛИМ в dist — пакет самодостаточен.
+      // потребитель). примитивы (@base-ui/react, clsx, lucide-react)
+      // БАНДЛИМ в dist — пакет самодостаточен.
       external: [
         'react',
         'react-dom',

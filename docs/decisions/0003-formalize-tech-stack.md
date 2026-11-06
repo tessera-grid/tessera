@@ -8,7 +8,10 @@
 > контролы — примитивы **Base UI** со стилями на **CSS Modules** (не Tailwind-утилиты и не
 > `cva`); тема — трёхуровневые токены `--tsr-ref/sys/comp`
 > ([ADR 0019](0019-token-architecture.md)), статически в `core/themeVariables/theme.css`.
-> `tailwind-merge`/`cn` удалены; `cva`/`motion` объявлены, но не используются.
+> `tailwind-merge`/`cn` и `cva` удалены; `motion` объявлен, но не используется.
+> **Актуализировано (2026-11-06).** Tailwind не попадает в `dist`: `@import 'tailwindcss'` убран из
+> `DataGrid.module.css`, вместо глобального сброса — сброс под корнем темы (ADR 0019, TK7, TI-11);
+> плагин `@tailwindcss/vite` подключает только Storybook (`.storybook/main.ts`).
 >
 > **Актуализировано (2026-10-17).** Витрина — **Storybook 11** на предрелизе
 > `11.0.0-alpha.6`, зафиксированном точной версией (встроенное решение 8).
@@ -64,8 +67,8 @@ ADR закрывает пробел (сам слой позже детализи
    `@tanstack/*`, `@dnd-kit/*`.
 3. **Стилизация — CSS Modules.** И раскладка грида, и контролы (примитивы Base UI)
    стилизуются **CSS Modules** (`*.module.css` + BEM), классы склеиваются `clsx`.
-   Tailwind-утилиты и `cva` в компонентах библиотеки **не применяются** (`cva`
-   объявлена, но не используется; `tailwind-merge`/`cn` удалены). Tailwind остаётся
+   Tailwind-утилиты в компонентах библиотеки **не применяются** (`cva` и
+   `tailwind-merge`/`cn` удалены). Tailwind остаётся
    build-time для `@theme`-моста shadcn-токенов в Storybook (`src/styles/global.css`).
 4. **Тема — трёхуровневые токены (ADR 0019).** Источник, шиппящийся с библиотекой, —
    `core/themeVariables/theme.css` (импортится из `DataGrid.tsx`): `--tsr-ref-*`

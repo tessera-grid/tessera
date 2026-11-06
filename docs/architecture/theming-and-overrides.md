@@ -8,9 +8,8 @@
 
 ## Тема — CSS-переменные (трёхуровневая система токенов)
 
-Интерактивные контролы — это примитивы Base UI (фундамент shadcn),
-стилизованные Tailwind + cva; layout грида и темизация используют CSS Modules,
-читающие CSS custom properties `--tsr-*`. Токены разложены на **три уровня**
+Интерактивные контролы — это примитивы Base UI (фундамент shadcn); их стили, layout
+грида и темизация используют CSS Modules, читающие CSS custom properties `--tsr-*`. Токены разложены на **три уровня**
 (ADR [0019](../decisions/0019-token-architecture.md)); слой и шиппинг — ADR
 [0018](../decisions/0018-external-theming.md).
 

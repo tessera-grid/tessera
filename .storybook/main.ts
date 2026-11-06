@@ -1,4 +1,5 @@
 import type { StorybookConfig } from '@storybook/react-vite'
+import tailwindcss from '@tailwindcss/vite'
 
 /**
  * Наборы историй (ADR 0117 §8): `storybook dev` и тесты — все файлы; сборка для
@@ -60,6 +61,11 @@ const config: StorybookConfig = {
     { from: '../brand/storybook', to: '/brand/storybook' },
     { from: '../brand/favicon', to: '/brand/favicon' },
   ],
+  // Tailwind — только мост токенов палитры историй: библиотека его не собирает (ADR 0003).
+  viteFinal: config => ({
+    ...config,
+    plugins: [...(config.plugins ?? []), tailwindcss()],
+  }),
   managerHead: head => `${head}
     <link rel="icon" type="image/svg+xml" href="brand/favicon/favicon.svg" />
     <link rel="icon" sizes="48x48" href="brand/favicon/favicon.ico" />`,

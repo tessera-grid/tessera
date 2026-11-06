@@ -7,6 +7,7 @@ import { describe, expect, test } from 'vitest'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import { rowSelection } from '../../../plugins'
+import themeCss from '../../../ui/theme/theme.css?raw'
 import * as stories from '../../Theming.stories'
 import { contrast, effectiveBg, toRgba } from './a11y-helpers'
 
@@ -270,6 +271,36 @@ describe('Theming — external customization + token tiers', () => {
     expect(
       readVar('--tsr-sys-accent', { vars: { '--primary': 'rgb(9, 9, 9)' } }),
     ).toBe('rgb(9, 9, 9)')
+  })
+
+  test('TK7: сброс браузерных стилей — только под корнем темы, страница приложения без Tailwind не меняется', () => {
+    // Своя страница: сброс Storybook из `global.css` сюда не доходит.
+    const frame = document.createElement('iframe')
+    document.body.append(frame)
+    const doc = frame.contentDocument!
+    doc.head.innerHTML = `<style>${themeCss}</style>`
+    doc.body.innerHTML = `
+      <div class="data-grid-theme"><p data-at="in"></p><ul data-at="in"></ul><button data-at="in"></button></div>
+      <p data-at="out"></p><ul data-at="out"></ul><button data-at="out"></button>`
+    const styleOf = (at: string, tag: string) =>
+      frame.contentWindow!.getComputedStyle(
+        doc.querySelector(`${tag}[data-at="${at}"]`)!,
+      )
+    expect(styleOf('in', 'p').marginBlockStart).toBe('0px')
+    expect(styleOf('in', 'ul').listStyleType).toBe('none')
+    expect(styleOf('in', 'ul').paddingInlineStart).toBe('0px')
+    expect(styleOf('in', 'button').borderTopWidth).toBe('0px')
+    expect(styleOf('in', 'button').backgroundColor).toBe('rgba(0, 0, 0, 0)')
+
+    expect(parseFloat(styleOf('out', 'p').marginBlockStart)).toBeGreaterThan(0)
+    expect(styleOf('out', 'ul').listStyleType).toBe('disc')
+    expect(parseFloat(styleOf('out', 'ul').paddingInlineStart)).toBeGreaterThan(
+      0,
+    )
+    expect(parseFloat(styleOf('out', 'button').borderTopWidth)).toBeGreaterThan(
+      0,
+    )
+    frame.remove()
   })
 
   test('TK6: --font-sans of the app is the font of the grid and its portals; without it — the system stack', () => {

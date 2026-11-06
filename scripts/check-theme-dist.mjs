@@ -7,6 +7,7 @@
 // TI-02 нет старого префикса --data-grid-
 // TI-03 нет засорения глобала дженерик-именами shadcn
 // TI-04 все три уровня токенов присутствуют
+// TI-11 нет глобального сброса и служебных переменных Tailwind
 
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -72,10 +73,22 @@ for (const tier of ['--tsr-ref-', '--tsr-sys-', '--tsr-comp-']) {
   check('TI-04', css.includes(tier), `в бандле нет уровня ${tier}*`)
 }
 
+// TI-11 — библиотека не меняет страницу приложения: ни сброса вне корня темы, ни словаря Tailwind.
+for (const [marker, what] of [
+  ['html,:host', 'сброс Tailwind на всю страницу'],
+  ['--default-font-family', 'переменные сброса Tailwind'],
+  ['--tw-', 'служебные переменные Tailwind'],
+  ['@layer utilities', 'слой утилит Tailwind'],
+]) {
+  check('TI-11', !css.includes(marker), `в бандле ${what}: \`${marker}\``)
+}
+
 if (fails.length) {
   console.error(
     '[check-theme-dist] ПРОВАЛ инвариантов темы:\n  ' + fails.join('\n  '),
   )
   process.exit(1)
 }
-console.log('[check-theme-dist] OK — TI-01…TI-04 зелёные (dist/style.css).')
+console.log(
+  '[check-theme-dist] OK — TI-01…TI-04 и TI-11 зелёные (dist/style.css).',
+)

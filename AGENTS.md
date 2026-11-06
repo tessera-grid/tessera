@@ -35,8 +35,8 @@ upstream-библиотек headless-ядра — он никогда их не 
 
 Публичная поверхность — два вызова: `useCreateTable(...)` строит сконфигурированный
 экземпляр таблицы; `<DataGrid table={...} />` его рендерит. Контролы построены на
-примитивах **Base UI** (фундамент shadcn) со стилизацией **Tailwind v4 + cva**, а
-раскладка и тема грида — на **CSS Modules** поверх кастомных свойств `--tsr-comp-*`.
+примитивах **Base UI** (фундамент shadcn), а их стили, раскладка и тема грида — на
+**CSS Modules** поверх кастомных свойств `--tsr-comp-*`.
 
 > **Полный технический стек — источник правды: [ADR 0003](docs/decisions/0003-formalize-tech-stack.md).**
 > Там перечислены все слои (peer, headless-ядро, примитивы Base UI, Tailwind/shadcn,
@@ -1742,10 +1742,11 @@ UI-кит `src/lib/ui`, а не собирается по месту в плаг
   и никаких отсылок к исходному внутреннему проекту и его инфраструктуре — нигде: код,
   stories, документация, README. Дефолтные подписи — на английском через проп `localization`.
 - **Только утверждённый стек контролов ([ADR 0003](docs/decisions/0003-formalize-tech-stack.md)).**
-  Контролы — примитивы **Base UI** (фундамент shadcn) со стилизацией **Tailwind v4 + cva**;
-  раскладка и тема грида — **CSS Modules** поверх `--tsr-comp-*`, выведенных из токенов
-  shadcn. Не добавляйте сторонние UI-kit'ы и не вводите CSS-in-JS: стилизация — только
-  Tailwind и CSS Modules, тема — только переопределяемые CSS-переменные.
+  Контролы — примитивы **Base UI** (фундамент shadcn); стили контролов, раскладка и тема
+  грида — **CSS Modules** поверх `--tsr-comp-*`, выведенных из токенов shadcn. Не добавляйте
+  сторонние UI-kit'ы и не вводите CSS-in-JS: стилизация — только CSS Modules, тема — только
+  переопределяемые CSS-переменные. Tailwind — только сборка мостов токенов Storybook, в
+  `dist` его нет (TI-11).
 - **Компонуйте upstream, никогда не форкайте.** TanStack Table и dnd-kit — это
   зависимости, а не вендоренный код. Расширяйте через фичи (`tableFeatures()`)/плагины, а не патчами.
   Единственное исключение — TanStack Virtual: исходники с одним патчем в
@@ -1803,8 +1804,8 @@ UI-кит `src/lib/ui`, а не собирается по месту в плаг
   Не поднимайте, пока этот тулинг не поддержит 7.
 - **Мажорные апгрейды требуют одобрения.** npm остаётся пакетным менеджером. В
   `vite.config.ts` держите вынесенными в `external` **только** `react`, `react-dom`,
-  `react/jsx-runtime`, `@tanstack/*`, `@dnd-kit/*`; примитивы shadcn (`@base-ui/react`,
-  `cva`, `tailwind-merge`, `clsx`, `lucide-react`) **бандлятся** в `dist`
+  `react/jsx-runtime`, `@tanstack/*`, `@dnd-kit/*`; примитивы (`@base-ui/react`, `clsx`,
+  `lucide-react`) **бандлятся** в `dist`
   ([ADR 0003](docs/decisions/0003-formalize-tech-stack.md)). Держите
   `build.lib.cssFileName: 'style'`, чтобы экспорт `./style.css` сохранялся.
   Ошибка генерации `.d.ts` роняет `npm run build` (`afterDiagnostic`, ADR 0003): тип,

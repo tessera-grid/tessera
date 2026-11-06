@@ -1305,6 +1305,58 @@
 
 .data-grid-theme [data-flash-out] {
   --tsr-flash-time: var(--tsr-comp-flash-fade-duration);
+
+/*
+ * Сброс браузерных стилей внутри таблицы (ADR 0019, TK7): только под корнем темы, страницу
+ * приложения он не трогает. Слой `base` — ниже стилей приложения, в приложении на Tailwind это
+ * его же слой сброса.
+ */
+@layer base {
+  :where(.data-grid-theme) {
+    line-height: 1.5;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :where(.data-grid-theme, .data-grid-theme *),
+  :where(.data-grid-theme, .data-grid-theme *)::before,
+  :where(.data-grid-theme, .data-grid-theme *)::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    border: 0 solid;
+  }
+
+  :where(.data-grid-theme) :where(h1, h2, h3, h4, h5, h6) {
+    font-size: inherit;
+    font-weight: inherit;
+  }
+
+  :where(.data-grid-theme) :where(a) {
+    color: inherit;
+    text-decoration: inherit;
+  }
+
+  :where(.data-grid-theme) :where(ol, ul, menu) {
+    list-style: none;
+  }
+
+  :where(.data-grid-theme) :where(img, svg, video, canvas) {
+    display: block;
+    vertical-align: middle;
+  }
+
+  :where(.data-grid-theme) :where(button, input, select, optgroup, textarea) {
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    background-color: transparent;
+    border-radius: 0;
+  }
+
+  :where(.data-grid-theme) ::placeholder {
+    opacity: 1;
+  }
+}
 }
 
 .data-grid-theme [data-column-flash-out] {
