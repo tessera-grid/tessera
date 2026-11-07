@@ -13,7 +13,11 @@ const { PaginationPlayground } = composeStories(pagination)
 /** Отступ каждого контрола от верха и низа панели. */
 const insets = (bar: Element) => {
   const box = bar.getBoundingClientRect()
-  return [...bar.querySelectorAll('button, input')].map(el => {
+  const shown = [...bar.querySelectorAll('button, input')].filter(
+    // Скрытый вид пейджера: номера страниц в узкой панели (ADR 0192).
+    el => el.getClientRects().length > 0,
+  )
+  return shown.map(el => {
     const r = el.getBoundingClientRect()
     return [r.top - box.top, box.bottom - r.bottom]
   })

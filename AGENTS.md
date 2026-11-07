@@ -745,6 +745,10 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       `statusBar`), `pagination` (PG2–PG4, PG6, PG11–PG19; PG20 — `page-size-chunk`; PG1, PG5, PG8–PG10 —
       модульный `pagination`, PG7 — `pagination.dom`),
       [ADR 0038](docs/decisions/0038-pagination-and-status-bar.md).
+    - _Номера страниц:_ `page-numbers` (PJ2–PJ10, PJ12, PJ14–PJ16 — ряд и поле, узкая панель, неизвестный
+      итог, отказ и отмена, клавиатура, axe и `forced-colors`), модульный `pageNumbers` (PJ1, PJ11), перф
+      PJ13 — в `interaction`, истории «Panels/Pagination» S1–S4 и «Data loading/Server row model/Pagination»
+      S5 ([ADR 0192](docs/decisions/0192-page-numbers.md)).
     - _Футер колонок:_ `footer-position` (FT1–FT2, FT4–FT13, FT15–FT17 — строка итогов,
       `pinned` у низа области и в короткой таблице, `inline` за последней строкой, вид,
       закреплённые колонки, клавиатура, `scrollToRow`, пагинация, лента и заглушки до или
@@ -918,7 +922,7 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       `server-actions`, SA16 — в `work-counters`, `play` истории «Data loading/Server
       actions — Refused by the server» (SA17)
       ([ADR 0116](docs/decisions/0116-async-server-actions.md)); плашка — примитив кита
-      `Alert`: `alert` (LE18), история `UI/Alert` (LE19) ([ADR 0096](docs/decisions/0096-load-error.md)).
+      `Alert`: `alert` (LE18, LE24 — уходя, держит последний вид), история `UI/Alert` (LE19) ([ADR 0096](docs/decisions/0096-load-error.md)).
     - _Счётчики работы:_ `work-counters` (PF2–PF11, PF23–PF25 — коммиты React, отрисованные
       компоненты, узлы, раскладки и стили, пересборки моделей строк ключевых действий:
       прокрутка на строку, выбор, страница, приход детей, сортировка, поиск, меню колонки,

@@ -7887,3 +7887,143 @@ export const HighContrastThemingUnsavedRoleStep2 = {
   name: 'Theming — Unsaved role, шаг 2',
   tags: ['!test'],
 }
+
+export const HighContrastPaginationPageNumbersStep1 = {
+  ...twinStep(
+    panelsPaginationStories,
+    panelsPaginationStories.PaginationPageNumbers,
+    1,
+  ),
+  name: 'Panels/Pagination — Page numbers, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastPaginationPageNumbersStep2 = {
+  ...twinStep(
+    panelsPaginationStories,
+    panelsPaginationStories.PaginationPageNumbers,
+    2,
+  ),
+  name: 'Panels/Pagination — Page numbers, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastPaginationPageNumbersStep3 = {
+  ...twinStep(
+    panelsPaginationStories,
+    panelsPaginationStories.PaginationPageNumbers,
+    3,
+  ),
+  name: 'Panels/Pagination — Page numbers, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastPaginationPageInputStep1 = {
+  ...twinStep(
+    panelsPaginationStories,
+    panelsPaginationStories.PaginationPageInput,
+    1,
+  ),
+  name: 'Panels/Pagination — Page input, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastPaginationPageInputStep2 = {
+  ...twinStep(
+    panelsPaginationStories,
+    panelsPaginationStories.PaginationPageInput,
+    2,
+  ),
+  name: 'Panels/Pagination — Page input, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastPaginationPageInputStep3 = {
+  ...twinStep(
+    panelsPaginationStories,
+    panelsPaginationStories.PaginationPageInput,
+    3,
+  ),
+  name: 'Panels/Pagination — Page input, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastPaginationNarrowPageNumbersStep1 = {
+  ...twinStep(
+    panelsPaginationStories,
+    panelsPaginationStories.PaginationNarrowPageNumbers,
+    1,
+  ),
+  name: 'Panels/Pagination — Narrow panel, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastPaginationNarrowPageNumbersStep2 = {
+  ...twinStep(
+    panelsPaginationStories,
+    panelsPaginationStories.PaginationNarrowPageNumbers,
+    2,
+  ),
+  name: 'Panels/Pagination — Narrow panel, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastPaginationNarrowPageNumbersStep3 = {
+  ...twinStep(
+    panelsPaginationStories,
+    panelsPaginationStories.PaginationNarrowPageNumbers,
+    3,
+  ),
+  name: 'Panels/Pagination — Narrow panel, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastPaginationServerPageRefusedStep1 = {
+  ...twinStep(
+    panelsPaginationStories,
+    panelsPaginationStories.PaginationServerPageRefused,
+    1,
+  ),
+  name: 'Panels/Pagination — Refused page, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastPaginationServerPageRefusedStep2 = {
+  ...twinStep(
+    panelsPaginationStories,
+    panelsPaginationStories.PaginationServerPageRefused,
+    2,
+  ),
+  name: 'Panels/Pagination — Refused page, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastPaginationServerPageRefusedStep3 = {
+  ...twinStep(
+    panelsPaginationStories,
+    panelsPaginationStories.PaginationServerPageRefused,
+    3,
+  ),
+  name: 'Panels/Pagination — Refused page, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastPaginationUnknownTotalStep1 = {
+  ...twinStep(
+    serverPaginationStories,
+    serverPaginationStories.PaginationUnknownTotal,
+    1,
+  ),
+  name: 'Data loading/Server row model/Pagination — Page numbers after the total, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastPaginationUnknownTotalStep2 = {
+  ...twinStep(
+    serverPaginationStories,
+    serverPaginationStories.PaginationUnknownTotal,
+    2,
+  ),
+  name: 'Data loading/Server row model/Pagination — Page numbers after the total, шаг 2',
+  tags: ['!test'],
+}

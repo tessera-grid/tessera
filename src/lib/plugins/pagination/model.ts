@@ -33,8 +33,51 @@ export const resolvePageSizes = (
   pageSize: number,
 ): number[] => [...new Set([...pageSizes, pageSize])].sort((a, b) => a - b)
 
+/** Многоточие в ряду номеров: у начала и у конца — свои ключи. */
+export type PageGap = 'gapStart' | 'gapEnd'
+
+/** Мест в ряду номеров: первая, последняя, текущая с соседями и два многоточия. */
+const PAGE_SLOTS = 7
+/** Сколько страниц подряд стоит у края ряда, пока одно многоточие не нужно. */
+const EDGE_RUN = 5
+
+const pageRun = (from: number, count: number) =>
+  Array.from({ length: count }, (_, offset) => from + offset)
+
+/** Ряд номеров (ADR 0192, §2): индексы страниц и многоточия; мест всегда поровну. */
+export const pageSlots = (
+  pageIndex: number,
+  pageCount: number,
+): (number | PageGap)[] => {
+  if (pageCount <= PAGE_SLOTS) return pageRun(0, pageCount)
+  const last = pageCount - 1
+  if (pageIndex < EDGE_RUN - 1) return [...pageRun(0, EDGE_RUN), 'gapEnd', last]
+  if (pageIndex > last - EDGE_RUN + 1)
+    return [0, 'gapStart', ...pageRun(pageCount - EDGE_RUN, EDGE_RUN)]
+  return [
+    0,
+    'gapStart',
+    pageIndex - 1,
+    pageIndex,
+    pageIndex + 1,
+    'gapEnd',
+    last,
+  ]
+}
+
+/**
+ * Индекс страницы из текста поля: номер приводится к границам; пусто и не число — `undefined`.
+ * Разделители разрядов допускаются: поле показывает номер на языке таблицы.
+ */
+export const parsePageInput = (text: string, pageCount: number) => {
+  const digits = text.replace(/[\s.,]/g, '')
+  if (!/^\d+$/.test(digits)) return undefined
+  return clampedPageIndex(Number(digits) - 1, pageCount)
+}
+
 /** Контрол пагинатора — причина серверного действия (ADR 0116, §3). */
-export type PageControl = 'first' | 'previous' | 'next' | 'last' | 'size'
+export type PageControl =
+  'first' | 'previous' | 'next' | 'last' | 'page' | 'size'
 
 export const pageControl = (control: PageControl) => `pagination:${control}`
 

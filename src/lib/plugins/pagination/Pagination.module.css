@@ -48,3 +48,84 @@
   align-items: center;
   gap: 4px;
 }
+
+/* Номера страниц (ADR 0192). Кнопки «первая» и «последняя» уступают им место в полной панели;
+   в компактной и двухстрочной — наоборот: вид меняет CSS, перемонтировать нечего (PJ8). */
+.numbers,
+.pageInput {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+:global([data-status-bar-layout='full'])
+  .buttons[data-page-numbers='buttons']
+  .edge {
+  display: none;
+}
+
+:global([data-status-bar-layout='compact']) .numbers,
+:global([data-status-bar-layout='stacked']) .numbers,
+:global([data-status-bar-layout='compact']) .pageInput,
+:global([data-status-bar-layout='stacked']) .pageInput {
+  display: none;
+}
+
+.number {
+  min-width: var(--tsr-comp-button-size);
+  padding-inline: var(--tsr-comp-pagination-number-padding-x);
+}
+
+/* Текущая страница — как выбранный сегмент кита (ADR 0074). */
+.number[aria-current='page'] {
+  color: var(--tsr-comp-segments-selected-color);
+  background-color: var(--tsr-comp-segments-selected-bg);
+  box-shadow: var(--tsr-comp-segments-selected-shadow);
+}
+
+.gap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tsr-comp-button-size);
+}
+
+/* Ширину поля задаёт скрытый текст номера последней страницы: `ch` меньше цифр шрифта,
+   а номер может нести разделители разрядов. */
+.pageFieldBox {
+  display: inline-grid;
+}
+
+.pageFieldBox > * {
+  grid-area: 1 / 1;
+}
+
+/* Запас в одну цифру: каретке нужно место, иначе браузер сдвигает и обрезает номер. */
+.pageSizer::after {
+  content: '0';
+}
+
+.pageField {
+  width: 0;
+  min-width: 100%;
+  text-align: center;
+}
+
+.pageSizer {
+  padding-inline: calc(var(--tsr-comp-field-padding-x) + 1px);
+  font-size: var(--tsr-comp-field-font-size);
+  white-space: nowrap;
+  visibility: hidden;
+}
+
+.pageTotal {
+  white-space: nowrap;
+}
+
+@media (forced-colors: active) {
+  /* Подпись текущей страницы — системного цвета, как у выбранного сегмента. */
+  .number[aria-current='page'] {
+    forced-color-adjust: none;
+  }
+}

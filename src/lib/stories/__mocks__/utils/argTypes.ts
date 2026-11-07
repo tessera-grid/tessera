@@ -65,7 +65,7 @@ const booleanControl = (
 
 const radioControl = (
   description: string,
-  options: string[],
+  options: (string | boolean)[],
   defaultSummary: string,
 ): InputType => ({
   control: 'inline-radio',
@@ -576,6 +576,11 @@ export const paginationPageSizesType = objectControl(
   'Варианты размера страницы в нижней панели; `false` — без выбора (`pageSizes`)',
   'number[] | false',
   DEFAULT_PAGE_SIZES,
+)
+export const paginationPageNumbersType = radioControl(
+  'Переход на страницу: кнопки номеров, поле номера или только четыре кнопки',
+  ['buttons', 'input', false],
+  'buttons',
 )
 export const paginationRevertOnRejectType = booleanControl(
   'Возвращать прежнюю страницу при отказе промиса `onPageChange` в серверном режиме (`revertOnReject`, ADR 0116)',

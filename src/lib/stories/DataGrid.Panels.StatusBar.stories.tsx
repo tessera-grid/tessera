@@ -186,6 +186,8 @@ const inFrame = () => {
   const bar = statusBar()!
   const box = bar.parentElement!.getBoundingClientRect()
   return [...bar.querySelectorAll('button')].every(button => {
+    // Скрытый вид пейджера не считается: номера страниц в узкой панели не видны.
+    if (button.getClientRects().length === 0) return true
     const own = button.getBoundingClientRect()
     return (
       own.left >= box.left - 1 &&

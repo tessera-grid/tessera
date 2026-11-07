@@ -24,6 +24,8 @@ const GRID = {
   height: 500,
   columnCount: 6,
   dataCount: 1000,
+  // Четыре кнопки ADR 0038; номера страниц — `page-numbers` (ADR 0192).
+  paginationPageNumbers: false as const,
 }
 
 const nav = () =>

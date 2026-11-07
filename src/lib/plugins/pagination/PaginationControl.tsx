@@ -30,6 +30,7 @@ import {
   type PaginationTable,
 } from '../paginationModel/model'
 import { type PageAction, PageButton } from './PageButton'
+import { PageNumberButtons, PageNumberInput } from './PageNumbers'
 import { SelectTrigger } from '../../ui/SelectTrigger/SelectTrigger'
 import styles from './Pagination.module.css'
 import { paginationLabels } from './labels'
@@ -39,6 +40,7 @@ const PageSizeSelect = preloadable(() =>
 )
 
 const ICON_SIZE = 16
+const empty = (rowCount: number) => rowCount === 0
 /** Ширина скелета диапазона «1–25 of 1000» на время первой загрузки. */
 const RANGE_SKELETON_WIDTH = 96
 
@@ -96,6 +98,11 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
   const { from, to } = pageRange(pagination, rowCount)
   const lastIndex = Math.max(0, pageCount - 1)
   const pageSizesOption = table.options.paginationPageSizes
+  // Номера — только при известном итоге: прыжок мог бы уйти за конец данных (ADR 0192, §6).
+  const pageNumbers =
+    known && !inert && !empty(rowCount)
+      ? (table.options.paginationPageNumbers ?? false)
+      : false
 
   const announcePage = (index: number, pages: number | undefined) =>
     announceLabel(table, all =>
@@ -137,11 +144,10 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
     </>
   )
 
-  const empty = rowCount === 0
-  const atStart = empty || pageIndex <= 0
+  const atStart = empty(rowCount) || pageIndex <= 0
   // Итог неизвестен: дальше можно, пока впереди есть корни; последней страницы нет (§4).
   const atEnd =
-    empty ||
+    empty(rowCount) ||
     (known ? pageIndex >= lastIndex : (pageIndex + 1) * pageSize >= rowCount)
 
   return (
@@ -180,9 +186,13 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
           paginationLabels(labels).pageRangeOfMany(from, to)
         )}
       </span>
-      <div className={styles.buttons}>
+      <div
+        className={styles.buttons}
+        data-page-numbers={pageNumbers || undefined}
+      >
         <PageButton
           action="first"
+          className={styles.edge}
           label={paginationLabels(labels).firstPage}
           icon={<icons.firstPage width={ICON_SIZE} height={ICON_SIZE} />}
           disabled={atStart}
@@ -195,6 +205,20 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
           disabled={atStart}
           onClick={() => goTo(pageIndex - 1, 'previous')}
         />
+        {pageNumbers === 'buttons' && (
+          <PageNumberButtons
+            pageIndex={pageIndex}
+            pageCount={pageCount}
+            onChange={index => goTo(index, 'page')}
+          />
+        )}
+        {pageNumbers === 'input' && (
+          <PageNumberInput
+            pageIndex={pageIndex}
+            pageCount={pageCount}
+            onChange={index => goTo(index, 'page')}
+          />
+        )}
         <PageButton
           action="next"
           label={paginationLabels(labels).nextPage}
@@ -204,6 +228,7 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
         />
         <PageButton
           action="last"
+          className={styles.edge}
           label={paginationLabels(labels).lastPage}
           icon={<icons.lastPage width={ICON_SIZE} height={ICON_SIZE} />}
           disabled={atEnd || !known}

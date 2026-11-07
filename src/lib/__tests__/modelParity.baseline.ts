@@ -211,6 +211,7 @@ export const MODEL_PARITY: ParityBase = {
     same: [
       'enabled',
       'pageSizes',
+      'pageNumbers',
       'revertOnReject',
       'onPageChange',
       'pagination',

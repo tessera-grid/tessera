@@ -94,7 +94,10 @@ const selectAll = async () => {
 /** Каждый контрол панели внутри рамки и получает нажатие в своём центре. */
 const controlsReachable = () => {
   const box = frame().getBoundingClientRect()
-  const controls = [...bar().querySelectorAll<HTMLElement>('button')]
+  // Скрытый вид пейджера не считается: номера страниц в узкой панели не видны (PJ8).
+  const controls = [...bar().querySelectorAll<HTMLElement>('button')].filter(
+    control => control.getClientRects().length > 0,
+  )
   expect(controls.length).toBeGreaterThan(4)
   for (const control of controls) {
     const r = control.getBoundingClientRect()

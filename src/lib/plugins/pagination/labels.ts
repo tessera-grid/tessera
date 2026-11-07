@@ -11,6 +11,12 @@ export interface PaginationLabels {
   previousPage: string
   nextPage: string
   lastPage: string
+  /** Кнопка номера: доступное имя и подпись — номер на языке таблицы */
+  goToPage: (page: number) => string
+  pageNumber: (page: number) => string
+  /** Поле номера: доступное имя и подпись справа, «of 40» */
+  pageInput: string
+  pageOfTotal: (pages: number) => string
   /** Диапазон строк текущей страницы: «1–25 of 1000» */
   pageRange: (from: number, to: number, total: number) => string
   /** Диапазон строк страницы, когда итог неизвестен: «1–25 of many» (ADR 0158) */
@@ -34,6 +40,10 @@ export const paginationLabels = defineLabels<PaginationLabels>()(
     previousPage: 'Previous page',
     nextPage: 'Next page',
     lastPage: 'Last page',
+    goToPage: 'Go to page {page}',
+    pageNumber: '{page}',
+    pageInput: 'Page number',
+    pageOfTotal: 'of {pages}',
     pageRange: '{from}–{to} of {total}',
     pageRangeOfMany: '{from}–{to} of many',
     pageAnnouncement: 'Page {page} of {pages}',
@@ -42,6 +52,9 @@ export const paginationLabels = defineLabels<PaginationLabels>()(
     actionChangePageSize: 'Change the page size',
   },
   {
+    goToPage: ['page'],
+    pageNumber: ['page'],
+    pageOfTotal: ['pages'],
     pageRange: ['from', 'to', 'total'],
     pageRangeOfMany: ['from', 'to'],
     pageAnnouncement: ['page', 'pages'],

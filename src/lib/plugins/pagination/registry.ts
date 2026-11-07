@@ -30,6 +30,12 @@ export interface PaginationOptions extends Omit<
   /** Варианты выбора размера (по умолчанию 10/25/50/100); `false` — без выбора. */
   pageSizes?: number[] | false
   /**
+   * Переход на страницу (ADR 0192): `'buttons'` — ряд номеров вместо кнопок «первая» и
+   * «последняя», `'input'` — поле номера, `false` — только четыре кнопки. По умолчанию
+   * `'buttons'`; в узкой панели и при неизвестном итоге — четыре кнопки.
+   */
+  pageNumbers?: PageNumbersMode
+  /**
    * Отказ промиса `onPageChange` при страницах с сервера возвращает прежнюю страницу и её
    * размер (по умолчанию true); `false` — страница остаётся новой (ADR 0116).
    */
@@ -37,6 +43,8 @@ export interface PaginationOptions extends Omit<
   /** Бизнес-колбэк смены страницы (аргумент фабрики); читается живо. */
   onPageChange?: PaginationHooks['onPageChange']
 }
+
+export type PageNumbersMode = 'buttons' | 'input' | false
 
 export const pagination = definePlugin<PaginationOptions>()({
   id: 'pagination',
@@ -61,6 +69,7 @@ export const pagination = definePlugin<PaginationOptions>()({
     declareRevertOnReject(table, 'pagination', o.revertOnReject !== false),
   options: o => ({
     paginationPageSizes: o.pageSizes ?? DEFAULT_PAGE_SIZES,
+    paginationPageNumbers: o.pageNumbers ?? 'buttons',
   }),
   slots: [
     {
@@ -82,6 +91,7 @@ declare module '@tanstack/react-table' {
     /** Опции таблицы, которые выставляет плагин (ADR 0167). */
     paginationPlugin: {
       paginationPageSizes?: PaginationOptions['pageSizes']
+      paginationPageNumbers?: PaginationOptions['pageNumbers']
     }
   }
 }

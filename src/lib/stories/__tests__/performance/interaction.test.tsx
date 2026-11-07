@@ -1128,6 +1128,66 @@ describe('Отзывчивость — смена скелета на данны
   )
 })
 
+// Номера страниц (ADR 0192, PJ13): переход на следующую страницу по 100 строк на 100 000 строк
+// с рядом номеров против той же смены без него. Каждый замер — свежий грид.
+describe('Отзывчивость — номера страниц', () => {
+  test(
+    'PJ13: смена страницы на 100 000 строк с номерами не дороже той же без них',
+    async () => {
+      const measure = async (numbered: boolean) => {
+        await renderGrid({
+          ...PAGED,
+          ...ALL_PLUGINS,
+          ...PAGINATION,
+          paginationInitialPageSize: 100,
+          paginationPageNumbers: numbered ? 'buttons' : false,
+        } as Parameters<typeof renderGrid>[0])
+        await waitForGrid()
+        await expect.poll(() => pageButton('next')).not.toBeNull()
+        const result = await measureInteractionWork(
+          async () => pageButton('next')!.click(),
+          { afterWarmup: () => expect(firstRowId()).toBe('item-id-100') },
+        )
+        expect(firstRowId()).toBe('item-id-200')
+        await cleanup()
+        return result
+      }
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const numbered = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = ceilingOver(base.longestMs, { ratio: 1.1, plusMs: 5 })
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '100 000×30',
+          plugins: 'all',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('PJ13-base', 'смена страницы без номеров', base, false)
+      await record('PJ13', 'смена страницы с номерами', numbered, true)
+      expect(numbered.longestMs).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT,
+  )
+})
+
 // Сортировка по подписи (ADR 0063, OS11): первый клик сортировки колонки менеджера на
 // 100 000 строк — с подписями `getOptionLabel` против той же колонки без них
 // (сортировка по id). Каждый замер — свежий грид.

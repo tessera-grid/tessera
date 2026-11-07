@@ -61,6 +61,7 @@ export const PaginationPlayground: StoryObj<StoryProps> = {
       'enablePagination',
       'paginationInitialPageSize',
       'paginationPageSizes',
+      'paginationPageNumbers',
       'paginationRevertOnReject',
     ]),
   },
@@ -647,6 +648,323 @@ export const PaginationServerSelectAllExcept: StoryObj<StoryProps> = {
         except: UNCHECKED,
       })
       await expect(consoleText()).toContain('export all except 2')
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0192 ------------------------------------------------------------------------
+
+const pageNumber = (root: ParentNode, page: number) =>
+  root.querySelector<HTMLElement>(`[data-page-number="${page}"]`)
+const currentPage = (root: ParentNode) =>
+  root.querySelector('[data-testid="pagination"] [aria-current="page"]')
+    ?.textContent
+const numbersShown = (root: ParentNode) => !!pageNumber(root, 1)?.offsetParent
+
+/** Открыть страницу кнопкой номера; номера нет в ряду — сначала первая страница. */
+const openPage = (root: HTMLElement, page: number, signal: AbortSignal) =>
+  pollUntil(() => {
+    if (currentPage(root) === String(page)) return true
+    ;(pageNumber(root, page) ?? pageNumber(root, 1))?.click()
+    return false
+  }, signal)
+
+const PAGE_NUMBERS: readonly GuideStoryStep[] = [
+  {
+    title: 'Ряд номеров',
+    hint: 'Под таблицей — первая и последняя страница, текущая и соседние. Текущая выделена.',
+    enter: stepAction((root, { signal }) => openPage(root, 1, signal)),
+  },
+  {
+    title: 'Пользователь открыл страницу 5',
+    hint: 'Таблица показывает пятую страницу. Ряд сдвинулся: текущая страница в середине, между ней и краями многоточия.',
+    enter: stepAction((root, { signal }) => openPage(root, 5, signal)),
+  },
+  {
+    title: 'Пользователь открыл последнюю страницу',
+    hint: 'Одним нажатием таблица ушла в конец. Кнопка перехода вперёд погашена.',
+    enter: stepAction((root, { signal }) => openPage(root, 40, signal)),
+  },
+]
+
+/** ADR 0192, S1: переход на дальнюю страницу нажатием на её номер. */
+export const PaginationPageNumbers: StoryObj<StoryProps> = {
+  name: 'Page numbers',
+  parameters: { scenario: '0192/S1', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Переход по номеру страницы"
+      steps={PAGE_NUMBERS}
+      args={guideArgs(
+        {
+          containerHeight: '560',
+          height: '460',
+          maxHeight: '460',
+          enablePagination: true,
+          dataCount: 1000,
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(PAGE_NUMBERS[0]!.title, async () => {
+      await stepDone(canvas)
+      await expect(currentPage(canvas)).toBe('1')
+    })
+    await step(PAGE_NUMBERS[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(currentPage(canvas)).toBe('5')
+      await expect(pageNumber(canvas, 4)).not.toBeNull()
+      await expect(pageNumber(canvas, 2)).toBeNull()
+    })
+    await step(PAGE_NUMBERS[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(currentPage(canvas)).toBe('40')
+      await settle()
+    })
+  },
+}
+
+const pageField = (root: ParentNode) =>
+  root.querySelector<HTMLInputElement>('[data-testid="pagination-input"] input')
+
+/** Ввод в поле номера: значение доходит до React событием `input`, Enter применяет. */
+const enterPage = (root: ParentNode, text: string) => {
+  const input = pageField(root)
+  if (!input) return
+  const setValue = Object.getOwnPropertyDescriptor(
+    HTMLInputElement.prototype,
+    'value',
+  )!.set!
+  setValue.call(input, text)
+  input.dispatchEvent(new Event('input', { bubbles: true }))
+  input.dispatchEvent(
+    new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+  )
+}
+
+const typePage = (
+  root: HTMLElement,
+  text: string,
+  from: string,
+  signal: AbortSignal,
+) =>
+  pollUntil(() => {
+    if (rangeText().startsWith(from)) return true
+    enterPage(root, text)
+    return false
+  }, signal)
+
+const PAGE_INPUT: readonly GuideStoryStep[] = [
+  {
+    title: 'Поле номера',
+    hint: 'Вместо ряда номеров — поле с текущей страницей и числом страниц рядом.',
+    enter: stepAction((root, { signal }) => typePage(root, '1', '1–', signal)),
+  },
+  {
+    title: 'Пользователь ввёл номер',
+    hint: 'Пользователь ввёл 17 и нажал Enter. Таблица показывает эту страницу.',
+    enter: stepAction((root, { signal }) =>
+      typePage(root, '17', '401–', signal),
+    ),
+  },
+  {
+    title: 'Номер больше числа страниц',
+    hint: 'Пользователь ввёл 500, таких страниц нет. Таблица открыла последнюю, в поле её номер.',
+    enter: stepAction((root, { signal }) =>
+      typePage(root, '500', '976–', signal),
+    ),
+  },
+]
+
+/** ADR 0192, S2: пользователь вводит номер страницы в поле. */
+export const PaginationPageInput: StoryObj<StoryProps> = {
+  name: 'Page input',
+  parameters: { scenario: '0192/S2', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Переход вводом номера"
+      steps={PAGE_INPUT}
+      args={guideArgs(
+        {
+          containerHeight: '560',
+          height: '460',
+          maxHeight: '460',
+          enablePagination: true,
+          dataCount: 1000,
+          paginationPageNumbers: 'input',
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(PAGE_INPUT[0]!.title, async () => {
+      await stepDone(canvas)
+      await expect(pageField(canvas)?.value).toBe('1')
+    })
+    await step(PAGE_INPUT[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await until(() => expect(pageField(canvas)?.value).toBe('17'))
+    })
+    await step(PAGE_INPUT[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await until(() => expect(pageField(canvas)?.value).toBe('40'))
+      await settle()
+    })
+  },
+}
+
+const NARROW_NUMBERS: readonly GuideStoryStep[] = [
+  {
+    title: 'Широкая таблица',
+    hint: 'Места хватает: под таблицей ряд номеров.',
+    props: () => ({ containerWidth: 760 }),
+  },
+  {
+    title: 'Таблица сузилась',
+    hint: 'Ряд номеров не поместился, на его месте кнопки перехода на первую, предыдущую, следующую и последнюю страницы.',
+    props: () => ({ containerWidth: 420 }),
+  },
+  {
+    title: 'Таблица снова широкая',
+    hint: 'Места снова хватает, и ряд номеров вернулся.',
+    props: () => ({ containerWidth: 760 }),
+  },
+]
+
+/** ADR 0192, S3: таблица сужается — номера уступают место кнопкам и возвращаются. */
+export const PaginationNarrowPageNumbers: StoryObj<StoryProps> = {
+  name: 'Narrow panel',
+  parameters: { scenario: '0192/S3', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Номера в узкой таблице"
+      steps={NARROW_NUMBERS}
+      args={guideArgs(
+        {
+          containerHeight: '560',
+          height: '460',
+          maxHeight: '460',
+          enablePagination: true,
+          dataCount: 1000,
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(NARROW_NUMBERS[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(numbersShown(canvas)).toBe(true))
+    })
+    await step(NARROW_NUMBERS[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(numbersShown(canvas)).toBe(false))
+    })
+    await step(NARROW_NUMBERS[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(numbersShown(canvas)).toBe(true))
+      await settle()
+    })
+  },
+}
+
+const PAGE_REFUSAL = 'The server is busy, try again later'
+const refusedPage = {
+  reject: undefined as ((error: Error) => void) | undefined,
+}
+
+const failureBanner = (root: ParentNode) =>
+  root.querySelector<HTMLElement>('[data-testid="load-error-banner"]')
+
+const PAGE_REFUSED: readonly GuideStoryStep[] = [
+  {
+    title: 'Страницы на сервере',
+    hint: 'Каждая страница приходит с сервера.',
+    props: () => ({
+      columnsOverride: filteringColumns,
+      dataOverride: queryPage(0, SERVER_PAGE, undefined),
+      onPageChange: () =>
+        new Promise<void>((_resolve, reject) => {
+          refusedPage.reject = reject
+        }),
+    }),
+  },
+  {
+    title: 'Страница грузится',
+    hint: 'Пользователь нажал номер 5. В ряду уже пятая страница, таблица ждёт ответа сервера.',
+    states: ['body.refreshing'],
+    enter: stepAction(async (root, { signal }) => {
+      await pollUntil(() => {
+        if (pageWaits(root)) return true
+        pageNumber(root, 5)?.click()
+        return false
+      }, signal)
+    }),
+  },
+  {
+    title: 'Сервер отказал',
+    hint: 'Сервер не отдал страницу. В ряду снова первая страница, под шапкой сообщение с причиной и повтором.',
+    states: ['body.loadError'],
+    enter: stepAction(async (root, { signal }) => {
+      await pollUntil(() => {
+        if (failureBanner(root)) return true
+        if (pageWaits(root)) refusedPage.reject?.(new Error(PAGE_REFUSAL))
+        else pageNumber(root, 5)?.click()
+        return false
+      }, signal)
+    }),
+  },
+]
+
+/** ADR 0192, S4: сервер отказал при переходе по номеру — прежняя страница и сообщение. */
+export const PaginationServerPageRefused: StoryObj<StoryProps> = {
+  name: 'Refused page',
+  parameters: { scenario: '0192/S4', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Сервер отказал в странице"
+      steps={PAGE_REFUSED}
+      args={guideArgs(
+        {
+          containerHeight: '560',
+          height: '460',
+          maxHeight: '460',
+          enablePagination: true,
+          dataMode: { pagination: 'server' },
+          rowCount: PAGE_SERVER_TOTAL,
+          paginationInitialPageSize: SERVER_PAGE,
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(PAGE_REFUSED[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(currentPage(canvas)).toBe('1'))
+    })
+    await step(PAGE_REFUSED[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(currentPage(canvas)).toBe('5')
+    })
+    await step(PAGE_REFUSED[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await until(() => expect(currentPage(canvas)).toBe('1'))
+      await expect(failureBanner(canvas)).toHaveTextContent(PAGE_REFUSAL)
       await settle()
     })
   },

@@ -110,6 +110,7 @@ import {
   maxHeightType,
   paginationInitialPageSizeType,
   paginationModelInitialPageSizeType,
+  paginationPageNumbersType,
   paginationPageSizesType,
   paginationRevertOnRejectType,
   quickSearchDebounceMsType,
@@ -341,6 +342,7 @@ export const dataGridArgTypes = {
     ...when('enablePagination', {
       paginationInitialPageSize: paginationInitialPageSizeType,
       paginationPageSizes: paginationPageSizesType,
+      paginationPageNumbers: paginationPageNumbersType,
       paginationRevertOnReject: paginationRevertOnRejectType,
     }),
     enablePaginationModel: enablePaginationModelType,
@@ -547,6 +549,7 @@ export const dataGridDefaultArgs = {
   enablePagination: false,
   paginationInitialPageSize: DEFAULT_PAGE_SIZE,
   paginationPageSizes: DEFAULT_PAGE_SIZES,
+  paginationPageNumbers: 'buttons',
   paginationRevertOnReject: true,
   enablePaginationModel: false,
   paginationModelInitialPageSize: DEFAULT_PAGE_SIZE,

@@ -15,6 +15,7 @@ interface PageButtonProps {
   icon: ReactNode
   disabled: boolean
   action: PageAction
+  className?: string
   onClick: () => void
 }
 
@@ -23,12 +24,14 @@ export const PageButton = ({
   icon,
   disabled,
   action,
+  className,
   onClick,
 }: PageButtonProps) => {
   return (
     <IconButton
       label={label}
       shape="square"
+      className={className}
       disabled={disabled}
       tooltipWhenDisabled
       data-page-action={action}

@@ -287,6 +287,64 @@ export const ServerPaginationUnknownTotal: StoryObj<StoryProps> = {
   },
 }
 
+// --- ADR 0192, S5: номера появляются с итогом ----------------------------------------
+
+const pageNumberOf = (root: ParentNode, page: number) =>
+  root.querySelector<HTMLElement>(`[data-page-number="${page}"]`)
+
+const NUMBERS_WITH_TOTAL: readonly GuideStoryStep[] = [
+  {
+    title: 'Итог неизвестен',
+    hint: 'Сервер не сообщает, сколько всего строк, поэтому номеров нет: переход на произвольную страницу мог бы уйти за конец списка. Видны кнопки первой, предыдущей, следующей и последней страниц.',
+    props: pagedProps(
+      serverProps({
+        total: SHORT_TOTAL,
+        knownTotal: false,
+        blockSize: SHORT_BLOCK,
+      }),
+      SHORT_PAGE,
+    ),
+    enter: stepAction(async (root, { signal }) => {
+      await pollUntil(() => hasRow(root, 0), signal)
+    }),
+  },
+  {
+    title: 'Итог стал известен',
+    hint: 'Пользователь дошёл до конца списка, и таблица узнала число строк. Под таблицей появился ряд номеров.',
+    enter: stepAction(async (root, { signal }) => {
+      await reachEnd(root, signal)
+      await pollUntil(() => !!pageNumberOf(root, 1), signal)
+    }),
+  },
+]
+
+/** ADR 0192, S5: итог неизвестен — только стрелки, итог пришёл — номера. */
+export const PaginationUnknownTotal: StoryObj<StoryProps> = {
+  name: 'Page numbers after the total',
+  parameters: { scenario: '0192/S5', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Номера при неизвестном итоге"
+      steps={NUMBERS_WITH_TOTAL}
+      args={guideArgs(layout, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(NUMBERS_WITH_TOTAL[0]!.title, async () => {
+      await stepDone(canvas)
+      await expect(pageNumberOf(canvas, 1)).toBeNull()
+      await expect(offButton(pageButton(canvas, 'last'))).toBe(true)
+    })
+    await step(NUMBERS_WITH_TOTAL[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(pageNumberOf(canvas, 5)).not.toBeNull()
+      await settle()
+    })
+  },
+}
+
 // --- S3: группы на страницах ---------------------------------------------------------
 
 /** Групп на странице: пять городов — три страницы. */
