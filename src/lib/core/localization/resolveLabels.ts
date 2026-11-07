@@ -31,6 +31,7 @@ export const LABEL_PARAMS = {
   announceActionFailed: ['name', 'error'],
   cancelAction: ['name'],
   announceActionCancelled: ['name'],
+  pendingAction: ['name'],
   menuBack: ['section'],
   announceMenuSection: ['section'],
   announceStillSaving: ['name'],

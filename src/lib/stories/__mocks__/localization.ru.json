@@ -133,6 +133,7 @@
   "actionSelectPage": "Выбор страницы",
   "pendingCopy": "Копирование…",
   "pendingSelectPage": "Выбор страницы…",
+  "pendingAction": "{name}…",
   "menuBack": "Назад, {section}",
   "announceMenuSection": "Меню «{section}»",
   "sectionLoadFailed": "Не удалось загрузить",

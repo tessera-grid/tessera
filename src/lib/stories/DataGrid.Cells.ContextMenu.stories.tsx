@@ -1016,3 +1016,108 @@ export const ContextMenuWholeTable: StoryObj<StoryProps> = {
     })
   },
 }
+
+// --- ADR 0153 S11 --------------------------------------------------------------------
+
+const pendingBanner = (root: ParentNode) =>
+  root.querySelector<HTMLElement>('[data-testid="pending-action-banner"]')
+const pendingCancel = (root: ParentNode) =>
+  root.querySelector<HTMLElement>('[data-testid="pending-action-cancel"]')
+
+const WHOLE_TABLE_CANCEL: readonly GuideStoryStep[] = [
+  {
+    title: 'Таблица ждёт',
+    hint: 'Пользователь выбрал пересчёт всей таблицы. Под шапкой светится полоса обновления, строки приглушены.',
+    states: ['body.refreshing'],
+    enter: root => {
+      TABLE_SERVER.runs.hold()
+      return untilDone(
+        root =>
+          tableRun.inFlight &&
+          refreshing(root) &&
+          !pendingBanner(root) &&
+          !openMenu(),
+        tableWaits,
+      )(root, undefined)
+    },
+  },
+  {
+    title: 'Ожидание затянулось',
+    hint: 'Ответа нет дольше секунды. Под шапкой появилось сообщение с именем действия и кнопкой отмены.',
+    enter: root => {
+      TABLE_SERVER.runs.hold()
+      return untilDone(
+        root => tableRun.inFlight && !!pendingBanner(root) && !openMenu(),
+        tableWaits,
+      )(root, undefined)
+    },
+  },
+  {
+    title: 'Действие отменено',
+    hint: 'Пользователь отменил пересчёт. Свечение и сообщение ушли, таблица осталась прежней, ошибки нет.',
+    enter: root => {
+      TABLE_SERVER.runs.hold()
+      let cancelled = false
+      return untilDone(
+        root =>
+          cancelled &&
+          !tableRun.inFlight &&
+          !pendingBanner(root) &&
+          !refreshing(root),
+        root => {
+          if (cancelled) return
+          const cancel = pendingCancel(root)
+          if (cancel) {
+            cancel.click()
+            cancelled = true
+          } else tableWaits(root)
+        },
+      )(root, undefined)
+    },
+  },
+]
+
+/** ADR 0153, S11: действие над всей таблицей затянулось — человек отменяет его в плашке. */
+export const ContextMenuWholeTableCancel: StoryObj<StoryProps> = {
+  name: 'Whole table — Cancel',
+  parameters: { scenario: '0153/S11', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Отмена действия над всей таблицей"
+      steps={WHOLE_TABLE_CANCEL}
+      args={guideArgs(
+        {
+          enableContextMenu: true,
+          enableCellSelection: true,
+          actionsDemo: 'none',
+          extraPlugins: [tableDemo],
+          columnCount: 8,
+          dataCount: 20,
+          height: '360',
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(WHOLE_TABLE_CANCEL[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(refreshing(canvas)).toBe(true))
+      expect(openMenu()).toBeNull()
+    })
+    await step(WHOLE_TABLE_CANCEL[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(pendingBanner(canvas)).not.toBeNull())
+      expect(pendingCancel(canvas)).not.toBeNull()
+      expect(banner(canvas)).toBeNull()
+    })
+    await step(WHOLE_TABLE_CANCEL[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(pendingBanner(canvas)).toBeNull())
+      await until(() => expect(refreshing(canvas)).toBe(false))
+      await settle()
+      expect(banner(canvas)).toBeNull()
+    })
+  },
+}

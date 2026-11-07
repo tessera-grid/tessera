@@ -32,6 +32,8 @@ export interface ActionStatusEntry {
   table?: boolean
   /** Имя, причина отказа для плашки и повтор действия — у действия всей таблицы. */
   name?: (labels: TableLabels) => string
+  /** Начало ожидания действия всей таблицы: от него — задержка плашки (ADR 0153, §5). */
+  since?: number
   reason?: (labels: TableLabels) => string
   retry?: () => void
   /** Плашку отказа закрыли; отметка на кебабе остаётся. */

@@ -4,6 +4,7 @@ import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 import { humanClick } from '../helpers'
 
+import * as contextMenuStories from '../../DataGrid.Cells.ContextMenu.stories'
 import * as editingStories from '../../DataGrid.Cells.Editing.stories'
 import * as skeletonStories from '../../DataGrid.DataLoading.Skeleton.stories'
 import * as visibilityStories from '../../DataGrid.Columns.Visibility.stories'
@@ -25,7 +26,7 @@ import {
 import { pressCell, untilDone } from '../../__mocks__/cellGestures'
 import { HANDLE, ROW, rowIdOrder } from '../../rowDragging.dnd'
 
-// Панель гайда историй (ADR 0117, SN14–SN15, SN17, SN21–SN27, SN33–SN35, SN40–SN58) — с
+// Панель гайда историй (ADR 0117, SN14–SN15, SN17, SN21–SN27, SN33–SN35, SN40–SN58, SN69) — с
 // движением: каталог гоняет истории с уменьшенным движением, и порядок конфетти и сдвига
 // виден только здесь. SN16, SN18–SN20 — в `play` песочницы `Tessera/Common/Guide panel`.
 
@@ -34,6 +35,7 @@ const { GuidePanelCollapsed, GuidePanelManySteps, GuidePanelPlayground } =
 const { SkeletonDataArrives } = composeStories(skeletonStories)
 const { ColumnVisibilityToggleAll } = composeStories(visibilityStories)
 const { EditingSession } = composeStories(editingStories)
+const { ContextMenuCancelFromMenu } = composeStories(contextMenuStories)
 
 interface Point {
   x: number
@@ -95,6 +97,34 @@ const settled = () =>
     .toBe(false)
 
 describe('панель сценария (ADR 0117)', () => {
+  test('SN69: при открытом контекстном меню шага первое нажатие на панель гайда срабатывает и закрывает меню', async () => {
+    const screen = await render(<ContextMenuCancelFromMenu />)
+    try {
+      const menu = () => document.querySelector('[role="menu"]')
+      await humanClick(byId('guide-toggle'))
+      await sleep(600)
+      for (const step of ['2 из 4', '3 из 4']) {
+        await expect
+          .poll(() => button('guide-next').disabled, { timeout: 8000 })
+          .toBe(false)
+        await humanClick(button('guide-next'))
+        await expect
+          .poll(() => byId('guide').textContent, { timeout: 8000 })
+          .toContain(step)
+      }
+      await expect.poll(menu, { timeout: 8000 }).not.toBeNull()
+      await expect
+        .poll(() => button('guide-next').disabled, { timeout: 8000 })
+        .toBe(false)
+
+      await humanClick(byId('guide-toggle'))
+      expect(byId('guide-toggle').getAttribute('aria-expanded')).toBe('false')
+      await expect.poll(menu).toBeNull()
+    } finally {
+      await screen.unmount()
+    }
+  })
+
   test('SN35: нажатие мышью на панель гайда не забирает фокус у таблицы — открытая правка не сохраняется потерей фокуса', async () => {
     const screen = await render(<EditingSession />)
     try {

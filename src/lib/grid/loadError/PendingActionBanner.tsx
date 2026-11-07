@@ -1,13 +1,19 @@
 /**
- * Плашка ожидания серверного действия (ADR 0153, §5): действие, ждущее дольше
- * `--tsr-comp-cancel-hint-delay`, — «Идёт поиск…» и кнопка «Отменить» под шапкой, на месте
- * плашки отказа. Плашка одна: отменяет все ждущие серверные действия и догрузку строк.
+ * Плашка ожидания действия над всей таблицей (ADR 0153, §5): серверное действие или пункт
+ * меню с целью `'table'`, ждущие дольше `--tsr-comp-cancel-hint-delay`, — «Идёт поиск…» и
+ * кнопка «Отменить» под шапкой, на месте плашки отказа. Плашка одна: отменяет все такие
+ * действия и догрузку строк.
  */
 import { type RefObject, useEffect, useState } from 'react'
 
 import clsx from 'clsx'
 
 import { cancelPending, cancelSourceOf } from '../../core/cancellation'
+import {
+  cancelTableActions,
+  pendingTableAction,
+} from '../../core/headerActions/actionStatus'
+import type { ActionStatus } from '../../core/headerActions/actionStatusFeature'
 import { useLocalization } from '../../core/localization'
 import { useTableState } from '../../core/reactivity'
 import {
@@ -31,12 +37,21 @@ interface PendingActionBannerProps {
   onCancelled: () => void
 }
 
-/** Ждущее действие и его попытка; догрузка строк — по времени начала. */
-const pendingOf = (status: ServerActionStatus | undefined) => {
+interface PendingSlices {
+  serverAction?: ServerActionStatus
+  actionStatus?: ActionStatus
+}
+
+/** Ждущее действие и его попытка; догрузка строк и пункт меню — по времени начала. */
+const pendingOf = ({ serverAction, actionStatus }: PendingSlices) => {
   const kind: ServerActionKind | undefined =
-    status?.pending?.kind ?? status?.loadingRows?.kind
-  const attempt = status?.pending?.attempt ?? status?.loadingRows?.since
-  return { kind, attempt }
+    serverAction?.pending?.kind ?? serverAction?.loadingRows?.kind
+  const action = pendingTableAction(actionStatus)
+  const attempt =
+    serverAction?.pending?.attempt ??
+    serverAction?.loadingRows?.since ??
+    action?.since
+  return { kind, attempt, name: action?.name }
 }
 
 /** Отменить всё, что показывает плашка. */
@@ -45,7 +60,8 @@ export const cancelServerPending = (table: unknown, event?: unknown) => {
   return (
     cancelPending(table, { kind: 'server' }, source) +
     cancelPending(table, { kind: 'copy' }, source) +
-    cancelPending(table, { kind: 'selectPage' }, source)
+    cancelPending(table, { kind: 'selectPage' }, source) +
+    cancelTableActions(table, source)
   )
 }
 
@@ -56,13 +72,16 @@ export const PendingActionBanner = ({
   onCancelled,
 }: PendingActionBannerProps) => {
   const labels = useLocalization()
-  const { kind, attempt } = useTableState(table as never, state =>
-    pendingOf((state as { serverAction?: ServerActionStatus }).serverAction),
+  const { kind, attempt, name } = useTableState(table as never, state =>
+    pendingOf(state as PendingSlices),
   )
+  const heading = kind
+    ? serverActionPendingTitle(kind, labels)
+    : name && labels.pendingAction(name(labels))
   // Попытка, чья задержка истекла; уходя, плашка держит заголовок последнего действия.
   const [due, setDue] = useState<number>()
-  const [title, setTitle] = useState<ServerActionKind>()
-  if (kind !== undefined && kind !== title) setTitle(kind)
+  const [title, setTitle] = useState('')
+  if (heading && heading !== title) setTitle(heading)
 
   useEffect(() => {
     const el = themeRef.current
@@ -74,12 +93,12 @@ export const PendingActionBanner = ({
     return () => clearTimeout(timer)
   }, [attempt, themeRef])
 
-  const shown = kind !== undefined && due === attempt && !blocked
+  const shown = !!heading && due === attempt && !blocked
   return (
     <Alert
       shown={shown}
       className={clsx('data-grid__pending-action', styles.banner)}
-      title={title ? serverActionPendingTitle(title, labels) : ''}
+      title={title}
       action={
         <Button
           onClick={event => {

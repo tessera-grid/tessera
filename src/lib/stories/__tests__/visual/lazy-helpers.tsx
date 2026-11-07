@@ -173,12 +173,13 @@ export const contextMenu = () => document.querySelector('[role="menu"]')
 export const gridScroller = () =>
   document.querySelector<HTMLElement>('.data-grid__container')!
 
-export const renderHandleGrid = async () => {
+export const renderHandleGrid = async (args: object = {}) => {
   const screen = renderGrid({
     columnCount: 5,
     dataCount: 6,
     enableColumnSizing: true,
     enableColumnDragging: true,
+    ...args,
   })
   await waitForGrid()
   return screen

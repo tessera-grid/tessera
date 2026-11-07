@@ -88,13 +88,22 @@ const recalculate: ContextMenuAction = {
   onSelect: held('recalculate'),
 }
 
+const recalculateTable: ContextMenuAction = {
+  id: 'recalculateTable',
+  icon: icon('T'),
+  label: () => 'Recalculate table',
+  target: () => 'table',
+  onSelect: held('table'),
+}
+
 const probe = definePlugin()({
   id: 'cancelProbe',
   slotActions: [
     rowAction('archive', 'Archive', { order: 0 }),
     rowAction('remove', 'Remove', { order: 1, placement: 'menu' }),
+    rowAction('merge', 'Merge', { order: 2, inlineAsMenu: () => true }),
   ],
-  contextMenuActions: [recalculate],
+  contextMenuActions: [recalculate, recalculateTable],
 })
 
 interface Node {
@@ -414,6 +423,110 @@ describe('Отмена длительных операций (ADR 0153)', () => 
     await sleep(300)
     expect(loadBanner()).toBeNull()
     expect(document.querySelector('[data-error-flash="true"]')).toBeNull()
+  })
+
+  test("CA13: пункт меню с целью 'table' дольше --tsr-comp-cancel-hint-delay — та же плашка с именем действия и кнопкой «Отменить»; кнопка и Escape в теле отменяют тихо; плашка одна и с серверным действием", async () => {
+    await mount()
+    const start = async () => {
+      await userEvent.click(nameCell('r2'), { button: 'right' })
+      await expect.poll(() => itemByText('Recalculate table')).toBeTruthy()
+      await humanClick(itemByText('Recalculate table')!)
+      await expect.poll(() => items().length).toBe(0)
+      return lastCall('table')!
+    }
+
+    // Кнопка плашки: не раньше задержки, имя действия, отмена тихая.
+    const first = await start()
+    expect(pendingBanner()).toBeNull()
+    await expect
+      .poll(() => pendingBanner()?.textContent ?? '', { timeout: 3000 })
+      .toContain(tableLabels.pendingAction('Recalculate table'))
+    expect(pendingBanner()!.textContent).toContain(tableLabels.cancel)
+    await humanClick(
+      document.querySelector<HTMLElement>(
+        '[data-testid="pending-action-cancel"]',
+      )!,
+    )
+    await expect.poll(() => first.signal.aborted).toBe(true)
+    await expect.poll(() => pendingBanner()).toBeNull()
+    await expect
+      .poll(() => liveRegion().textContent)
+      .toContain(tableLabels.announceActionCancelled('Recalculate table'))
+    await sleep(300)
+    expect(loadBanner()).toBeNull()
+    expect(document.querySelector('[data-refreshing]')).toBeNull()
+
+    // Escape в теле; пункт снова запускается после отмены.
+    const second = await start()
+    expect(second).not.toBe(first)
+    await expect.poll(() => pendingBanner(), { timeout: 3000 }).not.toBeNull()
+    await humanClick(nameCell('r3'))
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => second.signal.aborted).toBe(true)
+    await expect.poll(() => pendingBanner()).toBeNull()
+
+    // Вместе с серверным действием: заголовок — серверного, отменяет обоих.
+    const third = await start()
+    await userEvent.hover(headCell())
+    await humanClick(sortButton())
+    const sort = lastCall('sort')!
+    await expect
+      .poll(() => pendingBanner()?.textContent ?? '', { timeout: 3000 })
+      .toContain(tableLabels.pendingSorting)
+    expect(
+      document.querySelectorAll('[data-testid="pending-action-banner"]'),
+    ).toHaveLength(1)
+    await humanClick(
+      document.querySelector<HTMLElement>(
+        '[data-testid="pending-action-cancel"]',
+      )!,
+    )
+    await expect.poll(() => third.signal.aborted).toBe(true)
+    await expect.poll(() => sort.signal.aborted).toBe(true)
+  })
+
+  test('CA14: ждущий пункт мини-меню инлайн-кнопки — подпись «Отменить: ‹имя›» и спиннер, кнопка без дуги; выбор мышью и клавиатурой отменяет тихо', async () => {
+    await mount()
+    const button = () =>
+      nameCell('r4')
+        .closest<HTMLElement>('.data-grid__body-row')!
+        .querySelector<HTMLElement>('[aria-label="Merge"]')!
+    const open = async () => {
+      await userEvent.hover(nameCell('r4'))
+      await humanClick(button())
+      await expect.poll(() => items().length).toBeGreaterThan(0)
+    }
+    const cancelMerge = tableLabels.cancelAction('Merge')
+
+    await open()
+    await humanClick(itemByText('Merge')!)
+    await expect.poll(() => items().length).toBe(0)
+    const mouse = lastCall('merge')!
+    expect(pendingArcOf(button())).toBeNull()
+
+    await open()
+    await expect.poll(() => itemByText(cancelMerge)).toBeTruthy()
+    const item = itemByText(cancelMerge)!
+    expect(item.hasAttribute('data-disabled')).toBe(false)
+    expect(item.hasAttribute('data-pending')).toBe(true)
+    await humanClick(item)
+    await expect.poll(() => mouse.signal.aborted).toBe(true)
+    await expect.poll(() => items().length).toBe(0)
+    await expect
+      .poll(() => liveRegion().textContent)
+      .toContain(tableLabels.announceActionCancelled('Merge'))
+    expect(document.querySelector('[data-flash]')).toBeNull()
+
+    await open()
+    await humanClick(itemByText('Merge')!)
+    await expect.poll(() => items().length).toBe(0)
+    const keyboard = lastCall('merge')!
+    expect(keyboard).not.toBe(mouse)
+    await open()
+    await expect.poll(() => itemByText(cancelMerge)).toBeTruthy()
+    itemByText(cancelMerge)!.focus()
+    await userEvent.keyboard('{Enter}')
+    await expect.poll(() => keyboard.signal.aborted).toBe(true)
   })
 
   test('CA5: серверное действие дольше --tsr-comp-cancel-hint-delay — плашка Alert под шапкой «Идёт поиск…» с кнопкой «Отменить»; Escape в поле поиска и в теле отменяет; поиск возвращает прежний запрос в поле', async () => {

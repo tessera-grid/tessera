@@ -239,7 +239,15 @@ export const runMenuAction = (
   const wave = !!target || undefined
   writeActionStatus(table, status => ({
     ...status,
-    [key]: { pending: true, action, menu, target, wave, table: whole },
+    [key]: {
+      pending: true,
+      action,
+      menu,
+      target,
+      wave,
+      table: whole,
+      ...(whole && { name, since: Date.now() }),
+    },
   }))
   // Отмена тихая (ADR 0153, §4): ожидание снято, ни отметки, ни вспышки.
   const runs = runningOf(table)
@@ -370,9 +378,24 @@ export const cellPendingOf = (
   return pending
 }
 
-/** Ждёт ли действие всей таблицы (ADR 0155, §2). */
+/** Ждущее действие всей таблицы (ADR 0155, §2). */
+export const pendingTableAction = (status: ActionStatus | undefined) =>
+  status && Object.values(status).find(entry => entry.pending && entry.table)
+
+/** Ждёт ли действие всей таблицы. */
 export const tableActionPending = (status: ActionStatus | undefined) =>
-  !!status && Object.values(status).some(entry => entry.pending && entry.table)
+  !!pendingTableAction(status)
+
+/** Отменить ждущие действия всей таблицы; возвращает число отменённых (ADR 0153, §5). */
+export const cancelTableActions = (table: unknown, source: CancelSource) => {
+  const runs = runningOf(table)
+  const keys = Object.entries(readActionStatus(table)).flatMap(
+    ([key, entry]) =>
+      entry.pending && entry.table && runs.has(key) ? [key] : [],
+  )
+  keys.forEach(key => cancelRunningAction(table, key, source))
+  return keys.length
+}
 
 interface TableFailure {
   key: string

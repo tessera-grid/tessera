@@ -54,6 +54,8 @@ interface Snapshot {
     top: number
     /** Высота тела до коммита: футер стоит под ней. */
     bodyHeight: number
+    /** Высота тела, при которой шапка, тело и футер умещаются в области без прокрутки. */
+    room: number
   } | null
 }
 
@@ -163,6 +165,10 @@ export class RowMotion extends Component<RowMotionProps> {
               element: footer,
               top: footerBox.top - bodyTop,
               bodyHeight: body.clientHeight,
+              room:
+                (scroller?.clientHeight ?? Infinity) -
+                (bodyTop - (view?.top ?? 0) + (scroller?.scrollTop ?? 0)) -
+                footerBox.height,
             }
           : null,
     }
@@ -195,7 +201,12 @@ export class RowMotion extends Component<RowMotionProps> {
     this.animations = []
     this.ghosts.current?.replaceChildren()
     this.props.bodyRef.current?.style.removeProperty('min-height')
+    this.clipped?.style.removeProperty('overflow-y')
+    this.clipped = null
   }
+
+  /** Таблица, обрезанная на время движения. */
+  private clipped: HTMLElement | null = null
 
   private readonly onScroll = () => {
     const scroller = this.scroller
@@ -414,14 +425,23 @@ export class RowMotion extends Component<RowMotionProps> {
 
     // Строки, едущие снизу, и призраки не обрезаются укоротившимся телом. Без чтения
     // раскладки: `min-height` ниже высоты тела ничего не меняет.
-    const held = Math.max(
+    const moved = Math.max(
       0,
       ...plan.exits.map(exit => exit.from + rowSize),
       ...[...plan.moves].map(
         ([id, dy]) => (starts.get(id) ?? 0) + dy + rowSize,
       ),
     )
+    // Таблица с футером, которая теперь умещается в области, уже не прокручивается: она
+    // не выше области, а едущее за её край обрезается, иначе полоса прокрутки ждала бы
+    // конца движения (FT18).
+    const fits = !!footer && footer.bodyHeight + footer.shift <= footer.room
+    const held = fits ? Math.min(moved, footer.room) : moved
     body.style.minHeight = `${held}px`
+    if (fits) {
+      this.clipped = body.closest<HTMLElement>('.data-grid__table')
+      this.clipped?.style.setProperty('overflow-y', 'clip')
+    }
 
     // Незакреплённый футер едет за последней строкой: от прежнего места к новому, а
     // раскладка держит его под удержанной высотой тела до конца движения.

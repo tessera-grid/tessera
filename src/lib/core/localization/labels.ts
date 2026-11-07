@@ -52,6 +52,8 @@ export interface TableLabels {
   pendingGrouping: string
   pendingCopy: string
   pendingSelectPage: string
+  /** Плашка ожидания действия над всей таблицей: его имя */
+  pendingAction: (name: string) => string
   /** Имя серверного действия в объявлении отмены (ADR 0153, §8) */
   actionSorting: string
   actionFiltering: string
@@ -203,6 +205,7 @@ export const DEFAULT_LABELS = {
   pendingGrouping: 'Grouping…',
   pendingCopy: 'Copying…',
   pendingSelectPage: 'Selecting the page…',
+  pendingAction: '{name}…',
   actionSorting: 'Sorting',
   actionFiltering: 'Filtering',
   actionSearch: 'Search',

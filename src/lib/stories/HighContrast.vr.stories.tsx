@@ -5335,6 +5335,36 @@ export const HighContrastFilteringServerReapplyStep5 = {
   tags: ['!test'],
 }
 
+export const HighContrastContextMenuWholeTableCancelStep1 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuWholeTableCancel,
+    1,
+  ),
+  name: 'Cells/Context menu — Whole table — Cancel, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastContextMenuWholeTableCancelStep2 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuWholeTableCancel,
+    2,
+  ),
+  name: 'Cells/Context menu — Whole table — Cancel, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastContextMenuWholeTableCancelStep3 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuWholeTableCancel,
+    3,
+  ),
+  name: 'Cells/Context menu — Whole table — Cancel, шаг 3',
+  tags: ['!test'],
+}
+
 export const HighContrastContextMenuWholeTableStep1 = {
   ...twinStep(
     cellsContextMenuStories,

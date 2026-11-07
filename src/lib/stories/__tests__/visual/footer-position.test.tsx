@@ -582,8 +582,7 @@ describe('Положение футера', () => {
             message,
           })
           .toBeLessThanOrEqual(1)
-        // Заглушка — во всю видимую ширину области, как без футера (FL41). После
-        // движения: пока футер едет, область выше, и WebKit показывает полосу прокрутки.
+        // Заглушка — во всю видимую ширину области, как без футера (FL41).
         const settled = rect(q(stub)!)
         expectNear(
           settled.left,
@@ -674,6 +673,40 @@ describe('Положение футера', () => {
       await view.screen.unmount()
       await fx.reducedMotion(false)
     }
+  })
+
+  test("FT18: в 'inline' таблица, которая после смены строк умещается в области, на время движения не держит область прокрутки выше видимой, а футер едет к последней строке", async () => {
+    const view = await mount({
+      data: makeRows(33),
+      search: true,
+      footerPosition: 'inline',
+      style: { '--tsr-comp-row-motion-duration': '600ms' } as CSSProperties,
+    })
+    const rows = () => document.querySelectorAll('.data-grid__body-row').length
+    const before = rows()
+    expect(scroller().scrollHeight).toBeGreaterThan(scroller().clientHeight)
+
+    api!.setGlobalFilter('Note 3')
+    do await frame()
+    while (rows() >= before)
+    const over: number[] = []
+    const tops: number[] = []
+    for (let i = 0; i < 40; i++) {
+      over.push(scroller().scrollHeight - scroller().clientHeight)
+      tops.push(rect(footer()).top)
+      await frame()
+    }
+
+    expect(Math.max(...over)).toBeLessThanOrEqual(0)
+    await expect
+      .poll(() => Math.abs(rect(footer()).top - rect(lastRow()).bottom))
+      .toBeLessThanOrEqual(1)
+    const to = rect(footer()).top
+    expect(tops.some(top => top > to + 10)).toBe(true)
+    await expect
+      .poll(() => q<HTMLElement>('.data-grid__table')!.style.overflowY)
+      .toBe('')
+    await view.screen.unmount()
   })
 
   test("FT13: axe с color-contrast в обоих режимах, темах и ролях table, grid, treegrid; в forced-colors линия 'inline' видна", async () => {

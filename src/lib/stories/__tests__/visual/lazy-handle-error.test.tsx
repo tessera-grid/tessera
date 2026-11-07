@@ -1,6 +1,7 @@
 import { userEvent } from 'vitest/browser'
 import { afterEach, describe, expect, test } from 'vitest'
 
+import type { Failure } from '../../../core/failures/failuresFeature'
 import { failureShownOn, humanClick } from '../helpers'
 import {
   MODULE,
@@ -60,5 +61,37 @@ describe('Меню ручек — ошибка загрузки', () => {
     expect(failed()).toBe(false)
     announcements.stop()
     expect(handleMenu()).toBeNull()
+  })
+
+  test('OB19: отказ загрузки меню ручки и грипа — запись реестра отказов с действием владельца, причиной и повтором, который запускает новую загрузку', async () => {
+    await failModule(MODULE.handleMenu)
+    let failures: () => Failure[] = () => []
+    await renderHandleGrid({
+      extraPlugins: [
+        {
+          id: 'failuresProbe',
+          setup: (table: { getFailures: () => Failure[] }) => {
+            failures = () => table.getFailures()
+          },
+        },
+      ],
+    })
+
+    await userEvent.hover(handleCell())
+    await humanClick(gripWrapper())
+    await expect.poll(() => failures().length).toBe(1)
+    const label = columnSizingLabels(tableLabels).columnWidth
+    const [failure] = failures()
+    expect(failure!.action).toEqual({
+      plugin: 'columnSizing',
+      action: 'handleMenu',
+    })
+    expect(failure!.reason).toBe(tableLabels.loadFailed(label))
+    expect(failure!.retry).toBeTypeOf('function')
+
+    failure!.retry!()
+    await expect
+      .poll(() => failures().length === 1 && failures()[0] !== failure)
+      .toBe(true)
   })
 })
