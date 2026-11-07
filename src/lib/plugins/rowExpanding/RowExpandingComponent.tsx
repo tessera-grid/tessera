@@ -21,6 +21,7 @@ import {
   useSliceProjection,
   useTableState,
 } from '../../core/reactivity'
+import { usePredicateResult } from '../../core/renderVersion'
 import { rowSourceOf } from '../../core/rowSource'
 import { ExpandButton } from '../../plugins/rowExpanding/ExpandButton'
 import { readLoadedChildren } from './lazyChildrenFeature'
@@ -39,6 +40,8 @@ export const RowExpandingComponent = ({
   hooks,
 }: PluginCellProps<Partial<RowExpandingHooks>>) => {
   useSlice(table, 'expanded')
+  // Переключатель — по ответу раскрываемости (ADR 0193).
+  const canExpand = usePredicateResult(() => row.getCanExpand())
   const pending = useSliceProjection(
     table,
     'rowExpandPending',
@@ -91,7 +94,7 @@ export const RowExpandingComponent = ({
     ).queueLazyLoad(row.id, done => loadExpandedRow(row, hooks, done))
   }, [inSlice, failed, hooks, row, table])
 
-  if (!row.getCanExpand()) {
+  if (!canExpand) {
     return null
   }
 

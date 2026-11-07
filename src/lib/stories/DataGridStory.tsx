@@ -313,6 +313,11 @@ const StoryGrid = memo(
       onToggleColumnVisibility,
       onPageChange,
     })
+    // Демо-предикат правки стабилен: история — образец для приложения (ADR 0193, §5).
+    const canEditDemo = useCallback(
+      (ctx: CellComponentProps) => editableColumns.includes(ctx.column.id),
+      [editableColumns],
+    )
     // Предикат правки аргументом истории (тесты) — без демо правки.
     const editingDemo =
       options.enableCellEditing && !options.cellEditingCanEditCell
@@ -329,8 +334,7 @@ const StoryGrid = memo(
       paginationOnPageChange: demo.onPageChange,
       ...(editingDemo
         ? {
-            cellEditingCanEditCell: (ctx: CellComponentProps) =>
-              editableColumns.includes(ctx.column.id),
+            cellEditingCanEditCell: canEditDemo,
             // Проверка историй — по набранному тексту.
             cellEditingValidate:
               validateCellEdit &&

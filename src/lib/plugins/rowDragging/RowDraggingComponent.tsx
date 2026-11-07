@@ -7,6 +7,7 @@ import { useSelector } from '@tanstack/react-store'
 
 import type { CellComponentProps } from '../../core/createSlots'
 import { useLocalization } from '../../core/localization'
+import { usePredicateResult } from '../../core/renderVersion'
 import { hasRowHierarchy } from '../../core/rowHierarchy'
 import { DragHandler } from '../../shared/dnd'
 import {
@@ -47,8 +48,10 @@ export const RowDraggingComponent = ({ row, table }: CellComponentProps) => {
     (moves: Record<string, { pending: boolean }>) => !!moves[row.id]?.pending,
   )
   const labels = useLocalization()
+  // Ручка — по ответу `canDragRow` (ADR 0193).
+  const canDrag = usePredicateResult(() => row.getCanDrag())
 
-  if (!row.getCanDrag()) {
+  if (!canDrag) {
     return null
   }
 

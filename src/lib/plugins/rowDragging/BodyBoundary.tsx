@@ -46,6 +46,7 @@ import { DragHandler } from '../../shared/dnd'
 import { windowedListSortingStrategy } from './windowedListSortingStrategy'
 import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
 import { useLatest } from '../../util/useLatest'
+import { usePredicateResult } from '../../core/renderVersion'
 import { REACT_MAJOR } from '../../util/reactVersion'
 
 /** Перетаскиваемая строка модели; без перетаскивания строки не обходятся (D33). */
@@ -203,13 +204,16 @@ const DndBodyWrapper = ({
     [activeId, rows],
   )
 
+  // Ответ `canDragRow` у взятой строки — по новой версии предикатов тоже (ADR 0193).
+  const canDragActive = usePredicateResult(
+    () =>
+      !!(
+        draggableRow as { getCanDrag?: () => boolean } | undefined
+      )?.getCanDrag?.(),
+  )
   // Перетаскивание запретили на лету или строка ушла — отмена как по Escape.
   const forbidden =
-    !!activeId &&
-    (!table.options.enableRowDragging ||
-      !(
-        draggableRow as { getCanDrag?: () => boolean } | undefined
-      )?.getCanDrag?.())
+    !!activeId && (!table.options.enableRowDragging || !canDragActive)
   const lost = !draggableRow
   useIsomorphicLayoutEffect(() => {
     if (forbidden) {

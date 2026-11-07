@@ -1,8 +1,8 @@
 /**
- * Версия отрисовки предикатов плагинов (ADR 0039, RX2, RX11; ADR 0171, §3): растёт, когда у
- * аргумента из `refreshOn` новая ссылка на функцию. Атом поднимает эффект коммита, ячейки
- * подписаны на него — смена предиката перерисовывает их до кадра, мимо мемоизации и без
- * перерисовки хоста. Модели и колонки от неё не зависят.
+ * Версия отрисовки предикатов плагинов (ADR 0039, RX2; ADR 0171, §3): растёт, когда у
+ * аргумента из `refreshOn` новая ссылка на функцию. Атом поднимает эффект коммита. Читатели
+ * предиката подписаны на свой ответ (ADR 0193): после новой версии пересчитывают его и
+ * перерисовываются до кадра, только если он изменился. Модели и колонки от версии не зависят.
  */
 import { createContext, useContext } from 'react'
 
@@ -18,5 +18,15 @@ export const NO_RENDER_VERSION = createRenderVersion()
 export const PluginRenderVersionContext =
   createContext<RenderVersionAtom>(NO_RENDER_VERSION)
 
-export const usePluginRenderVersion = (): number =>
-  useSelector(useContext(PluginRenderVersionContext))
+/** Атом версии грида: узел канала вклада берёт его в источник подписки (ADR 0193, §3). */
+export const usePluginRenderVersionAtom = (): RenderVersionAtom =>
+  useContext(PluginRenderVersionContext)
+
+/**
+ * Предикат из `refreshOn` при отрисовке (ADR 0193, RP1): `read` вызывается в рендере и после
+ * каждой новой версии; компонент перерисовывается, только если ответ сменился (`Object.is`).
+ */
+export const usePredicateResult = <T>(read: () => T): T =>
+  useSelector(useContext(PluginRenderVersionContext), () => read(), {
+    compare: Object.is,
+  })

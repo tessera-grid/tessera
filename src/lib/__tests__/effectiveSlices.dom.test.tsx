@@ -20,7 +20,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { definePlugin, setPluginState } from '../core/definePlugin'
 import {
   PluginRenderVersionContext,
-  usePluginRenderVersion,
+  usePredicateResult,
 } from '../core/renderVersion'
 import { useCreateTable } from '../core/useCreateTable'
 import { allSelectionOf } from '../core/rowSelectionAll'
@@ -286,11 +286,10 @@ describe('эффективное состояние в атомах (ADR 0171)',
       },
     })
     const seen: string[] = []
-    // Ячейка под мемоизацией: перерисовывает её только версия отрисовки.
+    // Ячейка под мемоизацией: перерисовывает её только новый ответ предиката (ADR 0193).
     const Cell = memo(() => {
-      usePluginRenderVersion()
       // Вид появляется в эффекте: первый рендер ячейки его ещё не видит.
-      seen.push(view?.check() ?? '')
+      seen.push(usePredicateResult(() => view?.check() ?? ''))
       return null
     })
     const never = new Promise<never>(() => {})

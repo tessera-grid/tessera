@@ -13,7 +13,7 @@ import {
   tableFeatures,
 } from '@tanstack/react-table'
 import { storeReactivityBindings } from '../../../../../node_modules/@tanstack/table-core/dist/store-reactivity-bindings.js'
-import { useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { cleanup, render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
@@ -5536,6 +5536,102 @@ describe('Отзывчивость взаимодействий — выгруз
       } finally {
         HTMLAnchorElement.prototype.click = click
       }
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Предикат, созданный в рендере хоста (ADR 0193, RP7): хост перерисовывается на каждый выбор
+// строки и передаёт новый canEditCell с прежними ответами. Читатели пересчитывают свой ответ —
+// второго прохода по таблице нет, выбор не дороже того же со стабильным предикатом.
+const PredicateHost = ({ inline }: { inline: boolean }) => {
+  const [, setTick] = useState(0)
+  const columns = useMemo(() => makeColumns(SMALL.columnCount), [])
+  const data = useMemo(() => getData(SMALL.dataCount), [])
+  const stable = useCallback(() => true, [])
+  const table = useCreateTable({
+    columns: columns as never,
+    data,
+    // Как I1: клавиатурная навигация включена, строка выбора озвучивает aria-selected.
+    enableKeyboardNavigation: true,
+    plugins: [
+      rowSelection({ onSelectRow: () => setTick(tick => tick + 1) }),
+      cellEditing({ canEditCell: inline ? () => true : stable }),
+      cellSelection(),
+    ] as never,
+  })
+  return (
+    <div
+      style={{
+        padding: 16,
+        height: 600,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <DataGrid table={table as never} height={500} />
+    </div>
+  )
+}
+
+describe('Отзывчивость взаимодействий — предикат в рендере хоста', () => {
+  test(
+    'RP7: выбор строки с canEditCell, созданным в рендере хоста на каждое нажатие, не дороже выбора со стабильным предикатом больше чем на 10 % или 10 мс',
+    async () => {
+      const measure = async (inline: boolean) => {
+        render(<PredicateHost inline={inline} />)
+        await waitForGrid()
+        const result = await measureInteractionWork(
+          clickRowCheckbox,
+          SELECT_CHECKS,
+        )
+        await cleanup()
+        return result
+      }
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const inline = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = ceilingOver(base.longestMs, { ratio: 1.1, plusMs: 10 })
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '30×500',
+          plugins: 'cellEditing',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record(
+        'RP7-base',
+        'выбор строки, стабильный canEditCell',
+        base,
+        false,
+      )
+      await record(
+        'RP7',
+        'выбор строки, canEditCell в рендере хоста',
+        inline,
+        true,
+      )
+      expect(
+        inline.longestMs,
+        `в рендере longest=${inline.longestMs.toFixed(1)}ms, база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,
   )

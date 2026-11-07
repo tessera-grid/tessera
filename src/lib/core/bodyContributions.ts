@@ -14,6 +14,10 @@ import {
 import { useSelector } from '@tanstack/react-store'
 
 import type { DropPreview } from './dragSession'
+import {
+  type RenderVersionAtom,
+  usePluginRenderVersionAtom,
+} from './renderVersion'
 import { PluginErrorBoundary } from './pluginBoundary'
 import { reportPluginError } from './pluginDiagnostics'
 import { isProduction, logWarn } from '../util/logger'
@@ -281,9 +285,66 @@ const equalTo = (a: unknown, b: unknown, depth: number): boolean => {
 /** Узел цели → список выборов вкладчиков → выбор → его поля. */
 const nodeEqual = (a: unknown, b: unknown) => equalTo(a, b, 3)
 
+interface Readable<T> {
+  get: () => T
+  subscribe: (listener: () => void) => { unsubscribe: () => void }
+}
+
+interface NodeSnapshot {
+  state: Record<string, unknown>
+  version: number
+}
+
+const nodeSources = new WeakMap<
+  object,
+  WeakMap<RenderVersionAtom, Readable<NodeSnapshot>>
+>()
+
 /**
- * Одна подписка цели на store: выбор ядра и выборы вкладчиков одним узлом. Выборы
- * вкладчиков — под ключом `contributions`.
+ * Состояние таблицы и версия отрисовки одним источником (ADR 0193, §3): выборы вкладчиков
+ * пересчитываются и при новой ссылке на предикат. Снимок — прежний объект, пока не
+ * сменилось ни то, ни другое.
+ */
+const nodeSourceOf = (
+  store: Readable<Record<string, unknown>>,
+  version: RenderVersionAtom,
+): Readable<NodeSnapshot> => {
+  let byVersion = nodeSources.get(store)
+  if (!byVersion) {
+    byVersion = new WeakMap()
+    nodeSources.set(store, byVersion)
+  }
+  let source = byVersion.get(version)
+  if (!source) {
+    let last: NodeSnapshot | undefined
+    source = {
+      get: () => {
+        const state = store.get()
+        const current = version.get()
+        if (last?.state !== state || last.version !== current) {
+          last = { state, version: current }
+        }
+        return last
+      },
+      subscribe: listener => {
+        const a = store.subscribe(listener)
+        const b = version.subscribe(listener)
+        return {
+          unsubscribe: () => {
+            a.unsubscribe()
+            b.unsubscribe()
+          },
+        }
+      },
+    }
+    byVersion.set(version, source)
+  }
+  return source
+}
+
+/**
+ * Одна подписка цели на состояние таблицы и версию отрисовки: выбор ядра и выборы
+ * вкладчиков одним узлом. Выборы вкладчиков — под ключом `contributions`.
  */
 export const useContributionNode = <TCore extends object, TContext>(
   table: unknown,
@@ -291,11 +352,12 @@ export const useContributionNode = <TCore extends object, TContext>(
   context: TContext,
   selectCore: (state: Record<string, unknown>) => TCore,
 ): TCore & { contributions: unknown[] } => {
-  const store = (table as { store: Parameters<typeof useSelector>[0] }).store
+  const store = (table as { store: Readable<Record<string, unknown>> }).store
+  const source = nodeSourceOf(store, usePluginRenderVersionAtom())
   return useSelector(
-    store,
-    (state: unknown) => {
-      const s = state as Record<string, unknown>
+    source as never,
+    (snapshot: NodeSnapshot) => {
+      const s = snapshot.state
       const core = selectCore(s)
       return {
         ...core,

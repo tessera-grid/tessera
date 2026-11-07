@@ -184,6 +184,51 @@ export type PluginSlotDecl<THooks = Record<never, never>, TState = never> =
 type SlotContext = { table: unknown }
 type SlotComponent = (props: never) => ReactNode
 
+type HooksTable = { getHooks: () => unknown }
+
+const liveViews = new WeakMap<object, object>()
+
+/**
+ * Слайс хуков плагина живым видом (ADR 0193, §1): свойство читается из `table.getHooks()` в
+ * момент обращения. Селектор `usePredicateResult`, созданный в прошлом рендере компонента,
+ * после новой версии вызывает предикат последнего рендера хоста, а не свой снимок. Вид новый
+ * с каждым объектом хуков рендера, как прежний снимок: мемоизированный слот перерисовывается
+ * с хостом и перечитывает опции таблицы.
+ */
+export const livePluginHooks = <THooks>(
+  table: HooksTable,
+  scope: string,
+): THooks => {
+  const own = readPluginHooks<object>(table, scope)
+  let view = liveViews.get(own)
+  if (!view) {
+    const snapshot = own as Record<PropertyKey, unknown>
+    // Плагин выключили после рендера — живого значения у ключа нет: колбэк отмены идущего
+    // действия берётся из снимка рендера.
+    const current = () => ({
+      ...snapshot,
+      ...readPluginHooks<Record<PropertyKey, unknown>>(table, scope),
+    })
+    const valueOf = (key: PropertyKey) =>
+      readPluginHooks<Record<PropertyKey, unknown>>(table, scope)[key] ??
+      snapshot[key]
+    view = new Proxy(
+      {},
+      {
+        get: (_, key) => valueOf(key),
+        has: (_, key) => key in current(),
+        ownKeys: () => Reflect.ownKeys(current()),
+        getOwnPropertyDescriptor: (_, key) =>
+          key in current()
+            ? { value: valueOf(key), enumerable: true, configurable: true }
+            : undefined,
+      },
+    )
+    liveViews.set(own, view)
+  }
+  return view as THooks
+}
+
 // Обёртка на пару «компонент — плагин» одна: иначе пересборка настройки при смене
 // аргументов давала бы новый тип компонента и перемонтировала слот.
 const wrappers = new WeakMap<SlotComponent, Map<string, SlotComponent>>()
@@ -192,7 +237,7 @@ const hooksOnly =
   (Component: SlotComponent, id: string) => (ctx: SlotContext) =>
     createElement(Component as (props: Record<string, unknown>) => ReactNode, {
       ...ctx,
-      hooks: readPluginHooks(ctx.table as { getHooks: () => unknown }, id),
+      hooks: livePluginHooks(ctx.table as HooksTable, id),
     })
 
 const hooksAndState =
@@ -202,7 +247,7 @@ const hooksAndState =
       Component as (props: Record<string, unknown>) => ReactNode,
       {
         ...ctx,
-        hooks: readPluginHooks(ctx.table as { getHooks: () => unknown }, id),
+        hooks: livePluginHooks(ctx.table as HooksTable, id),
         state: [value, (next: unknown) => setPluginState(ctx.table, id, next)],
       },
     )

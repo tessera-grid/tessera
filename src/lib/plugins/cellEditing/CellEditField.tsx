@@ -13,6 +13,7 @@ import type { ReactNode } from 'react'
 
 import type { PluginCellProps } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
+import { usePredicateResult } from '../../core/renderVersion'
 import { useSliceProjection } from '../../core/reactivity'
 import { alignOf } from '../../core/dataTypeFormat'
 import { Checkbox } from '../../ui/Checkbox/Checkbox'
@@ -50,6 +51,8 @@ export const CellEditField = (
 ) => {
   const { row, column, table, content, hooks } = props
   const labels = useLocalization()
+  // Булево правится флажком — по ответу `canEditCell` (ADR 0193).
+  const toggles = usePredicateResult(() => booleanToggle(props))
   // Подписка только на состояние этой ячейки: ввод черновика другие ячейки не
   // перерисовывает.
   const view = useSliceProjection(
@@ -80,7 +83,7 @@ export const CellEditField = (
   // Сохранение ждёт сервера — отправленное значение; ожидание показывает кнопка правки.
   // Редактируемое булево — флажок кита во всю ячейку: нажатие сохраняет сразу, ожидание —
   // дугой на флажке, отказ — вспышкой отката (ED21, ADR 0176).
-  if (view !== 'editing' && booleanToggle(props)) {
+  if (view !== 'editing' && toggles) {
     const value =
       pending && typeof submitted!.draft === 'boolean'
         ? submitted!.draft

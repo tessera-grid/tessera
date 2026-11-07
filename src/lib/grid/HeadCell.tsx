@@ -30,7 +30,6 @@ import {
 import { useTableState } from '../core/reactivity'
 import { highlightRender, useColumnHighlight } from './highlight'
 import { flashRender, useColumnFlash } from './flash'
-import { usePluginRenderVersion } from '../core/renderVersion'
 import { useLocalization } from '../core/localization'
 import { ActionsZone } from './headerActions/ActionsZone'
 import { ActionsHostContext } from './headerActions/useHeldActive'
@@ -76,8 +75,6 @@ export const HeadCellView = ({
   drag,
   absoluteLeft,
 }: HeadCellViewProps) => {
-  // Новая ссылка на предикат плагина — перерисовка шапки.
-  usePluginRenderVersion()
   const table = header.getContext().table
 
   // Подписка — на значения ячейки, а не на всё состояние: выбор строки или правка ячейки

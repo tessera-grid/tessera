@@ -8,7 +8,7 @@ import { useSortable } from '@dnd-kit/sortable'
 
 import type { RowDecoratorProps } from '../../core/pluginWrappers'
 import { useTableState } from '../../core/reactivity'
-import { usePluginRenderVersion } from '../../core/renderVersion'
+import { usePredicateResult } from '../../core/renderVersion'
 import { ItemSortableContextProvider } from '../../shared/dnd'
 import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
 import { animateLayoutChanges } from './animationHelpers'
@@ -20,8 +20,8 @@ const transformAt = (y: number) => `translate3d(0px, ${y}px, 0px)`
 export const SortableRow = memo(({ Row, ...props }: RowDecoratorProps) => {
   const { row, virtualRow } = props
   const table = (row as unknown as { table: object }).table
-  // Предикат `canDragRow` с новой ссылкой (ADR 0039, RX23) включает ручку строки мимо мемоизации.
-  usePluginRenderVersion()
+  // Строка перетаскивается — по ответу `canDragRow` (ADR 0193).
+  const canDrag = usePredicateResult(() => row.getCanDrag())
   // Перенос не завершён (ADR 0112): ждёт промиса или ответа цели.
   const move = useTableState(
     table as never,
@@ -93,7 +93,7 @@ export const SortableRow = memo(({ Row, ...props }: RowDecoratorProps) => {
       }}
     />
   )
-  return row.getCanDrag() ? (
+  return canDrag ? (
     <ItemSortableContextProvider
       setActivatorNodeRef={setActivatorNodeRef}
       listeners={listeners}

@@ -91,6 +91,8 @@ export {
   type PluginCellStateProps,
   type PluginCellOwnerProps,
 } from './lib/core/definePlugin'
+// Предикат из `refreshOn` при отрисовке — перерисовка по его ответу (ADR 0193).
+export { usePredicateResult } from './lib/core/renderVersion'
 // Вклад в тело грида для автора плагина: поле `body` у definePlugin (ADR 0173).
 export type {
   PluginBody,

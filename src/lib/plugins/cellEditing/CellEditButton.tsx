@@ -11,6 +11,7 @@ import type { PluginCellProps } from '../../core/definePlugin'
 import { useRowDraftMark } from '../../core/drafts/drafts'
 import { useLocalization } from '../../core/localization'
 import { useSliceProjection } from '../../core/reactivity'
+import { usePredicateResult } from '../../core/renderVersion'
 import { CellButton } from '../../ui/CellButton/CellButton'
 import { useIcons } from '../../ui/icons'
 import { booleanToggle } from './CellEditField'
@@ -31,6 +32,9 @@ export const CellEditButton = (props: PluginCellProps<CellEditingHooks>) => {
 
   // Ячейки удалённой строки не правятся (ADR 0178, §7).
   const deleted = useRowDraftMark(table, row.id) === 'deleted'
+  // Ответы `canEditCell` — перерисовка, только когда они сменились (ADR 0193).
+  const editable = usePredicateResult(() => hooks.canEditCell(props))
+  const toggles = usePredicateResult(() => booleanToggle(props))
 
   // Ячейка уже в правке — кнопка не нужна.
   if (view === 'editing' || deleted) {
@@ -38,12 +42,12 @@ export const CellEditButton = (props: PluginCellProps<CellEditingHooks>) => {
   }
 
   // Предикат из опций гейтит показ по контексту; отправленное сохранение кнопку держит.
-  if (!view && !hooks.canEditCell(props)) {
+  if (!view && !editable) {
     return null
   }
 
   // Булево с флажком правится нажатием на него: кнопки нет.
-  if (booleanToggle(props)) return null
+  if (toggles) return null
   return (
     <CellButton
       label={cellEditingLabels(labels).editCell}

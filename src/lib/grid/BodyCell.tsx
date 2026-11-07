@@ -41,7 +41,6 @@ import { cellPendingOf } from '../core/headerActions/actionStatus'
 import type { ActionStatus } from '../core/headerActions/actionStatusFeature'
 import { cellFailureOf, type Failures } from '../core/failures/failuresFeature'
 import { CellFailureMark } from './CellFailureMark'
-import { usePluginRenderVersion } from '../core/renderVersion'
 import { CellWrapperContent, getAlignContent } from '../grid/CellWrapperContent'
 import { CellWrapperTitle } from '../grid/CellWrapperTitle'
 import { alignAttrs, renderCellContent } from './cellContent'
@@ -96,8 +95,6 @@ export const BodyCell = memo(
     copy,
   }: TableBodyCellProps) => {
     const table = cell.getContext().table
-    // Новая ссылка на предикат плагина (canSelectCell, canEditCell…) — перерисовка.
-    usePluginRenderVersion()
 
     // Одна подписка ячейки (ADR 0170, CH5): BodyCell — memo по стабильному `cell`, смена
     // срезов сверху пропом не приходит. Узел — срезы формы колонок (пиннинг, размеры,

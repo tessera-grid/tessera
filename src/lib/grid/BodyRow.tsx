@@ -41,6 +41,7 @@ import { rowHasWave } from '../core/headerActions/actionStatus'
 import type { ActionStatus } from '../core/headerActions/actionStatusFeature'
 import { RightFillerBodyColumn } from './RightFillerBodyColumn'
 import { needsRightFiller } from './layout'
+import { usePredicateResult } from '../core/renderVersion'
 
 import styles from '../grid/BodyRow/BodyRow.module.css'
 
@@ -279,7 +280,8 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
   )
   const nav = props.copy ? undefined : navRow
 
-  const canExpand = row.getCanExpand?.() ?? false
+  // Раскрываемость — по ответу `hasChildren` (ADR 0193).
+  const canExpand = usePredicateResult(() => row.getCanExpand?.() ?? false)
   // Состояние раскрытия строки озвучивается, только если его можно менять (ADR 0119).
   const canToggle =
     canExpand && hasExpandToggle((row as { table: unknown }).table)

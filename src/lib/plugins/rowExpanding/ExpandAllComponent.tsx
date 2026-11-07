@@ -12,6 +12,7 @@ import { isExpandedAll } from '../../core/expandAll'
 import { useLocalization } from '../../core/localization'
 import { serverRowModelReason } from '../../core/pluginDiagnostics'
 import { useSlice } from '../../core/reactivity'
+import { usePredicateResult } from '../../core/renderVersion'
 import { IconButton } from '../../ui/IconButton'
 import { useIcons } from '../../ui/icons'
 import styles from './ExpandButton.module.css'
@@ -42,11 +43,14 @@ export const ExpandAllComponent = ({
   // Кнопку выключает аргумент фабрики `expandAll: false` (ADR 0160, §2).
   const enabled = table.options.rowExpandAllButton
 
+  // Свёрнутые раскрываемые строки — по ответам раскрываемости (ADR 0193).
+  const collapsed = usePredicateResult(
+    () =>
+      value !== true && !isExpandedAll(value) && !server && hasCollapsedRows(t),
+  )
   const allOpen =
     value === true ||
-    (isExpandedAll(value)
-      ? value.except.length === 0
-      : !server && !hasCollapsedRows(t))
+    (isExpandedAll(value) ? value.except.length === 0 : !server && !collapsed)
   const label = allOpen
     ? rowExpandingLabels(labels).collapseAll
     : rowExpandingLabels(labels).expandAll

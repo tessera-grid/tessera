@@ -6,6 +6,7 @@
 import type { PluginCellProps } from '../../core/definePlugin'
 import { useCellFailure } from '../../core/failures/failuresFeature'
 import { useLocalization } from '../../core/localization'
+import { usePredicateResult } from '../../core/renderVersion'
 import { CellIssue } from '../../ui/CellIssue'
 import { CellInvalid } from '../../ui/cellControls/CellInvalid'
 import type { CellErrorsHooks } from './types'
@@ -13,7 +14,7 @@ import type { CellErrorsHooks } from './types'
 export const CellErrorMark = (props: PluginCellProps<CellErrorsHooks>) => {
   const { table, row, column, hooks } = props
   const labels = useLocalization()
-  const error = hooks.getCellError(props)
+  const error = usePredicateResult(() => hooks.getCellError(props))
   const failure = useCellFailure(table, row.id, column.id)
   if (!error || failure) {
     return null
