@@ -93,6 +93,7 @@ export const DRAFTS_KEY = pluginStateKey(DRAFTS)
 const EMPTY: readonly Draft[] = []
 
 type DraftsTable = {
+  atoms?: Record<string, { get: () => unknown } | undefined>
   store?: { get: () => Record<string, unknown> }
   options?: { draftKinds?: readonly DraftKind[] }
 }
@@ -107,10 +108,16 @@ export const draftKeyOf = (kind: string, target: DraftTarget) => {
 
 const keyOf = (draft: Draft) => draftKeyOf(draft.kind, draft.target)
 
-/** Срез черновиков; без таблицы — пустой. */
-export const readDrafts = (table: unknown): readonly Draft[] =>
-  ((table as DraftsTable | undefined)?.store?.get()[DRAFTS_KEY] as
-    readonly Draft[] | undefined) ?? EMPTY
+/**
+ * Срез черновиков; без таблицы — пустой. Читается атом среза: снимок всего `store` собирает
+ * все срезы, а источник строк спрашивает черновики на каждую ячейку (DR55).
+ */
+export const readDrafts = (table: unknown): readonly Draft[] => {
+  const t = table as DraftsTable | undefined
+  const atom = t?.atoms?.[DRAFTS_KEY]
+  const drafts = atom ? atom.get() : t?.store?.get()[DRAFTS_KEY]
+  return (drafts as readonly Draft[] | undefined) ?? EMPTY
+}
 
 /** Положить черновик: запись той же пары вида и цели заменяется. */
 export const setDraft = (table: unknown, draft: Draft) => {

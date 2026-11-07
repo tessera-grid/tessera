@@ -427,6 +427,8 @@ export const baseIndexOfNewRow = (table: unknown, rowId: string) => {
 
 /** Слой строк до сохранения: без новых строк или вне своего режима — источник как есть. */
 export const rowDraftsLayer = (base: RowSource, table: unknown): RowSource => {
+  // Слой спрашивают на каждую ячейку: при автосохранении новых строк нет (DR55).
+  if (hooksOf(table).saveMode !== 'manual') return base
   if (insertsOf(readDrafts(table)).length === 0) return base
   if (rowDraftsInertReason(table) !== undefined) return base
   return layerOf(table as object, base as RowSource<LayerRow>).source

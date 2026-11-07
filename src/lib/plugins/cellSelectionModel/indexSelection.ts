@@ -155,6 +155,8 @@ const rowIndexOf = (source: RowSource, row: Row): number => {
   return index
 }
 
+const NO_BOUNDS: SelectionBounds[] = []
+
 /** Выделение по индексам одной таблицы: прямоугольники — один раз на смену входов. */
 const createIndexSelection = (t: SelectionTable) => {
   const source = () => rowSourceOf<Row>(t)
@@ -198,6 +200,8 @@ const createIndexSelection = (t: SelectionTable) => {
   /** Диапазоны с индексами по видимому списку — одни на срез и список. */
   const live = (): CellSelectionState => {
     const ranges = rangesOf(t)
+    // Без диапазонов ячейке незачем искать своё место в списке строк (UR9).
+    if (ranges.length === 0) return ranges
     if (byIndex() && ranges.every(hasIndexes)) return ranges
     const list = source().rows?.()
     if (resolved?.ranges !== ranges || resolved.list !== list) {
@@ -226,6 +230,7 @@ const createIndexSelection = (t: SelectionTable) => {
 
   const bounds = (): SelectionBounds[] => {
     const ranges = live()
+    if (ranges.length === 0) return NO_BOUNDS
     const columns = t.getCellSelectionColumnIndexes()
     const count = source().count()
     if (
@@ -489,14 +494,16 @@ const createIndexSelection = (t: SelectionTable) => {
 
   const cell: Record<string, (cell: Cell, ...args: never[]) => unknown> = {
     getIsSelected: c => {
+      const b = bounds()
+      if (b.length === 0) return false
       const at = positionOf(c)
-      return !!at && isWithinBounds(bounds(), at.rowIndex, at.columnIndex)
+      return !!at && isWithinBounds(b, at.rowIndex, at.columnIndex)
     },
     getIsFocused: c => isFocused(c),
     getTabIndex: c => (isFocused(c) ? 0 : -1),
     getSelectionEdges: c => {
-      const at = positionOf(c)
       const b = bounds()
+      const at = b.length === 0 ? null : positionOf(c)
       if (!at || !isWithinBounds(b, at.rowIndex, at.columnIndex)) {
         return { top: false, right: false, bottom: false, left: false }
       }

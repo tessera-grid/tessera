@@ -977,7 +977,8 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       ([ADR 0146](docs/decisions/0146-cell-selection-in-ssrm.md)).
     - _Единая форма диапазона выделения:_ модульный `unifiedRange.dom` (UR1–UR2, UR4–UR7 —
       индексы и `id` углов в срезе, паритет со стоковой фичей, диапазон от приложения, сброс
-      при смене `data`, `getCellSelectionRanges`, цель `range` подсветки), визуальный
+      при смене `data`, `getCellSelectionRanges`, цель `range` подсветки; UR9 — ячейка без
+      диапазонов не спрашивает источник строк), визуальный
       `unified-range` (UR3 — выделение едет с углами при сортировке и поиске), перф UR8 — в
       `scroll`, истории «Data loading/Server row model/Cell selection — Read the selection»
       (S1) и «Cells/Selection — Follows sorting» (S2)
@@ -1122,7 +1123,7 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       (DR27–DR28, DR30, DR33 — место новой строки, удаление, пакет со вставками и удалениями,
       инертность в дереве, группировке и ленте), визуальный `row-drafts` (DR29, DR31–DR32,
       DR34–DR35, DR40 — правка новой строки, заливка и приглушение, откат, счёт по данным, axe и
-      `forced-colors`, диапазон по видимому списку), DR41, DR50–DR54 — модульные (копирование новой строки, диапазон выделения и подсветки и активная ячейка за новой строкой),
+      `forced-colors`, диапазон по видимому списку), DR41, DR50–DR55 — модульные (копирование новой строки, диапазон выделения и подсветки и активная ячейка за новой строкой, источник строк без чтения всего состояния),
       перф DR36 — в `scroll`, истории «Rows/Editing» S8–S10,
       истории «Cells/Editing» S5–S7
       ([ADR 0178](docs/decisions/0178-drafts.md)).

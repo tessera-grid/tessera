@@ -1,8 +1,9 @@
 // @vitest-environment happy-dom
 /**
- * Единая форма диапазона выделения (ADR 0180; UR1–UR2, UR4–UR7): индексы углов и их `id` в
- * срезе во всех режимах, одна реализация по индексам с итогом стоковой фичи, диапазон от
- * приложения, сброс при смене `data`, чтение без режима, цель `range` подсветки.
+ * Единая форма диапазона выделения (ADR 0180; UR1–UR2, UR4–UR7, UR9): индексы углов и их `id`
+ * в срезе во всех режимах, одна реализация по индексам с итогом стоковой фичи, диапазон от
+ * приложения, сброс при смене `data`, чтение без режима, цель `range` подсветки, ячейка без
+ * диапазонов.
  * Запуск: npx vitest run --config vitest.node.config.ts unifiedRange
  */
 import {
@@ -406,5 +407,29 @@ describe('единая форма диапазона выделения (ADR 018
     // @ts-expect-error — форма `rows`/`columns` удалена.
     const typed: RangeTarget = legacy
     void typed
+  })
+})
+
+describe('Ячейка без диапазонов (ADR 0180, §2)', () => {
+  it('UR9: без диапазонов ячейка не выбрана, не в фокусе и без краёв, не спрашивая источник строк', () => {
+    mount([cellSelectionModel()])
+    const cells = table
+      .getRowModel()
+      .rows.flatMap((row: any) => row.getAllCells())
+    // Выделение держит таблицу ядра, а не копию рендера из `useCreateTable`.
+    const asked = vi.spyOn(cells[0].table, 'getRowSource')
+    for (const cell of cells) {
+      expect(cell.getIsSelected()).toBe(false)
+      expect(cell.getIsFocused()).toBe(false)
+      expect(cell.getTabIndex()).toBe(-1)
+      expect(cell.getSelectionEdges()).toEqual({
+        top: false,
+        right: false,
+        bottom: false,
+        left: false,
+      })
+    }
+    expect(asked).not.toHaveBeenCalled()
+    asked.mockRestore()
   })
 })

@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 /**
- * Строки до сохранения (ADR 0178, §7; DR27, DR28, DR30, DR33, DR41, DR50, DR54): место новой
+ * Строки до сохранения (ADR 0178, §7; DR27, DR28, DR30, DR33, DR41, DR50, DR54–DR55): место новой
  * строки, удаление, пакет со вставками и удалениями, режимы, где строки инертны, копирование
  * диапазона. Диапазон на индексах и смена списка в эффекте коммита (ADR 0152, TG21).
  * Запуск: npx vitest run --config vitest.node.config.ts rowDrafts
@@ -657,5 +657,20 @@ describe('строки до сохранения (ADR 0178, §7)', () => {
     expect(drafts()).toEqual([])
     expect(table.getCellSelectionRanges()).toHaveLength(1)
     expect(rowsOfRange()).toEqual(['3', '5'])
+  })
+})
+
+describe('Источник строк без новых строк (ADR 0178, §7)', () => {
+  it('DR55: без новых строк запрос источника строк не читает снимок всего состояния таблицы — ни при автосохранении, ни при сохранении по кнопке', () => {
+    for (const plugin of [cellEditing(), manual()]) {
+      mount([plugin])
+      const base = source()
+      const read = vi.spyOn(table.store, 'get')
+      for (let i = 0; i < 50; i++) expect(source()).toBe(base)
+      expect(read).not.toHaveBeenCalled()
+      read.mockRestore()
+      act(() => root?.unmount())
+      root = undefined
+    }
   })
 })
