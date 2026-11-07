@@ -273,13 +273,34 @@ describe('единая форма диапазона выделения (ADR 018
     }
   })
 
-  it('UR5: смена data сбрасывает выделение, как у стока; строки до сохранения — по видимому списку, как прежде', async () => {
+  it('UR5: смена data не сбрасывает выделение — углы следуют за своими строками, угол, ушедший из данных, снимает диапазон; строки до сохранения — по видимому списку, как прежде', async () => {
     mount([cellSelectionModel()])
-    act(() => table.selectAllCells())
-    expect(table.getSelectedCellCount()).toBe(30)
-    mount([cellSelectionModel()], itemsOf(10))
-    // Сброс — при пересборке модели строк новыми данными.
-    act(() => table.getRowModel())
+    act(() =>
+      table.selectCellRange({
+        anchorRowIndex: 1,
+        focusRowIndex: 3,
+        anchorColumnId: 'a',
+        focusColumnId: 'a',
+      }),
+    )
+    expect(slice()[0]).toMatchObject({ anchorRowId: 'r1', focusRowId: 'r3' })
+    // Строка вставлена выше — углы едут со своими строками (ADR 0194).
+    const added = { id: 'x', a: 'x', b: 'x', c: 'x' }
+    mount([cellSelectionModel()], [added, ...DATA])
+    await act(async () => {})
+    expect(slice()).toEqual([
+      expect.objectContaining({
+        anchorRowId: 'r1',
+        focusRowId: 'r3',
+        anchorRowIndex: 2,
+        focusRowIndex: 4,
+      }),
+    ])
+    // Угол ушёл из данных — диапазон снят.
+    mount(
+      [cellSelectionModel()],
+      [added, ...DATA.filter(row => row.id !== 'r3')],
+    )
     await act(async () => {})
     expect(slice()).toEqual([])
     act(() => root?.unmount())

@@ -33,6 +33,11 @@ export type {
   HighlightTone,
   RangeTarget,
 } from './lib/core/highlights/highlightFeature'
+// Транзакция строк (ADR 0157, ADR 0194): `table.applyRowTransaction` и `onDataChange`.
+export type {
+  RowTransaction,
+  RowTransactionResult,
+} from './lib/core/rowTransactions'
 // Отмена длительных операций (ADR 0153): `table.cancelPending`.
 export type { CancelPendingFilter, PendingKind } from './lib/core/cancellation'
 // Ожидание и итог действия на ячейке (ADR 0176): `table.trackCellAction` и хук контрола.

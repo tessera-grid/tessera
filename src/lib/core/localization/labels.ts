@@ -144,6 +144,8 @@ export interface TableLabels {
   actionClearHighlights: string
   /** Действие: вспышка итога на цели */
   actionFlashOutcome: string
+  /** Действие: транзакция строк */
+  actionRowTransaction: string
   /** Действие: прокрутка к строке */
   actionScrollToRow: string
   /** Действие: сброс фильтров из заглушки */
@@ -263,6 +265,7 @@ export const DEFAULT_LABELS = {
   actionHighlight: 'Highlight',
   actionClearHighlights: 'Clear highlights',
   actionFlashOutcome: 'Show the outcome',
+  actionRowTransaction: 'Change rows',
   actionScrollToRow: 'Scroll to a row',
   actionResetFilters: 'Reset filters',
   actionRetryLoad: 'Load again',

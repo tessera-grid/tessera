@@ -2,8 +2,8 @@
  * Исходная модель строк с ленивыми детьми (ADR 0054): дети строки — из `subRows`
  * данных, иначе — сохранённый ответ `loadChildren`. Смена ответов при тех же `data`
  * собирает модель из прежней — пересобираются только изменённые поддеревья
- * (ADR 0067), словарь `rowsById` переходит новой модели (ADR 0069); смена `data` —
- * полная сборка TanStack. Ожидающие переносы ленивого дерева (ADR 0112) — стадия на
+ * (ADR 0067), словарь `rowsById` переходит новой модели (ADR 0069); смена `data` при тех же
+ * ответах — из прежней по тождеству строк (ADR 0194), иначе полная сборка TanStack. Ожидающие переносы ленивого дерева (ADR 0112) — стадия на
  * входе: модель собирается из данных и ответов, где строка уже на новом месте. Пока ответ
  * строки в пути, у неё ребёнок-заглушка — скелет-строка (ADR 0155, §3).
  */
@@ -20,7 +20,9 @@ import {
   isLazyPlaceholder,
   lazyPlaceholdersOf,
 } from '../../core/lazyPlaceholder'
-import { handOverRowsById } from '../../shared/rowModels/rowsByIdHandover'
+import { patchCoreModel } from '../../core/dataChanges'
+import { autoResetOnDataChange } from '../../core/incrementalCoreRowModel'
+import { handOverRowsById } from '../../core/rowsByIdHandover'
 import type { RowData, Table, TableFeatures } from '../../types'
 import { type LoadedChildren, readLoadedChildren } from './lazyChildrenFeature'
 
@@ -317,6 +319,17 @@ export const createLazyCoreRowModel =
         loaded = answers
         last = { data, loaded: answers, model }
         return model as never
+      }
+      // Смена data при тех же ответах — из прежней модели по тождеству строк (ADR 0194).
+      if (prev && prev.loaded === answers) {
+        const patched = withAnswers(answers, () =>
+          patchCoreModel<TData>(table, prev.model, prev.data, data),
+        )
+        if (patched) {
+          last = { data, loaded: answers, model: patched as CoreModel }
+          autoResetOnDataChange(table)
+          return patched as never
+        }
       }
       if (loaded !== UNSET && answers !== loaded) {
         rowModel = createCoreRowModel<TFeatures, TData>()(table)

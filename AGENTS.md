@@ -1147,6 +1147,14 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       клавиатурой, протяжка ширины), KA4 — в `touch` (удержание ряда мышью, клавиатурой и
       касанием), KA8 — в `work-counters`, перф KA7 — в `scroll`, история «Columns/Header
       menu — Narrow column» (S1) ([ADR 0156](docs/decisions/0156-active-actions-stay-in-row.md)).
+    - _Смена `data` из прежней модели и клиентские транзакции:_ модульные `dataChanges.dom`
+      (IU1–IU9 — модель ядра, сортировка, фильтры и поиск, группировка с агрегатами, дерево и
+      раскрытие из прежней модели, паритет с полной сборкой, автосбросы), `rowChanges.dom` (IU10 —
+      подсказка виртуализатору), `clientTransactions.dom` (IU11, IU15 — `applyRowTransaction` через
+      `onDataChange`, канал действий), визуальный `client-transactions` (IU12 — активная ячейка,
+      выделение, прокрутка и правка держат строки), перф IU13–IU14 — в `interaction`, истории «Data
+      loading/Client transactions» (S1–S3); следование за строками — `core/dataFollow.ts`
+      ([ADR 0194](docs/decisions/0194-incremental-data-changes-and-client-transactions.md)).
     - _Транзакции строк SSRM:_ модульный `serverTransactions.dom` (RT1–RT7, RT10–RT11,
       RT13–RT14 — вставка на место, перезапрос без места, удаление и итог, `update`, отмена
       запросов и неполный блок без запроса, ветки, выбор, объявление, склейка после кадра,

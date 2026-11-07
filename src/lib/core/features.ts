@@ -29,6 +29,7 @@ import { failuresFeature } from './failures/failuresFeature'
 import { draftsFeature } from './drafts/draftsFeature'
 import { flashFeature } from './flashes/flashFeature'
 import { highlightFeature } from './highlights/highlightFeature'
+import { createIncrementalCoreRowModel } from './incrementalCoreRowModel'
 import { scrollToRowFeature } from './scrollToRow/scrollToRowFeature'
 import { serverActionFeature } from './serverActions/serverActionFeature'
 import type { ServiceColumn } from './createColumns'
@@ -533,6 +534,8 @@ export const buildTesseraFeatures = <
     columnPinningFeature,
     columnSizingFeature,
     columnGroupingFeature,
+    // Смена data — из прежней модели (ADR 0194); плагин может подменить модель ядра.
+    coreRowModel: createIncrementalCoreRowModel(),
   }
 
   // Фичи ВСЕХ присутствующих записей (в т.ч. enabled:false): набор фич фиксируется

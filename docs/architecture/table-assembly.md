@@ -152,8 +152,10 @@ flowchart LR
 
 Набор фич собирается presence-based (ADR 0010): `buildTesseraFeatures` вклеивает
 always-on `commonFeature` + grid-инфраструктурные фичи (columnOrdering/Visibility/
-Pinning/Sizing/Grouping — их методы гриду нужны всегда), затем **фичи всех
-присутствующих записей** (в т.ч. `enabled: false`) и прогоняет через `tableFeatures()`.
+Pinning/Sizing/Grouping — их методы гриду нужны всегда) и модель ядра по умолчанию —
+`createIncrementalCoreRowModel` (новый `data` — из прежней модели, ADR 0194), затем
+**фичи всех присутствующих записей** (в т.ч. `enabled: false`) и прогоняет через
+`tableFeatures()`; запись со своей моделью ядра (ленивые дети) её подменяет.
 Почему всех: v9 фиксирует набор фич на маунте `useTable`, поэтому рантайм-включение
 плагина не добавило бы фичу — вместо этого фича всегда в наборе, а поведение гейтится
 `enable*`-опцией (фабрика отключённого плагина эмитит `enable*: false`; `foldEntries`

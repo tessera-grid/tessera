@@ -31,6 +31,7 @@ import * as serverSelectionStories from './DataGrid.DataLoading.ServerRowModel.S
 import * as serverCellSelectionStories from './DataGrid.DataLoading.ServerRowModel.CellSelection.stories'
 import * as serverEditingStories from './DataGrid.DataLoading.ServerRowModel.Editing.stories'
 import * as serverTransactionsStories from './DataGrid.DataLoading.ServerRowModel.Transactions.stories'
+import * as clientTransactionsStories from './DataGrid.DataLoading.ClientTransactions.stories'
 import * as serverPaginationStories from './DataGrid.DataLoading.ServerRowModel.Pagination.stories'
 import * as serverDraggingStories from './DataGrid.DataLoading.ServerRowModel.Dragging.stories'
 import * as serverLazyChildrenStories from './DataGrid.DataLoading.ServerRowModel.LazyChildren.stories'
@@ -8025,5 +8026,95 @@ export const HighContrastPaginationUnknownTotalStep2 = {
     2,
   ),
   name: 'Data loading/Server row model/Pagination — Page numbers after the total, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastClientTransactionsEditLargeTableStep1 = {
+  ...twinStep(
+    clientTransactionsStories,
+    clientTransactionsStories.ClientTransactionsEditLargeTable,
+    1,
+  ),
+  name: 'Data loading/Client transactions — Edit a large sorted table, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastClientTransactionsEditLargeTableStep2 = {
+  ...twinStep(
+    clientTransactionsStories,
+    clientTransactionsStories.ClientTransactionsEditLargeTable,
+    2,
+  ),
+  name: 'Data loading/Client transactions — Edit a large sorted table, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastClientTransactionsEditLargeTableStep3 = {
+  ...twinStep(
+    clientTransactionsStories,
+    clientTransactionsStories.ClientTransactionsEditLargeTable,
+    3,
+  ),
+  name: 'Data loading/Client transactions — Edit a large sorted table, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastClientTransactionsAddRemoveStep1 = {
+  ...twinStep(
+    clientTransactionsStories,
+    clientTransactionsStories.ClientTransactionsAddRemove,
+    1,
+  ),
+  name: 'Data loading/Client transactions — Add and remove rows, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastClientTransactionsAddRemoveStep2 = {
+  ...twinStep(
+    clientTransactionsStories,
+    clientTransactionsStories.ClientTransactionsAddRemove,
+    2,
+  ),
+  name: 'Data loading/Client transactions — Add and remove rows, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastClientTransactionsAddRemoveStep3 = {
+  ...twinStep(
+    clientTransactionsStories,
+    clientTransactionsStories.ClientTransactionsAddRemove,
+    3,
+  ),
+  name: 'Data loading/Client transactions — Add and remove rows, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastClientTransactionsAddRemoveStep4 = {
+  ...twinStep(
+    clientTransactionsStories,
+    clientTransactionsStories.ClientTransactionsAddRemove,
+    4,
+  ),
+  name: 'Data loading/Client transactions — Add and remove rows, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastClientTransactionsWithoutHandlerStep1 = {
+  ...twinStep(
+    clientTransactionsStories,
+    clientTransactionsStories.ClientTransactionsWithoutHandler,
+    1,
+  ),
+  name: 'Data loading/Client transactions — Without a data handler, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastClientTransactionsWithoutHandlerStep2 = {
+  ...twinStep(
+    clientTransactionsStories,
+    clientTransactionsStories.ClientTransactionsWithoutHandler,
+    2,
+  ),
+  name: 'Data loading/Client transactions — Without a data handler, шаг 2',
   tags: ['!test'],
 }

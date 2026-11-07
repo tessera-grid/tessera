@@ -23,6 +23,7 @@ import { pruneFlashes, readFlashes } from './flashes/flashFeature'
 import { pruneHighlights, readHighlights } from './highlights/highlightFeature'
 import { followIndexRanges } from './highlights/followRanges'
 import { rowSourceOf } from './rowSource'
+import { checkDataChange, type SeenData } from './dataFollow'
 import { abortServerActions } from './serverActions'
 import {
   type PluginDiagnostic,
@@ -118,6 +119,12 @@ export const useTableEffects = (
     if (flashed) {
       pruneFlashes(table, hasRow, hasColumn)
     }
+  })
+
+  // Новый `data` клиента: активная ячейка и выделение держат свои строки (ADR 0194, IU12).
+  const seenData = useRef<SeenData | undefined>(undefined)
+  useIsomorphicLayoutEffect(() => {
+    seenData.current = checkDataChange(instance, seenData.current)
   })
 
   // Диапазоны подсветки и вспышки на индексах следуют за списком строк (ADR 0152, §4). Держим по

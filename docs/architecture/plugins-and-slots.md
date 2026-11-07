@@ -179,8 +179,8 @@ reportOutcome(table, { plugin: 'starRows', action: 'save', cause: id }, promise)
   `on<Срез>Change` и `initial<Срез>` (MP8, MP9). Срез с внешним значением (или со своим
   сужением) ведёт ядро, как суженный (`useEffectiveSlices`); без них срезом владеет
   TanStack, а ядро оборачивает его `makeStateUpdater`, чтобы колбэк получил новое
-  значение. `initial<Срез>` уходит и в `initialState` TanStack: автосброс
-  (`autoResetCellSelection`) и `reset*` возвращают к нему. Сброс среза ядра в
+  значение. `initial<Срез>` уходит и в `initialState` TanStack: автосбросы TanStack и `reset*`
+  возвращают к нему; выделение ячеек смена `data` не сбрасывает (ADR 0194, §6). Сброс среза ядра в
   `undefined` передаётся TanStack своим свойством — иначе v9 берёт прежнее из базового
   атома. В `state`/`handlers` ядра срезов плагинов нет (MP6–MP7).
 - **Выключенная модель** сужает свой срез до пустого (фильтры, поиск, группировка, выбор

@@ -153,6 +153,10 @@ export const useKeyboardNavigationCellBinding = (
     tracking.pending = false
     const quiet = tracking.quiet
     tracking.quiet = false
+    // Ячейка переехала вслед за строкой, а фокус внутри неё (поле правки) — он на месте.
+    if (quiet && el.contains(document.activeElement)) {
+      return
+    }
     const scroller = el.closest<HTMLElement>(SCROLLER_SELECTOR)
     if (scroller && !quiet) {
       // Шапка и закреплённый футер — sticky: по вертикали доводить не нужно;

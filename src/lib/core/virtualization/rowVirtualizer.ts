@@ -1,4 +1,10 @@
-import { useCallback, useMemo, useRef, useSyncExternalStore } from 'react'
+import {
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react'
 
 import {
   type VirtualItem,
@@ -56,18 +62,14 @@ export const useRowVirtualizer = ({
   // Серверная модель строк — по индексу (ADR 0138, §14); незагруженная строка — тоже.
   // Виртуализатор сверяет ключи начала списка на каждой смене строк (ADR 0143): массив
   // строк — один раз, а не модель на каждый индекс.
-  const { getItemKey, list } = useMemo(() => {
-    if (rows.keyByIndex) {
-      return { getItemKey: (index: number) => index, list: undefined }
-    }
-    const list = rows.rows?.()
-    return {
-      getItemKey: list
-        ? (index: number) => list[index]?.id ?? index
-        : (index: number) => rows.at(index)?.id ?? index,
-      list,
-    }
-  }, [rows])
+  // Источник клиента — один объект на таблицу: список строк — свой на каждую модель.
+  const list = rows.keyByIndex ? undefined : rows.rows?.()
+  const getItemKey = useMemo(() => {
+    if (rows.keyByIndex) return (index: number) => index
+    return list
+      ? (index: number) => list[index]?.id ?? index
+      : (index: number) => rows.at(index)?.id ?? index
+  }, [rows, list])
 
   // Место первого изменения строк с прошлой сборки позиций (ADR 0145): виртуализатор
   // спрашивает его на каждой сборке.
@@ -81,9 +83,30 @@ export const useRowVirtualizer = ({
 
   const activeRowIndex = useActiveCellIndex(table, 'rowIndex')
 
+  // Строка активной ячейки — по её `id`: новый `data` клиента сдвигает строку раньше, чем
+  // ячейка переезжает за ней после коммита (ADR 0194, IU12), — строка с фокусом остаётся в окне.
+  const [held, setHeld] = useState<{
+    list: readonly { id: string }[] | undefined
+    index: number | undefined
+    /** Строка, что стояла на месте активной ячейки до смены списка. */
+    pin: string | undefined
+  }>({ list, index: activeRowIndex, pin: undefined })
+  if (held.list !== list) {
+    setHeld({
+      list,
+      index: activeRowIndex,
+      pin: held.index === undefined ? undefined : held.list?.[held.index]?.id,
+    })
+  } else if (held.index !== activeRowIndex) {
+    setHeld({ list, index: activeRowIndex, pin: undefined })
+  }
+  const heldRowIndex =
+    held.pin === undefined ? undefined : rows.indexOf(held.pin)
+
   const rangeExtractor = useRowRangeExtractor({
     rowDraggingIndex,
     activeRowIndex,
+    heldRowIndex,
   })
 
   const virtualizer = useVirtualizer<HTMLDivElement, HTMLDivElement>({
@@ -133,6 +156,35 @@ export const useRowVirtualizer = ({
     const moved = followIndex(anchor, batches) - anchor
     if (moved)
       scrollGridTo(scroller, { top: top + moved * rowHeight }, 'instant')
+  })
+
+  // Клиент: новый `data` — прокрутка держит первую строку экрана, что осталась в списке
+  // (ADR 0194, IU12); смена порядка без нового `data` (сортировка) прокрутку не держит.
+  const clientSeen = useRef<
+    { data: unknown; list: readonly { id: string }[] } | undefined
+  >(undefined)
+  useIsomorphicLayoutEffect(() => {
+    if (rows.keyByIndex || !list) {
+      clientSeen.current = undefined
+      return
+    }
+    const data: unknown = table.options.data
+    const before = clientSeen.current
+    clientSeen.current = { data, list }
+    if (!before || before.data === data || before.list === list) return
+    const scroller = getScrollElement()
+    if (!scroller) return
+    const top = scrollLayer(scroller).top()
+    if (top <= 0) return
+    const anchor = Math.floor(top / rowHeight)
+    for (let k = anchor; k < before.list.length; k++) {
+      const at = rows.indexOf(before.list[k]!.id)
+      if (at < 0) continue
+      if (at !== k) {
+        scrollGridTo(scroller, { top: top + (at - k) * rowHeight }, 'instant')
+      }
+      return
+    }
   })
 
   // Новая высота: замеры строк прежней высоты больше не верны.

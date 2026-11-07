@@ -67,9 +67,6 @@ export const serverRowModel = definePlugin<ServerRowModelOptions>()({
       getRowSource: enabled && o.getRows ? serverSourceOf : undefined,
       serverRowModelBlockSize: o.blockSize ?? DEFAULT_BLOCK_SIZE,
       serverRowModelMaxBlocks: o.maxBlocks ?? DEFAULT_MAX_BLOCKS,
-      // Клиентская модель строк здесь не рисует: новая `data` выделение по индексам не
-      // сбрасывает, новую выборку отслеживает само выделение (ADR 0146, §6).
-      autoResetCellSelection: enabled ? false : undefined,
     }
   },
   // Кэш переживает смену аргументов: cleanup лишь отменяет запросы в пути.

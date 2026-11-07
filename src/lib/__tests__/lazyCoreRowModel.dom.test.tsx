@@ -212,16 +212,24 @@ describe('Инкрементальная исходная модель лени�
     expect(before.rowsById.a1!.subRows).toEqual([])
   })
 
-  it('IM7: смена data даёт полную сборку — новые объекты строк', () => {
+  it('IM7: смена data — модель из прежней по тождеству строк: прежние объекты и загруженные дети, новая заменённая строка, паритет с полной сборкой', () => {
     render({ a: [node('a1')] })
     toggle('a')
     const before = model()
     render({ a: [node('a1')] }, [...ROWS])
-    const after = model()
     for (const id of ['a', 'a1', 'b', 'c', 'd']) {
-      expect(after.rowsById[id], id).not.toBe(before.rowsById[id])
+      expect(model().rowsById[id], id).toBe(before.rowsById[id])
     }
-    expectParity([...ROWS])
+    const data = ROWS.map(row =>
+      row.id === 'b' ? { ...row, name: 'b*' } : row,
+    )
+    render({ a: [node('a1')] }, data)
+    const after = model()
+    expect(after.rowsById.b).not.toBe(before.rowsById.b)
+    for (const id of ['a', 'a1', 'c', 'c1', 'c1x', 'd']) {
+      expect(after.rowsById[id], id).toBe(before.rowsById[id])
+    }
+    expectParity(data)
   })
 })
 

@@ -35,4 +35,5 @@ export const CORE_ACTIONS: ActionLabels = {
   pagination: labels => labels.actionPage,
   grouping: labels => labels.actionGrouping,
   copy: labels => labels.actionCopy,
+  rowTransaction: labels => labels.actionRowTransaction,
 }

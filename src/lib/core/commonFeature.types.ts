@@ -54,6 +54,7 @@ import type { FoldedBody } from './bodyContributions'
 import type { RenderVersionAtom } from './renderVersion'
 import type { NarrowContext, NarrowMap } from './effectiveState'
 import type { RefreshOptions } from './loadingDisplay'
+import type { RowTransaction, RowTransactionResult } from './rowTransactions'
 
 // --- Payload-типы контракта --------------------------------------------------
 /** Бизнес-контракт хуков. */
@@ -152,6 +153,12 @@ export interface CoreOptions {
   onDebugAction?: OnDebugAction
   /** Новый отказ в реестре отказов (ADR 0177, §6) — например, для своего трекера ошибок. */
   onFailure?: (failure: Failure) => void
+  /**
+   * Следующий `data` клиентской транзакции `table.applyRowTransaction` (ADR 0194, §4):
+   * приложение кладёт его в `data`. Без обработчика транзакция в клиентском режиме не
+   * применяется.
+   */
+  onDataChange?: (data: any[], transaction: RowTransaction) => void
   /** Высота строк тела, футера и скелета, px; по умолчанию 50, не ниже 40 (ADR 0077). */
   rowHeight?: number
   /** Высота каждой строки шапки, px; по умолчанию — как `rowHeight`, не ниже 36. */
@@ -235,6 +242,13 @@ export interface CommonTableAPI<
   getRowSource: () => RowSource<Row<TFeatures, TData>>
   /** Итог колонки: ответа сервера или плагина `columnTotals`; нет — `undefined`. */
   getColumnTotal: (columnId: string) => unknown
+  /**
+   * Добавить, обновить и удалить строки (ADR 0157, ADR 0194): с серверной моделью — в её
+   * кэше, в клиентском режиме — следующим `data` через `onDataChange`.
+   */
+  applyRowTransaction: (
+    transaction: RowTransaction<TData>,
+  ) => RowTransactionResult
   getHooks: () => CommonHooks | undefined
   /** Подпись действия справочника по текущему словарю таблицы (ADR 0182, AN8). */
   getActionLabel: (action: ActionRef) => string

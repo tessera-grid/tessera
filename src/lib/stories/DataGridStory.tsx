@@ -25,6 +25,7 @@ import { argsKeyOf } from '../../lib/core/pluginArgs'
 import type { CoreOptions } from '../../lib/core/commonFeature.types'
 import type { DebugAction } from '../../lib/core/debugActions'
 import { useCreateTable } from '../../lib/core/useCreateTable'
+import type { RowTransaction } from '../../lib/core/rowTransactions'
 import { isThenable } from '../util/thenable'
 import { useLatest } from '../util/useLatest'
 import { DataGrid } from '../../lib/grid/DataGrid'
@@ -344,6 +345,19 @@ const StoryGrid = memo(
         : {}),
       ...(errorsDemo ? { cellErrorsGetCellError: demoCellError } : {}),
     }
+    // Следующий `data` клиентской транзакции (ADR 0194, §4): приложение-история кладёт его в
+    // свою копию данных; без обработчика истории транзакция не применяется.
+    const onDataChange = options.onDataChange
+    const dataChangeHandler = useMemo(() => {
+      if (!onDataChange) return undefined
+      const logged = consoleLog
+        ? loggedCallback(consoleLog, 'onDataChange', onDataChange)
+        : onDataChange
+      return (next: any[], transaction: RowTransaction) => {
+        setData(next)
+        logged(next, transaction)
+      }
+    }, [onDataChange, consoleLog, setData])
     const writeCell = useCallback<WriteStoryCell>(
       (rowId, columnId, value) =>
         setData(prev =>
@@ -509,6 +523,7 @@ const StoryGrid = memo(
       loadError: retry === 'idle' ? options.loadError : undefined,
       onDebugAction,
       onRetry: retryHandler,
+      onDataChange: dataChangeHandler,
       enableFooter: options.enableFooter,
       footerPosition: options.footerPosition,
       enableToolbar: panelFlag(options.enableToolbar),

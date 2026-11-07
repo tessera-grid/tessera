@@ -377,14 +377,14 @@ describe('транзакции строк серверной модели (ADR 0
     expect(say).toHaveBeenCalledWith('Added 2 rows. Removed 1 row')
   })
 
-  it('RT13: плагин подключён, но выключен или без getRows — метод ничего не меняет, возвращает undefined, dev-предупреждение', () => {
+  it("RT13: плагин подключён, но выключен или без getRows — транзакция клиентская: без onDataChange ничего не меняет, итог 'unavailable', dev-предупреждение", () => {
     for (const props of [{ loader: false }, { enabled: false }]) {
       act(() => root.render(<Grid {...props} />))
       let result: unknown = 'not called'
       act(() => {
         result = table.applyRowTransaction({ add: [item('n1')], index: 0 })
       })
-      expect(result).toBeUndefined()
+      expect(result).toBe('unavailable')
       expect(source().count()).toBe(0)
     }
     expect(

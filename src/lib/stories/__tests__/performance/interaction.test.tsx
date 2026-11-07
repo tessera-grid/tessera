@@ -84,6 +84,11 @@ import { moveRowToGroup } from '../../../plugins/rowDragging/groupMove'
 import { rowSelection } from '../../../plugins/rowSelection'
 import { columnSorting } from '../../../plugins/columnSorting'
 import { useCreateTable } from '../../../core/useCreateTable'
+import {
+  columnFilteringModel,
+  columnSortingModel,
+  rowGroupingModel,
+} from '../../../plugins'
 import { DataGrid } from '../../../grid/DataGrid'
 import { buildXlsx } from '../../../plugins/dataExportModel/xlsxBuild'
 import { columns as mockColumns, makeColumns } from '../../__mocks__/columns'
@@ -5636,3 +5641,183 @@ describe('Отзывчивость взаимодействий — предик
   )
 })
 
+// Смена data из прежней модели (ADR 0194, IU13–IU14): правка одной строки и вставка 100 строк
+// транзакцией на 100 000 строк — против той же смены, где каждая строка — новый объект: так
+// модели строк собираются полностью, как до ADR 0194. Грид рисуется в обоих вариантах.
+interface ChangeRow {
+  id: string
+  a: string
+  b: number
+  c: string
+}
+const changeRows = (from: number, count: number): ChangeRow[] =>
+  Array.from({ length: count }, (_, k) => ({
+    id: `r${from + k}`,
+    a: `Name ${from + k}`,
+    b: (from + k) % 997,
+    c: `City ${(from + k) % 50}`,
+  }))
+const CHANGE_COLUMNS = [
+  { id: 'a', accessorKey: 'a', header: 'A', size: 200 },
+  { id: 'b', accessorKey: 'b', header: 'B', size: 120 },
+  { id: 'c', accessorKey: 'c', header: 'C', size: 200 },
+]
+let setChangeRows: (update: (prev: ChangeRow[]) => ChangeRow[]) => void
+let changeTable: {
+  applyRowTransaction: (transaction: object) => unknown
+  getRowModel: () => { rows: unknown[] }
+}
+const ChangeGrid = ({
+  initial,
+  plugins,
+  copyAll,
+}: {
+  initial: ChangeRow[]
+  plugins: () => unknown[]
+  /** База: приложение отдаёт каждую строку новым объектом. */
+  copyAll: boolean
+}) => {
+  const [rows, setRows] = useState(initial)
+  const [entries] = useState(plugins)
+  setChangeRows = setRows
+  const table = useCreateTable({
+    columns: CHANGE_COLUMNS as never,
+    data: rows,
+    getRowId: (row: ChangeRow) => row.id,
+    onDataChange: (next: ChangeRow[]) =>
+      setRows(copyAll ? next.map(row => ({ ...row })) : next),
+    plugins: entries as never,
+  })
+  changeTable = table as never
+  return (
+    <div style={{ height: 600 }}>
+      <DataGrid table={table as never} />
+    </div>
+  )
+}
+
+const measureChange = async (
+  plugins: () => unknown[],
+  copyAll: boolean,
+  act: (turn: number) => void,
+) => {
+  await render(
+    <ChangeGrid
+      initial={changeRows(0, 100_000)}
+      plugins={plugins}
+      copyAll={copyAll}
+    />,
+  )
+  await waitForGrid()
+  let turn = 0
+  const result = await measureInteractionWork(async () => act(turn++))
+  // Прогрев и замер — по действию: изменения дошли до модели.
+  await expect.poll(() => turn).toBe(2)
+  await cleanup()
+  return result
+}
+
+const recordChange = (
+  id: string,
+  label: string,
+  plugins: 'columnSorting' | 'columnSorting, columnFiltering, rowGrouping',
+  r: Awaited<ReturnType<typeof measureInteractionWork>>,
+  ceilingMs?: number,
+) =>
+  recordPerf({
+    id,
+    label,
+    operation: 'interaction',
+    size: '100 000×3',
+    plugins,
+    cpuThrottle: CPU_THROTTLE_RATE,
+    metrics: [
+      {
+        kind: 'load',
+        metric: 'longest',
+        valueMs: r.longestMs,
+        targetMs: INTERACTION_BUDGET_MS,
+        ceilingMs,
+        ...r,
+      },
+    ],
+  })
+
+describe('Смена data из прежней модели', () => {
+  test(
+    'IU13: правка одной ячейки на 100 000 строк при сортировке, фильтре и группировке — не дольше четверти полной сборки',
+    async () => {
+      const plugins = () => [
+        columnSortingModel({ initialSorting: [{ id: 'b', desc: false }] }),
+        columnFilteringModel({
+          initialColumnFilters: [
+            { id: 'a', value: { operator: 'contains', value: 'Name' } },
+          ],
+        }),
+        rowGroupingModel({ initialGrouping: ['c'] }),
+      ]
+      const edit = (copyAll: boolean) => (turn: number) =>
+        setChangeRows(prev =>
+          prev.map((row, i) =>
+            i === 500
+              ? { ...row, b: row.b + turn + 1 }
+              : copyAll
+                ? { ...row }
+                : row,
+          ),
+        )
+      const runs = await againstBase(isOurs =>
+        measureChange(plugins, !isOurs, edit(!isOurs)),
+      )
+      const base = medianRun(runs.base, r => r.longestMs)
+      const ours = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = base.longestMs / 4
+      const used = 'columnSorting, columnFiltering, rowGrouping' as const
+      await recordChange('IU13-base', 'полная сборка', used, base)
+      await recordChange(
+        'IU13',
+        'правка строки из прежней модели',
+        used,
+        ours,
+        ceiling,
+      )
+      expect(
+        ours.longestMs,
+        `правка longest=${ours.longestMs.toFixed(1)}ms, полная ${base.longestMs.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+
+  test(
+    'IU14: вставка 100 строк транзакцией без места на 100 000 строк при сортировке — не дольше четверти полной сборки',
+    async () => {
+      const plugins = () => [
+        columnSortingModel({ initialSorting: [{ id: 'b', desc: false }] }),
+      ]
+      const insert = (turn: number) =>
+        changeTable.applyRowTransaction({
+          add: changeRows(200_000 + turn * 100, 100),
+        })
+      const runs = await againstBase(isOurs =>
+        measureChange(plugins, !isOurs, insert),
+      )
+      const base = medianRun(runs.base, r => r.longestMs)
+      const ours = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = base.longestMs / 4
+      await recordChange('IU14-base', 'полная сборка', 'columnSorting', base)
+      await recordChange(
+        'IU14',
+        'вставка транзакцией из прежней модели',
+        'columnSorting',
+        ours,
+        ceiling,
+      )
+      expect(
+        ours.longestMs,
+        `вставка longest=${ours.longestMs.toFixed(1)}ms, полная ${base.longestMs.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})

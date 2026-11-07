@@ -2,12 +2,14 @@
  * Модель раскрытия из прошлой (ADR 0070): заново обходятся только корни, затронутые
  * сменой модели на входе или среза `expanded`; участки остальных копируются. Первая
  * сборка, «раскрыто всё», смена числа корней и больше половины затронутых корней —
- * модель TanStack.
+ * модель TanStack. Смена `data` с записанной сменой модели (ADR 0194) копирует участки
+ * корней с прежними детьми при любом числе корней.
  */
 import { createExpandedRowModel } from '@tanstack/react-table'
 
 import type { RowData, Table, TableFeatures } from '../../types'
 import { dataModeOf, isPaginationActive } from '../../core/dataMode'
+import { rowModelChangeOf } from '../../core/dataChanges'
 import type { NarrowState } from '../../core/definePlugin'
 import { recordRowChange } from '../../core/rowChanges'
 
@@ -224,6 +226,50 @@ export const createIncrementalExpandedRowModel =
       }
     }
 
+    /** Смена `data` (ADR 0194): корень с прежними детьми — прежний участок, прочие — обход. */
+    const patchData = (
+      prev: Built & { starts: Int32Array },
+      input: ExpandModel,
+      expanded: Expanded,
+      paginate: unknown,
+    ): Built => {
+      const roots = input.rows
+      const prevRoots = prev.input.rows
+      const prevAt = new Map<string, number>()
+      for (let j = 0; j < prevRoots.length; j++) prevAt.set(prevRoots[j]!.id, j)
+      const before = prev.output.rows
+      const rows: ExpandRow[] = []
+      const starts = new Int32Array(roots.length + 1)
+      for (let i = 0; i < roots.length; i++) {
+        const root = roots[i]!
+        starts[i] = rows.length
+        const j = prevAt.get(root.id)
+        const old = j === undefined ? undefined : prevRoots[j]
+        // Сдвинутый корень — новый объект с прежними детьми: участок прежний.
+        if (old && (old === root || old.subRows === root.subRows)) {
+          rows.push(root)
+          for (let k = prev.starts[j!]! + 1; k < prev.starts[j! + 1]!; k++) {
+            rows.push(before[k]!)
+          }
+        } else {
+          walk(root, rows)
+        }
+      }
+      starts[roots.length] = rows.length
+      let from = 0
+      const end = Math.min(rows.length, before.length)
+      while (from < end && rows[from] === before[from]) from++
+      recordRowChange(rows, before, from)
+      return {
+        input,
+        expanded,
+        paginate,
+        output: { rows, flatRows: input.flatRows, rowsById: input.rowsById },
+        patchable: expanded !== true,
+        starts,
+      }
+    }
+
     return () => {
       const input = t.getPreExpandedRowModel()
       const expanded = t.atoms.expanded?.get() ?? NO_EXPANDED
@@ -236,6 +282,27 @@ export const createIncrementalExpandedRowModel =
         prev.paginate === paginate
       ) {
         return prev.output as never
+      }
+      // «Раскрыто всё» тоже: участки корней с прежними детьми переходят.
+      const dataChanged =
+        prev &&
+        paginate &&
+        prev.paginate === paginate &&
+        expanded === prev.expanded &&
+        !t.options.getIsRowExpanded &&
+        (expanded === true || Object.keys(expanded).length > 0) &&
+        rowModelChangeOf(input)?.prev === prev.input
+      if (dataChanged) {
+        last = patchData(
+          Object.assign(prev, {
+            starts:
+              prev.starts ?? rootStarts(prev.input.rows, prev.output.rows),
+          }),
+          input,
+          expanded,
+          paginate,
+        )
+        return last.output as never
       }
       const incremental =
         prev?.patchable &&

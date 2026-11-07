@@ -67,6 +67,8 @@ const cellSelectionModelEntry = definePlugin<CellSelectionModelOptions>()({
   options: o => {
     const canSelect = o.canSelectCell
     return {
+      // Смена data не сбрасывает выделение: углы следуют за своими строками (ADR 0194).
+      autoResetCellSelection: false,
       // При disabled — false: v9 фиксирует набор фич на маунте, гейт — опцией.
       enableCellSelection:
         o.enabled === false

@@ -194,11 +194,15 @@ const sourceFiles = (dir: string): string[] =>
  */
 const MODEL_READERS: Record<string, string> = {
   'core/rowSource.ts': 'клиентский источник строк — над моделью TanStack',
+  'core/rowTransactions.ts':
+    'родитель ветки клиентской транзакции — по модели ядра (ADR 0194)',
+  'core/dataChanges.ts':
+    'модель ядра из прежней при смене data — над моделью TanStack (ADR 0194)',
   'shared/rowModels/expandedRowModel.ts':
     'фабрика модели раскрытия клиентского режима (ADR 0070)',
   'shared/rowModels/filteredRowModel.ts':
     'фабрика модели фильтрации клиентского режима (ADR 0045, 0068)',
-  'shared/rowModels/rowsByIdHandover.ts':
+  'core/rowsByIdHandover.ts':
     'передача словаря между моделями клиентского режима (ADR 0069)',
   'plugins/columnSortingModel/sortedRowModel.ts':
     'фабрика модели сортировки клиентского режима (ADR 0064, 0072)',

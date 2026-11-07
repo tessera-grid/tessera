@@ -19,6 +19,7 @@ import type {
 
 import type { ColumnDef, RowData, TableOptions } from '../types'
 import type { CoreOptions } from './commonFeature.types'
+import { defaultGetSubRows } from './rowTransactions'
 import { dataModeKeyOf, manualOptionsOf, stockRowCountOf } from './dataMode'
 import { type DefaultColumnSizing, resolveDefaultColumn } from './defaultColumn'
 import { resolveHooks } from './createHooks'
@@ -108,6 +109,7 @@ const CORE_OPTION_KEYS: Record<keyof CoreOptions, true> = {
   onRetry: true,
   onDebugAction: true,
   onFailure: true,
+  onDataChange: true,
   rowHeight: true,
   headerHeight: true,
 }
@@ -374,9 +376,8 @@ export const useCreateTable = <
     columns: injectedColumns,
     data,
     getRowId: getRowId ?? ((row: TData) => (row as { id: string }).id),
-    getSubRows:
-      getSubRows ??
-      ((row: TData) => (row as { subRows?: TData[] }).subRows || []),
+    // Умолчание — одна функция: по ней транзакция знает, куда писать детей (ADR 0194).
+    getSubRows: getSubRows ?? defaultGetSubRows<TData>,
     defaultColumn: resolvedDefaultColumn,
 
     // Фичевые опции плагинов (enableSorting и т.п.) — вливаются первыми, чтобы

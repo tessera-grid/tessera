@@ -350,6 +350,7 @@
   "actionHighlight": "Подсветка",
   "actionClearHighlights": "Снятие подсветки",
   "actionFlashOutcome": "Вспышка итога",
+  "actionRowTransaction": "Изменение строк",
   "actionScrollToRow": "Прокрутка к строке",
   "actionResetFilters": "Сброс фильтров",
   "actionRetryLoad": "Повторная загрузка",

@@ -87,12 +87,11 @@ describe('общий слой (ADR 0166)', () => {
     expect(parsers).toEqual(['lib/util/cssTime.ts'])
   })
 
-  it('SH2: модели строк — в shared/rowModels/, failedAttempts, rowMoves, serverAggregations и фильтрация с FilteredRowsCount — в shared/; в core/ и grid/ их нет', () => {
+  it('SH2: модели строк — в shared/rowModels/, failedAttempts, rowMoves, serverAggregations и фильтрация с FilteredRowsCount — в shared/; в core/ и grid/ их нет; передача словаря строк — в core/', () => {
     const rowModels = [
       'expandedRowModel.ts',
       'filteredRowModel.ts',
       'idleRowModel.ts',
-      'rowsByIdHandover.ts',
     ]
     const shared = ['failedAttempts.ts', 'rowMoves.ts', 'serverAggregations.ts']
     const filtering = ['filtering.ts', 'FilteredRowsCount.tsx']
@@ -106,6 +105,8 @@ describe('общий слой (ADR 0166)', () => {
     expect(
       strays([...rowModels, ...shared, ...filtering], ['core', 'grid']),
     ).toEqual([])
+    // Словарь передаёт и модель ядра (ADR 0194): ядро не импортирует shared/.
+    expect(missing(['lib/core/rowsByIdHandover.ts'])).toEqual([])
   })
 
   it('SH3: тема — в ui/theme; в базе LB1 нет рёбер ui → core и core → ui', () => {

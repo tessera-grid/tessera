@@ -9,6 +9,8 @@ export interface UseRowRangeExtractorParams {
   rowDraggingIndex?: number
   /** Активная строка клавиатурной навигации (фокус не должен размонтироваться). */
   activeRowIndex?: number
+  /** Строка активной ячейки после смены списка, пока ячейка не переехала за ней. */
+  heldRowIndex?: number
 }
 
 /**
@@ -19,11 +21,12 @@ export interface UseRowRangeExtractorParams {
 export const useRowRangeExtractor = ({
   rowDraggingIndex,
   activeRowIndex,
+  heldRowIndex,
 }: UseRowRangeExtractorParams) => {
   return useCallback(
     (range: Range) => {
       const newIndexes = defaultRangeExtractor(range)
-      const pinned = [rowDraggingIndex, activeRowIndex].filter(
+      const pinned = [rowDraggingIndex, activeRowIndex, heldRowIndex].filter(
         (index): index is number =>
           index !== undefined && index >= 0 && index < range.count,
       )
@@ -36,6 +39,6 @@ export const useRowRangeExtractor = ({
         (a, b) => a - b,
       )
     },
-    [rowDraggingIndex, activeRowIndex],
+    [rowDraggingIndex, activeRowIndex, heldRowIndex],
   )
 }

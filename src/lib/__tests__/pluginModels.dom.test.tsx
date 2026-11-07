@@ -452,7 +452,7 @@ describe('плагины модели и интерфейса (ADR 0120)', () =>
     act(() => root!.unmount())
     root = undefined
 
-    // Автосброс TanStack (`autoResetCellSelection`) возвращает к начальному значению.
+    // Сброс среза (`resetCellSelection`) возвращает к начальному значению.
     const range = [
       {
         anchorRowId: 'a',

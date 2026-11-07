@@ -29,6 +29,7 @@ import {
 } from './pluginDiagnostics'
 import { createClientRowSource, rowSourceOf } from './rowSource'
 import { DEFAULT_SKELETON_OPTIONS } from './skeletonOptions'
+import { applyRowTransaction, type RowTransaction } from './rowTransactions'
 
 // Побочка импорта типов: подключает declaration merging из commonFeature.types.
 export type { CommonOptions } from './commonFeature.types'
@@ -75,6 +76,10 @@ export const commonFeature: TableFeature = {
       table_getHooks: { fn: () => options().hooks },
       table_getActionLabel: {
         fn: (action: ActionRef) => actionLabelOf(table, action),
+      },
+      table_applyRowTransaction: {
+        fn: (transaction: RowTransaction) =>
+          applyRowTransaction(table, transaction),
       },
       table_getRowSource: {
         fn: () => {

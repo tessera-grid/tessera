@@ -204,11 +204,15 @@ describe('Счётчики работы', () => {
     })
     await userEvent.click(checkbox(2))
     await userEvent.click(checkbox(2))
-    // Новая ссылка `data` с теми же строками — перерисовка всего тела.
+    // Каждая строка — новым объектом: модель строк собирается заново, перерисовка всего
+    // тела (новый массив с прежними строками тело не перерисовывает, ADR 0194).
     const planted = await measure(async () => {
       await userEvent.click(checkbox(2))
       await screen.rerender(
-        <Grid data={[...data]} toggles={{ enableRowSelection: true }} />,
+        <Grid
+          data={data.map(row => ({ ...row }))}
+          toggles={{ enableRowSelection: true }}
+        />,
       )
     })
     expect(rowRenders(planted)).toBeGreaterThan(1)

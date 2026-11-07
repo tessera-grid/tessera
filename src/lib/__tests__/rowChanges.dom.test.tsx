@@ -251,7 +251,7 @@ describe('Подсказка места изменения строк (ADR 0145)
     expect(all.parity).toEqual(all.full)
   })
 
-  it('HV5: лента дописала блок в конец data — подсказка — длина прежнего списка; без ленты, при сортировке, фильтре, поиске, группировке на клиенте и при data не длиннее прежней — подсказки нет', () => {
+  it('HV5: лента дописала блок в конец data — подсказка — длина прежнего списка; без ленты, при сортировке, фильтре, поиске, группировке на клиенте — подсказка модели строк; data в другом порядке — подсказки нет; позиции совпадают с полным пересчётом', () => {
     const feed = () => infiniteScroll({ hasMore: true, onLoadMore: () => {} })
     const appended = (plugins: () => readonly unknown[]) => {
       const first = flat(0, 50)
@@ -295,16 +295,20 @@ describe('Подсказка места изменения строк (ADR 0145)
         () => [feed(), rowGroupingModel({ initialGrouping: ['name'] })],
       ],
     ] as const) {
+      // Модель собрана из прошлой (ADR 0194): место изменения знает она, а не опция ленты.
       const result = appended(plugins)
-      expect(result.hint, name).toBeUndefined()
+      expect(result.hint, name).toBeDefined()
       expect(result.parity, name).toEqual(result.full)
     }
 
     const same = flat(0, 50)
     render(same, () => [feed()])
     const update = track()
-    render(same.slice(), () => [feed()])
-    expect(update().hint).toBeUndefined()
+    // Та же длина в другом порядке: модель собрана заново, место изменения неизвестно.
+    render(same.slice().reverse(), () => [feed()])
+    const reversed = update()
+    expect(reversed.hint).toBeUndefined()
+    expect(reversed.parity).toEqual(reversed.full)
   })
 
   it('HV6: серверная модель — раскрытие и сворачивание ветки и смена итога: подсказка — прежнее число строк, позиции совпадают с полным пересчётом', async () => {
@@ -451,5 +455,77 @@ describe('Подсказка места изменения строк (ADR 0145)
     expect(page.changed).toBe(true)
     expect(page.hint).toBeUndefined()
     expect(page.parity).toEqual(page.full)
+  })
+})
+
+describe('Подсказка при смене data (ADR 0194)', () => {
+  it('IU10: смена data из прежней модели даёт виртуализатору место первого изменения без полного пересчёта — без плагинов, при сортировке, фильтре, группировке и раскрытии; позиции совпадают с полным пересчётом', () => {
+    // Дерево — только для раскрытия: группировка дерева идёт полной сборкой.
+    const rowsOf = (tree: boolean): Node[] =>
+      flat(0, 200).map((row, i) => ({
+        ...row,
+        kids: i % 3,
+        ...(tree && i % 20 === 0
+          ? { subRows: [node(`r${i}.a`), node(`r${i}.b`)] }
+          : {}),
+      }))
+    const steps: [string, (d: Node[]) => Node[]][] = [
+      [
+        'замена',
+        d =>
+          d.map((row, i) =>
+            i === 120 ? { ...row, name: 'r120*', kids: 2 } : row,
+          ),
+      ],
+      ['вставка', d => [...d.slice(0, 150), node('x1'), ...d.slice(150)]],
+      ['удаление', d => d.filter((_, i) => i !== 170)],
+    ]
+    for (const [name, plugins] of [
+      ['без плагинов', () => []],
+      [
+        'сортировка',
+        () => [
+          columnSortingModel({ initialSorting: [{ id: 'name', desc: false }] }),
+        ],
+      ],
+      [
+        'фильтр',
+        () => [
+          columnFilteringModel({
+            initialColumnFilters: [
+              { id: 'name', value: { operator: 'contains', value: 'r' } },
+            ],
+          }),
+        ],
+      ],
+      [
+        'группировка',
+        () => [
+          rowGroupingModel({ initialGrouping: ['name'] }),
+          rowExpanding({ initialExpanded: true }),
+        ],
+      ],
+      [
+        'раскрытие',
+        () => [rowExpanding({ initialExpanded: { r100: true, r160: true } })],
+      ],
+    ] as const) {
+      let data = rowsOf(name === 'раскрытие')
+      render(data, plugins)
+      const update = track()
+      for (const [label, step] of steps) {
+        data = step(data)
+        render(data, plugins)
+        const result = update()
+        expect(result.hint, `${name}, ${label}`).toBeDefined()
+        expect(result.hint, `${name}, ${label}`).toBeGreaterThan(0)
+        expect(result.askedBefore(result.hint!), `${name}, ${label}`).toBe(
+          false,
+        )
+        expect(result.parity, `${name}, ${label}`).toEqual(result.full)
+      }
+      act(() => root!.unmount())
+      root = undefined
+    }
   })
 })

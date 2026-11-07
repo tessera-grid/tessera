@@ -62,6 +62,7 @@ export const CORE_OPTIONS: Record<string, string> = {
   onColumnAutoSizingChange: '0010',
   onDebugAction: '0125',
   onFailure: '0177',
+  onDataChange: '0194',
   onRetry: '0096',
   pagedRows: '0169',
   partialData: '0081',

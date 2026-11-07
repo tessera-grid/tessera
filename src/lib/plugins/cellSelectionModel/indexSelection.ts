@@ -3,6 +3,7 @@
  * TanStack работают по индексам источника. В срезе — индексы углов и `id` углов, где строка
  * известна; на клиенте место угла — по его `id`, выделение едет со строками.
  */
+import { followDataChanges } from '../../core/dataFollow'
 import type { RowData, TableFeatures } from '@tanstack/react-table'
 import { logWarn } from '../../util/logger'
 import {
@@ -708,8 +709,9 @@ const followIds = (
 }
 
 /**
- * Клиент: смена порядка строк — сортировка, фильтр, страница — пересчитывает индексы углов по
- * их `id` (ADR 0180, §3). Угол не на виду — индексов нет, диапазон остаётся в срезе.
+ * Клиент: смена порядка строк — сортировка, фильтр, страница, новый `data` — пересчитывает
+ * индексы углов по их `id` (ADR 0180, §3; ADR 0194). Угол не на виду — индексов нет, диапазон
+ * остаётся в срезе; угол ушёл из данных — диапазон снимается.
  */
 const followClientOrder = (t: FollowTable, table: unknown) => {
   let list: unknown
@@ -720,12 +722,28 @@ const followClientOrder = (t: FollowTable, table: unknown) => {
     if (next === list) return
     list = next
     const ranges = (t.store.get().cellSelection ?? []) as CellSelectionState
-    const moved = ranges.map(range => followIds(range, source))
-    if (moved.some((range, index) => range !== ranges[index]))
+    // Угол ушёл из данных — диапазон снимается; скрытый фильтром остаётся (ADR 0194).
+    const kept = ranges.filter(
+      range =>
+        (range.anchorRowId === undefined ||
+          source.byId(range.anchorRowId) !== undefined) &&
+        (range.focusRowId === undefined ||
+          source.byId(range.focusRowId) !== undefined),
+    )
+    const moved = kept.map(range => followIds(range, source))
+    if (
+      kept.length !== ranges.length ||
+      moved.some((range, index) => range !== ranges[index])
+    )
       t.setCellSelection(() => moved)
   }
   const subscription = t.store.subscribe(check)
-  return () => subscription.unsubscribe()
+  // Новый `data` срез не меняет: о нём сообщает таблица (ADR 0194).
+  const unfollowData = followDataChanges(table, check)
+  return () => {
+    subscription.unsubscribe()
+    unfollowData()
+  }
 }
 
 /**

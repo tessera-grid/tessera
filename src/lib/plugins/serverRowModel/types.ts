@@ -1,3 +1,4 @@
+import type { RowTransaction } from '../../core/rowTransactions'
 import type { ColumnFiltersState, SortingState } from '../../types'
 
 /** Запрос строк `[start, end)` под текущие сортировку, фильтры и поиск (ADR 0138, §1). */
@@ -33,15 +34,8 @@ export interface ServerRowsResponse<TData = unknown> {
  * перезапроса. `index` — место добавленных в ветке `parentId` (в списке уже без удалённых);
  * без него таблица тихо перезапрашивает окно.
  */
-export interface ServerRowTransaction<TData = any> {
-  add?: TData[]
-  index?: number
-  update?: TData[]
-  remove?: string[]
-  parentId?: string
-  /** Итог ветки после транзакции, если его знает приложение. */
-  rowCount?: number
-}
+/** Транзакция строк — одна форма с клиентской (ADR 0194, §4). */
+export type ServerRowTransaction<TData = any> = RowTransaction<TData>
 
 /** Итог транзакции: применена, окно перезапрошено или ветки нет в раскладке. */
 export type ServerRowTransactionResult =
