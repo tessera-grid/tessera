@@ -69,6 +69,12 @@
   --tsr-sys-fg: var(--foreground, var(--tsr-ref-neutral-950));
   --tsr-sys-bg: var(--background, var(--tsr-ref-neutral-0));
   --tsr-sys-surface: var(--card, var(--tsr-ref-neutral-0));
+  /* Нечётная строка: фон и поверхность светлой темы совпадают, зебру даёт примесь текста. */
+  --tsr-sys-stripe: color-mix(
+    in oklch,
+    var(--tsr-sys-fg) 2%,
+    var(--tsr-sys-surface)
+  );
   --tsr-sys-muted: var(--muted, var(--tsr-ref-neutral-100));
   --tsr-sys-accent: var(--primary, var(--tsr-ref-neutral-900));
   --tsr-sys-accent-fg: var(--primary-foreground, var(--tsr-ref-neutral-50));
@@ -176,6 +182,7 @@
   --tsr-sys-fg: var(--foreground, var(--tsr-ref-neutral-50));
   --tsr-sys-bg: var(--background, var(--tsr-ref-neutral-950));
   --tsr-sys-surface: var(--card, var(--tsr-ref-neutral-900));
+  --tsr-sys-stripe: var(--tsr-sys-bg);
   --tsr-sys-muted: var(--muted, var(--tsr-ref-neutral-800));
   --tsr-sys-accent: var(--primary, var(--tsr-ref-neutral-200));
   --tsr-sys-accent-fg: var(--primary-foreground, var(--tsr-ref-neutral-900));
@@ -354,7 +361,7 @@
 
   /* Строки */
   --tsr-comp-row-bg: var(--tsr-sys-surface);
-  --tsr-comp-row-odd-bg: var(--tsr-sys-bg);
+  --tsr-comp-row-odd-bg: var(--tsr-sys-stripe);
   --tsr-comp-row-hovered-bg: var(--tsr-sys-overlay-hover);
   --tsr-comp-row-selected-bg: var(--tsr-sys-overlay-selected);
   --tsr-comp-row-selected-hovered-bg: var(--tsr-sys-overlay-selected-strong);
@@ -499,7 +506,7 @@
    * строки поверх (ADR 0126). */
   --tsr-comp-cell-odd-pinned-left-bg: color-mix(
     in oklch,
-    var(--tsr-sys-bg),
+    var(--tsr-sys-stripe),
     var(--tsr-sys-fg) var(--tsr-sys-tint-pinned)
   );
   --tsr-comp-cell-pinned-left-bg: color-mix(
@@ -736,6 +743,8 @@
     transparent
   );
   --tsr-comp-segments-track-outline: none;
+  /* Кнопка и поле номера страницы (ADR 0192): номер важнее полей. */
+  --tsr-comp-pagination-number-padding-x: var(--tsr-ref-space-1);
   --tsr-comp-segments-color: var(--tsr-comp-control-color);
   --tsr-comp-segments-selected-bg: var(--tsr-sys-elevated);
   --tsr-comp-segments-selected-color: var(--tsr-sys-fg);
@@ -1163,6 +1172,11 @@
   --tsr-sys-fg: var(--tsr-ref-neutral-950);
   --tsr-sys-bg: var(--tsr-ref-neutral-0);
   --tsr-sys-surface: var(--tsr-ref-neutral-0);
+  --tsr-sys-stripe: color-mix(
+    in oklch,
+    var(--tsr-sys-fg) 2%,
+    var(--tsr-sys-surface)
+  );
   --tsr-sys-muted: var(--tsr-ref-neutral-100);
   --tsr-sys-accent: var(--tsr-ref-neutral-900);
   --tsr-sys-accent-fg: var(--tsr-ref-neutral-50);

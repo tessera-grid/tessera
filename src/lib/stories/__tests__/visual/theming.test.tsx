@@ -50,7 +50,7 @@ describe('Theming — external customization + token tiers', () => {
     // Без него `--tsr-comp-loader-bar` был бы не задан и полоса осталась бы
     // без цвета — синий #0070f3 (rgb 0,112,243) доказывает, что слой поставлен.
     const container = await renderTheming()
-    expect(barColor(container)).toBe('rgb(0, 112, 243)')
+    expect(barColor(container)).toBe('oklch(0.546 0.245 262.881)')
   })
 
   test('TH3: a direct `--tsr-comp-*` override wins over the layer default', async () => {

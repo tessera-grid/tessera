@@ -225,7 +225,8 @@ describe('id новой строки задаёт таблица (ADR 0181)', ()
       expect(rowsWith(id), String(early)).toHaveLength(1)
       expect(table.getRowSource().indexOf(id)).toBe(at)
       expect(table.getRowSource().count()).toBe(ROWS.length + 1)
-      expect(rowDraftMarkOf(table, id)).toBeUndefined()
+      // Отметку снимает итог пакета: он приходит позже записи в данные.
+      await vi.waitFor(() => expect(rowDraftMarkOf(table, id)).toBeUndefined())
       expect(readDrafts(table)).toEqual([])
       act(() => root!.unmount())
       root = undefined

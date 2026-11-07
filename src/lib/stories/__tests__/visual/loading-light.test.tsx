@@ -120,10 +120,11 @@ describe('Спиннер ожидания (ADR 0095)', () => {
     tones.pause()
     for (const index of [1, 2, 3, 4]) {
       tones.currentTime = (cycle * (index - 1)) / 4
+      // Значение анимации приходит в другой записи цвета.
       expect(
-        getComputedStyle(el).getPropertyValue('--tsr-spinner-tone'),
+        toRgba(getComputedStyle(el).getPropertyValue('--tsr-spinner-tone')),
         `tone ${index}`,
-      ).toBe(tone(index))
+      ).toEqual(toRgba(tone(index)))
     }
 
     // Кадр начала оборота: дуга от верха по часовой первым оттенком, как у круглой кнопки.

@@ -264,7 +264,10 @@ describe('Скрытие всех колонок', () => {
       status.querySelector<HTMLElement>('.column-filter__button')!,
     )
     await expect.poll(() => byTestId('filter-panel')).not.toBeNull()
-    expect(widthOf('filter-panel')).toBe(limit)
+    // Панель лежит в поверхности с полями: ширина поповера — у неё.
+    expect(
+      getComputedStyle(byTestId('filter-panel')!.parentElement!).width,
+    ).toBe(limit)
     await userEvent.click(
       byTestId('filter-panel')!.querySelector<HTMLElement>(
         '[role="checkbox"]',

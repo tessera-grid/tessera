@@ -710,13 +710,14 @@ describe('Повышенный контраст (ADR 0088)', () => {
     for (const id of ['r5', 'r6']) {
       const base =
         rowEl(id).getAttribute('data-row-odd') === 'true'
-          ? 'var(--tsr-sys-bg)'
+          ? 'var(--tsr-sys-stripe)'
           : 'var(--tsr-sys-surface)'
       expect(style(cellEl(id, 'a')).backgroundColor, `закрепление/${id}`).toBe(
         mix('oklch', base, 3),
       )
     }
-    expect(style(wrapper()).borderTopColor, 'рамка').toBe('rgb(235, 235, 235)')
+    // Рамка — neutral-200 (ADR 0191).
+    expect(style(wrapper()).borderTopColor, 'рамка').toBe('oklch(0.922 0 0)')
 
     if (server.browser === 'webkit') return
     await cmd.moreContrast(true)

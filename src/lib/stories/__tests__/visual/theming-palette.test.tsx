@@ -3,6 +3,7 @@ import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
 import * as stories from '../../Theming.stories'
+import { toRgba } from './a11y-helpers'
 
 // Витрина «Палитра» (свотч-борд) — каждое требование отдельным именованным
 // тестом (PL1–PL3). История рендерит две
@@ -37,9 +38,9 @@ describe('Theming — палитра (свотч-борд, обе темы)', ()
   test('PL2: один и тот же токен `--tsr-sys-bg` даёт разный фон в light и dark', async () => {
     const container = await renderPalette()
     const [light, dark] = container.querySelectorAll(THEME_COLUMN)
-    // Плоский primitive-слот роли: light neutral-50, dark neutral-950.
-    expect(bgOf(light)).toBe('rgb(250, 250, 250)')
-    expect(bgOf(dark)).toBe('rgb(10, 10, 10)')
+    // Плоский primitive-слот роли: light белый, dark neutral-950 (ADR 0191).
+    expect(toRgba(bgOf(light)).slice(0, 3)).toEqual([255, 255, 255])
+    expect(toRgba(bgOf(dark)).slice(0, 3)).toEqual([10, 10, 10])
   })
 
   test('PL3: каждый цвет снабжён свотчем-квадратом и подписью-значением', async () => {

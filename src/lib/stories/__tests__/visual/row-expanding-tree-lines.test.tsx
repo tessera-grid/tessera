@@ -6,7 +6,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest'
 import { getScroller, humanClick, rowState, scrollToEnd } from '../helpers'
 import { composed, treeLinesArgs, plainGroupingArgs } from '../stories'
 import { makeData } from '../../__mocks__/data'
-import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
+import { AXE_OPTIONS, inBothThemes, toRgba } from './a11y-helpers'
 import { pinFirstColumn } from './column-pinning-helpers'
 import {
   TREE,
@@ -254,7 +254,7 @@ describe('Row expanding: tree lines', () => {
       const cell = indentOf(TREE.portugal)
       const row = rowEl(TREE.portugal)!
       const color = channels(tokenColor('--tsr-comp-tree-line-color', row))
-      const fg = channels(tokenColor('--tsr-sys-fg', row))
+      const fg = toRgba(tokenColor('--tsr-sys-fg', row))
       // Цвет текста с прозрачностью 12 %.
       for (const i of [0, 1, 2])
         expect(Math.abs(color[i]! - fg[i]!)).toBeLessThanOrEqual(3)
