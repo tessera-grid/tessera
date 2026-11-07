@@ -111,6 +111,10 @@ export const HeadCellView = ({
   const previous = header.headerGroup?.headers[header.index - 1]
   const afterResizable =
     !isFirstEndPinnedColumn && (previous?.column.getCanResize?.() ?? false)
+  // Следующий — первый правый закреплённый: отметка вместо `:has` по соседу (GB13).
+  const next = header.headerGroup?.headers[header.index + 1]
+  const beforeEndPinned =
+    !!next && getHeaderPinning(next).isFirstEndPinnedColumn
   const isResizing = header.column.getIsResizing?.() ?? false
   // Скелет первой загрузки: только названия колонок (ADR 0060, §3).
   const skeleton = useSkeletonMode()
@@ -247,6 +251,7 @@ export const HeadCellView = ({
       data-cell-pinned={pinnedSideToDom(headerPinned)}
       data-cell-last-left-pinned={isLastStartPinnedColumn}
       data-cell-first-right-pinned={isFirstEndPinnedColumn}
+      data-before-right-pinned={beforeEndPinned || undefined}
       data-column-resizable={enableResizingColumn}
       data-after-resizable={afterResizable || undefined}
       data-column-resizing={isResizing}

@@ -451,7 +451,9 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       перф SM12 — в `interaction` ([ADR 0072](docs/decisions/0072-incremental-sorted-row-model.md)),
       `column-resizing` (CR1–CR16, CR18 — сдвиг соседей во время протяжки, CR21 — и при прокрутке колонок посреди неё, [ADR 0013](docs/decisions/0013-column-sizing.md);
       GB1–GB5, GB10 — грип на границе колонок без маски, сдвиг соседа, закрепление и вложенная
-      шапка, прежнее поведение, кнопки не прячутся при протяжке), `action-menu` (GB6 — кнопки в кебаб по ширине), модульный
+      шапка, прежнее поведение, кнопки не прячутся при протяжке; GB12 — отметка заголовка перед правыми
+      закреплёнными), модульный `headSiblingSelectors` (GB13 — без `:has` по соседним заголовкам),
+      `action-menu` (GB6 — кнопки в кебаб по ширине), модульный
       `slots` (GB7 — расчёт вместимости), `work-counters` (GB8), `play` истории
       «Columns/Resizing — Resize columns» (GB9)
       ([ADR 0111](docs/decisions/0111-resize-grip-on-column-border.md)),

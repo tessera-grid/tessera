@@ -912,6 +912,32 @@ describe('Грип ширины на границе колонок (ADR 0111)', 
       .toBe(true)
     await userEvent.keyboard('{Escape}')
   })
+
+  test('GB12: заголовок перед правыми закреплёнными отмечает грид, его грип целиком в своей колонке', async () => {
+    const container = await renderColumnResizing({
+      columnCount: 4,
+      enableRowActions: true,
+    })
+    const heads = [
+      ...container.querySelectorAll<HTMLElement>(`${HEAD_CELL}[aria-colindex]`),
+    ]
+    const firstRight = heads.find(
+      cell => cell.getAttribute('data-cell-first-right-pinned') === 'true',
+    )!
+    expect(firstRight).toBeTruthy()
+    const marked = heads.filter(
+      cell => cell.getAttribute('data-before-right-pinned') === 'true',
+    )
+    expect(marked).toHaveLength(1)
+    const [before] = marked as [HTMLElement]
+    const r = before.getBoundingClientRect()
+    expect(
+      Math.abs(r.right - firstRight.getBoundingClientRect().left),
+    ).toBeLessThanOrEqual(1)
+    const zone = zoneOf(before)
+    expect(zone.right).toBeLessThanOrEqual(r.right + 0.5)
+    expect(zone.left).toBeGreaterThanOrEqual(r.left - 0.5)
+  })
 })
 
 describe('Грип вне грида (ADR 0111)', () => {

@@ -189,7 +189,7 @@
    */
   &:is(
       [data-last-header-in-row='true'],
-      :has(+ .head__cell[data-cell-first-right-pinned='true'])
+      [data-before-right-pinned='true']
     )[data-column-resizable='true']
     :global(.data-grid__cell-wrapper-title) {
     mask-image: linear-gradient(
@@ -225,10 +225,7 @@
   }
 
   /* Последний заголовок и заголовок перед правыми закреплёнными: грип целиком внутри. */
-  &:is(
-      [data-last-header-in-row='true'],
-      :has(+ .head__cell[data-cell-first-right-pinned='true'])
-    )
+  &:is([data-last-header-in-row='true'], [data-before-right-pinned='true'])
     :global(.resize__handler--column) {
     right: 0;
     justify-content: center;
@@ -258,7 +255,7 @@
    */
   &:is(
       [data-last-header-in-row='true'],
-      :has(+ .head__cell[data-cell-first-right-pinned='true'])
+      [data-before-right-pinned='true']
     )[data-column-resizable='true']
     :global(.data-grid__cell-wrapper-content) {
     --tsr-head-grip-inside: var(--tsr-comp-resize-handler-width);
