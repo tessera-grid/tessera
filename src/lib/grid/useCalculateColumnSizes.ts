@@ -26,9 +26,12 @@ export const useCalculateColumnSizes = ({
     return { columnSizing: s.columnSizing, columnResizing: s.columnResizing }
   })
 
+  // Копия таблицы новая на каждый рендер хоста: ключ — заголовки (мемо TanStack) и срезы
+  // ширин (CR22).
+  const headers = table.getFlatHeaders()
   return useMemo(
     () => buildColumnSizeVars(table as never),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [table, sizingDeps.columnSizing, sizingDeps.columnResizing],
+    [headers, sizingDeps.columnSizing, sizingDeps.columnResizing],
   )
 }

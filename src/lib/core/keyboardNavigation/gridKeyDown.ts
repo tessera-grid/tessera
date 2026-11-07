@@ -19,6 +19,8 @@ import {
   resolveRowFocusKey,
   restoreFocusIfLost,
 } from './actions'
+import { batch } from '@tanstack/react-store'
+
 import { notifyActiveCellChange, runNavigationKeys } from '../bodyContributions'
 import { applyFollow, trackingOf } from './focus'
 import { getPageRows } from './geometry'
@@ -237,19 +239,22 @@ export const handleGridKeyDown = (
   const next = skipHeaderSpans(t, active, resolved, modified ? '' : event.key)
   // Навигационная клавиша не должна прокручивать контейнер нативно.
   event.preventDefault()
-  notifyActiveCellChange(t as never, next)
-  if (
-    next.rowIndex === active.rowIndex &&
-    next.columnIndex === active.columnIndex
-  ) {
-    return
-  }
-  trackingOf(t).pending = true
-  reportNavigation(t, 'moveActiveCell', 'keyboard', () => ({
-    from: active,
-    to: next,
-  }))
-  setPluginState(t, KEYBOARD_NAVIGATION, next)
+  // Запись вкладчиков клавиш и активная ячейка — одним оповещением подписчиков (CH15).
+  batch(() => {
+    notifyActiveCellChange(t as never, next)
+    if (
+      next.rowIndex === active.rowIndex &&
+      next.columnIndex === active.columnIndex
+    ) {
+      return
+    }
+    trackingOf(t).pending = true
+    reportNavigation(t, 'moveActiveCell', 'keyboard', () => ({
+      from: active,
+      to: next,
+    }))
+    setPluginState(t, KEYBOARD_NAVIGATION, next)
+  })
 }
 
 const isSelectAllKey = (event: { key: string } & Modifiers) =>

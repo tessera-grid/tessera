@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 /**
- * Плагины модели и интерфейса (ADR 0120, этап 1; MP4, MP5, MP8, MP9, MP16–MP18): модель —
+ * Плагины модели и интерфейса (ADR 0120, этап 1; MP4, MP5, MP8, MP9, MP16–MP19): модель —
  * своя запись, явная модель главнее включённой, срез — аргументами плагина.
  * Запуск: npx vitest run --project unit pluginModels
  */
@@ -599,5 +599,68 @@ describe('плагины модели и интерфейса (ADR 0120)', () =>
     expect(mismatches.map(modelArgsMismatchMessage)).toEqual([
       'аргументы модели у second не действуют: treeModel уже включил first со своими аргументами; задайте их у одного интерфейса или явной treeModel',
     ])
+  })
+})
+
+describe('Срез модели в аргументах интерфейса (ADR 0120)', () => {
+  it('MP19: значение среза модели, заданное аргументом интерфейса, не входит в ключ аргументов интерфейса — его смена не пересобирает набор плагинов', () => {
+    const pairs: [
+      string,
+      () => { argsKey?: string },
+      () => { argsKey?: string },
+    ][] = [
+      [
+        'rowSelection',
+        () => rowSelection({ rowSelection: {} }),
+        () => rowSelection({ rowSelection: { a: true } }),
+      ],
+      [
+        'columnSorting',
+        () => columnSorting({ sorting: [] }),
+        () => columnSorting({ sorting: [{ id: 'a', desc: true }] }),
+      ],
+      [
+        'cellSelection',
+        () => cellSelection({ cellSelection: [] }),
+        () =>
+          cellSelection({
+            cellSelection: [
+              {
+                anchorColumnId: 'a',
+                focusColumnId: 'a',
+                anchorRowIndex: 0,
+                focusRowIndex: 0,
+              },
+            ] as never,
+          }),
+      ],
+      [
+        'pagination',
+        () => pagination({ pagination: { pageIndex: 0, pageSize: 10 } }),
+        () => pagination({ pagination: { pageIndex: 3, pageSize: 10 } }),
+      ],
+      [
+        'columnFiltering',
+        () => columnFiltering({ columnFilters: [] }),
+        () => columnFiltering({ columnFilters: [{ id: 'a', value: 'x' }] }),
+      ],
+      [
+        'rowExpanding',
+        () => rowExpanding({ expanded: {} }),
+        () => rowExpanding({ expanded: { a: true } }),
+      ],
+      [
+        'rowGrouping',
+        () => rowGrouping({ grouping: [] }),
+        () => rowGrouping({ grouping: ['a'] }),
+      ],
+    ]
+    for (const [name, before, after] of pairs) {
+      expect(after().argsKey, name).toBe(before().argsKey)
+    }
+    // Настройка в ключе остаётся: другая настройка — другой ключ.
+    expect(rowSelection({ subRows: true }).argsKey).not.toBe(
+      rowSelection({ subRows: false }).argsKey,
+    )
   })
 })

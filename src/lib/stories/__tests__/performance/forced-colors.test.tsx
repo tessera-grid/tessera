@@ -2,7 +2,8 @@ import { commands } from 'vitest/browser'
 import { afterEach, describe, expect, test } from 'vitest'
 
 import type { TesseraFeatureEntry } from '../../../core/features'
-import { measureScrollWork, recordPerf, renderGrid } from '../helpers'
+import { measureScrollWork, recordPerf } from '../helpers'
+import { renderGrid } from './hosts'
 import { waitForGrid } from '../visual/core-helpers'
 import { againstBase, axesCeiling, medianAxes } from './baseline'
 import {

@@ -270,3 +270,20 @@ describe('слой ячейки (ADR 0170)', () => {
     ).toBe(true)
   })
 })
+
+describe('Канал клавиш — одно оповещение на шаг (ADR 0170)', () => {
+  test('CH15: шаг активной ячейки с клавиатуры оповещает подписчиков состояния таблицы один раз — вместе с записью вкладчика клавиш (выделение ячеек схлопывается на новую ячейку)', async () => {
+    const screen = await render(<Grid />)
+    await waitForGrid()
+    cell('r0', 'a').focus()
+    await expect.poll(() => cell('r0', 'a').getAttribute('tabindex')).toBe('0')
+    let notified = 0
+    const subscription = captured.store.subscribe(() => notified++)
+    await userEvent.keyboard('{ArrowDown}')
+    subscription.unsubscribe()
+    await expect.poll(() => cell('r1', 'a').getAttribute('tabindex')).toBe('0')
+    expect(cell('r1', 'a').getAttribute('data-cell-selected')).toBe('true')
+    expect(notified).toBe(1)
+    await screen.unmount()
+  })
+})

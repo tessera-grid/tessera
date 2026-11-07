@@ -3,12 +3,7 @@ import { beforeAll, describe, expect, test } from 'vitest'
 
 import { againstBase, ceilingOver, medianRun } from './baseline'
 
-import {
-  headCells,
-  measureRenderWork,
-  recordPerf,
-  renderGrid,
-} from '../helpers'
+import { headCells, measureRenderWork, recordPerf } from '../helpers'
 import { makeData } from '../../__mocks__/data'
 import {
   ALL_PLUGINS,
@@ -20,7 +15,7 @@ import {
   PERF_TIMEOUT,
   SMALL,
 } from './perf-cases'
-import { renderPluginsGrid } from './hosts'
+import { renderPluginsGrid, renderGrid } from './hosts'
 import {
   __resetScrollLimits,
   measureStickyScrollLimit,

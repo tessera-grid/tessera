@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 
-import { measureInteractionWork, recordPerf, renderGrid } from '../helpers'
+import { measureInteractionWork, recordPerf } from '../helpers'
+import { renderGrid } from './hosts'
 import { INTERACTION_BUDGET_MS } from '../perf.constants'
 import { againstBase, ceilingOver, medianRun } from './baseline'
 import { waitForGrid } from '../visual/core-helpers'

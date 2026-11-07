@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 
-import { measureScrollWork, recordPerf, renderGrid } from '../helpers'
+import { measureScrollWork, recordPerf } from '../helpers'
+import { renderGrid } from './hosts'
 import { waitForGrid } from '../visual/core-helpers'
 import {
   ALL_PLUGINS,

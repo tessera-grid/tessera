@@ -1,4 +1,6 @@
 import axe from 'axe-core'
+import type { RowSelectionState } from '@tanstack/react-table'
+import { useMemo, useState } from 'react'
 import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
@@ -6,7 +8,10 @@ import { describe, expect, test } from 'vitest'
 import { useCreateTable } from '../../../core/useCreateTable'
 import type { TesseraFeatureEntry } from '../../../core/features'
 import { DataGrid } from '../../../grid/DataGrid'
+import { BodyRowCells } from '../../../grid/BodyRow'
+import { HeadCellView } from '../../../grid/HeadCell'
 import {
+  cellEditing,
   cellSelection,
   cellSelectionModel,
   columnFiltering,
@@ -29,6 +34,9 @@ import {
 import { COLUMN_EXPANDING_ID } from '../../../plugins/rowExpanding/rowExpandingColumn'
 import { COLUMN_SELECTION_ID } from '../../../plugins/rowSelection/rowSelectionColumn'
 import { Stories } from '../helpers'
+import { columns as mockColumns } from '../../__mocks__/columns'
+import { getData } from '../../__mocks__/data'
+import { describeWork, measureWork, renders } from '../work.helpers'
 import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
 
 // Плагины модели без интерфейса (ADR 0120): видимое состояние модели без контролов.
@@ -358,5 +366,52 @@ describe('Пары «модель — интерфейс» (ADR 0120)', () => {
       await expect.poll(pair.applied, { message: pair.name }).toBe(true)
       await on.unmount()
     }
+  })
+})
+
+const ControlledSelection = () => {
+  const [selection, setSelection] = useState<RowSelectionState>({})
+  const columns = useMemo(() => mockColumns.slice(0, 5), [])
+  const data = useMemo(() => getData(20), [])
+  const table = useCreateTable({
+    columns: columns as never,
+    data,
+    plugins: [
+      rowSelection({
+        rowSelection: selection,
+        onRowSelectionChange: setSelection as never,
+      }),
+      cellEditing(),
+    ] as never,
+  })
+  return (
+    <div style={{ height: 600, display: 'flex', flexDirection: 'column' }}>
+      <DataGrid table={table as never} height={560} />
+    </div>
+  )
+}
+
+describe('Контролируемый срез модели (ADR 0120)', () => {
+  test('MP20: приложение ведёт выбор строк аргументом интерфейса — выбор строки перерисовывает только её, шапку и остальные строки — нет', async () => {
+    const screen = await render(<ControlledSelection />)
+    await expect
+      .poll(() => document.querySelectorAll('.data-grid__body-row').length)
+      .toBeGreaterThan(5)
+    const checkbox = () =>
+      document.querySelector<HTMLElement>(
+        ".data-grid__body-row[data-row-id='item-id-1'] .row-select-checkbox",
+      )!
+    const work = await measureWork(
+      document.querySelector('.data-grid__body-row')!,
+      () => checkbox().click(),
+    )
+    expect(
+      document
+        .querySelector(".data-grid__body-row[data-row-id='item-id-1']")
+        ?.getAttribute('data-selected'),
+    ).toBe('true')
+    expect(renders(work, BodyRowCells), describeWork(work)).toBe(1)
+    expect(renders(work, HeadCellView), describeWork(work)).toBe(0)
+    await screen.unmount()
   })
 })

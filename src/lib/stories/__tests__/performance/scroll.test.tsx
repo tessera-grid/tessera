@@ -7,7 +7,6 @@ import {
   measureRenderWork,
   measureScrollWork,
   recordPerf,
-  renderGrid,
   type ScrollWorkResult,
 } from '../helpers'
 import {
@@ -43,7 +42,7 @@ import {
 import { makeColumns } from '../../__mocks__/columns'
 import { getData, makeData } from '../../__mocks__/data'
 import { argsToPlugins } from '../../__mocks__/utils/argsToPlugins'
-import { renderPluginsGrid } from './hosts'
+import { renderPluginsGrid, renderGrid } from './hosts'
 import { scrollLayer } from '../../../core/scrollStretch'
 import type { CellComponentProps } from '../../../core/createSlots'
 import type { TesseraFeatureEntry } from '../../../core/features'

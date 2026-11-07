@@ -404,19 +404,6 @@ export const definePlugin = <
       }
       Object.assign(entry, configure(opts))
       entry.args = opts
-      // Значение внешнего состояния — не настройка: его смена не пересобирает плагин (DP18).
-      entry.argsKey = argsKeyOf(
-        withoutKeys(opts, [
-          ...(config.stateName ? [config.stateName] : []),
-          ...(config.slices ?? []),
-        ]),
-      )
-      if (config.slices) {
-        entry.stateSlices = stateSlicesOf(
-          config.slices,
-          opts as Record<string, unknown>,
-        )
-      }
       if (config.model) {
         const options = opts as Record<string, unknown>
         entry.model = config.model.plugin({
@@ -427,6 +414,21 @@ export const definePlugin = <
           ),
           enabled: opts.enabled,
         })
+      }
+      // Значение внешнего состояния — не настройка: его смена не пересобирает плагин (DP18),
+      // в том числе срез модели, заданный аргументом интерфейса.
+      entry.argsKey = argsKeyOf(
+        withoutKeys(opts, [
+          ...(config.stateName ? [config.stateName] : []),
+          ...(config.slices ?? []),
+          ...(entry.model?.stateSlices ?? []).map(slice => slice.key),
+        ]),
+      )
+      if (config.slices) {
+        entry.stateSlices = stateSlicesOf(
+          config.slices,
+          opts as Record<string, unknown>,
+        )
       }
       if (config.stateName) {
         const [slice] = stateSlicesOf(

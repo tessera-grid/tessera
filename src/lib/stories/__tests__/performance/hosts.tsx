@@ -1,5 +1,10 @@
-import { useMemo } from 'react'
+import { type ComponentProps, useMemo } from 'react'
+import { composeStory } from '@storybook/react-vite'
 import { render } from 'vitest-browser-react'
+
+import * as playground from '../../DataGrid.Playground.stories'
+import { StoryComponent } from '../../DataGridStory'
+import { normalizeArgs } from '../../__mocks__/utils/normalizeArgs'
 
 import { getData } from '../../__mocks__/data'
 import { useColumns } from '../../__mocks__/columns'
@@ -78,3 +83,29 @@ export const renderPluginsGrid = ({
 }: Omit<PluginsGridProps, 'plugins'> & {
   plugins?: readonly TesseraFeatureEntry[]
 }) => render(<PluginsGrid plugins={plugins} {...props} />)
+
+/**
+ * Песочница грида без консоли истории: перф-кейсы меряют грид, а не журнал обвязки — консоль
+ * перерисовывает историю и таблицу записей на каждый колбэк. Аргументы меты — те же.
+ */
+const BareGrid = composeStory(
+  {
+    ...playground.DataGridPlayground,
+    render: args => <StoryComponent {...normalizeArgs(args)} />,
+  },
+  playground.default,
+)
+
+/** Грид перф-кейса с размерами `renderGrid` из `helpers`, без консоли истории. */
+export const renderGrid = (
+  args: Partial<ComponentProps<typeof BareGrid>> = {},
+) =>
+  render(
+    <BareGrid
+      containerHeight={600}
+      height={500}
+      columnCount={20}
+      dataCount={300}
+      {...args}
+    />,
+  )

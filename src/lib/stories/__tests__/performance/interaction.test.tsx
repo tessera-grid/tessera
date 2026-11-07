@@ -26,7 +26,6 @@ import {
   measureScrollWork,
   measureTransitionWork,
   recordPerf,
-  renderGrid,
 } from '../helpers'
 import {
   ALL_PLUGINS,
@@ -75,7 +74,7 @@ import { cellEditing } from '../../../plugins/cellEditing'
 import { columnTotals } from '../../../plugins/columnTotals'
 import { quickSearchModel } from '../../../plugins/quickSearchModel'
 import { failureLog } from '../../../plugins/failureLog'
-import { renderPluginsGrid } from './hosts'
+import { renderPluginsGrid, renderGrid } from './hosts'
 import { DRAFTS, applyAllDrafts, readDrafts } from '../../../core/drafts/drafts'
 import { setPluginState } from '../../../core/definePlugin'
 import { cellSelection } from '../../../plugins/cellSelection'
@@ -5636,3 +5635,4 @@ describe('Отзывчивость взаимодействий — предик
     PERF_TIMEOUT * 2,
   )
 })
+

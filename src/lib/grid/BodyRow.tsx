@@ -115,7 +115,10 @@ const useRowStateSubscription = (
       const move = s.rowMoves?.[row.id]
       return {
         rowWave: rowHasWave(s.actionStatus, row.id),
-        selected: s.rowSelection?.[row.id] ?? false,
+        // У строки с потомками (группа, каскад) выбор выводится из них — своего ключа в срезе нет.
+        selected: row.subRows.length
+          ? (row.getIsSelected?.() ?? false)
+          : (s.rowSelection?.[row.id] ?? false),
         expanded: isRowExpandedIn(s.expanded, row.id),
         grouping: s.grouping,
         expandPending: s.rowExpandPending?.[row.id] ?? 0,
