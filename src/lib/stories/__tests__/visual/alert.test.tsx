@@ -18,13 +18,19 @@ const LONG = `Gateway timeout ${'while aggregating orders '.repeat(8)}`.trim()
 
 const Harness = ({
   shown = true,
+  title = "Couldn't refresh the data",
   description = 'Server responded 503',
+  action = true,
+  onAction,
   onDismiss = () => {},
   bare = false,
   style,
 }: {
   shown?: boolean
+  title?: string
   description?: string
+  action?: boolean
+  onAction?: () => void
   onDismiss?: () => void
   /** Без действия и закрытия: последним стоит текст. */
   bare?: boolean
@@ -42,10 +48,14 @@ const Harness = ({
     <Alert
       shown={shown}
       icon={<svg data-testid="alert-icon" width={16} height={16} />}
-      title="Couldn't refresh the data"
+      title={title}
       description={description}
       action={
-        bare ? undefined : <Button data-testid="alert-action">Retry</Button>
+        bare || !action ? undefined : (
+          <Button data-testid="alert-action" onClick={onAction}>
+            Retry
+          </Button>
+        )
       }
       dismiss={bare ? undefined : { label: 'Dismiss', onClick: onDismiss }}
       data-testid="alert"
@@ -64,6 +74,44 @@ const tooltipShows = (text: string) =>
   )
 
 describe('Плашка кита Alert (ADR 0096)', () => {
+  test('LE24: уходя, плашка держит последний вид — заголовок, описание, действие и ширину, хотя потребитель уже снял их; действие и закрытие больше не срабатывают', async () => {
+    const onAction = vi.fn()
+    const onDismiss = vi.fn()
+    const slow = {
+      width: 'max-content',
+      '--tsr-comp-motion-duration': '2000ms',
+    } as CSSProperties
+    const screen = await render(
+      <Harness style={slow} onAction={onAction} onDismiss={onDismiss} />,
+    )
+    const box = () => alert()!.getBoundingClientRect()
+    const shape = { width: box().width, left: box().left }
+    const text = alert()!.textContent
+
+    await screen.rerender(
+      <Harness
+        style={slow}
+        shown={false}
+        title="Refresh failed"
+        description=""
+        action={false}
+        onAction={onAction}
+        onDismiss={onDismiss}
+      />,
+    )
+    expect(alert()!.hasAttribute('data-leaving')).toBe(true)
+    expect(alert()!.textContent).toBe(text)
+    expect(
+      alert()!.querySelector('[data-testid="alert-action"]'),
+    ).not.toBeNull()
+    expect({ width: box().width, left: box().left }).toEqual(shape)
+    alert()!.querySelector<HTMLElement>('[data-testid="alert-action"]')!.click()
+    dismiss().click()
+    expect(onAction).not.toHaveBeenCalled()
+    expect(onDismiss).not.toHaveBeenCalled()
+    await screen.unmount()
+  })
+
   test('LE18: иконка, заголовок, описание одной строкой с … и тултипом, действие и квадратная кнопка закрытия с подписью; текст без кнопок отстоит от правого края, как иконка от левого; кнопки со скруглением кита, угол плашки больше на её отступ; вид — токены --tsr-comp-alert-*; появление и уход токенами движения, уходя держит описание и не откликается на указатель; axe в обеих темах', async () => {
     const onDismiss = vi.fn()
     const view = await render(
