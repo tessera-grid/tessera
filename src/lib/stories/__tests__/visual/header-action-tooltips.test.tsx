@@ -90,14 +90,17 @@ describe('Тултипы инлайн-кнопок с поповером', () =>
       headerActionMenuMode: 'always',
     })
     await waitForGrid()
-    const head = document.querySelector<HTMLElement>(
-      '.data-grid__head-cell[data-column-id]',
-    )!
-    const headKebab = head.querySelector<HTMLElement>(
-      `[aria-label="${tableLabels.headerMenu}"]`,
-    )!
-    await userEvent.hover(head)
-    await userEvent.hover(headKebab)
+    // Заголовок и кебаб — на момент действия: перерисовка ставит новые узлы (WebKit).
+    const head = () =>
+      document.querySelector<HTMLElement>(
+        '.data-grid__head-cell[data-column-id]',
+      )!
+    const headKebab = () =>
+      head().querySelector<HTMLElement>(
+        `[aria-label="${tableLabels.headerMenu}"]`,
+      )!
+    await userEvent.hover(head())
+    await userEvent.hover(headKebab())
     await expect.poll(tooltipShown(tableLabels.headerMenu)).toBe(true)
     await (await header).unmount()
 
@@ -107,12 +110,11 @@ describe('Тултипы инлайн-кнопок с поповером', () =>
         '.data-grid__body-cell[data-column-id="actionColumn__rowActions"]',
       )
     await expect.poll(actionCell).not.toBeNull()
-    const rowKebab = actionCell()!.querySelector<HTMLElement>(
-      '[aria-haspopup="menu"]',
-    )!
-    expect(rowKebab.getAttribute('aria-label')).toBe(tableLabels.rowMenu)
+    const rowKebab = () =>
+      actionCell()!.querySelector<HTMLElement>('[aria-haspopup="menu"]')!
+    expect(rowKebab().getAttribute('aria-label')).toBe(tableLabels.rowMenu)
     await userEvent.hover(actionCell()!.closest('.data-grid__body-row')!)
-    await userEvent.hover(rowKebab)
+    await userEvent.hover(rowKebab())
     await expect.poll(tooltipShown(tableLabels.rowMenu)).toBe(true)
   })
 })

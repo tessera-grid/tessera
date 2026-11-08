@@ -3,7 +3,8 @@ import type { BrowserCommand } from 'vitest/node'
 
 // Раскладки и пересчёты стилей действия через трейс CDP (ADR 0099, PF2): события `Layout`
 // и `UpdateLayoutTree` главного потока рендерера. `Performance.getMetrics` кадр теста —
-// iframe оркестратора — не видит. Только Chromium.
+// iframe оркестратора — не видит. Только Chromium: в Firefox и WebKit раскладки и стили —
+// `NaN`, утверждение о них падает, а счёт React от движка не зависит (ADR 0084).
 
 interface CDPSession {
   send: (method: string, params?: unknown) => Promise<unknown>
@@ -28,9 +29,10 @@ const sessions = new Map<
 >()
 
 export const renderTraceStart: BrowserCommand<[id: string]> = async (
-  { context, page },
+  { context, page, provider },
   id,
 ) => {
+  if ((provider as { browserName?: string }).browserName !== 'chromium') return
   const session = (await context.newCDPSession(page)) as unknown as CDPSession
   const events: TraceEvent[] = []
   session.on('Tracing.dataCollected', ({ value }: { value: TraceEvent[] }) =>
@@ -48,7 +50,7 @@ export const renderTraceStop: BrowserCommand<[id: string]> = async (
   id,
 ): Promise<RenderMetrics> => {
   const trace = sessions.get(id)
-  if (!trace) throw new Error(`трейс ${id} не начат`)
+  if (!trace) return { layouts: Number.NaN, styleRecalcs: Number.NaN }
   sessions.delete(id)
   const { session, events } = trace
   const complete = new Promise<void>(resolve =>

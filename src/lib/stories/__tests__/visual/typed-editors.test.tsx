@@ -69,6 +69,8 @@ const box = () =>
 const checked = () => box()?.getAttribute('aria-checked') === 'true'
 /** Смена данных извне посреди правки (ED22). */
 let changeRows: (change: (rows: typeof ROWS) => typeof ROWS) => void = () => {}
+/** Строки последнего рендера хоста: смена данных дошла до таблицы. */
+let renderedRows: typeof ROWS = ROWS
 
 /** Таблица на русском: сохранение пишет значение в данные — сразу или после ответа. */
 const Host = ({
@@ -86,6 +88,7 @@ const Host = ({
 }) => {
   const [rows, setRows] = useState(ROWS)
   changeRows = setRows
+  renderedRows = rows
   const plugins = useMemo(
     () => [
       cellEditing({
@@ -335,11 +338,11 @@ describe('редакторы по типу (ADR 0175)', () => {
     changeRows(rows =>
       rows.map(row => (row.id === 'p1' ? { ...row, name: 'Lamp v2' } : row)),
     )
+    // Новые данные дошли до таблицы до Enter: иначе конфликта ещё нет (WebKit отстаёт).
     await expect
-      .poll(() =>
-        document.querySelector('.data-grid__body-row[data-row-id="p1"]'),
-      )
-      .not.toBeNull()
+      .poll(() => renderedRows.find(row => row.id === 'p1')?.name)
+      .toBe('Lamp v2')
+    await new Promise(resolve => requestAnimationFrame(resolve))
     expect(inputOf('name')?.value).toBe('Lantern')
     await userEvent.keyboard('{Enter}')
 

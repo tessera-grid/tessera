@@ -254,7 +254,10 @@ describe('перенос между клиентскими группами (ADR
     await userEvent.keyboard('{ArrowRight}')
     await expect.poll(() => document.activeElement === menuItem(DE)).toBe(true)
     await userEvent.keyboard('{ArrowLeft}')
-    await expect.poll(() => menuItem('moveToGroup')).not.toBeNull()
+    // Назад — фокус снова на пункте раздела: следующая стрелка уходит от него (Firefox медленнее).
+    await expect
+      .poll(() => document.activeElement === menuItem('moveToGroup'))
+      .toBe(true)
     await userEvent.keyboard('{ArrowRight}')
     await expect.poll(() => document.activeElement === menuItem(DE)).toBe(true)
     await userEvent.keyboard('{Enter}')

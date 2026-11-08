@@ -116,9 +116,11 @@ describe('режим данных у ядра (ADR 0169)', () => {
     // Фильтр ушёл на сервер: числа строк ещё нет.
     expect(live.messages).toEqual([])
 
-    const search = document.querySelector<HTMLInputElement>(
-      '[data-testid="quick-search"]',
-    )!
+    // Поле тулбара — из ленивого модуля: в WebKit приходит позже грида.
+    const searchField = () =>
+      document.querySelector<HTMLInputElement>('[data-testid="quick-search"]')
+    await expect.poll(searchField).not.toBeNull()
+    const search = searchField()!
     // Дебаунс поиска по умолчанию: объявляется результат, а не каждая буква.
     await userEvent.type(search, 'Ali')
     await new Promise(resolve => setTimeout(resolve, 500))

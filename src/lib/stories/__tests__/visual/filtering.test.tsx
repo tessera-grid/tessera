@@ -422,9 +422,26 @@ describe('Фильтрация — тулбар и нижняя панель', (
     expect(remove.getAttribute('aria-label')).toBe(label)
     expect(remove.dataset.shape).toBe('square')
 
-    const settled = (el: Element) =>
-      Promise.all(el.getAnimations({ subtree: true }).map(a => a.finished))
+    // Анимация открытия — у предка сводки (позиционер поповера): ждём все конечные анимации.
+    const settled = (_el: Element) =>
+      Promise.all(
+        document
+          .getAnimations()
+          .filter(a => a.effect?.getTiming().iterations !== Infinity)
+          .map(a => a.finished.catch(() => undefined)),
+      )
     await settled(summary()!)
+    // Открытие поповера доигрывает на кадр позже: «до» — когда строка два кадра на месте.
+    let last = ''
+    await expect
+      .poll(async () => {
+        await new Promise(resolve => requestAnimationFrame(resolve))
+        const now = JSON.stringify(item.getBoundingClientRect())
+        const same = now === last
+        last = now
+        return same
+      })
+      .toBe(true)
     const before = item.getBoundingClientRect()
     const removeBefore = remove.getBoundingClientRect()
     // Фокус — клавишами: с «Сбросить фильтры» назад на крестик.
