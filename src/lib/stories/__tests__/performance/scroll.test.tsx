@@ -302,7 +302,8 @@ const TG11_COST = { ratio: 1.3, plusMs: 4 }
 const TG18_COST = { ratio: 1.3, plusMs: 4 }
 const OT11_COST = { ratio: 1.3, plusMs: 4 }
 const AV11_COST = { ratio: 1.3, plusMs: 4 }
-const IR30_COST = { ratio: 1.3, plusMs: 4 }
+// Цена дуги — решение автора 2026-11-08: монтаж svg дуги у каждой новой строки окна (IR30).
+const IR30_COST = { ratio: 1.5, plusMs: 8 }
 const OT11_MOUNT_COST = { ratio: 1.3, plusMs: 40 }
 const BT14_COST = { ratio: 1.3, plusMs: 4 }
 const GL13_COST = { ratio: 1.3, plusMs: 4 }
