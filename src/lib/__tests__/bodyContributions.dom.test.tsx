@@ -50,6 +50,7 @@ const probe = (id: string, extra: BodyContributions = {}) => {
     {
       cell: {
         id,
+        slices: [key],
         select: (state, { cell }) => of(state)[cell.id],
         render: (value: string | undefined) =>
           value
@@ -62,6 +63,7 @@ const probe = (id: string, extra: BodyContributions = {}) => {
       },
       row: {
         id,
+        slices: [key],
         select: (state, { row }) => of(state)[`row:${row.id}`],
         render: (value: string | undefined) =>
           value ? { attrs: { [`data-${id}`]: value } } : null,

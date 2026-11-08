@@ -8118,3 +8118,21 @@ export const HighContrastClientTransactionsWithoutHandlerStep2 = {
   name: 'Data loading/Client transactions — Without a data handler, шаг 2',
   tags: ['!test'],
 }
+
+export const HighContrastPluginApiBodyMissingSliceStep1 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiBodyMissingSlice, 1),
+  name: 'Plugin API — Body slices, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiBodyMissingSliceStep2 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiBodyMissingSlice, 2),
+  name: 'Plugin API — Body slices, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastPluginApiBodyMissingSliceStep3 = {
+  ...twinStep(pluginApiStories, pluginApiStories.PluginApiBodyMissingSlice, 3),
+  name: 'Plugin API — Body slices, шаг 3',
+  tags: ['!test'],
+}

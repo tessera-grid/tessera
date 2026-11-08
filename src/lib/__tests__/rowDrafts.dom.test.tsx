@@ -5,7 +5,7 @@
  * диапазона. Диапазон на индексах и смена списка в эффекте коммита (ADR 0152, TG21).
  * Запуск: npx vitest run --config vitest.node.config.ts rowDrafts
  */
-import { act, createElement, useEffect } from 'react'
+import { act, createElement, useEffect, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -80,15 +80,21 @@ const Child = () => {
   return null
 }
 
+/** Новый объект таблицы: приложение перерисовано с другим входом отрисовки (ADR 0196, §2). */
+let renewTable: () => void = () => {}
+
 const mount = (
   plugins: readonly unknown[],
   options: Record<string, unknown> = {},
 ) => {
   const Host = () => {
+    const [renewed, setRenewed] = useState(false)
+    renewTable = () => setRenewed(true)
     table = useCreateTable({
       columns: columns as never,
       data: ROWS,
       getRowId: (row: Row) => row.id,
+      ...(renewed ? { locale: 'en-US' } : {}),
       ...options,
       plugins: plugins as never,
     } as never)
@@ -269,6 +275,8 @@ describe('строки до сохранения (ADR 0178, §7)', () => {
     )
     // Повтор — сервер принял строку и вернул её под id, который выдала таблица (ADR 0181).
     answer = { saved: [{ rowId: id, row: { id, name: 'Zed', age: 99 } }] }
+    // Повтор — новое нажатие, а не тот же проход «Применить всё».
+    await act(async () => {})
     act(() => table.getDrafts().length && applyAllDrafts(table))
     await act(() => new Promise(resolve => setTimeout(resolve)))
     expect(kinds()).not.toContain('rowInsert')
@@ -524,11 +532,11 @@ describe('строки до сохранения (ADR 0178, §7)', () => {
     act(() => table.highlight(target))
     expect(span()).toEqual([{ indexes: [3, 5] }])
 
-    // Подсветка строки — новый объект таблицы, а эффект дочернего компонента сдвигает список.
+    // Новый объект таблицы, а эффект дочернего компонента сдвигает список.
     const before = table
     act(() => {
       inChildEffect = () => table.addRow({ name: 'Zed', age: 99 }, { index: 1 })
-      table.highlight({ row: '20' })
+      renewTable()
     })
     expect(table).not.toBe(before)
     expect(source().at(1)?.id).not.toBe('1')
@@ -548,7 +556,7 @@ describe('строки до сохранения (ADR 0178, §7)', () => {
 
     // Кнопка пульта живёт в новом рендере: у неё другой объект таблицы.
     const before = table
-    act(() => table.highlight({ row: '20' }))
+    act(() => renewTable())
     expect(table).not.toBe(before)
     act(() => applyAllDrafts(table))
     expect(onCommitEdits).toHaveBeenCalledTimes(1)

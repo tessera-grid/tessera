@@ -1325,6 +1325,7 @@ const authorEveryCell = definePlugin<{ enabled?: boolean }>()({
   id: 'perfBody',
   body: () => ({
     cell: {
+      slices: [],
       select: (_state, { cell }) => cell.row.index % 2 === 0,
       render: (even: boolean) => ({
         attrs: { 'data-perfbody-even': even },

@@ -8,6 +8,7 @@ import {
   type CSSProperties,
   Fragment,
   type ReactNode,
+  useEffect,
   useMemo,
 } from 'react'
 
@@ -20,7 +21,9 @@ import {
 } from './renderVersion'
 import { PluginErrorBoundary } from './pluginBoundary'
 import { reportPluginError } from './pluginDiagnostics'
-import { isProduction, logWarn } from '../util/logger'
+import { isProduction, logError, logWarn } from '../util/logger'
+import { useLatest } from '../util/useLatest'
+import { pluginStateKey } from './definePlugin/channels'
 import type { RowSource } from './rowSource'
 import type { Cell, Row, Table } from '../types'
 
@@ -85,6 +88,11 @@ export interface TargetContribution<TContext, TSelected = any> {
   id: string
   /** Вклад плагина автора (ADR 0173): уже занятые атрибуты он не перезаписывает. */
   author?: true
+  /**
+   * Ключи состояния таблицы, которые читает выбор — прямо или через методы строки и ячейки;
+   * узел цели подписан только на них (ADR 0195).
+   */
+  slices: readonly string[]
   select: (state: Record<string, unknown>, context: TContext) => TSelected
   render: (selected: TSelected, context: TContext) => ContributionOutput | null
 }
@@ -293,68 +301,143 @@ interface Readable<T> {
 interface NodeSnapshot {
   state: Record<string, unknown>
   version: number
+  /** Значения атомов подписанных срезов при снимке. */
+  values?: readonly unknown[]
 }
 
-const nodeSources = new WeakMap<
+interface SliceAtom {
+  get: () => unknown
+  subscribe: (listener: () => void) => { unsubscribe: () => void }
+}
+
+const sliceSources = new WeakMap<
   object,
-  WeakMap<RenderVersionAtom, Readable<NodeSnapshot>>
+  WeakMap<RenderVersionAtom, Map<string, Readable<NodeSnapshot>>>
 >()
 
 /**
- * Состояние таблицы и версия отрисовки одним источником (ADR 0193, §3): выборы вкладчиков
- * пересчитываются и при новой ссылке на предикат. Снимок — прежний объект, пока не
- * сменилось ни то, ни другое.
+ * Атомы срезов `slices` и версия отрисовки одним источником (ADR 0195, §1): снимок — новый,
+ * только когда сменилось значение одного из этих атомов или версия; смена прочих срезов
+ * подписчиков не будит.
  */
-const nodeSourceOf = (
-  store: Readable<Record<string, unknown>>,
+const sliceSourceOf = (
+  table: { store: Readable<Record<string, unknown>>; atoms: object },
   version: RenderVersionAtom,
+  slices: readonly string[],
 ): Readable<NodeSnapshot> => {
-  let byVersion = nodeSources.get(store)
+  const key = slices.join('\u0000')
+  let byVersion = sliceSources.get(table.store)
   if (!byVersion) {
     byVersion = new WeakMap()
-    nodeSources.set(store, byVersion)
+    sliceSources.set(table.store, byVersion)
   }
-  let source = byVersion.get(version)
+  let byKey = byVersion.get(version)
+  if (!byKey) {
+    byKey = new Map()
+    byVersion.set(version, byKey)
+  }
+  let source = byKey.get(key)
   if (!source) {
+    const atoms = table.atoms as Record<string, SliceAtom | undefined>
+    const watched = slices
+      .map(slice => atoms[slice])
+      .filter((atom): atom is SliceAtom => !!atom)
     let last: NodeSnapshot | undefined
     source = {
       get: () => {
-        const state = store.get()
         const current = version.get()
-        if (last?.state !== state || last.version !== current) {
-          last = { state, version: current }
+        const values = watched.map(atom => atom.get())
+        if (
+          !last ||
+          last.version !== current ||
+          values.some((value, i) => value !== last!.values![i])
+        ) {
+          last = { state: table.store.get(), version: current, values }
         }
         return last
       },
       subscribe: listener => {
-        const a = store.subscribe(listener)
-        const b = version.subscribe(listener)
+        const subscriptions = [
+          ...watched.map(atom => atom.subscribe(listener)),
+          version.subscribe(listener),
+        ]
         return {
           unsubscribe: () => {
-            a.unsubscribe()
-            b.unsubscribe()
+            for (const subscription of subscriptions) subscription.unsubscribe()
           },
         }
       },
     }
-    byVersion.set(version, source)
+    byKey.set(key, source)
   }
   return source
 }
 
 /**
- * Одна подписка цели на состояние таблицы и версию отрисовки: выбор ядра и выборы
- * вкладчиков одним узлом. Выборы вкладчиков — под ключом `contributions`.
+ * Dev-проверка необъявленных срезов (ADR 0195, §3): на смену срезов вне подписки узла выборы
+ * вкладчиков пересчитываются; итог сменился — предупреждение, одно на вкладчика и срезы.
+ */
+const useUndeclaredSliceCheck = <TContext>(
+  table: unknown,
+  store: Readable<Record<string, unknown>>,
+  latest: {
+    current: {
+      contributions: readonly TargetContribution<TContext>[]
+      context: TContext
+      selected: readonly unknown[]
+      slices: readonly string[]
+    }
+  },
+) => {
+  useEffect(() => {
+    if (isProduction()) return
+    let before = store.get()
+    const subscription = store.subscribe(() => {
+      const next = store.get()
+      const previous = before
+      before = next
+      const { contributions, context, selected, slices } = latest.current
+      if (!contributions.length) return
+      // Срез подписки сменился — узел пересчитал выборы сам.
+      if (slices.some(slice => previous[slice] !== next[slice])) return
+      const changed = Object.keys(next).filter(
+        key => previous[key] !== next[key],
+      )
+      if (!changed.length) return
+      contributions.forEach((item, index) => {
+        if (nodeEqual(item.select(next, context), selected[index])) return
+        const keys = changed.join(', ')
+        logWarn(
+          table as never,
+          `${item.id}: body select reads ${keys}, which is not in its slices — the target does not update on this change (ADR 0195)`,
+          `body-slices:${item.id}:${keys}`,
+        )
+      })
+    })
+    return () => subscription.unsubscribe()
+  }, [table, store, latest])
+}
+
+/**
+ * Одна подписка цели на атомы своих срезов и версию отрисовки (ADR 0195): выбор ядра и
+ * выборы вкладчиков одним узлом. Выборы вкладчиков — под ключом `contributions`.
  */
 export const useContributionNode = <TCore extends object, TContext>(
   table: unknown,
   contributions: readonly TargetContribution<TContext>[],
   context: TContext,
+  coreSlices: readonly string[],
   selectCore: (state: Record<string, unknown>) => TCore,
 ): TCore & { contributions: unknown[] } => {
-  const store = (table as { store: Readable<Record<string, unknown>> }).store
-  const source = nodeSourceOf(store, usePluginRenderVersionAtom())
-  return useSelector(
+  const t = table as {
+    store: Readable<Record<string, unknown>>
+    atoms: object
+  }
+  const slices = [
+    ...new Set([...coreSlices, ...contributions.flatMap(item => item.slices)]),
+  ]
+  const source = sliceSourceOf(t, usePluginRenderVersionAtom(), slices)
+  const node = useSelector(
     source as never,
     (snapshot: NodeSnapshot) => {
       const s = snapshot.state
@@ -366,6 +449,14 @@ export const useContributionNode = <TCore extends object, TContext>(
     },
     { compare: nodeEqual },
   ) as TCore & { contributions: unknown[] }
+  const latest = useLatest({
+    contributions,
+    context,
+    selected: node.contributions,
+    slices,
+  })
+  useUndeclaredSliceCheck(table, t.store, latest)
+  return node
 }
 
 export interface MergedContribution {
@@ -670,6 +761,11 @@ export interface PluginRowContext {
  * перерисовывается, только когда выбор изменился.
  */
 export interface PluginTargetBody<TContext, TSelected = any> {
+  /**
+   * Ключи состояния таблицы, которые читает `select` — прямо или через методы строки и
+   * ячейки; цель перерисовывается только на их смену. Свой срез плагина входит сам (ADR 0195).
+   */
+  slices: readonly string[]
   select: (state: Record<string, unknown>, context: TContext) => TSelected
   render: (selected: TSelected, context: TContext) => PluginBodyOutput | null
 }
@@ -814,9 +910,17 @@ export const authorBodyOf = (
     part: PluginTargetBody<TContext>,
   ): TargetContribution<TContext> => {
     const select = measured(part.select)
+    if (!Array.isArray(part.slices)) {
+      logError(
+        {},
+        `${pluginId}: body.cell and body.row need slices — the state keys their select reads (ADR 0195)`,
+        `body-no-slices:${pluginId}`,
+      )
+    }
     return {
       id: pluginId,
       author: true,
+      slices: [...(part.slices ?? []), pluginStateKey(pluginId)],
       select: (state, context) => {
         if (isBodyDisabled(context.table, pluginId)) return OFF
         try {

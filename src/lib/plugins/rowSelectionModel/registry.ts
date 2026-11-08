@@ -248,6 +248,7 @@ const rowSelectionModelEntry = definePlugin<RowSelectionModelOptions>()({
 const rowSelectionBody: BodyContributions = {
   row: {
     id: 'rowSelectionModel',
+    slices: ['rowSelection'],
     select: (_state, { row, navigation }) =>
       navigation && (row.getCanSelect?.() ?? false)
         ? (row.getIsSelected?.() ?? false)

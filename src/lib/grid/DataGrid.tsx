@@ -7,6 +7,7 @@ import {
   type FocusEvent,
   type KeyboardEvent as ReactKeyboardEvent,
   lazy,
+  memo,
   Suspense,
   useCallback,
   useEffect,
@@ -136,11 +137,7 @@ const releaseContainerFocus = (event: FocusEvent<HTMLDivElement>) => {
 const localeOf = (table: unknown): string =>
   commonOptionsOf(table).locale ?? DEFAULT_LOCALE
 
-/**
- * Основной компонент таблицы. Ожидает инстанс таблицы (useCreateTable) и высоту;
- * заглушки пустой таблицы — из реестра причин, свой вид — пропом `stubs` (ADR 0123).
- */
-export const DataGrid = <D extends LabelDictionary = LabelDictionary>({
+const DataGridView = <D extends LabelDictionary = LabelDictionary>({
   table: tableProp,
   height = '100%',
   maxHeight = '100%',
@@ -707,3 +704,10 @@ export const DataGrid = <D extends LabelDictionary = LabelDictionary>({
     </>
   )
 }
+
+/**
+ * Основной компонент таблицы. Ожидает инстанс таблицы (useCreateTable) и высоту;
+ * заглушки пустой таблицы — из реестра причин, свой вид — пропом `stubs` (ADR 0123).
+ * Те же `table` и пропы — без перерисовки (ADR 0196, §3).
+ */
+export const DataGrid = memo(DataGridView) as typeof DataGridView

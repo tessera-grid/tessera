@@ -12,6 +12,7 @@ import { useMemo, useState } from 'react'
 
 import { makeStateUpdater, useTable } from '@tanstack/react-table'
 import type {
+  ReactTable,
   ColumnPinningState,
   ColumnSizingState,
   OnChangeFn,
@@ -71,56 +72,64 @@ import { useTableEffects } from './useTableEffects'
 import { useIsomorphicLayoutEffect } from '../util/useIsomorphicLayoutEffect'
 import { keyboardNavigationEntry } from './keyboardNavigation/entry'
 import { draftsEntry } from './drafts/entry'
+import { renderKeyOf, tableViewOf } from './tableView'
 
 // Видимость служебных колонок сужается с первого рендера (ADR 0050).
 const INITIAL_EFFECTIVE_STATE = { columnVisibility: {} }
 
 /**
  * Ключи опций ядра (ADR 0164): уходят в таблицу все, и непереданные — `undefined`, иначе
- * `useTable`, сливая опции с прежними, оставил бы снятое значение.
+ * `useTable`, сливая опции с прежними, оставил бы снятое значение. Вид ключа — вход ли он
+ * отрисовки (ADR 0196, §2): значения срезов идут атомами, колбэки читаются живо, начальные
+ * значения нужны только при создании.
  */
-const CORE_OPTION_KEYS: Record<keyof CoreOptions, true> = {
-  dataMode: true,
-  rowCount: true,
-  totalRowCount: true,
-  locale: true,
-  dataTypes: true,
-  timeZone: true,
-  dateLocale: true,
-  loading: true,
-  enableFooter: true,
-  footerPosition: true,
-  enableToolbar: true,
-  enableStatusBar: true,
-  enableAnnouncements: true,
-  enableKeyboardNavigation: true,
-  activeCell: true,
-  onActiveCellChange: true,
-  initialActiveCell: true,
-  drafts: true,
-  onDraftsChange: true,
-  initialDrafts: true,
-  enableOverflowTooltip: true,
-  enableRowAnimation: true,
-  enableColumnAnimation: true,
-  skeletonOptions: true,
-  refreshOptions: true,
-  loadError: true,
-  onRetry: true,
-  onDebugAction: true,
-  onFailure: true,
-  onDataChange: true,
-  rowHeight: true,
-  headerHeight: true,
+const CORE_OPTION_KINDS: Record<
+  keyof CoreOptions,
+  'render' | 'state' | 'callback' | 'initial'
+> = {
+  dataMode: 'render',
+  rowCount: 'render',
+  totalRowCount: 'render',
+  locale: 'render',
+  dataTypes: 'render',
+  timeZone: 'render',
+  dateLocale: 'render',
+  loading: 'render',
+  enableFooter: 'render',
+  footerPosition: 'render',
+  enableToolbar: 'render',
+  enableStatusBar: 'render',
+  enableAnnouncements: 'render',
+  enableKeyboardNavigation: 'render',
+  activeCell: 'state',
+  onActiveCellChange: 'callback',
+  initialActiveCell: 'initial',
+  drafts: 'state',
+  onDraftsChange: 'callback',
+  initialDrafts: 'initial',
+  enableOverflowTooltip: 'render',
+  enableRowAnimation: 'render',
+  enableColumnAnimation: 'render',
+  skeletonOptions: 'render',
+  refreshOptions: 'render',
+  loadError: 'render',
+  onRetry: 'callback',
+  onDebugAction: 'callback',
+  onFailure: 'callback',
+  onDataChange: 'callback',
+  rowHeight: 'render',
+  headerHeight: 'render',
 }
+const CORE_OPTION_KEYS = Object.keys(CORE_OPTION_KINDS) as (keyof CoreOptions)[]
+const RENDER_OPTION_KEYS = CORE_OPTION_KEYS.filter(
+  key => CORE_OPTION_KINDS[key] === 'render',
+)
 
 const coreOptionsOf = (params: CoreOptions): CoreOptions =>
-  Object.fromEntries(
-    Object.keys(CORE_OPTION_KEYS).map(key => [
-      key,
-      params[key as keyof CoreOptions],
-    ]),
-  )
+  Object.fromEntries(CORE_OPTION_KEYS.map(key => [key, params[key]]))
+
+/** Компонент приложения не подписан на срезы (ADR 0196, §1). */
+const NO_STATE = () => null
 
 /** Без строкового `id` в строке `getRowId` обязателен — иначе id строк молча `undefined`. */
 type RowIdParams<TData extends RowData> = [TData] extends [{ id: string }]
@@ -440,8 +449,35 @@ export const useCreateTable = <
   // Каст опций — компромисс динамической сборки (Q2): tableFeatures() валидирует
   // слоты в рантайме, но синтетический тип набора не несёт производные опции фич,
   // которых ждёт статическая сигнатура useTable. Каст изолирован здесь.
-  const table = useTable(
+  useTable(
     options as unknown as TableOptions<TesseraFeatures<TEntries>, TData>,
+    NO_STATE,
+  )
+  type TableView = Omit<
+    ReactTable<TesseraFeatures<TEntries>, TData, null>,
+    'state'
+  >
+
+  // Ссылка таблицы — по входам отрисовки (ADR 0196, §2): значения срезов приходят атомами,
+  // колбэки читаются живо, поэтому перерисовка приложения с теми же входами грид не будит.
+  const core = sliceStore.table() as unknown as TableView
+  const renderKey = renderKeyOf(RENDER_OPTION_KEYS.map(key => coreOptions[key]))
+  const table = useMemo(
+    () => tableViewOf(core),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- входы отрисовки, не опции целиком
+    [
+      core,
+      features,
+      injectedColumns,
+      data,
+      resolvedDefaultColumn,
+      folded,
+      narrow,
+      narrowContext,
+      effective.atoms,
+      dataMode,
+      renderKey,
+    ],
   )
 
   useTableEffects(

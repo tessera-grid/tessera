@@ -103,15 +103,16 @@ describe('колонки быстрого поиска', () => {
     )
   })
 
-  it('QS7: в серверном режиме смена набора колонок при непустом поиске зовёт onSearchChange с прежней строкой и новыми columnIds; при пустом — нет', () => {
+  it('QS7: в серверном режиме смена набора колонок при непустом поиске зовёт onSearchChange с прежней строкой и новыми columnIds; при пустом — нет', async () => {
     const onSearchChange = vi.fn()
     mount({ onSearchChange }, { search: 'server' })
-    act(() => captured.getColumn('city').toggleVisibility(false))
+    // Согласование плагинов — после записи, сменившей состояние (ADR 0196, §1).
+    await act(async () => captured.getColumn('city').toggleVisibility(false))
     expect(onSearchChange).not.toHaveBeenCalled()
 
     act(() => setSearchByUser(captured, 'an'))
     onSearchChange.mockClear()
-    act(() => captured.getColumn('city').toggleVisibility(true))
+    await act(async () => captured.getColumn('city').toggleVisibility(true))
     expect(onSearchChange).toHaveBeenCalledWith(
       'an',
       { columnIds: ['name', 'city', 'born', 'visits'] },

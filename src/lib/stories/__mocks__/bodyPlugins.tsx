@@ -41,6 +41,7 @@ export const changes = definePlugin<ChangesOptions>()({
   stateName: 'changed',
   body: () => ({
     cell: {
+      slices: [],
       select: (state, { cell }) =>
         keysOf(state, 'changes').includes(cellKey(cell.row.id, cell.column.id)),
       render: (changed: boolean) =>
@@ -148,6 +149,7 @@ export const cellCard = definePlugin<{ enabled?: boolean }>()({
       useRoot: props => <CellCard {...props} />,
     },
     cell: {
+      slices: [],
       select: (state, { cell }) => {
         const target = state[pluginStateKey('cellCard')] as CardTarget | null
         return (
@@ -207,12 +209,37 @@ export const keyMarks = definePlugin<{
       onActiveCellChange: (_table, next) => o.onActiveCell?.(next),
     },
     cell: {
+      slices: [],
       select: (state, { cell }) =>
         keysOf(state, 'keyMarks').includes(
           cellKey(cell.row.id, cell.column.id),
         ),
       render: (marked: boolean) =>
         marked ? { attrs: { 'data-keymarks-cell': '' } } : null,
+    },
+  }),
+})
+
+// --- ADR 0195, S1: срез выбора строк, который автор забыл объявить ---------------------
+
+export interface SelectedMarksOptions {
+  enabled?: boolean
+  /** Вклад объявляет срез выбора строк, который читает его выбор. */
+  declareSlice?: boolean
+}
+
+/** Отмечает ячейки выбранных строк; без объявленного среза отметки не обновляются. */
+export const selectedMarks = definePlugin<SelectedMarksOptions>()({
+  id: 'selectedMarks',
+  body: o => ({
+    cell: {
+      slices: o.declareSlice ? ['rowSelection'] : [],
+      select: (state, { cell }) =>
+        !!(state.rowSelection as Record<string, boolean> | undefined)?.[
+          cell.row.id
+        ],
+      render: (marked: boolean) =>
+        marked ? { attrs: { 'data-selectedmarks-cell': '' } } : null,
     },
   }),
 })

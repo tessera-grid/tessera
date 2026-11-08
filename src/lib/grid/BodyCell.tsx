@@ -56,6 +56,21 @@ import { RowRevealContext } from './rowReveal'
 import { IconRevealContext } from '../ui/IconButton/iconReveal'
 
 import styles from '../grid/BodyCell/BodyCell.module.css'
+import { pluginStateKey } from '../core/definePlugin'
+import { KEYBOARD_NAVIGATION } from '../core/keyboardNavigation/model'
+
+/** Срезы, которые читает выбор ячейки (ADR 0195, §1); прочие её не будят. */
+const CELL_SLICES = [
+  'columnPinning',
+  'columnSizing',
+  'columnOrder',
+  'columnVisibility',
+  'highlights',
+  'flashes',
+  'actionStatus',
+  'failures',
+  pluginStateKey(KEYBOARD_NAVIGATION),
+]
 
 interface TableBodyCellProps {
   layout: 'grid' | 'flex'
@@ -123,39 +138,45 @@ export const BodyCell = memo(
       failure,
       navActive,
       contributions,
-    } = useContributionNode(table, contributors, contributionContext, state => {
-      const s = state as Record<string, unknown> & {
-        highlights?: Highlights
-        flashes?: Flashes
-        actionStatus?: ActionStatus
-        failures?: Failures
-      }
-      return {
-        columnPinning: s.columnPinning,
-        columnSizing: s.columnSizing,
-        columnOrder: s.columnOrder,
-        columnVisibility: s.columnVisibility,
-        cellHighlight: (s.highlights?.[cellKey] ??
-          rangeHighlightAt(table, s.highlights, rowId, columnId)) as
-          HighlightTargetState | undefined,
-        columnHighlight: s.highlights?.[columnKey] as
-          HighlightTargetState | undefined,
-        cellFlash: (s.flashes?.[cellKey] ??
-          rangeFlashAt(table, s.flashes, rowId, columnId)) as
-          FlashEntry | undefined,
-        columnFlash: s.flashes?.[columnKey] as FlashEntry | undefined,
-        busy: cellPendingOf(table, s.actionStatus, rowId, columnId) as
-          'wave' | 'busy' | undefined,
-        failure: s.failures
-          ? cellFailureOf(s.failures, rowId, columnId)
-          : undefined,
-        navActive: selectNavigationCell(table, s, {
-          rowIndex,
-          columnId,
-          participates: navigation && !copy,
-        }),
-      }
-    })
+    } = useContributionNode(
+      table,
+      contributors,
+      contributionContext,
+      CELL_SLICES,
+      state => {
+        const s = state as Record<string, unknown> & {
+          highlights?: Highlights
+          flashes?: Flashes
+          actionStatus?: ActionStatus
+          failures?: Failures
+        }
+        return {
+          columnPinning: s.columnPinning,
+          columnSizing: s.columnSizing,
+          columnOrder: s.columnOrder,
+          columnVisibility: s.columnVisibility,
+          cellHighlight: (s.highlights?.[cellKey] ??
+            rangeHighlightAt(table, s.highlights, rowId, columnId)) as
+            HighlightTargetState | undefined,
+          columnHighlight: s.highlights?.[columnKey] as
+            HighlightTargetState | undefined,
+          cellFlash: (s.flashes?.[cellKey] ??
+            rangeFlashAt(table, s.flashes, rowId, columnId)) as
+            FlashEntry | undefined,
+          columnFlash: s.flashes?.[columnKey] as FlashEntry | undefined,
+          busy: cellPendingOf(table, s.actionStatus, rowId, columnId) as
+            'wave' | 'busy' | undefined,
+          failure: s.failures
+            ? cellFailureOf(s.failures, rowId, columnId)
+            : undefined,
+          navActive: selectNavigationCell(table, s, {
+            rowIndex,
+            columnId,
+            participates: navigation && !copy,
+          }),
+        }
+      },
+    )
     const highlighted = highlightRender([
       { layer: 'cell', state: cellHighlight },
       { layer: 'column', state: columnHighlight, describe: false },

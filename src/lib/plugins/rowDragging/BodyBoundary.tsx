@@ -172,7 +172,18 @@ const DndBodyWrapper = ({
 
   // Строки по индексу окна: модель TanStack или источник серверной модели (ADR 0159).
   const modelRows = table.getRowModel().rows
-  const rows = useMemo(() => dragRowsOf(table, modelRows), [table, modelRows])
+  // Серверная модель меняет строки без новой модели и без новой ссылки `table` (ADR 0196):
+  // приход ветки посреди сессии виден по номеру раскладки источника.
+  const listVersion = (
+    table as { getRowSource?: () => { version?: () => number } }
+  )
+    .getRowSource?.()
+    ?.version?.()
+  const rows = useMemo(
+    () => dragRowsOf(table, modelRows),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- номер раскладки — признак смены строк источника
+    [table, modelRows, listVersion],
+  )
 
   // Группа раскрылась посреди сессии — индексы места сдвинулись без движения
   // указателя: выровнять их по id до кадра (ADR 0109, §1).

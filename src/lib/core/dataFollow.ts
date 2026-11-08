@@ -41,14 +41,15 @@ export const checkDataChange = (
   table: unknown,
   seen: SeenData | undefined,
 ): SeenData | undefined => {
-  const set = listeners.get(table as object)
-  if (!set?.size) return undefined
   const source = rowSourceOf<ListedRow>(table)
   if (source.keyByIndex) return undefined
   const list = source.rows?.()
   if (!list) return undefined
   const data = (table as { options: { data: unknown } }).options.data
-  if (seen && seen.data !== data && seen.list !== list) {
+  // Список помнится и без слушателей: они подписываются после первого рендера, а следующий
+  // рендер приложения может быть уже с новым `data` (ADR 0196).
+  const set = listeners.get(table as object)
+  if (set?.size && seen && seen.data !== data && seen.list !== list) {
     for (const listener of [...set]) listener(seen.list, list)
   }
   return { data, list }

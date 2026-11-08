@@ -28,6 +28,11 @@ flowchart TB
 `DataGrid` подписан на состояние единственным `useTableState(table, …)`, а компоненты —
 на свои срезы через `useSlice`/`useTableState` (см. [reactivity.md](reactivity.md)).
 
+`DataGrid` обёрнут в `memo` ([ADR 0196](../decisions/0196-app-render-does-not-reach-grid.md)):
+при той же ссылке `table` и тех же пропах перерисовка приложения до грида не доходит.
+Пропы-объекты — `icons`, `localization`, `stubs`, `style` — приложение держит стабильными
+(константа модуля или `useMemo`): объект, созданный в рендере, перерисовывает грид каждый раз.
+
 `props`: `table`, `height`, `maxHeight`, `stubs`, `colorMode`, `icons`,
 `localization`. `colorMode` управляет темой на CSS-переменных; `icons` и
 `localization` питают два контекста переопределения, потребляемых кнопками

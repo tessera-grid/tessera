@@ -50,7 +50,9 @@ export const followActiveCell = (table: unknown) => {
     ) {
       return
     }
-    const id = previous[current.rowIndex]?.id
+    // Строка ячейки — по `id` с последней смены состояния: список до смены `data` помнится с
+    // прошлого рендера приложения, а новая строка слоя появляется и без него (ADR 0196).
+    const id = held ?? previous[current.rowIndex]?.id
     const own = id === undefined ? -1 : rowSourceOf(table).indexOf(id)
     moveTo(
       current,

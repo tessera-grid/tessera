@@ -202,6 +202,7 @@ describe('Канал вклада в тело для авторов (ADR 0173)',
       id: 'aria',
       body: () => ({
         cell: {
+          slices: [],
           select: () => true,
           render: () => ({
             attrs: { 'aria-description': 'checked', role: 'presentation' },

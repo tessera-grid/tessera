@@ -92,6 +92,18 @@ interface BodyRowCellsProps extends TableBodyRowProps {
  * собственный выбор/раскрытие (а не любой выбор/раскрытие в таблице), группировка или
  * вклад плагинов в неё (ADR 0170, §3).
  */
+/** Срезы, которые читает выбор строки (ADR 0195, §1); прочие её не будят. */
+const ROW_SLICES = [
+  'rowSelection',
+  'expanded',
+  'grouping',
+  'rowExpandPending',
+  'rowMoves',
+  'highlights',
+  'flashes',
+  'actionStatus',
+]
+
 const useRowStateSubscription = (
   row: Row<any, any>,
   context: RowContributionContext,
@@ -101,6 +113,7 @@ const useRowStateSubscription = (
     context.table,
     bodyOf(context.table).row,
     context,
+    ROW_SLICES,
     (state: unknown) => {
       const s = state as {
         rowSelection?: Record<string, boolean>

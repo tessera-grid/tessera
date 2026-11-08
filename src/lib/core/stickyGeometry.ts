@@ -18,8 +18,16 @@ export const syncStickyGeometry = (scroller: HTMLElement) => {
   scroller[axis] = at
 }
 
+/**
+ * Ошибка — только у Firefox (Gecko): в WebKit сдвиг шлёт события прокрутки и будит грид
+ * на каждое нажатие (ADR 0196, HR5), в Chromium он лишний.
+ */
+const needsSync = () =>
+  typeof CSS !== 'undefined' && CSS.supports('-moz-appearance', 'none')
+
 /** Синхронизировать перед нажатием, отпусканием и клавишей открытия над гридом. */
 export const trackStickyGeometry = (getScroller: () => HTMLElement | null) => {
+  if (!needsSync()) return () => {}
   const onPress = (event: Event) => {
     const scroller = getScroller()
     if (!scroller?.contains(event.target as Node)) return

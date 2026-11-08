@@ -66,6 +66,7 @@ import {
   changes,
   keyMarks,
   MARK_KEY,
+  selectedMarks,
 } from './__mocks__/bodyPlugins'
 
 /**
@@ -1935,6 +1936,77 @@ export const PluginApiBodyKeys: StoryObj<StoryProps> = {
         expect(markedCells(canvas).sort()).toEqual([first, next].sort()),
       )
       expect(activeCellKey(canvas)).toBe(next)
+      await settle()
+    })
+  },
+}
+
+// --- Срезы вклада в тело (ADR 0195) -------------------------------------------------------
+
+const SLICE_ROW = 'item-id-1'
+const sliceMarks = (root: ParentNode) =>
+  root.querySelectorAll('[data-selectedmarks-cell]').length
+const rowSelected = (root: ParentNode) =>
+  bodyCell(root, SLICE_ROW, 'firstName')
+    ?.closest('.data-grid__body-row')
+    ?.getAttribute('data-selected') === 'true'
+const rowCheckbox = (root: ParentNode) =>
+  root.querySelector<HTMLElement>(
+    `.data-grid__body-row[data-row-id="${SLICE_ROW}"] [role="checkbox"]`,
+  )
+
+const MISSING_SLICE: readonly GuideStoryStep[] = [
+  {
+    title: 'Плагин подключён',
+    hint: 'Плагин автора отмечает ячейки выбранных строк. Выбор строк он читает из состояния таблицы, но не перечислил его среди срезов, на которые подписан его вклад.',
+    props: () => ({
+      enableRowSelection: true,
+      extraPlugins: [selectedMarks({ declareSlice: false })],
+    }),
+  },
+  {
+    title: 'Пользователь выбрал строку',
+    hint: 'Строка выбрана, а её ячейки без отметок: вклад подписан только на свои срезы, и смена выбора его не будит. В консоли браузера — предупреждение для разработчика с названием среза, который вклад не объявил.',
+    enter: untilDone(
+      root => rowSelected(root),
+      root => rowCheckbox(root)?.click(),
+    ),
+  },
+  {
+    title: 'Автор объявил срез',
+    hint: 'Автор добавил выбор строк в срезы вклада. Ячейки выбранной строки отмечены, следующий выбор отметится сразу.',
+    props: () => ({
+      enableRowSelection: true,
+      extraPlugins: [selectedMarks({ declareSlice: true })],
+    }),
+    enter: untilDone(
+      root => rowSelected(root) && sliceMarks(root) > 0,
+      root => {
+        if (!rowSelected(root)) rowCheckbox(root)?.click()
+      },
+    ),
+  },
+]
+
+/** ADR 0195, S1: автор плагина забыл объявить срез вклада. */
+export const PluginApiBodyMissingSlice: StoryObj<StoryProps> = {
+  name: 'Body slices',
+  parameters: { scenario: '0195/S1', ...GUIDED },
+  render: guided('Срезы вклада в тело', MISSING_SLICE),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(MISSING_SLICE[0]!.title, async () => {
+      await waitForRows(canvas)
+      expect(sliceMarks(canvas)).toBe(0)
+    })
+    await step(MISSING_SLICE[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(rowSelected(canvas)).toBe(true))
+      expect(sliceMarks(canvas)).toBe(0)
+    })
+    await step(MISSING_SLICE[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(sliceMarks(canvas)).toBeGreaterThan(0))
       await settle()
     })
   },

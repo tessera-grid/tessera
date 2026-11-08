@@ -77,7 +77,10 @@ const Host = ({ plugins, data = ROWS, onFailure }: HostProps) => {
     : null
 }
 
+let lastProps: HostProps | undefined
+
 const render = (props: HostProps) => {
+  lastProps = props
   if (!root) {
     container = document.createElement('div')
     document.body.append(container)
@@ -102,6 +105,9 @@ const flush = () => act(async () => {})
 /** Открыть правку ячейки строки `rowId` и сохранить `value` через Enter. */
 const editAndCommit = (rowId: string, value: string) => {
   editRow = rowId
+  // Приложение не перерисовывается от срезов таблицы (ADR 0196): ячейку другой строки
+  // показывает новая отрисовка хоста.
+  render(lastProps!)
   act(() =>
     startEditSession(captured, captured.getRowSource().byId(rowId), {
       id: 'name',

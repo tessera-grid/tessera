@@ -65,6 +65,8 @@ const edgeColor = (on: boolean) =>
 export const cellSelectionModelBody: BodyContributions = {
   cell: {
     id: 'cellSelectionModel',
+    // Методы выделения ячейки читают срез выделения сами (ADR 0195).
+    slices: ['cellSelection'],
     select: selectMembership,
     render: (membership: Membership | null, { navigation }) =>
       membership && {

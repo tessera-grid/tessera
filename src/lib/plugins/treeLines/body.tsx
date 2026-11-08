@@ -120,6 +120,7 @@ export const treeLinesBody: BodyContributions = {
   },
   cell: {
     id: 'treeLines',
+    slices: [],
     select: () => null,
     render: () => null,
     // Слой стоит и без линий: ушедшие части в нём гаснут (ADR 0108, PV11); у скелета —

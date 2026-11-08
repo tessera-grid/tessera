@@ -40,7 +40,8 @@ describe('Серверный рендер', () => {
           'object',
           'object',
         ])
-        expect(typeof entries[0].DataGrid).toBe('function')
+        // `DataGrid` — компонент в `memo` (ADR 0196, §3).
+        expect(entries[0].DataGrid).toHaveProperty('$$typeof')
       } finally {
         for (const [name, descriptor] of saved) {
           if (descriptor) Object.defineProperty(globalThis, name, descriptor)

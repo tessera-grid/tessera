@@ -31,6 +31,7 @@ import {
   warnInertPlugins,
 } from './pluginDiagnostics'
 import { useIsomorphicLayoutEffect } from '../util/useIsomorphicLayoutEffect'
+import { useLatest } from '../util/useLatest'
 
 /** `instance` — сам экземпляр таблицы: подписки живут дольше рендера, а опции копии `table` — нет. */
 export const useTableEffects = (
@@ -45,6 +46,10 @@ export const useTableEffects = (
   foreignSlices: readonly string[] = [],
 ) => {
   const host = table as Parameters<typeof logWarn>[0]
+  const { store } = table as { store: object }
+
+  // Размонтирование прерывает ожидающее серверное действие (ADR 0116, SA2).
+  useEffect(() => () => abortServerActions(store), [store])
 
   // Императивный сетап плагинов (generic-escape) — единым эффектом; перезапускается
   // только при смене состава набора или значения аргументов фабрик (ADR 0039, RX24).
@@ -60,13 +65,9 @@ export const useTableEffects = (
     [argsSignature],
   )
 
-  // Размонтирование прерывает ожидающее серверное действие (ADR 0116, SA2).
-  const { store } = table as { store: object }
-  useEffect(() => () => abortServerActions(store), [store])
-
-  // Согласование состояния плагинов с таблицей — после каждого рендера, и у
-  // выключенных записей (ADR 0040, §2).
-  useIsomorphicLayoutEffect(() => {
+  // Согласование состояния плагинов с таблицей — после каждого рендера приложения и каждой
+  // смены состояния таблицы, и у выключенных записей (ADR 0040, §2; ADR 0196, §1).
+  const reconcile = useLatest(() => {
     for (const entry of plugins) {
       if (!entry.reconcile) {
         continue
@@ -85,6 +86,46 @@ export const useTableEffects = (
       }
     }
   })
+  // Согласование само пишет срезы: повтор — после него, а не внутри. Смена состояния будит
+  // согласование после записи, которая её сделала, — запись плагина не прерывается посреди.
+  const reconciling = useRef({ running: false, again: false, queued: false })
+  const runReconcile = useLatest(() => {
+    const state = reconciling.current
+    if (state.running) {
+      state.again = true
+      return
+    }
+    state.running = true
+    try {
+      do {
+        state.again = false
+        reconcile.current()
+      } while (state.again)
+    } finally {
+      state.running = false
+    }
+  })
+  useIsomorphicLayoutEffect(() => runReconcile.current())
+  useEffect(() => {
+    const state = reconciling.current
+    let live = true
+    const subscription = (
+      store as {
+        subscribe: (listener: () => void) => { unsubscribe: () => void }
+      }
+    ).subscribe(() => {
+      if (state.queued) return
+      state.queued = true
+      queueMicrotask(() => {
+        state.queued = false
+        if (live) runReconcile.current()
+      })
+    })
+    return () => {
+      live = false
+      subscription.unsubscribe()
+    }
+  }, [store, runReconcile])
 
   // Подсветка и вспышки целей, ушедших из данных или колонок, снимаются (ADR 0080, §1;
   // ADR 0134, §4) — при новой ссылке `data`/`columns`. Скрытые фильтром и страницей

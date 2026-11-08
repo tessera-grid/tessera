@@ -35,12 +35,12 @@ flowchart TB
     CTRL["контролируемые срезы:<br/>columnPinning (пиннинг сервисных колонок)<br/>columnSizing (ресайз + авто-слайс)"]
     HK["useCreateHooks(hooks)"]
 
-    RT["useTable(options)<br/>features, columns: injected, data<br/>...folded.options, state<br/>hooks, slots, slotActions, actionMenu"]
+    RT["useTable(options, без срезов)<br/>features, columns: injected, data<br/>...folded.options, state<br/>hooks, slots, slotActions, actionMenu"]
 
-    OUT["инстанс table"]
+    OUT["вид инстанса table<br/>(новый — только по входам отрисовки, ADR 0196)"]
 
     IN --> SIG --> FEAT --> FOLD --> COLS --> CTRL --> HK --> RT --> OUT
-    RT --> EFF["useEffect: folded.setups(table)<br/>layout-эффект: reconcile каждой записи"]
+    RT --> EFF["useEffect: folded.setups(table)<br/>reconcile каждой записи: после рендера<br/>и на смену table.store"]
 ```
 
 ## Сервисные столбцы (`injectServiceColumns`)

@@ -75,6 +75,7 @@ describe('канал вклада в тело для авторов (ADR 0173)',
       id: 'marks',
       body: o => ({
         cell: {
+          slices: [],
           select: (_state, context) => context.cell.row.id === '2',
           render: (marked: boolean) =>
             marked
@@ -85,6 +86,7 @@ describe('канал вклада в тело для авторов (ADR 0173)',
               : null,
         },
         row: {
+          slices: [],
           select: (_state, context) => context.row.id,
           render: (id: string) => ({ attrs: { 'data-marks-row': id } }),
         },
@@ -154,6 +156,7 @@ describe('канал вклада в тело для авторов (ADR 0173)',
       id: 'marks',
       body: () => ({
         cell: {
+          slices: [],
           select: () => true,
           render: () => ({
             attrs: {
@@ -213,6 +216,7 @@ describe('канал вклада в тело для авторов (ADR 0173)',
     // Атрибут, уже заданный встроенным вкладом, автор не перезаписывает.
     const builtIn: CellContribution = {
       id: 'builtIn',
+      slices: [],
       select: () => true,
       render: () => ({ attrs: { 'aria-selected': true } }),
     }
@@ -234,6 +238,7 @@ describe('канал вклада в тело для авторов (ADR 0173)',
       id: 'myMarks',
       body: () => ({
         cell: {
+          slices: [],
           select: () => true,
           render: () => ({
             attrs: { 'data-mymarks-on': '' },
@@ -267,6 +272,7 @@ describe('канал вклада в тело для авторов (ADR 0173)',
           }
           return {
             cell: {
+              slices: [],
               select: () => {
                 fail('select')
                 return true
@@ -369,12 +375,18 @@ describe('канал вклада в тело для авторов (ADR 0173)',
       definePlugin<{ enabled?: boolean }>()({
         id: 'fresh',
         body: () => ({
-          cell: { select: () => ({ marked: true }), render: () => null },
+          cell: {
+            slices: [],
+            select: () => ({ marked: true }),
+            render: () => null,
+          },
         }),
       })(),
       definePlugin<{ enabled?: boolean }>()({
         id: 'slow',
-        body: () => ({ cell: { select: busy, render: () => null } }),
+        body: () => ({
+          cell: { slices: [], select: busy, render: () => null },
+        }),
       })(),
     ]
     const run = () => {
