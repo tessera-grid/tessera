@@ -90,7 +90,10 @@ export const CoreStateHoveredRow: StoryObj<StoryProps> = {
         ),
       ].map(button => getComputedStyle(button).opacity)
     await waitFor(() => expect(hidden('item-id-2')).toContain('1'))
-    expect(hidden('item-id-3').every(opacity => opacity === '0')).toBe(true)
+    // Указатель мог пройти над соседней строкой по пути к флажку: её кнопки гаснут переходом.
+    await waitFor(() =>
+      expect(hidden('item-id-3').every(opacity => opacity === '0')).toBe(true),
+    )
     // В высокой контрастности цвет чипа системный (ADR 0087), его прячет прозрачность обёртки.
     if (matchMedia('(forced-colors: active)').matches) return
     // Чип действий строки — тоже: значок наведённой строки закрашен, у соседней прозрачен.
