@@ -1,3 +1,4 @@
+import { INPUT_MODALITY_ATTR } from '../../core/inputModality'
 import {
   KeyboardEvent,
   MouseEvent,
@@ -5,6 +6,7 @@ import {
   memo,
   useCallback,
   useRef,
+  useState,
 } from 'react'
 
 import clsx from 'clsx'
@@ -19,6 +21,8 @@ import { reportAction } from '../../core/debugActions'
 import styles from './ResizeHandler.module.css'
 import '../../ui/cellControls/buttonVisibility.css'
 import { columnSizingLabels } from './labels'
+import { useResizeLine } from './resizeLine'
+import { useResizeAutoScroll } from './resizeAutoScroll'
 
 /** Шаг изменения ширины стрелкой и Shift+стрелкой, px. */
 const KEY_STEP = 10
@@ -81,6 +85,15 @@ export const ResizeHandler = memo(
       'columnSizing',
     )
     const menuOpen = menu.open
+    const active = isResizing || menuOpen || menu.trigger.pending
+    const [keyboardFocus, setKeyboardFocus] = useState(false)
+    const lineShown = !disabled && (active || keyboardFocus)
+    useResizeLine(wrapperRef, separatorRef, lineShown, styles.line)
+    useResizeAutoScroll(wrapperRef, isResizing && !disabled, {
+      table,
+      minSize,
+      maxSize,
+    })
 
     const onResizeStart = useCallback(
       (event: MouseEvent<HTMLDivElement> | TouchEvent<HTMLDivElement>) => {
@@ -90,6 +103,9 @@ export const ResizeHandler = memo(
           'touches' in event ? event.touches[0]?.clientX : undefined
         pressedX.current = 'clientX' in event ? event.clientX : (touchX ?? null)
         document.body.style.cursor = 'col-resize'
+        // Нажатие внутри выделения текста WebKit начинает перетаскивать выделение, и движения
+        // указателя до протяжки не доходят.
+        window.getSelection()?.removeAllRanges()
         onResize(event)
         const onKey = (evt: globalThis.KeyboardEvent) => {
           if (evt.key === 'Escape') {
@@ -149,6 +165,8 @@ export const ResizeHandler = memo(
     }
 
     const onKeyDown = (event: KeyboardEvent<HTMLSpanElement>) => {
+      // Клавиша на разделителе, получившем фокус от указателя, — тоже фокус клавиатуры.
+      setKeyboardFocus(true)
       const step = event.shiftKey ? LARGE_KEY_STEP : KEY_STEP
       const report = (action: string, delta?: number) =>
         reportAction(table, {
@@ -210,7 +228,8 @@ export const ResizeHandler = memo(
             'cell__button--hidden',
             'resize__handler--column',
           )}
-          data-button-active={isResizing || menuOpen || menu.trigger.pending}
+          data-button-active={active}
+          data-resize-line={lineShown || undefined}
           data-lazy-pending={menu.trigger.pending || undefined}
         >
           <div
@@ -231,8 +250,20 @@ export const ResizeHandler = memo(
               aria-disabled={disabled}
               aria-busy={menu.trigger.pending || undefined}
               onKeyDown={disabled ? undefined : onKeyDown}
-              onFocus={menu.trigger.onIntent}
-              onBlur={menu.trigger.onCancel}
+              onFocus={event => {
+                // Firefox не даёт `:focus-visible` фокусу, вернувшемуся из меню после клавиши.
+                setKeyboardFocus(
+                  event.currentTarget.matches(':focus-visible') ||
+                    document.documentElement.getAttribute(
+                      INPUT_MODALITY_ATTR,
+                    ) === 'keyboard',
+                )
+                menu.trigger.onIntent?.()
+              }}
+              onBlur={() => {
+                setKeyboardFocus(false)
+                menu.trigger.onCancel()
+              }}
               className={styles.handler}
             />
           </div>

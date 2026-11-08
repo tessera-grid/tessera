@@ -8,16 +8,25 @@ import { StoryComponent } from './DataGridStory'
 import { dataGridMeta } from './dataGridMeta'
 import {
   afterRows,
+  centerOf,
   guideNext,
   headCell,
   headKebab,
+  pollUntil,
   settle,
+  stepDone,
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import {
+  GuideStory,
+  type GuideStoryStep,
+  type StepRun,
+  guideArgs,
+  stepAction,
+} from './demos/GuideStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 
@@ -102,12 +111,97 @@ const RESIZED = 'firstName'
 const START = 310
 const WIDE = 420
 const NARROW = 150
+/** Насколько шаг протяжки уводит ручку вправо: до краевой зоны автопрокрутки не доходит. */
+const HOLD_SHIFT = 80
+
+const GRIP = '.resize__handler--column'
+/** Линия границы колонки при протяжке (ADR 0197). */
+const RESIZE_LINE = '[data-column-resize-line]:not([hidden])'
+
+const separatorOf = (root: ParentNode, id: string) =>
+  root.querySelector<HTMLElement>(
+    `${HEAD}[data-column-id="${id}"] ${GRIP} [role="separator"]`,
+  )
+
+/**
+ * Протяжка ручки, которую держит шаг (ADR 0197): нажатие и движение — события шага, мышь
+ * человека протяжку не ведёт и не отпускает; уход с шага отпускает ручку там, где её
+ * держали. `to` — куда шаг уводит указатель от черты.
+ */
+const holdGrip = async (
+  root: HTMLElement,
+  step: StepRun,
+  id: string,
+  to: (from: { x: number; y: number }) => number,
+) => {
+  const from = centerOf(separatorOf(root, id)!)
+  const ours = new WeakSet<Event>()
+  const fire = (type: string, target: EventTarget, x: number) => {
+    const event = new MouseEvent(type, {
+      bubbles: true,
+      cancelable: true,
+      button: 0,
+      buttons: type === 'mouseup' ? 0 : 1,
+      clientX: x,
+      clientY: from.y,
+    })
+    ours.add(event)
+    target.dispatchEvent(event)
+  }
+  let at = from.x
+  // Движение в точке удержания — повтор автопрокрутки у края (ADR 0197, §5): пропускается.
+  const shield = (event: Event) => {
+    const repeat =
+      event.type === 'mousemove' && (event as MouseEvent).clientX === at
+    if (!ours.has(event) && !repeat) event.stopPropagation()
+  }
+  for (const type of ['mousemove', 'mouseup']) {
+    window.addEventListener(type, shield, true)
+  }
+  let released = false
+  const release = () => {
+    if (released) return
+    released = true
+    fire('mouseup', document, at)
+    for (const type of ['mousemove', 'mouseup']) {
+      window.removeEventListener(type, shield, true)
+    }
+  }
+  step.onLeave(release)
+  fire('mousedown', separatorOf(root, id)!, at)
+  const target = to(from)
+  for (let i = 1; i <= 8; i++) {
+    step.signal.throwIfAborted()
+    at = from.x + ((target - from.x) * i) / 8
+    fire('mousemove', document, at)
+    await new Promise(resolve => requestAnimationFrame(resolve))
+  }
+  return { release, at: () => at }
+}
+
+/** Шаг ADR 0197, RL12: ручку First Name тянут вправо, не доходя до краевой зоны. */
+const holdResize = async (root: HTMLElement, step: StepRun) => {
+  await pollUntil(() => !!sizingApi, step.signal)
+  sizingApi!.setColumnSizing({ [RESIZED]: START })
+  await pollUntil(
+    () => Math.round(rect(headCell(root, RESIZED)).width) === START,
+    step.signal,
+  )
+  await holdGrip(root, step, RESIZED, from => from.x + HOLD_SHIFT)
+  await pollUntil(() => !!root.querySelector(RESIZE_LINE), step.signal)
+}
 
 const RESIZE: readonly GuideStoryStep[] = [
   {
     title: 'Колонки в таблице',
     hint: 'Таблица отображает колонки с ручкой изменения ширины на границе заголовков. Ручка появляется при наведении на заголовок.',
     enter: withWidths({ [RESIZED]: START }),
+  },
+  {
+    title: 'Пользователь тянет ручку',
+    hint: 'Пользователь нажал на ручку ширины и тянет её вправо. От ручки вниз через всю таблицу идёт синяя линия: она показывает, где встанет граница колонки относительно значений в строках.',
+    states: ['head.resizeLine'],
+    enter: stepAction(holdResize),
   },
   {
     title: 'Пользователь растянул колонку',
@@ -126,7 +220,7 @@ export const ResizingColumns: StoryObj<StoryProps> = {
   name: 'Resize columns',
   parameters: {
     scenario: '0013/S1',
-    requirements: ['GB9'],
+    requirements: ['GB9', 'RL12'],
     ...guideControls(),
   },
   render: args => (
@@ -169,16 +263,194 @@ export const ResizingColumns: StoryObj<StoryProps> = {
     })
     await step(RESIZE[1]!.title, async () => {
       await guideNext(canvas)
+      await stepDone(canvas)
+      // Линия идёт от ручки вниз через всю таблицу — от верха заголовка ниже строк.
+      const line = document.querySelector<HTMLElement>(RESIZE_LINE)!
+      await expect(line).not.toBeNull()
+      const head = rect(headCell(canvas, RESIZED))
+      const stroke = rect(
+        headCell(canvas, RESIZED).querySelector(`${GRIP} [role="separator"]`)!,
+      )
+      // Низ видимой части таблицы: последняя видимая строка, не ниже области прокрутки.
+      const scroller = canvas.querySelector<HTMLElement>(
+        '.data-grid__container',
+      )!
+      const area =
+        rect(scroller).top + scroller.clientTop + scroller.clientHeight
+      const rows = [...canvas.querySelectorAll('.data-grid__body-row')]
+      const visibleBottom = Math.min(
+        area,
+        Math.max(...rows.map(row => rect(row).bottom)),
+      )
+      await expect(Math.abs(rect(line).top - head.top)).toBeLessThanOrEqual(1)
+      await expect(
+        Math.abs(rect(line).bottom - visibleBottom),
+      ).toBeLessThanOrEqual(1)
+      await expect(
+        Math.abs(
+          rect(line).left +
+            rect(line).width / 2 -
+            (stroke.left + stroke.width / 2),
+        ),
+      ).toBeLessThanOrEqual(1)
+      // Ручку тянут вправо: колонка шире исходной.
+      await expect(width()).toBe(START + HOLD_SHIFT)
+    })
+    await step(RESIZE[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(document.querySelector(RESIZE_LINE)).toBeNull())
       await until(() => expect(width()).toBe(WIDE))
       await expect(rect(headCell(canvas, 'lastName')).left).toBeGreaterThan(
         neighbour,
       )
       await settle()
     })
-    await step(RESIZE[2]!.title, async () => {
+    await step(RESIZE[3]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(width()).toBe(NARROW))
       await until(() => expect(kebab()).not.toBeNull())
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0197 S1: протяжка за край области ------------------------------------------
+
+const scrollerOf = (root: ParentNode) =>
+  root.querySelector<HTMLElement>('.data-grid__container')!
+
+/** Правый край видимой области прокрутки. */
+const areaRight = (scroller: HTMLElement) =>
+  rect(scroller).left + scroller.clientLeft + scroller.clientWidth
+
+/** Указатель держат в краевой зоне автопрокрутки, у самого края. */
+const EDGE_GAP = 8
+
+/** Колонка, которую тянут за край, — самая правая, видимая целиком у начала таблицы. */
+let edgeColumn: string | null = null
+
+const widthOf = (root: HTMLElement, id: string) =>
+  Math.round(rect(headCell(root, id)).width)
+const maxOf = (root: ParentNode, id: string) =>
+  Number(separatorOf(root, id)?.getAttribute('aria-valuemax'))
+
+/** Ширины по умолчанию, таблица у начала. */
+const resetEdge = afterRows(root => {
+  sizingApi?.setColumnSizing({})
+  scrollerOf(root).scrollLeft = 0
+})
+
+/** Тянуть ручку к правому краю и держать, пока колонка не дорастёт до наибольшей ширины. */
+const holdAtEdge = async (root: HTMLElement, step: StepRun) => {
+  await pollUntil(() => !!sizingApi, step.signal)
+  sizingApi!.setColumnSizing({})
+  const scroller = scrollerOf(root)
+  scroller.scrollLeft = 0
+  await pollUntil(() => !!root.querySelector(`${HEAD} ${GRIP}`), step.signal)
+  const right = areaRight(scroller)
+  const id = [...root.querySelectorAll<HTMLElement>(HEAD)]
+    .filter(cell => cell.querySelector(GRIP) && rect(cell).right < right - 60)
+    .sort((a, b) => rect(a).left - rect(b).left)
+    .at(-1)!.dataset.columnId!
+  edgeColumn = id
+  const held = await holdGrip(root, step, id, () => right - EDGE_GAP)
+  await pollUntil(() => widthOf(root, id) >= maxOf(root, id), step.signal)
+  return held
+}
+
+const PAST_EDGE: readonly GuideStoryStep[] = [
+  {
+    title: 'Колонки за краем',
+    hint: 'Таблица шире видимой области: часть колонок справа скрыта, к ним прокручивают по горизонтали.',
+    enter: resetEdge,
+  },
+  {
+    title: 'Пользователь тянет ручку к краю',
+    hint: 'Пользователь тянет ручку ширины к правому краю таблицы и держит её там. Таблица сама прокручивается вправо, колонка растёт, а граница остаётся под указателем, пока колонка не достигнет наибольшей ширины.',
+    states: ['head.resizeLine'],
+    enter: stepAction(async (root, step) => {
+      await holdAtEdge(root, step)
+    }),
+  },
+  {
+    title: 'Пользователь отпустил ручку',
+    hint: 'Пользователь отпустил ручку. Колонка осталась новой ширины, а таблица — там, куда её прокрутила протяжка.',
+    // С прошлого шага ручку отпускает уход с него; переход сразу сюда тянет и отпускает сам.
+    enter: stepAction(async (root, step) => {
+      const id = edgeColumn
+      if (
+        id &&
+        scrollerOf(root).scrollLeft > 0 &&
+        widthOf(root, id) >= maxOf(root, id)
+      ) {
+        return
+      }
+      const held = await holdAtEdge(root, step)
+      held.release()
+    }),
+  },
+]
+
+/** ADR 0197, S1: ручку тянут за край области — таблица прокручивается, колонка растёт. */
+export const ResizingPastEdge: StoryObj<StoryProps> = {
+  name: 'Resize past the edge',
+  parameters: {
+    scenario: '0197/S1',
+    ...guideControls(),
+  },
+  render: args => (
+    <GuideStory
+      title="Протяжка за край"
+      steps={PAST_EDGE}
+      args={guideArgs(
+        {
+          enableColumnSizing: true,
+          extraPlugins: [columnSizingHost()],
+          columnCount: 12,
+          dataCount: 20,
+          height: '360',
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    // В Storybook сценарий проходит человек; `play` — только в тестах каталога.
+    if (globals.catalog !== true) return
+    const scroller = () => scrollerOf(canvas)
+    await step(PAST_EDGE[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() =>
+        expect(scroller().scrollWidth).toBeGreaterThan(scroller().clientWidth),
+      )
+      await until(() => expect(scroller().scrollLeft).toBe(0))
+    })
+    let scrolled = 0
+    await step(PAST_EDGE[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      const id = edgeColumn!
+      // Таблица прокрутилась, колонка дорасла до наибольшей ширины, граница у указателя.
+      await expect(scroller().scrollLeft).toBeGreaterThan(0)
+      await expect(widthOf(canvas, id)).toBe(maxOf(canvas, id))
+      await expect(
+        Math.abs(
+          rect(headCell(canvas, id)).right - (areaRight(scroller()) - EDGE_GAP),
+        ),
+      ).toBeLessThanOrEqual(2)
+      await until(() =>
+        expect(document.querySelector(RESIZE_LINE)).not.toBeNull(),
+      )
+      scrolled = scroller().scrollLeft
+    })
+    await step(PAST_EDGE[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      const id = edgeColumn!
+      // Отпущено: линии нет, ширина и прокрутка те же.
+      await until(() => expect(document.querySelector(RESIZE_LINE)).toBeNull())
+      await expect(widthOf(canvas, id)).toBe(maxOf(canvas, id))
+      await expect(scroller().scrollLeft).toBe(scrolled)
       await settle()
     })
   },

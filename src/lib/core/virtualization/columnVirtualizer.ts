@@ -138,13 +138,19 @@ export const useColumnVirtualizer = ({
   if (isResizingColumn && !dragWindow) setDragWindow(virtualColumns)
   if (!isResizingColumn && dragWindow) setDragWindow(null)
   const columnShifts: Record<string, number> = {}
-  let bodyWidth = virtualizer.getTotalSize()
+  const {
+    paddingStart = 0,
+    paddingEnd = 0,
+    scrollMargin = 0,
+  } = virtualizer.options
+  const origin = paddingStart + scrollMargin
+  const now = startsOf(displayColumns, origin)
+  // Ширина тела — по ширинам колонок, а не по кэшу виртуализатора: тот пересчитывается в
+  // эффекте после отрисовки, и тело, на кадр уже прежнего, поджимало бы прокрутку, если
+  // раскладку в этот момент кто-то прочтёт (ADR 0197, RL21).
+  const bodyWidth = now.end - scrollMargin + paddingEnd
   if (isResizingColumn) {
-    const { paddingStart = 0, scrollMargin = 0 } = virtualizer.options
-    const origin = paddingStart + scrollMargin
-    const now = startsOf(displayColumns, origin)
     const before = startsOf(displayColumns, origin, new Map(sizingStart))
-    bodyWidth = now.end - scrollMargin
     for (const { index } of dragWindow ?? virtualColumns) {
       const column = displayColumns[index]
       const shift = column ? now.starts[index] - before.starts[index] : 0

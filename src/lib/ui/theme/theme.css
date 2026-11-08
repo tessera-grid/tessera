@@ -225,6 +225,10 @@
   --tsr-comp-z-index-head: 3;
   /* Липкие строки групп — над строками тела, внутри тела (ADR 0160). */
   --tsr-comp-z-index-sticky-rows: 6;
+  /* Линия границы колонки при протяжке — над шапкой, телом и липкими строками (ADR 0197). */
+  --tsr-comp-z-index-resize-line: 7;
+  /* Маркер угла выделения — над телом и закреплёнными ячейками, под линией протяжки (ADR 0198). */
+  --tsr-comp-z-index-range-handle: 5;
   --tsr-comp-z-index-loader: 4;
   --tsr-comp-z-index-tooltip: 1500;
 
@@ -384,6 +388,17 @@
   /* Сплошной: край выделения — индикатор состояния, контраст ≥ 3:1 (WCAG 1.4.11). */
   --tsr-comp-cell-selected-border-color: var(--tsr-sys-info);
   --tsr-comp-cell-selected-border-width: 2px;
+  /* Линия границы колонки при протяжке — синий выделения, тоньше черты грипа (ADR 0197). */
+  --tsr-comp-resize-line-color: var(--tsr-sys-info);
+  --tsr-comp-resize-line-width: 2px;
+  /* Маркер угла выделения (ADR 0198): метка цвета кромки выделения с обводкой цветом фона. */
+  --tsr-comp-range-handle-color: var(--tsr-sys-info);
+  --tsr-comp-range-handle-outline: var(--tsr-sys-bg);
+  --tsr-comp-range-handle-outline-width: 1px;
+  --tsr-comp-range-handle-size: 8px;
+  --tsr-comp-range-handle-touch-size: 12px;
+  /* Зона нажатия не меньше 24×24 (TS1, ADR 0034). */
+  --tsr-comp-range-handle-zone: 24px;
   --tsr-comp-body-cell-outline-color: var(--tsr-sys-accent);
   --tsr-comp-cell-content-padding-x: var(--tsr-ref-space-3);
   --tsr-comp-cell-content-padding: 0px var(--tsr-comp-cell-content-padding-x);
@@ -604,6 +619,8 @@
   /* Формы радиуса (shape): кнопки — `--tsr-comp-button-radius-*`; пилюля — переключатель, бабл, полоса прокрутки. */
   --tsr-comp-radius-pill: 999px;
   --tsr-comp-resize-handler-radius: 2px;
+  /* Ширина черты грипа — как линии границы при протяжке (ADR 0197). */
+  --tsr-comp-resize-handler-stroke-width: 2px;
 
   /* Единый disabled: интерактивные иконки/кнопки (F1/F2) гаснут ЦВЕТОМ
    * (--tsr-comp-control-disabled-color, объявлен выше); наполненные форм-контролы
@@ -1217,6 +1234,7 @@
     --tsr-comp-row-selected-bg: Highlight;
     --tsr-comp-row-selected-hovered-bg: Highlight;
     --tsr-comp-focus-ring: Highlight;
+    --tsr-comp-resize-line-color: Highlight;
     /* Разделители тише текста, как линии дерева: кольцо и наведение заметнее (HC18). */
     --tsr-comp-cell-divider-color: GrayText;
     --tsr-comp-pending-spinner-1: Highlight;

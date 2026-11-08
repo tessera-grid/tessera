@@ -3,6 +3,7 @@ import { composeStories } from '@storybook/react-vite'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
+import { EDGE_ZONE } from '../../../shared/edgeScroll'
 import { humanClick } from '../helpers'
 import { parkPointer } from '../pointer'
 import {
@@ -462,8 +463,8 @@ describe('Кнопки заголовка по ширине (ADR 0111)', () => {
       const scroller = view.container.querySelector<HTMLElement>(
         '.data-grid__container',
       )!
-      // Граница и путь протяжки — в кадре.
-      const edge = scroller.getBoundingClientRect().right - 16
+      // Граница и путь протяжки — в кадре и вне краевой зоны автопрокрутки (ADR 0197).
+      const edge = scroller.getBoundingClientRect().right - EDGE_ZONE - 16
       const overflow =
         cell().getBoundingClientRect().right + Math.max(dx, 0) - edge
       if (overflow > 0) scroller.scrollLeft += overflow

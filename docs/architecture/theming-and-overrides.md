@@ -136,6 +136,11 @@
   `--tsr-comp-resize-handler-width` (24px) — зона грипа на границе колонок, по половине в
   каждую; `--tsr-comp-head-title-min-width` (72px, ADR 0135) — наименьшая подпись заголовка: кнопки,
   которым не хватает места, уходят в кебаб.
+- **Протяжка ширины** (ADR [0197](../decisions/0197-column-resize-line.md)):
+  `--tsr-comp-resize-handler-stroke-width` (2px) — ширина черты грипа;
+  `--tsr-comp-resize-line-color` (`--tsr-sys-info`, в `forced-colors` — `Highlight`) и
+  `--tsr-comp-resize-line-width` (2px) — линия границы колонки во всю высоту при протяжке;
+  `--tsr-comp-z-index-resize-line` — её слой над шапкой, телом и липкими строками.
 - **Будущий родитель при перетаскивании строки** (ADR
   [0109](../decisions/0109-drop-into-collapsed-groups.md)):
   `--tsr-comp-row-drop-parent-bg` (10 % `--tsr-sys-accent`) — заливка строки слоем

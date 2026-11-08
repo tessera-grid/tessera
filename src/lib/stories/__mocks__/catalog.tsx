@@ -59,6 +59,8 @@ export const CATALOG_STATES = {
     'nested',
     'kebab',
     'resizeHandle',
+    // Протяжка ширины колонки: линия границы во всю высоту (ADR 0197).
+    'resizeLine',
     'footer',
     // Неприменённое условие: точка цвета несохранённого на кнопке заголовка (ADR 0178, §3).
     'draft',

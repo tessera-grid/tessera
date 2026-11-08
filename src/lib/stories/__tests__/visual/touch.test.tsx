@@ -6,11 +6,19 @@ import { humanClick, revealedHandleWidth, settledCenter } from '../helpers'
 
 import { Stories, renderGrid } from '../helpers'
 import { composed } from '../stories'
-import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
+import {
+  AXE_OPTIONS,
+  contrast,
+  effectiveBg,
+  inBothThemes,
+  resolveColor,
+  toRgba,
+} from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
 import { pinViaPopover } from './column-pinning-helpers'
 import { tableLabels } from '../labels'
 import { scrollLayer } from '../../../core/scrollStretch'
+import { EDGE_ZONE } from '../../../shared/edgeScroll'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import { columnSorting } from '../../../plugins/columnSorting'
@@ -215,7 +223,16 @@ describe('Касания (ADR 0086)', () => {
     skip(!chromium, 'жест пальцем по шагам — CDP Chromium')
     renderGrid({ columnCount: 12, dataCount: 20, enableColumnSizing: true })
     await waitForGrid()
-    const head = headById(dataColumn())
+    // Колонка, чей грип далеко от правого края: палец не заходит в краевую зону, где грип
+    // прокручивает таблицу (ADR 0197, RL18).
+    const area = scroller().getBoundingClientRect()
+    const edge = area.left + scroller().clientLeft + scroller().clientWidth
+    const head = [
+      ...document.querySelectorAll<HTMLElement>(`${HEAD_CELL}[data-column-id]`),
+    ].find(cell => {
+      const zone = cell.querySelector(GRIP)?.getBoundingClientRect()
+      return zone !== undefined && zone.left + 83 < edge - EDGE_ZONE
+    })!
     const grip = head.querySelector<HTMLElement>(GRIP)!
     const width = () => head.getBoundingClientRect().width
     const initial = width()
@@ -253,6 +270,63 @@ describe('Касания (ADR 0086)', () => {
     const strip = grip.querySelector<HTMLElement>('[role="separator"]')!
     await expect.poll(() => shown(grip)).toBe(true)
     expect(strip.getBoundingClientRect().height).toBeGreaterThanOrEqual(16)
+  })
+
+  test('RL8: при касании линия границы видна только пока палец тянет грип; черта своего цвета не меняет', async ({
+    skip,
+  }) => {
+    skip(!chromium, 'жест пальцем по шагам — CDP Chromium')
+    renderGrid({ columnCount: 6, dataCount: 20, enableColumnSizing: true })
+    await waitForGrid()
+    const grip = () => headById(dataColumn()).querySelector<HTMLElement>(GRIP)!
+    const stroke = () =>
+      getComputedStyle(grip().querySelector('[role="separator"]')!)
+        .borderTopColor
+    const line = () =>
+      document.querySelector('[data-column-resize-line]:not([hidden])')
+    const idle = resolveColor(grip(), 'var(--tsr-comp-control-color)')
+    expect(stroke()).toBe(idle)
+    expect(line()).toBeNull()
+
+    const from = center(grip())
+    await touch.realTouchDown([from])
+    try {
+      // Влево: граница остаётся в узком окне.
+      await touch.realTouchMove(from, { x: from.x - 30, y: from.y })
+      await expect.poll(line).not.toBeNull()
+      expect(stroke()).toBe(idle)
+    } finally {
+      await touch.realTouchUp()
+    }
+    await expect.poll(line).toBeNull()
+    expect(stroke()).toBe(idle)
+    expect(menu()).toBeNull()
+  })
+
+  test('RL18: палец, протянувший грип к правому краю, прокручивает таблицу, граница остаётся под пальцем', async ({
+    skip,
+  }) => {
+    skip(!chromium, 'жест пальцем по шагам — CDP Chromium')
+    renderGrid({ columnCount: 12, dataCount: 20, enableColumnSizing: true })
+    await waitForGrid()
+    const head = () => headById(dataColumn())
+    const area = scroller().getBoundingClientRect()
+    const right = area.left + scroller().clientLeft + scroller().clientWidth
+    const from = center(head().querySelector(GRIP)!)
+    const edge = { x: right - 6, y: from.y }
+    await touch.realTouchDown([from])
+    try {
+      await touch.realTouchMove(from, edge)
+      await expect.poll(() => scroller().scrollLeft).toBeGreaterThan(40)
+      // Палец ушёл из краевой зоны: прокрутка стоит, граница — под пальцем.
+      const back = { x: right - 90, y: from.y }
+      await touch.realTouchMove(edge, back)
+      await expect
+        .poll(() => Math.abs(head().getBoundingClientRect().right - back.x))
+        .toBeLessThanOrEqual(1)
+    } finally {
+      await touch.realTouchUp()
+    }
   })
 
   const renderContextMenu = async (withActions = true) => {

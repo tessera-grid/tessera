@@ -475,6 +475,14 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       ширины, посреди движения, флаг и уменьшенное движение, токены, фокус, коммиты React),
       модульный `columnMotion` (CN12 — план), перф CN13 — в `interaction`
       ([ADR 0115](docs/decisions/0115-column-motion.md)).
+    - _Линия границы и автопрокрутка при протяжке ширины:_ `column-resize-line` (RL1–RL7, RL9,
+      RL13–RL17, RL19–RL21 — черта грипа своего цвета и 2px, у последней колонки у края, синяя линия
+      во всю видимую высоту колонки при нажатии, протяжке, меню и фокусе клавиатуры, закрепление,
+      вложенная шапка и футер, контраст и `forced-colors`; автопрокрутка у края, пределы ширины и
+      Escape, закреплённая колонка, сужение у конца прокрутки, ширина тела по колонкам), RL8 и RL18
+      — в `touch`, RL10 — в `work-counters`, перф RL11 — в `interaction`, RL12 — `play` истории
+      «Columns/Resizing — Resize columns», история «Resize past the edge» (S1)
+      ([ADR 0197](docs/decisions/0197-column-resize-line.md)).
     - _Строки:_ `row-selection` (RS1–RS12, RS15–RS18, [ADR 0014](docs/decisions/0014-row-selection.md);
       RS19–RS22 — счётчик в нижней панели, [ADR 0038](docs/decisions/0038-pagination-and-status-bar.md);
       охват «Выбрать всё» — `select-all-scope` (SE2–SE4), `select-all-server` (SE6–SE7,

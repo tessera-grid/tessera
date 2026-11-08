@@ -1,5 +1,5 @@
 import axe from 'axe-core'
-import { userEvent } from 'vitest/browser'
+import { page, userEvent } from 'vitest/browser'
 import { describe, expect, test } from 'vitest'
 import { render } from 'vitest-browser-react'
 
@@ -176,47 +176,56 @@ const PendingMenuGrid = () => {
 
 describe('Скелет первой загрузки (ADR 0060)', () => {
   test('SL1: колонки скелета совпадают с колонками грида — число, порядок и ширина, включая заданную и изменённую пользователем', async () => {
-    const { set } = await renderToggle({ enableColumnSizing: true }, false)
-    await waitData()
+    // Широкое окно: протяжка кончается вне краевой зоны автопрокрутки ширины (ADR 0197).
+    const viewport = { width: innerWidth, height: innerHeight }
+    await page.viewport(1100, 800)
+    try {
+      const { set } = await renderToggle({ enableColumnSizing: true }, false)
+      await waitData()
 
-    // Пользователь расширил колонку First Name протяжкой грипа.
-    const head = headCellsNow().find(
-      cell => cell.dataset.columnId === 'firstName',
-    )!
-    await userEvent.hover(head)
-    const grip = head.querySelector<HTMLElement>('.resize__handler--column')!
-    const r = grip.getBoundingClientRect()
-    const x0 = r.left + r.width / 2
-    const y = r.top + r.height / 2
-    const mouse = (type: string, target: Element | Document, x: number) =>
-      target.dispatchEvent(
-        new MouseEvent(type, {
-          bubbles: true,
-          cancelable: true,
-          button: 0,
-          buttons: type === 'mouseup' ? 0 : 1,
-          clientX: x,
-          clientY: y,
-        }),
+      // Пользователь расширил колонку First Name протяжкой грипа.
+      const head = headCellsNow().find(
+        cell => cell.dataset.columnId === 'firstName',
+      )!
+      await userEvent.hover(head)
+      const grip = head.querySelector<HTMLElement>('.resize__handler--column')!
+      const r = grip.getBoundingClientRect()
+      const x0 = r.left + r.width / 2
+      const y = r.top + r.height / 2
+      const mouse = (type: string, target: Element | Document, x: number) =>
+        target.dispatchEvent(
+          new MouseEvent(type, {
+            bubbles: true,
+            cancelable: true,
+            button: 0,
+            buttons: type === 'mouseup' ? 0 : 1,
+            clientX: x,
+            clientY: y,
+          }),
+        )
+      mouse('mousedown', grip, x0)
+      await nextFrame()
+      mouse('mousemove', document, x0 + 60)
+      await nextFrame()
+      mouse('mousemove', document, x0 + 60)
+      await nextFrame()
+      mouse('mouseup', document, x0 + 60)
+      await nextFrame()
+
+      const dataRow = document.querySelector('.data-grid__body-row')!
+      const loaded = geometry(cellsOf(dataRow, '.data-grid__body-cell'))
+      expect(loaded.find(cell => cell.id === 'firstName')!.width).toBe(210)
+      // Заданная `size` колонки Country (200) отличается от остальных (150).
+      expect(loaded.find(cell => cell.id === 'country')!.width).toBe(200)
+
+      await set(true)
+      await waitSkeleton()
+      expect(geometry(cellsOf(skeletonRows()[0], SKELETON_CELL))).toEqual(
+        loaded,
       )
-    mouse('mousedown', grip, x0)
-    await nextFrame()
-    mouse('mousemove', document, x0 + 60)
-    await nextFrame()
-    mouse('mousemove', document, x0 + 60)
-    await nextFrame()
-    mouse('mouseup', document, x0 + 60)
-    await nextFrame()
-
-    const dataRow = document.querySelector('.data-grid__body-row')!
-    const loaded = geometry(cellsOf(dataRow, '.data-grid__body-cell'))
-    expect(loaded.find(cell => cell.id === 'firstName')!.width).toBe(210)
-    // Заданная `size` колонки Country (200) отличается от остальных (150).
-    expect(loaded.find(cell => cell.id === 'country')!.width).toBe(200)
-
-    await set(true)
-    await waitSkeleton()
-    expect(geometry(cellsOf(skeletonRows()[0], SKELETON_CELL))).toEqual(loaded)
+    } finally {
+      await page.viewport(viewport.width, viewport.height)
+    }
   })
 
   test('SL3: закреплённые колонки скелета остаются на месте при горизонтальной прокрутке', async () => {

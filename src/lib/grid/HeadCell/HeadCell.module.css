@@ -224,12 +224,15 @@
     --tsr-cell-edge-limit-end: 0px;
   }
 
-  /* Последний заголовок и заголовок перед правыми закреплёнными: грип целиком внутри. */
+  /*
+   * Последний заголовок и заголовок перед правыми закреплёнными: зона грипа целиком внутри,
+   * черта — у правого края колонки (ADR 0197).
+   */
   &:is([data-last-header-in-row='true'], [data-before-right-pinned='true'])
     :global(.resize__handler--column) {
     right: 0;
-    justify-content: center;
-    --tsr-resize-line-self: center;
+    justify-content: flex-end;
+    --tsr-resize-line-self: end;
     --tsr-resize-line-shift: 0;
     --tsr-resize-line-inset: 0;
   }

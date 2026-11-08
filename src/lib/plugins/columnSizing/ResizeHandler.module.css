@@ -31,6 +31,19 @@
   outline-offset: 1px;
 }
 
+/*
+ * Линия границы над областью прокрутки (строка шапки обрезает содержимое), по центру черты
+ * грипа: положение и высоту задаёт грип, пока он активен (ADR 0197).
+ */
+.line {
+  position: absolute;
+  z-index: var(--tsr-comp-z-index-resize-line);
+  width: var(--tsr-comp-resize-line-width);
+  transform: translateX(-50%);
+  background-color: var(--tsr-comp-resize-line-color);
+  pointer-events: none;
+}
+
 .wrapper:hover[aria-disabled='true'] {
   cursor: not-allowed;
 }
@@ -52,7 +65,8 @@
   border-color: currentColor;
   align-self: center;
   border-radius: var(--tsr-comp-resize-handler-radius, 2px);
-  border-width: 2px;
+  /* Черта — две половины рамки пустого элемента: её ширина — токен (ADR 0197). */
+  border-width: calc(var(--tsr-comp-resize-handler-stroke-width) / 2);
   height: 16px;
   touch-action: none;
   user-select: none;

@@ -78,6 +78,7 @@ import { renderPluginsGrid, renderGrid } from './hosts'
 import { DRAFTS, applyAllDrafts, readDrafts } from '../../../core/drafts/drafts'
 import { setPluginState } from '../../../core/definePlugin'
 import { cellSelection } from '../../../plugins/cellSelection'
+import { columnSizing } from '../../../plugins/columnSizing'
 import { rowExpanding } from '../../../plugins/rowExpanding'
 import { rowGrouping } from '../../../plugins/rowGrouping'
 import { moveRowToGroup } from '../../../plugins/rowDragging/groupMove'
@@ -3567,6 +3568,111 @@ describe('Отзывчивость — движение колонок', () => {
       }
     },
     PERF_TIMEOUT * 4,
+  )
+})
+
+// Линия границы колонки (ADR 0197, RL11): те же шаги ширины по кадру на 1000×1000 — с
+// активным грипом (фокус клавиатуры, линия во всю высоту) против того же без него.
+/** Цена линии: замер черты и запись положения слоя на каждом шаге ширины. */
+const RL11_COST = { ratio: 1.1, plusMs: 2 }
+const RESIZE_STEPS = 40
+
+describe('Кадры — линия границы колонки', () => {
+  test(
+    'RL11: кадр протяжки ширины на 1000×1000 с линией не дороже той же протяжки без неё — до +10 % или 2 мс',
+    async () => {
+      const resize = async (line: boolean) => {
+        let table:
+          | {
+              setColumnSizing: (
+                updater: (
+                  old: Record<string, number>,
+                ) => Record<string, number>,
+              ) => void
+            }
+          | undefined
+        const ResizeGrid = () => {
+          const created = useCreateTable({
+            columns: MOTION_GRID_COLUMNS as never,
+            data: MOTION_GRID_ROWS,
+            getRowId: (row: { id: string }) => row.id,
+            plugins: [columnSizing()],
+          })
+          table = created as never
+          return (
+            <div style={{ width: 1200, height: 520 }}>
+              <DataGrid table={created} height={500} />
+            </div>
+          )
+        }
+        await render(<ResizeGrid />)
+        await waitForGrid()
+        const separator = document.querySelector<HTMLElement>(
+          '.data-grid__head-cell[data-column-id="c1"] [role="separator"]',
+        )!
+        const shown = () =>
+          document.querySelector('[data-column-resize-line]:not([hidden])') !==
+          null
+        if (line) {
+          separator.focus()
+          separator.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Shift', bubbles: true }),
+          )
+          await expect.poll(shown).toBe(true)
+        }
+        let step = 0
+        const result = await measureTransitionWork(
+          async () => {
+            const next = () => {
+              step++
+              table!.setColumnSizing(old => ({ ...old, c1: 150 + step * 5 }))
+              if (step < RESIZE_STEPS) requestAnimationFrame(next)
+            }
+            requestAnimationFrame(next)
+          },
+          () => step >= RESIZE_STEPS,
+        )
+        expect(shown(), 'линия во время шагов').toBe(line)
+        await cleanup()
+        return result
+      }
+
+      const runs = await againstBase(resize)
+      const base = medianRun(runs.base, r => r.p95Ms)
+      const variant = medianRun(runs.variant, r => r.p95Ms)
+      const ceiling = ceilingOver(base.p95Ms, RL11_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1000×1000',
+          plugins: 'columnSizing',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'animation',
+              metric: 'p95',
+              valueMs: r.p95Ms,
+              targetMs: ANIMATION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('RL11-base', 'шаги ширины без линии', base, false)
+      await record('RL11', 'шаги ширины с линией границы', variant, true)
+      expect(
+        variant.p95Ms,
+        `p95=${variant.p95Ms.toFixed(1)}ms, база ${base.p95Ms.toFixed(1)}ms, потолок ${ceiling.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
   )
 })
 

@@ -4272,6 +4272,46 @@ export const HighContrastResizingColumnsStep3 = {
   tags: ['!test'],
 }
 
+export const HighContrastResizingColumnsStep4 = {
+  ...twinStep(
+    columnsResizingStories,
+    columnsResizingStories.ResizingColumns,
+    4,
+  ),
+  name: 'Columns/Resizing — Resize columns, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastResizingPastEdgeStep1 = {
+  ...twinStep(
+    columnsResizingStories,
+    columnsResizingStories.ResizingPastEdge,
+    1,
+  ),
+  name: 'Columns/Resizing — Resize past the edge, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastResizingPastEdgeStep2 = {
+  ...twinStep(
+    columnsResizingStories,
+    columnsResizingStories.ResizingPastEdge,
+    2,
+  ),
+  name: 'Columns/Resizing — Resize past the edge, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastResizingPastEdgeStep3 = {
+  ...twinStep(
+    columnsResizingStories,
+    columnsResizingStories.ResizingPastEdge,
+    3,
+  ),
+  name: 'Columns/Resizing — Resize past the edge, шаг 3',
+  tags: ['!test'],
+}
+
 export const HighContrastDraggingNestedStep1 = {
   ...twinStep(columnsDraggingStories, columnsDraggingStories.DraggingNested, 1),
   name: 'Columns/Dragging — Header groups, шаг 1',

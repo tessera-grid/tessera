@@ -32,6 +32,8 @@ import { LinearProgress } from '../../../ui/LinearProgress'
 import { IconButton } from '../../../ui/IconButton'
 import { RevealedIcon } from '../../../ui/IconButton/iconReveal'
 import { ColumnDraggingComponent } from '../../../plugins/columnDragging/ColumnDraggingComponent'
+import { ColumnSizingComponent } from '../../../plugins/columnSizing/ColumnSizingComponent'
+import { ResizeHandler } from '../../../plugins/columnSizing/ResizeHandler'
 import { makeColumns } from '../../__mocks__/columns'
 import { getData } from '../../__mocks__/data'
 import type { FeatureToggles } from '../../__mocks__/utils/argsToPlugins'
@@ -537,6 +539,40 @@ describe('Счётчики работы — кнопки заголовка по
     // за протяжку; зоны других колонок — ни разу.
     expect(renders(work, ActionsZone), describeWork(work)).toBeLessThanOrEqual(
       2,
+    )
+  })
+})
+
+describe('Счётчики работы — линия границы колонки (ADR 0197)', () => {
+  test('RL10: линия границы — один узел вне React: протяжка добавляет и убирает его, грип перерисовывается не чаще своего хоста', async () => {
+    type Point = { x: number; y: number }
+    const pointer = commands as unknown as {
+      realMouseMove: (from: Point, to: Point, steps?: number) => Promise<void>
+      realDragHold: (from: Point, to: Point, steps?: number) => Promise<void>
+      realMouseUp: () => Promise<void>
+    }
+    const { measure } = await mountGrid({ enableColumnSizing: true })
+    const head = () =>
+      document.querySelector<HTMLElement>(
+        '.data-grid__head-cell[data-column-id="firstName"]',
+      )!
+    const line = () =>
+      document.querySelector('[data-column-resize-line]:not([hidden])')
+    const separator = head().querySelector('[role="separator"]')!
+    const r = separator.getBoundingClientRect()
+    const at = { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+    await pointer.realMouseMove({ x: at.x - 40, y: at.y }, at, 4)
+    let shown = false
+    const work = await measure(async () => {
+      await pointer.realDragHold(at, { x: at.x + 80, y: at.y }, 6)
+      shown = line() !== null
+      await pointer.realMouseUp()
+    })
+    expect(shown).toBe(true)
+    const summary = describeWork(work)
+    expect([work.nodesAdded, work.nodesRemoved], summary).toEqual([1, 1])
+    expect(renders(work, ResizeHandler), summary).toBeLessThanOrEqual(
+      renders(work, ColumnSizingComponent),
     )
   })
 })
