@@ -276,14 +276,22 @@ const DRAG_CLICK_RELEASE = 100
  * нажатие «Далее» стало бы броском. Удержание шлёт события самому документу — их
  * фильтр пропускает. Клик по обвязке гайда (панель, консоль) dnd-kit на время
  * перетаскивания глотает — фильтр отменяет удержание и повторяет клик, когда dnd-kit
- * отпустил документ. Фильтр на странице один, сколько бы удержаний его ни просили;
- * возвращает снятие своей просьбы — повторное ничего не делает.
+ * отпустил документ. Колесо, касание и клавиши прокрутки человека гасятся: прокрутка увела бы
+ * цель из-под удерживаемой точки, и бросок пришёлся бы не туда. Фильтр на странице один,
+ * сколько бы удержаний его ни просили; возвращает снятие своей просьбы — повторное ничего не
+ * делает.
  */
 export const shieldHeldDrag = () => {
   if (shield.holders++ === 0) {
     const html = document.documentElement
     for (const type of DRAG_POINTER) html.addEventListener(type, stopPointer)
     window.addEventListener('click', passClick, true)
+    for (const type of HUMAN_SCROLL) {
+      window.addEventListener(type, stopScroll, {
+        capture: true,
+        passive: false,
+      })
+    }
   }
   let lifted = false
   return () => {
@@ -293,7 +301,29 @@ export const shieldHeldDrag = () => {
     const html = document.documentElement
     for (const type of DRAG_POINTER) html.removeEventListener(type, stopPointer)
     window.removeEventListener('click', passClick, true)
+    for (const type of HUMAN_SCROLL) {
+      window.removeEventListener(type, stopScroll, { capture: true })
+    }
   }
+}
+
+/** Прокрутка человеком: колесо, касание и клавиши. */
+const HUMAN_SCROLL = ['wheel', 'touchmove', 'keydown'] as const
+const SCROLL_KEYS = new Set([
+  'ArrowUp',
+  'ArrowDown',
+  'PageUp',
+  'PageDown',
+  'Home',
+  'End',
+  ' ',
+])
+
+const stopScroll = (event: Event) => {
+  if (event instanceof KeyboardEvent && !SCROLL_KEYS.has(event.key)) return
+  if (!event.isTrusted) return
+  event.preventDefault()
+  event.stopPropagation()
 }
 
 const shield = { holders: 0, replaying: false }

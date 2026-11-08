@@ -22,6 +22,7 @@ import {
   pollUntil,
   pressEscape,
   repeat,
+  shieldHeldDrag,
 } from '../../__mocks__/catalogPlay'
 import { pressCell, untilDone } from '../../__mocks__/cellGestures'
 import { HANDLE, ROW, rowIdOrder } from '../../rowDragging.dnd'
@@ -1139,6 +1140,70 @@ describe('ввод человека посреди гайда (ADR 0117)', () =>
       const scrolled = await drop()
       expect(scrolled.inView).toBe(true)
       expect(scrolled.order).toEqual(plain.order)
+    } finally {
+      spacer.remove()
+      window.scrollTo(0, 0)
+    }
+  })
+
+  test('SN70: пока шаг держит перетаскивание, колесо человека не прокручивает ни страницу, ни таблицу — бросок приходится на цель шага', async () => {
+    const args = guideArgs(
+      { dataCount: 30, height: 400, enableRowDragging: true },
+      { colorMode: 'light', locale: 'en' },
+    )
+    const steps: readonly GuideStoryStep[] = [{ title: 'Строки', hint: '' }]
+    const rowAt = (index: number) =>
+      document.querySelector<HTMLElement>(`${ROW}[data-index="${index}"]`)!
+    /** Строку 0 держат у нижнего края строки 3, `during` — пока держат; порядок после броска. */
+    const drop = async (during: () => Promise<void>) => {
+      const screen = await render(
+        <GuideStory title="Бросок" steps={steps} args={args} />,
+      )
+      try {
+        await expect
+          .poll(() => document.querySelectorAll(HANDLE).length)
+          .toBeGreaterThan(3)
+        const handle = rowAt(0).querySelector<HTMLElement>(HANDLE)!
+        const lift = shieldHeldDrag()
+        try {
+          const held = await dragHold(handle, {
+            x: centerOf(handle).x,
+            y: rowAt(3).getBoundingClientRect().bottom - 1,
+          })
+          await during()
+          held.release()
+        } finally {
+          lift()
+        }
+        await sleep(600)
+        return rowIdOrder(document.body)
+      } finally {
+        await screen.unmount()
+      }
+    }
+    // Страница с прокруткой: колесо без щита увело бы таблицу из-под точки удержания.
+    const spacer = document.createElement('div')
+    spacer.style.height = '3000px'
+    document.body.prepend(spacer)
+    try {
+      window.scrollTo(0, 0)
+      const plain = await drop(async () => {})
+      expect(plain.indexOf('item-id-0')).toBeGreaterThan(0)
+      // Удержание само подводит ручку в окно (SN44): сравнивается прокрутка до колеса и после.
+      const moved: { page: number; table: number }[] = []
+      const order = await drop(async () => {
+        const page = window.scrollY
+        const table = scroller().scrollTop
+        await pointer.realWheel({ x: 4, y: 4 }, -400, 3, 30)
+        await wheelTable(400)
+        await sleep(200)
+        moved.push({
+          page: window.scrollY - page,
+          table: scroller().scrollTop - table,
+        })
+      })
+      expect(moved).toEqual([{ page: 0, table: 0 }])
+      expect(order).toEqual(plain)
     } finally {
       spacer.remove()
       window.scrollTo(0, 0)
