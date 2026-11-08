@@ -36,8 +36,9 @@ interface DataGridTableProps {
   layout: 'grid' | 'flex'
   headStyles?: CSSProperties
   headerGroups: HeaderGroup<any, any>[]
-  rows: Row<any, any>[]
-  /** Строки тела по индексу (ADR 0138); `rows` — весь список, если он загружен целиком. */
+  /** Весь список строк, если он загружен целиком; геттером — ради dev-журнала React (MS12). */
+  getRows: () => Row<any, any>[]
+  /** Строки тела по индексу (ADR 0138). */
   rowSource: RowSource<Row<any, any>>
   leafColumns: Column<any, any, unknown>[]
   virtualRows: VirtualItem[]
@@ -65,7 +66,7 @@ export const DataGridTable = ({
   layout,
   headStyles,
   headerGroups,
-  rows,
+  getRows,
   rowSource,
   leafColumns,
   virtualRows,
@@ -91,7 +92,7 @@ export const DataGridTable = ({
     dropPreviewOf(state),
   )
 
-  const rowWindow = getRowWindow(table, rows, rowSource)
+  const rowWindow = getRowWindow(table, getRows(), rowSource)
   const rootRef = useRef<HTMLDivElement>(null)
 
   const {
@@ -246,7 +247,7 @@ export const DataGridTable = ({
               dropPreview={dropPreview}
               layout={layout}
               table={table}
-              rows={rows}
+              getRows={getRows}
               rowSource={rowSource}
               virtualRows={virtualRows}
               virtualColumns={virtualColumns}

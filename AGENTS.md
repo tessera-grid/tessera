@@ -1184,6 +1184,13 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       выделение, прокрутка и правка держат строки), перф IU13–IU14 — в `interaction`, истории «Data
       loading/Client transactions» (S1–S3); следование за строками — `core/dataFollow.ts`
       ([ADR 0194](docs/decisions/0194-incremental-data-changes-and-client-transactions.md)).
+    - _Сдвиги в середине `data`:_ модульный `rowShifts.dom` (MS1–MS8 — вставка, удаление и перенос:
+      прежние объекты с живым `index`, перенесённые — изменённые, паритет сортировки, фильтров,
+      группировки и раскрытия, колонки от индекса, ветки, прежняя модель, подсказка виртуализатору),
+      перф MS9–MS11 — в `interaction`, визуальный `row-shifts-dev` (MS12 — вставка в окно в dev-сборке React);
+      итог клиентской транзакции — модульный `clientTransactions.dom` (MS13–MS14 — вспышка добавленных
+      только у транзакции, объявление), визуальный `client-transactions` (MS15 — вспышка и уход на гриде)
+      ([ADR 0199](docs/decisions/0199-row-shifts-in-the-middle-of-data.md)).
     - _Транзакции строк SSRM:_ модульный `serverTransactions.dom` (RT1–RT7, RT10–RT11,
       RT13–RT14 — вставка на место, перезапрос без места, удаление и итог, `update`, отмена
       запросов и неполный блок без запроса, ветки, выбор, объявление, склейка после кадра,

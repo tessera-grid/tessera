@@ -46,6 +46,8 @@ export const LABEL_PARAMS = {
   announceLoadErrorReason: ['reason'],
   announceLoadFailedReason: ['reason'],
   announceFilteredRows: ['count'],
+  announceRowsAdded: ['count'],
+  announceRowsRemoved: ['count'],
 } as const satisfies Record<FunctionKey, readonly string[]>
 
 /** Формы слова по числу (`Intl.PluralRules`) и `zero` для нуля в любом языке. */

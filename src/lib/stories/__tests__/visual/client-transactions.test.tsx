@@ -12,7 +12,7 @@ import { startEditSession } from '../../../plugins/cellEditing/session'
 import { humanClick, settleRowMotion } from '../helpers'
 
 // Клиентская транзакция и новый data на гриде (ADR 0194, IU12): активная ячейка, выделение,
-// правка и прокрутка держат свои строки.
+// правка и прокрутка держат свои строки; вспышка добавленных и уход удалённых (ADR 0199, MS15).
 
 interface Item {
   id: string
@@ -90,6 +90,18 @@ const selectedRows = () =>
     ),
   ].sort()
 const item = (id: string): Item => ({ id, name: id })
+const body = () => q('.data-grid__body')!
+/** Анимация сдвига строки движением строк: строка — прямой потомок тела. */
+const slideOf = (id: string) =>
+  body()
+    .querySelector<HTMLElement>(`:scope > [data-row-id="${id}"]`)
+    ?.getAnimations()
+    .find(animation =>
+      (animation.effect as KeyframeEffect)
+        .getKeyframes()
+        .some(frame => frame.translate !== undefined),
+    )
+const ghosts = () => document.querySelectorAll('[data-row-ghost]').length
 
 const scrollToIndex = async (index: number) => {
   scroller().scrollTop = index * rowHeight()
@@ -178,6 +190,36 @@ describe('Клиентская транзакция на гриде (ADR 0194)',
       table.applyRowTransaction({ add: [item('n6')], index: 0 })
       await expect.poll(() => indexOf('n6')).toBe(0)
       expect(scroller().scrollTop).toBe(0)
+      await settleRowMotion()
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('MS15: на гриде добавленная клиентской транзакцией строка вспыхивает «пришла», удалённая гаснет на месте раньше, чем строки закрывают щель; строка из нового data приложения без транзакции не вспыхивает', async () => {
+    let table!: GridTable
+    const screen = await render(<Grid onTable={t => (table = t)} />)
+    try {
+      await expect.poll(() => rowById('r5')).not.toBeNull()
+
+      table.applyRowTransaction({ add: [item('n1')], index: 3 })
+      await expect.poll(() => indexOf('n1')).toBe(3)
+      expect(rowById('n1')!.getAttribute('data-flash')).toBe('arrived')
+      expect(rowById('r3')!.hasAttribute('data-flash')).toBe(false)
+      await settleRowMotion()
+
+      // Удаление: сперва призрак гаснет, строки ниже ждут его конца.
+      table.applyRowTransaction({ remove: ['r5'] })
+      await expect.poll(ghosts).toBeGreaterThan(0)
+      const timing = slideOf('r6')!.effect!.getTiming()
+      expect(Number(timing.delay)).toBeGreaterThan(0)
+      expect(timing.delay).toBe(timing.duration)
+      await settleRowMotion()
+      await expect.poll(ghosts).toBe(0)
+
+      setRows(rows => [rows[0]!, item('n2'), ...rows.slice(1)])
+      await expect.poll(() => indexOf('n2')).toBe(1)
+      expect(rowById('n2')!.hasAttribute('data-flash')).toBe(false)
       await settleRowMotion()
     } finally {
       await screen.unmount()

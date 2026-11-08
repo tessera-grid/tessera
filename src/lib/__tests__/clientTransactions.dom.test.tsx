@@ -2,14 +2,19 @@
 /**
  * Клиентская транзакция строк (ADR 0194, §4; IU11, IU15): следующий `data` с прежними
  * объектами нетронутых строк уходит в `onDataChange`, без обработчика — отказ с
- * предупреждением; транзакция — действие ядра в канале действий.
+ * предупреждением; транзакция — действие ядра в канале действий. Итог на строках — вспышка
+ * добавленных и объявление (ADR 0199, §6; MS13–MS14).
  * Запуск: npx vitest run --config vitest.node.config.ts clientTransactions
  */
 import { act, createElement, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { registerAnnouncer } from '../core/announcer'
 import { rowModelChangeOf } from '../core/dataChanges'
+import { readFlashes } from '../core/flashes/flashFeature'
+import { rowHighlightKey } from '../core/highlights/highlightFeature'
+import { resolveLabels } from '../core/localization'
 import type { DebugAction } from '../core/debugActions'
 import type { RowTransaction } from '../core/rowTransactions'
 import { useCreateTable } from '../core/useCreateTable'
@@ -47,14 +52,19 @@ afterEach(() => {
 const host = ({
   handler = true,
   onDebugAction,
+  keep = next => next,
 }: {
   handler?: boolean
   onDebugAction?: (action: DebugAction) => void
+  /** Что приложение кладёт в `data` из следующего `data` транзакции. */
+  keep?: (next: Item[]) => Item[]
 } = {}) => {
   let table: any
+  let setRows!: (next: Item[]) => void
   const changes: [Item[], RowTransaction<Item>][] = []
   const Host = () => {
     const [data, setData] = useState(DATA)
+    setRows = setData
     table = useCreateTable({
       columns: COLUMNS as never,
       data,
@@ -62,7 +72,7 @@ const host = ({
       ...(handler && {
         onDataChange: (next: Item[], transaction: RowTransaction<Item>) => {
           changes.push([next, transaction])
-          setData(next)
+          setData(keep(next))
         },
       }),
     })
@@ -74,6 +84,7 @@ const host = ({
   return {
     table: () => table,
     changes,
+    setData: (next: Item[]) => act(() => setRows(next)),
     apply: (transaction: RowTransaction<Item>) => {
       let result: unknown
       act(() => {
@@ -165,5 +176,63 @@ describe('Клиентская транзакция (ADR 0194)', () => {
     expect(
       grid.table().getActionLabel({ plugin: 'core', action: 'rowTransaction' }),
     ).toBe('Change rows')
+  })
+
+  it('MS13: добавленные клиентской транзакцией строки вспыхивают «пришла», когда приложение положило следующий data; новый data от приложения без транзакции и data без добавленных — без вспышки', () => {
+    const arrived = (grid: ReturnType<typeof host>, id: string) =>
+      readFlashes(grid.table())[rowHighlightKey(id)]?.outcome
+    const grid = host()
+    grid.apply({
+      add: [
+        { id: 'x', name: 'x' },
+        { id: 'y', name: 'y' },
+      ],
+      index: 3,
+    })
+    expect(arrived(grid, 'x')).toBe('arrived')
+    expect(arrived(grid, 'y')).toBe('arrived')
+    expect(arrived(grid, 'r3')).toBeUndefined()
+
+    const current = grid.table().options.data as Item[]
+    grid.setData([current[0]!, { id: 'z', name: 'z' }, ...current.slice(1)])
+    expect(arrived(grid, 'z')).toBeUndefined()
+
+    act(() => root!.unmount())
+    root = undefined
+    // Приложение не взяло добавленную строку: вспышки нет, ожидание снято.
+    const refused = host({ keep: next => next.filter(row => row.id !== 'w') })
+    refused.apply({ add: [{ id: 'w', name: 'w' }], index: 0 })
+    expect(arrived(refused, 'w')).toBeUndefined()
+    refused.setData([{ id: 'w', name: 'w' }, ...DATA])
+    expect(arrived(refused, 'w')).toBeUndefined()
+  })
+
+  it('MS14: объявление клиентской транзакции «Добавлено / удалено N строк» — ключи словаря localization ядра', () => {
+    const grid = host()
+    const say = vi.fn()
+    registerAnnouncer(grid.table(), {
+      say,
+      labels: resolveLabels(
+        {
+          announceRowsAdded: count => `+${count}`,
+          announceRowsRemoved: count => `-${count}`,
+        },
+        'en-US',
+      ),
+    })
+    grid.apply({
+      add: [
+        { id: 'x', name: 'x' },
+        { id: 'y', name: 'y' },
+      ],
+    })
+    expect(say).toHaveBeenLastCalledWith('+2')
+    grid.apply({ remove: ['r1', 'none'] })
+    expect(say).toHaveBeenLastCalledWith('-1')
+    grid.apply({ add: [{ id: 'q', name: 'q' }], remove: ['r4'] })
+    expect(say).toHaveBeenLastCalledWith('+1. -1')
+    const calls = say.mock.calls.length
+    grid.setData([{ id: 'p', name: 'p' }])
+    expect(say).toHaveBeenCalledTimes(calls)
   })
 })

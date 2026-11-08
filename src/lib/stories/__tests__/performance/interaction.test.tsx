@@ -5969,7 +5969,8 @@ const measureChange = async (
 const recordChange = (
   id: string,
   label: string,
-  plugins: 'columnSorting' | 'columnSorting, columnFiltering, rowGrouping',
+  plugins:
+    'none' | 'columnSorting' | 'columnSorting, columnFiltering, rowGrouping',
   r: Awaited<ReturnType<typeof measureInteractionWork>>,
   ceilingMs?: number,
 ) =>
@@ -6065,6 +6066,117 @@ describe('Смена data из прежней модели', () => {
       expect(
         ours.longestMs,
         `вставка longest=${ours.longestMs.toFixed(1)}ms, полная ${base.longestMs.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Сдвиги в середине data (ADR 0199, MS9–MS11): вставка и удаление 100 строк в середине 100 000
+// при сортировке — против дописывания тех же 100 строк в конец; перенос строки через 50 000
+// позиций — против полной сборки. Грид рисуется во всех вариантах.
+const MIDDLE = 50_000
+const SHIFT_COST = 1.3
+const sortedPlugins = () => [
+  columnSortingModel({ initialSorting: [{ id: 'b', desc: false }] }),
+]
+const append = (turn: number) =>
+  changeTable.applyRowTransaction({
+    add: changeRows(200_000 + turn * 100, 100),
+  })
+
+describe('Сдвиги в середине data', () => {
+  test(
+    'MS9: вставка 100 строк транзакцией в середину 100 000 при сортировке — не дороже дописывания тех же 100 строк в конец больше чем в 1,3 раза',
+    async () => {
+      const insert = (turn: number) =>
+        changeTable.applyRowTransaction({
+          add: changeRows(200_000 + turn * 100, 100),
+          index: MIDDLE,
+        })
+      const runs = await againstBase(isOurs =>
+        measureChange(sortedPlugins, false, isOurs ? insert : append),
+      )
+      const base = medianRun(runs.base, r => r.longestMs)
+      const ours = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = base.longestMs * SHIFT_COST
+      await recordChange(
+        'MS9-base',
+        'дописывание в конец',
+        'columnSorting',
+        base,
+      )
+      await recordChange(
+        'MS9',
+        'вставка в середину',
+        'columnSorting',
+        ours,
+        ceiling,
+      )
+      expect(
+        ours.longestMs,
+        `вставка longest=${ours.longestMs.toFixed(1)}ms, в конец ${base.longestMs.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+
+  test(
+    'MS10: удаление 100 строк из середины 100 000 при сортировке — не дороже дописывания 100 строк в конец больше чем в 1,3 раза',
+    async () => {
+      const remove = (turn: number) =>
+        changeTable.applyRowTransaction({
+          remove: changeRows(MIDDLE + turn * 100, 100).map(row => row.id),
+        })
+      const runs = await againstBase(isOurs =>
+        measureChange(sortedPlugins, false, isOurs ? remove : append),
+      )
+      const base = medianRun(runs.base, r => r.longestMs)
+      const ours = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = base.longestMs * SHIFT_COST
+      await recordChange(
+        'MS10-base',
+        'дописывание в конец',
+        'columnSorting',
+        base,
+      )
+      await recordChange(
+        'MS10',
+        'удаление из середины',
+        'columnSorting',
+        ours,
+        ceiling,
+      )
+      expect(
+        ours.longestMs,
+        `удаление longest=${ours.longestMs.toFixed(1)}ms, в конец ${base.longestMs.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+
+  test(
+    'MS11: перенос одной строки через 50 000 позиций на 100 000 строк — не дольше четверти полной сборки',
+    async () => {
+      // Перенос, как после броска перетаскивания: тот же объект строки на новом месте.
+      const move = (copyAll: boolean) => (turn: number) =>
+        setChangeRows(prev => {
+          const next = prev.slice()
+          const [row] = next.splice(10 + turn, 1)
+          next.splice(MIDDLE, 0, row!)
+          return copyAll ? next.map(item => ({ ...item })) : next
+        })
+      const runs = await againstBase(isOurs =>
+        measureChange(() => [], !isOurs, move(!isOurs)),
+      )
+      const base = medianRun(runs.base, r => r.longestMs)
+      const ours = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = base.longestMs / 4
+      await recordChange('MS11-base', 'полная сборка', 'none', base)
+      await recordChange('MS11', 'перенос строки', 'none', ours, ceiling)
+      expect(
+        ours.longestMs,
+        `перенос longest=${ours.longestMs.toFixed(1)}ms, полная ${base.longestMs.toFixed(1)}ms`,
       ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,

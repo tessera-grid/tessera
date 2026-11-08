@@ -383,7 +383,8 @@ const patchSort = (table: SortTable, prev: Sorted): Sorted | undefined => {
 }
 
 /** Сравнение двух строк по всем колонкам сортировки, как у полной; значения — раз на строку. */
-const rowComparator = (entries: SortEntry[]) => {
+/** `byIndex: false` — без последнего правила: равные значения сравниваются как равные. */
+const rowComparator = (entries: SortEntry[], byIndex = true) => {
   const width = entries.length
   const values = new Map<SortRow, unknown[]>()
   const valuesOf = (row: SortRow) => {
@@ -420,7 +421,7 @@ const rowComparator = (entries: SortEntry[]) => {
       if (result === Infinity) return 1
       if (result !== 0) return result
     }
-    return a.index - b.index
+    return byIndex ? a.index - b.index : 0
   }
 }
 
@@ -433,7 +434,7 @@ const cloneWith = (row: SortRow, subRows: SortRow[]) => {
 }
 
 /**
- * Смена без сдвигов (ADR 0194): у каждого уровня — прежний порядок, из которого уходят
+ * Смена с прежним порядком выживших (ADR 0194, ADR 0199): у каждого уровня — прежний порядок, из которого уходят
  * прежние объекты изменённых и удалённых строк, а изменённые и вставленные встают на места
  * поиском; плоский список — из участков прежнего, словарь переходит новой модели.
  */
@@ -501,22 +502,48 @@ const patchInPlace = (table: SortTable, prev: Sorted): Sorted | undefined => {
     }
     return lo
   }
+  /**
+   * Место прежнего объекта в уровне. У сдвинутых строк место новое, а у уходящей — прежнее
+   * (ADR 0199, §3): среди равных значений правило по индексу может не совпасть, поэтому
+   * объект ищется среди равных по тождеству.
+   */
+  let sameValues: ((a: SortRow, b: SortRow) => number) | undefined
+  const findOld = (rows: readonly SortRow[], old: SortRow) => {
+    const at = placeOf(rows, old)
+    if (rows[at] === old) return at
+    sameValues ??= rowComparator(entries, false)
+    for (let i = at; i < rows.length && sameValues(rows[i]!, old) === 0; i++) {
+      if (rows[i] === old) return i
+    }
+    for (let i = at - 1; i >= 0 && sameValues(rows[i]!, old) === 0; i--) {
+      if (rows[i] === old) return i
+    }
+    return -1
+  }
   const rebuilt = new Set<SortRow>()
   let failed = false
   const patchLevel = (
     prevLevel: readonly SortRow[],
     parentId: string | undefined,
   ): SortRow[] => {
-    const rows = prevLevel.slice()
+    // Уходящие и приходящие — одним проходом по уровню, а не `splice` на каждую строку.
+    const drop = new Set<number>()
     for (const old of goes.get(parentId) ?? []) {
-      const at = placeOf(rows, old)
-      if (rows[at] !== old) {
+      const at = findOld(prevLevel, old)
+      if (at < 0 || drop.has(at)) {
         failed = true
-        return rows
+        return []
       }
-      rows.splice(at, 1)
+      drop.add(at)
     }
-    for (const row of (comes.get(parentId) ?? []).slice().sort(compare)) {
+    const kept = drop.size
+      ? prevLevel.filter((_, i) => !drop.has(i))
+      : prevLevel.slice()
+    const coming = (comes.get(parentId) ?? []).slice().sort(compare)
+    if (!coming.length) return kept
+    const rows: SortRow[] = []
+    let from = 0
+    for (const row of coming) {
       let placed = row
       if (row.subRows.length) {
         if (inserted.has(row.id)) {
@@ -532,9 +559,19 @@ const patchInPlace = (table: SortTable, prev: Sorted): Sorted | undefined => {
               : cloneWith(row, children)
         }
       }
-      rows.splice(placeOf(rows, row), 0, placed)
+      let lo = from
+      let hi = kept.length
+      while (lo < hi) {
+        const mid = (lo + hi) >>> 1
+        if (compare(kept[mid]!, row) < 0) lo = mid + 1
+        else hi = mid
+      }
+      for (let k = from; k < lo; k++) rows.push(kept[k]!)
+      rows.push(placed)
       rebuilt.add(placed)
+      from = lo
     }
+    for (let k = from; k < kept.length; k++) rows.push(kept[k]!)
     return rows
   }
   const rows = patchLevel(prev.output.rows, undefined)
@@ -708,7 +745,9 @@ const patchData = (table: SortTable, prev: Sorted): Sorted | undefined => {
         const old = isChanged ? prevOutput[row.id] : row
         const now = isChanged ? row : keptRow(row)
         if (!isChanged && now === prevInput[now.id]) {
-          // Строка входа прежняя: выход прошлой модели переходит с поддеревом.
+          // Строка входа прежняя: выход прошлой модели переходит с поддеревом; у копии
+          // родителя — новое место строки входа после сдвига (ADR 0199, §1).
+          if (old!.index !== now.index) old!.index = now.index
           flat.push(old!)
           if (old!.subRows.length) pushSubtree(old!.subRows, flat)
         } else {

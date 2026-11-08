@@ -215,6 +215,12 @@ const patchFlatFiltered = (
   ) {
     return null
   }
+  // Изменённая строка на другом месте — перенос (ADR 0199, §2): общий путь.
+  for (const id of change.changed) {
+    const old = (change.previous?.get(id) ?? prev.input.rowsById[id]) as
+      FilterRow | undefined
+    if (!old || old.index !== input.rowsById[id]?.index) return null
+  }
   const appended: FilterRow[] = []
   for (const id of change.inserted) {
     const row = input.rowsById[id]

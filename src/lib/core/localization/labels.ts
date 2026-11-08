@@ -132,6 +132,9 @@ export interface TableLabels {
   serverActionFailedSelectPage: string
   /** Объявление числа строк после применения фильтра или поиска */
   announceFilteredRows: (count: number) => string
+  /** Объявление клиентской транзакции строк: строки добавлены и удалены (ADR 0199, §6) */
+  announceRowsAdded: (count: number) => string
+  announceRowsRemoved: (count: number) => string
   /** Действие: переход активной ячейки */
   actionMoveActiveCell: string
   /** Действие: вход в режим действия ячейки */
@@ -259,6 +262,10 @@ export const DEFAULT_LABELS = {
   groupRowCount: '({count})',
   announceFilteredRows: '{count} rows',
   announceFilteredRows_one: '{count} row',
+  announceRowsAdded: 'Added {count} rows',
+  announceRowsAdded_one: 'Added {count} row',
+  announceRowsRemoved: 'Removed {count} rows',
+  announceRowsRemoved_one: 'Removed {count} row',
   actionMoveActiveCell: 'Move the active cell',
   actionEnterActionMode: 'Enter action mode',
   actionExitActionMode: 'Exit action mode',

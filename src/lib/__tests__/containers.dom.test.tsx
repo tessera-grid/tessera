@@ -79,7 +79,7 @@ describe('Body/Head контейнеры (happy-dom)', () => {
         <Body
           table={table}
           layout="flex"
-          rows={rows}
+          getRows={() => rows}
           rowSource={table.getRowSource()}
           virtualRows={[vRow(0), vRow(1)]}
           virtualColumns={[]}

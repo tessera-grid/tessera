@@ -6,6 +6,7 @@
  */
 import { logWarn } from '../util/logger'
 import { reportAction } from './debugActions'
+import { expectTransactionOutcome } from './transactionOutcome'
 
 export interface RowTransaction<TData = any> {
   /** Новые строки; без `index` — в конец уровня (на сервере — перезапрос окна). */
@@ -53,23 +54,66 @@ interface TransactionTable {
   }
 }
 
-/** Уровень после транзакции: обновление, удаление, затем вставка. */
+/**
+ * Места строк уровня по id — из модели ядра: индекс строки живой (ADR 0199, §1). Строки нет в
+ * модели — её и в данных нет. `undefined` — модель не сходится с уровнем: проход по уровню.
+ */
+const placesOf = (
+  t: TransactionTable,
+  level: readonly unknown[],
+  ids: readonly string[],
+  parent: TransactionRow | undefined,
+): Map<string, number> | undefined => {
+  const { rowsById } = t.getCoreRowModel()
+  const places = new Map<string, number>()
+  for (const id of ids) {
+    const row = rowsById[id]
+    if (!row) continue
+    if (row.parentId !== parent?.id || level[row.index] !== row.original) {
+      return undefined
+    }
+    places.set(id, row.index)
+  }
+  return places
+}
+
+/** Уровень после транзакции: обновление, удаление, затем вставка; в `added` — id вставленных. */
 const applyToLevel = (
   t: TransactionTable,
   level: readonly unknown[],
   transaction: RowTransaction,
   parent: TransactionRow | undefined,
+  added: string[],
 ): unknown[] => {
   const idOf = (row: unknown, index: number) => t.getRowId(row, index, parent)
   let next = level.slice()
   if (transaction.update?.length) {
     const updates = new Map<string, unknown>()
     for (const row of transaction.update) updates.set(idOf(row, 0), row)
-    next = next.map((row, i) => updates.get(idOf(row, i)) ?? row)
+    const places = placesOf(t, level, [...updates.keys()], parent)
+    if (places) {
+      for (const [id, at] of places) next[at] = updates.get(id)
+    } else {
+      next = next.map((row, i) => updates.get(idOf(row, i)) ?? row)
+    }
   }
   if (transaction.remove?.length) {
-    const removed = new Set(transaction.remove)
-    next = next.filter((row, i) => !removed.has(idOf(row, i)))
+    const places = placesOf(t, level, transaction.remove, parent)
+    if (places) {
+      // Уровень без удалённых — кусками между ними, а не проходом по каждой строке.
+      const drop = [...new Set(places.values())].sort((a, b) => a - b)
+      const pieces: unknown[][] = []
+      let from = 0
+      for (const at of drop) {
+        pieces.push(next.slice(from, at))
+        from = at + 1
+      }
+      pieces.push(next.slice(from))
+      next = ([] as unknown[]).concat(...pieces)
+    } else {
+      const removed = new Set(transaction.remove)
+      next = next.filter((row, i) => !removed.has(idOf(row, i)))
+    }
   }
   if (transaction.add?.length) {
     const at = Math.max(
@@ -77,6 +121,7 @@ const applyToLevel = (
       Math.min(transaction.index ?? next.length, next.length),
     )
     next.splice(at, 0, ...transaction.add)
+    transaction.add.forEach((row, i) => added.push(idOf(row, at + i)))
   }
   return next
 }
@@ -85,10 +130,11 @@ const applyToLevel = (
 const nextDataOf = (
   t: TransactionTable,
   transaction: RowTransaction,
+  added: string[],
 ): unknown[] | 'branchNotLoaded' | 'unwritable' => {
   const data = t.options.data
   if (transaction.parentId === undefined) {
-    return applyToLevel(t, data, transaction, undefined)
+    return applyToLevel(t, data, transaction, undefined, added)
   }
   // Дети ветки пишутся в поле `subRows` новых объектов её и предков.
   if (t.options.getSubRows !== defaultGetSubRows) return 'unwritable'
@@ -106,7 +152,7 @@ const nextDataOf = (
   const children = defaultGetSubRows(parent.original)
   let replaced: unknown = {
     ...(parent.original as object),
-    subRows: applyToLevel(t, children, transaction, parent),
+    subRows: applyToLevel(t, children, transaction, parent, added),
   }
   for (let depth = path.length - 1; depth >= 0; depth--) {
     const row = path[depth]!
@@ -146,7 +192,8 @@ export const applyRowTransaction = (
     )
     return 'unavailable'
   }
-  const next = nextDataOf(t, transaction)
+  const added: string[] = []
+  const next = nextDataOf(t, transaction, added)
   if (next === 'branchNotLoaded') return next
   if (next === 'unwritable') {
     logWarn(
@@ -156,6 +203,12 @@ export const applyRowTransaction = (
     )
     return 'unavailable'
   }
+  const { rowsById } = t.getCoreRowModel()
+  expectTransactionOutcome(
+    table,
+    added,
+    (transaction.remove ?? []).filter(id => rowsById[id] !== undefined),
+  )
   onDataChange(next, transaction)
   return 'applied'
 }

@@ -23,7 +23,12 @@ const DND_SHIFT = /translate3d\([^,]+,\s*(-?[\d.]+)px/
 
 interface RowMotionProps {
   enabled: boolean
-  rows: readonly { id: string }[]
+  /**
+   * Список строк модели — геттером, а не массивом: dev-журнал React 19 сравнивает пропсы
+   * перерисованной компоненты и обошёл бы массив целиком (ADR 0199, MS12). Новый геттер —
+   * новый список.
+   */
+  getRows: () => readonly { id: string }[]
   /** Источник строк по индексу (серверная модель): движение — по его журналу. */
   source?: RowSource<{ id: string }>
   /** Номер раскладки источника по индексу. */
@@ -122,7 +127,7 @@ export class RowMotion extends Component<RowMotionProps> {
     const body = this.props.bodyRef.current
     if (
       !body ||
-      (prev.rows === this.props.rows &&
+      (prev.getRows === this.props.getRows &&
         prev.listVersion === this.props.listVersion) ||
       !this.props.enabled ||
       prefersReducedMotion()
@@ -149,7 +154,7 @@ export class RowMotion extends Component<RowMotionProps> {
     return {
       before,
       leaving,
-      prevRows: prev.rows,
+      prevRows: prev.getRows(),
       prevVersion: prev.listVersion,
       scrolledAt: {
         top: scroller?.scrollTop ?? 0,
@@ -187,8 +192,8 @@ export class RowMotion extends Component<RowMotionProps> {
   }
 
   private idAt(index: number) {
-    const { rows, source } = this.props
-    return source?.keyByIndex ? source.at(index)?.id : rows[index]?.id
+    const { getRows, source } = this.props
+    return source?.keyByIndex ? source.at(index)?.id : getRows()[index]?.id
   }
 
   /** Довести движение до конца: строки на места, призраки — прочь (RM12). */
@@ -231,7 +236,8 @@ export class RowMotion extends Component<RowMotionProps> {
   }: Snapshot) {
     this.finish()
     const body = this.props.bodyRef.current
-    const { rows, source, virtualRows } = this.props
+    const { getRows, source, virtualRows } = this.props
+    const rows = getRows()
     if (!body || virtualRows.length === 0) return
     const batches =
       source?.keyByIndex && prevVersion !== undefined

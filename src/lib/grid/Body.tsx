@@ -28,8 +28,11 @@ import styles from '../grid/Body/Body.module.css'
 interface TableBodyProps {
   table: Table<any, any>
   layout: 'grid' | 'flex'
-  /** Весь список, если он загружен целиком: дерево, линии, движение и место броска. */
-  rows: Row<any, any>[]
+  /**
+   * Весь список, если он загружен целиком: дерево, линии, движение и место броска. Геттером:
+   * dev-журнал React обошёл бы массив в пропсах (ADR 0199, MS12).
+   */
+  getRows: () => Row<any, any>[]
   rowSource: RowSource<Row<any, any>>
   virtualRows: VirtualItem[]
   virtualColumns: VirtualItem[]
@@ -56,7 +59,7 @@ const NO_FAILURES: readonly RowFailure[] = []
 export const Body = ({
   table,
   layout,
-  rows,
+  getRows,
   rowSource,
   virtualRows,
   virtualColumns,
@@ -79,6 +82,7 @@ export const Body = ({
     PendingRow,
     'Row',
   )
+  const rows = getRows()
   // Серверная модель строк считает `aria-*` дерева сама: массива строк у неё нет
   // (ADR 0138, §14).
   const sourceAria = rowSource.treeAria
@@ -156,7 +160,7 @@ export const Body = ({
         )}
         <RowMotion
           enabled={rowAnimation}
-          rows={rows}
+          getRows={getRows}
           source={rowSource}
           listVersion={rowSource.version?.()}
           virtualRows={virtualRows}

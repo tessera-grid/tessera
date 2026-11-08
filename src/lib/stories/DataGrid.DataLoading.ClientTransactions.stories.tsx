@@ -31,11 +31,14 @@ import {
   rowIdAt,
   transact,
 } from './__mocks__/clientTransactionsGuide'
+import { getData } from './__mocks__/data'
+import { holdRowAtLevel } from './__mocks__/rowDragHold'
+import { OVERLAY } from './rowDragging.dnd'
 
 /**
- * Клиентские транзакции и смена данных (ADR 0194): `Playground` — поток изменений
- * приложения и его период — контролами; S1–S3 — правка в большой таблице, строки
- * транзакцией, транзакция без обработчика.
+ * Клиентские транзакции и смена данных (ADR 0194, ADR 0199): `Playground` — поток изменений
+ * приложения и его период — контролами; S1–S3 ADR 0194 — правка в большой таблице, строки
+ * транзакцией, транзакция без обработчика; S1 ADR 0199 — сдвиги в середине большой таблицы.
  */
 const meta = {
   ...dataGridMeta,
@@ -348,6 +351,185 @@ export const ClientTransactionsAddRemove: StoryObj<StoryProps> = {
       await stepDone(canvas)
       await expect(indexOfRow(canvas, SELECTED[0]!)).toBe(3)
       await expect(selectedRows(canvas)).toEqual([...SELECTED].sort())
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0199, S1: сдвиги в середине большой таблицы ------------------------------------
+
+const BIG_COUNT = 100_000
+let bigData: ReturnType<typeof getData> | undefined
+/** Сто тысяч строк — копии тысячи строк мока со своими `id`: генератор на всё — секунды. */
+const bigRows = () =>
+  (bigData ??= (() => {
+    const base = getData(1000)
+    return Array.from({ length: BIG_COUNT }, (_, i) => ({
+      ...base[i % base.length],
+      id: `item-id-${i}`,
+    }))
+  })())
+
+const SHIFTED_ADDED = ['item-new-1', 'item-new-2', 'item-new-3']
+const MOVED = 'item-id-0'
+
+const SHIFT_ARGS: Partial<StoryProps> = {
+  ...layout,
+  dataCount: BIG_COUNT,
+  enableRowDragging: true,
+}
+
+/** Строка в данных приложения — по модели таблицы, а не по окну. */
+const inData = (id: string) =>
+  !!(
+    clientTx.table as unknown as
+      | { getCoreRowModel: () => { rowsById: Record<string, unknown> } }
+      | undefined
+  )?.getCoreRowModel().rowsById[id]
+const addBetween = () => {
+  if (inData(SHIFTED_ADDED[0]!)) return
+  const template = clientTx.table?.options.data[0] ?? { id: '' }
+  transact({
+    add: SHIFTED_ADDED.map((id, k) => ({
+      ...template,
+      id,
+      firstName: `New ${k + 1}`,
+    })),
+    index: 2,
+  })
+}
+/**
+ * Шаг начинается с начала таблицы: человек мог прокрутить её, и первая строка ушла из окна
+ * виртуализации.
+ */
+const showTop = () =>
+  (
+    clientTx.table as unknown as {
+      scrollToRow: (id: string, options: object) => unknown
+    }
+  ).scrollToRow(MOVED, { align: 'start', behavior: 'instant' })
+
+/** После удаления строки — как в начале: добавленных нет, строки на своих местах. */
+const removeAdded = () => {
+  if (inData(SHIFTED_ADDED[0]!)) transact({ remove: SHIFTED_ADDED })
+}
+const removedShown = (root: ParentNode) =>
+  SHIFTED_ADDED.every(id => !inData(id)) && indexOfRow(root, 'item-id-2') === 2
+
+const SHIFTS: readonly GuideStoryStep[] = [
+  {
+    title: 'Сто тысяч строк',
+    hint: 'В таблице сто тысяч строк. Приложение хранит данные у себя: оно меняет строки транзакцией, таблица собирает из прежних данных новые и отдаёт их приложению. Строку можно перенести за ручку.',
+    props: () => ({
+      dataOverride: bigRows(),
+      extraPlugins: [clientTxSeed],
+      onDataChange: keepData,
+    }),
+    enter: stepAction(async (root, { signal }) => {
+      showTop()
+      await pollUntil(() => !!rowById(root, MOVED), signal)
+    }),
+  },
+  {
+    title: 'Строки добавлены между другими',
+    hint: 'Приложение добавило три строки третьей, четвёртой и пятой. Строки ниже остались прежними и съехали вниз — таблица не пересобирала их, поэтому новые строки появились сразу, как при добавлении в конец, и коротко вспыхнули.',
+    immediate: true,
+    enter: stepAction(async (root, { signal }) => {
+      showTop()
+      await pollUntil(() => !!rowById(root, MOVED), signal)
+      addBetween()
+      await pollUntil(() => indexOfRow(root, SHIFTED_ADDED[2]!) === 4, signal)
+    }),
+  },
+  {
+    title: 'Строки удалены',
+    hint: 'Приложение удалило три добавленные строки. Они погасли на месте, затем строки ниже поднялись на свои места — тоже без пересборки остальных ста тысяч.',
+    enter: stepAction(async (root, { signal }) => {
+      showTop()
+      await pollUntil(() => !!rowById(root, MOVED), signal)
+      removeAdded()
+      await pollUntil(() => removedShown(root), signal)
+    }),
+  },
+  {
+    title: 'Строка перенесена',
+    hint: 'Пользователь взял первую строку за ручку и бросил её ниже четвёртой. Таблица пересобрала одну перенесённую строку: она встала на новое место и коротко вспыхнула, строки между её прежним и новым местом сдвинулись вверх.',
+    states: ['drag.landed'],
+    immediate: true,
+    enter: stepAction(async (root, run) => {
+      showTop()
+      await pollUntil(() => !!rowById(root, MOVED), run.signal)
+      removeAdded()
+      await pollUntil(() => removedShown(root), run.signal)
+      if (indexOfRow(root, MOVED) !== 0) return
+      const held = await holdRowAtLevel(root, MOVED, 'item-id-3', 0, run)
+      run.signal.throwIfAborted()
+      await held.release()
+      await pollUntil(() => indexOfRow(root, MOVED) === 3, run.signal)
+    }),
+  },
+]
+
+/** ADR 0199, S1: вставка, удаление и перенос в середине таблицы на сто тысяч строк. */
+export const ClientTransactionsShiftLargeTable: StoryObj<StoryProps> = {
+  name: 'Shift rows in a large table',
+  parameters: { scenario: '0199/S1', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Строки в середине большой таблицы"
+      steps={SHIFTS}
+      args={guideArgs(SHIFT_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(SHIFTS[0]!.title, async () => {
+      await stepDone(canvas)
+      await expect(indexOfRow(canvas, 'item-id-2')).toBe(2)
+    })
+    await step(SHIFTS[1]!.title, async () => {
+      // Вспышка новых строк держится на время снимка (ADR 0199, MS15): токен — до транзакции.
+      canvas
+        .querySelector<HTMLElement>('.data-grid-theme')!
+        .style.setProperty('--tsr-comp-flash-duration', '600000ms')
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(clientTx.result).toBe('applied')
+      await expect(SHIFTED_ADDED.map(id => indexOfRow(canvas, id))).toEqual([
+        2, 3, 4,
+      ])
+      // Строки ниже съехали на три места.
+      await expect(indexOfRow(canvas, 'item-id-2')).toBe(5)
+      for (const id of SHIFTED_ADDED) {
+        await expect(rowById(canvas, id)).toHaveAttribute(
+          'data-flash',
+          'arrived',
+        )
+      }
+      await expect(rowById(canvas, 'item-id-2')).not.toHaveAttribute(
+        'data-flash',
+      )
+      await settle()
+    })
+    await step(SHIFTS[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(SHIFTED_ADDED.every(id => !rowById(canvas, id))).toBe(true)
+      await expect(indexOfRow(canvas, 'item-id-2')).toBe(2)
+      await settle()
+    })
+    await step(SHIFTS[3]!.title, async () => {
+      // Вспышка броска держится на время снимка (ADR 0130, DG6): токен задан до шага 2.
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await until(() => expect(document.querySelector(OVERLAY)).toBeNull())
+      await expect(indexOfRow(canvas, MOVED)).toBe(3)
+      // Строки между прежним и новым местом поднялись на одно место.
+      await expect(rowIdAt(canvas, 0)).toBe('item-id-1')
+      await expect(rowIdAt(canvas, 2)).toBe('item-id-3')
+      await until(() =>
+        expect(rowById(canvas, MOVED)).toHaveAttribute('data-flash', 'arrived'),
+      )
       await settle()
     })
   },

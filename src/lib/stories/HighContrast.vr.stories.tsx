@@ -8209,6 +8209,46 @@ export const HighContrastClientTransactionsAddRemoveStep4 = {
   tags: ['!test'],
 }
 
+export const HighContrastClientTransactionsShiftLargeTableStep1 = {
+  ...twinStep(
+    clientTransactionsStories,
+    clientTransactionsStories.ClientTransactionsShiftLargeTable,
+    1,
+  ),
+  name: 'Data loading/Client transactions — Shift rows in a large table, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastClientTransactionsShiftLargeTableStep2 = {
+  ...twinStep(
+    clientTransactionsStories,
+    clientTransactionsStories.ClientTransactionsShiftLargeTable,
+    2,
+  ),
+  name: 'Data loading/Client transactions — Shift rows in a large table, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastClientTransactionsShiftLargeTableStep3 = {
+  ...twinStep(
+    clientTransactionsStories,
+    clientTransactionsStories.ClientTransactionsShiftLargeTable,
+    3,
+  ),
+  name: 'Data loading/Client transactions — Shift rows in a large table, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastClientTransactionsShiftLargeTableStep4 = {
+  ...twinStep(
+    clientTransactionsStories,
+    clientTransactionsStories.ClientTransactionsShiftLargeTable,
+    4,
+  ),
+  name: 'Data loading/Client transactions — Shift rows in a large table, шаг 4',
+  tags: ['!test'],
+}
+
 export const HighContrastClientTransactionsWithoutHandlerStep1 = {
   ...twinStep(
     clientTransactionsStories,

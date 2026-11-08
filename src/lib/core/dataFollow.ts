@@ -4,6 +4,7 @@
  * смену замечает эффект таблицы после рендера с новым `data`.
  */
 import { rowSourceOf } from './rowSource'
+import { settleTransactionOutcome } from './transactionOutcome'
 
 export interface ListedRow {
   id: string
@@ -51,6 +52,9 @@ export const checkDataChange = (
   const set = listeners.get(table as object)
   if (set?.size && seen && seen.data !== data && seen.list !== list) {
     for (const listener of [...set]) listener(seen.list, list)
+  }
+  if (seen && seen.data !== data) {
+    settleTransactionOutcome(table, id => source.byId(id) !== undefined)
   }
   return { data, list }
 }

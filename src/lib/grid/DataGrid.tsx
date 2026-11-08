@@ -95,6 +95,7 @@ import { useDragPointerY } from './useDragPointerY'
 import { useCalculateColumnSizes } from './useCalculateColumnSizes'
 import { columnShiftVars } from './columnSizes'
 import { DataGridTable } from './DataGridTable'
+import { rowsGetterOf } from './rowsGetter'
 import { StatusBar } from './StatusBar/StatusBar'
 import { getTableHeight } from './getTableHeight'
 import { getGridLayout } from './layout'
@@ -181,6 +182,8 @@ const DataGridView = <D extends LabelDictionary = LabelDictionary>({
   // целиком; строки тела и их число — у источника (ADR 0138).
   const rowSource = table.getRowSource()
   const rows = (rowSource.rows?.() ?? NO_ROWS) as Row<any, any>[]
+  // Компонентам ниже — геттером: dev-журнал React обошёл бы массив строк (ADR 0199, MS12).
+  const getRows = rowsGetterOf(rows)
   const rowCount = rowSource.count()
 
   const isResizingColumns: false | string =
@@ -660,7 +663,7 @@ const DataGridView = <D extends LabelDictionary = LabelDictionary>({
                             layout={layout}
                             headStyles={headStyles}
                             headerGroups={headerGroups}
-                            rows={rows}
+                            getRows={getRows}
                             rowSource={rowSource}
                             leafColumns={leafColumns}
                             virtualRows={virtualRows}

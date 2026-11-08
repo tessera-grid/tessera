@@ -180,6 +180,12 @@ const patchFlatGroups = <
   ) {
     return null
   }
+  // Изменённая строка на другом месте — перенос (ADR 0199, §2): общий путь.
+  for (const id of change.changed) {
+    const old = (change.previous?.get(id) ?? prev.input.rowsById[id]) as
+      GroupRow | undefined
+    if (!old || old.index !== input.rowsById[id]?.index) return null
+  }
   const { topKeys, movedKeys, prevGroups } = known
   // Строки, что входят в группу и выходят из неё, по ключу группы.
   const comes = new Map<string, GroupRow[]>()

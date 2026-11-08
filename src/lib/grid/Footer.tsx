@@ -8,6 +8,7 @@ import clsx from 'clsx'
 import type { FooterPosition } from '../core/footer'
 import type { Header, HeaderGroup } from '../types'
 import { FooterCell } from './FooterCell'
+import { rowsGetterOf } from './rowsGetter'
 import { VirtualCenterSpacer } from './VirtualCenterSpacer'
 import { RightFillerBodyColumn } from './RightFillerBodyColumn'
 import { needsRightFiller } from './layout'
@@ -39,6 +40,8 @@ export const Footer = ({
   // а не при сдвиге окна колонок (ADR 0149, PS13).
   const table = headers[0]?.getContext().table
   const rows = table?.getRowSource().rows?.()
+  // Ключ — геттер: dev-журнал React обошёл бы массив строк в пропсах (ADR 0199, MS12).
+  const rowsKey = rowsGetterOf(rows)
   const state = table?.store.get()
 
   return (
@@ -78,7 +81,7 @@ export const Footer = ({
                       key={h.id}
                       layout={layout}
                       header={h}
-                      rows={rows}
+                      rows={rowsKey}
                       state={state}
                     />
                   )),
@@ -88,7 +91,7 @@ export const Footer = ({
                       layout={layout}
                       header={header}
                       absoluteLeft={start}
-                      rows={rows}
+                      rows={rowsKey}
                       state={state}
                     />
                   )),
@@ -97,7 +100,7 @@ export const Footer = ({
                       key={h.id}
                       layout={layout}
                       header={h}
-                      rows={rows}
+                      rows={rowsKey}
                       state={state}
                     />
                   )),
@@ -112,7 +115,7 @@ export const Footer = ({
                 key={header.id}
                 layout={layout}
                 header={header}
-                rows={rows}
+                rows={rowsKey}
                 state={state}
               />
             ))}
