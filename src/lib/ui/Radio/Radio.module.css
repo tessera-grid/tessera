@@ -23,8 +23,11 @@
   opacity: var(--tsr-comp-disabled-opacity, 0.5);
 }
 
-/* Рамка 1px перекрашивается в цвет кольца, кольцо добирает остаток до ширины токена. */
-.radio:focus-visible {
+/* Рамка 1px перекрашивается в цвет кольца, кольцо добирает остаток до ширины токена.
+   Клавиатурный ввод по признаку на корне — Firefox не даёт :focus-visible фокусу, который
+   переводит стрелка скриптом (ADR 0084). */
+.radio:focus-visible,
+:root[data-tsr-input='keyboard'] .radio:focus {
   outline: none;
   border-color: var(--tsr-comp-focus-ring);
   box-shadow: 0 0 0 calc(var(--tsr-comp-focus-ring-width) - 1px)

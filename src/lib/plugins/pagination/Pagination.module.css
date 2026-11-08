@@ -106,9 +106,10 @@
   content: '0';
 }
 
+/* Своя ширина поля не входит в колонку: колонку задаёт размерник, поле — во всю её ширину.
+   `width: 0` с `min-width: 100%` Firefox сжимает до нуля. */
 .pageField {
-  width: 0;
-  min-width: 100%;
+  contain: inline-size;
   text-align: center;
 }
 
