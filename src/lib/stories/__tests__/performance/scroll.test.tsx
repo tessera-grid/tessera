@@ -301,6 +301,7 @@ const TG11_COST = { ratio: 1.3, plusMs: 4 }
 const TG18_COST = { ratio: 1.3, plusMs: 4 }
 const OT11_COST = { ratio: 1.3, plusMs: 4 }
 const AV11_COST = { ratio: 1.3, plusMs: 4 }
+const IR30_COST = { ratio: 1.3, plusMs: 4 }
 const OT11_MOUNT_COST = { ratio: 1.3, plusMs: 40 }
 const BT14_COST = { ratio: 1.3, plusMs: 4 }
 const GL13_COST = { ratio: 1.3, plusMs: 4 }
@@ -2382,6 +2383,93 @@ describe('Производительность прокрутки — включ
         expect(
           active[axis].p95Ms,
           `${axis} p95=${active[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
+        ).toBeLessThanOrEqual(ceiling[axis])
+      }
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Дуга ожидания на кнопках ячеек (ADR 0127, IR30): 1000×1000 без плагинов, кнопка во второй
+// колонке каждой строки и в третьей — каждой чётной, 1500 кнопок, как ошибки ER9; спокойная
+// прокрутка с кнопками в ожидании против тех же кнопок в покое.
+const pendingButtonsSeed = (pending: boolean): TesseraFeatureEntry => {
+  const Button = (ctx: CellComponentProps) =>
+    ctx.column.getIndex() === 1 ||
+    (ctx.column.getIndex() === 2 && ctx.row.index % 2 === 0) ? (
+      <CellButton
+        label="Save"
+        icon={<svg />}
+        pending={pending}
+        revealOnHover={false}
+      />
+    ) : null
+  return {
+    id: 'perfPendingButtons',
+    slots: [
+      { id: 'perfPendingButtons', slot: 'rightCellSlot', component: Button },
+    ],
+  }
+}
+
+describe('Производительность прокрутки — дуга ожидания кнопок', () => {
+  test(
+    'IR30: спокойная прокрутка 1000×1000 с 1500 кнопками ячеек в ожидании — в пределах цены против тех же кнопок в покое',
+    async () => {
+      const measure = async (pending: boolean) => {
+        const screen = renderGrid({
+          ...LARGE,
+          ...NO_PLUGINS,
+          extraPlugins: [pendingButtonsSeed(pending)],
+        })
+        await waitForGrid()
+        // Проверка, что мерили заявленное: кнопки в окне, дуги — только в ожидании.
+        await expect
+          .poll(() => document.querySelector('[aria-label="Save"]') !== null)
+          .toBe(true)
+        await expect
+          .poll(() => document.querySelector('svg[data-pending-arc]') !== null)
+          .toBe(pending)
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        return { y, x }
+      }
+
+      const runs = await againstBase(measure)
+      const base = medianAxes(runs.base)
+      const pending = medianAxes(runs.variant)
+      const ceiling = axesCeiling(base, IR30_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1000×1000',
+          plugins: 'none',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: (['y', 'x'] as const).map(axis => ({
+            axis,
+            kind: 'animation' as const,
+            metric: 'p95' as const,
+            valueMs: r[axis].p95Ms,
+            targetMs: ANIMATION_BUDGET_MS,
+            ceilingMs: gated ? ceiling[axis] : undefined,
+            ...r[axis],
+          })),
+        })
+      await record('IR30-base', 'кнопки в покое', base, false)
+      await record('IR30', 'кнопки в ожидании с дугой', pending, true)
+
+      for (const axis of ['y', 'x'] as const) {
+        expect(
+          pending[axis].p95Ms,
+          `${axis} p95=${pending[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
         ).toBeLessThanOrEqual(ceiling[axis])
       }
     },
