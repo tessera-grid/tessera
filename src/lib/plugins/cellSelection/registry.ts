@@ -30,6 +30,7 @@ const cellSelectionEntry = definePlugin<CellSelectionOptions>()({
     extendSelection: labels =>
       cellSelectionLabels(labels).actionExtendSelection,
     copy: labels => cellSelectionLabels(labels).copy,
+    resizeRange: labels => cellSelectionLabels(labels).actionResizeRange,
   },
   diagnose: neverInert,
   model: {
@@ -52,6 +53,10 @@ const cellSelectionEntry = definePlugin<CellSelectionOptions>()({
       enableCellSelectionDrag: off ? false : (o.dragSelection ?? true),
       enableMultiCellRangeSelection: off ? false : (o.multiRange ?? true),
       cellSelectionMaxCopyRows: o.maxCopyRows ?? DEFAULT_MAX_COPY_ROWS,
+      cellSelectionHandle: {
+        mouse: !off && o.handle !== false && (o.handle?.mouse ?? true),
+        touch: !off && o.handle !== false && (o.handle?.touch ?? true),
+      },
     }
   },
   // Вклад в контекстное меню (ADR 0030): «Копировать». Показывается только при
@@ -73,6 +78,8 @@ declare module '@tanstack/react-table' {
       /** Жесты выделения включены: `false` у выключенного плагина. */
       cellSelectionInteraction?: boolean
       cellSelectionMaxCopyRows?: number
+      /** Для каких указателей показан маркер угла выделения (ADR 0198). */
+      cellSelectionHandle?: { mouse: boolean; touch: boolean }
     }
   }
 }

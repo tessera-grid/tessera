@@ -17,6 +17,7 @@
 import { useEffect } from 'react'
 
 import { scrollLayer } from '../../core/scrollStretch'
+import { EDGE_ZONE, edgeSpeed } from '../../shared/edgeScroll'
 import { useLatest } from '../../util/useLatest'
 
 interface AutoScrollTable {
@@ -36,20 +37,12 @@ interface AutoScrollTable {
   getRowSource?: () => { keyByIndex?: boolean }
 }
 
-/** Ширина краевой зоны (px) и максимальная скорость прокрутки (px/кадр). */
-const EDGE = 48
-const MAX_SPEED = 22
-
 const CELL = '.data-grid__body-cell[data-column-id]'
 /** Строка тела под курсором, в том числе незагруженная строка серверной модели. */
 const ROW = '.data-grid__body-row[data-index], [data-pending-row]'
 
 const clamp = (v: number, min: number, max: number) =>
   Math.max(min, Math.min(max, v))
-
-/** Скорость пропорциональна заходу в краевую зону, за краем — потолок. */
-const speed = (penetration: number) =>
-  clamp(penetration / EDGE, 0, 1) * MAX_SPEED
 
 /**
  * Серверная модель строк (ADR 0146, §3): фокус диапазона — место строки под курсором, и
@@ -149,15 +142,15 @@ export const useCellSelectionAutoScroll = (
       const r = scroller.getBoundingClientRect()
       let dx = 0
       let dy = 0
-      if (pointer.y < r.top + EDGE) {
-        dy = -speed(r.top + EDGE - pointer.y)
-      } else if (pointer.y > r.bottom - EDGE) {
-        dy = speed(pointer.y - (r.bottom - EDGE))
+      if (pointer.y < r.top + EDGE_ZONE) {
+        dy = -edgeSpeed(r.top + EDGE_ZONE - pointer.y)
+      } else if (pointer.y > r.bottom - EDGE_ZONE) {
+        dy = edgeSpeed(pointer.y - (r.bottom - EDGE_ZONE))
       }
-      if (pointer.x < r.left + EDGE) {
-        dx = -speed(r.left + EDGE - pointer.x)
-      } else if (pointer.x > r.right - EDGE) {
-        dx = speed(pointer.x - (r.right - EDGE))
+      if (pointer.x < r.left + EDGE_ZONE) {
+        dx = -edgeSpeed(r.left + EDGE_ZONE - pointer.x)
+      } else if (pointer.x > r.right - EDGE_ZONE) {
+        dx = edgeSpeed(pointer.x - (r.right - EDGE_ZONE))
       }
       if (dx === 0 && dy === 0) {
         return

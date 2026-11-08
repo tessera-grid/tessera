@@ -43,6 +43,7 @@ export const CATALOG_STATES = {
     'rowDraft',
     'highlight',
     'cellRange',
+    'cellRangeTouch',
     'refreshing',
     'treeLines',
     'groups',

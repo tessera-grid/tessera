@@ -37,6 +37,7 @@ import {
   treeLines,
 } from '../../../../lib/plugins'
 
+import { rangeHandleArg } from './dataGridControls'
 import { rowActionsDemo } from '../plugins/rowActionsDemo/rowActionsDemo'
 import {
   asyncContextActionsDemo,
@@ -224,7 +225,10 @@ export const argsToPlugins = (o: FeatureToggles) => {
     rowActionMenu(argsOf(o, 'rowActionMenu')),
     cellEditing(argsOf(o, 'cellEditing')),
     cellErrors(argsOf(o, 'cellErrors')),
-    cellSelection(argsOf(o, 'cellSelection')),
+    cellSelection({
+      ...argsOf(o, 'cellSelection'),
+      handle: rangeHandleArg(o.cellSelectionHandle),
+    }),
     cellSelectionModel(argsOf(o, 'cellSelectionModel')),
     contextMenu(argsOf(o, 'contextMenu')),
     columnVisibility(argsOf(o, 'columnVisibility')),

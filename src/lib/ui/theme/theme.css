@@ -1235,6 +1235,8 @@
     --tsr-comp-row-selected-hovered-bg: Highlight;
     --tsr-comp-focus-ring: Highlight;
     --tsr-comp-resize-line-color: Highlight;
+    --tsr-comp-range-handle-color: Highlight;
+    --tsr-comp-range-handle-outline: Canvas;
     /* Разделители тише текста, как линии дерева: кольцо и наведение заметнее (HC18). */
     --tsr-comp-cell-divider-color: GrayText;
     --tsr-comp-pending-spinner-1: Highlight;

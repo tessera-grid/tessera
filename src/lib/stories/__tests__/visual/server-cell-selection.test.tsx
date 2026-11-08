@@ -354,6 +354,46 @@ describe('Выделение ячеек в серверной модели ст�
     }
   })
 
+  test('HN20: протяжка маркера у края в SSRM — через незагруженные строки, в растянутой области — по виртуальной позиции', async () => {
+    // Отвечает только первый блок: дальше под указателем — незагруженные строки.
+    const { getRows } = server(request =>
+      request.start === 0 ? rowsAnswer(request) : undefined,
+    )
+    let table!: GridTable
+    const screen = await render(
+      <Grid
+        getRows={getRows}
+        rowCount={1_000_000}
+        onTable={t => (table = t)}
+      />,
+    )
+    try {
+      await expect.poll(() => cellAt(2, 'name')).not.toBeNull()
+      expect(scrollLayer(scroller()).stretched).toBe(true)
+      await humanClick(cellAt(2, 'name')!)
+      const handle = () =>
+        q('[data-range-handle="end"]:not([hidden])') as HTMLElement | null
+      await expect.poll(handle).not.toBeNull()
+      const box = scroller().getBoundingClientRect()
+      await pointer.realDragHold(centerOf(handle()!), {
+        x: box.left + 100,
+        y: box.bottom + 40,
+      })
+      await expect
+        .poll(() => rangesOf(table)[0]?.focusRowIndex ?? 0, { timeout: 10_000 })
+        .toBeGreaterThan(BLOCK + 5)
+      expect(document.querySelector('[data-pending-row]')).not.toBeNull()
+      await pointer.realMouseUp()
+      expect(rangesOf(table)[0]).toMatchObject({
+        anchorRowIndex: 2,
+        anchorColumnId: 'name',
+      })
+      expect(scrollLayer(scroller()).top()).toBeGreaterThan(0)
+    } finally {
+      await screen.unmount()
+    }
+  })
+
   test('XC5: весь диапазон загружен — Ctrl+C синхронно пишет TSV и HTML', async () => {
     const { getRows, calls } = server()
     const screen = await render(<Grid getRows={getRows} />)

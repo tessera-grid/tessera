@@ -7237,6 +7237,76 @@ export const HighContrastCellSelectionFollowsSortStep2 = {
   tags: ['!test'],
 }
 
+export const HighContrastCellSelectionHandleStep1 = {
+  ...twinStep(
+    cellsSelectionStories,
+    cellsSelectionStories.CellSelectionHandle,
+    1,
+  ),
+  name: 'Cells/Selection — Range handle, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastCellSelectionHandleStep2 = {
+  ...twinStep(
+    cellsSelectionStories,
+    cellsSelectionStories.CellSelectionHandle,
+    2,
+  ),
+  name: 'Cells/Selection — Range handle, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastCellSelectionHandleStep3 = {
+  ...twinStep(
+    cellsSelectionStories,
+    cellsSelectionStories.CellSelectionHandle,
+    3,
+  ),
+  name: 'Cells/Selection — Range handle, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastCellSelectionTouchStep1 = {
+  ...twinStep(
+    cellsSelectionStories,
+    cellsSelectionStories.CellSelectionTouch,
+    1,
+  ),
+  name: 'Cells/Selection — Select by touch, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastCellSelectionTouchStep2 = {
+  ...twinStep(
+    cellsSelectionStories,
+    cellsSelectionStories.CellSelectionTouch,
+    2,
+  ),
+  name: 'Cells/Selection — Select by touch, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastCellSelectionTouchStep3 = {
+  ...twinStep(
+    cellsSelectionStories,
+    cellsSelectionStories.CellSelectionTouch,
+    3,
+  ),
+  name: 'Cells/Selection — Select by touch, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastCellSelectionTouchStep4 = {
+  ...twinStep(
+    cellsSelectionStories,
+    cellsSelectionStories.CellSelectionTouch,
+    4,
+  ),
+  name: 'Cells/Selection — Select by touch, шаг 4',
+  tags: ['!test'],
+}
+
 export const HighContrastFailureLogLanguageSwitchStep1 = {
   ...twinStep(
     panelsFailureLogStories,

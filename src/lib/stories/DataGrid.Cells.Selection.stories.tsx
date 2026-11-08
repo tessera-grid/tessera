@@ -14,21 +14,30 @@ import {
   untilDone,
 } from './__mocks__/cellGestures'
 import {
+  centerOf,
   consoleText,
   guideNext,
+  pollUntil,
   settle,
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import {
+  GuideStory,
+  type GuideStoryStep,
+  type StepRun,
+  guideArgs,
+  stepAction,
+} from './demos/GuideStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 
 /**
  * Выделение ячеек (ADR 0029); выделение командой приложения без жестов (ADR 0120); выделение
- * едет с углами при сортировке (ADR 0180, S2).
+ * едет с углами при сортировке (ADR 0180, S2); маркер в углу диапазона мышью и круги пальца
+ * (ADR 0198, S3–S4).
  */
 const meta = {
   ...dataGridMeta,
@@ -45,6 +54,7 @@ export const CellSelectionPlayground: StoryObj<StoryProps> = {
     'cellSelectionRangeSelection',
     'cellSelectionDragSelection',
     'cellSelectionMultiRange',
+    'cellSelectionHandle',
     'enableKeyboardNavigation',
   ]),
   args: {
@@ -430,6 +440,406 @@ export const CellSelectionFollowsSort: StoryObj<StoryProps> = {
       expect(
         [CORNER_A.row, CORNER_B.row].map(id => rowIndexOf(canvas, id)),
       ).not.toEqual(before)
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0198 S3 ---------------------------------------------------------------------
+
+/** Угол, к которому тянут маркер: ниже и правее прежнего диапазона, в виду и в окне 900px. */
+const HANDLE_TO = { row: 'item-id-5', column: 'gender' }
+/** Пять строк по четырём колонкам: от имени до пола. */
+const HANDLE_CELLS = 20
+
+const HANDLE = '[data-range-handle]:not([hidden])'
+const handleOf = (root: ParentNode) => root.querySelector<HTMLElement>(HANDLE)
+
+const firstRangeSelected = (root: HTMLElement) =>
+  selectedCells(root) === FIRST_CELLS &&
+  isSelected(at(root, FIRST)) &&
+  isSelected(at(root, FIRST_END))
+
+const handleRangeSelected = (root: HTMLElement) =>
+  selectedCells(root) === HANDLE_CELLS &&
+  isSelected(at(root, FIRST)) &&
+  isSelected(at(root, HANDLE_TO))
+
+/**
+ * Протяжка маркера, которую держит шаг: нажатие и движение — события шага, указатель
+ * человека её не ведёт и не отпускает; уход с шага отпускает маркер там, где его держали.
+ */
+const holdHandle = async (root: HTMLElement, step: StepRun) => {
+  if (!firstRangeSelected(root)) {
+    pressCell(at(root, FIRST))
+    pressCell(at(root, FIRST_END), { shiftKey: true })
+  }
+  await pollUntil(
+    () => firstRangeSelected(root) && !!handleOf(root),
+    step.signal,
+  )
+  const marker = handleOf(root)!
+  const from = centerOf(marker)
+  const to = centerOf(at(root, HANDLE_TO))
+  const ours = new WeakSet<Event>()
+  let point = from
+  const fire = (type: string, target: EventTarget) => {
+    const event = new PointerEvent(type, {
+      bubbles: true,
+      cancelable: true,
+      button: 0,
+      buttons: type === 'pointerup' ? 0 : 1,
+      pointerType: 'mouse',
+      isPrimary: true,
+      clientX: point.x,
+      clientY: point.y,
+    })
+    ours.add(event)
+    target.dispatchEvent(event)
+  }
+  // Щит встаёт на окне раньше слушателей маркера: события человека до них не доходят.
+  const shield = (event: Event) => {
+    if (!ours.has(event)) event.stopImmediatePropagation()
+  }
+  const types = ['pointermove', 'pointerup', 'pointercancel']
+  for (const type of types) window.addEventListener(type, shield, true)
+  let released = false
+  // Указатель держится на целевой ячейке, как у человека: панель гайда меняет высоту и
+  // сдвигает грид под неподвижной точкой.
+  const onTarget = () => {
+    const cell = at(root, HANDLE_TO)
+    if (!cell) return
+    const center = centerOf(cell)
+    if (
+      Math.abs(center.x - point.x) < 0.5 &&
+      Math.abs(center.y - point.y) < 0.5
+    )
+      return
+    point = center
+    fire('pointermove', document)
+  }
+  let keeping = 0
+  const keep = () => {
+    onTarget()
+    keeping = requestAnimationFrame(keep)
+  }
+  step.onLeave(() => {
+    if (released) return
+    released = true
+    cancelAnimationFrame(keeping)
+    onTarget()
+    fire('pointerup', document)
+    for (const type of types) window.removeEventListener(type, shield, true)
+  })
+  fire('pointerdown', marker)
+  for (let i = 1; i <= 8; i++) {
+    step.signal.throwIfAborted()
+    point = {
+      x: from.x + ((to.x - from.x) * i) / 8,
+      y: from.y + ((to.y - from.y) * i) / 8,
+    }
+    fire('pointermove', document)
+    await new Promise(resolve => requestAnimationFrame(resolve))
+  }
+  if (!released) keeping = requestAnimationFrame(keep)
+  await pollUntil(() => handleRangeSelected(root), step.signal)
+}
+
+const RANGE_HANDLE: readonly GuideStoryStep[] = [
+  {
+    title: 'Выделен диапазон',
+    hint: 'Пользователь выделил диапазон ячеек. В правом нижнем углу выделения — маркер: за него диапазон растягивают и сужают.',
+    states: ['body.cellRange'],
+    enter: untilDone(firstRangeSelected, selectFirstRange),
+  },
+  {
+    title: 'Пользователь тянет маркер',
+    hint: 'Пользователь взял маркер и тянет его вниз и вправо. Диапазон растёт вслед за указателем, а левый верхний угол остаётся на месте.',
+    states: ['body.cellRange'],
+    enter: stepAction(holdHandle),
+  },
+  {
+    title: 'Пользователь отпустил маркер',
+    hint: 'Пользователь отпустил маркер. Выделен новый диапазон, а маркер — в его правом нижнем углу.',
+    states: ['body.cellRange'],
+    enter: untilDone(
+      root => handleRangeSelected(root) && !!handleOf(root),
+      root => {
+        if (selectedCells(root) === 1 && isSelected(at(root, FIRST)))
+          pressCell(at(root, HANDLE_TO), { shiftKey: true })
+        else if (!handleRangeSelected(root)) pressCell(at(root, FIRST))
+      },
+    ),
+  },
+]
+
+/** Центр маркера — в правом нижнем углу ячейки. */
+const expectHandleAtCorner = (root: HTMLElement, cell: HTMLElement) => {
+  const box = cell.getBoundingClientRect()
+  const handle = centerOf(handleOf(root)!)
+  expect(Math.abs(handle.x - box.right)).toBeLessThanOrEqual(1)
+  expect(Math.abs(handle.y - box.bottom)).toBeLessThanOrEqual(1)
+}
+
+/** ADR 0198, S3: пользователь подправляет выделенный диапазон маркером мыши. */
+export const CellSelectionHandle: StoryObj<StoryProps> = {
+  name: 'Range handle',
+  parameters: { scenario: '0198/S3', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Маркер диапазона"
+      steps={RANGE_HANDLE}
+      args={guideArgs({ enableCellSelection: true, ...GRID }, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(RANGE_HANDLE[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(firstRangeSelected(canvas)).toBe(true))
+      await until(() => expect(handleOf(canvas)).not.toBeNull())
+      expectHandleAtCorner(canvas, at(canvas, FIRST_END))
+    })
+    await step(RANGE_HANDLE[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(handleRangeSelected(canvas)).toBe(true))
+      expect(handleOf(canvas)!.hasAttribute('data-dragging')).toBe(true)
+    })
+    await step(RANGE_HANDLE[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(handleOf(canvas)!.hasAttribute('data-dragging')).toBe(false),
+      )
+      await until(() => expect(handleRangeSelected(canvas)).toBe(true))
+      await until(() => expectHandleAtCorner(canvas, at(canvas, HANDLE_TO)))
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0198 S4 ---------------------------------------------------------------------
+
+const TOUCHED = { row: 'item-id-3', column: 'firstName' }
+/** Куда тянут правый нижний круг: та же колонка, ниже. */
+const END_TO = { row: 'item-id-5', column: 'firstName' }
+/** Куда тянут левый верхний круг: та же колонка, выше. */
+const START_TO = { row: 'item-id-1', column: 'firstName' }
+
+const circleOf = (root: ParentNode, corner: 'start' | 'end') =>
+  root.querySelector<HTMLElement>(
+    `[data-range-handle="${corner}"][data-selection-handle="circle"]:not([hidden])`,
+  )
+const circlesShown = (root: ParentNode) =>
+  !!circleOf(root, 'start') && !!circleOf(root, 'end')
+
+/** Выделены ячейки колонки от строки до строки и стоят круги. */
+const touchRange = (root: HTMLElement, from: number, to: number) =>
+  selectedCells(root) === to - from + 1 &&
+  isSelected(at(root, { row: `item-id-${from}`, column: 'firstName' })) &&
+  isSelected(at(root, { row: `item-id-${to}`, column: 'firstName' })) &&
+  circlesShown(root)
+
+const touchEvent = (
+  type: string,
+  target: EventTarget,
+  point: { x: number; y: number },
+) => {
+  const event = new PointerEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    button: 0,
+    buttons: type === 'pointerup' ? 0 : 1,
+    pointerId: 2,
+    pointerType: 'touch',
+    isPrimary: true,
+    clientX: point.x,
+    clientY: point.y,
+  })
+  target.dispatchEvent(event)
+  return event
+}
+
+/** Тап пальцем по ячейке: указатель касания и мышиные события совместимости после него. */
+const tapCell = (cell: HTMLElement) => {
+  const point = centerOf(cell)
+  const init = {
+    bubbles: true,
+    cancelable: true,
+    button: 0,
+    clientX: point.x,
+    clientY: point.y,
+  }
+  touchEvent('pointerdown', cell, point)
+  touchEvent('pointerup', cell, point)
+  cell.dispatchEvent(new MouseEvent('mousedown', init))
+  cell.focus()
+  cell.dispatchEvent(new MouseEvent('mouseup', init))
+  cell.dispatchEvent(new MouseEvent('click', { ...init, detail: 1 }))
+}
+
+/**
+ * Протяжка круга пальцем к ячейке. С `step` шаг держит палец: касания человека её не ведут,
+ * уход с шага отпускает круг там, где его держали; без `step` круг отпускается сразу.
+ */
+const dragCircle = async (
+  root: HTMLElement,
+  corner: 'start' | 'end',
+  target: { row: string; column: string },
+  step?: StepRun,
+) => {
+  const circle = circleOf(root, corner)!
+  const from = centerOf(circle)
+  const to = () => centerOf(at(root, target))
+  const ours = new WeakSet<Event>()
+  let point = from
+  const fire = (type: string, on: EventTarget) => {
+    const event = new PointerEvent(type, {
+      bubbles: true,
+      cancelable: true,
+      button: 0,
+      buttons: type === 'pointerup' ? 0 : 1,
+      pointerId: 2,
+      pointerType: 'touch',
+      isPrimary: true,
+      clientX: point.x,
+      clientY: point.y,
+    })
+    ours.add(event)
+    on.dispatchEvent(event)
+  }
+  // Щит встаёт на окне раньше слушателей круга: касания человека до них не доходят.
+  const shield = (event: Event) => {
+    if (!ours.has(event)) event.stopImmediatePropagation()
+  }
+  const types = ['pointermove', 'pointerup', 'pointercancel']
+  for (const type of types) window.addEventListener(type, shield, true)
+  let released = false
+  let keeping = 0
+  const release = () => {
+    if (released) return
+    released = true
+    cancelAnimationFrame(keeping)
+    point = to()
+    fire('pointermove', document)
+    fire('pointerup', document)
+    for (const type of types) window.removeEventListener(type, shield, true)
+  }
+  step?.onLeave(release)
+  fire('pointerdown', circle)
+  const end = to()
+  for (let i = 1; i <= 8; i++) {
+    step?.signal.throwIfAborted()
+    point = {
+      x: from.x + ((end.x - from.x) * i) / 8,
+      y: from.y + ((end.y - from.y) * i) / 8,
+    }
+    fire('pointermove', document)
+    await new Promise(resolve => requestAnimationFrame(resolve))
+  }
+  if (!step) return release()
+  // Палец держится на ячейке, как у человека: панель гайда сдвигает грид под ним.
+  const keep = () => {
+    const now = to()
+    if (Math.abs(now.x - point.x) > 0.5 || Math.abs(now.y - point.y) > 0.5) {
+      point = now
+      fire('pointermove', document)
+    }
+    keeping = requestAnimationFrame(keep)
+  }
+  if (!released) keeping = requestAnimationFrame(keep)
+}
+
+/** Ячейка выделена касанием и стоят круги. */
+const touchOne = async (root: HTMLElement, signal?: AbortSignal) => {
+  await pollUntil(() => !!cellOf(root, TOUCHED.row, TOUCHED.column), signal)
+  if (!touchRange(root, 3, 3)) tapCell(at(root, TOUCHED))
+  await pollUntil(() => touchRange(root, 3, 3), signal)
+}
+
+const TOUCH: readonly GuideStoryStep[] = [
+  {
+    title: 'Пользователь коснулся ячейки',
+    hint: 'Пользователь коснулся ячейки пальцем. Ячейка выделена, а в левом верхнем и правом нижнем углу выделения — круги: за них диапазон растягивают пальцем.',
+    states: ['body.cellRangeTouch'],
+    enter: stepAction(async (root, step) => {
+      await touchOne(root, step.signal)
+    }),
+  },
+  {
+    title: 'Пользователь тянет нижний круг',
+    hint: 'Пользователь тянет правый нижний круг вниз. Диапазон растёт вслед за пальцем, а левый верхний угол остаётся на месте.',
+    states: ['body.cellRangeTouch'],
+    enter: stepAction(async (root, step) => {
+      await touchOne(root, step.signal)
+      await dragCircle(root, 'end', END_TO, step)
+      await pollUntil(() => touchRange(root, 3, 5), step.signal)
+    }),
+  },
+  {
+    title: 'Пользователь тянет верхний круг',
+    hint: 'Пользователь отпустил нижний круг и тянет левый верхний вверх. Теперь на месте остаётся правый нижний угол, а верхняя граница диапазона следует за пальцем.',
+    states: ['body.cellRangeTouch'],
+    enter: stepAction(async (root, step) => {
+      if (!touchRange(root, 3, 5)) {
+        await touchOne(root, step.signal)
+        await dragCircle(root, 'end', END_TO)
+        await pollUntil(() => touchRange(root, 3, 5), step.signal)
+      }
+      await dragCircle(root, 'start', START_TO, step)
+      await pollUntil(() => touchRange(root, 1, 5), step.signal)
+    }),
+  },
+  {
+    title: 'Пользователь отпустил круг',
+    hint: 'Пользователь отпустил круг. Выделен новый диапазон, круги — в его углах. Движение пальца по таблице мимо кругов по-прежнему прокручивает её.',
+    states: ['body.cellRangeTouch'],
+    enter: stepAction(async (root, step) => {
+      if (touchRange(root, 1, 5)) return
+      await touchOne(root, step.signal)
+      await dragCircle(root, 'end', END_TO)
+      await pollUntil(() => touchRange(root, 3, 5), step.signal)
+      await dragCircle(root, 'start', START_TO)
+      await pollUntil(() => touchRange(root, 1, 5), step.signal)
+    }),
+  },
+]
+
+const dragging = (root: ParentNode, corner: 'start' | 'end') =>
+  circleOf(root, corner)?.hasAttribute('data-dragging') ?? false
+
+/** ADR 0198, S4: пользователь выделяет диапазон пальцем, двигая круги в углах. */
+export const CellSelectionTouch: StoryObj<StoryProps> = {
+  name: 'Select by touch',
+  parameters: { scenario: '0198/S4', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Выделение пальцем"
+      steps={TOUCH}
+      args={guideArgs({ enableCellSelection: true, ...GRID }, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(TOUCH[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(touchRange(canvas, 3, 3)).toBe(true))
+      expectHandleAtCorner(canvas, at(canvas, TOUCHED))
+    })
+    await step(TOUCH[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(touchRange(canvas, 3, 5)).toBe(true))
+      expect(dragging(canvas, 'end')).toBe(true)
+    })
+    await step(TOUCH[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(touchRange(canvas, 1, 5)).toBe(true))
+      expect(dragging(canvas, 'start')).toBe(true)
+    })
+    await step(TOUCH[3]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(dragging(canvas, 'start')).toBe(false))
+      expect(touchRange(canvas, 1, 5)).toBe(true)
+      expectHandleAtCorner(canvas, at(canvas, END_TO))
       await settle()
     })
   },

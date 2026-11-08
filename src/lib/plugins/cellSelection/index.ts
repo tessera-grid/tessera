@@ -1,5 +1,5 @@
 export { cellSelection } from './registry'
-export type { CellSelectionOptions } from './types'
+export type { CellSelectionHandleOptions, CellSelectionOptions } from './types'
 
 // Реэкспорт ядровой сериализации буфера — чтобы потребитель мог собрать свою
 // копию (напр. с заголовками) поверх table.getSelectedCellRangesData().

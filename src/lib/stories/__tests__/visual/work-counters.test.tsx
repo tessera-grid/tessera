@@ -31,6 +31,7 @@ import {
 import { LinearProgress } from '../../../ui/LinearProgress'
 import { IconButton } from '../../../ui/IconButton'
 import { RevealedIcon } from '../../../ui/IconButton/iconReveal'
+import { SelectionHandle } from '../../../ui/SelectionHandle'
 import { ColumnDraggingComponent } from '../../../plugins/columnDragging/ColumnDraggingComponent'
 import { ColumnSizingComponent } from '../../../plugins/columnSizing/ColumnSizingComponent'
 import { ResizeHandler } from '../../../plugins/columnSizing/ResizeHandler'
@@ -1025,5 +1026,84 @@ describe('сдвиг окна при прокрутке (ADR 0149)', () => {
     const added = [...footerIds()].filter(id => !before.has(id)).length
     expect(added, describeWork(work)).toBeGreaterThan(0)
     within(work, renders(work, FooterCell), added, 'ячейки футера')
+  })
+})
+
+/** Перерисовки компонента по имени: вид грида не экспортируется. */
+const rendersNamed = (work: Work, name: string) =>
+  [...work.components].reduce(
+    (sum, [type, count]) =>
+      (type as { name?: string } | null)?.name === name ? sum + count : sum,
+    0,
+  )
+
+describe('Счётчики работы — маркер угла выделения (ADR 0198)', () => {
+  test('HN15: протяжка маркера перерисовывает только ячейки, чьё членство в диапазоне изменилось, и маркер; строки и заголовки — нет', async () => {
+    type Point = { x: number; y: number }
+    const pointer = commands as unknown as {
+      realDragHold: (from: Point, to: Point, steps?: number) => Promise<void>
+      realMouseUp: () => Promise<void>
+    }
+    const { measure, table } = await mountGrid({ enableCellSelection: true })
+    const cellAt = (row: number, column: number) =>
+      document
+        .querySelector(`.data-grid__body-row[data-index="${row}"]`)!
+        .querySelectorAll<HTMLElement>('.data-grid__body-cell[data-column-id]')[
+        column
+      ]!
+    const center = (el: Element): Point => {
+      const r = el.getBoundingClientRect()
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+    }
+    const handle = () =>
+      document.querySelector<HTMLElement>('[data-range-handle]:not([hidden])')
+    await userEvent.click(cellAt(1, 1))
+    await expect.poll(handle).not.toBeNull()
+    // Смены ячеек: членство в диапазоне (атрибут) или его кромка (переменные стиля).
+    const joined = new Set<Element>()
+    let cellChanges = 0
+    const observer = new MutationObserver(records => {
+      const touched = new Set<Element>()
+      for (const record of records) {
+        const cell = record.target as Element
+        if (record.oldValue === cell.getAttribute(record.attributeName!))
+          continue
+        touched.add(cell)
+        if (record.attributeName === 'data-cell-selected') joined.add(cell)
+      }
+      cellChanges += touched.size
+    })
+    observer.observe(document.querySelector('.data-grid__body')!, {
+      attributes: true,
+      attributeOldValue: true,
+      attributeFilter: ['data-cell-selected', 'style'],
+      subtree: true,
+    })
+    // Записи диапазона за протяжку.
+    type Atom = { subscribe: (listener: () => void) => { unsubscribe(): void } }
+    const atom = (table() as { atoms: { cellSelection: Atom } }).atoms
+      .cellSelection
+    let writes = 0
+    const subscription = atom.subscribe(() => writes++)
+    const work = await measure(async () => {
+      await pointer.realDragHold(center(handle()!), center(cellAt(3, 2)), 6)
+      await pointer.realMouseUp()
+    })
+    observer.disconnect()
+    subscription.unsubscribe()
+    const summary = `${describeWork(work)}; смен ячеек ${cellChanges}, записей ${writes}`
+    expect(cellAt(3, 2).hasAttribute('data-cell-selected'), summary).toBe(true)
+    expect(joined.size, summary).toBe(5)
+    expect(renders(work, BodyCell), summary).toBeLessThanOrEqual(cellChanges)
+    // Маркер — со сменой диапазона или вместе с гридом (объявление выделения), а не на
+    // каждое движение указателя.
+    expect(renders(work, SelectionHandle), summary).toBeGreaterThan(0)
+    expect(renders(work, SelectionHandle), summary).toBeLessThanOrEqual(
+      writes + rendersNamed(work, 'DataGridView'),
+    )
+    expect(
+      renders(work, BodyRow, SortableRow, BodyRowCells, HeadCellView),
+      summary,
+    ).toBe(0)
   })
 })

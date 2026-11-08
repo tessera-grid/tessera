@@ -460,6 +460,24 @@ export const cellSelectionMultiRangeType = booleanControl(
   'Несколько диапазонов с Ctrl/Cmd (`multiRange`)',
   true,
 )
+/**
+ * Маркер угла выделения (ADR 0198): в Controls это строка радио, до истории `mapping`
+ * доносит аргумент `handle` фабрики.
+ */
+export const RANGE_HANDLE_MAPPING = {
+  all: undefined,
+  mouse: { touch: false },
+  touch: { mouse: false },
+  off: false,
+} as const
+export const cellSelectionHandleType: InputType = {
+  control: 'inline-radio',
+  options: Object.keys(RANGE_HANDLE_MAPPING),
+  mapping: RANGE_HANDLE_MAPPING,
+  description:
+    'Маркер угла выделения (`handle`): `all` — для мыши и пальца, `mouse` и `touch` — только для одного ввода, `off` — без маркера',
+  table: { defaultValue: { summary: 'all' } },
+}
 export const cellSelectionMaxCopyRowsType = numberControl(
   'Больше строк выделения копирование не кладёт в буфер (`maxCopyRows`)',
   { min: 1, max: 1_000_000, step: 1 },

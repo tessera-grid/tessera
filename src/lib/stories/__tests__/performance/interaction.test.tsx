@@ -3676,6 +3676,149 @@ describe('Кадры — линия границы колонки', () => {
   )
 })
 
+// Маркер угла выделения (ADR 0198, HN16): кадр протяжки маркера на 1000×1000 против протяжки
+// выделения от ячейки по тем же ячейкам.
+/** Цена маркера: поиск ячейки под указателем и место маркера на каждом шаге. */
+const HN16_COST = { ratio: 1.1, plusMs: 2 }
+const HANDLE_STEPS = 40
+
+describe('Кадры — маркер угла выделения', () => {
+  test(
+    'HN16: кадр протяжки маркера на 1000×1000 не дороже протяжки выделения от ячейки — до +10 % или 2 мс',
+    async () => {
+      const drag = async (handle: boolean) => {
+        const HandleGrid = () => {
+          const created = useCreateTable({
+            columns: MOTION_GRID_COLUMNS as never,
+            data: MOTION_GRID_ROWS,
+            getRowId: (row: { id: string }) => row.id,
+            plugins: [cellSelection()],
+          })
+          return (
+            <div style={{ width: 1200, height: 520 }}>
+              <DataGrid table={created} height={500} />
+            </div>
+          )
+        }
+        await render(<HandleGrid />)
+        await waitForGrid()
+        const cellOf = (row: number, column: number) =>
+          document.querySelector<HTMLElement>(
+            `.data-grid__body-row[data-index="${row}"] .data-grid__body-cell[data-column-id="c${column}"]`,
+          )!
+        const centerOf = (el: Element) => {
+          const r = el.getBoundingClientRect()
+          return {
+            clientX: r.left + r.width / 2,
+            clientY: r.top + r.height / 2,
+          }
+        }
+        const mouse = (type: string, target: EventTarget, at: object) =>
+          target.dispatchEvent(
+            new MouseEvent(type, {
+              bubbles: true,
+              cancelable: true,
+              button: 0,
+              buttons: type === 'mouseup' ? 0 : 1,
+              ...at,
+            }),
+          )
+        const pointer = (type: string, target: EventTarget, at: object) =>
+          target.dispatchEvent(
+            new PointerEvent(type, {
+              bubbles: true,
+              cancelable: true,
+              button: 0,
+              buttons: type === 'pointerup' ? 0 : 1,
+              pointerType: 'mouse',
+              isPrimary: true,
+              ...at,
+            }),
+          )
+        const marker = () =>
+          document.querySelector<HTMLElement>(
+            '[data-range-handle]:not([hidden])',
+          )
+        // Угол — в окне: строки 1–8, колонки 1–5; шаг меняет ячейку под указателем.
+        const target = (step: number) =>
+          cellOf(1 + (step % 8), 1 + (Math.floor(step / 8) % 5))
+        const start = cellOf(1, 1)
+        if (handle) {
+          mouse('mousedown', start, centerOf(start))
+          mouse('mouseup', document, centerOf(start))
+          await expect.poll(marker).not.toBeNull()
+          pointer('pointerdown', marker()!, centerOf(marker()!))
+        } else {
+          mouse('mousedown', start, centerOf(start))
+        }
+        let step = 0
+        const result = await measureTransitionWork(
+          async () => {
+            const next = () => {
+              step++
+              const cell = target(step)
+              if (handle) pointer('pointermove', document, centerOf(cell))
+              else mouse('mouseover', cell, centerOf(cell))
+              if (step < HANDLE_STEPS) requestAnimationFrame(next)
+            }
+            requestAnimationFrame(next)
+          },
+          () => step >= HANDLE_STEPS,
+        )
+        const last = target(HANDLE_STEPS)
+        expect(
+          last.hasAttribute('data-cell-selected'),
+          'угол протяжки выделен',
+        ).toBe(true)
+        expect(
+          marker()?.hasAttribute('data-dragging') ?? false,
+          'протяжка маркером',
+        ).toBe(handle)
+        if (handle) pointer('pointerup', document, centerOf(last))
+        else mouse('mouseup', document, centerOf(last))
+        await cleanup()
+        return result
+      }
+
+      const runs = await againstBase(drag)
+      const base = medianRun(runs.base, r => r.p95Ms)
+      const variant = medianRun(runs.variant, r => r.p95Ms)
+      const ceiling = ceilingOver(base.p95Ms, HN16_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1000×1000',
+          plugins: 'cellSelection',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'animation',
+              metric: 'p95',
+              valueMs: r.p95Ms,
+              targetMs: ANIMATION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('HN16-base', 'протяжка выделения от ячейки', base, false)
+      await record('HN16', 'протяжка маркера угла выделения', variant, true)
+      expect(
+        variant.p95Ms,
+        `p95=${variant.p95Ms.toFixed(1)}ms, база ${base.p95Ms.toFixed(1)}ms, потолок ${ceiling.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
 // Серверная модель строк (ADR 0138, SD32): приход блока из 10 строк при итоге 1 000 000
 // против того же прихода при итоге 1000 — работа прихода не растёт с итогом.
 interface ServerCall {

@@ -369,6 +369,7 @@
   "cellEditing.actionRowDraftDiscard": "Откат изменения строки",
   "cellSelection.actionSelect": "Выделение ячеек",
   "cellSelection.actionExtendSelection": "Расширение выделения",
+  "cellSelection.actionResizeRange": "Изменение выделения маркером",
   "columnDragging.actionDragCancel": "Отмена переноса",
   "columnDragging.actionDrop": "Бросок колонки",
   "columnDragging.actionHandleMenu": "Меню ручки колонки",

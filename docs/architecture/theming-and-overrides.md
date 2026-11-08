@@ -141,6 +141,13 @@
   `--tsr-comp-resize-line-color` (`--tsr-sys-info`, в `forced-colors` — `Highlight`) и
   `--tsr-comp-resize-line-width` (2px) — линия границы колонки во всю высоту при протяжке;
   `--tsr-comp-z-index-resize-line` — её слой над шапкой, телом и липкими строками.
+- **Маркер угла выделения** (ADR [0198](../decisions/0198-cell-range-handle.md)):
+  `--tsr-comp-range-handle-color` (`--tsr-sys-info`, в `forced-colors` — `Highlight`) — метка;
+  `--tsr-comp-range-handle-outline` (`--tsr-sys-bg`, в `forced-colors` — `Canvas`) и
+  `--tsr-comp-range-handle-outline-width` (1px) — обводка метки; `--tsr-comp-range-handle-size`
+  (8px) — квадрат мыши, `--tsr-comp-range-handle-touch-size` (12px) — круг пальца;
+  `--tsr-comp-range-handle-zone` (24px) — зона нажатия (TS1); `--tsr-comp-z-index-range-handle` —
+  слой маркера над телом.
 - **Будущий родитель при перетаскивании строки** (ADR
   [0109](../decisions/0109-drop-into-collapsed-groups.md)):
   `--tsr-comp-row-drop-parent-bg` (10 % `--tsr-sys-accent`) — заливка строки слоем

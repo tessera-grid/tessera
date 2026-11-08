@@ -25,6 +25,7 @@ import {
   backToTopHorizontalThresholdType,
   backToTopThresholdType,
   cellSelectionDragSelectionType,
+  cellSelectionHandleType,
   cellSelectionMultiRangeType,
   cellSelectionMaxCopyRowsType,
   cellSelectionRangeSelectionType,
@@ -140,7 +141,9 @@ import {
   rowSelectionSubRowsType,
   showStubType,
   skeletonOptionsType,
+  RANGE_HANDLE_MAPPING,
 } from './argTypes'
+import type { CellSelectionHandleOptions } from '../../../../lib/plugins/cellSelection'
 
 /** Контрол виден, пока включена фича `arg` (или пока аргумент не задан историей). */
 const when = (arg: string, types: Record<string, InputType>) =>
@@ -321,6 +324,7 @@ export const dataGridArgTypes = {
       cellSelectionRangeSelection: cellSelectionRangeSelectionType,
       cellSelectionDragSelection: cellSelectionDragSelectionType,
       cellSelectionMultiRange: cellSelectionMultiRangeType,
+      cellSelectionHandle: cellSelectionHandleType,
       cellSelectionMaxCopyRows: cellSelectionMaxCopyRowsType,
     }),
     enableContextMenu: enableContextMenuType,
@@ -451,6 +455,17 @@ const PANEL_AUTO = 'auto' as unknown as undefined
 export const panelFlag = (value: boolean | undefined) =>
   value === PANEL_AUTO ? undefined : value
 
+/** Вариант «all» маркера (ADR 0198): `mapping` доносит `undefined` — маркер по умолчанию. */
+const HANDLE_ALL = 'all' as unknown as undefined
+
+/** Маркер для грида: истории мимо Storybook (тесты) получают вариант строкой, без `mapping`. */
+export const rangeHandleArg = (
+  value: false | CellSelectionHandleOptions | undefined,
+): false | CellSelectionHandleOptions | undefined =>
+  typeof value === 'string'
+    ? RANGE_HANDLE_MAPPING[value as keyof typeof RANGE_HANDLE_MAPPING]
+    : value
+
 /** Вариант «off» загрузки (ADR 0106): `mapping` доносит `false`, тесты — строку. */
 const LOADING_OFF = 'off' as unknown as false
 
@@ -534,6 +549,7 @@ export const dataGridDefaultArgs = {
   cellSelectionRangeSelection: true,
   cellSelectionDragSelection: true,
   cellSelectionMultiRange: true,
+  cellSelectionHandle: HANDLE_ALL,
   cellSelectionMaxCopyRows: 10_000,
   enableContextMenu: false,
   enableKeyboardNavigation: false,

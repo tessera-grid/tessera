@@ -51,6 +51,7 @@ import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import { definePlugin } from '../../../core/definePlugin'
 import {
+  cellSelection,
   cellSelectionModel,
   columnFiltering,
   columnFilteringModel,
@@ -3737,6 +3738,99 @@ describe('Производительность прокрутки — число
         expect(
           shown[axis].p95Ms,
           `${axis.toUpperCase()} p95=${shown[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms)`,
+        ).toBeLessThanOrEqual(ceiling[axis])
+      }
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Маркер угла выделения (ADR 0198, HN17): спокойная прокрутка 1000×1000 с выделенным
+// диапазоном и маркером против той же выборки с диапазоном без маркера.
+const HN17_COST = { ratio: 1.1, plusMs: 1 }
+
+describe('Производительность прокрутки — маркер угла выделения', () => {
+  test(
+    'HN17: прокрутка 1000×1000 с выделенным диапазоном и маркером не дороже той же без маркера — до +10 % или 1 мс',
+    async () => {
+      const measure = async (handle: boolean) => {
+        const screen = renderPluginsGrid({
+          ...LARGE,
+          plugins: [cellSelection(handle ? {} : { handle: false })],
+        })
+        await waitForGrid()
+        const cellAt = (row: number, column: number) =>
+          document
+            .querySelector(`.data-grid__body-row[data-index="${row}"]`)!
+            .querySelectorAll<HTMLElement>(
+              '.data-grid__body-cell[data-column-id]',
+            )[column]!
+        const mouse = (type: string, target: EventTarget, cell: Element) => {
+          const r = cell.getBoundingClientRect()
+          target.dispatchEvent(
+            new MouseEvent(type, {
+              bubbles: true,
+              cancelable: true,
+              button: 0,
+              clientX: r.left + r.width / 2,
+              clientY: r.top + r.height / 2,
+            }),
+          )
+        }
+        // Диапазон из трёх строк первой колонки — угол в виду узкого хоста: протяжкой от ячейки.
+        mouse('mousedown', cellAt(1, 0), cellAt(1, 0))
+        mouse('mouseover', cellAt(3, 0), cellAt(3, 0))
+        mouse('mouseup', document, cellAt(3, 0))
+        await expect
+          .poll(() => document.querySelectorAll('[data-cell-selected]').length)
+          .toBe(3)
+        await expect
+          .poll(
+            () =>
+              document.querySelector('[data-range-handle]:not([hidden])') !==
+              null,
+          )
+          .toBe(handle)
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        return { y, x }
+      }
+
+      const runs = await againstBase(measure)
+      const base = medianAxes(runs.base)
+      const shown = medianAxes(runs.variant)
+      const ceiling = axesCeiling(base, HN17_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1000×1000',
+          plugins: 'cellSelection',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: (['y', 'x'] as const).map(axis => ({
+            axis,
+            kind: 'animation' as const,
+            metric: 'p95' as const,
+            valueMs: r[axis].p95Ms,
+            targetMs: ANIMATION_BUDGET_MS,
+            ceilingMs: gated ? ceiling[axis] : undefined,
+            ...r[axis],
+          })),
+        })
+      await record('HN17-base', 'диапазон без маркера', base, false)
+      await record('HN17', 'диапазон с маркером', shown, true)
+
+      for (const axis of ['y', 'x'] as const) {
+        expect(
+          shown[axis].p95Ms,
+          `${axis} p95=${shown[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
         ).toBeLessThanOrEqual(ceiling[axis])
       }
     },

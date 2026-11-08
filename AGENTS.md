@@ -1000,6 +1000,16 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       `scroll`, истории «Data loading/Server row model/Cell selection — Read the selection»
       (S1) и «Cells/Selection — Follows sorting» (S2)
       ([ADR 0180](docs/decisions/0180-unified-cell-range.md)).
+    - _Маркер угла выделения:_ `cell-range-handle` (HN1–HN4, HN8–HN14 — квадрат у активного
+      диапазона, протяжка с переворотом, Escape, автопрокрутка у края, зона нажатия, доступность,
+      окно виртуализации и закрепление, правка, служебные колонки и `canSelectCell`, аргумент
+      `handle` на лету, контраст, канал действий), модульный `rangeHandle` (HN18–HN19 — режим
+      отдельно от жеста, аргумент на клиентской и серверной модели), HN15 — в `work-counters`, перф
+      HN16 — в `interaction`, HN17 — в `scroll`, `play` историй «Cells/Selection — Range handle» (S3) и «— Select by touch» (S4);
+      круги пальца — в `touch` (HN5–HN7, HN21 — тап и протяжка кругов, прокрутка и долгое нажатие,
+      вид по вводу, контраст), HN20 — в `server-cell-selection` (протяжка у края через
+      незагруженные строки в растянутой области)
+      ([ADR 0198](docs/decisions/0198-cell-range-handle.md)).
     - _Серверная группировка:_ модульный `serverGrouping.dom` (GS1–GS2, GS10–GS11, GS15–GS16 — поля
       запроса, строки-группы и ветки, запрос выгрузки, инертность клиентской модели и ленивых детей,
       предупреждение об агрегате не строкой, своё имя агрегата),

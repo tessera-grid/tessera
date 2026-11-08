@@ -145,6 +145,7 @@ export const MODEL_PARITY: ParityBase = {
       'dragSelection',
       'multiRange',
       'canSelectCell',
+      'handle',
       'maxCopyRows',
       'cellSelection',
       'onCellSelectionChange',

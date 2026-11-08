@@ -1,0 +1,43 @@
+/* Зона нажатия маркера угла выделения (ADR 0198, TS1): центр — в точке left/top. */
+.handle {
+  position: absolute;
+  z-index: var(--tsr-comp-z-index-range-handle);
+  display: grid;
+  place-items: center;
+  width: var(--tsr-comp-range-handle-zone);
+  height: var(--tsr-comp-range-handle-zone);
+  transform: translate(-50%, -50%);
+  cursor: crosshair;
+  /* Палец тянет маркер, а не прокручивает грид (ADR 0086). */
+  touch-action: none;
+  user-select: none;
+}
+
+.handle[hidden] {
+  display: none;
+}
+
+/* Во время протяжки под указателем — ячейка, а не маркер. */
+.handle[data-dragging] {
+  pointer-events: none;
+}
+
+.mark {
+  box-sizing: border-box;
+  background-color: var(--tsr-comp-range-handle-color);
+  /* Обводка цветом фона: метка читается и на заливке выделения, и на фоне. */
+  box-shadow: 0 0 0 var(--tsr-comp-range-handle-outline-width)
+    var(--tsr-comp-range-handle-outline);
+}
+
+.square {
+  width: var(--tsr-comp-range-handle-size);
+  height: var(--tsr-comp-range-handle-size);
+  border-radius: 0;
+}
+
+.circle {
+  width: var(--tsr-comp-range-handle-touch-size);
+  height: var(--tsr-comp-range-handle-touch-size);
+  border-radius: 50%;
+}

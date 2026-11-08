@@ -30,6 +30,7 @@ export { cellEditing, type CellEditingOptions } from './cellEditing'
 export { cellErrors, type CellErrorsOptions } from './cellErrors'
 export {
   cellSelection,
+  type CellSelectionHandleOptions,
   type CellSelectionOptions,
   cellRangesToTsv,
   cellRangesToHtml,

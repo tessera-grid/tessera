@@ -16,6 +16,8 @@ export interface CellSelectionLabels {
   actionSelect: string
   /** Действие: расширить выделение */
   actionExtendSelection: string
+  /** Действие: изменить диапазон маркером угла (ADR 0198) */
+  actionResizeRange: string
 }
 
 export const cellSelectionLabels = defineLabels<CellSelectionLabels>()(
@@ -30,6 +32,7 @@ export const cellSelectionLabels = defineLabels<CellSelectionLabels>()(
     copyClipboardDenied: "The browser didn't allow writing to the clipboard",
     actionSelect: 'Select cells',
     actionExtendSelection: 'Extend the selection',
+    actionResizeRange: 'Resize the selection',
   },
   {
     announceCopy: ['count'],

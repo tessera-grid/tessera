@@ -1314,3 +1314,211 @@ describe('Треугольник отказа ячейки на касаниях
     }
   })
 })
+
+describe('Маркеры выделения пальцем (ADR 0198, этап 2)', () => {
+  const contrastCommands = commands as unknown as {
+    moreContrast: (active: boolean) => Promise<void>
+    forcedColors: (active: boolean) => Promise<void>
+  }
+  const mouse = commands as unknown as {
+    realDragHold: (from: Point, to: Point, steps?: number) => Promise<void>
+    realMouseUp: () => Promise<void>
+  }
+  afterEach(async () => {
+    await contrastCommands.moreContrast(false)
+    await contrastCommands.forcedColors(false)
+    document.documentElement.classList.remove('dark')
+  })
+
+  const renderSelection = async (args: Record<string, unknown> = {}) => {
+    const screen = await renderGrid({
+      enableCellSelection: true,
+      columnCount: 6,
+      dataCount: 30,
+      // Окно узкое: углы колонки имени — вне краевых зон автопрокрутки.
+      defaultColumn: { size: 90 },
+      ...args,
+    })
+    await waitForGrid()
+    return screen
+  }
+  /** Ячейка данных строки `row` по месту `column` среди колонок данных. */
+  const cellAt = (row: number, column: number) =>
+    [
+      ...rowAt(row).querySelectorAll<HTMLElement>(
+        `${BODY_CELL}[data-column-id]:not([data-actions-column-cell="true"])`,
+      ),
+    ].sort(
+      (a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left,
+    )[column]!
+  const handleOf = (corner: 'start' | 'end') =>
+    document.querySelector<HTMLElement>(
+      `[data-range-handle="${corner}"]:not([hidden])`,
+    )
+  const selectedCount = () =>
+    document.querySelectorAll(`${BODY_CELL}[data-cell-selected]`).length
+  const focusedAt = () => {
+    const focused = document.querySelector<HTMLElement>('[data-cell-focused]')
+    return `${focused?.closest(BODY_ROW)?.getAttribute('data-index')}:${focused?.dataset.columnId}`
+  }
+  const idOf = (row: number, column: number) =>
+    `${row}:${cellAt(row, column).dataset.columnId}`
+  /** Центр маркера — в углу ячейки. */
+  const expectAt = async (corner: 'start' | 'end', cell: () => HTMLElement) => {
+    await expect
+      .poll(() => {
+        const handle = handleOf(corner)
+        if (!handle) return Infinity
+        const at = center(handle)
+        const box = cell().getBoundingClientRect()
+        const x = corner === 'end' ? box.right : box.left
+        const y = corner === 'end' ? box.bottom : box.top
+        return Math.max(Math.abs(at.x - x), Math.abs(at.y - y))
+      })
+      .toBeLessThanOrEqual(1)
+  }
+  /** Протянуть круг пальцем к ячейке. */
+  const dragCircle = async (corner: 'start' | 'end', to: HTMLElement) => {
+    const from = center(handleOf(corner)!)
+    await touch.realTouchDown([from])
+    await touch.realTouchMove(from, center(to), 10)
+    await touch.realTouchUp()
+  }
+
+  test('HN5: касание: тап выделяет ячейку и показывает круги в левом верхнем и правом нижнем углу; протяжка круга двигает его угол, противоположный на месте и становится опорной ячейкой', async ({
+    skip,
+  }) => {
+    skip(!chromium, 'протяжка пальцем — CDP Chromium')
+    const screen = await renderSelection()
+    try {
+      await touch.realTap(center(cellAt(3, 1)))
+      await expect.poll(selectedCount).toBe(1)
+      for (const corner of ['start', 'end'] as const) {
+        await expect.poll(() => handleOf(corner)).not.toBeNull()
+        expect(handleOf(corner)!.getAttribute('data-selection-handle')).toBe(
+          'circle',
+        )
+        await expectAt(corner, () => cellAt(3, 1))
+      }
+
+      // Правый нижний круг вниз: левый верхний угол на месте и опорный.
+      await dragCircle('end', cellAt(5, 1))
+      await expect.poll(selectedCount).toBe(3)
+      await expectAt('start', () => cellAt(3, 1))
+      await expectAt('end', () => cellAt(5, 1))
+      expect(focusedAt()).toBe(idOf(3, 1))
+
+      // Левый верхний круг вверх: правый нижний угол на месте и становится опорным.
+      await dragCircle('start', cellAt(2, 1))
+      await expect.poll(selectedCount).toBe(4)
+      await expectAt('start', () => cellAt(2, 1))
+      await expectAt('end', () => cellAt(5, 1))
+      await expect.poll(focusedAt).toBe(idOf(5, 1))
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('HN6: касание: движение пальца по телу прокручивает, долгое нажатие на ячейку открывает контекстное меню; нажатие на круг не прокручивает и не запускает долгое нажатие', async ({
+    skip,
+  }) => {
+    skip(!chromium, 'удержание и протяжка пальцем — CDP Chromium')
+    const screen = await renderSelection({ enableContextMenu: true })
+    try {
+      const scroller = () =>
+        document.querySelector<HTMLElement>('.data-grid__container')!
+      await touch.realTap(center(cellAt(2, 1)))
+      await expect.poll(() => handleOf('end')).not.toBeNull()
+
+      // Удержание круга: ни прокрутки, ни меню, выделение то же.
+      const held = center(handleOf('end')!)
+      const before = scroller().scrollTop
+      await touch.realTouchDown([held])
+      await wait(LONG_PRESS_WAIT_MS)
+      await touch.realTouchUp()
+      await wait(100)
+      expect(menu()).toBeNull()
+      expect(scroller().scrollTop).toBe(before)
+      expect(selectedCount()).toBe(1)
+
+      // Палец по телу прокручивает; круги едут вместе с ячейкой.
+      await touch.realSwipe(center(cellAt(7, 1)), center(cellAt(3, 1)))
+      await expect.poll(() => scroller().scrollTop).toBeGreaterThan(before)
+      expect(selectedCount()).toBeLessThanOrEqual(1)
+
+      // Долгое нажатие на ячейку — контекстное меню.
+      const target = center(cellAt(6, 0))
+      await touch.realTouchDown([target])
+      await wait(LONG_PRESS_WAIT_MS)
+      await expect.poll(menu, { timeout: 5000 }).toBeTruthy()
+      await touch.realTouchUp()
+      await closeMenu()
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('HN7: вид маркера — по вводу, которым сделано выделение: касание — круги, мышь — квадрат, на одном устройстве попеременно', async () => {
+    const screen = await renderSelection()
+    try {
+      await touch.realTap(center(cellAt(2, 1)))
+      await expect.poll(() => handleOf('start')).not.toBeNull()
+      expect(handleOf('end')!.getAttribute('data-selection-handle')).toBe(
+        'circle',
+      )
+
+      // Мышь: один квадрат в правом нижнем углу.
+      await mouse.realDragHold(center(cellAt(3, 0)), center(cellAt(4, 1)), 4)
+      await mouse.realMouseUp()
+      await expect
+        .poll(() => handleOf('end')?.getAttribute('data-selection-handle'))
+        .toBe('square')
+      expect(handleOf('start')).toBeNull()
+      await expectAt('end', () => cellAt(4, 1))
+
+      // Снова палец — снова круги.
+      await touch.realTap(center(cellAt(5, 1)))
+      await expect
+        .poll(() => handleOf('end')?.getAttribute('data-selection-handle'))
+        .toBe('circle')
+      await expect.poll(() => handleOf('start')).not.toBeNull()
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('HN21: круги не ниже 3:1 к заливке выделения и к фону в обеих темах и в повышенном контрасте; в forced-colors — Highlight', async () => {
+    const screen = await renderSelection()
+    try {
+      await touch.realTap(center(cellAt(2, 1)))
+      await expect.poll(() => handleOf('start')).not.toBeNull()
+      const marks = () =>
+        (['start', 'end'] as const).map(
+          corner => handleOf(corner)!.firstElementChild as HTMLElement,
+        )
+      const check = async () => {
+        for (const mark of marks()) {
+          const color = toRgba(getComputedStyle(mark).backgroundColor)
+          expect(
+            contrast(color, effectiveBg(cellAt(2, 1))),
+          ).toBeGreaterThanOrEqual(3)
+          expect(
+            contrast(color, effectiveBg(cellAt(4, 0))),
+          ).toBeGreaterThanOrEqual(3)
+        }
+      }
+      await inBothThemes(check)
+      await contrastCommands.moreContrast(true)
+      await inBothThemes(check)
+      await contrastCommands.moreContrast(false)
+      await contrastCommands.forcedColors(true)
+      for (const mark of marks()) {
+        await expect
+          .poll(() => getComputedStyle(mark).backgroundColor)
+          .toBe(resolveColor(mark, 'Highlight'))
+      }
+    } finally {
+      await screen.unmount()
+    }
+  })
+})
