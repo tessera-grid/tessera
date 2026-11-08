@@ -80,6 +80,7 @@ export interface SliceTable {
     state?: Record<string, unknown>
     pluginNarrows?: NarrowMap
     pluginNarrowContext?: NarrowContext
+    pluginRenderVersion?: { get: () => number }
   }
   baseAtoms: Record<
     string,
@@ -152,6 +153,8 @@ export const createSliceStore = () => {
     /** Сужение — производный атом: следит за атомами, которые читает (ленивые дети и т. п.). */
     const computeWith = (instance: SliceTable | null) => () => {
       const options = instance?.options
+      // Функция-аргумент приходит обёрткой: её новую ссылку видно только по версии отрисовки.
+      options?.pluginRenderVersion?.get()
       const external = externalOf(instance, key)
       const saved = source.get()
       const raw =

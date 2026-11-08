@@ -32,6 +32,7 @@ import {
   rowSelectionModel,
 } from '../plugins'
 import { setLoadedAnswer } from '../plugins/rowExpanding/lazyChildrenFeature'
+import { COLUMN_EXPANDING_ID } from '../plugins/rowExpanding/rowExpandingColumn'
 ;(
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true
@@ -152,6 +153,31 @@ describe('эффективное состояние в атомах (ADR 0171)',
     mount(<LazyHost maxDepth={2} />)
     expect(captured.atoms.expanded.get()).toEqual({ p: true })
     expect(ids()).toEqual(['p', 'c'])
+
+    // Аргумент-функция сменился: обёртка аргумента та же, сужение — по новому ответу.
+    const PresenceHost = ({ lazy }: { lazy: boolean }) => {
+      captured = useCreateTable({
+        columns: columns as never,
+        data,
+        plugins: [
+          rowExpanding({
+            hasChildren: row => lazy && row.id === '1',
+            loadChildren: () => [],
+          }),
+        ],
+      })
+      return null
+    }
+    const expandColumnShown = () =>
+      captured.atoms.columnVisibility.get()?.[COLUMN_EXPANDING_ID] !== false
+    act(() => root?.unmount())
+    root = undefined
+    mount(<PresenceHost lazy={false} />)
+    expect(expandColumnShown()).toBe(false)
+    mount(<PresenceHost lazy />)
+    expect(expandColumnShown()).toBe(true)
+    mount(<PresenceHost lazy={false} />)
+    expect(expandColumnShown()).toBe(false)
 
     // Данные и колонки: та же сохранённая ссылка, новое сужение.
     const DataHost = ({ rows }: { rows: Node[] }) => {
