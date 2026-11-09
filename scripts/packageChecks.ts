@@ -203,7 +203,12 @@ const DICTIONARIES = {
   'dictionary.json': JSON.stringify({ 'pagination.rowsPerPage': 'Rows' }),
   'dictionary-typo.json': JSON.stringify({ 'paginaton.rowsPerPage': 'Rows' }),
 }
-const REACT_TABLE = '^9'
+/** Фикстуры ставят TanStack Table по диапазону peer пакета. */
+const REACT_TABLE = (
+  JSON.parse(
+    readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+  ) as { peerDependencies: Record<string, string> }
+).peerDependencies['@tanstack/react-table']
 const TYPESCRIPT = '^5'
 
 export const FIXTURES: Fixture[] = [

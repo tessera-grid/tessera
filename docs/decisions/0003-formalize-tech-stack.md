@@ -9,6 +9,10 @@
 > `cva`); тема — трёхуровневые токены `--tsr-ref/sys/comp`
 > ([ADR 0019](0019-token-architecture.md)), статически в `core/themeVariables/theme.css`.
 > `tailwind-merge`/`cn` и `cva` удалены; `motion` объявлен, но не используется.
+> **Актуализировано (2026-11-08).** TanStack Table — 9.3.1; peer `@tanstack/react-table` на время
+> внедрения своего движка строк — `>=9.3.1 <9.4`, после — снова `^9`
+> ([ADR 0200](0200-own-row-engine.md), этап 0).
+>
 > **Актуализировано (2026-11-06).** Tailwind не попадает в `dist`: `@import 'tailwindcss'` убран из
 > `DataGrid.module.css`, вместо глобального сброса — сброс под корнем темы (ADR 0019, TK7, TI-11);
 > плагин `@tailwindcss/vite` подключает только Storybook (`.storybook/main.ts`).
