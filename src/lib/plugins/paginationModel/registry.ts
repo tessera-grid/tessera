@@ -12,6 +12,7 @@ import {
 
 import { definePlugin } from '../../core/definePlugin'
 import { paginationInertReason, resetPageOnReorder } from './model'
+import { stageSlot } from '../../core/rowEngine/engine'
 
 export const DEFAULT_PAGE_SIZE = 25
 
@@ -34,7 +35,7 @@ export interface PaginationModelOptions {
 /** Фичи модели пагинации; интерфейс несёт те же — по ним выводится тип среза. */
 export const paginationModelFeatures = {
   rowPaginationFeature,
-  paginatedRowModel: createPaginatedRowModel(),
+  paginatedRowModel: stageSlot('page', createPaginatedRowModel()),
 }
 
 export const paginationModel = definePlugin<PaginationModelOptions>()({

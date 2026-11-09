@@ -20,6 +20,7 @@ import { narrowSorting } from './narrowSorting'
 import { optionLabelSortFeature } from './optionLabelSort'
 import { typedSortFeature } from './typedSort'
 import { createTesseraSortedRowModel } from './sortedRowModel'
+import { stageSlot } from '../../core/rowEngine/engine'
 
 export interface ColumnSortingModelOptions {
   /** `false` — плагин отключён. */
@@ -52,7 +53,7 @@ export const sortingModelFeatures = {
   rowSortingFeature,
   optionLabelSortFeature,
   typedSortFeature,
-  sortedRowModel: createTesseraSortedRowModel(),
+  sortedRowModel: stageSlot('sort', createTesseraSortedRowModel()),
   sortFns,
 }
 

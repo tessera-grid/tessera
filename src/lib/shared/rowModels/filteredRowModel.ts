@@ -232,8 +232,8 @@ const patchFlatFiltered = (
       if (row.columnFilters[id] === false) return false
     return true
   }
-  const out = (row: FilterRow) =>
-    table.options.filterFromLeafRows ? copyRow(table, row, row.subRows) : row
+  // Плоская строка — сама строка входа (ADR 0200, EN28).
+  const out = (row: FilterRow) => row
   const rows = prev.output.rows.slice()
   const changed = new Set<string>()
   const inserted = new Set<string>()
@@ -286,6 +286,36 @@ const patchFlatFiltered = (
   return output
 }
 
+/**
+ * Полный отбор плоских строк (ADR 0200, EN28): проверка — как у стоковой модели, строки
+ * отбора — сами строки входа, без копий.
+ */
+const filterFlat = (table: FilteringTable, input: FilterModel): FilterModel => {
+  const filters = resolveFilters(table)
+  const rows: FilterRow[] = []
+  for (const row of input.rows) {
+    checkRow(row, filters)
+    let passes = true
+    for (const id of filters.ids) {
+      if (row.columnFilters[id] === false) {
+        passes = false
+        break
+      }
+    }
+    if (passes) rows.push(row)
+  }
+  const rowsById =
+    rows.length === input.rows.length
+      ? input.rowsById
+      : makeObjectMap<FilterRow>()
+  if (rowsById !== input.rowsById)
+    for (const row of rows) rowsById[row.id] = row
+  return { rows, flatRows: rows, rowsById }
+}
+
+const isFlat = (model: FilterModel) =>
+  model.flatRows.length === model.rows.length
+
 const sameList = (a: readonly FilterRow[], b: readonly FilterRow[]) => {
   if (a.length !== b.length) return false
   for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false
@@ -309,7 +339,10 @@ const filterTree = (
   const maxDepth = table.options.maxLeafRowFilterDepth ?? 100
   const flatRows: FilterRow[] = []
   const rowsById = makeObjectMap<FilterRow>()
+  // Плоская модель — строки входа без копий (ADR 0200, EN28).
+  const flat = rows.length === 0 || rows.every(row => !row.subRows.length)
   const copyOf = (row: FilterRow, subRows: FilterRow[]) => {
+    if (flat) return row
     const old = previous?.[row.id]
     if (
       old &&
@@ -489,7 +522,14 @@ export const createSearchAwareFilteredRowModel =
         t.autoResetPageIndex?.()
         return patched.output
       }
-      const output = rowModel() as unknown as FilterModel
+      let output: FilterModel
+      if (isFlat(input) && input.rows.length) {
+        output = filterFlat(t, input)
+        // Как `skipFirstRun` стоковой модели: сброс страницы — со второго отбора.
+        if (last) t.autoResetPageIndex?.()
+      } else {
+        output = rowModel() as unknown as FilterModel
+      }
       last = { input, columnFilters, globalFilter, output }
       return output
     }

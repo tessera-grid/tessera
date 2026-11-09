@@ -7,6 +7,7 @@ import { useSelector } from '@tanstack/react-store'
 
 import type { CellComponentProps } from '../../core/createSlots'
 import { useLocalization } from '../../core/localization'
+import { useTableState } from '../../core/reactivity'
 import { usePredicateResult } from '../../core/renderVersion'
 import { hasRowHierarchy } from '../../core/rowHierarchy'
 import { DragHandler } from '../../shared/dnd'
@@ -22,6 +23,7 @@ import {
   nestRow,
   unnestRow,
 } from './moveRow'
+import { rowDraggingInertReason } from './rowDraggingFeature'
 import {
   groupMoveTargets,
   groupPathLabel,
@@ -48,6 +50,8 @@ export const RowDraggingComponent = ({ row, table }: CellComponentProps) => {
     (moves: Record<string, { pending: boolean }>) => !!moves[row.id]?.pending,
   )
   const labels = useLocalization()
+  // Ручку прячут сортировка, группировка, фильтр и поиск (FL21): ответ — по срезам, строка та же.
+  useTableState(table as never, () => rowDraggingInertReason(table))
   // Ручка — по ответу `canDragRow` (ADR 0193).
   const canDrag = usePredicateResult(() => row.getCanDrag())
 

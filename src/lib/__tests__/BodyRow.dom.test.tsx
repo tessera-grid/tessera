@@ -13,6 +13,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { buildTesseraFeatures, foldEntries } from '../core/features'
 import { columnSizing } from '../plugins/columnSizing'
 import { BodyRow } from '../grid/BodyRow'
+import { rowCellsOf } from '../grid/rowCells'
 
 ;(
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -81,7 +82,7 @@ describe('BodyRow (happy-dom)', () => {
         <BodyRow
           layout="flex"
           row={row}
-          visibleCells={row.getVisibleCells()}
+          cells={rowCellsOf(row.table, row)}
           virtualRow={virtualRow}
           virtualColumns={[]}
           leafColumns={table.getAllLeafColumns()}

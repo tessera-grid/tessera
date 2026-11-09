@@ -44,6 +44,7 @@ import { needsRightFiller } from './layout'
 import { usePredicateResult } from '../core/renderVersion'
 
 import styles from '../grid/BodyRow/BodyRow.module.css'
+import type { RowCells } from './rowCells'
 
 export interface TableBodyRowProps {
   layout: 'grid' | 'flex'
@@ -56,7 +57,8 @@ export interface TableBodyRowProps {
   stickyLast?: boolean
   stickyPushed?: boolean
   row: Row<any, any>
-  visibleCells: Cell<any, any, unknown>[]
+  /** Ячейки строки: создаются, когда тело их рисует (ADR 0200, EN14). */
+  cells: RowCells
   virtualRow: VirtualItem
   /** Окно колонок; в теле его даёт `ColumnWindowContext`, чтобы сдвиг не перерисовывал строку. */
   virtualColumns?: VirtualItem[]
@@ -155,7 +157,7 @@ export const BodyRowCells = ({
   layout,
   row,
   virtualRow,
-  visibleCells,
+  cells,
   virtualColumns: virtualColumnsProp,
   leafColumns,
   leftCellSlot,
@@ -197,7 +199,7 @@ export const BodyRowCells = ({
     const endCells: Cell<any, any, unknown>[] = []
     const centerCells: { cell: Cell<any, any, unknown>; start: number }[] = []
     for (const virtualColumn of virtualColumns) {
-      const cell = visibleCells[virtualColumn.index]
+      const cell = cells.at(virtualColumn.index)
       const pinned = cell.column.getIsPinned()
       if (pinned === 'start') startCells.push(cell)
       else if (pinned === 'end') endCells.push(cell)
@@ -220,7 +222,7 @@ export const BodyRowCells = ({
           )),
         ]}
         {/* Ячейки вне потока: свободное место занимает заполнитель только под волной. */}
-        {rowWave && needsRightFiller(row.getVisibleCells().at(-1)?.column) && (
+        {rowWave && needsRightFiller(cells.lastColumn()) && (
           <RightFillerBodyColumn wave order={2} />
         )}
       </>
@@ -230,7 +232,7 @@ export const BodyRowCells = ({
   return (
     <>
       {leafColumns.map(column => {
-        const cell = visibleCells[column.getIndex()]
+        const cell = cells.at(column.getIndex())
         return (
           <BodyCell
             key={cell.id}
@@ -248,7 +250,7 @@ export const BodyRowCells = ({
           />
         )
       })}
-      {needsRightFiller(row.getVisibleCells().at(-1)?.column) && (
+      {needsRightFiller(cells.lastColumn()) && (
         <RightFillerBodyColumn
           hasBorderTop={!row.getIsFirstRow()}
           hasBorderRight

@@ -12,6 +12,7 @@ import { createSearchAwareFilteredRowModel } from '../../shared/rowModels/filter
 import { neverInert } from '../../core/pluginDiagnostics'
 import { canSearchColumn, quickSearchFilter } from './search'
 import { filteringLabels } from '../../shared/filtering/labels'
+import { stageSlot } from '../../core/rowEngine/engine'
 
 export interface QuickSearchModelOptions {
   /** `false` — плагин отключён: поиск не применяется. */
@@ -27,7 +28,7 @@ export interface QuickSearchModelOptions {
 /** Фичи модели поиска; интерфейс несёт те же — по ним выводится тип среза. */
 export const quickSearchModelFeatures = {
   globalFilteringFeature,
-  filteredRowModel: createSearchAwareFilteredRowModel(),
+  filteredRowModel: stageSlot('filter', createSearchAwareFilteredRowModel()),
 }
 
 export const quickSearchModel = definePlugin<QuickSearchModelOptions>()({

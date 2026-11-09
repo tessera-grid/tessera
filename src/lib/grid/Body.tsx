@@ -21,6 +21,7 @@ import { hasStickyRows, StickyRows } from './StickyRows'
 import { isPlaceholderRow } from '../core/lazyPlaceholder'
 import { FailedRow, PendingRow } from './PendingRow'
 import { getTreeAria } from './treeAria'
+import { rowCellsOf } from './rowCells'
 import { useWindowData } from '../core/bodyContributions'
 
 import styles from '../grid/Body/Body.module.css'
@@ -146,7 +147,7 @@ export const Body = ({
                   size: virtualRows[0]!.size,
                   lane: 0,
                 }}
-                visibleCells={entry.row.getVisibleCells()}
+                cells={rowCellsOf(table, entry.row)}
                 leafColumns={leafColumns}
                 leftCellSlot={leftCellSlot}
                 rightCellSlot={rightCellSlot}
@@ -241,7 +242,7 @@ export const Body = ({
               layout,
               row,
               virtualRow,
-              visibleCells: row.getVisibleCells(),
+              cells: rowCellsOf(table, row),
               leafColumns,
               leftCellSlot,
               rightCellSlot,

@@ -16,6 +16,7 @@ import { BodyCell } from '../grid/BodyCell'
 import { BodyRow } from '../grid/BodyRow'
 import { columnSortingModel, rowSelectionModel } from '../plugins'
 import { __resetLogger, __setLoggerProduction } from '../util/logger'
+import { rowCellsOf } from '../grid/rowCells'
 ;(
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true
@@ -102,7 +103,7 @@ const renderRows = () =>
           key={row.id}
           layout="flex"
           row={row}
-          visibleCells={row.getVisibleCells()}
+          cells={rowCellsOf(row.table, row)}
           virtualRow={virtualRow(index)}
           virtualColumns={[]}
           leafColumns={table.getAllLeafColumns()}

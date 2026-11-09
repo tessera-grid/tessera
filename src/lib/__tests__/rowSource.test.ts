@@ -194,6 +194,8 @@ const sourceFiles = (dir: string): string[] =>
  */
 const MODEL_READERS: Record<string, string> = {
   'core/rowSource.ts': 'клиентский источник строк — над моделью TanStack',
+  'core/rowEngine/engine.ts':
+    'движок строк: вход стадии — модель TanStack перед её слотом (ADR 0200, §10)',
   'core/rowTransactions.ts':
     'родитель ветки клиентской транзакции — по модели ядра (ADR 0194)',
   'core/dataChanges.ts':

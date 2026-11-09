@@ -28,6 +28,7 @@ import { BodyCell } from '../grid/BodyCell'
 import { BodyRow } from '../grid/BodyRow'
 import { columnSizing } from '../plugins/columnSizing'
 import type { FlashOutcome } from '../../index'
+import { rowCellsOf } from '../grid/rowCells'
 
 ;(
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -269,7 +270,7 @@ describe('Вспышка итога: перерисовка только цел�
             <BodyRow
               layout="flex"
               row={row}
-              visibleCells={row.getVisibleCells()}
+              cells={rowCellsOf(row.table, row)}
               virtualRow={virtualRow(index)}
               virtualColumns={[]}
               leafColumns={table.getAllLeafColumns()}
