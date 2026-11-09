@@ -21,6 +21,8 @@ import {
   rowGroupingModel,
 } from '../plugins'
 import { positionOf } from '../core/rowPosition'
+import { childrenOf } from '../core/rowEngine/displayChildren'
+import { engineOf } from '../core/rowEngine/engine'
 ;(
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true
@@ -66,13 +68,14 @@ interface Model {
 
 /** Устройство модели для сравнения с полной сборкой. */
 const shape = (model: Model) => {
+  // Дети — в порядке показа: у выхода стадии движка — дети показа (ADR 0200, §4).
   const row = (r: ModelRow): unknown => ({
     id: r.id,
     index: positionOf(r),
     depth: r.depth,
     parentId: r.parentId,
     original: r.original,
-    subRows: r.subRows.map(row),
+    subRows: childrenOf(model, r).map(row),
   })
   return {
     rows: model.rows.map(row),
@@ -307,7 +310,7 @@ describe('Смена data по тождеству строк (ADR 0194)', () => 
         plugins: [
           columnSortingModel({ initialSorting: [{ id: 'score', desc }] }),
         ],
-        read: table => table.getSortedRowModel(),
+        read: table => engineOf(table).output('sort') as Model,
       }
       let data = make(2000, 50)
       const grid = host(data, options)

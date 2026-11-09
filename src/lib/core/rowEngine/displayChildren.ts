@@ -42,3 +42,15 @@ export const passChildren = (output: object, input: object) => {
   if (output !== input && layers.has(input))
     setChildren(output, new Map(), input)
 }
+
+/** Пишет ли кто-то из стадий цепочки детей показа: иначе выход — тот же, что у TanStack. */
+export const hasShownChildren = (model: object) => {
+  for (
+    let layer = layers.get(model);
+    layer;
+    layer = layer.input && layers.get(layer.input)
+  ) {
+    if (layer.own.size) return true
+  }
+  return false
+}

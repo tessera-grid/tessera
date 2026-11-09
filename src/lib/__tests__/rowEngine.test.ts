@@ -5,7 +5,9 @@
  */
 import {
   constructTable,
+  createExpandedRowModel,
   createFilteredRowModel,
+  createGroupedRowModel,
   createPaginatedRowModel,
   createSortedRowModel,
   sortFn_alphanumeric,
@@ -19,16 +21,24 @@ import { describe, expect, it } from 'vitest'
 import { injectServiceColumns } from '../core/createColumns'
 import { resolveHooks } from '../core/createHooks'
 import { buildTesseraFeatures, foldEntries, foldHooks } from '../core/features'
-import { STAGES, stageOfSlot } from '../core/rowEngine/engine'
+import { childrenOf } from '../core/rowEngine/displayChildren'
+import { STAGES, engineOf, stageOfSlot } from '../core/rowEngine/engine'
 import { positionOf } from '../core/rowPosition'
+import { rowSourceOf } from '../core/rowSource'
 import {
+  columnFiltering,
   columnFilteringModel,
+  columnSorting,
   columnSortingModel,
+  pagination,
   paginationModel,
+  quickSearch,
   quickSearchModel,
   rowExpanding,
   rowExpandingModel,
+  rowGrouping,
   rowGroupingModel,
+  rowSelection,
 } from '../plugins'
 import { setLoadedAnswer } from '../plugins/rowExpanding/lazyChildrenFeature'
 
@@ -110,12 +120,18 @@ const sources = (dir: string): string[] =>
   })
 
 describe('Движок строк (ADR 0200)', () => {
-  it('EN1: каркас движка в ядре, стадии приносят плагины моделей — каркас ничего не импортирует, обёртку стадии зовут только плагины моделей', () => {
+  it('EN1: каркас движка в ядре, стадии приносят плагины моделей — каркас не импортирует плагины, shared/, грид и кит, обёртку стадии зовут только плагины моделей', () => {
     const root = join(__dirname, '..')
-    const engine = readFileSync(join(root, 'core/rowEngine/engine.ts'), 'utf8')
-    expect(engine).not.toMatch(/^import /m)
+    for (const name of readdirSync(join(root, 'core/rowEngine'))) {
+      const text = readFileSync(join(root, 'core/rowEngine', name), 'utf8')
+      expect(text, name).not.toMatch(
+        /from '(?:\.\.\/)+(?:plugins|shared|grid|ui)\//,
+      )
+    }
     const callers = sources(root)
-      .filter(file => /\bstageSlot\b/.test(readFileSync(file, 'utf8')))
+      .filter(file =>
+        /\b(?:stageSlot|ownStage)\b/.test(readFileSync(file, 'utf8')),
+      )
       .map(file => relative(root, file).replace(/\\/g, '/'))
       .filter(file => file !== 'core/rowEngine/engine.ts')
       .sort()
@@ -338,6 +354,474 @@ describe('Хранилище строк (ADR 0200, этап 3)', () => {
       ).toEqual(
         fresh.getCoreRowModel().rows.map((row: any) => [row.id, row.index]),
       )
+    }
+  })
+})
+
+interface TreeItem {
+  id: string
+  name: string
+  city: string
+  subRows?: TreeItem[]
+}
+
+const node = (id: string, city: string, subRows?: TreeItem[]): TreeItem => ({
+  id,
+  name: `Name ${id}`,
+  city,
+  ...(subRows ? { subRows } : {}),
+})
+const TREE: TreeItem[] = [
+  node('a', 'Paris', [
+    node('a1', 'Lima'),
+    node('a2', 'Oslo', [node('a21', 'Rome')]),
+  ]),
+  node('b', 'Rome'),
+  node('c', 'Paris', [node('c1', 'Rome'), node('c2', 'Paris')]),
+  node('d', 'Oslo'),
+  node('e', 'Rome', [node('e1', 'Oslo')]),
+  node('f', 'Oslo'),
+]
+
+/** Таблица на плагинах грида или на стоковых фабриках моделей TanStack во всех слотах. */
+const buildTree = (
+  stock: boolean,
+  extra: object = {},
+  more: readonly unknown[] = [],
+) => {
+  const entries = [
+    REACTIVITY,
+    columnSorting(),
+    columnFiltering(),
+    quickSearch(),
+    rowGrouping(),
+    rowExpanding(),
+    pagination({ initialPageSize: 4 }),
+    ...more,
+  ]
+  const folded = foldEntries(entries as never)
+  const features = buildTesseraFeatures(entries as never) as Record<
+    string,
+    unknown
+  >
+  return constructTable({
+    features: stock
+      ? {
+          ...features,
+          filteredRowModel: createFilteredRowModel(),
+          groupedRowModel: createGroupedRowModel(),
+          sortedRowModel: createSortedRowModel(),
+          expandedRowModel: createExpandedRowModel(),
+          paginatedRowModel: createPaginatedRowModel(),
+        }
+      : features,
+    data: TREE,
+    columns: injectServiceColumns(COLUMNS as any[], folded.serviceColumns),
+    getRowId: (row: TreeItem) => row.id,
+    getSubRows: (row: TreeItem) => row.subRows,
+    ...folded.options,
+    hooks: resolveHooks(foldHooks(entries as never)),
+    pluginDiagnostics: folded.pluginDiagnostics,
+    logLevel: 'error',
+    ...extra,
+  } as never) as any
+}
+
+describe('Источник строк движка (ADR 0200, этап 4)', () => {
+  it('EN2: источник клиентского режима — движок: count, at, byId, indexOf и rows совпадают со стоковыми моделями TanStack при сортировке, фильтре, поиске, группировке, раскрытии и странице, на дереве и группах', () => {
+    const ours = buildTree(false)
+    const stock = buildTree(true)
+    const expectParity = (step: string) => {
+      const source = rowSourceOf<any>(ours)
+      const { rows } = stock.getRowModel()
+      expect(
+        source.rows!().map((row: any) => [row.id, row.depth]),
+        step,
+      ).toEqual(rows.map((row: any) => [row.id, row.depth]))
+      expect(source.count(), step).toBe(rows.length)
+      rows.forEach((row: any, index: number) => {
+        expect(source.at(index)?.id, `${step}: at ${index}`).toBe(row.id)
+        expect(source.indexOf(row.id), `${step}: indexOf ${row.id}`).toBe(index)
+      })
+      for (const id of Object.keys(stock.getCoreRowModel().rowsById)) {
+        expect(source.byId(id)?.id, `${step}: byId ${id}`).toBe(id)
+      }
+    }
+    for (const [step, apply] of [
+      ['исходно', () => {}],
+      ['раскрыто всё', (t: any) => t.setExpanded(true)],
+      ['сортировка', (t: any) => t.setSorting([{ id: 'city', desc: true }])],
+      ['вторая страница', (t: any) => t.setPageIndex(1)],
+      [
+        'фильтр',
+        (t: any) => {
+          t.setPageIndex(0)
+          t.setColumnFilters([
+            { id: 'city', value: { operator: 'contains', value: 'o' } },
+          ])
+        },
+      ],
+      ['поиск', (t: any) => t.setGlobalFilter('Name a')],
+      [
+        'группировка',
+        (t: any) => {
+          t.setGlobalFilter('')
+          t.setColumnFilters([])
+          t.setGrouping(['city'])
+        },
+      ],
+      ['свёрнуто', (t: any) => t.setExpanded({})],
+    ] as const) {
+      apply(ours)
+      apply(stock)
+      expectParity(step)
+    }
+  })
+})
+
+/** Модель TanStack для сверки: строки с детьми, плоский список и ключи словаря. */
+const modelShape = (model: any) => {
+  const node = (row: any): unknown => ({
+    id: row.id,
+    depth: row.depth,
+    subRows: row.subRows.map(node),
+  })
+  return {
+    rows: model.rows.map(node),
+    flat: model.flatRows.map((row: any) => row.id),
+    byId: Object.keys(model.rowsById).sort(),
+  }
+}
+
+describe('Стоковый вид и дети показа (ADR 0200, этап 4)', () => {
+  it('EN6: getSortedRowModel, getExpandedRowModel и getRowModel дают итог стоковых моделей; вид собирается при вызове и один раз на выход, движок отдаёт строки без копий', () => {
+    const ours = buildTree(false)
+    const stock = buildTree(true)
+    for (const t of [ours, stock]) {
+      t.setExpanded(true)
+      t.setSorting([{ id: 'city', desc: true }])
+      t.setPageSize(100)
+    }
+    for (const getter of [
+      'getSortedRowModel',
+      'getExpandedRowModel',
+      'getRowModel',
+    ] as const) {
+      expect(modelShape(ours[getter]()), getter).toEqual(
+        modelShape(stock[getter]()),
+      )
+    }
+    const engine = engineOf(ours)
+    const sorted = engine.output('sort') as any
+    expect(ours.getSortedRowModel()).not.toBe(sorted)
+    expect(ours.getSortedRowModel()).toBe(ours.getSortedRowModel())
+    const core = ours.getCoreRowModel().rowsById
+    for (const row of sorted.flatRows) expect(row, row.id).toBe(core[row.id])
+  })
+
+  it('EN16: дерево из getSubRows — порядок показа детей у движка, subRows строк остаются в порядке данных; раскрытие и «раскрыть всё» показывают ветки', () => {
+    const table = buildTree(false)
+    table.setPageSize(100)
+    table.setSorting([{ id: 'city', desc: false }])
+    const source = rowSourceOf<any>(table)
+    expect(source.rows!().map((row: any) => row.id)).toEqual([
+      'd',
+      'f',
+      'a',
+      'c',
+      'b',
+      'e',
+    ])
+    table.setExpanded({ a: true })
+    expect(source.rows!().map((row: any) => row.id)).toEqual([
+      'd',
+      'f',
+      'a',
+      'a1',
+      'a2',
+      'c',
+      'b',
+      'e',
+    ])
+    const a = table.getCoreRowModel().rowsById.a
+    expect(a.subRows.map((row: any) => row.id)).toEqual(['a1', 'a2'])
+    table.setSorting([{ id: 'city', desc: true }])
+    expect(
+      source.rows!()
+        .map((row: any) => row.id)
+        .slice(2, 5),
+    ).toEqual(['a', 'a2', 'a1'])
+    expect(a.subRows.map((row: any) => row.id)).toEqual(['a1', 'a2'])
+    table.setExpanded(true)
+    expect(source.count()).toBe(
+      Object.keys(table.getCoreRowModel().rowsById).length,
+    )
+  })
+})
+
+describe('Стадия фильтра (ADR 0200, этап 4)', () => {
+  it('EN11: фильтры колонок и поиск — итог как у createFilteredRowModel на дереве: filterFromLeafRows вкл и выкл, maxLeafRowFilterDepth 0 и 1, фильтр колонки, поиск и оба вместе', () => {
+    for (const filterFromLeafRows of [true, false]) {
+      for (const maxLeafRowFilterDepth of [100, 1, 0]) {
+        const extra = { filterFromLeafRows, maxLeafRowFilterDepth }
+        const ours = buildTree(false, extra)
+        const stock = buildTree(true, extra)
+        for (const [step, apply] of [
+          [
+            'фильтр колонки',
+            (t: any) =>
+              t.setColumnFilters([
+                { id: 'city', value: { operator: 'contains', value: 'ro' } },
+              ]),
+          ],
+          ['поиск', (t: any) => t.setGlobalFilter('Name a2')],
+          ['снят фильтр колонки', (t: any) => t.setColumnFilters([])],
+          ['снят поиск', (t: any) => t.setGlobalFilter('')],
+        ] as const) {
+          apply(ours)
+          apply(stock)
+          const label = `${step}, fromLeafs=${filterFromLeafRows}, depth=${maxLeafRowFilterDepth}`
+          expect(modelShape(ours.getFilteredRowModel()), label).toEqual(
+            modelShape(stock.getFilteredRowModel()),
+          )
+        }
+      }
+    }
+  })
+})
+
+const STAGE_IDS = ['filter', 'group', 'sort', 'expand', 'page'] as const
+
+/** Какие стадии дали новый выход после действия. */
+const rerun = (table: any, act: () => void) => {
+  const engine = engineOf(table)
+  table.getRowModel()
+  const before = STAGE_IDS.map(id => engine.output(id))
+  act()
+  table.getRowModel()
+  return STAGE_IDS.filter((id, i) => engine.output(id) !== before[i])
+}
+
+describe('Стоковые фичи, пересчёт и страница (ADR 0200, этап 4)', () => {
+  it('EN7: выбор и раскрытие всего, число страниц, фасеты, автоматические sortFn и aggregationFn — тот же итог, что со стоковыми моделями', () => {
+    const ours = buildTree(false, {}, [rowSelection()])
+    const stock = buildTree(true, {}, [rowSelection()])
+    const features = (t: any) => {
+      const city = t.getColumn('city')
+      const name = t.getColumn('name')
+      return {
+        allSelected: t.getIsAllRowsSelected(),
+        someSelected: t.getIsSomeRowsSelected(),
+        allPageSelected: t.getIsAllPageRowsSelected(),
+        somePageSelected: t.getIsSomePageRowsSelected(),
+        selected: modelShape(t.getSelectedRowModel()),
+        filteredSelected: modelShape(t.getFilteredSelectedRowModel()),
+        groupedSelected: modelShape(t.getGroupedSelectedRowModel()),
+        allExpanded: t.getIsAllRowsExpanded(),
+        someExpanded: t.getIsSomeRowsExpanded(),
+        canSomeExpand: t.getCanSomeRowsExpand(),
+        expandedDepth: t.getExpandedDepth(),
+        pageCount: t.getPageCount(),
+        rowCount: t.getRowCount(),
+        canNext: t.getCanNextPage(),
+        cityFacet: modelShape(city.getFacetedRowModel()),
+        nameFacet: modelShape(name.getFacetedRowModel()),
+        sortFns: [city.getAutoSortFn(), name.getAutoSortFn()],
+        aggregationFns: [
+          city.getAutoAggregationFn(),
+          name.getAutoAggregationFn(),
+        ],
+      }
+    }
+    expect(features(ours).cityFacet.flat.length).toBeGreaterThan(0)
+    for (const [step, apply] of [
+      ['исходно', () => {}],
+      ['выбрано всё', (t: any) => t.toggleAllRowsSelected(true)],
+      ['раскрыто всё', (t: any) => t.toggleAllRowsExpanded(true)],
+      ['сортировка', (t: any) => t.setSorting([{ id: 'city', desc: true }])],
+      [
+        'выбраны ветки',
+        (t: any) =>
+          t.setRowSelection({ a: true, a1: true, a2: true, c: true, c2: true }),
+      ],
+      [
+        'фильтр имени',
+        (t: any) =>
+          t.setColumnFilters([
+            { id: 'name', value: { operator: 'contains', value: 'Name c' } },
+          ]),
+      ],
+      ['снят выбор страницы', (t: any) => t.toggleAllPageRowsSelected(false)],
+      [
+        'группировка',
+        (t: any) => {
+          t.setColumnFilters([])
+          t.setGrouping(['city'])
+        },
+      ],
+      ['свёрнуто всё', (t: any) => t.toggleAllRowsExpanded(false)],
+      ['вторая страница', (t: any) => t.setPageIndex(1)],
+    ] as const) {
+      apply(ours)
+      apply(stock)
+      expect(features(ours), step).toEqual(features(stock))
+    }
+  })
+
+  it('EN8: смена входа стадии пересчитывает её и стадии ниже; смена data, транзакция и раскрытие пересобирают только затронутые ветки; итог равен полной сборке', () => {
+    let data = TREE
+    const table = buildTree(false, {
+      onDataChange: (next: TreeItem[]) => {
+        data = next
+        table.setOptions((o: any) => ({ ...o, data }))
+      },
+    })
+    table.setExpanded(true)
+    table.setPageSize(100)
+    expect(
+      rerun(table, () =>
+        table.setColumnFilters([
+          { id: 'city', value: { operator: 'contains', value: 'o' } },
+        ]),
+      ),
+    ).toEqual(STAGE_IDS)
+    expect(rerun(table, () => table.setGrouping(['city']))).toEqual([
+      'group',
+      'sort',
+      'expand',
+      'page',
+    ])
+    table.setGrouping([])
+    expect(
+      rerun(table, () => table.setSorting([{ id: 'city', desc: true }])),
+    ).toEqual(['sort', 'expand', 'page'])
+    // Со страницей ветки раскрывает стадия страницы (ADR 0038): выход раскрытия — её вход.
+    expect(rerun(table, () => table.setExpanded({ a: true, c: true }))).toEqual(
+      ['page'],
+    )
+    expect(rerun(table, () => table.setPageSize(3))).toEqual(['page'])
+    table.setPageSize(100)
+
+    const full = (rows: TreeItem[]) => {
+      const fresh = buildTree(false, { data: rows })
+      fresh.setColumnFilters(table.store.state.columnFilters)
+      fresh.setSorting(table.store.state.sorting)
+      fresh.setExpanded(table.store.state.expanded)
+      fresh.setPageSize(100)
+      return fresh
+    }
+    /** Дети строки в порядке показа стадии сортировки. */
+    const shown = (t: any, id: string) => {
+      const output = engineOf(t).output('sort') as any
+      const row = output.flatRows.find((other: any) => other.id === id)
+      return childrenOf(output, row)
+    }
+    // Смена data в ветке c: ветка a держит прежний порядок показа.
+    table.setColumnFilters([])
+    const aBefore = shown(table, 'a')
+    expect(aBefore.map(row => row.id)).toEqual(['a2', 'a1'])
+    data = data.map(row =>
+      row.id === 'c'
+        ? { ...row, subRows: [row.subRows![0]!, node('c2', 'Oslo')] }
+        : row,
+    )
+    table.setOptions((o: any) => ({ ...o, data }))
+    expect(shown(table, 'a')).toBe(aBefore)
+    expect(modelShape(table.getRowModel())).toEqual(
+      modelShape(full(data).getRowModel()),
+    )
+    // Транзакция приложения: новая строка в корнях, ветки прежние.
+    const cBefore = shown(table, 'c')
+    expect(
+      table.applyRowTransaction({ add: [node('g', 'Oslo')], index: 1 }),
+    ).toBe('applied')
+    expect(shown(table, 'c')).toBe(cBefore)
+    expect(shown(table, 'a')).toBe(aBefore)
+    expect(modelShape(table.getRowModel())).toEqual(
+      modelShape(full(data).getRowModel()),
+    )
+    // Раскрытие ветки: стадии выше прежние, итог — как у полной сборки.
+    expect(rerun(table, () => table.setExpanded({ e: true }))).toEqual(['page'])
+    expect(modelShape(table.getRowModel())).toEqual(
+      modelShape(full(data).getRowModel()),
+    )
+  })
+
+  it('EN10: автосбросы страницы и раскрытия — как у стоковых моделей при смене данных, фильтра, поиска и группировки, с autoResetPageIndex и autoResetExpanded вкл и выкл', async () => {
+    const flush = async () => {
+      for (let i = 0; i < 3; i++) await new Promise(r => setTimeout(r, 0))
+    }
+    for (const autoReset of [true, false]) {
+      const extra = {
+        autoResetPageIndex: autoReset,
+        autoResetExpanded: autoReset,
+      }
+      const ours = buildTree(false, extra)
+      const stock = buildTree(true, extra)
+      for (const [step, apply] of [
+        [
+          'данные',
+          (t: any) => t.setOptions((o: any) => ({ ...o, data: [...TREE] })),
+        ],
+        [
+          'фильтр',
+          (t: any) =>
+            t.setColumnFilters([
+              { id: 'city', value: { operator: 'contains', value: 'o' } },
+            ]),
+        ],
+        ['поиск', (t: any) => t.setGlobalFilter('Name')],
+        ['группировка', (t: any) => t.setGrouping(['city'])],
+        ['снята группировка', (t: any) => t.setGrouping([])],
+      ] as const) {
+        for (const t of [ours, stock]) {
+          t.setPageSize(2)
+          t.setExpanded({ a: true })
+          t.setPageIndex(1)
+          t.getRowModel()
+        }
+        await flush()
+        for (const t of [ours, stock]) {
+          apply(t)
+          t.getRowModel()
+        }
+        await flush()
+        for (const t of [ours, stock]) t.getRowModel()
+        await flush()
+        const state = (t: any) => ({
+          pageIndex: t.store.state.pagination.pageIndex,
+          expanded: t.store.state.expanded,
+        })
+        expect(state(ours), `${step}, autoReset=${autoReset}`).toEqual(
+          state(stock),
+        )
+      }
+    }
+  })
+
+  it('EN13: клиентская страница — по корням вместе с ветками; итог как у createPaginatedRowModel с paginateExpandedRows: false', () => {
+    for (const sorting of [[], [{ id: 'city', desc: true }]]) {
+      for (const expanded of [true, { a: true, c: true }, {}] as const) {
+        const ours = buildTree(false)
+        const stock = buildTree(true)
+        expect(ours.options.paginateExpandedRows).toBe(false)
+        for (const t of [ours, stock]) {
+          t.setSorting(sorting)
+          t.setExpanded(expanded)
+          t.setPageSize(2)
+        }
+        for (const pageIndex of [0, 1, 2]) {
+          for (const t of [ours, stock]) t.setPageIndex(pageIndex)
+          const label = `${JSON.stringify(sorting)}, ${JSON.stringify(expanded)}, страница ${pageIndex}`
+          expect(modelShape(ours.getPaginatedRowModel()), label).toEqual(
+            modelShape(stock.getPaginatedRowModel()),
+          )
+          expect(
+            rowSourceOf<any>(ours).rows!().map((row: any) => row.id),
+            label,
+          ).toEqual(ids(stock.getRowModel()))
+        }
+      }
     }
   })
 })

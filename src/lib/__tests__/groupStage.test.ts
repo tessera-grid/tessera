@@ -50,7 +50,7 @@ const REACTIVITY = {
   features: { coreReactivityFeature: storeReactivityBindings() },
 }
 
-const build = () => {
+const build = (extra: object = {}) => {
   const all = [REACTIVITY, rowGroupingModel()]
   const folded = foldEntries(all as never)
   return constructTable({
@@ -62,10 +62,11 @@ const build = () => {
     hooks: resolveHooks(foldHooks(all as never)),
     pluginDiagnostics: folded.pluginDiagnostics,
     logLevel: 'error',
+    ...extra,
   } as never) as any
 }
 
-const buildStock = () =>
+const buildStock = (extra: object = {}) =>
   constructTable({
     features: {
       coreReactivityFeature: storeReactivityBindings(),
@@ -82,6 +83,7 @@ const buildStock = () =>
     columns: COLUMNS,
     getRowId: (row: Item) => row.id,
     logLevel: 'error',
+    ...extra,
   } as never) as any
 
 /** Строки модели группировки: место, связи, поля группы, значения и агрегаты. */
@@ -99,7 +101,7 @@ const shape = (table: any) =>
   }))
 
 describe('Стадия группировки движка (ADR 0200)', () => {
-  it('EN15: строки-группы с полями группы и агрегатами, заданными при создании, — итог как у createGroupedRowModel на одном и двух уровнях, при смене data и переезде строки между группами, кэши строк не пишутся', () => {
+  it('EN15: строки-группы с полями группы и агрегатами, заданными при создании, — итог как у createGroupedRowModel на одном и двух уровнях, при смене data и переезде строки между группами, на дереве с глубиной агрегации; кэши строк не пишутся', () => {
     const ours = build()
     const stock = buildStock()
     const writes: string[] = []
@@ -154,5 +156,29 @@ describe('Стадия группировки движка (ADR 0200)', () => {
     ours.setGrouping([])
     stock.setGrouping([])
     expect(shape(ours)).toEqual(shape(stock))
+
+    // Дерево на входе: по группам — корни, ветки идут за ними; агрегат — с глубиной.
+    const tree = {
+      data: DATA.slice(0, 8).map((row, i) => ({
+        ...row,
+        subRows: [
+          { id: `${row.id}.a`, city: 'Lima', team: 'red', age: 10 + i },
+          { id: `${row.id}.b`, city: 'Oslo', team: 'blue', age: 20 + i },
+        ],
+      })),
+      getSubRows: (row: Item & { subRows?: Item[] }) => row.subRows,
+      columns: COLUMNS.map(column =>
+        column.id === 'age' ? { ...column, maxAggregationDepth: 1 } : column,
+      ),
+    }
+    const ourTree = build(tree)
+    const stockTree = buildStock(tree)
+    for (const grouping of [['city'], ['city', 'team'], []]) {
+      ourTree.setGrouping(grouping)
+      stockTree.setGrouping(grouping)
+      expect(shape(ourTree), `дерево: ${grouping.join()}`).toEqual(
+        shape(stockTree),
+      )
+    }
   })
 })

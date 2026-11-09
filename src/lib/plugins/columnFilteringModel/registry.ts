@@ -17,7 +17,7 @@ import { createSearchAwareFilteredRowModel } from '../../shared/rowModels/filter
 import { neverInert } from '../../core/pluginDiagnostics'
 import { columnFilterTypesFeature } from './columnFilterTypesFeature'
 import { filteringLabels } from '../../shared/filtering/labels'
-import { stageSlot } from '../../core/rowEngine/engine'
+import { ownStage } from '../../core/rowEngine/engine'
 
 export interface ColumnFilteringModelOptions {
   /** `false` — плагин отключён: фильтры колонок не применяются. */
@@ -34,7 +34,7 @@ export interface ColumnFilteringModelOptions {
 export const columnFilteringModelFeatures = {
   columnFilteringFeature,
   columnFilterTypesFeature,
-  filteredRowModel: stageSlot('filter', createSearchAwareFilteredRowModel()),
+  filteredRowModel: ownStage('filter', createSearchAwareFilteredRowModel()),
   // Счётчики вариантов — по строкам без фильтра своей колонки (ADR 0048, §3).
   columnFacetingFeature,
   facetedRowModel: createFacetedRowModel(),

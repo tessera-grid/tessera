@@ -28,6 +28,8 @@ import {
   resolvePluginDiagnostics,
 } from './pluginDiagnostics'
 import { createClientRowSource, rowSourceOf } from './rowSource'
+import { childrenOf } from './rowEngine/displayChildren'
+import { engineOf } from './rowEngine/engine'
 import { DEFAULT_SKELETON_OPTIONS } from './skeletonOptions'
 import { applyRowTransaction, type RowTransaction } from './rowTransactions'
 
@@ -191,11 +193,7 @@ export const commonFeature: TableFeature = {
         },
       },
       row_getIsLastSubRow: {
-        fn: (row: {
-          id: string
-          parentId?: string | null
-          getParentRow?: () => { subRows: { id: string }[] } | undefined
-        }) => {
+        fn: (row: { id: string; parentId?: string | null }) => {
           if (row.parentId == null) {
             return false
           }
@@ -207,8 +205,13 @@ export const commonFeature: TableFeature = {
             const aria = source.treeAria(source.indexOf(row.id))
             return !!aria && aria.posInSet === aria.setSize
           }
-          const parent = row.getParentRow?.()
-          return row.id === parent?.subRows.at(-1)?.id
+          // Последняя среди детей показа родителя (ADR 0200, §4): без копий стокового вида.
+          const parent = source.byId(row.parentId!) as
+            { id: string; subRows: { id: string }[] } | undefined
+          const shown = parent
+            ? childrenOf(engineOf(table).input('page') as object, parent)
+            : []
+          return row.id === shown.at(-1)?.id
         },
       },
     })

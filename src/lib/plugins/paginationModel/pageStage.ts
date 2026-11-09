@@ -65,8 +65,8 @@ export const createPageStage =
           output: PageModel
         }
       | undefined
-    return () => {
-      const input = t.getPrePaginatedRowModel()
+    return (read: () => unknown) => {
+      const input = read() as PageModel
       const pagination = t.atoms.pagination?.get()
       const expanded = isPaginationActive(t)
         ? t.atoms.expanded?.get()

@@ -32,6 +32,7 @@ import * as serverCellSelectionStories from './DataGrid.DataLoading.ServerRowMod
 import * as serverEditingStories from './DataGrid.DataLoading.ServerRowModel.Editing.stories'
 import * as serverTransactionsStories from './DataGrid.DataLoading.ServerRowModel.Transactions.stories'
 import * as clientTransactionsStories from './DataGrid.DataLoading.ClientTransactions.stories'
+import * as clientRowModelStories from './DataGrid.DataLoading.ClientRowModel.stories'
 import * as serverPaginationStories from './DataGrid.DataLoading.ServerRowModel.Pagination.stories'
 import * as serverDraggingStories from './DataGrid.DataLoading.ServerRowModel.Dragging.stories'
 import * as serverLazyChildrenStories from './DataGrid.DataLoading.ServerRowModel.LazyChildren.stories'
@@ -8266,6 +8267,66 @@ export const HighContrastClientTransactionsWithoutHandlerStep2 = {
     2,
   ),
   name: 'Data loading/Client transactions — Without a data handler, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastClientRowModelLargeTableStep1 = {
+  ...twinStep(
+    clientRowModelStories,
+    clientRowModelStories.ClientRowModelLargeTable,
+    1,
+  ),
+  name: 'Data loading/Client row model — Sort, filter, group and edit a large table, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastClientRowModelLargeTableStep2 = {
+  ...twinStep(
+    clientRowModelStories,
+    clientRowModelStories.ClientRowModelLargeTable,
+    2,
+  ),
+  name: 'Data loading/Client row model — Sort, filter, group and edit a large table, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastClientRowModelLargeTableStep3 = {
+  ...twinStep(
+    clientRowModelStories,
+    clientRowModelStories.ClientRowModelLargeTable,
+    3,
+  ),
+  name: 'Data loading/Client row model — Sort, filter, group and edit a large table, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastClientRowModelLargeTableStep4 = {
+  ...twinStep(
+    clientRowModelStories,
+    clientRowModelStories.ClientRowModelLargeTable,
+    4,
+  ),
+  name: 'Data loading/Client row model — Sort, filter, group and edit a large table, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastClientRowModelLargeTableStep5 = {
+  ...twinStep(
+    clientRowModelStories,
+    clientRowModelStories.ClientRowModelLargeTable,
+    5,
+  ),
+  name: 'Data loading/Client row model — Sort, filter, group and edit a large table, шаг 5',
+  tags: ['!test'],
+}
+
+export const HighContrastClientRowModelLargeTableStep6 = {
+  ...twinStep(
+    clientRowModelStories,
+    clientRowModelStories.ClientRowModelLargeTable,
+    6,
+  ),
+  name: 'Data loading/Client row model — Sort, filter, group and edit a large table, шаг 6',
   tags: ['!test'],
 }
 

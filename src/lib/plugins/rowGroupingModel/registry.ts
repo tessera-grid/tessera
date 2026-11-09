@@ -15,7 +15,7 @@ import { aggregationFeatures } from '../../shared/aggregation'
 import { rowExpandingModel } from '../rowExpandingModel/registry'
 import { createGroupStage, stagedGroupValue } from './groupStage'
 import { objectGroupingFeature } from './objectGrouping'
-import { stageSlot } from '../../core/rowEngine/engine'
+import { ownStage } from '../../core/rowEngine/engine'
 
 export interface RowGroupingModelOptions {
   /** `false` — плагин отключён. */
@@ -32,7 +32,7 @@ export interface RowGroupingModelOptions {
 export const rowGroupingModelFeatures = {
   columnGroupingFeature,
   objectGroupingFeature,
-  groupedRowModel: stageSlot('group', createGroupStage()),
+  groupedRowModel: ownStage('group', createGroupStage()),
   ...aggregationFeatures,
 }
 

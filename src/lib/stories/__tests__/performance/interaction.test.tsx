@@ -55,7 +55,8 @@ import { createLazyCoreRowModel } from '../../../plugins/rowExpanding/lazyCoreRo
 import { createIncrementalExpandedRowModel } from '../../../shared/rowModels/expandedRowModel'
 import { rowChangeHints } from '../../../core/rowChanges'
 import { createSearchAwareFilteredRowModel } from '../../../shared/rowModels/filteredRowModel'
-import { createIdleAwareGroupedRowModel } from '../../../plugins/rowGroupingModel/groupedRowModel'
+import { createGroupStage } from '../../../plugins/rowGroupingModel/groupStage'
+import { ownStage } from '../../../core/rowEngine/engine'
 import {
   rowExpandingLazyFeature,
   setLoadedAnswer,
@@ -2136,8 +2137,8 @@ describe('Холостые проходы фильтрации и группир
       const runs = await againstBase(isOurs =>
         isOurs
           ? passes(
-              createSearchAwareFilteredRowModel(),
-              createIdleAwareGroupedRowModel(),
+              ownStage('filter', createSearchAwareFilteredRowModel()),
+              ownStage('group', createGroupStage()),
             )
           : passes(createFilteredRowModel(), createGroupedRowModel()),
       )

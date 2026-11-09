@@ -22,7 +22,14 @@ import {
 import { storeReactivityBindings } from '../../../node_modules/@tanstack/table-core/dist/store-reactivity-bindings.js'
 import { describe, expect, it } from 'vitest'
 
-import { createTesseraSortedRowModel } from '../plugins/columnSortingModel/sortedRowModel'
+import { ownStage } from '../core/rowEngine/engine'
+import { createTesseraSortedRowModel as createSortStage } from '../plugins/columnSortingModel/sortedRowModel'
+
+/** Стадия сортировки движка в слоте модели — как её подключает плагин (ADR 0200). */
+const createTesseraSortedRowModel = () =>
+  ownStage('sort', createSortStage()) as unknown as ReturnType<
+    typeof createSortedRowModel
+  >
 import {
   type LoadedChildren,
   readLoadedChildren,

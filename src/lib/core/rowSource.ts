@@ -1,3 +1,4 @@
+import { engineOf } from './rowEngine/engine'
 import { positionOf } from './rowPosition'
 /**
  * Источник строк (ADR 0138, §2): строки, которые рисует тело, — по индексу и по id.
@@ -267,18 +268,20 @@ const dataRowsInGroup = (row: ModelRow) => {
   return count
 }
 
-/** Источник клиентского режима: список — `getRowModel().rows`. */
+/** Источник клиентского режима: список — выход движка строк (ADR 0200, §2). */
 export const createClientRowSource = (table: unknown): RowSource => {
   const t = table as ModelTable
+  const engine = engineOf(table as object)
+  const list = () => engine.last() as ReturnType<ModelTable['getRowModel']>
   return {
-    count: () => t.getRowModel().rows.length,
-    at: index => t.getRowModel().rows[index],
+    count: () => list().rows.length,
+    at: index => list().rows[index],
     // Как `getRow(id, true)` TanStack — строки групп и других страниц, но без исключения.
     byId: id =>
-      t.getPrePaginatedRowModel().rowsById[id] ??
+      (engine.input('page') as ById).rowsById[id] ??
       t.getCoreRowModel().rowsById[id],
     indexOf: id => {
-      const { rows, rowsById } = t.getRowModel()
+      const { rows, rowsById } = list()
       // Строка стоит на своём индексе (плоский список без сортировки) — без обхода списка.
       const row = rowsById[id]
       if (row && rows[positionOf(row)] === row) return positionOf(row)
@@ -291,7 +294,7 @@ export const createClientRowSource = (table: unknown): RowSource => {
     },
     loadedRows: () => t.getCoreRowModel().flatRows,
     groupRowCount: row => dataRowsInGroup(row as ModelRow),
-    rows: () => t.getRowModel().rows,
+    rows: () => list().rows,
   }
 }
 

@@ -4,8 +4,8 @@
  * при создании; агрегаты считают определения колонки (`column.getAggregationFns()`). Ключи
  * групп и значения стадии переноса (ADR 0186, §3) — в словарях стадии, а не в кэшах строк.
  * `depth` и `parentId` листьев стадия назначает, как стоковая группировка. Смена `data` при
- * той же группировке пересобирает только затронутые группы (ADR 0194). Вход-дерево — прежняя
- * модель до этапа 3.
+ * той же группировке пересобирает только затронутые группы (ADR 0194). У дерева на входе по
+ * группам раскладываются корни, их ветки идут за ними.
  */
 import { constructRow, makeObjectMap } from '@tanstack/react-table'
 
@@ -20,7 +20,7 @@ import {
   type RowMoves,
 } from '../../shared/rowMoves'
 import type { RowData, Table, TableFeatures } from '../../types'
-import { createIdleAwareGroupedRowModel } from './groupedRowModel'
+import { childrenOf } from '../../core/rowEngine/displayChildren'
 
 interface StageRow {
   id: string
@@ -105,13 +105,14 @@ const aggregationDepth = (value: number | undefined) =>
 
 /**
  * Агрегат колонки строки-группы — как исполнитель агрегации TanStack, но через публичные
- * определения колонки. Листья группы плоские: строк для агрегации — сами листья.
+ * определения колонки. Строки агрегации — строки группы, а с `maxAggregationDepth` — их потомки
+ * до этой глубины, как `normalizeUniqueAggregationRows` TanStack.
  */
 const aggregateOf = (
   column: StageColumn,
   group: StageRow,
   subRows: StageRow[],
-  rows: StageRow[],
+  rowsAt: (maxDepth: number) => StageRow[],
 ) => {
   const entries = column.getAggregationFns?.()
   if (!entries) return undefined
@@ -128,7 +129,7 @@ const aggregateOf = (
     getValue: row => row.getValue(column.id),
     groupingRow: group,
     maxDepth: aggregationDepth(column.columnDef.maxAggregationDepth),
-    rows,
+    rows: rowsAt(aggregationDepth(column.columnDef.maxAggregationDepth)),
     table: column.table,
   }
   const subResultOf = (value: unknown, id: string | undefined) => {
@@ -160,9 +161,13 @@ const aggregateOf = (
 }
 
 interface Layout {
+  /** Модель входа: дети строки — её дети показа (ADR 0200, §4). */
+  input: StageModel
   /** Колонки группировки, которые есть в таблице. */
   columns: string[]
   moves: RowMoves
+  /** Вход плоский: строки группы — сами листья. */
+  flat: boolean
   /** Значения `getGroupingValue` по строке — пока жив объект строки. */
   groupingValues: WeakMap<object, Map<string, unknown>>
 }
@@ -230,7 +235,7 @@ const makeGroup = (
     groupingColumnId: columnId,
     groupingValue: key,
     subRows,
-    leafRows: members,
+    leafRows: layout.flat ? members : leavesOf(layout, members),
     getValue: (target: string) => {
       if (values.has(target)) return values.get(target)
       const level = layout.columns.indexOf(target)
@@ -239,7 +244,13 @@ const makeGroup = (
         value = valueOf(layout.moves, members[0]!, target)
       } else {
         const column = table.getColumn(target)
-        value = column ? aggregateOf(column, row, subRows, members) : undefined
+        value = column
+          ? aggregateOf(column, row, subRows, (maxDepth: number) =>
+              layout.flat || maxDepth === 0
+                ? members
+                : leavesOf(layout, members, maxDepth),
+            )
+          : undefined
       }
       values.set(target, value)
       return value
@@ -259,6 +270,41 @@ interface Grouped {
   topKeys?: Map<string, string>
 }
 
+/** Строка данных под группой и её ветка: `depth` по месту, ветка идёт за строкой. */
+const placeBranch = (
+  layout: Layout,
+  row: StageRow,
+  depth: number,
+  parentId: string | undefined,
+  flatRows: StageRow[],
+) => {
+  row.depth = depth
+  row.parentId = parentId
+  flatRows.push(row)
+  for (const child of childrenOf(layout.input, row)) {
+    placeBranch(layout, child, depth + 1, row.id, flatRows)
+  }
+}
+
+/** Листья веток — как `normalizeUniqueAggregationRows` TanStack до глубины `maxDepth`. */
+const leavesOf = (
+  layout: Layout,
+  rows: readonly StageRow[],
+  maxDepth = Infinity,
+) => {
+  const leaves: StageRow[] = []
+  const visit = (row: StageRow, depth: number) => {
+    const kids = childrenOf(layout.input, row)
+    if (kids.length && depth < maxDepth) {
+      for (const child of kids) visit(child, depth + 1)
+    } else {
+      leaves.push(row)
+    }
+  }
+  for (const row of rows) visit(row, 0)
+  return leaves
+}
+
 /** Раскладка уровня `depth` и ниже; листья получают свои `depth` и `parentId`. */
 const groupUp = (
   table: StageTable,
@@ -269,11 +315,7 @@ const groupUp = (
   flatRows: StageRow[],
 ): StageRow[] => {
   if (depth >= layout.columns.length) {
-    for (const row of rows) {
-      row.depth = depth
-      row.parentId = parentId
-      flatRows.push(row)
-    }
+    for (const row of rows) placeBranch(layout, row, depth, parentId, flatRows)
     return rows
   }
   const columnId = layout.columns[depth]!
@@ -352,7 +394,13 @@ const patchGroups = (
   input: StageModel,
 ): Grouped | undefined => {
   const change = rowModelChangeOf(input) as RowModelChange | undefined
-  if (!change || change.prev !== prev.input || prev.output === prev.input) {
+  if (
+    !change ||
+    change.prev !== prev.input ||
+    prev.output === prev.input ||
+    !isFlat(input) ||
+    !prev.layout.flat
+  ) {
     return undefined
   }
   const { layout } = prev
@@ -460,33 +508,39 @@ const patchGroups = (
 }
 
 /** Связи строк без группировки — как `resetRowRelationships` стоковой модели. */
-const resetRelationships = (rows: readonly StageRow[]) => {
+const resetRelationships = (
+  input: StageModel,
+  rows: readonly StageRow[],
+  depth = 0,
+  parentId?: string,
+) => {
   for (const row of rows) {
-    if (row.depth !== 0) row.depth = 0
-    if (row.parentId !== undefined) row.parentId = undefined
+    if (row.depth !== depth) row.depth = depth
+    if (row.parentId !== parentId) row.parentId = parentId
+    const kids = childrenOf(input, row)
+    if (kids.length) resetRelationships(input, kids, depth + 1, row.id)
   }
 }
 
 /**
- * Фабрика слота группировки: плоский вход — своя стадия, дерево — прежняя модель
- * (`createIdleAwareGroupedRowModel`) до этапа 3.
+ * Стадия группировки: вход — у движка (ADR 0200, §3), плоский и дерево.
  */
 export const createGroupStage =
   <TFeatures extends TableFeatures, TData extends RowData = any>() =>
   (table: Table<TFeatures, TData>) => {
     const t = table as unknown as StageTable
-    const legacy = createIdleAwareGroupedRowModel<TFeatures, TData>()(table)
     let last: Grouped | undefined
     /** Последний выход своей стадии: без группировки — вход. */
     let shown: { input: StageModel; grouping: unknown } | undefined
     let grouped = false
-    /** Дерево сгруппировано прежней моделью: снятие группировки — её проход (PT4). */
-    let legacyGrouped = false
 
     const resets = (input: StageModel, grouping: unknown) => {
+      // Как мемо TanStack: сбросы — после пересчёта, не посреди чтения модели.
       if (shown && (shown.input !== input || shown.grouping !== grouping)) {
-        t.autoResetExpanded?.()
-        t.autoResetPageIndex?.()
+        queueMicrotask(() => {
+          t.autoResetExpanded?.()
+          t.autoResetPageIndex?.()
+        })
       }
       shown = { input, grouping }
     }
@@ -497,7 +551,7 @@ export const createGroupStage =
       if (!input.rows.length || !columns.length) {
         // Без группировки строки уже в нужном виде: связи сбрасываются один раз (ADR 0068).
         if (grouped) {
-          resetRelationships(input.rows)
+          resetRelationships(input, input.rows)
           grouped = false
         }
         last = undefined
@@ -521,12 +575,14 @@ export const createGroupStage =
         last.grouping === grouping &&
         last.columns === columnsOption &&
         last.movesKey === movesKey
-      if (same) last!.layout.moves = moves
+      if (same) Object.assign(last!.layout, { moves, input })
       const patched = same ? patchGroups(t, last!, input) : undefined
       if (patched) {
         last = patched
       } else {
         const layout: Layout = {
+          input,
+          flat: isFlat(input),
           columns,
           moves,
           groupingValues:
@@ -550,21 +606,7 @@ export const createGroupStage =
       return last.output
     }
 
-    return () => {
-      const input = t.getPreGroupedRowModel()
-      const groupingOn = (t.atoms.grouping?.get() ?? []).some(id =>
-        t.getColumn(id),
-      )
-      if (isFlat(input) || !(groupingOn || legacyGrouped)) {
-        legacyGrouped = false
-        return own(input) as never
-      }
-      legacyGrouped = groupingOn
-      last = undefined
-      shown = undefined
-      grouped = false
-      return legacy() as never
-    }
+    return (read: () => unknown) => own(read() as StageModel) as never
   }
 
 /**

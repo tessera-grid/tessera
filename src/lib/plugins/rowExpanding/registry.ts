@@ -43,7 +43,7 @@ import {
 } from '../rowExpandingModel/registry'
 import type { RowExpandingHooks } from './types'
 import { rowExpandingLabels } from './labels'
-import { stageSlot } from '../../core/rowEngine/engine'
+import { ownStage } from '../../core/rowEngine/engine'
 
 export const DEFAULT_MAX_EXPANDING_DEPTH = 1
 
@@ -134,7 +134,7 @@ export const rowExpanding = definePlugin<RowExpandingOptions>()({
     rowExpandingPendingFeature,
     rowExpandingLazyFeature,
     coreRowModel: createLazyCoreRowModel(),
-    expandedRowModel: stageSlot('expand', createIncrementalExpandedRowModel()),
+    expandedRowModel: ownStage('expand', createIncrementalExpandedRowModel()),
   },
   hooks: o => ({
     onExpandRow: o.onExpandRow,

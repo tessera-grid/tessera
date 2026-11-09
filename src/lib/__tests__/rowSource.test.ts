@@ -83,7 +83,7 @@ const expectParity = (table: any) => {
   const { rows } = table.getRowModel()
   expect(source.count()).toBe(rows.length)
   rows.forEach((row: { id: string }, index: number) => {
-    expect(source.at(index)).toBe(row)
+    expect(source.at(index)?.id).toBe(row.id)
     expect(source.indexOf(row.id)).toBe(index)
   })
   expect(source.at(rows.length)).toBeUndefined()
@@ -94,7 +94,8 @@ const expectParity = (table: any) => {
     ...Object.keys(table.getPrePaginatedRowModel().rowsById),
   ]
   for (const id of ids) {
-    expect(source.byId(id)).toBe(table.getRow(id, true))
+    // Источник отдаёт строки движка, getRow — стоковый вид: сверка по id (ADR 0200, §6).
+    expect(source.byId(id)?.id).toBe(table.getRow(id, true)?.id)
     if (!shown.has(id)) expect(source.indexOf(id)).toBe(-1)
   }
   expect(source.byId('missing')).toBeUndefined()
@@ -194,6 +195,8 @@ const sourceFiles = (dir: string): string[] =>
  */
 const MODEL_READERS: Record<string, string> = {
   'core/rowSource.ts': 'клиентский источник строк — над моделью TanStack',
+  'core/rowEngine/stockView.ts':
+    'стоковый вид выхода стадии для table.get*RowModel() — над словарём выхода (ADR 0200, §6)',
   'core/rowEngine/engine.ts':
     'движок строк: вход стадии — модель TanStack перед её слотом (ADR 0200, §10)',
   'core/rowTransactions.ts':
@@ -216,8 +219,6 @@ const MODEL_READERS: Record<string, string> = {
     'стадия страницы движка: вход — модель перед слотом страницы (ADR 0200, §3)',
   'plugins/rowGroupingModel/groupStage.ts':
     'стадия группировки движка: вход — модель перед слотом группировки (ADR 0200, §3)',
-  'plugins/rowGroupingModel/groupedRowModel.ts':
-    'фабрика модели группировки клиентского режима (ADR 0068)',
   'plugins/columnFilteringModel/options.ts':
     'варианты и счётчики фильтра из данных клиентского режима (ADR 0048)',
   'core/scrollToRow/scrollToRowFeature.ts':

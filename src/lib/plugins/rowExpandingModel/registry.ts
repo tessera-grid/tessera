@@ -11,7 +11,7 @@ import {
   narrowExpandingOff,
 } from '../../shared/rowModels/expandedRowModel'
 import { neverInert } from '../../core/pluginDiagnostics'
-import { stageSlot } from '../../core/rowEngine/engine'
+import { ownStage } from '../../core/rowEngine/engine'
 
 export interface RowExpandingModelOptions {
   /** `false` — плагин отключён. */
@@ -29,7 +29,7 @@ export const rowExpandingModel = definePlugin<RowExpandingModelOptions>()({
   diagnose: neverInert,
   features: {
     rowExpandingFeature,
-    expandedRowModel: stageSlot('expand', createIncrementalExpandedRowModel()),
+    expandedRowModel: ownStage('expand', createIncrementalExpandedRowModel()),
   },
   slices: ['expanded'],
   narrow: () => ({ expanded: narrowExpandingOff }),

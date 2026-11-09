@@ -282,8 +282,8 @@ export const createIncrementalExpandedRowModel =
       }
     }
 
-    return () => {
-      const input = t.getPreExpandedRowModel()
+    return (read: () => unknown) => {
+      const input = read() as ExpandModel
       const expanded = t.atoms.expanded?.get() ?? NO_EXPANDED
       const paginate = expandsHere(t)
       const prev = last

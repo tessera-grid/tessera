@@ -23,7 +23,11 @@ import { storeReactivityBindings } from '../../../node_modules/@tanstack/table-c
 import { describe, expect, it } from 'vitest'
 
 import { getTreeAria } from '../grid/treeAria'
-import { createTesseraSortedRowModel } from '../plugins/columnSortingModel/sortedRowModel'
+import { ownStage } from '../core/rowEngine/engine'
+import { createTesseraSortedRowModel as createSortStage } from '../plugins/columnSortingModel/sortedRowModel'
+
+/** Стадия сортировки движка в слоте модели — как её подключает плагин (ADR 0200). */
+const createTesseraSortedRowModel = () => ownStage('sort', createSortStage())
 
 interface Item {
   id: string

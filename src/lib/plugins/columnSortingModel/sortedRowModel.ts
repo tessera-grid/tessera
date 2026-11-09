@@ -1,29 +1,20 @@
 /**
- * Отсортированная модель строк (ADR 0064): устройство как у `createSortedRowModel`
- * TanStack, но значения сортируемых колонок читаются один раз на строку, а функции по
- * контракту `constructSortFn` сравнивают уже приведённые значения. `rowsById`
- * указывает на строки модели, в том числе на копии родителей с переставленными детьми.
- * Приход ответа при той же сортировке собирает модель из прошлой: порядок корней —
- * прежний, заново сортируются только изменённые поддеревья (ADR 0072). Смена `data` с
- * записанной сменой модели собирается из прошлой: изменённые и вставленные строки встают на
- * свои места поиском, удалённые уходят (ADR 0194).
+ * Стадия сортировки движка строк (ADR 0064, ADR 0200, §3–§4): значения сортируемых колонок
+ * читаются один раз на строку, а функции по контракту `constructSortFn` сравнивают уже
+ * приведённые значения. Строки выхода — объекты входа: дети, чей порядок изменился, — дети
+ * показа выхода, без копий родителей. Приход ответа при той же сортировке собирает модель из
+ * прошлой: порядок корней — прежний, заново сортируются только изменённые поддеревья (ADR 0072).
+ * Смена `data` с записанной сменой модели собирается из прошлой: изменённые и вставленные строки
+ * встают на свои места поиском, удалённые уходят (ADR 0194).
  */
-import {
-  type createSortedRowModel,
-  copyInstancePropertiesWithoutMemos,
-  skipFirstRun,
-  tableMemo,
-} from '@tanstack/react-table'
-
 import {
   type RowModelChange,
   recordRowModelChange,
   rowModelChangeOf,
 } from '../../core/dataChanges'
-import { handOverRowsById } from '../../core/rowsByIdHandover'
-import { positionOf, setPosition } from '../../core/rowPosition'
-
-type SortedRowModelFactory = ReturnType<typeof createSortedRowModel>
+import { childrenOf, setChildren } from '../../core/rowEngine/displayChildren'
+import type { StageRun } from '../../core/rowEngine/engine'
+import { positionOf } from '../../core/rowPosition'
 
 interface SortRow {
   id: string
@@ -64,7 +55,6 @@ interface SortTable {
   /** Язык и типы колонок — правила сравнения сортировки по типу (ADR 0172, DT10). */
   options: { locale?: string; dataTypes?: unknown }
   atoms: { sorting?: { get: () => { id: string; desc: boolean }[] } }
-  getPreSortedRowModel: () => RowModel
   getColumn: (id: string) => SortColumn | undefined
   autoResetPageIndex?: () => void
 }
@@ -133,10 +123,17 @@ const sortEntries = (table: SortTable) => {
   return entries
 }
 
-/** Сортировка уровней дерева; `onClone` получает копию родителя с переставленными детьми. */
+/** Дети показа модели: свои записи стадии или дети входа. */
+type ShownChildren = (row: SortRow) => readonly SortRow[]
+
+/**
+ * Сортировка уровней дерева: детей строки даёт `kidsOf`, а уровень с другим порядком
+ * записывается в `own` — дети показа выхода.
+ */
 const sorter = (
   entries: SortEntry[],
-  onClone: (id: string, clone: SortRow) => void,
+  kidsOf: ShownChildren,
+  own: Map<string, SortRow[]>,
 ) => {
   const width = entries.length
   const resolvers = entries.map(entry =>
@@ -144,27 +141,27 @@ const sorter = (
   )
 
   /** Порядок строк уровня: значения читаются один раз, сортируются индексы. */
-  const sortRows = (rows: SortRow[]): SortRow[] => {
+  const sortRows = (rows: readonly SortRow[]): SortRow[] => {
     const raw = new Array<unknown>(rows.length * width)
     const keys = new Array<unknown>(rows.length * width)
     const order = new Array<number>(rows.length)
     for (let i = 0; i < rows.length; i++) {
       order[i] = i
       for (let e = 0; e < width; e++) {
-        const value = rows[i].getValue(entries[e].id)
+        const value = rows[i]!.getValue(entries[e]!.id)
         const resolve = resolvers[e]
         raw[i * width + e] = value
         keys[i * width + e] = resolve ? resolve(value) : value
       }
     }
     order.sort((x, y) => {
-      const rowX = rows[x]
-      const rowY = rows[y]
+      const rowX = rows[x]!
+      const rowY = rows[y]!
       for (let e = 0; e < width; e++) {
         const a = x * width + e
         const b = y * width + e
         const result = compareEntry(
-          entries[e],
+          entries[e]!,
           raw[a],
           raw[b],
           keys[a],
@@ -179,37 +176,26 @@ const sorter = (
       // Равные — в порядке уровня: он в порядке данных.
       return x - y
     })
-    return order.map(i => rows[i])
+    return order.map(i => rows[i]!)
   }
 
-  /** Строка и её отсортированное поддерево в `flat`; копия строки, если порядок детей изменился. */
+  /** Строка и её отсортированное поддерево в `flat`; порядок детей — в `own`. */
   const sortTree = (row: SortRow, flat: SortRow[]): SortRow => {
-    const at = flat.length
     flat.push(row)
-    if (!row.subRows.length) return row
-    const children = sortLevel(row.subRows, flat)
-    if (!children.changed) return row
-    // Как у TanStack: родитель с переставленными детьми — копия строки.
-    const cloned = Object.create(Object.getPrototypeOf(row)) as SortRow
-    copyInstancePropertiesWithoutMemos(cloned as never, row as never)
-    setPosition(cloned, positionOf(row))
-    cloned.subRows = children.rows
-    clonesOf.set(row, cloned)
-    flat[at] = cloned
-    onClone(row.id, cloned)
-    return cloned
+    const kids = kidsOf(row)
+    if (!kids.length) return row
+    const children = sortLevel(kids, flat)
+    if (children.changed) own.set(row.id, children.rows)
+    else own.delete(row.id)
+    return row
   }
 
-  const sortLevel = (rows: SortRow[], flat: SortRow[]) => {
+  const sortLevel = (rows: readonly SortRow[], flat: SortRow[]) => {
     const result = sortRows(rows)
     let changed = false
     for (let i = 0; i < result.length; i++) {
       if (result[i] !== rows[i]) changed = true
-      const row = sortTree(result[i], flat)
-      if (row !== result[i]) {
-        result[i] = row
-        changed = true
-      }
+      sortTree(result[i]!, flat)
     }
     return { rows: result, changed }
   }
@@ -224,8 +210,8 @@ interface Sorted {
   rules: readonly unknown[]
   sortFns: RowSortFn[]
   output: RowModel
-  /** `rowsById` модели — свой словарь (с копиями родителей), а не словарь входа. */
-  ownIndex: boolean
+  /** Дети показа выхода — уровни, чей порядок отличается от входа. */
+  own: Map<string, SortRow[]>
   /** Позиция корня в `output.rows` по id — порядок корней при инкременте не меняется. */
   rootAt?: Map<string, number>
   /** Начало участка каждого корня в `output.flatRows`; последний элемент — длина. */
@@ -237,8 +223,38 @@ const rulesOf = (table: SortTable) => [
   table.options.dataTypes,
 ]
 
-const fullSort = (table: SortTable): Sorted => {
-  const input = table.getPreSortedRowModel()
+/** Выход стадии: строки входа, словарь входа, дети показа — свои поверх входа. */
+const outputOf = (
+  input: RowModel,
+  rows: SortRow[],
+  flatRows: SortRow[],
+  own: Map<string, SortRow[]>,
+): RowModel => {
+  const output = { rows, flatRows, rowsById: input.rowsById }
+  setChildren(output, own, input)
+  return output
+}
+
+/** Дети строки во входе стадии. */
+const inputKids =
+  (input: RowModel): ShownChildren =>
+  row =>
+    childrenOf(input, row)
+
+/** Строки поддеревьев по детям показа, в порядке показа. */
+const pushShown = (
+  rows: readonly SortRow[],
+  flat: SortRow[],
+  kidsOf: ShownChildren,
+) => {
+  for (const row of rows) {
+    flat.push(row)
+    const kids = kidsOf(row)
+    if (kids.length) pushShown(kids, flat, kidsOf)
+  }
+}
+
+const fullSort = (table: SortTable, input: RowModel): Sorted => {
   const base = {
     input,
     sorting: table.atoms.sorting?.get(),
@@ -246,20 +262,17 @@ const fullSort = (table: SortTable): Sorted => {
   }
   const entries = input.rows.length ? sortEntries(table) : []
   if (!entries.length) {
-    return { ...base, sortFns: [], output: input, ownIndex: false }
+    return { ...base, sortFns: [], output: input, own: new Map() }
   }
-  let rowsById: Record<string, SortRow> | undefined
-  const { sortLevel } = sorter(entries, (id, clone) => {
-    rowsById ??= Object.assign(Object.create(null), input.rowsById)
-    rowsById![id] = clone
-  })
+  const own = new Map<string, SortRow[]>()
+  const { sortLevel } = sorter(entries, inputKids(input), own)
   const flatRows: SortRow[] = []
   const rows = sortLevel(input.rows, flatRows).rows
   return {
     ...base,
     sortFns: entries.map(entry => entry.sortFn),
-    output: { rows, flatRows, rowsById: rowsById ?? input.rowsById },
-    ownIndex: !!rowsById,
+    output: outputOf(input, rows, flatRows, own),
+    own,
   }
 }
 
@@ -277,8 +290,11 @@ const rootStarts = (rows: SortRow[], flatRows: SortRow[]) => {
 }
 
 /** Модель из прошлой: прежний порядок корней, заново — поддеревья изменённых (ADR 0072). */
-const patchSort = (table: SortTable, prev: Sorted): Sorted | undefined => {
-  const input = table.getPreSortedRowModel()
+const patchSort = (
+  table: SortTable,
+  prev: Sorted,
+  input: RowModel,
+): Sorted | undefined => {
   const sorting = table.atoms.sorting?.get()
   if (
     prev.output === prev.input ||
@@ -302,8 +318,8 @@ const patchSort = (table: SortTable, prev: Sorted): Sorted | undefined => {
   const changed: SortRow[] = []
   const limit = input.rows.length / 2
   for (let i = 0; i < input.rows.length; i++) {
-    const row = input.rows[i]
-    const old = prev.input.rows[i]
+    const row = input.rows[i]!
+    const old = prev.input.rows[i]!
     if (row === old) continue
     if (row.original !== old.original || row.id !== old.id) return undefined
     changed.push(row)
@@ -313,9 +329,7 @@ const patchSort = (table: SortTable, prev: Sorted): Sorted | undefined => {
     return {
       ...prev,
       input,
-      output: prev.ownIndex
-        ? prev.output
-        : { ...prev.output, rowsById: input.rowsById },
+      output: outputOf(input, prev.output.rows, prev.output.flatRows, prev.own),
     }
   }
 
@@ -328,8 +342,15 @@ const patchSort = (table: SortTable, prev: Sorted): Sorted | undefined => {
     prev.output.flatRows,
   ))
 
-  const clones: SortRow[] = []
-  const { sortTree } = sorter(entries, (_id, clone) => clones.push(clone))
+  // Дети показа: прежние, без поддеревьев изменённых корней; их — заново.
+  const own = new Map(prev.own)
+  for (const row of changed) {
+    const at = rootAt.get(row.id)!
+    for (let i = prevStarts[at]!; i < prevStarts[at + 1]!; i++) {
+      own.delete(prev.output.flatRows[i]!.id)
+    }
+  }
+  const { sortTree } = sorter(entries, inputKids(input), own)
   const patches = changed
     .map(row => {
       const at = rootAt.get(row.id)!
@@ -343,43 +364,23 @@ const patchSort = (table: SortTable, prev: Sorted): Sorted | undefined => {
   const starts = prevStarts.slice()
   for (const { at, root, piece } of patches) {
     rows[at] = root
-    const from = prevStarts[at]
-    const removed = prevStarts[at + 1] - from
+    const from = prevStarts[at]!
+    const removed = prevStarts[at + 1]! - from
     flatRows.splice(from, removed)
     for (let i = 0; i < piece.length; i += SPLICE_LIMIT) {
       flatRows.splice(from + i, 0, ...piece.slice(i, i + SPLICE_LIMIT))
     }
     const shift = piece.length - removed
     if (shift !== 0) {
-      for (let i = at + 1; i <= rows.length; i++) starts[i] += shift
+      for (let i = at + 1; i <= rows.length; i++) starts[i]! += shift
     }
-  }
-
-  let rowsById = input.rowsById
-  let ownIndex = false
-  if (prev.ownIndex) {
-    // Свой словарь прошлой модели переходит новой: поддеревья изменённых — заново.
-    rowsById = handOverRowsById(prev.output)
-    for (const { at } of patches) {
-      for (let i = prevStarts[at]; i < prevStarts[at + 1]; i++) {
-        delete rowsById[prev.output.flatRows[i].id]
-      }
-    }
-    for (const { piece } of patches) {
-      for (const row of piece) rowsById[row.id] = row
-    }
-    ownIndex = true
-  } else if (clones.length) {
-    rowsById = Object.assign(Object.create(null), input.rowsById)
-    for (const clone of clones) rowsById[clone.id] = clone
-    ownIndex = true
   }
 
   return {
     ...prev,
     input,
-    output: { rows, flatRows, rowsById },
-    ownIndex,
+    output: outputOf(input, rows, flatRows, own),
+    own,
     rootAt,
     starts,
   }
@@ -395,8 +396,8 @@ const rowComparator = (entries: SortEntry[], byIndex = true) => {
     if (!found) {
       found = new Array<unknown>(width * 2)
       for (let e = 0; e < width; e++) {
-        const value = row.getValue(entries[e].id)
-        const { sortFn } = entries[e]
+        const value = row.getValue(entries[e]!.id)
+        const { sortFn } = entries[e]!
         found[e] = value
         found[width + e] =
           sortFn.sort && sortFn.resolveDataValue
@@ -412,7 +413,7 @@ const rowComparator = (entries: SortEntry[], byIndex = true) => {
     const vb = valuesOf(b)
     for (let e = 0; e < width; e++) {
       const result = compareEntry(
-        entries[e],
+        entries[e]!,
         va[e],
         vb[e],
         va[width + e],
@@ -428,22 +429,19 @@ const rowComparator = (entries: SortEntry[], byIndex = true) => {
   }
 }
 
-const cloneWith = (row: SortRow, subRows: SortRow[]) => {
-  const cloned = Object.create(Object.getPrototypeOf(row)) as SortRow
-  copyInstancePropertiesWithoutMemos(cloned as never, row as never)
-  setPosition(cloned, positionOf(row))
-  cloned.subRows = subRows
-  clonesOf.set(row, cloned)
-  return cloned
-}
+const sameList = (a: readonly SortRow[], b: readonly SortRow[]) =>
+  a.length === b.length && a.every((row, i) => row === b[i])
 
 /**
- * Смена с прежним порядком выживших (ADR 0194, ADR 0199): у каждого уровня — прежний порядок, из которого уходят
- * прежние объекты изменённых и удалённых строк, а изменённые и вставленные встают на места
- * поиском; плоский список — из участков прежнего, словарь переходит новой модели.
+ * Смена с прежним порядком выживших (ADR 0194, ADR 0199): у каждого уровня — прежний порядок, из
+ * которого уходят прежние объекты изменённых и удалённых строк, а изменённые и вставленные встают
+ * на места поиском; плоский список — из участков прежнего.
  */
-const patchInPlace = (table: SortTable, prev: Sorted): Sorted | undefined => {
-  const input = table.getPreSortedRowModel()
+const patchInPlace = (
+  table: SortTable,
+  prev: Sorted,
+  input: RowModel,
+): Sorted | undefined => {
   const change = rowModelChangeOf(input) as RowModelChange | undefined
   const sorting = table.atoms.sorting?.get()
   if (
@@ -466,9 +464,14 @@ const patchInPlace = (table: SortTable, prev: Sorted): Sorted | undefined => {
   const { changed, inserted, removed, previous } = change
   const current = input.rowsById
   const compare = rowComparator(entries)
-  const { sortTree } = sorter(entries, () => {})
-  /** Объект строки в выходе прошлой модели: копия родителя или сама строка. */
-  const sortedOld = (row: SortRow) => clonesOf.get(row) ?? row
+  const own = new Map(prev.own)
+  for (const id of removed) own.delete(id)
+  const kidsOf = inputKids(input)
+  const { sortTree } = sorter(entries, kidsOf, own)
+  /** Дети показа прошлой модели. */
+  const prevKids = (row: SortRow) => childrenOf(prev.output, row)
+  /** Дети показа новой модели. */
+  const shownKids: ShownChildren = row => own.get(row.id) ?? kidsOf(row)
 
   const comes = new Map<string | undefined, SortRow[]>()
   const goes = new Map<string | undefined, SortRow[]>()
@@ -485,7 +488,7 @@ const patchInPlace = (table: SortTable, prev: Sorted): Sorted | undefined => {
     for (const id of ids) {
       const old = previous.get(id) as SortRow | undefined
       if (!old) return undefined
-      add(goes, old.parentId, sortedOld(old))
+      add(goes, old.parentId, old)
     }
   }
   for (const ids of [changed, inserted]) {
@@ -508,7 +511,7 @@ const patchInPlace = (table: SortTable, prev: Sorted): Sorted | undefined => {
   }
   /**
    * Место прежнего объекта в уровне. У сдвинутых строк место новое, а у уходящей — прежнее
-   * (ADR 0199, §3): среди равных значений правило по индексу может не совпасть, поэтому
+   * (ADR 0199, §3): среди равных значений правило по месту может не совпасть, поэтому
    * объект ищется среди равных по тождеству.
    */
   let sameValues: ((a: SortRow, b: SortRow) => number) | undefined
@@ -548,19 +551,18 @@ const patchInPlace = (table: SortTable, prev: Sorted): Sorted | undefined => {
     const rows: SortRow[] = []
     let from = 0
     for (const row of coming) {
-      let placed = row
-      if (row.subRows.length) {
+      const kids = kidsOf(row)
+      if (kids.length) {
         if (inserted.has(row.id)) {
-          placed = sortTree(row, [])
+          sortTree(row, [])
         } else {
-          const old = sortedOld(previous.get(row.id) as SortRow)
-          const children = patchLevel(old.subRows, row.id)
+          const children = patchLevel(
+            prevKids(previous.get(row.id) as SortRow),
+            row.id,
+          )
           if (failed) return rows
-          placed =
-            children.length === row.subRows.length &&
-            children.every((child, i) => child === row.subRows[i])
-              ? row
-              : cloneWith(row, children)
+          if (sameList(children, kids)) own.delete(row.id)
+          else own.set(row.id, children)
         }
       }
       let lo = from
@@ -571,8 +573,8 @@ const patchInPlace = (table: SortTable, prev: Sorted): Sorted | undefined => {
         else hi = mid
       }
       for (let k = from; k < lo; k++) rows.push(kept[k]!)
-      rows.push(placed)
-      rebuilt.add(placed)
+      rows.push(row)
+      rebuilt.add(row)
       from = lo
     }
     for (let k = from; k < kept.length; k++) rows.push(kept[k]!)
@@ -588,7 +590,7 @@ const patchInPlace = (table: SortTable, prev: Sorted): Sorted | undefined => {
   let starts: Int32Array | undefined
   if (
     prevFlat.length === prevRows.length &&
-    rows.every(row => !row.subRows.length)
+    rows.every(row => !kidsOf(row).length)
   ) {
     flatRows = rows.slice()
   } else {
@@ -601,7 +603,7 @@ const patchInPlace = (table: SortTable, prev: Sorted): Sorted | undefined => {
       starts[i] = flatRows.length
       const row = rows[i]!
       const j = rebuilt.has(row) ? undefined : at.get(row)
-      if (j === undefined) pushSubtree([row], flatRows)
+      if (j === undefined) pushShown([row], flatRows, shownKids)
       else {
         for (let k = prevStarts[j]!; k < prevStarts[j + 1]!; k++) {
           flatRows.push(prevFlat[k]!)
@@ -611,51 +613,16 @@ const patchInPlace = (table: SortTable, prev: Sorted): Sorted | undefined => {
     starts[rows.length] = flatRows.length
   }
 
-  // Словарь: свой — переходит новой модели; без копий родителей — словарь входа.
-  let rowsById = current
-  let ownIndex = false
-  if (prev.ownIndex) {
-    rowsById = handOverRowsById(prev.output)
-    for (const id of removed) delete rowsById[id]
-    for (const row of rebuilt) {
-      const subtree: SortRow[] = []
-      pushSubtree([row], subtree)
-      for (const item of subtree) rowsById[item.id] = item
-    }
-    ownIndex = true
-  } else if ([...rebuilt].some(row => row !== current[row.id])) {
-    rowsById = Object.assign(Object.create(null), current)
-    for (const row of rebuilt) {
-      const subtree: SortRow[] = []
-      pushSubtree([row], subtree)
-      for (const item of subtree) rowsById[item.id] = item
-    }
-    ownIndex = true
-  }
-
-  const output = { rows, flatRows, rowsById }
-  const before = new Map<string, object>()
-  for (const [id, old] of previous) before.set(id, sortedOld(old as SortRow))
-  recordRowModelChange(output, {
-    ...change,
-    prev: prev.output,
-    previous: before,
-  })
+  const output = outputOf(input, rows, flatRows, own)
+  recordRowModelChange(output, { ...change, prev: prev.output })
   return {
     input,
     sorting,
     rules: rulesOf(table),
     sortFns: entries.map(entry => entry.sortFn),
     output,
-    ownIndex,
+    own,
     starts,
-  }
-}
-
-const pushSubtree = (rows: readonly SortRow[], flat: SortRow[]) => {
-  for (const row of rows) {
-    flat.push(row)
-    if (row.subRows.length) pushSubtree(row.subRows, flat)
   }
 }
 
@@ -665,8 +632,11 @@ const pushSubtree = (rows: readonly SortRow[], flat: SortRow[]) => {
  * Сдвинутые строки — новые объекты входа с прежним порядком: сдвиг не меняет их сравнение;
  * их поддеревья переходят по id, а не по объектам.
  */
-const patchData = (table: SortTable, prev: Sorted): Sorted | undefined => {
-  const input = table.getPreSortedRowModel()
+const patchData = (
+  table: SortTable,
+  prev: Sorted,
+  input: RowModel,
+): Sorted | undefined => {
   const change = rowModelChangeOf(input) as RowModelChange | undefined
   const sorting = table.atoms.sorting?.get()
   if (
@@ -690,7 +660,11 @@ const patchData = (table: SortTable, prev: Sorted): Sorted | undefined => {
   const prevOutput = prev.output.rowsById
   const current = input.rowsById
   const compare = rowComparator(entries)
-  const { sortTree } = sorter(entries, () => {})
+  const own = new Map(prev.own)
+  for (const id of removed) own.delete(id)
+  const kidsOf = inputKids(input)
+  const { sortTree } = sorter(entries, kidsOf, own)
+  const prevKids = (row: SortRow) => childrenOf(prev.output, row)
 
   // Изменённые и вставленные строки по родителю — их место ищется заново.
   const moved = new Map<string | undefined, SortRow[]>()
@@ -717,7 +691,7 @@ const patchData = (table: SortTable, prev: Sorted): Sorted | undefined => {
     }
     const coming = (moved.get(parentId) ?? []).slice().sort(compare)
     const rows: SortRow[] = []
-    // Прежняя строка уровня — объект выхода прошлой модели; на её месте — строка входа.
+    // Прежняя строка уровня — объект прошлой модели; на её месте — строка входа.
     const keptRow = (old: SortRow) => current[old.id] ?? old
     let from = 0
     for (const row of coming) {
@@ -725,14 +699,14 @@ const patchData = (table: SortTable, prev: Sorted): Sorted | undefined => {
       let hi = kept.length
       while (lo < hi) {
         const mid = (lo + hi) >>> 1
-        if (compare(keptRow(kept[mid]), row) < 0) lo = mid + 1
+        if (compare(keptRow(kept[mid]!), row) < 0) lo = mid + 1
         else hi = mid
       }
-      for (let i = from; i < lo; i++) rows.push(kept[i])
+      for (let i = from; i < lo; i++) rows.push(kept[i]!)
       rows.push(row)
       from = lo
     }
-    for (let i = from; i < kept.length; i++) rows.push(kept[i])
+    for (let i = from; i < kept.length; i++) rows.push(kept[i]!)
     if (rows.length !== inputLevel.length) {
       failed = true
       return { rows, changed: false }
@@ -740,37 +714,32 @@ const patchData = (table: SortTable, prev: Sorted): Sorted | undefined => {
 
     let levelChanged = false
     for (let i = 0; i < rows.length && !failed; i++) {
-      let row = rows[i]
+      let row = rows[i]!
       if (inserted.has(row.id)) {
-        row = sortTree(row, flat)
+        sortTree(row, flat)
       } else {
         const isChanged = changed.has(row.id)
-        // Прежняя строка — объект выхода прошлой модели, нынешняя — объект входа.
+        // Прежняя строка — объект прошлой модели, нынешняя — объект входа.
         const old = isChanged ? prevOutput[row.id] : row
         const now = isChanged ? row : keptRow(row)
         if (!isChanged && now === prevInput[now.id]) {
-          // Строка входа прежняя: выход прошлой модели переходит с поддеревом; у копии
-          // родителя — новое место строки входа после сдвига (ADR 0199, §1).
-          if (positionOf(old!) !== positionOf(now)) {
-            setPosition(old!, positionOf(now))
-          }
-          flat.push(old!)
-          if (old!.subRows.length) pushSubtree(old!.subRows, flat)
+          // Строка входа прежняя: поддерево прошлой модели переходит.
+          flat.push(now)
+          const kids = prevKids(old!)
+          if (kids.length) pushShown(kids, flat, prevKids)
         } else {
-          const at = flat.length
           row = now
           flat.push(row)
-          if (now.subRows.length) {
+          const kids = kidsOf(now)
+          if (kids.length) {
             const children = patchLevel(
-              old?.subRows ?? [],
-              now.subRows,
+              old ? prevKids(old) : [],
+              kids,
               now.id,
               flat,
             )
-            if (children.changed) {
-              row = cloneWith(now, children.rows)
-              flat[at] = row
-            }
+            if (children.changed) own.set(now.id, children.rows)
+            else own.delete(now.id)
           }
         }
       }
@@ -784,18 +753,7 @@ const patchData = (table: SortTable, prev: Sorted): Sorted | undefined => {
   const { rows } = patchLevel(prev.output.rows, input.rows, undefined, flatRows)
   if (failed) return undefined
 
-  let rowsById = current
-  let ownIndex = false
-  for (const row of flatRows) {
-    if (row !== current[row.id]) {
-      if (!ownIndex) {
-        rowsById = Object.assign(Object.create(null), current)
-        ownIndex = true
-      }
-      rowsById[row.id] = row
-    }
-  }
-  const output = { rows, flatRows, rowsById }
+  const output = outputOf(input, rows, flatRows, own)
   recordRowModelChange(output, { ...change, prev: prev.output })
   return {
     input,
@@ -803,38 +761,39 @@ const patchData = (table: SortTable, prev: Sorted): Sorted | undefined => {
     rules: rulesOf(table),
     sortFns: entries.map(entry => entry.sortFn),
     output,
-    ownIndex,
+    own,
   }
 }
 
 /** Сколько строк вставлять одним `splice`: аргументы вызова ограничены стеком. */
 const SPLICE_LIMIT = 10_000
 
-/** Копия родителя с переставленными детьми — по исходной строке. */
-const clonesOf = new WeakMap<object, SortRow>()
-
-export const createTesseraSortedRowModel = (): SortedRowModelFactory =>
-  (table => {
-    const t = table as unknown as SortTable
+/**
+ * Стадия сортировки: вход — у движка (ADR 0200, §3); пересчёт после первого сбрасывает
+ * страницу.
+ */
+export const createTesseraSortedRowModel =
+  () =>
+  (table: unknown): StageRun => {
+    const t = table as SortTable
     let last: Sorted | undefined
-    return tableMemo({
-      feature: 'rowSortingFeature',
-      table,
-      fnName: 'table.getSortedRowModel',
-      memoDeps: () => [
-        t.atoms.sorting?.get(),
-        t.getPreSortedRowModel(),
-        ...rulesOf(t),
-      ],
-      fn: () => {
-        last =
-          (last &&
-            (patchInPlace(t, last) ??
-              patchData(t, last) ??
-              patchSort(t, last))) ??
-          fullSort(t)
+    let deps: readonly unknown[] | undefined
+    return read => {
+      const input = read() as RowModel
+      const next = [t.atoms.sorting?.get(), input, ...rulesOf(t)]
+      if (last && deps && next.every((dep, i) => dep === deps![i])) {
         return last.output
-      },
-      onAfterUpdate: skipFirstRun(() => t.autoResetPageIndex?.()),
-    } as never)
-  }) as SortedRowModelFactory
+      }
+      const first = !last
+      last =
+        (last &&
+          (patchInPlace(t, last, input) ??
+            patchData(t, last, input) ??
+            patchSort(t, last, input))) ??
+        fullSort(t, input)
+      deps = next
+      // Как мемо TanStack: сброс страницы — после пересчёта, не посреди чтения модели.
+      if (!first) queueMicrotask(() => t.autoResetPageIndex?.())
+      return last.output
+    }
+  }

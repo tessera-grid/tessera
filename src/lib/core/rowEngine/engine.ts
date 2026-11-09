@@ -1,48 +1,57 @@
 /**
  * Движок строк (ADR 0200): конвейер стадий в постоянном порядке — фильтр и поиск,
- * группировка, сортировка, раскрытие, страница. Слоты моделей TanStack — обёртки над
- * стадиями: стадию приносит плагин модели, вход стадии — выход предыдущей.
+ * группировка, сортировка, раскрытие, страница. Движок сам передаёт выход стадии следующей;
+ * слоты моделей TanStack отдают выход стадии в стоковом виде (ADR 0200, §6).
  */
+
+import { hasShownChildren } from './displayChildren'
+import { stockView, type ViewKind } from './stockView'
 
 export type StageId = 'filter' | 'group' | 'sort' | 'expand' | 'page'
 
-/** Стадии по порядку: слот модели TanStack, ручной режим и модель входа. */
+/** Стадии по порядку: слот модели TanStack, ручной режим, модели входа и выхода. */
 export const STAGES = [
   {
     id: 'filter',
     slot: 'filteredRowModel',
     manual: 'manualFiltering',
     input: 'getPreFilteredRowModel',
+    output: 'getFilteredRowModel',
   },
   {
     id: 'group',
     slot: 'groupedRowModel',
     manual: 'manualGrouping',
     input: 'getPreGroupedRowModel',
+    output: 'getGroupedRowModel',
   },
   {
     id: 'sort',
     slot: 'sortedRowModel',
     manual: 'manualSorting',
     input: 'getPreSortedRowModel',
+    output: 'getSortedRowModel',
   },
   {
     id: 'expand',
     slot: 'expandedRowModel',
     manual: 'manualExpanding',
     input: 'getPreExpandedRowModel',
+    output: 'getExpandedRowModel',
   },
   {
     id: 'page',
     slot: 'paginatedRowModel',
     manual: 'manualPagination',
     input: 'getPrePaginatedRowModel',
+    output: 'getPaginatedRowModel',
   },
 ] as const satisfies readonly {
   id: StageId
   slot: string
   manual: string
   input: string
+  output: string
 }[]
 
 /**
@@ -66,28 +75,121 @@ const stages = new WeakMap<object, RowStage>()
 export const stageOfSlot = (slot: unknown): RowStage | undefined =>
   typeof slot === 'function' ? stages.get(slot) : undefined
 
+interface EngineTable {
+  options: Record<string, unknown> & { features?: Record<string, unknown> }
+  getCoreRowModel: () => unknown
+  [getter: string]: unknown
+}
+
+/** Движок таблицы: стадии в постоянном порядке, выход стадии — вход следующей. */
+export interface RowEngine {
+  /** Выход стадии; стадия в ручном режиме и без плагина отдаёт вход. */
+  output: (id: StageId) => unknown
+  /** Вход стадии: выход предыдущей стадии с плагином, без неё — модель ядра. */
+  input: (id: StageId) => unknown
+  /** Выход последней стадии — строки тела. */
+  last: () => unknown
+}
+
+const engines = new WeakMap<object, RowEngine>()
+
+const createEngine = (table: object): RowEngine => {
+  const t = table as EngineTable
+  const runs = new Map<StageId, StageRun>()
+  const slotAt = (at: number) => t.options.features?.[STAGES[at]!.slot]
+  const stageAt = (at: number) => stageOfSlot(slotAt(at))
+  /** Выход места конвейера: своя стадия — движком, чужой слот — моделью TanStack. */
+  const outputAt = (at: number) =>
+    stageAt(at)
+      ? engine.output(STAGES[at]!.id)
+      : (t[STAGES[at]!.output] as () => unknown)()
+  const indexOf = (id: StageId) => STAGES.findIndex(step => step.id === id)
+  const engine: RowEngine = {
+    input: id => {
+      for (let at = indexOf(id) - 1; at >= 0; at--) {
+        if (slotAt(at)) return outputAt(at)
+      }
+      return t.getCoreRowModel()
+    },
+    output: id => {
+      const at = indexOf(id)
+      const stage = stageAt(at)
+      if (!stage || t.options[STAGES[at]!.manual]) return engine.input(id)
+      let run = runs.get(id)
+      if (!run) {
+        run = stage.create(table)
+        runs.set(id, run)
+      }
+      return run(() => engine.input(id))
+    },
+    last: () => {
+      for (let at = STAGES.length - 1; at >= 0; at--) {
+        if (slotAt(at)) return outputAt(at)
+      }
+      return t.getCoreRowModel()
+    },
+  }
+  return engine
+}
+
 /**
- * Слот модели TanStack — обёртка над стадией. Реализация — фабрика модели, которая сама
- * читает свой вход через модели TanStack (ADR 0200, §10): в постоянном порядке стадий это
- * выход предыдущей стадии.
+ * Движок таблицы; один на экземпляр. Ключ — хранилище таблицы: React-адаптер отдаёт на рендер
+ * новый объект таблицы с тем же хранилищем.
  */
-export const stageSlot = <F extends SlotFactory>(
-  id: StageId,
-  factory: F,
-): F => {
-  const step = STAGES.find(item => item.id === id)!
-  const stage: RowStage = {
+export const engineOf = (table: object): RowEngine => {
+  const key = (table as { store?: object }).store ?? table
+  let engine = engines.get(key)
+  if (!engine) {
+    engine = createEngine(table)
+    engines.set(key, engine)
+  }
+  return engine
+}
+
+/** Вид выхода стадии: деревья — фильтр, группировка, сортировка; списки — раскрытие и страница. */
+const KIND: Record<StageId, ViewKind> = {
+  filter: 'tree',
+  group: 'tree',
+  sort: 'tree',
+  expand: 'list',
+  page: 'page',
+}
+
+const makeSlot = <F extends SlotFactory>(stage: RowStage): F => {
+  const step = STAGES.find(item => item.id === stage.id)!
+  const slot = ((table: object) => () => {
+    const engine = engineOf(table)
+    const output = engine.output(stage.id)
+    // Стоковый вид входа — у модели TanStack перед слотом.
+    const inputView = () =>
+      (table as Record<string, () => unknown>)[step.input]!()
+    if (output === engine.input(stage.id)) return inputView()
+    return hasShownChildren(output as object)
+      ? stockView(output, KIND[stage.id], inputView)
+      : output
+  }) as unknown as F
+  stages.set(slot, stage)
+  return slot
+}
+
+/**
+ * Слот модели TanStack — обёртка над стадией с прежней фабрикой: фабрика сама читает свой вход
+ * через модели TanStack, а они — выходы стадий движка (ADR 0200, §10).
+ */
+export const stageSlot = <F extends SlotFactory>(id: StageId, factory: F): F =>
+  makeSlot<F>({
     id,
     create: table => {
       const model = factory(table as never)
       return () => model()
     },
-  }
-  const slot = ((table: Record<string, () => unknown>) => {
-    const run = stage.create(table)
-    const input = () => table[step.input]!()
-    return () => run(input)
-  }) as unknown as F
-  stages.set(slot, stage)
-  return slot
-}
+  })
+
+/** Своя стадия: вход берёт у движка (ADR 0200, §3). */
+/** Слот своей стадии: его тип годится любому слоту модели в карте фич. */
+type OwnSlot = (table: unknown) => () => never
+
+export const ownStage = <F extends SlotFactory = OwnSlot>(
+  id: StageId,
+  create: (table: never) => StageRun,
+): F => makeSlot<F>({ id, create: create as (table: unknown) => StageRun })

@@ -7,11 +7,7 @@
  * сервер, клиент не применяет (ADR 0169, §1). Смена `data` при тех же фильтрах проверяет
  * только изменённые и вставленные строки (ADR 0194).
  */
-import {
-  constructRow,
-  createFilteredRowModel,
-  makeObjectMap,
-} from '@tanstack/react-table'
+import { constructRow, makeObjectMap } from '@tanstack/react-table'
 
 import {
   type RowModelChange,
@@ -19,6 +15,7 @@ import {
   rowModelChangeOf,
 } from '../../core/dataChanges'
 import { dataModeOf } from '../../core/dataMode'
+import type { StageRun } from '../../core/rowEngine/engine'
 import { handOverRowsById } from '../../core/rowsByIdHandover'
 import type { RowData, Table, TableFeatures } from '../../types'
 import { skipIdlePasses } from './idleRowModel'
@@ -499,18 +496,42 @@ const clientViewOf = <T extends object>(table: T): T => {
   })
 }
 
+/**
+ * Полный отбор — как у стоковой модели TanStack: без фильтров и поиска словари фильтров строк
+ * сбрасываются, вход — как есть; иначе проверка всех строк и отбор, у дерева — копии родителей с
+ * детьми отбора (`constructRow`, поля — при создании; ADR 0200, §4).
+ */
+const fullFilter = (table: FilteringTable, input: FilterModel): FilterModel => {
+  const columnFilters = table.atoms.columnFilters?.get()
+  const globalFilter = table.atoms.globalFilter?.get()
+  const searching =
+    globalFilter !== undefined && globalFilter !== null && globalFilter !== ''
+  if (!input.rows.length || (!columnFilters?.length && !searching)) {
+    for (const row of input.flatRows) {
+      row.columnFilters = makeObjectMap()
+      row.columnFiltersMeta = makeObjectMap()
+    }
+    return input
+  }
+  if (isFlat(input)) return filterFlat(table, input)
+  const filters = resolveFilters(table)
+  for (const row of input.flatRows) checkRow(row, filters)
+  return filterTree(table, input.rows, filters.ids)
+}
+
+/** Стадия фильтра и поиска: вход — у движка (ADR 0200, §3). */
 export const createSearchAwareFilteredRowModel =
   <TFeatures extends TableFeatures, TData extends RowData = any>() =>
-  (table: Table<TFeatures, TData>) => {
+  (table: Table<TFeatures, TData>): StageRun => {
     const client = clientViewOf(table)
     const t = client as unknown as FilteringTable
     const { atoms } = t
     let visibility: unknown = UNSET
     let timeZone: unknown = UNSET
-    let rowModel = createFilteredRowModel<TFeatures, TData>()(client)
     let last: Filtered | undefined
+    let read: () => unknown = () => undefined
     const filtered = () => {
-      const input = t.getPreFilteredRowModel() as FilterModel
+      const input = read() as FilterModel
       const columnFilters = atoms.columnFilters?.get()
       const globalFilter = atoms.globalFilter?.get()
       if (
@@ -522,19 +543,13 @@ export const createSearchAwareFilteredRowModel =
         return last.output
       }
       const patched = last && patchFiltered(t, last, input)
+      // Как мемо стоковой модели: сброс страницы — со второго отбора, после пересчёта.
+      if (last) queueMicrotask(() => t.autoResetPageIndex?.())
       if (patched) {
         last = patched
-        t.autoResetPageIndex?.()
         return patched.output
       }
-      let output: FilterModel
-      if (isFlat(input) && input.rows.length) {
-        output = filterFlat(t, input)
-        // Как `skipFirstRun` стоковой модели: сброс страницы — со второго отбора.
-        if (last) t.autoResetPageIndex?.()
-      } else {
-        output = rowModel() as unknown as FilterModel
-      }
+      const output = fullFilter(t, input)
       last = { input, columnFilters, globalFilter, output }
       return output
     }
@@ -549,15 +564,13 @@ export const createSearchAwareFilteredRowModel =
         (timeZone !== UNSET && nextTimeZone !== timeZone && filtering())
       visibility = next
       timeZone = nextTimeZone
-      if (stale) {
-        rowModel = createFilteredRowModel<TFeatures, TData>()(client)
-        last = undefined
-      }
-      return filtered() as unknown as ReturnType<typeof rowModel>
+      // Поиск по видимым колонкам и пояс дат: смена — отбор заново, без сброса страницы.
+      if (stale) last = undefined
+      return filtered()
     }
-    return skipIdlePasses(
+    const run = skipIdlePasses(
       searchAware,
-      () => t.getPreFilteredRowModel() as ReturnType<typeof rowModel>,
+      () => read() as FilterModel,
       () => {
         const search = searchValue()
         return (
@@ -567,4 +580,8 @@ export const createSearchAwareFilteredRowModel =
       },
       () => t.autoResetPageIndex?.(),
     )
+    return next => {
+      read = next
+      return run()
+    }
   }
