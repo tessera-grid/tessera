@@ -4,12 +4,11 @@
  * скрыта хотя бы одна колонка; число скрытых — пузырьком на значке (ADR 0062, AI7).
  * Пока колонки не пришли с сервера — скелет (ADR 0122, TF3).
  */
-import { Suspense } from 'react'
 
 import type { ToolbarComponentProps } from '../../core/createSlots'
 import { useLazyPopover } from '../../core/lazyOpening'
 import { useLocalization } from '../../core/localization'
-import { preloadable } from '../../core/preloadable'
+import { preloadable } from '../../util/preloadable'
 import { useTableState } from '../../core/reactivity'
 import { isWaitingForColumns } from '../../core/skeletonOptions'
 import { dataColumnsOf } from '../../core/stubs'
@@ -73,16 +72,15 @@ export const ColumnVisibilityButton = ({ table }: ToolbarComponentProps) => {
   if (!popover.ready) return placeholder
 
   return (
-    <Suspense fallback={placeholder}>
-      <ColumnVisibilityPopover.Component
-        table={table}
-        label={label}
-        icon={icon}
-        active={active}
-        count={hidden}
-        open={popover.open}
-        onOpenChange={popover.onOpenChange}
-      />
-    </Suspense>
+    <ColumnVisibilityPopover.Component
+      fallback={placeholder}
+      table={table}
+      label={label}
+      icon={icon}
+      active={active}
+      count={hidden}
+      open={popover.open}
+      onOpenChange={popover.onOpenChange}
+    />
   )
 }

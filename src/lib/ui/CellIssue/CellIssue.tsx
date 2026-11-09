@@ -4,8 +4,9 @@
  * и тот же для любого содержимого. Наведение — подсказка с причиной, только чтение; нажатие,
  * касание или Enter — поповер с причиной и действиями.
  */
-import { Suspense, lazy, useId, useRef, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 
+import { preloadable } from '../../util/preloadable'
 import { Tooltip } from '../Tooltip'
 
 import hidden from '../visuallyHidden.module.css'
@@ -13,7 +14,9 @@ import styles from './CellIssue.module.css'
 
 // Поповер — отдельный чанк по первому нажатию: Base UI-попап тянет позиционирование, а
 // треугольников в теле много (ADR 0061).
-const CellIssuePopup = lazy(() => import('./CellIssuePopup'))
+const CellIssuePopup = preloadable(() =>
+  import('./CellIssuePopup').then(module => module.default),
+)
 
 export interface CellIssueAction {
   id: string
@@ -85,17 +88,16 @@ export const CellIssue = ({
         </button>
       </Tooltip>
       {open && (
-        <Suspense fallback={null}>
-          <CellIssuePopup
-            anchor={button}
-            title={title}
-            reason={reason}
-            details={details}
-            actions={actions}
-            tone={tone}
-            onClose={() => setOpen(false)}
-          />
-        </Suspense>
+        <CellIssuePopup.Component
+          fallback={null}
+          anchor={button}
+          title={title}
+          reason={reason}
+          details={details}
+          actions={actions}
+          tone={tone}
+          onClose={() => setOpen(false)}
+        />
       )}
     </>
   )

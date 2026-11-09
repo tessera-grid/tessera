@@ -1,9 +1,8 @@
 // Тултип у обрезанного текста ячейки (ADR 0075): один на грид. Обработчики висят на
 // контейнере прокрутки, обрезка проверяется у текста под указателем в момент наведения.
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
-const loadPopup = () => import('../ui/Tooltip/TooltipImpl')
-const TooltipPopup = lazy(loadPopup)
+import { TooltipPopup } from '../ui/Tooltip/Tooltip'
 
 // Значение строки группы обрезается отдельно от числа строк (ADR 0184, §8).
 const TITLE = '[data-group-value], .data-grid__cell-wrapper-title'
@@ -70,7 +69,7 @@ export const OverflowTooltip = ({ getScrollElement }: OverflowTooltipProps) => {
       }
       hide()
       current = title
-      void loadPopup()
+      void TooltipPopup.load()
       // Обрезка — на момент показа: кнопки ячейки к этому времени уже раскрылись.
       timer = setTimeout(() => {
         const text = title.textContent?.trim()
@@ -147,22 +146,21 @@ export const OverflowTooltip = ({ getScrollElement }: OverflowTooltipProps) => {
     return null
   }
   return (
-    <Suspense fallback={null}>
-      <TooltipPopup
-        open={tip.open}
-        // Escape и нажатие вне тултипа закрывает сам Base UI.
-        onOpenChange={next => {
-          if (!next) {
-            controls.current?.hide()
-          }
-        }}
-        anchor={anchorRef}
-        side="top"
-        title={tip.text}
-        interactive
-        onPointerEnter={() => controls.current?.keepOpen()}
-        onPointerLeave={() => controls.current?.hideSoon()}
-      />
-    </Suspense>
+    <TooltipPopup.Component
+      fallback={null}
+      open={tip.open}
+      // Escape и нажатие вне тултипа закрывает сам Base UI.
+      onOpenChange={next => {
+        if (!next) {
+          controls.current?.hide()
+        }
+      }}
+      anchor={anchorRef}
+      side="top"
+      title={tip.text}
+      interactive
+      onPointerEnter={() => controls.current?.keepOpen()}
+      onPointerLeave={() => controls.current?.hideSoon()}
+    />
   )
 }

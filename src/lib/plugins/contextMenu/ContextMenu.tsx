@@ -6,12 +6,12 @@
 // ADR 0030.
 import { type DebugActionSource, reportAction } from '../../core/debugActions'
 import { CELL_STATE_ACTIONS } from './cellStateActions'
-import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useLazyOpening } from '../../core/lazyOpening'
 import { type TableLabels, useLocalization } from '../../core/localization'
 import { contextMenuLabels } from './labels'
-import { preloadable } from '../../core/preloadable'
+import { preloadable } from '../../util/preloadable'
 import type { RowSource } from '../../core/rowSource'
 import {
   clearSeenActionErrors,
@@ -370,23 +370,22 @@ export const ContextMenu = ({ table, getScrollElement }: ContextMenuProps) => {
   }
 
   return (
-    <Suspense fallback={null}>
-      <ContextMenuPopupImpl.Component
-        x={state.x}
-        y={state.y}
-        actions={state.actions}
-        context={state.context}
-        labels={labels}
-        session={session}
-        extendChecks={extendContextChecks}
-        onClose={() => {
-          reportAction(table, { plugin: 'contextMenu', action: 'closeMenu' })
-          session.stop()
-          clearSeenActionErrors(state.context)
-          setState(null)
-        }}
-      />
-    </Suspense>
+    <ContextMenuPopupImpl.Component
+      fallback={null}
+      x={state.x}
+      y={state.y}
+      actions={state.actions}
+      context={state.context}
+      labels={labels}
+      session={session}
+      extendChecks={extendContextChecks}
+      onClose={() => {
+        reportAction(table, { plugin: 'contextMenu', action: 'closeMenu' })
+        session.stop()
+        clearSeenActionErrors(state.context)
+        setState(null)
+      }}
+    />
   )
 }
 

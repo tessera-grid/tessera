@@ -5,7 +5,7 @@
  * режиме условие уходит кнопкой «Применить» и Enter, набранное хранится по колонке
  * (ADR 0154).
  */
-import { type RefObject, Suspense, useId } from 'react'
+import { type RefObject, useId } from 'react'
 
 import { RadioGroup } from '@base-ui/react/radio-group'
 
@@ -18,7 +18,7 @@ import { setColumnFilterByUser } from '../../shared/filtering/filtering'
 import type { ActionPanelControls } from '../../core/headerActions'
 import { useLocalization } from '../../core/localization'
 import { parseLocaleDecimal, parseLocaleNumber } from '../../util/parseNumber'
-import { preloadable } from '../../core/preloadable'
+import { preloadable } from '../../util/preloadable'
 import { useDebouncedCallback } from '../../util/useDebouncedCallback'
 import {
   columnFilterDefOf,
@@ -411,7 +411,7 @@ export const FilterPanel = (props: FilterPanelProps) => {
   // Чек-лист вариантов — тоже ленивый модуль (ADR 0048, SF22).
   if (type === 'select' || type === 'multiselect' || type === 'lookup') {
     return (
-      <Suspense
+      <OptionFilterPanel.Component
         fallback={
           <div
             className={styles.content}
@@ -419,14 +419,14 @@ export const FilterPanel = (props: FilterPanelProps) => {
             data-testid="filter-options-loading"
           />
         }
-      >
-        <OptionFilterPanel.Component {...props} type={type} />
-      </Suspense>
+        {...props}
+        type={type}
+      />
     )
   }
   if (type === 'date' || type === 'datetime') {
     return (
-      <Suspense
+      <DateFilterPanel.Component
         fallback={
           <div
             className={styles.content}
@@ -434,9 +434,9 @@ export const FilterPanel = (props: FilterPanelProps) => {
             data-testid="filter-date-loading"
           />
         }
-      >
-        <DateFilterPanel.Component {...props} type={type} />
-      </Suspense>
+        {...props}
+        type={type}
+      />
     )
   }
   if (type === 'text' || type === 'number') {

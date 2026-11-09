@@ -7,12 +7,12 @@
 // может отложить этот повтор до следующего рендера кнопки, и тогда она сменится
 // посреди клика.
 import { actionDetailOf, actionOwnerOf } from '../../core/actionOwners'
-import { Suspense, useState } from 'react'
+import { useState } from 'react'
 import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
 import { useLazyPopover } from '../../core/lazyOpening'
-import { preloadable, usePreloaded } from '../../core/preloadable'
+import { preloadable, usePreloaded } from '../../util/preloadable'
 import { IconButton } from '../../ui/IconButton'
 import { HiddenButtonContext } from '../../ui/IconButton/iconReveal'
 import { useIcons } from '../../ui/icons'
@@ -233,16 +233,15 @@ export const ActionMenu = ({
   if (!menu.ready) return placeholder
 
   return (
-    <Suspense fallback={placeholder}>
-      <ActionMenuImpl.Component
-        actions={actions}
-        context={context}
-        variant={variant}
-        open={menu.open}
-        onOpenChange={kebab.openChange}
-        kebab={kebab}
-      />
-    </Suspense>
+    <ActionMenuImpl.Component
+      fallback={placeholder}
+      actions={actions}
+      context={context}
+      variant={variant}
+      open={menu.open}
+      onOpenChange={kebab.openChange}
+      kebab={kebab}
+    />
   )
 }
 
@@ -275,15 +274,14 @@ export const ActionInlineMenu = ({
   if (!menu.ready) return placeholder
 
   return (
-    <Suspense fallback={placeholder}>
-      <ActionInlineMenuImpl.Component
-        action={action}
-        context={context}
-        variant={variant}
-        open={menu.open}
-        onOpenChange={menu.onOpenChange}
-      />
-    </Suspense>
+    <ActionInlineMenuImpl.Component
+      fallback={placeholder}
+      action={action}
+      context={context}
+      variant={variant}
+      open={menu.open}
+      onOpenChange={menu.onOpenChange}
+    />
   )
 }
 
@@ -327,15 +325,14 @@ export const ActionPanel = ({
   if (!ready) return placeholder
 
   return (
-    <Suspense fallback={placeholder}>
-      <ActionPanelImpl.Component
-        action={action}
-        context={context}
-        variant={variant}
-        open={open}
-        onOpenChange={onOpenChange}
-        loading={loading}
-      />
-    </Suspense>
+    <ActionPanelImpl.Component
+      fallback={placeholder}
+      action={action}
+      context={context}
+      variant={variant}
+      open={open}
+      onOpenChange={onOpenChange}
+      loading={loading}
+    />
   )
 }

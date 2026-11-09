@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest'
 
-import { preloadable } from '../core/preloadable'
+import { preloadable } from '../util/preloadable'
 
 // LZ18 (ADR 0061): повтор загрузки модуля после ошибки — только по `reload()`.
 describe('preloadable — повтор после ошибки', () => {

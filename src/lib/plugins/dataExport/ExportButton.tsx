@@ -9,7 +9,7 @@
 import { announceLabel } from '../../core/announcer'
 import { cancelPending, cancelSourceOf } from '../../core/cancellation'
 import { reportAction, sourceOf } from '../../core/debugActions'
-import { Suspense, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 
 import type { ToolbarComponentProps } from '../../core/createSlots'
 import { useLazyPopover } from '../../core/lazyOpening'
@@ -19,7 +19,7 @@ import {
   resolveFailure,
 } from '../../core/failures/failuresFeature'
 import { useLocalization } from '../../core/localization'
-import { preloadable } from '../../core/preloadable'
+import { preloadable } from '../../util/preloadable'
 import { useKeyedSlice, useTableState } from '../../core/reactivity'
 import { rejectionText } from '../../util/thenable'
 import { isSkeletonShown } from '../../core/skeletonOptions'
@@ -162,18 +162,17 @@ export const ExportButton = ({ table }: ToolbarComponentProps) => {
   if (!popover.ready) return placeholder
 
   return (
-    <Suspense fallback={placeholder}>
-      <ExportPanel.Component
-        table={table}
-        axes={axes}
-        busy={!!busy}
-        pending={busy === 'client'}
-        failed={failed}
-        open={popover.open}
-        onOpenChange={popover.onOpenChange}
-        onRun={start}
-        cancel={cancel}
-      />
-    </Suspense>
+    <ExportPanel.Component
+      fallback={placeholder}
+      table={table}
+      axes={axes}
+      busy={!!busy}
+      pending={busy === 'client'}
+      failed={failed}
+      open={popover.open}
+      onOpenChange={popover.onOpenChange}
+      onRun={start}
+      cancel={cancel}
+    />
   )
 }

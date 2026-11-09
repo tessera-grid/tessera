@@ -1,6 +1,4 @@
 import {
-  lazy,
-  Suspense,
   useCallback,
   useEffect,
   useRef,
@@ -14,6 +12,7 @@ import {
 } from 'react'
 
 import { assignRef } from '../assignRef'
+import { preloadable } from '../../util/preloadable'
 import { REACT_MAJOR } from '../../util/reactVersion'
 
 export type TooltipSide = 'top' | 'right' | 'bottom' | 'left'
@@ -58,7 +57,9 @@ const isOverflowing = (element: HTMLElement | null) => {
 // и подгружаем при первом наведении. Триггер рендерится эагерно, открытием
 // управляет обёртка (контролируемый `open`), поэтому догрузка чанка лишь
 // задерживает появление попапа, но не теряет наведение.
-const TooltipPopup = lazy(() => import('./TooltipImpl'))
+export const TooltipPopup = preloadable(() =>
+  import('./TooltipImpl').then(module => module.default),
+)
 
 /**
  * Последний ввод — клавиатура или указатель. Фокус открывает подсказку только после
@@ -222,18 +223,17 @@ export const Tooltip = ({
         {...handlers}
       />
       {active && mounted && (
-        <Suspense fallback={null}>
-          <TooltipPopup
-            open={open}
-            onOpenChange={setOpen}
-            anchor={anchorRef}
-            side={side}
-            title={title}
-            interactive={overflowOnly}
-            onPointerEnter={keepOpen}
-            onPointerLeave={hideSoon}
-          />
-        </Suspense>
+        <TooltipPopup.Component
+          fallback={null}
+          open={open}
+          onOpenChange={setOpen}
+          anchor={anchorRef}
+          side={side}
+          title={title}
+          interactive={overflowOnly}
+          onPointerEnter={keepOpen}
+          onPointerLeave={hideSoon}
+        />
       )}
     </>
   )

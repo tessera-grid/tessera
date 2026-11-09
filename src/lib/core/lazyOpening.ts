@@ -11,7 +11,7 @@ import {
   reportFailure,
   resolveFailure,
 } from './failures/failuresFeature'
-import { type Preloadable, usePreloaded } from './preloadable'
+import { type Preloadable, usePreloaded } from '../util/preloadable'
 import { type TableLabels, useLocalization } from './localization'
 import type { ActionRef } from './actions'
 

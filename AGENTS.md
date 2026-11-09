@@ -1311,7 +1311,9 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       обрыв прокруткой, разворот без скачка, уменьшенное движение, флаг, токен, фокус,
       коммиты React, View Transitions приложения, прокрутка после перетаскивания без сдвигов
       dnd-kit, призраки без скрытых кнопок, уходящие строки группой; выборка по кадрам), модульный
-      `rowMotion` (RM18 — план FLIP, RM23 — набор в `test:react18`),
+      `rowMotion` (RM18 — план FLIP, RM23 — набор в `test:react18`), `noSuspense` (RM34 — без
+      `React.lazy` и `<Suspense>`), визуальный `view-transition-lazy` (RM33 — догрузка ленивых
+      модулей внутри `<ViewTransition>` приложения),
       `fastScrollDetector` (RM26 — внешний признак быстрой прокрутки), перф RM20 — в
       `interaction`, `play` истории «Rows/Motion» (RM21); дождаться конца движения —
       `settleRowMotion` из `__tests__/helpers.tsx`

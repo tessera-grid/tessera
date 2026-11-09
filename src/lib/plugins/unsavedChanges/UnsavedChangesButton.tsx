@@ -2,7 +2,6 @@
  * Кнопка пульта черновиков в тулбаре (ADR 0178, DR11): видна всегда, бабл — число черновиков,
  * которые применимы в этой таблице; без них бабла нет. Поповер — ленивый модуль (ADR 0061).
  */
-import { Suspense } from 'react'
 
 import type { ToolbarComponentProps } from '../../core/createSlots'
 import {
@@ -13,7 +12,7 @@ import {
 } from '../../core/drafts/drafts'
 import { useLazyPopover } from '../../core/lazyOpening'
 import { useLocalization } from '../../core/localization'
-import { preloadable } from '../../core/preloadable'
+import { preloadable } from '../../util/preloadable'
 import { useSliceProjection } from '../../core/reactivity'
 import { useIcons } from '../../ui/icons'
 import { ToolbarButton } from '../../ui/ToolbarButton'
@@ -65,15 +64,14 @@ export const UnsavedChangesButton = ({ table }: ToolbarComponentProps) => {
   if (!popover.ready) return placeholder
 
   return (
-    <Suspense fallback={placeholder}>
-      <UnsavedChangesPopover.Component
-        table={table}
-        label={label}
-        icon={icon}
-        count={count}
-        open={popover.open}
-        onOpenChange={popover.onOpenChange}
-      />
-    </Suspense>
+    <UnsavedChangesPopover.Component
+      fallback={placeholder}
+      table={table}
+      label={label}
+      icon={icon}
+      count={count}
+      open={popover.open}
+      onOpenChange={popover.onOpenChange}
+    />
   )
 }

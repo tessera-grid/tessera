@@ -6,9 +6,7 @@ import {
   type CSSProperties,
   type FocusEvent,
   type KeyboardEvent as ReactKeyboardEvent,
-  lazy,
   memo,
-  Suspense,
   useCallback,
   useEffect,
   useMemo,
@@ -118,13 +116,14 @@ import dataGridStyles from '../grid/DataGrid/DataGrid.module.css'
 // Токены темы (`.data-grid-theme`: --tsr-ref/sys/comp, light/dark) как ГЛОБАЛЬНЫЙ
 // (не-модульный) CSS side-effect отсюда — чтобы классы шиппились не захешированными.
 import '../ui/theme/theme.css'
+import { preloadable } from '../util/preloadable'
 import { useIsomorphicLayoutEffect } from '../util/useIsomorphicLayoutEffect'
 
 // Base UI Toolbar — около 6.5 KB gzip; грузим, только когда тулбар показывается.
 const NO_ROWS: Row<any, any>[] = []
 
-const Toolbar = lazy(() =>
-  import('./Toolbar/Toolbar').then(module => ({ default: module.Toolbar })),
+const Toolbar = preloadable(() =>
+  import('./Toolbar/Toolbar').then(module => module.Toolbar),
 )
 
 /**
@@ -275,16 +274,16 @@ const DataGridView = <D extends LabelDictionary = LabelDictionary>({
   const tableLabel = labels.table
   // Заглушка той же высоты, пока грузится чанк: раскладка не прыгает.
   const toolbar = enableToolbar && (
-    <Suspense
+    <Toolbar.Component
       fallback={
         <div
           className={dataGridStyles['toolbar-placeholder']}
           data-toolbar-placeholder=""
         />
       }
-    >
-      <Toolbar table={table} label={labels.toolbar} />
-    </Suspense>
+      table={table}
+      label={labels.toolbar}
+    />
   )
   const statusBar = hasStatusBar && (
     <StatusBar table={table} slot={statusBarSlot} />

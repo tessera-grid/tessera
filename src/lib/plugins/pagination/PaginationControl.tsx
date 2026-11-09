@@ -3,13 +3,13 @@
  * «from–to of total», кнопки «первая/назад/вперёд/последняя». Размечен как
  * `navigation`; бизнес-колбэк — на действие пользователя.
  */
-import { Suspense, useEffect, useId } from 'react'
+import { useEffect, useId } from 'react'
 
 import type { PaginationState } from '@tanstack/react-table'
 
 import { announceLabel } from '../../core/announcer'
 import { useLazyPopover } from '../../core/lazyOpening'
-import { preloadable } from '../../core/preloadable'
+import { preloadable } from '../../util/preloadable'
 import type { StatusBarComponentProps } from '../../core/createSlots'
 import { useLocalization } from '../../core/localization'
 import { useTableState } from '../../core/reactivity'
@@ -159,16 +159,15 @@ export const PaginationControl = ({ table }: StatusBarComponentProps) => {
       {pageSizesOption !== false && (
         <div className={styles.pageSize}>
           {sizeSelect.ready ? (
-            <Suspense fallback={sizePlaceholder}>
-              <PageSizeSelect.Component
-                label={paginationLabels(labels).rowsPerPage}
-                pageSize={pageSize}
-                pageSizes={resolvePageSizes(pageSizesOption ?? [], pageSize)}
-                onChange={changeSize}
-                open={sizeSelect.open}
-                onOpenChange={sizeSelect.onOpenChange}
-              />
-            </Suspense>
+            <PageSizeSelect.Component
+              fallback={sizePlaceholder}
+              label={paginationLabels(labels).rowsPerPage}
+              pageSize={pageSize}
+              pageSizes={resolvePageSizes(pageSizesOption ?? [], pageSize)}
+              onChange={changeSize}
+              open={sizeSelect.open}
+              onOpenChange={sizeSelect.onOpenChange}
+            />
           ) : (
             sizePlaceholder
           )}

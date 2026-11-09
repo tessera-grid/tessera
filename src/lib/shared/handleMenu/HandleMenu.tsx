@@ -3,13 +3,13 @@
 // действий; вид — `ui/Popup/HandleMenuPopup` (ADR 0168). Рендерится только открытым; попап
 // грузится лениво: при наведении и фокусе на ручке, а нажатие до загрузки открывает меню
 // после неё (ADR 0061, LZ11–LZ14).
-import { type RefObject, Suspense, useState } from 'react'
+import { type RefObject, useState } from 'react'
 
 import { reportAction, sourceOf } from '../../core/debugActions'
 import type { HeaderMenuItem } from '../../core/headerActions'
 import { type LazyTriggerState, useLazyOpening } from '../../core/lazyOpening'
 import { type TableLabels, useLocalization } from '../../core/localization'
-import { preloadable } from '../../core/preloadable'
+import { preloadable } from '../../util/preloadable'
 
 const HandleMenuPopupImpl = preloadable(() =>
   import('../../ui/Popup/HandleMenuPopup').then(m => m.HandleMenuPopup),
@@ -73,23 +73,22 @@ export const HandleMenu = ({
   const [items] = useState(getItems)
   const labels = useLocalization()
   return (
-    <Suspense fallback={null}>
-      <HandleMenuPopupImpl.Component
-        anchor={anchor}
-        focusTarget={focusTarget}
-        label={label}
-        items={items}
-        backLabel={labels.menuBack}
-        onClose={onClose}
-        onItemSelect={(id, event) =>
-          reportAction(table, {
-            plugin,
-            action: `handleMenu:${id}`,
-            source: sourceOf(event),
-          })
-        }
-      />
-    </Suspense>
+    <HandleMenuPopupImpl.Component
+      fallback={null}
+      anchor={anchor}
+      focusTarget={focusTarget}
+      label={label}
+      items={items}
+      backLabel={labels.menuBack}
+      onClose={onClose}
+      onItemSelect={(id, event) =>
+        reportAction(table, {
+          plugin,
+          action: `handleMenu:${id}`,
+          source: sourceOf(event),
+        })
+      }
+    />
   )
 }
 

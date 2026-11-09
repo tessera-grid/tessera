@@ -3,7 +3,7 @@
 import { actionDetailOf, actionOwnerOf } from '../../core/actionOwners'
 import { reportAction, sourceOf } from '../../core/debugActions'
 import { lazyTriggerHandlers, useLazyOpening } from '../../core/lazyOpening'
-import type { Preloadable } from '../../core/preloadable'
+import type { Preloadable } from '../../util/preloadable'
 import type { SlotAction } from '../../core/headerActions'
 import { actionRefOf, menuActionLabel } from '../../core/actions'
 import { useLocalization } from '../../core/localization'

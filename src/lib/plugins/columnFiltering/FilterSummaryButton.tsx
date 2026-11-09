@@ -3,12 +3,11 @@
  * фильтров бейджем, без фильтров — `disabled`. Поповер грузится лениво; пока чанк
  * не пришёл, стоит та же кнопка без Base UI Popover (ADR 0061).
  */
-import { Suspense } from 'react'
 
 import type { ToolbarComponentProps } from '../../core/createSlots'
 import { useLazyPopover } from '../../core/lazyOpening'
 import { useLocalization } from '../../core/localization'
-import { preloadable } from '../../core/preloadable'
+import { preloadable } from '../../util/preloadable'
 import { useTableState } from '../../core/reactivity'
 import { useIcons } from '../../ui/icons'
 import { ToolbarButton } from '../../ui/ToolbarButton'
@@ -61,15 +60,14 @@ export const FilterSummaryButton = ({ table }: ToolbarComponentProps) => {
   if (!popover.ready) return placeholder
 
   return (
-    <Suspense fallback={placeholder}>
-      <FilterSummaryPopover.Component
-        table={table}
-        items={items}
-        label={label}
-        icon={icon}
-        open={isOpen}
-        onOpenChange={popover.onOpenChange}
-      />
-    </Suspense>
+    <FilterSummaryPopover.Component
+      fallback={placeholder}
+      table={table}
+      items={items}
+      label={label}
+      icon={icon}
+      open={isOpen}
+      onOpenChange={popover.onOpenChange}
+    />
   )
 }

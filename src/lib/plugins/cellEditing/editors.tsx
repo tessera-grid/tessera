@@ -4,18 +4,12 @@
  * поле ввода, булево — без поля: действие правки сразу переключает значение, даты —
  * поповер с календарём, варианты — поле с поиском или список с флажками.
  */
-import {
-  Suspense,
-  useId,
-  useLayoutEffect,
-  useRef,
-  type KeyboardEvent,
-} from 'react'
+import { useId, useLayoutEffect, useRef, type KeyboardEvent } from 'react'
 
 import type { DebugActionSource } from '../../core/debugActions'
 import { ignoreBusyChange } from '../../core/failures/failuresFeature'
 import { isCellBusy } from '../../shared/objectPending'
-import { preloadable } from '../../core/preloadable'
+import { preloadable } from '../../util/preloadable'
 import { Checkbox } from '../../ui/Checkbox/Checkbox'
 import { FieldError } from '../../ui/Field/Field'
 import { CellEditInput } from './CellEditInput'
@@ -122,9 +116,10 @@ const DateEditor = preloadable(() =>
 
 /** Даты: поповер с календарём; пока модуль грузится, в ячейке — значение. */
 const dateEditor: CellEditor = props => (
-  <Suspense fallback={<span className={styles.pending}>{props.text}</span>}>
-    <DateEditor.Component {...props} />
-  </Suspense>
+  <DateEditor.Component
+    fallback={<span className={styles.pending}>{props.text}</span>}
+    {...props}
+  />
 )
 
 // Варианты — свой ленивый модуль: поле с поиском и список с флажками (ED8–ED9).
@@ -136,15 +131,17 @@ const MultiSelectEditor = preloadable(() =>
 )
 
 const selectEditor: CellEditor = props => (
-  <Suspense fallback={<span className={styles.pending}>{props.text}</span>}>
-    <SelectEditor.Component {...props} />
-  </Suspense>
+  <SelectEditor.Component
+    fallback={<span className={styles.pending}>{props.text}</span>}
+    {...props}
+  />
 )
 
 const multiSelectEditor: CellEditor = props => (
-  <Suspense fallback={<span className={styles.pending}>{props.text}</span>}>
-    <MultiSelectEditor.Component {...props} />
-  </Suspense>
+  <MultiSelectEditor.Component
+    fallback={<span className={styles.pending}>{props.text}</span>}
+    {...props}
+  />
 )
 
 interface EditorColumn {

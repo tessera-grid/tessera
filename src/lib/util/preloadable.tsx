@@ -1,11 +1,12 @@
-import { type ComponentType, lazy, useEffect, useState } from 'react'
+import { type ComponentType, type ReactNode, useEffect, useState } from 'react'
 
 const noop = () => {}
 
 /**
- * Ленивый компонент с явной загрузкой: после `load()` рисуется синхронно, без
- * Suspense-фолбэка — у `React.lazy` первый рендер приостанавливается всегда. До
- * загрузки `Component` приостанавливается как `React.lazy`.
+ * Ленивый компонент с явной загрузкой. Рендер не приостанавливается: до загрузки рисуется
+ * `fallback`, загруженный модуль подменяет его обычным обновлением, а не раскрытием Suspense —
+ * раскрытие внутри `<ViewTransition>` приложения запустило бы его View Transition (ADR 0107,
+ * RM33). После загрузки рисуется синхронно.
  *
  * `load()` грузит один раз и помнит исход, в том числе ошибку; `reload()` после
  * ошибки пробует снова — для явного действия пользователя (ADR 0061).
@@ -37,14 +38,19 @@ export function preloadable<P extends object>(
     return load()
   }
 
-  const Lazy = lazy(() => load().then(component => ({ default: component })))
+  const module: Preloadable = { load, reload, isLoaded: () => !!loaded }
 
-  const Component = (props: P) => {
-    const Loaded = loaded ?? Lazy
-    return <Loaded {...props} />
+  /** До загрузки — `fallback`; модуль начинает грузиться с первого рендера. */
+  const Component = ({
+    fallback = null,
+    ...props
+  }: P & { fallback?: ReactNode }) => {
+    usePreloaded(module)
+    const Loaded = loaded
+    return Loaded ? <Loaded {...(props as P)} /> : fallback
   }
 
-  return { load, reload, isLoaded: () => !!loaded, Component }
+  return { ...module, Component }
 }
 
 export interface Preloadable {
@@ -54,9 +60,9 @@ export interface Preloadable {
 }
 
 /**
- * Загружен ли модуль: загрузка начинается уже при рендере, как у `React.lazy`, и
- * компонент перерисовывается, когда она завершится. Ошибка оставляет `false` —
- * повторить её может только `reload()` по действию пользователя.
+ * Загружен ли модуль: загрузка начинается уже при рендере, и компонент перерисовывается,
+ * когда она завершится. Ошибка оставляет `false` — повторить её может только `reload()` по
+ * действию пользователя.
  */
 export function usePreloaded(module: Preloadable, enabled = true) {
   const [, setLoaded] = useState(module.isLoaded)

@@ -3,10 +3,9 @@
  * инлайн-кнопка и пункт кебаба открывают поповер фильтра колонки. Активный фильтр
  * виден по иконке, признаку `active` и доступному имени.
  */
-import { Suspense } from 'react'
 
 import type { HeaderAction } from '../../core/headerActions'
-import { preloadable } from '../../core/preloadable'
+import { preloadable } from '../../util/preloadable'
 import { hasColumnFilterDraft } from './filterDraft'
 import { useIcons } from '../../ui/icons'
 import {
@@ -65,16 +64,15 @@ export const filterHeaderAction: HeaderAction = {
       ),
     ]),
   panel: ({ column, table }, controls) => (
-    <Suspense fallback={null}>
-      <FilterPanel.Component
-        table={table}
-        column={column as never}
-        debounceMs={
-          (table.options as FilteringOptions).columnFilteringDebounceMs ??
-          DEFAULT_FILTER_DEBOUNCE_MS
-        }
-        controls={controls}
-      />
-    </Suspense>
+    <FilterPanel.Component
+      fallback={null}
+      table={table}
+      column={column as never}
+      debounceMs={
+        (table.options as FilteringOptions).columnFilteringDebounceMs ??
+        DEFAULT_FILTER_DEBOUNCE_MS
+      }
+      controls={controls}
+    />
   ),
 }
