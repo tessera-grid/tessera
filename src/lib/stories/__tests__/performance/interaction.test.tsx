@@ -1467,6 +1467,102 @@ describe('Отзывчивость — поиск по показанному т
   )
 })
 
+// Склеенный текст строки (ADR 0201): цена числа колонок поиска и первый поиск после монтирования.
+// QT8 — 10 колонок поиска против одной (прочие исключены `enableGlobalFilter: false`) на тех же
+// строках и колонках: прогрев считает тексты, замер — следующий запрос по ним.
+const SEARCHED_ALONE = 'firstName'
+const searchedColumns = (alone: boolean) =>
+  makeColumns(SEARCH_SIZE.columnCount).map(column =>
+    alone && column.id !== SEARCHED_ALONE
+      ? { ...column, enableGlobalFilter: false }
+      : column,
+  )
+
+describe('Отзывчивость — склеенный текст строки', () => {
+  const recordSearch = (
+    id: string,
+    label: string,
+    r: Awaited<ReturnType<typeof measureInteractionWork>>,
+    ceilingMs?: number,
+  ) =>
+    recordPerf({
+      id,
+      label,
+      operation: 'interaction',
+      size: '100 000×10',
+      plugins: 'all',
+      cpuThrottle: CPU_THROTTLE_RATE,
+      metrics: [
+        {
+          kind: 'load',
+          metric: 'longest',
+          valueMs: r.longestMs,
+          targetMs: INTERACTION_BUDGET_MS,
+          ceilingMs,
+          ...r,
+        },
+      ],
+    })
+
+  test(
+    'QT8: поиск по 100 000 строк с 10 колонками поиска — против одной колонки поиска, прочие исключены enableGlobalFilter: false',
+    async () => {
+      const measure = async (all: boolean) => {
+        await renderGrid({
+          ...SEARCH_SIZE,
+          ...ALL_PLUGINS,
+          ...SEARCH,
+          columnsOverride: searchedColumns(!all),
+        } as Parameters<typeof renderGrid>[0])
+        await waitForGrid()
+        await expect.poll(quickSearchInput).not.toBeNull()
+        const result = await measureInteractionWork(
+          async () => alternate(quickSearchInput()!, 'a', 'e'),
+          { afterWarmup: () => expect(quickSearchInput()!.value).toBe('a') },
+        )
+        expect(quickSearchInput()!.value).toBe('e')
+        await cleanup()
+        return result
+      }
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const all = medianRun(runs.variant, r => r.longestMs)
+      // Одна проверка склеенного текста на строку: число колонок поиска почти ничего не стоит.
+      const ceiling = ceilingOver(base.longestMs, { ratio: 1.2, plusMs: 30 })
+      await recordSearch('QT8-base', 'поиск по одной колонке', base)
+      await recordSearch('QT8', 'поиск по 10 колонкам', all, ceiling)
+      expect(
+        all.longestMs,
+        `10 колонок longest=${all.longestMs.toFixed(1)}ms, одна ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+
+  test(
+    'QT9: первый поиск после монтирования, 100 000×10, тексты строк не посчитаны',
+    async () => {
+      await renderGrid({
+        ...SEARCH_SIZE,
+        ...ALL_PLUGINS,
+        ...SEARCH,
+      } as Parameters<typeof renderGrid>[0])
+      await waitForGrid()
+      await expect.poll(quickSearchInput).not.toBeNull()
+      expect(quickSearchInput()!.value).toBe('')
+      const result = await measureInteractionWork(
+        async () => alternate(quickSearchInput()!, 'a', 'e'),
+        { warmup: false },
+      )
+      expect(quickSearchInput()!.value).toBe('a')
+      await cleanup()
+      // Без гейта: значение — в дашборд против цели INP.
+      await recordSearch('QT9', 'первый поиск, тексты не посчитаны', result)
+    },
+    PERF_TIMEOUT,
+  )
+})
+
 // Фильтр записи с фасетами по ключу (ADR 0174, TY15): отметка варианта на 100 000 строк —
 // колонка менеджера-записи `object` против той же колонки `select` с вариантами (база SF25).
 const GENDER_NAMES: Record<string, string> = { male: 'Male', female: 'Female' }

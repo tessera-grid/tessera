@@ -800,6 +800,10 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       описание колонок поиска, недоступное поле), модульные
       `quickSearchHint.dom` (QS3, QS6–QS7), `play` истории «Filtering — Server» (QS9 —
       колонки для сервера), [ADR 0053](docs/decisions/0053-quick-search-columns-hint.md).
+    - _Склеенный текст поиска:_ модульный `quickSearchJoined` (QT1–QT7 — отбор как по колонкам,
+      стык колонок, текст раз на строку и его сброс, путь по колонкам, общий форматтер, общие
+      вердикты строки), перф QT8–QT9 — в `interaction`, QT10 — отчёт `perf:compare` в ADR
+      ([ADR 0201](docs/decisions/0201-quick-search-joined-row-text.md)).
     - _Фильтр дат:_ `filtering-dates` (DF1, DF9–DF13, DF15–DF17, DF19 — кнопка и панель
       даты, календарь, время, клавиатура, тема, движение, локализация, сводка, axe,
       сервер), `date-filter-chunk` (DF14 — ленивый модуль календаря), модульные

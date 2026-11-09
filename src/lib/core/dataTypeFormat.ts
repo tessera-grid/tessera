@@ -207,14 +207,14 @@ export const dateTypeInstant = (
   return instantOf(parsed, type.base)?.getTime()
 }
 
-/** Текст значения колонки по её типу (DT4, DT5, DT7). */
-export const formatDataTypeValue = (
+/** Текст значения по уже разрешённому типу колонки — общее тело форматирования. */
+const formatTyped = (
   table: FormatTable,
   column: FormatColumn,
+  type: ResolvedDataType | undefined,
   value: unknown,
   row: unknown,
 ): string => {
-  const type = resolveDataType(table, column)
   if (type?.definition.formatValue)
     return type.definition.formatValue(value, row)
   const options = optionTextOf(table, column, value)
@@ -261,6 +261,25 @@ export const formatDataTypeValue = (
     default:
       return String(value)
   }
+}
+
+/** Текст значения колонки по её типу (DT4, DT5, DT7). */
+export const formatDataTypeValue = (
+  table: FormatTable,
+  column: FormatColumn,
+  value: unknown,
+  row: unknown,
+): string =>
+  formatTyped(table, column, resolveDataType(table, column), value, row)
+
+/**
+ * Форматтер колонки с типом, разрешённым один раз (ADR 0201, §4): тот же текст, что
+ * `formatDataTypeValue`, без разрешения типа на каждое значение.
+ */
+export const columnFormatter = (table: FormatTable, column: FormatColumn) => {
+  const type = resolveDataType(table, column)
+  return (value: unknown, row: unknown): string =>
+    formatTyped(table, column, type, value, row)
 }
 
 /** Числа — `number` и десятичная строка `numberString`: цифры одной ширины. */

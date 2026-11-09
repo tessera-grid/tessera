@@ -456,9 +456,12 @@ export async function measureInteractionWork(
   trigger: () => Promise<void>,
   {
     settleFrames = 6,
+    warmup = true,
     afterWarmup,
   }: {
     settleFrames?: number
+    /** `false` — замер первого действия, без прогрева: холодный путь (ADR 0201, QT9). */
+    warmup?: boolean
     /**
      * Вне трейса после прогрева: проверить, что прогрев сделал измеряемое (замер
      * повторяет то же действие), и при нужде вернуть состояние.
@@ -467,12 +470,14 @@ export async function measureInteractionWork(
   } = {},
 ): Promise<ScrollWorkResult> {
   // Warm-up: одно взаимодействие вне трейса (JIT + первый переход состояния).
-  await trigger()
-  for (let i = 0; i < settleFrames; i++) {
-    // eslint-disable-next-line no-await-in-loop
-    await nextFrame()
+  if (warmup) {
+    await trigger()
+    for (let i = 0; i < settleFrames; i++) {
+      // eslint-disable-next-line no-await-in-loop
+      await nextFrame()
+    }
+    await afterWarmup?.()
   }
-  await afterWarmup?.()
 
   const id = `inp-${traceSeq++}-${Date.now()}`
   await perfCommands.perfTraceStart(id)

@@ -5,7 +5,8 @@
  * (`timeZone`, ADR 0047) при активных фильтрах колонок — тоже. Без фильтров и поиска
  * второй проход подряд строки не обходит (ADR 0068). Срез операции, которую выполняет
  * сервер, клиент не применяет (ADR 0169, §1). Смена `data` при тех же фильтрах проверяет
- * только изменённые и вставленные строки (ADR 0194).
+ * только изменённые и вставленные строки (ADR 0194). Поиск проверяет строку проверкой,
+ * подготовленной функцией поиска раз на проход (ADR 0201).
  */
 import { constructRow, makeObjectMap } from '@tanstack/react-table'
 
@@ -31,7 +32,15 @@ type FilterFn = ((
   columnId: string,
   value: unknown,
   addMeta: AddMeta,
-) => boolean) & { resolveFilterValue?: (value: unknown) => unknown }
+) => boolean) & {
+  resolveFilterValue?: (value: unknown) => unknown
+  /** Проверка строки поиском, подготовленная раз на проход; `undefined` — по колонкам (ADR 0201, §2). */
+  prepareRowCheck?: (
+    table: FilteringTable,
+    columns: readonly FilterColumn[],
+    value: unknown,
+  ) => ((row: FilterRow) => boolean) | undefined
+}
 
 interface FilterColumn {
   id: string
@@ -104,24 +113,38 @@ const resolveFilters = (table: FilteringTable) => {
   const searchable = globalFn
     ? table.getAllLeafColumns().filter(column => column.getCanGlobalFilter())
     : []
+  let search: ((row: FilterRow) => boolean) | undefined
   if (globalFn && searchable.length) {
     ids.push('__global__')
-    for (const column of searchable) {
-      global.push({
-        id: column.id,
-        filterFn: globalFn,
-        value: globalFn.resolveFilterValue?.(globalFilter) ?? globalFilter,
-      })
+    const value = globalFn.resolveFilterValue?.(globalFilter) ?? globalFilter
+    search = globalFn.prepareRowCheck?.(table, searchable, value)
+    if (!search) {
+      for (const column of searchable) {
+        global.push({ id: column.id, filterFn: globalFn, value })
+      }
     }
   }
-  return { columns, global, ids }
+  return { columns, global, ids, search }
 }
+
+const frozenMap = <T>(entries: Record<string, T>) =>
+  Object.freeze(Object.assign(makeObjectMap<T>(), entries))
+
+/** Вердикты строки при одном поиске — общие на все строки (ADR 0201, §5). */
+const FOUND = frozenMap({ __global__: true })
+const NOT_FOUND = frozenMap({ __global__: false })
+const NO_META = frozenMap<unknown>({})
 
 /** Проверка строки фильтрами — как у стоковой модели. */
 const checkRow = (
   row: FilterRow,
-  { columns, global }: ReturnType<typeof resolveFilters>,
+  { columns, global, search }: ReturnType<typeof resolveFilters>,
 ) => {
+  if (search && !columns.length) {
+    row.columnFilters = search(row) ? FOUND : NOT_FOUND
+    row.columnFiltersMeta = NO_META
+    return
+  }
   row.columnFilters = makeObjectMap()
   row.columnFiltersMeta = makeObjectMap()
   const addMeta = (id: string) => (meta: unknown) => {
@@ -135,7 +158,8 @@ const checkRow = (
       addMeta(filter.id),
     )
   }
-  if (global.length) {
+  if (search) row.columnFilters.__global__ = search(row)
+  else if (global.length) {
     row.columnFilters.__global__ = false
     for (const filter of global) {
       if (filter.filterFn(row, filter.id, filter.value, addMeta(filter.id))) {
