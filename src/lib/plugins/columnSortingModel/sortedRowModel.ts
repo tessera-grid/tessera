@@ -216,6 +216,12 @@ interface Sorted {
   starts?: Int32Array
 }
 
+/** Срез сортировки по значению: атом с тем же составом может отдать новую ссылку. */
+const sortingKey = (table: SortTable) =>
+  (table.atoms.sorting?.get() ?? [])
+    .map(sort => `${sort.id}\u0000${sort.desc ? 1 : 0}`)
+    .join('\u0001')
+
 const rulesOf = (table: SortTable) => [
   table.options.locale,
   table.options.dataTypes,
@@ -261,7 +267,7 @@ const pushShown = (
 const fullSort = (table: SortTable, input: RowModel): Sorted => {
   const base = {
     input,
-    sorting: table.atoms.sorting?.get(),
+    sorting: sortingKey(table),
     rules: rulesOf(table),
   }
   const entries = input.rows.length ? sortEntries(table) : []
@@ -350,7 +356,7 @@ const patchInPlace = (
   input: RowModel,
 ): Sorted | undefined => {
   const change = rowModelChangeOf(input) as RowModelChange | undefined
-  const sorting = table.atoms.sorting?.get()
+  const sorting = sortingKey(table)
   if (
     !change?.inPlace ||
     !change.previous ||
@@ -545,7 +551,7 @@ const patchData = (
   input: RowModel,
 ): Sorted | undefined => {
   const change = rowModelChangeOf(input) as RowModelChange | undefined
-  const sorting = table.atoms.sorting?.get()
+  const sorting = sortingKey(table)
   if (
     !change ||
     change.prev !== prev.input ||
@@ -684,7 +690,7 @@ export const createTesseraSortedRowModel =
     let deps: readonly unknown[] | undefined
     return read => {
       const input = read() as RowModel
-      const next = [t.atoms.sorting?.get(), input, ...rulesOf(t)]
+      const next = [sortingKey(t), input, ...rulesOf(t)]
       if (last && deps && next.every((dep, i) => dep === deps![i])) {
         return last.output
       }

@@ -101,91 +101,54 @@ dnd-kit — это headless-тулкит drag-and-drop для React.
 - **Drag overlay** — плавающий элемент, рендерящийся во время перетаскивания;
   Tessera рендерит для этого `OverlayHeadCell` / `OverlayBodyRow`.
 
-## Свои модели строк поверх TanStack
+## Движок строк поверх TanStack
 
-Цепочка моделей TanStack (исходная → фильтрация → группировка → сортировка → раскрытие →
-страница) на любое изменение входа пересобирается с нуля, за время, пропорциональное
-числу строк; инкрементального API нет. Для ленивых детей это давало сотни миллисекунд
-на приход одного ответа на 100 000 корней. Tessera подменяет часть моделей своими
-фабриками в штатных слотах фич v9 — без форка и патчей — и пересчитывает только
-изменённое; во всех непривычных случаях фабрика откатывается на модель TanStack.
+Строки, их порядок, видимость и место строит свой движок Tessera
+([ADR 0200](../decisions/0200-own-row-engine.md)): хранилище строк
+([`memoryStore.ts`](../../src/lib/core/rowEngine/memoryStore.ts), словарь с версиями
+[`rowDict.ts`](../../src/lib/core/rowEngine/rowDict.ts)), конвейер стадий в плагинах моделей
+(фильтр и поиск → группировка → сортировка → раскрытие → страница) и источник строк. Слоты
+моделей TanStack — обёртки над стадиями; `table.get*RowModel()` собирает стоковый вид лениво
+([`stockView.ts`](../../src/lib/core/rowEngine/stockView.ts)). Ядро, грид и плагины читают
+строки через [`rowsOf`](../../src/lib/core/rowEngine/rows.ts) (страж SD2). Серверная модель —
+хранилище блоков движка; стадии на клиенте в её режиме не идут.
 
-| Слот                                  | Фабрика Tessera                                                                                                                    | ADR                                                                                                              |
-| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `coreRowModel`                        | [`createLazyCoreRowModel`](../../src/lib/plugins/rowExpanding/lazyCoreRowModel.ts) — сборка из прежней при смене ответов           | [0067](../decisions/0067-incremental-lazy-core-row-model.md), [0069](../decisions/0069-rowsbyid-handover.md)     |
-| `filteredRowModel`, `groupedRowModel` | [`skipIdlePasses`](../../src/lib/shared/rowModels/idleRowModel.ts) — без холостых проходов                                         | [0068](../decisions/0068-idle-filter-and-group-passes.md)                                                        |
-| `sortedRowModel`                      | [`createTesseraSortedRowModel`](../../src/lib/plugins/columnSortingModel/sortedRowModel.ts) — значения один раз, сборка из прошлой | [0064](../decisions/0064-tessera-sorted-row-model.md), [0072](../decisions/0072-incremental-sorted-row-model.md) |
-| `expandedRowModel`                    | [`createIncrementalExpandedRowModel`](../../src/lib/shared/rowModels/expandedRowModel.ts) — обход затронутых корней                | [0070](../decisions/0070-incremental-expanded-row-model.md)                                                      |
+### На что опираемся
 
-**Решение не целевое.** Фабрики встают в публичные слоты, но опираются на поведение
-TanStack, которого его API не обещает. Целевой путь — инкрементальное API в самом
-TanStack (вопрос в upstream) либо свой движок за источником строк ядра. Серверной модели
-строк эти фабрики не нужны: она строит строки блока публичной `constructRow`, а цепочка
-моделей в её режиме простаивает ([ADR 0138](../decisions/0138-server-side-row-model.md),
-§3).
+Опор на неописанное поведение TanStack нет (ADR 0200, EN21). Движок пользуется только
+публичным API:
 
-### На что опираемся и что это держит
+| API TanStack                                                                                          | Зачем                                                                                    |
+| ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `constructRow(table, id, original, index, depth, subRows, parentId)`                                  | строки хранилища, строки-группы, копии родителей у фильтра дерева и ответа ленивых детей |
+| `copyInstancePropertiesWithoutMemos`                                                                  | копии строк стокового вида `table.get*RowModel()`                                        |
+| `table.getRowId`, `options.getSubRows`                                                                | id и дети строк данных                                                                   |
+| `table.autoResetPageIndex()`, `autoResetExpanded()`, `autoResetSorting()`, `autoResetCellSelection()` | автосбросы после пересчёта — микрозадачей, по правилу TanStack                           |
+| `sortFns`, `filterFns`, `getGlobalFilterFn`, `column.getAggregationFns()`                             | функции стадий сортировки, фильтра, поиска и группировки                                 |
+| `row.getValue`, `row.getIsExpanded`, `row.getCanExpand`                                               | значения ячеек и раскрытие                                                               |
+| `table.atoms.*`                                                                                       | срезы состояния; стадии сравнивают их по значению, а не по ссылке                        |
 
-| Поведение TanStack                                                                                                                                         | Кто опирается                                                                                      | Тесты                     |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------- |
-| Строка переживает смену модели: кэш значений зависит от `original`, кэш листовых строк — от `subRows`, индекс отображения пересчитывается на каждой модели | исходная, сортировка, раскрытие                                                                    | IM1–IM7, SM8–SM9, XM1–XM4 |
-| `constructRow(table, id, original, index, depth, subRows, parentId)` и `getRowId(original, index, parent)` — как в `accessRows`                            | исходная                                                                                           | IM1–IM5                   |
-| Новая строка создаётся с пустыми `columnFilters` и `columnFiltersMeta` (`initRowInstanceData`)                                                             | фильтрация                                                                                         | PT1–PT2, PT5              |
-| `depth` и `parentId` строк пишут только исходная модель и группировка                                                                                      | группировка                                                                                        | PT3–PT5                   |
-| Автосбросы страницы и раскрытия — микрозадачи после пересчёта, сравнивают модели на момент выполнения                                                      | фильтрация, группировка                                                                            | PT6                       |
-| `copyInstancePropertiesWithoutMemos` копирует строку для родителя с переставленными детьми                                                                 | только стоковый вид `table.get*RowModel()` (ADR 0200, §6); сортировка пишет детей показа без копий | EN6                       |
-| «Раскрыть всё» материализуется обходом `Object.values(getRowModel().rowsById)` с `row_getCanExpand`                                                        | исходная (передача словаря)                                                                        | IM11                      |
-| `expandRows`: строка, затем дети раскрытой (`row.getIsExpanded()`)                                                                                         | раскрытие                                                                                          | XM1–XM4                   |
-| Атом среза с тем же содержимым сохраняет ссылку (сравнение по значению)                                                                                    | сортировка (только скорость)                                                                       | SM12                      |
-
-Опубликованных строк и словарей хранилище не правит ([ADR 0200](../decisions/0200-own-row-engine.md), этап 3):
-место строки после сдвига знает хранилище (`core/rowPosition.ts`), `index` — место при создании;
-словарь `rowsById` — один на таблицу и меняется на месте (`core/rowEngine/rowDict.ts`): прежняя модель видит словарь своей версии через обратные записи смен (ADR 0200, этап 5).
+Фасеты (`column.getFacetedRowModel`), выбор и раскрытие всего, число страниц — стоковые фичи
+TanStack; они читают ленивые виды движка (ADR 0200, §6, EN7).
 
 ### При обновлении TanStack
 
-1. Прогнать паритет: `npx vitest run --config vitest.node.config.ts` — наборы
-   `lazyCoreRowModel.dom`, `idleRowModelPasses`, `sortedRowModel`, `expandedRowModel`.
-2. Сверить строки таблицы выше с исходниками новой версии: `accessRows`,
-   `initRowInstanceData` фильтрации, `resetRowRelationships`, `expandRows`,
-   `row_toggleExpanded`, автосбросы (`table_autoReset*`), `tableMemo`.
-3. Перф `npm run perf`: IM8, PT7, XM5, SM7, SM12 — выигрыш против фабрик TanStack в том
-   же замере.
+1. Паритет: `npm run test:parity` — наборы движка против стоковых моделей. Тот же набор раз в
+   неделю идёт против свежей 9.x в `prerelease.yml` (ADR 0200, EN23).
+2. Перф: `npm run perf:compare -- <ref>`.
 
-Последняя сверка — 9.2.4 → 9.3.1 (2026-11-08, [ADR 0200](../decisions/0200-own-row-engine.md),
-этап 0): фичи обращаются друг к другу через заглушки `core/featureStubs` и внутренние API с `_`
-(`table._expandRows`), автосбросы зовутся методами таблицы (`table.autoResetExpanded?.()`);
-поведение строк таблицы выше не изменилось. Агрегаты группировки считаются, только если
-подключён `rowAggregationFeature` (у нас — `shared/aggregation.ts`). Таблица опор уходит вместе
-со своими фабриками (ADR 0200, этап 5).
+Peer — `^9` (ADR 0200, EN22): новая минорная версия TanStack не требует нашего выпуска.
+Последняя сверка исходников — 9.2.4 → 9.3.1 (ADR 0200, этап 0); с этапа 5 сверять нечего.
 
 ## Обходы апстрима
 
 Ошибки upstream, которые Tessera обходит композицией (без форка). У каждого обхода —
 условие снятия: проверяйте его при обновлении зависимости.
 
-### Сортировка дерева: `rowsById` указывает на строку вне модели
-
-- **Версия:** `@tanstack/table-core` 9.2.4 (установлена); в 9.2.6 и в `main` на
-  2026-10-07 не исправлено, issue в TanStack/table нет.
-- **Суть.** `createSortedRowModel` копирует строку, чьих детей переставила сортировка
-  (`Object.create` + `copyInstancePropertiesWithoutMemos`), и кладёт копию в `rows` и
-  `flatRows`, но `rowsById` возвращает от предыдущей модели — с оригиналом. Всё, что
-  ищет строку по id, получает объект, которого нет в отображаемых строках: например,
-  `resolveRowIndex` выделения ячеек берёт `getPrePaginatedRowModel().rowsById[id]`,
-  `getDisplayIndex()` оригинала даёт `-1` — ячейка не выделяется и не копируется.
-- **Воспроизведение.** Дерево (`subRows`), клиентская сортировка, при которой меняется
-  порядок детей строки, и `cellSelectionFeature`: клик по ячейке этой строки не
-  выделяет её. Строки без детей и строки, чей порядок детей не изменился, не
-  затронуты.
-- **Как устранено.** Плагин `columnSorting` подключает свою фабрику
-  [`createTesseraSortedRowModel`](../../src/lib/plugins/columnSorting/sortedRowModel.ts)
-  ([ADR 0064](../decisions/0064-tessera-sorted-row-model.md)) — ради скорости она
-  повторяет устройство модели TanStack и строит `rowsById` с копиями (SM5). Ошибка
-  upstream на Tessera больше не влияет; требование CS24
-  ([ADR 0012](../decisions/0012-column-sorting.md)) это проверяет.
-- **При обновлении TanStack.** Паритет порядка своей модели с `createSortedRowModel`
-  держат SM1–SM4 (одни сценарии через обе фабрики).
+Сейчас обходов нет. Ошибка `createSortedRowModel` в 9.2.4–9.3.1 — `rowsById` указывает на
+строку вне модели, когда сортировка переставила детей, — Tessera не задевает: сортировку строит
+своя стадия без копий, а стоковый вид кладёт копии и в словарь (ADR 0200, EN6; CS24
+[ADR 0012](../decisions/0012-column-sorting.md)).
 
 ## Где находится Tessera
 

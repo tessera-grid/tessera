@@ -97,10 +97,18 @@ describe('CI', () => {
       const setups = text.match(/uses: actions\/setup-node@v\d+/g) ?? []
       const fromFile = text.match(/node-version-file: \.nvmrc/g) ?? []
       expect(fromFile.length, file).toBe(setups.length)
-      expect(text, file).not.toMatch(/npm install\b/)
       for (const id of jobIds(text)) {
         const job = jobOf(text, id)
         const runs = runsOf(job)
+        // Паритет движка строк ставит свежую TanStack 9.x поверх lockfile (ADR 0200, EN23).
+        const installs = runs.filter(run => /^npm install\b/.test(run))
+        const parity = file === 'prerelease.yml' && id === 'parity'
+        for (const run of installs) {
+          expect(parity, `${file} ${id}: ${run}`).toBe(true)
+          expect(run).toMatch(
+            /^npm install --no-save( @tanstack\/[\w-]+@\^9)+$/,
+          )
+        }
         if (runs.some(run => /^npm (run|test)/.test(run))) {
           expect(runs, `${file} ${id}`).toContain('npm ci')
         }

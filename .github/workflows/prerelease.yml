@@ -1,5 +1,6 @@
 # Шаги перед публикацией (ADR 0103, CI6): все наборы в движках, React 18 и пакет глазами
-# потребителя. Раз в неделю при новых коммитах, гейтом выпуска и по кнопке.
+# потребителя. Раз в неделю при новых коммитах, гейтом выпуска и по кнопке. Паритет движка строк
+# против свежей TanStack 9.x — каждую неделю, и без наших коммитов (ADR 0200, EN23).
 name: Pre-release checks
 
 on:
@@ -12,6 +13,20 @@ permissions:
   contents: read
 
 jobs:
+  parity:
+    name: Row engine parity on latest TanStack 9.x
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm install --no-save @tanstack/react-table@^9 @tanstack/table-core@^9
+      - run: npm ls @tanstack/react-table @tanstack/table-core
+      - run: npm run test:parity
+
   changes:
     name: New commits this week
     runs-on: ubuntu-latest

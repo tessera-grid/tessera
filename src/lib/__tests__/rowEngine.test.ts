@@ -1144,3 +1144,64 @@ describe('Словарь хранилища на месте (ADR 0200, этап 
     expect(table.getCoreRowModel().rowsById.b).toBeUndefined()
   })
 })
+
+describe('Без опор на TanStack (ADR 0200, этап 5)', () => {
+  const root = join(__dirname, '..')
+  const project = join(root, '..', '..')
+
+  it('EN21: прежних фабрик моделей нет — библиотека не берёт фабрик моделей строк TanStack, кроме фасетов; модели строк читают только движок, хранилище, источник и стадии; таблица опор в upstream-foundations.md пуста', () => {
+    const factories = sources(root)
+      .filter(file =>
+        /\bcreate(?:Core|Filtered|Grouped|Sorted|Expanded|Paginated)RowModel\b/.test(
+          readFileSync(file, 'utf8'),
+        ),
+      )
+      .map(file => relative(root, file).replace(/\\/g, '/'))
+    expect(factories).toEqual([])
+
+    const ENGINE = [
+      'core/rowSource.ts',
+      'core/dataChanges.ts',
+      'plugins/rowExpanding/lazyCoreRowModel.ts',
+      'shared/rowModels/filteredRowModel.ts',
+      'plugins/rowGroupingModel/groupStage.ts',
+      'plugins/columnSortingModel/sortedRowModel.ts',
+      'shared/rowModels/expandedRowModel.ts',
+      'plugins/paginationModel/pageStage.ts',
+    ]
+    const readers = sources(root)
+      .filter(file =>
+        /\.get(?:Pre)?(?:Core|Filtered|Grouped|Sorted|Expanded|Paginated)?RowModel\??\.?\(|\.rowsById\b/.test(
+          readFileSync(file, 'utf8'),
+        ),
+      )
+      .map(file => relative(root, file).replace(/\\/g, '/'))
+      .filter(file => !file.startsWith('core/rowEngine/'))
+    expect(readers.filter(file => !ENGINE.includes(file))).toEqual([])
+
+    const doc = readFileSync(
+      join(project, 'docs/architecture/upstream-foundations.md'),
+      'utf8',
+    )
+    const supports = doc.slice(
+      doc.indexOf('### На что опираемся'),
+      doc.indexOf('### При обновлении TanStack'),
+    )
+    expect(supports).toContain('Опор на неописанное поведение TanStack нет')
+    expect(supports).not.toContain('| Поведение TanStack')
+  })
+
+  it('EN22: peer @tanstack/react-table — ^9; наборы паритета идут на установленной 9.3.x', () => {
+    const pkg = JSON.parse(readFileSync(join(project, 'package.json'), 'utf8'))
+    expect(pkg.peerDependencies['@tanstack/react-table']).toBe('^9')
+    expect(pkg.devDependencies['@tanstack/react-table']).toBe('~9.3.1')
+    const installed = JSON.parse(
+      readFileSync(
+        join(project, 'node_modules/@tanstack/react-table/package.json'),
+        'utf8',
+      ),
+    ).version
+    expect(installed).toMatch(/^9\.3\./)
+    expect(pkg.scripts['test:parity']).toMatch(/\browEngine\b/)
+  })
+})
