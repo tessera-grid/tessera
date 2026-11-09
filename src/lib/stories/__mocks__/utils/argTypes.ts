@@ -235,6 +235,11 @@ export const enableRowAnimationType = booleanControl(
   true,
 )
 
+export const enableIncrementalRenderType = booleanControl(
+  'Первый рендер и смена всего окна по кускам, переходами React; выкл — одним проходом (`enableIncrementalRender`, ADR 0203)',
+  true,
+)
+
 export const enableColumnAnimationType = booleanControl(
   'Движение колонок при смене порядка: откат, клавиатура, меню ручки (`enableColumnAnimation`, ADR 0115)',
   true,

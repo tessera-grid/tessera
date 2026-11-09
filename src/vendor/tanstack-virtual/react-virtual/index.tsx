@@ -36,7 +36,13 @@ export type ReactVirtualizerOptions<
   TScrollElement extends Element | Window,
   TItemElement extends Element,
 > = VirtualizerOptions<TScrollElement, TItemElement> & {
-  useFlushSync?: boolean
+  // Tessera (ADR 0202, ADR 0203): a function decides on every notify, not at render
+  // time; 'transition' renders in a React transition.
+  useFlushSync?:
+    | boolean
+    | ((
+        instance: Virtualizer<TScrollElement, TItemElement>,
+      ) => boolean | 'transition')
   /**
    * Skip React re-renders for scroll-only updates. The virtualizer writes
    * item positions (`top`/`left`) and the container size (`height`/`width`)
@@ -101,6 +107,12 @@ function useVirtualizerBase<
     prevRange: null as {
       startIndex: number
       endIndex: number
+      isScrolling: boolean
+    } | null,
+    // Tessera (ADR 0202): what the last commit rendered.
+    rendered: null as {
+      items: Array<VirtualItem>
+      totalSize: number
       isScrolling: boolean
     } | null,
   })
@@ -200,6 +212,18 @@ function useVirtualizerBase<
         }
       }
 
+      // Tessera (ADR 0202): the same items, total size and scrolling state as the
+      // last commit — the browser already shows them, a render changes nothing.
+      const rendered = state.rendered
+      if (shouldRerender && rendered) {
+        const items = instance.getVirtualItems()
+        shouldRerender =
+          rendered.isScrolling !== instance.isScrolling ||
+          rendered.totalSize !== instance.getTotalSize() ||
+          rendered.items.length !== items.length ||
+          items.some((item, k) => item !== rendered.items[k])
+      }
+
       if (shouldRerender) {
         // A sync notify raised from `measureElement` reaches us while React is
         // committing, because `measureElement` is a ref callback. `flushSync`
@@ -209,7 +233,13 @@ function useVirtualizerBase<
         // window keeps the same lane and the same flush point — without the
         // warning. Every other sync notify (ResizeObserver re-measures, scroll
         // adjustments) still flushes synchronously.
-        if (useFlushSync && sync && !measuringFromRef.current) {
+        const flush =
+          typeof useFlushSync === 'function'
+            ? useFlushSync(instance)
+            : useFlushSync
+        if (flush === 'transition') {
+          React.startTransition(rerender)
+        } else if (flush && sync && !measuringFromRef.current) {
           flushSync(rerender)
         } else {
           rerender()
@@ -257,6 +287,16 @@ function useVirtualizerBase<
   })
 
   instance.setOptions(resolvedOptions)
+
+  // Tessera (ADR 0202): what this render shows becomes the rendered state on commit.
+  const showing = {
+    items: instance.getVirtualItems(),
+    totalSize: instance.getTotalSize(),
+    isScrolling: instance.isScrolling,
+  }
+  useIsomorphicLayoutEffect(() => {
+    directRef.current.rendered = showing
+  })
 
   useIsomorphicLayoutEffect(() => {
     return instance._didMount()

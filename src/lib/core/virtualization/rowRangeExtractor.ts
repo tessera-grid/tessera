@@ -1,11 +1,12 @@
 import { useCallback } from 'react'
 
-import {
-  type Range,
-  defaultRangeExtractor,
-} from '../../../vendor/tanstack-virtual/react-virtual'
+import type { Range } from '../../../vendor/tanstack-virtual/react-virtual'
+
+import type { WindowBand } from './windowBand'
 
 export interface UseRowRangeExtractorParams {
+  /** Полоса окна строк (ADR 0202). */
+  band: WindowBand
   rowDraggingIndex?: number
   /** Активная строка клавиатурной навигации (фокус не должен размонтироваться). */
   activeRowIndex?: number
@@ -19,13 +20,14 @@ export interface UseRowRangeExtractorParams {
  * @link https://tanstack.com/virtual/latest/docs/api/virtualizer#rangeextractor
  */
 export const useRowRangeExtractor = ({
+  band,
   rowDraggingIndex,
   activeRowIndex,
   heldRowIndex,
 }: UseRowRangeExtractorParams) => {
   return useCallback(
     (range: Range) => {
-      const newIndexes = defaultRangeExtractor(range)
+      const newIndexes = band(range)
       const pinned = [rowDraggingIndex, activeRowIndex, heldRowIndex].filter(
         (index): index is number =>
           index !== undefined && index >= 0 && index < range.count,
@@ -39,6 +41,6 @@ export const useRowRangeExtractor = ({
         (a, b) => a - b,
       )
     },
-    [rowDraggingIndex, activeRowIndex, heldRowIndex],
+    [band, rowDraggingIndex, activeRowIndex, heldRowIndex],
   )
 }

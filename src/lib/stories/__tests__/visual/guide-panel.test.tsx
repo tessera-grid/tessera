@@ -1696,6 +1696,10 @@ describe('показ действий шага (ADR 0117)', () => {
     const screen = await mount(true)
     try {
       await rows().toBeGreaterThan(3)
+      // Порции окна позади (ADR 0203): строка цели больше не перерисовывается.
+      await expect
+        .poll(() => document.querySelector('[data-portions-pending]'))
+        .toBeNull()
       const button = cellAt(2, 'age').querySelector<HTMLElement>(
         '.cell__button button',
       )!

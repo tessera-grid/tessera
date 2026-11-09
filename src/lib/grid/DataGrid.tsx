@@ -7,12 +7,16 @@ import {
   type FocusEvent,
   type KeyboardEvent as ReactKeyboardEvent,
   memo,
+  startTransition,
   useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from 'react'
+import { isIncremental } from '../core/virtualization/windowPortions'
+import { markGridPending } from '../core/scrollToRow/viewport'
 
 import clsx from 'clsx'
 
@@ -312,6 +316,7 @@ const DataGridView = <D extends LabelDictionary = LabelDictionary>({
     virtualRows,
     bodyHeight,
     virtualizer: rowVirtualizer,
+    band: rowBand,
   } = useRowVirtualizer({
     table,
     getScrollElement,
@@ -346,7 +351,7 @@ const DataGridView = <D extends LabelDictionary = LabelDictionary>({
       )
     },
   })
-  useRowSourceWindow(table, rowSource, rowVirtualizer, fastScrollStore)
+  useRowSourceWindow(table, rowSource, rowVirtualizer, fastScrollStore, rowBand)
 
   const virtualPaddingStyles = useColumnVirtualizerScroll({
     table,
@@ -666,6 +671,7 @@ const DataGridView = <D extends LabelDictionary = LabelDictionary>({
                             rowSource={rowSource}
                             leafColumns={leafColumns}
                             virtualRows={virtualRows}
+                            visibleRows={rowVirtualizer.range}
                             virtualColumns={virtualColumns}
                             isVirtualColumns={!hasNestedGroups}
                             isResizingColumns={isResizingColumns}
@@ -712,4 +718,54 @@ const DataGridView = <D extends LabelDictionary = LabelDictionary>({
  * заглушки пустой таблицы — из реестра причин, свой вид — пропом `stubs` (ADR 0123).
  * Те же `table` и пропы — без перерисовки (ADR 0196, §3).
  */
-export const DataGrid = memo(DataGridView) as typeof DataGridView
+const subscribeNothing = () => () => {}
+
+/**
+ * Первый рендер содержимого грида — переходом React (ADR 0203, §1): его рендер React режет на
+ * куски. До него — пустая рамка того же размера. Серверный рендер и гидратация — сразу грид.
+ */
+const DataGridDeferred = <D extends LabelDictionary = LabelDictionary>(
+  props: DataGridProps<D>,
+) => {
+  const server = useSyncExternalStore(
+    subscribeNothing,
+    () => false,
+    () => true,
+  )
+  const [ready, setReady] = useState(
+    () => server || !isIncremental(props.table as never),
+  )
+  // Вызовы прокрутки до готовности грида ждут его окна (§6).
+  const { table } = props
+  useIsomorphicLayoutEffect(() => {
+    if (!ready) return markGridPending(table)
+  }, [ready, table])
+  useEffect(() => {
+    if (!ready) startTransition(() => setReady(true))
+  }, [ready])
+  return (
+    <>
+      {ready ? (
+        <DataGridView {...props} />
+      ) : (
+        <div
+          className={clsx(
+            dataGridStyles['table__theme-wrapper'],
+            DATA_GRID_THEME_CLASS,
+            props.className,
+          )}
+          data-tsr-grid=""
+          data-tsr-grid-pending=""
+          style={{
+            ...getTableHeight({
+              height: props.height ?? '100%',
+              maxHeight: props.maxHeight ?? '100%',
+            }),
+            ...props.style,
+          }}
+        />
+      )}
+    </>
+  )
+}
+export const DataGrid = memo(DataGridDeferred) as typeof DataGridView

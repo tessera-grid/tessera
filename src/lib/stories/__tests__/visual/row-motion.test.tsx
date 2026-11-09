@@ -1021,7 +1021,7 @@ describe('Движение строк (ADR 0107)', () => {
     expect(slow).toBe(standard)
   })
 
-  test('RM22: грид не мешает View Transitions приложения — без startViewTransition и view-transition-name, внутри <ViewTransition> строки двигаются', async () => {
+  test('RM22: грид с выключенным enableIncrementalRender не мешает View Transitions приложения — без startViewTransition и view-transition-name, внутри <ViewTransition> строки двигаются', async () => {
     const original = document.startViewTransition
     let calls = 0
     if (original) {
@@ -1039,7 +1039,10 @@ describe('Движение строк (ADR 0107)', () => {
           ViewTransition?: React.ComponentType<{ children: React.ReactNode }>
         }
       ).ViewTransition
-      const story = <composed.RowExpandingPlayground />
+      // Переходы React (ADR 0203) будят View Transitions приложения: здесь они выключены.
+      const story = (
+        <composed.RowExpandingPlayground enableIncrementalRender={false} />
+      )
       await render(
         ViewTransition ? <ViewTransition>{story}</ViewTransition> : story,
       )

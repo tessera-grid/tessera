@@ -85,6 +85,14 @@ const scrolls = (root: ParentNode) => {
   const scroller = scrollerOf(root)
   return scroller.scrollHeight > scroller.clientHeight
 }
+/** Строки, видимые в области прокрутки хотя бы частью. */
+const rowsInView = (root: ParentNode) => {
+  const area = rect(scrollerOf(root))
+  return rowsOf(root).filter(row => {
+    const box = rect(row)
+    return box.bottom > area.top && box.top < area.bottom
+  }).length
+}
 /** Строки, видимые целиком между шапкой и футером. */
 const visibleRows = (root: ParentNode) => {
   const top = rect(headOf(root)).bottom
@@ -215,13 +223,14 @@ export const SizingFillContainer: StoryObj<StoryProps> = {
       await until(() => near(rect(gridOf(canvas)).height, 400))
       near(rect(containerOf(canvas)).height, 400)
       body = bodyOf(canvas)
-      rows = rowsOf(canvas).length
+      // Видимые строки: полоса окна (ADR 0202) держит запас и монтирует их заранее.
+      rows = rowsInView(canvas)
     })
     await step(FILL[1].title, async () => {
       await guideNext(canvas)
       await until(() => near(rect(gridOf(canvas)).height, 600))
       near(rect(containerOf(canvas)).height, 600)
-      await until(() => expect(rowsOf(canvas).length).toBeGreaterThan(rows))
+      await until(() => expect(rowsInView(canvas)).toBeGreaterThan(rows))
       await expect(bodyOf(canvas)).toBe(body)
       await expect(recreated()).toBe(false)
     })

@@ -99,6 +99,28 @@ describe('Совместимость окружений (ADR 0091)', () => {
       )
     }
 
+    test('WS4: серверный рендер и гидратация — грид целиком, без рамки и нарезки', async () => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+      try {
+        host = document.createElement('div')
+        host.innerHTML = renderToString(<App />)
+        document.body.append(host)
+        // Сервер рисует грид со строками, а не пустую рамку первого рендера (ADR 0203).
+        const container = host.querySelector('.data-grid__container')
+        expect(container).not.toBeNull()
+        const serverRows = host.querySelectorAll('.data-grid__body-row').length
+        root = hydrateRoot(host, <App />)
+        for (let i = 0; i < 10; i++) await frame()
+        // Гидратация берёт серверную разметку: контейнер — тот же узел, строк не меньше.
+        expect(host.querySelector('.data-grid__container')).toBe(container)
+        expect(
+          host.querySelectorAll('.data-grid__body-row').length,
+        ).toBeGreaterThanOrEqual(serverRows)
+      } finally {
+        error.mockRestore()
+      }
+    })
+
     test('EV5: серверный HTML гидрируется без ошибок; после гидратации нажатие сортирует, а прокрутка рисует строки', async () => {
       const recoverable: unknown[] = []
       const errors: string[] = []

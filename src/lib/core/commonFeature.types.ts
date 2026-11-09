@@ -139,6 +139,11 @@ export interface CoreOptions {
   enableRowAnimation?: boolean
   /** `false` — смены порядка колонок мгновенны, без движения (ADR 0115). */
   enableColumnAnimation?: boolean
+  /**
+   * `false` — первый рендер и смена всего окна одним проходом, без переходов React: для
+   * приложения с `<ViewTransition>` над гридом (ADR 0203).
+   */
+  enableIncrementalRender?: boolean
   skeletonOptions?: SkeletonOptions
   /** Задержка и минимум показа обновления при `loading: 'refresh'` (ADR 0094). */
   refreshOptions?: RefreshOptions

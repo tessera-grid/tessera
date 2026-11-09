@@ -42,9 +42,22 @@ export const repeat = async (
   }
 }
 
-/** Конечные анимации доиграны: снимок и axe не застают промежуточный кадр. */
+/**
+ * Конечные анимации доиграны и грид нарисован целиком (ADR 0203): снимок и axe не застают
+ * промежуточный кадр.
+ */
 export const settle = async () => {
   await new Promise(resolve => requestAnimationFrame(resolve))
+  for (
+    let frames = 0;
+    frames < 120 &&
+    document.querySelector?.(
+      '[data-portions-pending], [data-tsr-grid-pending]',
+    );
+    frames++
+  ) {
+    await new Promise(resolve => requestAnimationFrame(resolve))
+  }
   for (const animation of document.getAnimations()) {
     if (animation.effect?.getTiming().iterations !== Infinity) {
       animation.finish()
@@ -352,10 +365,15 @@ const passClick = (event: MouseEvent) => {
 
 export type HeldDrag = Awaited<ReturnType<typeof dragHold>>
 
+/**
+ * Грид нарисован: строки есть, рамка первого рендера и порции окна позади (ADR 0203, §6).
+ */
+export const gridDrawn = (root: ParentNode) =>
+  !!root.querySelector('.data-grid__body-row') &&
+  !root.querySelector('[data-portions-pending], [data-tsr-grid-pending]')
+
 export const waitForRows = (canvas: HTMLElement) =>
-  until(() =>
-    expect(canvas.querySelector('.data-grid__body-row')).not.toBeNull(),
-  )
+  until(() => expect(gridDrawn(canvas)).toBe(true))
 
 export const byTestId = (id: string) =>
   document.querySelector<HTMLElement>(`[data-testid="${id}"]`)
@@ -434,7 +452,7 @@ export const afterRows =
     const controller = new AbortController()
     const run = () => {
       if (controller.signal.aborted) return
-      if (root.querySelector('.data-grid__body-row')) {
+      if (gridDrawn(root)) {
         action(root, controller.signal)
       } else setTimeout(run, 50)
     }

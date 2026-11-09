@@ -19,8 +19,18 @@ export const nextFrame = () =>
  * на текст мока: готовность — это наличие структуры, а не конкретных значений
  * (см. docs/decisions/0009-test-coverage-visual-and-performance.md — запрет хардкода мок-данных).
  */
+/** Грид нарисован целиком: рамка первого рендера и порции строк позади (ADR 0203). */
 export const waitForGrid = () =>
-  expect.poll(() => headCells().length > 0 && bodyRows().length > 0).toBe(true)
+  expect
+    .poll(
+      () =>
+        headCells().length > 0 &&
+        bodyRows().length > 0 &&
+        !document.querySelector(
+          '[data-portions-pending], [data-tsr-grid-pending]',
+        ),
+    )
+    .toBe(true)
 
 export const bodyCellsOf = (row: HTMLElement) =>
   Array.from(row.querySelectorAll<HTMLElement>(SEL.bodyCell))

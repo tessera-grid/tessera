@@ -44,6 +44,7 @@ import { getData, makeData } from '../../__mocks__/data'
 import { argsToPlugins } from '../../__mocks__/utils/argsToPlugins'
 import { renderPluginsGrid, renderGrid } from './hosts'
 import { scrollLayer } from '../../../core/scrollStretch'
+import { windowBand } from '../../../core/virtualization/windowBand'
 import type { CellComponentProps } from '../../../core/createSlots'
 import type { TesseraFeatureEntry } from '../../../core/features'
 import { CellButton } from '../../../ui/CellButton/CellButton'
@@ -281,6 +282,138 @@ describe('Цена плагинов при спокойной прокрутке
       expect(failures).toEqual([])
     },
     PERF_TIMEOUT * 12,
+  )
+})
+
+// Полоса окна (ADR 0202, WB7–WB8): средний интервал кадра и кадры длиннее 34 мс со всеми
+// плагинами — против того же грида без полосы (окно — видимое и симметричный запас).
+const WB7_GAIN = { y: 0.9, x: 0.7 }
+const LONG_FRAME_MS = 34
+
+const measureBand = async (
+  args: { columnCount: number; dataCount: number },
+  speed: typeof CONTENT_SCROLL | typeof FAST_SCROLL,
+  band: boolean,
+) => {
+  windowBand.enabled = band
+  try {
+    const screen = renderGrid({ ...args, ...ALL_PLUGINS })
+    await waitForGrid()
+    const y = await measureScrollWork('y', speed.y)
+    const x = await measureScrollWork('x', speed.x)
+    ;(await screen).unmount()
+    return { y, x }
+  } finally {
+    windowBand.enabled = true
+  }
+}
+
+describe('Полоса окна при прокрутке', () => {
+  const frame = (run: { frameMs?: number }) => run.frameMs ?? 0
+  const long = (run: { longFrames?: number }) => run.longFrames ?? 0
+  /** Медиана по среднему интервалу кадра, по каждой оси. */
+  const byFrame = (list: { y: ScrollWorkResult; x: ScrollWorkResult }[]) => ({
+    y: medianRun(
+      list.map(run => run.y),
+      frame,
+    ),
+    x: medianRun(
+      list.map(run => run.x),
+      frame,
+    ),
+  })
+  const record = (
+    id: string,
+    label: string,
+    size: string,
+    r: { y: ScrollWorkResult; x: ScrollWorkResult },
+    ceiling?: { y: number; x: number },
+  ) =>
+    recordPerf({
+      id,
+      label,
+      operation: 'scroll',
+      size,
+      plugins: 'all',
+      cpuThrottle: CPU_THROTTLE_RATE,
+      metrics: (['y', 'x'] as const).map(axis => ({
+        axis,
+        kind: 'animation' as const,
+        metric: 'frame' as const,
+        valueMs: frame(r[axis]),
+        targetMs: ANIMATION_BUDGET_MS,
+        ceilingMs: ceiling?.[axis],
+        ...r[axis],
+      })),
+    })
+
+  test(
+    `WB7: спокойная прокрутка P12 и P13 по среднему интервалу кадра — не дороже 0,7 базы по X и 0,9 базы по Y, кадров длиннее ${LONG_FRAME_MS} мс — не больше базы; база — окно без полосы`,
+    async () => {
+      const failures: string[] = []
+      for (const [size, args] of [
+        ['30×500', SMALL],
+        ['1000×1000', LARGE],
+      ] as const) {
+        const runs = await againstBase(band =>
+          measureBand(args, CONTENT_SCROLL, band),
+        )
+        const base = byFrame(runs.base)
+        const band = byFrame(runs.variant)
+        const ceiling = {
+          y: frame(base.y) * WB7_GAIN.y,
+          x: frame(base.x) * WB7_GAIN.x,
+        }
+        await record(`WB7-base-${size}`, `окно без полосы ${size}`, size, base)
+        await record(`WB7-${size}`, `полоса окна ${size}`, size, band, ceiling)
+        for (const axis of ['y', 'x'] as const) {
+          if (frame(band[axis]) > ceiling[axis]) {
+            failures.push(
+              `${size} ${axis}: кадр ${frame(band[axis]).toFixed(1)} мс, без полосы ${frame(base[axis]).toFixed(1)} мс, потолок ${ceiling[axis].toFixed(1)} мс`,
+            )
+          }
+          if (long(band[axis]) > long(base[axis])) {
+            failures.push(
+              `${size} ${axis}: длинных кадров ${long(band[axis])}, без полосы ${long(base[axis])}`,
+            )
+          }
+        }
+      }
+      expect(failures).toEqual([])
+    },
+    PERF_TIMEOUT * 12,
+  )
+
+  test(
+    'WB8: быстрая прокрутка P8 по среднему интервалу кадра — не дороже базы без полосы',
+    async () => {
+      const runs = await againstBase(band =>
+        measureBand(LARGE, FAST_SCROLL, band),
+      )
+      const base = byFrame(runs.base)
+      const band = byFrame(runs.variant)
+      const ceiling = { y: frame(base.y), x: frame(base.x) }
+      await record(
+        'WB8-base',
+        'быстрая прокрутка без полосы',
+        '1000×1000',
+        base,
+      )
+      await record(
+        'WB8',
+        'быстрая прокрутка с полосой',
+        '1000×1000',
+        band,
+        ceiling,
+      )
+      for (const axis of ['y', 'x'] as const) {
+        expect(
+          frame(band[axis]),
+          `${axis}: кадр ${frame(band[axis]).toFixed(1)} мс, без полосы ${frame(base[axis]).toFixed(1)} мс`,
+        ).toBeLessThanOrEqual(ceiling[axis])
+      }
+    },
+    PERF_TIMEOUT * 6,
   )
 })
 

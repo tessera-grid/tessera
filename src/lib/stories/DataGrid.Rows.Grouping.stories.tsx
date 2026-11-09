@@ -292,9 +292,12 @@ export const GroupingStickyRows: StoryObj<StoryProps> = {
     await step(STICKY[3]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(stickyIds(canvas)).toEqual([]))
-      await expect(
-        realRow(canvas, groupIds(canvas)[0]!)?.dataset.expanded,
-      ).toBe('false')
+      // Окно после сворачивания дорисовывается порциями (ADR 0203).
+      await until(() =>
+        expect(realRow(canvas, groupIds(canvas)[0]!)?.dataset.expanded).toBe(
+          'false',
+        ),
+      )
       await settle()
     })
   },

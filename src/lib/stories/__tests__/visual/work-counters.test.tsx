@@ -222,25 +222,51 @@ describe('Счётчики работы', () => {
     expect(() => expectSelectionBudget(planted)).toThrow()
   })
 
-  test('PF4: прокрутка на одну строку монтирует одну строку ячеек видимых колонок; остальные строки окна не перерисовываются', async () => {
+  test('PF4: сдвиг полосы окна строк монтирует только пришедшие строки ячеек видимых колонок; остальные строки окна не перерисовываются', async () => {
     const { grid, measure } = await mountGrid({})
     const box = grid.getBoundingClientRect()
     const at = { x: box.left + 200, y: box.top + 200 }
     const rowHeight = document
       .querySelector('.data-grid__body-row')!
       .getBoundingClientRect().height
+    const indexes = () =>
+      new Set(
+        [...document.querySelectorAll<HTMLElement>('.data-grid__body-row')].map(
+          row => row.dataset.index,
+        ),
+      )
     // Колесо не ждёт прокрутки: тик засчитан, когда `scrollTop` дошёл до цели, — иначе
     // под нагрузкой замер кончается раньше, чем строка смонтирована.
-    const wheel = async (rows: number) => {
+    let rows = 0
+    const wheel = async () => {
+      rows++
       await browser.realWheel(at, rowHeight, 1, 0)
       await expect.poll(() => grid.scrollTop).toBe(rowHeight * rows)
     }
-    await wheel(1)
-    // Тики подряд — быстрая прокрутка со скелетами (ADR 0008); один тик — спокойная.
+    // Полоса окна (ADR 0202) держит запас: тики до её сдвига, по одному — спокойная прокрутка.
+    const shift = async () => {
+      const before = indexes()
+      for (let i = 0; i < 12 && [...indexes()].every(k => before.has(k)); i++) {
+        // eslint-disable-next-line no-await-in-loop
+        await wheel()
+        // eslint-disable-next-line no-await-in-loop
+        await waitForQuietDocument(200)
+      }
+      return [...indexes()].filter(k => !before.has(k)).length
+    }
+    await shift()
     await waitForQuietDocument(500)
-    const work = await measure(() => wheel(2))
-    expect(rowRenders(work), describeWork(work)).toBe(1)
-    expect(renders(work, BodyCell), describeWork(work)).toBe(windowSize().cells)
+    const before = indexes()
+    let added = 0
+    const work = await measure(async () => {
+      added = await shift()
+    })
+    expect(added, describeWork(work)).toBeGreaterThan(0)
+    expect([...indexes()].some(k => before.has(k))).toBe(true)
+    expect(rowRenders(work), describeWork(work)).toBe(added)
+    expect(renders(work, BodyCell), describeWork(work)).toBe(
+      added * windowSize().cells,
+    )
   })
 
   test('PF5: клик по флажку выбора перерисовывает свою строку и флажок шапки, а не всё тело', async () => {
@@ -925,16 +951,35 @@ describe('линии дерева в серверной модели (ADR 0161)'
 // перерисовывает новое, а не всё, что на экране.
 describe('сдвиг окна при прокрутке (ADR 0149)', () => {
   const WIDE = makeColumns(30)
-  /** Сдвиг по горизонтали на одну колонку: окно колонок сменилось, скелетов нет. */
-  const shiftColumns = async (grid: HTMLElement) => {
+  /** Ширина колонки данных: колонки WIDE одной ширины, служебные уже. */
+  const columnStep = () =>
+    Math.max(
+      ...[
+        ...document.querySelectorAll(
+          '.data-grid__body-row .data-grid__body-cell[data-column-id]',
+        ),
+      ].map(cell => cell.getBoundingClientRect().width),
+    )
+  const headIds = () =>
+    [...document.querySelectorAll('.data-grid__head-cell[data-column-id]')]
+      .map(cell => cell.getAttribute('data-column-id'))
+      .join()
+  /** Сдвиг на одну колонку, без скелетов. */
+  const stepColumns = async (grid: HTMLElement) => {
     const before = grid.scrollLeft
-    const step = document
-      .querySelector(
-        '.data-grid__body-row .data-grid__body-cell[data-column-id="country"]',
-      )!
-      .getBoundingClientRect().width
-    grid.scrollLeft = before + step
+    grid.scrollLeft = before + columnStep()
     await expect.poll(() => grid.scrollLeft).toBeGreaterThan(before)
+  }
+  /** Сдвиг по колонке, пока окно колонок не сменится: полоса окна (ADR 0202) держит запас. */
+  const shiftColumns = async (grid: HTMLElement) => {
+    const before = headIds()
+    for (let i = 0; i < 12 && headIds() === before; i++) {
+      // eslint-disable-next-line no-await-in-loop
+      await stepColumns(grid)
+      // eslint-disable-next-line no-await-in-loop
+      await new Promise(requestAnimationFrame)
+    }
+    expect(headIds()).not.toBe(before)
   }
   const mountWide = async (toggles: FeatureToggles, footer = false) => {
     const mounted = await mountGrid(
@@ -963,6 +1008,35 @@ describe('сдвиг окна при прокрутке (ADR 0149)', () => {
       'списки ячеек',
     )
     within(work, rowRenders(work), 0, 'строки')
+  })
+
+  test('WB2: пока видимое внутри полосы и впереди не меньше половины запаса, прокрутка не перерисовывает ни строк, ни списков ячеек — по счётчикам работы', async () => {
+    const { grid, measure } = await mountWide(ALL_PLUGINS)
+    // Окно колонок только что сменилось: впереди полоса держит два запаса.
+    const columns = await measure(() => stepColumns(grid))
+    within(columns, renders(columns, BodyRowCells), 0, 'списки ячеек')
+    within(columns, rowRenders(columns), 0, 'строки при сдвиге колонок')
+    const box = grid.getBoundingClientRect()
+    const rowHeight = document
+      .querySelector('.data-grid__body-row')!
+      .getBoundingClientRect().height
+    const before = grid.scrollTop
+    const rows = await measure(async () => {
+      await browser.realWheel(
+        { x: box.left + 200, y: box.top + 200 },
+        rowHeight,
+        1,
+        0,
+      )
+      await expect.poll(() => grid.scrollTop).toBe(before + rowHeight)
+    })
+    within(rows, rowRenders(rows), 0, 'строки при сдвиге строк')
+    within(
+      rows,
+      renders(rows, BodyRowCells),
+      0,
+      'списки ячеек при сдвиге строк',
+    )
   })
 
   test('PS11: обёртки перетаскивания строки перерисовываются только при смене своей строки, а не при сдвиге окна строк или колонок — по счётчикам работы', async () => {

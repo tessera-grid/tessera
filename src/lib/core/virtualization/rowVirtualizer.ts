@@ -18,6 +18,9 @@ import { ESTIMATE_SIZE } from './measureRows'
 import { rowMeasureElement } from './rowMeasureElement'
 import { useRowRangeExtractor } from './rowRangeExtractor'
 import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
+import { createWindowBand, createWindowFlush } from './windowBand'
+import { isIncremental } from './windowPortions'
+import { useLatest } from '../../util/useLatest'
 import { scrollLayer } from '../scrollStretch'
 import { firstChangedIndex, type RowBuild, rowBuildOf } from '../rowChanges'
 import { followIndex } from '../rowListFollow'
@@ -103,12 +106,18 @@ export const useRowVirtualizer = ({
   const heldRowIndex =
     held.pin === undefined ? undefined : rows.indexOf(held.pin)
 
+  const [band] = useState(createWindowBand)
   const rangeExtractor = useRowRangeExtractor({
+    band,
     rowDraggingIndex,
     activeRowIndex,
     heldRowIndex,
   })
 
+  const latestTable = useLatest(table)
+  const [windowFlush] = useState(() =>
+    createWindowFlush(() => isIncremental(latestTable.current)),
+  )
   const virtualizer = useVirtualizer<HTMLDivElement, HTMLDivElement>({
     count: rows.count(),
     estimateSize: getEstimateSize,
@@ -118,6 +127,8 @@ export const useRowVirtualizer = ({
     getFirstChangedIndex,
     overscan: ROWS_OVERSCAN,
     rangeExtractor,
+    // Синхронно в событии — только непокрытый край (ADR 0202, §2).
+    useFlushSync: windowFlush.flush,
     // Позиция — виртуальная, из слоя растяжки (ADR 0142).
     observeElementOffset: (instance, onOffset) =>
       instance.scrollElement
@@ -201,6 +212,9 @@ export const useRowVirtualizer = ({
   // (активная, перетаскиваемая) — не дальше нескольких экранов: место за пределом
   // браузера он обрезает или обнуляет.
   const items = virtualizer.getVirtualItems()
+  useIsomorphicLayoutEffect(() => {
+    windowFlush.show(items.map(item => item.index))
+  })
   const scroller = getScrollElement()
   const layer = scroller ? scrollLayer(scroller) : undefined
   const subscribeBase = useCallback(
@@ -239,5 +253,6 @@ export const useRowVirtualizer = ({
     bodyHeight: virtualizer.getTotalSize(),
     measureElement: virtualizer.measureElement,
     virtualizer,
+    band,
   }
 }

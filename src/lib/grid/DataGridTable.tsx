@@ -42,6 +42,8 @@ interface DataGridTableProps {
   rowSource: RowSource<Row<any, any>>
   leafColumns: Column<any, any, unknown>[]
   virtualRows: VirtualItem[]
+  /** Видимые строки окна (ADR 0203). */
+  visibleRows: { startIndex: number; endIndex: number } | null
   virtualColumns: VirtualItem[]
   isVirtualColumns: boolean
   isResizingColumns: false | string
@@ -70,6 +72,7 @@ export const DataGridTable = ({
   rowSource,
   leafColumns,
   virtualRows,
+  visibleRows,
   virtualColumns,
   isVirtualColumns,
   isResizingColumns,
@@ -250,6 +253,7 @@ export const DataGridTable = ({
               getRows={getRows}
               rowSource={rowSource}
               virtualRows={virtualRows}
+              visibleRows={visibleRows}
               virtualColumns={virtualColumns}
               leafColumns={leafColumns}
               leftCellSlot={leftCellSlot}

@@ -10,6 +10,9 @@ import { getDisplayColumns } from '../displayColumns'
 import { useTableState } from '../reactivity'
 import { useColumnRangeExtractor } from './columnRangeExtractor'
 import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
+import { createWindowFlush } from './windowBand'
+import { isIncremental } from './windowPortions'
+import { useLatest } from '../../util/useLatest'
 
 export interface ColumnVirtualizerParams {
   table: Table<any, any>
@@ -64,6 +67,10 @@ export const useColumnVirtualizer = ({
 
   const rangeExtractor = useColumnRangeExtractor({ table })
 
+  const latestTable = useLatest(table)
+  const [windowFlush] = useState(() =>
+    createWindowFlush(() => isIncremental(latestTable.current)),
+  )
   const virtualizer = useVirtualizer<HTMLDivElement, HTMLDivElement>({
     count: displayColumns.length,
     estimateSize: getEstimateSize,
@@ -73,6 +80,8 @@ export const useColumnVirtualizer = ({
     enabled,
     overscan: COLUMNS_OVERSCAN,
     rangeExtractor,
+    // Синхронно в событии — только непокрытый край (ADR 0202, §2).
+    useFlushSync: windowFlush.flush,
   })
 
   // columnResizing — срез плагина columnResizing (в v9 sizing/resizing разделены):
@@ -125,6 +134,9 @@ export const useColumnVirtualizer = ({
   // Тот же состав окна — прежний массив: строки тела мемоизированы по нему, а
   // react-virtual отдаёт новый при любом пересчёте диапазона (ADR 0099, PF5, PF10).
   const items = virtualizer.getVirtualItems()
+  useIsomorphicLayoutEffect(() => {
+    windowFlush.show(items.map(item => item.index))
+  })
   const windowKey = windowOf(items)
   // Память по составу окна, а не по массиву: `items` новый при каждом пересчёте.
   // eslint-disable-next-line react-hooks/exhaustive-deps

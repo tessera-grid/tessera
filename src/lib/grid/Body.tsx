@@ -23,6 +23,9 @@ import { FailedRow, PendingRow } from './PendingRow'
 import { getTreeAria } from './treeAria'
 import { rowCellsOf } from './rowCells'
 import { useWindowData } from '../core/bodyContributions'
+import { useActiveCellIndex } from '../core/keyboardNavigation'
+import { useRowPortions } from './rowPortions'
+import { isIncremental } from '../core/virtualization/windowPortions'
 
 import styles from '../grid/Body/Body.module.css'
 
@@ -36,6 +39,8 @@ interface TableBodyProps {
   getRows: () => Row<any, any>[]
   rowSource: RowSource<Row<any, any>>
   virtualRows: VirtualItem[]
+  /** Видимые строки окна: смена окна целиком рисуется порциями (ADR 0203). */
+  visibleRows?: { startIndex: number; endIndex: number } | null
   virtualColumns: VirtualItem[]
   leafColumns: Column<any, any, unknown>[]
   leftCellSlot?: CellSlot
@@ -63,6 +68,7 @@ export const Body = ({
   getRows,
   rowSource,
   virtualRows,
+  visibleRows,
   virtualColumns,
   leafColumns,
   leftCellSlot,
@@ -105,6 +111,14 @@ export const Body = ({
   const failures = rowSource.failures?.() ?? NO_FAILURES
   const failedAt = (index: number) =>
     failures.some(failure => index >= failure.start && index < failure.end)
+  const shownIds = new Set<string>()
+  const drawnRows = useRowPortions({
+    rows: virtualRows,
+    visible: visibleRows ?? null,
+    activeIndex: useActiveCellIndex(table, 'rowIndex'),
+    cellsPerRow: virtualColumns.length || leafColumns.length,
+    enabled: isIncremental(table),
+  })
   const first = virtualRows[0]?.index ?? 0
   const last = virtualRows[virtualRows.length - 1]?.index ?? -1
   // Данные строк окна от плагинов — линии дерева (ADR 0170, §3).
@@ -124,6 +138,8 @@ export const Body = ({
       className={clsx('data-grid__body', styles.body)}
       role="rowgroup"
       data-layout={layout}
+      // Порции окна ещё ставятся (ADR 0203): тесты и снимки ждут конца.
+      data-portions-pending={drawnRows.length < virtualRows.length || undefined}
     >
       <ColumnWindowContext.Provider value={virtualColumns}>
         {hasStickyRows(table) && virtualRows.length > 0 && (
@@ -167,8 +183,12 @@ export const Body = ({
           virtualRows={virtualRows}
           bodyRef={bodyRef}
         >
-          {virtualRows.map(virtualRow => {
-            const row = rowSource.at(virtualRow.index)
+          {drawnRows.map(virtualRow => {
+            // Строка на двух местах сразу — посреди переноса в серверной модели: второе место —
+            // скелет, пока источник не сойдётся (ключ строки — её id).
+            const found = rowSource.at(virtualRow.index)
+            const row = found && !shownIds.has(found.id) ? found : undefined
+            if (row) shownIds.add(row.id)
             // Строка отказавшего блока — пустая рамка под его строкой ошибки (ADR 0138, §11).
             if (!row && failedAt(virtualRow.index)) {
               return (

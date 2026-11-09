@@ -534,6 +534,7 @@ const StoryGrid = memo(
       enableOverflowTooltip: options.enableOverflowTooltip,
       enableRowAnimation: options.enableRowAnimation,
       enableColumnAnimation: options.enableColumnAnimation,
+      enableIncrementalRender: options.enableIncrementalRender,
       rowHeight: options.rowHeight,
       headerHeight: options.headerHeight,
       defaultColumn: options.defaultColumn,

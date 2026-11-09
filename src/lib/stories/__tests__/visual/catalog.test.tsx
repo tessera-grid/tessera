@@ -38,7 +38,9 @@ const renderTexts = async () => {
     if (left >= scroller.scrollWidth - scroller.clientWidth) break
   }
   await screen.unmount()
-  return texts
+  // Сколько колонок нарисовано к снимку, зависит от дозаполнения полосы окна (ADR 0202):
+  // сравнивается всё, что прошло за проход по ширине.
+  return [...new Set(texts)].sort()
 }
 
 describe('Каталог визуальных состояний', () => {

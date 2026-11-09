@@ -246,8 +246,9 @@ describe('слой ячейки (ADR 0170)', () => {
         ),
       )
     const before = new Set(rows())
-    // 100 px за кадр — выше порога входа в быструю прокрутку по Y.
-    for (let i = 0; i < 3; i++) {
+    // 100 px за кадр — выше порога входа в быструю прокрутку по Y; 8 кадров — дальше полосы
+    // окна, что смонтирована до входа (ADR 0202).
+    for (let i = 0; i < 8; i++) {
       scroller.scrollTop += 100
       // eslint-disable-next-line no-await-in-loop
       await nextFrame()

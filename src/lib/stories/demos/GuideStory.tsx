@@ -214,6 +214,8 @@ const isBareGridClick = (event: Event, target: Element) =>
   !!target.closest('[role="grid"], [role="treegrid"], [role="table"]') &&
   !target.closest('[aria-haspopup="menu"]')
 const HOVERING = new Set(['pointerover', 'mouseover'])
+/** Признаки недорисованного грида (ADR 0203, §6). */
+const GRID_PENDING = '[data-tsr-grid-pending], [data-portions-pending]'
 const UNHOVERING = new Set(['pointerout', 'mouseout'])
 /**
  * После показанного нажатия: события того же жеста на той же цели доходят сразу, а повтор
@@ -927,7 +929,8 @@ export const GuideStory = ({
         demo?.unhover()
     }
     // Указатель перешёл на другой элемент вне таблицы — грид снял наведение строки и спрятал
-    // её кнопки; пока гайд показывает нажатие, наведение строки возвращается.
+    // её кнопки; пока гайд показывает нажатие, наведение строки возвращается. Всплытием на
+    // `window` — после обработчиков грида на документе, в каком бы порядке они ни встали.
     const onRealOver = (event: Event) => {
       if (!event.isTrusted || !showing || area.contains(event.target as Node))
         return
@@ -966,7 +969,7 @@ export const GuideStory = ({
     document.body.addEventListener('click', keepPopupsOnClick)
     document.addEventListener('focusin', onFocus, true)
     document.addEventListener('mousemove', onRealMove, true)
-    document.addEventListener('pointerover', onRealOver, true)
+    window.addEventListener('pointerover', onRealOver)
     return () => {
       for (const type of HUMAN)
         window.removeEventListener(type, onHumanStart, true)
@@ -976,7 +979,7 @@ export const GuideStory = ({
       document.body.removeEventListener('click', keepPopupsOnClick)
       document.removeEventListener('focusin', onFocus, true)
       document.removeEventListener('mousemove', onRealMove, true)
-      document.removeEventListener('pointerover', onRealOver, true)
+      window.removeEventListener('pointerover', onRealOver)
       // Идущий показ не доходит до таблицы, которая встала на это место (SN61).
       epoch++
       held = []
@@ -1028,19 +1031,36 @@ export const GuideStory = ({
   const enter = steps[guide.step]?.enter
   useEffect(() => {
     showControl.current?.resume()
-    const leave = root.current ? enter?.(root.current, app) : undefined
     leaveStep.current = undefined
-    if (typeof leave !== 'function') return
-    let left = false
-    const stop = () => {
-      if (left) return
-      left = true
-      ;(leave as () => void)()
+    let stop: (() => void) | undefined
+    let cancelled = false
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const start = () => {
+      const node = root.current
+      if (cancelled || !node) return
+      // Грид ещё за рамкой первого рендера или режет окно (ADR 0203, §6): действие шага ждёт,
+      // таймером — в фоновой вкладке кадры стоят.
+      if (node.querySelector(GRID_PENDING)) {
+        timer = setTimeout(start, 16)
+        return
+      }
+      const leave = enter?.(node, app)
+      if (typeof leave !== 'function') return
+      let left = false
+      const done = () => {
+        if (left) return
+        left = true
+        ;(leave as () => void)()
+      }
+      stop = done
+      leaveStep.current = done
     }
-    leaveStep.current = stop
+    start()
     return () => {
-      if (leaveStep.current === stop) leaveStep.current = undefined
-      stop()
+      cancelled = true
+      if (timer !== undefined) clearTimeout(timer)
+      if (stop && leaveStep.current === stop) leaveStep.current = undefined
+      stop?.()
     }
   }, [enter, app, guide.step, guide.run, shown.rewinds])
   return (

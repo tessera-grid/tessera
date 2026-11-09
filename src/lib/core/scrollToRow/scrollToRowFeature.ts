@@ -19,7 +19,7 @@ import { withRowExpanded } from '../expandAll'
 import type { RowSource } from '../rowSource'
 import { type ScrollTarget, scrollGridTo } from '../scrollGridTo'
 import { scrollLayer } from '../scrollStretch'
-import { type ScrollViewport, viewportOf } from './viewport'
+import { type ScrollViewport, viewportOf, whenViewport } from './viewport'
 import { rowsOf } from '../rowEngine/rows'
 
 export type ScrollAlign = 'auto' | 'start' | 'center' | 'end'
@@ -495,7 +495,9 @@ export const revealColumn = async (
 ): Promise<boolean> => {
   const table = tableArg as ScrollTable
   const alive = startCall(table)
-  const viewport = viewportOf(table)
+  // Грид за рамкой первого рендера (ADR 0203, §6) — ждём его окна.
+  const viewport = viewportOf(table) ?? (await whenViewport(table))
+  if (!alive()) return false
   const scroller = viewport?.getScrollElement()
   const column = table.getColumn(columnId)
   if (!viewport || !scroller || !column?.getIsVisible()) return false
@@ -602,7 +604,9 @@ export const scrollToRowIndex = async (
   const table = tableArg as ScrollTable
   const alive = startCall(table)
   const { align = 'auto', behavior = 'instant', columnId } = options
-  const viewport = viewportOf(table)
+  // Грид за рамкой первого рендера (ADR 0203, §6) — ждём его окна.
+  const viewport = viewportOf(table) ?? (await whenViewport(table))
+  if (!alive()) return false
   const scroller = viewport?.getScrollElement()
   if (!viewport || !scroller) return false
   const column = columnId === undefined ? undefined : table.getColumn(columnId)
@@ -628,7 +632,9 @@ export const scrollToRow = async (
     columnId,
     expandParents = false,
   } = options
-  const viewport = viewportOf(table)
+  // Грид за рамкой первого рендера (ADR 0203, §6) — ждём его окна.
+  const viewport = viewportOf(table) ?? (await whenViewport(table))
+  if (!alive()) return false
   const scroller = viewport?.getScrollElement()
   if (!viewport || !scroller) return false
   const column = columnId === undefined ? undefined : table.getColumn(columnId)

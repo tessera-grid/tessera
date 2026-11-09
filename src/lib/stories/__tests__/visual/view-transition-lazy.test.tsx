@@ -41,9 +41,14 @@ const frames = (count: number) =>
   })
 
 describe('ленивые модули внутри <ViewTransition> приложения (ADR 0107)', () => {
-  test('RM33: догрузка ленивого модуля грида не запускает startViewTransition — ни тулбар при монтировании, ни тултип посреди раскрытия строки', async () => {
+  test('RM33: при выключенном enableIncrementalRender догрузка ленивого модуля грида не запускает startViewTransition — ни тулбар при монтировании, ни тултип посреди раскрытия строки', async () => {
     const counter = countViewTransitions()
-    const story = <composed.RowExpandingPlayground enableToolbar />
+    const story = (
+      <composed.RowExpandingPlayground
+        enableToolbar
+        enableIncrementalRender={false}
+      />
+    )
     await render(
       ViewTransition ? <ViewTransition>{story}</ViewTransition> : story,
     )

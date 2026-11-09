@@ -110,6 +110,7 @@ const CORE_OPTION_KINDS: Record<
   enableOverflowTooltip: 'render',
   enableRowAnimation: 'render',
   enableColumnAnimation: 'render',
+  enableIncrementalRender: 'render',
   skeletonOptions: 'render',
   refreshOptions: 'render',
   loadError: 'render',

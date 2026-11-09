@@ -18,6 +18,14 @@ Tessera ([ADR 0143](../../../docs/decisions/0143-tanstack-virtual-fork.md)). Э�
   [ADR 0145](../../../docs/decisions/0145-first-changed-row-hint.md)): индекс вместо сверки
   ключей; в разработке сверяется с ней, неверная подсказка — одно предупреждение.
 - **Импорт ядра** (`react-virtual/index.tsx`): `../virtual-core` вместо `@tanstack/virtual-core`.
+- **Синхронность по уведомлению** (`react-virtual/index.tsx`, опция `useFlushSync`,
+  [ADR 0202](../../../docs/decisions/0202-window-band.md)): булево или функция от
+  виртуализатора — решение на каждое уведомление, а не по значению с прошлого рендера; ответ
+  `'transition'` ставит перерисовку переходом React
+  ([ADR 0203](../../../docs/decisions/0203-whole-window-in-row-portions.md)).
+- **Без перерисовки того же окна** (`react-virtual/index.tsx`, `onChange`, ADR 0202):
+  уведомление, после которого элементы окна, полный размер и признак прокрутки те же, что
+  в последнем коммите, React не перерисовывает.
 
 ## Обновление версии
 

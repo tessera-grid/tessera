@@ -49,6 +49,10 @@ async function renderColumnSorting(args: StoryArgs = {}) {
   await expect
     .poll(() => container.querySelectorAll(HEAD_CELL).length)
     .toBeGreaterThan(3)
+  // Порции окна позади (ADR 0203): значения колонок — по всему окну.
+  await expect
+    .poll(() => container.querySelector('[data-portions-pending]'))
+    .toBeNull()
   return container
 }
 

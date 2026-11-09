@@ -30,7 +30,7 @@ import {
   setColumnFilterByUser,
   setSearchByUser,
 } from '../../../shared/filtering/filtering'
-import { humanClick, revealCellButtons } from '../helpers'
+import { humanClick, revealCellButtons, settleRowMotion } from '../helpers'
 import { tableLabels } from '../labels'
 import { measureWork, renders } from '../work.helpers'
 import {
@@ -349,8 +349,8 @@ describe('Серверная модель строк (ADR 0138)', () => {
       })
       expect(calls[0]!.request.signal).toBeInstanceOf(AbortSignal)
 
-      // Фокус на строке 90; ниже, в окне, — скелеты следующего блока.
-      scroller().scrollTop = 80 * rowHeight()
+      // Фокус на строке 90; ниже, в полосе окна (ADR 0202), — скелеты следующего блока.
+      scroller().scrollTop = 85 * rowHeight()
       await expect.poll(() => rowAt(90)?.dataset.rowId).toBe('r90')
       const cell = rowAt(90)!.querySelector<HTMLElement>(
         '.data-grid__body-cell',
@@ -369,9 +369,33 @@ describe('Серверная модель строк (ADR 0138)', () => {
           rows: rowsOf(BLOCK, 2 * BLOCK),
         })
       await expect.poll(() => rowAt(BLOCK)?.dataset.rowId).toBe(`r${BLOCK}`)
-      expect(rowAt(BLOCK)!.textContent).toContain(`N${BLOCK}`)
+      await expect.poll(() => rowAt(BLOCK)!.textContent).toContain(`N${BLOCK}`)
       expect(scroller().scrollTop).toBe(top)
       expect(document.activeElement).toBe(cell)
+    } finally {
+      await screen.unmount()
+    }
+  })
+
+  test('WB9: серверная модель просит блоки полосы окна строк без закреплённых далёких строк: блок, что попал в полосу впереди видимого, запрошен до того, как видимое до него дошло', async () => {
+    const { calls, getRows } = server(({ start, end }) => ({
+      rows: rowsOf(start, end),
+    }))
+    const screen = await render(<Grid getRows={getRows} rowCount={10_000} />)
+    try {
+      await expect.poll(shownIndexes).toContain(0)
+      // Видимое кончается за 8 строк до блока: запас окна в 5 строк до него не достаёт,
+      // полоса впереди — заходит в него.
+      scroller().scrollTop = (BLOCK - 7) * rowHeight() - scroller().clientHeight
+      await expect
+        .poll(() => calls.some(call => call.request.start === BLOCK))
+        .toBe(true)
+      const last = Math.floor(
+        (scroller().scrollTop + scroller().clientHeight) / rowHeight(),
+      )
+      expect(last).toBeLessThan(BLOCK)
+      // Позади видимого полоса держит одну строку: прежний блок не перезапрошен.
+      expect(calls.filter(call => call.request.start === 0)).toHaveLength(1)
     } finally {
       await screen.unmount()
     }
@@ -1597,7 +1621,8 @@ describe('Серверная модель строк (ADR 0138)', () => {
           .toEqual(['2', '2', `${CHILDREN}`])
         expect(aria(rowOf('r2'))).toEqual(['1', '3', '1000'])
 
-        // axe — с незагруженной веткой в окне.
+        // axe — с незагруженной веткой в окне; строки после прихода ветки доехали.
+        await settleRowMotion()
         await humanClick(toggleOf('r2')!)
         await expect.poll(() => pendingRow(4 + CHILDREN)).not.toBeNull()
         const { violations } = await axe.run(q('.data-grid-theme')!, {

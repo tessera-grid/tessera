@@ -302,7 +302,16 @@ describe('Превью броска строки (ADR 0108)', () => {
         document.querySelectorAll(`${BODY_ROW}[data-row-drop-parent]`),
       ).toHaveLength(0)
       await release()
-      await expect.poll(lines).toEqual(before)
+      // Полоса окна (ADR 0202) могла дорисовать строки: сравнение — по строкам, что были до.
+      // Полоса окна (ADR 0202) могла дорисовать или убрать строки: сравнение — по общим.
+      await expect
+        .poll(() => {
+          const now = lines()
+          return [...before].filter(
+            ([id]) => now.has(id) && now.get(id) !== before.get(id),
+          )
+        })
+        .toEqual([])
     } finally {
       await pointer.realMouseUp()
       await screen.unmount()
@@ -350,7 +359,10 @@ describe('Превью броска строки (ADR 0108)', () => {
         tokenColor('--tsr-comp-row-drop-invalid-overlay-bg', cloud()!),
       )
       await release()
-      await expect.poll(order).toEqual(before)
+      // Полоса окна (ADR 0202) могла дорисовать строки: порядок — тех, что были до.
+      await expect
+        .poll(() => order().filter(id => before.includes(id)))
+        .toEqual(before)
       expect(onRowDragEnd).not.toHaveBeenCalled()
       expect(onRowOrderChange).not.toHaveBeenCalled()
     } finally {

@@ -3,7 +3,12 @@ import { beforeAll, describe, expect, test } from 'vitest'
 
 import { againstBase, ceilingOver, medianRun } from './baseline'
 
-import { headCells, measureRenderWork, recordPerf } from '../helpers'
+import {
+  headCells,
+  measureRenderWork,
+  measureTransitionWork,
+  recordPerf,
+} from '../helpers'
 import { makeData } from '../../__mocks__/data'
 import {
   ALL_PLUGINS,
@@ -21,6 +26,7 @@ import {
   measureStickyScrollLimit,
 } from '../../../core/scrollHeightLimit'
 import { RU_LABELS } from '../../__mocks__/localization.ru'
+import { windowPortions } from '../../../core/virtualization/windowPortions'
 import {
   columnFiltering,
   columnVisibility,
@@ -507,5 +513,197 @@ describe('Производительность первой отрисовки �
       ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,
+  )
+})
+
+// Смена всего окна порциями строк (ADR 0203, WS6): монтирование 1000×1000 — самая длинная
+// задача, стена до первой строки и вся работа против того же монтирования одним проходом.
+/** Самая длинная задача — доля базы; 60 мс — цель RAIL в дашборде. */
+const WS6_LONGEST = 0.3
+const WS6_TARGET_MS = 60
+const WS6_WORK = 1.1
+
+/** Данные — заранее: генерация мока в рендере истории — не цена грида. */
+let ws6Data: ReturnType<typeof makeData> | undefined
+/** Монтирование до конца нарезки: строк тела столько же три кадра подряд. */
+const measurePortions = async (all: boolean, sliced: boolean) => {
+  ws6Data ??= makeData({ shape: 'flat', count: LARGE.dataCount })
+  const dataOverride = ws6Data
+  windowPortions.enabled = sliced
+  try {
+    let started = 0
+    let firstRowMs = 0
+    let last = -1
+    let stable = 0
+    const result = await measureRenderWork(
+      () => {
+        started = performance.now()
+        if (all) renderGrid({ ...LARGE, ...ALL_PLUGINS, dataOverride })
+        else renderPluginsGrid({ ...LARGE, dataOverride })
+      },
+      () => {
+        const count = document.querySelectorAll('.data-grid__body-row').length
+        if (count > 0 && !firstRowMs) firstRowMs = performance.now() - started
+        stable = count > 0 && count === last ? stable + 1 : 0
+        last = count
+        return stable >= 3
+      },
+      { warmup: false },
+    )
+    await cleanup()
+    return { ...result, firstRowMs }
+  } finally {
+    windowPortions.enabled = true
+  }
+}
+
+describe('Производительность первой отрисовки — порции строк', () => {
+  test(
+    'WS6: монтирование 1000×1000 без плагинов и со всеми — самая длинная задача не длиннее 0,3 базы, первая строка — не позже базы, работа — не больше базы на 10 %; база — монтирование одним проходом; цель RAIL 60 мс — в дашборде',
+    async () => {
+      const failures: string[] = []
+      for (const [plugins, all] of [
+        ['none', false],
+        ['all', true],
+      ] as const) {
+        const runs = await againstBase(sliced => measurePortions(all, sliced))
+        const base = medianRun(runs.base, r => r.longestMs)
+        const sliced = medianRun(runs.variant, r => r.longestMs)
+        const wall = (list: typeof runs.base) =>
+          medianRun(list, r => r.firstRowMs).firstRowMs
+        for (const [id, r, gated] of [
+          [`WS6-base-${plugins}`, base, false],
+          [`WS6-${plugins}`, sliced, true],
+        ] as const) {
+          await recordPerf({
+            id,
+            label: gated
+              ? 'монтирование порциями строк'
+              : 'монтирование одним проходом',
+            operation: 'render',
+            size: '1000×1000',
+            plugins,
+            cpuThrottle: CPU_THROTTLE_RATE,
+            metrics: [
+              {
+                kind: 'load',
+                metric: 'longest',
+                valueMs: r.longestMs,
+                targetMs: WS6_TARGET_MS,
+                ceilingMs: gated ? base.longestMs * WS6_LONGEST : undefined,
+                ...r,
+              },
+            ],
+          })
+        }
+        if (sliced.longestMs > base.longestMs * WS6_LONGEST) {
+          failures.push(
+            `${plugins}: самая длинная задача ${sliced.longestMs.toFixed(1)} мс (база ${base.longestMs.toFixed(1)} мс)`,
+          )
+        }
+        if (wall(runs.variant) > wall(runs.base)) {
+          failures.push(
+            `${plugins}: первая строка через ${wall(runs.variant).toFixed(0)} мс, база ${wall(runs.base).toFixed(0)} мс`,
+          )
+        }
+        if (sliced.totalMs > base.totalMs * WS6_WORK) {
+          failures.push(
+            `${plugins}: работа ${sliced.totalMs.toFixed(0)} мс, база ${base.totalMs.toFixed(0)} мс`,
+          )
+        }
+      }
+      expect(failures).toEqual([])
+    },
+    PERF_TIMEOUT * 8,
+  )
+})
+
+// Прыжок за полосу окна (ADR 0203, WS7): видимые строки — в событии, запас — порциями; против
+// того же прыжка одним проходом.
+const WS7_WORK = 1.1
+
+const measureJump = async (sliced: boolean) => {
+  windowPortions.enabled = sliced
+  try {
+    ws6Data ??= makeData({ shape: 'flat', count: LARGE.dataCount })
+    const screen = renderGrid({
+      ...LARGE,
+      ...ALL_PLUGINS,
+      dataOverride: ws6Data,
+    })
+    await screen
+    const rows = () => document.querySelectorAll('.data-grid__body-row').length
+    let last = -1
+    let stable = 0
+    const settled = () => {
+      const count = rows()
+      stable = count > 0 && count === last ? stable + 1 : 0
+      last = count
+      return stable >= 10
+    }
+    for (let i = 0; i < 600 && !settled(); i++) {
+      // eslint-disable-next-line no-await-in-loop
+      await new Promise(requestAnimationFrame)
+    }
+    const scroller = document.querySelector<HTMLElement>(
+      '.data-grid__container',
+    )!
+    stable = 0
+    const result = await measureTransitionWork(async () => {
+      scroller.scrollTop = scroller.scrollHeight / 2
+    }, settled)
+    await cleanup()
+    return result
+  } finally {
+    windowPortions.enabled = true
+  }
+}
+
+describe('Производительность прыжка — порции строк', () => {
+  test(
+    'WS7: прыжок прокрутки 1000×1000 со всеми плагинами в середину — самая длинная задача не длиннее базы, работа — не больше базы на 10 %',
+    async () => {
+      const runs = await againstBase(measureJump)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const sliced = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = {
+        longest: base.longestMs,
+        work: base.totalMs * WS7_WORK,
+      }
+      for (const [id, r, gated] of [
+        ['WS7-base', base, false],
+        ['WS7', sliced, true],
+      ] as const) {
+        await recordPerf({
+          id,
+          label: gated
+            ? 'прыжок: видимые сразу, запас порциями'
+            : 'прыжок одним проходом',
+          operation: 'interaction',
+          size: '1000×1000',
+          plugins: 'all',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: WS6_TARGET_MS,
+              ceilingMs: gated ? ceiling.longest : undefined,
+              ...r,
+            },
+          ],
+        })
+      }
+      expect(
+        sliced.longestMs,
+        `самая длинная задача ${sliced.longestMs.toFixed(1)} мс, база ${base.longestMs.toFixed(1)} мс`,
+      ).toBeLessThanOrEqual(ceiling.longest)
+      expect(
+        sliced.totalMs,
+        `работа ${sliced.totalMs.toFixed(0)} мс, база ${base.totalMs.toFixed(0)} мс`,
+      ).toBeLessThanOrEqual(ceiling.work)
+    },
+    PERF_TIMEOUT * 6,
   )
 })

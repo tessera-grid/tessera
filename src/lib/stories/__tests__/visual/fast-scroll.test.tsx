@@ -26,6 +26,8 @@ const pointer = commands as unknown as {
 const SKELETON = '[data-skeleton]'
 const nextFrame = () => new Promise(requestAnimationFrame)
 const hasSkeleton = (row: Element) => row.querySelector(SKELETON) !== null
+/** Кадров рывка: дальше полосы окна, что смонтирована до входа (ADR 0202). */
+const FAST_STEPS = 8
 
 const mount = async () => {
   renderGrid({ columnCount: 10, dataCount: 1000 })
@@ -38,7 +40,7 @@ const fastScroll = async () => {
   const scroller = getScroller()
   const before = new Set(bodyRows())
   // 100 px за кадр — выше порога входа по Y.
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < FAST_STEPS; i++) {
     scroller.scrollTop += 100
     // eslint-disable-next-line no-await-in-loop
     await nextFrame()
@@ -51,7 +53,7 @@ describe('Быстрая прокрутка', () => {
     const scroller = await mount()
     const before = new Set(bodyRows())
     // 100 px за кадр — выше порога входа по Y.
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < FAST_STEPS; i++) {
       scroller.scrollTop += 100
       // eslint-disable-next-line no-await-in-loop
       await nextFrame()
@@ -62,6 +64,31 @@ describe('Быстрая прокрутка', () => {
     expect(kept.length).toBeGreaterThan(0)
     expect(kept.filter(hasSkeleton)).toEqual([])
     expect(mounted.some(hasSkeleton)).toBe(true)
+  })
+
+  test('WB6: скелеты — у ячеек, смонтированных в сессии, включая пополнения полосы; строки, смонтированные полосой до входа, — с содержимым', async () => {
+    const scroller = await mount()
+    const box = scroller.getBoundingClientRect()
+    // Полоса окна (ADR 0202) смонтировала строки ниже видимой части до входа.
+    const ahead = bodyRows().filter(
+      row => row.getBoundingClientRect().top >= box.bottom,
+    )
+    expect(ahead.length).toBeGreaterThan(0)
+    const before = new Set(bodyRows())
+    // Рывок на высоту области: строки полосы встают в видимую часть, полоса пополняется.
+    const steps = Math.ceil(scroller.clientHeight / 100) + 1
+    for (let i = 0; i < steps; i++) {
+      scroller.scrollTop += 100
+      // eslint-disable-next-line no-await-in-loop
+      await nextFrame()
+    }
+    const rows = bodyRows()
+    const shown = ahead.filter(row => rows.includes(row))
+    expect(shown.length).toBeGreaterThan(0)
+    expect(shown.filter(hasSkeleton)).toEqual([])
+    const refilled = rows.filter(row => !before.has(row))
+    expect(refilled.length).toBeGreaterThan(0)
+    expect(refilled.some(hasSkeleton)).toBe(true)
   })
 
   test('FS7: медленная прокрутка настоящим колесом с паузой главного потока не показывает скелетов', async () => {

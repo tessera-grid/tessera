@@ -1,9 +1,8 @@
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 
-import {
-  type Range,
-  defaultRangeExtractor,
-} from '../../../vendor/tanstack-virtual/react-virtual'
+import type { Range } from '../../../vendor/tanstack-virtual/react-virtual'
+
+import { createWindowBand } from './windowBand'
 
 import type { Table } from '../../types'
 import { useActiveCellIndex } from '../keyboardNavigation'
@@ -35,10 +34,13 @@ export const useColumnRangeExtractor = ({
   const activeColumnIndex = useActiveCellIndex(table, 'columnIndex')
   const latest = useLatest(table)
 
+  // Полоса окна (ADR 0202, §1): своя у каждого виртуализатора.
+  const [band] = useState(createWindowBand)
+
   return useCallback(
     (range: Range) => {
       const table = latest.current
-      const newIndexes = defaultRangeExtractor(range)
+      const newIndexes = band(range)
       const activeIndexes =
         activeColumnIndex !== undefined &&
         activeColumnIndex >= 0 &&
@@ -80,6 +82,6 @@ export const useColumnRangeExtractor = ({
     // но обязан быть в deps: смена идентичности extractor заставляет react-virtual
     // пере-считать окно сразу при закреплении, а не со следующего скролла.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [latest, table.store, columnPinning, activeColumnIndex],
+    [band, latest, table.store, columnPinning, activeColumnIndex],
   )
 }

@@ -6,6 +6,7 @@ import { scrollGridTo } from './scrollGridTo'
 import type { RowSource } from './rowSource'
 import { useIsomorphicLayoutEffect } from '../util/useIsomorphicLayoutEffect'
 import { useLatest } from '../util/useLatest'
+import type { WindowBand } from './virtualization/windowBand'
 
 interface RowRange {
   range: { startIndex: number; endIndex: number } | null
@@ -18,8 +19,8 @@ const sameConditions = (a: readonly unknown[], b: readonly unknown[]) =>
 
 /**
  * Окно строк тела и быстрая прокрутка — источнику с `observe` (ADR 0138, §4). Окно —
- * видимые строки с запасом виртуализатора, без закреплённых далёких строк (активной,
- * перетаскиваемой): иначе оно растянулось бы на весь список. Смена сортировки, фильтров,
+ * полоса окна строк (ADR 0202, §6): видимое и запас по ходу прокрутки, без закреплённых
+ * далёких строк (активной, перетаскиваемой): иначе оно растянулось бы на весь список. Смена сортировки, фильтров,
  * поиска или группировки (ADR 0144) начинает список заново — тело в начале (§6).
  */
 export const useRowSourceWindow = (
@@ -27,10 +28,13 @@ export const useRowSourceWindow = (
   source: RowSource,
   virtualizer: RowRange,
   fastScroll: FastScrollStore,
+  band: WindowBand,
 ) => {
   const overscan = virtualizer.options.overscan
-  const first = Math.max((virtualizer.range?.startIndex ?? 0) - overscan, 0)
-  const last = (virtualizer.range?.endIndex ?? -1) + overscan
+  const bounds = band.current()
+  const first =
+    bounds?.[0] ?? Math.max((virtualizer.range?.startIndex ?? 0) - overscan, 0)
+  const last = bounds?.[1] ?? (virtualizer.range?.endIndex ?? -1) + overscan
   const window = useLatest({ first, last })
 
   const conditions = useTableState(table as never, s => [
