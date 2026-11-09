@@ -43,6 +43,7 @@ import { cellFailureOf, type Failures } from '../core/failures/failuresFeature'
 import { CellFailureMark } from './CellFailureMark'
 import { CellWrapperContent, getAlignContent } from '../grid/CellWrapperContent'
 import { CellWrapperTitle } from '../grid/CellWrapperTitle'
+import { cellValueOf } from '../core/cellValue'
 import { alignAttrs, renderCellContent } from './cellContent'
 import { renderSkeletonCell, skeletonCellKindOf } from './skeletonCell'
 import type { Cell } from '../types'
@@ -253,7 +254,7 @@ export const BodyCell = memo(
         ? rowSourceOf(table).groupRowCount?.(cell.row)
         : undefined
     // Значение меняется и без смены данных: стадия переноса между группами (ADR 0186, §3).
-    const value = cell.getValue()
+    const { value, overridden } = cellValueOf(cell)
     const render = useMemo(() => {
       if (showSkeleton) {
         return renderSkeletonCell(
@@ -278,7 +279,7 @@ export const BodyCell = memo(
         )
       }
 
-      const content = renderCellContent(cell, labels, value)
+      const content = renderCellContent(cell, labels, value, overridden)
 
       // Сервисная колонка — контент без CellWrapperTitle.
       return isActionsColumn ? (
@@ -302,6 +303,7 @@ export const BodyCell = memo(
     }, [
       cell,
       value,
+      overridden,
       groupCount,
       labels,
       isActionsColumn,

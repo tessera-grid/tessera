@@ -22,6 +22,7 @@ import { dataModeOf } from '../../core/dataMode'
 import { handOverRowsById } from '../../core/rowsByIdHandover'
 import type { RowData, Table, TableFeatures } from '../../types'
 import { skipIdlePasses } from './idleRowModel'
+import { positionOf, setPosition } from '../../core/rowPosition'
 
 interface Atom {
   get: () => unknown
@@ -175,6 +176,7 @@ const copyRow = (
     undefined,
     row.parentId,
   ) as unknown as FilterRow
+  setPosition(next, positionOf(row))
   next.columnFilters = row.columnFilters
   next.columnFiltersMeta = row.columnFiltersMeta
   next.subRows = subRows
@@ -187,7 +189,7 @@ const placeOf = (rows: readonly FilterRow[], index: number) => {
   let hi = rows.length
   while (lo < hi) {
     const mid = (lo + hi) >>> 1
-    if (rows[mid]!.index < index) lo = mid + 1
+    if (positionOf(rows[mid]!) < index) lo = mid + 1
     else hi = mid
   }
   return lo
@@ -219,12 +221,13 @@ const patchFlatFiltered = (
   for (const id of change.changed) {
     const old = (change.previous?.get(id) ?? prev.input.rowsById[id]) as
       FilterRow | undefined
-    if (!old || old.index !== input.rowsById[id]?.index) return null
+    const now = input.rowsById[id]
+    if (!old || !now || positionOf(old) !== positionOf(now)) return null
   }
   const appended: FilterRow[] = []
   for (const id of change.inserted) {
     const row = input.rowsById[id]
-    if (!row || row.index < before) return null
+    if (!row || positionOf(row) < before) return null
     appended.push(row)
   }
   const passes = (row: FilterRow) => {
@@ -244,7 +247,7 @@ const patchFlatFiltered = (
     const row = input.rowsById[id]
     if (!row) return null
     checkRow(row, filters)
-    const at = placeOf(rows, row.index)
+    const at = placeOf(rows, positionOf(row))
     const was = rows[at]?.id === id
     if (passes(row)) {
       const next = out(row)
@@ -263,7 +266,7 @@ const patchFlatFiltered = (
       removed.add(id)
     }
   }
-  for (const row of appended.sort((a, b) => a.index - b.index)) {
+  for (const row of appended.sort((a, b) => positionOf(a) - positionOf(b))) {
     checkRow(row, filters)
     if (!passes(row)) continue
     const next = out(row)
@@ -354,6 +357,8 @@ const filterTree = (
       old.columnFilters === row.columnFilters &&
       sameList(old.subRows, subRows)
     ) {
+      // Прежняя копия встаёт на нынешнее место строки (ADR 0200, §5).
+      if (positionOf(old) !== positionOf(row)) setPosition(old, positionOf(row))
       return old
     }
     return copyRow(table, row, subRows)

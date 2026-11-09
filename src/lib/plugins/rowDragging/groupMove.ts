@@ -9,6 +9,7 @@ import type { Row } from '../../types'
 import { commitRowMove } from './commitRowMove'
 import { dragRowsOf, groupedRowsOf } from './dragRows'
 import type { RowDraggingHooks } from './types'
+import { positionOf } from '../../core/rowPosition'
 
 type AnyRow = Row<any, any>
 
@@ -59,7 +60,7 @@ export const groupMoveTargets = (row: AnyRow, table: unknown): AnyRow[] => {
 
 /** Место строки в группе: порядок внутри неё задают данные (ADR 0186, §2). */
 const indexIn = (group: AnyRow, row: AnyRow) =>
-  group.subRows.filter(sibling => sibling.index < row.index).length
+  group.subRows.filter(sibling => positionOf(sibling) < positionOf(row)).length
 
 export const commitGroupMove = (
   table: unknown,

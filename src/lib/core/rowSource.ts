@@ -1,3 +1,4 @@
+import { positionOf } from './rowPosition'
 /**
  * Источник строк (ADR 0138, §2): строки, которые рисует тело, — по индексу и по id.
  * Клиентский режим — модель строк TanStack; серверная модель строк подставит свой.
@@ -280,7 +281,7 @@ export const createClientRowSource = (table: unknown): RowSource => {
       const { rows, rowsById } = t.getRowModel()
       // Строка стоит на своём индексе (плоский список без сортировки) — без обхода списка.
       const row = rowsById[id]
-      if (row && rows[row.index] === row) return row.index
+      if (row && rows[positionOf(row)] === row) return positionOf(row)
       let indexes = listIndexes.get(rows)
       if (!indexes) {
         indexes = new Map(rows.map((item, index) => [item.id, index]))

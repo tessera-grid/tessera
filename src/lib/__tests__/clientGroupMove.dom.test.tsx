@@ -8,6 +8,7 @@ import { act, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+import { cellValueOf } from '../core/cellValue'
 import { useCreateTable } from '../core/useCreateTable'
 import {
   columnSortingModel,
@@ -84,6 +85,9 @@ const groupRow = (value: string) =>
 const inGroup = (value: string) =>
   groupRow(value).subRows.map((row: { id: string }) => row.id)
 const leaf = (id: string) => table.getRow(id, true)
+/** Значение колонки, которое показывает ячейка строки (ADR 0186, §3). */
+const shown = (id: string, columnId: string) =>
+  cellValueOf(leaf(id).getAllCellsByColumnId()[columnId]).value
 
 beforeEach(() => {
   settleMove = undefined
@@ -149,7 +153,7 @@ describe('перенос между клиентскими группами (ADR
     })
     // Данные приложения не менялись, а ячейка показывает новую группу.
     expect(leaf('a').original.country).toBe('US')
-    expect(leaf('a').getValue('country')).toBe('DE')
+    expect(shown('a', 'country')).toBe('DE')
 
     await act(async () => {
       write(rows =>
@@ -160,13 +164,13 @@ describe('перенос между клиентскими группами (ADR
     expect(table.atoms.rowMoves.get()).toEqual({})
     expect(inGroup('DE').sort()).toEqual(['a', 'c'])
     expect(leaf('a').original.country).toBe('DE')
-    expect(leaf('a').getValue('country')).toBe('DE')
+    expect(shown('a', 'country')).toBe('DE')
 
     // Отказ снимает стадию: строка в прежней группе, значение прежнее.
     act(() => moveRowToGroup(table, leaf('b'), groupRow('DE')))
-    expect(leaf('b').getValue('country')).toBe('DE')
+    expect(shown('b', 'country')).toBe('DE')
     await act(async () => settleMove!(false))
     expect(inGroup('US')).toEqual(['b'])
-    expect(leaf('b').getValue('country')).toBe('US')
+    expect(shown('b', 'country')).toBe('US')
   })
 })

@@ -49,6 +49,7 @@ import {
   type RowDragOverlayState,
   type RowSortableData,
 } from './types'
+import { positionOf } from '../../core/rowPosition'
 
 /**
  * Редьюсер DnD-событий тела: переупорядочивание строк c поддержкой вложенности
@@ -527,7 +528,7 @@ export const getRowDraggingEvents = (
         if (
           !place ||
           (place.parentId === activeRow.parentId &&
-            place.index === activeRow.index)
+            place.index === positionOf(activeRow))
         ) {
           return cancel(active.id, 'cancel')
         }
@@ -604,7 +605,7 @@ export const getRowDraggingEvents = (
       if (
         staged &&
         place.parent?.id === activeParentId &&
-        place.index === activeRow.index
+        place.index === positionOf(activeRow)
       ) {
         expandDraggableGroupAgain(activeRow)
 
@@ -628,7 +629,7 @@ export const getRowDraggingEvents = (
         fromAnchors: (activeParentRow?.subRows ?? table.getCoreRowModel().rows)
           .map(row => row.id)
           .filter(id => id !== rowId),
-        fromIndex: activeRow.index,
+        fromIndex: positionOf(activeRow),
       }
       reportAction(table, {
         plugin: 'rowDragging',
@@ -647,7 +648,7 @@ export const getRowDraggingEvents = (
               original: activeRow.original,
               from: {
                 parentId: activeParentId,
-                index: activeRow.index,
+                index: positionOf(activeRow),
                 lazy: isLazyParent(activeParentRow),
               },
               to: {
@@ -665,8 +666,8 @@ export const getRowDraggingEvents = (
           activeParentId,
           overParentId,
           activeParentRow,
-          activeOriginalIndex: activeRow.index,
-          overOriginalIndex: targetItem?.index || 0,
+          activeOriginalIndex: positionOf(activeRow),
+          overOriginalIndex: targetItem ? positionOf(targetItem) : 0,
           targetItem,
           isDownMove,
           currentDepth,

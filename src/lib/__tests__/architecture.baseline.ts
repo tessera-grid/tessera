@@ -15,6 +15,10 @@ export const CORE_PLUGIN_ONLY: Record<string, string> = {}
  * извне его читают только плагины и `shared/`.
  */
 export const CORE_PLUGIN_API: Record<string, string> = {
+  'lib/core/rowEngine/displayChildren.ts':
+    'дети строки в порядке показа: пишут стадии фильтра и сортировки, читают раскрытие и страница (ADR 0200, §4)',
+  'lib/core/rowPosition.ts':
+    'место строки в данных знает хранилище: его читают модели строк, перетаскивание и транзакции (ADR 0200, §5)',
   'lib/core/rowEngine/engine.ts':
     'движок строк: стадии конвейера приносят плагины моделей обёрткой слота, порядок стадий — ядра (ADR 0200)',
   'lib/core/dataTypes.ts':

@@ -21,6 +21,7 @@ import {
   rowModelChangeOf,
 } from '../../core/dataChanges'
 import { handOverRowsById } from '../../core/rowsByIdHandover'
+import { positionOf, setPosition } from '../../core/rowPosition'
 
 type SortedRowModelFactory = ReturnType<typeof createSortedRowModel>
 
@@ -175,7 +176,8 @@ const sorter = (
         if (result === Infinity) return 1
         if (result !== 0) return result
       }
-      return rowX.index - rowY.index
+      // Равные — в порядке уровня: он в порядке данных.
+      return x - y
     })
     return order.map(i => rows[i])
   }
@@ -190,6 +192,7 @@ const sorter = (
     // Как у TanStack: родитель с переставленными детьми — копия строки.
     const cloned = Object.create(Object.getPrototypeOf(row)) as SortRow
     copyInstancePropertiesWithoutMemos(cloned as never, row as never)
+    setPosition(cloned, positionOf(row))
     cloned.subRows = children.rows
     clonesOf.set(row, cloned)
     flat[at] = cloned
@@ -421,13 +424,14 @@ const rowComparator = (entries: SortEntry[], byIndex = true) => {
       if (result === Infinity) return 1
       if (result !== 0) return result
     }
-    return byIndex ? a.index - b.index : 0
+    return byIndex ? positionOf(a) - positionOf(b) : 0
   }
 }
 
 const cloneWith = (row: SortRow, subRows: SortRow[]) => {
   const cloned = Object.create(Object.getPrototypeOf(row)) as SortRow
   copyInstancePropertiesWithoutMemos(cloned as never, row as never)
+  setPosition(cloned, positionOf(row))
   cloned.subRows = subRows
   clonesOf.set(row, cloned)
   return cloned
@@ -747,7 +751,9 @@ const patchData = (table: SortTable, prev: Sorted): Sorted | undefined => {
         if (!isChanged && now === prevInput[now.id]) {
           // Строка входа прежняя: выход прошлой модели переходит с поддеревом; у копии
           // родителя — новое место строки входа после сдвига (ADR 0199, §1).
-          if (old!.index !== now.index) old!.index = now.index
+          if (positionOf(old!) !== positionOf(now)) {
+            setPosition(old!, positionOf(now))
+          }
           flat.push(old!)
           if (old!.subRows.length) pushSubtree(old!.subRows, flat)
         } else {

@@ -20,6 +20,7 @@ import {
   rowExpanding,
   rowGroupingModel,
 } from '../plugins'
+import { positionOf } from '../core/rowPosition'
 ;(
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true
@@ -67,7 +68,7 @@ interface Model {
 const shape = (model: Model) => {
   const row = (r: ModelRow): unknown => ({
     id: r.id,
-    index: r.index,
+    index: positionOf(r),
     depth: r.depth,
     parentId: r.parentId,
     original: r.original,
@@ -188,17 +189,13 @@ const replaceAt = (data: Item[], at: number) =>
 
 describe('Смена data по тождеству строк (ADR 0194)', () => {
   it('IU1: замена, вставка и удаление строк и строк поддерева дают модель ядра, совпадающую с полной сборкой TanStack', () => {
-    // Значение колонки с индексом у сдвинутой строки — новое, прочие переходят.
+    // Колонка с индексом: её значение — по индексу при создании строки (ADR 0200, §5).
     const columns = [
       ...COLUMNS,
       { id: 'pos', accessorFn: (_row: Item, index: number) => index },
     ]
     const values = (model: Model) =>
-      model.flatRows.map(row => [
-        row.id,
-        (row as any).getValue('name'),
-        (row as any).getValue('pos'),
-      ])
+      model.flatRows.map(row => [row.id, (row as any).getValue('name')])
     let data = make(40, 5)
     const grid = host(data, { columns })
     values(grid.model())

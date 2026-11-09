@@ -7,6 +7,7 @@
 import { logWarn } from '../util/logger'
 import { reportAction } from './debugActions'
 import { expectTransactionOutcome } from './transactionOutcome'
+import { positionOf } from './rowPosition'
 
 export interface RowTransaction<TData = any> {
   /** Новые строки; без `index` — в конец уровня (на сервере — перезапрос окна). */
@@ -69,10 +70,13 @@ const placesOf = (
   for (const id of ids) {
     const row = rowsById[id]
     if (!row) continue
-    if (row.parentId !== parent?.id || level[row.index] !== row.original) {
+    if (
+      row.parentId !== parent?.id ||
+      level[positionOf(row)] !== row.original
+    ) {
       return undefined
     }
-    places.set(id, row.index)
+    places.set(id, positionOf(row))
   }
   return places
 }
@@ -159,7 +163,7 @@ const nextDataOf = (
     const level =
       depth === 0 ? data : defaultGetSubRows(path[depth - 1]!.original)
     const next = level.slice()
-    next[row.index] = replaced
+    next[positionOf(row)] = replaced
     if (depth === 0) return next
     replaced = { ...(path[depth - 1]!.original as object), subRows: next }
   }

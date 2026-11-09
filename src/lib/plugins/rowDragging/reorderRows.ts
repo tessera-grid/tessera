@@ -1,5 +1,6 @@
 import type { Row } from '../../types'
 import { getNewOriginalIndex } from './draggingHelpers'
+import { positionOf } from '../../core/rowPosition'
 
 /** Параметры переноса строки, вычисленные в `onRowDragEnd`. */
 export interface RowMove {
@@ -44,7 +45,7 @@ const moveRootToRoot = (newArray: any[], move: RowMove) => {
   // берём индекс самой группы, а не последнего её элемента
   if (targetItem.getIsLastSubRow() && move.currentDepth === 0) {
     const nextIndexAfterExpandedGroup = getNewOriginalIndex(
-      targetItem.getParentRow()!.index,
+      positionOf(targetItem.getParentRow()!),
       move.isDownMove,
     )
 
@@ -127,7 +128,7 @@ const moveGroupToRoot = (
   // Переместить на индекс ниже группы, из которой элемент удалён, если он
   // должен располагаться сразу после её последней подстроки
   if (targetItem.parentId === activeParentId) {
-    newArray.splice(activeParentRow.index + 1, 0, {
+    newArray.splice(positionOf(activeParentRow) + 1, 0, {
       ...activeItem,
       parentId: undefined,
     })
@@ -137,7 +138,8 @@ const moveGroupToRoot = (
 
   // Не в группу, а на следующий индекс после неё — индекс самой группы
   if (targetItem.getIsLastSubRow() && move.currentDepth === 0) {
-    const nextIndexAfterExpandedGroup = targetItem.getParentRow()!.index + 1
+    const nextIndexAfterExpandedGroup =
+      positionOf(targetItem.getParentRow()!) + 1
 
     newArray.splice(nextIndexAfterExpandedGroup, 0, {
       ...activeItem,

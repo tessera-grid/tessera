@@ -167,6 +167,11 @@ export interface CoreOptions {
 
 /** Опции `commonFeature`: опции ядра и каналы сборки и плагинов (ADR 0164). */
 export interface CommonOptions extends CoreOptions {
+  /**
+   * Значение ячейки для отрисовки, которого строка ещё не несёт: стадия переноса между группами
+   * (ADR 0186, §3; ADR 0200, §4). `undefined` — значение строки.
+   */
+  cellValueOverride?: (cell: unknown) => { value: unknown } | undefined
   /** `false` — без числа строк в строке группы (ADR 0184, §8). */
   groupRowCount?: boolean
   /** Итог колонки на клиенте: с ним футер есть без флага (ADR 0184, §4, §7). */

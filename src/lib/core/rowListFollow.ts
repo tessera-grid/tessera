@@ -4,6 +4,7 @@
  * пользуются выделение по индексам и диапазоны подсветки и вспышки (ADR 0152, §4).
  */
 import { type NewRowPlace, type RowListChange, rowSourceOf } from './rowSource'
+import { positionOf } from './rowPosition'
 
 /** Сдвиг промежутка `[top, bottom]` сменой списка: число строк или `null` — смена внутри. */
 export const shiftIndexSpan = (
@@ -96,12 +97,12 @@ export const newRowChanges = (
   const after = new Set(next.map(row => row.id))
   const removed = previous
     .filter(row => !after.has(row.id))
-    .map(row => ({ at: row.index, delta: -1 }))
+    .map(row => ({ at: positionOf(row), delta: -1 }))
   // Место пришедшей — среди пришедших выше: пачка считается в индексах до неё.
   const added = next
     .filter(row => !before.has(row.id))
-    .sort((a, b) => a.index - b.index)
-    .map((row, position) => ({ at: row.index - position, delta: 1 }))
+    .sort((a, b) => positionOf(a) - positionOf(b))
+    .map((row, position) => ({ at: positionOf(row) - position, delta: 1 }))
   return [removed, added].filter(batch => batch.length > 0)
 }
 

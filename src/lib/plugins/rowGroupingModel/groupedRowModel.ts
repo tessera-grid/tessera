@@ -20,6 +20,7 @@ import { handOverRowsById } from '../../core/rowsByIdHandover'
 import { groupMovesKey, readRowMoves } from '../../shared/rowMoves'
 import { skipIdlePasses } from '../../shared/rowModels/idleRowModel'
 import type { RowData, Table, TableFeatures } from '../../types'
+import { positionOf } from '../../core/rowPosition'
 
 interface StagedRow {
   _valuesCache?: Record<string, unknown>
@@ -145,7 +146,7 @@ const placeOf = (rows: readonly GroupRow[], index: number) => {
   let hi = rows.length
   while (lo < hi) {
     const mid = (lo + hi) >>> 1
-    if (rows[mid]!.index < index) lo = mid + 1
+    if (positionOf(rows[mid]!) < index) lo = mid + 1
     else hi = mid
   }
   return lo
@@ -184,7 +185,8 @@ const patchFlatGroups = <
   for (const id of change.changed) {
     const old = (change.previous?.get(id) ?? prev.input.rowsById[id]) as
       GroupRow | undefined
-    if (!old || old.index !== input.rowsById[id]?.index) return null
+    const now = input.rowsById[id]
+    if (!old || !now || positionOf(old) !== positionOf(now)) return null
   }
   const { topKeys, movedKeys, prevGroups } = known
   // Строки, что входят в группу и выходят из неё, по ключу группы.
@@ -196,7 +198,7 @@ const patchFlatGroups = <
     const members = group?.leafRows
     if (!members?.length) return null
     const old = topKeys.get(id)
-    if (change.inserted.has(id) && row.index < before) return null
+    if (change.inserted.has(id) && positionOf(row) < before) return null
     if (old !== undefined && old !== key) {
       const from = prevGroups.get(old)!.leafRows!
       // Первая строка группы задаёт её место: её уход может сменить порядок групп.
@@ -205,7 +207,7 @@ const patchFlatGroups = <
       if (list) list.push(row)
       else leaves.set(old, [row])
     }
-    if (old !== key && row.index < members[0]!.index) return null
+    if (old !== key && positionOf(row) < positionOf(members[0]!)) return null
     const list = comes.get(key)
     if (list) list.push(row)
     else comes.set(key, [row])
@@ -219,10 +221,10 @@ const patchFlatGroups = <
       const old = prevGroups.get(key)!
       const members = old.leafRows!.slice()
       for (const row of leaves.get(key) ?? []) {
-        members.splice(placeOf(members, row.index), 1)
+        members.splice(placeOf(members, positionOf(row)), 1)
       }
       for (const row of comes.get(key) ?? []) {
-        const at = placeOf(members, row.index)
+        const at = placeOf(members, positionOf(row))
         if (members[at]?.id === row.id) members[at] = row
         else members.splice(at, 0, row)
       }

@@ -5,6 +5,7 @@
  * серверной модели — индекс `-1` (ADR 0159, §3).
  */
 import { findDropParent, indexBeforeMove } from '../../core/dragSession'
+import { positionOf } from '../../core/rowPosition'
 
 interface PlaceRow {
   id: string
@@ -34,7 +35,7 @@ export const dropPlace = <TRow extends PlaceRow>(
   // Сестра в своей группе стоит после убранной строки — её индекс на один меньше.
   const sameGroup = active.parentId === parent?.id
   const shifted = (index: number) =>
-    sameGroup && active.index < index ? index - 1 : index
+    sameGroup && positionOf(active) < index ? index - 1 : index
   const at = (position: number) => rows.at(indexBeforeMove(position, from, to))
   // Незагруженная строка серверной модели: сестра могла стоять за ней (ADR 0159).
   let hidden = false
@@ -42,13 +43,14 @@ export const dropPlace = <TRow extends PlaceRow>(
     const row = at(position)
     hidden = !row
     if (!row || row.depth < depth) break
-    if (row.depth === depth) return { parent, index: shifted(row.index + 1) }
+    if (row.depth === depth)
+      return { parent, index: shifted(positionOf(row) + 1) }
   }
   for (let position = to + 1; position < rows.length; position++) {
     const row = at(position)
     hidden ||= !row
     if (!row || row.depth < depth) break
-    if (row.depth === depth) return { parent, index: shifted(row.index) }
+    if (row.depth === depth) return { parent, index: shifted(positionOf(row)) }
   }
   return { parent, index: hidden ? -1 : 0 }
 }

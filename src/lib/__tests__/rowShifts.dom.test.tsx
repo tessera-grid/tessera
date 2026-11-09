@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
 /**
- * Вставка, удаление и перенос в середине `data` (ADR 0199; MS1–MS8): сдвинутые строки — прежние
- * объекты с новым `index`, перенесённые — новые объекты, итог моделей — как у полной сборки.
+ * Вставка, удаление и перенос в середине `data` (ADR 0199; MS2–MS4, MS6–MS8): сдвинутые строки —
+ * прежние объекты, их место знает хранилище (ADR 0200, §5), перенесённые — новые объекты, итог
+ * моделей — как у полной сборки.
  * Запуск: npx vitest run --config vitest.node.config.ts rowShifts
  */
 import { act, createElement, useState } from 'react'
@@ -18,6 +19,7 @@ import {
   rowExpanding,
   rowGroupingModel,
 } from '../plugins'
+import { positionOf } from '../core/rowPosition'
 ;(
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true
@@ -70,7 +72,7 @@ const COLUMNS = [
 const shape = (model: Model) => {
   const row = (r: ModelRow): unknown => ({
     id: r.id,
-    index: r.index,
+    index: positionOf(r),
     depth: r.depth,
     parentId: r.parentId,
     original: r.original,
@@ -161,27 +163,23 @@ const moveRow = (from: number, to: number) => (d: Item[]) => {
 }
 
 describe('Сдвиги в середине data (ADR 0199)', () => {
-  it('MS1: вставка в середину — прежние объекты строк с новым index, итог как у полной сборки', () => {
-    const grid = host(make(2000))
-    const before = grid.model()
-    const kept = before.rowsById['r1500']!
-    const head = before.rowsById['r10']!
-    grid.set(insertAt(700, [{ id: 'x1', name: 'x1', score: 3 }])(grid.data()))
-    const model = grid.model()
-    expect(rowModelChangeOf(model)?.inserted).toEqual(new Set(['x1']))
-    expect(model.rowsById['r1500']).toBe(kept)
-    expect(kept.index).toBe(1501)
-    expect(model.rowsById['r10']).toBe(head)
-    expect(head.index).toBe(10)
-    expect(shape(model)).toEqual(shape(fullBuild(grid.data())))
-  })
-
-  it('MS2: удаление из середины — новым data и транзакцией по id — прежние объекты с новым index', () => {
+  it('MS2: вставка и удаление в середине — новым data и транзакцией по id — прежние объекты с новым местом у хранилища', () => {
     const grid = host(make(2000))
     const kept = grid.model().rowsById['r1500']!
+    grid.set(
+      insertAt(1000, [
+        { id: 'x1', name: 'x1', score: 1 },
+        { id: 'x2', name: 'x2', score: 2 },
+      ])(grid.data()),
+    )
+    expect(grid.model().rowsById['r1500']).toBe(kept)
+    expect(kept.index).toBe(1500)
+    expect(positionOf(kept)).toBe(1502)
+    expect(shape(grid.model())).toEqual(shape(fullBuild(grid.data())))
+    grid.set(grid.data().filter(item => !item.id.startsWith('x')))
     grid.set(removeAt(700, 3)(grid.data()))
     expect(grid.model().rowsById['r1500']).toBe(kept)
-    expect(kept.index).toBe(1497)
+    expect(positionOf(kept)).toBe(1497)
     expect(shape(grid.model())).toEqual(shape(fullBuild(grid.data())))
 
     grid.transaction({ remove: ['r800', 'r801', 'r1999'] })
@@ -191,7 +189,7 @@ describe('Сдвиги в середине data (ADR 0199)', () => {
       new Set(['r800', 'r801', 'r1999']),
     )
     expect(model.rowsById['r1500']).toBe(kept)
-    expect(kept.index).toBe(1495)
+    expect(positionOf(kept)).toBe(1495)
     expect(shape(model)).toEqual(shape(fullBuild(grid.data())))
   })
 
@@ -205,9 +203,9 @@ describe('Сдвиги в середине data (ADR 0199)', () => {
     const change = rowModelChangeOf(model)!
     expect(change.changed).toEqual(new Set(['r10']))
     expect(model.rowsById['r10']).not.toBe(moved)
-    expect(model.rowsById['r10']!.index).toBe(1500)
+    expect(positionOf(model.rowsById['r10']!)).toBe(1500)
     expect(model.rowsById['r11']).toBe(between)
-    expect(between.index).toBe(10)
+    expect(positionOf(between)).toBe(10)
     expect(shape(model)).toEqual(shape(fullBuild(grid.data())))
 
     // Обратно издалека и несколько переносов за раз.
@@ -304,30 +302,7 @@ describe('Сдвиги в середине data (ADR 0199)', () => {
     }
   })
 
-  it('MS5: значения колонок от индекса у сдвинутых строк — по новому индексу; сортировка по такой колонке — по новым значениям', () => {
-    const columns = [
-      ...COLUMNS,
-      { id: 'place', accessorFn: (_row: Item, index: number) => index },
-    ]
-    const options = {
-      columns,
-      plugins: () => [
-        columnSortingModel({ initialSorting: [{ id: 'place', desc: true }] }),
-      ],
-      read: (table: any) => table.getSortedRowModel(),
-    }
-    const grid = host(make(500), options)
-    const row = grid.table().getCoreRowModel().rowsById['r400']!
-    expect(row.getValue('place')).toBe(400)
-    grid.set(insertAt(100, [{ id: 'x1', name: 'x1', score: 1 }])(grid.data()))
-    expect(grid.table().getCoreRowModel().rowsById['r400']).toBe(row)
-    expect(row.getValue('place')).toBe(401)
-    grid.set(removeAt(0, 5)(grid.data()))
-    expect(row.getValue('place')).toBe(396)
-    expect(shape(grid.model())).toEqual(shape(fullBuild(grid.data(), options)))
-  })
-
-  it('MS6: вставка, удаление и перенос внутри ветки — прежние объекты детей с новым index, итог как у полной сборки', () => {
+  it('MS6: вставка, удаление и перенос внутри ветки — прежние объекты детей с новым местом у хранилища, итог как у полной сборки', () => {
     const grid = host(make(300, 10))
     const kid = grid.model().rowsById['r20.3']!
     grid.transaction({
@@ -336,12 +311,12 @@ describe('Сдвиги в середине data (ADR 0199)', () => {
       index: 1,
     })
     expect(grid.model().rowsById['r20.3']).toBe(kid)
-    expect(kid.index).toBe(4)
+    expect(positionOf(kid)).toBe(4)
     expect(shape(grid.model())).toEqual(shape(fullBuild(grid.data())))
 
     grid.transaction({ parentId: 'r20', remove: ['r20.0'] })
     expect(grid.model().rowsById['r20.3']).toBe(kid)
-    expect(kid.index).toBe(3)
+    expect(positionOf(kid)).toBe(3)
     expect(shape(grid.model())).toEqual(shape(fullBuild(grid.data())))
 
     // Перенос ребёнка внутри ветки — новый `subRows` ветки.
@@ -357,7 +332,7 @@ describe('Сдвиги в середине data (ADR 0199)', () => {
     expect(shape(grid.model())).toEqual(shape(fullBuild(grid.data())))
   })
 
-  it('MS7: прежняя модель после сдвига — те же массивы и порядок; меняются только index сдвинутых строк и кэш индексных колонок', () => {
+  it('MS7: прежняя модель после сдвига — те же массивы и порядок; меняются только места сдвинутых строк, значение колонки от индекса — по месту при создании', () => {
     const columns = [
       ...COLUMNS,
       { id: 'place', accessorFn: (_row: Item, index: number) => index },
@@ -374,9 +349,9 @@ describe('Сдвиги в середине data (ADR 0199)', () => {
     expect(before.rows.map(row => row.id)).toEqual(order)
     expect(before.flatRows).toBe(flat)
     expect(Object.keys(before.rowsById).sort()).toEqual(ids)
-    expect(before.rows[900]!.index).toBe(901)
-    expect(before.rows[900]!.getValue('place')).toBe(901)
-    expect(before.rows[100]!.index).toBe(100)
+    expect(positionOf(before.rows[900]!)).toBe(901)
+    expect(before.rows[900]!.getValue('place')).toBe(900)
+    expect(positionOf(before.rows[100]!)).toBe(100)
   })
 
   it('MS8: виртуализатор получает подсказкой место первого сдвига', () => {

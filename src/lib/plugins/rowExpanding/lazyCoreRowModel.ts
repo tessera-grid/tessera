@@ -25,6 +25,7 @@ import { autoResetOnDataChange } from '../../core/incrementalCoreRowModel'
 import { handOverRowsById } from '../../core/rowsByIdHandover'
 import type { RowData, Table, TableFeatures } from '../../types'
 import { type LoadedChildren, readLoadedChildren } from './lazyChildrenFeature'
+import { positionOf, setPosition } from '../../core/rowPosition'
 
 type GetSubRows<TData> = (row: TData, index: number) => TData[] | undefined
 
@@ -210,8 +211,8 @@ export const createLazyCoreRowModel =
     const subtreeSize = (row: ModelRow): number =>
       row.subRows.reduce((size, child) => size + subtreeSize(child), 1)
 
-    const copyRow = (row: ModelRow) =>
-      constructRow(
+    const copyRow = (row: ModelRow) => {
+      const copy = constructRow(
         table as never,
         row.id,
         row.original as never,
@@ -220,6 +221,10 @@ export const createLazyCoreRowModel =
         undefined,
         row.parentId,
       ) as unknown as ModelRow
+      // Копия стоит на месте строки (ADR 0200, §5).
+      setPosition(copy, positionOf(row))
+      return copy
+    }
 
     /** Модель из прежней: новые объекты — изменённые строки с поддеревьями и их предки. */
     const patch = (

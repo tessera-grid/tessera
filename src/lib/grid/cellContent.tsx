@@ -12,6 +12,8 @@ export const renderCellContent = (
   cell: Cell<any, any, unknown>,
   labels: TableLabels,
   value: unknown = cell.getValue(),
+  /** `value` — не значение строки: его же видит рендерер ячейки (ADR 0186, §3). */
+  overridden = false,
 ) => {
   const { column } = cell
   if (
@@ -27,7 +29,18 @@ export const renderCellContent = (
       )
     }
   }
-  return flexRender(column.columnDef.cell, cell.getContext())
+  const context = cell.getContext()
+  return flexRender(
+    column.columnDef.cell,
+    overridden
+      ? {
+          ...context,
+          getValue: () => value as never,
+          renderValue: () =>
+            (value ?? context.table.options.renderFallbackValue) as never,
+        }
+      : context,
+  )
 }
 
 /** Атрибуты выравнивания ячейки и заголовка колонки (ADR 0172, DT9). */

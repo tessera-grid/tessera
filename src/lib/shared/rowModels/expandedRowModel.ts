@@ -5,13 +5,13 @@
  * модель TanStack. Смена `data` с записанной сменой модели (ADR 0194) копирует участки
  * корней с прежними детьми при любом числе корней.
  */
-import { createExpandedRowModel } from '@tanstack/react-table'
-
 import type { RowData, Table, TableFeatures } from '../../types'
 import { dataModeOf, isPaginationActive } from '../../core/dataMode'
 import { rowModelChangeOf } from '../../core/dataChanges'
 import type { NarrowState } from '../../core/definePlugin'
 import { recordRowChange } from '../../core/rowChanges'
+import { passChildren } from '../../core/rowEngine/displayChildren'
+import { walkExpanded } from './expandRows'
 
 interface ExpandRow {
   id: string
@@ -71,14 +71,27 @@ const SPLICE_LIMIT = 10_000
 const isExpandedId = (expanded: Record<string, boolean>, id: string) =>
   Object.hasOwn(expanded, id) && !!expanded[id]
 
-/** Строка и дети раскрытых строк — обход `expandRows` TanStack. */
-const walk = (row: ExpandRow, into: ExpandRow[]) => {
-  into.push(row)
-  if (row.subRows.length && row.getIsExpanded()) {
-    for (const child of row.subRows) {
-      walk(child, into)
-    }
+/**
+ * Полная сборка — как модель раскрытия TanStack: без раскрытых строк и когда раскрывает страница
+ * — вход как есть, иначе строки по детям показа.
+ */
+const expandModel = (
+  table: ExpandTable,
+  input: ExpandModel,
+  expanded: Expanded,
+): ExpandModel => {
+  if (
+    !input.rows.length ||
+    (expanded !== true && !Object.keys(expanded).length) ||
+    !expandsHere(table)
+  ) {
+    return input
   }
+  const rows: ExpandRow[] = []
+  for (const row of input.rows) walkExpanded(input, row, rows)
+  const output = { rows, flatRows: input.flatRows, rowsById: input.rowsById }
+  passChildren(output, input)
+  return output
 }
 
 /** Начала участков корней в выходных строках. */
@@ -150,7 +163,6 @@ export const createIncrementalExpandedRowModel =
   <TFeatures extends TableFeatures, TData extends RowData = any>() =>
   (table: Table<TFeatures, TData>) => {
     const t = table as unknown as ExpandTable
-    const stock = createExpandedRowModel<TFeatures, TData>()(table)
     let last: Built | undefined
 
     const full = (
@@ -158,8 +170,8 @@ export const createIncrementalExpandedRowModel =
       expanded: Expanded,
       paginate: unknown,
     ): Built => {
-      const output = stock() as unknown as ExpandModel
       const expands = expandsHere(t)
+      const output = expandModel(t, input, expanded)
       return {
         input,
         expanded,
@@ -189,7 +201,7 @@ export const createIncrementalExpandedRowModel =
         const from = prev.starts[at]!
         const removed = prev.starts[at + 1]! - from
         const piece: ExpandRow[] = []
-        walk(roots[at]!, piece)
+        walkExpanded(input, roots[at]!, piece)
         rows.splice(from, removed)
         for (let i = 0; i < piece.length; i += SPLICE_LIMIT) {
           rows.splice(from + i, 0, ...piece.slice(i, i + SPLICE_LIMIT))
@@ -252,7 +264,7 @@ export const createIncrementalExpandedRowModel =
             rows.push(before[k]!)
           }
         } else {
-          walk(root, rows)
+          walkExpanded(input, root, rows)
         }
       }
       starts[roots.length] = rows.length

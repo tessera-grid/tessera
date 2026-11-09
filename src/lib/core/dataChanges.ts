@@ -8,6 +8,7 @@
 import { constructRow, makeObjectMap } from '@tanstack/react-table'
 
 import { recordRowChange } from './rowChanges'
+import { positionOf, setPosition } from './rowPosition'
 import { handOverRowsById } from './rowsByIdHandover'
 
 export interface ChangeRow {
@@ -92,11 +93,11 @@ const movedPositions = (
   let ordered = true
   for (const old of olds) {
     if (!old) continue
-    if (old.index < last) {
+    if (positionOf(old) < last) {
       ordered = false
       break
     }
-    last = old.index
+    last = positionOf(old)
   }
   if (ordered) return new Set()
   // Терпеливая сортировка: tails[k] — место с наименьшим концом цепочки длины k + 1.
@@ -109,7 +110,7 @@ const movedPositions = (
     let hi = tails.length
     while (lo < hi) {
       const mid = (lo + hi) >>> 1
-      if (olds[tails[mid]!]!.index < old.index) lo = mid + 1
+      if (positionOf(olds[tails[mid]!]!) < positionOf(old)) lo = mid + 1
       else hi = mid
     }
     if (lo > 0) before[p] = tails[lo - 1]!
@@ -126,29 +127,9 @@ const movedPositions = (
   return moved
 }
 
-/**
- * Новое место строки — тот же объект (ADR 0199, §1): значения колонок, чей `accessorFn`
- * принимает индекс, считаются заново.
- */
-const setRowIndex = (
-  row: ChangeRow,
-  index: number,
-  byIndex: ReadonlySet<string>,
-) => {
-  row.index = index
-  if (!byIndex.size) return
-  const r = row as ChangeRow & {
-    _uniqueValuesCache?: Record<string, unknown>
-    _groupingValuesCache?: Record<string, unknown>
-  }
-  for (const cache of [
-    r._valuesCache,
-    r._uniqueValuesCache,
-    r._groupingValuesCache,
-  ]) {
-    if (!cache) continue
-    for (const key of byIndex) delete cache[key]
-  }
+/** Новое место строки — тот же объект, место знает хранилище (ADR 0200, §5). */
+const setRowIndex = (row: ChangeRow, index: number) => {
+  setPosition(row, index)
 }
 
 const subtreeIds = (row: ChangeRow, into: Set<string>) => {
@@ -175,25 +156,6 @@ export const patchCoreModel = <TData>(
   const inserted = new Set<string>()
   const removed = new Set<string>()
   let failed = false
-  // Колонки, чьё значение зависит от индекса строки: `accessorFn(original, index)`.
-  let byIndex: Set<string> | undefined
-  const indexColumns = () =>
-    new Set(
-      t
-        .getAllFlatColumns()
-        .filter(column => (column.accessorFn?.length ?? 0) > 1)
-        .map(column => column.id),
-    )
-  const carryValues = (from: ChangeRow, to: ChangeRow) => {
-    byIndex ??= indexColumns()
-    const values = from._valuesCache
-    const into = to._valuesCache
-    if (!values || !into) return
-    for (const key in values) {
-      if (!byIndex.has(key)) into[key] = values[key]
-    }
-  }
-
   const spend = (count: number) => {
     budget -= count
     if (budget < 0) failed = true
@@ -206,8 +168,7 @@ export const patchCoreModel = <TData>(
   }
   const applyShifts = () => {
     if (!shifts.length) return
-    byIndex ??= indexColumns()
-    for (const [row, index] of shifts) setRowIndex(row, index, byIndex)
+    for (const [row, index] of shifts) setRowIndex(row, index)
   }
 
   const construct = (
@@ -305,7 +266,7 @@ export const patchCoreModel = <TData>(
       const isMoved = moved.has(i)
       if (old.original === original && !isMoved) {
         // Сдвиг: тот же объект строки с новым местом (ADR 0199, §1).
-        if (old.index !== i) shiftRow(old, i)
+        if (positionOf(old) !== i) shiftRow(old, i)
         rows[i] = old
         continue
       }
@@ -316,7 +277,6 @@ export const patchCoreModel = <TData>(
         // Перенос: данные и поддерево прежние, место другое.
         row.originalSubRows = old.originalSubRows
         row.subRows = old.subRows
-        carryValues(old, row)
         rows[i] = row
         continue
       }
@@ -493,7 +453,6 @@ export const patchCoreModel = <TData>(
       if (getSubRows) row.originalSubRows = getSubRows(original, at)
       if (old) {
         // Перенос — те же данные на другом месте; иначе — новые данные строки.
-        if (old.original === original) carryValues(old, row)
         lostById.delete(id)
         changed.add(id)
         previous.set(id, old)
@@ -510,18 +469,17 @@ export const patchCoreModel = <TData>(
     }
 
     // Смена собрана — у прежних строк середины и конца новые места; начало не сдвинулось.
-    byIndex ??= indexColumns()
     for (let k = 0; k < middle.length; k++) {
       const from = keptAt[k]!
       if (from < 0) continue
       const old = prevRows[from]!
-      if (old.index !== head + k) setRowIndex(old, head + k, byIndex)
+      if (positionOf(old) !== head + k) setRowIndex(old, head + k)
       middle[k] = old
     }
     const end = prevRows.slice(oldEnd)
     if (n1 !== n0) {
       for (let k = 0; k < end.length; k++) {
-        setRowIndex(end[k]!, newEnd + k, byIndex)
+        setRowIndex(end[k]!, newEnd + k)
       }
     }
     const rows = prevRows.slice(0, head).concat(middle, end)

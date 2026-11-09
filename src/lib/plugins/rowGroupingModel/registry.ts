@@ -13,7 +13,7 @@ import { definePlugin } from '../../core/definePlugin'
 import { serverRowModelReason } from '../../core/pluginDiagnostics'
 import { aggregationFeatures } from '../../shared/aggregation'
 import { rowExpandingModel } from '../rowExpandingModel/registry'
-import { createIdleAwareGroupedRowModel } from './groupedRowModel'
+import { createGroupStage, stagedGroupValue } from './groupStage'
 import { objectGroupingFeature } from './objectGrouping'
 import { stageSlot } from '../../core/rowEngine/engine'
 
@@ -32,7 +32,7 @@ export interface RowGroupingModelOptions {
 export const rowGroupingModelFeatures = {
   columnGroupingFeature,
   objectGroupingFeature,
-  groupedRowModel: stageSlot('group', createIdleAwareGroupedRowModel()),
+  groupedRowModel: stageSlot('group', createGroupStage()),
   ...aggregationFeatures,
 }
 
@@ -59,5 +59,6 @@ export const rowGroupingModel = definePlugin<RowGroupingModelOptions>()({
     enableGrouping: o.enabled !== false,
     groupRows: o.enabled !== false,
     groupedColumnMode: false,
+    ...(o.enabled !== false ? { cellValueOverride: stagedGroupValue } : {}),
   }),
 })

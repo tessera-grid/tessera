@@ -5,13 +5,13 @@
  * который включает эту модель.
  */
 import {
-  createPaginatedRowModel,
   type PaginationState,
   rowPaginationFeature,
 } from '@tanstack/react-table'
 
 import { definePlugin } from '../../core/definePlugin'
 import { paginationInertReason, resetPageOnReorder } from './model'
+import { createPageStage } from './pageStage'
 import { stageSlot } from '../../core/rowEngine/engine'
 
 export const DEFAULT_PAGE_SIZE = 25
@@ -35,7 +35,7 @@ export interface PaginationModelOptions {
 /** Фичи модели пагинации; интерфейс несёт те же — по ним выводится тип среза. */
 export const paginationModelFeatures = {
   rowPaginationFeature,
-  paginatedRowModel: stageSlot('page', createPaginatedRowModel()),
+  paginatedRowModel: stageSlot('page', createPageStage()),
 }
 
 export const paginationModel = definePlugin<PaginationModelOptions>()({

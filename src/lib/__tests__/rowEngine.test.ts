@@ -20,14 +20,17 @@ import { injectServiceColumns } from '../core/createColumns'
 import { resolveHooks } from '../core/createHooks'
 import { buildTesseraFeatures, foldEntries, foldHooks } from '../core/features'
 import { STAGES, stageOfSlot } from '../core/rowEngine/engine'
+import { positionOf } from '../core/rowPosition'
 import {
   columnFilteringModel,
   columnSortingModel,
   paginationModel,
   quickSearchModel,
+  rowExpanding,
   rowExpandingModel,
   rowGroupingModel,
 } from '../plugins'
+import { setLoadedAnswer } from '../plugins/rowExpanding/lazyChildrenFeature'
 
 interface Item {
   id: string
@@ -213,6 +216,128 @@ describe('Движок строк (ADR 0200)', () => {
         data: [...(o.data as Item[]), item('y', 'Rome')],
       }))
       expectCore('дописывание в data')
+    }
+  })
+})
+
+describe('Место строки (ADR 0200, §5)', () => {
+  it('EN5: место строки знает хранилище — после вставки в середину сдвинутая строка прежним объектом с прежним index, positionOf — новое место, accessorFn получает индекс при создании, равные при сортировке — по месту, как у полной сборки', () => {
+    const columns = [
+      ...COLUMNS,
+      { id: 'pos', accessorFn: (_row: Item, index: number) => index },
+    ]
+    const sorted = (extra: object) =>
+      build([columnSortingModel()], { columns, ...extra })
+    const table = sorted({})
+    const shifted = table.getCoreRowModel().rowsById.e
+    expect(shifted.getValue('pos')).toBe(4)
+    const next = [...DATA.slice(0, 2), item('x', 'Rome'), ...DATA.slice(2)]
+    table.setOptions((o: any) => ({ ...o, data: next }))
+    const core = table.getCoreRowModel()
+    expect(core.rowsById.e).toBe(shifted)
+    expect(shifted.index).toBe(4)
+    expect(positionOf(shifted)).toBe(5)
+    expect(core.rows.map((row: any) => positionOf(row))).toEqual(
+      core.rows.map((_: unknown, i: number) => i),
+    )
+    expect(shifted.getValue('pos')).toBe(4)
+
+    table.setSorting([{ id: 'city', desc: false }])
+    const fresh = sorted({ data: next })
+    fresh.setSorting([{ id: 'city', desc: false }])
+    expect(ids(table.getRowModel())).toEqual(ids(fresh.getRowModel()))
+  })
+})
+
+describe('Хранилище строк (ADR 0200, этап 3)', () => {
+  it('EN4: строка создаётся один раз на объект данных — прежний объект в новом data остаётся прежней строкой, новый объект — новая строка', () => {
+    const table = build([])
+    const before = table.getCoreRowModel().rowsById
+    const next = DATA.map((row, i) =>
+      i === 2 ? { ...row, city: 'Lyon' } : row,
+    )
+    table.setOptions((o: any) => ({ ...o, data: next }))
+    const after = table.getCoreRowModel().rowsById
+    for (const row of DATA) {
+      if (row.id === 'c') expect(after.c).not.toBe(before.c)
+      else expect(after[row.id], row.id).toBe(before[row.id])
+    }
+    expect(after.c.original).toBe(next[2])
+  })
+
+  it('EN17: ответ ленивых детей добавляет ветку без обхода других корней — getRowId зовётся только для строк ветки, прочие корни — прежние объекты', () => {
+    let calls: string[] = []
+    const table = build(
+      [
+        rowExpanding({
+          hasChildren: (row: { original: Item }) => row.original.id === 'a',
+          loadChildren: () => [],
+        }),
+      ],
+      {
+        getRowId: (row: Item) => {
+          calls.push(row.id)
+          return row.id
+        },
+      },
+    )
+    const before = table.getCoreRowModel()
+    calls = []
+    setLoadedAnswer(table, (prev: object) => ({
+      ...prev,
+      a: [item('a1', 'Lima'), item('a2', 'Oslo')],
+    }))
+    const after = table.getCoreRowModel()
+    expect(after).not.toBe(before)
+    expect([...new Set(calls)].sort()).toEqual(['a', 'a1', 'a2'])
+    for (const id of ['b', 'c', 'd', 'e', 'f', 'g', 'h']) {
+      expect(after.rowsById[id], id).toBe(before.rowsById[id])
+    }
+    expect(after.rowsById.a.subRows.map((row: any) => row.id)).toEqual([
+      'a1',
+      'a2',
+    ])
+  })
+
+  it('EN18: смена data — замена, вставка, удаление и перенос в середине — не меняет опубликованных строк и словаря прежней модели; итог как у полной сборки', () => {
+    const table = build([])
+    const fields = (row: any) => ({
+      id: row.id,
+      index: row.index,
+      depth: row.depth,
+      parentId: row.parentId,
+      original: row.original,
+      subRows: row.subRows,
+    })
+    const steps: ((data: Item[]) => Item[])[] = [
+      data => data.map((row, i) => (i === 3 ? { ...row, city: 'Lyon' } : row)),
+      data => [...data.slice(0, 2), item('x', 'Rome'), ...data.slice(2)],
+      data => data.filter((_, i) => i !== 4),
+      data => [data[5]!, ...data.slice(0, 5), ...data.slice(6)],
+    ]
+    let data = DATA
+    for (const [step, change] of steps.entries()) {
+      const model = table.getCoreRowModel()
+      const dict = model.rowsById
+      const entries = Object.entries(dict)
+      const snapshot = new Map<any, ReturnType<typeof fields>>(
+        model.flatRows.map((row: any) => [row, fields(row)]),
+      )
+      data = change(data)
+      table.setOptions((o: any) => ({ ...o, data }))
+      const next = table.getCoreRowModel()
+      expect(next, `шаг ${step}`).not.toBe(model)
+      for (const [row, before] of snapshot) {
+        expect(fields(row), `шаг ${step}: ${row.id}`).toEqual(before)
+      }
+      expect(Object.entries(dict), `шаг ${step}: словарь`).toEqual(entries)
+      const fresh = build([], { data })
+      expect(
+        next.rows.map((row: any) => [row.id, positionOf(row)]),
+        `шаг ${step}: места`,
+      ).toEqual(
+        fresh.getCoreRowModel().rows.map((row: any) => [row.id, row.index]),
+      )
     }
   })
 })

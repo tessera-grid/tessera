@@ -20,6 +20,7 @@ import {
   shiftServerRow,
 } from './serverMove'
 import type { RowDraggingHooks } from './types'
+import { positionOf } from '../../core/rowPosition'
 
 interface OrderItem {
   id: string
@@ -94,7 +95,7 @@ const commit = (
     fromAnchors: (from?.subRows ?? (table as MoveTable).getCoreRowModel().rows)
       .map(sibling => sibling.id)
       .filter(id => id !== row.id),
-    fromIndex: row.index,
+    fromIndex: positionOf(row),
     dragIndex,
     hoverIndex,
     parentId: to.parent?.id,
@@ -104,7 +105,11 @@ const commit = (
       ? {
           lazy: {
             original: row.original,
-            from: { parentId: from?.id, index: row.index, lazy: isLazy(from) },
+            from: {
+              parentId: from?.id,
+              index: positionOf(row),
+              lazy: isLazy(from),
+            },
             to: {
               parentId: to.parent?.id,
               index: to.index,
@@ -146,7 +151,7 @@ export const canMoveRow = (
   // Перестановки внутри клиентской группы нет (ADR 0186, §4).
   if (isClientGrouped(table)) return false
   const r = row as MoveRow
-  const to = r.index + direction
+  const to = positionOf(r) + direction
   return to >= 0 && to < siblingsOf(r, table).length
 }
 
@@ -165,7 +170,7 @@ export const moveRow = (
   const r = row as MoveRow
   const t = table as MoveTable
   const parent = r.getParentRow()
-  const from = r.index
+  const from = positionOf(r)
   const to = from + direction
   const shown = t.getRowModel().rows
   const neighbour = siblingsOf(r, table)[to]
@@ -187,7 +192,9 @@ export const moveRow = (
 /** Предыдущая корневая строка-группа, в которую вкладывается строка. */
 const nestTargetOf = (row: MoveRow, table: unknown) => {
   if (row.getParentRow() || row.subRows.length > 0) return undefined
-  const target = (table as MoveTable).getCoreRowModel().rows[row.index - 1]
+  const target = (table as MoveTable).getCoreRowModel().rows[
+    positionOf(row) - 1
+  ]
   return target && canNestInto(target, table) ? target : undefined
 }
 
@@ -219,12 +226,12 @@ export const nestRow = (row: unknown, table: unknown) => {
     hoverIndex,
     () =>
       onRowOrderChangeOf(table)?.(prev => {
-        const item = prev[r.index]
+        const item = prev[positionOf(r)]
         if (!item) {
           return prev
         }
         return prev
-          .filter((_, i) => i !== r.index)
+          .filter((_, i) => i !== positionOf(r))
           .map(entry =>
             entry.id === target.id
               ? {
@@ -266,24 +273,30 @@ export const unnestRow = (row: unknown, table: unknown) => {
   const shown = (table as MoveTable).getRowModel().rows
   const dragIndex = shown.findIndex(item => item.id === r.id)
   const hoverIndex = shown.findIndex(item => item.id === parent.id)
-  commit(table, r, { index: parent.index + 1 }, dragIndex, hoverIndex, () =>
-    onRowOrderChangeOf(table)?.(prev => {
-      const parentIndex = prev.findIndex(item => item.id === parent.id)
-      const item = prev[parentIndex]?.subRows?.[r.index]
-      if (!item) {
-        return prev
-      }
-      const next = prev.map(entry =>
-        entry.id === parent.id
-          ? {
-              ...entry,
-              subRows: entry.subRows!.filter((_, i) => i !== r.index),
-            }
-          : entry,
-      )
-      next.splice(parentIndex + 1, 0, { ...item, parentId: undefined })
-      return next
-    }),
+  commit(
+    table,
+    r,
+    { index: positionOf(parent) + 1 },
+    dragIndex,
+    hoverIndex,
+    () =>
+      onRowOrderChangeOf(table)?.(prev => {
+        const parentIndex = prev.findIndex(item => item.id === parent.id)
+        const item = prev[parentIndex]?.subRows?.[positionOf(r)]
+        if (!item) {
+          return prev
+        }
+        const next = prev.map(entry =>
+          entry.id === parent.id
+            ? {
+                ...entry,
+                subRows: entry.subRows!.filter((_, i) => i !== positionOf(r)),
+              }
+            : entry,
+        )
+        next.splice(parentIndex + 1, 0, { ...item, parentId: undefined })
+        return next
+      }),
   )
 }
 
