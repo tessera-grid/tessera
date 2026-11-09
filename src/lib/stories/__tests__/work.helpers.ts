@@ -1,5 +1,11 @@
 import { commands } from 'vitest/browser'
 
+import {
+  STAGES,
+  engineOf,
+  stageOfSlot,
+  type StageId,
+} from '../../core/rowEngine/engine'
 import { onReactCommit, type FiberRoot } from './reactCommits'
 import type { RenderMetrics } from './work.commands'
 
@@ -121,10 +127,15 @@ export type RowModelName =
   | 'expandedRowModel'
   | 'paginatedRowModel'
 
+/** Стадия движка за слотом модели. */
+const STAGE_OF_MODEL = Object.fromEntries(
+  STAGES.map(step => [step.slot, step]),
+) as Record<string, (typeof STAGES)[number] | undefined>
+
 /**
- * Счёт пересборок моделей: мемоизированные модели конвейера лежат в `table._rowModels`,
- * общем у экземпляра ядра и его копий из `useTable`, и звенья вызывают друг друга через
- * него. Модель ленивая: новый результат — это пересборка.
+ * Счёт пересборок моделей. Своя стадия (ADR 0200) — по выходам движка: тело читает строки у
+ * него, мимо слотов TanStack. Модель ядра и чужой слот — в `table._rowModels`, общем у экземпляра
+ * ядра и его копий из `useTable`. Модель ленивая: новый результат — это пересборка.
  */
 const watchModels = (
   table: object | undefined,
@@ -135,11 +146,21 @@ const watchModels = (
   if (names.length === 0) return { builds, stop: () => {} }
   const source = table as {
     getRowModel: () => unknown
+    options: { features?: Record<string, unknown> }
     _rowModels: Record<string, (() => unknown) | undefined>
   }
   source.getRowModel()
+  const engine = engineOf(source)
+  const output = engine.output
+  const watched = new Map<StageId, { name: string; last: unknown }>()
   const models = source._rowModels
   for (const name of names) {
+    const step = STAGE_OF_MODEL[name]
+    if (step && stageOfSlot(source.options.features?.[step.slot])) {
+      watched.set(step.id, { name, last: output(step.id) })
+      builds[name] = 0
+      continue
+    }
     const original = models[name]
     if (!original) throw new Error(`в конвейере нет модели ${name}`)
     let last = original()
@@ -153,6 +174,19 @@ const watchModels = (
       return result
     }
     restore.push(() => (models[name] = original))
+  }
+  if (watched.size > 0) {
+    // Стадии зовут друг друга через `engine.output`: обёртка видит и внутренние вызовы.
+    engine.output = id => {
+      const result = output(id)
+      const entry = watched.get(id)
+      if (entry && result !== entry.last) {
+        entry.last = result
+        builds[entry.name]++
+      }
+      return result
+    }
+    restore.push(() => (engine.output = output))
   }
   return { builds, stop: () => restore.forEach(fn => fn()) }
 }
