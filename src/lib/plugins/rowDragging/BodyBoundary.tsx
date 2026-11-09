@@ -48,6 +48,7 @@ import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
 import { useLatest } from '../../util/useLatest'
 import { usePredicateResult } from '../../core/renderVersion'
 import { REACT_MAJOR } from '../../util/reactVersion'
+import { rowsOf } from '../../core/rowEngine/rows'
 
 /** Перетаскиваемая строка модели; без перетаскивания строки не обходятся (D33). */
 export const findDraggableRow = <TRow,>(
@@ -171,7 +172,9 @@ const DndBodyWrapper = ({
   ) as RowDragOverlayState
 
   // Строки по индексу окна: модель TanStack или источник серверной модели (ADR 0159).
-  const modelRows = table.getRowModel().rows
+  const modelRows = rowsOf(table, 'shown').rows as Parameters<
+    typeof dragRowsOf
+  >[1]
   // Серверная модель меняет строки без новой модели и без новой ссылки `table` (ADR 0196):
   // приход ветки посреди сессии виден по номеру раскладки источника.
   const listVersion = (

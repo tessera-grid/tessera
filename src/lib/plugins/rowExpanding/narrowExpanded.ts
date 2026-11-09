@@ -13,6 +13,7 @@ import type { Row } from '../../types'
 import type { RowExpandPending } from './rowExpandingPendingFeature'
 import { isLazyRow } from './toggleRowExpanded'
 import type { RowExpandingHooks } from './types'
+import { rowsOf } from '../../core/rowEngine/rows'
 
 interface NarrowRow {
   id: string
@@ -46,7 +47,8 @@ export const narrowExpanded =
     // Серверная модель строк: «раскрыть всё» раскрывает строки окна по мере прихода
     // (ADR 0160, §1) — сужать нечего.
     if (serverRowModelReason(table)) return value
-    const { flatRows, rowsById } = table.getCoreRowModel()
+    const core = rowsOf<NarrowRow>(table, 'core')
+    const { flatRows } = core
     const pending = table.atoms.rowExpandPending?.get() ?? {}
     // Ленивая строка без детей (ответа ещё нет) и без ожидания раскрытой не видна.
     const unloaded = (row: NarrowRow) =>
@@ -84,7 +86,7 @@ export const narrowExpanded =
         ? value
         : { all: true, except: [...except] }
     }
-    const kept = Object.entries(value).filter(([id]) => allowed(rowsById[id]))
+    const kept = Object.entries(value).filter(([id]) => allowed(core.byId(id)))
     return kept.length === Object.keys(value).length
       ? value
       : Object.fromEntries(kept)

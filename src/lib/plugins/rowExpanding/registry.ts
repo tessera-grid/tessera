@@ -44,6 +44,7 @@ import {
 import type { RowExpandingHooks } from './types'
 import { rowExpandingLabels } from './labels'
 import { ownStage } from '../../core/rowEngine/engine'
+import { rowsOf } from '../../core/rowEngine/rows'
 
 export const DEFAULT_MAX_EXPANDING_DEPTH = 1
 
@@ -103,13 +104,11 @@ const hasExpandableRows: ServicePresence<RowExpandingOptions> = (
   // Скелет первой загрузки: данных ещё нет, включённое раскрытие держит колонку (SL25).
   if (context.options.loading === 'initial') return true
   if (!table) return undefined
-  return table
-    .getCoreRowModel()
-    .rows.some(
-      row =>
-        row.subRows.length > 0 ||
-        !!o.hasChildren?.(row as unknown as Row<any, any>),
-    )
+  return rowsOf<Row<any, any>>(table, 'core').rows.some(
+    row =>
+      row.subRows.length > 0 ||
+      !!o.hasChildren?.(row as unknown as Row<any, any>),
+  )
 }
 
 export const rowExpanding = definePlugin<RowExpandingOptions>()({

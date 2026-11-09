@@ -20,6 +20,7 @@ import type { RowSource } from '../rowSource'
 import { type ScrollTarget, scrollGridTo } from '../scrollGridTo'
 import { scrollLayer } from '../scrollStretch'
 import { type ScrollViewport, viewportOf } from './viewport'
+import { rowsOf } from '../rowEngine/rows'
 
 export type ScrollAlign = 'auto' | 'start' | 'center' | 'end'
 
@@ -81,7 +82,6 @@ type AnyRow = Row<any, any>
 interface ScrollTable {
   store: { state: { pagination?: { pageIndex: number; pageSize: number } } }
   getRowSource: () => RowSource<AnyRow>
-  getPreExpandedRowModel: () => { rows: AnyRow[] }
   setPageIndex?: (index: number) => void
   setExpanded?: (updater: (old: unknown) => unknown) => void
   getColumn: (
@@ -155,17 +155,22 @@ const pathTo = (table: ScrollTable, rowId: string): AnyRow[] | undefined => {
     const path = source.ancestors(rowId).map(id => source.byId(id))
     return path.every(Boolean) ? [...(path as AnyRow[]), row] : undefined
   }
-  const walk = (rows: AnyRow[], path: AnyRow[]): AnyRow[] | undefined => {
+  const view = rowsOf<AnyRow>(table, 'sorted')
+  const walk = (
+    rows: readonly AnyRow[],
+    path: AnyRow[],
+  ): AnyRow[] | undefined => {
     for (const row of rows) {
       if (row.id === rowId) return [...path, row]
-      if (row.subRows.length > 0) {
-        const found = walk(row.subRows, [...path, row])
+      const children = view.children(row)
+      if (children.length > 0) {
+        const found = walk(children, [...path, row])
         if (found) return found
       }
     }
     return undefined
   }
-  return walk(table.getPreExpandedRowModel().rows, [])
+  return walk(view.rows, [])
 }
 
 const paginationOf = (table: ScrollTable) => table.store.state.pagination
@@ -181,7 +186,7 @@ const pageOf = (table: ScrollTable, root: AnyRow): number | undefined => {
   ) {
     return undefined
   }
-  const index = table.getPreExpandedRowModel().rows.indexOf(root)
+  const index = rowsOf<AnyRow>(table, 'sorted').rows.indexOf(root)
   return index === -1 ? undefined : Math.floor(index / pagination.pageSize)
 }
 

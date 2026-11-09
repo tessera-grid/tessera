@@ -272,7 +272,15 @@ const dataRowsInGroup = (row: ModelRow) => {
 export const createClientRowSource = (table: unknown): RowSource => {
   const t = table as ModelTable
   const engine = engineOf(table as object)
-  const list = () => engine.last() as ReturnType<ModelTable['getRowModel']>
+  let settled: unknown
+  const list = () => {
+    const model = engine.last() as ReturnType<ModelTable['getRowModel']>
+    if (model !== settled) {
+      settled = model
+      engine.settle()
+    }
+    return model
+  }
   return {
     count: () => list().rows.length,
     at: index => list().rows[index],

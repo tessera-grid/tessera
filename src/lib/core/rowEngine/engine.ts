@@ -4,6 +4,8 @@
  * слоты моделей TanStack отдают выход стадии в стоковом виде (ADR 0200, §6).
  */
 
+import { releaseRowModelChange } from '../dataChanges'
+import { forgetRowChange } from '../rowChanges'
 import { hasShownChildren } from './displayChildren'
 import { stockView, type ViewKind } from './stockView'
 
@@ -83,12 +85,14 @@ interface EngineTable {
 
 /** Движок таблицы: стадии в постоянном порядке, выход стадии — вход следующей. */
 export interface RowEngine {
-  /** Выход стадии; стадия в ручном режиме и без плагина отдаёт вход. */
+  /** Выход стадии; стадия в ручном режиме, без плагина и при хранилище блоков отдаёт вход. */
   output: (id: StageId) => unknown
   /** Вход стадии: выход предыдущей стадии с плагином, без неё — модель ядра. */
   input: (id: StageId) => unknown
   /** Выход последней стадии — строки тела. */
   last: () => unknown
+  /** Конвейер досчитан: записи смен моделей отпускают прежние модели и строки (EN26). */
+  settle: () => void
 }
 
 const engines = new WeakMap<object, RowEngine>()
@@ -114,7 +118,10 @@ const createEngine = (table: object): RowEngine => {
     output: id => {
       const at = indexOf(id)
       const stage = stageAt(at)
-      if (!stage || t.options[STAGES[at]!.manual]) return engine.input(id)
+      // Хранилище блоков (ADR 0138): порядок, отбор и группы — с сервера, стадии не идут.
+      if (!stage || t.options[STAGES[at]!.manual] || t.options.getRowSource) {
+        return engine.input(id)
+      }
       let run = runs.get(id)
       if (!run) {
         run = stage.create(table)
@@ -127,6 +134,17 @@ const createEngine = (table: object): RowEngine => {
         if (slotAt(at)) return outputAt(at)
       }
       return t.getCoreRowModel()
+    },
+    settle: () => {
+      // Подсказку виртуализатору спрашивают только у итогового списка: прочие отпускаются.
+      const last = (engine.last() as { rows: object }).rows
+      const release = (model: object) => {
+        releaseRowModelChange(model)
+        const { rows } = model as { rows: object }
+        if (rows !== last) forgetRowChange(rows)
+      }
+      release(t.getCoreRowModel() as object)
+      for (const step of STAGES) release(engine.output(step.id) as object)
     },
   }
   return engine
@@ -172,21 +190,7 @@ const makeSlot = <F extends SlotFactory>(stage: RowStage): F => {
   return slot
 }
 
-/**
- * Слот модели TanStack — обёртка над стадией с прежней фабрикой: фабрика сама читает свой вход
- * через модели TanStack, а они — выходы стадий движка (ADR 0200, §10).
- */
-export const stageSlot = <F extends SlotFactory>(id: StageId, factory: F): F =>
-  makeSlot<F>({
-    id,
-    create: table => {
-      const model = factory(table as never)
-      return () => model()
-    },
-  })
-
-/** Своя стадия: вход берёт у движка (ADR 0200, §3). */
-/** Слот своей стадии: его тип годится любому слоту модели в карте фич. */
+/** Слот своей стадии: вход берёт у движка (ADR 0200, §3); тип годится любому слоту модели. */
 type OwnSlot = (table: unknown) => () => never
 
 export const ownStage = <F extends SlotFactory = OwnSlot>(

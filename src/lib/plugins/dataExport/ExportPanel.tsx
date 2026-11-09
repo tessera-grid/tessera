@@ -38,6 +38,7 @@ import type { ExportSettings } from '../dataExportModel/types'
 import styles from './ExportPanel.module.css'
 import { useFinalFocus } from '../../ui/Popup/finalFocus'
 import { dataExportLabels } from './labels'
+import { rowsOf } from '../../core/rowEngine/rows'
 
 export interface ExportPanelProps {
   table: Table<any, any>
@@ -196,7 +197,7 @@ export const ExportPanel = ({
   // Лента без серверной выгрузки: «все строки» — только загруженные (ADR 0081).
   const loaded =
     !exportsOnServer(table) && table.options.partialData
-      ? table.getCoreRowModel().rows.length
+      ? rowsOf(table, 'core').rows.length
       : undefined
 
   const columnLabel = (value: string) =>

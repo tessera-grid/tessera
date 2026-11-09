@@ -12,6 +12,7 @@ import {
   subRowsOf,
 } from '../rowSelectionModel/selectionHelpers'
 import type { SelectAllScope } from './types'
+import { rowsOf } from '../../core/rowEngine/rows'
 
 interface ScopeTable {
   options: { rowSelectionSelectAll?: SelectAllScope }
@@ -33,7 +34,9 @@ const pageRows = (t: ScopeTable) => {
     rows.push(row)
     row.subRows.forEach(walk)
   }
-  for (const row of t.getRowModel().rows) if (row.depth === 0) walk(row)
+  for (const row of rowsOf<Row<any, any>>(t, 'shown').rows) {
+    if (row.depth === 0) walk(row)
+  }
   return rows
 }
 
@@ -44,9 +47,9 @@ export const scopeRowsOf = (
   const t = table as ScopeTable
   const rows =
     scope === 'all'
-      ? t.getCoreRowModel().flatRows
+      ? [...rowsOf<Row<any, any>>(t, 'core').flatRows]
       : scope === 'filtered'
-        ? t.getFilteredRowModel().flatRows
+        ? [...rowsOf<Row<any, any>>(t, 'filtered').flatRows]
         : pageRows(t)
   // При группировке строки данных вложены в группы, а строки выбора — только они (ADR 0185, §5).
   const nested = !!subRowsOf(table) || isGroupingActive(table)

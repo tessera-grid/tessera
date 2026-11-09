@@ -9,7 +9,7 @@ import { constructRow, makeObjectMap } from '@tanstack/react-table'
 
 import { recordRowChange } from './rowChanges'
 import { positionOf, setPosition } from './rowPosition'
-import { handOverRowsById } from './rowsByIdHandover'
+import { RowDict, dictModel, editDictOf } from './rowEngine/rowDict'
 
 export interface ChangeRow {
   id: string
@@ -25,7 +25,7 @@ export interface ChangeRow {
 export interface ChangeModel {
   rows: ChangeRow[]
   flatRows: ChangeRow[]
-  rowsById: Record<string, ChangeRow>
+  readonly rowsById: Record<string, ChangeRow>
 }
 
 /** Смена модели относительно прежней: id строк по виду смены, на любой глубине. */
@@ -39,14 +39,19 @@ export interface RowModelChange {
   removed: ReadonlySet<string>
   /**
    * Строки вне `changed`, `inserted`, `removed` — прежние объекты в прежнем порядке; места
-   * могли сдвинуться, `index` у них новый (ADR 0199, §3). `previous` — прежние объекты
-   * изменённых, перенесённых и удалённых строк.
+   * могли сдвинуться, `index` у них новый (ADR 0199, §3).
    */
   inPlace?: boolean
+  /**
+   * Прежние объекты изменённых, перенесённых и удалённых строк: стадии берут прежнее отсюда, а не
+   * из словаря прежней модели — хранилище меняется на месте (ADR 0200, §2, EN32).
+   */
   previous?: ReadonlyMap<string, object>
 }
 
 const changes = new WeakMap<object, RowModelChange>()
+/** Отпущенная запись: стадии её не применяют — смена уже прочитана всеми. */
+const RELEASED: object = Object.freeze({})
 
 /** Смена, с которой собрана модель; у модели полной сборки её нет. */
 export const rowModelChangeOf = (model: object): RowModelChange | undefined =>
@@ -58,6 +63,8 @@ export const recordRowModelChange = (
   change: RowModelChange,
 ) => {
   changes.set(model, change)
+  // Запись прежней модели больше не прочтут: цепочка моделей держала бы прежние строки (EN26).
+  changes.delete(change.prev)
   const before = (change.prev as { rows?: readonly object[] }).rows
   const { rows } = model
   if (!before || rows === before) return
@@ -65,6 +72,17 @@ export const recordRowModelChange = (
   let from = 0
   while (from < end && rows[from] === before[from]) from++
   recordRowChange(rows, before, from)
+}
+
+/**
+ * Смена прочитана всеми стадиями (ADR 0200, EN26): запись остаётся видом смены, а прежняя модель
+ * и прежние объекты строк отпускаются — удалённая строка уходит из памяти.
+ */
+export const releaseRowModelChange = (model: object) => {
+  const change = changes.get(model)
+  if (change && change.prev !== RELEASED) {
+    changes.set(model, { ...change, prev: RELEASED, previous: undefined })
+  }
 }
 
 /** Доля строк, после которой полная сборка не дороже инкремента. */
@@ -353,16 +371,21 @@ export const patchCoreModel = <TData>(
     for (const i of replaced) previous.set(prevRows[i]!.id, prevRows[i]!)
     const changedRows = replaced.map(i => place(i, prevRows[i]!.id))
     const addedRows = added.map(([i, id]) => place(i, id))
-    const rowsById = handOverRowsById(prev) as Record<string, ChangeRow>
+    const { dict, writer } = editDictOf(prev)
     for (const row of changedRows) {
-      rowsById[row.id] = row
+      writer.set(row.id, row)
       changed.add(row.id)
     }
     for (const row of addedRows) {
-      rowsById[row.id] = row
+      writer.set(row.id, row)
       inserted.add(row.id)
     }
-    const model: ChangeModel = { rows, flatRows: rows.slice(), rowsById }
+    const model = dictModel(
+      dict,
+      writer.version,
+      rows,
+      rows.slice(),
+    ) as ChangeModel
     recordRowModelChange(model, {
       prev,
       changed,
@@ -483,10 +506,15 @@ export const patchCoreModel = <TData>(
       }
     }
     const rows = prevRows.slice(0, head).concat(middle, end)
-    const rowsById = handOverRowsById(prev) as Record<string, ChangeRow>
-    for (const id of removed) delete rowsById[id]
-    for (const row of placed) rowsById[row.id] = row
-    const model: ChangeModel = { rows, flatRows: rows.slice(), rowsById }
+    const { dict, writer } = editDictOf(prev)
+    for (const id of removed) writer.delete(id)
+    for (const row of placed) writer.set(row.id, row)
+    const model = dictModel(
+      dict,
+      writer.version,
+      rows,
+      rows.slice(),
+    ) as ChangeModel
     recordRowModelChange(model, {
       prev,
       changed,
@@ -515,7 +543,16 @@ export const patchCoreModel = <TData>(
   walk(rows)
   const rowsById = makeObjectMap<ChangeRow>()
   for (const row of flatRows) rowsById[row.id] = row
-  const model: ChangeModel = { rows, flatRows, rowsById }
-  recordRowModelChange(model, { prev, changed, inserted, removed })
+  const dict = new RowDict(rowsById)
+  const model = dictModel(dict, dict.version(), rows, flatRows) as ChangeModel
+  // Прежние объекты — из словаря, который ядро ещё не меняло (ADR 0200, §2, EN32).
+  const previous = new Map<string, object>()
+  for (const ids of [changed, removed]) {
+    for (const id of ids) {
+      const old = prev.rowsById[id]
+      if (old) previous.set(id, old)
+    }
+  }
+  recordRowModelChange(model, { prev, changed, inserted, removed, previous })
   return model
 }

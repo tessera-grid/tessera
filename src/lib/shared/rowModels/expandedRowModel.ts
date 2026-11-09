@@ -15,6 +15,7 @@ import { walkExpanded } from './expandRows'
 
 interface ExpandRow {
   id: string
+  original: unknown
   parentId?: string
   subRows: ExpandRow[]
   getIsExpanded: () => boolean
@@ -89,7 +90,13 @@ const expandModel = (
   }
   const rows: ExpandRow[] = []
   for (const row of input.rows) walkExpanded(input, row, rows)
-  const output = { rows, flatRows: input.flatRows, rowsById: input.rowsById }
+  const output = {
+    rows,
+    flatRows: input.flatRows,
+    get rowsById() {
+      return input.rowsById
+    },
+  }
   passChildren(output, input)
   return output
 }
@@ -231,7 +238,9 @@ export const createIncrementalExpandedRowModel =
         output: {
           rows,
           flatRows: input.flatRows,
-          rowsById: input.rowsById,
+          get rowsById() {
+            return input.rowsById
+          },
         },
         patchable: true,
         starts,
@@ -268,15 +277,29 @@ export const createIncrementalExpandedRowModel =
         }
       }
       starts[roots.length] = rows.length
+      // Копия строки с теми же данными (родитель ответа ленивых детей) — не смена места.
       let from = 0
       const end = Math.min(rows.length, before.length)
-      while (from < end && rows[from] === before[from]) from++
+      while (
+        from < end &&
+        (rows[from] === before[from] ||
+          (rows[from]!.id === before[from]!.id &&
+            rows[from]!.original === before[from]!.original))
+      ) {
+        from++
+      }
       recordRowChange(rows, before, from)
       return {
         input,
         expanded,
         paginate,
-        output: { rows, flatRows: input.flatRows, rowsById: input.rowsById },
+        output: {
+          rows,
+          flatRows: input.flatRows,
+          get rowsById() {
+            return input.rowsById
+          },
+        },
         patchable: expanded !== true,
         starts,
       }

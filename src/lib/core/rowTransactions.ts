@@ -8,6 +8,7 @@ import { logWarn } from '../util/logger'
 import { reportAction } from './debugActions'
 import { expectTransactionOutcome } from './transactionOutcome'
 import { positionOf } from './rowPosition'
+import { rowsOf } from './rowEngine/rows'
 
 export interface RowTransaction<TData = any> {
   /** Новые строки; без `index` — в конец уровня (на сервере — перезапрос окна). */
@@ -65,10 +66,10 @@ const placesOf = (
   ids: readonly string[],
   parent: TransactionRow | undefined,
 ): Map<string, number> | undefined => {
-  const { rowsById } = t.getCoreRowModel()
+  const core = rowsOf<TransactionRow>(t, 'core')
   const places = new Map<string, number>()
   for (const id of ids) {
-    const row = rowsById[id]
+    const row = core.byId(id)
     if (!row) continue
     if (
       row.parentId !== parent?.id ||
@@ -142,14 +143,14 @@ const nextDataOf = (
   }
   // Дети ветки пишутся в поле `subRows` новых объектов её и предков.
   if (t.options.getSubRows !== defaultGetSubRows) return 'unwritable'
-  const { rowsById } = t.getCoreRowModel()
-  const parent = rowsById[transaction.parentId]
+  const core = rowsOf<TransactionRow>(t, 'core')
+  const parent = core.byId(transaction.parentId)
   if (!parent) return 'branchNotLoaded'
   const path: TransactionRow[] = []
   for (
     let row: TransactionRow | undefined = parent;
     row;
-    row = row.parentId === undefined ? undefined : rowsById[row.parentId]
+    row = row.parentId === undefined ? undefined : core.byId(row.parentId)
   ) {
     path.unshift(row)
   }
@@ -207,11 +208,11 @@ export const applyRowTransaction = (
     )
     return 'unavailable'
   }
-  const { rowsById } = t.getCoreRowModel()
+  const core = rowsOf<TransactionRow>(t, 'core')
   expectTransactionOutcome(
     table,
     added,
-    (transaction.remove ?? []).filter(id => rowsById[id] !== undefined),
+    (transaction.remove ?? []).filter(id => core.byId(id) !== undefined),
   )
   onDataChange(next, transaction)
   return 'applied'

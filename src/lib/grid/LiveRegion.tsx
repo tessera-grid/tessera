@@ -11,6 +11,7 @@ import type { TableLabels } from '../core/localization'
 import { useTableState } from '../core/reactivity'
 
 import hidden from '../ui/visuallyHidden.module.css'
+import { hasRowsView, rowsOf } from '../core/rowEngine/rows'
 
 interface LiveRegionProps {
   table: unknown
@@ -116,16 +117,15 @@ export const LiveRegion = ({
   }) as string
   const filtersChanged = useRef(false)
   useOnChange(filters, (next, prev) => {
-    const t = table as { getFilteredRowModel?: () => { rows: unknown[] } }
     const [nextFilters, nextSearch] = JSON.parse(next) as unknown[]
     const [prevFilters, prevSearch] = JSON.parse(prev) as unknown[]
     const onServer =
       (JSON.stringify(nextFilters) !== JSON.stringify(prevFilters) &&
         dataModeOf(table, 'filtering') === 'server') ||
       (nextSearch !== prevSearch && dataModeOf(table, 'search') === 'server')
-    if (onServer || !t.getFilteredRowModel) return
+    if (onServer || !hasRowsView(table, 'filtered')) return
     filtersChanged.current = true
-    const count = t.getFilteredRowModel().rows.length
+    const count = rowsOf(table, 'filtered').rows.length
     announceLabel(table, l => l.announceFilteredRows(count))
   })
 

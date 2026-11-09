@@ -3,11 +3,11 @@
  * данных, иначе — сохранённый ответ `loadChildren`. Смена ответов при тех же `data`
  * собирает модель из прежней — пересобираются только изменённые поддеревья
  * (ADR 0067), словарь `rowsById` переходит новой модели (ADR 0069); смена `data` при тех же
- * ответах — из прежней по тождеству строк (ADR 0194), иначе полная сборка TanStack. Ожидающие переносы ленивого дерева (ADR 0112) — стадия на
+ * ответах — из прежней по тождеству строк (ADR 0194), иначе полная сборка хранилища в памяти (ADR 0200). Ожидающие переносы ленивого дерева (ADR 0112) — стадия на
  * входе: модель собирается из данных и ответов, где строка уже на новом месте. Пока ответ
  * строки в пути, у неё ребёнок-заглушка — скелет-строка (ADR 0155, §3).
  */
-import { constructRow, createCoreRowModel } from '@tanstack/react-table'
+import { constructRow } from '@tanstack/react-table'
 
 import {
   type Answers,
@@ -20,9 +20,10 @@ import {
   isLazyPlaceholder,
   lazyPlaceholdersOf,
 } from '../../core/lazyPlaceholder'
-import { patchCoreModel } from '../../core/dataChanges'
+import { patchCoreModel, recordRowModelChange } from '../../core/dataChanges'
 import { autoResetOnDataChange } from '../../core/incrementalCoreRowModel'
-import { handOverRowsById } from '../../core/rowsByIdHandover'
+import { dictModel, editDictOf } from '../../core/rowEngine/rowDict'
+import { buildCoreModel } from '../../core/rowEngine/memoryStore'
 import type { RowData, Table, TableFeatures } from '../../types'
 import { type LoadedChildren, readLoadedChildren } from './lazyChildrenFeature'
 import { positionOf, setPosition } from '../../core/rowPosition'
@@ -58,7 +59,7 @@ interface ModelRow {
 interface CoreModel {
   rows: ModelRow[]
   flatRows: ModelRow[]
-  rowsById: Record<string, ModelRow>
+  readonly rowsById: Record<string, ModelRow>
 }
 
 const UNSET = Symbol('unset')
@@ -68,7 +69,8 @@ export const createLazyCoreRowModel =
   (table: Table<TFeatures, TData>) => {
     const t = table as unknown as SubRowsTable<TData>
     let loaded: LoadedChildren | typeof UNSET = UNSET
-    let rowModel = createCoreRowModel<TFeatures, TData>()(table)
+    /** Данные последней полной сборки: смена `data` после неё — автосбросы, как у мемо TanStack. */
+    let built: WeakRef<object> | undefined
     let last:
       { data: unknown; loaded: LoadedChildren; model: CoreModel } | undefined
     let moved:
@@ -120,20 +122,6 @@ export const createLazyCoreRowModel =
       ) as { data: unknown; answers: LoadedChildren }
       moved = { data, answers, moves, result }
       return result
-    }
-
-    /** Сборка на данных стадии: `options.data` подменяется на время вызова. */
-    const withData = <T>(data: unknown, build: () => T): T => {
-      const own = t.options.data
-      if (own === data) {
-        return build()
-      }
-      t.options.data = data
-      try {
-        return build()
-      } finally {
-        t.options.data = own
-      }
     }
 
     /** Опция `getSubRows` — приложения; на время сборки дополняем её ответами. */
@@ -293,18 +281,57 @@ export const createLazyCoreRowModel =
           .concat(subtree(row), flatRows.slice(at + removed))
       }
       const oldTops = [...changedTops].map(id => byId[id]!)
-      const rowsById = handOverRowsById(prev)
+      const { dict, writer } = editDictOf(prev)
       for (const old of oldTops) {
-        for (const row of subtree(old)) {
-          delete rowsById[row.id]
-        }
+        for (const row of subtree(old)) writer.delete(row.id)
       }
       for (const [id, row] of replaced) {
         for (const fresh of changedTops.has(id) ? subtree(row) : [row]) {
-          rowsById[fresh.id] = fresh
+          writer.set(fresh.id, fresh)
         }
       }
-      return { rows, flatRows, rowsById }
+      const model = dictModel(dict, writer.version, rows, flatRows) as CoreModel
+      recordRowModelChange(model, answerChange(prev, replaced, changedTops))
+      return model
+    }
+
+    /**
+     * Смена ветки ответа для стадий (ADR 0200, EN32): строка с ответом и её предки — изменённые,
+     * дети ответа — вставленные, прежние дети — удалённые; одноимённый ребёнок — изменённый.
+     */
+    const answerChange = (
+      prev: CoreModel,
+      replaced: ReadonlyMap<string, ModelRow>,
+      tops: ReadonlySet<string>,
+    ) => {
+      const changed = new Set<string>()
+      const inserted = new Set<string>()
+      const removed = new Set<string>()
+      const previous = new Map<string, object>()
+      for (const [id, row] of replaced) {
+        const old = prev.rowsById[id]!
+        changed.add(id)
+        previous.set(id, old)
+        if (!tops.has(id)) continue
+        const before = new Map(
+          subtree(old)
+            .slice(1)
+            .map(r => [r.id, r]),
+        )
+        for (const child of subtree(row).slice(1)) {
+          const was = before.get(child.id)
+          if (was) {
+            changed.add(child.id)
+            previous.set(child.id, was)
+            before.delete(child.id)
+          } else inserted.add(child.id)
+        }
+        for (const [childId, was] of before) {
+          removed.add(childId)
+          previous.set(childId, was)
+        }
+      }
+      return { prev, changed, inserted, removed, previous }
     }
 
     return () => {
@@ -336,13 +363,17 @@ export const createLazyCoreRowModel =
           return patched as never
         }
       }
-      if (loaded !== UNSET && answers !== loaded) {
-        rowModel = createCoreRowModel<TFeatures, TData>()(table)
-      }
+      // Новые ответы — сборка заново без автосбросов, как у нового мемо TanStack.
+      if (loaded !== UNSET && answers !== loaded) built = undefined
       loaded = answers
-      const model = withData(data, () =>
-        withAnswers(answers, () => rowModel()),
+      const model = withAnswers(answers, () =>
+        buildCoreModel(table, data as readonly unknown[]),
       ) as unknown as CoreModel
+      if (built && built.deref() !== data) {
+        queueMicrotask(() => autoResetOnDataChange(table))
+      }
+      // Слабо: после правок прежний data держали бы только мы (ADR 0200, EN26).
+      built = new WeakRef(data as object)
       last = { data, loaded: answers, model }
       return model as never
     }

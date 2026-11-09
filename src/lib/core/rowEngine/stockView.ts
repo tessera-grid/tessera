@@ -7,7 +7,6 @@
 import { copyInstancePropertiesWithoutMemos } from '@tanstack/react-table'
 
 import { childrenOf } from './displayChildren'
-import { handOverRowsById } from '../rowsByIdHandover'
 import { positionOf, setPosition } from '../rowPosition'
 
 interface ViewRow {
@@ -19,7 +18,31 @@ interface ViewRow {
 interface ViewModel {
   rows: ViewRow[]
   flatRows: ViewRow[]
-  rowsById: Record<string, ViewRow>
+  readonly rowsById: Record<string, ViewRow>
+}
+
+/** Словарь модели с копиями поверх: словарь модели читается при каждом обращении — своей версии. */
+const withCopies = (
+  model: ViewModel,
+  copies: ReadonlyMap<string, ViewRow>,
+): Record<string, ViewRow> => {
+  const read = (key: string | symbol) =>
+    typeof key === 'string'
+      ? (copies.get(key) ?? model.rowsById[key])
+      : undefined
+  return new Proxy(Object.create(null) as Record<string, ViewRow>, {
+    get: (_, key) => read(key),
+    has: (_, key) => read(key) !== undefined,
+    set: () => false,
+    deleteProperty: () => false,
+    ownKeys: () => Object.keys(model.rowsById),
+    getOwnPropertyDescriptor: (_, key) => {
+      const value = read(key)
+      return value === undefined
+        ? undefined
+        : { value, writable: false, enumerable: true, configurable: true }
+    },
+  })
 }
 
 const views = new WeakMap<object, ViewModel>()
@@ -30,7 +53,7 @@ const sameList = (a: readonly ViewRow[], b: readonly ViewRow[]) =>
 /** Дерево — выход фильтра, группировки или сортировки: строки — корни. */
 const treeView = (model: ViewModel): ViewModel => {
   const flatRows: ViewRow[] = []
-  const rowsById = handOverRowsById(model)
+  const copies = new Map<string, ViewRow>()
   const visit = (row: ViewRow): ViewRow => {
     const at = flatRows.length
     flatRows.push(row)
@@ -42,12 +65,16 @@ const treeView = (model: ViewModel): ViewModel => {
       copyInstancePropertiesWithoutMemos(shown as never, row as never)
       setPosition(shown, positionOf(row))
       shown.subRows = subRows
-      rowsById[shown.id] = shown
+      copies.set(shown.id, shown)
     }
     flatRows[at] = shown
     return shown
   }
-  return { rows: model.rows.map(visit), flatRows, rowsById }
+  return {
+    rows: model.rows.map(visit),
+    flatRows,
+    rowsById: withCopies(model, copies),
+  }
 }
 
 /** Список — выход раскрытия или страницы: строки — в виде входа. */
@@ -58,7 +85,13 @@ const listView = (
 ): ViewModel => {
   const rows = model.rows.map(row => base.rowsById[row.id] ?? row)
   if (!flatten) {
-    return { rows, flatRows: base.flatRows, rowsById: base.rowsById }
+    return {
+      rows,
+      flatRows: base.flatRows,
+      get rowsById() {
+        return base.rowsById
+      },
+    }
   }
   // Как у модели страницы TanStack: строки страницы и их потомки без повторов.
   const flatRows: ViewRow[] = []
@@ -70,7 +103,13 @@ const listView = (
     for (const child of row.subRows) visit(child)
   }
   for (const row of rows) visit(row)
-  return { rows, flatRows, rowsById: base.rowsById }
+  return {
+    rows,
+    flatRows,
+    get rowsById() {
+      return base.rowsById
+    },
+  }
 }
 
 export type ViewKind = 'tree' | 'list' | 'page'

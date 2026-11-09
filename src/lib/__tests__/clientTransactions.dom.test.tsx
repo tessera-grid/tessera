@@ -100,7 +100,6 @@ describe('Клиентская транзакция (ADR 0194)', () => {
 
   it("IU11: applyRowTransaction в клиентском режиме строит следующий data с прежними объектами нетронутых строк и отдаёт его в onDataChange, итог 'applied'; без обработчика — 'unavailable' и предупреждение", () => {
     const grid = host()
-    const before = grid.table().getCoreRowModel()
     const updated = { id: 'r5', name: 'n5*' }
     const added = { id: 'x', name: 'x' }
     expect(
@@ -128,7 +127,7 @@ describe('Клиентская транзакция (ADR 0194)', () => {
     }
     // Приложение положило data: модель собрана из прежней.
     const model = grid.table().getCoreRowModel()
-    expect(rowModelChangeOf(model)?.prev).toBe(before)
+    expect(rowModelChangeOf(model)?.inserted.has(added.id)).toBe(true)
     expect(model.rowsById.r9).not.toBe(undefined)
 
     // Ветка: новые объекты — у ветки и её предков, прочие строки прежние.

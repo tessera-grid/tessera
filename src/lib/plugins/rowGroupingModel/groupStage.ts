@@ -435,15 +435,13 @@ const patchGroups = (
     }
   }
 
-  // Строки по группам в порядке входа; группа строки с другим объектом собирается заново.
-  const before = prev.input.rowsById
+  // Строки по группам в порядке входа; новые объекты — только строки смены (movedKeys).
   const members = new Map<string, StageRow[]>()
   for (const row of input.rows) {
     let key = movedKeys.get(row.id)
     if (key === undefined) {
       key = topKeys.get(row.id)
       if (key === undefined) return undefined
-      if (row !== before[row.id]) affected.add(key)
     }
     const list = members.get(key)
     if (list) list.push(row)
@@ -498,11 +496,18 @@ const patchGroups = (
   for (const [id, key] of movedKeys) topKeys.set(id, key)
 
   const output: StageModel = { rows, flatRows, rowsById }
+  // Прежние объекты — из своего прежнего выхода: его словарь стадия не меняла.
+  const was = prev.output.rowsById
+  const previous = new Map<string, object>()
+  for (const ids of [changed, removed]) {
+    for (const id of ids) if (was[id]) previous.set(id, was[id])
+  }
   recordRowModelChange(output, {
     prev: prev.output,
     changed,
     inserted,
     removed,
+    previous,
   })
   return { ...prev, input, output, topKeys }
 }

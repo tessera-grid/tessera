@@ -2,10 +2,9 @@
  * Стадия сортировки движка строк (ADR 0064, ADR 0200, §3–§4): значения сортируемых колонок
  * читаются один раз на строку, а функции по контракту `constructSortFn` сравнивают уже
  * приведённые значения. Строки выхода — объекты входа: дети, чей порядок изменился, — дети
- * показа выхода, без копий родителей. Приход ответа при той же сортировке собирает модель из
- * прошлой: порядок корней — прежний, заново сортируются только изменённые поддеревья (ADR 0072).
- * Смена `data` с записанной сменой модели собирается из прошлой: изменённые и вставленные строки
- * встают на свои места поиском, удалённые уходят (ADR 0194).
+ * показа выхода, без копий родителей. Смена `data` и приход ответа ленивых детей при той же
+ * сортировке собираются из прошлой модели по записи смены (ADR 0072, ADR 0194, ADR 0200, EN32):
+ * изменённые и вставленные строки встают на свои места поиском, удалённые уходят.
  */
 import {
   type RowModelChange,
@@ -213,7 +212,6 @@ interface Sorted {
   /** Дети показа выхода — уровни, чей порядок отличается от входа. */
   own: Map<string, SortRow[]>
   /** Позиция корня в `output.rows` по id — порядок корней при инкременте не меняется. */
-  rootAt?: Map<string, number>
   /** Начало участка каждого корня в `output.flatRows`; последний элемент — длина. */
   starts?: Int32Array
 }
@@ -230,7 +228,13 @@ const outputOf = (
   flatRows: SortRow[],
   own: Map<string, SortRow[]>,
 ): RowModel => {
-  const output = { rows, flatRows, rowsById: input.rowsById }
+  const output = {
+    rows,
+    flatRows,
+    get rowsById() {
+      return input.rowsById
+    },
+  }
   setChildren(output, own, input)
   return output
 }
@@ -287,103 +291,6 @@ const rootStarts = (rows: SortRow[], flatRows: SortRow[]) => {
   }
   starts[rows.length] = flatRows.length
   return starts
-}
-
-/** Модель из прошлой: прежний порядок корней, заново — поддеревья изменённых (ADR 0072). */
-const patchSort = (
-  table: SortTable,
-  prev: Sorted,
-  input: RowModel,
-): Sorted | undefined => {
-  const sorting = table.atoms.sorting?.get()
-  if (
-    prev.output === prev.input ||
-    sorting !== prev.sorting ||
-    rulesOf(table).some((rule, i) => rule !== prev.rules[i]) ||
-    input.rows.length !== prev.input.rows.length
-  ) {
-    return undefined
-  }
-  const entries = sortEntries(table)
-  if (
-    entries.length !== prev.sortFns.length ||
-    entries.some(
-      (entry, e) => !entry.sortFn.sort || entry.sortFn !== prev.sortFns[e],
-    )
-  ) {
-    return undefined
-  }
-
-  // Изменённые корни: тот же `original` на той же позиции входа, другой объект.
-  const changed: SortRow[] = []
-  const limit = input.rows.length / 2
-  for (let i = 0; i < input.rows.length; i++) {
-    const row = input.rows[i]!
-    const old = prev.input.rows[i]!
-    if (row === old) continue
-    if (row.original !== old.original || row.id !== old.id) return undefined
-    changed.push(row)
-    if (changed.length > limit) return undefined
-  }
-  if (!changed.length) {
-    return {
-      ...prev,
-      input,
-      output: outputOf(input, prev.output.rows, prev.output.flatRows, prev.own),
-    }
-  }
-
-  const prevRows = prev.output.rows
-  const rootAt = (prev.rootAt ??= new Map(
-    prevRows.map((row, i) => [row.id, i]),
-  ))
-  const prevStarts = (prev.starts ??= rootStarts(
-    prevRows,
-    prev.output.flatRows,
-  ))
-
-  // Дети показа: прежние, без поддеревьев изменённых корней; их — заново.
-  const own = new Map(prev.own)
-  for (const row of changed) {
-    const at = rootAt.get(row.id)!
-    for (let i = prevStarts[at]!; i < prevStarts[at + 1]!; i++) {
-      own.delete(prev.output.flatRows[i]!.id)
-    }
-  }
-  const { sortTree } = sorter(entries, inputKids(input), own)
-  const patches = changed
-    .map(row => {
-      const at = rootAt.get(row.id)!
-      const piece: SortRow[] = []
-      return { at, root: sortTree(row, piece), piece }
-    })
-    .sort((a, b) => b.at - a.at)
-
-  const rows = prevRows.slice()
-  const flatRows = prev.output.flatRows.slice()
-  const starts = prevStarts.slice()
-  for (const { at, root, piece } of patches) {
-    rows[at] = root
-    const from = prevStarts[at]!
-    const removed = prevStarts[at + 1]! - from
-    flatRows.splice(from, removed)
-    for (let i = 0; i < piece.length; i += SPLICE_LIMIT) {
-      flatRows.splice(from + i, 0, ...piece.slice(i, i + SPLICE_LIMIT))
-    }
-    const shift = piece.length - removed
-    if (shift !== 0) {
-      for (let i = at + 1; i <= rows.length; i++) starts[i]! += shift
-    }
-  }
-
-  return {
-    ...prev,
-    input,
-    output: outputOf(input, rows, flatRows, own),
-    own,
-    rootAt,
-    starts,
-  }
 }
 
 /** Сравнение двух строк по всем колонкам сортировки, как у полной; значения — раз на строку. */
@@ -655,9 +562,8 @@ const patchData = (
   ) {
     return undefined
   }
-  const { changed, inserted, removed } = change
-  const prevInput = prev.input.rowsById
-  const prevOutput = prev.output.rowsById
+  const { changed, inserted, removed, previous } = change
+  if (!previous) return undefined
   const current = input.rowsById
   const compare = rowComparator(entries)
   const own = new Map(prev.own)
@@ -720,10 +626,11 @@ const patchData = (
       } else {
         const isChanged = changed.has(row.id)
         // Прежняя строка — объект прошлой модели, нынешняя — объект входа.
-        const old = isChanged ? prevOutput[row.id] : row
+        const old = isChanged ? (previous.get(row.id) as SortRow) : row
         const now = isChanged ? row : keptRow(row)
-        if (!isChanged && now === prevInput[now.id]) {
-          // Строка входа прежняя: поддерево прошлой модели переходит.
+        if (!isChanged) {
+          // Поддерево прежнее: предок изменённой строки сам изменён — данные неизменяемы,
+          // предки ответа ленивых детей — копии (ADR 0200, §4).
           flat.push(now)
           const kids = prevKids(old!)
           if (kids.length) pushShown(kids, flat, prevKids)
@@ -740,7 +647,7 @@ const patchData = (
             )
             if (children.changed) own.set(now.id, children.rows)
             else own.delete(now.id)
-          }
+          } else own.delete(now.id)
         }
       }
       rows[i] = row
@@ -765,9 +672,6 @@ const patchData = (
   }
 }
 
-/** Сколько строк вставлять одним `splice`: аргументы вызова ограничены стеком. */
-const SPLICE_LIMIT = 10_000
-
 /**
  * Стадия сортировки: вход — у движка (ADR 0200, §3); пересчёт после первого сбрасывает
  * страницу.
@@ -786,10 +690,7 @@ export const createTesseraSortedRowModel =
       }
       const first = !last
       last =
-        (last &&
-          (patchInPlace(t, last, input) ??
-            patchData(t, last, input) ??
-            patchSort(t, last, input))) ??
+        (last && (patchInPlace(t, last, input) ?? patchData(t, last, input))) ??
         fullSort(t, input)
       deps = next
       // Как мемо TanStack: сброс страницы — после пересчёта, не посреди чтения модели.

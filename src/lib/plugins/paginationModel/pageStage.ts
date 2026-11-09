@@ -47,7 +47,9 @@ const pageOf = (table: PageTable, input: PageModel): PageModel => {
   const output = {
     rows,
     flatRows: flattenShown(input, rows),
-    rowsById: input.rowsById,
+    get rowsById() {
+      return input.rowsById
+    },
   }
   passChildren(output, input)
   return output

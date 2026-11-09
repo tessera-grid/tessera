@@ -25,6 +25,7 @@ import type {
   ExportRows,
   ExportValueContext,
 } from './types'
+import { rowsOf } from '../../core/rowEngine/rows'
 
 export interface ExportCollectOptions {
   rows?: ExportRows
@@ -50,14 +51,8 @@ interface ExportSourceColumn {
   getIsPinned?: () => false | 'start' | 'end'
 }
 
-type RowModel = { rows: ExportRow[] }
-
 interface ExportTable {
   getAllLeafColumns: () => ExportSourceColumn[]
-  getCoreRowModel: () => RowModel
-  getRowModel: () => RowModel
-  getPreExpandedRowModel?: () => RowModel
-  getPrePaginatedRowModel?: () => RowModel
   options?: { timeZone?: string }
 }
 
@@ -102,33 +97,29 @@ const isPageRow = (row: ExportRow) =>
   !row.getIsGrouped?.() && !isPlaceholderRow(row)
 
 /** Данные в глубину по `subRows`; строки-группы пропускаются, их дети — нет. */
-const walk = (rows: ExportRow[], visit: (row: ExportRow) => void) => {
+const walk = (
+  rows: readonly ExportRow[],
+  visit: (row: ExportRow) => void,
+  children: (row: ExportRow) => readonly ExportRow[] = row => row.subRows ?? [],
+) => {
   for (const row of rows) {
     // Скелет-строка ленивых детей — не данные (ADR 0155, §3).
     if (isPlaceholderRow(row)) continue
     if (!row.getIsGrouped?.()) visit(row)
-    if (row.subRows?.length) walk(row.subRows, visit)
+    const kids = children(row)
+    if (kids.length) walk(kids, visit, children)
   }
 }
-
-/** Модель до раскрытия и нарезки: после сортировки (и группировки), все страницы. */
-const viewRows = (table: ExportTable): ExportRow[] =>
-  (
-    table.getPreExpandedRowModel ??
-    table.getPrePaginatedRowModel ??
-    table.getRowModel
-  ).call(table).rows
 
 export const exportRowsOf = (
   table: unknown,
   scope: ExportRows,
 ): ExportRow[] => {
-  const source = table as ExportTable
   const out: ExportRow[] = []
   const push = (row: ExportRow) => out.push(row)
 
   if (scope === 'all') {
-    walk(source.getCoreRowModel().rows, push)
+    walk(rowsOf<ExportRow>(table, 'core').rows, push)
   } else if (scope === 'page') {
     // Строки страницы уже плоские (раскрытые дети — отдельные строки): без обхода.
     // Строки до сохранения не выгружаются: только данные (ADR 0178, DR34).
@@ -138,13 +129,19 @@ export const exportRowsOf = (
       if (row && isPageRow(row)) push(row)
     }
   } else {
-    walk(viewRows(source), row => {
-      if (scope === 'view' || row.getIsSelected?.()) push(row)
-    })
+    // Строки до раскрытия и нарезки: после сортировки и группировки, все страницы.
+    const view = rowsOf<ExportRow>(table, 'sorted')
+    walk(
+      view.rows,
+      row => {
+        if (scope === 'view' || row.getIsSelected?.()) push(row)
+      },
+      view.children,
+    )
     // Выбранные, но скрытые фильтром — после видимых, в порядке данных (ADR 0045, FL25).
     if (scope === 'selected') {
       const included = new Set(out.map(row => row.id))
-      walk(source.getCoreRowModel().rows, row => {
+      walk(rowsOf<ExportRow>(table, 'core').rows, row => {
         if (row.getIsSelected?.() && !included.has(row.id)) push(row)
       })
     }

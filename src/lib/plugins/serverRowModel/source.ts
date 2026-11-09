@@ -35,6 +35,7 @@ import { serverAggregationsOf } from '../../shared/serverAggregations'
 import { isThenable } from '../../util/thenable'
 import { BlockTree, type ExpandedRows } from './tree'
 import { removeRowDrafts } from '../../core/drafts/drafts'
+import { positionOf } from '../../core/rowPosition'
 import { isExpandedAll } from '../../core/expandAll'
 import type {
   ServerRowModelHooks,
@@ -625,7 +626,7 @@ const createServerSource = (table: unknown): ServerSource => {
       if (!row) continue
       const [updated] = buildRows(
         [functionalUpdate(updater, row.original)],
-        row.index,
+        positionOf(row),
         row.depth,
         row.parentId,
         generation.query.grouping,

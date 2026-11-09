@@ -16,6 +16,7 @@ import { logWarn } from '../../util/logger'
 import { objectKeyOf, objectLabelOf } from '../../core/dataTypeFormat'
 import type { ResolvedDataType } from '../../core/dataTypes'
 import type { ColumnFilterType, OptionFilter } from './types'
+import { rowsOf } from '../../core/rowEngine/rows'
 
 export const isOptionType = (type: ColumnFilterType | undefined) =>
   type === 'select' || type === 'multiselect' || type === 'lookup'
@@ -67,17 +68,20 @@ export const optionKeyOf = (
     ? objectKeyOf(table as never, column as never, value)
     : value
 
-interface FacetTable {
-  getPreFilteredRowModel: () => { flatRows: FacetRow[] }
-}
-
 /** Варианты и их счётчики — от сервера: фильтры колонок выполняет он (ADR 0169). */
 const filtersOnServer = (table: unknown) =>
   dataModeOf(table, 'filtering') === 'server'
 
-const countCache = new WeakMap<FacetRow[], Map<string, Map<unknown, number>>>()
+const countCache = new WeakMap<
+  readonly FacetRow[],
+  Map<string, Map<unknown, number>>
+>()
 
-const countValues = (table: unknown, rows: FacetRow[], column: FacetColumn) => {
+const countValues = (
+  table: unknown,
+  rows: readonly FacetRow[],
+  column: FacetColumn,
+) => {
   let byColumn = countCache.get(rows)
   if (!byColumn) countCache.set(rows, (byColumn = new Map()))
   let counts = byColumn.get(column.id)
@@ -93,11 +97,14 @@ const countValues = (table: unknown, rows: FacetRow[], column: FacetColumn) => {
   return counts
 }
 
-const labelCache = new WeakMap<FacetRow[], Map<string, Map<unknown, string>>>()
+const labelCache = new WeakMap<
+  readonly FacetRow[],
+  Map<string, Map<unknown, string>>
+>()
 
 /** Подписи записей `object` по ключу — из всех строк колонки (TY4, TY7). */
 const objectLabels = (table: unknown, column: FacetColumn) => {
-  const rows = (table as FacetTable).getPreFilteredRowModel().flatRows
+  const rows = rowsOf<FacetRow>(table, 'core').flatRows
   let byColumn = labelCache.get(rows)
   if (!byColumn) labelCache.set(rows, (byColumn = new Map()))
   let labels = byColumn.get(column.id)
@@ -155,7 +162,6 @@ export const filterOptionsOf = (
   column: FacetColumn,
 ): ColumnOption[] => {
   if (column.columnDef.options) return column.columnDef.options
-  const t = table as FacetTable
   if (filtersOnServer(table)) {
     logWarn(
       table as never,
@@ -164,7 +170,11 @@ export const filterOptionsOf = (
     )
     return []
   }
-  const values = countValues(table, t.getPreFilteredRowModel().flatRows, column)
+  const values = countValues(
+    table,
+    rowsOf<FacetRow>(table, 'core').flatRows,
+    column,
+  )
   return [...values.keys()]
     .map(value => ({
       value: value as OptionValue,

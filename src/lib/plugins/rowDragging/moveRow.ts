@@ -21,6 +21,7 @@ import {
 } from './serverMove'
 import type { RowDraggingHooks } from './types'
 import { positionOf } from '../../core/rowPosition'
+import { rowsOf } from '../../core/rowEngine/rows'
 
 interface OrderItem {
   id: string
@@ -83,16 +84,14 @@ const commit = (
 ) => {
   const from = row.getParentRow()
   const lazy = isLazy(from) || isLazy(to.parent)
-  const anchors = (
-    to.parent?.subRows ?? (table as MoveTable).getCoreRowModel().rows
-  )
+  const anchors = (to.parent?.subRows ?? rowsOf<MoveRow>(table, 'core').rows)
     .map(sibling => sibling.id)
     .filter(id => id !== row.id)
   const move: RowMoveCommit = {
     rowId: row.id,
     original: row.original,
     anchors,
-    fromAnchors: (from?.subRows ?? (table as MoveTable).getCoreRowModel().rows)
+    fromAnchors: (from?.subRows ?? rowsOf<MoveRow>(table, 'core').rows)
       .map(sibling => sibling.id)
       .filter(id => id !== row.id),
     fromIndex: positionOf(row),
@@ -135,7 +134,7 @@ const expand = (row: MoveRow) =>
     : row.toggleExpanded?.(true)
 
 const siblingsOf = (row: MoveRow, table: unknown) =>
-  row.getParentRow()?.subRows ?? (table as MoveTable).getCoreRowModel().rows
+  row.getParentRow()?.subRows ?? rowsOf<MoveRow>(table, 'core').rows
 
 export const canMoveRow = (
   row: unknown,
@@ -172,7 +171,7 @@ export const moveRow = (
   const parent = r.getParentRow()
   const from = positionOf(r)
   const to = from + direction
-  const shown = t.getRowModel().rows
+  const shown = rowsOf<MoveRow>(t, 'shown').rows
   const neighbour = siblingsOf(r, table)[to]
   const dragIndex = shown.findIndex(item => item.id === r.id)
   const hoverIndex = shown.findIndex(item => item.id === neighbour.id)
@@ -192,9 +191,7 @@ export const moveRow = (
 /** Предыдущая корневая строка-группа, в которую вкладывается строка. */
 const nestTargetOf = (row: MoveRow, table: unknown) => {
   if (row.getParentRow() || row.subRows.length > 0) return undefined
-  const target = (table as MoveTable).getCoreRowModel().rows[
-    positionOf(row) - 1
-  ]
+  const target = rowsOf<MoveRow>(table, 'core').rows[positionOf(row) - 1]
   return target && canNestInto(target, table) ? target : undefined
 }
 
@@ -215,7 +212,7 @@ export const nestRow = (row: unknown, table: unknown) => {
   if (!target) {
     return
   }
-  const shown = (table as MoveTable).getRowModel().rows
+  const shown = rowsOf<MoveRow>(table, 'shown').rows
   const dragIndex = shown.findIndex(item => item.id === r.id)
   const hoverIndex = shown.findIndex(item => item.id === target.id)
   commit(
@@ -270,7 +267,7 @@ export const unnestRow = (row: unknown, table: unknown) => {
     return
   }
   const parent = r.getParentRow()!
-  const shown = (table as MoveTable).getRowModel().rows
+  const shown = rowsOf<MoveRow>(table, 'shown').rows
   const dragIndex = shown.findIndex(item => item.id === r.id)
   const hoverIndex = shown.findIndex(item => item.id === parent.id)
   commit(

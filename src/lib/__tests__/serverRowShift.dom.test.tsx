@@ -4,6 +4,7 @@
  * NT10–NT11).
  * Запуск: npx vitest run --config vitest.node.config.ts serverRowShift
  */
+import { positionOf } from '../core/rowPosition'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -177,7 +178,7 @@ describe('вложение и вынос в SSRM (ADR 0189)', () => {
     await expand('r1')
     act(() => nestRow(rowOf('r2'), table))
     expect(rowOf('r2').parentId).toBe('r1')
-    expect(rowOf('r2').index).toBe(3)
+    expect(positionOf(rowOf('r2'))).toBe(3)
     expect(ends[0]).toMatchObject({ parentId: 'r1', index: 3 })
   })
 
@@ -186,7 +187,7 @@ describe('вложение и вынос в SSRM (ADR 0189)', () => {
     await expand('r1')
     act(() => unnestRow(rowOf('r1.1'), table))
     expect(rowOf('r1.1').parentId).toBeUndefined()
-    expect(rowOf('r1.1').index).toBe(2)
+    expect(positionOf(rowOf('r1.1'))).toBe(2)
     expect(ends[0]).toMatchObject({
       parentId: undefined,
       previousParentId: 'r1',
@@ -207,7 +208,7 @@ describe('вложение и вынос в SSRM (ADR 0189)', () => {
     expect(table.atoms.rowMoves.get().r2?.pending).toBe(true)
     await act(async () => settleMove!(false))
     expect(rowOf('r2').parentId).toBeUndefined()
-    expect(rowOf('r2').index).toBe(2)
+    expect(positionOf(rowOf('r2'))).toBe(2)
     expect(table.atoms.rowMoveFailed.get().r2).toBeDefined()
   })
 
@@ -215,14 +216,14 @@ describe('вложение и вынос в SSRM (ADR 0189)', () => {
     await mount()
     await expand('r1')
     act(() => nestRow(rowOf('r2'), table))
-    expect(rowOf('r2').index).toBe(3)
+    expect(positionOf(rowOf('r2'))).toBe(3)
     await act(async () => settleMove!(true))
 
     unknownBranch = true
     await expand('r3')
     act(() => nestRow(rowOf('r4'), table))
     expect(rowOf('r4').parentId).toBe('r3')
-    expect(rowOf('r4').index).toBe(0)
+    expect(positionOf(rowOf('r4'))).toBe(0)
   })
 
   it('NT7: пункт недоступен, а клавиша инертна, если цели нет или она не загружена', async () => {

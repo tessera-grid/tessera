@@ -184,7 +184,10 @@ export class RowMotion extends Component<RowMotionProps> {
     _state: unknown,
     snapshot: Snapshot | null,
   ) {
-    if (snapshot) this.play(snapshot)
+    if (!snapshot) return
+    this.play(snapshot)
+    // React держит последний снимок до следующего обновления: прежние строки — нет (ADR 0200, EN26).
+    snapshot.prevRows = []
   }
 
   componentWillUnmount() {

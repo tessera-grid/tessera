@@ -13,6 +13,7 @@ import {
 import { dropRowMove, writeTarget } from './commitRowMove'
 import { type FailedAttempts, withoutGone } from '../../shared/failedAttempts'
 import { serverMoveSource } from './serverMove'
+import { rowsOf } from '../../core/rowEngine/rows'
 
 interface ReconcileTable {
   options: { data: readonly unknown[] }
@@ -42,9 +43,9 @@ const containsRow = (
  * (ADR 0159, §2).
  */
 const knownRows = (table: unknown) => {
-  const { rowsById } = (table as ReconcileTable).getCoreRowModel()
+  const core = rowsOf(table, 'core')
   const server = serverMoveSource(table)
-  return (id: string) => !!rowsById[id] || !!server?.byId(id)
+  return (id: string) => !!core.byId(id) || !!server?.byId(id)
 }
 
 /** Отметка отказа строки, ушедшей из модели, снимается (IR14). */
@@ -72,7 +73,7 @@ export const reconcileRowMoves = (table: unknown) => {
   }
   const t = table as ReconcileTable
   const answers = t.atoms.loadedChildren?.get() ?? {}
-  const { rowsById } = t.getCoreRowModel()
+  const core = rowsOf(t, 'core')
   const known = knownRows(table)
   const seen = checked.get(t.atoms)
   const inputsChanged =
@@ -89,8 +90,10 @@ export const reconcileRowMoves = (table: unknown) => {
     }
     const { from, to } = move
     const parentGone =
-      (to.parentId !== undefined && !rowsById[to.parentId]) ||
-      (entry.pending && from.parentId !== undefined && !rowsById[from.parentId])
+      (to.parentId !== undefined && !core.byId(to.parentId)) ||
+      (entry.pending &&
+        from.parentId !== undefined &&
+        !core.byId(from.parentId))
     // Пока промис не выполнен, строка стоит на старом месте источника: ушла — снять.
     const rowGone =
       entry.pending &&

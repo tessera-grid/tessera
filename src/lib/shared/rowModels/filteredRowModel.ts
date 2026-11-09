@@ -16,7 +16,7 @@ import {
 } from '../../core/dataChanges'
 import { dataModeOf } from '../../core/dataMode'
 import type { StageRun } from '../../core/rowEngine/engine'
-import { handOverRowsById } from '../../core/rowsByIdHandover'
+import { RowDict, dictModel, editDictOf } from '../../core/rowEngine/rowDict'
 import type { RowData, Table, TableFeatures } from '../../types'
 import { skipIdlePasses } from './idleRowModel'
 import { positionOf, setPosition } from '../../core/rowPosition'
@@ -216,8 +216,7 @@ const patchFlatFiltered = (
   }
   // Изменённая строка на другом месте — перенос (ADR 0199, §2): общий путь.
   for (const id of change.changed) {
-    const old = (change.previous?.get(id) ?? prev.input.rowsById[id]) as
-      FilterRow | undefined
+    const old = change.previous?.get(id) as FilterRow | undefined
     const now = input.rowsById[id]
     if (!old || !now || positionOf(old) !== positionOf(now)) return null
   }
@@ -271,10 +270,15 @@ const patchFlatFiltered = (
     rows.push(next)
     inserted.add(row.id)
   }
-  const rowsById = handOverRowsById(prev.output)
-  for (const id of removed) delete rowsById[id]
-  for (const row of placed) rowsById[row.id] = row
-  const output = { rows, flatRows: rows.slice(), rowsById }
+  const { dict, writer } = editDictOf(prev.output)
+  for (const id of removed) writer.delete(id)
+  for (const row of placed) writer.set(row.id, row)
+  const output = dictModel(
+    dict,
+    writer.version,
+    rows,
+    rows.slice(),
+  ) as FilterModel
   recordRowModelChange(output, {
     prev: prev.output,
     changed,
@@ -304,13 +308,19 @@ const filterFlat = (table: FilteringTable, input: FilterModel): FilterModel => {
     }
     if (passes) rows.push(row)
   }
-  const rowsById =
-    rows.length === input.rows.length
-      ? input.rowsById
-      : makeObjectMap<FilterRow>()
-  if (rowsById !== input.rowsById)
-    for (const row of rows) rowsById[row.id] = row
-  return { rows, flatRows: rows, rowsById }
+  if (rows.length === input.rows.length) {
+    return {
+      rows,
+      flatRows: rows,
+      get rowsById() {
+        return input.rowsById
+      },
+    }
+  }
+  const rowsById = makeObjectMap<FilterRow>()
+  for (const row of rows) rowsById[row.id] = row
+  const dict = new RowDict(rowsById)
+  return dictModel(dict, dict.version(), rows, rows) as FilterModel
 }
 
 const isFlat = (model: FilterModel) =>
@@ -429,15 +439,11 @@ const patchFiltered = (
   const filters = resolveFilters(table)
   const flat = patchFlatFiltered(table, prev, input, change, filters)
   if (flat) return { input, columnFilters, globalFilter, output: flat }
-  const before = prev.input.rowsById
-  for (const row of input.flatRows) {
-    const old = before[row.id]
-    if (row === old) continue
-    if (old && !change.changed.has(row.id) && !change.inserted.has(row.id)) {
-      row.columnFilters = old.columnFilters
-      row.columnFiltersMeta = old.columnFiltersMeta
-    } else {
-      checkRow(row, filters)
+  // Новые объекты строк — только изменённые и вставленные: прочие проверены прежним проходом.
+  for (const ids of [change.changed, change.inserted]) {
+    for (const id of ids) {
+      const row = input.rowsById[id]
+      if (row) checkRow(row, filters)
     }
   }
   const output = filterTree(
@@ -460,11 +466,17 @@ const patchFiltered = (
   }
   for (const id of change.inserted) if (now[id]) inserted.add(id)
   for (const id of change.removed) if (was[id]) removed.add(id)
+  // Прежние объекты — из своего прежнего выхода: его словарь стадия не меняла.
+  const previous = new Map<string, object>()
+  for (const ids of [changed, removed]) {
+    for (const id of ids) if (was[id]) previous.set(id, was[id])
+  }
   recordRowModelChange(output, {
     prev: prev.output,
     changed,
     inserted,
     removed,
+    previous,
   })
   return { input, columnFilters, globalFilter, output }
 }

@@ -9,6 +9,8 @@ import { rowSourceOf } from './rowSource'
 interface RowChange {
   previous: object
   from: number
+  /** Длина цепочки до этой смены: дальше MAX_STEPS прежние списки отпускаются. */
+  depth: number
 }
 
 const changes = new WeakMap<object, RowChange>()
@@ -23,20 +25,44 @@ export const recordRowChange = (
   previous: object,
   from: number,
 ) => {
-  if (next !== previous) {
-    changes.set(next, { previous, from })
+  if (next === previous) return
+  const depth = (changes.get(previous)?.depth ?? 0) + 1
+  changes.set(next, { previous, from, depth })
+  // Цепочку длиннее, чем её ищут, не держим: прежние списки — это прежние строки (ADR 0200, EN26).
+  if (depth > MAX_STEPS) {
+    let list: object = next
+    for (let step = 0; step < MAX_STEPS; step++) {
+      list = changes.get(list)!.previous
+    }
+    changes.delete(list)
   }
 }
 
-/** Первое отличие `current` от `previous` по журналу; `undefined` — цепочки нет. */
+/** Подсказку списка больше не спросят: прежний список отпускается (ADR 0200, EN26). */
+export const forgetRowChange = (list: object) => {
+  changes.delete(list)
+}
+
+/**
+ * Первое отличие `current` от `previous` по журналу; `undefined` — цепочки нет. `consume` —
+ * путь прочитан последний раз (сборка виртуализатора): прежние списки отпускаются.
+ */
 export const firstChangeSince = (
   current: object,
   previous: object,
+  consume = false,
 ): number | undefined => {
   let list = current
   let from = Infinity
   for (let step = 0; step <= MAX_STEPS; step++) {
     if (list === previous) {
+      if (consume) {
+        for (let at = current; at !== previous;) {
+          const change = changes.get(at)!
+          changes.delete(at)
+          at = change.previous
+        }
+      }
       return from
     }
     const change = changes.get(list)
@@ -110,7 +136,8 @@ export const firstChangedIndex = (
     return next.count
   }
   if (next.list && previous.list) {
-    const from = firstChangeSince(next.list, previous.list)
+    // Сборка виртуализатора спрашивает путь один раз: после — его списки не нужны.
+    const from = firstChangeSince(next.list, previous.list, true)
     if (from !== undefined) {
       return from
     }

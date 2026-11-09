@@ -14,6 +14,7 @@ import {
 } from '@tanstack/react-table'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
+import { types } from 'node:util'
 
 import { storeReactivityBindings } from '../../../node_modules/@tanstack/table-core/dist/store-reactivity-bindings.js'
 import { describe, expect, it } from 'vitest'
@@ -39,6 +40,7 @@ import {
   rowGrouping,
   rowGroupingModel,
   rowSelection,
+  serverRowModel,
 } from '../plugins'
 import { setLoadedAnswer } from '../plugins/rowExpanding/lazyChildrenFeature'
 
@@ -129,9 +131,7 @@ describe('Движок строк (ADR 0200)', () => {
       )
     }
     const callers = sources(root)
-      .filter(file =>
-        /\b(?:stageSlot|ownStage)\b/.test(readFileSync(file, 'utf8')),
-      )
+      .filter(file => /\bownStage\b/.test(readFileSync(file, 'utf8')))
       .map(file => relative(root, file).replace(/\\/g, '/'))
       .filter(file => file !== 'core/rowEngine/engine.ts')
       .sort()
@@ -268,15 +268,16 @@ describe('Место строки (ADR 0200, §5)', () => {
 describe('Хранилище строк (ADR 0200, этап 3)', () => {
   it('EN4: строка создаётся один раз на объект данных — прежний объект в новом data остаётся прежней строкой, новый объект — новая строка', () => {
     const table = build([])
-    const before = table.getCoreRowModel().rowsById
+    // Прежняя модель — словарь своей версии (ADR 0200, §6): держим модель, а не её словарь.
+    const model = table.getCoreRowModel()
     const next = DATA.map((row, i) =>
       i === 2 ? { ...row, city: 'Lyon' } : row,
     )
     table.setOptions((o: any) => ({ ...o, data: next }))
     const after = table.getCoreRowModel().rowsById
     for (const row of DATA) {
-      if (row.id === 'c') expect(after.c).not.toBe(before.c)
-      else expect(after[row.id], row.id).toBe(before[row.id])
+      if (row.id === 'c') expect(after.c).not.toBe(model.rowsById.c)
+      else expect(after[row.id], row.id).toBe(model.rowsById[row.id])
     }
     expect(after.c.original).toBe(next[2])
   })
@@ -334,8 +335,8 @@ describe('Хранилище строк (ADR 0200, этап 3)', () => {
     let data = DATA
     for (const [step, change] of steps.entries()) {
       const model = table.getCoreRowModel()
-      const dict = model.rowsById
-      const entries = Object.entries(dict)
+      // Словарь прежней модели читается через модель — своей версии (ADR 0200, §6).
+      const entries = Object.entries(model.rowsById).sort()
       const snapshot = new Map<any, ReturnType<typeof fields>>(
         model.flatRows.map((row: any) => [row, fields(row)]),
       )
@@ -346,7 +347,10 @@ describe('Хранилище строк (ADR 0200, этап 3)', () => {
       for (const [row, before] of snapshot) {
         expect(fields(row), `шаг ${step}: ${row.id}`).toEqual(before)
       }
-      expect(Object.entries(dict), `шаг ${step}: словарь`).toEqual(entries)
+      expect(
+        Object.entries(model.rowsById).sort(),
+        `шаг ${step}: словарь`,
+      ).toEqual(entries)
       const fresh = build([], { data })
       expect(
         next.rows.map((row: any) => [row.id, positionOf(row)]),
@@ -823,5 +827,320 @@ describe('Стоковые фичи, пересчёт и страница (ADR 0
         }
       }
     }
+  })
+})
+
+describe('Серверная модель на движке (ADR 0200, этап 5)', () => {
+  it('EN20: хранилище блоков — второе хранилище движка: источник таблицы — блоки, стадии фильтра, группировки, сортировки, раскрытия и страницы на клиенте не идут', () => {
+    const table = build([
+      serverRowModel({ getRows: () => ({ rows: [], rowCount: 0 }) }),
+      columnSortingModel(),
+      columnFilteringModel(),
+      rowGroupingModel(),
+      rowExpandingModel(),
+      paginationModel({ initialPageSize: 3 }),
+    ])
+    table.setSorting([{ id: 'name', desc: true }])
+    table.setColumnFilters([
+      { id: 'city', value: { operator: 'contains', value: 'o' } },
+    ])
+    table.setGrouping(['city'])
+    const engine = engineOf(table)
+    const core = table.getCoreRowModel()
+    for (const id of STAGE_IDS) expect(engine.output(id), id).toBe(core)
+    expect((rowSourceOf(table) as { store?: unknown }).store).toBeDefined()
+  })
+})
+
+/** Запись поля строки TanStack: поля `Row`, кэши с `_` и сборка через `Object.assign`. */
+const ROW_WRITE =
+  /\b[\w$]+\??\.(?:id|index|depth|parentId|subRows|original|originalSubRows|leafRows|groupingColumnId|groupingValue|columnFilters|columnFiltersMeta|_[A-Za-z]\w*)\s*=(?!=)|\bObject\.assign\((?:row|copy|group|next|fresh)\b/
+/** Поле с `_` у объекта, который не таблица: внутренности строк и ячеек TanStack. */
+const PRIVATE_READ = /\b(?!t\b|table\b)[A-Za-z]\w*\??\._[A-Za-z]\w*/
+
+/**
+ * Где движок создаёт строки и задаёт их поля при создании (ADR 0200, §4), и изменяемые поля,
+ * которые объявляет фича TanStack. Это устройство движка, а не долг: список не сокращается.
+ */
+const ROW_WRITERS: Record<string, string> = {
+  'core/rowEngine/memoryStore.ts':
+    'хранилище в памяти: дети строки при создании',
+  'core/dataChanges.ts':
+    'новые строки смены data: дети при создании (ADR 0194)',
+  'core/rowEngine/stockView.ts':
+    'копии стокового вида для table.get*RowModel() с детьми показа (ADR 0200, §6)',
+  'plugins/rowExpanding/lazyCoreRowModel.ts':
+    'строки ленивого дерева и строка с ответом и её предки — при создании (ADR 0200, §4)',
+  'plugins/rowGroupingModel/groupStage.ts':
+    'строки-группы при создании; depth и parentId листьев под группами (ADR 0200, §4)',
+  'plugins/serverRowModel/source.ts':
+    'строки блока и строки-группы серверной модели при создании (ADR 0138, 0144)',
+  'shared/rowModels/filteredRowModel.ts':
+    'columnFilters и columnFiltersMeta отбора; копии родителей фильтра дерева (ADR 0200, §4)',
+}
+
+/** Совпадения шаблона записи, которые не про строки: свой объект модуля. */
+const NOT_ROWS: Record<string, string> = {
+  'grid/useSkeletonWave.ts': 'id анимации волны скелета (Web Animations)',
+  'plugins/cellSelectionModel/indexSelection.ts':
+    'флаг таблицы на время протяжки выделения',
+}
+
+describe('Строки движка (ADR 0200, этап 5)', () => {
+  it('EN3: поля строки пишет только движок при создании и изменяемые поля фич TanStack; полей строк с _ никто не читает', () => {
+    const root = join(__dirname, '..')
+    const writers: string[] = []
+    const privateReads: string[] = []
+    for (const file of sources(root)) {
+      const name = relative(root, file).replace(/\\/g, '/')
+      const text = readFileSync(file, 'utf8')
+        .split('\n')
+        .filter(line => !/^\s*(?:\/\/|\*|\/\*)/.test(line))
+        .join('\n')
+      if (ROW_WRITE.test(text) && !(name in NOT_ROWS)) writers.push(name)
+      const read = text.match(PRIVATE_READ)
+      if (read) privateReads.push(`${name}: ${read[0]}`)
+    }
+    expect(writers.sort()).toEqual(Object.keys(ROW_WRITERS).sort())
+    expect(privateReads).toEqual([])
+  })
+})
+
+/** Детерминированный генератор для цепочек смен. */
+const random = (seed: number) => () => {
+  seed = (seed + 0x6d2b79f5) | 0
+  let t = Math.imul(seed ^ (seed >>> 15), 1 | seed)
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+}
+const CITIES = ['Paris', 'Rome', 'Oslo', 'Lima', 'Bonn']
+
+/** Узлы дерева с путём родителей: смены — неизменяемыми копиями ветки. */
+const nodesOf = (tree: TreeItem[], into: TreeItem[] = []) => {
+  for (const item of tree) {
+    into.push(item)
+    if (item.subRows) nodesOf(item.subRows, into)
+  }
+  return into
+}
+const mapTree = (
+  tree: TreeItem[],
+  fn: (level: TreeItem[], parent?: TreeItem) => TreeItem[],
+  parent?: TreeItem,
+): TreeItem[] =>
+  fn(tree, parent).map(item =>
+    item.subRows
+      ? (() => {
+          const kids = mapTree(item.subRows, fn, item)
+          return kids === item.subRows ? item : { ...item, subRows: kids }
+        })()
+      : item,
+  )
+
+describe('Набор изменений (ADR 0200, этап 5)', () => {
+  it('EN32: стадии не читают словарь прежнего входа; цепочка смен data — правка, вставка, удаление, перенос — и ответов ленивых детей при фильтре и сортировке даёт итог полной сборки', () => {
+    const root = join(__dirname, '..')
+    const readers = sources(root)
+      .filter(file =>
+        /\b(?:prev|last)\.input\.rowsById\b/.test(readFileSync(file, 'utf8')),
+      )
+      .map(file => relative(root, file).replace(/\\/g, '/'))
+    expect(readers).toEqual([])
+    // Выход этих стадий делит словарь со входом.
+    for (const file of [
+      'plugins/columnSortingModel/sortedRowModel.ts',
+      'shared/rowModels/expandedRowModel.ts',
+      'plugins/paginationModel/pageStage.ts',
+    ]) {
+      expect(readFileSync(join(root, file), 'utf8'), file).not.toMatch(
+        /\bprev\.output\.rowsById\b/,
+      )
+    }
+
+    const next = random(200)
+    const pick = <T>(list: readonly T[]) =>
+      list[Math.floor(next() * list.length)]!
+    let created = 0
+    const STATE = (t: any) => {
+      t.setColumnFilters([
+        { id: 'city', value: { operator: 'contains', value: 'o' } },
+      ])
+      t.setSorting([{ id: 'city', desc: true }])
+      t.setExpanded(true)
+      t.setPageSize(1000)
+    }
+    const shape = (t: any) =>
+      rowSourceOf<any>(t).rows!().map((row: any) => `${row.id}:${row.depth}`)
+
+    let data = TREE
+    const table = buildTree(false)
+    STATE(table)
+    shape(table)
+    for (let step = 0; step < 40; step++) {
+      const op = pick(['edit', 'insert', 'remove', 'move'] as const)
+      const target = pick(nodesOf(data))
+      if (op === 'edit') {
+        const city = pick(CITIES)
+        data = mapTree(data, level =>
+          level.includes(target)
+            ? level.map(item => (item === target ? { ...item, city } : item))
+            : level,
+        )
+      } else if (op === 'insert') {
+        const fresh = node(`n${created++}`, pick(CITIES))
+        data = mapTree(data, level => {
+          if (!level.includes(target)) return level
+          const at = level.indexOf(target)
+          return [...level.slice(0, at), fresh, ...level.slice(at)]
+        })
+      } else if (op === 'remove' && nodesOf(data).length > 4) {
+        data = mapTree(data, level =>
+          level.includes(target)
+            ? level.filter(item => item !== target)
+            : level,
+        )
+      } else if (op === 'move' && data.length > 2) {
+        const from = Math.floor(next() * data.length)
+        const moved = data[from]!
+        const rest = data.filter((_, i) => i !== from)
+        const to = Math.floor(next() * rest.length)
+        data = [...rest.slice(0, to), moved, ...rest.slice(to)]
+      }
+      table.setOptions((o: any) => ({ ...o, data }))
+      const fresh = buildTree(false, { data })
+      STATE(fresh)
+      expect(shape(table), `шаг ${step}: ${op}`).toEqual(shape(fresh))
+    }
+
+    // Ответы ленивых детей при сортировке: приход, замена и удаление ответа.
+    const lazy = () =>
+      build([
+        rowExpanding({
+          hasChildren: (row: { original: Item }) =>
+            ['a', 'c', 'e', 'g'].includes(row.original.id),
+          loadChildren: () => [],
+        }),
+        columnSortingModel(),
+      ])
+    const LAZY_STATE = (t: any) => {
+      t.setSorting([{ id: 'city', desc: true }])
+      t.setExpanded(true)
+    }
+    const lazyTable = lazy()
+    LAZY_STATE(lazyTable)
+    shape(lazyTable)
+    let answers: Record<string, Item[]> = {}
+    for (let step = 0; step < 20; step++) {
+      const parent = pick(['a', 'c', 'e', 'g'])
+      answers =
+        next() < 0.3
+          ? Object.fromEntries(
+              Object.entries(answers).filter(([id]) => id !== parent),
+            )
+          : {
+              ...answers,
+              [parent]: Array.from(
+                { length: 1 + Math.floor(next() * 3) },
+                (_, k) => item(`${parent}${step}-${k}`, pick(CITIES)),
+              ),
+            }
+      setLoadedAnswer(lazyTable, () => answers)
+      const fresh = lazy()
+      LAZY_STATE(fresh)
+      setLoadedAnswer(fresh, () => answers)
+      expect(shape(lazyTable), `ответ ${step}`).toEqual(shape(fresh))
+    }
+  })
+})
+
+describe('Словарь хранилища на месте (ADR 0200, этап 5)', () => {
+  it('EN30: словарь хранилища один и правится на месте — смена data, вставка и удаление в середине, транзакция и ответ ленивых детей; текущий словарь — обычный объект, не прокси', () => {
+    let data = DATA
+    const table = build([], {
+      onDataChange: (next: Item[]) => {
+        data = next
+        table.setOptions((o: any) => ({ ...o, data }))
+      },
+    })
+    const live = table.getCoreRowModel().rowsById
+    expect(types.isProxy(live)).toBe(false)
+    const steps: [string, () => void][] = [
+      [
+        'правка',
+        () =>
+          (data = data.map((r, i) => (i === 3 ? { ...r, city: 'Lyon' } : r))),
+      ],
+      [
+        'вставка',
+        () =>
+          (data = [...data.slice(0, 2), item('x', 'Rome'), ...data.slice(2)]),
+      ],
+      ['удаление', () => (data = data.filter(r => r.id !== 'e'))],
+    ]
+    for (const [step, change] of steps) {
+      change()
+      table.setOptions((o: any) => ({ ...o, data }))
+      const now = table.getCoreRowModel().rowsById
+      expect(now, step).toBe(live)
+      expect(Object.keys(now).sort(), step).toEqual(data.map(r => r.id).sort())
+    }
+    expect(
+      table.applyRowTransaction({ add: [item('y', 'Oslo')], index: 0 }),
+    ).toBe('applied')
+    expect(table.getCoreRowModel().rowsById).toBe(live)
+    expect(live.y?.original).toEqual(item('y', 'Oslo'))
+
+    const lazy = build([
+      rowExpanding({
+        hasChildren: (row: { original: Item }) => row.original.id === 'a',
+        loadChildren: () => [],
+      }),
+    ])
+    const lazyLive = lazy.getCoreRowModel().rowsById
+    setLoadedAnswer(lazy, (prev: object) => ({
+      ...prev,
+      a: [item('a1', 'Lima')],
+    }))
+    expect(lazy.getCoreRowModel().rowsById).toBe(lazyLive)
+    expect(types.isProxy(lazyLive)).toBe(false)
+    expect(lazyLive.a1?.id).toBe('a1')
+  })
+
+  it('EN31: модели table.get*RowModel(), отданные до смены, не меняются после неё — строки и словарь своей версии; текущая модель и getRow читают хранилище', () => {
+    let data = DATA
+    const table = build([columnSortingModel(), columnFilteringModel()])
+    table.setSorting([{ id: 'city', desc: true }])
+    const getters = [
+      'getCoreRowModel',
+      'getSortedRowModel',
+      'getRowModel',
+    ] as const
+    const shapeOf = (model: any) => ({
+      rows: model.rows.map((row: any) => row.id),
+      byId: Object.entries(model.rowsById)
+        .map(([id, row]: [string, any]) => `${id}:${row.original.city}`)
+        .sort(),
+    })
+    const held = getters.map(getter => table[getter]())
+    const before = held.map(shapeOf)
+    const live = table.getCoreRowModel().rowsById
+    // Смены по одной — каждая правит словарь хранилища на месте.
+    for (const change of [
+      (rows: Item[]) => rows.filter(r => r.id !== 'b'),
+      (rows: Item[]) =>
+        rows.map(r => (r.id === 'c' ? { ...r, city: 'Bonn' } : r)),
+      (rows: Item[]) => [...rows, item('z', 'Oslo')],
+    ]) {
+      data = change(data)
+      table.setOptions((o: any) => ({ ...o, data }))
+      table.getRowModel()
+      expect(table.getCoreRowModel().rowsById).toBe(live)
+    }
+    held.forEach((model, i) =>
+      expect(shapeOf(model), getters[i]).toEqual(before[i]),
+    )
+    expect(table.getRow('c').original.city).toBe('Bonn')
+    expect(table.getRow('z').id).toBe('z')
+    expect(table.getCoreRowModel().rowsById.b).toBeUndefined()
   })
 })

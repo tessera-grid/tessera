@@ -105,8 +105,8 @@ describe('общий слой (ADR 0166)', () => {
     expect(
       strays([...rowModels, ...shared, ...filtering], ['core', 'grid']),
     ).toEqual([])
-    // Словарь передаёт и модель ядра (ADR 0194): ядро не импортирует shared/.
-    expect(missing(['lib/core/rowsByIdHandover.ts'])).toEqual([])
+    // Словарь хранилища правят и модель ядра, и стадия фильтра (ADR 0200): ядро не импортирует shared/.
+    expect(missing(['lib/core/rowEngine/rowDict.ts'])).toEqual([])
   })
 
   it('SH3: тема — в ui/theme; в базе LB1 нет рёбер ui → core и core → ui', () => {

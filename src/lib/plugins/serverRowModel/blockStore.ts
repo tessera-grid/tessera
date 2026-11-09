@@ -4,6 +4,7 @@
  * вытеснение давно не нужных блоков сверх `maxBlocks`, итог известный или нет.
  * Без React и DOM: окно, быструю прокрутку и закреплённые строки сообщает плагин.
  */
+import { setPosition } from '../../core/rowPosition'
 import { isThenable, rejectionText } from '../../util/thenable'
 
 /** Запрос строк `[start, end)`; состояние выборки — от плагина. */
@@ -387,7 +388,8 @@ export class BlockStore<TData, TRow, TQuery> {
     for (const [index, row] of known) {
       const next = editedIndex(index, removed, insert)
       if (next === -1) continue
-      ;(row as { index?: number }).index = next
+      // Новое место знает хранилище: опубликованная строка не меняется (ADR 0200, §5).
+      setPosition(row as object, next)
       placed.set(next, row)
     }
     edits.insert?.rows.forEach((row, offset) =>

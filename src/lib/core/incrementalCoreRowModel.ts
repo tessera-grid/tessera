@@ -1,11 +1,10 @@
 /**
  * Модель ядра по умолчанию (ADR 0194, §2): смена `data` собирает модель из прежней по
- * тождеству строк, иначе — полная сборка TanStack. Автосбросы при смене `data` — те же,
- * что у мемо TanStack (IU9).
+ * тождеству строк, иначе — полная сборка хранилища в памяти (ADR 0200). Автосбросы при смене
+ * `data` — те же, что у мемо TanStack (IU9).
  */
-import { createCoreRowModel } from '@tanstack/react-table'
-
 import { type ChangeModel, patchCoreModel } from './dataChanges'
+import { buildCoreModel } from './rowEngine/memoryStore'
 import type { RowData, Table, TableFeatures } from '../types'
 
 interface ResettingTable {
@@ -29,7 +28,6 @@ export const createIncrementalCoreRowModel =
   <TFeatures extends TableFeatures, TData extends RowData = any>() =>
   (table: Table<TFeatures, TData>) => {
     const t = table as unknown as ResettingTable
-    const full = createCoreRowModel<TFeatures, TData>()(table)
     let last: { data: unknown; model: ChangeModel } | undefined
     return () => {
       const data = t.options.data
@@ -42,7 +40,12 @@ export const createIncrementalCoreRowModel =
           return model as never
         }
       }
-      const model = full() as unknown as ChangeModel
+      const model = buildCoreModel(
+        table,
+        data as readonly unknown[],
+      ) as unknown as ChangeModel
+      // Как мемо TanStack: полная сборка после смены `data` — сброс после пересчёта.
+      if (last) queueMicrotask(() => autoResetOnDataChange(table))
       last = { data, model }
       return model as never
     }

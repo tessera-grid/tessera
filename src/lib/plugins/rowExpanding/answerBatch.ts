@@ -10,6 +10,7 @@ import { flashOutcome } from '../../core/flashes/flashFeature'
 import { readLoadedChildren, setLoadedAnswer } from './lazyChildrenFeature'
 import type { RowExpandPending } from './rowExpandingPendingFeature'
 import { rowExpandingLabels } from './labels'
+import { rowsOf } from '../../core/rowEngine/rows'
 
 export interface BatchTable {
   store: object
@@ -36,7 +37,10 @@ export const HIDDEN_TAB_FALLBACK_MS = 100
 const queues = new WeakMap<object, Answer[]>()
 
 export const childIds = (table: BatchTable, rowId: string) =>
-  (table.getCoreRowModel().rowsById[rowId]?.subRows ?? []).map(row => row.id)
+  (
+    rowsOf<{ subRows: { id: string }[] }>(table, 'core').byId(rowId)?.subRows ??
+    []
+  ).map(row => row.id)
 
 const asRows = (rows: unknown): readonly unknown[] =>
   Array.isArray(rows) ? rows : []

@@ -19,6 +19,7 @@ import {
   selectionSummaryOf,
 } from '../rowSelectionModel/selectionCount'
 import { rowSelectionLabels } from './labels'
+import { hasRowsView, rowsOf } from '../../core/rowEngine/rows'
 
 export { countSelectedRows }
 
@@ -34,10 +35,12 @@ export const countHiddenSelectedRows = (
 ) => {
   const t = table as FilteredTable
   const selected = Object.keys(selection ?? {}).filter(id => selection![id])
-  if (!t.getFilteredRowModel || selected.length === 0) return 0
-  const { rowsById } = t.getCoreRowModel()
-  const visible = new Set(t.getFilteredRowModel().flatRows.map(row => row.id))
-  return selected.filter(id => id in rowsById && !visible.has(id)).length
+  if (!hasRowsView(t, 'filtered') || selected.length === 0) return 0
+  const core = rowsOf(t, 'core')
+  const visible = new Set(
+    rowsOf<{ id: string }>(t, 'filtered').flatRows.map(row => row.id),
+  )
+  return selected.filter(id => !!core.byId(id) && !visible.has(id)).length
 }
 
 export const SelectedRowsCount = ({ table }: StatusBarComponentProps) => {

@@ -61,6 +61,7 @@ describe('шаг вложенности при перетаскивании', ()
       atoms: { rowDragging: { get: () => ({ offsetLeft: 0 }) } },
       setRowDragging: () => {},
       options: {},
+      getCoreRowModel: () => ({ rows: [] }),
       getRowModel: () => ({ rows: [] }),
       getHooks: () => ({}),
     }

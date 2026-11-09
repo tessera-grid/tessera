@@ -19,17 +19,17 @@ import styles from './ExpandButton.module.css'
 import type { Row } from '../../types'
 import type { RowExpandingHooks } from './types'
 import { rowExpandingLabels } from './labels'
+import { rowsOf } from '../../core/rowEngine/rows'
 
 interface ExpandAllTable {
-  getPreExpandedRowModel: () => { flatRows: Row<any, any>[] }
   setExpanded: (value: unknown) => void
 }
 
 /** Есть раскрываемая строка, показанная свёрнутой. */
 const hasCollapsedRows = (table: ExpandAllTable) =>
-  table
-    .getPreExpandedRowModel()
-    .flatRows.some(row => row.getCanExpand() && !row.getIsExpanded())
+  rowsOf<Row<any, any>>(table, 'sorted').flatRows.some(
+    row => row.getCanExpand() && !row.getIsExpanded(),
+  )
 
 export const ExpandAllComponent = ({
   table,

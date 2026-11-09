@@ -257,7 +257,8 @@ describe('Смена data по тождеству строк (ADR 0194)', () => 
     expect(shape(before)).toEqual(snapshot)
     const change = rowModelChangeOf(after)!
     expect([...change.changed]).toEqual(['r4'])
-    expect(change.prev).toBe(before)
+    // Прежнюю модель запись отпускает после прохода конвейера (ADR 0200, EN26).
+    expect(change.inserted.size + change.removed.size).toBe(0)
   })
 
   it('IU3: изменения находятся по ссылкам и id строк — getRowId или поле id; повторяющийся id на уровне — полная сборка с тем же итогом', () => {

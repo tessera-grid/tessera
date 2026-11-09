@@ -9,6 +9,7 @@ import { isSkeletonShown } from '../../core/skeletonOptions'
 import { StatusBarCount } from '../../ui/StatusBarCount/StatusBarCount'
 import { Skeleton } from '../../ui/Skeleton'
 import { infiniteScrollLabels } from './labels'
+import { rowsOf } from '../../core/rowEngine/rows'
 
 export const LoadedRowsCount = ({ table }: StatusBarComponentProps) => {
   const labels = useLocalization()
@@ -20,7 +21,7 @@ export const LoadedRowsCount = ({ table }: StatusBarComponentProps) => {
     )
   }
   const rowCount = knownCount(rowCountOf(table))
-  const loaded = table.getCoreRowModel().rows.length
+  const loaded = rowsOf(table, 'core').rows.length
   return (
     <StatusBarCount
       data-testid="loaded-rows-count"

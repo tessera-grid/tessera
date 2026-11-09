@@ -174,9 +174,13 @@ const THROUGH_SOURCE = [
   'core/commonFeature.ts',
 ]
 
-/** Чтение моделей строк TanStack: методы моделей и словарь `rowsById`. */
+/**
+ * Чтение моделей строк TanStack: вызов метода модели и обращение к словарю `rowsById`. Описание
+ * типа (`getCoreRowModel: () => …`) — не чтение; фасеты (`getFacetedRowModel`) — стоковая фича
+ * поверх ленивых видов движка (ADR 0200, §6).
+ */
 const MODEL_READ =
-  /\bget(?:Pre)?(?:Core|Filtered|Grouped|Sorted|Expanded|Paginated|Faceted)?RowModel\b|\browsById\b/
+  /\.get(?:Pre)?(?:Core|Filtered|Grouped|Sorted|Expanded|Paginated)?RowModel\??\.?\(|\.rowsById\b/
 
 const sourceFiles = (dir: string): string[] =>
   readdirSync(dir).flatMap(name => {
@@ -194,69 +198,28 @@ const sourceFiles = (dir: string): string[] =>
  * переведённый на источник, уходит из списка.
  */
 const MODEL_READERS: Record<string, string> = {
-  'core/rowSource.ts': 'клиентский источник строк — над моделью TanStack',
-  'core/rowEngine/stockView.ts':
-    'стоковый вид выхода стадии для table.get*RowModel() — над словарём выхода (ADR 0200, §6)',
   'core/rowEngine/engine.ts':
-    'движок строк: вход стадии — модель TanStack перед её слотом (ADR 0200, §10)',
-  'core/rowTransactions.ts':
-    'родитель ветки клиентской транзакции — по модели ядра (ADR 0194)',
+    'каркас движка: вход стадии — модель ядра или выход прежней стадии (ADR 0200, §2)',
+  'core/rowEngine/rows.ts':
+    'чтение строк движка для ядра, грида и плагинов — место конвейера по виду (ADR 0200, §6)',
+  'core/rowEngine/stockView.ts':
+    'стоковый вид выхода стадии для table.get*RowModel() (ADR 0200, §6)',
+  'core/rowEngine/rowDict.ts':
+    'словарь хранилища с версиями: модель версии отдаёт словарь своей версии (ADR 0200, §2)',
+  'core/rowSource.ts':
+    'источник строк клиентского режима — выход движка (ADR 0200, §2)',
   'core/dataChanges.ts':
-    'модель ядра из прежней при смене data — над моделью TanStack (ADR 0194)',
-  'shared/rowModels/expandedRowModel.ts':
-    'фабрика модели раскрытия клиентского режима (ADR 0070)',
-  'shared/rowModels/filteredRowModel.ts':
-    'фабрика модели фильтрации клиентского режима (ADR 0045, 0068)',
-  'core/rowsByIdHandover.ts':
-    'передача словаря между моделями клиентского режима (ADR 0069)',
-  'plugins/columnSortingModel/sortedRowModel.ts':
-    'фабрика модели сортировки клиентского режима (ADR 0064, 0072)',
+    'хранилище: смена data из прежней модели ядра (ADR 0194, ADR 0200, §7)',
   'plugins/rowExpanding/lazyCoreRowModel.ts':
-    'фабрика исходной модели ленивого дерева (ADR 0067)',
-  'plugins/rowExpanding/ExpandAllComponent.tsx':
-    'свёрнутые раскрываемые строки клиентского режима — подпись кнопки «Раскрыть всё»; в SSRM — срез (ADR 0160)',
-  'plugins/paginationModel/pageStage.ts':
-    'стадия страницы движка: вход — модель перед слотом страницы (ADR 0200, §3)',
+    'хранилище: модель ядра ленивого дерева (ADR 0054, ADR 0200, §2)',
+  'shared/rowModels/filteredRowModel.ts':
+    'стадия фильтра и поиска движка (ADR 0200, §3)',
   'plugins/rowGroupingModel/groupStage.ts':
-    'стадия группировки движка: вход — модель перед слотом группировки (ADR 0200, §3)',
-  'plugins/columnFilteringModel/options.ts':
-    'варианты и счётчики фильтра из данных клиентского режима (ADR 0048)',
-  'core/scrollToRow/scrollToRowFeature.ts':
-    'путь до строки в дереве и страница по корню клиентского режима (ADR 0104); в SSRM — предки и сквозной индекс источника (SD53)',
-  'core/servicePresence.ts':
-    'есть ли подстроки в данных — показ служебной колонки (ADR 0050)',
-  'plugins/rowDragging/BodyBoundary.tsx':
-    'строки модели для перетаскивания клиентского режима; в SSRM — источник через dragRows (ADR 0159)',
-  'plugins/rowDragging/dragRows.ts':
-    'строки перетаскивания клиентского режима — модель TanStack; в SSRM — источник (ADR 0159)',
-  'plugins/rowDragging/getRowDraggingEvents.ts':
-    'раскрытие групп и сёстры для отката клиентского режима; в SSRM — транзакция источника (ADR 0159)',
-  'plugins/rowDragging/moveRow.ts':
-    'перестановка в порядке данных клиентского режима; в SSRM — транзакция источника (ADR 0159)',
-  'plugins/rowDragging/reconcileRowMoves.ts':
-    'согласование переносов с данными клиентского режима; в SSRM — кэш источника (ADR 0159)',
-  'grid/LiveRegion.tsx':
-    'объявление числа строк после фильтра клиентского режима (ADR 0045)',
-  'shared/filtering/FilteredRowsCount.tsx':
-    'счётчик «показано N из M» по данным клиентского режима (ADR 0045)',
-  'plugins/rowSelection/selectAllScope.ts':
-    'строки охвата «Выбрать всё» клиентского режима (ADR 0179); в SSRM — срез «всё, кроме»',
-  'plugins/rowSelection/SelectedRowsCount.tsx':
-    'выбранные строки, скрытые фильтром, по данным клиентского режима (ADR 0045)',
-  'plugins/dataExport/ExportPanel.tsx':
-    'число строк данных для подписи выгрузки; в SSRM выгрузка серверная (SD30)',
-  'plugins/dataExportModel/exportData.ts':
-    'обход данных для выгрузки всех и выбранных строк; в SSRM выгрузка серверная (SD30)',
-  'plugins/infiniteScroll/InfiniteTail.tsx':
-    'лента считает строки в data приложения (ADR 0081); в SSRM инертна (SD26)',
-  'plugins/infiniteScroll/LoadedRowsCount.tsx':
-    'лента считает строки в data приложения (ADR 0081); в SSRM инертна (SD26)',
-  'plugins/rowExpanding/answerBatch.ts':
-    'ленивые дети клиентского режима (ADR 0066); в SSRM дети — блоки ветки источника (ADR 0138, §14)',
-  'plugins/rowExpanding/narrowExpanded.ts':
-    'сужение раскрытия по дереву данных (ADR 0039); в SSRM не сужает (ADR 0160, §1)',
-  'plugins/rowExpanding/reconcileLoadedChildren.ts':
-    'согласование ответов ленивых детей с данными (ADR 0054); в SSRM дети — блоки ветки источника (ADR 0138, §14)',
-  'plugins/rowExpanding/registry.ts':
-    'ленивые дети клиентского режима (ADR 0054); в SSRM — hasChildren и ветки источника (ADR 0138, §14)',
+    'стадия группировки движка (ADR 0200, §3)',
+  'plugins/columnSortingModel/sortedRowModel.ts':
+    'стадия сортировки движка (ADR 0200, §3)',
+  'shared/rowModels/expandedRowModel.ts':
+    'стадия раскрытия движка (ADR 0200, §3)',
+  'plugins/paginationModel/pageStage.ts':
+    'стадия страницы движка (ADR 0200, §3)',
 }

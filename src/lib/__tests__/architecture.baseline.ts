@@ -17,6 +17,8 @@ export const CORE_PLUGIN_ONLY: Record<string, string> = {}
 export const CORE_PLUGIN_API: Record<string, string> = {
   'lib/core/rowEngine/displayChildren.ts':
     'дети строки в порядке показа: пишут стадии фильтра и сортировки, читают раскрытие и страница (ADR 0200, §4)',
+  'lib/core/rowEngine/memoryStore.ts':
+    'хранилище строк в памяти: модель ядра по умолчанию и ленивое дерево собирают из data одним обходом (ADR 0200, §2)',
   'lib/core/rowPosition.ts':
     'место строки в данных знает хранилище: его читают модели строк, перетаскивание и транзакции (ADR 0200, §5)',
   'lib/core/rowEngine/engine.ts':
@@ -31,8 +33,8 @@ export const CORE_PLUGIN_API: Record<string, string> = {
     'смена data клиента: замечает таблица, слушают активная ячейка ядра и выделение cellSelectionModel (ADR 0194, §6)',
   'lib/core/incrementalCoreRowModel.ts':
     'модель ядра по умолчанию и автосбросы смены data: их берёт и ленивая модель дерева (ADR 0194)',
-  'lib/core/rowsByIdHandover.ts':
-    'передача словаря rowsById новой модели: модель ядра, ленивая модель дерева и сортировка (ADR 0069, ADR 0194)',
+  'lib/core/rowEngine/rowDict.ts':
+    'словарь хранилища с версиями: модель ядра, ленивая модель дерева и стадия фильтра правят его на месте (ADR 0200, §2)',
   'lib/core/rowChanges.ts':
     'подсказка виртуализатору: пишут модели строк, читает виртуализатор ядра (ADR 0145)',
   'lib/core/rowHierarchy.ts':

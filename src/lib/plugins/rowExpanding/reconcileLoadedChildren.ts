@@ -11,6 +11,7 @@ import {
 } from './lazyChildrenFeature'
 import type { RowExpandPending } from './rowExpandingPendingFeature'
 import { setObjectPending } from '../../shared/objectPending'
+import { rowsOf } from '../../core/rowEngine/rows'
 
 interface ReconcileTable {
   store: object
@@ -42,9 +43,9 @@ export const reconcileLoadedChildren = (table: unknown) => {
   }
   for (let pass = 0; pass < MAX_PASSES; pass++) {
     const loaded = readLoadedChildren(table)
-    const { rowsById } = t.getCoreRowModel()
+    const core = rowsOf(t, 'core')
     const stale = Object.keys(loaded).filter(
-      id => !rowsById[id] || loaded[id]!.length === 0,
+      id => !core.byId(id) || loaded[id]!.length === 0,
     )
     if (stale.length === 0) {
       break
@@ -52,18 +53,18 @@ export const reconcileLoadedChildren = (table: unknown) => {
     // Пустой ответ снят: строка снова с переключателем, а не раскрытая, что грузит детей.
     collapseRows(
       table,
-      stale.filter(id => rowsById[id]),
+      stale.filter(id => core.byId(id)),
     )
     setLoadedAnswer(table, prev => without(prev, stale))
   }
-  const { rowsById } = t.getCoreRowModel()
+  const core = rowsOf(t, 'core')
   const gone = Object.keys(t.atoms.rowExpandPending?.get() ?? {}).filter(
-    id => !rowsById[id],
+    id => !core.byId(id),
   )
   if (gone.length > 0) {
     t.setRowExpandPending?.(prev => without(prev, gone))
     gone.forEach(id => setObjectPending(table, `rowExpand:${id}`, undefined))
   }
   // Отказ строки, ушедшей из данных, снимается (ADR 0177, OB11).
-  clearExpandFailed(table, id => !!rowsById[id])
+  clearExpandFailed(table, id => !!core.byId(id))
 }

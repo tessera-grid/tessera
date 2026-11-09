@@ -284,6 +284,8 @@ describe('rowDragging — пауза над свёрнутой группой (A
       const options: { rowDragExpandDelay?: number } = {}
       const table = {
         options,
+        // Без стадий итог движка — модель ядра (ADR 0200, SD2).
+        getCoreRowModel: () => table.getRowModel(),
         getRowModel: () => ({
           rows: [active, group],
           rowsById: { r: active, g: group },
@@ -486,6 +488,8 @@ describe('rowDragging — допустимые уровни места (ADR 0137
     let state = { ...DEFAULT_ROW_DRAG_OVERLAY_STATE, activeId }
     const table = {
       options: { rowDragExpandDelay: 0 },
+      // Без стадий итог движка — модель ядра (ADR 0200, SD2).
+      getCoreRowModel: () => table.getRowModel(),
       getRowModel: () => ({
         rows,
         rowsById: Object.fromEntries(rows.map(row => [row.id, row])),

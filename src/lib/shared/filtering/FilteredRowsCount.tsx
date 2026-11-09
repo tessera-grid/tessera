@@ -19,13 +19,12 @@ import { useTableState } from '../../core/reactivity'
 import { dataRowSourceOf } from '../../core/rowSource'
 import { StatusBarCount } from '../../ui/StatusBarCount/StatusBarCount'
 import { filteringLabels } from './labels'
+import { hasRowsView, rowsOf } from '../../core/rowEngine/rows'
 
 export const FILTERED_ROWS_COUNT_SLOT_ID = 'filteredRowsCount'
 
 interface CountTable {
   store: { get: () => { columnFilters?: unknown[]; globalFilter?: unknown } }
-  getFilteredRowModel?: () => { rows: unknown[] }
-  getPreFilteredRowModel?: () => { rows: unknown[] }
 }
 
 /** Клиент сужает строки сам: операция на клиенте и её срез не пуст. */
@@ -62,10 +61,10 @@ const countsOf = (table: CountTable) => {
     dataModeOf(table, 'filtering') === 'server' ||
     dataModeOf(table, 'search') === 'server'
   const clientRows = () =>
-    table.getFilteredRowModel && table.getPreFilteredRowModel
+    hasRowsView(table, 'filtered')
       ? {
-          filtered: table.getFilteredRowModel().rows.length,
-          total: table.getPreFilteredRowModel().rows.length,
+          filtered: rowsOf(table, 'filtered').rows.length,
+          total: rowsOf(table, 'core').rows.length,
         }
       : undefined
   if (!onServer) return clientRows()

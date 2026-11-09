@@ -50,6 +50,7 @@ import {
   type RowSortableData,
 } from './types'
 import { positionOf } from '../../core/rowPosition'
+import { rowsOf } from '../../core/rowEngine/rows'
 
 /**
  * Редьюсер DnD-событий тела: переупорядочивание строк c поддержкой вложенности
@@ -133,8 +134,7 @@ export const getRowDraggingEvents = (
   /** Все группы раскрыты — записью, чтобы сменить одну (ADR 0137, §6). */
   const allExpanded = () =>
     Object.fromEntries(
-      table
-        .getCoreRowModel()
+      rowsOf<Row<any, any>>(table, 'core')
         .flatRows.filter(row => row.getCanExpand())
         .map(row => [row.id, true]),
     )
@@ -623,10 +623,14 @@ export const getRowDraggingEvents = (
         parentId: overParentId,
         previousParentId: activeParentId,
         original: activeRow.original,
-        anchors: (place.parent?.subRows ?? table.getCoreRowModel().rows)
+        anchors: (
+          place.parent?.subRows ?? rowsOf<Row<any, any>>(table, 'core').rows
+        )
           .map(row => row.id)
           .filter(id => id !== rowId),
-        fromAnchors: (activeParentRow?.subRows ?? table.getCoreRowModel().rows)
+        fromAnchors: (
+          activeParentRow?.subRows ?? rowsOf<Row<any, any>>(table, 'core').rows
+        )
           .map(row => row.id)
           .filter(id => id !== rowId),
         fromIndex: positionOf(activeRow),

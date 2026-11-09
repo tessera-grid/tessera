@@ -360,7 +360,8 @@ describe('Сдвиги в середине data (ADR 0199)', () => {
         columnSortingModel({ initialSorting: [{ id: 'name', desc: false }] }),
       ],
     }
-    for (const read of [coreModel, (table: any) => table.getRowModel()]) {
+    // Подсказку спрашивают у итогового списка: промежуточные отпускаются после прохода (ADR 0200, EN26).
+    for (const read of [(table: any) => table.getRowModel()]) {
       const grid = host(make(1000), { ...options, read })
       const steps: [(d: Item[]) => Item[], (model: Model) => number][] = [
         [insertAt(400, [{ id: 'x1', name: 'n400a' }]), () => -1],

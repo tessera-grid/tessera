@@ -14,6 +14,7 @@ import type { InfiniteScrollHooks, InfiniteScrollState } from './types'
 
 import styles from './InfiniteTail.module.css'
 import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
+import { rowsOf } from '../../core/rowEngine/rows'
 
 interface InfiniteOptions {
   infiniteScrollHasMore?: boolean
@@ -37,7 +38,7 @@ export const InfiniteTail = ({
   const options = table.options as InfiniteOptions
   const inert = !!infiniteScrollInertReason(table)
   const hasMore = !!options.infiniteScrollHasMore
-  const loaded = table.getCoreRowModel().rows.length
+  const loaded = rowsOf(table, 'core').rows.length
   const bodyRows = table.getRowSource().count()
   const [loader] = useState(() => new InfiniteLoader())
   const sentinelRef = useRef<HTMLDivElement>(null)

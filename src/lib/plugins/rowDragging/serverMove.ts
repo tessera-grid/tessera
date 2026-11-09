@@ -4,6 +4,7 @@
  * `onRowDragEnd` получает место в ветке, отказ промиса возвращает строку.
  */
 import { reportAction } from '../../core/debugActions'
+import { positionOf } from '../../core/rowPosition'
 import { readPluginHooks } from '../../core/definePlugin'
 import { groupKeysOf, type RowSource, rowSourceOf } from '../../core/rowSource'
 import {
@@ -56,9 +57,9 @@ export const serverMoveTarget = (
         ? branch.known
           ? last
           : undefined
-        : row.index + to
+        : positionOf(row) + to
   if (target === undefined || target < 0 || target > last) return undefined
-  return target === row.index
+  return target === positionOf(row)
     ? undefined
     : { parentId: row.parentId, index: target }
 }
@@ -94,12 +95,12 @@ const branchTargetOf = (
     if (group?.groupingColumnId === undefined) return undefined
     const next = source.rowIn?.(
       group.parentId,
-      group.index + (shift === 'in' ? 1 : -1),
+      positionOf(group) + (shift === 'in' ? 1 : -1),
     ) as BranchRow | undefined
     return next?.groupingColumnId === undefined ? undefined : next
   }
   if (shift === 'out') return undefined
-  const sister = source.rowIn?.(row.parentId, row.index - 1) as
+  const sister = source.rowIn?.(row.parentId, positionOf(row) - 1) as
     BranchRow | undefined
   return sister && canNestInto(sister, table) ? sister : undefined
 }
@@ -114,7 +115,11 @@ const outdentPlaceOf = (
     return undefined
   const parent = source.byId(row.parentId) as BranchRow | undefined
   return (
-    parent && { parentId: parent.parentId, index: parent.index + 1, parent }
+    parent && {
+      parentId: parent.parentId,
+      index: positionOf(parent) + 1,
+      parent,
+    }
   )
 }
 
@@ -275,7 +280,7 @@ export const moveServerRow = (
   commitServerMove(
     table,
     rowId,
-    { from, to: from + place.index - row.index },
+    { from, to: from + place.index - positionOf(row) },
     place,
     readPluginHooks<Partial<RowDraggingHooks>>(table as never, 'rowDragging')
       .onRowDragEnd,
@@ -305,7 +310,7 @@ export const commitServerMove = (
   const source = rowSourceOf(table)
   const row = source.byId(rowId) as
     (PlacedRow & { original?: unknown }) | undefined
-  const before = { parentId: row?.parentId, index: row?.index ?? 0 }
+  const before = { parentId: row?.parentId, index: row ? positionOf(row) : 0 }
   // Перенос за окно уносит строку из кэша: откат ставит её по данным и закрывает новое место
   // (ADR 0159, §2).
   const stray = row && { original: row.original, from: place }

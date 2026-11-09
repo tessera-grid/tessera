@@ -32,6 +32,7 @@ import {
 } from '../plugins/rowDragging/moveRow'
 import { commitServerMove } from '../plugins/rowDragging/serverMove'
 import { captureInertWarnings } from './inertWarnings'
+import { positionOf } from '../core/rowPosition'
 ;(
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true
@@ -286,7 +287,7 @@ describe('перетаскивание строк в серверной моде
     )
     expect(source().branchSize!('r1')?.count).toBe(BRANCH + 1)
     expect(source().branchSize!('r2')?.count).toBe(BRANCH - 1)
-    expect(rowOf('r1.25').index).toBe(26)
+    expect(positionOf(rowOf('r1.25'))).toBe(26)
 
     // Блок со строкой вытеснен; блок ветки ниже неё и прежняя ветка — в окне.
     show(23, 43)
@@ -299,8 +300,8 @@ describe('перетаскивание строк в серверной моде
     expect(source().branchSize!('r2')?.count).toBe(BRANCH)
     expect(source().count()).toBe(TOTAL + 2 * BRANCH)
     expect(rowOf('r2.3')).toMatchObject({ parentId: 'r2', index: 3 })
-    expect(rowOf('r2.4').index).toBe(4)
-    expect(rowOf('r1.25').index).toBe(25)
+    expect(positionOf(rowOf('r2.4'))).toBe(4)
+    expect(positionOf(rowOf('r1.25'))).toBe(25)
   })
 
   it('MV9: блок, запрошенный до переноса и пришедший после, сверяется по id — ни дублей, ни пропусков', async () => {

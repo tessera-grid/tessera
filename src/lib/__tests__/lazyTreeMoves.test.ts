@@ -175,6 +175,8 @@ describe('Перенос в ленивом дереве (ADR 0112)', () => {
         // Переключатель rowExpanding есть: свёрнутая ленивая группа принимает детей (ADR 0109, §5).
         getKeyboardActions: () => [{ expands: true }],
         getHooks: () => ({}),
+        // Без стадий итог движка — модель ядра (ADR 0200, SD2).
+        getCoreRowModel: () => table.getRowModel(),
         getRowModel: () => ({
           rows,
           rowsById: Object.fromEntries(rows.map(r => [r.id, r])),

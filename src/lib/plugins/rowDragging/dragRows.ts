@@ -4,6 +4,7 @@
  */
 import type { RowSource } from '../../core/rowSource'
 import type { Row } from '../../types'
+import { rowsOf } from '../../core/rowEngine/rows'
 
 type AnyRow = Row<any, any>
 
@@ -16,23 +17,14 @@ export interface DragRows {
   server: boolean
 }
 
-interface ModelTable {
-  getRowModel: () => {
-    rows: AnyRow[]
-    rowsById: Record<string, AnyRow | undefined>
-  }
-}
-
 /** Все строки модели группировки, в том числе в свёрнутых группах (ADR 0186, §5). */
 export const groupedRowsOf = (table: unknown) =>
-  (
-    table as { getGroupedRowModel: () => { flatRows: AnyRow[] } }
-  ).getGroupedRowModel().flatRows
+  rowsOf<AnyRow>(table, 'grouped').flatRows
 
 /** `rows` — строки модели TanStack, если они уже прочитаны. */
 export const dragRowsOf = (
   table: unknown,
-  rows = (table as ModelTable).getRowModel().rows,
+  rows: readonly AnyRow[] = rowsOf<AnyRow>(table, 'shown').rows,
 ): DragRows => {
   const source = (
     table as { getRowSource?: () => RowSource<AnyRow> }
@@ -48,12 +40,12 @@ export const dragRowsOf = (
       server: true,
     }
   }
-  const { rowsById } = (table as ModelTable).getRowModel()
+  const shown = rowsOf<AnyRow>(table, 'shown')
   return {
     at: index => (index < 0 ? undefined : rows[index]),
     length: rows.length,
     indexOf: id => rows.findIndex(row => row.id === id),
-    byId: id => rowsById[id],
+    byId: id => shown.byId(id),
     server: false,
   }
 }
