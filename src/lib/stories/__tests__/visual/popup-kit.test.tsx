@@ -138,9 +138,8 @@ describe('Раскладка поповера-панели (ADR 0183, PK33)', ()
     settle()
     const surface = count()!.closest<HTMLElement>('[role="dialog"]')!
     const field = surface.querySelector('input')!
-    const fieldBox = field.closest('[class*="field"]') ?? field
-    expect(box(fieldBox).left - box(surface).left).toBeCloseTo(p, 0)
-    expect(box(fieldBox).top - box(surface).top).toBeCloseTo(p, 0)
+    expect(box(field).left - box(surface).left).toBeCloseTo(p, 0)
+    expect(box(field).top - box(surface).top).toBeCloseTo(p, 0)
     const item = surface.querySelector('[role="checkbox"]')!.closest('label')!
     expect(box(item).left - box(surface).left).toBeCloseTo(p, 0)
     expect(box(surface).right - box(item).right).toBeCloseTo(p, 0)
