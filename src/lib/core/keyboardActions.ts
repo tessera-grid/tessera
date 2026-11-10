@@ -8,7 +8,7 @@ import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 
 import { actionDetailOf, actionOwnerOf } from './actionOwners'
 import type { CellComponentProps, HeaderComponentProps } from './createSlots'
-import { reportAction } from './debugActions'
+import { type DebugActionSource, reportAction } from './debugActions'
 
 interface KeyboardActionBase<TCtx> {
   /** Идентификатор; при свёртке дубли по id заменяются последним. */
@@ -98,12 +98,45 @@ export const runKeyboardAction = (
   action: KeyboardAction,
   ctx: unknown,
   event: ReactKeyboardEvent<HTMLElement>,
+  source: DebugActionSource = 'keyboard',
 ): void => {
   reportAction(table, {
     plugin: actionOwnerOf(action),
     action: action.id,
-    detail: () => ({ ...actionDetailOf(ctx), key: keyComboOf(event) }),
-    source: 'keyboard',
+    detail: () => ({
+      ...actionDetailOf(ctx),
+      ...(source === 'keyboard' && { key: keyComboOf(event) }),
+    }),
+    source,
   })
   action.run(ctx as never, event)
+}
+
+/**
+ * Раскрыть или свернуть строку тем же путём, что и её кнопка: действие канала с флагом
+ * `expands`, применимое к одной из ячеек строки. Так переключают фокус на строке treegrid и
+ * шеврон липкой копии, когда кнопки строки нет в DOM (ADR 0160, EA12). `false` — нечем.
+ */
+export const toggleRowByAction = (
+  table: unknown,
+  row: { getVisibleCells: () => unknown[] } | undefined,
+  event: ReactKeyboardEvent<HTMLElement>,
+  source: DebugActionSource,
+): boolean => {
+  const actions = (
+    (
+      table as { getKeyboardActions?: () => KeyboardAction[] | undefined }
+    ).getKeyboardActions?.() ?? []
+  ).filter(action => action.scope === 'cell' && action.expands)
+  for (const cell of (row?.getVisibleCells() ?? []) as {
+    getContext?: () => unknown
+  }[]) {
+    const ctx = cell.getContext?.()
+    const action = actions.find(a => a.visible?.(ctx as never) ?? true)
+    if (ctx && action) {
+      runKeyboardAction(table, action, ctx, event, source)
+      return true
+    }
+  }
+  return false
 }

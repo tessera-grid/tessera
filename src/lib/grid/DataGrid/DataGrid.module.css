@@ -108,6 +108,28 @@
 }
 
 /*
+ * Волна ожидания (ADR 0155, PW7) заходит на прозрачный разделитель не прилипшего края: обрезка —
+ * по внешнему краю ячейки (`clip-path`), а не по внутреннему, как у `contain: paint`.
+ */
+.table__container:not([data-pinned-left-stuck])
+  .table
+  [data-cell-last-left-pinned='true'][data-pending-wave] {
+  --tsr-pending-edge-right: -1px;
+  contain: layout;
+  clip-path: inset(0);
+}
+
+.table__container:not([data-pinned-right-stuck])
+  .table
+  [data-cell-first-right-pinned='true'][data-pending-wave]:not(
+    [data-actions-column-cell='true']
+  ) {
+  --tsr-pending-edge-left: -1px;
+  contain: layout;
+  clip-path: inset(0);
+}
+
+/*
  * Прилипший блок отбрасывает тень на прокручиваемые колонки — только в их сторону.
  * Выбранная ячейка добавляет тень к кромкам выделения сама; обёртка содержимого
  * наследует тень ячейки, ей вторая не нужна.

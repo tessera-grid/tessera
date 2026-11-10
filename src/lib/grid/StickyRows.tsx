@@ -9,6 +9,8 @@ import { type ReactNode, type MouseEvent, useRef, useState } from 'react'
 
 import { useLatest } from '../util/useLatest'
 
+import { sourceOf } from '../core/debugActions'
+import { toggleRowByAction } from '../core/keyboardActions'
 import { scrollLayer } from '../core/scrollStretch'
 import { viewportOf } from '../core/scrollToRow/viewport'
 import type { CommonOptions } from '../core/commonFeature.types'
@@ -29,7 +31,10 @@ export interface StickyRow {
 
 interface StickyTable {
   options: Pick<CommonOptions, 'stickyGroupRows' | 'stickyBranchRows'>
-  scrollToRowIndex?: (index: number, options?: { align?: 'start' }) => unknown
+  scrollToRowIndex?: (
+    index: number,
+    options?: { align?: 'start'; behavior?: 'smooth' },
+  ) => Promise<boolean>
 }
 
 /** Глубже не бывает: стопка ограничена, даже если дерево глубже. */
@@ -201,18 +206,25 @@ export const StickyRows = ({
       .forEach(node => node.setAttribute('tabindex', '-1'))
   })
 
-  // Шеврон копии сворачивает группу — к её строке, иначе свёрнутая ушла бы выше экрана.
-  // Строка встаёт под копиями предков: они остаются в стопке над ней.
+  // Шеврон копии сворачивает группу на месте её строки: сначала плавная прокрутка к строке —
+  // она встаёт под копиями предков, — затем сворачивание тем же действием, что у её кнопки.
+  // Свёрнутая сразу ушла бы выше экрана, а прокрутка после сворачивания обрывает его движение
+  // (ADR 0160, EA12). Кнопки настоящей строки в DOM может не быть (ADR 0149).
   const onClickCapture = (event: MouseEvent<HTMLDivElement>) => {
     const target = event.target as Element
     if (!target.closest('.row-expand-button')) return
     const id = target.closest<HTMLElement>('[data-row-id]')?.dataset.rowId
     const level = stack.findIndex(entry => entry.row.id === id)
     if (level < 0) return
-    const index = stack[level]!.index - level
-    requestAnimationFrame(() =>
-      (table as StickyTable).scrollToRowIndex?.(index, { align: 'start' }),
-    )
+    event.preventDefault()
+    event.stopPropagation()
+    const { row, index } = stack[level]!
+    const source = sourceOf(event)
+    void (table as StickyTable)
+      .scrollToRowIndex?.(index - level, { align: 'start', behavior: 'smooth' })
+      .then(found => {
+        if (found) toggleRowByAction(table, row, event as never, source)
+      })
   }
 
   const pushed = (level: number) => stack[level]!.top < level * rowHeight

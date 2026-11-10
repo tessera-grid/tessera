@@ -1,14 +1,17 @@
 /**
- * getCellExpandingStyles: отступ вложенности на первой пользовательской колонке
- * (getVisibleLeafColumns + getIsActionsColumn из commonFeature); шаг — токен темы.
+ * getCellExpandingStyles: отступ вложенности на первой колонке данных в порядке отображения —
+ * закреплённые слева, центр, закреплённые справа, без скрытых и служебных (ADR 0059, RE80);
+ * шаг — токен темы. Там же линии дерева (ADR 0058).
  */
+import { getDisplayColumns } from '../core/displayColumns'
 import { ROW_NESTING_INDENT_TOKEN } from '../core/rowNesting'
 
 type ExpandingColumn = { id: string; getIsActionsColumn: () => boolean }
 type ExpandingTable = {
-  // getAllLeafColumns — ядровый (getVisibleLeafColumns из columnVisibilityFeature,
-  // не всегда в наборе). Видимость учтём, если понадобится.
-  getAllLeafColumns: () => ExpandingColumn[]
+  getVisibleLeafColumns: () => ExpandingColumn[]
+  getStartVisibleLeafColumns?: () => ExpandingColumn[]
+  getCenterVisibleLeafColumns?: () => ExpandingColumn[]
+  getEndVisibleLeafColumns?: () => ExpandingColumn[]
 }
 
 export interface CellExpandingStylesParams {
@@ -17,13 +20,13 @@ export interface CellExpandingStylesParams {
   table: ExpandingTable
 }
 
-/** Колонка отступа вложенности — первая пользовательская. */
+/** Колонка отступа вложенности — первая колонка данных на экране. */
 export const isIndentColumn = (
   column: ExpandingColumn,
   table: ExpandingTable,
 ) =>
-  table.getAllLeafColumns().find(leaf => !leaf.getIsActionsColumn())?.id ===
-  column.id
+  getDisplayColumns(table).columns.find(leaf => !leaf.getIsActionsColumn())
+    ?.id === column.id
 
 export const getCellExpandingStyles = ({
   column,

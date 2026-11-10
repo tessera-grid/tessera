@@ -2,7 +2,7 @@
 import { reportNavigation } from './model'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 
-import { type KeyboardAction, runKeyboardAction } from '../keyboardActions'
+import { type KeyboardAction, toggleRowByAction } from '../keyboardActions'
 import { getHeaderOwner } from './header'
 import { type ActiveCell, type NavTable, ROW_FOCUS_COLUMN } from './model'
 
@@ -68,32 +68,13 @@ export const resolveActionTarget = (
   return cell?.getContext ? { scope: 'cell', ctx: cell.getContext() } : null
 }
 
-/**
- * Раскрыть/свернуть строку тем же путём, что и кнопка: действие канала с флагом
- * `expands`, применимое к одной из ячеек строки. `false` — строку не раскрыть.
- */
+/** Раскрыть/свернуть строку тем же путём, что и кнопка; `false` — строку не раскрыть. */
 const toggleRowExpansion = (
   t: NavTable,
   rowIndex: number,
   event: ReactKeyboardEvent<HTMLElement>,
-): boolean => {
-  const row = t.getRowSource().at(rowIndex)
-  const actions = (t.getKeyboardActions?.() ?? []).filter(
-    action => action.scope === 'cell' && action.expands,
-  )
-  const cells = (row?.getVisibleCells() ?? []) as {
-    getContext?: () => unknown
-  }[]
-  for (const cell of cells) {
-    const ctx = cell.getContext?.()
-    const action = actions.find(a => a.visible?.(ctx as never) ?? true)
-    if (ctx && action) {
-      runKeyboardAction(t, action, ctx, event)
-      return true
-    }
-  }
-  return false
-}
+): boolean =>
+  toggleRowByAction(t, t.getRowSource().at(rowIndex), event, 'keyboard')
 
 /**
  * Клавиши в режиме фокуса на строке treegrid (паттерн APG Treegrid): следующая

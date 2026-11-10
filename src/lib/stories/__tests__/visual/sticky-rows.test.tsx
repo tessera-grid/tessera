@@ -16,11 +16,13 @@ import {
   type ServerRowsRequest,
   type ServerRowsResponse,
 } from '../../../plugins'
+import { settleRowMotion } from '../helpers'
 import { AXE_OPTIONS, inBothThemes, toRgba } from './a11y-helpers'
 
 // Липкие строки групп и веток (ADR 0160, этап 2): стопка под шапкой, выталкивание,
 // горизонтальная прокрутка и закреплённые колонки, серверная модель (EA6); шеврон копии,
-// клавиатура и скринридер (EA7); axe, контраст, токен линии и высокая контрастность (EA9).
+// клавиатура и скринридер (EA7); сворачивание с места строки после плавной прокрутки (EA12);
+// axe, контраст, токен линии и высокая контрастность (EA9).
 // EA8 — модульный stickyRows, EA10 — перф в scroll.
 
 const fc = commands as unknown as {
@@ -307,6 +309,8 @@ describe('липкие строки групп и веток (ADR 0160)', () => 
             ),
           )
           .toBe(h)
+        // Строки ниже доезжают движением сворачивания (EA12).
+        await settleRowMotion()
 
         // Клавиши: фокус ходит по настоящим строкам, в копии не заходит.
         if (keyboard) {
@@ -342,6 +346,75 @@ describe('липкие строки групп и веток (ADR 0160)', () => 
       } finally {
         await screen.unmount()
       }
+    }
+  })
+
+  test('EA12: шеврон липкой строки сначала плавно прокручивает к строке группы, затем сворачивает её на месте — прокрутка после сворачивания его не обрывает; при уменьшенном движении прокрутка сразу', async () => {
+    const motion = commands as unknown as {
+      reducedMotion: (reduce: boolean) => Promise<void>
+    }
+    /** Кадры от нажатия шеврона копии T0/C1: прокрутка и раскрыта ли группа. */
+    const collapseFromCopy = async (animated: boolean) => {
+      const h = rowHeight()
+      await scrollTo(40 * h)
+      await expect.poll(copyIds).toEqual([t0, t0c1])
+      const frames: { top: number; expanded: string | undefined }[] = []
+      await userEvent.click(
+        copies()[1]!.querySelector<HTMLElement>('.row-expand-button')!,
+      )
+      for (let i = 0; i < 180; i++) {
+        frames.push({
+          top: container().scrollTop,
+          expanded: realRow(t0c1)?.dataset.expanded,
+        })
+        if (frames.at(-1)!.expanded === 'false') break
+        // eslint-disable-next-line no-await-in-loop
+        await nextFrame()
+      }
+      const collapsedAt = frames.findIndex(f => f.expanded === 'false')
+      expect(collapsedAt, 'группа свёрнута').toBeGreaterThan(0)
+      const scrolling = frames.slice(0, collapsedAt)
+      // Сворачивание идёт движением строк: прокрутка его не оборвала. При уменьшенном
+      // движении его нет.
+      await nextFrame()
+      const animations = document
+        .querySelector('.data-grid__body')!
+        .getAnimations({ subtree: true }).length
+      if (animated)
+        expect(animations, 'движение сворачивания').toBeGreaterThan(0)
+      await settleRowMotion()
+      // Свёрнута на месте: под копией предка, без прокрутки после сворачивания.
+      await expect
+        .poll(() =>
+          Math.round(realRow(t0c1)!.getBoundingClientRect().top - headBottom()),
+        )
+        .toBe(h)
+      expect(container().scrollTop).toBe(frames[collapsedAt]!.top)
+      return new Set(scrolling.map(f => Math.round(f.top))).size
+    }
+
+    const screen = await render(<Grouped />)
+    try {
+      await expect.poll(() => realRow('r3')).not.toBeNull()
+      // Плавно: до сворачивания прокрутка проходит промежуточные положения.
+      expect(await collapseFromCopy(true), 'плавная прокрутка').toBeGreaterThan(
+        3,
+      )
+    } finally {
+      await screen.unmount()
+    }
+
+    await motion.reducedMotion(true)
+    const reduced = await render(<Grouped />)
+    try {
+      await expect.poll(() => realRow('r3')).not.toBeNull()
+      expect(
+        await collapseFromCopy(false),
+        'уменьшенное движение',
+      ).toBeLessThanOrEqual(2)
+    } finally {
+      await motion.reducedMotion(false)
+      await reduced.unmount()
     }
   })
 

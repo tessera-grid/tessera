@@ -217,12 +217,16 @@
   isolation: isolate;
 }
 
-/* Подложка занятой ячейки: блик идёт поверх неё. */
+/*
+ * Подложка занятой ячейки: блик идёт поверх неё. Прозрачный разделитель края закрепления, пока
+ * блок не прилип, подложка и блик заходят и на него (`--tsr-pending-edge-*`, PW7).
+ */
 :is(.body__cell, .body__filler)[data-pending-wave]::after {
   content: '';
   position: absolute;
   z-index: -2;
-  inset: 0;
+  inset: 0 var(--tsr-pending-edge-right, 0px) 0
+    var(--tsr-pending-edge-left, 0px);
   pointer-events: none;
   background: var(--tsr-comp-pending-bg);
 }
@@ -231,7 +235,7 @@
   content: '';
   position: absolute;
   z-index: -1;
-  inset: 0 auto 0 0;
+  inset: 0 auto 0 var(--tsr-pending-edge-left, 0px);
   width: var(--tsr-comp-skeleton-wave-width);
   transform: translateX(-100%);
   pointer-events: none;
@@ -249,6 +253,31 @@
     color-mix(in oklch, var(--tsr-comp-pending-wave) 10%, transparent) 90%,
     transparent
   );
+}
+
+/*
+ * Колонка действий одна справа прозрачна — её кнопки висят над содержимым; в ожидании подложка
+ * легла бы на подложку ячейки под ней второй раз. Ячейка берёт фон строки без тона прилипания и
+ * слои строки, как закреплённые (ADR 0155, PW6).
+ */
+.body__cell[data-actions-column-cell='true'][data-cell-first-right-pinned='true'][data-pending-wave] {
+  background-color: var(--tsr-comp-row-bg);
+  background-image:
+    linear-gradient(
+      var(--tsr-cell-selection-tint, transparent),
+      var(--tsr-cell-selection-tint, transparent)
+    ),
+    linear-gradient(var(--tsr-flash-cell), var(--tsr-flash-cell)),
+    linear-gradient(var(--tsr-highlight-cell), var(--tsr-highlight-cell)),
+    linear-gradient(var(--tsr-flash-column), var(--tsr-flash-column)),
+    linear-gradient(var(--tsr-highlight-column), var(--tsr-highlight-column)),
+    linear-gradient(var(--tsr-flash-row), var(--tsr-flash-row)),
+    linear-gradient(var(--tsr-highlight-row), var(--tsr-highlight-row)),
+    linear-gradient(var(--tsr-row-state), var(--tsr-row-state));
+}
+
+.body__cell[data-actions-column-cell='true'][data-cell-first-right-pinned='true'][data-cell-odd-right-pinned='true'][data-pending-wave] {
+  background-color: var(--tsr-comp-row-odd-bg);
 }
 
 /* Без блика — одна подложка: уменьшенное движение или цель больше порога (usePendingWave). */

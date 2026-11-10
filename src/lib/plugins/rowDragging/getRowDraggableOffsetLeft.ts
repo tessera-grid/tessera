@@ -1,4 +1,5 @@
 import type { Table } from '../../types'
+import { getDisplayColumns } from '../../core/displayColumns'
 import { readRowNestingIndent } from '../../core/rowNesting'
 
 export interface RowDraggableRowOffsetLeftParams {
@@ -19,10 +20,15 @@ export interface RowDraggableRowOffsetLeftParams {
 export const getRowDraggableOffsetLeft = ({
   table,
 }: RowDraggableRowOffsetLeftParams) => {
-  const visibleColumns = table.getVisibleLeafColumns()
+  // Порядок отображения: до колонки отступа — то, что стоит слева на экране (RE80).
+  const visibleColumns = getDisplayColumns<{
+    id: string
+    getIsActionsColumn: () => boolean
+    getSize: () => number
+  }>(table as never).columns
 
   const firstUserColumnIndex = visibleColumns.findIndex(
-    (visibleColumn: any) => !visibleColumn.getIsActionsColumn(),
+    visibleColumn => !visibleColumn.getIsActionsColumn(),
   )
 
   // -1 (пользовательских колонок нет) трактуем как «все колонки — сервисные».
@@ -31,7 +37,7 @@ export const getRowDraggableOffsetLeft = ({
 
   const leadingServiceWidth = visibleColumns
     .slice(0, leadingServiceCount)
-    .reduce((sum: number, column: any) => sum + column.getSize(), 0)
+    .reduce((sum, column) => sum + column.getSize(), 0)
 
   return leadingServiceWidth + readRowNestingIndent(table)
 }

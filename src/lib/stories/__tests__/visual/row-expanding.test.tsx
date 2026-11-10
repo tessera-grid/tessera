@@ -7,7 +7,21 @@ import axe from 'axe-core'
 import { composed, treeLinesArgs, plainGroupingArgs } from '../stories'
 import { settleRowMotion } from '../helpers'
 import { ENGLISH_LABELS } from '../../../core/localization'
-import { waitForBodyText } from './column-pinning-helpers'
+import {
+  menuItemByText,
+  revealPin,
+  waitForBodyText,
+} from './column-pinning-helpers'
+import { columnPinningLabels } from '../../../plugins/columnPinning/labels'
+import { tableLabels } from '../labels'
+import { useCreateTable } from '../../../core/useCreateTable'
+import { DataGrid } from '../../../grid/DataGrid'
+import {
+  columnPinning,
+  columnVisibility,
+  rowExpandingModel,
+  treeLines,
+} from '../../../plugins'
 import { AXE_OPTIONS, gridRoot, inBothThemes } from './a11y-helpers'
 import { ROW_NESTING_INDENT_PX } from '../../../core/rowNesting'
 import { COLUMN_EXPANDING_ID } from '../../../../lib/plugins/rowExpanding'
@@ -464,5 +478,119 @@ describe('Row Expanding — nesting step', () => {
     )
     await expect.poll(() => paddings().length).toBeGreaterThan(0)
     expect(new Set(paddings())).toEqual(new Set([16]))
+  })
+
+  test('RE80: отступ и линии дерева — в первой колонке данных на экране: закреплённая слева колонка, а не первая по объявлению; скрытая колонка отдаёт их следующей; при смене порядка колонок — новой первой', async () => {
+    interface Node {
+      id: string
+      name: string
+      city: string
+      score: number
+      subRows?: Node[]
+    }
+    const data: Node[] = [
+      {
+        id: 'a',
+        name: 'Alpha',
+        city: 'Oslo',
+        score: 1,
+        subRows: [
+          {
+            id: 'a1',
+            name: 'Alpha one',
+            city: 'Rome',
+            score: 2,
+            subRows: [{ id: 'a1x', name: 'Deep', city: 'Lima', score: 3 }],
+          },
+        ],
+      },
+      { id: 'b', name: 'Beta', city: 'Kyiv', score: 4 },
+    ]
+    const columns = ['name', 'city', 'score'].map(id => ({
+      id,
+      accessorKey: id,
+      header: id,
+      size: 160,
+    }))
+    const Host = ({ state }: { state?: Record<string, unknown> }) => {
+      const table = useCreateTable({
+        columns: columns as never,
+        data,
+        getRowId: (row: Node) => row.id,
+        plugins: [
+          rowExpandingModel({ expanded: true }),
+          treeLines(),
+          columnPinning(),
+          columnVisibility(),
+        ] as never,
+        state: state as never,
+      })
+      return (
+        <div style={{ width: 640, height: 300 }}>
+          <DataGrid table={table as never} />
+        </div>
+      )
+    }
+    const row = (id: string) =>
+      document.querySelector<HTMLElement>(
+        `.data-grid__body-row[data-row-id="${id}"]`,
+      )
+    /** Колонки глубокой строки: где отступ и где линии дерева. */
+    const indentOf = () => {
+      const cells = [
+        ...row('a1x')!.querySelectorAll<HTMLElement>('.data-grid__body-cell'),
+      ]
+      return {
+        padding: cells
+          .filter(cell => parseFloat(getComputedStyle(cell).paddingLeft) > 0)
+          .map(cell => cell.dataset.columnId),
+        lines: cells
+          .filter(
+            cell =>
+              cell.hasAttribute('data-tree-depth') ||
+              cell.querySelector('[data-tree-depth]'),
+          )
+          .map(cell => cell.dataset.columnId),
+      }
+    }
+
+    const screen = await render(<Host />)
+    await expect.poll(() => row('a1x')).not.toBeNull()
+    expect(indentOf()).toEqual({ padding: ['name'], lines: ['name'] })
+
+    // Закрепление второй колонки нажатием на её кнопку — она первая на экране.
+    const head = () =>
+      document.querySelector<HTMLElement>(
+        '.data-grid__head-cell[data-column-id="city"]',
+      )!
+    await userEvent.click(await revealPin(head()))
+    const pinLeft = () =>
+      menuItemByText(columnPinningLabels(tableLabels).pinLeft)
+    await expect.poll(pinLeft).toBeTruthy()
+    await userEvent.click(pinLeft()!)
+    await expect
+      .poll(() => head().getAttribute('data-cell-pinned'))
+      .toBe('left')
+    await expect.poll(indentOf).toEqual({ padding: ['city'], lines: ['city'] })
+    await screen.unmount()
+
+    // Первая на экране скрыта — отступ у следующей.
+    const hidden = await render(
+      <Host
+        state={{
+          columnPinning: { start: ['city'], end: [] },
+          columnVisibility: { city: false },
+        }}
+      />,
+    )
+    await expect.poll(() => row('a1x')).not.toBeNull()
+    await expect.poll(indentOf).toEqual({ padding: ['name'], lines: ['name'] })
+    await hidden.rerender(
+      <Host state={{ columnOrder: ['score', 'name', 'city'] }} />,
+    )
+    await expect
+      .poll(indentOf)
+      .toEqual({ padding: ['score'], lines: ['score'] })
+    await hidden.unmount()
   })
 })
