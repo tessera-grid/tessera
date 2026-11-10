@@ -40,6 +40,14 @@ const pageRows = (t: ScopeTable) => {
   return rows
 }
 
+/** Строка в охвате: выбираемая строка данных нужного уровня. */
+const inScopeOf = (table: unknown) => {
+  // При группировке строки данных вложены в группы, а строки выбора — только они (ADR 0185, §5).
+  const nested = !!subRowsOf(table) || isGroupingActive(table)
+  return (row: Row<any, any>) =>
+    (nested || row.depth === 0) && !isClientGroupRow(row) && row.getCanSelect()
+}
+
 export const scopeRowsOf = (
   table: unknown,
   scope: SelectAllScope,
@@ -51,14 +59,47 @@ export const scopeRowsOf = (
       : scope === 'filtered'
         ? [...rowsOf<Row<any, any>>(t, 'filtered').flatRows]
         : pageRows(t)
-  // При группировке строки данных вложены в группы, а строки выбора — только они (ADR 0185, §5).
-  const nested = !!subRowsOf(table) || isGroupingActive(table)
-  return rows.filter(
-    row =>
-      (nested || row.depth === 0) &&
-      !isClientGroupRow(row) &&
-      row.getCanSelect(),
+  return rows.filter(inScopeOf(table))
+}
+
+/**
+ * Состояние флажка шапки без списка строк охвата (ADR 0179, SE17): выбранные — по ключам выбора,
+ * «все» — до первой невыбранной строки охвата. Страница короткая — по её строкам.
+ */
+export const scopeStateOf = (
+  table: unknown,
+  scope: SelectAllScope,
+  selection: RowSelectionState,
+) => {
+  if (scope === 'currentPage') {
+    const rows = scopeRowsOf(table, scope)
+    const { all, some } = scopeSelectionOf(rows, selection)
+    return { all, some, empty: rows.length === 0 }
+  }
+  const view = rowsOf<Row<any, any>>(
+    table as ScopeTable,
+    scope === 'all' ? 'core' : 'filtered',
   )
+  const inScope = inScopeOf(table)
+  let some = false
+  for (const id in selection) {
+    const row = selection[id] ? view.byId(id) : undefined
+    if (row && inScope(row)) {
+      some = true
+      break
+    }
+  }
+  let empty = true
+  let all = some
+  for (const row of view.flatRows) {
+    if (!inScope(row)) continue
+    empty = false
+    if (!selection[row.id]) {
+      all = false
+      break
+    }
+  }
+  return { all: all && !empty, some, empty }
 }
 
 /** Выбраны ли все строки охвата и хотя бы одна. */

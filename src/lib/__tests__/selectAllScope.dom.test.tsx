@@ -346,4 +346,33 @@ describe('охват «Выбрать всё» (ADR 0179)', () => {
       except: ['p2'],
     })
   })
+
+  it('SE17: выбор строки пересчитывает флажок шапки при охвате filtered и all без обхода всех строк — проверок строк не больше двух на выбор; вид флажка прежний', () => {
+    const data = Array.from({ length: 1000 }, (_, k) => item(`r${k}`))
+    const state = () =>
+      container.querySelector('[role="checkbox"]')!.getAttribute('aria-checked')
+    for (const scope of ['filtered', 'all'] as const) {
+      mount({ plugins: [rowSelection({ selectAll: scope })], data, head: true })
+      expect(state(), scope).toBe('false')
+      let checks = 0
+      for (const row of captured.getCoreRowModel().flatRows) {
+        const own = row.getCanSelect.bind(row)
+        row.getCanSelect = () => {
+          checks++
+          return own()
+        }
+      }
+      act(() => captured.setRowSelection({ r500: true }))
+      expect(state(), scope).toBe('mixed')
+      expect(checks, scope).toBeLessThanOrEqual(2)
+      act(() =>
+        captured.setRowSelection(
+          Object.fromEntries(data.map(row => [row.id, true])),
+        ),
+      )
+      expect(state(), scope).toBe('true')
+      act(() => root?.unmount())
+      root = undefined
+    }
+  })
 })

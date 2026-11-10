@@ -20,7 +20,7 @@ import type { ServerActionStatus } from '../../core/serverActions'
 import { Checkbox } from '../../ui/Checkbox/Checkbox'
 import {
   scopeRowsOf,
-  scopeSelectionOf,
+  scopeStateOf,
   selectAllScopeOf,
   setScopeSelected,
 } from './selectAllScope'
@@ -114,11 +114,10 @@ export const HeadSelectionComponent = ({
     )
   }
 
-  const rows = scopeRowsOf(table, scope)
-  const { all, some } = scopeSelectionOf(rows, selection)
+  const { all, some, empty } = scopeStateOf(table, scope, selection)
   const selected = all
   const indeterminate = some && !all
-  const disabled = rows.length === 0
+  const disabled = empty
 
   const handleSelectAll = (event: unknown) => {
     reportAction(table, {
