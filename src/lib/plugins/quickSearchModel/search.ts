@@ -22,10 +22,12 @@ interface SearchTable {
 
 type SearchFormatColumn = FormatColumn & {
   getDataType?: () => ResolvedDataType | undefined
+  accessorFn?: (original: never, index: number) => unknown
 }
 
 interface SearchRow {
   original: unknown
+  index: number
   getValue: (columnId: string) => unknown
   table: SearchTable
 }
@@ -132,8 +134,11 @@ const prepareRowCheck = (
   if (typeof query !== 'string' || query.includes(SEPARATOR)) return undefined
   if (query === '') return () => true
   const pass = passOf(table, columns)
+  // Значение — функцией доступа колонки, как `row.getValue`, но без поиска колонки и записи в
+  // кэш значений строки на каждую ячейку.
   const parts = columns.map(column => ({
     id: column.id,
+    access: column.accessorFn,
     typed: isTyped(column),
     format: columnFormatter(table, column),
   }))
@@ -144,12 +149,15 @@ const prepareRowCheck = (
     }
     let text = ''
     for (let i = 0; i < parts.length; i++) {
-      const { id, typed, format } = parts[i]!
+      const { id, access, typed, format } = parts[i]!
       if (i) text += SEPARATOR
-      const value = row.getValue(id)
-      if (isShown(value, typed))
-        text += format(value, row.original).toLowerCase()
+      const value = access
+        ? access(row.original as never, row.index)
+        : row.getValue(id)
+      if (isShown(value, typed)) text += format(value, row.original)
     }
+    // Регистр — раз на строку: разделитель не меняет перевод соседних частей.
+    text = text.toLowerCase()
     textByRow.set(row, { pass, original: row.original, text })
     return text
   }

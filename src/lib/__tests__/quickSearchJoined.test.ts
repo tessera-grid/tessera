@@ -211,6 +211,21 @@ describe('склеенный текст строки (ADR 0201)', () => {
     expect(search).not.toHaveBeenCalled()
   })
 
+  it('QT11: первый поиск читает значения ячеек функцией доступа колонки — без getValue строки', () => {
+    const table = tableOf()
+    const getValue = vi.fn()
+    for (const row of table.getCoreRowModel().rows) {
+      const own = row.getValue.bind(row)
+      row.getValue = (id: string) => {
+        getValue(id)
+        return own(id)
+      }
+    }
+    expect(found(table, 'plain note')).toEqual(['b'])
+    expect(found(table, '$1,234.50')).toEqual(['a'])
+    expect(getValue).not.toHaveBeenCalled()
+  })
+
   it('QT4: текст строки пересчитывается при смене данных строки, набора колонок поиска, columnDef колонки, locale, timeZone и реестра dataTypes; без этих смен — не пересчитывается', () => {
     const shown = vi.fn((value: unknown) => `#${value}`)
     const table = tableOf({}, shown)

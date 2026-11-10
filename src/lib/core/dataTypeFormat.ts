@@ -4,7 +4,11 @@
  * дата со временем `YYYY-MM-DD HH:mm` в поясе таблицы. Форматтеры — раз на язык, пояс и
  * опции (DT20).
  */
-import { optionTextOf, type ColumnOptionsDef } from './columnOptions'
+import {
+  hasColumnOptions,
+  optionTextOf,
+  type ColumnOptionsDef,
+} from './columnOptions'
 import { DEFAULT_LOCALE } from './localization'
 import { parseDecimal } from '../util/decimal'
 import { logWarn } from '../util/logger'
@@ -278,6 +282,18 @@ export const formatDataTypeValue = (
  */
 export const columnFormatter = (table: FormatTable, column: FormatColumn) => {
   const type = resolveDataType(table, column)
+  if (!type && !hasColumnOptions(column.columnDef)) {
+    // Без типа и вариантов — строка значения, как у `formatTyped`, без проверок на каждое.
+    const { timeZone } = table.options
+    return (value: unknown): string =>
+      typeof value === 'string'
+        ? value
+        : value === null || value === undefined
+          ? ''
+          : value instanceof Date
+            ? neutralDate(value, true, timeZone)
+            : String(value)
+  }
   return (value: unknown, row: unknown): string =>
     formatTyped(table, column, type, value, row)
 }
