@@ -179,6 +179,20 @@ export const patchCoreModel = <TData>(
     if (budget < 0) failed = true
   }
 
+  /**
+   * Данные корней прежней модели — прежний `data`, если модель собрана из него: сверка по местам
+   * идёт по массивам данных, без чтения `original` у строк разной формы.
+   */
+  const prevOriginals = (rows: readonly ChangeRow[]): readonly unknown[] => {
+    const n = rows.length
+    return prevData.length === n &&
+      (n === 0 ||
+        (rows[0]!.original === prevData[0] &&
+          rows[n - 1]!.original === prevData[n - 1]))
+      ? prevData
+      : rows.map(row => row.original)
+  }
+
   // Новые места сдвинутых строк ставятся, только когда смена собрана: при отказе — полная сборка.
   const shifts: [ChangeRow, number][] = []
   const shiftRow = (row: ChangeRow, index: number) => {
@@ -337,10 +351,11 @@ export const patchCoreModel = <TData>(
     const leaf = (original: TData, index: number) =>
       !getSubRows?.(original, index)?.length
     const replaced: number[] = []
+    const olds = prevOriginals(prevRows)
     for (let i = 0; i < prevRows.length; i++) {
-      const old = prevRows[i]!
       const original = originals[i]!
-      if (old.original === original) continue
+      if (olds[i] === original) continue
+      const old = prevRows[i]!
       if (t.getRowId(original, i, undefined) !== old.id || !leaf(original, i)) {
         return null
       }
@@ -414,14 +429,13 @@ export const patchCoreModel = <TData>(
     // Пары «прежняя строка — новое место» по тождеству данных, в порядке обоих списков: общее
     // начало и общий конец, середина — двумя указателями с шагом вперёд.
     const shortest = Math.min(n0, n1)
+    const olds = prevOriginals(prevRows)
     let head = 0
-    while (head < shortest && prevRows[head]!.original === originals[head]) {
-      head++
-    }
+    while (head < shortest && olds[head] === originals[head]) head++
     let tail = 0
     while (
       tail < shortest - head &&
-      prevRows[n0 - 1 - tail]!.original === originals[n1 - 1 - tail]
+      olds[n0 - 1 - tail] === originals[n1 - 1 - tail]
     ) {
       tail++
     }
@@ -435,11 +449,11 @@ export const patchCoreModel = <TData>(
     let j = head
     while (i < newEnd && j < oldEnd) {
       const original = originals[i]
-      if (prevRows[j]!.original === original) {
+      if (olds[j] === original) {
         keptAt[i++ - head] = j++
-      } else if (j + 1 < oldEnd && prevRows[j + 1]!.original === original) {
+      } else if (j + 1 < oldEnd && olds[j + 1] === original) {
         lostOld.push(j++)
-      } else if (i + 1 < newEnd && originals[i + 1] === prevRows[j]!.original) {
+      } else if (i + 1 < newEnd && originals[i + 1] === olds[j]) {
         extraNew.push(i++)
       } else {
         lostOld.push(j++)
