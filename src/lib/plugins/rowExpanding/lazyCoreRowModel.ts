@@ -26,7 +26,7 @@ import { dictModel, editDictOf } from '../../core/rowEngine/rowDict'
 import { buildCoreModel } from '../../core/rowEngine/memoryStore'
 import type { RowData, Table, TableFeatures } from '../../types'
 import { type LoadedChildren, readLoadedChildren } from './lazyChildrenFeature'
-import { positionOf, setPosition } from '../../core/rowPosition'
+import { copyPosition } from '../../core/rowPosition'
 
 type GetSubRows<TData> = (row: TData, index: number) => TData[] | undefined
 
@@ -210,7 +210,7 @@ export const createLazyCoreRowModel =
         row.parentId,
       ) as unknown as ModelRow
       // Копия стоит на месте строки (ADR 0200, §5).
-      setPosition(copy, positionOf(row))
+      copyPosition(row, copy)
       return copy
     }
 
@@ -331,7 +331,8 @@ export const createLazyCoreRowModel =
           previous.set(childId, was)
         }
       }
-      return { prev, changed, inserted, removed, previous }
+      // Прочие строки — прежние объекты на прежних местах: смена на месте.
+      return { prev, changed, inserted, removed, inPlace: true, previous }
     }
 
     return () => {

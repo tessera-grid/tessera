@@ -14,6 +14,8 @@ import {
   recordRowModelChange,
   rowModelChangeOf,
 } from '../../core/dataChanges'
+import { RowDict, dictModel, editDictOf } from '../../core/rowEngine/rowDict'
+import { positionOf } from '../../core/rowPosition'
 import {
   groupMovesKey,
   readRowMoves,
@@ -268,6 +270,8 @@ interface Grouped {
   output: StageModel
   /** Ключ верхней группы строки входа; собирается при первом инкременте. */
   topKeys?: Map<string, string>
+  /** Начала участков верхних групп в `flatRows` выхода; собираются при первой замене на месте. */
+  starts?: Int32Array
 }
 
 /** Строка данных под группой и её ветка: `depth` по месту, ветка идёт за строкой. */
@@ -384,6 +388,195 @@ const subtreeIds = (row: StageRow, into: Set<string>) => {
   for (const child of row.subRows) subtreeIds(child, into)
 }
 
+/** Выход стадии со словарём версий: замена на месте правит его, а не копирует (ADR 0200, EN30). */
+const modelOf = (
+  rows: StageRow[],
+  flatRows: StageRow[],
+  rowsById: Record<string, StageRow>,
+): StageModel => {
+  const dict = new RowDict(rowsById)
+  return dictModel(dict, dict.version(), rows, flatRows)
+}
+
+/** Начала участков групп `groups` в `flatRows`. */
+const groupStarts = (
+  groups: readonly StageRow[],
+  flatRows: readonly StageRow[],
+) => {
+  const starts = new Int32Array(groups.length + 1)
+  let at = 0
+  for (let i = 0; i < flatRows.length && at < groups.length; i++) {
+    if (flatRows[i] === groups[at]) starts[at++] = i
+  }
+  starts[groups.length] = flatRows.length
+  return starts
+}
+
+/** Первое место в строках группы, чья позиция в данных не меньше `position`. */
+const placeIn = (rows: readonly StageRow[], position: number) => {
+  let lo = 0
+  let hi = rows.length
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1
+    if (positionOf(rows[mid]!) < position) lo = mid + 1
+    else hi = mid
+  }
+  return lo
+}
+
+const SPLICE_LIMIT = 10_000
+
+const pushTo = (map: Map<string, StageRow[]>, key: string, row: StageRow) => {
+  const list = map.get(key)
+  if (list) list.push(row)
+  else map.set(key, [row])
+}
+
+/**
+ * Плоский вход без сдвигов — замена на месте и дописывание в конец (ADR 0194): строки
+ * затронутой группы берутся из её прежних строк, без раскладки всех строк по группам;
+ * плоский список — прежний с заменой участков групп, словарь переходит новой модели.
+ * Новая или опустевшая группа и смена порядка групп — общий путь (`null`).
+ */
+const patchFlatGroups = (
+  table: StageTable,
+  prev: Grouped,
+  input: StageModel,
+  change: RowModelChange,
+  known: {
+    topKeys: Map<string, string>
+    movedKeys: Map<string, string>
+    prevGroups: Map<string, StageRow>
+  },
+): Grouped | null => {
+  const before = prev.input.rows.length
+  if (
+    change.removed.size > 0 ||
+    !isFlat(prev.input) ||
+    input.rows.length !== before + change.inserted.size
+  ) {
+    return null
+  }
+  // Изменённая строка на другом месте — перенос (ADR 0199, §2): общий путь.
+  for (const id of change.changed) {
+    const old = change.previous?.get(id) as StageRow | undefined
+    const now = input.rowsById[id]
+    if (!old || !now || positionOf(old) !== positionOf(now)) return null
+  }
+  const { topKeys, movedKeys, prevGroups } = known
+  // Строки, что входят в группу и выходят из неё, по ключу группы.
+  const comes = new Map<string, StageRow[]>()
+  const leaves = new Map<string, StageRow[]>()
+  for (const [id, key] of movedKeys) {
+    const row = input.rowsById[id]!
+    const members = prevGroups.get(key)?.leafRows
+    if (!members?.length) return null
+    const old = topKeys.get(id)
+    const position = positionOf(row)
+    if (change.inserted.has(id) && position < before) return null
+    if (old !== undefined && old !== key) {
+      const from = prevGroups.get(old)!.leafRows!
+      // Первая строка группы задаёт её место: её уход может сменить порядок групп.
+      if (from[0]!.id === id || from.length === 1) return null
+      pushTo(leaves, old, row)
+    }
+    if (old !== key && position < positionOf(members[0]!)) return null
+    pushTo(comes, key, row)
+  }
+
+  const { layout } = prev
+  const groups = prev.output.rows
+  const starts = (prev.starts ??= groupStarts(groups, prev.output.flatRows))
+  const affected = new Set([...comes.keys(), ...leaves.keys()])
+  const rebuilt = [...affected]
+    .map(key => {
+      const old = prevGroups.get(key)!
+      const members = old.leafRows!.slice()
+      for (const row of leaves.get(key) ?? []) {
+        members.splice(placeIn(members, positionOf(row)), 1)
+      }
+      for (const row of comes.get(key) ?? []) {
+        const at = placeIn(members, positionOf(row))
+        if (members[at]?.id === row.id) members[at] = row
+        else members.splice(at, 0, row)
+      }
+      const subtree: StageRow[] = []
+      const group = buildGroup(
+        table,
+        layout,
+        key,
+        members,
+        old.index,
+        0,
+        undefined,
+        subtree,
+      )
+      return { old, group, subtree }
+    })
+    .sort((a, b) => b.old.index - a.old.index)
+
+  const rows = groups.slice()
+  const flatRows = prev.output.flatRows.slice()
+  const nextStarts = starts.slice()
+  const gone = new Set<string>()
+  const placed: StageRow[] = []
+  const previous = new Map<string, object>()
+  // Группы — с конца: участок группы сдвигает только участки после неё.
+  for (const { old, group, subtree } of rebuilt) {
+    const at = old.index
+    rows[at] = group
+    const from = starts[at]!
+    const length = starts[at + 1]! - from
+    for (let i = from; i < from + length; i++) {
+      gone.add(flatRows[i]!.id)
+      previous.set(flatRows[i]!.id, flatRows[i]!)
+    }
+    flatRows.splice(from, length)
+    for (let i = 0; i < subtree.length; i += SPLICE_LIMIT) {
+      flatRows.splice(from + i, 0, ...subtree.slice(i, i + SPLICE_LIMIT))
+    }
+    const shift = subtree.length - length
+    if (shift !== 0) {
+      for (let i = at + 1; i < nextStarts.length; i++) nextStarts[i]! += shift
+    }
+    for (const row of subtree) placed.push(row)
+  }
+
+  const changed = new Set<string>()
+  const inserted = new Set<string>()
+  const removed = new Set<string>()
+  const placedIds = new Set<string>()
+  const { dict, writer } = editDictOf(prev.output)
+  // Сначала уходят прежние поддеревья всех групп: строка могла переехать в другую из них.
+  for (const id of gone) writer.delete(id)
+  for (const row of placed) {
+    writer.set(row.id, row)
+    placedIds.add(row.id)
+    if (input.rowsById[row.id] !== undefined) {
+      if (change.changed.has(row.id)) changed.add(row.id)
+      else if (change.inserted.has(row.id)) inserted.add(row.id)
+    } else if (gone.has(row.id)) {
+      changed.add(row.id)
+    } else {
+      inserted.add(row.id)
+    }
+  }
+  for (const id of gone) {
+    if (!placedIds.has(id) && !input.rowsById[id]) removed.add(id)
+  }
+  for (const [id, key] of movedKeys) topKeys.set(id, key)
+  const output = dictModel(dict, writer.version, rows, flatRows)
+  recordRowModelChange(output, {
+    prev: prev.output,
+    changed,
+    inserted,
+    removed,
+    inPlace: true,
+    previous,
+  })
+  return { ...prev, input, output, topKeys, starts: nextStarts }
+}
+
 /**
  * Смена `data` при той же группировке (ADR 0194): строки верхних групп, затронутых сменой,
  * группируются заново; прочие группы переходят прежними объектами вместе с агрегатами.
@@ -434,6 +627,13 @@ const patchGroups = (
       affected.add(key)
     }
   }
+
+  const flat = patchFlatGroups(table, prev, input, change, {
+    topKeys,
+    movedKeys,
+    prevGroups,
+  })
+  if (flat !== null) return flat
 
   // Строки по группам в порядке входа; новые объекты — только строки смены (movedKeys).
   const members = new Map<string, StageRow[]>()
@@ -495,7 +695,7 @@ const patchGroups = (
   for (const id of change.removed) topKeys.delete(id)
   for (const [id, key] of movedKeys) topKeys.set(id, key)
 
-  const output: StageModel = { rows, flatRows, rowsById }
+  const output = modelOf(rows, flatRows, rowsById)
   // Прежние объекты — из своего прежнего выхода: его словарь стадия не меняла.
   const was = prev.output.rowsById
   const previous = new Map<string, object>()
@@ -509,7 +709,7 @@ const patchGroups = (
     removed,
     previous,
   })
-  return { ...prev, input, output, topKeys }
+  return { ...prev, input, output, topKeys, starts: undefined }
 }
 
 /** Связи строк без группировки — как `resetRowRelationships` стоковой модели. */
@@ -603,7 +803,7 @@ export const createGroupStage =
           columns: columnsOption,
           movesKey,
           layout,
-          output: { rows, flatRows, rowsById: byId(flatRows) },
+          output: modelOf(rows, flatRows, byId(flatRows)),
         }
       }
       grouped = true

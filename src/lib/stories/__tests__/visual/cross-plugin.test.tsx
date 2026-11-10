@@ -2,7 +2,7 @@ import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
-import { humanClick } from '../helpers'
+import { humanClick, wideViewport } from '../helpers'
 
 import { ENGLISH_LABELS } from '../../../core/localization'
 import { composed, plainGroupingArgs } from '../stories'
@@ -48,9 +48,13 @@ const menuTexts = () =>
 const sortedRows = (container: HTMLElement) =>
   Array.from(container.querySelectorAll<HTMLElement>(ROW)).sort(sortByIndex)
 
-/** A per-row identity signature: the text of all its user (non-service) cells. */
+/**
+ * A per-row identity signature: the text of its first two user (non-service) cells — they stay
+ * in the column window, while the band grows and rests to the right (ADR 0202, §1а).
+ */
 const signatureOf = (row: HTMLElement) =>
   Array.from(row.querySelectorAll<HTMLElement>(USER_CELL))
+    .slice(0, 2)
     .map(cell => cell.textContent?.trim() ?? '')
     .join('|')
 
@@ -475,6 +479,9 @@ describe('Cross-plugin — columnDragging × columnSorting', () => {
 
 describe('Cross-plugin — rowSelection × rowGrouping', () => {
   test('X6: row selection works with the grouping plugin enabled, under active grouping and after ungrouping', async () => {
+    // Все колонки — в видимой области: клик по кнопке группировки не прокручивает грид вбок, а окно
+    // в покое после смены списка держит только видимое и запас (ADR 0202, §1а).
+    await wideViewport()
     const { container } = await render(
       <composed.RowGroupingPlayground
         {...plainGroupingArgs}

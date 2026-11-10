@@ -1,8 +1,8 @@
 import type { ComponentProps } from 'react'
 
 import { commands } from '@vitest/browser/context'
-import { server, userEvent } from 'vitest/browser'
-import { expect } from 'vitest'
+import { page, server, userEvent } from 'vitest/browser'
+import { expect, onTestFinished } from 'vitest'
 import { cleanup, render } from 'vitest-browser-react'
 
 import { composed } from './stories'
@@ -22,6 +22,16 @@ export const HUMAN_PRESS_MS = 100
  */
 export const humanClick = (element: Element) =>
   userEvent.click(element, { delay: HUMAN_PRESS_MS })
+
+/**
+ * Окно страницы шириной 1600px до конца теста: все колонки истории — в видимой области. Окно
+ * колонок в покое держит видимое и запас (ADR 0202, §1а) — колонка за краем экрана не смонтирована.
+ */
+export const wideViewport = async () => {
+  const viewport = { width: innerWidth, height: innerHeight }
+  await page.viewport(1600, viewport.height)
+  onTestFinished(() => page.viewport(viewport.width, viewport.height))
+}
 
 /**
  * Фокус настоящим Tab: Firefox и WebKit не дают `:focus-visible` фокусу из скрипта после

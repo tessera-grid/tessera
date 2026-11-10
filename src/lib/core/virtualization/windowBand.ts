@@ -3,6 +3,7 @@ import {
   type Virtualizer,
   defaultRangeExtractor,
 } from '../../../vendor/tanstack-virtual/react-virtual'
+import { startTransition, useEffect, useState } from 'react'
 
 /** Полоса окна включена; перф WB7–WB8 выключает её для базы. */
 export const windowBand = { enabled: true }
@@ -12,32 +13,50 @@ export interface WindowBand {
   (range: Range): number[]
   /** Первый и последний индекс полосы последнего вызова, без закреплённых далёких строк. */
   current: () => readonly [number, number] | null
+  /** Окно — в покой: видимое и симметричный запас до сдвига по оси или роста (ADR 0202, §1а). */
+  rest: () => void
+  /** Полоса дорастает из покоя без сдвига: следующее окно — полоса вперёд. Было ли в покое. */
+  grow: () => boolean
+  isResting: () => boolean
 }
 
 /**
  * Полоса окна виртуализатора: впереди по ходу прокрутки `2 × overscan` элементов, позади —
- * один; держится, пока впереди не меньше `⌈overscan / 2⌉` или полоса у края списка.
+ * один; держится, пока впереди не меньше `⌈overscan / 2⌉` или полоса у края списка. Создаётся
+ * в покое: окно — видимое и симметричный запас, пока по оси не сдвинулись или полоса не выросла.
  */
 export const createWindowBand = (): WindowBand => {
   let band: [number, number] | null = null
-  let lastStart = -1
+  let lastStart: number | undefined
   let forward = true
+  let resting = true
   let last: readonly [number, number] | null = null
+  const symmetric = (range: Range) => {
+    band = null
+    const indexes = defaultRangeExtractor(range)
+    last = indexes.length ? [indexes[0]!, indexes.at(-1)!] : null
+    return indexes
+  }
   const extract = (range: Range): number[] => {
-    if (!windowBand.enabled) {
-      band = null
-      const indexes = defaultRangeExtractor(range)
-      last = indexes.length ? [indexes[0]!, indexes.at(-1)!] : null
-      return indexes
-    }
+    if (!windowBand.enabled) return symmetric(range)
     const { startIndex: start, endIndex: end, overscan, count } = range
     if (count === 0) {
       band = null
       last = null
       return []
     }
-    if (start !== lastStart) forward = start > lastStart
+    if (lastStart === undefined) lastStart = start
+    if (start !== lastStart) {
+      forward = start > lastStart
+      resting = false
+    }
     lastStart = start
+    if (resting) {
+      const indexes = symmetric(range)
+      // Окно покоя — полоса для первого сдвига: держится, пока видимое внутри и впереди есть запас.
+      band = last ? [last[0], last[1]] : null
+      return indexes
+    }
     const margin = Math.max(1, Math.ceil(overscan / 2))
     const keep =
       band !== null &&
@@ -59,7 +78,20 @@ export const createWindowBand = (): WindowBand => {
     for (let i = from; i <= to; i++) indexes[i - from] = i
     return indexes
   }
-  return Object.assign(extract, { current: () => last })
+  return Object.assign(extract, {
+    current: () => last,
+    rest: () => {
+      resting = true
+    },
+    grow: () => {
+      if (!resting) return false
+      resting = false
+      band = null
+      forward = true
+      return true
+    },
+    isResting: () => resting,
+  })
 }
 
 /**
@@ -85,4 +117,33 @@ export const createWindowFlush = (incremental: () => boolean) => {
       return false
     },
   }
+}
+
+/**
+ * Покой и рост полосы (ADR 0202, §1а): смена списка строк — окно в покой; в следующем кадре
+ * полоса дорастает переходом React, который прерывает ввод. Без рендера порциями (ADR 0203,
+ * `deferred: false`) покоя нет: окно рисуется одним проходом, без переходов. Возвращает версию
+ * окна — зависимость `rangeExtractor`: без неё виртуализатор отдаст прежние индексы.
+ */
+export const useBandRest = (
+  band: WindowBand,
+  listKey: unknown,
+  deferred: boolean,
+) => {
+  const [state, setState] = useState({ key: listKey, version: 0 })
+  if (!deferred) band.grow()
+  else if (windowBand.enabled && state.key !== listKey) {
+    band.rest()
+    setState({ key: listKey, version: state.version + 1 })
+  }
+  useEffect(() => {
+    if (!deferred || !windowBand.enabled || !band.isResting()) return
+    const id = requestAnimationFrame(() =>
+      startTransition(() => {
+        if (band.grow()) setState(s => ({ ...s, version: s.version + 1 }))
+      }),
+    )
+    return () => cancelAnimationFrame(id)
+  }, [band, state.version, deferred])
+  return state.version
 }

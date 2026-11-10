@@ -82,6 +82,17 @@ const box = (element: Element) => {
 const geometry = (cells: HTMLElement[]) =>
   cells.map(cell => ({ id: cell.dataset.columnId, ...box(cell) }))
 
+type Geometry = ReturnType<typeof geometry>
+
+/**
+ * Места колонок, что смонтированы в обоих окнах: окно колонок в покое и после роста полосы разное
+ * (ADR 0202, §1а), сдвиг — это смена места общей колонки.
+ */
+const shared = (now: Geometry, before: Geometry) => [
+  now.filter(cell => before.some(other => other.id === cell.id)),
+  before.filter(cell => now.some(other => other.id === cell.id)),
+]
+
 const waitSkeleton = (canvas: HTMLElement) =>
   until(() => expect(skeletonRows(canvas).length).toBeGreaterThan(0))
 const waitData = (canvas: HTMLElement) =>
@@ -364,20 +375,30 @@ export const SkeletonDataArrives: StoryObj<StoryProps> = {
       await expect(empty).toBe(0)
       // SL6 и SL2, без сдвига: те же заголовки, места и ширины колонок, служебных тоже.
       await expect(headCells(canvas)[0]).toBe(header)
-      await expect(geometry(headCells(canvas))).toEqual(head)
-      await expect(
+      const [headNow, headBefore] = shared(geometry(headCells(canvas)), head)
+      await expect(headNow.length).toBeGreaterThan(1)
+      await expect(headNow).toEqual(headBefore)
+      const [cellsNow, cellsBefore] = shared(
         geometry(all(dataRows(canvas)[0]!, '.data-grid__body-cell')),
-      ).toEqual(columns)
+        columns,
+      )
+      await expect(cellsNow.length).toBeGreaterThan(1)
+      await expect(cellsNow).toEqual(cellsBefore)
       // SL8: итоги — ровно в колонках, где был их скелет.
       const loaded = all(canvas, '.data-grid__footer-cell')
-      await expect(geometry(loaded)).toEqual(footer)
-      await expect(
-        new Set(
-          loaded
-            .filter(cell => cell.textContent?.trim())
-            .map(cell => cell.dataset.columnId!),
-        ),
-      ).toEqual(footerShapes)
+      const [footerNow, footerBefore] = shared(geometry(loaded), footer)
+      await expect(footerNow.length).toBeGreaterThan(1)
+      await expect(footerNow).toEqual(footerBefore)
+      const ids = new Set(footerNow.map(cell => cell.id))
+      const totals = new Set(
+        loaded
+          .filter(cell => cell.textContent?.trim())
+          .map(cell => cell.dataset.columnId!),
+      )
+      await expect(totals.size).toBeGreaterThan(0)
+      await expect(totals).toEqual(
+        new Set([...footerShapes].filter(id => ids.has(id))),
+      )
       // Скелетов не осталось нигде, панели тоже.
       await expect(canvas.querySelector('[data-skeleton]')).toBeNull()
       // «Экспорт» — на месте своего скелета.

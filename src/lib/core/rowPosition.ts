@@ -8,7 +8,14 @@ const positions = new WeakMap<object, number>()
 export const positionOf = (row: { index: number }): number =>
   positions.get(row) ?? row.index
 
-/** Новое место строки без правки самой строки. */
+/** Новое место строки без правки самой строки; место, равное `index`, записи не держит. */
 export const setPosition = (row: object, position: number) => {
-  positions.set(row, position)
+  if ((row as { index?: number }).index === position) positions.delete(row)
+  else positions.set(row, position)
+}
+
+/** Место строки — её копии с тем же `index`: запись переходит, только если она есть. */
+export const copyPosition = (from: object, to: object) => {
+  const position = positions.get(from)
+  if (position !== undefined) positions.set(to, position)
 }

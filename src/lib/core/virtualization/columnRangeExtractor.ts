@@ -2,7 +2,8 @@ import { useCallback, useState } from 'react'
 
 import type { Range } from '../../../vendor/tanstack-virtual/react-virtual'
 
-import { createWindowBand } from './windowBand'
+import { createWindowBand, useBandRest } from './windowBand'
+import { isIncremental } from './windowPortions'
 
 import type { Table } from '../../types'
 import { useActiveCellIndex } from '../keyboardNavigation'
@@ -34,8 +35,14 @@ export const useColumnRangeExtractor = ({
   const activeColumnIndex = useActiveCellIndex(table, 'columnIndex')
   const latest = useLatest(table)
 
-  // Полоса окна (ADR 0202, §1): своя у каждого виртуализатора.
+  // Полоса окна (ADR 0202, §1): своя у каждого виртуализатора; смена списка строк — покой (§1а).
   const [band] = useState(createWindowBand)
+  const rows = table.getRowSource()
+  const bandVersion = useBandRest(
+    band,
+    rows.keyByIndex ? rows.version?.() : rows.rows?.(),
+    isIncremental(table),
+  )
 
   return useCallback(
     (range: Range) => {
@@ -81,7 +88,8 @@ export const useColumnRangeExtractor = ({
     // `columnPinning` не читается в теле напрямую (пиннинг берётся через `table`),
     // но обязан быть в deps: смена идентичности extractor заставляет react-virtual
     // пере-считать окно сразу при закреплении, а не со следующего скролла.
+    // Версия полосы тоже не читается, но пересобирает окно при покое и росте.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [band, latest, table.store, columnPinning, activeColumnIndex],
+    [band, latest, table.store, columnPinning, activeColumnIndex, bandVersion],
   )
 }

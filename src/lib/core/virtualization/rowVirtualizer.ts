@@ -18,7 +18,7 @@ import { ESTIMATE_SIZE } from './measureRows'
 import { rowMeasureElement } from './rowMeasureElement'
 import { useRowRangeExtractor } from './rowRangeExtractor'
 import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
-import { createWindowBand, createWindowFlush } from './windowBand'
+import { createWindowBand, createWindowFlush, useBandRest } from './windowBand'
 import { isIncremental } from './windowPortions'
 import { useLatest } from '../../util/useLatest'
 import { scrollLayer } from '../scrollStretch'
@@ -107,8 +107,14 @@ export const useRowVirtualizer = ({
     held.pin === undefined ? undefined : rows.indexOf(held.pin)
 
   const [band] = useState(createWindowBand)
+  const bandVersion = useBandRest(
+    band,
+    rows.keyByIndex ? rows.version?.() : list,
+    isIncremental(table),
+  )
   const rangeExtractor = useRowRangeExtractor({
     band,
+    bandVersion,
     rowDraggingIndex,
     activeRowIndex,
     heldRowIndex,

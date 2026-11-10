@@ -245,11 +245,14 @@ const outputOf = (
   return output
 }
 
-/** Дети строки во входе стадии. */
-const inputKids =
-  (input: RowModel): ShownChildren =>
-  row =>
-    childrenOf(input, row)
+const NO_KIDS: readonly SortRow[] = []
+
+/** Вход без поддеревьев: в плоском списке нет строк сверх корней. */
+const isFlat = (input: RowModel) => input.flatRows.length === input.rows.length
+
+/** Дети строки во входе стадии; у плоского входа — без поиска по цепочке стадий. */
+const inputKids = (input: RowModel): ShownChildren =>
+  isFlat(input) ? () => NO_KIDS : row => childrenOf(input, row)
 
 /** Строки поддеревьев по детям показа, в порядке показа. */
 const pushShown = (
@@ -340,6 +343,18 @@ const rowComparator = (entries: SortEntry[], byIndex = true) => {
     }
     return byIndex ? positionOf(a) - positionOf(b) : 0
   }
+}
+
+/** Число уходящих и приходящих строк уровня, до которого уровень правится `splice`. */
+const FEW_CHANGES = 64
+
+/** Склейка участков: немного больших участков — `concat`, много мелких — одним проходом. */
+const concatPieces = (pieces: SortRow[][], length: number): SortRow[] => {
+  if (pieces.length <= 1000) return ([] as SortRow[]).concat(...pieces)
+  const out = new Array<SortRow>(length)
+  let k = 0
+  for (const piece of pieces) for (const row of piece) out[k++] = row
+  return out
 }
 
 const sameList = (a: readonly SortRow[], b: readonly SortRow[]) =>
@@ -456,28 +471,58 @@ const patchInPlace = (
       }
       drop.add(at)
     }
-    const kept = drop.size
-      ? prevLevel.filter((_, i) => !drop.has(i))
-      : prevLevel.slice()
+    // Немного строк — копия уровня и `splice`: сдвиг массива дешевле прохода по уровню.
+    const few = drop.size + (comes.get(parentId)?.length ?? 0) <= FEW_CHANGES
+    let kept: SortRow[]
+    if (!drop.size) kept = prevLevel.slice()
+    else if (few) {
+      kept = prevLevel.slice()
+      for (const at of [...drop].sort((a, b) => b - a)) kept.splice(at, 1)
+    } else kept = prevLevel.filter((_, i) => !drop.has(i))
     const coming = (comes.get(parentId) ?? []).slice().sort(compare)
     if (!coming.length) return kept
+    /** Дети строки, что встаёт на место заново. */
+    const patchKids = (row: SortRow) => {
+      const kids = kidsOf(row)
+      if (!kids.length) {
+        own.delete(row.id)
+        return
+      }
+      if (inserted.has(row.id)) {
+        sortTree(row, [])
+        return
+      }
+      const children = patchLevel(
+        prevKids(previous.get(row.id) as SortRow),
+        row.id,
+      )
+      if (failed) return
+      if (sameList(children, kids)) own.delete(row.id)
+      else own.set(row.id, children)
+    }
+    if (few) {
+      let from = 0
+      for (const row of coming) {
+        patchKids(row)
+        if (failed) return kept
+        let lo = from
+        let hi = kept.length
+        while (lo < hi) {
+          const mid = (lo + hi) >>> 1
+          if (compare(kept[mid]!, row) < 0) lo = mid + 1
+          else hi = mid
+        }
+        kept.splice(lo, 0, row)
+        rebuilt.add(row)
+        from = lo + 1
+      }
+      return kept
+    }
     const rows: SortRow[] = []
     let from = 0
     for (const row of coming) {
-      const kids = kidsOf(row)
-      if (kids.length) {
-        if (inserted.has(row.id)) {
-          sortTree(row, [])
-        } else {
-          const children = patchLevel(
-            prevKids(previous.get(row.id) as SortRow),
-            row.id,
-          )
-          if (failed) return rows
-          if (sameList(children, kids)) own.delete(row.id)
-          else own.set(row.id, children)
-        }
-      }
+      patchKids(row)
+      if (failed) return rows
       let lo = from
       let hi = kept.length
       while (lo < hi) {
@@ -501,29 +546,54 @@ const patchInPlace = (
   const prevFlat = prev.output.flatRows
   let flatRows: SortRow[]
   let starts: Int32Array | undefined
-  if (
-    prevFlat.length === prevRows.length &&
-    rows.every(row => !kidsOf(row).length)
-  ) {
+  if (prevFlat.length === prevRows.length && isFlat(input)) {
     flatRows = rows.slice()
   } else {
     const prevStarts = (prev.starts ??= rootStarts(prevRows, prevFlat))
-    const at = new Map<SortRow, number>()
-    for (let i = 0; i < prevRows.length; i++) at.set(prevRows[i]!, i)
-    flatRows = []
+    // Прежние корни идут в прежнем порядке: место участка — вторым указателем, подряд идущие
+    // участки копируются одним срезом.
+    const pieces: SortRow[][] = []
     starts = new Int32Array(rows.length + 1)
-    for (let i = 0; i < rows.length; i++) {
-      starts[i] = flatRows.length
-      const row = rows[i]!
-      const j = rebuilt.has(row) ? undefined : at.get(row)
-      if (j === undefined) pushShown([row], flatRows, shownKids)
-      else {
-        for (let k = prevStarts[j]!; k < prevStarts[j + 1]!; k++) {
-          flatRows.push(prevFlat[k]!)
-        }
-      }
+    let length = 0
+    let j = 0
+    let runFrom = -1
+    let runTo = -1
+    const flush = () => {
+      if (runFrom < 0) return
+      pieces.push(prevFlat.slice(runFrom, runTo))
+      runFrom = -1
     }
-    starts[rows.length] = flatRows.length
+    for (let i = 0; i < rows.length; i++) {
+      starts[i] = length
+      const row = rows[i]!
+      // Тот же объект на очереди — прежний корень; перестроенные — объекты входа, их в прошлом нет.
+      const same = prevRows[j] === row
+      const isRebuilt = !same && rebuilt.has(row)
+      if (!same && !isRebuilt) {
+        while (j < prevRows.length && prevRows[j] !== row) j++
+      }
+      if (isRebuilt || j >= prevRows.length) {
+        flush()
+        const piece: SortRow[] = []
+        pushShown([row], piece, shownKids)
+        pieces.push(piece)
+        length += piece.length
+        continue
+      }
+      const from = prevStarts[j]!
+      const to = prevStarts[j + 1]!
+      if (runFrom >= 0 && runTo === from) runTo = to
+      else {
+        flush()
+        runFrom = from
+        runTo = to
+      }
+      length += to - from
+      j++
+    }
+    flush()
+    starts[rows.length] = length
+    flatRows = pieces.length === 1 ? pieces[0]! : concatPieces(pieces, length)
   }
 
   const output = outputOf(input, rows, flatRows, own)

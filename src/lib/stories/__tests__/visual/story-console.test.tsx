@@ -423,10 +423,16 @@ describe('консоль историй (ADR 0124)', () => {
         )!
         await userEvent.hover(sortButton())
         await waitForQuietDocument()
-        const work = await measureWork(grid, () => humanClick(sortButton()), {
-          table: table(),
-          models: ['coreRowModel', 'sortedRowModel'],
-        })
+        // Полоса дорастает в следующем кадре после смены списка (ADR 0202, §1а): замер — до
+        // покоя, иначе рост попадает в одну сторону сравнения.
+        const work = await measureWork(
+          grid,
+          async () => {
+            await humanClick(sortButton())
+            await waitForQuietDocument(300)
+          },
+          { table: table(), models: ['coreRowModel', 'sortedRowModel'] },
+        )
         if (log) {
           expect(log.entries().some(entry => entry.name === 'sorting')).toBe(
             true,

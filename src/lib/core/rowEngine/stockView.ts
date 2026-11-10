@@ -7,7 +7,7 @@
 import { copyInstancePropertiesWithoutMemos } from '@tanstack/react-table'
 
 import { childrenOf } from './displayChildren'
-import { positionOf, setPosition } from '../rowPosition'
+import { copyPosition } from '../rowPosition'
 
 interface ViewRow {
   id: string
@@ -63,7 +63,7 @@ const treeView = (model: ViewModel): ViewModel => {
       // Как у TanStack: родитель с другими детьми — копия строки.
       shown = Object.create(Object.getPrototypeOf(row)) as ViewRow
       copyInstancePropertiesWithoutMemos(shown as never, row as never)
-      setPosition(shown, positionOf(row))
+      copyPosition(row, shown)
       shown.subRows = subRows
       copies.set(shown.id, shown)
     }

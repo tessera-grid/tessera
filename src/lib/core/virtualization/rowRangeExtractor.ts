@@ -12,6 +12,8 @@ export interface UseRowRangeExtractorParams {
   activeRowIndex?: number
   /** Строка активной ячейки после смены списка, пока ячейка не переехала за ней. */
   heldRowIndex?: number
+  /** Версия полосы: покой и рост меняют окно без смены диапазона. */
+  bandVersion?: number
 }
 
 /**
@@ -24,6 +26,7 @@ export const useRowRangeExtractor = ({
   rowDraggingIndex,
   activeRowIndex,
   heldRowIndex,
+  bandVersion,
 }: UseRowRangeExtractorParams) => {
   return useCallback(
     (range: Range) => {
@@ -41,6 +44,7 @@ export const useRowRangeExtractor = ({
         (a, b) => a - b,
       )
     },
-    [band, rowDraggingIndex, activeRowIndex, heldRowIndex],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- версия полосы пересобирает окно
+    [band, rowDraggingIndex, activeRowIndex, heldRowIndex, bandVersion],
   )
 }

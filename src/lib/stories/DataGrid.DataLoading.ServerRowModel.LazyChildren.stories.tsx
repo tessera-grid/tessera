@@ -340,7 +340,8 @@ const openLines = async (root: HTMLElement, signal: AbortSignal) => {
 /** Второй блок ветки пришёл, конец его — в середине области; третий держит «сервер». */
 const secondBlock = async (root: HTMLElement, signal: AbortSignal) => {
   if (!childRow(root, LINES_BLOCK)) {
-    await openLines(root, signal)
+    // Ветка уже раскрыта, если видна вложенная строка первого блока: строка-родитель могла уйти из окна.
+    if (!childRow(root, LINES_BLOCK - 1)) await openLines(root, signal)
     release()
   }
   await pollUntil(() => !!childRow(root, LINES_BLOCK), signal)

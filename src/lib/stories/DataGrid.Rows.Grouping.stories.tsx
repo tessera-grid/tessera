@@ -275,14 +275,17 @@ export const GroupingStickyRows: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
+    // Первая группа — до прокрутки: ушедшая вверх строка тела выходит из окна.
+    let firstGroup: string | undefined
     await step(STICKY[0]!.title, async () => {
       await waitForRows(canvas)
       await expect(stickyIds(canvas)).toEqual([])
+      firstGroup = groupIds(canvas)[0]
     })
     await step(STICKY[1]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(stickyIds(canvas)).toHaveLength(1))
-      await expect(stickyIds(canvas)[0]).toBe(groupIds(canvas)[0])
+      await expect(stickyIds(canvas)[0]).toBe(firstGroup)
     })
     await step(STICKY[2]!.title, async () => {
       await guideNext(canvas)

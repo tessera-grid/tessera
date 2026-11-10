@@ -33,6 +33,7 @@ import {
 import { humanClick, revealCellButtons, settleRowMotion } from '../helpers'
 import { tableLabels } from '../labels'
 import { measureWork, renders } from '../work.helpers'
+import { waitForQuietDocument } from '../memory.helpers'
 import {
   AXE_OPTIONS,
   contrast,
@@ -1569,7 +1570,9 @@ describe('Серверная модель строк (ADR 0138)', () => {
         // Отступ — шаг уровня, как у клиентского дерева (RE61).
         expect(indentOf('r1.0') - indentOf('r1')).toBe(16)
 
-        // Клавиша: Enter на ячейке раскрытия сворачивает и раскрывает.
+        // Клавиша: Enter на ячейке раскрытия сворачивает и раскрывает. Клик — после роста полосы
+        // (ADR 0202, §1а): локатор ячейки по имени «N1» иначе совпадёт и со строками N10–N13.
+        await waitForQuietDocument(300)
         await humanClick(
           rowOf('r1')!.querySelector<HTMLElement>('[data-column-id="name"]')!,
         )

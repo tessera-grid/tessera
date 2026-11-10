@@ -2,6 +2,7 @@ import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
+import { wideViewport } from '../helpers'
 import { composed, plainGroupingArgs } from '../stories'
 
 // Each Row Grouping requirement is its own named test, prefixed with its spec ID
@@ -205,6 +206,8 @@ describe('Row Grouping — visibility & layout', () => {
   })
 
   test('RG9: the active group button stays visible without hover', async () => {
+    // Все колонки на экране: клик по кнопке группировки не прокручивает грид вбок (ADR 0202, §1а).
+    await wideViewport()
     const container = await renderRowGrouping()
     await groupByColumn(container, GROUPED_COLUMN)
 
@@ -221,6 +224,7 @@ describe('Row Grouping — visibility & layout', () => {
   })
 
   test('RG10: grouping keeps the column in place (`groupedColumnMode: false`)', async () => {
+    await wideViewport()
     const container = await renderRowGrouping()
     const before = dataColumnIds(container)
 

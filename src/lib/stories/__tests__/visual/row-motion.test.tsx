@@ -385,6 +385,13 @@ describe('Движение строк (ADR 0107)', () => {
       ),
     )
     const rowSize = rowById(id(0))!.getBoundingClientRect().height
+    // Край окна в кадре сортировки — у окна в покое (ADR 0202, §1а): между видимой частью и
+    // краем выросшей полосы.
+    const scroller = bodyOf().closest<HTMLElement>('.data-grid__container')!
+    const visibleBottom =
+      scroller.getBoundingClientRect().top +
+      scroller.clientHeight -
+      bodyOf().getBoundingClientRect().top
     // id(1): возраст 7 — с 1-го места на 7-е; id(23): возраст 1 — с 23-го (далеко за
     // окном) на 1-е; id(2): возраст 14 — с 2-го места далеко вниз.
     expect(rowById(id(23))).toBeNull()
@@ -414,7 +421,7 @@ describe('Движение строк (ADR 0107)', () => {
       .map(frame => frame.far)
       .filter((top): top is number => top !== null)
     expect(Math.max(...far)).toBeLessThanOrEqual(windowBottom + 1)
-    expect(Math.max(...far)).toBeGreaterThan(windowBottom - 3 * rowSize)
+    expect(Math.max(...far)).toBeGreaterThanOrEqual(visibleBottom - 1)
     expect(far.at(-1)).toBeCloseTo(1 * rowSize, 0)
     // Вдаль: призрак едет от старого места вниз к краю окна.
     const leaving = frames

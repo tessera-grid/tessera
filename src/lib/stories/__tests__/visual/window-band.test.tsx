@@ -281,3 +281,89 @@ describe('Полоса окна после смены списка (ADR 0202)', 
     }
   })
 })
+
+const WIDE_COLUMNS = Array.from({ length: 60 }, (_, k) => ({
+  id: `c${k}`,
+  header: `C${k}`,
+  size: 120,
+  accessorFn: (row: Item) => `${row.name}·${k}`,
+}))
+
+const WideTransactionGrid = ({
+  onTable,
+}: {
+  onTable: (table: TransactionTable) => void
+}) => {
+  const [data, setData] = useState(ROWS)
+  const table = useCreateTable({
+    columns: WIDE_COLUMNS as never,
+    data,
+    onDataChange: setData,
+  })
+  onTable(table as unknown as TransactionTable)
+  return (
+    <div style={{ width: 800, height: 420 }}>
+      <DataGrid table={table as never} />
+    </div>
+  )
+}
+
+describe('Покой и рост полосы (ADR 0202, §1а)', () => {
+  test('WB12: в кадре смены списка строк окно строк и колонок — видимое и симметричный запас; затем полоса дорастает без прокрутки', async () => {
+    let table!: TransactionTable
+    const screen = await render(
+      <WideTransactionGrid onTable={t => (table = t)} />,
+    )
+    try {
+      const grid = () =>
+        document.querySelector<HTMLElement>('.data-grid__container')!
+      const size = () => {
+        const rows = grid().querySelectorAll<HTMLElement>('[data-index]')
+        return {
+          rows: rows.length,
+          cells: rows[0]!.querySelectorAll('.data-grid__body-cell').length,
+        }
+      }
+      const rowCount = () =>
+        grid()
+          .closest('[data-tsr-grid]')
+          ?.querySelector('[aria-rowcount]')
+          ?.getAttribute('aria-rowcount')
+      await expect.poll(() => size().rows).toBeGreaterThan(5)
+      // Полоса после монтирования: рост в следующем кадре, затем окно стоит.
+      let grown = size()
+      await expect
+        .poll(async () => {
+          const before = grown
+          await nextFrame()
+          await nextFrame()
+          grown = size()
+          return grown.rows === before.rows && grown.cells === before.cells
+        })
+        .toBe(true)
+
+      // Окно в кадре коммита смены списка — до кадра, в котором полоса дорастает.
+      const before = rowCount()
+      let atChange: { rows: number; cells: number } | undefined
+      const observer = new MutationObserver(() => {
+        if (atChange === undefined && rowCount() !== before) atChange = size()
+      })
+      observer.observe(grid().closest('[data-tsr-grid]')!, {
+        attributes: true,
+        subtree: true,
+        attributeFilter: ['aria-rowcount'],
+      })
+      table.applyRowTransaction({ add: [{ id: 'a', name: 'A' }], index: 500 })
+      await expect.poll(() => atChange).toBeDefined()
+      observer.disconnect()
+      expect(atChange!.rows).toBeLessThan(grown.rows)
+      expect(atChange!.cells).toBeLessThan(grown.cells)
+      // Без прокрутки полоса дорастает до прежней.
+      await expect.poll(size).toEqual(grown)
+      expect(grid().scrollTop).toBe(0)
+      expect(grid().scrollLeft).toBe(0)
+    } finally {
+      await screen.unmount()
+    }
+  })
+})

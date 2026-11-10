@@ -11,6 +11,7 @@ import type { HeaderAction } from '../../../core/headerActions'
 import { ActionButton } from '../../../grid/headerActions/ActionButton'
 import { ActionsZone } from '../../../grid/headerActions/ActionsZone'
 import { BodyCell } from '../../../grid/BodyCell'
+import { windowBand } from '../../../core/virtualization/windowBand'
 import { BodyRow, BodyRowCells } from '../../../grid/BodyRow'
 import { SortableRow } from '../../../plugins/rowDragging/SortableRow'
 import { ItemSortableContextProvider } from '../../../shared/dnd'
@@ -744,9 +745,16 @@ describe('Счётчики работы — ручка колонки (ADR 0114)
       const button = document.querySelector<HTMLElement>(
         '.data-grid__head-cell [aria-label^="Sort"]',
       )!
-      const work = await measure(() => userEvent.click(button), {
-        models: ['sortedRowModel'],
-      })
+      // Полоса дорастает в следующем кадре после монтирования и после смены списка (ADR 0202, §1а):
+      // замер — от покоя до покоя, иначе рост попадает в одну сторону сравнения.
+      await waitForQuietDocument(300)
+      const work = await measure(
+        async () => {
+          await userEvent.click(button)
+          await waitForQuietDocument(300)
+        },
+        { models: ['sortedRowModel'] },
+      )
       await screen.unmount()
       return work
     }
@@ -1020,8 +1028,8 @@ describe('сдвиг окна при прокрутке (ADR 0149)', () => {
     const rowHeight = document
       .querySelector('.data-grid__body-row')!
       .getBoundingClientRect().height
-    const before = grid.scrollTop
-    const rows = await measure(async () => {
+    const wheelRow = async () => {
+      const before = grid.scrollTop
       await browser.realWheel(
         { x: box.left + 200, y: box.top + 200 },
         rowHeight,
@@ -1029,7 +1037,11 @@ describe('сдвиг окна при прокрутке (ADR 0149)', () => {
         0,
       )
       await expect.poll(() => grid.scrollTop).toBe(before + rowHeight)
-    })
+    }
+    // Первый сдвиг по оси снимает покой и наращивает полосу строк впереди (ADR 0202, WB10).
+    await wheelRow()
+    await waitForQuietDocument(500)
+    const rows = await measure(wheelRow)
     within(rows, rowRenders(rows), 0, 'строки при сдвиге строк')
     within(
       rows,
@@ -1037,6 +1049,64 @@ describe('сдвиг окна при прокрутке (ADR 0149)', () => {
       0,
       'списки ячеек при сдвиге строк',
     )
+  })
+
+  test('WB11: в кадре смены списка строк — сортировки — перерисовывается не больше ячеек, чем окно без полосы, — по счётчикам работы', async () => {
+    const sortedCells = async () => {
+      const { measure, table, screen } = await mountGrid(
+        { enableColumnSorting: true },
+        getData(300),
+        undefined,
+        undefined,
+        WIDE,
+      )
+      const first = () =>
+        document
+          .querySelector('.data-grid__body-row[data-index="0"]')
+          ?.getAttribute('data-row-id')
+      const api = table() as {
+        setSorting: (sorting: { id: string; desc: boolean }[]) => void
+      }
+      // Полоса после монтирования выросла: смена списка — из полосы в покой.
+      await waitForQuietDocument(300)
+      const before = first()
+      // Замер кончается коммитом смены — до кадра, в котором полоса дорастает (WB12).
+      const work = await measure(
+        () =>
+          new Promise<void>(resolve => {
+            const observer = new MutationObserver(() => {
+              if (first() === before) return
+              observer.disconnect()
+              resolve()
+            })
+            observer.observe(document.body, {
+              subtree: true,
+              childList: true,
+              attributes: true,
+              attributeFilter: ['data-row-id'],
+            })
+            api.setSorting([{ id: 'firstName', desc: true }])
+          }),
+        { quietFrames: 0 },
+      )
+      await screen.unmount()
+      return { cells: renders(work, BodyCell), work }
+    }
+    const withBand = await sortedCells()
+    windowBand.enabled = false
+    try {
+      const without = await sortedCells()
+      // Вариант мерил заявленное: сортировка перерисовала ячейки окна.
+      expect(without.cells).toBeGreaterThan(0)
+      within(
+        withBand.work,
+        withBand.cells,
+        without.cells,
+        'ячейки в кадре сортировки',
+      )
+    } finally {
+      windowBand.enabled = true
+    }
   })
 
   test('PS11: обёртки перетаскивания строки перерисовываются только при смене своей строки, а не при сдвиге окна строк или колонок — по счётчикам работы', async () => {

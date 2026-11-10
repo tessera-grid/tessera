@@ -56,6 +56,17 @@ const box = (el: Element) => {
 const geometry = (cells: HTMLElement[]) =>
   cells.map(cell => ({ id: cell.dataset.columnId, ...box(cell) }))
 
+type Geometry = ReturnType<typeof geometry>
+
+/**
+ * Места колонок, что смонтированы в обоих окнах: окно колонок в покое и после роста полосы разное
+ * (ADR 0202, §1а), сдвиг — это смена места общей колонки.
+ */
+const shared = (now: Geometry, before: Geometry) => [
+  now.filter(cell => before.some(other => other.id === cell.id)),
+  before.filter(cell => now.some(other => other.id === cell.id)),
+]
+
 /** Грид с переключаемым `loading: 'initial'` на одном экземпляре таблицы. */
 const renderToggle = async (args: Args, skeleton = true) => {
   const props = (on: boolean) => ({
@@ -957,7 +968,9 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
       <Stories.DataGridPlayground {...props({ loading: false })} />,
     )
     await waitData()
-    expect(geometry(headCellsNow())).toEqual(head)
+    const [now, before] = shared(geometry(headCellsNow()), head)
+    expect(now.length).toBeGreaterThan(1)
+    expect(now).toEqual(before)
 
     // Пришли плоские данные: колонки раскрытия нет (RE14).
     await screen.rerender(

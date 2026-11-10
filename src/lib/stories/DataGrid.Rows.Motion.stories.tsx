@@ -216,6 +216,11 @@ export const RowMotionSearch: StoryObj<StoryProps> = {
       names.every(
         (name, i) => i === 0 || names[i - 1]!.localeCompare(name) <= 0,
       )
+    // Строки модели, а не окна: окно после смены списка в покое, затем дорастает (ADR 0202, §1а).
+    const modelRows = () =>
+      Number(
+        canvas.querySelector('[aria-rowcount]')?.getAttribute('aria-rowcount'),
+      )
     let rows = 0
     await step(SORT_SEARCH[0]!.title, async () => {
       await waitForRows(canvas)
@@ -226,7 +231,7 @@ export const RowMotionSearch: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await until(() => expect(isAscending(namesOf(canvas))).toBe(true))
       await settle()
-      rows = orderedRows(canvas).length
+      rows = modelRows()
     })
     await step(SORT_SEARCH[2]!.title, async () => {
       await guideNext(canvas)
@@ -238,7 +243,7 @@ export const RowMotionSearch: StoryObj<StoryProps> = {
         ).toBe(true),
       )
       await until(() => expect(ghost(canvas)).toBeNull())
-      await expect(orderedRows(canvas).length).toBeLessThanOrEqual(rows)
+      await expect(modelRows()).toBeLessThan(rows)
       await expect(isAscending(namesOf(canvas))).toBe(true)
       await settle()
     })

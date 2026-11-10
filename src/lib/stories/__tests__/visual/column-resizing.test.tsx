@@ -684,13 +684,14 @@ describe('Column Resizing — requirements', () => {
       .poll(() => container.querySelector('[data-resizing="true"]'))
       .toBeNull()
 
-    // Меню ширины: клик открывает меню, указатель уходит на дальнюю колонку.
+    // Меню ширины: клик открывает меню, указатель уходит на другую видимую колонку — без
+    // прокрутки: прокрутка снимает окно покоя, и колонка с меню может уйти из окна (ADR 0202, WB10).
     await revealGrip(firstDataCell(container))
     await userEvent.click(gripOf(firstDataCell(container)))
     await expect
       .poll(() => document.querySelector('[role="menu"]'))
       .not.toBeNull()
-    await userEvent.hover(renderedDataCells(container)[3])
+    await userEvent.hover(renderedDataCells(container)[1]!)
     await expect
       .poll(() =>
         wrapperOf(gripOf(firstDataCell(container))).getAttribute(

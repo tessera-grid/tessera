@@ -14,6 +14,7 @@ import {
   renderGrid,
   revealCellButtons,
   SEL,
+  wideViewport,
 } from '../helpers'
 import { tableLabels } from '../labels'
 import { composed, treeLinesArgs } from '../stories'
@@ -108,6 +109,7 @@ const WIDE_COLUMNS = [
 
 describe('Кнопки грида 28px (ADR 0135)', () => {
   test('GZ1: кнопки ячеек, действия строки, тоггл раскрытия, кнопки и кебабы заголовка и строки — сторона --tsr-comp-grid-button-size (28px), иконка 16px; вид совпадает с зоной нажатия', async () => {
+    await wideViewport()
     await renderGrid(ALL_BUTTONS)
     await waitForGrid()
     const side = tokenPx('--tsr-comp-grid-button-size')

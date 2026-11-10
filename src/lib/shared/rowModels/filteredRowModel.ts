@@ -20,7 +20,7 @@ import type { StageRun } from '../../core/rowEngine/engine'
 import { RowDict, dictModel, editDictOf } from '../../core/rowEngine/rowDict'
 import type { RowData, Table, TableFeatures } from '../../types'
 import { skipIdlePasses } from './idleRowModel'
-import { positionOf, setPosition } from '../../core/rowPosition'
+import { copyPosition, positionOf, setPosition } from '../../core/rowPosition'
 
 interface Atom {
   get: () => unknown
@@ -197,7 +197,7 @@ const copyRow = (
     undefined,
     row.parentId,
   ) as unknown as FilterRow
-  setPosition(next, positionOf(row))
+  copyPosition(row, next)
   next.columnFilters = row.columnFilters
   next.columnFiltersMeta = row.columnFiltersMeta
   next.subRows = subRows
@@ -376,7 +376,8 @@ const filterTree = (
   // Плоская модель — строки входа без копий (ADR 0200, EN28).
   const flat = rows.length === 0 || rows.every(row => !row.subRows.length)
   const copyOf = (row: FilterRow, subRows: FilterRow[]) => {
-    if (flat) return row
+    // Те же дети — строка входа без копии (ADR 0200, EN28): копия нужна, когда дети другие.
+    if (flat || sameList(row.subRows, subRows)) return row
     const old = previous?.[row.id]
     if (
       old &&

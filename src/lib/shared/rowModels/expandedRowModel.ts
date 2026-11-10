@@ -247,6 +247,82 @@ export const createIncrementalExpandedRowModel =
       }
     }
 
+    /**
+     * Смена `data` при корнях на прежних местах (приход ленивых детей, замена на месте): участки
+     * корней с прежними детьми остаются в копии прошлого списка, остальные заменяются с конца.
+     * Итог — как у обхода всех корней в `patchData`; корни сдвинуты — `undefined`.
+     */
+    const patchRootsInPlace = (
+      prev: Built & { starts: Int32Array },
+      input: ExpandModel,
+      expanded: Expanded,
+      paginate: unknown,
+    ): Built | undefined => {
+      const roots = input.rows
+      const prevRoots = prev.input.rows
+      if (roots.length !== prevRoots.length) return undefined
+      const walked: number[] = []
+      const renewed: number[] = []
+      for (let i = 0; i < roots.length; i++) {
+        const root = roots[i]!
+        const old = prevRoots[i]!
+        if (old === root) continue
+        if (old.id !== root.id) return undefined
+        if (old.subRows === root.subRows) renewed.push(i)
+        else walked.push(i)
+      }
+      const before = prev.output.rows
+      const rows = before.slice()
+      const starts = prev.starts.slice()
+      // Новый объект корня с прежними детьми — на месте прежнего, участок тот же.
+      for (const at of renewed) rows[prev.starts[at]!] = roots[at]!
+      for (let k = walked.length - 1; k >= 0; k--) {
+        const at = walked[k]!
+        const from = prev.starts[at]!
+        const removed = prev.starts[at + 1]! - from
+        const piece: ExpandRow[] = []
+        walkExpanded(input, roots[at]!, piece)
+        rows.splice(from, removed)
+        for (let i = 0; i < piece.length; i += SPLICE_LIMIT) {
+          rows.splice(from + i, 0, ...piece.slice(i, i + SPLICE_LIMIT))
+        }
+        const shift = piece.length - removed
+        if (shift !== 0) {
+          for (let i = at + 1; i <= roots.length; i++) starts[i]! += shift
+        }
+      }
+      // Копия строки с теми же данными (родитель ответа ленивых детей) — не смена места.
+      const first = Math.min(
+        walked[0] ?? roots.length,
+        renewed[0] ?? roots.length,
+      )
+      let from = first < roots.length ? prev.starts[first]! : rows.length
+      const end = Math.min(rows.length, before.length)
+      while (
+        from < end &&
+        (rows[from] === before[from] ||
+          (rows[from]!.id === before[from]!.id &&
+            rows[from]!.original === before[from]!.original))
+      ) {
+        from++
+      }
+      recordRowChange(rows, before, from)
+      return {
+        input,
+        expanded,
+        paginate,
+        output: {
+          rows,
+          flatRows: input.flatRows,
+          get rowsById() {
+            return input.rowsById
+          },
+        },
+        patchable: expanded !== true,
+        starts,
+      }
+    }
+
     /** Смена `data` (ADR 0194): корень с прежними детьми — прежний участок, прочие — обход. */
     const patchData = (
       prev: Built & { starts: Int32Array },
@@ -256,6 +332,8 @@ export const createIncrementalExpandedRowModel =
     ): Built => {
       const roots = input.rows
       const prevRoots = prev.input.rows
+      const sameRoots = patchRootsInPlace(prev, input, expanded, paginate)
+      if (sameRoots) return sameRoots
       const prevAt = new Map<string, number>()
       for (let j = 0; j < prevRoots.length; j++) prevAt.set(prevRoots[j]!.id, j)
       const before = prev.output.rows
