@@ -1,16 +1,11 @@
 /*
- * Содержимое панели фильтра — на двойном поле поповера от краёв (ADR 0017, PP13); кнопки внизу —
+ * Содержимое панели фильтра — поля и кнопки на поле поповера (ADR 0183, PK33); кнопки внизу —
  * подвалом `PopupPanel` (ADR 0183, PK2).
  */
 .content {
   display: flex;
   flex-direction: column;
   gap: calc(var(--tsr-comp-popup-padding) * 2);
-  padding: var(--tsr-comp-popup-padding) var(--tsr-comp-popup-padding) 0;
-}
-
-.content:last-child {
-  padding-bottom: var(--tsr-comp-popup-padding);
 }
 
 .range {

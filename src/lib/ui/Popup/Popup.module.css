@@ -38,9 +38,45 @@
 }
 
 /*
- * Раскладка поповера-панели (ADR 0017, PP11–PP13; образец — ADR 0178, DR42): заголовок,
- * содержимое и кнопки внизу — на двойном поле от краёв поповера со всех сторон, над кнопками
- * разделителя нет; полоса прокрутки — справа от облачков через поле.
+ * Затемнение краёв прокрутки (ADR 0183, PK31): содержимое тает к краю, за которым есть ещё
+ * записи, как лента шагов гайда; полоса прокрутки — без маски. Расстояния до краёв ставит
+ * `useScrollFade`, затемнение растёт с ними до `--tsr-comp-popup-scroll-fade`.
+ */
+.scrollFade {
+  --_fade-top: min(
+    var(--tsr-comp-popup-scroll-fade),
+    var(--tsr-scroll-fade-above, 0px)
+  );
+  --_fade-bottom: min(
+    var(--tsr-comp-popup-scroll-fade),
+    var(--tsr-scroll-fade-below, 0px)
+  );
+  --_scrollbar: var(--tsr-scroll-fade-scrollbar, 0px);
+  mask-image:
+    linear-gradient(
+      to bottom,
+      transparent,
+      #000 var(--_fade-top),
+      #000 calc(100% - var(--_fade-bottom)),
+      transparent
+    ),
+    linear-gradient(#000, #000);
+  mask-size:
+    calc(100% - var(--_scrollbar)) 100%,
+    var(--_scrollbar) 100%;
+  mask-position:
+    left top,
+    right top;
+  mask-repeat: no-repeat;
+  /* Выбранный и фокусный пункт прокрутка ставит вне затемнения. */
+  scroll-padding-block: var(--tsr-comp-popup-scroll-fade);
+}
+
+/*
+ * Раскладка поповера-панели (ADR 0017, PP11–PP12; ADR 0183, PK33): две линии от края —
+ * рамки пунктов, облачков, полей и кнопок стоят на поле поповера, текст заголовка и подписей —
+ * на линии текста пунктов (ещё поле пункта). Сверху и снизу содержимое — на поле поповера, между
+ * заголовком, содержимым и кнопками — двойное поле; над кнопками разделителя нет.
  */
 .panel {
   display: flex;
@@ -50,15 +86,15 @@
 
 .panelTitle {
   margin: 0;
-  padding: var(--tsr-comp-popup-padding) var(--tsr-comp-popup-padding)
+  padding: 0 var(--tsr-comp-popup-item-padding-x)
     calc(var(--tsr-comp-popup-padding) * 2);
   font-size: var(--tsr-comp-popup-title-font-size);
   font-weight: 600;
 }
 
 .cardsScroll {
+  composes: scrollFade;
   overflow-y: auto;
-  padding-inline: var(--tsr-comp-popup-padding);
   max-height: min(60vh, calc(var(--tsr-comp-popup-item-min-height) * 10));
 }
 
@@ -66,8 +102,7 @@
   display: flex;
   justify-content: flex-end;
   gap: var(--tsr-comp-popup-padding);
-  padding: calc(var(--tsr-comp-popup-padding) * 2) var(--tsr-comp-popup-padding)
-    var(--tsr-comp-popup-padding);
+  padding: calc(var(--tsr-comp-popup-padding) * 2) 0 0;
 }
 
 .popup[data-starting-style],
@@ -86,7 +121,9 @@
   gap: 8px;
   box-sizing: border-box;
   min-height: var(--tsr-comp-popup-item-min-height);
-  padding: var(--_item-padding-block, 6px) 8px;
+  padding: var(--_item-padding-block, 6px)
+    var(--_item-padding-end, var(--tsr-comp-popup-item-padding-x))
+    var(--_item-padding-block, 6px) var(--tsr-comp-popup-item-padding-x);
   border-radius: var(--tsr-comp-popup-item-radius);
   line-height: 1.2;
   cursor: var(--_item-cursor, pointer);

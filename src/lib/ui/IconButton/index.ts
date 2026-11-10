@@ -5,4 +5,5 @@ export {
   type DerivedButtonProps,
   type IconButtonProps,
   type RevealProps,
+  type ToneProps,
 } from './IconButton'

@@ -7,7 +7,7 @@ import { cellEditingLabels } from '../plugins/cellEditing/labels'
 import { dataExportLabels } from '../plugins/dataExport/labels'
 import { failureLogLabels } from '../plugins/failureLog/labels'
 import { Bubble } from '../ui/Bubble'
-import { IconButton } from '../ui/IconButton'
+import { ItemButton } from '../ui/Popup/ItemButton'
 import { useIcons } from '../ui/icons'
 import popupStyles from '../ui/Popup/Popup.module.css'
 import { PopupEntry } from '../ui/Popup/PopupEntry'
@@ -68,12 +68,12 @@ const Entry = ({ tone, label, reason, showable, actions }: EntryStoryArgs) => {
       actions={
         actions ? (
           <>
-            <IconButton shape="square" size="compact" label={texts.retry}>
+            <ItemButton label={texts.retry}>
               <icons.retry />
-            </IconButton>
-            <IconButton shape="square" size="compact" label={texts.close}>
+            </ItemButton>
+            <ItemButton label={texts.close}>
               <icons.clear />
-            </IconButton>
+            </ItemButton>
           </>
         ) : undefined
       }

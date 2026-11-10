@@ -133,6 +133,19 @@ reportOutcome(table, { plugin: 'starRows', action: 'save', cause: id }, promise)
 числе у действия, о котором канал сообщает только итогом: `starAll` и `save` из примера. Итог берёт
 подпись исходного действия, без записи — предупреждение `unknown action` (ADR 0182, AN8).
 
+### Преобразования колонок: `columnTransforms`
+
+Плагин, который меняет данные по колонке, объявляет это полем записи `columnTransforms`
+(ADR 0204, §2): вид (`'sort'`, `'filter'`, `'group'` или свой), `of(table, columnId)` — что он
+делает с колонкой сейчас (направление, место среди уровней) — и `clear(table, columnIds, source)`
+— снятие тем же путём, что действие пользователя: `runServerAction` и сообщение в канал действий
+с переданным источником. Ядро сворачивает записи включённых плагинов в опцию
+`columnTransforms`; читают её `columnTransformsOf`, `transformsOfColumn` и
+`clearColumnTransforms` (`core/columnTransforms.ts`). Так меню «Колонки» видит и снимает
+сортировку, фильтр и группировку скрытой колонки, не импортируя их плагинов. Встроенные записи —
+у `columnSorting`, `columnFiltering` и `rowGrouping`; модели без интерфейса записи не несут:
+снятие — путь пользователя, а он у интерфейса.
+
 ### Согласование состояния: `reconcile`
 
 Поле записи `reconcile(table, { enabled, hooks })` (ADR 0040, §2) ядро зовёт после

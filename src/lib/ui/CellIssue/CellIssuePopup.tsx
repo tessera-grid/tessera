@@ -4,7 +4,7 @@
  * Base UI-поповер тянет позиционирование и хранилища попапов; триггер — обычная кнопка в
  * `CellIssue`.
  */
-import { type RefObject, useId } from 'react'
+import { type RefObject, useEffect, useId, useState } from 'react'
 
 import { Popover } from '@base-ui/react/popover'
 
@@ -16,6 +16,7 @@ import type { CellIssueAction, CellIssueDetail } from './CellIssue'
 import styles from './CellIssue.module.css'
 
 export interface CellIssuePopupProps {
+  open: boolean
   anchor: RefObject<HTMLButtonElement | null>
   title: string
   reason: string
@@ -26,6 +27,7 @@ export interface CellIssuePopupProps {
 }
 
 const CellIssuePopup = ({
+  open,
   anchor,
   title,
   reason,
@@ -35,6 +37,13 @@ const CellIssuePopup = ({
   onClose,
 }: CellIssuePopupProps) => {
   const titleId = useId()
+  // Смонтированный сразу открытым попап Base UI не проигрывает появление: модуль приходит по
+  // первому нажатию, поэтому первый кадр — закрытым, открытие — следующим (ADR 0183, PK32).
+  const [entered, setEntered] = useState(false)
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setEntered(true))
+    return () => cancelAnimationFrame(frame)
+  }, [])
   // Главное действие — последним, справа.
   const ordered = [
     ...actions.filter(action => !action.primary),
@@ -42,7 +51,7 @@ const CellIssuePopup = ({
   ]
   return (
     <Popover.Root
-      open
+      open={open && entered}
       onOpenChange={next => {
         if (!next) onClose()
       }}
@@ -73,6 +82,7 @@ const CellIssuePopup = ({
                     <Button
                       key={action.id}
                       variant={action.primary ? 'outline' : 'ghost'}
+                      tone={action.tone}
                       data-action={action.id}
                       onClick={() => {
                         onClose()

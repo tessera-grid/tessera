@@ -21,8 +21,9 @@ import { humanClick } from '../helpers'
 import { AXE_OPTIONS, contrast, inBothThemes, toRgba } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
 
-// Включённое состояние кнопок (ADR 0129, AV1–AV3, AV5–AV7, AV10): бабл в базе
-// `IconButton` — точка, число `count`, свой значок; ожидание и отказ главнее бабла. Место
+// Включённое состояние кнопок (ADR 0129, AV1–AV3, AV5–AV7, AV10, AV12): бабл в базе
+// `IconButton` — точка, число `count`, свой значок, уход в последнем виде; ожидание и отказ
+// главнее бабла. Место
 // бабла — FB8–FB9 (ADR 0136).
 // AV4, AV8–AV9 — модульный `activeState.dom`, AV11 — перф в `scroll`.
 
@@ -162,6 +163,48 @@ describe('Включённое состояние кнопок (ADR 0129)', () =
     await again.rerender(<Kit active={false} count={3} />)
     expect(shown(kit()), 'без active').toBe(false)
     await again.unmount()
+  })
+
+  test('AV12: уходящий бабл гаснет в последнем показанном виде — число, тон, размер и место не меняются, пока он гаснет, даже если count или draft сменились вместе с active; появившийся бабл сразу в новом виде', async () => {
+    const look = () => {
+      const bubble = bubbleOf(kit())!
+      return {
+        text: bubble.textContent,
+        place: [
+          bubble.offsetLeft,
+          bubble.offsetTop,
+          bubble.offsetWidth,
+          bubble.offsetHeight,
+        ],
+        tone: getComputedStyle(bubble).backgroundColor,
+      }
+    }
+    const shownBefore = async (props: Partial<IconButtonProps>) => {
+      await screen.rerender(<Kit {...props} />)
+      settle()
+      return look()
+    }
+    const screen = await render(<Kit active count={3} />)
+    const counted = await shownBefore({ active: true, count: 3 })
+    expect(counted.text).toBe('3')
+    // Последний фильтр снят: `active` и `count` уходят вместе.
+    await screen.rerender(<Kit active={false} count={0} />)
+    expect(bubbleOf(kit())!.dataset.shown).toBe('false')
+    expect(look(), 'число гаснет на месте').toEqual(counted)
+    expect(shown(kit())).toBe(false)
+    // Погасший бабл — снова в текущем виде: число не держится до следующего показа.
+    await expect.poll(() => look().text, { message: 'после ухода' }).toBe('')
+
+    // Появившийся — сразу в новом виде: точка, без прежнего числа.
+    await screen.rerender(<Kit active />)
+    expect(look().text).toBe('')
+    expect(look().place[2]).toBeLessThan(counted.place[2]!)
+
+    const drafted = await shownBefore({ active: false, draft: true })
+    expect(drafted.tone).toBe(tokenColor('--tsr-comp-draft-color'))
+    await screen.rerender(<Kit active={false} draft={false} />)
+    expect(look(), 'точка несохранённого гаснет своим тоном').toEqual(drafted)
+    await screen.unmount()
   })
 
   test('AV3: activeIcon заменяет значок у включённой кнопки, бабл остаётся; indicator={false} убирает бабл, цвет значка остаётся', async () => {

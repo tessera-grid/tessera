@@ -1,15 +1,31 @@
 /*
  * Облачко записи поповера со списком (ADR 0178, §8; DR42): точка слева, справа от неё подпись с
- * кнопками и содержимое; внутри поле одно со всех сторон.
+ * кнопками и содержимое. Строка подписи — как пункт списка (ADR 0183, PK36): высотой пункта,
+ * текст и значки — на его линиях. Строка вмещает кнопку записи целиком: высотой кнопки, поле
+ * над ней — остаток до высоты пункта, справа поле меньше на зазор вокруг значка кнопки (PK34).
  */
 .entry {
+  --_line: calc(1.2 * var(--tsr-comp-popup-font-size));
+  --_padding-block: calc(
+    (var(--tsr-comp-popup-item-min-height) - var(--_line)) / 2
+  );
+  --_head: var(--tsr-comp-button-size-compact);
+  --_head-inset: calc(
+    (var(--tsr-comp-popup-item-min-height) - var(--_head)) / 2
+  );
+  --_button-gap: calc(
+    (var(--tsr-comp-button-size-compact) - var(--tsr-comp-button-icon-size)) / 2
+  );
+  --_padding-end: var(--tsr-comp-popup-item-padding-x);
   position: relative;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: var(--tsr-comp-popup-padding) calc(var(--tsr-comp-popup-padding) * 2);
   box-sizing: border-box;
   align-content: start;
-  padding: calc(var(--tsr-comp-popup-padding) * 2);
+  padding: var(--_head-inset) var(--_padding-end) var(--_padding-block)
+    var(--tsr-comp-popup-item-padding-x);
+  line-height: 1.2;
   border-radius: var(--tsr-comp-popup-item-radius);
   background-color: var(--tsr-comp-popup-card-bg);
   outline: var(--tsr-comp-popup-card-outline);
@@ -17,9 +33,24 @@
   transition: var(--tsr-comp-popup-item-transition);
 }
 
+/* С кнопками справа — значок кнопки, а не её рамка, на поле записи. */
+.entry:has(.actions) {
+  --_padding-end: calc(
+    var(--tsr-comp-popup-item-padding-x) - var(--_button-gap)
+  );
+}
+
+/* Без содержимого — высотой пункта. */
+.entry:not(:has(.body)) {
+  padding-block-end: var(--_head-inset);
+}
+
 /* Облачка с содержимым одной высоты — подпись и две его строки, даже когда строка одна. */
 .entry:has(.body):not([data-fit]) {
-  min-height: calc(3lh + var(--tsr-comp-popup-padding) * 6);
+  min-height: calc(
+    var(--_head-inset) + var(--_head) + var(--tsr-comp-popup-padding) + 2lh +
+      var(--_padding-block)
+  );
 }
 
 .entry:has(.show:hover) {
@@ -32,18 +63,26 @@
     var(--tsr-comp-focus-ring);
 }
 
-/* Точка — по центру первой строки подписи. */
+/* Точка — в месте значка пункта, по центру строки подписи. */
 .mark {
   display: flex;
   align-items: center;
-  height: 1lh;
+  justify-content: center;
+  width: var(--tsr-comp-button-icon-size);
+  height: var(--_head);
 }
 
 .head {
   display: flex;
   align-items: flex-start;
   gap: calc(var(--tsr-comp-popup-padding) * 2);
+  min-height: var(--_head);
   font-weight: 600;
+}
+
+/* Первая строка подписи и `aside` — по центру строки высотой кнопки, как текст пункта. */
+.head > :not(.actions) {
+  padding-block-start: calc((var(--_head) - var(--_line)) / 2);
 }
 
 .label,
@@ -73,15 +112,18 @@
   border-radius: var(--tsr-comp-popup-item-radius);
 }
 
-/* Кнопки записи — поверх области перехода, по центру первой строки, высоту строки не растят. */
+/* Кнопки записи — поверх области перехода, во всю высоту строки подписи. */
 .actions {
   position: relative;
   display: flex;
   flex: none;
-  margin-block: calc((1lh - var(--tsr-comp-button-size-compact)) / 2);
 }
 
+/* Содержимое — на поле записи справа, есть кнопки или нет. */
 .body {
+  padding-inline-end: calc(
+    var(--tsr-comp-popup-item-padding-x) - var(--_padding-end)
+  );
   display: flex;
   flex-direction: column;
   gap: var(--tsr-comp-popup-padding);

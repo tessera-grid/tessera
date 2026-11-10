@@ -31,6 +31,7 @@ export const CellFailureMark = ({
     {
       id: 'discard',
       label: labels.failureDiscard,
+      tone: 'danger' as const,
       onSelect: () => {
         discard?.()
         resolveFailure(table, failure.key)

@@ -69,6 +69,7 @@ export const asyncRowActionsDemo: RowAction[] = [
     order: 1,
     icon: () => <Trash2 width={16} height={16} />,
     label: () => 'Delete',
+    tone: 'danger',
     // Каждая 3-я строка заблокирована другим пользователем — удаление отклоняется.
     onSelect: async (ctx, _event, context) => {
       await wait(ASYNC_DEMO_DELAY_MS, context?.signal)

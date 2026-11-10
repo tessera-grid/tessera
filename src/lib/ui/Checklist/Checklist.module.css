@@ -1,5 +1,6 @@
 /* Список вариантов с флажками (ADR 0183, PK6; ADR 0048, ADR 0175): строки фиксированной высоты в окне. */
 .scroller {
+  composes: scrollFade from '../Popup/Popup.module.css';
   max-height: var(--tsr-comp-column-menu-max-height);
   overflow-y: auto;
 }
@@ -46,7 +47,7 @@
   display: flex;
   align-items: center;
   height: var(--tsr-comp-popup-item-min-height);
-  padding: 0 var(--tsr-comp-popup-padding);
+  padding: 0 var(--tsr-comp-popup-item-padding-x);
 }
 
 /* Отказ — блок ошибки загрузки кита по центру. */
@@ -55,7 +56,6 @@
   flex-direction: column;
   align-items: center;
   gap: var(--tsr-comp-popup-padding);
-  padding: var(--tsr-comp-popup-padding);
   font-size: var(--tsr-comp-cell-font-size);
 }
 

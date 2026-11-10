@@ -485,6 +485,13 @@ describe('Сохранение по кнопке (ADR 0178)', () => {
     const open = async (mark: HTMLElement) => {
       await humanClick(mark)
       await expect.poll(popover).not.toBeNull()
+      // Размеры — после появления: на первых кадрах поверхность ещё уменьшена переходом (PK32).
+      await expect
+        .poll(() => popover()!.hasAttribute('data-starting-style'))
+        .toBe(false)
+      popover()!
+        .getAnimations()
+        .forEach(animation => animation.finish())
       return popover()!
     }
     const close = async () => {

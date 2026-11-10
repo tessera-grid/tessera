@@ -16,6 +16,37 @@
   );
 }
 
+/*
+ * Пункт с кнопкой справа (ADR 0183, PK34): строка вмещает кнопку целиком — поле сверху и снизу
+ * до высоты пункта, справа поле меньше на зазор вокруг значка: значок кнопки — на поле пункта.
+ */
+.item:has([data-item-button]) {
+  --_item-padding-block: calc(
+    (
+        var(--tsr-comp-popup-item-min-height) -
+          var(--tsr-comp-button-size-compact)
+      ) /
+      2
+  );
+  --_item-padding-end: calc(
+    var(--tsr-comp-popup-item-padding-x) -
+      (var(--tsr-comp-button-size-compact) - var(--tsr-comp-button-icon-size)) /
+      2
+  );
+}
+
+/*
+ * Тон опасного действия (ADR 0206, DX3): текст и значок пункта красные, подсветка — бледно-красная;
+ * выключенный пункт — цветом выключенных (DX4).
+ */
+.item[data-tone='danger']:not([data-disabled]) {
+  color: var(--tsr-comp-danger-text-color);
+}
+
+.item[data-tone='danger']:not([data-disabled])[data-highlighted] {
+  background-color: var(--tsr-comp-danger-hover-bg);
+}
+
 /* Заблокированный пункт с причиной принимает наведение — ради тултипа (ADR 0078). */
 .item[data-disabled][data-has-tooltip] {
   pointer-events: auto;
@@ -23,6 +54,7 @@
 
 .icon {
   display: inline-flex;
+  min-width: var(--tsr-comp-button-icon-size);
   align-items: center;
   flex-shrink: 0;
   height: var(--_line);
@@ -33,6 +65,14 @@
   flex: 1;
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+/* Вторая строка под подписью — мелким текстом цвета контролов (ADR 0204, HT5). */
+.caption {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--tsr-comp-caption-font-size);
+  color: var(--tsr-comp-control-color);
 }
 
 .hint {

@@ -22,6 +22,8 @@ export interface PopupItemProps extends HTMLAttributes<HTMLElement> {
   label?: ReactNode
   /** Подсказка справа от подписи: сочетание клавиш, «по возрастанию». */
   hint?: ReactNode
+  /** Вторая строка мелким текстом под подписью (ADR 0204, HT5). */
+  caption?: ReactNode
   /** Справа, последним: метка `PopupItemMark` или кнопка пункта. */
   end?: ReactNode
   /** Подпись переносится, значки и метка — по первой строке. */
@@ -30,7 +32,18 @@ export interface PopupItemProps extends HTMLAttributes<HTMLElement> {
 
 export const PopupItem = forwardRef<HTMLElement, PopupItemProps>(
   (
-    { render, icon, label, hint, end, wrap, className, children, ...rest },
+    {
+      render,
+      icon,
+      label,
+      hint,
+      caption,
+      end,
+      wrap,
+      className,
+      children,
+      ...rest
+    },
     ref,
   ) =>
     useRender({
@@ -51,6 +64,11 @@ export const PopupItem = forwardRef<HTMLElement, PopupItemProps>(
               // Части пункта находят по data-атрибутам, а не по именам классов.
               <span className={styles.label} data-popup-item-label="">
                 {label}
+                {caption !== undefined && (
+                  <span className={styles.caption} data-popup-item-caption="">
+                    {caption}
+                  </span>
+                )}
               </span>
             )}
             {children}

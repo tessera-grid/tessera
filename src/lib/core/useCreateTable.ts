@@ -425,6 +425,7 @@ export const useCreateTable = <
     labelSets: folded.labelSets,
     actionCatalog: folded.actionCatalog,
     keyboardActions: folded.keyboardActions,
+    columnTransforms: folded.columnTransforms,
     pluginDiagnostics: folded.pluginDiagnostics,
     pluginRenderVersion: argsStore.renderVersion,
     pluginWrappers: folded.wrappers,

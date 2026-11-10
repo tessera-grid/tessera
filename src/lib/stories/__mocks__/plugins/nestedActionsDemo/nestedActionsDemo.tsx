@@ -89,10 +89,16 @@ const sections = (server?: NestedDemoServer): MenuAction[] => {
       assigneeOf.set(rowId(ctx), name)
     },
   })
-  const plain = (id: string, label: string, Glyph: Icon): MenuAction => ({
+  const plain = (
+    id: string,
+    label: string,
+    Glyph: Icon,
+    tone?: MenuAction['tone'],
+  ): MenuAction => ({
     id,
     icon: icon(Glyph),
     label: () => label,
+    tone,
     onSelect: () => {},
   })
   return [
@@ -187,7 +193,7 @@ const sections = (server?: NestedDemoServer): MenuAction[] => {
         ],
       }),
     },
-    plain('demoDelete', 'Delete', Trash2),
+    plain('demoDelete', 'Delete', Trash2, 'danger'),
   ]
 }
 

@@ -5,11 +5,17 @@
  * при тысячах колонок рисуются только видимые строки (I4–I5).
  */
 import { reportAction, sourceOf } from '../../core/debugActions'
-import { type RefObject, useRef, useState } from 'react'
+import { type ReactNode, type RefObject, useRef, useState } from 'react'
 
 import { useVirtualizer } from '../../../vendor/tanstack-virtual/react-virtual'
 
-import { useLocalization } from '../../core/localization'
+import {
+  describeColumnTransforms,
+  type ShownColumnTransform,
+} from '../../core/columnTransforms'
+import { type TableLabels, useLocalization } from '../../core/localization'
+import { ItemButton } from '../../ui/Popup/ItemButton'
+import { useIcons } from '../../ui/icons'
 import { TreeLines } from '../../ui/TreeLines/TreeLinesLayer'
 import { useTableState } from '../../core/reactivity'
 import type { Table } from '../../types'
@@ -18,6 +24,7 @@ import { Button } from '../../ui/Button'
 import { Field, SearchField } from '../../ui/Field/Field'
 import { PopupItem } from '../../ui/Popup/PopupItem'
 import { PopupPanel } from '../../ui/Popup/PopupPanel'
+import { useScrollFade } from '../../ui/Popup/useScrollFade'
 import { Checkbox } from '../../ui/Checkbox/Checkbox'
 import { Tooltip } from '../../ui/Tooltip'
 import {
@@ -28,6 +35,7 @@ import {
   getCheckState,
   getRootNode,
   getToggle,
+  labelOf,
 } from './columnTree'
 import {
   type VisibilityControlTable,
@@ -36,6 +44,11 @@ import {
 } from './applyVisibility'
 
 import styles from './ColumnVisibilityMenu.module.css'
+import {
+  announceKeptTransforms,
+  capitalized,
+  clearHiddenTransforms,
+} from './hiddenTransforms'
 import { columnVisibilityLabels } from './labels'
 
 const ROW_HEIGHT = 32
@@ -55,6 +68,12 @@ interface TreeRow {
 }
 
 /** Плоский список под корнем «Все колонки»: уровень узла — его глубина + 1. */
+/** Подпись колонки по id — для объявления скрытия. */
+const labelOfId = (table: VisibilityControlTable, id: string) => {
+  const column = table.getAllLeafColumns().find(leaf => leaf.id === id)
+  return column ? labelOf(column) : id
+}
+
 const flatten = (nodes: ColumnTreeNode[], prefix = ''): TreeRow[] =>
   nodes.flatMap((node, index) => {
     const branch = prefix + (index < nodes.length - 1 ? '1' : '0')
@@ -67,11 +86,19 @@ const CheckRow = ({
   label,
   table,
   action,
+  name = label,
+  end,
+  onToggle,
 }: {
   node: ColumnTreeNode
   label: string
   table: VisibilityControlTable
   action: 'toggleColumn' | 'toggleAll'
+  /** Доступное имя флажка; у скрытой колонки — с её преобразованиями (HT3). */
+  name?: string
+  /** Справа: значки преобразований скрытой колонки и «Снять». */
+  end?: ReactNode
+  onToggle?: (columnIds: string[], visible: boolean) => void
 }) => {
   const state = getCheckState(node)
   const toggle = getToggle(node)
@@ -81,16 +108,17 @@ const CheckRow = ({
       render={<label />}
       className={styles.row}
       style={{
-        paddingInlineStart: `calc(8px + ${node.depth + 1} * var(--tsr-tree-indent))`,
+        paddingInlineStart: `calc(var(--tsr-comp-popup-item-padding-x) + ${node.depth + 1} * var(--tsr-tree-indent))`,
       }}
       data-disabled={toggle === null || undefined}
+      end={end}
     >
       <Checkbox
         className="row-select-checkbox"
         checked={state === 'checked'}
         indeterminate={state === 'indeterminate'}
         disabled={toggle === null}
-        label={label}
+        label={name}
         // Меню — в композите тулбара: без tabIndex галочки выпали бы из порядка Tab.
         tabIndex={toggle === null ? undefined : 0}
         onCheckedChange={(_, event) => {
@@ -102,6 +130,7 @@ const CheckRow = ({
             source: sourceOf(event),
           })
           setColumnsVisible(table, toggle.columnIds, toggle.visible)
+          onToggle?.(toggle.columnIds, toggle.visible)
         }}
       />
       <Tooltip title={label} overflowOnly>
@@ -113,31 +142,120 @@ const CheckRow = ({
   )
 }
 
+/**
+ * Справа у скрытой колонки с преобразованиями (ADR 0204, §3): одна кнопка-ластик в активном
+ * цвете — тултип называет, что с колонкой сейчас, нажатие всё снимает; у только что скрытой —
+ * перед ней подсказка «остаются».
+ */
+const HiddenTransforms = ({
+  columnId,
+  transforms,
+  kept,
+  table,
+  labels,
+  onCleared,
+}: {
+  columnId: string
+  transforms: ShownColumnTransform[]
+  kept: boolean
+  table: VisibilityControlTable
+  labels: TableLabels
+  onCleared: () => void
+}) => {
+  const { clearColumnTransforms: EraserIcon } = useIcons()
+  const names = transforms.map(t => t.name)
+  return (
+    <span className={styles.trailing}>
+      {kept && (
+        <span className={styles.kept} data-transforms-kept="">
+          {capitalized(
+            columnVisibilityLabels(labels).transformsKept(names, names.length),
+          )}
+        </span>
+      )}
+      <ItemButton
+        active
+        indicator={false}
+        label={columnVisibilityLabels(labels).activeTransforms(
+          capitalized(transforms.map(t => t.description).join(', ')),
+        )}
+        data-testid="column-visibility-clear-transforms"
+        data-transforms={transforms.map(t => t.kind).join(' ')}
+        onClick={event => {
+          clearHiddenTransforms(table, columnId, sourceOf(event))
+          onCleared()
+        }}
+      >
+        <EraserIcon />
+      </ItemButton>
+    </span>
+  )
+}
+
 const ColumnRow = ({
   row: { node, branch },
   table,
   top,
+  labels,
+  kept,
+  onToggle,
+  onCleared,
 }: {
   row: TreeRow
   table: VisibilityControlTable
   top: number
-}) => (
-  <li
-    className={styles.item}
-    style={{ transform: `translateY(${top}px)` }}
-    data-column-id={node.id}
-    data-column-group={node.children.length > 0 || undefined}
-  >
-    <CheckRow
-      node={node}
-      label={node.label}
-      table={table}
-      action="toggleColumn"
-    />
-    {/* После строки: подложка наведения не закрывает линии. */}
-    <TreeLines branch={branch} open={node.children.length > 0} />
-  </li>
-)
+  labels: TableLabels
+  /** Колонку скрыли в этом меню: перед кнопкой — подсказка «остаются» (HT6). */
+  kept: boolean
+  onToggle: (columnIds: string[], visible: boolean) => void
+  onCleared: (columnId: string) => void
+}) => {
+  // Преобразования — только у скрытого листа: у видимой колонки они видны в шапке.
+  const hidden =
+    node.children.length === 0 && node.leaves[0]?.getIsVisible() === false
+  const transforms = hidden
+    ? describeColumnTransforms(table, node.id, labels)
+    : []
+  const name =
+    transforms.length > 0
+      ? [
+          node.label,
+          columnVisibilityLabels(labels).hiddenColumn,
+          ...transforms.map(t => t.description),
+        ].join(', ')
+      : node.label
+  return (
+    <li
+      className={styles.item}
+      style={{ transform: `translateY(${top}px)` }}
+      data-column-id={node.id}
+      data-column-group={node.children.length > 0 || undefined}
+    >
+      <CheckRow
+        node={node}
+        label={node.label}
+        name={name}
+        table={table}
+        action="toggleColumn"
+        onToggle={onToggle}
+        end={
+          transforms.length > 0 ? (
+            <HiddenTransforms
+              columnId={node.id}
+              transforms={transforms}
+              kept={kept}
+              table={table}
+              labels={labels}
+              onCleared={() => onCleared(node.id)}
+            />
+          ) : undefined
+        }
+      />
+      {/* После строки: подложка наведения не закрывает линии. */}
+      <TreeLines branch={branch} open={node.children.length > 0} />
+    </li>
+  )
+}
 
 export const ColumnVisibilityMenu = ({
   table,
@@ -146,13 +264,36 @@ export const ColumnVisibilityMenu = ({
   const labels = useLocalization()
   const [query, setQuery] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
+  const scrollerRef = useScrollFade(scrollRef)
 
-  // Перерисовка на смену видимости, порядка и закрепления.
+  // Перерисовка на смену видимости, порядка, закрепления и преобразований (ADR 0204).
   useTableState(table, state => ({
     visibility: state.columnVisibility,
     order: state.columnOrder,
     pinning: state.columnPinning,
+    sorting: (state as { sorting?: unknown }).sorting,
+    columnFilters: (state as { columnFilters?: unknown }).columnFilters,
+    grouping: (state as { grouping?: unknown }).grouping,
   }))
+  // Колонки, скрытые в этом меню, — у них подсказка «остаются» вместо значков (HT6).
+  const [kept, setKept] = useState<readonly string[]>([])
+  const onToggle = (columnIds: string[], visible: boolean) => {
+    setKept(current =>
+      visible
+        ? current.filter(id => !columnIds.includes(id))
+        : [...current.filter(id => !columnIds.includes(id)), ...columnIds],
+    )
+    if (!visible)
+      announceKeptTransforms(
+        table,
+        columnIds.map(id => ({
+          id,
+          label: labelOfId(control, id),
+        })),
+      )
+  }
+  const onCleared = (columnId: string) =>
+    setKept(current => current.filter(id => id !== columnId))
 
   const control = table as unknown as VisibilityControlTable
   const found = filterColumnTree(buildColumnTree(control), query)
@@ -234,11 +375,12 @@ export const ColumnVisibilityMenu = ({
               label={columnVisibilityLabels(labels).allColumns}
               table={control}
               action="toggleAll"
+              onToggle={onToggle}
             />
             <TreeLines branch="" open />
           </div>
           <div
-            ref={scrollRef}
+            ref={scrollerRef}
             className={styles.scroller}
             data-popup-scroller=""
           >
@@ -253,6 +395,10 @@ export const ColumnVisibilityMenu = ({
                   row={rows[item.index]}
                   table={control}
                   top={item.start}
+                  labels={labels}
+                  kept={kept.includes(rows[item.index].node.id)}
+                  onToggle={onToggle}
+                  onCleared={onCleared}
                 />
               ))}
             </ul>

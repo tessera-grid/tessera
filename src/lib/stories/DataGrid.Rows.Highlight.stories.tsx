@@ -146,6 +146,7 @@ const deleteRow: RowAction = {
   order: 0,
   icon: () => <Trash2 width={16} height={16} />,
   label: () => 'Delete',
+  tone: 'danger',
   onSelect: ctx => {
     if (deletion.has(ctx.row.id)) return
     const table = ctx.table as unknown as HighlightApi
@@ -171,6 +172,7 @@ const ConfirmDelete = () => {
           : `Delete ${count} ${count === 1 ? 'row' : 'rows'}`
       }
       icon={<Trash2 size={18} />}
+      tone="danger"
       disabled={count === 0}
       data-testid="confirm-delete"
       onClick={() => deletion.decide(true)}

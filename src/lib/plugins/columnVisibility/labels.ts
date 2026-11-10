@@ -26,6 +26,22 @@ export interface ColumnVisibilityLabels {
   columnsHiddenTitle: string
   /** Действие: показать или скрыть колонку */
   actionToggleColumn: string
+  /** Действие: снять сортировку, фильтр и группировку скрытой колонки (ADR 0204, HT4) */
+  actionClearTransforms: string
+  /** Пункт скрытой колонки в доступном имени (ADR 0204, HT3) */
+  hiddenColumn: string
+  /** Подсказка у пункта только что скрытой колонки: преобразования (`list`) остаются */
+  transformsKept: (list: readonly string[], count: number) => string
+  /** Подсказка пункта кебаба «Скрыть колонку»: преобразования останутся */
+  transformsWillRemain: (list: readonly string[], count: number) => string
+  /** Тултип кнопки-ластика у скрытой колонки: что с ней сейчас (`transforms`) и что сделает нажатие */
+  activeTransforms: (transforms: string) => string
+  /** Объявление: колонки (`columns`) скрыты, их преобразования (`list`) остаются */
+  columnsHiddenKept: (
+    columns: readonly string[],
+    list: readonly string[],
+    count: number,
+  ) => string
 }
 
 export const columnVisibilityLabels = defineLabels<ColumnVisibilityLabels>()(
@@ -44,10 +60,22 @@ export const columnVisibilityLabels = defineLabels<ColumnVisibilityLabels>()(
     hideGroup: 'Hide group',
     columnsHiddenTitle: 'All columns are hidden',
     actionToggleColumn: 'Show or hide a column',
+    actionClearTransforms: 'Clear sorting, filter and grouping of a column',
+    hiddenColumn: 'hidden',
+    transformsKept: '{list} remain',
+    transformsKept_one: '{list} remains',
+    transformsWillRemain: '{list} will remain',
+    activeTransforms: '{transforms}. Click to clear',
+    columnsHiddenKept: '{columns} hidden, {list} remain',
+    columnsHiddenKept_one: '{columns} hidden, {list} remains',
   },
   {
     columnsWithHidden: ['count'],
     selectedColumns: ['count'],
+    transformsKept: ['list', 'count'],
+    transformsWillRemain: ['list', 'count'],
+    activeTransforms: ['transforms'],
+    columnsHiddenKept: ['columns', 'list', 'count'],
   },
 )
 

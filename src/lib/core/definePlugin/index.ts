@@ -28,6 +28,7 @@ import type {
   SlotAction,
 } from '../headerActions'
 import type { KeyboardAction } from '../keyboardActions'
+import type { ColumnTransform } from '../columnTransforms'
 import type { PluginDiagnose } from '../pluginDiagnostics'
 import type { NarrowState } from '../effectiveState'
 import type { StubEntry } from '../stubs'
@@ -249,6 +250,8 @@ interface DefinePluginConfig<
   contextMenuActions?: ContextMenuAction[]
   /** Клавиатурные действия на ячейках (ADR 0021). */
   keyboardActions?: KeyboardAction[]
+  /** Что плагин делает с данными по колонке и как это снять (ADR 0204, §2). */
+  columnTransforms?: ColumnTransform[]
   /** Декларация плагина-меню (зависит от opts): на какие слоты распространить кебаб. */
   actionMenu?: (opts: TOptions) => ActionMenuDeclaration
   /** Причина инертности для `table.getPluginDiagnostics()`; `undefined` — плагин работает. */
@@ -474,6 +477,9 @@ export const definePlugin = <
       }
       if (config.keyboardActions) {
         entry.keyboardActions = config.keyboardActions
+      }
+      if (config.columnTransforms) {
+        entry.columnTransforms = config.columnTransforms
       }
       if (config.diagnose) {
         entry.diagnose = config.diagnose

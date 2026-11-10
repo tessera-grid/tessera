@@ -9,6 +9,7 @@ import { useVirtualizer } from '../../../vendor/tanstack-virtual/react-virtual'
 import { Checkbox } from '../Checkbox/Checkbox'
 import { LoadErrorBlock } from '../LoadMoreError/LoadMoreError'
 import { PopupItem } from '../Popup/PopupItem'
+import { useScrollFade } from '../Popup/useScrollFade'
 import { Skeleton } from '../Skeleton'
 import { Stub } from '../Stub'
 import { Tooltip } from '../Tooltip'
@@ -50,6 +51,7 @@ export const Checklist = <V,>({
   testId,
 }: ChecklistProps<V>) => {
   const scrollRef = useRef<HTMLDivElement>(null)
+  const scrollerRef = useScrollFade(scrollRef)
   const listRef = useRef<HTMLDivElement>(null)
   const [active, setActive] = useState(0)
 
@@ -98,7 +100,7 @@ export const Checklist = <V,>({
 
   return (
     <div
-      ref={scrollRef}
+      ref={scrollerRef}
       className={styles.scroller}
       data-popup-scroller=""
       aria-busy={busy || undefined}

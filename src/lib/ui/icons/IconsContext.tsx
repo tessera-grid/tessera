@@ -18,6 +18,7 @@ import {
   ChevronsRight,
   ChevronsDown,
   ChevronsUpDown,
+  Eraser,
   CircleAlert,
   Clock,
   Columns3,
@@ -114,6 +115,8 @@ export interface TableIcons {
   info: IconComponent
   /** Пункт «Скрыть колонку» в кебабе заголовка */
   hideColumn: IconComponent
+  /** Скрытая колонка в меню «Колонки»: снять её сортировку, фильтр и группировку (ADR 0204) */
+  clearColumnTransforms: IconComponent
   /** Кнопки пагинации: первая / предыдущая / следующая / последняя страница */
   firstPage: IconComponent
   previousPage: IconComponent
@@ -196,6 +199,7 @@ export const DEFAULT_ICONS: TableIcons = {
   clear: X,
   info: Info,
   hideColumn: EyeOff,
+  clearColumnTransforms: Eraser,
   firstPage: ChevronsLeft,
   previousPage: ChevronLeft,
   nextPage: ChevronRight,

@@ -9,7 +9,7 @@ import clsx from 'clsx'
 import { useLocalization } from '../../core/localization'
 import { IconButton } from '../../ui/IconButton'
 import { HiddenButtonContext } from '../../ui/IconButton/iconReveal'
-import type { SlotAction } from '../../core/headerActions'
+import { type SlotAction, toneOf } from '../../core/headerActions'
 import { ActionMenuPopup } from './ActionMenuPopup'
 import { useLatest } from '../../util/useLatest'
 import { useCloseOnGridScroll } from '../../ui/Popup/useCloseOnGridScroll'
@@ -87,6 +87,7 @@ export const ActionInlineMenu = ({
           className={action.className?.(context)}
           active={active}
           draft={draft}
+          tone={toneOf(action, context)}
           count={action.count?.(context)}
           label={label}
           aria-label={ariaLabel}

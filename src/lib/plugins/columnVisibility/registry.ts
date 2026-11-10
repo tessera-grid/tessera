@@ -31,6 +31,8 @@ export const columnVisibility = definePlugin<ColumnVisibilityOptions>()({
     toggleColumn: labels => columnVisibilityLabels(labels).actionToggleColumn,
     hide: labels => columnVisibilityLabels(labels).hideColumn,
     hideGroup: labels => columnVisibilityLabels(labels).hideGroup,
+    clearTransforms: labels =>
+      columnVisibilityLabels(labels).actionClearTransforms,
   },
   diagnose: columnVisibilityInertReason,
   hooks: o => ({ onToggleColumnVisibility: o.onToggleColumnVisibility }),

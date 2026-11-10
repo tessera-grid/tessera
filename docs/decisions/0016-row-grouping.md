@@ -13,6 +13,7 @@
   ([ADR 0024](0024-slot-action-descriptor-and-menu.md)): при `headerActionMenu`
   уезжает в кебаб-меню. Инлайн-DOM (`column-group__button`) сохранён; `GroupButton`
   остаётся публичным примитивом.
+- **Изменено:** [ADR 0204](0204-hidden-column-transforms.md) (2026-11-09) — у плагина кнопка-сводка «Группировка» в тулбаре; группировка по скрытой колонке видна в меню «Колонки».
 - **Изменено:** [ADR 0184](0184-column-totals-and-group-row-count.md) (2026-11-05) — число строк группы в подписи, `aggregatedCell` грид не рисует (этап 2).
 - **Изменено:** [ADR 0174](0174-object-and-number-string-types.md) (2026-11-01) — колонка записи `object` группирует по ключу.
 - **Связано:**

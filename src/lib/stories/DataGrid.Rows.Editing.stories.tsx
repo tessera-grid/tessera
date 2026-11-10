@@ -62,6 +62,7 @@ const deleteRow: RowAction = {
   slot: 'actionRowSlot',
   icon: () => <Trash2 width={16} height={16} />,
   label: () => 'Delete',
+  tone: 'danger',
   // У строки с черновиком строки — откат, а не удаление.
   visible: ({ table, row }) =>
     !(table as unknown as RowsTable)

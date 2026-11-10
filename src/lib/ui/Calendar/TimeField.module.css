@@ -1,9 +1,14 @@
 /* Поле времени кита (ADR 0183, PK20): сегменты в рамке поля и кнопка списка справа. */
 .field {
+  /* Поле сегмента под заливку фокуса: текст первого — на поле текста поля ввода (PK35). */
+  --_segment-padding: 1px;
   display: flex;
   align-items: center;
   gap: var(--tsr-ref-space-1);
-  padding-inline-end: var(--tsr-ref-space-1);
+  padding-inline: calc(
+      var(--tsr-comp-field-padding-x) - var(--_segment-padding)
+    )
+    var(--tsr-ref-space-1);
   font-variant-numeric: tabular-nums;
 }
 
@@ -22,7 +27,7 @@
 }
 
 .segment {
-  padding: 0 1px;
+  padding: 0 var(--_segment-padding);
   border-radius: var(--tsr-comp-popup-item-radius);
   outline: none;
   cursor: text;
@@ -53,6 +58,7 @@
 }
 
 .column {
+  composes: scrollFade from '../Popup/Popup.module.css';
   display: flex;
   flex-direction: column;
   min-width: 56px;

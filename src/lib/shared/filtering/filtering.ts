@@ -4,7 +4,11 @@
  * зовёт (как `onPageChange`, PG6). Общие для `columnFiltering`, `quickSearch` и
  * заглушки пустого результата. В серверном режиме — серверные действия (ADR 0116).
  */
-import { reportAction, sourceOf } from '../../core/debugActions'
+import {
+  type DebugActionSource,
+  reportAction,
+  sourceOf,
+} from '../../core/debugActions'
 import { readPluginHooks } from '../../core/definePlugin'
 import { searchColumnIdsOf } from './searchColumns'
 import { ILLUSTRATION_SIZE, type StubEntry } from '../../core/stubs'
@@ -98,16 +102,17 @@ const changedColumns = (
 const filterSource = () =>
   globalThis.event ? sourceOf(globalThis.event) : 'keyboard'
 
-/** Заменить фильтры колонок целиком. */
+/** Заменить фильтры колонок целиком; `source` — когда действие пришло не из события. */
 export const setColumnFiltersByUser = (
   table: unknown,
   filters: ColumnFilterEntry[],
+  source: DebugActionSource = filterSource(),
 ) => {
   reportAction(table, {
     plugin: 'columnFiltering',
     action: filters.length === 0 ? 'clearFilters' : 'setFilters',
     detail: () => ({ filters }),
-    source: filterSource(),
+    source,
   })
   applyColumnFilters(table, filters)
 }

@@ -20,10 +20,11 @@ import { useLocalization } from '../../core/localization'
 import { useSliceProjection } from '../../core/reactivity'
 import { Bubble } from '../../ui/Bubble'
 import { Button } from '../../ui/Button'
-import { IconButton } from '../../ui/IconButton'
+import { ItemButton } from '../../ui/Popup/ItemButton'
 import { Stub } from '../../ui/Stub'
 import { useIcons } from '../../ui/icons'
 import { PopupEntry } from '../../ui/Popup/PopupEntry'
+import { useScrollFade } from '../../ui/Popup/useScrollFade'
 import { PopupFooter, PopupPanel } from '../../ui/Popup/PopupPanel'
 import { ToolbarButton } from '../../ui/ToolbarButton'
 import { useVirtualizer } from '../../../vendor/tanstack-virtual/react-virtual'
@@ -129,9 +130,7 @@ const FailureEntry = ({
       actions={
         <>
           {retry && (
-            <IconButton
-              shape="square"
-              size="compact"
+            <ItemButton
               label={labels.failureRetry}
               data-action="retry"
               onClick={event => {
@@ -141,11 +140,9 @@ const FailureEntry = ({
               }}
             >
               <icons.retry />
-            </IconButton>
+            </ItemButton>
           )}
-          <IconButton
-            shape="square"
-            size="compact"
+          <ItemButton
             label={failureLogLabels(labels).failureClose}
             data-action="close"
             onClick={event => {
@@ -155,7 +152,7 @@ const FailureEntry = ({
             }}
           >
             <icons.clear />
-          </IconButton>
+          </ItemButton>
         </>
       }
     >
@@ -180,6 +177,7 @@ const FailureList = ({
   const failures = useSliceProjection(table, 'failures', newestFirst)
   const locale = (table as { options: { locale?: string } }).options.locale
   const scrollRef = useRef<HTMLDivElement>(null)
+  const scrollerRef = useScrollFade(scrollRef)
   const virtualizer = useVirtualizer({
     count: failures.length,
     getScrollElement: () => scrollRef.current,
@@ -199,7 +197,7 @@ const FailureList = ({
     )
   return (
     <>
-      <div ref={scrollRef} className={styles.scroller} data-popup-scroller="">
+      <div ref={scrollerRef} className={styles.scroller} data-popup-scroller="">
         <div
           role="list"
           aria-label={failureLogLabels(labels).failureLog}

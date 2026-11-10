@@ -45,6 +45,7 @@ export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(
       onCancel,
       cancelLabel,
       tooltipWhenDisabled,
+      tone,
       onClick,
       render,
       ...rest
@@ -68,6 +69,7 @@ export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(
           onCancel={onCancel}
           cancelLabel={cancelLabel}
           tooltipWhenDisabled={tooltipWhenDisabled}
+          tone={tone}
           onClick={onClick}
           className={className}
           render={render}

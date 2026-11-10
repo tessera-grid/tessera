@@ -15,6 +15,7 @@ import { readSyncDisabled } from './actionStatus'
 import { menuActionLabel } from '../actions'
 
 export * from './actionStatus'
+export { toneOf } from './tone'
 export * from './menuSections'
 export { useActionStatus } from './useActionStatus'
 export {
@@ -37,6 +38,7 @@ export {
 } from './actionStatusFeature'
 
 export type {
+  ActionTone,
   SlotName,
   HeaderActionSlot,
   MenuAction,

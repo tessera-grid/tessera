@@ -28,7 +28,13 @@ const issueTexts = (labels: TableLabels) => {
   const editing = cellEditingLabels(labels)
   return {
     actions: [
-      { id: 'discard', label: labels.failureDiscard, onSelect: () => {} },
+      {
+        id: 'discard',
+        label: labels.failureDiscard,
+        onSelect: () => {},
+        // Опасное действие — тоном, как у таблицы (ADR 0206).
+        tone: 'danger',
+      },
       {
         id: 'retry',
         label: labels.failureRetry,
@@ -117,6 +123,7 @@ const OpenIssue = () => {
         </span>
         {button && (
           <CellIssuePopup
+            open
             anchor={anchor}
             tone="draft"
             title={texts.titles.draft}

@@ -13,6 +13,10 @@ export interface MenuItemModel {
   /** Пункт-раздел: справа шеврон и `hint`, `aria-haspopup`. */
   section: boolean
   hint?: string
+  /** Вторая строка мелким текстом под подписью: что будет после выбора (ADR 0204, HT5). */
+  caption?: string
+  /** Тон опасного действия (ADR 0206): пункт красный. */
+  tone?: 'danger'
   /** Флажок меню: пункт с `active`, не закрывающий меню. */
   checkbox: boolean
   active: boolean

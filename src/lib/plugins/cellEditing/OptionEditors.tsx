@@ -31,6 +31,7 @@ import { Field, SearchField } from '../../ui/Field/Field'
 import { PopupItem, PopupItemMark } from '../../ui/Popup/PopupItem'
 import { PopupSurface } from '../../ui/Popup/PopupSurface'
 import { useCloseOnGridScroll } from '../../ui/Popup/useCloseOnGridScroll'
+import { useScrollFade } from '../../ui/Popup/useScrollFade'
 import { useDebouncedCallback } from '../../util/useDebouncedCallback'
 import { useVirtualizer } from '../../../vendor/tanstack-virtual/react-virtual'
 import {
@@ -166,13 +167,14 @@ const VirtualOptions = ({
     overscan: OVERSCAN,
   })
   useImperativeHandle(virtualizerRef, () => virtualizer)
-  const onScrollRef = useCallback(
+  const measureOnMount = useCallback(
     (element: HTMLDivElement | null) => {
       scrollRef.current = element
       if (element) virtualizer.measure()
     },
     [virtualizer],
   )
+  const onScrollRef = useScrollFade(measureOnMount)
   if (items.length === 0) return null
   const total = virtualizer.getTotalSize()
   return (
@@ -315,7 +317,6 @@ export const SelectEditor = (props: CellEditorProps) => {
             className={styles.popup}
           >
             <SearchField
-              className={styles.search}
               clear={
                 query === ''
                   ? undefined
@@ -397,7 +398,6 @@ export const MultiSelectEditor = (props: CellEditorProps) => {
         }}
       >
         <SearchField
-          className={styles.search}
           clear={
             query === ''
               ? undefined

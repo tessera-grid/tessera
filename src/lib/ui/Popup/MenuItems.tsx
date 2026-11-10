@@ -23,8 +23,15 @@ const statusOf = (item: MenuItemModel): PopupItemStatus | undefined =>
             ? 'checked'
             : undefined
 
-const MenuItem = ({ item }: { item: MenuItemModel }) => {
+const MenuItem = ({
+  item,
+  withIcons,
+}: {
+  item: MenuItemModel
+  withIcons: boolean
+}) => {
   const descriptionId = useId()
+  const captionId = useId()
   const { tooltip, description } = item
 
   const node = (
@@ -41,7 +48,9 @@ const MenuItem = ({ item }: { item: MenuItemModel }) => {
       data-has-tooltip={tooltip ? '' : undefined}
       data-pending={item.pending || undefined}
       aria-busy={item.pending || undefined}
-      aria-describedby={description ? descriptionId : undefined}
+      aria-describedby={
+        description ? descriptionId : item.caption ? captionId : undefined
+      }
       onPointerEnter={item.preload}
       onFocus={item.preload}
       onKeyDown={item.onKeyDown}
@@ -53,9 +62,15 @@ const MenuItem = ({ item }: { item: MenuItemModel }) => {
       })}
       data-action-id={item.actionId}
       data-item-id={item.itemId}
-      icon={item.icon ?? null}
+      data-tone={item.tone}
+      icon={withIcons ? (item.icon ?? null) : undefined}
       label={item.label}
       hint={item.hint}
+      caption={
+        item.caption === undefined ? undefined : (
+          <span id={captionId}>{item.caption}</span>
+        )
+      }
       end={
         <PopupItemMark
           status={statusOf(item)}
@@ -82,8 +97,10 @@ const MenuItem = ({ item }: { item: MenuItemModel }) => {
   )
 }
 
-export const MenuItems = ({ groups }: { groups: MenuGroupModel[] }) =>
-  groups.map(group => (
+/** Слот значка — у всех пунктов меню, если значок есть хоть у одного: текст на одной линии. */
+export const MenuItems = ({ groups }: { groups: MenuGroupModel[] }) => {
+  const withIcons = groups.some(group => group.items.some(item => item.icon))
+  return groups.map(group => (
     <PopupGroup
       key={group.key}
       render={<Menu.Group />}
@@ -92,7 +109,8 @@ export const MenuItems = ({ groups }: { groups: MenuGroupModel[] }) =>
       divided={group.divided}
     >
       {group.items.map(item => (
-        <MenuItem key={item.key} item={item} />
+        <MenuItem key={item.key} item={item} withIcons={withIcons} />
       ))}
     </PopupGroup>
   ))
+}

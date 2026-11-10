@@ -21,6 +21,7 @@ import {
 } from './actionStatus'
 import type { ActionStatus } from './actionStatusFeature'
 import { menuGroups, preloadActionPanel } from './index'
+import { toneOf } from './tone'
 import type { MenuAction, SlotAction } from './types'
 import { useActionStatus } from './useActionStatus'
 import type { MenuGroupModel } from '../../util/menuModel'
@@ -144,7 +145,9 @@ export const useMenuItemGroups = ({
         : availability.checking
           ? labels.availabilityChecking
           : tooltip
+      // У раздела подсказка — значение перед шевроном, у пункта — вторая строка (ADR 0204, HT5).
       const hint = section ? action.hint?.(context, labels) : undefined
+      const caption = section ? undefined : action.hint?.(context, labels)
 
       return {
         key: action.id,
@@ -160,6 +163,8 @@ export const useMenuItemGroups = ({
           label: running ? labels.cancelAction(item.label) : item.label,
           section,
           hint,
+          caption,
+          tone: toneOf(action, context),
           checkbox: keepOpen && !!action.active,
           active: !!item.active,
           disabled:

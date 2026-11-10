@@ -15,6 +15,7 @@ import {
   readSyncDisabled,
   useActionStatus,
   runMenuAction,
+  toneOf,
   type ActionStatus,
   type SlotAction,
 } from '../../core/headerActions'
@@ -65,6 +66,7 @@ export const ActionButton = ({
       className={action.className?.(context)}
       active={active}
       draft={draft}
+      tone={toneOf(action, context)}
       count={action.count?.(context)}
       onClick={event =>
         runMenuAction(action, context, event, { keepError: false })

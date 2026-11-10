@@ -3,7 +3,7 @@
  * таблицы, стрелки из `icons`, подписи листания — пропом от владельца словаря. Его берут фильтр
  * даты и редактор даты; оба грузят его своим ленивым модулем.
  */
-import type { ChangeEvent, ComponentProps } from 'react'
+import { type ChangeEvent, type ComponentProps, useRef } from 'react'
 
 import { Select } from '@base-ui/react/select'
 import {
@@ -19,6 +19,8 @@ import { ChevronDown } from 'lucide-react'
 import { useIcons } from '../icons'
 import { PopupItem, PopupItemMark } from '../Popup/PopupItem'
 import { PopupSurface } from '../Popup/PopupSurface'
+import { centerSelected } from '../Popup/centerSelected'
+import { useScrollFade } from '../Popup/useScrollFade'
 import { SelectTrigger } from '../SelectTrigger/SelectTrigger'
 
 import styles from './Calendar.module.css'
@@ -71,10 +73,22 @@ const CalendarDropdown = ({
   'aria-label': label,
 }: DropdownProps) => {
   const current = Number(value)
+  const listRef = useRef<HTMLDivElement>(null)
+  const scrollerRef = useScrollFade(listRef)
   return (
     <Select.Root
       value={current}
       disabled={disabled}
+      onOpenChange={open => {
+        // Base UI в кадре открытия ставит выбранный год к краю списка — под затемнение;
+        // следующим кадром, когда список уже раскрыт, ставим его в середину.
+        if (open)
+          requestAnimationFrame(() =>
+            requestAnimationFrame(() =>
+              centerSelected(listRef.current, '[aria-selected="true"]'),
+            ),
+          )
+      }}
       onValueChange={next => {
         if (next === null) return
         onChange?.({
@@ -100,9 +114,8 @@ const CalendarDropdown = ({
             />
           }
           popup={<Select.Popup />}
-          className={styles.dropdownPopup}
         >
-          <Select.List>
+          <Select.List ref={scrollerRef} className={styles.dropdownList}>
             {options.map(option => (
               <PopupItem
                 key={option.value}

@@ -11,6 +11,7 @@ import {
   type RowGroupingModelOptions,
 } from '../rowGroupingModel/registry'
 import { groupHeaderAction } from './groupHeaderAction'
+import { groupTransform } from './grouping'
 import { rowGroupingLabels } from './labels'
 
 export interface RowGroupingOptions extends Omit<
@@ -44,6 +45,8 @@ export const rowGrouping = definePlugin<RowGroupingOptions>()({
   features: rowGroupingModelFeatures,
   // Единый дескриптор: ядро решает подачу (инлайн-кнопка / строка меню).
   slotActions: [groupHeaderAction],
+  // Группировка по колонке — факт ядра (ADR 0204, §2).
+  columnTransforms: [groupTransform],
   // Липкие строки групп — факт ядра (ADR 0170, §2).
   options: o => ({
     stickyGroupRows: o.enabled !== false && !!o.stickyRows,

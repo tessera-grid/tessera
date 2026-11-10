@@ -14,11 +14,11 @@
   gap: var(--tsr-comp-popup-padding);
 }
 
-/* Заголовок раздела — по краю облачков, мельче записей, как заголовок поповера. */
+/* Заголовок раздела — на линии текста записей, мельче их, как заголовок поповера (PK33). */
 .sectionTitle {
   margin: 0;
-  padding: calc(var(--tsr-comp-popup-padding) * 2) 0
-    var(--tsr-comp-popup-padding);
+  padding: calc(var(--tsr-comp-popup-padding) * 2)
+    var(--tsr-comp-popup-item-padding-x) var(--tsr-comp-popup-padding);
   font-size: var(--tsr-comp-popup-title-font-size);
   font-weight: 600;
 }

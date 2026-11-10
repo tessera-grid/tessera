@@ -17,6 +17,7 @@ import {
   useButtonStates,
 } from '../buttonStates'
 import { useActiveNameCheck } from './useActiveNameCheck'
+import { useBubbleLook } from './bubbleLook'
 import { RevealedIcon } from './iconReveal'
 import { useIcons } from '../icons/IconsContext'
 
@@ -32,11 +33,17 @@ export interface ButtonTooltipProps {
   tooltipWhenDisabled?: boolean
 }
 
+/** Тон действия (ADR 0206): `danger` — действие безвозвратно теряет данные пользователя. */
+export interface ToneProps {
+  tone?: 'danger'
+}
+
 /**
- * Общие пропсы производных кнопок кита (ADR 0128): занятость, остановка дуги при отказе и
- * тултип выключенной — как у базы.
+ * Общие пропсы производных кнопок кита (ADR 0128): занятость, остановка дуги при отказе,
+ * тултип выключенной и тон — как у базы.
  */
-export interface DerivedButtonProps extends ButtonStatesProps, FailureProps {
+export interface DerivedButtonProps
+  extends ButtonStatesProps, FailureProps, ToneProps {
   disabled?: boolean
   tooltipWhenDisabled?: boolean
   onClick?: (event: MouseEvent<HTMLButtonElement>) => void
@@ -77,7 +84,8 @@ export interface IconButtonProps
     ButtonStatesProps,
     FailureProps,
     ButtonTooltipProps,
-    ActiveProps {
+    ActiveProps,
+    ToneProps {
   /** Доступное имя и тултип кнопки. */
   label?: string
   /** `ghost` — прозрачная; `overlay` — непрозрачный чип поверх контента (действия строки). */
@@ -116,6 +124,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
       indicator = true,
       indicatorTone = 'active',
       draft,
+      tone,
       className,
       disabledClassName,
       disabled,
@@ -156,6 +165,13 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
 
     // Неприменённое без включённого — точка несохранённого; включённое главнее.
     const drafted = !active && !!draft
+    const bubble = useBubbleLook(
+      {
+        count: drafted || !count ? 0 : count,
+        tone: drafted ? 'draft' : indicatorTone,
+      },
+      (!!active || !!draft) && indicator && !states.active,
+    )
     const icons = useIcons()
     const CancelIcon = icons.cancelAction
     const name = states.armed ? (cancelLabel ?? label) : label
@@ -179,6 +195,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         data-bare={children == null || undefined}
         data-active={active || undefined}
         data-draft={draft || undefined}
+        data-tone={tone}
         data-cancel-armed={states.armed || undefined}
         onClick={states.onClick}
         // Взведённый «стоп» отменяет, а не открывает меню, которое триггер открыл бы нажатием.
@@ -196,15 +213,17 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         </RevealedIcon>
         {(active !== undefined || draft !== undefined) && (
           <Bubble
-            size={count && !drafted ? 'sm' : 'dot'}
-            tone={drafted ? 'draft' : indicatorTone}
+            size={bubble.count ? 'sm' : 'dot'}
+            tone={bubble.tone}
             className={styles.indicator}
             data-active-indicator=""
-            data-count={(!drafted && count) || undefined}
-            data-shown={(!!active || !!draft) && indicator && !states.active}
+            data-count={bubble.count || undefined}
+            data-shown={bubble.shown}
+            onTransitionEnd={bubble.settle}
+            onTransitionCancel={bubble.settle}
             aria-hidden
           >
-            {count && !drafted ? countText(count) : null}
+            {bubble.count ? countText(bubble.count) : null}
           </Bubble>
         )}
         {states.armed && (

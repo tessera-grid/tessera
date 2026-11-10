@@ -6,13 +6,7 @@
 import type { HeaderAction } from '../../core/headerActions'
 import type { HeaderComponentProps } from '../../core/createSlots'
 import { useIcons } from '../../ui/icons'
-import { serverRowModelReason } from '../../core/pluginDiagnostics'
-import {
-  isSelectionEmpty,
-  rowSelectionValueOf,
-  setRowSelectionValue,
-} from '../../core/rowSelectionAll'
-import { runServerAction } from '../../core/serverActions'
+import { changeGrouping } from './grouping'
 
 import '../../ui/cellControls/buttonVisibility.css'
 import { rowGroupingLabels } from './labels'
@@ -28,30 +22,15 @@ const GroupActionIcon = ({ grouped = false }: { grouped?: boolean }) => {
 const isGrouped = ({ column }: HeaderComponentProps): boolean =>
   column.getIsGrouped()
 
-/**
- * Смена группировки. В серверной модели строк — серверное действие (ADR 0144, §3): id групп
- * другой группировки не совпадают — раскрытие и выбор сброшены (ADR 0148, §4); отказ
- * возвращает оба.
- */
+/** Группировка по колонке кнопкой или строкой кебаба. */
 const toggleGrouping = (
   { column, table }: HeaderComponentProps,
   menu = false,
 ) =>
-  runServerAction(
-    table,
-    'grouping',
-    () => {
-      column.toggleGrouping()
-      if (serverRowModelReason(table)) {
-        table.resetExpanded(true)
-        if (!isSelectionEmpty(rowSelectionValueOf(table))) {
-          setRowSelectionValue(table, {})
-        }
-      }
-    },
-    () => undefined,
-    { control: 'rowGrouping', columns: [column.id], ...(menu ? { menu } : {}) },
-  )
+  changeGrouping(table, () => column.toggleGrouping(), {
+    columns: [column.id],
+    ...(menu ? { menu } : {}),
+  })
 
 export const groupHeaderAction: HeaderAction = {
   id: 'rowGrouping',

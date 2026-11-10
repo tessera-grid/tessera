@@ -6,6 +6,8 @@ import { afterEach, describe, expect, test } from 'vitest'
 import '../../../ui/theme/theme.css'
 import { DATA_GRID_THEME_CLASS } from '../../../ui/theme'
 import { Bubble } from '../../../ui/Bubble'
+import { CellIssue } from '../../../ui/CellIssue'
+import { UiCanvas } from '../../__mocks__/UiCanvas'
 import { PopupItem, PopupItemMark } from '../../../ui/Popup/PopupItem'
 import { SelectTrigger } from '../../../ui/SelectTrigger/SelectTrigger'
 import * as assembled from '../../UI.PopupAssembled.stories'
@@ -25,7 +27,7 @@ import * as timeField from '../../UI.TimeField.stories'
 import { failureShownOn } from '../helpers'
 import { resolveColor, toRgba } from './a11y-helpers'
 
-// Кит поповеров и контролов (ADR 0183, PK2–PK6, PK12–PK21, PK27–PK30) и раскладка панели (ADR 0017,
+// Кит поповеров и контролов (ADR 0183, PK2–PK6, PK12–PK21, PK27–PK30, PK32) и раскладка панели (ADR 0017,
 // PP11–PP13). Истории — те же, что снимает каталог; потребители проверяются по исходникам.
 
 const Assembled = composeStories(assembled)
@@ -311,6 +313,52 @@ describe('Блоки поповера', () => {
     expect(box(surface).right - box(panel()!).right).toBeCloseTo(p, 0)
     const list = panel()!.querySelector('[data-testid="filter-options"]')!
     expect(box(surface).right - box(list).right).toBeCloseTo(p * 2, 0)
+  })
+
+  test('PK32: поповер, модуль которого приходит по первому нажатию, появляется и уходит переходом поверхности — с первого открытия и при каждом следующем; отметка ячейки', async () => {
+    const popup = () =>
+      document.querySelector<HTMLElement>('[data-testid="cell-issue-popover"]')
+    // Состояния перехода, в которых побывал попап: первый кадр открытия и уход.
+    const seen = new Set<string>()
+    const observer = new MutationObserver(() => {
+      for (const state of ['data-starting-style', 'data-ending-style'])
+        if (popup()?.hasAttribute(state)) seen.add(state)
+    })
+    observer.observe(document.body, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ['data-starting-style', 'data-ending-style'],
+    })
+    const screen = await render(
+      <UiCanvas>
+        <CellIssue reason="The server refused the value" label="Save failed" />
+      </UiCanvas>,
+    )
+    const trigger = () =>
+      document.querySelector<HTMLElement>('[data-cell-issue]')!
+    try {
+      for (const round of ['первое открытие', 'повторное открытие']) {
+        seen.clear()
+        // eslint-disable-next-line no-await-in-loop
+        await userEvent.click(trigger())
+        // eslint-disable-next-line no-await-in-loop
+        await expect
+          .poll(() => popup() && !popup()!.hasAttribute('data-starting-style'))
+          .toBe(true)
+        expect(seen.has('data-starting-style'), `${round}: появление`).toBe(
+          true,
+        )
+        // eslint-disable-next-line no-await-in-loop
+        await userEvent.keyboard('{Escape}')
+        // eslint-disable-next-line no-await-in-loop
+        await expect.poll(popup).toBeNull()
+        expect(seen.has('data-ending-style'), `${round}: уход`).toBe(true)
+      }
+    } finally {
+      observer.disconnect()
+      await screen.unmount()
+    }
   })
 })
 

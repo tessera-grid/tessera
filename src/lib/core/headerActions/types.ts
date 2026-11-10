@@ -26,6 +26,9 @@ export type HeaderActionSlot = 'leftHeaderSlot' | 'rightHeaderSlot'
  * контекстного меню (ADR 0030). Достаточно для `resolveMenuItems`; инлайн-подача
  * (кнопка в слоте) и `slot` живут в наследнике `SlotAction`.
  */
+/** Тон действия (ADR 0206). */
+export type ActionTone = 'danger'
+
 export interface MenuAction<TCtx = any> extends NamedAction<TCtx> {
   /** Уникальный id действия — ключ дедупликации при сборке и имя действия справочника. */
   id: string
@@ -88,13 +91,21 @@ export interface MenuAction<TCtx = any> extends NamedAction<TCtx> {
    * (ADR 0079).
    */
   submenu?: (ctx: TCtx, labels: TableLabels) => MenuSection<TCtx>
-  /** Значение пункта-раздела мелким текстом перед шевроном («Pin … Left»). */
+  /**
+   * Значение пункта-раздела мелким текстом перед шевроном («Pin … Left»); у обычного пункта —
+   * вторая строка под подписью: что будет после выбора (ADR 0204, HT5).
+   */
   hint?: (ctx: TCtx, labels: TableLabels) => string | undefined
   /**
    * `false` — выбор не закрывает меню (переопределяет умолчание раздела); пункт с
    * `active` становится флажком меню (ADR 0079).
    */
   closeOnSelect?: boolean
+  /**
+   * Тон (ADR 0206): `'danger'` — действие безвозвратно теряет данные пользователя; пункт меню
+   * красный, кнопка слота — красная при наведении и фокусе. Функция — тон по контексту.
+   */
+  tone?: ActionTone | ((ctx: TCtx) => ActionTone | undefined)
 }
 
 /** Раздел меню (ADR 0079): пункты сразу или промисом — тогда со скелетом. */

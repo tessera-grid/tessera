@@ -8,6 +8,7 @@ export {
   IconButton,
   type ActiveProps,
   type DerivedButtonProps,
+  type ToneProps,
   type IconButtonProps,
 } from './lib/ui/IconButton'
 export {

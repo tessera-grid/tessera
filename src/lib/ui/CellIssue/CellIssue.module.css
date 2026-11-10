@@ -68,7 +68,7 @@
 .reason {
   margin: 0;
   color: var(--tsr-comp-error-text-color);
-  padding: 0 var(--tsr-comp-popup-padding);
+  padding: 0 var(--tsr-comp-popup-item-padding-x);
 }
 
 .details {
@@ -76,7 +76,7 @@
   grid-template-columns: auto minmax(0, 1fr);
   gap: 0 calc(var(--tsr-comp-popup-padding) * 2);
   margin: 0;
-  padding: 0 var(--tsr-comp-popup-padding);
+  padding: 0 var(--tsr-comp-popup-item-padding-x);
 }
 
 /* Без кнопок от тела до нижнего края — двойное поле поповера. */

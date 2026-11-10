@@ -47,7 +47,15 @@ const meta = {
           positioner={<Popover.Positioner side={side} align={align} />}
           popup={<Popover.Popup aria-label="Surface" initialFocus={false} />}
         >
-          <p style={{ margin: 0, padding: 8, maxWidth: 240 }}>{text}</p>
+          <p
+            style={{
+              margin: 0,
+              padding: '0 var(--tsr-comp-popup-item-padding-x)',
+              maxWidth: 240,
+            }}
+          >
+            {text}
+          </p>
         </PopupSurface>
       </Popover.Portal>
     </PopupCanvas>

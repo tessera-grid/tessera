@@ -64,7 +64,7 @@
 
 .searchIcon {
   position: absolute;
-  inset-inline-start: var(--tsr-comp-field-padding-x);
+  inset-inline-start: var(--tsr-comp-control-padding-x);
   display: inline-flex;
   color: var(--tsr-comp-control-color);
   pointer-events: none;
@@ -73,7 +73,7 @@
 .search[data-icon] > .field {
   /* Лупа и промежуток до текста — как иконка и подпись `Button`. */
   padding-inline-start: calc(
-    var(--tsr-comp-field-padding-x) + var(--tsr-comp-button-icon-size) +
+    var(--tsr-comp-button-padding-x-icon) + var(--tsr-comp-button-icon-size) +
       var(--tsr-comp-button-gap)
   );
 }

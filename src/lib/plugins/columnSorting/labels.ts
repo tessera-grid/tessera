@@ -16,6 +16,14 @@ export interface ColumnSortingLabels {
   sortPriority: (position: number, total: number) => string
   /** Действие: сортировка колонки */
   actionSort: string
+  /** Вид преобразования в перечне меню «Колонки» (ADR 0204) */
+  transformName: string
+  /** Сортировка скрытой колонки по возрастанию — в доступном имени её пункта */
+  transformAscending: string
+  /** То же по убыванию */
+  transformDescending: string
+  /** Приоритет сортировки скрытой колонки (`position` из `total`) */
+  transformPriority: (position: number, total: number) => string
 }
 
 export const columnSortingLabels = defineLabels<ColumnSortingLabels>()(
@@ -26,9 +34,14 @@ export const columnSortingLabels = defineLabels<ColumnSortingLabels>()(
     clearSort: 'Clear sorting',
     sortPriority: 'Sort priority {position} of {total}',
     actionSort: 'Sort',
+    transformName: 'sorting',
+    transformAscending: 'sorted ascending',
+    transformDescending: 'sorted descending',
+    transformPriority: 'priority {position} of {total}',
   },
   {
     sortPriority: ['position', 'total'],
+    transformPriority: ['position', 'total'],
   },
 )
 

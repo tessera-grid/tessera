@@ -7,7 +7,9 @@
   производные кнопки делят с базой пропсы занятости, отказа и тултипа выключенной, показ по
   наведению — `revealOnHover` ([ADR 0128](0128-derived-button-contract.md)); 2026-10-21 —
   включённое состояние базы — цвет и бабл (точка или число), свой значок
-  ([ADR 0129](0129-button-active-state.md)).
+  ([ADR 0129](0129-button-active-state.md)); 2026-11-09 — отступы кнопки с подписью — от общего
+  отступа контрола `--tsr-comp-control-padding-x` ([ADR 0183](0183-popup-kit.md), PK25); 2026-11-10 —
+  тон опасного действия `tone="danger"` у обеих баз ([ADR 0206](0206-danger-tone.md), этап 1).
 - **Меняет:**
   - [ADR 0017](0017-ui-components.md) — палитра, размер и иконка кнопок F1/F2/F4/F5 —
     общие токены; формы — `circle` и `square` базы `IconButton`.
@@ -51,8 +53,8 @@
 | `--tsr-comp-button-radius-circle`             | 50% — форма `circle`                                          |
 | `--tsr-comp-button-radius-square`             | `--tsr-comp-control-radius` (8px) — форма `square` и `Button` |
 | `--tsr-comp-button-color`                     | `--tsr-comp-control-color` — иконка и подпись в покое         |
-| `--tsr-comp-button-padding-x`, `-gap`         | 12px, 6px — отступ и промежуток кнопки с подписью             |
-| `--tsr-comp-button-padding-x-icon`            | 10px — отступ слева у кнопки с подписью и иконкой (ADR 0097)  |
+| `--tsr-comp-button-padding-x`, `-gap`         | 7px, 6px — отступ внутри рамки и промежуток кнопки с подписью |
+| `--tsr-comp-button-padding-x-icon`            | 7px — отступ слева у кнопки с подписью и иконкой (ADR 0097)   |
 | `--tsr-comp-button-font-size`, `-font-weight` | 13px, 500 — подпись `Button` (ADR 0097)                       |
 
 Палитра состояний — общая: наведение `control-hover-bg`; активное (включённое

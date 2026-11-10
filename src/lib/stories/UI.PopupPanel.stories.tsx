@@ -55,7 +55,8 @@ const PanelStory = ({ title, body, buttons, footerLabel }: PanelStoryArgs) => {
                     <span
                       style={{
                         marginInlineEnd: 'auto',
-                        paddingInlineStart: 'var(--tsr-comp-popup-padding)',
+                        paddingInlineStart:
+                          'var(--tsr-comp-popup-item-padding-x)',
                         alignSelf: 'center',
                       }}
                     >
@@ -63,7 +64,9 @@ const PanelStory = ({ title, body, buttons, footerLabel }: PanelStoryArgs) => {
                     </span>
                   )}
                   {buttons > 1 && (
-                    <Button variant="ghost">{drafts.draftDiscard}</Button>
+                    <Button variant="ghost" tone="danger">
+                      {drafts.draftDiscard}
+                    </Button>
                   )}
                   {buttons > 0 && (
                     <Button variant="outline">{drafts.draftApply}</Button>
@@ -75,7 +78,7 @@ const PanelStory = ({ title, body, buttons, footerLabel }: PanelStoryArgs) => {
             <p
               style={{
                 margin: 0,
-                padding: '0 var(--tsr-comp-popup-padding)',
+                padding: '0 var(--tsr-comp-popup-item-padding-x)',
               }}
             >
               {body}

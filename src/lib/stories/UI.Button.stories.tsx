@@ -93,6 +93,12 @@ const meta = {
   component: ButtonDemo,
   argTypes: {
     variant: { control: 'inline-radio', options: ['outline', 'ghost'] },
+    tone: {
+      control: 'inline-radio',
+      options: ['none', 'danger'],
+      mapping: { none: undefined },
+      description: 'Тон: опасное действие — красное (ADR 0206)',
+    },
     tooltip: { control: 'text' },
     failed: { control: 'boolean' },
     tooltipWhenDisabled: { if: { arg: 'disabled' } },
@@ -116,6 +122,7 @@ export const ButtonPlayground: Story = {
   parameters: defaultControls(
     'children',
     'variant',
+    'tone',
     'withIcon',
     'tooltip',
     'pending',

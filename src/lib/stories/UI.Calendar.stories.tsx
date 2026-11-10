@@ -96,11 +96,9 @@ const CalendarStory = ({ mode, time }: CalendarStoryArgs) => {
               testId="story-time"
             />
           )}
-          {/* Как у редактора даты: от календаря до кнопки — одно двойное поле (PP12). */}
+          {/* Как у редактора даты: зазор поповера и это поле — двойное поле до кнопки. */}
           <PopupFooter
-            style={{
-              marginBlockStart: 'calc(var(--tsr-comp-popup-padding) * -1)',
-            }}
+            style={{ paddingBlockStart: 'var(--tsr-comp-popup-padding)' }}
           >
             <Button variant="ghost" onClick={() => setDay(null)}>
               {editing.editClear}

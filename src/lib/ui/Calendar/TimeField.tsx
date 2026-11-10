@@ -15,6 +15,8 @@ import { IconButton } from '../IconButton'
 import { useIcons } from '../icons'
 import { PopupItem, PopupItemMark } from '../Popup/PopupItem'
 import { PopupSurface } from '../Popup/PopupSurface'
+import { centerSelected } from '../Popup/centerSelected'
+import { useScrollFade } from '../Popup/useScrollFade'
 
 import fieldStyles from '../Field/Field.module.css'
 import styles from './TimeField.module.css'
@@ -77,14 +79,8 @@ const clockOf = (locale?: string) => {
 const wrap = (value: number, size: number) => ((value % size) + size) % size
 
 /** Колонка списка открывается на выбранном: он посередине, а не за краем. */
-const centerSelected = (column: HTMLDivElement | null) => {
-  const selected = column?.querySelector<HTMLElement>('[aria-pressed="true"]')
-  if (!column || !selected) return
-  column.scrollTop =
-    selected.offsetTop -
-    column.offsetTop -
-    (column.clientHeight - selected.offsetHeight) / 2
-}
+const centerPressed = (column: HTMLDivElement | null) =>
+  centerSelected(column, '[aria-pressed="true"]')
 
 export const TimeField = ({
   value,
@@ -107,6 +103,9 @@ export const TimeField = ({
   }
   const [open, setOpen] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
+  const hoursColumn = useScrollFade(centerPressed)
+  const minutesColumn = useScrollFade(centerPressed)
+  const periodColumn = useScrollFade(centerPressed)
   const typed = useRef('')
   const refs = {
     hours: useRef<HTMLSpanElement>(null),
@@ -343,7 +342,7 @@ export const TimeField = ({
           >
             <div className={styles.columns}>
               <div
-                ref={centerSelected}
+                ref={hoursColumn}
                 className={styles.column}
                 aria-label={labels.hours}
               >
@@ -366,7 +365,7 @@ export const TimeField = ({
                 })}
               </div>
               <div
-                ref={centerSelected}
+                ref={minutesColumn}
                 className={styles.column}
                 aria-label={labels.minutes}
               >
@@ -390,7 +389,7 @@ export const TimeField = ({
               </div>
               {clock.twelve && (
                 <div
-                  ref={centerSelected}
+                  ref={periodColumn}
                   className={styles.column}
                   aria-label={labels.dayPeriod}
                 >

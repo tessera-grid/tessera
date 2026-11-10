@@ -29,6 +29,7 @@ export const rowActionsDemo: RowAction[] = [
     order: 2,
     icon: () => <Trash2 width={16} height={16} />,
     label: () => 'Delete',
+    tone: 'danger',
     onSelect: () => {},
   },
 ]

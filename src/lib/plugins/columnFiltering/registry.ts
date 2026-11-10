@@ -21,6 +21,7 @@ import {
 } from '../columnFilteringModel/registry'
 import { DEFAULT_FILTER_DEBOUNCE_MS } from '../columnFilteringModel/conditions'
 import { filterHeaderAction } from './filterHeaderAction'
+import { filterTransform } from './transform'
 import { declareRejectHandler } from '../../core/serverActions'
 import {
   columnFilterDraftKind,
@@ -91,6 +92,8 @@ export const columnFiltering = definePlugin<ColumnFilteringOptions>()({
   features: columnFilteringModelFeatures,
   hooks: o => ({ onFilterChange: o.onFilterChange }),
   slotActions: [filterHeaderAction],
+  // Фильтр колонки — факт ядра (ADR 0204, §2).
+  columnTransforms: [filterTransform],
   draftKinds: [columnFilterDraftKind],
   // Черновики условий (ADR 0178, §2): уходят со сменой фильтра колонки, отказ кладёт их обратно.
   setup: () => table => {

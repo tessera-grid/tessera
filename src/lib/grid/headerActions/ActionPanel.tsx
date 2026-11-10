@@ -9,7 +9,7 @@ import clsx from 'clsx'
 import { useLocalization } from '../../core/localization'
 import { IconButton } from '../../ui/IconButton'
 import { HiddenButtonContext } from '../../ui/IconButton/iconReveal'
-import type { SlotAction } from '../../core/headerActions'
+import { type SlotAction, toneOf } from '../../core/headerActions'
 import { ActionPanelPopup } from './ActionPanelPopup'
 import { useClosingVisible } from './useClosingVisible'
 import { type PanelButtonState, panelButtonProps } from './usePanelOpening'
@@ -55,6 +55,7 @@ export const ActionPanel = ({
           className={action.className?.(context)}
           active={active}
           draft={draft}
+          tone={toneOf(action, context)}
           count={action.count?.(context)}
           label={label}
           aria-label={ariaLabel}

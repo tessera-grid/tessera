@@ -3,7 +3,7 @@ import { type ButtonHTMLAttributes, type ReactNode, forwardRef } from 'react'
 import { Button as BaseButton } from '@base-ui/react/button'
 import clsx from 'clsx'
 
-import { type ButtonTooltipProps } from '../IconButton'
+import { type ButtonTooltipProps, type ToneProps } from '../IconButton'
 import { Tooltip } from '../Tooltip'
 import {
   type ButtonStatesProps,
@@ -18,7 +18,8 @@ export interface ButtonProps
     ButtonHTMLAttributes<HTMLButtonElement>,
     ButtonStatesProps,
     FailureProps,
-    ButtonTooltipProps {
+    ButtonTooltipProps,
+    ToneProps {
   /** `outline` — с рамкой, на поверхности грида; `ghost` — без рамки, в поповерах. */
   variant?: 'outline' | 'ghost'
   /** Иконка перед подписью. */
@@ -39,6 +40,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
       variant = 'outline',
+      tone,
       icon,
       tooltip,
       tooltipSide,
@@ -72,6 +74,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         aria-busy={states['aria-busy'] ?? rest['aria-busy']}
         data-pending-leaving={states['data-pending-leaving']}
         data-variant={variant}
+        data-tone={tone}
         data-with-icon={icon ? '' : undefined}
         onClick={states.onClick}
         className={clsx(

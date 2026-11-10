@@ -1,6 +1,6 @@
 /**
  * Поповер-панель (ADR 0183, PK2): заголовок, содержимое и кнопки внизу по раскладке ADR 0017
- * (PP11–PP13). Заголовок связывают с попапом через `titleId` и `aria-labelledby` попапа.
+ * (PP11–PP12; линии полей — ADR 0183, PK33). Заголовок связывают с попапом через `titleId` и `aria-labelledby` попапа.
  */
 import type { HTMLAttributes, ReactNode } from 'react'
 import { forwardRef } from 'react'

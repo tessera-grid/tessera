@@ -13,6 +13,7 @@ import { neverInert } from '../../core/pluginDiagnostics'
 import { declareRevertOnReject } from '../../core/serverActions'
 import { sortKeyboardAction } from './keyboardActions'
 import { sortHeaderAction } from './sortHeaderAction'
+import { sortTransform } from './transform'
 import type { ColumnSortingHooks } from './types'
 import { columnSortingLabels } from './labels'
 
@@ -80,6 +81,8 @@ export const columnSorting = definePlugin<ColumnSortingOptions>()({
   setup: o => table =>
     declareRevertOnReject(table, 'sorting', o.revertOnReject !== false),
   keyboardActions: [sortKeyboardAction],
+  // Сортировка колонки — факт ядра: её видят меню «Колонки» и сводки (ADR 0204, §2).
+  columnTransforms: [sortTransform],
   options: o => {
     const multi = resolveMultiSort(o.multiSort)
     const isMultiSortEvent = resolveMultiSortEvent(multi.opts.event)

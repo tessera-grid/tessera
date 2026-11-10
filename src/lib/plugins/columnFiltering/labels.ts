@@ -2,6 +2,10 @@
 import { defineLabels } from '../../core/localization'
 
 export interface ColumnFilteringLabels {
+  /** Вид преобразования в перечне меню «Колонки» (ADR 0204) */
+  transformName: string
+  /** Фильтр скрытой колонки — в доступном имени её пункта */
+  transformDescription: string
   /** Кнопка фильтра в заголовке и подпись панели фильтра (`columnFiltering`) */
   filter: string
   /** Доступное имя кнопки фильтра при активном фильтре колонки */
@@ -141,6 +145,8 @@ export const columnFilteringLabels = defineLabels<ColumnFilteringLabels>()(
     actionSetFilters: 'Set filters',
     actionRemoveFilter: 'Remove a filter',
     actionClearFilters: 'Clear filters',
+    transformName: 'filter',
+    transformDescription: 'filtered',
   },
   {
     filtersActive: ['count'],

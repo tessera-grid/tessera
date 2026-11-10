@@ -25,6 +25,8 @@ export const rowDraftAction: RowAction = {
   label: labels => cellEditingLabels(labels).actionRowDraftDiscard,
   action: ({ table, row }) =>
     isNewRow(table, row.id) ? 'rowInsertDiscard' : 'rowDeleteDiscard',
+  // Убрать новую строку — потеря её значений; вернуть удалённую — нет (ADR 0206).
+  tone: ({ table, row }) => (isNewRow(table, row.id) ? 'danger' : undefined),
   visible: ({ table, row }) => !!rowDraftOf(table, row.id),
   // Видна без наведения, без точки черновика: строку и так выдаёт её вид.
   shown: () => true,

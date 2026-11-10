@@ -15,10 +15,11 @@ import { Bubble } from '../../ui/Bubble/Bubble'
 import { PopupEntry } from '../../ui/Popup/PopupEntry'
 import { PopupPanel } from '../../ui/Popup/PopupPanel'
 import { PopupSurface } from '../../ui/Popup/PopupSurface'
+import { useScrollFade } from '../../ui/Popup/useScrollFade'
 import { useLocalization } from '../../core/localization'
 import type { Table } from '../../types'
 import { Button } from '../../ui/Button'
-import { IconButton } from '../../ui/IconButton'
+import { ItemButton } from '../../ui/Popup/ItemButton'
 import { useIcons } from '../../ui/icons'
 import { ToolbarButton } from '../../ui/ToolbarButton'
 import { Tooltip } from '../../ui/Tooltip'
@@ -51,6 +52,7 @@ export const FilterSummaryPopover = ({
   const labels = useLocalization()
   const { clear: ClearIcon, hideColumn: HiddenIcon } = useIcons()
   const triggerRef = useRef<HTMLButtonElement>(null)
+  const listRef = useScrollFade<HTMLUListElement>()
   const locale = table.options.dateLocale?.code
 
   return (
@@ -89,7 +91,7 @@ export const FilterSummaryPopover = ({
               </Button>
             }
           >
-            <ul className={styles.list}>
+            <ul ref={listRef} className={styles.list} data-popup-scroller="">
               {items.map(item => {
                 const condition = describeFilter(item.filter, labels, {
                   locale,
@@ -109,9 +111,7 @@ export const FilterSummaryPopover = ({
                       mark={<Bubble size="dot" tone="active" />}
                       label={item.header}
                       actions={
-                        <IconButton
-                          shape="square"
-                          size="compact"
+                        <ItemButton
                           label={columnFilteringLabels(labels).removeFilter(
                             item.header,
                           )}
@@ -125,7 +125,7 @@ export const FilterSummaryPopover = ({
                           data-testid="filter-summary-remove"
                         >
                           <ClearIcon />
-                        </IconButton>
+                        </ItemButton>
                       }
                     >
                       <Tooltip title={condition} overflowOnly>

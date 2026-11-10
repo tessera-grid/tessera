@@ -27,13 +27,13 @@
   position: relative;
 }
 
-/* Поле поиска — на двойном поле поповера от краёв (ADR 0017, PP13). */
+/* Поле поиска — на поле поповера, по краю пунктов (ADR 0183, PK33). */
 .search {
-  margin: var(--tsr-comp-popup-padding) var(--tsr-comp-popup-padding)
-    calc(var(--tsr-comp-popup-padding) * 2);
+  margin: 0 0 calc(var(--tsr-comp-popup-padding) * 2);
 }
 
 .scroller {
+  composes: scrollFade from '../../ui/Popup/Popup.module.css';
   max-height: var(--tsr-comp-column-menu-max-height);
   overflow-y: auto;
 }
@@ -61,9 +61,29 @@
 }
 
 .label {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Справа у скрытой колонки (ADR 0204, §3): подсказка «остаются» и кнопка-ластик. */
+.trailing {
+  display: inline-flex;
+  flex-shrink: 1;
+  align-items: center;
+  gap: var(--tsr-comp-popup-padding);
+  min-width: 0;
+}
+
+.kept {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--tsr-comp-caption-font-size);
+  color: var(--tsr-comp-control-color);
 }
 
 .item[data-column-group] > .row > .label {
@@ -80,11 +100,11 @@
   align-items: center;
 }
 
-/* Счётчик — слева, по краю галочек списка: поле пункта поповера (ADR 0017, PP13). */
+/* Счётчик — на линии текста пунктов, по краю галочек (ADR 0183, PK33). */
 .count {
   min-width: 0;
   margin-inline-end: auto;
-  padding-inline-start: var(--tsr-comp-popup-padding);
+  padding-inline-start: var(--tsr-comp-popup-item-padding-x);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

@@ -40,6 +40,7 @@ export const CellDraftMark = (props: PluginCellProps<CellEditingHooks>) => {
           label: cellEditingLabels(labels).cellDraftRollback,
           onSelect: () => discardDraft(table, draft),
           primary: true,
+          tone: 'danger',
         },
       ]}
     />

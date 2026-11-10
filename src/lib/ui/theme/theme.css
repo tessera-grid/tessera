@@ -428,6 +428,13 @@
     var(--tsr-sys-danger) 80%,
     var(--tsr-sys-fg)
   );
+  /*
+   * Тон опасного действия (ADR 0206): подпись и значок — цветом текста ошибки (контраст текста во
+   * всех режимах), рамка — тоном опасности, наведение и подсветка — его бледной заливкой.
+   */
+  --tsr-comp-danger-text-color: var(--tsr-comp-error-text-color);
+  --tsr-comp-danger-border-color: var(--tsr-sys-danger);
+  --tsr-comp-danger-hover-bg: var(--tsr-comp-highlight-danger-bg);
   /* Блок ошибки догрузки ленты в конце списка (ADR 0081). */
   --tsr-comp-load-more-height: calc(var(--tsr-comp-row-height) * 2.4);
   --tsr-comp-load-more-icon-color: var(--tsr-sys-danger);
@@ -606,10 +613,15 @@
   --tsr-comp-button-radius-square: var(--tsr-comp-control-radius);
   --tsr-comp-button-radius-circle: 50%;
   --tsr-comp-button-color: var(--tsr-comp-control-color);
-  /* Кнопка с подписью (ADR 0097): отступ и промежуток иконки, подпись. */
-  --tsr-comp-button-padding-x: 12px;
-  /* Слева при иконке: у глифа свои поля внутри 16px — видимый край как у подписи справа. */
-  --tsr-comp-button-padding-x-icon: 10px;
+  /*
+   * Отступ содержимого контрола от его внешнего края (ADR 0183, PK25): текст и значок пункта,
+   * записи, поля, списка и кнопки с подписью, значок кнопки в пункте — на одной линии.
+   */
+  --tsr-comp-control-padding-x: 8px;
+  /* Кнопка с подписью (ADR 0097): отступы внутри рамки 1px — от края, как у контрола. */
+  --tsr-comp-button-padding-x: calc(var(--tsr-comp-control-padding-x) - 1px);
+  /* Слева при иконке — как без неё: значок на отступе контрола, как значок пункта. */
+  --tsr-comp-button-padding-x-icon: var(--tsr-comp-button-padding-x);
   --tsr-comp-button-gap: 6px;
   --tsr-comp-button-font-size: 0.8125rem;
   --tsr-comp-button-font-weight: 500;
@@ -705,7 +717,7 @@
   --tsr-comp-popup-font-size: 0.8125rem;
   /* Поле ввода кита (ADR 0183, PK5): свой кегль — одинаково в поповере, тулбаре и на холсте. */
   --tsr-comp-field-font-size: var(--tsr-comp-popup-font-size);
-  /* Отступ текста поля от рамки — как подписи `Button` (и у полей shadcn). */
+  /* Отступ текста поля внутри рамки — как у подписи `Button`: текст на отступе контрола. */
   --tsr-comp-field-padding-x: var(--tsr-comp-button-padding-x);
   /* Подпись-заполнитель пустого поля: текст, порог 4.5:1 (ADR 0183, PK26). */
   --tsr-comp-field-placeholder-color: var(--tsr-comp-control-color);
@@ -717,6 +729,11 @@
   --tsr-comp-caption-font-size-compact: 0.6875rem;
   --tsr-comp-popup-color: var(--tsr-comp-control-color);
   --tsr-comp-popup-item-min-height: 32px;
+  /*
+   * Поле пункта по горизонтали (ADR 0183, PK33): текст пунктов, заголовков и подписей — на
+   * поле поповера плюс это поле; рамки пунктов, полей и кнопок — на поле поповера.
+   */
+  --tsr-comp-popup-item-padding-x: var(--tsr-comp-control-padding-x);
   --tsr-comp-popup-item-radius: var(--tsr-sys-radius-inner);
   /* Предел ширины меню: длинная подпись пункта переносится (ADR 0083, TX1). */
   --tsr-comp-popup-max-width: 320px;
@@ -726,6 +743,8 @@
   --tsr-comp-popup-scroll-inset: calc(
     var(--tsr-comp-popup-padding) * 3 - var(--tsr-comp-scrollbar-width)
   );
+  /* Высота затемнения у края прокручиваемого списка поповера (ADR 0183, PK31). */
+  --tsr-comp-popup-scroll-fade: 24px;
   /* Разделители внутри меню и панелей: мягче границы контролов. */
   --tsr-comp-popup-divider-color: var(--tsr-sys-border);
   /* Облачко записи в списке поповера (ADR 0178, §8): подложка поверх поверхности. */

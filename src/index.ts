@@ -81,6 +81,10 @@ export type {
   HeaderKeyboardAction,
 } from './lib/core/keyboardActions'
 export type {
+  ColumnTransform,
+  ColumnTransformState,
+} from './lib/core/columnTransforms'
+export type {
   PluginDiagnostic,
   PluginDiagnose,
   PluginInertReason,
@@ -140,6 +144,7 @@ export type {
 // данными, ядро решает подачу (инлайн-кнопка или строка меню). `SlotAction<TCtx>`
 // — обобщённый дескриптор; `HeaderAction`/`RowAction` — псевдонимы под контекст.
 export type {
+  ActionTone,
   SlotAction,
   SlotName,
   HeaderAction,

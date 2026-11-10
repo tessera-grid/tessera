@@ -150,6 +150,26 @@
   }
 }
 
+/*
+ * Тон опасного действия (ADR 0206, DX2): значок красный и в покое, наведение и фокус с клавиатуры —
+ * бледно-красная подложка. Выключенная и занятая — без тона (DX4).
+ */
+.iconButton[data-tone='danger']:not(
+    :disabled,
+    [data-disabled],
+    [aria-busy='true']
+  ) {
+  color: var(--tsr-comp-danger-text-color);
+}
+
+.iconButton[data-tone='danger']:not(
+    :disabled,
+    [data-disabled],
+    [aria-busy='true']
+  ):is(:hover, :focus-visible) {
+  background-color: var(--tsr-comp-danger-hover-bg);
+}
+
 /* Единый disabled кнопок: гаснут цветом (не только курсором). */
 .iconButton:is(:disabled, [data-disabled]) {
   color: var(--tsr-comp-control-disabled-color);

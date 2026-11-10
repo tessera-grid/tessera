@@ -13,6 +13,7 @@ import {
   registerKeyboardActionsInto,
   sortKeyboardActionsByPriority,
 } from './keyboardActions'
+import type { ColumnTransform } from './columnTransforms'
 import {
   columnGroupingFeature,
   columnOrderingFeature,
@@ -119,6 +120,8 @@ export interface TablePlugin<TFeatures extends object = object> {
   contextMenuActions?: ContextMenuAction[]
   /** Клавиатурные действия на ячейках (ADR 0021). */
   keyboardActions?: KeyboardAction[]
+  /** Что плагин делает с данными по колонке и как это снять (ADR 0204, §2). */
+  columnTransforms?: ColumnTransform[]
   /** Декларация плагина-меню: на какие слоты распространить кебаб. */
   actionMenu?: ActionMenuDeclaration
   /** Причина инертности для `table.getPluginDiagnostics()` (ADR 0022). */
@@ -224,6 +227,8 @@ export interface FoldedEntryConfig {
   /** Повторно объявленные действия (ADR 0182, AN1). */
   actionDuplicates: string[]
   keyboardActions: KeyboardAction[]
+  /** Преобразования колонок включённых записей (ADR 0204, §2). */
+  columnTransforms: ColumnTransform[]
   actionMenu: SlotActionMenu
   serviceColumns: ServiceColumn[]
   setups: NonNullable<TesseraFeatureEntry['setup']>[]
@@ -327,6 +332,7 @@ export const foldEntries = (
     { id: 'core', actions: CORE_ACTIONS },
   ]
   const keyboardActions: KeyboardAction[] = []
+  const columnTransforms: ColumnTransform[] = []
   const actionMenu: SlotActionMenu = {}
   const serviceColumns: ServiceColumn[] = []
   const setups: NonNullable<TesseraFeatureEntry['setup']>[] = []
@@ -406,6 +412,7 @@ export const foldEntries = (
 
     entry.keyboardActions?.forEach(action => setActionOwner(action, entry.id))
     registerKeyboardActionsInto(keyboardActions, entry.keyboardActions)
+    if (entry.columnTransforms) columnTransforms.push(...entry.columnTransforms)
 
     if (entry.column) {
       serviceColumns.push({ ...entry.column, pluginId: entry.id })
@@ -445,6 +452,7 @@ export const foldEntries = (
       return { actionCatalog: catalog, actionDuplicates: duplicates }
     })(),
     keyboardActions: sortKeyboardActionsByPriority(keyboardActions),
+    columnTransforms,
     actionMenu,
     serviceColumns,
     setups,

@@ -29,7 +29,8 @@ export interface ColumnTreeNode {
 
 export type CheckState = 'checked' | 'unchecked' | 'indeterminate'
 
-const labelOf = (column: VisibilityColumn) =>
+/** Подпись колонки в меню: строковый заголовок или id. */
+export const labelOf = (column: VisibilityColumn) =>
   typeof column.columnDef.header === 'string'
     ? column.columnDef.header
     : column.id

@@ -280,11 +280,13 @@ describe('Номера страниц (ADR 0192)', () => {
       probe.remove()
       // Запас под каретку: без него браузер обрезает номер.
       expect(text + 4, field()!.value).toBeLessThanOrEqual(room)
-      expect(parseFloat(style.paddingLeft)).toBe(
-        parseFloat(
-          style.getPropertyValue('--tsr-comp-field-padding-x') || '12',
-        ),
-      )
+      // Отступ поля — токен кита: проба на том же поле разрешает его в пиксели.
+      const tokenProbe = document.createElement('span')
+      tokenProbe.style.paddingLeft = 'var(--tsr-comp-field-padding-x)'
+      field()!.parentElement!.append(tokenProbe)
+      const fieldPadding = getComputedStyle(tokenProbe).paddingLeft
+      tokenProbe.remove()
+      expect(style.paddingLeft).toBe(fieldPadding)
       await screen.unmount()
     }
   })

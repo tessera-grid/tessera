@@ -475,7 +475,7 @@ describe('Button (ADR 0097)', () => {
     expect(style(withIcon!).paddingLeft).toBe(
       token(host, '--tsr-comp-button-padding-x-icon', 'padding-left'),
     )
-    expect(style(withIcon!).paddingLeft).toBe('10px')
+    expect(style(withIcon!).paddingLeft).toBe('7px')
     expect(style(withIcon!).paddingRight).toBe(regular)
     expect(style(plain!).paddingLeft).toBe(regular)
     expect(style(plain!).paddingRight).toBe(regular)

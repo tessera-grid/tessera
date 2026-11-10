@@ -330,6 +330,246 @@ export const ColumnVisibilityWithHeaderMenu: StoryObj<StoryProps> = {
   },
 }
 
+// --- ADR 0204 S1–S2 ------------------------------------------------------------------
+
+/** Колонка с сортировкой по убыванию и фильтром «содержит a». */
+const TRANSFORMED = 'lastName'
+const transformedArgs: Partial<StoryProps> = {
+  enableColumnVisibility: true,
+  enableHeaderActionMenu: true,
+  enableColumnSorting: true,
+  enableColumnFiltering: true,
+  columnSortingInitialSorting: [{ id: TRANSFORMED, desc: true }],
+  columnFilteringInitialColumnFilters: [
+    { id: TRANSFORMED, value: { operator: 'contains', value: 'a' } },
+  ],
+  columnCount: 5,
+  dataCount: 40,
+  containerHeight: '460',
+  height: '360',
+  maxHeight: '360',
+}
+
+const transformedHideItem = () =>
+  document.querySelector<HTMLElement>(
+    '[role="menu"] [data-action-id="columnVisibility.hide"]',
+  )
+const captionOf = (item: HTMLElement | null) =>
+  item?.querySelector('[data-popup-item-caption]')?.textContent ?? null
+const rowOf = (id: string) =>
+  menuOf()?.querySelector<HTMLElement>(`[data-column-id="${id}"]`) ?? null
+const keptOf = (id: string) =>
+  rowOf(id)?.querySelector('[data-transforms-kept]')?.textContent ?? null
+/** Что держит скрытая колонка — по кнопке-ластику у её пункта. */
+const iconsOf = (id: string) =>
+  rowOf(id)
+    ?.querySelector<HTMLElement>(
+      '[data-testid="column-visibility-clear-transforms"]',
+    )
+    ?.dataset.transforms?.split(' ') ?? []
+const clearOf = (id: string) =>
+  rowOf(id)?.querySelector<HTMLElement>(
+    '[data-testid="column-visibility-clear-transforms"]',
+  ) ?? null
+const columnsButtonOf = (root: HTMLElement) =>
+  root.querySelector<HTMLElement>('[data-testid="column-visibility-button"]')
+const transformedKebabOf = (root: HTMLElement) =>
+  headCell(root, TRANSFORMED)?.querySelector<HTMLElement>(
+    '[data-action-menu]',
+  ) ?? null
+const sortedBy = (root: HTMLElement) =>
+  !!root.querySelector(`[data-column-id="${TRANSFORMED}"][aria-sort]`)
+
+const HIDE_SORTED: readonly GuideStoryStep[] = [
+  {
+    title: 'Колонка отсортирована и отфильтрована',
+    hint: 'Строки идут по фамилии в обратном порядке, и в таблице только фамилии с буквой «a».',
+  },
+  {
+    title: 'Пользователь открыл меню колонки',
+    hint: 'Под действием «скрыть колонку» — подсказка: сортировка и фильтр останутся и после скрытия.',
+    states: ['overlay.menu'],
+    enter: untilDone(
+      () => !!captionOf(transformedHideItem()),
+      root => {
+        if (!transformedHideItem()) transformedKebabOf(root)?.click()
+      },
+    ),
+  },
+  {
+    title: 'Пользователь скрыл колонку',
+    hint: 'Колонки нет в таблице, а строки по-прежнему отсортированы по фамилии и отфильтрованы.',
+    enter: untilDone(
+      root => !headCell(root, TRANSFORMED),
+      root => {
+        if (!headCell(root, TRANSFORMED)) return
+        if (transformedHideItem()) transformedHideItem()!.click()
+        else transformedKebabOf(root)?.click()
+      },
+    ),
+  },
+]
+
+/** ADR 0204, S1: скрытие отсортированной колонки кебабом — подсказка, что сортировка останется. */
+export const VisibilityHideSortedColumn: StoryObj<StoryProps> = {
+  name: 'Hide a sorted column',
+  parameters: {
+    scenario: '0204/S1',
+    ...guideControls(),
+  },
+  render: args => (
+    <GuideStory
+      title="Скрытие отсортированной колонки"
+      steps={HIDE_SORTED}
+      args={guideArgs(transformedArgs, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(HIDE_SORTED[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(sortedBy(canvas)).toBe(true))
+      await until(() => expect(transformedKebabOf(canvas)).not.toBeNull())
+    })
+    await step(HIDE_SORTED[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(captionOf(transformedHideItem())).toBeTruthy())
+      await settle()
+    })
+    await step(HIDE_SORTED[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(headCell(canvas, TRANSFORMED)).toBeNull())
+      await settle()
+    })
+  },
+}
+
+/**
+ * Скрыть колонку в списке колонок, если она видна; `true` — скрыта и меню открыто. Подсказка
+ * «остаются» — у колонки, скрытой в этом открытии меню.
+ */
+const hiddenInMenu = (root: HTMLElement) => () => {
+  if (
+    !headCell(root, TRANSFORMED) &&
+    checkedOf(columnBoxOf(TRANSFORMED)) === 'false'
+  )
+    return true
+  if (checkedOf(columnBoxOf(TRANSFORMED)) === 'true')
+    columnBoxOf(TRANSFORMED)?.click()
+  return false
+}
+
+/** Список колонок открыт заново: колонка скрыта, у неё кнопка-ластик без подсказки. */
+const reopenedWithIcons = (root: HTMLElement) => {
+  let closed = false
+  let left = false
+  const run = () => {
+    if (left) return
+    if (headCell(root, TRANSFORMED)) {
+      if (menuOf()?.hasAttribute('data-open')) {
+        if (checkedOf(columnBoxOf(TRANSFORMED)) === 'true')
+          columnBoxOf(TRANSFORMED)?.click()
+      } else columnsButtonOf(root)?.click()
+    } else if (!closed) {
+      if (menuOf()?.hasAttribute('data-open')) columnsButtonOf(root)?.click()
+      else closed = true
+    } else if (!menuOf()?.hasAttribute('data-open'))
+      columnsButtonOf(root)?.click()
+    else if (iconsOf(TRANSFORMED).length > 0 && !keptOf(TRANSFORMED)) return
+    setTimeout(run, 150)
+  }
+  setTimeout(run, 0)
+  return () => {
+    left = true
+  }
+}
+
+const CLEAR_HIDDEN: readonly GuideStoryStep[] = [
+  {
+    title: 'Колонка отсортирована и отфильтрована',
+    hint: 'Строки идут по фамилии в обратном порядке, и в таблице только фамилии с буквой «a».',
+  },
+  {
+    title: 'Пользователь скрыл колонку в списке',
+    hint: 'Колонки нет в таблице. У неё в списке — подсказка: сортировка и фильтр остаются.',
+    states: ['overlay.columns'],
+    enter: root => inColumnsMenu(hiddenInMenu(root))(root),
+  },
+  {
+    title: 'Пользователь снова открыл список',
+    hint: 'У скрытой колонки — кнопка-ластик: она видна, пока колонка меняет строки, а её подсказка называет сортировку и фильтр.',
+    states: ['overlay.columns'],
+    enter: reopenedWithIcons,
+  },
+  {
+    title: 'Пользователь снял сортировку и фильтр',
+    hint: 'Ластиком у скрытой колонки пользователь снял её сортировку и фильтр: кнопки больше нет, в таблице снова все строки в исходном порядке.',
+    states: ['overlay.columns'],
+    enter: untilDone(
+      () =>
+        !!menuOf() &&
+        iconsOf(TRANSFORMED).length === 0 &&
+        !clearOf(TRANSFORMED),
+      root => {
+        if (clearOf(TRANSFORMED)) clearOf(TRANSFORMED)!.click()
+        else if (!menuOf()?.hasAttribute('data-open'))
+          columnsButtonOf(root)?.click()
+        else if (checkedOf(columnBoxOf(TRANSFORMED)) === 'true')
+          columnBoxOf(TRANSFORMED)?.click()
+      },
+    ),
+  },
+]
+
+/** ADR 0204, S2: скрытая колонка в списке колонок — кнопка-ластик снимает её сортировку и фильтр. */
+export const VisibilityClearHiddenTransforms: StoryObj<StoryProps> = {
+  name: 'Clear a hidden column sorting',
+  parameters: {
+    scenario: '0204/S2',
+    ...guideControls(),
+  },
+  render: args => (
+    <GuideStory
+      title="Сортировка и фильтр скрытой колонки"
+      steps={CLEAR_HIDDEN}
+      args={guideArgs(transformedArgs, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    let filtered = 0
+    await step(CLEAR_HIDDEN[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(sortedBy(canvas)).toBe(true))
+      filtered = canvas.querySelectorAll('.data-grid__body-row').length
+    })
+    await step(CLEAR_HIDDEN[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(keptOf(TRANSFORMED)).toBeTruthy())
+      await expect(headCell(canvas, TRANSFORMED)).toBeNull()
+      await settle()
+    })
+    await step(CLEAR_HIDDEN[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(iconsOf(TRANSFORMED)).toEqual(['sort', 'filter']),
+      )
+      await expect(keptOf(TRANSFORMED)).toBeNull()
+      await settle()
+    })
+    await step(CLEAR_HIDDEN[3]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(iconsOf(TRANSFORMED)).toEqual([]))
+      await until(() =>
+        expect(
+          canvas.querySelectorAll('.data-grid__body-row').length,
+        ).toBeGreaterThanOrEqual(filtered),
+      )
+      await settle()
+    })
+  },
+}
+
 // --- ADR 0133 S2 ---------------------------------------------------------------------
 
 const NESTED_TREE: readonly GuideStoryStep[] = [

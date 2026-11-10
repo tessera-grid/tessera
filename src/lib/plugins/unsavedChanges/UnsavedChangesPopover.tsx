@@ -26,10 +26,11 @@ import { useLocalization } from '../../core/localization'
 import { useSliceProjection } from '../../core/reactivity'
 import { Bubble } from '../../ui/Bubble'
 import { Button } from '../../ui/Button'
-import { IconButton } from '../../ui/IconButton'
+import { ItemButton } from '../../ui/Popup/ItemButton'
 import { Stub } from '../../ui/Stub'
 import { useIcons } from '../../ui/icons'
 import { PopupEntry } from '../../ui/Popup/PopupEntry'
+import { useScrollFade } from '../../ui/Popup/useScrollFade'
 import hidden from '../../ui/visuallyHidden.module.css'
 import { ToolbarButton } from '../../ui/ToolbarButton'
 import {
@@ -133,9 +134,7 @@ const DraftEntry = ({
       }
       actions={
         <>
-          <IconButton
-            shape="square"
-            size="compact"
+          <ItemButton
             label={unsavedChangesLabels(labels).draftApply}
             data-action="apply"
             onClick={event => {
@@ -145,11 +144,10 @@ const DraftEntry = ({
             }}
           >
             <icons.draftApply />
-          </IconButton>
-          <IconButton
-            shape="square"
-            size="compact"
+          </ItemButton>
+          <ItemButton
             label={unsavedChangesLabels(labels).draftDiscard}
+            tone="danger"
             data-action="discard"
             onClick={event => {
               report(table, 'discard', draft, event)
@@ -158,7 +156,7 @@ const DraftEntry = ({
             }}
           >
             <icons.draftDiscard />
-          </IconButton>
+          </ItemButton>
         </>
       }
     />
@@ -234,6 +232,7 @@ const DraftList = ({
   )
   // Открытая правка без черновиков — кнопки внизу остаются: «Применить всё» её сохранит.
   const open = useOpenDrafts(table)
+  const scrollerRef = useScrollFade<HTMLDivElement>()
   if (drafts.length === 0 && open === 0)
     return (
       <Stub
@@ -250,7 +249,7 @@ const DraftList = ({
   const handlers = { onDiscarded, onDone }
   return (
     <>
-      <div className={styles.scroller} data-popup-scroller="">
+      <div ref={scrollerRef} className={styles.scroller} data-popup-scroller="">
         {data.length > 0 && (
           <EntryList
             table={table}
@@ -271,6 +270,7 @@ const DraftList = ({
       <PopupFooter>
         <Button
           variant="ghost"
+          tone="danger"
           data-action="discard-all"
           onClick={event => {
             report(table, 'discardAll', undefined, event)

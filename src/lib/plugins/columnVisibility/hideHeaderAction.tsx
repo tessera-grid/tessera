@@ -10,8 +10,10 @@ import { useIcons } from '../../ui/icons'
 import {
   countVisibleColumns,
   getHide,
+  labelOf,
   type VisibilityColumn,
 } from './columnTree'
+import { announceKeptTransforms, willRemainHint } from './hiddenTransforms'
 import { requestStubFocus } from './columnsHiddenStub'
 import { columnVisibilityInertReason } from './inertReason'
 import {
@@ -42,6 +44,11 @@ export const hideHeaderAction: HeaderAction = {
     hideIds(ctx) !== null,
   icon: () => <HideIcon />,
   label: labels => columnVisibilityLabels(labels).hideColumn,
+  // Что останется после скрытия: сортировка, фильтр, группировка (ADR 0204, HT5).
+  hint: (ctx, labels) => {
+    const ids = hideIds(ctx)
+    return ids ? willRemainHint(ctx.table, ids, labels) : undefined
+  },
   action: ctx => (isGroup(ctx) ? 'hideGroup' : 'hide'),
   onSelect: ctx => {
     const ids = hideIds(ctx)
@@ -49,5 +56,11 @@ export const hideHeaderAction: HeaderAction = {
     const table = ctx.table as unknown as VisibilityControlTable
     if (countVisibleColumns(table) === ids.length) requestStubFocus(table)
     setColumnsVisible(table, ids, false)
+    announceKeptTransforms(
+      ctx.table,
+      leavesOf(ctx)
+        .filter(leaf => ids.includes(leaf.id))
+        .map(leaf => ({ id: leaf.id, label: labelOf(leaf) })),
+    )
   },
 }

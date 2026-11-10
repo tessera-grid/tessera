@@ -7,7 +7,18 @@
   box-sizing: border-box;
   min-width: 64px;
   height: var(--tsr-comp-toolbar-button-size);
-  padding: 0 8px;
+  /*
+   * Значение — на поле текста поля ввода, шеврон — на месте значка кнопки в поле поиска и
+   * времени: компактная кнопка с отступом от рамки (ADR 0183, PK35).
+   */
+  padding-inline: var(--tsr-comp-field-padding-x)
+    calc(
+      var(--tsr-ref-space-1) +
+        (
+          var(--tsr-comp-button-size-compact) - var(--tsr-comp-button-icon-size)
+        ) /
+        2
+    );
   border: 1px solid var(--tsr-comp-control-border);
   /* Дуга ожидания отсчитывает внешний край кнопки от рамки (ADR 0127). */
   --tsr-ring-border: 1px;

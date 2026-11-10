@@ -38,6 +38,7 @@ import type {
   SlotActions,
 } from './headerActions'
 import type { KeyboardAction } from './keyboardActions'
+import type { ColumnTransform } from './columnTransforms'
 import type { ActiveCell } from './keyboardNavigation/model'
 import type { Draft, DraftKind } from './drafts/drafts'
 import type { LabelSet } from './localization'
@@ -194,6 +195,8 @@ export interface CommonOptions extends CoreOptions {
   /** Справочник действий таблицы (ADR 0182, §1). */
   actionCatalog?: ActionCatalog
   keyboardActions?: KeyboardAction[]
+  /** Преобразования колонок плагинов: вид, состояние и снятие (ADR 0204, §2). */
+  columnTransforms?: ColumnTransform[]
   pluginDiagnostics?: PluginDiagnosticSource[]
   actionMenu?: SlotActionMenuV9
   logLevel?: LogLevel

@@ -86,6 +86,7 @@ const discardChangeAction: ContextMenuAction = {
   order: -20,
   icon: () => <Undo2 width={16} height={16} />,
   label: labels => labels.failureDiscard,
+  tone: 'danger',
   visible: ctx => !!failureOf(ctx),
   onSelect: ctx => {
     const failure = failureOf(ctx)
@@ -112,6 +113,7 @@ const rollbackDraftAction: ContextMenuAction = {
   icon: () => <Undo2 width={16} height={16} />,
   // Чужое действие — подпись плагина правки по id (ADR 0182, §8).
   action: () => ({ plugin: 'cellEditing', action: 'cellDraftRollback' }),
+  tone: 'danger',
   // Отказ главнее: у ячейки с отказом — «Отбросить изменение», оно снимает и черновик.
   visible: ctx => !failureOf(ctx) && !!draftOf(ctx),
   onSelect: ctx => {
@@ -141,6 +143,11 @@ const rollbackRowDraftAction: ContextMenuAction = {
         ? 'rowInsertDiscard'
         : 'rowDeleteDiscard',
   }),
+  // Убрать новую строку — потеря её значений; вернуть удалённую — нет (ADR 0206).
+  tone: ctx =>
+    draftKindOf(ctx.table, rowDraftOf(ctx)?.kind ?? '')?.rowMark === 'inserted'
+      ? 'danger'
+      : undefined,
   visible: ctx => !!rowDraftOf(ctx),
   onSelect: ctx => {
     const draft = rowDraftOf(ctx)

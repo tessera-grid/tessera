@@ -24,6 +24,8 @@ export interface CellIssueAction {
   onSelect: () => void
   /** Главное действие — справа, кнопка с рамкой. */
   primary?: boolean
+  /** Тон опасного действия (ADR 0206): безвозвратно теряет данные пользователя. */
+  tone?: 'danger'
 }
 
 /** Строка тела поповера: подпись и значение («Было», «Стало»). */
@@ -59,6 +61,8 @@ export const CellIssue = ({
   tone = 'error',
 }: CellIssueProps) => {
   const [open, setOpen] = useState(false)
+  // Поповер остаётся смонтированным после первого открытия: закрытие доигрывает уход.
+  const [mounted, setMounted] = useState(false)
   const reasonId = useId()
   const button = useRef<HTMLButtonElement>(null)
   return (
@@ -75,7 +79,10 @@ export const CellIssue = ({
           data-cell-issue={tone === 'error' ? '' : undefined}
           data-cell-draft={tone === 'draft' ? '' : undefined}
           data-tone={tone}
-          onClick={() => setOpen(true)}
+          onClick={() => {
+            setMounted(true)
+            setOpen(true)
+          }}
         >
           <span className={styles.mark} aria-hidden />
           <span
@@ -87,9 +94,10 @@ export const CellIssue = ({
           </span>
         </button>
       </Tooltip>
-      {open && (
+      {mounted && (
         <CellIssuePopup.Component
           fallback={null}
+          open={open}
           anchor={button}
           title={title}
           reason={reason}

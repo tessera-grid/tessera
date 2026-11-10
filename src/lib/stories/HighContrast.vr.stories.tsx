@@ -8347,3 +8347,73 @@ export const HighContrastPluginApiBodyMissingSliceStep3 = {
   name: 'Plugin API — Body slices, шаг 3',
   tags: ['!test'],
 }
+
+export const HighContrastVisibilityHideSortedColumnStep1 = {
+  ...twinStep(
+    columnsVisibilityStories,
+    columnsVisibilityStories.VisibilityHideSortedColumn,
+    1,
+  ),
+  name: 'Columns/Visibility — Hide a sorted column, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastVisibilityHideSortedColumnStep2 = {
+  ...twinStep(
+    columnsVisibilityStories,
+    columnsVisibilityStories.VisibilityHideSortedColumn,
+    2,
+  ),
+  name: 'Columns/Visibility — Hide a sorted column, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastVisibilityHideSortedColumnStep3 = {
+  ...twinStep(
+    columnsVisibilityStories,
+    columnsVisibilityStories.VisibilityHideSortedColumn,
+    3,
+  ),
+  name: 'Columns/Visibility — Hide a sorted column, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastVisibilityClearHiddenTransformsStep1 = {
+  ...twinStep(
+    columnsVisibilityStories,
+    columnsVisibilityStories.VisibilityClearHiddenTransforms,
+    1,
+  ),
+  name: 'Columns/Visibility — Clear a hidden column sorting, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastVisibilityClearHiddenTransformsStep2 = {
+  ...twinStep(
+    columnsVisibilityStories,
+    columnsVisibilityStories.VisibilityClearHiddenTransforms,
+    2,
+  ),
+  name: 'Columns/Visibility — Clear a hidden column sorting, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastVisibilityClearHiddenTransformsStep3 = {
+  ...twinStep(
+    columnsVisibilityStories,
+    columnsVisibilityStories.VisibilityClearHiddenTransforms,
+    3,
+  ),
+  name: 'Columns/Visibility — Clear a hidden column sorting, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastVisibilityClearHiddenTransformsStep4 = {
+  ...twinStep(
+    columnsVisibilityStories,
+    columnsVisibilityStories.VisibilityClearHiddenTransforms,
+    4,
+  ),
+  name: 'Columns/Visibility — Clear a hidden column sorting, шаг 4',
+  tags: ['!test'],
+}
