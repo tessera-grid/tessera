@@ -57,6 +57,7 @@ import { rowChangeHints } from '../../../core/rowChanges'
 import { createSearchAwareFilteredRowModel } from '../../../shared/rowModels/filteredRowModel'
 import { createGroupStage } from '../../../plugins/rowGroupingModel/groupStage'
 import { ownStage } from '../../../core/rowEngine/engine'
+import { rowsOf } from '../../../core/rowEngine/rows'
 import {
   rowExpandingLazyFeature,
   setLoadedAnswer,
@@ -1801,7 +1802,11 @@ describe('Своя отсортированная модель', () => {
         })
       }
       const runs = await againstBase(isOurs =>
-        measure(isOurs ? createTesseraSortedRowModel : createSortedRowModel),
+        measure(
+          isOurs
+            ? () => ownStage('sort', createTesseraSortedRowModel())
+            : createSortedRowModel,
+        ),
       )
       const theirs = medianRun(runs.base, r => r.longestMs)
       const ours = medianRun(runs.variant, r => r.longestMs)
@@ -2329,7 +2334,7 @@ describe('Инкрементальная модель раскрытия', () =>
       const runs = await againstBase(isOurs =>
         recompute(
           isOurs
-            ? createIncrementalExpandedRowModel()
+            ? ownStage('expand', createIncrementalExpandedRowModel())
             : createExpandedRowModel(),
         ),
       )
@@ -2394,7 +2399,7 @@ describe('Сортировка из прошлой модели', () => {
             coreReactivityFeature: storeReactivityBindings(),
             rowExpandingLazyFeature,
             coreRowModel: createLazyCoreRowModel(),
-            sortedRowModel: createTesseraSortedRowModel(),
+            sortedRowModel: ownStage('sort', createTesseraSortedRowModel()),
             sortFns: { alphanumeric: sortFn_alphanumeric },
           } as never),
           data: SORTED_ROOTS,
@@ -2407,13 +2412,16 @@ describe('Сортировка из прошлой модели', () => {
           getSortedRowModel: () => unknown
           setSorting: (next: typeof sorting) => void
         }
-        table.getSortedRowModel()
+        // Выход стадии у движка, как его читает грид; снимок getSortedRowModel строится по
+        // требованию и стоит прохода по всем строкам (ADR 0200, EN31).
+        const sorted = () => rowsOf(table, 'sorted').rows
+        sorted()
         let turn = 0
         return measureInteractionWork(async () => {
           const kids = LAZY_ANSWERS[turn++ % 2]!
           setLoadedAnswer(table, prev => ({ ...prev, r0: kids }))
           if (full) table.setSorting([{ id: 'name', desc: turn % 2 === 0 }])
-          table.getSortedRowModel()
+          sorted()
         })
       }
 

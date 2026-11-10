@@ -1,7 +1,6 @@
 // Открытые панели фильтра и выгрузки как фикстуры тестов: `Playground` своего раздела и
 // `play`, который открывает панель, как пользователь. Истории-состояния ушли в шаги гайдов
 // (ADR 0117), а тестам кнопок нужен грид с уже открытой панелью.
-import { userEvent } from 'vitest/browser'
 
 import {
   dateFilteringColumns,
@@ -10,6 +9,7 @@ import {
   optionFilteringData,
 } from '../__mocks__/filteringData'
 import { headCell, openPopup, waitForRows } from '../__mocks__/catalogPlay'
+import { revealCellButtons } from './helpers'
 import { composed } from './stories'
 
 type Play = (context: { canvasElement: HTMLElement }) => Promise<void>
@@ -26,7 +26,7 @@ const openFilter =
   (column: string): Play =>
   async ({ canvasElement }) => {
     await waitForRows(canvasElement)
-    await userEvent.hover(headCell(canvasElement, column))
+    await revealCellButtons(headCell(canvasElement, column))
     await openPopup(() =>
       headCell(canvasElement, column).querySelector<HTMLElement>(
         '.column-filter__button',

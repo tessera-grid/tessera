@@ -551,10 +551,11 @@ export const VisibilityClearHiddenTransforms: StoryObj<StoryProps> = {
     })
     await step(CLEAR_HIDDEN[2]!.title, async () => {
       await guideNext(canvas)
-      await until(() =>
-        expect(iconsOf(TRANSFORMED)).toEqual(['sort', 'filter']),
-      )
-      await expect(keptOf(TRANSFORMED)).toBeNull()
+      // Ластик стоит у колонки и в прошлом шаге: шаг пройден, когда подсказка ушла с повторным открытием.
+      await until(() => {
+        expect(keptOf(TRANSFORMED)).toBeNull()
+        expect(iconsOf(TRANSFORMED)).toEqual(['sort', 'filter'])
+      })
       await settle()
     })
     await step(CLEAR_HIDDEN[3]!.title, async () => {

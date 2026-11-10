@@ -359,10 +359,19 @@ describe('Превью броска строки (ADR 0108)', () => {
         tokenColor('--tsr-comp-row-drop-invalid-overlay-bg', cloud()!),
       )
       await release()
-      // Полоса окна (ADR 0202) могла дорисовать строки: порядок — тех, что были до.
-      await expect
-        .poll(() => order().filter(id => before.includes(id)))
-        .toEqual(before)
+      // Полоса окна (ADR 0202) могла дорисовать или убрать строки у края: порядок — тех, что
+      // видны и до, и после; таких — больше половины.
+      const unchanged = () => {
+        const now = order()
+        const kept = before.filter(id => now.includes(id))
+        return {
+          order: now.filter(id => before.includes(id)),
+          kept,
+          most: kept.length * 2 > before.length,
+        }
+      }
+      await expect.poll(() => unchanged().order).toEqual(unchanged().kept)
+      expect(unchanged().most).toBe(true)
       expect(onRowDragEnd).not.toHaveBeenCalled()
       expect(onRowOrderChange).not.toHaveBeenCalled()
     } finally {

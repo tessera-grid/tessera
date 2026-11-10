@@ -1,6 +1,6 @@
 import { composeStories } from '@storybook/react-vite'
 import { userEvent } from 'vitest/browser'
-import { render } from 'vitest-browser-react'
+import { cleanup, render } from 'vitest-browser-react'
 import { afterEach, describe, expect, test } from 'vitest'
 
 import '../../../ui/theme/theme.css'
@@ -27,8 +27,8 @@ import * as timeField from '../../UI.TimeField.stories'
 import { failureShownOn } from '../helpers'
 import { resolveColor, toRgba } from './a11y-helpers'
 
-// Кит поповеров и контролов (ADR 0183, PK2–PK6, PK12–PK21, PK27–PK30, PK32) и раскладка панели (ADR 0017,
-// PP11–PP13). Истории — те же, что снимает каталог; потребители проверяются по исходникам.
+// Кит поповеров и контролов (ADR 0183, PK2–PK6, PK12–PK21, PK27–PK30, PK32) и раскладка панели по
+// двум линиям (PK33). Истории — те же, что снимает каталог; потребители проверяются по исходникам.
 
 const Assembled = composeStories(assembled)
 const Calendar = composeStories(calendarStories)
@@ -96,46 +96,39 @@ afterEach(() => {
   document.documentElement.classList.remove('dark')
 })
 
-describe('Раскладка поповера-панели (ADR 0017)', () => {
-  test('PP11: заголовок — кеглем popup-title-font-size, полужирный, на двойном поле от верхнего и боковых краёв и до содержимого', async () => {
-    await render(<Panel.PopupPanelPlayground />)
+describe('Раскладка поповера-панели (ADR 0183, PK33)', () => {
+  test('PK33: две линии от края — рамки на поле поповера со всех сторон, текст на линии текста пунктов; между заголовком, содержимым и кнопками — двойное поле; слот значка меню у всех пунктов или ни у кого', async () => {
+    const view = await render(<Panel.PopupPanelPlayground />)
     await expect.poll(dialog).not.toBeNull()
     settle()
     const popup = dialog()
+    const p = padding(popup)
+    const textLine = p + px(popup, '--tsr-comp-popup-item-padding-x')
     const title = popup.querySelector('p')!
-    const double = padding(popup) * 2
     const style = getComputedStyle(title)
     expect(parseFloat(style.fontSize)).toBe(
       px(popup, '--tsr-comp-popup-title-font-size'),
     )
     expect(Number(style.fontWeight)).toBeGreaterThanOrEqual(600)
-    expect(textBox(title).left - box(popup).left).toBeCloseTo(double, 0)
+    // Заголовок: текст — на линии текста пунктов, сверху — поле поповера.
+    expect(textBox(title).left - box(popup).left).toBeCloseTo(textLine, 0)
+    expect(box(title).top - box(popup).top).toBeCloseTo(p, 0)
+    const content = title.nextElementSibling!
     expect(
-      box(title).top + parseFloat(style.paddingTop) - box(popup).top,
-    ).toBeCloseTo(double, 0)
-    const next = title.nextElementSibling!
-    expect(
-      box(next).top - (box(title).bottom - parseFloat(style.paddingBottom)),
-    ).toBeCloseTo(double, 0)
-  })
-
-  test('PP12: кнопки внизу — у правого края, без разделителя, на двойном поле от краёв и от содержимого', async () => {
-    await render(<Panel.PopupPanelPlayground />)
-    await expect.poll(dialog).not.toBeNull()
-    settle()
-    const popup = dialog()
+      box(content).top - (box(title).bottom - parseFloat(style.paddingBottom)),
+    ).toBeCloseTo(p * 2, 0)
+    // Кнопки: рамка последней — на поле поповера справа и снизу, от содержимого — двойное поле.
     const footer = popup.querySelector('[data-popup-footer]')!
-    const double = padding(popup) * 2
     const last = [...footer.querySelectorAll('button')].at(-1)!
-    expect(box(popup).right - box(last).right).toBeCloseTo(double, 0)
-    expect(box(popup).bottom - box(last).bottom).toBeCloseTo(double, 0)
-    const content = footer.previousElementSibling!
-    expect(box(last).top - box(content).bottom).toBeCloseTo(double, 0)
+    expect(box(popup).right - box(last).right).toBeCloseTo(p, 0)
+    expect(box(popup).bottom - box(last).bottom).toBeCloseTo(p, 0)
+    const body = footer.previousElementSibling!
+    expect(box(last).top - box(body).bottom).toBeCloseTo(p * 2, 0)
     expect(getComputedStyle(footer).borderTopWidth).toBe('0px')
-    expect(getComputedStyle(content).borderBottomWidth).toBe('0px')
-  })
+    expect(getComputedStyle(body).borderBottomWidth).toBe('0px')
+    await view.unmount()
 
-  test('PP13: поля и текст — на двойном поле от боковых краёв, пункты — на поле поповера, подпись в ряду кнопок — по краю содержимого', async () => {
+    // «Колонки»: поле поиска и пункты — на поле поповера, счётчик — на линии текста.
     await opened('columns')
     const count = () =>
       document.querySelector<HTMLElement>(
@@ -144,14 +137,31 @@ describe('Раскладка поповера-панели (ADR 0017)', () => {
     await expect.poll(count).not.toBeNull()
     settle()
     const surface = count()!.closest<HTMLElement>('[role="dialog"]')!
-    const p = padding(surface)
-    const search = surface.querySelector('input')!
-    const field = search.parentElement!
-    expect(box(field).left - box(surface).left).toBeCloseTo(p * 2, 0)
-    const mark = surface.querySelector('[role="checkbox"]')!
-    const item = mark.closest('label')!
+    const field = surface.querySelector('input')!
+    const fieldBox = field.closest('[class*="field"]') ?? field
+    expect(box(fieldBox).left - box(surface).left).toBeCloseTo(p, 0)
+    expect(box(fieldBox).top - box(surface).top).toBeCloseTo(p, 0)
+    const item = surface.querySelector('[role="checkbox"]')!.closest('label')!
     expect(box(item).left - box(surface).left).toBeCloseTo(p, 0)
-    expect(textBox(count()!).left).toBeCloseTo(box(mark).left, 0)
+    expect(box(surface).right - box(item).right).toBeCloseTo(p, 0)
+    expect(textBox(count()!).left - box(surface).left).toBeCloseTo(textLine, 0)
+    await cleanup()
+
+    // Меню без значков: текст пунктов — на линии текста, пустого слота значка нет.
+    await render(<Group.PopupGroupWithoutLabels />)
+    const label = () =>
+      document.querySelector<HTMLElement>('[data-popup-item-label]')
+    await expect.poll(label).not.toBeNull()
+    settle()
+    const menu = label()!.closest<HTMLElement>(
+      '[role="menu"], [role="dialog"]',
+    )!
+    const menuItem = label()!.parentElement!
+    expect(menuItem.querySelector('[data-popup-item-icon]')).toBeNull()
+    expect(textBox(label()!).left - box(menu).left).toBeCloseTo(
+      padding(menu) + px(menu, '--tsr-comp-popup-item-padding-x'),
+      0,
+    )
   })
 })
 
@@ -311,8 +321,9 @@ describe('Блоки поповера', () => {
     const surface = panel()!.parentElement!
     const p = padding(surface)
     expect(box(surface).right - box(panel()!).right).toBeCloseTo(p, 0)
+    // Список вариантов — на поле поверхности, как пункты (PK33).
     const list = panel()!.querySelector('[data-testid="filter-options"]')!
-    expect(box(surface).right - box(list).right).toBeCloseTo(p * 2, 0)
+    expect(box(surface).right - box(list).right).toBeCloseTo(p, 0)
   })
 
   test('PK32: поповер, модуль которого приходит по первому нажатию, появляется и уходит переходом поверхности — с первого открытия и при каждом следующем; отметка ячейки', async () => {

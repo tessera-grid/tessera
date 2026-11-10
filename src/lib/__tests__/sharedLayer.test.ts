@@ -59,6 +59,7 @@ const UI_EXPORTS = [
   'StubProps',
   'Switch',
   'SwitchProps',
+  'ToneProps',
   'ToolbarButton',
   'ToolbarButtonProps',
 ]

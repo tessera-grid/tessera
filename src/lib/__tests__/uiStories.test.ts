@@ -72,6 +72,8 @@ const WITHOUT_STORY: Record<string, string> = {
   'icons/SvgIcon': 'обёртка значков набора — истории кнопок и Stub',
   'icons/EmptyStateIllustration':
     'иллюстрация заглушки — история Stub «Playground»',
+  'Popup/ItemButton':
+    'кнопка пункта и записи поповера — кнопки записей в истории Popup/Entry',
 }
 
 /** Компоненты кита поповеров и контролы этапа 2 (ADR 0183, PK8). */

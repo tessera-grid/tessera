@@ -263,7 +263,7 @@ describe('Длинный текст в поповерах черновиков �
     }
   })
 
-  test('DR38: поповер отметки ячейки — поповер-панель: над кнопками разделителя нет; от верхнего края до заголовка, от заголовка до содержимого, от содержимого до кнопок и от кнопок до нижнего края — один отступ: двойное поле поповера', async () => {
+  test('DR38: поповер отметки ячейки — поповер-панель: над кнопками разделителя нет; от верхнего края до заголовка и от кнопок до нижнего края — поле поповера, от заголовка до содержимого и от содержимого до кнопок — двойное поле (ADR 0183, PK33)', async () => {
     await page.viewport(1024, 700)
     const screen = await render(<Grid width={760} />)
     await waitForGrid()
@@ -325,14 +325,23 @@ describe('Длинный текст в поповерах черновиков �
         }
         return gaps.map(Math.round)
       }
-      /** Каждый отступ — двойное поле поповера (на пиксель — округление раскладки). */
+      /**
+       * Края — поле поповера, промежутки внутри — двойное поле (ADR 0183, PK33); на пиксель —
+       * округление раскладки и межстрочный интервал строки.
+       */
       const expectEven = (gaps: number[], field: number, name: string) => {
-        for (const gap of gaps) {
+        const [top, inner, bottom, ...rest] = gaps
+        for (const [gap, expected] of [
+          [top, field],
+          [inner, field * 2],
+          [bottom, field],
+          ...rest.map(gap => [gap, field * 2]),
+        ] as const) {
           expect(gap, `${name}: ${gaps.join(', ')}`).toBeGreaterThanOrEqual(
-            field * 2,
+            expected,
           )
           expect(gap, `${name}: ${gaps.join(', ')}`).toBeLessThanOrEqual(
-            field * 2 + 1,
+            expected + 1,
           )
         }
       }

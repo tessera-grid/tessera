@@ -435,6 +435,8 @@
   --tsr-comp-danger-text-color: var(--tsr-comp-error-text-color);
   --tsr-comp-danger-border-color: var(--tsr-sys-danger);
   --tsr-comp-danger-hover-bg: var(--tsr-comp-highlight-danger-bg);
+  /* Значок кнопки в тоне danger: скрытая до наведения кнопка гасит его, как цвет кнопки. */
+  --tsr-comp-button-danger-color: var(--tsr-comp-danger-text-color);
   /* Блок ошибки догрузки ленты в конце списка (ADR 0081). */
   --tsr-comp-load-more-height: calc(var(--tsr-comp-row-height) * 2.4);
   --tsr-comp-load-more-icon-color: var(--tsr-sys-danger);

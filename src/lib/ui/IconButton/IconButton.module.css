@@ -159,7 +159,7 @@
     [data-disabled],
     [aria-busy='true']
   ) {
-  color: var(--tsr-comp-danger-text-color);
+  color: var(--tsr-comp-button-danger-color);
 }
 
 .iconButton[data-tone='danger']:not(
@@ -228,6 +228,11 @@
  * кнопки — `HighlightText`, и число пропадает.
  */
 @media (forced-colors: active) {
+  /* Тон опасного действия (ADR 0206, DX7): системный цвет кнопки, без красного. */
+  .iconButton[data-tone='danger']:not(:disabled, [data-disabled]) {
+    color: ButtonText;
+  }
+
   .iconButton:is([data-active], [data-popup-open]) {
     background-color: Highlight;
     color: HighlightText;

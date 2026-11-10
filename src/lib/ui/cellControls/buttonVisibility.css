@@ -288,6 +288,7 @@
  */
 :is(.data-grid__body-row, [data-row-ghost]) .row__button--hidden {
   --tsr-comp-button-color: transparent;
+  --tsr-comp-button-danger-color: transparent;
   --tsr-comp-control-active-color: transparent;
   --tsr-comp-control-disabled-color: transparent;
   --tsr-comp-shadow-action: none;
@@ -299,6 +300,7 @@
   .row__button--hidden,
 .data-grid__body-row[data-touched] .row__button--hidden {
   --tsr-comp-button-color: inherit;
+  --tsr-comp-button-danger-color: inherit;
   --tsr-comp-control-active-color: inherit;
   --tsr-comp-control-disabled-color: inherit;
   --tsr-comp-shadow-action: inherit;
@@ -309,6 +311,7 @@
 .data-grid__body-row:has([aria-haspopup][aria-expanded='true'])
   .row__button--hidden {
   --tsr-comp-button-color: inherit;
+  --tsr-comp-button-danger-color: inherit;
   --tsr-comp-control-active-color: inherit;
   --tsr-comp-control-disabled-color: inherit;
   --tsr-comp-shadow-action: inherit;
@@ -319,6 +322,7 @@
   .data-grid__body-row:has(:focus)
   .row__button--hidden {
   --tsr-comp-button-color: inherit;
+  --tsr-comp-button-danger-color: inherit;
   --tsr-comp-control-active-color: inherit;
   --tsr-comp-control-disabled-color: inherit;
   --tsr-comp-shadow-action: inherit;
@@ -364,6 +368,7 @@
   ) {
   opacity: 1;
   --tsr-comp-button-color: inherit;
+  --tsr-comp-button-danger-color: inherit;
   --tsr-comp-control-active-color: inherit;
   --tsr-comp-control-disabled-color: inherit;
   --tsr-comp-shadow-action: inherit;
@@ -375,6 +380,7 @@
   .row__button--hidden[data-button-active='true'] {
   opacity: 1;
   --tsr-comp-button-color: inherit;
+  --tsr-comp-button-danger-color: inherit;
   --tsr-comp-control-active-color: inherit;
   --tsr-comp-control-disabled-color: inherit;
   --tsr-comp-shadow-action: inherit;

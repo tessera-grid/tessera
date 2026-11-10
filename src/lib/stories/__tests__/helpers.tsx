@@ -1,7 +1,7 @@
 import type { ComponentProps } from 'react'
 
 import { commands } from '@vitest/browser/context'
-import { userEvent } from 'vitest/browser'
+import { server, userEvent } from 'vitest/browser'
 import { expect } from 'vitest'
 import { cleanup, render } from 'vitest-browser-react'
 
@@ -94,7 +94,23 @@ export const rowState = (element: Element) =>
  * (кольцо ожидания) не ждём.
  */
 export const revealCellButtons = async (cell: Element) => {
-  await userEvent.hover(cell)
+  if (server.browser === 'chromium') await userEvent.hover(cell)
+  else {
+    // Firefox и WebKit: `userEvent.hover` ищет ячейку по подписи, а её часть есть и в других
+    // именах — настоящим указателем в центр ячейки.
+    cell.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+    const box = cell.getBoundingClientRect()
+    const center = { x: box.left + box.width / 2, y: box.top + box.height / 2 }
+    await (
+      commands as unknown as {
+        realMouseMove: (
+          from: { x: number; y: number },
+          to: { x: number; y: number },
+          steps?: number,
+        ) => Promise<void>
+      }
+    ).realMouseMove(center, center, 1)
+  }
   await new Promise(resolve => requestAnimationFrame(resolve))
   await Promise.all(
     cell

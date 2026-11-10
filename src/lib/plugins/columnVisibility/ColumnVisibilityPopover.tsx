@@ -3,7 +3,7 @@
  * управляет эагерная кнопка (`ColumnVisibilityButton`), поэтому клик до догрузки
  * не теряется. `Escape` и клик снаружи закрывают поповер, фокус — на кнопку.
  */
-import { type ReactNode, useRef } from 'react'
+import { type ReactNode, useRef, useState } from 'react'
 
 import { Popover } from '@base-ui/react/popover'
 
@@ -25,7 +25,8 @@ export interface ColumnVisibilityPopoverProps {
   count: number
   active: boolean
   open: boolean
-  onOpenChange: (open: boolean) => void
+  /** `details` — подробности Base UI: источник открытия для канала действий. */
+  onOpenChange: (open: boolean, details?: unknown) => void
 }
 
 export const ColumnVisibilityPopover = ({
@@ -40,9 +41,18 @@ export const ColumnVisibilityPopover = ({
   const labels = useLocalization()
   const triggerRef = useRef<HTMLButtonElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
+  // Каждое открытие — свой сеанс меню: подсказки «остаются» прошлого открытия не переживают
+  // повторное открытие во время ухода поповера (ADR 0204, HT6).
+  const [session, setSession] = useState(0)
 
   return (
-    <Popover.Root open={open} onOpenChange={onOpenChange}>
+    <Popover.Root
+      open={open}
+      onOpenChange={(next, details) => {
+        if (next) setSession(value => value + 1)
+        onOpenChange(next, details)
+      }}
+    >
       <ToolbarButton
         ref={triggerRef}
         label={label}
@@ -65,7 +75,11 @@ export const ColumnVisibilityPopover = ({
           }
           className={styles.popup}
         >
-          <ColumnVisibilityMenu table={table} searchRef={searchRef} />
+          <ColumnVisibilityMenu
+            key={session}
+            table={table}
+            searchRef={searchRef}
+          />
         </PopupSurface>
       </Popover.Portal>
     </Popover.Root>
