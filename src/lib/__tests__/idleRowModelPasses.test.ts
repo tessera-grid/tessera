@@ -259,4 +259,28 @@ describe('Холостые проходы фильтрации и группир
     expect(stock).toEqual({ pageIndex: 0, expanded: {} })
     expect(await run(build({ options }))).toEqual(stock)
   })
+
+  it('PT8: первый проход фильтрации при монтировании без фильтров и поиска — модель на входе, словари фильтров строк не переписываются; первый отбор после него сбрасывает страницу, как TanStack', async () => {
+    const table = build()
+    const before = table.getCoreRowModel().rowsById.b.columnFilters
+    const model = table.getFilteredRowModel()
+    expect(model).toBe(table.getPreFilteredRowModel())
+    expect(model.rowsById.b.columnFilters).toBe(before)
+
+    const options = { autoResetPageIndex: true }
+    const step = async (t: any, act: () => void) => {
+      act()
+      t.getRowModel()
+      await new Promise(resolve => setTimeout(resolve, 0))
+    }
+    const run = async (t: any) => {
+      await step(t, () => t.setPageSize(2))
+      await step(t, () => t.setPageIndex(1))
+      await step(t, () => t.setColumnFilters(nameFilter('Name')))
+      return t.atoms.pagination.get().pageIndex
+    }
+    const stock = await run(build({ stock: true, options }))
+    expect(stock).toBe(0)
+    expect(await run(build({ options }))).toBe(stock)
+  })
 })

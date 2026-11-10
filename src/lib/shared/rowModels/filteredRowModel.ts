@@ -556,6 +556,9 @@ const fullFilter = (table: FilteringTable, input: FilterModel): FilterModel => {
   return filterTree(table, input.rows, filters.ids)
 }
 
+/** Таблицы, строки которых видели активный отбор: их словари фильтров не пустые (ADR 0068, §1а). */
+const filteredOnce = new WeakSet<object>()
+
 /** Стадия фильтра и поиска: вход — у движка (ADR 0200, §3). */
 export const createSearchAwareFilteredRowModel =
   <TFeatures extends TableFeatures, TData extends RowData = any>() =>
@@ -603,6 +606,7 @@ export const createSearchAwareFilteredRowModel =
       timeZone = nextTimeZone
       // Поиск по видимым колонкам и пояс дат: смена — отбор заново, без сброса страницы.
       if (stale) last = undefined
+      if (filtering() || !!searchValue()) filteredOnce.add(table)
       return filtered()
     }
     const run = skipIdlePasses(
@@ -616,6 +620,7 @@ export const createSearchAwareFilteredRowModel =
         )
       },
       () => t.autoResetPageIndex?.(),
+      () => !filteredOnce.has(table),
     )
     return next => {
       read = next
