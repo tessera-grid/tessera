@@ -26,11 +26,9 @@ import styles from '../grid/Body/Body.module.css'
 
 interface PendingRowProps {
   table: Table<any, any>
-  layout: 'grid' | 'flex'
   virtualRow: VirtualItem
   leafColumns: Column<any, any, unknown>[]
   virtualColumns: VirtualItem[]
-  isVirtualColumns: boolean
   ariaRowIndexBase: number
   /** Место незагруженной строки в дереве (treegrid, ADR 0138, §14). */
   tree?: { level: number; posInSet: number; setSize: number }
@@ -151,11 +149,9 @@ const PendingCell = ({
 
 export const PendingRow = ({
   table,
-  layout,
   virtualRow,
   leafColumns,
   virtualColumns,
-  isVirtualColumns,
   ariaRowIndexBase,
   tree,
   skeletonTree,
@@ -183,10 +179,8 @@ export const PendingRow = ({
     >
       <SkeletonRows
         table={table}
-        layout={layout}
         leafColumns={leafColumns}
         virtualColumns={virtualColumns}
-        isVirtualColumns={isVirtualColumns}
         rowCount={1}
         firstRowIndex={virtualRow.index}
         cellExtra={cellExtra}
@@ -208,11 +202,9 @@ export const PendingRow = ({
  */
 export const FailedRow = ({
   table,
-  layout,
   virtualRow,
   leafColumns,
   virtualColumns,
-  isVirtualColumns,
 }: Omit<PendingRowProps, 'ariaRowIndexBase'>) => (
   <div
     className={styles.pending}
@@ -222,10 +214,8 @@ export const FailedRow = ({
   >
     <SkeletonRows
       table={table}
-      layout={layout}
       leafColumns={leafColumns}
       virtualColumns={virtualColumns}
-      isVirtualColumns={isVirtualColumns}
       rowCount={1}
       firstRowIndex={virtualRow.index}
       empty

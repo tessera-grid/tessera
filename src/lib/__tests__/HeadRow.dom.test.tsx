@@ -4,6 +4,7 @@
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { act } from 'react'
+import { allColumnsWindow } from './columnWindow'
 import { createRoot } from 'react-dom/client'
 import { constructTable } from '@tanstack/react-table'
 import { storeReactivityBindings } from '../../../node_modules/@tanstack/table-core/dist/store-reactivity-bindings.js'
@@ -57,11 +58,9 @@ describe('HeadRow (happy-dom)', () => {
     act(() => {
       root.render(
         <HeadRow
-          layout="flex"
           lastGroup
           headerGroup={table.getHeaderGroups()[0]}
-          virtualColumns={[]}
-          isVirtualColumns={false}
+          virtualColumns={allColumnsWindow(table.getVisibleLeafColumns())}
         />,
       )
     })

@@ -31,10 +31,8 @@ export type StatusBarComponentProps = ToolbarComponentProps
  */
 export interface BodyEndComponentProps {
   table: Table<any, any>
-  layout: 'grid' | 'flex'
   leafColumns: Column<any, any, unknown>[]
   virtualColumns: VirtualItem[]
-  isVirtualColumns: boolean
   /** `aria-rowindex` строки сразу за последней строкой тела. */
   nextAriaRowIndex: number
   /** Строки скелета после тела — тем же видом, что строки тела (ADR 0170, §2). */

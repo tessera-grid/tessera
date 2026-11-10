@@ -451,11 +451,15 @@ describe('Высокая контрастность (ADR 0087)', () => {
     }
   })
 
-  test('HC19: вложенная шапка — рамки ячеек шапки и тела одной линией 1px GrayText, без контура ячейки', async () => {
+  test('HC19: вложенная шапка с линиями между колонками — рамки ячеек шапки и тела одной линией 1px GrayText, без контура ячейки', async () => {
     await page.viewport(414, 720)
     try {
       await mount([], false, true)
       await expect.poll(() => headCellEl('g')).toBeTruthy()
+      // Линии между колонками включает токен темы (ADR 0207, §4).
+      document
+        .querySelector<HTMLElement>('.data-grid-theme')!
+        .style.setProperty('--tsr-comp-column-divider-width', '1px')
       await expect
         .poll(() => style(rowEl('r1')).backgroundColor)
         .toBe(sys('Canvas'))

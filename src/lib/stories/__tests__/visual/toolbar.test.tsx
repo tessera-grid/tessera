@@ -39,7 +39,7 @@ const toolbarButtons = () => [
   ...toolbar()!.querySelectorAll<HTMLButtonElement>('button'),
 ]
 const frame = () => getScroller().parentElement!
-const head = () => document.querySelector<HTMLElement>('[data-layout]')!
+const head = () => document.querySelector<HTMLElement>('.data-grid__head')!
 const rect = (el: Element) => el.getBoundingClientRect()
 const read = (el: Element, prop: string) =>
   getComputedStyle(el).getPropertyValue(prop).trim()
@@ -137,7 +137,7 @@ describe('Toolbar', () => {
     await flat.unmount()
 
     await mount(<Stories.ToolbarPlayground {...DEMO} headerNesting="nested" />)
-    expect(head().dataset.layout).toBe('grid')
+    expect(head().querySelectorAll('[role="row"]').length).toBeGreaterThan(1)
     expect(read(head(), 'border-top-width')).toBe('0px')
   })
 

@@ -5,6 +5,7 @@
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { act } from 'react'
+import { allColumnsWindow } from './columnWindow'
 import { createRoot } from 'react-dom/client'
 import { constructTable } from '@tanstack/react-table'
 import { storeReactivityBindings } from '../../../node_modules/@tanstack/table-core/dist/store-reactivity-bindings.js'
@@ -78,15 +79,13 @@ describe('Body/Head контейнеры (happy-dom)', () => {
       root.render(
         <Body
           table={table}
-          layout="flex"
           getRows={() => rows}
           rowSource={table.getRowSource()}
           virtualRows={[vRow(0), vRow(1)]}
-          virtualColumns={[]}
+          virtualColumns={allColumnsWindow(table.getAllLeafColumns())}
           leafColumns={table.getAllLeafColumns()}
           ariaRowIndexBase={1}
           isResizingColumns={false}
-          isVirtualColumns={false}
         />,
       )
     })
@@ -102,11 +101,9 @@ describe('Body/Head контейнеры (happy-dom)', () => {
     act(() => {
       root.render(
         <Head
-          layout="flex"
           headerGroups={table.getHeaderGroups()}
-          virtualColumns={[]}
+          virtualColumns={allColumnsWindow(table.getVisibleLeafColumns())}
           isResizingColumns={false}
-          isVirtualColumns={false}
         />,
       )
     })

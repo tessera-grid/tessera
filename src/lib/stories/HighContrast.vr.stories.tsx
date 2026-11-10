@@ -8417,3 +8417,45 @@ export const HighContrastVisibilityClearHiddenTransformsStep4 = {
   name: 'Columns/Visibility — Clear a hidden column sorting, шаг 4',
   tags: ['!test'],
 }
+
+export const HighContrastHeaderGroupsWideGroupsStep1 = {
+  ...twinStep(
+    columnsHeaderGroupsStories,
+    columnsHeaderGroupsStories.HeaderGroupsWideGroups,
+    1,
+  ),
+  name: 'Columns/Header groups — Wide groups, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastHeaderGroupsWideGroupsStep2 = {
+  ...twinStep(
+    columnsHeaderGroupsStories,
+    columnsHeaderGroupsStories.HeaderGroupsWideGroups,
+    2,
+  ),
+  name: 'Columns/Header groups — Wide groups, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastHeaderGroupsWideGroupsStep3 = {
+  ...twinStep(
+    columnsHeaderGroupsStories,
+    columnsHeaderGroupsStories.HeaderGroupsWideGroups,
+    3,
+  ),
+  name: 'Columns/Header groups — Wide groups, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastThemingColumnDividersStep1 = {
+  ...twinStep(themingStories, themingStories.ThemingColumnDividers, 1),
+  name: 'Theming — Column dividers, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastThemingColumnDividersStep2 = {
+  ...twinStep(themingStories, themingStories.ThemingColumnDividers, 2),
+  name: 'Theming — Column dividers, шаг 2',
+  tags: ['!test'],
+}

@@ -1462,3 +1462,61 @@ export const ThemingGridButtonSize: StoryObj<ThemingArgs> = {
     await settle()
   },
 }
+
+// --- ADR 0207 S2 ---------------------------------------------------------------------
+
+/** Тема приложения: линии между колонками. */
+const COLUMN_DIVIDERS = 'theming-column-dividers'
+const COLUMN_DIVIDERS_CSS = `
+.${COLUMN_DIVIDERS}.${DATA_GRID_THEME_CLASS} { --tsr-comp-column-divider-width: 1px; }
+`
+const dividerOf = (root: ParentNode) =>
+  getComputedStyle(
+    root.querySelector(
+      ".data-grid__body-row[data-index='1'] .data-grid__body-cell[data-cell-pinned='false']",
+    )!,
+  ).borderRightWidth
+
+const DIVIDERS: readonly GuideStoryStep[] = [
+  {
+    title: 'Без линий между колонками',
+    hint: 'Колонки таблицы разделяет только расстояние между ними, строки — горизонтальные линии.',
+  },
+  {
+    title: 'Приложение включило линии',
+    hint: 'Приложение задало в своей теме толщину линии между колонками. Шапку и тело разделили вертикальные линии — таблица выглядит как сетка, ширины колонок прежние.',
+    props: () => ({ gridClassName: COLUMN_DIVIDERS }),
+  },
+]
+
+/** ADR 0207, S2: приложение включает линии между колонками токеном темы. */
+export const ThemingColumnDividers: StoryObj<ThemingArgs> = {
+  name: 'Column dividers',
+  args: { locale: 'en' },
+  parameters: { scenario: '0207/S2', ...guideControls() },
+  render: storyArgs => (
+    <>
+      <style>{COLUMN_DIVIDERS_CSS}</style>
+      <GuideStory
+        title="Линии между колонками"
+        steps={DIVIDERS}
+        args={guideArgs(
+          PALETTE_GRID,
+          storyArgs as Pick<StoryProps, 'colorMode' | 'locale'>,
+        )}
+      />
+    </>
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(DIVIDERS[0]!.title, async () => {
+      await until(() => expect(dividerOf(canvas)).toBe('0px'))
+      await settle()
+    })
+    await step(DIVIDERS[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(dividerOf(canvas)).toBe('1px'))
+      await settle()
+    })
+  },
+}

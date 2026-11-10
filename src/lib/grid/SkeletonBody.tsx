@@ -30,8 +30,6 @@ import type { Column, Table } from '../types'
 import { CellWrapperContent, getAlignContent } from './CellWrapperContent'
 import { getCellPinningParams, pinnedSideToDom } from './cellPinningParams'
 import { getColumnSizeVariable } from './columnSizes'
-import { needsRightFiller } from './layout'
-import { RightFillerBodyColumn } from './RightFillerBodyColumn'
 import { VirtualCenterSpacer } from './VirtualCenterSpacer'
 
 import bodyStyles from '../grid/Body/Body.module.css'
@@ -71,10 +69,8 @@ const cellContent = (
 /** Колонки ряда скелета: закреплённые — в потоке, центральные — по `left`. */
 const getSkeletonColumns = (
   table: Table<any, any>,
-  layout: 'grid' | 'flex',
   leafColumns: Column<any, any, unknown>[],
   virtualColumns: VirtualItem[],
-  isVirtualColumns: boolean,
   shape: (column: Column<any, any, unknown>) => boolean,
   wave = true,
 ): SkeletonColumn[] => {
@@ -116,16 +112,12 @@ const getSkeletonColumns = (
         'data-cell-first-right-pinned': pinning.isFirstEndPinnedColumn,
         'data-cell-alone-right-pinned': pinning.isAloneEndPinnedColumn,
         'data-actions-column-cell': isActionsColumn,
-        'data-layout': layout,
         'data-first-cell-in-row': column.getIsFirstColumn(),
         'data-last-cell-in-row': column.getIsLastColumn(),
       },
     }
   }
 
-  if (!isVirtualColumns) {
-    return leafColumns.map(column => describe(column, 'flow'))
-  }
   const columns: SkeletonColumn[] = []
   for (const virtualColumn of virtualColumns) {
     const column = leafColumns[virtualColumn.index]
@@ -144,7 +136,8 @@ const getSkeletonColumns = (
 
 interface SkeletonCellsProps {
   columns: SkeletonColumn[]
-  isVirtualColumns: boolean
+  /** Ячейки по окну колонок; без колонок таблицы — в потоке. */
+  windowed: boolean
   className: string
   moduleClassName: string | undefined
   /** Номер строки тела; у футера нет. */
@@ -162,7 +155,7 @@ interface SkeletonCellsProps {
 
 const SkeletonCells = ({
   columns,
-  isVirtualColumns,
+  windowed,
   className,
   moduleClassName,
   rowIndex,
@@ -218,7 +211,7 @@ const SkeletonCells = ({
       </div>
     )
   }
-  if (!isVirtualColumns) {
+  if (!windowed) {
     return (
       <>
         {columns.map(renderCell)}
@@ -239,7 +232,6 @@ const SkeletonCells = ({
 }
 
 interface SkeletonRowsBlockProps {
-  layout: 'grid' | 'flex'
   columns: SkeletonColumn[]
   cellsVirtual: boolean
   filler: ReactNode
@@ -260,7 +252,6 @@ interface SkeletonRowsBlockProps {
 
 /** Блок строк скелета высотой в `rowCount` строк темы. */
 const SkeletonRowsBlock = ({
-  layout,
   columns,
   cellsVirtual,
   filler,
@@ -276,7 +267,6 @@ const SkeletonRowsBlock = ({
 }: SkeletonRowsBlockProps) => (
   <div
     className={clsx(className, bodyStyles.body)}
-    data-layout={layout}
     style={{ height: `calc(var(--tsr-comp-row-height) * ${rowCount})` }}
   >
     {Array.from({ length: cells ? rowCount : 0 }, (_, rowIndex) => (
@@ -284,14 +274,13 @@ const SkeletonRowsBlock = ({
         key={rowIndex}
         className={clsx(rowClassName, bodyRowStyles.body__row)}
         data-row-odd={(firstRowIndex + rowIndex) % 2 !== 0}
-        data-layout={layout}
         style={{
           top: `calc(var(--tsr-comp-row-height) * ${rowIndex})`,
         }}
       >
         <SkeletonCells
           columns={columns}
-          isVirtualColumns={cellsVirtual}
+          windowed={cellsVirtual}
           className="data-grid__body-cell--skeleton"
           moduleClassName={bodyCellStyles.body__cell}
           rowIndex={firstRowIndex + rowIndex}
@@ -311,20 +300,10 @@ const SkeletonRowsBlock = ({
   </div>
 )
 
-const bodyFillerOf = (
-  leafColumns: Column<any, any, unknown>[],
-  isVirtualColumns: boolean,
-) =>
-  !isVirtualColumns && needsRightFiller(leafColumns.at(-1)) ? (
-    <RightFillerBodyColumn hasBorderTop hasBorderRight />
-  ) : null
-
 export interface SkeletonRowsProps {
   table: Table<any, any>
-  layout: 'grid' | 'flex'
   leafColumns: Column<any, any, unknown>[]
   virtualColumns: VirtualItem[]
-  isVirtualColumns: boolean
   rowCount: number
   /** Номер первой строки в теле: чётность полос продолжает тело. */
   firstRowIndex: number
@@ -352,10 +331,8 @@ export interface SkeletonCellExtra {
 export const SkeletonRows = memo(
   ({
     table,
-    layout,
     leafColumns,
     virtualColumns,
-    isVirtualColumns,
     rowCount,
     firstRowIndex,
     className,
@@ -367,10 +344,8 @@ export const SkeletonRows = memo(
   }: SkeletonRowsProps) => {
     const columns = getSkeletonColumns(
       table,
-      layout,
       leafColumns,
       virtualColumns,
-      isVirtualColumns,
       () => !empty,
       false,
     )
@@ -381,7 +356,6 @@ export const SkeletonRows = memo(
         style={{ display: 'contents' }}
       >
         <SkeletonRowsBlock
-          layout={layout}
           columns={
             cellExtra
               ? columns.map(column => {
@@ -396,8 +370,8 @@ export const SkeletonRows = memo(
                 })
               : columns
           }
-          cellsVirtual={isVirtualColumns}
-          filler={bodyFillerOf(leafColumns, isVirtualColumns)}
+          cellsVirtual
+          filler={null}
           rowCount={rowCount}
           firstRowIndex={firstRowIndex}
           className={className}
@@ -419,10 +393,8 @@ SkeletonRows.displayName = 'SkeletonRows'
 
 interface SkeletonBodyProps {
   table: Table<any, any>
-  layout: 'grid' | 'flex'
   leafColumns: Column<any, any, unknown>[]
   virtualColumns: VirtualItem[]
-  isVirtualColumns: boolean
 }
 
 /** Высота строки из темы грида; без темы — оценка виртуализатора. */
@@ -432,13 +404,7 @@ const readRowHeight = (node: HTMLElement) =>
   ) || ESTIMATE_SIZE
 
 export const SkeletonBody = memo(
-  ({
-    table,
-    layout,
-    leafColumns,
-    virtualColumns,
-    isVirtualColumns,
-  }: SkeletonBodyProps) => {
+  ({ table, leafColumns, virtualColumns }: SkeletonBodyProps) => {
     const rootRef = useRef<HTMLDivElement>(null)
     const { options } = table
     const { rowsCount, columnsCount } = resolveSkeletonOptions(
@@ -492,14 +458,7 @@ export const SkeletonBody = memo(
     const treeRows =
       tree && hasColumns ? getSkeletonTreeRows(rowCount) : undefined
     const columns = hasColumns
-      ? getSkeletonColumns(
-          table,
-          layout,
-          leafColumns,
-          virtualColumns,
-          isVirtualColumns,
-          () => true,
-        )
+      ? getSkeletonColumns(table, leafColumns, virtualColumns, () => true)
       : Array.from({ length: columnsCount }, (_, index): SkeletonColumn => ({
           id: getSkeletonColumnId(index),
           placement: 'flow',
@@ -509,12 +468,10 @@ export const SkeletonBody = memo(
           isToggle: false,
           content: renderSkeletonCell(getSkeletonColumnId(index), 'bar', true),
           style: { flex: 1, minWidth: 0 },
-          attrs: { 'data-layout': layout },
+          attrs: {},
         }))
-    const cellsVirtual = hasColumns && isVirtualColumns
-    const bodyFiller = hasColumns
-      ? bodyFillerOf(leafColumns, isVirtualColumns)
-      : null
+    const cellsVirtual = hasColumns
+    const bodyFiller = null
 
     const footerGroup = options.enableFooter
       ? table.getFooterGroups().at(0)
@@ -523,10 +480,8 @@ export const SkeletonBody = memo(
       footerGroup && hasColumns
         ? getSkeletonColumns(
             table,
-            layout,
             leafColumns,
             virtualColumns,
-            isVirtualColumns,
             column => !!column.columnDef.footer,
           )
         : undefined
@@ -540,7 +495,6 @@ export const SkeletonBody = memo(
         style={{ display: 'contents' }}
       >
         <SkeletonRowsBlock
-          layout={layout}
           columns={columns}
           cellsVirtual={cellsVirtual}
           filler={bodyFiller}
@@ -552,14 +506,13 @@ export const SkeletonBody = memo(
         {footerColumns && (
           <div
             className={clsx('data-grid__footer--skeleton', footerStyles.footer)}
-            data-layout={layout}
             data-position={getFooterPosition(table)}
             data-skeleton=""
           >
             <div style={{ display: 'contents' }}>
               <SkeletonCells
                 columns={footerColumns}
-                isVirtualColumns={cellsVirtual}
+                windowed={cellsVirtual}
                 className="data-grid__footer-cell--skeleton"
                 moduleClassName={footerCellStyles.footer__cell}
                 table={table}

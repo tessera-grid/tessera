@@ -45,7 +45,6 @@ interface ColumnMotionProps {
   columns: readonly MotionColumnDef[]
   /** Срез закрепления: его смена — не перенос, движения нет (CN6). */
   pinning: unknown
-  isVirtualColumns: boolean
   rootRef: RefObject<HTMLDivElement | null>
   children: ReactNode
 }
@@ -208,9 +207,11 @@ export class ColumnMotion extends Component<ColumnMotionProps> {
     )
     const offset = anchor ? anchor[1].left - prevLefts.get(anchor[0])! : 0
     const leaving = new Map<string, LeavingCell[]>()
-    const away = this.props.isVirtualColumns
-      ? leavingWindow(measured, logicalLefts(this.props.columns), offset)
-      : new Set<string>()
+    const away = leavingWindow(
+      measured,
+      logicalLefts(this.props.columns),
+      offset,
+    )
     if (away.size > 0) {
       for (const id of away) {
         leaving.set(

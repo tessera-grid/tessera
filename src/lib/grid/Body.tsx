@@ -31,7 +31,6 @@ import styles from '../grid/Body/Body.module.css'
 
 interface TableBodyProps {
   table: Table<any, any>
-  layout: 'grid' | 'flex'
   /**
    * Весь список, если он загружен целиком: дерево, линии, движение и место броска. Геттером:
    * dev-журнал React обошёл бы массив в пропсах (ADR 0199, MS12).
@@ -53,7 +52,6 @@ interface TableBodyProps {
   treeRows?: boolean
   /** Ветки линий дерева (ADR 0102). */
   isResizingColumns: false | string
-  isVirtualColumns: boolean
   /** Движение строк при смене модели (ADR 0107). */
   rowAnimation?: boolean
   /** Перетаскиваемая строка и место броска (ADR 0108). */
@@ -64,7 +62,6 @@ const NO_FAILURES: readonly RowFailure[] = []
 
 export const Body = ({
   table,
-  layout,
   getRows,
   rowSource,
   virtualRows,
@@ -77,7 +74,6 @@ export const Body = ({
   actionRowSlot,
   ariaRowIndexBase,
   treeRows,
-  isVirtualColumns,
   rowAnimation = false,
   dropPreview,
 }: TableBodyProps) => {
@@ -137,7 +133,6 @@ export const Body = ({
       ref={bodyRef}
       className={clsx('data-grid__body', styles.body)}
       role="rowgroup"
-      data-layout={layout}
       // Порции окна ещё ставятся (ADR 0203): тесты и снимки ждут конца.
       data-portions-pending={drawnRows.length < virtualRows.length || undefined}
     >
@@ -153,7 +148,6 @@ export const Body = ({
                 copy
                 stickyLast={last}
                 stickyPushed={pushed}
-                layout={layout}
                 row={entry.row}
                 virtualRow={{
                   key: `sticky-${entry.row.id}`,
@@ -170,7 +164,6 @@ export const Body = ({
                 cellSlot={cellSlot}
                 actionRowSlot={actionRowSlot}
                 ariaRowIndexBase={ariaRowIndexBase}
-                isVirtualColumns={isVirtualColumns}
               />
             )}
           />
@@ -195,11 +188,9 @@ export const Body = ({
                 <FailedRow
                   key={`failed-${virtualRow.index}`}
                   table={table}
-                  layout={layout}
                   virtualRow={virtualRow}
                   leafColumns={leafColumns}
                   virtualColumns={virtualColumns}
-                  isVirtualColumns={isVirtualColumns}
                 />
               )
             }
@@ -212,11 +203,9 @@ export const Body = ({
                 skeletonTree: place ? { ...place, parent: false } : undefined,
                 window: place ? windowData.rowOf(virtualRow.index) : undefined,
                 table,
-                layout,
                 virtualRow,
                 leafColumns,
                 virtualColumns,
-                isVirtualColumns,
                 ariaRowIndexBase,
               }
               const key = `pending-${virtualRow.index}`
@@ -236,11 +225,9 @@ export const Body = ({
                 <PendingRow
                   key={row.id}
                   table={table}
-                  layout={layout}
                   virtualRow={virtualRow}
                   leafColumns={leafColumns}
                   virtualColumns={virtualColumns}
-                  isVirtualColumns={isVirtualColumns}
                   ariaRowIndexBase={ariaRowIndexBase}
                   tree={
                     treeRows
@@ -259,7 +246,6 @@ export const Body = ({
             }
             const isActive = drop?.activeId === row.id
             const rowProps = {
-              layout,
               row,
               virtualRow,
               cells: rowCellsOf(table, row),
@@ -274,7 +260,6 @@ export const Body = ({
               window: windowData.rowOf(virtualRow.index, isActive),
               slotDepth: isActive ? drop.depth : undefined,
               dropParent: virtualRow.index === dropParent || undefined,
-              isVirtualColumns,
             }
             return decoratedRow ? (
               <decoratedRow.Outer

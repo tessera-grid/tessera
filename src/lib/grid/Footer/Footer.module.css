@@ -28,7 +28,7 @@
   box-shadow: none;
 }
 
-.footer[data-position='inline'][data-layout='flex'] {
+.footer[data-position='inline'] {
   box-sizing: border-box;
   border-top: 1px solid var(--tsr-comp-cell-divider-color);
 }

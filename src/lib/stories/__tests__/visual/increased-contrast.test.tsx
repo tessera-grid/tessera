@@ -452,7 +452,7 @@ describe('Повышенный контраст (ADR 0088)', () => {
     }
     await screen.unmount()
 
-    // Разделители ячеек — у раскладки под вложенной шапкой.
+    // Разделители между колонками — токеном темы (ADR 0207, §4), под вложенной шапкой.
     const nested = await renderGrid({
       contrast: 'more',
       columnCount: 6,
@@ -460,9 +460,12 @@ describe('Повышенный контраст (ADR 0088)', () => {
       headerNesting: 'nested',
     })
     await waitRows()
+    document
+      .querySelector<HTMLElement>('.data-grid-theme')!
+      .style.setProperty('--tsr-comp-column-divider-width', '1px')
     await inBothThemes(async () => {
       const cell = document.querySelector<HTMLElement>(
-        '.data-grid__body-cell[data-layout="grid"]',
+        '.data-grid__body-cell[data-cell-pinned="false"]',
       )!
       expect(style(cell).borderRightStyle).toBe('solid')
       expect(

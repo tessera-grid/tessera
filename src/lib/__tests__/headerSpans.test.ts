@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest'
 import type { CommonColumnDef } from '../core/commonFeature.types'
 import { definePlugin } from '../core/definePlugin'
 import { buildTesseraFeatures } from '../core/features'
-import { getHeaderGridPosition } from '../grid/layout'
+import { getHeaderPlacement } from '../grid/layout'
 
 // Мелкий лист `country`, группа `name` над листьями глубины 1, ветка `info` глубины 3.
 const makeTable = () => {
@@ -51,7 +51,7 @@ const visiblePositions = (table: any) => {
   const positions: Record<string, unknown> = {}
   for (const group of table.getHeaderGroups()) {
     for (const header of group.headers) {
-      const position = getHeaderGridPosition(header)
+      const position = getHeaderPlacement(header)
       if (position) positions[header.column.id] = position
     }
   }
@@ -65,17 +65,17 @@ const visibleHeader = (table: any, columnId: string) =>
     .find((header: any) => header.column.id === columnId && header.rowSpan > 0)
 
 describe('Спаны вложенной шапки (v9)', () => {
-  it('HS1: позиция ячейки шапки — из header.rowSpan v9, покрытые не рисуются, columnDef не читается', () => {
+  it('HS1: место ячейки шапки — из header.rowSpan v9: строка, число строк и колонок; покрытые не рисуются, columnDef не читается', () => {
     const table = makeTable()
     expect(visiblePositions(table)).toEqual({
-      country: { gridRow: '1 / span 3', gridColumn: 'span 1' },
-      name: { gridRow: '1 / span 1', gridColumn: 'span 2' },
-      info: { gridRow: '1 / span 1', gridColumn: 'span 2' },
-      firstName: { gridRow: '2 / span 2', gridColumn: 'span 1' },
-      lastName: { gridRow: '2 / span 2', gridColumn: 'span 1' },
-      more: { gridRow: '2 / span 1', gridColumn: 'span 1' },
-      visits: { gridRow: '2 / span 2', gridColumn: 'span 1' },
-      age: { gridRow: '3 / span 1', gridColumn: 'span 1' },
+      country: { row: 1, rowSpan: 3, colSpan: 1 },
+      name: { row: 1, rowSpan: 1, colSpan: 2 },
+      info: { row: 1, rowSpan: 1, colSpan: 2 },
+      firstName: { row: 2, rowSpan: 2, colSpan: 1 },
+      lastName: { row: 2, rowSpan: 2, colSpan: 1 },
+      more: { row: 2, rowSpan: 1, colSpan: 1 },
+      visits: { row: 2, rowSpan: 2, colSpan: 1 },
+      age: { row: 3, rowSpan: 1, colSpan: 1 },
     })
     // Настоящий заголовок мелкого листа покрыт вершиной своей цепочки.
     const covered = table
@@ -83,7 +83,7 @@ describe('Спаны вложенной шапки (v9)', () => {
       .at(-1)
       .headers.find((header: any) => header.column.id === 'country')
     expect(covered.rowSpan).toBe(0)
-    expect(getHeaderGridPosition(covered)).toBeNull()
+    expect(getHeaderPlacement(covered)).toBeNull()
   })
 
   it('HS7: columnDef.rowSpan отсутствует в типе определения колонки', () => {

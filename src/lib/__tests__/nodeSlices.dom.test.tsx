@@ -6,6 +6,7 @@
  * Запуск: npx vitest run --config vitest.node.config.ts nodeSlices
  */
 import { act } from 'react'
+import { allColumnsWindow } from './columnWindow'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -84,12 +85,7 @@ const renderCells = (offset = 0) =>
         row
           .getVisibleCells()
           .map((cell: any) => (
-            <BodyCell
-              key={cell.id}
-              layout="flex"
-              cell={cell}
-              rowIndex={index + offset}
-            />
+            <BodyCell key={cell.id} cell={cell} rowIndex={index + offset} />
           )),
       ),
   )
@@ -101,14 +97,12 @@ const renderRows = () =>
       .rows.map((row: any, index: number) => (
         <BodyRow
           key={row.id}
-          layout="flex"
           row={row}
           cells={rowCellsOf(row.table, row)}
           virtualRow={virtualRow(index)}
-          virtualColumns={[]}
+          virtualColumns={allColumnsWindow(table.getAllLeafColumns())}
           leafColumns={table.getAllLeafColumns()}
           ariaRowIndexBase={1}
-          isVirtualColumns={false}
         />
       )),
   )

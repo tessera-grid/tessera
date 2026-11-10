@@ -33,7 +33,6 @@ import hidden from '../ui/visuallyHidden.module.css'
 
 interface DataGridTableProps {
   table: Table<any, any>
-  layout: 'grid' | 'flex'
   headStyles?: CSSProperties
   headerGroups: HeaderGroup<any, any>[]
   /** Весь список строк, если он загружен целиком; геттером — ради dev-журнала React (MS12). */
@@ -45,7 +44,8 @@ interface DataGridTableProps {
   /** Видимые строки окна (ADR 0203). */
   visibleRows: { startIndex: number; endIndex: number } | null
   virtualColumns: VirtualItem[]
-  isVirtualColumns: boolean
+  /** Начала всех колонок в порядке отображения (ADR 0207, §2). */
+  columnStarts: number[]
   isResizingColumns: false | string
   keyboardNavigation: KeyboardNavigationGrid | null
   label: string
@@ -65,7 +65,6 @@ interface DataGridTableProps {
  */
 export const DataGridTable = ({
   table,
-  layout,
   headStyles,
   headerGroups,
   getRows,
@@ -74,7 +73,7 @@ export const DataGridTable = ({
   virtualRows,
   visibleRows,
   virtualColumns,
-  isVirtualColumns,
+  columnStarts,
   isResizingColumns,
   keyboardNavigation,
   label,
@@ -146,19 +145,15 @@ export const DataGridTable = ({
   const footerInline = footer && footerPosition === 'inline' && !skeleton
   const endContext = {
     table,
-    layout,
     leafColumns,
     virtualColumns,
-    isVirtualColumns,
     nextAriaRowIndex:
       headerGroups.length + rowWindow.offset + rowSource.count() + 1,
     renderSkeletonRows: (request: SkeletonRowsRequest) => (
       <SkeletonRows
         table={table}
-        layout={layout}
         leafColumns={leafColumns}
         virtualColumns={virtualColumns}
-        isVirtualColumns={isVirtualColumns}
         {...request}
       />
     ),
@@ -196,7 +191,6 @@ export const DataGridTable = ({
         pinning={
           (table.store.get() as { columnPinning?: unknown }).columnPinning
         }
-        isVirtualColumns={isVirtualColumns}
         rootRef={rootRef}
       >
         {skeleton && (
@@ -222,14 +216,13 @@ export const DataGridTable = ({
               ),
             },
             <MemoizedHead
-              layout={layout}
               style={headStyles}
               headerGroups={headerGroups}
               virtualColumns={virtualColumns}
+              columnStarts={columnStarts}
               leftHeaderSlot={leftHeaderSlot}
               rightHeaderSlot={rightHeaderSlot}
               isResizingColumns={isResizingColumns}
-              isVirtualColumns={isVirtualColumns}
               skeleton={skeleton}
             />,
           )}
@@ -237,10 +230,8 @@ export const DataGridTable = ({
         {skeleton ? (
           <SkeletonBody
             table={table}
-            layout={layout}
             leafColumns={leafColumns}
             virtualColumns={virtualColumns}
-            isVirtualColumns={isVirtualColumns}
           />
         ) : (
           wrapWith(
@@ -248,7 +239,6 @@ export const DataGridTable = ({
             { table, virtualRows, renderCloud: renderRowCloud },
             <MemoizedBody
               dropPreview={dropPreview}
-              layout={layout}
               table={table}
               getRows={getRows}
               rowSource={rowSource}
@@ -263,7 +253,6 @@ export const DataGridTable = ({
               ariaRowIndexBase={headerGroups.length + rowWindow.offset}
               treeRows={!!keyboardNavigation && hierarchical}
               isResizingColumns={isResizingColumns}
-              isVirtualColumns={isVirtualColumns}
               rowAnimation={
                 options.enableRowAnimation !== false &&
                 (!!rowSource.rows || !!rowSource.changesSince)
@@ -276,11 +265,9 @@ export const DataGridTable = ({
         {stubRow}
         {footer && !skeleton && (
           <MemoizedFooter
-            layout={layout}
             position={footerPosition}
             footerGroup={table.getFooterGroups().at(0)}
             virtualColumns={virtualColumns}
-            isVirtualColumns={isVirtualColumns}
             isResizingColumns={isResizingColumns}
           />
         )}

@@ -5,6 +5,7 @@
  * Запуск: npx vitest run --config vitest.node.config.ts
  */
 import { act, createElement, Profiler, type ReactNode } from 'react'
+import { allColumnsWindow } from './columnWindow'
 import { createRoot, type Root } from 'react-dom/client'
 import { constructTable } from '@tanstack/react-table'
 import { storeReactivityBindings } from '../../../node_modules/@tanstack/table-core/dist/store-reactivity-bindings.js'
@@ -258,14 +259,12 @@ describe('Подсветка: перерисовка только цели', () 
           track(
             `row:${row.id}`,
             <BodyRow
-              layout="flex"
               row={row}
               cells={rowCellsOf(row.table, row)}
               virtualRow={virtualRow(index)}
-              virtualColumns={[]}
+              virtualColumns={allColumnsWindow(table.getAllLeafColumns())}
               leafColumns={table.getAllLeafColumns()}
               ariaRowIndexBase={1}
-              isVirtualColumns={false}
             />,
           ),
         ),
@@ -277,7 +276,7 @@ describe('Подсветка: перерисовка только цели', () 
             .map((cell: any) =>
               track(
                 `cell:${row.id}:${cell.column.id}`,
-                <BodyCell layout="flex" cell={cell} rowIndex={index} />,
+                <BodyCell cell={cell} rowIndex={index} />,
               ),
             ),
         ),

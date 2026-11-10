@@ -7,10 +7,6 @@
   display: grid;
   position: relative;
   height: var(--tsr-comp-body-height);
-
-  &:is([data-layout='grid']) {
-    border-bottom: 1px solid var(--tsr-comp-cell-divider-color);
-  }
 }
 
 /* Обновление данных (ADR 0094): строки приглушены — они скоро заменятся. */

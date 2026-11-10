@@ -14,26 +14,24 @@ import styles from '../grid/Head/Head.module.css'
 import { inertProp } from '../core/inertProp'
 
 interface TableHeadProps {
-  layout: 'grid' | 'flex'
   style?: CSSProperties
   headerGroups: HeaderGroup<any, any>[]
   virtualColumns: VirtualItem[]
+  columnStarts?: number[]
   leftHeaderSlot?: HeaderSlot
   rightHeaderSlot?: HeaderSlot
   isResizingColumns: false | string | undefined
-  isVirtualColumns: boolean
   /** Шапка внутри скелета первой загрузки: скрыта от скринридера и неинтерактивна. */
   skeleton?: boolean
 }
 
 export const Head = ({
-  layout,
   style,
   headerGroups,
   virtualColumns,
+  columnStarts = [],
   leftHeaderSlot,
   rightHeaderSlot,
-  isVirtualColumns,
   skeleton,
 }: TableHeadProps) => (
   <div
@@ -42,7 +40,6 @@ export const Head = ({
     })}
     style={style}
     role="rowgroup"
-    data-layout={layout}
     aria-hidden={skeleton || undefined}
     {...inertProp(!!skeleton)}
   >
@@ -50,13 +47,12 @@ export const Head = ({
       {headerGroups.map(headerGroup => (
         <HeadRow
           key={headerGroup.id}
-          layout={layout}
           headerGroup={headerGroup}
           lastGroup={headerGroups.at(-1)?.id === headerGroup.id}
           virtualColumns={virtualColumns}
+          columnStarts={columnStarts}
           leftHeaderSlot={leftHeaderSlot}
           rightHeaderSlot={rightHeaderSlot}
-          isVirtualColumns={isVirtualColumns}
         />
       ))}
     </HeaderMetricsProvider>

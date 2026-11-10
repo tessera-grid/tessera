@@ -15,9 +15,10 @@ type PinnedLeavesTable = {
   getStartVisibleLeafColumns: () => SizedColumn[]
   getEndVisibleLeafColumns: () => SizedColumn[]
 }
-/** Для сбора --*-size переменных нужны плоские заголовки. */
+/** Для сбора --*-size переменных нужны плоские заголовки и закреплённые слева листья. */
 type FlatHeadersTable = {
   getFlatHeaders: () => SizedHeader[]
+  getStartVisibleLeafColumns?: () => SizedColumn[]
 }
 
 export const getHeaderSizeVariable = (headerId: string) =>
@@ -82,6 +83,11 @@ export const buildColumnSizeVars = (
     colSizes[getColumnSizeVariable(header.column.id)] =
       `${header.column.getSize()}px`
   }
+  // Ширина закреплённых слева: левый край липкой подписи группы (ADR 0207, §3).
+  let pinnedStart = 0
+  for (const column of table.getStartVisibleLeafColumns?.() ?? [])
+    pinnedStart += column.getSize()
+  colSizes['--tsr-pinned-start-width'] = `${pinnedStart}px`
 
   return colSizes
 }

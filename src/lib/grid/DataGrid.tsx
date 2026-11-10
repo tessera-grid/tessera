@@ -100,7 +100,6 @@ import { DataGridTable } from './DataGridTable'
 import { rowsGetterOf } from './rowsGetter'
 import { StatusBar } from './StatusBar/StatusBar'
 import { getTableHeight } from './getTableHeight'
-import { getGridLayout } from './layout'
 import { useScrollbarWidthVar } from './useScrollbarWidthVar'
 import { usePendingWave, useSkeletonWave } from './useSkeletonWave'
 import {
@@ -251,7 +250,6 @@ const DataGridView = <D extends LabelDictionary = LabelDictionary>({
   const columnSizes = useCalculateColumnSizes({ table })
 
   const headerGroupsDepth = headerGroups.length
-  const hasNestedGroups = headerGroupsDepth > 1
   // Разделитель в 1px — между строками шапки; под последней — тень, а не рамка.
   const headHeight = headerGroupsDepth * heights.head + headerGroupsDepth - 1
   // Над телом шапка, под ним — не больше строки футера.
@@ -294,22 +292,15 @@ const DataGridView = <D extends LabelDictionary = LabelDictionary>({
   )
   const loadingLabel = labels.loading
 
-  const layout = hasNestedGroups ? 'grid' : 'flex'
-  const headStyles = getGridLayout({
-    layout,
-    headerGroups,
-    leafColumns,
-  })
-
   const {
     virtualColumns,
     bodyWidth,
     columnShifts,
+    columnStarts,
     virtualizer: columnVirtualizer,
   } = useColumnVirtualizer({
     table,
     getScrollElement,
-    enabled: !hasNestedGroups,
   })
 
   const {
@@ -329,7 +320,7 @@ const DataGridView = <D extends LabelDictionary = LabelDictionary>({
   useScrollViewport(table, {
     getScrollElement,
     rows: rowVirtualizer,
-    columns: hasNestedGroups ? undefined : columnVirtualizer,
+    columns: columnVirtualizer,
   })
 
   const dragPointerY = useDragPointerY(rowDragging?.activeId != null)
@@ -664,8 +655,6 @@ const DataGridView = <D extends LabelDictionary = LabelDictionary>({
                         >
                           <DataGridTable
                             table={table}
-                            layout={layout}
-                            headStyles={headStyles}
                             headerGroups={headerGroups}
                             getRows={getRows}
                             rowSource={rowSource}
@@ -673,7 +662,7 @@ const DataGridView = <D extends LabelDictionary = LabelDictionary>({
                             virtualRows={virtualRows}
                             visibleRows={rowVirtualizer.range}
                             virtualColumns={virtualColumns}
-                            isVirtualColumns={!hasNestedGroups}
+                            columnStarts={columnStarts}
                             isResizingColumns={isResizingColumns}
                             keyboardNavigation={keyboardNavigation}
                             label={tableLabel}

@@ -55,7 +55,7 @@ describe('Ядро на TanStack — роли и атрибуты', () => {
     renderGrid({ columnCount: 3, dataCount: 3 })
     await waitForGrid()
 
-    const rowAttrs = ['data-layout', 'data-row-odd', 'data-last-row']
+    const rowAttrs = ['data-row-odd', 'data-last-row']
     bodyRows().forEach(row => {
       rowAttrs.forEach(attr => expect(row.getAttribute(attr)).not.toBeNull())
     })

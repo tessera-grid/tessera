@@ -33,14 +33,9 @@ import { flashRender, useColumnFlash } from './flash'
 import { useLocalization } from '../core/localization'
 import { ActionsZone } from './headerActions/ActionsZone'
 import { ActionsHostContext } from './headerActions/useHeldActive'
-import { useGridStyles } from './layout'
 import { pinnedSideToDom } from './cellPinningParams'
 import { useSkeletonMode } from './skeletonMode'
-import {
-  getColumnSizeVariable,
-  getHeaderSizeVariable,
-  getVirtualCellLeft,
-} from './columnSizes'
+import { getHeaderSizeVariable, getVirtualCellLeft } from './columnSizes'
 import {
   getAriaSort,
   getHeadCellState,
@@ -53,7 +48,6 @@ import headCellStyles from '../grid/HeadCell/HeadCell.module.css'
 import hidden from '../ui/visuallyHidden.module.css'
 
 export interface TableHeadCellProps {
-  layout: 'grid' | 'flex'
   header: Header<any, any, unknown>
   leftHeaderSlot?: RegisterSlotParams<any>[]
   rightHeaderSlot?: RegisterSlotParams<any>[]
@@ -68,7 +62,6 @@ interface HeadCellViewProps extends TableHeadCellProps {
 }
 
 export const HeadCellView = ({
-  layout,
   header,
   leftHeaderSlot,
   rightHeaderSlot,
@@ -144,8 +137,6 @@ export const HeadCellView = ({
     )
   }, [header, isActionsColumn, serviceLabel, labels, titleId, skeleton])
 
-  const gridStyles = useGridStyles(header)
-
   // Клавиатурная навигация: строка шапки — верхняя видимая строка заголовка (< 0).
   const nav = useKeyboardNavigationCell(
     table,
@@ -166,17 +157,22 @@ export const HeadCellView = ({
     [setDragNodeRef, navRef],
   )
 
+  // Растянутый лист — на свои строки шапки; строка над нижней выше на линию (ADR 0207, §2).
+  const stretched =
+    header.rowSpan > 1
+      ? {
+          height: `calc((var(--tsr-comp-row-height) + 1px) * ${header.rowSpan} - 1px)`,
+          alignSelf: 'flex-start' as const,
+        }
+      : undefined
   const cellStyles: CSSProperties = {
-    ...gridStyles,
-    width:
-      layout === 'grid' &&
-      (!!header.column.getServiceColumn()?.fill || isFirstEndPinnedColumn)
-        ? 'auto'
-        : `var(${getColumnSizeVariable(header.id)})`,
+    // Ширина заголовка — его листья: у листа это ширина колонки, у группы — их сумма.
+    width: `var(${getHeaderSizeVariable(header.id)})`,
+    ...stretched,
     // Центральный виртуализированный заголовок — только динамический left инлайн,
     // статику position/top/height задаёт CSS по data-virtual-cell.
     ...(absoluteLeft !== undefined
-      ? { left: getVirtualCellLeft(header.column.id, absoluteLeft) }
+      ? { left: getVirtualCellLeft(firstLeaf.id, absoluteLeft) }
       : {
           minWidth: `var(${getHeaderSizeVariable(header.id)})`,
           left: startPinnedOffset,
@@ -193,6 +189,17 @@ export const HeadCellView = ({
   if (isCoveredHeader(header)) {
     return null
   }
+
+  // Заголовок группы и последний видимый лист группы — граница группы в шапке (ADR 0207, §4).
+  const isGroup = header.column.columns.length > 0
+  const parent = header.column.parent
+  const groupEnd =
+    isGroup ||
+    (!!parent &&
+      parent
+        .getLeafColumns()
+        .filter(column => column.getIsVisible())
+        .at(-1)?.id === header.column.id)
 
   const headerRowCount = table.getHeaderGroups().length
   const reachesLastRow =
@@ -253,10 +260,11 @@ export const HeadCellView = ({
       data-after-resizable={afterResizable || undefined}
       data-column-resizing={isResizing}
       data-actions-column-cell={isActionsColumn}
-      data-layout={layout}
       data-first-headers-row={header.headerGroup?.getIsFirstGroup() ?? false}
       data-last-headers-row={reachesLastRow}
       data-header-stretched={header.rowSpan > 1 || undefined}
+      data-header-group={isGroup || undefined}
+      data-group-end={groupEnd || undefined}
       data-first-header-in-row={header.getIsFirstHeader()}
       data-last-header-in-row={header.getIsLastHeader()}
       data-header-full-height={header.getIsFullHeightHeader()}

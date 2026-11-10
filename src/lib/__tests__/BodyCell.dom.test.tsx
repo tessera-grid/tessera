@@ -69,7 +69,7 @@ describe('BodyCell (happy-dom)', () => {
   it('DOM-контракт: role, aria-colindex, размер-переменная, контент', () => {
     const table = makeTable()
     act(() => {
-      root.render(<BodyCell layout="flex" cell={cellOf(table)} rowIndex={0} />)
+      root.render(<BodyCell cell={cellOf(table)} rowIndex={0} />)
     })
 
     const cellEl = container.querySelector('[role="cell"]') as HTMLElement
@@ -87,7 +87,7 @@ describe('BodyCell (happy-dom)', () => {
     table.setColumnPinning({ start: ['name'], end: [] })
 
     act(() => {
-      root.render(<BodyCell layout="flex" cell={cellOf(table)} rowIndex={0} />)
+      root.render(<BodyCell cell={cellOf(table)} rowIndex={0} />)
     })
 
     const cellEl = container.querySelector('[role="cell"]') as HTMLElement

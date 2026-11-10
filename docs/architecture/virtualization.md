@@ -13,17 +13,9 @@ Tessera использует **два** независимых виртуали�
 
 - **Строки — всегда.** `useRowVirtualizer` считает `virtualRows` и высоту body
   (`bodyHeight`) для любой таблицы.
-- **Столбцы — только при плоском layout.** `useColumnVirtualizer` включён лишь
-  когда заголовки одноуровневые (`flex`-layout, `enabled: !hasNestedGroups`). При
-  вложенных заголовках (`grid`-layout) виртуализация столбцов отключена — см. выбор
-  layout в [rendering.md](rendering.md).
-
-```mermaid
-flowchart TB
-    HG{"headerGroups.length > 1 ?"}
-    HG -->|нет| BOTH["строки + столбцы<br/>useRowVirtualizer + useColumnVirtualizer"]
-    HG -->|да| ROWS["только строки<br/>useRowVirtualizer"]
-```
+- **Столбцы — всегда.** `useColumnVirtualizer` считает окно колонок и при группах
+  колонок: заголовок группы рисуется, если в окне хотя бы один его лист
+  ([ADR 0207](../decisions/0207-one-head-layout.md), см. [rendering.md](rendering.md)).
 
 Смещения столбцов пересчитываются (`virtualizer.measure()`) при смене порядка
 отображения, в конце протяжки грипа и при смене среза `columnSizing` вне протяжки

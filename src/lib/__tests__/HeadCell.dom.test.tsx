@@ -67,7 +67,7 @@ describe('HeadCell (happy-dom)', () => {
   it('DOM-контракт: columnheader, aria-sort none, контент, действия слота', () => {
     const table = makeTable()
     act(() => {
-      root.render(<HeadCell layout="flex" header={headerOf(table)} />)
+      root.render(<HeadCell header={headerOf(table)} />)
     })
 
     const head = container.querySelector('[role="columnheader"]') as HTMLElement
@@ -83,7 +83,7 @@ describe('HeadCell (happy-dom)', () => {
     const table = makeTable()
     table.setColumnPinning({ start: ['name'], end: [] })
     act(() => {
-      root.render(<HeadCell layout="flex" header={headerOf(table)} />)
+      root.render(<HeadCell header={headerOf(table)} />)
     })
     const head = container.querySelector('[role="columnheader"]') as HTMLElement
     // DOM-контракт грида — left/right (маппинг pinnedSideToDom из v9 start/end).

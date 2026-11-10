@@ -170,5 +170,8 @@ export const useColumnVirtualizer = ({
     }
   }
 
-  return { virtualColumns, bodyWidth, columnShifts, virtualizer }
+  // Начала всех колонок — для заголовков групп, чей первый лист вне окна (ADR 0207, §2).
+  const columnStarts = now.starts
+
+  return { virtualColumns, bodyWidth, columnShifts, columnStarts, virtualizer }
 }

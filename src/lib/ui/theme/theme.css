@@ -375,6 +375,8 @@
   --tsr-comp-row-selected-outline: none;
   /* Разделители ячеек, строк шапки и футера. */
   --tsr-comp-cell-divider-color: var(--tsr-sys-overlay-hover);
+  /* Линии между колонками в шапке, теле и футере (ADR 0207, §4): 0 — без линий. */
+  --tsr-comp-column-divider-width: 0px;
 
   /* Ячейки / закрепление */
   --tsr-comp-cell-outline-color: var(--tsr-sys-accent);

@@ -10,6 +10,48 @@
   transition: var(--tsr-comp-head-cell-transition);
   /* Фон — через переменную: ей же и тем же переходом красится хэндл ширины. */
   background-color: var(--tsr-head-cell-bg);
+  /* Линия между колонками — токеном темы, внутри ширины колонки (ADR 0207, §4). */
+  box-sizing: border-box;
+  border-right: var(--tsr-comp-column-divider-width) solid
+    var(--tsr-comp-cell-divider-color);
+
+  /* Ячейка над нижней строкой шапки — линия под ней, внутри высоты строки (ADR 0207, §2). */
+  &:not([data-last-headers-row='true']) {
+    border-bottom: 1px solid var(--tsr-comp-cell-divider-color);
+  }
+
+  /* Граница группы видна при любом токене: где группа кончается (ADR 0207, §4, NV10). */
+  &[data-group-end] {
+    border-right-width: max(1px, var(--tsr-comp-column-divider-width));
+  }
+
+  /*
+   * Подпись группы шире видимой части — у левого края видимой части, правее закреплённых
+   * слева колонок и в пределах группы (ADR 0207, §3). Обёртка обрезает без прокрутки
+   * (`clip`): с `hidden` она была бы областью прокрутки, и подпись липла бы к ней.
+   */
+  &[data-header-group] :global(.data-grid__cell-wrapper-content) {
+    overflow: clip;
+  }
+
+  &[data-header-group] :global(.data-grid__cell-wrapper-title) {
+    position: sticky;
+    left: var(--tsr-pinned-start-width, 0px);
+    width: auto;
+    max-width: 100%;
+    overflow: clip;
+  }
+
+  /*
+   * Растянутый центральный лист — над строками шапки ниже: они позиционированы и иначе легли бы
+   * поверх по порядку дерева; закреплённые ячейки — выше него (ADR 0207, §2).
+   */
+  &[data-header-stretched]:not(
+      [data-cell-pinned='left'],
+      [data-cell-pinned='right']
+    ) {
+    z-index: 1;
+  }
 
   /* Центральный виртуализированный заголовок вне потока: статика в CSS. */
   &[data-virtual-cell] {
@@ -38,24 +80,6 @@
   /* Растянутый лист: содержимое в нижней строке, на одной линии с соседними листьями. */
   &[data-header-stretched] {
     align-items: flex-end;
-  }
-
-  /* Бордеры для ячеек заголовков */
-
-  &:is([data-layout='grid']) {
-    &:is([data-first-header-in-row='true']) {
-      border-left: 1px solid var(--tsr-comp-cell-divider-color);
-    }
-
-    /*&:not([data-last-header-in-row='true']) {*/
-    border-right: 1px solid var(--tsr-comp-cell-divider-color);
-    /*}*/
-
-    &:not([data-last-headers-row='true']):not(
-        [data-header-full-height='true']
-      ) {
-      border-bottom: 1px solid var(--tsr-comp-cell-divider-color);
-    }
   }
 
   /* Sticky-ячейка закрепленной колонки слева */
@@ -103,15 +127,13 @@
 
   /* Ширина и позиционирование контента последней ячейки действий в строке заголовков (заголовок колонки действий незакрепляемый!) */
 
-  &:is([data-layout='flex']):is([data-actions-column-cell='true']):is(
-      [data-last-header-in-row='true']
-    ) {
+  &:is([data-actions-column-cell='true']):is([data-last-header-in-row='true']) {
     justify-content: flex-end;
     flex-grow: 1;
   }
 
   /* Первая закреплённая справа колонка забирает свободное место — как ячейка тела. */
-  &[data-layout='flex'][data-cell-pinned='right'][data-cell-first-right-pinned='true']:not(
+  &[data-cell-pinned='right'][data-cell-first-right-pinned='true']:not(
       [data-actions-column-cell='true']
     ) {
     flex-grow: 1;

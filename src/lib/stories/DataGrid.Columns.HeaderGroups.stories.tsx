@@ -183,3 +183,107 @@ export const HeaderGrouped: StoryObj<StoryProps> = {
     })
   },
 }
+
+// --- ADR 0207 S1 ---------------------------------------------------------------------
+
+const WIDE_SIZE = 150
+const WIDE_LEAVES = 8
+/** Широкие группы: неделя из восьми колонок шире видимой части таблицы. */
+const WIDE_GROUPS: ColumnDefs = Array.from({ length: 6 }, (_, week) => ({
+  id: `week${week + 1}`,
+  header: `Week ${week + 1}`,
+  columns: Array.from({ length: WIDE_LEAVES }, (_, day) => ({
+    id: `week${week + 1}_${day + 1}`,
+    header: `Day ${day + 1}`,
+    size: WIDE_SIZE,
+    accessorFn: (_row: unknown, index: number) =>
+      `${(index * 7 + week * 13 + day * 5) % 100}`,
+  })),
+})) as ColumnDefs
+const WEEK = WIDE_SIZE * WIDE_LEAVES
+
+const scrollerOf = (root: ParentNode) =>
+  root.querySelector<HTMLElement>('.data-grid__container')!
+const scrollColumns = (root: HTMLElement, left: number) => {
+  scrollerOf(root).scrollLeft = left
+}
+const weekTitle = (root: ParentNode, id: string) =>
+  headCellOf(root, id)?.querySelector<HTMLElement>(TITLE)
+
+const WIDE: readonly GuideStoryStep[] = [
+  {
+    title: 'Широкие группы',
+    hint: 'Колонки сгруппированы по неделям, и каждая неделя шире видимой части таблицы. Подпись группы стоит в начале своей группы.',
+    enter: root => scrollColumns(root, 0),
+  },
+  {
+    title: 'Прокрутка вбок',
+    hint: 'Пользователь прокрутил таблицу вправо: начало второй недели ушло за левый край. Подпись группы осталась на экране — у левого края видимой части.',
+    enter: root => scrollColumns(root, WEEK + 3 * WIDE_SIZE),
+  },
+  {
+    title: 'Конец группы',
+    hint: 'Пользователь прокрутил дальше, к концу второй недели. Подпись не выходит за свою группу: она уходит вместе с концом группы, а рядом видна подпись следующей недели.',
+    enter: root => scrollColumns(root, 2 * WEEK - 2 * WIDE_SIZE),
+  },
+]
+
+/** ADR 0207, S1: широкая таблица с группами колонок — прокрутка вбок, подпись группы на экране. */
+export const HeaderGroupsWideGroups: StoryObj<StoryProps> = {
+  name: 'Wide groups',
+  parameters: {
+    scenario: '0207/S1',
+    ...guideControls(),
+  },
+  render: args => (
+    <GuideStory
+      title="Широкие группы"
+      steps={WIDE}
+      args={guideArgs(
+        { dataCount: 30, height: '360', columnsOverride: WIDE_GROUPS },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(WIDE[0]!.title, async () => {
+      await waitForRows(canvas)
+      // Подпись — в начале группы: от её левого края только отступ ячейки.
+      const offset =
+        box(weekTitle(canvas, 'week1')!).left -
+        box(headCellOf(canvas, 'week1')!).left
+      await expect(offset).toBeGreaterThanOrEqual(0)
+      await expect(offset).toBeLessThanOrEqual(24)
+      await settle()
+    })
+    await step(WIDE[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(scrollerOf(canvas).scrollLeft).toBe(WEEK + 3 * WIDE_SIZE),
+      )
+      await until(() => expect(headCellOf(canvas, 'week1_1')).toBeUndefined())
+      const edge = box(scrollerOf(canvas)).left
+      await until(() =>
+        expect(
+          Math.abs(box(weekTitle(canvas, 'week2')!).left - edge),
+        ).toBeLessThanOrEqual(1),
+      )
+      await settle()
+    })
+    await step(WIDE[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(scrollerOf(canvas).scrollLeft).toBe(2 * WEEK - 2 * WIDE_SIZE),
+      )
+      const group = box(headCellOf(canvas, 'week2')!)
+      await until(() =>
+        expect(box(weekTitle(canvas, 'week2')!).right).toBeLessThanOrEqual(
+          group.right + 1,
+        ),
+      )
+      await expect(weekTitle(canvas, 'week3')).toBeTruthy()
+      await settle()
+    })
+  },
+}

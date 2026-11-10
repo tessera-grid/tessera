@@ -2,6 +2,10 @@
   contain: paint;
   display: flex;
   padding: 0;
+  /* Линия между колонками — токеном темы, внутри ширины колонки (ADR 0207, §4). */
+  box-sizing: border-box;
+  border-right: var(--tsr-comp-column-divider-width) solid
+    var(--tsr-comp-cell-divider-color);
 
   /* Центральная виртуализированная ячейка футера вне потока: статика в CSS. */
   &[data-virtual-cell] {
@@ -17,20 +21,6 @@
     &[data-kn-cell][data-kn-active='true']:focus {
     outline: var(--tsr-comp-focus-ring-width) solid var(--tsr-comp-focus-ring);
     outline-offset: calc(-1 * var(--tsr-comp-focus-ring-width));
-  }
-
-  /* Бордеры для ячеек */
-
-  &:is([data-layout='grid']) {
-    &:is([data-first-cell-in-row='true']) {
-      border-left: 1px solid var(--tsr-comp-cell-divider-color);
-    }
-
-    /*&:not([data-last-cell-in-row='true']) {*/
-    border-right: 1px solid var(--tsr-comp-cell-divider-color);
-    /*}*/
-
-    border-bottom: 1px solid var(--tsr-comp-cell-divider-color);
   }
 
   /*

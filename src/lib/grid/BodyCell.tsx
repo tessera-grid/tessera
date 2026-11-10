@@ -74,7 +74,6 @@ const CELL_SLICES = [
 ]
 
 interface TableBodyCellProps {
-  layout: 'grid' | 'flex'
   cell: Cell<any, any, unknown>
   rowIndex: number
   leftCellSlot?: RegisterSlotParams<any>[]
@@ -97,7 +96,6 @@ interface TableBodyCellProps {
 
 export const BodyCell = memo(
   ({
-    layout,
     cell,
     rowIndex,
     leftCellSlot,
@@ -359,7 +357,6 @@ export const BodyCell = memo(
         data-cell-alone-right-pinned={isAloneEndPinnedColumn}
         data-actions-column-cell={isActionsColumn}
         data-cell-interact={interact}
-        data-layout={layout}
         data-first-cell-in-row={cell.column.getIsFirstColumn()}
         data-last-cell-in-row={cell.column.getIsLastColumn()}
         data-cell-of-first-row={cell.row.getIsFirstRow()}

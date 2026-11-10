@@ -246,6 +246,21 @@ flowchart LR
 (`visual/cell-fill-precedence`, FP1–FP3); состояние строки в тестах читает помощник
 `rowState`.
 
+### Линии между колонками
+
+Вертикальные линии между колонками задаёт токен `--tsr-comp-column-divider-width` (0 по
+умолчанию — линий нет) цветом `--tsr-comp-cell-divider-color`: одна и та же линия в шапке, теле и
+футере, с группами колонок и без ([ADR 0207](../decisions/0207-one-head-layout.md)). Линия —
+`border-right` ячейки внутри её ширины (`box-sizing: border-box`): ширины колонок от токена не
+меняются. Граница группы в шапке (`data-group-end` у заголовка группы и последнего листа группы)
+видна при любом значении токена. Сетку включает одна строка CSS приложения:
+
+```css
+.data-grid-theme {
+  --tsr-comp-column-divider-width: 1px;
+}
+```
+
 ### Высокая контрастность
 
 В контрастных темах Windows (`@media (forced-colors: active)`) браузер заменяет цвета

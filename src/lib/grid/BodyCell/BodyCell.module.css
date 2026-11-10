@@ -2,6 +2,9 @@
   contain: layout paint;
   display: flex;
   padding: 0;
+  /* Линия между колонками — токеном темы, внутри ширины колонки (ADR 0207, §4). */
+  border-right: var(--tsr-comp-column-divider-width) solid
+    var(--tsr-comp-cell-divider-color);
 
   /* Центральная виртуализированная ячейка вынесена из потока: статичное
      позиционирование в CSS (инлайн только динамический left) — меньше записей стиля. */
@@ -18,22 +21,6 @@
    */
   box-sizing: border-box;
   transition: var(--tsr-comp-row-transition);
-
-  /* Бордеры для ячеек */
-
-  &:is([data-layout='grid']) {
-    &:is([data-first-cell-in-row='true']) {
-      border-left: 1px solid var(--tsr-comp-cell-divider-color);
-    }
-
-    /*&:not([data-last-cell-in-row='true']) {*/
-    border-right: 1px solid var(--tsr-comp-cell-divider-color);
-    /*}*/
-
-    &:not([data-cell-of-first-row='true']) {
-      border-top: 1px solid var(--tsr-comp-cell-divider-color);
-    }
-  }
 
   /* Обводка ячейки при наведении: проявляется тем же переходом, что и кнопки внутри */
   /* (ADR 0017, MO4) — без мгновенного скачка, который опережал их появление. */
@@ -291,13 +278,6 @@
   clip-path: inset(0);
 }
 
-/* В раскладке grid у ячейки есть верхняя граница — линия заходит на неё. */
-.body__cell[data-tree-depth][data-layout='grid']:not(
-    [data-cell-of-first-row='true']
-  ) {
-  --tsr-tree-line-overlap: 1px;
-}
-
 /*
  * Слои фона ячейки поверх `background-color`: сверху вниз — тинт выделения ячеек,
  * вспышка и подсветка ячейки, вспышка и подсветка колонки (ADR 0080, §2; ADR 0134, §5):
@@ -378,7 +358,7 @@
     outline-style: none;
   }
 
-  .body__cell[data-layout='flex']:not([data-cell-of-first-row='true']) {
+  .body__cell:not([data-cell-of-first-row='true']) {
     border-top: 1px solid var(--tsr-comp-cell-divider-color);
   }
 

@@ -3971,3 +3971,108 @@ describe('Производительность прокрутки — марке
     PERF_TIMEOUT * 2,
   )
 })
+
+/** Цена шапки с группами (ADR 0207, NV11): монтирование и прокрутка — шум до ~30 %. */
+const NV11_COST = { ratio: 1.3, plusMs: 2 }
+const NV11_MOUNT_COST = { ratio: 1.3, plusMs: 40 }
+
+// Одна раскладка шапки (ADR 0207, NV11): 1000×1000 с группами колонок по 10 против той же
+// таблицы с плоской шапкой — колонки виртуализируются и при группах.
+describe('Производительность — шапка с группами колонок', () => {
+  test(
+    'NV11: монтирование и спокойная прокрутка 1000×1000 с группами по 10 не дороже той же таблицы с плоской шапкой больше чем в 1,3 раза',
+    async () => {
+      const leaves = makeColumns(LARGE.columnCount)
+      const groups = Array.from(
+        { length: LARGE.columnCount / 10 },
+        (_, group) => ({
+          id: `group_${group}`,
+          header: `Group ${group}`,
+          columns: leaves.slice(group * 10, group * 10 + 10),
+        }),
+      )
+      const measure = async (nested: boolean) => {
+        let screen: ReturnType<typeof render> | undefined
+        const mount = await measureRenderWork(
+          () => {
+            screen = renderGrid({
+              ...LARGE,
+              ...NO_PLUGINS,
+              columnsOverride: (nested ? groups : leaves) as never,
+            })
+            return screen
+          },
+          () => headCells().length > 0,
+          { warmup: false },
+        )
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen!).unmount()
+        await cleanup()
+        return { mount, y, x }
+      }
+
+      const runs = await againstBase(measure)
+      const pick = (side: typeof runs.base) => ({
+        mount: medianRun(
+          side.map(run => run.mount),
+          r => r.longestMs,
+        ),
+        ...medianAxes(side),
+      })
+      const base = pick(runs.base)
+      const nested = pick(runs.variant)
+      const ceiling = {
+        mount: ceilingOver(base.mount.longestMs, NV11_MOUNT_COST),
+        ...axesCeiling(base, NV11_COST),
+      }
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1000×1000',
+          plugins: 'none',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load' as const,
+              metric: 'longest' as const,
+              valueMs: r.mount.longestMs,
+              targetMs: LOAD_BUDGET_MS,
+              ceilingMs: gated ? ceiling.mount : undefined,
+              ...r.mount,
+            },
+            ...(['y', 'x'] as const).map(axis => ({
+              axis,
+              kind: 'animation' as const,
+              metric: 'p95' as const,
+              valueMs: r[axis].p95Ms,
+              targetMs: ANIMATION_BUDGET_MS,
+              ceilingMs: gated ? ceiling[axis] : undefined,
+              ...r[axis],
+            })),
+          ],
+        })
+      await record('NV11-base', 'плоская шапка', base, false)
+      await record('NV11', 'группы колонок по 10', nested, true)
+
+      expect(
+        nested.mount.longestMs,
+        `монтирование longest=${nested.mount.longestMs.toFixed(1)}ms (база ${base.mount.longestMs.toFixed(1)}ms, потолок ${ceiling.mount.toFixed(1)})`,
+      ).toBeLessThanOrEqual(ceiling.mount)
+      for (const axis of ['y', 'x'] as const) {
+        expect(
+          nested[axis].p95Ms,
+          `${axis} p95=${nested[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
+        ).toBeLessThanOrEqual(ceiling[axis])
+      }
+    },
+    PERF_TIMEOUT * 2,
+  )
+})

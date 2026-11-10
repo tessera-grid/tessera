@@ -5,6 +5,7 @@
  * Запуск: npx vitest run --config vitest.node.config.ts bodyContributions
  */
 import { readdirSync, readFileSync } from 'node:fs'
+import { allColumnsWindow } from './columnWindow'
 import { resolve } from 'node:path'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
@@ -146,12 +147,7 @@ const renderCells = () =>
         row
           .getVisibleCells()
           .map((cell: any) => (
-            <BodyCell
-              key={cell.id}
-              layout="flex"
-              cell={cell}
-              rowIndex={index}
-            />
+            <BodyCell key={cell.id} cell={cell} rowIndex={index} />
           )),
       ),
   )
@@ -163,14 +159,12 @@ const renderRows = () =>
       .rows.map((row: any, index: number) => (
         <BodyRow
           key={row.id}
-          layout="flex"
           row={row}
           cells={rowCellsOf(row.table, row)}
           virtualRow={virtualRow(index)}
-          virtualColumns={[]}
+          virtualColumns={allColumnsWindow(table.getAllLeafColumns())}
           leafColumns={table.getAllLeafColumns()}
           ariaRowIndexBase={1}
-          isVirtualColumns={false}
         />
       )),
   )
@@ -228,7 +222,7 @@ describe('вклад плагинов в тело (ADR 0170)', () => {
         return subscribe(...(args as [never]))
       }
       const cell = table.getRowModel().rows[0].getVisibleCells()[0]
-      render(<BodyCell layout="flex" cell={cell} rowIndex={0} />)
+      render(<BodyCell cell={cell} rowIndex={0} />)
       store.subscribe = subscribe
       return count
     }

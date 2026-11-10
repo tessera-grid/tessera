@@ -47,7 +47,6 @@ import styles from '../grid/BodyRow/BodyRow.module.css'
 import type { RowCells } from './rowCells'
 
 export interface TableBodyRowProps {
-  layout: 'grid' | 'flex'
   /**
    * Липкая копия строки группы под шапкой (ADR 0160, §3): без клавиатурной навигации и
    * `aria-*` строки; `stickyLast` — нижняя в стопке, под ней отделитель; `stickyPushed` —
@@ -78,7 +77,6 @@ export interface TableBodyRowProps {
   slotDepth?: number
   /** Будущий родитель слота перетаскивания (ADR 0109, §4). */
   dropParent?: boolean
-  isVirtualColumns: boolean
   /** Привязка к перетаскиванию от декоратора плагина (ADR 0168, §2). */
   drag?: RowDragBinding
 }
@@ -154,108 +152,67 @@ const useRowStateSubscription = (
 }
 
 export const BodyRowCells = ({
-  layout,
-  row,
   virtualRow,
   cells,
   virtualColumns: virtualColumnsProp,
-  leafColumns,
   leftCellSlot,
   rightCellSlot,
   cellSlot,
   actionRowSlot,
   window,
   slotDepth,
-  isVirtualColumns,
   isRowInteract,
   copy,
   rowWave,
 }: BodyRowCellsProps) => {
   const virtualColumns =
     useContext(ColumnWindowContext) ?? virtualColumnsProp ?? []
-  if (isVirtualColumns) {
-    const cellProps = (
-      cell: Cell<any, any, unknown>,
-      absoluteLeft?: number,
-    ) => ({
-      layout,
-      cell,
-      rowIndex: virtualRow?.index,
-      leftCellSlot,
-      rightCellSlot,
-      cellSlot,
-      actionRowSlot,
-      interact: isRowInteract,
-      window,
-      slotDepth,
-      absoluteLeft,
-      copy,
-    })
+  const cellProps = (cell: Cell<any, any, unknown>, absoluteLeft?: number) => ({
+    cell,
+    rowIndex: virtualRow?.index,
+    leftCellSlot,
+    rightCellSlot,
+    cellSlot,
+    actionRowSlot,
+    interact: isRowInteract,
+    window,
+    slotDepth,
+    absoluteLeft,
+    copy,
+  })
 
-    // Пиннутые ячейки — sticky-сиблинги в потоке; центральные — position:absolute по
-    // своему `left` (вне потока), поэтому их монтаж на границе окна не рефлоуит строку.
-    // Спейсер постоянной ширины держит поток (экстент + отсутствие свободного места).
-    const startCells: Cell<any, any, unknown>[] = []
-    const endCells: Cell<any, any, unknown>[] = []
-    const centerCells: { cell: Cell<any, any, unknown>; start: number }[] = []
-    for (const virtualColumn of virtualColumns) {
-      const cell = cells.at(virtualColumn.index)
-      const pinned = cell.column.getIsPinned()
-      if (pinned === 'start') startCells.push(cell)
-      else if (pinned === 'end') endCells.push(cell)
-      else centerCells.push({ cell, start: virtualColumn.start })
-    }
-
-    // Один массив с ключами: при закреплении ячейка переезжает, а не монтируется заново.
-    return (
-      <>
-        <VirtualCenterSpacer />
-        {[
-          ...startCells.map(cell => (
-            <BodyCell key={cell.id} {...cellProps(cell)} />
-          )),
-          ...centerCells.map(({ cell, start }) => (
-            <BodyCell key={cell.id} {...cellProps(cell, start)} />
-          )),
-          ...endCells.map(cell => (
-            <BodyCell key={cell.id} {...cellProps(cell)} />
-          )),
-        ]}
-        {/* Ячейки вне потока: свободное место занимает заполнитель только под волной. */}
-        {rowWave && needsRightFiller(cells.lastColumn()) && (
-          <RightFillerBodyColumn wave order={2} />
-        )}
-      </>
-    )
+  // Пиннутые ячейки — sticky-сиблинги в потоке; центральные — position:absolute по
+  // своему `left` (вне потока), поэтому их монтаж на границе окна не рефлоуит строку.
+  // Спейсер постоянной ширины держит поток (экстент + отсутствие свободного места).
+  const startCells: Cell<any, any, unknown>[] = []
+  const endCells: Cell<any, any, unknown>[] = []
+  const centerCells: { cell: Cell<any, any, unknown>; start: number }[] = []
+  for (const virtualColumn of virtualColumns) {
+    const cell = cells.at(virtualColumn.index)
+    const pinned = cell.column.getIsPinned()
+    if (pinned === 'start') startCells.push(cell)
+    else if (pinned === 'end') endCells.push(cell)
+    else centerCells.push({ cell, start: virtualColumn.start })
   }
 
+  // Один массив с ключами: при закреплении ячейка переезжает, а не монтируется заново.
   return (
     <>
-      {leafColumns.map(column => {
-        const cell = cells.at(column.getIndex())
-        return (
-          <BodyCell
-            key={cell.id}
-            layout={layout}
-            cell={cell}
-            rowIndex={virtualRow?.index}
-            leftCellSlot={leftCellSlot}
-            rightCellSlot={rightCellSlot}
-            cellSlot={cellSlot}
-            actionRowSlot={actionRowSlot}
-            interact={isRowInteract}
-            window={window}
-            slotDepth={slotDepth}
-            copy={copy}
-          />
-        )
-      })}
-      {needsRightFiller(cells.lastColumn()) && (
-        <RightFillerBodyColumn
-          hasBorderTop={!row.getIsFirstRow()}
-          hasBorderRight
-          wave={rowWave}
-        />
+      <VirtualCenterSpacer />
+      {[
+        ...startCells.map(cell => (
+          <BodyCell key={cell.id} {...cellProps(cell)} />
+        )),
+        ...centerCells.map(({ cell, start }) => (
+          <BodyCell key={cell.id} {...cellProps(cell, start)} />
+        )),
+        ...endCells.map(cell => (
+          <BodyCell key={cell.id} {...cellProps(cell)} />
+        )),
+      ]}
+      {/* Ячейки вне потока: свободное место занимает заполнитель только под волной. */}
+      {rowWave && needsRightFiller(cells.lastColumn()) && (
+        <RightFillerBodyColumn wave order={2} />
       )}
     </>
   )
@@ -266,7 +223,7 @@ export const BodyRowCells = ({
  * выключено — чтобы не платить за useSortable на каждый смонтированный ряд.
  */
 export const BodyRow = memo((props: TableBodyRowProps) => {
-  const { layout, row, virtualRow, ariaRowIndexBase, drag } = props
+  const { row, virtualRow, ariaRowIndexBase, drag } = props
 
   const table = (row as unknown as { table: RowContributionContext['table'] })
     .table
@@ -365,7 +322,6 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
       data-row-drop-parent={props.dropParent || undefined}
       data-row-interact={interacting}
       data-last-row={row.getIsLastRow()}
-      data-layout={layout}
       style={
         highlighted.style || flashed.style || contributed.style
           ? {
