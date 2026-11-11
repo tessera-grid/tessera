@@ -42,18 +42,25 @@ const settleKey = (key: object | undefined) => {
   for (let i = from; i < rows.length; i++) write(rows[i]!, i)
 }
 
-/** Таблица последней прочитанной строки без отложенных мест: её строки читаются без поиска. */
-let settledTable: unknown
+/**
+ * Таблица последней прочитанной строки без отложенных мест: её строки читаются без поиска. Ссылка
+ * слабая — ушедшая таблица не держится в памяти.
+ */
+let settled: WeakRef<object> | undefined
 
 /** Отложенное таблицы строки; таблица без него запоминается. */
 const pendingOf = (row: object) => {
   // Прототип строки TanStack хранит таблицу.
   const table = (row as { table?: unknown }).table
-  if (table === settledTable) return undefined
+  if (settled !== undefined && settled.deref() === table) return undefined
   const key = keyOfTable(table)
   const pending = key && deferred.get(key)
-  if (!pending) settledTable = table
+  if (!pending) remember(table)
   return pending ? { key: key!, pending, table } : undefined
+}
+
+const remember = (table: unknown) => {
+  settled = typeof table === 'object' && table ? new WeakRef(table) : undefined
 }
 
 const settleRow = (row: object) => {
@@ -61,7 +68,7 @@ const settleRow = (row: object) => {
   const found = pendingOf(row)
   if (!found) return
   settleKey(found.key)
-  settledTable = found.table
+  remember(found.table)
 }
 
 /** У таблицы есть отложенные места. */
@@ -105,9 +112,14 @@ export const deferPositions = (
   if (from >= rows.length) return
   deferred.set(key, { rows, from, shift })
   deferredTables++
-  settledTable = undefined
-  // Дописать в простое: чтение мест других таблиц не платит за поиск таблицы строки.
-  whenIdle(() => settleKey(key))
+  settled = undefined
+  // Дописать в простое: чтение мест других таблиц не платит за поиск таблицы строки. Ссылка
+  // слабая — ушедшая таблица не ждёт простоя в памяти.
+  const ref = new WeakRef(key)
+  whenIdle(() => {
+    const target = ref.deref()
+    if (target) settleKey(target)
+  })
 }
 
 const whenIdle = (task: () => void) => {
@@ -128,7 +140,7 @@ export const positionOf = (row: { index: number }): number => {
   if (rows[known] === row) return known
   if (rows[known + shift] === row) return known + shift
   settleKey(found.key)
-  settledTable = found.table
+  remember(found.table)
   return positions.get(row) ?? row.index
 }
 
