@@ -89,9 +89,6 @@
  * таблицы скруглён, как край липкой строки.
  */
 .table__container:not([data-pinned-left-stuck]) {
-  --tsr-comp-cell-pinned-left-bg: var(--tsr-comp-row-bg);
-  --tsr-comp-cell-odd-pinned-left-bg: var(--tsr-comp-row-odd-bg);
-
   /* Через таблицу: правило ячейки с разделителем — той же силы. */
   & .table [data-cell-last-left-pinned='true'] {
     border-right-color: transparent;
@@ -99,9 +96,6 @@
 }
 
 .table__container:not([data-pinned-right-stuck]) {
-  --tsr-comp-cell-pinned-right-bg: var(--tsr-comp-row-bg);
-  --tsr-comp-cell-odd-pinned-right-bg: var(--tsr-comp-row-odd-bg);
-
   & .table [data-cell-first-right-pinned='true'] {
     border-left-color: transparent;
   }
@@ -152,10 +146,6 @@
     [data-actions-column-cell='true']
   ):not([data-cell-selected='true']) {
   box-shadow: var(--tsr-pinned-edge-shadow);
-
-  & :global(.data-grid__cell-wrapper-content) {
-    box-shadow: none;
-  }
 }
 
 /* Концы блока: сверху — первый ряд шапки, снизу — футер, без футера — последняя строка. */

@@ -1,9 +1,12 @@
+import { useState } from 'react'
 import { cleanup, render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
+import { commands } from 'vitest/browser'
 
 import {
   headCells,
   measureIdleWork,
+  measureInteractionWork,
   measureRenderWork,
   measureScrollWork,
   recordPerf,
@@ -55,6 +58,7 @@ import {
   cellSelection,
   cellSelectionModel,
   columnFiltering,
+  columnPinning,
   columnFilteringModel,
   columnSortingModel,
   dataExportModel,
@@ -4072,6 +4076,113 @@ describe('Производительность — шапка с группам�
           `${axis} p95=${nested[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
         ).toBeLessThanOrEqual(ceiling[axis])
       }
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Прилипание закреплённых колонок (ADR 0213, PZ2): переключение атрибута на контейнере
+// пересчитывает стили закреплённых ячеек, а не всего грида. База — тот же грид с правилом
+// переменной на контейнере, как было до ADR 0213.
+const PZ2_RATIO = 0.8
+const PZ2_COLUMNS = makeColumns(LARGE.columnCount)
+const PZ2_DATA = getData(LARGE.dataCount)
+const PZ2_PINNED = (PZ2_COLUMNS[0] as { id: string }).id
+/** Грид без плагинов, кроме закрепления: замер — механизм прилипания, а не цена богатых ячеек. */
+const PinnedGrid = () => {
+  const [plugins] = useState(() => [columnPinning()])
+  const table = useCreateTable({
+    columns: PZ2_COLUMNS as never,
+    data: PZ2_DATA,
+    state: { columnPinning: { start: [PZ2_PINNED], end: [] } },
+    plugins: plugins as never,
+  })
+  return (
+    <div style={{ height: 600 }}>
+      <DataGrid table={table as never} height={500} />
+    </div>
+  )
+}
+interface PerfTraceCommands {
+  perfTraceStart: (id: string) => Promise<void>
+  perfTraceStop: (id: string) => Promise<unknown>
+}
+
+describe('Прилипание закреплённых колонок', () => {
+  test(
+    'PZ2: переключение прилипания на 1000 × 1000 с закреплённой колонкой пересчитывает стили не дороже 0,8 переключения правила переменных на контейнере',
+    async () => {
+      const measure = async (containerRule: boolean) => {
+        const rule = containerRule ? document.createElement('style') : null
+        if (rule) {
+          rule.textContent =
+            '.data-grid__container:not([data-pinned-left-stuck]) { --tsr-pz2-unstuck: 1; }'
+          document.head.append(rule)
+        }
+        await render(<PinnedGrid />)
+        await expect
+          .poll(
+            () => document.querySelectorAll('[data-cell-pinned="left"]').length,
+          )
+          .toBeGreaterThan(1)
+        const scroller = document.querySelector<HTMLElement>(
+          '.data-grid__container',
+        )!
+        const row = scroller.querySelector<HTMLElement>('[role="row"]')!
+        // Пересчёт стилей переключения под ×4 CPU: переключить и прочитать раскладку.
+        const id = `pz2-${Date.now()}`
+        await (commands as unknown as PerfTraceCommands).perfTraceStart(id)
+        const times: number[] = []
+        for (let k = 0; k < 9; k++) {
+          row.getBoundingClientRect()
+          const start = performance.now()
+          scroller.toggleAttribute('data-pinned-left-stuck')
+          row.getBoundingClientRect()
+          times.push(performance.now() - start)
+        }
+        await (commands as unknown as PerfTraceCommands).perfTraceStop(id)
+        await cleanup()
+        rule?.remove()
+        return times.sort((x, y) => x - y)[4]!
+      }
+      const runs = await againstBase(isOurs => measure(!isOurs))
+      const median = (list: number[]) =>
+        list.slice().sort((x, y) => x - y)[Math.floor(list.length / 2)]!
+      const base = { ms: median(runs.base) }
+      const ours = median(runs.variant)
+      const ceiling = base.ms * PZ2_RATIO
+      const record = (id: string, label: string, ms: number, gated: boolean) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1000×1000',
+          plugins: 'columnPinning',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'animation' as const,
+              metric: 'longest' as const,
+              valueMs: ms,
+              targetMs: ANIMATION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              // Одна задача — пересчёт стилей переключения.
+              taskCount: 1,
+              longestMs: ms,
+              tasksOverBudget: ms > ANIMATION_BUDGET_MS ? 1 : 0,
+              longTasks: ms > 50 ? 1 : 0,
+              tbtMs: Math.max(0, ms - 50),
+              p95Ms: ms,
+              p99Ms: ms,
+            },
+          ],
+        })
+      await record('PZ2-base', 'переменная на контейнере', base.ms, false)
+      await record('PZ2', 'переменные на ячейках', ours, true)
+      expect(
+        ours,
+        `пересчёт ${ours.toFixed(1)}ms, база ${base.ms.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,
   )

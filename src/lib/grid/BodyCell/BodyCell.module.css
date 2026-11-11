@@ -1,3 +1,17 @@
+/*
+ * Фон закреплённой ячейки сейчас — свои свойства без наследования (ADR 0213): смена прилипания
+ * блока пересчитывает стиль закреплённых ячеек, но не их содержимого.
+ */
+@property --tsr-pinned-bg-now {
+  syntax: '*';
+  inherits: false;
+}
+
+@property --tsr-pinned-odd-bg-now {
+  syntax: '*';
+  inherits: false;
+}
+
 .body__cell {
   contain: layout paint;
   display: flex;
@@ -78,6 +92,11 @@
       inset var(--tsr-comp-cell-selected-border-width) 0 0 0
         var(--tsr-sel-edge-left, transparent),
       var(--tsr-pinned-edge-shadow, 0 0 transparent);
+
+    /* Кромки выделения — и поверх содержимого: обёртка повторяет тень ячейки. */
+    & > :global(.data-grid__cell-wrapper-content) {
+      box-shadow: inherit;
+    }
   }
 
   /* Активная (anchor) ячейка — как в Excel/Sheets: НЕ заливается тинтом (виден фон
@@ -103,14 +122,16 @@
     will-change: transform;
     z-index: var(--tsr-comp-z-index-pinned);
     opacity: var(--tsr-comp-opacity);
-    background-color: var(--tsr-comp-cell-pinned-left-bg);
+    --tsr-pinned-bg-now: var(--tsr-comp-cell-pinned-left-bg);
+    --tsr-pinned-odd-bg-now: var(--tsr-comp-cell-odd-pinned-left-bg);
+    background-color: var(--tsr-pinned-bg-now);
     position: sticky;
   }
 
   /* Бэкграунд ячейки нечетной строки */
 
   &:is([data-cell-odd-left-pinned='true']) {
-    background-color: var(--tsr-comp-cell-odd-pinned-left-bg) !important;
+    background-color: var(--tsr-pinned-odd-bg-now) !important;
   }
 
   /* Бордер для ячейки последней закрепленной колонки слева  */
@@ -125,6 +146,8 @@
     will-change: transform;
     z-index: var(--tsr-comp-z-index-pinned);
     opacity: var(--tsr-comp-opacity);
+    --tsr-pinned-bg-now: var(--tsr-comp-cell-pinned-right-bg);
+    --tsr-pinned-odd-bg-now: var(--tsr-comp-cell-odd-pinned-right-bg);
     position: sticky;
   }
 
@@ -137,13 +160,13 @@
    * когда одна (пользовательских правых пинов нет) — по умолчанию без подложки.
    */
   &:is([data-cell-pinned='right']):not([data-actions-column-cell='true']) {
-    background-color: var(--tsr-comp-cell-pinned-right-bg);
+    background-color: var(--tsr-pinned-bg-now);
   }
 
   &[data-actions-column-cell='true'][data-cell-pinned='right']:not(
       [data-cell-first-right-pinned='true']
     ) {
-    background-color: var(--tsr-comp-cell-pinned-right-bg);
+    background-color: var(--tsr-pinned-bg-now);
   }
 
   /* Бэкграунд ячейки нечетной строки (закрепление справа), та же логика действий */
@@ -151,13 +174,13 @@
   &:is([data-cell-odd-right-pinned='true']):not(
       [data-actions-column-cell='true']
     ) {
-    background-color: var(--tsr-comp-cell-odd-pinned-right-bg) !important;
+    background-color: var(--tsr-pinned-odd-bg-now) !important;
   }
 
   &[data-actions-column-cell='true'][data-cell-odd-right-pinned='true']:not(
       [data-cell-first-right-pinned='true']
     ) {
-    background-color: var(--tsr-comp-cell-odd-pinned-right-bg) !important;
+    background-color: var(--tsr-pinned-odd-bg-now) !important;
   }
 
   /* Бордер-разделитель для первой закрепленной колонки справа (зеркало левого);
@@ -422,6 +445,7 @@
     --tsr-comp-cell-pinned-right-bg: Highlight;
     --tsr-comp-cell-odd-pinned-left-bg: Highlight;
     --tsr-comp-cell-odd-pinned-right-bg: Highlight;
+    --tsr-pinned-unstuck-bg: Highlight;
 
     background-color: Highlight;
   }
@@ -456,6 +480,7 @@
     --tsr-comp-cell-pinned-right-bg: Mark;
     --tsr-comp-cell-odd-pinned-left-bg: Mark;
     --tsr-comp-cell-odd-pinned-right-bg: Mark;
+    --tsr-pinned-unstuck-bg: Mark;
 
     background-color: Mark;
   }
@@ -508,4 +533,20 @@
 .group-count {
   flex: none;
   white-space: pre;
+}
+
+/*
+ * Неприлипший закреплённый блок — как обычные колонки (ADR 0011, CP39): фон строки или свой тон
+ * строки и ячейки `--tsr-pinned-unstuck-bg`. Правило — на классе стороны закреплённых ячеек, а не
+ * на контейнере и не на всех ячейках: смена прилипания пересчитывает только их (ADR 0213).
+ */
+:global(.data-grid__container):not([data-pinned-left-stuck])
+  .body__cell--pinned-left,
+:global(.data-grid__container):not([data-pinned-right-stuck])
+  .body__cell--pinned-right {
+  --tsr-pinned-bg-now: var(--tsr-pinned-unstuck-bg, var(--tsr-comp-row-bg));
+  --tsr-pinned-odd-bg-now: var(
+    --tsr-pinned-unstuck-bg,
+    var(--tsr-comp-row-odd-bg)
+  );
 }

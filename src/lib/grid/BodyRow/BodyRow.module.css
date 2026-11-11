@@ -126,6 +126,7 @@
   --tsr-comp-cell-pinned-right-bg: var(--tsr-comp-row-new-pinned-bg);
   --tsr-comp-cell-odd-pinned-left-bg: var(--tsr-comp-row-new-pinned-bg);
   --tsr-comp-cell-odd-pinned-right-bg: var(--tsr-comp-row-new-pinned-bg);
+  --tsr-pinned-unstuck-bg: var(--tsr-comp-row-new-pinned-bg);
 }
 
 .body__row[data-row-draft='deleted']
@@ -166,6 +167,7 @@
     --tsr-comp-cell-pinned-right-bg: Highlight;
     --tsr-comp-cell-odd-pinned-left-bg: Highlight;
     --tsr-comp-cell-odd-pinned-right-bg: Highlight;
+    --tsr-pinned-unstuck-bg: Highlight;
 
     background-color: Highlight;
   }
@@ -186,6 +188,7 @@
     --tsr-comp-cell-pinned-right-bg: Mark;
     --tsr-comp-cell-odd-pinned-left-bg: Mark;
     --tsr-comp-cell-odd-pinned-right-bg: Mark;
+    --tsr-pinned-unstuck-bg: Mark;
 
     background-color: Mark;
   }

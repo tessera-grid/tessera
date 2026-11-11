@@ -12,7 +12,6 @@
   padding: var(--tsr-comp-cell-content-padding);
   /* Обе оси: прокручиваемая обёртка — остановка Tab в Firefox (KN32). */
   overflow: hidden;
-  box-shadow: inherit;
   box-sizing: border-box;
 }
 

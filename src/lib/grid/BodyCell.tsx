@@ -46,6 +46,7 @@ import {
   getAlignContent,
 } from '../grid/CellWrapperContent'
 import { cellTitleAttrs } from '../grid/CellWrapperTitle'
+import { pinnedCellClass } from './BodyCell/pinnedCellClass'
 import { cellValueOf } from '../core/cellValue'
 import { alignAttrs, renderCellContent } from './cellContent'
 import { renderSkeletonCell, skeletonCellKindOf } from './skeletonCell'
@@ -318,7 +319,11 @@ export const BodyCell = memo(
       <div
         ref={nav?.ref}
         role={nav ? 'gridcell' : 'cell'}
-        className={clsx('data-grid__body-cell', styles.body__cell)}
+        className={clsx(
+          'data-grid__body-cell',
+          styles.body__cell,
+          pinnedCellClass(isStartPinned, isEndPinned),
+        )}
         style={{
           width: `var(${getColumnSizeVariable(cell.column.id)})`,
           // Центральная виртуализированная ячейка — только динамический left инлайн;

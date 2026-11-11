@@ -40,6 +40,7 @@ import footerStyles from '../grid/Footer/Footer.module.css'
 import footerCellStyles from '../grid/FooterCell/FooterCell.module.css'
 import { useIsomorphicLayoutEffect } from '../util/useIsomorphicLayoutEffect'
 import { inertProp } from '../core/inertProp'
+import { pinnedCellClass } from './BodyCell/pinnedCellClass'
 
 interface SkeletonColumn {
   id: string
@@ -140,6 +141,8 @@ interface SkeletonCellsProps {
   windowed: boolean
   className: string
   moduleClassName: string | undefined
+  /** Класс стороны закрепления — у ячеек тела (ADR 0213). */
+  pinnedClassName?: (start: boolean, end: boolean) => string | undefined
   /** Номер строки тела; у футера нет. */
   rowIndex?: number
   rowCount?: number
@@ -158,6 +161,7 @@ const SkeletonCells = ({
   windowed,
   className,
   moduleClassName,
+  pinnedClassName,
   rowIndex,
   rowCount,
   filler,
@@ -181,7 +185,14 @@ const SkeletonCells = ({
     return (
       <div
         key={column.id}
-        className={clsx(className, moduleClassName)}
+        className={clsx(
+          className,
+          moduleClassName,
+          pinnedClassName?.(
+            column.placement === 'start',
+            column.placement === 'end',
+          ),
+        )}
         style={
           nested
             ? {
@@ -283,6 +294,7 @@ const SkeletonRowsBlock = ({
           windowed={cellsVirtual}
           className="data-grid__body-cell--skeleton"
           moduleClassName={bodyCellStyles.body__cell}
+          pinnedClassName={pinnedCellClass}
           rowIndex={firstRowIndex + rowIndex}
           rowCount={firstRowIndex + rowCount}
           filler={filler}

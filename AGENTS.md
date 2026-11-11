@@ -1119,6 +1119,9 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
     - _Ранняя полная сборка:_ модульный `earlyFullBuild` (EB1–EB2 — новых объектов больше бюджета —
       полная сборка без сборки по уровням, разнесённые вставки — по уровням), EB3 — отчёт
       `perf:compare` в ADR ([ADR 0212](docs/decisions/0212-early-full-build.md)).
+    - _Прилипание без пересчёта грида:_ модульный `pinnedStuckRules` (PZ1 — правила прилипания не
+      задают переменных на контейнере), перф PZ2 — в `scroll` (переключение прилипания против правила
+      переменных на контейнере) ([ADR 0213](docs/decisions/0213-pinned-stuck-without-grid-restyle.md)).
     - _Полнота сценариев:_ модульные `scenarioCompleteness` (OC1–OC3, OC5–OC7 — реестр
       исходов ADR: шаги ответа и отказа существуют, каждый асинхронный колбэк публичного API в
       реестре, причина вместо шага, подразделы «Data loading/Server row model/*» с `Playground`
