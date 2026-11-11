@@ -41,8 +41,11 @@ import { cellPendingOf } from '../core/headerActions/actionStatus'
 import type { ActionStatus } from '../core/headerActions/actionStatusFeature'
 import { cellFailureOf, type Failures } from '../core/failures/failuresFeature'
 import { CellFailureMark } from './CellFailureMark'
-import { CellWrapperContent, getAlignContent } from '../grid/CellWrapperContent'
-import { CellWrapperTitle } from '../grid/CellWrapperTitle'
+import {
+  cellWrapperClassName,
+  getAlignContent,
+} from '../grid/CellWrapperContent'
+import { cellTitleAttrs } from '../grid/CellWrapperTitle'
 import { cellValueOf } from '../core/cellValue'
 import { alignAttrs, renderCellContent } from './cellContent'
 import { renderSkeletonCell, skeletonCellKindOf } from './skeletonCell'
@@ -279,11 +282,11 @@ export const BodyCell = memo(
 
       const content = renderCellContent(cell, labels, value, overridden)
 
-      // Сервисная колонка — контент без CellWrapperTitle.
-      return isActionsColumn ? (
-        content
-      ) : (
-        <CellWrapperTitle>
+      // Сервисная колонка — контент без подписи; пустая подпись не рисуется.
+      if (isActionsColumn) return content
+      if (!content && groupCount === undefined) return null
+      return (
+        <div {...cellTitleAttrs}>
           {groupCount === undefined ? (
             content
           ) : (
@@ -296,7 +299,7 @@ export const BodyCell = memo(
               </span>
             </span>
           )}
-        </CellWrapperTitle>
+        </div>
       )
     }, [
       cell,
@@ -364,17 +367,17 @@ export const BodyCell = memo(
       >
         {layers.nodes}
         <IconRevealContext.Provider value={iconReveal}>
-          <CellWrapperContent
-            flex={getAlignContent({
-              isActionsColumn,
-              isFillColumn,
+          {/* Обёртка — разметкой, слоты — компонентами только при непустом слоте (ADR 0208). */}
+          <div
+            className={cellWrapperClassName({
+              flex: getAlignContent({ isActionsColumn, isFillColumn }),
+              smallPadding: isActionsColumn,
             })}
-            smallPadding={isActionsColumn}
           >
-            {canRenderSlots && (
+            {canRenderSlots && !!leftCellSlot?.length && (
               <RenderSlot slot={leftCellSlot} context={cell.getContext()} />
             )}
-            {canRenderSlots ? (
+            {canRenderSlots && !!cellSlot?.length ? (
               <RenderCellSlot
                 slot={cellSlot}
                 context={cell.getContext()}
@@ -383,11 +386,11 @@ export const BodyCell = memo(
             ) : (
               render
             )}
-            {canRenderSlots && (
+            {canRenderSlots && !!rightCellSlot?.length && (
               <RenderSlot slot={rightCellSlot} context={cell.getContext()} />
             )}
             {failure && <CellFailureMark table={table} failure={failure} />}
-          </CellWrapperContent>
+          </div>
         </IconRevealContext.Provider>
       </div>
     )

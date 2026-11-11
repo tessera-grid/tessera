@@ -11,6 +11,10 @@ import type { HeaderAction } from '../../../core/headerActions'
 import { ActionButton } from '../../../grid/headerActions/ActionButton'
 import { ActionsZone } from '../../../grid/headerActions/ActionsZone'
 import { BodyCell } from '../../../grid/BodyCell'
+import { CellWrapperContent } from '../../../grid/CellWrapperContent'
+import { CellWrapperTitle } from '../../../grid/CellWrapperTitle'
+import { RenderCellSlot, RenderSlot } from '../../../core/renderSlots'
+import { defaultCell } from '../../../core/commonFeature'
 import { windowBand } from '../../../core/virtualization/windowBand'
 import { BodyRow, BodyRowCells } from '../../../grid/BodyRow'
 import { SortableRow } from '../../../plugins/rowDragging/SortableRow'
@@ -1049,6 +1053,43 @@ describe('сдвиг окна при прокрутке (ADR 0149)', () => {
       0,
       'списки ячеек при сдвиге строк',
     )
+  })
+
+  test('TN1: ячейка тела ядра без слотов перерисовывается одним компонентом BodyCell — без компонентов обёрток, слотов и ячейки ядра — по счётчикам работы', async () => {
+    // Колонки с ячейкой ядра; сортировка новыми строками перерисовывает ячейки окна.
+    const columns = ['firstName', 'lastName', 'age', 'visits'].map(id => ({
+      id,
+      accessorKey: id,
+      header: id,
+    }))
+    const { measure, table, screen } = await mountGrid(
+      { enableColumnSorting: true },
+      getData(300),
+      undefined,
+      undefined,
+      columns,
+    )
+    await waitForQuietDocument(300)
+    const api = table() as {
+      setSorting: (sorting: { id: string; desc: boolean }[]) => void
+    }
+    const work = await measure(async () => {
+      api.setSorting([{ id: 'firstName', desc: true }])
+      await waitForQuietDocument(300)
+    })
+    expect(renders(work, BodyCell), describeWork(work)).toBeGreaterThan(0)
+    // Обёртка и слоты — компоненты у шапки и футера: сортировка перерисовывает шапку. Компонент на
+    // ячейку тела дал бы не меньше перерисовок, чем строк.
+    for (const component of [CellWrapperContent, RenderSlot]) {
+      expect(
+        renders(work, component as never),
+        describeWork(work),
+      ).toBeLessThan(renders(work, BodyRow))
+    }
+    for (const component of [CellWrapperTitle, RenderCellSlot, defaultCell]) {
+      expect(renders(work, component as never), describeWork(work)).toBe(0)
+    }
+    await screen.unmount()
   })
 
   test('WB11: в кадре смены списка строк — сортировки — перерисовывается не больше ячеек, чем окно без полосы, — по счётчикам работы', async () => {

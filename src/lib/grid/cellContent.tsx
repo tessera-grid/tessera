@@ -29,18 +29,19 @@ export const renderCellContent = (
       )
     }
   }
-  const context = cell.getContext()
-  return flexRender(
-    column.columnDef.cell,
-    overridden
-      ? {
-          ...context,
-          getValue: () => value as never,
-          renderValue: () =>
-            (value ?? context.table.options.renderFallbackValue) as never,
-        }
-      : context,
-  )
+  const base = cell.getContext()
+  const context = overridden
+    ? {
+        ...base,
+        getValue: () => value as never,
+        renderValue: () =>
+          (value ?? base.table.options.renderFallbackValue) as never,
+      }
+    : base
+  // Ячейка ядра — функция форматирования без хуков: вызов, а не компонент на ячейку (ADR 0208).
+  if (column.columnDef.cell === defaultCell)
+    return defaultCell(context as never)
+  return flexRender(column.columnDef.cell, context)
 }
 
 /** Атрибуты выравнивания ячейки и заголовка колонки (ADR 0172, DT9). */
