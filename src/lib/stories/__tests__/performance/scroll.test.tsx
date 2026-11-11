@@ -4083,8 +4083,8 @@ describe('Производительность — шапка с группам�
 
 // Прилипание закреплённых колонок (ADR 0213, PZ2): переключение атрибута на контейнере
 // пересчитывает стили закреплённых ячеек, а не всего грида. База — тот же грид с правилом
-// переменной на контейнере, как было до ADR 0213.
-const PZ2_RATIO = 0.8
+// переменной на контейнере, как было до ADR 0213; порог — ADR 0214.
+const PZ2_RATIO = 0.5
 const PZ2_COLUMNS = makeColumns(LARGE.columnCount)
 const PZ2_DATA = getData(LARGE.dataCount)
 const PZ2_PINNED = (PZ2_COLUMNS[0] as { id: string }).id
@@ -4110,7 +4110,7 @@ interface PerfTraceCommands {
 
 describe('Прилипание закреплённых колонок', () => {
   test(
-    'PZ2: переключение прилипания на 1000 × 1000 с закреплённой колонкой пересчитывает стили не дороже 0,8 переключения правила переменных на контейнере',
+    'PZ2: переключение прилипания на 1000 × 1000 с закреплённой колонкой пересчитывает стили не дороже 0,5 переключения правила переменных на контейнере',
     async () => {
       const measure = async (containerRule: boolean) => {
         const rule = containerRule ? document.createElement('style') : null

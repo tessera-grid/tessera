@@ -264,11 +264,12 @@
   /* Сдвиг заголовков во время перетаскивания колонки; после броска — без перехода. */
   --tsr-comp-head-cell-shift-transition: transform
     var(--tsr-comp-motion-duration) var(--tsr-comp-motion-easing);
-  --tsr-comp-row-transition:
-    background-color var(--tsr-comp-motion-duration)
-      var(--tsr-comp-motion-easing),
-    outline-color var(--tsr-comp-motion-duration)
-      var(--tsr-comp-motion-easing-out);
+  /*
+   * Фон строк и ячеек меняется без перехода (ADR 0214): наведение и выбор — переходом слоя
+   * `--tsr-row-state`, а смена прилипания и чётности не запускает анимаций.
+   */
+  --tsr-comp-row-transition: outline-color var(--tsr-comp-motion-duration)
+    var(--tsr-comp-motion-easing-out);
   /* Волна скелета (ADR 0060, SL20): проход блика и пауза перед первым проходом. */
   --tsr-comp-skeleton-wave-duration: calc(
     var(--tsr-comp-motion-duration) * 32 / 3
@@ -1245,12 +1246,6 @@
  */
 @media (forced-colors: active) {
   :where(.data-grid-theme) {
-    /*
-     * Фон строк и ячеек в режиме — системный цвет состояния: переход провёл бы его через
-     * несистемный цвет, который браузер подменит `Canvas`. Итог появляется сразу (ADR 0134, §4).
-     */
-    --tsr-comp-row-transition: outline-color var(--tsr-comp-motion-duration)
-      var(--tsr-comp-motion-easing-out);
     --tsr-comp-row-bg: Canvas;
     --tsr-comp-row-odd-bg: Canvas;
     --tsr-comp-row-hovered-bg: Canvas;

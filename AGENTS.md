@@ -1122,6 +1122,11 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
     - _Прилипание без пересчёта грида:_ модульный `pinnedStuckRules` (PZ1 — правила прилипания не
       задают переменных на контейнере), перф PZ2 — в `scroll` (переключение прилипания против правила
       переменных на контейнере) ([ADR 0213](docs/decisions/0213-pinned-stuck-without-grid-restyle.md)).
+    - _Фон строк и ячеек без перехода:_ модульный `rowBackgroundTransition` (NF1 — токен перехода
+      строки и переходы строк, ячеек и футера без `background-color`), визуальный
+      `row-background-transition` (NF2–NF4 — прилипание и смена чётности без анимаций, наведение и
+      выбор плавные), NF5 — отчёт `perf:compare` в ADR
+      ([ADR 0214](docs/decisions/0214-row-background-without-transition.md)).
     - _Полнота сценариев:_ модульные `scenarioCompleteness` (OC1–OC3, OC5–OC7 — реестр
       исходов ADR: шаги ответа и отказа существуют, каждый асинхронный колбэк публичного API в
       реестре, причина вместо шага, подразделы «Data loading/Server row model/*» с `Playground`
