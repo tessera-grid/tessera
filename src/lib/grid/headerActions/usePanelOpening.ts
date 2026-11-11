@@ -2,7 +2,11 @@
 // (ADR 0024, AM28–AM30) — общий договор ленивого открытия (ADR 0061) для действия.
 import { actionDetailOf, actionOwnerOf } from '../../core/actionOwners'
 import { reportAction, sourceOf } from '../../core/debugActions'
-import { lazyTriggerHandlers, useLazyOpening } from '../../core/lazyOpening'
+import {
+  type LazyTriggerState,
+  lazyTriggerHandlers,
+  useLazyOpening,
+} from '../../core/lazyOpening'
 import type { Preloadable } from '../../util/preloadable'
 import type { SlotAction } from '../../core/headerActions'
 import { actionRefOf, menuActionLabel } from '../../core/actions'
@@ -63,6 +67,8 @@ export interface PanelButtonState {
   onIntent: () => void
   /** Escape или уход фокуса: отменить ожидание. */
   onCancel: () => void
+  /** Фокус на заглушке до загрузки модуля (ADR 0061, LZ25). */
+  onFocus?: LazyTriggerState['onFocus']
 }
 
 /** Пропсы `IconButton` кнопки, открывающей панель. */

@@ -3,7 +3,13 @@
 // отменить, ошибка загрузки не открывает поповер: дуга на элементе останавливается, текст
 // объявляется, отказ — запись реестра отказов с повтором (ADR 0177, §2).
 import { reportAction, userSourceOf } from './debugActions'
-import { type KeyboardEvent, useEffect, useRef, useState } from 'react'
+import {
+  type FocusEvent,
+  type KeyboardEvent,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 
 import { announceLabel } from './announcer'
 import {
@@ -122,18 +128,75 @@ export interface LazyTriggerState {
   onIntent?: () => void
   /** Escape или уход фокуса: отменить ожидание. */
   onCancel: () => void
+  /** Фокус на заглушке: передать его элементу, сменившему её с приходом модуля (LZ25). */
+  onFocus?: (event: FocusEvent<HTMLElement>) => void
 }
 
 /** Обработчики элемента, запускающего ленивое открытие. */
 export const lazyTriggerHandlers = (state: LazyTriggerState | undefined) =>
   state && {
     onPointerEnter: state.onIntent,
-    onFocus: state.onIntent,
+    onFocus: (event: FocusEvent<HTMLElement>) => {
+      state.onFocus?.(event)
+      state.onIntent?.()
+    },
     onBlur: state.onCancel,
     onKeyDown: (event: KeyboardEvent) => {
       if (event.key === 'Escape') state.onCancel()
     },
   }
+
+const FOCUSABLE = 'button, [href], input, [tabindex]'
+
+/** Место заглушки: её предки снизу вверх и номер ребёнка на каждом шаге. */
+interface Place {
+  ancestors: Element[]
+  indexes: number[]
+}
+
+interface FocusHandover {
+  /** Заглушка, на которой был фокус. */
+  placeholder: HTMLElement | null
+  /** Место заглушки, когда модуль пришёл, а фокус был на ней. */
+  place?: Place
+}
+
+/** Предков хватает, чтобы выйти из обёрток, которые меняются вместе с заглушкой. */
+const PLACE_DEPTH = 4
+
+/** Модуль пришёл, заглушка ещё в документе: фокус на ней — запомнить её место. */
+const arriveWithFocus = (handover: FocusHandover) => {
+  const el = handover.placeholder
+  if (!el?.isConnected || !el.contains(document.activeElement)) return
+  const place: Place = { ancestors: [], indexes: [] }
+  let node: Element = el
+  while (node.parentElement && place.ancestors.length < PLACE_DEPTH) {
+    const parent: Element = node.parentElement
+    place.ancestors.push(parent)
+    place.indexes.push([...parent.children].indexOf(node))
+    node = parent
+  }
+  handover.place = place
+}
+
+/**
+ * Фокус заглушки переходит к элементу, сменившему её с приходом модуля (ADR 0061, LZ25): React
+ * ставит новый узел, и фокус браузера с ушедшего падает в body. Преемник — на месте заглушки,
+ * от ближайшего уцелевшего предка.
+ */
+const focusSuccessor = ({ ancestors, indexes }: Place) => {
+  // Фокус уже ушёл сам (клик, Tab) — его не трогаем.
+  const active = document.activeElement
+  if (active && active !== document.body) return
+  const level = ancestors.findIndex(ancestor => ancestor.isConnected)
+  if (level < 0) return
+  let next: Element | undefined = ancestors[level]
+  for (let i = level; i >= 0 && next; i--) next = next.children[indexes[i]!]
+  const focusable = next?.matches(FOCUSABLE)
+    ? next
+    : next?.querySelector(FOCUSABLE)
+  ;(focusable as HTMLElement | null | undefined)?.focus()
+}
 
 /**
  * Поповер из ленивого модуля с кнопкой-заглушкой (ADR 0061): пока модуль не пришёл,
@@ -150,7 +213,21 @@ export const useLazyPopover = (
   owner?: { plugin: string; detail?: () => unknown },
 ) => {
   const [open, setOpen] = useState(false)
-  const ready = usePreloaded(module, enabled)
+  const handover = useRef<FocusHandover>({ placeholder: null })
+  const ready = usePreloaded(module, enabled, () =>
+    arriveWithFocus(handover.current),
+  )
+  useEffect(() => {
+    const { place } = handover.current
+    if (!ready || !place) return
+    // Кадр спустя: тулбар Base UI учитывает новую кнопку после коммита, и фокус до этого
+    // оставляет стрелки без хода.
+    const frame = requestAnimationFrame(() => {
+      handover.current.place = undefined
+      focusSuccessor(place)
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [ready])
   const opening = useLazyOpening(table)
 
   // `details` — событие нажатия или подробности Base UI (`{ event }`).
@@ -193,6 +270,10 @@ export const useLazyPopover = (
       pending: opening.pending,
       onCancel: opening.cancel,
     }),
+    // Заглушка с фокусом — запомнить её (LZ25); заглушки кебаба передают его через `onFocus`.
+    onFocus: (event: FocusEvent<HTMLElement>) => {
+      handover.current.placeholder = event.currentTarget
+    },
   }
 
   return { open, onOpenChange, ready, trigger, opening }

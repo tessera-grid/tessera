@@ -59,6 +59,7 @@ const loadingOf = (
   failed: popover.trigger.failed,
   onIntent: () => {},
   onCancel: popover.opening.cancel,
+  onFocus: popover.trigger.onFocus,
 })
 
 /** Фолбэк кебаб-триггера: тот же IconButton с иконкой ⋮, но без Base UI-обвязки. */
@@ -214,6 +215,7 @@ export const ActionMenu = ({
     pending: menu.trigger.pending,
     failed: menu.trigger.failed,
     onIntent: kebab.intent,
+    onFocus: menu.trigger.onFocus,
     onCancel: () => {
       menu.opening.cancel()
       kebab.leave()

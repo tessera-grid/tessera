@@ -1,5 +1,7 @@
 import { type ComponentType, type ReactNode, useEffect, useState } from 'react'
 
+import { useLatest } from './useLatest'
+
 const noop = () => {}
 
 /**
@@ -62,21 +64,29 @@ export interface Preloadable {
 /**
  * Загружен ли модуль: загрузка начинается уже при рендере, и компонент перерисовывается,
  * когда она завершится. Ошибка оставляет `false` — повторить её может только `reload()` по
- * действию пользователя.
+ * действию пользователя. `onArrive` — модуль пришёл, а документ ещё прежний: следующий рендер
+ * сменит заглушку.
  */
-export function usePreloaded(module: Preloadable, enabled = true) {
+export function usePreloaded(
+  module: Preloadable,
+  enabled = true,
+  onArrive?: () => void,
+) {
   const [, setLoaded] = useState(module.isLoaded)
+  const arrive = useLatest(onArrive)
   const ready = module.isLoaded()
   const loading = ready || !enabled ? undefined : module.load()
   useEffect(() => {
     if (!loading) return
     let alive = true
     loading.then(() => {
-      if (alive) setLoaded(true)
+      if (!alive) return
+      arrive.current?.()
+      setLoaded(true)
     }, noop)
     return () => {
       alive = false
     }
-  }, [loading])
+  }, [loading, arrive])
   return ready
 }

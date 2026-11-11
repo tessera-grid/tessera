@@ -733,8 +733,8 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       `-error` (LZ11–LZ14 — меню ручек и грипа), `lazy-page-size`, `-error`
       (LZ15–LZ16), `lazy-a11y` (LZ17), `live-region-repeat` (LZ20), `lazy-kebab`,
       `-kebab-error`, `-inline-menu`, `-panel-module` (LZ21–LZ24 — кнопки заголовка из
-      ленивого модуля), модульный
-      `preloadable` (LZ18); задержка и отказ загрузки модуля — команды
+      ленивого модуля), `lazy-toolbar-focus` (LZ25 — фокус на заглушке переживает приход модуля),
+      модульный `preloadable` (LZ18); задержка и отказ загрузки модуля — команды
       `network.commands.ts`, [ADR 0061](docs/decisions/0061-lazy-popover-loading.md).
     - _Тулбар и видимость колонок:_ `toolbar` (TB1–TB15 — рамка грида, тулбар,
       кнопки F4), `column-visibility` (CV1–CV18 — меню «Колонки»),
