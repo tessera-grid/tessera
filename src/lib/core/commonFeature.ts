@@ -32,6 +32,7 @@ import { childrenOf } from './rowEngine/displayChildren'
 import { engineOf } from './rowEngine/engine'
 import { DEFAULT_SKELETON_OPTIONS } from './skeletonOptions'
 import { applyRowTransaction, type RowTransaction } from './rowTransactions'
+import { tableHeaderGroups } from './headerGroups'
 
 // Побочка импорта типов: подключает declaration merging из commonFeature.types.
 export type { CommonOptions } from './commonFeature.types'
@@ -74,7 +75,26 @@ export const commonFeature: TableFeature = {
     const pluginErrors = createPluginErrorRegistry(table)
     const rowSource = createClientRowSource(table)
 
+    // Группы шапки — линейная сборка вместо квадратичной TanStack (ADR 0209); зависимости мемо —
+    // те же, что у `coreHeadersFeature` (страж HG3).
+    const atoms = table.atoms as Record<
+      string,
+      { get: () => unknown } | undefined
+    >
     assignTableAPIs('commonFeature', table, {
+      table_getHeaderGroups: {
+        fn: () => tableHeaderGroups(table) as never,
+        memoDeps: () => [
+          table.options.columns,
+          atoms.columnOrder?.get(),
+          atoms.grouping?.get(),
+          atoms.columnPinning?.get(),
+          atoms.columnVisibility?.get(),
+          'groupedColumnMode' in table.options
+            ? table.options.groupedColumnMode
+            : undefined,
+        ],
+      },
       table_getHooks: { fn: () => options().hooks },
       table_getActionLabel: {
         fn: (action: ActionRef) => actionLabelOf(table, action),
