@@ -21,6 +21,7 @@ import { join, relative } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  type ItemsChange,
   type VirtualItem,
   Virtualizer,
   type VirtualizerOptions,
@@ -209,11 +210,16 @@ describe('Форк TanStack Virtual (ADR 0143)', () => {
  * Смена ключей с подсказкой `hint` против нового виртуализатора: ключи, которые спросил
  * виртуализатор, и размеры, которые он оценил, — на смене.
  */
-const hinted = (keys: Key[], next: Key[], hint: number | undefined) => {
+const hinted = (
+  keys: Key[],
+  next: Key[],
+  hint: number | ItemsChange | undefined,
+  measured: Record<string, number> = {},
+) => {
   let current = keys
-  let given: number | undefined
+  let given: number | ItemsChange | undefined
   const asked: number[] = []
-  const { v, options, calls } = setup(keys)
+  const { v, options, calls } = setup(keys, measured)
   const getItemKey = (index: number) => {
     asked.push(index)
     return current[index]!
@@ -234,7 +240,7 @@ const hinted = (keys: Key[], next: Key[], hint: number | undefined) => {
   given = undefined
   return {
     updated,
-    full: layout(setup(next).v),
+    full: layout(setup(next, measured).v),
     estimated: [...calls],
     asked: [...asked],
   }
@@ -300,5 +306,110 @@ describe('Подсказка места изменения (ADR 0145)', () => {
     const wrong = hinted(BASE, INSERTED, 900)
     expect(Math.min(...wrong.asked)).toBe(900)
     expect(wrong.updated).not.toEqual(wrong.full)
+  })
+})
+
+/** Отрезки прежних ключей в прежнем порядке после `from` — тройки «новое начало, прежнее, длина». */
+const runsOf = (keys: Key[], next: Key[], from: number) => {
+  const at = new Map(keys.map((key, index) => [key, index]))
+  const runs: number[] = []
+  for (let i = from; i < next.length; i++) {
+    const old = at.get(next[i]!)
+    if (old === undefined || old < from) continue
+    const last = runs.length - 3
+    if (
+      last >= 0 &&
+      runs[last]! + runs[last + 2]! === i &&
+      runs[last + 1]! + runs[last + 2]! === old
+    ) {
+      runs[last + 2]!++
+    } else runs.push(i, old, 1)
+  }
+  return runs
+}
+const without = (keys: Key[], drop: number[]) =>
+  keys.filter((_, index) => !drop.includes(index))
+const MOVED = (() => {
+  const next = BASE.slice()
+  const [key] = next.splice(10, 1)
+  next.splice(600, 0, key!)
+  return next
+})()
+/** Индексы вне отрезков от `from`. */
+const outside = (runs: number[], from: number, count: number) =>
+  Array.from({ length: count - from }, (_, k) => from + k).filter(index => {
+    for (let r = 0; r < runs.length; r += 3) {
+      if (index >= runs[r]! && index < runs[r]! + runs[r + 2]!) return false
+    }
+    return true
+  })
+
+describe('Пересчёт позиций сдвигом (ADR 0210)', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.restoreAllMocks()
+  })
+
+  it('VS1: подсказка с отрезками — позиции совпадают с полным пересчётом: разбросанные удаления, вставка, перенос, измеренные размеры; ключ и оценку размера строк отрезков виртуализатор не спрашивает', () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    const measured = { r150: 55, r650: 70, r999: 12 }
+    for (const [label, next, from] of [
+      ['удаления', without(BASE, [100, 300, 301, 700]), 100],
+      ['вставка', INSERTED, 400],
+      ['перенос', MOVED, 10],
+    ] as const) {
+      const kept = runsOf(BASE, [...next], from)
+      const { updated, full, estimated, asked } = hinted(
+        BASE,
+        [...next],
+        { from, kept },
+        measured,
+      )
+      expect(updated, label).toEqual(full)
+      const fresh = outside(kept, from, next.length)
+      expect(asked, label).toEqual(fresh)
+      expect(
+        estimated.filter(index => !fresh.includes(index)),
+        label,
+      ).toEqual([])
+    }
+  })
+
+  it('VS2: отрезок за пределами сборки отбрасывает подсказку; в dev неверный отрезок — позиции по пересчёту с from и одно предупреждение на виртуализатор', () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    const removed = without(BASE, [100])
+    for (const kept of [
+      [100, 101, 900],
+      [100, 101, 899, 999, 0, 1],
+    ]) {
+      const { updated, full, asked } = hinted(BASE, removed, {
+        from: 100,
+        kept,
+      })
+      expect(updated, String(kept)).toEqual(full)
+      expect(asked, String(kept)).toEqual(outside([], 100, removed.length))
+    }
+    vi.unstubAllEnvs()
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    let current: Key[] = BASE
+    let given: ItemsChange | undefined
+    const { v, options } = setup(BASE)
+    const getItemKey = (index: number) => current[index]!
+    v.setOptions({ ...options, getItemKey, getFirstChangedIndex: () => given })
+    v.getTotalSize()
+    // Отрезок указывает на прежние строки со сдвигом на одну: ключи не совпадают.
+    for (const next of [removed, BASE]) {
+      current = next
+      given = { from: 100, kept: [100, 102, 100] }
+      v.setOptions({
+        ...options,
+        count: next.length,
+        getItemKey,
+        getFirstChangedIndex: () => given,
+      })
+      expect(layout(v)).toEqual(layout(setup(next).v))
+    }
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn.mock.calls[0]![0]).toContain('kept index 100 from 102')
   })
 })

@@ -139,6 +139,7 @@ const track = () => {
   let keys = keysOf()
   let built: RowBuild | undefined
   let hint: number | undefined
+  let kept: number[] | undefined
   const asked: number[] = []
   const estimateSize = (index: number) => sizeOf(keys.key(index))
   const options = () => ({
@@ -153,8 +154,12 @@ const track = () => {
       const next = rowBuildOf(table, keys.list)
       const previous = built
       built = next
-      hint = previous ? firstChangedIndex(table, previous, next) : undefined
-      return hint
+      const answer = previous
+        ? firstChangedIndex(table, previous, next)
+        : undefined
+      hint = typeof answer === 'object' ? answer.from : answer
+      kept = typeof answer === 'object' ? answer.kept : undefined
+      return answer
     },
     scrollToFn: () => {},
     observeElementRect: () => {},
@@ -185,6 +190,8 @@ const track = () => {
     before = after
     return {
       hint,
+      kept,
+      asked: [...asked],
       truth,
       changed,
       parity: updated,
@@ -526,6 +533,86 @@ describe('Подсказка при смене data (ADR 0194)', () => {
       }
       act(() => root!.unmount())
       root = undefined
+    }
+  })
+})
+
+describe('Пересчёт позиций сдвигом (ADR 0210)', () => {
+  /** Имена с повторами: при сортировке строки середины `data` разбросаны по списку. */
+  const named = (from: number, count: number): Node[] =>
+    flat(from, count).map((row, k) => ({ ...row, name: `n${(from + k) % 7}` }))
+  const sorted = () => [
+    columnSortingModel({ initialSorting: [{ id: 'name', desc: false }] }),
+  ]
+  /** Ни одного спрошенного ключа внутри отрезков прежних строк. */
+  const outsideRuns = (kept: number[], asked: number[]) =>
+    asked.every(index => {
+      for (let r = 0; r < kept.length; r += 3) {
+        if (index >= kept[r]! && index < kept[r]! + kept[r + 2]!) return false
+      }
+      return true
+    })
+
+  it('VS3: смена data транзакцией при сортировке даёт отрезки прежних строк — разбросанные удаления, вставка, перенос, цепочка из нескольких смен; позиции совпадают с полным пересчётом', () => {
+    let data = named(0, 1000)
+    render(data, sorted)
+    const update = track()
+    const steps: [string, (d: Node[]) => Node[], number][] = [
+      ['удаление', d => d.filter((_, i) => i < 500 || i >= 510), 0],
+      [
+        'вставка',
+        d => [...d.slice(0, 300), ...named(5000, 10), ...d.slice(300)],
+        10,
+      ],
+      [
+        'перенос',
+        d => {
+          const next = d.slice()
+          const [row] = next.splice(10, 1)
+          next.splice(600, 0, row!)
+          return next
+        },
+        1,
+      ],
+    ]
+    for (const [label, step, fresh] of steps) {
+      data = step(data)
+      render(data, sorted)
+      const result = update()
+      expect(result.kept, label).toBeDefined()
+      expect(result.parity, label).toEqual(result.full)
+      expect(result.asked, label).toHaveLength(fresh)
+      expect(outsideRuns(result.kept!, result.asked), label).toBe(true)
+    }
+    // Две смены между сборками виртуализатора: отрезки — по наборам обеих.
+    data = data.filter((_, i) => i % 100 !== 5)
+    render(data, sorted)
+    data = [...named(6000, 3), ...data]
+    render(data, sorted)
+    const chain = update()
+    expect(chain.kept).toBeDefined()
+    expect(chain.parity).toEqual(chain.full)
+    expect(chain.asked).toHaveLength(3)
+  })
+
+  it('VS4: раскрытие и сворачивание кликом — отрезок общего конца списков; позиции совпадают с полным пересчётом', () => {
+    const data = flat(0, 200).map((row, i) =>
+      i % 20 === 0
+        ? { ...row, subRows: [node(`r${i}.a`), node(`r${i}.b`)] }
+        : row,
+    )
+    render(data, () => [rowExpanding({ initialExpanded: { r0: true } })])
+    const update = track()
+    for (const [id, fresh] of [
+      ['r40', 2],
+      ['r40', 0],
+    ] as const) {
+      toggle(id)
+      const result = update()
+      expect(result.kept, id).toBeDefined()
+      expect(result.parity, id).toEqual(result.full)
+      expect(result.asked, id).toHaveLength(fresh)
+      expect(outsideRuns(result.kept!, result.asked), id).toBe(true)
     }
   })
 })

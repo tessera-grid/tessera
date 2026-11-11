@@ -304,9 +304,13 @@ const rootStarts = (rows: SortRow[], flatRows: SortRow[]) => {
 
 /** Сравнение двух строк по всем колонкам сортировки, как у полной; значения — раз на строку. */
 /** `byIndex: false` — без последнего правила: равные значения сравниваются как равные. */
-const rowComparator = (entries: SortEntry[], byIndex = true) => {
+/** `values` — значения строк, общие с другим сравнением тех же колонок. */
+const rowComparator = (
+  entries: SortEntry[],
+  byIndex = true,
+  values = new Map<SortRow, unknown[]>(),
+) => {
   const width = entries.length
-  const values = new Map<SortRow, unknown[]>()
   const valuesOf = (row: SortRow) => {
     let found = values.get(row)
     if (!found) {
@@ -345,8 +349,24 @@ const rowComparator = (entries: SortEntry[], byIndex = true) => {
   }
 }
 
+/** Уровень без строк на местах `drop` — копией отрезков между ними. */
+const without = <T>(level: readonly T[], drop: ReadonlySet<number>): T[] => {
+  const at = [...drop].sort((a, b) => a - b)
+  const kept = new Array<T>(level.length - at.length)
+  let write = 0
+  let read = 0
+  for (const skip of at) {
+    while (read < skip) kept[write++] = level[read++]!
+    read = skip + 1
+  }
+  while (read < level.length) kept[write++] = level[read++]!
+  return kept
+}
+
 /** Число уходящих и приходящих строк уровня, до которого уровень правится `splice`. */
 const FEW_CHANGES = 64
+/** Сколько строк с равными значениями перебирает поиск уходящей строки, прежде чем взять места. */
+const EQUAL_SCAN = 256
 
 /** Склейка участков: немного больших участков — `concat`, много мелких — одним проходом. */
 const concatPieces = (pieces: SortRow[][], length: number): SortRow[] => {
@@ -391,7 +411,8 @@ const patchInPlace = (
   }
   const { changed, inserted, removed, previous } = change
   const current = input.rowsById
-  const compare = rowComparator(entries)
+  const values = new Map<SortRow, unknown[]>()
+  const compare = rowComparator(entries, true, values)
   const own = new Map(prev.own)
   for (const id of removed) own.delete(id)
   const kidsOf = inputKids(input)
@@ -444,9 +465,22 @@ const patchInPlace = (
    */
   let sameValues: ((a: SortRow, b: SortRow) => number) | undefined
   const findOld = (rows: readonly SortRow[], old: SortRow) => {
+    sameValues ??= rowComparator(entries, false, values)
+    // Малый блок равных значений — перебором без мест строк: места сдвинутых строк читать
+    // не нужно, их запись отложена (ADR 0211).
+    let lo = 0
+    let hi = rows.length
+    while (lo < hi) {
+      const mid = (lo + hi) >>> 1
+      if (sameValues(rows[mid]!, old) < 0) lo = mid + 1
+      else hi = mid
+    }
+    const stop = Math.min(rows.length, lo + EQUAL_SCAN)
+    for (let i = lo; i < stop && sameValues(rows[i]!, old) === 0; i++) {
+      if (rows[i] === old) return i
+    }
     const at = placeOf(rows, old)
     if (rows[at] === old) return at
-    sameValues ??= rowComparator(entries, false)
     for (let i = at; i < rows.length && sameValues(rows[i]!, old) === 0; i++) {
       if (rows[i] === old) return i
     }
@@ -478,7 +512,7 @@ const patchInPlace = (
     else if (few) {
       kept = prevLevel.slice()
       for (const at of [...drop].sort((a, b) => b - a)) kept.splice(at, 1)
-    } else kept = prevLevel.filter((_, i) => !drop.has(i))
+    } else kept = without(prevLevel, drop)
     const coming = (comes.get(parentId) ?? []).slice().sort(compare)
     if (!coming.length) return kept
     /** Дети строки, что встаёт на место заново. */

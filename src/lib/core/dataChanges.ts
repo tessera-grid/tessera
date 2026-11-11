@@ -8,7 +8,12 @@
 import { constructRow, makeObjectMap } from '@tanstack/react-table'
 
 import { recordRowChange } from './rowChanges'
-import { positionOf, setPosition } from './rowPosition'
+import {
+  deferPositions,
+  positionOf,
+  setPosition,
+  settlePositions,
+} from './rowPosition'
 import { RowDict, dictModel, editDictOf } from './rowEngine/rowDict'
 
 export interface ChangeRow {
@@ -71,7 +76,12 @@ export const recordRowModelChange = (
   const end = Math.min(rows.length, before.length)
   let from = 0
   while (from < end && rows[from] === before[from]) from++
-  recordRowChange(rows, before, from)
+  // Только наборы id: смена держит прежнюю модель и прежние строки (EN26).
+  recordRowChange(rows, before, from, {
+    inserted: change.inserted,
+    changed: change.changed,
+    removed: change.removed,
+  })
 }
 
 /**
@@ -143,6 +153,20 @@ const movedPositions = (
     if (olds[p] && !chain.has(p)) moved.add(p)
   }
   return moved
+}
+
+/** Объектов `data`, которых нет в `prevData`, больше `limit`. */
+const newOriginalsOver = (
+  prevData: readonly unknown[],
+  data: readonly unknown[],
+  limit: number,
+) => {
+  const known = new Set(prevData)
+  let fresh = 0
+  for (const item of data) {
+    if (!known.has(item) && ++fresh > limit) return true
+  }
+  return false
 }
 
 /** Новое место строки — тот же объект, место знает хранилище (ADR 0200, §5). */
@@ -386,6 +410,8 @@ export const patchCoreModel = <TData>(
     for (const i of replaced) previous.set(prevRows[i]!.id, prevRows[i]!)
     const changedRows = replaced.map(i => place(i, prevRows[i]!.id))
     const addedRows = added.map(([i, id]) => place(i, id))
+    // Строки на прежних местах: отложенные места переходят новому списку (ADR 0211).
+    deferPositions(t, rows, rows.length, prevRows, 0)
     const { dict, writer } = editDictOf(prev)
     for (const row of changedRows) {
       writer.set(row.id, row)
@@ -420,6 +446,7 @@ export const patchCoreModel = <TData>(
    * несовпавших. Совпавшие — прежние объекты с новым местом; несовпавшая с прежним id —
    * изменена или перенесена; словарь переходит новой модели. `null` — случай не этот.
    */
+  let shiftsOverBudget = false
   const patchShifted = (): ChangeModel | undefined | null => {
     const prevRows = prev.rows
     const originals = data as TData[]
@@ -460,7 +487,10 @@ export const patchCoreModel = <TData>(
         extraNew.push(i++)
       }
       // Шаги вперёд сбились — сверка по id на общем пути.
-      if (lostOld.length + extraNew.length > budget * 2) return null
+      if (lostOld.length + extraNew.length > budget * 2) {
+        shiftsOverBudget = true
+        return null
+      }
     }
     while (j < oldEnd) lostOld.push(j++)
     while (i < newEnd) extraNew.push(i++)
@@ -505,21 +535,14 @@ export const patchCoreModel = <TData>(
       previous.set(old.id, old)
     }
 
-    // Смена собрана — у прежних строк середины и конца новые места; начало не сдвинулось.
+    // Смена собрана — у прежних строк середины и конца новые места, их запись отложена до
+    // первого обращения к местам (ADR 0211); начало не сдвинулось.
     for (let k = 0; k < middle.length; k++) {
       const from = keptAt[k]!
-      if (from < 0) continue
-      const old = prevRows[from]!
-      if (positionOf(old) !== head + k) setRowIndex(old, head + k)
-      middle[k] = old
+      if (from >= 0) middle[k] = prevRows[from]!
     }
-    const end = prevRows.slice(oldEnd)
-    if (n1 !== n0) {
-      for (let k = 0; k < end.length; k++) {
-        setRowIndex(end[k]!, newEnd + k)
-      }
-    }
-    const rows = prevRows.slice(0, head).concat(middle, end)
+    const rows = prevRows.slice(0, head).concat(middle, prevRows.slice(oldEnd))
+    deferPositions(t, rows, head, prevRows, n1 - n0)
     const { dict, writer } = editDictOf(prev)
     for (const id of removed) writer.delete(id)
     for (const row of placed) writer.set(row.id, row)
@@ -540,7 +563,14 @@ export const patchCoreModel = <TData>(
     return model
   }
   const shifted = patchShifted()
+  // Полная сборка и сборка по уровням читают и пишут места: отложенные — сначала.
+  if (shifted == null) settlePositions(t)
   if (shifted !== null) return shifted
+  // Новых объектов данных больше бюджета — сборка по уровням откажет: каждый тратит бюджет
+  // вставкой, заменой или переносом (ADR 0212).
+  if (shiftsOverBudget && newOriginalsOver(prevData, data, budget)) {
+    return undefined
+  }
 
   const rows = level(prev.rows, data as TData[], 0, undefined)
   if (failed) return undefined

@@ -4,6 +4,7 @@
  */
 import { constructRow } from '@tanstack/react-table'
 
+import { settlePositions } from '../rowPosition'
 import { RowDict, dictModel } from './rowDict'
 
 interface StoreRow {
@@ -30,6 +31,8 @@ interface StoreTable {
 
 /** Модель ядра из `data`: строка, затем её потомки; `getSubRows` и `getRowId` — таблицы. */
 export const buildCoreModel = (table: unknown, data: readonly unknown[]) => {
+  // Отложенные места прежних строк дописываются: прежний список не держится (ADR 0211).
+  settlePositions(table)
   const t = table as StoreTable
   const flatRows: StoreRow[] = []
   const rowsById: Record<string, StoreRow> = Object.create(null)

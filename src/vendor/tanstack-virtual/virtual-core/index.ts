@@ -66,6 +66,13 @@ export interface VirtualItem {
   lane: number
 }
 
+// Tessera (ADR 0210): runs of previous items kept in order after `from`, as
+// triples (new start, previous start, length) in ascending order.
+export interface ItemsChange {
+  from: number
+  kept: ArrayLike<number>
+}
+
 export interface Rect {
   width: number
   height: number
@@ -377,7 +384,8 @@ export interface VirtualizerOptions<
   getItemKey?: (index: number) => Key
   // Tessera (ADR 0145): first index whose key may differ from the previous
   // build; called on every rebuild, `undefined` falls back to comparing keys.
-  getFirstChangedIndex?: () => number | undefined
+  // Tessera (ADR 0210): or that index with runs of previous items kept after it.
+  getFirstChangedIndex?: () => number | ItemsChange | undefined
   rangeExtractor?: (range: Range) => Array<number>
   scrollMargin?: number
   gap?: number
@@ -498,6 +506,8 @@ export class Virtualizer<
   private itemSizeCacheVersion = 0
   // Tessera (ADR 0145): a wrong first-changed hint is reported once.
   private warnedFirstChangedIndex = false
+  // Tessera (ADR 0210): a wrong kept run is reported once.
+  private warnedKeptRuns = false
   private laneAssignments = new Map<number, number>() // index → lane cache
   // Earliest index dirtied since last getMeasurements() rebuild, or null.
   private pendingMin: number | null = null
@@ -1608,6 +1618,57 @@ export class Virtualizer<
   private isIndexInRange = (index: number): boolean =>
     index >= 0 && index < this.options.count
 
+  // Tessera (ADR 0210): kept runs that fit both builds after `min`; in
+  // development each kept key and size is checked against a rebuild.
+  private keptRunsOf = (
+    kept: ArrayLike<number>,
+    min: number,
+    count: number,
+    previous: { items: Array<Key | VirtualItem>; flat: Float64Array },
+  ): ArrayLike<number> | undefined => {
+    if (kept.length === 0 || kept.length % 3 !== 0) return undefined
+    let end = min
+    for (let r = 0; r < kept.length; r += 3) {
+      const at = kept[r]!
+      const from = kept[r + 1]!
+      const length = kept[r + 2]!
+      if (
+        !(at >= end && length > 0 && at + length <= count) ||
+        !(from >= 0 && from + length <= previous.items.length)
+      ) {
+        return undefined
+      }
+      end = at + length
+    }
+    if (process.env.NODE_ENV !== 'production') {
+      for (let r = 0; r < kept.length; r += 3) {
+        for (let k = 0; k < kept[r + 2]!; k++) {
+          const index = kept[r]! + k
+          const from = kept[r + 1]! + k
+          const key = this.options.getItemKey(index)
+          const measured = this.itemSizeCache.get(key)
+          const size =
+            typeof measured === 'number'
+              ? measured
+              : this.options.estimateSize(index)
+          if (
+            key !== getMeasurementKey(previous.items[from]!) ||
+            size !== previous.flat[from * 2 + 1]
+          ) {
+            if (!this.warnedKeptRuns) {
+              this.warnedKeptRuns = true
+              console.warn(
+                `getFirstChangedIndex kept index ${index} from ${from}, but its key or size differs: positions are rebuilt from ${min}`,
+              )
+            }
+            return undefined
+          }
+        }
+      }
+    }
+    return kept
+  }
+
   private getMeasurements = memo(
     () => [this.getMeasurementOptions(), this.itemSizeCacheVersion],
     (
@@ -1663,7 +1724,10 @@ export class Virtualizer<
       }
 
       // Tessera (ADR 0145): asked on every rebuild so the caller tracks builds.
-      const hint = this.options.getFirstChangedIndex?.()
+      const hinted = this.options.getFirstChangedIndex?.()
+      const hint = typeof hinted === 'object' ? hinted.from : hinted
+      // Tessera (ADR 0210): runs of previous items whose positions are shifted.
+      let kept: ArrayLike<number> | undefined
 
       // During lanes settling, ignore pendingMin to prevent repositioning
       let min = this.lanesSettling ? 0 : (this.pendingMin ?? 0)
@@ -1712,6 +1776,9 @@ export class Virtualizer<
               min = same
             }
           }
+          if (typeof hinted === 'object' && min === hint) {
+            kept = this.keptRunsOf(hinted.kept, min, count, previous)
+          }
         }
       }
       this.pendingMin = null
@@ -1726,6 +1793,57 @@ export class Virtualizer<
       // per-item VirtualItem object allocation. We write start/size pairs
       // into a Float64Array and return a Proxy that builds VirtualItem
       // objects on demand (only the indices a consumer actually reads).
+      // Tessera (ADR 0210): kept runs copy key and size from the previous build;
+      // only items between them are keyed and sized again.
+      if (lanes === 1 && kept) {
+        const prev = this._singleLaneMeasurements!
+        const flat = new Float64Array(count * 2)
+        flat.set(prev.flat.subarray(0, min * 2))
+        const items: Array<Key | VirtualItem> = prev.items.slice(0, min)
+        items.length = count
+        let runningStart =
+          min === 0
+            ? paddingStart + scrollMargin
+            : flat[(min - 1) * 2]! + flat[(min - 1) * 2 + 1]! + gap
+        let i = min
+        for (let r = 0; r <= kept.length; r += 3) {
+          const end = r < kept.length ? kept[r]! : count
+          for (; i < end; i++) {
+            const key = getItemKey(i)
+            items[i] = key
+            const measuredSize = itemSizeCache.get(key)
+            const size =
+              typeof measuredSize === 'number'
+                ? measuredSize
+                : this.options.estimateSize(i)
+            flat[i * 2] = runningStart
+            flat[i * 2 + 1] = size
+            runningStart += size + gap
+          }
+          if (r === kept.length) break
+          let from = kept[r + 1]!
+          for (const stop = i + kept[r + 2]!; i < stop; i++, from++) {
+            items[i] = getMeasurementKey(prev.items[from]!)
+            const size = prev.flat[from * 2 + 1]!
+            flat[i * 2] = runningStart
+            flat[i * 2 + 1] = size
+            runningStart += size + gap
+          }
+        }
+        this._singleLaneMeasurements = {
+          flat,
+          items,
+          paddingStart,
+          scrollMargin,
+          gap,
+          estimateSize: this.options.estimateSize,
+          itemSizeCacheVersion: _itemSizeCacheVersion,
+        }
+        const view = createLazyMeasurementsView(items, flat)
+        this.measurementsCache = view
+        return view
+      }
+
       if (lanes === 1) {
         // Reuse flat backing if large enough; else grow (preserving data
         // before `min` to mirror the slice-and-rebuild contract).

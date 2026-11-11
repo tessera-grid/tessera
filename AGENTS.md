@@ -440,6 +440,12 @@ Chromium через Playwright, а **не** в jsdom, потому что вир
       колонками, граница группы, axe), модульный `oneHeadLayout` (NV8 — нет раскладки grid и
       `data-layout`), перф NV11 — в `scroll`, истории «Columns/Header groups — Wide groups» (S1) и
       «Theming — Column dividers» (S2) ([ADR 0207](docs/decisions/0207-one-head-layout.md)).
+    - _Тонкая ячейка тела:_ `work-counters` (TN1 — ячейка ядра без слотов одним компонентом
+      `BodyCell`), модульный `BodyCell.dom` (TN2–TN3 — слоты с записями, прежний DOM обёрток),
+      TN4 — отчёт `perf:compare` в ADR ([ADR 0208](docs/decisions/0208-thin-body-cell.md)).
+    - _Сборка групп шапки:_ модульный `headerGroups` (HG1–HG4 — паритет с `buildHeaderGroups`
+      TanStack, пересборка по срезам, страж зависимостей мемо, без выброшенного уровня), HG5 — отчёт
+      `perf:compare` в ADR ([ADR 0209](docs/decisions/0209-linear-header-groups.md)).
     - _Колонки:_ `column-pinning` (CP1–CP12), `column-pinning-nested` (CP13–CP19, CP30), гайды «Columns/Pinning» (S1–S2),
       `column-pinning-right` (CP20–CP27, CP29, CP34 — правые закреплённые ячейки следуют наведению и выбору строки), `column-pinning-footer`
       (CP31–CP33, CP35 — футер следует закреплению, ячейка колонки действий — как её заголовок),
@@ -1101,6 +1107,18 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       раскрытия, дописывание ленты, ключи по индексу серверной модели, полные сборки без
       подсказки; паритет с полным пересчётом), перф HV8 — в `interaction`
       ([ADR 0145](docs/decisions/0145-first-changed-row-hint.md)).
+    - _Пересчёт позиций сдвигом:_ модульные `vendorVirtual` (VS1–VS2 — отрезки прежних строк с
+      паритетом полного пересчёта без ключей и оценок их строк, отрезок вне сборки, сверка в dev) и
+      `rowChanges.dom` (VS3–VS4 — отрезки журнала при сортировке по наборам id, цепочка смен, общий
+      конец списков у раскрытия), VS5 — отчёт `perf:compare` в ADR
+      ([ADR 0210](docs/decisions/0210-positions-by-shift.md)).
+    - _Отложенные места строк:_ модульный `rowPositionDefer` (PD1–PD4 — места сдвига при первом
+      обращении, слияние двух смен и запись места поверх отложенного, полная сборка дописывает, поиск
+      уходящей строки сортировки по значениям), PD5 — отчёт `perf:compare` в ADR
+      ([ADR 0211](docs/decisions/0211-deferred-row-positions.md)).
+    - _Ранняя полная сборка:_ модульный `earlyFullBuild` (EB1–EB2 — новых объектов больше бюджета —
+      полная сборка без сборки по уровням, разнесённые вставки — по уровням), EB3 — отчёт
+      `perf:compare` в ADR ([ADR 0212](docs/decisions/0212-early-full-build.md)).
     - _Полнота сценариев:_ модульные `scenarioCompleteness` (OC1–OC3, OC5–OC7 — реестр
       исходов ADR: шаги ответа и отказа существуют, каждый асинхронный колбэк публичного API в
       реестре, причина вместо шага, подразделы «Data loading/Server row model/*» с `Playground`

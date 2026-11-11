@@ -17,6 +17,10 @@ Tessera ([ADR 0143](../../../docs/decisions/0143-tanstack-virtual-fork.md)). Э�
 - **Подсказка места изменения** (`virtual-core/index.ts`, опция `getFirstChangedIndex`,
   [ADR 0145](../../../docs/decisions/0145-first-changed-row-hint.md)): индекс вместо сверки
   ключей; в разработке сверяется с ней, неверная подсказка — одно предупреждение.
+- **Сдвиг прежних отрезков** (`virtual-core/index.ts`, `getFirstChangedIndex` с `{ from, kept }`,
+  `keptRunsOf`, [ADR 0210](../../../docs/decisions/0210-positions-by-shift.md)): на отрезках прежних
+  элементов ключ и размер берутся из прежней сборки, начало — нарастающим итогом; в разработке
+  каждый перенесённый ключ и размер сверяется с пересчётом, неверный отрезок — одно предупреждение.
 - **Импорт ядра** (`react-virtual/index.tsx`): `../virtual-core` вместо `@tanstack/virtual-core`.
 - **Синхронность по уведомлению** (`react-virtual/index.tsx`, опция `useFlushSync`,
   [ADR 0202](../../../docs/decisions/0202-window-band.md)): булево или функция от
