@@ -29,6 +29,7 @@ import type {
 } from '../headerActions'
 import type { KeyboardAction } from '../keyboardActions'
 import type { ColumnTransform } from '../columnTransforms'
+import type { ViewSettingsSection } from '../viewSettings'
 import type { PluginDiagnose } from '../pluginDiagnostics'
 import type { NarrowState } from '../effectiveState'
 import type { StubEntry } from '../stubs'
@@ -252,6 +253,8 @@ interface DefinePluginConfig<
   keyboardActions?: KeyboardAction[]
   /** Что плагин делает с данными по колонке и как это снять (ADR 0204, §2). */
   columnTransforms?: ColumnTransform[]
+  /** Разделы «Настроек вида»: короткое значение, уровни или своя панель (ADR 0215, §5). */
+  viewSettingsSections?: ViewSettingsSection[]
   /** Декларация плагина-меню (зависит от opts): на какие слоты распространить кебаб. */
   actionMenu?: (opts: TOptions) => ActionMenuDeclaration
   /** Причина инертности для `table.getPluginDiagnostics()`; `undefined` — плагин работает. */
@@ -480,6 +483,9 @@ export const definePlugin = <
       }
       if (config.columnTransforms) {
         entry.columnTransforms = config.columnTransforms
+      }
+      if (config.viewSettingsSections) {
+        entry.viewSettingsSections = config.viewSettingsSections
       }
       if (config.diagnose) {
         entry.diagnose = config.diagnose

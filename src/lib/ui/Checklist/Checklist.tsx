@@ -10,7 +10,7 @@ import { Checkbox } from '../Checkbox/Checkbox'
 import { LoadErrorBlock } from '../LoadMoreError/LoadMoreError'
 import { PopupItem } from '../Popup/PopupItem'
 import { useScrollFade } from '../Popup/useScrollFade'
-import { Skeleton } from '../Skeleton'
+import { PopupSkeletonRows } from '../Popup/PopupSkeletonRows'
 import { Stub } from '../Stub'
 import { Tooltip } from '../Tooltip'
 
@@ -209,11 +209,11 @@ export const ChecklistStatus = ({
       <span className={hidden['visually-hidden']} data-visually-hidden="">
         {labels.loading}
       </span>
-      {Array.from({ length: SKELETON_ROWS }, (_, index) => (
-        <div key={index} className={styles.skeletonRow}>
-          <Skeleton width={`${70 - index * 10}%`} height={10} />
-        </div>
-      ))}
+      <PopupSkeletonRows
+        count={SKELETON_ROWS}
+        width={index => `${70 - index * 10}%`}
+        height={10}
+      />
     </div>
   )
 }

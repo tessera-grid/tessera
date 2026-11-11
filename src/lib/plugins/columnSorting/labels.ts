@@ -24,6 +24,12 @@ export interface ColumnSortingLabels {
   transformDescending: string
   /** Приоритет сортировки скрытой колонки (`position` из `total`) */
   transformPriority: (position: number, total: number) => string
+  /** Кнопка-сводка сортировки в тулбаре и заголовок её поповера (ADR 0204, §5) */
+  sorting: string
+  /** Снять уровень сортировки колонки в сводке */
+  removeSort: (column: string) => string
+  /** Сбросить всю сортировку в сводке */
+  resetSorting: string
 }
 
 export const columnSortingLabels = defineLabels<ColumnSortingLabels>()(
@@ -38,10 +44,14 @@ export const columnSortingLabels = defineLabels<ColumnSortingLabels>()(
     transformAscending: 'sorted ascending',
     transformDescending: 'sorted descending',
     transformPriority: 'priority {position} of {total}',
+    sorting: 'Sorting',
+    removeSort: 'Remove sorting: {column}',
+    resetSorting: 'Reset sorting',
   },
   {
     sortPriority: ['position', 'total'],
     transformPriority: ['position', 'total'],
+    removeSort: ['column'],
   },
 )
 

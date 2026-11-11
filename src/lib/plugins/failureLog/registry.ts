@@ -4,6 +4,10 @@
  * Тулбар кнопка не вызывает: она встаёт в тулбар, который у таблицы уже есть.
  */
 import { announceLabel } from '../../core/announcer'
+import {
+  placeToolbarSlot,
+  type ToolbarPlacementOption,
+} from '../../shared/toolbarPlacement'
 import { definePlugin } from '../../core/definePlugin'
 import { neverInert } from '../../core/pluginDiagnostics'
 import { FailureLogButton } from './FailureLogButton'
@@ -12,7 +16,7 @@ import { failureLogLabels } from './labels'
 /** Группа тулбара: последней справа, после групп потребителя (ранг — `core/toolbar`). */
 export const FAILURE_LOG_TOOLBAR_GROUP = 'failures'
 
-export interface FailureLogOptions {
+export interface FailureLogOptions extends ToolbarPlacementOption {
   /** `false` — плагин отключён. */
   enabled?: boolean
 }
@@ -62,14 +66,16 @@ export const failureLog = definePlugin<FailureLogOptions>()({
   },
   diagnose: neverInert,
   setup: () => table => announceNewRecords(table),
-  slots: [
-    {
-      id: 'failureLogButton',
-      slot: 'toolbarSlot',
-      group: FAILURE_LOG_TOOLBAR_GROUP,
-      order: 0,
-      showsPanel: false,
-      component: FailureLogButton,
-    },
-  ],
+  slots: o =>
+    placeToolbarSlot(
+      {
+        id: 'failureLogButton',
+        slot: 'toolbarSlot',
+        group: FAILURE_LOG_TOOLBAR_GROUP,
+        order: 0,
+        showsPanel: false,
+        component: FailureLogButton,
+      },
+      o.toolbar,
+    ),
 })

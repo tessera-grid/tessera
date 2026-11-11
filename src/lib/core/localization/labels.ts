@@ -14,6 +14,22 @@ export interface TableLabels {
   booleanFalse: string
   /** Доступное имя кебаб-кнопки меню действий заголовка (`aria-label`/тултип) */
   headerMenu: string
+  /** Кнопка «Настройки вида» (ADR 0215). */
+  viewSettings: string
+  /** Кнопка «Настройки вида» с активными разделами. */
+  viewSettingsActive: (count: number) => string
+  /** Короткое значение неактивного раздела. */
+  viewSettingsNone: string
+  /** Короткое значение раздела: сколько включено. */
+  viewSettingsActiveCount: (count: number) => string
+  /** Короткое значение раздела: сколько черновиков (ADR 0178). */
+  viewSettingsDraftCount: (count: number) => string
+  /** Короткое значение раздела, который просто включён. */
+  viewSettingsOn: string
+  /** Доступное имя строки раздела: имя и полное значение. */
+  viewSettingsSectionName: (section: string, value: string) => string
+  /** Значок скрытой колонки у имени уровня: тултип и доступное имя. */
+  viewSettingsHiddenColumn: string
   /** Доступное имя кебаб-кнопки меню действий строки (`aria-label`/тултип) */
   rowMenu: string
   /** Доступное имя кебаба, в который свёрнуты включённые действия (`count` — их число) */
@@ -188,6 +204,16 @@ export const DEFAULT_LABELS = {
   booleanTrue: 'Yes',
   booleanFalse: 'No',
   headerMenu: 'Column options',
+  viewSettings: 'View settings',
+  viewSettingsActive: 'View settings, {count} active',
+  viewSettingsActive_one: 'View settings, {count} active',
+  viewSettingsNone: 'none',
+  viewSettingsActiveCount: '{count} active',
+  viewSettingsDraftCount: '{count} drafts',
+  viewSettingsDraftCount_one: '{count} draft',
+  viewSettingsOn: 'active',
+  viewSettingsSectionName: '{section}: {value}',
+  viewSettingsHiddenColumn: 'Column hidden',
   rowMenu: 'Row options',
   withActiveCount: '{name}, {count} active',
   loadFailed: "Couldn't load {name}. Try again.",

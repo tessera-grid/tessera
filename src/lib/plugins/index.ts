@@ -157,3 +157,11 @@ export type {
   ServerActionContext,
   ServerActionResult,
 } from '../core/serverActions'
+export type { ToolbarPlacement } from '../shared/toolbarPlacement'
+export {
+  countViewSettingsValue,
+  type ViewSettingsLevel,
+  type ViewSettingsPanel,
+  type ViewSettingsPanelProps,
+  type ViewSettingsSection,
+} from '../core/viewSettings'

@@ -295,15 +295,15 @@ export const SkeletonDataArrives: StoryObj<StoryProps> = {
       skeletonRows(canvas).flatMap(row => byId('rowExpanding', row) ?? [])
     await step(DATA_ARRIVES[0].title, async () => {
       await waitSkeleton(canvas)
-      // ADR 0122: без колонок поиск, «Колонки» и «Экспорт» — скелеты.
+      // ADR 0122: без колонок поиск, «Настройки вида» и «Экспорт» — скелеты (ADR 0215).
       for (const id of [
         'quick-search-skeleton',
-        'column-visibility-skeleton',
+        'view-settings-skeleton',
         'export-skeleton',
       ]) {
         await until(() => expect(toolbarPart(id), id).not.toBeNull())
       }
-      for (const id of ['quick-search', 'column-visibility-button']) {
+      for (const id of ['quick-search', 'view-settings-button']) {
         await expect(toolbarPart(id), id).toBeNull()
       }
     })
@@ -318,13 +318,9 @@ export const SkeletonDataArrives: StoryObj<StoryProps> = {
       }
       await expect(expandCells()).toHaveLength(0)
       await expect(indented()).toBe(false)
-      // ADR 0122: поиск, «Фильтры» и «Колонки» — контролы, «Экспорт» — скелет.
+      // ADR 0122: поиск и «Настройки вида» — контролы, «Экспорт» — скелет.
       await until(() => expect(toolbarPart('export-skeleton')).not.toBeNull())
-      for (const id of [
-        'quick-search',
-        'filter-summary-button',
-        'column-visibility-button',
-      ]) {
+      for (const id of ['quick-search', 'view-settings-button']) {
         await expect(toolbarPart(id), id).not.toBeNull()
       }
       await expect(toolbarPart('export-button')).toBeNull()

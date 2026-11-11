@@ -1,18 +1,16 @@
 /**
  * Запись плагина columnVisibility на `definePlugin` (ADR 0035). Своей фичи нет:
- * видимость — стоковый срез `columnVisibility` ядра. Плагин добавляет кнопку
- * «Колонки» в тулбар (группа `view`), «Скрыть колонку» в кебаб заголовка и
+ * видимость — стоковый срез `columnVisibility` ядра. Плагин добавляет раздел «Колонки»
+ * «Настроек вида» (ADR 0215), «Скрыть колонку» в кебаб заголовка и
  * бизнес-колбэк; заглушка «все колонки скрыты» (ADR 0123).
  */
 import { definePlugin } from '../../core/definePlugin'
-import { ColumnVisibilityButton } from './ColumnVisibilityButton'
 import { COLUMNS_HIDDEN_STUB } from './columnsHiddenStub'
 import { hideHeaderAction } from './hideHeaderAction'
 import { columnVisibilityInertReason } from './inertReason'
 import type { ColumnVisibilityHooks } from './types'
 import { columnVisibilityLabels } from './labels'
-
-export const COLUMN_VISIBILITY_TOOLBAR_GROUP = 'view'
+import { columnsSection } from './viewSettingsSection'
 
 export interface ColumnVisibilityOptions {
   /** `false` — плагин отключён. */
@@ -38,13 +36,6 @@ export const columnVisibility = definePlugin<ColumnVisibilityOptions>()({
   hooks: o => ({ onToggleColumnVisibility: o.onToggleColumnVisibility }),
   slotActions: [hideHeaderAction],
   stubs: [COLUMNS_HIDDEN_STUB],
-  slots: [
-    {
-      id: 'columnVisibilityButton',
-      slot: 'toolbarSlot',
-      group: COLUMN_VISIBILITY_TOOLBAR_GROUP,
-      order: 0,
-      component: ColumnVisibilityButton,
-    },
-  ],
+  // Меню колонок — раздел «Настроек вида» (ADR 0215, §3).
+  viewSettingsSections: [columnsSection],
 })

@@ -32,8 +32,12 @@ export const PopupEntry = ({
 }: PopupEntryProps) => {
   const id = useId()
   return (
-    <div className={styles.entry} data-fit={fit || undefined}>
-      <span className={styles.mark} aria-hidden>
+    <div
+      className={styles.entry}
+      data-popup-entry=""
+      data-fit={fit || undefined}
+    >
+      <span className={styles.mark} data-popup-entry-mark="" aria-hidden>
         {mark}
       </span>
       <div className={styles.head}>
@@ -42,6 +46,7 @@ export const PopupEntry = ({
           <button
             type="button"
             className={styles.show}
+            data-popup-entry-label=""
             data-action="show"
             aria-describedby={children ? id : undefined}
             onClick={onShow}
@@ -49,7 +54,9 @@ export const PopupEntry = ({
             {label}
           </button>
         ) : (
-          <span className={styles.label}>{label}</span>
+          <span className={styles.label} data-popup-entry-label="">
+            {label}
+          </span>
         )}
         {aside}
         {actions && <div className={styles.actions}>{actions}</div>}

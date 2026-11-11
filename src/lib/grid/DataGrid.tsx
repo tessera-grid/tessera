@@ -87,6 +87,7 @@ import type { RenderSlots } from '../core/createSlots'
 import { useTableState } from '../core/reactivity'
 import { cancelColumnResize } from '../core/cancelInteraction'
 import { countPanelSlots, resolvePanelVisible } from '../core/panels'
+import { viewSettingsShown } from '../core/viewSettings'
 import {
   useColumnVirtualizer,
   useColumnVirtualizerScroll,
@@ -209,7 +210,7 @@ const DataGridView = <D extends LabelDictionary = LabelDictionary>({
   const statusBarSlot = renderSlots?.statusBarSlot ?? []
   const enableToolbar = resolvePanelVisible(
     options.enableToolbar,
-    renderSlots?.toolbarSlot.length ?? 0,
+    (renderSlots?.toolbarSlot.length ?? 0) + (viewSettingsShown(table) ? 1 : 0),
   )
   const hasStatusBar = resolvePanelVisible(
     options.enableStatusBar,

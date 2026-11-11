@@ -309,3 +309,111 @@ export const UnsavedChangesApply: StoryObj<StoryProps> = {
     })
   },
 }
+
+// --- ADR 0206 S1 ----------------------------------------------------------------------
+
+const DISCARDED = 'Lima'
+
+/** Три несохранённые правки ячеек. */
+const CELL_DRAFTS = PLAYGROUND_DRAFTS.filter(
+  draft => draft.kind === 'cellValue',
+)
+
+const DISCARD_ARGS = {
+  ...GRID,
+  enableCellEditing: true,
+  cellEditingSaveMode: 'manual',
+  editableColumns: ['name', 'city', 'age'],
+  initialDrafts: CELL_DRAFTS,
+} satisfies Partial<StoryProps>
+
+/** Пульт открыт; правка `text` отброшена кнопкой своей записи. */
+const discardEntry = async (text: string, signal: AbortSignal) => {
+  const entry = () =>
+    entries().find(item => item.textContent?.includes(text)) ?? null
+  if (countOf() === CELL_DRAFTS.length) {
+    await openPanel(signal)
+    entry()?.querySelector<HTMLElement>('[data-action="discard"]')?.click()
+  }
+  await pollUntil(
+    () => countOf() === CELL_DRAFTS.length - 1 && panelOpen() && !entry(),
+    signal,
+  )
+}
+
+const DISCARD: readonly GuideStoryStep[] = [
+  {
+    title: 'Пульт открыт',
+    hint: 'Пользователь поправил три ячейки и не сохранил правки, затем открыл пульт. Кнопка отказа у каждой правки и кнопка отказа от всех внизу выделены тоном опасного действия сразу, без наведения: они безвозвратно теряют правки, а применение и переход к ячейке — нет.',
+    states: ['overlay.unsavedChanges'],
+    enter: stepAction((_root, { signal }) => openPanel(signal)),
+  },
+  {
+    title: 'Одна правка отброшена',
+    hint: 'Пользователь отказался от правки города прямо в пульте. Её запись ушла, пульт остался открытым; в ячейке снова прежнее значение, на кнопке пульта — две несохранённые правки.',
+    states: ['overlay.unsavedChanges', 'body.cellDraft'],
+    enter: stepAction((_root, { signal }) => discardEntry(DISCARDED, signal)),
+  },
+  {
+    title: 'Всё отброшено',
+    hint: 'Пользователь отказался от всех оставшихся правок. Пульт пуст, несохранённых изменений не осталось, в ячейках — прежние значения.',
+    states: ['overlay.unsavedChanges'],
+    enter: stepAction(async (_root, { signal }) => {
+      await discardEntry(DISCARDED, signal)
+      if (countOf() > 0) {
+        await openPanel(signal)
+        byTestId('unsaved-changes')
+          ?.querySelector<HTMLElement>('[data-action="discard-all"]')
+          ?.click()
+      }
+      await pollUntil(
+        () => countOf() === 0 && panelOpen() && entries().length === 0,
+        signal,
+      )
+    }),
+  },
+]
+
+/** ADR 0206, S1: пользователь отбрасывает правки из пульта — опасные кнопки видны сразу. */
+export const UnsavedChangesDangerActions: StoryObj<StoryProps> = {
+  name: 'Discard from the panel',
+  parameters: { scenario: '0206/S1', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Отказ от правок в пульте"
+      steps={DISCARD}
+      args={guideArgs(DISCARD_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(DISCARD[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(panelOpen()).toBe(true))
+      await expect(entries()).toHaveLength(CELL_DRAFTS.length)
+      await expect(
+        byTestId('unsaved-changes')?.querySelector(
+          '[data-action="discard-all"]',
+        ),
+      ).not.toBeNull()
+      await settle()
+    })
+    await step(DISCARD[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(countOf()).toBe(CELL_DRAFTS.length - 1)
+      await expect(
+        canvas.querySelector(
+          '.data-grid__body-row[data-row-id="item-id-2"] .data-grid__body-cell[data-column-id="city"] [data-cell-draft]',
+        ),
+      ).toBeNull()
+    })
+    await step(DISCARD[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(countOf()).toBe(0)
+      await expect(entries()).toHaveLength(0)
+      await settle()
+    })
+  },
+}

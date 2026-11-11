@@ -11,6 +11,10 @@ import {
   waitForRows,
 } from './__mocks__/catalogPlay'
 import { untilDone } from './__mocks__/cellGestures'
+import {
+  closeViewSettings,
+  openViewSettingsSection,
+} from './__mocks__/viewSettings'
 import { storyLabels } from './__mocks__/storyLabels'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
@@ -37,7 +41,7 @@ export const ColumnVisibilityPlayground: StoryObj<StoryProps> = {
     'rowSelectionSelectedCount',
   ]),
   args: {
-    // Кнопка «Колонки» в тулбаре: поиск, флажок всех колонок, дерево, счётчик и «Сбросить».
+    // Раздел «Колонки» «Настроек вида»: поиск, флажок всех колонок, дерево, счётчик и «Сбросить».
     // headerNesting: nested — меню покажет группы вложенной шапки.
     enableColumnVisibility: true,
     enableRowSelection: true,
@@ -62,8 +66,8 @@ const headIdsOf = (root: ParentNode) =>
     .filter(id => id && !id.startsWith('actionColumn'))
 
 /**
- * Шаг в меню «Колонки», как у пользователя: меню открыто — сразу, иначе сначала нажатие
- * на кнопку тулбара. `reach` делает одно нажатие к состоянию шага и возвращает `true`,
+ * Шаг в меню «Колонки», как у пользователя: меню открыто — сразу, иначе сначала «Настройки вида» и его
+ * раздел «Колонки» (ADR 0215). `reach` делает одно нажатие к состоянию шага и возвращает `true`,
  * когда оно достигнуто: шаг приходит к своему состоянию из любого — после отката гайда
  * и при переходе нажатием на шаг (ADR 0117, SN24, SN33).
  */
@@ -74,13 +78,7 @@ const inColumnsMenu =
     const run = () => {
       if (menuOf()?.hasAttribute('data-open')) {
         if (reach() || ++clicks > 10) return
-      } else {
-        const button = root.querySelector<HTMLElement>(
-          '[data-testid="column-visibility-button"]',
-        )
-        if (button?.hasAttribute('data-base-ui-click-trigger') && !menuOf())
-          button.click()
-      }
+      } else openViewSettingsSection(root, 'columns')
       requestAnimationFrame(run)
     }
     requestAnimationFrame(run)
@@ -259,11 +257,7 @@ const HEADER_MENU: readonly GuideStoryStep[] = [
           else hideFromMenu(root)
         } else if (headCell(root, HIDDEN)) return
         else if (!menuOf()?.hasAttribute('data-open'))
-          root
-            .querySelector<HTMLElement>(
-              '[data-testid="column-visibility-button"]',
-            )
-            ?.click()
+          openViewSettingsSection(root, 'columns')
         else if (checkedOf(columnBoxOf(HIDDEN)) !== 'true')
           columnBoxOf(HIDDEN)?.click()
         setTimeout(run, 150)
@@ -371,8 +365,12 @@ const clearOf = (id: string) =>
   rowOf(id)?.querySelector<HTMLElement>(
     '[data-testid="column-visibility-clear-transforms"]',
   ) ?? null
-const columnsButtonOf = (root: HTMLElement) =>
-  root.querySelector<HTMLElement>('[data-testid="column-visibility-button"]')
+/** Нажатие к разделу «Колонки» «Настроек вида» (ADR 0215): открыть «Настройки вида», затем раздел. */
+const columnsButtonOf = (root: HTMLElement) => ({
+  click: () => openViewSettingsSection(root, 'columns'),
+})
+/** Закрыть «Настройки вида» с разделом «Колонки». */
+const closeColumns = (root: HTMLElement) => closeViewSettings(root)
 const transformedKebabOf = (root: HTMLElement) =>
   headCell(root, TRANSFORMED)?.querySelector<HTMLElement>(
     '[data-action-menu]',
@@ -387,7 +385,7 @@ const HIDE_SORTED: readonly GuideStoryStep[] = [
   },
   {
     title: 'Пользователь открыл меню колонки',
-    hint: 'Под действием «скрыть колонку» — подсказка: сортировка и фильтр останутся и после скрытия.',
+    hint: 'Пользователь открыл меню отсортированной колонки. Под пунктом скрытия — подсказка: сортировка и фильтр останутся и после скрытия.',
     states: ['overlay.menu'],
     enter: untilDone(
       () => !!captionOf(transformedHideItem()),
@@ -471,7 +469,7 @@ const reopenedWithIcons = (root: HTMLElement) => {
           columnBoxOf(TRANSFORMED)?.click()
       } else columnsButtonOf(root)?.click()
     } else if (!closed) {
-      if (menuOf()?.hasAttribute('data-open')) columnsButtonOf(root)?.click()
+      if (menuOf()?.hasAttribute('data-open')) closeColumns(root)
       else closed = true
     } else if (!menuOf()?.hasAttribute('data-open'))
       columnsButtonOf(root)?.click()

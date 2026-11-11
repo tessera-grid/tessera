@@ -633,3 +633,19 @@ export const dataExportFilenameType: InputType = {
   description: 'Имя файла без расширения (`filename`); по умолчанию `export`',
   table: { defaultValue: { summary: 'export' } },
 }
+
+/** Место встроенной кнопки плагина в тулбаре (ADR 0205): `{ group, order, align }` или `false`. */
+const toolbarPlacementControl = (button: string): InputType => ({
+  control: 'object',
+  description: `Место кнопки «${button}» в тулбаре: \`{ group, order, align }\`; \`false\` — без кнопки`,
+  table: {
+    type: { summary: 'ToolbarPlacement | false' },
+    defaultValue: { summary: 'встроенное' },
+  },
+})
+export const quickSearchToolbarType = toolbarPlacementControl('Поиск')
+export const dataExportToolbarType = toolbarPlacementControl('Выгрузка')
+export const unsavedChangesToolbarType = toolbarPlacementControl(
+  'Несохранённые изменения',
+)
+export const failureLogToolbarType = toolbarPlacementControl('Журнал отказов')

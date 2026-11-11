@@ -11,7 +11,7 @@ import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
 
 /**
  * Тулбар (ADR 0035, ADR 0051): `Playground` — все встроенные кнопки; до прихода
- * данных — сценарии S1–S3 ADR 0122.
+ * данных — сценарии S1–S3 ADR 0122; свой порядок кнопок — S1 ADR 0205.
  */
 const meta = {
   ...dataGridMeta,
@@ -76,7 +76,7 @@ const TOOLBAR_ARGS = {
 /** Грид открыт, данных ещё нет. */
 const OPENED: GuideStoryStep = {
   title: 'Данные загружаются',
-  hint: 'Данные ещё не пришли. Поиск, фильтры и выбор колонок уже работают, их результат станет запросом к данным. Выгружать пока нечего, поэтому на месте кнопки выгрузки — состояние загрузки.',
+  hint: 'Данные ещё не пришли. Поиск и настройки вида уже работают, их результат станет запросом к данным. Выгружать пока нечего, поэтому на месте кнопки выгрузки — состояние загрузки.',
   props: () => ({ loading: 'initial', dataOverride: [] }),
 }
 
@@ -133,27 +133,23 @@ export const ToolbarInitialLoading: StoryObj<StoryProps> = {
     // В Storybook сценарий проходит человек; `play` — только в тестах каталога.
     if (globals.catalog !== true) return
     let skeleton = rect(canvas)
-    let columns = rect(canvas)
-    let filters = rect(canvas)
+    let view = rect(canvas)
     await step(INITIAL_LOADING[0]!.title, async () => {
       await waitTestId('export-skeleton')
       await waitTestId('quick-search')
       await expect(byTestId('export-button')).toBeNull()
-      await expect(byTestId('column-visibility-button')).not.toBeNull()
-      await expect(byTestId('filter-summary-button')).not.toBeNull()
+      await expect(byTestId('view-settings-button')).not.toBeNull()
       await expect(
         byTestId('quick-search')!.getAttribute('aria-disabled'),
       ).not.toBe('true')
       skeleton = rect(byTestId('export-skeleton')!)
-      columns = rect(byTestId('column-visibility-button')!)
-      filters = rect(byTestId('filter-summary-button')!)
+      view = rect(byTestId('view-settings-button')!)
     })
     await step(INITIAL_LOADING[1]!.title, async () => {
       await guideNext(canvas)
       await waitTestId('export-button')
       await expectSameBox(rect(byTestId('export-button')!), skeleton)
-      await expectSameBox(rect(byTestId('column-visibility-button')!), columns)
-      await expectSameBox(rect(byTestId('filter-summary-button')!), filters)
+      await expectSameBox(rect(byTestId('view-settings-button')!), view)
     })
     await settle()
   },
@@ -259,7 +255,7 @@ export const ToolbarSearchBeforeDataServer: StoryObj<StoryProps> = {
 const COLUMNS_ARRIVE: readonly GuideStoryStep[] = [
   {
     title: 'Ожидание списка колонок от сервера',
-    hint: 'Структура таблицы ещё неизвестна. Поле поиска, выбор колонок, кнопка выгрузки и тело таблицы в состоянии загрузки.',
+    hint: 'Структура таблицы ещё неизвестна. Поле поиска, кнопка настроек вида, кнопка выгрузки и тело таблицы в состоянии загрузки.',
     props: () => ({
       loading: 'initial',
       dataOverride: [],
@@ -268,7 +264,7 @@ const COLUMNS_ARRIVE: readonly GuideStoryStep[] = [
   },
   {
     title: 'Колонки загружены',
-    hint: 'Сервер вернул список колонок, данные ещё не пришли. Поле поиска и выбор колонок встают на место состояния загрузки, кнопка выгрузки ждёт данных.',
+    hint: 'Сервер вернул список колонок, данные ещё не пришли. Поле поиска и кнопка настроек вида встают на место состояния загрузки, кнопка выгрузки ждёт данных.',
     props: () => ({ columnsOverride: undefined }),
   },
   ANSWERED,
@@ -294,18 +290,18 @@ export const ToolbarColumnsArrive: StoryObj<StoryProps> = {
     let columns = rect(canvas)
     await step(COLUMNS_ARRIVE[0]!.title, async () => {
       await waitTestId('quick-search-skeleton')
-      await waitTestId('column-visibility-skeleton')
+      await waitTestId('view-settings-skeleton')
       await waitTestId('export-skeleton')
       await expect(skeletonRow(canvas)).not.toBeNull()
       field = rect(byTestId('quick-search-skeleton')!)
-      columns = rect(byTestId('column-visibility-skeleton')!)
+      columns = rect(byTestId('view-settings-skeleton')!)
     })
     await step(COLUMNS_ARRIVE[1]!.title, async () => {
       await guideNext(canvas)
       await waitTestId('quick-search')
-      await waitTestId('column-visibility-button')
+      await waitTestId('view-settings-button')
       await expectSameBox(rect(byTestId('quick-search')!.parentElement!), field)
-      await expectSameBox(rect(byTestId('column-visibility-button')!), columns)
+      await expectSameBox(rect(byTestId('view-settings-button')!), columns)
       await expect(byTestId('export-skeleton')).not.toBeNull()
     })
     await step(COLUMNS_ARRIVE[2]!.title, async () => {
@@ -313,5 +309,93 @@ export const ToolbarColumnsArrive: StoryObj<StoryProps> = {
       await waitTestId('export-button')
     })
     await settle()
+  },
+}
+
+// --- ADR 0205, S1 -----------------------------------------------------------------------
+
+const OWN_ORDER_ARGS = {
+  enableQuickSearch: true,
+  enableColumnFiltering: true,
+  enableColumnSorting: true,
+  enableColumnVisibility: true,
+  enableDataExport: true,
+  columnCount: 5,
+  dataCount: 30,
+  containerHeight: '420',
+  height: '320',
+  maxHeight: '320',
+} satisfies Partial<StoryProps>
+
+/** «Экспорт» — в левой группе, в её конце. */
+const EXPORT_LEFT = {
+  group: 'search',
+  align: 'start',
+  order: 'last',
+} as const
+
+const box = (testId: string) =>
+  byTestId(testId)?.getBoundingClientRect() ?? null
+
+const OWN_ORDER: readonly GuideStoryStep[] = [
+  {
+    title: 'Кнопки на местах по умолчанию',
+    hint: 'Слева — поле поиска, справа — кнопка настроек вида и выгрузка.',
+  },
+  {
+    title: 'Выгрузка слева',
+    hint: 'Приложение поставило кнопку выгрузки в левую группу, сразу после поля поиска. Стрелки клавиатуры проходят кнопки тулбара в новом порядке.',
+    props: () => ({ dataExportToolbar: EXPORT_LEFT }),
+  },
+  {
+    title: 'Поле поиска убрано',
+    hint: 'Приложению поле поиска не нужно — его больше нет, выгрузка встала первой слева.',
+    props: () => ({ quickSearchToolbar: false }),
+  },
+]
+
+/** ADR 0205, S1: приложение переносит «Экспорт» влево и убирает поле поиска. */
+export const ToolbarOwnOrder: StoryObj<StoryProps> = {
+  name: 'Own button order',
+  parameters: {
+    scenario: '0205/S1',
+    ...guideControls(),
+  },
+  render: args => (
+    <GuideStory
+      title="Свой порядок кнопок"
+      steps={OWN_ORDER}
+      args={guideArgs(OWN_ORDER_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(OWN_ORDER[0]!.title, async () => {
+      await until(() => expect(box('export-button')).not.toBeNull())
+      await until(() => expect(box('quick-search')).not.toBeNull())
+      await expect(box('export-button')!.left).toBeGreaterThan(
+        box('view-settings-button')!.right,
+      )
+    })
+    await step(OWN_ORDER[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(box('export-button')!.right).toBeLessThan(
+          box('view-settings-button')!.left,
+        ),
+      )
+      await expect(box('export-button')!.left).toBeGreaterThan(
+        box('quick-search')!.right,
+      )
+      await settle()
+    })
+    await step(OWN_ORDER[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(box('quick-search')).toBeNull())
+      await expect(box('export-button')!.right).toBeLessThan(
+        box('view-settings-button')!.left,
+      )
+      await settle()
+    })
   },
 }

@@ -39,7 +39,7 @@
 в разы, но держатся на поведении TanStack, которого его API не обещает: строка переживает смену
 модели вместе с кэшами `_valuesCache` и `_groupingValuesCache`, словарь `rowsById` правится на
 месте, `index`, `depth`, `parentId` и `subRows` уже собранных строк переписываются, автосбросы —
-микрозадачи после пересчёта (перечень — [upstream-foundations.md](../architecture/upstream-foundations.md#свои-модели-строк-поверх-tanstack)).
+микрозадачи после пересчёта (перечень — [upstream-foundations.md](../architecture/upstream-foundations.md#движок-строк-поверх-tanstack)).
 Почти всё, что мы трогаем, TanStack экспортирует (`constructRow`, `copyInstancePropertiesWithoutMemos`,
 `expandRows`, `tableMemo`), а подчёркнутые поля объявлены в типах `Row`: риск не в закрытых
 символах, а в неописанном поведении.

@@ -34,6 +34,7 @@ import {
   SquareCheck,
   Funnel,
   Search,
+  SlidersHorizontal,
   X,
   Group,
   GripVertical,
@@ -101,6 +102,8 @@ export interface TableIcons {
   edit: IconComponent
   /** Кнопка меню колонок в тулбаре */
   columns: IconComponent
+  /** Кнопка «Настройки вида» в тулбаре (ADR 0215) */
+  viewSettings: IconComponent
   /** Кнопка «Экспорт» в тулбаре */
   download: IconComponent
   /** Кнопка фильтра в заголовке (`columnFiltering`) */
@@ -191,6 +194,7 @@ export const DEFAULT_ICONS: TableIcons = {
   menu: MoreVertical,
   edit: Pencil,
   columns: Columns3,
+  viewSettings: SlidersHorizontal,
   download: Download,
   filter: Funnel,
   // Та же воронка: включённый фильтр показывает точка (ADR 0062), а не смена значка.

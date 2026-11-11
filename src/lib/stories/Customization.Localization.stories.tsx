@@ -14,6 +14,13 @@ import {
   waitForRows,
 } from './__mocks__/catalogPlay'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
+import {
+  closeViewSettings,
+  openViewSettingsSection,
+  viewSettingsPopover,
+  viewSettingsSectionOpen,
+} from './__mocks__/viewSettings'
+import { untilDone } from './__mocks__/cellGestures'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
 import { WithConsole } from './demos/StoryConsole'
@@ -148,8 +155,6 @@ const NBSP = ' '
 /** Закрыть открытое меню или панель — как `Escape` пользователя. */
 const closePopups = pressEscape
 
-const columnsButtonOf = (root: ParentNode) =>
-  root.querySelector<HTMLElement>('[data-testid="column-visibility-button"]')
 const filterButtonOf = (root: ParentNode) =>
   root.querySelector<HTMLElement>(
     '.data-grid__head-cell[data-column-id="country"] .column-filter__button',
@@ -179,12 +184,25 @@ const FROM_JSON: readonly GuideStoryStep[] = [
   {
     title: 'Меню «Колонки»',
     hint: 'Меню колонок тоже по-русски: поле «Найти колонку», флажок «Все колонки», счётчик «Выбрано: N колонок» и кнопка «Сбросить».',
-    enter: openWith(columnsButtonOf),
+    // Раздел «Колонки» «Настроек вида» (ADR 0215): сначала «Настройки вида», затем раздел.
+    enter: untilDone(
+      () => !!viewSettingsSectionOpen('columns'),
+      root => {
+        if (!viewSettingsPopover()) closePopups()
+        openViewSettingsSection(root, 'columns')
+      },
+    ),
   },
   {
     title: 'Фильтр колонки',
     hint: 'Панель фильтра колонки «Country»: условие «Содержит», кнопка «Сбросить».',
-    enter: openWith(filterButtonOf),
+    enter: untilDone(
+      () => !!document.querySelector('[data-testid="filter-panel"]'),
+      root => {
+        if (viewSettingsPopover()) closeViewSettings(root)
+        else filterButtonOf(root)?.click()
+      },
+    ),
   },
 ]
 
@@ -241,7 +259,7 @@ export const LocalizationFromJson: StoryObj<StoryProps> = {
       await until(() =>
         expect(
           document
-            .querySelector('[data-testid="column-visibility-button"]')
+            .querySelector('[data-testid="view-settings-button"]')
             ?.getAttribute('aria-expanded'),
         ).not.toBe('true'),
       )

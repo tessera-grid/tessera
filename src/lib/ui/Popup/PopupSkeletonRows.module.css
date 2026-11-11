@@ -1,0 +1,7 @@
+.row {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  min-height: var(--tsr-comp-popup-item-min-height);
+  padding: 0 var(--tsr-comp-popup-item-padding-x);
+}

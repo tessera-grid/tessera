@@ -243,10 +243,10 @@ export const MODEL_PARITY: ParityBase = {
     same: ['enabled'],
   },
   failureLog: {
-    same: ['enabled'],
+    same: ['toolbar', 'enabled'],
   },
   unsavedChanges: {
-    same: ['enabled'],
+    same: ['toolbar', 'enabled'],
   },
   serverRowModel: {
     onlyOnServer: {
@@ -275,6 +275,7 @@ export const MODEL_PARITY: ParityBase = {
   },
   quickSearch: {
     same: [
+      'toolbar',
       'enabled',
       'debounceMs',
       'filteredCount',
@@ -294,6 +295,7 @@ export const MODEL_PARITY: ParityBase = {
   },
   dataExport: {
     same: [
+      'toolbar',
       'enabled',
       'formats',
       'allow',

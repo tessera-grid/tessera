@@ -5,6 +5,7 @@ import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { actionOwnerOf } from '../actionOwners'
 import { announceLabel } from '../announcer'
 import { type DebugActionSource, reportAction } from '../debugActions'
+import { snapshotLevel } from '../../util/levelSnapshot'
 import { useLatest } from '../../util/useLatest'
 import type { TableLabels } from '../localization'
 import {
@@ -52,34 +53,8 @@ export const useMenuSections = (
     loads,
   )
 
-  // Снимок уходящего уровня — разметка без обработчиков и ролей: Base UI не ведёт по
-  // нему стрелки, а скринридер его не видит. Классы снимка задаёт вид меню на слое снимков.
-  const snapshot = (towards: SectionDirection) => {
-    const current = levelRef.current
-    const host = ghostRef.current
-    if (!current || !host) return
-    const ghost = current.cloneNode(true) as HTMLElement
-    ghost.querySelectorAll('[id], [role], [tabindex]').forEach(node => {
-      node.removeAttribute('id')
-      node.removeAttribute('role')
-      node.removeAttribute('tabindex')
-    })
-    ghost.removeAttribute('data-menu-level')
-    ghost.setAttribute('aria-hidden', 'true')
-    ghost.setAttribute('inert', '')
-    ghost.className =
-      (towards === 'forward'
-        ? host.dataset.leaveForward
-        : host.dataset.leaveBack) ?? ''
-    ghost.style.width = `${current.offsetWidth}px`
-    host.replaceChildren(ghost)
-    void Promise.all(
-      ghost.getAnimations().map(animation => animation.finished),
-    ).then(
-      () => ghost.remove(),
-      () => ghost.remove(),
-    )
-  }
+  const snapshot = (towards: SectionDirection) =>
+    snapshotLevel(levelRef.current, ghostRef.current, towards)
 
   /** Вход в раздел — сразу; асинхронный раздел до ответа показывает скелет. */
   const enter = (owner: MenuAction, source: DebugActionSource = 'pointer') => {

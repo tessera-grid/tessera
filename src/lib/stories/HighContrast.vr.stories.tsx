@@ -19,6 +19,7 @@ import * as exportStories from './DataGrid.Export.stories'
 import * as filteringStories from './DataGrid.Filtering.stories'
 import * as panelsPaginationStories from './DataGrid.Panels.Pagination.stories'
 import * as panelsToolbarStories from './DataGrid.Panels.Toolbar.stories'
+import * as panelsViewSettingsStories from './DataGrid.Panels.ViewSettings.stories'
 import panelsFailureLogMeta, * as panelsFailureLogStories from './DataGrid.Panels.FailureLog.stories'
 import panelsUnsavedChangesMeta, * as panelsUnsavedChangesStories from './DataGrid.Panels.UnsavedChanges.stories'
 import rowsEditingMeta, * as rowsEditingStories from './DataGrid.Rows.Editing.stories'
@@ -4955,6 +4956,26 @@ export const HighContrastContextMenuRefusedOnSelectionStep3 = {
   tags: ['!test'],
 }
 
+export const HighContrastContextMenuDangerActionStep1 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuDangerAction,
+    1,
+  ),
+  name: 'Cells/Context menu — Own dangerous action, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastContextMenuDangerActionStep2 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuDangerAction,
+    2,
+  ),
+  name: 'Cells/Context menu — Own dangerous action, шаг 2',
+  tags: ['!test'],
+}
+
 export const HighContrastRowActionsCancelStep1 = {
   ...twinStep(rowsActionsStories, rowsActionsStories.RowActionsCancel, 1),
   name: 'Rows/Actions — Cancel an action, шаг 1',
@@ -6968,6 +6989,36 @@ export const HighContrastUnsavedChangesApplyStep4 = {
   tags: ['!test'],
 }
 
+export const HighContrastUnsavedChangesDangerActionsStep1 = {
+  ...twinStep(
+    panelsUnsavedChangesStories,
+    panelsUnsavedChangesStories.UnsavedChangesDangerActions,
+    1,
+  ),
+  name: 'Panels/Unsaved changes — Discard from the panel, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastUnsavedChangesDangerActionsStep2 = {
+  ...twinStep(
+    panelsUnsavedChangesStories,
+    panelsUnsavedChangesStories.UnsavedChangesDangerActions,
+    2,
+  ),
+  name: 'Panels/Unsaved changes — Discard from the panel, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastUnsavedChangesDangerActionsStep3 = {
+  ...twinStep(
+    panelsUnsavedChangesStories,
+    panelsUnsavedChangesStories.UnsavedChangesDangerActions,
+    3,
+  ),
+  name: 'Panels/Unsaved changes — Discard from the panel, шаг 3',
+  tags: ['!test'],
+}
+
 export const HighContrastManualSaveCellsStep1 = {
   ...twinStep(cellsEditingStories, cellsEditingStories.ManualSaveCells, 1),
   name: 'Cells/Editing — Save by button, шаг 1',
@@ -8457,5 +8508,153 @@ export const HighContrastThemingColumnDividersStep1 = {
 export const HighContrastThemingColumnDividersStep2 = {
   ...twinStep(themingStories, themingStories.ThemingColumnDividers, 2),
   name: 'Theming — Column dividers, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastToolbarOwnOrderStep1 = {
+  ...twinStep(panelsToolbarStories, panelsToolbarStories.ToolbarOwnOrder, 1),
+  name: 'Panels/Toolbar — Own button order, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastToolbarOwnOrderStep2 = {
+  ...twinStep(panelsToolbarStories, panelsToolbarStories.ToolbarOwnOrder, 2),
+  name: 'Panels/Toolbar — Own button order, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastToolbarOwnOrderStep3 = {
+  ...twinStep(panelsToolbarStories, panelsToolbarStories.ToolbarOwnOrder, 3),
+  name: 'Panels/Toolbar — Own button order, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastViewSummaryStep1 = {
+  ...twinStep(
+    panelsViewSettingsStories,
+    panelsViewSettingsStories.ViewSettingsSummary,
+    1,
+  ),
+  name: 'Panels/View settings — Hidden column settings, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastViewSummaryStep2 = {
+  ...twinStep(
+    panelsViewSettingsStories,
+    panelsViewSettingsStories.ViewSettingsSummary,
+    2,
+  ),
+  name: 'Panels/View settings — Hidden column settings, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastViewSummaryStep3 = {
+  ...twinStep(
+    panelsViewSettingsStories,
+    panelsViewSettingsStories.ViewSettingsSummary,
+    3,
+  ),
+  name: 'Panels/View settings — Hidden column settings, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastViewSummaryStep4 = {
+  ...twinStep(
+    panelsViewSettingsStories,
+    panelsViewSettingsStories.ViewSettingsSummary,
+    4,
+  ),
+  name: 'Panels/View settings — Hidden column settings, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastViewColumnsStep1 = {
+  ...twinStep(
+    panelsViewSettingsStories,
+    panelsViewSettingsStories.ViewSettingsColumns,
+    1,
+  ),
+  name: 'Panels/View settings — Columns section, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastViewColumnsStep2 = {
+  ...twinStep(
+    panelsViewSettingsStories,
+    panelsViewSettingsStories.ViewSettingsColumns,
+    2,
+  ),
+  name: 'Panels/View settings — Columns section, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastViewColumnsStep3 = {
+  ...twinStep(
+    panelsViewSettingsStories,
+    panelsViewSettingsStories.ViewSettingsColumns,
+    3,
+  ),
+  name: 'Panels/View settings — Columns section, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastViewOwnSectionStep1 = {
+  ...twinStep(
+    panelsViewSettingsStories,
+    panelsViewSettingsStories.ViewSettingsOwnSection,
+    1,
+  ),
+  name: 'Panels/View settings — Own section, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastViewOwnSectionStep2 = {
+  ...twinStep(
+    panelsViewSettingsStories,
+    panelsViewSettingsStories.ViewSettingsOwnSection,
+    2,
+  ),
+  name: 'Panels/View settings — Own section, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastViewOwnSectionStep3 = {
+  ...twinStep(
+    panelsViewSettingsStories,
+    panelsViewSettingsStories.ViewSettingsOwnSection,
+    3,
+  ),
+  name: 'Panels/View settings — Own section, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastViewServerRefusedStep1 = {
+  ...twinStep(
+    panelsViewSettingsStories,
+    panelsViewSettingsStories.ViewSettingsServerRefused,
+    1,
+  ),
+  name: 'Panels/View settings — Refused by the server, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastViewServerRefusedStep2 = {
+  ...twinStep(
+    panelsViewSettingsStories,
+    panelsViewSettingsStories.ViewSettingsServerRefused,
+    2,
+  ),
+  name: 'Panels/View settings — Refused by the server, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastViewServerRefusedStep3 = {
+  ...twinStep(
+    panelsViewSettingsStories,
+    panelsViewSettingsStories.ViewSettingsServerRefused,
+    3,
+  ),
+  name: 'Panels/View settings — Refused by the server, шаг 3',
   tags: ['!test'],
 }

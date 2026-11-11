@@ -92,7 +92,9 @@ describe('Action menu — header', () => {
 
     const labels = menuItems().map(i => i.textContent?.trim())
     // Три подгруппы: пиннинг | сортировка (3 пункта) | группировка.
-    expect(document.querySelectorAll('[role="group"]').length).toBe(3)
+    expect(
+      document.querySelectorAll('[role="menu"] [role="group"]').length,
+    ).toBe(3)
     expect(labels).toEqual(
       expect.arrayContaining([
         columnSortingLabels(tableLabels).sortAscending,

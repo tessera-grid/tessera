@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowDownToLine, Calculator } from 'lucide-react'
+import { ArrowDownToLine, Calculator, Trash2 } from 'lucide-react'
 import { Meta, StoryObj } from '@storybook/react'
 import { expect } from 'storybook/test'
 import type { StoryProps } from './DataGridStory.types'
@@ -1118,6 +1118,113 @@ export const ContextMenuWholeTableCancel: StoryObj<StoryProps> = {
       await until(() => expect(refreshing(canvas)).toBe(false))
       await settle()
       expect(banner(canvas)).toBeNull()
+    })
+  },
+}
+
+// --- ADR 0206 S2 ---------------------------------------------------------------------
+
+const DOOMED = { row: 'item-id-2', column: 'lastName' }
+const DELETE_ITEM = '[data-action-id="deleteRowFromMenu"]'
+
+/** Действие приложения: удалить строку до сохранения — с тоном опасного действия. */
+const deleteRowAction: ContextMenuAction = {
+  id: 'deleteRowFromMenu',
+  icon: () => <Trash2 width={16} height={16} />,
+  label: () => 'Delete row',
+  tone: 'danger',
+  visible: ctx =>
+    !(ctx.table as unknown as { getDrafts: () => { target: object }[] })
+      .getDrafts()
+      .some(draft => 'row' in draft.target),
+  onSelect: ctx =>
+    (ctx.table as unknown as { removeRow: (id: string) => void }).removeRow(
+      ctx.row.id,
+    ),
+}
+
+const deleteRowDemo: TesseraFeatureEntry = {
+  id: 'deleteRowGuide',
+  contextMenuActions: [deleteRowAction],
+}
+
+const deleteItem = () =>
+  openMenu()?.querySelector<HTMLElement>(DELETE_ITEM) ?? null
+const doomedRow = (root: ParentNode) =>
+  root.querySelector<HTMLElement>(
+    `.data-grid__body-row[data-row-id="${DOOMED.row}"]`,
+  )
+const rowDeleted = (root: ParentNode) =>
+  doomedRow(root)?.getAttribute('data-row-draft') === 'deleted'
+
+const DANGER_ITEM: readonly GuideStoryStep[] = [
+  {
+    title: 'Опасный пункт в меню',
+    hint: 'Приложение добавило в меню ячейки своё действие удаления строки и пометило его как опасное. Пользователь открыл меню: этот пункт выделен тоном опасного действия сразу, без наведения, остальные — обычные.',
+    states: ['overlay.contextMenu'],
+    enter: root => {
+      const still = steady()
+      return untilDone(
+        root =>
+          still(at(root, DOOMED)) && menuAt(at(root, DOOMED)) && !!deleteItem(),
+        root => openAt(at(root, DOOMED)),
+      )(root, undefined)
+    },
+  },
+  {
+    title: 'Строка помечена удалённой',
+    hint: 'Пользователь выбрал удаление. Меню закрылось, строка осталась на месте до сохранения: текст приглушён, на кнопке пульта — одно несохранённое изменение.',
+    states: ['body.rowDraft'],
+    enter: untilDone(
+      root => rowDeleted(root) && !openMenu(),
+      root => {
+        if (rowDeleted(root)) closeMenu()
+        else if (deleteItem()) deleteItem()!.click()
+        else openAt(at(root, DOOMED))
+      },
+    ),
+  },
+]
+
+/** ADR 0206, S2: своё опасное действие приложения в контекстном меню — тоном `danger`. */
+export const ContextMenuDangerAction: StoryObj<StoryProps> = {
+  name: 'Own dangerous action',
+  parameters: { scenario: '0206/S2', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Опасное действие в меню"
+      steps={DANGER_ITEM}
+      args={guideArgs(
+        {
+          enableContextMenu: true,
+          enableCellEditing: true,
+          cellEditingSaveMode: 'manual',
+          enableUnsavedChanges: true,
+          enableToolbar: true,
+          onCommitEdits: () => Promise.resolve(),
+          actionsDemo: 'none',
+          extraPlugins: [deleteRowDemo],
+          columnCount: 8,
+          dataCount: 20,
+          height: '360',
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(DANGER_ITEM[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(deleteItem()).not.toBeNull())
+      await settle()
+      expectPopupInCanvas(canvas, openMenu()!)
+    })
+    await step(DANGER_ITEM[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(rowDeleted(canvas)).toBe(true))
+      expect(openMenu()).toBeNull()
+      await settle()
     })
   },
 }

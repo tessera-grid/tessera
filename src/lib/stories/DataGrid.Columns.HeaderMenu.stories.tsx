@@ -303,7 +303,7 @@ const ACTIVE: readonly GuideStoryStep[] = [
   },
   {
     title: 'Пользователь скрыл колонку',
-    hint: 'На кнопке управления видимостью колонок появляется число скрытых колонок.',
+    hint: 'Число на кнопке «Настройки вида» выросло: теперь включены сортировка, фильтр и скрытые колонки.',
     enter: withActions(SORT_TWO, FILTER_AGE, HIDE_VISITS),
     states: ['head.activeIndicator'],
   },
@@ -348,10 +348,8 @@ export const HeaderMenuActiveActions: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     const sort = (id: string) => buttonOf(canvas, id, 'column-sort')
     const filter = (id: string) => buttonOf(canvas, id, 'column-filter')
-    const columnsButton = () =>
-      canvas.querySelector<HTMLElement>(
-        '[data-testid="column-visibility-button"]',
-      )
+    const viewSettingsButton = () =>
+      canvas.querySelector<HTMLElement>('[data-testid="view-settings-button"]')
     await step(ACTIVE[0]!.title, async () => {
       await waitForRows(canvas)
       await expect(marked(sort('name'))).toBe(false)
@@ -375,7 +373,9 @@ export const HeaderMenuActiveActions: StoryObj<StoryProps> = {
     })
     await step(ACTIVE[4]!.title, async () => {
       await guideNext(canvas)
-      await until(() => expect(columnsButton()?.textContent).toContain('1'))
+      await until(() =>
+        expect(viewSettingsButton()?.textContent).toContain('3'),
+      )
       await settle()
     })
     await step(ACTIVE[5]!.title, async () => {

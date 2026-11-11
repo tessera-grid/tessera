@@ -14,6 +14,7 @@ import {
   sortKeyboardActionsByPriority,
 } from './keyboardActions'
 import type { ColumnTransform } from './columnTransforms'
+import type { ViewSettingsSection } from './viewSettings'
 import {
   columnGroupingFeature,
   columnOrderingFeature,
@@ -122,6 +123,8 @@ export interface TablePlugin<TFeatures extends object = object> {
   keyboardActions?: KeyboardAction[]
   /** Что плагин делает с данными по колонке и как это снять (ADR 0204, §2). */
   columnTransforms?: ColumnTransform[]
+  /** Разделы «Настроек вида» (ADR 0215, §5). */
+  viewSettingsSections?: ViewSettingsSection[]
   /** Декларация плагина-меню: на какие слоты распространить кебаб. */
   actionMenu?: ActionMenuDeclaration
   /** Причина инертности для `table.getPluginDiagnostics()` (ADR 0022). */
@@ -229,6 +232,8 @@ export interface FoldedEntryConfig {
   keyboardActions: KeyboardAction[]
   /** Преобразования колонок включённых записей (ADR 0204, §2). */
   columnTransforms: ColumnTransform[]
+  /** Разделы «Настроек вида» включённых записей (ADR 0215). */
+  viewSettingsSections: ViewSettingsSection[]
   actionMenu: SlotActionMenu
   serviceColumns: ServiceColumn[]
   setups: NonNullable<TesseraFeatureEntry['setup']>[]
@@ -333,6 +338,7 @@ export const foldEntries = (
   ]
   const keyboardActions: KeyboardAction[] = []
   const columnTransforms: ColumnTransform[] = []
+  const viewSettingsSections: ViewSettingsSection[] = []
   const actionMenu: SlotActionMenu = {}
   const serviceColumns: ServiceColumn[] = []
   const setups: NonNullable<TesseraFeatureEntry['setup']>[] = []
@@ -413,6 +419,8 @@ export const foldEntries = (
     entry.keyboardActions?.forEach(action => setActionOwner(action, entry.id))
     registerKeyboardActionsInto(keyboardActions, entry.keyboardActions)
     if (entry.columnTransforms) columnTransforms.push(...entry.columnTransforms)
+    if (entry.viewSettingsSections)
+      viewSettingsSections.push(...entry.viewSettingsSections)
 
     if (entry.column) {
       serviceColumns.push({ ...entry.column, pluginId: entry.id })
@@ -453,6 +461,7 @@ export const foldEntries = (
     })(),
     keyboardActions: sortKeyboardActionsByPriority(keyboardActions),
     columnTransforms,
+    viewSettingsSections,
     actionMenu,
     serviceColumns,
     setups,

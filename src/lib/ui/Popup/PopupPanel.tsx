@@ -1,11 +1,14 @@
 /**
- * Поповер-панель (ADR 0183, PK2): заголовок, содержимое и кнопки внизу по раскладке ADR 0017
+ * Поповер-панель (ADR 0183, PK2): заголовок — строкой уровня с разделителем (PK33), содержимое и
+ * кнопки внизу по раскладке ADR 0017
  * (PP11–PP12; линии полей — ADR 0183, PK33). Заголовок связывают с попапом через `titleId` и `aria-labelledby` попапа.
  */
 import type { HTMLAttributes, ReactNode } from 'react'
 import { forwardRef } from 'react'
 
 import clsx from 'clsx'
+
+import { PopupLevelTitle } from './PopupLevels'
 
 import styles from './Popup.module.css'
 
@@ -39,11 +42,7 @@ export const PopupPanel = forwardRef<HTMLDivElement, PopupPanelProps>(
     ref,
   ) => (
     <div {...rest} ref={ref} className={clsx(styles.panel, className)}>
-      {title !== undefined && (
-        <p id={titleId} className={styles.panelTitle}>
-          {title}
-        </p>
-      )}
+      {title !== undefined && <PopupLevelTitle label={title} id={titleId} />}
       {children}
       {footer !== undefined && (
         <PopupFooter className={footerClassName}>{footer}</PopupFooter>

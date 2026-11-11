@@ -220,7 +220,12 @@ reportOutcome(table, { plugin: 'starRows', action: 'save', cause: id }, promise)
 `{ table }` (контекста колонки нет), кнопки группируются полем `group`; группы идут
 по наименьшему `order`, между ними — разделитель. Кнопку рисует `ToolbarButton`
 (семейство F4); вне тулбара она не работает. Тулбар есть, пока есть хоть один активный
-`toolbarSlot`; `enableToolbar: true` / `false` это переопределяет (ADR 0046, PB1–PB2).
+`toolbarSlot`; `enableToolbar: true` / `false` это переопределяет (ADR 0046, PB1–PB2). Место кнопки
+встроенного плагина — аргумент `toolbar` его фабрики поверх `group`, `order`, `align` слота;
+`toolbar: false` снимает слот (помощник `placeToolbarSlot`, `shared/toolbarPlacement.ts`, ADR 0205).
+Кнопку «Настройки вида» рисует грид по факту ядра `viewSettingsSections` (ADR 0215): плагин вкладывает раздел полем
+`viewSettingsSections` записи — короткое значение, уровни простого раздела или ленивую панель, — а место
+кнопки задаёт опция ядра `viewSettingsToolbar`.
 
 `statusBarSlot` — табличный слот нижней панели (ADR 0038): сведения о данных
 (счётчики, пагинация), компонент получает `{ table }`. Поле `align` (`'start'` по

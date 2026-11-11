@@ -47,6 +47,14 @@
   background-color: var(--tsr-comp-danger-hover-bg);
 }
 
+/* Высокая контрастность (ADR 0206, DX7): подсвеченный пункт — `Highlight`, как без тона. */
+@media (forced-colors: active) {
+  .item[data-tone='danger']:not([data-disabled])[data-highlighted] {
+    background-color: Highlight;
+    color: HighlightText;
+  }
+}
+
 /* Заблокированный пункт с причиной принимает наведение — ради тултипа (ADR 0078). */
 .item[data-disabled][data-has-tooltip] {
   pointer-events: auto;

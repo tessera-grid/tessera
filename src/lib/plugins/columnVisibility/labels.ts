@@ -4,8 +4,10 @@ import { defineLabels } from '../../core/localization'
 export interface ColumnVisibilityLabels {
   /** Кнопка тулбара и доступное имя меню колонок (`columnVisibility`) */
   columns: string
-  /** Кнопка «Колонки», когда часть колонок скрыта (`hidden` — их число) */
-  columnsWithHidden: (hidden: number) => string
+  /** Короткое значение раздела «Колонки» «Настроек вида»: ничего не скрыто (ADR 0215) */
+  columnsAllVisible: string
+  /** Короткое значение раздела «Колонки» «Настроек вида»: сколько колонок скрыто */
+  columnsHiddenShort: (count: number) => string
   /** Плейсхолдер и доступное имя поиска в меню колонок */
   searchColumns: string
   /** Текст меню колонок, когда поиск ничего не нашёл */
@@ -48,7 +50,8 @@ export const columnVisibilityLabels = defineLabels<ColumnVisibilityLabels>()(
   'columnVisibility',
   {
     columns: 'Columns',
-    columnsWithHidden: 'Columns, {count} hidden',
+    columnsAllVisible: 'all visible',
+    columnsHiddenShort: '{count} hidden',
     searchColumns: 'Find column',
     noColumnsFound: 'No columns found',
     showAllColumns: 'Show all',
@@ -70,7 +73,7 @@ export const columnVisibilityLabels = defineLabels<ColumnVisibilityLabels>()(
     columnsHiddenKept_one: '{columns} hidden, {list} remains',
   },
   {
-    columnsWithHidden: ['count'],
+    columnsHiddenShort: ['count'],
     selectedColumns: ['count'],
     transformsKept: ['list', 'count'],
     transformsWillRemain: ['list', 'count'],

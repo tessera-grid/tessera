@@ -131,10 +131,8 @@ describe('Разрешитель подписей', () => {
     // Словарь только из строк: каждую ветку бывшей составной подписи задаёт свой ключ.
     const labels = resolveLabels(
       {
-        'columnFiltering.filters': 'Фильтры',
-        'columnFiltering.filtersActive': 'Фильтры: {count}',
-        'columnFiltering.filtersActiveHidden':
-          'Фильтры: {count}, на скрытых: {hidden}',
+        viewSettings: 'Настройки вида',
+        viewSettingsActive: 'Настройки вида, включено: {count}',
         announceSortAscending: '«{column}» по возрастанию',
         announceSortDescending: '«{column}» по убыванию',
         announceSortCleared: 'Сортировка снята',
@@ -159,9 +157,8 @@ describe('Разрешитель подписей', () => {
       'ru',
     )
     expect([
-      columnFilteringLabels(labels).filters,
-      columnFilteringLabels(labels).filtersActive(2),
-      columnFilteringLabels(labels).filtersActiveHidden(2, 1),
+      labels.viewSettings,
+      labels.viewSettingsActive(2),
       labels.announceSortAscending('Город'),
       labels.announceSortDescending('Город'),
       labels.announceSortCleared,
@@ -176,9 +173,8 @@ describe('Разрешитель подписей', () => {
       rowExpandingLabels(labels).announceChildrenLoaded(0),
       rowExpandingLabels(labels).announceChildrenLoaded(3),
     ]).toEqual([
-      'Фильтры',
-      'Фильтры: 2',
-      'Фильтры: 2, на скрытых: 1',
+      'Настройки вида',
+      'Настройки вида, включено: 2',
       '«Город» по возрастанию',
       '«Город» по убыванию',
       'Сортировка снята',
@@ -236,14 +232,14 @@ describe('Разрешитель подписей', () => {
       rowSelectionLabels(english).selectedRows(1),
       rowSelectionLabels(english).selectedRows(3),
       rowExpandingLabels(english).announceChildrenLoaded(0),
-      columnFilteringLabels(english).filtersActiveHidden(2, 1),
+      english.viewSettingsActive(2),
       english.announceSortDescending('City'),
       infiniteScrollLabels(english).loadedRowsOf(12_340, 100_000),
     ]).toEqual([
       '1 row selected',
       '3 rows selected',
       'No rows',
-      'Filters, 2 active, 1 on hidden columns',
+      'View settings, 2 active',
       'Sorted by City, descending',
       'Loaded 12,340 of 100,000',
     ])

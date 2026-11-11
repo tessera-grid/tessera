@@ -1,6 +1,6 @@
 /**
  * Запись плагина columnFiltering на `definePlugin` (ADR 0045, ADR 0120): интерфейс фильтров
- * колонок — кнопка фильтра в заголовке с панелью, сводка в тулбаре, счётчик «показано N из
+ * колонок — кнопка фильтра в заголовке с панелью, раздел «Настроек вида», счётчик «показано N из
  * M» и колбэк пользователя. Модель — `columnFilteringModel`, плагин её включает и передаёт
  * ей режим данных, пояс дат и срез.
  */
@@ -28,7 +28,7 @@ import {
   followFilterDrafts,
   rejectFilterDrafts,
 } from './filterDraft'
-import { FilterSummaryButton } from './FilterSummaryButton'
+import { filterSection } from './viewSettingsSection'
 import { filteredRowsCountSlot } from '../../shared/filtering/FilteredRowsCount'
 import { columnFilteringLabels } from './labels'
 import { filteringLabels } from '../../shared/filtering/labels'
@@ -107,18 +107,9 @@ export const columnFiltering = definePlugin<ColumnFilteringOptions>()({
     }
   },
   // Счётчик — opt-in: у гридов с фильтрами нижняя панель не появляется сама.
-  slots: o => [
-    {
-      id: 'filterSummaryButton',
-      slot: 'toolbarSlot',
-      // Рядом с поиском: оба сужают данные (ADR 0051).
-      align: 'start',
-      group: 'search',
-      order: 1,
-      component: FilterSummaryButton,
-    },
-    ...(o.filteredCount ? [filteredRowsCountSlot] : []),
-  ],
+  slots: o => (o.filteredCount ? [filteredRowsCountSlot] : []),
+  // Условия фильтров — раздел «Настроек вида» (ADR 0215, §1).
+  viewSettingsSections: [filterSection],
   options: o => ({
     columnFilteringDebounceMs: o.debounceMs ?? DEFAULT_FILTER_DEBOUNCE_MS,
   }),

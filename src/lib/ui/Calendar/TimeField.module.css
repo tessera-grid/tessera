@@ -5,10 +5,11 @@
   display: flex;
   align-items: center;
   gap: var(--tsr-ref-space-1);
+  /* Кнопка списка — на отступе кнопок поля поиска от внешней рамки, без рамки поля (PK35). */
   padding-inline: calc(
       var(--tsr-comp-field-padding-x) - var(--_segment-padding)
     )
-    var(--tsr-ref-space-1);
+    calc(var(--tsr-ref-space-1) - 1px);
   font-variant-numeric: tabular-nums;
 }
 

@@ -84,14 +84,6 @@
   min-width: 0;
 }
 
-.panelTitle {
-  margin: 0;
-  padding: 0 var(--tsr-comp-popup-item-padding-x)
-    calc(var(--tsr-comp-popup-padding) * 2);
-  font-size: var(--tsr-comp-popup-title-font-size);
-  font-weight: 600;
-}
-
 .cardsScroll {
   composes: scrollFade;
   overflow-y: auto;

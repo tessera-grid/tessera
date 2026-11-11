@@ -43,6 +43,11 @@ import {
   pickDay,
 } from './__mocks__/filterGuide'
 import { labelPattern, storyLabels } from './__mocks__/storyLabels'
+import {
+  openViewSettingsSection,
+  viewSettingsPopover,
+  viewSettingsSectionOpen,
+} from './__mocks__/viewSettings'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
   GuideStory,
@@ -344,7 +349,7 @@ const serverReset: TesseraFeatureEntry = {
 
 const serverAnswered = (root: HTMLElement) => !busy(root)
 
-/** Пользователь скрывает колонку возраста в меню колонок. */
+/** Пользователь скрывает колонку возраста в разделе «Колонки» «Настроек вида». */
 const hideAge = async (root: HTMLElement, signal: AbortSignal) => {
   const ageBox = () =>
     document.querySelector<HTMLElement>(
@@ -353,10 +358,7 @@ const hideAge = async (root: HTMLElement, signal: AbortSignal) => {
   if (!headCell(root, 'age')) return
   await repeat(
     () => !!ageBox(),
-    () =>
-      root
-        .querySelector<HTMLElement>('[data-testid="column-visibility-button"]')
-        ?.click(),
+    () => openViewSettingsSection(root, 'columns'),
     signal,
   )
   await repeat(
@@ -364,11 +366,7 @@ const hideAge = async (root: HTMLElement, signal: AbortSignal) => {
     () => ageBox()?.click(),
     signal,
   )
-  await repeat(
-    () => !document.querySelector('[data-testid="column-visibility-menu"]'),
-    pressEscape,
-    signal,
-  )
+  await repeat(() => !viewSettingsPopover(), pressEscape, signal)
 }
 
 const SERVER: readonly GuideStoryStep[] = [
@@ -1165,13 +1163,13 @@ const LOOKUP: readonly GuideStoryStep[] = [
     enter: stepAction((root, { signal }) => filterManager(root, signal)),
   },
   {
-    title: 'Пользователь открыл сводку фильтров',
-    hint: 'Менеджер в сводке назван по имени, а не по коду.',
+    title: 'Пользователь открыл фильтры в «Настройках вида»',
+    hint: 'Менеджер в разделе фильтров назван по имени, а не по коду.',
     enter: stepAction(async (root, { signal }) => {
       await filterManager(root, signal)
       await repeat(
-        () => !!byTestId('filter-summary'),
-        () => byTestId('filter-summary-button')?.click(),
+        () => !!viewSettingsSectionOpen('filter'),
+        () => openViewSettingsSection(root, 'filter'),
         signal,
       )
     }),
@@ -1230,7 +1228,7 @@ export const FilteringLookupServer: StoryObj<StoryProps> = {
     await step(LOOKUP[3]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(byTestId('filter-summary')).toHaveTextContent(
+      await expect(viewSettingsSectionOpen('filter')).toHaveTextContent(
         `${columnFilteringLabels(labels).filterAnyOf}: Alice Moss`,
       )
       await settle()

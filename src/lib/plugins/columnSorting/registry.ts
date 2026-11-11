@@ -14,6 +14,7 @@ import { declareRevertOnReject } from '../../core/serverActions'
 import { sortKeyboardAction } from './keyboardActions'
 import { sortHeaderAction } from './sortHeaderAction'
 import { sortTransform } from './transform'
+import { transformSection } from '../../shared/transformSection'
 import type { ColumnSortingHooks } from './types'
 import { columnSortingLabels } from './labels'
 
@@ -59,6 +60,24 @@ const resolveMultiSortEvent = (
 ): ((event: unknown) => boolean) | undefined =>
   typeof event === 'function' ? event : undefined
 
+/** Раздел «Сортировка» «Настроек вида» (ADR 0215, §1): уровни по приоритету. */
+const sortingSection = transformSection({
+  id: 'sorting',
+  order: 20,
+  plugin: 'columnSorting',
+  icon: 'sort',
+  transform: sortTransform,
+  slice: 'sorting',
+  labels: labels => {
+    const own = columnSortingLabels(labels)
+    return {
+      title: own.sorting,
+      remove: own.removeSort,
+      reset: own.resetSorting,
+    }
+  },
+})
+
 export const columnSorting = definePlugin<ColumnSortingOptions>()({
   id: 'columnSorting',
   labels: [columnSortingLabels],
@@ -81,8 +100,9 @@ export const columnSorting = definePlugin<ColumnSortingOptions>()({
   setup: o => table =>
     declareRevertOnReject(table, 'sorting', o.revertOnReject !== false),
   keyboardActions: [sortKeyboardAction],
-  // Сортировка колонки — факт ядра: её видят меню «Колонки» и сводки (ADR 0204, §2).
+  // Сортировка колонки — факт ядра: её видят меню «Колонки» и «Настройки вида» (ADR 0204, §2; ADR 0215).
   columnTransforms: [sortTransform],
+  viewSettingsSections: [sortingSection],
   options: o => {
     const multi = resolveMultiSort(o.multiSort)
     const isMultiSortEvent = resolveMultiSortEvent(multi.opts.event)

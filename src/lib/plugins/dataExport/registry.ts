@@ -4,6 +4,10 @@
  * (`table.exportData`, форматы, оси, наборы, колбэки), плагин её включает и передаёт ей
  * свои аргументы.
  */
+import {
+  placeToolbarSlot,
+  type ToolbarPlacementOption,
+} from '../../shared/toolbarPlacement'
 import { definePlugin } from '../../core/definePlugin'
 import {
   dataExportModel,
@@ -16,7 +20,7 @@ import { dataExportLabels } from './labels'
 
 export const EXPORT_TOOLBAR_GROUP = 'data'
 
-export type ExportOptions = DataExportModelOptions
+export type ExportOptions = DataExportModelOptions & ToolbarPlacementOption
 
 export const dataExport = definePlugin<ExportOptions>()({
   id: 'dataExport',
@@ -40,13 +44,15 @@ export const dataExport = definePlugin<ExportOptions>()({
     ],
   },
   features: dataExportModelFeatures,
-  slots: [
-    {
-      id: 'exportButton',
-      slot: 'toolbarSlot',
-      group: EXPORT_TOOLBAR_GROUP,
-      order: 0,
-      component: ExportButton,
-    },
-  ],
+  slots: o =>
+    placeToolbarSlot(
+      {
+        id: 'exportButton',
+        slot: 'toolbarSlot',
+        group: EXPORT_TOOLBAR_GROUP,
+        order: 0,
+        component: ExportButton,
+      },
+      o.toolbar,
+    ),
 })

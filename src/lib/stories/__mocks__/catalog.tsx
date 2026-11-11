@@ -85,6 +85,8 @@ export const CATALOG_STATES = {
     'failureLog',
     // Пульт черновиков (ADR 0178, §8).
     'unsavedChanges',
+    // Поповер «Настроек вида» и его разделы (ADR 0215).
+    'viewSettings',
   ],
   panel: ['toolbar', 'statusBar', 'pagination', 'narrow'],
   // Перетаскивание (ADR 0130): шаги гайдов историй строк и колонок.

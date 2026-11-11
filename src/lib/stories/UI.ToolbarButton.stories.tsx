@@ -36,7 +36,9 @@ const ToolbarButtonDemo = ({
           {...props}
           label={
             label ||
-            (count > 0 ? texts.columnsWithHidden(count) : texts.columns)
+            (count > 0
+              ? `${texts.columns}, ${texts.columnsHiddenShort(count)}`
+              : texts.columns)
           }
           icon={<Columns width={16} height={16} />}
         />

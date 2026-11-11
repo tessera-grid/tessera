@@ -12,6 +12,12 @@ export interface RowGroupingLabels {
   transformDescription: string
   /** Уровень группировки скрытой колонки (`position` из `total`) */
   transformLevel: (position: number, total: number) => string
+  /** Кнопка-сводка группировки в тулбаре и заголовок её поповера (ADR 0204, §5) */
+  grouping: string
+  /** Снять уровень группировки колонки в сводке */
+  removeGrouping: (column: string) => string
+  /** Сбросить всю группировку в сводке */
+  resetGrouping: string
 }
 
 export const rowGroupingLabels = defineLabels<RowGroupingLabels>()(
@@ -22,9 +28,13 @@ export const rowGroupingLabels = defineLabels<RowGroupingLabels>()(
     transformName: 'grouping',
     transformDescription: 'grouped',
     transformLevel: 'level {position} of {total}',
+    grouping: 'Grouping',
+    removeGrouping: 'Remove grouping: {column}',
+    resetGrouping: 'Reset grouping',
   },
   {
     transformLevel: ['position', 'total'],
+    removeGrouping: ['column'],
   },
 )
 

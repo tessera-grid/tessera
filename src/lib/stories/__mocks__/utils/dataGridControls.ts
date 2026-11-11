@@ -143,6 +143,10 @@ import {
   showStubType,
   skeletonOptionsType,
   RANGE_HANDLE_MAPPING,
+  quickSearchToolbarType,
+  dataExportToolbarType,
+  unsavedChangesToolbarType,
+  failureLogToolbarType,
 } from './argTypes'
 import type { CellSelectionHandleOptions } from '../../../../lib/plugins/cellSelection'
 
@@ -238,6 +242,7 @@ export const dataGridArgTypes = {
         columnDraggingRevertOnReject: columnDraggingRevertOnRejectType,
       }),
       enableColumnVisibility: enableColumnVisibilityType,
+      ...when('enableColumnVisibility', {}),
       enableHeaderActionMenu: enableHeaderActionMenuType,
       ...when('enableHeaderActionMenu', {
         headerActionMenuMode: headerActionMenuModeType,
@@ -336,6 +341,7 @@ export const dataGridArgTypes = {
     ...when('enableQuickSearch', {
       quickSearchDebounceMs: quickSearchDebounceMsType,
       quickSearchFilteredCount: quickSearchFilteredCountType,
+      quickSearchToolbar: quickSearchToolbarType,
     }),
     enableColumnFiltering: enableColumnFilteringType,
     ...when('enableColumnFiltering', {
@@ -367,7 +373,13 @@ export const dataGridArgTypes = {
     }),
     enableColumnTotals: enableColumnTotalsType,
     enableFailureLog: enableFailureLogType,
+    ...when('enableFailureLog', {
+      failureLogToolbar: failureLogToolbarType,
+    }),
     enableUnsavedChanges: enableUnsavedChangesType,
+    ...when('enableUnsavedChanges', {
+      unsavedChangesToolbar: unsavedChangesToolbarType,
+    }),
     enableBackToTop: enableBackToTopType,
     ...when('enableBackToTop', {
       backToTopThreshold: backToTopThresholdType,
@@ -379,6 +391,7 @@ export const dataGridArgTypes = {
       dataExportAllow: dataExportAllowType,
       dataExportFilename: dataExportFilenameType,
       dataExportMaxLoadedRows: dataExportMaxLoadedRowsType,
+      dataExportToolbar: dataExportToolbarType,
     }),
     enableDataExportModel: enableDataExportModelType,
   }),

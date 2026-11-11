@@ -13,6 +13,7 @@ import {
 import { groupHeaderAction } from './groupHeaderAction'
 import { groupTransform } from './grouping'
 import { rowGroupingLabels } from './labels'
+import { transformSection } from '../../shared/transformSection'
 
 export interface RowGroupingOptions extends Omit<
   RowGroupingModelOptions,
@@ -28,6 +29,24 @@ export interface RowGroupingOptions extends Omit<
   /** `false` — без числа строк данных в строке группы (ADR 0184, §8). */
   groupRowCount?: boolean
 }
+
+/** Раздел «Группировка» «Настроек вида» (ADR 0215, §1): уровни по порядку. */
+const groupingSection = transformSection({
+  id: 'grouping',
+  order: 30,
+  plugin: 'rowGrouping',
+  icon: 'group',
+  transform: groupTransform,
+  slice: 'grouping',
+  labels: labels => {
+    const own = rowGroupingLabels(labels)
+    return {
+      title: own.grouping,
+      remove: own.removeGrouping,
+      reset: own.resetGrouping,
+    }
+  },
+})
 
 export const rowGrouping = definePlugin<RowGroupingOptions>()({
   id: 'rowGrouping',
@@ -47,6 +66,7 @@ export const rowGrouping = definePlugin<RowGroupingOptions>()({
   slotActions: [groupHeaderAction],
   // Группировка по колонке — факт ядра (ADR 0204, §2).
   columnTransforms: [groupTransform],
+  viewSettingsSections: [groupingSection],
   // Липкие строки групп — факт ядра (ADR 0170, §2).
   options: o => ({
     stickyGroupRows: o.enabled !== false && !!o.stickyRows,

@@ -39,6 +39,8 @@ import type {
 } from './headerActions'
 import type { KeyboardAction } from './keyboardActions'
 import type { ColumnTransform } from './columnTransforms'
+import type { ViewSettingsSection } from './viewSettings'
+import type { ToolbarPlacement } from './toolbar'
 import type { ActiveCell } from './keyboardNavigation/model'
 import type { Draft, DraftKind } from './drafts/drafts'
 import type { LabelSet } from './localization'
@@ -113,6 +115,8 @@ export interface CoreOptions {
   footerPosition?: FooterPosition
   /** Верхний тулбар: без флага — по наличию кнопок плагинов, `true` — всегда, `false` — никогда (ADR 0046). */
   enableToolbar?: boolean
+  /** Место кнопки «Настройки вида» в тулбаре; `false` — кнопки нет (ADR 0215, §2). */
+  viewSettingsToolbar?: ToolbarPlacement | false
   /** Нижняя панель: без флага — по наличию её слотов, `true` — всегда, `false` — никогда (ADR 0046). */
   enableStatusBar?: boolean
   /** `false` — ядро не объявляет изменения скринридеру (ADR 0032, W9). */
@@ -197,6 +201,8 @@ export interface CommonOptions extends CoreOptions {
   keyboardActions?: KeyboardAction[]
   /** Преобразования колонок плагинов: вид, состояние и снятие (ADR 0204, §2). */
   columnTransforms?: ColumnTransform[]
+  /** Разделы «Настроек вида» плагинов (ADR 0215, §5). */
+  viewSettingsSections?: ViewSettingsSection[]
   pluginDiagnostics?: PluginDiagnosticSource[]
   actionMenu?: SlotActionMenuV9
   logLevel?: LogLevel

@@ -23,6 +23,10 @@ type FunctionKey = {
  */
 export const LABEL_PARAMS = {
   withActiveCount: ['name', 'count'],
+  viewSettingsActive: ['count'],
+  viewSettingsActiveCount: ['count'],
+  viewSettingsDraftCount: ['count'],
+  viewSettingsSectionName: ['section', 'value'],
   loadFailed: ['name'],
   actionFailedRetry: ['reason'],
   actionsRunning: ['names'],

@@ -83,23 +83,3 @@
     transform: translateX(100%);
   }
 }
-
-.backItem {
-  color: var(--tsr-comp-control-color);
-}
-
-/* Разделитель под строкой «назад» — как между подгруппами (.divided). */
-.separator {
-  flex-shrink: 0;
-  height: 1px;
-  margin: 4px 0;
-  background-color: var(--tsr-comp-popup-divider-color);
-}
-
-.skeletonRow {
-  display: flex;
-  align-items: center;
-  box-sizing: border-box;
-  min-height: var(--tsr-comp-popup-item-min-height);
-  padding: 0 var(--tsr-comp-popup-item-padding-x);
-}

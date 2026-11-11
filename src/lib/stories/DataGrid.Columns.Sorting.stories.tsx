@@ -8,19 +8,27 @@ import {
 } from './__mocks__/filteringData'
 import { expect } from 'storybook/test'
 import {
+  consoleText,
   firstRowText,
   guideNext,
   headCell,
   orderedRows,
+  pollUntil,
   releaseFocus,
   settle,
+  stepDone,
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
 import { untilDone } from './__mocks__/cellGestures'
 import { storyLabels } from './__mocks__/storyLabels'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import {
+  GuideStory,
+  type GuideStoryStep,
+  guideArgs,
+  stepAction,
+} from './demos/GuideStory'
 import { columnSortingLabels } from '../plugins/columnSorting/labels'
 
 /**

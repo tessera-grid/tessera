@@ -15,7 +15,7 @@ import {
   quickSearch,
   rowSelection,
 } from '../../../plugins'
-import { ColumnVisibilityButton } from '../../../plugins/columnVisibility/ColumnVisibilityButton'
+import { ViewSettingsButton } from '../../../grid/ViewSettings/ViewSettingsButton'
 import { SearchField } from '../../../plugins/quickSearch/SearchField'
 import { rowSelectionLabels } from '../../../plugins/rowSelection/labels'
 import { makeColumns } from '../../__mocks__/columns'
@@ -95,8 +95,8 @@ const mounted = async () => {
   await expect.poll(() => document.querySelector(SEARCH)).not.toBeNull()
 }
 
-/** Тулбар, поле поиска, «Колонки» и зоны кнопок шапки. */
-const PANEL = [Toolbar, SearchField, ColumnVisibilityButton, ActionsZone]
+/** Тулбар, поле поиска, «Настройки вида» и зоны кнопок шапки. */
+const PANEL = [Toolbar, SearchField, ViewSettingsButton, ActionsZone]
 
 describe('Перерисовка приложения не доходит до грида (ADR 0196)', () => {
   test('HR3: выбор строки, который держит приложение, показан в гриде в том же кадре, что и перерисовка приложения', async () => {

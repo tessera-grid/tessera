@@ -1,0 +1,54 @@
+/* Пункт перехода — кнопка: облачко наведения и фокуса, как у пункта меню (ADR 0183, PK27). */
+.nav {
+  width: 100%;
+  /* Поля снизу и шрифт задаёт шапка уровня (PopupLevels): сброс кнопки их не трогает. */
+  margin-top: 0;
+  margin-inline: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  text-align: start;
+}
+
+.nav:not([data-disabled]):hover,
+.nav:focus-visible {
+  background-color: var(--tsr-comp-control-hover-bg);
+  outline: var(--tsr-comp-popup-item-highlighted-outline);
+  outline-offset: -1px;
+}
+
+/* Без перехода строка принимает наведение — ради тултипа значения. */
+.nav[data-disabled] {
+  pointer-events: auto;
+  cursor: default;
+}
+
+/* Короткое значение — справа, многоточием; полный текст — в тултипе (ADR 0215, §4). */
+.value {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 55%;
+  margin-inline-start: auto;
+  color: var(--tsr-comp-control-color);
+}
+
+.nav[data-disabled] .value {
+  color: inherit;
+}
+
+.valueText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (forced-colors: active) {
+  .nav:not([data-disabled]):hover,
+  .nav:focus-visible {
+    forced-color-adjust: none;
+    background-color: Highlight;
+    color: HighlightText;
+  }
+}

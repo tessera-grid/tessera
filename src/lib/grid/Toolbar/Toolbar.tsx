@@ -8,10 +8,15 @@ import { Fragment, memo, type KeyboardEvent } from 'react'
 
 import { Toolbar as BaseToolbar } from '@base-ui/react/toolbar'
 
-import type { RenderSlots } from '../../core/createSlots'
+import type { RenderSlots, ToolbarSlot } from '../../core/createSlots'
 import { RenderSlot } from '../../core/renderSlots'
 import { type ToolbarGroup, resolveToolbarSides } from '../../core/toolbar'
+import {
+  viewSettingsPlacement,
+  viewSettingsShown,
+} from '../../core/viewSettings'
 import type { Table } from '../../types'
+import { ViewSettingsButton } from '../ViewSettings/ViewSettingsButton'
 import styles from './Toolbar.module.css'
 
 interface ToolbarProps {
@@ -64,7 +69,21 @@ const ToolbarGroups = ({
 // подписаны на свои срезы сами (ADR 0149, PS12).
 export const Toolbar = memo(({ table, label }: ToolbarProps) => {
   const slots = (table.getRenderSlots as () => RenderSlots | undefined)()
-  const { start, end } = resolveToolbarSides(slots?.toolbarSlot ?? [])
+  // Кнопка «Настройки вида» — грида, а не плагина: есть, пока есть разделы (ADR 0215, §2).
+  const view: ToolbarSlot = viewSettingsShown(table)
+    ? [
+        {
+          id: 'viewSettingsButton',
+          slot: 'toolbarSlot',
+          component: ViewSettingsButton,
+          ...viewSettingsPlacement(table),
+        } as ToolbarSlot[number],
+      ]
+    : []
+  const { start, end } = resolveToolbarSides([
+    ...(slots?.toolbarSlot ?? []),
+    ...view,
+  ])
 
   return (
     <BaseToolbar.Root

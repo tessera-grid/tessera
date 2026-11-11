@@ -1,0 +1,22 @@
+/* Уровень поповера-панели (ADR 0215, §3): во всю ширину поповера — ширину задаёт поповер. */
+.level {
+  display: flex;
+  flex-direction: column;
+  width: var(--_popup-level-width, 100%);
+}
+
+/*
+ * Шапка уровня — заголовок и «назад»: кеглем и жирностью подписей групп (ADR 0183, PK4); от шапки
+ * до содержимого — двойное поле (PK33).
+ */
+.heading {
+  flex-shrink: 0;
+  margin-bottom: calc(var(--tsr-comp-popup-padding) * 2);
+  font-size: var(--tsr-comp-popup-title-font-size);
+  font-weight: 600;
+}
+
+/* Заголовок уровня — не кнопка: без указателя-руки. */
+.title {
+  --_item-cursor: default;
+}

@@ -147,6 +147,10 @@ export const rejectFilterDrafts = (
   }
 }
 
+/** Сколько неприменённых условий — для «Настроек вида» (ADR 0215, §4). */
+export const filterDraftCount = (table: unknown) =>
+  activeDrafts(table).filter(draft => draft.kind === COLUMN_FILTER_DRAFT).length
+
 /** Черновик условия колонки работает: серверный режим, вид включён (ADR 0178, §3). */
 export const hasColumnFilterDraft = (table: unknown, columnId: string) =>
   activeDrafts(table).some(

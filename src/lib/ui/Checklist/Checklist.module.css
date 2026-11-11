@@ -43,13 +43,6 @@
   flex-direction: column;
 }
 
-.skeletonRow {
-  display: flex;
-  align-items: center;
-  height: var(--tsr-comp-popup-item-min-height);
-  padding: 0 var(--tsr-comp-popup-item-padding-x);
-}
-
 /* Отказ — блок ошибки загрузки кита по центру. */
 .error {
   display: flex;

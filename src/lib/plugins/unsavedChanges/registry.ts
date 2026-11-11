@@ -3,6 +3,10 @@
  * список черновиков с переходом к цели, применением и отбрасыванием, внизу «Применить всё» и
  * «Отменить всё». Тулбар кнопка не вызывает: она встаёт в тулбар, который у таблицы уже есть.
  */
+import {
+  placeToolbarSlot,
+  type ToolbarPlacementOption,
+} from '../../shared/toolbarPlacement'
 import { definePlugin } from '../../core/definePlugin'
 import { neverInert } from '../../core/pluginDiagnostics'
 import { UnsavedChangesButton } from './UnsavedChangesButton'
@@ -11,7 +15,7 @@ import { unsavedChangesLabels } from './labels'
 /** Группа тулбара: перед журналом отказов, после групп потребителя (ранг — `core/toolbar`). */
 export const UNSAVED_CHANGES_TOOLBAR_GROUP = 'drafts'
 
-export interface UnsavedChangesOptions {
+export interface UnsavedChangesOptions extends ToolbarPlacementOption {
   /** `false` — плагин отключён. */
   enabled?: boolean
 }
@@ -27,14 +31,16 @@ export const unsavedChanges = definePlugin<UnsavedChangesOptions>()({
     show: labels => unsavedChangesLabels(labels).draftShow,
   },
   diagnose: neverInert,
-  slots: [
-    {
-      id: 'unsavedChangesButton',
-      slot: 'toolbarSlot',
-      group: UNSAVED_CHANGES_TOOLBAR_GROUP,
-      order: 0,
-      showsPanel: false,
-      component: UnsavedChangesButton,
-    },
-  ],
+  slots: o =>
+    placeToolbarSlot(
+      {
+        id: 'unsavedChangesButton',
+        slot: 'toolbarSlot',
+        group: UNSAVED_CHANGES_TOOLBAR_GROUP,
+        order: 0,
+        showsPanel: false,
+        component: UnsavedChangesButton,
+      },
+      o.toolbar,
+    ),
 })

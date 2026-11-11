@@ -16,12 +16,14 @@ import clsx from 'clsx'
 import type { MenuLevelModel } from '../../util/menuModel'
 import { rejectionText } from '../../util/thenable'
 import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
-import { Skeleton } from '../Skeleton'
 import { Tooltip } from '../Tooltip'
 import { useIcons } from '../icons'
+import { PopupSkeletonRows } from './PopupSkeletonRows'
 import { PopupItem, PopupItemMark } from './PopupItem'
+import { LEVEL_GHOST_CLASSES, useFitToLevel } from './PopupLevels'
 
 import styles from './ActionMenu.module.css'
+import levelStyles from './PopupLevels.module.css'
 
 /** Разделы открытого меню — то, что вид берёт у состояния разделов. */
 export interface MenuSectionsModel<TAction> {
@@ -48,12 +50,6 @@ interface MenuSectionsProps<TAction> {
 
 const SKELETON_ROWS = 3
 
-/** Классы снимка уходящего уровня: их читает состояние разделов со слоя снимков. */
-const GHOST_CLASSES = {
-  'data-leave-forward': clsx(styles.level, styles.ghost, styles.leaveForward),
-  'data-leave-back': clsx(styles.level, styles.ghost, styles.leaveBack),
-}
-
 export const MenuSections = <TAction,>({
   sections,
   backLabel,
@@ -68,29 +64,7 @@ export const MenuSections = <TAction,>({
   const levelKey = level.path.join('/')
   const loaded = level.items.status === 'done' ? level.items.items : null
 
-  // Окно следует размеру уровня: переход ширины и высоты — в CSS.
-  useIsomorphicLayoutEffect(() => {
-    const wrap = wrapRef.current
-    const current = levelRef.current
-    if (!wrap || !current) return
-    const fit = () => {
-      wrap.style.width = `${current.offsetWidth}px`
-      wrap.style.height = `${current.offsetHeight}px`
-    }
-    fit()
-    // Размер окна — в следующем кадре: без перехода смена размера внутри обработчика
-    // наблюдателя даёт ошибку «ResizeObserver loop».
-    let frame = 0
-    const observer = new ResizeObserver(() => {
-      cancelAnimationFrame(frame)
-      frame = requestAnimationFrame(fit)
-    })
-    observer.observe(current)
-    return () => {
-      observer.disconnect()
-      cancelAnimationFrame(frame)
-    }
-  }, [levelKey, levelRef])
+  useFitToLevel(wrapRef, levelRef, levelKey)
 
   // Фокус после смены уровня: вход — первый пункт, возврат — пункт, из которого вошли.
   useIsomorphicLayoutEffect(() => {
@@ -121,7 +95,7 @@ export const MenuSections = <TAction,>({
         ref={ghostRef}
         className={styles.ghostHost}
         data-menu-ghost=""
-        {...GHOST_CLASSES}
+        {...LEVEL_GHOST_CLASSES}
       />
       <div
         key={levelKey}
@@ -134,32 +108,19 @@ export const MenuSections = <TAction,>({
         data-menu-level={depth}
       >
         {depth > 0 && (
-          <>
-            <PopupItem
-              wrap
-              render={<Menu.Item closeOnClick={false} onClick={onBack} />}
-              className={styles.backItem}
-              aria-label={backLabel}
-              data-menu-back=""
-              icon={<BackIcon width={16} height={16} />}
-              label={level.title}
-            />
-            <Menu.Separator className={styles.separator} />
-          </>
+          <PopupItem
+            wrap
+            render={<Menu.Item closeOnClick={false} onClick={onBack} />}
+            className={levelStyles.heading}
+            aria-label={backLabel}
+            data-menu-back=""
+            icon={<BackIcon width={16} height={16} />}
+            label={level.title}
+          />
         )}
-        {level.items.status === 'loading' &&
-          Array.from({ length: SKELETON_ROWS }, (_, index) => (
-            <div
-              key={index}
-              className={styles.skeletonRow}
-              data-menu-skeleton=""
-            >
-              <Skeleton
-                width="100%"
-                height="var(--tsr-comp-skeleton-menu-height)"
-              />
-            </div>
-          ))}
+        {level.items.status === 'loading' && (
+          <PopupSkeletonRows count={SKELETON_ROWS} data-menu-skeleton="" />
+        )}
         {level.items.status === 'failed' && (
           <>
             <Tooltip title={errorText} side="right">

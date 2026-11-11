@@ -105,7 +105,7 @@ async function focusBodyCell(rowIndex: number, position: number) {
 
 /**
  * Грид между двумя внешними кнопками — чтобы наблюдать уход фокуса по Tab. Грид истории
- * без её консоли: кнопки консоли стояли бы между гридом и соседом.
+ * без её консоли и тулбара: их кнопки стояли бы между гридом и соседом.
  */
 async function renderWithNeighbours() {
   const screen = await render(
@@ -113,6 +113,8 @@ async function renderWithNeighbours() {
       <button id="before-grid">before</button>
       <StoryComponent
         {...normalizeArgs(composed.KeyboardPlayground.args as StoryProps)}
+        // Сводка сортировки ставит тулбар — свою остановку Tab (TB11); здесь — уход из тела.
+        columnSortingToolbar={false}
       />
       <button id="after-grid">after</button>
     </>,

@@ -91,7 +91,7 @@
 
 - **+** Перенос между группами работает в обеих моделях с одним контрактом колбэка.
 - **−** Стадия опирается на кэши значений строки TanStack: при смене их поведения она сломается;
-  внесено в перечень [upstream-foundations.md](../architecture/upstream-foundations.md#свои-модели-строк-поверх-tanstack).
+  внесено в перечень [upstream-foundations.md](../architecture/upstream-foundations.md#движок-строк-поверх-tanstack).
 - **Публичный API:** `rowDragging` с `onRowDragEnd` при группировке больше не инертен, ручки видны.
   `HandleMenuItemModel` и `HeaderMenuItem` получают необязательные `items`.
 

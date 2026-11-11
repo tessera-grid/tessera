@@ -72,12 +72,8 @@ export interface ColumnFilteringLabels {
    * активными (`count`) и с активными на скрытых колонках (`hidden`)
    */
   filters: string
-  filtersActive: (count: number) => string
-  filtersActiveHidden: (count: number, hidden: number) => string
   /** Кнопка сброса одного фильтра в сводке */
   removeFilter: (column: string) => string
-  /** Пометка фильтра на скрытой колонке в сводке */
-  columnHidden: string
   /** Действие: задать фильтры колонок */
   actionSetFilters: string
   /** Действие: снять фильтр колонки */
@@ -138,10 +134,7 @@ export const columnFilteringLabels = defineLabels<ColumnFilteringLabels>()(
     filterRetry: 'Retry',
     draftNoFilter: 'No filter',
     filters: 'Filters',
-    filtersActive: 'Filters, {count} active',
-    filtersActiveHidden: 'Filters, {count} active, {hidden} on hidden columns',
     removeFilter: 'Remove filter: {column}',
-    columnHidden: 'column hidden',
     actionSetFilters: 'Set filters',
     actionRemoveFilter: 'Remove a filter',
     actionClearFilters: 'Clear filters',
@@ -149,8 +142,6 @@ export const columnFilteringLabels = defineLabels<ColumnFilteringLabels>()(
     transformDescription: 'filtered',
   },
   {
-    filtersActive: ['count'],
-    filtersActiveHidden: ['count', 'hidden'],
     removeFilter: ['column'],
   },
 )

@@ -1281,6 +1281,8 @@
     --tsr-comp-popup-card-outline: 1px solid CanvasText;
     --tsr-comp-popup-card-hover-outline: 1px solid CanvasText;
     --tsr-comp-segments-track-outline: none;
+    /* Тон опасного действия (ADR 0206, DX7): наведение — как у кнопки без тона. */
+    --tsr-comp-danger-hover-bg: var(--tsr-comp-control-hover-bg);
   }
 }
 

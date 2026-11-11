@@ -10,6 +10,16 @@ import type { ToolbarSlot } from './createSlots'
 
 export const DEFAULT_TOOLBAR_GROUP = 'default'
 
+/** Место кнопки в тулбаре: поверх группы, порядка и стороны её слота (ADR 0205). */
+export interface ToolbarPlacement {
+  /** Группа кнопок: встроенная или своя группа приложения. */
+  group?: string
+  /** Порядок внутри группы. */
+  order?: number | 'last'
+  /** Сторона тулбара. */
+  align?: 'start' | 'end'
+}
+
 /** Ранги встроенных групп: порядок не зависит от порядка плагинов (TB16). */
 const BUILTIN_GROUP_RANK: Record<string, number> = {
   search: 0,

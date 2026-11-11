@@ -8,6 +8,8 @@ import { DATA_GRID_THEME_CLASS } from '../../../ui/theme'
 import { Bubble } from '../../../ui/Bubble'
 import { CellIssue } from '../../../ui/CellIssue'
 import { UiCanvas } from '../../__mocks__/UiCanvas'
+import { ItemButton } from '../../../ui/Popup/ItemButton'
+import { PopupEntry } from '../../../ui/Popup/PopupEntry'
 import { PopupItem, PopupItemMark } from '../../../ui/Popup/PopupItem'
 import { SelectTrigger } from '../../../ui/SelectTrigger/SelectTrigger'
 import * as assembled from '../../UI.PopupAssembled.stories'
@@ -689,5 +691,383 @@ describe('Контролы', () => {
       expect(distance, dark ? 'тёмная' : 'светлая').toBeGreaterThan(15)
       await screen.unmount()
     }
+  })
+})
+
+const STYLES = import.meta.glob('../../../{plugins,ui}/**/*.module.css', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+}) as Record<string, string>
+const styleOf = (name: string) => {
+  const keys = Object.keys(STYLES).filter(path =>
+    path.endsWith(`/${name}.module.css`),
+  )
+  if (keys.length !== 1) throw new Error(`${name}: ${keys.length}`)
+  return STYLES[keys[0]!]!
+}
+
+/** Затемнение у верхнего и нижнего края, px: длины маски области прокрутки. */
+const fadeOf = (el: Element) => {
+  const mask = getComputedStyle(el).maskImage
+  const match =
+    /rgb\(0, 0, 0\) ([\d.]+)px, rgb\(0, 0, 0\) (?:calc\(100% - ([\d.]+)px\)|100%)/.exec(
+      mask,
+    )
+  if (!match) return null
+  // Прокрутка в Firefox и WebKit — дробными пикселями.
+  return {
+    top: Math.round(Number(match[1])),
+    bottom: Math.round(Number(match[2] ?? 0)),
+  }
+}
+const scrollable = (root: ParentNode) =>
+  [...root.querySelectorAll<HTMLElement>('*')].find(
+    el =>
+      el.scrollHeight > el.clientHeight + 4 &&
+      getComputedStyle(el).overflowY === 'auto',
+  ) ?? null
+const scrollTo = async (el: HTMLElement, top: number) => {
+  el.scrollTop = top
+  el.dispatchEvent(new Event('scroll'))
+  await new Promise(resolve => requestAnimationFrame(resolve))
+}
+/** Выбранный пункт стоит посередине списка — не у края под затемнением. */
+const centered = (list: HTMLElement, selected: HTMLElement) => {
+  const outer = list.getBoundingClientRect()
+  const inner = selected.getBoundingClientRect()
+  return (
+    Math.abs(inner.top + inner.height / 2 - (outer.top + outer.height / 2)) <=
+    inner.height / 2
+  )
+}
+
+describe('Затемнение краёв прокрутки (ADR 0183, PK31)', () => {
+  test('PK31: прокручиваемая область поповера затемнена у края, за которым есть ещё содержимое: затемнение растёт с прокруткой до токена --tsr-comp-popup-scroll-fade, у края без содержимого его нет, полоса прокрутки и тень поверхности не гаснут; во всех прокручиваемых списках поповеров; выбранный год и время открываются посередине списка', async () => {
+    // Список вариантов: рост затемнения с прокруткой и края без содержимого.
+    const screen = await render(<Checklist.ChecklistPlayground count={500} />)
+    await expect.poll(() => scrollable(document)).not.toBeNull()
+    const list = scrollable(document)!
+    const token = px(list, '--tsr-comp-popup-scroll-fade')
+    expect(token).toBeGreaterThan(0)
+    await expect.poll(() => fadeOf(list)).toEqual({ top: 0, bottom: token })
+    await scrollTo(list, token / 4)
+    await expect.poll(() => fadeOf(list)?.top).toBe(Math.round(list.scrollTop))
+    expect(fadeOf(list)!.top).toBeGreaterThan(0)
+    expect(fadeOf(list)!.top).toBeLessThan(token)
+    await scrollTo(list, token * 10)
+    await expect.poll(() => fadeOf(list)?.top).toBe(token)
+    await scrollTo(list, list.scrollHeight)
+    await expect.poll(() => fadeOf(list)).toEqual({ top: token, bottom: 0 })
+    // Полоса прокрутки — без маски: второй слой маски открывает её во всю ширину.
+    const scrollbar = list.offsetWidth - list.clientWidth
+    expect(getComputedStyle(list).maskSize).toBe(
+      `${scrollbar ? `calc(100% - ${scrollbar}px)` : '100%'} 100%, ${scrollbar}px 100%`,
+    )
+    await screen.unmount()
+
+    // Колонки времени: затемнение на колонке, поверхность — без маски и с тенью; выбранный час
+    // посередине.
+    const time = await render(<Time.TimeField24 />)
+    const opener = () =>
+      time.container.querySelector<HTMLElement>(
+        'button[aria-haspopup="dialog"]',
+      )
+    await expect.poll(opener).not.toBeNull()
+    await userEvent.click(opener()!)
+    // Колонки часов и минут; выбранный час получает фокус, минута — нет: посередине обе.
+    const columns = () =>
+      [
+        ...(dialog()?.querySelectorAll<HTMLElement>(
+          '[aria-label] > [aria-pressed="true"]',
+        ) ?? []),
+      ].map(pressed => pressed.parentElement!)
+    const hours = () => columns()[0] ?? null
+    await expect.poll(() => columns().length).toBe(2)
+    settle()
+    for (const column of columns())
+      await expect
+        .poll(() =>
+          centered(column, column.querySelector('[aria-pressed="true"]')!),
+        )
+        .toBe(true)
+    // Посередине длинного списка содержимое есть за обоими краями.
+    await expect.poll(() => fadeOf(hours()!)?.top).toBeGreaterThan(0)
+    expect(fadeOf(hours()!)!.bottom).toBeGreaterThan(0)
+    expect(getComputedStyle(dialog()).maskImage).toBe('none')
+    expect(getComputedStyle(dialog()).boxShadow).not.toBe('none')
+    await userEvent.keyboard('{Escape}')
+    await time.unmount()
+
+    // Список лет: выбранный год посередине, края затемнены.
+    const calendar = await render(<Calendar.CalendarPlayground />)
+    const triggers = () => [
+      ...document.querySelectorAll<HTMLElement>('[aria-haspopup="listbox"]'),
+    ]
+    await expect.poll(() => triggers().length).toBe(2)
+    await userEvent.click(triggers()[1]!)
+    const years = () =>
+      document.querySelector<HTMLElement>('[data-open] [role="listbox"]')
+    await expect.poll(years).not.toBeNull()
+    const yearList = () => scrollable(years()!.parentElement!) ?? years()!
+    const year = () =>
+      years()!.querySelector<HTMLElement>('[aria-selected="true"]')!
+    await expect.poll(() => centered(yearList(), year())).toBe(true)
+    await expect.poll(() => fadeOf(yearList())?.top).toBeGreaterThan(0)
+    expect(fadeOf(yearList())!.bottom).toBeGreaterThan(0)
+    await userEvent.keyboard('{Escape}')
+    await calendar.unmount()
+
+    // Все прокручиваемые списки поповеров — на затемнении кита.
+    for (const name of [
+      'Checklist',
+      'OptionEditors',
+      'ColumnVisibilityMenu',
+      'FailureLogPopover',
+      'UnsavedChangesPopover',
+      'FilterSummaryPopover',
+      'Calendar',
+      'TimeField',
+    ])
+      expect(sourceOf(name), name).toMatch(/useScrollFade[<(]/)
+    for (const name of [
+      'Checklist',
+      'OptionEditors',
+      'ColumnVisibilityMenu',
+      'Calendar',
+      'TimeField',
+    ])
+      expect(styleOf(name), name).toContain('composes: scrollFade from')
+    for (const name of ['FailureLog', 'UnsavedChanges', 'FilterSummary'])
+      expect(styleOf(name), name).toContain('composes: cardsScroll from')
+  })
+})
+
+/** Рамка поля: сам узел или ближайший предок с рамкой. */
+const frameOf = (el: Element) => {
+  for (let node: Element | null = el; node; node = node.parentElement)
+    if (parseFloat(getComputedStyle(node).borderTopWidth) > 0) return node
+  throw new Error('нет рамки')
+}
+const iconBox = (el: Element) =>
+  el.querySelector('svg')!.getBoundingClientRect()
+/** Центр значка от правой рамки: значки разной ширины стоят в одном месте компактной кнопки. */
+const iconCenterFromRight = (frame: Element, icon: DOMRect) =>
+  box(frame).right - (icon.left + icon.width / 2)
+
+const Glyph = () => (
+  <svg width={16} height={16} viewBox="0 0 16 16" aria-hidden>
+    <rect width={16} height={16} />
+  </svg>
+)
+
+/** Пункты с кнопкой и с меткой, запись в одну строку и с содержимым — в одной теме. */
+const Rows = () => (
+  <div
+    className={DATA_GRID_THEME_CLASS}
+    // Шрифт и кегль — как у поверхности поповера, где пункты и записи живут.
+    style={{
+      padding: 24,
+      width: 340,
+      display: 'grid',
+      gap: 8,
+      fontFamily: 'var(--tsr-comp-font-family)',
+      fontSize: 'var(--tsr-comp-popup-font-size)',
+    }}
+  >
+    <PopupItem
+      data-testid="with-button"
+      icon={<Glyph />}
+      label="Apply"
+      end={
+        <ItemButton label="Discard">
+          <Glyph />
+        </ItemButton>
+      }
+    />
+    <PopupItem
+      data-testid="with-mark"
+      icon={<Glyph />}
+      label="Apply"
+      end={<PopupItemMark status="checked" />}
+    />
+    <div data-testid="entry-line">
+      <PopupEntry
+        mark={<Bubble size="dot" tone="draft" />}
+        label="Edit cell"
+        actions={
+          <ItemButton label="Discard">
+            <Glyph />
+          </ItemButton>
+        }
+      />
+    </div>
+    <div data-testid="entry-body">
+      <PopupEntry
+        mark={<Bubble size="dot" tone="error" />}
+        label="Edit cell"
+        onShow={() => {}}
+        actions={
+          <ItemButton label="Close">
+            <Glyph />
+          </ItemButton>
+        }
+      >
+        The server refused the value.
+      </PopupEntry>
+    </div>
+  </div>
+)
+const byTestId = (id: string) =>
+  document.querySelector<HTMLElement>(`[data-testid="${id}"]`)!
+const entryOf = (id: string) =>
+  byTestId(id).querySelector<HTMLElement>('[data-popup-entry]')!
+
+describe('Пункт, запись и поле по линиям поповера (ADR 0183, PK34–PK36)', () => {
+  test('PK34: кнопка справа в пункте и записи — ItemButton, компактный квадрат; пункт и запись вмещают её целиком: строка с кнопкой высотой пункта, значок кнопки — на поле пункта от правого края, как метка пункта', async () => {
+    const screen = await render(<Rows />)
+    await expect.poll(() => byTestId('with-button')).not.toBeNull()
+    const item = byTestId('with-button')
+    const marked = byTestId('with-mark')
+    const height = px(item, '--tsr-comp-popup-item-min-height')
+    const fieldX = px(item, '--tsr-comp-popup-item-padding-x')
+    const compact = px(item, '--tsr-comp-button-size-compact')
+    for (const host of [item, entryOf('entry-line'), entryOf('entry-body')]) {
+      const button = host.querySelector('[data-item-button]')!
+      const b = box(button)
+      // Компактный квадрат.
+      expect(b.width).toBeCloseTo(compact, 0)
+      expect(b.height).toBeCloseTo(compact, 0)
+      // Целиком внутри пункта или записи.
+      expect(b.top).toBeGreaterThanOrEqual(box(host).top - 0.5)
+      expect(b.right).toBeLessThanOrEqual(box(host).right + 0.5)
+      // Поле над кнопкой — остаток до высоты пункта.
+      expect(b.top - box(host).top).toBeCloseTo((height - compact) / 2, 0)
+      // Значок — на поле пункта от правого края, как метка пункта.
+      expect(box(host).right - iconBox(button).right).toBeCloseTo(fieldX, 0)
+    }
+    expect(box(item).height).toBeCloseTo(height, 0)
+    expect(box(item).height).toBeCloseTo(box(marked).height, 0)
+    const mark = marked.querySelector('[data-popup-item-mark]')!
+    expect(box(marked).right - iconBox(mark).right).toBeCloseTo(fieldX, 0)
+    await screen.unmount()
+  })
+
+  test('PK35: поле ввода, поиск, выпадающий список и поле времени держат текст на одном поле от рамки; значок справа — шеврон, часы, крестик — на одном отступе от рамки', async () => {
+    const offsets: Record<string, { text: number; icon?: number }> = {}
+
+    let view = await render(<Field.FieldPlayground />)
+    await expect
+      .poll(() => view.container.querySelector('input'))
+      .not.toBeNull()
+    let input = view.container.querySelector('input')!
+    offsets.field = {
+      text:
+        parseFloat(getComputedStyle(input).borderLeftWidth) +
+        parseFloat(getComputedStyle(input).paddingLeft) +
+        box(input).left -
+        box(frameOf(input)).left,
+    }
+    const padX = px(input.parentElement!, '--tsr-comp-field-padding-x')
+    await view.unmount()
+
+    view = await render(<Search.SearchFieldPlayground />)
+    await expect
+      .poll(() => view.container.querySelector('input'))
+      .not.toBeNull()
+    input = view.container.querySelector('input')!
+    const searchFrame = frameOf(input)
+    const searchIcons = [
+      ...searchFrame.parentElement!.querySelectorAll('svg'),
+    ].map(svg => svg.getBoundingClientRect())
+    // Лупа — на поле текста, крестик — справа.
+    offsets.search = {
+      text: searchIcons[0]!.left - box(searchFrame).left,
+      icon: iconCenterFromRight(searchFrame, searchIcons.at(-1)!),
+    }
+    await view.unmount()
+
+    view = await render(<Select.SelectTriggerPlayground />)
+    const trigger = () =>
+      view.container.querySelector<HTMLElement>('button[aria-haspopup]')
+    await expect.poll(trigger).not.toBeNull()
+    offsets.select = {
+      text:
+        textBox(trigger()!.querySelector('span') ?? trigger()!).left -
+        box(trigger()!).left,
+      icon: iconCenterFromRight(trigger()!, iconBox(trigger()!)),
+    }
+    await view.unmount()
+
+    view = await render(<Time.TimeFieldPlayground />)
+    const segment = () =>
+      view.container.querySelector<HTMLElement>('[role="spinbutton"]')
+    await expect.poll(segment).not.toBeNull()
+    const timeFrame = frameOf(segment()!)
+    const slot =
+      px(timeFrame, '--tsr-ref-space-1') +
+      px(timeFrame, '--tsr-comp-button-size-compact') / 2
+    offsets.time = {
+      text: textBox(segment()!).left - box(timeFrame).left,
+      icon: iconCenterFromRight(
+        timeFrame,
+        iconBox(timeFrame.querySelector('button[aria-haspopup]')!),
+      ),
+    }
+    await view.unmount()
+
+    // Текст — на поле от рамки: рамка 1px и `--tsr-comp-field-padding-x`.
+    for (const [name, { text }] of Object.entries(offsets))
+      expect(text, name).toBeCloseTo(padX + 1, 0)
+    // Значки справа — на одном месте: центр компактной кнопки у рамки.
+    expect(offsets.select!.icon).toBeCloseTo(slot, 0)
+    expect(offsets.search!.icon).toBeCloseTo(offsets.select!.icon!, 0)
+    expect(offsets.time!.icon).toBeCloseTo(offsets.select!.icon!, 0)
+  })
+
+  test('PK36: строка подписи записи — как пункт списка: поля сверху и по бокам, место значка шириной значка с точкой по центру; подпись — на линии текста пунктов со значком, однострочная запись — высотой пункта, кнопки — на поле пункта от края', async () => {
+    const screen = await render(<Rows />)
+    await expect.poll(() => byTestId('with-mark')).not.toBeNull()
+    const item = byTestId('with-mark')
+    const height = px(item, '--tsr-comp-popup-item-min-height')
+    const iconSize = px(item, '--tsr-comp-button-icon-size')
+    const fieldX = px(item, '--tsr-comp-popup-item-padding-x')
+    const itemIcon = item.querySelector('[data-popup-item-icon]')!
+    const itemLabel = item.querySelector('[data-popup-item-label]')!
+    for (const id of ['entry-line', 'entry-body']) {
+      const entry = entryOf(id)
+      const mark = entry.querySelector('[data-popup-entry-mark]')!
+      const label = entry.querySelector('[data-popup-entry-label]')!
+      // Место значка — как у пункта: та же ширина и левый край, точка по центру.
+      expect(box(mark).width, id).toBeCloseTo(iconSize, 0)
+      expect(box(mark).left - box(entry).left, id).toBeCloseTo(
+        box(itemIcon).left - box(item).left,
+        0,
+      )
+      const dot = box(mark.firstElementChild!)
+      expect(dot.left + dot.width / 2, id).toBeCloseTo(
+        box(mark).left + box(mark).width / 2,
+        0,
+      )
+      // Подпись — на линии текста пункта со значком, по горизонтали и по вертикали.
+      expect(textBox(label).left - box(entry).left, id).toBeCloseTo(
+        textBox(itemLabel).left - box(item).left,
+        0,
+      )
+      expect(textBox(label).top - box(entry).top, id).toBeCloseTo(
+        textBox(itemLabel).top - box(item).top,
+        0,
+      )
+      // Кнопки — на поле пункта от края.
+      expect(
+        box(entry).right -
+          iconBox(entry.querySelector('[data-item-button]')!).right,
+        id,
+      ).toBeCloseTo(fieldX, 0)
+    }
+    // Однострочная запись — высотой пункта.
+    expect(box(entryOf('entry-line')).height).toBeCloseTo(height, 0)
+    expect(box(entryOf('entry-body')).height).toBeGreaterThan(height)
+    await screen.unmount()
   })
 })

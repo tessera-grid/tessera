@@ -18,6 +18,7 @@ import { storyLabels } from './__mocks__/storyLabels'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
 import type { ConsoleLog } from './demos/consoleLog'
+import { openViewSettingsSection } from './__mocks__/viewSettings'
 import { columnVisibilityLabels } from '../plugins/columnVisibility/labels'
 
 /**
@@ -140,7 +141,7 @@ export const StubsNoColumns: StoryObj<StoryProps> = {
       for (const id of [
         'quick-search-skeleton',
         'export-skeleton',
-        'column-visibility-skeleton',
+        'view-settings-skeleton',
       ]) {
         await waitTestId(id)
       }
@@ -162,8 +163,7 @@ export const StubsNoColumns: StoryObj<StoryProps> = {
       for (const id of [
         'quick-search',
         'export-button',
-        'filter-summary-button',
-        'column-visibility-button',
+        'view-settings-button',
       ]) {
         await until(() => expect(disabled(id), id).toBe(true))
       }
@@ -175,7 +175,7 @@ export const StubsNoColumns: StoryObj<StoryProps> = {
 // --- S2 ------------------------------------------------------------------------------
 
 /**
- * Пользователь снимает флажок всех колонок в меню «Колонки» и закрывает меню, как
+ * Пользователь снимает флажок всех колонок в разделе «Колонки» «Настроек вида» и закрывает «Настройки вида», как
  * `Escape`: заглушку ничто не заслоняет (ADR 0133).
  */
 const hideAllFromMenu = (root: HTMLElement) => {
@@ -183,8 +183,6 @@ const hideAllFromMenu = (root: HTMLElement) => {
     document.querySelector<HTMLElement>(
       '[data-testid="column-visibility-menu"]',
     )
-  const button = () =>
-    root.querySelector<HTMLElement>('[data-testid="column-visibility-button"]')
   const run = () => {
     const box = menu()?.querySelector<HTMLElement>(
       '[data-testid="column-visibility-all"] [role="checkbox"]',
@@ -194,11 +192,10 @@ const hideAllFromMenu = (root: HTMLElement) => {
       pressEscape()
       return
     }
-    if (button()?.hasAttribute('data-base-ui-click-trigger') && !menu())
-      button()!.click()
-    requestAnimationFrame(run)
+    openViewSettingsSection(root, 'columns')
+    setTimeout(run, 100)
   }
-  requestAnimationFrame(run)
+  setTimeout(run, 0)
 }
 
 const COLUMNS_HIDDEN: readonly GuideStoryStep[] = [
@@ -235,8 +232,8 @@ export const StubsColumnsHidden: StoryObj<StoryProps> = {
       await expect(
         canvas.querySelectorAll('[role="columnheader"]').length,
       ).toBeGreaterThan(0)
-      await expect(byTestId('column-visibility-button')).not.toBeNull()
-      await expect(byTestId('column-visibility-button')).not.toHaveAttribute(
+      await expect(byTestId('view-settings-button')).not.toBeNull()
+      await expect(byTestId('view-settings-button')).not.toHaveAttribute(
         'data-active',
       )
     })
@@ -246,7 +243,7 @@ export const StubsColumnsHidden: StoryObj<StoryProps> = {
       await until(() => expect(byTestId('column-visibility-menu')).toBeNull())
       await until(() =>
         expect(document.activeElement).not.toBe(
-          byTestId('column-visibility-button'),
+          byTestId('view-settings-button'),
         ),
       )
       await expect(bodyRows(canvas)).toHaveLength(0)
@@ -256,8 +253,8 @@ export const StubsColumnsHidden: StoryObj<StoryProps> = {
       await expect(byTestId('columns-hidden-show-all')).toHaveTextContent(
         columnVisibilityLabels(labels).showAllColumns,
       )
-      await expect(disabled('column-visibility-button')).toBe(false)
-      await expect(byTestId('column-visibility-button')).toHaveAttribute(
+      await expect(disabled('view-settings-button')).toBe(false)
+      await expect(byTestId('view-settings-button')).toHaveAttribute(
         'data-active',
         'true',
       )

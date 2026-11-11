@@ -103,7 +103,7 @@ export interface MenuAction<TCtx = any> extends NamedAction<TCtx> {
   closeOnSelect?: boolean
   /**
    * Тон (ADR 0206): `'danger'` — действие безвозвратно теряет данные пользователя; пункт меню
-   * красный, кнопка слота — красная при наведении и фокусе. Функция — тон по контексту.
+   * и кнопка слота красные и в покое. Функция — тон по контексту.
    */
   tone?: ActionTone | ((ctx: TCtx) => ActionTone | undefined)
 }

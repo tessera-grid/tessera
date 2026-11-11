@@ -1,3 +1,8 @@
+import {
+  openViewSettingsSection,
+  viewSettingsPopover,
+  viewSettingsSectionOpen,
+} from './__mocks__/viewSettings'
 import { useEffect, useRef, useState } from 'react'
 import { StickyNote } from 'lucide-react'
 import { Meta, StoryObj } from '@storybook/react'
@@ -297,24 +302,21 @@ const POPUPS: readonly AssembledPopup[] = [
     open: (root, { signal }) => openPanel(root, 'released', signal),
   },
   {
-    id: 'filterSummary',
-    title: 'Сводка фильтров',
-    hint: 'Приложение задало фильтр, пользователь открыл сводку. Панель собрана из поверхности, заголовка, записей условий и кнопки сброса внизу.',
-    sources: ['plugins/columnFiltering/FilterSummaryPopover'],
-    shown: () => byTestId('filter-summary'),
+    id: 'view',
+    title: 'Настройки вида',
+    hint: 'Приложение задало фильтр, пользователь открыл настройки вида и раздел фильтров. Панель собрана из поверхности, строки возврата, записей условий и кнопки сброса внизу.',
+    sources: ['grid/ViewSettings/ViewSettingsPopover'],
+    shown: () =>
+      viewSettingsSectionOpen('filter') ? viewSettingsPopover() : null,
     parts: [
-      '[data-testid="filter-summary-reset"]',
-      '[data-testid="filter-summary-remove"]',
+      '[data-testid="view-settings-reset"]',
+      '[data-testid="view-settings-remove"]',
     ],
-    open: async (_root, { signal, onLeave }) => {
+    open: async (root, { signal, onLeave }) => {
       await pollUntil(() => !!gridTable, signal)
       onLeave(() => gridTable?.setColumnFilters([]))
       gridTable!.setColumnFilters([{ id: 'name', value: FILTER_VALUE }])
-      await openToolbarPopover(
-        'filter-summary-button',
-        () => byTestId('filter-summary'),
-        signal,
-      )
+      await pollUntil(() => openViewSettingsSection(root, 'filter'), signal)
     },
   },
   {
@@ -347,17 +349,13 @@ const POPUPS: readonly AssembledPopup[] = [
   {
     id: 'columns',
     title: 'Выбор колонок',
-    hint: 'Пользователь открыл выбор колонок. Панель собрана из поверхности, заголовка со счётчиком, поля поиска и дерева пунктов с флажками.',
-    sources: ['plugins/columnVisibility/ColumnVisibilityPopover'],
+    hint: 'Пользователь открыл раздел колонок в настройках вида. Панель собрана из поверхности, заголовка со счётчиком, поля поиска и дерева пунктов с флажками.',
+    sources: [],
     states: ['overlay.columns'],
     shown: () => byTestId('column-visibility-menu'),
     parts: ['[data-testid="column-visibility-count"]', FIELD, CHECKBOX],
-    open: (_root, { signal }) =>
-      openToolbarPopover(
-        'column-visibility-button',
-        () => byTestId('column-visibility-menu'),
-        signal,
-      ),
+    open: (root, { signal }) =>
+      pollUntil(() => openViewSettingsSection(root, 'columns'), signal),
   },
   {
     id: 'export',
@@ -591,7 +589,7 @@ export const PopupAssembled: StoryObj<StoryProps> = {
     await step(STEPS[4]!.title, () => expectPopup(canvas, 'operatorSelect'))
     await step(STEPS[5]!.title, () => expectPopup(canvas, 'filterOptions'))
     await step(STEPS[6]!.title, () => expectPopup(canvas, 'filterDate'))
-    await step(STEPS[7]!.title, () => expectPopup(canvas, 'filterSummary'))
+    await step(STEPS[7]!.title, () => expectPopup(canvas, 'view'))
     await step(STEPS[8]!.title, () => expectPopup(canvas, 'contextMenu'))
     await step(STEPS[9]!.title, () => expectPopup(canvas, 'handleMenu'))
     await step(STEPS[10]!.title, () => expectPopup(canvas, 'columns'))
