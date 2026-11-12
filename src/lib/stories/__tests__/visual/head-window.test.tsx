@@ -9,6 +9,14 @@ import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
 // липкая подпись группы (NV4), линии между колонками токеном темы и граница группы (NV9–NV10),
 // axe (NV12). NV8 — модульный `oneHeadLayout`, NV11 — перф в `scroll`.
 
+const pointer = commands as unknown as {
+  realDragHold: (
+    from: { x: number; y: number },
+    to: { x: number; y: number },
+  ) => Promise<void>
+  realMouseUp: () => Promise<void>
+}
+
 const realDrag = (
   commands as unknown as {
     realDrag: (
@@ -213,7 +221,14 @@ describe('Одна раскладка шапки (ADR 0207)', () => {
       return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
     }
     const from = await handle('g2')
-    await realDrag(from, { x: visibleLeft('g1') + 5, y: from.y })
+    // Точка броска у левого края — в зоне автопрокрутки: таблица едет, пока g1 не освободит место
+    // для g2. Отпускание — как только освободила: Firefox крутит быстрее, и бросок на ходу пришёлся
+    // бы на другую колонку.
+    await pointer.realDragHold(from, { x: visibleLeft('g1') + 5, y: from.y })
+    await expect
+      .poll(() => new DOMMatrix(getComputedStyle(head('g1')!).transform).m41)
+      .toBeGreaterThan(0)
+    await pointer.realMouseUp()
     // Переезд колонок доигрывает (ADR 0115): место — после движения.
     await expect
       .poll(() => Math.abs(leftInRow(head('g2')!) - PER_GROUP * SIZE))

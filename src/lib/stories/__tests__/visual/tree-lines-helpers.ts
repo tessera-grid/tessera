@@ -119,8 +119,12 @@ export const horizontalAt = (shot: Shot, x: number, y: number, minDiff = 6) =>
   minDiff
 
 /** Строка целиком в видимой области прокрутки грида — её пиксели на скриншоте. */
+/**
+ * Строка в середине окна, ячейка отступа — в виду: строка шире окна, и Firefox прокрутил бы её к
+ * другому краю по горизонтали.
+ */
 export const showRow = async (id: string) => {
-  rowEl(id)!.scrollIntoView({ block: 'center' })
+  indentOf(id).scrollIntoView({ block: 'center', inline: 'nearest' })
   for (let i = 0; i < 3; i++)
     await new Promise(resolve => requestAnimationFrame(resolve))
 }

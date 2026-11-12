@@ -383,12 +383,15 @@ describe('липкие строки групп и веток (ADR 0160)', () => 
       if (animated)
         expect(animations, 'движение сворачивания').toBeGreaterThan(0)
       await settleRowMotion()
-      // Свёрнута на месте: под копией предка, без прокрутки после сворачивания.
+      // Свёрнута на месте: под копией предка, без прокрутки после сворачивания. Плавная
+      // прокрутка Firefox встаёт на дробный `scrollTop` — допуск в пиксель.
       await expect
         .poll(() =>
-          Math.round(realRow(t0c1)!.getBoundingClientRect().top - headBottom()),
+          Math.abs(
+            realRow(t0c1)!.getBoundingClientRect().top - headBottom() - h,
+          ),
         )
-        .toBe(h)
+        .toBeLessThanOrEqual(1)
       expect(container().scrollTop).toBe(frames[collapsedAt]!.top)
       return new Set(scrolling.map(f => Math.round(f.top))).size
     }
