@@ -19,6 +19,16 @@
   min-height: 0;
 }
 
+/* Модуль панели раздела не загрузился — блок ошибки с повтором на месте строк-скелетов. */
+.panelError {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--tsr-comp-popup-padding);
+  padding: var(--tsr-comp-popup-padding);
+  font-size: var(--tsr-comp-cell-font-size);
+}
+
 .levels {
   composes: cardsScroll from '../../ui/Popup/Popup.module.css';
   display: flex;

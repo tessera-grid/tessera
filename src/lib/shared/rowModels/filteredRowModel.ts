@@ -1,8 +1,9 @@
 /**
  * Отфильтрованная модель строк для `columnFiltering` и `quickSearch` (ADR 0045).
- * Стоковый кэш смотрит только на срезы фильтров, а быстрый поиск идёт по видимым
- * колонкам: при активном поиске смена видимости пересобирает кэш. Смена пояса дат
- * (`timeZone`, ADR 0047) при активных фильтрах колонок — тоже. Без фильтров и поиска
+ * Стоковый кэш смотрит только на срезы фильтров, а быстрый поиск сверяет показанный текст
+ * видимых колонок: при активном поиске смена видимости, `locale`, `dataTypes` и `timeZone`
+ * пересобирает кэш (ADR 0201, QT12). Смена пояса дат (ADR 0047) при активных фильтрах колонок —
+ * тоже. Без фильтров и поиска
  * второй проход подряд строки не обходит (ADR 0068). Срез операции, которую выполняет
  * сервер, клиент не применяет (ADR 0169, §1). Смена `data` при тех же фильтрах проверяет
  * только изменённые и вставленные строки (ADR 0194). Поиск проверяет строку проверкой,
@@ -56,6 +57,8 @@ interface FilteringTable {
   }
   options: {
     timeZone?: string
+    locale?: string
+    dataTypes?: unknown
     filterFromLeafRows?: boolean
     maxLeafRowFilterDepth?: number
   }
@@ -568,6 +571,8 @@ export const createSearchAwareFilteredRowModel =
     const { atoms } = t
     let visibility: unknown = UNSET
     let timeZone: unknown = UNSET
+    let locale: unknown = UNSET
+    let dataTypes: unknown = UNSET
     let last: Filtered | undefined
     let read: () => unknown = () => undefined
     const filtered = () => {
@@ -597,14 +602,25 @@ export const createSearchAwareFilteredRowModel =
     const filtering = () => (atoms.columnFilters?.get()?.length ?? 0) > 0
     const searchAware = () => {
       const next = atoms.columnVisibility?.get()
-      const nextTimeZone = t.options.timeZone
+      const { timeZone: nextTimeZone, locale: nextLocale } = t.options
+      const nextDataTypes = t.options.dataTypes
       const searching = !!searchValue()
+      const changed = (prev: unknown, value: unknown) =>
+        prev !== UNSET && value !== prev
+      // Поиск сверяет показанный текст ячейки: он зависит от видимых колонок, языка, реестра
+      // типов и пояса (ADR 0201, QT12); фильтры дат колонок — от пояса.
       const stale =
-        (visibility !== UNSET && next !== visibility && searching) ||
-        (timeZone !== UNSET && nextTimeZone !== timeZone && filtering())
+        (searching &&
+          (changed(visibility, next) ||
+            changed(locale, nextLocale) ||
+            changed(dataTypes, nextDataTypes) ||
+            changed(timeZone, nextTimeZone))) ||
+        (changed(timeZone, nextTimeZone) && filtering())
       visibility = next
       timeZone = nextTimeZone
-      // Поиск по видимым колонкам и пояс дат: смена — отбор заново, без сброса страницы.
+      locale = nextLocale
+      dataTypes = nextDataTypes
+      // Смена — отбор заново, без сброса страницы.
       if (stale) last = undefined
       if (filtering() || !!searchValue()) filteredOnce.add(table)
       return filtered()

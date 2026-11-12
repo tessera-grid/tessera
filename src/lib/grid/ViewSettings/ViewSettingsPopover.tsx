@@ -3,13 +3,21 @@
  * строка «назад» и уровни простого раздела или своя панель плагина. Снятие и сброс — функции
  * раздела: пути плагина с каналом действий и серверным действием.
  */
-import { type ReactNode, useId, useLayoutEffect, useRef, useState } from 'react'
+import {
+  type ReactNode,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
 
 import { Popover } from '@base-ui/react/popover'
 
 import { sourceOf } from '../../core/debugActions'
 import { type TableLabels, useLocalization } from '../../core/localization'
 import {
+  type ViewSettingsPanel,
   type ViewSettingsSection,
   shownViewSettingsSections,
 } from '../../core/viewSettings'
@@ -17,6 +25,7 @@ import type { Table } from '../../types'
 import { Bubble } from '../../ui/Bubble/Bubble'
 import { Button } from '../../ui/Button'
 import { type TableIcons, useIcons } from '../../ui/icons'
+import { LoadErrorBlock } from '../../ui/LoadMoreError/LoadMoreError'
 import { ItemButton } from '../../ui/Popup/ItemButton'
 import { PopupEntry } from '../../ui/Popup/PopupEntry'
 import { PopupNavItem } from '../../ui/Popup/PopupNavItem'
@@ -165,6 +174,56 @@ const SectionLevels = ({
 
 const PANEL_SKELETON_ROWS = 4
 
+/**
+ * Своя панель раздела: строки-скелеты, пока модуль грузится; не загрузился — блок ошибки кита с
+ * повтором на их месте, как отказ списка вариантов (ADR 0215, VW17).
+ */
+const SectionPanel = ({
+  panel,
+  table,
+  name,
+  labels,
+}: {
+  panel: ViewSettingsPanel
+  table: unknown
+  name: string
+  labels: TableLabels
+}) => {
+  const [failed, setFailed] = useState(false)
+  const [attempt, setAttempt] = useState(0)
+  useEffect(() => {
+    let alive = true
+    // Повтор уже начал загрузку заново (`reload` в нажатии): эффект подписывается на неё.
+    panel.load().then(undefined, () => {
+      if (alive) setFailed(true)
+    })
+    return () => {
+      alive = false
+    }
+  }, [panel, attempt])
+  if (failed)
+    return (
+      <div className={styles.panelError} role="alert">
+        <LoadErrorBlock
+          title={labels.loadFailed(name)}
+          retryLabel={labels.loadMoreRetry}
+          onRetry={() => {
+            void panel.reload().catch(() => {})
+            setFailed(false)
+            setAttempt(count => count + 1)
+          }}
+          testId="view-settings-panel-retry"
+        />
+      </div>
+    )
+  return (
+    <panel.Component
+      table={table}
+      fallback={<PopupSkeletonRows count={PANEL_SKELETON_ROWS} />}
+    />
+  )
+}
+
 export const ViewSettingsPopover = ({
   table,
   label,
@@ -274,9 +333,11 @@ export const ViewSettingsPopover = ({
       />
       <div className={styles.section} data-view-settings-open={shown.id}>
         {shown.panel ? (
-          <shown.panel.Component
+          <SectionPanel
+            panel={shown.panel}
             table={table}
-            fallback={<PopupSkeletonRows count={PANEL_SKELETON_ROWS} />}
+            name={shown.label(labels)}
+            labels={labels}
           />
         ) : (
           <SectionLevels

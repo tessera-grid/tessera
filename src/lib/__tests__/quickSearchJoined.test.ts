@@ -271,6 +271,35 @@ describe('склеенный текст строки (ADR 0201)', () => {
     expect(calls()).toBe(19)
   })
 
+  it('QT12: смена locale, dataTypes или timeZone при том же запросе поиска отбирает строки заново — по новому показанному тексту', () => {
+    const table = tableOf()
+    const set = (patch: (prev: any) => object) =>
+      table.setOptions((prev: any) => ({ ...prev, ...patch(prev) }))
+    const shownRows = () =>
+      table.getFilteredRowModel().rows.map((row: { id: string }) => row.id)
+
+    // Реестр типов: тот же запрос, другой показанный текст колонки.
+    expect(found(table, '#7')).toEqual(['a'])
+    set(prev => ({
+      dataTypes: {
+        ...prev.dataTypes,
+        tag: { extends: 'text', formatValue: (value: unknown) => `@${value}` },
+      },
+    }))
+    expect(shownRows()).toEqual([])
+
+    // Язык: сумма в формате другого языка.
+    expect(found(table, '$1,234.50')).toEqual(['a'])
+    set(() => ({ locale: 'de-DE' }))
+    expect(shownRows()).toEqual([])
+
+    // Пояс: время даты в другом поясе.
+    set(() => ({ locale: undefined }))
+    expect(found(table, '2026-03-04 23:30')).toEqual(['c'])
+    set(() => ({ timeZone: 'Asia/Tokyo' }))
+    expect(shownRows()).toEqual([])
+  })
+
   it('QT5: запрос с символом U+0000 проверяется по каждой колонке; своя globalFilterFn без prepareRowCheck — тоже, с addMeta', () => {
     const search = spiedSearch()
     const table = tableOf({ globalFilterFn: search })
