@@ -19,6 +19,7 @@ import {
   waitForRows,
 } from './__mocks__/catalogPlay'
 import { untilDone } from './__mocks__/cellGestures'
+import { holdGrip, separatorOf } from './__mocks__/columnGrip'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
@@ -123,67 +124,6 @@ const HOLD_SHIFT = 80
 const GRIP = '.resize__handler--column'
 /** Линия границы колонки при протяжке (ADR 0197). */
 const RESIZE_LINE = '[data-column-resize-line]:not([hidden])'
-
-const separatorOf = (root: ParentNode, id: string) =>
-  root.querySelector<HTMLElement>(
-    `${HEAD}[data-column-id="${id}"] ${GRIP} [role="separator"]`,
-  )
-
-/**
- * Протяжка ручки, которую держит шаг (ADR 0197): нажатие и движение — события шага, мышь
- * человека протяжку не ведёт и не отпускает; уход с шага отпускает ручку там, где её
- * держали. `to` — куда шаг уводит указатель от черты.
- */
-const holdGrip = async (
-  root: HTMLElement,
-  step: StepRun,
-  id: string,
-  to: (from: { x: number; y: number }) => number,
-) => {
-  const from = centerOf(separatorOf(root, id)!)
-  const ours = new WeakSet<Event>()
-  const fire = (type: string, target: EventTarget, x: number) => {
-    const event = new MouseEvent(type, {
-      bubbles: true,
-      cancelable: true,
-      button: 0,
-      buttons: type === 'mouseup' ? 0 : 1,
-      clientX: x,
-      clientY: from.y,
-    })
-    ours.add(event)
-    target.dispatchEvent(event)
-  }
-  let at = from.x
-  // Движение в точке удержания — повтор автопрокрутки у края (ADR 0197, §5): пропускается.
-  const shield = (event: Event) => {
-    const repeat =
-      event.type === 'mousemove' && (event as MouseEvent).clientX === at
-    if (!ours.has(event) && !repeat) event.stopPropagation()
-  }
-  for (const type of ['mousemove', 'mouseup']) {
-    window.addEventListener(type, shield, true)
-  }
-  let released = false
-  const release = () => {
-    if (released) return
-    released = true
-    fire('mouseup', document, at)
-    for (const type of ['mousemove', 'mouseup']) {
-      window.removeEventListener(type, shield, true)
-    }
-  }
-  step.onLeave(release)
-  fire('mousedown', separatorOf(root, id)!, at)
-  const target = to(from)
-  for (let i = 1; i <= 8; i++) {
-    step.signal.throwIfAborted()
-    at = from.x + ((target - from.x) * i) / 8
-    fire('mousemove', document, at)
-    await new Promise(resolve => requestAnimationFrame(resolve))
-  }
-  return { release, at: () => at }
-}
 
 /** Шаг ADR 0197, RL12: ручку First Name тянут вправо, не доходя до краевой зоны. */
 const holdResize = async (root: HTMLElement, step: StepRun) => {

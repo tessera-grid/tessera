@@ -7,15 +7,25 @@ import { StoryComponent } from './DataGridStory'
 import { dataGridMeta } from './dataGridMeta'
 import {
   afterRows,
+  gridDrawn,
   guideNext,
   headCell,
+  pointAt,
+  pollUntil,
   settle,
+  stepDone,
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
+import { chooseGripItem, dragGripTo, separatorOf } from './__mocks__/columnGrip'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import {
+  GuideStory,
+  type GuideStoryStep,
+  guideArgs,
+  stepAction,
+} from './demos/GuideStory'
 
 /**
  * Флекс-колонки (ADR 0216): колонки делят ширину таблицы по весам `flex` в пределах своих
@@ -94,6 +104,44 @@ const filled = (root: ParentNode) => {
   return Math.abs(cells - scrollerOf(root).clientWidth) <= 1
 }
 
+const frame = () => new Promise(resolve => requestAnimationFrame(resolve))
+/** Плавный ход за `frames` кадров: `apply` получает долю пути с замедлением к концу. */
+const glide = async (
+  signal: AbortSignal,
+  apply: (part: number) => void,
+  frames = 24,
+) => {
+  for (let i = 1; i <= frames; i++) {
+    signal.throwIfAborted()
+    const t = i / frames
+    apply(t * (2 - t))
+    await frame()
+  }
+}
+
+/** Контейнер приложения вокруг таблицы: ширину ему задаёт история. */
+const containerOf = (root: HTMLElement) => {
+  let node: HTMLElement | null = scrollerOf(root)
+  while (node && !node.style.width.endsWith('px')) node = node.parentElement
+  return node
+}
+
+/**
+ * Окно приложения меняет ширину: край контейнера едет, колонки следуют за ним. Ход — стилем
+ * контейнера, итог — пропом приложения один раз: консоль истории не полнится записями.
+ */
+const resizeWindowTo = (width: number) =>
+  stepAction(async (root, { signal }, app) => {
+    await pollUntil(() => gridDrawn(root) && !!containerOf(root), signal)
+    const container = containerOf(root)!
+    const from = container.getBoundingClientRect().width
+    await glide(signal, part => {
+      container.style.width = `${Math.round(from + (width - from) * part)}px`
+    })
+    app.update(props => ({ ...props, containerWidth: width }))
+    await pollUntil(() => filled(root), signal)
+  })
+
 const FLEX_ARGS: Partial<StoryProps> = {
   defaultColumn: { flex: 1 },
   enableColumnSizing: true,
@@ -114,12 +162,12 @@ const FILL: readonly GuideStoryStep[] = [
   {
     title: 'Окно стало уже',
     hint: 'Таблица сузилась, и колонки сузились вместе с ней: они по-прежнему делят всю ширину поровну.',
-    props: () => ({ containerWidth: 560 }),
+    enter: resizeWindowTo(560),
   },
   {
     title: 'Окно стало шире',
     hint: 'Таблица расширилась — колонки снова заняли всю её ширину.',
-    props: () => ({ containerWidth: 900 }),
+    enter: resizeWindowTo(900),
   },
 ]
 
@@ -144,12 +192,14 @@ export const FlexFillWidth: StoryObj<StoryProps> = {
     })
     await step(FILL[1]!.title, async () => {
       await guideNext(canvas)
+      await stepDone(canvas)
       await until(() => expect(width(canvas, 'firstName')).toBeLessThan(wide))
       await until(() => expect(filled(canvas)).toBe(true))
       await settle()
     })
     await step(FILL[2]!.title, async () => {
       await guideNext(canvas)
+      await stepDone(canvas)
       await until(() =>
         expect(width(canvas, 'firstName')).toBeGreaterThan(wide),
       )
@@ -161,7 +211,7 @@ export const FlexFillWidth: StoryObj<StoryProps> = {
 
 // --- S2: протяжка флекс-колонки ------------------------------------------------------
 
-const RESIZED = 'firstName'
+const RESIZED = 'country'
 const RESIZED_WIDTH = 320
 
 const RESIZE: readonly GuideStoryStep[] = [
@@ -173,12 +223,36 @@ const RESIZE: readonly GuideStoryStep[] = [
   {
     title: 'Пользователь протянул колонку',
     hint: 'Пользователь сделал первую колонку шире. Теперь её ширина задана, а остальные колонки делят то, что осталось.',
-    enter: withWidths({ [RESIZED]: RESIZED_WIDTH }),
+    enter: stepAction(async (root, step) => {
+      await pollUntil(
+        () => filled(root) && !!separatorOf(root, RESIZED),
+        step.signal,
+      )
+      if (width(root, RESIZED) === RESIZED_WIDTH) return
+      // Указатель над заголовком: ручка ширины видна, её тянут вправо.
+      const leave = pointAt(headCell(root, RESIZED))
+      try {
+        await dragGripTo(root, step, RESIZED, RESIZED_WIDTH)
+      } finally {
+        leave()
+      }
+      await pollUntil(() => width(root, RESIZED) === RESIZED_WIDTH, step.signal)
+    }),
   },
   {
     title: 'Пользователь сбросил ширину',
     hint: 'Пользователь сбросил ширину колонки в меню ручки: она снова делит ширину таблицы наравне с другими.',
-    enter: withWidths({}),
+    enter: stepAction(async (root, step) => {
+      await pollUntil(
+        () => !!sizingApi && !!separatorOf(root, RESIZED),
+        step.signal,
+      )
+      // Протянутая колонка шире соседей; флекс-колонки делят ширину поровну.
+      const resized = () =>
+        Math.abs(width(root, RESIZED) - width(root, 'lastName')) > 1
+      if (resized()) await chooseGripItem(root, step, RESIZED, 'reset')
+      await pollUntil(() => !resized() && filled(root), step.signal)
+    }),
   },
 ]
 
@@ -203,6 +277,7 @@ export const FlexResize: StoryObj<StoryProps> = {
     })
     await step(RESIZE[1]!.title, async () => {
       await guideNext(canvas)
+      await stepDone(canvas)
       await until(() => expect(width(canvas, RESIZED)).toBe(RESIZED_WIDTH))
       await expect(width(canvas, 'lastName')).toBeLessThan(share)
       await until(() => expect(filled(canvas)).toBe(true))
@@ -210,6 +285,7 @@ export const FlexResize: StoryObj<StoryProps> = {
     })
     await step(RESIZE[2]!.title, async () => {
       await guideNext(canvas)
+      await stepDone(canvas)
       await until(() => expect(width(canvas, 'lastName')).toBe(share))
       await until(() => expect(filled(canvas)).toBe(true))
       await settle()
@@ -233,9 +309,18 @@ const OVERFLOW: readonly GuideStoryStep[] = [
   {
     title: 'Пользователь прокрутил таблицу',
     hint: 'Пользователь прокрутил таблицу вправо и видит последние колонки.',
-    enter: afterRows(root => {
+    enter: stepAction(async (root, { signal }) => {
+      await pollUntil(() => gridDrawn(root), signal)
       const scroller = scrollerOf(root)
-      scroller.scrollLeft = scroller.scrollWidth
+      const from = scroller.scrollLeft
+      const to = scroller.scrollWidth - scroller.clientWidth
+      await glide(
+        signal,
+        part => {
+          scroller.scrollLeft = from + (to - from) * part
+        },
+        36,
+      )
     }),
   },
 ]
@@ -268,6 +353,7 @@ export const FlexOverflow: StoryObj<StoryProps> = {
     })
     await step(OVERFLOW[1]!.title, async () => {
       await guideNext(canvas)
+      await stepDone(canvas)
       await until(() =>
         expect(scrollerOf(canvas).scrollLeft).toBeGreaterThan(0),
       )
