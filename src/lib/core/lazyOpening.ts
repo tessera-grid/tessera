@@ -213,6 +213,8 @@ export const useLazyPopover = (
   owner?: { plugin: string; detail?: () => unknown },
 ) => {
   const [open, setOpen] = useState(false)
+  // Открытие запрошено: пишется сразу, до коммита — кадр передачи фокуса может прийти раньше.
+  const opened = useRef(false)
   const handover = useRef<FocusHandover>({ placeholder: null })
   const ready = usePreloaded(module, enabled, () =>
     arriveWithFocus(handover.current),
@@ -224,7 +226,8 @@ export const useLazyPopover = (
     // оставляет стрелки без хода.
     const frame = requestAnimationFrame(() => {
       handover.current.place = undefined
-      focusSuccessor(place)
+      // С приходом модуля открылся поповер: фокус ведёт он, возврат на кнопку закрыл бы его.
+      if (!opened.current) focusSuccessor(place)
     })
     return () => cancelAnimationFrame(frame)
   }, [ready])
@@ -251,10 +254,14 @@ export const useLazyPopover = (
           label,
           action: { plugin: owner?.plugin ?? 'core', action: 'openMenu' },
         },
-        () => setOpen(true),
+        () => {
+          opened.current = true
+          setOpen(true)
+        },
       )
     } else {
       opening.cancel()
+      opened.current = false
       setOpen(false)
     }
   }
