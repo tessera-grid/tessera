@@ -572,12 +572,13 @@ describe('Шаги гайдов в матрице контраста (ADR 0089, 
   }, 60_000)
 
   test('CX15: шаг с immediate проверен сразу, без доведения переходов, во всех своих сочетаниях', async () => {
-    // Вспышка: текст светлеет и за 4 с темнеет до чёрного — доведённый переход её прячет.
+    // Вспышка: текст светлеет и за 20 с темнеет до чёрного — доведённый переход её прячет. Долгая:
+    // Firefox снимает сочетания медленнее, и короткая успевала дотемнеть до последнего.
     const flash = (root: HTMLElement) => {
       root
         .querySelector('.cx15-flash')!
         .animate([{ color: '#d0d0d0' }, { color: '#000' }], {
-          duration: 4000,
+          duration: 20_000,
           fill: 'forwards',
         })
     }
@@ -614,6 +615,36 @@ describe('Шаги гайдов в матрице контраста (ADR 0089, 
     )
     expect(tall.fit.length).toBeGreaterThan(0)
     expect(tall.fit[0]).toMatch(/проверяемая область больше окна/)
+  })
+
+  test('CX22: узел под затемнением края прокручиваемой области не проверяется; тот же узел вне затемнения — проверяется', async () => {
+    // Область с затемнением снизу: бледная строка у нижнего края — под ним, такая же сверху — нет.
+    const result = await walkGuide(
+      'Стенд CX22',
+      stand(
+        [REST],
+        <div
+          data-fade-bottom=""
+          style={{
+            height: 120,
+            overflow: 'auto',
+            ['--tsr-scroll-fade-below' as string]: '200px',
+          }}
+        >
+          <div aria-label="clear-row" style={{ color: '#c0c0c0' }}>
+            Pale text
+          </div>
+          <div style={{ height: 60 }} />
+          <div aria-label="faded-row" style={{ color: '#c0c0c0' }}>
+            Pale text
+          </div>
+          <div style={{ height: 200 }} />
+        </div>,
+      ),
+    )
+    const keys = result.findings.filter(f => checked(f.key)).map(f => f.key)
+    expect(keys.some(key => key.includes('clear-row'))).toBe(true)
+    expect(keys.filter(key => key.includes('faded-row'))).toEqual([])
   })
 
   test('CX19: шаг без immediate проверяется после конца вспышки итога во всех своих сочетаниях; вспышка, не кончившаяся за предел, — сбой стража', async () => {

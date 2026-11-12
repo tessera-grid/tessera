@@ -448,7 +448,8 @@ describe('Превью броска строки (ADR 0108)', () => {
     expect(frames).toBeGreaterThan(20)
     expect(mismatches).toEqual([])
     await screen.unmount()
-  })
+    // 56 шагов указателя с проверкой линий в каждом кадре: в WebKit ~17 с.
+  }, 60_000)
 
   test('DI3: высокая контрастность — облако на недопустимом месте Mark с текстом MarkText, полоски слота GrayText на любом месте; axe с контрастом в обеих темах во время перетаскивания', async () => {
     const sys = (name: string) => {

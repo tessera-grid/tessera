@@ -546,6 +546,28 @@ const disabled = (el: Element) =>
     '[disabled], [aria-disabled="true"], [data-disabled]:not([data-disabled="false"]), :is(button, [role="button"])[aria-busy="true"]',
   )
 
+/**
+ * Узел под затемнением края прокручиваемой области (ADR 0183, PK31; ADR 0089, CX22): затемнение —
+ * знак, что за краем есть содержимое, а не цвет узла; прокрутка показывает его целиком.
+ */
+const underFade = (el: Element) => {
+  const area = el.closest<HTMLElement>('[data-fade-top], [data-fade-bottom]')
+  if (!area || el === area) return false
+  const s = style(area)
+  const max =
+    parseFloat(s.getPropertyValue('--tsr-comp-popup-scroll-fade')) || 0
+  const band = (name: string) =>
+    Math.min(max, parseFloat(s.getPropertyValue(name)) || 0)
+  const box = el.getBoundingClientRect()
+  const edge = area.getBoundingClientRect()
+  return (
+    (area.hasAttribute('data-fade-bottom') &&
+      box.bottom > edge.bottom - band('--tsr-scroll-fade-below')) ||
+    (area.hasAttribute('data-fade-top') &&
+      box.top < edge.top + band('--tsr-scroll-fade-above'))
+  )
+}
+
 const ownText = (el: Element) =>
   [...el.childNodes].some(
     node => node.nodeType === Node.TEXT_NODE && node.textContent!.trim(),
@@ -655,7 +677,7 @@ export const auditRoots = (
   }
   for (const root of roots) {
     for (const el of root.querySelectorAll('*')) {
-      if (disabled(el)) continue
+      if (disabled(el) || underFade(el)) continue
       // Прозрачная краска не рисует ничего: так скрыты кнопки строки до наведения.
       const painted = (color: string) => toRgba(color)[3]! > 0
       const deleted = !!el.closest(DELETED_ROW_CONTENT)
