@@ -29,10 +29,13 @@ export const useBubbleLook = (look: BubbleLook, shown: boolean) => {
     })
   else if (shown && !same(state.lastShown, look))
     setState({ ...state, lastShown: look })
-  const settle = () =>
+  // Запоздавший конец прошлого перехода (WebKit) уход не завершает: у бабла ещё идёт переход.
+  const settle = (bubble?: Element) => {
+    if (bubble?.getAnimations().some(a => a.playState === 'running')) return
     setState(current =>
       current.leaving ? { ...current, leaving: false } : current,
     )
+  }
   const view = !shown && state.leaving ? state.lastShown : look
   return { ...view, shown, settle }
 }

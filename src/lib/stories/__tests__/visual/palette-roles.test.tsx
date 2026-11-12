@@ -51,11 +51,14 @@ describe('Роли палитры', () => {
             className={`${DATA_GRID_THEME_CLASS}${theme === 'dark' ? ' dark' : ''}`}
             style={{ ...vars, ...SURFACE }}
           >
+            {/* Начало Tab: в Firefox после размонтирования прошлого поля Tab уходит из документа. */}
+            <button type="button" data-testid="start" />
             <Field aria-label="Search" />
           </div>,
         )
         const root = screen.container.firstElementChild as HTMLElement
         const field = root.querySelector('input')!
+        root.querySelector<HTMLElement>('[data-testid="start"]')!.focus()
         await userEvent.tab()
         expect(document.activeElement).toBe(field)
         settle()

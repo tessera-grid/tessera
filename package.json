@@ -74,7 +74,7 @@
     "test:watch": "vitest",
     "test:parity": "vitest run --project unit rowEngine groupStage sortedRowModel expandedRowModel lazyCoreRowModel idleRowModelPasses dataChanges rowShifts treeAria pluginModels rowSource lazyChildren clientTransactions",
     "test:browsers": "vitest run --config vitest.browsers.config.ts",
-    "test:engines": "vitest run --config vitest.engines.config.ts",
+    "test:engines": "node scripts/test-engines.mjs",
     "test:react18": "npm ci --prefix tools/react18 --no-audit --no-fund && vitest run --config vitest.react18.config.ts",
     "perf": "node scripts/perf.mjs",
     "perf:compare": "node scripts/perf-compare.mjs",

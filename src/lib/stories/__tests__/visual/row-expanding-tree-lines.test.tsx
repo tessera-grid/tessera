@@ -3,7 +3,13 @@ import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest'
 
-import { getScroller, humanClick, rowState, scrollToEnd } from '../helpers'
+import {
+  getScroller,
+  humanClick,
+  rowState,
+  scrollToEnd,
+  settleRowMotion,
+} from '../helpers'
 import { composed, treeLinesArgs, plainGroupingArgs } from '../stories'
 import { makeData } from '../../__mocks__/data'
 import { AXE_OPTIONS, inBothThemes, toRgba } from './a11y-helpers'
@@ -221,6 +227,8 @@ describe('Row expanding: tree lines', () => {
     }
     await expect.poll(pair).toEqual([leaf, withKids])
     await showRow(withKids)
+    // Снимок — после движения строк: посреди него линии ещё на прежних местах (ADR 0107).
+    await settleRowMotion()
     const g = treeGeometry()
     const shot = await snapshot()
     const first = indentOf(leaf)

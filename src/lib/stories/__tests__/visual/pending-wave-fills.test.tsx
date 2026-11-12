@@ -197,6 +197,9 @@ const rowsMounted = () =>
     .poll(() => document.querySelectorAll('.data-grid__body-row').length)
     .toBeGreaterThanOrEqual(ROWS.length)
 
+/** Десятки снимков экрана: в Firefox и WebKit снимок дольше, чем в Chromium. */
+const PIXEL_TIMEOUT = 90_000
+
 describe('Волна ожидания на цели-строке по пикселям (ADR 0155)', () => {
   beforeAll(() => page.viewport(900, 720))
   afterAll(async () => {
@@ -204,111 +207,122 @@ describe('Волна ожидания на цели-строке по пиксе
     await motion.reducedMotion(false)
   })
 
-  test('PW6: волна на цели-строке — одним слоем на каждой ячейке строки: сдвиг заливки против той же строки без ожидания один у закреплённых слева и справа, служебной колонки, колонки действий — одной справа и рядом с закреплённой, прокручиваемых под ними; у чётной, нечётной, выбранной, подсвеченной строки и под указателем; при прилипшем и не прилипшем блоке; в светлой и тёмной теме и повышенном контрасте', async () => {
-    await motion.reducedMotion(true)
-    const failures: string[] = []
-    try {
+  test(
+    'PW6: волна на цели-строке — одним слоем на каждой ячейке строки: сдвиг заливки против той же строки без ожидания один у закреплённых слева и справа, служебной колонки, колонки действий — одной справа и рядом с закреплённой, прокручиваемых под ними; у чётной, нечётной, выбранной, подсвеченной строки и под указателем; при прилипшем и не прилипшем блоке; в светлой и тёмной теме и повышенном контрасте',
+    async () => {
+      await motion.reducedMotion(true)
+      const failures: string[] = []
+      try {
+        for (const layout of ['actionsAlone', 'pinnedRight'] as const) {
+          const screen = await render(<Grid layout={layout} />)
+          await rowsMounted()
+          for (const id of HIGHLIGHTED) table.highlight({ row: id })
+          setObjectPending(
+            table,
+            'row',
+            PENDING.map(row => ({ row })),
+          )
+          await expect
+            .poll(() =>
+              cellsOf('r10').every(c => c.hasAttribute('data-pending-wave')),
+            )
+            .toBe(true)
+          for (const combo of COMBOS) {
+            await applyCombo(combo)
+            for (const at of ['start', 'end'] as const) {
+              await scrollTo(at)
+              // Указатель — на шапке: ни одна строка не под ним.
+              await userEvent.hover(
+                document.querySelector<HTMLElement>('.data-grid__head-cell')!,
+              )
+              await settle()
+              const label = `${layout} ${combo.theme}/${combo.mode} ${at}`
+              const shot = await snapshot()
+              for (const [ref, pending] of PAIRS)
+                failures.push(
+                  ...uneven(deltasOf(shot, ref, shot, pending)).map(
+                    f => `${label} ${ref}→${pending}: ${f}`,
+                  ),
+                )
+              // Под указателем: образец и строка в ожидании — по очереди, той же ячейкой.
+              const hovered = async (id: string) => {
+                await userEvent.hover(cellOf(id, 'd') ?? cellOf(id, 'c')!)
+                await settle()
+                return snapshot()
+              }
+              const [ref, pending] = HOVER_PAIR
+              const refShot = await hovered(ref)
+              const pendingShot = await hovered(pending)
+              failures.push(
+                ...uneven(deltasOf(refShot, ref, pendingShot, pending)).map(
+                  f => `${label} hover ${ref}→${pending}: ${f}`,
+                ),
+              )
+            }
+          }
+          await resetCombo()
+          await screen.unmount()
+        }
+      } finally {
+        await motion.reducedMotion(false)
+      }
+      expect(failures).toEqual([])
+    },
+    PIXEL_TIMEOUT,
+  )
+
+  test(
+    'PW7: подложка и блик волны закрывают ячейку до внешнего края — прозрачный разделитель не прилипшего края закрепления слева и справа не виден полосой ни в покое волны, ни когда по нему идёт блик',
+    async () => {
+      const failures: string[] = []
       for (const layout of ['actionsAlone', 'pinnedRight'] as const) {
         const screen = await render(<Grid layout={layout} />)
         await rowsMounted()
-        for (const id of HIGHLIGHTED) table.highlight({ row: id })
-        setObjectPending(
-          table,
-          'row',
-          PENDING.map(row => ({ row })),
-        )
+        setObjectPending(table, 'row', [{ row: 'r2' }])
         await expect
-          .poll(() =>
-            cellsOf('r10').every(c => c.hasAttribute('data-pending-wave')),
+          .poll(
+            () =>
+              rowEl('r2')
+                .getAnimations({ subtree: true })
+                .filter(animation => animation.id === 'tsr-pending-wave')
+                .length,
           )
-          .toBe(true)
-        for (const combo of COMBOS) {
-          await applyCombo(combo)
-          for (const at of ['start', 'end'] as const) {
-            await scrollTo(at)
-            // Указатель — на шапке: ни одна строка не под ним.
-            await userEvent.hover(
-              document.querySelector<HTMLElement>('.data-grid__head-cell')!,
-            )
-            await settle()
-            const label = `${layout} ${combo.theme}/${combo.mode} ${at}`
+          .toBeGreaterThan(0)
+        // Левый край не прилип в начале прокрутки, правый — в конце.
+        for (const at of ['start', 'end'] as const) {
+          await scrollTo(at)
+          const edges = pointsOf('r2').filter(p => p.name.endsWith(':edge'))
+          if (layout === 'pinnedRight' || at === 'start')
+            expect(edges.length, `${layout} ${at}: край`).toBeGreaterThan(0)
+          const waves = rowEl('r2')
+            .getAnimations({ subtree: true })
+            .filter(animation => animation.id === 'tsr-pending-wave')
+          const duration = Number(
+            waves[0]!.effect!.getComputedTiming().duration,
+          )
+          waves.forEach(animation => animation.pause())
+          for (let step = 0; step <= 40; step++) {
+            for (const animation of waves)
+              animation.currentTime = (duration * step) / 40
+            await frame()
             const shot = await snapshot()
-            for (const [ref, pending] of PAIRS)
-              failures.push(
-                ...uneven(deltasOf(shot, ref, shot, pending)).map(
-                  f => `${label} ${ref}→${pending}: ${f}`,
-                ),
-              )
-            // Под указателем: образец и строка в ожидании — по очереди, той же ячейкой.
-            const hovered = async (id: string) => {
-              await userEvent.hover(cellOf(id, 'd') ?? cellOf(id, 'c')!)
-              await settle()
-              return snapshot()
+            for (const edge of edges) {
+              // Сосед — 2px внутрь ячейки: разделитель справа у левого блока, слева у правого.
+              const inward = edge.name.startsWith('a:') ? -2 : 2
+              const e = shot(edge.x, edge.y)!.slice(0, 3)
+              const n = shot(edge.x + inward, edge.y)!.slice(0, 3)
+              if (e.some((v, k) => Math.abs(v - n[k]!) > 8))
+                failures.push(
+                  `${layout} ${at} t${step} ${edge.name}: ${e} ≠ ${n}`,
+                )
             }
-            const [ref, pending] = HOVER_PAIR
-            const refShot = await hovered(ref)
-            const pendingShot = await hovered(pending)
-            failures.push(
-              ...uneven(deltasOf(refShot, ref, pendingShot, pending)).map(
-                f => `${label} hover ${ref}→${pending}: ${f}`,
-              ),
-            )
           }
+          waves.forEach(animation => animation.play())
         }
-        await resetCombo()
         await screen.unmount()
       }
-    } finally {
-      await motion.reducedMotion(false)
-    }
-    expect(failures).toEqual([])
-  })
-
-  test('PW7: подложка и блик волны закрывают ячейку до внешнего края — прозрачный разделитель не прилипшего края закрепления слева и справа не виден полосой ни в покое волны, ни когда по нему идёт блик', async () => {
-    const failures: string[] = []
-    for (const layout of ['actionsAlone', 'pinnedRight'] as const) {
-      const screen = await render(<Grid layout={layout} />)
-      await rowsMounted()
-      setObjectPending(table, 'row', [{ row: 'r2' }])
-      await expect
-        .poll(
-          () =>
-            rowEl('r2')
-              .getAnimations({ subtree: true })
-              .filter(animation => animation.id === 'tsr-pending-wave').length,
-        )
-        .toBeGreaterThan(0)
-      // Левый край не прилип в начале прокрутки, правый — в конце.
-      for (const at of ['start', 'end'] as const) {
-        await scrollTo(at)
-        const edges = pointsOf('r2').filter(p => p.name.endsWith(':edge'))
-        if (layout === 'pinnedRight' || at === 'start')
-          expect(edges.length, `${layout} ${at}: край`).toBeGreaterThan(0)
-        const waves = rowEl('r2')
-          .getAnimations({ subtree: true })
-          .filter(animation => animation.id === 'tsr-pending-wave')
-        const duration = Number(waves[0]!.effect!.getComputedTiming().duration)
-        waves.forEach(animation => animation.pause())
-        for (let step = 0; step <= 40; step++) {
-          for (const animation of waves)
-            animation.currentTime = (duration * step) / 40
-          await frame()
-          const shot = await snapshot()
-          for (const edge of edges) {
-            // Сосед — 2px внутрь ячейки: разделитель справа у левого блока, слева у правого.
-            const inward = edge.name.startsWith('a:') ? -2 : 2
-            const e = shot(edge.x, edge.y)!.slice(0, 3)
-            const n = shot(edge.x + inward, edge.y)!.slice(0, 3)
-            if (e.some((v, k) => Math.abs(v - n[k]!) > 8))
-              failures.push(
-                `${layout} ${at} t${step} ${edge.name}: ${e} ≠ ${n}`,
-              )
-          }
-        }
-        waves.forEach(animation => animation.play())
-      }
-      await screen.unmount()
-    }
-    expect(failures).toEqual([])
-  })
+      expect(failures).toEqual([])
+    },
+    PIXEL_TIMEOUT,
+  )
 })

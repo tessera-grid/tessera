@@ -182,6 +182,11 @@ const HiddenTransforms = ({
         data-testid="column-visibility-clear-transforms"
         data-transforms={transforms.map(t => t.kind).join(' ')}
         onClick={event => {
+          // Кнопка уходит: фокус — на флажок той же колонки, а не туда, куда его бросит движок.
+          event.currentTarget
+            .closest('li')
+            ?.querySelector<HTMLElement>('.row-select-checkbox')
+            ?.focus()
           clearHiddenTransforms(table, columnId, sourceOf(event))
           onCleared()
         }}

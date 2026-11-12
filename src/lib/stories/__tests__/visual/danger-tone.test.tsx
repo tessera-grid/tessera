@@ -36,6 +36,7 @@ import {
   failureShownOn,
   humanClick,
   pendingArcOf,
+  pointTo,
   revealCellButtons,
 } from '../helpers'
 import { tableLabels } from '../labels'
@@ -187,12 +188,12 @@ describe('Кнопки кита в тоне danger (ADR 0206)', () => {
     )
 
     for (const button of [outline, ghost]) {
-      await userEvent.hover(button)
+      await pointTo(button)
       await expect
         .poll(() => style(button).backgroundColor)
         .toBe(dangerHover(button))
     }
-    await userEvent.hover(plainOutline)
+    await pointTo(plainOutline)
     await settle()
     expect(style(plainOutline).backgroundColor).not.toBe(
       dangerHover(plainOutline),
@@ -229,7 +230,7 @@ describe('Кнопки кита в тоне danger (ADR 0206)', () => {
       expect(style(button).color, id).toBe(dangerText(button))
       expect(isRed(byId(plain)), plain).toBe(false)
 
-      await userEvent.hover(button)
+      await pointTo(button)
       await expect
         .poll(() => style(button).backgroundColor, { message: id })
         .toBe(dangerHover(button))
@@ -363,7 +364,7 @@ const closeMenus = async () => {
   await expect.poll(() => items().length).toBe(0)
 }
 const openRowMenu = async (id = 'r1') => {
-  await userEvent.hover(cellEl(id))
+  await pointTo(cellEl(id))
   const kebab = () =>
     rowEl(id).querySelector<HTMLElement>(
       `[aria-label^="${tableLabels.rowMenu}"]`,
@@ -379,13 +380,23 @@ const openContextMenu = async (id = 'r1') => {
   await settle()
 }
 
+/**
+ * Подсветить пункт меню указателем. WebKit: указатель Playwright не подсвечивает пункт меню
+ * Base UI — подсветка фокусом, вид подсвеченного пункта тот же.
+ */
+const highlightItem = async (el: HTMLElement) => {
+  await pointTo(el)
+  if (server.browser === 'webkit' && !el.hasAttribute('data-highlighted'))
+    el.focus()
+}
+
 /** Пункт в тоне `danger`: текст и значок красные в покое, подсветка — бледно-красная. */
 const expectDangerItem = async (label: string) => {
   const el = item(label)!
   expect(el, label).toBeTruthy()
   expect(style(el).color, label).toBe(dangerText(el))
   expect(style(itemIcon(el)).color, `${label}: значок`).toBe(dangerText(el))
-  await userEvent.hover(el)
+  await highlightItem(el)
   await expect
     .poll(() => el.hasAttribute('data-highlighted'), { message: label })
     .toBe(true)
@@ -437,7 +448,7 @@ describe('Дескрипторы действий в тоне danger (ADR 0206)'
     )!
     await expect.poll(() => style(del).color).toBe(dangerText(del))
     expect(isRed(edit)).toBe(false)
-    await userEvent.hover(del)
+    await pointTo(del)
     await expect.poll(() => style(del).backgroundColor).toBe(dangerHover(del))
     await humanClick(
       rowEl('r1').querySelector<HTMLElement>('button[aria-label="More"]')!,
@@ -777,7 +788,7 @@ describe('Контраст и темы тона danger (ADR 0206)', () => {
         expect(text(byId('icon')), `${at}: значок`).toBeGreaterThanOrEqual(3)
         for (const id of ['outline', 'icon', 'item']) {
           const el = byId(id)
-          await userEvent.hover(el)
+          await pointTo(el)
           await expect
             .poll(() => style(el).backgroundColor)
             .toBe(dangerHover(el))
@@ -796,7 +807,7 @@ describe('Контраст и темы тона danger (ADR 0206)', () => {
       await inBothThemes(async () => {
         await openRowMenu()
         const del = item('Delete')!
-        await userEvent.hover(del)
+        await highlightItem(del)
         await expect.poll(() => del.hasAttribute('data-highlighted')).toBe(true)
         await settle()
         expect(
@@ -828,7 +839,7 @@ describe('Контраст и темы тона danger (ADR 0206)', () => {
     expect(style(byId('item')).color).toBe(style(byId('plain-item')).color)
     // Наведение — как у кнопки без тона.
     const hovered = async (id: string) => {
-      await userEvent.hover(byId(id))
+      await pointTo(byId(id))
       await settle()
       return [style(byId(id)).color, style(byId(id)).backgroundColor]
     }
@@ -843,7 +854,7 @@ describe('Контраст и темы тона danger (ADR 0206)', () => {
     expect(style(item('Delete')!).color).toBe(style(item('Edit')!).color)
     // Подсвеченный пункт — Highlight и HighlightText, как без тона.
     const highlighted = async (label: string) => {
-      await userEvent.hover(item(label)!)
+      await pointTo(item(label)!)
       await expect
         .poll(() => item(label)!.hasAttribute('data-highlighted'))
         .toBe(true)
@@ -893,7 +904,7 @@ describe('Контраст и темы тона danger (ADR 0206)', () => {
     expect(style(byId('outline')).borderTopColor).toBe('rgb(255, 0, 255)')
     expect(style(byId('icon')).color).toBe('rgb(0, 0, 255)')
     expect(style(byId('item')).color).toBe('rgb(0, 0, 255)')
-    await userEvent.hover(byId('icon'))
+    await pointTo(byId('icon'))
     await expect
       .poll(() => style(byId('icon')).backgroundColor)
       .toBe('rgb(255, 255, 0)')
@@ -919,7 +930,7 @@ describe('Контраст и темы тона danger (ADR 0206)', () => {
       await settle()
       const root = byId('outline').parentElement!
       await check(root, 'покой')
-      await userEvent.hover(byId('outline'))
+      await pointTo(byId('outline'))
       await settle()
       await check(root, 'наведение')
       byId('plain-outline').focus()
@@ -936,7 +947,7 @@ describe('Контраст и темы тона danger (ADR 0206)', () => {
       await openRowMenu()
       const menu = document.querySelector<HTMLElement>('[role="menu"]')!
       await check(menu, 'меню')
-      await userEvent.hover(item('Delete')!)
+      await pointTo(item('Delete')!)
       await settle()
       await check(menu, 'подсветка')
       await closeMenus()

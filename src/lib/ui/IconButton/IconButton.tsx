@@ -219,8 +219,8 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
             data-active-indicator=""
             data-count={bubble.count || undefined}
             data-shown={bubble.shown}
-            onTransitionEnd={bubble.settle}
-            onTransitionCancel={bubble.settle}
+            onTransitionEnd={event => bubble.settle(event.currentTarget)}
+            onTransitionCancel={event => bubble.settle(event.currentTarget)}
             aria-hidden
           >
             {bubble.count ? countText(bubble.count) : null}

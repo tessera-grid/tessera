@@ -467,12 +467,16 @@ describe('Pending arc: failure', () => {
         label,
       ).toBe(true)
       const style = getComputedStyle(arc)
-      // Угасание идёт переходом непрозрачности к нулю.
-      const fade = arc
-        .getAnimations()
-        .find(
-          a => a instanceof CSSTransition && a.transitionProperty === 'opacity',
-        ) as CSSTransition
+      // Угасание идёт переходом непрозрачности к нулю; WebKit заводит переход кадром позже.
+      const fadeOf = () =>
+        arc
+          .getAnimations()
+          .find(
+            a =>
+              a instanceof CSSTransition && a.transitionProperty === 'opacity',
+          ) as CSSTransition | undefined
+      await expect.poll(fadeOf, { message: label }).toBeTruthy()
+      const fade = fadeOf()!
       const keyframes = (fade.effect as KeyframeEffect).getKeyframes()
       expect(keyframes.at(-1)!.opacity, label).toBe('0')
       expect(style.transitionDuration, label).toBe(

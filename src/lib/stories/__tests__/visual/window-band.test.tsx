@@ -258,7 +258,9 @@ describe('Полоса окна после смены списка (ADR 0202)', 
       grid().scrollTop = (count - 12) * rowHeight - grid().clientHeight
       await nextFrame()
       await nextFrame()
-      expect(grid().querySelector('[data-row-id="r995"]')).not.toBeNull()
+      await expect
+        .poll(() => grid().querySelector('[data-row-id="r995"]'))
+        .not.toBeNull()
       table.applyRowTransaction({
         remove: ROWS.slice(-8).map(row => row.id),
       })

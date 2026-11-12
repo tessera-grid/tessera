@@ -99,28 +99,37 @@ export const rowState = (element: Element) =>
   getComputedStyle(element).getPropertyValue('--tsr-row-state').trim()
 
 /**
+ * Навести указатель на элемент. Firefox и WebKit: `userEvent.hover` ищет элемент по подписи,
+ * а её часть есть и в других именах — настоящим указателем в центр элемента.
+ */
+export const pointTo = async (element: Element) => {
+  if (server.browser === 'chromium') {
+    await userEvent.hover(element)
+    return
+  }
+  element.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  const box = element.getBoundingClientRect()
+  const center = { x: box.left + box.width / 2, y: box.top + box.height / 2 }
+  // Несколько шагов внутри элемента: меню Base UI подсвечивает пункт по движению указателя.
+  const start = { x: box.left + Math.min(4, box.width / 4), y: center.y }
+  await (
+    commands as unknown as {
+      realMouseMove: (
+        from: { x: number; y: number },
+        to: { x: number; y: number },
+        steps?: number,
+      ) => Promise<void>
+    }
+  ).realMouseMove(start, center, 3)
+}
+
+/**
  * Навести на ячейку и дождаться, пока её скрытые кнопки доедут до своей ширины
  * (ADR 0076): клик по кнопке посреди раскрытия уходит мимо. Бесконечные анимации
  * (кольцо ожидания) не ждём.
  */
 export const revealCellButtons = async (cell: Element) => {
-  if (server.browser === 'chromium') await userEvent.hover(cell)
-  else {
-    // Firefox и WebKit: `userEvent.hover` ищет ячейку по подписи, а её часть есть и в других
-    // именах — настоящим указателем в центр ячейки.
-    cell.scrollIntoView({ block: 'nearest', inline: 'nearest' })
-    const box = cell.getBoundingClientRect()
-    const center = { x: box.left + box.width / 2, y: box.top + box.height / 2 }
-    await (
-      commands as unknown as {
-        realMouseMove: (
-          from: { x: number; y: number },
-          to: { x: number; y: number },
-          steps?: number,
-        ) => Promise<void>
-      }
-    ).realMouseMove(center, center, 1)
-  }
+  await pointTo(cell)
   await new Promise(resolve => requestAnimationFrame(resolve))
   await Promise.all(
     cell

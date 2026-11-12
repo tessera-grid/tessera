@@ -17,7 +17,7 @@ import { capitalized } from '../../../plugins/columnVisibility/hiddenTransforms'
 import { humanClick, revealCellButtons } from '../helpers'
 import { tableLabels } from '../labels'
 import { waitForGrid } from './core-helpers'
-import { openColumnsMenu, viewSettingsPopover } from '../viewSettings'
+import { openColumnsMenu } from '../viewSettings'
 
 // Преобразования скрытых колонок в меню «Колонки» и кебабе (ADR 0204, этап 2, HT3–HT6). HT1–HT2 —
 // модульные (`columnTransforms.dom`).
@@ -232,8 +232,12 @@ describe('Преобразования скрытых колонок (ADR 0204)'
     await humanClick(erasersOf(TRANSFORMED)[0]!)
 
     await expect.poll(() => erasersOf(TRANSFORMED)).toHaveLength(0)
-    // Фокус — в поповере «Настроек вида», куда Base UI возвращает его с ушедшей кнопки.
-    expect(viewSettingsPopover()!.contains(document.activeElement)).toBe(true)
+    // Фокус — на флажке той же колонки, во всех движках.
+    expect(document.activeElement).toBe(
+      menu()!.querySelector(
+        `[data-column-id="${TRANSFORMED}"] [role="checkbox"]`,
+      ),
+    )
     // Одно действие меню, а под ним — пути плагинов.
     expect(probe.actions).toEqual(
       expect.arrayContaining([

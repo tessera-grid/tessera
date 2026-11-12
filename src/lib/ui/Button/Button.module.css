@@ -96,6 +96,27 @@
     border-color: ButtonText;
   }
 
+  /* Тон опасного действия (ADR 0206, DX7): системные цвета кнопки, без красного. */
+  .button[data-tone='danger']:not(:disabled, [data-disabled]) {
+    color: ButtonText;
+  }
+
+  .button[data-tone='danger'][data-variant='outline']:not(
+      :disabled,
+      [data-disabled],
+      [aria-busy='true']
+    ) {
+    border-color: ButtonText;
+  }
+
+  .button[data-tone='danger']:not(
+      :disabled,
+      [data-disabled],
+      [aria-busy='true']
+    ):hover {
+    background-color: var(--tsr-comp-control-hover-bg);
+  }
+
   .button:disabled {
     color: GrayText;
   }

@@ -135,6 +135,8 @@ describe('охват страницы в SSRM на гриде (ADR 0188)', () =>
       // Отмена Escape: выбора нет, ожидание снято.
       table!.setPageIndex(1)
       await expect.poll(() => rowBox('r20')).not.toBeNull()
+      // Полоса окна дорастает в следующих кадрах (ADR 0202): её блоки — не запросы выбора.
+      await new Promise(resolve => setTimeout(resolve, 300))
       holding = true
       await humanClick(head()!)
       await expect.poll(() => held.length).toBeGreaterThan(0)
@@ -143,7 +145,9 @@ describe('охват страницы в SSRM на гриде (ADR 0188)', () =>
         .poll(() => head()!.getAttribute('aria-busy'))
         .not.toBe('true')
       expect(selectedText()).toBe('')
-      expect(held.every(({ request }) => request.signal.aborted)).toBe(true)
+      await expect
+        .poll(() => held.every(({ request }) => request.signal.aborted))
+        .toBe(true)
       held.length = 0
 
       // Смена страницы: ответ не выбирает строки прежней страницы.
