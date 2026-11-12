@@ -91,10 +91,10 @@ describe('Action menu — header', () => {
     await expect.poll(() => menuItems().length).toBeGreaterThan(0)
 
     const labels = menuItems().map(i => i.textContent?.trim())
-    // Три подгруппы: пиннинг | сортировка (3 пункта) | группировка.
+    // Подгруппы: пиннинг | сортировка (3 пункта) | группировка | подгонка колонки | подгонка всех.
     expect(
       document.querySelectorAll('[role="menu"] [role="group"]').length,
-    ).toBe(3)
+    ).toBe(5)
     expect(labels).toEqual(
       expect.arrayContaining([
         columnSortingLabels(tableLabels).sortAscending,
@@ -479,9 +479,9 @@ describe('Кнопки заголовка по ширине (ADR 0111)', () => {
     }
     try {
       await resize(100)
-      await expect.poll(() => kebab()).toBeNull()
+      // Кебаб с пунктами подгонки ширины (ADR 0217) есть всегда: ширину видно по ряду.
+      await expect.poll(() => inline().length).toBeGreaterThan(2)
       const all = inline()
-      expect(all.length).toBeGreaterThan(2)
 
       // Включить сортировку — первое действие с признаком «включено» после закрепления.
       await userEvent.hover(cell())
@@ -492,7 +492,7 @@ describe('Кнопки заголовка по ширине (ADR 0111)', () => {
 
       // Сужаем, пока в ряду не останется одна кнопка: остальные — в кебабе, с конца.
       await resize(-100)
-      await expect.poll(() => kebab()).not.toBeNull()
+      await expect.poll(() => inline().length).toBeLessThan(all.length)
       const kept = inline()
       expect(all.slice(0, kept.length)).toEqual(kept)
       expect(kept.length).toBeLessThan(all.length)
@@ -504,10 +504,9 @@ describe('Кнопки заголовка по ширине (ADR 0111)', () => {
         )
         .toBe('true')
 
-      // Шире — кнопки возвращаются, кебаба нет.
+      // Шире — кнопки возвращаются в ряд.
       await resize(100)
-      await expect.poll(() => kebab()).toBeNull()
-      expect(inline()).toEqual(all)
+      await expect.poll(inline).toEqual(all)
     } finally {
       await pointer.realMouseUp()
     }

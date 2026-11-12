@@ -33,6 +33,7 @@ import { engineOf } from './rowEngine/engine'
 import { DEFAULT_SKELETON_OPTIONS } from './skeletonOptions'
 import { applyRowTransaction, type RowTransaction } from './rowTransactions'
 import { tableHeaderGroups } from './headerGroups'
+import { setFlexContentMins } from './flexColumns'
 
 // Побочка импорта типов: подключает declaration merging из commonFeature.types.
 export type { CommonOptions } from './commonFeature.types'
@@ -156,6 +157,16 @@ export const commonFeature: TableFeature = {
           options().onColumnAutoSizingChange?.(old =>
             functionalUpdate(updater, old),
           ),
+      },
+      table_setColumnFlexSizing: {
+        fn: (updater: Updater<ColumnSizingState>) =>
+          options().onColumnFlexSizingChange?.(old =>
+            functionalUpdate(updater, old),
+          ),
+      },
+      table_setColumnFlexMinSizing: {
+        fn: (updater: Updater<ColumnSizingState>) =>
+          setFlexContentMins(table, updater),
       },
     })
   },

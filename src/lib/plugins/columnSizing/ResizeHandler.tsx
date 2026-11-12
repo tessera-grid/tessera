@@ -45,6 +45,9 @@ export interface ResizeSplitterProps {
   onResetSize: (event: unknown) => void
   /** Изменить ширину на `delta` px с клавиатуры или из меню. */
   onResizeBy: (delta: number) => void
+  /** Подогнать ширину по содержимому: колонку или все (ADR 0217). */
+  onAutosize?: (source: 'pointer' | 'keyboard') => void
+  onAutosizeAll?: (source: 'pointer' | 'keyboard') => void
   size: number
   minSize: number
   /** `undefined` — без верхней границы. */
@@ -65,6 +68,8 @@ export const ResizeHandler = memo(
     onEscape,
     onResetSize,
     onResizeBy,
+    onAutosize,
+    onAutosizeAll,
     size,
     minSize,
     maxSize,
@@ -211,6 +216,26 @@ export const ResizeHandler = memo(
         label: columnSizingLabels(labels).resetColumnWidth,
         onSelect: () => onResetSize(undefined),
       },
+      ...(onAutosize
+        ? [
+            {
+              id: 'autosize',
+              label: columnSizingLabels(labels).autosizeColumn,
+              onSelect: (event?: { detail?: number }) =>
+                onAutosize(event?.detail === 0 ? 'keyboard' : 'pointer'),
+            },
+          ]
+        : []),
+      ...(onAutosizeAll
+        ? [
+            {
+              id: 'autosizeAll',
+              label: columnSizingLabels(labels).autosizeAllColumns,
+              onSelect: (event?: { detail?: number }) =>
+                onAutosizeAll(event?.detail === 0 ? 'keyboard' : 'pointer'),
+            },
+          ]
+        : []),
     ]
 
     return (
@@ -218,6 +243,15 @@ export const ResizeHandler = memo(
         <div
           ref={wrapperRef}
           onClick={onClick}
+          // Двойной клик подгоняет ширину: меню ручки, открытое первым кликом, закрывается (ADR 0217).
+          onDoubleClick={
+            disabled || !onAutosize
+              ? undefined
+              : () => {
+                  menu.close()
+                  onAutosize('pointer')
+                }
+          }
           onPointerEnter={menu.trigger.onIntent}
           onMouseDown={onResizeStart}
           onTouchStart={onResizeStart}

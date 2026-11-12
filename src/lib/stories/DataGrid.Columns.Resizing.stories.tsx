@@ -18,6 +18,7 @@ import {
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
+import { untilDone } from './__mocks__/cellGestures'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
@@ -49,7 +50,12 @@ const NOT_COLUMNS = 'На ширину колонок не влияет'
 export const ColumnResizingPlayground: StoryObj<StoryProps> = {
   name: 'Playground',
   parameters: showControls(
-    ['enableColumnSizing', 'enableColumnSorting', 'enableHeaderActionMenu'],
+    [
+      'enableColumnSizing',
+      'columnSizingAutosizeOnData',
+      'enableColumnSorting',
+      'enableHeaderActionMenu',
+    ],
     { rowHeight: NOT_COLUMNS, headerHeight: NOT_COLUMNS },
   ),
   args: {
@@ -249,6 +255,9 @@ export const ResizingColumns: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     const width = () => Math.round(rect(headCell(canvas, RESIZED)).width)
     const kebab = () => headKebab(canvas, RESIZED)
+    // Кнопка сортировки в ряду заголовка: в узкой колонке она уходит в кебаб (GB6).
+    const sortInline = () =>
+      headCell(canvas, RESIZED).querySelector('.column-sort__button')
     let neighbour = 0
     await step(RESIZE[0]!.title, async () => {
       await waitForRows(canvas)
@@ -258,7 +267,7 @@ export const ResizingColumns: StoryObj<StoryProps> = {
         ).not.toBeNull(),
       )
       await until(() => expect(width()).toBe(START))
-      await until(() => expect(kebab()).toBeNull())
+      await until(() => expect(sortInline()).not.toBeNull())
       neighbour = rect(headCell(canvas, 'lastName')).left
     })
     await step(RESIZE[1]!.title, async () => {
@@ -308,7 +317,8 @@ export const ResizingColumns: StoryObj<StoryProps> = {
     await step(RESIZE[3]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(width()).toBe(NARROW))
-      await until(() => expect(kebab()).not.toBeNull())
+      await until(() => expect(sortInline()).toBeNull())
+      await expect(kebab()).not.toBeNull()
       await settle()
     })
   },
@@ -528,5 +538,208 @@ export const ResizingDefaultColumnWidth: StoryObj<StoryProps> = {
       await until(() => expect(widths()).toEqual([STRETCHED, 140, 100]))
     })
     await settle()
+  },
+}
+
+// --- ADR 0217 S1: подгонка по содержимому ---------------------------------------------
+
+/** Колонки и строки гайда: значения разной длины. */
+const FIT_COLUMNS = [
+  { id: 'name', accessorKey: 'name', header: 'Name' },
+  { id: 'company', accessorKey: 'company', header: 'Company' },
+  { id: 'city', accessorKey: 'city', header: 'City' },
+]
+const FIT_ROWS = Array.from({ length: 20 }, (_, index) => ({
+  id: String(index),
+  name: index === 2 ? 'Annabelle Featherstonehaugh' : 'Person ' + index,
+  company: index === 4 ? 'Northwind Logistics International' : 'Acme',
+  city: index % 2 ? 'Oslo' : 'Lisbon',
+}))
+
+/** Имя и компания узкие — текст обрезан многоточием; город шире своего текста. */
+const NARROW_WIDTHS = { name: 70, company: 70, city: 160 }
+
+/** Все колонки по содержимому: узкие расширились, широкая сузилась. */
+const allFitted = (root: HTMLElement) =>
+  fittedWidth(root, 'name') > NARROW_WIDTHS.name &&
+  fittedWidth(root, 'company') > NARROW_WIDTHS.company &&
+  fittedWidth(root, 'city') < NARROW_WIDTHS.city
+
+const fittedWidth = (root: HTMLElement, id: string) =>
+  Math.round(rect(headCell(root, id)).width)
+
+/** Шаг из любого состояния: сначала узкие колонки, затем действие пользователя. */
+const fromNarrow =
+  (
+    done: (root: HTMLElement) => boolean,
+    act: (root: HTMLElement) => void,
+  ): GuideStoryStep['enter'] =>
+  (root, app) => {
+    let narrowed = false
+    return untilDone(done, current => {
+      if (!sizingApi) return
+      if (!narrowed) {
+        sizingApi.setColumnSizing(NARROW_WIDTHS)
+        narrowed = true
+      } else act(current)
+    })(root, app)
+  }
+
+const dblclickGrip = (root: HTMLElement, id: string) =>
+  headCell(root, id)
+    .querySelector('.resize__handler--column')
+    ?.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+
+const autosizeAllItem = () =>
+  document.querySelector<HTMLElement>(
+    '[role="menuitem"][data-action-id="columnSizing.autosizeAll"]',
+  )
+
+const AUTOSIZE: readonly GuideStoryStep[] = [
+  {
+    title: 'Колонки обрезают текст',
+    hint: 'Имя и компания не помещаются в узкие колонки и обрезаны многоточием, а колонка города шире своего текста.',
+    enter: withWidths(NARROW_WIDTHS),
+  },
+  {
+    title: 'Пользователь дважды щёлкнул по ручке',
+    hint: 'Пользователь дважды щёлкнул по ручке на границе первой колонки. Колонка стала шириной по самому длинному значению среди видимых строк, остальные остались прежними.',
+    enter: fromNarrow(
+      root =>
+        fittedWidth(root, 'name') > NARROW_WIDTHS.name &&
+        fittedWidth(root, 'company') === NARROW_WIDTHS.company,
+      root => dblclickGrip(root, 'name'),
+    ),
+  },
+  {
+    title: 'Пользователь подогнал все колонки',
+    hint: 'Пользователь выбрал в меню колонки «Подогнать все колонки»: каждая колонка стала шириной по своему содержимому — узкие расширились, слишком широкая сузилась.',
+    enter: fromNarrow(
+      root => allFitted(root) && !autosizeAllItem(),
+      root => {
+        const item = autosizeAllItem()
+        if (item) item.click()
+        else headKebab(root, 'city')?.click()
+      },
+    ),
+  },
+]
+
+/** ADR 0217, S1: двойной клик по ручке подгоняет колонку, пункт кебаба — все колонки. */
+export const AutosizeColumns: StoryObj<StoryProps> = {
+  name: 'Autosize columns',
+  parameters: { scenario: '0217/S1', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Ширина по содержимому"
+      steps={AUTOSIZE}
+      args={guideArgs(
+        {
+          enableColumnSizing: true,
+          enableHeaderActionMenu: true,
+          extraPlugins: [columnSizingHost()],
+          columnsOverride: FIT_COLUMNS as never,
+          dataOverride: FIT_ROWS,
+          height: '360',
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(AUTOSIZE[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() =>
+        expect(fittedWidth(canvas, 'name')).toBe(NARROW_WIDTHS.name),
+      )
+    })
+    await step(AUTOSIZE[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(fittedWidth(canvas, 'name')).toBeGreaterThan(NARROW_WIDTHS.name),
+      )
+      await expect(fittedWidth(canvas, 'company')).toBe(NARROW_WIDTHS.company)
+      await settle()
+    })
+    await step(AUTOSIZE[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(allFitted(canvas)).toBe(true))
+      await until(() => expect(autosizeAllItem()).toBeNull())
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0217 S2: подгонка при приходе данных -----------------------------------------
+
+const DATA_COLUMNS = [
+  { id: 'name', accessorKey: 'name', header: 'Name' },
+  { id: 'city', accessorKey: 'city', header: 'City' },
+]
+
+const rowsOf = (names: string[]) =>
+  names.map((name, index) => ({
+    id: String(index),
+    name,
+    city: index % 2 ? 'Oslo' : 'Lisbon',
+  }))
+
+const SHORT = rowsOf(['Ann', 'Bob', 'Eve', 'Kim', 'Lee'])
+const LONG = rowsOf([
+  'Annabelle Featherstonehaugh',
+  'Bob',
+  'Evelyn Montgomery-Smythe',
+  'Kim',
+  'Lee',
+])
+
+const ON_DATA: readonly GuideStoryStep[] = [
+  {
+    title: 'Данные пришли',
+    hint: 'Таблица получила данные и сама подогнала колонки по содержимому: имена короткие — колонка узкая.',
+    props: () => ({ dataOverride: SHORT }),
+  },
+  {
+    title: 'Пришли новые данные',
+    hint: 'Приложение передало новые данные с длинными именами. Таблица снова подогнала колонку — теперь она шире.',
+    props: () => ({ dataOverride: LONG }),
+  },
+]
+
+/** ADR 0217, S2: колонки подгоняются по содержимому при приходе данных и на новых данных. */
+export const AutosizeOnData: StoryObj<StoryProps> = {
+  name: 'Autosize on data',
+  parameters: { scenario: '0217/S2', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Подгонка при приходе данных"
+      steps={ON_DATA}
+      args={guideArgs(
+        {
+          enableColumnSizing: true,
+          columnSizingAutosizeOnData: true,
+          columnsOverride: DATA_COLUMNS as never,
+          height: '300',
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    let short = 0
+    await step(ON_DATA[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(fittedWidth(canvas, 'name')).toBeLessThan(150))
+      short = fittedWidth(canvas, 'name')
+    })
+    await step(ON_DATA[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(fittedWidth(canvas, 'name')).toBeGreaterThan(short + 50),
+      )
+      await settle()
+    })
   },
 }

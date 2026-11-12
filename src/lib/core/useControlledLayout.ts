@@ -64,10 +64,12 @@ export const useControlledSizing = (
 ) => {
   const [internalSizing, setInternalSizing] = useState<ColumnSizingState>({})
   const [autoSizing, setAutoSizing] = useState<ColumnSizingState>({})
+  const [flexSizing, setFlexSizing] = useState<ColumnSizingState>({})
 
   const displayedSizing = useMemo(
-    () => mergeColumnSizing(externalSizing, internalSizing, autoSizing),
-    [externalSizing, internalSizing, autoSizing],
+    () =>
+      mergeColumnSizing(externalSizing, internalSizing, autoSizing, flexSizing),
+    [externalSizing, internalSizing, autoSizing, flexSizing],
   )
 
   // Авто-слайс пишут плагины в setup (generic-escape); setup перезапускается
@@ -81,9 +83,22 @@ export const useControlledSizing = (
     [],
   )
 
+  // Флекс-ширины пишет грид по ширине области (ADR 0216); равные — без перерисовки.
+  const onColumnFlexSizingChange = useCallback<OnChangeFn<ColumnSizingState>>(
+    updater =>
+      setFlexSizing(prev => {
+        const next = functionalUpdate(updater, prev)
+        return isSameColumnSizing(prev, next) ? prev : next
+      }),
+    [],
+  )
+
   return {
     displayedSizing,
+    // Пользовательский срез — без флекс-ширин: по нему флекс-колонка становится фиксированной.
+    userSizing: externalSizing ?? internalSizing,
     onColumnSizingChange: externalOnSizing ?? setInternalSizing,
     onColumnAutoSizingChange,
+    onColumnFlexSizingChange,
   }
 }

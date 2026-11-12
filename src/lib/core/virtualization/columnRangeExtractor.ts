@@ -6,6 +6,7 @@ import { createWindowBand, useBandRest } from './windowBand'
 import { isIncremental } from './windowPortions'
 
 import type { Table } from '../../types'
+import { useMeasuringColumns } from '../autosize'
 import { useActiveCellIndex } from '../keyboardNavigation'
 import { useSlice } from '../reactivity'
 import { useLatest } from '../../util/useLatest'
@@ -34,6 +35,8 @@ export const useColumnRangeExtractor = ({
   // Активная колонка клавиатурной навигации держится в окне (фокус не размонтируется).
   const activeColumnIndex = useActiveCellIndex(table, 'columnIndex')
   const latest = useLatest(table)
+  // Колонки автоподбора ширины вне окна — отрисованы на время замера (ADR 0217, §1).
+  const measuring = useMeasuringColumns(table)
 
   // Полоса окна (ADR 0202, §1): своя у каждого виртуализатора; смена списка строк — покой (§1а).
   const [band] = useState(createWindowBand)
@@ -47,7 +50,20 @@ export const useColumnRangeExtractor = ({
   return useCallback(
     (range: Range) => {
       const table = latest.current
-      const newIndexes = band(range)
+      const banded = band(range)
+      const newIndexes =
+        measuring.size === 0
+          ? banded
+          : Array.from(
+              new Set([
+                ...banded,
+                ...table
+                  .getVisibleLeafColumns()
+                  .flatMap((column: { id: string }, index: number) =>
+                    measuring.has(column.id) ? [index] : [],
+                  ),
+              ]),
+            ).sort((a, b) => a - b)
       const activeIndexes =
         activeColumnIndex !== undefined &&
         activeColumnIndex >= 0 &&
@@ -90,6 +106,14 @@ export const useColumnRangeExtractor = ({
     // пере-считать окно сразу при закреплении, а не со следующего скролла.
     // Версия полосы тоже не читается, но пересобирает окно при покое и росте.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [band, latest, table.store, columnPinning, activeColumnIndex, bandVersion],
+    [
+      band,
+      latest,
+      table.store,
+      columnPinning,
+      activeColumnIndex,
+      bandVersion,
+      measuring,
+    ],
   )
 }

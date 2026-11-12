@@ -505,14 +505,14 @@ const NARROW: readonly GuideStoryStep[] = [
   },
   {
     title: 'Колонку расширили',
-    hint: 'Пользователь расширил колонку: все три кнопки помещаются в ряд, меню колонки не нужно.',
+    hint: 'Пользователь расширил колонку: все три кнопки помещаются в ряд. В меню колонки остались только пункты её ширины.',
     pseudo: NARROW_HOVER,
     enter: stepAction(async (root, run) => {
       afterRows(() => {
         narrowApi?.setSorting([])
         narrowApi?.setColumnSizing({ [NARROW_COLUMN]: WIDE_WIDTH })
       })(root)
-      await pointWhen(el => !headKebab(el, NARROW_COLUMN))(root, run)
+      await pointWhen(el => !!pinButton(el) && !!sortButton(el))(root, run)
     }),
   },
 ]
@@ -533,8 +533,9 @@ export const HeaderMenuNarrowActive: StoryObj<StoryProps> = {
           columnsOverride: NARROW_COLUMNS,
           dataOverride: filteringData,
           enableHeaderActionMenu: true,
-          // Три действия ниже порога: в меню их уводит только ширина колонки.
-          headerActionMenuThreshold: 4,
+          // Три действия и кнопка меню с пунктами ширины колонки ниже порога: в меню их
+          // уводит только ширина колонки.
+          headerActionMenuThreshold: 5,
           enableColumnPinning: true,
           enableColumnSorting: true,
           enableColumnFiltering: true,
@@ -581,7 +582,7 @@ export const HeaderMenuNarrowActive: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await until(() => expect(sortButton(canvas)).not.toBeNull())
       await expect(pinButton(canvas)).not.toBeNull()
-      await expect(kebab()).toBeNull()
+      await expect(marked(kebab())).toBe(false)
       await settle()
     })
   },

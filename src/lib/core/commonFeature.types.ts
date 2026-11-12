@@ -250,6 +250,10 @@ export interface CommonOptions extends CoreOptions {
   appendOnlyData?: boolean
   /** Writer авто-слайса размеров (generic-механизм). */
   onColumnAutoSizingChange?: OnChangeFn<ColumnSizingState>
+  /** Writer флекс-ширин: их считает грид по ширине области (ADR 0216). */
+  onColumnFlexSizingChange?: OnChangeFn<ColumnSizingState>
+  /** Пользовательский срез ширин без флекс-ширин и служебных (ADR 0216, §3). */
+  columnUserSizing?: ColumnSizingState
 }
 
 // --- Публичные API по объектам таблицы ---------------------------------------
@@ -281,6 +285,10 @@ export interface CommonTableAPI<
   reportPluginError: (pluginId: string, error: unknown) => void
   getIsAnyColumnResizing: () => boolean
   setColumnAutoSizing: (updater: Updater<ColumnSizingState>) => void
+  /** Записать флекс-ширины (ADR 0216); пишет грид по ширине области. */
+  setColumnFlexSizing: (updater: Updater<ColumnSizingState>) => void
+  /** Записать нижние границы флекс-колонок по содержимому (ADR 0217, §3). */
+  setColumnFlexMinSizing: (updater: Updater<ColumnSizingState>) => void
   /** Объявить текст скринридеру через live-область грида. */
   announce: (message: string) => void
   /** Сообщить действие в канал `onDebugAction` (ADR 0125); номер действия или `undefined`. */
@@ -303,6 +311,11 @@ export interface CommonColumnDef<TData = any>
   dataType?: DataTypeName
   /** Свой разбор текста редактора, главнее `dataType` (ADR 0139). */
   parseValue?: (text: string, row: TData) => unknown
+  /**
+   * Вес флекс-колонки (ADR 0216): колонка делит свободную ширину таблицы с другими флекс-колонками
+   * в пределах `minSize`/`maxSize`; `size` не учитывается.
+   */
+  flex?: number
   /**
    * Ячейка колонки в скелетах (ADR 0060, SL18): `'bar'` — полоска, `'control'` —
    * квадрат контрола, `'toggle'` — переключатель на строках дерева с детьми (ADR 0165),

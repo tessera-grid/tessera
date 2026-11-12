@@ -961,7 +961,8 @@ const RowGrid = () => {
       columnSorting(),
       columnFiltering(),
       columnSizing(),
-      headerActionMenu({ threshold: 4 }),
+      // Три действия и кебаб пунктов подгонки ширины (ADR 0217) — ниже порога.
+      headerActionMenu({ threshold: 5 }),
     ] as never,
   })
   rowApi = table as unknown as RowApi

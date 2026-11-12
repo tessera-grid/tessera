@@ -15,6 +15,8 @@ export const CORE_PLUGIN_ONLY: Record<string, string> = {}
  * извне его читают только плагины и `shared/`.
  */
 export const CORE_PLUGIN_API: Record<string, string> = {
+  'lib/core/autosize.ts':
+    'измеряемые колонки: набор ставит автоподбор плагина columnSizing, окно колонок ядра держит их отрисованными (ADR 0217, §1)',
   'lib/core/rowEngine/displayChildren.ts':
     'дети строки в порядке показа: пишут стадии фильтра и сортировки, читают раскрытие и страница (ADR 0200, §4)',
   'lib/core/rowEngine/memoryStore.ts':

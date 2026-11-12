@@ -190,6 +190,13 @@ export const MODEL_PARITY: ParityBase = {
   },
   columnSizing: {
     same: ['enabled', 'onColumnResizeEnd', 'onColumnResizeCancel'],
+    differs: {
+      autosizeOnData: {
+        reason:
+          'В SSRM ссылка `data` не меняется, строки приходят блоками: подгонка — по `table.autosizeColumns()`',
+        adr: 217,
+      },
+    },
   },
   columnDragging: {
     same: [

@@ -71,7 +71,8 @@ const Grid = ({ role }: { role?: 'grid' }) => {
         onFilterChange: () => Promise.resolve(),
       }),
       columnSizing(),
-      headerActionMenu({ threshold: 4 }),
+      // Три действия и кебаб пунктов подгонки ширины (ADR 0217) — ниже порога.
+      headerActionMenu({ threshold: 5 }),
     ] as never,
   })
   api = table as unknown as Api
@@ -137,6 +138,26 @@ const tooltipShown = (text: string) =>
   [...document.querySelectorAll('[data-side]')].some(
     el => el.textContent?.trim() === text,
   )
+/**
+ * Навести на кнопку ряда, когда он раскрылся: при наведении на заголовок проявляется кебаб
+ * (пункты подгонки ширины, ADR 0217) и сдвигает видимую кнопку из-под указателя.
+ */
+const hoverSettled = async (button: HTMLElement) => {
+  await userEvent.hover(button.closest<HTMLElement>('.data-grid__head-cell')!, {
+    position: { x: 8, y: 8 },
+  })
+  let last = Number.NaN
+  await expect
+    .poll(() => {
+      const left = button.getBoundingClientRect().left
+      const still = left === last
+      last = left
+      return still
+    })
+    .toBe(true)
+  await userEvent.hover(button)
+}
+
 const row = (column: string) =>
   [...head(column).querySelectorAll<HTMLElement>('button')].map(button =>
     button.hasAttribute('data-action-menu')
@@ -167,7 +188,7 @@ describe('Неприменённое условие в заголовке (ADR 0
         columnFilteringLabels(tableLabels).filter,
       )
       expect(name.getAttribute('aria-label')).toBe(draftName)
-      await userEvent.hover(name)
+      await hoverSettled(name)
       await expect.poll(() => tooltipShown(draftName)).toBe(true)
       await away()
 

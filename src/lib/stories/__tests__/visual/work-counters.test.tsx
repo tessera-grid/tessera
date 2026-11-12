@@ -555,9 +555,13 @@ describe('Счётчики работы — кнопки заголовка по
       document.querySelector<HTMLElement>(
         '.data-grid__head-cell[data-column-id="firstName"]',
       )!
-    const kebab = () =>
-      head().querySelector(`[aria-label^="${tableLabels.headerMenu}"]`)
-    await expect.poll(kebab).toBeNull()
+    // Кнопки действий в ряду; кебаб с пунктами подгонки ширины (ADR 0217) есть всегда.
+    const inline = () =>
+      head().querySelectorAll(
+        `button[aria-label]:not([aria-label^="${tableLabels.headerMenu}"])`,
+      ).length
+    await expect.poll(inline).toBeGreaterThan(2)
+    const before = inline()
     const r = head().getBoundingClientRect()
     const at = { x: r.right, y: r.top + r.height / 2 }
     await pointer.realMouseMove({ x: r.left + 8, y: at.y }, at, 4)
@@ -566,11 +570,11 @@ describe('Счётчики работы — кнопки заголовка по
       await pointer.realDragHold(at, { x: at.x - 110, y: at.y }, 6)
       await pointer.realMouseUp()
     })
-    await expect.poll(kebab).not.toBeNull()
-    // Раскладка кнопок сменилась у одной зоны — она и перерисовалась, не больше двух раз
-    // за протяжку; зоны других колонок — ни разу.
+    await expect.poll(inline).toBeLessThan(before)
+    // Раскладка кнопок сменилась у одной зоны — она и перерисовалась, не чаще, чем кнопки
+    // уходили в кебаб; зоны других колонок — ни разу.
     expect(renders(work, ActionsZone), describeWork(work)).toBeLessThanOrEqual(
-      2,
+      before - inline(),
     )
   })
 })

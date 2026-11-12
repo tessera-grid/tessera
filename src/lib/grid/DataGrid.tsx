@@ -102,6 +102,7 @@ import { rowsGetterOf } from './rowsGetter'
 import { StatusBar } from './StatusBar/StatusBar'
 import { getTableHeight } from './getTableHeight'
 import { useScrollbarWidthVar } from './useScrollbarWidthVar'
+import { useFlexColumns } from './useFlexColumns'
 import { usePendingWave, useSkeletonWave } from './useSkeletonWave'
 import {
   dismissTableActionFailure,
@@ -494,6 +495,8 @@ const DataGridView = <D extends LabelDictionary = LabelDictionary>({
     : undefined
   // Реальная ширина скроллбара в CSS-var — чтобы лоадер совпадал с краем контента.
   useScrollbarWidthVar(getScrollElement, wrapperRef, !gridStub)
+  // Флекс-колонки делят ширину области (ADR 0216).
+  useFlexColumns(table, getScrollElement)
   useSkeletonWave(wrapperRef, showSkeleton && !gridStub)
   // Волна ожидания на цели действия из контекстного меню (ADR 0155, §1) — пока хоть одно ждёт.
   const menuPending = useTableState(table, s =>

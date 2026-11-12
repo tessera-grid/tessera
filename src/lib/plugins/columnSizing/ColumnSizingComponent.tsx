@@ -15,6 +15,7 @@ import { useSlice, useTableState } from '../../core/reactivity'
 import { useLatest } from '../../util/useLatest'
 import { ResizeHandler } from '../../plugins/columnSizing/ResizeHandler'
 import type { ColumnSizingHooks } from './types'
+import { autosizeColumns } from './autosize'
 
 export const ColumnSizingComponent = ({
   header,
@@ -59,6 +60,13 @@ export const ColumnSizingComponent = ({
     const { minSize, size, maxSize } = column.columnDef
 
     column.resetSize()
+    ;(
+      table as unknown as {
+        setColumnFlexMinSizing: (
+          updater: (old: Record<string, number>) => Record<string, number>,
+        ) => void
+      }
+    ).setColumnFlexMinSizing(({ [column.id]: _removed, ...rest }) => rest)
 
     const width = Math.min(
       Math.max(minSize ?? 20, size ?? 150),
@@ -124,6 +132,8 @@ export const ColumnSizingComponent = ({
       onEscape={() => cancelColumnResize(table, 'cancel')}
       onResetSize={onResetSize}
       onResizeBy={onResizeBy}
+      onAutosize={source => void autosizeColumns(table, [column.id], source)}
+      onAutosizeAll={source => void autosizeColumns(table, undefined, source)}
       size={column.getSize()}
       minSize={minSize}
       maxSize={upperBound}

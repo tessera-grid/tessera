@@ -257,8 +257,14 @@ export const useCreateTable = <
         size: defaultColumn?.size,
         minSize: defaultColumn?.minSize,
         maxSize: defaultColumn?.maxSize,
+        flex: defaultColumn?.flex,
       }),
-    [defaultColumn?.size, defaultColumn?.minSize, defaultColumn?.maxSize],
+    [
+      defaultColumn?.size,
+      defaultColumn?.minSize,
+      defaultColumn?.maxSize,
+      defaultColumn?.flex,
+    ],
   )
 
   // TanStack сливает `defaultColumn` в колонки при их сборке, а собирает их заново только
@@ -308,11 +314,16 @@ export const useCreateTable = <
     externalOnPinning as OnChangeFn<ColumnPinningState> | undefined,
     servicePins,
   )
-  const { displayedSizing, onColumnSizingChange, onColumnAutoSizingChange } =
-    useControlledSizing(
-      externalSizing as ColumnSizingState | undefined,
-      externalOnSizing as OnChangeFn<ColumnSizingState> | undefined,
-    )
+  const {
+    displayedSizing,
+    userSizing,
+    onColumnSizingChange,
+    onColumnAutoSizingChange,
+    onColumnFlexSizingChange,
+  } = useControlledSizing(
+    externalSizing as ColumnSizingState | undefined,
+    externalOnSizing as OnChangeFn<ColumnSizingState> | undefined,
+  )
 
   // Бизнес-хуки из аргументов фабрик плагинов (напр. rowSelection({ onSelectRow }))
   // и из hook-слайсов пользовательских записей сворачиваются ЖИВО каждый рендер:
@@ -411,6 +422,8 @@ export const useCreateTable = <
     onColumnPinningChange,
     onColumnSizingChange,
     onColumnAutoSizingChange,
+    onColumnFlexSizingChange,
+    columnUserSizing: userSizing,
     // Прочие onXChange потребителя (onExpandedChange/onRowSelectionChange/
     // onGroupingChange/onRowOrderChange…); для суженных срезов — обёртки слоя.
     ...restHandlers,

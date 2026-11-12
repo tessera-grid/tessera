@@ -39,6 +39,7 @@ import * as serverDraggingStories from './DataGrid.DataLoading.ServerRowModel.Dr
 import * as serverLazyChildrenStories from './DataGrid.DataLoading.ServerRowModel.LazyChildren.stories'
 import * as columnsDraggingStories from './DataGrid.Columns.Dragging.stories'
 import * as columnsResizingStories from './DataGrid.Columns.Resizing.stories'
+import * as columnsFlexWidthStories from './DataGrid.Columns.FlexWidth.stories'
 import * as rowsDraggingStories from './DataGrid.Rows.Dragging.stories'
 import * as rowsGroupingStories from './DataGrid.Rows.Grouping.stories'
 import * as rowsSelectionStories from './DataGrid.Rows.Selection.stories'
@@ -8656,5 +8657,107 @@ export const HighContrastViewServerRefusedStep3 = {
     3,
   ),
   name: 'Panels/View settings — Refused by the server, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastFlexFillStep1 = {
+  ...twinStep(
+    columnsFlexWidthStories,
+    columnsFlexWidthStories.FlexFillWidth,
+    1,
+  ),
+  name: 'Columns/Flex width — Fill the width, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastFlexFillStep2 = {
+  ...twinStep(
+    columnsFlexWidthStories,
+    columnsFlexWidthStories.FlexFillWidth,
+    2,
+  ),
+  name: 'Columns/Flex width — Fill the width, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastFlexFillStep3 = {
+  ...twinStep(
+    columnsFlexWidthStories,
+    columnsFlexWidthStories.FlexFillWidth,
+    3,
+  ),
+  name: 'Columns/Flex width — Fill the width, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastFlexResizeStep1 = {
+  ...twinStep(columnsFlexWidthStories, columnsFlexWidthStories.FlexResize, 1),
+  name: 'Columns/Flex width — Resize a flex column, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastFlexResizeStep2 = {
+  ...twinStep(columnsFlexWidthStories, columnsFlexWidthStories.FlexResize, 2),
+  name: 'Columns/Flex width — Resize a flex column, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastFlexResizeStep3 = {
+  ...twinStep(columnsFlexWidthStories, columnsFlexWidthStories.FlexResize, 3),
+  name: 'Columns/Flex width — Resize a flex column, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastFlexOverflowStep1 = {
+  ...twinStep(columnsFlexWidthStories, columnsFlexWidthStories.FlexOverflow, 1),
+  name: 'Columns/Flex width — Columns do not fit, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastFlexOverflowStep2 = {
+  ...twinStep(columnsFlexWidthStories, columnsFlexWidthStories.FlexOverflow, 2),
+  name: 'Columns/Flex width — Columns do not fit, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastAutosizeColumnsStep1 = {
+  ...twinStep(
+    columnsResizingStories,
+    columnsResizingStories.AutosizeColumns,
+    1,
+  ),
+  name: 'Columns/Resizing — Autosize columns, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastAutosizeColumnsStep2 = {
+  ...twinStep(
+    columnsResizingStories,
+    columnsResizingStories.AutosizeColumns,
+    2,
+  ),
+  name: 'Columns/Resizing — Autosize columns, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastAutosizeColumnsStep3 = {
+  ...twinStep(
+    columnsResizingStories,
+    columnsResizingStories.AutosizeColumns,
+    3,
+  ),
+  name: 'Columns/Resizing — Autosize columns, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastAutosizeOnDataStep1 = {
+  ...twinStep(columnsResizingStories, columnsResizingStories.AutosizeOnData, 1),
+  name: 'Columns/Resizing — Autosize on data, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastAutosizeOnDataStep2 = {
+  ...twinStep(columnsResizingStories, columnsResizingStories.AutosizeOnData, 2),
+  name: 'Columns/Resizing — Autosize on data, шаг 2',
   tags: ['!test'],
 }

@@ -68,14 +68,17 @@ export const mergeServiceColumnPinning = (
 // --- Размеры: слияние пользовательского ресайза с авто-слайсом ----------------
 
 /**
- * Итоговый columnSizing. Авто-слайс плагинов (ширины служебных колонок) идёт
- * ПОСЛЕДНИМ и побеждает как контролируемый, так и внутренний размер.
+ * Итоговый columnSizing. Флекс-ширины (ADR 0216) — нижний слой; авто-слайс плагинов
+ * (ширины служебных колонок) идёт ПОСЛЕДНИМ и побеждает как контролируемый, так и
+ * внутренний размер.
  */
 export const mergeColumnSizing = (
   externalColumnSizing: ColumnSizingState | undefined,
   columnSizing: ColumnSizingState,
   columnAutoSizing: ColumnSizingState,
+  columnFlexSizing: ColumnSizingState = {},
 ): ColumnSizingState => ({
+  ...columnFlexSizing,
   ...(externalColumnSizing ?? columnSizing),
   ...columnAutoSizing,
 })

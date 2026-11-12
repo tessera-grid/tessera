@@ -270,6 +270,8 @@
   "columnSizing.widenColumn": "Расширить",
   "columnSizing.narrowColumn": "Сузить",
   "columnSizing.resetColumnWidth": "Сбросить ширину",
+  "columnSizing.autosizeColumn": "Подогнать ширину",
+  "columnSizing.autosizeAllColumns": "Подогнать все колонки",
   "pagination.pagination": "Пагинация",
   "pagination.rowsPerPage": "Строк на странице",
   "pagination.firstPage": "Первая страница",

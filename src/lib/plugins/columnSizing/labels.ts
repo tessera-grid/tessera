@@ -9,6 +9,9 @@ export interface ColumnSizingLabels {
   widenColumn: string
   narrowColumn: string
   resetColumnWidth: string
+  /** Автоподбор ширины по содержимому (ADR 0217): пункты меню ручки и кебаба */
+  autosizeColumn: string
+  autosizeAllColumns: string
   /** Действие: отмена протяжки */
   actionResizeCancel: string
 }
@@ -21,6 +24,8 @@ export const columnSizingLabels = defineLabels<ColumnSizingLabels>()(
     widenColumn: 'Wider',
     narrowColumn: 'Narrower',
     resetColumnWidth: 'Reset width',
+    autosizeColumn: 'Autosize column',
+    autosizeAllColumns: 'Autosize all columns',
     actionResizeCancel: 'Cancel resizing',
   },
   {},

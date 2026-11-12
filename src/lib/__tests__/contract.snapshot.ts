@@ -12,6 +12,7 @@ export const COLUMN_DEF_FIELDS: Record<string, string> = {
   formatDate: '0175',
   formatValue: '0172',
   enableDragging: '0006',
+  flex: '0216',
   getKey: '0174',
   getLabel: '0174',
   getOptionLabel: '0048',
@@ -25,6 +26,7 @@ export const COLUMN_DEF_FIELDS: Record<string, string> = {
 
 /** Опции ядра `CommonOptions`. */
 export const CORE_OPTIONS: Record<string, string> = {
+  columnUserSizing: '0216',
   actionMenu: '0024',
   activeCell: '0170',
   drafts: '0178',
@@ -65,6 +67,7 @@ export const CORE_OPTIONS: Record<string, string> = {
   onActiveCellChange: '0170',
   onDraftsChange: '0178',
   onColumnAutoSizingChange: '0010',
+  onColumnFlexSizingChange: '0216',
   onDebugAction: '0125',
   onFailure: '0177',
   onDataChange: '0194',

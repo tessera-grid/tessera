@@ -18,6 +18,7 @@ const LIB = join(ROOT, 'src', 'lib')
  * объекту таблицы, данных или колонок — только `WeakMap`/`WeakSet`.
  */
 const BOUNDED: Record<string, string> = {
+  'core/autosize.ts:EMPTY': 'пустой набор измеряемых колонок, не растёт',
   'core/inputModality.ts:MODIFIER_KEYS': 'константный набор клавиш',
   'core/keyboardNavigation/actions.ts:ACTION_KEYS': 'константный набор клавиш',
   'ui/Popup/useMenuLeave.ts:LEAVING': 'константный набор причин',

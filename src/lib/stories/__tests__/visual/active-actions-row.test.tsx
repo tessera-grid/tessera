@@ -37,7 +37,10 @@ interface Api {
 
 let api: Api
 
-/** Три действия заголовка ниже порога: в кебаб их уводит только ширина. */
+/**
+ * Три действия заголовка и кебаб пунктов подгонки ширины (ADR 0217) ниже порога: в кебаб их
+ * уводит только ширина.
+ */
 const Grid = () => {
   const table = useCreateTable({
     columns: COLUMNS as never,
@@ -48,7 +51,7 @@ const Grid = () => {
       columnSorting(),
       columnFiltering(),
       columnSizing(),
-      headerActionMenu({ threshold: 4 }),
+      headerActionMenu({ threshold: 5 }),
     ] as never,
   })
   api = table as unknown as Api
@@ -178,10 +181,10 @@ describe('Включённые действия уходят в кебаб по�
       realMouseUp: () => Promise<void>
     }
     const { screen, width } = await mount()
-    // Широкая колонка: все три кнопки в ряду, сортировка включена.
+    // Широкая колонка: все три кнопки в ряду и кебаб подгонки, сортировка включена.
     api.setColumnSizing({ name: width + 120 })
     api.setSorting([{ id: 'name', desc: false }])
-    await expect.poll(row).toEqual(['pin', 'sort', 'filter'])
+    await expect.poll(row).toEqual(['pin', 'sort', 'filter', 'menu'])
 
     // Протяжка грипа влево до ширины на одну кнопку и кебаб, кнопка мыши ещё нажата.
     const r = head().getBoundingClientRect()

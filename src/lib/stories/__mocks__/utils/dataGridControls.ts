@@ -133,6 +133,7 @@ import {
   rowDraggingExpandDelayType,
   rowDraggingRevertOnRejectType,
   columnDraggingRevertOnRejectType,
+  columnSizingAutosizeOnDataType,
   enableRowExpandingModelType,
   enableTreeLinesType,
   rowHeightType,
@@ -237,6 +238,9 @@ export const dataGridArgTypes = {
     'Колонки',
     {
       enableColumnSizing: enableColumnSizingType,
+      ...when('enableColumnSizing', {
+        columnSizingAutosizeOnData: columnSizingAutosizeOnDataType,
+      }),
       enableColumnDragging: enableColumnDraggingType,
       ...when('enableColumnDragging', {
         columnDraggingRevertOnReject: columnDraggingRevertOnRejectType,
@@ -522,6 +526,7 @@ export const dataGridDefaultArgs = {
   enableColumnSizing: false,
   enableColumnDragging: false,
   columnDraggingRevertOnReject: true,
+  columnSizingAutosizeOnData: false,
   enableColumnPinning: false,
   columnPinningLeafPinning: false,
   enableColumnVisibility: false,

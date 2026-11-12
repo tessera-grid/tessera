@@ -393,6 +393,9 @@ export const columnDraggingRevertOnRejectType = booleanControl(
   'Откатывать перенос колонки при отказе промиса `onColumnDragEnd` (`revertOnReject`, ADR 0114)',
   true,
 )
+export const columnSizingAutosizeOnDataType = booleanControl(
+  'Подгонять ширину колонок по содержимому на приходе данных (`autosizeOnData`, ADR 0217)',
+)
 export const enableRowGroupingType = booleanControl(
   'Группировка строк кнопкой в заголовке (плагин `rowGrouping`)',
 )

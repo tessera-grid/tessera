@@ -11,6 +11,9 @@ import {
 import { definePlugin } from '../../core/definePlugin'
 import { neverInert } from '../../core/pluginDiagnostics'
 import { ColumnSizingComponent } from './ColumnSizingComponent'
+import { autosizeHeaderActions } from './autosizeHeaderActions'
+import { columnAutosizeFeature } from './columnAutosizeFeature'
+import { reconcileAutosizeOnData } from './autosizeOnData'
 import type { ColumnSizingHooks } from './types'
 import { columnSizingLabels } from './labels'
 
@@ -21,6 +24,11 @@ export interface ColumnSizingOptions {
   onColumnResizeEnd?: ColumnSizingHooks['onColumnResizeEnd']
   /** Ресайз отменён: Escape, запрет на лету, колонка ушла (ADR 0040). */
   onColumnResizeCancel?: ColumnSizingHooks['onColumnResizeCancel']
+  /**
+   * Подгонять колонки по содержимому на приходе данных и на каждой новой ссылке `data`,
+   * кроме протянутых пользователем (ADR 0217, §2).
+   */
+  autosizeOnData?: boolean
 }
 
 export const columnSizing = definePlugin<ColumnSizingOptions>()({
@@ -31,14 +39,22 @@ export const columnSizing = definePlugin<ColumnSizingOptions>()({
     resetSize: labels => columnSizingLabels(labels).resetColumnWidth,
     resizeBy: labels => columnSizingLabels(labels).resizeColumn,
     resizeCancel: labels => columnSizingLabels(labels).actionResizeCancel,
+    autosize: labels => columnSizingLabels(labels).autosizeColumn,
+    autosizeAll: labels => columnSizingLabels(labels).autosizeAllColumns,
     handleMenu: labels => columnSizingLabels(labels).columnWidth,
   },
   diagnose: neverInert,
-  features: { columnSizingFeature, columnResizingFeature },
+  features: {
+    columnSizingFeature,
+    columnResizingFeature,
+    columnAutosizeFeature,
+  },
   hooks: o => ({
     onColumnResizeEnd: o.onColumnResizeEnd ?? (() => null),
     onColumnResizeCancel: o.onColumnResizeCancel,
   }),
+  slotActions: autosizeHeaderActions,
+  reconcile: reconcileAutosizeOnData,
   slots: [
     {
       id: 'columnSizingPlugin',
@@ -52,6 +68,7 @@ export const columnSizing = definePlugin<ColumnSizingOptions>()({
   ],
   options: o => ({
     enableColumnResizing: o.enabled !== false,
+    autosizeOnData: o.autosizeOnData === true,
     columnResizeMode: 'onChange',
   }),
 })

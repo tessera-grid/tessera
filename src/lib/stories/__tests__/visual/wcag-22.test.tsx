@@ -296,6 +296,8 @@ describe('WCAG 2.5.7 — альтернатива перетаскиванию (
       columnSizingLabels(ENGLISH_LABELS).widenColumn,
       columnSizingLabels(ENGLISH_LABELS).narrowColumn,
       columnSizingLabels(ENGLISH_LABELS).resetColumnWidth,
+      columnSizingLabels(ENGLISH_LABELS).autosizeColumn,
+      columnSizingLabels(ENGLISH_LABELS).autosizeAllColumns,
     ])
     // Ширина на minSize — сужать некуда.
     expect(

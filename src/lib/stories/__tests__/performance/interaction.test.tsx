@@ -6314,3 +6314,149 @@ describe('Сдвиги в середине data', () => {
     PERF_TIMEOUT * 2,
   )
 })
+
+// Флекс-колонки и автоподбор ширины (ADR 0216 FX10, ADR 0217 AZ10): 1000 × 1000 с
+// `columnSizing`. Гейт — против той же операции без фичи; цена — из требования.
+const FX10_COST = { ratio: 1.3, plusMs: 30 }
+const AZ10_COST = { ratio: 1.3, plusMs: 300 }
+const SIZING_COLUMNS = makeColumns(LARGE.columnCount)
+const SIZING_DATA = getData(LARGE.dataCount)
+
+interface SizingTable {
+  autosizeColumns: (ids?: string[]) => Promise<boolean>
+  setColumnSizing: (sizing: Record<string, number>) => void
+  store: { state: { columnSizing: Record<string, number> } }
+}
+
+let sizingTable: SizingTable | null = null
+let setSizingWidth: ((width: number) => void) | null = null
+
+const SizingGrid = ({ flex }: { flex: boolean }) => {
+  const [plugins] = useState(() => [columnSizing()])
+  const [width, setWidth] = useState(1200)
+  setSizingWidth = setWidth
+  const table = useCreateTable({
+    columns: SIZING_COLUMNS as never,
+    data: SIZING_DATA,
+    defaultColumn: flex ? { flex: 1 } : undefined,
+    plugins: plugins as never,
+  })
+  sizingTable = table as unknown as SizingTable
+  return (
+    <div style={{ width, height: 600 }}>
+      <DataGrid table={table as never} height={500} />
+    </div>
+  )
+}
+
+const recordSizing = (
+  id: string,
+  label: string,
+  r: Awaited<ReturnType<typeof measureInteractionWork>>,
+  ceiling: number | undefined,
+) =>
+  recordPerf({
+    id,
+    label,
+    operation: 'interaction',
+    size: '1000×1000',
+    plugins: 'columnSizing',
+    cpuThrottle: CPU_THROTTLE_RATE,
+    metrics: [
+      {
+        kind: 'load',
+        metric: 'longest',
+        valueMs: r.longestMs,
+        targetMs: INTERACTION_BUDGET_MS,
+        ceilingMs: ceiling,
+        ...r,
+      },
+    ],
+  })
+
+describe('Отзывчивость — флекс-колонки и автоподбор ширины', () => {
+  test(
+    'FX10: пересчёт флекс-ширин при смене ширины контейнера на 1000 колонок не дороже той же смены без флекс-колонок с ценой',
+    async () => {
+      const measure = async (flex: boolean) => {
+        await render(<SizingGrid flex={flex} />)
+        await waitForGrid()
+        let wide = true
+        const result = await measureInteractionWork(
+          async () => {
+            wide = !wide
+            setSizingWidth!(wide ? 1200 : 1000)
+          },
+          {
+            afterWarmup: async () => {
+              // У колонок мока minSize равен size: флекс-ширины — те же, что без флекса, замер —
+              // цена самого пересчёта. Слой флекс-ширин есть у всех 1000 колонок.
+              const sized = Object.keys(sizingTable!.store.state.columnSizing)
+              expect(sized.length).toBe(flex ? LARGE.columnCount : 0)
+            },
+          },
+        )
+        await cleanup()
+        return result
+      }
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const ours = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = ceilingOver(base.longestMs, FX10_COST)
+      await recordSizing(
+        'FX10-base',
+        'контейнер без флекс-колонок',
+        base,
+        undefined,
+      )
+      await recordSizing('FX10', 'контейнер с флекс-колонками', ours, ceiling)
+      expect(
+        ours.longestMs,
+        `флекс ${ours.longestMs.toFixed(1)}ms, база ${base.longestMs.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+
+  test(
+    'AZ10: «Подогнать все» на 1000 × 1000 не дороже протяжки одной колонки с ценой',
+    async () => {
+      const measure = async (autosize: boolean) => {
+        await render(<SizingGrid flex={false} />)
+        await waitForGrid()
+        let step = 0
+        let fitted = false
+        const result = await measureInteractionWork(
+          async () => {
+            step += 1
+            if (autosize) fitted = await sizingTable!.autosizeColumns()
+            else
+              sizingTable!.setColumnSizing({
+                [(SIZING_COLUMNS[0] as { id: string }).id]:
+                  step % 2 ? 180 : 200,
+              })
+          },
+          {
+            afterWarmup: () => {
+              // Прогрев подогнал колонки.
+              if (autosize) expect(fitted).toBe(true)
+            },
+          },
+        )
+        await cleanup()
+        return result
+      }
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const ours = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = ceilingOver(base.longestMs, AZ10_COST)
+      await recordSizing('AZ10-base', 'протяжка одной колонки', base, undefined)
+      await recordSizing('AZ10', '«Подогнать все» 1000 колонок', ours, ceiling)
+      expect(
+        ours.longestMs,
+        `подгонка ${ours.longestMs.toFixed(1)}ms, база ${base.longestMs.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})

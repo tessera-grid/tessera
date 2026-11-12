@@ -3,6 +3,8 @@ export interface DefaultColumnSizing {
   size?: number
   minSize?: number
   maxSize?: number
+  /** Вес флекс-колонки (ADR 0216): `1` — колонки делят ширину таблицы. */
+  flex?: number
 }
 
 /** `minSize` — наименьшая ширина текста ячейки; `size` по умолчанию — у TanStack (150). */

@@ -7,6 +7,8 @@ import {
 } from 'react'
 
 import {
+  MoveHorizontal,
+  UnfoldHorizontal,
   ArrowLeftToLine,
   ArrowUpToLine,
   Check,
@@ -166,6 +168,9 @@ export interface TableIcons {
   /** Пункт-раздел меню и строка «назад» раздела (ADR 0079) */
   submenu: IconComponent
   menuBack: IconComponent
+  /** Автоподбор ширины по содержимому (ADR 0217): колонка и все колонки */
+  autosizeColumn: IconComponent
+  autosizeAllColumns: IconComponent
   /** Варианты осей панели экспорта (ADR 0074): строки и колонки */
   exportRowsAll: IconComponent
   exportRowsView: IconComponent
@@ -230,6 +235,8 @@ export const DEFAULT_ICONS: TableIcons = {
   actionBlocked: Lock,
   submenu: ChevronRight,
   menuBack: ChevronLeft,
+  autosizeColumn: MoveHorizontal,
+  autosizeAllColumns: UnfoldHorizontal,
   exportRowsAll: Rows3,
   exportRowsView: ListFilter,
   exportRowsPage: FileText,
