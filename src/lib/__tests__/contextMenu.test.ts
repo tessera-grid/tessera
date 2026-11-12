@@ -143,7 +143,18 @@ describe('cellSelection — пункт «Копировать» (CM4)', () => {
         store: {},
         options: {},
         atoms: {},
-        getRowSource: () => ({ keyByIndex: false }),
+        getRowSource: () => ({
+          keyByIndex: false,
+          at: (index: number) => ({
+            original: {},
+            getAllCellsByColumnId: () => ({
+              x: { getCanSelect: () => true, getValue: () => 'ac'[index] },
+              y: { getCanSelect: () => true, getValue: () => 'bd'[index] },
+            }),
+          }),
+        }),
+        getColumn: () => undefined,
+        getCellSelectionColumnIndexes: () => ({ x: 0, y: 1 }),
         getCellSelectionBounds: () => [
           {
             minRowIndex: 0,
@@ -151,12 +162,6 @@ describe('cellSelection — пункт «Копировать» (CM4)', () => {
             minColumnIndex: 0,
             maxColumnIndex: 1,
           },
-        ],
-        getSelectedCellRangesData: () => [
-          [
-            ['a', 'b'],
-            ['c', 'd'],
-          ],
         ],
       },
     } as unknown as ContextMenuContext

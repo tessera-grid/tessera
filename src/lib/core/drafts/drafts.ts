@@ -129,6 +129,41 @@ export const setDraft = (table: unknown, draft: Draft) => {
   setPluginState(table, DRAFTS, next)
 }
 
+/**
+ * Положить и снять записи одной записью в срез (ADR 0219, WR11): та же пара вида и цели
+ * заменяется, порядок прежних записей сохраняется, новые — в конце.
+ */
+export const writeDrafts = (
+  table: unknown,
+  set: readonly Draft[],
+  remove: readonly { kind: string; target: DraftTarget }[] = [],
+) => {
+  if (set.length === 0 && remove.length === 0) return
+  const prev = readDrafts(table)
+  const incoming = new Map(set.map(draft => [keyOf(draft), draft]))
+  const gone = new Set(remove.map(item => draftKeyOf(item.kind, item.target)))
+  let changed = false
+  const next: Draft[] = []
+  for (const item of prev) {
+    const key = keyOf(item)
+    const replacement = incoming.get(key)
+    if (replacement) {
+      incoming.delete(key)
+      next.push(replacement)
+      changed = true
+    } else if (gone.has(key)) {
+      changed = true
+    } else {
+      next.push(item)
+    }
+  }
+  for (const draft of incoming.values()) {
+    next.push(draft)
+    changed = true
+  }
+  if (changed) setPluginState(table, DRAFTS, next)
+}
+
 /** Снять записи, отобранные условием, одной записью в срез; нечего снимать — ничего. */
 export const removeDrafts = (
   table: unknown,

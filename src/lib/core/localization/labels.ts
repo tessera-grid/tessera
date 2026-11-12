@@ -68,6 +68,12 @@ export interface TableLabels {
   pendingGrouping: string
   pendingCopy: string
   pendingSelectPage: string
+  pendingPaste: string
+  /** Вопрос перед вставкой на месте плашки ожидания и его кнопки (ADR 0219, WR3) */
+  pasteQuestionValue: (value: string) => string
+  pasteQuestionCount: (count: number) => string
+  pasteConfirm: string
+  pasteDecline: string
   /** Плашка ожидания действия над всей таблицей: его имя */
   pendingAction: (name: string) => string
   /** Имя серверного действия в объявлении отмены (ADR 0153, §8) */
@@ -78,6 +84,7 @@ export interface TableLabels {
   actionGrouping: string
   actionCopy: string
   actionSelectPage: string
+  actionPaste: string
   /** Доступное имя строки «назад» раздела меню (ADR 0079) */
   menuBack: (section: string) => string
   /** Объявление: открыт раздел меню */
@@ -145,6 +152,7 @@ export interface TableLabels {
   serverActionFailedPagination: string
   serverActionFailedGrouping: string
   serverActionFailedCopy: string
+  serverActionFailedPaste: string
   serverActionFailedSelectPage: string
   /** Объявление числа строк после применения фильтра или поиска */
   announceFilteredRows: (count: number) => string
@@ -236,6 +244,12 @@ export const DEFAULT_LABELS = {
   pendingGrouping: 'Grouping…',
   pendingCopy: 'Copying…',
   pendingSelectPage: 'Selecting the page…',
+  pendingPaste: 'Pasting…',
+  pasteQuestionValue: 'Paste "{value}"?',
+  pasteQuestionCount: 'Paste {count} values?',
+  pasteQuestionCount_one: 'Paste {count} value?',
+  pasteConfirm: 'Paste',
+  pasteDecline: "Don't paste",
   pendingAction: '{name}…',
   actionSorting: 'Sorting',
   actionFiltering: 'Filtering',
@@ -244,6 +258,7 @@ export const DEFAULT_LABELS = {
   actionGrouping: 'Grouping',
   actionCopy: 'Copying',
   actionSelectPage: 'Selecting the page',
+  actionPaste: 'Pasting',
   menuBack: 'Back, {section}',
   announceMenuSection: '{section} menu',
   sectionLoadFailed: "Couldn't load",
@@ -280,6 +295,7 @@ export const DEFAULT_LABELS = {
   serverActionFailedPagination: "The page didn't change",
   serverActionFailedGrouping: "Grouping wasn't applied",
   serverActionFailedCopy: "The cells weren't copied",
+  serverActionFailedPaste: "The cells weren't pasted",
   serverActionFailedSelectPage: "The page rows weren't selected",
   announceLoadError: "Couldn't refresh the data",
   announceLoadErrorReason: "Couldn't refresh the data: {reason}",

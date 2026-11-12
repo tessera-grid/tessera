@@ -49,6 +49,7 @@ import { makeColumns } from '../../__mocks__/columns'
 import { getData, makeData } from '../../__mocks__/data'
 import { argsToPlugins } from '../../__mocks__/utils/argsToPlugins'
 import { renderPluginsGrid, renderGrid } from './hosts'
+import { cellEditing } from '../../../plugins/cellEditing'
 import { scrollLayer } from '../../../core/scrollStretch'
 import { windowBand } from '../../../core/virtualization/windowBand'
 import type { CellComponentProps } from '../../../core/createSlots'
@@ -4257,6 +4258,105 @@ describe('Производительность прокрутки — высот
         wrap.y.p95Ms,
         `y p95=${wrap.y.p95Ms.toFixed(1)}ms (база ${base.y.p95Ms.toFixed(1)}ms, потолок ${ceiling.y.toFixed(1)})`,
       ).toBeLessThanOrEqual(ceiling.y)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Пакет записи в ожидании (ADR 0219, WR37): 1000×1000, спокойная прокрутка со 100 000 ячейками,
+// ждущими ответа сервера (100 строк × 1000 колонок), против той же выборки без них.
+const WR37_COST = { ratio: 3, plusMs: 4 }
+const WR37_ROWS = 100
+describe('Производительность прокрутки — пакет записи в ожидании', () => {
+  test(
+    'WR37: спокойная прокрутка 1000×1000 со 100 000 ячейками в ожидании пакета против той же без него — ×3 или +4 мс',
+    async () => {
+      const measure = async (pending: boolean) => {
+        type WriteTable = {
+          getRowSource: () => { at: (i: number) => { id: string } }
+          getAllLeafColumns: () => { id: string }[]
+          writeCells: (changes: unknown[], options: object) => Promise<unknown>
+        }
+        let table: WriteTable | undefined
+        const screen = renderPluginsGrid({
+          ...LARGE,
+          plugins: [
+            // Сервер не отвечает: ячейки пакета ждут весь замер.
+            cellEditing({
+              onCommitEdits: () => new Promise(() => {}),
+            } as never),
+            {
+              id: 'perfPendingWrite',
+              setup: t => {
+                table = t as never
+              },
+            },
+          ],
+        })
+        await waitForGrid()
+        await expect.poll(() => table).toBeTruthy()
+        if (pending) {
+          const columns = table!.getAllLeafColumns().map(column => column.id)
+          const changes = Array.from({ length: WR37_ROWS }, (_, row) =>
+            columns.map(columnId => ({
+              rowId: table!.getRowSource().at(row).id,
+              columnId,
+              value: 'x',
+            })),
+          ).flat()
+          expect(changes).toHaveLength(WR37_ROWS * LARGE.columnCount)
+          await table!.writeCells(changes, { source: 'api' })
+        }
+        await expect
+          .poll(
+            () =>
+              document.querySelector(
+                '.data-grid__body-cell[aria-busy="true"]',
+              ) !== null,
+          )
+          .toBe(pending)
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        return { y, x }
+      }
+
+      const runs = await againstBase(measure)
+      const base = medianAxes(runs.base)
+      const pending = medianAxes(runs.variant)
+      const ceiling = axesCeiling(base, WR37_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1000×1000',
+          plugins: 'cellEditing',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: (['y', 'x'] as const).map(axis => ({
+            axis,
+            kind: 'animation' as const,
+            metric: 'p95' as const,
+            valueMs: r[axis].p95Ms,
+            targetMs: ANIMATION_BUDGET_MS,
+            ceilingMs: gated ? ceiling[axis] : undefined,
+            ...r[axis],
+          })),
+        })
+      await record('WR37-base', 'правка без ожидающего пакета', base, false)
+      await record('WR37', '100 000 ячеек в ожидании пакета', pending, true)
+
+      for (const axis of ['y', 'x'] as const) {
+        expect(
+          pending[axis].p95Ms,
+          `${axis} p95=${pending[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
+        ).toBeLessThanOrEqual(ceiling[axis])
+      }
     },
     PERF_TIMEOUT * 2,
   )

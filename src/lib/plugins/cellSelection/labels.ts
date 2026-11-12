@@ -18,6 +18,14 @@ export interface CellSelectionLabels {
   actionExtendSelection: string
   /** Действие: изменить диапазон маркером угла (ADR 0198) */
   actionResizeRange: string
+  /** Пункты «Вставить», «Вырезать», «Очистить» (ADR 0219, WR17) */
+  paste: string
+  cut: string
+  clear: string
+  /** Объявление: вставлена часть строк буфера — таблица кончилась (WR8) */
+  announcePasteCut: (count: number, total: number) => string
+  /** Отказ «Вставить» из меню: браузер не дал прочесть буфер */
+  pasteDenied: string
 }
 
 export const cellSelectionLabels = defineLabels<CellSelectionLabels>()(
@@ -33,11 +41,19 @@ export const cellSelectionLabels = defineLabels<CellSelectionLabels>()(
     actionSelect: 'Select cells',
     actionExtendSelection: 'Extend the selection',
     actionResizeRange: 'Resize the selection',
+    paste: 'Paste',
+    cut: 'Cut',
+    clear: 'Clear',
+    announcePasteCut: 'Pasted {count} of {total} rows: the table ended',
+    announcePasteCut_one: 'Pasted {count} of {total} rows: the table ended',
+    pasteDenied:
+      "The browser didn't allow reading the clipboard. Press Ctrl+V or ⌘V",
   },
   {
     announceCopy: ['count'],
     announceCopyLoading: ['count'],
     copyTooManyRows: ['count', 'max'],
+    announcePasteCut: ['count', 'total'],
   },
 )
 

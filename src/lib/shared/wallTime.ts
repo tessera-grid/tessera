@@ -86,6 +86,16 @@ export const instantToWallMs = (ms: number, timeZone?: string): number => {
   )
 }
 
+/**
+ * Момент, который часы пояса показывают как `wallMs` (ADR 0219, WR5); без пояса — пояс
+ * браузера. Смещение уточняется вторым шагом: на переходе на летнее время оно другое.
+ */
+export const wallMsToInstant = (wallMs: number, timeZone?: string): number => {
+  let instant = wallMs - (instantToWallMs(wallMs, timeZone) - wallMs)
+  instant = wallMs - (instantToWallMs(instant, timeZone) - instant)
+  return instant
+}
+
 export interface WallValue {
   ms: number
   /** Календарный день без времени (`'YYYY-MM-DD'`). */

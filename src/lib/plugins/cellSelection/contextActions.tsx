@@ -3,9 +3,11 @@
  * что Ctrl+C (ADR 0146): клик по пункту — жест пользователя, запись в буфер разрешена;
  * незагруженные строки серверной модели догружаются.
  */
-import { Copy } from 'lucide-react'
+import { ClipboardPaste, Copy, Eraser, Scissors } from 'lucide-react'
 
+import { clearSelection, cutFromMenu, hasWritableSelection } from './clear'
 import { copyCellSelection } from './copy'
+import { canPaste, pasteFromMenu } from './paste'
 import type { ContextMenuAction } from '../../core/headerActions'
 import { cellSelectionLabels } from './labels'
 
@@ -21,4 +23,46 @@ export const copyContextAction: ContextMenuAction = {
   onSelect: ctx => {
     copyCellSelection(ctx.table, { source: 'pointer' })
   },
+}
+
+/**
+ * Пункты записи (ADR 0219, WR17): только с плагином правки; недоступны, когда в выделении нет
+ * ячейки, куда можно записать. Итог — на самих ячейках, у пункта ожидания нет.
+ */
+const writable = (ctx: Parameters<ContextMenuAction['onSelect']>[0]) =>
+  !hasWritableSelection(ctx.table)
+
+export const cutContextAction: ContextMenuAction = {
+  id: 'cellSelection:cut',
+  order: 1,
+  icon: () => <Scissors width={16} height={16} />,
+  label: labels => cellSelectionLabels(labels).cut,
+  visible: ctx => ctx.selection.isInSelection && canPaste(ctx.table),
+  disabled: writable,
+  target: () => false,
+  onSelect: ctx => cutFromMenu(ctx.table),
+}
+
+export const pasteContextAction: ContextMenuAction = {
+  id: 'cellSelection:paste',
+  order: 2,
+  icon: () => <ClipboardPaste width={16} height={16} />,
+  label: labels => cellSelectionLabels(labels).paste,
+  visible: ctx => ctx.selection.isInSelection && canPaste(ctx.table),
+  disabled: writable,
+  target: () => false,
+  onSelect: ctx => {
+    void pasteFromMenu(ctx.table)
+  },
+}
+
+export const clearContextAction: ContextMenuAction = {
+  id: 'cellSelection:clear',
+  order: 3,
+  icon: () => <Eraser width={16} height={16} />,
+  label: labels => cellSelectionLabels(labels).clear,
+  visible: ctx => ctx.selection.isInSelection && canPaste(ctx.table),
+  disabled: writable,
+  target: () => false,
+  onSelect: ctx => clearSelection(ctx.table, 'clear', 'pointer'),
 }

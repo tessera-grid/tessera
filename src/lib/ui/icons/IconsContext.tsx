@@ -138,6 +138,8 @@ export interface TableIcons {
   actionFailed: IconComponent
   /** «Стоп» занятой кнопки: нажатие отменяет её действие (ADR 0153) */
   cancelAction: IconComponent
+  /** Ответ «Вставить» на вопрос перед вставкой (ADR 0219, WR3); «Не вставлять» — `clear` */
+  pasteConfirm: IconComponent
   /** Блок ошибки догрузки ленты и его кнопка повтора (ADR 0081) */
   loadMoreFailed: IconComponent
   retry: IconComponent
@@ -219,6 +221,7 @@ export const DEFAULT_ICONS: TableIcons = {
   saveFailed: CircleAlert,
   actionFailed: CircleAlert,
   cancelAction: Square,
+  pasteConfirm: Check,
   loadMoreFailed: CircleAlert,
   retry: RotateCw,
   emptyState: EmptyStateIllustration,

@@ -11,7 +11,10 @@ import {
   cellRangesToTsv,
   countCells,
   hasSelectedCells,
+  TESSERA_FORMAT,
+  valuesToTesseraFormat,
 } from './clipboard'
+import { shownTextOf } from './shownText'
 import { reportAction } from '../../core/debugActions'
 import { ENGLISH_LABELS } from '../../core/localization'
 import { rowSourceOf } from '../../core/rowSource'
@@ -35,8 +38,17 @@ interface CopyCell {
 }
 
 interface CopyRow {
+  original?: unknown
   getAllCellsByColumnId: () => Record<string, CopyCell | undefined>
 }
+
+/** Регион буфера: показанный текст и значения в типе колонки (ADR 0219, WR4). */
+interface CopyRegion {
+  texts: string[][]
+  values: unknown[][]
+}
+
+type ShownText = ReturnType<typeof shownTextOf>
 
 interface CopyTable {
   store: object
@@ -78,29 +90,60 @@ export const selectedRowCount = (bounds: readonly Bounds[]): number => {
   return rows
 }
 
-/**
- * Значения выбираемых ячеек прямоугольника по строкам `rows` подряд с его верха —
- * кусками, уступая главный поток.
- */
+/** Строка региона: показанный текст и значения выбираемых ячеек прямоугольника. */
+const regionRow = (
+  bound: Bounds,
+  columnIds: readonly string[],
+  row: CopyRow | undefined,
+  shown: ShownText,
+  region: CopyRegion,
+) => {
+  const cells = row?.getAllCellsByColumnId()
+  const texts: string[] = []
+  const values: unknown[] = []
+  for (let c = bound.minColumnIndex; c <= bound.maxColumnIndex; c++) {
+    const columnId = columnIds[c]!
+    const cell = cells?.[columnId]
+    if (!cell?.getCanSelect()) continue
+    const value = cell.getValue()
+    texts.push(shown(columnId, value, row?.original))
+    values.push(value)
+  }
+  region.texts.push(texts)
+  region.values.push(values)
+}
+
+/** Регион прямоугольника по строкам `rows` подряд с его верха — сразу. */
+const regionNow = (
+  bound: Bounds,
+  columnIds: readonly string[],
+  rows: readonly (CopyRow | undefined)[],
+  shown: ShownText,
+): CopyRegion => {
+  const region: CopyRegion = { texts: [], values: [] }
+  for (const row of rows) regionRow(bound, columnIds, row, shown, region)
+  return region
+}
+
+/** Тот же регион кусками, уступая главный поток. */
 const regionOf = async (
   bound: Bounds,
   columnIds: readonly string[],
   rows: readonly (CopyRow | undefined)[],
-): Promise<unknown[][]> => {
+  shown: ShownText,
+): Promise<CopyRegion> => {
   const slice = timeSlicer()
-  const region: unknown[][] = []
+  const region: CopyRegion = { texts: [], values: [] }
   for (const row of rows) {
-    const cells = row?.getAllCellsByColumnId()
-    const values: unknown[] = []
-    for (let c = bound.minColumnIndex; c <= bound.maxColumnIndex; c++) {
-      const cell = cells?.[columnIds[c]!]
-      if (cell?.getCanSelect()) values.push(cell.getValue())
-    }
-    region.push(values)
-    if (region.length % 256 === 0) await slice()
+    regionRow(bound, columnIds, row, shown, region)
+    if (region.texts.length % 256 === 0) await slice()
   }
   return region
 }
+
+/** Свой формат — одним регионом: несвязные прямоугольники вставляются как сплошной блок. */
+const tesseraData = (regions: readonly CopyRegion[]) =>
+  valuesToTesseraFormat(regions.flatMap(region => region.values))
 
 const columnIdsOf = (t: CopyTable): string[] => {
   const ids: string[] = []
@@ -112,7 +155,10 @@ const columnIdsOf = (t: CopyTable): string[] => {
   return ids
 }
 
-/** Буфер — асинхронным Clipboard API: TSV и HTML, без поддержки HTML — только текст. */
+/**
+ * Буфер — асинхронным Clipboard API: TSV и HTML, без поддержки HTML — только текст. Свой формат
+ * Clipboard API пишет только как `web `-формат, который читает не каждый браузер, — его нет.
+ */
 const writeClipboard = async (tsv: string, html: string): Promise<void> => {
   if (typeof ClipboardItem === 'function' && navigator.clipboard?.write) {
     try {
@@ -202,19 +248,28 @@ export const copyCellSelection = (
     })
 
   if (loaded) {
-    const regions = t.getSelectedCellRangesData?.() ?? []
-    if (!hasSelectedCells(regions)) return 'none'
-    const tsv = cellRangesToTsv(regions)
-    const html = cellRangesToHtml(regions)
+    const shown = shownTextOf(table)
+    const columnIds = columnIdsOf(t)
+    const regions = bounds.map(bound => {
+      const rows: (CopyRow | undefined)[] = []
+      for (let r = bound.minRowIndex; r <= bound.maxRowIndex; r++)
+        rows.push(source.at(r))
+      return regionNow(bound, columnIds, rows, shown)
+    })
+    const texts = regions.map(region => region.texts)
+    if (!hasSelectedCells(texts)) return 'none'
+    const tsv = cellRangesToTsv(texts)
+    const html = cellRangesToHtml(texts)
     if (request.clipboardData) {
       request.clipboardData.setData('text/plain', tsv)
       request.clipboardData.setData('text/html', html)
+      request.clipboardData.setData(TESSERA_FORMAT, tesseraData(regions))
     } else {
       void writeClipboard(tsv, html).catch(() => {})
     }
     clearRefusal(table)
     announceLabel(table, l =>
-      cellSelectionLabels(l).announceCopy(countCells(regions)),
+      cellSelectionLabels(l).announceCopy(countCells(texts)),
     )
     return 'copied'
   }
@@ -249,6 +304,7 @@ export const copyCellSelection = (
     },
   })
   const columnIds = columnIdsOf(t)
+  const shown = shownTextOf(table)
   const regions = Promise.all(
     bounds.map(async bound => {
       const fetched = await source.loadRange!(
@@ -256,9 +312,9 @@ export const copyCellSelection = (
         bound.maxRowIndex,
         controller.signal,
       )
-      return regionOf(bound, columnIds, fetched)
+      return regionOf(bound, columnIds, fetched, shown)
     }),
-  )
+  ).then(list => list.map(region => region.texts))
   const finish = () => {
     watch?.unsubscribe()
     unregister()

@@ -49,7 +49,10 @@ import {
   removeDraft,
   removeDrafts,
   setDraft as putDraft,
+  writeDrafts,
 } from '../../core/drafts/drafts'
+import type { CellWriteSource } from '../../core/cellWrites'
+import type { TableLabels } from '../../core/localization'
 import { commonOptionsOf } from '../../core/commonFeature'
 import {
   ROW_DELETE_DRAFT,
@@ -323,6 +326,19 @@ export const isEditingCell = (
   columnId: string,
 ) => session?.cell.rowId === rowId && session.cell.columnId === columnId
 
+/** Ячейка в ждущем пакете операции записи или `undefined`. */
+const packagedCell = (
+  state: CellEditingState,
+  key: string,
+): SubmittedCell | undefined => {
+  if (!state.packages) return undefined
+  for (const pending of Object.values(state.packages)) {
+    const cell = pending.cells.get(key)
+    if (cell) return cell
+  }
+  return undefined
+}
+
 /**
  * Что показывает ячейка: `'editing'` — редактор, отправленная ячейка — её
  * ожидание или ошибку, `null` — собственный контент.
@@ -338,7 +354,8 @@ export const cellEditingViewOf = (
   if (isEditingCell(state.active, rowId, columnId)) {
     return 'editing'
   }
-  return state.submitted[cellKey(rowId, columnId)] ?? null
+  const key = cellKey(rowId, columnId)
+  return state.submitted[key] ?? packagedCell(state, key) ?? null
 }
 
 /** Сохранение этой ячейки ещё ждёт сервера — повторной правки нет. */
@@ -346,9 +363,13 @@ export const isCellPending = (
   table: unknown,
   rowId: string,
   columnId: string,
-) =>
-  readEditingState(table).submitted[cellKey(rowId, columnId)]?.status ===
-  'pending'
+) => {
+  const state = readEditingState(table)
+  const key = cellKey(rowId, columnId)
+  return (
+    state.submitted[key]?.status === 'pending' || !!packagedCell(state, key)
+  )
+}
 
 /**
  * Открыть правку ячейки. Открытая сессия другой ячейки (недопустимое значение,
@@ -1221,6 +1242,292 @@ export const commitDrafts = (table: unknown, drafts: readonly Draft[]) => {
       )
     },
   )
+}
+
+/** Ячейка пакета операции записи: значение и прежнее значение — в типе колонки. */
+export interface PackageCell {
+  rowId: string
+  columnId: string
+  value: unknown
+  text: string
+  original: unknown
+}
+
+/** Действие справочника по источнику операции записи (ADR 0219, §8). */
+export const writeActionOf = (source: CellWriteSource) => ({
+  plugin: ID,
+  action:
+    source === 'paste' ||
+    source === 'cut' ||
+    source === 'clear' ||
+    source === 'fillDown' ||
+    source === 'fillRight'
+      ? source
+      : source === 'bulk'
+        ? 'bulkEdit'
+        : 'write',
+})
+
+const packageStatusKey = (id: string) => `cellWrite:${id}`
+const packagePendingKey = (id: string) => `cellWrite:${id}:pending`
+
+/** Номер отправки для пакета: исполнитель собирает ячейки ожидания до вызова колбэка. */
+export const nextAttempt = () => ++lastAttempt
+
+/**
+ * Вспышка итога пакета — до стольких ячеек (ADR 0219, §10): сверх них итог говорит объявление,
+ * а запись вспышки на каждую ячейку стала бы одной долгой задачей.
+ */
+export const OUTCOME_FLASH_LIMIT = 1000
+
+/** Пакет операции записи: ячейки для колбэка и они же словарём для ожидания. */
+export interface CellPackage {
+  id: string
+  source: CellWriteSource
+  cells: readonly PackageCell[]
+  /** Ячейки по ключу в виде ожидания — с номером отправки пакета. */
+  pending: ReadonlyMap<string, SubmittedCell>
+  /** Ячейки по ключу: волна ожидания (`false` — флажок булева ждёт без волны). */
+  waves: ReadonlyMap<string, boolean>
+}
+
+const withoutKey = <T extends object>(record: T, key: string): T => {
+  if (!(key in record)) return record
+  const next = { ...record }
+  delete next[key as keyof T]
+  return next
+}
+
+/**
+ * Сохранить пакет операции записи (ADR 0219, §6, §10): `onCommitEdits` одним вызовом с `id` и
+ * `source`. Пока промис не решён, пакет — одна запись среза правки и одна запись ожидания со
+ * словарём ячеек: ячейки ждут и показывают новые значения; «стоп» прерывает `signal` — ячейки
+ * возвращают прежние значения. Отказ части — отказ на ячейках, отказ пакета целиком — одна
+ * плашка таблицы с причиной и повтором, без отметок на ячейках.
+ */
+export const commitCellPackage = (table: unknown, pkg: CellPackage) => {
+  const { id, source, cells, pending, waves } = pkg
+  const hooks = readPluginHooks<Partial<CellEditingHooks>>(table as never, ID)
+  const action = writeActionOf(source)
+  const statusKey = packageStatusKey(id)
+  const pendingKey = packagePendingKey(id)
+  // Повтор снимает прежнюю плашку отказа этой операции.
+  writeActionStatus(table, status => withoutKey(status, statusKey))
+  const controller = new AbortController()
+  const result = hooks.onCommitEdits?.(
+    { id, source, cells },
+    { signal: controller.signal },
+  )
+  reportOutcome(table, { plugin: ID, action: action.action }, result)
+  const name = (labels: TableLabels) => actionLabelOf(table, action, labels)
+  const flashCells = (outcome: 'accepted' | 'reverted') => {
+    if (cells.length > OUTCOME_FLASH_LIMIT) return
+    flashOutcome(
+      table,
+      cells.map(cell => ({ cell: [cell.rowId, cell.columnId] })),
+      outcome,
+    )
+  }
+  const record = { id, cells: pending }
+  /** Снять ожидание пакета: одна запись в срез правки и одна — в срез ожидания. */
+  const dropPending = () => {
+    const state = readEditingState(table)
+    if (state.packages?.[id] === record) {
+      const packages = withoutKey(state.packages, id)
+      writeEditingState(table, {
+        ...state,
+        packages: Object.keys(packages).length > 0 ? packages : undefined,
+      })
+    }
+    writeActionStatus(table, status => withoutKey(status, pendingKey))
+  }
+
+  const settleAnswer = (answer: unknown, answered: boolean) => {
+    const batch = answer as CellEditBatchResult | undefined
+    const refused = new Map(
+      (batch?.refused ?? []).flatMap(item =>
+        item.columnId === undefined
+          ? []
+          : [[cellKey(item.rowId, item.columnId), item.reason] as const],
+      ),
+    )
+    if (answered) dropPending()
+    // Отказанные ячейки — отказом на объекте; их обычно немного.
+    if (refused.size > 0) {
+      const state = readEditingState(table)
+      const submitted = { ...state.submitted }
+      const reverted: FlashTarget[] = []
+      for (const [key, error] of refused) {
+        const cell = pending.get(key)
+        if (!cell) continue
+        submitted[key] = { ...cell, status: 'error', error }
+        reverted.push({ cell: [cell.rowId, cell.columnId] })
+      }
+      writeEditingState(table, { ...state, submitted })
+      flashOutcome(table, reverted, 'reverted')
+    }
+    // Серверная модель: сохранённое — в кэш строк (ADR 0139); у клиента данные пишет приложение.
+    const t = table as SavedTable
+    if (t.setRowData) {
+      const savedRows = new Map(
+        (batch?.saved ?? []).map(item => [item.rowId, item.row]),
+      )
+      const rows = new Map<string, { columnId: string; value: unknown }[]>()
+      for (const cell of cells) {
+        if (refused.has(cellKey(cell.rowId, cell.columnId))) continue
+        const row = rows.get(cell.rowId) ?? []
+        row.push({ columnId: cell.columnId, value: cell.value })
+        rows.set(cell.rowId, row)
+      }
+      for (const [rowId, values] of rows) {
+        const saved = savedRows.get(rowId)
+        if (saved !== undefined && isSavedRow(t, rowId, saved))
+          t.setRowData(rowId, () => saved)
+        else writeSavedRow(table, rowId, values)
+      }
+    }
+    if (refused.size === 0) flashCells('accepted')
+    if (answered)
+      announceLabel(table, all =>
+        refused.size === 0
+          ? cellEditingLabels(all).announceWriteSaved(name(all))
+          : cellEditingLabels(all).announceWriteFailed(
+              name(all),
+              [...refused.values()][0] ?? all.saveFailed,
+            ),
+      )
+  }
+
+  if (!isThenable(result)) {
+    settleAnswer(result, false)
+    return
+  }
+
+  const state = readEditingState(table)
+  writeEditingState(table, {
+    ...state,
+    packages: { ...state.packages, [id]: record },
+  })
+  writeActionStatus(table, status => ({
+    ...status,
+    [pendingKey]: { pending: true, cells: waves },
+  }))
+
+  // Пункт «Отменить сохранение» любой ячейки пакета и `table.cancelPending` — весь пакет: ключ
+  // ячейки пакета совпадает с id ожидания ячейки (`cellPendingId`).
+  const unregister = registerPending(table, {
+    kind: 'cellEdit',
+    id: statusKey,
+    ids: pending,
+    cancel: cancelSource => {
+      if (controller.signal.aborted) return
+      controller.abort()
+      unregister()
+      dropPending()
+      reportAction(table, {
+        plugin: ID,
+        action: 'cancel',
+        detail: { action: action.action, id },
+        source: cancelSource,
+      })
+      announceLabel(table, all => all.announceActionCancelled(name(all)))
+    },
+  })
+
+  result.then(
+    answer => {
+      if (controller.signal.aborted) return lateAnswer(table)
+      unregister()
+      settleAnswer(answer, true)
+    },
+    reason => {
+      if (controller.signal.aborted) return lateAnswer(table, reason)
+      unregister()
+      dropPending()
+      const labels = announcerLabels(table) ?? ENGLISH_LABELS
+      const error = rejectionText(reason) ?? labels.saveFailed
+      const retry = () => commitCellPackage(table, pkg)
+      const dismiss = () =>
+        writeActionStatus(table, status => withoutKey(status, statusKey))
+      writeActionStatus(table, status => ({
+        ...status,
+        [statusKey]: {
+          failed: true,
+          table: true,
+          error: reason,
+          name,
+          reason: () => error,
+          retry,
+        },
+      }))
+      reportFailure(table, {
+        action,
+        target: { table: true },
+        reason: error,
+        retry,
+        discard: dismiss,
+      })
+      flashCells('reverted')
+      announceLabel(table, all =>
+        cellEditingLabels(all).announceWriteFailed(name(all), error),
+      )
+    },
+  )
+}
+
+/** Сохранить ячейки по одной через `onCellEdit` — без `onCommitEdits` (ADR 0219, §6). */
+export const submitCells = (table: unknown, cells: readonly PackageCell[]) => {
+  const hooks = readPluginHooks<Partial<CellEditingHooks>>(table as never, ID)
+  for (const cell of cells)
+    submitValue(table, cell, cell.value, cell.text, cell.original, hooks)
+}
+
+/**
+ * Записать значения пакета черновиками одной записью в срез (ADR 0219, WR11): совпавшее с
+ * данными снимает черновик, новая строка пишет значения в свой черновик `rowInsert`.
+ */
+export const storeCellDrafts = (
+  table: unknown,
+  cells: readonly PackageCell[],
+) => {
+  const set: Draft[] = []
+  const remove: { kind: string; target: { cell: [string, string] } }[] = []
+  const newRows = new Map<string, PackageCell[]>()
+  for (const cell of cells) {
+    if (isNewRow(table, cell.rowId)) {
+      const list = newRows.get(cell.rowId) ?? []
+      list.push(cell)
+      newRows.set(cell.rowId, list)
+      continue
+    }
+    const target = { cell: [cell.rowId, cell.columnId] as [string, string] }
+    if (
+      sameEditValue(
+        table,
+        cell.columnId,
+        cell.value,
+        dataValueOf(table, cell.rowId, cell.columnId),
+      )
+    ) {
+      remove.push({ kind: CELL_VALUE_DRAFT, target })
+      continue
+    }
+    const value: CellDraftValue = { value: cell.value, text: cell.text }
+    set.push({ kind: CELL_VALUE_DRAFT, target, value })
+  }
+  writeDrafts(table, set, remove)
+  for (const [rowId, list] of newRows)
+    writeNewRowValues(table, rowId, values =>
+      list.reduce((row, cell) => {
+        const key = (table as SavedTable).getColumn?.(cell.columnId)?.columnDef
+          .accessorKey
+        if (typeof key !== 'string') {
+          warnNotWritten(table)
+          return row
+        }
+        return setAtPath(row, key, cell.value) as Record<string, unknown>
+      }, values),
+    )
 }
 
 /** Отказ строки пакета — отказ на объекте с повтором и откатом (ADR 0177). */

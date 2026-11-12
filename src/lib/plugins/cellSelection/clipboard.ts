@@ -47,6 +47,100 @@ export const cellRangesToHtml = (regions: unknown[][][]): string =>
     )
     .join('')
 
+/**
+ * Текст буфера в строки и ячейки (ADR 0219, WR2): колонки — таб, строки — `\n` и `\r\n`,
+ * поле в кавычках с `""` и переводами строк внутри — как кладут Excel и Google Sheets;
+ * хвостовая пустая строка отбрасывается.
+ */
+export const parseClipboardText = (text: string): string[][] => [
+  ...clipboardRows(text),
+]
+
+/** Строки буфера по одной — разбор кусками с уступкой потока (ADR 0219, §10). */
+export function* clipboardRows(text: string): Generator<string[]> {
+  let row: string[] = []
+  let field = ''
+  let quoted = false
+  let fieldStart = true
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i]!
+    if (quoted) {
+      if (char === '"') {
+        if (text[i + 1] === '"') {
+          field += '"'
+          i++
+        } else quoted = false
+      } else field += char
+      continue
+    }
+    if (char === '"' && fieldStart) {
+      quoted = true
+      fieldStart = false
+      continue
+    }
+    fieldStart = false
+    if (char === '\t') {
+      row.push(field)
+      field = ''
+      fieldStart = true
+    } else if (char === '\n' || char === '\r') {
+      if (char === '\r' && text[i + 1] === '\n') i++
+      row.push(field)
+      yield row
+      row = []
+      field = ''
+      fieldStart = true
+    } else field += char
+  }
+  if (!fieldStart || field !== '' || row.length > 0) {
+    row.push(field)
+    yield row
+  }
+}
+
+/** Свой формат буфера: значения в типе колонки для вставки между гридами (ADR 0219, WR4). */
+export const TESSERA_FORMAT = 'application/x-tessera'
+
+const DATE_KEY = '$date'
+
+/** Регион значений в свой формат: даты — ISO. */
+export const valuesToTesseraFormat = (region: readonly unknown[][]): string =>
+  JSON.stringify({
+    version: 1,
+    rows: region.map(row =>
+      row.map(value =>
+        value instanceof Date
+          ? { [DATE_KEY]: value.toISOString() }
+          : (value ?? null),
+      ),
+    ),
+  })
+
+/** Свой формат буфера в значения; не наш формат — `undefined`. */
+export const tesseraFormatToValues = (
+  data: string | undefined,
+): unknown[][] | undefined => {
+  if (!data) return undefined
+  try {
+    const parsed = JSON.parse(data) as { version?: unknown; rows?: unknown }
+    if (parsed.version !== 1 || !Array.isArray(parsed.rows)) return undefined
+    return (parsed.rows as unknown[]).map(row =>
+      Array.isArray(row)
+        ? row.map(value =>
+            value !== null &&
+            typeof value === 'object' &&
+            DATE_KEY in value &&
+            Object.keys(value).length === 1
+              ? new Date(String((value as Record<string, unknown>)[DATE_KEY]))
+              : value,
+          )
+        : [],
+    )
+  } catch {
+    return undefined
+  }
+}
+
 /** Есть ли в регионах хоть одна ячейка (пустой массив/пустые регионы → нет). */
 export const hasSelectedCells = (regions: unknown[][][]): boolean =>
   regions.some(region => region.some(row => row.length > 0))

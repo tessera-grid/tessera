@@ -17,6 +17,8 @@ import {
   isFooterRowIndex,
 } from '../../core/keyboardNavigation/model'
 import { isInteractive } from './copyEvent'
+import { clearSelection } from './clear'
+import { canPaste } from './paste'
 
 interface CellRange {
   anchorRowId?: string
@@ -275,6 +277,19 @@ export const cellSelectionKeys: NavigationKeys = {
   onKey: (event, { table, active, pageRows }) => {
     const t = table as unknown as NavTable
     if (isSelectAllKey(event)) return selectAllCellsIn(t)
+    // Delete и Backspace очищают выделение (ADR 0219, WR20).
+    if (
+      (event.key === 'Delete' || event.key === 'Backspace') &&
+      !event.ctrlKey &&
+      !event.metaKey &&
+      !event.altKey &&
+      !event.shiftKey &&
+      isCellSelectionActive(t) &&
+      canPaste(table)
+    ) {
+      clearSelection(table, 'clear', 'keyboard')
+      return true
+    }
     if (extendSelectionByKey(t, active, event, pageRows)) return true
     const direction = ARROW_DIRECTIONS[event.key]
     if (event.shiftKey && !event.altKey && direction) {

@@ -32,6 +32,7 @@ import { childrenOf } from './rowEngine/displayChildren'
 import { engineOf } from './rowEngine/engine'
 import { DEFAULT_SKELETON_OPTIONS } from './skeletonOptions'
 import { applyRowTransaction, type RowTransaction } from './rowTransactions'
+import { type CellWrite, type CellWriteOptions, writeCells } from './cellWrites'
 import { tableHeaderGroups } from './headerGroups'
 import { setFlexContentMins } from './flexColumns'
 
@@ -103,6 +104,10 @@ export const commonFeature: TableFeature = {
       table_applyRowTransaction: {
         fn: (transaction: RowTransaction) =>
           applyRowTransaction(table, transaction),
+      },
+      table_writeCells: {
+        fn: (changes: readonly CellWrite[], options?: CellWriteOptions) =>
+          writeCells(table, changes, options),
       },
       table_getRowSource: {
         fn: () => {

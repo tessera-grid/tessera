@@ -143,6 +143,9 @@ export interface BodyEvents {
   /** Указатель вошёл в другую ячейку тела. */
   hover?: BodyEventHandler<MouseEvent>
   copy?: BodyEventHandler<ClipboardEvent>
+  /** Вставка и вырезание над телом (ADR 0219). */
+  paste?: BodyEventHandler<ClipboardEvent>
+  cut?: BodyEventHandler<ClipboardEvent>
   contextmenu?: BodyEventHandler<MouseEvent>
 }
 
@@ -742,6 +745,8 @@ export const bodyEventHandlers = (table: Table<any, any>) => {
     onDoubleClick: dispatch<MouseEvent>('dblclick'),
     onMouseOver: dispatch<MouseEvent>('hover'),
     onCopy: dispatch<ClipboardEvent>('copy'),
+    onPaste: dispatch<ClipboardEvent>('paste'),
+    onCut: dispatch<ClipboardEvent>('cut'),
     onContextMenu: dispatch<MouseEvent>('contextmenu'),
   }
 }

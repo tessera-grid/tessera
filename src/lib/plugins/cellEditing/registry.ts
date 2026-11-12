@@ -22,6 +22,7 @@ import { cellValueDraftKind, rowDeleteKind, rowInsertKind } from './cellDrafts'
 import { rowDraftAction } from './rowDraftActions'
 import { rowDraftsLayer } from './rowDrafts'
 import { rowDraftsFeature } from './rowDraftsFeature'
+import { cellWriter } from './writeCells'
 import {
   editCellKeyboardAction,
   toggleCellKeyboardAction,
@@ -82,11 +83,22 @@ export const cellEditing = definePlugin<CellEditingOptions>()({
     rowDeleteDiscard: labels => cellEditingLabels(labels).rowDeleteDiscard,
     cellDraftRollback: labels => cellEditingLabels(labels).cellDraftRollback,
     rowDraftDiscard: labels => cellEditingLabels(labels).actionRowDraftDiscard,
+    paste: labels => cellEditingLabels(labels).actionPaste,
+    cut: labels => cellEditingLabels(labels).actionCut,
+    clear: labels => cellEditingLabels(labels).actionClear,
+    bulkEdit: labels => cellEditingLabels(labels).actionBulkEdit,
+    fillDown: labels => cellEditingLabels(labels).actionFillDown,
+    fillRight: labels => cellEditingLabels(labels).actionFillRight,
+    write: labels => cellEditingLabels(labels).actionWrite,
   },
   // Методы addRow и removeRow строк до сохранения (ADR 0178, §7).
   features: { rowDraftsFeature },
   // Новые строки показывает слой поверх источника строк, а не модель строк.
-  options: () => ({ rowSourceLayer: rowDraftsLayer }),
+  // Запись в ячейки — вставка, очистка, массовая правка (ADR 0219, §1).
+  options: o => ({
+    rowSourceLayer: rowDraftsLayer,
+    ...(o.enabled === false ? {} : { cellWriter }),
+  }),
   // Предикат влияет на отрисовку ячеек: новая ссылка — перерисовка (ADR 0039).
   refreshOn: ['canEditCell'],
   diagnose: neverInert,

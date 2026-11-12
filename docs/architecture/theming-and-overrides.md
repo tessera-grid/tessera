@@ -381,7 +381,9 @@ ADR [0087](../decisions/0087-forced-colors.md)). Переопределённы�
 ## Иконки
 
 Дефолтные inline-SVG живут в `ui/icons`; `IconsProvider` сливает проп потребителя
-`icons` поверх `DEFAULT_ICONS`; кнопки-плагины читают их через `useIcons()`.
+`icons` поверх `DEFAULT_ICONS`; кнопки-плагины читают их через `useIcons()`. Галочка вопроса
+перед вставкой — `pasteConfirm`, крестик отказа рядом — общий `clear`
+([ADR 0219](../decisions/0219-paste-fill-and-bulk-edit.md), WR42).
 
 ## Локализация
 

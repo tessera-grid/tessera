@@ -28,6 +28,7 @@ import {
   cellSelectionHandleType,
   cellSelectionMultiRangeType,
   cellSelectionMaxCopyRowsType,
+  cellSelectionPasteType,
   cellSelectionRangeSelectionType,
   columnCountType,
   dataModeType,
@@ -353,6 +354,7 @@ export const dataGridArgTypes = {
       cellSelectionMultiRange: cellSelectionMultiRangeType,
       cellSelectionHandle: cellSelectionHandleType,
       cellSelectionMaxCopyRows: cellSelectionMaxCopyRowsType,
+      cellSelectionPaste: cellSelectionPasteType,
     }),
     enableContextMenu: enableContextMenuType,
   }),
@@ -591,6 +593,7 @@ export const dataGridDefaultArgs = {
   cellSelectionMultiRange: true,
   cellSelectionHandle: HANDLE_ALL,
   cellSelectionMaxCopyRows: 10_000,
+  cellSelectionPaste: true,
   enableContextMenu: false,
   enableKeyboardNavigation: false,
 

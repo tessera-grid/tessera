@@ -158,6 +158,62 @@ export const reportFailure = (table: unknown, report: FailureReport) => {
   return failure.key
 }
 
+/** Записать отказы одной записью в срез (ADR 0219, WR10): отказы ячеек операции. */
+export const reportFailures = (
+  table: unknown,
+  reports: readonly FailureReport[],
+) => {
+  if (reports.length === 0) return
+  const now = Date.now()
+  const failures = reports.map(report => {
+    const failure: Failure = {
+      ...report,
+      key: report.key ?? failureKeyOf(report.target),
+      time: report.time ?? now,
+    }
+    if ('cell' in failure.target) {
+      const [rowId, columnId] = failure.target.cell
+      const row = rowOf(table, rowId)
+      if (row) reportedValues.set(failure, row.getValue(columnId))
+    }
+    return failure
+  })
+  write(table, prev => {
+    const next = { ...prev }
+    for (const failure of failures) next[failure.key] = failure
+    return next
+  })
+  const onFailure = (table as FailuresTable).options.onFailure
+  if (onFailure) for (const failure of failures) onFailure(failure)
+}
+
+/** Снять отказы по ключам одной записью в срез; нет записей — ничего. */
+export const resolveFailures = (table: unknown, keys: Iterable<string>) =>
+  write(table, prev => {
+    let next: Failures | undefined
+    for (const key of keys) {
+      if (!(key in prev)) continue
+      next ??= { ...prev }
+      delete next[key]
+    }
+    return next ?? prev
+  })
+
+/**
+ * Снять отказы ячеек, для которых `written` отвечает «да», — проходом по отказам, а не по
+ * ячейкам: отказов мало, ячеек операции записи — до сотен тысяч (ADR 0219, §10).
+ */
+export const resolveCellFailures = (
+  table: unknown,
+  written: (rowId: string, columnId: string) => boolean,
+) => {
+  const keys: string[] = []
+  for (const failure of Object.values(readFailures(table)))
+    if ('cell' in failure.target && written(...failure.target.cell))
+      keys.push(failure.key)
+  if (keys.length > 0) resolveFailures(table, keys)
+}
+
 /** Снять отказ; нет записи — ничего. */
 export const resolveFailure = (table: unknown, key: string) =>
   write(table, prev => {

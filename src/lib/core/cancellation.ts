@@ -9,7 +9,14 @@ import { logWarn } from '../util/logger'
 
 /** Вид ждущей операции — фильтр `table.cancelPending`. */
 export type PendingKind =
-  'menu' | 'server' | 'export' | 'children' | 'copy' | 'cellEdit' | 'selectPage'
+  | 'menu'
+  | 'server'
+  | 'export'
+  | 'children'
+  | 'copy'
+  | 'paste'
+  | 'cellEdit'
+  | 'selectPage'
 
 /** Источник отмены — в канал действий (ADR 0125). */
 export type CancelSource = 'pointer' | 'keyboard' | 'api'
@@ -26,8 +33,16 @@ export interface CancelPendingFilter {
 export interface PendingOperation {
   kind: PendingKind
   id: string
+  /** Другие id, по которым находится та же операция: ячейки пакета записи (ADR 0219, §6). */
+  ids?: { has: (id: string) => boolean }
   cancel: (source: CancelSource) => void
 }
+
+const matches = (operation: PendingOperation, filter: CancelPendingFilter) =>
+  (filter.kind === undefined || operation.kind === filter.kind) &&
+  (filter.id === undefined ||
+    operation.id === filter.id ||
+    operation.ids?.has(filter.id) === true)
 
 /** Источник отмены по событию нажатия «стопа» или пункта меню. */
 export const cancelSourceOf = (event?: unknown): CancelSource => {
@@ -69,9 +84,7 @@ export const hasPending = (
   const registry = store && registries.get(store)
   if (!registry) return false
   for (const operation of registry) {
-    if (filter.kind !== undefined && operation.kind !== filter.kind) continue
-    if (filter.id !== undefined && operation.id !== filter.id) continue
-    return true
+    if (matches(operation, filter)) return true
   }
   return false
 }
@@ -87,8 +100,7 @@ export const cancelPending = (
   if (!registry) return 0
   let count = 0
   for (const operation of [...registry]) {
-    if (filter.kind !== undefined && operation.kind !== filter.kind) continue
-    if (filter.id !== undefined && operation.id !== filter.id) continue
+    if (!matches(operation, filter)) continue
     operation.cancel(source)
     count++
   }

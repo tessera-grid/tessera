@@ -36,6 +36,8 @@ export const LABEL_PARAMS = {
   cancelAction: ['name'],
   announceActionCancelled: ['name'],
   pendingAction: ['name'],
+  pasteQuestionValue: ['value'],
+  pasteQuestionCount: ['count'],
   menuBack: ['section'],
   announceMenuSection: ['section'],
   announceStillSaving: ['name'],

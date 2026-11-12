@@ -15,6 +15,17 @@ export interface CellSelectionHandleOptions {
   touch?: boolean
 }
 
+/**
+ * Свой разбор буфера при вставке (ADR 0219, WR3): строки и ячейки текста, `null` — отмена,
+ * промис — ожидание с отменой; `signal` прерывается, когда ожидание отменили или его сменила
+ * новая вставка. `confirm()` спрашивает пользователя «Вставить?» на месте плашки ожидания:
+ * `true` — вставить, `false` — отказ или отмена.
+ */
+export type ParseClipboard = (
+  clipboard: { text: string; html: string },
+  context: { signal: AbortSignal; confirm: () => Promise<boolean> },
+) => string[][] | null | PromiseLike<string[][] | null>
+
 export interface CellSelectionOptions extends Omit<
   CellSelectionModelOptions,
   'enabled' | 'canSelectCell'
@@ -36,4 +47,11 @@ export interface CellSelectionOptions extends Omit<
    * маркера нет. По умолчанию — для мыши и пальца.
    */
   handle?: false | CellSelectionHandleOptions
+  /**
+   * Вставка из буфера, вырезание и очистка выделения (ADR 0219): пишут через плагин правки.
+   * `false` — их нет. По умолчанию `true`.
+   */
+  paste?: boolean
+  /** Свой разбор буфера при вставке; главнее своего формата и текста. */
+  parseClipboard?: ParseClipboard
 }

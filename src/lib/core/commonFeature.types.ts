@@ -58,6 +58,12 @@ import type { RenderVersionAtom } from './renderVersion'
 import type { NarrowContext, NarrowMap } from './effectiveState'
 import type { RefreshOptions } from './loadingDisplay'
 import type { RowTransaction, RowTransactionResult } from './rowTransactions'
+import type {
+  CellWrite,
+  CellWriteOptions,
+  CellWriteReport,
+  CellWriter,
+} from './cellWrites'
 
 // --- Payload-типы контракта --------------------------------------------------
 /** Бизнес-контракт хуков. */
@@ -235,6 +241,8 @@ export interface CommonOptions extends CoreOptions {
    * модель строк. Нечего показать — тот же источник.
    */
   rowSourceLayer?: (source: RowSource, table: unknown) => RowSource
+  /** Исполнитель записи в ячейки — плагин правки (ADR 0219, §1). */
+  cellWriter?: CellWriter
   /** Тело ждёт данных плагина: `aria-busy` таблицы (ADR 0081). */
   getBodyBusy?: (state: object) => boolean
   /** В `data` загружена только часть строк сервера (лента, ADR 0081). */
@@ -277,6 +285,14 @@ export interface CommonTableAPI<
   applyRowTransaction: (
     transaction: RowTransaction<TData>,
   ) => RowTransactionResult
+  /**
+   * Записать в ячейки (ADR 0219, §1) по правилам правки — `canEditCell`, разбор текста по
+   * типу, `validate` — одним пакетом или черновиками; без плагина правки — `undefined`.
+   */
+  writeCells: (
+    changes: readonly CellWrite[],
+    options?: CellWriteOptions,
+  ) => Promise<CellWriteReport> | undefined
   getHooks: () => CommonHooks | undefined
   /** Подпись действия справочника по текущему словарю таблицы (ADR 0182, AN8). */
   getActionLabel: (action: ActionRef) => string

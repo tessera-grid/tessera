@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 
 import type { SessionCancelReason } from '../../core/cancelInteraction'
 import type { CellComponentProps } from '../../core/createSlots'
+import type { CellWriteSource } from '../../core/cellWrites'
 import type { CellEditHook } from '../../shared/cellHooks'
 
 /**
@@ -48,10 +49,20 @@ export interface SubmittedCell {
   attempt: number
 }
 
-/** Срез плагина: активная правка и отправленные ячейки по ключу ячейки. */
+/**
+ * Пакет операции записи, ждущий ответа (ADR 0219, §10): одна запись на пакет со словарём ячеек
+ * по ключу ячейки — смена ожидания не переписывает срез по записи на ячейку.
+ */
+export interface PendingPackage {
+  id: string
+  cells: ReadonlyMap<string, SubmittedCell>
+}
+
+/** Срез плагина: активная правка, отправленные ячейки по ключу ячейки и ждущие пакеты. */
 export interface CellEditingState {
   active: EditingCell
   submitted: Record<string, SubmittedCell>
+  packages?: Readonly<Record<string, PendingPackage>>
 }
 
 /** Данные коммита нового значения ячейки. */
@@ -141,6 +152,10 @@ export interface RowInsertBatchItem {
 
 /** Пакет сохранения: правки ячеек, новые и удалённые строки. */
 export interface CellEditBatch {
+  /** Id операции записи в ячейки — вставки, очистки, массовой правки (ADR 0219, §6). */
+  id?: string
+  /** Откуда операция; нет — «Применить» черновиков (ADR 0178). */
+  source?: CellWriteSource
   cells: readonly CellEditBatchItem[]
   inserts?: readonly RowInsertBatchItem[]
   deletes?: readonly { rowId: string }[]

@@ -331,17 +331,44 @@ interface BusyTarget {
   wave: boolean
 }
 
-const busyTargets = new WeakMap<ActionStatus, readonly BusyTarget[]>()
+/** Цели ждущих действий: ячейки — словарём (пакет записи — тысячи целей, ADR 0219, WR37). */
+interface BusyTargets {
+  cells: Map<string, boolean>
+  /** Словари ждущих ячеек больших целей (пакеты записи). */
+  indexes: readonly ReadonlyMap<string, boolean>[]
+  others: readonly BusyTarget[]
+  wave: boolean
+}
+
+const busyTargets = new WeakMap<ActionStatus, BusyTargets>()
+
+const busyCellKey = (rowId: string, columnId: string) =>
+  `${rowId}\u0000${columnId}`
 
 /** Цели ждущих действий — один раз на объект среза. */
-const busyTargetsOf = (status: ActionStatus): readonly BusyTarget[] => {
+const busyTargetsOf = (status: ActionStatus): BusyTargets => {
   let targets = busyTargets.get(status)
   if (!targets) {
-    targets = Object.values(status).flatMap(entry =>
-      entry.pending && entry.target
-        ? entry.target.map(target => ({ target, wave: !!entry.wave }))
-        : [],
-    )
+    const cells = new Map<string, boolean>()
+    const others: BusyTarget[] = []
+    const indexes: ReadonlyMap<string, boolean>[] = []
+    let anyWave = false
+    for (const entry of Object.values(status)) {
+      if (entry.pending && entry.cells) {
+        indexes.push(entry.cells)
+        anyWave ||= entry.cells.size > 0
+      }
+      if (!entry.pending || !entry.target) continue
+      const wave = !!entry.wave
+      anyWave ||= wave
+      for (const target of entry.target) {
+        if ('cell' in target) {
+          const key = busyCellKey(target.cell[0], target.cell[1])
+          cells.set(key, wave || cells.get(key) === true)
+        } else others.push({ target, wave })
+      }
+    }
+    targets = { cells, indexes, others, wave: anyWave }
     busyTargets.set(status, targets)
   }
   return targets
@@ -350,13 +377,13 @@ const busyTargetsOf = (status: ActionStatus): readonly BusyTarget[] => {
 /** Волна на строке как на цели: она идёт и по свободному месту за колонками (ADR 0152, TG20). */
 export const rowHasWave = (status: ActionStatus | undefined, rowId: string) =>
   !!status &&
-  busyTargetsOf(status).some(
+  busyTargetsOf(status).others.some(
     ({ target, wave }) => wave && 'row' in target && target.row === rowId,
   )
 
 /** Есть ли ждущее действие с волной на цели (ADR 0155, §1). */
 export const hasWaveTargets = (status: ActionStatus | undefined) =>
-  !!status && busyTargetsOf(status).some(busy => busy.wave)
+  !!status && busyTargetsOf(status).wave
 
 /**
  * Ожидание ячейки (ADR 0152, §3; ADR 0155, §1): `'wave'` — в цели действия из контекстного
@@ -369,8 +396,17 @@ export const cellPendingOf = (
   columnId: string,
 ): 'wave' | 'busy' | undefined => {
   if (!status) return undefined
-  let pending: 'wave' | 'busy' | undefined
-  for (const { target, wave } of busyTargetsOf(status)) {
+  const { cells, indexes, others } = busyTargetsOf(status)
+  const key = busyCellKey(rowId, columnId)
+  const own = cells.get(key)
+  if (own === true) return 'wave'
+  let pending: 'wave' | 'busy' | undefined = own === false ? 'busy' : undefined
+  for (const index of indexes) {
+    const wave = index.get(key)
+    if (wave === true) return 'wave'
+    if (wave === false) pending = 'busy'
+  }
+  for (const { target, wave } of others) {
     if (!targetContains(table, target, rowId, columnId)) continue
     if (wave) return 'wave'
     pending = 'busy'

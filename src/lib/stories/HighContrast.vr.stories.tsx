@@ -47,6 +47,7 @@ import * as rowsSelectionStories from './DataGrid.Rows.Selection.stories'
 import * as rowsTreeDataStories from './DataGrid.Rows.TreeData.stories'
 import * as cellsContextMenuStories from './DataGrid.Cells.ContextMenu.stories'
 import * as cellsEditingStories from './DataGrid.Cells.Editing.stories'
+import * as cellsPasteFillStories from './DataGrid.Cells.PasteFill.stories'
 import * as columnsDataTypesStories from './DataGrid.Columns.DataTypes.stories'
 import * as columnsDataTypesBooleanStories from './DataGrid.Columns.DataTypes.Boolean.stories'
 import * as columnsDataTypesDateStories from './DataGrid.Columns.DataTypes.Date.stories'
@@ -8896,5 +8897,223 @@ export const HighContrastTextWrapMotionStep1 = {
 export const HighContrastTextWrapMotionStep2 = {
   ...twinStep(columnsTextWrapStories, columnsTextWrapStories.TextWrapMotion, 2),
   name: 'Columns/Text wrap — Sort rows of different heights, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastPasteFromSpreadsheetStep1 = {
+  ...twinStep(
+    cellsPasteFillStories,
+    cellsPasteFillStories.PasteFromSpreadsheet,
+    1,
+  ),
+  name: 'Cells/Paste & fill — Paste from a spreadsheet, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastPasteFromSpreadsheetStep2 = {
+  ...twinStep(
+    cellsPasteFillStories,
+    cellsPasteFillStories.PasteFromSpreadsheet,
+    2,
+  ),
+  name: 'Cells/Paste & fill — Paste from a spreadsheet, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastPasteOneIntoRangeStep1 = {
+  ...twinStep(
+    cellsPasteFillStories,
+    cellsPasteFillStories.PasteOneIntoRange,
+    1,
+  ),
+  name: 'Cells/Paste & fill — One value into a range, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastPasteOneIntoRangeStep2 = {
+  ...twinStep(
+    cellsPasteFillStories,
+    cellsPasteFillStories.PasteOneIntoRange,
+    2,
+  ),
+  name: 'Cells/Paste & fill — One value into a range, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastPasteWithErrorsStep1 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.PasteWithErrors, 1),
+  name: 'Cells/Paste & fill — Read-only and invalid cells, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastPasteWithErrorsStep2 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.PasteWithErrors, 2),
+  name: 'Cells/Paste & fill — Read-only and invalid cells, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastPasteRefusedByServerStep1 = {
+  ...twinStep(
+    cellsPasteFillStories,
+    cellsPasteFillStories.PasteRefusedByServer,
+    1,
+  ),
+  name: 'Cells/Paste & fill — Refused by the server, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastPasteRefusedByServerStep2 = {
+  ...twinStep(
+    cellsPasteFillStories,
+    cellsPasteFillStories.PasteRefusedByServer,
+    2,
+  ),
+  name: 'Cells/Paste & fill — Refused by the server, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastPasteRefusedByServerStep3 = {
+  ...twinStep(
+    cellsPasteFillStories,
+    cellsPasteFillStories.PasteRefusedByServer,
+    3,
+  ),
+  name: 'Cells/Paste & fill — Refused by the server, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastPasteRefusedByServerStep4 = {
+  ...twinStep(
+    cellsPasteFillStories,
+    cellsPasteFillStories.PasteRefusedByServer,
+    4,
+  ),
+  name: 'Cells/Paste & fill — Refused by the server, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastPasteManualSaveStep1 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.PasteManualSave, 1),
+  name: 'Cells/Paste & fill — Paste, then save by button, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastPasteManualSaveStep2 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.PasteManualSave, 2),
+  name: 'Cells/Paste & fill — Paste, then save by button, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastClearAndCutStep1 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.ClearAndCut, 1),
+  name: 'Cells/Paste & fill — Clear and cut, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastClearAndCutStep2 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.ClearAndCut, 2),
+  name: 'Cells/Paste & fill — Clear and cut, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastClearAndCutStep3 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.ClearAndCut, 3),
+  name: 'Cells/Paste & fill — Clear and cut, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastOwnBulkEditStep1 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.OwnBulkEdit, 1),
+  name: 'Cells/Paste & fill — Own action in the context menu, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastOwnBulkEditStep2 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.OwnBulkEdit, 2),
+  name: 'Cells/Paste & fill — Own action in the context menu, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastPasteConfirmStep1 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.PasteConfirm, 1),
+  name: 'Cells/Paste & fill — Confirm before pasting, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastPasteConfirmStep2 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.PasteConfirm, 2),
+  name: 'Cells/Paste & fill — Confirm before pasting, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastPasteConfirmStep3 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.PasteConfirm, 3),
+  name: 'Cells/Paste & fill — Confirm before pasting, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastPasteFromSpreadsheetStep3 = {
+  ...twinStep(
+    cellsPasteFillStories,
+    cellsPasteFillStories.PasteFromSpreadsheet,
+    3,
+  ),
+  name: 'Cells/Paste & fill — Paste from a spreadsheet, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastPasteOneIntoRangeStep3 = {
+  ...twinStep(
+    cellsPasteFillStories,
+    cellsPasteFillStories.PasteOneIntoRange,
+    3,
+  ),
+  name: 'Cells/Paste & fill — One value into a range, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastPasteWithErrorsStep3 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.PasteWithErrors, 3),
+  name: 'Cells/Paste & fill — Read-only and invalid cells, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastPasteRefusedByServerStep5 = {
+  ...twinStep(
+    cellsPasteFillStories,
+    cellsPasteFillStories.PasteRefusedByServer,
+    5,
+  ),
+  name: 'Cells/Paste & fill — Refused by the server, шаг 5',
+  tags: ['!test'],
+}
+
+export const HighContrastPasteManualSaveStep3 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.PasteManualSave, 3),
+  name: 'Cells/Paste & fill — Paste, then save by button, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastClearAndCutStep4 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.ClearAndCut, 4),
+  name: 'Cells/Paste & fill — Clear and cut, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastOwnBulkEditStep3 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.OwnBulkEdit, 3),
+  name: 'Cells/Paste & fill — Own action in the context menu, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastPasteConfirmStep4 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.PasteConfirm, 4),
+  name: 'Cells/Paste & fill — Confirm before pasting, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastOwnBulkEditStep4 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.OwnBulkEdit, 4),
+  name: 'Cells/Paste & fill — Own action in the context menu, шаг 4',
   tags: ['!test'],
 }

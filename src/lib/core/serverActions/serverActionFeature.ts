@@ -14,7 +14,8 @@ import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
 /** Срез, который меняет серверное действие. */
 /**
  * `copy` — копирование выделения с догрузкой строк (ADR 0146), `selectPage` — выбор страницы с
- * догрузкой (ADR 0188): только отказ, без отката.
+ * догрузкой (ADR 0188), `paste` — вставка ждёт хука приложения (ADR 0219, WR3): только отказ,
+ * без отката.
  */
 export type ServerActionKind =
   | 'sorting'
@@ -24,6 +25,7 @@ export type ServerActionKind =
   | 'grouping'
   | 'copy'
   | 'selectPage'
+  | 'paste'
 
 /** Контрол, начавший действие: на нём свет ожидания и вспышка отказа (ADR 0116, §3). */
 export interface ServerActionCause {
@@ -55,7 +57,15 @@ export interface ServerActionStatus {
    * Действие ждёт догрузки строк (ADR 0146, ADR 0188): плашка ожидания и Escape (ADR 0153, §5), без
    * свечения обновления. Обновления среза без этого поля его не трогают.
    */
-  loadingRows?: { kind: 'copy' | 'selectPage'; since: number }
+  loadingRows?: {
+    kind: 'copy' | 'selectPage' | 'paste'
+    since: number
+    /**
+     * Вставка спрашивает пользователя (ADR 0219, WR3, WR42): ответ «Вставить» — `accept`;
+     * в вопросе — одно значение буфера или число его значений.
+     */
+    confirm?: { accept: () => void; value?: string; count: number }
+  }
 }
 
 interface ServerActionStateSlice {

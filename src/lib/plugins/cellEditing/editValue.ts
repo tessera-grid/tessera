@@ -2,10 +2,21 @@
  * Значение правки в типе колонки (ADR 0175, §1–§2): текст значения для поля по языку
  * таблицы, разбор набранного текста по типу и сравнение с исходным значением.
  */
-import { inferDataType, parseByDataType, parseKindOf } from './columnDataType'
+import {
+  inferDataType,
+  optionByText,
+  parseByDataType,
+  parseKindOf,
+} from './columnDataType'
+import { announcerLabels } from '../../core/announcer'
+import { ENGLISH_LABELS } from '../../core/localization'
 import type { ColumnOption } from '../../core/columnOptions'
 import type { ResolvedDataType } from '../../core/dataTypes'
-import { formatDataTypeValue, objectKeyOf } from '../../core/dataTypeFormat'
+import {
+  formatDataTypeValue,
+  objectKeyOf,
+  objectLabelOf,
+} from '../../core/dataTypeFormat'
 import { compareDecimal, parseDecimal } from '../../util/decimal'
 
 export interface EditColumn {
@@ -18,7 +29,7 @@ export interface EditColumn {
 
 export interface EditTable {
   getColumn?: (id: string) => EditColumn | undefined
-  options: { locale?: string }
+  options: { locale?: string; timeZone?: string }
 }
 
 const DEFAULT_LOCALE = 'en-US'
@@ -85,14 +96,63 @@ export const parseEditText = (
   const type = column?.getDataType()
   const parse = type?.definition.parseValue ?? column?.columnDef.parseValue
   if (parse) return { value: parse(text, row.original) }
+  if (type?.base === 'object') return recordByLabel(table, columnId, text)
+  const labels = announcerLabels(table) ?? ENGLISH_LABELS
   return parseByDataType(
     text,
     type ? parseKindOf(type.base) : inferDataType(row.current),
     {
       locale: (table as EditTable).options.locale,
+      timeZone: (table as EditTable).options.timeZone,
       options: column?.columnDef.options,
+      booleanLabels: { yes: labels.booleanTrue, no: labels.booleanFalse },
+      current: row.current,
     },
   )
+}
+
+type RecordsTable = EditTable & {
+  getRowSource?: () => {
+    loadedRows: () => Iterable<{ getValue: (columnId: string) => unknown }>
+  }
+}
+
+/** Подписи записей колонки `object` в загруженных строках — раз на список строк и колонку. */
+const recordLabels = new WeakMap<object, Map<string, Map<string, unknown>>>()
+
+/**
+ * Запись `object` по подписи (ADR 0219, WR5): среди `options` с `record`, иначе среди
+ * записей колонки в загруженных строках, как редактор (ED8, ED17). Пустой текст — пусто.
+ */
+const recordByLabel = (
+  table: unknown,
+  columnId: string,
+  text: string,
+): { value: unknown } | undefined => {
+  const trimmed = text.trim()
+  if (trimmed === '') return { value: null }
+  const column = columnOf(table, columnId)!
+  const definition = column.getDataType()!.definition
+  const option = optionByText(column.columnDef.options, trimmed)
+  if (option)
+    return option.record !== undefined ? { value: option.record } : undefined
+  const rows = (table as RecordsTable).getRowSource?.().loadedRows()
+  if (!rows) return undefined
+  let byColumn = recordLabels.get(rows)
+  if (!byColumn) recordLabels.set(rows, (byColumn = new Map()))
+  let byLabel = byColumn.get(columnId)
+  if (!byLabel) {
+    byLabel = new Map()
+    for (const row of rows) {
+      const value = row.getValue(columnId)
+      if (value === null || value === undefined) continue
+      const label = objectLabelOf(definition, value).toLowerCase()
+      if (!byLabel.has(label)) byLabel.set(label, value)
+    }
+    byColumn.set(columnId, byLabel)
+  }
+  const record = byLabel.get(trimmed.toLowerCase())
+  return record === undefined ? undefined : { value: record }
 }
 
 const isBlank = (value: unknown) =>

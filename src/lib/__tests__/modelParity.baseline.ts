@@ -150,6 +150,8 @@ export const MODEL_PARITY: ParityBase = {
       'canSelectCell',
       'handle',
       'maxCopyRows',
+      'paste',
+      'parseClipboard',
       'cellSelection',
       'onCellSelectionChange',
       'initialCellSelection',

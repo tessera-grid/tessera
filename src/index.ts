@@ -38,6 +38,13 @@ export type {
   RowTransaction,
   RowTransactionResult,
 } from './lib/core/rowTransactions'
+// Запись в ячейки (ADR 0219): `table.writeCells`.
+export type {
+  CellWrite,
+  CellWriteOptions,
+  CellWriteReport,
+  CellWriteSource,
+} from './lib/core/cellWrites'
 // Отмена длительных операций (ADR 0153): `table.cancelPending`.
 export type { CancelPendingFilter, PendingKind } from './lib/core/cancellation'
 // Ожидание и итог действия на ячейке (ADR 0176): `table.trackCellAction` и хук контрола.

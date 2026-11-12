@@ -7,7 +7,9 @@ import type {
   RootHookProps,
 } from '../../core/bodyContributions'
 import { useCellSelectionAutoScroll } from './autoScroll'
-import { copyOnEvent, useCopyAbort } from './copyEvent'
+import { copyOnEvent, isInteractive, useCopyAbort } from './copyEvent'
+import { cutOnEvent } from './clear'
+import { pasteOnEvent } from './paste'
 import { cellSelectionKeys } from './keys'
 import { extendSelection, startSelection } from './pointer'
 import { useRangeHandle } from './rangeHandle'
@@ -28,6 +30,10 @@ export const cellSelectionBody: BodyContributions = {
       mousedown: startSelection,
       hover: extendSelection,
       copy: copyOnEvent,
+      cut: cutOnEvent,
+      paste: (event, { table }) => {
+        if (isInteractive(table)) pasteOnEvent(event, table)
+      },
     },
   },
   keys: cellSelectionKeys,

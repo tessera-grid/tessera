@@ -106,6 +106,46 @@ export const copyFrom = (cell: HTMLElement) => {
   return event.clipboardData ?? clipboardData
 }
 
+/**
+ * Вставка с клавиатуры: событие `paste` от ячейки с буфером — текстом, как его кладёт Excel
+ * или Google Sheets, или буфером прежнего копирования таблицы (ADR 0219).
+ */
+export const pasteInto = (cell: HTMLElement, data: string | DataTransfer) => {
+  let clipboardData = data
+  if (typeof data === 'string') {
+    clipboardData = new DataTransfer()
+    clipboardData.setData('text/plain', data)
+  }
+  cell.dispatchEvent(
+    new ClipboardEvent('paste', {
+      bubbles: true,
+      cancelable: true,
+      clipboardData: clipboardData as DataTransfer,
+    }),
+  )
+}
+
+/** Вырезание с клавиатуры: событие `cut` от ячейки; что положено в буфер — в ответе. */
+export const cutFrom = (cell: HTMLElement) => {
+  const clipboardData = new DataTransfer()
+  const event = new ClipboardEvent('cut', {
+    bubbles: true,
+    cancelable: true,
+    clipboardData,
+  })
+  cell.dispatchEvent(event)
+  return event.clipboardData ?? clipboardData
+}
+
+/** Клавиша на ячейке в фокусе: `keydown` и `keyup`, как с клавиатуры. */
+export const pressKey = (cell: HTMLElement, key: string) => {
+  cell.focus()
+  cell.dispatchEvent(
+    new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }),
+  )
+  cell.dispatchEvent(new KeyboardEvent('keyup', { key, bubbles: true }))
+}
+
 /** Открытое меню таблицы. */
 export const openMenu = () =>
   document.querySelector<HTMLElement>('[role="menu"][data-open]')

@@ -90,6 +90,7 @@ export const CORE_OPTIONS: Record<string, string> = {
   rowCount: '0169',
   rowHeight: '0077',
   rowSourceLayer: '0178',
+  cellWriter: '0219',
   skeletonOptions: '0060',
   slotActions: '0024',
   serverRowCount: '0169',

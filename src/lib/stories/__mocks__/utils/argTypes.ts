@@ -509,6 +509,9 @@ export const cellSelectionMaxCopyRowsType = numberControl(
   { min: 1, max: 1_000_000, step: 1 },
   '10000',
 )
+export const cellSelectionPasteType = booleanControl(
+  'Вставка из буфера, вырезание и очистка выделения (`paste`); пишут через плагин правки',
+)
 export const enableContextMenuType = booleanControl(
   'Контекстное меню по правому клику (плагин `contextMenu`)',
 )

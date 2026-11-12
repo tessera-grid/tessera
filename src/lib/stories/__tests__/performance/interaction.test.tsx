@@ -73,6 +73,7 @@ import {
   unnestRow,
 } from '../../../plugins/rowDragging/moveRow'
 import { cellEditing } from '../../../plugins/cellEditing'
+import { pasteData } from '../../../plugins/cellSelection/paste'
 import { columnTotals } from '../../../plugins/columnTotals'
 import { quickSearchModel } from '../../../plugins/quickSearchModel'
 import { failureLog } from '../../../plugins/failureLog'
@@ -6455,6 +6456,175 @@ describe('Отзывчивость — флекс-колонки и автопо
       expect(
         ours.longestMs,
         `подгонка ${ours.longestMs.toFixed(1)}ms, база ${base.longestMs.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Вставка из буфера (ADR 0219, WR35–WR36): объём и одно значение в большой диапазон.
+type PasteTable = {
+  getRowSource: () => { at: (index: number) => { id: string } | undefined }
+  getCellSelectionColumnIndexes: () => Record<string, number>
+  setCellSelection: (updater: () => unknown[]) => void
+}
+
+/** Грид для вставки: правка с ответом сервера и выделение; таблица — из `setup`. */
+const mountPasteGrid = async (columnCount: number, dataCount: number) => {
+  let table: PasteTable | undefined
+  const screen = renderPluginsGrid({
+    columnCount,
+    dataCount,
+    plugins: [
+      cellEditing({ onCommitEdits: () => Promise.resolve() } as never),
+      cellSelection(),
+      {
+        id: 'perfPaste',
+        setup: t => {
+          table = t as never
+        },
+      },
+    ],
+  })
+  await expect.poll(() => table).toBeTruthy()
+  await waitForGrid()
+  const columns = Object.entries(table!.getCellSelectionColumnIndexes())
+    .sort((a, b) => a[1] - b[1])
+    .map(([id]) => id)
+  /** Выделить `rows` строк первой колонки от первой строки. */
+  const select = (rows: number) =>
+    table!.setCellSelection(() => [
+      {
+        anchorRowId: table!.getRowSource().at(0)!.id,
+        anchorColumnId: columns[0]!,
+        focusRowId: table!.getRowSource().at(rows - 1)!.id,
+        focusColumnId: columns[0]!,
+      },
+    ])
+  return { table: table!, screen, select }
+}
+
+const WR35_RATIO = 12
+/** Самая длинная задача: перерисовка окна, не объём (ADR 0219, §10). */
+const WR35_LONGEST_RATIO = 1.5
+const WR35_COLUMNS = 10
+describe('Вставка из буфера — объём', () => {
+  test(
+    'WR35: вставка 100 000 ячеек против 10 000 — работа главного потока не больше ×12, самая длинная задача не больше ×1,5',
+    async () => {
+      const measure = async (rows: number) => {
+        const { table, screen, select } = await mountPasteGrid(
+          WR35_COLUMNS,
+          10_000,
+        )
+        select(1)
+        const text = Array.from({ length: rows }, (_, row) =>
+          Array.from({ length: WR35_COLUMNS }, (_, column) =>
+            String((row + column) % 90),
+          ).join('\t'),
+        ).join('\n')
+        const result = await measureInteractionWork(() =>
+          pasteData(table, { text, html: '' }, 'api'),
+        )
+        ;(await screen).unmount()
+        return result
+      }
+
+      const runs = await againstBase(isMany => measure(isMany ? 10_000 : 1000))
+      const base = medianRun(runs.base, r => r.totalMs)
+      const many = medianRun(runs.variant, r => r.totalMs)
+      const ceiling = base.totalMs * WR35_RATIO
+      const baseLongest = medianRun(runs.base, r => r.longestMs).longestMs
+      const manyLongest = medianRun(runs.variant, r => r.longestMs).longestMs
+      const longestCeiling = baseLongest * WR35_LONGEST_RATIO
+      const record = (
+        id: string,
+        label: string,
+        r: typeof many,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '10 000×10',
+          plugins: 'cellEditing, cellSelection',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            // Гейт — работа и самая длинная задача против базы (проверки ниже).
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? longestCeiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('WR35-base', 'вставка 10 000 ячеек', base, false)
+      await record('WR35', 'вставка 100 000 ячеек', many, true)
+
+      const summary = `100 000: total=${many.totalMs.toFixed(0)}ms longest=${many.longestMs.toFixed(0)}ms; 10 000: total=${base.totalMs.toFixed(0)}ms longest=${base.longestMs.toFixed(0)}ms long=${base.longTasks}; 100 000 long=${many.longTasks}; медианы longest: ${manyLongest.toFixed(0)} против ${baseLongest.toFixed(0)}ms`
+      expect(many.totalMs, summary).toBeLessThanOrEqual(ceiling)
+      expect(manyLongest, summary).toBeLessThanOrEqual(longestCeiling)
+    },
+    PERF_TIMEOUT * 4,
+  )
+})
+
+const WR36_COST = { ratio: 3, plusMs: 30 }
+describe('Вставка из буфера — одно значение в диапазон', () => {
+  test(
+    'WR36: Ctrl+V одного значения в диапазон 1000 ячеек против вставки в одну ячейку — потолок базы ×3 или +30 мс',
+    async () => {
+      const measure = async (wide: boolean) => {
+        const { table, screen, select } = await mountPasteGrid(
+          LARGE.columnCount,
+          LARGE.dataCount,
+        )
+        select(wide ? 1000 : 1)
+        const result = await measureInteractionWork(() =>
+          pasteData(table, { text: '7', html: '' }, 'api'),
+        )
+        ;(await screen).unmount()
+        return result
+      }
+
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const wide = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = ceilingOver(base.longestMs, WR36_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof wide,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '1000×1000',
+          plugins: 'cellEditing, cellSelection',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('WR36-base', 'вставка в одну ячейку', base, false)
+      await record('WR36', 'вставка в 1000 ячеек', wide, true)
+
+      expect(
+        wide.longestMs,
+        `1000 ячеек: longest=${wide.longestMs.toFixed(1)}ms, одна: ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)}`,
       ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,

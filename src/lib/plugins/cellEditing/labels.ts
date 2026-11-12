@@ -50,6 +50,26 @@ export interface CellEditingLabels {
   actionToggle: string
   /** Действие: откат новой или удалённой строки */
   actionRowDraftDiscard: string
+  /** Действия записи в ячейки (ADR 0219, §8) */
+  actionPaste: string
+  actionCut: string
+  actionClear: string
+  actionBulkEdit: string
+  actionFillDown: string
+  actionFillRight: string
+  actionWrite: string
+  /** Причина отказа записи текста: не разобрался по типу или не прошёл проверку */
+  writeInvalidReason: (reason: string, text: string) => string
+  /** Объявление операции записи (`name` — действие, `count` — записано ячеек) */
+  announceWritten: (name: string, count: number) => string
+  /** Часть объявления: пропущено ячеек только для чтения */
+  announceWriteSkipped: (count: number) => string
+  /** Часть объявления: ячеек с ошибкой */
+  announceWriteInvalid: (count: number) => string
+  /** Объявление: пакет операции сохранён */
+  announceWriteSaved: (name: string) => string
+  /** Объявление: пакет операции не сохранён */
+  announceWriteFailed: (name: string, error: string) => string
 }
 
 export const cellEditingLabels = defineLabels<CellEditingLabels>()(
@@ -81,12 +101,32 @@ export const cellEditingLabels = defineLabels<CellEditingLabels>()(
     actionValidationFailed: 'Check the value',
     actionToggle: 'Toggle the value',
     actionRowDraftDiscard: 'Undo the row change',
+    actionPaste: 'Paste',
+    actionCut: 'Cut',
+    actionClear: 'Clear cells',
+    actionBulkEdit: 'Edit the selection',
+    actionFillDown: 'Fill down',
+    actionFillRight: 'Fill right',
+    actionWrite: 'Write to cells',
+    writeInvalidReason: '{reason}: "{text}"',
+    announceWritten: '{name}: {count} cells',
+    announceWritten_one: '{name}: {count} cell',
+    announceWriteSkipped: '{count} read-only skipped',
+    announceWriteInvalid: '{count} not recognized',
+    announceWriteSaved: '{name}: saved',
+    announceWriteFailed: '{name}: not saved. {error}',
   },
   {
     editCellValue: ['column'],
     cellDraftReason: ['was', 'now'],
     rowInsertDraftMore: ['values', 'count'],
     announceSaveFailed: ['name', 'target', 'error'],
+    writeInvalidReason: ['reason', 'text'],
+    announceWritten: ['name', 'count'],
+    announceWriteSkipped: ['count'],
+    announceWriteInvalid: ['count'],
+    announceWriteSaved: ['name'],
+    announceWriteFailed: ['name', 'error'],
   },
 )
 

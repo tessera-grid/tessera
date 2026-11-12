@@ -418,9 +418,11 @@ const DataGridView = <D extends LabelDictionary = LabelDictionary>({
     title:
       !appFailed && !listError && failed?.kind === 'copy'
         ? labels.serverActionFailedCopy
-        : !appFailed && !listError && !failed && menuFailure?.entry.name
-          ? labels.actionsFailed(menuFailure.entry.name(labels))
-          : undefined,
+        : !appFailed && !listError && failed?.kind === 'paste'
+          ? labels.serverActionFailedPaste
+          : !appFailed && !listError && !failed && menuFailure?.entry.name
+            ? labels.actionsFailed(menuFailure.entry.name(labels))
+            : undefined,
   })
 
   // Скелет первой загрузки — строго по флагу приложения (ADR 0060, §5); отказ без строк

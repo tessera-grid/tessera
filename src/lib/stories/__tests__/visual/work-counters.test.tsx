@@ -39,6 +39,8 @@ import { RevealedIcon } from '../../../ui/IconButton/iconReveal'
 import { SelectionHandle } from '../../../ui/SelectionHandle'
 import { ColumnDraggingComponent } from '../../../plugins/columnDragging/ColumnDraggingComponent'
 import { ColumnSizingComponent } from '../../../plugins/columnSizing/ColumnSizingComponent'
+import { CellDraftMark } from '../../../plugins/cellEditing/CellDraftMark'
+import { CellEditField } from '../../../plugins/cellEditing/CellEditField'
 import { ResizeHandler } from '../../../plugins/columnSizing/ResizeHandler'
 import { makeColumns } from '../../__mocks__/columns'
 import { getData } from '../../__mocks__/data'
@@ -1294,5 +1296,78 @@ describe('Счётчики работы — маркер угла выделен
       renders(work, BodyRow, SortableRow, BodyRowCells, HeadCellView),
       summary,
     ).toBe(0)
+  })
+})
+
+describe('Счётчики работы — запись в ячейки (ADR 0219)', () => {
+  test('WR34: операция перерисовывает только ячейки целей в окне, по разу на кусок; строки, шапка и тулбар — нет', async () => {
+    const pasteRows = 5
+    for (const saveMode of ['manual', 'auto'] as const) {
+      const { measure, table, screen } = await mountGrid({
+        enableCellEditing: true,
+        enableCellSelection: true,
+        enableToolbar: true,
+        cellEditingSaveMode: saveMode,
+        // Сервер не отвечает: ячейки пакета остаются в ожидании.
+        onCommitEdits: () => new Promise(() => {}),
+      } as FeatureToggles)
+      const t = table() as {
+        getRowSource: () => { at: (i: number) => { id: string } }
+        getCellSelectionColumnIndexes: () => Record<string, number>
+        setCellSelection: (updater: () => unknown[]) => void
+      }
+      const column = Object.entries(t.getCellSelectionColumnIndexes()).find(
+        ([, index]) => index === 3,
+      )![0]
+      const rows = Array.from(
+        { length: pasteRows },
+        (_, i) => t.getRowSource().at(i).id,
+      )
+      t.setCellSelection(() => [
+        {
+          anchorRowId: rows[0],
+          anchorColumnId: column,
+          focusRowId: rows.at(-1),
+          focusColumnId: column,
+        },
+      ])
+      const target = () =>
+        document.querySelector<HTMLElement>(
+          `.data-grid__body-row[data-row-id="${rows[0]}"] .data-grid__body-cell[data-column-id="${column}"]`,
+        )!
+      await expect
+        .poll(() => target().getAttribute('data-cell-selected'))
+        .toBe('true')
+      const work = await measure(() => {
+        const data = new DataTransfer()
+        data.setData('text/plain', '42')
+        target().dispatchEvent(
+          new ClipboardEvent('paste', {
+            bubbles: true,
+            cancelable: true,
+            clipboardData: data,
+          }),
+        )
+      })
+      const summary = `${saveMode}: ${describeWork(work)}`
+      expect(target().textContent, summary).toContain('42')
+      // Одна операция — один кусок и один коммит; ячейки целей и их части — по разу,
+      // прочие ячейки окна — нет.
+      expect(work.commits, summary).toBeLessThanOrEqual(1)
+      for (const part of [BodyCell, CellDraftMark, CellEditField])
+        expect(renders(work, part), summary).toBeLessThanOrEqual(pasteRows)
+      expect(
+        renders(
+          work,
+          BodyRow,
+          SortableRow,
+          BodyRowCells,
+          HeadCellView,
+          Toolbar,
+        ),
+        summary,
+      ).toBe(0)
+      screen.unmount()
+    }
   })
 })

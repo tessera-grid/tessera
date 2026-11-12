@@ -1,0 +1,998 @@
+import { useState } from 'react'
+import { RotateCcw } from 'lucide-react'
+import { Meta, StoryObj } from '@storybook/react'
+import { expect } from 'storybook/test'
+import type { StoryProps } from './DataGridStory.types'
+import { StoryComponent } from './DataGridStory'
+import { dataGridMeta } from './dataGridMeta'
+import { REFUSAL } from './__mocks__/heldServer'
+import {
+  cellOf,
+  closeMenu,
+  cutFrom,
+  dragCells,
+  isSelected,
+  openMenu,
+  pasteInto,
+  pressCell,
+  pressKey,
+  rightClickCell,
+  untilDone,
+} from './__mocks__/cellGestures'
+import {
+  byTestId,
+  consoleText,
+  expectPopupInCanvas,
+  guideNext,
+  settle,
+  until,
+  waitForRows,
+} from './__mocks__/catalogPlay'
+import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
+import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
+import {
+  type GuideApp,
+  GuideStory,
+  type GuideStoryStep,
+  guideArgs,
+} from './demos/GuideStory'
+import { WithConsole } from './demos/StoryConsole'
+import { createConsoleLog } from './demos/consoleLog'
+import type { TesseraFeatureEntry } from '../core/features'
+import type { ContextMenuAction } from '../core/headerActions'
+import type {
+  CellEditBatch,
+  CellEditBatchResult,
+} from '../plugins/cellEditing/types'
+
+/**
+ * Вставка из буфера, очистка, вырезание и массовая правка выделения (ADR 0219, этап 1): блок из
+ * таблицы, одно значение во весь диапазон, ошибки разбора, отказ сервера, черновики, своя
+ * кнопка приложения и подтверждение вставки.
+ */
+const meta = {
+  ...dataGridMeta,
+  parameters: { ...dataGridMeta.parameters },
+  title: 'Tessera/DataGrid/Cells/Paste & fill',
+} satisfies Meta<StoryProps>
+
+export default meta
+
+export const CellPastePlayground: StoryObj<StoryProps> = {
+  name: 'Playground',
+  // Выделите ячейки возраста, пола или визитов и нажмите Ctrl/Cmd+V с текстом из таблицы;
+  // Delete очищает выделение, Ctrl/Cmd+X вырезает. Без вставки — тумблер «paste».
+  args: {
+    enableCellEditing: true,
+    enableCellSelection: true,
+    enableKeyboardNavigation: true,
+    enableContextMenu: true,
+    columnCount: 6,
+    dataCount: 20,
+    containerHeight: '560',
+    height: '460',
+    maxHeight: '460',
+  },
+  parameters: showControls([
+    'enableCellEditing',
+    'cellEditingSaveMode',
+    'enableCellSelection',
+    'cellSelectionPaste',
+    'enableKeyboardNavigation',
+    'enableContextMenu',
+  ]),
+  render: function Render(args) {
+    const [consoleLog] = useState(createConsoleLog)
+    return (
+      <WithConsole log={consoleLog} args={args}>
+        <StoryComponent {...normalizeArgs(args)} />
+      </WithConsole>
+    )
+  },
+}
+
+// --- «Сервер» и действия шагов --------------------------------------------------------
+
+/** «Сервер» пакетов: придерживает ответ и отказывает пакету целиком, если задано. */
+const pasteServer = {
+  held: false,
+  refuse: false,
+  waiting: [] as (() => void)[],
+  reset: () => {
+    pasteServer.held = false
+    pasteServer.refuse = false
+    pasteServer.waiting = []
+  },
+  release: () => {
+    pasteServer.held = false
+    pasteServer.waiting.splice(0).forEach(answer => answer())
+  },
+  save: (_batch: CellEditBatch) =>
+    new Promise<CellEditBatchResult | void>((resolve, reject) => {
+      const answer = () =>
+        pasteServer.refuse ? reject(new Error(REFUSAL)) : resolve()
+      if (pasteServer.held) pasteServer.waiting.push(answer)
+      else answer()
+    }),
+}
+
+const BASE_ARGS = {
+  enableCellEditing: true,
+  enableCellSelection: true,
+  enableKeyboardNavigation: true,
+  columnCount: 6,
+  dataCount: 10,
+  onCommitEdits: pasteServer.save,
+} satisfies Partial<StoryProps>
+
+/** Текст ячейки без кнопок и отметок. */
+const textOf = (root: ParentNode, row: string, column: string) => {
+  const copy = cellOf(root, row, column)?.cloneNode(true) as
+    HTMLElement | undefined
+  copy
+    ?.querySelectorAll('.cell__button, [data-cell-issue], [data-cell-draft]')
+    .forEach(node => node.remove())
+  return copy?.textContent?.trim()
+}
+const pendingAt = (root: ParentNode, row: string, column: string) =>
+  cellOf(root, row, column)?.getAttribute('aria-busy') === 'true'
+const issueAt = (root: ParentNode, row: string, column: string) =>
+  !!cellOf(root, row, column)?.querySelector('[data-cell-issue]')
+const draftAt = (root: ParentNode, row: string, column: string) =>
+  !!cellOf(root, row, column)?.querySelector('[data-cell-draft]')
+const selectedAt = (root: ParentNode, row: string, column: string) =>
+  isSelected(cellOf(root, row, column))
+const errorBanner = () => byTestId('load-error-banner')
+
+/** Выбрать одну ячейку нажатием. */
+const selectCell = (root: HTMLElement, row: string, column: string) => {
+  const cell = cellOf(root, row, column)
+  if (cell) pressCell(cell)
+}
+
+/** Протянуть выделение по колонке от строки `from` до строки `to`. */
+const selectRows = (
+  root: HTMLElement,
+  column: string,
+  rows: readonly string[],
+) => {
+  const from = cellOf(root, rows[0]!, column)
+  const to = cellOf(root, rows.at(-1)!, column)
+  if (from && to) dragCells(from, to)
+}
+const rangeSelected = (
+  root: ParentNode,
+  column: string,
+  rows: readonly string[],
+) => rows.every(row => selectedAt(root, row, column))
+
+/** Вставка — один раз за проход шага: ответ сервера приходит не сразу. */
+let pasted = false
+const pasteOnce = (
+  root: HTMLElement,
+  row: string,
+  column: string,
+  data: string | DataTransfer,
+) => {
+  const cell = cellOf(root, row, column)
+  if (!cell || pasted) return
+  pasted = true
+  pasteInto(cell, data)
+}
+
+// --- ADR 0219, S1 ---------------------------------------------------------------------
+
+/** Три строки из таблицы: возраст и пол. */
+const SHEET = '41\tmale\n42\tfemale\n43\tmale\n'
+const SHEET_ROWS = [
+  ['item-id-2', '41', 'male'],
+  ['item-id-3', '42', 'female'],
+  ['item-id-4', '43', 'male'],
+] as const
+
+const sheetPasted = (root: ParentNode) =>
+  SHEET_ROWS.every(
+    ([row, age, gender]) =>
+      textOf(root, row, 'age') === age &&
+      textOf(root, row, 'gender') === gender &&
+      !pendingAt(root, row, 'age'),
+  )
+
+const FROM_SPREADSHEET: readonly GuideStoryStep[] = [
+  {
+    title: 'Ячейки, которые можно править',
+    hint: 'Приложение разрешило править возраст, пол и число визитов. Пользователь скопировал в другой таблице три строки: возраст и пол.',
+    enter: () => {
+      pasteServer.reset()
+      pasted = false
+    },
+  },
+  {
+    title: 'Ячейка выбрана',
+    hint: 'Пользователь нажал на ячейку возраста во второй строке. С неё начнётся вставка.',
+    states: ['body.cellRange'],
+    enter: untilDone(
+      root => selectedAt(root, 'item-id-2', 'age'),
+      root => selectCell(root, 'item-id-2', 'age'),
+    ),
+  },
+  {
+    title: 'Блок вставлен',
+    hint: 'Пользователь нажал Ctrl+V. Три строки буфера легли в возраст и пол трёх строк подряд, начиная с выбранной ячейки, и вставленный блок выделен. Сервер принял изменения одним запросом, ячейки коротко вспыхнули тоном успеха.',
+    states: ['body.cellRange'],
+    enter: untilDone(sheetPasted, root => {
+      if (!selectedAt(root, 'item-id-2', 'age'))
+        selectCell(root, 'item-id-2', 'age')
+      else pasteOnce(root, 'item-id-2', 'age', SHEET)
+    }),
+  },
+]
+
+/** ADR 0219, S1: блок из таблицы ложится от выбранной ячейки размером буфера. */
+export const PasteFromSpreadsheet: StoryObj<StoryProps> = {
+  name: 'Paste from a spreadsheet',
+  parameters: { scenario: '0219/S1', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Вставка из таблицы"
+      steps={FROM_SPREADSHEET}
+      args={guideArgs(BASE_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(FROM_SPREADSHEET[0]!.title, async () => {
+      await waitForRows(canvas)
+    })
+    await step(FROM_SPREADSHEET[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(selectedAt(canvas, 'item-id-2', 'age')).toBe(true),
+      )
+    })
+    await step(FROM_SPREADSHEET[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(sheetPasted(canvas)).toBe(true))
+      expect(selectedAt(canvas, 'item-id-4', 'gender')).toBe(true)
+      expect(consoleText()).toContain('onCommitEdits')
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0219, S2 ---------------------------------------------------------------------
+
+const RANGE_ROWS = ['item-id-1', 'item-id-2', 'item-id-3', 'item-id-4']
+const ONE_VALUE = '30'
+const onePasted = (root: ParentNode) =>
+  RANGE_ROWS.every(
+    row =>
+      textOf(root, row, 'age') === ONE_VALUE && !pendingAt(root, row, 'age'),
+  )
+
+const ONE_INTO_RANGE: readonly GuideStoryStep[] = [
+  {
+    title: 'Ячейки, которые можно править',
+    hint: 'Приложение разрешило править возраст, пол и число визитов. Пользователь скопировал одно число.',
+    enter: () => {
+      pasteServer.reset()
+      pasted = false
+    },
+  },
+  {
+    title: 'Выделен диапазон',
+    hint: 'Пользователь протянул выделение по возрасту в четырёх строках.',
+    states: ['body.cellRange'],
+    enter: untilDone(
+      root => rangeSelected(root, 'age', RANGE_ROWS),
+      root => selectRows(root, 'age', RANGE_ROWS),
+    ),
+  },
+  {
+    title: 'Одно значение во всём диапазоне',
+    hint: 'Пользователь нажал Ctrl+V. Одно значение из буфера легло во все выделенные ячейки — так правят много ячеек сразу.',
+    states: ['body.cellRange'],
+    enter: untilDone(onePasted, root => {
+      if (!rangeSelected(root, 'age', RANGE_ROWS))
+        selectRows(root, 'age', RANGE_ROWS)
+      else pasteOnce(root, RANGE_ROWS[0]!, 'age', ONE_VALUE)
+    }),
+  },
+]
+
+/** ADR 0219, S2: одно значение буфера — во все ячейки выделенного диапазона. */
+export const PasteOneIntoRange: StoryObj<StoryProps> = {
+  name: 'One value into a range',
+  parameters: { scenario: '0219/S2', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Одно значение во весь диапазон"
+      steps={ONE_INTO_RANGE}
+      args={guideArgs(BASE_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(ONE_INTO_RANGE[0]!.title, async () => {
+      await waitForRows(canvas)
+    })
+    await step(ONE_INTO_RANGE[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(rangeSelected(canvas, 'age', RANGE_ROWS)).toBe(true),
+      )
+    })
+    await step(ONE_INTO_RANGE[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(onePasted(canvas)).toBe(true))
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0219, S3 ---------------------------------------------------------------------
+
+/** Фамилия и возраст: фамилию править нельзя, второй возраст — не число. */
+const WITH_ERRORS = 'Smith\t31\nDoe\tforty\nRoe\t33'
+const ERROR_ROW = 'item-id-2'
+const errorsPasted = (root: ParentNode) =>
+  textOf(root, 'item-id-1', 'age') === '31' &&
+  textOf(root, 'item-id-3', 'age') === '33' &&
+  issueAt(root, ERROR_ROW, 'age')
+
+const WITH_ERRORS_STEPS: readonly GuideStoryStep[] = [
+  {
+    title: 'Что можно править',
+    hint: 'Приложение разрешило править возраст, пол и число визитов, а фамилию — нет. Пользователь скопировал три строки: фамилию и возраст, и в одной строке возраст записан словом.',
+    enter: () => {
+      pasteServer.reset()
+      pasted = false
+    },
+  },
+  {
+    title: 'Ячейка выбрана',
+    hint: 'Пользователь нажал на ячейку фамилии в первой строке. С неё начнётся вставка.',
+    states: ['body.cellRange'],
+    enter: untilDone(
+      root => selectedAt(root, 'item-id-1', 'lastName'),
+      root => selectCell(root, 'item-id-1', 'lastName'),
+    ),
+  },
+  {
+    title: 'Вставлено, кроме ошибок',
+    hint: 'Пользователь нажал Ctrl+V. Фамилии не изменились: их править нельзя. Два числа легли в возраст. Слово не разобралось как число: эта ячейка не изменилась, в её углу отметка с причиной.',
+    states: ['body.error'],
+    enter: untilDone(errorsPasted, root => {
+      if (!selectedAt(root, 'item-id-1', 'lastName'))
+        selectCell(root, 'item-id-1', 'lastName')
+      else pasteOnce(root, 'item-id-1', 'lastName', WITH_ERRORS)
+    }),
+  },
+]
+
+/** ADR 0219, S3: часть ячеек только для чтения, часть не разобрана — годные записаны. */
+export const PasteWithErrors: StoryObj<StoryProps> = {
+  name: 'Read-only and invalid cells',
+  parameters: { scenario: '0219/S3', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Вставка с ошибками"
+      steps={WITH_ERRORS_STEPS}
+      args={guideArgs(BASE_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    let lastNames: (string | undefined)[] = []
+    await step(WITH_ERRORS_STEPS[0]!.title, async () => {
+      await waitForRows(canvas)
+      lastNames = ['item-id-1', 'item-id-2', 'item-id-3'].map(row =>
+        textOf(canvas, row, 'lastName'),
+      )
+    })
+    await step(WITH_ERRORS_STEPS[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(selectedAt(canvas, 'item-id-1', 'lastName')).toBe(true),
+      )
+    })
+    await step(WITH_ERRORS_STEPS[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(errorsPasted(canvas)).toBe(true))
+      expect(
+        ['item-id-1', 'item-id-2', 'item-id-3'].map(row =>
+          textOf(canvas, row, 'lastName'),
+        ),
+      ).toEqual(lastNames)
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0219, S4 ---------------------------------------------------------------------
+
+const REFUSED_ROWS = ['item-id-1', 'item-id-2', 'item-id-3']
+const REFUSED_VALUE = '50'
+let originals: (string | undefined)[] = []
+const allPending = (root: ParentNode) =>
+  REFUSED_ROWS.every(row => pendingAt(root, row, 'age'))
+const refusedBack = (root: ParentNode) =>
+  !!errorBanner() &&
+  REFUSED_ROWS.every(
+    (row, i) =>
+      !pendingAt(root, row, 'age') && textOf(root, row, 'age') === originals[i],
+  )
+const retried = (root: ParentNode) =>
+  !errorBanner() &&
+  REFUSED_ROWS.every(
+    row =>
+      textOf(root, row, 'age') === REFUSED_VALUE &&
+      !pendingAt(root, row, 'age'),
+  )
+const retryButton = () => byTestId('load-error-retry')
+
+const REFUSED: readonly GuideStoryStep[] = [
+  {
+    title: 'Сервер сохраняет вставку',
+    hint: 'Приложение сохраняет вставку на сервере одним запросом. Сейчас сервер отвечает не сразу и в первый раз откажет.',
+    enter: root => {
+      pasteServer.reset()
+      pasted = false
+      originals = REFUSED_ROWS.map(row => textOf(root, row, 'age'))
+    },
+  },
+  {
+    title: 'Выделен диапазон',
+    hint: 'Пользователь протянул выделение по возрасту в трёх строках.',
+    states: ['body.cellRange'],
+    enter: untilDone(
+      root => rangeSelected(root, 'age', REFUSED_ROWS),
+      root => selectRows(root, 'age', REFUSED_ROWS),
+    ),
+  },
+  {
+    title: 'Вставка ждёт сервера',
+    hint: 'Пользователь нажал Ctrl+V. В ячейках уже новое значение, но сервер ещё не ответил: ячейки ждут.',
+    states: ['body.pending'],
+    enter: untilDone(allPending, root => {
+      pasteServer.held = true
+      pasteServer.refuse = true
+      if (!rangeSelected(root, 'age', REFUSED_ROWS))
+        selectRows(root, 'age', REFUSED_ROWS)
+      else pasteOnce(root, REFUSED_ROWS[0]!, 'age', REFUSED_VALUE)
+    }),
+  },
+  {
+    title: 'Сервер отказал',
+    hint: 'Сервер отказал всей вставке. В ячейках снова прежние значения. Причина отказа — одна плашка под шапкой таблицы с кнопкой повтора, а не отметки на каждой ячейке.',
+    states: ['body.loadError'],
+    enter: untilDone(refusedBack, root => {
+      if (allPending(root)) pasteServer.release()
+      else if (!errorBanner()) {
+        pasteServer.held = true
+        pasteServer.refuse = true
+        if (!rangeSelected(root, 'age', REFUSED_ROWS))
+          selectRows(root, 'age', REFUSED_ROWS)
+        else {
+          pasted = false
+          pasteOnce(root, REFUSED_ROWS[0]!, 'age', REFUSED_VALUE)
+        }
+      }
+    }),
+  },
+  {
+    title: 'Повтор удался',
+    hint: 'Пользователь нажал кнопку повтора на плашке. Та же вставка ушла на сервер ещё раз, и теперь сервер её принял: плашка ушла, в ячейках новое значение.',
+    enter: untilDone(retried, () => {
+      pasteServer.refuse = false
+      if (pasteServer.waiting.length > 0) pasteServer.release()
+      else {
+        const retry = retryButton()
+        if (retry) retry.click()
+      }
+    }),
+  },
+]
+
+/** ADR 0219, S4: сервер отказал пакету вставки целиком — плашка с повтором. */
+export const PasteRefusedByServer: StoryObj<StoryProps> = {
+  name: 'Refused by the server',
+  parameters: { scenario: '0219/S4', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Сервер отказал вставке"
+      steps={REFUSED}
+      args={guideArgs(BASE_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(REFUSED[0]!.title, async () => {
+      await waitForRows(canvas)
+    })
+    await step(REFUSED[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(rangeSelected(canvas, 'age', REFUSED_ROWS)).toBe(true),
+      )
+    })
+    await step(REFUSED[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(allPending(canvas)).toBe(true))
+      expect(textOf(canvas, REFUSED_ROWS[0]!, 'age')).toBe(REFUSED_VALUE)
+    })
+    await step(REFUSED[3]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(refusedBack(canvas)).toBe(true))
+      expect(REFUSED_ROWS.some(row => issueAt(canvas, row, 'age'))).toBe(false)
+    })
+    await step(REFUSED[4]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(retried(canvas)).toBe(true))
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0219, S5 ---------------------------------------------------------------------
+
+const MANUAL_ARGS = {
+  ...BASE_ARGS,
+  cellEditingSaveMode: 'manual',
+  enableUnsavedChanges: true,
+  enableToolbar: true,
+} satisfies Partial<StoryProps>
+
+const DRAFT_CLIP = '61\n62\n63'
+const DRAFT_ROWS = [
+  ['item-id-1', '61'],
+  ['item-id-2', '62'],
+  ['item-id-3', '63'],
+] as const
+const panelButton = (root: ParentNode) =>
+  root.querySelector<HTMLElement>('[data-testid="unsaved-changes-button"]')
+const panelOpen = () =>
+  !!document.querySelector('[data-testid="unsaved-changes"]')
+const applyAll = (root: HTMLElement) => {
+  if (!panelOpen()) panelButton(root)?.click()
+  else document.querySelector<HTMLElement>('[data-action="apply-all"]')?.click()
+}
+const drafted = (root: ParentNode) =>
+  DRAFT_ROWS.every(
+    ([row, value]) =>
+      draftAt(root, row, 'age') && textOf(root, row, 'age') === value,
+  )
+const applied = (root: ParentNode) =>
+  !panelOpen() &&
+  DRAFT_ROWS.every(
+    ([row, value]) =>
+      !draftAt(root, row, 'age') &&
+      !pendingAt(root, row, 'age') &&
+      textOf(root, row, 'age') === value,
+  )
+
+const MANUAL: readonly GuideStoryStep[] = [
+  {
+    title: 'Сохранение по кнопке',
+    hint: 'Приложение сохраняет изменения не сразу, а пакетом — по кнопке пульта в тулбаре.',
+    enter: () => {
+      pasteServer.reset()
+      pasted = false
+    },
+  },
+  {
+    title: 'Вставлено несохранённым',
+    hint: 'Пользователь выбрал ячейку возраста в первой строке и вставил три числа. Новые значения видны в ячейках, но ещё не сохранены: в углу каждой ячейки отметка несохранённого изменения, на кнопке пульта — их число.',
+    states: ['body.cellDraft'],
+    enter: untilDone(drafted, root => {
+      if (!selectedAt(root, 'item-id-1', 'age'))
+        selectCell(root, 'item-id-1', 'age')
+      else pasteOnce(root, 'item-id-1', 'age', DRAFT_CLIP)
+    }),
+  },
+  {
+    title: 'Сохранено пакетом',
+    hint: 'Пользователь открыл пульт и нажал «Применить всё». Вставленные значения ушли на сервер одним запросом и сохранены: отметки исчезли.',
+    enter: untilDone(applied, root => {
+      if (!drafted(root)) {
+        if (!selectedAt(root, 'item-id-1', 'age'))
+          selectCell(root, 'item-id-1', 'age')
+        else pasteOnce(root, 'item-id-1', 'age', DRAFT_CLIP)
+      } else applyAll(root)
+    }),
+  },
+]
+
+/** ADR 0219, S5: вставка при сохранении по кнопке — черновики, затем «Применить всё». */
+export const PasteManualSave: StoryObj<StoryProps> = {
+  name: 'Paste, then save by button',
+  parameters: { scenario: '0219/S5', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Вставка с сохранением по кнопке"
+      steps={MANUAL}
+      args={guideArgs(MANUAL_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(MANUAL[0]!.title, async () => {
+      await waitForRows(canvas)
+    })
+    await step(MANUAL[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(drafted(canvas)).toBe(true))
+      expect(consoleText()).not.toContain('onCommitEdits')
+    })
+    await step(MANUAL[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(applied(canvas)).toBe(true))
+      expect(consoleText()).toContain('onCommitEdits')
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0219, S10 --------------------------------------------------------------------
+
+const CLEAR_ROWS = ['item-id-1', 'item-id-2', 'item-id-3']
+const CUT_ROW = 'item-id-5'
+const CUT_TARGET = 'item-id-7'
+let cutValue: string | undefined
+let cutData: DataTransfer | undefined
+const cleared = (root: ParentNode) =>
+  CLEAR_ROWS.every(
+    row =>
+      textOf(root, row, 'visits') === '' && !pendingAt(root, row, 'visits'),
+  )
+const cutDone = (root: ParentNode) =>
+  !!cutData &&
+  textOf(root, CUT_ROW, 'age') === '' &&
+  !pendingAt(root, CUT_ROW, 'age')
+const moved = (root: ParentNode) =>
+  cutDone(root) &&
+  textOf(root, CUT_TARGET, 'age') === cutValue &&
+  !pendingAt(root, CUT_TARGET, 'age')
+
+const CLEAR_AND_CUT: readonly GuideStoryStep[] = [
+  {
+    title: 'Ячейки, которые можно править',
+    hint: 'Приложение разрешило править возраст, пол и число визитов.',
+    enter: root => {
+      pasteServer.reset()
+      pasted = false
+      cutData = undefined
+      cutValue = textOf(root, CUT_ROW, 'age')
+    },
+  },
+  {
+    title: 'Диапазон очищен',
+    hint: 'Пользователь выделил число визитов в трёх строках и нажал Delete. Ячейки стали пустыми.',
+    states: ['body.cellRange'],
+    keyboard: true,
+    enter: untilDone(cleared, root => {
+      if (!rangeSelected(root, 'visits', CLEAR_ROWS))
+        selectRows(root, 'visits', CLEAR_ROWS)
+      else pressKey(cellOf(root, CLEAR_ROWS[0]!, 'visits')!, 'Delete')
+    }),
+  },
+  {
+    title: 'Значение вырезано',
+    hint: 'Пользователь выбрал ячейку возраста и нажал Ctrl+X. Значение ушло в буфер, ячейка стала пустой.',
+    states: ['body.cellRange'],
+    enter: untilDone(cutDone, root => {
+      if (!selectedAt(root, CUT_ROW, 'age')) selectCell(root, CUT_ROW, 'age')
+      else if (!cutData) cutData = cutFrom(cellOf(root, CUT_ROW, 'age')!)
+    }),
+  },
+  {
+    title: 'Вырезанное вставлено',
+    hint: 'Пользователь выбрал ячейку возраста двумя строками ниже и нажал Ctrl+V. Значение переехало в неё.',
+    states: ['body.cellRange'],
+    enter: untilDone(moved, root => {
+      if (!cutDone(root)) {
+        if (!selectedAt(root, CUT_ROW, 'age')) selectCell(root, CUT_ROW, 'age')
+        else if (!cutData) cutData = cutFrom(cellOf(root, CUT_ROW, 'age')!)
+      } else if (!selectedAt(root, CUT_TARGET, 'age'))
+        selectCell(root, CUT_TARGET, 'age')
+      else pasteOnce(root, CUT_TARGET, 'age', cutData!)
+    }),
+  },
+]
+
+/** ADR 0219, S10: очистка диапазона клавишей Delete, вырезание и вставка вырезанного. */
+export const ClearAndCut: StoryObj<StoryProps> = {
+  name: 'Clear and cut',
+  parameters: { scenario: '0219/S10', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Очистка и вырезание"
+      steps={CLEAR_AND_CUT}
+      args={guideArgs(BASE_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(CLEAR_AND_CUT[0]!.title, async () => {
+      await waitForRows(canvas)
+    })
+    await step(CLEAR_AND_CUT[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(cleared(canvas)).toBe(true))
+    })
+    await step(CLEAR_AND_CUT[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(cutDone(canvas)).toBe(true))
+    })
+    await step(CLEAR_AND_CUT[3]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(moved(canvas)).toBe(true))
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0219, S11 --------------------------------------------------------------------
+
+/**
+ * Пункт приложения в контекстном меню ячейки визитов: обнулить визиты в выделенных ячейках —
+ * `table.writeCells`, по тем же правилам, что вставка.
+ */
+const resetVisitsAction: ContextMenuAction = {
+  id: 'resetVisits',
+  icon: () => <RotateCcw width={16} height={16} />,
+  label: () => 'Reset visits',
+  visible: ctx => ctx.selection.isInSelection && ctx.column.id === 'visits',
+  // Итог — на самих ячейках: ожидание и вспышка пакета записи.
+  target: () => false,
+  onSelect: ({ table }) => {
+    const source = table.getRowSource()
+    const changes = table.getCellSelectionRanges().flatMap(range => {
+      if (!range.columnIds.includes('visits')) return []
+      const cells = []
+      for (let i = range.minRowIndex; i <= range.maxRowIndex; i++) {
+        const row = source.at(i)
+        if (row) cells.push({ rowId: row.id, columnId: 'visits', value: 0 })
+      }
+      return cells
+    })
+    void table.writeCells(changes, { source: 'api' })
+  },
+}
+
+const resetVisitsDemo: TesseraFeatureEntry = {
+  id: 'resetVisitsGuide',
+  contextMenuActions: [resetVisitsAction],
+}
+
+const OWN_ROWS = ['item-id-1', 'item-id-2', 'item-id-3', 'item-id-4']
+const MENU_ROW = 'item-id-2'
+const resetItem = () =>
+  document.querySelector<HTMLElement>(
+    '[role="menu"][data-open] [data-action-id$="resetVisits"]',
+  )
+const zeroed = (root: ParentNode) =>
+  OWN_ROWS.every(
+    row =>
+      textOf(root, row, 'visits') === '0' && !pendingAt(root, row, 'visits'),
+  )
+
+/** Выделить визиты в четырёх строках и открыть меню внутри выделения. */
+const selectAndOpenMenu = (root: HTMLElement) => {
+  if (!rangeSelected(root, 'visits', OWN_ROWS)) {
+    if (openMenu()) closeMenu()
+    else selectRows(root, 'visits', OWN_ROWS)
+  } else if (!resetItem()) {
+    if (openMenu()) closeMenu()
+    else rightClickCell(cellOf(root, MENU_ROW, 'visits')!)
+  }
+}
+
+const OWN_BULK: readonly GuideStoryStep[] = [
+  {
+    title: 'Пункт меню приложения',
+    hint: 'Приложение добавило в меню ячейки визитов свой пункт: он обнуляет число визитов в выделенных ячейках. Записывает таблица — по тем же правилам, что и вставка.',
+    enter: () => pasteServer.reset(),
+  },
+  {
+    title: 'Выделен диапазон',
+    hint: 'Пользователь протянул выделение по числу визитов в четырёх строках.',
+    states: ['body.cellRange'],
+    enter: untilDone(
+      root => rangeSelected(root, 'visits', OWN_ROWS) && !openMenu(),
+      root => {
+        if (openMenu()) closeMenu()
+        else selectRows(root, 'visits', OWN_ROWS)
+      },
+    ),
+  },
+  {
+    title: 'Меню открыто',
+    hint: 'Пользователь нажал правой кнопкой внутри выделения. В меню рядом с пунктами таблицы — пункт приложения.',
+    states: ['overlay.contextMenu'],
+    enter: untilDone(
+      root => rangeSelected(root, 'visits', OWN_ROWS) && !!resetItem(),
+      selectAndOpenMenu,
+    ),
+  },
+  {
+    title: 'Визиты обнулены',
+    hint: 'Пользователь выбрал пункт приложения. Меню закрылось, во всех выделенных ячейках ноль; сервер принял изменения одним запросом.',
+    enter: untilDone(
+      root => zeroed(root) && !openMenu(),
+      root => {
+        if (zeroed(root)) closeMenu()
+        else if (resetItem()) resetItem()!.click()
+        else selectAndOpenMenu(root)
+      },
+    ),
+  },
+]
+
+/** ADR 0219, S11: пункт приложения в контекстном меню пишет значение в выделенные ячейки. */
+export const OwnBulkEdit: StoryObj<StoryProps> = {
+  name: 'Own action in the context menu',
+  parameters: { scenario: '0219/S11', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Своя массовая правка в меню"
+      steps={OWN_BULK}
+      args={guideArgs(
+        {
+          ...BASE_ARGS,
+          enableContextMenu: true,
+          actionsDemo: 'none',
+          extraPlugins: [resetVisitsDemo],
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(OWN_BULK[0]!.title, async () => {
+      await waitForRows(canvas)
+    })
+    await step(OWN_BULK[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(rangeSelected(canvas, 'visits', OWN_ROWS)).toBe(true),
+      )
+    })
+    await step(OWN_BULK[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(resetItem()).not.toBeNull())
+      expectPopupInCanvas(canvas, openMenu()!)
+    })
+    await step(OWN_BULK[3]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(zeroed(canvas)).toBe(true))
+      expect(openMenu()).toBeNull()
+      expect(consoleText()).toContain('onCommitEdits')
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0219, S12 --------------------------------------------------------------------
+
+/** Своя разборка буфера приложения: перед вставкой таблица спрашивает пользователя. */
+const parseWithConfirm = async (
+  { text }: { text: string; html: string },
+  { confirm }: { confirm: () => Promise<boolean> },
+) => ((await confirm()) ? text.split('\n').map(line => line.split('\t')) : null)
+
+const CONFIRM_ARGS = {
+  ...BASE_ARGS,
+  cellSelectionParseClipboard: parseWithConfirm,
+} satisfies Partial<StoryProps>
+
+const CONFIRM_ROW = 'item-id-2'
+const CONFIRM_VALUE = '55'
+let confirmOriginal: string | undefined
+const question = (root: ParentNode) =>
+  root.querySelector<HTMLElement>('[data-testid="paste-question"]')
+const asking = (root: ParentNode) => !!question(root)
+const declined = (root: ParentNode) =>
+  !asking(root) && textOf(root, CONFIRM_ROW, 'age') === confirmOriginal
+const accepted = (root: ParentNode) =>
+  !asking(root) &&
+  textOf(root, CONFIRM_ROW, 'age') === CONFIRM_VALUE &&
+  !pendingAt(root, CONFIRM_ROW, 'age')
+
+/** Выбрать ячейку и вставить, если вопрос ещё не задан. */
+const askToPaste = (root: HTMLElement) => {
+  if (!selectedAt(root, CONFIRM_ROW, 'age'))
+    selectCell(root, CONFIRM_ROW, 'age')
+  else if (!asking(root)) {
+    pasted = false
+    pasteOnce(root, CONFIRM_ROW, 'age', CONFIRM_VALUE)
+  }
+}
+/** Ответить на вопрос: галочка — вставить, крестик — не вставлять. */
+const answerAsk = (root: HTMLElement, ok: boolean) => {
+  const button = question(root)?.querySelector<HTMLElement>(
+    ok ? '[data-testid="paste-confirm"]' : '[data-testid="paste-decline"]',
+  )
+  if (!button) return false
+  button.click()
+  return true
+}
+
+/**
+ * Спросить и ответить один раз за шаг — дальше только ждать итога: пока ответ «Вставить» не
+ * лёг в ячейку, повторной вставки и второго вопроса нет.
+ */
+const answerOnce =
+  (ok: boolean, done: (root: HTMLElement) => boolean) =>
+  (root: HTMLElement, app: GuideApp) => {
+    let answered = false
+    return untilDone(done, root => {
+      if (asking(root)) answered = answerAsk(root, ok) || answered
+      else if (!answered) askToPaste(root)
+    })(root, app)
+  }
+
+const CONFIRM: readonly GuideStoryStep[] = [
+  {
+    title: 'Вопрос перед вставкой',
+    hint: 'Приложение разбирает буфер само и перед вставкой просит таблицу спросить пользователя.',
+    enter: root => {
+      pasteServer.reset()
+      pasted = false
+      confirmOriginal = textOf(root, CONFIRM_ROW, 'age')
+    },
+  },
+  {
+    title: 'Вопрос задан',
+    hint: 'Пользователь выбрал ячейку возраста и нажал Ctrl+V. Под шапкой таблицы плашка с вопросом, вставлять ли это значение, и двумя кнопками: галочка вставляет, крестик отменяет вставку.',
+    enter: untilDone(asking, askToPaste),
+  },
+  {
+    title: 'Вставка отменена',
+    hint: 'Пользователь нажал крестик. Вставка отменена: ячейка не изменилась, плашка ушла.',
+    enter: answerOnce(false, declined),
+  },
+  {
+    title: 'Вставка подтверждена',
+    hint: 'Пользователь снова нажал Ctrl+V и ответил галочкой. Значение легло в ячейку, сервер его принял.',
+    enter: answerOnce(true, accepted),
+  },
+]
+
+/** ADR 0219, S12: таблица спрашивает перед вставкой; пользователь отказывается и подтверждает. */
+export const PasteConfirm: StoryObj<StoryProps> = {
+  name: 'Confirm before pasting',
+  parameters: { scenario: '0219/S12', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Подтверждение вставки"
+      steps={CONFIRM}
+      args={guideArgs(CONFIRM_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(CONFIRM[0]!.title, async () => {
+      await waitForRows(canvas)
+    })
+    await step(CONFIRM[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(asking(canvas)).toBe(true))
+      expect(
+        canvas.querySelector('[data-testid="pending-action-banner"]'),
+      ).toBeNull()
+    })
+    await step(CONFIRM[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(declined(canvas)).toBe(true))
+      expect(consoleText()).not.toContain('onCommitEdits')
+    })
+    await step(CONFIRM[3]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(accepted(canvas)).toBe(true))
+      expect(consoleText()).toContain('onCommitEdits')
+      await settle()
+    })
+  },
+}

@@ -11,6 +11,7 @@ const FAILED_LABEL = {
   grouping: 'serverActionFailedGrouping',
   copy: 'serverActionFailedCopy',
   selectPage: 'serverActionFailedSelectPage',
+  paste: 'serverActionFailedPaste',
 } as const satisfies Record<ServerActionKind, keyof TableLabels>
 
 /** Причина отказа серверного действия: текст сервера (AS10), иначе подпись действия. */

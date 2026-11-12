@@ -23,6 +23,8 @@ import {
 } from '../../core/serverActions'
 import { Alert } from '../../ui/Alert'
 import { Button } from '../../ui/Button'
+import { IconButton } from '../../ui/IconButton'
+import { useIcons } from '../../ui/icons'
 import { parseDuration } from '../../util/cssTime'
 
 import styles from './LoadError.module.css'
@@ -51,7 +53,21 @@ const pendingOf = ({ serverAction, actionStatus }: PendingSlices) => {
     serverAction?.pending?.attempt ??
     serverAction?.loadingRows?.since ??
     action?.since
-  return { kind, attempt, name: action?.name }
+  return {
+    kind,
+    attempt,
+    name: action?.name,
+    confirm: serverAction?.loadingRows?.confirm,
+  }
+}
+
+/** Значение в вопросе вставки — одной строкой, длинное — с многоточием. */
+const QUESTION_VALUE_LENGTH = 40
+const clipped = (value: string) => {
+  const line = value.replace(/s+/g, ' ').trim()
+  return line.length > QUESTION_VALUE_LENGTH
+    ? `${line.slice(0, QUESTION_VALUE_LENGTH - 1)}…`
+    : line
 }
 
 /** Отменить всё, что показывает плашка. */
@@ -61,6 +77,7 @@ export const cancelServerPending = (table: unknown, event?: unknown) => {
     cancelPending(table, { kind: 'server' }, source) +
     cancelPending(table, { kind: 'copy' }, source) +
     cancelPending(table, { kind: 'selectPage' }, source) +
+    cancelPending(table, { kind: 'paste' }, source) +
     cancelTableActions(table, source)
   )
 }
@@ -72,8 +89,10 @@ export const PendingActionBanner = ({
   onCancelled,
 }: PendingActionBannerProps) => {
   const labels = useLocalization()
-  const { kind, attempt, name } = useTableState(table as never, state =>
-    pendingOf(state as PendingSlices),
+  const icons = useIcons()
+  const { kind, attempt, name, confirm } = useTableState(
+    table as never,
+    state => pendingOf(state as PendingSlices),
   )
   const heading = kind
     ? serverActionPendingTitle(kind, labels)
@@ -94,6 +113,48 @@ export const PendingActionBanner = ({
   }, [attempt, themeRef])
 
   const shown = !!heading && due === attempt && !blocked
+  // Вопрос перед вставкой (ADR 0219, WR3): сразу, на месте плашки ожидания; галочка вставляет,
+  // крестик отменяет вставку — как «Отмена» плашки.
+  if (confirm && !blocked) {
+    const ConfirmIcon = icons.pasteConfirm
+    const DeclineIcon = icons.clear
+    return (
+      <Alert
+        shown
+        className={clsx('data-grid__pending-action', styles.banner)}
+        title={
+          confirm.value !== undefined && confirm.count === 1
+            ? labels.pasteQuestionValue(clipped(confirm.value))
+            : labels.pasteQuestionCount(confirm.count)
+        }
+        action={
+          <span className={styles.questionButtons}>
+            <IconButton
+              label={labels.pasteConfirm}
+              shape="square"
+              onClick={confirm.accept}
+              data-testid="paste-confirm"
+            >
+              <ConfirmIcon width={16} height={16} />
+            </IconButton>
+            {/* Отказ теряет вставляемое: тон отказа (ADR 0206). */}
+            <IconButton
+              label={labels.pasteDecline}
+              shape="square"
+              tone="danger"
+              onClick={() => {
+                if (cancelServerPending(table) > 0) onCancelled()
+              }}
+              data-testid="paste-decline"
+            >
+              <DeclineIcon width={16} height={16} />
+            </IconButton>
+          </span>
+        }
+        data-testid="paste-question"
+      />
+    )
+  }
   return (
     <Alert
       shown={shown}
