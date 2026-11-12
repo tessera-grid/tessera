@@ -16,6 +16,12 @@ import { openSettingsSection } from '../viewSettings'
 
 // Отказ загрузки своей панели раздела «Настроек вида» (ADR 0215, VW17).
 
+/** axe с проверкой контраста: в общих опциях она выключена. */
+const AXE_CONTRAST = {
+  ...AXE_OPTIONS,
+  rules: { ...AXE_OPTIONS.rules, 'color-contrast': { enabled: true } },
+}
+
 const DATA = Array.from({ length: 5 }, (_, i) => ({
   id: String(i),
   name: `Name ${i}`,
@@ -90,7 +96,7 @@ describe('Панель раздела «Настроек вида» (ADR 0215)',
     ).toBeNull()
     expect(retry()!.textContent).toContain(tableLabels.loadMoreRetry)
     await inBothThemes(async () => {
-      const result = await axe.run(errorBlock()!, AXE_OPTIONS)
+      const result = await axe.run(errorBlock()!, AXE_CONTRAST)
       expect(result.violations.map(v => v.id)).toEqual([])
     })
 
