@@ -10,7 +10,7 @@ import { humanClick, pendingArcOf } from '../helpers'
 import { tableLabels } from '../labels'
 import {
   MODULE,
-  columnsButton,
+  settingsButton,
   exportButton,
   failModule,
   holdModule,
@@ -20,13 +20,12 @@ import {
   sleep,
 } from './lazy-helpers'
 import { dataExportLabels } from '../../../plugins/dataExport/labels'
-import { columnVisibilityLabels } from '../../../plugins/columnVisibility/labels'
 
 // Отказ процесса вне таблицы (ADR 0177, OB2): выгрузка и ленивый модуль поповера — дуга и
 // «стоп» на своей кнопке, отказ — без отметки, объявлением и записью реестра. Отдельный
 // файл: модуль поповера грузится один раз на документ.
 
-afterEach(() => releaseModule(MODULE.columns))
+afterEach(() => releaseModule(MODULE.settings))
 
 const DATA = Array.from({ length: 20 }, (_, i) => ({
   id: String(i),
@@ -76,7 +75,7 @@ const unmarked = (el: HTMLElement) =>
 
 describe('Отказ процесса вне таблицы (ADR 0177)', () => {
   test('OB2: процесс вне таблицы — выгрузка, ленивый модуль поповера — показывает дугу и «стоп» на своей кнопке; отказ останавливает дугу без отметки на кнопке, объявляется с причиной и пишет запись в реестр', async () => {
-    await holdModule(MODULE.columns)
+    await holdModule(MODULE.settings)
     await render(<Grid />)
     await expect
       .poll(() => document.querySelector('[role="toolbar"]'))
@@ -110,27 +109,25 @@ describe('Отказ процесса вне таблицы (ADR 0177)', () => {
     ])
 
     // Ленивый модуль поповера: загрузка задержана, затем оборвана.
-    await humanClick(columnsButton())
-    await expect.poll(() => heldRequests(MODULE.columns)).toBeGreaterThan(0)
-    await expect.poll(() => pendingArcOf(columnsButton())).not.toBeNull()
-    await userEvent.hover(columnsButton())
-    await expect.poll(() => armed(columnsButton())).toBe(true)
-    await expect.poll(() => stopShown(columnsButton())).toBe(true)
-    await failModule(MODULE.columns)
-    await expect.poll(() => pendingArcOf(columnsButton())).toBeNull()
+    await humanClick(settingsButton())
+    await expect.poll(() => heldRequests(MODULE.settings)).toBeGreaterThan(0)
+    await expect.poll(() => pendingArcOf(settingsButton())).not.toBeNull()
+    await userEvent.hover(settingsButton())
+    await expect.poll(() => armed(settingsButton())).toBe(true)
+    await expect.poll(() => stopShown(settingsButton())).toBe(true)
+    await failModule(MODULE.settings)
+    await expect.poll(() => pendingArcOf(settingsButton())).toBeNull()
     await sleep(100)
-    expect(unmarked(columnsButton())).toBe(true)
+    expect(unmarked(settingsButton())).toBe(true)
     expect(
       document.querySelector('[role="dialog"] [role="checkbox"]'),
     ).toBeNull()
     await expect
       .poll(() => announcements.messages)
-      .toContain(
-        tableLabels.loadFailed(columnVisibilityLabels(tableLabels).columns),
-      )
+      .toContain(tableLabels.loadFailed(tableLabels.viewSettings))
     expect(failures().map(failure => failure.target)).toEqual([
       { process: 'export' },
-      { process: `lazy:${columnVisibilityLabels(tableLabels).columns}` },
+      { process: `lazy:${tableLabels.viewSettings}` },
     ])
     announcements.stop()
   })

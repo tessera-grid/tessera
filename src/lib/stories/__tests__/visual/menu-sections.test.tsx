@@ -413,7 +413,7 @@ describe('Раздел и смена содержимого', () => {
     await closeMenu()
   })
 
-  test('NM3: первая строка раздела — «‹ Название» с разделителем; нажатие возвращает уровень выше', async () => {
+  test('NM3: первая строка раздела — «‹ Название» кеглем и жирностью подписей групп, без разделителя, с двойным полем до пунктов; нажатие возвращает уровень выше', async () => {
     await renderGrid()
     await openRowMenu()
     await enter('Pin')
@@ -421,19 +421,24 @@ describe('Раздел и смена содержимого', () => {
     expect(items()[0]).toBe(back)
     expect(back.textContent).toBe('Pin')
     expect(back.querySelector('svg')).not.toBeNull()
-    // Отдельный разделитель, а не граница строки: подсветка строки остаётся скруглённой.
-    expect(getComputedStyle(back).borderBottomWidth).toBe('0px')
-    expect(getComputedStyle(back).borderBottomLeftRadius).not.toBe('0px')
-    const separator = back.nextElementSibling as HTMLElement
-    expect(separator.getAttribute('role')).toBe('separator')
-    expect(separator.getBoundingClientRect().height).toBe(1)
-    const divider = document.createElement('span')
-    divider.style.color = 'var(--tsr-comp-popup-divider-color)'
-    menu()!.appendChild(divider)
-    expect(getComputedStyle(separator).backgroundColor).toBe(
-      getComputedStyle(divider).color,
-    )
-    divider.remove()
+    // Шапкой поповеров-панелей (ADR 0215): кегль и жирность подписей групп, без разделителя.
+    const probe = document.createElement('span')
+    probe.style.width = 'var(--tsr-comp-popup-title-font-size)'
+    probe.style.position = 'absolute'
+    menu()!.appendChild(probe)
+    const titleSize = getComputedStyle(probe).width
+    probe.style.width = 'var(--tsr-comp-popup-padding)'
+    const padding = parseFloat(getComputedStyle(probe).width)
+    probe.remove()
+    const style = getComputedStyle(back)
+    expect(style.fontSize).toBe(titleSize)
+    expect(Number(style.fontWeight)).toBeGreaterThanOrEqual(600)
+    expect(style.borderBottomWidth).toBe('0px')
+    const next = back.nextElementSibling as HTMLElement
+    expect(next.getAttribute('role')).not.toBe('separator')
+    expect(
+      next.getBoundingClientRect().top - back.getBoundingClientRect().bottom,
+    ).toBeCloseTo(padding * 2, 0)
 
     await humanClick(back)
     await settle()

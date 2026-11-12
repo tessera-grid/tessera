@@ -338,6 +338,8 @@ describe('Button system (ADR 0098)', () => {
           '[data-testid="quick-search-clear"]',
           // Список размера страницы — триггер Select (ADR 0038).
           '[aria-haspopup="listbox"]',
+          // Пункт перехода поповера (ADR 0215) — пункт, как пункт меню, а не кнопка кита.
+          '[data-popup-nav-item]',
           // Консоль истории (ADR 0124) — обвязка, не грид.
           '[data-testid="story-console"] button',
         ].join(','),

@@ -2,6 +2,7 @@
 // `play`, который открывает панель, как пользователь. Истории-состояния ушли в шаги гайдов
 // (ADR 0117), а тестам кнопок нужен грид с уже открытой панелью.
 
+import { openColumnsMenu } from './viewSettings'
 import {
   dateFilteringColumns,
   dateFilteringData,
@@ -76,7 +77,7 @@ export const ExportPanel = fixture(
   },
 )
 
-/** Открытое меню «Колонки». */
+/** Открытый раздел «Колонки» «Настроек вида». */
 export const ColumnsPanel = fixture(
   composed.ColumnVisibilityPlayground,
   {
@@ -88,10 +89,6 @@ export const ColumnsPanel = fixture(
   },
   async ({ canvasElement }) => {
     await waitForRows(canvasElement)
-    await openPopup(() =>
-      canvasElement.querySelector<HTMLElement>(
-        '[data-testid="column-visibility-button"]',
-      ),
-    )
+    await openColumnsMenu({ root: canvasElement })
   },
 )

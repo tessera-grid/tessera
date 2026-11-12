@@ -29,6 +29,13 @@ import {
 } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
 import { tableLabels } from '../labels'
+import {
+  closeSettings,
+  openColumnsMenu,
+  openSettings,
+  viewSettingsButton,
+  viewSettingsRow,
+} from '../viewSettings'
 import { columnFilteringLabels } from '../../../plugins/columnFiltering/labels'
 import { columnPinningLabels } from '../../../plugins/columnPinning/labels'
 import { columnSortingLabels } from '../../../plugins/columnSorting/labels'
@@ -190,25 +197,24 @@ const filterName = async (value: string) => {
     .toBeNull()
 }
 
+/** Скрыть или вернуть колонку «City» в разделе «Колонки» «Настроек вида». */
 const hideCity = async () => {
-  const columns = () =>
-    document.querySelector<HTMLElement>(
-      '[data-testid="column-visibility-button"]',
-    )!
-  await humanClick(columns())
-  const checkbox = () =>
-    document.querySelector<HTMLElement>(
-      '[data-testid="column-visibility-menu"] [data-column-id="city"] [role="checkbox"]',
-    )
-  await expect.poll(checkbox).not.toBeNull()
-  await userEvent.click(checkbox()!)
-  await userEvent.keyboard('{Escape}')
-  await expect
-    .poll(() =>
-      document.querySelector('[data-testid="column-visibility-menu"]'),
-    )
-    .toBeNull()
+  const menu = await openColumnsMenu({ click: humanClick })
+  await userEvent.click(
+    menu.querySelector<HTMLElement>(
+      '[data-column-id="city"] [role="checkbox"]',
+    )!,
+  )
+  await closeSettings()
 }
+
+/** Пузырёк-счётчик «Настроек вида»: число включённых разделов (ADR 0215). */
+const settingsBubble = () =>
+  [
+    ...(viewSettingsButton(document)?.querySelectorAll<HTMLElement>(
+      '[aria-hidden]',
+    ) ?? []),
+  ].find(el => el.textContent?.trim())
 
 describe('Индикатор активного действия', () => {
   test('AI1: активная инлайн-кнопка заголовка — обычная, с мини-меню и с панелью — показывает точку цвета --tsr-comp-active-indicator в правом верхнем углу; у неактивной точка скрыта; размер кнопки не меняется', async () => {
@@ -369,13 +375,10 @@ describe('Индикатор активного действия', () => {
     await pressInHead('age', () => button('age', 'column-sort__button'))
     await filterName('Name 1')
     await hideCity()
+    // Сортировка, фильтр и скрытая колонка — три включённых раздела на одном пузырьке.
     const countBubbles = () =>
-      [
-        ...document.querySelectorAll<HTMLElement>(
-          '[data-testid="filter-summary-button"] [aria-hidden], [data-testid="column-visibility-button"] [aria-hidden]',
-        ),
-      ].filter(el => el.textContent?.trim())
-    await expect.poll(() => countBubbles().length).toBe(2)
+      [settingsBubble()].filter(Boolean) as HTMLElement[]
+    await expect.poll(() => settingsBubble()?.textContent).toBe('3')
     blur()
 
     const options = {
@@ -414,13 +417,8 @@ describe('Индикатор активного действия', () => {
     )
     await pressInHead('age', () => button('age', 'column-sort__button'))
     await filterName('Name 1')
-    const summary = () =>
-      [
-        ...document.querySelectorAll<HTMLElement>(
-          '[data-testid="filter-summary-button"] [aria-hidden]',
-        ),
-      ].find(el => el.textContent?.trim())!
-    await expect.poll(summary).toBeTruthy()
+    const summary = () => settingsBubble()!
+    await expect.poll(settingsBubble).toBeTruthy()
 
     const theme = document.querySelector<HTMLElement>('.data-grid-theme')!
     theme.style.setProperty('--tsr-comp-active-indicator', 'rgb(200, 30, 90)')
@@ -447,36 +445,33 @@ describe('Индикатор активного действия', () => {
     )
   })
 
-  test('AI7: «Колонки» при скрытых колонках показывают их число пузырьком тона active и называются columnsWithHidden(N); без скрытых — columns и без пузырька', async () => {
+  test('AI7: «Настройки вида» при скрытых колонках считают раздел «Колонки» пузырьком тона active и называются viewSettingsActive(N), строка раздела называет число скрытых; без скрытых — viewSettings и без пузырька', async () => {
     await render(<Grid />)
     await waitForGrid()
-    const columns = () =>
-      document.querySelector<HTMLElement>(
-        '[data-testid="column-visibility-button"]',
-      )!
-    const count = () =>
-      [...columns().querySelectorAll<HTMLElement>('[aria-hidden]')].find(el =>
-        el.textContent?.trim(),
-      )
-    expect(columns().ariaLabel).toBe(
-      columnVisibilityLabels(tableLabels).columns,
-    )
-    expect(count()).toBeUndefined()
+    const settings = () => viewSettingsButton(document)!
+    await expect
+      .poll(() => settings()?.ariaLabel)
+      .toBe(tableLabels.viewSettings)
+    expect(settingsBubble()).toBeUndefined()
 
     await hideCity()
     await expect
-      .poll(() => columns().ariaLabel)
-      .toBe(columnVisibilityLabels(tableLabels).columnsWithHidden(1))
-    expect(count()!.textContent).toBe('1')
-    expect(getComputedStyle(count()!).backgroundColor).toBe(
+      .poll(() => settings().ariaLabel)
+      .toBe(tableLabels.viewSettingsActive(1))
+    expect(settingsBubble()!.textContent).toBe('1')
+    expect(getComputedStyle(settingsBubble()!).backgroundColor).toBe(
       tokenColor('--tsr-comp-active-indicator'),
     )
+    await openSettings({ click: humanClick })
+    expect(
+      viewSettingsRow('columns')!.querySelector('[data-popup-nav-value]')!
+        .textContent,
+    ).toBe(columnVisibilityLabels(tableLabels).columnsHiddenShort(1))
+    await closeSettings()
 
     await hideCity()
-    await expect
-      .poll(() => columns().ariaLabel)
-      .toBe(columnVisibilityLabels(tableLabels).columns)
-    expect(count()).toBeUndefined()
+    await expect.poll(() => settings().ariaLabel).toBe(tableLabels.viewSettings)
+    expect(settingsBubble()).toBeUndefined()
   })
 
   test('AI8: точка проявляется и гаснет переходом на токенах движения; при prefers-reduced-motion: reduce переход нулевой', async () => {

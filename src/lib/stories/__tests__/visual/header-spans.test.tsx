@@ -8,6 +8,7 @@ import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
 import { pinViaPopover } from './column-pinning-helpers'
 import { PINNING_NESTED, SHALLOW_LEAVES } from './header-fixtures'
 import { tableLabels } from '../labels'
+import { openColumnsMenu } from '../viewSettings'
 import { columnPinningLabels } from '../../../plugins/columnPinning/labels'
 import { columnVisibilityLabels } from '../../../plugins/columnVisibility/labels'
 
@@ -123,21 +124,9 @@ describe('Нативные спаны вложенной шапки', () => {
   test('HS5: скрытие самой глубокой ветки через меню «Колонки» убирает строку шапки без дыр', async () => {
     await mount()
     expect(headerRowTops()).toHaveLength(3)
-    const columnsButton = () =>
-      document.querySelector<HTMLElement>(
-        '[data-testid="column-visibility-button"]',
-      )
-    await expect
-      .poll(() => columnsButton()?.hasAttribute('data-base-ui-click-trigger'))
-      .toBe(true)
-    await userEvent.click(columnsButton()!)
-    const menu = () =>
-      document.querySelector<HTMLElement>(
-        '[data-testid="column-visibility-menu"]',
-      )
-    await expect.poll(() => menu()?.hasAttribute('data-open')).toBe(true)
+    const menu = await openColumnsMenu()
     await userEvent.click(
-      menu()!.querySelector<HTMLElement>(
+      menu.querySelector<HTMLElement>(
         '[data-column-id="more-info"] [role="checkbox"]',
       )!,
     )

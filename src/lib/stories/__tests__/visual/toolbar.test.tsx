@@ -309,53 +309,41 @@ describe('Toolbar button order', () => {
       />,
     )
 
-  test('TB17: the filter summary sits on the left right after the search field with no separator; without search it comes first on the left', async () => {
-    const { unmount } = await renderBuiltIns()
-    const search = rect(byTestId('quick-search'))
-    const filters = rect(byTestId('filter-summary-button'))
-    const columns = rect(byTestId('column-visibility-button'))
-    const gap = parseFloat(read(toolbar()!, 'column-gap'))
-    // Вплотную к полю поиска (зазор группы) и не наезжает на правую сторону.
-    expect(filters.left - search.right).toBeCloseTo(gap, 0)
-    expect(columns.left - filters.right).toBeGreaterThanOrEqual(gap)
-    expect(
-      separators().filter(separator => rect(separator).right < filters.left),
-    ).toHaveLength(0)
-    await unmount()
-
-    await renderBuiltIns(false)
+  test('TB17: the search field comes first on the left; View settings sits on the right, the sides do not overlap', async () => {
+    await renderBuiltIns()
     const padding = parseFloat(read(toolbar()!, 'padding-left'))
-    expect(rect(byTestId('filter-summary-button')).left).toBeCloseTo(
-      rect(toolbar()!).left + padding,
-      0,
-    )
+    const search = rect(byTestId('quick-search'))
+    const settings = rect(byTestId('view-settings-button'))
+    const gap = parseFloat(read(toolbar()!, 'column-gap'))
+    expect(search.left).toBeCloseTo(rect(toolbar()!).left + padding, 0)
+    expect(settings.left - search.right).toBeGreaterThanOrEqual(gap)
+    expect(
+      separators().filter(separator => rect(separator).right < search.left),
+    ).toHaveLength(0)
   })
 
-  test('TB18: on the right — Columns, a separator, then Export', async () => {
+  test('TB18: on the right — View settings, a separator, then Export', async () => {
     await renderBuiltIns()
     const bar = rect(toolbar()!)
-    const columns = rect(byTestId('column-visibility-button'))
+    const settings = rect(byTestId('view-settings-button'))
     const exportButton = rect(byTestId('export-button'))
-    expect(columns.left).toBeGreaterThan(bar.left + bar.width / 2)
+    expect(settings.left).toBeGreaterThan(bar.left + bar.width / 2)
     const [separator] = separators().map(rect)
     expect(separators()).toHaveLength(1)
-    expect(separator.left).toBeGreaterThan(columns.right)
+    expect(separator.left).toBeGreaterThan(settings.right)
     expect(separator.right).toBeLessThan(exportButton.left)
   })
 
   test('TB20: ←/→ and Home/End walk the buttons in the visual order', async () => {
     await renderBuiltIns()
     const focused = () => document.activeElement?.getAttribute('data-testid')
-    byTestId('column-visibility-button').focus()
-    await userEvent.keyboard('{ArrowLeft}')
-    expect(focused()).toBe('filter-summary-button')
-    await userEvent.keyboard('{ArrowRight}')
-    expect(focused()).toBe('column-visibility-button')
+    byTestId('view-settings-button').focus()
     await userEvent.keyboard('{ArrowRight}')
     expect(focused()).toBe('export-button')
+    await userEvent.keyboard('{ArrowLeft}')
+    expect(focused()).toBe('view-settings-button')
     await userEvent.keyboard('{Home}')
     expect(focused()).toBe('quick-search')
-    byTestId('filter-summary-button').focus()
     await userEvent.keyboard('{End}')
     expect(focused()).toBe('export-button')
   })

@@ -21,6 +21,7 @@ import {
 } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
 import { columnSortingLabels } from '../../../plugins/columnSorting/labels'
+import { closeSettings, openSettingsSection } from '../viewSettings'
 
 // Тип данных колонки (ADR 0172): вид по типу, значок булева, текст по типу в группе,
 // агрегате, тултипе и сводке фильтров, выравнивание, примитив `CheckMark`; вид фильтра,
@@ -285,16 +286,10 @@ describe('Тип данных колонки (ADR 0172)', () => {
       )
       .toContain(usd(123456.78))
 
-    // Сводка фильтров: число условия — по типу колонки.
-    await humanClick(
-      document.querySelector('[data-testid="filter-summary-button"]')!,
-    )
-    await expect
-      .poll(
-        () =>
-          document.querySelector('[data-testid="filter-summary"]')?.textContent,
-      )
-      .toContain(usd(1000))
+    // Раздел «Фильтр» «Настроек вида»: число условия — по типу колонки.
+    const section = await openSettingsSection('filter', { click: humanClick })
+    expect(section.textContent).toContain(usd(1000))
+    await closeSettings()
     await first.unmount()
 
     // Строка группы и агрегат группы.

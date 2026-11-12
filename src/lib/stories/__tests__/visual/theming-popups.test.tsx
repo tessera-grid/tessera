@@ -171,23 +171,21 @@ const POPOVERS: Popover[] = [
       ),
   },
   {
-    name: 'column visibility menu',
+    name: 'view settings',
     open: async () => {
-      await userEvent.click(
-        query('[data-testid="column-visibility-button"]')[0],
-      )
+      await userEvent.click(query('[data-testid="view-settings-button"]')[0])
       await expect
-        .poll(() => query('[data-testid="column-visibility-menu"]').length)
+        .poll(() => query('[data-testid="view-settings-popover"]').length)
         .toBe(1)
     },
-    popup: () => query('[data-testid="column-visibility-menu"]')[0],
-    items: () => query('[data-column-id] label'),
+    popup: () => query('[data-testid="view-settings-popover"]')[0],
+    items: () => query('[data-view-settings-section]'),
     gap: () =>
       gapFrom(
         query(
-          '[data-testid="column-visibility-button"]',
+          '[data-testid="view-settings-button"]',
         )[0].getBoundingClientRect(),
-        query('[data-testid="column-visibility-menu"]')[0],
+        query('[data-testid="view-settings-popover"]')[0],
       ),
   },
   {
@@ -426,23 +424,27 @@ describe('Popover family contract', () => {
 
   test('PP9 popover item highlight transitions its background in the tempo of a table row hover', async () => {
     await renderAll()
-    const cell = document.querySelector<HTMLElement>('.data-grid__body-cell')!
-    const timingOf = (el: Element) => {
+    // Наведение строки — переход слоя состояния строки, а не фона ячейки (ADR 0214).
+    const row = document.querySelector<HTMLElement>('.data-grid__body-row')!
+    // Запятые внутри cubic-bezier(…) списки не делят.
+    const listOf = (value: string) =>
+      value.split(/,(?![^(]*\))/).map(part => part.trim())
+    const timingOf = (el: Element, property = 'background-color') => {
       const style = getComputedStyle(el)
-      const properties = style.transitionProperty.split(', ')
-      const index = properties.indexOf('background-color')
+      const properties = listOf(style.transitionProperty)
+      const index = properties.indexOf(property)
       return index < 0
         ? undefined
         : {
-            duration: style.transitionDuration.split(', ')[index],
-            easing: style.transitionTimingFunction.split(', ')[index],
+            duration: listOf(style.transitionDuration)[index],
+            easing: listOf(style.transitionTimingFunction)[index],
           }
     }
-    const row = timingOf(cell)
-    expect(row).toBeDefined()
+    const hover = timingOf(row, '--tsr-row-state')
+    expect(hover).toBeDefined()
     const items = await collect(p => timingOf(p.items()[0]!))
     for (const [name, timing] of items) {
-      expect(timing, ` item`).toEqual(row)
+      expect(timing, `${name} item`).toEqual(hover)
     }
   })
 

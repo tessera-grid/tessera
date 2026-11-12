@@ -33,6 +33,12 @@ import { tableLabels } from '../labels'
 import { rowSelectionLabels } from '../../../plugins/rowSelection/labels'
 import { filteringLabels } from '../../../shared/filtering/labels'
 import { infiniteScrollLabels } from '../../../plugins/infiniteScroll/labels'
+import {
+  closeSettings,
+  openColumnsMenu,
+  openSettingsSection,
+  viewSettingsPopover,
+} from '../viewSettings'
 
 // Длинный текст (ADR 0083; TX1–TX7, TX9–TX11, TX13). Модульный TX8 — в
 // `textOverflow`, перф TX12 — в `interaction`.
@@ -377,12 +383,7 @@ describe('Длинный текст', () => {
 
   test('TX4: «Колонки» и чек-лист вариантов — подпись в одну строку с многоточием, тултип только у обрезанной', async () => {
     await mount()
-    const columnsButton = () =>
-      document.querySelector<HTMLElement>(
-        '[data-testid="column-visibility-button"]',
-      )
-    await expect.poll(columnsButton).not.toBeNull()
-    await userEvent.click(columnsButton()!)
+    await openColumnsMenu()
     const columnLabel = (id: string) =>
       document.querySelector<HTMLElement>(
         `[data-testid="column-visibility-menu"] [data-column-id="${id}"] [data-option-label]`,
@@ -421,7 +422,7 @@ describe('Длинный текст', () => {
     await expect.poll(tooltipShown(LONG_OPTION)).toBe(true)
   })
 
-  test('TX5: сводка фильтров — условие не больше двух строк с многоточием, полный текст в тултипе', async () => {
+  test('TX5: раздел «Фильтр» «Настроек вида» — условие не больше двух строк с многоточием, полный текст в тултипе', async () => {
     await mount()
     table.setColumnFilters([
       {
@@ -429,15 +430,10 @@ describe('Длинный текст', () => {
         value: { operator: 'anyOf', value: ['review', 'approved'] },
       },
     ])
-    const button = () =>
-      document.querySelector<HTMLElement>(
-        '[data-testid="filter-summary-button"]',
-      )
-    await expect.poll(button).not.toBeNull()
-    await humanClick(button()!)
+    await openSettingsSection('filter', { click: humanClick })
     const condition = () =>
       document.querySelector<HTMLElement>(
-        '[data-testid="filter-summary"] [data-column-id="status"] [data-filter-condition]',
+        '[data-view-settings-level="status"] [data-view-settings-description]',
       )
     await expect.poll(condition).not.toBeNull()
     await settle()
@@ -610,22 +606,16 @@ describe('Длинный текст', () => {
     table.setColumnFilters([
       { id: 'status', value: { operator: 'anyOf', value: ['review'] } },
     ])
-    const button = () =>
-      document.querySelector<HTMLElement>(
-        '[data-testid="filter-summary-button"]',
-      )
-    await expect.poll(button).not.toBeNull()
-    await humanClick(button()!)
-    const summary = () =>
-      document.querySelector<HTMLElement>('[data-testid="filter-summary"]')
-    await expect.poll(summary).not.toBeNull()
+    await openSettingsSection('filter', { click: humanClick })
     await settle()
-    await run(summary()!, 'сводка')
+    await run(viewSettingsPopover()!, 'раздел «Фильтр»')
     await textContrast(
-      summary()!.querySelector<HTMLElement>('[data-filter-condition]')!,
+      viewSettingsPopover()!.querySelector<HTMLElement>(
+        '[data-view-settings-description]',
+      )!,
       'условие',
     )
-    await userEvent.keyboard('{Escape}')
+    await closeSettings()
 
     await selectAll()
     await narrowUntil('compact')

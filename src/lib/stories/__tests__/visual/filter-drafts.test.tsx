@@ -217,7 +217,7 @@ describe('Неприменённое условие в заголовке (ADR 0
     try {
       const summary = () =>
         document.querySelector<HTMLElement>(
-          '[data-testid="filter-summary-button"]',
+          '[data-testid="view-settings-button"]',
         )!
       const count = () =>
         bubbleOf(summary()).getAttribute('data-shown') === 'true'

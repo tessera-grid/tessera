@@ -38,7 +38,8 @@ async function renderFromOutside() {
   await render(
     <>
       <button id="before-grid">before</button>
-      <composed.KeyboardPlayground />
+      {/* Без тулбара «Настроек вида»: его остановка Tab стояла бы перед гридом (TB11). */}
+      <composed.KeyboardPlayground enableToolbar={false} />
     </>,
   )
   await expect

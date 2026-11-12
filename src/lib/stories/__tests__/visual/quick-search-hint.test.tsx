@@ -11,6 +11,7 @@ import { bodyRows } from '../helpers'
 import { composed } from '../stories'
 import { tableLabels } from '../labels'
 import { quickSearchLabels } from '../../../plugins/quickSearch/labels'
+import { openColumnsMenu } from '../viewSettings'
 
 // Подсказка быстрого поиска (ADR 0053): QS1–QS2, QS4–QS5, QS8. QS3, QS6–QS7 —
 // модульные (`src/lib/__tests__/quickSearchHint.dom.test.tsx`), QS9 — `play` истории
@@ -48,11 +49,7 @@ const mount = async (node: React.ReactElement) => {
 
 /** Снять или вернуть колонку в меню «Колонки». */
 const toggleColumn = async (id: string) => {
-  await userEvent.click(
-    document.querySelector<HTMLElement>(
-      '[data-testid="column-visibility-button"]',
-    )!,
-  )
+  await openColumnsMenu()
   const checkbox = () =>
     document.querySelector<HTMLElement>(
       `[data-testid="column-visibility-menu"] [data-column-id="${id}"] [role="checkbox"]`,

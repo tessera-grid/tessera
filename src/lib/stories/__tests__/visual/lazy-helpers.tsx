@@ -33,7 +33,7 @@ export const heldRequests = (pattern: string) =>
   network.heldModuleRequests(pattern)
 
 export const MODULE = {
-  columns: 'ColumnVisibilityPopover.tsx',
+  settings: 'ViewSettingsPopover.tsx',
   export: 'ExportPanel.tsx',
   pageSize: 'PageSizeSelect.tsx',
   contextMenu: 'ContextMenuPopup.tsx',
@@ -76,18 +76,17 @@ export const renderToolbarGrid = async () => {
   return screen
 }
 
-export const columnsButton = () =>
-  document.querySelector<HTMLElement>(
-    '[data-testid="column-visibility-button"]',
-  )!
+export const settingsButton = () =>
+  document.querySelector<HTMLElement>('[data-testid="view-settings-button"]')!
 export const exportButton = () =>
   document.querySelector<HTMLElement>('[data-testid="export-button"]')!
 export const pageSizeButton = () =>
   document.querySelector<HTMLElement>(
     'nav[data-testid="pagination"] button[aria-haspopup="listbox"]:not([data-testid="page-size-select"])',
   )!
-export const columnsPopover = () =>
-  document.querySelector('[role="dialog"] [role="checkbox"]')
+/** Поповер «Настроек вида» в DOM: открыт или ещё закрывается (фокус вернёт в конце). */
+export const settingsPopover = () =>
+  document.querySelector('[data-testid="view-settings-popover"]')
 export const exportPanel = () =>
   document.querySelector('[data-testid="export-panel"]')
 export const pageSizeOptions = () =>

@@ -5,6 +5,7 @@
  */
 import type { ComponentType, ReactNode } from 'react'
 
+import type { ToolbarSlot } from './createSlots'
 import type { DebugActionSource } from './debugActions'
 import type { TableLabels } from './localization'
 import type { ToolbarPlacement } from './toolbar'
@@ -113,6 +114,27 @@ export const viewSettingsPlacement = (table: unknown) => {
     ...(placement ? definedOnly(placement) : {}),
   }
 }
+
+/**
+ * Кнопки тулбара вместе с кнопкой «Настроек вида» на её месте (VW1): кнопка — грида, а не плагина,
+ * есть, пока есть разделы; компонент кнопки даёт грид.
+ */
+export const withViewSettingsButton = (
+  slot: ToolbarSlot,
+  table: unknown,
+  component: ToolbarSlot[number]['component'],
+): ToolbarSlot =>
+  viewSettingsShown(table)
+    ? [
+        ...slot,
+        {
+          id: 'viewSettingsButton',
+          slot: 'toolbarSlot',
+          component,
+          ...viewSettingsPlacement(table),
+        } as ToolbarSlot[number],
+      ]
+    : slot
 
 const definedOnly = ({ group, order, align }: ToolbarPlacement) => ({
   ...(group !== undefined && { group }),

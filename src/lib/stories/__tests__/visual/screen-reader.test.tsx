@@ -25,7 +25,8 @@ describe('Эмулятор скринридера (SR)', () => {
     await render(
       <>
         <button id="before-grid">before</button>
-        <Stories.KeyboardPlayground />
+        {/* Без тулбара «Настроек вида»: его остановка Tab стояла бы перед гридом (TB11). */}
+        <Stories.KeyboardPlayground enableToolbar={false} />
       </>,
     )
     await waitForGrid()

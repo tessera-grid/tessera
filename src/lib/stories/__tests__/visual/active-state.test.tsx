@@ -20,6 +20,7 @@ import { UiCanvas } from '../../__mocks__/UiCanvas'
 import { humanClick } from '../helpers'
 import { AXE_OPTIONS, contrast, inBothThemes, toRgba } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
+import { openColumnsMenu } from '../viewSettings'
 
 // Включённое состояние кнопок (ADR 0129, AV1–AV3, AV5–AV7, AV10, AV12): бабл в базе
 // `IconButton` — точка, число `count`, свой значок, уход в последнем виде; ожидание и отказ
@@ -334,30 +335,28 @@ describe('Включённое состояние кнопок (ADR 0129)', () =
     }
     await render(<Grid />)
     await waitForGrid()
-    const filters = () => byId('filter-summary-button')
-    const columns = () => byId('column-visibility-button')
+    // Счётчик «Настроек вида» — число включённых разделов (ADR 0215): фильтр, затем и колонки.
+    const settings = () => byId('view-settings-button')
     // Тулбар — ленивый модуль (ADR 0046, PB6).
     await expect
-      .poll(() => filters() && bubbleOf(filters())?.dataset.count)
-      .toBe('2')
-    expect(bubbleOf(filters())!.getAttribute('data-count')).toBe('2')
-    expect(shown(filters())).toBe(true)
-    expect(box(bubbleOf(filters())!).right).toBeGreaterThan(
-      box(filters()).right,
+      .poll(() => settings() && bubbleOf(settings())?.dataset.count)
+      .toBe('1')
+    expect(shown(settings())).toBe(true)
+    expect(box(bubbleOf(settings())!).right).toBeGreaterThan(
+      box(settings()).right,
     )
 
-    await humanClick(columns())
-    const checkbox = () =>
-      document.querySelector<HTMLElement>(
-        '[data-testid="column-visibility-menu"] [data-column-id="city"] [role="checkbox"]',
-      )
-    await expect.poll(checkbox).not.toBeNull()
-    await userEvent.click(checkbox()!)
+    const menu = await openColumnsMenu({ click: humanClick })
+    await userEvent.click(
+      menu.querySelector<HTMLElement>(
+        '[data-column-id="city"] [role="checkbox"]',
+      )!,
+    )
     await userEvent.keyboard('{Escape}')
     await expect
-      .poll(() => bubbleOf(columns())?.getAttribute('data-count'))
-      .toBe('1')
-    expect(shown(columns())).toBe(true)
+      .poll(() => bubbleOf(settings())?.getAttribute('data-count'))
+      .toBe('2')
+    expect(shown(settings())).toBe(true)
   })
 
   test('AV6: ExpandButton не принимает active, count, activeIcon и indicator; раскрытую строку показывают поворот шеврона и aria-expanded, бабла нет', async () => {

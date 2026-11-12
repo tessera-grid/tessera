@@ -69,19 +69,22 @@ const headIdsOf = (root: ParentNode) =>
  * Шаг в меню «Колонки», как у пользователя: меню открыто — сразу, иначе сначала «Настройки вида» и его
  * раздел «Колонки» (ADR 0215). `reach` делает одно нажатие к состоянию шага и возвращает `true`,
  * когда оно достигнуто: шаг приходит к своему состоянию из любого — после отката гайда
- * и при переходе нажатием на шаг (ADR 0117, SN24, SN33).
+ * и при переходе нажатием на шаг (ADR 0117, SN24, SN33). Уход с шага останавливает нажатия:
+ * иначе они дошли бы до таблицы, открытой заново.
  */
 const inColumnsMenu =
   (reach: () => boolean = () => true) =>
   (root: HTMLElement) => {
     let clicks = 0
+    let frame = 0
     const run = () => {
       if (menuOf()?.hasAttribute('data-open')) {
         if (reach() || ++clicks > 10) return
       } else openViewSettingsSection(root, 'columns')
-      requestAnimationFrame(run)
+      frame = requestAnimationFrame(run)
     }
-    requestAnimationFrame(run)
+    frame = requestAnimationFrame(run)
+    return () => cancelAnimationFrame(frame)
   }
 
 const checkedOf = (box: HTMLElement | null) => box?.getAttribute('aria-checked')

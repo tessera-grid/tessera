@@ -500,14 +500,14 @@ describe('Сохранение по кнопке (ADR 0178)', () => {
     }
     /** Заголовок, цвет тела, кнопки слева направо и разделитель над ними. */
     const layout = (pop: HTMLElement) => {
-      const title = pop.querySelector<HTMLElement>('[id]')!
+      const title = pop.querySelector<HTMLElement>('[data-popup-level-title]')!
       const body = title.nextElementSibling as HTMLElement
       const buttons = [...pop.querySelectorAll<HTMLElement>('[data-action]')]
       return {
         title: title.textContent,
         labelled: pop.getAttribute('aria-labelledby') === title.id,
-        // Отметки у заголовка нет: только текст.
-        markless: title.children.length === 0,
+        // Отметки у заголовка нет: только подпись, без значка.
+        markless: title.querySelector('[data-popup-item-icon]') === null,
         bodyColor: getComputedStyle(body).color,
         popColor: getComputedStyle(pop).color,
         buttons: buttons.map(button => [

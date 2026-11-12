@@ -17,6 +17,7 @@ import {
   wideViewport,
 } from '../helpers'
 import { tableLabels } from '../labels'
+import { openColumnsMenu, viewSettingsPopover } from '../viewSettings'
 import { composed, treeLinesArgs } from '../stories'
 import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
@@ -186,7 +187,7 @@ describe('Кнопки грида 28px (ADR 0135)', () => {
       ].filter(
         b => !b.closest(`${SEL.headCell}, ${SEL.bodyCell}`) && box(b).width > 0,
       )
-    // Кнопки тулбара — ленивый модуль (ADR 0061): ждём кнопку «Колонки».
+    // Кнопки тулбара — ленивый модуль (ADR 0061): ждём кнопку «Настройки вида».
     await expect
       .poll(() => outsideCells().some(b => b.hasAttribute('aria-expanded')))
       .toBe(true)
@@ -195,13 +196,9 @@ describe('Кнопки грида 28px (ADR 0135)', () => {
     for (const button of outside) {
       expect(box(button).height, button.getAttribute('aria-label')!).toBe(side)
     }
-    // Поповер «Колонки»: его кнопки — тоже 32px.
-    const columns = outside.find(b => b.hasAttribute('aria-expanded'))!
-    await userEvent.click(columns)
-    await expect
-      .poll(() => document.querySelector('[role="dialog"], [role="menu"]'))
-      .not.toBeNull()
-    const popup = document.querySelector('[role="dialog"], [role="menu"]')!
+    // Раздел «Колонки» «Настроек вида»: его кнопки — тоже 32px.
+    await openColumnsMenu()
+    const popup = viewSettingsPopover()!
     // Кнопки кита в поповере: иконки и кнопки с подписью.
     const popupButtons = [
       ...popup.querySelectorAll<HTMLElement>(
@@ -253,7 +250,7 @@ describe('Кнопки грида 28px (ADR 0135)', () => {
       `[aria-label="${rowDraggingLabels(tableLabels).moveRow}"]`,
     )!
     const columns = document.querySelector<HTMLElement>(
-      `[role="toolbar"] [aria-label="${columnVisibilityLabels(tableLabels).columns}"]`,
+      '[role="toolbar"] [data-testid="view-settings-button"]',
     )!
     const sizes = () =>
       [kebab, edit, handle, rowHandle, columns].map(b => box(b).width)

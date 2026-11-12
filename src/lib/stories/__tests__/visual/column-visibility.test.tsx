@@ -13,6 +13,14 @@ import axe from 'axe-core'
 import { AXE_OPTIONS } from './a11y-helpers'
 import { tableLabels } from '../labels'
 import { columnVisibilityLabels } from '../../../plugins/columnVisibility/labels'
+import {
+  columnsMenu as menu,
+  openColumnsMenu,
+  openSettings,
+  viewSettingsButton,
+  viewSettingsReady,
+  viewSettingsRow,
+} from '../viewSettings'
 
 // Плагин columnVisibility (ADR 0035, CV1–CV3, CV5, CV8, CV14–CV18 визуальные).
 // Модель меню (CV4, CV6, CV7, CV10–CV13) — модульные тесты
@@ -26,12 +34,7 @@ const GRID = {
   dataCount: 20,
 }
 
-const button = () =>
-  document.querySelector<HTMLButtonElement>(
-    '[data-testid="column-visibility-button"]',
-  )
-const menu = () =>
-  document.querySelector<HTMLElement>('[data-testid="column-visibility-menu"]')
+const button = () => viewSettingsButton(document)
 const menuRow = (id: string) =>
   menu()!.querySelector<HTMLElement>(`[data-column-id="${id}"]`)!
 const checkbox = (id: string) =>
@@ -74,16 +77,11 @@ const LocalizedGrid = () => {
 const mount = async (node: ReactElement) => {
   const result = await render(node)
   // Поповер грузится лениво: ждём настоящий триггер Base UI.
-  await expect
-    .poll(() => button()?.hasAttribute('data-base-ui-click-trigger'))
-    .toBe(true)
+  await expect.poll(() => viewSettingsReady()).toBe(true)
   return result
 }
 
-const openMenu = async () => {
-  await userEvent.click(button()!)
-  await expect.poll(() => menu()?.hasAttribute('data-open')).toBe(true)
-}
+const openMenu = () => openColumnsMenu()
 
 const KEBAB = `[aria-label="${tableLabels.headerMenu}"]`
 const kebabOf = (id: string) =>
@@ -107,44 +105,37 @@ const renderPlugin = (args = {}) =>
   mount(<Stories.ColumnVisibilityPlayground {...GRID} {...args} />)
 
 describe('columnVisibility', () => {
-  test('CV1: the plugin adds a Columns button to the toolbar; without it or with enabled:false — none', async () => {
+  test('CV1: the plugin adds a Columns section to View settings; without it or with enabled:false — none', async () => {
     const off = await render(
       <Stories.ColumnVisibilityPlayground
         {...GRID}
         enableColumnVisibility={false}
+        enableColumnFiltering
         enableToolbar
       />,
     )
-    await expect
-      .poll(() => document.querySelector('[role="toolbar"]'))
-      .not.toBeNull()
-    expect(button()).toBeNull()
+    await openSettings()
+    expect(viewSettingsRow('filter')).not.toBeNull()
+    expect(viewSettingsRow('columns')).toBeNull()
+    await userEvent.keyboard('{Escape}')
     await off.unmount()
 
     await renderPlugin()
-    expect(button()!.getAttribute('aria-label')).toBe(
+    await openSettings()
+    expect(viewSettingsRow('columns')!.textContent).toContain(
       columnVisibilityLabels(tableLabels).columns,
-    )
-    expect(document.querySelector('[role="toolbar"]')!.contains(button())).toBe(
-      true,
     )
   })
 
-  test('CV2: the button opens the columns popover; Escape closes it and returns focus to the button', async () => {
+  test('CV2: the Columns section opens the columns menu with focus in search; Escape closes View settings and returns focus to its button', async () => {
     await renderPlugin()
     await openMenu()
-    expect(menu()!.getAttribute('role')).toBe('dialog')
-    expect(menu()!.getAttribute('aria-label')).toBe(
-      columnVisibilityLabels(tableLabels).columns,
-    )
     await expect
       .poll(() => document.activeElement?.getAttribute('aria-label'))
       .toBe(columnVisibilityLabels(tableLabels).searchColumns)
 
     await userEvent.keyboard('{Escape}')
-    await expect
-      .poll(() => menu()?.hasAttribute('data-open') ?? false)
-      .toBe(false)
+    await expect.poll(() => menu()).toBeNull()
     await expect.poll(() => document.activeElement).toBe(button())
   })
 
@@ -204,14 +195,15 @@ describe('columnVisibility', () => {
     expect(checkbox('b').hasAttribute('data-disabled')).toBe(false)
   })
 
-  test('CV16: menu labels come from localization and the icon from icons', async () => {
+  test('CV16: menu and section labels come from localization and the section icon from icons', async () => {
     await mount(<LocalizedGrid />)
-    expect(button()!.getAttribute('aria-label')).toBe('Колонки')
+    await openSettings()
+    const row = viewSettingsRow('columns')!
+    expect(row.textContent).toContain('Колонки')
     expect(
-      button()!.querySelector('[data-testid="custom-columns-icon"]'),
+      row.querySelector('[data-testid="custom-columns-icon"]'),
     ).not.toBeNull()
     await openMenu()
-    expect(menu()!.getAttribute('aria-label')).toBe('Колонки')
     expect(menu()!.querySelector('input')!.getAttribute('placeholder')).toBe(
       'Поиск',
     )
@@ -245,7 +237,7 @@ describe('columnVisibility', () => {
     expect(violations.map(v => v.id)).toEqual([])
   })
 
-  test('CV18: the Columns button is active while any column is hidden, at rest when all are visible', async () => {
+  test('CV18: the Columns section is on and View settings is active while any column is hidden, at rest when all are visible', async () => {
     const onToggle = vi.fn()
     await renderPlugin({ onToggleColumnVisibility: onToggle })
     expect(button()!.hasAttribute('data-active')).toBe(false)
@@ -254,7 +246,11 @@ describe('columnVisibility', () => {
     await userEvent.click(checkbox('firstName'))
     await expect.poll(() => button()!.hasAttribute('data-active')).toBe(true)
     expect(onToggle).toHaveBeenCalledWith(['firstName'], false)
+    await userEvent.keyboard('{Escape}')
+    await openSettings()
+    expect(viewSettingsRow('columns')!.hasAttribute('data-active')).toBe(true)
 
+    await openMenu()
     await userEvent.click(checkbox('firstName'))
     await expect.poll(() => button()!.hasAttribute('data-active')).toBe(false)
   })

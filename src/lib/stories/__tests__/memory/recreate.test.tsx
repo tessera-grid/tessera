@@ -14,6 +14,7 @@ import {
   measureSlope,
   mount,
   settled,
+  settledDom,
   track,
   warmUpDocument,
   type Tracked,
@@ -67,7 +68,7 @@ describe('Утечки при пересоздании таблицы', () => {
       mounted.render(
         <Grid data={data} columns={freshColumns()} onTable={onTable} />,
       )
-      await frames(2)
+      await settledDom(mounted.container)
     }
     try {
       // Пустые данные первого рендера — заглушка «нет данных» (ADR 0123): таблица с

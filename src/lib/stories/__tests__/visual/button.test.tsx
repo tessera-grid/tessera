@@ -18,6 +18,7 @@ import {
   FilterTextPanel,
 } from '../panelFixtures'
 import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
+import { openSettingsSection } from '../viewSettings'
 
 /** История или фикстура панели: компонент и `play`, который доводит его до состояния. */
 type Fixture = ((props: Record<string, never>) => ReactNode) & {
@@ -355,7 +356,7 @@ describe('Button (ADR 0097)', () => {
       expectKit(q('[data-testid="filter-clear-selection"]'), 'ghost')
     })
 
-    // Сводка фильтров и заглушка «нет строк»: фильтр из панели, сводка, затем пусто.
+    // Раздел «Фильтр» «Настроек вида» и заглушка «нет строк»: фильтр из панели, раздел, затем пусто.
     await run(FilterTextPanel, async () => {
       const field = q('[data-testid="filter-value"]')!
       await userEvent.type(field, 'zzz')
@@ -365,11 +366,8 @@ describe('Button (ADR 0097)', () => {
         .poll(() => q('[data-testid="filter-stub-reset"]'), { timeout: 3000 })
         .not.toBeNull()
       expectKit(q('[data-testid="filter-stub-reset"]'), 'outline')
-      await userEvent.click(q('[data-testid="filter-summary-button"]')!)
-      await expect
-        .poll(() => q('[data-testid="filter-summary-reset"]'))
-        .not.toBeNull()
-      expectKit(q('[data-testid="filter-summary-reset"]'), 'ghost')
+      await openSettingsSection('filter')
+      expectKit(q('[data-testid="view-settings-reset"]'), 'ghost')
     })
 
     // Меню «Колонки» и панель экспорта.

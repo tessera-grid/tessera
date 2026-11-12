@@ -14,6 +14,7 @@ import { AXE_OPTIONS } from './a11y-helpers'
 import { bodyRows, humanClick } from '../helpers'
 import { nextFrame, waitForGrid } from './core-helpers'
 import { tableLabels } from '../labels'
+import { openSettingsSection } from '../viewSettings'
 import { columnFilteringLabels } from '../../../plugins/columnFiltering/labels'
 
 // Фильтр вариантов (ADR 0048): чек-лист, поиск, счётчики, виртуализация, клавиатура,
@@ -607,16 +608,10 @@ describe('Фильтр вариантов — подписи и вид', () => {
       { id: 'manager', value: { operator: 'noneOf', value: ['m1'] } },
       { id: 'status', value: { operator: 'empty' } },
     ])
-    const summaryButton = () =>
-      document.querySelector<HTMLElement>(
-        '[data-testid="filter-summary-button"]',
-      )
-    await expect.poll(summaryButton).not.toBeNull()
-    await humanClick(summaryButton()!)
+    await openSettingsSection('filter', { click: humanClick })
     const item = (id: string) =>
-      document.querySelector(
-        `[data-testid="filter-summary"] [data-column-id="${id}"]`,
-      )?.textContent ?? null
+      document.querySelector(`[data-view-settings-level="${id}"]`)
+        ?.textContent ?? null
     await expect.poll(() => item('tags')).toContain('Any of: VIP, Partner +1')
     expect(item('manager')).toContain('None of: Alice Moss')
     expect(item('status')).toContain(
@@ -650,16 +645,10 @@ describe('Фильтр вариантов — подписи и вид', () => {
     await humanClick(checkbox('m9'))
     await closePanel()
 
-    const summaryButton = () =>
-      document.querySelector<HTMLElement>(
-        '[data-testid="filter-summary-button"]',
-      )
-    await expect.poll(summaryButton).not.toBeNull()
-    await humanClick(summaryButton()!)
+    await openSettingsSection('filter', { click: humanClick })
     const item = () =>
-      document.querySelector(
-        '[data-testid="filter-summary"] [data-column-id="owner"]',
-      )?.textContent ?? null
+      document.querySelector('[data-view-settings-level="owner"]')
+        ?.textContent ?? null
     await expect.poll(item).toContain('Dana Fox')
   })
 

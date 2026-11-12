@@ -331,8 +331,7 @@ describe('Заглушки пустой таблицы (ADR 0123)', () => {
     await expect.poll(() => byTestId('quick-search')).not.toBeNull()
     expect(disabled('quick-search')).toBe(true)
     expect(disabled('export-button')).toBe(true)
-    expect(disabled('filter-summary-button')).toBe(false)
-    expect(disabled('column-visibility-button')).toBe(false)
+    expect(disabled('view-settings-button')).toBe(false)
     await hidden.unmount()
 
     await render(<Host columns={NO_COLUMNS} />)
@@ -340,8 +339,7 @@ describe('Заглушки пустой таблицы (ADR 0123)', () => {
     await expect.poll(() => byTestId('quick-search')).not.toBeNull()
     expect(disabled('quick-search')).toBe(true)
     expect(disabled('export-button')).toBe(true)
-    expect(disabled('filter-summary-button')).toBe(true)
-    expect(disabled('column-visibility-button')).toBe(true)
+    expect(disabled('view-settings-button')).toBe(true)
   })
 
   test('ES11: примитив Stub из /ui на токенах кита — встроенные заглушки рисуются им', async () => {

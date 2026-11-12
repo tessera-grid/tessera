@@ -113,8 +113,8 @@ async function renderWithNeighbours() {
       <button id="before-grid">before</button>
       <StoryComponent
         {...normalizeArgs(composed.KeyboardPlayground.args as StoryProps)}
-        // Сводка сортировки ставит тулбар — свою остановку Tab (TB11); здесь — уход из тела.
-        columnSortingToolbar={false}
+        // «Настройки вида» ставят тулбар — свою остановку Tab (TB11); здесь — уход из тела.
+        enableToolbar={false}
       />
       <button id="after-grid">after</button>
     </>,

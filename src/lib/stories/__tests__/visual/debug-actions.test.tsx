@@ -44,6 +44,7 @@ import {
 } from '../helpers'
 import { composed } from '../stories'
 import { tableLabels } from '../labels'
+import { openColumnsMenu, openSettingsSection } from '../viewSettings'
 import { ColumnDraggingGrid } from './columns-fixtures'
 import { rowDraggingLabels } from '../../../plugins/rowDragging/labels'
 import { columnVisibilityLabels } from '../../../plugins/columnVisibility/labels'
@@ -510,19 +511,12 @@ describe('канал действий (ADR 0125)', () => {
       .toMatchObject({ source: 'keyboard' })
   })
 
-  test('AL15: columnVisibility — открыть поповер, флажок колонки, флажок «Все колонки», поиск колонок, «Сбросить»', async () => {
+  test('AL15: columnVisibility — флажок колонки, флажок «Все колонки», поиск колонок, «Сбросить»; открытие «Настроек вида» — openMenu ядра', async () => {
     await renderGrid({ enableColumnVisibility: true, onDebugAction })
+    const menu = await openColumnsMenu({ click: humanClick })
     await expect
-      .poll(() => q('[data-testid="column-visibility-button"]'))
-      .toBeTruthy()
-    await humanClick(q('[data-testid="column-visibility-button"]')!)
-    await expect
-      .poll(() => lastOf('columnVisibility', 'openMenu'))
-      .toMatchObject({ source: 'pointer' })
-    await expect
-      .poll(() => q('[data-testid="column-visibility-menu"]'))
-      .toBeTruthy()
-    const menu = q('[data-testid="column-visibility-menu"]')!
+      .poll(() => lastOf('core', 'openMenu'))
+      .toMatchObject({ source: 'pointer', detail: { menu: 'view' } })
     await humanClick(
       menu.querySelector<HTMLElement>('[data-column-id] .row-select-checkbox')!,
     )
@@ -716,7 +710,7 @@ describe('канал действий (ADR 0125)', () => {
       .toMatchObject({ phase: 'end', detail: { reason: 'cancel' } })
   })
 
-  test('AL14: columnFiltering — открыть панель, изменить условие, снять фильтр в панели и в сводке', async () => {
+  test('AL14: columnFiltering — открыть панель, изменить условие, снять фильтр в панели и в разделе «Фильтр» «Настроек вида»', async () => {
     await render(
       <composed.FilteringPlayground
         containerHeight={700}
@@ -754,7 +748,7 @@ describe('канал действий (ADR 0125)', () => {
     await userEvent.keyboard('{Escape}')
     await expect.poll(panel).toBeNull()
 
-    // Снять в сводке.
+    // Снять в разделе «Фильтр» «Настроек вида».
     await open('name')
     await userEvent.type(
       panel()!.querySelector<HTMLInputElement>('[data-testid="filter-value"]')!,
@@ -763,14 +757,15 @@ describe('канал действий (ADR 0125)', () => {
     await userEvent.keyboard('{Escape}')
     await expect.poll(panel).toBeNull()
     const removals = of('columnFiltering', 'removeFilter').length
-    await humanClick(q('[data-testid="filter-summary-button"]')!)
+    const section = await openSettingsSection('filter', { click: humanClick })
     await expect
-      .poll(() => lastOf('columnFiltering', 'openMenu'))
-      .toMatchObject({ detail: { menu: 'summary' } })
-    await expect
-      .poll(() => q('[data-testid="filter-summary-remove"]'))
-      .toBeTruthy()
-    await humanClick(q('[data-testid="filter-summary-remove"]')!)
+      .poll(() => lastOf('core', 'openMenu'))
+      .toMatchObject({ detail: { menu: 'view' } })
+    await humanClick(
+      section.querySelector<HTMLElement>(
+        '[data-testid="view-settings-remove"]',
+      )!,
+    )
     await expect
       .poll(() => of('columnFiltering', 'removeFilter').length)
       .toBe(removals + 1)

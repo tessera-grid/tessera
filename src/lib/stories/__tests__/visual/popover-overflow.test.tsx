@@ -280,6 +280,15 @@ describe('Длинный текст в поповерах черновиков �
           const parent = node.parentElement!
           if (!node.textContent?.trim() || parent.closest('button')) continue
           if (parent.closest('[data-visually-hidden]')) continue
+          // Шапка поповера — строка высоты пункта (ADR 0183, PK33): блок — сама строка.
+          const heading = parent.closest<HTMLElement>(
+            '[data-popup-level-title]',
+          )
+          if (heading) {
+            const rect = heading.getBoundingClientRect()
+            blocks.push({ top: rect.top, bottom: rect.bottom })
+            continue
+          }
           // Строки текста — блок без полей: межстрочный интервал входит в строку, как в раскладке.
           const rect = parent.getBoundingClientRect()
           const style = getComputedStyle(parent)

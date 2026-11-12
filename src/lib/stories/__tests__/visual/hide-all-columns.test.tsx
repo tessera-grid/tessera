@@ -10,6 +10,11 @@ import { columnFiltering, columnVisibility } from '../../../plugins'
 import { Stories, humanClick, revealCellButtons } from '../helpers'
 import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
 import { tableLabels } from '../labels'
+import {
+  closeSettings,
+  openColumnsMenu,
+  openSettingsSection,
+} from '../viewSettings'
 import { columnVisibilityLabels } from '../../../plugins/columnVisibility/labels'
 
 // Скрытие всех колонок и корень «Все колонки» меню (ADR 0133, HA1–HA3, HA6–HA7, HA9,
@@ -39,7 +44,7 @@ const grid = (ids: string[], args: Record<string, unknown> = {}) => (
 
 const byTestId = (id: string) =>
   document.querySelector<HTMLElement>(`[data-testid="${id}"]`)
-const button = () => byTestId('column-visibility-button')
+const button = () => byTestId('view-settings-button')
 const menu = () => byTestId('column-visibility-menu')
 const root = () =>
   byTestId('column-visibility-all')?.querySelector<HTMLElement>(
@@ -66,12 +71,13 @@ const mount = async (node: Parameters<typeof render>[0]) => {
   return result
 }
 
+/** Меню колонок — раздел «Колонки» «Настроек вида»; ждёт конца открытия и сдвига уровня. */
 const openMenu = async () => {
-  await userEvent.click(button()!)
-  await expect.poll(() => menu()?.hasAttribute('data-open')).toBe(true)
+  await openColumnsMenu()
   await Promise.all(
-    menu()!
-      .getAnimations({ subtree: true })
+    document
+      .getAnimations()
+      .filter(a => a.effect?.getTiming().iterations !== Infinity)
       .map(animation => animation.finished.catch(() => undefined)),
   )
 }
@@ -237,7 +243,7 @@ describe('Скрытие всех колонок', () => {
     })
   })
 
-  test('HA11: меню «Колонки», сводка «Фильтры» и панель вариантов фильтра — шириной --tsr-comp-column-menu-width, по умолчанию равной пределу меню --tsr-comp-popup-max-width', async () => {
+  test('HA11: поповер «Настроек вида» с разделами «Колонки» и «Фильтр» и панель вариантов фильтра — шириной --tsr-comp-column-menu-width, по умолчанию равной пределу меню --tsr-comp-popup-max-width', async () => {
     await render(<FilteringHost />)
     await expect
       .poll(() => button()?.hasAttribute('data-base-ui-click-trigger'))
@@ -252,9 +258,8 @@ describe('Скрытие всех колонок', () => {
     const widthOf = (id: string) => getComputedStyle(byTestId(id)!).width
 
     await openMenu()
-    expect(widthOf('column-visibility-menu')).toBe(limit)
-    await userEvent.keyboard('{Escape}')
-    await expect.poll(menu).toBeNull()
+    expect(widthOf('view-settings-popover')).toBe(limit)
+    await closeSettings()
 
     const status = document.querySelector<HTMLElement>(
       '.data-grid__head-cell[data-column-id="status"]',
@@ -276,14 +281,8 @@ describe('Скрытие всех колонок', () => {
     await userEvent.keyboard('{Escape}')
     await expect.poll(() => byTestId('filter-panel')).toBeNull()
 
-    await expect
-      .poll(() =>
-        byTestId('filter-summary-button')!.getAttribute('aria-disabled'),
-      )
-      .not.toBe('true')
-    await humanClick(byTestId('filter-summary-button')!)
-    await expect.poll(() => byTestId('filter-summary')).not.toBeNull()
-    expect(widthOf('filter-summary')).toBe(limit)
+    await openSettingsSection('filter', { click: humanClick })
+    expect(widthOf('view-settings-popover')).toBe(limit)
   })
 
   test('HA12: дерево меню — линиями дерева таблицы: ветки от флажка всех колонок и от групп, вертикаль уровня под центром галочки родителя, поворот, скругление и зазор до галочки как у дерева строк', async () => {

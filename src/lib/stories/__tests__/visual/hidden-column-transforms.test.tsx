@@ -17,6 +17,7 @@ import { capitalized } from '../../../plugins/columnVisibility/hiddenTransforms'
 import { humanClick, revealCellButtons } from '../helpers'
 import { tableLabels } from '../labels'
 import { waitForGrid } from './core-helpers'
+import { openColumnsMenu, viewSettingsPopover } from '../viewSettings'
 
 // Преобразования скрытых колонок в меню «Колонки» и кебабе (ADR 0204, этап 2, HT3–HT6). HT1–HT2 —
 // модульные (`columnTransforms.dom`).
@@ -143,16 +144,7 @@ const settle = async () => {
 }
 
 const openMenu = async () => {
-  // Кнопка тулбара — из ленивого модуля: ждём настоящую, а не заглушку.
-  await expect
-    .poll(() =>
-      byTestId('column-visibility-button')?.hasAttribute(
-        'data-base-ui-click-trigger',
-      ),
-    )
-    .toBe(true)
-  await humanClick(byTestId('column-visibility-button')!)
-  await expect.poll(() => menu()?.hasAttribute('data-open')).toBe(true)
+  await openColumnsMenu({ click: humanClick })
   await settle()
 }
 const closeMenu = async () => {
@@ -240,7 +232,8 @@ describe('Преобразования скрытых колонок (ADR 0204)'
     await humanClick(erasersOf(TRANSFORMED)[0]!)
 
     await expect.poll(() => erasersOf(TRANSFORMED)).toHaveLength(0)
-    expect(menu()!.contains(document.activeElement)).toBe(true)
+    // Фокус — в поповере «Настроек вида», куда Base UI возвращает его с ушедшей кнопки.
+    expect(viewSettingsPopover()!.contains(document.activeElement)).toBe(true)
     // Одно действие меню, а под ним — пути плагинов.
     expect(probe.actions).toEqual(
       expect.arrayContaining([

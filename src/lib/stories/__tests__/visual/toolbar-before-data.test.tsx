@@ -15,6 +15,14 @@ import {
   quickSearch,
 } from '../../../plugins'
 import { humanClick } from '../helpers'
+import {
+  closeSettings,
+  openColumnsMenu,
+  openSettings,
+  openSettingsSection,
+  viewSettingsRow,
+  viewSettingsSectionOpen,
+} from '../viewSettings'
 import { AXE_OPTIONS } from './a11y-helpers'
 
 // Тулбар до прихода данных (ADR 0122, TF1–TF6, TF8–TF11): доступны функции, чей результат —
@@ -123,9 +131,8 @@ const byTestId = (id: string) =>
   document.querySelector<HTMLElement>(`[data-testid="${id}"]`)
 const toolbar = () => byTestId('data-grid-toolbar')!
 const searchInput = () => byTestId('quick-search') as HTMLInputElement | null
-const summaryButton = () => byTestId('filter-summary-button')
 const exportButton = () => byTestId('export-button')
-const columnsButton = () => byTestId('column-visibility-button')
+const settingsButton = () => byTestId('view-settings-button')
 /** Полоска скелета внутри обёртки контрола. */
 const barOf = (id: string) =>
   byTestId(id)!.querySelector<HTMLElement>('[data-tsr-skeleton-wave]')!
@@ -184,7 +191,7 @@ const expectIconSkeleton = (id: string) => {
 const neighbours = (except: string) =>
   [
     ...toolbar().querySelectorAll<HTMLElement>(
-      '[data-testid="quick-search"], [data-testid="quick-search-skeleton"], [data-testid="filter-summary-button"], [data-testid="column-visibility-button"], [data-testid="column-visibility-skeleton"], [data-testid="export-button"], [data-testid="export-skeleton"]',
+      '[data-testid="quick-search"], [data-testid="quick-search-skeleton"], [data-testid="view-settings-button"], [data-testid="view-settings-skeleton"], [data-testid="export-button"], [data-testid="export-skeleton"]',
     ),
   ]
     .filter(element => !element.dataset.testid!.startsWith(except))
@@ -254,34 +261,32 @@ describe('Тулбар до прихода данных (ADR 0122)', () => {
     expect(byTestId('quick-search-skeleton')).toBeNull()
   })
 
-  test('TF3: «Колонки» при неизвестных колонках — скелет иконки в центре места кнопки тулбара; колонки известны — кнопка доступна, меню по описанию колонок', async () => {
+  test('TF3: «Настройки вида» при неизвестных колонках — скелет иконки в центре места кнопки тулбара; колонки известны — кнопка доступна, раздел «Колонки» по описанию колонок', async () => {
     const screen = await render(<Host columns={NO_COLUMNS} />)
-    await expect
-      .poll(() => byTestId('column-visibility-skeleton'))
-      .not.toBeNull()
-    expect(columnsButton()).toBeNull()
-    expectIconSkeleton('column-visibility-skeleton')
-    const skeletonBox = rect(byTestId('column-visibility-skeleton')!)
+    await expect.poll(() => byTestId('view-settings-skeleton')).not.toBeNull()
+    expect(settingsButton()).toBeNull()
+    expectIconSkeleton('view-settings-skeleton')
+    const skeletonBox = rect(byTestId('view-settings-skeleton')!)
 
     await screen.rerender(<Host columns={COLUMNS} />)
-    await expect.poll(columnsButton).not.toBeNull()
-    expect(byTestId('column-visibility-skeleton')).toBeNull()
-    expectSameBox(rect(columnsButton()!), skeletonBox, 'button')
-    await humanClick(columnsButton()!)
-    await expect.poll(() => byTestId('column-visibility-menu')).not.toBeNull()
-    const menu = byTestId('column-visibility-menu')!
+    await expect.poll(settingsButton).not.toBeNull()
+    expect(byTestId('view-settings-skeleton')).toBeNull()
+    expectSameBox(rect(settingsButton()!), skeletonBox, 'button')
+    const menu = await openColumnsMenu({ click: humanClick })
     expect(menu.textContent).toContain('Name')
     expect(menu.textContent).toContain('City')
   })
 
-  test('TF4: «Фильтры» во время первой загрузки — как после неё: с фильтрами кнопка доступна и снимает фильтр (клиент — для пришедших строк, сервер — колбэком); без фильтров или без колонок — выключена', async () => {
+  test('TF4: раздел «Фильтр» «Настроек вида» во время первой загрузки — как после неё: с фильтрами раздел открывается и снимает фильтр (клиент — для пришедших строк, сервер — колбэком); без фильтров — не открывается; без колонок — на месте кнопки скелет', async () => {
     const removeName = async () => {
-      await expect.poll(summaryButton).not.toBeNull()
-      expect(summaryButton()!.getAttribute('aria-disabled')).not.toBe('true')
-      await humanClick(summaryButton()!)
-      await expect.poll(() => byTestId('filter-summary')).not.toBeNull()
-      await humanClick(byTestId('filter-summary-remove')!)
-      await expect.poll(() => byTestId('filter-summary')).toBeNull()
+      const section = await openSettingsSection('filter', { click: humanClick })
+      await humanClick(
+        section.querySelector<HTMLElement>(
+          '[data-testid="view-settings-remove"]',
+        )!,
+      )
+      await expect.poll(() => viewSettingsSectionOpen('filter')).toBeNull()
+      await closeSettings()
     }
 
     const client = await render(<Host initialColumnFilters={NAME_FILTER} />)
@@ -307,15 +312,18 @@ describe('Тулбар до прихода данных (ADR 0122)', () => {
     await server.unmount()
 
     const empty = await render(<Host />)
-    await expect.poll(summaryButton).not.toBeNull()
-    expect(summaryButton()!.getAttribute('aria-disabled')).toBe('true')
+    await openSettings({ click: humanClick })
+    expect(viewSettingsRow('filter')!.getAttribute('aria-disabled')).toBe(
+      'true',
+    )
+    await closeSettings()
     await empty.unmount()
 
     await render(
       <Host columns={NO_COLUMNS} initialColumnFilters={NAME_FILTER} />,
     )
-    await expect.poll(summaryButton).not.toBeNull()
-    expect(summaryButton()!.getAttribute('aria-disabled')).toBe('true')
+    await expect.poll(() => byTestId('view-settings-skeleton')).not.toBeNull()
+    expect(settingsButton()).toBeNull()
   })
 
   test('TF5: клиентский «Экспорт» во время первой загрузки — скелет иконки в центре места кнопки тулбара; данные пришли — кнопка на том же месте, соседи не сдвигаются', async () => {
@@ -356,7 +364,7 @@ describe('Тулбар до прихода данных (ADR 0122)', () => {
     }
     const ids = [
       'quick-search-skeleton',
-      'column-visibility-skeleton',
+      'view-settings-skeleton',
       'export-skeleton',
     ]
     const waitBars = () =>
@@ -497,8 +505,7 @@ describe('Тулбар до прихода данных (ADR 0122)', () => {
       // eslint-disable-next-line no-await-in-loop
       await expect.poll(() => byTestId('export-skeleton')).not.toBeNull()
       expect(searchInput(), colorMode).not.toBeNull()
-      expect(summaryButton(), colorMode).not.toBeNull()
-      expect(columnsButton(), colorMode).not.toBeNull()
+      expect(settingsButton(), colorMode).not.toBeNull()
       // eslint-disable-next-line no-await-in-loop
       const { violations } = await axe.run(toolbar(), {
         ...AXE_OPTIONS,

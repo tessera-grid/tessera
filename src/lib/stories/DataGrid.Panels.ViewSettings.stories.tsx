@@ -199,7 +199,8 @@ export const ViewSettingsSummary: StoryObj<StoryProps> = {
       await until(() =>
         expect(viewSettingsRow('sorting')?.dataset.active).toBeUndefined(),
       )
-      await expect(viewSettingsCount(canvas)).toBe('2')
+      // Число на кнопке — из её подписки на срезы: догоняет строку раздела.
+      await until(() => expect(viewSettingsCount(canvas)).toBe('2'))
       await settle()
     })
   },

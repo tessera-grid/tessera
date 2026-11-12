@@ -44,9 +44,12 @@
   white-space: nowrap;
 }
 
+/* Высокая контрастность: подсветка пункта — Highlight, как у пункта меню; значение и значки — её текстом. */
 @media (forced-colors: active) {
   .nav:not([data-disabled]):hover,
-  .nav:focus-visible {
+  .nav:not([data-disabled]):hover *,
+  .nav:focus-visible,
+  .nav:focus-visible * {
     forced-color-adjust: none;
     background-color: Highlight;
     color: HighlightText;

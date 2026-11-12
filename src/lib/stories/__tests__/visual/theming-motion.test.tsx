@@ -60,25 +60,25 @@ const renderAll = async () => {
   )
   await expect.poll(() => query('.row__button').length).toBeGreaterThan(0)
   await expect
-    .poll(() => query('[data-testid="column-visibility-button"]').length)
+    .poll(() => query('[data-testid="view-settings-button"]').length)
     .toBe(1)
 }
 
-/** Элементы выборки плюс открытый поповер меню колонок. */
+/** Элементы выборки плюс открытый поповер «Настроек вида». */
 const sampled = async (): Promise<[string, HTMLElement][]> => {
-  await userEvent.click(query('[data-testid="column-visibility-button"]')[0])
+  await userEvent.click(query('[data-testid="view-settings-button"]')[0])
   await expect
-    .poll(() => query('[data-testid="column-visibility-menu"]').length)
+    .poll(() => query('[data-testid="view-settings-popover"]').length)
     .toBe(1)
   // Поповер на первом кадре открытия ещё в начальном состоянии перехода.
-  const popover = query('[data-testid="column-visibility-menu"]')[0]
+  const popover = query('[data-testid="view-settings-popover"]')[0]
   await expect
     .poll(() => popover.hasAttribute('data-starting-style'))
     .toBe(false)
   await new Promise(resolve => requestAnimationFrame(resolve))
   return [
     ...SAMPLES.map(([name, selector]) => [name, query(selector)[0]] as const),
-    ['popover', query('[data-testid="column-visibility-menu"]')[0]] as const,
+    ['popover', query('[data-testid="view-settings-popover"]')[0]] as const,
   ].map(([name, el]) => {
     expect(el, `${name} is rendered`).toBeTruthy()
     return [name, el] as [string, HTMLElement]

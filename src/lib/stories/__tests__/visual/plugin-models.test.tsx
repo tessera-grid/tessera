@@ -285,7 +285,7 @@ const PAIRS: Pair[] = [
       shownIds().length > 0 &&
       shownIds().length < ITEMS.length &&
       shownIds().every(id => ageOf(id) > 35),
-    controls: '.column-filter__button, [data-testid="filter-summary-button"]',
+    controls: '.column-filter__button, [data-testid="view-settings-button"]',
   },
   {
     name: 'quickSearch',

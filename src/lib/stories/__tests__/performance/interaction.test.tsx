@@ -163,12 +163,23 @@ const pressArrowDown = async () => {
   )
 }
 
-// Меню колонок (ADR 0035): кнопка тулбара → поповер с деревом на 1000 колонок.
+// Меню колонок (ADR 0035): раздел «Колонки» «Настроек вида» (ADR 0215) с деревом на 1000 колонок.
 const COLUMN_VISIBILITY = { enableToolbar: true, enableColumnVisibility: true }
 
-const columnsButton = () =>
+const settingsButton = () =>
+  document.querySelector<HTMLElement>('[data-testid="view-settings-button"]')
+const settingsPopover = () =>
   document.querySelector<HTMLElement>(
-    '[data-testid="column-visibility-button"]',
+    '[data-testid="view-settings-popover"][data-open]',
+  )
+/** Строка раздела «Колонки» и «назад» — на текущем уровне, не на снимке уходящего. */
+const columnsRow = () =>
+  settingsPopover()?.querySelector<HTMLElement>(
+    '[data-popup-level] [data-view-settings-section="columns"]',
+  )
+const backRow = () =>
+  settingsPopover()?.querySelector<HTMLElement>(
+    '[data-popup-level] [data-popup-level-back]',
   )
 const columnsMenu = () =>
   document.querySelector<HTMLElement>('[data-testid="column-visibility-menu"]')
@@ -181,12 +192,26 @@ const isColumnsMenuOpen = () => !!columnsMenu()?.hasAttribute('data-open')
 /** Поповер грузится лениво: ждём настоящий триггер Base UI. */
 const waitForColumnsButton = () =>
   expect
-    .poll(() => columnsButton()?.hasAttribute('data-base-ui-click-trigger'))
+    .poll(() => settingsButton()?.hasAttribute('data-base-ui-click-trigger'))
     .toBe(true)
 
+/** Первый уровень «Настроек вида» со строкой «Колонки». */
+const openSettings = async () => {
+  if (!settingsPopover()) settingsButton()!.click()
+  await expect.poll(columnsRow).toBeTruthy()
+}
+
 const openColumnsMenu = async () => {
-  columnsButton()!.click()
-  await expect.poll(() => columnsMenu()?.hasAttribute('data-open')).toBe(true)
+  await openSettings()
+  columnsRow()!.click()
+  await expect.poll(isColumnsMenuOpen).toBe(true)
+}
+
+/** Из раздела «Колонки» — на первый уровень: следующий замер снова входит в раздел. */
+const leaveColumnsMenu = async () => {
+  backRow()!.click()
+  await expect.poll(columnsRow).toBeTruthy()
+  await expect.poll(columnsMenu).toBeNull()
 }
 
 const columnsSearch = () =>
@@ -603,13 +628,15 @@ const CASES: InteractionCase[] = [
     id: 'I5',
     label: 'открытие меню колонок на 1000 колонок, все плагины',
     args: { ...LARGE, ...ALL_PLUGINS, ...COLUMN_VISIBILITY },
-    prepare: waitForColumnsButton,
-    act: async () => columnsButton()!.click(),
-    // Прогрев открыл меню; закрываем вне замера — замер мерит открытие.
+    prepare: async () => {
+      await waitForColumnsButton()
+      await openSettings()
+    },
+    act: async () => columnsRow()!.click(),
+    // Прогрев вошёл в раздел; выходим вне замера — замер мерит вход в раздел.
     afterWarmup: async () => {
       expect(isColumnsMenuOpen()).toBe(true)
-      columnsButton()!.click()
-      await expect.poll(columnsMenu).toBeNull()
+      await leaveColumnsMenu()
     },
     verify: () => expect(isColumnsMenuOpen()).toBe(true),
   },
@@ -2982,13 +3009,13 @@ describe('Отзывчивость — кит поповеров', () => {
           ...COLUMN_VISIBILITY,
         })
         await waitForColumnsButton()
+        await openSettings()
         const result = await measureInteractionWork(
-          async () => columnsButton()!.click(),
+          async () => columnsRow()!.click(),
           {
             afterWarmup: async () => {
               expect(isColumnsMenuOpen()).toBe(true)
-              columnsButton()!.click()
-              await expect.poll(columnsMenu).toBeNull()
+              await leaveColumnsMenu()
             },
           },
         )

@@ -29,6 +29,16 @@ import { quickSearchLabels } from '../../../plugins/quickSearch/labels'
 import { optionsLabels } from '../../../shared/options/labels'
 import { filteringLabels } from '../../../shared/filtering/labels'
 import { rowSelectionLabels } from '../../../plugins/rowSelection/labels'
+import {
+  closeSettings,
+  openSettings,
+  openSettingsSection,
+  viewSettingsButton,
+  viewSettingsLevel,
+  viewSettingsPopover,
+  viewSettingsRow,
+  viewSettingsSectionOpen,
+} from '../viewSettings'
 
 // Фильтрация (ADR 0045): кнопка фильтра в заголовке, панель условия, дебаунс,
 // кебаб, клавиатура. Условия по значениям (FL2, FL4–FL6, FL14, FL26) — модульные
@@ -293,12 +303,27 @@ describe('Фильтрация — фильтры колонок', () => {
 
 const searchInput = () =>
   document.querySelector<HTMLInputElement>('[data-testid="quick-search"]')
-const summaryButton = () =>
-  document.querySelector<HTMLButtonElement>(
-    '[data-testid="filter-summary-button"]',
-  )
-const summary = () =>
-  document.querySelector<HTMLElement>('[data-testid="filter-summary"]')
+const settingsButton = () => viewSettingsButton(document)
+/** Раздел «Фильтр» «Настроек вида» (ADR 0215) и его уровни — условия колонок. */
+const filterSection = () => viewSettingsSectionOpen('filter')
+const filterLevels = () => [
+  ...(filterSection()?.querySelectorAll<HTMLElement>(
+    '[data-view-settings-level]',
+  ) ?? []),
+]
+const sectionReset = () =>
+  viewSettingsLevel()?.querySelector<HTMLElement>(
+    '[data-testid="view-settings-reset"]',
+  ) ?? null
+const filterRowValue = () =>
+  viewSettingsRow('filter')?.querySelector('[data-popup-nav-value]')
+    ?.textContent ?? null
+/** Сбросить фильтры кнопкой раздела «Фильтр» и закрыть «Настройки вида». */
+const resetFiltersFromSettings = async () => {
+  await openSettingsSection('filter', { click: humanClick })
+  await humanClick(sectionReset()!)
+  await closeSettings()
+}
 const filteredCount = () =>
   document.querySelector('[data-testid="filtered-rows-count"]')?.textContent ??
   null
@@ -346,7 +371,7 @@ describe('Фильтрация — тулбар и нижняя панель', (
     )
     await expect.poll(rowIds).toEqual(ALL)
     expect(filterButton('name')).toBeNull()
-    expect(summaryButton()).toBeNull()
+    expect(settingsButton()).toBeNull()
     await onlyColumns.unmount()
 
     const onlySearch = await renderFiltering({
@@ -369,54 +394,51 @@ describe('Фильтрация — тулбар и нижняя панель', (
     expect(searchInput()).toBeNull()
   })
 
-  test('FL12: кнопка «Фильтры»: без фильтров disabled, с фильтрами — число; сводка перечисляет фильтры со сбросом каждого и «Сбросить все»', async () => {
+  test('FL12: раздел «Фильтр» «Настроек вида»: без фильтров — «нет» и не открывается, с фильтрами — их число; в разделе — фильтры со снятием каждого и «Сбросить фильтры»', async () => {
     await renderFiltering(TOOLBAR)
-    expect(summaryButton()!.getAttribute('aria-disabled')).toBe('true')
-    expect(summaryButton()!.getAttribute('aria-label')).toBe(
-      columnFilteringLabels(tableLabels).filters,
+    await openSettings({ click: humanClick })
+    expect(filterRowValue()).toBe(tableLabels.viewSettingsNone)
+    expect(viewSettingsRow('filter')!.getAttribute('aria-disabled')).toBe(
+      'true',
     )
+    await closeSettings()
 
     await applyTextFilter('name', 'a')
     await applyTextFilter('city', 'r')
     await expect
-      .poll(() => summaryButton()!.getAttribute('aria-label'))
-      .toBe(columnFilteringLabels(tableLabels).filtersActive(2))
-    expect(summaryButton()!.getAttribute('aria-disabled')).not.toBe('true')
-    expect(summaryButton()!.textContent).toContain('2')
+      .poll(() => settingsButton()!.getAttribute('aria-label'))
+      .toBe(tableLabels.viewSettingsActive(1))
+    await openSettings({ click: humanClick })
+    expect(filterRowValue()).toBe(tableLabels.viewSettingsActiveCount(2))
 
-    await humanClick(summaryButton()!)
-    await expect.poll(summary).not.toBeNull()
-    const items = () => [...summary()!.querySelectorAll<HTMLElement>('li')]
-    expect(items().map(item => item.dataset.columnId)).toEqual(['name', 'city'])
-    expect(items()[0].textContent).toContain('Name')
-    expect(items()[0].textContent).toContain('Contains "a"')
+    await openSettingsSection('filter', { click: humanClick })
+    expect(
+      filterLevels().map(level => level.dataset.viewSettingsLevel),
+    ).toEqual(['name', 'city'])
+    expect(filterLevels()[0].textContent).toContain('Name')
+    expect(filterLevels()[0].textContent).toContain('Contains "a"')
 
     await humanClick(
-      items()[1].querySelector(
+      filterLevels()[1].querySelector(
         `[aria-label="${columnFilteringLabels(tableLabels).removeFilter('City')}"]`,
       )!,
     )
-    await expect.poll(() => items().length).toBe(1)
-    await expect
-      .poll(() => summaryButton()!.getAttribute('aria-label'))
-      .toBe(columnFilteringLabels(tableLabels).filtersActive(1))
+    await expect.poll(() => filterLevels().length).toBe(1)
 
-    await humanClick(
-      summary()!.querySelector('[data-testid="filter-summary-reset"]')!,
-    )
+    await humanClick(sectionReset()!)
     await expect.poll(rowIds).toEqual(ALL)
-    await expect.poll(summary).toBeNull()
-    expect(summaryButton()!.getAttribute('aria-disabled')).toBe('true')
+    await expect.poll(filterSection).toBeNull()
+    await expect.poll(filterRowValue).toBe(tableLabels.viewSettingsNone)
+    expect(settingsButton()!.hasAttribute('data-active')).toBe(false)
   })
 
-  test('FL43: кнопка снятия фильтра в сводке — квадратная кнопка-иконка кита: подпись — её имя и тултип, с клавиатуры — кольцо фокуса; фокус не меняет раскладку строки и не рисует линию над ней', async () => {
+  test('FL43: кнопка снятия фильтра в разделе «Фильтр» — квадратная кнопка-иконка кита: подпись — её имя и тултип, с клавиатуры — кольцо фокуса; фокус не меняет раскладку строки и не рисует линию над ней', async () => {
     await renderFiltering(TOOLBAR)
     await applyTextFilter('name', 'a')
-    await humanClick(summaryButton()!)
-    await expect.poll(summary).not.toBeNull()
-    const item = summary()!.querySelector<HTMLElement>('li')!
+    await openSettingsSection('filter', { click: humanClick })
+    const item = filterLevels()[0]!
     const remove = item.querySelector<HTMLButtonElement>(
-      '[data-testid="filter-summary-remove"]',
+      '[data-testid="view-settings-remove"]',
     )!
     const label = columnFilteringLabels(tableLabels).removeFilter('Name')
     expect(remove.getAttribute('aria-label')).toBe(label)
@@ -430,7 +452,7 @@ describe('Фильтрация — тулбар и нижняя панель', (
           .filter(a => a.effect?.getTiming().iterations !== Infinity)
           .map(a => a.finished.catch(() => undefined)),
       )
-    await settled(summary()!)
+    await settled(item)
     // Открытие поповера доигрывает на кадр позже: «до» — когда строка два кадра на месте.
     let last = ''
     await expect
@@ -445,15 +467,13 @@ describe('Фильтрация — тулбар и нижняя панель', (
     const before = item.getBoundingClientRect()
     const removeBefore = remove.getBoundingClientRect()
     // Фокус — клавишами: с «Сбросить фильтры» назад на крестик.
-    const reset = summary()!.querySelector(
-      '[data-testid="filter-summary-reset"]',
-    )
+    const reset = sectionReset()
     for (let i = 0; i < 5 && document.activeElement !== reset; i++)
       await userEvent.keyboard('{Tab}')
     await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
     expect(document.activeElement).toBe(remove)
     expect(remove.matches(':focus-visible')).toBe(true)
-    await settled(summary()!)
+    await settled(item)
     const style = getComputedStyle(remove)
     expect(style.boxShadow).toContain(
       `0px 0px 0px ${tokenPx('--tsr-comp-focus-ring-width')}px`,
@@ -481,42 +501,38 @@ describe('Фильтрация — тулбар и нижняя панель', (
     await userEvent.keyboard('{Escape}')
   })
 
-  test('FL13: фильтр скрытой колонки остаётся активным и в сводке помечен «колонка скрыта»; доступное имя называет число таких фильтров', async () => {
+  test('FL13: фильтр скрытой колонки остаётся активным; в разделе «Фильтр» у имени колонки — значок «колонка скрыта»', async () => {
     await renderFiltering({ ...TOOLBAR, enableColumnVisibility: true })
     await applyTextFilter('city', 'rome')
     await expect.poll(rowIds).toEqual(['2', '7'])
 
-    await humanClick(
-      document.querySelector('[data-testid="column-visibility-button"]')!,
-    )
+    await openSettingsSection('columns', { click: humanClick })
     const cityCheckbox = () =>
       document.querySelector<HTMLElement>(
         '[data-testid="column-visibility-menu"] [data-column-id="city"] [role="checkbox"]',
       )
     await expect.poll(cityCheckbox).not.toBeNull()
     await humanClick(cityCheckbox()!)
-    await userEvent.keyboard('{Escape}')
     await expect.poll(() => headCell('city')).toBeNull()
     expect(rowIds()).toEqual(['2', '7'])
-    // Меню доигрывает выход, и его подложка съела бы следующий клик.
-    await expect
-      .poll(() =>
-        document.querySelector('[data-testid="column-visibility-menu"]'),
-      )
-      .toBeNull()
 
-    await expect
-      .poll(() => summaryButton()!.getAttribute('aria-label'))
-      .toBe(columnFilteringLabels(tableLabels).filtersActiveHidden(1, 1))
-    await humanClick(summaryButton()!)
-    await expect.poll(summary).not.toBeNull()
-    const item = summary()!.querySelector<HTMLElement>(
-      '[data-column-id="city"]',
+    await humanClick(
+      viewSettingsLevel()!.querySelector<HTMLElement>(
+        '[data-popup-level-back]',
+      )!,
+    )
+    await openSettingsSection('filter', { click: humanClick })
+    const item = filterLevels().find(
+      level => level.dataset.viewSettingsLevel === 'city',
     )!
     expect(item.hasAttribute('data-hidden-column')).toBe(true)
-    expect(item.textContent).toContain(
-      columnFilteringLabels(tableLabels).columnHidden,
+    const mark = item.querySelector<HTMLElement>(
+      '[data-testid="view-settings-hidden"]',
+    )!
+    expect(mark.getAttribute('aria-label')).toBe(
+      tableLabels.viewSettingsHiddenColumn,
     )
+    expect(item.textContent).toContain('City')
   })
 
   test('FL15: поле поиска слева в тулбаре с кнопкой очистки', async () => {
@@ -526,7 +542,7 @@ describe('Фильтрация — тулбар и нижняя панель', (
       quickSearchLabels(tableLabels).search,
     )
     expect(input.getBoundingClientRect().right).toBeLessThan(
-      summaryButton()!.getBoundingClientRect().left,
+      settingsButton()!.getBoundingClientRect().left,
     )
     const clear = () =>
       document.querySelector<HTMLElement>('[data-testid="quick-search-clear"]')
@@ -631,11 +647,7 @@ describe('Фильтрация — тулбар и нижняя панель', (
         `${rowSelectionLabels(tableLabels).selectedRows(2)}, ${rowSelectionLabels(tableLabels).selectedRowsHidden(1)}`,
       )
 
-    await humanClick(summaryButton()!)
-    await expect.poll(summary).not.toBeNull()
-    await humanClick(
-      summary()!.querySelector('[data-testid="filter-summary-reset"]')!,
-    )
+    await resetFiltersFromSettings()
     await expect
       .poll(counter)
       .toBe(rowSelectionLabels(tableLabels).selectedRows(2))
@@ -731,11 +743,7 @@ describe('Фильтрация — сочетания с плагинами', ()
     await humanClick(selectAll)
     await expect.poll(checked).toEqual(['0', '7'])
 
-    await humanClick(summaryButton()!)
-    await expect.poll(summary).not.toBeNull()
-    await humanClick(
-      summary()!.querySelector('[data-testid="filter-summary-reset"]')!,
-    )
+    await resetFiltersFromSettings()
     await expect.poll(rowIds).toEqual(ALL)
     expect(checked()).toEqual(['0', '1', '7'])
   })
@@ -758,11 +766,7 @@ describe('Фильтрация — сочетания с плагинами', ()
       ),
     ).toBe(true)
 
-    await humanClick(summaryButton()!)
-    await expect.poll(summary).not.toBeNull()
-    await humanClick(
-      summary()!.querySelector('[data-testid="filter-summary-reset"]')!,
-    )
+    await resetFiltersFromSettings()
     await expect.poll(handles).toBe(12)
 
     await userEvent.type(searchInput()!, 'bob')
@@ -927,7 +931,7 @@ describe('Фильтрация — пустой результат, сервер
     await expect.poll(rowIds).toEqual(ALL)
     expect(stub()).toBeNull()
     expect(searchInput()!.value).toBe('')
-    expect(summaryButton()!.getAttribute('aria-disabled')).toBe('true')
+    expect(settingsButton()!.hasAttribute('data-active')).toBe(false)
     await screen.unmount()
 
     // Пустые данные: строк нет, `waitForGrid` не дождётся.
@@ -1162,7 +1166,14 @@ describe('Фильтрация — пустой результат, сервер
       filterButton('name')!.querySelector('[data-testid="custom-filter-icon"]'),
     ).not.toBeNull()
     expect(searchInput()!.getAttribute('aria-label')).toBe('Поиск')
-    expect(summaryButton()!.getAttribute('aria-label')).toBe('Фильтры')
+    await openSettings({ click: humanClick })
+    expect(viewSettingsRow('filter')!.textContent).toContain('Фильтры')
+    expect(
+      viewSettingsRow('filter')!.querySelector(
+        '[data-testid="custom-filter-icon"]',
+      ),
+    ).not.toBeNull()
+    await closeSettings()
 
     await openFilter('name')
     expect(
@@ -1207,21 +1218,19 @@ describe('Фильтрация — пустой результат, сервер
       await userEvent.keyboard('{Escape}')
       await expect.poll(panel).toBeNull()
 
-      await humanClick(summaryButton()!)
-      await expect.poll(summary).not.toBeNull()
-      expect(await axeOf(summary()!)).toEqual([])
-      for (const el of summary()!.querySelectorAll('button')) {
+      await openSettingsSection('filter', { click: humanClick })
+      expect(await axeOf(viewSettingsPopover()!)).toEqual([])
+      for (const el of viewSettingsLevel()!.querySelectorAll('button')) {
         expect(minSize(el), el.outerHTML.slice(0, 120)).toBeGreaterThanOrEqual(
           24,
         )
       }
-      await userEvent.keyboard('{Escape}')
-      await expect.poll(summary).toBeNull()
+      await closeSettings()
 
       expect(await axeOf(wrapper())).toEqual([])
       for (const el of [
         filterButton('name')!,
-        summaryButton()!,
+        settingsButton()!,
         document.querySelector('[data-testid="quick-search-clear"]')!,
       ]) {
         expect(minSize(el), el.outerHTML.slice(0, 120)).toBeGreaterThanOrEqual(

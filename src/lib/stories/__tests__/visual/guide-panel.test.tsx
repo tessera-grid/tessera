@@ -26,6 +26,7 @@ import {
 } from '../../__mocks__/catalogPlay'
 import { pressCell, untilDone } from '../../__mocks__/cellGestures'
 import { HANDLE, ROW, rowIdOrder } from '../../rowDragging.dnd'
+import { openViewSettingsSection } from '../../__mocks__/viewSettings'
 
 // Панель гайда историй (ADR 0117, SN14–SN15, SN17, SN21–SN27, SN33–SN35, SN40–SN58, SN69) — с
 // движением: каталог гоняет истории с уменьшенным движением, и порядок конфетти и сдвига
@@ -885,9 +886,7 @@ const bodyCell = () =>
     `${ROW}[data-index="1"] .data-grid__body-cell`,
   )!
 const visibilityButton = () =>
-  document.querySelector<HTMLElement>(
-    '[data-testid="column-visibility-button"]',
-  )!
+  document.querySelector<HTMLElement>('[data-testid="view-settings-button"]')!
 const visibilityMenu = () =>
   document.querySelector<HTMLElement>(
     '[data-testid="column-visibility-menu"][data-open]',
@@ -942,7 +941,7 @@ describe('ввод человека посреди гайда (ADR 0117)', () =>
       // Меню, открытое не человеком, пометки не ставит; нажатие в нём (портал) — ставит.
       await expect
         .poll(() => {
-          if (!visibilityMenu()) visibilityButton().click()
+          if (!visibilityMenu()) openViewSettingsSection(document, 'columns')
           return !!visibilityMenu()
         })
         .toBe(true)
@@ -1974,7 +1973,7 @@ describe('показ действий шага (ADR 0117)', () => {
     try {
       await expect
         .poll(() => {
-          if (!visibilityMenu()) visibilityButton()?.click()
+          if (!visibilityMenu()) openViewSettingsSection(document, 'columns')
           return !!visibilityMenu()
         })
         .toBe(true)
@@ -2114,7 +2113,7 @@ const FOCUS_STEPS: readonly GuideStoryStep[] = [
     hint: '',
     enter: stepAction(async (_root, { signal }) => {
       await pollUntil(() => {
-        if (!visibilityMenu()) visibilityButton().click()
+        if (!visibilityMenu()) openViewSettingsSection(document, 'columns')
         return !!visibilityMenu()
       }, signal)
       pressEscape()
@@ -2265,7 +2264,7 @@ describe('фокус после шага (ADR 0117)', () => {
       // Открытое меню держит фокус.
       await expect
         .poll(() => {
-          if (!visibilityMenu()) visibilityButton().click()
+          if (!visibilityMenu()) openViewSettingsSection(document, 'columns')
           return !!visibilityMenu()
         })
         .toBe(true)

@@ -54,22 +54,13 @@ const byTestId = (id: string) =>
 const rect = (el: Element) => el.getBoundingClientRect()
 const focused = () => document.activeElement?.getAttribute('data-testid')
 
-const ORDER = [
-  'quick-search',
-  'filter-summary-button',
-  'export-button',
-  'column-visibility-button',
-]
+const ORDER = ['quick-search', 'export-button', 'view-settings-button']
 
 const mount = async (width: number) => {
   const screen = await render(<Grid width={width} />)
   await waitForGrid()
   // Клавиатура — по пришедшим кнопкам: смена заглушки посреди нажатий — предмет LZ25 (ADR 0061).
-  for (const id of [
-    'filter-summary-button',
-    'export-button',
-    'column-visibility-button',
-  ])
+  for (const id of ['export-button', 'view-settings-button'])
     await expect
       .poll(() => byTestId(id)?.hasAttribute('data-base-ui-click-trigger'))
       .toBe(true)
@@ -85,25 +76,23 @@ describe('Размещение кнопок тулбара (ADR 0205)', () => {
       expect(wideRects[i]!.left, ORDER[i]).toBeGreaterThan(
         wideRects[i - 1]!.right,
       )
-    // «Экспорт» — слева, вплотную к «Фильтрам»; «Колонки» — справа.
+    // «Экспорт» — слева, вплотную к полю поиска; «Настройки вида» — справа.
     const gap = parseFloat(getComputedStyle(toolbar()).columnGap)
-    expect(wideRects[2]!.left - wideRects[1]!.right).toBeCloseTo(gap, 0)
+    expect(wideRects[1]!.left - wideRects[0]!.right).toBeCloseTo(gap, 0)
     const bar = rect(toolbar())
-    expect(wideRects[2]!.right).toBeLessThan(bar.left + bar.width / 2)
-    expect(wideRects[3]!.left).toBeGreaterThan(bar.left + bar.width / 2)
+    expect(wideRects[1]!.right).toBeLessThan(bar.left + bar.width / 2)
+    expect(wideRects[2]!.left).toBeGreaterThan(bar.left + bar.width / 2)
 
-    byTestId('filter-summary-button')!.focus()
+    byTestId('export-button')!.focus()
     await userEvent.keyboard('{ArrowRight}')
-    expect(focused()).toBe('export-button')
-    await userEvent.keyboard('{ArrowRight}')
-    expect(focused()).toBe('column-visibility-button')
+    expect(focused()).toBe('view-settings-button')
     await userEvent.keyboard('{ArrowLeft}')
     expect(focused()).toBe('export-button')
     await userEvent.keyboard('{Home}')
     expect(focused()).toBe('quick-search')
     byTestId('export-button')!.focus()
     await userEvent.keyboard('{End}')
-    expect(focused()).toBe('column-visibility-button')
+    expect(focused()).toBe('view-settings-button')
     await wide.unmount()
 
     // Узко: сжимается поле поиска, кнопки целиком, стороны не наезжают.
@@ -119,7 +108,7 @@ describe('Размещение кнопок тулбара (ADR 0205)', () => {
         narrowRects[i - 1]!.right,
       )
     }
-    expect(narrowRects[3]!.right).toBeLessThanOrEqual(rect(toolbar()).right)
+    expect(narrowRects[2]!.right).toBeLessThanOrEqual(rect(toolbar()).right)
     await narrow.unmount()
   })
 })

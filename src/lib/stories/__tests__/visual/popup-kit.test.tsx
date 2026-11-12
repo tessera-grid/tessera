@@ -28,6 +28,7 @@ import * as statusIcon from '../../UI.StatusIcon.stories'
 import * as timeField from '../../UI.TimeField.stories'
 import { failureShownOn } from '../helpers'
 import { resolveColor, toRgba } from './a11y-helpers'
+import { viewSettingsLevel, viewSettingsSectionOpen } from '../viewSettings'
 
 // Кит поповеров и контролов (ADR 0183, PK2–PK6, PK12–PK21, PK27–PK30, PK32) и раскладка панели по
 // двум линиям (PK33). Истории — те же, что снимает каталог; потребители проверяются по исходникам.
@@ -106,19 +107,21 @@ describe('Раскладка поповера-панели (ADR 0183, PK33)', ()
     const popup = dialog()
     const p = padding(popup)
     const textLine = p + px(popup, '--tsr-comp-popup-item-padding-x')
-    const title = popup.querySelector('p')!
+    const title = popup.querySelector<HTMLElement>('[data-popup-level-title]')!
     const style = getComputedStyle(title)
     expect(parseFloat(style.fontSize)).toBe(
       px(popup, '--tsr-comp-popup-title-font-size'),
     )
     expect(Number(style.fontWeight)).toBeGreaterThanOrEqual(600)
     // Заголовок: текст — на линии текста пунктов, сверху — поле поповера.
-    expect(textBox(title).left - box(popup).left).toBeCloseTo(textLine, 0)
+    expect(
+      textBox(title.querySelector('[data-popup-item-label]')!).left -
+        box(popup).left,
+    ).toBeCloseTo(textLine, 0)
     expect(box(title).top - box(popup).top).toBeCloseTo(p, 0)
     const content = title.nextElementSibling!
-    expect(
-      box(content).top - (box(title).bottom - parseFloat(style.paddingBottom)),
-    ).toBeCloseTo(p * 2, 0)
+    // Шапка — строкой высоты пункта, от неё до содержимого — двойное поле.
+    expect(box(content).top - box(title).bottom).toBeCloseTo(p * 2, 0)
     // Кнопки: рамка последней — на поле поповера справа и снизу, от содержимого — двойное поле.
     const footer = popup.querySelector('[data-popup-footer]')!
     const last = [...footer.querySelectorAll('button')].at(-1)!
@@ -141,7 +144,10 @@ describe('Раскладка поповера-панели (ADR 0183, PK33)', ()
     const surface = count()!.closest<HTMLElement>('[role="dialog"]')!
     const field = surface.querySelector('input')!
     expect(box(field).left - box(surface).left).toBeCloseTo(p, 0)
-    expect(box(field).top - box(surface).top).toBeCloseTo(p, 0)
+    // Раздел «Настроек вида»: над полем — строка «назад», от неё — двойное поле (ADR 0215).
+    const back = surface.querySelector('[data-popup-level-back]')!
+    expect(box(back).top - box(surface).top).toBeCloseTo(p, 0)
+    expect(box(field).top - box(back).bottom).toBeCloseTo(p * 2, 0)
     const item = surface.querySelector('[role="checkbox"]')!.closest('label')!
     expect(box(item).left - box(surface).left).toBeCloseTo(p, 0)
     expect(box(surface).right - box(item).right).toBeCloseTo(p, 0)
@@ -171,13 +177,13 @@ describe('Блоки поповера', () => {
     await render(<Panel.PopupPanelPlayground />)
     await expect.poll(dialog).not.toBeNull()
     const popup = dialog()
-    const title = popup.querySelector('p')!
+    const title = popup.querySelector<HTMLElement>('[data-popup-level-title]')!
     expect(popup.getAttribute('aria-labelledby')).toBe(title.id)
     for (const name of [
       'FailureLogPopover',
       'UnsavedChangesPopover',
       'CellIssuePopup',
-      'FilterSummaryPopover',
+      'ViewSettingsPopover',
       'ColumnVisibilityMenu',
       'FilterPanel',
       'OptionFilterPanel',
@@ -295,19 +301,23 @@ describe('Блоки поповера', () => {
     }
   })
 
-  test('PK28: условие сводки фильтров — запись с точкой, колонкой, кнопкой снятия и условием; у панели заголовок', async () => {
-    await opened('filterSummary')
-    const summary = () =>
-      document.querySelector<HTMLElement>('[data-testid="filter-summary"]')
-    await expect.poll(summary).not.toBeNull()
-    const entry = summary()!.querySelector('li[data-column-id="name"]')!
-    expect(entry.querySelector('[data-filter-condition]')).not.toBeNull()
+  test('PK28: условие в разделе «Фильтр» «Настроек вида» — запись с точкой, колонкой, кнопкой снятия и условием; у раздела — строка «назад»', async () => {
+    await opened('view')
+    const section = () => viewSettingsSectionOpen('filter')
+    await expect.poll(section).not.toBeNull()
+    const entry = section()!.querySelector('[data-view-settings-level="name"]')!
     expect(
-      entry.querySelector('[data-testid="filter-summary-remove"]'),
+      entry.querySelector('[data-view-settings-description]'),
+    ).not.toBeNull()
+    expect(
+      entry.querySelector('[data-testid="view-settings-remove"]'),
     ).not.toBeNull()
     expect(entry.textContent).toContain('Name')
-    expect(summary()!.querySelector('p')?.textContent).toBeTruthy()
-    expect(sourceOf('FilterSummaryPopover')).toContain('<PopupEntry')
+    expect(
+      viewSettingsLevel()!.querySelector('[data-popup-level-back]')
+        ?.textContent,
+    ).toBeTruthy()
+    expect(sourceOf('ViewSettingsPopover')).toContain('<PopupEntry')
   })
 
   test('PK30: панель фильтра вариантов держит поля поверхности: содержимое не доходит до правого края', async () => {
@@ -694,7 +704,7 @@ describe('Контролы', () => {
   })
 })
 
-const STYLES = import.meta.glob('../../../{plugins,ui}/**/*.module.css', {
+const STYLES = import.meta.glob('../../../{grid,plugins,ui}/**/*.module.css', {
   query: '?raw',
   import: 'default',
   eager: true,
@@ -825,7 +835,7 @@ describe('Затемнение краёв прокрутки (ADR 0183, PK31)', 
       'ColumnVisibilityMenu',
       'FailureLogPopover',
       'UnsavedChangesPopover',
-      'FilterSummaryPopover',
+      'ViewSettingsPopover',
       'Calendar',
       'TimeField',
     ])
@@ -838,7 +848,7 @@ describe('Затемнение краёв прокрутки (ADR 0183, PK31)', 
       'TimeField',
     ])
       expect(styleOf(name), name).toContain('composes: scrollFade from')
-    for (const name of ['FailureLog', 'UnsavedChanges', 'FilterSummary'])
+    for (const name of ['FailureLog', 'UnsavedChanges', 'ViewSettings'])
       expect(styleOf(name), name).toContain('composes: cardsScroll from')
   })
 })

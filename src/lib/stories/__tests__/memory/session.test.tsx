@@ -215,7 +215,7 @@ describe('Утечки в долгой сессии', () => {
 
       await click(
         container.querySelector<HTMLElement>(
-          '[data-testid="column-visibility-button"]',
+          '[data-testid="view-settings-button"]',
         )!,
       )
       await waitFor(() => document.querySelector('[role="dialog"]') !== null)

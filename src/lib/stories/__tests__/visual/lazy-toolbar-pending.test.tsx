@@ -5,8 +5,8 @@ import { LAZY_PENDING_DELAY_MS } from '../../../core/lazyOpening'
 import { humanClick, pendingArcOf } from '../helpers'
 import {
   MODULE,
-  columnsButton,
-  columnsPopover,
+  settingsButton,
+  settingsPopover,
   holdModule,
   pageSizeButton,
   pageSizeOptions,
@@ -21,28 +21,28 @@ import {
 // страницы.
 
 afterEach(async () => {
-  await releaseModule(MODULE.columns)
+  await releaseModule(MODULE.settings)
   await releaseModule(MODULE.pageSize)
 })
 
 describe('Ленивые поповеры — ожидание', () => {
   test('LZ3: загрузка дольше 150 мс — кнопка тулбара в ожидании (aria-busy, блик); быстрая загрузка ожидания не показывает', async () => {
-    await holdModule(MODULE.columns)
+    await holdModule(MODULE.settings)
     await holdModule(MODULE.pageSize)
     await renderToolbarGrid()
 
-    await humanClick(columnsButton())
-    expect(columnsButton().getAttribute('aria-busy')).toBeNull()
+    await humanClick(settingsButton())
+    expect(settingsButton().getAttribute('aria-busy')).toBeNull()
     await expect
-      .poll(() => columnsButton().getAttribute('aria-busy'))
+      .poll(() => settingsButton().getAttribute('aria-busy'))
       .toBe('true')
     // Ожидание — дуга по контуру кнопки (ADR 0127).
-    expect(pendingArcOf(columnsButton())?.dataset.phase).toBe('pending')
-    await releaseModule(MODULE.columns)
-    await expect.poll(columnsPopover).not.toBeNull()
-    expect(columnsButton().getAttribute('aria-busy')).toBeNull()
+    expect(pendingArcOf(settingsButton())?.dataset.phase).toBe('pending')
+    await releaseModule(MODULE.settings)
+    await expect.poll(settingsPopover).not.toBeNull()
+    expect(settingsButton().getAttribute('aria-busy')).toBeNull()
     await userEvent.keyboard('{Escape}')
-    await expect.poll(columnsPopover).toBeNull()
+    await expect.poll(settingsPopover).toBeNull()
 
     const busy = recordAttribute(pageSizeButton, 'aria-busy')
     await humanClick(pageSizeButton())

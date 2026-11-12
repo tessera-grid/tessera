@@ -47,6 +47,7 @@ import {
   toRgba,
 } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
+import { openColumnsMenu } from '../viewSettings'
 
 // Тон опасного действия (ADR 0206, DX1–DX8, DX10): кнопки кита, пункты меню по дескриптору,
 // встроенные опасные действия, контраст, высокая контрастность, токены, axe. DX9 и DX11 —
@@ -716,7 +717,7 @@ describe('Встроенные опасные действия (ADR 0206)', () =
     await expect.poll(() => testId('failure-log')).toBeNull()
 
     // «Колонки»: «Reset» и ластик скрытой колонки с сортировкой — без тона.
-    await humanClick(testId('column-visibility-button')!)
+    await openColumnsMenu({ click: humanClick })
     const eraser = () => testId('column-visibility-clear-transforms')
     await expect.poll(eraser).not.toBeNull()
     await settle()

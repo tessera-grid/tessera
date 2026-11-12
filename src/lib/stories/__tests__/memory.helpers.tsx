@@ -173,6 +173,20 @@ export const settled = async (container: ParentNode = document) => {
 }
 
 /**
+ * Ждёт, пока число узлов перестанет меняться два кадра подряд: полоса окна и первый рендер
+ * дорастают в следующих кадрах (ADR 0202, ADR 0203), и счёт узлов посреди роста — шум.
+ */
+export const settledDom = async (container: ParentNode = document) => {
+  let last = -1
+  for (let i = 0; i < 60; i++) {
+    await frames(2)
+    const count = container.querySelectorAll('*').length
+    if (count === last) return
+    last = count
+  }
+}
+
+/**
  * Ждёт, пока документ затихнет: `quiet` мс без новых узлов в `<head>` и без загрузок
  * ресурсов. Ленивые модули, начатые при рендере (ADR 0061), приходят позже монтирования
  * и вставляют свои стили — один раз на документ.

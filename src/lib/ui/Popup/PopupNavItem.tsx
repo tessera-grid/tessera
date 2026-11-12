@@ -51,6 +51,7 @@ export const PopupNavItem = ({
     label={label}
     aria-disabled={disabled || undefined}
     data-disabled={disabled || undefined}
+    data-popup-nav-item=""
     onClick={disabled ? undefined : onClick}
     end={chevron && !disabled ? <PopupItemMark status="submenu" /> : undefined}
   >

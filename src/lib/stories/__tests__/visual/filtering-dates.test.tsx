@@ -15,6 +15,7 @@ import { waitForGrid } from './core-helpers'
 import { tableLabels } from '../labels'
 import { calendarLabels } from '../../../shared/calendar/labels'
 import { columnFilteringLabels } from '../../../plugins/columnFiltering/labels'
+import { openSettingsSection, viewSettingsSectionOpen } from '../viewSettings'
 
 // Фильтр дат (ADR 0047): панель с календарём, время у datetime, клавиатура, тема,
 // локализация, сводка, axe, серверный режим. Условия по значениям, пресеты и пояс
@@ -187,12 +188,7 @@ const dayCell = (iso: string) =>
   calendar()!.querySelector<HTMLElement>(`[data-day="${iso}"]`)!
 const byTestId = (id: string) =>
   panel()?.querySelector<HTMLInputElement>(`[data-testid="${id}"]`) ?? null
-const summary = () =>
-  document.querySelector<HTMLElement>('[data-testid="filter-summary"]')
-const summaryButton = () =>
-  document.querySelector<HTMLButtonElement>(
-    '[data-testid="filter-summary-button"]',
-  )!
+const summary = () => viewSettingsSectionOpen('filter')
 
 const openFilter = async (columnId: string) => {
   await userEvent.hover(headCell(columnId))
@@ -538,16 +534,14 @@ describe('Фильтр дат — вид', () => {
     expect(panel()!.textContent).toContain('Сегодня')
   })
 
-  test('DF16: сводка «Фильтры» показывает дату через Intl.DateTimeFormat (локаль dateLocale, пояс timeZone), пресет — подписью', async () => {
+  test('DF16: раздел «Фильтр» «Настроек вида» показывает дату через Intl.DateTimeFormat (локаль dateLocale, пояс timeZone), пресет — подписью', async () => {
     const item = (columnId: string) =>
-      summary()!.querySelector<HTMLElement>(`[data-column-id="${columnId}"]`)!
-        .textContent
-    // Тулбар — ленивый модуль (PB6): кнопка сводки появляется после загрузки.
-    const openSummary = async () => {
-      await expect.poll(summaryButton).not.toBeNull()
-      await humanClick(summaryButton())
-      await expect.poll(summary).not.toBeNull()
-    }
+      summary()!.querySelector<HTMLElement>(
+        `[data-view-settings-level="${columnId}"]`,
+      )!.textContent
+    // Раздел «Фильтр» «Настроек вида» (ADR 0215).
+    const openSummary = () =>
+      openSettingsSection('filter', { click: humanClick })
 
     let table: any
     const english = await render(<Grid onTable={t => (table = t)} />)

@@ -9,14 +9,13 @@ import { describe, expect, it } from 'vitest'
 import type { PluginSlot } from '../core/createSlots'
 import { foldEntries } from '../core/features'
 import { resolveToolbarSides } from '../core/toolbar'
+import { withViewSettingsButton } from '../core/viewSettings'
 import {
   columnFiltering,
-  columnSorting,
   columnVisibility,
   dataExport,
   failureLog,
   quickSearch,
-  rowGrouping,
   unsavedChanges,
 } from '../plugins'
 import { hideHeaderAction } from '../plugins/columnVisibility/hideHeaderAction'
@@ -57,8 +56,13 @@ const button = (id: string, extra: Partial<ToolbarPluginSlot> = {}): Entry => ({
 
 /** Стороны тулбара как [группа, [id кнопок]] — слева и справа. */
 const layoutOf = (entries: Entry[]) => {
+  // Кнопку «Настроек вида» ставит грид — тем же помощником (ADR 0215, VW1).
+  const folded = foldEntries(entries)
+  const table = {
+    options: { viewSettingsSections: folded.viewSettingsSections },
+  }
   const { start, end } = resolveToolbarSides(
-    foldEntries(entries).slots.toolbarSlot,
+    withViewSettingsButton(folded.slots.toolbarSlot, table, () => null),
   )
   const ids = (groups: typeof start) =>
     groups.map(group => [group.id, group.items.map(item => item.id)])
@@ -112,10 +116,8 @@ describe('Размещение кнопок тулбара (ADR 0205)', () => {
         quickSearch(),
       ]),
     ).toEqual({
-      start: [
-        ['search', ['quickSearchField', 'filterSummaryButton', 'exportButton']],
-      ],
-      end: [['view', ['columnVisibilityButton']]],
+      start: [['search', ['quickSearchField', 'exportButton']]],
+      end: [['view', ['viewSettingsButton']]],
     })
 
     // Кнопка «Экспорт» в группе приложения: группа — на месте групп приложения (после встроенных,
@@ -144,7 +146,7 @@ describe('Размещение кнопок тулбара (ADR 0205)', () => {
         columnVisibility(),
       ]).end,
     ).toEqual([
-      ['view', ['exportButton', 'columnVisibilityButton']],
+      ['view', ['exportButton', 'viewSettingsButton']],
       ['data', ['unsavedChangesButton']],
     ])
   })

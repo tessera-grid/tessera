@@ -7,7 +7,7 @@ import { headCellById, renderColumnPinning } from './column-pinning-helpers'
 import { waitForGrid } from './core-helpers'
 import {
   MODULE,
-  columnsButton,
+  settingsButton,
   exportButton,
   holdModule,
   releaseModule,
@@ -20,7 +20,7 @@ import {
 
 afterEach(async () => {
   for (const module of [
-    MODULE.columns,
+    MODULE.settings,
     MODULE.export,
     MODULE.kebab,
     MODULE.inlineMenu,
@@ -48,23 +48,23 @@ const keepsFocus = async (
 describe('Ленивые поповеры — фокус', () => {
   test('LZ25: фокус клавиатуры на заглушке кнопки тулбара, кебаба заголовка или инлайн-кнопки остаётся на ней после загрузки модуля; стрелки тулбара ходят от неё; ушедший фокус не возвращается', async () => {
     // Тулбар: стрелкой с «Колонок» — на заглушку «Экспорта».
-    await holdModule(MODULE.columns)
+    await holdModule(MODULE.settings)
     await holdModule(MODULE.export)
     const toolbar = await renderToolbarGrid()
     expect(isTrigger(exportButton())).toBe(false)
-    columnsButton().focus()
+    settingsButton().focus()
     await keepsFocus(MODULE.export, exportButton, () =>
       userEvent.keyboard('{ArrowRight}'),
     )
     expect(isTrigger(exportButton())).toBe(true)
     await userEvent.keyboard('{ArrowLeft}')
-    expect(document.activeElement).toBe(columnsButton())
+    expect(document.activeElement).toBe(settingsButton())
 
     // Заглушка, ушедшая без фокуса, его не забирает.
     await userEvent.keyboard('{ArrowRight}')
     expect(document.activeElement).toBe(exportButton())
-    await releaseModule(MODULE.columns)
-    await expect.poll(() => isTrigger(columnsButton())).toBe(true)
+    await releaseModule(MODULE.settings)
+    await expect.poll(() => isTrigger(settingsButton())).toBe(true)
     expect(document.activeElement).toBe(exportButton())
     await toolbar.unmount()
 
