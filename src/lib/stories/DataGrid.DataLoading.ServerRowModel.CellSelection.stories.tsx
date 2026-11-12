@@ -32,9 +32,11 @@ import { StoryComponent } from './DataGridStory'
 import type { TesseraFeatureEntry } from '../core/features'
 import type { CellSelectionRangeView } from '../plugins/cellSelectionModel/indexSelection'
 import type { ConsoleLog } from './demos/consoleLog'
+import type { CellEditBatch } from '../plugins/cellEditing/types'
 import {
   layout,
   bodyRows,
+  scroller,
   skeletonRows,
   hasRow,
   server,
@@ -663,7 +665,10 @@ export const ServerCopyCancel: StoryObj<StoryProps> = {
 const describeRange = (range: CellSelectionRangeView) =>
   `rows ${range.minRowIndex + 1}–${range.maxRowIndex + 1} · ${range.columnIds[0]}…${range.columnIds.at(-1)} · corners ${range.anchorRowId ?? '—'} → ${range.focusRowId ?? '—'}`
 
-/** Приложение читает выделение одной функцией таблицы и пишет его в консоль. */
+/**
+ * Приложение читает выделение одной функцией таблицы и пишет его в консоль — при смене
+ * выделения и при приходе строк: строка угла, пришедшая с сервера, получает свой id.
+ */
 const rangeReader = (log: ConsoleLog): TesseraFeatureEntry => ({
   id: 'appRangeReader',
   setup: table => {
@@ -674,13 +679,13 @@ const rangeReader = (log: ConsoleLog): TesseraFeatureEntry => ({
       }
       getCellSelectionRanges: () => CellSelectionRangeView[]
     }
-    let seen = t.store.get().cellSelection
+    let seen = ''
     const subscription = t.store.subscribe(() => {
-      const next = t.store.get().cellSelection
-      if (next === seen) return
-      seen = next
       const ranges = t.getCellSelectionRanges()
-      if (ranges.length) log.log('app', ranges.map(describeRange).join('; '))
+      const text = ranges.map(describeRange).join('; ')
+      if (!ranges.length || text === seen) return
+      seen = text
+      log.log('app', text)
     })
     return () => subscription.unsubscribe()
   },
@@ -730,23 +735,50 @@ const READ_RANGES: readonly GuideStoryStep[] = [
     states: ['body.skeleton', 'body.cellRange'],
     enter: stepAction(async (root, { signal }) => {
       if (selectedPending(root) > 0) return
-      if (layerOf(root).top() > 0) layerOf(root).scrollTo({ top: 0 })
-      await pollUntil(() => !!cellAt(root, 2, 'age'), signal)
-      await nextFrame()
-      if (selectedCellCount(root) !== 9) {
-        dragCells(cellAt(root, 0, 'name')!, cellAt(root, 2, 'age')!)
-      }
-      server.hold = true
-      cellAt(root, 0, 'name')!.focus({ preventScroll: true })
-      for (let page = 0; page < RANGE_PAGES; page++) {
-        press(document.activeElement as HTMLElement, 'PageDown', {
-          shiftKey: true,
-        })
-      }
-      await pollUntil(() => selectedPending(root) > 0, signal)
+      await cornerPending(root, signal)
+    }),
+  },
+  {
+    title: 'Строки пришли',
+    hint: 'Сервер прислал строки. Диапазон тот же, но теперь приложение знает и строку второго угла: тот же вызов вернул её id, и консоль называет оба угла.',
+    states: ['body.cellRange'],
+    enter: stepAction(async (root, { signal }) => {
+      if (selectedPending(root) === 0 && !secondCornerKnown())
+        await cornerPending(root, signal)
+      server.hold = false
+      release()
+      await pollUntil(
+        () => selectedPending(root) === 0 && secondCornerKnown(),
+        signal,
+      )
     }),
   },
 ]
+
+/** Консоль после прочерка назвала второй угол строкой с id. */
+const secondCornerKnown = () => {
+  const text = consoleText()
+  const unknown = text.lastIndexOf('→ —')
+  return unknown >= 0 && /→ item-id-\d+/.test(text.slice(unknown))
+}
+
+/** Диапазон протяжкой и три экрана вниз: второй угол — на строке в пути с сервера. */
+const cornerPending = async (root: HTMLElement, signal: AbortSignal) => {
+  if (layerOf(root).top() > 0) layerOf(root).scrollTo({ top: 0 })
+  await pollUntil(() => !!cellAt(root, 2, 'age'), signal)
+  await nextFrame()
+  if (selectedCellCount(root) !== 9) {
+    dragCells(cellAt(root, 0, 'name')!, cellAt(root, 2, 'age')!)
+  }
+  server.hold = true
+  cellAt(root, 0, 'name')!.focus({ preventScroll: true })
+  for (let page = 0; page < RANGE_PAGES; page++) {
+    press(document.activeElement as HTMLElement, 'PageDown', {
+      shiftKey: true,
+    })
+  }
+  await pollUntil(() => selectedPending(root) > 0, signal)
+}
 
 /** ADR 0180, S1: приложение читает выделенный диапазон одной функцией в серверной модели. */
 export const CellSelectionRangesAnyMode: StoryObj<StoryProps> = {
@@ -777,14 +809,30 @@ export const CellSelectionRangesAnyMode: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(consoleText()).toMatch(/corners item-id-0 → —/))
-      server.hold = false
-      release()
+    })
+    await step(READ_RANGES[3]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(selectedPending(canvas)).toBe(0)
+      await expect(secondCornerKnown()).toBe(true)
       await settle()
     })
   },
 }
 
 // --- ADR 0219: вставка через незагруженные строки -------------------------------------
+
+/** Значения, которые «сервер» принял: `id строки:колонка` — значение. */
+const savedCells = new Map<string, unknown>()
+type SavedRow = { id: string } & Record<string, unknown>
+const withSaved = (row: SavedRow) => {
+  let next = row
+  for (const [key, value] of savedCells) {
+    const [rowId, columnId] = key.split(':') as [string, string]
+    if (rowId === row.id) next = { ...next, [columnId]: value }
+  }
+  return next
+}
 
 /** Мелкие блоки: сорок строк вставки — за пределами загруженного окна. */
 const PASTE_BLOCK = 10
@@ -814,17 +862,32 @@ const PASTE_LOADS: readonly GuideStoryStep[] = [
     title: 'Ячейка выбрана',
     hint: 'Строки приходят с сервера блоками по десять. Приложение разрешило править возраст и число визитов. Пользователь щёлкнул ячейку возраста в первой строке.',
     states: ['body.cellRange'],
-    props: context => ({
-      ...serverProps({
+    props: context => {
+      const props = serverProps({
         total: PASTE_TOTAL,
         knownTotal: true,
         blockSize: PASTE_BLOCK,
         selection: true,
-      })!(context),
-      enableCellEditing: true,
-      onCommitEdits: () => Promise.resolve(),
-    }),
+      })!(context)
+      const getRows = props.serverRowModelGetRows!
+      return {
+        ...props,
+        enableCellEditing: true,
+        // «Сервер» помнит принятое: строки, запрошенные после сохранения, приходят с ним.
+        onCommitEdits: (batch: CellEditBatch) => {
+          for (const cell of batch.cells)
+            savedCells.set(`${cell.rowId}:${cell.columnId}`, cell.value)
+          return Promise.resolve()
+        },
+        serverRowModelGetRows: request =>
+          Promise.resolve(getRows(request)).then(response => ({
+            ...response,
+            rows: response.rows.map((row: SavedRow) => withSaved(row)),
+          })),
+      }
+    },
     enter: stepAction(async (root, { signal }) => {
+      savedCells.clear()
       server.hold = false
       release()
       if (layerOf(root).top() > 0) layerOf(root).scrollTo({ top: 0 })
@@ -836,7 +899,7 @@ const PASTE_LOADS: readonly GuideStoryStep[] = [
   },
   {
     title: 'Вставка ждёт строк',
-    hint: 'Пользователь вставил из буфера сорок значений. Строк дальше экрана у таблицы нет: она запросила их у сервера и ждёт. Над таблицей плашка ожидания вставки с кнопкой отмены; данные пока не изменились.',
+    hint: 'Пользователь вставил из буфера столбец из сорока значений. Они лягут в возраст сорока строк подряд, начиная с выбранной ячейки, а строк дальше экрана у таблицы нет: она запросила их у сервера и ждёт. Над таблицей плашка ожидания вставки с кнопкой отмены; данные пока не изменились.',
     states: ['body.cellRange'],
     enter: stepAction(async (root, { signal }) => {
       if (server.held.length > 0) return
@@ -845,7 +908,7 @@ const PASTE_LOADS: readonly GuideStoryStep[] = [
   },
   {
     title: 'Значения вставлены',
-    hint: 'Сервер прислал строки. Значения легли во все сорок строк одним запросом сохранения, плашка ушла, вставленный блок выделен.',
+    hint: 'Сервер прислал строки. Значения легли в возраст сорока строк подряд от выбранной ячейки одним запросом сохранения, плашка ушла, вставленный блок выделен.',
     states: ['body.cellRange'],
     enter: stepAction(async (root, { signal }) => {
       if (pasteWritten(root)) return
@@ -855,7 +918,35 @@ const PASTE_LOADS: readonly GuideStoryStep[] = [
       await pollUntil(() => pasteWritten(root), signal)
     }),
   },
+  {
+    title: 'Конец вставленного блока',
+    hint: 'Пользователь прокрутил таблицу вниз. Выделенный блок кончается на сороковой строке: вставка заняла столько строк, сколько значений было в буфере, а возраст ниже остался прежним.',
+    states: ['body.cellRange'],
+    enter: stepAction(async (root, { signal }) => {
+      if (!pasteWritten(root) && !blockEndShown(root)) {
+        if (server.held.length === 0) await pasteHeld(root, signal)
+        server.hold = false
+        release()
+        await pollUntil(() => pasteWritten(root), signal)
+      }
+      const height = Number.parseFloat(
+        getComputedStyle(scroller(root)!).getPropertyValue(
+          '--tsr-comp-row-height',
+        ),
+      )
+      layerOf(root).scrollTo({ top: (PASTE_ROWS - 8) * height })
+      await pollUntil(() => blockEndShown(root), signal)
+    }),
+  },
 ]
+
+/** Последняя вставленная строка и следующая за ней — на экране. */
+const blockEndShown = (root: HTMLElement) =>
+  ageText(root, PASTE_ROWS - 1) === PASTED.at(-1) &&
+  isSelected(cellAt(root, PASTE_ROWS - 1, 'age')) &&
+  !!cellAt(root, PASTE_ROWS, 'age') &&
+  !isSelected(cellAt(root, PASTE_ROWS, 'age')) &&
+  ageText(root, PASTE_ROWS) !== String(100 + PASTE_ROWS)
 
 /** ADR 0219, S13: вставка в SSRM через незагруженные строки — ожидание, догрузка, запись. */
 export const ServerPasteLoadsRows: StoryObj<StoryProps> = {
@@ -887,6 +978,11 @@ export const ServerPasteLoadsRows: StoryObj<StoryProps> = {
       await stepDone(canvas)
       await expect(ageText(canvas, 0)).toBe(PASTED[0])
       await expect(consoleText()).toContain('onCommitEdits')
+    })
+    await step(PASTE_LOADS[3]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(blockEndShown(canvas)).toBe(true)
       await settle()
     })
   },

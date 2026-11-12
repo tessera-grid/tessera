@@ -9271,3 +9271,23 @@ export const HighContrastServerPasteLoadsRowsStep3 = {
   name: 'Data loading/Server row model/Cell selection — Paste loads the rows, шаг 3',
   tags: ['!test'],
 }
+
+export const HighContrastCellSelectionRangesAnyModeStep4 = {
+  ...twinStep(
+    serverCellSelectionStories,
+    serverCellSelectionStories.CellSelectionRangesAnyMode,
+    4,
+  ),
+  name: 'Data loading/Server row model/Cell selection — Read the selection, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastServerPasteLoadsRowsStep4 = {
+  ...twinStep(
+    serverCellSelectionStories,
+    serverCellSelectionStories.ServerPasteLoadsRows,
+    4,
+  ),
+  name: 'Data loading/Server row model/Cell selection — Paste loads the rows, шаг 4',
+  tags: ['!test'],
+}
