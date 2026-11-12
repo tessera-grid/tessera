@@ -21,20 +21,25 @@ import {
 } from './__mocks__/cellGestures'
 import {
   byTestId,
+  centerOf,
   consoleText,
   expectPopupInCanvas,
   guideNext,
+  pollUntil,
   settle,
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
+import { typeInto } from './__mocks__/typeGuides'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import {
   type GuideApp,
   GuideStory,
   type GuideStoryStep,
+  type StepRun,
   guideArgs,
+  stepAction,
 } from './demos/GuideStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
@@ -46,9 +51,9 @@ import type {
 } from '../plugins/cellEditing/types'
 
 /**
- * Вставка из буфера, очистка, вырезание и массовая правка выделения (ADR 0219, этап 1): блок из
- * таблицы, одно значение во весь диапазон, ошибки разбора, отказ сервера, черновики, своя
- * кнопка приложения и подтверждение вставки.
+ * Вставка из буфера, очистка, вырезание, протяжка и массовая правка выделения (ADR 0219): блок
+ * из таблицы, одно значение во весь диапазон, ошибки разбора, отказ сервера, черновики, свой
+ * пункт приложения, подтверждение вставки, протяжка маркером, ряд, Ctrl+D и Ctrl+Enter.
  */
 const meta = {
   ...dataGridMeta,
@@ -991,6 +996,617 @@ export const PasteConfirm: StoryObj<StoryProps> = {
     await step(CONFIRM[3]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(accepted(canvas)).toBe(true))
+      expect(consoleText()).toContain('onCommitEdits')
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0219, этап 2: протяжка и заполнение ------------------------------------------------
+
+/** Квадрат маркера угла активного диапазона. */
+const fillHandleOf = (root: ParentNode) =>
+  root.querySelector<HTMLElement>(
+    '[data-range-handle="end"][data-selection-handle="square"]:not([hidden])',
+  )
+const fillFrameShown = (root: ParentNode) =>
+  !!root.querySelector('[data-fill-frame]:not([hidden])')
+
+/** Событие указателя мыши в точке; `altKey` — с зажатым Alt. */
+const handleEvent = (
+  type: string,
+  point: { x: number; y: number },
+  altKey: boolean,
+) =>
+  new PointerEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    button: 0,
+    buttons: type === 'pointerup' ? 0 : 1,
+    pointerType: 'mouse',
+    isPrimary: true,
+    altKey,
+    clientX: point.x,
+    clientY: point.y,
+  })
+
+/** Протянуть квадрат маркера к ячейке и отпустить; `alt` — с зажатым Alt. */
+const fillTo = (
+  root: HTMLElement,
+  row: string,
+  column: string,
+  alt = false,
+) => {
+  const handle = fillHandleOf(root)
+  const target = cellOf(root, row, column)
+  if (!handle || !target) return false
+  const from = centerOf(handle)
+  const to = centerOf(target)
+  handle.dispatchEvent(handleEvent('pointerdown', from, alt))
+  for (let i = 1; i <= 4; i++)
+    document.dispatchEvent(
+      handleEvent(
+        'pointermove',
+        {
+          x: from.x + ((to.x - from.x) * i) / 4,
+          y: from.y + ((to.y - from.y) * i) / 4,
+        },
+        alt,
+      ),
+    )
+  document.dispatchEvent(handleEvent('pointerup', to, alt))
+  return true
+}
+
+/**
+ * Взять квадрат маркера и держать над ячейкой, не отпуская (ADR 0117, SN36): события человека
+ * до маркера не доходят; уход с шага отпускает маркер там, где его держали, — значения пишутся.
+ */
+const holdFill =
+  (
+    from: { row: string; column: string },
+    to: { row: string; column: string },
+  ) =>
+  async (root: HTMLElement, step: StepRun) => {
+    if (!selectedAt(root, from.row, from.column))
+      selectCell(root, from.row, from.column)
+    await pollUntil(
+      () => selectedAt(root, from.row, from.column) && !!fillHandleOf(root),
+      step.signal,
+    )
+    const handle = fillHandleOf(root)!
+    const start = centerOf(handle)
+    const ours = new WeakSet<Event>()
+    let point = start
+    // Своё событие — в списке до отправки: щит его пропускает.
+    const fire = (type: string, target: EventTarget) => {
+      const event = handleEvent(type, point, false)
+      ours.add(event)
+      target.dispatchEvent(event)
+    }
+    // Щит на окне раньше слушателей маркера: указатель человека жест не ведёт.
+    const shield = (event: Event) => {
+      if (!ours.has(event)) event.stopImmediatePropagation()
+    }
+    const types = ['pointermove', 'pointerup', 'pointercancel']
+    for (const type of types) window.addEventListener(type, shield, true)
+    let released = false
+    const onTarget = () => {
+      const cell = cellOf(root, to.row, to.column)
+      if (!cell) return
+      const center = centerOf(cell)
+      if (
+        Math.abs(center.x - point.x) < 0.5 &&
+        Math.abs(center.y - point.y) < 0.5
+      )
+        return
+      point = center
+      fire('pointermove', document)
+    }
+    let keeping = 0
+    const keep = () => {
+      onTarget()
+      keeping = requestAnimationFrame(keep)
+    }
+    step.onLeave(() => {
+      if (released) return
+      released = true
+      cancelAnimationFrame(keeping)
+      onTarget()
+      fire('pointerup', document)
+      for (const type of types) window.removeEventListener(type, shield, true)
+    })
+    fire('pointerdown', handle)
+    const end = centerOf(cellOf(root, to.row, to.column)!)
+    for (let i = 1; i <= 6; i++) {
+      step.signal.throwIfAborted()
+      point = {
+        x: start.x + ((end.x - start.x) * i) / 6,
+        y: start.y + ((end.y - start.y) * i) / 6,
+      }
+      fire('pointermove', document)
+      await new Promise(resolve => requestAnimationFrame(resolve))
+    }
+    if (!released) keeping = requestAnimationFrame(keep)
+    await pollUntil(() => fillFrameShown(root), step.signal)
+  }
+
+/** Протяжка — один раз за проход шага: ответ сервера приходит не сразу. */
+let filled = false
+const fillOnce = (
+  root: HTMLElement,
+  from: { row: string; column: string },
+  to: { row: string; column: string },
+  alt = false,
+) => {
+  if (filled) return
+  if (!selectedAt(root, from.row, from.column)) {
+    selectCell(root, from.row, from.column)
+    return
+  }
+  filled = fillTo(root, to.row, to.column, alt)
+}
+
+/** Протяжка значения маркером в историях этапа 2. */
+const FILL_ARGS = {
+  ...BASE_ARGS,
+  cellSelectionHandle: 'fill',
+} as unknown as Partial<StoryProps>
+
+// --- ADR 0219, S6 ---------------------------------------------------------------------
+
+const COPY_FROM = { row: 'item-id-2', column: 'age' }
+const COPY_TO = { row: 'item-id-5', column: 'age' }
+const COPY_ROWS = ['item-id-3', 'item-id-4', 'item-id-5']
+let copiedAge: string | undefined
+const copyFilled = (root: ParentNode) =>
+  COPY_ROWS.every(
+    row =>
+      textOf(root, row, 'age') === copiedAge && !pendingAt(root, row, 'age'),
+  )
+
+const FILL_COPY: readonly GuideStoryStep[] = [
+  {
+    title: 'Протяжка значения включена',
+    hint: 'Приложение разрешило править возраст, пол и число визитов и включило протяжку значения маркером.',
+    enter: root => {
+      pasteServer.reset()
+      filled = false
+      copiedAge = textOf(root, COPY_FROM.row, COPY_FROM.column)
+    },
+  },
+  {
+    title: 'Ячейка выбрана',
+    hint: 'Пользователь нажал на ячейку возраста во второй строке. В правом нижнем углу ячейки — квадрат маркера.',
+    states: ['body.cellRange'],
+    enter: untilDone(
+      root =>
+        selectedAt(root, COPY_FROM.row, COPY_FROM.column) &&
+        !!fillHandleOf(root),
+      root => selectCell(root, COPY_FROM.row, COPY_FROM.column),
+    ),
+  },
+  {
+    title: 'Пользователь тянет маркер',
+    hint: 'Пользователь взял квадрат и тянет его вниз. Пунктирная рамка показывает ячейки, куда ляжет значение; пока кнопка мыши нажата, данные не меняются.',
+    states: ['body.cellRange', 'body.fillFrame'],
+    enter: stepAction(holdFill(COPY_FROM, COPY_TO)),
+  },
+  {
+    title: 'Значение протянуто',
+    hint: 'Пользователь отпустил кнопку. Возраст из второй строки лёг в три ячейки ниже, сервер принял изменения одним запросом, ячейки коротко вспыхнули тоном успеха. Выделены исходная ячейка и заполненные.',
+    states: ['body.cellRange'],
+    enter: untilDone(copyFilled, root => fillOnce(root, COPY_FROM, COPY_TO)),
+  },
+]
+
+/** ADR 0219, S6: значение ячейки тянут маркером вниз — копия в ячейки ниже. */
+export const FillCopy: StoryObj<StoryProps> = {
+  name: 'Drag a value down',
+  parameters: { scenario: '0219/S6', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Протяжка значения"
+      steps={FILL_COPY}
+      args={guideArgs(FILL_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(FILL_COPY[0]!.title, async () => {
+      await waitForRows(canvas)
+    })
+    await step(FILL_COPY[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(fillHandleOf(canvas)).not.toBeNull())
+    })
+    await step(FILL_COPY[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(fillFrameShown(canvas)).toBe(true))
+      expect(consoleText()).not.toContain('onCommitEdits')
+    })
+    await step(FILL_COPY[3]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(copyFilled(canvas)).toBe(true))
+      expect(fillFrameShown(canvas)).toBe(false)
+      expect(selectedAt(canvas, COPY_TO.row, COPY_TO.column)).toBe(true)
+      expect(consoleText()).toContain('onCommitEdits')
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0219, S7 ---------------------------------------------------------------------
+
+type Delivery = { id: string; name: string; price: number; delivery: string }
+
+const SERIES_COLUMNS = [
+  { id: 'name', accessorKey: 'name', header: 'Product', size: 180 },
+  {
+    id: 'price',
+    accessorKey: 'price',
+    header: 'Price',
+    dataType: 'number',
+    size: 120,
+  },
+  {
+    id: 'delivery',
+    accessorKey: 'delivery',
+    header: 'Delivery',
+    dataType: 'dateString',
+    size: 150,
+  },
+]
+
+const SERIES_ROWS: Delivery[] = [
+  'Desk lamp',
+  'Office chair',
+  'Notebook',
+  'Water bottle',
+  'Headphones',
+  'Backpack',
+  'Keyboard',
+  'Monitor',
+].map((name, index) => ({
+  id: `item-id-${index + 1}`,
+  name,
+  price: index === 0 ? 10 : index === 1 ? 20 : 5,
+  delivery: '2026-11-02',
+}))
+
+const SERIES_ARGS = {
+  ...FILL_ARGS,
+  columnsOverride: SERIES_COLUMNS,
+  dataOverride: SERIES_ROWS,
+  editableColumns: ['price', 'delivery'],
+} as unknown as Partial<StoryProps>
+
+const PRICE_ROWS = ['item-id-1', 'item-id-2']
+const PRICE_TO = { row: 'item-id-5', column: 'price' }
+const pricesFilled = (root: ParentNode) =>
+  ['30', '40', '50'].every(
+    (price, i) =>
+      textOf(root, `item-id-${i + 3}`, 'price') === price &&
+      !pendingAt(root, `item-id-${i + 3}`, 'price'),
+  )
+const DATE_FROM = { row: 'item-id-6', column: 'delivery' }
+const DATE_TO = { row: 'item-id-8', column: 'delivery' }
+const datesFilled = (root: ParentNode) =>
+  textOf(root, 'item-id-7', 'delivery') === '2026-11-03' &&
+  textOf(root, 'item-id-8', 'delivery') === '2026-11-04' &&
+  !pendingAt(root, 'item-id-8', 'delivery')
+
+const FILL_SERIES: readonly GuideStoryStep[] = [
+  {
+    title: 'Цены с шагом',
+    hint: 'В первых двух строках цены 10 и 20. Приложение разрешило править цену и дату доставки и включило протяжку значения маркером.',
+    enter: () => {
+      pasteServer.reset()
+      filled = false
+    },
+  },
+  {
+    title: 'Выделены две цены',
+    hint: 'Пользователь выделил цены в первых двух строках.',
+    states: ['body.cellRange'],
+    enter: untilDone(
+      root => rangeSelected(root, 'price', PRICE_ROWS) && !!fillHandleOf(root),
+      root => selectRows(root, 'price', PRICE_ROWS),
+    ),
+  },
+  {
+    title: 'Ряд цен продолжен',
+    hint: 'Пользователь протянул маркер на три строки вниз. Две цены с одинаковым шагом протяжка продолжила рядом: каждая следующая больше на тот же шаг.',
+    states: ['body.cellRange'],
+    enter: untilDone(pricesFilled, root => {
+      if (!rangeSelected(root, 'price', PRICE_ROWS))
+        selectRows(root, 'price', PRICE_ROWS)
+      else if (!filled) filled = fillTo(root, PRICE_TO.row, PRICE_TO.column)
+    }),
+  },
+  {
+    title: 'Выбрана дата',
+    hint: 'Пользователь нажал на дату доставки в шестой строке.',
+    states: ['body.cellRange'],
+    enter: untilDone(
+      root =>
+        selectedAt(root, DATE_FROM.row, DATE_FROM.column) &&
+        !!fillHandleOf(root),
+      root => {
+        filled = false
+        selectCell(root, DATE_FROM.row, DATE_FROM.column)
+      },
+    ),
+  },
+  {
+    title: 'Ряд дат с Alt',
+    hint: 'Пользователь протянул маркер на две строки вниз, удерживая Alt. Без него одна дата повторилась бы, а с ним протяжка ведёт ряд по дням.',
+    states: ['body.cellRange'],
+    enter: untilDone(datesFilled, root =>
+      fillOnce(root, DATE_FROM, DATE_TO, true),
+    ),
+  },
+]
+
+/** ADR 0219, S7: протяжка продолжает ряд чисел, Alt ведёт ряд одной даты по дням. */
+export const FillSeries: StoryObj<StoryProps> = {
+  name: 'Continue a series',
+  parameters: { scenario: '0219/S7', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Ряд протяжкой"
+      steps={FILL_SERIES}
+      args={guideArgs(SERIES_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(FILL_SERIES[0]!.title, async () => {
+      await waitForRows(canvas)
+    })
+    await step(FILL_SERIES[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(rangeSelected(canvas, 'price', PRICE_ROWS)).toBe(true),
+      )
+    })
+    await step(FILL_SERIES[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(pricesFilled(canvas)).toBe(true))
+    })
+    await step(FILL_SERIES[3]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(selectedAt(canvas, DATE_FROM.row, DATE_FROM.column)).toBe(true),
+      )
+    })
+    await step(FILL_SERIES[4]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(datesFilled(canvas)).toBe(true))
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0219, S8 ---------------------------------------------------------------------
+
+const DOWN_ROWS = ['item-id-2', 'item-id-3', 'item-id-4', 'item-id-5']
+let downAge: string | undefined
+const downFilled = (root: ParentNode) =>
+  DOWN_ROWS.slice(1).every(
+    row => textOf(root, row, 'age') === downAge && !pendingAt(root, row, 'age'),
+  )
+const RIGHT_ROW = 'item-id-7'
+let rightName: string | undefined
+const rightSelected = (root: ParentNode) =>
+  selectedAt(root, RIGHT_ROW, 'firstName') &&
+  selectedAt(root, RIGHT_ROW, 'lastName')
+const rightFilled = (root: ParentNode) =>
+  textOf(root, RIGHT_ROW, 'lastName') === rightName &&
+  !pendingAt(root, RIGHT_ROW, 'lastName')
+
+/** Ctrl+D или Ctrl+R на первой ячейке диапазона — по коду клавиши. */
+const pressFill = (
+  root: HTMLElement,
+  row: string,
+  column: string,
+  code: 'KeyD' | 'KeyR',
+) => {
+  const cell = cellOf(root, row, column)
+  if (cell) pressKey(cell, code === 'KeyD' ? 'd' : 'r', { code, ctrlKey: true })
+}
+
+const FILL_KEYBOARD: readonly GuideStoryStep[] = [
+  {
+    title: 'Ячейки, которые можно править',
+    hint: 'Приложение разрешило править имя, фамилию, возраст, пол и число визитов.',
+    enter: root => {
+      pasteServer.reset()
+      downAge = textOf(root, DOWN_ROWS[0]!, 'age')
+      rightName = textOf(root, RIGHT_ROW, 'firstName')
+    },
+  },
+  {
+    title: 'Выделен диапазон',
+    hint: 'Пользователь выделил возраст в четырёх строках.',
+    states: ['body.cellRange'],
+    enter: untilDone(
+      root => rangeSelected(root, 'age', DOWN_ROWS),
+      root => selectRows(root, 'age', DOWN_ROWS),
+    ),
+  },
+  {
+    title: 'Заполнено вниз',
+    hint: 'Пользователь нажал Ctrl+D. Возраст из первой строки диапазона лёг в остальные его ячейки.',
+    states: ['body.cellRange'],
+    keyboard: true,
+    enter: untilDone(downFilled, root => {
+      if (!rangeSelected(root, 'age', DOWN_ROWS))
+        selectRows(root, 'age', DOWN_ROWS)
+      else pressFill(root, DOWN_ROWS[0]!, 'age', 'KeyD')
+    }),
+  },
+  {
+    title: 'Выделены имя и фамилия',
+    hint: 'Пользователь выделил имя и фамилию в седьмой строке.',
+    states: ['body.cellRange'],
+    enter: untilDone(rightSelected, root => {
+      const first = cellOf(root, RIGHT_ROW, 'firstName')
+      const last = cellOf(root, RIGHT_ROW, 'lastName')
+      if (first && last) dragCells(first, last)
+    }),
+  },
+  {
+    title: 'Заполнено вправо',
+    hint: 'Пользователь нажал Ctrl+R. Имя из первой колонки диапазона легло в фамилию.',
+    states: ['body.cellRange'],
+    keyboard: true,
+    enter: untilDone(rightFilled, root => {
+      if (!rightSelected(root)) {
+        const first = cellOf(root, RIGHT_ROW, 'firstName')
+        const last = cellOf(root, RIGHT_ROW, 'lastName')
+        if (first && last) dragCells(first, last)
+      } else pressFill(root, RIGHT_ROW, 'firstName', 'KeyR')
+    }),
+  },
+]
+
+const KEYBOARD_ARGS = {
+  ...BASE_ARGS,
+  editableColumns: ['firstName', 'lastName', 'age', 'gender', 'visits'],
+} as unknown as Partial<StoryProps>
+
+/** ADR 0219, S8: Ctrl+D заполняет вниз, Ctrl+R — вправо. */
+export const FillDownKeyboard: StoryObj<StoryProps> = {
+  name: 'Fill down and right from the keyboard',
+  parameters: { scenario: '0219/S8', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Заполнение с клавиатуры"
+      steps={FILL_KEYBOARD}
+      args={guideArgs(KEYBOARD_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(FILL_KEYBOARD[0]!.title, async () => {
+      await waitForRows(canvas)
+    })
+    await step(FILL_KEYBOARD[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(rangeSelected(canvas, 'age', DOWN_ROWS)).toBe(true),
+      )
+    })
+    await step(FILL_KEYBOARD[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(downFilled(canvas)).toBe(true))
+    })
+    await step(FILL_KEYBOARD[3]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(rightSelected(canvas)).toBe(true))
+    })
+    await step(FILL_KEYBOARD[4]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(rightFilled(canvas)).toBe(true))
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0219, S9 ---------------------------------------------------------------------
+
+const BULK_ROWS = ['item-id-2', 'item-id-3', 'item-id-4']
+const BULK_VALUE = '35'
+const bulkInput = (root: ParentNode) =>
+  cellOf(root, BULK_ROWS[0]!, 'age')?.querySelector<HTMLInputElement>(
+    'input',
+  ) ?? null
+const bulkFilled = (root: ParentNode) =>
+  !bulkInput(root) &&
+  BULK_ROWS.every(
+    row =>
+      textOf(root, row, 'age') === BULK_VALUE && !pendingAt(root, row, 'age'),
+  )
+
+const BULK_EDIT: readonly GuideStoryStep[] = [
+  {
+    title: 'Ячейки, которые можно править',
+    hint: 'Приложение разрешило править возраст, пол и число визитов.',
+    enter: () => pasteServer.reset(),
+  },
+  {
+    title: 'Выделен диапазон',
+    hint: 'Пользователь выделил возраст в трёх строках.',
+    states: ['body.cellRange'],
+    enter: untilDone(
+      root => rangeSelected(root, 'age', BULK_ROWS),
+      root => selectRows(root, 'age', BULK_ROWS),
+    ),
+  },
+  {
+    title: 'Набрано значение',
+    hint: 'Пользователь нажал F2 и набрал новый возраст в первой ячейке диапазона. Выделение осталось.',
+    states: ['body.cellRange', 'body.editing'],
+    keyboard: true,
+    enter: untilDone(
+      root =>
+        bulkInput(root)?.value === BULK_VALUE &&
+        rangeSelected(root, 'age', BULK_ROWS),
+      root => {
+        const input = bulkInput(root)
+        if (input) typeInto(input, BULK_VALUE)
+        else if (!rangeSelected(root, 'age', BULK_ROWS))
+          selectRows(root, 'age', BULK_ROWS)
+        else pressKey(cellOf(root, BULK_ROWS[0]!, 'age')!, 'F2')
+      },
+    ),
+  },
+  {
+    title: 'Значение во всём диапазоне',
+    hint: 'Пользователь нажал Ctrl+Enter. Набранное значение легло во все ячейки диапазона одним запросом, правка закрылась.',
+    states: ['body.cellRange'],
+    keyboard: true,
+    enter: untilDone(bulkFilled, root => {
+      const input = bulkInput(root)
+      if (input && input.value !== BULK_VALUE) typeInto(input, BULK_VALUE)
+      else if (input) pressKey(input, 'Enter', { ctrlKey: true })
+      else if (!rangeSelected(root, 'age', BULK_ROWS))
+        selectRows(root, 'age', BULK_ROWS)
+      else pressKey(cellOf(root, BULK_ROWS[0]!, 'age')!, 'F2')
+    }),
+  },
+]
+
+/** ADR 0219, S9: набранное в правке уходит во весь диапазон по Ctrl+Enter. */
+export const BulkEditCtrlEnter: StoryObj<StoryProps> = {
+  name: 'Edit the whole range',
+  parameters: { scenario: '0219/S9', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Правка всего диапазона"
+      steps={BULK_EDIT}
+      args={guideArgs(BASE_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(BULK_EDIT[0]!.title, async () => {
+      await waitForRows(canvas)
+    })
+    await step(BULK_EDIT[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(rangeSelected(canvas, 'age', BULK_ROWS)).toBe(true),
+      )
+    })
+    await step(BULK_EDIT[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(bulkInput(canvas)?.value).toBe(BULK_VALUE))
+    })
+    await step(BULK_EDIT[3]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(bulkFilled(canvas)).toBe(true))
       expect(consoleText()).toContain('onCommitEdits')
       await settle()
     })

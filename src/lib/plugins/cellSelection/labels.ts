@@ -26,6 +26,11 @@ export interface CellSelectionLabels {
   announcePasteCut: (count: number, total: number) => string
   /** Отказ «Вставить» из меню: браузер не дал прочесть буфер */
   pasteDenied: string
+  /** Пункты «Заполнить вниз» и «Заполнить вправо» (WR19) */
+  fillDown: string
+  fillRight: string
+  /** Действие: протяжка значения маркером (WR16) */
+  actionFill: string
 }
 
 export const cellSelectionLabels = defineLabels<CellSelectionLabels>()(
@@ -48,6 +53,9 @@ export const cellSelectionLabels = defineLabels<CellSelectionLabels>()(
     announcePasteCut_one: 'Pasted {count} of {total} rows: the table ended',
     pasteDenied:
       "The browser didn't allow reading the clipboard. Press Ctrl+V or ⌘V",
+    fillDown: 'Fill down',
+    fillRight: 'Fill right',
+    actionFill: 'Fill the cells',
   },
   {
     announceCopy: ['count'],

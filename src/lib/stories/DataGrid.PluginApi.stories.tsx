@@ -65,6 +65,7 @@ import {
   cellKey,
   changes,
   keyMarks,
+  MARK_CODE,
   MARK_KEY,
   selectedMarks,
 } from './__mocks__/bodyPlugins'
@@ -1856,10 +1857,10 @@ const activeCellKey = (root: ParentNode) => {
     ? `${cell.closest<HTMLElement>('[data-row-id]')!.dataset.rowId}:${cell.dataset.columnId}`
     : undefined
 }
-const pressKey = (root: ParentNode, key: string) =>
+const pressKey = (root: ParentNode, key: string, code?: string) =>
   root
     .querySelector<HTMLElement>('.data-grid__body-cell[data-kn-active]')
-    ?.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }))
+    ?.dispatchEvent(new KeyboardEvent('keydown', { key, code, bubbles: true }))
 /** Пользователь делает ячейку активной и нажимает клавишу плагина. */
 const markCell = (
   root: HTMLElement,
@@ -1872,7 +1873,7 @@ const markCell = (
     } else bodyCell(root, target.rowId, target.columnId)?.focus()
     return
   }
-  if (!markedCells(root).includes(key)) pressKey(root, MARK_KEY)
+  if (!markedCells(root).includes(key)) pressKey(root, MARK_KEY, MARK_CODE)
 }
 
 const BODY_KEYS: readonly GuideStoryStep[] = [

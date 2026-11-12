@@ -44,6 +44,8 @@ export const CATALOG_STATES = {
     'highlight',
     'cellRange',
     'cellRangeTouch',
+    // Протяжка значения маркером: пунктирная рамка цели (ADR 0219, §4).
+    'fillFrame',
     'refreshing',
     'treeLines',
     'groups',

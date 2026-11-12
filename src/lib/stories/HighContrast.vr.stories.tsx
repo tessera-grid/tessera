@@ -9117,3 +9117,127 @@ export const HighContrastOwnBulkEditStep4 = {
   name: 'Cells/Paste & fill — Own action in the context menu, шаг 4',
   tags: ['!test'],
 }
+
+export const HighContrastFillCopyStep1 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.FillCopy, 1),
+  name: 'Cells/Paste & fill — Drag a value down, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastFillCopyStep2 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.FillCopy, 2),
+  name: 'Cells/Paste & fill — Drag a value down, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastFillCopyStep3 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.FillCopy, 3),
+  name: 'Cells/Paste & fill — Drag a value down, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastFillCopyStep4 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.FillCopy, 4),
+  name: 'Cells/Paste & fill — Drag a value down, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastFillSeriesStep1 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.FillSeries, 1),
+  name: 'Cells/Paste & fill — Continue a series, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastFillSeriesStep2 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.FillSeries, 2),
+  name: 'Cells/Paste & fill — Continue a series, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastFillSeriesStep3 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.FillSeries, 3),
+  name: 'Cells/Paste & fill — Continue a series, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastFillSeriesStep4 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.FillSeries, 4),
+  name: 'Cells/Paste & fill — Continue a series, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastFillSeriesStep5 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.FillSeries, 5),
+  name: 'Cells/Paste & fill — Continue a series, шаг 5',
+  tags: ['!test'],
+}
+
+export const HighContrastFillDownKeyboardStep1 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.FillDownKeyboard, 1),
+  name: 'Cells/Paste & fill — Fill down and right from the keyboard, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastFillDownKeyboardStep2 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.FillDownKeyboard, 2),
+  name: 'Cells/Paste & fill — Fill down and right from the keyboard, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastFillDownKeyboardStep3 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.FillDownKeyboard, 3),
+  name: 'Cells/Paste & fill — Fill down and right from the keyboard, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastFillDownKeyboardStep4 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.FillDownKeyboard, 4),
+  name: 'Cells/Paste & fill — Fill down and right from the keyboard, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastFillDownKeyboardStep5 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.FillDownKeyboard, 5),
+  name: 'Cells/Paste & fill — Fill down and right from the keyboard, шаг 5',
+  tags: ['!test'],
+}
+
+export const HighContrastBulkEditCtrlEnterStep1 = {
+  ...twinStep(
+    cellsPasteFillStories,
+    cellsPasteFillStories.BulkEditCtrlEnter,
+    1,
+  ),
+  name: 'Cells/Paste & fill — Edit the whole range, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastBulkEditCtrlEnterStep2 = {
+  ...twinStep(
+    cellsPasteFillStories,
+    cellsPasteFillStories.BulkEditCtrlEnter,
+    2,
+  ),
+  name: 'Cells/Paste & fill — Edit the whole range, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastBulkEditCtrlEnterStep3 = {
+  ...twinStep(
+    cellsPasteFillStories,
+    cellsPasteFillStories.BulkEditCtrlEnter,
+    3,
+  ),
+  name: 'Cells/Paste & fill — Edit the whole range, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastBulkEditCtrlEnterStep4 = {
+  ...twinStep(
+    cellsPasteFillStories,
+    cellsPasteFillStories.BulkEditCtrlEnter,
+    4,
+  ),
+  name: 'Cells/Paste & fill — Edit the whole range, шаг 4',
+  tags: ['!test'],
+}

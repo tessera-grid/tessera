@@ -100,7 +100,7 @@ type Cell = { rowId: string; columnId: string }
 const KEY_SEPARATOR = '\u0000'
 
 /** Конец сессии правки — жест в канале действий (ADR 0125, AL19). */
-const reportEditEnd = (
+export const reportEditEnd = (
   table: unknown,
   cell: { rowId: string; columnId: string },
   detail: Record<string, unknown>,
@@ -1254,7 +1254,12 @@ export interface PackageCell {
 }
 
 /** Действие справочника по источнику операции записи (ADR 0219, §8). */
-export const writeActionOf = (source: CellWriteSource) => ({
+export const writeActionOf = (source: CellWriteSource) =>
+  source === 'fill'
+    ? { plugin: 'cellSelection', action: 'fill' }
+    : writeActionOfEditing(source)
+
+const writeActionOfEditing = (source: CellWriteSource) => ({
   plugin: ID,
   action:
     source === 'paste' ||
@@ -1318,7 +1323,7 @@ export const commitCellPackage = (table: unknown, pkg: CellPackage) => {
     { id, source, cells },
     { signal: controller.signal },
   )
-  reportOutcome(table, { plugin: ID, action: action.action }, result)
+  reportOutcome(table, action, result)
   const name = (labels: TableLabels) => actionLabelOf(table, action, labels)
   const flashCells = (outcome: 'accepted' | 'reverted') => {
     if (cells.length > OUTCOME_FLASH_LIMIT) return

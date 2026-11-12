@@ -241,8 +241,7 @@ const write = async (
     invalid: invalid.length,
   }
   reportAction(table, {
-    plugin: ID,
-    action: action.action,
+    ...action,
     detail: { ...report, source },
     source: source === 'api' ? 'api' : 'auto',
   })

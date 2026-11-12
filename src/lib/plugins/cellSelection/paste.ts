@@ -62,12 +62,12 @@ export const canPaste = (table: unknown) => {
 }
 
 /** Строка, которая места буфера не занимает: группа и удалённая до сохранения. */
-const isPassedRow = (table: unknown, row: PasteRow) =>
+export const isPassedRow = (table: unknown, row: PasteRow) =>
   row.groupingColumnId !== undefined ||
   row.getIsGrouped?.() === true ||
   rowDraftMarkOf(table, row.id) === 'deleted'
 
-const columnOrderOf = (t: PasteTable): string[] => {
+export const columnOrderOf = (t: PasteTable): string[] => {
   const ids: string[] = []
   for (const [id, index] of Object.entries(
     t.getCellSelectionColumnIndexes?.() ?? {},

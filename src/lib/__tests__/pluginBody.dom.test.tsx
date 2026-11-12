@@ -132,6 +132,7 @@ describe('канал вклада в тело для авторов (ADR 0173)',
       keys.onKey!(
         {
           key: 'm',
+          code: 'KeyM',
           shiftKey: false,
           ctrlKey: false,
           metaKey: false,
@@ -318,6 +319,7 @@ describe('канал вклада в тело для авторов (ADR 0173)',
         item.onKey?.(
           {
             key: 'x',
+            code: 'KeyX',
             shiftKey: false,
             ctrlKey: false,
             metaKey: false,
@@ -352,6 +354,7 @@ describe('канал вклада в тело для авторов (ADR 0173)',
       byId(keys, 'fail-select').onKey!(
         {
           key: 'x',
+          code: 'KeyX',
           shiftKey: false,
           ctrlKey: false,
           metaKey: false,

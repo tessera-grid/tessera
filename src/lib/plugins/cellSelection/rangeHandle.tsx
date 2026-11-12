@@ -9,7 +9,8 @@
  * закреплённым футером или закреплёнными колонками, в ячейке с правкой.
  *
  * Жест отделён от того, что он делает с выделением (§8): жест даёт ячейку под указателем,
- * автопрокрутку у края, конец и отмену; режим диапазона — первый режим маркера.
+ * автопрокрутку у края, конец и отмену. Режим диапазона двигает угол; режим протяжки значения
+ * (ADR 0219, §4) показывает рамку цели и пишет значения после отпускания.
  */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
@@ -20,8 +21,12 @@ import { reportAction } from '../../core/debugActions'
 import { useTableState } from '../../core/reactivity'
 import { scrollLayer } from '../../core/scrollStretch'
 import { EDGE_ZONE, edgeSpeed } from '../../shared/edgeScroll'
+import { FillFrame } from '../../ui/FillFrame'
 import { SelectionHandle } from '../../ui/SelectionHandle'
 import { isInteractive } from './copyEvent'
+import { type Bounds, fillChanges, selectBounds, writeFill } from './fill'
+import { canPaste, columnOrderOf } from './paste'
+import type { CellSelectionHandle } from './registry'
 
 const ROW = '.data-grid__body-row[data-index]'
 /** Строка под указателем, в том числе незагруженная строка серверной модели (ADR 0146). */
@@ -48,8 +53,9 @@ interface RangeView {
 interface HandleTable {
   options: {
     cellSelectionInteraction?: boolean
-    cellSelectionHandle?: { mouse: boolean; touch: boolean }
+    cellSelectionHandle?: CellSelectionHandle
   }
+  getCellSelectionBounds?: () => Bounds[]
   atoms: { cellSelection?: { get: () => Range[] | undefined } }
   setCellSelection?: (updater: (old: Range[]) => Range[]) => void
   getCellSelectionRanges?: () => RangeView[]
@@ -71,6 +77,8 @@ export interface HandleMode {
   move: (cell: HandleCell) => void
   end: () => void
   cancel: () => void
+  /** Прокрутка под неподвижным указателем: перерисовать своё по новому месту ячеек. */
+  refresh?: () => void
 }
 
 /** Режим диапазона: неподвижный угол — опорный, второй следует за указателем. */
@@ -93,6 +101,106 @@ export const rangeMode = (table: unknown, fixed: HandleCell): HandleMode => {
     move: set,
     end: () => {},
     cancel: () => t.setCellSelection?.(() => before),
+  }
+}
+
+/** Цель протяжки: прямоугольник рамки, план записи или сужение выделения. */
+interface FillTarget {
+  frame: Bounds
+  plan?: { axis: 'x' | 'y'; to: number }
+}
+
+/**
+ * Режим протяжки значения (ADR 0219, §4, WR22–WR23): ось — по большему смещению от диапазона,
+ * `direction` её ограничивает; рамка показывает цель, значения считаются после отпускания.
+ * Протяжка внутрь сужает выделение без записи.
+ */
+export const fillMode = (
+  table: unknown,
+  bound: Bounds,
+  options: Pick<CellSelectionHandle, 'direction' | 'getFillValue'>,
+  show: (frame: Bounds | undefined) => void,
+  alt: () => boolean,
+): HandleMode => {
+  const t = table as HandleTable
+  const indexes = t.getCellSelectionColumnIndexes?.() ?? {}
+  let target: FillTarget | undefined
+  const offset = (value: number, min: number, max: number) =>
+    value > max ? value - max : value < min ? value - min : 0
+  return {
+    move: cell => {
+      const column = indexes[cell.column]
+      if (column === undefined) return
+      const dy = offset(cell.row, bound.minRowIndex, bound.maxRowIndex)
+      const dx = offset(column, bound.minColumnIndex, bound.maxColumnIndex)
+      const axis =
+        options.direction === 'y'
+          ? 'y'
+          : options.direction === 'x'
+            ? 'x'
+            : Math.abs(dy) >= Math.abs(dx)
+              ? 'y'
+              : 'x'
+      const along = axis === 'y' ? dy : dx
+      if (along === 0) {
+        // Внутри диапазона: сужение от левого верхнего угла до ячейки под указателем.
+        target = {
+          frame: {
+            minRowIndex: bound.minRowIndex,
+            maxRowIndex: Math.min(
+              Math.max(cell.row, bound.minRowIndex),
+              bound.maxRowIndex,
+            ),
+            minColumnIndex: bound.minColumnIndex,
+            maxColumnIndex: Math.min(
+              Math.max(column, bound.minColumnIndex),
+              bound.maxColumnIndex,
+            ),
+          },
+        }
+      } else {
+        const to = axis === 'y' ? cell.row : column
+        target = {
+          frame:
+            axis === 'y'
+              ? {
+                  ...bound,
+                  minRowIndex: Math.min(bound.minRowIndex, to),
+                  maxRowIndex: Math.max(bound.maxRowIndex, to),
+                }
+              : {
+                  ...bound,
+                  minColumnIndex: Math.min(bound.minColumnIndex, to),
+                  maxColumnIndex: Math.max(bound.maxColumnIndex, to),
+                },
+          plan: { axis, to },
+        }
+      }
+      show(target.frame)
+    },
+    refresh: () => show(target?.frame),
+    end: () => {
+      show(undefined)
+      if (!target) return
+      if (!target.plan) {
+        selectBounds(table, target.frame)
+        return
+      }
+      const changes = fillChanges(
+        table,
+        { bound, ...target.plan },
+        { toggle: alt(), getFillValue: options.getFillValue },
+      )
+      reportAction(table, {
+        plugin: 'cellSelection',
+        action: 'fill',
+        detail: { cells: changes.length, toggle: alt() },
+        source: 'pointer',
+      })
+      void writeFill(table, changes, 'fill')
+      selectBounds(table, target.frame)
+    },
+    cancel: () => show(undefined),
   }
 }
 
@@ -176,6 +284,59 @@ const cellAt = (
   return { row: index, column: selectable ? column : previous.column }
 }
 
+/**
+ * Поставить рамку цели протяжки на прямоугольник. Край строки или колонки вне окна
+ * виртуализации — у края видимой части тела с его стороны.
+ */
+const placeFrame = (
+  table: HandleTable,
+  scroller: HTMLElement,
+  frame: HTMLElement,
+  rect: Bounds | undefined,
+) => {
+  const host = frame.parentElement
+  if (!rect || !host) {
+    frame.hidden = true
+    return
+  }
+  const bounds = bodyBounds(scroller)
+  const rows = [...scroller.querySelectorAll<HTMLElement>(ANY_ROW)].map(
+    row => ({ row, index: Number(row.getAttribute('data-index')) }),
+  )
+  const rowEdge = (index: number, side: 'top' | 'bottom') => {
+    const found = rows.find(item => item.index === index)
+    if (found) return found.row.getBoundingClientRect()[side]
+    const before = rows.every(item => index < item.index)
+    return before ? bounds.top : bounds.bottom
+  }
+  const order = columnOrderOf(table as never)
+  const columnEdge = (index: number, side: 'left' | 'right') => {
+    const id = order[index]
+    const cell =
+      id === undefined
+        ? null
+        : scroller.querySelector<HTMLElement>(
+            `.data-grid__body-cell[data-column-id="${CSS.escape(id)}"]`,
+          )
+    if (cell) return cell.getBoundingClientRect()[side]
+    return side === 'left' ? bounds.left : bounds.right
+  }
+  const top = Math.max(bounds.top, rowEdge(rect.minRowIndex, 'top'))
+  const bottom = Math.min(bounds.bottom, rowEdge(rect.maxRowIndex, 'bottom'))
+  const left = Math.max(bounds.left, columnEdge(rect.minColumnIndex, 'left'))
+  const right = Math.min(bounds.right, columnEdge(rect.maxColumnIndex, 'right'))
+  if (bottom <= top || right <= left) {
+    frame.hidden = true
+    return
+  }
+  const origin = host.getBoundingClientRect()
+  frame.hidden = false
+  frame.style.left = `${left - origin.left - host.clientLeft}px`
+  frame.style.top = `${top - origin.top - host.clientTop}px`
+  frame.style.width = `${right - left}px`
+  frame.style.height = `${bottom - top}px`
+}
+
 /** Ячейка в правке: в ней поле ввода. */
 const isEditing = (cell: Element) =>
   !!cell.querySelector('input, textarea, [contenteditable="true"]')
@@ -196,6 +357,7 @@ export const useRangeHandle = ({ table, getScrollElement }: RootHookProps) => {
   const t = table as unknown as HandleTable
   const startRef = useRef<HTMLSpanElement>(null)
   const endRef = useRef<HTMLSpanElement>(null)
+  const frameRef = useRef<HTMLSpanElement>(null)
   // Перерисовка по выделению и по опции маркера; место читается после раскладки.
   const ranges = useTableState(
     table,
@@ -299,11 +461,26 @@ export const useRangeHandle = ({ table, getScrollElement }: RootHookProps) => {
     event.preventDefault()
     event.stopPropagation()
     const handle = event.currentTarget
-    // Неподвижен противоположный угол — он и становится опорной ячейкой.
-    const mode = rangeMode(
-      table,
-      cornerOf(view, corner === 'end' ? 'start' : 'end'),
-    )
+    // Квадрат мыши в режиме `'fill'` тянет значения; круги пальца всегда меняют диапазон.
+    const bound = t.getCellSelectionBounds?.().at(-1)
+    const filling =
+      allowed?.mode === 'fill' &&
+      event.pointerType !== 'touch' &&
+      !!bound &&
+      canPaste(table)
+    let alt = event.altKey
+    const frame = frameRef.current
+    const mode =
+      filling && bound
+        ? fillMode(
+            table,
+            bound,
+            allowed,
+            rect => frame && placeFrame(t, scroller, frame, rect),
+            () => alt,
+          )
+        : // Неподвижен противоположный угол — он и становится опорной ячейкой.
+          rangeMode(table, cornerOf(view, corner === 'end' ? 'start' : 'end'))
     const pressed = { x: event.clientX, y: event.clientY }
     const tolerance =
       event.pointerType === 'touch' ? TOUCH_TOLERANCE : DRAG_TOLERANCE
@@ -315,7 +492,7 @@ export const useRangeHandle = ({ table, getScrollElement }: RootHookProps) => {
     handle.dataset.dragging = ''
     reportAction(table, {
       plugin: 'cellSelection',
-      action: 'resizeRange',
+      action: filling ? 'fill' : 'resizeRange',
       source: 'pointer',
       phase: 'start',
     })
@@ -348,9 +525,11 @@ export const useRangeHandle = ({ table, getScrollElement }: RootHookProps) => {
       if (!moved || (dx === 0 && dy === 0)) return
       scrollLayer(scroller).scrollBy(dy, dx)
       follow()
+      mode.refresh?.()
     }
     const onMove = (move: PointerEvent) => {
       pointer = { x: move.clientX, y: move.clientY }
+      alt = move.altKey
       moved ||=
         Math.hypot(pointer.x - pressed.x, pointer.y - pressed.y) >= tolerance
       follow()
@@ -364,11 +543,12 @@ export const useRangeHandle = ({ table, getScrollElement }: RootHookProps) => {
       window.removeEventListener('pointerup', onUp, true)
       window.removeEventListener('pointercancel', onCancel, true)
       window.removeEventListener('keydown', onKey, true)
+      window.removeEventListener('keyup', onKeyUp, true)
       if (cancelled) mode.cancel()
       else mode.end()
       reportAction(table, {
         plugin: 'cellSelection',
-        action: 'resizeRange',
+        action: filling ? 'fill' : 'resizeRange',
         source: 'pointer',
         phase: 'end',
         ...(cancelled && { detail: { reason: 'cancel' } }),
@@ -376,7 +556,18 @@ export const useRangeHandle = ({ table, getScrollElement }: RootHookProps) => {
     }
     const onUp = () => finish(false)
     const onCancel = () => finish(true)
+    // Alt/Option переключает копию и ряд (WR25); меню окна на Alt не открывается.
+    const onKeyUp = (key: KeyboardEvent) => {
+      if (key.key !== 'Alt') return
+      key.preventDefault()
+      alt = false
+    }
     const onKey = (key: KeyboardEvent) => {
+      if (key.key === 'Alt') {
+        key.preventDefault()
+        alt = true
+        return
+      }
       if (key.key !== 'Escape') return
       key.preventDefault()
       key.stopPropagation()
@@ -387,6 +578,7 @@ export const useRangeHandle = ({ table, getScrollElement }: RootHookProps) => {
     window.addEventListener('pointerup', onUp, true)
     window.addEventListener('pointercancel', onCancel, true)
     window.addEventListener('keydown', onKey, true)
+    window.addEventListener('keyup', onKeyUp, true)
     raf = requestAnimationFrame(tick)
   }
 
@@ -398,6 +590,7 @@ export const useRangeHandle = ({ table, getScrollElement }: RootHookProps) => {
   const shape = touch ? 'circle' : 'square'
   return (
     <>
+      {allowed?.mode === 'fill' && <FillFrame ref={frameRef} hidden />}
       <SelectionHandle
         ref={endRef}
         hidden

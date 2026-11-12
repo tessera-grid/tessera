@@ -148,6 +148,9 @@
   (8px) — квадрат мыши, `--tsr-comp-range-handle-touch-size` (12px) — круг пальца;
   `--tsr-comp-range-handle-zone` (24px) — зона нажатия (TS1); `--tsr-comp-z-index-range-handle` —
   слой маркера над телом.
+- **Рамка цели протяжки значения** (ADR [0219](../decisions/0219-paste-fill-and-bulk-edit.md), WR40):
+  `--tsr-comp-fill-frame-color` (`--tsr-sys-info`, в `forced-colors` — `Highlight`) и
+  `--tsr-comp-fill-frame-width` (2px) — пунктир рамки; слой — тот же, что у маркера.
 - **Будущий родитель при перетаскивании строки** (ADR
   [0109](../decisions/0109-drop-into-collapsed-groups.md)):
   `--tsr-comp-row-drop-parent-bg` (10 % `--tsr-sys-accent`) — заливка строки слоем

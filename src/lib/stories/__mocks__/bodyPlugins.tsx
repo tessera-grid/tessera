@@ -164,8 +164,9 @@ export const cellCard = definePlugin<{ enabled?: boolean }>()({
 
 // --- S3: своя клавиша ------------------------------------------------------------------
 
-/** Клавиша плагина: отмечает активную ячейку и снимает отметку. */
+/** Клавиша плагина: отмечает активную ячейку и снимает отметку; код — на любой раскладке. */
 export const MARK_KEY = 'm'
+export const MARK_CODE = 'KeyM'
 
 /**
  * Клавиша `m` отмечает активную ячейку и снимает отметку; ячейка остаётся на месте.
@@ -182,7 +183,7 @@ export const keyMarks = definePlugin<{
     keys: {
       onKey: (event, { table, active }) => {
         if (
-          event.key.toLowerCase() !== MARK_KEY ||
+          event.code !== MARK_CODE ||
           event.ctrlKey ||
           event.metaKey ||
           event.altKey

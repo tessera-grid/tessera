@@ -74,6 +74,8 @@ const WITHOUT_STORY: Record<string, string> = {
     'иллюстрация заглушки — история Stub «Playground»',
   'Popup/ItemButton':
     'кнопка пункта и записи поповера — кнопки записей в истории Popup/Entry',
+  'FillFrame/FillFrame':
+    'рамка цели протяжки — шаг гайда Cells/Paste & fill «Drag a value down»',
 }
 
 /** Компоненты кита поповеров и контролы этапа 2 (ADR 0183, PK8). */

@@ -6,6 +6,8 @@
  * доступности; показ живёт только в живом Storybook.
  */
 
+import { keyNameOf } from '../../core/keyboardActions'
+
 export interface Point {
   x: number
   y: number
@@ -39,16 +41,21 @@ const KEY_LABELS: Record<string, string> = {
 }
 const MODIFIERS = new Set(['Shift', 'Control', 'Alt', 'Meta'])
 
-/** Подпись клавиши: символ и модификаторы через «+»; одиночный модификатор — без подписи. */
+/**
+ * Подпись клавиши: символ и модификаторы через «+»; одиночный модификатор — без подписи. Буква
+ * сочетания с Ctrl, Alt или ⌘ — по коду клавиши, как её ловит грид (ADR 0220); набранный текст —
+ * как набран.
+ */
 export const keyLabel = (event: KeyboardEvent) => {
   if (MODIFIERS.has(event.key)) return undefined
+  const shortcut = event.ctrlKey || event.altKey || event.metaKey
+  const name = shortcut ? keyNameOf(event) : event.key
   const parts = [
     event.ctrlKey && 'Ctrl',
     event.altKey && 'Alt',
     event.shiftKey && 'Shift',
     event.metaKey && '⌘',
-    KEY_LABELS[event.key] ??
-      (event.key.length === 1 ? event.key.toUpperCase() : event.key),
+    KEY_LABELS[name] ?? (name.length === 1 ? name.toUpperCase() : name),
   ].filter(Boolean)
   return parts.join('+')
 }

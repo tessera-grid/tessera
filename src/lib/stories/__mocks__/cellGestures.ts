@@ -137,13 +137,27 @@ export const cutFrom = (cell: HTMLElement) => {
   return event.clipboardData ?? clipboardData
 }
 
-/** Клавиша на ячейке в фокусе: `keydown` и `keyup`, как с клавиатуры. */
-export const pressKey = (cell: HTMLElement, key: string) => {
-  cell.focus()
+/**
+ * Клавиша на ячейке в фокусе: `keydown` и `keyup`, как с клавиатуры; `init` — модификаторы и
+ * код клавиши (Ctrl+D — `{ code: 'KeyD', ctrlKey: true }`).
+ */
+export const pressKey = (
+  cell: HTMLElement,
+  key: string,
+  init: KeyboardEventInit = {},
+) => {
+  if (document.activeElement !== cell) cell.focus()
   cell.dispatchEvent(
-    new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }),
+    new KeyboardEvent('keydown', {
+      key,
+      bubbles: true,
+      cancelable: true,
+      ...init,
+    }),
   )
-  cell.dispatchEvent(new KeyboardEvent('keyup', { key, bubbles: true }))
+  cell.dispatchEvent(
+    new KeyboardEvent('keyup', { key, bubbles: true, ...init }),
+  )
 }
 
 /** Открытое меню таблицы. */

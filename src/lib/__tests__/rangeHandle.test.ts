@@ -79,11 +79,13 @@ describe('маркер угла выделения (ADR 0198)', () => {
 
   it('HN19: аргумент handle на клиентской и серверной модели строк одинаков; запись в базе паритета', () => {
     const server = serverRowModel({ getRows: () => new Promise(() => {}) })
+    // Режим и ось маркера — по умолчанию диапазон по обеим осям (ADR 0219, §4).
+    const modes = { mode: 'range', direction: 'xy' } as const
     const cases = [
-      [undefined, { mouse: true, touch: true }],
-      [{ touch: false }, { mouse: true, touch: false }],
-      [{ mouse: false }, { mouse: false, touch: true }],
-      [false, { mouse: false, touch: false }],
+      [undefined, { mouse: true, touch: true, ...modes }],
+      [{ touch: false }, { mouse: true, touch: false, ...modes }],
+      [{ mouse: false }, { mouse: false, touch: true, ...modes }],
+      [false, { mouse: false, touch: false, ...modes }],
     ] as const
     for (const [handle, expected] of cases) {
       const plugin = () => cellSelection(handle === undefined ? {} : { handle })

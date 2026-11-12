@@ -20,6 +20,7 @@ import { Checkbox } from '../../ui/Checkbox/Checkbox'
 import { defaultCell } from '../../core/commonFeature'
 import { useDraft } from '../../core/drafts/drafts'
 import { sourceOf } from '../../core/debugActions'
+import { bulkEditOnKey } from './bulkEdit'
 import { beginEdit, editorOf, togglesInPlace } from './editors'
 import styles from './CellEditInput.module.css'
 import {
@@ -129,7 +130,8 @@ export const CellEditField = (
   const cell = { rowId: row.id, columnId: column.id }
 
   // Режим правки: контент замещается редактором колонки, типа, плагина или встроенным.
-  return editorOf(
+  // Ctrl/Cmd+Enter перехватывается раньше Enter редактора — запись во весь диапазон (WR18).
+  const editor = editorOf(
     table,
     column,
     hooks,
@@ -149,4 +151,12 @@ export const CellEditField = (
     setText: text => setEditText(table, text),
     cell: props,
   })
+  return (
+    <span
+      className={styles.editHost}
+      onKeyDownCapture={event => bulkEditOnKey(event, table, cell)}
+    >
+      {editor}
+    </span>
+  )
 }

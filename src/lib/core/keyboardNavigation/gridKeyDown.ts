@@ -264,11 +264,12 @@ export const handleGridKeyDown = (
   })
 }
 
-const isSelectAllKey = (event: { key: string } & Modifiers) =>
+/** Ctrl/Cmd+A — по коду клавиши, на любой раскладке (ADR 0220, KC1). */
+const isSelectAllKey = (event: { code: string } & Modifiers) =>
   (event.ctrlKey || event.metaKey) &&
   !event.altKey &&
   !event.shiftKey &&
-  event.key.toLowerCase() === 'a'
+  event.code === 'KeyA'
 
 interface Modifiers {
   ctrlKey: boolean

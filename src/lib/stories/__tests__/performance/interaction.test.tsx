@@ -6462,6 +6462,154 @@ describe('Отзывчивость — флекс-колонки и автопо
   )
 })
 
+// Протяжка значения маркером (ADR 0219, WR38): кадр протяжки квадрата в режиме 'fill' — рамка
+// цели вместо смены диапазона — против той же протяжки в режиме 'range'.
+const WR38_COST = { ratio: 1.1, plusMs: 2 }
+
+describe('Кадры — протяжка значения маркером', () => {
+  test(
+    "WR38: кадр протяжки маркера в режиме 'fill' на 1000×1000 против режима 'range' — потолок базы ×1,1 или +2 мс",
+    async () => {
+      const drag = async (fill: boolean) => {
+        const FillGrid = () => {
+          const created = useCreateTable({
+            columns: MOTION_GRID_COLUMNS as never,
+            data: MOTION_GRID_ROWS,
+            getRowId: (row: { id: string }) => row.id,
+            plugins: [
+              cellEditing({ onCommitEdits: () => {} } as never),
+              cellSelection({ handle: { mode: fill ? 'fill' : 'range' } }),
+            ],
+          })
+          return (
+            <div style={{ width: 1200, height: 520 }}>
+              <DataGrid table={created} height={500} />
+            </div>
+          )
+        }
+        await render(<FillGrid />)
+        await waitForGrid()
+        const cellOf = (row: number, column: number) =>
+          document.querySelector<HTMLElement>(
+            `.data-grid__body-row[data-index="${row}"] .data-grid__body-cell[data-column-id="c${column}"]`,
+          )!
+        const centerOf = (el: Element) => {
+          const r = el.getBoundingClientRect()
+          return {
+            clientX: r.left + r.width / 2,
+            clientY: r.top + r.height / 2,
+          }
+        }
+        const pointer = (type: string, target: EventTarget, at: object) =>
+          target.dispatchEvent(
+            new PointerEvent(type, {
+              bubbles: true,
+              cancelable: true,
+              button: 0,
+              buttons: type === 'pointerup' ? 0 : 1,
+              pointerType: 'mouse',
+              isPrimary: true,
+              ...at,
+            }),
+          )
+        const marker = () =>
+          document.querySelector<HTMLElement>(
+            '[data-range-handle]:not([hidden])',
+          )
+        // Окно дорисовывается порциями (ADR 0202): протяжка — по уже отрисованным строкам.
+        await expect
+          .poll(() => [1, 2, 3, 4, 5, 6, 7, 8].every(row => !!cellOf(row, 5)))
+          .toBe(true)
+        const start = cellOf(1, 1)
+        start.dispatchEvent(
+          new MouseEvent('mousedown', {
+            bubbles: true,
+            cancelable: true,
+            button: 0,
+            buttons: 1,
+            ...centerOf(start),
+          }),
+        )
+        document.dispatchEvent(
+          new MouseEvent('mouseup', { bubbles: true, ...centerOf(start) }),
+        )
+        await expect.poll(marker).not.toBeNull()
+        pointer('pointerdown', marker()!, centerOf(marker()!))
+        // Угол — в окне: строки 2–8 и колонки 1–5 — шаг меняет ячейку под указателем.
+        const target = (step: number) =>
+          cellOf(2 + (step % 7), 1 + (Math.floor(step / 7) % 5))
+        let step = 0
+        const result = await measureTransitionWork(
+          async () => {
+            const next = () => {
+              step++
+              pointer('pointermove', document, centerOf(target(step)))
+              if (step < HANDLE_STEPS) requestAnimationFrame(next)
+            }
+            requestAnimationFrame(next)
+          },
+          () => step >= HANDLE_STEPS,
+        )
+        // Протяжка значения — рамка цели, диапазона — новый угол выделения.
+        const frame = document.querySelector('[data-fill-frame]:not([hidden])')
+        expect(!!frame, 'рамка цели протяжки').toBe(fill)
+        expect(
+          target(HANDLE_STEPS).hasAttribute('data-cell-selected'),
+          'угол протяжки выделения',
+        ).toBe(!fill)
+        // Escape — без записи: замер только кадров жеста.
+        document.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+        )
+        pointer('pointerup', document, centerOf(target(HANDLE_STEPS)))
+        await cleanup()
+        return result
+      }
+
+      const runs = await againstBase(drag)
+      const base = medianRun(runs.base, r => r.p95Ms)
+      const variant = medianRun(runs.variant, r => r.p95Ms)
+      const ceiling = ceilingOver(base.p95Ms, WR38_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1000×1000',
+          plugins: 'cellEditing, cellSelection',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'animation',
+              metric: 'p95',
+              valueMs: r.p95Ms,
+              targetMs: ANIMATION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record(
+        'WR38-base',
+        "протяжка маркера в режиме 'range'",
+        base,
+        false,
+      )
+      await record('WR38', "протяжка маркера в режиме 'fill'", variant, true)
+      expect(
+        variant.p95Ms,
+        `p95=${variant.p95Ms.toFixed(1)}ms, база ${base.p95Ms.toFixed(1)}ms, потолок ${ceiling.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
 // Вставка из буфера (ADR 0219, WR35–WR36): объём и одно значение в большой диапазон.
 type PasteTable = {
   getRowSource: () => { at: (index: number) => { id: string } | undefined }
@@ -6533,10 +6681,12 @@ describe('Вставка из буфера — объём', () => {
       const runs = await againstBase(isMany => measure(isMany ? 10_000 : 1000))
       const base = medianRun(runs.base, r => r.totalMs)
       const many = medianRun(runs.variant, r => r.totalMs)
-      const ceiling = base.totalMs * WR35_RATIO
       const baseLongest = medianRun(runs.base, r => r.longestMs).longestMs
       const manyLongest = medianRun(runs.variant, r => r.longestMs).longestMs
-      const longestCeiling = baseLongest * WR35_LONGEST_RATIO
+      const ceiling = {
+        total: base.totalMs * WR35_RATIO,
+        longest: baseLongest * WR35_LONGEST_RATIO,
+      }
       const record = (
         id: string,
         label: string,
@@ -6557,7 +6707,7 @@ describe('Вставка из буфера — объём', () => {
               metric: 'longest',
               valueMs: r.longestMs,
               targetMs: INTERACTION_BUDGET_MS,
-              ceilingMs: gated ? longestCeiling : undefined,
+              ceilingMs: gated ? ceiling.longest : undefined,
               ...r,
             },
           ],
@@ -6566,8 +6716,8 @@ describe('Вставка из буфера — объём', () => {
       await record('WR35', 'вставка 100 000 ячеек', many, true)
 
       const summary = `100 000: total=${many.totalMs.toFixed(0)}ms longest=${many.longestMs.toFixed(0)}ms; 10 000: total=${base.totalMs.toFixed(0)}ms longest=${base.longestMs.toFixed(0)}ms long=${base.longTasks}; 100 000 long=${many.longTasks}; медианы longest: ${manyLongest.toFixed(0)} против ${baseLongest.toFixed(0)}ms`
-      expect(many.totalMs, summary).toBeLessThanOrEqual(ceiling)
-      expect(manyLongest, summary).toBeLessThanOrEqual(longestCeiling)
+      expect(many.totalMs, summary).toBeLessThanOrEqual(ceiling.total)
+      expect(manyLongest, summary).toBeLessThanOrEqual(ceiling.longest)
     },
     PERF_TIMEOUT * 4,
   )

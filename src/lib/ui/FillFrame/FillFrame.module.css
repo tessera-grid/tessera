@@ -1,0 +1,13 @@
+/* Рамка цели протяжки значения (ADR 0219, WR40): пунктир цвета кромки выделения. */
+.frame {
+  position: absolute;
+  z-index: var(--tsr-comp-z-index-range-handle);
+  box-sizing: border-box;
+  border: var(--tsr-comp-fill-frame-width) dashed
+    var(--tsr-comp-fill-frame-color);
+  pointer-events: none;
+}
+
+.frame[hidden] {
+  display: none;
+}

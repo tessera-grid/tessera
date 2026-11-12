@@ -20,10 +20,21 @@ import {
   clearContextAction,
   copyContextAction,
   cutContextAction,
+  fillDownContextAction,
+  fillRightContextAction,
   pasteContextAction,
 } from './contextActions'
 import { DEFAULT_MAX_COPY_ROWS } from './copy'
-import type { CellSelectionOptions, ParseClipboard } from './types'
+import type { CellSelectionOptions, FillValue, ParseClipboard } from './types'
+
+/** Маркер в опциях таблицы: для каких указателей, режим и протяжка значения. */
+export interface CellSelectionHandle {
+  mouse: boolean
+  touch: boolean
+  mode: 'range' | 'fill'
+  direction: 'x' | 'y' | 'xy'
+  getFillValue?: FillValue
+}
 import { cellSelectionLabels } from './labels'
 
 // TOptions задаётся ОДИН раз дженериком; `o` в полях выводится (DP12).
@@ -39,6 +50,9 @@ const cellSelectionEntry = definePlugin<CellSelectionOptions>()({
     paste: labels => cellSelectionLabels(labels).paste,
     cut: labels => cellSelectionLabels(labels).cut,
     clear: labels => cellSelectionLabels(labels).clear,
+    fill: labels => cellSelectionLabels(labels).actionFill,
+    fillDown: labels => cellSelectionLabels(labels).fillDown,
+    fillRight: labels => cellSelectionLabels(labels).fillRight,
   },
   diagnose: neverInert,
   model: {
@@ -68,6 +82,11 @@ const cellSelectionEntry = definePlugin<CellSelectionOptions>()({
       cellSelectionHandle: {
         mouse: !off && o.handle !== false && (o.handle?.mouse ?? true),
         touch: !off && o.handle !== false && (o.handle?.touch ?? true),
+        mode: (o.handle !== false && o.handle?.mode) || 'range',
+        direction: (o.handle !== false && o.handle?.direction) || 'xy',
+        ...(o.handle !== false && o.handle?.getFillValue
+          ? { getFillValue: o.handle.getFillValue }
+          : {}),
       },
     }
   },
@@ -79,6 +98,8 @@ const cellSelectionEntry = definePlugin<CellSelectionOptions>()({
     cutContextAction,
     pasteContextAction,
     clearContextAction,
+    fillDownContextAction,
+    fillRightContextAction,
   ],
 })
 
@@ -97,7 +118,7 @@ declare module '@tanstack/react-table' {
       cellSelectionInteraction?: boolean
       cellSelectionMaxCopyRows?: number
       /** Для каких указателей показан маркер угла выделения (ADR 0198). */
-      cellSelectionHandle?: { mouse: boolean; touch: boolean }
+      cellSelectionHandle?: CellSelectionHandle
       /** Вставка, вырезание и очистка выделения включены (ADR 0219). */
       cellSelectionPaste?: boolean
       /** Свой разбор буфера при вставке (ADR 0219, WR3). */

@@ -576,6 +576,9 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       Tab/Shift+Tab снаружи без остановок и прокрутки, ещё и в `test:browsers`);
       `keyboard-wcag` (KB1–KB14 — соответствие WCAG 2.1.1 и замены клавиш для компактных клавиатур,
       [ADR 0031](docs/decisions/0031-wcag-keyboard.md)).
+    - _Сочетания по коду клавиши:_ `key-codes` (KC1 — Ctrl/Cmd+A по коду `KeyA` на любой раскладке),
+      модульный `keyCodes` (KC2 — буква и цифра сочетаний действий по коду, ключи без регистра; KC3 —
+      страж сравнений `KeyboardEvent.key` с буквой) ([ADR 0220](docs/decisions/0220-shortcuts-by-key-code.md)).
     - _Меню действий:_ `action-menu` (AM10–AM19, AM24–AM27 — kebab заголовка и строки),
       `action-panel-loading` (AM28–AM30 — ожидание загрузки панели, отмена, ошибка),
       `header-action-tooltips` (AM31–AM32 — тултип кнопок с панелью и мини-меню, кебабов заголовка и строки),
@@ -1034,8 +1037,12 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       группировка, форма пакета для журнала, серверная модель), визуальный `paste` (WR1, WR10,
       WR13–WR14, WR17, WR20, WR31, WR33, WR42 — настоящие Ctrl+C и Ctrl+V, отказ разбора, ожидание,
       «стоп» и отказ пакета, пункты меню, Delete, Backspace и Ctrl+X, сортировка после записи, axe,
-      вопрос перед вставкой), истории «Cells/Paste & fill» (S1–S5, S10–S12)
-      ([ADR 0219](docs/decisions/0219-paste-fill-and-bulk-edit.md)).
+      вопрос перед вставкой), истории «Cells/Paste & fill» (S1–S5, S10–S12); протяжка и
+      заполнение — модульный `cellWrites.dom` (WR24, WR26, WR41 — правила ряда, `getFillValue`,
+      аргументы маркера на обеих моделях), визуальный `fill` (WR18–WR19, WR22–WR23, WR25, WR40 —
+      Ctrl+Enter во весь диапазон, Ctrl+D и Ctrl+R по коду клавиши и пункты меню, рамка цели и
+      запись после отпускания, ось и сужение, Alt, контраст рамки), перф WR38 — в `interaction`,
+      истории S6–S9 ([ADR 0219](docs/decisions/0219-paste-fill-and-bulk-edit.md)).
     - _Серверная группировка:_ модульный `serverGrouping.dom` (GS1–GS2, GS10–GS11, GS15–GS16 — поля
       запроса, строки-группы и ветки, запрос выгрузки, инертность клиентской модели и ленивых детей,
       предупреждение об агрегате не строкой, своё имя агрегата),

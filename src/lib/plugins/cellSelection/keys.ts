@@ -18,6 +18,7 @@ import {
 } from '../../core/keyboardNavigation/model'
 import { isInteractive } from './copyEvent'
 import { clearSelection } from './clear'
+import { fillFromEdge } from './fill'
 import { canPaste } from './paste'
 
 interface CellRange {
@@ -252,11 +253,15 @@ const extendSelectionByKey = (
   return true
 }
 
-const isSelectAllKey = (event: NavigationKeyEvent) =>
+/** Ctrl/Cmd+буква без Shift и Alt — по коду клавиши, а не по букве раскладки. */
+const isCtrlCode = (event: NavigationKeyEvent, code: string) =>
   (event.ctrlKey || event.metaKey) &&
   !event.altKey &&
   !event.shiftKey &&
-  event.key.toLowerCase() === 'a'
+  event.code === code
+
+/** Ctrl/Cmd+A — по коду клавиши, на любой раскладке (ADR 0220, KC1). */
+const isSelectAllKey = (event: NavigationKeyEvent) => isCtrlCode(event, 'KeyA')
 
 /** Ctrl+A: выделить все ячейки; без cellSelection клавиша остаётся браузеру. */
 const selectAllCellsIn = (t: NavTable): boolean => {
@@ -288,6 +293,17 @@ export const cellSelectionKeys: NavigationKeys = {
       canPaste(table)
     ) {
       clearSelection(table, 'clear', 'keyboard')
+      return true
+    }
+    // Ctrl/Cmd+D и Ctrl/Cmd+R заполняют вниз и вправо (WR19); закладку и перезагрузку браузер
+    // не получает, даже когда заполнять нечем.
+    const fillAxis = isCtrlCode(event, 'KeyD')
+      ? 'y'
+      : isCtrlCode(event, 'KeyR')
+        ? 'x'
+        : undefined
+    if (fillAxis && isCellSelectionActive(t) && canPaste(table)) {
+      fillFromEdge(table, fillAxis, 'keyboard')
       return true
     }
     if (extendSelectionByKey(t, active, event, pageRows)) return true

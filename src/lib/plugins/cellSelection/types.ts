@@ -13,7 +13,35 @@ export interface CellSelectionHandleOptions {
   mouse?: boolean
   /** Палец: круги в противоположных углах. */
   touch?: boolean
+  /**
+   * Что делает протяжка квадрата (ADR 0219, §4): `'range'` — меняет диапазон, `'fill'` — тянет
+   * значения в ячейки. По умолчанию `'range'`; круги пальца всегда меняют диапазон.
+   */
+  mode?: 'range' | 'fill'
+  /** Оси протяжки значения. По умолчанию `'xy'`. */
+  direction?: 'x' | 'y' | 'xy'
+  /** Своё значение ячейки протяжки; `ctx.skip` — оставить ячейку как есть. */
+  getFillValue?: FillValue
 }
+
+/** Ячейка протяжки значения для `getFillValue` (ADR 0219, WR26). */
+export interface FillContext {
+  /** Исходные значения линии вдоль оси протяжки. */
+  values: readonly unknown[]
+  /** Номер ячейки протяжки на линии: 0 — ближайшая к исходным. */
+  index: number
+  direction: 'down' | 'up' | 'right' | 'left'
+  rowId: string
+  columnId: string
+  /** Строка ячейки. */
+  row: unknown
+  /** Значение по правилу копии, ряда или повтора. */
+  value: unknown
+  /** Вернуть, чтобы оставить ячейку как есть. */
+  skip: symbol
+}
+
+export type FillValue = (ctx: FillContext) => unknown
 
 /**
  * Свой разбор буфера при вставке (ADR 0219, WR3): строки и ячейки текста, `null` — отмена,

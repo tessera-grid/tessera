@@ -177,6 +177,8 @@ export interface RootContribution {
 /** Клавиша навигации в канале клавиш. */
 export interface NavigationKeyEvent {
   key: string
+  /** Код клавиши: сочетания с буквой — по нему, на любой раскладке. */
+  code: string
   shiftKey: boolean
   ctrlKey: boolean
   metaKey: boolean

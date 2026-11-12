@@ -13,6 +13,11 @@
   min-width: 0;
 }
 
+/* Обёртка редактора для перехвата Ctrl+Enter: в раскладке ячейки её нет. */
+.editHost {
+  display: contents;
+}
+
 /* Пустая строка ошибки не добавляет зазор под полем. */
 .error:empty {
   margin-top: -2px;

@@ -15,7 +15,8 @@ interface KeyboardActionBase<TCtx> {
   id: string
   /**
    * Значения `KeyboardEvent.key` (`' '` — пробел) или сочетания в форме
-   * `keyComboOf` — `'Alt+Shift+ArrowUp'`; сочетания срабатывают только с `Alt`.
+   * `keyComboOf` — `'Alt+Shift+ArrowUp'`; сочетания срабатывают только с `Alt`. Буква и
+   * цифра сочетания — по коду клавиши, на любой раскладке; регистр буквы не важен (ADR 0220).
    */
   keys: string[]
   /**
@@ -42,9 +43,30 @@ export interface HeaderKeyboardAction extends KeyboardActionBase<HeaderComponent
 
 export type KeyboardAction = CellKeyboardAction | HeaderKeyboardAction
 
-/** Сочетание клавиш события: модификаторы в порядке Ctrl, Alt, Shift, Meta и `key`. */
+/**
+ * Имя клавиши сочетания (ADR 0220): буква и цифра — по коду клавиши, латинской строчной буквой
+ * и цифрой, на любой раскладке и с Option на macOS; прочие клавиши — `key`.
+ */
+export const keyNameOf = (event: { key: string; code?: string }): string => {
+  const code = event.code ?? ''
+  const letter = /^Key([A-Z])$/.exec(code)
+  if (letter) return letter[1]!.toLowerCase()
+  const digit = /^(?:Digit|Numpad)(\d)$/.exec(code)
+  if (digit) return digit[1]!
+  return event.key
+}
+
+/** Ключ действия в виде сочетания: последняя буква — строчная (`'Alt+K'` — `'Alt+k'`). */
+export const normalizeKeyCombo = (combo: string): string =>
+  combo.replace(
+    /(^|\+)([A-Za-z])$/,
+    (_, plus: string, letter: string) => `${plus}${letter.toLowerCase()}`,
+  )
+
+/** Сочетание клавиш события: модификаторы в порядке Ctrl, Alt, Shift, Meta и имя клавиши. */
 export const keyComboOf = (event: {
   key: string
+  code?: string
   ctrlKey: boolean
   altKey: boolean
   shiftKey: boolean
@@ -55,7 +77,7 @@ export const keyComboOf = (event: {
     event.altKey && 'Alt',
     event.shiftKey && 'Shift',
     event.metaKey && 'Meta',
-    event.key,
+    keyNameOf(event),
   ]
     .filter(Boolean)
     .join('+')

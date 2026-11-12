@@ -495,13 +495,15 @@ export const RANGE_HANDLE_MAPPING = {
   mouse: { touch: false },
   touch: { mouse: false },
   off: false,
+  fill: { mode: 'fill' },
+  fillDown: { mode: 'fill', direction: 'y' },
 } as const
 export const cellSelectionHandleType: InputType = {
   control: 'inline-radio',
   options: Object.keys(RANGE_HANDLE_MAPPING),
   mapping: RANGE_HANDLE_MAPPING,
   description:
-    'Маркер угла выделения (`handle`): `all` — для мыши и пальца, `mouse` и `touch` — только для одного ввода, `off` — без маркера',
+    'Маркер угла выделения (`handle`): `all` — для мыши и пальца, `mouse` и `touch` — только для одного ввода, `off` — без маркера; `fill` — квадрат тянет значения в ячейки (`mode`), `fillDown` — тянет только вниз и вверх (`direction`)',
   table: { defaultValue: { summary: 'all' } },
 }
 export const cellSelectionMaxCopyRowsType = numberControl(

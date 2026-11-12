@@ -33,6 +33,10 @@ import {
 } from '../plugins/cellSelection/clipboard'
 import { copyCellSelection } from '../plugins/cellSelection/copy'
 import { pasteData } from '../plugins/cellSelection/paste'
+import { fillChanges } from '../plugins/cellSelection/fill'
+import { fillMode } from '../plugins/cellSelection/rangeHandle'
+import type { CellSelectionHandleOptions } from '../plugins/cellSelection/types'
+import { fillSeries } from '../shared/fillSeries'
 
 ;(
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -139,6 +143,7 @@ interface HostProps {
     context: { signal: AbortSignal; confirm: () => Promise<boolean> },
   ) => string[][] | null | PromiseLike<string[][] | null>
   paste?: boolean
+  handle?: CellSelectionHandleOptions
   grouping?: string[]
   server?: boolean
   locale?: string
@@ -156,6 +161,7 @@ const Host = ({
   validate,
   parseClipboard,
   paste,
+  handle,
   grouping,
   server,
   locale,
@@ -180,6 +186,7 @@ const Host = ({
       cellSelection({
         ...(parseClipboard ? { parseClipboard } : {}),
         ...(paste === undefined ? {} : { paste }),
+        ...(handle ? { handle } : {}),
       }),
       ...(grouping
         ? [rowGroupingModel({ initialGrouping: grouping } as never)]
@@ -774,5 +781,193 @@ describe('вставка из буфера и запись в ячейки (ADR 
     )
     await paste('7')
     expect(onCommitEdits).toHaveBeenCalledTimes(1)
+  })
+})
+
+/** Значения протяжки по номерам ячеек. */
+const take = (at: (index: number) => unknown, count: number) =>
+  Array.from({ length: count }, (_, index) => at(index))
+
+/** Прямоугольник по местам строк и колонок в порядке показа. */
+const bounds = (rows: [number, number], columns: [number, number]) => ({
+  minRowIndex: rows[0],
+  maxRowIndex: rows[1],
+  minColumnIndex: columns[0],
+  maxColumnIndex: columns[1],
+})
+
+const columnIndex = (id: string) =>
+  captured.getCellSelectionColumnIndexes()[id] as number
+
+describe('протяжка значения и заполнение (ADR 0219, этап 2)', () => {
+  it('WR24: одно значение — копия; два и больше с постоянным шагом — ряд чисел, numberString без float, дат днями, месяцами или годами; иначе, а также текст, варианты, булево и object — повтор по кругу', () => {
+    // Одно значение — копия любого типа.
+    expect(take(fillSeries([5]), 3)).toEqual([5, 5, 5])
+    expect(take(fillSeries(['2026-01-01'], { kind: 'date' }), 2)).toEqual([
+      '2026-01-01',
+      '2026-01-01',
+    ])
+    // Ряд чисел, вперёд и назад; хвостов float нет.
+    expect(take(fillSeries([1, 3]), 3)).toEqual([5, 7, 9])
+    expect(take(fillSeries([1, 3], { backward: true }), 2)).toEqual([-1, -3])
+    expect(take(fillSeries([0.1, 0.2]), 2)).toEqual([0.3, 0.4])
+    // numberString — десятичной арифметикой.
+    expect(take(fillSeries(['0.10', '0.20'], { kind: 'decimal' }), 2)).toEqual([
+      '0.30',
+      '0.40',
+    ])
+    expect(
+      take(
+        fillSeries(['99999999999999999.1', '99999999999999999.2'], {
+          kind: 'decimal',
+        }),
+        1,
+      ),
+    ).toEqual(['99999999999999999.3'])
+    // Даты: шаг днями, месяцами с тем же числом (конца месяца нет — последний день), годами.
+    expect(
+      take(fillSeries(['2026-01-30', '2026-01-31'], { kind: 'date' }), 2),
+    ).toEqual(['2026-02-01', '2026-02-02'])
+    expect(
+      take(fillSeries(['2026-01-15', '2026-02-15'], { kind: 'date' }), 2),
+    ).toEqual(['2026-03-15', '2026-04-15'])
+    expect(
+      take(fillSeries(['2025-11-30', '2025-12-30'], { kind: 'date' }), 2),
+    ).toEqual(['2026-01-30', '2026-02-28'])
+    expect(
+      take(fillSeries(['2020-06-01', '2021-06-01'], { kind: 'date' }), 1),
+    ).toEqual(['2022-06-01'])
+    expect(
+      take(
+        fillSeries(['2026-01-01T09:00', '2026-01-01T10:30'], { kind: 'date' }),
+        1,
+      ),
+    ).toEqual(['2026-01-01T12:00'])
+    // Даты-моменты — в календаре пояса таблицы: через переход на летнее время та же полночь.
+    const days = take(
+      fillSeries(
+        [new Date('2026-03-27T23:00:00Z'), new Date('2026-03-28T23:00:00Z')],
+        { timeZone: 'Europe/Berlin' },
+      ),
+      1,
+    ) as Date[]
+    expect(days[0]!.toISOString()).toBe('2026-03-29T22:00:00.000Z')
+    // Шаг не постоянный — повтор по кругу; назад — от последнего.
+    expect(take(fillSeries([1, 2, 4]), 4)).toEqual([1, 2, 4, 1])
+    expect(take(fillSeries([1, 2, 4], { backward: true }), 3)).toEqual([
+      4, 2, 1,
+    ])
+    // Текст, варианты, булево и object — повтор, даже когда похожи на ряд.
+    expect(take(fillSeries(['a', 'b']), 3)).toEqual(['a', 'b', 'a'])
+    expect(take(fillSeries(['1', '2'], { kind: 'none' }), 2)).toEqual([
+      '1',
+      '2',
+    ])
+    expect(take(fillSeries([true, false]), 3)).toEqual([true, false, true])
+    const ann = { id: 'o1' }
+    expect(take(fillSeries([ann]), 2)).toEqual([ann, ann])
+    // По таблице: тип колонки выбирает правило — число, дата-строка, текст.
+    render()
+    const changes = fillChanges(captured, {
+      bound: bounds([0, 1], [columnIndex('name'), columnIndex('born')]),
+      axis: 'y',
+      to: 3,
+    })
+    const byCell = Object.fromEntries(
+      changes.map(change => [
+        `${change.rowId}:${change.columnId}`,
+        'value' in change ? change.value : undefined,
+      ]),
+    )
+    expect(byCell['2:age']).toBe(22)
+    expect(byCell['3:age']).toBe(23)
+    expect(byCell['2:born']).toBe('2026-01-03')
+    expect(byCell['2:name']).toBe('Name 0')
+    expect(byCell['3:name']).toBe('Name 1')
+  })
+
+  it('WR26: getFillValue задаёт значение ячейки протяжки или пропуск', async () => {
+    const onCommitEdits = vi.fn()
+    const getFillValue = vi.fn(
+      (ctx: { index: number; value: unknown; skip: symbol }) =>
+        ctx.index === 1 ? ctx.skip : `${String(ctx.value)}!`,
+    )
+    render({ onCommitEdits, handle: { mode: 'fill', getFillValue } })
+    select(['0', 'name', '0', 'name'])
+    const name = columnIndex('name')
+    const mode = fillMode(
+      captured,
+      bounds([0, 0], [name, name]),
+      captured.options.cellSelectionHandle,
+      () => {},
+      () => false,
+    )
+    act(() => {
+      mode.move({ row: 3, column: 'name' })
+      mode.end()
+    })
+    await flush()
+    // Контекст — исходные значения линии, номер, направление, строка, колонка, значение по правилу.
+    expect(getFillValue.mock.calls[0]![0]).toMatchObject({
+      values: ['Name 0'],
+      index: 0,
+      direction: 'down',
+      rowId: '1',
+      columnId: 'name',
+      value: 'Name 0',
+    })
+    // Пропуск оставляет ячейку: строки 2 в пакете нет.
+    expect(cellsOf(onCommitEdits.mock.calls[0]![0])).toEqual([
+      ['1', 'name', 'Name 0!'],
+      ['3', 'name', 'Name 0!'],
+    ])
+    expect(onCommitEdits.mock.calls[0]![0].source).toBe('fill')
+  })
+
+  it('WR41: аргументы handle.mode, handle.direction, handle.getFillValue работают на клиентской и серверной модели строк', async () => {
+    const getFillValue = (ctx: { value: unknown }) => Number(ctx.value) + 100
+    for (const server of [false, true]) {
+      const onCommitEdits = vi.fn()
+      // Набор фич собирается при монтировании: серверная модель — новой таблицей.
+      act(() => root?.unmount())
+      root = undefined
+      render({
+        onCommitEdits,
+        server,
+        handle: { mode: 'fill', direction: 'x', getFillValue },
+      })
+      if (server) {
+        act(() =>
+          captured.getRowSource().observe({ first: 0, last: 9, fast: false }),
+        )
+        await flush()
+        await flush()
+      }
+      const options = captured.options.cellSelectionHandle
+      expect(options).toMatchObject({ mode: 'fill', direction: 'x' })
+      const age = columnIndex('age')
+      const mode = fillMode(
+        captured,
+        bounds([1, 1], [age, age]),
+        options,
+        () => {},
+        () => false,
+      )
+      // Ось ограничена 'x': смещение вниз больше, но протяжка идёт вправо, в соседнюю колонку.
+      act(() => {
+        mode.move({ row: 5, column: 'born' })
+        mode.end()
+      })
+      await flush()
+      expect(cellsOf(onCommitEdits.mock.calls[0]![0])).toEqual([
+        ['1', 'born', 121],
+      ])
+    }
+    // Без аргумента — режим диапазона.
+    render({})
+    expect(captured.options.cellSelectionHandle).toMatchObject({
+      mode: 'range',
+      direction: 'xy',
+    })
   })
 })

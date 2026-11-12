@@ -2,7 +2,11 @@
 import { reportNavigation } from './model'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 
-import { type KeyboardAction, toggleRowByAction } from '../keyboardActions'
+import {
+  type KeyboardAction,
+  normalizeKeyCombo,
+  toggleRowByAction,
+} from '../keyboardActions'
 import { getHeaderOwner } from './header'
 import { type ActiveCell, type NavTable, ROW_FOCUS_COLUMN } from './model'
 
@@ -135,7 +139,7 @@ export const findKeyboardAction = (
   (t.getKeyboardActions?.() ?? []).find(
     action =>
       action.scope === target.scope &&
-      action.keys.includes(key) &&
+      action.keys.some(item => normalizeKeyCombo(item) === key) &&
       (action.visible?.(target.ctx as never) ?? true),
   )
 
