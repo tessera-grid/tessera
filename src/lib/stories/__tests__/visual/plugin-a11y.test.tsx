@@ -37,6 +37,7 @@ const PLUGIN_ARGS: Record<string, GridArgs> = {
     dataNesting: 'nested',
     expandAll: true,
   },
+  textWrap: { enableTextWrap: true },
   columnSortingModel: { enableColumnSortingModel: true },
   paginationModel: { enablePaginationModel: true },
   columnFilteringModel: { enableColumnFilteringModel: true },

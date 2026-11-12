@@ -19,6 +19,10 @@ const LIB = join(ROOT, 'src', 'lib')
  */
 const BOUNDED: Record<string, string> = {
   'core/autosize.ts:EMPTY': 'пустой набор измеряемых колонок, не растёт',
+  'core/headSizes.ts:EMPTY':
+    'пустой набор колонок шапки по содержимому, не растёт',
+  'plugins/textWrap/measure.ts:deferred':
+    'наблюдение ячеек, смонтированных в колбэке наблюдателя: очищается следующим кадром',
   'core/inputModality.ts:MODIFIER_KEYS': 'константный набор клавиш',
   'core/keyboardNavigation/actions.ts:ACTION_KEYS': 'константный набор клавиш',
   'ui/Popup/useMenuLeave.ts:LEAVING': 'константный набор причин',

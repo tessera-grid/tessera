@@ -40,6 +40,7 @@ import footerStyles from '../grid/Footer/Footer.module.css'
 import footerCellStyles from '../grid/FooterCell/FooterCell.module.css'
 import { useIsomorphicLayoutEffect } from '../util/useIsomorphicLayoutEffect'
 import { inertProp } from '../core/inertProp'
+import { estimatedRowHeightOf } from '../core/rowSizes'
 import { pinnedCellClass } from './BodyCell/pinnedCellClass'
 
 interface SkeletonColumn {
@@ -259,6 +260,8 @@ interface SkeletonRowsBlockProps {
   /** Квадраты раскрытия вразброс по номеру строки (плоский скелет, SL25). */
   scatterToggles?: boolean
   rowClassName?: string
+  /** Высота строк блока, px; нет — высота строки темы (ADR 0218, §8). */
+  rowHeight?: number
 }
 
 /** Блок строк скелета высотой в `rowCount` строк темы. */
@@ -275,10 +278,16 @@ const SkeletonRowsBlock = ({
   window,
   scatterToggles,
   rowClassName = 'data-grid__body-row--skeleton',
+  rowHeight,
 }: SkeletonRowsBlockProps) => (
   <div
     className={clsx(className, bodyStyles.body)}
-    style={{ height: `calc(var(--tsr-comp-row-height) * ${rowCount})` }}
+    style={{
+      ...(rowHeight !== undefined && {
+        '--tsr-comp-row-height': `${rowHeight}px`,
+      }),
+      height: `calc(var(--tsr-comp-row-height) * ${rowCount})`,
+    }}
   >
     {Array.from({ length: cells ? rowCount : 0 }, (_, rowIndex) => (
       <div
@@ -457,11 +466,13 @@ export const SkeletonBody = memo(
       return () => observer.disconnect()
     }, [footerRows, options.rowHeight, options.headerHeight])
 
+    // Строки разной высоты — скелет высотой оценки (ADR 0218, §8).
+    const estimate = estimatedRowHeightOf(table)
     const rowCount = space
       ? getSkeletonRowCount({
           rowsCount,
           bodyHeight: space.body,
-          rowHeight: space.row,
+          rowHeight: estimate ?? space.row,
           pageSize,
         })
       : 0
@@ -514,6 +525,7 @@ export const SkeletonBody = memo(
           tree={treeRows}
           table={table}
           scatterToggles={!treeRows}
+          rowHeight={estimate}
         />
         {footerColumns && (
           <div

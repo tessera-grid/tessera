@@ -375,3 +375,37 @@
 .head__cell[data-cell-pinned='right'] {
   order: var(--tsr-virtual-end-order, 0);
 }
+
+/*
+ * Перенос подписи заголовка (ADR 0218, §10), атрибут ставит плагин textWrap. `clamp` — в высоте
+ * строки шапки: целые строки (`--tsr-text-wrap-head-fit` считает плагин), последняя — с `…`.
+ * `auto` — по содержимому до предела строк шапки: обёртка своей высоты, уровень растёт до неё.
+ */
+.head__cell[data-text-wrap] :global(.data-grid__cell-wrapper-content) {
+  /* Не ниже строки шапки, а не своего уровня: иначе замер не дал бы уровню опуститься. */
+  min-height: var(--tsr-comp-head-row-height);
+  padding-block: var(--tsr-comp-cell-wrap-padding-y);
+}
+
+.head__cell[data-text-wrap] :global(.data-grid__cell-wrapper-title) {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.head__cell[data-text-wrap='clamp'] :global(.data-grid__cell-wrapper-title) {
+  -webkit-line-clamp: var(--tsr-text-wrap-head-fit, 2);
+  line-clamp: var(--tsr-text-wrap-head-fit, 2);
+}
+
+.head__cell[data-text-wrap='auto']:not([data-header-stretched])
+  :global(.data-grid__cell-wrapper-content) {
+  align-self: center;
+}
+
+.head__cell[data-text-wrap='auto'] :global(.data-grid__cell-wrapper-title) {
+  max-height: none;
+  -webkit-line-clamp: var(--tsr-text-wrap-head-max-lines, 3);
+  line-clamp: var(--tsr-text-wrap-head-max-lines, 3);
+}

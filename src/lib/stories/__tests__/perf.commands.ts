@@ -271,6 +271,7 @@ export interface PerfRecord {
     | 'columnSizing'
     | 'columnPinning'
     | 'columnSorting, columnFiltering, rowGrouping'
+    | 'textWrap'
   /** Кратность CPU-троттлинга во время замера (1 = без троттлинга). */
   cpuThrottle: number
   metrics: PerfMetric[]

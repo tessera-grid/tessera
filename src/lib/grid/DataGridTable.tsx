@@ -41,6 +41,8 @@ interface DataGridTableProps {
   rowSource: RowSource<Row<any, any>>
   leafColumns: Column<any, any, unknown>[]
   virtualRows: VirtualItem[]
+  /** Высота строки, px: строки групп и их липкие копии (ADR 0218, §8). */
+  rowHeight: number
   /** Видимые строки окна (ADR 0203). */
   visibleRows: { startIndex: number; endIndex: number } | null
   virtualColumns: VirtualItem[]
@@ -71,6 +73,7 @@ export const DataGridTable = ({
   rowSource,
   leafColumns,
   virtualRows,
+  rowHeight,
   visibleRows,
   virtualColumns,
   columnStarts,
@@ -243,6 +246,7 @@ export const DataGridTable = ({
               getRows={getRows}
               rowSource={rowSource}
               virtualRows={virtualRows}
+              rowHeight={rowHeight}
               visibleRows={visibleRows}
               virtualColumns={virtualColumns}
               leafColumns={leafColumns}

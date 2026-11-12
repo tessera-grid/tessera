@@ -550,3 +550,34 @@
     var(--tsr-comp-row-odd-bg)
   );
 }
+
+/*
+ * Перенос текста в ячейке (ADR 0218, §1), атрибут ставит плагин textWrap. `clamp` — в высоте
+ * строки: целые строки, сколько помещается (`--tsr-text-wrap-fit` считает плагин), последняя —
+ * с `…`. `auto` — по содержимому: обёртка своей высоты по центру ячейки, строка растёт до неё.
+ */
+.body__cell[data-text-wrap] :global(.data-grid__cell-wrapper-content) {
+  padding-block: var(--tsr-comp-cell-wrap-padding-y);
+}
+
+.body__cell[data-text-wrap] :global(.data-grid__cell-wrapper-title) {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.body__cell[data-text-wrap='clamp'] :global(.data-grid__cell-wrapper-title) {
+  -webkit-line-clamp: var(--tsr-text-wrap-fit, 2);
+  line-clamp: var(--tsr-text-wrap-fit, 2);
+}
+
+.body__cell[data-text-wrap='auto'] :global(.data-grid__cell-wrapper-content) {
+  align-self: center;
+}
+
+.body__cell[data-text-wrap='auto'] :global(.data-grid__cell-wrapper-title) {
+  max-height: none;
+  -webkit-line-clamp: var(--tsr-text-wrap-max-lines, 10);
+  line-clamp: var(--tsr-text-wrap-max-lines, 10);
+}

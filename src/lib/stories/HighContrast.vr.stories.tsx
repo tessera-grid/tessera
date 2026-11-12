@@ -40,6 +40,7 @@ import * as serverLazyChildrenStories from './DataGrid.DataLoading.ServerRowMode
 import * as columnsDraggingStories from './DataGrid.Columns.Dragging.stories'
 import * as columnsResizingStories from './DataGrid.Columns.Resizing.stories'
 import * as columnsFlexWidthStories from './DataGrid.Columns.FlexWidth.stories'
+import * as columnsTextWrapStories from './DataGrid.Columns.TextWrap.stories'
 import * as rowsDraggingStories from './DataGrid.Rows.Dragging.stories'
 import * as rowsGroupingStories from './DataGrid.Rows.Grouping.stories'
 import * as rowsSelectionStories from './DataGrid.Rows.Selection.stories'
@@ -8759,5 +8760,141 @@ export const HighContrastAutosizeOnDataStep1 = {
 export const HighContrastAutosizeOnDataStep2 = {
   ...twinStep(columnsResizingStories, columnsResizingStories.AutosizeOnData, 2),
   name: 'Columns/Resizing — Autosize on data, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastTextWrapClampedStep1 = {
+  ...twinStep(
+    columnsTextWrapStories,
+    columnsTextWrapStories.TextWrapClamped,
+    1,
+  ),
+  name: 'Columns/Text wrap — Wrap within the row, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastTextWrapClampedStep2 = {
+  ...twinStep(
+    columnsTextWrapStories,
+    columnsTextWrapStories.TextWrapClamped,
+    2,
+  ),
+  name: 'Columns/Text wrap — Wrap within the row, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastTextWrapClampedStep3 = {
+  ...twinStep(
+    columnsTextWrapStories,
+    columnsTextWrapStories.TextWrapClamped,
+    3,
+  ),
+  name: 'Columns/Text wrap — Wrap within the row, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastTextWrapAutoHeightStep1 = {
+  ...twinStep(
+    columnsTextWrapStories,
+    columnsTextWrapStories.TextWrapAutoHeight,
+    1,
+  ),
+  name: 'Columns/Text wrap — Rows grow with content, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastTextWrapAutoHeightStep2 = {
+  ...twinStep(
+    columnsTextWrapStories,
+    columnsTextWrapStories.TextWrapAutoHeight,
+    2,
+  ),
+  name: 'Columns/Text wrap — Rows grow with content, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastTextWrapResizeColumnStep1 = {
+  ...twinStep(
+    columnsTextWrapStories,
+    columnsTextWrapStories.TextWrapResizeColumn,
+    1,
+  ),
+  name: 'Columns/Text wrap — Narrow a column, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastTextWrapResizeColumnStep2 = {
+  ...twinStep(
+    columnsTextWrapStories,
+    columnsTextWrapStories.TextWrapResizeColumn,
+    2,
+  ),
+  name: 'Columns/Text wrap — Narrow a column, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastTextWrapHeaderStep1 = {
+  ...twinStep(columnsTextWrapStories, columnsTextWrapStories.TextWrapHeader, 1),
+  name: 'Columns/Text wrap — Long headers, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastTextWrapHeaderStep2 = {
+  ...twinStep(columnsTextWrapStories, columnsTextWrapStories.TextWrapHeader, 2),
+  name: 'Columns/Text wrap — Long headers, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastTextWrapKeyboardStep1 = {
+  ...twinStep(
+    columnsTextWrapStories,
+    columnsTextWrapStories.TextWrapKeyboard,
+    1,
+  ),
+  name: 'Columns/Text wrap — Keyboard and scroll to a record, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastTextWrapKeyboardStep2 = {
+  ...twinStep(
+    columnsTextWrapStories,
+    columnsTextWrapStories.TextWrapKeyboard,
+    2,
+  ),
+  name: 'Columns/Text wrap — Keyboard and scroll to a record, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastTextWrapKeyboardStep3 = {
+  ...twinStep(
+    columnsTextWrapStories,
+    columnsTextWrapStories.TextWrapKeyboard,
+    3,
+  ),
+  name: 'Columns/Text wrap — Keyboard and scroll to a record, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastTextWrapServerStep1 = {
+  ...twinStep(columnsTextWrapStories, columnsTextWrapStories.TextWrapServer, 1),
+  name: 'Columns/Text wrap — Server rows, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastTextWrapServerStep2 = {
+  ...twinStep(columnsTextWrapStories, columnsTextWrapStories.TextWrapServer, 2),
+  name: 'Columns/Text wrap — Server rows, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastTextWrapMotionStep1 = {
+  ...twinStep(columnsTextWrapStories, columnsTextWrapStories.TextWrapMotion, 1),
+  name: 'Columns/Text wrap — Sort rows of different heights, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastTextWrapMotionStep2 = {
+  ...twinStep(columnsTextWrapStories, columnsTextWrapStories.TextWrapMotion, 2),
+  name: 'Columns/Text wrap — Sort rows of different heights, шаг 2',
   tags: ['!test'],
 }

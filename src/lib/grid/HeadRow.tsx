@@ -1,7 +1,7 @@
 // HeadRow: строка заголовка (заголовки группы → HeadCell). Перетаскивание колонок
 // приносят обёртка серии соседей и декоратор ячейки плагина (ADR 0168, §2).
 import type { VirtualItem } from '../../vendor/tanstack-virtual/react-virtual'
-import { Fragment } from 'react'
+import { type CSSProperties, Fragment } from 'react'
 
 import clsx from 'clsx'
 
@@ -13,6 +13,7 @@ import { useDecorators, wrapWith, wrappersOf } from './pluginWrappers'
 import { isCoveredHeader } from '../core/headerSpans'
 import { siblingKeyOf } from '../core/columnNodes'
 import { getHeaderPinning } from './headCellParams'
+import { headLevelVar, useHeadColumns } from '../core/headSizes'
 
 import styles from '../grid/HeadRow/HeadRow.module.css'
 
@@ -59,6 +60,8 @@ export const HeadRow = ({
   const table = headers[0]?.getContext().table
   const wrappers = wrappersOf(table)
   const decorated = useDecorators(wrappers.headCellDecorator, HeadCell, 'Cell')
+  // Заголовки, которые рисуются и вне окна колонок: высота шапки по ним (ADR 0218, §10).
+  const headColumns = useHeadColumns(table)
 
   const cell = (header: (typeof headers)[number], absoluteLeft?: number) => {
     const props = {
@@ -92,8 +95,11 @@ export const HeadRow = ({
     if (pinned === 'start') startHeaders.push(header)
     else if (pinned === 'end') endHeaders.push(header)
     else {
+      const held =
+        headColumns.size > 0 &&
+        header.getLeafHeaders().some(leaf => headColumns.has(leaf.column.id))
       for (let index = from; index < at; index++) {
-        if (inWindow.has(index)) {
+        if (held || inWindow.has(index)) {
           centerHeaders.push({ header, start: columnStarts[from] ?? 0 })
           break
         }
@@ -134,6 +140,12 @@ export const HeadRow = ({
       role="row"
       aria-rowindex={headerGroup.depth + 1}
       data-last-head-row={lastGroup || undefined}
+      // Высота строки — высота своего уровня шапки (ADR 0218, §10).
+      style={
+        {
+          '--tsr-comp-row-height': headLevelVar(headerGroup.depth),
+        } as CSSProperties
+      }
     >
       <VirtualCenterSpacer />
       {/* Один массив с ключами: при закреплении заголовок переезжает, а не монтируется заново. */}

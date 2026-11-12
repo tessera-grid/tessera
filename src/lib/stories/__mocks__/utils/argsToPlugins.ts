@@ -35,6 +35,7 @@ import {
   rowSelectionModel,
   rowExpandingModel,
   treeLines,
+  textWrap,
 } from '../../../../lib/plugins'
 
 import { rangeHandleArg } from './dataGridControls'
@@ -62,6 +63,7 @@ const FACTORIES = {
   rowExpanding,
   rowExpandingModel,
   treeLines,
+  textWrap,
   rowDragging,
   columnPinning,
   columnSizing,
@@ -212,6 +214,7 @@ export const argsToPlugins = (o: FeatureToggles) => {
     rowExpanding(argsOf(o, 'rowExpanding')),
     rowExpandingModel(argsOf(o, 'rowExpandingModel')),
     treeLines(argsOf(o, 'treeLines')),
+    textWrap(argsOf(o, 'textWrap')),
     rowDragging(argsOf(o, 'rowDragging')),
     columnPinning(argsOf(o, 'columnPinning')),
     columnSizing(argsOf(o, 'columnSizing')),

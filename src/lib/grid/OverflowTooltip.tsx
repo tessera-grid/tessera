@@ -11,9 +11,14 @@ const INTERACTIVE =
 const OPEN_DELAY = 200
 const CLOSE_DELAY = 150
 
-/** Текст не помещается в свой контейнер и обрезан многоточием. */
+/**
+ * Текст не помещается в свой контейнер и обрезан многоточием; перенесённый текст — по высоте:
+ * строки сверх видимых (ADR 0218, AH2).
+ */
 const isTruncated = (element: HTMLElement) =>
-  element.scrollWidth > element.clientWidth
+  element.scrollWidth > element.clientWidth ||
+  (!!element.closest('[data-text-wrap]') &&
+    element.scrollHeight > element.clientHeight + 1)
 
 const titleUnder = (target: EventTarget | null): HTMLElement | null => {
   if (!(target instanceof Element) || target.closest(INTERACTIVE)) {

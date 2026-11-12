@@ -100,7 +100,7 @@ index e4082c0..0a51ede 100644
      return instance._didMount()
    }, [])
 diff --git a/virtual-core/index.ts b/virtual-core/index.ts
-index 83386f3..5e8a3e8 100644
+index 83386f3..61b1751 100644
 --- a/virtual-core/index.ts
 +++ b/virtual-core/index.ts
 @@ -66,6 +66,13 @@ export interface VirtualItem {
@@ -117,7 +117,20 @@ index 83386f3..5e8a3e8 100644
  export interface Rect {
    width: number
    height: number
-@@ -375,6 +382,10 @@ export interface VirtualizerOptions<
+@@ -362,6 +369,12 @@ export interface VirtualizerOptions<
+     instance: Virtualizer<TScrollElement, TItemElement>,
+     sync: boolean,
+   ) => void
++  // Tessera (ADR 0218): the same predicate as the instance field, as an option.
++  shouldAdjustScrollPositionOnItemSizeChange?: (
++    item: VirtualItem,
++    delta: number,
++    instance: Virtualizer<TScrollElement, TItemElement>,
++  ) => boolean
+   measureElement?: (
+     element: TItemElement,
+     entry: ResizeObserverEntry | undefined,
+@@ -375,6 +388,10 @@ export interface VirtualizerOptions<
    scrollPaddingEnd?: number
    initialOffset?: number | (() => number)
    getItemKey?: (index: number) => Key
@@ -128,7 +141,7 @@ index 83386f3..5e8a3e8 100644
    rangeExtractor?: (range: Range) => Array<number>
    scrollMargin?: number
    gap?: number
-@@ -484,9 +495,19 @@ export class Virtualizer<
+@@ -484,9 +501,24 @@ export class Virtualizer<
    private _singleLaneMeasurements: {
      flat: Float64Array
      items: Array<Key | VirtualItem>
@@ -138,7 +151,12 @@ index 83386f3..5e8a3e8 100644
 +    gap: number
 +    estimateSize: (index: number) => number
 +    itemSizeCacheVersion: number
++    // Tessera (ADR 0218): the measurement options of this build — same keys.
++    options: unknown
    } | null = null
++  // Tessera (ADR 0218): indexes resized since the last build; `false` once
++  // anything else invalidated it.
++  private _resized: Set<number> | false | null = null
    itemSizeCache = new Map<Key, number>()
    private itemSizeCacheVersion = 0
 +  // Tessera (ADR 0145): a wrong first-changed hint is reported once.
@@ -148,7 +166,15 @@ index 83386f3..5e8a3e8 100644
    private laneAssignments = new Map<number, number>() // index → lane cache
    // Earliest index dirtied since last getMeasurements() rebuild, or null.
    private pendingMin: number | null = null
-@@ -1597,6 +1618,57 @@ export class Virtualizer<
+@@ -844,6 +876,7 @@ export class Virtualizer<
+     // memoised cache. Without this, a stable `getItemKey` reference +
+     // unchanged `count` would let getMeasurements() return the old layout.
+     if (edgeKeysChanged) {
++      this._resized = false
+       this.pendingMin = 0
+       this.itemSizeCacheVersion++
+     }
+@@ -1597,10 +1630,61 @@ export class Virtualizer<
    private isIndexInRange = (index: number): boolean =>
      index >= 0 && index < this.options.count
  
@@ -205,8 +231,28 @@ index 83386f3..5e8a3e8 100644
 +
    private getMeasurements = memo(
      () => [this.getMeasurementOptions(), this.itemSizeCacheVersion],
-     (
-@@ -1651,8 +1723,64 @@ export class Virtualizer<
+-    (
+-      {
++    (measurementOptions, _itemSizeCacheVersion) => {
++      const {
+         count,
+         paddingStart,
+         scrollMargin,
+@@ -1609,10 +1693,10 @@ export class Virtualizer<
+         lanes,
+         laneAssignmentMode,
+         gap,
+-      },
+-      _itemSizeCacheVersion,
+-    ) => {
++      } = measurementOptions
+       const itemSizeCache = this.itemSizeCache
++      const resized = this._resized
++      this._resized = null
+       if (!enabled) {
+         this.measurementsCache = []
+         this._singleLaneMeasurements = null
+@@ -1651,8 +1735,64 @@ export class Virtualizer<
          })
        }
  
@@ -272,7 +318,56 @@ index 83386f3..5e8a3e8 100644
        this.pendingMin = null
  
        // ✅ End settling period when cache is fully built
-@@ -1665,6 +1793,57 @@ export class Virtualizer<
+@@ -1660,11 +1800,107 @@ export class Virtualizer<
+         this.lanesSettling = false
+       }
+ 
++      // Tessera (ADR 0218): only `resizeItem` changed sizes since the previous
++      // build, with the same options — the same keys and estimates. Items after
++      // `min` keep their size unless resized and shift by the size changes,
++      // without reading keys or estimates again.
++      const sizeOnly = this._singleLaneMeasurements
++      if (
++        lanes === 1 &&
++        resized instanceof Set &&
++        !this.lanesSettling &&
++        sizeOnly !== null &&
++        sizeOnly.options === measurementOptions &&
++        sizeOnly.estimateSize === this.options.estimateSize &&
++        sizeOnly.items.length === count &&
++        sizeOnly.flat.length >= count * 2 &&
++        (hint === undefined || hint >= count)
++      ) {
++        const flat = sizeOnly.flat
++        const items = sizeOnly.items.slice()
++        let runningStart =
++          min === 0
++            ? paddingStart + scrollMargin
++            : flat[(min - 1) * 2]! + flat[(min - 1) * 2 + 1]! + gap
++        for (let i = min; i < count; i++) {
++          const item = items[i]!
++          let size = flat[i * 2 + 1]!
++          if (typeof item === 'object') items[i] = item.key
++          if (resized.has(i)) {
++            const measured = itemSizeCache.get(getMeasurementKey(item))
++            if (typeof measured === 'number') size = measured
++          }
++          flat[i * 2] = runningStart
++          flat[i * 2 + 1] = size
++          runningStart += size + gap
++        }
++        this._singleLaneMeasurements = {
++          ...sizeOnly,
++          items,
++          itemSizeCacheVersion: _itemSizeCacheVersion,
++        }
++        const view = createLazyMeasurementsView(items, flat)
++        this.measurementsCache = view
++        return view
++      }
++
+       // ─── Fast path: single-lane lazy materialization ────────────────────
+       // For lanes === 1 (the default and most common case), skip the
        // per-item VirtualItem object allocation. We write start/size pairs
        // into a Float64Array and return a Proxy that builds VirtualItem
        // objects on demand (only the indices a consumer actually reads).
@@ -321,6 +416,7 @@ index 83386f3..5e8a3e8 100644
 +          gap,
 +          estimateSize: this.options.estimateSize,
 +          itemSizeCacheVersion: _itemSizeCacheVersion,
++          options: measurementOptions,
 +        }
 +        const view = createLazyMeasurementsView(items, flat)
 +        this.measurementsCache = view
@@ -330,7 +426,7 @@ index 83386f3..5e8a3e8 100644
        if (lanes === 1) {
          // Reuse flat backing if large enough; else grow (preserving data
          // before `min` to mirror the slice-and-rebuild contract).
-@@ -1679,7 +1858,9 @@ export class Virtualizer<
+@@ -1679,7 +1915,9 @@ export class Virtualizer<
          const items: Array<Key | VirtualItem> =
            min === 0
              ? new Array(count)
@@ -341,7 +437,7 @@ index 83386f3..5e8a3e8 100644
  
          let runningStart: number
          if (min === 0) {
-@@ -1703,7 +1884,15 @@ export class Virtualizer<
+@@ -1703,7 +1941,16 @@ export class Virtualizer<
            runningStart += size + gap
          }
  
@@ -354,7 +450,69 @@ index 83386f3..5e8a3e8 100644
 +          gap,
 +          estimateSize: this.options.estimateSize,
 +          itemSizeCacheVersion: _itemSizeCacheVersion,
++          options: measurementOptions,
 +        }
          const view = createLazyMeasurementsView(items, flat)
          this.measurementsCache = view
          return view
+@@ -1973,6 +2220,24 @@ export class Virtualizer<
+     }
+   }
+ 
++  // Tessera (ADR 0218): several sizes at once — measured as one batch, like the
++  // entries of a ResizeObserver callback, with one notify.
++  resizeItems = (sizes: Iterable<readonly [index: number, size: number]>) => {
++    const batch: { sync: boolean; notify?: boolean } = { sync: false }
++    this._resizeBatch = batch
++    try {
++      for (const [index, size] of sizes) this.resizeItem(index, size)
++    } finally {
++      this._resizeBatch = null
++      if (batch.notify) {
++        this.notify(batch.sync)
++        this._noteClampMax()
++        this._flushHoldIfReady(true)
++        this._retryClampedAdjustment()
++      }
++    }
++  }
++
+   resizeItem = (index: number, size: number) => {
+     if (!this.isIndexInRange(index)) return
+ 
+@@ -2030,10 +2295,13 @@ export class Virtualizer<
+           // scrolling up" cascade.
+           itemStart + itemSize <= scrollOffset &&
+           this.scrollDirection !== 'backward'
++      const shouldAdjustOnSizeChange =
++        this.shouldAdjustScrollPositionOnItemSizeChange ??
++        this.options.shouldAdjustScrollPositionOnItemSizeChange
+       const shouldAdjustScroll =
+         !isSmoothScroll(this.scrollState) &&
+-        (this.shouldAdjustScrollPositionOnItemSizeChange !== undefined
+-          ? this.shouldAdjustScrollPositionOnItemSizeChange(
++        (shouldAdjustOnSizeChange !== undefined
++          ? shouldAdjustOnSizeChange(
+               // The callback expects a VirtualItem; build one lazily only
+               // when the consumer actually supplied a custom predicate.
+               this.measurementsCache[index] ?? {
+@@ -2052,6 +2320,11 @@ export class Virtualizer<
+       if (this.pendingMin === null || index < this.pendingMin) {
+         this.pendingMin = index
+       }
++      if (this._resized !== false) {
++        const resized = this._resized ?? new Set<number>()
++        resized.add(index)
++        this._resized = resized
++      }
+       this.itemSizeCache.set(key, size)
+       this.itemSizeCacheVersion++
+ 
+@@ -2674,6 +2947,7 @@ export class Virtualizer<
+     // Without this, a prior resizeItem() that left pendingMin > 0 would
+     // cause the rebuild to preserve stale items before that index.
+     this.pendingMin = null
++    this._resized = false
+     this.itemSizeCache.clear()
+     this.laneAssignments.clear() // Clear lane cache for full re-layout
+     this.itemSizeCacheVersion++

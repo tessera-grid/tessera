@@ -17,6 +17,7 @@ import { resolveActive, type NavTable } from '../core/keyboardNavigation/model'
 import { useLocalization } from '../core/localization'
 import type { PendingRowDragBinding } from '../core/pluginWrappers'
 import { useTableState } from '../core/reactivity'
+import { hasRowSizes } from '../core/rowSizes'
 import type { Column, Table } from '../types'
 import type { WindowRow } from '../core/bodyContributions'
 import type { SkeletonTreeRow } from '../core/skeletonOptions'
@@ -173,7 +174,7 @@ export const PendingRow = ({
       aria-setsize={tree?.setSize}
       aria-busy="true"
       className={styles.pending}
-      style={{ top: virtualRow.start }}
+      style={placeStyle(table, virtualRow)}
       data-index={virtualRow.index}
       data-pending-row=""
     >
@@ -197,6 +198,18 @@ export const PendingRow = ({
 }
 
 /**
+ * Место незагруженной строки: при строках разной высоты — высотой своего места у
+ * виртуализатора, то есть оценки (ADR 0218, §6).
+ */
+const placeStyle = (table: unknown, virtualRow: VirtualItem): CSSProperties =>
+  hasRowSizes(table)
+    ? ({
+        top: virtualRow.start,
+        '--tsr-comp-row-height': `${virtualRow.size}px`,
+      } as CSSProperties)
+    : { top: virtualRow.start }
+
+/**
  * Строка отказавшего блока (ADR 0138, §11): пустая рамка строки под строкой ошибки —
  * без полосок скелета, скрыта от вспомогательных технологий.
  */
@@ -208,7 +221,7 @@ export const FailedRow = ({
 }: Omit<PendingRowProps, 'ariaRowIndexBase'>) => (
   <div
     className={styles.pending}
-    style={{ top: virtualRow.start }}
+    style={placeStyle(table, virtualRow)}
     data-index={virtualRow.index}
     data-failed-row=""
   >

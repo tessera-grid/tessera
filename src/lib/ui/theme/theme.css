@@ -405,6 +405,8 @@
   --tsr-comp-body-cell-outline-color: var(--tsr-sys-accent);
   --tsr-comp-cell-content-padding-x: var(--tsr-ref-space-3);
   --tsr-comp-cell-content-padding: 0px var(--tsr-comp-cell-content-padding-x);
+  /* Отступ по высоте у перенесённого текста ячейки (ADR 0218, §1). */
+  --tsr-comp-cell-wrap-padding-y: 8px;
   /* Отступ слева от раскрытой ручки колонки — она заходит в отступ содержимого (ADR 0114). */
   --tsr-comp-drag-handle-inset: var(--tsr-ref-space-1);
   --tsr-comp-cell-content-gap: var(--tsr-ref-space-1);

@@ -423,3 +423,32 @@ export const highlightSeed = (rows: number): TesseraFeatureEntry => ({
     t.highlight({ column: t.getAllLeafColumns()[2]!.id }, { tone: 'success' })
   },
 })
+
+// Перенос текста и высота строк по содержимому (ADR 0218, AH32–AH33): 100 000 строк с
+// заметками разной длины; колонка заметок `autoHeight`.
+const WRAP_NOTES = [
+  'Call back on Monday.',
+  'Asked for a discount on the annual plan and a demo for the new team.',
+  'Renewal is due next month. The client wants the same price, more seats and a named contact for support questions.',
+  'Sent the contract.',
+  'Long thread about the integration: the client uses an old version of the API and needs help with the migration.',
+]
+export const WRAP_ROWS = Array.from({ length: 100_000 }, (_, i) => ({
+  id: String(i),
+  name: `Client ${i + 1}`,
+  note: WRAP_NOTES[(i * 7) % WRAP_NOTES.length]!,
+  city: `City ${i % 50}`,
+}))
+export const WRAP_COLUMNS = [
+  { id: 'name', accessorKey: 'name', header: 'Client', size: 160 },
+  {
+    id: 'note',
+    accessorKey: 'note',
+    header: 'Note',
+    size: 260,
+    autoHeight: true,
+  },
+  { id: 'city', accessorKey: 'city', header: 'City', size: 140 },
+]
+/** Цена высоты строк по содержимому против той же выборки без плагина (ADR 0218). */
+export const WRAP_COST = { ratio: 1.3, plusMs: 4 }

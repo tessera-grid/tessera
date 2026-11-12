@@ -21,6 +21,15 @@ Tessera ([ADR 0143](../../../docs/decisions/0143-tanstack-virtual-fork.md)). Э�
   `keptRunsOf`, [ADR 0210](../../../docs/decisions/0210-positions-by-shift.md)): на отрезках прежних
   элементов ключ и размер берутся из прежней сборки, начало — нарастающим итогом; в разработке
   каждый перенесённый ключ и размер сверяется с пересчётом, неверный отрезок — одно предупреждение.
+- **Пересборка после замеров** (`virtual-core/index.ts`, `getMeasurements` и `resizeItem`,
+  [ADR 0218](../../../docs/decisions/0218-text-wrap-and-auto-height.md)): если с прошлой сборки при
+  тех же опциях менялись только размеры от `resizeItem`, места пересобираются без ключей и оценок —
+  размер прежний, кроме изменённых, начало нарастающим итогом.
+- **Пачка размеров** (`virtual-core/index.ts`, `resizeItems`, ADR 0218): размеры нескольких
+  элементов одной пачкой, как записи колбэка ResizeObserver, с одним уведомлением.
+- **Поправка прокрутки опцией** (`virtual-core/index.ts`, опция
+  `shouldAdjustScrollPositionOnItemSizeChange`, ADR 0218): тот же предикат, что поле экземпляра;
+  поле главнее.
 - **Импорт ядра** (`react-virtual/index.tsx`): `../virtual-core` вместо `@tanstack/virtual-core`.
 - **Синхронность по уведомлению** (`react-virtual/index.tsx`, опция `useFlushSync`,
   [ADR 0202](../../../docs/decisions/0202-window-band.md)): булево или функция от

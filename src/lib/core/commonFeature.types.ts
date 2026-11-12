@@ -184,6 +184,11 @@ export interface CommonOptions extends CoreOptions {
   cellValueOverride?: (cell: unknown) => { value: unknown } | undefined
   /** `false` — без числа строк в строке группы (ADR 0184, §8). */
   groupRowCount?: boolean
+  /**
+   * Оценка высоты незамеренной строки, px: строки разной высоты по содержимому (ADR 0218, §6).
+   * Ставит плагин `textWrap`; нет — строки одной высоты.
+   */
+  estimatedRowHeight?: number
   /** Итог колонки на клиенте: с ним футер есть без флага (ADR 0184, §4, §7). */
   columnTotalOf?: (table: unknown, columnId: string) => unknown
   hooks?: CommonHooks

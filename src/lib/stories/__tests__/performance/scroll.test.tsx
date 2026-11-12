@@ -41,6 +41,9 @@ import {
   rangeFlashSeed,
   INLINE_HEADER_ACTIONS,
   inlineHeaderActions,
+  WRAP_COLUMNS,
+  WRAP_COST,
+  WRAP_ROWS,
 } from './perf-cases'
 import { makeColumns } from '../../__mocks__/columns'
 import { getData, makeData } from '../../__mocks__/data'
@@ -4183,6 +4186,77 @@ describe('Прилипание закреплённых колонок', () => {
         ours,
         `пересчёт ${ours.toFixed(1)}ms, база ${base.ms.toFixed(1)}ms`,
       ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Высота строк по содержимому (ADR 0218, AH32): спокойная прокрутка 100 000 строк с колонкой
+// `autoHeight` — строки окна меряются по ходу — против той же выборки без плагина.
+describe('Производительность прокрутки — высота строк по содержимому', () => {
+  test(
+    'AH32: прокрутка 100 000 строк с колонкой autoHeight — p95 не дороже базы без плагина больше чем на 30 % (или 4 мс)',
+    async () => {
+      const measure = async (wrap: boolean) => {
+        const screen = renderGrid({
+          ...NO_PLUGINS,
+          dataOverride: WRAP_ROWS,
+          columnsOverride: WRAP_COLUMNS as never,
+          enableTextWrap: wrap,
+        })
+        await waitForGrid()
+        await expect
+          .poll(() => !!document.querySelector('[data-text-wrap="auto"]'))
+          .toBe(wrap)
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        ;(await screen).unmount()
+        return { y }
+      }
+      const runs = await againstBase(measure)
+      const base = {
+        y: medianRun(
+          runs.base.map(r => r.y),
+          r => r.p95Ms,
+        ),
+      }
+      const wrap = {
+        y: medianRun(
+          runs.variant.map(r => r.y),
+          r => r.p95Ms,
+        ),
+      }
+      const ceiling = { y: ceilingOver(base.y.p95Ms, WRAP_COST) }
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '3×100 000',
+          plugins: 'textWrap',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              axis: 'y' as const,
+              kind: 'animation' as const,
+              metric: 'p95' as const,
+              valueMs: r.y.p95Ms,
+              targetMs: ANIMATION_BUDGET_MS,
+              ceilingMs: gated ? ceiling.y : undefined,
+              ...r.y,
+            },
+          ],
+        })
+      await record('AH32-base', 'строки одной высоты', base, false)
+      await record('AH32', 'высота строк по содержимому', wrap, true)
+      expect(
+        wrap.y.p95Ms,
+        `y p95=${wrap.y.p95Ms.toFixed(1)}ms (база ${base.y.p95Ms.toFixed(1)}ms, потолок ${ceiling.y.toFixed(1)})`,
+      ).toBeLessThanOrEqual(ceiling.y)
     },
     PERF_TIMEOUT * 2,
   )

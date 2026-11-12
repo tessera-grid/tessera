@@ -107,6 +107,18 @@ export type CellContribution<TSelected = any> = TargetContribution<
    */
   layer?: (context: CellLayerContext) => CellLayer | null
 }
+/** Ячейка заголовка, в которой вклад рисует слой (ADR 0218, §10). */
+export interface HeadCellContext {
+  table: Table<any, any>
+  columnId: string
+}
+
+/** Вклад в ячейку заголовка: атрибуты, переменные стиля и слой перед содержимым. */
+export interface HeadCellContribution {
+  id: string
+  render: (context: HeadCellContext) => (CellLayer & ContributionOutput) | null
+}
+
 export type RowContribution<TSelected = any> = TargetContribution<
   RowContributionContext,
   TSelected
@@ -223,6 +235,8 @@ export interface WindowContribution<TData = any> {
 /** Вклад записи плагина в тело грида. */
 export interface BodyContributions {
   cell?: CellContribution
+  /** Ячейка заголовка — только у встроенных плагинов. */
+  head?: HeadCellContribution
   row?: RowContribution
   root?: RootContribution
   keys?: NavigationKeys
@@ -231,6 +245,7 @@ export interface BodyContributions {
 
 export interface FoldedBody {
   cell: CellContribution[]
+  head: HeadCellContribution[]
   row: RowContribution[]
   root: RootContribution[]
   keys: NavigationKeys[]
@@ -239,6 +254,7 @@ export interface FoldedBody {
 
 export const createEmptyBody = (): FoldedBody => ({
   cell: [],
+  head: [],
   row: [],
   root: [],
   keys: [],
@@ -535,6 +551,23 @@ export const cellLayersOf = (context: CellLayerContext) => {
     Object.assign(attrs, layer.attrs)
   }
   return { nodes, attrs }
+}
+
+/** Вклады в ячейку заголовка: узлы перед содержимым, атрибуты и переменные стиля. */
+export const headLayersOf = (context: HeadCellContext) => {
+  const nodes: ReactNode[] = []
+  const attrs: NonNullable<ContributionOutput['attrs']> = {}
+  const style: NonNullable<ContributionOutput['style']> = {}
+  for (const item of bodyOf(context.table).head) {
+    const layer = item.render(context)
+    if (!layer) continue
+    if (layer.node != null) {
+      nodes.push(createElement(Fragment, { key: item.id }, layer.node))
+    }
+    Object.assign(attrs, layer.attrs)
+    Object.assign(style, layer.style)
+  }
+  return { nodes, attrs, style }
 }
 
 export interface WindowData {

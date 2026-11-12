@@ -5,9 +5,11 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react'
+import { flushSync } from 'react-dom'
 
 import {
   type VirtualItem,
+  type Virtualizer,
   useVirtualizer,
 } from '../../../vendor/tanstack-virtual/react-virtual'
 
@@ -25,8 +27,16 @@ import { scrollLayer } from '../scrollStretch'
 import { firstChangedIndex, type RowBuild, rowBuildOf } from '../rowChanges'
 import { followIndex } from '../rowListFollow'
 import { scrollGridTo } from '../scrollGridTo'
+import {
+  estimatedRowHeightOf,
+  rowNeedsOf,
+  rowSizeOf,
+  subscribeRowSizes,
+} from '../rowSizes'
 
 const ROWS_OVERSCAN = 5
+/** Строк по обе стороны окна, чьи высоты объявляются заново после сброса замеров. */
+const ANNOUNCE_SPAN = 200
 /** Строка растянутой области на экране — по объекту строки виртуализатора. */
 const shifted = new WeakMap<VirtualItem, VirtualItem>()
 /** Строка дальше стольких экранов от видимой области стоит на этом расстоянии. */
@@ -60,8 +70,6 @@ export const useRowVirtualizer = ({
     return index === -1 ? undefined : index
   }, [rows, rowDraggingActiveId])
 
-  const getEstimateSize = useCallback(() => rowHeight, [rowHeight])
-
   // Серверная модель строк — по индексу (ADR 0138, §14); незагруженная строка — тоже.
   // Виртуализатор сверяет ключи начала списка на каждой смене строк (ADR 0143): массив
   // строк — один раз, а не модель на каждый индекс.
@@ -73,6 +81,21 @@ export const useRowVirtualizer = ({
       ? (index: number) => list[index]?.id ?? index
       : (index: number) => rows.at(index)?.id ?? index
   }, [rows, list])
+
+  // Размер строки — по высоте её содержимого (ADR 0218, §4). Источник строк читает текущую
+  // модель, функция оценки постоянна: её смена пересчитывала бы все места (ADR 0143, §3).
+  const [needs] = useState(() => rowNeedsOf(table))
+  const estimate = estimatedRowHeightOf(table)
+  // Ключ строки — индекс (ADR 0138, §14): высота строки — только через `resizeItem`, кэш
+  // виртуализатора по индексу переживает уход блока. Оценка по id применяла бы высоту
+  // перезагруженной строки молча, без поправки прокрутки.
+  const getEstimateSize = useCallback(
+    (index: number) =>
+      (needs.size === 0 && estimate === undefined) || rows.keyByIndex
+        ? (estimate ?? rowHeight)
+        : rowSizeOf(needs, rows.at(index)?.id, rowHeight, estimate),
+    [needs, rows, rowHeight, estimate],
+  )
 
   // Место первого изменения строк с прошлой сборки позиций (ADR 0145): виртуализатор
   // спрашивает его на каждой сборке.
@@ -120,6 +143,23 @@ export const useRowVirtualizer = ({
     heldRowIndex,
   })
 
+  // Строки разной высоты (ADR 0218, §6): поправка прокрутки — только за строку целиком выше
+  // экрана; строка у верхнего края стоит на месте, растёт вниз. Иначе — правило виртуализатора.
+  const shouldAdjustOnSizeChange = useCallback(
+    (
+      item: VirtualItem,
+      _delta: number,
+      v: Virtualizer<HTMLDivElement, HTMLDivElement>,
+    ) => {
+      const top = v.scrollOffset ?? 0
+      if (needs.size > 0 || estimate !== undefined) return item.end <= top
+      return v.itemSizeCache.has(item.key)
+        ? item.end <= top && v.scrollDirection !== 'backward'
+        : item.start < top
+    },
+    [needs, estimate],
+  )
+
   const latestTable = useLatest(table)
   const [windowFlush] = useState(() =>
     createWindowFlush(() => isIncremental(latestTable.current)),
@@ -131,6 +171,7 @@ export const useRowVirtualizer = ({
     measureElement: rowMeasureElement,
     getItemKey,
     getFirstChangedIndex,
+    shouldAdjustScrollPositionOnItemSizeChange: shouldAdjustOnSizeChange,
     overscan: ROWS_OVERSCAN,
     rangeExtractor,
     // Синхронно в событии — только непокрытый край (ADR 0202, §2).
@@ -142,12 +183,57 @@ export const useRowVirtualizer = ({
         : undefined,
     scrollToFn: (offset, { adjustments = 0, behavior }, instance) => {
       if (!instance.scrollElement) return
+      // Поправка на высоту строк выше экрана не обрывает щелчок колеса (ADR 0218, AH15).
+      if (adjustments && !behavior) {
+        scrollLayer(instance.scrollElement).adjustTo(offset + adjustments)
+        return
+      }
       scrollLayer(instance.scrollElement).scrollTo(
         { top: offset + adjustments },
         behavior === 'smooth' ? 'smooth' : 'instant',
       )
     },
   })
+
+  // Первая строка экрана до смены списка (ADR 0218, §7): при строках разной высоты место
+  // строки — не индекс × высота. Пишется на прокрутке и после каждого коммита.
+  const anchorSeen = useRef<{ index: number; start: number } | undefined>(
+    undefined,
+  )
+  const variable = () => needs.size > 0 || estimate !== undefined
+  const anchorAt = (top: number) => {
+    if (!variable()) return undefined
+    const item = virtualizer.getVirtualItemForOffset(top)
+    return item && { index: item.index, start: item.start }
+  }
+  /** Индекс первой строки экрана и смещение прокрутки от её начала. */
+  const anchorOf = (top: number) => {
+    const seen = anchorSeen.current
+    const index = seen?.index ?? Math.floor(top / rowHeight)
+    return { index, offset: top - (seen?.start ?? index * rowHeight) }
+  }
+  const startOf = (index: number) => {
+    if (!variable()) return index * rowHeight
+    // `getTotalSize` пересобирает места после `resizeItem` и `measure()`.
+    virtualizer.getTotalSize()
+    return virtualizer.measurementsCache[index]?.start ?? index * rowHeight
+  }
+
+  /** Высоты строк у окна — виртуализатору заново, после сброса его замеров. */
+  const announceNear = () => {
+    const { startIndex = 0, endIndex = -1 } = virtualizer.range ?? {}
+    const count = rows.count()
+    const last = Math.min(count - 1, endIndex + ANNOUNCE_SPAN)
+    for (
+      let index = Math.max(0, startIndex - ANNOUNCE_SPAN);
+      index <= last;
+      index++
+    ) {
+      const id = rows.at(index)?.id
+      if (id === undefined || !needs.has(id)) continue
+      virtualizer.resizeItem(index, rowSizeOf(needs, id, rowHeight, estimate))
+    }
+  }
 
   // Строки выше экрана вставлены или удалены — прокрутка держит первую строку экрана
   // (ADR 0157, §3); у начала списка, как якорь прокрутки браузера, не держит.
@@ -163,16 +249,29 @@ export const useRowVirtualizer = ({
     const epoch = rows.epoch?.() ?? 0
     const before = listSeen.current
     listSeen.current = { epoch, version }
+    // Ключ строки — индекс: после вставок и удалений замеры по индексам — чужих строк. Сброс, и
+    // строки у окна объявляют свои высоты заново (ADR 0218, §6).
+    if (
+      before &&
+      before.version !== version &&
+      rows.keyByIndex &&
+      needs.size > 0 &&
+      (before.epoch !== epoch ||
+        rows.changesSince?.(before.version)?.some(batch => batch.length > 0))
+    ) {
+      virtualizer.measure()
+      queueMicrotask(() => flushSync(() => announceNear()))
+    }
     if (!before || before.epoch !== epoch || before.version === version) return
     const scroller = getScrollElement()
     const batches = rows.changesSince?.(before.version)
     if (!scroller || !batches) return
     const top = scrollLayer(scroller).top()
     if (top <= 0) return
-    const anchor = Math.floor(top / rowHeight)
-    const moved = followIndex(anchor, batches) - anchor
-    if (moved)
-      scrollGridTo(scroller, { top: top + moved * rowHeight }, 'instant')
+    const anchor = anchorOf(top)
+    const next = followIndex(anchor.index, batches)
+    if (next !== anchor.index)
+      scrollGridTo(scroller, { top: startOf(next) + anchor.offset }, 'instant')
   })
 
   // Клиент: новый `data` — прокрутка держит первую строку экрана, что осталась в списке
@@ -193,16 +292,56 @@ export const useRowVirtualizer = ({
     if (!scroller) return
     const top = scrollLayer(scroller).top()
     if (top <= 0) return
-    const anchor = Math.floor(top / rowHeight)
-    for (let k = anchor; k < before.list.length; k++) {
+    const anchor = anchorOf(top)
+    for (let k = anchor.index; k < before.list.length; k++) {
       const at = rows.indexOf(before.list[k]!.id)
       if (at < 0) continue
       if (at !== k) {
-        scrollGridTo(scroller, { top: top + (at - k) * rowHeight }, 'instant')
+        // При строках разной высоты: строка экрана ушла — следующая оставшаяся встаёт верхом.
+        const next = variable()
+          ? startOf(at) + (k === anchor.index ? anchor.offset : 0)
+          : top + (at - k) * rowHeight
+        scrollGridTo(scroller, { top: next }, 'instant')
       }
       return
     }
   })
+
+  useIsomorphicLayoutEffect(() => {
+    const scroller = getScrollElement()
+    if (!scroller) return
+    return scrollLayer(scroller).subscribe(top => {
+      anchorSeen.current = anchorAt(top)
+    })
+  })
+  useIsomorphicLayoutEffect(() => {
+    const scroller = getScrollElement()
+    anchorSeen.current = scroller
+      ? anchorAt(scrollLayer(scroller).top())
+      : undefined
+  })
+
+  // Высоты содержимого строк (ADR 0218, §4): замер зовёт микрозадачей после коммита или
+  // синхронно из своего наблюдателя — новая высота строки и места строк ниже в одной отрисовке
+  // (AH17). `resizeItem` поправляет прокрутку на строки выше экрана (AH11).
+  useIsomorphicLayoutEffect(
+    () =>
+      subscribeRowSizes(table, changed => {
+        if (!changed) {
+          virtualizer.measure()
+          return
+        }
+        const sizes: [number, number][] = []
+        for (const id of changed) {
+          const index = rows.indexOf(id)
+          if (index >= 0)
+            sizes.push([index, rowSizeOf(needs, id, rowHeight, estimate)])
+        }
+        // Одной пачкой: одно оповещение и одна пересборка мест.
+        virtualizer.resizeItems(sizes)
+      }),
+    [table, virtualizer, rows, needs, rowHeight, estimate],
+  )
 
   // Новая высота: замеры строк прежней высоты больше не верны.
   const measuredHeight = useRef(rowHeight)

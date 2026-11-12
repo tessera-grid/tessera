@@ -21,6 +21,10 @@ export const COLUMN_DEF_FIELDS: Record<string, string> = {
   options: '0048',
   parseValue: '0139',
   pinSides: '0165',
+  wrapText: '0218',
+  autoHeight: '0218',
+  wrapHeaderText: '0218',
+  autoHeaderHeight: '0218',
   skeletonCell: '0060',
 }
 
@@ -51,6 +55,7 @@ export const CORE_OPTIONS: Record<string, string> = {
   getRowSource: '0138',
   getTotalRowCount: '0081',
   groupRowCount: '0184',
+  estimatedRowHeight: '0218',
   groupRows: '0170',
   headerHeight: '0077',
   hooks: '0027',

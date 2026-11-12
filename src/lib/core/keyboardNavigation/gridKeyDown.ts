@@ -190,7 +190,14 @@ export const handleGridKeyDown = (
 
   // Клавишу сначала берут плагины (ADR 0170, §4): выделение — Shift со стрелками и
   // листанием, Ctrl+Shift+Home и End, Ctrl+A.
-  const pageRows = getPageRows(getScrollElement())
+  // Листание вверх — PageUp и Alt+↑ (KB13); место на экран — от активной строки (ADR 0218, §7).
+  const pageUp =
+    event.key === 'PageUp' || (event.altKey && event.key === 'ArrowUp')
+  const pageRows = getPageRows(getScrollElement(), {
+    table: t,
+    rowIndex: active.rowIndex,
+    direction: pageUp ? -1 : 1,
+  })
   if (runNavigationKeys(t as never, event, { active, pageRows })) {
     event.preventDefault()
     return

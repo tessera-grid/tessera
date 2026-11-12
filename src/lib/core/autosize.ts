@@ -1,6 +1,7 @@
 /**
- * Автоподбор ширины (ADR 0217, §1): колонки вне окна виртуализации на время замера входят в окно
- * колонок — `useMeasuringColumns` читает экстрактор окна, замер ставит набор плагин `columnSizing`.
+ * Колонки вне окна виртуализации, которые окно колонок держит отрисованными: на время замера
+ * автоподбора ширины (ADR 0217, §1) и всегда — колонки высоты строк по содержимому (ADR 0218,
+ * §4). `useMeasuringColumns` читает экстрактор окна, наборы ставят плагины — каждый свой.
  */
 import { useSyncExternalStore } from 'react'
 
@@ -8,6 +9,8 @@ import { useSyncExternalStore } from 'react'
 const storeOf = (table: unknown) => (table as { store: object }).store
 
 interface Measuring {
+  /** Наборы по владельцам: `autosize`, `textWrap`. */
+  owners: Map<string, ReadonlySet<string>>
   ids: ReadonlySet<string>
   listeners: Set<() => void>
 }
@@ -19,23 +22,35 @@ const measuringOf = (table: unknown) => {
   const store = storeOf(table)
   let entry = measuring.get(store)
   if (!entry) {
-    entry = { ids: EMPTY, listeners: new Set() }
+    entry = { owners: new Map(), ids: EMPTY, listeners: new Set() }
     measuring.set(store, entry)
   }
   return entry
 }
 
-/** Колонки, которые сейчас меряются: окно колонок держит их отрисованными. */
+const sameSet = (a: ReadonlySet<string>, b: ReadonlySet<string>) =>
+  a.size === b.size && [...a].every(id => b.has(id))
+
+/** Колонки владельца, которые окно колонок держит отрисованными; пустой список — снять. */
 export const setMeasuringColumns = (
   table: unknown,
   columnIds: readonly string[],
+  owner = 'autosize',
 ) => {
   const entry = measuringOf(table)
-  entry.ids = columnIds.length ? new Set(columnIds) : EMPTY
+  const next: ReadonlySet<string> = columnIds.length
+    ? new Set(columnIds)
+    : EMPTY
+  if (sameSet(entry.owners.get(owner) ?? EMPTY, next)) return
+  if (next.size) entry.owners.set(owner, next)
+  else entry.owners.delete(owner)
+  const union = new Set<string>()
+  for (const ids of entry.owners.values()) for (const id of ids) union.add(id)
+  entry.ids = union.size ? union : EMPTY
   for (const listener of entry.listeners) listener()
 }
 
-/** Набор измеряемых колонок; меняется — перерисовка подписчика. */
+/** Колонки, которые окно держит отрисованными; меняется — перерисовка подписчика. */
 export const useMeasuringColumns = (table: unknown) => {
   const entry = measuringOf(table)
   return useSyncExternalStore(

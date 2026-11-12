@@ -5,6 +5,9 @@
 - **Изменяет:** [ADR 0003](0003-formalize-tech-stack.md) — TanStack Virtual больше не зависимость
   пакета, а исходники в `src/vendor/tanstack-virtual/`, собранные в `dist`; инвариант
   «компонуйте, не форкайте» (AGENTS.md §6) получает одно описанное исключение.
+- **Изменено:** [ADR 0218](0218-text-wrap-and-auto-height.md) (2026-11-12) — патч добавляет пачку
+  размеров `resizeItems`, пересборку мест после `resizeItem` без ключей и оценок (размеры прежние,
+  кроме изменённых) и опцию `shouldAdjustScrollPositionOnItemSizeChange` вровень с полем экземпляра.
 - **Связано:**
   - [ADR 0081](0081-infinite-scroll.md) — лента, перф IS16.
   - [ADR 0138](0138-server-side-row-model.md) — серверная модель строк, перф SD46.

@@ -217,6 +217,22 @@ class ScrollLayer {
     }
   }
 
+  /**
+   * Поправка места на разницу высот строк выше экрана (ADR 0218, AH15): в растянутой области
+   * идущий щелчок колеса продолжается со сдвигом, а не обрывается.
+   */
+  adjustTo(top: number) {
+    const animation = this.animation
+    if (!this.stretched || !animation) {
+      this.scrollTo({ top })
+      return
+    }
+    const delta = top - this.virtual
+    animation.from += delta
+    animation.to = this.clamp(animation.to + delta)
+    this.write(top)
+  }
+
   scrollTo(target: ScrollTarget, behavior: 'instant' | 'smooth' = 'instant') {
     if (!this.stretched) {
       this.scroller.scrollTo({ ...target, behavior })

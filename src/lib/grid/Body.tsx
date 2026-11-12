@@ -26,6 +26,8 @@ import { useWindowData } from '../core/bodyContributions'
 import { useActiveCellIndex } from '../core/keyboardNavigation'
 import { useRowPortions } from './rowPortions'
 import { isIncremental } from '../core/virtualization/windowPortions'
+import { hasRowSizes } from '../core/rowSizes'
+import { viewportOf } from '../core/scrollToRow/viewport'
 
 import styles from '../grid/Body/Body.module.css'
 
@@ -38,6 +40,8 @@ interface TableBodyProps {
   getRows: () => Row<any, any>[]
   rowSource: RowSource<Row<any, any>>
   virtualRows: VirtualItem[]
+  /** Высота строки, px: липкие копии строк групп — её высоты (ADR 0218, §8). */
+  rowHeight?: number
   /** Видимые строки окна: смена окна целиком рисуется порциями (ADR 0203). */
   visibleRows?: { startIndex: number; endIndex: number } | null
   virtualColumns: VirtualItem[]
@@ -60,11 +64,39 @@ interface TableBodyProps {
 
 const NO_FAILURES: readonly RowFailure[] = []
 
+/**
+ * Место блока, который не загрузился: от отрисованной строки — в растянутой области место не
+ * индекс × высота; при строках разной высоты — по местам строк у виртуализатора (ADR 0218, §6).
+ */
+const failedBlockStyle = (
+  table: Table<any, any>,
+  first: VirtualItem,
+  failure: RowFailure,
+) => {
+  const places = hasRowSizes(table)
+    ? viewportOf(table)?.rows.measurementsCache
+    : undefined
+  const from = places?.[failure.start]
+  const to = places?.[failure.end - 1]
+  const anchor = places?.[first.index]
+  if (from && to && anchor) {
+    return {
+      top: first.start + from.start - anchor.start,
+      height: to.end - from.start,
+    }
+  }
+  return {
+    top: first.start + (failure.start - first.index) * first.size,
+    height: `calc(var(--tsr-comp-row-height) * ${failure.end - failure.start})`,
+  }
+}
+
 export const Body = ({
   table,
   getRows,
   rowSource,
   virtualRows,
+  rowHeight,
   visibleRows,
   virtualColumns,
   leafColumns,
@@ -141,7 +173,7 @@ export const Body = ({
           <StickyRows
             table={table}
             source={rowSource}
-            rowHeight={virtualRows[0]!.size}
+            rowHeight={rowHeight ?? virtualRows[0]!.size}
             renderRow={(entry, { last, pushed }) => (
               <BodyRow
                 key={`sticky-${entry.row.id}`}
@@ -153,8 +185,8 @@ export const Body = ({
                   key: `sticky-${entry.row.id}`,
                   index: entry.index,
                   start: entry.top,
-                  end: entry.top + virtualRows[0]!.size,
-                  size: virtualRows[0]!.size,
+                  end: entry.top + (rowHeight ?? virtualRows[0]!.size),
+                  size: rowHeight ?? virtualRows[0]!.size,
                   lane: 0,
                 }}
                 cells={rowCellsOf(table, entry.row)}
@@ -175,6 +207,11 @@ export const Body = ({
           listVersion={rowSource.version?.()}
           virtualRows={virtualRows}
           bodyRef={bodyRef}
+          placeOf={
+            hasRowSizes(table)
+              ? index => viewportOf(table)?.rows.measurementsCache[index]
+              : undefined
+          }
         >
           {drawnRows.map(virtualRow => {
             // Строка на двух местах сразу — посреди переноса в серверной модели: второе место —
@@ -280,13 +317,7 @@ export const Body = ({
             key={`failed-${failure.start}`}
             role="presentation"
             className={styles.failed}
-            style={{
-              // От отрисованной строки: в растянутой области место — не индекс × высота.
-              top:
-                virtualRows[0].start +
-                (failure.start - virtualRows[0].index) * virtualRows[0].size,
-              height: `calc(var(--tsr-comp-row-height) * ${failure.end - failure.start})`,
-            }}
+            style={failedBlockStyle(table, virtualRows[0]!, failure)}
           >
             <LoadMoreError
               className={styles.failedRow}
@@ -306,8 +337,13 @@ export const Body = ({
 }
 
 // Мемоизация активна только во время ресайза колонок.
+// Строки, выросшие по содержимому посреди протяжки, — перерисовка тела (ADR 0218, AH30);
+// в растянутой области массив строк окна новый на каждый рендер, строки — прежние.
 export const MemoizedBody = memo(
   Body,
-  (_, next) => next.isResizingColumns !== false,
+  (prev, next) =>
+    next.isResizingColumns !== false &&
+    prev.virtualRows.length === next.virtualRows.length &&
+    prev.virtualRows.every((row, index) => row === next.virtualRows[index]),
 )
 MemoizedBody.displayName = 'MemoizedBody'

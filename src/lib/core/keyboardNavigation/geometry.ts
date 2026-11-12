@@ -1,4 +1,6 @@
 /** Геометрия: видимая область тела и довод активной ячейки в вид. */
+import { hasRowSizes } from '../rowSizes'
+import { viewportOf } from '../scrollToRow/viewport'
 import { scrollLayer } from '../scrollStretch'
 import {
   BODY_ROW_SELECTOR,
@@ -86,7 +88,8 @@ export const ensureCellVisible = (
   if (!isSticky) {
     const { top, bottom } = getBodyViewport(scroller)
     const span = rowSpanOf(cell, scroller, rect)
-    if (span.top < top) {
+    // Строка выше видимой области встаёт верхом к краю (ADR 0218, §7).
+    if (span.top < top || span.bottom - span.top > bottom - top) {
       scrollLayer(scroller).scrollBy(span.top - top)
     } else if (span.bottom > bottom) {
       scrollLayer(scroller).scrollBy(span.bottom - bottom)
@@ -103,11 +106,28 @@ export const ensureCellVisible = (
   }
 }
 
-export const getPageRows = (scroller: HTMLElement | null): number => {
+/**
+ * Строк до места на видимую высоту от строки `rowIndex` в сторону `direction`: при строках
+ * разной высоты — по местам строк у виртуализатора, а не по высоте одной строки (ADR 0218, §7).
+ */
+export const getPageRows = (
+  scroller: HTMLElement | null,
+  page?: { table: unknown; rowIndex: number; direction: 1 | -1 },
+): number => {
   if (!scroller) {
     return 1
   }
   const { top, bottom } = getBodyViewport(scroller)
+  const rows = page && viewportOf(page.table)?.rows
+  if (page && rows && hasRowSizes(page.table)) {
+    const from = rows.measurementsCache[page.rowIndex]
+    const target = from
+      ? rows.getVirtualItemForOffset(
+          from.start + page.direction * (bottom - top),
+        )
+      : undefined
+    if (target) return Math.max(1, Math.abs(target.index - page.rowIndex))
+  }
   const rowHeight =
     scroller.querySelector(BODY_ROW_SELECTOR)?.getBoundingClientRect().height ||
     FALLBACK_ROW_HEIGHT

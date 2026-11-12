@@ -2,9 +2,13 @@ import { cleanup } from 'vitest-browser-react'
 import { beforeAll, describe, expect, test } from 'vitest'
 
 import { againstBase, ceilingOver, medianRun } from './baseline'
+import { render } from 'vitest-browser-react'
+import { useCreateTable } from '../../../core/useCreateTable'
+import { DataGrid } from '../../../grid/DataGrid'
 
 import {
   headCells,
+  measureInteractionWork,
   measureRenderWork,
   measureTransitionWork,
   recordPerf,
@@ -19,6 +23,8 @@ import {
   PAGED,
   PERF_TIMEOUT,
   SMALL,
+  WRAP_COLUMNS,
+  WRAP_ROWS,
 } from './perf-cases'
 import { renderPluginsGrid, renderGrid } from './hosts'
 import {
@@ -29,10 +35,12 @@ import { RU_LABELS } from '../../__mocks__/localization.ru'
 import { windowPortions } from '../../../core/virtualization/windowPortions'
 import {
   columnFiltering,
+  columnSizing,
   columnVisibility,
   pagination,
   quickSearch,
   rowSelection,
+  textWrap,
 } from '../../../plugins'
 
 // Производительность ПЕРВОЙ ОТРИСОВКИ (mount → первый кадр). Половина перф-матрицы:
@@ -705,5 +713,112 @@ describe('Производительность прыжка — порции с�
       ).toBeLessThanOrEqual(ceiling.work)
     },
     PERF_TIMEOUT * 6,
+  )
+})
+
+// Высота строк по содержимому (ADR 0218, AH33): монтирование 100 000 строк с колонкой
+// `autoHeight` и смена её ширины — строки окна перемеряются — против того же без плагина.
+describe('Производительность первой отрисовки — высота строк по содержимому', () => {
+  test(
+    'AH33: монтирование 100 000 строк с колонкой autoHeight — не дороже базы без плагина больше чем на 30 % (или 40 мс); смена её ширины — не дороже 2,5 базы: вторая отрисовка строк окна',
+    async () => {
+      let table: { setColumnSizing: (sizing: Record<string, number>) => void }
+      const Wrap = ({ wrap }: { wrap: boolean }) => {
+        const created = useCreateTable({
+          columns: WRAP_COLUMNS as never,
+          data: WRAP_ROWS,
+          getRowId: (row: { id: string }) => row.id,
+          plugins: [columnSizing(), ...(wrap ? [textWrap()] : [])] as never,
+        })
+        table = created as never
+        return (
+          <div style={{ width: 900, height: 620 }}>
+            <DataGrid table={created as never} height={600} />
+          </div>
+        )
+      }
+      const measure = async (wrap: boolean) => {
+        const mount = await measureRenderWork(
+          () => render(<Wrap wrap={wrap} />),
+          () => headCells().length > 0,
+          { warmup: false },
+        )
+        let narrow = true
+        const resize = await measureInteractionWork(async () => {
+          table.setColumnSizing({ note: narrow ? 160 : 260 })
+          narrow = !narrow
+          await new Promise(resolve => requestAnimationFrame(resolve))
+        })
+        await cleanup()
+        return { mount, resize }
+      }
+      const runs = await againstBase(measure)
+      const base = {
+        mount: medianRun(
+          runs.base.map(r => r.mount),
+          r => r.longestMs,
+        ),
+        resize: medianRun(
+          runs.base.map(r => r.resize),
+          r => r.longestMs,
+        ),
+      }
+      const wrap = {
+        mount: medianRun(
+          runs.variant.map(r => r.mount),
+          r => r.longestMs,
+        ),
+        resize: medianRun(
+          runs.variant.map(r => r.resize),
+          r => r.longestMs,
+        ),
+      }
+      const ceiling = {
+        mount: ceilingOver(base.mount.longestMs, {
+          ratio: 1.3,
+          plusMs: 40,
+        }),
+        // Высоты строк известны только после отрисовки: строки окна рисуются второй раз.
+        resize: ceilingOver(base.resize.longestMs, {
+          ratio: 2.5,
+          plusMs: 8,
+        }),
+      }
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'render',
+          size: '3×100 000',
+          plugins: 'textWrap',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.mount.longestMs,
+              targetMs: LOAD_BUDGET_MS,
+              ceilingMs: gated ? ceiling.mount : undefined,
+              ...r.mount,
+            },
+          ],
+        })
+      await record('AH33-base', 'строки одной высоты', base, false)
+      await record('AH33', 'высота строк по содержимому', wrap, true)
+      expect(
+        wrap.mount.longestMs,
+        `монтирование longest=${wrap.mount.longestMs.toFixed(1)}ms, база ${base.mount.longestMs.toFixed(1)}ms, потолок ${ceiling.mount.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling.mount)
+      expect(
+        wrap.resize.longestMs,
+        `смена ширины longest=${wrap.resize.longestMs.toFixed(1)}ms, база ${base.resize.longestMs.toFixed(1)}ms, потолок ${ceiling.resize.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling.resize)
+    },
+    PERF_TIMEOUT * 3,
   )
 })

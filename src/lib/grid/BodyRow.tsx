@@ -42,6 +42,7 @@ import type { ActionStatus } from '../core/headerActions/actionStatusFeature'
 import { RightFillerBodyColumn } from './RightFillerBodyColumn'
 import { needsRightFiller } from './layout'
 import { usePredicateResult } from '../core/renderVersion'
+import { hasRowSizes } from '../core/rowSizes'
 
 import styles from '../grid/BodyRow/BodyRow.module.css'
 import type { RowCells } from './rowCells'
@@ -266,9 +267,14 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
     (row as { getIsExpandPending?: () => boolean }).getIsExpandPending?.() ??
     false
 
+  // Строки разной высоты (ADR 0218, §4): высота — место строки у виртуализатора.
+  const sized = hasRowSizes(table)
   const rowStyles = useMemo(
-    () => ({ top: virtualRow.start }),
-    [virtualRow.start],
+    () =>
+      sized
+        ? { top: virtualRow.start, height: virtualRow.size }
+        : { top: virtualRow.start },
+    [virtualRow.start, virtualRow.size, sized],
   )
 
   // Слот — по сессии перетаскивания строки (ADR 0168, DM8); при декораторе — по dnd-kit: в

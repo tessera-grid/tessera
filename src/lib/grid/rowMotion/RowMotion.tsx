@@ -35,6 +35,11 @@ interface RowMotionProps {
   listVersion?: number
   virtualRows: readonly VirtualItem[]
   bodyRef: RefObject<HTMLDivElement | null>
+  /**
+   * Место строки новой модели по индексу у виртуализатора: строки разной высоты (ADR 0218, §9).
+   * Нет — строки одной высоты, место — индекс × высота.
+   */
+  placeOf?: (index: number) => { start: number; size: number } | undefined
   children: ReactNode
 }
 
@@ -247,8 +252,11 @@ export class RowMotion extends Component<RowMotionProps> {
         ? source.changesSince?.(prevVersion)
         : undefined
     if (source?.keyByIndex && !batches) return
+    const { placeOf } = this.props
     const rowSize = virtualRows[0].size
     const offset = virtualRows[0].start - virtualRows[0].index * rowSize
+    const startOf = (index: number) =>
+      placeOf?.(index)?.start ?? offset + index * rowSize
     // Сдвиг dnd-kit, оставшийся строке после смены модели посреди перетаскивания: строка,
     // что на экране стоит на месте, не едет (ADR 0109).
     const shifts = new Map<string, number>()
@@ -265,6 +273,7 @@ export class RowMotion extends Component<RowMotionProps> {
           id,
           index: item.index,
           start: item.start + (shifts.get(id) ?? 0),
+          size: item.size,
         },
       ]
     })
@@ -273,7 +282,7 @@ export class RowMotion extends Component<RowMotionProps> {
       before,
       after,
       rowSize,
-      startOf: index => offset + index * rowSize,
+      startOf,
       // Пришедшие в окно ищутся в прошлой модели, ушедшие из окна — в новой.
       prevIndexOf: batches
         ? id => {
@@ -300,16 +309,18 @@ export class RowMotion extends Component<RowMotionProps> {
       plan,
       leaving,
       rowSize,
-      new Map(after.map(row => [row.id, row.start])),
+      new Map(after.map(row => [row.id, row])),
       scrolledAt,
       timing,
       viewport,
       footer && {
         ...footer,
-        shift:
-          (batches
-            ? batches.flat().reduce((sum, change) => sum + change.delta, 0)
-            : rows.length - prevRows.length) * rowSize,
+        // Строки разной высоты: тело выросло на свою разницу, а не на число строк × высоту.
+        shift: placeOf
+          ? body.clientHeight - footer.bodyHeight
+          : (batches
+              ? batches.flat().reduce((sum, change) => sum + change.delta, 0)
+              : rows.length - prevRows.length) * rowSize,
       },
     )
   }
@@ -319,7 +330,7 @@ export class RowMotion extends Component<RowMotionProps> {
     plan: RowMotionPlan,
     leaving: Map<string, HTMLElement>,
     rowSize: number,
-    starts: Map<string, number>,
+    starts: Map<string, { start: number; size?: number }>,
     scrolledAt: Snapshot['scrolledAt'],
     timing: Snapshot['timing'],
     viewport: Snapshot['viewport'],
@@ -363,7 +374,7 @@ export class RowMotion extends Component<RowMotionProps> {
     }
     for (const [id, dy] of plan.moves) {
       const row = mounted.get(id)
-      const start = starts.get(id) ?? 0
+      const start = starts.get(id)?.start ?? 0
       if (row && seen(start + dy, start)) {
         this.animations.push(
           row.animate(
@@ -375,7 +386,7 @@ export class RowMotion extends Component<RowMotionProps> {
     }
     for (const id of plan.enters) {
       const row = mounted.get(id)
-      const start = starts.get(id) ?? 0
+      const start = starts.get(id)?.start ?? 0
       if (row && seen(start, start)) {
         this.animations.push(
           row.animate([{ opacity: 0 }, { opacity: 1 }], settle),
@@ -436,10 +447,16 @@ export class RowMotion extends Component<RowMotionProps> {
     // раскладки: `min-height` ниже высоты тела ничего не меняет.
     const moved = Math.max(
       0,
-      ...plan.exits.map(exit => exit.from + rowSize),
-      ...[...plan.moves].map(
-        ([id, dy]) => (starts.get(id) ?? 0) + dy + rowSize,
+      // Призрак — копия строки своей высоты (ADR 0218, §9).
+      ...plan.exits.map(
+        exit =>
+          exit.from +
+          (parseFloat(leaving.get(exit.id)?.style.height ?? '') || rowSize),
       ),
+      ...[...plan.moves].map(([id, dy]) => {
+        const row = starts.get(id)
+        return (row?.start ?? 0) + dy + (row?.size ?? rowSize)
+      }),
     )
     // Таблица с футером, которая теперь умещается в области, уже не прокручивается: она
     // не выше области, а едущее за её край обрезается, иначе полоса прокрутки ждала бы

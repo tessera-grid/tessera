@@ -22,6 +22,8 @@ import { alignAttrs } from './cellContent'
 import type { RegisterSlotParams } from '../core/createSlots'
 import { getDisplayColumnIndex } from '../core/displayColumns'
 import { getHeaderRowStart, isCoveredHeader } from '../core/headerSpans'
+import { headLevelVar } from '../core/headSizes'
+import { headLayersOf } from '../core/bodyContributions'
 import {
   NAV_CELL_ATTR,
   getHeaderRowIndex,
@@ -158,13 +160,18 @@ export const HeadCellView = ({
   )
 
   // Растянутый лист — на свои строки шапки; строка над нижней выше на линию (ADR 0207, §2).
+  // У каждого уровня своя высота (ADR 0218, §10).
   const stretched =
     header.rowSpan > 1
       ? {
-          height: `calc((var(--tsr-comp-row-height) + 1px) * ${header.rowSpan} - 1px)`,
+          height: `calc(${Array.from({ length: header.rowSpan }, (_, k) =>
+            headLevelVar(getHeaderRowStart(header) + k),
+          ).join(' + ')} + ${header.rowSpan - 1}px)`,
           alignSelf: 'flex-start' as const,
         }
       : undefined
+  // Вклады плагинов в ячейку заголовка: перенос подписи и проба её высоты (ADR 0218, §10).
+  const contributed = headLayersOf({ table, columnId: header.column.id })
   const cellStyles: CSSProperties = {
     // Ширина заголовка — его листья: у листа это ширина колонки, у группы — их сумма.
     width: `var(${getHeaderSizeVariable(header.id)})`,
@@ -234,10 +241,18 @@ export const HeadCellView = ({
       {...(nav && { [NAV_CELL_ATTR]: '' })}
       data-kn-active={nav?.isActive || undefined}
       style={
-        highlighted.style || flashed.style
-          ? { ...cellStyles, ...highlighted.style, ...flashed.style }
+        highlighted.style ||
+        flashed.style ||
+        Object.keys(contributed.style).length > 0
+          ? {
+              ...cellStyles,
+              ...contributed.style,
+              ...highlighted.style,
+              ...flashed.style,
+            }
           : cellStyles
       }
+      {...contributed.attrs}
       {...highlighted.attrs}
       {...flashed.attrs}
       className={clsx('data-grid__head-cell', headCellStyles.head__cell)}
@@ -269,6 +284,7 @@ export const HeadCellView = ({
       data-last-header-in-row={header.getIsLastHeader()}
       data-header-full-height={header.getIsFullHeightHeader()}
     >
+      {contributed.nodes}
       <CellWrapperContent
         flex={getAlignContent({ isActionsColumn, isFillColumn: false })}
         smallPadding={isActionsColumn}

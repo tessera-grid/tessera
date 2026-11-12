@@ -1,7 +1,7 @@
 /**
  * Форк TanStack Virtual (ADR 0143, VF1–VF4; ADR 0145, HV1–HV2): импорт только из вендора, вендор равен
  * upstream с патчем, уведомление MIT в пакете, пересчёт позиций от первого изменённого ключа
- * и подсказка места изменения.
+ * и подсказка места изменения; пересборка мест после замеров и пачка размеров (ADR 0218, AH34–AH36).
  * Запуск: npx vitest run --config vitest.node.config.ts vendorVirtual
  */
 import { execFileSync } from 'node:child_process'
@@ -411,5 +411,87 @@ describe('Пересчёт позиций сдвигом (ADR 0210)', () => {
     }
     expect(warn).toHaveBeenCalledTimes(1)
     expect(warn.mock.calls[0]![0]).toContain('kept index 100 from 102')
+  })
+})
+
+describe('Пересборка мест после замера размеров (ADR 0218)', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  /** Виртуализатор над `BASE`, который считает обращения к ключам и оценкам. */
+  const counted = () => {
+    const asked: number[] = []
+    const { v, options, calls } = setup(BASE)
+    v.setOptions({
+      ...options,
+      getItemKey: index => {
+        asked.push(index)
+        return BASE[index]!
+      },
+    })
+    layout(v)
+    asked.length = 0
+    calls.length = 0
+    return { v, options, asked, calls }
+  }
+  const SIZES = [
+    [5, 70],
+    [400, 12],
+    [999, 90],
+    [5, 45],
+  ] as const
+  /** Места по последним размерам — нарастающим итогом, без виртуализатора. */
+  const expected = (sizes: readonly (readonly [number, number])[]) => {
+    const size = new Map(sizes)
+    let start = 0
+    return BASE.map((key, index) => {
+      const item = [key, start, size.get(index) ?? SIZE]
+      start += size.get(index) ?? SIZE
+      return item
+    })
+  }
+
+  it('AH34: размеры от resizeItem пересобирают места без ключей и оценок прочих строк — позиции совпадают с полной пересборкой, в том числе при чтении мест между замерами', () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    const { v, asked, calls } = counted()
+    for (const [index, size] of SIZES) {
+      v.resizeItem(index, size)
+      // Чтение мест между замерами — как перерисовка по уведомлению.
+      layout(v)
+    }
+    expect(layout(v)).toEqual(expected(SIZES))
+    expect(new Set(asked)).toEqual(new Set(SIZES.map(([index]) => index)))
+    expect(calls).toEqual([])
+  })
+
+  it('AH35: resizeItems — одно уведомление на пачку и те же места, что у поштучных resizeItem', () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    const { v } = counted()
+    const onChange = vi.fn()
+    v.setOptions({ ...v.options, onChange })
+    layout(v)
+    v.resizeItems(SIZES)
+    expect(onChange).toHaveBeenCalledTimes(1)
+    expect(layout(v)).toEqual(expected(SIZES))
+  })
+
+  it('AH36: опция shouldAdjustScrollPositionOnItemSizeChange решает поправку прокрутки за изменённый размер, как поле экземпляра; без неё — правило виртуализатора', () => {
+    for (const [label, predicate, shift] of [
+      ['нет', () => false, 0],
+      ['да', () => true, 40],
+      ['без опции', undefined, 40],
+    ] as const) {
+      const { v, options } = setup(BASE)
+      v.setOptions({
+        ...options,
+        initialOffset: () => 3000,
+        shouldAdjustScrollPositionOnItemSizeChange: predicate,
+      })
+      layout(v)
+      // Строка 10 целиком выше экрана, замер первый.
+      v.resizeItem(10, SIZE + 40)
+      expect((v.scrollOffset ?? 0) - 3000, label).toBe(shift)
+    }
   })
 })

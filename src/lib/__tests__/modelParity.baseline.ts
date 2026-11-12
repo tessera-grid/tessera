@@ -82,6 +82,9 @@ export const MODEL_PARITY: ParityBase = {
   treeLines: {
     same: ['enabled'],
   },
+  textWrap: {
+    same: ['enabled', 'estimatedRowHeight', 'maxLines', 'headerMaxLines'],
+  },
   rowDragging: {
     same: [
       'enabled',

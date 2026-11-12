@@ -10,6 +10,8 @@ export interface MotionRow {
   index: number
   /** Верх строки, px от начала тела. */
   start: number
+  /** Высота строки, px; нет — `rowSize`. */
+  size?: number
 }
 
 export interface RowMotionInput {
@@ -66,7 +68,8 @@ export const planRowMotion = ({
 
   // Строка издалека въезжает от края окна, уходящая — уезжает к нему (§4).
   const top = after.length > 0 ? after[0].start : 0
-  const bottom = after.length > 0 ? after[after.length - 1].start + rowSize : 0
+  const last = after[after.length - 1]
+  const bottom = last ? last.start + (last.size ?? rowSize) : 0
   const toWindow = (start: number) => clamp(start, top - rowSize, bottom)
 
   const moves = new Map<string, number>()

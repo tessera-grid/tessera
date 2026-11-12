@@ -19,6 +19,12 @@ export {
   type RowExpandingModelOptions,
 } from './rowExpandingModel'
 export { treeLines, type TreeLinesOptions } from './treeLines'
+export {
+  textWrap,
+  type AutoHeight,
+  type TextWrapColumnDef,
+  type TextWrapOptions,
+} from './textWrap'
 export { rowDragging, type RowDraggingOptions } from './rowDragging'
 export { rowGrouping, type RowGroupingOptions } from './rowGrouping'
 export {

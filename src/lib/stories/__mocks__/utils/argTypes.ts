@@ -377,6 +377,24 @@ export const enableRowExpandingModelType = booleanControl(
 export const enableTreeLinesType = booleanControl(
   'Линии дерева у раскрытых строк и групп (плагин `treeLines`)',
 )
+export const enableTextWrapType = booleanControl(
+  'Перенос текста и высота строк по содержимому у колонок с `wrapText` и `autoHeight` (плагин `textWrap`)',
+)
+export const textWrapEstimatedRowHeightType = numberControl(
+  'Оценка высоты незамеренной строки, px; пусто — высота строки (`estimatedRowHeight`)',
+  { min: MIN_ROW_HEIGHT, max: 300, step: 2 },
+  'высота строки',
+)
+export const textWrapMaxLinesType = numberControl(
+  'Предел строк ячейки `autoHeight`, дальше `…` с тултипом (`maxLines`)',
+  { min: 1, max: 30, step: 1 },
+  '10',
+)
+export const textWrapHeaderMaxLinesType = numberControl(
+  'Предел строк заголовка `autoHeaderHeight`, дальше `…` с тултипом (`headerMaxLines`)',
+  { min: 1, max: 10, step: 1 },
+  '3',
+)
 export const enableRowDraggingType = booleanControl(
   'Перестановка строк перетаскиванием ручки (плагин `rowDragging`)',
 )

@@ -112,6 +112,7 @@ import {
 } from '../core/headerActions/actionStatus'
 import type { ActionStatus } from '../core/headerActions/actionStatusFeature'
 import { useRowHeights } from './useRowHeights'
+import { useHeadLevelHeights } from '../core/headSizes'
 import { useControlColumnSizes } from './useControlColumnSizes'
 import { ScrollingAttribute } from './ScrollingAttribute'
 import { PinnedEdgesAttribute } from './PinnedEdgesAttribute'
@@ -252,8 +253,17 @@ const DataGridView = <D extends LabelDictionary = LabelDictionary>({
   const columnSizes = useCalculateColumnSizes({ table })
 
   const headerGroupsDepth = headerGroups.length
+  // Высоты уровней шапки по содержимому (ADR 0218, §10); нет — высота строки шапки.
+  const headLevels = useHeadLevelHeights(table)
+  const levelHeights =
+    headLevels?.length === headerGroupsDepth ? headLevels : undefined
   // Разделитель в 1px — между строками шапки; под последней — тень, а не рамка.
-  const headHeight = headerGroupsDepth * heights.head + headerGroupsDepth - 1
+  const headHeight =
+    (levelHeights
+      ? levelHeights.reduce((sum, level) => sum + level, 0)
+      : headerGroupsDepth * heights.head) +
+    headerGroupsDepth -
+    1
   // Над телом шапка, под ним — не больше строки футера.
   const aroundBody = headHeight + heights.row
 
@@ -511,6 +521,12 @@ const DataGridView = <D extends LabelDictionary = LabelDictionary>({
     ...({
       '--tsr-comp-head-height': `${headHeight}px`,
       '--tsr-comp-body-height': `${shownBodyHeight}px`,
+      ...Object.fromEntries(
+        (levelHeights ?? []).map((level, index) => [
+          `--tsr-comp-head-level-${index}-height`,
+          `${level}px`,
+        ]),
+      ),
     } as CSSProperties),
     ...heights.vars,
     ...containerStyles,
@@ -664,6 +680,7 @@ const DataGridView = <D extends LabelDictionary = LabelDictionary>({
                             rowSource={rowSource}
                             leafColumns={leafColumns}
                             virtualRows={virtualRows}
+                            rowHeight={heights.row}
                             visibleRows={rowVirtualizer.range}
                             virtualColumns={virtualColumns}
                             columnStarts={columnStarts}
