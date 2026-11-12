@@ -78,6 +78,7 @@ export const cancelServerPending = (table: unknown, event?: unknown) => {
     cancelPending(table, { kind: 'copy' }, source) +
     cancelPending(table, { kind: 'selectPage' }, source) +
     cancelPending(table, { kind: 'paste' }, source) +
+    cancelPending(table, { kind: 'fill' }, source) +
     cancelTableActions(table, source)
   )
 }

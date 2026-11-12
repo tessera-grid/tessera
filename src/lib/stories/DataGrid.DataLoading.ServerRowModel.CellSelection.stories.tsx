@@ -15,6 +15,7 @@ import {
   copyFrom,
   dragCells,
   isSelected,
+  pasteInto,
   pressCell,
 } from './__mocks__/cellGestures'
 import { storyLabels } from './__mocks__/storyLabels'
@@ -50,7 +51,7 @@ import { cellSelectionLabels } from '../plugins/cellSelection/labels'
  * Выделение и копирование в серверной модели (ADR 0146): `Playground` — строки с «сервера»
  * с выделением ячеек, объём и предел копирования — контролами; S1 — диапазон через
  * незагруженные строки, S2 — копирование с догрузкой, S3 — сверх предела, S4 — отказ сервера;
- * чтение выделения приложением одной формой — S1 ADR 0180.
+ * чтение выделения приложением одной формой — S1 ADR 0180; вставка с догрузкой — S13 ADR 0219.
  */
 const meta = {
   ...dataGridMeta,
@@ -778,6 +779,114 @@ export const CellSelectionRangesAnyMode: StoryObj<StoryProps> = {
       await until(() => expect(consoleText()).toMatch(/corners item-id-0 → —/))
       server.hold = false
       release()
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0219: вставка через незагруженные строки -------------------------------------
+
+/** Мелкие блоки: сорок строк вставки — за пределами загруженного окна. */
+const PASTE_BLOCK = 10
+const PASTE_TOTAL = 2000
+const PASTE_ROWS = 40
+const PASTED = Array.from({ length: PASTE_ROWS }, (_, i) => String(100 + i))
+const ageText = (root: HTMLElement, index: number) =>
+  cellAt(root, index, 'age')?.textContent?.trim()
+const pasteWritten = (root: HTMLElement) =>
+  !pendingBanner(root) &&
+  ageText(root, 0) === PASTED[0] &&
+  ageText(root, 1) === PASTED[1]
+
+/** Ячейка возраста первой строки выбрана, вставка ждёт строк с сервера. */
+const pasteHeld = async (root: HTMLElement, signal: AbortSignal) => {
+  if (layerOf(root).top() > 0) layerOf(root).scrollTo({ top: 0 })
+  await pollUntil(() => !!cellAt(root, 0, 'age'), signal)
+  if (!isSelected(cellAt(root, 0, 'age'))) pressCell(cellAt(root, 0, 'age')!)
+  await pollUntil(() => isSelected(cellAt(root, 0, 'age')), signal)
+  server.hold = true
+  pasteInto(cellAt(root, 0, 'age')!, PASTED.join('\n'))
+  await pollUntil(() => server.held.length > 0 && !!pendingBanner(root), signal)
+}
+
+const PASTE_LOADS: readonly GuideStoryStep[] = [
+  {
+    title: 'Ячейка выбрана',
+    hint: 'Строки приходят с сервера блоками по десять. Приложение разрешило править возраст и число визитов. Пользователь щёлкнул ячейку возраста в первой строке.',
+    states: ['body.cellRange'],
+    props: context => ({
+      ...serverProps({
+        total: PASTE_TOTAL,
+        knownTotal: true,
+        blockSize: PASTE_BLOCK,
+        selection: true,
+      })!(context),
+      enableCellEditing: true,
+      onCommitEdits: () => Promise.resolve(),
+    }),
+    enter: stepAction(async (root, { signal }) => {
+      server.hold = false
+      release()
+      if (layerOf(root).top() > 0) layerOf(root).scrollTo({ top: 0 })
+      await pollUntil(() => !!cellAt(root, 0, 'age'), signal)
+      await nextFrame()
+      pressCell(cellAt(root, 0, 'age')!)
+      await pollUntil(() => isSelected(cellAt(root, 0, 'age')), signal)
+    }),
+  },
+  {
+    title: 'Вставка ждёт строк',
+    hint: 'Пользователь вставил из буфера сорок значений. Строк дальше экрана у таблицы нет: она запросила их у сервера и ждёт. Над таблицей плашка ожидания вставки с кнопкой отмены; данные пока не изменились.',
+    states: ['body.cellRange'],
+    enter: stepAction(async (root, { signal }) => {
+      if (server.held.length > 0) return
+      await pasteHeld(root, signal)
+    }),
+  },
+  {
+    title: 'Значения вставлены',
+    hint: 'Сервер прислал строки. Значения легли во все сорок строк одним запросом сохранения, плашка ушла, вставленный блок выделен.',
+    states: ['body.cellRange'],
+    enter: stepAction(async (root, { signal }) => {
+      if (pasteWritten(root)) return
+      if (server.held.length === 0) await pasteHeld(root, signal)
+      server.hold = false
+      release()
+      await pollUntil(() => pasteWritten(root), signal)
+    }),
+  },
+]
+
+/** ADR 0219, S13: вставка в SSRM через незагруженные строки — ожидание, догрузка, запись. */
+export const ServerPasteLoadsRows: StoryObj<StoryProps> = {
+  name: 'Paste loads the rows',
+  parameters: { scenario: '0219/S13', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Вставка с догрузкой"
+      steps={PASTE_LOADS}
+      args={guideArgs(layout, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step, args }) => {
+    if (globals.catalog !== true) return
+    await step(PASTE_LOADS[0]!.title, async () => {
+      await stepDone(canvas)
+      await expect(isSelected(cellAt(canvas, 0, 'age'))).toBe(true)
+    })
+    await step(PASTE_LOADS[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(pendingBanner(canvas)!.textContent).toContain(
+        storyLabels(args.locale).pendingPaste,
+      )
+      await expect(consoleText()).not.toContain('onCommitEdits')
+    })
+    await step(PASTE_LOADS[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(ageText(canvas, 0)).toBe(PASTED[0])
+      await expect(consoleText()).toContain('onCommitEdits')
       await settle()
     })
   },

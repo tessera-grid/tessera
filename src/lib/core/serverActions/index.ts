@@ -182,6 +182,7 @@ const isServer = (t: ServerTable, kind: ServerActionKind) => {
     case 'copy':
     case 'selectPage':
     case 'paste':
+    case 'fill':
       return false
     default:
       return dataModeOf(t, kind) === 'server'
@@ -327,6 +328,8 @@ export const serverActionName = (
       return labels.actionSelectPage
     case 'paste':
       return labels.actionPaste
+    case 'fill':
+      return labels.actionFill
   }
 }
 
@@ -352,6 +355,8 @@ export const serverActionPendingTitle = (
       return labels.pendingSelectPage
     case 'paste':
       return labels.pendingPaste
+    case 'fill':
+      return labels.pendingFill
   }
 }
 
@@ -418,6 +423,7 @@ const SERVER_ACTION_PLUGIN: Record<ServerActionKind, string> = {
   copy: 'cellSelection',
   selectPage: 'rowSelection',
   paste: 'cellSelection',
+  fill: 'cellSelection',
 }
 
 export const runServerAction = (

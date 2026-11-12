@@ -9241,3 +9241,33 @@ export const HighContrastBulkEditCtrlEnterStep4 = {
   name: 'Cells/Paste & fill — Edit the whole range, шаг 4',
   tags: ['!test'],
 }
+
+export const HighContrastServerPasteLoadsRowsStep1 = {
+  ...twinStep(
+    serverCellSelectionStories,
+    serverCellSelectionStories.ServerPasteLoadsRows,
+    1,
+  ),
+  name: 'Data loading/Server row model/Cell selection — Paste loads the rows, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerPasteLoadsRowsStep2 = {
+  ...twinStep(
+    serverCellSelectionStories,
+    serverCellSelectionStories.ServerPasteLoadsRows,
+    2,
+  ),
+  name: 'Data loading/Server row model/Cell selection — Paste loads the rows, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerPasteLoadsRowsStep3 = {
+  ...twinStep(
+    serverCellSelectionStories,
+    serverCellSelectionStories.ServerPasteLoadsRows,
+    3,
+  ),
+  name: 'Data loading/Server row model/Cell selection — Paste loads the rows, шаг 3',
+  tags: ['!test'],
+}

@@ -12,7 +12,8 @@ import { resolveDataType } from '../../core/dataTypes'
 import { reportAction } from '../../core/debugActions'
 import { rowSourceOf } from '../../core/rowSource'
 import { type FillKind, fillSeries } from '../../shared/fillSeries'
-import { canPaste, columnOrderOf, isPassedRow } from './paste'
+import { canPaste, columnOrderOf } from './paste'
+import { isPassedRow, withTargetRows } from './targetRows'
 import type { FillContext, FillValue } from './types'
 
 export interface Bounds {
@@ -80,14 +81,20 @@ const kindOfColumn = (
   }
 }
 
+type RowAt = (index: number) => FillRow | undefined
+
 /** Строки списка в отрезке, без строк, что места не занимают; незагруженная — конец. */
-const rowsBetween = (table: unknown, from: number, to: number) => {
-  const source = rowSourceOf<FillRow>(table)
+const rowsBetween = (
+  table: unknown,
+  from: number,
+  to: number,
+  rowAt: RowAt = index => rowSourceOf<FillRow>(table).at(index),
+) => {
   const rows: { row: FillRow; index: number }[] = []
   const step = from <= to ? 1 : -1
-  const last = Math.min(Math.max(to, 0), source.count() - 1)
+  const last = Math.min(Math.max(to, 0), rowSourceOf(table).count() - 1)
   for (let r = from; step > 0 ? r <= last : r >= last; r += step) {
-    const row = source.at(r)
+    const row = rowAt(r)
     if (!row) break
     if (!isPassedRow(table, row)) rows.push({ row, index: r })
   }
@@ -119,13 +126,19 @@ export const fillChanges = (
   {
     toggle = false,
     getFillValue,
-  }: { toggle?: boolean; getFillValue?: FillValue } = {},
+    rowAt,
+  }: { toggle?: boolean; getFillValue?: FillValue; rowAt?: RowAt } = {},
 ): CellWrite[] => {
   const t = table as FillTable
   const { bound, axis, to } = plan
   const order = columnOrderOf(t as never)
   const timeZone = t.options.timeZone
-  const sourceRows = rowsBetween(table, bound.minRowIndex, bound.maxRowIndex)
+  const sourceRows = rowsBetween(
+    table,
+    bound.minRowIndex,
+    bound.maxRowIndex,
+    rowAt,
+  )
   const sourceColumns = columnsBetween(
     table,
     order,
@@ -174,7 +187,7 @@ export const fillChanges = (
   }
 
   if (vertical) {
-    const targetRows = rowsBetween(table, from, to)
+    const targetRows = rowsBetween(table, from, to, rowAt)
     for (const columnId of sourceColumns) {
       line(
         sourceRows.map(({ row }) => row.getValue(columnId)),
@@ -230,12 +243,44 @@ export const selectBounds = (table: unknown, bound: Bounds) => {
   ])
 }
 
-/** Записать протяжку: пусто — ничего. */
-export const writeFill = (
+/**
+ * Протянуть и записать (ADR 0219, §7, WR27): строки исходного диапазона и цели в незагруженной
+ * части серверной модели сперва догружаются — ожидание с отменой; затем значения по правилу ряда
+ * уходят в канал записи. `done` — после записи, с выделением.
+ */
+export const fillAndWrite = (
   table: unknown,
-  changes: CellWrite[],
+  plan: FillPlan,
   source: CellWriteSource,
-) => (changes.length === 0 ? undefined : writeCells(table, changes, { source }))
+  options: { toggle?: boolean; getFillValue?: FillValue } = {},
+  done?: () => void,
+): Promise<void> => {
+  const { bound, axis, to } = plan
+  const span =
+    axis === 'y'
+      ? {
+          from: Math.min(bound.minRowIndex, to),
+          last: Math.max(bound.maxRowIndex, to),
+        }
+      : { from: bound.minRowIndex, last: bound.maxRowIndex }
+  return withTargetRows(
+    table,
+    'fill',
+    [span],
+    rows => {
+      // Строки источника — полные строки модели: у них есть значения ячеек.
+      const rowAt = rows.at as RowAt
+      const changes = fillChanges(table, plan, { ...options, rowAt })
+      if (changes.length > 0)
+        void writeCells(table, changes, {
+          source,
+          ...(rows.rows && { rows: rows.rows }),
+        })
+      done?.()
+    },
+    () => void fillAndWrite(table, plan, source, options, done),
+  ).then(() => undefined)
+}
 
 /**
  * Заполнить вниз или вправо (WR19): первой строкой или колонкой активного диапазона, на одной
@@ -273,14 +318,8 @@ export const fillFromEdge = (
       : { ...bound, maxColumnIndex: min }
   }
   // На одной ячейке целью становится она сама.
-  const changes = fillChanges(table, { bound: source, axis, to: max })
   const kind = vertical ? 'fillDown' : 'fillRight'
-  reportAction(table, {
-    plugin: 'cellSelection',
-    action: kind,
-    detail: { cells: changes.length },
-    source: input,
-  })
-  void writeFill(table, changes, kind)
+  reportAction(table, { plugin: 'cellSelection', action: kind, source: input })
+  void fillAndWrite(table, { bound: source, axis, to: max }, kind)
   return true
 }

@@ -9,8 +9,8 @@ import { announceLabel, announcerLabels } from '../../core/announcer'
 import type {
   CellWrite,
   CellWriteReport,
-  CellWriteSource,
   CellWriter,
+  CellWriterOptions,
 } from '../../core/cellWrites'
 import type { CellComponentProps } from '../../core/createSlots'
 import { isNumericBase } from '../../core/dataTypeFormat'
@@ -133,7 +133,7 @@ const invalidReason = (
 const write = async (
   table: unknown,
   changes: readonly CellWrite[],
-  { source }: { source: CellWriteSource },
+  { source, rows: fetched }: CellWriterOptions,
 ): Promise<CellWriteReport> => {
   const id = `write-${++operations}`
   const hooks = hooksOf(table)
@@ -160,7 +160,9 @@ const write = async (
   for (let i = 0; i < changes.length; i++) {
     if (i % 256 === 255) await slice()
     const change = changes[i]!
-    const row = rows.byId(change.rowId)
+    const row =
+      rows.byId(change.rowId) ??
+      (fetched?.get(change.rowId) as WriteRow | undefined)
     const ctx = writableContext(table, row, change.columnId, hooks)
     if (!ctx || !row) {
       skipped++

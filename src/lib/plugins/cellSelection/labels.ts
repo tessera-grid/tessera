@@ -31,6 +31,8 @@ export interface CellSelectionLabels {
   fillRight: string
   /** Действие: протяжка значения маркером (WR16) */
   actionFill: string
+  /** Отказ записи в SSRM: строк цели больше предела `maxCopyRows` (ADR 0219, WR28) */
+  writeTooManyRows: (rows: number, max: number) => string
 }
 
 export const cellSelectionLabels = defineLabels<CellSelectionLabels>()(
@@ -56,12 +58,14 @@ export const cellSelectionLabels = defineLabels<CellSelectionLabels>()(
     fillDown: 'Fill down',
     fillRight: 'Fill right',
     actionFill: 'Fill the cells',
+    writeTooManyRows: 'The limit is {max} rows at once',
   },
   {
     announceCopy: ['count'],
     announceCopyLoading: ['count'],
     copyTooManyRows: ['count', 'max'],
     announcePasteCut: ['count', 'total'],
+    writeTooManyRows: ['count', 'max'],
   },
 )
 

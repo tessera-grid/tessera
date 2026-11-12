@@ -40,12 +40,20 @@ export interface CellWriteReport {
   invalid: number
 }
 
+/**
+ * Опции исполнителя: источник и строки, догруженные мимо кэша окна серверной модели (ADR 0219,
+ * §7) — по id их не найти в источнике строк.
+ */
+export interface CellWriterOptions extends Required<CellWriteOptions> {
+  rows?: ReadonlyMap<string, unknown>
+}
+
 /** Исполнитель записи — плагин правки. */
 export interface CellWriter {
   write: (
     table: unknown,
     changes: readonly CellWrite[],
-    options: Required<CellWriteOptions>,
+    options: CellWriterOptions,
   ) => Promise<CellWriteReport>
   /** Можно ли записать в ячейку — для вставки, пунктов меню и клавиш. */
   canWrite: (table: unknown, rowId: string, columnId: string) => boolean
@@ -61,9 +69,16 @@ export const cellWriterOf = (table: unknown): CellWriter | undefined =>
 export const writeCells = (
   table: unknown,
   changes: readonly CellWrite[],
-  { source = 'api' }: CellWriteOptions = {},
+  {
+    source = 'api',
+    rows,
+  }: CellWriteOptions & Pick<CellWriterOptions, 'rows'> = {},
 ): Promise<CellWriteReport> | undefined =>
-  cellWriterOf(table)?.write(table, changes, { source })
+  cellWriterOf(table)?.write(
+    table,
+    changes,
+    rows ? { source, rows } : { source },
+  )
 
 /** Можно ли записать в ячейку; без исполнителя — нет. */
 export const canWriteCell = (

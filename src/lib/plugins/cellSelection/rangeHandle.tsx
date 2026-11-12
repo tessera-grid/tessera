@@ -24,7 +24,7 @@ import { EDGE_ZONE, edgeSpeed } from '../../shared/edgeScroll'
 import { FillFrame } from '../../ui/FillFrame'
 import { SelectionHandle } from '../../ui/SelectionHandle'
 import { isInteractive } from './copyEvent'
-import { type Bounds, fillChanges, selectBounds, writeFill } from './fill'
+import { type Bounds, fillAndWrite, selectBounds } from './fill'
 import { canPaste, columnOrderOf } from './paste'
 import type { CellSelectionHandle } from './registry'
 
@@ -186,19 +186,21 @@ export const fillMode = (
         selectBounds(table, target.frame)
         return
       }
-      const changes = fillChanges(
-        table,
-        { bound, ...target.plan },
-        { toggle: alt(), getFillValue: options.getFillValue },
-      )
+      const frame = target.frame
       reportAction(table, {
         plugin: 'cellSelection',
         action: 'fill',
-        detail: { cells: changes.length, toggle: alt() },
+        detail: { toggle: alt() },
         source: 'pointer',
       })
-      void writeFill(table, changes, 'fill')
-      selectBounds(table, target.frame)
+      // Выделение — после записи: смена выделения отменила бы догрузку строк цели (WR28).
+      void fillAndWrite(
+        table,
+        { bound, ...target.plan },
+        'fill',
+        { toggle: alt(), getFillValue: options.getFillValue },
+        () => selectBounds(table, frame),
+      )
     },
     cancel: () => show(undefined),
   }

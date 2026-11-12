@@ -32,6 +32,7 @@ import {
   TESSERA_FORMAT,
 } from '../plugins/cellSelection/clipboard'
 import { copyCellSelection } from '../plugins/cellSelection/copy'
+import { cellSelectionLabels } from '../plugins/cellSelection/labels'
 import { pasteData } from '../plugins/cellSelection/paste'
 import { fillChanges } from '../plugins/cellSelection/fill'
 import { fillMode } from '../plugins/cellSelection/rangeHandle'
@@ -146,6 +147,13 @@ interface HostProps {
   handle?: CellSelectionHandleOptions
   grouping?: string[]
   server?: boolean
+  /** Свой «сервер» серверной модели и размер блока. */
+  getRows?: (request: {
+    start: number
+    end: number
+  }) => Promise<{ rows: Row[]; rowCount: number }>
+  blockSize?: number
+  maxCopyRows?: number
   locale?: string
   timeZone?: string
 }
@@ -164,6 +172,9 @@ const Host = ({
   handle,
   grouping,
   server,
+  getRows,
+  blockSize,
+  maxCopyRows,
   locale,
   timeZone,
 }: HostProps) => {
@@ -187,6 +198,7 @@ const Host = ({
         ...(parseClipboard ? { parseClipboard } : {}),
         ...(paste === undefined ? {} : { paste }),
         ...(handle ? { handle } : {}),
+        ...(maxCopyRows ? { maxCopyRows } : {}),
       }),
       ...(grouping
         ? [rowGroupingModel({ initialGrouping: grouping } as never)]
@@ -194,7 +206,9 @@ const Host = ({
       ...(server
         ? [
             serverRowModel({
-              getRows: () => ({ rows: data, rowCount: data.length }),
+              getRows:
+                getRows ?? (() => ({ rows: data, rowCount: data.length })),
+              ...(blockSize ? { blockSize } : {}),
             } as never),
           ]
         : []),
@@ -969,5 +983,130 @@ describe('протяжка значения и заполнение (ADR 0219, �
       mode: 'range',
       direction: 'xy',
     })
+  })
+})
+
+describe('вставка в серверной модели строк (ADR 0219, этап 3)', () => {
+  /** «Сервер» блоками: ответ ждёт команды; считает запросы в полёте. */
+  const blockServer = () => {
+    const waiting: (() => void)[] = []
+    let inFlight = 0
+    let most = 0
+    const getRows = ({ start, end }: { start: number; end: number }) =>
+      new Promise<{ rows: Row[]; rowCount: number }>(resolve => {
+        inFlight++
+        most = Math.max(most, inFlight)
+        waiting.push(() => {
+          inFlight--
+          resolve({ rows: ROWS.slice(start, end), rowCount: ROWS.length })
+        })
+      })
+    const answerAll = async () => {
+      while (waiting.length > 0) {
+        await act(async () => {
+          for (const answer of waiting.splice(0)) answer()
+        })
+        await flush()
+      }
+    }
+    return { getRows, answerAll, most: () => most }
+  }
+
+  const mountServer = async (
+    props: Omit<HostProps, 'server' | 'getRows'> = {},
+  ) => {
+    act(() => root?.unmount())
+    root = undefined
+    const backend = blockServer()
+    render({ ...props, server: true, getRows: backend.getRows, blockSize: 1 })
+    // В окне — только первые две строки.
+    act(() =>
+      captured.getRowSource().observe({ first: 0, last: 1, fast: false }),
+    )
+    await backend.answerAll()
+    return backend
+  }
+
+  const selectIndex = (index: number, column: string) =>
+    act(() =>
+      captured.setCellSelection(() => [
+        {
+          anchorRowIndex: index,
+          focusRowIndex: index,
+          anchorColumnId: column,
+          focusColumnId: column,
+        },
+      ]),
+    )
+
+  it('WR28: SSRM — цели в незагруженных строках догружаются getRows по веткам, не больше четырёх запросов сразу; строк больше cellSelectionMaxCopyRows — отказ с причиной; смена выборки до отправки пакета отменяет операцию с объявлением; отправленный пакет держится за id строк', async () => {
+    const onCommitEdits = vi.fn(
+      (_batch: CellEditBatch, _context?: { signal: AbortSignal }) =>
+        new Promise<void>(() => {}),
+    )
+    let backend = await mountServer({ onCommitEdits })
+    expect(captured.getRowSource().at(5)).toBeUndefined()
+
+    // Девять строк от первой: восемь незагруженных — ожидание, догрузка, один пакет.
+    selectIndex(0, 'age')
+    let done: Promise<void> | undefined
+    act(() => {
+      done = pasteData(
+        captured,
+        { text: '1\n2\n3\n4\n5\n6\n7\n8\n9', html: '' },
+        'api',
+      )
+    })
+    await flush()
+    expect(readServerAction(captured).loadingRows?.kind).toBe('paste')
+    expect(onCommitEdits).not.toHaveBeenCalled()
+    await backend.answerAll()
+    await act(async () => {
+      await done
+    })
+    expect(backend.most()).toBeLessThanOrEqual(4)
+    expect(readServerAction(captured).loadingRows).toBeUndefined()
+    const batch = onCommitEdits.mock.calls[0]![0]
+    expect(cellsOf(batch)).toEqual(
+      Array.from({ length: 9 }, (_, i) => [String(i), 'age', i + 1]),
+    )
+    // Пакет держится за id: новое выделение и запросы его не меняют, сохранение не прервано.
+    selectIndex(3, 'name')
+    expect(onCommitEdits.mock.calls[0]![1]?.signal.aborted).toBe(false)
+    expect(batch.cells.map(cell => cell.rowId)).toEqual(
+      Array.from({ length: 9 }, (_, i) => String(i)),
+    )
+
+    // Смена выделения до отправки пакета — отмена с объявлением.
+    backend = await mountServer({ onCommitEdits })
+    const say = vi.fn()
+    registerAnnouncer(captured, { say, labels: ENGLISH_LABELS })
+    selectIndex(0, 'age')
+    act(() => {
+      done = pasteData(captured, { text: '1\n2\n3\n4\n5', html: '' }, 'api')
+    })
+    await flush()
+    expect(readServerAction(captured).loadingRows?.kind).toBe('paste')
+    selectIndex(1, 'name')
+    expect(readServerAction(captured).loadingRows).toBeUndefined()
+    await backend.answerAll()
+    await act(async () => {
+      await done
+    })
+    expect(onCommitEdits).toHaveBeenCalledTimes(1)
+    expect(say).toHaveBeenCalledWith(
+      ENGLISH_LABELS.announceActionCancelled(ENGLISH_LABELS.actionPaste),
+    )
+
+    // Строк больше предела — отказ с причиной, без запросов.
+    await mountServer({ onCommitEdits, maxCopyRows: 3 })
+    selectIndex(0, 'age')
+    await paste('1\n2\n3\n4\n5')
+    expect(onCommitEdits).toHaveBeenCalledTimes(1)
+    const failed = readServerAction(captured).failed
+    expect(failed?.kind).toBe('paste')
+    expect((failed?.error as Error).message).toBe(
+      cellSelectionLabels(ENGLISH_LABELS).writeTooManyRows(5, 3),
+    )
   })
 })

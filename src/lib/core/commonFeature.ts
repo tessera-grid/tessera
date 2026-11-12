@@ -107,7 +107,7 @@ export const commonFeature: TableFeature = {
       },
       table_writeCells: {
         fn: (changes: readonly CellWrite[], options?: CellWriteOptions) =>
-          writeCells(table, changes, options),
+          writeCells(table, changes, { source: options?.source }),
       },
       table_getRowSource: {
         fn: () => {

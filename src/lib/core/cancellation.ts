@@ -15,6 +15,7 @@ export type PendingKind =
   | 'children'
   | 'copy'
   | 'paste'
+  | 'fill'
   | 'cellEdit'
   | 'selectPage'
 
