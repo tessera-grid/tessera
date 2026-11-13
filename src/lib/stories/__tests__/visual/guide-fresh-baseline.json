@@ -5,6 +5,5 @@
   "DataGrid/Core/Sizing/SizingRowHeight": "непрерывность: смена высоты строк не сбрасывает прокрутку прошлого шага",
   "DataGrid/Data loading/Skeleton/SkeletonDataArrives": "непрерывность: данные встают на место скелета без пустого кадра и с теми же узлами шапки",
   "DataGrid/Data loading/Server row model/Pagination/ServerPaginationPages": "непрерывность: первая страница — из кэша, загруженного прошлыми шагами, без запроса",
-  "DataGrid/Columns/Header menu/HeaderMenuNarrowActive": "находка: в узкой колонке открытой заново таблицы включённая из меню сортировка не встаёт в ряд кнопок до пересчёта ширины",
-  "DataGrid/Data loading/Server actions/ServerActionsRefused": "находка: со свежей таблицы после отказа фильтра пейджер оказывается на второй странице — шаг ждёт отказа второй, а запрашивается третья"
+  "DataGrid/Data loading/Server actions/ServerActionsRefused": "находка, не разобрана: со свежей таблицы после отклонённого фильтра пейджер уходит на седьмую страницу, «Далее» запрашивает восьмую; последовательно — на месте"
 }

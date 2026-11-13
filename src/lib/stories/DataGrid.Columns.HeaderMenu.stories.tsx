@@ -495,7 +495,13 @@ const NARROW: readonly GuideStoryStep[] = [
     pseudo: NARROW_HOVER,
     enter: stepAction(async (root, { signal, onLeave }) => {
       await sortFromMenu(root, signal)
-      onLeave(pointAt(headCellOf(root, NARROW_COLUMN)!))
+      // Тронутый заголовок ряд не перестраивает (ADR 0156, §2): фокус, вернувшийся на
+      // кнопку меню, уходит, и включённая сортировка встаёт в ряд до наведения.
+      const head = headCellOf(root, NARROW_COLUMN)!
+      if (head.contains(document.activeElement))
+        (document.activeElement as HTMLElement).blur()
+      await pollUntil(() => !!sortButton(root), signal)
+      onLeave(pointAt(head))
       sortButton(root)!.click()
       await pollUntil(() => !sorted(), signal)
     }),
