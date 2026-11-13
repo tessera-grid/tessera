@@ -555,7 +555,9 @@ export const checkErrorText = (
 
 /** Дескрипторы, чей `disabled` уже возвращал промис: рендер их не вызывает. */
 const asyncDisabled = new WeakSet<object>()
-let probeSignal: AbortSignal | undefined
+// Создаётся при загрузке модуля: стек причины, созданной в рендере, удерживал бы первую таблицу.
+const probeSignal: AbortSignal | undefined =
+  typeof AbortSignal === 'function' ? AbortSignal.abort() : undefined
 
 /**
  * Синхронное значение `disabled` для рендера. `'async'` — дескриптор асинхронный:
@@ -567,8 +569,7 @@ export const readSyncDisabled = (
 ): DisabledResult | 'async' => {
   if (!action.disabled) return false
   if (asyncDisabled.has(action)) return 'async'
-  probeSignal ??= AbortSignal.abort()
-  const result = action.disabled(ctx, probeSignal)
+  const result = action.disabled(ctx, probeSignal ?? AbortSignal.abort())
   if (!isThenable(result)) return result
   asyncDisabled.add(action)
   Promise.resolve(result).catch(() => {})
