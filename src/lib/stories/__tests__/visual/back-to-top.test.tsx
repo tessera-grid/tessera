@@ -584,6 +584,16 @@ describe('Кнопка «наверх»', () => {
     expect(startShown()).toBe(false)
   })
 
+  test('BT25: таблица стала шире области без смены рамки — «к первой колонке» держит место и видна после двух ширин тела', async () => {
+    const screen = await mount({ pageSize: 100 })
+    expect(startButton()!.parentElement!.hidden).toBe(true)
+    // Рамка области та же, шире стали шапка и тело — как у открытой заново таблицы.
+    await screen.rerender(<Grid pageSize={100} wide />)
+    await expect.poll(() => startButton()!.parentElement!.hidden).toBe(false)
+    await scrollTo(0, scroller().clientWidth * 2 + 20)
+    await expect.poll(startShown).toBe(true)
+  })
+
   test('BT19: «к первой колонке» — прыжок на экран и плавно последний экран; вертикаль не меняется, ячейки по пути без скелетов', async () => {
     await mount({ data: MANY(), enableStatusBar: true, wide: true, width: 480 })
     await scrollTo(5000, 1400)

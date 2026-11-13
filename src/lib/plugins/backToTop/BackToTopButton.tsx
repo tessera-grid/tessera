@@ -44,10 +44,29 @@ const useScrollsHorizontally = (
     }
     const check = () => setScrolls(scrollsHorizontally(scroller))
     check()
+    // Ширину по колонкам задают шапка и тело внутри таблицы, а не рамка таблицы: следим за
+    // ними и за заменой узлов — открытая заново таблица дорастает до ширины колонок позже.
     const observer = new ResizeObserver(check)
-    observer.observe(scroller)
-    if (scroller.firstElementChild) observer.observe(scroller.firstElementChild)
-    return () => observer.disconnect()
+    const observeAll = () => {
+      observer.disconnect()
+      observer.observe(scroller)
+      const table = scroller.firstElementChild
+      if (!table) return
+      observer.observe(table)
+      for (const part of table.children) observer.observe(part)
+    }
+    observeAll()
+    const replaced = new MutationObserver(() => {
+      observeAll()
+      check()
+    })
+    replaced.observe(scroller, { childList: true })
+    if (scroller.firstElementChild)
+      replaced.observe(scroller.firstElementChild, { childList: true })
+    return () => {
+      observer.disconnect()
+      replaced.disconnect()
+    }
   }, [slot, active])
   return scrolls
 }
