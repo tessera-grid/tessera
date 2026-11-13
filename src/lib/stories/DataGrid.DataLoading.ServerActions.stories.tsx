@@ -401,7 +401,8 @@ const REFUSED: readonly GuideStoryStep[] = [
       await pollUntil(() => {
         if (refusedWith('page 2') && banner(root) && !refreshing(root))
           return onFirstPage(root)
-        if (!server.holding() && !refusedWith('page 2'))
+        // Одно нажатие: пока запрос в пути, пейджер уже на второй странице.
+        if (!server.holding() && onFirstPage(root) && !refusedWith('page 2'))
           pageButton(root, 'next')?.click()
         return false
       }, signal)

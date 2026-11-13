@@ -4,6 +4,5 @@
   "DataGrid/Core/Sizing/SizingFillContainer": "непрерывность: рост контейнера не пересоздаёт таблицу — тот же узел тела",
   "DataGrid/Core/Sizing/SizingRowHeight": "непрерывность: смена высоты строк не сбрасывает прокрутку прошлого шага",
   "DataGrid/Data loading/Skeleton/SkeletonDataArrives": "непрерывность: данные встают на место скелета без пустого кадра и с теми же узлами шапки",
-  "DataGrid/Data loading/Server row model/Pagination/ServerPaginationPages": "непрерывность: первая страница — из кэша, загруженного прошлыми шагами, без запроса",
-  "DataGrid/Data loading/Server actions/ServerActionsRefused": "находка, не разобрана: со свежей таблицы после отклонённого фильтра пейджер уходит на седьмую страницу, «Далее» запрашивает восьмую; последовательно — на месте"
+  "DataGrid/Data loading/Server row model/Pagination/ServerPaginationPages": "непрерывность: первая страница — из кэша, загруженного прошлыми шагами, без запроса"
 }
