@@ -102,15 +102,20 @@
   строка рисует его своим фоном, ячейки с непрозрачной подложкой закрепления повторяют
   его по `--tsr-highlight-row`; слои — зарегистрированные цветовые свойства, поэтому
   снятие гаснет переходом. Блик всех элементов цели идёт в одной фазе (`startTime` с момента постановки); пока грид прокручивается (`data-scrolling`), полосы нет.
-- **Вспышка итога** (ADR [0134](../decisions/0134-outcome-flash.md)): тоны
-  `--tsr-comp-flash-arrived-bg` (синий, как приход), `--tsr-comp-flash-accepted-bg` (по
-  умолчанию `--tsr-comp-highlight-success-bg`), `--tsr-comp-flash-reverted-bg` (по
-  умолчанию `--tsr-comp-highlight-danger-bg`); удержание и угасание любого итога —
-  `--tsr-comp-flash-duration` и `--tsr-comp-flash-fade-duration`. Слои `--tsr-flash-row`/`-cell`/`-column` лежат над
-  слоями подсветки той же цели; атрибуты — `data-flash` у строки и ячейки,
+- **Вспышка итога** (ADR [0134](../decisions/0134-outcome-flash.md), ADR
+  [0221](../decisions/0221-value-change-flash.md)): тоны `--tsr-comp-flash-arrived-bg` (синий, как
+  приход), `--tsr-comp-flash-accepted-bg` и `--tsr-comp-flash-reverted-bg` (зелёный и красный итога
+  записи), `--tsr-comp-flash-changed-bg` (смена значения извне, роль `--tsr-sys-changed`),
+  `--tsr-comp-flash-up-bg` и `--tsr-comp-flash-down-bg` (рост и падение); стрелка роста и падения —
+  `--tsr-comp-flash-up-color`, `--tsr-comp-flash-down-color`, `--tsr-comp-flash-direction-size`;
+  удержание и угасание любого итога — `--tsr-comp-flash-duration` и `--tsr-comp-flash-fade-duration`.
+  Тоны непрозрачны — оттенок поверх `--tsr-sys-surface`: слои `--tsr-flash-cell`/`-column`/`-row` —
+  верхние слои фона, над тинтом выделения, подсветкой, выбором и наведением, и с ними не смешиваются
+  (ADR 0221, §6); вспышка строки повторена слоем ячеек с подсветкой или тинтом. Тема с полупрозрачным
+  тоном снова смешает его с заливкой под ним; атрибуты — `data-flash` у строки и ячейки,
   `data-column-flash` у ячеек колонки, заголовка и футера, `-out` — пока гаснет. Время
   перехода слоя — `--tsr-flash-time`/`--tsr-column-flash-time`: появление сразу, уход — угасанием. В
-  `forced-colors` рисуется только `reverted` — `Mark`.
+  `forced-colors` рисуется только `reverted` — `Mark`; стрелка `up` и `down` — `CanvasText`.
 - **Общая волна скелетов** (ADR [0121](../decisions/0121-shared-skeleton-wave.md)):
   проход рамки `--tsr-comp-skeleton-frame-wave-duration` (из базовой длительности),
   пауза до первого прохода `--tsr-comp-skeleton-wave-delay`, ширина полосы

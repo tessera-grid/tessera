@@ -77,6 +77,7 @@ import {
   serverRowModel,
   type ServerRowsRequest,
   treeLines,
+  valueChangeFlash,
 } from '../../../plugins'
 
 // Производительность ПРОКРУТКИ: операция × объём × плагины, замер на
@@ -1454,6 +1455,66 @@ describe('Производительность прокрутки — вспыш
         }
       } finally {
         hold.remove()
+      }
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Вспышка при смене значения извне (ADR 0221, VC19): 1000×1000 без плагинов, спокойная
+// прокрутка с плагином против той же выборки без него — цена сторожа значения в каждой
+// смонтированной ячейке.
+const VC19_COST = { ratio: 1.1, plusMs: 2 }
+describe('Производительность прокрутки — вспышка при смене значения', () => {
+  test(
+    'VC19: спокойная прокрутка 1000×1000 с плагином valueChangeFlash не дороже той же выборки без него больше чем на 10 % (или 2 мс)',
+    async () => {
+      const measure = async (flash: boolean) => {
+        const screen = renderGrid({
+          ...LARGE,
+          ...NO_PLUGINS,
+          extraPlugins: flash ? [valueChangeFlash()] : [],
+        })
+        await waitForGrid()
+        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+        ;(await screen).unmount()
+        return { y, x }
+      }
+      const runs = await againstBase(measure)
+      const base = medianAxes(runs.base)
+      const lit = medianAxes(runs.variant)
+      const ceiling = axesCeiling(base, VC19_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'scroll',
+          size: '1000×1000',
+          plugins: 'none',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: (['y', 'x'] as const).map(axis => ({
+            axis,
+            kind: 'animation' as const,
+            metric: 'p95' as const,
+            valueMs: r[axis].p95Ms,
+            targetMs: ANIMATION_BUDGET_MS,
+            ceilingMs: gated ? ceiling[axis] : undefined,
+            ...r[axis],
+          })),
+        })
+      await record('VC19-base', 'без плагина', base, false)
+      await record('VC19', 'valueChangeFlash', lit, true)
+      for (const axis of ['y', 'x'] as const) {
+        expect(
+          lit[axis].p95Ms,
+          `${axis} p95=${lit[axis].p95Ms.toFixed(1)}ms (база ${base[axis].p95Ms.toFixed(1)}ms, потолок ${ceiling[axis].toFixed(1)})`,
+        ).toBeLessThanOrEqual(ceiling[axis])
       }
     },
     PERF_TIMEOUT * 2,

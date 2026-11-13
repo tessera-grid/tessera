@@ -10,6 +10,7 @@ import {
   type ReactNode,
   useEffect,
   useMemo,
+  useRef,
 } from 'react'
 
 import { useSelector } from '@tanstack/react-store'
@@ -23,6 +24,7 @@ import { PluginErrorBoundary } from './pluginBoundary'
 import { reportPluginError } from './pluginDiagnostics'
 import { isProduction, logError, logWarn } from '../util/logger'
 import { useLatest } from '../util/useLatest'
+import { useIsomorphicLayoutEffect } from '../util/useIsomorphicLayoutEffect'
 import { pluginStateKey } from './definePlugin/channels'
 import type { RowSource } from './rowSource'
 import type { Cell, Row, Table } from '../types'
@@ -106,6 +108,38 @@ export type CellContribution<TSelected = any> = TargetContribution<
    * прокрутке, когда слоты ячейки не рисуются.
    */
   layer?: (context: CellLayerContext) => CellLayer | null
+  /**
+   * Значение смонтированной ячейки сменилось (ADR 0221, §4): зовётся после коммита с новым и
+   * прежним значением; первая отрисовка ячейки — не смена.
+   */
+  watch?: (
+    cell: Cell<any, any, unknown>,
+    value: unknown,
+    previous: unknown,
+  ) => void
+}
+
+/**
+ * Сторож значения ячейки для вкладчиков с `watch` (ADR 0221, §4): без них значение не
+ * читается. Эффект идёт при смене ячейки — новой строки, — а не на каждую отрисовку.
+ */
+export const useCellValueWatch = (
+  contributors: readonly CellContribution[],
+  cell: Cell<any, any, unknown>,
+) => {
+  const watching = contributors.some(contributor => contributor.watch)
+  const value = watching ? cell.getValue() : undefined
+  const last = useRef({ value, watching })
+  useIsomorphicLayoutEffect(() => {
+    const previous = last.current
+    last.current = { value, watching }
+    if (!watching || !previous.watching || Object.is(previous.value, value)) {
+      return
+    }
+    for (const contributor of contributors) {
+      contributor.watch?.(cell, value, previous.value)
+    }
+  }, [contributors, cell, value, watching])
 }
 /** Ячейка заголовка, в которой вклад рисует слой (ADR 0218, §10). */
 export interface HeadCellContext {

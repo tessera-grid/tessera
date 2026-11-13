@@ -677,6 +677,14 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       в `scroll`, `play` истории «Plugin API — Outcome flash» (OF21), истории сценариев
       S1 «Cells/Editing — Refused while editing another cell» и S3 «Rows/Expanding — Expand
       refused by the server» ([ADR 0134](docs/decisions/0134-outcome-flash.md)).
+    - _Вспышка при смене значения извне:_ `value-change-flash` (VC1–VC5, VC7–VC11, VC13–VC17 —
+      плагин и источники: новый `data`, транзакции и `setRowData` SSRM, своя запись не вспыхивает,
+      первая отрисовка и перестановки без вспышки, колонки и направление, стрелка, перезапуск, окно,
+      сортировка, непрозрачный тон поверх подсветки, тинта и выбора, контраст, `forced-colors` и
+      уменьшенное движение, без объявлений, перерисовка только строки), модульный `valueChangeFlash.dom`
+      (VC6 — равенство по типу колонки, VC12 — итоги и токены), перф VC18 — в `interaction`, VC19 — в
+      `scroll`, истории «Cells/Value change flash» (S1–S5), VC20 — `play` истории «Flash colors»
+      ([ADR 0221](docs/decisions/0221-value-change-flash.md)).
     - _Бесконечная прокрутка — лента:_ `infinite-scroll` (IS1–IS4, IS7, IS9–IS15 —
       порог края, хвост скелет-строк и его высота вне окна, ответ без сдвига прокрутки и
       фокуса, строка ошибки с повтором, отмена при смене сортировки, фильтра и поиска,

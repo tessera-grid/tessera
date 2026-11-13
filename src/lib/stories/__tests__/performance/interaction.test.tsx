@@ -92,6 +92,7 @@ import {
   columnFilteringModel,
   columnSortingModel,
   rowGroupingModel,
+  valueChangeFlash,
 } from '../../../plugins'
 import { DataGrid } from '../../../grid/DataGrid'
 import { buildXlsx } from '../../../plugins/dataExportModel/xlsxBuild'
@@ -6775,6 +6776,102 @@ describe('Вставка из буфера — одно значение в ди
       expect(
         wide.longestMs,
         `1000 ячеек: longest=${wide.longestMs.toFixed(1)}ms, одна: ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)}`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Вспышка при смене значения извне (ADR 0221, VC18): тик сокета — 20 строк окна с новым значением
+// первой колонки новым `data` на 1000×1000 — с плагином против той же смены без него. Сторож
+// значения стоит в каждой смонтированной ячейке: цена — по окну, а не по данным.
+const TICK_COLUMNS = Array.from({ length: 1000 }, (_, k) => ({
+  id: `c${k}`,
+  accessorKey: `c${k}`,
+  header: `C${k}`,
+  size: 100,
+}))
+type TickRow = Record<string, number | string>
+const tickRows = (): TickRow[] =>
+  Array.from({ length: 1000 }, (_, r) => {
+    const row: TickRow = { id: `r${r}` }
+    for (let k = 0; k < 1000; k++) row[`c${k}`] = r * 1000 + k
+    return row
+  })
+let tick: (turn: number) => void
+const TickGrid = ({ flash }: { flash: boolean }) => {
+  const [rows, setRows] = useState(tickRows)
+  const [plugins] = useState(() => (flash ? [valueChangeFlash()] : []))
+  tick = turn =>
+    setRows(prev =>
+      prev.map((row, r) =>
+        r < 20 ? { ...row, c0: (row.c0 as number) + turn + 1 } : row,
+      ),
+    )
+  const table = useCreateTable({
+    columns: TICK_COLUMNS as never,
+    data: rows,
+    getRowId: (row: TickRow) => row.id as string,
+    plugins: plugins as never,
+  })
+  return (
+    <div style={{ height: 600 }}>
+      <DataGrid table={table as never} />
+    </div>
+  )
+}
+const VC18_COST = { ratio: 1.15, plusMs: 3 }
+
+describe('Вспышка при смене значения извне', () => {
+  test(
+    'VC18: тик сокета — 20 ячеек окна новым data на 1000×1000 — с плагином не дороже той же смены без него больше чем на 15 % (или 3 мс)',
+    async () => {
+      const measure = async (flash: boolean) => {
+        await render(<TickGrid flash={flash} />)
+        await waitForGrid()
+        let turn = 0
+        const result = await measureInteractionWork(async () => tick(turn++))
+        // Тик дошёл до ячеек: вспышка у варианта, новое значение у обоих.
+        await expect.poll(() => turn).toBe(2)
+        await expect
+          .poll(() => document.querySelector('[data-flash="changed"]') !== null)
+          .toBe(flash)
+        await cleanup()
+        return result
+      }
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const lit = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = ceilingOver(base.longestMs, VC18_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '1000×1000',
+          plugins: 'none',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('VC18-base', 'без плагина', base, false)
+      await record('VC18', 'valueChangeFlash', lit, true)
+      expect(
+        lit.longestMs,
+        `с плагином ${lit.longestMs.toFixed(1)}ms (база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
       ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,

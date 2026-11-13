@@ -333,13 +333,16 @@ describe('Вспышка итога: токены темы', () => {
         match => [match[1]!, match[2]!],
       ),
     )
-    expect([...declared.keys()].sort()).toEqual([
-      '--tsr-comp-flash-accepted-bg',
-      '--tsr-comp-flash-arrived-bg',
-      '--tsr-comp-flash-duration',
-      '--tsr-comp-flash-fade-duration',
-      '--tsr-comp-flash-reverted-bg',
-    ])
+    // Итоги смены значения (ADR 0221) — свои токены рядом, их проверяет VC12.
+    expect([...declared.keys()]).toEqual(
+      expect.arrayContaining([
+        '--tsr-comp-flash-accepted-bg',
+        '--tsr-comp-flash-arrived-bg',
+        '--tsr-comp-flash-duration',
+        '--tsr-comp-flash-fade-duration',
+        '--tsr-comp-flash-reverted-bg',
+      ]),
+    )
     // Компонентный уровень ссылается на системный и компонентный, не на опорный.
     const refs = [...declared.values()].flatMap(value =>
       [...value.matchAll(/var\(\s*(--[a-z0-9-]+)/g)].map(match => match[1]!),

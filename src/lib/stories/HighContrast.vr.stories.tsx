@@ -102,6 +102,7 @@ import * as rowsBackToTopStories from './DataGrid.Rows.BackToTop.stories'
 import * as rowsHighlightStories from './DataGrid.Rows.Highlight.stories'
 import * as rowsMotionStories from './DataGrid.Rows.Motion.stories'
 import * as rowsScrollToRowStories from './DataGrid.Rows.ScrollToRow.stories'
+import * as cellsValueChangeFlashStories from './DataGrid.Cells.ValueChangeFlash.stories'
 
 /**
  * Высокая контрастность (ADR 0087): каждое состояние каталога — близнец своей истории со
@@ -9289,5 +9290,165 @@ export const HighContrastServerPasteLoadsRowsStep4 = {
     4,
   ),
   name: 'Data loading/Server row model/Cell selection — Paste loads the rows, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastValueChangeFlashUpdateStep1 = {
+  ...twinStep(
+    cellsValueChangeFlashStories,
+    cellsValueChangeFlashStories.ValueChangeFlashUpdate,
+    1,
+  ),
+  name: 'Cells/Value change flash — Update from the server, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastValueChangeFlashUpdateStep2 = {
+  ...twinStep(
+    cellsValueChangeFlashStories,
+    cellsValueChangeFlashStories.ValueChangeFlashUpdate,
+    2,
+  ),
+  name: 'Cells/Value change flash — Update from the server, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastValueChangeFlashDirectionStep1 = {
+  ...twinStep(
+    cellsValueChangeFlashStories,
+    cellsValueChangeFlashStories.ValueChangeFlashDirection,
+    1,
+  ),
+  name: 'Cells/Value change flash — Rise and fall, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastValueChangeFlashDirectionStep2 = {
+  ...twinStep(
+    cellsValueChangeFlashStories,
+    cellsValueChangeFlashStories.ValueChangeFlashDirection,
+    2,
+  ),
+  name: 'Cells/Value change flash — Rise and fall, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastValueChangeFlashOwnEditStep1 = {
+  ...twinStep(
+    cellsValueChangeFlashStories,
+    cellsValueChangeFlashStories.ValueChangeFlashOwnEdit,
+    1,
+  ),
+  name: 'Cells/Value change flash — Own edit and a colleague, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastValueChangeFlashOwnEditStep2 = {
+  ...twinStep(
+    cellsValueChangeFlashStories,
+    cellsValueChangeFlashStories.ValueChangeFlashOwnEdit,
+    2,
+  ),
+  name: 'Cells/Value change flash — Own edit and a colleague, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastValueChangeFlashOwnEditStep3 = {
+  ...twinStep(
+    cellsValueChangeFlashStories,
+    cellsValueChangeFlashStories.ValueChangeFlashOwnEdit,
+    3,
+  ),
+  name: 'Cells/Value change flash — Own edit and a colleague, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastValueChangeFlashOverFillStep1 = {
+  ...twinStep(
+    cellsValueChangeFlashStories,
+    cellsValueChangeFlashStories.ValueChangeFlashOverFill,
+    1,
+  ),
+  name: 'Cells/Value change flash — Flash over a highlight, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastValueChangeFlashOverFillStep2 = {
+  ...twinStep(
+    cellsValueChangeFlashStories,
+    cellsValueChangeFlashStories.ValueChangeFlashOverFill,
+    2,
+  ),
+  name: 'Cells/Value change flash — Flash over a highlight, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastValueChangeFlashColorsStep1 = {
+  ...twinStep(
+    cellsValueChangeFlashStories,
+    cellsValueChangeFlashStories.ValueChangeFlashColors,
+    1,
+  ),
+  name: 'Cells/Value change flash — Flash colors, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastValueChangeFlashColorsStep2 = {
+  ...twinStep(
+    cellsValueChangeFlashStories,
+    cellsValueChangeFlashStories.ValueChangeFlashColors,
+    2,
+  ),
+  name: 'Cells/Value change flash — Flash colors, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastValueChangeFlashColorsStep3 = {
+  ...twinStep(
+    cellsValueChangeFlashStories,
+    cellsValueChangeFlashStories.ValueChangeFlashColors,
+    3,
+  ),
+  name: 'Cells/Value change flash — Flash colors, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastValueChangeFlashColorsStep4 = {
+  ...twinStep(
+    cellsValueChangeFlashStories,
+    cellsValueChangeFlashStories.ValueChangeFlashColors,
+    4,
+  ),
+  name: 'Cells/Value change flash — Flash colors, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastValueChangeFlashColorsStep5 = {
+  ...twinStep(
+    cellsValueChangeFlashStories,
+    cellsValueChangeFlashStories.ValueChangeFlashColors,
+    5,
+  ),
+  name: 'Cells/Value change flash — Flash colors, шаг 5',
+  tags: ['!test'],
+}
+
+export const HighContrastValueChangeFlashColorsStep6 = {
+  ...twinStep(
+    cellsValueChangeFlashStories,
+    cellsValueChangeFlashStories.ValueChangeFlashColors,
+    6,
+  ),
+  name: 'Cells/Value change flash — Flash colors, шаг 6',
+  tags: ['!test'],
+}
+
+export const HighContrastValueChangeFlashColorsStep7 = {
+  ...twinStep(
+    cellsValueChangeFlashStories,
+    cellsValueChangeFlashStories.ValueChangeFlashColors,
+    7,
+  ),
+  name: 'Cells/Value change flash — Flash colors, шаг 7',
   tags: ['!test'],
 }

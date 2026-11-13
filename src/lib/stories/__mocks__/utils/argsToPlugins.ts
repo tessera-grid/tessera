@@ -5,6 +5,7 @@ import {
   unsavedChanges,
   cellEditing,
   cellErrors,
+  valueChangeFlash,
   cellSelection,
   cellSelectionModel,
   contextMenu,
@@ -77,6 +78,7 @@ const FACTORIES = {
   rowActionMenu,
   cellEditing,
   cellErrors,
+  valueChangeFlash,
   cellSelection,
   cellSelectionModel,
   contextMenu,
@@ -228,6 +230,7 @@ export const argsToPlugins = (o: FeatureToggles) => {
     rowActionMenu(argsOf(o, 'rowActionMenu')),
     cellEditing(argsOf(o, 'cellEditing')),
     cellErrors(argsOf(o, 'cellErrors')),
+    valueChangeFlash(argsOf(o, 'valueChangeFlash')),
     cellSelection({
       ...argsOf(o, 'cellSelection'),
       handle: rangeHandleArg(o.cellSelectionHandle),

@@ -25,6 +25,7 @@ import { inferDataType, setAtPath } from './columnDataType'
 import { isNumericBase } from '../../core/dataTypeFormat'
 import { logWarn } from '../../util/logger'
 import { isThenable, rejectionText } from '../../util/thenable'
+import { markOwnWrites, settleOwnOn } from '../../shared/ownWrites'
 import {
   pluginStateKey,
   readPluginHooks,
@@ -828,6 +829,8 @@ const submitValue = (
   { session = false, current }: { session?: boolean; current?: unknown } = {},
 ) => {
   const controller = new AbortController()
+  // Эхо записи в данных — своё, не смена извне (ADR 0221, §1).
+  const settleOwn = markOwnWrites(table, [{ rowId, columnId }])
   const result = hooks.onCellEdit?.(
     {
       rowId,
@@ -843,6 +846,7 @@ const submitValue = (
   const key = cellKey(rowId, columnId)
   if (!isThenable(result)) {
     writeSaved(table, rowId, columnId, value, result)
+    settleOwn()
     if (session) {
       endEditSession(table)
       return
@@ -882,6 +886,7 @@ const submitValue = (
       cancelSubmitted(table, key, attempt, source, hooks)
     },
   })
+  result.then(settleOwn, settleOwn)
   result.then(
     answer => {
       if (controller.signal.aborted) return lateAnswer(table)
@@ -1079,6 +1084,10 @@ export const commitDrafts = (table: unknown, drafts: readonly Draft[]) => {
   )
   const controller = new AbortController()
   const attempt = ++lastAttempt
+  const settleOwn = markOwnWrites(table, [
+    ...cells,
+    ...inserts.map(({ rowId }) => ({ rowId })),
+  ])
   const result = hooks.onCommitEdits?.(
     {
       cells,
@@ -1087,6 +1096,7 @@ export const commitDrafts = (table: unknown, drafts: readonly Draft[]) => {
     },
     { signal: controller.signal },
   )
+  settleOwnOn(result, settleOwn)
   reportOutcome(table, { plugin: ID, action: 'commit' }, result)
 
   // Ответ — одной записью в каждый срез: ожидание, черновики, вспышки, кэш строк (DR26).
@@ -1319,10 +1329,12 @@ export const commitCellPackage = (table: unknown, pkg: CellPackage) => {
   // Повтор снимает прежнюю плашку отказа этой операции.
   writeActionStatus(table, status => withoutKey(status, statusKey))
   const controller = new AbortController()
+  const settleOwn = markOwnWrites(table, cells)
   const result = hooks.onCommitEdits?.(
     { id, source, cells },
     { signal: controller.signal },
   )
+  settleOwnOn(result, settleOwn)
   reportOutcome(table, action, result)
   const name = (labels: TableLabels) => actionLabelOf(table, action, labels)
   const flashCells = (outcome: 'accepted' | 'reverted') => {

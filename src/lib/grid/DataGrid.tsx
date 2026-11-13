@@ -163,13 +163,15 @@ const DataGridView = <D extends LabelDictionary = LabelDictionary>({
   // выбора строк не перестраивает раскладку/модель — её несут сами строки и чекбоксы
   // (useSelector в компонентах), поэтому корню на неё ре-рендериться незачем. Прочие
   // срезы (пиннинг/порядок/сортировка/группировка/раскрытие/размеры…) меняют шапку/
-  // тело/модель — на них корень ре-рендерится (shallow по top-level ключам).
+  // тело/модель — на них корень ре-рендерится (shallow по top-level ключам). Вспышки читают
+  // ячейки, строки, шапка и футер своими подписками: тик потока не будит корень (ADR 0221, VC18).
   const state = useTableState(table, s => {
     const {
       rowSelection: _rowSelection,
       cellSelection: _cellSelection,
       keyboardNavigation: _keyboardNavigation,
       serverAction: _serverAction,
+      flashes: _flashes,
       ...rest
     } = s as unknown as Record<string, unknown>
     return rest

@@ -463,6 +463,14 @@ export const enableCellEditingType = booleanControl(
 export const enableCellErrorsType = booleanControl(
   'Ошибки ячеек: красная точка у Visits больше 15 (плагин `cellErrors`)',
 )
+export const enableValueChangeFlashType = booleanControl(
+  'Вспышка ячейки при смене значения новыми данными (плагин `valueChangeFlash`)',
+)
+export const valueChangeFlashColumnDefaultType = radioControl(
+  'Вид колонок без своего `changeFlash` (`columnDefault`): `true` — вспышка, `direction` — тон и стрелка роста и падения, `false` — без вспышки',
+  [true, 'direction', false],
+  'true',
+)
 export const enableCellSelectionType = booleanControl(
   'Выделение диапазона ячеек мышью и копирование Ctrl/Cmd+C (плагин `cellSelection`)',
 )

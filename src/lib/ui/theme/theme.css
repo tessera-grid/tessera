@@ -100,6 +100,8 @@
   /* Несохранённое (ADR 0178, §4): черновики — не ниже 3:1 к фону, цифры на нём — 4,5:1. */
   --tsr-sys-unsaved: var(--tsr-ref-amber-700);
   --tsr-sys-success: var(--success, var(--tsr-ref-green-500));
+  /* Смена значения извне (ADR 0221): синий, янтарь и зелёный заняты. */
+  --tsr-sys-changed: var(--tsr-ref-violet-500);
 
   /* Схема темы (ADR 0090): `color-scheme` грида и порталов — нативные полосы
    * прокрутки и поля; по ней же порталы и проверка палитры узнают фактическую тему. */
@@ -206,6 +208,7 @@
   --tsr-sys-warning: var(--warning, var(--tsr-ref-amber-400));
   --tsr-sys-unsaved: var(--tsr-ref-orange-400);
   --tsr-sys-success: var(--success, var(--tsr-ref-green-400));
+  --tsr-sys-changed: var(--tsr-ref-violet-400);
   --tsr-sys-elevated: color-mix(
     in oklch,
     var(--tsr-sys-surface),
@@ -503,15 +506,55 @@
   --tsr-comp-highlight-fade-duration: 500ms;
   /*
    * Вспышка итога на цели (ADR 0134): синий — появилось, зелёный — сервер принял,
-   * красный — грид вернул прежнее; время у всех итогов одно.
+   * красный — грид вернул прежнее; смена значения извне (ADR 0221) — фиолетовый, рост и
+   * падение — зелёный и красный. Тон непрозрачен — оттенок поверх поверхности строк: вспышка
+   * закрывает подсветку, тинт и выбор под собой, не смешиваясь с ними. Время у всех одно.
    */
   --tsr-comp-flash-arrived-bg: color-mix(
     in srgb,
     var(--tsr-comp-loader-bar) 16%,
-    transparent
+    var(--tsr-sys-surface)
   );
-  --tsr-comp-flash-accepted-bg: var(--tsr-comp-highlight-success-bg);
-  --tsr-comp-flash-reverted-bg: var(--tsr-comp-highlight-danger-bg);
+  --tsr-comp-flash-accepted-bg: color-mix(
+    in srgb,
+    var(--tsr-sys-success) 16%,
+    var(--tsr-sys-surface)
+  );
+  --tsr-comp-flash-reverted-bg: color-mix(
+    in srgb,
+    var(--tsr-sys-danger) 15%,
+    var(--tsr-sys-surface)
+  );
+  --tsr-comp-flash-changed-bg: color-mix(
+    in srgb,
+    var(--tsr-sys-changed) 16%,
+    var(--tsr-sys-surface)
+  );
+  --tsr-comp-flash-up-bg: color-mix(
+    in srgb,
+    var(--tsr-sys-success) 16%,
+    var(--tsr-sys-surface)
+  );
+  --tsr-comp-flash-down-bg: color-mix(
+    in srgb,
+    var(--tsr-sys-danger) 15%,
+    var(--tsr-sys-surface)
+  );
+  /*
+   * Стрелка роста и падения (ADR 0221, §6): треугольник в отступе у начала ячейки; тон темнее
+   * роли к цвету текста — не ниже 3:1 на своей вспышке.
+   */
+  --tsr-comp-flash-up-color: color-mix(
+    in oklch,
+    var(--tsr-sys-success) 60%,
+    var(--tsr-sys-fg)
+  );
+  --tsr-comp-flash-down-color: color-mix(
+    in oklch,
+    var(--tsr-sys-danger) 75%,
+    var(--tsr-sys-fg)
+  );
+  --tsr-comp-flash-direction-size: 6px;
   --tsr-comp-flash-duration: 300ms;
   --tsr-comp-flash-fade-duration: 500ms;
   /* Шаг отступа уровня вложенности строк (ADR 0059). */
@@ -1241,6 +1284,7 @@
   --tsr-sys-glow-strength: 70%;
   --tsr-sys-warning: var(--tsr-ref-amber-500);
   --tsr-sys-success: var(--tsr-ref-green-500);
+  --tsr-sys-changed: var(--tsr-ref-violet-500);
 }
 
 /*

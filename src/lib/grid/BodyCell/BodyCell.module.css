@@ -273,15 +273,15 @@
 .body__cell[data-actions-column-cell='true'][data-cell-first-right-pinned='true'][data-pending-wave] {
   background-color: var(--tsr-comp-row-bg);
   background-image:
+    linear-gradient(var(--tsr-flash-cell), var(--tsr-flash-cell)),
+    linear-gradient(var(--tsr-flash-column), var(--tsr-flash-column)),
+    linear-gradient(var(--tsr-flash-row), var(--tsr-flash-row)),
     linear-gradient(
       var(--tsr-cell-selection-tint, transparent),
       var(--tsr-cell-selection-tint, transparent)
     ),
-    linear-gradient(var(--tsr-flash-cell), var(--tsr-flash-cell)),
     linear-gradient(var(--tsr-highlight-cell), var(--tsr-highlight-cell)),
-    linear-gradient(var(--tsr-flash-column), var(--tsr-flash-column)),
     linear-gradient(var(--tsr-highlight-column), var(--tsr-highlight-column)),
-    linear-gradient(var(--tsr-flash-row), var(--tsr-flash-row)),
     linear-gradient(var(--tsr-highlight-row), var(--tsr-highlight-row)),
     linear-gradient(var(--tsr-row-state), var(--tsr-row-state));
 }
@@ -302,13 +302,14 @@
 }
 
 /*
- * Слои фона ячейки поверх `background-color`: сверху вниз — тинт выделения ячеек,
- * вспышка и подсветка ячейки, вспышка и подсветка колонки (ADR 0080, §2; ADR 0134, §5):
- * вспышка итога — над подсветкой приложения своей цели. Текст, кромки выделения и фокус-кольцо
- * лежат выше и не тонируются. Подсветку строки и её состояние (наведение, выбор)
- * рисует фон самой строки: прозрачные ячейки их пропускают, а свои слои строки получают
- * только ячейки с непрозрачной подложкой закрепления (ADR 0126) — иначе прозрачная
- * закреплённая ячейка поверх прокрученной удвоила бы тон.
+ * Слои фона ячейки поверх `background-color`: сверху вниз — вспышки ячейки, колонки и строки,
+ * тинт выделения ячеек, подсветка ячейки и колонки (ADR 0080, §2; ADR 0134, §5; ADR 0221, §6).
+ * Тон вспышки непрозрачен: пока она держится, заливки под ней не видны и с ней не смешиваются.
+ * Вспышка строки повторена слоем ячейки — иначе подсветка и тинт ячейки легли бы поверх неё.
+ * Текст, кромки выделения и фокус-кольцо лежат выше и не тонируются. Подсветку строки и её
+ * состояние (наведение, выбор) рисует фон самой строки: прозрачные ячейки их пропускают, а свои
+ * слои строки получают только ячейки с непрозрачной подложкой закрепления (ADR 0126) — иначе
+ * прозрачная закреплённая ячейка поверх прокрученной удвоила бы тон.
  */
 .body__cell:is(
   [data-highlight],
@@ -318,13 +319,14 @@
   [data-cell-selected='true']
 ) {
   background-image:
+    linear-gradient(var(--tsr-flash-cell), var(--tsr-flash-cell)),
+    linear-gradient(var(--tsr-flash-column), var(--tsr-flash-column)),
+    linear-gradient(var(--tsr-flash-row), var(--tsr-flash-row)),
     linear-gradient(
       var(--tsr-cell-selection-tint, transparent),
       var(--tsr-cell-selection-tint, transparent)
     ),
-    linear-gradient(var(--tsr-flash-cell), var(--tsr-flash-cell)),
     linear-gradient(var(--tsr-highlight-cell), var(--tsr-highlight-cell)),
-    linear-gradient(var(--tsr-flash-column), var(--tsr-flash-column)),
     linear-gradient(var(--tsr-highlight-column), var(--tsr-highlight-column));
 }
 
@@ -336,15 +338,15 @@
     )
 ) {
   background-image:
+    linear-gradient(var(--tsr-flash-cell), var(--tsr-flash-cell)),
+    linear-gradient(var(--tsr-flash-column), var(--tsr-flash-column)),
+    linear-gradient(var(--tsr-flash-row), var(--tsr-flash-row)),
     linear-gradient(
       var(--tsr-cell-selection-tint, transparent),
       var(--tsr-cell-selection-tint, transparent)
     ),
-    linear-gradient(var(--tsr-flash-cell), var(--tsr-flash-cell)),
     linear-gradient(var(--tsr-highlight-cell), var(--tsr-highlight-cell)),
-    linear-gradient(var(--tsr-flash-column), var(--tsr-flash-column)),
     linear-gradient(var(--tsr-highlight-column), var(--tsr-highlight-column)),
-    linear-gradient(var(--tsr-flash-row), var(--tsr-flash-row)),
     linear-gradient(var(--tsr-highlight-row), var(--tsr-highlight-row)),
     linear-gradient(var(--tsr-row-state), var(--tsr-row-state));
 }
@@ -580,4 +582,47 @@
   max-height: none;
   -webkit-line-clamp: var(--tsr-text-wrap-max-lines, 10);
   line-clamp: var(--tsr-text-wrap-max-lines, 10);
+}
+
+/*
+ * Стрелка роста и падения (ADR 0221, §6): треугольник в отступе у начала ячейки, посередине
+ * высоты; раскладку не меняет и гаснет вместе с заливкой вспышки.
+ */
+.flash-direction {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-start: calc(
+    (
+        var(--tsr-comp-cell-content-padding-x) -
+          var(--tsr-comp-flash-direction-size)
+      ) /
+      2
+  );
+  z-index: 1;
+  width: var(--tsr-comp-flash-direction-size);
+  height: var(--tsr-comp-flash-direction-size);
+  translate: 0 -50%;
+  pointer-events: none;
+  background-color: var(--tsr-comp-flash-up-color);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.flash-direction[data-flash-direction='down'] {
+  background-color: var(--tsr-comp-flash-down-color);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.flash-direction[data-out] {
+  opacity: 0;
+  transition: opacity var(--tsr-comp-flash-fade-duration)
+    var(--tsr-comp-motion-easing-out);
+}
+
+/* Высокая контрастность: заливки смены нет, направление несёт стрелка цветом текста. */
+@media (forced-colors: active) {
+  .flash-direction,
+  .flash-direction[data-flash-direction='down'] {
+    forced-color-adjust: none;
+    background-color: CanvasText;
+  }
 }

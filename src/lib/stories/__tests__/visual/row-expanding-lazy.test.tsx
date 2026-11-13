@@ -637,7 +637,7 @@ describe('Row expanding: arrival flash', () => {
     expect(alpha('lazy-c0')).toBe(0)
   })
 
-  test('RE46: the flash keeps the row layout; selection and hover show through it and it does not catch the pointer', async () => {
+  test('RE46: the flash keeps the row layout and does not catch the pointer; selection and hover under it take effect', async () => {
     restore = themeTokens({ '--tsr-comp-flash-duration': '60000ms' })
     await renderLazy(asyncKids(2), {
       enableRowSelection: true,
@@ -650,8 +650,6 @@ describe('Row expanding: arrival flash', () => {
     expect(arrived('lazy-c0')).toBe(true)
     const lit = rowOf('lazy-c0')!.getBoundingClientRect()
     expect([lit.width, lit.height]).toEqual([plain.width, plain.height])
-    // Слой полупрозрачен: фон строки под ним виден.
-    expect(alpha('lazy-c0')).toBeLessThanOrEqual(0.25)
 
     // Клик по вспыхнувшей строке выбирает её; под слоем — фон выбранной строки при наведении.
     await humanClick(

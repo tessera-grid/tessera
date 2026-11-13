@@ -11,6 +11,7 @@ import {
   type CellContributionContext,
   cellLayersOf,
   mergeContributions,
+  useCellValueWatch,
   useContributionNode,
   type WindowRow,
 } from '../core/bodyContributions'
@@ -31,7 +32,7 @@ import {
   rangeHighlightAt,
 } from '../core/highlights/highlightFeature'
 import { highlightRender } from './highlight'
-import { flashRender } from './flash'
+import { directionOf, flashRender } from './flash'
 import {
   type FlashEntry,
   type Flashes,
@@ -125,6 +126,8 @@ export const BodyCell = memo(
     const columnKey = columnHighlightKey(columnId)
     const navigation = useContext(KeyboardNavigationContext)
     const contributors = bodyOf(table).cell
+    // Смена значения смонтированной ячейки — вкладчикам с `watch` (ADR 0221, §4).
+    useCellValueWatch(contributors, cell)
     const contributionContext: CellContributionContext = {
       table: table as never,
       cell,
@@ -188,6 +191,8 @@ export const BodyCell = memo(
       { layer: 'cell', entry: cellFlash },
       { layer: 'column', entry: columnFlash },
     ])
+    // Рост и падение — ещё и стрелкой (ADR 0221, §6): цвет не единственный носитель смысла.
+    const direction = directionOf(cellFlash ?? columnFlash)
 
     const {
       isStartPinned,
@@ -371,6 +376,14 @@ export const BodyCell = memo(
         data-cell-of-last-row={cell.row.getIsLastRow()}
       >
         {layers.nodes}
+        {direction && (
+          <span
+            aria-hidden
+            className={styles['flash-direction']}
+            data-flash-direction={direction.outcome}
+            data-out={direction.out}
+          />
+        )}
         <IconRevealContext.Provider value={iconReveal}>
           {/* Обёртка — разметкой, слоты — компонентами только при непустом слоте (ADR 0208). */}
           <div

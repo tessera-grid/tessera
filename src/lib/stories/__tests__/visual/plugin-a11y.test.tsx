@@ -51,6 +51,7 @@ const PLUGIN_ARGS: Record<string, GridArgs> = {
   rowActions: { enableRowActions: true },
   cellEditing: { enableCellEditing: true },
   cellErrors: { enableCellErrors: true },
+  valueChangeFlash: { enableValueChangeFlash: true },
   cellSelection: { enableCellSelection: true },
   contextMenu: { enableContextMenu: true, enableCellSelection: true },
   columnSorting: { enableColumnSorting: true },

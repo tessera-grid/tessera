@@ -35,6 +35,11 @@ export { rowActions, type RowActionsPluginOptions } from './rowActions'
 export { cellEditing, type CellEditingOptions } from './cellEditing'
 export { cellErrors, type CellErrorsOptions } from './cellErrors'
 export {
+  valueChangeFlash,
+  type ValueChangeFlashColumnDef,
+  type ValueChangeFlashOptions,
+} from './valueChangeFlash'
+export {
   cellSelection,
   type CellSelectionHandleOptions,
   type CellSelectionOptions,

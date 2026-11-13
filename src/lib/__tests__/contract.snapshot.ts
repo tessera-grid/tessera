@@ -25,6 +25,7 @@ export const COLUMN_DEF_FIELDS: Record<string, string> = {
   autoHeight: '0218',
   wrapHeaderText: '0218',
   autoHeaderHeight: '0218',
+  changeFlash: '0221',
   skeletonCell: '0060',
 }
 

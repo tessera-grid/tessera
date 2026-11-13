@@ -21,8 +21,12 @@ import { rangeEntriesAt } from '../highlights/targetRanges'
 import { parseDuration } from '../../util/cssTime'
 import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
 
-/** Итог: здесь появилось, сервер принял запись, грид вернул прежнее. */
-export type FlashOutcome = 'arrived' | 'accepted' | 'reverted'
+/**
+ * Итог: здесь появилось, сервер принял запись, грид вернул прежнее; значение сменилось извне,
+ * выросло, упало (ADR 0221).
+ */
+export type FlashOutcome =
+  'arrived' | 'accepted' | 'reverted' | 'changed' | 'up' | 'down'
 
 export interface FlashEntry {
   outcome: FlashOutcome
@@ -76,7 +80,14 @@ declare module '@tanstack/react-table' {
 }
 /* eslint-enable @typescript-eslint/no-unused-vars */
 
-const OUTCOMES: readonly FlashOutcome[] = ['arrived', 'accepted', 'reverted']
+const OUTCOMES: readonly FlashOutcome[] = [
+  'arrived',
+  'accepted',
+  'reverted',
+  'changed',
+  'up',
+  'down',
+]
 
 const EMPTY: Flashes = {}
 
@@ -88,11 +99,59 @@ const tokenMs = (table: unknown, name: string): number | undefined => {
   return value ? parseDuration(value) : undefined
 }
 
+interface FlashTiming {
+  hold: number
+  fade: number
+}
+
+const readTiming = (table: unknown): FlashTiming | undefined => {
+  const hold = tokenMs(table, '--tsr-comp-flash-duration')
+  const fade = tokenMs(table, '--tsr-comp-flash-fade-duration')
+  return hold === undefined && fade === undefined
+    ? undefined
+    : { hold: hold ?? FALLBACK.hold, fade: fade ?? FALLBACK.fade }
+}
+
+/**
+ * Время, прочитанное из темы, — по хранилищу таблицы. Чтение токена сразу после коммита
+ * пересчитывает стили всего грида (ADR 0221, VC18): частые вспышки берут прочитанное, а тему
+ * перечитывают после кадра, когда стили уже посчитаны.
+ */
+const timings = new WeakMap<object, FlashTiming>()
+const rereading = new WeakSet<object>()
+
+const timingKey = (table: unknown) =>
+  ((table as { store?: object }).store ?? table) as object
+
+const rereadLater = (table: unknown, key: object) => {
+  if (rereading.has(key)) return
+  rereading.add(key)
+  const reread = () => {
+    rereading.delete(key)
+    const timing = readTiming(table)
+    if (timing) timings.set(key, timing)
+    else timings.delete(key)
+  }
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(() => setTimeout(reread, 0))
+  } else {
+    setTimeout(reread, 0)
+  }
+}
+
 /** Удержание и угасание вспышки по токенам темы грида — одни у всех итогов. */
-export const flashTiming = (table: unknown) => ({
-  hold: tokenMs(table, '--tsr-comp-flash-duration') ?? FALLBACK.hold,
-  fade: tokenMs(table, '--tsr-comp-flash-fade-duration') ?? FALLBACK.fade,
-})
+export const flashTiming = (table: unknown): FlashTiming => {
+  const key = timingKey(table)
+  const known = timings.get(key)
+  if (known) {
+    rereadLater(table, key)
+    return known
+  }
+  const timing = readTiming(table)
+  if (!timing) return FALLBACK
+  timings.set(key, timing)
+  return timing
+}
 
 /* --------------------------------- срез --------------------------------- */
 

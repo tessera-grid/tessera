@@ -141,6 +141,9 @@ export const MODEL_PARITY: ParityBase = {
   cellErrors: {
     same: ['enabled', 'getCellError'],
   },
+  valueChangeFlash: {
+    same: ['enabled', 'columnDefault'],
+  },
   cellSelection: {
     same: [
       'enabled',

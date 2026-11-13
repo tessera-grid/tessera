@@ -60,6 +60,8 @@ import {
   cellEditingSearchDebounceMsType,
   cellEditingSaveModeType,
   enableCellErrorsType,
+  enableValueChangeFlashType,
+  valueChangeFlashColumnDefaultType,
   enableCellSelectionModelType,
   enableCellSelectionType,
   enableColumnDraggingType,
@@ -346,6 +348,10 @@ export const dataGridArgTypes = {
       cellEditingSaveMode: cellEditingSaveModeType,
     }),
     enableCellErrors: enableCellErrorsType,
+    enableValueChangeFlash: enableValueChangeFlashType,
+    ...when('enableValueChangeFlash', {
+      valueChangeFlashColumnDefault: valueChangeFlashColumnDefaultType,
+    }),
     enableCellSelectionModel: enableCellSelectionModelType,
     enableCellSelection: enableCellSelectionType,
     ...when('enableCellSelection', {
@@ -586,6 +592,8 @@ export const dataGridDefaultArgs = {
 
   enableCellEditing: false,
   enableCellErrors: false,
+  enableValueChangeFlash: false,
+  valueChangeFlashColumnDefault: true,
   enableCellSelection: false,
   enableCellSelectionModel: false,
   cellSelectionRangeSelection: true,

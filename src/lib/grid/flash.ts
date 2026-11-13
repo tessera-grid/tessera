@@ -43,6 +43,12 @@ export const flashRender = (
   return attrs ? { attrs, style } : NONE
 }
 
+/** Вспышка роста или падения (ADR 0221) — для стрелки в ячейке. */
+export const directionOf = (entry: FlashEntry | undefined) =>
+  entry && (entry.outcome === 'up' || entry.outcome === 'down')
+    ? entry
+    : undefined
+
 /** Вспышка колонки — для ячеек заголовка и футера. */
 export const useColumnFlash = (table: unknown, columnId: string) => {
   const key = columnHighlightKey(columnId)

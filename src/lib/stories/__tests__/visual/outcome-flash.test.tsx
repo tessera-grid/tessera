@@ -443,7 +443,7 @@ describe('Вспышка итога: цели и вид', () => {
     )
   })
 
-  test('OF8: текст, кромки диапазона и кольцо фокуса не тонированы; вспышка над подсветкой приложения; выбор строки и тинт диапазона различимы сквозь неё', async () => {
+  test('OF8: текст, кромки диапазона и кольцо фокуса не тонированы; вспышка непрозрачна и лежит над подсветкой приложения, выбором строки и тинтом диапазона', async () => {
     holdLong()
     const screen = await mount({ cells: true, selected: ['r4'] })
     // Содержимое и кромки диапазона b2:b3.
@@ -464,7 +464,7 @@ describe('Вспышка итога: цели и вид', () => {
     const before = await snapshot()
     await act(() => {
       table.flashOutcome([{ row: 'r1' }, { row: 'r3' }], 'reverted')
-      table.flashOutcome([{ row: 'r4' }, { row: 'r5' }], 'accepted')
+      table.flashOutcome([{ row: 'r4' }, { row: 'r0' }], 'accepted')
     })
     const lit = await snapshot()
     expect(lit(...center(ink))).toEqual(before(...center(ink)))
@@ -473,34 +473,30 @@ describe('Вспышка итога: цели и вид', () => {
     expect(distance(lit(...edge()), before(...edge()))).toBeLessThan(
       bgShift(cellEl('r3', 'b')) * 0.4,
     )
-    // Тинт диапазона сквозь вспышку: синий канал выше, чем у той же строки вне диапазона.
-    const inRange = colorAt(lit, cellEl('r3', 'b'))
-    const outside = colorAt(lit, cellEl('r3', 'c'))
-    expect(inRange[2]! - outside[2]!).toBeGreaterThan(3)
-    // Выбор строки сквозь вспышку: выбранная r4 отличается от невыбранной r5 того же итога.
+    // Тинт диапазона и выбор строки под вспышкой не видны: цвет — тон итога (ADR 0221, §6).
+    expect(
+      distance(
+        colorAt(lit, cellEl('r3', 'b')),
+        colorAt(lit, cellEl('r3', 'c')),
+      ),
+    ).toBeLessThanOrEqual(4)
     expect(
       distance(
         colorAt(lit, cellEl('r4', 'c')),
-        colorAt(lit, cellEl('r5', 'c')),
+        colorAt(lit, cellEl('r0', 'c')),
       ),
-    ).toBeGreaterThan(4)
+    ).toBeLessThanOrEqual(4)
     await screen.unmount()
 
-    // Над подсветкой приложения: цвет — вспышка поверх подсветки, а не наоборот.
+    // Над подсветкой приложения: цвет — тон вспышки, подсветка с ним не смешивается.
     const stackedScreen = await mount()
-    const plain = await snapshot()
     await act(() => {
       table.highlight({ row: 'r2' }, { tone: 'warning' })
       table.flashOutcome({ row: 'r2' }, 'reverted')
     })
     const stacked = await snapshot()
-    const base = colorAt(plain, cellEl('r2', 'a'))
-    const tone = toRgba(resolve('var(--tsr-comp-highlight-warning-bg)'))
-    const flash = fillOf('reverted')
-    const flashOnTop = over(flash, over(tone, base))
-    const toneOnTop = over(tone, over(flash, base))
-    const seen = colorAt(stacked, cellEl('r2', 'a'))
-    expect(distance(seen, flashOnTop)).toBeLessThan(distance(seen, toneOnTop))
+    const flash = fillOf('reverted').slice(0, 3)
+    expect(distance(colorAt(stacked, cellEl('r2', 'a')), flash)).toBeLessThan(8)
 
     // Фокус-кольцо клавиатурной навигации.
     await stackedScreen.unmount()
