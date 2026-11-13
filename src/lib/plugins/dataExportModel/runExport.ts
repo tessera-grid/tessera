@@ -138,6 +138,13 @@ const cancellable = (
     kind: 'export',
     id: format.id,
     cancel,
+    // Таблица ушла со страницы — выгрузка бросается молча, файла нет (XV11).
+    drop: () => {
+      if (controller.signal.aborted) return
+      controller.abort()
+      unregister()
+      cancelled!()
+    },
   })
   const settled = pending.then(
     () => {

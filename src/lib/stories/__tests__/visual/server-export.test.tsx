@@ -102,6 +102,26 @@ const Grid = ({
 const armed = () => exportButton().hasAttribute('data-cancel-armed')
 
 describe('выгрузка в SSRM на гриде (ADR 0190)', () => {
+  test('XV11: выгрузка, ждущая строк, бросается, когда таблица уходит со страницы: её запросы прерваны, файла нет', async () => {
+    let holding = false
+    const { getRows, held } = server(start => holding && start > 0)
+    const screen = await render(<Grid getRows={getRows} />)
+    vi.mocked(downloadFile).mockClear()
+    await expect
+      .poll(() => q('.data-grid__body-row[data-row-id="r0"]'))
+      .not.toBeNull()
+    await expect.poll(() => q('[data-testid="export-button"]')).not.toBeNull()
+    holding = true
+    await humanClick(exportButton())
+    await expect.poll(() => held.length).toBeGreaterThan(0)
+
+    await screen.unmount()
+    expect(held.every(({ request }) => request.signal.aborted)).toBe(true)
+    for (const { go } of held.splice(0)) go()
+    await new Promise(resolve => setTimeout(resolve, 200))
+    expect(downloadFile).not.toHaveBeenCalled()
+  })
+
   test('XV6: кнопка занята, отмена и смена выборки прерывают запросы, файла нет', async () => {
     let holding = false
     const { getRows, held } = server(start => holding && start > 0)

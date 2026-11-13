@@ -1279,7 +1279,7 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       ([ADR 0188](docs/decisions/0188-current-page-scope-in-ssrm.md)).
     - _Выгрузка в SSRM без сервера:_ модульный `serverExport.dom` (XV1–XV5, XV8 — оси, страница и вся
       выборка с раскрытыми ветками, предел, неизвестный итог, `table.exportData`), визуальный
-      `server-export` (XV6–XV7, XV9 — занятая кнопка, отмена и смена выборки, отказ блока, axe панели),
+      `server-export` (XV6–XV7, XV9 — занятая кнопка, отмена и смена выборки, отказ блока, axe панели; XV11 — выгрузка бросается, когда таблица уходит со страницы),
       перф XV10 — в `interaction` ([ADR 0190](docs/decisions/0190-client-export-in-ssrm.md)).
     - _Пагинация в SSRM:_ модульный `serverPagination.dom` (SP1, SP3, SP9–SP10, SP12 — страница из
       корней с ветками, отмена блоков ушедшей страницы, выбор, диапазон и транзакции по сквозному

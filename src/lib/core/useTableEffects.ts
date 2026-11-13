@@ -25,6 +25,7 @@ import { followIndexRanges } from './highlights/followRanges'
 import { rowSourceOf } from './rowSource'
 import { checkDataChange, type SeenData } from './dataFollow'
 import { abortServerActions } from './serverActions'
+import { dropPending } from './cancellation'
 import {
   type PluginDiagnostic,
   reportPluginError,
@@ -48,8 +49,15 @@ export const useTableEffects = (
   const host = table as Parameters<typeof logWarn>[0]
   const { store } = table as { store: object }
 
-  // Размонтирование прерывает ожидающее серверное действие (ADR 0116, SA2).
-  useEffect(() => () => abortServerActions(store), [store])
+  // Размонтирование прерывает ожидающее серверное действие (ADR 0116, SA2) и бросает
+  // ждущие операции, которые умеют бросаться, — выгрузку (ADR 0190, XV11).
+  useEffect(
+    () => () => {
+      abortServerActions(store)
+      dropPending(store)
+    },
+    [store],
+  )
 
   // Императивный сетап плагинов (generic-escape) — единым эффектом; перезапускается
   // только при смене состава набора или значения аргументов фабрик (ADR 0039, RX24).

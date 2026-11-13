@@ -37,6 +37,11 @@ export interface PendingOperation {
   /** Другие id, по которым находится та же операция: ячейки пакета записи (ADR 0219, §6). */
   ids?: { has: (id: string) => boolean }
   cancel: (source: CancelSource) => void
+  /**
+   * Таблица ушла со страницы: операция бросается без объявления и канала действий, как
+   * копирование (ADR 0146, XC17; ADR 0190, XV11).
+   */
+  drop?: () => void
 }
 
 const matches = (operation: PendingOperation, filter: CancelPendingFilter) =>
@@ -106,6 +111,13 @@ export const cancelPending = (
     count++
   }
   return count
+}
+
+/** Таблица ушла со страницы: ждущие операции, умеющие бросаться, бросаются. */
+export const dropPending = (store: object) => {
+  const registry = registries.get(store)
+  if (!registry) return
+  for (const operation of [...registry]) operation.drop?.()
 }
 
 const cancelledLoads = new WeakSet<object>()
