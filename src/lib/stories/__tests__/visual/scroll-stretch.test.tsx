@@ -102,6 +102,17 @@ const visibleIndexes = () => {
     .map(row => Number(row.dataset.index))
 }
 const nextFrame = () => new Promise(requestAnimationFrame)
+/** Верх строки после конца анимации щелчка: место не меняется три кадра подряд. */
+const settledTop = async (index: number) => {
+  let last = rowTop(index)
+  for (let still = 0; still < 3;) {
+    await nextFrame()
+    const top = rowTop(index)
+    still = top === last ? still + 1 : 0
+    last = top
+  }
+  return last
+}
 const center = () => {
   const box = scroller().getBoundingClientRect()
   return { x: box.left + box.width / 2, y: box.top + box.height / 2 }
@@ -178,20 +189,21 @@ describe('Растяжка высоты (ADR 0142)', () => {
     for (const fraction of [0.3, 0.9]) {
       await thumbTo(fraction)
       const watched = middleRow()
-      const before = rowTop(watched)
+      const before = await settledTop(watched)
       await wheel.realWheel(center(), 30, 4, 50)
       await expect
         .poll(() => Math.abs(before - rowTop(watched) - 120))
         .toBeLessThanOrEqual(PRECISION)
     }
     // Строка и страница колеса — в px; сдвиг доезжает за анимацию щелчка.
+    // Точка отсчёта — после конца анимации прошлого щелчка: на ходу ошибка складывается.
     const watched = middleRow()
-    let before = rowTop(watched)
+    let before = await settledTop(watched)
     syntheticWheel({ deltaY: 1, deltaMode: 1 })
     await expect
       .poll(() => Math.abs(before - rowTop(watched) - 20))
       .toBeLessThanOrEqual(PRECISION)
-    before = rowTop(watched)
+    before = await settledTop(watched)
     syntheticWheel({ deltaY: -1, deltaMode: 2 })
     await expect
       .poll(() => Math.abs(rowTop(watched) - before - scroller().clientHeight))

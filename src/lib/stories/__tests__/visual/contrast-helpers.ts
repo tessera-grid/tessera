@@ -460,6 +460,8 @@ export const sys = (name: string) => {
   return value
 }
 
+const POPUP_ROOTS = '[role="menu"], [role="dialog"], [data-side]'
+
 /** Системные цвета, которыми режим рисует состояния, — кроме фона `Canvas`. */
 const STATE_COLORS = [
   'CanvasText',
@@ -483,7 +485,8 @@ const STATE_COLORS = [
 /**
  * Псевдо-состояние в `forced-colors` (CX14): пиксели в рамке узла (+3 px) до и после
  * состояния. `changed` — сколько отличается, `system` — сколько из них системного
- * цвета, не `Canvas`.
+ * цвета, не `Canvas`. Пиксели под поповером не считаются: подсказку состояния (тултип
+ * обрезанного текста) обход проверяет сам, а узел под ней не виден.
  */
 export const pseudoChange = (before: Shot, after: Shot, el: Element) => {
   const canvas = toRgba(sys('Canvas'))
@@ -500,6 +503,8 @@ export const pseudoChange = (before: Shot, after: Shot, el: Element) => {
       const a = before(x, y)
       const b = after(x, y)
       if (!a || !b || near(a, b)) continue
+      const top = document.elementFromPoint(x, y)
+      if (top && !el.contains(top) && top.closest(POPUP_ROOTS)) continue
       changed++
       if (states.some(rgb => near(b, rgb))) system++
     }
@@ -872,9 +877,9 @@ export const loadStories = async (): Promise<CatalogStory[]> => {
 
 export const gridsAndPopups = (container: HTMLElement) => {
   const grids = [...container.querySelectorAll('[data-tsr-grid]')]
-  const popups = [
-    ...document.querySelectorAll('[role="menu"], [role="dialog"], [data-side]'),
-  ].filter(el => !container.contains(el))
+  const popups = [...document.querySelectorAll(POPUP_ROOTS)].filter(
+    el => !container.contains(el),
+  )
   const outer = popups.filter(
     el => !popups.some(other => other !== el && other.contains(el)),
   )

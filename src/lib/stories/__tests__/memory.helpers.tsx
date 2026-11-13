@@ -319,13 +319,20 @@ export interface Growth {
   heap: number
 }
 
+/**
+ * Счётчики — наименьшее из трёх чтений с паузой: таймеры грида на сотни миллисекунд
+ * вешают несколько обработчиков, и одно чтение ловит этот всплеск. Утечка держится во
+ * всех чтениях.
+ */
 const sample = async (): Promise<Growth> => {
-  const counters = await memory.domCounters()
-  return {
-    nodes: counters.nodes,
-    jsEventListeners: counters.jsEventListeners,
-    heap: await memory.heapUsed(),
+  let { nodes, jsEventListeners } = await memory.domCounters()
+  for (let i = 0; i < 2; i++) {
+    await new Promise(resolve => setTimeout(resolve, 150))
+    const next = await memory.domCounters()
+    nodes = Math.min(nodes, next.nodes)
+    jsEventListeners = Math.min(jsEventListeners, next.jsEventListeners)
   }
+  return { nodes, jsEventListeners, heap: await memory.heapUsed() }
 }
 
 const diff = (to: Growth, from: Growth): Growth => ({
