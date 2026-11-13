@@ -512,6 +512,23 @@ export const GuideStory = ({
   const restore = () =>
     setShown(prev => ({ ...prev, rewinds: prev.rewinds + 1, changed: false }))
   const root = useRef<HTMLDivElement>(null)
+  // Шаг выполняется: действие во времени или показ нажатия — панель не сворачивается (SN74).
+  const [stepBusy, setStepBusy] = useState(false)
+  useEffect(() => {
+    const node = root.current
+    if (!node) return
+    const observer = new MutationObserver(() =>
+      setStepBusy(
+        node.dataset.stepAction === 'running' ||
+          node.hasAttribute('data-guide-showing'),
+      ),
+    )
+    observer.observe(node, {
+      attributes: true,
+      attributeFilter: ['data-step-action', 'data-guide-showing'],
+    })
+    return () => observer.disconnect()
+  }, [])
   const table = useRef<HTMLDivElement>(null)
   // Экземпляр таблицы — для прокрутки к цели действия шага (SN45).
   const instance = useRef<unknown>(undefined)
@@ -1126,6 +1143,7 @@ export const GuideStory = ({
         onJump={guide.jump}
         changed={shown.changed}
         onRestore={restore}
+        stepBusy={stepBusy}
       />
       <div
         ref={table}

@@ -269,6 +269,7 @@ export const GuidePanel = ({
   onJump,
   changed = false,
   onRestore,
+  stepBusy = false,
   defaultExpanded = false,
 }: {
   title: string
@@ -284,6 +285,8 @@ export const GuidePanel = ({
   changed?: boolean
   /** Открыть таблицу текущего шага заново. */
   onRestore?: () => void
+  /** Идёт действие шага или показ нажатия. */
+  stepBusy?: boolean
   defaultExpanded?: boolean
 }) => {
   const [expanded, setExpanded] = useState(defaultExpanded)
@@ -317,6 +320,8 @@ export const GuidePanel = ({
   // Шаг под указателем: подложка-карточка.
   const [hovered, setHovered] = useState<number | null>(null)
   const blocking = move !== null && !move.timed
+  // Сворачивание сдвинуло бы таблицу посреди шага (SN74).
+  const toggleLocked = stepBusy || blocking || playing
   const filling = move && !move.back && !move.timed ? move.index : null
   const emptying = move?.back ? move.index : null
   const nextRef = useLatest(onNext)
@@ -629,7 +634,16 @@ export const GuidePanel = ({
               data-testid="guide-toggle"
               aria-expanded={expanded}
               aria-controls={id}
-              onClick={() => setExpanded(open => !open)}
+              disabled={toggleLocked}
+              tooltipWhenDisabled
+              tooltip={
+                toggleLocked
+                  ? 'Шаг выполняется: панель можно свернуть после него'
+                  : undefined
+              }
+              onClick={() => {
+                if (!toggleLocked) setExpanded(open => !open)
+              }}
               icon={
                 // Поворот — на обёртке размером с иконку кнопки кита.
                 <span

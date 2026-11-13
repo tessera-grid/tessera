@@ -28,7 +28,7 @@ import { pressCell, untilDone } from '../../__mocks__/cellGestures'
 import { HANDLE, ROW, rowIdOrder } from '../../rowDragging.dnd'
 import { openViewSettingsSection } from '../../__mocks__/viewSettings'
 
-// Панель гайда историй (ADR 0117, SN14–SN15, SN17, SN21–SN27, SN33–SN35, SN40–SN58, SN69) — с
+// Панель гайда историй (ADR 0117, SN14–SN15, SN17, SN21–SN27, SN33–SN35, SN40–SN58, SN69, SN74) — с
 // движением: каталог гоняет истории с уменьшенным движением, и порядок конфетти и сдвига
 // виден только здесь. SN16, SN18–SN20 — в `play` песочницы `Tessera/Common/Guide panel`.
 
@@ -819,7 +819,10 @@ describe('панель сценария (ADR 0117)', () => {
     expect(share()).toBeLessThan(0.05)
     byId('guide-play').click()
 
-    // Раскрытая панель — без линии.
+    // Раскрытая панель — без линии; раскрыть её можно после паузы (SN74).
+    await expect
+      .poll(() => byId('guide-toggle').getAttribute('aria-disabled'))
+      .not.toBe('true')
     byId('guide-toggle').click()
     await expect.poll(() => getComputedStyle(layer()).opacity).toBe('0')
 
@@ -1098,6 +1101,105 @@ describe('ввод человека посреди гайда (ADR 0117)', () =>
       await wheelTable(200)
       await expect.poll(changed).not.toBeNull()
       expect(scroller().scrollTop).toBeGreaterThan(0)
+    } finally {
+      run.release = true
+      await screen.unmount()
+    }
+  })
+
+  test('SN74: пока шаг выполняется — действие во времени, показ нажатия, заливка полоски, воспроизведение — кнопка сворачивания недоступна, в порядке фокуса и с подсказкой; нажатие и клавиши панель не переключают, таблица не сдвигается; дошедший шаг и пауза снова открывают кнопку', async () => {
+    const toggle = () => byId('guide-toggle')
+    const locked = () => toggle().getAttribute('aria-disabled') === 'true'
+    const expanded = () => toggle().getAttribute('aria-expanded')
+    const tableTop = () => scroller().getBoundingClientRect().top
+    const tooltipText = () =>
+      [...document.querySelectorAll('[data-side]')]
+        .map(element => element.textContent?.trim())
+        .find(Boolean)
+    run.release = false
+    let screen = await render(<InputGuide />)
+    try {
+      await opened()
+      await expandGuide()
+      expect(locked()).toBe(false)
+
+      // Действие шага во времени.
+      document.querySelector<HTMLElement>('[data-step-button="2"]')!.click()
+      await expect
+        .poll(() => guideRoot().getAttribute('data-step-action'))
+        .toBe('running')
+      await expect.poll(locked).toBe(true)
+      const top = tableTop()
+      await userEvent.click(toggle(), { force: true })
+      toggle().focus()
+      expect(document.activeElement).toBe(toggle())
+      await userEvent.keyboard('{Enter}')
+      await userEvent.keyboard(' ')
+      await sleep(500)
+      expect(expanded()).toBe('true')
+      expect(tableTop()).toBe(top)
+      await userEvent.hover(toggle())
+      await expect
+        .poll(tooltipText, { timeout: 2000 })
+        .toContain('Шаг выполняется')
+
+      // Шаг дошёл — кнопка снова доступна.
+      run.release = true
+      await expect
+        .poll(() => guideRoot().getAttribute('data-step-action'))
+        .toBe('done:2')
+      await expect.poll(locked).toBe(false)
+
+      // Заливка полоски перехода «Далее».
+      document.querySelector<HTMLElement>('[data-step-button="1"]')!.click()
+      await settled()
+      expect(locked()).toBe(false)
+      await humanClick(button('guide-next'))
+      await expect.poll(locked, { interval: 10 }).toBe(true)
+      await expect
+        .poll(() => guideRoot().getAttribute('data-step-action'))
+        .toBe('done:2')
+      await expect.poll(locked).toBe(false)
+
+      // Воспроизведение и пауза.
+      document.querySelector<HTMLElement>('[data-step-button="1"]')!.click()
+      await settled()
+      await humanClick(byId('guide-play'))
+      await expect.poll(locked).toBe(true)
+      await sleep(300)
+      await humanClick(byId('guide-play'))
+      await expect.poll(locked).toBe(false)
+      await humanClick(toggle())
+      await expect.poll(expanded).toBe('false')
+      await screen.unmount()
+
+      // Показ нажатия действием шага.
+      screen = await render(
+        <GuideStory
+          title="Ввод человека"
+          steps={INPUT_STEPS}
+          args={guideArgs(
+            { dataCount: 200, height: 320 },
+            { colorMode: 'light', locale: 'en' },
+          )}
+          showActions
+        />,
+      )
+      await opened()
+      await expect.poll(locked, { timeout: 5000 }).toBe(false)
+      const cell = bodyCell()
+      const box = cell.getBoundingClientRect()
+      cell.dispatchEvent(
+        new MouseEvent('click', {
+          bubbles: true,
+          cancelable: true,
+          clientX: box.left + box.width / 2,
+          clientY: box.top + box.height / 2,
+        }),
+      )
+      expect(guideRoot().hasAttribute('data-guide-showing')).toBe(true)
+      await expect.poll(locked, { interval: 10 }).toBe(true)
+      await expect.poll(locked, { timeout: 5000 }).toBe(false)
     } finally {
       run.release = true
       await screen.unmount()
