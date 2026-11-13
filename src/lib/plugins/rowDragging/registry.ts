@@ -4,6 +4,7 @@
  * колонка-ручка. Обёртка тела, декораторы строки и незагруженной строки встраивают
  * dnd-kit в грид (ADR 0168, §2); dnd-редьюсер — getRowDraggingEvents.
  */
+import { rowMover } from './historyMove'
 import type { Updater } from '@tanstack/react-table'
 
 import type { Row } from '../../types'
@@ -91,6 +92,7 @@ const rowDraggingEntry = definePlugin<RowDraggingOptions>()({
     rowDragRevertOnReject: o.revertOnReject !== false,
     rowDragReportsMoves: !!o.onRowDragEnd,
     onRowOrderChange: o.onRowOrderChange,
+    ...(o.enabled === false ? {} : { rowMover }),
   }),
 })
 

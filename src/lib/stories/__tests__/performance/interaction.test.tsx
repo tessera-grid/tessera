@@ -73,6 +73,7 @@ import {
   unnestRow,
 } from '../../../plugins/rowDragging/moveRow'
 import { cellEditing } from '../../../plugins/cellEditing'
+import { editHistory } from '../../../plugins/editHistory'
 import { pasteData } from '../../../plugins/cellSelection/paste'
 import { columnTotals } from '../../../plugins/columnTotals'
 import { quickSearchModel } from '../../../plugins/quickSearchModel'
@@ -6719,6 +6720,104 @@ describe('Вставка из буфера — объём', () => {
       const summary = `100 000: total=${many.totalMs.toFixed(0)}ms longest=${many.longestMs.toFixed(0)}ms; 10 000: total=${base.totalMs.toFixed(0)}ms longest=${base.longestMs.toFixed(0)}ms long=${base.longTasks}; 100 000 long=${many.longTasks}; медианы longest: ${manyLongest.toFixed(0)} против ${baseLongest.toFixed(0)}ms`
       expect(many.totalMs, summary).toBeLessThanOrEqual(ceiling.total)
       expect(manyLongest, summary).toBeLessThanOrEqual(ceiling.longest)
+    },
+    PERF_TIMEOUT * 4,
+  )
+})
+
+// Отмена вставки (ADR 0222, UD23): обратная запись тем же каналом — кусками, как сама вставка.
+const UD23_COST = { ratio: 1.1, plusMs: 5 }
+const UD23_COLUMNS = 10
+describe('Отмена вставки — объём', () => {
+  test(
+    'UD23: отмена вставки 100 000 ячеек — самая длинная задача не дороже самой вставки больше чем на 10 % (или 5 мс)',
+    async () => {
+      const measure = async (undo: boolean) => {
+        let table: (PasteTable & { undo: () => Promise<boolean> }) | undefined
+        const screen = renderPluginsGrid({
+          columnCount: UD23_COLUMNS,
+          dataCount: 10_000,
+          plugins: [
+            cellEditing({ onCommitEdits: () => Promise.resolve() } as never),
+            cellSelection(),
+            editHistory(),
+            {
+              id: 'perfUndo',
+              setup: t => {
+                table = t as never
+              },
+            },
+          ],
+        })
+        await expect.poll(() => table).toBeTruthy()
+        await waitForGrid()
+        const columns = Object.entries(table!.getCellSelectionColumnIndexes())
+          .sort((a, b) => a[1] - b[1])
+          .map(([id]) => id)
+        table!.setCellSelection(() => [
+          {
+            anchorRowId: table!.getRowSource().at(0)!.id,
+            anchorColumnId: columns[0]!,
+            focusRowId: table!.getRowSource().at(0)!.id,
+            focusColumnId: columns[0]!,
+          },
+        ])
+        const text = Array.from({ length: 10_000 }, (_, row) =>
+          Array.from({ length: UD23_COLUMNS }, (_, column) =>
+            String((row + column) % 90),
+          ).join('\t'),
+        ).join('\n')
+        const paste = () => pasteData(table!, { text, html: '' }, 'api')
+        let result
+        if (undo) {
+          await paste()
+          await expect
+            .poll(() =>
+              (table as never as { canUndo: () => boolean }).canUndo(),
+            )
+            .toBe(true)
+          result = await measureInteractionWork(async () => {
+            await table!.undo()
+          })
+        } else result = await measureInteractionWork(paste)
+        ;(await screen).unmount()
+        return result
+      }
+
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const undo = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = ceilingOver(base.longestMs, UD23_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof undo,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '10 000×10',
+          plugins: 'cellEditing, cellSelection, editHistory',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('UD23-base', 'вставка 100 000 ячеек', base, false)
+      await record('UD23', 'отмена вставки 100 000 ячеек', undo, true)
+      expect(
+        undo.longestMs,
+        `отмена longest=${undo.longestMs.toFixed(0)}ms, вставка longest=${base.longestMs.toFixed(0)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 4,
   )

@@ -14,7 +14,7 @@ import { buildTesseraFeatures, foldEntries } from '../core/features'
 import { readFlashes } from '../core/flashes/flashFeature'
 import { cellHighlightKey } from '../core/highlights/highlightFeature'
 import { resolveDataType } from '../core/dataTypes'
-import { sameCellValue } from '../plugins/valueChangeFlash/compare'
+import { sameCellValue } from '../shared/cellValues'
 
 const table = {
   options: {

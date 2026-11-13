@@ -48,6 +48,7 @@ import * as rowsTreeDataStories from './DataGrid.Rows.TreeData.stories'
 import * as cellsContextMenuStories from './DataGrid.Cells.ContextMenu.stories'
 import * as cellsEditingStories from './DataGrid.Cells.Editing.stories'
 import * as cellsPasteFillStories from './DataGrid.Cells.PasteFill.stories'
+import * as cellsUndoRedoStories from './DataGrid.Cells.UndoRedo.stories'
 import * as columnsDataTypesStories from './DataGrid.Columns.DataTypes.stories'
 import * as columnsDataTypesBooleanStories from './DataGrid.Columns.DataTypes.Boolean.stories'
 import * as columnsDataTypesDateStories from './DataGrid.Columns.DataTypes.Date.stories'
@@ -8429,6 +8430,16 @@ export const HighContrastPopupAssembledStep18 = {
   tags: ['!test'],
 }
 
+export const HighContrastPopupAssembledStep19 = {
+  ...twinStep(
+    uiPopupAssembledStories,
+    uiPopupAssembledStories.PopupAssembled,
+    19,
+  ),
+  name: 'UI/Popup/Assembled — Popups assembled, шаг 19',
+  tags: ['!test'],
+}
+
 export const HighContrastThemingDefaultPaletteStep1 = {
   ...twinStep(themingStories, themingStories.ThemingDefaultPalette, 1),
   name: 'Theming — Default palette, шаг 1',
@@ -9876,5 +9887,275 @@ export const HighContrastValueChangeFlashColorsStep7 = {
     7,
   ),
   name: 'Cells/Value change flash — Flash colors, шаг 7',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoPasteStep1 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoPaste, 1),
+  name: 'Cells/Undo & redo — Undo a paste, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoPasteStep2 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoPaste, 2),
+  name: 'Cells/Undo & redo — Undo a paste, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoPasteStep3 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoPaste, 3),
+  name: 'Cells/Undo & redo — Undo a paste, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoPasteStep4 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoPaste, 4),
+  name: 'Cells/Undo & redo — Undo a paste, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoOnServerStep1 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoOnServer, 1),
+  name: 'Cells/Undo & redo — Undo saved on the server, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoOnServerStep2 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoOnServer, 2),
+  name: 'Cells/Undo & redo — Undo saved on the server, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoOnServerStep3 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoOnServer, 3),
+  name: 'Cells/Undo & redo — Undo saved on the server, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoOnServerStep4 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoOnServer, 4),
+  name: 'Cells/Undo & redo — Undo saved on the server, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoOnServerStep5 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoOnServer, 5),
+  name: 'Cells/Undo & redo — Undo saved on the server, шаг 5',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoWhilePendingStep1 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoWhilePending, 1),
+  name: 'Cells/Undo & redo — Undo while saving, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoWhilePendingStep2 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoWhilePending, 2),
+  name: 'Cells/Undo & redo — Undo while saving, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoWhilePendingStep3 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoWhilePending, 3),
+  name: 'Cells/Undo & redo — Undo while saving, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoWhilePendingStep4 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoWhilePending, 4),
+  name: 'Cells/Undo & redo — Undo while saving, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoConflictStep1 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoConflict, 1),
+  name: 'Cells/Undo & redo — Changed by someone else, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoConflictStep2 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoConflict, 2),
+  name: 'Cells/Undo & redo — Changed by someone else, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoConflictStep3 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoConflict, 3),
+  name: 'Cells/Undo & redo — Changed by someone else, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoConflictStep4 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoConflict, 4),
+  name: 'Cells/Undo & redo — Changed by someone else, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastHistoryRewindStep1 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.HistoryRewind, 1),
+  name: 'Cells/Undo & redo — Rewind with the history, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastHistoryRewindStep2 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.HistoryRewind, 2),
+  name: 'Cells/Undo & redo — Rewind with the history, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastHistoryRewindStep3 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.HistoryRewind, 3),
+  name: 'Cells/Undo & redo — Rewind with the history, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastHistoryRewindStep4 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.HistoryRewind, 4),
+  name: 'Cells/Undo & redo — Rewind with the history, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastHistoryRewindStep5 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.HistoryRewind, 5),
+  name: 'Cells/Undo & redo — Rewind with the history, шаг 5',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoDraftsStep1 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoDrafts, 1),
+  name: 'Cells/Undo & redo — Undo unsaved changes, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoDraftsStep2 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoDrafts, 2),
+  name: 'Cells/Undo & redo — Undo unsaved changes, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoDraftsStep3 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoDrafts, 3),
+  name: 'Cells/Undo & redo — Undo unsaved changes, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoDraftsStep4 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoDrafts, 4),
+  name: 'Cells/Undo & redo — Undo unsaved changes, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastAppHistoryEntryStep1 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.AppHistoryEntry, 1),
+  name: 'Cells/Undo & redo — Own action in the history, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastAppHistoryEntryStep2 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.AppHistoryEntry, 2),
+  name: 'Cells/Undo & redo — Own action in the history, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastAppHistoryEntryStep3 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.AppHistoryEntry, 3),
+  name: 'Cells/Undo & redo — Own action in the history, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastAppHistoryEntryStep4 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.AppHistoryEntry, 4),
+  name: 'Cells/Undo & redo — Own action in the history, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastAppHistoryEntryStep5 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.AppHistoryEntry, 5),
+  name: 'Cells/Undo & redo — Own action in the history, шаг 5',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoRowDeleteStep1 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoRowDelete, 1),
+  name: 'Cells/Undo & redo — Undo a row delete, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoRowDeleteStep2 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoRowDelete, 2),
+  name: 'Cells/Undo & redo — Undo a row delete, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoRowDeleteStep3 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoRowDelete, 3),
+  name: 'Cells/Undo & redo — Undo a row delete, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoRowDeleteStep4 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoRowDelete, 4),
+  name: 'Cells/Undo & redo — Undo a row delete, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoRowDeleteStep5 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoRowDelete, 5),
+  name: 'Cells/Undo & redo — Undo a row delete, шаг 5',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoRowMoveStep1 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoRowMove, 1),
+  name: 'Cells/Undo & redo — Undo a row move, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoRowMoveStep2 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoRowMove, 2),
+  name: 'Cells/Undo & redo — Undo a row move, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoRowMoveStep3 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoRowMove, 3),
+  name: 'Cells/Undo & redo — Undo a row move, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoRowMoveStep4 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoRowMove, 4),
+  name: 'Cells/Undo & redo — Undo a row move, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoRowMoveStep5 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoRowMove, 5),
+  name: 'Cells/Undo & redo — Undo a row move, шаг 5',
+  tags: ['!test'],
+}
+
+export const HighContrastServerUndoStep1 = {
+  ...twinStep(serverEditingStories, serverEditingStories.ServerUndo, 1),
+  name: 'Data loading/Server row model/Editing — Undo an edit off the window, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerUndoStep2 = {
+  ...twinStep(serverEditingStories, serverEditingStories.ServerUndo, 2),
+  name: 'Data loading/Server row model/Editing — Undo an edit off the window, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerUndoStep3 = {
+  ...twinStep(serverEditingStories, serverEditingStories.ServerUndo, 3),
+  name: 'Data loading/Server row model/Editing — Undo an edit off the window, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerUndoStep4 = {
+  ...twinStep(serverEditingStories, serverEditingStories.ServerUndo, 4),
+  name: 'Data loading/Server row model/Editing — Undo an edit off the window, шаг 4',
   tags: ['!test'],
 }

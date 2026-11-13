@@ -11,6 +11,9 @@ import { describe, expect, it } from 'vitest'
 
 import { ENTRY, exportNames, typeProps } from './publicTypes'
 
+/** Программа TypeScript публичных типов строится дольше умолчания теста. */
+const TYPES_TIMEOUT = 120_000
+
 const LIB = fileURLToPath(new URL('..', import.meta.url))
 
 /** Опасные действия: ключ словаря → подпись по умолчанию и файл словаря. */
@@ -125,26 +128,32 @@ const untoned = () => {
 }
 
 describe('Тон опасного действия (ADR 0206)', () => {
-  it('DX9: тип tone?: "danger" — в публичных типах пропсов Button, IconButton и производных кнопок /ui и у дескрипторов действий SlotAction и ContextMenuAction (наследники MenuAction) — значением или функцией контекста; тип ActionTone — из главного входа', () => {
-    expect(exportNames(ENTRY.index)).toContain('ActionTone')
-    const buttons = exportNames(ENTRY.ui).filter(name =>
-      /^(Button|IconButton|.+Button)Props$/.test(name),
-    )
-    expect(buttons).toEqual(
-      expect.arrayContaining(['ButtonProps', 'IconButtonProps']),
-    )
-    for (const name of buttons) {
-      const tone = typeProps(ENTRY.ui, name).find(prop => prop.name === 'tone')
-      expect(tone?.type, name).toBe('"danger"')
-    }
-    for (const name of ['SlotAction', 'ContextMenuAction']) {
-      const tone = typeProps(ENTRY.index, name).find(
-        prop => prop.name === 'tone',
+  it(
+    'DX9: тип tone?: "danger" — в публичных типах пропсов Button, IconButton и производных кнопок /ui и у дескрипторов действий SlotAction и ContextMenuAction (наследники MenuAction) — значением или функцией контекста; тип ActionTone — из главного входа',
+    () => {
+      expect(exportNames(ENTRY.index)).toContain('ActionTone')
+      const buttons = exportNames(ENTRY.ui).filter(name =>
+        /^(Button|IconButton|.+Button)Props$/.test(name),
       )
-      expect(tone?.type, name).toContain('"danger"')
-      expect(tone?.isFunction, `${name}: тон функцией контекста`).toBe(true)
-    }
-  })
+      expect(buttons).toEqual(
+        expect.arrayContaining(['ButtonProps', 'IconButtonProps']),
+      )
+      for (const name of buttons) {
+        const tone = typeProps(ENTRY.ui, name).find(
+          prop => prop.name === 'tone',
+        )
+        expect(tone?.type, name).toBe('"danger"')
+      }
+      for (const name of ['SlotAction', 'ContextMenuAction']) {
+        const tone = typeProps(ENTRY.index, name).find(
+          prop => prop.name === 'tone',
+        )
+        expect(tone?.type, name).toContain('"danger"')
+        expect(tone?.isFunction, `${name}: тон функцией контекста`).toBe(true)
+      }
+    },
+    TYPES_TIMEOUT,
+  )
 
   it('DX11: кнопка, пункт или дескриптор действия в src/lib (код и истории) с подписью опасного действия — «Delete», «Remove row», «Discard», «Discard all», «Discard change», «Roll back» и их ключи словаря — без tone: "danger" роняет тест; исключения — с причиной', () => {
     // Подписи и ключи — те, что в словарях.

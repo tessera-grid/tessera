@@ -1,0 +1,62 @@
+/* История правок (ADR 0222, §11): попап со списком записей облачками, как у журнала отказов. */
+.popup {
+  width: var(--tsr-comp-popup-max-width);
+  max-width: calc(100vw - 16px);
+}
+
+/* Окно списка: длинный список виртуализирован (UD20). */
+.scroller {
+  composes: cardsScroll from '../../ui/Popup/Popup.module.css';
+}
+
+.list {
+  position: relative;
+  width: 100%;
+}
+
+/* Место записи в окне; зазор между облачками — её верхнее поле, у первой его нет. */
+.entry {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  padding-block-start: var(--tsr-comp-popup-padding);
+}
+
+.entry[data-index='0'] {
+  padding-block-start: 0;
+}
+
+.label {
+  overflow-wrap: anywhere;
+}
+
+/* Откаченная запись — приглушённым цветом подписи раздела, не прозрачностью: текст держит контраст. */
+[data-undone] .label,
+.undone {
+  color: var(--tsr-comp-popup-group-label-color);
+  font-weight: normal;
+}
+
+.time {
+  flex: none;
+  color: var(--tsr-comp-popup-group-label-color);
+  font-weight: normal;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Высокая контрастность: приглушение — системным цветом недоступного текста. */
+@media (forced-colors: active) {
+  [data-undone] .label,
+  .undone {
+    color: GrayText;
+  }
+}
+
+/* Отметка «Текущее состояние» — заголовок раздела, как у пульта черновиков (PK33). */
+.here {
+  margin: 0;
+  padding: var(--tsr-comp-popup-padding) var(--tsr-comp-popup-item-padding-x);
+  color: var(--tsr-comp-popup-group-label-color);
+  font-size: var(--tsr-comp-popup-title-font-size);
+  font-weight: 600;
+}

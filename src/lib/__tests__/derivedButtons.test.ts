@@ -8,6 +8,9 @@ import { describe, expect, it } from 'vitest'
 
 import { ENTRY, exportNames, typeProps } from './publicTypes'
 
+/** Программа TypeScript публичных типов строится дольше умолчания теста. */
+const TYPES_TIMEOUT = 120_000
+
 const BUTTONS = [
   'CellButton',
   'RowButton',
@@ -60,31 +63,36 @@ const names = (button: string) =>
   typeProps(ENTRY.ui, `${button}Props`).map(prop => prop.name)
 
 describe('Производные кнопки кита (ADR 0128)', () => {
-  it('DB3: публичные типы /ui — label вместо title, revealOnHover вместо showOnHover и isVisible, tooltipWhenDisabled вместо showTooltipWhenDisabled, pinned и grouped вместо isPinned и isGrouped, data-testid вместо testId, тип CellButtonProps; старых имён нет; DerivedButtonProps экспортируется', () => {
-    const exported = exportNames(ENTRY.ui)
-    expect(exported).toEqual(
-      expect.arrayContaining([
-        'DerivedButtonProps',
-        ...BUTTONS.map(button => `${button}Props`),
-      ]),
-    )
-    expect(exported).not.toContain('CellEditButtonProps')
-    for (const button of BUTTONS) {
-      const props = names(button)
-      expect(props, button).toEqual(expect.arrayContaining(COMMON))
-      for (const old of OLD)
-        expect(props, `${button}: ${old}`).not.toContain(old)
-      expect(props.includes('revealOnHover'), `${button}: revealOnHover`).toBe(
-        REVEALING.includes(button),
+  it(
+    'DB3: публичные типы /ui — label вместо title, revealOnHover вместо showOnHover и isVisible, tooltipWhenDisabled вместо showTooltipWhenDisabled, pinned и grouped вместо isPinned и isGrouped, data-testid вместо testId, тип CellButtonProps; старых имён нет; DerivedButtonProps экспортируется',
+    () => {
+      const exported = exportNames(ENTRY.ui)
+      expect(exported).toEqual(
+        expect.arrayContaining([
+          'DerivedButtonProps',
+          ...BUTTONS.map(button => `${button}Props`),
+        ]),
       )
-    }
-    for (const button of ['CellButton', 'RowButton']) {
-      expect(names(button), button).toContain('label')
-      expect(names(button), button).not.toContain('title')
-    }
-    expect(names('PinButton')).toContain('pinned')
-    expect(names('GroupButton')).toContain('grouped')
-  })
+      expect(exported).not.toContain('CellEditButtonProps')
+      for (const button of BUTTONS) {
+        const props = names(button)
+        expect(props, button).toEqual(expect.arrayContaining(COMMON))
+        for (const old of OLD)
+          expect(props, `${button}: ${old}`).not.toContain(old)
+        expect(
+          props.includes('revealOnHover'),
+          `${button}: revealOnHover`,
+        ).toBe(REVEALING.includes(button))
+      }
+      for (const button of ['CellButton', 'RowButton']) {
+        expect(names(button), button).toContain('label')
+        expect(names(button), button).not.toContain('title')
+      }
+      expect(names('PinButton')).toContain('pinned')
+      expect(names('GroupButton')).toContain('grouped')
+    },
+    TYPES_TIMEOUT,
+  )
 
   it('DB4: истории UI/<Кнопка> — первая Playground в рамке своего места, есть Pending и Disabled, у кнопок со своим состоянием и у CellButton и RowButton — история включённого, у кнопок с revealOnHover — Always visible', () => {
     for (const button of BUTTONS) {

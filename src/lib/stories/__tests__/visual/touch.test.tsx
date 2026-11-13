@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import axe from 'axe-core'
 import { commands, server, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
@@ -24,6 +25,7 @@ import { DataGrid } from '../../../grid/DataGrid'
 import { columnSorting } from '../../../plugins/columnSorting'
 import {
   cellEditing,
+  editHistory,
   columnFiltering,
   dataExport,
   columnPinning,
@@ -1518,6 +1520,66 @@ describe('Маркеры выделения пальцем (ADR 0198, этап 2
           .poll(() => getComputedStyle(mark).backgroundColor)
           .toBe(resolveColor(mark, 'Highlight'))
       }
+    } finally {
+      await screen.unmount()
+    }
+  })
+})
+
+describe('Отмена и повтор касанием (ADR 0222)', () => {
+  test('UD30: кнопки «Отменить» и «Повторить» в тулбаре нажимаются касанием', async () => {
+    let api: any
+    const Host = () => {
+      const [rows, setRows] = useState(
+        Array.from({ length: 5 }, (_, i) => ({ id: String(i), price: i })),
+      )
+      api = useCreateTable({
+        columns: [
+          {
+            id: 'price',
+            accessorKey: 'price',
+            header: 'Price',
+            dataType: 'number',
+          },
+        ] as never,
+        data: rows,
+        getRowId: (row: { id: string }) => row.id,
+        plugins: [
+          cellEditing({
+            onCellEdit: () => {},
+            onCommitEdits: (batch: {
+              cells: readonly { rowId: string; value: unknown }[]
+            }) =>
+              setRows(prev =>
+                prev.map(row => {
+                  const cell = batch.cells.find(item => item.rowId === row.id)
+                  return cell ? { ...row, price: cell.value as number } : row
+                }),
+              ),
+          } as never),
+          editHistory(),
+        ] as never,
+      })
+      return (
+        <div style={{ width: 400, height: 400 }}>
+          <DataGrid table={api as never} height={360} />
+        </div>
+      )
+    }
+    const screen = await render(<Host />)
+    try {
+      await waitForGrid()
+      const price = () => api.getRowSource().byId('1').getValue('price')
+      await api.writeCells([{ rowId: '1', columnId: 'price', value: 99 }], {
+        source: 'paste',
+      })
+      await expect.poll(price).toBe(99)
+      const button = (id: string) =>
+        document.querySelector<HTMLElement>(`[data-testid="${id}"]`)!
+      await touch.realTap(await settledCenter(() => button('undo-button')))
+      await expect.poll(price).toBe(1)
+      await touch.realTap(await settledCenter(() => button('redo-button')))
+      await expect.poll(price).toBe(99)
     } finally {
       await screen.unmount()
     }

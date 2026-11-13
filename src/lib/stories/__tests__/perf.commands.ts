@@ -238,6 +238,7 @@ export interface PerfRecord {
     | 'all'
     | 'cellEditing'
     | 'cellEditing, cellSelection'
+    | 'cellEditing, cellSelection, editHistory'
     | 'failureLog'
     | 'cellErrors'
     | 'columnFiltering'

@@ -199,7 +199,11 @@ Tessera поставляет **кастомную стратегию колли�
 Любой перенос строки — бросок, клавиатура, меню ручки — проходит `commitRowMove`
 (`plugins/rowDragging/commitRowMove.ts`, [ADR 0112](../decisions/0112-lazy-tree-row-moves.md)):
 `onRowDragEnd` получает место после переноса (`parentId`, `previousParentId`, `index` —
-`dropPlace` по проекции окна), промис колбэка — запись в срезе `rowMoves` и свет ожидания
+`dropPlace` по проекции окна) и место среди сестёр до него (`previousIndex`); перенос от истории
+правок несёт `source: 'undo'` или `'redo'` ([ADR 0222](../decisions/0222-undo-redo.md), §13). Успешный
+перенос `commitRowMove` сообщает каналу итогов записи (`notifyCellsWritten`, запись `move`), отказ —
+`failed`; обратный перенос истории идёт тем же путём через исполнитель `rowMover`
+(`historyMove.ts`): кэш серверной модели, значения клиентских групп, данные и ленивая стадия. промис колбэка — запись в срезе `rowMoves` и свет ожидания
 на ручке; строку с записью не переносят (`isMovableRow`, `disabled` у `useSortable`).
 Перенос, задевающий ленивого родителя (`row.getIsLazyParent` из `rowExpanding`), в
 `data` и ответы `loadedChildren` сразу не пишется: исходная модель `rowExpanding`

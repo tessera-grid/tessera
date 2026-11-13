@@ -48,6 +48,8 @@ import {
   RotateCw,
   PencilLine,
   Undo2,
+  Redo2,
+  History,
 } from 'lucide-react'
 
 import { EmptyStateIllustration } from './EmptyStateIllustration'
@@ -163,6 +165,14 @@ export interface TableIcons {
   draftDiscard: IconComponent
   /** Иллюстрация пустого пульта черновиков (ADR 0178) */
   unsavedChangesEmpty: IconComponent
+  /** «Отменить» в тулбаре и меню (ADR 0222) */
+  undo: IconComponent
+  /** «Повторить» в тулбаре и меню (ADR 0222) */
+  redo: IconComponent
+  /** Кнопка истории правок в тулбаре (ADR 0222) */
+  editHistory: IconComponent
+  /** Иллюстрация пустой истории правок (ADR 0222) */
+  editHistoryEmpty: IconComponent
   /** Кнопка «к первой колонке» в нижней панели (ADR 0105) */
   backToStart: IconComponent
   /** Пункт меню, заблокированный с причиной (ADR 0078) */
@@ -234,6 +244,10 @@ export const DEFAULT_ICONS: TableIcons = {
   draftApply: Check,
   draftDiscard: Undo2,
   unsavedChangesEmpty: EmptyStateIllustration,
+  undo: Undo2,
+  redo: Redo2,
+  editHistory: History,
+  editHistoryEmpty: EmptyStateIllustration,
   backToStart: ArrowLeftToLine,
   actionBlocked: Lock,
   submenu: ChevronRight,

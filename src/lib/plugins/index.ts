@@ -87,6 +87,13 @@ export { columnTotals, type ColumnTotalsOptions } from './columnTotals'
 export { failureLog, type FailureLogOptions } from './failureLog'
 export { unsavedChanges, type UnsavedChangesOptions } from './unsavedChanges'
 export {
+  editHistory,
+  type EditHistoryOptions,
+  type AppHistoryEntry,
+  type EditHistoryEntry,
+  type EditHistoryState,
+} from './editHistory'
+export {
   serverRowModel,
   type ServerRowModelOptions,
   type ServerRowModelHooks,

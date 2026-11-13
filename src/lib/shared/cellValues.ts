@@ -1,11 +1,11 @@
 /**
- * Сравнение значения ячейки по типу колонки (ADR 0221, §3): равенство до форматирования и
+ * Сравнение значения ячейки по типу колонки (ADR 0221, §3; ADR 0222, §6): равенство до форматирования и
  * направление смены у чисел, десятичных строк и дат.
  */
-import { dateTypeInstant, objectKeyOf } from '../../core/dataTypeFormat'
-import type { ResolvedDataType } from '../../core/dataTypes'
-import type { FlashOutcome } from '../../core/flashes/flashFeature'
-import { compareDecimal, parseDecimal } from '../../util/decimal'
+import { dateTypeInstant, objectKeyOf } from '../core/dataTypeFormat'
+import type { ResolvedDataType } from '../core/dataTypes'
+import type { FlashOutcome } from '../core/flashes/flashFeature'
+import { compareDecimal, parseDecimal } from '../util/decimal'
 
 export interface CompareColumn {
   id: string

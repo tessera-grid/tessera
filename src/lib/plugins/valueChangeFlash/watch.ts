@@ -11,7 +11,11 @@ import {
 } from '../../core/flashes/flashFeature'
 import { consumeOwnWrite } from '../../shared/ownWrites'
 import type { Cell } from '../../types'
-import { changeOutcome, sameCellValue, type CompareColumn } from './compare'
+import {
+  changeOutcome,
+  sameCellValue,
+  type CompareColumn,
+} from '../../shared/cellValues'
 import type { ValueChangeFlashHooks } from './types'
 import type { ValueChangeFlashColumnDef } from './valueChangeFlashFeature'
 

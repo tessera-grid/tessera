@@ -52,7 +52,11 @@ import {
   setDraft as putDraft,
   writeDrafts,
 } from '../../core/drafts/drafts'
-import type { CellWriteSource } from '../../core/cellWrites'
+import {
+  type CellWriteSource,
+  notifyCellsWritten,
+  type WrittenCell,
+} from '../../core/cellWrites'
 import type { TableLabels } from '../../core/localization'
 import { commonOptionsOf } from '../../core/commonFeature'
 import {
@@ -227,7 +231,11 @@ const retrySubmitted = (table: unknown, key: string) => {
     commitDrafts(table, [draft])
     return
   }
-  submitValue(table, entry, entry.draft, entry.text, entry.original, hooks)
+  submitValue(table, entry, entry.draft, entry.text, entry.original, hooks, {
+    onSettled: outcome =>
+      outcome === true &&
+      notifyEdit(table, entry, entry.original, entry.draft, outcome),
+  })
 }
 
 /** «Отбросить изменение»: отклонённое значение удаляется, черновик уходит в `onEditCancel`. */
@@ -280,6 +288,40 @@ export const cellDraftOf = (
 
 const dataValueOf = (table: unknown, rowId: string, columnId: string) =>
   (table as ReconcileTable).getRowSource().byId(rowId)?.getValue(columnId)
+
+/** Значение, которое ячейка показывает: черновик, иначе данные (ADR 0222, §8). */
+export const shownValueOf = (
+  table: unknown,
+  rowId: string,
+  columnId: string,
+) => {
+  const draft = cellDraftOf(table, rowId, columnId)
+  return draft
+    ? (draft.value as CellDraftValue).value
+    : dataValueOf(table, rowId, columnId)
+}
+
+let edits = 0
+
+/** Итог одиночной правки — каналу истории (ADR 0222, §2). */
+const notifyEdit = (
+  table: unknown,
+  { rowId, columnId }: Cell,
+  before: unknown,
+  after: unknown,
+  outcome: boolean | 'cancelled' | 'draft',
+) =>
+  notifyCellsWritten(table, {
+    id: `edit-${++edits}`,
+    source: 'edit',
+    cells:
+      outcome === false || outcome === 'cancelled'
+        ? []
+        : [{ rowId, columnId, before, after }],
+    refused: outcome === false ? [{ rowId, columnId }] : [],
+    ...(outcome === 'draft' ? { draft: true } : {}),
+    ...(outcome === 'cancelled' ? { cancelled: true } : {}),
+  })
 
 /** Записать черновик ячейки; совпал со значением в данных — снять. */
 const storeCellDraft = (
@@ -804,14 +846,17 @@ export const commitEditSession = (
   }
   if (manual(hooks)) {
     reportEditEnd(table, cell, { result: 'draft', value })
+    const before = shownValueOf(table, rowId, columnId)
     storeCellDraft(table, cell, value, text)
     endEditSession(table)
+    notifyEdit(table, cell, before, value, 'draft')
     return
   }
   reportEditEnd(table, cell, { result: 'commit', value })
   submitValue(table, cell, value, text, original, hooks, {
     session: true,
     ...(changed ? { current: now } : {}),
+    onSettled: outcome => notifyEdit(table, cell, now, value, outcome),
   })
 }
 
@@ -826,7 +871,16 @@ const submitValue = (
   text: string,
   original: unknown,
   hooks: Partial<CellEditingHooks>,
-  { session = false, current }: { session?: boolean; current?: unknown } = {},
+  {
+    session = false,
+    current,
+    onSettled,
+  }: {
+    session?: boolean
+    current?: unknown
+    /** Итог сохранения: сохранено, отклонено или прервано «стопом». */
+    onSettled?: (outcome: boolean | 'cancelled') => void
+  } = {},
 ) => {
   const controller = new AbortController()
   // Эхо записи в данных — своё, не смена извне (ADR 0221, §1).
@@ -849,6 +903,7 @@ const submitValue = (
     settleOwn()
     if (session) {
       endEditSession(table)
+      onSettled?.(true)
       return
     }
     const state = readEditingState(table)
@@ -856,6 +911,7 @@ const submitValue = (
     delete submitted[key]
     writeEditingState(table, { ...state, submitted })
     flashOutcome(table, { cell: [rowId, columnId] }, 'accepted')
+    onSettled?.(true)
     return
   }
   const state = readEditingState(table)
@@ -884,6 +940,7 @@ const submitValue = (
       controller.abort()
       unregister()
       cancelSubmitted(table, key, attempt, source, hooks)
+      onSettled?.('cancelled')
     },
   })
   result.then(settleOwn, settleOwn)
@@ -892,11 +949,13 @@ const submitValue = (
       if (controller.signal.aborted) return lateAnswer(table)
       unregister()
       settleSubmitted(table, key, attempt, { ok: true, answer })
+      onSettled?.(true)
     },
     reason => {
       if (controller.signal.aborted) return lateAnswer(table, reason)
       unregister()
       settleSubmitted(table, key, attempt, { ok: false, reason })
+      onSettled?.(false)
     },
   )
 }
@@ -1267,7 +1326,10 @@ export interface PackageCell {
 export const writeActionOf = (source: CellWriteSource) =>
   source === 'fill'
     ? { plugin: 'cellSelection', action: 'fill' }
-    : writeActionOfEditing(source)
+    : // Отмена и повтор — действия истории правок (ADR 0222): их источники пишет только она.
+      source === 'undo' || source === 'redo'
+      ? { plugin: 'editHistory', action: source }
+      : writeActionOfEditing(source)
 
 const writeActionOfEditing = (source: CellWriteSource) => ({
   plugin: ID,
@@ -1404,6 +1466,7 @@ export const commitCellPackage = (table: unknown, pkg: CellPackage) => {
       }
     }
     if (refused.size === 0) flashCells('accepted')
+    notifyPackage(table, pkg, refused)
     if (answered)
       announceLabel(table, all =>
         refused.size === 0
@@ -1441,6 +1504,7 @@ export const commitCellPackage = (table: unknown, pkg: CellPackage) => {
       controller.abort()
       unregister()
       dropPending()
+      notifyPackage(table, pkg, undefined, 'cancelled')
       reportAction(table, {
         plugin: ID,
         action: 'cancel',
@@ -1485,6 +1549,7 @@ export const commitCellPackage = (table: unknown, pkg: CellPackage) => {
         discard: dismiss,
       })
       flashCells('reverted')
+      notifyPackage(table, pkg, undefined, 'refused')
       announceLabel(table, all =>
         cellEditingLabels(all).announceWriteFailed(name(all), error),
       )
@@ -1492,11 +1557,87 @@ export const commitCellPackage = (table: unknown, pkg: CellPackage) => {
   )
 }
 
+/**
+ * Итог пакета каналу истории (ADR 0222, §2): сохранённые ячейки без отклонённых ответом; отказ
+ * пакета целиком — все отклонены, «стоп» — итог неизвестен.
+ */
+const notifyPackage = (
+  table: unknown,
+  { id, source, cells }: Pick<CellPackage, 'id' | 'source' | 'cells'>,
+  refused?: ReadonlyMap<string, unknown>,
+  whole?: 'refused' | 'cancelled',
+) => {
+  const saved: WrittenCell[] = []
+  const lost: { rowId: string; columnId: string }[] = []
+  for (const cell of cells) {
+    const target = { rowId: cell.rowId, columnId: cell.columnId }
+    if (whole === 'refused' || refused?.has(cellKey(cell.rowId, cell.columnId)))
+      lost.push(target)
+    else if (!whole)
+      saved.push({ ...target, before: cell.original, after: cell.value })
+  }
+  notifyCellsWritten(table, {
+    id,
+    source,
+    cells: saved,
+    refused: lost,
+    ...(whole === 'cancelled' ? { cancelled: true } : {}),
+  })
+}
+
+/**
+ * Итог пакета, сохранённого по ячейкам через `onCellEdit` или черновиками (ADR 0222, §2): одно
+ * сообщение, когда решились все ячейки.
+ */
+const notifyCells = (
+  table: unknown,
+  id: string,
+  source: CellWriteSource,
+  cells: readonly PackageCell[],
+) => {
+  const outcomes: (boolean | 'cancelled')[] = []
+  let left = cells.length
+  return (index: number) => (outcome: boolean | 'cancelled') => {
+    outcomes[index] = outcome
+    if (--left > 0) return
+    notifyCellsWritten(table, {
+      id,
+      source,
+      cells: cells.flatMap((cell, k) =>
+        outcomes[k] === true
+          ? [
+              {
+                rowId: cell.rowId,
+                columnId: cell.columnId,
+                before: cell.original,
+                after: cell.value,
+              },
+            ]
+          : [],
+      ),
+      refused: cells.flatMap((cell, k) =>
+        outcomes[k] === false
+          ? [{ rowId: cell.rowId, columnId: cell.columnId }]
+          : [],
+      ),
+      ...(outcomes.includes('cancelled') ? { cancelled: true } : {}),
+    })
+  }
+}
+
 /** Сохранить ячейки по одной через `onCellEdit` — без `onCommitEdits` (ADR 0219, §6). */
-export const submitCells = (table: unknown, cells: readonly PackageCell[]) => {
+export const submitCells = (
+  table: unknown,
+  cells: readonly PackageCell[],
+  operation: { id: string; source: CellWriteSource },
+) => {
   const hooks = readPluginHooks<Partial<CellEditingHooks>>(table as never, ID)
-  for (const cell of cells)
-    submitValue(table, cell, cell.value, cell.text, cell.original, hooks)
+  const settled = notifyCells(table, operation.id, operation.source, cells)
+  cells.forEach((cell, index) =>
+    submitValue(table, cell, cell.value, cell.text, cell.original, hooks, {
+      onSettled: settled(index),
+    }),
+  )
 }
 
 /**
@@ -1506,7 +1647,21 @@ export const submitCells = (table: unknown, cells: readonly PackageCell[]) => {
 export const storeCellDrafts = (
   table: unknown,
   cells: readonly PackageCell[],
+  operation?: { id: string; source: CellWriteSource },
 ) => {
+  // Итог черновиками — сразу: показанное значение «до» читается до записи (ADR 0222, §8).
+  if (operation)
+    notifyCellsWritten(table, {
+      ...operation,
+      cells: cells.map(cell => ({
+        rowId: cell.rowId,
+        columnId: cell.columnId,
+        before: shownValueOf(table, cell.rowId, cell.columnId),
+        after: cell.value,
+      })),
+      refused: [],
+      draft: true,
+    })
   const set: Draft[] = []
   const remove: { kind: string; target: { cell: [string, string] } }[] = []
   const newRows = new Map<string, PackageCell[]>()

@@ -3,6 +3,7 @@ import {
   columnTotals,
   failureLog,
   unsavedChanges,
+  editHistory,
   cellEditing,
   cellErrors,
   valueChangeFlash,
@@ -97,6 +98,7 @@ const FACTORIES = {
   columnTotals,
   failureLog,
   unsavedChanges,
+  editHistory,
 }
 
 const FACTORY_NAMES = Object.keys(FACTORIES)
@@ -252,6 +254,7 @@ export const argsToPlugins = (o: FeatureToggles) => {
     columnTotals(argsOf(o, 'columnTotals')),
     failureLog(argsOf(o, 'failureLog')),
     unsavedChanges(argsOf(o, 'unsavedChanges')),
+    editHistory(argsOf(o, 'editHistory')),
     // Демо-производитель действий строки как единые дескрипторы (`RowAction`):
     // инлайн — ряд row-кнопок, при `rowActionMenu` схлопываются в overflow-кебаб.
     {

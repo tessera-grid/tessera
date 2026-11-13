@@ -70,6 +70,9 @@ export interface TableLabels {
   pendingSelectPage: string
   pendingPaste: string
   pendingFill: string
+  /** Отмена и повтор ждут строк серверной модели (ADR 0222, §7) */
+  pendingUndo: string
+  pendingRedo: string
   /** Вопрос перед вставкой на месте плашки ожидания и его кнопки (ADR 0219, WR3) */
   pasteQuestionValue: (value: string) => string
   pasteQuestionCount: (count: number) => string
@@ -87,6 +90,8 @@ export interface TableLabels {
   actionSelectPage: string
   actionPaste: string
   actionFill: string
+  actionUndo: string
+  actionRedo: string
   /** Доступное имя строки «назад» раздела меню (ADR 0079) */
   menuBack: (section: string) => string
   /** Объявление: открыт раздел меню */
@@ -156,6 +161,8 @@ export interface TableLabels {
   serverActionFailedCopy: string
   serverActionFailedPaste: string
   serverActionFailedFill: string
+  serverActionFailedUndo: string
+  serverActionFailedRedo: string
   serverActionFailedSelectPage: string
   /** Объявление числа строк после применения фильтра или поиска */
   announceFilteredRows: (count: number) => string
@@ -249,6 +256,8 @@ export const DEFAULT_LABELS = {
   pendingSelectPage: 'Selecting the page…',
   pendingPaste: 'Pasting…',
   pendingFill: 'Filling…',
+  pendingUndo: 'Undoing…',
+  pendingRedo: 'Redoing…',
   pasteQuestionValue: 'Paste "{value}"?',
   pasteQuestionCount: 'Paste {count} values?',
   pasteQuestionCount_one: 'Paste {count} value?',
@@ -264,6 +273,8 @@ export const DEFAULT_LABELS = {
   actionSelectPage: 'Selecting the page',
   actionPaste: 'Pasting',
   actionFill: 'Filling',
+  actionUndo: 'Undo',
+  actionRedo: 'Redo',
   menuBack: 'Back, {section}',
   announceMenuSection: '{section} menu',
   sectionLoadFailed: "Couldn't load",
@@ -302,6 +313,8 @@ export const DEFAULT_LABELS = {
   serverActionFailedCopy: "The cells weren't copied",
   serverActionFailedPaste: "The cells weren't pasted",
   serverActionFailedFill: "The cells weren't filled",
+  serverActionFailedUndo: "The change wasn't undone",
+  serverActionFailedRedo: "The change wasn't redone",
   serverActionFailedSelectPage: "The page rows weren't selected",
   announceLoadError: "Couldn't refresh the data",
   announceLoadErrorReason: "Couldn't refresh the data: {reason}",

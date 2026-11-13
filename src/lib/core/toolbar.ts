@@ -26,6 +26,8 @@ const BUILTIN_GROUP_RANK: Record<string, number> = {
   view: 1,
   data: 2,
   // Пульт черновиков — после групп потребителя, перед журналом отказов (ADR 0178, §8).
+  // Отмена, повтор и история — перед пультом черновиков (ADR 0222, §11).
+  history: Number.MAX_SAFE_INTEGER - 1,
   drafts: Number.MAX_SAFE_INTEGER,
   // Журнал отказов — последним справа, после групп потребителя (ADR 0177, §7).
   failures: Number.POSITIVE_INFINITY,

@@ -27,6 +27,8 @@ export type ServerActionKind =
   | 'selectPage'
   | 'paste'
   | 'fill'
+  | 'undo'
+  | 'redo'
 
 /** Контрол, начавший действие: на нём свет ожидания и вспышка отказа (ADR 0116, §3). */
 export interface ServerActionCause {
@@ -59,7 +61,7 @@ export interface ServerActionStatus {
    * свечения обновления. Обновления среза без этого поля его не трогают.
    */
   loadingRows?: {
-    kind: 'copy' | 'selectPage' | 'paste' | 'fill'
+    kind: 'copy' | 'selectPage' | 'paste' | 'fill' | 'undo' | 'redo'
     since: number
     /**
      * Вставка спрашивает пользователя (ADR 0219, WR3, WR42): ответ «Вставить» — `accept`;

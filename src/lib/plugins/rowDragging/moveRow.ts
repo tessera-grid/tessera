@@ -43,6 +43,7 @@ interface MoveRow {
   getCanDrag: () => boolean
   getParentRow: () => MoveRow | undefined
   getCanExpand?: () => boolean
+  getIsExpanded?: () => boolean
   toggleExpanded?: (expanded?: boolean) => void
 }
 
@@ -81,6 +82,7 @@ const commit = (
   dragIndex: number,
   hoverIndex: number,
   write: () => void,
+  history?: 'undo' | 'redo',
 ) => {
   const from = row.getParentRow()
   const lazy = isLazy(from) || isLazy(to.parent)
@@ -100,6 +102,7 @@ const commit = (
     parentId: to.parent?.id,
     previousParentId: from?.id,
     index: to.index,
+    ...(history && { source: history }),
     ...(lazy
       ? {
           lazy: {
@@ -315,3 +318,97 @@ export const moveRowToEdge = (
   table: unknown,
   edge: RowMoveEdge,
 ) => moveServerRow(table, (row as MoveRow).id, edge)
+
+/** Вынуть строку с id из списка или подстрок любой глубины. */
+const takeItem = (
+  items: OrderItem[],
+  rowId: string,
+): [OrderItem[], OrderItem | undefined] => {
+  const at = items.findIndex(item => item.id === rowId)
+  if (at >= 0) return [items.filter((_, i) => i !== at), items[at]]
+  for (let i = 0; i < items.length; i++) {
+    const subRows = items[i]!.subRows
+    if (!subRows) continue
+    const [rest, item] = takeItem(subRows, rowId)
+    if (item) {
+      const next = [...items]
+      next[i] = { ...items[i]!, subRows: rest }
+      return [next, item]
+    }
+  }
+  return [items, undefined]
+}
+
+/** Поставить строку на место среди подстрок `parentId` или в корень. */
+const putItem = (
+  items: OrderItem[],
+  item: OrderItem,
+  parentId: string | undefined,
+  index: number,
+): OrderItem[] => {
+  if (parentId === undefined) {
+    const next = [...items]
+    next.splice(Math.min(index, next.length), 0, item)
+    return next
+  }
+  return items.map(entry =>
+    entry.id === parentId
+      ? {
+          ...entry,
+          subRows: putItem(entry.subRows ?? [], item, undefined, index),
+        }
+      : entry.subRows
+        ? { ...entry, subRows: putItem(entry.subRows, item, parentId, index) }
+        : entry,
+  )
+}
+
+/**
+ * Перенос строки на место от истории правок (ADR 0222, §13): тот же путь, что бросок, —
+ * колбэк, ожидание, ленивая стадия; данные пишутся по id строки.
+ */
+export const moveRowToPlace = (
+  table: unknown,
+  rowId: string,
+  place: { parentId?: string; index: number },
+  history: 'undo' | 'redo',
+) => {
+  const source = rowsOf<MoveRow>(table, 'core')
+  const all = (
+    table as { getRowSource: () => { byId: (id: string) => unknown } }
+  ).getRowSource()
+  const row = all.byId(rowId) as MoveRow | undefined
+  if (!row) return false
+  const parent =
+    place.parentId === undefined
+      ? undefined
+      : (all.byId(place.parentId) as MoveRow | undefined)
+  if (place.parentId !== undefined && !parent) return false
+  const siblings = parent?.subRows ?? source.rows
+  const shown = rowsOf<MoveRow>(table, 'shown').rows
+  const target = siblings.filter(item => item.id !== rowId)[place.index]
+  const dragIndex = shown.findIndex(item => item.id === rowId)
+  const hoverIndex = shown.findIndex(
+    item => item.id === (target?.id ?? parent?.id ?? rowId),
+  )
+  commit(
+    table,
+    row,
+    { parent, index: place.index },
+    dragIndex,
+    hoverIndex,
+    () =>
+      onRowOrderChangeOf(table)?.(prev => {
+        const [rest, item] = takeItem(prev, rowId)
+        if (!item) return prev
+        const moved =
+          item.parentId === place.parentId
+            ? item
+            : { ...item, parentId: place.parentId }
+        return putItem(rest, moved, place.parentId, place.index)
+      }),
+    history,
+  )
+  if (parent && !parent.getIsExpanded?.()) expand(parent)
+  return true
+}

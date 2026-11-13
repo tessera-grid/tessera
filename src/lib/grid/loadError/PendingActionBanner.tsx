@@ -79,6 +79,7 @@ export const cancelServerPending = (table: unknown, event?: unknown) => {
     cancelPending(table, { kind: 'selectPage' }, source) +
     cancelPending(table, { kind: 'paste' }, source) +
     cancelPending(table, { kind: 'fill' }, source) +
+    cancelPending(table, { kind: 'history' }, source) +
     cancelTableActions(table, source)
   )
 }

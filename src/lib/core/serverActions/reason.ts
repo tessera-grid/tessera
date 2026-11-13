@@ -13,6 +13,8 @@ const FAILED_LABEL = {
   selectPage: 'serverActionFailedSelectPage',
   paste: 'serverActionFailedPaste',
   fill: 'serverActionFailedFill',
+  undo: 'serverActionFailedUndo',
+  redo: 'serverActionFailedRedo',
 } as const satisfies Record<ServerActionKind, keyof TableLabels>
 
 /** Причина отказа серверного действия: текст сервера (AS10), иначе подпись действия. */

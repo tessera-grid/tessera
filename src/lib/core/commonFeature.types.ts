@@ -63,6 +63,8 @@ import type {
   CellWriteOptions,
   CellWriteReport,
   CellWriter,
+  CellsWritten,
+  RowMover,
 } from './cellWrites'
 
 // --- Payload-типы контракта --------------------------------------------------
@@ -243,6 +245,10 @@ export interface CommonOptions extends CoreOptions {
   rowSourceLayer?: (source: RowSource, table: unknown) => RowSource
   /** Исполнитель записи в ячейки — плагин правки (ADR 0219, §1). */
   cellWriter?: CellWriter
+  /** Слушатель итогов записи в ячейки — плагин истории (ADR 0222, §2). */
+  cellsWritten?: (table: unknown, record: CellsWritten) => void
+  /** Исполнитель переноса строки — плагин перетаскивания строк (ADR 0222, §13). */
+  rowMover?: RowMover
   /** Тело ждёт данных плагина: `aria-busy` таблицы (ADR 0081). */
   getBodyBusy?: (state: object) => boolean
   /** В `data` загружена только часть строк сервера (лента, ADR 0081). */

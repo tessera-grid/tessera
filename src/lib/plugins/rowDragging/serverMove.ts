@@ -306,6 +306,8 @@ export const commitServerMove = (
   { from, to }: { from: number; to: number },
   place: ServerMovePlace,
   onRowDragEnd: RowDraggingHooks['onRowDragEnd'] | undefined,
+  /** Перенос сделала история правок (ADR 0222, §13). */
+  history?: 'undo' | 'redo',
 ) => {
   const source = rowSourceOf(table)
   const row = source.byId(rowId) as
@@ -324,6 +326,8 @@ export const commitServerMove = (
       parentId: place.parentId,
       previousParentId: before.parentId,
       index: place.index,
+      previousIndex: before.index,
+      ...(history && { source: history }),
       ...(grouping.length > 0 && {
         groupValues: groupValuesOf(place.parentId, grouping),
         previousGroupValues: groupValuesOf(before.parentId, grouping),

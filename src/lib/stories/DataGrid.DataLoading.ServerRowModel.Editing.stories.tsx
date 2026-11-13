@@ -9,7 +9,11 @@ import {
   stepDone,
   until,
 } from './__mocks__/catalogPlay'
-import { type FilteringItem, filteringItemAt } from './__mocks__/filteringData'
+import {
+  type FilteringItem,
+  filteringColumns,
+  filteringItemAt,
+} from './__mocks__/filteringData'
 import { untilDone } from './__mocks__/cellGestures'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
@@ -21,6 +25,7 @@ import {
 } from './demos/GuideStory'
 import { StoryComponent } from './DataGridStory'
 import type { CellEditCommit } from '../plugins'
+import type { CellEditBatch } from '../plugins/cellEditing/types'
 import { layout, hasRow, serverProps } from './__mocks__/serverRowModelGuide'
 
 /**
@@ -202,6 +207,154 @@ export const ServerRowModelEditCell: StoryObj<StoryProps> = {
     await step(EDIT_CELL[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(ageText(canvas)).toBe(SAVED_AGE))
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0222, S7 ---------------------------------------------------------------------
+
+/** «Сервер» помнит сохранённые возрасты: окно, пришедшее после правки, их несёт. */
+const savedAges = new Map<string, unknown>()
+const ORIGINAL_AGE = '25'
+const indexOfRow = (rowId: string) => Number(rowId.split('-').at(-1))
+const rowAt = (i: number): FilteringItem => {
+  const row = filteringItemAt(i)
+  return savedAges.has(row.id)
+    ? { ...row, age: savedAges.get(row.id) as number }
+    : row
+}
+
+const undoProps: GuideStoryStep['props'] = () => ({
+  columnsOverride: filteringColumns,
+  dataOverride: [],
+  enableServerRowModel: true,
+  serverRowModelBlockSize: EDIT_BLOCK,
+  serverRowModelMaxBlocks: 2,
+  rowCount: EDIT_TOTAL,
+  serverRowModelGetRows: ({ start, end }: { start: number; end: number }) =>
+    Promise.resolve({
+      rows: Array.from({ length: end - start }, (_, k) => rowAt(start + k)),
+    }),
+  enableCellEditing: true,
+  // Без активной ячейки: её блок кэш не вытесняет (ADR 0138, SD9).
+  enableCellSelection: false,
+  enableKeyboardNavigation: false,
+  enableEditHistory: true,
+  onCellEdit: ({ rowId, value }: CellEditCommit) => {
+    savedAges.set(rowId, value)
+    return { ...rowAt(indexOfRow(rowId)) }
+  },
+  onCommitEdits: (batch: CellEditBatch) => {
+    for (const cell of batch.cells) savedAges.set(cell.rowId, cell.value)
+  },
+})
+
+const scroller = (root: ParentNode) =>
+  root.querySelector<HTMLElement>('.data-grid__container')
+/** Прокрутка: доля высоты от 0 до 1. */
+const scrollTo = (root: ParentNode, at: number) => {
+  const element = scroller(root)
+  if (element)
+    element.scrollTop = (element.scrollHeight - element.clientHeight) * at
+}
+/** Строка последнего блока на экране: таблица дошла до конца. */
+const atEnd = (root: HTMLElement) => hasRow(root, EDIT_TOTAL - 1)
+const atMiddle = (root: HTMLElement) => hasRow(root, EDIT_TOTAL / 2)
+
+const ageSaved = (root: HTMLElement) =>
+  savedAges.get(EDIT_ROW) === Number(TYPED_AGE) &&
+  ageText(root) === TYPED_AGE &&
+  !agePending(root)
+/** Через середину в конец: три блока при пределе в два — первый уходит из памяти. */
+let passedMiddle = false
+const scrolledAway = (root: HTMLElement) =>
+  savedAges.get(EDIT_ROW) === Number(TYPED_AGE) &&
+  passedMiddle &&
+  atEnd(root) &&
+  !ageCellOf(root)
+const undoneOnServer = () =>
+  savedAges.get(EDIT_ROW) === Number(ORIGINAL_AGE) &&
+  !document.querySelector('[data-testid="load-error-banner"]')
+const backAtTop = (root: HTMLElement) =>
+  undoneOnServer() && ageText(root) === ORIGINAL_AGE && !agePending(root)
+
+/** Правка, затем прокрутка вниз: блок с правленой строкой уходит из кэша. */
+const awayAfterEdit = (root: HTMLElement) => {
+  if (savedAges.get(EDIT_ROW) !== Number(TYPED_AGE)) saveAge(root)
+  else if (!passedMiddle) {
+    if (atMiddle(root)) passedMiddle = true
+    else scrollTo(root, 0.5)
+  } else scrollTo(root, 1)
+}
+
+let undoPressed = false
+const undoAway = (root: HTMLElement) => {
+  if (!scrolledAway(root) && !undoPressed) {
+    awayAfterEdit(root)
+    return
+  }
+  if (undoPressed) return
+  undoPressed = true
+  document.querySelector<HTMLElement>('[data-testid="undo-button"]')?.click()
+}
+
+const SERVER_UNDO: readonly GuideStoryStep[] = [
+  {
+    title: 'Строки с сервера',
+    hint: 'Сервер отдаёт строки блоками, таблица держит в памяти только два блока. Возраст можно править, над таблицей — кнопки отмены и повтора.',
+    props: undoProps,
+  },
+  {
+    title: 'Возраст поправлен',
+    hint: 'Пользователь поправил возраст во второй строке и сохранил. Сервер принял правку.',
+    states: ['body.pending'],
+    enter: untilDone(ageSaved, saveAge),
+  },
+  {
+    title: 'Таблица прокручена вниз',
+    hint: 'Пользователь прокрутил таблицу в конец. Блок с поправленной строкой ушёл из памяти таблицы.',
+    enter: untilDone(scrolledAway, awayAfterEdit),
+  },
+  {
+    title: 'Отмена вернула возраст',
+    hint: 'Пользователь нажал кнопку отмены. Строки в памяти таблицы уже не было: таблица запросила её у сервера, проверила, что возраст в ней прежний после правки, отправила прежнее значение и прокрутила к строке.',
+    enter: untilDone(backAtTop, undoAway),
+  },
+]
+
+/** ADR 0222, S7: отмена правки, чья строка ушла из кэша окна, — догрузка строки и запись. */
+export const ServerUndo: StoryObj<StoryProps> = {
+  name: 'Undo an edit off the window',
+  parameters: { scenario: '0222/S7', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Отмена ушедшей правки"
+      steps={SERVER_UNDO}
+      reset={() => {
+        savedAges.clear()
+        undoPressed = false
+        passedMiddle = false
+      }}
+      args={guideArgs(layout, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(SERVER_UNDO[0]!.title, async () => {
+      await until(() => expect(ageText(canvas)).toBe(ORIGINAL_AGE))
+    })
+    await step(SERVER_UNDO[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(ageSaved(canvas)).toBe(true))
+    })
+    await step(SERVER_UNDO[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(scrolledAway(canvas)).toBe(true))
+    })
+    await step(SERVER_UNDO[3]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(backAtTop(canvas)).toBe(true))
       await settle()
     })
   },

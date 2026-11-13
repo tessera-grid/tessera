@@ -18,6 +18,7 @@ import { contextMenuLabels } from './lib/plugins/contextMenu/labels'
 import { dataExportLabels } from './lib/plugins/dataExport/labels'
 import { dataExportModelLabels } from './lib/plugins/dataExportModel/labels'
 import { failureLogLabels } from './lib/plugins/failureLog/labels'
+import { editHistoryLabels } from './lib/plugins/editHistory/labels'
 import { infiniteScrollLabels } from './lib/plugins/infiniteScroll/labels'
 import { paginationLabels } from './lib/plugins/pagination/labels'
 import { quickSearchLabels } from './lib/plugins/quickSearch/labels'
@@ -47,6 +48,7 @@ export const allLabelSets = [
   dataExportLabels,
   dataExportModelLabels,
   failureLogLabels,
+  editHistoryLabels,
   infiniteScrollLabels,
   paginationLabels,
   quickSearchLabels,

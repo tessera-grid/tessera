@@ -552,6 +552,23 @@ export const cellEditingSaveModeType = radioControl(
   ['auto', 'manual'],
   'auto',
 )
+export const enableEditHistoryType = booleanControl(
+  'Отмена и повтор правок: Ctrl+Z и Ctrl+Shift+Z, кнопки и история в тулбаре, пункты контекстного меню (плагин `editHistory`)',
+)
+export const editHistoryLimitType = numberControl(
+  'Сколько записей помнит история (`limit`); старейшая уходит',
+  { min: 1, max: 200, step: 1 },
+  '30',
+)
+export const editHistoryConflictType = radioControl(
+  'Ячейка изменилась извне после правки (`conflict`): `skip` — отмена её пропускает, `overwrite` — пишет поверх',
+  ['skip', 'overwrite'],
+  'skip',
+)
+export const editHistoryContextMenuType = booleanControl(
+  'Пункты «Отменить» и «Повторить» в контекстном меню ячейки (`contextMenu`)',
+  true,
+)
 export const cellEditingSearchDebounceMsType = numberControl(
   'Задержка запроса справочника при поиске в редакторе варианта, мс (`searchDebounceMs`); 0 — на каждый ввод',
   { min: 0, max: 2000, step: 50 },
@@ -683,3 +700,7 @@ export const unsavedChangesToolbarType = toolbarPlacementControl(
   'Несохранённые изменения',
 )
 export const failureLogToolbarType = toolbarPlacementControl('Журнал отказов')
+export const editHistoryToolbarType = toolbarPlacementControl(
+  'Отменить и Повторить',
+)
+export const editHistoryHistoryPanelType = toolbarPlacementControl('История')

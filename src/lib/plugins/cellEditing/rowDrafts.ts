@@ -7,6 +7,7 @@ import { constructRow } from '@tanstack/react-table'
 
 import { readPluginHooks } from '../../core/definePlugin'
 import { commonOptionsOf } from '../../core/commonFeature'
+import { notifyCellsWritten, type WrittenRow } from '../../core/cellWrites'
 import { flashOutcome } from '../../core/flashes/flashFeature'
 import {
   type Draft,
@@ -130,7 +131,70 @@ export const addRow = (
   }
   setDraft(table, { kind: ROW_INSERT_DRAFT, target: { row: rowId }, value })
   flashOutcome(table, { row: rowId }, 'arrived')
+  notifyRow(table, { rowId, change: 'insert', ...value })
   return rowId
+}
+
+let rowWrites = 0
+
+/** Строка до сохранения — каналу истории (ADR 0222, §13). */
+const notifyRow = (table: unknown, row: WrittenRow) =>
+  notifyCellsWritten(table, {
+    id: `row-${++rowWrites}`,
+    source: 'row',
+    cells: [],
+    refused: [],
+    draft: true,
+    rows: [row],
+  })
+
+type RowsTable = {
+  getRowSource: () => RowSource<{ id: string; original?: unknown }>
+}
+
+/** Место строки в видимом списке и строка над ней. */
+const placeInList = (table: unknown, rowId: string) => {
+  const source = (table as RowsTable).getRowSource()
+  const index = Math.max(0, source.indexOf(rowId))
+  const after = index > 0 ? source.at(index - 1)?.id : undefined
+  return { index, ...(after ? { after } : {}) }
+}
+
+/**
+ * Строки до сохранения от истории (ADR 0222, §13): вернуть строку — снять черновик удаления или
+ * положить черновик вставки с её id, убрать — снять черновик вставки или положить удаление.
+ */
+export const writeDraftRows = (table: unknown, rows: readonly WrittenRow[]) => {
+  if (rowDraftsInertReason(table) !== undefined) return
+  const source = (table as RowsTable).getRowSource()
+  for (const row of rows) {
+    const known = !!source.byId(row.rowId)
+    if (row.change === 'delete') {
+      if (isNewRow(table, row.rowId))
+        removeDraft(table, ROW_INSERT_DRAFT, { row: row.rowId })
+      else if (known && !isDeletedRow(table, row.rowId))
+        setDraft(table, {
+          kind: ROW_DELETE_DRAFT,
+          target: { row: row.rowId },
+          value: null,
+        })
+      continue
+    }
+    if (isDeletedRow(table, row.rowId))
+      removeDraft(table, ROW_DELETE_DRAFT, { row: row.rowId })
+    else if (!known && !isNewRow(table, row.rowId)) {
+      const value: RowInsertValue = {
+        values: row.values as Record<string, unknown>,
+        index: row.index,
+        ...(row.after ? { after: row.after } : {}),
+      }
+      setDraft(table, {
+        kind: ROW_INSERT_DRAFT,
+        target: { row: row.rowId },
+        value,
+      })
+    }
+  }
 }
 
 /**
@@ -139,15 +203,25 @@ export const addRow = (
  */
 export const removeRow = (table: unknown, rowId: string) => {
   if (inert(table, 'removeRow')) return
-  if (isNewRow(table, rowId)) {
+  const draft = insertDraftOf(table, rowId)
+  if (draft) {
     removeDraft(table, ROW_INSERT_DRAFT, { row: rowId })
+    notifyRow(table, {
+      rowId,
+      change: 'delete',
+      ...(draft.value as RowInsertValue),
+    })
     return
   }
+  if (isDeletedRow(table, rowId)) return
+  const row = (table as RowsTable).getRowSource().byId(rowId)
+  const place = placeInList(table, rowId)
   setDraft(table, {
     kind: ROW_DELETE_DRAFT,
     target: { row: rowId },
     value: null,
   })
+  notifyRow(table, { rowId, change: 'delete', values: row?.original, ...place })
 }
 
 /** Значения ячеек новой строки — в её черновик, без черновиков ячеек (DR29). */

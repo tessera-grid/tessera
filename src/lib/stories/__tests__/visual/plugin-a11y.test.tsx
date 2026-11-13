@@ -70,6 +70,11 @@ const PLUGIN_ARGS: Record<string, GridArgs> = {
   columnTotals: { enableColumnTotals: true },
   // Кнопка журнала видна только с отказами: сам журнал проверяет JR6 (ADR 0177).
   failureLog: { enableFailureLog: true, enableToolbar: true },
+  editHistory: {
+    enableEditHistory: true,
+    enableCellEditing: true,
+    enableToolbar: true,
+  },
   unsavedChanges: { enableUnsavedChanges: true, enableToolbar: true },
   infiniteScroll: {
     enableInfiniteScroll: true,

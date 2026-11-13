@@ -3,6 +3,7 @@
  * ожидание его промиса, запись ленивого переноса в ответы и `data`, отказ — вспышка ручки
  * и объявление. Общий путь броска, клавиатуры и меню ручки.
  */
+import { notifyCellsWritten } from '../../core/cellWrites'
 import { reportOutcome } from '../../core/debugActions'
 import { announceLabel, announcerLabels } from '../../core/announcer'
 import { ENGLISH_LABELS } from '../../core/localization'
@@ -64,7 +65,44 @@ export interface RowMoveCommit {
   previousGroupValues?: Record<string, unknown>
   /** Перенос между клиентскими группами: стадия до итога промиса (ADR 0186, §3). */
   group?: Record<string, unknown>
+  /** Место среди сестёр до переноса; нет — `fromIndex` (ADR 0222, §13). */
+  previousIndex?: number
+  /** Перенос сделала история правок (ADR 0222, §13). */
+  source?: 'undo' | 'redo'
 }
+
+let moves = 0
+
+/** Итог переноса — каналу истории правок (ADR 0222, §13). */
+const notifyMove = (table: unknown, commit: RowMoveCommit, ok: boolean) =>
+  notifyCellsWritten(table, {
+    id: `move-${++moves}`,
+    source: commit.source ?? 'move',
+    cells: [],
+    refused: [],
+    ...(ok
+      ? {
+          move: {
+            rowId: commit.rowId,
+            from: {
+              ...(commit.previousParentId !== undefined && {
+                parentId: commit.previousParentId,
+              }),
+              index: previousIndexOf(commit),
+            },
+            to: {
+              ...(commit.parentId !== undefined && {
+                parentId: commit.parentId,
+              }),
+              index: commit.index,
+            },
+          },
+        }
+      : { failed: true }),
+  })
+
+const previousIndexOf = (commit: RowMoveCommit) =>
+  commit.previousIndex ?? commit.fromIndex ?? commit.lazy?.from.index ?? 0
 
 // Номер попытки сквозной: итог прежнего переноса не спутать с новым.
 let lastAttempt = 0
@@ -300,6 +338,8 @@ export const commitRowMove = (
     parentId: commit.parentId,
     previousParentId: commit.previousParentId,
     index: commit.index,
+    previousIndex: previousIndexOf(commit),
+    ...(commit.source && { source: commit.source }),
     ...(commit.groupValues && {
       groupValues: commit.groupValues,
       previousGroupValues: commit.previousGroupValues,
@@ -312,6 +352,7 @@ export const commitRowMove = (
     if (lazy) {
       confirm(t, rowId, { attempt, pending: false, lazy })
     }
+    notifyMove(table, commit, true)
     return
   }
   const entry: RowMoveEntry = {
@@ -332,6 +373,7 @@ export const commitRowMove = (
     } else {
       reject(t, commit, entry, reason)
     }
+    notifyMove(table, commit, ok)
     if (commit.group) refreshStagedCells(table)
   }
   // Стадия модели и `data` приложения меняются одним коммитом: строка не пропадает.

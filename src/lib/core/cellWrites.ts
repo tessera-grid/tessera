@@ -4,7 +4,7 @@
  * операции и место исполнителя — его кладёт в опции таблицы плагин правки.
  */
 
-/** Откуда операция: встроенные триггеры, приложение, будущий журнал отмен. */
+/** Откуда операция: встроенные триггеры, приложение, отмена и повтор (ADR 0222). */
 export type CellWriteSource =
   | 'paste'
   | 'fill'
@@ -15,6 +15,86 @@ export type CellWriteSource =
   | 'cut'
   | 'api'
   | 'undo'
+  | 'redo'
+
+/** Ячейка сохранённой записи: значения до и после в типе колонки. */
+export interface WrittenCell {
+  rowId: string
+  columnId: string
+  before: unknown
+  after: unknown
+}
+
+/** Новая или удалённая строка до сохранения (ADR 0222, §13): значения и место в списке. */
+export interface WrittenRow {
+  rowId: string
+  change: 'insert' | 'delete'
+  values: unknown
+  /** Место в видимом списке. */
+  index: number
+  /** Строка над ней; нет — строка первая. */
+  after?: string
+}
+
+/** Место строки: родитель и место среди сестёр. */
+export interface RowPlace {
+  parentId?: string
+  index: number
+}
+
+/** Перенос строки (ADR 0222, §13). */
+export interface WrittenMove {
+  rowId: string
+  from: RowPlace
+  to: RowPlace
+}
+
+/**
+ * Итог операции записи (ADR 0222, §2): что сохранено, что отклонено. `'edit'` — правка ячейки в
+ * редакторе. `draft` — записано черновиками режима «Применить», без сервера; `cancelled` —
+ * ожидание прервано «стопом», итог неизвестен.
+ */
+export interface CellsWritten {
+  id: string
+  source: CellWriteSource | 'edit' | 'row' | 'move'
+  cells: readonly WrittenCell[]
+  refused: readonly { rowId: string; columnId: string }[]
+  draft?: boolean
+  cancelled?: boolean
+  /** Строки до сохранения: добавленные и удалённые (§13). */
+  rows?: readonly WrittenRow[]
+  /** Перенос строки; у отказа — нет, `failed`. */
+  move?: WrittenMove
+  /** Перенос отклонён (§13). */
+  failed?: boolean
+}
+
+/** Исполнитель переноса строки — плагин перетаскивания строк (ADR 0222, §13). */
+export interface RowMover {
+  /** Перенести строку на место тем же путём, что бросок; `false` — перенос невозможен. */
+  move: (
+    table: unknown,
+    rowId: string,
+    place: RowPlace,
+    source: 'undo' | 'redo',
+  ) => boolean
+  /** Место строки сейчас; нет строки — `undefined`. */
+  placeOf: (table: unknown, rowId: string) => RowPlace | undefined
+}
+
+type MoverTable = { options?: { rowMover?: RowMover } }
+
+/** Исполнитель переноса таблицы; без плагина перетаскивания — `undefined`. */
+export const rowMoverOf = (table: unknown): RowMover | undefined =>
+  (table as MoverTable | undefined)?.options?.rowMover
+
+type SettledTable = {
+  options?: { cellsWritten?: (table: unknown, record: CellsWritten) => void }
+}
+
+/** Сообщить итог записи слушателю таблицы — плагину истории; без него ничего. */
+export const notifyCellsWritten = (table: unknown, record: CellsWritten) =>
+  (table as SettledTable | undefined)?.options?.cellsWritten?.(table, record)
 
 /**
  * Изменение одной ячейки: набранный или вставленный текст разбирается по типу колонки,
@@ -57,6 +137,13 @@ export interface CellWriter {
   ) => Promise<CellWriteReport>
   /** Можно ли записать в ячейку — для вставки, пунктов меню и клавиш. */
   canWrite: (table: unknown, rowId: string, columnId: string) => boolean
+  /** Значение, которое ячейка показывает: черновик или данные (ADR 0222, §6). */
+  valueOf: (table: unknown, rowId: string, columnId: string) => unknown
+  /**
+   * Строки до сохранения (ADR 0222, §13): `insert` — вернуть строку (снять черновик удаления или
+   * положить черновик вставки), `delete` — убрать её; без записи в историю.
+   */
+  writeRows: (table: unknown, rows: readonly WrittenRow[]) => void
 }
 
 type WriterTable = { options?: { cellWriter?: CellWriter } }
@@ -79,6 +166,13 @@ export const writeCells = (
     changes,
     rows ? { source, rows } : { source },
   )
+
+/** Показанное значение ячейки; без исполнителя — `undefined`. */
+export const shownCellValue = (
+  table: unknown,
+  rowId: string,
+  columnId: string,
+): unknown => cellWriterOf(table)?.valueOf(table, rowId, columnId)
 
 /** Можно ли записать в ячейку; без исполнителя — нет. */
 export const canWriteCell = (

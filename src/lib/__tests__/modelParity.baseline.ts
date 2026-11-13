@@ -263,6 +263,16 @@ export const MODEL_PARITY: ParityBase = {
   unsavedChanges: {
     same: ['toolbar', 'enabled'],
   },
+  editHistory: {
+    same: [
+      'enabled',
+      'limit',
+      'conflict',
+      'toolbar',
+      'contextMenu',
+      'historyPanel',
+    ],
+  },
   serverRowModel: {
     onlyOnServer: {
       reason: 'Сама серверная модель строк: в клиентском режиме её нет',

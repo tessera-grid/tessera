@@ -68,6 +68,8 @@ export const commitGroupMove = (
   group: AnyRow,
   { from, to }: { from: number; to: number },
   onRowDragEnd: RowDraggingHooks['onRowDragEnd'] | undefined,
+  /** Перенос сделала история правок (ADR 0222, §13). */
+  history?: 'undo' | 'redo',
 ) => {
   const previous = row.getParentRow()
   const groupValues = groupValuesOf(group)
@@ -80,6 +82,8 @@ export const commitGroupMove = (
       parentId: group.id,
       previousParentId: previous?.id,
       index: indexIn(group, row),
+      previousIndex: previous ? indexIn(previous, row) : 0,
+      ...(history && { source: history }),
       groupValues,
       previousGroupValues: groupValuesOf(previous),
       group: groupValues,

@@ -28,7 +28,7 @@ import { timeSlicer } from '../../util/timeSlice'
 import { inferDataType } from './columnDataType'
 import { columnOf, editTextOf, parseEditText } from './editValue'
 import { cellEditingLabels } from './labels'
-import { isDeletedRow } from './rowDrafts'
+import { isDeletedRow, writeDraftRows } from './rowDrafts'
 import {
   cellKey,
   commitCellPackage,
@@ -37,6 +37,7 @@ import {
   isEditingCell,
   type PackageCell,
   readEditSession,
+  shownValueOf,
   storeCellDrafts,
   submitCells,
   writeActionOf,
@@ -261,7 +262,7 @@ const write = async (
 
   if (cells.length === 0) return report
   if (hooks.saveMode === 'manual') {
-    storeCellDrafts(table, cells)
+    storeCellDrafts(table, cells, { id, source })
     return report
   }
   if (packaged) {
@@ -274,9 +275,14 @@ const write = async (
       `cellEditing: ${cells.length} cells are saved one by one through onCellEdit — set onCommitEdits to save an operation in one call`,
       'cellEditing:perCellWrite',
     )
-  submitCells(table, cells)
+  submitCells(table, cells, { id, source })
   return report
 }
 
 /** Исполнитель записи для канала ядра (ADR 0219, §1). */
-export const cellWriter: CellWriter = { write, canWrite }
+export const cellWriter: CellWriter = {
+  write,
+  canWrite,
+  valueOf: shownValueOf,
+  writeRows: writeDraftRows,
+}

@@ -150,6 +150,7 @@ const GRID = {
   enablePagination: true,
   enableFailureLog: true,
   enableUnsavedChanges: true,
+  enableEditHistory: true,
   initialDrafts: DRAFTS,
   extraPlugins: [GRID_SEED, NOTE_PLUGIN],
 } satisfies Partial<StoryProps>
@@ -456,6 +457,20 @@ const POPUPS: readonly AssembledPopup[] = [
         signal,
       ),
   },
+  {
+    id: 'editHistory',
+    title: 'История изменений',
+    hint: 'Пользователь открыл историю изменений. Панель собрана из поверхности, заголовка и заглушки: правок ещё не было.',
+    sources: ['plugins/editHistory/HistoryPopover'],
+    shown: () => byTestId('edit-history'),
+    parts: [],
+    open: (_root, { signal }) =>
+      openToolbarPopover(
+        'edit-history-button',
+        () => byTestId('edit-history'),
+        signal,
+      ),
+  },
 ]
 
 const popupById = (id: string) => POPUPS.find(popup => popup.id === id)!
@@ -600,5 +615,6 @@ export const PopupAssembled: StoryObj<StoryProps> = {
     await step(STEPS[15]!.title, () => expectPopup(canvas, 'cellIssue'))
     await step(STEPS[16]!.title, () => expectPopup(canvas, 'failureLog'))
     await step(STEPS[17]!.title, () => expectPopup(canvas, 'unsavedChanges'))
+    await step(STEPS[18]!.title, () => expectPopup(canvas, 'editHistory'))
   },
 }

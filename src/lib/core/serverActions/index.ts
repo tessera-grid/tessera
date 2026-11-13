@@ -183,6 +183,8 @@ const isServer = (t: ServerTable, kind: ServerActionKind) => {
     case 'selectPage':
     case 'paste':
     case 'fill':
+    case 'undo':
+    case 'redo':
       return false
     default:
       return dataModeOf(t, kind) === 'server'
@@ -330,6 +332,10 @@ export const serverActionName = (
       return labels.actionPaste
     case 'fill':
       return labels.actionFill
+    case 'undo':
+      return labels.actionUndo
+    case 'redo':
+      return labels.actionRedo
   }
 }
 
@@ -357,6 +363,10 @@ export const serverActionPendingTitle = (
       return labels.pendingPaste
     case 'fill':
       return labels.pendingFill
+    case 'undo':
+      return labels.pendingUndo
+    case 'redo':
+      return labels.pendingRedo
   }
 }
 
@@ -424,6 +434,8 @@ const SERVER_ACTION_PLUGIN: Record<ServerActionKind, string> = {
   selectPage: 'rowSelection',
   paste: 'cellSelection',
   fill: 'cellSelection',
+  undo: 'editHistory',
+  redo: 'editHistory',
 }
 
 export const runServerAction = (
