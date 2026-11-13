@@ -112,6 +112,10 @@ const selectBothRanges = (root: HTMLElement) => {
 
 const RANGE: readonly GuideStoryStep[] = [
   {
+    title: 'Ничего не выделено',
+    hint: 'Приложение включило выделение ячеек. Пользователь ещё ничего не выделял.',
+  },
+  {
     title: 'Ячейка выделена',
     hint: 'Пользователь щёлкнул ячейку. Она выделена и стала активной.',
     enter: untilDone(
@@ -172,18 +176,22 @@ export const CellSelectionRange: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     await step(RANGE[0]!.title, async () => {
       await waitForRows(canvas)
-      await until(() => expect(selectedCells(canvas)).toBe(1))
-      expect(isSelected(at(canvas, FIRST))).toBe(true)
     })
     await step(RANGE[1]!.title, async () => {
       await guideNext(canvas)
-      await until(() => expect(selectedCells(canvas)).toBe(FIRST_CELLS))
+      await waitForRows(canvas)
+      await until(() => expect(selectedCells(canvas)).toBe(1))
+      expect(isSelected(at(canvas, FIRST))).toBe(true)
     })
     await step(RANGE[2]!.title, async () => {
       await guideNext(canvas)
-      await until(() => expect(selectedCells(canvas)).toBe(BOTH_CELLS))
+      await until(() => expect(selectedCells(canvas)).toBe(FIRST_CELLS))
     })
     await step(RANGE[3]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(selectedCells(canvas)).toBe(BOTH_CELLS))
+    })
+    await step(RANGE[4]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(consoleText()).toContain('copy'))
       const data = copyFrom(at(canvas, FIRST))
@@ -385,10 +393,14 @@ const selectCorners = (root: HTMLElement) => {
 
 const FOLLOWS_SORT: readonly GuideStoryStep[] = [
   {
+    title: 'Ничего не выделено',
+    hint: 'Строки идут в исходном порядке. Пользователь ещё ничего не выделял.',
+    props: () => ({ enableColumnSorting: true }),
+  },
+  {
     title: 'Диапазон выделен',
     hint: 'Пользователь выделил прямоугольник между двумя ячейками. Строки идут в исходном порядке.',
     states: ['body.cellRange'],
-    props: () => ({ enableColumnSorting: true }),
     enter: untilDone(cornersSelected, selectCorners),
   },
   {
@@ -429,10 +441,14 @@ export const CellSelectionFollowsSort: StoryObj<StoryProps> = {
     let before: (string | null | undefined)[] = []
     await step(FOLLOWS_SORT[0]!.title, async () => {
       await waitForRows(canvas)
+    })
+    await step(FOLLOWS_SORT[1]!.title, async () => {
+      await guideNext(canvas)
+      await waitForRows(canvas)
       await until(() => expect(cornersSelected(canvas)).toBe(true))
       before = [CORNER_A.row, CORNER_B.row].map(id => rowIndexOf(canvas, id))
     })
-    await step(FOLLOWS_SORT[1]!.title, async () => {
+    await step(FOLLOWS_SORT[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(sortOf(canvas)).not.toBe('none'))
       await until(() => expect(cornersSelected(canvas)).toBe(true))
@@ -547,6 +563,10 @@ const holdHandle = async (root: HTMLElement, step: StepRun) => {
 
 const RANGE_HANDLE: readonly GuideStoryStep[] = [
   {
+    title: 'Ничего не выделено',
+    hint: 'Приложение включило выделение ячеек с маркером в углу диапазона. Пользователь ещё ничего не выделял.',
+  },
+  {
     title: 'Выделен диапазон',
     hint: 'Пользователь выделил диапазон ячеек. В правом нижнем углу выделения — маркер: за него диапазон растягивают и сужают.',
     states: ['body.cellRange'],
@@ -596,16 +616,20 @@ export const CellSelectionHandle: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     await step(RANGE_HANDLE[0]!.title, async () => {
       await waitForRows(canvas)
+    })
+    await step(RANGE_HANDLE[1]!.title, async () => {
+      await guideNext(canvas)
+      await waitForRows(canvas)
       await until(() => expect(firstRangeSelected(canvas)).toBe(true))
       await until(() => expect(handleOf(canvas)).not.toBeNull())
       expectHandleAtCorner(canvas, at(canvas, FIRST_END))
     })
-    await step(RANGE_HANDLE[1]!.title, async () => {
+    await step(RANGE_HANDLE[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(handleRangeSelected(canvas)).toBe(true))
       expect(handleOf(canvas)!.hasAttribute('data-dragging')).toBe(true)
     })
-    await step(RANGE_HANDLE[2]!.title, async () => {
+    await step(RANGE_HANDLE[3]!.title, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(handleOf(canvas)!.hasAttribute('data-dragging')).toBe(false),
@@ -758,6 +782,10 @@ const touchOne = async (root: HTMLElement, signal?: AbortSignal) => {
 
 const TOUCH: readonly GuideStoryStep[] = [
   {
+    title: 'Ничего не выделено',
+    hint: 'Приложение включило выделение ячеек. Пользователь ещё не касался таблицы.',
+  },
+  {
     title: 'Пользователь коснулся ячейки',
     hint: 'Пользователь коснулся ячейки пальцем. Ячейка выделена, а в левом верхнем и правом нижнем углу выделения — круги: за них диапазон растягивают пальцем.',
     states: ['body.cellRangeTouch'],
@@ -822,23 +850,27 @@ export const CellSelectionTouch: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     await step(TOUCH[0]!.title, async () => {
       await waitForRows(canvas)
-      await until(() => expect(touchRange(canvas, 3, 3)).toBe(true))
-      expectHandleAtCorner(canvas, at(canvas, TOUCHED))
     })
     await step(TOUCH[1]!.title, async () => {
       await guideNext(canvas)
-      await until(() => expect(touchRange(canvas, 3, 5)).toBe(true))
-      expect(dragging(canvas, 'end')).toBe(true)
+      await waitForRows(canvas)
+      await until(() => expect(touchRange(canvas, 3, 3)).toBe(true))
+      expectHandleAtCorner(canvas, at(canvas, TOUCHED))
     })
     await step(TOUCH[2]!.title, async () => {
       await guideNext(canvas)
-      await until(() => expect(touchRange(canvas, 1, 5)).toBe(true))
-      expect(dragging(canvas, 'start')).toBe(true)
+      await until(() => expect(touchRange(canvas, 3, 5)).toBe(true))
+      await until(() => expect(dragging(canvas, 'end')).toBe(true))
     })
     await step(TOUCH[3]!.title, async () => {
       await guideNext(canvas)
+      await until(() => expect(touchRange(canvas, 1, 5)).toBe(true))
+      await until(() => expect(dragging(canvas, 'start')).toBe(true))
+    })
+    await step(TOUCH[4]!.title, async () => {
+      await guideNext(canvas)
       await until(() => expect(dragging(canvas, 'start')).toBe(false))
-      expect(touchRange(canvas, 1, 5)).toBe(true)
+      await until(() => expect(touchRange(canvas, 1, 5)).toBe(true))
       expectHandleAtCorner(canvas, at(canvas, END_TO))
       await settle()
     })

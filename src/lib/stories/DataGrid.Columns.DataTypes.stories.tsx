@@ -481,25 +481,33 @@ export const EditingTypeEditor: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     await step(EDIT_TYPE_EDITOR[0]!.title, async () => {
       await waitForRows(canvas)
-      expect(priorityText(canvas)).toBe(
-        priorityLabel(PRIORITY_ROWS[0]!.priority),
+      await until(() =>
+        expect(priorityText(canvas)).toBe(
+          priorityLabel(PRIORITY_ROWS[0]!.priority),
+        ),
       )
     })
     await step(EDIT_TYPE_EDITOR[1]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(priorityEditor(canvas)).not.toBeNull())
-      expect(
-        priorityCell(canvas)!.querySelector('input:not([type="radio"])'),
-      ).toBeNull()
-      expect(
-        priorityEditor(canvas)!.querySelector('[role="radiogroup"]'),
-      ).not.toBeNull()
+      await until(() =>
+        expect(
+          priorityCell(canvas)!.querySelector('input:not([type="radio"])'),
+        ).toBeNull(),
+      )
+      await until(() =>
+        expect(
+          priorityEditor(canvas)!.querySelector('[role="radiogroup"]'),
+        ).not.toBeNull(),
+      )
     })
     await step(EDIT_TYPE_EDITOR[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(priorityEditor(canvas)).toBeNull())
-      expect(priorityText(canvas)).toBe(priorityLabel(HIGH))
-      expect(consoleText()).toMatch(new RegExp(`value:${HIGH}`))
+      await until(() => expect(priorityText(canvas)).toBe(priorityLabel(HIGH)))
+      await until(() =>
+        expect(consoleText()).toMatch(new RegExp(`value:${HIGH}`)),
+      )
       await settle()
     })
   },

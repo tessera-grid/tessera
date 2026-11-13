@@ -158,9 +158,6 @@ const EDIT_CELL: readonly GuideStoryStep[] = [
     title: 'Строки с сервера',
     hint: 'Сервер отдаёт строки блоками, данные строк держит таблица. Возраст можно править: у ячеек колонки при наведении появляется кнопка правки.',
     props: editProps,
-    enter: stepAction(async (root, { signal }) => {
-      await pollUntil(() => !!ageCellOf(root), signal)
-    }),
   },
   {
     title: 'Пользователь сохранил правку',
@@ -193,8 +190,8 @@ export const ServerRowModelEditCell: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(EDIT_CELL[0]!.title, async () => {
-      await stepDone(canvas)
-      await expect(ageText(canvas)).toBe('25')
+      await until(() => expect(hasRow(canvas, 0)).toBe(true))
+      await until(() => expect(ageText(canvas)).toBe('25'))
     })
     // Шаги правки идут таймером до своего состояния — ждём само состояние.
     await step(EDIT_CELL[1]!.title, async () => {

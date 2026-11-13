@@ -176,24 +176,26 @@ export const ExpandingConfirmed: StoryObj<StoryProps> = {
     await step(CONFIRMED[0]!.title, async () => {
       await waitForRows(canvas)
       await until(() => expect(toggleIn(confirmRow(canvas))).not.toBeNull())
-      await expect(isExpanded(confirmRow(canvas))).toBe(false)
+      await until(() => expect(isExpanded(confirmRow(canvas))).toBe(false))
     })
     await step(CONFIRMED[1]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(isPending(confirmRow(canvas))).toBe(true))
-      await expect(isExpanded(confirmRow(canvas))).toBe(true)
+      await until(() => expect(isExpanded(confirmRow(canvas))).toBe(true))
       // Ожидание — волной на строке, на кнопке раскрытия дуги нет (ADR 0177, §1).
-      await expect(
-        confirmRow(canvas)!.querySelector('[data-pending-wave]'),
-      ).not.toBeNull()
-      await expect(toggleIn(confirmRow(canvas))).not.toHaveAttribute(
-        'aria-busy',
+      await until(() =>
+        expect(
+          confirmRow(canvas)!.querySelector('[data-pending-wave]'),
+        ).not.toBeNull(),
+      )
+      await until(() =>
+        expect(toggleIn(confirmRow(canvas))).not.toHaveAttribute('aria-busy'),
       )
     })
     await step(CONFIRMED[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(isPending(confirmRow(canvas))).toBe(false))
-      await expect(isExpanded(confirmRow(canvas))).toBe(true)
+      await until(() => expect(isExpanded(confirmRow(canvas))).toBe(true))
       await until(() => expect(consoleText()).toContain('onExpandRow'))
       await settle()
     })
@@ -643,7 +645,7 @@ export const ExpandingCancel: StoryObj<StoryProps> = {
     await step(CANCEL_EXPAND[0]!.title, async () => {
       await waitForRows(canvas)
       await until(() => expect(cancelToggle(canvas)).not.toBeNull())
-      await expect(firstExpanded(canvas)).toBe(false)
+      await until(() => expect(firstExpanded(canvas)).toBe(false))
     })
     await step(CANCEL_EXPAND[1]!.title, async () => {
       await guideNext(canvas)
@@ -660,9 +662,11 @@ export const ExpandingCancel: StoryObj<StoryProps> = {
     await step(CANCEL_EXPAND[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(toggleArmed(canvas)).toBe(true))
-      await expect(cancelToggle(canvas)).toHaveAttribute(
-        'aria-label',
-        labels.cancelAction(rowExpandingLabels(labels).expandRow),
+      await until(() =>
+        expect(cancelToggle(canvas)).toHaveAttribute(
+          'aria-label',
+          labels.cancelAction(rowExpandingLabels(labels).expandRow),
+        ),
       )
     })
     await step(CANCEL_EXPAND[3]!.title, async () => {
@@ -670,12 +674,14 @@ export const ExpandingCancel: StoryObj<StoryProps> = {
       await until(() => expect(firstExpanded(canvas)).toBe(false))
       await until(() => expect(childrenWait(canvas)).toBe(false))
       await settle()
-      await expect(rowOf(canvas, CHILDREN.first)).not.toHaveAttribute(
-        'data-flash',
+      await until(() =>
+        expect(rowOf(canvas, CHILDREN.first)).not.toHaveAttribute('data-flash'),
       )
-      await expect(
-        cancelToggle(canvas)!.querySelector('[data-failure-indicator]'),
-      ).toBeNull()
+      await until(() =>
+        expect(
+          cancelToggle(canvas)!.querySelector('[data-failure-indicator]'),
+        ).toBeNull(),
+      )
     })
   },
 }
@@ -741,9 +747,11 @@ export const ExpandingExpandAll: StoryObj<StoryProps> = {
     await step(EXPAND_ALL[0]!.title, async () => {
       await waitForRows(canvas)
       await until(() => expect(expandAllButton(canvas)).not.toBeNull())
-      await expect(noneExpanded(canvas)).toBe(true)
-      await expect(expandAllButton(canvas)).toHaveAccessibleName(
-        rowExpandingLabels(labels).expandAll,
+      await until(() => expect(noneExpanded(canvas)).toBe(true))
+      await until(() =>
+        expect(expandAllButton(canvas)).toHaveAccessibleName(
+          rowExpandingLabels(labels).expandAll,
+        ),
       )
     })
     await step(EXPAND_ALL[1]!.title, async () => {
@@ -753,15 +761,19 @@ export const ExpandingExpandAll: StoryObj<StoryProps> = {
           allShownExpanded(canvas) && rowsInOrder(canvas).length > 10,
         ).toBe(true),
       )
-      await expect(expandAllButton(canvas)).toHaveAccessibleName(
-        rowExpandingLabels(labels).collapseAll,
+      await until(() =>
+        expect(expandAllButton(canvas)).toHaveAccessibleName(
+          rowExpandingLabels(labels).collapseAll,
+        ),
       )
     })
     await step(EXPAND_ALL[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(noneExpanded(canvas)).toBe(true))
-      await expect(expandAllButton(canvas)).toHaveAccessibleName(
-        rowExpandingLabels(labels).expandAll,
+      await until(() =>
+        expect(expandAllButton(canvas)).toHaveAccessibleName(
+          rowExpandingLabels(labels).expandAll,
+        ),
       )
       await settle()
     })

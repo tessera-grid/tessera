@@ -39,6 +39,12 @@ const INPUTS = ['keydown', 'pointerdown', 'touchstart']
 /** Действие шага (`stepAction`) дошло: фокус уходит до отметки `done` — её ждут проверки. */
 export const STEP_ACTION_DONE = 'guide-step-action-done'
 
+/**
+ * Пометка «Таблица изменена» без ввода в таблицу: проход гайдов со свежей таблицей перед
+ * каждым шагом (ADR 0117, SN73) ставит её тем же путём, что ввод человека.
+ */
+export const GUIDE_FRESH = 'guide-fresh'
+
 export interface FocusGuard {
   /** Переход к шагу: фокус человека снова не его, итог шага — после действия. */
   stepChanged: () => void

@@ -252,6 +252,10 @@ const search = async (
 
 const EMPTY: readonly GuideStoryStep[] = [
   {
+    title: 'Все строки',
+    hint: 'Таблица показывает все строки. Поле поиска пустое.',
+  },
+  {
     title: 'Пользователь ищет',
     hint: 'Пользователь ввёл запрос в поле поиска. Таблица показывает только строки с совпадениями.',
     enter: stepAction((root, { signal }) =>
@@ -282,10 +286,14 @@ export const FilteringEmpty: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     await step(EMPTY[0]!.title, async () => {
       await waitForRows(canvas)
+    })
+    await step(EMPTY[1]!.title, async () => {
+      await guideNext(canvas)
+      await waitForRows(canvas)
       await stepDone(canvas)
       await expect(allMatch(canvas, 'name', NAME)).toBe(true)
     })
-    await step(EMPTY[1]!.title, async () => {
+    await step(EMPTY[2]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(orderedRows(canvas)).toHaveLength(0)

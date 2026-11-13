@@ -120,6 +120,10 @@ const onlyGroupHidden = (id: string) => () => {
 
 const TOGGLE_ALL: readonly GuideStoryStep[] = [
   {
+    title: 'Все колонки видны',
+    hint: 'Пользователь ещё не открывал меню видимости колонок, все колонки на месте.',
+  },
+  {
     title: 'Меню видимости колонок',
     hint: 'Над списком колонок — флажок всех колонок, колонки под ним сдвинуты на уровень. Внизу — сколько колонок выбрано.',
     states: ['overlay.columns'],
@@ -173,36 +177,48 @@ export const ColumnVisibilityToggleAll: StoryObj<StoryProps> = {
         ?.textContent
     await step(TOGGLE_ALL[0].title, async () => {
       await waitForRows(canvas)
+    })
+    await step(TOGGLE_ALL[1].title, async () => {
+      await guideNext(canvas)
+      await waitForRows(canvas)
       await until(() => expect(rootBoxOf()).not.toBeNull())
-      await expect(rootBoxOf()).toHaveAttribute('aria-checked', 'true')
-      await expect(count()).toBe(
-        columnVisibilityLabels(labels).selectedColumns(5),
+      await until(() =>
+        expect(rootBoxOf()).toHaveAttribute('aria-checked', 'true'),
+      )
+      await until(() =>
+        expect(count()).toBe(columnVisibilityLabels(labels).selectedColumns(5)),
       )
       await settle()
     })
-    await step(TOGGLE_ALL[1].title, async () => {
+    await step(TOGGLE_ALL[2].title, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(
           canvas.querySelector('[data-testid="columns-hidden-stub"]'),
         ).not.toBeNull(),
       )
-      await expect(rootBoxOf()).toHaveAttribute('aria-checked', 'false')
-      await expect(count()).toBe(
-        columnVisibilityLabels(labels).selectedColumns(0),
+      await until(() =>
+        expect(rootBoxOf()).toHaveAttribute('aria-checked', 'false'),
       )
-      await settle()
-    })
-    await step(TOGGLE_ALL[2].title, async () => {
-      await guideNext(canvas)
-      await until(() => expect(headIdsOf(canvas)).toEqual(['firstName']))
-      await expect(rootBoxOf()).toHaveAttribute('aria-checked', 'mixed')
+      await until(() =>
+        expect(count()).toBe(columnVisibilityLabels(labels).selectedColumns(0)),
+      )
       await settle()
     })
     await step(TOGGLE_ALL[3].title, async () => {
       await guideNext(canvas)
+      await until(() => expect(headIdsOf(canvas)).toEqual(['firstName']))
+      await until(() =>
+        expect(rootBoxOf()).toHaveAttribute('aria-checked', 'mixed'),
+      )
+      await settle()
+    })
+    await step(TOGGLE_ALL[4].title, async () => {
+      await guideNext(canvas)
       await until(() => expect(headIdsOf(canvas)).toHaveLength(5))
-      await expect(rootBoxOf()).toHaveAttribute('aria-checked', 'true')
+      await until(() =>
+        expect(rootBoxOf()).toHaveAttribute('aria-checked', 'true'),
+      )
       await settle()
     })
   },
@@ -576,6 +592,10 @@ export const VisibilityClearHiddenTransforms: StoryObj<StoryProps> = {
 
 const NESTED_TREE: readonly GuideStoryStep[] = [
   {
+    title: 'Все колонки видны',
+    hint: 'Колонки сгруппированы во вложенной шапке. Пользователь ещё не открывал меню видимости колонок.',
+  },
+  {
     title: 'Дерево колонок вложенной шапки',
     hint: 'Колонки в меню сгруппированы, как в шапке таблицы. Флажок всех колонок, группы и их колонки соединены линиями дерева.',
     enter: inColumnsMenu(),
@@ -621,22 +641,30 @@ export const ColumnVisibilityNestedTree: StoryObj<StoryProps> = {
       menuOf()!.querySelectorAll('[data-column-id] [data-tree-elbow]').length
     await step(NESTED_TREE[0].title, async () => {
       await waitForRows(canvas)
-      await until(() => expect(rootBoxOf()).not.toBeNull())
-      await expect(columnBoxOf('name')).not.toBeNull()
-      await expect(elbows()).toBeGreaterThan(0)
-      await settle()
     })
     await step(NESTED_TREE[1].title, async () => {
       await guideNext(canvas)
-      await until(() => expect(headIdsOf(canvas)).not.toContain('firstName'))
-      await expect(headIdsOf(canvas)).not.toContain('lastName')
-      await expect(rootBoxOf()).toHaveAttribute('aria-checked', 'mixed')
+      await waitForRows(canvas)
+      await until(() => expect(rootBoxOf()).not.toBeNull())
+      await until(() => expect(columnBoxOf('name')).not.toBeNull())
+      await until(() => expect(elbows()).toBeGreaterThan(0))
       await settle()
     })
     await step(NESTED_TREE[2].title, async () => {
       await guideNext(canvas)
+      await until(() => expect(headIdsOf(canvas)).not.toContain('firstName'))
+      await until(() => expect(headIdsOf(canvas)).not.toContain('lastName'))
+      await until(() =>
+        expect(rootBoxOf()).toHaveAttribute('aria-checked', 'mixed'),
+      )
+      await settle()
+    })
+    await step(NESTED_TREE[3].title, async () => {
+      await guideNext(canvas)
       await until(() => expect(headIdsOf(canvas)).toContain('firstName'))
-      await expect(rootBoxOf()).toHaveAttribute('aria-checked', 'true')
+      await until(() =>
+        expect(rootBoxOf()).toHaveAttribute('aria-checked', 'true'),
+      )
       await settle()
     })
   },

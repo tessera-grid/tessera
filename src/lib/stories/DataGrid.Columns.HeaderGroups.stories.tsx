@@ -214,7 +214,6 @@ const WIDE: readonly GuideStoryStep[] = [
   {
     title: 'Широкие группы',
     hint: 'Колонки сгруппированы по неделям, и каждая неделя шире видимой части таблицы. Подпись группы стоит в начале своей группы.',
-    enter: root => scrollColumns(root, 0),
   },
   {
     title: 'Прокрутка вбок',
@@ -253,8 +252,8 @@ export const HeaderGroupsWideGroups: StoryObj<StoryProps> = {
       const offset =
         box(weekTitle(canvas, 'week1')!).left -
         box(headCellOf(canvas, 'week1')!).left
-      await expect(offset).toBeGreaterThanOrEqual(0)
-      await expect(offset).toBeLessThanOrEqual(24)
+      await until(() => expect(offset).toBeGreaterThanOrEqual(0))
+      await until(() => expect(offset).toBeLessThanOrEqual(24))
       await settle()
     })
     await step(WIDE[1]!.title, async () => {
@@ -282,7 +281,7 @@ export const HeaderGroupsWideGroups: StoryObj<StoryProps> = {
           group.right + 1,
         ),
       )
-      await expect(weekTitle(canvas, 'week3')).toBeTruthy()
+      await until(() => expect(weekTitle(canvas, 'week3')).toBeTruthy())
       await settle()
     })
   },

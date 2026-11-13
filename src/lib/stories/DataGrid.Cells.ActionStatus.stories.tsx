@@ -296,24 +296,30 @@ export const ActionStatusCheckbox: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     await step(CHECKBOX[0]!.title, async () => {
       await waitForRows(canvas)
-      expect(checked(checkboxOf(canvas))).toBe(START.inStock)
+      await until(() => expect(checked(checkboxOf(canvas))).toBe(START.inStock))
       await settle()
     })
     await step(CHECKBOX[1]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(busy(checkboxOf(canvas))).toBe(true))
-      expect(checked(checkboxOf(canvas))).toBe(!START.inStock)
+      await until(() =>
+        expect(checked(checkboxOf(canvas))).toBe(!START.inStock),
+      )
       // Контрол ждёт сам: ячейка несёт только `aria-busy`, без подложки волны.
-      expect(cellBusy(canvas, 'inStock')).toBe(true)
-      expect(
-        cellOf(canvas, ROW, 'inStock')!.hasAttribute('data-pending-wave'),
-      ).toBe(false)
+      await until(() => expect(cellBusy(canvas, 'inStock')).toBe(true))
+      await until(() =>
+        expect(
+          cellOf(canvas, ROW, 'inStock')!.hasAttribute('data-pending-wave'),
+        ).toBe(false),
+      )
     })
     await step(CHECKBOX[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(busy(checkboxOf(canvas))).toBe(false))
-      expect(checked(checkboxOf(canvas))).toBe(!START.inStock)
-      expect(cellBusy(canvas, 'inStock')).toBe(false)
+      await until(() =>
+        expect(checked(checkboxOf(canvas))).toBe(!START.inStock),
+      )
+      await until(() => expect(cellBusy(canvas, 'inStock')).toBe(false))
       await settle()
     })
   },
@@ -366,13 +372,29 @@ const SWITCH: readonly GuideStoryStep[] = [
     title: 'Сервер отказал',
     hint: 'Пользователь переключил ещё раз, но сервер отклонил значение. Переключатель вернулся в прежнее положение, ячейка коротко вспыхнула тоном ошибки, скринридер услышал причину отказа.',
     immediate: true,
-    enter: untilDone(
-      root =>
-        flashOf(root, 'published') === 'reverted' &&
-        !busy(switchOf(root)) &&
-        checked(switchOf(root)) !== START.published,
-      reachSwitchRefusal,
-    ),
+    enter: (root, app) => {
+      // Со свежей таблицы переключатель ещё в исходном положении: сперва сохранённое
+      // переключение, затем отклонённое.
+      let accepted = false
+      return untilDone(
+        root =>
+          flashOf(root, 'published') === 'reverted' &&
+          !busy(switchOf(root)) &&
+          checked(switchOf(root)) !== START.published,
+        root => {
+          const toggle = switchOf(root)
+          if (!toggle || busy(toggle)) return reachSwitchRefusal(root)
+          if (!accepted && checked(toggle) === START.published) {
+            accepted = true
+            SWITCH_SERVER.answer(true)
+            return toggle.click()
+          }
+          accepted = true
+          if (flashOf(root, 'published')) return
+          reachSwitchRefusal(root)
+        },
+      )(root, app)
+    },
   },
 ]
 
@@ -397,18 +419,22 @@ export const ActionStatusSwitch: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     await step(SWITCH[0]!.title, async () => {
       await waitForRows(canvas)
-      expect(checked(switchOf(canvas))).toBe(START.published)
+      await until(() => expect(checked(switchOf(canvas))).toBe(START.published))
       await settle()
     })
     await step(SWITCH[1]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(busy(switchOf(canvas))).toBe(true))
-      expect(checked(switchOf(canvas))).toBe(!START.published)
+      await until(() =>
+        expect(checked(switchOf(canvas))).toBe(!START.published),
+      )
     })
     await step(SWITCH[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(busy(switchOf(canvas))).toBe(false))
-      expect(checked(switchOf(canvas))).toBe(!START.published)
+      await until(() =>
+        expect(checked(switchOf(canvas))).toBe(!START.published),
+      )
       await settle()
     })
     await step(SWITCH[3]!.title, async () => {
@@ -595,6 +621,9 @@ const reachSaving = (root: HTMLElement) => {
 }
 /** Дойти до ждущего действия строки: сохранение названия отвечено. */
 const reachArchiving = (root: HTMLElement) => {
+  // Со свежей таблицы название ещё не сохранялось: сперва сохранение.
+  const name = cellOf(root, ROW, 'name')?.textContent ?? ''
+  if (!name.includes(RENAMED) && !waved(root, 'name')) return reachSaving(root)
   BUSY_SAVE.answer(true)
   BUSY_ARCHIVE.hold()
   if (!waved(root, 'priority')) archiveButton(root)?.click()
@@ -688,13 +717,13 @@ export const BusyObjectIgnored: StoryObj<StoryProps> = {
         ?.textContent ?? ''
     await step(BUSY_STEPS[0]!.title, async () => {
       await waitForRows(canvas)
-      expect(archiveButton(canvas)).not.toBeNull()
+      await until(() => expect(archiveButton(canvas)).not.toBeNull())
       await settle()
     })
     await step(BUSY_STEPS[1]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(waved(canvas, 'name')).toBe(true))
-      expect(waved(canvas, 'priority')).toBe(false)
+      await until(() => expect(waved(canvas, 'priority')).toBe(false))
       await until(() => expect(textIn(canvas, 'name')).toBe(RENAMED))
     })
     await step(BUSY_STEPS[2]!.title, async () => {
@@ -705,7 +734,7 @@ export const BusyObjectIgnored: StoryObj<StoryProps> = {
           'reverted',
         ),
       )
-      expect(inputIn(canvas, 'name')).toBeNull()
+      await until(() => expect(inputIn(canvas, 'name')).toBeNull())
       await until(() =>
         expect(live()).toContain(
           labels.announceStillSaving(String(TEXT_COLUMNS[0]!.header)),
@@ -715,7 +744,7 @@ export const BusyObjectIgnored: StoryObj<StoryProps> = {
     await step(BUSY_STEPS[3]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(waved(canvas, 'priority')).toBe(true))
-      expect(waved(canvas, 'name')).toBe(true)
+      await until(() => expect(waved(canvas, 'name')).toBe(true))
       await until(() => expect(textIn(canvas, 'name')).toBe(RENAMED))
     })
     await step(BUSY_STEPS[4]!.title, async () => {
@@ -726,7 +755,7 @@ export const BusyObjectIgnored: StoryObj<StoryProps> = {
           'reverted',
         ),
       )
-      expect(inputIn(canvas, 'priority')).toBeNull()
+      await until(() => expect(inputIn(canvas, 'priority')).toBeNull())
       await settle()
     })
   },
@@ -939,7 +968,7 @@ export const CellSaveCancelMenu: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     await step(CANCEL_STEPS[0]!.title, async () => {
       await waitForRows(canvas)
-      expect(waved(canvas, 'name')).toBe(false)
+      await until(() => expect(waved(canvas, 'name')).toBe(false))
       await settle()
     })
     await step(CANCEL_STEPS[1]!.title, async () => {
@@ -954,8 +983,8 @@ export const CellSaveCancelMenu: StoryObj<StoryProps> = {
     await step(CANCEL_STEPS[3]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(waved(canvas, 'name')).toBe(false))
-      expect(textIn(canvas, 'name')).toBe(START.name)
-      expect(issueIn(canvas, 'name')).toBeNull()
+      await until(() => expect(textIn(canvas, 'name')).toBe(START.name))
+      await until(() => expect(issueIn(canvas, 'name')).toBeNull())
       await settle()
     })
   },
@@ -988,6 +1017,18 @@ const ownLogButton = () =>
 const ownCounter = () =>
   ownLogButton()?.querySelector('[data-active-indicator]')?.textContent ?? ''
 
+/** Приложение сообщает отказ пересчёта своей подписью — один раз за открытие таблицы. */
+const reportOwnFailure = () => {
+  if (ownCounter()) return
+  void ownLabelTable
+    ?.trackCellAction(
+      { cell: [PRODUCTS[1]!.id, 'priority'] },
+      Promise.reject(new Error('The priority list is locked')),
+      { label: OWN_LABEL },
+    )
+    .catch(() => {})
+}
+
 const OWN_LABEL_STEPS: readonly GuideStoryStep[] = [
   {
     title: 'Товары',
@@ -997,19 +1038,7 @@ const OWN_LABEL_STEPS: readonly GuideStoryStep[] = [
     title: 'Пересчёт в фоне',
     hint: 'Приложение пересчитало приоритет в фоне и назвало действие своей подписью. Сервер отказал: на кнопке журнала появился счётчик.',
     states: ['panel.toolbar'],
-    enter: untilDone(
-      () => ownCounter() === '1',
-      () => {
-        if (ownCounter()) return
-        void ownLabelTable
-          ?.trackCellAction(
-            { cell: [PRODUCTS[1]!.id, 'priority'] },
-            Promise.reject(new Error('The priority list is locked')),
-            { label: OWN_LABEL },
-          )
-          .catch(() => {})
-      },
-    ),
+    enter: untilDone(() => ownCounter() === '1', reportOwnFailure),
   },
   {
     title: 'Журнал',
@@ -1018,7 +1047,8 @@ const OWN_LABEL_STEPS: readonly GuideStoryStep[] = [
     enter: untilDone(
       () => !!ownLog()?.textContent?.includes(OWN_LABEL),
       () => {
-        if (!ownLog()) ownLogButton()?.click()
+        if (!ownCounter()) reportOwnFailure()
+        else if (!ownLog()) ownLogButton()?.click()
       },
     ),
   },
@@ -1049,7 +1079,7 @@ export const ActionStatusOwnLabel: StoryObj<StoryProps> = {
     await step(OWN_LABEL_STEPS[0]!.title, async () => {
       await waitForRows(canvas)
       await until(() => expect(ownLogButton()).not.toBeNull())
-      expect(ownCounter()).toBe('')
+      await until(() => expect(ownCounter()).toBe(''))
       await settle()
     })
     await step(OWN_LABEL_STEPS[1]!.title, async () => {
@@ -1060,7 +1090,9 @@ export const ActionStatusOwnLabel: StoryObj<StoryProps> = {
     await step(OWN_LABEL_STEPS[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(ownLog()?.textContent).toContain(OWN_LABEL))
-      expect(ownLog()!.textContent).toContain('The priority list is locked')
+      await until(() =>
+        expect(ownLog()!.textContent).toContain('The priority list is locked'),
+      )
       await settle()
     })
   },

@@ -171,6 +171,20 @@ export const answerMove = (ok: boolean) => {
   move.resolve()
 }
 
+/**
+ * Порядок «сервера» сначала. Гайд зовёт до открытия таблицы (`reset`): первый блок
+ * таблица запрашивает раньше, чем её плагины ставятся.
+ */
+export const resetDragServer = () => {
+  dragServer.items = initialItems()
+  dragServer.children = new Map()
+  dragServer.holdChildren = false
+  dragServer.failChildren = false
+  dragServer.held = []
+  for (const move of dragServer.moves) move.reject(new Error('reset'))
+  dragServer.moves = []
+}
+
 /** Новое открытие таблицы — порядок «сервера» сначала. */
 const dragReset: TesseraFeatureEntry = {
   id: 'serverDraggingGuideReset',
@@ -179,13 +193,7 @@ const dragReset: TesseraFeatureEntry = {
     dragServer.grid = table as GroupTable
     if (dragServer.table === store) return
     dragServer.table = store
-    dragServer.items = initialItems()
-    dragServer.children = new Map()
-    dragServer.holdChildren = false
-    dragServer.failChildren = false
-    dragServer.held = []
-    for (const move of dragServer.moves) move.reject(new Error('reset'))
-    dragServer.moves = []
+    resetDragServer()
   },
 }
 

@@ -231,8 +231,8 @@ export const SizingFillContainer: StoryObj<StoryProps> = {
       await until(() => near(rect(gridOf(canvas)).height, 600))
       near(rect(containerOf(canvas)).height, 600)
       await until(() => expect(rowsInView(canvas)).toBeGreaterThan(rows))
-      await expect(bodyOf(canvas)).toBe(body)
-      await expect(recreated()).toBe(false)
+      await until(() => expect(bodyOf(canvas)).toBe(body))
+      await until(() => expect(recreated()).toBe(false))
     })
     await step(FILL[2].title, async () => {
       await guideNext(canvas)
@@ -374,7 +374,11 @@ export const SizingContentHeight: StoryObj<StoryProps> = {
 const ROWS: readonly GuideStoryStep[] = [
   {
     title: 'Высота по умолчанию',
-    hint: 'Строки тела и футера — по 50px. Таблица прокручена к середине.',
+    hint: 'Строки тела и футера — по 50px.',
+  },
+  {
+    title: 'Таблица прокручена к середине',
+    hint: 'Пользователь прокрутил таблицу к середине. Строки тела и футера — по 50px.',
     enter: scrollToMiddle,
   },
   {
@@ -427,31 +431,37 @@ export const SizingRowHeight: StoryObj<StoryProps> = {
     let scrollTop = 0
     await step(ROWS[0].title, async () => {
       await waitForRows(canvas)
+    })
+    await step(ROWS[1].title, async () => {
+      await guideNext(canvas)
+      await waitForRows(canvas)
       await until(() => expect(scrollerOf(canvas).scrollTop).toBeGreaterThan(0))
       await rowsAre(50)
       body = bodyOf(canvas)
       visible = visibleRows(canvas)
       scrollTop = scrollerOf(canvas).scrollTop
     })
-    await step(ROWS[1].title, async () => {
-      await guideNext(canvas)
-      await rowsAre(40)
-      await expect(visibleRows(canvas)).toBeGreaterThan(visible)
-      // Не сброшена: та же область, сдвиг — не больше прежней строки.
-      await expect(scrollerOf(canvas).scrollTop).toBeGreaterThan(0)
-      await expect(
-        Math.abs(scrollerOf(canvas).scrollTop - scrollTop),
-      ).toBeLessThanOrEqual(50)
-      await expect(bodyOf(canvas)).toBe(body)
-      await expect(recreated()).toBe(false)
-      visible = visibleRows(canvas)
-    })
     await step(ROWS[2].title, async () => {
       await guideNext(canvas)
-      await rowsAre(64)
-      await expect(visibleRows(canvas)).toBeLessThan(visible)
+      await rowsAre(40)
+      await until(() => expect(visibleRows(canvas)).toBeGreaterThan(visible))
+      // Не сброшена: та же область, сдвиг — не больше прежней строки.
+      await until(() => expect(scrollerOf(canvas).scrollTop).toBeGreaterThan(0))
+      await until(() =>
+        expect(
+          Math.abs(scrollerOf(canvas).scrollTop - scrollTop),
+        ).toBeLessThanOrEqual(50),
+      )
+      await until(() => expect(bodyOf(canvas)).toBe(body))
+      await until(() => expect(recreated()).toBe(false))
+      visible = visibleRows(canvas)
     })
     await step(ROWS[3].title, async () => {
+      await guideNext(canvas)
+      await rowsAre(64)
+      await until(() => expect(visibleRows(canvas)).toBeLessThan(visible))
+    })
+    await step(ROWS[4].title, async () => {
       // Предупреждение печатается раз за сессию: прежние прогоны его не гасят.
       __resetLogger()
       const warn = spyOn(console, 'warn').mockImplementation(() => {})

@@ -7,6 +7,7 @@ import { addons } from 'storybook/preview-api'
 import { expect, userEvent, waitFor } from 'storybook/test'
 
 import { guideSteps } from '../demos/GuideStory'
+import { GUIDE_FRESH } from '../demos/guideFocus'
 import {
   PLAY_ARGS,
   type TwinSource,
@@ -662,6 +663,9 @@ export const watchFlash = (
 /** Перетаскивание с паузой над группой и ответом «сервера» — дольше загрузки. */
 const STEP_ACTION_TIMEOUT = 15_000
 
+/** Признак прохода гайдов со свежей таблицей перед каждым шагом (SN73) у корня документа. */
+export const FRESH_ATTR = 'data-guide-fresh'
+
 /** Номер шага, на котором стоит гайд. */
 const currentGuideStep = (panel: HTMLElement) =>
   [...panel.querySelectorAll('[data-testid="guide-steps"] ol > li')].findIndex(
@@ -685,8 +689,23 @@ export const guideNext = async (canvas: HTMLElement) => {
   )!
   await until(() => expect(next).toBeEnabled())
   const from = currentGuideStep(panel)
+  // Проход со свежей таблицей (SN73): пометка перед переходом — шаг откроет таблицу заново.
+  if (document.documentElement.hasAttribute(FRESH_ATTR)) {
+    panel.closest('[data-guide-root]')!.dispatchEvent(new Event(GUIDE_FRESH))
+    await until(() =>
+      expect(
+        panel.querySelector('[data-testid="guide-restore"]'),
+      ).not.toBeNull(),
+    )
+  }
   await userEvent.click(next)
-  // Клик может дойти не сразу: удерживающий шаг повторяет его (`shieldHeldDrag`).
-  await until(() => expect(currentGuideStep(panel)).not.toBe(from))
+  // Клик может дойти не сразу: удерживающий шаг повторяет его (`shieldHeldDrag`), а после
+  // пометки отпущенное перетаскивание проглатывает его — проход повторяет нажатие (SN73).
+  const fresh = document.documentElement.hasAttribute(FRESH_ATTR)
+  await until(async () => {
+    if (fresh && currentGuideStep(panel) === from && !next.disabled)
+      await userEvent.click(next)
+    expect(currentGuideStep(panel)).not.toBe(from)
+  })
   await until(() => expect(panel).not.toHaveAttribute('data-busy'))
 }

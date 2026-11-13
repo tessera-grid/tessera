@@ -288,21 +288,25 @@ export const EditingDecimalString: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     await step(DECIMAL_EDIT[0]!.title, async () => {
       await waitForRows(canvas)
-      expect(productText(canvas, 'amount')).toBe(ORIGINAL)
+      await until(() => expect(productText(canvas, 'amount')).toBe(ORIGINAL))
     })
     await step(DECIMAL_EDIT[1]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(productInput(canvas, 'amount')).not.toBeNull())
       // Конечные нули дробной части поле не показывает — значение то же.
-      expect(productInput(canvas, 'amount')!.value.replace(',', '.')).toBe(
-        ORIGINAL.replace(/0+$/, ''),
+      await until(() =>
+        expect(productInput(canvas, 'amount')!.value.replace(',', '.')).toBe(
+          ORIGINAL.replace(/0+$/, ''),
+        ),
       )
     })
     await step(DECIMAL_EDIT[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(productInput(canvas, 'amount')).toBeNull())
-      expect(productText(canvas, 'amount')).toBe(NEW_AMOUNT)
-      expect(consoleText()).toContain(`value:"${NEW_AMOUNT}"`)
+      await until(() => expect(productText(canvas, 'amount')).toBe(NEW_AMOUNT))
+      await until(() =>
+        expect(consoleText()).toContain(`value:"${NEW_AMOUNT}"`),
+      )
       await settle()
     })
   },

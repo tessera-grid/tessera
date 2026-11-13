@@ -1,0 +1,13 @@
+{
+  "Customization/Localization/LocalizationSwitch": "непрерывность: смена языка не пересоздаёт таблицу — поиск, выбор и прокрутка прошлого шага на месте",
+  "DataGrid/Core/Footer/FooterPositionSwitch": "непрерывность: смена положения футера оставляет прокрутку, активную ячейку и тело прошлого шага",
+  "DataGrid/Core/Sizing/SizingFillContainer": "непрерывность: рост контейнера не пересоздаёт таблицу — тот же узел тела",
+  "DataGrid/Core/Sizing/SizingRowHeight": "непрерывность: смена высоты строк не сбрасывает прокрутку прошлого шага",
+  "DataGrid/Data loading/Skeleton/SkeletonDataArrives": "непрерывность: данные встают на место скелета без пустого кадра и с теми же узлами шапки",
+  "DataGrid/Data loading/Server row model/Pagination/ServerPaginationPages": "непрерывность: первая страница — из кэша, загруженного прошлыми шагами, без запроса",
+  "DataGrid/Columns/Header menu/HeaderMenuNarrowActive": "находка: в узкой колонке открытой заново таблицы включённая из меню сортировка не встаёт в ряд кнопок до пересчёта ширины",
+  "DataGrid/Rows/Back to top/BackToTopWide": "находка: кнопка «к первой колонке» открытой заново таблицы остаётся в скрытом слоте — плагин не замечает, что таблица стала шире области",
+  "DataGrid/Data loading/Server row model/Export/ExportServerRowsRefused": "находка: выгрузка, начатая до открытия таблицы заново, не отменяется и скачивает файл",
+  "DataGrid/Data loading/Server row model/Export/ExportServerRowsView": "находка: выгрузка, начатая до открытия таблицы заново, не отменяется и скачивает файл",
+  "DataGrid/Data loading/Server actions/ServerActionsRefused": "находка: со свежей таблицы после отказа фильтра пейджер оказывается на второй странице — шаг ждёт отказа второй, а запрашивается третья"
+}

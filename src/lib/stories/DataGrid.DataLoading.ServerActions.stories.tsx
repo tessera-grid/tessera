@@ -303,9 +303,6 @@ const REFUSED: readonly GuideStoryStep[] = [
           log.log('server', text)
         },
       }),
-    enter: () => {
-      guide.mode = 'answer'
-    },
   },
   {
     title: 'Сортировка ждёт ответа',
@@ -424,6 +421,9 @@ export const ServerActionsRefused: StoryObj<StoryProps> = {
     <GuideStory
       title="Отказ сервера"
       steps={REFUSED}
+      reset={() => {
+        guide.mode = 'answer'
+      }}
       args={guideArgs(
         {
           ...SERVER_MODE,
@@ -444,35 +444,43 @@ export const ServerActionsRefused: StoryObj<StoryProps> = {
     const first = queryActionServer(initialActionQuery())
     await step(REFUSED[0]!.title, async () => {
       await waitForRows(canvas)
-      await expect(firstRowText(canvas, 'name')).toBe(first.rows[0]!.name)
-      await expect(onFirstPage(canvas)).toBe(true)
+      await until(() =>
+        expect(firstRowText(canvas, 'name')).toBe(first.rows[0]!.name),
+      )
+      await until(() => expect(onFirstPage(canvas)).toBe(true))
     })
     await step(REFUSED[1]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(server.holding()).toBe(true)
-      await expect(refreshing(canvas)).toBe(true)
-      await expect(firstRowText(canvas, 'name')).toBe(first.rows[0]!.name)
-      await expect(consoleText()).toContain('onToggleColumnSort')
+      await until(() => expect(server.holding()).toBe(true))
+      await until(() => expect(refreshing(canvas)).toBe(true))
+      await until(() =>
+        expect(firstRowText(canvas, 'name')).toBe(first.rows[0]!.name),
+      )
+      await until(() => expect(consoleText()).toContain('onToggleColumnSort'))
     })
     await step(REFUSED[2]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(server.holding()).toBe(false)
-      await expect(refreshing(canvas)).toBe(false)
-      await expect(firstRowText(canvas, 'name')).toBe(firstSortedName(canvas))
-      await expect(consoleText()).toContain('by name')
+      await until(() => expect(server.holding()).toBe(false))
+      await until(() => expect(refreshing(canvas)).toBe(false))
+      await until(() =>
+        expect(firstRowText(canvas, 'name')).toBe(firstSortedName(canvas)),
+      )
+      await until(() => expect(consoleText()).toContain('by name'))
     })
     await step(REFUSED[3]!.title, async () => {
       const answered = ariaSort(canvas)
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(banner(canvas)).toHaveTextContent(ACTION_SERVER_REFUSAL)
+      await until(() =>
+        expect(banner(canvas)).toHaveTextContent(ACTION_SERVER_REFUSAL),
+      )
       // Откат: сортировка и страница — как в последнем ответе.
-      await expect(ariaSort(canvas)).toBe(answered)
-      await expect(onFirstPage(canvas)).toBe(true)
-      await expect(failed(sortButton(canvas))).toBe(false)
-      await expect(consoleText()).toContain('onPageChange')
+      await until(() => expect(ariaSort(canvas)).toBe(answered))
+      await until(() => expect(onFirstPage(canvas)).toBe(true))
+      await until(() => expect(failed(sortButton(canvas))).toBe(false))
+      await until(() => expect(consoleText()).toContain('onPageChange'))
       await until(() =>
         expect(canvas.querySelector('[data-error-flash]')).toBeNull(),
       )
@@ -482,9 +490,11 @@ export const ServerActionsRefused: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await stepDone(canvas)
       // Черновик: текст поиска остался в поле.
-      await expect(searchField(canvas)!.value).toBe(SEARCH)
-      await expect(banner(canvas)).toHaveTextContent(ACTION_SERVER_REFUSAL)
-      await expect(consoleText()).toContain('onSearchChange')
+      await until(() => expect(searchField(canvas)!.value).toBe(SEARCH))
+      await until(() =>
+        expect(banner(canvas)).toHaveTextContent(ACTION_SERVER_REFUSAL),
+      )
+      await until(() => expect(consoleText()).toContain('onSearchChange'))
       await until(() =>
         expect(canvas.querySelector('[data-error-flash]')).toBeNull(),
       )
@@ -493,31 +503,35 @@ export const ServerActionsRefused: StoryObj<StoryProps> = {
     await step(REFUSED[5]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(banner(canvas)).toBeNull()
-      await expect(searchField(canvas)!.value).toBe(SEARCH)
-      await expect(names(canvas).length).toBeGreaterThan(0)
-      await expect(names(canvas).every(name => name.includes(SEARCH))).toBe(
-        true,
+      await until(() => expect(banner(canvas)).toBeNull())
+      await until(() => expect(searchField(canvas)!.value).toBe(SEARCH))
+      await until(() => expect(names(canvas).length).toBeGreaterThan(0))
+      await until(() =>
+        expect(names(canvas).every(name => name.includes(SEARCH))).toBe(true),
       )
-      await expect(consoleText()).toContain(`search "${SEARCH}"`)
+      await until(() => expect(consoleText()).toContain(`search "${SEARCH}"`))
       await settle()
     })
     await step(REFUSED[6]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       // Черновик: условие осталось в панели, рядом — значок ошибки.
-      await expect(filterValue()!.value).toBe(FILTER)
-      await expect(filterFailed()).toBe(true)
-      await expect(banner(canvas)).toHaveTextContent(ACTION_SERVER_REFUSAL)
-      await expect(consoleText()).toContain('onFilterChange')
+      await until(() => expect(filterValue()!.value).toBe(FILTER))
+      await until(() => expect(filterFailed()).toBe(true))
+      await until(() =>
+        expect(banner(canvas)).toHaveTextContent(ACTION_SERVER_REFUSAL),
+      )
+      await until(() => expect(consoleText()).toContain('onFilterChange'))
       await settle()
     })
     await step(REFUSED[7]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(onFirstPage(canvas)).toBe(true)
-      await expect(failed(pageButton(canvas, 'next'))).toBe(false)
-      await expect(banner(canvas)).toHaveTextContent(ACTION_SERVER_REFUSAL)
+      await until(() => expect(onFirstPage(canvas)).toBe(true))
+      await until(() => expect(failed(pageButton(canvas, 'next'))).toBe(false))
+      await until(() =>
+        expect(banner(canvas)).toHaveTextContent(ACTION_SERVER_REFUSAL),
+      )
       await settle()
     })
   },
@@ -565,10 +579,12 @@ const cancelServerStep = (title: string, hint: string): GuideStoryStep => ({
         })),
       log: text => log.log('server', text),
     }),
-  enter: () => {
-    cancelGuide.mode = 'answer'
-  },
 })
+
+/** Гайды отмены открывают таблицу с «сервером», который отвечает. */
+const answerCancel = () => {
+  cancelGuide.mode = 'answer'
+}
 
 const cancelGuideArgs = {
   ...SERVER_MODE,
@@ -637,6 +653,7 @@ export const ServerActionsCancelSearch: StoryObj<StoryProps> = {
     <GuideStory
       title="Отмена поиска"
       steps={CANCEL_SEARCH}
+      reset={answerCancel}
       args={guideArgs(cancelGuideArgs, args)}
     />
   ),
@@ -733,6 +750,7 @@ export const ServerActionsCancelSort: StoryObj<StoryProps> = {
     <GuideStory
       title="Отмена сортировки"
       steps={CANCEL_SORT}
+      reset={answerCancel}
       args={guideArgs(cancelGuideArgs, args)}
     />
   ),

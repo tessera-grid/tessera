@@ -253,7 +253,7 @@ export const PanelsNarrowStatusBar: StoryObj<StoryProps> = {
     await step(NARROW_STEPS[0]!.title, async () => {
       await waitForRows(canvas)
       await until(() => expect(layout()).toBe('full'))
-      await expect(counterText()).not.toBe('')
+      await until(() => expect(counterText()).not.toBe(''))
     })
     await step(NARROW_STEPS[1]!.title, async () => {
       await guideNext(canvas)
@@ -262,12 +262,14 @@ export const PanelsNarrowStatusBar: StoryObj<StoryProps> = {
     await step(NARROW_STEPS[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(layout()).toBe('stacked'))
-      await expect(inFrame()).toBe(true)
-      await expect(orderedRows(canvas).length).toBeGreaterThan(0)
+      await until(() => expect(inFrame()).toBe(true))
+      await until(() => expect(orderedRows(canvas).length).toBeGreaterThan(0))
       // Область прокрутки кончается над панелью: последняя строка не уходит под неё.
       const scroller = canvas.querySelector('.data-grid__container')!
-      await expect(scroller.getBoundingClientRect().bottom).toBeLessThanOrEqual(
-        statusBar()!.getBoundingClientRect().top + 0.5,
+      await until(() =>
+        expect(scroller.getBoundingClientRect().bottom).toBeLessThanOrEqual(
+          statusBar()!.getBoundingClientRect().top + 0.5,
+        ),
       )
       await settle()
     })

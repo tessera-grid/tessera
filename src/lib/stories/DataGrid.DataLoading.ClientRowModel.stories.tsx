@@ -191,7 +191,6 @@ const STEPS: readonly GuideStoryStep[] = [
     title: 'Сто тысяч строк в памяти',
     hint: 'Приложение передало таблице сто тысяч строк. Все они в памяти: таблица сама сортирует, фильтрует и группирует их, без сервера.',
     props: () => ({ dataOverride: bigRows(), extraPlugins: [stateHost()] }),
-    enter: showLevel(0),
   },
   {
     title: 'Строки отсортированы по возрасту',

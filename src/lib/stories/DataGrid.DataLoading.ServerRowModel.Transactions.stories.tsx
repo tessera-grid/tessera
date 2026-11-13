@@ -93,9 +93,6 @@ const atRest = (hint: string, props = txProps()): GuideStoryStep => ({
   title: 'Строки с сервера',
   hint,
   props,
-  enter: stepAction(async (root, { signal }) => {
-    await pollUntil(() => hasRow(root, 0), signal)
-  }),
 })
 
 // --- S1: вставка на место ------------------------------------------------------------
@@ -191,7 +188,7 @@ export const ServerTransactionAdd: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(ADD[0]!.title, async () => {
-      await stepDone(canvas)
+      await until(() => expect(hasRow(canvas, 0)).toBe(true))
     })
     await step(ADD[1]!.title, async () => {
       const requests = txServer.requests
@@ -296,7 +293,7 @@ export const ServerTransactionRemove: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(REMOVE[0]!.title, async () => {
-      await stepDone(canvas)
+      await until(() => expect(hasRow(canvas, 0)).toBe(true))
     })
     await step(REMOVE[1]!.title, async () => {
       await guideNext(canvas)
@@ -352,7 +349,7 @@ export const ServerTransactionLive: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(LIVE[0]!.title, async () => {
-      await stepDone(canvas)
+      await until(() => expect(hasRow(canvas, 0)).toBe(true))
     })
     await step(LIVE[1]!.title, async () => {
       const requests = txServer.requests
@@ -426,7 +423,7 @@ export const ServerTransactionRefetch: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(REFETCH[0]!.title, async () => {
-      await stepDone(canvas)
+      await until(() => expect(hasRow(canvas, 0)).toBe(true))
     })
     await step(REFETCH[1]!.title, async () => {
       await guideNext(canvas)

@@ -343,6 +343,10 @@ const discardEntry = async (text: string, signal: AbortSignal) => {
 
 const DISCARD: readonly GuideStoryStep[] = [
   {
+    title: 'Три несохранённые правки',
+    hint: 'Пользователь поправил три ячейки и не сохранил правки. Пульт пока закрыт.',
+  },
+  {
     title: 'Пульт открыт',
     hint: 'Пользователь поправил три ячейки и не сохранил правки, затем открыл пульт. Кнопка отказа у каждой правки и кнопка отказа от всех внизу выделены тоном опасного действия сразу, без наведения: они безвозвратно теряют правки, а применение и переход к ячейке — нет.',
     states: ['overlay.unsavedChanges'],
@@ -389,6 +393,10 @@ export const UnsavedChangesDangerActions: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     await step(DISCARD[0]!.title, async () => {
       await waitForRows(canvas)
+    })
+    await step(DISCARD[1]!.title, async () => {
+      await guideNext(canvas)
+      await waitForRows(canvas)
       await until(() => expect(panelOpen()).toBe(true))
       await expect(entries()).toHaveLength(CELL_DRAFTS.length)
       await expect(
@@ -398,7 +406,7 @@ export const UnsavedChangesDangerActions: StoryObj<StoryProps> = {
       ).not.toBeNull()
       await settle()
     })
-    await step(DISCARD[1]!.title, async () => {
+    await step(DISCARD[2]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(countOf()).toBe(CELL_DRAFTS.length - 1)
@@ -408,7 +416,7 @@ export const UnsavedChangesDangerActions: StoryObj<StoryProps> = {
         ),
       ).toBeNull()
     })
-    await step(DISCARD[2]!.title, async () => {
+    await step(DISCARD[3]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(countOf()).toBe(0)

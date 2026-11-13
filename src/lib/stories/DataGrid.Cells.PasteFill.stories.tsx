@@ -207,10 +207,6 @@ const FROM_SPREADSHEET: readonly GuideStoryStep[] = [
   {
     title: 'Ячейки, которые можно править',
     hint: 'Приложение разрешило править возраст, пол и число визитов. Пользователь скопировал в другой таблице три строки: возраст и пол.',
-    enter: () => {
-      pasteServer.reset()
-      pasted = false
-    },
   },
   {
     title: 'Ячейка выбрана',
@@ -241,6 +237,10 @@ export const PasteFromSpreadsheet: StoryObj<StoryProps> = {
     <GuideStory
       title="Вставка из таблицы"
       steps={FROM_SPREADSHEET}
+      reset={() => {
+        pasteServer.reset()
+        pasted = false
+      }}
       args={guideArgs(BASE_ARGS, args)}
     />
   ),
@@ -279,10 +279,6 @@ const ONE_INTO_RANGE: readonly GuideStoryStep[] = [
   {
     title: 'Ячейки, которые можно править',
     hint: 'Приложение разрешило править возраст, пол и число визитов. Пользователь скопировал одно число.',
-    enter: () => {
-      pasteServer.reset()
-      pasted = false
-    },
   },
   {
     title: 'Выделен диапазон',
@@ -313,6 +309,10 @@ export const PasteOneIntoRange: StoryObj<StoryProps> = {
     <GuideStory
       title="Одно значение во весь диапазон"
       steps={ONE_INTO_RANGE}
+      reset={() => {
+        pasteServer.reset()
+        pasted = false
+      }}
       args={guideArgs(BASE_ARGS, args)}
     />
   ),
@@ -349,10 +349,6 @@ const WITH_ERRORS_STEPS: readonly GuideStoryStep[] = [
   {
     title: 'Что можно править',
     hint: 'Приложение разрешило править возраст, пол и число визитов, а фамилию — нет. Пользователь скопировал три строки: фамилию и возраст, и в одной строке возраст записан словом.',
-    enter: () => {
-      pasteServer.reset()
-      pasted = false
-    },
   },
   {
     title: 'Ячейка выбрана',
@@ -383,6 +379,10 @@ export const PasteWithErrors: StoryObj<StoryProps> = {
     <GuideStory
       title="Вставка с ошибками"
       steps={WITH_ERRORS_STEPS}
+      reset={() => {
+        pasteServer.reset()
+        pasted = false
+      }}
       args={guideArgs(BASE_ARGS, args)}
     />
   ),
@@ -419,6 +419,11 @@ export const PasteWithErrors: StoryObj<StoryProps> = {
 const REFUSED_ROWS = ['item-id-1', 'item-id-2', 'item-id-3']
 const REFUSED_VALUE = '50'
 let originals: (string | undefined)[] = []
+/** Прежние значения — до первой вставки после открытия таблицы. */
+const rememberOriginals = (root: ParentNode) => {
+  if (originals.length === 0)
+    originals = REFUSED_ROWS.map(row => textOf(root, row, 'age'))
+}
 const allPending = (root: ParentNode) =>
   REFUSED_ROWS.every(row => pendingAt(root, row, 'age'))
 const refusedBack = (root: ParentNode) =>
@@ -440,11 +445,6 @@ const REFUSED: readonly GuideStoryStep[] = [
   {
     title: 'Сервер сохраняет вставку',
     hint: 'Приложение сохраняет вставку на сервере одним запросом. Сейчас сервер отвечает не сразу и в первый раз откажет.',
-    enter: root => {
-      pasteServer.reset()
-      pasted = false
-      originals = REFUSED_ROWS.map(row => textOf(root, row, 'age'))
-    },
   },
   {
     title: 'Выделен диапазон',
@@ -464,7 +464,10 @@ const REFUSED: readonly GuideStoryStep[] = [
       pasteServer.refuse = true
       if (!rangeSelected(root, 'age', REFUSED_ROWS))
         selectRows(root, 'age', REFUSED_ROWS)
-      else pasteOnce(root, REFUSED_ROWS[0]!, 'age', REFUSED_VALUE)
+      else {
+        rememberOriginals(root)
+        pasteOnce(root, REFUSED_ROWS[0]!, 'age', REFUSED_VALUE)
+      }
     }),
   },
   {
@@ -479,6 +482,7 @@ const REFUSED: readonly GuideStoryStep[] = [
         if (!rangeSelected(root, 'age', REFUSED_ROWS))
           selectRows(root, 'age', REFUSED_ROWS)
         else {
+          rememberOriginals(root)
           pasted = false
           pasteOnce(root, REFUSED_ROWS[0]!, 'age', REFUSED_VALUE)
         }
@@ -488,14 +492,30 @@ const REFUSED: readonly GuideStoryStep[] = [
   {
     title: 'Повтор удался',
     hint: 'Пользователь нажал кнопку повтора на плашке. Та же вставка ушла на сервер ещё раз, и теперь сервер её принял: плашка ушла, в ячейках новое значение.',
-    enter: untilDone(retried, () => {
-      pasteServer.refuse = false
-      if (pasteServer.waiting.length > 0) pasteServer.release()
-      else {
-        const retry = retryButton()
-        if (retry) retry.click()
-      }
-    }),
+    enter: (root, app) => {
+      // Со свежей таблицы отказа ещё не было: сперва отклонённая вставка, затем повтор.
+      let refused = false
+      return untilDone(retried, root => {
+        if (errorBanner()) refused = true
+        if (!refused) {
+          pasteServer.held = false
+          pasteServer.refuse = true
+          if (!rangeSelected(root, 'age', REFUSED_ROWS))
+            selectRows(root, 'age', REFUSED_ROWS)
+          else {
+            rememberOriginals(root)
+            pasteOnce(root, REFUSED_ROWS[0]!, 'age', REFUSED_VALUE)
+          }
+          return
+        }
+        pasteServer.refuse = false
+        if (pasteServer.waiting.length > 0) pasteServer.release()
+        else {
+          const retry = retryButton()
+          if (retry) retry.click()
+        }
+      })(root, app)
+    },
   },
 ]
 
@@ -507,6 +527,11 @@ export const PasteRefusedByServer: StoryObj<StoryProps> = {
     <GuideStory
       title="Сервер отказал вставке"
       steps={REFUSED}
+      reset={() => {
+        pasteServer.reset()
+        pasted = false
+        originals = []
+      }}
       args={guideArgs(BASE_ARGS, args)}
     />
   ),
@@ -524,12 +549,18 @@ export const PasteRefusedByServer: StoryObj<StoryProps> = {
     await step(REFUSED[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(allPending(canvas)).toBe(true))
-      expect(textOf(canvas, REFUSED_ROWS[0]!, 'age')).toBe(REFUSED_VALUE)
+      await until(() =>
+        expect(textOf(canvas, REFUSED_ROWS[0]!, 'age')).toBe(REFUSED_VALUE),
+      )
     })
     await step(REFUSED[3]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(refusedBack(canvas)).toBe(true))
-      expect(REFUSED_ROWS.some(row => issueAt(canvas, row, 'age'))).toBe(false)
+      await until(() =>
+        expect(REFUSED_ROWS.some(row => issueAt(canvas, row, 'age'))).toBe(
+          false,
+        ),
+      )
     })
     await step(REFUSED[4]!.title, async () => {
       await guideNext(canvas)
@@ -580,10 +611,6 @@ const MANUAL: readonly GuideStoryStep[] = [
   {
     title: 'Сохранение по кнопке',
     hint: 'Приложение сохраняет изменения не сразу, а пакетом — по кнопке пульта в тулбаре.',
-    enter: () => {
-      pasteServer.reset()
-      pasted = false
-    },
   },
   {
     title: 'Вставлено несохранённым',
@@ -616,6 +643,10 @@ export const PasteManualSave: StoryObj<StoryProps> = {
     <GuideStory
       title="Вставка с сохранением по кнопке"
       steps={MANUAL}
+      reset={() => {
+        pasteServer.reset()
+        pasted = false
+      }}
       args={guideArgs(MANUAL_ARGS, args)}
     />
   ),
@@ -659,16 +690,16 @@ const moved = (root: ParentNode) =>
   textOf(root, CUT_TARGET, 'age') === cutValue &&
   !pendingAt(root, CUT_TARGET, 'age')
 
+/** Вырезать значение, запомнив его до вырезания. */
+const cutOnce = (root: ParentNode) => {
+  cutValue ??= textOf(root, CUT_ROW, 'age')
+  cutData = cutFrom(cellOf(root, CUT_ROW, 'age')!)
+}
+
 const CLEAR_AND_CUT: readonly GuideStoryStep[] = [
   {
     title: 'Ячейки, которые можно править',
     hint: 'Приложение разрешило править возраст, пол и число визитов.',
-    enter: root => {
-      pasteServer.reset()
-      pasted = false
-      cutData = undefined
-      cutValue = textOf(root, CUT_ROW, 'age')
-    },
   },
   {
     title: 'Диапазон очищен',
@@ -687,7 +718,7 @@ const CLEAR_AND_CUT: readonly GuideStoryStep[] = [
     states: ['body.cellRange'],
     enter: untilDone(cutDone, root => {
       if (!selectedAt(root, CUT_ROW, 'age')) selectCell(root, CUT_ROW, 'age')
-      else if (!cutData) cutData = cutFrom(cellOf(root, CUT_ROW, 'age')!)
+      else if (!cutData) cutOnce(root)
     }),
   },
   {
@@ -697,7 +728,7 @@ const CLEAR_AND_CUT: readonly GuideStoryStep[] = [
     enter: untilDone(moved, root => {
       if (!cutDone(root)) {
         if (!selectedAt(root, CUT_ROW, 'age')) selectCell(root, CUT_ROW, 'age')
-        else if (!cutData) cutData = cutFrom(cellOf(root, CUT_ROW, 'age')!)
+        else if (!cutData) cutOnce(root)
       } else if (!selectedAt(root, CUT_TARGET, 'age'))
         selectCell(root, CUT_TARGET, 'age')
       else pasteOnce(root, CUT_TARGET, 'age', cutData!)
@@ -713,6 +744,12 @@ export const ClearAndCut: StoryObj<StoryProps> = {
     <GuideStory
       title="Очистка и вырезание"
       steps={CLEAR_AND_CUT}
+      reset={() => {
+        pasteServer.reset()
+        pasted = false
+        cutData = undefined
+        cutValue = undefined
+      }}
       args={guideArgs(BASE_ARGS, args)}
     />
   ),
@@ -797,7 +834,6 @@ const OWN_BULK: readonly GuideStoryStep[] = [
   {
     title: 'Пункт меню приложения',
     hint: 'Приложение добавило в меню ячейки визитов свой пункт: он обнуляет число визитов в выделенных ячейках. Записывает таблица — по тем же правилам, что и вставка.',
-    enter: () => pasteServer.reset(),
   },
   {
     title: 'Выделен диапазон',
@@ -842,6 +878,7 @@ export const OwnBulkEdit: StoryObj<StoryProps> = {
     <GuideStory
       title="Своя массовая правка в меню"
       steps={OWN_BULK}
+      reset={() => pasteServer.reset()}
       args={guideArgs(
         {
           ...BASE_ARGS,
@@ -910,6 +947,7 @@ const askToPaste = (root: HTMLElement) => {
   if (!selectedAt(root, CONFIRM_ROW, 'age'))
     selectCell(root, CONFIRM_ROW, 'age')
   else if (!asking(root)) {
+    confirmOriginal ??= textOf(root, CONFIRM_ROW, 'age')
     pasted = false
     pasteOnce(root, CONFIRM_ROW, 'age', CONFIRM_VALUE)
   }
@@ -942,11 +980,6 @@ const CONFIRM: readonly GuideStoryStep[] = [
   {
     title: 'Вопрос перед вставкой',
     hint: 'Приложение разбирает буфер само и перед вставкой просит таблицу спросить пользователя.',
-    enter: root => {
-      pasteServer.reset()
-      pasted = false
-      confirmOriginal = textOf(root, CONFIRM_ROW, 'age')
-    },
   },
   {
     title: 'Вопрос задан',
@@ -973,6 +1006,11 @@ export const PasteConfirm: StoryObj<StoryProps> = {
     <GuideStory
       title="Подтверждение вставки"
       steps={CONFIRM}
+      reset={() => {
+        pasteServer.reset()
+        pasted = false
+        confirmOriginal = undefined
+      }}
       args={guideArgs(CONFIRM_ARGS, args)}
     />
   ),
@@ -1133,6 +1171,8 @@ const holdFill =
 
 /** Протяжка — один раз за проход шага: ответ сервера приходит не сразу. */
 let filled = false
+/** Место цели протяжки на прошлом проходе шага. */
+let fillTargetTop: string | undefined
 const fillOnce = (
   root: HTMLElement,
   from: { row: string; column: string },
@@ -1142,6 +1182,16 @@ const fillOnce = (
   if (filled) return
   if (!selectedAt(root, from.row, from.column)) {
     selectCell(root, from.row, from.column)
+    return
+  }
+  // Цель — в виду, и тянуть, когда она стоит: открытая заново таблица ещё встаёт на место.
+  cellOf(root, to.row, to.column)?.scrollIntoView({ block: 'nearest' })
+  const handle = fillHandleOf(root)?.getBoundingClientRect()
+  const target = cellOf(root, to.row, to.column)?.getBoundingClientRect()
+  const top =
+    handle && target ? `${handle.top}:${handle.left}:${target.top}` : undefined
+  if (top === undefined || top !== fillTargetTop) {
+    fillTargetTop = top
     return
   }
   filled = fillTo(root, to.row, to.column, alt)
@@ -1158,22 +1208,21 @@ const FILL_ARGS = {
 const COPY_FROM = { row: 'item-id-2', column: 'age' }
 const COPY_TO = { row: 'item-id-5', column: 'age' }
 const COPY_ROWS = ['item-id-3', 'item-id-4', 'item-id-5']
-let copiedAge: string | undefined
+/** Протягиваемое значение: исходная ячейка шаги не меняют. */
+const copiedAge = (root: ParentNode) =>
+  textOf(root, COPY_FROM.row, COPY_FROM.column)
 const copyFilled = (root: ParentNode) =>
+  !!copiedAge(root) &&
   COPY_ROWS.every(
     row =>
-      textOf(root, row, 'age') === copiedAge && !pendingAt(root, row, 'age'),
+      textOf(root, row, 'age') === copiedAge(root) &&
+      !pendingAt(root, row, 'age'),
   )
 
 const FILL_COPY: readonly GuideStoryStep[] = [
   {
     title: 'Протяжка значения включена',
     hint: 'Приложение разрешило править возраст, пол и число визитов и включило протяжку значения маркером.',
-    enter: root => {
-      pasteServer.reset()
-      filled = false
-      copiedAge = textOf(root, COPY_FROM.row, COPY_FROM.column)
-    },
   },
   {
     title: 'Ячейка выбрана',
@@ -1208,6 +1257,10 @@ export const FillCopy: StoryObj<StoryProps> = {
     <GuideStory
       title="Протяжка значения"
       steps={FILL_COPY}
+      reset={() => {
+        pasteServer.reset()
+        filled = false
+      }}
       args={guideArgs(FILL_ARGS, args)}
     />
   ),
@@ -1300,10 +1353,6 @@ const FILL_SERIES: readonly GuideStoryStep[] = [
   {
     title: 'Цены с шагом',
     hint: 'В первых двух строках цены 10 и 20. Приложение разрешило править цену и дату доставки и включило протяжку значения маркером.',
-    enter: () => {
-      pasteServer.reset()
-      filled = false
-    },
   },
   {
     title: 'Выделены две цены',
@@ -1356,6 +1405,10 @@ export const FillSeries: StoryObj<StoryProps> = {
     <GuideStory
       title="Ряд протяжкой"
       steps={FILL_SERIES}
+      reset={() => {
+        pasteServer.reset()
+        filled = false
+      }}
       args={guideArgs(SERIES_ARGS, args)}
     />
   ),
@@ -1391,18 +1444,23 @@ export const FillSeries: StoryObj<StoryProps> = {
 // --- ADR 0219, S8 ---------------------------------------------------------------------
 
 const DOWN_ROWS = ['item-id-2', 'item-id-3', 'item-id-4', 'item-id-5']
-let downAge: string | undefined
+/** Значения источников протяжки: их ячейки шаги не меняют. */
+const downAge = (root: ParentNode) => textOf(root, DOWN_ROWS[0]!, 'age')
 const downFilled = (root: ParentNode) =>
+  !!downAge(root) &&
   DOWN_ROWS.slice(1).every(
-    row => textOf(root, row, 'age') === downAge && !pendingAt(root, row, 'age'),
+    row =>
+      textOf(root, row, 'age') === downAge(root) &&
+      !pendingAt(root, row, 'age'),
   )
 const RIGHT_ROW = 'item-id-7'
-let rightName: string | undefined
+const rightName = (root: ParentNode) => textOf(root, RIGHT_ROW, 'firstName')
 const rightSelected = (root: ParentNode) =>
   selectedAt(root, RIGHT_ROW, 'firstName') &&
   selectedAt(root, RIGHT_ROW, 'lastName')
 const rightFilled = (root: ParentNode) =>
-  textOf(root, RIGHT_ROW, 'lastName') === rightName &&
+  !!rightName(root) &&
+  textOf(root, RIGHT_ROW, 'lastName') === rightName(root) &&
   !pendingAt(root, RIGHT_ROW, 'lastName')
 
 /** Ctrl+D или Ctrl+R на первой ячейке диапазона — по коду клавиши. */
@@ -1420,11 +1478,6 @@ const FILL_KEYBOARD: readonly GuideStoryStep[] = [
   {
     title: 'Ячейки, которые можно править',
     hint: 'Приложение разрешило править имя, фамилию, возраст, пол и число визитов.',
-    enter: root => {
-      pasteServer.reset()
-      downAge = textOf(root, DOWN_ROWS[0]!, 'age')
-      rightName = textOf(root, RIGHT_ROW, 'firstName')
-    },
   },
   {
     title: 'Выделен диапазон',
@@ -1484,6 +1537,7 @@ export const FillDownKeyboard: StoryObj<StoryProps> = {
     <GuideStory
       title="Заполнение с клавиатуры"
       steps={FILL_KEYBOARD}
+      reset={() => pasteServer.reset()}
       args={guideArgs(KEYBOARD_ARGS, args)}
     />
   ),
@@ -1533,7 +1587,6 @@ const BULK_EDIT: readonly GuideStoryStep[] = [
   {
     title: 'Ячейки, которые можно править',
     hint: 'Приложение разрешило править возраст, пол и число визитов.',
-    enter: () => pasteServer.reset(),
   },
   {
     title: 'Выделен диапазон',
@@ -1586,6 +1639,7 @@ export const BulkEditCtrlEnter: StoryObj<StoryProps> = {
     <GuideStory
       title="Правка всего диапазона"
       steps={BULK_EDIT}
+      reset={() => pasteServer.reset()}
       args={guideArgs(BASE_ARGS, args)}
     />
   ),

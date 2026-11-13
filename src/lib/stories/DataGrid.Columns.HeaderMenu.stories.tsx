@@ -15,6 +15,7 @@ import {
   pollUntil,
   pressEscape,
   settle,
+  stepDone,
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
@@ -281,7 +282,6 @@ const ACTIVE: readonly GuideStoryStep[] = [
   {
     title: 'Действия не включены',
     hint: 'Таблица отображает колонки с кнопками сортировки и фильтра. Ни одно действие не включено.',
-    enter: withActions([]),
   },
   {
     title: 'Пользователь отсортировал колонку',
@@ -403,6 +403,8 @@ const narrowHost = definePlugin<{ enabled?: boolean }>()({
   id: 'headerMenuNarrowHost',
   setup: () => table => {
     narrowApi = table as unknown as NarrowApi
+    // Узкая колонка — с открытия таблицы.
+    narrowApi.setColumnSizing({ [NARROW_COLUMN]: NARROW_WIDTH })
     return () => {
       narrowApi = null
     }
@@ -470,6 +472,10 @@ const pointWhen =
 const NARROW: readonly GuideStoryStep[] = [
   {
     title: 'Узкая колонка',
+    hint: 'Первая колонка узкая: в её заголовке помещается одна кнопка и кнопка меню. Указатель вне таблицы.',
+  },
+  {
+    title: 'Указатель над заголовком',
     hint: 'Указатель над заголовком первой колонки. В нём помещается одна кнопка и кнопка меню: в ряду — закрепление, сортировка и фильтр — в меню колонки.',
     pseudo: NARROW_HOVER,
     enter: stepAction(async (root, run) => {
@@ -552,37 +558,43 @@ export const HeaderMenuNarrowActive: StoryObj<StoryProps> = {
     const kebab = () => headKebab(canvas, NARROW_COLUMN)
     await step(NARROW[0]!.title, async () => {
       await waitForRows(canvas)
-      await until(() => expect(pinButton(canvas)).not.toBeNull())
-      await expect(sortButton(canvas)).toBeNull()
-      await expect(kebab()).not.toBeNull()
     })
     await step(NARROW[1]!.title, async () => {
       await guideNext(canvas)
+      await waitForRows(canvas)
+      await until(() => expect(pinButton(canvas)).not.toBeNull())
+      await until(() => expect(sortButton(canvas)).toBeNull())
+      await until(() => expect(kebab()).not.toBeNull())
+    })
+    await step(NARROW[2]!.title, async () => {
+      await guideNext(canvas)
       await until(() => expect(marked(sortButton(canvas))).toBe(true))
-      await expect(pinButton(canvas)).toBeNull()
+      await until(() => expect(pinButton(canvas)).toBeNull())
       // Отметка уходит с кнопки меню переходом.
       await until(() => expect(marked(kebab())).toBe(false))
       await settle()
     })
-    await step(NARROW[2]!.title, async () => {
-      await guideNext(canvas)
-      await until(() => expect(sorted()).toBe(false))
-      await expect(sortButton(canvas)).not.toBeNull()
-      await until(() => expect(marked(sortButton(canvas))).toBe(false))
-      await expect(pinButton(canvas)).toBeNull()
-      await settle()
-    })
     await step(NARROW[3]!.title, async () => {
       await guideNext(canvas)
-      await until(() => expect(pinButton(canvas)).not.toBeNull())
-      await expect(sortButton(canvas)).toBeNull()
+      // Со свежей таблицы сортировки нет сразу: ждать, пока шаг включит и выключит её.
+      await stepDone(canvas)
+      await until(() => expect(sorted()).toBe(false))
+      await until(() => expect(sortButton(canvas)).not.toBeNull())
+      await until(() => expect(marked(sortButton(canvas))).toBe(false))
+      await until(() => expect(pinButton(canvas)).toBeNull())
       await settle()
     })
     await step(NARROW[4]!.title, async () => {
       await guideNext(canvas)
+      await until(() => expect(pinButton(canvas)).not.toBeNull())
+      await until(() => expect(sortButton(canvas)).toBeNull())
+      await settle()
+    })
+    await step(NARROW[5]!.title, async () => {
+      await guideNext(canvas)
       await until(() => expect(sortButton(canvas)).not.toBeNull())
-      await expect(pinButton(canvas)).not.toBeNull()
-      await expect(marked(kebab())).toBe(false)
+      await until(() => expect(pinButton(canvas)).not.toBeNull())
+      await until(() => expect(marked(kebab())).toBe(false))
       await settle()
     })
   },
@@ -667,6 +679,10 @@ const runIndex = (menu: HTMLElement) => {
 }
 
 const ASYNC_ACTIONS: readonly GuideStoryStep[] = [
+  {
+    title: 'Меню ещё не открыто',
+    hint: 'Приложение добавило в меню колонки своё действие, доступность которого решает сервер. Пользователь ещё не открывал меню.',
+  },
   {
     title: 'Проверка доступности',
     hint: 'Приложение добавило в меню колонки своё действие, доступность которого решает сервер. Пользователь открыл меню: пока сервер не ответил, пункт заблокирован и показывает ожидание.',
@@ -757,11 +773,15 @@ export const HeaderMenuAsyncActions: StoryObj<StoryProps> = {
         ?.textContent ?? ''
     await step(ASYNC_ACTIONS[0]!.title, async () => {
       await waitForRows(canvas)
+    })
+    await step(ASYNC_ACTIONS[1]!.title, async () => {
+      await guideNext(canvas)
+      await waitForRows(canvas)
       await until(() => expect(expandedMenuOf(canvas, 'country')).toBe(true))
       await until(() => expect(description()).toBe(labels.availabilityChecking))
       await until(() => expect(itemEnabled(item())).toBe(false))
     })
-    await step(ASYNC_ACTIONS[1]!.title, async () => {
+    await step(ASYNC_ACTIONS[2]!.title, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(description()).toBe('The column is already indexed'),
@@ -769,7 +789,7 @@ export const HeaderMenuAsyncActions: StoryObj<StoryProps> = {
       await expect(itemEnabled(item())).toBe(false)
       await settle()
     })
-    await step(ASYNC_ACTIONS[2]!.title, async () => {
+    await step(ASYNC_ACTIONS[3]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(expandedMenuOf(canvas, 'total')).toBe(true))
       await until(() =>
@@ -778,14 +798,14 @@ export const HeaderMenuAsyncActions: StoryObj<StoryProps> = {
       await expect(itemEnabled(item())).toBe(false)
       await settle()
     })
-    await step(ASYNC_ACTIONS[3]!.title, async () => {
+    await step(ASYNC_ACTIONS[4]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(busy(canvas, 'lastName')).toBe(true))
       await until(() =>
         expect(document.querySelector('[role="menu"][data-open]')).toBeNull(),
       )
     })
-    await step(ASYNC_ACTIONS[4]!.title, async () => {
+    await step(ASYNC_ACTIONS[5]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(refusedFlash(canvas, 'lastName')).toBe(true))
       await until(() => expect(busy(canvas, 'lastName')).toBe(false))

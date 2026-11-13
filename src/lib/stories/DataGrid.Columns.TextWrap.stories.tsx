@@ -463,19 +463,11 @@ const TARGET = '120'
 const KEYBOARD: readonly GuideStoryStep[] = [
   {
     title: 'Строки разной высоты',
-    hint: 'У строк своя высота по заметке. Активна первая ячейка таблицы.',
-    enter: afterRows(root => {
-      scrollerOf(root).scrollTop = 0
-      root
-        .querySelector<HTMLElement>(
-          '.data-grid__body-row[data-row-id="0"] [data-column-id="name"]',
-        )
-        ?.focus()
-    }),
+    hint: 'У строк своя высота по заметке. Таблица в начале.',
   },
   {
     title: 'Пользователь нажал PageDown',
-    hint: 'Активной стала строка на высоту экрана ниже: таблица отсчитала её по высотам строк, а не по их числу, и прокрутилась, чтобы её показать.',
+    hint: 'Пользователь встал на первую ячейку и нажал PageDown. Активной стала строка на высоту экрана ниже: таблица отсчитала её по высотам строк, а не по их числу, и прокрутилась, чтобы её показать.',
     enter: stepAction(async (root, { signal }) => {
       await pollUntil(() => gridDrawn(root), signal)
       const active =
@@ -563,9 +555,6 @@ const SERVER: readonly GuideStoryStep[] = [
   {
     title: 'Миллион строк с заметками',
     hint: 'Строки приходят с сервера блоками и растут по заметкам. Пока блок в пути, его строки — скелеты высотой оценки.',
-    enter: afterRows(root => {
-      if (layerOf(root).top() > 0) layerOf(root).scrollTo({ top: 0 })
-    }),
   },
   {
     title: 'Пользователь перешёл в середину',
@@ -627,7 +616,6 @@ const MOTION: readonly GuideStoryStep[] = [
   {
     title: 'Строки разной высоты',
     hint: 'Строки идут по клиентам, у каждой своя высота по заметке.',
-    enter: afterRows(() => guideTable?.setSorting([])),
   },
   {
     title: 'Пользователь отсортировал по городу',

@@ -133,9 +133,6 @@ const PAGES: readonly GuideStoryStep[] = [
     props: pagedProps(
       serverProps({ total: TOTAL, knownTotal: true, blockSize: BLOCK }),
     ),
-    enter: stepAction(async (root, { signal }) => {
-      await pollUntil(() => hasRow(root, 0), signal)
-    }),
   },
   {
     title: 'Пользователь открыл последнюю страницу',
@@ -188,18 +185,18 @@ export const ServerPaginationPages: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(PAGES[0]!.title, async () => {
-      await stepDone(canvas)
-      await expect(pageRange(canvas)).toMatch(/^1–25\D+100\D?000$/)
+      await until(() => expect(hasRow(canvas, 0)).toBe(true))
+      await until(() => expect(pageRange(canvas)).toMatch(/^1–25\D+100\D?000$/))
     })
     await step(PAGES[1]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(skeletonRows(canvas)).toBeGreaterThan(0)
+      await until(() => expect(skeletonRows(canvas)).toBeGreaterThan(0))
     })
     await step(PAGES[2]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(skeletonRows(canvas)).toBe(0)
+      await until(() => expect(skeletonRows(canvas)).toBe(0))
       await settle()
     })
     await step(PAGES[3]!.title, async () => {
@@ -207,8 +204,8 @@ export const ServerPaginationPages: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await stepDone(canvas)
       // Первая страница — из кэша: новых запросов нет.
-      await expect(server.starts.length).toBe(requests)
-      await expect(skeletonRows(canvas)).toBe(0)
+      await until(() => expect(server.starts.length).toBe(requests))
+      await until(() => expect(skeletonRows(canvas)).toBe(0))
       await settle()
     })
   },
@@ -246,9 +243,6 @@ const UNKNOWN_TOTAL: readonly GuideStoryStep[] = [
       }),
       SHORT_PAGE,
     ),
-    enter: stepAction(async (root, { signal }) => {
-      await pollUntil(() => hasRow(root, 0), signal)
-    }),
   },
   {
     title: 'Пользователь дошёл до конца списка',
@@ -273,9 +267,13 @@ export const ServerPaginationUnknownTotal: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(UNKNOWN_TOTAL[0]!.title, async () => {
-      await stepDone(canvas)
-      await expect(offButton(pageButton(canvas, 'last'))).toBe(true)
-      await expect(offButton(pageButton(canvas, 'next'))).toBe(false)
+      await until(() => expect(hasRow(canvas, 0)).toBe(true))
+      await until(() =>
+        expect(offButton(pageButton(canvas, 'last'))).toBe(true),
+      )
+      await until(() =>
+        expect(offButton(pageButton(canvas, 'next'))).toBe(false),
+      )
     })
     await step(UNKNOWN_TOTAL[1]!.title, async () => {
       await guideNext(canvas)
@@ -304,9 +302,6 @@ const NUMBERS_WITH_TOTAL: readonly GuideStoryStep[] = [
       }),
       SHORT_PAGE,
     ),
-    enter: stepAction(async (root, { signal }) => {
-      await pollUntil(() => hasRow(root, 0), signal)
-    }),
   },
   {
     title: 'Итог стал известен',
@@ -332,9 +327,11 @@ export const PaginationUnknownTotal: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(NUMBERS_WITH_TOTAL[0]!.title, async () => {
-      await stepDone(canvas)
-      await expect(pageNumberOf(canvas, 1)).toBeNull()
-      await expect(offButton(pageButton(canvas, 'last'))).toBe(true)
+      await until(() => expect(hasRow(canvas, 0)).toBe(true))
+      await until(() => expect(pageNumberOf(canvas, 1)).toBeNull())
+      await until(() =>
+        expect(offButton(pageButton(canvas, 'last'))).toBe(true),
+      )
     })
     await step(NUMBERS_WITH_TOTAL[1]!.title, async () => {
       await guideNext(canvas)
@@ -375,11 +372,6 @@ const GROUPS: readonly GuideStoryStep[] = [
     hint: 'Сервер группирует строки по городам. Страница считает строки верхнего уровня — на каждой по две группы.',
     props: pagedProps(groupProps({ grouping: ['city'] }), GROUP_PAGE),
     states: ['body.groups'],
-    enter: stepAction(async (root, { signal }) => {
-      // Отказ группировки мог остаться от другого гайда.
-      groupServer.refuse = false
-      await pollUntil(() => !!groupRow(root, 'Berlin'), signal)
-    }),
   },
   {
     title: 'Пользователь раскрыл группу',
@@ -409,16 +401,19 @@ export const ServerPaginationGroups: StoryObj<StoryProps> = {
     <GuideStory
       title="Группы на страницах"
       steps={GROUPS}
+      reset={() => {
+        groupServer.refuse = false
+      }}
       args={guideArgs(layout, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(GROUPS[0]!.title, async () => {
-      await stepDone(canvas)
-      await expect(pageRange(canvas)).toMatch(/^1–2\D+5$/)
+      await until(() => expect(!!groupRow(canvas, 'Berlin')).toBe(true))
+      await until(() => expect(pageRange(canvas)).toMatch(/^1–2\D+5$/))
       await expect(groupRow(canvas, 'Lima')).not.toBeNull()
-      await expect(groupRow(canvas, 'Oslo')).toBeNull()
+      await until(() => expect(groupRow(canvas, 'Oslo')).toBeNull())
     })
     await step(GROUPS[1]!.title, async () => {
       await guideNext(canvas)
@@ -509,9 +504,6 @@ const EDITING: readonly GuideStoryStep[] = [
         extraPlugins: [...(props.extraPlugins ?? []), editingHost],
       }
     },
-    enter: stepAction(async (root, { signal }) => {
-      await pollUntil(() => !!ageCell(root), signal)
-    }),
   },
   {
     title: 'Пользователь начал правку',
@@ -561,7 +553,7 @@ export const ServerPaginationEditing: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(EDITING[0]!.title, async () => {
-      await stepDone(canvas)
+      await until(() => expect(hasRow(canvas, 0)).toBe(true))
     })
     await step(EDITING[1]!.title, async () => {
       await guideNext(canvas)

@@ -361,7 +361,7 @@ export const EditingDateClear: StoryObj<StoryProps> = {
         expect(datePopup()).toBeNull()
         expect(dateText(canvas, 'released')).toBe('')
       })
-      expect(consoleText()).toContain('value:null')
+      await until(() => expect(consoleText()).toContain('value:null'))
       await settle()
     })
   },

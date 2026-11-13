@@ -105,7 +105,7 @@ describe('панель сценария (ADR 0117)', () => {
       const menu = () => document.querySelector('[role="menu"]')
       await humanClick(byId('guide-toggle'))
       await sleep(600)
-      for (const step of ['2 из 4', '3 из 4']) {
+      for (const step of ['2 из 5', '3 из 5', '4 из 5']) {
         await expect
           .poll(() => button('guide-next').disabled, { timeout: 8000 })
           .toBe(false)
@@ -134,8 +134,18 @@ describe('панель сценария (ADR 0117)', () => {
         document.querySelector<HTMLInputElement>(
           '.data-grid__body-row[data-row-id="item-id-0"] .data-grid__body-cell[data-column-id="age"] input',
         )
+      // Шаг 1 — в покое (SN71): правку открывает шаг 2.
+      byId('guide-toggle').click()
+      await sleep(600)
+      await expect.poll(() => button('guide-next').disabled).toBe(false)
+      button('guide-next').click()
       await expect.poll(() => input()?.value).toBe('55')
       input()!.focus()
+      await humanClick(byId('guide-toggle'))
+      await expect
+        .poll(() => byId('guide-toggle').getAttribute('aria-expanded'))
+        .toBe('false')
+      expect(document.activeElement).toBe(input())
       await humanClick(byId('guide-toggle'))
       await expect
         .poll(() => byId('guide-toggle').getAttribute('aria-expanded'))
@@ -147,7 +157,7 @@ describe('панель сценария (ADR 0117)', () => {
       await humanClick(button('guide-next'))
       await expect
         .poll(() => byId('guide').textContent, { timeout: 5000 })
-        .toContain('2 из 4')
+        .toContain('3 из 5')
       // Черновик не сохранён: поле открыто, фокус — в нём.
       expect(input()?.value).toBe('55')
       expect(document.activeElement).toBe(input())
@@ -729,7 +739,7 @@ describe('панель сценария (ADR 0117)', () => {
   test('SN33: «Назад» и нажатие на прошлый шаг возвращают таблицу в состояние этого шага, даже если отменённый шаг выполнил действие', async () => {
     await motion.reducedMotion(true)
     try {
-      // «Toggle all»: шаг 2 снимает флажок всех колонок — таблица уходит в заглушку.
+      // «Toggle all»: шаг 3 снимает флажок всех колонок — таблица уходит в заглушку.
       await render(<ColumnVisibilityToggleAll />)
       await expect.poll(() => byId('guide-next')).toBeTruthy()
       byId('guide-toggle').click()
@@ -742,7 +752,7 @@ describe('панель сценария (ADR 0117)', () => {
           `[data-step-button="${index}"]`,
         )!
       const toHidden = async () => {
-        stepButton(1).click()
+        stepButton(2).click()
         await expect.poll(stub).not.toBeNull()
         expect(rows()).toBe(0)
       }
@@ -1090,6 +1100,172 @@ describe('ввод человека посреди гайда (ADR 0117)', () =>
       expect(scroller().scrollTop).toBeGreaterThan(0)
     } finally {
       run.release = true
+      await screen.unmount()
+    }
+  })
+
+  test('SN71: шаг 1 — исходное состояние: раскрытие и сворачивание панели таблицу не меняют, действие шага 2 — только после перехода; шаг 1 с действием — ошибка в консоли', async () => {
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      let acted = 0
+      const quiet = await render(
+        <GuideStory
+          title="Начало гайда"
+          steps={[
+            {
+              title: 'Таблица в покое',
+              hint: 'Шаг только показывает таблицу.',
+            },
+            {
+              title: 'Действие',
+              hint: 'Действие прокручивает таблицу.',
+              enter: root => {
+                acted++
+                root.querySelector('.data-grid__container')!.scrollTop = 200
+              },
+            },
+          ]}
+          args={guideArgs(
+            { dataCount: 200, height: 320 },
+            { colorMode: 'light', locale: 'en' },
+          )}
+        />,
+      )
+      try {
+        await expect
+          .poll(() => document.querySelectorAll(ROW).length)
+          .toBeGreaterThan(0)
+        const table = scroller()
+        await expandGuide()
+        await humanClick(byId('guide-toggle'))
+        await sleep(600)
+        expect(scroller()).toBe(table)
+        expect(table.scrollTop).toBe(0)
+        expect(acted).toBe(0)
+        expect(errors).not.toHaveBeenCalled()
+
+        await expandGuide()
+        button('guide-next').click()
+        await expect.poll(() => acted).toBe(1)
+        expect(scroller()).toBe(table)
+      } finally {
+        await quiet.unmount()
+      }
+
+      const acting = await render(
+        <GuideStory
+          title="Действие сразу"
+          steps={[
+            { title: 'Действие', hint: 'Шаг 1 действует.', enter: () => {} },
+            { title: 'Итог', hint: 'Итог.' },
+          ]}
+          args={guideArgs(
+            { dataCount: 20 },
+            { colorMode: 'light', locale: 'en' },
+          )}
+        />,
+      )
+      try {
+        await expect
+          .poll(() =>
+            errors.mock.calls.some(call => String(call[0]).includes('SN71')),
+          )
+          .toBe(true)
+      } finally {
+        await acting.unmount()
+      }
+    } finally {
+      errors.mockRestore()
+    }
+  })
+
+  test('SN72: сброс обвязки — перед первым открытием, «Сначала», открытием заново при откате и после пометки, «Вернуть шаг» и раньше эффектов грида: шаг, к которому перешли, находит обвязку сброшенной', async () => {
+    // Мок-«сервер» вне таблицы: шаг 2 его меняет, шаг 3 смотрит, каким его нашёл.
+    const server = { state: 'fresh', resets: 0, seenAtOpen: [] as string[] }
+    const seenByStep3: string[] = []
+    const probe = {
+      id: 'resetProbe',
+      setup: () => {
+        server.seenAtOpen.push(server.state)
+      },
+    }
+    const screen = await render(
+      <GuideStory
+        title="Сброс обвязки"
+        reset={() => {
+          server.state = 'fresh'
+          server.resets++
+        }}
+        steps={[
+          {
+            title: 'Таблица в покое',
+            hint: 'Шаг только показывает таблицу.',
+            props: () => ({ extraPlugins: [probe] }),
+          },
+          {
+            title: 'Обвязка изменена',
+            hint: 'Шаг меняет «сервер».',
+            enter: () => {
+              server.state = 'used'
+            },
+          },
+          {
+            title: 'Обвязка прочитана',
+            hint: 'Шаг смотрит на «сервер».',
+            enter: () => {
+              seenByStep3.push(server.state)
+            },
+          },
+        ]}
+        args={guideArgs(
+          { dataCount: 200, height: 320 },
+          { colorMode: 'light', locale: 'en' },
+        )}
+      />,
+    )
+    const rows = () => document.querySelectorAll(ROW).length
+    const reopened = async (resets: number) => {
+      await expect.poll(() => server.resets).toBe(resets)
+      await expect.poll(rows).toBeGreaterThan(0)
+      // StrictMode ставит плагин дважды: открытий не меньше сбросов.
+      await expect
+        .poll(() => server.seenAtOpen.length)
+        .toBeGreaterThanOrEqual(resets)
+      expect(server.seenAtOpen.every(state => state === 'fresh')).toBe(true)
+    }
+    try {
+      await reopened(1)
+      await expandGuide()
+
+      // «Далее» без пометки — та же таблица: обвязка идёт дальше от шага 2.
+      button('guide-next').click()
+      await expect.poll(stepText).toContain('шаг 2 из 3')
+      button('guide-next').click()
+      await expect.poll(() => seenByStep3).toEqual(['used'])
+      expect(server.resets).toBe(1)
+
+      // Откат через шаг с действием — таблица заново, обвязка сброшена до неё.
+      button('guide-back').click()
+      await expect.poll(stepText).toContain('шаг 2 из 3')
+      await reopened(2)
+      await expect.poll(() => server.state).toBe('used')
+
+      // После пометки — переход к шагу 3 находит обвязку сброшенной, а не после шага 2.
+      await wheelTable(200)
+      await expect.poll(changed).not.toBeNull()
+      document.querySelector<HTMLElement>('[data-step-button="2"]')!.click()
+      await reopened(3)
+      await expect.poll(() => seenByStep3).toEqual(['used', 'fresh'])
+
+      // «Вернуть шаг» и «Сначала».
+      await wheelTable(200)
+      await expect.poll(changed).not.toBeNull()
+      byId('guide-restore').click()
+      await reopened(4)
+      byId('guide-restart').click()
+      await expect.poll(stepText).toContain('шаг 1 из 3')
+      await reopened(5)
+    } finally {
       await screen.unmount()
     }
   })

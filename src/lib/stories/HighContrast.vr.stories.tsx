@@ -367,6 +367,16 @@ export const HighContrastInfiniteScrollServerQueryStep2 = {
   tags: ['!test'],
 }
 
+export const HighContrastInfiniteScrollServerQueryStep3 = {
+  ...twinStep(
+    infiniteScrollStories,
+    infiniteScrollStories.InfiniteScrollServerQuery,
+    3,
+  ),
+  name: 'Data loading/Infinite scroll — Server sort & filter, шаг 3',
+  tags: ['!test'],
+}
+
 export const HighContrastServerRowModelJumpStep1 = {
   ...twinStep(
     serverRowModelStories,
@@ -504,6 +514,16 @@ export const HighContrastServerRowModelSortingStep4 = {
     4,
   ),
   name: 'Data loading/Server row model — Sorting, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelSortingStep5 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelSorting,
+    5,
+  ),
+  name: 'Data loading/Server row model — Sorting, шаг 5',
   tags: ['!test'],
 }
 
@@ -983,6 +1003,12 @@ export const HighContrastServerDragGroupsStep3 = {
   tags: ['!test'],
 }
 
+export const HighContrastServerDragGroupsStep4 = {
+  ...twinStep(serverDraggingStories, serverDraggingStories.ServerDragGroups, 4),
+  name: 'Data loading/Server row model/Dragging — Move to another group, шаг 4',
+  tags: ['!test'],
+}
+
 export const HighContrastServerGroupingExpandAllStep1 = {
   ...twinStep(
     serverGroupingStories,
@@ -1075,6 +1101,16 @@ export const HighContrastServerStickyBranchesStep2 = {
   tags: ['!test'],
 }
 
+export const HighContrastServerStickyBranchesStep3 = {
+  ...twinStep(
+    serverLazyChildrenStories,
+    serverLazyChildrenStories.ServerStickyBranches,
+    3,
+  ),
+  name: 'Data loading/Server row model/Lazy children — Sticky branches, шаг 3',
+  tags: ['!test'],
+}
+
 export const HighContrastServerTreeLinesStep1 = {
   ...twinStep(
     serverLazyChildrenStories,
@@ -1102,6 +1138,16 @@ export const HighContrastServerTreeLinesStep3 = {
     3,
   ),
   name: 'Data loading/Server row model/Lazy children — Tree lines, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerTreeLinesStep4 = {
+  ...twinStep(
+    serverLazyChildrenStories,
+    serverLazyChildrenStories.ServerTreeLines,
+    4,
+  ),
+  name: 'Data loading/Server row model/Lazy children — Tree lines, шаг 4',
   tags: ['!test'],
 }
 
@@ -1305,6 +1351,16 @@ export const HighContrastServerRangeSelectionStep4 = {
   tags: ['!test'],
 }
 
+export const HighContrastServerRangeSelectionStep5 = {
+  ...twinStep(
+    serverCellSelectionStories,
+    serverCellSelectionStories.ServerRangeSelection,
+    5,
+  ),
+  name: 'Data loading/Server row model/Cell selection — Select a range, шаг 5',
+  tags: ['!test'],
+}
+
 export const HighContrastServerCopyLoadsRowsStep1 = {
   ...twinStep(
     serverCellSelectionStories,
@@ -1335,6 +1391,16 @@ export const HighContrastServerCopyLoadsRowsStep3 = {
   tags: ['!test'],
 }
 
+export const HighContrastServerCopyLoadsRowsStep4 = {
+  ...twinStep(
+    serverCellSelectionStories,
+    serverCellSelectionStories.ServerCopyLoadsRows,
+    4,
+  ),
+  name: 'Data loading/Server row model/Cell selection — Copy loads the rows, шаг 4',
+  tags: ['!test'],
+}
+
 export const HighContrastServerCopyOverLimitStep1 = {
   ...twinStep(
     serverCellSelectionStories,
@@ -1352,6 +1418,16 @@ export const HighContrastServerCopyOverLimitStep2 = {
     2,
   ),
   name: 'Data loading/Server row model/Cell selection — Copy over the limit, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerCopyOverLimitStep3 = {
+  ...twinStep(
+    serverCellSelectionStories,
+    serverCellSelectionStories.ServerCopyOverLimit,
+    3,
+  ),
+  name: 'Data loading/Server row model/Cell selection — Copy over the limit, шаг 3',
   tags: ['!test'],
 }
 
@@ -1382,6 +1458,16 @@ export const HighContrastServerCopyRefusedStep3 = {
     3,
   ),
   name: 'Data loading/Server row model/Cell selection — Copy refused by the server, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerCopyRefusedStep4 = {
+  ...twinStep(
+    serverCellSelectionStories,
+    serverCellSelectionStories.ServerCopyRefused,
+    4,
+  ),
+  name: 'Data loading/Server row model/Cell selection — Copy refused by the server, шаг 4',
   tags: ['!test'],
 }
 
@@ -1457,6 +1543,12 @@ export const HighContrastFilteringEmptyStep1 = {
 export const HighContrastFilteringEmptyStep2 = {
   ...twinStep(filteringStories, filteringStories.FilteringEmpty, 2),
   name: 'Filtering — Empty result, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastFilteringEmptyStep3 = {
+  ...twinStep(filteringStories, filteringStories.FilteringEmpty, 3),
+  name: 'Filtering — Empty result, шаг 3',
   tags: ['!test'],
 }
 
@@ -1772,6 +1864,12 @@ export const HighContrastRowActionsNestedStep5 = {
   tags: ['!test'],
 }
 
+export const HighContrastRowActionsNestedStep6 = {
+  ...twinStep(rowsActionsStories, rowsActionsStories.RowActionsNested, 6),
+  name: 'Rows/Actions — Nested sections, шаг 6',
+  tags: ['!test'],
+}
+
 export const HighContrastRowActionsAsyncStep1 = {
   ...twinStep(rowsActionsStories, rowsActionsStories.RowActionsAsync, 1),
   name: 'Rows/Actions — Async action, шаг 1',
@@ -2003,6 +2101,12 @@ export const HighContrastHighlightMarksStep3 = {
 export const HighContrastHighlightMarksStep4 = {
   ...twinStep(rowsHighlightStories, rowsHighlightStories.HighlightMarks, 4),
   name: 'Rows/Highlight — Search, cell and column, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastHighlightMarksStep5 = {
+  ...twinStep(rowsHighlightStories, rowsHighlightStories.HighlightMarks, 5),
+  name: 'Rows/Highlight — Search, cell and column, шаг 5',
   tags: ['!test'],
 }
 
@@ -2360,6 +2464,12 @@ export const HighContrastFooterPositionSwitchStep2 = {
   tags: ['!test'],
 }
 
+export const HighContrastFooterPositionSwitchStep3 = {
+  ...twinStep(coreFooterStories, coreFooterStories.FooterPositionSwitch, 3),
+  name: 'Core/Footer — Position switch, шаг 3',
+  tags: ['!test'],
+}
+
 export const HighContrastFooterKeyboardStep1 = {
   ...twinStep(coreFooterStories, coreFooterStories.FooterKeyboard, 1),
   name: 'Core/Footer — Keyboard, шаг 1',
@@ -2369,6 +2479,12 @@ export const HighContrastFooterKeyboardStep1 = {
 export const HighContrastFooterKeyboardStep2 = {
   ...twinStep(coreFooterStories, coreFooterStories.FooterKeyboard, 2),
   name: 'Core/Footer — Keyboard, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastFooterKeyboardStep3 = {
+  ...twinStep(coreFooterStories, coreFooterStories.FooterKeyboard, 3),
+  name: 'Core/Footer — Keyboard, шаг 3',
   tags: ['!test'],
 }
 
@@ -2389,6 +2505,16 @@ export const HighContrastInlineFooterInfiniteScrollStep2 = {
     2,
   ),
   name: 'Core/Footer — Inline — infinite scroll, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastInlineFooterInfiniteScrollStep3 = {
+  ...twinStep(
+    coreFooterStories,
+    coreFooterStories.InlineFooterInfiniteScroll,
+    3,
+  ),
+  name: 'Core/Footer — Inline — infinite scroll, шаг 3',
   tags: ['!test'],
 }
 
@@ -2413,6 +2539,12 @@ export const HighContrastInlineFooterScrollToRowStep1 = {
 export const HighContrastInlineFooterScrollToRowStep2 = {
   ...twinStep(coreFooterStories, coreFooterStories.InlineFooterScrollToRow, 2),
   name: 'Core/Footer — Inline — scroll to row, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastInlineFooterScrollToRowStep3 = {
+  ...twinStep(coreFooterStories, coreFooterStories.InlineFooterScrollToRow, 3),
+  name: 'Core/Footer — Inline — scroll to row, шаг 3',
   tags: ['!test'],
 }
 
@@ -2515,6 +2647,12 @@ export const HighContrastSizingRowHeightStep3 = {
 export const HighContrastSizingRowHeightStep4 = {
   ...twinStep(coreSizingStories, coreSizingStories.SizingRowHeight, 4),
   name: 'Core/Sizing — Row height, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastSizingRowHeightStep5 = {
+  ...twinStep(coreSizingStories, coreSizingStories.SizingRowHeight, 5),
+  name: 'Core/Sizing — Row height, шаг 5',
   tags: ['!test'],
 }
 
@@ -3604,6 +3742,12 @@ export const HighContrastRowDraggingLazyTreeStep5 = {
   tags: ['!test'],
 }
 
+export const HighContrastRowDraggingLazyTreeStep6 = {
+  ...twinStep(rowsDraggingStories, rowsDraggingStories.RowDraggingLazyTree, 6),
+  name: 'Rows/Dragging — Lazy tree (server), шаг 6',
+  tags: ['!test'],
+}
+
 export const HighContrastLocalizationFromJsonStep1 = {
   ...twinStep(
     customizationLocalizationStories,
@@ -3664,6 +3808,16 @@ export const HighContrastLocalizationSwitchStep2 = {
   tags: ['!test'],
 }
 
+export const HighContrastLocalizationSwitchStep3 = {
+  ...twinStep(
+    customizationLocalizationStories,
+    customizationLocalizationStories.LocalizationSwitch,
+    3,
+  ),
+  name: 'Customization/Localization — Switch language, шаг 3',
+  tags: ['!test'],
+}
+
 export const HighContrastLocalizationOverridesStep1 = {
   ...twinStep(
     customizationLocalizationStories,
@@ -3701,6 +3855,16 @@ export const HighContrastLocalizationFunctionStep2 = {
     2,
   ),
   name: 'Customization/Localization — Function label, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastLocalizationFunctionStep3 = {
+  ...twinStep(
+    customizationLocalizationStories,
+    customizationLocalizationStories.LocalizationFunction,
+    3,
+  ),
+  name: 'Customization/Localization — Function label, шаг 3',
   tags: ['!test'],
 }
 
@@ -3744,6 +3908,16 @@ export const HighContrastColumnVisibilityToggleAllStep4 = {
   tags: ['!test'],
 }
 
+export const HighContrastColumnVisibilityToggleAllStep5 = {
+  ...twinStep(
+    columnsVisibilityStories,
+    columnsVisibilityStories.ColumnVisibilityToggleAll,
+    5,
+  ),
+  name: 'Columns/Visibility — Toggle all, шаг 5',
+  tags: ['!test'],
+}
+
 export const HighContrastColumnVisibilityNestedTreeStep1 = {
   ...twinStep(
     columnsVisibilityStories,
@@ -3771,6 +3945,16 @@ export const HighContrastColumnVisibilityNestedTreeStep3 = {
     3,
   ),
   name: 'Columns/Visibility — Nested headers, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnVisibilityNestedTreeStep4 = {
+  ...twinStep(
+    columnsVisibilityStories,
+    columnsVisibilityStories.ColumnVisibilityNestedTree,
+    4,
+  ),
+  name: 'Columns/Visibility — Nested headers, шаг 4',
   tags: ['!test'],
 }
 
@@ -3970,6 +4154,12 @@ export const HighContrastLongTextMenusStep2 = {
   tags: ['!test'],
 }
 
+export const HighContrastLongTextMenusStep3 = {
+  ...twinStep(coreLongTextStories, coreLongTextStories.LongTextMenus, 3),
+  name: 'Core/Long text — Menus and panels, шаг 3',
+  tags: ['!test'],
+}
+
 export const HighContrastHeaderGroupedStep1 = {
   ...twinStep(
     columnsHeaderGroupsStories,
@@ -4150,6 +4340,16 @@ export const HighContrastHeaderMenuAsyncActionsStep5 = {
   tags: ['!test'],
 }
 
+export const HighContrastHeaderMenuAsyncActionsStep6 = {
+  ...twinStep(
+    columnsHeaderMenuStories,
+    columnsHeaderMenuStories.HeaderMenuAsyncActions,
+    6,
+  ),
+  name: 'Columns/Header menu — Async actions, шаг 6',
+  tags: ['!test'],
+}
+
 export const HighContrastHeaderMenuNarrowActiveStep1 = {
   ...twinStep(
     columnsHeaderMenuStories,
@@ -4197,6 +4397,16 @@ export const HighContrastHeaderMenuNarrowActiveStep5 = {
     5,
   ),
   name: 'Columns/Header menu — Narrow column, шаг 5',
+  tags: ['!test'],
+}
+
+export const HighContrastHeaderMenuNarrowActiveStep6 = {
+  ...twinStep(
+    columnsHeaderMenuStories,
+    columnsHeaderMenuStories.HeaderMenuNarrowActive,
+    6,
+  ),
+  name: 'Columns/Header menu — Narrow column, шаг 6',
   tags: ['!test'],
 }
 
@@ -4378,6 +4588,12 @@ export const HighContrastEditingServerStep4 = {
   tags: ['!test'],
 }
 
+export const HighContrastEditingServerStep5 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingServer, 5),
+  name: 'Cells/Editing — Server save, шаг 5',
+  tags: ['!test'],
+}
+
 export const HighContrastEditingRevertedWhileAwayStep1 = {
   ...twinStep(
     cellsEditingStories,
@@ -4405,6 +4621,16 @@ export const HighContrastEditingRevertedWhileAwayStep3 = {
     3,
   ),
   name: 'Cells/Editing — Refused while editing another cell, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingRevertedWhileAwayStep4 = {
+  ...twinStep(
+    cellsEditingStories,
+    cellsEditingStories.EditingRevertedWhileAway,
+    4,
+  ),
+  name: 'Cells/Editing — Refused while editing another cell, шаг 4',
   tags: ['!test'],
 }
 
@@ -4450,6 +4676,12 @@ export const HighContrastEditingSessionStep4 = {
   tags: ['!test'],
 }
 
+export const HighContrastEditingSessionStep5 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingSession, 5),
+  name: 'Cells/Editing — Draft survives, шаг 5',
+  tags: ['!test'],
+}
+
 export const HighContrastEditingConflictStep1 = {
   ...twinStep(cellsEditingStories, cellsEditingStories.EditingConflict, 1),
   name: 'Cells/Editing — Conflict blocks save, шаг 1',
@@ -4459,6 +4691,12 @@ export const HighContrastEditingConflictStep1 = {
 export const HighContrastEditingConflictStep2 = {
   ...twinStep(cellsEditingStories, cellsEditingStories.EditingConflict, 2),
   name: 'Cells/Editing — Conflict blocks save, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastEditingConflictStep3 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.EditingConflict, 3),
+  name: 'Cells/Editing — Conflict blocks save, шаг 3',
   tags: ['!test'],
 }
 
@@ -4499,6 +4737,16 @@ export const HighContrastCellSelectionRangeStep4 = {
     4,
   ),
   name: 'Cells/Selection — Select and copy, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastCellSelectionRangeStep5 = {
+  ...twinStep(
+    cellsSelectionStories,
+    cellsSelectionStories.CellSelectionRange,
+    5,
+  ),
+  name: 'Cells/Selection — Select and copy, шаг 5',
   tags: ['!test'],
 }
 
@@ -4559,6 +4807,16 @@ export const HighContrastContextMenuCellStep4 = {
     4,
   ),
   name: 'Cells/Context menu — Menu on a cell, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastContextMenuCellStep5 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuCell,
+    5,
+  ),
+  name: 'Cells/Context menu — Menu on a cell, шаг 5',
   tags: ['!test'],
 }
 
@@ -4930,6 +5188,16 @@ export const HighContrastContextMenuAsyncItemsStep4 = {
   tags: ['!test'],
 }
 
+export const HighContrastContextMenuAsyncItemsStep5 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuAsyncItems,
+    5,
+  ),
+  name: 'Cells/Context menu — Async items, шаг 5',
+  tags: ['!test'],
+}
+
 export const HighContrastContextMenuRefusedOnSelectionStep1 = {
   ...twinStep(
     cellsContextMenuStories,
@@ -4960,6 +5228,16 @@ export const HighContrastContextMenuRefusedOnSelectionStep3 = {
   tags: ['!test'],
 }
 
+export const HighContrastContextMenuRefusedOnSelectionStep4 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuRefusedOnSelection,
+    4,
+  ),
+  name: 'Cells/Context menu — Refused on a selection, шаг 4',
+  tags: ['!test'],
+}
+
 export const HighContrastContextMenuDangerActionStep1 = {
   ...twinStep(
     cellsContextMenuStories,
@@ -4977,6 +5255,16 @@ export const HighContrastContextMenuDangerActionStep2 = {
     2,
   ),
   name: 'Cells/Context menu — Own dangerous action, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastContextMenuDangerActionStep3 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuDangerAction,
+    3,
+  ),
+  name: 'Cells/Context menu — Own dangerous action, шаг 3',
   tags: ['!test'],
 }
 
@@ -5041,6 +5329,16 @@ export const HighContrastContextMenuCancelFromMenuStep4 = {
     4,
   ),
   name: 'Cells/Context menu — Cancel from the menu, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastContextMenuCancelFromMenuStep5 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuCancelFromMenu,
+    5,
+  ),
+  name: 'Cells/Context menu — Cancel from the menu, шаг 5',
   tags: ['!test'],
 }
 
@@ -5348,6 +5646,16 @@ export const HighContrastServerCopyCancelStep4 = {
   tags: ['!test'],
 }
 
+export const HighContrastServerCopyCancelStep5 = {
+  ...twinStep(
+    serverCellSelectionStories,
+    serverCellSelectionStories.ServerCopyCancel,
+    5,
+  ),
+  name: 'Data loading/Server row model/Cell selection — Cancel copying, шаг 5',
+  tags: ['!test'],
+}
+
 export const HighContrastFilteringServerApplyStep1 = {
   ...twinStep(filteringStories, filteringStories.FilteringServerApply, 1),
   name: 'Filtering — Apply a server filter, шаг 1',
@@ -5432,6 +5740,16 @@ export const HighContrastContextMenuWholeTableCancelStep3 = {
   tags: ['!test'],
 }
 
+export const HighContrastContextMenuWholeTableCancelStep4 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuWholeTableCancel,
+    4,
+  ),
+  name: 'Cells/Context menu — Whole table — Cancel, шаг 4',
+  tags: ['!test'],
+}
+
 export const HighContrastContextMenuWholeTableStep1 = {
   ...twinStep(
     cellsContextMenuStories,
@@ -5469,6 +5787,16 @@ export const HighContrastContextMenuWholeTableStep4 = {
     4,
   ),
   name: 'Cells/Context menu — Whole table, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastContextMenuWholeTableStep5 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuWholeTable,
+    5,
+  ),
+  name: 'Cells/Context menu — Whole table, шаг 5',
   tags: ['!test'],
 }
 
@@ -7023,6 +7351,16 @@ export const HighContrastUnsavedChangesDangerActionsStep3 = {
   tags: ['!test'],
 }
 
+export const HighContrastUnsavedChangesDangerActionsStep4 = {
+  ...twinStep(
+    panelsUnsavedChangesStories,
+    panelsUnsavedChangesStories.UnsavedChangesDangerActions,
+    4,
+  ),
+  name: 'Panels/Unsaved changes — Discard from the panel, шаг 4',
+  tags: ['!test'],
+}
+
 export const HighContrastManualSaveCellsStep1 = {
   ...twinStep(cellsEditingStories, cellsEditingStories.ManualSaveCells, 1),
   name: 'Cells/Editing — Save by button, шаг 1',
@@ -7095,6 +7433,12 @@ export const HighContrastCellDraftRollbackStep3 = {
   tags: ['!test'],
 }
 
+export const HighContrastCellDraftRollbackStep4 = {
+  ...twinStep(cellsEditingStories, cellsEditingStories.CellDraftRollback, 4),
+  name: 'Cells/Editing — Roll back an edit, шаг 4',
+  tags: ['!test'],
+}
+
 export const HighContrastRowEditingPlayground = {
   ...twin(rowsEditingMeta, rowsEditingStories.RowEditingPlayground),
   name: 'Rows/Editing — Playground',
@@ -7110,6 +7454,12 @@ export const HighContrastRowDraftSaveInPlaceStep1 = {
 export const HighContrastRowDraftSaveInPlaceStep2 = {
   ...twinStep(rowsEditingStories, rowsEditingStories.RowDraftSaveInPlace, 2),
   name: 'Rows/Editing — Save a row in place, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastRowDraftSaveInPlaceStep3 = {
+  ...twinStep(rowsEditingStories, rowsEditingStories.RowDraftSaveInPlace, 3),
+  name: 'Rows/Editing — Save a row in place, шаг 3',
   tags: ['!test'],
 }
 
@@ -7293,6 +7643,16 @@ export const HighContrastCellSelectionFollowsSortStep2 = {
   tags: ['!test'],
 }
 
+export const HighContrastCellSelectionFollowsSortStep3 = {
+  ...twinStep(
+    cellsSelectionStories,
+    cellsSelectionStories.CellSelectionFollowsSort,
+    3,
+  ),
+  name: 'Cells/Selection — Follows sorting, шаг 3',
+  tags: ['!test'],
+}
+
 export const HighContrastCellSelectionHandleStep1 = {
   ...twinStep(
     cellsSelectionStories,
@@ -7320,6 +7680,16 @@ export const HighContrastCellSelectionHandleStep3 = {
     3,
   ),
   name: 'Cells/Selection — Range handle, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastCellSelectionHandleStep4 = {
+  ...twinStep(
+    cellsSelectionStories,
+    cellsSelectionStories.CellSelectionHandle,
+    4,
+  ),
+  name: 'Cells/Selection — Range handle, шаг 4',
   tags: ['!test'],
 }
 
@@ -7363,6 +7733,16 @@ export const HighContrastCellSelectionTouchStep4 = {
   tags: ['!test'],
 }
 
+export const HighContrastCellSelectionTouchStep5 = {
+  ...twinStep(
+    cellsSelectionStories,
+    cellsSelectionStories.CellSelectionTouch,
+    5,
+  ),
+  name: 'Cells/Selection — Select by touch, шаг 5',
+  tags: ['!test'],
+}
+
 export const HighContrastFailureLogLanguageSwitchStep1 = {
   ...twinStep(
     panelsFailureLogStories,
@@ -7380,6 +7760,16 @@ export const HighContrastFailureLogLanguageSwitchStep2 = {
     2,
   ),
   name: 'Panels/Failure log — Switch language, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastFailureLogLanguageSwitchStep3 = {
+  ...twinStep(
+    panelsFailureLogStories,
+    panelsFailureLogStories.FailureLogLanguageSwitch,
+    3,
+  ),
+  name: 'Panels/Failure log — Switch language, шаг 3',
   tags: ['!test'],
 }
 
@@ -7715,6 +8105,12 @@ export const HighContrastServerRowOutdentStep3 = {
   tags: ['!test'],
 }
 
+export const HighContrastServerRowOutdentStep4 = {
+  ...twinStep(serverDraggingStories, serverDraggingStories.ServerRowOutdent, 4),
+  name: 'Data loading/Server row model/Dragging — Outdent a row, шаг 4',
+  tags: ['!test'],
+}
+
 export const HighContrastServerRowIndentRefusedStep1 = {
   ...twinStep(
     serverDraggingStories,
@@ -7775,6 +8171,16 @@ export const HighContrastServerRowNextGroupStep3 = {
   tags: ['!test'],
 }
 
+export const HighContrastServerRowNextGroupStep4 = {
+  ...twinStep(
+    serverDraggingStories,
+    serverDraggingStories.ServerRowNextGroup,
+    4,
+  ),
+  name: 'Data loading/Server row model/Dragging — Move to the next group, шаг 4',
+  tags: ['!test'],
+}
+
 export const HighContrastExportServerRowsViewStep1 = {
   ...twinStep(serverExportStories, serverExportStories.ExportServerRowsView, 1),
   name: 'Data loading/Server row model/Export — Export the result, шаг 1',
@@ -7830,6 +8236,16 @@ export const HighContrastExportServerRowsRefusedStep2 = {
     2,
   ),
   name: 'Data loading/Server row model/Export — Refused by the server, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastExportServerRowsRefusedStep3 = {
+  ...twinStep(
+    serverExportStories,
+    serverExportStories.ExportServerRowsRefused,
+    3,
+  ),
+  name: 'Data loading/Server row model/Export — Refused by the server, шаг 3',
   tags: ['!test'],
 }
 
@@ -9290,6 +9706,16 @@ export const HighContrastServerPasteLoadsRowsStep4 = {
     4,
   ),
   name: 'Data loading/Server row model/Cell selection — Paste loads the rows, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastServerPasteLoadsRowsStep5 = {
+  ...twinStep(
+    serverCellSelectionStories,
+    serverCellSelectionStories.ServerPasteLoadsRows,
+    5,
+  ),
+  name: 'Data loading/Server row model/Cell selection — Paste loads the rows, шаг 5',
   tags: ['!test'],
 }
 

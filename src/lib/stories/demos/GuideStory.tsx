@@ -37,6 +37,7 @@ import {
   type FocusGuard,
   keepsFocus,
   OWN_CHROME,
+  GUIDE_FRESH,
   STEP_ACTION_DONE,
 } from './guideFocus'
 import { StoryConsole } from './StoryConsole'
@@ -216,6 +217,11 @@ const isBareGridClick = (event: Event, target: Element) =>
 const HOVERING = new Set(['pointerover', 'mouseover'])
 /** Признаки недорисованного грида (ADR 0203, §6). */
 const GRID_PENDING = '[data-tsr-grid-pending], [data-portions-pending]'
+/**
+ * Сколько действие шага ждёт первую строку открытого заново грида, мс: у таблицы без строк
+ * (заглушка, загрузка) ждать нечего.
+ */
+const ROWS_WAIT_MS = 2000
 const UNHOVERING = new Set(['pointerout', 'mouseout'])
 /**
  * После показанного нажатия: события того же жеста на той же цели доходят сразу, а повтор
@@ -423,11 +429,17 @@ export const GuideStory = ({
   title,
   steps,
   args,
+  reset,
   showActions: showActionsProp,
 }: {
   title: string
   steps: readonly GuideStoryStep[]
   args: StoryProps
+  /**
+   * Сброс обвязки истории вне таблицы (мок-сервер, флажки) перед каждым открытием грида
+   * (SN72): шаг, к которому перешли, находит её такой же, как при первом открытии.
+   */
+  reset?: () => void
   /** Показ действий шага (SN46–SN52); по умолчанию — только в живом Storybook. */
   showActions?: boolean
 }) => {
@@ -547,6 +559,14 @@ export const GuideStory = ({
         guideRoot.removeEventListener(type, shield, { capture: true })
       area.removeEventListener('scroll', scrolled, true)
     }
+  }, [markChangedRef])
+  // Пометка прохода со свежей таблицей (SN73) — как от ввода человека.
+  useEffect(() => {
+    const node = root.current
+    if (!node) return
+    const mark = () => markChangedRef.current()
+    node.addEventListener(GUIDE_FRESH, mark)
+    return () => node.removeEventListener(GUIDE_FRESH, mark)
   }, [markChangedRef])
   // События действия шага (SN45–SN52): ждут, пока таблица докрутится до ячейки-цели, а
   // цель нажатия покажет наведение и нажатие, затем доходят в прежнем порядке; ввод в поле
@@ -998,6 +1018,27 @@ export const GuideStory = ({
   useIsomorphicLayoutEffect(() => {
     mountRef.current = mount
   }, [mount])
+  // Грид открывается после сброса обвязки (SN72): его эффекты уже видят сброшенный мок.
+  const [opened, setOpened] = useState<string>()
+  const resetFor = useRef<string>(undefined)
+  const resetRef = useLatest(reset)
+  useIsomorphicLayoutEffect(() => {
+    // Повтор эффекта StrictMode обвязку второй раз не сбрасывает.
+    if (resetFor.current !== mount) {
+      resetFor.current = mount
+      resetRef.current?.()
+    }
+    setOpened(mount)
+  }, [mount, resetRef])
+  const ready = opened === mount
+  // Шаг 1 — исходное состояние: гайд не трогает таблицу, пока его не начали (SN71).
+  const firstActs = steps[0]?.enter !== undefined
+  useEffect(() => {
+    if (firstActs)
+      console.error(
+        `Гайд «${title}»: у шага 1 есть действие — шаг 1 только показывает исходное состояние (ADR 0117, SN71).`,
+      )
+  }, [firstActs, title])
   // Что поменяло приложение посреди шага — в консоль, как действие истории.
   useEffect(() => {
     if (appProps)
@@ -1030,17 +1071,22 @@ export const GuideStory = ({
   }, [guide.step, guide.run, shown.rewinds])
   const enter = steps[guide.step]?.enter
   useEffect(() => {
+    if (!ready) return
     showControl.current?.resume()
     leaveStep.current = undefined
     let stop: (() => void) | undefined
     let cancelled = false
     let timer: ReturnType<typeof setTimeout> | undefined
+    const startedAt = performance.now()
     const start = () => {
       const node = root.current
       if (cancelled || !node) return
-      // Грид ещё за рамкой первого рендера или режет окно (ADR 0203, §6): действие шага ждёт,
-      // таймером — в фоновой вкладке кадры стоят.
-      if (node.querySelector(GRID_PENDING)) {
+      // Грид ещё за рамкой первого рендера или режет окно (ADR 0203, §6), а открытый заново
+      // ещё без строк (SN73): действие шага ждёт, таймером — в фоновой вкладке кадры стоят.
+      const rowless =
+        !node.querySelector('.data-grid__body-row') &&
+        performance.now() - startedAt < ROWS_WAIT_MS
+      if (node.querySelector(GRID_PENDING) || rowless) {
         timer = setTimeout(start, 16)
         return
       }
@@ -1062,7 +1108,7 @@ export const GuideStory = ({
       if (stop && leaveStep.current === stop) leaveStep.current = undefined
       stop?.()
     }
-  }, [enter, app, guide.step, guide.run, shown.rewinds])
+  }, [enter, app, guide.step, guide.run, shown.rewinds, ready])
   return (
     <div
       ref={root}
@@ -1095,14 +1141,16 @@ export const GuideStory = ({
           wheelAt.current = performance.now()
         }}
       >
-        <StoryComponent
-          key={mount}
-          {...args}
-          {...props}
-          {...live}
-          extraPlugins={plugins}
-          consoleLog={consoleLog}
-        />
+        {ready && (
+          <StoryComponent
+            key={mount}
+            {...args}
+            {...props}
+            {...live}
+            extraPlugins={plugins}
+            consoleLog={consoleLog}
+          />
+        )}
       </div>
       <StoryConsole log={consoleLog} />
     </div>

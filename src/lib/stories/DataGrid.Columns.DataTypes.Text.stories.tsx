@@ -302,18 +302,20 @@ export const EditingText: StoryObj<StoryProps> = {
     const original = productRows(1)[0]!.name
     await step(TEXT_EDIT[0]!.title, async () => {
       await waitForRows(canvas)
-      expect(productText(canvas, 'name')).toBe(original)
+      await until(() => expect(productText(canvas, 'name')).toBe(original))
     })
     await step(TEXT_EDIT[1]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(productInput(canvas, 'name')).not.toBeNull())
-      expect(productInput(canvas, 'name')!.value).toBe(original)
+      await until(() =>
+        expect(productInput(canvas, 'name')!.value).toBe(original),
+      )
     })
     await step(TEXT_EDIT[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(productInput(canvas, 'name')).toBeNull())
-      expect(productText(canvas, 'name')).toBe(NEW_NAME)
-      expect(consoleText()).toContain(`value:"${NEW_NAME}"`)
+      await until(() => expect(productText(canvas, 'name')).toBe(NEW_NAME))
+      await until(() => expect(consoleText()).toContain(`value:"${NEW_NAME}"`))
       await settle()
     })
   },

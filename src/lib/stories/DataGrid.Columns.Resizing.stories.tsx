@@ -88,15 +88,24 @@ interface SizingApi {
 
 let sizingApi: SizingApi | null = null
 
-/** Отдаёт таблицу шагам истории — ширину меняют, как протяжкой ручки. */
-const columnSizingHost = definePlugin<{ enabled?: boolean }>()({
+/**
+ * Отдаёт таблицу шагам истории — ширину меняют, как протяжкой ручки; `initial` — ширины
+ * колонок при открытии таблицы.
+ */
+const columnSizingHost = definePlugin<{
+  enabled?: boolean
+  initial?: Record<string, number>
+}>()({
   id: 'resizingColumnSizingHost',
-  setup: () => table => {
-    sizingApi = table as unknown as SizingApi
-    return () => {
-      sizingApi = null
-    }
-  },
+  setup:
+    ({ initial }) =>
+    table => {
+      sizingApi = table as unknown as SizingApi
+      if (initial) sizingApi.setColumnSizing(initial)
+      return () => {
+        sizingApi = null
+      }
+    },
 })
 
 /** Ширина колонок шага: таблица отдаёт её, когда готова. */
@@ -141,7 +150,6 @@ const RESIZE: readonly GuideStoryStep[] = [
   {
     title: 'Колонки в таблице',
     hint: 'Таблица отображает колонки с ручкой изменения ширины на границе заголовков. Ручка появляется при наведении на заголовок.',
-    enter: withWidths({ [RESIZED]: START }),
   },
   {
     title: 'Пользователь тянет ручку',
@@ -181,7 +189,7 @@ export const ResizingColumns: StoryObj<StoryProps> = {
           enableColumnPinning: true,
           enableHeaderActionMenu: true,
           headerActionMenuThreshold: 10,
-          extraPlugins: [columnSizingHost()],
+          extraPlugins: [columnSizingHost({ initial: { [RESIZED]: START } })],
           columnCount: 4,
           dataCount: 20,
           height: '360',
@@ -285,11 +293,6 @@ const maxOf = (root: ParentNode, id: string) =>
   Number(separatorOf(root, id)?.getAttribute('aria-valuemax'))
 
 /** Ширины по умолчанию, таблица у начала. */
-const resetEdge = afterRows(root => {
-  sizingApi?.setColumnSizing({})
-  scrollerOf(root).scrollLeft = 0
-})
-
 /** Тянуть ручку к правому краю и держать, пока колонка не дорастёт до наибольшей ширины. */
 const holdAtEdge = async (root: HTMLElement, step: StepRun) => {
   await pollUntil(() => !!sizingApi, step.signal)
@@ -312,7 +315,6 @@ const PAST_EDGE: readonly GuideStoryStep[] = [
   {
     title: 'Колонки за краем',
     hint: 'Таблица шире видимой области: часть колонок справа скрыта, к ним прокручивают по горизонтали.',
-    enter: resetEdge,
   },
   {
     title: 'Пользователь тянет ручку к краю',
@@ -539,7 +541,6 @@ const AUTOSIZE: readonly GuideStoryStep[] = [
   {
     title: 'Колонки обрезают текст',
     hint: 'Имя и компания не помещаются в узкие колонки и обрезаны многоточием, а колонка города шире своего текста.',
-    enter: withWidths(NARROW_WIDTHS),
   },
   {
     title: 'Пользователь дважды щёлкнул по ручке',
@@ -577,7 +578,7 @@ export const AutosizeColumns: StoryObj<StoryProps> = {
         {
           enableColumnSizing: true,
           enableHeaderActionMenu: true,
-          extraPlugins: [columnSizingHost()],
+          extraPlugins: [columnSizingHost({ initial: NARROW_WIDTHS })],
           columnsOverride: FIT_COLUMNS as never,
           dataOverride: FIT_ROWS,
           height: '360',

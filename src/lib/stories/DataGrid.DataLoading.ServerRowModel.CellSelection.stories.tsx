@@ -3,6 +3,7 @@ import { expect, spyOn } from 'storybook/test'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import {
+  waitForRows,
   consoleText,
   guideNext,
   pollUntil,
@@ -189,16 +190,39 @@ const clipboardWrites = () => {
   return written
 }
 
+/** Диапазон 3×3 растёт на три экрана вниз через строки, которые ещё в пути. */
+const growRange = async (root: HTMLElement, signal: AbortSignal) => {
+  if (selectedPending(root) > 0) return
+  if (layerOf(root).top() > 0) layerOf(root).scrollTo({ top: 0 })
+  await pollUntil(() => !!cellAt(root, 2, 'age'), signal)
+  await nextFrame()
+  if (selectedCellCount(root) !== 9) {
+    dragCells(cellAt(root, 0, 'name')!, cellAt(root, 2, 'age')!)
+  }
+  server.hold = true
+  cellAt(root, 0, 'name')!.focus({ preventScroll: true })
+  for (let page = 0; page < RANGE_PAGES; page++) {
+    press(document.activeElement as HTMLElement, 'PageDown', {
+      shiftKey: true,
+    })
+  }
+  await pollUntil(() => selectedPending(root) > 0, signal)
+}
+
 const RANGE_SELECTION: readonly GuideStoryStep[] = [
   {
-    title: 'Ячейка выделена',
-    hint: 'Пользователь щёлкнул ячейку в начале списка. Она выделена и стала активной.',
+    title: 'Строки с сервера',
+    hint: 'Строки приходят с сервера блоками. Пользователь ещё ничего не выделял.',
     props: serverProps({
       total: RANGE_TOTAL,
       knownTotal: true,
       blockSize: RANGE_BLOCK,
       selection: true,
     }),
+  },
+  {
+    title: 'Ячейка выделена',
+    hint: 'Пользователь щёлкнул ячейку в начале списка. Она выделена и стала активной.',
     enter: stepAction(async (root, { signal }) => {
       server.hold = false
       release()
@@ -224,29 +248,15 @@ const RANGE_SELECTION: readonly GuideStoryStep[] = [
     keyboard: true,
     hint: 'Пользователь трижды нажал Shift+PageDown. Диапазон вырос на три экрана, и таблица прокрутилась к его краю. Строки, которые теперь на экране, ещё в пути с сервера: их скелеты внутри диапазона залиты так же.',
     states: ['body.skeleton', 'body.cellRange'],
-    enter: stepAction(async (root, { signal }) => {
-      if (selectedPending(root) > 0) return
-      if (layerOf(root).top() > 0) layerOf(root).scrollTo({ top: 0 })
-      await pollUntil(() => !!cellAt(root, 2, 'age'), signal)
-      await nextFrame()
-      if (selectedCellCount(root) !== 9) {
-        dragCells(cellAt(root, 0, 'name')!, cellAt(root, 2, 'age')!)
-      }
-      server.hold = true
-      cellAt(root, 0, 'name')!.focus({ preventScroll: true })
-      for (let page = 0; page < RANGE_PAGES; page++) {
-        press(document.activeElement as HTMLElement, 'PageDown', {
-          shiftKey: true,
-        })
-      }
-      await pollUntil(() => selectedPending(root) > 0, signal)
-    }),
+    enter: stepAction((root, { signal }) => growRange(root, signal)),
   },
   {
     title: 'Строки пришли',
     hint: 'Сервер ответил: строки встали на место скелетов, диапазон остался прежним.',
     states: ['body.cellRange'],
     enter: stepAction(async (root, { signal }) => {
+      // Со свежей таблицы диапазона ещё нет: сперва он, как на прошлом шаге.
+      if (selectedCellCount(root) <= 9) await growRange(root, signal)
       server.hold = false
       release()
       await pollUntil(
@@ -265,35 +275,47 @@ export const ServerRangeSelection: StoryObj<StoryProps> = {
     <GuideStory
       title="Диапазон через незагруженные строки"
       steps={RANGE_SELECTION}
+      reset={() => {
+        server.hold = false
+        release()
+      }}
       args={guideArgs(layout, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(RANGE_SELECTION[0]!.title, async () => {
-      await stepDone(canvas)
-      await expect(isSelected(cellAt(canvas, 0, 'name'))).toBe(true)
+      await waitForRows(canvas)
     })
     await step(RANGE_SELECTION[1]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(selectedCellCount(canvas)).toBe(9)
-      // Начальная ячейка — активная, без заливки.
-      await expect(
-        cellAt(canvas, 0, 'name')!.getAttribute('data-cell-focused'),
-      ).toBe('true')
+      await until(() =>
+        expect(isSelected(cellAt(canvas, 0, 'name'))).toBe(true),
+      )
     })
     await step(RANGE_SELECTION[2]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(skeletonRows(canvas)).toBeGreaterThan(0)
-      await expect(selectedPending(canvas)).toBeGreaterThan(0)
+      await until(() => expect(selectedCellCount(canvas)).toBe(9))
+      // Начальная ячейка — активная, без заливки.
+      await until(() =>
+        expect(
+          cellAt(canvas, 0, 'name')!.getAttribute('data-cell-focused'),
+        ).toBe('true'),
+      )
     })
     await step(RANGE_SELECTION[3]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(skeletonRows(canvas)).toBe(0)
-      await expect(selectedCellCount(canvas)).toBeGreaterThan(9)
+      await until(() => expect(skeletonRows(canvas)).toBeGreaterThan(0))
+      await until(() => expect(selectedPending(canvas)).toBeGreaterThan(0))
+    })
+    await step(RANGE_SELECTION[4]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await until(() => expect(skeletonRows(canvas)).toBe(0))
+      await until(() => expect(selectedCellCount(canvas)).toBeGreaterThan(9))
       await settle()
     })
   },
@@ -309,15 +331,19 @@ const copyHeld = async (root: HTMLElement, signal: AbortSignal) => {
 
 const COPY_LOADS: readonly GuideStoryStep[] = [
   {
-    title: 'Выделена вся таблица',
-    hint: 'Пользователь щёлкнул первую ячейку, прокрутил таблицу в конец и щёлкнул последнюю ячейку с зажатым Shift. Выделено всё, а загружены только строки начала и конца списка.',
-    states: ['body.cellRange'],
+    title: 'Строки с сервера',
+    hint: 'Строки приходят с сервера блоками, загружены только строки у начала. Пользователь ещё ничего не выделял.',
     props: serverProps({
       total: SMALL_TOTAL,
       knownTotal: true,
       blockSize: SELECTION_BLOCK,
       selection: true,
     }),
+  },
+  {
+    title: 'Выделена вся таблица',
+    hint: 'Пользователь щёлкнул первую ячейку, прокрутил таблицу в конец и щёлкнул последнюю ячейку с зажатым Shift. Выделено всё, а загружены только строки начала и конца списка.',
+    states: ['body.cellRange'],
     enter: stepAction(async (root, { signal }) => {
       server.hold = false
       release()
@@ -354,6 +380,10 @@ export const ServerCopyLoadsRows: StoryObj<StoryProps> = {
     <GuideStory
       title="Копирование с догрузкой"
       steps={COPY_LOADS}
+      reset={() => {
+        server.hold = false
+        release()
+      }}
       args={guideArgs(layout, args)}
     />
   ),
@@ -361,6 +391,10 @@ export const ServerCopyLoadsRows: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     const written = clipboardWrites()
     await step(COPY_LOADS[0]!.title, async () => {
+      await waitForRows(canvas)
+    })
+    await step(COPY_LOADS[1]!.title, async () => {
+      await guideNext(canvas)
       await stepDone(canvas)
       await expect(isSelected(cellAt(canvas, SMALL_TOTAL - 1, 'visits'))).toBe(
         true,
@@ -370,14 +404,14 @@ export const ServerCopyLoadsRows: StoryObj<StoryProps> = {
         server.starts.filter(start => start > 0 && start < SMALL_TOTAL - 100),
       ).toEqual([])
     })
-    await step(COPY_LOADS[1]!.title, async () => {
+    await step(COPY_LOADS[2]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(server.held.length).toBeGreaterThan(0)
       await expect(consoleText()).toContain('copy')
       await expect(written).toEqual([])
     })
-    await step(COPY_LOADS[2]!.title, async () => {
+    await step(COPY_LOADS[3]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(written).toHaveLength(1))
@@ -396,15 +430,19 @@ const selectAllCells = (root: HTMLElement, signal: AbortSignal) =>
 
 const COPY_OVER_LIMIT: readonly GuideStoryStep[] = [
   {
-    title: 'Выделена вся таблица',
-    hint: 'Пользователь щёлкнул первую ячейку, прокрутил таблицу в конец и щёлкнул последнюю ячейку с зажатым Shift. Выделены все пятьдесят тысяч строк.',
-    states: ['body.cellRange'],
+    title: 'Строки с сервера',
+    hint: 'В выборке пятьдесят тысяч строк, они приходят с сервера блоками. Пользователь ещё ничего не выделял.',
     props: serverProps({
       total: LIMIT_TOTAL,
       knownTotal: true,
       blockSize: SELECTION_BLOCK,
       selection: true,
     }),
+  },
+  {
+    title: 'Выделена вся таблица',
+    hint: 'Пользователь щёлкнул первую ячейку, прокрутил таблицу в конец и щёлкнул последнюю ячейку с зажатым Shift. Выделены все пятьдесят тысяч строк.',
+    states: ['body.cellRange'],
     enter: stepAction(async (root, { signal }) => {
       await selectAllCells(root, signal)
     }),
@@ -437,12 +475,16 @@ export const ServerCopyOverLimit: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     const labels = storyLabels(args.locale)
     await step(COPY_OVER_LIMIT[0]!.title, async () => {
+      await waitForRows(canvas)
+    })
+    await step(COPY_OVER_LIMIT[1]!.title, async () => {
+      await guideNext(canvas)
       await stepDone(canvas)
       await expect(isSelected(cellAt(canvas, LIMIT_TOTAL - 1, 'visits'))).toBe(
         true,
       )
     })
-    await step(COPY_OVER_LIMIT[1]!.title, async () => {
+    await step(COPY_OVER_LIMIT[2]!.title, async () => {
       const asked = server.starts.length
       await guideNext(canvas)
       await stepDone(canvas)
@@ -467,9 +509,8 @@ const copyRefused = async (root: HTMLElement, signal: AbortSignal) => {
 
 const COPY_REFUSED: readonly GuideStoryStep[] = [
   {
-    title: 'Выделена вся таблица',
-    hint: 'Пользователь щёлкнул первую ячейку, прокрутил таблицу в конец и щёлкнул последнюю ячейку с зажатым Shift. Выделено всё, а загружены только строки начала и конца списка.',
-    states: ['body.cellRange'],
+    title: 'Строки с сервера',
+    hint: 'Строки приходят с сервера блоками, загружены только строки у начала. Пользователь ещё ничего не выделял.',
     props: serverProps({
       total: SMALL_TOTAL,
       knownTotal: true,
@@ -477,6 +518,11 @@ const COPY_REFUSED: readonly GuideStoryStep[] = [
       failBlock: REFUSED_BLOCK,
       selection: true,
     }),
+  },
+  {
+    title: 'Выделена вся таблица',
+    hint: 'Пользователь щёлкнул первую ячейку, прокрутил таблицу в конец и щёлкнул последнюю ячейку с зажатым Shift. Выделено всё, а загружены только строки начала и конца списка.',
+    states: ['body.cellRange'],
     enter: stepAction(async (root, { signal }) => {
       server.failed.clear()
       await selectToEnd(root, signal)
@@ -519,6 +565,7 @@ export const ServerCopyRefused: StoryObj<StoryProps> = {
     <GuideStory
       title="Отказ сервера при копировании"
       steps={COPY_REFUSED}
+      reset={() => server.failed.clear()}
       args={guideArgs(layout, args)}
     />
   ),
@@ -527,12 +574,16 @@ export const ServerCopyRefused: StoryObj<StoryProps> = {
     const labels = storyLabels(args.locale)
     const written = clipboardWrites()
     await step(COPY_REFUSED[0]!.title, async () => {
+      await waitForRows(canvas)
+    })
+    await step(COPY_REFUSED[1]!.title, async () => {
+      await guideNext(canvas)
       await stepDone(canvas)
       await expect(isSelected(cellAt(canvas, SMALL_TOTAL - 1, 'visits'))).toBe(
         true,
       )
     })
-    await step(COPY_REFUSED[1]!.title, async () => {
+    await step(COPY_REFUSED[2]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       const text = banner(canvas)!.textContent
@@ -540,7 +591,7 @@ export const ServerCopyRefused: StoryObj<StoryProps> = {
       await expect(text).toContain(SERVER_FAILURE)
       await expect(written).toEqual([])
     })
-    await step(COPY_REFUSED[2]!.title, async () => {
+    await step(COPY_REFUSED[3]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(banner(canvas)).toBeNull()
@@ -565,15 +616,19 @@ const copyHinted = async (root: HTMLElement, signal: AbortSignal) => {
 
 const CANCEL_COPY: readonly GuideStoryStep[] = [
   {
-    title: 'Выделение шире загруженного',
-    hint: 'Пользователь выделил строки, которых ещё нет в браузере.',
-    states: ['body.cellRange'],
+    title: 'Строки с сервера',
+    hint: 'Строки приходят с сервера блоками, загружены только строки у начала. Пользователь ещё ничего не выделял.',
     props: serverProps({
       total: SMALL_TOTAL,
       knownTotal: true,
       blockSize: SELECTION_BLOCK,
       selection: true,
     }),
+  },
+  {
+    title: 'Выделение шире загруженного',
+    hint: 'Пользователь выделил строки, которых ещё нет в браузере.',
+    states: ['body.cellRange'],
     enter: stepAction(async (root, { signal }) => {
       server.hold = false
       release()
@@ -619,6 +674,10 @@ export const ServerCopyCancel: StoryObj<StoryProps> = {
     <GuideStory
       title="Отмена копирования"
       steps={CANCEL_COPY}
+      reset={() => {
+        server.hold = false
+        release()
+      }}
       args={guideArgs(layout, args)}
     />
   ),
@@ -627,24 +686,28 @@ export const ServerCopyCancel: StoryObj<StoryProps> = {
     const labels = storyLabels(args.locale)
     const written = clipboardWrites()
     await step(CANCEL_COPY[0]!.title, async () => {
+      await waitForRows(canvas)
+    })
+    await step(CANCEL_COPY[1]!.title, async () => {
+      await guideNext(canvas)
       await stepDone(canvas)
       await expect(isSelected(cellAt(canvas, SMALL_TOTAL - 1, 'visits'))).toBe(
         true,
       )
     })
-    await step(CANCEL_COPY[1]!.title, async () => {
+    await step(CANCEL_COPY[2]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(server.held.length).toBeGreaterThan(0)
       await expect(pendingBanner(canvas)).toBeNull()
     })
-    await step(CANCEL_COPY[2]!.title, async () => {
+    await step(CANCEL_COPY[3]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(pendingBanner(canvas)).toHaveTextContent(labels.pendingCopy)
       await settle()
     })
-    await step(CANCEL_COPY[3]!.title, async () => {
+    await step(CANCEL_COPY[4]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await settle()
@@ -708,10 +771,6 @@ const READ_RANGES: readonly GuideStoryStep[] = [
         ...props,
         extraPlugins: [...(props.extraPlugins ?? []), rangeReader(context.log)],
       }
-    },
-    enter: () => {
-      server.hold = false
-      release()
     },
   },
   {
@@ -788,6 +847,10 @@ export const CellSelectionRangesAnyMode: StoryObj<StoryProps> = {
     <GuideStory
       title="Чтение выделения приложением"
       steps={READ_RANGES}
+      reset={() => {
+        server.hold = false
+        release()
+      }}
       args={guideArgs(layout, args)}
     />
   ),
@@ -859,9 +922,8 @@ const pasteHeld = async (root: HTMLElement, signal: AbortSignal) => {
 
 const PASTE_LOADS: readonly GuideStoryStep[] = [
   {
-    title: 'Ячейка выбрана',
-    hint: 'Строки приходят с сервера блоками по десять. Приложение разрешило править возраст и число визитов. Пользователь щёлкнул ячейку возраста в первой строке.',
-    states: ['body.cellRange'],
+    title: 'Строки с сервера',
+    hint: 'Строки приходят с сервера блоками по десять. Приложение разрешило править возраст и число визитов.',
     props: context => {
       const props = serverProps({
         total: PASTE_TOTAL,
@@ -886,6 +948,11 @@ const PASTE_LOADS: readonly GuideStoryStep[] = [
           })),
       }
     },
+  },
+  {
+    title: 'Ячейка выбрана',
+    hint: 'Пользователь щёлкнул ячейку возраста в первой строке.',
+    states: ['body.cellRange'],
     enter: stepAction(async (root, { signal }) => {
       savedCells.clear()
       server.hold = false
@@ -956,16 +1023,25 @@ export const ServerPasteLoadsRows: StoryObj<StoryProps> = {
     <GuideStory
       title="Вставка с догрузкой"
       steps={PASTE_LOADS}
+      reset={() => {
+        savedCells.clear()
+        server.hold = false
+        release()
+      }}
       args={guideArgs(layout, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step, args }) => {
     if (globals.catalog !== true) return
     await step(PASTE_LOADS[0]!.title, async () => {
+      await waitForRows(canvas)
+    })
+    await step(PASTE_LOADS[1]!.title, async () => {
+      await guideNext(canvas)
       await stepDone(canvas)
       await expect(isSelected(cellAt(canvas, 0, 'age'))).toBe(true)
     })
-    await step(PASTE_LOADS[1]!.title, async () => {
+    await step(PASTE_LOADS[2]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(pendingBanner(canvas)!.textContent).toContain(
@@ -973,13 +1049,13 @@ export const ServerPasteLoadsRows: StoryObj<StoryProps> = {
       )
       await expect(consoleText()).not.toContain('onCommitEdits')
     })
-    await step(PASTE_LOADS[2]!.title, async () => {
+    await step(PASTE_LOADS[3]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(ageText(canvas, 0)).toBe(PASTED[0])
       await expect(consoleText()).toContain('onCommitEdits')
     })
-    await step(PASTE_LOADS[3]!.title, async () => {
+    await step(PASTE_LOADS[4]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(blockEndShown(canvas)).toBe(true)

@@ -78,18 +78,6 @@ const flexHost = definePlugin<{ enabled?: boolean }>()({
   },
 })
 
-/** Ширины, протянутые пользователем, на шаге: таблица отдаёт их, когда готова. */
-const withWidths = (sizing: Record<string, number>) =>
-  afterRows((_, signal) => {
-    let tries = 0
-    const run = () => {
-      if (signal.aborted) return
-      if (sizingApi) sizingApi.setColumnSizing(sizing)
-      else if (++tries < 40) setTimeout(run, 50)
-    }
-    run()
-  })
-
 const scrollerOf = (root: ParentNode) =>
   root.querySelector<HTMLElement>('.data-grid__container')!
 
@@ -218,7 +206,6 @@ const RESIZE: readonly GuideStoryStep[] = [
   {
     title: 'Колонки растянуты',
     hint: 'Все колонки делят ширину таблицы поровну.',
-    enter: withWidths({}),
   },
   {
     title: 'Пользователь протянул колонку',
@@ -302,9 +289,6 @@ const OVERFLOW: readonly GuideStoryStep[] = [
   {
     title: 'Колонки не помещаются',
     hint: 'Колонкам нужно больше места, чем есть в таблице: каждая на своей наименьшей ширине, и таблица прокручивается по горизонтали.',
-    enter: afterRows(root => {
-      scrollerOf(root).scrollLeft = 0
-    }),
   },
   {
     title: 'Пользователь прокрутил таблицу',

@@ -5,6 +5,7 @@ import { rowExpandingLabels } from '../plugins/rowExpanding/labels'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import {
+  waitForRows,
   guideNext,
   pollUntil,
   settle,
@@ -129,9 +130,6 @@ const LAZY_CHILDREN: readonly GuideStoryStep[] = [
     title: 'Строки со вложенными записями',
     hint: 'Сервер отдаёт верхний уровень списка блоками. У строк со вложенными записями — кнопка раскрытия; самих вложенных строк таблица ещё не загружала.',
     props: treeProps,
-    enter: stepAction(async (root, { signal }) => {
-      await pollUntil(() => !!toggleOf(root, TREE_PARENT), signal)
-    }),
   },
   {
     title: 'Пользователь раскрыл строку',
@@ -173,8 +171,8 @@ export const ServerRowModelLazyChildren: StoryObj<StoryProps> = {
   play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(LAZY_CHILDREN[0]!.title, async () => {
-      await stepDone(canvas)
-      await expect(childRequests()).toEqual([])
+      await until(() => expect(hasRow(canvas, 0)).toBe(true))
+      await until(() => expect(childRequests()).toEqual([]))
     })
     await step(LAZY_CHILDREN[1]!.title, async () => {
       await guideNext(canvas)
@@ -244,9 +242,13 @@ const openBranch = async (root: HTMLElement, signal: AbortSignal) => {
 
 const STICKY_BRANCHES: readonly GuideStoryStep[] = [
   {
-    title: 'Строка раскрыта',
-    hint: 'Сервер отдал вложенные строки первой строки — они под ней с отступом уровня.',
+    title: 'Строки со вложенными записями',
+    hint: 'Сервер отдаёт верхний уровень списка блоками. У строк со вложенными записями — кнопка раскрытия.',
     props: stickyTreeProps,
+  },
+  {
+    title: 'Строка раскрыта',
+    hint: 'Пользователь раскрыл первую строку. Сервер отдал её вложенные строки — они под ней с отступом уровня.',
     enter: stepAction(async (root, { signal }) => {
       server.hold = false
       await openBranch(root, signal)
@@ -356,10 +358,14 @@ const secondBlock = async (root: HTMLElement, signal: AbortSignal) => {
 
 const TREE_LINES: readonly GuideStoryStep[] = [
   {
+    title: 'Строки со вложенными записями',
+    hint: 'Сервер отдаёт верхний уровень списка блоками. Приложение включило линии дерева; вложенных строк таблица ещё не загружала.',
+    props: linesProps,
+  },
+  {
     title: 'Ветка раскрыта',
     hint: 'Пользователь раскрыл строку, и сервер отдал первый блок её вложенных строк, не сообщив, сколько их всего. Линии ведут от строки к вложенным строкам, а у последней пришедшей линия идёт дальше вниз — к строкам-скелетам, которые ещё грузятся.',
     states: ['body.skeleton'],
-    props: linesProps,
     enter: stepAction(async (root, { signal }) => {
       linesScroller(root).scrollTop = 0
       await openLines(root, signal)
@@ -405,18 +411,22 @@ export const ServerTreeLines: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(TREE_LINES[0]!.title, async () => {
+      await waitForRows(canvas)
+    })
+    await step(TREE_LINES[1]!.title, async () => {
+      await guideNext(canvas)
       await stepDone(canvas)
       await expect(endsBranch(childRow(canvas, LINES_BLOCK - 1))).toBe(false)
       await expect(skeletonRows(canvas)).toBeGreaterThan(0)
     })
-    await step(TREE_LINES[1]!.title, async () => {
+    await step(TREE_LINES[2]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(endsBranch(childRow(canvas, LINES_BLOCK * 2 - 1))).toBe(
         false,
       )
     })
-    await step(TREE_LINES[2]!.title, async () => {
+    await step(TREE_LINES[3]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(endsBranch(childRow(canvas, LINES_CHILDREN - 1))).toBe(true)
@@ -433,17 +443,24 @@ export const ServerStickyBranches: StoryObj<StoryProps> = {
     <GuideStory
       title="Липкие ветки"
       steps={STICKY_BRANCHES}
+      reset={() => {
+        server.hold = false
+      }}
       args={guideArgs(layout, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(STICKY_BRANCHES[0]!.title, async () => {
+      await waitForRows(canvas)
+    })
+    await step(STICKY_BRANCHES[1]!.title, async () => {
+      await guideNext(canvas)
       await stepDone(canvas)
       await expect(branchOpen(canvas)).toBe(true)
       await expect(stickyIds(canvas)).toEqual([])
     })
-    await step(STICKY_BRANCHES[1]!.title, async () => {
+    await step(STICKY_BRANCHES[2]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(stickyIds(canvas)).toEqual([STICKY_PARENT])

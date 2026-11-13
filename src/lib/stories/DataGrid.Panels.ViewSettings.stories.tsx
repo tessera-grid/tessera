@@ -227,7 +227,6 @@ const COLUMNS: readonly GuideStoryStep[] = [
   {
     title: 'Все колонки видны',
     hint: 'Таблица показывает все колонки. Настройки вида ничего не меняют — числа на их кнопке нет.',
-    enter: closeViewSettings,
   },
   {
     title: 'Пользователь открыл раздел колонок',
@@ -274,7 +273,7 @@ export const ViewSettingsColumns: StoryObj<StoryProps> = {
     await step(COLUMNS[0]!.title, async () => {
       await waitForRows(canvas)
       await until(() => expect(viewSettingsButton(canvas)).not.toBeNull())
-      await expect(viewSettingsCount(canvas)).toBeNull()
+      await until(() => expect(viewSettingsCount(canvas)).toBeNull())
     })
     await step(COLUMNS[1]!.title, async () => {
       await guideNext(canvas)
@@ -284,7 +283,7 @@ export const ViewSettingsColumns: StoryObj<StoryProps> = {
     await step(COLUMNS[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(headCell(canvas, HIDDEN)).toBeNull())
-      await expect(viewSettingsCount(canvas)).toBe('1')
+      await until(() => expect(viewSettingsCount(canvas)).toBe('1'))
       await settle()
     })
   },

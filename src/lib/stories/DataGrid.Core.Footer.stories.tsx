@@ -12,6 +12,7 @@ import { dataGridMeta } from './dataGridMeta'
 import { vrStates } from './__mocks__/catalog'
 import { pressCell } from './__mocks__/cellGestures'
 import {
+  waitForRows,
   guideNext,
   pollUntil,
   settle,
@@ -330,7 +331,11 @@ const scrollAndPressCell = stepAction(async (root, { signal }) => {
 const SWITCH: readonly GuideStoryStep[] = [
   {
     title: 'Футер у нижнего края',
-    hint: 'Строка футера отображается у нижнего края таблицы. Таблица прокручена к середине, ячейка выбрана.',
+    hint: 'Строка футера отображается у нижнего края таблицы. Таблица в начале, ничего не выбрано.',
+  },
+  {
+    title: 'Пользователь выбрал ячейку в середине',
+    hint: 'Пользователь прокрутил таблицу к середине и выбрал ячейку. Строка футера по-прежнему у нижнего края таблицы.',
     enter: scrollAndPressCell,
   },
   {
@@ -368,27 +373,35 @@ export const FooterPositionSwitch: StoryObj<StoryProps> = {
     let body: Element | null = null
     let cell: HTMLElement | undefined
     await step(SWITCH[0].title, async () => {
+      await waitForRows(canvas)
+    })
+    await step(SWITCH[1].title, async () => {
+      await guideNext(canvas)
       await stepDone(canvas)
-      expect(scrollerOf(canvas).scrollTop).toBeGreaterThan(0)
+      await until(() => expect(scrollerOf(canvas).scrollTop).toBeGreaterThan(0))
       // Ячейку нажало действие шага; фокус с неё гайд снимает (ADR 0117, SN56).
       cell = firstVisibleCell(canvas)!
       await until(() => expect(cell!.dataset.knActive).toBe('true'))
       await settle()
       scrollTop = scrollerOf(canvas).scrollTop
       body = canvas.querySelector('.data-grid__body')
-      await expect(footerOf(canvas).dataset.position).toBe('pinned')
+      await until(() =>
+        expect(footerOf(canvas).dataset.position).toBe('pinned'),
+      )
     })
-    await step(SWITCH[1].title, async () => {
+    await step(SWITCH[2].title, async () => {
       await guideNext(canvas)
       // FT3: положение сменилось, а прокрутка, активная ячейка и тело — те же.
       await until(() =>
         expect(footerOf(canvas).dataset.position).toBe('inline'),
       )
-      await expect(scrollerOf(canvas).scrollTop).toBe(scrollTop)
-      await expect(canvas.querySelector('.data-grid__body')).toBe(body)
-      await expect(cell!.isConnected).toBe(true)
-      await expect(cell!.dataset.knActive).toBe('true')
-      await expect(cell!.tabIndex).toBe(0)
+      await until(() => expect(scrollerOf(canvas).scrollTop).toBe(scrollTop))
+      await until(() =>
+        expect(canvas.querySelector('.data-grid__body')).toBe(body),
+      )
+      await until(() => expect(cell!.isConnected).toBe(true))
+      await until(() => expect(cell!.dataset.knActive).toBe('true'))
+      await until(() => expect(cell!.tabIndex).toBe(0))
     })
     await settle()
   },
@@ -422,6 +435,10 @@ const pressArrowDown = (root: HTMLElement) => {
 
 const KEYBOARD: readonly GuideStoryStep[] = [
   {
+    title: 'Футер за последней строкой',
+    hint: 'Строка футера отображается следом за последней строкой. Фокус вне таблицы.',
+  },
+  {
     title: 'Фокус на последней строке',
     keyboard: true,
     hint: 'Строка футера отображается следом за последней строкой и сейчас скрыта за нижним краем таблицы.',
@@ -431,7 +448,24 @@ const KEYBOARD: readonly GuideStoryStep[] = [
     title: 'Стрелка вниз',
     keyboard: true,
     hint: 'Фокус переходит на строку футера, таблица автоматически прокручивается до конца.',
-    enter: pressArrowDown,
+    // Со свежей таблицы фокуса на последней строке нет: сперва он, затем стрелка.
+    enter: stepAction(async (root, { signal, onLeave }) => {
+      const lastActive = () =>
+        root.querySelector('.data-grid__body-row')
+          ? lastRowOf(root).contains(
+              root.querySelector('[data-kn-active="true"]'),
+            )
+          : false
+      if (!lastActive()) {
+        focusLastRow(root)
+        await pollUntil(lastActive, signal)
+      }
+      pressArrowDown(root)
+      await pollUntil(
+        () => footerOf(root).contains(document.activeElement),
+        signal,
+      )
+    }),
   },
 ]
 
@@ -459,23 +493,31 @@ export const FooterKeyboard: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(KEYBOARD[0].title, async () => {
+      await waitForRows(canvas)
+    })
+    await step(KEYBOARD[1].title, async () => {
+      await guideNext(canvas)
       await waitRows(canvas)
       await until(() =>
         expect(
           lastRowOf(canvas).querySelector('[data-kn-active="true"]'),
         ).not.toBeNull(),
       )
-      await expect(rect(footerOf(canvas)).top).toBeGreaterThanOrEqual(
-        clientBottom(canvas) - 1,
+      await until(() =>
+        expect(rect(footerOf(canvas)).top).toBeGreaterThanOrEqual(
+          clientBottom(canvas) - 1,
+        ),
       )
     })
-    await step(KEYBOARD[1].title, async () => {
+    await step(KEYBOARD[2].title, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(footerOf(canvas).contains(document.activeElement)).toBe(true),
       )
-      await expect(rect(footerOf(canvas)).bottom).toBeLessThanOrEqual(
-        clientBottom(canvas) + 1,
+      await until(() =>
+        expect(rect(footerOf(canvas)).bottom).toBeLessThanOrEqual(
+          clientBottom(canvas) + 1,
+        ),
       )
     })
     await settle()
@@ -494,6 +536,10 @@ const failingLoad = () =>
   )
 
 const FEED: readonly GuideStoryStep[] = [
+  {
+    title: 'Начало ленты',
+    hint: 'Таблица подгружает строки по мере прокрутки к концу ленты.',
+  },
   {
     title: 'Футер в бесконечной ленте',
     hint: 'Футер отображается в конце загруженной ленты.',
@@ -533,12 +579,16 @@ export const InlineFooterInfiniteScroll: StoryObj<StoryProps> = {
     const errorRow = () =>
       canvas.querySelector<HTMLElement>('[data-testid="infinite-scroll-error"]')
     await step(FEED[0].title, async () => {
+      await waitForRows(canvas)
+    })
+    await step(FEED[1].title, async () => {
+      await guideNext(canvas)
       await waitRows(canvas)
       await until(() =>
         near(rect(footerOf(canvas)).top, rect(lastRowOf(canvas)).bottom),
       )
     })
-    await step(FEED[1].title, async () => {
+    await step(FEED[2].title, async () => {
       await guideNext(canvas)
       await until(() => expect(errorRow()).not.toBeNull())
       const footer = footerOf(canvas)
@@ -677,6 +727,10 @@ const scrollToRowEnd = (rowId: string) =>
 
 const SCROLL: readonly GuideStoryStep[] = [
   {
+    title: 'Начало таблицы',
+    hint: 'Таблица открыта в начале. Строка футера отображается следом за последней строкой.',
+  },
+  {
     title: 'Середина таблицы',
     hint: 'Строка футера находится не в области прокрутки.',
     enter: scrollToMiddle,
@@ -716,6 +770,10 @@ export const InlineFooterScrollToRow: StoryObj<StoryProps> = {
         `.data-grid__body-row[data-row-id="${id}"]`,
       )
     await step(SCROLL[0].title, async () => {
+      await waitForRows(canvas)
+    })
+    await step(SCROLL[1].title, async () => {
+      await guideNext(canvas)
       await waitRows(canvas)
       await until(() => expect(scrollApi).not.toBeNull())
       await until(() => expect(scrollerOf(canvas).scrollTop).toBeGreaterThan(0))
@@ -723,7 +781,7 @@ export const InlineFooterScrollToRow: StoryObj<StoryProps> = {
         clientBottom(canvas),
       )
     })
-    await step(SCROLL[1].title, async () => {
+    await step(SCROLL[2].title, async () => {
       await guideNext(canvas)
       await until(() =>
         near(rect(rowById(LAST_ROW_ID)!).bottom, rect(footerOf(canvas)).top),

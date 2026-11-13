@@ -8,6 +8,7 @@ import type { RowDragEnd } from '../plugins'
 import type { Row } from '../types'
 import { expect, waitFor } from 'storybook/test'
 import {
+  waitForRows,
   type HeldDrag,
   guideNext,
   pollUntil,
@@ -245,7 +246,9 @@ export const RowDraggingMove: StoryObj<StoryProps> = {
         .hasAttribute('data-row-drop-invalid')
     await step(ROW_MOVE[0].title, async () => {
       await until(() => expect(rowOf(canvas, 'node-0-1')).not.toBeNull())
-      expect(rowOf(canvas, 'row-0')!.querySelector(HANDLE)).not.toBeNull()
+      await until(() =>
+        expect(rowOf(canvas, 'row-0')!.querySelector(HANDLE)).not.toBeNull(),
+      )
     })
     await step(ROW_MOVE[1].title, async () => {
       await guideNext(canvas)
@@ -259,7 +262,7 @@ export const RowDraggingMove: StoryObj<StoryProps> = {
       await until(() =>
         expect(indentOf(canvas, DRAG_FILL)).toBe(rowIndent(canvas, 'node-0-0')),
       )
-      expect(invalid()).toBe(false)
+      await until(() => expect(invalid()).toBe(false))
     })
     await step(ROW_MOVE[2].title, async () => {
       await guideNext(canvas)
@@ -268,14 +271,16 @@ export const RowDraggingMove: StoryObj<StoryProps> = {
       await until(() =>
         expect(indentOf(canvas, DRAG_FILL)).toBe(rowIndent(canvas, 'node-1')),
       )
-      expect(invalid()).toBe(false)
+      await until(() => expect(invalid()).toBe(false))
     })
     await step(ROW_MOVE[3].title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(invalid()).toBe(true))
       // Слот — на уровне детей: там, куда строка встала бы.
-      expect(indentOf(canvas, DRAG_FILL)).toBe(rowIndent(canvas, 'node-1-0'))
+      await until(() =>
+        expect(indentOf(canvas, DRAG_FILL)).toBe(rowIndent(canvas, 'node-1-0')),
+      )
     })
     await step(ROW_MOVE[4].title, async () => {
       // Вспышка держится на время снимка (ADR 0130, DG6): токен — до броска шага.
@@ -584,7 +589,11 @@ const lazyTreeUpTo = (count: number) =>
 const LAZY_TREE: readonly GuideStoryStep[] = [
   {
     title: 'Ленивое дерево',
-    hint: 'Дети групп приходят с сервера при раскрытии. Первая группа и её первая подгруппа раскрываются — их дети загружены.',
+    hint: 'Дети групп приходят с сервера при раскрытии. Группы свёрнуты.',
+  },
+  {
+    title: 'Пользователь раскрыл группы',
+    hint: 'Первая группа и её первая подгруппа раскрыты — их дети пришли с сервера.',
     enter: lazyTreeUpTo(2),
   },
   {
@@ -663,10 +672,14 @@ export const RowDraggingLazyTree: StoryObj<StoryProps> = {
     const slow = { timeout: 10_000 }
 
     await step(LAZY_TREE[0].title, async () => {
+      await waitForRows(canvas)
+    })
+    await step(LAZY_TREE[1].title, async () => {
+      await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(rowOf(canvas, 'node-0-0-2')).not.toBeNull())
     })
-    await step(LAZY_TREE[1].title, async () => {
+    await step(LAZY_TREE[2].title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() =>
@@ -685,7 +698,7 @@ export const RowDraggingLazyTree: StoryObj<StoryProps> = {
         handleOf('node-0-0-0').querySelector('svg[data-pending-arc]'),
       ).toBeNull()
     })
-    await step(LAZY_TREE[2].title, async () => {
+    await step(LAZY_TREE[3].title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() =>
@@ -698,7 +711,7 @@ export const RowDraggingLazyTree: StoryObj<StoryProps> = {
         'accepted',
       )
     })
-    await step(LAZY_TREE[3].title, async () => {
+    await step(LAZY_TREE[4].title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await waitFor(() => {
@@ -716,7 +729,7 @@ export const RowDraggingLazyTree: StoryObj<StoryProps> = {
         handleOf('node-0-0-1').querySelector('[data-failure-indicator]'),
       ).toBeNull()
     })
-    await step(LAZY_TREE[4].title, async () => {
+    await step(LAZY_TREE[5].title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() =>

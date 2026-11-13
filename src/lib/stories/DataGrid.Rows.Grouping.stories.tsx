@@ -210,13 +210,6 @@ const STICKY: readonly GuideStoryStep[] = [
   {
     title: 'Группы раскрыты',
     hint: 'Строки сгруппированы по полу, группы раскрыты. Строка группы — над её строками.',
-    enter: untilDone(
-      root => (scrollerOf(root)?.scrollTop ?? 1) === 0,
-      root => {
-        const scroller = scrollerOf(root)
-        if (scroller) scroller.scrollTop = 0
-      },
-    ),
   },
   {
     title: 'Пользователь прокрутил группу',

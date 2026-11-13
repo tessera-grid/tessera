@@ -173,7 +173,6 @@ const FROM_JSON: readonly GuideStoryStep[] = [
   {
     title: 'Подписи по умолчанию',
     hint: 'Без словаря таблица подписана по-английски: поле «Search», диапазон «1–25 of 1,000».',
-    enter: closePopups,
   },
   {
     title: 'Словарь из JSON',
@@ -276,6 +275,10 @@ const SCROLL = 200
 const SWITCH: readonly GuideStoryStep[] = [
   {
     title: 'Английский интерфейс',
+    hint: 'Таблица подписана по-английски. Пользователь ещё ничего не искал и не выбирал.',
+  },
+  {
+    title: 'Пользователь нашёл и выбрал строки',
     hint: 'Пользователь нашёл «1», прокрутил таблицу и выбрал две строки.',
     enter: afterRows(root => {
       typeSearch(root, SEARCH)
@@ -317,11 +320,15 @@ export const LocalizationSwitch: StoryObj<StoryProps> = {
     let scrollTop = 0
     const kept = async () => {
       await until(() => expect(searchOf(canvas)?.value).toBe(SEARCH))
-      await expect(scrollerOf(canvas).scrollTop).toBe(scrollTop)
-      await expect(bodyOf(canvas)).toBe(body)
-      await expect(recreated()).toBe(false)
+      await until(() => expect(scrollerOf(canvas).scrollTop).toBe(scrollTop))
+      await until(() => expect(bodyOf(canvas)).toBe(body))
+      await until(() => expect(recreated()).toBe(false))
     }
     await step(SWITCH[0].title, async () => {
+      await waitForRows(canvas)
+    })
+    await step(SWITCH[1].title, async () => {
+      await guideNext(canvas)
       await waitForRows(canvas)
       await until(() => expect(selectedOf(canvas)).toBe('2 rows selected'))
       await until(() =>
@@ -333,10 +340,12 @@ export const LocalizationSwitch: StoryObj<StoryProps> = {
       scrollTop = scrollerOf(canvas).scrollTop
       body = bodyOf(canvas)
     })
-    await step(SWITCH[1].title, async () => {
+    await step(SWITCH[2].title, async () => {
       await guideNext(canvas)
       await until(() => expect(selectedOf(canvas)).toBe('Выбрано: 2 строки'))
-      await expect(toolbarOf(canvas)).toBe('Панель инструментов таблицы')
+      await until(() =>
+        expect(toolbarOf(canvas)).toBe('Панель инструментов таблицы'),
+      )
       await kept()
     })
     await settle()
@@ -410,19 +419,23 @@ const selectedRowsCapped = (count: number) =>
       ? '99+ rows selected'
       : `${count} rows selected`
 
+/** Пользователь выбирает все строки флажком в шапке. */
+const selectAllRows = afterRows(root => {
+  const all = root.querySelector<HTMLElement>(
+    '.data-grid__head [role="checkbox"]',
+  )
+  if (all?.getAttribute('aria-checked') !== 'true') all?.click()
+})
+
 const FUNCTION: readonly GuideStoryStep[] = [
+  {
+    title: 'Строки не выбраны',
+    hint: 'Приложение включило счётчик выбранных строк. Пока ничего не выбрано.',
+  },
   {
     title: 'Выбраны все строки',
     hint: 'Пользователь выбрал все строки: «1,000 rows selected» — подпись по умолчанию.',
-    enter: afterRows(root =>
-      root
-        .querySelector<HTMLElement>('.data-grid__head [role="checkbox"]')
-        ?.getAttribute('aria-checked') === 'true'
-        ? undefined
-        : root
-            .querySelector<HTMLElement>('.data-grid__head [role="checkbox"]')
-            ?.click(),
-    ),
+    enter: selectAllRows,
   },
   {
     title: 'Подпись функцией',
@@ -430,6 +443,8 @@ const FUNCTION: readonly GuideStoryStep[] = [
     props: () => ({
       localization: { 'rowSelection.selectedRows': selectedRowsCapped },
     }),
+    // Со свежей таблицы строки ещё не выбраны.
+    enter: selectAllRows,
   },
 ]
 
@@ -461,9 +476,13 @@ export const LocalizationFunction: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     await step(FUNCTION[0].title, async () => {
       await waitForRows(canvas)
-      await until(() => expect(selectedOf(canvas)).toBe('1,000 rows selected'))
     })
     await step(FUNCTION[1].title, async () => {
+      await guideNext(canvas)
+      await waitForRows(canvas)
+      await until(() => expect(selectedOf(canvas)).toBe('1,000 rows selected'))
+    })
+    await step(FUNCTION[2].title, async () => {
       await guideNext(canvas)
       await until(() => expect(selectedOf(canvas)).toBe('99+ rows selected'))
     })

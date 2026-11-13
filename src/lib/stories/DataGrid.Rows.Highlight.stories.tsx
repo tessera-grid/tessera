@@ -204,11 +204,25 @@ const deleteButton = (root: HTMLElement, id: string) =>
   bodyRow(root, id)?.querySelector<HTMLElement>(
     '[data-column-id="actionColumn__rowActions"] button',
   )
-/** Пользователь нажимает удаление у строк, ещё не подсвеченных. */
-const markForDeletion = (root: HTMLElement, ids: string[]) =>
-  ids
-    .filter(id => !danger(root, id))
-    .forEach(id => deleteButton(root, id)?.click())
+/**
+ * Пользователь нажимает удаление у строк, ещё не подсвеченных, — у каждой один раз за шаг:
+ * повторное нажатие сняло бы подсветку, пока приложение её ставит.
+ */
+const markForDeletion =
+  (ids: string[]): GuideStoryStep['enter'] =>
+  (root, app) => {
+    const pressed = new Set<string>()
+    return untilDone(
+      root => ids.every(id => danger(root, id)),
+      root => {
+        const id = ids.find(id => !danger(root, id) && !pressed.has(id))
+        const button = id ? deleteButton(root, id) : undefined
+        if (!button) return
+        pressed.add(id!)
+        button.click()
+      },
+    )(root, app)
+  }
 
 const DELETE: readonly GuideStoryStep[] = [
   {
@@ -219,40 +233,41 @@ const DELETE: readonly GuideStoryStep[] = [
     title: 'Пользователь удаляет строку',
     hint: 'Пользователь нажал удаление. Строка подсвечена тоном опасности, приложение спрашивает подтверждение.',
     states: ['body.highlight'],
-    enter: untilDone(
-      root => danger(root, FIRST),
-      root => markForDeletion(root, [FIRST]),
-    ),
+    enter: markForDeletion([FIRST]),
   },
   {
     title: 'Пользователь удаляет ещё одну строку',
     hint: 'Обе строки подсвечены, приложение спрашивает об удалении двух строк.',
     states: ['body.highlight'],
-    enter: untilDone(
-      root => danger(root, FIRST) && danger(root, SECOND),
-      root => markForDeletion(root, [FIRST, SECOND]),
-    ),
+    enter: markForDeletion([FIRST, SECOND]),
   },
   {
     title: 'Пользователь подтвердил удаление',
     hint: 'Строки ушли из таблицы, подсветки больше нет.',
-    enter: untilDone<{
-      update: (change: () => Partial<StoryProps>) => void
-    }>(
-      root => !bodyRow(root, FIRST) && !bodyRow(root, SECOND),
-      (root, app) => {
-        if (!danger(root, FIRST) || !danger(root, SECOND)) {
-          markForDeletion(root, [FIRST, SECOND])
-          return
-        }
-        byTestId('confirm-delete')?.click()
-        app.update(() => ({
-          dataOverride: deleteRows.filter(
-            row => row.id !== FIRST && row.id !== SECOND,
-          ),
-        }))
-      },
-    ),
+    enter: (root, app) => {
+      const pressed = new Set<string>()
+      return untilDone<{
+        update: (change: () => Partial<StoryProps>) => void
+      }>(
+        root => !bodyRow(root, FIRST) && !bodyRow(root, SECOND),
+        (root, app) => {
+          const id = [FIRST, SECOND].find(id => !danger(root, id))
+          if (id) {
+            if (!pressed.has(id) && deleteButton(root, id)) {
+              pressed.add(id)
+              deleteButton(root, id)!.click()
+            }
+            return
+          }
+          byTestId('confirm-delete')?.click()
+          app.update(() => ({
+            dataOverride: deleteRows.filter(
+              row => row.id !== FIRST && row.id !== SECOND,
+            ),
+          }))
+        },
+      )(root, app as never)
+    },
   },
 ]
 
@@ -268,6 +283,7 @@ export const HighlightDeleteConfirmation: StoryObj<StoryProps> = {
     <GuideStory
       title="Подсветка до подтверждения"
       steps={DELETE}
+      reset={() => deletion.decide(false)}
       args={guideArgs(
         {
           ...GRID,
@@ -305,20 +321,22 @@ export const HighlightDeleteConfirmation: StoryObj<StoryProps> = {
       await until(() =>
         expect(byTestId('confirm-delete')).toHaveAccessibleName('Delete 1 row'),
       )
-      await expect(top()).toBe(gridTop)
+      await until(() => expect(top()).toBe(gridTop))
     })
     await step(DELETE[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(danger(canvas, SECOND)).toBe(true))
-      await expect(danger(canvas, FIRST)).toBe(true)
-      await expect(byTestId('confirm-delete')).toHaveAccessibleName(
-        'Delete 2 rows',
+      await until(() => expect(danger(canvas, FIRST)).toBe(true))
+      await until(() =>
+        expect(byTestId('confirm-delete')).toHaveAccessibleName(
+          'Delete 2 rows',
+        ),
       )
     })
     await step(DELETE[3]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(bodyRow(canvas, FIRST)).toBeFalsy())
-      await expect(bodyRow(canvas, SECOND)).toBeFalsy()
+      await until(() => expect(bodyRow(canvas, SECOND)).toBeFalsy())
       await until(() =>
         expect(canvas.querySelector('[data-highlight="danger"]')).toBeNull(),
       )
@@ -409,6 +427,10 @@ const markedCell = (root: HTMLElement) =>
 
 const MARKS: readonly GuideStoryStep[] = [
   {
+    title: 'Поиск пуст',
+    hint: 'В поиске приложения нет запроса, ячейки не подсвечены.',
+  },
+  {
     title: 'Пользователь ищет',
     hint: 'Пользователь ввёл запрос в поиске приложения. Ячейки с совпадениями подсвечены.',
     states: ['body.highlight'],
@@ -460,15 +482,19 @@ export const HighlightMarks: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     await step(MARKS[0]!.title, async () => {
       await waitForRows(canvas)
+    })
+    await step(MARKS[1]!.title, async () => {
+      await guideNext(canvas)
+      await waitForRows(canvas)
       await until(() => expect(searchCells(canvas).length).toBeGreaterThan(0))
       await expect(markedCell(canvas)).toBeFalsy()
     })
-    await step(MARKS[1]!.title, async () => {
+    await step(MARKS[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(markedCell(canvas)).toBeTruthy())
       await expect(searchCells(canvas).length).toBeGreaterThan(0)
     })
-    await step(MARKS[2]!.title, async () => {
+    await step(MARKS[3]!.title, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(headCell(canvas, 'total')).toHaveAttribute(
@@ -479,7 +505,7 @@ export const HighlightMarks: StoryObj<StoryProps> = {
       await expect(markedCell(canvas)).toBeTruthy()
       await settle()
     })
-    await step(MARKS[3]!.title, async () => {
+    await step(MARKS[4]!.title, async () => {
       await guideNext(canvas)
       const rangeCells = () =>
         RANGE_ROWS.flatMap(row =>

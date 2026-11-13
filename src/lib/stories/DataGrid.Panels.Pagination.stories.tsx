@@ -674,7 +674,6 @@ const PAGE_NUMBERS: readonly GuideStoryStep[] = [
   {
     title: 'Ряд номеров',
     hint: 'Под таблицей — первая и последняя страница, текущая и соседние. Текущая выделена.',
-    enter: stepAction((root, { signal }) => openPage(root, 1, signal)),
   },
   {
     title: 'Пользователь открыл страницу 5',
@@ -711,8 +710,8 @@ export const PaginationPageNumbers: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(PAGE_NUMBERS[0]!.title, async () => {
-      await stepDone(canvas)
-      await expect(currentPage(canvas)).toBe('1')
+      await waitForRows(canvas)
+      await until(() => expect(currentPage(canvas)).toBe('1'))
     })
     await step(PAGE_NUMBERS[1]!.title, async () => {
       await guideNext(canvas)
@@ -764,7 +763,6 @@ const PAGE_INPUT: readonly GuideStoryStep[] = [
   {
     title: 'Поле номера',
     hint: 'Вместо ряда номеров — поле с текущей страницей и числом страниц рядом.',
-    enter: stepAction((root, { signal }) => typePage(root, '1', '1–', signal)),
   },
   {
     title: 'Пользователь ввёл номер',
@@ -806,8 +804,8 @@ export const PaginationPageInput: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(PAGE_INPUT[0]!.title, async () => {
-      await stepDone(canvas)
-      await expect(pageField(canvas)?.value).toBe('1')
+      await waitForRows(canvas)
+      await until(() => expect(pageField(canvas)?.value).toBe('1'))
     })
     await step(PAGE_INPUT[1]!.title, async () => {
       await guideNext(canvas)

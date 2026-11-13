@@ -1094,17 +1094,25 @@ export const ThemeSources: StoryObj<ThemingArgs> = {
     await step(SOURCES[1]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(schemeOf(canvas)).toBe('dark'))
-      expect(wrapperOf(canvas)!.parentElement!.classList).toContain('dark')
+      await until(() =>
+        expect(wrapperOf(canvas)!.parentElement!.classList).toContain('dark'),
+      )
     })
     await step(SOURCES[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(schemeOf(canvas)).toBe('light'))
-      expect(wrapperOf(canvas)!.parentElement!.classList).toContain('dark')
+      await until(() =>
+        expect(wrapperOf(canvas)!.parentElement!.classList).toContain('dark'),
+      )
     })
     await step(SOURCES[3]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(schemeOf(canvas)).toBe('dark'))
-      expect(wrapperOf(canvas)!.parentElement!.classList).not.toContain('dark')
+      await until(() =>
+        expect(wrapperOf(canvas)!.parentElement!.classList).not.toContain(
+          'dark',
+        ),
+      )
     })
     await settle()
   },
@@ -1136,8 +1144,10 @@ const setRoles = (root: HTMLElement, roles: Record<string, string>) => {
     for (const role of Object.keys(roles)) root.style.removeProperty(role)
   }
 }
-const withoutPalette = (root: HTMLElement) =>
-  setRoles(root, Object.fromEntries(APP_ROLES.map(role => [role, 'initial'])))
+/** Приложение без своих цветов: роли палитры приложения не заданы. */
+const WITHOUT_PALETTE = Object.fromEntries(
+  APP_ROLES.map(role => [role, 'initial']),
+) as CSSProperties
 const rawToken = (canvas: HTMLElement, token: string) =>
   getComputedStyle(wrapperOf(canvas)!).getPropertyValue(token).trim()
 
@@ -1155,13 +1165,11 @@ const DEFAULT_PALETTE: readonly GuideStoryStep[] = [
   {
     title: 'Приложение без палитры',
     hint: 'Приложение не задаёт свои цвета. Таблица берёт встроенную палитру: нейтральные поверхности и линии, акцент выбора и загрузки.',
-    enter: withoutPalette,
   },
   {
     title: 'Тёмная тема',
     hint: 'Приложение включило таблице тёмную тему. Встроенная палитра сменила все цвета разом, текст и линии остались читаемыми.',
     props: () => ({ colorMode: 'dark' }),
-    enter: withoutPalette,
   },
 ]
 
@@ -1171,14 +1179,16 @@ export const ThemingDefaultPalette: StoryObj<ThemingArgs> = {
   args: { locale: 'en' },
   parameters: { scenario: '0191/S1', ...guideControls() },
   render: storyArgs => (
-    <GuideStory
-      title="Палитра по умолчанию"
-      steps={DEFAULT_PALETTE}
-      args={guideArgs(
-        PALETTE_GRID,
-        storyArgs as Pick<StoryProps, 'colorMode' | 'locale'>,
-      )}
-    />
+    <div style={WITHOUT_PALETTE}>
+      <GuideStory
+        title="Палитра по умолчанию"
+        steps={DEFAULT_PALETTE}
+        args={guideArgs(
+          PALETTE_GRID,
+          storyArgs as Pick<StoryProps, 'colorMode' | 'locale'>,
+        )}
+      />
+    </div>
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return

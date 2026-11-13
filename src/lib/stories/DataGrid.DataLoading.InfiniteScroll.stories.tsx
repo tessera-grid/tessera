@@ -153,8 +153,10 @@ const loadMore =
   (app: GuideApp, { hold, failFirst }: FeedMode) =>
   ({ signal, loaded }: InfiniteScrollLoadContext) =>
     new Promise<void>((resolve, reject) => {
+      // Ответ прошлой ленты (таблица уже открыта заново) новой ленте не принадлежит.
+      const table = feed.table
       const answer = () => {
-        if (signal.aborted) return resolve()
+        if (signal.aborted || feed.table !== table) return resolve()
         if (failFirst && !feed.failed.has(loaded)) {
           feed.failed.add(loaded)
           return reject(new Error(FAILURE))
@@ -397,8 +399,8 @@ const sortedByName = (root: HTMLElement) =>
 
 const SERVER_QUERY: readonly GuideStoryStep[] = [
   {
-    title: 'Два блока загружены',
-    hint: 'Пользователь докрутил до края, и таблица дописала второй блок.',
+    title: 'Первый блок загружен',
+    hint: 'Таблица загрузила первый блок строк. Следующий она допишет, когда пользователь докрутит до края.',
     props: ({ app, ...context }) => ({
       ...feedProps({})!({ app, ...context }),
       enableColumnSorting: true,
@@ -412,6 +414,10 @@ const SERVER_QUERY: readonly GuideStoryStep[] = [
         reload(app)
       },
     }),
+  },
+  {
+    title: 'Два блока загружены',
+    hint: 'Пользователь докрутил до края, и таблица дописала второй блок.',
     enter: stepAction(async (root, { signal }) => {
       if (feed.rows.length === BLOCK) await scrollToEnd(root, signal)
       await pollUntil(() => settledAt(root, BLOCK * 2), signal)
@@ -452,19 +458,27 @@ export const InfiniteScrollServerQuery: StoryObj<StoryProps> = {
     const labels = storyLabels(args.locale)
     await step(SERVER_QUERY[0]!.title, async () => {
       await waitForRows(canvas)
-      await stepDone(canvas)
-      await expect(loadedText()).toBe(
-        infiniteScrollLabels(labels).loadedRowsOf(BLOCK * 2, SERVER_TOTAL),
-      )
     })
     await step(SERVER_QUERY[1]!.title, async () => {
       await guideNext(canvas)
+      await waitForRows(canvas)
       await stepDone(canvas)
-      await expect(scroller(canvas)!.scrollTop).toBe(0)
-      await expect(loadedText()).toBe(
-        infiniteScrollLabels(labels).loadedRowsOf(BLOCK, SERVER_TOTAL),
+      await until(() =>
+        expect(loadedText()).toBe(
+          infiniteScrollLabels(labels).loadedRowsOf(BLOCK * 2, SERVER_TOTAL),
+        ),
       )
-      await expect(consoleText()).toContain('onToggleColumnSort')
+    })
+    await step(SERVER_QUERY[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await until(() => expect(scroller(canvas)!.scrollTop).toBe(0))
+      await until(() =>
+        expect(loadedText()).toBe(
+          infiniteScrollLabels(labels).loadedRowsOf(BLOCK, SERVER_TOTAL),
+        ),
+      )
+      await until(() => expect(consoleText()).toContain('onToggleColumnSort'))
       await settle()
     })
   },

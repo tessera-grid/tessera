@@ -4,6 +4,7 @@ import { dataExportModelLabels } from '../plugins/dataExportModel/labels'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import {
+  waitForRows,
   guideNext,
   pollUntil,
   settle,
@@ -117,9 +118,6 @@ const VIEW: readonly GuideStoryStep[] = [
     title: 'Список без сервиса выгрузки',
     hint: 'У приложения нет своего сервиса выгрузки, а строки приходят блоками. Кнопка выгрузки всё равно доступна.',
     props: exportProps(),
-    enter: stepAction(async (root, { signal }) => {
-      await pollUntil(() => hasRow(root, 0) && !!exportButton(), signal)
-    }),
   },
   {
     title: 'Строки идут',
@@ -157,20 +155,20 @@ export const ExportServerRowsView: StoryObj<StoryProps> = {
     const download = interceptDownload()
     try {
       await step(VIEW[0]!.title, async () => {
-        await stepDone(canvas)
-        await expect(busy()).toBe(false)
+        await until(() => expect(hasRow(canvas, 0)).toBe(true))
+        await until(() => expect(busy()).toBe(false))
       })
       await step(VIEW[1]!.title, async () => {
         await guideNext(canvas)
         await stepDone(canvas)
-        await expect(busy()).toBe(true)
-        await expect(download.names).toEqual([])
+        await until(() => expect(busy()).toBe(true))
+        await until(() => expect(download.names).toEqual([]))
       })
       await step(VIEW[2]!.title, async () => {
         await guideNext(canvas)
         await stepDone(canvas)
-        await expect(busy()).toBe(false)
-        await expect(download.names).toEqual(['export.csv'])
+        await until(() => expect(busy()).toBe(false))
+        await until(() => expect(download.names).toEqual(['export.csv']))
         await settle()
       })
     } finally {
@@ -186,9 +184,6 @@ const OVER_LIMIT: readonly GuideStoryStep[] = [
     title: 'Выборка больше предела',
     hint: 'В выборке больше строк, чем таблица загружает за одну выгрузку. Предел задаёт приложение.',
     props: exportProps(undefined, LIMIT),
-    enter: stepAction(async (root, { signal }) => {
-      await pollUntil(() => hasRow(root, 0) && !!exportButton(), signal)
-    }),
   },
   {
     title: 'Отказ с причиной',
@@ -219,7 +214,7 @@ export const ExportServerRowsLimit: StoryObj<StoryProps> = {
     const download = interceptDownload()
     try {
       await step(OVER_LIMIT[0]!.title, async () => {
-        await stepDone(canvas)
+        await until(() => expect(hasRow(canvas, 0)).toBe(true))
       })
       await step(OVER_LIMIT[1]!.title, async () => {
         const requests = server.starts.length
@@ -242,9 +237,13 @@ export const ExportServerRowsLimit: StoryObj<StoryProps> = {
 
 const REFUSED: readonly GuideStoryStep[] = [
   {
-    title: 'Строки идут',
-    hint: 'Таблица запрашивает строки выборки, кнопка занята.',
+    title: 'Список с сервера',
+    hint: 'У приложения нет своего сервиса выгрузки, а строки приходят блоками. Кнопка выгрузки доступна.',
     props: exportProps(FAILED_BLOCK),
+  },
+  {
+    title: 'Строки идут',
+    hint: 'Пользователь начал выгрузку. Таблица запрашивает строки выборки, кнопка занята.',
     enter: stepAction(async (root, { signal }) => {
       server.failed.delete(FAILED_BLOCK)
       await startExport(root, signal)
@@ -271,6 +270,7 @@ export const ExportServerRowsRefused: StoryObj<StoryProps> = {
     <GuideStory
       title="Отказ блока"
       steps={REFUSED}
+      reset={() => server.failed.delete(FAILED_BLOCK)}
       args={guideArgs(layout, args)}
     />
   ),
@@ -279,14 +279,18 @@ export const ExportServerRowsRefused: StoryObj<StoryProps> = {
     const download = interceptDownload()
     try {
       await step(REFUSED[0]!.title, async () => {
-        await stepDone(canvas)
-        await expect(busy()).toBe(true)
+        await waitForRows(canvas)
       })
       await step(REFUSED[1]!.title, async () => {
         await guideNext(canvas)
         await stepDone(canvas)
-        await expect(busy()).toBe(false)
-        await expect(download.names).toEqual([])
+        await until(() => expect(busy()).toBe(true))
+      })
+      await step(REFUSED[2]!.title, async () => {
+        await guideNext(canvas)
+        await stepDone(canvas)
+        await until(() => expect(busy()).toBe(false))
+        await until(() => expect(download.names).toEqual([]))
         await settle()
       })
     } finally {

@@ -177,9 +177,6 @@ const SELECT_ALL_EXCEPT: readonly GuideStoryStep[] = [
         }),
       extraPlugins: [serverReset, exportReset],
     }),
-    enter: stepAction(async (root, { signal }) => {
-      await pollUntil(() => !!rowCheckbox(root, 0), signal)
-    }),
   },
   {
     title: 'Пользователь выбрал всё',
@@ -229,9 +226,9 @@ export const ServerRowModelSelectAllExcept: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     const labels = storyLabels(args.locale)
     await step(SELECT_ALL_EXCEPT[0]!.title, async () => {
-      await stepDone(canvas)
-      await expect(isChecked(rowCheckbox(canvas, 0))).toBe(false)
-      await expect(selectedCount(canvas)).toBe('')
+      await until(() => expect(hasRow(canvas, 0)).toBe(true))
+      await until(() => expect(isChecked(rowCheckbox(canvas, 0))).toBe(false))
+      await until(() => expect(selectedCount(canvas)).toBe(''))
     })
     await step(SELECT_ALL_EXCEPT[1]!.title, async () => {
       const before = server.starts.length
@@ -359,10 +356,6 @@ const GROUP_SELECTION: readonly GuideStoryStep[] = [
     title: 'Список сгруппирован по городу',
     hint: 'Каждая строка — город с числом строк в нём. Самих строк городов таблица не загружала, у каждого города — свой флажок.',
     props: groupSelectProps({ exported: true }),
-    enter: stepAction(async (root, { signal }) => {
-      groupServer.refuse = false
-      await pollUntil(() => !!groupCheckbox(root, 'Paris'), signal)
-    }),
   },
   {
     title: 'Пользователь выбрал город',
@@ -405,6 +398,9 @@ export const ServerGroupSelection: StoryObj<StoryProps> = {
     <GuideStory
       title="Выбор группы целиком"
       steps={GROUP_SELECTION}
+      reset={() => {
+        groupServer.refuse = false
+      }}
       args={guideArgs(layout, args)}
     />
   ),
@@ -413,9 +409,11 @@ export const ServerGroupSelection: StoryObj<StoryProps> = {
     const labels = storyLabels(args.locale)
     const paris = parisItems().length
     await step(GROUP_SELECTION[0]!.title, async () => {
-      await stepDone(canvas)
-      await expect(isChecked(groupCheckbox(canvas, 'Paris'))).toBe(false)
-      await expect(selectedCount(canvas)).toBe('')
+      await until(() => expect(!!groupCheckbox(canvas, 'Paris')).toBe(true))
+      await until(() =>
+        expect(isChecked(groupCheckbox(canvas, 'Paris'))).toBe(false),
+      )
+      await until(() => expect(selectedCount(canvas)).toBe(''))
     })
     await step(GROUP_SELECTION[1]!.title, async () => {
       const parents = server.parents.length
@@ -475,10 +473,6 @@ const GROUP_SELECT_RESET: readonly GuideStoryStep[] = [
     title: 'Список сгруппирован по городу',
     hint: 'Каждая строка — город с числом строк в нём и своим флажком. Пока ничего не выбрано.',
     props: groupSelectProps(),
-    enter: stepAction(async (root, { signal }) => {
-      groupServer.refuse = false
-      await pollUntil(() => !!groupCheckbox(root, 'Paris'), signal)
-    }),
   },
   {
     title: 'Пользователь выбрал город',
@@ -505,14 +499,19 @@ export const ServerGroupSelectReset: StoryObj<StoryProps> = {
     <GuideStory
       title="Выбор и смена группировки"
       steps={GROUP_SELECT_RESET}
+      reset={() => {
+        groupServer.refuse = false
+      }}
       args={guideArgs(layout, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(GROUP_SELECT_RESET[0]!.title, async () => {
-      await stepDone(canvas)
-      await expect(isChecked(groupCheckbox(canvas, 'Paris'))).toBe(false)
+      await until(() => expect(!!groupCheckbox(canvas, 'Paris')).toBe(true))
+      await until(() =>
+        expect(isChecked(groupCheckbox(canvas, 'Paris'))).toBe(false),
+      )
     })
     await step(GROUP_SELECT_RESET[1]!.title, async () => {
       await guideNext(canvas)
@@ -536,10 +535,6 @@ const GROUP_SELECT_COUNT: readonly GuideStoryStep[] = [
     title: 'Сервер не знает размер групп',
     hint: 'Каждая строка — город, но числа строк в городах сервер не прислал. Флажки у городов есть и так.',
     props: groupSelectProps({ counts: false }),
-    enter: stepAction(async (root, { signal }) => {
-      groupServer.refuse = false
-      await pollUntil(() => !!groupCheckbox(root, 'Paris'), signal)
-    }),
   },
   {
     title: 'Пользователь выбрал город',
@@ -570,6 +565,9 @@ export const ServerGroupSelectCount: StoryObj<StoryProps> = {
     <GuideStory
       title="Счётчик без размера групп"
       steps={GROUP_SELECT_COUNT}
+      reset={() => {
+        groupServer.refuse = false
+      }}
       args={guideArgs(layout, args)}
     />
   ),
@@ -577,8 +575,8 @@ export const ServerGroupSelectCount: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     const labels = storyLabels(args.locale)
     await step(GROUP_SELECT_COUNT[0]!.title, async () => {
-      await stepDone(canvas)
-      await expect(selectedCount(canvas)).toBe('')
+      await until(() => expect(!!groupCheckbox(canvas, 'Paris')).toBe(true))
+      await until(() => expect(selectedCount(canvas)).toBe(''))
     })
     await step(GROUP_SELECT_COUNT[1]!.title, async () => {
       await guideNext(canvas)
@@ -675,9 +673,6 @@ const BRANCH_SELECTION: readonly GuideStoryStep[] = [
     title: 'Дерево с флажками',
     hint: 'Сервер отдаёт верхний уровень списка блоками, у каждой строки — флажок. Вложенных строк таблица ещё не загружала, ничего не выбрано.',
     props: branchSelectProps,
-    enter: stepAction(async (root, { signal }) => {
-      await pollUntil(() => !!treeCheckbox(root, BRANCH_PARENT), signal)
-    }),
   },
   {
     title: 'Пользователь выбрал строку со вложенными',
@@ -737,9 +732,11 @@ export const ServerTreeSelectBranch: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     const labels = storyLabels(args.locale)
     await step(BRANCH_SELECTION[0]!.title, async () => {
-      await stepDone(canvas)
-      await expect(isChecked(treeCheckbox(canvas, BRANCH_PARENT))).toBe(false)
-      await expect(selectedCount(canvas)).toBe('')
+      await until(() => expect(hasRow(canvas, 0)).toBe(true))
+      await until(() =>
+        expect(isChecked(treeCheckbox(canvas, BRANCH_PARENT))).toBe(false),
+      )
+      await until(() => expect(selectedCount(canvas)).toBe(''))
     })
     await step(BRANCH_SELECTION[1]!.title, async () => {
       await guideNext(canvas)
@@ -851,9 +848,6 @@ const SELECT_PAGE: readonly GuideStoryStep[] = [
     title: 'Список страницами',
     hint: 'Сервер отдаёт строки страницами, у каждой строки есть флажок. Флажок в шапке относится к текущей странице.',
     props: pageProps(PAGE_SIZE, PAGE_SIZE),
-    enter: stepAction(async (root, { signal }) => {
-      await pollUntil(() => !!rowCheckbox(root, 0), signal)
-    }),
   },
   {
     title: 'Пользователь выбрал страницу',
@@ -901,8 +895,8 @@ export const ServerPageSelectAll: StoryObj<StoryProps> = {
         ),
       )
     await step(SELECT_PAGE[0]!.title, async () => {
-      await stepDone(canvas)
-      await expect(isChecked(headCheckbox(canvas))).toBe(false)
+      await until(() => expect(hasRow(canvas, 0)).toBe(true))
+      await until(() => expect(isChecked(headCheckbox(canvas))).toBe(false))
     })
     await step(SELECT_PAGE[1]!.title, async () => {
       await guideNext(canvas)
@@ -938,9 +932,6 @@ const WAITS: readonly GuideStoryStep[] = [
     title: 'Часть страницы загружена',
     hint: 'Страница длиннее блока, остальные строки сервер ещё не присылал.',
     props: pageProps(LONG_PAGE, SHORT_BLOCK),
-    enter: stepAction(async (root, { signal }) => {
-      await pollUntil(() => !!rowCheckbox(root, 0), signal)
-    }),
   },
   {
     title: 'Пользователь нажал флажок',
@@ -976,8 +967,8 @@ export const ServerPageSelectAllWaits: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     const labels = storyLabels(args.locale)
     await step(WAITS[0]!.title, async () => {
-      await stepDone(canvas)
-      await expect(selectedCount(canvas)).toBe('')
+      await until(() => expect(hasRow(canvas, 0)).toBe(true))
+      await until(() => expect(selectedCount(canvas)).toBe(''))
     })
     await step(WAITS[1]!.title, async () => {
       await guideNext(canvas)
@@ -1004,6 +995,8 @@ const failureBanner = (root: HTMLElement) =>
 /** Флажок ждал, «сервер» отказал в блоке страницы. */
 const refusePage = async (root: HTMLElement, signal: AbortSignal) => {
   if (failureBanner(root)) return
+  // Блок откажет и после запроса заранее при открытии таблицы.
+  if (!headWaits(root)) server.failed.delete(FAILED_BLOCK)
   await pressWaitingHead(root, signal)
   server.hold = false
   release()
@@ -1015,10 +1008,6 @@ const PAGE_REFUSED: readonly GuideStoryStep[] = [
     title: 'Часть страницы загружена',
     hint: 'Остальные строки сервер ещё не присылал.',
     props: pageProps(LONG_PAGE, SHORT_BLOCK, FAILED_BLOCK),
-    enter: stepAction(async (root, { signal }) => {
-      server.failed.delete(FAILED_BLOCK)
-      await pollUntil(() => !!rowCheckbox(root, 0), signal)
-    }),
   },
   {
     title: 'Пользователь нажал флажок',
@@ -1055,6 +1044,9 @@ export const ServerPageSelectAllRefused: StoryObj<StoryProps> = {
     <GuideStory
       title="Отказ в строках страницы"
       steps={PAGE_REFUSED}
+      reset={() => {
+        server.failed.delete(FAILED_BLOCK)
+      }}
       args={guideArgs(layout, args)}
     />
   ),
@@ -1062,18 +1054,18 @@ export const ServerPageSelectAllRefused: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     const labels = storyLabels(args.locale)
     await step(PAGE_REFUSED[0]!.title, async () => {
-      await stepDone(canvas)
+      await until(() => expect(hasRow(canvas, 0)).toBe(true))
     })
     await step(PAGE_REFUSED[1]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(headWaits(canvas)).toBe(true)
+      await until(() => expect(headWaits(canvas)).toBe(true))
     })
     await step(PAGE_REFUSED[2]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(failureBanner(canvas)).not.toBeNull()
-      await expect(selectedCount(canvas)).toBe('')
+      await until(() => expect(failureBanner(canvas)).not.toBeNull())
+      await until(() => expect(selectedCount(canvas)).toBe(''))
     })
     await step(PAGE_REFUSED[3]!.title, async () => {
       await guideNext(canvas)

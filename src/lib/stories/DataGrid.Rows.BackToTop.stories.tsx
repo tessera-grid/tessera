@@ -77,11 +77,14 @@ const scrollAway = async (
   signal: AbortSignal,
 ) => {
   await pollUntil(() => !!root.querySelector('.data-grid__body-row'), signal)
-  const scroller = scrollerOf(root)
-  const size = axis === 'top' ? scroller.clientHeight : scroller.clientWidth
-  if (!shown(button))
+  // Открытая заново таблица ещё растёт до полной ширины: прокрутку повторить, пока нужно.
+  await pollUntil(() => {
+    if (shown(button)) return true
+    const scroller = scrollerOf(root)
+    const size = axis === 'top' ? scroller.clientHeight : scroller.clientWidth
     scroller.scrollTo({ [axis]: size * 2 + 200, behavior: 'instant' })
-  await pollUntil(() => shown(button), signal)
+    return false
+  }, signal)
 }
 
 /** Пользователь нажимает кнопку возврата, пока прокрутка по оси не станет нулевой. */
@@ -208,24 +211,26 @@ export const BackToTopWide: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     await step(WIDE[0]!.title, async () => {
       await waitForRows(canvas)
-      await expect(scrollerOf(canvas).scrollWidth).toBeGreaterThan(
-        scrollerOf(canvas).clientWidth * 3,
+      await until(() =>
+        expect(scrollerOf(canvas).scrollWidth).toBeGreaterThan(
+          scrollerOf(canvas).clientWidth * 3,
+        ),
       )
-      await expect(shown(START)).toBe(false)
-      await expect(shown(TOP)).toBe(false)
+      await until(() => expect(shown(START)).toBe(false))
+      await until(() => expect(shown(TOP)).toBe(false))
     })
     await step(WIDE[1]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(shown(START)).toBe(true)
-      await expect(inStatusBar(START)).toBe(true)
+      await until(() => expect(shown(START)).toBe(true))
+      await until(() => expect(inStatusBar(START)).toBe(true))
     })
     await step(WIDE[2]!.title, async () => {
       const top = scrollerOf(canvas).scrollTop
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(scrollerOf(canvas).scrollLeft).toBe(0)
-      await expect(scrollerOf(canvas).scrollTop).toBe(top)
+      await until(() => expect(scrollerOf(canvas).scrollLeft).toBe(0))
+      await until(() => expect(scrollerOf(canvas).scrollTop).toBe(top))
       await until(() => expect(inactive(START)).toBe(true))
       await settle()
     })

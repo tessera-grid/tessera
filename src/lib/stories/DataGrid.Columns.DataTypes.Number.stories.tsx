@@ -203,7 +203,7 @@ export const DataTypesEditNumber: StoryObj<StoryProps> = {
       await until(() =>
         expect(priceText(canvas)).toBe(moneyIn('ru-RU', COMMA_ROWS[0]!.price)),
       )
-      await expect(priceEditButton(canvas)).not.toBeNull()
+      await until(() => expect(priceEditButton(canvas)).not.toBeNull())
     })
     await step(EDIT_COMMA[1]!.title, async () => {
       await guideNext(canvas)
@@ -212,7 +212,7 @@ export const DataTypesEditNumber: StoryObj<StoryProps> = {
     await step(EDIT_COMMA[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(priceInput(canvas)).toBeNull())
-      await expect(priceText(canvas)).toBe(savedText())
+      await until(() => expect(priceText(canvas)).toBe(savedText()))
       await settle()
     })
   },
@@ -278,14 +278,22 @@ export const EditingNumber: StoryObj<StoryProps> = {
     const original = EDIT_ROWS[0]!.price
     await step(EDIT_NUMBER[0]!.title, async () => {
       await waitForRows(canvas)
-      expect(productText(canvas, 'price')).toBe(dollars(locale, original))
-      expect(productEditButton(canvas, 'price')).not.toBeNull()
+      await until(() =>
+        expect(productText(canvas, 'price')).toBe(dollars(locale, original)),
+      )
+      await until(() =>
+        expect(productEditButton(canvas, 'price')).not.toBeNull(),
+      )
     })
     await step(EDIT_NUMBER[1]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(productInput(canvas, 'price')).not.toBeNull())
-      expect(productInput(canvas, 'price')!.value).toBe(
-        new Intl.NumberFormat(locale, { useGrouping: false }).format(original),
+      await until(() =>
+        expect(productInput(canvas, 'price')!.value).toBe(
+          new Intl.NumberFormat(locale, { useGrouping: false }).format(
+            original,
+          ),
+        ),
       )
     })
     await step(EDIT_NUMBER[2]!.title, async () => {
@@ -295,21 +303,29 @@ export const EditingNumber: StoryObj<StoryProps> = {
           cellEditingLabels(labels).editInvalidNumber,
         ),
       )
-      expect(productInput(canvas, 'price')!.value).toBe(NOT_A_NUMBER)
-      expect(productInput(canvas, 'price')).toHaveAttribute(
-        'aria-invalid',
-        'true',
+      await until(() =>
+        expect(productInput(canvas, 'price')!.value).toBe(NOT_A_NUMBER),
       )
-      expect(consoleText()).not.toContain('onCellEdit')
+      await until(() =>
+        expect(productInput(canvas, 'price')).toHaveAttribute(
+          'aria-invalid',
+          'true',
+        ),
+      )
+      await until(() => expect(consoleText()).not.toContain('onCellEdit'))
     })
     await step(EDIT_NUMBER[3]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(productInput(canvas, 'price')).toBeNull())
-      expect(productText(canvas, 'price')).toBe(
-        dollars(locale, Number(NEW_PRICE)),
+      await until(() =>
+        expect(productText(canvas, 'price')).toBe(
+          dollars(locale, Number(NEW_PRICE)),
+        ),
       )
-      expect(consoleText()).toMatch(
-        new RegExp(`value:${NEW_PRICE},text:"${NEW_PRICE}"`),
+      await until(() =>
+        expect(consoleText()).toMatch(
+          new RegExp(`value:${NEW_PRICE},text:"${NEW_PRICE}"`),
+        ),
       )
       await settle()
     })

@@ -402,24 +402,32 @@ export const FailureLogOffscreen: StoryObj<StoryProps> = {
     await step(OFFSCREEN_STEPS[0]!.title, async () => {
       await waitForRows(canvas)
       await until(() => expect(logButton()).not.toBeNull())
-      expect(hasFailures()).toBe(false)
+      await until(() => expect(hasFailures()).toBe(false))
       await settle()
     })
     await step(OFFSCREEN_STEPS[1]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(counter()).toBe('3'))
-      expect(
-        cellEl(canvas, VISIBLE)!.querySelector('[data-cell-issue]'),
-      ).not.toBeNull()
-      expect(rowEl(canvas, FAR)).toBeNull()
+      await until(() =>
+        expect(
+          cellEl(canvas, VISIBLE)!.querySelector('[data-cell-issue]'),
+        ).not.toBeNull(),
+      )
+      await until(() => expect(rowEl(canvas, FAR)).toBeNull())
       await settle()
     })
     await step(OFFSCREEN_STEPS[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(entries()).toHaveLength(3))
-      expect(entries()[0]!.getAttribute('data-failure-key')).toContain(VISIBLE)
-      expect(entryOf(FAR)!.textContent).toContain(
-        labels.failureTargetCell('First Name', 71),
+      await until(() =>
+        expect(entries()[0]!.getAttribute('data-failure-key')).toContain(
+          VISIBLE,
+        ),
+      )
+      await until(() =>
+        expect(entryOf(FAR)!.textContent).toContain(
+          labels.failureTargetCell('First Name', 71),
+        ),
       )
       await settle()
     })
@@ -427,14 +435,21 @@ export const FailureLogOffscreen: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await until(() => expect(flashed(cellEl(canvas, FAR))).toBe(true))
       await until(() => expect(log()).toBeNull())
-      expect(
-        cellEl(canvas, FAR)!.querySelector('[data-cell-issue]'),
-      ).not.toBeNull()
+      await until(() =>
+        expect(
+          cellEl(canvas, FAR)!.querySelector('[data-cell-issue]'),
+        ).not.toBeNull(),
+      )
     })
     await step(OFFSCREEN_STEPS[4]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(counter()).toBe('2'))
-      expect(cellEl(canvas, FAR)!.querySelector('[data-cell-issue]')).toBeNull()
+      // Со свежей таблицы ячейка вдали может быть вне окна — отметки на ней тогда нет.
+      await until(() =>
+        expect(
+          cellEl(canvas, FAR)?.querySelector('[data-cell-issue]') ?? null,
+        ).toBeNull(),
+      )
       await settle()
     })
     await step(OFFSCREEN_STEPS[5]!.title, async () => {
@@ -464,6 +479,10 @@ const NAMED_SEED = [
 ]
 
 const LANGUAGE_STEPS: readonly GuideStoryStep[] = [
+  {
+    title: 'Журнал закрыт',
+    hint: 'Поиск на сервере и сохранение ячейки не удались. Журнал отказов пока закрыт.',
+  },
   {
     title: 'Журнал на английском',
     hint: 'Поиск на сервере и сохранение ячейки не удались. Пользователь открыл журнал: записи называют действия на языке таблицы.',
@@ -517,12 +536,16 @@ export const FailureLogLanguageSwitch: StoryObj<StoryProps> = {
     const ru = storyLabels('ru')
     await step(LANGUAGE_STEPS[0]!.title, async () => {
       await waitForRows(canvas)
+    })
+    await step(LANGUAGE_STEPS[1]!.title, async () => {
+      await guideNext(canvas)
+      await waitForRows(canvas)
       await until(() => expect(entries()).toHaveLength(2))
       expect(log()!.textContent).toContain(en.actionSearch)
       expect(log()!.textContent).toContain(en.actionSave)
       await settle()
     })
-    await step(LANGUAGE_STEPS[1]!.title, async () => {
+    await step(LANGUAGE_STEPS[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(log()?.textContent).toContain(ru.actionSearch))
       expect(log()!.textContent).toContain(ru.actionSave)

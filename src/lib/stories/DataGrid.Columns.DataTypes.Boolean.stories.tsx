@@ -104,11 +104,21 @@ const EDIT_BOOLEAN: readonly GuideStoryStep[] = [
     title: 'Пробел с клавиатуры',
     keyboard: true,
     hint: 'Пользователь перешёл на ячейку клавиатурой и нажал пробел. Значение переключилось обратно и тоже сохранилось.',
-    enter: untilDone(
-      root => !checkedIn(root),
-      root =>
-        checkedIn(root) ? pressSpaceOnStock(root) : stockBox(root)?.click(),
-    ),
+    // Со свежей таблицы флажок ещё не переключали: сперва нажатие, затем пробел.
+    enter: (root, app) => {
+      let pressed = false
+      return untilDone(
+        root => pressed && !checkedIn(root),
+        root => {
+          if (!checkedIn(root)) {
+            if (!pressed) stockBox(root)?.click()
+          } else if (!pressed) {
+            pressed = true
+            pressSpaceOnStock(root)
+          }
+        },
+      )(root, app)
+    },
   },
 ]
 
@@ -130,18 +140,18 @@ export const EditingBoolean: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     await step(EDIT_BOOLEAN[0]!.title, async () => {
       await waitForRows(canvas)
-      expect(checkedIn(canvas)).toBe(false)
+      await until(() => expect(checkedIn(canvas)).toBe(false))
     })
     await step(EDIT_BOOLEAN[1]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(checkedIn(canvas)).toBe(true))
-      expect(productInput(canvas, 'inStock')).toBeNull()
-      expect(consoleText()).toMatch(/value:true/)
+      await until(() => expect(productInput(canvas, 'inStock')).toBeNull())
+      await until(() => expect(consoleText()).toMatch(/value:true/))
     })
     await step(EDIT_BOOLEAN[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(checkedIn(canvas)).toBe(false))
-      expect(consoleText()).toMatch(/value:false/)
+      await until(() => expect(consoleText()).toMatch(/value:false/))
       await settle()
     })
   },

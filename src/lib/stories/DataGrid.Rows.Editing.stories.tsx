@@ -247,7 +247,6 @@ const INSERT: readonly GuideStoryStep[] = [
   {
     title: 'Сохранение по кнопке',
     hint: 'Приложение сохраняет изменения не сразу, а пакетом — по кнопке пульта в тулбаре. Новые строки тоже ждут сохранения.',
-    enter: () => rowServer.reset(),
   },
   {
     title: 'Новая строка',
@@ -286,6 +285,7 @@ export const RowDraftInsert: StoryObj<StoryProps> = {
     <GuideStory
       title="Новая строка"
       steps={INSERT}
+      reset={() => rowServer.reset()}
       args={guideArgs(ROWS_ARGS, args)}
     />
   ),
@@ -325,7 +325,6 @@ const DELETE: readonly GuideStoryStep[] = [
   {
     title: 'Удаление строки',
     hint: 'Приложение сохраняет изменения пакетом по кнопке пульта. У строк в колонке действий — кнопка удаления.',
-    enter: () => rowServer.reset(),
   },
   {
     title: 'Строка удалена',
@@ -363,6 +362,7 @@ export const RowDraftDelete: StoryObj<StoryProps> = {
     <GuideStory
       title="Удаление строки"
       steps={DELETE}
+      reset={() => rowServer.reset()}
       args={guideArgs(ROWS_ARGS, args)}
     />
   ),
@@ -410,10 +410,6 @@ const REFUSED: readonly GuideStoryStep[] = [
   {
     title: 'Сохранение по кнопке',
     hint: 'Приложение сохраняет изменения пакетом по кнопке пульта. Сервер сейчас не принимает новые строки.',
-    enter: () => {
-      rowServer.reset()
-      rowServer.refuseInserts = true
-    },
   },
   {
     title: 'Три изменения',
@@ -449,6 +445,10 @@ export const RowDraftsCommitRefused: StoryObj<StoryProps> = {
     <GuideStory
       title="Отказ новой строке"
       steps={REFUSED}
+      reset={() => {
+        rowServer.reset()
+        rowServer.refuseInserts = true
+      }}
       args={guideArgs(ROWS_ARGS, args)}
     />
   ),
@@ -464,9 +464,11 @@ export const RowDraftsCommitRefused: StoryObj<StoryProps> = {
     await step(REFUSED[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(rowEl(canvas, REMOVED)).toBeNull())
-      expect(newRow(canvas)).not.toBeNull()
-      expect(textOf(cellOf(rowEl(canvas, EDITED), 'age'))).toBe(EDITED_AGE)
-      expect(panelCount(canvas)).toBe(1)
+      await until(() => expect(newRow(canvas)).not.toBeNull())
+      await until(() =>
+        expect(textOf(cellOf(rowEl(canvas, EDITED), 'age'))).toBe(EDITED_AGE),
+      )
+      await until(() => expect(panelCount(canvas)).toBe(1))
       await settle()
     })
   },
@@ -479,6 +481,10 @@ const placeOf = (root: ParentNode, row: HTMLElement | null) =>
   row ? [...root.querySelectorAll('.data-grid__body-row')].indexOf(row) : -1
 
 const SAVE_IN_PLACE: readonly GuideStoryStep[] = [
+  {
+    title: 'Правок нет',
+    hint: 'Приложение сохраняет изменения по кнопке пульта. Пользователь ещё ничего не добавлял.',
+  },
   {
     title: 'Новая строка заполнена',
     hint: 'Приложение сохраняет изменения по кнопке пульта. Пользователь добавил строку под второй и вписал имя и возраст: строка залита тоном несохранённого.',
@@ -511,6 +517,7 @@ export const RowDraftSaveInPlace: StoryObj<StoryProps> = {
     <GuideStory
       title="Сохранение на месте"
       steps={SAVE_IN_PLACE}
+      reset={() => rowServer.reset()}
       args={guideArgs(ROWS_ARGS, args)}
     />
   ),
@@ -519,10 +526,14 @@ export const RowDraftSaveInPlace: StoryObj<StoryProps> = {
     let place = -1
     await step(SAVE_IN_PLACE[0]!.title, async () => {
       await waitForRows(canvas)
+    })
+    await step(SAVE_IN_PLACE[1]!.title, async () => {
+      await guideNext(canvas)
+      await waitForRows(canvas)
       await until(() => expect(newRowFilled(canvas)).toBe(true))
       place = placeOf(canvas, newRow(canvas))
     })
-    await step(SAVE_IN_PLACE[1]!.title, async () => {
+    await step(SAVE_IN_PLACE[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(savedRow(canvas)).not.toBeNull())
       expect(newRow(canvas)).toBeNull()

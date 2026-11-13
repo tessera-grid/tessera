@@ -288,8 +288,10 @@ export const SkeletonDataArrives: StoryObj<StoryProps> = {
         cell.dataset.columnId?.includes(part),
       )
     const square = async (shape: HTMLElement) => {
-      await expect(box(shape).width).toBe(16)
-      await expect(Math.round(shape.getBoundingClientRect().height)).toBe(16)
+      await until(() => expect(box(shape).width).toBe(16))
+      await until(() =>
+        expect(Math.round(shape.getBoundingClientRect().height)).toBe(16),
+      )
     }
     const expandCells = () =>
       skeletonRows(canvas).flatMap(row => byId('rowExpanding', row) ?? [])
@@ -304,48 +306,51 @@ export const SkeletonDataArrives: StoryObj<StoryProps> = {
         await until(() => expect(toolbarPart(id), id).not.toBeNull())
       }
       for (const id of ['quick-search', 'view-settings-button']) {
-        await expect(toolbarPart(id), id).toBeNull()
+        await until(() => expect(toolbarPart(id), id).toBeNull())
       }
     })
     await step(DATA_ARRIVES[1].title, async () => {
       await guideNext(canvas)
       await until(() => expect(toolbarPart('quick-search')).not.toBeNull())
+      await until(() =>
+        expect(byId('rowSelection', skeletonRows(canvas)[0]!)).toBeDefined(),
+      )
       const rows = skeletonRows(canvas)
       // SL2: выбор — квадрат, перетаскивание и действия — пустая ячейка.
       await square(shapeOf(byId('rowSelection', rows[0]!)!)!)
       for (const empty of ['rowDragging', 'rowActions']) {
-        await expect(shapeOf(byId(empty, rows[0]!)!)).toBeNull()
+        await until(() => expect(shapeOf(byId(empty, rows[0]!)!)).toBeNull())
       }
-      await expect(expandCells()).toHaveLength(0)
-      await expect(indented()).toBe(false)
+      await until(() => expect(expandCells()).toHaveLength(0))
+      await until(() => expect(indented()).toBe(false))
       // ADR 0122: поиск и «Настройки вида» — контролы, «Экспорт» — скелет.
       await until(() => expect(toolbarPart('export-skeleton')).not.toBeNull())
       for (const id of ['quick-search', 'view-settings-button']) {
-        await expect(toolbarPart(id), id).not.toBeNull()
+        await until(() => expect(toolbarPart(id), id).not.toBeNull())
       }
-      await expect(toolbarPart('export-button')).toBeNull()
+      await until(() => expect(toolbarPart('export-button')).toBeNull())
       exportSlot = inToolbar(toolbarPart('export-skeleton')!)
     })
     await step(DATA_ARRIVES[2].title, async () => {
       await guideNext(canvas)
       await until(() => expect(indented()).toBe(true))
-      await expect(expandCells()).toHaveLength(0)
-      await expect(treeLines()).toBe(false)
+      await until(() => expect(expandCells()).toHaveLength(0))
+      await until(() => expect(treeLines()).toBe(false))
     })
     await step(DATA_ARRIVES[3].title, async () => {
       await guideNext(canvas)
       await until(() => expect(treeLines()).toBe(true))
-      await expect(expandCells()).toHaveLength(0)
+      await until(() => expect(expandCells()).toHaveLength(0))
     })
     await step(DATA_ARRIVES[4].title, async () => {
       await guideNext(canvas)
       await until(() => expect(expandCells().length).toBeGreaterThan(0))
       // SL2: раскрытие — квадрат у строк с подстроками (SL25).
       const shapes = expandCells().flatMap(cell => shapeOf(cell) ?? [])
-      await expect(shapes.length).toBeGreaterThan(0)
+      await until(() => expect(shapes.length).toBeGreaterThan(0))
       for (const shape of shapes) await square(shape)
-      await expect(indented()).toBe(true)
-      await expect(treeLines()).toBe(true)
+      await until(() => expect(indented()).toBe(true))
+      await until(() => expect(treeLines()).toBe(true))
       head = geometry(headCells(canvas))
       columns = geometry(all(skeletonRows(canvas)[0]!, SKELETON_CELL))
       header = headCells(canvas)[0]
@@ -356,7 +361,7 @@ export const SkeletonDataArrives: StoryObj<StoryProps> = {
           .filter(cell => shapeOf(cell))
           .map(cell => cell.dataset.columnId!),
       )
-      await expect(footerShapes.size).toBeGreaterThan(0)
+      await until(() => expect(footerShapes.size).toBeGreaterThan(0))
     })
     await step(DATA_ARRIVES[5].title, async () => {
       // SL6, без задержки: ни одного состояния DOM без скелета и без строк.
@@ -368,38 +373,44 @@ export const SkeletonDataArrives: StoryObj<StoryProps> = {
       await guideNext(canvas)
       observer.disconnect()
       await waitData(canvas)
-      await expect(empty).toBe(0)
+      await until(() => expect(empty).toBe(0))
       // SL6 и SL2, без сдвига: те же заголовки, места и ширины колонок, служебных тоже.
-      await expect(headCells(canvas)[0]).toBe(header)
+      await until(() => expect(headCells(canvas)[0]).toBe(header))
       const [headNow, headBefore] = shared(geometry(headCells(canvas)), head)
-      await expect(headNow.length).toBeGreaterThan(1)
-      await expect(headNow).toEqual(headBefore)
+      await until(() => expect(headNow.length).toBeGreaterThan(1))
+      await until(() => expect(headNow).toEqual(headBefore))
       const [cellsNow, cellsBefore] = shared(
         geometry(all(dataRows(canvas)[0]!, '.data-grid__body-cell')),
         columns,
       )
-      await expect(cellsNow.length).toBeGreaterThan(1)
-      await expect(cellsNow).toEqual(cellsBefore)
+      await until(() => expect(cellsNow.length).toBeGreaterThan(1))
+      await until(() => expect(cellsNow).toEqual(cellsBefore))
       // SL8: итоги — ровно в колонках, где был их скелет.
       const loaded = all(canvas, '.data-grid__footer-cell')
       const [footerNow, footerBefore] = shared(geometry(loaded), footer)
-      await expect(footerNow.length).toBeGreaterThan(1)
-      await expect(footerNow).toEqual(footerBefore)
+      await until(() => expect(footerNow.length).toBeGreaterThan(1))
+      await until(() => expect(footerNow).toEqual(footerBefore))
       const ids = new Set(footerNow.map(cell => cell.id))
       const totals = new Set(
         loaded
           .filter(cell => cell.textContent?.trim())
           .map(cell => cell.dataset.columnId!),
       )
-      await expect(totals.size).toBeGreaterThan(0)
-      await expect(totals).toEqual(
-        new Set([...footerShapes].filter(id => ids.has(id))),
+      await until(() => expect(totals.size).toBeGreaterThan(0))
+      await until(() =>
+        expect(totals).toEqual(
+          new Set([...footerShapes].filter(id => ids.has(id))),
+        ),
       )
       // Скелетов не осталось нигде, панели тоже.
-      await expect(canvas.querySelector('[data-skeleton]')).toBeNull()
+      await until(() =>
+        expect(canvas.querySelector('[data-skeleton]')).toBeNull(),
+      )
       // «Экспорт» — на месте своего скелета.
       await until(() => expect(toolbarPart('export-button')).not.toBeNull())
-      await expect(inToolbar(toolbarPart('export-button')!)).toEqual(exportSlot)
+      await until(() =>
+        expect(inToolbar(toolbarPart('export-button')!)).toEqual(exportSlot),
+      )
     })
     await settle()
   },

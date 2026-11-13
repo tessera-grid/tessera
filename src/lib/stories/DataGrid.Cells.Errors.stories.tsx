@@ -768,19 +768,23 @@ export const CellFailureDiscardMenu: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     await step(DISCARD_MENU_STEPS[0]!.title, async () => {
       await waitForRows(canvas)
-      expect(cellIssueOf(visitsCellOf(canvas, CLEAR_A))).toBeNull()
+      await until(() =>
+        expect(cellIssueOf(visitsCellOf(canvas, CLEAR_A))).toBeNull(),
+      )
       await settle()
     })
     await step(DISCARD_MENU_STEPS[1]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(refusedAll(canvas, [CLEAR_A!])).toBe(true))
-      expect(textOf(visitsCellOf(canvas, CLEAR_A))).toBe(visitsOf(CLEAR_A!))
+      await until(() =>
+        expect(textOf(visitsCellOf(canvas, CLEAR_A))).toBe(visitsOf(CLEAR_A!)),
+      )
       await settle()
     })
     await step(DISCARD_MENU_STEPS[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(menuItem('discardChange')).not.toBeNull())
-      expect(menuItem('retrySave')).not.toBeNull()
+      await until(() => expect(menuItem('retrySave')).not.toBeNull())
       await settle()
     })
     await step(DISCARD_MENU_STEPS[3]!.title, async () => {
@@ -788,8 +792,10 @@ export const CellFailureDiscardMenu: StoryObj<StoryProps> = {
       await until(() =>
         expect(cellIssueOf(visitsCellOf(canvas, CLEAR_A))).toBeNull(),
       )
-      expect(menuItem('discardChange')).toBeNull()
-      expect(textOf(visitsCellOf(canvas, CLEAR_A))).toBe(visitsOf(CLEAR_A!))
+      await until(() => expect(menuItem('discardChange')).toBeNull())
+      await until(() =>
+        expect(textOf(visitsCellOf(canvas, CLEAR_A))).toBe(visitsOf(CLEAR_A!)),
+      )
       await settle()
     })
   },
@@ -1014,8 +1020,10 @@ export const CellFailureAppReset: StoryObj<StoryProps> = {
         ).toBe(true),
       )
       for (const row of BOTH())
-        expect(textOf(visitsCellOf(canvas, row))).toBe(visitsOf(row))
-      expect(resetTable!.getFailures()).toEqual([])
+        await until(() =>
+          expect(textOf(visitsCellOf(canvas, row))).toBe(visitsOf(row)),
+        )
+      await until(() => expect(resetTable!.getFailures()).toEqual([]))
       await settle()
     })
   },

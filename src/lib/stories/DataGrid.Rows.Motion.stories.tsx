@@ -224,8 +224,8 @@ export const RowMotionSearch: StoryObj<StoryProps> = {
     let rows = 0
     await step(SORT_SEARCH[0]!.title, async () => {
       await waitForRows(canvas)
-      await expect(sorted(canvas)).toBe(false)
-      await expect(isAscending(namesOf(canvas))).toBe(false)
+      await until(() => expect(sorted(canvas)).toBe(false))
+      await until(() => expect(isAscending(namesOf(canvas))).toBe(false))
     })
     await step(SORT_SEARCH[1]!.title, async () => {
       await guideNext(canvas)
@@ -243,8 +243,8 @@ export const RowMotionSearch: StoryObj<StoryProps> = {
         ).toBe(true),
       )
       await until(() => expect(ghost(canvas)).toBeNull())
-      await expect(modelRows()).toBeLessThan(rows)
-      await expect(isAscending(namesOf(canvas))).toBe(true)
+      await until(() => expect(modelRows()).toBeLessThan(rows))
+      await until(() => expect(isAscending(namesOf(canvas))).toBe(true))
       await settle()
     })
   },
@@ -287,13 +287,13 @@ export const RowMotionDelete: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     await step(DELETE[0]!.title, async () => {
       await waitForRows(canvas)
-      await expect(bodyRow(canvas, REMOVED)).toBeTruthy()
+      await until(() => expect(bodyRow(canvas, REMOVED)).toBeTruthy())
     })
     await step(DELETE[1]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(bodyRow(canvas, REMOVED)).toBeFalsy())
       await until(() => expect(ghost(canvas)).toBeNull())
-      await expect(bodyRow(canvas, NEXT)).toBeTruthy()
+      await until(() => expect(bodyRow(canvas, NEXT)).toBeTruthy())
       await settle()
     })
   },

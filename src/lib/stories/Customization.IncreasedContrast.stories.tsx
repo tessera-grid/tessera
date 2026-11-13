@@ -245,8 +245,14 @@ export const IncreasedContrastEnable: StoryObj<StoryProps> = {
     await step(ENABLE[0].title, async () => {
       await until(() => expect(selectedRow(canvas)).not.toBeNull())
       await settle()
-      expect(gridTheme(canvas)).not.toHaveAttribute('data-tsr-contrast')
-      expect(getComputedStyle(selectedRow(canvas)!).outlineStyle).toBe('none')
+      await until(() =>
+        expect(gridTheme(canvas)).not.toHaveAttribute('data-tsr-contrast'),
+      )
+      await until(() =>
+        expect(getComputedStyle(selectedRow(canvas)!).outlineStyle).toBe(
+          'none',
+        ),
+      )
       line = contrastToBg(canvas, treeLineColor(canvas))
     })
     await step(ENABLE[1].title, async () => {
@@ -254,20 +260,32 @@ export const IncreasedContrastEnable: StoryObj<StoryProps> = {
       await until(() =>
         expect(gridTheme(canvas)).toHaveAttribute('data-tsr-contrast', 'more'),
       )
+      await until(() => expect(selectedRow(canvas)).not.toBeNull())
       await settle()
       const row = getComputedStyle(selectedRow(canvas)!)
-      expect(row.outlineStyle).toBe('solid')
-      expect(row.outlineWidth).toBe('1px')
-      expect(contrastToBg(canvas, treeLineColor(canvas))).toBeGreaterThan(line)
+      await until(() => expect(row.outlineStyle).toBe('solid'))
+      await until(() => expect(row.outlineWidth).toBe('1px'))
+      await until(() =>
+        expect(contrastToBg(canvas, treeLineColor(canvas))).toBeGreaterThan(
+          line,
+        ),
+      )
     })
     await step(ENABLE[2].title, async () => {
       await guideNext(canvas)
+      await until(() =>
+        expect(canvas.querySelector(HOVERED_ROW)).not.toBeNull(),
+      )
       const row = canvas.querySelector<HTMLElement>(HOVERED_ROW)!
-      expect(getComputedStyle(row).outlineStyle).toBe('none')
+      await until(() => expect(getComputedStyle(row).outlineStyle).toBe('none'))
       // Наведение — псевдо-состояние; классы снимаются: матрица контраста ставит свои.
       await applyPseudoStates(id, ENABLE[2].pseudo!)
-      expect(getComputedStyle(row).outlineStyle).toBe('solid')
-      expect(contrastToBg(canvas, rowStateColor(row))).toBeGreaterThan(1)
+      await until(() =>
+        expect(getComputedStyle(row).outlineStyle).toBe('solid'),
+      )
+      await until(() =>
+        expect(contrastToBg(canvas, rowStateColor(row))).toBeGreaterThan(1),
+      )
       row.classList.remove('pseudo-hover')
       await settle()
     })
@@ -275,14 +293,18 @@ export const IncreasedContrastEnable: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await stepDone(canvas)
       const menu = await waitForPopup('menu')
-      expect(getComputedStyle(menu).outlineStyle).toBe('solid')
-      expect(
-        getComputedStyle(
-          menu.querySelector<HTMLElement>(
-            '[role="menuitem"][data-highlighted]',
-          )!,
-        ).outlineStyle,
-      ).toBe('solid')
+      await until(() =>
+        expect(getComputedStyle(menu).outlineStyle).toBe('solid'),
+      )
+      await until(() =>
+        expect(
+          getComputedStyle(
+            menu.querySelector<HTMLElement>(
+              '[role="menuitem"][data-highlighted]',
+            )!,
+          ).outlineStyle,
+        ).toBe('solid'),
+      )
       await settle()
     })
   },
@@ -302,19 +324,21 @@ const RECIPE = `
 }
 `
 
-const recipe = (on: boolean) => (root: HTMLElement) =>
-  root.classList.toggle('contrast-recipe', on)
+/** Правило приложения на время шага: уход с шага его снимает. */
+const recipe = (root: HTMLElement) => {
+  root.classList.add('contrast-recipe')
+  return () => root.classList.remove('contrast-recipe')
+}
 
 const RECIPE_STEPS: readonly GuideStoryStep[] = [
   {
     title: 'Надстройка из коробки',
     hint: 'Повышенный контраст включён: рамка грида — цвет палитры приложения, тона наведения и выбора — из надстройки.',
-    enter: recipe(false),
   },
   {
     title: 'Правило приложения',
     hint: 'Приложение задаёт свою рамку палитры и свои доли тона наведения и выбора: рамка грида синяя, заливка выбранных строк плотнее. Правило перебивает надстройку без !important.',
-    enter: recipe(true),
+    enter: recipe,
   },
 ]
 

@@ -373,8 +373,10 @@ export const ToolbarOwnOrder: StoryObj<StoryProps> = {
     await step(OWN_ORDER[0]!.title, async () => {
       await until(() => expect(box('export-button')).not.toBeNull())
       await until(() => expect(box('quick-search')).not.toBeNull())
-      await expect(box('export-button')!.left).toBeGreaterThan(
-        box('view-settings-button')!.right,
+      await until(() =>
+        expect(box('export-button')!.left).toBeGreaterThan(
+          box('view-settings-button')!.right,
+        ),
       )
     })
     await step(OWN_ORDER[1]!.title, async () => {
@@ -384,16 +386,20 @@ export const ToolbarOwnOrder: StoryObj<StoryProps> = {
           box('view-settings-button')!.left,
         ),
       )
-      await expect(box('export-button')!.left).toBeGreaterThan(
-        box('quick-search')!.right,
+      await until(() =>
+        expect(box('export-button')!.left).toBeGreaterThan(
+          box('quick-search')!.right,
+        ),
       )
       await settle()
     })
     await step(OWN_ORDER[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(box('quick-search')).toBeNull())
-      await expect(box('export-button')!.right).toBeLessThan(
-        box('view-settings-button')!.left,
+      await until(() =>
+        expect(box('export-button')!.right).toBeLessThan(
+          box('view-settings-button')!.left,
+        ),
       )
       await settle()
     })

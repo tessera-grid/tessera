@@ -115,10 +115,6 @@ const GROUP_BY: readonly GuideStoryStep[] = [
     title: 'Пользователь открыл список',
     hint: 'Сервер отдаёт сто тысяч строк блоками. Таблица держит только те, что рядом с экраном.',
     props: groupProps({}),
-    enter: stepAction(async (root, { signal }) => {
-      groupServer.refuse = false
-      await pollUntil(() => hasRow(root, 0), signal)
-    }),
   },
   {
     title: 'Пользователь сгруппировал по городу',
@@ -154,14 +150,17 @@ export const ServerRowModelGroupBy: StoryObj<StoryProps> = {
     <GuideStory
       title="Группировка на сервере"
       steps={GROUP_BY}
+      reset={() => {
+        groupServer.refuse = false
+      }}
       args={guideArgs(layout, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(GROUP_BY[0]!.title, async () => {
-      await stepDone(canvas)
-      await expect(groupRows(canvas)).toHaveLength(0)
+      await until(() => expect(hasRow(canvas, 0)).toBe(true))
+      await until(() => expect(groupRows(canvas)).toHaveLength(0))
     })
     await step(GROUP_BY[1]!.title, async () => {
       await guideNext(canvas)
@@ -204,9 +203,6 @@ const EXPAND_GROUP: readonly GuideStoryStep[] = [
     title: 'Список сгруппирован по городу',
     hint: 'Каждая строка — город с числом строк и агрегатами. Самих строк городов таблица ещё не загружала.',
     props: groupProps({ grouping: ['city'] }),
-    enter: stepAction(async (root, { signal }) => {
-      await pollUntil(() => !!groupRowOf(root, 'Paris'), signal)
-    }),
   },
   {
     title: 'Пользователь раскрыл город',
@@ -252,8 +248,8 @@ export const ServerRowModelExpandGroup: StoryObj<StoryProps> = {
         id => id === groupRowOf(canvas, 'Paris')?.dataset.rowId,
       )
     await step(EXPAND_GROUP[0]!.title, async () => {
-      await stepDone(canvas)
-      await expect(parisRequests()).toEqual([])
+      await until(() => expect(!!groupRowOf(canvas, 'Paris')).toBe(true))
+      await until(() => expect(parisRequests()).toEqual([]))
     })
     await step(EXPAND_GROUP[1]!.title, async () => {
       await guideNext(canvas)
@@ -305,9 +301,6 @@ const TOTALS: readonly GuideStoryStep[] = [
     title: 'Итог в футере',
     hint: 'Под списком — итог по всем ста тысячам строк: сумма визитов и средний возраст. Его посчитал сервер, загружены лишь строки рядом с экраном.',
     props: groupProps({ search: true }),
-    enter: stepAction(async (root, { signal }) => {
-      await pollUntil(() => footerOf(root, 'visits') === allVisits(), signal)
-    }),
   },
   {
     title: 'Пользователь ищет город',
@@ -354,8 +347,8 @@ export const ServerRowModelTotals: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(TOTALS[0]!.title, async () => {
-      await stepDone(canvas)
-      await expect(footerOf(canvas, 'visits')).toBe(allVisits())
+      await until(() => expect(hasRow(canvas, 0)).toBe(true))
+      await until(() => expect(footerOf(canvas, 'visits')).toBe(allVisits()))
     })
     await step(TOTALS[1]!.title, async () => {
       await guideNext(canvas)
@@ -384,10 +377,6 @@ const GROUPING_REFUSED: readonly GuideStoryStep[] = [
     title: 'Пользователь открыл список',
     hint: 'Сервер отдаёт строки списка блоками, группировки нет.',
     props: groupProps({}),
-    enter: stepAction(async (root, { signal }) => {
-      groupServer.refuse = true
-      await pollUntil(() => hasRow(root, 0), signal)
-    }),
   },
   {
     title: 'Пользователь сгруппировал по городу',
@@ -422,14 +411,17 @@ export const ServerRowModelGroupingRefused: StoryObj<StoryProps> = {
     <GuideStory
       title="Отказ в группировке"
       steps={GROUPING_REFUSED}
+      reset={() => {
+        groupServer.refuse = true
+      }}
       args={guideArgs(layout, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(GROUPING_REFUSED[0]!.title, async () => {
-      await stepDone(canvas)
-      await expect(groupRows(canvas)).toHaveLength(0)
+      await until(() => expect(hasRow(canvas, 0)).toBe(true))
+      await until(() => expect(groupRows(canvas)).toHaveLength(0))
     })
     await step(GROUPING_REFUSED[1]!.title, async () => {
       await guideNext(canvas)
@@ -489,9 +481,6 @@ const EXPAND_ALL: readonly GuideStoryStep[] = [
       groupServer.refuse = false
       return groupProps({ grouping: ['city'] })!(context)
     },
-    enter: stepAction(async (root, { signal }) => {
-      await pollUntil(() => groupRows(root).length > 0, signal)
-    }),
   },
   {
     title: 'Пользователь раскрыл всё',
@@ -533,8 +522,10 @@ export const ServerGroupingExpandAll: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(EXPAND_ALL[0]!.title, async () => {
-      await stepDone(canvas)
-      await expect(groupRows(canvas).some(groupExpanded)).toBe(false)
+      await until(() => expect(groupRows(canvas).length > 0).toBe(true))
+      await until(() =>
+        expect(groupRows(canvas).some(groupExpanded)).toBe(false),
+      )
     })
     await step(EXPAND_ALL[1]!.title, async () => {
       await guideNext(canvas)
@@ -566,9 +557,6 @@ const ROW_COUNT: readonly GuideStoryStep[] = [
     title: 'Сервер прислал число подгрупп',
     hint: 'Рядом с городом стоит число его подгрупп: сервер сообщил только их, этого хватает, чтобы раскрыть группу.',
     props: groupProps({ grouping: NESTED_GROUPS, rowCounts: false }),
-    enter: stepAction(async (root, { signal }) => {
-      await pollUntil(() => !!groupRowOf(root, 'Paris'), signal)
-    }),
   },
   {
     title: 'Сервер прислал число строк',
@@ -595,8 +583,8 @@ export const ServerGroupRowCount: StoryObj<StoryProps> = {
   play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(ROW_COUNT[0]!.title, async () => {
-      await stepDone(canvas)
-      await expect(groupCountOf(canvas)).toBe('(3)')
+      await until(() => expect(!!groupRowOf(canvas, 'Paris')).toBe(true))
+      await until(() => expect(groupCountOf(canvas)).toBe('(3)'))
     })
     await step(ROW_COUNT[1]!.title, async () => {
       await guideNext(canvas)

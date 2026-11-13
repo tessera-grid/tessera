@@ -272,9 +272,6 @@ const ADD_REMOVE: readonly GuideStoryStep[] = [
       onDataChange: keepData,
       enableCellSelection: true,
     }),
-    enter: stepAction(async (root, { signal }) => {
-      await pollUntil(() => !!rowById(root, SELECTED[0]!), signal)
-    }),
   },
   {
     title: 'Ячейки выделены',
@@ -307,6 +304,8 @@ const ADD_REMOVE: readonly GuideStoryStep[] = [
       await pollUntil(() => !!rowById(root, SELECTED[0]!), signal)
       if (!selectionShown(root)) selectRows()
       addRows()
+      // Удаление — из данных с добавленными строками: приложение кладёт их к себе не сразу.
+      await pollUntil(() => !!rowById(root, ADDED[1]!), signal)
       if (rowById(root, REMOVED)) transact({ remove: [REMOVED] })
       await pollUntil(
         () => !rowById(root, REMOVED) && selectionShown(root),
@@ -330,27 +329,33 @@ export const ClientTransactionsAddRemove: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(ADD_REMOVE[0]!.title, async () => {
-      await stepDone(canvas)
+      await waitForRows(canvas)
     })
     await step(ADD_REMOVE[1]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(selectedRows(canvas)).toEqual([...SELECTED].sort())
+      await until(() =>
+        expect(selectedRows(canvas)).toEqual([...SELECTED].sort()),
+      )
     })
     await step(ADD_REMOVE[2]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(clientTx.result).toBe('applied')
-      await expect(indexOfRow(canvas, ADDED[0]!)).toBe(1)
-      await expect(indexOfRow(canvas, SELECTED[0]!)).toBe(4)
-      await expect(selectedRows(canvas)).toEqual([...SELECTED].sort())
+      await until(() => expect(clientTx.result).toBe('applied'))
+      await until(() => expect(indexOfRow(canvas, ADDED[0]!)).toBe(1))
+      await until(() => expect(indexOfRow(canvas, SELECTED[0]!)).toBe(4))
+      await until(() =>
+        expect(selectedRows(canvas)).toEqual([...SELECTED].sort()),
+      )
       await settle()
     })
     await step(ADD_REMOVE[3]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(indexOfRow(canvas, SELECTED[0]!)).toBe(3)
-      await expect(selectedRows(canvas)).toEqual([...SELECTED].sort())
+      await until(() => expect(indexOfRow(canvas, SELECTED[0]!)).toBe(3))
+      await until(() =>
+        expect(selectedRows(canvas)).toEqual([...SELECTED].sort()),
+      )
       await settle()
     })
   },
@@ -425,10 +430,6 @@ const SHIFTS: readonly GuideStoryStep[] = [
       extraPlugins: [clientTxSeed],
       onDataChange: keepData,
     }),
-    enter: stepAction(async (root, { signal }) => {
-      showTop()
-      await pollUntil(() => !!rowById(root, MOVED), signal)
-    }),
   },
   {
     title: 'Строки добавлены между другими',
@@ -484,8 +485,8 @@ export const ClientTransactionsShiftLargeTable: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(SHIFTS[0]!.title, async () => {
-      await stepDone(canvas)
-      await expect(indexOfRow(canvas, 'item-id-2')).toBe(2)
+      await waitForRows(canvas)
+      await until(() => expect(indexOfRow(canvas, 'item-id-2')).toBe(2))
     })
     await step(SHIFTS[1]!.title, async () => {
       // Вспышка новых строк держится на время снимка (ADR 0199, MS15): токен — до транзакции.
@@ -544,10 +545,6 @@ const WITHOUT_HANDLER: readonly GuideStoryStep[] = [
     title: 'Данные только у приложения',
     hint: 'Приложение не передало таблице обработчик новых данных: менять данные может только оно само.',
     props: () => ({ extraPlugins: [clientTxSeed] }),
-    enter: stepAction(async (root, { signal }) => {
-      clientTx.result = undefined
-      await pollUntil(() => !!rowIdAt(root, 0), signal)
-    }),
   },
   {
     title: 'Транзакция не применена',
@@ -567,13 +564,16 @@ export const ClientTransactionsWithoutHandler: StoryObj<StoryProps> = {
     <GuideStory
       title="Без обработчика данных"
       steps={WITHOUT_HANDLER}
+      reset={() => {
+        clientTx.result = undefined
+      }}
       args={guideArgs(layout, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(WITHOUT_HANDLER[0]!.title, async () => {
-      await stepDone(canvas)
+      await waitForRows(canvas)
     })
     await step(WITHOUT_HANDLER[1]!.title, async () => {
       const first = rowIdAt(canvas, 0)

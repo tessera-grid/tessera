@@ -193,6 +193,10 @@ const statusBarLayout = (root: ParentNode) =>
 
 const MENUS: readonly GuideStoryStep[] = [
   {
+    title: 'Меню закрыто',
+    hint: 'У пунктов меню строки длинные подписи. Пользователь ещё не открывал меню.',
+  },
+  {
     title: 'Меню строки',
     hint: 'Длинный пункт меню переносится на несколько строк, а само меню не становится шире заданного предела.',
     states: ['overlay.menu'],
@@ -238,6 +242,10 @@ export const LongTextMenus: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     await step(MENUS[0]!.title, async () => {
       await waitForRows(canvas)
+    })
+    await step(MENUS[1]!.title, async () => {
+      await guideNext(canvas)
+      await waitForRows(canvas)
       await until(() =>
         expect(document.querySelector('[role="menu"]')).not.toBeNull(),
       )
@@ -253,7 +261,7 @@ export const LongTextMenus: StoryObj<StoryProps> = {
       )
       await settle()
     })
-    await step(MENUS[1]!.title, async () => {
+    await step(MENUS[2]!.title, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(['compact', 'stacked']).toContain(statusBarLayout(canvas)),

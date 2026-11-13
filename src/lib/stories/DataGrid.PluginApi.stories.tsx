@@ -268,7 +268,7 @@ export const PluginApiReactiveArgs: StoryObj<SessionsArgs> = {
     if (globals.catalog !== true) return
     await step(REACTIVE[0]!.title, async () => {
       await waitForRows(canvas)
-      await expect(isExpanded(canvas, ROOT)).toBe(false)
+      await until(() => expect(isExpanded(canvas, ROOT)).toBe(false))
     })
     await step(REACTIVE[1]!.title, async () => {
       await guideNext(canvas)
@@ -281,7 +281,7 @@ export const PluginApiReactiveArgs: StoryObj<SessionsArgs> = {
     await step(REACTIVE[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(isExpanded(canvas, CHILD)).toBe(false))
-      await expect(isExpanded(canvas, ROOT)).toBe(true)
+      await until(() => expect(isExpanded(canvas, ROOT)).toBe(true))
     })
     await step(REACTIVE[3]!.title, async () => {
       await guideNext(canvas)
@@ -600,24 +600,31 @@ export const PluginApiResizeCallbacks: StoryObj<SessionsArgs> = {
     await step(RESIZE[1]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      expect(widthOf(canvas)).toBeGreaterThan(start + RESIZE_BY / 2)
+      await until(() =>
+        expect(widthOf(canvas)).toBeGreaterThan(start + RESIZE_BY / 2),
+      )
       await until(() =>
         expect(consoleText()).toMatch(
           new RegExp(`onColumnResizeEnd[^\\n]*${RESIZED}`),
         ),
       )
       const width = /onColumnResizeEnd[^\n]*width\D*(\d+)/.exec(consoleText())
-      expect(Number(width?.[1])).toBeGreaterThan(start + RESIZE_BY / 2)
+      await until(() =>
+        expect(Number(width?.[1])).toBeGreaterThan(start + RESIZE_BY / 2),
+      )
     })
     await step(RESIZE[2]!.title, async () => {
       const wide = widthOf(canvas)
       await guideNext(canvas)
       await stepDone(canvas)
-      expect(widthOf(canvas)).toBe(wide)
+      // Прежняя ширина: после прошлого шага — расширенная, со свежей таблицы — исходная.
+      await until(() => expect([wide, start]).toContain(widthOf(canvas)))
       await until(() =>
         expect(consoleText()).toMatch(/onColumnResizeCancel[^\n]*cancel/),
       )
-      expect(consoleText().match(/onColumnResizeEnd/g)).toHaveLength(1)
+      await until(() =>
+        expect(consoleText().match(/onColumnResizeEnd/g)).toHaveLength(1),
+      )
       await settle()
     })
   },
@@ -1290,13 +1297,13 @@ export const PluginApiControlledState: StoryObj<StoryProps> = {
     await step(CONTROLLED[0]!.title, async () => {
       await waitForRows(canvas)
       await until(() => expect(isMarked(canvas, UNMARKED_ROW)).toBe(true))
-      expect(isMarked(canvas, KEPT_ROW)).toBe(true)
-      expect(markedRows(canvas)).toBe(2)
+      await until(() => expect(isMarked(canvas, KEPT_ROW)).toBe(true))
+      await until(() => expect(markedRows(canvas)).toBe(2))
     })
     await step(CONTROLLED[1]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(isMarked(canvas, UNMARKED_ROW)).toBe(false))
-      expect(isMarked(canvas, KEPT_ROW)).toBe(true)
+      await until(() => expect(isMarked(canvas, KEPT_ROW)).toBe(true))
       await until(() =>
         expect(consoleText()).toMatch(
           new RegExp(`onFavoritesChange[^\\n]*${UNMARKED_ROW}[^\\n]*false`),
@@ -1306,7 +1313,7 @@ export const PluginApiControlledState: StoryObj<StoryProps> = {
     await step(CONTROLLED[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(markedRows(canvas)).toBe(0))
-      expect(markOf(canvas, KEPT_ROW)).not.toBeNull()
+      await until(() => expect(markOf(canvas, KEPT_ROW)).not.toBeNull())
       await settle()
     })
   },
@@ -1821,7 +1828,7 @@ export const PluginApiBodyEvents: StoryObj<StoryProps> = {
     const cell = () => bodyCell(canvas, CARD_CELL.rowId, CARD_CELL.columnId)!
     await step(BODY_EVENTS[0]!.title, async () => {
       await waitForRows(canvas)
-      expect(cellCardOf()).toBeNull()
+      await until(() => expect(cellCardOf()).toBeNull())
     })
     await step(BODY_EVENTS[1]!.title, async () => {
       await guideNext(canvas)
@@ -1829,14 +1836,18 @@ export const PluginApiBodyEvents: StoryObj<StoryProps> = {
       const value = cell().querySelector(
         '.data-grid__cell-wrapper-title',
       )!.textContent!
-      expect(cellCardOf()!.textContent).toContain(value)
-      expect(cell().hasAttribute('data-cellcard-open')).toBe(true)
+      await until(() => expect(cellCardOf()!.textContent).toContain(value))
+      await until(() =>
+        expect(cell().hasAttribute('data-cellcard-open')).toBe(true),
+      )
       await settle()
     })
     await step(BODY_EVENTS[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(cellCardOf()).toBeNull())
-      expect(cell().hasAttribute('data-cellcard-open')).toBe(false)
+      await until(() =>
+        expect(cell().hasAttribute('data-cellcard-open')).toBe(false),
+      )
       await settle()
     })
   },

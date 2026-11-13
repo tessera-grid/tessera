@@ -523,6 +523,50 @@ const toPage = (start: string) => (root: HTMLElement) => {
     ?.click()
 }
 
+/** Звено действия шага: состояние, до которого оно доводит, и само действие. */
+type Link = [
+  done: (root: HTMLElement) => boolean,
+  act: (root: HTMLElement) => void,
+]
+
+/**
+ * Шаг, чьё состояние — итог цепочки действий: со свежей таблицы он проходит все звенья,
+ * после прошлого шага — только недостающие (ADR 0117, §6а).
+ */
+const chain =
+  (...links: Link[]): GuideStoryStep['enter'] =>
+  (root, app) => {
+    let at = -1
+    return untilDone(links.at(-1)![0], root => {
+      if (at < 0) {
+        at = links.length - 1
+        while (at > 0 && !links[at - 1]![0](root)) at--
+      }
+      while (at < links.length - 1 && links[at]![0](root)) at++
+      links[at]![1](root)
+    })(root, app)
+  }
+
+const typed = (text: string) => (root: HTMLElement) => {
+  void root
+  const field = searchField()
+  if (field && field.value !== text) typeInto(field, text)
+}
+const foundOnPages: Link = [
+  root => pagesOfFound(root) && searchField()?.value === SCOPE_QUERY,
+  typed(SCOPE_QUERY),
+]
+const foundChecked: Link = [
+  root => headChecked(root) && selectedCount().includes(String(FOUND)),
+  checkHead,
+]
+const nextPageSelected: Link = [
+  root =>
+    pageStart(root) === String(SCOPE_PAGE + 1) &&
+    orderedRows(root).every(selected),
+  toPage(String(SCOPE_PAGE + 1)),
+]
+
 const SELECT_FOUND: readonly GuideStoryStep[] = [
   {
     title: 'Строки на страницах',
@@ -541,30 +585,25 @@ const SELECT_FOUND: readonly GuideStoryStep[] = [
     title: 'Пользователь выбрал все найденные',
     hint: 'Пользователь отметил флажок в заголовке. Выбраны все найденные строки — и на другой странице; нижняя панель называет их число.',
     states: ['body.selection'],
-    enter: untilDone(
-      root => headChecked(root) && selectedCount().includes(String(FOUND)),
-      checkHead,
-    ),
+    enter: chain(foundOnPages, foundChecked),
   },
   {
     title: 'Пользователь перешёл на другую страницу',
     hint: 'Найденные строки следующей страницы тоже выбраны, флажок в заголовке остаётся отмеченным.',
     states: ['body.selection'],
-    enter: untilDone(
-      root =>
-        pageStart(root) === String(SCOPE_PAGE + 1) &&
-        orderedRows(root).every(selected),
-      toPage(String(SCOPE_PAGE + 1)),
-    ),
+    enter: chain(foundOnPages, foundChecked, nextPageSelected),
   },
   {
     title: 'Пользователь очистил поиск',
     hint: 'Пользователь очистил поле поиска. Видны все строки; выбраны только найденные, нижняя панель называет то же число.',
     states: ['body.selection'],
-    enter: untilDone(
-      root => !pagesOfFound(root) && searchField()?.value === '',
+    enter: chain(foundOnPages, foundChecked, nextPageSelected, [
+      root =>
+        !pagesOfFound(root) &&
+        searchField()?.value === '' &&
+        selectedCount().includes(String(FOUND)),
       () => byTestId('quick-search-clear')?.click(),
-    ),
+    ]),
   },
 ]
 
@@ -583,7 +622,7 @@ export const RowsSelectionSelectAllFiltered: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     await step(SELECT_FOUND[0]!.title, async () => {
       await waitForRows(canvas)
-      await expect(orderedRows(canvas).some(selected)).toBe(false)
+      await until(() => expect(orderedRows(canvas).some(selected)).toBe(false))
     })
     await step(SELECT_FOUND[1]!.title, async () => {
       await guideNext(canvas)
@@ -592,19 +631,19 @@ export const RowsSelectionSelectAllFiltered: StoryObj<StoryProps> = {
     await step(SELECT_FOUND[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(selectedCount()).toContain(String(FOUND)))
-      await expect(orderedRows(canvas).every(selected)).toBe(true)
+      await until(() => expect(orderedRows(canvas).every(selected)).toBe(true))
     })
     await step(SELECT_FOUND[3]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(pageStart(canvas)).toBe(String(SCOPE_PAGE + 1)))
       await until(() => expect(orderedRows(canvas).every(selected)).toBe(true))
-      await expect(headChecked(canvas)).toBe(true)
+      await until(() => expect(headChecked(canvas)).toBe(true))
     })
     await step(SELECT_FOUND[4]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(pagesOfFound(canvas)).toBe(false))
-      await expect(orderedRows(canvas).every(selected)).toBe(false)
-      await expect(selectedCount()).toContain(String(FOUND))
+      await until(() => expect(orderedRows(canvas).every(selected)).toBe(false))
+      await until(() => expect(selectedCount()).toContain(String(FOUND)))
       await settle()
     })
   },
@@ -805,7 +844,16 @@ const GROUP_FILTERED: readonly GuideStoryStep[] = [
     title: 'Пользователь очистил поиск',
     hint: 'Скрытые поиском строки вернулись невыбранными, поэтому флажок группы стал частичным.',
     states: ['body.selection'],
-    enter: searchFor('', root => flagOf(root, ALPHA) === 'mixed'),
+    enter: chain(
+      [
+        root =>
+          searchField()?.value === GROUP_QUERY &&
+          !bodyRow(root, HIDDEN_IN_ALPHA),
+        typed(GROUP_QUERY),
+      ],
+      [root => flagOf(root, ALPHA) === 'true', selectAlpha],
+      [root => flagOf(root, ALPHA) === 'mixed', typed('')],
+    ),
   },
 ]
 
@@ -833,13 +881,15 @@ export const GroupSelectFiltered: StoryObj<StoryProps> = {
     await step(GROUP_FILTERED[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(flagOf(canvas, ALPHA)).toBe('true'))
-      await expect(selectedCount()).toContain('3')
+      await until(() => expect(selectedCount()).toContain('3'))
     })
     await step(GROUP_FILTERED[3]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(flagOf(canvas, ALPHA)).toBe('mixed'))
-      await expect(selected(bodyRow(canvas, HIDDEN_IN_ALPHA))).toBe(false)
-      await expect(selectedCount()).toContain('3')
+      await until(() =>
+        expect(selected(bodyRow(canvas, HIDDEN_IN_ALPHA))).toBe(false),
+      )
+      await until(() => expect(selectedCount()).toContain('3'))
       await settle()
     })
   },
@@ -866,9 +916,21 @@ const GROUP_REGROUP: readonly GuideStoryStep[] = [
     title: 'Пользователь сгруппировал по другой колонке',
     hint: 'Группы стали другими, но выбор остался: те же строки выбраны и в новых группах, их флажки частичные.',
     states: ['body.selection'],
-    enter: untilDone(
-      root => groupedBy(root, 'city') && !groupedBy(root, 'team'),
-      groupBy('city', 'team'),
+    enter: chain(
+      [
+        root => groupedBy(root, 'team') && flagOf(root, ALPHA) === 'true',
+        root => {
+          groupBy('team', 'city')(root)
+          if (groupedBy(root, 'team')) selectAlpha(root)
+        },
+      ],
+      [
+        root =>
+          groupedBy(root, 'city') &&
+          !groupedBy(root, 'team') &&
+          selectedCount().includes('6'),
+        groupBy('city', 'team'),
+      ],
     ),
   },
 ]
@@ -897,8 +959,8 @@ export const GroupSelectRegroup: StoryObj<StoryProps> = {
     await step(GROUP_REGROUP[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(groupedBy(canvas, 'city')).toBe(true))
-      await expect(selectedCount()).toContain('6')
-      await expect(flagOf(canvas, 'city:Paris')).toBe('mixed')
+      await until(() => expect(selectedCount()).toContain('6'))
+      await until(() => expect(flagOf(canvas, 'city:Paris')).toBe('mixed'))
       await settle()
     })
   },

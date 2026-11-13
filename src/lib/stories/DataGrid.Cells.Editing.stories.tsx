@@ -167,12 +167,14 @@ export const EditingValue: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     await step(EDIT_VALUE[0]!.title, async () => {
       await waitForRows(canvas)
-      expect(editButtonOf(canvas, VALUE_ROW)).not.toBeNull()
-      expect(
-        canvas.querySelector(
-          `.data-grid__body-row[data-row-id="${VALUE_ROW}"] .data-grid__body-cell[data-column-id="firstName"] .cell__button`,
-        ),
-      ).toBeNull()
+      await until(() => expect(editButtonOf(canvas, VALUE_ROW)).not.toBeNull())
+      await until(() =>
+        expect(
+          canvas.querySelector(
+            `.data-grid__body-row[data-row-id="${VALUE_ROW}"] .data-grid__body-cell[data-column-id="firstName"] .cell__button`,
+          ),
+        ).toBeNull(),
+      )
     })
     await step(EDIT_VALUE[1]!.title, async () => {
       await guideNext(canvas)
@@ -181,7 +183,7 @@ export const EditingValue: StoryObj<StoryProps> = {
     await step(EDIT_VALUE[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(inputOf(canvas, VALUE_ROW)).toBeNull())
-      expect(ageText(canvas, VALUE_ROW)).toBe(NEW_AGE)
+      await until(() => expect(ageText(canvas, VALUE_ROW)).toBe(NEW_AGE))
       await settle()
     })
   },
@@ -200,6 +202,10 @@ const reachRefusal = (root: HTMLElement) => {
 }
 
 const EDIT_SERVER_STEPS: readonly GuideStoryStep[] = [
+  {
+    title: 'Правок нет',
+    hint: 'Приложение сохраняет правку ячейки на сервере. Пользователь ещё ничего не правил.',
+  },
   {
     title: 'Значение отправлено на сервер',
     hint: 'Пользователь сохранил новое значение, и приложение отправило его на сервер. Пока сервер не ответил, ячейка чуть темнеет и по ней проходит светлый блик, а соседние ячейки можно править.',
@@ -236,11 +242,17 @@ const EDIT_SERVER_STEPS: readonly GuideStoryStep[] = [
     hint: 'Пользователь снова открыл правку. В поле отклонённое значение, а рядом причина отказа от сервера.',
     states: ['body.editing'],
     enter: untilDone(
-      root => !!ageCellOf(root, SERVER_ROW)?.querySelector('[role="alert"]'),
+      // Причина отказа в поле: пустая область сообщений есть у любой открытой правки.
       root =>
-        failed(root, SERVER_ROW)
-          ? editButtonOf(root, SERVER_ROW)?.click()
-          : reachRefusal(root),
+        !!ageCellOf(root, SERVER_ROW)
+          ?.querySelector('[role="alert"]')
+          ?.textContent?.trim(),
+      root => {
+        if (!failed(root, SERVER_ROW)) reachRefusal(root)
+        // Со свежей таблицы отказ только что пришёл: правка — после его вспышки.
+        else if (!ageCellOf(root, SERVER_ROW)?.hasAttribute('data-flash'))
+          editButtonOf(root, SERVER_ROW)?.click()
+      },
     ),
   },
 ]
@@ -273,15 +285,19 @@ export const EditingServer: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     await step(EDIT_SERVER_STEPS[0]!.title, async () => {
       await waitForRows(canvas)
+    })
+    await step(EDIT_SERVER_STEPS[1]!.title, async () => {
+      await guideNext(canvas)
+      await waitForRows(canvas)
       await until(() => expect(pending(canvas, SERVER_ROW)).toBe(true))
       // Ожидание и значение — разные срезы: React 18 коммитит их по одному.
       await until(() => expect(ageText(canvas, SERVER_ROW)).toBe(SAVED_AGE))
     })
-    await step(EDIT_SERVER_STEPS[1]!.title, async () => {
+    await step(EDIT_SERVER_STEPS[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(pending(canvas, SERVER_ROW)).toBe(false))
       await until(() => expect(ageText(canvas, SERVER_ROW)).toBe(SAVED_AGE))
-      expect(consoleText()).toContain('onCellEdit')
+      await until(() => expect(consoleText()).toContain('onCellEdit'))
       await until(() =>
         expect(ageCellOf(canvas, SERVER_ROW)).toHaveAttribute(
           'data-flash',
@@ -291,7 +307,7 @@ export const EditingServer: StoryObj<StoryProps> = {
       // Значок кнопки возвращается из приглушённого цвета ожидания переходом.
       await settle()
     })
-    await step(EDIT_SERVER_STEPS[2]!.title, async () => {
+    await step(EDIT_SERVER_STEPS[3]!.title, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(ageCellOf(canvas, SERVER_ROW)).toHaveAttribute(
@@ -304,16 +320,20 @@ export const EditingServer: StoryObj<StoryProps> = {
           ageCellOf(canvas, SERVER_ROW)!.querySelector('[data-cell-issue]'),
         ).not.toBeNull(),
       )
-      expect(ageText(canvas, SERVER_ROW)).toBe(SAVED_AGE)
+      // Значение из данных: после прошлого шага — сохранённое, со свежей таблицы — исходное.
+      await until(() => expect(ageText(canvas, SERVER_ROW)).toMatch(/^\d+$/))
+      expect(ageText(canvas, SERVER_ROW)).not.toBe(REFUSED_AGE)
     })
-    await step(EDIT_SERVER_STEPS[3]!.title, async () => {
+    await step(EDIT_SERVER_STEPS[4]!.title, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(inputOf(canvas, SERVER_ROW)?.value).toBe(REFUSED_AGE),
       )
-      expect(
-        ageCellOf(canvas, SERVER_ROW)!.querySelector('[role="alert"]'),
-      ).toHaveTextContent(REFUSAL)
+      await until(() =>
+        expect(
+          ageCellOf(canvas, SERVER_ROW)!.querySelector('[role="alert"]'),
+        ).toHaveTextContent(REFUSAL),
+      )
       await settle()
     })
   },
@@ -336,6 +356,10 @@ const reachAway = (root: HTMLElement) => {
 }
 
 const AWAY: readonly GuideStoryStep[] = [
+  {
+    title: 'Правок нет',
+    hint: 'Приложение сохраняет правку ячейки на сервере. Пользователь ещё ничего не правил.',
+  },
   {
     title: 'Значение отправлено на сервер',
     hint: 'Пользователь сохранил новый возраст, и приложение отправило его на сервер. Пока сервер не ответил, ячейка чуть темнеет и по ней проходит светлый блик.',
@@ -396,18 +420,22 @@ export const EditingRevertedWhileAway: StoryObj<StoryProps> = {
     let original = ''
     await step(AWAY[0]!.title, async () => {
       await waitForRows(canvas)
+    })
+    await step(AWAY[1]!.title, async () => {
+      await guideNext(canvas)
+      await waitForRows(canvas)
       await until(() => expect(pending(canvas, AWAY_ROW)).toBe(true))
       expect(ageText(canvas, AWAY_ROW)).toBe(AWAY_AGE)
       original = String(getData(10).find(row => row.id === AWAY_ROW)?.age ?? '')
     })
-    await step(AWAY[1]!.title, async () => {
+    await step(AWAY[2]!.title, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(inputOf(canvas, OTHER_ROW)?.value).toBe(OTHER_AGE),
       )
       expect(pending(canvas, AWAY_ROW)).toBe(true)
     })
-    await step(AWAY[2]!.title, async () => {
+    await step(AWAY[3]!.title, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(ageCellOf(canvas, AWAY_ROW)).toHaveAttribute(
@@ -464,6 +492,10 @@ const draftThenChange = (
 }
 
 const EDIT_SESSION: readonly GuideStoryStep[] = [
+  {
+    title: 'Правка не открыта',
+    hint: 'Возраст в ячейках можно править. Пользователь ещё не открывал правку.',
+  },
   {
     title: 'Правка открыта',
     hint: 'Пользователь открыл правку возраста в первой строке и набрал число, но ещё не сохранил.',
@@ -545,29 +577,37 @@ export const EditingSession: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     await step(EDIT_SESSION[0]!.title, async () => {
       await waitForRows(canvas)
+    })
+    await step(EDIT_SESSION[1]!.title, async () => {
+      await guideNext(canvas)
+      await waitForRows(canvas)
       await until(() =>
         expect(inputOf(canvas, SESSION_ROW)?.value).toBe(DRAFT_AGE),
       )
     })
-    await step(EDIT_SESSION[1]!.title, async () => {
+    await step(EDIT_SESSION[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(outOfView(canvas, SESSION_ROW)).toBe(true))
     })
-    await step(EDIT_SESSION[2]!.title, async () => {
+    await step(EDIT_SESSION[3]!.title, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(inputOf(canvas, SESSION_ROW)?.value).toBe(DRAFT_AGE),
       )
       await until(() => expect(consoleText()).toContain('dataOverride'))
-      expect(inputOf(canvas, SESSION_ROW)?.value).toBe(DRAFT_AGE)
+      await until(() =>
+        expect(inputOf(canvas, SESSION_ROW)?.value).toBe(DRAFT_AGE),
+      )
     })
-    await step(EDIT_SESSION[3]!.title, async () => {
+    await step(EDIT_SESSION[4]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(inputOf(canvas, SESSION_ROW)).toBeNull())
-      expect(ageText(canvas, SESSION_ROW)).toBe(DRAFT_AGE)
-      expect(consoleText()).toMatch(
-        new RegExp(
-          `value:${DRAFT_AGE},text:"${DRAFT_AGE}",original:\\d+,current:${externalAge()}`,
+      await until(() => expect(ageText(canvas, SESSION_ROW)).toBe(DRAFT_AGE))
+      await until(() =>
+        expect(consoleText()).toMatch(
+          new RegExp(
+            `value:${DRAFT_AGE},text:"${DRAFT_AGE}",original:\\d+,current:${externalAge()}`,
+          ),
         ),
       )
       await settle()
@@ -576,6 +616,10 @@ export const EditingSession: StoryObj<StoryProps> = {
 }
 
 const EDIT_CONFLICT: readonly GuideStoryStep[] = [
+  {
+    title: 'Правка не открыта',
+    hint: 'Возраст в ячейках можно править, а приложение меняет данные и само. Пользователь ещё не открывал правку.',
+  },
   {
     title: 'Данные изменились во время правки',
     hint: 'Пользователь правит возраст, а приложение в это время изменило ту же ячейку.',
@@ -633,15 +677,23 @@ export const EditingConflict: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     await step(EDIT_CONFLICT[0]!.title, async () => {
       await waitForRows(canvas)
-      await until(() => expect(consoleText()).toContain('dataOverride'))
-      expect(inputOf(canvas, SESSION_ROW)?.value).toBe(DRAFT_AGE)
     })
     await step(EDIT_CONFLICT[1]!.title, async () => {
       await guideNext(canvas)
+      await waitForRows(canvas)
+      await until(() => expect(consoleText()).toContain('dataOverride'))
+      await until(() =>
+        expect(inputOf(canvas, SESSION_ROW)?.value).toBe(DRAFT_AGE),
+      )
+    })
+    await step(EDIT_CONFLICT[2]!.title, async () => {
+      await guideNext(canvas)
       await until(() => expect(inputOf(canvas, SESSION_ROW)).toBeNull())
-      expect(ageText(canvas, SESSION_ROW)).toBe(externalAge())
+      await until(() =>
+        expect(ageText(canvas, SESSION_ROW)).toBe(externalAge()),
+      )
       await until(() => expect(consoleText()).toContain('onEditCancel'))
-      expect(consoleText()).toContain('conflict')
+      await until(() => expect(consoleText()).toContain('conflict'))
       await settle()
     })
   },
@@ -736,7 +788,6 @@ const MANUAL_SAVE: readonly GuideStoryStep[] = [
   {
     title: 'Сохранение по кнопке',
     hint: 'Приложение сохраняет правки не сразу, а пакетом — по кнопке пульта в тулбаре.',
-    enter: () => batchServer.reset(),
   },
   {
     title: 'Три правки',
@@ -793,6 +844,7 @@ export const ManualSaveCells: StoryObj<StoryProps> = {
     <GuideStory
       title="Сохранение по кнопке"
       steps={MANUAL_SAVE}
+      reset={() => batchServer.reset()}
       args={guideArgs(MANUAL_ARGS, args)}
     />
   ),
@@ -838,10 +890,6 @@ const PARTIAL: readonly GuideStoryStep[] = [
   {
     title: 'Сохранение по кнопке',
     hint: 'Приложение сохраняет правки пакетом по кнопке пульта. Сервер принимает пакет, но одну из строк сейчас отклоняет.',
-    enter: () => {
-      batchServer.reset()
-      batchServer.refuseRow = REFUSED_ROW
-    },
   },
   {
     title: 'Две правки',
@@ -878,6 +926,10 @@ export const ManualSavePartialRefusal: StoryObj<StoryProps> = {
     <GuideStory
       title="Отказ части пакета"
       steps={PARTIAL}
+      reset={() => {
+        batchServer.reset()
+        batchServer.refuseRow = REFUSED_ROW
+      }}
       args={guideArgs(MANUAL_ARGS, args)}
     />
   ),
@@ -910,6 +962,10 @@ const rollbackPopover = () =>
   document.querySelector<HTMLElement>('[data-testid="cell-issue-popover"]')
 
 const ROLLBACK: readonly GuideStoryStep[] = [
+  {
+    title: 'Правок нет',
+    hint: 'Приложение сохраняет правки по кнопке пульта. Пользователь ещё ничего не правил.',
+  },
   {
     title: 'Несохранённое значение',
     hint: 'Приложение сохраняет правки по кнопке пульта. Пользователь поправил возраст: новое значение в ячейке, в её углу отметка несохранённого изменения.',
@@ -972,21 +1028,31 @@ export const CellDraftRollback: StoryObj<StoryProps> = {
     let before = ''
     await step(ROLLBACK[0]!.title, async () => {
       await waitForRows(canvas)
-      await until(() => expect(draftMarked(canvas, ROLLBACK_ROW)).toBe(true))
-      expect(ageText(canvas, ROLLBACK_ROW)).toBe(ROLLBACK_AGE)
-      before = String(getData(10).find(row => row.id === ROLLBACK_ROW)!.age)
     })
     await step(ROLLBACK[1]!.title, async () => {
       await guideNext(canvas)
-      await until(() => expect(rollbackPopover()).not.toBeNull())
-      expect(rollbackPopover()!.textContent).toContain(before)
-      expect(rollbackPopover()!.textContent).toContain(ROLLBACK_AGE)
+      await waitForRows(canvas)
+      await until(() => expect(draftMarked(canvas, ROLLBACK_ROW)).toBe(true))
+      await until(() =>
+        expect(ageText(canvas, ROLLBACK_ROW)).toBe(ROLLBACK_AGE),
+      )
+      before = String(getData(10).find(row => row.id === ROLLBACK_ROW)!.age)
     })
     await step(ROLLBACK[2]!.title, async () => {
       await guideNext(canvas)
+      await until(() => expect(rollbackPopover()).not.toBeNull())
+      await until(() =>
+        expect(rollbackPopover()!.textContent).toContain(before),
+      )
+      await until(() =>
+        expect(rollbackPopover()!.textContent).toContain(ROLLBACK_AGE),
+      )
+    })
+    await step(ROLLBACK[3]!.title, async () => {
+      await guideNext(canvas)
       await until(() => expect(draftMarked(canvas, ROLLBACK_ROW)).toBe(false))
-      expect(ageText(canvas, ROLLBACK_ROW)).toBe(before)
-      expect(panelCount(canvas)).toBe(0)
+      await until(() => expect(ageText(canvas, ROLLBACK_ROW)).toBe(before))
+      await until(() => expect(panelCount(canvas)).toBe(0))
       await settle()
     })
   },

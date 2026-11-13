@@ -131,7 +131,6 @@ const UPDATE: readonly GuideStoryStep[] = [
     title: 'Данные приложения',
     hint: 'Приложение держит данные у себя и получает обновления с сервера: новые значения отдельных строк.',
     props: seedProps,
-    enter: stepAction(async (root, { signal }) => rowsReady(root, signal)),
   },
   {
     title: 'Пришло обновление',
@@ -190,7 +189,6 @@ const DIRECTION: readonly GuideStoryStep[] = [
     title: 'Котировки',
     hint: 'Таблица показывает числа, которые часто меняются. У числовых колонок вспышка показывает и направление смены.',
     props: seedProps,
-    enter: stepAction(async (root, { signal }) => rowsReady(root, signal)),
   },
   {
     title: 'Одно выросло, другое упало',
@@ -279,7 +277,6 @@ const OWN_EDIT: readonly GuideStoryStep[] = [
     title: 'Общая таблица',
     hint: 'С таблицей работают несколько человек. Приложение кладёт в неё и свои сохранения, и правки коллег, которые приходят с сервера.',
     props: seedProps,
-    enter: stepAction(async (root, { signal }) => rowsReady(root, signal)),
   },
   {
     title: 'Своя правка',
@@ -358,7 +355,6 @@ const OVER_FILL: readonly GuideStoryStep[] = [
       extraPlugins: [clientTxSeed, highlightSeed],
     }),
     states: ['body.highlight'],
-    enter: stepAction(async (root, { signal }) => rowsReady(root, signal)),
   },
   {
     title: 'Смена на подсвеченной строке',
@@ -485,7 +481,6 @@ const COLORS: readonly GuideStoryStep[] = [
     title: 'Тоны вспышек',
     hint: 'Ячейка или строка коротко вспыхивает, когда в ней что-то произошло. У каждого события свой тон: по нему видно, что именно случилось. Шаги ниже показывают все тоны по очереди.',
     props: () => ({ ...seedProps(), onCellEdit: colorsSave as never }),
-    enter: stepAction(async (root, { signal }) => rowsReady(root, signal)),
   },
   {
     title: 'Значение сменилось извне',

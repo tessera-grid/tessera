@@ -219,6 +219,10 @@ const inSection = async (
 
 const NESTED: readonly GuideStoryStep[] = [
   {
+    title: 'Меню строки закрыто',
+    hint: 'У каждой строки — меню действий. Пункты с разделами меняют значения записи.',
+  },
+  {
     title: 'Пользователь открыл меню строки',
     hint: 'Пункты с разделами показывают текущее значение записи и стрелку перехода в раздел.',
     states: ['overlay.menu'],
@@ -308,6 +312,10 @@ export const RowActionsNested: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     await step(NESTED[0]!.title, async () => {
       await waitForRows(canvas)
+    })
+    await step(NESTED[1]!.title, async () => {
+      await guideNext(canvas)
+      await waitForRows(canvas)
       await stepDone(canvas)
       const status = itemOf('demoStatus')!
       await expect(status).toHaveAttribute('aria-haspopup', 'menu')
@@ -315,7 +323,7 @@ export const RowActionsNested: StoryObj<StoryProps> = {
       await expect(marked(status)).toBe(true)
       await settle()
     })
-    await step(NESTED[1]!.title, async () => {
+    await step(NESTED[2]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(openMenu()!.querySelector('[data-menu-back]')).not.toBeNull()
@@ -324,7 +332,7 @@ export const RowActionsNested: StoryObj<StoryProps> = {
       ).toHaveLength(1)
       await settle()
     })
-    await step(NESTED[2]!.title, async () => {
+    await step(NESTED[3]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(openMenu()).toBeNull()
@@ -332,14 +340,14 @@ export const RowActionsNested: StoryObj<StoryProps> = {
       // Пункт раздела назван своей подписью, а не id (ADR 0182, AN23).
       await expect(consoleText()).toContain(`«${STATUS}»`)
     })
-    await step(NESTED[3]!.title, async () => {
+    await step(NESTED[4]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(labelsFailed()).toBe(true)
       await expect(itemOf('demoStatus')).toBeNull()
       await settle()
     })
-    await step(NESTED[4]!.title, async () => {
+    await step(NESTED[5]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(labelItem()).toHaveAttribute('aria-checked', 'true')

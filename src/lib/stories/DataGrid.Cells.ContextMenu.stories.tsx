@@ -123,6 +123,10 @@ const steady = () => {
 
 const MENU: readonly GuideStoryStep[] = [
   {
+    title: 'Меню ещё не открыто',
+    hint: 'Приложение включило контекстное меню таблицы. Пользователь ещё не нажимал по ячейкам.',
+  },
+  {
     title: 'Меню у курсора',
     hint: 'Пользователь нажал правой кнопкой по ячейке. Ячейка выделилась, а у курсора открылось меню таблицы вместо меню браузера.',
     states: ['overlay.contextMenu'],
@@ -231,6 +235,10 @@ export const ContextMenuCell: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     await step(MENU[0]!.title, async () => {
       await waitForRows(canvas)
+    })
+    await step(MENU[1]!.title, async () => {
+      await guideNext(canvas)
+      await waitForRows(canvas)
       await until(() => expect(openMenu()).not.toBeNull())
       expect(isSelected(at(canvas, TARGET))).toBe(true)
       expect(openMenu()!.querySelector(COPY)).not.toBeNull()
@@ -243,19 +251,19 @@ export const ContextMenuCell: StoryObj<StoryProps> = {
           Math.abs(menu.top - (cell.top + cell.height / 2)),
       ).toBeLessThan(24)
     })
-    await step(MENU[1]!.title, async () => {
+    await step(MENU[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(openMenu()).toBeNull())
       await until(() => expect(consoleText()).toContain('cellSelection:copy'))
     })
-    await step(MENU[2]!.title, async () => {
+    await step(MENU[3]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(openMenu()).not.toBeNull())
       expect(selectedCells(canvas)).toBe(RANGE_CELLS)
       expect(openMenu()!.querySelector(COPY)).not.toBeNull()
       await settle()
     })
-    await step(MENU[3]!.title, async () => {
+    await step(MENU[4]!.title, async () => {
       // Что меню кладёт в буфер — перехватом записи: буфер страницы тест не читает.
       const clipboard = navigator.clipboard
       const write = clipboard.write
@@ -339,6 +347,10 @@ const startRecalculate = (root: HTMLElement) => {
 }
 
 const ASYNC_ITEMS: readonly GuideStoryStep[] = [
+  {
+    title: 'Меню ещё не открыто',
+    hint: 'Приложение добавило в меню ячейки действие, которое выполняет сервер. Пользователь ещё не открывал меню.',
+  },
   {
     title: 'Меню с действием сервера',
     hint: 'Приложение добавило в меню ячейки действие, которое выполняет сервер. Пользователь открыл меню правой кнопкой по ячейке.',
@@ -427,6 +439,10 @@ export const ContextMenuAsyncItems: StoryObj<StoryProps> = {
     <GuideStory
       title="Действие сервера в меню"
       steps={ASYNC_ITEMS}
+      reset={() => {
+        run.started = false
+        run.reopened = false
+      }}
       args={guideArgs(
         {
           enableContextMenu: true,
@@ -445,22 +461,30 @@ export const ContextMenuAsyncItems: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     await step(ASYNC_ITEMS[0]!.title, async () => {
       await waitForRows(canvas)
+    })
+    await step(ASYNC_ITEMS[1]!.title, async () => {
+      await guideNext(canvas)
+      await waitForRows(canvas)
       await until(() => expect(recalculate()).not.toBeNull())
       await settle()
       expectPopupInCanvas(canvas, openMenu()!)
     })
-    await step(ASYNC_ITEMS[1]!.title, async () => {
+    await step(ASYNC_ITEMS[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(recalculatePending()).toBe(true))
       // Ждущий пункт доступен и предлагает отмену (ADR 0153, §3).
-      expect(recalculate()).not.toHaveAttribute('data-disabled')
-      expect(recalculate()!.textContent).toContain(
-        storyLabels(args.locale).cancelAction('Recalculate'),
+      await until(() =>
+        expect(recalculate()).not.toHaveAttribute('data-disabled'),
       )
-      expect(busyCell(canvas)).toBe(true)
+      await until(() =>
+        expect(recalculate()!.textContent).toContain(
+          storyLabels(args.locale).cancelAction('Recalculate'),
+        ),
+      )
+      await until(() => expect(busyCell(canvas)).toBe(true))
       await until(() => expect(pendingShown(1)).toBe(true))
     })
-    await step(ASYNC_ITEMS[2]!.title, async () => {
+    await step(ASYNC_ITEMS[3]!.title, async () => {
       const flash = watchFlash(
         canvas,
         `.data-grid__body-row[data-row-id="${ASYNC_TARGET.row}"] [data-column-id="${ASYNC_TARGET.column}"]`,
@@ -470,18 +494,20 @@ export const ContextMenuAsyncItems: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await until(() => expect(flash.seen()).toBe(true))
       flash.stop()
-      expect(openMenu()).toBeNull()
-      expect(busyCell(canvas)).toBe(false)
+      await until(() => expect(openMenu()).toBeNull())
+      await until(() => expect(busyCell(canvas)).toBe(false))
     })
-    await step(ASYNC_ITEMS[3]!.title, async () => {
+    await step(ASYNC_ITEMS[4]!.title, async () => {
       releaseFlash(canvas)
       await until(() => expect(flashedCell(canvas)).toBe(false))
       await guideNext(canvas)
       await until(() => expect(recalculateFailed()).toBe(true))
       const item = recalculate()!
       const id = item.getAttribute('aria-describedby')
-      expect(id && document.getElementById(id)?.textContent).toBe(
-        'Formula service timed out',
+      await until(() =>
+        expect(id && document.getElementById(id)?.textContent).toBe(
+          'Formula service timed out',
+        ),
       )
       await settle()
       expectPopupInCanvas(canvas, openMenu()!)
@@ -548,6 +574,10 @@ const selectAndOpen = (root: HTMLElement) => {
 }
 
 const REFUSED_ON_SELECTION: readonly GuideStoryStep[] = [
+  {
+    title: 'Ничего не выделено',
+    hint: 'В контекстном меню есть заполнение выделения, его выполняет сервер. Пользователь ещё не выделял ячейки.',
+  },
   {
     title: 'Меню на выделении',
     hint: 'Пользователь выделил шесть ячеек и открыл меню на одной из них. Заполнение применяется ко всему выделению, его выполняет сервер.',
@@ -626,12 +656,16 @@ export const ContextMenuRefusedOnSelection: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     await step(REFUSED_ON_SELECTION[0]!.title, async () => {
       await waitForRows(canvas)
+    })
+    await step(REFUSED_ON_SELECTION[1]!.title, async () => {
+      await guideNext(canvas)
+      await waitForRows(canvas)
       await until(() => expect(fillItem()).not.toBeNull())
       expect(selectedCells(canvas)).toBe(SELECTION_CELLS)
       await settle()
       expectPopupInCanvas(canvas, openMenu()!)
     })
-    await step(REFUSED_ON_SELECTION[1]!.title, async () => {
+    await step(REFUSED_ON_SELECTION[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(allBusy(canvas)).toBe(true))
       await until(() => expect(pendingShown(SELECTION_CELLS)).toBe(true))
@@ -640,7 +674,7 @@ export const ContextMenuRefusedOnSelection: StoryObj<StoryProps> = {
         at(canvas, { row: 'item-id-1', column: 'firstName' }),
       ).not.toHaveAttribute('aria-busy')
     })
-    await step(REFUSED_ON_SELECTION[2]!.title, async () => {
+    await step(REFUSED_ON_SELECTION[3]!.title, async () => {
       const flash = watchFlash(canvas, '.data-grid__body-cell', 'reverted')
       holdFlash(canvas)
       await guideNext(canvas)
@@ -700,6 +734,10 @@ const cancelItemShown = (root: HTMLElement) => {
 }
 
 const CANCEL_FROM_MENU: readonly GuideStoryStep[] = [
+  {
+    title: 'Ничего не выделено',
+    hint: 'В контекстном меню есть действие, которое сервер выполняет долго. Пользователь ещё не выделял ячейки.',
+  },
   {
     title: 'Выделен диапазон',
     hint: 'Пользователь выделил несколько ячеек. В контекстном меню есть действие, которое сервер выполняет долго.',
@@ -788,15 +826,19 @@ export const ContextMenuCancelFromMenu: StoryObj<StoryProps> = {
     const labels = storyLabels(args.locale)
     await step(CANCEL_FROM_MENU[0]!.title, async () => {
       await waitForRows(canvas)
+    })
+    await step(CANCEL_FROM_MENU[1]!.title, async () => {
+      await guideNext(canvas)
+      await waitForRows(canvas)
       await until(() => expect(selectedCells(canvas)).toBe(SELECTION_CELLS))
       expect(openMenu()).toBeNull()
     })
-    await step(CANCEL_FROM_MENU[1]!.title, async () => {
+    await step(CANCEL_FROM_MENU[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(allBusy(canvas)).toBe(true))
       await until(() => expect(openMenu()).toBeNull())
     })
-    await step(CANCEL_FROM_MENU[2]!.title, async () => {
+    await step(CANCEL_FROM_MENU[3]!.title, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(recalcItem()?.hasAttribute('data-pending')).toBe(true),
@@ -807,7 +849,7 @@ export const ContextMenuCancelFromMenu: StoryObj<StoryProps> = {
       await settle()
       expectPopupInCanvas(canvas, openMenu()!)
     })
-    await step(CANCEL_FROM_MENU[3]!.title, async () => {
+    await step(CANCEL_FROM_MENU[4]!.title, async () => {
       const flash = watchFlash(canvas, '.data-grid__body-cell', 'reverted')
       await guideNext(canvas)
       await until(() => expect(selectionIdle(canvas)).toBe(true))
@@ -910,6 +952,10 @@ const tableRefused = (root: HTMLElement) => {
 
 const WHOLE_TABLE: readonly GuideStoryStep[] = [
   {
+    title: 'Меню ещё не открыто',
+    hint: 'В контекстном меню есть действие, которое пересчитывает всю таблицу на сервере. Пользователь ещё не открывал меню.',
+  },
+  {
     title: 'Действие над всей таблицей',
     hint: 'В контекстном меню есть действие, которое пересчитывает всю таблицу на сервере.',
     states: ['overlay.contextMenu'],
@@ -990,25 +1036,29 @@ export const ContextMenuWholeTable: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     await step(WHOLE_TABLE[0]!.title, async () => {
       await waitForRows(canvas)
+    })
+    await step(WHOLE_TABLE[1]!.title, async () => {
+      await guideNext(canvas)
+      await waitForRows(canvas)
       await until(() => expect(tableItem()).not.toBeNull())
       await settle()
       expectPopupInCanvas(canvas, openMenu()!)
     })
-    await step(WHOLE_TABLE[1]!.title, async () => {
+    await step(WHOLE_TABLE[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(refreshing(canvas)).toBe(true))
       expect(openMenu()).toBeNull()
       expect(banner(canvas)).toBeNull()
       expect(canvas.querySelector('[data-pending-wave]')).toBeNull()
     })
-    await step(WHOLE_TABLE[2]!.title, async () => {
+    await step(WHOLE_TABLE[3]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(banner(canvas)).not.toBeNull())
       await until(() => expect(refreshing(canvas)).toBe(false))
       expect(banner(canvas)!.textContent).toContain(TABLE_REFUSAL)
       expect(retryButton(canvas)).not.toBeNull()
     })
-    await step(WHOLE_TABLE[3]!.title, async () => {
+    await step(WHOLE_TABLE[4]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(tableRun.succeeded).toBe(true))
       await until(() => expect(banner(canvas)).toBeNull())
@@ -1025,6 +1075,10 @@ const pendingCancel = (root: ParentNode) =>
   root.querySelector<HTMLElement>('[data-testid="pending-action-cancel"]')
 
 const WHOLE_TABLE_CANCEL: readonly GuideStoryStep[] = [
+  {
+    title: 'Таблица в покое',
+    hint: 'В контекстном меню есть пересчёт всей таблицы на сервере. Пользователь ещё не открывал меню.',
+  },
   {
     title: 'Таблица ждёт',
     hint: 'Пользователь выбрал пересчёт всей таблицы. Под шапкой светится полоса обновления, строки приглушены.',
@@ -1103,16 +1157,20 @@ export const ContextMenuWholeTableCancel: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     await step(WHOLE_TABLE_CANCEL[0]!.title, async () => {
       await waitForRows(canvas)
+    })
+    await step(WHOLE_TABLE_CANCEL[1]!.title, async () => {
+      await guideNext(canvas)
+      await waitForRows(canvas)
       await until(() => expect(refreshing(canvas)).toBe(true))
       expect(openMenu()).toBeNull()
     })
-    await step(WHOLE_TABLE_CANCEL[1]!.title, async () => {
+    await step(WHOLE_TABLE_CANCEL[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(pendingBanner(canvas)).not.toBeNull())
       expect(pendingCancel(canvas)).not.toBeNull()
       expect(banner(canvas)).toBeNull()
     })
-    await step(WHOLE_TABLE_CANCEL[2]!.title, async () => {
+    await step(WHOLE_TABLE_CANCEL[3]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(pendingBanner(canvas)).toBeNull())
       await until(() => expect(refreshing(canvas)).toBe(false))
@@ -1158,6 +1216,10 @@ const rowDeleted = (root: ParentNode) =>
   doomedRow(root)?.getAttribute('data-row-draft') === 'deleted'
 
 const DANGER_ITEM: readonly GuideStoryStep[] = [
+  {
+    title: 'Меню ещё не открыто',
+    hint: 'Приложение добавило в меню ячейки своё действие удаления строки и пометило его как опасное. Пользователь ещё не открывал меню.',
+  },
   {
     title: 'Опасный пункт в меню',
     hint: 'Приложение добавило в меню ячейки своё действие удаления строки и пометило его как опасное. Пользователь открыл меню: этот пункт выделен тоном опасного действия сразу, без наведения, остальные — обычные.',
@@ -1216,11 +1278,15 @@ export const ContextMenuDangerAction: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     await step(DANGER_ITEM[0]!.title, async () => {
       await waitForRows(canvas)
+    })
+    await step(DANGER_ITEM[1]!.title, async () => {
+      await guideNext(canvas)
+      await waitForRows(canvas)
       await until(() => expect(deleteItem()).not.toBeNull())
       await settle()
       expectPopupInCanvas(canvas, openMenu()!)
     })
-    await step(DANGER_ITEM[1]!.title, async () => {
+    await step(DANGER_ITEM[2]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(rowDeleted(canvas)).toBe(true))
       expect(openMenu()).toBeNull()

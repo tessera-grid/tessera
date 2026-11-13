@@ -179,12 +179,12 @@ export const LoadErrorRefresh: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     await step(REFRESH_ERROR[0]!.title, async () => {
       await waitForRows(canvas)
-      await expect(banner(canvas)).toBeNull()
+      await until(() => expect(banner(canvas)).toBeNull())
     })
     await step(REFRESH_ERROR[1]!.title, async () => {
       await guideNext(canvas)
       await until(() => expect(refreshing(canvas)).toBe(true))
-      await expect(dataRows(canvas).length).toBeGreaterThan(0)
+      await until(() => expect(dataRows(canvas).length).toBeGreaterThan(0))
       await settle()
     })
     await step(REFRESH_ERROR[2]!.title, async () => {
@@ -192,7 +192,7 @@ export const LoadErrorRefresh: StoryObj<StoryProps> = {
       await until(() =>
         expect(banner(canvas)).toHaveTextContent('Server responded 503'),
       )
-      await expect(dataRows(canvas).length).toBeGreaterThan(0)
+      await until(() => expect(dataRows(canvas).length).toBeGreaterThan(0))
       // Индикатор ошибки догорает — состояние в покое.
       await until(() =>
         expect(canvas.querySelector('[data-error-flash]')).toBeNull(),
@@ -203,7 +203,7 @@ export const LoadErrorRefresh: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await until(() => expect(banner(canvas)).toBeNull())
       await until(() => expect(refreshing(canvas)).toBe(false))
-      await expect(dataRows(canvas).length).toBeGreaterThan(0)
+      await until(() => expect(dataRows(canvas).length).toBeGreaterThan(0))
       await settle()
     })
   },

@@ -207,7 +207,6 @@ const COLUMN_MOVE: readonly GuideStoryStep[] = [
   {
     title: 'Ручка колонки',
     hint: 'У заголовка колонки есть ручка переноса: за неё колонку берут, чтобы переставить. Ручка появляется при наведении на заголовок.',
-    enter: dropHeldColumn,
   },
   {
     title: 'Пользователь ведёт колонку',
@@ -260,6 +259,7 @@ export const ColumnDraggingMove: StoryObj<StoryProps> = {
     <GuideStory
       title="Перенос колонки мышью"
       steps={COLUMN_MOVE}
+      reset={dropHeldColumn}
       args={guideArgs(COLUMN_MOVE_ARGS, args)}
     />
   ),
@@ -405,9 +405,6 @@ const COLUMN_SERVER: readonly GuideStoryStep[] = [
   {
     title: 'Порядок колонок хранит сервер',
     hint: 'Приложение сохраняет порядок колонок на сервере: каждый перенос колонки ждёт его ответа.',
-    enter: () => {
-      pendingColumnSaves.length = 0
-    },
   },
   {
     title: 'Перенос ждёт сервера',
@@ -458,6 +455,9 @@ export const ColumnDraggingServer: StoryObj<StoryProps> = {
     <GuideStory
       title="Перенос колонки с сервером"
       steps={COLUMN_SERVER}
+      reset={() => {
+        pendingColumnSaves.length = 0
+      }}
       args={guideArgs(COLUMN_SERVER_ARGS, args)}
     />
   ),
@@ -477,9 +477,11 @@ export const ColumnDraggingServer: StoryObj<StoryProps> = {
       await until(() =>
         expect(head('country')).toHaveAttribute('aria-busy', 'true'),
       )
-      await expect(
-        handle('country').querySelector('svg[data-pending-arc]'),
-      ).toBeNull()
+      await until(() =>
+        expect(
+          handle('country').querySelector('svg[data-pending-arc]'),
+        ).toBeNull(),
+      )
       await releaseFocus()
     })
     await step(COLUMN_SERVER[2]!.title, async () => {
@@ -488,10 +490,12 @@ export const ColumnDraggingServer: StoryObj<StoryProps> = {
       await until(() =>
         expect(head('country')).not.toHaveAttribute('aria-busy'),
       )
-      await expect(headOrder(canvas)).toEqual(placed)
-      await expect(head('country')).toHaveAttribute(
-        'data-column-flash',
-        'accepted',
+      await until(() => expect(headOrder(canvas)).toEqual(placed))
+      await until(() =>
+        expect(head('country')).toHaveAttribute(
+          'data-column-flash',
+          'accepted',
+        ),
       )
     })
     await step(COLUMN_SERVER[3]!.title, async () => {
@@ -505,8 +509,17 @@ export const ColumnDraggingServer: StoryObj<StoryProps> = {
           ),
         slow,
       )
-      await waitFor(() => expect(headOrder(canvas)).toEqual(before), slow)
-      await expect(handle('lastName').querySelector(FAILURE)).toBeNull()
+      // Колонка — на прежнем месте: со свежей таблицы порядок до шага другой, место — то же.
+      await waitFor(
+        () =>
+          expect(headOrder(canvas).indexOf('lastName')).toBe(
+            before.indexOf('lastName'),
+          ),
+        slow,
+      )
+      await until(() =>
+        expect(handle('lastName').querySelector(FAILURE)).toBeNull(),
+      )
       await releaseFocus()
     })
     await step(COLUMN_SERVER[4]!.title, async () => {
@@ -514,8 +527,8 @@ export const ColumnDraggingServer: StoryObj<StoryProps> = {
       await until(() =>
         expect(head('age')).toHaveAttribute('data-column-flash', 'reverted'),
       )
-      await expect(movedRight(canvas, 'age')).toBe(true)
-      await expect(handle('age').querySelector(FAILURE)).toBeNull()
+      await until(() => expect(movedRight(canvas, 'age')).toBe(true))
+      await until(() => expect(handle('age').querySelector(FAILURE)).toBeNull())
       await releaseFocus()
     })
     await settle()

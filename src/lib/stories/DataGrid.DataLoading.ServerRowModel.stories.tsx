@@ -4,6 +4,7 @@ import type { TesseraFeatureEntry } from '../core/features'
 import type { StoryProps } from './DataGridStory.types'
 import { dataGridMeta } from './dataGridMeta'
 import {
+  waitForRows,
   guideNext,
   pollUntil,
   settle,
@@ -154,9 +155,6 @@ const JUMP: readonly GuideStoryStep[] = [
       knownTotal: true,
       blockSize: JUMP_BLOCK,
     }),
-    enter: stepAction(async (root, { signal }) => {
-      await pollUntil(() => hasRow(root, 0), signal)
-    }),
   },
   {
     title: 'Пользователь прыгнул в середину',
@@ -198,7 +196,7 @@ export const ServerRowModelJump: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(JUMP[0]!.title, async () => {
-      await stepDone(canvas)
+      await until(() => expect(hasRow(canvas, 0)).toBe(true))
     })
     await step(JUMP[1]!.title, async () => {
       await guideNext(canvas)
@@ -246,9 +244,6 @@ const BLOCK_ERROR: readonly GuideStoryStep[] = [
       blockSize: ERROR_BLOCK,
       failBlock: ERROR_BLOCK,
     }),
-    enter: stepAction(async (root, { signal }) => {
-      await pollUntil(() => hasRow(root, 0), signal)
-    }),
   },
   {
     title: 'Сервер отказал в блоке',
@@ -289,8 +284,8 @@ export const ServerRowModelBlockError: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(BLOCK_ERROR[0]!.title, async () => {
-      await stepDone(canvas)
-      await expect(errorRow(canvas)).toBeNull()
+      await until(() => expect(hasRow(canvas, 0)).toBe(true))
+      await until(() => expect(errorRow(canvas)).toBeNull())
     })
     await step(BLOCK_ERROR[1]!.title, async () => {
       await guideNext(canvas)
@@ -331,9 +326,6 @@ const UNKNOWN: readonly GuideStoryStep[] = [
       total: UNKNOWN_TOTAL,
       knownTotal: false,
       blockSize: UNKNOWN_BLOCK,
-    }),
-    enter: stepAction(async (root, { signal }) => {
-      await pollUntil(() => hasRow(root, 0), signal)
     }),
   },
   {
@@ -390,8 +382,8 @@ export const ServerRowModelUnknownTotal: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(UNKNOWN[0]!.title, async () => {
-      await stepDone(canvas)
-      await expect(skeletonRows(canvas)).toBe(0)
+      await until(() => expect(hasRow(canvas, 0)).toBe(true))
+      await until(() => expect(skeletonRows(canvas)).toBe(0))
     })
     await step(UNKNOWN[1]!.title, async () => {
       await guideNext(canvas)
@@ -468,14 +460,18 @@ const sortByName = async (root: HTMLElement, signal: AbortSignal) => {
 
 const SORTING: readonly GuideStoryStep[] = [
   {
-    title: 'Пользователь листает список',
-    hint: 'Пользователь прокрутил список далеко от начала. Таблица показывает строки, которые сервер прислал для этого места.',
+    title: 'Начало списка',
+    hint: 'Сервер отдаёт строки блоками, таблица показывает начало списка.',
     props: serverProps({
       total: SORT_TOTAL,
       knownTotal: true,
       blockSize: SORT_BLOCK,
       sortable: true,
     }),
+  },
+  {
+    title: 'Пользователь листает список',
+    hint: 'Пользователь прокрутил список далеко от начала. Таблица показывает строки, которые сервер прислал для этого места.',
     enter: stepAction(async (root, { signal }) => {
       server.refuseSort = undefined
       if (refreshing(root) || firstRowId(root) === sortedFirst()) return
@@ -542,16 +538,23 @@ export const ServerRowModelSorting: StoryObj<StoryProps> = {
     <GuideStory
       title="Смена сортировки"
       steps={SORTING}
+      reset={() => {
+        server.refuseSort = undefined
+      }}
       args={guideArgs(layout, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(SORTING[0]!.title, async () => {
+      await waitForRows(canvas)
+    })
+    await step(SORTING[1]!.title, async () => {
+      await guideNext(canvas)
       await stepDone(canvas)
       await expect(hasRow(canvas, SORT_FROM)).toBe(true)
     })
-    await step(SORTING[1]!.title, async () => {
+    await step(SORTING[2]!.title, async () => {
       const before = server.starts.length
       await guideNext(canvas)
       await stepDone(canvas)
@@ -560,14 +563,14 @@ export const ServerRowModelSorting: StoryObj<StoryProps> = {
       await expect(firstRowId(canvas)).toBe('item-id-0')
       await expect(server.starts.slice(before)).toContain(0)
     })
-    await step(SORTING[2]!.title, async () => {
+    await step(SORTING[3]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(firstRowId(canvas)).toBe(sortedFirst())
       await expect(refreshing(canvas)).toBe(false)
       await settle()
     })
-    await step(SORTING[3]!.title, async () => {
+    await step(SORTING[4]!.title, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(sortBanner(canvas)).toHaveTextContent(SORT_REFUSAL)
@@ -647,9 +650,6 @@ const OPEN_AT_RECORD: readonly GuideStoryStep[] = [
       })!({ app, ...context }),
       extraPlugins: [serverReset, recordHost],
     }),
-    enter: stepAction(async (root, { signal }) => {
-      await pollUntil(() => hasRow(root, 0), signal)
-    }),
   },
   {
     title: 'Приложение открыло место записи',
@@ -690,9 +690,9 @@ export const ServerRowModelOpenAtRecord: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(OPEN_AT_RECORD[0]!.title, async () => {
-      await stepDone(canvas)
-      await expect(scroller(canvas)!.scrollTop).toBe(0)
-      await expect(recordRow(canvas)).toBeNull()
+      await until(() => expect(hasRow(canvas, 0)).toBe(true))
+      await until(() => expect(scroller(canvas)!.scrollTop).toBe(0))
+      await until(() => expect(recordRow(canvas)).toBeNull())
     })
     await step(OPEN_AT_RECORD[1]!.title, async () => {
       await guideNext(canvas)
@@ -783,11 +783,6 @@ const MILLION_ROWS: readonly GuideStoryStep[] = [
       })!({ app, ...context }),
       enableKeyboardNavigation: true,
     }),
-    enter: stepAction(async (root, { signal }) => {
-      await pollUntil(() => hasRow(root, 0), signal)
-      if (layerOf(root).top() > 0) layerOf(root).scrollTo({ top: 0 })
-      await pollUntil(() => hasRow(root, 0), signal)
-    }),
   },
   {
     title: 'Пользователь протянул ползунок в конец',
@@ -840,8 +835,8 @@ export const ServerRowModelMillionRows: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(MILLION_ROWS[0]!.title, async () => {
-      await stepDone(canvas)
-      await expect(hasRow(canvas, 0)).toBe(true)
+      await until(() => expect(hasRow(canvas, 0)).toBe(true))
+      await until(() => expect(hasRow(canvas, 0)).toBe(true))
     })
     await step(MILLION_ROWS[1]!.title, async () => {
       await guideNext(canvas)
