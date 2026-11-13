@@ -813,6 +813,10 @@
   );
   --tsr-comp-popup-card-outline: none;
   --tsr-comp-popup-card-hover-outline: var(--tsr-comp-popup-card-outline);
+  /* Текущая запись списка (ADR 0222, §11) — тоном выделения ячеек, кромка ≥ 3:1. */
+  --tsr-comp-popup-card-current-bg: var(--tsr-comp-cell-selected-bg);
+  --tsr-comp-popup-card-current-outline: 1px solid
+    var(--tsr-comp-cell-selected-border-color);
   /* Рамка поверхности и пункта под указателем (ADR 0088) — `outline` целиком. */
   --tsr-comp-popup-outline: none;
   --tsr-comp-popup-item-highlighted-outline: none;
@@ -1330,6 +1334,7 @@
     /* Подложку облачка режим снимает: границу держит контур. */
     --tsr-comp-popup-card-outline: 1px solid CanvasText;
     --tsr-comp-popup-card-hover-outline: 1px solid CanvasText;
+    --tsr-comp-popup-card-current-outline: 2px solid Highlight;
     --tsr-comp-segments-track-outline: none;
     /* Тон опасного действия (ADR 0206, DX7): наведение — как у кнопки без тона. */
     --tsr-comp-danger-hover-bg: var(--tsr-comp-control-hover-bg);

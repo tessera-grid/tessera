@@ -500,7 +500,6 @@
   "editHistory.historyEmpty": "Изменений пока нет",
   "editHistory.historyEmptyDescription": "Здесь появятся правки, сделанные в таблице",
   "editHistory.historyShow": "Показать",
-  "editHistory.historyHere": "Текущее состояние",
   "editHistory.historyUndone": "Отменено",
   "editHistory.entryCells_one": "{name}, {count} ячейка",
   "editHistory.entryCells_few": "{name}, {count} ячейки",
@@ -530,5 +529,6 @@
   "pendingRedo": "Повтор…",
   "serverActionFailedUndo": "Изменение не отменено",
   "serverActionFailedRedo": "Изменение не повторено",
-  "editHistory.announceMoveSkipped": "Строку уже переставили — перенос не отменён"
+  "editHistory.announceMoveSkipped": "Строку уже переставили — перенос не отменён",
+  "editHistory.historyOriginal": "К исходному виду"
 }

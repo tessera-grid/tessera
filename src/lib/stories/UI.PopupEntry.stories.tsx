@@ -29,6 +29,8 @@ interface EntryStoryArgs {
   reason: string
   showable: boolean
   actions: boolean
+  /** Текущая запись списка — шаг истории, на котором стоит таблица. */
+  current?: boolean
 }
 
 /** Подписи записей, как у журнала: действие и цель — «Возраст · строка 12». */
@@ -45,7 +47,14 @@ const useEntryLabels = () => {
   }
 }
 
-const Entry = ({ tone, label, reason, showable, actions }: EntryStoryArgs) => {
+const Entry = ({
+  tone,
+  label,
+  reason,
+  showable,
+  actions,
+  current,
+}: EntryStoryArgs) => {
   const icons = useIcons()
   const texts = useEntryLabels()
   return (
@@ -53,6 +62,7 @@ const Entry = ({ tone, label, reason, showable, actions }: EntryStoryArgs) => {
       mark={<Bubble size="dot" tone={tone} />}
       label={label || texts.editCell}
       onShow={showable ? () => {} : undefined}
+      current={current}
       aside={
         <time
           dateTime="2026-03-12T09:30:00"
@@ -141,6 +151,7 @@ const meta = {
     reason: { control: 'text', description: 'Причина; пусто — без неё' },
     showable: { control: 'boolean', description: 'Переход к цели нажатием' },
     actions: { control: 'boolean', description: 'Кнопки записи' },
+    current: { control: 'boolean', description: 'Текущая запись списка' },
   },
   render: args => <EntryList entries={[args]} />,
 } satisfies Meta<EntryStoryArgs>
@@ -151,7 +162,14 @@ type Story = StoryObj<typeof meta>
 
 export const PopupEntryPlayground: Story = {
   name: 'Playground',
-  parameters: defaultControls('tone', 'label', 'reason', 'showable', 'actions'),
+  parameters: defaultControls(
+    'tone',
+    'label',
+    'reason',
+    'showable',
+    'actions',
+    'current',
+  ),
 }
 
 /** Список записей, как в журнале отказов и пульте изменений. */

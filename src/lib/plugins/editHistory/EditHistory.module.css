@@ -51,12 +51,3 @@
     color: GrayText;
   }
 }
-
-/* Отметка «Текущее состояние» — заголовок раздела, как у пульта черновиков (PK33). */
-.here {
-  margin: 0;
-  padding: var(--tsr-comp-popup-padding) var(--tsr-comp-popup-item-padding-x);
-  color: var(--tsr-comp-popup-group-label-color);
-  font-size: var(--tsr-comp-popup-title-font-size);
-  font-weight: 600;
-}

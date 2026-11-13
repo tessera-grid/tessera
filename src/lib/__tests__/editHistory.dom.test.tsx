@@ -651,6 +651,36 @@ describe('История правок (ADR 0222)', () => {
     expect(names).toEqual(['undo', 'redo', 'rewind'])
   })
 
+  it('UD34: rewindHistory(null) откатывает все выполненные записи — позиция 0 — и возвращает false на первом отказе', async () => {
+    let refuse = false
+    render({
+      answer: batch =>
+        refuse && batch.cells.some(cell => cell.rowId === '2')
+          ? Promise.reject(new Error('locked'))
+          : undefined,
+    })
+    await write([{ rowId: '1', columnId: 'age', value: 91 }])
+    await write([{ rowId: '2', columnId: 'age', value: 92 }])
+    await write([{ rowId: '3', columnId: 'age', value: 93 }])
+    const rewindAll = async () => {
+      let ok: boolean | undefined
+      await act(async () => {
+        ok = await table.rewindHistory(null)
+      })
+      await flush()
+      return ok
+    }
+    refuse = true
+    expect(await rewindAll()).toBe(false)
+    expect(table.getHistory().position).toBe(2)
+    expect([ageOf('2'), ageOf('3')]).toEqual([92, 23])
+    refuse = false
+    expect(await rewindAll()).toBe(true)
+    expect(table.getHistory().position).toBe(0)
+    expect([ageOf('1'), ageOf('2'), ageOf('3')]).toEqual([21, 22, 23])
+    expect(await rewindAll()).toBe(true)
+  })
+
   it('UD26: режим «Применить» — addRow даёт запись; отмена убирает новую строку, а применённую — кладёт черновик удаления; повтор возвращает строку с тем же id, значениями и местом', async () => {
     render({ saveMode: 'manual', flat: true })
     let id = ''

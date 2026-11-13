@@ -18,6 +18,8 @@ export interface PopupEntryProps {
   actions?: ReactNode
   /** Высота по содержимому: иначе облачка одной высоты, на две строки содержимого. */
   fit?: boolean
+  /** Текущая запись списка — шаг, на котором стоит таблица (ADR 0222, §11). */
+  current?: boolean
   children?: ReactNode
 }
 
@@ -28,6 +30,7 @@ export const PopupEntry = ({
   aside,
   actions,
   fit,
+  current,
   children,
 }: PopupEntryProps) => {
   const id = useId()
@@ -36,6 +39,7 @@ export const PopupEntry = ({
       className={styles.entry}
       data-popup-entry=""
       data-fit={fit || undefined}
+      data-current={current || undefined}
     >
       <span className={styles.mark} data-popup-entry-mark="" aria-hidden>
         {mark}
@@ -49,12 +53,17 @@ export const PopupEntry = ({
             data-popup-entry-label=""
             data-action="show"
             aria-describedby={children ? id : undefined}
+            aria-current={current ? 'step' : undefined}
             onClick={onShow}
           >
             {label}
           </button>
         ) : (
-          <span className={styles.label} data-popup-entry-label="">
+          <span
+            className={styles.label}
+            data-popup-entry-label=""
+            aria-current={current ? 'step' : undefined}
+          >
             {label}
           </span>
         )}

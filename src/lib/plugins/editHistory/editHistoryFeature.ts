@@ -25,7 +25,8 @@ interface EditHistoryTableAPI {
   canUndo: () => boolean
   canRedo: () => boolean
   /** Откатить или повторить до записи с этим id. */
-  rewindHistory: (entryId: string) => Promise<boolean>
+  /** `null` — откат всех записей, к виду до первой правки. */
+  rewindHistory: (entryId: string | null) => Promise<boolean>
   clearHistory: () => void
   getHistory: () => EditHistoryState
   /** Положить свою запись приложения; возвращает её id. */
@@ -69,7 +70,7 @@ export const editHistoryFeature: TableFeature = {
       table_canUndo: { fn: () => canUndo(table) },
       table_canRedo: { fn: () => canRedo(table) },
       table_rewindHistory: {
-        fn: (entryId: string) => rewind(table, entryId, 'api'),
+        fn: (entryId: string | null) => rewind(table, entryId, 'api'),
       },
       table_clearHistory: { fn: () => clearHistory(table) },
       table_getHistory: { fn: () => historyOf(table) },

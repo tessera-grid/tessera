@@ -58,6 +58,13 @@
   outline: var(--tsr-comp-popup-card-hover-outline);
 }
 
+/* Текущая запись — тоном выделения таблицы; наведение её не меняет. */
+.entry[data-current],
+.entry[data-current]:has(.show:hover) {
+  background-color: var(--tsr-comp-popup-card-current-bg);
+  outline: var(--tsr-comp-popup-card-current-outline);
+}
+
 .entry:has(.show:focus-visible) {
   box-shadow: inset 0 0 0 var(--tsr-comp-focus-ring-width)
     var(--tsr-comp-focus-ring);

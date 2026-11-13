@@ -45,7 +45,8 @@ import type { RowAction } from '../core/headerActions'
 /**
  * Отмена и повтор правок (ADR 0222): Ctrl+Z после вставки, отмена на сервере с ответом и
  * отказом, отмена ждущей правки, пропуск ячейки, изменённой извне, история с откатом к шагу,
- * отмена черновиков, своё действие приложения в истории, отмена удаления и переноса строки.
+ * отмена черновиков, своё действие приложения в истории, отмена удаления и переноса строки,
+ * возврат к исходному виду.
  */
 const meta = {
   ...dataGridMeta,
@@ -655,7 +656,7 @@ const HISTORY_REWIND: readonly GuideStoryStep[] = [
   },
   {
     title: 'Откат к первой правке',
-    hint: 'Пользователь нажал на первую правку. Таблица отменила две правки над ней по очереди; они в списке приглушены и стоят над отметкой текущего состояния.',
+    hint: 'Пользователь нажал на первую правку. Таблица отменила две правки над ней по очереди; они в списке приглушены, а первая правка выделена как текущая.',
     enter: untilDone(rewoundCheck, rewindTo),
   },
   {
@@ -1178,6 +1179,100 @@ export const UndoRowMove: StoryObj<StoryProps> = {
     )
     await step(UNDO_ROW_MOVE[4]!.title, () =>
       next(canvasElement, moveUndoneCheck),
+    )
+    await settle()
+  },
+}
+
+// --- ADR 0222, S11 --------------------------------------------------------------------
+
+const originalButton = () =>
+  document.querySelector<HTMLElement>(
+    '[data-testid="edit-history"] [data-action="back-to-original"]',
+  )
+const pricesOf = (root: HTMLElement) =>
+  EDITS.map(({ row }) => textOf(root, row, 'price'))
+const settled = (root: HTMLElement) =>
+  EDITS.every(({ row }) => !pendingAt(root, row))
+
+const originalCheck = (root: HTMLElement) =>
+  done.has('original') &&
+  historyOpen() &&
+  settled(root) &&
+  pricesOf(root).join() === '10,20,30' &&
+  originalButton()?.hasAttribute('data-disabled') === true
+const allBackCheck = (root: HTMLElement) =>
+  done.has('redoAll') &&
+  settled(root) &&
+  pricesOf(root).join() === EDITS.map(({ value }) => value).join()
+
+const backToOriginal = (root: HTMLElement) => {
+  if (!openCheck(root)) {
+    openHistory(root)
+    return
+  }
+  once('original', () => originalButton()?.click())
+}
+
+const BACK_TO_ORIGINAL: readonly GuideStoryStep[] = [
+  {
+    title: 'История изменений',
+    hint: 'Над таблицей — кнопка истории: она показывает правки по порядку и возвращает таблицу к любой из них или к виду до первой правки.',
+  },
+  {
+    title: 'Три правки',
+    hint: 'Пользователь поменял по очереди три цены — в первой, второй и третьей строках.',
+    enter: untilDone(editsCheck, editNext),
+  },
+  {
+    title: 'История открыта',
+    hint: 'Пользователь открыл историю: три правки, новые сверху, последняя выделена как текущая. Внизу — кнопка возврата к исходному виду.',
+    enter: untilDone(openCheck, openHistory),
+  },
+  {
+    title: 'Исходный вид',
+    hint: 'Пользователь нажал кнопку возврата к исходному виду. Таблица отменила правки по очереди, начиная с последней: цены прежние, а правки остались в списке приглушёнными — к ним можно вернуться.',
+    enter: untilDone(originalCheck, backToOriginal),
+  },
+  {
+    title: 'Всё возвращено',
+    hint: 'Пользователь нажал на верхнюю, самую новую правку. Таблица повторила все три правки по очереди.',
+    enter: untilDone(allBackCheck, root => {
+      if (!originalCheck(root)) {
+        backToOriginal(root)
+        return
+      }
+      once('redoAll', () => pressEntry(EDITS.length - 1))
+    }),
+  },
+]
+
+/** ADR 0222, S11: таблица одной кнопкой возвращается к виду до первой правки и обратно нажатием на запись. */
+export const HistoryBackToOriginal: StoryObj<StoryProps> = {
+  name: 'Back to original',
+  parameters: { scenario: '0222/S11', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Исходный вид"
+      steps={BACK_TO_ORIGINAL}
+      reset={resetGuide}
+      args={guideArgs(BASE_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(BACK_TO_ORIGINAL[0]!.title, async () => {
+      await waitForRows(canvasElement)
+    })
+    await step(BACK_TO_ORIGINAL[1]!.title, () =>
+      next(canvasElement, editsCheck),
+    )
+    await step(BACK_TO_ORIGINAL[2]!.title, () => next(canvasElement, openCheck))
+    await step(BACK_TO_ORIGINAL[3]!.title, () =>
+      next(canvasElement, originalCheck),
+    )
+    await step(BACK_TO_ORIGINAL[4]!.title, () =>
+      next(canvasElement, allBackCheck),
     )
     await settle()
   },

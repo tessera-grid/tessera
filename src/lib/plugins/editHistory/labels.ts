@@ -20,8 +20,8 @@ export interface EditHistoryLabels {
   historyEmptyDescription: string
   /** Запись истории: показать её ячейки. */
   historyShow: string
-  /** Отметка «вы здесь» между выполненными и откаченными записями. */
-  historyHere: string
+  /** Кнопка подвала попапа: к виду до первой правки (§11). */
+  historyOriginal: string
   /** Откаченная запись — для скринридера. */
   historyUndone: string
   /** Запись операции над несколькими ячейками (`name` — действие, `count` — ячеек). */
@@ -60,7 +60,7 @@ export const editHistoryLabels = defineLabels<EditHistoryLabels>()(
     historyEmpty: 'No changes yet',
     historyEmptyDescription: 'Edits you make in the table will appear here',
     historyShow: 'Show',
-    historyHere: 'Current state',
+    historyOriginal: 'Back to original',
     historyUndone: 'Undone',
     entryCells: '{name}, {count} cells',
     entryCells_one: '{name}, {count} cell',

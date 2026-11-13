@@ -1,10 +1,10 @@
 /**
- * Попап истории правок (ADR 0222, §11; UD18–UD20): записи облачками, новые сверху; над отметкой
- * «Текущее состояние» — откаченные, приглушённые; нажатие на облачко — откат или повтор до
- * записи, «Показать» — выделение её ячеек без отката. Стрелки ходят по записям. Отдельный чанк:
+ * Попап истории правок (ADR 0222, §11; UD18–UD20): записи облачками, новые сверху; текущая —
+ * последняя действующая — выделена, выше неё откаченные, приглушённые; нажатие на облачко — откат
+ * или повтор до записи, «Показать» — выделение её ячеек без отката. Стрелки ходят по записям. Отдельный чанк:
  * открытием управляет кнопка (`HistoryButton`).
  */
-import { type KeyboardEvent, useRef } from 'react'
+import { type KeyboardEvent, useRef, useState } from 'react'
 
 import { Popover } from '@base-ui/react/popover'
 
@@ -15,7 +15,8 @@ import { Bubble } from '../../ui/Bubble'
 import { useIcons } from '../../ui/icons'
 import { ItemButton } from '../../ui/Popup/ItemButton'
 import { PopupEntry } from '../../ui/Popup/PopupEntry'
-import { PopupPanel } from '../../ui/Popup/PopupPanel'
+import { Button } from '../../ui/Button'
+import { PopupFooter, PopupPanel } from '../../ui/Popup/PopupPanel'
 import { PopupSurface } from '../../ui/Popup/PopupSurface'
 import { useScrollFade } from '../../ui/Popup/useScrollFade'
 import { Stub } from '../../ui/Stub'
@@ -43,19 +44,24 @@ export interface HistoryPopoverProps {
   onOpenChange: (open: boolean) => void
 }
 
-type Item =
-  { kind: 'entry'; entry: EditHistoryEntry; undone: boolean } | { kind: 'here' }
+interface Item {
+  entry: EditHistoryEntry
+  undone: boolean
+  current: boolean
+}
 
 const HistoryEntry = ({
   table,
   entry,
   undone,
+  current,
   locale,
   onDone,
 }: {
   table: unknown
   entry: EditHistoryEntry
   undone: boolean
+  current: boolean
   locale: string | undefined
   onDone: () => void
 }) => {
@@ -67,6 +73,7 @@ const HistoryEntry = ({
     <div data-history-entry={entry.id} data-undone={undone || undefined}>
       <PopupEntry
         mark={undone ? null : <Bubble size="dot" />}
+        current={current}
         label={
           <>
             <span className={styles.label} data-history-label="">
@@ -140,12 +147,13 @@ const HistoryList = ({
   const { entries, position } = historyOf(table, labels)
   const locale = (table as { options: { locale?: string } }).options.locale
   const items: Item[] = []
-  for (let i = entries.length - 1; i >= 0; i--) {
-    if (i === position - 1 && position < entries.length)
-      items.push({ kind: 'here' })
-    items.push({ kind: 'entry', entry: entries[i]!, undone: i >= position })
-  }
-  if (position === 0 && entries.length > 0) items.push({ kind: 'here' })
+  for (let i = entries.length - 1; i >= 0; i--)
+    items.push({
+      entry: entries[i]!,
+      undone: i >= position,
+      current: i === position - 1,
+    })
+  const [rewinding, setRewinding] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const scrollerRef = useScrollFade(scrollRef)
   const virtualizer = useVirtualizer({
@@ -153,10 +161,7 @@ const HistoryList = ({
     getScrollElement: () => scrollRef.current,
     estimateSize: () => ENTRY_ESTIMATE,
     overscan: OVERSCAN,
-    getItemKey: index => {
-      const item = items[index]!
-      return item.kind === 'here' ? 'here' : item.entry.id
-    },
+    getItemKey: index => items[index]!.entry.id,
   })
   if (entries.length === 0)
     return (
@@ -169,43 +174,56 @@ const HistoryList = ({
       />
     )
   return (
-    <div ref={scrollerRef} className={styles.scroller} data-popup-scroller="">
-      <div
-        role="list"
-        aria-label={own.history}
-        className={styles.list}
-        style={{ height: virtualizer.getTotalSize() }}
-        onKeyDown={moveFocus}
-      >
-        {virtualizer.getVirtualItems().map(virtual => {
-          const item = items[virtual.index]!
-          return (
-            <div
-              key={virtual.key}
-              ref={virtualizer.measureElement}
-              role="listitem"
-              data-index={virtual.index}
-              className={styles.entry}
-              style={{ transform: `translateY(${virtual.start}px)` }}
-            >
-              {item.kind === 'here' ? (
-                <div className={styles.here} data-history-here="">
-                  {own.historyHere}
-                </div>
-              ) : (
+    <>
+      <div ref={scrollerRef} className={styles.scroller} data-popup-scroller="">
+        <div
+          role="list"
+          aria-label={own.history}
+          className={styles.list}
+          style={{ height: virtualizer.getTotalSize() }}
+          onKeyDown={moveFocus}
+        >
+          {virtualizer.getVirtualItems().map(virtual => {
+            const item = items[virtual.index]!
+            return (
+              <div
+                key={virtual.key}
+                ref={virtualizer.measureElement}
+                role="listitem"
+                data-index={virtual.index}
+                className={styles.entry}
+                style={{ transform: `translateY(${virtual.start}px)` }}
+              >
                 <HistoryEntry
                   table={table}
                   entry={item.entry}
                   undone={item.undone}
+                  current={item.current}
                   locale={locale}
                   onDone={onDone}
                 />
-              )}
-            </div>
-          )
-        })}
+              </div>
+            )
+          })}
+        </div>
       </div>
-    </div>
+      <PopupFooter>
+        <Button
+          variant="outline"
+          data-action="back-to-original"
+          disabled={position === 0}
+          pending={rewinding}
+          onClick={() => {
+            setRewinding(true)
+            void rewind(table, null, 'pointer').finally(() =>
+              setRewinding(false),
+            )
+          }}
+        >
+          {own.historyOriginal}
+        </Button>
+      </PopupFooter>
+    </>
   )
 }
 

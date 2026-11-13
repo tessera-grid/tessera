@@ -24,6 +24,7 @@ import {
 import { setPluginState } from '../../core/definePlugin'
 import { reportAction, type DebugActionSource } from '../../core/debugActions'
 import { getDisplayColumns } from '../../core/displayColumns'
+import { flashOutcome } from '../../core/flashes/flashFeature'
 import {
   reportFailure,
   resolveFailure,
@@ -468,11 +469,15 @@ const prepare = (
   return { writes, changed, missing }
 }
 
-/** Выделить ячейки записи и прокрутить к ним (§9); скрытые — объявить. */
+/**
+ * Выделить ячейки записи и прокрутить к ним (§9); скрытые — объявить. `show` — «Показать» (§11):
+ * область по центру и вспышка, как у «Показать» журнала отказов и пульта.
+ */
 const reveal = (
   table: unknown,
   cells: readonly WrittenCell[],
   indexes?: ReadonlyMap<string, number>,
+  show = false,
 ) => {
   const source = rowSourceOf<{ id: string }>(table)
   const columns = getDisplayColumns(
@@ -517,7 +522,23 @@ const reveal = (
   void scrollToRow(table as never, top.id, {
     columnId: left.id,
     ...(source.keyByIndex ? { index: top.index } : {}),
+    ...(show ? { align: 'center' as const } : {}),
   })
+  if (show)
+    flashOutcome(
+      table,
+      top === bottom && left === right
+        ? { cell: [top.id, left.id] }
+        : {
+            range: {
+              anchorRowId: top.id,
+              anchorColumnId: left.id,
+              focusRowId: bottom.id,
+              focusColumnId: right.id,
+            },
+          },
+      'arrived',
+    )
   return hidden
 }
 
@@ -938,9 +959,10 @@ export const step = (
  * Выполненная запись — откат так, чтобы она осталась последней выполненной; откаченная — повтор
  * до неё включительно.
  */
+/** Откат или повтор до записи (§11); `null` — откат всех записей, к виду до первой правки. */
 export const rewind = async (
   table: unknown,
-  entryId: string,
+  entryId: string | null,
   source: DebugActionSource,
 ): Promise<boolean> => {
   const stack = stackOf(table)
@@ -950,6 +972,11 @@ export const rewind = async (
     detail: { id: entryId },
     source,
   })
+  if (entryId === null) {
+    while (stack.position > 0)
+      if (!(await step(table, 'undo', source))) return false
+    return true
+  }
   for (;;) {
     const index = stack.entries.findIndex(entry => entry.id === entryId)
     if (index < 0) return false
@@ -973,7 +1000,7 @@ export const showEntry = (table: unknown, entryId: string) => {
   if (
     entry &&
     entry.cells.length > 0 &&
-    reveal(table, entry.cells, entry.indexes)
+    reveal(table, entry.cells, entry.indexes, true)
   )
     announceLabel(table, all => editHistoryLabels(all).announceHidden)
 }

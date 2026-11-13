@@ -10136,6 +10136,56 @@ export const HighContrastUndoRowMoveStep5 = {
   tags: ['!test'],
 }
 
+export const HighContrastHistoryBackToOriginalStep1 = {
+  ...twinStep(
+    cellsUndoRedoStories,
+    cellsUndoRedoStories.HistoryBackToOriginal,
+    1,
+  ),
+  name: 'Cells/Undo & redo — Back to original, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastHistoryBackToOriginalStep2 = {
+  ...twinStep(
+    cellsUndoRedoStories,
+    cellsUndoRedoStories.HistoryBackToOriginal,
+    2,
+  ),
+  name: 'Cells/Undo & redo — Back to original, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastHistoryBackToOriginalStep3 = {
+  ...twinStep(
+    cellsUndoRedoStories,
+    cellsUndoRedoStories.HistoryBackToOriginal,
+    3,
+  ),
+  name: 'Cells/Undo & redo — Back to original, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastHistoryBackToOriginalStep4 = {
+  ...twinStep(
+    cellsUndoRedoStories,
+    cellsUndoRedoStories.HistoryBackToOriginal,
+    4,
+  ),
+  name: 'Cells/Undo & redo — Back to original, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastHistoryBackToOriginalStep5 = {
+  ...twinStep(
+    cellsUndoRedoStories,
+    cellsUndoRedoStories.HistoryBackToOriginal,
+    5,
+  ),
+  name: 'Cells/Undo & redo — Back to original, шаг 5',
+  tags: ['!test'],
+}
+
 export const HighContrastServerUndoStep1 = {
   ...twinStep(serverEditingStories, serverEditingStories.ServerUndo, 1),
   name: 'Data loading/Server row model/Editing — Undo an edit off the window, шаг 1',
