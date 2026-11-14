@@ -83,18 +83,33 @@ export const TreeDataPlayground: StoryObj<StoryProps> = {
 
 const READ_ONLY = [
   {
-    title: 'Корни дерева',
-    hint: 'Таблица получила иерархические данные, раскрытием управляет приложение. Пока ничего не раскрыто, видны только строки верхнего уровня.',
+    title: { ru: 'Корни дерева', en: 'Tree roots' },
+    hint: {
+      ru: 'Таблица получила иерархические данные, раскрытием управляет приложение. Пока ничего не раскрыто, видны только строки верхнего уровня.',
+      en: 'The table received hierarchical data, and the app controls expansion. Nothing is expanded yet, so only top-level rows are visible.',
+    },
     props: () => ({ expandAll: false }),
   },
   {
-    title: 'Приложение раскрывает всё',
-    hint: 'Приложение раскрыло все уровни. Таблица показывает подстроки с отступом по глубине. Кнопок раскрытия нет: раскрытие задаёт приложение, а не пользователь.',
+    title: {
+      ru: 'Приложение раскрывает всё',
+      en: 'The app expands everything',
+    },
+    hint: {
+      ru: 'Приложение раскрыло все уровни. Таблица показывает подстроки с отступом по глубине. Кнопок раскрытия нет: раскрытие задаёт приложение, а не пользователь.',
+      en: 'The app expanded every level. The table shows child rows indented by depth. There are no expand buttons: expansion is set by the app, not the user.',
+    },
     props: () => ({ expandAll: true }),
   },
   {
-    title: 'Приложение включает линии дерева',
-    hint: 'Ветки связаны линиями: поворот к подстроке, продолжение к следующей строке того же уровня, отросток у строки с подстроками.',
+    title: {
+      ru: 'Приложение включает линии дерева',
+      en: 'The app turns on tree lines',
+    },
+    hint: {
+      ru: 'Ветки связаны линиями: поворот к подстроке, продолжение к следующей строке того же уровня, отросток у строки с подстроками.',
+      en: 'Lines connect the branches: a turn to each child row, a continuation to the next row at the same level, and a stub under a row with child rows.',
+    },
     props: () => ({ enableTreeLines: true }),
   },
 ] as const satisfies readonly GuideStoryStep[]
@@ -111,7 +126,7 @@ export const TreeDataReadOnly: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Дерево без переключателя"
+      title={{ ru: 'Дерево без переключателя', en: 'A tree without a toggle' }}
       steps={READ_ONLY}
       args={guideArgs(
         {
@@ -125,12 +140,12 @@ export const TreeDataReadOnly: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(READ_ONLY[0].title, async () => {
+    await step(READ_ONLY[0].title.ru, async () => {
       await until(() => expect(rowOf(canvas, ROOT)).not.toBeNull())
       await expect(rowOf(canvas, GRANDCHILD)).toBeNull()
       await expect(expandColumn(canvas)).toBeNull()
     })
-    await step(READ_ONLY[1].title, async () => {
+    await step(READ_ONLY[1].title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(rowOf(canvas, GRANDCHILD)).not.toBeNull())
       await expect(textLeft(rowOf(canvas, GRANDCHILD)!)).toBeGreaterThan(
@@ -142,7 +157,7 @@ export const TreeDataReadOnly: StoryObj<StoryProps> = {
       await expect(expandColumn(canvas)).toBeNull()
       await expect(lines(canvas)).toBe(0)
     })
-    await step(READ_ONLY[2].title, async () => {
+    await step(READ_ONLY[2].title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(lines(canvas)).toBeGreaterThan(0))
     })
@@ -180,22 +195,37 @@ const expandRow = async (
 
 const WITH_TOGGLE = [
   {
-    title: 'Дерево с переключателем',
-    hint: 'Ветки раскрывает сам пользователь: у строк с подстроками есть кнопка раскрытия. Пока ветки свёрнуты, линий нет.',
+    title: { ru: 'Дерево с переключателем', en: 'A tree with a toggle' },
+    hint: {
+      ru: 'Ветки раскрывает сам пользователь: у строк с подстроками есть кнопка раскрытия. Пока ветки свёрнуты, линий нет.',
+      en: 'The user expands branches: rows with child rows have an expand button. While the branches are collapsed, there are no lines.',
+    },
   },
   {
-    title: 'Пользователь раскрывает ветку',
+    title: {
+      ru: 'Пользователь раскрывает ветку',
+      en: 'The user expands a branch',
+    },
     states: ['body.treeLines'],
-    hint: 'Пользователь нажал кнопку раскрытия первой строки. Подстроки встают под ней, линии связывают их с родителем.',
+    hint: {
+      ru: 'Пользователь нажал кнопку раскрытия первой строки. Подстроки встают под ней, линии связывают их с родителем.',
+      en: "The user pressed the first row's expand button. Its child rows appear below it, and lines connect them to the parent.",
+    },
     enter: stepAction(async (root, { signal }) => {
       await expandRow(root, ROOT, true, signal)
       await expandRow(root, CHILD, false, signal)
     }),
   },
   {
-    title: 'Пользователь раскрывает вложенную ветку',
+    title: {
+      ru: 'Пользователь раскрывает вложенную ветку',
+      en: 'The user expands a nested branch',
+    },
     states: ['body.treeLines'],
-    hint: 'Пользователь раскрыл подстроку первой строки. Под ней встаёт следующий уровень, линии продолжаются вглубь.',
+    hint: {
+      ru: 'Пользователь раскрыл подстроку первой строки. Под ней встаёт следующий уровень, линии продолжаются вглубь.',
+      en: 'The user expanded a child row of the first row. The next level appears below it, and the lines continue deeper.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await expandRow(root, ROOT, true, signal)
       await expandRow(root, CHILD, true, signal)
@@ -215,7 +245,7 @@ export const TreeDataWithToggle: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Дерево с переключателем"
+      title={{ ru: 'Дерево с переключателем', en: 'A tree with a toggle' }}
       steps={WITH_TOGGLE}
       args={guideArgs(
         {
@@ -231,18 +261,18 @@ export const TreeDataWithToggle: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(WITH_TOGGLE[0].title, async () => {
+    await step(WITH_TOGGLE[0].title.ru, async () => {
       await until(() => expect(expandColumn(canvas)).not.toBeNull())
       await expect(lines(canvas)).toBe(0)
     })
-    await step(WITH_TOGGLE[1].title, async () => {
+    await step(WITH_TOGGLE[1].title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(lines(canvas)).toBeGreaterThan(0))
       await expect(rowOf(canvas, CHILD)).not.toBeNull()
       await expect(rowOf(canvas, GRANDCHILD)).toBeNull()
     })
-    await step(WITH_TOGGLE[2].title, async () => {
+    await step(WITH_TOGGLE[2].title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(rowOf(canvas, GRANDCHILD)).not.toBeNull())

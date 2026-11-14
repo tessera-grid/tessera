@@ -22,7 +22,7 @@ const meta = {
     shape: {
       control: 'inline-radio',
       options: ['square', 'circle'],
-      description: 'Квадрат — маркер мыши, круг — маркер пальца',
+      description: 'Square is the mouse handle, circle is the touch handle',
     },
   },
   render: ({ shape }) => (

@@ -5,28 +5,21 @@
 import { useEffect, useRef } from 'react'
 
 import { useLatest } from '../../util/useLatest'
+import type { StoryLocale } from '../__mocks__/storyText'
 import { type ConsoleLog, preview } from './consoleLog'
+import { shellText, type StoryShellKey } from './storyShell'
 
 type Atom = {
   get: () => unknown
   subscribe: (listener: (value: unknown) => void) => { unsubscribe: () => void }
 }
 
-const plural = (count: number, one: string, few: string, many: string) => {
-  const mod10 = count % 10
-  const mod100 = count % 100
-  const word =
-    mod10 === 1 && mod100 !== 11
-      ? one
-      : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)
-        ? few
-        : many
-  return `${count} ${word}`
-}
-
-const rows = (count: number) => plural(count, 'строка', 'строки', 'строк')
-const columns = (count: number) =>
-  plural(count, 'колонка', 'колонки', 'колонок')
+const rows = (count: number) => (locale: StoryLocale) =>
+  shellText(locale, 'lifecycleRows', { count })
+const columns = (count: number) => (locale: StoryLocale) =>
+  shellText(locale, 'lifecycleColumnCount', { count })
+const shell = (key: StoryShellKey) => (locale: StoryLocale) =>
+  shellText(locale, key)
 const loadingLabel = (loading: unknown) =>
   loading === 'initial' ? 'initial' : loading === 'refresh' ? 'refresh' : 'off'
 
@@ -71,8 +64,15 @@ export const useTableConsole = (
     const { data, columnDefs, loading, plugins } = latest.current
     log.write(
       'lifecycle',
-      log.mounted() === 1 ? 'Грид смонтирован' : 'Грид пересоздан',
-      `загрузка ${loadingLabel(loading)}, ${rows(data.length)}, ${columns(columnDefs.length)}, плагины: ${plugins.join(', ') || 'нет'}`,
+      shell(log.mounted() === 1 ? 'lifecycleMounted' : 'lifecycleRecreated'),
+      locale =>
+        shellText(locale, 'lifecycleMountDetail', {
+          loading: loadingLabel(loading),
+          rows: rows(data.length)(locale),
+          columns: columns(columnDefs.length)(locale),
+          plugins:
+            plugins.join(', ') || shellText(locale, 'lifecycleNoPlugins'),
+        }),
     )
   }, [log, latest])
 
@@ -88,15 +88,21 @@ export const useTableConsole = (
       ...snapshot.plugins.filter(id => !had.has(id)).map(id => `+${id}`),
       ...before.plugins.filter(id => !has.has(id)).map(id => `−${id}`),
     ]
-    if (changes.length > 0) log.write('lifecycle', 'Плагины', changes.join(' '))
+    if (changes.length > 0)
+      log.write('lifecycle', shell('lifecyclePlugins'), changes.join(' '))
     const was = loadingLabel(before.loading)
     const is = loadingLabel(snapshot.loading)
-    if (was !== is) log.write('lifecycle', 'Загрузка', `${was} → ${is}`)
+    if (was !== is)
+      log.write('lifecycle', shell('lifecycleLoading'), `${was} → ${is}`)
     if (before.data !== snapshot.data) {
-      log.write('lifecycle', 'Данные', rows(snapshot.data.length))
+      log.write('lifecycle', shell('lifecycleData'), rows(snapshot.data.length))
     }
     if (before.columnDefs !== snapshot.columnDefs) {
-      log.write('lifecycle', 'Колонки', columns(snapshot.columnDefs.length))
+      log.write(
+        'lifecycle',
+        shell('lifecycleColumns'),
+        columns(snapshot.columnDefs.length),
+      )
     }
   })
 }

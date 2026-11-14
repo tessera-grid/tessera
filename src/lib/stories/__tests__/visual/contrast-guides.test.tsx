@@ -31,6 +31,7 @@ import {
 import { CATALOG_STATES } from '../../__mocks__/catalog'
 import { applyPseudoStates } from '../../__mocks__/catalogPlay'
 import { type GuideStoryStep, guideSteps } from '../../demos/GuideStory'
+import { both } from '../storyText.helpers'
 
 // Шаги гайдов в матрице контраста (ADR 0089, §7, CX12–CX16): промежуточные состояния
 // фич существуют только как шаги гайдов. Набор проходит каждый гайд тем же `play`, что
@@ -131,7 +132,7 @@ const auditStep = async (
     (() => {
       const created: StepAudit = {
         story: label.split(' › ')[0]!,
-        step: step.title,
+        step: step.title.ru,
         states: step.states ?? [],
         checked: {},
       }
@@ -249,7 +250,7 @@ const walkGuide = async (story: string, Story: ComposedState) => {
   const runStep = async (title: string, play: () => Promise<void>) => {
     await play()
     panel ??= stepsIn(screen.container)
-    const step = panel?.find(s => s.title === title)
+    const step = panel?.find(s => s.title.ru === title)
     if (!step) {
       result.guard.push(`${story}: шаг play «${title}» — не шаг панели`)
       return
@@ -278,7 +279,7 @@ const walkGuide = async (story: string, Story: ComposedState) => {
   await resetCombo()
   await screen.unmount()
   // Страж: каждый шаг панели проверен один раз.
-  const titles = (panel ?? []).map(s => s.title)
+  const titles = (panel ?? []).map(s => s.title.ru)
   if (!panel) result.guard.push(`${story}: панель гайда не найдена`)
   for (const title of titles) {
     const times = played.filter(t => t === title).length
@@ -298,7 +299,9 @@ const walkGuide = async (story: string, Story: ComposedState) => {
         step: async (name: string, play: () => Promise<void>) => {
           await play()
           if (name !== title) return
-          const step = stepsIn(replay.container)!.find(s => s.title === title)!
+          const step = stepsIn(replay.container)!.find(
+            s => s.title.ru === title,
+          )!
           await auditStep(
             result,
             `${story} › ${title}`,
@@ -377,7 +380,7 @@ const stand = (
       step: (title: string, play: () => Promise<void>) => Promise<void>
     }) => {
       for (const s of steps) {
-        await step(s.title, async () => {
+        await step(s.title.ru, async () => {
           s.enter?.(canvasElement, { update: () => {} })
         })
       }
@@ -385,7 +388,10 @@ const stand = (
   }) as unknown as ComposedState
 }
 
-const REST: GuideStoryStep = { title: 'Покой', hint: 'Стенд в покое.' }
+const REST: GuideStoryStep = {
+  title: both('Покой'),
+  hint: both('Стенд в покое.'),
+}
 
 // --- Прогон -------------------------------------------------------------------------
 
@@ -527,7 +533,10 @@ describe('Шаги гайдов в матрице контраста (ADR 0089, 
     const result = await walkGuide(
       'Стенд CX13',
       stand(
-        [REST, { title: 'Состояние', hint: '', states: ['body.hover'] }],
+        [
+          REST,
+          { title: both('Состояние'), hint: both(''), states: ['body.hover'] },
+        ],
         <div>Row text</div>,
       ),
     )
@@ -538,7 +547,7 @@ describe('Шаги гайдов в матрице контраста (ADR 0089, 
     )
     expect(
       Object.keys(
-        result.audits.find(a => a.step === REST.title)!.checked,
+        result.audits.find(a => a.step === REST.title.ru)!.checked,
       ).sort(),
     ).toEqual(STEP_LABELS)
   })
@@ -551,7 +560,11 @@ describe('Шаги гайдов в матрице контраста (ADR 0089, 
         stand(
           [
             REST,
-            { title: 'Наведение', hint: '', pseudo: { hover: `.${target}` } },
+            {
+              title: both('Наведение'),
+              hint: both(''),
+              pseudo: { hover: `.${target}` },
+            },
           ],
           <>
             <div className="cx14-visible">Visible hover</div>
@@ -586,7 +599,10 @@ describe('Шаги гайдов в матрице контраста (ADR 0089, 
       walkGuide(
         `Стенд CX15 ${immediate}`,
         stand(
-          [REST, { title: 'Вспышка', hint: '', enter: flash, immediate }],
+          [
+            REST,
+            { title: both('Вспышка'), hint: both(''), enter: flash, immediate },
+          ],
           <div className="cx15-flash">Flash text</div>,
         ),
       )
@@ -658,7 +674,7 @@ describe('Шаги гайдов в матрице контраста (ADR 0089, 
       walkGuide(
         `Стенд CX19 ${ends}`,
         stand(
-          [REST, { title: 'Отказ', hint: '', enter: flash(ends) }],
+          [REST, { title: both('Отказ'), hint: both(''), enter: flash(ends) }],
           <div className="cx19-flash">Flash text</div>,
         ),
       )
@@ -699,7 +715,7 @@ describe('Шаги гайдов в матрице контраста (ADR 0089, 
       walkGuide(
         `Стенд CX20 ${ends}`,
         stand(
-          [REST, { title: 'Рывок', hint: '', enter: scroll(ends) }],
+          [REST, { title: both('Рывок'), hint: both(''), enter: scroll(ends) }],
           <div className="cx20-scroll">Row text</div>,
         ),
       )

@@ -47,8 +47,11 @@ const meta = {
   title: 'Tessera/UI/Popup/Group',
   args: { divided: true },
   argTypes: {
-    label: { control: 'text', description: 'Подпись второй группы' },
-    divided: { control: 'boolean', description: 'Линия над второй группой' },
+    label: { control: 'text', description: 'Label of the second group' },
+    divided: {
+      control: 'boolean',
+      description: 'Divider above the second group',
+    },
   },
   render: function Render({ label, divided }) {
     const texts = useGroupTexts()

@@ -63,9 +63,9 @@ const meta = {
   title: 'Tessera/UI/SearchField',
   args: { value: 'Paris', icon: true, hint: true },
   argTypes: {
-    value: { control: 'text', description: 'Начальный текст' },
-    icon: { control: 'boolean', description: 'Лупа слева' },
-    hint: { control: 'boolean', description: 'Кнопка-подсказка' },
+    value: { control: 'text', description: 'Initial text' },
+    icon: { control: 'boolean', description: 'Magnifying glass on the left' },
+    hint: { control: 'boolean', description: 'Hint button' },
   },
   render: args => <SearchFieldStory key={args.value} {...args} />,
 } satisfies Meta<SearchFieldStoryArgs>

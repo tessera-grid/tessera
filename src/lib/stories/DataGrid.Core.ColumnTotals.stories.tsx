@@ -131,10 +131,11 @@ export const ColumnTotalsPlayground: StoryObj<StoryProps> = {
         'enableQuickSearch',
       ],
       {
-        dataCount: 'Строки заданы своими данными',
-        columnCount: 'Колонки заданы своим набором',
-        headerHeight: 'Футер встаёт под шапкой при любой её высоте',
-        defaultColumn: 'Футер повторяет ширины колонок, своего поведения нет',
+        dataCount: "Rows come from the story's own data",
+        columnCount: "Columns come from the story's own column set",
+        headerHeight: 'The footer sits below the header at any header height',
+        defaultColumn:
+          'The footer follows column widths and has no behavior of its own',
       },
     ),
   },
@@ -146,12 +147,18 @@ export const ColumnTotalsPlayground: StoryObj<StoryProps> = {
 
 const SEARCH: readonly GuideStoryStep[] = [
   {
-    title: 'Итоги всех строк',
-    hint: 'В колонках с заданным способом подсчёта футер показывает итог. Он считается по всем строкам таблицы.',
+    title: { ru: 'Итоги всех строк', en: 'Totals of all rows' },
+    hint: {
+      ru: 'В колонках с заданным способом подсчёта футер показывает итог. Он считается по всем строкам таблицы.',
+      en: 'In columns with an aggregation set, the footer shows a total. It is computed over all rows of the table.',
+    },
   },
   {
-    title: 'Итоги найденных строк',
-    hint: 'Поиск оставил часть строк, и итог посчитан заново: он учитывает только то, что осталось.',
+    title: { ru: 'Итоги найденных строк', en: 'Totals of found rows' },
+    hint: {
+      ru: 'Поиск оставил часть строк, и итог посчитан заново: он учитывает только то, что осталось.',
+      en: 'The search left only some of the rows, and the total was recomputed: it counts only what remains.',
+    },
     enter: typeSearch('Paris'),
   },
 ]
@@ -162,7 +169,7 @@ export const ColumnTotalsSearch: StoryObj<StoryProps> = {
   parameters: { scenario: '0184/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Итог и поиск"
+      title={{ ru: 'Итог и поиск', en: 'Totals and search' }}
       steps={SEARCH}
       args={guideArgs(
         { ...TOTALS_ARGS, enableQuickSearch: true, quickSearchDebounceMs: 0 },
@@ -172,7 +179,7 @@ export const ColumnTotalsSearch: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(SEARCH[0].title, async () => {
+    await step(SEARCH[0].title.ru, async () => {
       await until(() => expect(footerText(canvas, 'amount')).toBe('2100'))
       await expect(footerText(canvas, 'orders')).toBe('28')
       // Поле поиска приходит с ленивым модулем тулбара: шаг ввода ждёт его.
@@ -183,7 +190,7 @@ export const ColumnTotalsSearch: StoryObj<StoryProps> = {
       )
       await expect(footerText(canvas, 'name')).toBe('')
     })
-    await step(SEARCH[1].title, async () => {
+    await step(SEARCH[1].title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(footerText(canvas, 'amount')).toBe('900'))
       await expect(footerText(canvas, 'orders')).toBe('15')
@@ -209,12 +216,18 @@ const OWN_FOOTER_COLUMNS = COLUMNS.map(column =>
 
 const OWN_FOOTER: readonly GuideStoryStep[] = [
   {
-    title: 'Итог по типу колонки',
-    hint: 'Таблица показывает итог так же, как значения в этой колонке.',
+    title: { ru: 'Итог по типу колонки', en: 'A total by column type' },
+    hint: {
+      ru: 'Таблица показывает итог так же, как значения в этой колонке.',
+      en: 'The table displays the total the same way as the values in that column.',
+    },
   },
   {
-    title: 'Своё оформление итога',
-    hint: 'Приложение задало колонке своё содержимое футера: оно заменяет итог таблицы, а значение берёт у неё же.',
+    title: { ru: 'Своё оформление итога', en: 'Custom total formatting' },
+    hint: {
+      ru: 'Приложение задало колонке своё содержимое футера: оно заменяет итог таблицы, а значение берёт у неё же.',
+      en: "The app gave the column its own footer content: it replaces the table's total but takes its value from the table.",
+    },
     props: () => ({ columnsOverride: OWN_FOOTER_COLUMNS as never }),
   },
 ]
@@ -225,17 +238,17 @@ export const ColumnTotalsOwnFooter: StoryObj<StoryProps> = {
   parameters: { scenario: '0184/S2', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Своё оформление итога"
+      title={{ ru: 'Своё оформление итога', en: 'Custom total formatting' }}
       steps={OWN_FOOTER}
       args={guideArgs(TOTALS_ARGS, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(OWN_FOOTER[0].title, async () => {
+    await step(OWN_FOOTER[0].title.ru, async () => {
       await until(() => expect(footerText(canvas, 'amount')).toBe('2100'))
     })
-    await step(OWN_FOOTER[1].title, async () => {
+    await step(OWN_FOOTER[1].title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(footerText(canvas, 'amount')).toBe('Total: $2100'),
@@ -253,12 +266,18 @@ const DEEP_COLUMNS = COLUMNS.map(column =>
 
 const TREE: readonly GuideStoryStep[] = [
   {
-    title: 'Итог верхнего уровня',
-    hint: 'В дереве итог складывает только верхний уровень: иначе родитель и его вложенные строки считались бы вместе.',
+    title: { ru: 'Итог верхнего уровня', en: 'Top-level total' },
+    hint: {
+      ru: 'В дереве итог складывает только верхний уровень: иначе родитель и его вложенные строки считались бы вместе.',
+      en: 'In a tree, the total adds up only the top level: otherwise a parent and its nested rows would be counted together.',
+    },
   },
   {
-    title: 'Итог на уровень глубже',
-    hint: 'Колонкам разрешён подсчёт на уровень глубже: теперь итог складывает вложенные строки вместо их родителей.',
+    title: { ru: 'Итог на уровень глубже', en: 'A total one level deeper' },
+    hint: {
+      ru: 'Колонкам разрешён подсчёт на уровень глубже: теперь итог складывает вложенные строки вместо их родителей.',
+      en: 'The columns are allowed to aggregate one level deeper: now the total adds up the nested rows instead of their parents.',
+    },
     props: () => ({ columnsOverride: DEEP_COLUMNS as never }),
   },
 ]
@@ -269,7 +288,7 @@ export const ColumnTotalsTree: StoryObj<StoryProps> = {
   parameters: { scenario: '0184/S3', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Итог в дереве"
+      title={{ ru: 'Итог в дереве', en: 'Totals in a tree' }}
       steps={TREE}
       args={guideArgs(
         {
@@ -284,11 +303,11 @@ export const ColumnTotalsTree: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(TREE[0].title, async () => {
+    await step(TREE[0].title.ru, async () => {
       await until(() => expect(footerText(canvas, 'amount')).toBe('3000'))
       await expect(footerText(canvas, 'orders')).toBe('30')
     })
-    await step(TREE[1].title, async () => {
+    await step(TREE[1].title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(footerText(canvas, 'amount')).toBe('1000'))
       await expect(footerText(canvas, 'orders')).toBe('16')
@@ -310,12 +329,18 @@ const SERVER_FOOTER_COLUMNS = COLUMNS.map(column =>
 
 const SERVER_PAGE: readonly GuideStoryStep[] = [
   {
-    title: 'Итога нет',
-    hint: 'На странице только часть строк, остальные на сервере. Сумма видимых строк выглядела бы как настоящий итог, поэтому таблица его не показывает.',
+    title: { ru: 'Итога нет', en: 'No total' },
+    hint: {
+      ru: 'На странице только часть строк, остальные на сервере. Сумма видимых строк выглядела бы как настоящий итог, поэтому таблица его не показывает.',
+      en: "The page holds only some of the rows; the rest are on the server. A sum of the visible rows would look like the real total, so the table doesn't show one.",
+    },
   },
   {
-    title: 'Итог от сервера',
-    hint: 'Настоящий итог знает сервер. Приложение показывает его своим содержимым футера.',
+    title: { ru: 'Итог от сервера', en: 'A total from the server' },
+    hint: {
+      ru: 'Настоящий итог знает сервер. Приложение показывает его своим содержимым футера.',
+      en: 'Only the server knows the real total. The app shows it with its own footer content.',
+    },
     props: () => ({ columnsOverride: SERVER_FOOTER_COLUMNS as never }),
   },
 ]
@@ -326,7 +351,10 @@ export const ColumnTotalsServerPage: StoryObj<StoryProps> = {
   parameters: { scenario: '0184/S4', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Итог при странице с сервера"
+      title={{
+        ru: 'Итог при странице с сервера',
+        en: 'Totals with a page from the server',
+      }}
       steps={SERVER_PAGE}
       args={guideArgs(
         {
@@ -342,10 +370,10 @@ export const ColumnTotalsServerPage: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(SERVER_PAGE[0].title, async () => {
+    await step(SERVER_PAGE[0].title.ru, async () => {
       await until(() => expect(footerText(canvas, 'amount')).toBe(''))
     })
-    await step(SERVER_PAGE[1].title, async () => {
+    await step(SERVER_PAGE[1].title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(footerText(canvas, 'amount')).toBe(`Total: ${SERVER_AMOUNT}`),

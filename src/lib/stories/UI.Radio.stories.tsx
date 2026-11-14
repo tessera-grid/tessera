@@ -43,9 +43,12 @@ const meta = {
     value: {
       control: 'inline-radio',
       options: ['all', 'yes', 'no', 'empty'],
-      description: 'Выбранный вариант',
+      description: 'Selected option',
     },
-    disabledNo: { control: 'boolean', description: 'Вариант «No» выключен' },
+    disabledNo: {
+      control: 'boolean',
+      description: 'The "No" option is disabled',
+    },
   },
   render: function Render({ value, disabledNo }) {
     const texts = useChoices()

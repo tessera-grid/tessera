@@ -35,7 +35,7 @@ const meta = {
 
 export default meta
 
-const NOT_ICONS = 'На иконки не влияет'
+const NOT_ICONS = 'Does not affect icons'
 
 /** Свой набор приложения: сортировка, фильтр, перетаскивание, меню, выгрузка. */
 /** Иконка набора приложения с меткой: по ней видно, что таблица показала свою иконку. */
@@ -97,12 +97,18 @@ const ownIcons = (root: ParentNode) =>
 
 const OWN_SET: readonly GuideStoryStep[] = [
   {
-    title: 'Иконки по умолчанию',
-    hint: 'Таблица отображает встроенные иконки кнопок сортировки, фильтра, перетаскивания, меню и выгрузки.',
+    title: { ru: 'Иконки по умолчанию', en: 'Default icons' },
+    hint: {
+      ru: 'Таблица отображает встроенные иконки кнопок сортировки, фильтра, перетаскивания, меню и выгрузки.',
+      en: 'The table shows the built-in icons on the sort, filter, drag, menu, and export buttons.',
+    },
   },
   {
-    title: 'Свои иконки приложения',
-    hint: 'Приложение передало таблице свой набор иконок. Таблица заменила ими встроенные, остальные иконки остались по умолчанию.',
+    title: { ru: 'Свои иконки приложения', en: "The app's own icons" },
+    hint: {
+      ru: 'Приложение передало таблице свой набор иконок. Таблица заменила ими встроенные, остальные иконки остались по умолчанию.',
+      en: 'The app passed its own icon set to the table. The table replaced the built-in icons with it; the other icons kept their defaults.',
+    },
     props: () => ({ icons: OWN_ICONS }),
   },
 ]
@@ -116,7 +122,7 @@ export const IconsOwnSet: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Свои иконки"
+      title={{ ru: 'Свои иконки', en: 'Custom icons' }}
       steps={OWN_SET}
       args={guideArgs(WITH_ICONS, args)}
     />
@@ -124,11 +130,11 @@ export const IconsOwnSet: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     // В Storybook сценарий проходит человек; `play` — только в тестах каталога.
     if (globals.catalog !== true) return
-    await step(OWN_SET[0]!.title, async () => {
+    await step(OWN_SET[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await expect(ownIcons(canvas)).toBe(0)
     })
-    await step(OWN_SET[1]!.title, async () => {
+    await step(OWN_SET[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(ownIcons(canvas)).toBeGreaterThan(0))
       await settle()

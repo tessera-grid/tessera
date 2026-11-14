@@ -19,6 +19,7 @@ import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
+import { shellText } from './demos/storyShell'
 
 /**
  * Геометрия таблицы от приложения: высота на странице (ADR 0131, S1–S4), высота строк и
@@ -40,8 +41,8 @@ export default meta
 export const SizingPlayground: StoryObj<StoryProps> = {
   name: 'Playground',
   parameters: showControls(['enableFooter'], {
-    columnCount: 'Число колонок на высоту не влияет',
-    defaultColumn: 'Ширина колонок по умолчанию — в Columns/Resizing',
+    columnCount: 'The number of columns does not affect the height',
+    defaultColumn: 'The default column width is covered in Columns/Resizing',
   }),
   args: {
     enableFooter: true,
@@ -101,7 +102,13 @@ const visibleRows = (root: ParentNode) => {
     row => rect(row).top >= top - 1 && rect(row).bottom <= bottom + 1,
   ).length
 }
-const recreated = () => consoleText().includes('Грид пересоздан')
+const recreated = () => {
+  const text = consoleText()
+  return (
+    text.includes(shellText('ru', 'lifecycleRecreated')) ||
+    text.includes(shellText('en', 'lifecycleRecreated'))
+  )
+}
 
 /** Действие шага — после отрисовки строк: первый шаг входит при монтировании грида. */
 const afterRows =
@@ -122,12 +129,18 @@ const scrollToMiddle = afterRows(root => {
 
 const FIXED: readonly GuideStoryStep[] = [
   {
-    title: 'Высота 300px',
-    hint: 'Приложение задаёт таблице высоту числом. Таблица ниже контейнера, строки, которые не поместились, прокручиваются внутри.',
+    title: { ru: 'Высота 300px', en: 'Height of 300px' },
+    hint: {
+      ru: 'Приложение задаёт таблице высоту числом. Таблица ниже контейнера, строки, которые не поместились, прокручиваются внутри.',
+      en: 'The app sets the table height as a number. The table is shorter than its container, and the rows that do not fit scroll inside it.',
+    },
   },
   {
-    title: 'Строк стало меньше',
-    hint: 'Осталось три строки — высота таблицы та же, раскладка страницы не прыгает.',
+    title: { ru: 'Строк стало меньше', en: 'Fewer rows' },
+    hint: {
+      ru: 'Осталось три строки — высота таблицы та же, раскладка страницы не прыгает.',
+      en: 'Three rows are left. The table height stays the same, so the page layout does not jump.',
+    },
     props: () => ({ dataCount: 3 }),
   },
 ]
@@ -149,7 +162,7 @@ export const SizingFixedHeight: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Таблица фиксированной высоты"
+      title={{ ru: 'Таблица фиксированной высоты', en: 'A fixed-height table' }}
       steps={FIXED}
       args={guideArgs(FIXED_HEIGHT_ARGS, args)}
     />
@@ -157,13 +170,13 @@ export const SizingFixedHeight: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     // В Storybook сценарий проходит человек; `play` — только в тестах каталога.
     if (globals.catalog !== true) return
-    await step(FIXED[0].title, async () => {
+    await step(FIXED[0].title.ru, async () => {
       await waitForRows(canvas)
       await until(() => near(rect(gridOf(canvas)).height, 300))
       await expect(rect(containerOf(canvas)).height).toBe(600)
       await expect(scrolls(canvas)).toBe(true)
     })
-    await step(FIXED[1].title, async () => {
+    await step(FIXED[1].title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(rowsOf(canvas)).toHaveLength(3))
       near(rect(gridOf(canvas)).height, 300)
@@ -177,17 +190,26 @@ export const SizingFixedHeight: StoryObj<StoryProps> = {
 
 const FILL: readonly GuideStoryStep[] = [
   {
-    title: 'Вся высота контейнера',
-    hint: 'Приложение задаёт высоту `100%`: таблица занимает весь контейнер высотой 400px.',
+    title: { ru: 'Вся высота контейнера', en: 'The full container height' },
+    hint: {
+      ru: 'Приложение задаёт высоту `100%`: таблица занимает весь контейнер высотой 400px.',
+      en: 'The app sets the height to `100%`: the table fills the whole 400px-tall container.',
+    },
   },
   {
-    title: 'Контейнер вырос',
-    hint: 'Контейнер стал 600px — таблица выросла вместе с ним и показывает больше строк. Таблица не пересоздаётся.',
+    title: { ru: 'Контейнер вырос', en: 'The container grew' },
+    hint: {
+      ru: 'Контейнер стал 600px — таблица выросла вместе с ним и показывает больше строк. Таблица не пересоздаётся.',
+      en: 'The container is now 600px tall. The table grew with it and shows more rows. The table is not recreated.',
+    },
     props: () => ({ containerHeight: '600' }),
   },
   {
-    title: 'Половина контейнера',
-    hint: 'Высота `50%` — таблица занимает половину контейнера.',
+    title: { ru: 'Половина контейнера', en: 'Half of the container' },
+    hint: {
+      ru: 'Высота `50%` — таблица занимает половину контейнера.',
+      en: 'With a height of `50%`, the table takes up half of the container.',
+    },
     props: () => ({ height: '50%' }),
   },
 ]
@@ -209,7 +231,10 @@ export const SizingFillContainer: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Таблица по высоте контейнера"
+      title={{
+        ru: 'Таблица по высоте контейнера',
+        en: 'A table as tall as its container',
+      }}
       steps={FILL}
       args={guideArgs(FILL_CONTAINER_ARGS, args)}
     />
@@ -218,7 +243,7 @@ export const SizingFillContainer: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     let body: Element | null = null
     let rows = 0
-    await step(FILL[0].title, async () => {
+    await step(FILL[0].title.ru, async () => {
       await waitForRows(canvas)
       await until(() => near(rect(gridOf(canvas)).height, 400))
       near(rect(containerOf(canvas)).height, 400)
@@ -226,7 +251,7 @@ export const SizingFillContainer: StoryObj<StoryProps> = {
       // Видимые строки: полоса окна (ADR 0202) держит запас и монтирует их заранее.
       rows = rowsInView(canvas)
     })
-    await step(FILL[1].title, async () => {
+    await step(FILL[1].title.ru, async () => {
       await guideNext(canvas)
       await until(() => near(rect(gridOf(canvas)).height, 600))
       near(rect(containerOf(canvas)).height, 600)
@@ -234,7 +259,7 @@ export const SizingFillContainer: StoryObj<StoryProps> = {
       await until(() => expect(bodyOf(canvas)).toBe(body))
       await until(() => expect(recreated()).toBe(false))
     })
-    await step(FILL[2].title, async () => {
+    await step(FILL[2].title.ru, async () => {
       await guideNext(canvas)
       await until(() => near(rect(gridOf(canvas)).height, 300))
       near(rect(containerOf(canvas)).height, 600)
@@ -250,12 +275,18 @@ const PANEL_GROWN = 200
 
 const FLEX: readonly GuideStoryStep[] = [
   {
-    title: 'Таблица под панелью',
-    hint: 'Над таблицей — панель приложения. С высотой `auto` таблица занимает остаток контейнера до его низа, даже когда строк мало.',
+    title: { ru: 'Таблица под панелью', en: 'The table below a panel' },
+    hint: {
+      ru: 'Над таблицей — панель приложения. С высотой `auto` таблица занимает остаток контейнера до его низа, даже когда строк мало.',
+      en: 'An app panel sits above the table. With the height set to `auto`, the table takes up the rest of the container down to its bottom, even when there are few rows.',
+    },
   },
   {
-    title: 'Панель выросла',
-    hint: 'Панель приложения стала выше — таблица уменьшилась на столько же, низ таблицы остался у низа контейнера.',
+    title: { ru: 'Панель выросла', en: 'The panel grew' },
+    hint: {
+      ru: 'Панель приложения стала выше — таблица уменьшилась на столько же, низ таблицы остался у низа контейнера.',
+      en: 'The app panel got taller. The table shrank by the same amount, and its bottom stayed at the bottom of the container.',
+    },
     props: () => ({ appPanelHeight: PANEL_GROWN }),
   },
 ]
@@ -279,7 +310,10 @@ export const SizingFlexLayout: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Таблица в раскладке страницы"
+      title={{
+        ru: 'Таблица в раскладке страницы',
+        en: 'A table in the page layout',
+      }}
       steps={FLEX}
       args={guideArgs(FLEX_LAYOUT_ARGS, args)}
     />
@@ -293,13 +327,13 @@ export const SizingFlexLayout: StoryObj<StoryProps> = {
       near(rect(gridOf(canvas)).bottom, rect(containerOf(canvas)).bottom)
     }
     let height = 0
-    await step(FLEX[0].title, async () => {
+    await step(FLEX[0].title.ru, async () => {
       await waitForRows(canvas)
       await until(() => near(rect(panel()).height, PANEL))
       await until(fitsBelowPanel)
       height = rect(gridOf(canvas)).height
     })
-    await step(FLEX[1].title, async () => {
+    await step(FLEX[1].title.ru, async () => {
       await guideNext(canvas)
       await until(() => near(rect(panel()).height, PANEL_GROWN))
       await until(fitsBelowPanel)
@@ -315,12 +349,18 @@ const MAX_HEIGHT = 400
 
 const CONTENT: readonly GuideStoryStep[] = [
   {
-    title: 'Три строки',
-    hint: 'Ни у контейнера, ни у таблицы нет высоты — таблица по высоте хедера колонок и строк, пустого места под строками нет.',
+    title: { ru: 'Три строки', en: 'Three rows' },
+    hint: {
+      ru: 'Ни у контейнера, ни у таблицы нет высоты — таблица по высоте хедера колонок и строк, пустого места под строками нет.',
+      en: 'Neither the container nor the table has a set height. The table is as tall as its column header and rows, with no empty space below the rows.',
+    },
   },
   {
-    title: 'Строк стало много',
-    hint: 'Пришло 100 строк — таблица выросла до предела `maxHeight: 400`, остальные строки прокручиваются внутри.',
+    title: { ru: 'Строк стало много', en: 'Many rows now' },
+    hint: {
+      ru: 'Пришло 100 строк — таблица выросла до предела `maxHeight: 400`, остальные строки прокручиваются внутри.',
+      en: '100 rows arrived. The table grew up to the `maxHeight: 400` limit, and the remaining rows scroll inside it.',
+    },
     props: () => ({ dataCount: 100 }),
   },
 ]
@@ -341,14 +381,14 @@ export const SizingContentHeight: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Высота по числу строк"
+      title={{ ru: 'Высота по числу строк', en: 'Height by row count' }}
       steps={CONTENT}
       args={guideArgs(CONTENT_HEIGHT_ARGS, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(CONTENT[0].title, async () => {
+    await step(CONTENT[0].title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(rowsOf(canvas)).toHaveLength(3))
       const scroller = scrollerOf(canvas)
@@ -360,7 +400,7 @@ export const SizingContentHeight: StoryObj<StoryProps> = {
       await expect(scrolls(canvas)).toBe(false)
       await expect(rect(gridOf(canvas)).height).toBeLessThan(MAX_HEIGHT)
     })
-    await step(CONTENT[1].title, async () => {
+    await step(CONTENT[1].title.ru, async () => {
       await guideNext(canvas)
       await until(() => near(rect(gridOf(canvas)).height, MAX_HEIGHT))
       await expect(scrolls(canvas)).toBe(true)
@@ -373,27 +413,45 @@ export const SizingContentHeight: StoryObj<StoryProps> = {
 
 const ROWS: readonly GuideStoryStep[] = [
   {
-    title: 'Высота по умолчанию',
-    hint: 'Строки тела и футера — по 50px.',
+    title: { ru: 'Высота по умолчанию', en: 'Default height' },
+    hint: {
+      ru: 'Строки тела и футера — по 50px.',
+      en: 'Body and footer rows are 50px each.',
+    },
   },
   {
-    title: 'Таблица прокручена к середине',
-    hint: 'Пользователь прокрутил таблицу к середине. Строки тела и футера — по 50px.',
+    title: {
+      ru: 'Таблица прокручена к середине',
+      en: 'The table is scrolled to the middle',
+    },
+    hint: {
+      ru: 'Пользователь прокрутил таблицу к середине. Строки тела и футера — по 50px.',
+      en: 'The user scrolled the table to the middle. Body and footer rows are 50px each.',
+    },
     enter: scrollToMiddle,
   },
   {
-    title: 'Компактные строки',
-    hint: 'Приложение задаёт `rowHeight: 40`: строки и футер ниже, в таблице помещается больше строк. Прокрутка не сбрасывается, таблица не пересоздаётся.',
+    title: { ru: 'Компактные строки', en: 'Compact rows' },
+    hint: {
+      ru: 'Приложение задаёт `rowHeight: 40`: строки и футер ниже, в таблице помещается больше строк. Прокрутка не сбрасывается, таблица не пересоздаётся.',
+      en: 'The app sets `rowHeight: 40`: the rows and the footer are shorter, so more rows fit in the table. The scroll position is kept, and the table is not recreated.',
+    },
     props: () => ({ rowHeight: 40 }),
   },
   {
-    title: 'Просторные строки',
-    hint: '`rowHeight: 64` — строки и футер выше, строк помещается меньше.',
+    title: { ru: 'Просторные строки', en: 'Spacious rows' },
+    hint: {
+      ru: '`rowHeight: 64` — строки и футер выше, строк помещается меньше.',
+      en: 'With `rowHeight: 64`, the rows and the footer are taller, so fewer rows fit.',
+    },
     props: () => ({ rowHeight: 64 }),
   },
   {
-    title: 'Меньше минимума',
-    hint: '`rowHeight: 30` меньше минимума: строки — 40px, ниже кнопки строки не поместились бы. В режиме разработки — предупреждение в консоли браузера.',
+    title: { ru: 'Меньше минимума', en: 'Below the minimum' },
+    hint: {
+      ru: '`rowHeight: 30` меньше минимума: строки — 40px, ниже кнопки строки не поместились бы. В режиме разработки — предупреждение в консоли браузера.',
+      en: '`rowHeight: 30` is below the minimum: rows are 40px, since row buttons would not fit in anything shorter. In development mode, a warning appears in the browser console.',
+    },
     props: () => ({ rowHeight: 30 }),
   },
 ]
@@ -414,7 +472,7 @@ export const SizingRowHeight: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Высота строк"
+      title={{ ru: 'Высота строк', en: 'Row height' }}
       steps={ROWS}
       args={guideArgs(ROW_HEIGHT_ARGS, args)}
     />
@@ -429,10 +487,10 @@ export const SizingRowHeight: StoryObj<StoryProps> = {
     let body: Element | null = null
     let visible = 0
     let scrollTop = 0
-    await step(ROWS[0].title, async () => {
+    await step(ROWS[0].title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(ROWS[1].title, async () => {
+    await step(ROWS[1].title.ru, async () => {
       await guideNext(canvas)
       await waitForRows(canvas)
       await until(() => expect(scrollerOf(canvas).scrollTop).toBeGreaterThan(0))
@@ -441,7 +499,7 @@ export const SizingRowHeight: StoryObj<StoryProps> = {
       visible = visibleRows(canvas)
       scrollTop = scrollerOf(canvas).scrollTop
     })
-    await step(ROWS[2].title, async () => {
+    await step(ROWS[2].title.ru, async () => {
       await guideNext(canvas)
       await rowsAre(40)
       await until(() => expect(visibleRows(canvas)).toBeGreaterThan(visible))
@@ -456,12 +514,12 @@ export const SizingRowHeight: StoryObj<StoryProps> = {
       await until(() => expect(recreated()).toBe(false))
       visible = visibleRows(canvas)
     })
-    await step(ROWS[3].title, async () => {
+    await step(ROWS[3].title.ru, async () => {
       await guideNext(canvas)
       await rowsAre(64)
       await until(() => expect(visibleRows(canvas)).toBeLessThan(visible))
     })
-    await step(ROWS[4].title, async () => {
+    await step(ROWS[4].title.ru, async () => {
       // Предупреждение печатается раз за сессию: прежние прогоны его не гасят.
       __resetLogger()
       const warn = spyOn(console, 'warn').mockImplementation(() => {})
@@ -489,12 +547,18 @@ const headHeight = (row: number) => HEAD_DEPTH * row + HEAD_DEPTH - 1
 
 const HEADER: readonly GuideStoryStep[] = [
   {
-    title: 'Шапка высотой строк',
-    hint: 'Без `headerHeight` каждая строка вложенного хедера колонок — как строка тела, 44px.',
+    title: { ru: 'Шапка высотой строк', en: 'A header as tall as the rows' },
+    hint: {
+      ru: 'Без `headerHeight` каждая строка вложенного хедера колонок — как строка тела, 44px.',
+      en: 'Without `headerHeight`, each row of the nested column header is as tall as a body row, 44px.',
+    },
   },
   {
-    title: 'Высокий хедер колонок',
-    hint: 'Приложение задаёт `headerHeight: 72`: каждая строка хедера колонок — 72px, строки тела остались 44px.',
+    title: { ru: 'Высокий хедер колонок', en: 'A tall column header' },
+    hint: {
+      ru: 'Приложение задаёт `headerHeight: 72`: каждая строка хедера колонок — 72px, строки тела остались 44px.',
+      en: 'The app sets `headerHeight: 72`: each column header row is 72px, while body rows stay at 44px.',
+    },
     props: () => ({ headerHeight: 72 }),
   },
 ]
@@ -513,21 +577,21 @@ export const SizingHeaderHeight: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Высота хедера колонок"
+      title={{ ru: 'Высота хедера колонок', en: 'Column header height' }}
       steps={HEADER}
       args={guideArgs(HEADER_HEIGHT_ARGS, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(HEADER[0].title, async () => {
+    await step(HEADER[0].title.ru, async () => {
       await waitForRows(canvas)
       await until(() =>
         expect(Math.round(rect(headOf(canvas)).height)).toBe(headHeight(44)),
       )
       await expect(rowHeights(canvas)).toEqual(new Set([44]))
     })
-    await step(HEADER[1].title, async () => {
+    await step(HEADER[1].title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(Math.round(rect(headOf(canvas)).height)).toBe(headHeight(72)),
@@ -546,17 +610,29 @@ const APP_THEME_CSS = `.${APP_THEME}.${DATA_GRID_THEME_CLASS} { --tsr-comp-row-h
 
 const THEME: readonly GuideStoryStep[] = [
   {
-    title: 'Высота по умолчанию',
-    hint: 'Строки и хедер колонок — по 50px.',
+    title: { ru: 'Высота по умолчанию', en: 'Default height' },
+    hint: {
+      ru: 'Строки и хедер колонок — по 50px.',
+      en: 'The rows and the column header are 50px each.',
+    },
   },
   {
-    title: 'Тема приложения',
-    hint: 'Тема приложения в CSS задаёт `--tsr-comp-row-height: 40px` и `--tsr-comp-head-row-height: 64px`, параметров `rowHeight` и `headerHeight` у `useCreateTable` нет: строки 40px, хедер колонок 64px.',
+    title: { ru: 'Тема приложения', en: 'The app theme' },
+    hint: {
+      ru: 'Тема приложения в CSS задаёт `--tsr-comp-row-height: 40px` и `--tsr-comp-head-row-height: 64px`, параметров `rowHeight` и `headerHeight` у `useCreateTable` нет: строки 40px, хедер колонок 64px.',
+      en: 'The app theme sets `--tsr-comp-row-height: 40px` and `--tsr-comp-head-row-height: 64px` in CSS, and `useCreateTable` gets no `rowHeight` or `headerHeight`: rows are 40px and the column header is 64px.',
+    },
     props: () => ({ gridClassName: APP_THEME }),
   },
   {
-    title: 'Параметр главнее темы',
-    hint: 'Приложение передаёт в `useCreateTable` `rowHeight: 56` — строки 56px: параметр главнее темы. Хедер колонок по-прежнему из темы, 64px.',
+    title: {
+      ru: 'Параметр главнее темы',
+      en: 'The option overrides the theme',
+    },
+    hint: {
+      ru: 'Приложение передаёт в `useCreateTable` `rowHeight: 56` — строки 56px: параметр главнее темы. Хедер колонок по-прежнему из темы, 64px.',
+      en: 'The app passes `rowHeight: 56` to `useCreateTable`, so rows are 56px: the option overrides the theme. The column header height still comes from the theme: 64px.',
+    },
     props: () => ({ rowHeight: 56 }),
   },
 ]
@@ -572,7 +648,10 @@ export const SizingThemeTokens: StoryObj<StoryProps> = {
     <>
       <style>{APP_THEME_CSS}</style>
       <GuideStory
-        title="Высота из темы приложения"
+        title={{
+          ru: 'Высота из темы приложения',
+          en: 'Height from the app theme',
+        }}
         steps={THEME}
         args={guideArgs({}, args)}
       />
@@ -585,15 +664,15 @@ export const SizingThemeTokens: StoryObj<StoryProps> = {
         expect(rowHeights(canvas)).toEqual(new Set([row]))
         expect(Math.round(rect(headOf(canvas)).height)).toBe(head)
       })
-    await step(THEME[0].title, async () => {
+    await step(THEME[0].title.ru, async () => {
       await waitForRows(canvas)
       await sizes(50, 50)
     })
-    await step(THEME[1].title, async () => {
+    await step(THEME[1].title.ru, async () => {
       await guideNext(canvas)
       await sizes(40, 64)
     })
-    await step(THEME[2].title, async () => {
+    await step(THEME[2].title.ru, async () => {
       await guideNext(canvas)
       await sizes(56, 64)
     })

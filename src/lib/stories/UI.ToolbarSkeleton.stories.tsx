@@ -42,7 +42,7 @@ const meta = {
     kind: {
       control: 'inline-radio',
       options: ['button', 'field'],
-      description: 'Скелет кнопки или поля поиска',
+      description: 'Skeleton of a button or the search field',
     },
   },
   render: ({ kind }) => (

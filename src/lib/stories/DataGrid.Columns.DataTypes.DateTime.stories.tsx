@@ -96,12 +96,21 @@ const NEW_TIME = '14:30'
 
 const EDIT_DATE_TIME: readonly GuideStoryStep[] = [
   {
-    title: 'Время обновления',
-    hint: 'Время обновления — день и время в поясе таблицы. Его можно править: при наведении на ячейку появляется кнопка правки.',
+    title: { ru: 'Время обновления', en: 'Update time' },
+    hint: {
+      ru: 'Время обновления — день и время в поясе таблицы. Его можно править: при наведении на ячейку появляется кнопка правки.',
+      en: "The update time is a day and time in the table's time zone. It can be edited: hovering over the cell shows an edit button.",
+    },
   },
   {
-    title: 'Календарь и поле времени',
-    hint: 'Пользователь нажал кнопку правки времени обновления. Под ячейкой календарь, под ним поле времени — часы пояса таблицы.',
+    title: {
+      ru: 'Календарь и поле времени',
+      en: 'A calendar and a time field',
+    },
+    hint: {
+      ru: 'Пользователь нажал кнопку правки времени обновления. Под ячейкой календарь, под ним поле времени — часы пояса таблицы.',
+      en: "The user clicked the edit button in the update time cell. A calendar appears below the cell, with a time field under it showing the time in the table's time zone.",
+    },
     states: ['body.editing', 'overlay.dateEditor'],
     enter: untilDone(
       () => !!dateTime(),
@@ -111,8 +120,11 @@ const EDIT_DATE_TIME: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Время сохранено',
-    hint: 'Пользователь выбрал день, набрал время и нажал Enter. Календарь закрылся, в ячейке новые день и время.',
+    title: { ru: 'Время сохранено', en: 'The time is saved' },
+    hint: {
+      ru: 'Пользователь выбрал день, набрал время и нажал Enter. Календарь закрылся, в ячейке новые день и время.',
+      en: 'The user picked a day, typed a time and pressed Enter. The calendar closed, and the cell shows the new day and time.',
+    },
     enter: untilDone(
       root => !datePopup() && /:30/.test(dateText(root, 'updatedAt')),
       root => {
@@ -137,7 +149,7 @@ export const EditingDateTime: StoryObj<StoryProps> = {
   parameters: { scenario: '0175/S13', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Правка даты со временем"
+      title={{ ru: 'Правка даты со временем', en: 'Editing a date with time' }}
       steps={EDIT_DATE_TIME}
       args={guideArgs(
         {
@@ -153,15 +165,15 @@ export const EditingDateTime: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(EDIT_DATE_TIME[0]!.title, async () => {
+    await step(EDIT_DATE_TIME[0]!.title.ru, async () => {
       await waitForRows(canvas)
       expect(dateText(canvas, 'updatedAt')).toMatch(/\d\d:\d\d/)
     })
-    await step(EDIT_DATE_TIME[1]!.title, async () => {
+    await step(EDIT_DATE_TIME[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(dateTime()).not.toBeNull())
     })
-    await step(EDIT_DATE_TIME[2]!.title, async () => {
+    await step(EDIT_DATE_TIME[2]!.title.ru, async () => {
       await guideNext(canvas)
       // Черновик виден в ячейке ещё до сохранения: ждём и закрытия календаря.
       await until(() => {
@@ -198,8 +210,14 @@ const filterOnDay = async (root: HTMLElement, signal: AbortSignal) => {
 
 const DATE_TIME_FILTER: readonly GuideStoryStep[] = [
   {
-    title: 'Время обновления без настройки фильтра',
-    hint: 'Время обновления хранится строкой, у колонки задан только тип даты со временем. Фильтры в таблице подключены, но сама колонка фильтр не настраивала.',
+    title: {
+      ru: 'Время обновления без настройки фильтра',
+      en: 'Update time without a filter setup',
+    },
+    hint: {
+      ru: 'Время обновления хранится строкой, у колонки задан только тип даты со временем. Фильтры в таблице подключены, но сама колонка фильтр не настраивала.',
+      en: 'The update time is stored as a string, and the column only sets the date-with-time type. Filters are enabled in the table, but the column itself has no filter setup.',
+    },
     props: () => ({
       columnsOverride: columnsOf('number', ['name', 'updatedAt']),
       dataOverride: FILTER_ROWS,
@@ -209,8 +227,14 @@ const DATE_TIME_FILTER: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Пользователь открыл фильтр времени обновления',
-    hint: 'Тип колонки — дата со временем, поэтому панель предлагает условие и календарь для выбора дня.',
+    title: {
+      ru: 'Пользователь открыл фильтр времени обновления',
+      en: 'The user opened the update time filter',
+    },
+    hint: {
+      ru: 'Тип колонки — дата со временем, поэтому панель предлагает условие и календарь для выбора дня.',
+      en: 'The column type is a date with time, so the panel offers a condition and a calendar to pick a day.',
+    },
     states: ['overlay.filterDate'],
     enter: stepAction(async (root, { signal }) => {
       await openPanel(root, 'updatedAt', signal)
@@ -218,8 +242,11 @@ const DATE_TIME_FILTER: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Пользователь выбрал день',
-    hint: 'Остались товары, обновлённые в этот день в поясе таблицы, в любое время суток. Нижняя панель называет число оставшихся строк.',
+    title: { ru: 'Пользователь выбрал день', en: 'The user picked a day' },
+    hint: {
+      ru: 'Остались товары, обновлённые в этот день в поясе таблицы, в любое время суток. Нижняя панель называет число оставшихся строк.',
+      en: "Only products updated on that day in the table's time zone, at any time of day, remain. The status bar shows how many rows remain.",
+    },
     enter: stepAction((root, { signal }) => filterOnDay(root, signal)),
   },
 ]
@@ -230,23 +257,26 @@ export const DataTypesDateTimeFilter: StoryObj<StoryProps> = {
   parameters: { scenario: '0172/S15', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Фильтр даты со временем"
+      title={{
+        ru: 'Фильтр даты со временем',
+        en: 'Filtering a date with time',
+      }}
       steps={DATE_TIME_FILTER}
       args={guideArgs({ height: '460' }, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(DATE_TIME_FILTER[0]!.title, async () => {
+    await step(DATE_TIME_FILTER[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(DATE_TIME_FILTER[1]!.title, async () => {
+    await step(DATE_TIME_FILTER[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       expect(calendar()).not.toBeNull()
       await settle()
     })
-    await step(DATE_TIME_FILTER[2]!.title, async () => {
+    await step(DATE_TIME_FILTER[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       expect(shownCount()).toBe(onDay)

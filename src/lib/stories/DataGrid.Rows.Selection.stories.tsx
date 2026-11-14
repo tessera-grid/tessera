@@ -118,18 +118,33 @@ const selectAll = (root: HTMLElement) => {
 
 const ALL_ROWS: readonly GuideStoryStep[] = [
   {
-    title: 'Строки не выбраны',
-    hint: 'Таблица разбита на страницы, ни одна строка не выбрана.',
+    title: { ru: 'Строки не выбраны', en: 'No rows are selected' },
+    hint: {
+      ru: 'Таблица разбита на страницы, ни одна строка не выбрана.',
+      en: 'The table is split into pages, and no row is selected.',
+    },
   },
   {
-    title: 'Пользователь выбрал все строки',
-    hint: 'Пользователь отметил флажок в заголовке. Выбраны все строки таблицы — и на других страницах; нижняя панель называет их число.',
+    title: {
+      ru: 'Пользователь выбрал все строки',
+      en: 'The user selected all rows',
+    },
+    hint: {
+      ru: 'Пользователь отметил флажок в заголовке. Выбраны все строки таблицы — и на других страницах; нижняя панель называет их число.',
+      en: 'The user checked the checkbox in the header. All rows of the table are selected, including those on other pages; the status bar shows their count.',
+    },
     states: ['body.selection'],
     enter: untilDone(root => pageSelected(root) && allSelected(), selectAll),
   },
   {
-    title: 'Пользователь перешёл на другую страницу',
-    hint: 'Строки следующей страницы тоже выбраны.',
+    title: {
+      ru: 'Пользователь перешёл на другую страницу',
+      en: 'The user went to another page',
+    },
+    hint: {
+      ru: 'Строки следующей страницы тоже выбраны.',
+      en: 'The rows on the next page are selected too.',
+    },
     states: ['body.selection'],
     enter: stepAction(async (root, { signal }) => {
       await pollUntil(() => {
@@ -160,7 +175,7 @@ export const BatchRowSelection: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Выбор всех строк"
+      title={{ ru: 'Выбор всех строк', en: 'Selecting all rows' }}
       steps={ALL_ROWS}
       args={guideArgs(
         {
@@ -176,16 +191,16 @@ export const BatchRowSelection: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(ALL_ROWS[0]!.title, async () => {
+    await step(ALL_ROWS[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await expect(orderedRows(canvas).some(selected)).toBe(false)
     })
-    await step(ALL_ROWS[1]!.title, async () => {
+    await step(ALL_ROWS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(allSelected()).toBe(true))
       await expect(pageSelected(canvas)).toBe(true)
     })
-    await step(ALL_ROWS[2]!.title, async () => {
+    await step(ALL_ROWS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(rangeText(canvas)).toMatch(/^6–/)
@@ -215,18 +230,33 @@ const selectParent = (root: HTMLElement) => {
 
 const SUB_ROWS: readonly GuideStoryStep[] = [
   {
-    title: 'Дерево раскрыто',
-    hint: 'Строки сгруппированы по родителям, ничего не выбрано.',
+    title: { ru: 'Дерево раскрыто', en: 'The tree is expanded' },
+    hint: {
+      ru: 'Строки сгруппированы по родителям, ничего не выбрано.',
+      en: 'The rows are grouped under their parents, and nothing is selected.',
+    },
   },
   {
-    title: 'Пользователь выбрал родителя',
-    hint: 'Вместе с родителем выбраны все его дети.',
+    title: {
+      ru: 'Пользователь выбрал родителя',
+      en: 'The user selected a parent',
+    },
+    hint: {
+      ru: 'Вместе с родителем выбраны все его дети.',
+      en: 'Along with the parent, all its child rows are selected.',
+    },
     states: ['body.selection'],
     enter: untilDone(familySelected, selectParent),
   },
   {
-    title: 'Пользователь снял выбор одного ребёнка',
-    hint: 'Родитель отмечен частично, остальные дети выбраны.',
+    title: {
+      ru: 'Пользователь снял выбор одного ребёнка',
+      en: 'The user deselected one child row',
+    },
+    hint: {
+      ru: 'Родитель отмечен частично, остальные дети выбраны.',
+      en: 'The parent is partially checked, and the other child rows are selected.',
+    },
     states: ['body.selection'],
     enter: untilDone(partial, root => {
       if (!selected(bodyRow(root, UNSELECTED)) && !partial(root))
@@ -246,7 +276,7 @@ export const SubRowSelection: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Выбор родителя"
+      title={{ ru: 'Выбор родителя', en: 'Selecting a parent' }}
       steps={SUB_ROWS}
       args={guideArgs(
         {
@@ -265,16 +295,16 @@ export const SubRowSelection: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(SUB_ROWS[0]!.title, async () => {
+    await step(SUB_ROWS[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(bodyRow(canvas, CHILDREN[0]!)).toBeTruthy())
       await expect(orderedRows(canvas).some(selected)).toBe(false)
     })
-    await step(SUB_ROWS[1]!.title, async () => {
+    await step(SUB_ROWS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(familySelected(canvas)).toBe(true))
     })
-    await step(SUB_ROWS[2]!.title, async () => {
+    await step(SUB_ROWS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(partial(canvas)).toBe(true))
       await expect(selected(bodyRow(canvas, UNSELECTED))).toBe(false)
@@ -301,12 +331,21 @@ const selectOnly = (id: string) => (root: HTMLElement) => {
 
 const SELF_ROWS: readonly GuideStoryStep[] = [
   {
-    title: 'Дерево раскрыто',
-    hint: 'Строки сгруппированы по родителям, у каждой строки — свой флажок. Ничего не выбрано.',
+    title: { ru: 'Дерево раскрыто', en: 'The tree is expanded' },
+    hint: {
+      ru: 'Строки сгруппированы по родителям, у каждой строки — свой флажок. Ничего не выбрано.',
+      en: 'The rows are grouped under their parents, and each row has its own checkbox. Nothing is selected.',
+    },
   },
   {
-    title: 'Пользователь выбрал родителя',
-    hint: 'Выбран только сам родитель: его вложенные строки остались невыбранными.',
+    title: {
+      ru: 'Пользователь выбрал родителя',
+      en: 'The user selected a parent',
+    },
+    hint: {
+      ru: 'Выбран только сам родитель: его вложенные строки остались невыбранными.',
+      en: 'Only the parent itself is selected: its nested rows stay unselected.',
+    },
     states: ['body.selection'],
     enter: untilDone(
       root => selected(bodyRow(root, PARENT)),
@@ -314,8 +353,14 @@ const SELF_ROWS: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Пользователь выбрал вложенную строку другого родителя',
-    hint: 'Выбрана только эта строка. Флажок её родителя не изменился и частичного выбора не показывает: каждая строка выбирается сама.',
+    title: {
+      ru: 'Пользователь выбрал вложенную строку другого родителя',
+      en: 'The user selected a nested row of another parent',
+    },
+    hint: {
+      ru: 'Выбрана только эта строка. Флажок её родителя не изменился и частичного выбора не показывает: каждая строка выбирается сама.',
+      en: "Only this row is selected. Its parent's checkbox did not change and shows no partial selection: each row is selected on its own.",
+    },
     states: ['body.selection'],
     enter: untilDone(
       root =>
@@ -337,7 +382,10 @@ export const SelectionSubRowsSelf: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Выбор отдельных строк дерева"
+      title={{
+        ru: 'Выбор отдельных строк дерева',
+        en: 'Selecting individual tree rows',
+      }}
       steps={SELF_ROWS}
       args={guideArgs(
         {
@@ -356,19 +404,19 @@ export const SelectionSubRowsSelf: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(SELF_ROWS[0]!.title, async () => {
+    await step(SELF_ROWS[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(bodyRow(canvas, OTHER_CHILD)).toBeTruthy())
       await expect(orderedRows(canvas).some(selected)).toBe(false)
       await expect(checkboxOf(bodyRow(canvas, CHILDREN[0]!))).not.toBeNull()
     })
-    await step(SELF_ROWS[1]!.title, async () => {
+    await step(SELF_ROWS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(selected(bodyRow(canvas, PARENT))).toBe(true))
       for (const id of CHILDREN)
         await expect(selected(bodyRow(canvas, id))).toBe(false)
     })
-    await step(SELF_ROWS[2]!.title, async () => {
+    await step(SELF_ROWS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(selected(bodyRow(canvas, OTHER_CHILD))).toBe(true),
@@ -403,8 +451,11 @@ const clickRow = (id: string) =>
 
 const ROW_CLICK: readonly GuideStoryStep[] = [
   {
-    title: 'Выбора нет',
-    hint: 'Выбором управляет приложение: колонки флажков у таблицы нет, приложение выбирает строку, по которой щёлкнул пользователь. Пока ни одна строка не выбрана.',
+    title: { ru: 'Выбора нет', en: 'Nothing is selected yet' },
+    hint: {
+      ru: 'Выбором управляет приложение: колонки флажков у таблицы нет, приложение выбирает строку, по которой щёлкнул пользователь. Пока ни одна строка не выбрана.',
+      en: 'The app controls the selection: the table has no checkbox column, and the app selects the row the user clicked. No row is selected yet.',
+    },
     // Приложение: выбор строки по щелчку, срез выбора — у него до нового открытия грида.
     props: ({ app }) => ({
       enableRowSelectionModel: true,
@@ -418,13 +469,22 @@ const ROW_CLICK: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Пользователь выбрал строку',
-    hint: 'Пользователь щёлкнул по строке, и приложение отметило её выбранной. Таблица показывает строку выбранной.',
+    title: { ru: 'Пользователь выбрал строку', en: 'The user selected a row' },
+    hint: {
+      ru: 'Пользователь щёлкнул по строке, и приложение отметило её выбранной. Таблица показывает строку выбранной.',
+      en: 'The user clicked a row, and the app marked it as selected. The table shows the row as selected.',
+    },
     enter: clickRow(FIRST_CLICKED),
   },
   {
-    title: 'Пользователь выбрал другую строку',
-    hint: 'Пользователь щёлкнул по другой строке. Выбор перешёл на неё, прежняя строка больше не выбрана.',
+    title: {
+      ru: 'Пользователь выбрал другую строку',
+      en: 'The user selected another row',
+    },
+    hint: {
+      ru: 'Пользователь щёлкнул по другой строке. Выбор перешёл на неё, прежняя строка больше не выбрана.',
+      en: 'The user clicked another row. The selection moved to it, and the previous row is no longer selected.',
+    },
     enter: clickRow(SECOND_CLICKED),
   },
 ]
@@ -438,7 +498,10 @@ export const SelectionByRowClick: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Выбор щелчком по строке"
+      title={{
+        ru: 'Выбор щелчком по строке',
+        en: 'Selecting a row by clicking it',
+      }}
       steps={ROW_CLICK}
       args={guideArgs(
         {
@@ -454,21 +517,21 @@ export const SelectionByRowClick: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     // В Storybook сценарий проходит человек; `play` — только в тестах каталога.
     if (globals.catalog !== true) return
-    await step(ROW_CLICK[0].title, async () => {
+    await step(ROW_CLICK[0].title.ru, async () => {
       await waitForRows(canvas)
       expect(canvas.querySelector('[role="columnheader"] input')).toBeNull()
       expect(
         canvas.querySelector('.data-grid__body-row[data-selected="true"]'),
       ).toBeNull()
     })
-    await step(ROW_CLICK[1].title, async () => {
+    await step(ROW_CLICK[1].title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       expect(bodyRow(canvas, FIRST_CLICKED).getAttribute('aria-selected')).toBe(
         'true',
       )
     })
-    await step(ROW_CLICK[2].title, async () => {
+    await step(ROW_CLICK[2].title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       expect(rowSelected(canvas, SECOND_CLICKED)).toBe(true)
@@ -569,33 +632,57 @@ const nextPageSelected: Link = [
 
 const SELECT_FOUND: readonly GuideStoryStep[] = [
   {
-    title: 'Строки на страницах',
-    hint: 'Таблица разбита на страницы по пять строк, ни одна строка не выбрана. Над таблицей — поле поиска.',
+    title: { ru: 'Строки на страницах', en: 'Rows across pages' },
+    hint: {
+      ru: 'Таблица разбита на страницы по пять строк, ни одна строка не выбрана. Над таблицей — поле поиска.',
+      en: 'The table is split into pages of five rows, and no row is selected. A search field sits above the table.',
+    },
     props: () => ({ enableQuickSearch: true, quickSearchDebounceMs: 0 }),
   },
   {
-    title: 'Пользователь нашёл строки',
-    hint: 'Пользователь набрал город в поле поиска. Остались строки этого города — на двух страницах.',
+    title: { ru: 'Пользователь нашёл строки', en: 'The user found rows' },
+    hint: {
+      ru: 'Пользователь набрал город в поле поиска. Остались строки этого города — на двух страницах.',
+      en: 'The user typed a city in the search field. Only the rows for that city remain, across two pages.',
+    },
     enter: searchFor(
       SCOPE_QUERY,
       root => pagesOfFound(root) && searchField()?.value === SCOPE_QUERY,
     ),
   },
   {
-    title: 'Пользователь выбрал все найденные',
-    hint: 'Пользователь отметил флажок в заголовке. Выбраны все найденные строки — и на другой странице; нижняя панель называет их число.',
+    title: {
+      ru: 'Пользователь выбрал все найденные',
+      en: 'The user selected all found rows',
+    },
+    hint: {
+      ru: 'Пользователь отметил флажок в заголовке. Выбраны все найденные строки — и на другой странице; нижняя панель называет их число.',
+      en: 'The user checked the checkbox in the header. All found rows are selected, including those on the other page; the status bar shows their count.',
+    },
     states: ['body.selection'],
     enter: chain(foundOnPages, foundChecked),
   },
   {
-    title: 'Пользователь перешёл на другую страницу',
-    hint: 'Найденные строки следующей страницы тоже выбраны, флажок в заголовке остаётся отмеченным.',
+    title: {
+      ru: 'Пользователь перешёл на другую страницу',
+      en: 'The user went to another page',
+    },
+    hint: {
+      ru: 'Найденные строки следующей страницы тоже выбраны, флажок в заголовке остаётся отмеченным.',
+      en: 'The found rows on the next page are selected too, and the header checkbox stays checked.',
+    },
     states: ['body.selection'],
     enter: chain(foundOnPages, foundChecked, nextPageSelected),
   },
   {
-    title: 'Пользователь очистил поиск',
-    hint: 'Пользователь очистил поле поиска. Видны все строки; выбраны только найденные, нижняя панель называет то же число.',
+    title: {
+      ru: 'Пользователь очистил поиск',
+      en: 'The user cleared the search',
+    },
+    hint: {
+      ru: 'Пользователь очистил поле поиска. Видны все строки; выбраны только найденные, нижняя панель называет то же число.',
+      en: 'The user cleared the search field. All rows are visible; only the found ones are selected, and the status bar shows the same count.',
+    },
     states: ['body.selection'],
     enter: chain(foundOnPages, foundChecked, nextPageSelected, [
       root =>
@@ -613,33 +700,36 @@ export const RowsSelectionSelectAllFiltered: StoryObj<StoryProps> = {
   parameters: { scenario: '0179/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Выбор всех найденных строк"
+      title={{
+        ru: 'Выбор всех найденных строк',
+        en: 'Selecting all found rows',
+      }}
       steps={SELECT_FOUND}
       args={guideArgs(SCOPE_GRID, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(SELECT_FOUND[0]!.title, async () => {
+    await step(SELECT_FOUND[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(orderedRows(canvas).some(selected)).toBe(false))
     })
-    await step(SELECT_FOUND[1]!.title, async () => {
+    await step(SELECT_FOUND[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(pagesOfFound(canvas)).toBe(true))
     })
-    await step(SELECT_FOUND[2]!.title, async () => {
+    await step(SELECT_FOUND[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(selectedCount()).toContain(String(FOUND)))
       await until(() => expect(orderedRows(canvas).every(selected)).toBe(true))
     })
-    await step(SELECT_FOUND[3]!.title, async () => {
+    await step(SELECT_FOUND[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(pageStart(canvas)).toBe(String(SCOPE_PAGE + 1)))
       await until(() => expect(orderedRows(canvas).every(selected)).toBe(true))
       await until(() => expect(headChecked(canvas)).toBe(true))
     })
-    await step(SELECT_FOUND[4]!.title, async () => {
+    await step(SELECT_FOUND[4]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(pagesOfFound(canvas)).toBe(false))
       await until(() => expect(orderedRows(canvas).every(selected)).toBe(false))
@@ -651,19 +741,34 @@ export const RowsSelectionSelectAllFiltered: StoryObj<StoryProps> = {
 
 const SELECT_PAGE: readonly GuideStoryStep[] = [
   {
-    title: 'Строки на страницах',
-    hint: 'Флажок в заголовке выбирает строки только текущей страницы. Ни одна строка не выбрана.',
+    title: { ru: 'Строки на страницах', en: 'Rows across pages' },
+    hint: {
+      ru: 'Флажок в заголовке выбирает строки только текущей страницы. Ни одна строка не выбрана.',
+      en: 'The header checkbox selects only the rows of the current page. No row is selected.',
+    },
     props: () => ({ rowSelectionSelectAll: 'currentPage' }),
   },
   {
-    title: 'Пользователь выбрал строки страницы',
-    hint: 'Пользователь отметил флажок в заголовке. Выбраны пять строк этой страницы, нижняя панель называет их число.',
+    title: {
+      ru: 'Пользователь выбрал строки страницы',
+      en: "The user selected the page's rows",
+    },
+    hint: {
+      ru: 'Пользователь отметил флажок в заголовке. Выбраны пять строк этой страницы, нижняя панель называет их число.',
+      en: 'The user checked the checkbox in the header. The five rows of this page are selected, and the status bar shows their count.',
+    },
     states: ['body.selection'],
     enter: untilDone(headChecked, checkHead),
   },
   {
-    title: 'Пользователь перешёл на другую страницу',
-    hint: 'Строки следующей страницы не выбраны, флажок в заголовке не отмечен. Выбор первой страницы сохранился.',
+    title: {
+      ru: 'Пользователь перешёл на другую страницу',
+      en: 'The user went to another page',
+    },
+    hint: {
+      ru: 'Строки следующей страницы не выбраны, флажок в заголовке не отмечен. Выбор первой страницы сохранился.',
+      en: "The rows on the next page are not selected, and the header checkbox is unchecked. The first page's selection is kept.",
+    },
     enter: untilDone(
       root =>
         pageStart(root) === String(SCOPE_PAGE + 1) &&
@@ -680,24 +785,24 @@ export const RowsSelectionSelectAllCurrentPage: StoryObj<StoryProps> = {
   parameters: { scenario: '0179/S2', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Выбор строк страницы"
+      title={{ ru: 'Выбор строк страницы', en: "Selecting a page's rows" }}
       steps={SELECT_PAGE}
       args={guideArgs(SCOPE_GRID, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(SELECT_PAGE[0]!.title, async () => {
+    await step(SELECT_PAGE[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await expect(orderedRows(canvas).some(selected)).toBe(false)
     })
-    await step(SELECT_PAGE[1]!.title, async () => {
+    await step(SELECT_PAGE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(headChecked(canvas)).toBe(true))
       await expect(orderedRows(canvas).every(selected)).toBe(true)
       await expect(selectedCount()).toContain(String(SCOPE_PAGE))
     })
-    await step(SELECT_PAGE[2]!.title, async () => {
+    await step(SELECT_PAGE[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(pageStart(canvas)).toBe(String(SCOPE_PAGE + 1)))
       await expect(orderedRows(canvas).some(selected)).toBe(false)
@@ -757,18 +862,33 @@ const groupBy = (column: string, other: string) => (root: HTMLElement) => {
 
 const GROUP_SELECT: readonly GuideStoryStep[] = [
   {
-    title: 'Строки сгруппированы',
-    hint: 'Строки разбиты на группы, ничего не выбрано.',
+    title: { ru: 'Строки сгруппированы', en: 'Rows are grouped' },
+    hint: {
+      ru: 'Строки разбиты на группы, ничего не выбрано.',
+      en: 'The rows are split into groups, and nothing is selected.',
+    },
   },
   {
-    title: 'Пользователь выбрал группу',
-    hint: 'Пользователь отметил флажок группы. Выбраны все её строки, счётчик показывает их число.',
+    title: {
+      ru: 'Пользователь выбрал группу',
+      en: 'The user selected a group',
+    },
+    hint: {
+      ru: 'Пользователь отметил флажок группы. Выбраны все её строки, счётчик показывает их число.',
+      en: "The user checked the group's checkbox. All its rows are selected, and the counter shows their number.",
+    },
     states: ['body.selection'],
     enter: untilDone(root => flagOf(root, ALPHA) === 'true', selectAlpha),
   },
   {
-    title: 'Пользователь снял одну строку',
-    hint: 'Строка вышла из выбора. Флажок группы стал частичным, остальные строки группы выбраны.',
+    title: {
+      ru: 'Пользователь снял одну строку',
+      en: 'The user deselected one row',
+    },
+    hint: {
+      ru: 'Строка вышла из выбора. Флажок группы стал частичным, остальные строки группы выбраны.',
+      en: "The row left the selection. The group's checkbox became partially checked, and the group's other rows stay selected.",
+    },
     states: ['body.selection'],
     enter: untilDone(
       root => flagOf(root, ALPHA) === 'mixed',
@@ -786,24 +906,24 @@ export const GroupSelection: StoryObj<StoryProps> = {
   parameters: { scenario: '0185/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Выбор группы"
+      title={{ ru: 'Выбор группы', en: 'Selecting a group' }}
       steps={GROUP_SELECT}
       args={guideArgs(GROUP_GRID, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(GROUP_SELECT[0]!.title, async () => {
+    await step(GROUP_SELECT[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(flagOf(canvas, ALPHA)).toBe('false'))
     })
-    await step(GROUP_SELECT[1]!.title, async () => {
+    await step(GROUP_SELECT[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(flagOf(canvas, ALPHA)).toBe('true'))
       await expect(selectedCount()).toContain('6')
       await expect(selected(bodyRow(canvas, ALPHA))).toBe(true)
     })
-    await step(GROUP_SELECT[2]!.title, async () => {
+    await step(GROUP_SELECT[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(flagOf(canvas, ALPHA)).toBe('mixed'))
       await expect(selectedCount()).toContain('5')
@@ -814,18 +934,30 @@ export const GroupSelection: StoryObj<StoryProps> = {
 
 const GROUP_FILTERED: readonly GuideStoryStep[] = [
   {
-    title: 'Строки сгруппированы',
-    hint: 'Строки разбиты на группы, ничего не выбрано.',
+    title: { ru: 'Строки сгруппированы', en: 'Rows are grouped' },
+    hint: {
+      ru: 'Строки разбиты на группы, ничего не выбрано.',
+      en: 'The rows are split into groups, and nothing is selected.',
+    },
     props: () => ({ enableQuickSearch: true, quickSearchDebounceMs: 0 }),
   },
   {
-    title: 'Пользователь нашёл строки',
-    hint: 'Пользователь набрал город в поле поиска. В группах остались только найденные строки.',
+    title: { ru: 'Пользователь нашёл строки', en: 'The user found rows' },
+    hint: {
+      ru: 'Пользователь набрал город в поле поиска. В группах остались только найденные строки.',
+      en: 'The user typed a city in the search field. Only the found rows remain in the groups.',
+    },
     enter: searchFor(GROUP_QUERY, root => !bodyRow(root, HIDDEN_IN_ALPHA)),
   },
   {
-    title: 'Пользователь выбрал группу',
-    hint: 'Пользователь отметил флажок группы. Выбраны только показанные строки группы.',
+    title: {
+      ru: 'Пользователь выбрал группу',
+      en: 'The user selected a group',
+    },
+    hint: {
+      ru: 'Пользователь отметил флажок группы. Выбраны только показанные строки группы.',
+      en: "The user checked the group's checkbox. Only the group's visible rows are selected.",
+    },
     states: ['body.selection'],
     enter: untilDone(
       root =>
@@ -841,8 +973,14 @@ const GROUP_FILTERED: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Пользователь очистил поиск',
-    hint: 'Скрытые поиском строки вернулись невыбранными, поэтому флажок группы стал частичным.',
+    title: {
+      ru: 'Пользователь очистил поиск',
+      en: 'The user cleared the search',
+    },
+    hint: {
+      ru: 'Скрытые поиском строки вернулись невыбранными, поэтому флажок группы стал частичным.',
+      en: "The rows hidden by the search came back unselected, so the group's checkbox became partially checked.",
+    },
     states: ['body.selection'],
     enter: chain(
       [
@@ -863,27 +1001,30 @@ export const GroupSelectFiltered: StoryObj<StoryProps> = {
   parameters: { scenario: '0185/S2', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Выбор группы при поиске"
+      title={{
+        ru: 'Выбор группы при поиске',
+        en: 'Selecting a group during a search',
+      }}
       steps={GROUP_FILTERED}
       args={guideArgs(GROUP_GRID, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(GROUP_FILTERED[0]!.title, async () => {
+    await step(GROUP_FILTERED[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(bodyRow(canvas, HIDDEN_IN_ALPHA)).toBeTruthy())
     })
-    await step(GROUP_FILTERED[1]!.title, async () => {
+    await step(GROUP_FILTERED[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(bodyRow(canvas, HIDDEN_IN_ALPHA)).toBeFalsy())
     })
-    await step(GROUP_FILTERED[2]!.title, async () => {
+    await step(GROUP_FILTERED[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(flagOf(canvas, ALPHA)).toBe('true'))
       await until(() => expect(selectedCount()).toContain('3'))
     })
-    await step(GROUP_FILTERED[3]!.title, async () => {
+    await step(GROUP_FILTERED[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(flagOf(canvas, ALPHA)).toBe('mixed'))
       await until(() =>
@@ -897,12 +1038,21 @@ export const GroupSelectFiltered: StoryObj<StoryProps> = {
 
 const GROUP_REGROUP: readonly GuideStoryStep[] = [
   {
-    title: 'Строки сгруппированы',
-    hint: 'Строки разбиты на группы по одной колонке, ничего не выбрано.',
+    title: { ru: 'Строки сгруппированы', en: 'Rows are grouped' },
+    hint: {
+      ru: 'Строки разбиты на группы по одной колонке, ничего не выбрано.',
+      en: 'The rows are grouped by one column, and nothing is selected.',
+    },
   },
   {
-    title: 'Пользователь выбрал группу',
-    hint: 'Пользователь отметил флажок группы. Выбраны все её строки.',
+    title: {
+      ru: 'Пользователь выбрал группу',
+      en: 'The user selected a group',
+    },
+    hint: {
+      ru: 'Пользователь отметил флажок группы. Выбраны все её строки.',
+      en: "The user checked the group's checkbox. All its rows are selected.",
+    },
     states: ['body.selection'],
     enter: untilDone(
       root => groupedBy(root, 'team') && flagOf(root, ALPHA) === 'true',
@@ -913,8 +1063,14 @@ const GROUP_REGROUP: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Пользователь сгруппировал по другой колонке',
-    hint: 'Группы стали другими, но выбор остался: те же строки выбраны и в новых группах, их флажки частичные.',
+    title: {
+      ru: 'Пользователь сгруппировал по другой колонке',
+      en: 'The user grouped by another column',
+    },
+    hint: {
+      ru: 'Группы стали другими, но выбор остался: те же строки выбраны и в новых группах, их флажки частичные.',
+      en: 'The groups changed, but the selection stayed: the same rows are selected in the new groups, and their checkboxes are partially checked.',
+    },
     states: ['body.selection'],
     enter: chain(
       [
@@ -941,22 +1097,22 @@ export const GroupSelectRegroup: StoryObj<StoryProps> = {
   parameters: { scenario: '0185/S3', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Смена группировки"
+      title={{ ru: 'Смена группировки', en: 'Changing the grouping' }}
       steps={GROUP_REGROUP}
       args={guideArgs(GROUP_GRID, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(GROUP_REGROUP[0]!.title, async () => {
+    await step(GROUP_REGROUP[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(flagOf(canvas, ALPHA)).toBe('false'))
     })
-    await step(GROUP_REGROUP[1]!.title, async () => {
+    await step(GROUP_REGROUP[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(flagOf(canvas, ALPHA)).toBe('true'))
     })
-    await step(GROUP_REGROUP[2]!.title, async () => {
+    await step(GROUP_REGROUP[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(groupedBy(canvas, 'city')).toBe(true))
       await until(() => expect(selectedCount()).toContain('6'))

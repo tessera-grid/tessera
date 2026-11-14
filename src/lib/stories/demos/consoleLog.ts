@@ -4,6 +4,28 @@
  */
 
 import type { DebugActionSource } from '../../core/debugActions'
+import {
+  type StoryLocale,
+  type StoryText,
+  textOf,
+} from '../__mocks__/storyText'
+
+/**
+ * Текст записи (ADR 0225, §4): строка — имя API или данные, пара и функция языка — текст
+ * обвязки и истории; консоль рисует его на текущем языке.
+ */
+export type ConsoleText = string | StoryText | ((locale: StoryLocale) => string)
+
+const isStoryText = (value: unknown): value is StoryText =>
+  typeof value === 'object' &&
+  value !== null &&
+  typeof (value as StoryText).ru === 'string' &&
+  typeof (value as StoryText).en === 'string' &&
+  Object.keys(value).length === 2
+
+/** Текст записи на языке консоли. */
+export const consoleTextOf = (text: ConsoleText, locale: StoryLocale) =>
+  typeof text === 'function' ? text(locale) : textOf(text, locale)
 
 export type ConsoleKind = 'action' | 'callback' | 'state' | 'lifecycle'
 
@@ -20,8 +42,8 @@ export type ConsoleSource = DebugActionSource | 'story'
 export interface ConsoleEntry {
   id: number
   kind: ConsoleKind
-  name: string
-  detail: string
+  name: ConsoleText
+  detail: ConsoleText
   /** Время последней склеенной записи по часам, мс от эпохи. */
   time: number
   /** Сколько выполнялся колбэк, мс; у промиса — до завершения. */
@@ -42,7 +64,7 @@ export interface ConsoleEntry {
 
 export interface ConsoleAction {
   plugin: string
-  action: string
+  action: ConsoleText
   detail?: unknown
   source?: ConsoleSource
   phase?: 'start' | 'end'
@@ -55,14 +77,14 @@ export interface ConsoleAction {
 
 export interface ConsoleLog {
   /** Действие самой истории: кнопка демо, ответ мок-сервера. */
-  log: (name: string, detail?: string) => void
+  log: (name: ConsoleText, detail?: ConsoleText) => void
   /** Действие грида из `onDebugAction` или истории (шаг гайда, контрол). */
   action: (input: ConsoleAction) => number
   /** Запись колбэка, среза или цикла; номер записи — для `measured`. */
   write: (
     kind: Exclude<ConsoleKind, 'action'>,
-    name: string,
-    detail?: string,
+    name: ConsoleText,
+    detail?: ConsoleText,
   ) => number
   /** Длительность колбэка записи `id`. */
   measured: (id: number, duration: number) => void
@@ -177,9 +199,14 @@ export const createConsoleLog = (
     return start < 0 ? [] : entries.slice(start + 1)
   }
   /** Одинаковая запись (вид и имя) склеивается только внутри открытой группы. */
-  const mergeIntoGroup = (kind: ConsoleKind, name: string, detail: string) => {
+  const mergeIntoGroup = (
+    kind: ConsoleKind,
+    name: ConsoleText,
+    detail: ConsoleText,
+  ) => {
+    const key = consoleTextOf(name, 'en')
     const same = groupEntries().find(
-      entry => entry.kind === kind && entry.name === name,
+      entry => entry.kind === kind && consoleTextOf(entry.name, 'en') === key,
     )
     if (!same) return undefined
     entries = entries.map(entry =>
@@ -202,16 +229,20 @@ export const createConsoleLog = (
     })
 
   const action = (input: ConsoleAction): number => {
-    const name =
-      input.plugin === 'story' || input.plugin === input.action
-        ? input.action
-        : `${input.plugin} · ${input.action}`
-    // Строка — текст как есть: подпись журнала демо, текст отказа.
-    const detail =
+    const action = input.action
+    const name: ConsoleText =
+      input.plugin === 'story' || input.plugin === action
+        ? action
+        : (locale: StoryLocale) =>
+            `${input.plugin} · ${consoleTextOf(action, locale)}`
+    // Строка и текст на двух языках — как есть: подпись журнала демо, текст отказа.
+    const detail: ConsoleText =
       input.detail === undefined
         ? ''
-        : typeof input.detail === 'string'
-          ? input.detail
+        : typeof input.detail === 'string' ||
+            typeof input.detail === 'function' ||
+            isStoryText(input.detail)
+          ? (input.detail as ConsoleText)
           : preview(input.detail)
     const fields = {
       kind: 'action' as const,
@@ -238,8 +269,8 @@ export const createConsoleLog = (
 
   const write = (
     kind: Exclude<ConsoleKind, 'action'>,
-    name: string,
-    detail = '',
+    name: ConsoleText,
+    detail: ConsoleText = '',
   ) => {
     if (!group) return add({ kind, name, detail, child: false })
     return (

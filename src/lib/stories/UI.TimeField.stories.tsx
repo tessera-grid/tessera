@@ -54,16 +54,17 @@ const meta = {
   argTypes: {
     value: {
       control: 'text',
-      description: 'Время HH:mm; пусто — без значения',
+      description: 'Time as HH:mm; empty means no value',
     },
     language: {
       control: 'inline-radio',
       options: ['en-US', 'ru', 'de'],
-      description: 'Язык формата: 12 или 24 часа; пусто — язык таблицы',
+      description:
+        'Format language (12- or 24-hour clock); empty uses the table language',
     },
     step: {
       control: { type: 'number', min: 1, max: 30 },
-      description: 'Шаг минут у стрелок и в списке',
+      description: 'Minute step for the arrows and the list',
     },
   },
   render: args => (

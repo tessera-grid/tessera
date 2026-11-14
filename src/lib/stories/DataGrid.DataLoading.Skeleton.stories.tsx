@@ -45,15 +45,24 @@ const EXPAND_ALL_CONTROL = {
 
 /** Грид открыт, данных ещё нет — как у настоящего приложения. */
 const OPENED: GuideStoryStep = {
-  title: 'Таблица открыта, данные загружаются',
-  hint: 'Данных ещё нет: на месте строк — скелет по раскладке таблицы.',
+  title: {
+    ru: 'Таблица открыта, данные загружаются',
+    en: 'The table is open and data is loading',
+  },
+  hint: {
+    ru: 'Данных ещё нет: на месте строк — скелет по раскладке таблицы.',
+    en: 'There is no data yet: in place of the rows is a skeleton that follows the table layout.',
+  },
   props: () => ({ loading: 'initial', dataOverride: [] }),
 }
 
 /** Ответ сервера: данные и конец загрузки приходят одним обновлением. */
 const ANSWERED: GuideStoryStep = {
-  title: 'Данные получены',
-  hint: 'Строки встают на место скелета, колонки не сдвигаются.',
+  title: { ru: 'Данные получены', en: 'Data received' },
+  hint: {
+    ru: 'Строки встают на место скелета, колонки не сдвигаются.',
+    en: "The rows take the skeleton's place, and the columns do not shift.",
+  },
   props: ({ rows }) => ({ loading: false, dataOverride: rows }),
 }
 
@@ -110,8 +119,14 @@ const waitData = (canvas: HTMLElement) =>
 const DATA_ARRIVES = [
   {
     ...OPENED,
-    title: 'Ожидание списка колонок от сервера',
-    hint: 'Структура таблицы еще неизвестна. Тулбар, тело таблицы и статусбар находятся в состоянии загрузки.',
+    title: {
+      ru: 'Ожидание списка колонок от сервера',
+      en: 'Waiting for the column list from the server',
+    },
+    hint: {
+      ru: 'Структура таблицы еще неизвестна. Тулбар, тело таблицы и статусбар находятся в состоянии загрузки.',
+      en: 'The table structure is not known yet. The toolbar, the table body, and the status bar are in a loading state.',
+    },
     props: () => ({
       loading: 'initial',
       dataOverride: [],
@@ -119,28 +134,43 @@ const DATA_ARRIVES = [
     }),
   },
   {
-    title: 'Данные загружаются',
-    hint: 'Список колонок был загружен или известен заранее, но данных пока нет. Некоторые фичи уже доступны, но таблица еще не готова к взаимодействию.',
+    title: { ru: 'Данные загружаются', en: 'Data is loading' },
+    hint: {
+      ru: 'Список колонок был загружен или известен заранее, но данных пока нет. Некоторые фичи уже доступны, но таблица еще не готова к взаимодействию.',
+      en: 'The column list has loaded or was known in advance, but there is no data yet. Some features are already available, but the table is not ready for interaction yet.',
+    },
     props: () => ({ columnsOverride: undefined }),
   },
   {
-    title: 'Иерархия данных',
-    hint: 'Скелеты поддерживают отображение вложенных строк. В этом режиме случайным строкам в первой колонке добавляются отступы.',
+    title: { ru: 'Иерархия данных', en: 'Data hierarchy' },
+    hint: {
+      ru: 'Скелеты поддерживают отображение вложенных строк. В этом режиме случайным строкам в первой колонке добавляются отступы.',
+      en: 'Skeletons can show nested rows. In this mode, random rows get an indent in the first column.',
+    },
     props: () => ({ enableRowExpandingModel: true, expandAll: true }),
   },
   {
-    title: 'Линии дерева',
-    hint: 'Чтобы визуально выразить иерархическую структуру данных, вложенным строкам добавляются линии дерева.',
+    title: { ru: 'Линии дерева', en: 'Tree lines' },
+    hint: {
+      ru: 'Чтобы визуально выразить иерархическую структуру данных, вложенным строкам добавляются линии дерева.',
+      en: 'To show the hierarchical structure of the data visually, nested rows get tree lines.',
+    },
     props: () => ({ enableTreeLines: true }),
   },
   {
-    title: 'Раскрытие строк',
-    hint: 'Для сворачивания/разворачивания строк слева появляется колонка со скелетами. После загрузки данных на ее месте появятся реальные кнопки.',
+    title: { ru: 'Раскрытие строк', en: 'Row expanding' },
+    hint: {
+      ru: 'Для сворачивания/разворачивания строк слева появляется колонка со скелетами. После загрузки данных на ее месте появятся реальные кнопки.',
+      en: 'A column of skeletons appears on the left for collapsing and expanding rows. Once the data loads, real buttons will appear in its place.',
+    },
     props: () => ({ enableRowExpanding: true }),
   },
   {
     ...ANSWERED,
-    hint: 'Скелеты заменяются данными и кнопками. Таблица готова к работе.',
+    hint: {
+      ru: 'Скелеты заменяются данными и кнопками. Таблица готова к работе.',
+      en: 'The skeletons are replaced by data and buttons. The table is ready to use.',
+    },
   },
 ] as const satisfies readonly GuideStoryStep[]
 
@@ -237,7 +267,7 @@ export const SkeletonDataArrives: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Получение данных"
+      title={{ ru: 'Получение данных', en: 'Receiving data' }}
       steps={DATA_ARRIVES}
       args={guideArgs(DATA_ARRIVES_ARGS, args)}
     />
@@ -295,7 +325,7 @@ export const SkeletonDataArrives: StoryObj<StoryProps> = {
     }
     const expandCells = () =>
       skeletonRows(canvas).flatMap(row => byId('rowExpanding', row) ?? [])
-    await step(DATA_ARRIVES[0].title, async () => {
+    await step(DATA_ARRIVES[0].title.ru, async () => {
       await waitSkeleton(canvas)
       // ADR 0122: без колонок поиск, «Настройки вида» и «Экспорт» — скелеты (ADR 0215).
       for (const id of [
@@ -309,7 +339,7 @@ export const SkeletonDataArrives: StoryObj<StoryProps> = {
         await until(() => expect(toolbarPart(id), id).toBeNull())
       }
     })
-    await step(DATA_ARRIVES[1].title, async () => {
+    await step(DATA_ARRIVES[1].title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(toolbarPart('quick-search')).not.toBeNull())
       await until(() =>
@@ -331,18 +361,18 @@ export const SkeletonDataArrives: StoryObj<StoryProps> = {
       await until(() => expect(toolbarPart('export-button')).toBeNull())
       exportSlot = inToolbar(toolbarPart('export-skeleton')!)
     })
-    await step(DATA_ARRIVES[2].title, async () => {
+    await step(DATA_ARRIVES[2].title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(indented()).toBe(true))
       await until(() => expect(expandCells()).toHaveLength(0))
       await until(() => expect(treeLines()).toBe(false))
     })
-    await step(DATA_ARRIVES[3].title, async () => {
+    await step(DATA_ARRIVES[3].title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(treeLines()).toBe(true))
       await until(() => expect(expandCells()).toHaveLength(0))
     })
-    await step(DATA_ARRIVES[4].title, async () => {
+    await step(DATA_ARRIVES[4].title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(expandCells().length).toBeGreaterThan(0))
       // SL2: раскрытие — квадрат у строк с подстроками (SL25).
@@ -363,7 +393,7 @@ export const SkeletonDataArrives: StoryObj<StoryProps> = {
       )
       await until(() => expect(footerShapes.size).toBeGreaterThan(0))
     })
-    await step(DATA_ARRIVES[5].title, async () => {
+    await step(DATA_ARRIVES[5].title.ru, async () => {
       // SL6, без задержки: ни одного состояния DOM без скелета и без строк.
       let empty = 0
       const observer = new MutationObserver(() => {
@@ -434,12 +464,21 @@ const ROWS_COUNT_ARGS = {
 const ROWS_COUNT: readonly GuideStoryStep[] = [
   {
     ...OPENED,
-    title: 'Строки по высоте области',
-    hint: "rowsCount: 'auto' (по умолчанию) — строк скелета столько, сколько помещается по высоте области прокрутки.",
+    title: { ru: 'Строки по высоте области', en: 'Rows by area height' },
+    hint: {
+      ru: "rowsCount: 'auto' (по умолчанию) — строк скелета столько, сколько помещается по высоте области прокрутки.",
+      en: "rowsCount: 'auto' (the default): there are as many skeleton rows as fit in the height of the scroll area.",
+    },
   },
   {
-    title: `Размер страницы — ${PAGE_SIZE} строк`,
-    hint: 'Размер страницы жестко ограничен пагинацией. Количество строк скелетов не превышает этого значения.',
+    title: {
+      ru: `Размер страницы — ${PAGE_SIZE} строк`,
+      en: `Page size: ${PAGE_SIZE} rows`,
+    },
+    hint: {
+      ru: 'Размер страницы жестко ограничен пагинацией. Количество строк скелетов не превышает этого значения.',
+      en: 'Pagination strictly limits the page size. The number of skeleton rows does not exceed this value.',
+    },
     remount: true,
     props: () => ({
       enablePagination: true,
@@ -447,23 +486,44 @@ const ROWS_COUNT: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: `Размер строки — ${TALL_ROW}px`,
-    hint: `Увеличенная высота строки (rowHeight: ${TALL_ROW}): строк скелета меньше, но количество также подстраивается под высоту области прокрутки.`,
+    title: {
+      ru: `Размер строки — ${TALL_ROW}px`,
+      en: `Row size: ${TALL_ROW}px`,
+    },
+    hint: {
+      ru: `Увеличенная высота строки (rowHeight: ${TALL_ROW}): строк скелета меньше, но количество также подстраивается под высоту области прокрутки.`,
+      en: `A taller row (rowHeight: ${TALL_ROW}): there are fewer skeleton rows, but their number still adapts to the height of the scroll area.`,
+    },
     props: () => ({ rowHeight: TALL_ROW }),
   },
   {
-    title: `Размер тела таблицы — ${LOW_AREA}px`,
-    hint: 'Область меньше — строк меньше: расчёт идёт по высоте области прокрутки.',
+    title: {
+      ru: `Размер тела таблицы — ${LOW_AREA}px`,
+      en: `Table body size: ${LOW_AREA}px`,
+    },
+    hint: {
+      ru: 'Область меньше — строк меньше: расчёт идёт по высоте области прокрутки.',
+      en: 'A smaller area means fewer rows: the count follows the height of the scroll area.',
+    },
     props: () => ({ height: LOW_AREA, maxHeight: LOW_AREA }),
   },
   {
-    title: `Своё число строк — ${OWN_ROWS}`,
-    hint: `skeletonOptions: { rowsCount: ${OWN_ROWS} } — фиксированное количество строк, вне зависимости от области прокрутки.`,
+    title: {
+      ru: `Своё число строк — ${OWN_ROWS}`,
+      en: `Custom row count: ${OWN_ROWS}`,
+    },
+    hint: {
+      ru: `skeletonOptions: { rowsCount: ${OWN_ROWS} } — фиксированное количество строк, вне зависимости от области прокрутки.`,
+      en: `skeletonOptions: { rowsCount: ${OWN_ROWS} }: a fixed number of rows, regardless of the scroll area.`,
+    },
     props: () => ({ skeletonOptions: { rowsCount: OWN_ROWS } }),
   },
   {
     ...ANSWERED,
-    hint: `Загружено ${OWN_ROWS} строки. Их количество было известно заранее, поэтому сдвиг лейаута минимален.`,
+    hint: {
+      ru: `Загружено ${OWN_ROWS} строки. Их количество было известно заранее, поэтому сдвиг лейаута минимален.`,
+      en: `${OWN_ROWS} rows loaded. Their number was known in advance, so the layout shift is minimal.`,
+    },
     props: ({ rows }) => ({
       loading: false,
       dataOverride: rows.slice(0, OWN_ROWS),
@@ -484,7 +544,7 @@ export const SkeletonRowsCount: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Число строк скелета"
+      title={{ ru: 'Число строк скелета', en: 'Skeleton row count' }}
       steps={ROWS_COUNT}
       args={guideArgs(ROWS_COUNT_ARGS, args)}
     />
@@ -508,19 +568,19 @@ export const SkeletonRowsCount: StoryObj<StoryProps> = {
       )
     }
     let byHeight = 0
-    await step(ROWS_COUNT[0]!.title, async () => {
+    await step(ROWS_COUNT[0]!.title.ru, async () => {
       await waitSkeleton(canvas)
       byHeight = fit()
       await expect(byHeight).toBeGreaterThan(PAGE_SIZE)
       await expect(count()).toBe(byHeight)
       await fillsArea()
     })
-    await step(ROWS_COUNT[1]!.title, async () => {
+    await step(ROWS_COUNT[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(count()).toBe(PAGE_SIZE))
     })
     let tall = 0
-    await step(ROWS_COUNT[2]!.title, async () => {
+    await step(ROWS_COUNT[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(skeletonRows(canvas)[0]!.offsetHeight).toBe(TALL_ROW),
@@ -531,7 +591,7 @@ export const SkeletonRowsCount: StoryObj<StoryProps> = {
       await fillsArea()
     })
     let low = 0
-    await step(ROWS_COUNT[3]!.title, async () => {
+    await step(ROWS_COUNT[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => {
         expect(count()).toBe(fit())
@@ -540,7 +600,7 @@ export const SkeletonRowsCount: StoryObj<StoryProps> = {
       low = count()
       await fillsArea()
     })
-    await step(ROWS_COUNT[4]!.title, async () => {
+    await step(ROWS_COUNT[4]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(count()).toBe(OWN_ROWS))
       // Шаг виден: строк меньше, чем по высоте, и под ними пусто.
@@ -552,7 +612,7 @@ export const SkeletonRowsCount: StoryObj<StoryProps> = {
         scroller.getBoundingClientRect().top + scroller.clientHeight - 1,
       )
     })
-    await step(ROWS_COUNT[5]!.title, async () => {
+    await step(ROWS_COUNT[5]!.title.ru, async () => {
       await guideNext(canvas)
       await waitData(canvas)
       await expect(dataRows(canvas)).toHaveLength(OWN_ROWS)
@@ -575,8 +635,14 @@ const COLUMNS_COUNT_ARGS = {
 const COLUMNS_COUNT: readonly GuideStoryStep[] = [
   {
     ...OPENED,
-    title: 'Число колонок неизвестно',
-    hint: `Колонки придут с сервера, их число неизвестно. По умолчанию отображается ${DEFAULT_COLUMNS} одинаковых колонок на всю ширину.`,
+    title: {
+      ru: 'Число колонок неизвестно',
+      en: 'The column count is unknown',
+    },
+    hint: {
+      ru: `Колонки придут с сервера, их число неизвестно. По умолчанию отображается ${DEFAULT_COLUMNS} одинаковых колонок на всю ширину.`,
+      en: `The columns will come from the server, and their number is unknown. By default, ${DEFAULT_COLUMNS} identical columns fill the full width.`,
+    },
     props: () => ({
       loading: 'initial',
       dataOverride: [],
@@ -584,14 +650,23 @@ const COLUMNS_COUNT: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Структура таблицы известна заранее',
-    hint: 'Скелет повторяет колонки таблицы — число, порядок, размер.',
+    title: {
+      ru: 'Структура таблицы известна заранее',
+      en: 'The table structure is known in advance',
+    },
+    hint: {
+      ru: 'Скелет повторяет колонки таблицы — число, порядок, размер.',
+      en: "The skeleton mirrors the table's columns: their number, order, and size.",
+    },
     props: () => ({ columnsOverride: undefined }),
   },
   {
     ...ANSWERED,
-    title: 'Данные загружены',
-    hint: 'Вместо скелетов отобразились реальные данные, сдвиг лейаута минимален.',
+    title: { ru: 'Данные загружены', en: 'Data loaded' },
+    hint: {
+      ru: 'Вместо скелетов отобразились реальные данные, сдвиг лейаута минимален.',
+      en: 'Real data appeared in place of the skeletons, with minimal layout shift.',
+    },
   },
 ]
 
@@ -608,7 +683,7 @@ export const SkeletonColumnsCount: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Число колонок скелета"
+      title={{ ru: 'Число колонок скелета', en: 'Skeleton column count' }}
       steps={COLUMNS_COUNT}
       args={guideArgs(COLUMNS_COUNT_ARGS, args)}
     />
@@ -617,12 +692,12 @@ export const SkeletonColumnsCount: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     const cells = () => all(skeletonRows(canvas)[0]!, SKELETON_CELL)
     const widths = () => cells().map(cell => box(cell).width)
-    await step(COLUMNS_COUNT[0]!.title, async () => {
+    await step(COLUMNS_COUNT[0]!.title.ru, async () => {
       await waitSkeleton(canvas)
       await until(() => expect(widths()).toHaveLength(DEFAULT_COLUMNS))
       await expect(new Set(widths()).size).toBe(1)
     })
-    await step(COLUMNS_COUNT[1]!.title, async () => {
+    await step(COLUMNS_COUNT[1]!.title.ru, async () => {
       await guideNext(canvas)
       // Колонки таблицы: те же id, что у заголовков; данных ещё нет.
       await until(() =>
@@ -633,7 +708,7 @@ export const SkeletonColumnsCount: StoryObj<StoryProps> = {
       await expect(cells().length).not.toBe(DEFAULT_COLUMNS)
       await expect(dataRows(canvas)).toHaveLength(0)
     })
-    await step(COLUMNS_COUNT[2]!.title, async () => {
+    await step(COLUMNS_COUNT[2]!.title.ru, async () => {
       await guideNext(canvas)
       await waitData(canvas)
     })

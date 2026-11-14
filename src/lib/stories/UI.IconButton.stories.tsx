@@ -63,7 +63,7 @@ const meta = {
       control: 'inline-radio',
       options: ['none', 'danger'],
       mapping: { none: undefined },
-      description: 'Тон: опасное действие — красное (ADR 0206)',
+      description: 'Tone: a dangerous action is red (ADR 0206)',
     },
     count: { control: { type: 'number', min: 0 }, if: { arg: 'active' } },
     withActiveIcon: { if: { arg: 'active' } },

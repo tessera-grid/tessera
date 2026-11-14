@@ -58,22 +58,22 @@ const meta = {
     wrap: true,
   },
   argTypes: {
-    label: { control: 'text', description: 'Подпись' },
-    icon: { control: 'boolean', description: 'Значок слева' },
+    label: { control: 'text', description: 'Label' },
+    icon: { control: 'boolean', description: 'Icon on the left' },
     iconHint: {
       control: 'text',
-      description: 'Подсказка значка по наведению; пусто — без неё',
+      description: 'Icon hint on hover; empty for none',
     },
-    hint: { control: 'text', description: 'Подсказка справа от подписи' },
+    hint: { control: 'text', description: 'Hint to the right of the label' },
     status: {
       control: 'select',
       options: ['none', 'checked', 'submenu', 'pending', 'failed', 'blocked'],
-      description: 'Метка состояния справа',
+      description: 'State mark on the right',
     },
-    disabled: { control: 'boolean', description: 'Выключен' },
+    disabled: { control: 'boolean', description: 'Disabled' },
     wrap: {
       control: 'boolean',
-      description: 'Подпись переносится, значки — по первой строке',
+      description: 'The label wraps; icons align with the first line',
     },
   },
   render: function Render({

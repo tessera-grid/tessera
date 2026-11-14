@@ -25,7 +25,7 @@ const meta = {
 
 export default meta
 
-const NESTED_COLUMNS = 'Колонки задаёт вложенная шапка'
+const NESTED_COLUMNS = 'The nested header defines the columns'
 
 export const HeaderGroupsPlayground: StoryObj<StoryProps> = {
   name: 'Playground',
@@ -46,7 +46,7 @@ export const HeaderGroupsPlayground: StoryObj<StoryProps> = {
       ],
       {
         columnCount: NESTED_COLUMNS,
-        rowHeight: 'На шапку не влияет',
+        rowHeight: 'Does not affect the header',
       },
     ),
   },
@@ -109,18 +109,27 @@ const serviceCellsOf = (root: ParentNode, id: string) =>
 
 const GROUPED: readonly GuideStoryStep[] = [
   {
-    title: 'Шапка в одну строку',
-    hint: 'Таблица отображает колонки без группировки. Все заголовки расположены в одну строку.',
+    title: { ru: 'Шапка в одну строку', en: 'A single-row header' },
+    hint: {
+      ru: 'Таблица отображает колонки без группировки. Все заголовки расположены в одну строку.',
+      en: 'The table shows the columns without grouping. All headers sit in one row.',
+    },
     props: () => ({ columnsOverride: FLAT_COLUMNS }),
   },
   {
-    title: 'Колонки сгруппированы',
-    hint: 'Приложение объединило колонки в группы разной глубины. Заголовок группы расположен над её колонками, а колонка вне группы растягивается до низа шапки. Подписи всех колонок стоят на одной нижней линии.',
+    title: { ru: 'Колонки сгруппированы', en: 'Columns are grouped' },
+    hint: {
+      ru: 'Приложение объединило колонки в группы разной глубины. Заголовок группы расположен над её колонками, а колонка вне группы растягивается до низа шапки. Подписи всех колонок стоят на одной нижней линии.',
+      en: "The app combined the columns into groups of different depths. A group's header sits above its columns, and a column outside any group stretches to the bottom of the header. The labels of all columns sit on the same bottom line.",
+    },
     props: () => ({ columnsOverride: groupedColumns }),
   },
   {
-    title: 'Служебные колонки',
-    hint: 'Приложение включило функции, которые добавляют служебные колонки: выбор, раскрытие и перетаскивание строк, действия строки. Заголовок каждой служебной колонки занимает всю высоту шапки.',
+    title: { ru: 'Служебные колонки', en: 'Service columns' },
+    hint: {
+      ru: 'Приложение включило функции, которые добавляют служебные колонки: выбор, раскрытие и перетаскивание строк, действия строки. Заголовок каждой служебной колонки занимает всю высоту шапки.',
+      en: "The app turned on features that add service columns: row selection, expanding and dragging, and row actions. Each service column's header cell spans the full height of the header.",
+    },
     props: () => ({
       enableRowSelection: true,
       enableRowExpanding: true,
@@ -140,7 +149,7 @@ export const HeaderGrouped: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Многоуровневая шапка"
+      title={{ ru: 'Многоуровневая шапка', en: 'Multi-level header' }}
       steps={GROUPED}
       args={guideArgs({ dataCount: 20, height: '360' }, args)}
     />
@@ -148,12 +157,12 @@ export const HeaderGrouped: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     // В Storybook сценарий проходит человек; `play` — только в тестах каталога.
     if (globals.catalog !== true) return
-    await step(GROUPED[0]!.title, async () => {
+    await step(GROUPED[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await expect(headRowsOf(canvas)).toBe(1)
       await expect(headIdsOf(canvas)).not.toContain('name')
     })
-    await step(GROUPED[1]!.title, async () => {
+    await step(GROUPED[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(headRowsOf(canvas)).toBe(3))
       near(
@@ -167,7 +176,7 @@ export const HeaderGrouped: StoryObj<StoryProps> = {
         near(titleBottom(id), titleBottom('age'))
       await settle()
     })
-    await step(GROUPED[2]!.title, async () => {
+    await step(GROUPED[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(
@@ -212,17 +221,26 @@ const weekTitle = (root: ParentNode, id: string) =>
 
 const WIDE: readonly GuideStoryStep[] = [
   {
-    title: 'Широкие группы',
-    hint: 'Колонки сгруппированы по неделям, и каждая неделя шире видимой части таблицы. Подпись группы стоит в начале своей группы.',
+    title: { ru: 'Широкие группы', en: 'Wide groups' },
+    hint: {
+      ru: 'Колонки сгруппированы по неделям, и каждая неделя шире видимой части таблицы. Подпись группы стоит в начале своей группы.',
+      en: "Columns are grouped by week, and each week is wider than the visible part of the table. A group's label sits at the start of its group.",
+    },
   },
   {
-    title: 'Прокрутка вбок',
-    hint: 'Пользователь прокрутил таблицу вправо: начало второй недели ушло за левый край. Подпись группы осталась на экране — у левого края видимой части.',
+    title: { ru: 'Прокрутка вбок', en: 'Horizontal scroll' },
+    hint: {
+      ru: 'Пользователь прокрутил таблицу вправо: начало второй недели ушло за левый край. Подпись группы осталась на экране — у левого края видимой части.',
+      en: "The user scrolled the table to the right, and the start of the second week went past the left edge. The group's label stayed on screen, at the left edge of the visible part.",
+    },
     enter: root => scrollColumns(root, WEEK + 3 * WIDE_SIZE),
   },
   {
-    title: 'Конец группы',
-    hint: 'Пользователь прокрутил дальше, к концу второй недели. Подпись не выходит за свою группу: она уходит вместе с концом группы, а рядом видна подпись следующей недели.',
+    title: { ru: 'Конец группы', en: 'End of the group' },
+    hint: {
+      ru: 'Пользователь прокрутил дальше, к концу второй недели. Подпись не выходит за свою группу: она уходит вместе с концом группы, а рядом видна подпись следующей недели.',
+      en: "The user scrolled further, to the end of the second week. The label does not leave its group: it moves away with the end of the group, and the next week's label appears beside it.",
+    },
     enter: root => scrollColumns(root, 2 * WEEK - 2 * WIDE_SIZE),
   },
 ]
@@ -236,7 +254,7 @@ export const HeaderGroupsWideGroups: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Широкие группы"
+      title={{ ru: 'Широкие группы', en: 'Wide groups' }}
       steps={WIDE}
       args={guideArgs(
         { dataCount: 30, height: '360', columnsOverride: WIDE_GROUPS },
@@ -246,7 +264,7 @@ export const HeaderGroupsWideGroups: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(WIDE[0]!.title, async () => {
+    await step(WIDE[0]!.title.ru, async () => {
       await waitForRows(canvas)
       // Подпись — в начале группы: от её левого края только отступ ячейки.
       const offset =
@@ -256,7 +274,7 @@ export const HeaderGroupsWideGroups: StoryObj<StoryProps> = {
       await until(() => expect(offset).toBeLessThanOrEqual(24))
       await settle()
     })
-    await step(WIDE[1]!.title, async () => {
+    await step(WIDE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(scrollerOf(canvas).scrollLeft).toBe(WEEK + 3 * WIDE_SIZE),
@@ -270,7 +288,7 @@ export const HeaderGroupsWideGroups: StoryObj<StoryProps> = {
       )
       await settle()
     })
-    await step(WIDE[2]!.title, async () => {
+    await step(WIDE[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(scrollerOf(canvas).scrollLeft).toBe(2 * WEEK - 2 * WIDE_SIZE),

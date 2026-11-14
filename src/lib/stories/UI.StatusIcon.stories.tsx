@@ -18,11 +18,14 @@ const meta = {
   title: 'Tessera/UI/StatusIcon',
   args: { reason: 'The server refused the filter: timeout', tone: 'error' },
   argTypes: {
-    reason: { control: 'text', description: 'Причина: имя и тултип' },
+    reason: {
+      control: 'text',
+      description: 'Reason: accessible name and tooltip',
+    },
     tone: {
       control: 'inline-radio',
       options: ['error', 'neutral'],
-      description: 'Тон значка',
+      description: 'Icon tone',
     },
   },
   render: ({ reason, tone }) => (

@@ -1,11 +1,12 @@
 /**
  * Смена аргументов Storybook — действия истории в консоли (ADR 0124, CL16):
- * «Контрол enableRowDragging: true → false».
+ * «Control enableRowDragging: true → false».
  */
 import { useRef } from 'react'
 
 import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
 import { type ConsoleLog, preview } from './consoleLog'
+import { shellText } from './storyShell'
 
 /** Служебные пропсы истории, не контролы. */
 const SKIP = new Set(['consoleLog', 'updateArgs', 'colorMode'])
@@ -26,7 +27,12 @@ export const useArgsActions = (log: ConsoleLog | undefined, args?: object) => {
       if (typeof from === 'function' || typeof to === 'function') continue
       log.action({
         plugin: 'story',
-        action: `Контрол ${key}: ${preview(from, 40)} → ${preview(to, 40)}`,
+        action: locale =>
+          shellText(locale, 'consoleControl', {
+            key,
+            from: preview(from, 40),
+            to: preview(to, 40),
+          }),
         source: 'story',
       })
     }

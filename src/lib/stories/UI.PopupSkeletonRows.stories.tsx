@@ -50,11 +50,11 @@ const meta = {
   argTypes: {
     count: {
       control: { type: 'number', min: 1, max: 6 },
-      description: 'Строк',
+      description: 'Rows',
     },
     shortening: {
       control: 'boolean',
-      description: 'Полоски короче от строки к строке',
+      description: 'Bars get shorter from row to row',
     },
   },
   render: args => <SkeletonRowsStory {...args} />,

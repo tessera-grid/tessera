@@ -78,12 +78,12 @@ const radioControl = (
 export const timeZoneType: InputType = {
   control: 'text',
   description:
-    'Часовой пояс дат таблицы, IANA (`timeZone`): фильтр дат и выгрузка; по умолчанию — пояс браузера',
+    'Time zone for dates in the table, IANA (`timeZone`): used by the date filter and export; defaults to the browser time zone',
 }
 
 /** Режим данных (ADR 0169): одна радиокнопка на все операции. */
 export const dataModeType = radioControl(
-  'Где выполняются операции над строками (`dataMode`): `server` — таблица меняет состояние и вызывает колбэки, а строки не переставляет и не сужает — сервера в истории нет',
+  'Where row operations run (`dataMode`): `server` — the table changes its state and calls the callbacks but does not reorder or narrow the rows; the story has no server',
   ['client', 'server'],
   'client',
 )
@@ -129,51 +129,51 @@ export const inCategory = <T extends Record<string, InputType>>(
 // --- Данные и размеры ---------------------------------------------------------
 
 export const columnCountType = numberControl(
-  'Число колонок',
+  'Number of columns',
   { min: 0, max: 1000, step: 5 },
   String(COLUMN_COUNT),
 )
 export const dataCountType = numberControl(
-  'Число строк',
+  'Number of rows',
   { min: 0, max: 100_000, step: 10 },
   String(DATA_COUNT),
 )
 export const dataNestingType = radioControl(
-  'Вложенные строки: flat — без них, nested — дочерние строки у каждой 10-й строки (видны с раскрытием строк)',
+  'Nested rows: flat — none, nested — child rows under every 10th row (visible when row expanding is on)',
   ['flat', 'nested'],
   'flat',
 )
 /** Язык подписей задаёт переключатель Language в тулбаре: в панели Controls его нет. */
 export const localeType: InputType = { table: { disable: true } }
-export const heightType = sizeControl('Высота таблицы', '100%')
-export const maxHeightType = sizeControl('Максимальная высота таблицы', '100%')
+export const heightType = sizeControl('Table height', '100%')
+export const maxHeightType = sizeControl('Maximum table height', '100%')
 export const containerSizeType = sizeControl(
-  'Высота контейнера таблицы',
-  'по содержимому',
+  'Height of the table container',
+  'fits content',
 )
 export const expandAllType = booleanControl(
-  'Раскрыть все строки (`expanded: true`), выключить — свернуть все; на лету',
+  'Expand all rows (`expanded: true`); turning it off collapses them all; applies on the fly',
 )
 export const showStubType = booleanControl(
-  'Пустые данные: таблица показывает заглушку «нет данных»',
+  'Empty data: the table shows the no-data placeholder',
 )
 export const rowHeightType = numberControl(
-  `Высота строки, минимум ${MIN_ROW_HEIGHT}px`,
+  `Row height, minimum ${MIN_ROW_HEIGHT}px`,
   { min: MIN_ROW_HEIGHT, max: 120, step: 2 },
   String(DEFAULT_ROW_HEIGHT),
 )
 export const headerHeightType = numberControl(
-  `Высота строки хедера колонок, минимум ${MIN_HEADER_HEIGHT}px`,
+  `Height of a column header row, minimum ${MIN_HEADER_HEIGHT}px`,
   { min: MIN_HEADER_HEIGHT, max: 120, step: 2 },
-  'как у строки',
+  'same as a row',
 )
 export const defaultColumnType = objectControl(
-  'Ширина колонок по умолчанию',
+  'Default column width',
   '{ size?: number; minSize?: number; maxSize?: number }',
   { size: 150, ...DEFAULT_COLUMN },
 )
 export const headerNestingType = radioControl(
-  'Вложенность хедера колонок: flat — одна строка, nested — группы колонок',
+  'Column header nesting: flat — a single row, nested — column groups',
   ['flat', 'nested'],
   'flat',
 )
@@ -189,11 +189,11 @@ export const loadingType: InputType = {
   options: ['off', 'initial', 'refresh'],
   mapping: { off: false },
   description:
-    'Загрузка данных (`loading`): `initial` — скелет первой загрузки, `refresh` — свечение под хедером колонок и приглушение тела (ADR 0094)',
+    'Data loading (`loading`): `initial` — the first-load skeleton, `refresh` — a glow under the column header and a dimmed body (ADR 0094)',
   table: { defaultValue: { summary: 'false' } },
 }
 export const skeletonOptionsType = objectControl(
-  'rowsCount — строк: число или `auto` (по высоте); columnsCount — колонок, только когда своих колонок нет',
+  'rowsCount — rows: a number or `auto` (by height); columnsCount — columns, only when the table has no columns of its own',
   'SkeletonOptions',
   DEFAULT_SKELETON_OPTIONS,
 )
@@ -202,110 +202,110 @@ export const contrastType: InputType = {
   control: 'inline-radio',
   options: ['auto', 'more', 'standard'],
   description:
-    'Повышенный контраст (`contrast`): `auto` — по `prefers-contrast: more`, `more` — всегда, `standard` — никогда',
+    'Increased contrast (`contrast`): `auto` — follows `prefers-contrast: more`, `more` — always, `standard` — never',
   table: { defaultValue: { summary: 'auto' } },
 }
 export const refreshOptionsType = objectControl(
-  'Показ обновления: `delayMs` — задержка, `minDurationMs` — минимум показа, мс',
+  'Refresh display: `delayMs` — delay, `minDurationMs` — minimum display time, ms',
   'RefreshOptions',
   DEFAULT_REFRESH_OPTIONS,
 )
-export const enableFooterType = booleanControl('Футер колонок')
+export const enableFooterType = booleanControl('Column footer')
 /** Положение футера (ADR 0118): у низа области или за последней строкой. */
 export const footerPositionType: InputType = {
   control: 'inline-radio',
   options: ['pinned', 'inline'],
   description:
-    'Положение футера (`footerPosition`): `pinned` — всегда у низа области, `inline` — за последней строкой, прокручивается с телом',
+    'Footer position (`footerPosition`): `pinned` — always at the bottom of the area, `inline` — after the last row, scrolls with the body',
   table: { defaultValue: { summary: 'pinned' } },
 }
 export const enableToolbarType = panelFlag(
-  'Верхний тулбар: auto — по наличию кнопок плагинов, on — всегда (и пустой), off — никогда',
+  'Top toolbar: auto — when plugins add buttons, on — always (even empty), off — never',
 )
 export const enableStatusBarType = panelFlag(
-  'Нижняя панель: auto — по наличию её слотов, on — всегда (и пустая), off — никогда',
+  'Status bar: auto — when it has slots, on — always (even empty), off — never',
 )
 export const enableAnnouncementsType = booleanControl(
-  'Объявления скринридеру через live-область: сортировка, выбор, загрузка (`enableAnnouncements`)',
+  'Screen reader announcements through a live region: sorting, selection, loading (`enableAnnouncements`)',
   true,
 )
 
 export const enableRowAnimationType = booleanControl(
-  'Движение строк при смене модели: раскрытие, сортировка, фильтр, перестановка (`enableRowAnimation`, ADR 0107)',
+  'Row motion when the model changes: expanding, sorting, filtering, reordering (`enableRowAnimation`, ADR 0107)',
   true,
 )
 
 export const enableIncrementalRenderType = booleanControl(
-  'Первый рендер и смена всего окна по кускам, переходами React; выкл — одним проходом (`enableIncrementalRender`, ADR 0203)',
+  'First render and whole-window changes in chunks, via React transitions; off — in a single pass (`enableIncrementalRender`, ADR 0203)',
   true,
 )
 
 export const enableColumnAnimationType = booleanControl(
-  'Движение колонок при смене порядка: откат, клавиатура, меню ручки (`enableColumnAnimation`, ADR 0115)',
+  'Column motion when the order changes: revert, keyboard, drag handle menu (`enableColumnAnimation`, ADR 0115)',
   true,
 )
 
 export const enableOverflowTooltipType = booleanControl(
-  'Тултип с полным текстом у обрезанного многоточием текста ячейки (`enableOverflowTooltip`)',
+  'A tooltip with the full text for cell text truncated with an ellipsis (`enableOverflowTooltip`)',
   true,
 )
 
 // --- Колонки -------------------------------------------------------------------
 
 export const enableColumnSortingType = booleanControl(
-  'Сортировка кнопкой в заголовке (плагин `columnSorting`)',
+  'Sorting with a header button (`columnSorting` plugin)',
 )
 export const columnSortingRemovalType = booleanControl(
-  'Третий клик снимает сортировку (`removal`); иначе направление только переключается',
+  'A third click removes sorting (`removal`); otherwise the direction only toggles',
   true,
 )
 export const columnSortingMultiSortType = booleanControl(
-  'Мультисортировка по нескольким колонкам жестом Shift+клик (`multiSort`); `max` и `event` — объектом из истории',
+  'Multi-column sorting with Shift+click (`multiSort`); `max` and `event` are set by the story as an object',
   true,
 )
 export const columnSortingRevertOnRejectType = booleanControl(
-  'Откатывать сортировку при отказе промиса `onToggleColumnSort` в серверном режиме (`revertOnReject`, ADR 0116)',
+  'Revert sorting when the `onToggleColumnSort` promise rejects in server mode (`revertOnReject`, ADR 0116)',
   true,
 )
 export const enableColumnSortingModelType = booleanControl(
-  'Сортировка без кнопок: порядок строк по состоянию `sorting` (плагин `columnSortingModel`)',
+  'Sorting without buttons: row order from the `sorting` state (`columnSortingModel` plugin)',
 )
 export const columnSortingModelMultiSortType = booleanControl(
-  'Несколько колонок в срезе `sorting` (`multiSort`); иначе действует только первая',
+  'Several columns in the `sorting` slice (`multiSort`); otherwise only the first applies',
   true,
 )
 export const enableColumnSizingType = booleanControl(
-  'Изменение ширины колонок перетаскиванием границы (плагин `columnSizing`)',
+  'Resizing columns by dragging the border (`columnSizing` plugin)',
 )
 export const enableColumnDraggingType = booleanControl(
-  'Перестановка колонок перетаскиванием заголовка (плагин `columnDragging`)',
+  'Reordering columns by dragging the header (`columnDragging` plugin)',
 )
 export const enableColumnPinningType = booleanControl(
-  'Закрепление колонок кнопкой в заголовке (плагин `columnPinning`)',
+  'Pinning columns with a header button (`columnPinning` plugin)',
 )
-export const retrySucceedsType = booleanControl('Повтор загрузки удаётся')
+export const retrySucceedsType = booleanControl('Retrying the load succeeds')
 export const hideAllColumnsType = booleanControl(
-  'Все колонки скрыты состоянием приложения (`columnVisibility`): заглушка «все колонки скрыты» (ADR 0123)',
+  'All columns hidden by the app state (`columnVisibility`): the all-columns-hidden placeholder (ADR 0123)',
 )
 export const pinFirstColumnType = booleanControl(
-  'Первая колонка закреплена слева сразу при открытии (начальное закрепление, переключается на лету)',
+  'The first column is pinned left on open (initial pinning, toggles on the fly)',
 )
 export const columnPinningLeafPinningType = booleanControl(
-  'Закрепление отдельных листьев под вложенным хедером колонок (`leafPinning`)',
+  'Pinning individual leaves under a nested column header (`leafPinning`)',
 )
 export const enableColumnVisibilityType = booleanControl(
-  'Кнопка «Колонки» в тулбаре: скрытие и показ колонок (плагин `columnVisibility`)',
+  'The “Columns” button in the toolbar: hiding and showing columns (`columnVisibility` plugin)',
 )
 export const enableHeaderActionMenuType = booleanControl(
-  'Схлопывать кнопки заголовка в кебаб-меню (плагин `headerActionMenu`)',
+  'Collapse header buttons into a menu button (`headerActionMenu` plugin)',
 )
 const menuModeType = (description: string) =>
   radioControl(description, ['auto', 'always'], 'auto')
 export const headerActionMenuModeType = menuModeType(
-  'Кебаб заголовка: auto — от порога действий, always — всегда (`mode`)',
+  'Header menu button: auto — once the action count reaches the threshold, always — always (`mode`)',
 )
 export const headerActionMenuThresholdType = numberControl(
-  'С какого числа действий кнопки заголовка уходят в кебаб (`threshold`)',
+  'Number of actions at which header buttons move into the menu button (`threshold`)',
   { min: 1, max: 10, step: 1 },
   String(DEFAULT_HEADER_ACTION_MENU.threshold),
 )
@@ -313,10 +313,10 @@ export const headerActionMenuThresholdType = numberControl(
 // --- Строки --------------------------------------------------------------------
 
 export const enableRowSelectionType = booleanControl(
-  'Выбор строк чекбоксами (плагин `rowSelection`)',
+  'Row selection with checkboxes (`rowSelection` plugin)',
 )
 export const enableRowSelectionModelType = booleanControl(
-  'Выбор строк без флажков: выбранные строки по состоянию `rowSelection` (плагин `rowSelectionModel`)',
+  'Row selection without checkboxes: selected rows from the `rowSelection` state (`rowSelectionModel` plugin)',
 )
 /**
  * Выбор вложенных строк (ADR 0162): нет — только строки верхнего уровня, `true` — с
@@ -332,125 +332,125 @@ const subRowsControl = (description: string): InputType => ({
   table: { defaultValue: { summary: 'false' } },
 })
 export const rowSelectionModelSubRowsType = subRowsControl(
-  'Выбор вложенных строк модели (`subRows`): `true` — с потомками, `self` — каждая строка сама',
+  'Selecting nested rows of the model (`subRows`): `true` — with descendants, `self` — each row on its own',
 )
 export const rowSelectionSubRowsType = subRowsControl(
-  'Флажки у вложенных строк (`subRows`): `true` — выбор с потомками, `self` — каждая строка сама',
+  'Checkboxes on nested rows (`subRows`): `true` — selection with descendants, `self` — each row on its own',
 )
 export const rowSelectionSelectAllType = radioControl(
-  'Что выбирает флажок в шапке: строки после фильтров на всех страницах, текущей страницы или все строки данных (`selectAll`)',
+  'What the header checkbox selects: filtered rows on all pages, the current page, or all data rows (`selectAll`)',
   ['filtered', 'currentPage', 'all'],
   'filtered',
 )
 export const rowSelectionSelectedCountType = booleanControl(
-  'Счётчик выбранных строк в нижней панели (`selectedCount`)',
+  'Selected row count in the status bar (`selectedCount`)',
 )
 export const enableRowExpandingType = booleanControl(
-  'Раскрытие строк с детьми (плагин `rowExpanding`)',
+  'Expanding rows with child rows (`rowExpanding` plugin)',
 )
 export const rowExpandingMaxDepthType = numberControl(
-  'Сколько уровней раскрываемы от корня (`maxDepth`)',
+  'How many levels from the root can be expanded (`maxDepth`)',
   { min: 0, max: 10, step: 1 },
   String(DEFAULT_MAX_EXPANDING_DEPTH),
 )
 export const rowExpandingExpandAllType = booleanControl(
-  'Кнопка «Раскрыть всё / Свернуть всё» в шапке колонки раскрытия (`expandAll`)',
+  'An “Expand all / Collapse all” button in the header of the expand column (`expandAll`)',
   true,
 )
 export const rowExpandingStickyRowsType = booleanControl(
-  'Строка ветки держится под шапкой, пока видны её дети (`stickyRows`)',
+  'A branch row sticks under the header while its child rows are visible (`stickyRows`)',
 )
 export const rowGroupingGroupRowCountType = booleanControl(
-  'Число строк данных в строке группы',
+  'Number of data rows in a group row',
 )
 export const rowGroupingStickyRowsType = booleanControl(
-  'Строка группы держится под шапкой, пока видны её строки (`stickyRows`)',
+  'A group row sticks under the header while its rows are visible (`stickyRows`)',
 )
 export const rowExpandingColumnType = radioControl(
-  'Колонка тоггла раскрытия: auto — если есть строки с детьми, always — всегда (`column`)',
+  'Expand toggle column: auto — when some rows have child rows, always — always (`column`)',
   ['auto', 'always'],
   'auto',
 )
 export const enableRowExpandingModelType = booleanControl(
-  'Дерево без переключателя: подстроки по состоянию `expanded` (плагин `rowExpandingModel`)',
+  'A tree without a toggle: sub-rows from the `expanded` state (`rowExpandingModel` plugin)',
 )
 export const enableTreeLinesType = booleanControl(
-  'Линии дерева у раскрытых строк и групп (плагин `treeLines`)',
+  'Tree lines for expanded rows and groups (`treeLines` plugin)',
 )
 export const enableTextWrapType = booleanControl(
-  'Перенос текста и высота строк по содержимому у колонок с `wrapText` и `autoHeight` (плагин `textWrap`)',
+  'Text wrapping and content-based row height for columns with `wrapText` and `autoHeight` (`textWrap` plugin)',
 )
 export const textWrapEstimatedRowHeightType = numberControl(
-  'Оценка высоты незамеренной строки, px; пусто — высота строки (`estimatedRowHeight`)',
+  'Estimated height of a row not yet measured, px; empty — the row height is used (`estimatedRowHeight`)',
   { min: MIN_ROW_HEIGHT, max: 300, step: 2 },
-  'высота строки',
+  'row height',
 )
 export const textWrapMaxLinesType = numberControl(
-  'Предел строк ячейки `autoHeight`, дальше `…` с тултипом (`maxLines`)',
+  'Maximum lines in an `autoHeight` cell; beyond that, `…` with a tooltip (`maxLines`)',
   { min: 1, max: 30, step: 1 },
   '10',
 )
 export const textWrapHeaderMaxLinesType = numberControl(
-  'Предел строк заголовка `autoHeaderHeight`, дальше `…` с тултипом (`headerMaxLines`)',
+  'Maximum lines in an `autoHeaderHeight` header; beyond that, `…` with a tooltip (`headerMaxLines`)',
   { min: 1, max: 10, step: 1 },
   '3',
 )
 export const enableRowDraggingType = booleanControl(
-  'Перестановка строк перетаскиванием ручки (плагин `rowDragging`)',
+  'Reordering rows by dragging the drag handle (`rowDragging` plugin)',
 )
 export const rowDraggingExpandDelayType = numberControl(
-  'Пауза над свёрнутой группой до её раскрытия, мс; 0 — не раскрывать (`expandDelay`)',
+  'Hover delay over a collapsed group before it expands, ms; 0 — never expand (`expandDelay`)',
   { min: 0, max: 2000, step: 100 },
   String(DEFAULT_ROW_DRAG_EXPAND_DELAY),
 )
 export const rowDraggingRevertOnRejectType = booleanControl(
-  'Откатывать перенос строки при отказе промиса `onRowDragEnd` (`revertOnReject`, ADR 0114)',
+  'Revert a row move when the `onRowDragEnd` promise rejects (`revertOnReject`, ADR 0114)',
   true,
 )
 export const columnDraggingRevertOnRejectType = booleanControl(
-  'Откатывать перенос колонки при отказе промиса `onColumnDragEnd` (`revertOnReject`, ADR 0114)',
+  'Revert a column move when the `onColumnDragEnd` promise rejects (`revertOnReject`, ADR 0114)',
   true,
 )
 export const columnSizingAutosizeOnDataType = booleanControl(
-  'Подгонять ширину колонок по содержимому на приходе данных (`autosizeOnData`, ADR 0217)',
+  'Fit column widths to content when data arrives (`autosizeOnData`, ADR 0217)',
 )
 export const enableRowGroupingType = booleanControl(
-  'Группировка строк кнопкой в заголовке (плагин `rowGrouping`)',
+  'Row grouping with a header button (`rowGrouping` plugin)',
 )
 export const enableRowGroupingModelType = booleanControl(
-  'Группировка без кнопок: группы по состоянию `grouping` (плагин `rowGroupingModel`)',
+  'Grouping without buttons: groups from the `grouping` state (`rowGroupingModel` plugin)',
 )
 export const enableRowActionsType = booleanControl(
-  'Колонка действий строки с демо-кнопками (плагин `rowActions`)',
+  'A row actions column with demo buttons (`rowActions` plugin)',
 )
 export const rowActionsWidthType = numberControl(
-  'Ширина колонки действий с кнопками, px (`width`)',
+  'Width of the actions column with buttons, px (`width`)',
   { min: 40, max: 400, step: 4 },
   String(DEFAULT_ROW_ACTIONS_OPTIONS.width),
 )
 export const rowActionsCollapsedWidthType = numberControl(
-  'Ширина колонки действий, когда они в кебабе, px (`collapsedWidth`)',
+  'Width of the actions column when the actions are in the menu button, px (`collapsedWidth`)',
   { min: 40, max: 400, step: 4 },
   String(DEFAULT_ROW_ACTIONS_OPTIONS.collapsedWidth),
 )
 export const rowActionsColumnType = radioControl(
-  'Колонка действий: auto — если у строк есть действия, always — всегда (`column`)',
+  'Actions column: auto — when rows have actions, always — always (`column`)',
   ['auto', 'always'],
   'auto',
 )
 export const actionsDemoType = radioControl(
-  'Набор действий строки: basic — правка, копия, удаление; async — с ответом сервера; nested — с разделами; none — без действий',
+  'Row action set: basic — edit, copy, delete; async — with a server response; nested — with sections; none — no actions',
   ['basic', 'async', 'nested', 'none'],
   'basic',
 )
 export const enableRowActionMenuType = booleanControl(
-  'Схлопывать действия строки в кебаб-меню (плагин `rowActionMenu`, нужен enableRowActions)',
+  'Collapse row actions into a menu button (`rowActionMenu` plugin, needs enableRowActions)',
 )
 export const rowActionMenuModeType = menuModeType(
-  'Кебаб строки: auto — от порога действий, always — всегда (`mode`)',
+  'Row menu button: auto — once the action count reaches the threshold, always — always (`mode`)',
 )
 export const rowActionMenuThresholdType = numberControl(
-  'С какого числа действий кнопки строки уходят в кебаб (`threshold`)',
+  'Number of actions at which row buttons move into the menu button (`threshold`)',
   { min: 1, max: 10, step: 1 },
   String(DEFAULT_ROW_ACTION_MENU.threshold),
 )
@@ -458,40 +458,40 @@ export const rowActionMenuThresholdType = numberControl(
 // --- Ячейки и клавиатура -------------------------------------------------------
 
 export const enableCellEditingType = booleanControl(
-  'Правка ячеек Age, Visits, Gender: кнопка по наведению (плагин `cellEditing`)',
+  'Editing Age, Visits, Gender cells: a button on hover (`cellEditing` plugin)',
 )
 export const enableCellErrorsType = booleanControl(
-  'Ошибки ячеек: красная точка у Visits больше 15 (плагин `cellErrors`)',
+  'Cell errors: a red dot on Visits cells above 15 (`cellErrors` plugin)',
 )
 export const enableValueChangeFlashType = booleanControl(
-  'Вспышка ячейки при смене значения новыми данными (плагин `valueChangeFlash`)',
+  'A cell flash when new data changes the value (`valueChangeFlash` plugin)',
 )
 export const valueChangeFlashColumnDefaultType = radioControl(
-  'Вид колонок без своего `changeFlash` (`columnDefault`): `true` — вспышка, `direction` — тон и стрелка роста и падения, `false` — без вспышки',
+  'Look of columns without their own `changeFlash` (`columnDefault`): `true` — a flash, `direction` — a tone and an arrow for rise and fall, `false` — no flash',
   [true, 'direction', false],
   'true',
 )
 export const enableCellSelectionType = booleanControl(
-  'Выделение диапазона ячеек мышью и копирование Ctrl/Cmd+C (плагин `cellSelection`)',
+  'Selecting a range of cells with the mouse and copying with Ctrl/Cmd+C (`cellSelection` plugin)',
 )
 export const enableCellSelectionModelType = booleanControl(
-  'Выделение ячеек без мыши: подсветка по состоянию `cellSelection` (плагин `cellSelectionModel`)',
+  'Cell selection without the mouse: highlighting from the `cellSelection` state (`cellSelectionModel` plugin)',
 )
 export const cellSelectionRangeSelectionType = booleanControl(
-  'Диапазон Shift-кликом (`rangeSelection`)',
+  'A range with Shift+click (`rangeSelection`)',
   true,
 )
 export const dataExportMaxLoadedRowsType = numberControl(
-  'Больше строк выгрузка из серверной модели не загружает (`maxLoadedRows`)',
+  'Export from the server row model loads no more rows than this (`maxLoadedRows`)',
   { min: 1, max: 1_000_000, step: 1 },
   '10000',
 )
 export const cellSelectionDragSelectionType = booleanControl(
-  'Диапазон протяжкой мыши (`dragSelection`)',
+  'A range by dragging the mouse (`dragSelection`)',
   true,
 )
 export const cellSelectionMultiRangeType = booleanControl(
-  'Несколько диапазонов с Ctrl/Cmd (`multiRange`)',
+  'Several ranges with Ctrl/Cmd (`multiRange`)',
   true,
 )
 /**
@@ -511,22 +511,22 @@ export const cellSelectionHandleType: InputType = {
   options: Object.keys(RANGE_HANDLE_MAPPING),
   mapping: RANGE_HANDLE_MAPPING,
   description:
-    'Маркер угла выделения (`handle`): `all` — для мыши и пальца, `mouse` и `touch` — только для одного ввода, `off` — без маркера; `fill` — квадрат тянет значения в ячейки (`mode`), `fillDown` — тянет только вниз и вверх (`direction`)',
+    'Selection corner handle (`handle`): `all` — for mouse and finger, `mouse` and `touch` — for one input only, `off` — no handle; `fill` — dragging the square fills values into cells (`mode`), `fillDown` — fills only down and up (`direction`)',
   table: { defaultValue: { summary: 'all' } },
 }
 export const cellSelectionMaxCopyRowsType = numberControl(
-  'Больше строк выделения копирование не кладёт в буфер (`maxCopyRows`)',
+  'Copying puts no more selected rows than this on the clipboard (`maxCopyRows`)',
   { min: 1, max: 1_000_000, step: 1 },
   '10000',
 )
 export const cellSelectionPasteType = booleanControl(
-  'Вставка из буфера, вырезание и очистка выделения (`paste`); пишут через плагин правки',
+  'Pasting from the clipboard, cutting, and clearing the selection (`paste`); they write through the editing plugin',
 )
 export const enableContextMenuType = booleanControl(
-  'Контекстное меню по правому клику (плагин `contextMenu`)',
+  'A context menu on right click (`contextMenu` plugin)',
 )
 export const enableKeyboardNavigationType = booleanControl(
-  'Навигация по ячейкам стрелками: роль grid, roving tabindex (`enableKeyboardNavigation`)',
+  'Arrow-key navigation between cells: the grid role, roving tabindex (`enableKeyboardNavigation`)',
 )
 
 // --- Поиск, фильтры, страницы, экспорт -----------------------------------------
@@ -535,33 +535,33 @@ const debounceType = (description: string, defaultMs: number) =>
   numberControl(description, { min: 0, max: 2000, step: 50 }, String(defaultMs))
 
 export const enableQuickSearchType = booleanControl(
-  'Быстрый поиск в тулбаре по видимым колонкам (плагин `quickSearch`)',
+  'Quick search in the toolbar across visible columns (`quickSearch` plugin)',
 )
 export const quickSearchDebounceMsType = debounceType(
-  'Задержка ввода поиска, мс (`debounceMs`)',
+  'Search input delay, ms (`debounceMs`)',
   DEFAULT_SEARCH_DEBOUNCE_MS,
 )
 export const quickSearchFilteredCountType = booleanControl(
-  '«Показано N из M» в нижней панели (`filteredCount`)',
+  '“Showing N of M” in the status bar (`filteredCount`)',
 )
 export const enableColumnFilteringType = booleanControl(
-  'Фильтры колонок с полем filter: Country и имена — текст, Age, Visits, Total — число (плагин `columnFiltering`)',
+  'Filters for columns with a filter field: Country and names — text, Age, Visits, Total — number (`columnFiltering` plugin)',
 )
 export const cellEditingSaveModeType = radioControl(
-  'Сохранение правок (`saveMode`): `auto` — каждая законченная правка уходит сразу, `manual` — правки копятся черновиками и уходят пакетом по кнопке пульта',
+  'Saving edits (`saveMode`): `auto` — each finished edit is sent right away, `manual` — edits accumulate as drafts and are sent as a batch with a button in the unsaved changes panel',
   ['auto', 'manual'],
   'auto',
 )
 export const enableEditHistoryType = booleanControl(
-  'Отмена и повтор правок: Ctrl+Z и Ctrl+Shift+Z, кнопки и история в тулбаре, пункты контекстного меню (плагин `editHistory`)',
+  'Undo and redo of edits: Ctrl+Z and Ctrl+Shift+Z, buttons and history in the toolbar, context menu items (`editHistory` plugin)',
 )
 export const editHistoryLimitType = numberControl(
-  'Сколько записей помнит история (`limit`); старейшая уходит',
+  'How many entries the history keeps (`limit`); the oldest is dropped',
   { min: 1, max: 200, step: 1 },
   '30',
 )
 export const editHistoryMaxCellsType = numberControl(
-  'Сколько ячеек помнят все записи истории вместе (`maxCells`); старейшие уходят',
+  'How many cells all history entries keep together (`maxCells`); the oldest are dropped',
   { min: 1, max: 1_000_000, step: 1000 },
   '50000',
 )
@@ -584,150 +584,148 @@ export const editHistorySourcesType: InputType = {
     'app',
   ],
   description:
-    'Какие изменения пишутся в историю (`sources`); ничего не отмечено — все. Не записанное не отменяется',
-  table: { defaultValue: { summary: 'все' } },
+    'Which changes are recorded in the history (`sources`); nothing checked — all. Unrecorded changes cannot be undone',
+  table: { defaultValue: { summary: 'all' } },
 }
 export const editHistoryConflictType = radioControl(
-  'Ячейка изменилась извне после правки (`conflict`): `skip` — отмена её пропускает, `overwrite` — пишет поверх',
+  'The cell was changed externally after the edit (`conflict`): `skip` — undo skips it, `overwrite` — writes over it',
   ['skip', 'overwrite'],
   'skip',
 )
 export const editHistoryContextMenuType = booleanControl(
-  'Пункты «Отменить» и «Повторить» в контекстном меню ячейки (`contextMenu`)',
+  '“Undo” and “Redo” items in the cell context menu (`contextMenu`)',
   true,
 )
 export const cellEditingSearchDebounceMsType = numberControl(
-  'Задержка запроса справочника при поиске в редакторе варианта, мс (`searchDebounceMs`); 0 — на каждый ввод',
+  'Delay of the lookup request while searching in the option editor, ms (`searchDebounceMs`); 0 — on every keystroke',
   { min: 0, max: 2000, step: 50 },
   '0',
 )
 export const columnFilteringDebounceMsType = debounceType(
-  'Задержка ввода фильтра, мс (`debounceMs`)',
+  'Filter input delay, ms (`debounceMs`)',
   DEFAULT_FILTER_DEBOUNCE_MS,
 )
 export const columnFilteringFilteredCountType = booleanControl(
-  '«Показано N из M» в нижней панели (`filteredCount`)',
+  '“Showing N of M” in the status bar (`filteredCount`)',
 )
 export const enableColumnFilteringModelType = booleanControl(
-  'Фильтры без кнопок: строки по состоянию `columnFilters` (плагин `columnFilteringModel`)',
+  'Filters without buttons: rows from the `columnFilters` state (`columnFilteringModel` plugin)',
 )
 export const enableQuickSearchModelType = booleanControl(
-  'Поиск без поля: строки по состоянию `globalFilter` (плагин `quickSearchModel`)',
+  'Search without a field: rows from the `globalFilter` state (`quickSearchModel` plugin)',
 )
 export const enableInfiniteScrollType = booleanControl(
-  'Бесконечная прокрутка — лента: у края таблица просит блок (плагин `infiniteScroll`); данные дописывает история',
+  'Infinite scroll — a feed: near the edge the table asks for a block (`infiniteScroll` plugin); the story appends the data',
 )
 export const infiniteScrollThresholdType = numberControl(
-  'За сколько строк до края просить блок (`threshold`)',
+  'How many rows before the edge to ask for a block (`threshold`)',
   { min: 0, max: 200, step: 5 },
   '—',
 )
 export const infiniteScrollLoadedCountType = booleanControl(
-  'Счётчик загруженных строк в нижней панели (`loadedCount`)',
+  'Loaded row count in the status bar (`loadedCount`)',
 )
 export const enableServerRowModelType = booleanControl(
-  'Серверная модель строк: строки блоками с сервера по окну прокрутки, кэш у таблицы (плагин `serverRowModel`); загрузчик задаёт история',
+  'Server row model: rows come from the server in blocks for the scroll window, cached by the table (`serverRowModel` plugin); the story provides the loader',
 )
 export const serverRowModelBlockSizeType = numberControl(
-  'Строк в блоке (`blockSize`)',
+  'Rows per block (`blockSize`)',
   { min: 10, max: 500, step: 10 },
   '100',
 )
 export const serverRowModelMaxBlocksType = numberControl(
-  'Сколько блоков держать в кэше (`maxBlocks`)',
+  'How many blocks to keep in the cache (`maxBlocks`)',
   { min: 1, max: 200, step: 1 },
   '100',
 )
 export const enableColumnTotalsType = booleanControl(
-  'Итоги колонок с явным агрегатом в футере',
+  'Totals in the footer for columns with an explicit aggregate',
 )
 export const enableFailureLogType = booleanControl(
-  'Журнал отказов в тулбаре: кнопка со счётчиком, пока есть нерешённые отказы, встаёт только в уже показанный тулбар (плагин `failureLog`)',
+  'Failure log in the toolbar: a button with a count while there are unresolved refusals; it only joins a toolbar that is already shown (`failureLog` plugin)',
 )
 export const enableUnsavedChangesType = booleanControl(
-  'Пульт черновиков в тулбаре: кнопка со счётчиком неприменённых изменений и их список, встаёт только в уже показанный тулбар (плагин `unsavedChanges`)',
+  'Unsaved changes panel in the toolbar: a button with a count of unapplied changes and their list; it only joins a toolbar that is already shown (`unsavedChanges` plugin)',
 )
 export const enableBackToTopType = booleanControl(
-  'Кнопки «наверх» и «к первой колонке» в нижней панели: видны после прокрутки на два экрана, встают только в уже показанную панель (плагин `backToTop`)',
+  '“Back to top” and “Back to first column” buttons in the status bar: visible after scrolling two screens; they only join a status bar that is already shown (`backToTop` plugin)',
 )
 export const backToTopThresholdType = numberControl(
-  'С какой вертикальной прокрутки видна «наверх», px (`threshold`); по умолчанию — две высоты тела',
+  'Vertical scroll at which “Back to top” appears, px (`threshold`); defaults to two body heights',
   { min: 0, max: 20000, step: 100 },
   '—',
 )
 export const backToTopHorizontalThresholdType = numberControl(
-  'С какой горизонтальной прокрутки видна «к первой колонке», px (`horizontalThreshold`); по умолчанию — две ширины тела',
+  'Horizontal scroll at which “Back to first column” appears, px (`horizontalThreshold`); defaults to two body widths',
   { min: 0, max: 20000, step: 100 },
   '—',
 )
 export const backToTopAxesType = radioControl(
-  'Какие кнопки показывать (`axes`)',
+  'Which buttons to show (`axes`)',
   ['vertical', 'horizontal', 'both'],
   'both',
 )
 export const enablePaginationType = booleanControl(
-  'Пагинация в нижней панели (плагин `pagination`)',
+  'Pagination in the status bar (`pagination` plugin)',
 )
 export const paginationInitialPageSizeType = numberControl(
-  'Начальный размер страницы (`initialPageSize`)',
+  'Initial page size (`initialPageSize`)',
   { min: 1, max: 1000, step: 5 },
   String(DEFAULT_PAGE_SIZE),
 )
 export const paginationPageSizesType = objectControl(
-  'Варианты размера страницы в нижней панели; `false` — без выбора (`pageSizes`)',
+  'Page size options in the status bar; `false` — no page size selector (`pageSizes`)',
   'number[] | false',
   DEFAULT_PAGE_SIZES,
 )
 export const paginationPageNumbersType = radioControl(
-  'Переход на страницу: кнопки номеров, поле номера или только четыре кнопки',
+  'Going to a page: number buttons, a number field, or just the four buttons',
   ['buttons', 'input', false],
   'buttons',
 )
 export const paginationRevertOnRejectType = booleanControl(
-  'Возвращать прежнюю страницу при отказе промиса `onPageChange` в серверном режиме (`revertOnReject`, ADR 0116)',
+  'Return to the previous page when the `onPageChange` promise rejects in server mode (`revertOnReject`, ADR 0116)',
   true,
 )
 export const enablePaginationModelType = booleanControl(
-  'Страницы без пейджера: строки текущей страницы по состоянию `pagination` (плагин `paginationModel`)',
+  'Pages without a pager: rows of the current page from the `pagination` state (`paginationModel` plugin)',
 )
 export const paginationModelInitialPageSizeType = numberControl(
-  'Начальный размер страницы модели (`initialPageSize`)',
+  'Initial page size of the model (`initialPageSize`)',
   { min: 1, max: 1000, step: 5 },
   String(DEFAULT_PAGE_SIZE),
 )
 export const enableDataExportModelType = booleanControl(
-  'Выгрузка без кнопки: только `table.exportData` (плагин `dataExportModel`)',
+  'Export without a button: only `table.exportData` (`dataExportModel` plugin)',
 )
 export const enableDataExportType = booleanControl(
-  'Кнопка «Экспорт» в тулбаре: панель настроек и выгрузка в CSV (плагин `dataExport`)',
+  'The “Export” button in the toolbar: a settings panel and export to CSV (`dataExport` plugin)',
 )
 export const dataExportAllowType = objectControl(
-  'Оси экспорта, доступные пользователю (`allow`)',
+  'Export axes available to the user (`allow`)',
   'ExportAllow',
   {},
 )
 export const dataExportFilenameType: InputType = {
   control: 'text',
-  description: 'Имя файла без расширения (`filename`); по умолчанию `export`',
+  description: 'File name without extension (`filename`); defaults to `export`',
   table: { defaultValue: { summary: 'export' } },
 }
 
 /** Место встроенной кнопки плагина в тулбаре (ADR 0205): `{ group, order, align }` или `false`. */
 const toolbarPlacementControl = (button: string): InputType => ({
   control: 'object',
-  description: `Место кнопки «${button}» в тулбаре: \`{ group, order, align }\`; \`false\` — без кнопки`,
+  description: `Position of the “${button}” button in the toolbar: \`{ group, order, align }\`; \`false\` — no button`,
   table: {
     type: { summary: 'ToolbarPlacement | false' },
-    defaultValue: { summary: 'встроенное' },
+    defaultValue: { summary: 'built-in' },
   },
 })
-export const quickSearchToolbarType = toolbarPlacementControl('Поиск')
-export const dataExportToolbarType = toolbarPlacementControl('Выгрузка')
-export const unsavedChangesToolbarType = toolbarPlacementControl(
-  'Несохранённые изменения',
-)
-export const failureLogToolbarType = toolbarPlacementControl('Журнал отказов')
-export const editHistoryToolbarType = toolbarPlacementControl(
-  'Отменить и Повторить',
-)
-export const editHistoryHistoryPanelType = toolbarPlacementControl('История')
+export const quickSearchToolbarType = toolbarPlacementControl('Search')
+export const dataExportToolbarType = toolbarPlacementControl('Export')
+export const unsavedChangesToolbarType =
+  toolbarPlacementControl('Unsaved changes')
+export const failureLogToolbarType = toolbarPlacementControl('Failure log')
+export const editHistoryToolbarType = toolbarPlacementControl('Undo and Redo')
+export const editHistoryHistoryPanelType =
+  toolbarPlacementControl('Change history')

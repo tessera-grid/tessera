@@ -7,10 +7,12 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   CONSOLE_LIMIT,
   DETAIL_LIMIT,
+  consoleTextOf,
   createConsoleLog,
   loggedCallbacks,
   preview,
 } from '../stories/demos/consoleLog'
+import { shellText } from '../stories/demos/storyShell'
 
 /**
  * Журнал с часами и кадрами теста: время записи — счётчик вызовов, конец кадра —
@@ -34,7 +36,7 @@ const rows = (log: ReturnType<typeof clockLog>) =>
     .entries()
     .map(
       entry =>
-        `${entry.child ? '  ' : ''}${entry.kind}:${entry.name}${entry.count > 1 ? ` ×${entry.count}` : ''}`,
+        `${entry.child ? '  ' : ''}${entry.kind}:${consoleTextOf(entry.name, 'en')}${entry.count > 1 ? ` ×${entry.count}` : ''}`,
     )
 
 describe('консоль историй (ADR 0124)', () => {
@@ -87,7 +89,9 @@ describe('консоль историй (ADR 0124)', () => {
     log.write('state', 'sorting', 'asc')
     log.write('callback', 'onSortingChange', 'ƒ')
     log.write('state', 'sorting', 'desc')
-    const merged = log.entries().find(entry => entry.name === 'sorting')!
+    const merged = log
+      .entries()
+      .find(entry => consoleTextOf(entry.name, 'en') === 'sorting')!
     expect(merged).toMatchObject({ detail: 'desc', count: 2, time: 40 })
     log.endFrame()
     // Вне групп — не склеиваются.
@@ -180,5 +184,63 @@ describe('консоль историй (ADR 0124)', () => {
     expect(preview(huge)).toHaveLength(DETAIL_LIMIT + 1)
     expect(reads).toBeLessThan(50)
     expect(preview('x'.repeat(100_000))).toHaveLength(DETAIL_LIMIT + 1)
+  })
+
+  it('GT3: записи обвязки и истории рисуются на текущем языке и переходят на новый при его смене; имена колбэков, срезов и подписи справочника таблицы — как записаны', () => {
+    const log = clockLog()
+    log.log(
+      { ru: 'Сервер ответил', en: 'The server responded' },
+      {
+        ru: 'строка 1',
+        en: 'row 1',
+      },
+    )
+    log.write(
+      'lifecycle',
+      locale => shellText(locale, 'lifecycleData'),
+      locale => shellText(locale, 'lifecycleRows', { count: 5 }),
+    )
+    log.action({
+      plugin: 'story',
+      action: locale =>
+        shellText(locale, 'consoleControl', { key: 'a', from: '1', to: '2' }),
+      source: 'story',
+    })
+    log.action({
+      plugin: 'columnSorting',
+      action: 'toggleSort',
+      label: 'Sort column',
+    })
+    log.write('callback', 'onSortingChange', 'ƒ')
+    log.write('state', 'sorting', '[]')
+    const text = (locale: 'en' | 'ru') =>
+      log
+        .entries()
+        .map(
+          entry =>
+            `${consoleTextOf(entry.name, locale)} ${consoleTextOf(entry.detail, locale)}${entry.label ? ` «${entry.label}»` : ''}`,
+        )
+    expect(text('en')).toEqual([
+      'The server responded row 1',
+      'Data 5 rows',
+      'Control a: 1 → 2 ',
+      'columnSorting · toggleSort  «Sort column»',
+      'onSortingChange ƒ',
+      'sorting []',
+    ])
+    expect(text('ru')).toEqual([
+      'Сервер ответил строка 1',
+      'Данные 5 строк',
+      'Контрол a: 1 → 2 ',
+      'columnSorting · toggleSort  «Sort column»',
+      'onSortingChange ƒ',
+      'sorting []',
+    ])
+    // Переводимая запись склеивается с той же записью, как и строка.
+    log.endFrame()
+    log.action({ plugin: 'story', action: 'step' })
+    log.write('lifecycle', locale => shellText(locale, 'lifecycleData'), '1')
+    log.write('lifecycle', locale => shellText(locale, 'lifecycleData'), '2')
+    expect(log.entries().at(-1)!.count).toBe(2)
   })
 })

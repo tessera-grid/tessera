@@ -83,11 +83,11 @@ export const ValueChangeFlashPlayground: StoryObj<FlashPlaygroundArgs> = {
   argTypes: {
     liveUpdates: {
       description:
-        'Приложение шлёт поток обновлений: у трёх строк меняется число визитов',
+        'The app streams updates: three rows change their visit count',
       control: 'boolean',
     },
     liveIntervalMs: {
-      description: 'Период обновлений приложения, мс',
+      description: 'Interval between app updates, ms',
       control: { type: 'range', min: 100, max: 3000, step: 100 },
       if: { arg: 'liveUpdates' },
     },
@@ -128,13 +128,19 @@ const PUSHED_VISITS = 999
 
 const UPDATE: readonly GuideStoryStep[] = [
   {
-    title: 'Данные приложения',
-    hint: 'Приложение держит данные у себя и получает обновления с сервера: новые значения отдельных строк.',
+    title: { ru: 'Данные приложения', en: "The app's data" },
+    hint: {
+      ru: 'Приложение держит данные у себя и получает обновления с сервера: новые значения отдельных строк.',
+      en: 'The app keeps the data itself and receives updates from the server: new values for individual rows.',
+    },
     props: seedProps,
   },
   {
-    title: 'Пришло обновление',
-    hint: 'Сервер прислал новое число визитов у двух строк, приложение положило его в таблицу. Ячейки с новым значением коротко вспыхнули, остальные ячейки этих строк — нет: их значения прежние.',
+    title: { ru: 'Пришло обновление', en: 'An update arrived' },
+    hint: {
+      ru: 'Сервер прислал новое число визитов у двух строк, приложение положило его в таблицу. Ячейки с новым значением коротко вспыхнули, остальные ячейки этих строк — нет: их значения прежние.',
+      en: 'The server sent a new visit count for two rows, and the app put it into the table. The cells with a new value flashed briefly; the other cells of those rows did not, since their values are unchanged.',
+    },
     immediate: true,
     enter: stepAction(async (root, { signal }) => {
       await rowsReady(root, signal)
@@ -159,18 +165,18 @@ export const ValueChangeFlashUpdate: StoryObj<StoryProps> = {
   parameters: { scenario: '0221/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Обновление с сервера"
+      title={{ ru: 'Обновление с сервера', en: 'An update from the server' }}
       steps={UPDATE}
       args={guideArgs({ ...layout, enableValueChangeFlash: true }, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(UPDATE[0]!.title, async () => {
+    await step(UPDATE[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(dataRowId(3)).toBeDefined())
     })
-    await step(UPDATE[1]!.title, async () => {
+    await step(UPDATE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(flashOf(canvas, dataRowId(1)!, 'visits')).toBe('changed'),
@@ -186,13 +192,22 @@ export const ValueChangeFlashUpdate: StoryObj<StoryProps> = {
 
 const DIRECTION: readonly GuideStoryStep[] = [
   {
-    title: 'Котировки',
-    hint: 'Таблица показывает числа, которые часто меняются. У числовых колонок вспышка показывает и направление смены.',
+    title: { ru: 'Котировки', en: 'Quotes' },
+    hint: {
+      ru: 'Таблица показывает числа, которые часто меняются. У числовых колонок вспышка показывает и направление смены.',
+      en: 'The table shows numbers that change often. In number columns, the flash also shows the direction of the change.',
+    },
     props: seedProps,
   },
   {
-    title: 'Одно выросло, другое упало',
-    hint: 'Пришло обновление: у одной строки визитов стало больше, у другой — меньше. Ячейки вспыхнули тоном роста и падения, у начала ячейки — стрелка вверх или вниз: направление видно и без цвета.',
+    title: {
+      ru: 'Одно выросло, другое упало',
+      en: 'One went up, another went down',
+    },
+    hint: {
+      ru: 'Пришло обновление: у одной строки визитов стало больше, у другой — меньше. Ячейки вспыхнули тоном роста и падения, у начала ячейки — стрелка вверх или вниз: направление видно и без цвета.',
+      en: 'An update arrived: one row has more visits, another has fewer. The cells flashed in the rise and fall tones, with an up or down arrow at the start of the cell, so the direction is visible even without color.',
+    },
     immediate: true,
     enter: stepAction(async (root, { signal }) => {
       await rowsReady(root, signal)
@@ -213,7 +228,7 @@ export const ValueChangeFlashDirection: StoryObj<StoryProps> = {
   parameters: { scenario: '0221/S2', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Рост и падение"
+      title={{ ru: 'Рост и падение', en: 'Rise and fall' }}
       steps={DIRECTION}
       args={guideArgs(
         {
@@ -227,11 +242,11 @@ export const ValueChangeFlashDirection: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(DIRECTION[0]!.title, async () => {
+    await step(DIRECTION[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(dataRowId(2)).toBeDefined())
     })
-    await step(DIRECTION[1]!.title, async () => {
+    await step(DIRECTION[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(arrowOf(canvas, dataRowId(1)!, 'visits')).toBe('up'),
@@ -274,21 +289,30 @@ const saveAge = (root: HTMLElement) => {
 
 const OWN_EDIT: readonly GuideStoryStep[] = [
   {
-    title: 'Общая таблица',
-    hint: 'С таблицей работают несколько человек. Приложение кладёт в неё и свои сохранения, и правки коллег, которые приходят с сервера.',
+    title: { ru: 'Общая таблица', en: 'A shared table' },
+    hint: {
+      ru: 'С таблицей работают несколько человек. Приложение кладёт в неё и свои сохранения, и правки коллег, которые приходят с сервера.',
+      en: "Several people work with the table. The app puts into it both its own saves and colleagues' edits that come from the server.",
+    },
     props: seedProps,
   },
   {
-    title: 'Своя правка',
-    hint: 'Пользователь изменил возраст во второй строке и нажал Enter. Сервер принял значение, приложение положило его в таблицу. Ячейка не вспыхнула как смена извне: это значение записал сам пользователь.',
+    title: { ru: 'Своя правка', en: 'Your own edit' },
+    hint: {
+      ru: 'Пользователь изменил возраст во второй строке и нажал Enter. Сервер принял значение, приложение положило его в таблицу. Ячейка не вспыхнула как смена извне: это значение записал сам пользователь.',
+      en: 'The user changed the age in the second row and pressed Enter. The server accepted the value, and the app put it into the table. The cell did not flash as an outside change, because the user wrote this value.',
+    },
     enter: untilDone(
       root => !ageInputOf(root) && ageText(root) === OWN_AGE,
       saveAge,
     ),
   },
   {
-    title: 'Правка коллеги',
-    hint: 'Коллега изменил число визитов в той же строке. Значение пришло с сервера — ячейка вспыхнула.',
+    title: { ru: 'Правка коллеги', en: "A colleague's edit" },
+    hint: {
+      ru: 'Коллега изменил число визитов в той же строке. Значение пришло с сервера — ячейка вспыхнула.',
+      en: 'A colleague changed the visit count in the same row. The value came from the server, so the cell flashed.',
+    },
     immediate: true,
     enter: stepAction(async (root, { signal }) => {
       await rowsReady(root, signal)
@@ -307,7 +331,10 @@ export const ValueChangeFlashOwnEdit: StoryObj<StoryProps> = {
   parameters: { scenario: '0221/S3', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Своя правка и правка коллеги"
+      title={{
+        ru: 'Своя правка и правка коллеги',
+        en: "Your edit and a colleague's edit",
+      }}
       steps={OWN_EDIT}
       args={guideArgs(
         {
@@ -321,17 +348,17 @@ export const ValueChangeFlashOwnEdit: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(OWN_EDIT[0]!.title, async () => {
+    await step(OWN_EDIT[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(dataRowId(1)).toBeDefined())
     })
-    await step(OWN_EDIT[1]!.title, async () => {
+    await step(OWN_EDIT[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(ageText(canvas)).toBe(OWN_AGE))
       expect(flashOf(canvas, dataRowId(1)!, 'age')).not.toBe('changed')
       await settle()
     })
-    await step(OWN_EDIT[2]!.title, async () => {
+    await step(OWN_EDIT[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(flashOf(canvas, dataRowId(1)!, 'visits')).toBe('changed'),
@@ -348,8 +375,11 @@ const OVER_VISITS = 777
 
 const OVER_FILL: readonly GuideStoryStep[] = [
   {
-    title: 'Подсвеченная строка',
-    hint: 'Приложение подсветило третью строку: она требует внимания.',
+    title: { ru: 'Подсвеченная строка', en: 'A highlighted row' },
+    hint: {
+      ru: 'Приложение подсветило третью строку: она требует внимания.',
+      en: 'The app highlighted the third row because it needs attention.',
+    },
     props: () => ({
       ...seedProps(),
       extraPlugins: [clientTxSeed, highlightSeed],
@@ -357,8 +387,14 @@ const OVER_FILL: readonly GuideStoryStep[] = [
     states: ['body.highlight'],
   },
   {
-    title: 'Смена на подсвеченной строке',
-    hint: 'Пришло новое число визитов третьей строки. Ячейка вспыхнула своим тоном поверх подсветки, не смешиваясь с ней; когда вспышка погасла, подсветка видна как прежде.',
+    title: {
+      ru: 'Смена на подсвеченной строке',
+      en: 'A change on a highlighted row',
+    },
+    hint: {
+      ru: 'Пришло новое число визитов третьей строки. Ячейка вспыхнула своим тоном поверх подсветки, не смешиваясь с ней; когда вспышка погасла, подсветка видна как прежде.',
+      en: 'A new visit count arrived for the third row. The cell flashed in its own tone on top of the highlight without blending with it; after the flash faded, the highlight is visible as before.',
+    },
     immediate: true,
     enter: stepAction(async (root, { signal }) => {
       await rowsReady(root, signal)
@@ -375,14 +411,17 @@ export const ValueChangeFlashOverFill: StoryObj<StoryProps> = {
   parameters: { scenario: '0221/S4', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Вспышка на подсвеченной строке"
+      title={{
+        ru: 'Вспышка на подсвеченной строке',
+        en: 'A flash on a highlighted row',
+      }}
       steps={OVER_FILL}
       args={guideArgs({ ...layout, enableValueChangeFlash: true }, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(OVER_FILL[0]!.title, async () => {
+    await step(OVER_FILL[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() =>
         expect(
@@ -394,7 +433,7 @@ export const ValueChangeFlashOverFill: StoryObj<StoryProps> = {
         ).toBe(true),
       )
     })
-    await step(OVER_FILL[1]!.title, async () => {
+    await step(OVER_FILL[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(flashOf(canvas, dataRowId(HIGHLIGHTED)!, 'visits')).toBe(
@@ -478,13 +517,22 @@ const addedRowOf = (root: ParentNode) =>
 
 const COLORS: readonly GuideStoryStep[] = [
   {
-    title: 'Тоны вспышек',
-    hint: 'Ячейка или строка коротко вспыхивает, когда в ней что-то произошло. У каждого события свой тон: по нему видно, что именно случилось. Шаги ниже показывают все тоны по очереди.',
+    title: { ru: 'Тоны вспышек', en: 'Flash tones' },
+    hint: {
+      ru: 'Ячейка или строка коротко вспыхивает, когда в ней что-то произошло. У каждого события свой тон: по нему видно, что именно случилось. Шаги ниже показывают все тоны по очереди.',
+      en: 'A cell or row flashes briefly when something happens in it. Each event has its own tone, which shows what exactly happened. The steps below show all the tones one by one.',
+    },
     props: () => ({ ...seedProps(), onCellEdit: colorsSave as never }),
   },
   {
-    title: 'Значение сменилось извне',
-    hint: 'Сервер прислал новое имя во второй строке. Ячейка вспыхнула тоном смены: значение изменилось не по действию пользователя.',
+    title: {
+      ru: 'Значение сменилось извне',
+      en: 'The value changed from outside',
+    },
+    hint: {
+      ru: 'Сервер прислал новое имя во второй строке. Ячейка вспыхнула тоном смены: значение изменилось не по действию пользователя.',
+      en: 'The server sent a new name for the second row. The cell flashed in the change tone: the value changed without any action by the user.',
+    },
     immediate: true,
     enter: stepAction(async (root, { signal }) => {
       await rowsReady(root, signal)
@@ -496,8 +544,11 @@ const COLORS: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Значение выросло',
-    hint: 'Число визитов в третьей строке выросло. Ячейка вспыхнула тоном роста, у начала ячейки — стрелка вверх.',
+    title: { ru: 'Значение выросло', en: 'The value went up' },
+    hint: {
+      ru: 'Число визитов в третьей строке выросло. Ячейка вспыхнула тоном роста, у начала ячейки — стрелка вверх.',
+      en: 'The visit count in the third row went up. The cell flashed in the rise tone, with an up arrow at the start of the cell.',
+    },
     immediate: true,
     enter: stepAction(async (root, { signal }) => {
       await rowsReady(root, signal)
@@ -506,8 +557,11 @@ const COLORS: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Значение упало',
-    hint: 'Число визитов в четвёртой строке упало. Ячейка вспыхнула тоном падения, у начала ячейки — стрелка вниз.',
+    title: { ru: 'Значение упало', en: 'The value went down' },
+    hint: {
+      ru: 'Число визитов в четвёртой строке упало. Ячейка вспыхнула тоном падения, у начала ячейки — стрелка вниз.',
+      en: 'The visit count in the fourth row went down. The cell flashed in the fall tone, with a down arrow at the start of the cell.',
+    },
     immediate: true,
     enter: stepAction(async (root, { signal }) => {
       await rowsReady(root, signal)
@@ -516,8 +570,11 @@ const COLORS: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Сервер принял правку',
-    hint: 'Пользователь изменил возраст в пятой строке и нажал Enter. Сервер принял значение — ячейка вспыхнула тоном успеха.',
+    title: { ru: 'Сервер принял правку', en: 'The server accepted the edit' },
+    hint: {
+      ru: 'Пользователь изменил возраст в пятой строке и нажал Enter. Сервер принял значение — ячейка вспыхнула тоном успеха.',
+      en: 'The user changed the age in the fifth row and pressed Enter. The server accepted the value, and the cell flashed in the success tone.',
+    },
     immediate: true,
     enter: untilDone(
       root =>
@@ -528,8 +585,11 @@ const COLORS: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Сервер отклонил правку',
-    hint: 'Пользователь изменил возраст в шестой строке, но сервер отклонил значение. В ячейке снова прежнее значение, она вспыхнула тоном ошибки, а в её углу — отметка отказа.',
+    title: { ru: 'Сервер отклонил правку', en: 'The server rejected the edit' },
+    hint: {
+      ru: 'Пользователь изменил возраст в шестой строке, но сервер отклонил значение. В ячейке снова прежнее значение, она вспыхнула тоном ошибки, а в её углу — отметка отказа.',
+      en: 'The user changed the age in the sixth row, but the server rejected the value. The cell shows the previous value again and flashed in the error tone, and its corner has a refusal mark.',
+    },
     immediate: true,
     enter: untilDone(
       root => ageRefused(root, COLOR_ROWS.reverted),
@@ -537,8 +597,11 @@ const COLORS: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Пришла новая строка',
-    hint: 'Приложение добавило строку в начало таблицы. Вся строка вспыхнула тоном прихода: здесь появилось новое.',
+    title: { ru: 'Пришла новая строка', en: 'A new row arrived' },
+    hint: {
+      ru: 'Приложение добавило строку в начало таблицы. Вся строка вспыхнула тоном прихода: здесь появилось новое.',
+      en: 'The app added a row at the top of the table. The whole row flashed in the arrival tone: something new appeared here.',
+    },
     immediate: true,
     enter: stepAction(async (root, { signal }) => {
       await rowsReady(root, signal)
@@ -564,7 +627,7 @@ export const ValueChangeFlashColors: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Тоны вспышек"
+      title={{ ru: 'Тоны вспышек', en: 'Flash tones' }}
       steps={COLORS}
       args={guideArgs(
         {
@@ -581,37 +644,37 @@ export const ValueChangeFlashColors: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     const flashed = (rowId: string, column: string, outcome: string) =>
       until(() => expect(flashOf(canvas, rowId, column)).toBe(outcome))
-    await step(COLORS[0]!.title, async () => {
+    await step(COLORS[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(dataRowId(5)).toBeDefined())
     })
-    await step(COLORS[1]!.title, async () => {
+    await step(COLORS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await flashed(COLOR_ROWS.changed, 'firstName', 'changed')
     })
-    await step(COLORS[2]!.title, async () => {
+    await step(COLORS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await flashed(COLOR_ROWS.up, 'visits', 'up')
       expect(arrowOf(canvas, COLOR_ROWS.up, 'visits')).toBe('up')
     })
-    await step(COLORS[3]!.title, async () => {
+    await step(COLORS[3]!.title.ru, async () => {
       await guideNext(canvas)
       await flashed(COLOR_ROWS.down, 'visits', 'down')
       expect(arrowOf(canvas, COLOR_ROWS.down, 'visits')).toBe('down')
     })
-    await step(COLORS[4]!.title, async () => {
+    await step(COLORS[4]!.title.ru, async () => {
       await guideNext(canvas)
       await flashed(COLOR_ROWS.accepted, 'age', 'accepted')
       expect(ageValue(canvas, COLOR_ROWS.accepted)).toBe(ACCEPTED_AGE)
     })
-    await step(COLORS[5]!.title, async () => {
+    await step(COLORS[5]!.title.ru, async () => {
       await guideNext(canvas)
       await flashed(COLOR_ROWS.reverted, 'age', 'reverted')
       await until(() =>
         expect(ageRefused(canvas, COLOR_ROWS.reverted)).toBe(true),
       )
     })
-    await step(COLORS[6]!.title, async () => {
+    await step(COLORS[6]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(addedRowOf(canvas)?.getAttribute('data-flash')).toBe('arrived'),

@@ -122,12 +122,18 @@ const NEW_AGE = '77'
 
 const EDIT_VALUE: readonly GuideStoryStep[] = [
   {
-    title: 'Ячейки, которые можно править',
-    hint: 'Приложение разрешило править возраст, число визитов и пол. У таких ячеек при наведении появляется кнопка правки.',
+    title: { ru: 'Ячейки, которые можно править', en: 'Editable cells' },
+    hint: {
+      ru: 'Приложение разрешило править возраст, число визитов и пол. У таких ячеек при наведении появляется кнопка правки.',
+      en: 'The app allowed editing the age, visit count, and gender. Hovering over such cells shows an edit button.',
+    },
   },
   {
-    title: 'Поле правки открыто',
-    hint: 'Пользователь нажал кнопку правки в ячейке возраста и набрал новое число. Пока правка не сохранена, в ячейке поле с черновиком.',
+    title: { ru: 'Поле правки открыто', en: 'The edit field is open' },
+    hint: {
+      ru: 'Пользователь нажал кнопку правки в ячейке возраста и набрал новое число. Пока правка не сохранена, в ячейке поле с черновиком.',
+      en: 'The user clicked the edit button in an age cell and typed a new number. Until the edit is saved, the cell holds a field with the draft.',
+    },
     states: ['body.editing'],
     enter: untilDone(
       root => hasDraft(root, VALUE_ROW, NEW_AGE),
@@ -135,8 +141,11 @@ const EDIT_VALUE: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Значение сохранено',
-    hint: 'Пользователь нажал Enter. Поле закрылось, в ячейке новое значение.',
+    title: { ru: 'Значение сохранено', en: 'The value is saved' },
+    hint: {
+      ru: 'Пользователь нажал Enter. Поле закрылось, в ячейке новое значение.',
+      en: 'The user pressed Enter. The field closed, and the cell shows the new value.',
+    },
     enter: untilDone(
       root => !inputOf(root, VALUE_ROW) && ageText(root, VALUE_ROW) === NEW_AGE,
       root => save(root, VALUE_ROW, NEW_AGE),
@@ -150,7 +159,7 @@ export const EditingValue: StoryObj<StoryProps> = {
   parameters: { scenario: '0040/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Правка значения"
+      title={{ ru: 'Правка значения', en: 'Editing a value' }}
       steps={EDIT_VALUE}
       args={guideArgs(
         {
@@ -165,7 +174,7 @@ export const EditingValue: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(EDIT_VALUE[0]!.title, async () => {
+    await step(EDIT_VALUE[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(editButtonOf(canvas, VALUE_ROW)).not.toBeNull())
       await until(() =>
@@ -176,11 +185,11 @@ export const EditingValue: StoryObj<StoryProps> = {
         ).toBeNull(),
       )
     })
-    await step(EDIT_VALUE[1]!.title, async () => {
+    await step(EDIT_VALUE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(inputOf(canvas, VALUE_ROW)?.value).toBe(NEW_AGE))
     })
-    await step(EDIT_VALUE[2]!.title, async () => {
+    await step(EDIT_VALUE[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(inputOf(canvas, VALUE_ROW)).toBeNull())
       await until(() => expect(ageText(canvas, VALUE_ROW)).toBe(NEW_AGE))
@@ -203,12 +212,21 @@ const reachRefusal = (root: HTMLElement) => {
 
 const EDIT_SERVER_STEPS: readonly GuideStoryStep[] = [
   {
-    title: 'Правок нет',
-    hint: 'Приложение сохраняет правку ячейки на сервере. Пользователь ещё ничего не правил.',
+    title: { ru: 'Правок нет', en: 'No edits yet' },
+    hint: {
+      ru: 'Приложение сохраняет правку ячейки на сервере. Пользователь ещё ничего не правил.',
+      en: "The app saves cell edits on the server. The user hasn't edited anything yet.",
+    },
   },
   {
-    title: 'Значение отправлено на сервер',
-    hint: 'Пользователь сохранил новое значение, и приложение отправило его на сервер. Пока сервер не ответил, ячейка чуть темнеет и по ней проходит светлый блик, а соседние ячейки можно править.',
+    title: {
+      ru: 'Значение отправлено на сервер',
+      en: 'The value was sent to the server',
+    },
+    hint: {
+      ru: 'Пользователь сохранил новое значение, и приложение отправило его на сервер. Пока сервер не ответил, ячейка чуть темнеет и по ней проходит светлый блик, а соседние ячейки можно править.',
+      en: 'The user saved a new value, and the app sent it to the server. Until the server responds, the cell darkens slightly and a light shimmer passes over it, while neighboring cells can still be edited.',
+    },
     states: ['body.pending'],
     enter: untilDone(
       root => pending(root, SERVER_ROW),
@@ -219,8 +237,11 @@ const EDIT_SERVER_STEPS: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Сервер сохранил',
-    hint: 'Сервер принял значение. Ожидание снято, ячейка коротко вспыхивает тоном успеха.',
+    title: { ru: 'Сервер сохранил', en: 'The server saved' },
+    hint: {
+      ru: 'Сервер принял значение. Ожидание снято, ячейка коротко вспыхивает тоном успеха.',
+      en: 'The server accepted the value. The waiting state is cleared, and the cell flashes briefly in the success tone.',
+    },
     immediate: true,
     enter: untilDone(
       root =>
@@ -232,14 +253,20 @@ const EDIT_SERVER_STEPS: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Сервер отказал',
-    hint: 'Пользователь сохранил ещё одно значение, но сервер его отклонил. В ячейке снова значение из данных, ячейка коротко вспыхивает тоном ошибки, в её правом верхнем углу появилась отметка отказа.',
+    title: { ru: 'Сервер отказал', en: 'The server refused' },
+    hint: {
+      ru: 'Пользователь сохранил ещё одно значение, но сервер его отклонил. В ячейке снова значение из данных, ячейка коротко вспыхивает тоном ошибки, в её правом верхнем углу появилась отметка отказа.',
+      en: 'The user saved another value, but the server rejected it. The cell shows the value from the data again and flashes briefly in the error tone, and a refusal mark appeared in its top-right corner.',
+    },
     states: ['body.error'],
     enter: untilDone(root => failed(root, SERVER_ROW), reachRefusal),
   },
   {
-    title: 'Повторная правка',
-    hint: 'Пользователь снова открыл правку. В поле отклонённое значение, а рядом причина отказа от сервера.',
+    title: { ru: 'Повторная правка', en: 'Editing again' },
+    hint: {
+      ru: 'Пользователь снова открыл правку. В поле отклонённое значение, а рядом причина отказа от сервера.',
+      en: "The user opened the edit again. The field holds the rejected value, and next to it is the server's reason for the refusal.",
+    },
     states: ['body.editing'],
     enter: untilDone(
       // Причина отказа в поле: пустая область сообщений есть у любой открытой правки.
@@ -267,7 +294,7 @@ export const EditingServer: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Сохранение на сервере"
+      title={{ ru: 'Сохранение на сервере', en: 'Saving on the server' }}
       steps={EDIT_SERVER_STEPS}
       args={guideArgs(
         {
@@ -283,17 +310,17 @@ export const EditingServer: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(EDIT_SERVER_STEPS[0]!.title, async () => {
+    await step(EDIT_SERVER_STEPS[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(EDIT_SERVER_STEPS[1]!.title, async () => {
+    await step(EDIT_SERVER_STEPS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await waitForRows(canvas)
       await until(() => expect(pending(canvas, SERVER_ROW)).toBe(true))
       // Ожидание и значение — разные срезы: React 18 коммитит их по одному.
       await until(() => expect(ageText(canvas, SERVER_ROW)).toBe(SAVED_AGE))
     })
-    await step(EDIT_SERVER_STEPS[2]!.title, async () => {
+    await step(EDIT_SERVER_STEPS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(pending(canvas, SERVER_ROW)).toBe(false))
       await until(() => expect(ageText(canvas, SERVER_ROW)).toBe(SAVED_AGE))
@@ -307,7 +334,7 @@ export const EditingServer: StoryObj<StoryProps> = {
       // Значок кнопки возвращается из приглушённого цвета ожидания переходом.
       await settle()
     })
-    await step(EDIT_SERVER_STEPS[3]!.title, async () => {
+    await step(EDIT_SERVER_STEPS[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(ageCellOf(canvas, SERVER_ROW)).toHaveAttribute(
@@ -324,7 +351,7 @@ export const EditingServer: StoryObj<StoryProps> = {
       await until(() => expect(ageText(canvas, SERVER_ROW)).toMatch(/^\d+$/))
       expect(ageText(canvas, SERVER_ROW)).not.toBe(REFUSED_AGE)
     })
-    await step(EDIT_SERVER_STEPS[4]!.title, async () => {
+    await step(EDIT_SERVER_STEPS[4]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(inputOf(canvas, SERVER_ROW)?.value).toBe(REFUSED_AGE),
@@ -357,12 +384,21 @@ const reachAway = (root: HTMLElement) => {
 
 const AWAY: readonly GuideStoryStep[] = [
   {
-    title: 'Правок нет',
-    hint: 'Приложение сохраняет правку ячейки на сервере. Пользователь ещё ничего не правил.',
+    title: { ru: 'Правок нет', en: 'No edits yet' },
+    hint: {
+      ru: 'Приложение сохраняет правку ячейки на сервере. Пользователь ещё ничего не правил.',
+      en: "The app saves cell edits on the server. The user hasn't edited anything yet.",
+    },
   },
   {
-    title: 'Значение отправлено на сервер',
-    hint: 'Пользователь сохранил новый возраст, и приложение отправило его на сервер. Пока сервер не ответил, ячейка чуть темнеет и по ней проходит светлый блик.',
+    title: {
+      ru: 'Значение отправлено на сервер',
+      en: 'The value was sent to the server',
+    },
+    hint: {
+      ru: 'Пользователь сохранил новый возраст, и приложение отправило его на сервер. Пока сервер не ответил, ячейка чуть темнеет и по ней проходит светлый блик.',
+      en: 'The user saved a new age, and the app sent it to the server. Until the server responds, the cell darkens slightly and a light shimmer passes over it.',
+    },
     states: ['body.pending'],
     enter: untilDone(
       root => pending(root, AWAY_ROW),
@@ -373,8 +409,11 @@ const AWAY: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Правка другой ячейки',
-    hint: 'Не дожидаясь ответа, пользователь открыл правку возраста в другой строке и набрал число.',
+    title: { ru: 'Правка другой ячейки', en: 'Editing another cell' },
+    hint: {
+      ru: 'Не дожидаясь ответа, пользователь открыл правку возраста в другой строке и набрал число.',
+      en: 'Without waiting for the response, the user opened the age edit in another row and typed a number.',
+    },
     states: ['body.editing'],
     enter: untilDone(
       root => pending(root, AWAY_ROW) && hasDraft(root, OTHER_ROW, OTHER_AGE),
@@ -382,8 +421,11 @@ const AWAY: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Сервер отказал',
-    hint: 'Сервер отклонил первое значение. Его ячейка вернулась к значению из данных и коротко вспыхнула тоном ошибки, в её правом верхнем углу появилась отметка отказа, а правка в другой строке продолжается.',
+    title: { ru: 'Сервер отказал', en: 'The server refused' },
+    hint: {
+      ru: 'Сервер отклонил первое значение. Его ячейка вернулась к значению из данных и коротко вспыхнула тоном ошибки, в её правом верхнем углу появилась отметка отказа, а правка в другой строке продолжается.',
+      en: 'The server rejected the first value. Its cell went back to the value from the data and flashed briefly in the error tone, a refusal mark appeared in its top-right corner, and the edit in the other row continues.',
+    },
     immediate: true,
     enter: untilDone(
       root => failed(root, AWAY_ROW) && hasDraft(root, OTHER_ROW, OTHER_AGE),
@@ -401,7 +443,10 @@ export const EditingRevertedWhileAway: StoryObj<StoryProps> = {
   parameters: { scenario: '0134/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Отказ, пока идёт другая правка"
+      title={{
+        ru: 'Отказ, пока идёт другая правка',
+        en: 'A refusal while another edit is in progress',
+      }}
       steps={AWAY}
       args={guideArgs(
         {
@@ -418,24 +463,24 @@ export const EditingRevertedWhileAway: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     let original = ''
-    await step(AWAY[0]!.title, async () => {
+    await step(AWAY[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(AWAY[1]!.title, async () => {
+    await step(AWAY[1]!.title.ru, async () => {
       await guideNext(canvas)
       await waitForRows(canvas)
       await until(() => expect(pending(canvas, AWAY_ROW)).toBe(true))
       expect(ageText(canvas, AWAY_ROW)).toBe(AWAY_AGE)
       original = String(getData(10).find(row => row.id === AWAY_ROW)?.age ?? '')
     })
-    await step(AWAY[2]!.title, async () => {
+    await step(AWAY[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(inputOf(canvas, OTHER_ROW)?.value).toBe(OTHER_AGE),
       )
       expect(pending(canvas, AWAY_ROW)).toBe(true)
     })
-    await step(AWAY[3]!.title, async () => {
+    await step(AWAY[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(ageCellOf(canvas, AWAY_ROW)).toHaveAttribute(
@@ -493,12 +538,18 @@ const draftThenChange = (
 
 const EDIT_SESSION: readonly GuideStoryStep[] = [
   {
-    title: 'Правка не открыта',
-    hint: 'Возраст в ячейках можно править. Пользователь ещё не открывал правку.',
+    title: { ru: 'Правка не открыта', en: 'No edit is open' },
+    hint: {
+      ru: 'Возраст в ячейках можно править. Пользователь ещё не открывал правку.',
+      en: "The age cells can be edited. The user hasn't opened an edit yet.",
+    },
   },
   {
-    title: 'Правка открыта',
-    hint: 'Пользователь открыл правку возраста в первой строке и набрал число, но ещё не сохранил.',
+    title: { ru: 'Правка открыта', en: 'An edit is open' },
+    hint: {
+      ru: 'Пользователь открыл правку возраста в первой строке и набрал число, но ещё не сохранил.',
+      en: "The user opened the age edit in the first row and typed a number but hasn't saved it yet.",
+    },
     states: ['body.editing'],
     enter: untilDone(
       root => hasDraft(root, SESSION_ROW, DRAFT_AGE),
@@ -506,8 +557,11 @@ const EDIT_SESSION: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Таблица прокручена',
-    hint: 'Пользователь прокрутил таблицу вниз, и строка с правкой ушла из вида.',
+    title: { ru: 'Таблица прокручена', en: 'The table is scrolled' },
+    hint: {
+      ru: 'Пользователь прокрутил таблицу вниз, и строка с правкой ушла из вида.',
+      en: 'The user scrolled the table down, and the row being edited went out of view.',
+    },
     enter: untilDone(
       root =>
         hasDraft(root, SESSION_ROW, DRAFT_AGE) && outOfView(root, SESSION_ROW),
@@ -519,8 +573,14 @@ const EDIT_SESSION: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Данные изменились извне',
-    hint: 'Пользователь вернулся к строке, а приложение тем временем изменило её возраст. Поле осталось открытым, черновик в нём не тронут.',
+    title: {
+      ru: 'Данные изменились извне',
+      en: 'The data changed from outside',
+    },
+    hint: {
+      ru: 'Пользователь вернулся к строке, а приложение тем временем изменило её возраст. Поле осталось открытым, черновик в нём не тронут.',
+      en: 'The user came back to the row, and meanwhile the app changed its age. The field stayed open, and the draft in it is untouched.',
+    },
     states: ['body.editing'],
     enter: (root, app) => {
       const changed = { done: false }
@@ -531,8 +591,11 @@ const EDIT_SESSION: readonly GuideStoryStep[] = [
     },
   },
   {
-    title: 'Черновик сохранён',
-    hint: 'Пользователь нажал Enter. В ячейке его значение, а в консоли видны и исходное, и изменённое извне.',
+    title: { ru: 'Черновик сохранён', en: 'The draft is saved' },
+    hint: {
+      ru: 'Пользователь нажал Enter. В ячейке его значение, а в консоли видны и исходное, и изменённое извне.',
+      en: "The user pressed Enter. The cell shows the user's value, and the console shows both the original value and the one changed from outside.",
+    },
     enter: (root, app) => {
       const changed = { done: false }
       return untilDone(
@@ -559,7 +622,7 @@ export const EditingSession: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Черновик правки"
+      title={{ ru: 'Черновик правки', en: 'An edit draft' }}
       steps={EDIT_SESSION}
       args={guideArgs(
         {
@@ -575,21 +638,21 @@ export const EditingSession: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(EDIT_SESSION[0]!.title, async () => {
+    await step(EDIT_SESSION[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(EDIT_SESSION[1]!.title, async () => {
+    await step(EDIT_SESSION[1]!.title.ru, async () => {
       await guideNext(canvas)
       await waitForRows(canvas)
       await until(() =>
         expect(inputOf(canvas, SESSION_ROW)?.value).toBe(DRAFT_AGE),
       )
     })
-    await step(EDIT_SESSION[2]!.title, async () => {
+    await step(EDIT_SESSION[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(outOfView(canvas, SESSION_ROW)).toBe(true))
     })
-    await step(EDIT_SESSION[3]!.title, async () => {
+    await step(EDIT_SESSION[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(inputOf(canvas, SESSION_ROW)?.value).toBe(DRAFT_AGE),
@@ -599,7 +662,7 @@ export const EditingSession: StoryObj<StoryProps> = {
         expect(inputOf(canvas, SESSION_ROW)?.value).toBe(DRAFT_AGE),
       )
     })
-    await step(EDIT_SESSION[4]!.title, async () => {
+    await step(EDIT_SESSION[4]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(inputOf(canvas, SESSION_ROW)).toBeNull())
       await until(() => expect(ageText(canvas, SESSION_ROW)).toBe(DRAFT_AGE))
@@ -617,12 +680,21 @@ export const EditingSession: StoryObj<StoryProps> = {
 
 const EDIT_CONFLICT: readonly GuideStoryStep[] = [
   {
-    title: 'Правка не открыта',
-    hint: 'Возраст в ячейках можно править, а приложение меняет данные и само. Пользователь ещё не открывал правку.',
+    title: { ru: 'Правка не открыта', en: 'No edit is open' },
+    hint: {
+      ru: 'Возраст в ячейках можно править, а приложение меняет данные и само. Пользователь ещё не открывал правку.',
+      en: "The age cells can be edited, and the app also changes the data on its own. The user hasn't opened an edit yet.",
+    },
   },
   {
-    title: 'Данные изменились во время правки',
-    hint: 'Пользователь правит возраст, а приложение в это время изменило ту же ячейку.',
+    title: {
+      ru: 'Данные изменились во время правки',
+      en: 'The data changed during an edit',
+    },
+    hint: {
+      ru: 'Пользователь правит возраст, а приложение в это время изменило ту же ячейку.',
+      en: 'The user is editing an age, and meanwhile the app changed the same cell.',
+    },
     states: ['body.editing'],
     enter: (root, app) => {
       const changed = { done: false }
@@ -633,8 +705,11 @@ const EDIT_CONFLICT: readonly GuideStoryStep[] = [
     },
   },
   {
-    title: 'Сохранение отклонено',
-    hint: 'Пользователь нажал Enter. Правка закрылась без сохранения, в ячейке значение, пришедшее извне. Причина отмены видна в консоли.',
+    title: { ru: 'Сохранение отклонено', en: 'The save was rejected' },
+    hint: {
+      ru: 'Пользователь нажал Enter. Правка закрылась без сохранения, в ячейке значение, пришедшее извне. Причина отмены видна в консоли.',
+      en: 'The user pressed Enter. The edit closed without saving, and the cell shows the value that came from outside. The reason for the cancellation is in the console.',
+    },
     enter: (root, app) => {
       const changed = { done: false }
       return untilDone(
@@ -657,7 +732,7 @@ export const EditingConflict: StoryObj<StoryProps> = {
   parameters: { scenario: '0040/S3', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Конфликт правки"
+      title={{ ru: 'Конфликт правки', en: 'An edit conflict' }}
       steps={EDIT_CONFLICT}
       args={guideArgs(
         {
@@ -675,10 +750,10 @@ export const EditingConflict: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(EDIT_CONFLICT[0]!.title, async () => {
+    await step(EDIT_CONFLICT[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(EDIT_CONFLICT[1]!.title, async () => {
+    await step(EDIT_CONFLICT[1]!.title.ru, async () => {
       await guideNext(canvas)
       await waitForRows(canvas)
       await until(() => expect(consoleText()).toContain('dataOverride'))
@@ -686,7 +761,7 @@ export const EditingConflict: StoryObj<StoryProps> = {
         expect(inputOf(canvas, SESSION_ROW)?.value).toBe(DRAFT_AGE),
       )
     })
-    await step(EDIT_CONFLICT[2]!.title, async () => {
+    await step(EDIT_CONFLICT[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(inputOf(canvas, SESSION_ROW)).toBeNull())
       await until(() =>
@@ -786,12 +861,18 @@ const editsDrafted = (
 
 const MANUAL_SAVE: readonly GuideStoryStep[] = [
   {
-    title: 'Сохранение по кнопке',
-    hint: 'Приложение сохраняет правки не сразу, а пакетом — по кнопке пульта в тулбаре.',
+    title: { ru: 'Сохранение по кнопке', en: 'Saving with a button' },
+    hint: {
+      ru: 'Приложение сохраняет правки не сразу, а пакетом — по кнопке пульта в тулбаре.',
+      en: 'The app saves edits not right away but as a batch, using the unsaved changes panel button in the toolbar.',
+    },
   },
   {
-    title: 'Три правки',
-    hint: 'Пользователь поправил возраст в трёх строках. Новые значения видны в ячейках, но ещё не сохранены: в углу каждой ячейки отметка несохранённого изменения, на кнопке пульта — число несохранённых изменений.',
+    title: { ru: 'Три правки', en: 'Three edits' },
+    hint: {
+      ru: 'Пользователь поправил возраст в трёх строках. Новые значения видны в ячейках, но ещё не сохранены: в углу каждой ячейки отметка несохранённого изменения, на кнопке пульта — число несохранённых изменений.',
+      en: "The user edited the age in three rows. The new values show in the cells but aren't saved yet: each cell has an unsaved change mark in its corner, and the unsaved changes panel button shows the number of unsaved changes.",
+    },
     states: ['body.cellDraft'],
     enter: untilDone(
       root => editsDrafted(root, MANUAL_EDITS) && !inputOf(root, 'item-id-3'),
@@ -799,8 +880,11 @@ const MANUAL_SAVE: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Пакет отправлен',
-    hint: 'Пользователь открыл пульт и нажал «Применить всё». Все три правки ушли на сервер одним запросом; пока сервер не ответил, ячейки пакета ждут.',
+    title: { ru: 'Пакет отправлен', en: 'The batch was sent' },
+    hint: {
+      ru: 'Пользователь открыл пульт и нажал «Применить всё». Все три правки ушли на сервер одним запросом; пока сервер не ответил, ячейки пакета ждут.',
+      en: "The user opened the unsaved changes panel and clicked “Apply all”. All three edits went to the server in one request; until the server responds, the batch's cells are waiting.",
+    },
     states: ['body.pending'],
     immediate: true,
     // Пакет ушёл, и пульт, закрывшись после «Применить всё», вернул фокус кнопке.
@@ -815,8 +899,11 @@ const MANUAL_SAVE: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Сервер сохранил',
-    hint: 'Сервер принял пакет. Ожидание снято, уголки исчезли, ячейки коротко вспыхивают тоном успеха; несохранённых изменений не осталось.',
+    title: { ru: 'Сервер сохранил', en: 'The server saved' },
+    hint: {
+      ru: 'Сервер принял пакет. Ожидание снято, уголки исчезли, ячейки коротко вспыхивают тоном успеха; несохранённых изменений не осталось.',
+      en: 'The server accepted the batch. The waiting state is cleared, the corner marks are gone, and the cells flash briefly in the success tone; no unsaved changes are left.',
+    },
     enter: untilDone(
       root =>
         MANUAL_EDITS.every(
@@ -842,7 +929,7 @@ export const ManualSaveCells: StoryObj<StoryProps> = {
   parameters: { scenario: '0178/S5', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Сохранение по кнопке"
+      title={{ ru: 'Сохранение по кнопке', en: 'Saving with a button' }}
       steps={MANUAL_SAVE}
       reset={() => batchServer.reset()}
       args={guideArgs(MANUAL_ARGS, args)}
@@ -850,10 +937,10 @@ export const ManualSaveCells: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(MANUAL_SAVE[0]!.title, async () => {
+    await step(MANUAL_SAVE[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(MANUAL_SAVE[1]!.title, async () => {
+    await step(MANUAL_SAVE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(MANUAL_EDITS.every(([row]) => draftMarked(canvas, row))).toBe(
@@ -863,7 +950,7 @@ export const ManualSaveCells: StoryObj<StoryProps> = {
       expect(panelCount(canvas)).toBe(3)
       expect(consoleText()).not.toContain('onCommitEdits')
     })
-    await step(MANUAL_SAVE[2]!.title, async () => {
+    await step(MANUAL_SAVE[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(MANUAL_EDITS.every(([row]) => pending(canvas, row))).toBe(true),
@@ -871,7 +958,7 @@ export const ManualSaveCells: StoryObj<StoryProps> = {
       await until(() => expect(panelOpen()).toBe(false))
       expect(consoleText()).toContain('onCommitEdits')
     })
-    await step(MANUAL_SAVE[3]!.title, async () => {
+    await step(MANUAL_SAVE[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(panelCount(canvas)).toBe(0))
       for (const [row, value] of MANUAL_EDITS) {
@@ -888,12 +975,18 @@ const REFUSED_ROW = 'item-id-2'
 
 const PARTIAL: readonly GuideStoryStep[] = [
   {
-    title: 'Сохранение по кнопке',
-    hint: 'Приложение сохраняет правки пакетом по кнопке пульта. Сервер принимает пакет, но одну из строк сейчас отклоняет.',
+    title: { ru: 'Сохранение по кнопке', en: 'Saving with a button' },
+    hint: {
+      ru: 'Приложение сохраняет правки пакетом по кнопке пульта. Сервер принимает пакет, но одну из строк сейчас отклоняет.',
+      en: 'The app saves edits as a batch using the unsaved changes panel button. The server accepts the batch but currently rejects one of the rows.',
+    },
   },
   {
-    title: 'Две правки',
-    hint: 'Пользователь поправил возраст в двух строках. В углу обеих ячеек отметка несохранённого изменения: значения ещё не сохранены.',
+    title: { ru: 'Две правки', en: 'Two edits' },
+    hint: {
+      ru: 'Пользователь поправил возраст в двух строках. В углу обеих ячеек отметка несохранённого изменения: значения ещё не сохранены.',
+      en: "The user edited the age in two rows. Both cells have an unsaved change mark in the corner: the values aren't saved yet.",
+    },
     states: ['body.cellDraft'],
     enter: untilDone(
       root =>
@@ -903,8 +996,14 @@ const PARTIAL: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Сервер отказал одной ячейке',
-    hint: 'Пользователь применил всё из пульта. Сервер сохранил одну правку и отклонил другую. Сохранённая ячейка вспыхнула тоном успеха; у отклонённой в углу отметка отказа с причиной, а несохранённое значение осталось в ячейке.',
+    title: {
+      ru: 'Сервер отказал одной ячейке',
+      en: 'The server refused one cell',
+    },
+    hint: {
+      ru: 'Пользователь применил всё из пульта. Сервер сохранил одну правку и отклонил другую. Сохранённая ячейка вспыхнула тоном успеха; у отклонённой в углу отметка отказа с причиной, а несохранённое значение осталось в ячейке.',
+      en: 'The user applied everything from the unsaved changes panel. The server saved one edit and rejected the other. The saved cell flashed in the success tone; the rejected one has a refusal mark with the reason in its corner, and its unsaved value stayed in the cell.',
+    },
     states: ['body.error'],
     enter: untilDone(
       root => failed(root, REFUSED_ROW) && !draftMarked(root, 'item-id-1'),
@@ -924,7 +1023,7 @@ export const ManualSavePartialRefusal: StoryObj<StoryProps> = {
   parameters: { scenario: '0178/S6', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Отказ части пакета"
+      title={{ ru: 'Отказ части пакета', en: 'A partial batch refusal' }}
       steps={PARTIAL}
       reset={() => {
         batchServer.reset()
@@ -935,14 +1034,14 @@ export const ManualSavePartialRefusal: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(PARTIAL[0]!.title, async () => {
+    await step(PARTIAL[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(PARTIAL[1]!.title, async () => {
+    await step(PARTIAL[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(panelCount(canvas)).toBe(2))
     })
-    await step(PARTIAL[2]!.title, async () => {
+    await step(PARTIAL[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(failed(canvas, REFUSED_ROW)).toBe(true))
       expect(ageText(canvas, REFUSED_ROW)).toBe(PARTIAL_EDITS[1]![1])
@@ -963,12 +1062,18 @@ const rollbackPopover = () =>
 
 const ROLLBACK: readonly GuideStoryStep[] = [
   {
-    title: 'Правок нет',
-    hint: 'Приложение сохраняет правки по кнопке пульта. Пользователь ещё ничего не правил.',
+    title: { ru: 'Правок нет', en: 'No edits yet' },
+    hint: {
+      ru: 'Приложение сохраняет правки по кнопке пульта. Пользователь ещё ничего не правил.',
+      en: "The app saves edits using the unsaved changes panel button. The user hasn't edited anything yet.",
+    },
   },
   {
-    title: 'Несохранённое значение',
-    hint: 'Приложение сохраняет правки по кнопке пульта. Пользователь поправил возраст: новое значение в ячейке, в её углу отметка несохранённого изменения.',
+    title: { ru: 'Несохранённое значение', en: 'An unsaved value' },
+    hint: {
+      ru: 'Приложение сохраняет правки по кнопке пульта. Пользователь поправил возраст: новое значение в ячейке, в её углу отметка несохранённого изменения.',
+      en: 'The app saves edits using the unsaved changes panel button. The user edited an age: the new value is in the cell, with an unsaved change mark in its corner.',
+    },
     states: ['body.cellDraft'],
     enter: untilDone(
       root => draftMarked(root, ROLLBACK_ROW) && !inputOf(root, ROLLBACK_ROW),
@@ -976,8 +1081,11 @@ const ROLLBACK: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Было и стало',
-    hint: 'Пользователь нажал на уголок. В поповере — прежнее значение, новое и кнопка отката.',
+    title: { ru: 'Было и стало', en: 'Before and after' },
+    hint: {
+      ru: 'Пользователь нажал на уголок. В поповере — прежнее значение, новое и кнопка отката.',
+      en: 'The user clicked the corner mark. The popover shows the previous value, the new one, and a revert button.',
+    },
     states: ['overlay.cellIssue'],
     enter: untilDone(
       () => !!rollbackPopover(),
@@ -992,8 +1100,11 @@ const ROLLBACK: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Значение откачено',
-    hint: 'Пользователь откатил правку. В ячейке снова значение из данных, уголка нет, несохранённых изменений не осталось.',
+    title: { ru: 'Значение откачено', en: 'The value was reverted' },
+    hint: {
+      ru: 'Пользователь откатил правку. В ячейке снова значение из данных, уголка нет, несохранённых изменений не осталось.',
+      en: 'The user reverted the edit. The cell shows the value from the data again, the corner mark is gone, and no unsaved changes are left.',
+    },
     enter: untilDone(
       root => !draftMarked(root, ROLLBACK_ROW) && !rollbackPopover(),
       root => {
@@ -1018,7 +1129,7 @@ export const CellDraftRollback: StoryObj<StoryProps> = {
   parameters: { scenario: '0178/S7', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Откат правки"
+      title={{ ru: 'Откат правки', en: 'Reverting an edit' }}
       steps={ROLLBACK}
       args={guideArgs(MANUAL_ARGS, args)}
     />
@@ -1026,10 +1137,10 @@ export const CellDraftRollback: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     let before = ''
-    await step(ROLLBACK[0]!.title, async () => {
+    await step(ROLLBACK[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(ROLLBACK[1]!.title, async () => {
+    await step(ROLLBACK[1]!.title.ru, async () => {
       await guideNext(canvas)
       await waitForRows(canvas)
       await until(() => expect(draftMarked(canvas, ROLLBACK_ROW)).toBe(true))
@@ -1038,7 +1149,7 @@ export const CellDraftRollback: StoryObj<StoryProps> = {
       )
       before = String(getData(10).find(row => row.id === ROLLBACK_ROW)!.age)
     })
-    await step(ROLLBACK[2]!.title, async () => {
+    await step(ROLLBACK[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(rollbackPopover()).not.toBeNull())
       await until(() =>
@@ -1048,7 +1159,7 @@ export const CellDraftRollback: StoryObj<StoryProps> = {
         expect(rollbackPopover()!.textContent).toContain(ROLLBACK_AGE),
       )
     })
-    await step(ROLLBACK[3]!.title, async () => {
+    await step(ROLLBACK[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(draftMarked(canvas, ROLLBACK_ROW)).toBe(false))
       await until(() => expect(ageText(canvas, ROLLBACK_ROW)).toBe(before))

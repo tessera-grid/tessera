@@ -26,12 +26,12 @@ const meta = {
     reason: 'The server did not answer in 30 seconds.',
   },
   argTypes: {
-    title: { control: 'text', description: 'Заголовок ошибки' },
+    title: { control: 'text', description: 'Error title' },
     reason: {
       control: 'text',
-      description: 'Причина; пусто — без причины',
+      description: 'Reason; empty means no reason',
     },
-    retryLabel: { control: 'text', description: 'Подпись повтора' },
+    retryLabel: { control: 'text', description: 'Retry label' },
   },
   render: function Render({ title, reason, retryLabel }) {
     const labels = useStoryLabels()

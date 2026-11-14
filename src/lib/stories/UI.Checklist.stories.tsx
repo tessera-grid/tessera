@@ -96,9 +96,9 @@ const meta = {
   argTypes: {
     count: {
       control: { type: 'number', min: 0, max: 1000 },
-      description: 'Вариантов',
+      description: 'Number of options',
     },
-    counts: { control: 'boolean', description: 'Счётчики строк' },
+    counts: { control: 'boolean', description: 'Row counts' },
   },
   render: args => <ChecklistStory {...args} />,
 } satisfies Meta<ChecklistStoryArgs>

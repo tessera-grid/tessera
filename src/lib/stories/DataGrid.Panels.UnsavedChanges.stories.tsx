@@ -235,26 +235,41 @@ const nameApplied = async (root: HTMLElement, signal: AbortSignal) => {
 
 const APPLY: readonly GuideStoryStep[] = [
   {
-    title: 'Два условия не применены',
-    hint: 'Пользователь набрал условия фильтров двух колонок и не применил их. На кнопке пульта в тулбаре — число неприменённых изменений, на кнопках фильтра этих колонок — отметки неприменённого.',
+    title: {
+      ru: 'Два условия не применены',
+      en: 'Two conditions are not applied',
+    },
+    hint: {
+      ru: 'Пользователь набрал условия фильтров двух колонок и не применил их. На кнопке пульта в тулбаре — число неприменённых изменений, на кнопках фильтра этих колонок — отметки неприменённого.',
+      en: 'The user typed filter conditions for two columns and did not apply them. The unsaved changes button in the toolbar shows the number of unapplied changes, and the filter buttons of those columns carry an unapplied mark.',
+    },
     states: ['head.draft'],
     props: ({ app, log }) => ({ onFilterChange: answers(app, log) }),
   },
   {
-    title: 'Пульт открыт',
-    hint: 'Пользователь открыл пульт: оба условия — в разделе фильтров, у каждого — колонка и что задано, переход к колонке, применение и отказ от изменения.',
+    title: { ru: 'Пульт открыт', en: 'The unsaved changes panel is open' },
+    hint: {
+      ru: 'Пользователь открыл пульт: оба условия — в разделе фильтров, у каждого — колонка и что задано, переход к колонке, применение и отказ от изменения.',
+      en: 'The user opened the unsaved changes panel: both conditions are in the filters section, each with its column and what was set, plus buttons to go to the column, apply the change, and discard it.',
+    },
     states: ['overlay.unsavedChanges'],
     enter: stepAction((_root, { signal }) => openPanel(signal)),
   },
   {
-    title: 'Одно применено',
-    hint: 'Пользователь применил условие по имени. Пульт закрылся, сервер прислал строки с этим именем: на кнопке фильтра колонки точка, на кнопке пульта осталось одно изменение.',
+    title: { ru: 'Одно применено', en: 'One is applied' },
+    hint: {
+      ru: 'Пользователь применил условие по имени. Пульт закрылся, сервер прислал строки с этим именем: на кнопке фильтра колонки точка, на кнопке пульта осталось одно изменение.',
+      en: "The user applied the name condition. The panel closed, and the server sent the rows with that name: the column's filter button shows a dot, and the unsaved changes button shows one change left.",
+    },
     states: ['head.activeIndicator', 'head.draft'],
     enter: stepAction((root, { signal }) => nameApplied(root, signal)),
   },
   {
-    title: 'Всё применено',
-    hint: 'Пользователь открыл пульт и применил всё. Сервер отфильтровал строки по обоим условиям, неприменённых изменений не осталось.',
+    title: { ru: 'Всё применено', en: 'Everything is applied' },
+    hint: {
+      ru: 'Пользователь открыл пульт и применил всё. Сервер отфильтровал строки по обоим условиям, неприменённых изменений не осталось.',
+      en: 'The user opened the panel and applied everything. The server filtered the rows by both conditions, and no unapplied changes are left.',
+    },
     states: ['head.activeIndicator'],
     enter: stepAction(async (root, { signal }) => {
       await nameApplied(root, signal)
@@ -280,30 +295,33 @@ export const UnsavedChangesApply: StoryObj<StoryProps> = {
   parameters: { scenario: '0178/S4', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Применение из пульта"
+      title={{
+        ru: 'Применение из пульта',
+        en: 'Applying from the unsaved changes panel',
+      }}
       steps={APPLY}
       args={guideArgs({ ...GRID, extraPlugins: [serverReset] }, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(APPLY[0]!.title, async () => {
+    await step(APPLY[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(countOf()).toBe(2))
     })
-    await step(APPLY[1]!.title, async () => {
+    await step(APPLY[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(entries()).toHaveLength(2)
     })
-    await step(APPLY[2]!.title, async () => {
+    await step(APPLY[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(panelOpen()).toBe(false)
       await expect(filterActive(canvas, 'name')).toBe(true)
       await expect(countOf()).toBe(1)
     })
-    await step(APPLY[3]!.title, async () => {
+    await step(APPLY[3]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(filterActive(canvas, 'city')).toBe(true)
@@ -346,24 +364,36 @@ const discardEntry = async (text: string, signal: AbortSignal) => {
 
 const DISCARD: readonly GuideStoryStep[] = [
   {
-    title: 'Три несохранённые правки',
-    hint: 'Пользователь поправил три ячейки и не сохранил правки. Пульт пока закрыт.',
+    title: { ru: 'Три несохранённые правки', en: 'Three unsaved edits' },
+    hint: {
+      ru: 'Пользователь поправил три ячейки и не сохранил правки. Пульт пока закрыт.',
+      en: 'The user edited three cells and did not save the edits. The unsaved changes panel is still closed.',
+    },
   },
   {
-    title: 'Пульт открыт',
-    hint: 'Пользователь поправил три ячейки и не сохранил правки, затем открыл пульт. Кнопка отказа у каждой правки и кнопка отказа от всех внизу выделены тоном опасного действия сразу, без наведения: они безвозвратно теряют правки, а применение и переход к ячейке — нет.',
+    title: { ru: 'Пульт открыт', en: 'The unsaved changes panel is open' },
+    hint: {
+      ru: 'Пользователь поправил три ячейки и не сохранил правки, затем открыл пульт. Кнопка отказа у каждой правки и кнопка отказа от всех внизу выделены тоном опасного действия сразу, без наведения: они безвозвратно теряют правки, а применение и переход к ячейке — нет.',
+      en: 'The user edited three cells without saving, then opened the unsaved changes panel. The discard button on each edit and the discard-all button at the bottom are styled as dangerous actions right away, without hovering: they lose the edits for good, while applying and going to the cell do not.',
+    },
     states: ['overlay.unsavedChanges'],
     enter: stepAction((_root, { signal }) => openPanel(signal)),
   },
   {
-    title: 'Одна правка отброшена',
-    hint: 'Пользователь отказался от правки города прямо в пульте. Её запись ушла, пульт остался открытым; в ячейке снова прежнее значение, на кнопке пульта — две несохранённые правки.',
+    title: { ru: 'Одна правка отброшена', en: 'One edit is discarded' },
+    hint: {
+      ru: 'Пользователь отказался от правки города прямо в пульте. Её запись ушла, пульт остался открытым; в ячейке снова прежнее значение, на кнопке пульта — две несохранённые правки.',
+      en: 'The user discarded the city edit right in the panel. Its entry disappeared, and the panel stayed open; the cell shows its previous value again, and the panel button shows two unsaved edits.',
+    },
     states: ['overlay.unsavedChanges', 'body.cellDraft'],
     enter: stepAction((_root, { signal }) => discardEntry(DISCARDED, signal)),
   },
   {
-    title: 'Всё отброшено',
-    hint: 'Пользователь отказался от всех оставшихся правок. Пульт пуст, несохранённых изменений не осталось, в ячейках — прежние значения.',
+    title: { ru: 'Всё отброшено', en: 'Everything is discarded' },
+    hint: {
+      ru: 'Пользователь отказался от всех оставшихся правок. Пульт пуст, несохранённых изменений не осталось, в ячейках — прежние значения.',
+      en: 'The user discarded all the remaining edits. The panel is empty, no unsaved changes are left, and the cells show their previous values.',
+    },
     states: ['overlay.unsavedChanges'],
     enter: stepAction(async (_root, { signal }) => {
       await discardEntry(DISCARDED, signal)
@@ -387,17 +417,20 @@ export const UnsavedChangesDangerActions: StoryObj<StoryProps> = {
   parameters: { scenario: '0206/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Отказ от правок в пульте"
+      title={{
+        ru: 'Отказ от правок в пульте',
+        en: 'Discarding edits in the unsaved changes panel',
+      }}
       steps={DISCARD}
       args={guideArgs(DISCARD_ARGS, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(DISCARD[0]!.title, async () => {
+    await step(DISCARD[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(DISCARD[1]!.title, async () => {
+    await step(DISCARD[1]!.title.ru, async () => {
       await guideNext(canvas)
       await waitForRows(canvas)
       await until(() => expect(panelOpen()).toBe(true))
@@ -409,7 +442,7 @@ export const UnsavedChangesDangerActions: StoryObj<StoryProps> = {
       ).not.toBeNull()
       await settle()
     })
-    await step(DISCARD[2]!.title, async () => {
+    await step(DISCARD[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(countOf()).toBe(CELL_DRAFTS.length - 1)
@@ -419,7 +452,7 @@ export const UnsavedChangesDangerActions: StoryObj<StoryProps> = {
         ),
       ).toBeNull()
     })
-    await step(DISCARD[3]!.title, async () => {
+    await step(DISCARD[3]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(countOf()).toBe(0)
@@ -449,19 +482,31 @@ const pointOnce = (element: HTMLElement | null) => {
 
 const DOT_HINT: readonly GuideStoryStep[] = [
   {
-    title: 'Два условия не применены',
-    hint: 'Пользователь набрал условия фильтров двух колонок и не применил их. На кнопке пульта в тулбаре — число неприменённых изменений.',
+    title: {
+      ru: 'Два условия не применены',
+      en: 'Two conditions are not applied',
+    },
+    hint: {
+      ru: 'Пользователь набрал условия фильтров двух колонок и не применил их. На кнопке пульта в тулбаре — число неприменённых изменений.',
+      en: 'The user typed filter conditions for two columns and did not apply them. The unsaved changes button in the toolbar shows the number of unapplied changes.',
+    },
     states: ['head.draft'],
   },
   {
-    title: 'Пульт открыт',
-    hint: 'Пользователь открыл пульт. Слева у каждой записи — точка цвета неприменённого.',
+    title: { ru: 'Пульт открыт', en: 'The unsaved changes panel is open' },
+    hint: {
+      ru: 'Пользователь открыл пульт. Слева у каждой записи — точка цвета неприменённого.',
+      en: 'The user opened the unsaved changes panel. Each entry has a dot on the left in the unapplied color.',
+    },
     states: ['overlay.unsavedChanges'],
     enter: stepAction((_root, { signal }) => openPanel(signal)),
   },
   {
-    title: 'Подсказка точки',
-    hint: 'Пользователь навёл указатель на точку записи. Подсказка говорит, что значит точка: изменение не применено. На касаниях подсказку показывает удержание пальца.',
+    title: { ru: 'Подсказка точки', en: 'The dot hint' },
+    hint: {
+      ru: 'Пользователь навёл указатель на точку записи. Подсказка говорит, что значит точка: изменение не применено. На касаниях подсказку показывает удержание пальца.',
+      en: "The user hovered over an entry's dot. A tooltip explains what the dot means: the change is not applied. On touch screens, a long press shows the tooltip.",
+    },
     states: ['overlay.unsavedChanges', 'overlay.tooltip'],
     enter: stepAction(async (_root, { signal }) => {
       await openPanel(signal)
@@ -479,7 +524,7 @@ export const UnsavedChangesDotHint: StoryObj<StoryProps> = {
   parameters: { scenario: '0224/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Подсказка точки"
+      title={{ ru: 'Подсказка точки', en: 'The dot hint' }}
       steps={DOT_HINT}
       args={guideArgs(GRID, args)}
     />
@@ -487,16 +532,16 @@ export const UnsavedChangesDotHint: StoryObj<StoryProps> = {
   play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     const own = unsavedChangesLabels(storyLabels(args.locale))
-    await step(DOT_HINT[0]!.title, async () => {
+    await step(DOT_HINT[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(countOf()).toBe(2))
     })
-    await step(DOT_HINT[1]!.title, async () => {
+    await step(DOT_HINT[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(entries()).toHaveLength(2)
     })
-    await step(DOT_HINT[2]!.title, async () => {
+    await step(DOT_HINT[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(hintText()).toBe(own.markHint))

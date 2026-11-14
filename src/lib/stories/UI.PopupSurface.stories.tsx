@@ -31,14 +31,14 @@ const meta = {
     side: {
       control: 'inline-radio',
       options: ['top', 'bottom', 'left', 'right'],
-      description: 'Сторона якоря',
+      description: 'Side of the anchor',
     },
     align: {
       control: 'inline-radio',
       options: ['start', 'center', 'end'],
-      description: 'Выравнивание по якорю',
+      description: 'Alignment to the anchor',
     },
-    text: { control: 'text', description: 'Содержимое' },
+    text: { control: 'text', description: 'Content' },
   },
   render: ({ side, align, text }) => (
     <PopupCanvas>

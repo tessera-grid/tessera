@@ -45,7 +45,7 @@ const meta = {
 
 export default meta
 
-const NOT_COLUMNS = 'На ширину колонок не влияет'
+const NOT_COLUMNS = 'Does not affect column widths'
 
 /** Колонки с ручкой ширины на границе заголовков в покое. */
 export const ColumnResizingPlayground: StoryObj<StoryProps> = {
@@ -148,23 +148,41 @@ const holdResize = async (root: HTMLElement, step: StepRun) => {
 
 const RESIZE: readonly GuideStoryStep[] = [
   {
-    title: 'Колонки в таблице',
-    hint: 'Таблица отображает колонки с ручкой изменения ширины на границе заголовков. Ручка появляется при наведении на заголовок.',
+    title: { ru: 'Колонки в таблице', en: 'Columns in the table' },
+    hint: {
+      ru: 'Таблица отображает колонки с ручкой изменения ширины на границе заголовков. Ручка появляется при наведении на заголовок.',
+      en: 'The table shows columns with a resize grip on the border between headers. The grip appears when the pointer hovers over a header.',
+    },
   },
   {
-    title: 'Пользователь тянет ручку',
-    hint: 'Пользователь нажал на ручку ширины и тянет её вправо. От ручки вниз через всю таблицу идёт синяя линия: она показывает, где встанет граница колонки относительно значений в строках.',
+    title: { ru: 'Пользователь тянет ручку', en: 'The user drags the grip' },
+    hint: {
+      ru: 'Пользователь нажал на ручку ширины и тянет её вправо. От ручки вниз через всю таблицу идёт синяя линия: она показывает, где встанет граница колонки относительно значений в строках.',
+      en: 'The user pressed the resize grip and is dragging it to the right. A blue line runs from the grip down through the whole table: it shows where the column border will land relative to the values in the rows.',
+    },
     states: ['head.resizeLine'],
     enter: stepAction(holdResize),
   },
   {
-    title: 'Пользователь растянул колонку',
-    hint: 'Пользователь потянул ручку на границе колонок. Колонка стала шире, а колонки правее сдвинулись вслед за её краем.',
+    title: {
+      ru: 'Пользователь растянул колонку',
+      en: 'The user widened a column',
+    },
+    hint: {
+      ru: 'Пользователь потянул ручку на границе колонок. Колонка стала шире, а колонки правее сдвинулись вслед за её краем.',
+      en: 'The user dragged the grip on the column border. The column got wider, and the columns to its right moved along with its edge.',
+    },
     enter: withWidths({ [RESIZED]: WIDE }),
   },
   {
-    title: 'Пользователь сузил колонку',
-    hint: 'Колонка стала уже, и кнопкам заголовка не хватает места: они уходят в меню колонки.',
+    title: {
+      ru: 'Пользователь сузил колонку',
+      en: 'The user narrowed a column',
+    },
+    hint: {
+      ru: 'Колонка стала уже, и кнопкам заголовка не хватает места: они уходят в меню колонки.',
+      en: 'The column got narrower, and the header buttons run out of room: they move into the column menu.',
+    },
     enter: withWidths({ [RESIZED]: NARROW }),
   },
 ]
@@ -179,7 +197,7 @@ export const ResizingColumns: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Ширина колонки"
+      title={{ ru: 'Ширина колонки', en: 'Column width' }}
       steps={RESIZE}
       args={guideArgs(
         {
@@ -207,7 +225,7 @@ export const ResizingColumns: StoryObj<StoryProps> = {
     const sortInline = () =>
       headCell(canvas, RESIZED).querySelector('.column-sort__button')
     let neighbour = 0
-    await step(RESIZE[0]!.title, async () => {
+    await step(RESIZE[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() =>
         expect(
@@ -218,7 +236,7 @@ export const ResizingColumns: StoryObj<StoryProps> = {
       await until(() => expect(sortInline()).not.toBeNull())
       neighbour = rect(headCell(canvas, 'lastName')).left
     })
-    await step(RESIZE[1]!.title, async () => {
+    await step(RESIZE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       // Линия идёт от ручки вниз через всю таблицу — от верха заголовка ниже строк.
@@ -253,7 +271,7 @@ export const ResizingColumns: StoryObj<StoryProps> = {
       // Ручку тянут вправо: колонка шире исходной.
       await expect(width()).toBe(START + HOLD_SHIFT)
     })
-    await step(RESIZE[2]!.title, async () => {
+    await step(RESIZE[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(document.querySelector(RESIZE_LINE)).toBeNull())
       await until(() => expect(width()).toBe(WIDE))
@@ -262,7 +280,7 @@ export const ResizingColumns: StoryObj<StoryProps> = {
       )
       await settle()
     })
-    await step(RESIZE[3]!.title, async () => {
+    await step(RESIZE[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(width()).toBe(NARROW))
       await until(() => expect(sortInline()).toBeNull())
@@ -313,20 +331,35 @@ const holdAtEdge = async (root: HTMLElement, step: StepRun) => {
 
 const PAST_EDGE: readonly GuideStoryStep[] = [
   {
-    title: 'Колонки за краем',
-    hint: 'Таблица шире видимой области: часть колонок справа скрыта, к ним прокручивают по горизонтали.',
+    title: { ru: 'Колонки за краем', en: 'Columns past the edge' },
+    hint: {
+      ru: 'Таблица шире видимой области: часть колонок справа скрыта, к ним прокручивают по горизонтали.',
+      en: 'The table is wider than the visible area: some columns on the right are hidden, and you scroll horizontally to reach them.',
+    },
   },
   {
-    title: 'Пользователь тянет ручку к краю',
-    hint: 'Пользователь тянет ручку ширины к правому краю таблицы и держит её там. Таблица сама прокручивается вправо, колонка растёт, а граница остаётся под указателем, пока колонка не достигнет наибольшей ширины.',
+    title: {
+      ru: 'Пользователь тянет ручку к краю',
+      en: 'The user drags the grip to the edge',
+    },
+    hint: {
+      ru: 'Пользователь тянет ручку ширины к правому краю таблицы и держит её там. Таблица сама прокручивается вправо, колонка растёт, а граница остаётся под указателем, пока колонка не достигнет наибольшей ширины.',
+      en: 'The user is dragging the resize grip to the right edge of the table and holding it there. The table scrolls right on its own, the column grows, and the border stays under the pointer until the column reaches its maximum width.',
+    },
     states: ['head.resizeLine'],
     enter: stepAction(async (root, step) => {
       await holdAtEdge(root, step)
     }),
   },
   {
-    title: 'Пользователь отпустил ручку',
-    hint: 'Пользователь отпустил ручку. Колонка осталась новой ширины, а таблица — там, куда её прокрутила протяжка.',
+    title: {
+      ru: 'Пользователь отпустил ручку',
+      en: 'The user released the grip',
+    },
+    hint: {
+      ru: 'Пользователь отпустил ручку. Колонка осталась новой ширины, а таблица — там, куда её прокрутила протяжка.',
+      en: 'The user released the grip. The column keeps its new width, and the table stays where the drag scrolled it.',
+    },
     // С прошлого шага ручку отпускает уход с него; переход сразу сюда тянет и отпускает сам.
     enter: stepAction(async (root, step) => {
       const id = edgeColumn
@@ -352,7 +385,7 @@ export const ResizingPastEdge: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Протяжка за край"
+      title={{ ru: 'Протяжка за край', en: 'Resizing past the edge' }}
       steps={PAST_EDGE}
       args={guideArgs(
         {
@@ -370,7 +403,7 @@ export const ResizingPastEdge: StoryObj<StoryProps> = {
     // В Storybook сценарий проходит человек; `play` — только в тестах каталога.
     if (globals.catalog !== true) return
     const scroller = () => scrollerOf(canvas)
-    await step(PAST_EDGE[0]!.title, async () => {
+    await step(PAST_EDGE[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() =>
         expect(scroller().scrollWidth).toBeGreaterThan(scroller().clientWidth),
@@ -378,7 +411,7 @@ export const ResizingPastEdge: StoryObj<StoryProps> = {
       await until(() => expect(scroller().scrollLeft).toBe(0))
     })
     let scrolled = 0
-    await step(PAST_EDGE[1]!.title, async () => {
+    await step(PAST_EDGE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       const id = edgeColumn!
@@ -395,7 +428,7 @@ export const ResizingPastEdge: StoryObj<StoryProps> = {
       )
       scrolled = scroller().scrollLeft
     })
-    await step(PAST_EDGE[2]!.title, async () => {
+    await step(PAST_EDGE[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       const id = edgeColumn!
@@ -414,17 +447,29 @@ const STRETCHED = 320
 
 const COLUMNS: readonly GuideStoryStep[] = [
   {
-    title: 'Ширина по умолчанию',
-    hint: 'Приложение задало ширину колонок по умолчанию. Колонки без своей ширины получили её, а колонка со своей шириной осталась прежней.',
+    title: { ru: 'Ширина по умолчанию', en: 'Default width' },
+    hint: {
+      ru: 'Приложение задало ширину колонок по умолчанию. Колонки без своей ширины получили её, а колонка со своей шириной осталась прежней.',
+      en: 'The app set a default column width. Columns without their own width got it, and the column with its own width stayed the same.',
+    },
   },
   {
-    title: 'Пользователь растянул колонку',
-    hint: 'Пользователь растянул одну из колонок шире остальных.',
+    title: {
+      ru: 'Пользователь растянул колонку',
+      en: 'The user widened a column',
+    },
+    hint: {
+      ru: 'Пользователь растянул одну из колонок шире остальных.',
+      en: 'The user made one of the columns wider than the others.',
+    },
     enter: withWidths({ name: STRETCHED }),
   },
   {
-    title: 'Новая ширина по умолчанию',
-    hint: 'Приложение уменьшило ширину по умолчанию. Сузилась только колонка без своей ширины: растянутая пользователем и колонка со своей шириной не изменились.',
+    title: { ru: 'Новая ширина по умолчанию', en: 'A new default width' },
+    hint: {
+      ru: 'Приложение уменьшило ширину по умолчанию. Сузилась только колонка без своей ширины: растянутая пользователем и колонка со своей шириной не изменились.',
+      en: 'The app reduced the default width. Only the column without its own width got narrower: the one the user widened and the one with its own width did not change.',
+    },
     props: () => ({ defaultColumn: { size: 140 } }),
     enter: withWidths({ name: STRETCHED }),
   },
@@ -455,7 +500,7 @@ export const ResizingDefaultColumnWidth: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Ширина колонок по умолчанию"
+      title={{ ru: 'Ширина колонок по умолчанию', en: 'Default column width' }}
       steps={COLUMNS}
       args={guideArgs(DEFAULT_COLUMN_WIDTH_ARGS, args)}
     />
@@ -466,16 +511,16 @@ export const ResizingDefaultColumnWidth: StoryObj<StoryProps> = {
       ['name', 'company', 'city'].map(id =>
         Math.round(rect(headCell(canvas, id)).width),
       )
-    await step(COLUMNS[0]!.title, async () => {
+    await step(COLUMNS[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(sizingApi).not.toBeNull())
       await until(() => expect(widths()).toEqual([220, 220, 100]))
     })
-    await step(COLUMNS[1]!.title, async () => {
+    await step(COLUMNS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(widths()).toEqual([STRETCHED, 220, 100]))
     })
-    await step(COLUMNS[2]!.title, async () => {
+    await step(COLUMNS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(widths()).toEqual([STRETCHED, 140, 100]))
     })
@@ -539,12 +584,21 @@ const autosizeAllItem = () =>
 
 const AUTOSIZE: readonly GuideStoryStep[] = [
   {
-    title: 'Колонки обрезают текст',
-    hint: 'Имя и компания не помещаются в узкие колонки и обрезаны многоточием, а колонка города шире своего текста.',
+    title: { ru: 'Колонки обрезают текст', en: 'Columns cut off text' },
+    hint: {
+      ru: 'Имя и компания не помещаются в узкие колонки и обрезаны многоточием, а колонка города шире своего текста.',
+      en: 'The name and company do not fit in the narrow columns and are cut off with an ellipsis, while the city column is wider than its text.',
+    },
   },
   {
-    title: 'Пользователь дважды щёлкнул по ручке',
-    hint: 'Пользователь дважды щёлкнул по ручке на границе первой колонки. Колонка стала шириной по самому длинному значению среди видимых строк, остальные остались прежними.',
+    title: {
+      ru: 'Пользователь дважды щёлкнул по ручке',
+      en: 'The user double-clicked the grip',
+    },
+    hint: {
+      ru: 'Пользователь дважды щёлкнул по ручке на границе первой колонки. Колонка стала шириной по самому длинному значению среди видимых строк, остальные остались прежними.',
+      en: 'The user double-clicked the grip on the border of the first column. The column now fits the longest value among the visible rows, and the others did not change.',
+    },
     enter: fromNarrow(
       root =>
         fittedWidth(root, 'name') > NARROW_WIDTHS.name &&
@@ -553,8 +607,14 @@ const AUTOSIZE: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Пользователь подогнал все колонки',
-    hint: 'Пользователь выбрал в меню колонки «Подогнать все колонки»: каждая колонка стала шириной по своему содержимому — узкие расширились, слишком широкая сузилась.',
+    title: {
+      ru: 'Пользователь подогнал все колонки',
+      en: 'The user autosized all columns',
+    },
+    hint: {
+      ru: 'Пользователь выбрал в меню колонки «Подогнать все колонки»: каждая колонка стала шириной по своему содержимому — узкие расширились, слишком широкая сузилась.',
+      en: 'The user chose "Autosize all columns" in the column menu: each column now fits its content — the narrow ones got wider, and the one that was too wide got narrower.',
+    },
     enter: fromNarrow(
       root => allFitted(root) && !autosizeAllItem(),
       root => {
@@ -572,7 +632,7 @@ export const AutosizeColumns: StoryObj<StoryProps> = {
   parameters: { scenario: '0217/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Ширина по содержимому"
+      title={{ ru: 'Ширина по содержимому', en: 'Width by content' }}
       steps={AUTOSIZE}
       args={guideArgs(
         {
@@ -589,13 +649,13 @@ export const AutosizeColumns: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(AUTOSIZE[0]!.title, async () => {
+    await step(AUTOSIZE[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() =>
         expect(fittedWidth(canvas, 'name')).toBe(NARROW_WIDTHS.name),
       )
     })
-    await step(AUTOSIZE[1]!.title, async () => {
+    await step(AUTOSIZE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(fittedWidth(canvas, 'name')).toBeGreaterThan(NARROW_WIDTHS.name),
@@ -603,7 +663,7 @@ export const AutosizeColumns: StoryObj<StoryProps> = {
       await expect(fittedWidth(canvas, 'company')).toBe(NARROW_WIDTHS.company)
       await settle()
     })
-    await step(AUTOSIZE[2]!.title, async () => {
+    await step(AUTOSIZE[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(allFitted(canvas)).toBe(true))
       await until(() => expect(autosizeAllItem()).toBeNull())
@@ -637,13 +697,19 @@ const LONG = rowsOf([
 
 const ON_DATA: readonly GuideStoryStep[] = [
   {
-    title: 'Данные пришли',
-    hint: 'Таблица получила данные и сама подогнала колонки по содержимому: имена короткие — колонка узкая.',
+    title: { ru: 'Данные пришли', en: 'Data arrived' },
+    hint: {
+      ru: 'Таблица получила данные и сама подогнала колонки по содержимому: имена короткие — колонка узкая.',
+      en: 'The table received data and fitted the columns to their content on its own: the names are short, so the column is narrow.',
+    },
     props: () => ({ dataOverride: SHORT }),
   },
   {
-    title: 'Пришли новые данные',
-    hint: 'Приложение передало новые данные с длинными именами. Таблица снова подогнала колонку — теперь она шире.',
+    title: { ru: 'Пришли новые данные', en: 'New data arrived' },
+    hint: {
+      ru: 'Приложение передало новые данные с длинными именами. Таблица снова подогнала колонку — теперь она шире.',
+      en: 'The app passed new data with long names. The table fitted the column again, and now it is wider.',
+    },
     props: () => ({ dataOverride: LONG }),
   },
 ]
@@ -654,7 +720,10 @@ export const AutosizeOnData: StoryObj<StoryProps> = {
   parameters: { scenario: '0217/S2', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Подгонка при приходе данных"
+      title={{
+        ru: 'Подгонка при приходе данных',
+        en: 'Autosizing when data arrives',
+      }}
       steps={ON_DATA}
       args={guideArgs(
         {
@@ -670,12 +739,12 @@ export const AutosizeOnData: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     let short = 0
-    await step(ON_DATA[0]!.title, async () => {
+    await step(ON_DATA[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(fittedWidth(canvas, 'name')).toBeLessThan(150))
       short = fittedWidth(canvas, 'name')
     })
-    await step(ON_DATA[1]!.title, async () => {
+    await step(ON_DATA[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(fittedWidth(canvas, 'name')).toBeGreaterThan(short + 50),

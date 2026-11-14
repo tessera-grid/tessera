@@ -117,9 +117,9 @@ const meta = {
     mode: {
       control: 'inline-radio',
       options: ['single', 'range'],
-      description: 'День или диапазон',
+      description: 'A day or a range',
     },
-    time: { control: 'boolean', description: 'Поле времени' },
+    time: { control: 'boolean', description: 'Time field' },
   },
   render: args => <CalendarStory {...args} />,
 } satisfies Meta<CalendarStoryArgs>

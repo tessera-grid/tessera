@@ -120,28 +120,52 @@ const onlyGroupHidden = (id: string) => () => {
 
 const TOGGLE_ALL: readonly GuideStoryStep[] = [
   {
-    title: 'Все колонки видны',
-    hint: 'Пользователь ещё не открывал меню видимости колонок, все колонки на месте.',
+    title: { ru: 'Все колонки видны', en: 'All columns are visible' },
+    hint: {
+      ru: 'Пользователь ещё не открывал меню видимости колонок, все колонки на месте.',
+      en: 'The user has not opened the column visibility menu yet; all columns are in place.',
+    },
   },
   {
-    title: 'Меню видимости колонок',
-    hint: 'Над списком колонок — флажок всех колонок, колонки под ним сдвинуты на уровень. Внизу — сколько колонок выбрано.',
+    title: { ru: 'Меню видимости колонок', en: 'The column visibility menu' },
+    hint: {
+      ru: 'Над списком колонок — флажок всех колонок, колонки под ним сдвинуты на уровень. Внизу — сколько колонок выбрано.',
+      en: 'Above the column list is a checkbox for all columns, with the columns indented one level below it. At the bottom, the menu shows how many columns are selected.',
+    },
     states: ['overlay.columns'],
     enter: inColumnsMenu(),
   },
   {
-    title: 'Пользователь скрыл все колонки',
-    hint: 'Флажок всех колонок снят. В таблице отображается заглушка, выбрано ноль колонок.',
+    title: {
+      ru: 'Пользователь скрыл все колонки',
+      en: 'The user hid all columns',
+    },
+    hint: {
+      ru: 'Флажок всех колонок снят. В таблице отображается заглушка, выбрано ноль колонок.',
+      en: 'The checkbox for all columns is cleared. The table shows a placeholder, and zero columns are selected.',
+    },
     enter: inColumnsMenu(clickUntil(rootBoxOf, 'false')),
   },
   {
-    title: 'Пользователь вернул одну колонку',
-    hint: 'Флажок всех колонок — в промежуточном состоянии, в таблице одна колонка.',
+    title: {
+      ru: 'Пользователь вернул одну колонку',
+      en: 'The user brought back one column',
+    },
+    hint: {
+      ru: 'Флажок всех колонок — в промежуточном состоянии, в таблице одна колонка.',
+      en: 'The checkbox for all columns is in the mixed state, and the table has one column.',
+    },
     enter: inColumnsMenu(onlyColumn('firstName')),
   },
   {
-    title: 'Пользователь показал все колонки',
-    hint: 'Нажатие на промежуточный флажок показывает все колонки: таблица снова целиком.',
+    title: {
+      ru: 'Пользователь показал все колонки',
+      en: 'The user showed all columns',
+    },
+    hint: {
+      ru: 'Нажатие на промежуточный флажок показывает все колонки: таблица снова целиком.',
+      en: 'Clicking the mixed checkbox shows all columns: the whole table is back.',
+    },
     enter: inColumnsMenu(clickUntil(rootBoxOf, 'true')),
   },
 ]
@@ -155,7 +179,10 @@ export const ColumnVisibilityToggleAll: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Все колонки одним флажком"
+      title={{
+        ru: 'Все колонки одним флажком',
+        en: 'All columns with one checkbox',
+      }}
       steps={TOGGLE_ALL}
       args={guideArgs(
         {
@@ -175,10 +202,10 @@ export const ColumnVisibilityToggleAll: StoryObj<StoryProps> = {
     const count = () =>
       menuOf()?.querySelector('[data-testid="column-visibility-count"]')
         ?.textContent
-    await step(TOGGLE_ALL[0].title, async () => {
+    await step(TOGGLE_ALL[0].title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(TOGGLE_ALL[1].title, async () => {
+    await step(TOGGLE_ALL[1].title.ru, async () => {
       await guideNext(canvas)
       await waitForRows(canvas)
       await until(() => expect(rootBoxOf()).not.toBeNull())
@@ -190,7 +217,7 @@ export const ColumnVisibilityToggleAll: StoryObj<StoryProps> = {
       )
       await settle()
     })
-    await step(TOGGLE_ALL[2].title, async () => {
+    await step(TOGGLE_ALL[2].title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(
@@ -205,7 +232,7 @@ export const ColumnVisibilityToggleAll: StoryObj<StoryProps> = {
       )
       await settle()
     })
-    await step(TOGGLE_ALL[3].title, async () => {
+    await step(TOGGLE_ALL[3].title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(headIdsOf(canvas)).toEqual(['firstName']))
       await until(() =>
@@ -213,7 +240,7 @@ export const ColumnVisibilityToggleAll: StoryObj<StoryProps> = {
       )
       await settle()
     })
-    await step(TOGGLE_ALL[4].title, async () => {
+    await step(TOGGLE_ALL[4].title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(headIdsOf(canvas)).toHaveLength(5))
       await until(() =>
@@ -248,23 +275,44 @@ const hideFromMenu = (root: HTMLElement) => {
 
 const HEADER_MENU: readonly GuideStoryStep[] = [
   {
-    title: 'Меню колонок в заголовках',
-    hint: 'У заголовка — кнопка меню колонки, над таблицей — кнопка списка колонок.',
+    title: {
+      ru: 'Меню колонок в заголовках',
+      en: 'Column menus in the headers',
+    },
+    hint: {
+      ru: 'У заголовка — кнопка меню колонки, над таблицей — кнопка списка колонок.',
+      en: 'Each header has a column menu button, and above the table is a button for the column list.',
+    },
   },
   {
-    title: 'Пользователь открыл меню колонки',
-    hint: 'В меню — действие «скрыть колонку».',
+    title: {
+      ru: 'Пользователь открыл меню колонки',
+      en: 'The user opened the column menu',
+    },
+    hint: {
+      ru: 'В меню — действие «скрыть колонку».',
+      en: 'The menu has a “hide column” action.',
+    },
     states: ['overlay.menu'],
     enter: untilDone(() => !!hideItem(), openColumnMenu),
   },
   {
-    title: 'Пользователь скрыл колонку',
-    hint: 'Колонка ушла из таблицы, соседние сдвинулись на её место.',
+    title: { ru: 'Пользователь скрыл колонку', en: 'The user hid a column' },
+    hint: {
+      ru: 'Колонка ушла из таблицы, соседние сдвинулись на её место.',
+      en: 'The column left the table, and its neighbors moved into its place.',
+    },
     enter: untilDone(root => !headCell(root, HIDDEN), hideFromMenu),
   },
   {
-    title: 'Пользователь вернул колонку',
-    hint: 'В списке колонок над таблицей пользователь снова отметил скрытую колонку — она вернулась на своё место.',
+    title: {
+      ru: 'Пользователь вернул колонку',
+      en: 'The user brought the column back',
+    },
+    hint: {
+      ru: 'В списке колонок над таблицей пользователь снова отметил скрытую колонку — она вернулась на своё место.',
+      en: 'In the column list above the table, the user checked the hidden column again, and it returned to its place.',
+    },
     // Сначала колонку скрывают (шаг открыт нажатием на него), затем возвращают списком.
     enter: (root: HTMLElement) => {
       let hidden = false
@@ -298,7 +346,10 @@ export const ColumnVisibilityWithHeaderMenu: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Скрытие колонки из её меню"
+      title={{
+        ru: 'Скрытие колонки из её меню',
+        en: 'Hiding a column from its menu',
+      }}
       steps={HEADER_MENU}
       args={guideArgs(
         {
@@ -318,24 +369,24 @@ export const ColumnVisibilityWithHeaderMenu: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     let initial: string[] = []
-    await step(HEADER_MENU[0]!.title, async () => {
+    await step(HEADER_MENU[0]!.title.ru, async () => {
       await waitForRows(canvas)
       initial = headIdsOf(canvas)
       await expect(initial).toContain(HIDDEN)
       await until(() => expect(kebabOf(canvas)).not.toBeNull())
     })
-    await step(HEADER_MENU[1]!.title, async () => {
+    await step(HEADER_MENU[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(hideItem()).not.toBeNull())
       await settle()
     })
-    await step(HEADER_MENU[2]!.title, async () => {
+    await step(HEADER_MENU[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(headIdsOf(canvas)).toEqual(initial.filter(id => id !== HIDDEN)),
       )
     })
-    await step(HEADER_MENU[3]!.title, async () => {
+    await step(HEADER_MENU[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(headIdsOf(canvas)).toEqual(initial))
       await settle()
@@ -399,12 +450,24 @@ const sortedBy = (root: HTMLElement) =>
 
 const HIDE_SORTED: readonly GuideStoryStep[] = [
   {
-    title: 'Колонка отсортирована и отфильтрована',
-    hint: 'Строки идут по фамилии в обратном порядке, и в таблице только фамилии с буквой «a».',
+    title: {
+      ru: 'Колонка отсортирована и отфильтрована',
+      en: 'The column is sorted and filtered',
+    },
+    hint: {
+      ru: 'Строки идут по фамилии в обратном порядке, и в таблице только фамилии с буквой «a».',
+      en: 'Rows are sorted by last name in reverse order, and the table shows only last names with the letter “a”.',
+    },
   },
   {
-    title: 'Пользователь открыл меню колонки',
-    hint: 'Пользователь открыл меню отсортированной колонки. Под пунктом скрытия — подсказка: сортировка и фильтр останутся и после скрытия.',
+    title: {
+      ru: 'Пользователь открыл меню колонки',
+      en: 'The user opened the column menu',
+    },
+    hint: {
+      ru: 'Пользователь открыл меню отсортированной колонки. Под пунктом скрытия — подсказка: сортировка и фильтр останутся и после скрытия.',
+      en: 'The user opened the menu of the sorted column. Below the hide item, a note says that sorting and the filter will remain after hiding.',
+    },
     states: ['overlay.menu'],
     enter: untilDone(
       () => !!captionOf(transformedHideItem()),
@@ -414,8 +477,11 @@ const HIDE_SORTED: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Пользователь скрыл колонку',
-    hint: 'Колонки нет в таблице, а строки по-прежнему отсортированы по фамилии и отфильтрованы.',
+    title: { ru: 'Пользователь скрыл колонку', en: 'The user hid a column' },
+    hint: {
+      ru: 'Колонки нет в таблице, а строки по-прежнему отсортированы по фамилии и отфильтрованы.',
+      en: 'The column is gone from the table, but the rows are still sorted by last name and filtered.',
+    },
     enter: untilDone(
       root => !headCell(root, TRANSFORMED),
       root => {
@@ -436,24 +502,27 @@ export const VisibilityHideSortedColumn: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Скрытие отсортированной колонки"
+      title={{
+        ru: 'Скрытие отсортированной колонки',
+        en: 'Hiding a sorted column',
+      }}
       steps={HIDE_SORTED}
       args={guideArgs(transformedArgs, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(HIDE_SORTED[0]!.title, async () => {
+    await step(HIDE_SORTED[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(sortedBy(canvas)).toBe(true))
       await until(() => expect(transformedKebabOf(canvas)).not.toBeNull())
     })
-    await step(HIDE_SORTED[1]!.title, async () => {
+    await step(HIDE_SORTED[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(captionOf(transformedHideItem())).toBeTruthy())
       await settle()
     })
-    await step(HIDE_SORTED[2]!.title, async () => {
+    await step(HIDE_SORTED[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(headCell(canvas, TRANSFORMED)).toBeNull())
       await settle()
@@ -503,24 +572,48 @@ const reopenedWithIcons = (root: HTMLElement) => {
 
 const CLEAR_HIDDEN: readonly GuideStoryStep[] = [
   {
-    title: 'Колонка отсортирована и отфильтрована',
-    hint: 'Строки идут по фамилии в обратном порядке, и в таблице только фамилии с буквой «a».',
+    title: {
+      ru: 'Колонка отсортирована и отфильтрована',
+      en: 'The column is sorted and filtered',
+    },
+    hint: {
+      ru: 'Строки идут по фамилии в обратном порядке, и в таблице только фамилии с буквой «a».',
+      en: 'Rows are sorted by last name in reverse order, and the table shows only last names with the letter “a”.',
+    },
   },
   {
-    title: 'Пользователь скрыл колонку в списке',
-    hint: 'Колонки нет в таблице. У неё в списке — подсказка: сортировка и фильтр остаются.',
+    title: {
+      ru: 'Пользователь скрыл колонку в списке',
+      en: 'The user hid a column in the list',
+    },
+    hint: {
+      ru: 'Колонки нет в таблице. У неё в списке — подсказка: сортировка и фильтр остаются.',
+      en: 'The column is gone from the table. Its entry in the list has a note: sorting and the filter remain.',
+    },
     states: ['overlay.columns'],
     enter: root => inColumnsMenu(hiddenInMenu(root))(root),
   },
   {
-    title: 'Пользователь снова открыл список',
-    hint: 'У скрытой колонки — кнопка-ластик: она видна, пока колонка меняет строки, а её подсказка называет сортировку и фильтр.',
+    title: {
+      ru: 'Пользователь снова открыл список',
+      en: 'The user opened the list again',
+    },
+    hint: {
+      ru: 'У скрытой колонки — кнопка-ластик: она видна, пока колонка меняет строки, а её подсказка называет сортировку и фильтр.',
+      en: 'The hidden column has an eraser button: it is shown while the column affects the rows, and its tooltip names the sorting and the filter.',
+    },
     states: ['overlay.columns'],
     enter: reopenedWithIcons,
   },
   {
-    title: 'Пользователь снял сортировку и фильтр',
-    hint: 'Ластиком у скрытой колонки пользователь снял её сортировку и фильтр: кнопки больше нет, в таблице снова все строки в исходном порядке.',
+    title: {
+      ru: 'Пользователь снял сортировку и фильтр',
+      en: 'The user removed sorting and the filter',
+    },
+    hint: {
+      ru: 'Ластиком у скрытой колонки пользователь снял её сортировку и фильтр: кнопки больше нет, в таблице снова все строки в исходном порядке.',
+      en: 'With the eraser on the hidden column, the user removed its sorting and filter: the button is gone, and the table again shows all rows in their original order.',
+    },
     states: ['overlay.columns'],
     enter: untilDone(
       () =>
@@ -547,7 +640,10 @@ export const VisibilityClearHiddenTransforms: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Сортировка и фильтр скрытой колонки"
+      title={{
+        ru: 'Сортировка и фильтр скрытой колонки',
+        en: 'Sorting and filter of a hidden column',
+      }}
       steps={CLEAR_HIDDEN}
       args={guideArgs(transformedArgs, args)}
     />
@@ -555,18 +651,18 @@ export const VisibilityClearHiddenTransforms: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     let filtered = 0
-    await step(CLEAR_HIDDEN[0]!.title, async () => {
+    await step(CLEAR_HIDDEN[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(sortedBy(canvas)).toBe(true))
       filtered = canvas.querySelectorAll('.data-grid__body-row').length
     })
-    await step(CLEAR_HIDDEN[1]!.title, async () => {
+    await step(CLEAR_HIDDEN[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(keptOf(TRANSFORMED)).toBeTruthy())
       await expect(headCell(canvas, TRANSFORMED)).toBeNull()
       await settle()
     })
-    await step(CLEAR_HIDDEN[2]!.title, async () => {
+    await step(CLEAR_HIDDEN[2]!.title.ru, async () => {
       await guideNext(canvas)
       // Ластик стоит у колонки и в прошлом шаге: шаг пройден, когда подсказка ушла с повторным открытием.
       await until(() => {
@@ -575,7 +671,7 @@ export const VisibilityClearHiddenTransforms: StoryObj<StoryProps> = {
       })
       await settle()
     })
-    await step(CLEAR_HIDDEN[3]!.title, async () => {
+    await step(CLEAR_HIDDEN[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(iconsOf(TRANSFORMED)).toEqual([]))
       await until(() =>
@@ -592,22 +688,40 @@ export const VisibilityClearHiddenTransforms: StoryObj<StoryProps> = {
 
 const NESTED_TREE: readonly GuideStoryStep[] = [
   {
-    title: 'Все колонки видны',
-    hint: 'Колонки сгруппированы во вложенной шапке. Пользователь ещё не открывал меню видимости колонок.',
+    title: { ru: 'Все колонки видны', en: 'All columns are visible' },
+    hint: {
+      ru: 'Колонки сгруппированы во вложенной шапке. Пользователь ещё не открывал меню видимости колонок.',
+      en: 'The columns are grouped in a nested header. The user has not opened the column visibility menu yet.',
+    },
   },
   {
-    title: 'Дерево колонок вложенной шапки',
-    hint: 'Колонки в меню сгруппированы, как в шапке таблицы. Флажок всех колонок, группы и их колонки соединены линиями дерева.',
+    title: {
+      ru: 'Дерево колонок вложенной шапки',
+      en: 'The column tree of a nested header',
+    },
+    hint: {
+      ru: 'Колонки в меню сгруппированы, как в шапке таблицы. Флажок всех колонок, группы и их колонки соединены линиями дерева.',
+      en: 'The columns in the menu are grouped as in the table header. Tree lines connect the checkbox for all columns, the groups, and their columns.',
+    },
     enter: inColumnsMenu(),
   },
   {
-    title: 'Пользователь скрыл группу',
-    hint: 'Галочка группы скрывает все её колонки: группы больше нет в шапке, флажок всех колонок — в промежуточном состоянии.',
+    title: { ru: 'Пользователь скрыл группу', en: 'The user hid a group' },
+    hint: {
+      ru: 'Галочка группы скрывает все её колонки: группы больше нет в шапке, флажок всех колонок — в промежуточном состоянии.',
+      en: "The group's checkbox hides all its columns: the group is gone from the header, and the checkbox for all columns is in the mixed state.",
+    },
     enter: inColumnsMenu(onlyGroupHidden('name')),
   },
   {
-    title: 'Пользователь показал все колонки',
-    hint: 'Флажок всех колонок возвращает группу в шапку таблицы.',
+    title: {
+      ru: 'Пользователь показал все колонки',
+      en: 'The user showed all columns',
+    },
+    hint: {
+      ru: 'Флажок всех колонок возвращает группу в шапку таблицы.',
+      en: 'The checkbox for all columns brings the group back into the table header.',
+    },
     enter: inColumnsMenu(clickUntil(rootBoxOf, 'true')),
   },
 ]
@@ -621,7 +735,7 @@ export const ColumnVisibilityNestedTree: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Группы колонок в меню"
+      title={{ ru: 'Группы колонок в меню', en: 'Column groups in the menu' }}
       steps={NESTED_TREE}
       args={guideArgs(
         {
@@ -639,10 +753,10 @@ export const ColumnVisibilityNestedTree: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     const elbows = () =>
       menuOf()!.querySelectorAll('[data-column-id] [data-tree-elbow]').length
-    await step(NESTED_TREE[0].title, async () => {
+    await step(NESTED_TREE[0].title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(NESTED_TREE[1].title, async () => {
+    await step(NESTED_TREE[1].title.ru, async () => {
       await guideNext(canvas)
       await waitForRows(canvas)
       await until(() => expect(rootBoxOf()).not.toBeNull())
@@ -650,7 +764,7 @@ export const ColumnVisibilityNestedTree: StoryObj<StoryProps> = {
       await until(() => expect(elbows()).toBeGreaterThan(0))
       await settle()
     })
-    await step(NESTED_TREE[2].title, async () => {
+    await step(NESTED_TREE[2].title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(headIdsOf(canvas)).not.toContain('firstName'))
       await until(() => expect(headIdsOf(canvas)).not.toContain('lastName'))
@@ -659,7 +773,7 @@ export const ColumnVisibilityNestedTree: StoryObj<StoryProps> = {
       )
       await settle()
     })
-    await step(NESTED_TREE[3].title, async () => {
+    await step(NESTED_TREE[3].title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(headIdsOf(canvas)).toContain('firstName'))
       await until(() =>

@@ -33,8 +33,8 @@ const meta = {
   argTypes: {
     title: { control: 'text' },
     description: { control: 'text' },
-    illustration: { control: 'boolean', description: 'Иллюстрация' },
-    action: { control: 'boolean', description: 'Кнопка действия' },
+    illustration: { control: 'boolean', description: 'Illustration' },
+    action: { control: 'boolean', description: 'Action button' },
   },
   render: function Render({
     title,

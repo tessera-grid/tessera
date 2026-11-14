@@ -104,8 +104,14 @@ export const StubsPlayground: StoryObj<StoryProps> = {
 
 const NO_COLUMNS: readonly GuideStoryStep[] = [
   {
-    title: 'Ожидание списка колонок от сервера',
-    hint: 'Структура таблицы еще неизвестна. Тулбар, тело таблицы и статусбар находятся в состоянии загрузки.',
+    title: {
+      ru: 'Ожидание списка колонок от сервера',
+      en: 'Waiting for the column list from the server',
+    },
+    hint: {
+      ru: 'Структура таблицы еще неизвестна. Тулбар, тело таблицы и статусбар находятся в состоянии загрузки.',
+      en: 'The structure of the table is not known yet. The toolbar, the table body, and the status bar are in the loading state.',
+    },
     props: () => ({
       loading: 'initial',
       dataOverride: [],
@@ -113,8 +119,14 @@ const NO_COLUMNS: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Данные пришли, колонки — нет',
-    hint: 'Список колонок отсутствует. В таблице отображается заглушка, без заголовков и строк.',
+    title: {
+      ru: 'Данные пришли, колонки — нет',
+      en: 'Data arrived, columns did not',
+    },
+    hint: {
+      ru: 'Список колонок отсутствует. В таблице отображается заглушка, без заголовков и строк.',
+      en: 'There is no column list. The table shows a placeholder, with no headers or rows.',
+    },
     props: ({ rows }) => ({ loading: false, dataOverride: rows }),
   },
 ]
@@ -128,7 +140,7 @@ export const StubsNoColumns: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Данные без колонок"
+      title={{ ru: 'Данные без колонок', en: 'Data without columns' }}
       steps={NO_COLUMNS}
       args={guideArgs({ ...FIXED_HEIGHT, ...PANELS }, args)}
     />
@@ -137,7 +149,7 @@ export const StubsNoColumns: StoryObj<StoryProps> = {
     // В Storybook сценарий проходит человек; `play` — только в тестах каталога.
     if (globals.catalog !== true) return
     const labels = storyLabels(args.locale)
-    await step(NO_COLUMNS[0]!.title, async () => {
+    await step(NO_COLUMNS[0]!.title.ru, async () => {
       for (const id of [
         'quick-search-skeleton',
         'export-skeleton',
@@ -150,7 +162,7 @@ export const StubsNoColumns: StoryObj<StoryProps> = {
       ).not.toBeNull()
       await expect(byTestId('pagination-range')?.textContent).toBe('')
     })
-    await step(NO_COLUMNS[1]!.title, async () => {
+    await step(NO_COLUMNS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await waitTestId('no-columns-stub')
       await expect(byTestId('no-columns-stub')).toHaveTextContent(
@@ -200,12 +212,24 @@ const hideAllFromMenu = (root: HTMLElement) => {
 
 const COLUMNS_HIDDEN: readonly GuideStoryStep[] = [
   {
-    title: 'Видимость колонок в тулбаре',
-    hint: 'Таблица отображает список колонок. Включен виджет по управлению их видимостью.',
+    title: {
+      ru: 'Видимость колонок в тулбаре',
+      en: 'Column visibility in the toolbar',
+    },
+    hint: {
+      ru: 'Таблица отображает список колонок. Включен виджет по управлению их видимостью.',
+      en: 'The table shows its columns. A control for their visibility is turned on.',
+    },
   },
   {
-    title: 'Пользователь скрыл все колонки',
-    hint: 'Пользователь снял флажок всех колонок в меню видимости. Все колонки скрыты, в таблице отображается заглушка.',
+    title: {
+      ru: 'Пользователь скрыл все колонки',
+      en: 'The user hid all columns',
+    },
+    hint: {
+      ru: 'Пользователь снял флажок всех колонок в меню видимости. Все колонки скрыты, в таблице отображается заглушка.',
+      en: 'The user cleared the checkbox for all columns in the visibility menu. All columns are hidden, and the table shows a placeholder.',
+    },
     enter: hideAllFromMenu,
   },
 ]
@@ -219,7 +243,7 @@ export const StubsColumnsHidden: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Все колонки скрыты"
+      title={{ ru: 'Все колонки скрыты', en: 'All columns hidden' }}
       steps={COLUMNS_HIDDEN}
       args={guideArgs({ ...FIXED_HEIGHT, enableColumnVisibility: true }, args)}
     />
@@ -227,7 +251,7 @@ export const StubsColumnsHidden: StoryObj<StoryProps> = {
   play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     const labels = storyLabels(args.locale)
-    await step(COLUMNS_HIDDEN[0]!.title, async () => {
+    await step(COLUMNS_HIDDEN[0]!.title.ru, async () => {
       await until(() => expect(bodyRows(canvas).length).toBeGreaterThan(0))
       await expect(
         canvas.querySelectorAll('[role="columnheader"]').length,
@@ -237,7 +261,7 @@ export const StubsColumnsHidden: StoryObj<StoryProps> = {
         'data-active',
       )
     })
-    await step(COLUMNS_HIDDEN[1]!.title, async () => {
+    await step(COLUMNS_HIDDEN[1]!.title.ru, async () => {
       await guideNext(canvas)
       await waitTestId('columns-hidden-stub')
       await until(() => expect(byTestId('column-visibility-menu')).toBeNull())
@@ -267,13 +291,22 @@ export const StubsColumnsHidden: StoryObj<StoryProps> = {
 
 const NO_DATA: readonly GuideStoryStep[] = [
   {
-    title: 'Данные загружаются',
-    hint: 'Данных еще нет, в теле таблицы отображаются скелеты.',
+    title: { ru: 'Данные загружаются', en: 'Data is loading' },
+    hint: {
+      ru: 'Данных еще нет, в теле таблицы отображаются скелеты.',
+      en: 'There is no data yet; the table body shows skeletons.',
+    },
     props: () => ({ loading: 'initial', dataOverride: [] }),
   },
   {
-    title: 'Данные на сервере отсутствуют',
-    hint: 'В теле таблицы отображается заглушка.',
+    title: {
+      ru: 'Данные на сервере отсутствуют',
+      en: 'The server has no data',
+    },
+    hint: {
+      ru: 'В теле таблицы отображается заглушка.',
+      en: 'The table body shows a placeholder.',
+    },
     props: () => ({ loading: false }),
   },
 ]
@@ -287,7 +320,7 @@ export const StubsNoData: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Пустой ответ"
+      title={{ ru: 'Пустой ответ', en: 'An empty response' }}
       steps={NO_DATA}
       args={guideArgs(FIXED_HEIGHT, args)}
     />
@@ -295,7 +328,7 @@ export const StubsNoData: StoryObj<StoryProps> = {
   play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     const labels = storyLabels(args.locale)
-    await step(NO_DATA[0]!.title, async () => {
+    await step(NO_DATA[0]!.title.ru, async () => {
       await until(() =>
         expect(
           canvas.querySelector('.data-grid__body-row--skeleton'),
@@ -303,7 +336,7 @@ export const StubsNoData: StoryObj<StoryProps> = {
       )
       await expect(byTestId('no-data-stub')).toBeNull()
     })
-    await step(NO_DATA[1]!.title, async () => {
+    await step(NO_DATA[1]!.title.ru, async () => {
       await guideNext(canvas)
       await waitTestId('no-data-stub')
       await expect(byTestId('no-data-stub')).toHaveTextContent(labels.noData)
@@ -348,8 +381,11 @@ const ordersStub = (log: ConsoleLog) => (
 
 const OWN_STUB: readonly GuideStoryStep[] = [
   {
-    title: 'Данные загружаются',
-    hint: 'Данных еще нет, в теле таблицы отображаются скелеты.',
+    title: { ru: 'Данные загружаются', en: 'Data is loading' },
+    hint: {
+      ru: 'Данных еще нет, в теле таблицы отображаются скелеты.',
+      en: 'There is no data yet; the table body shows skeletons.',
+    },
     props: ({ log }) => ({
       loading: 'initial',
       dataOverride: [],
@@ -357,8 +393,14 @@ const OWN_STUB: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Данные на сервере отсутствуют',
-    hint: 'Приложение заменило заглушку таблицы своей. В теле таблицы отображается заглушка приложения с его текстом и действием.',
+    title: {
+      ru: 'Данные на сервере отсутствуют',
+      en: 'The server has no data',
+    },
+    hint: {
+      ru: 'Приложение заменило заглушку таблицы своей. В теле таблицы отображается заглушка приложения с его текстом и действием.',
+      en: "The app replaced the table's placeholder with its own. The table body shows the app's placeholder with its text and action.",
+    },
     props: () => ({ loading: false }),
   },
 ]
@@ -372,14 +414,14 @@ export const StubsCustom: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Своя заглушка"
+      title={{ ru: 'Своя заглушка', en: 'A custom placeholder' }}
       steps={OWN_STUB}
       args={guideArgs(FIXED_HEIGHT, args)}
     />
   ),
   play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(OWN_STUB[0]!.title, async () => {
+    await step(OWN_STUB[0]!.title.ru, async () => {
       await until(() =>
         expect(
           canvas.querySelector('.data-grid__body-row--skeleton'),
@@ -387,7 +429,7 @@ export const StubsCustom: StoryObj<StoryProps> = {
       )
       await expect(byTestId('own-no-data')).toBeNull()
     })
-    await step(OWN_STUB[1]!.title, async () => {
+    await step(OWN_STUB[1]!.title.ru, async () => {
       await guideNext(canvas)
       await waitTestId('own-no-data')
       await expect(byTestId('no-data-stub')).not.toHaveTextContent(
@@ -405,12 +447,15 @@ export const StubsCustom: StoryObj<StoryProps> = {
 
 const PLUGIN_REASON: readonly GuideStoryStep[] = [
   {
-    title: 'Связь есть',
-    hint: 'Таблица со строками.',
+    title: { ru: 'Связь есть', en: 'Connected' },
+    hint: { ru: 'Таблица со строками.', en: 'The table has rows.' },
   },
   {
-    title: 'Связь пропала',
-    hint: 'Вместо таблицы — заглушка плагина о потере связи.',
+    title: { ru: 'Связь пропала', en: 'The connection is lost' },
+    hint: {
+      ru: 'Вместо таблицы — заглушка плагина о потере связи.',
+      en: "In place of the table is the plugin's placeholder about the lost connection.",
+    },
     props: () => ({ extraPlugins: [offline({ offline: true })] }),
   },
 ]
@@ -424,7 +469,7 @@ export const StubsPluginReason: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Своя причина плагина"
+      title={{ ru: 'Своя причина плагина', en: "A plugin's own reason" }}
       steps={PLUGIN_REASON}
       args={guideArgs(
         { ...FIXED_HEIGHT, extraPlugins: [offline({ offline: false })] },
@@ -434,11 +479,11 @@ export const StubsPluginReason: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(PLUGIN_REASON[0]!.title, async () => {
+    await step(PLUGIN_REASON[0]!.title.ru, async () => {
       await until(() => expect(bodyRows(canvas).length).toBeGreaterThan(0))
       await expect(byTestId('offline-stub')).toBeNull()
     })
-    await step(PLUGIN_REASON[1]!.title, async () => {
+    await step(PLUGIN_REASON[1]!.title.ru, async () => {
       await guideNext(canvas)
       await waitTestId('offline-stub')
       await expect(byTestId('offline-stub')).toHaveTextContent(

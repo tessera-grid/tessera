@@ -65,8 +65,8 @@ export const InfiniteScrollPlayground: StoryObj<InfiniteScrollDemoProps> = {
       'serverQuery',
     ],
     {
-      dataCount: 'данные подаёт демо',
-      columnCount: 'колонки задаёт демо',
+      dataCount: 'the demo supplies the data',
+      columnCount: 'the demo defines the columns',
     },
   ),
   // Известный итог: счётчик «Loaded N of M»; режимы ленты — контролами.
@@ -80,23 +80,24 @@ export const InfiniteScrollPlayground: StoryObj<InfiniteScrollDemoProps> = {
   },
   argTypes: {
     serverDelayMs: {
-      description: 'Время ответа «сервера», мс',
+      description: '“Server” response time, ms',
       control: { type: 'range', min: 0, max: 3000, step: 100 },
     },
     blockSize: {
-      description: 'Строк в блоке',
+      description: 'Rows per block',
       control: { type: 'range', min: 5, max: 200, step: 5 },
     },
     knownTotal: {
-      description: 'Сервер сообщает итог; иначе — только что строки ещё есть',
+      description:
+        'The server reports the total; otherwise only that more rows exist',
       control: 'boolean',
     },
     failFirstAttempt: {
-      description: 'Первая попытка каждого блока падает, повтор проходит',
+      description: 'The first attempt for each block fails; the retry succeeds',
       control: 'boolean',
     },
     serverQuery: {
-      description: 'Сортировка, фильтры колонок и поиск — на сервере',
+      description: 'Sorting, column filters, and search run on the server',
       control: 'boolean',
     },
   },
@@ -212,13 +213,22 @@ const settledAt = (root: HTMLElement, count: number) =>
 
 const UNKNOWN_TOTAL: readonly GuideStoryStep[] = [
   {
-    title: 'Первая порция',
-    hint: 'Таблица показала первый блок строк. Сервер не сообщает, сколько строк всего: нижняя панель называет только число загруженных.',
+    title: { ru: 'Первая порция', en: 'The first batch' },
+    hint: {
+      ru: 'Таблица показала первый блок строк. Сервер не сообщает, сколько строк всего: нижняя панель называет только число загруженных.',
+      en: 'The table showed the first block of rows. The server does not report the total row count, so the status bar shows only how many are loaded.',
+    },
     props: feedProps({ hold: true }, false),
   },
   {
-    title: 'Пользователь докрутил до края',
-    hint: 'Таблица попросила следующий блок. Пока он в пути, внизу — строки-скелеты.',
+    title: {
+      ru: 'Пользователь докрутил до края',
+      en: 'The user scrolled to the edge',
+    },
+    hint: {
+      ru: 'Таблица попросила следующий блок. Пока он в пути, внизу — строки-скелеты.',
+      en: 'The table requested the next block. While it is on its way, skeleton rows appear at the bottom.',
+    },
     states: ['body.skeleton'],
     enter: stepAction(async (root, { signal }) => {
       if (feed.rows.length > BLOCK) return
@@ -227,8 +237,11 @@ const UNKNOWN_TOTAL: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Сервер ответил',
-    hint: 'Строки дописаны в конец, счётчик загруженных вырос, прокрутка осталась на месте.',
+    title: { ru: 'Сервер ответил', en: 'The server responded' },
+    hint: {
+      ru: 'Строки дописаны в конец, счётчик загруженных вырос, прокрутка осталась на месте.',
+      en: 'The rows were appended at the end, the loaded count went up, and the scroll position stayed put.',
+    },
     enter: stepAction(async (root, { signal }) => {
       if (feed.rows.length === BLOCK && !feed.held) {
         await scrollToEnd(root, signal)
@@ -248,7 +261,7 @@ export const InfiniteScrollUnknownTotal: StoryObj<StoryProps> = {
   parameters: { scenario: '0081/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Итог неизвестен"
+      title={{ ru: 'Итог неизвестен', en: 'Unknown total' }}
       steps={UNKNOWN_TOTAL}
       args={guideArgs(layout, args)}
     />
@@ -256,7 +269,7 @@ export const InfiniteScrollUnknownTotal: StoryObj<StoryProps> = {
   play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     const labels = storyLabels(args.locale)
-    await step(UNKNOWN_TOTAL[0]!.title, async () => {
+    await step(UNKNOWN_TOTAL[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() =>
         expect(loadedText()).toBe(
@@ -264,13 +277,13 @@ export const InfiniteScrollUnknownTotal: StoryObj<StoryProps> = {
         ),
       )
     })
-    await step(UNKNOWN_TOTAL[1]!.title, async () => {
+    await step(UNKNOWN_TOTAL[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(tailRows(canvas)).toBeGreaterThan(0)
       await expect(consoleText()).toContain('onLoadMore')
     })
-    await step(UNKNOWN_TOTAL[2]!.title, async () => {
+    await step(UNKNOWN_TOTAL[2]!.title.ru, async () => {
       const top = scroller(canvas)!.scrollTop
       await guideNext(canvas)
       await stepDone(canvas)
@@ -289,13 +302,19 @@ export const InfiniteScrollUnknownTotal: StoryObj<StoryProps> = {
 
 const ERRORS: readonly GuideStoryStep[] = [
   {
-    title: 'Первая порция',
-    hint: 'Таблица показала первый блок строк, нижняя панель называет, сколько загружено из общего числа.',
+    title: { ru: 'Первая порция', en: 'The first batch' },
+    hint: {
+      ru: 'Таблица показала первый блок строк, нижняя панель называет, сколько загружено из общего числа.',
+      en: 'The table showed the first block of rows; the status bar shows how many are loaded out of the total.',
+    },
     props: feedProps({ failFirst: true }),
   },
   {
-    title: 'Сервер отказал',
-    hint: 'Пользователь докрутил до края, сервер не отдал следующий блок. Внизу — строка ошибки с причиной и кнопкой повтора, загруженные строки на месте.',
+    title: { ru: 'Сервер отказал', en: 'The server refused' },
+    hint: {
+      ru: 'Пользователь докрутил до края, сервер не отдал следующий блок. Внизу — строка ошибки с причиной и кнопкой повтора, загруженные строки на месте.',
+      en: 'The user scrolled to the edge, and the server did not return the next block. At the bottom is an error row with the reason and a retry button; the loaded rows stay in place.',
+    },
     states: ['body.loadFailed'],
     enter: stepAction(async (root, { signal }) => {
       if (feed.rows.length > BLOCK) return
@@ -304,8 +323,14 @@ const ERRORS: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Пользователь повторил запрос',
-    hint: 'Повтор дописал блок, строка ошибки ушла, счётчик вырос.',
+    title: {
+      ru: 'Пользователь повторил запрос',
+      en: 'The user retried the request',
+    },
+    hint: {
+      ru: 'Повтор дописал блок, строка ошибки ушла, счётчик вырос.',
+      en: 'The retry appended the block, the error row went away, and the count went up.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await pollUntil(() => {
         if (feed.rows.length > BLOCK) return true
@@ -332,7 +357,7 @@ export const InfiniteScrollErrors: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Сбой загрузки и повтор"
+      title={{ ru: 'Сбой загрузки и повтор', en: 'Loading failure and retry' }}
       steps={ERRORS}
       args={guideArgs(layout, args)}
     />
@@ -340,7 +365,7 @@ export const InfiniteScrollErrors: StoryObj<StoryProps> = {
   play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     const labels = storyLabels(args.locale)
-    await step(ERRORS[0]!.title, async () => {
+    await step(ERRORS[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() =>
         expect(loadedText()).toBe(
@@ -348,7 +373,7 @@ export const InfiniteScrollErrors: StoryObj<StoryProps> = {
         ),
       )
     })
-    await step(ERRORS[1]!.title, async () => {
+    await step(ERRORS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(errorRow(canvas)).toHaveTextContent(FAILURE)
@@ -356,7 +381,7 @@ export const InfiniteScrollErrors: StoryObj<StoryProps> = {
         infiniteScrollLabels(labels).loadedRowsOf(BLOCK, SERVER_TOTAL),
       )
     })
-    await step(ERRORS[2]!.title, async () => {
+    await step(ERRORS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(errorRow(canvas)).toBeNull()
@@ -399,8 +424,11 @@ const sortedByName = (root: HTMLElement) =>
 
 const SERVER_QUERY: readonly GuideStoryStep[] = [
   {
-    title: 'Первый блок загружен',
-    hint: 'Таблица загрузила первый блок строк. Следующий она допишет, когда пользователь докрутит до края.',
+    title: { ru: 'Первый блок загружен', en: 'The first block is loaded' },
+    hint: {
+      ru: 'Таблица загрузила первый блок строк. Следующий она допишет, когда пользователь докрутит до края.',
+      en: 'The table loaded the first block of rows. It will append the next one when the user scrolls to the edge.',
+    },
     props: ({ app, ...context }) => ({
       ...feedProps({})!({ app, ...context }),
       enableColumnSorting: true,
@@ -416,16 +444,25 @@ const SERVER_QUERY: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Два блока загружены',
-    hint: 'Пользователь докрутил до края, и таблица дописала второй блок.',
+    title: { ru: 'Два блока загружены', en: 'Two blocks are loaded' },
+    hint: {
+      ru: 'Пользователь докрутил до края, и таблица дописала второй блок.',
+      en: 'The user scrolled to the edge, and the table appended the second block.',
+    },
     enter: stepAction(async (root, { signal }) => {
       if (feed.rows.length === BLOCK) await scrollToEnd(root, signal)
       await pollUntil(() => settledAt(root, BLOCK * 2), signal)
     }),
   },
   {
-    title: 'Пользователь отсортировал по имени',
-    hint: 'Новое условие ушло серверу, пока он отвечает, таблица в состоянии обновления данных. Таблица вернулась в начало: пришла первая порция в новом порядке, счётчик снова один блок.',
+    title: {
+      ru: 'Пользователь отсортировал по имени',
+      en: 'The user sorted by name',
+    },
+    hint: {
+      ru: 'Новое условие ушло серверу, пока он отвечает, таблица в состоянии обновления данных. Таблица вернулась в начало: пришла первая порция в новом порядке, счётчик снова один блок.',
+      en: 'The new condition went to the server; while the server responds, the table shows that its data is refreshing. The table went back to the top: the first batch arrived in the new order, and the count is back to one block.',
+    },
     states: ['body.refreshing'],
     enter: stepAction(async (root, { signal }) => {
       await pollUntil(() => {
@@ -448,7 +485,7 @@ export const InfiniteScrollServerQuery: StoryObj<StoryProps> = {
   parameters: { scenario: '0081/S3', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Сортировка на сервере"
+      title={{ ru: 'Сортировка на сервере', en: 'Sorting on the server' }}
       steps={SERVER_QUERY}
       args={guideArgs(layout, args)}
     />
@@ -456,10 +493,10 @@ export const InfiniteScrollServerQuery: StoryObj<StoryProps> = {
   play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     const labels = storyLabels(args.locale)
-    await step(SERVER_QUERY[0]!.title, async () => {
+    await step(SERVER_QUERY[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(SERVER_QUERY[1]!.title, async () => {
+    await step(SERVER_QUERY[1]!.title.ru, async () => {
       await guideNext(canvas)
       await waitForRows(canvas)
       await stepDone(canvas)
@@ -469,7 +506,7 @@ export const InfiniteScrollServerQuery: StoryObj<StoryProps> = {
         ),
       )
     })
-    await step(SERVER_QUERY[2]!.title, async () => {
+    await step(SERVER_QUERY[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(scroller(canvas)!.scrollTop).toBe(0))
@@ -501,8 +538,11 @@ const everyChecked = (root: HTMLElement) =>
 
 const SELECT_ALL: readonly GuideStoryStep[] = [
   {
-    title: 'Первая порция',
-    hint: 'Таблица показала первый блок строк, остальные придут при прокрутке. Ни одна строка не выбрана.',
+    title: { ru: 'Первая порция', en: 'The first batch' },
+    hint: {
+      ru: 'Таблица показала первый блок строк, остальные придут при прокрутке. Ни одна строка не выбрана.',
+      en: 'The table showed the first block of rows; the rest will arrive on scroll. No row is selected.',
+    },
     props: context => ({
       ...feedProps({})!(context),
       enableRowSelection: true,
@@ -510,8 +550,14 @@ const SELECT_ALL: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Пользователь выбрал все строки',
-    hint: 'Пользователь отметил флажок в заголовке. Выбраны все строки ленты, и ещё не загруженные; нижняя панель называет их число.',
+    title: {
+      ru: 'Пользователь выбрал все строки',
+      en: 'The user selected all rows',
+    },
+    hint: {
+      ru: 'Пользователь отметил флажок в заголовке. Выбраны все строки ленты, и ещё не загруженные; нижняя панель называет их число.',
+      en: 'The user checked the checkbox in the header. All rows of the feed are selected, including those not loaded yet; the status bar shows their count.',
+    },
     states: ['body.selection'],
     enter: untilDone(
       root => everyChecked(root) && selectedCount() === String(SERVER_TOTAL),
@@ -522,8 +568,11 @@ const SELECT_ALL: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Пришли следующие строки',
-    hint: 'Пользователь докрутил до края, и сервер прислал следующий блок. Пришедшие строки тоже выбраны.',
+    title: { ru: 'Пришли следующие строки', en: 'The next rows arrived' },
+    hint: {
+      ru: 'Пользователь докрутил до края, и сервер прислал следующий блок. Пришедшие строки тоже выбраны.',
+      en: 'The user scrolled to the edge, and the server sent the next block. The rows that arrived are selected too.',
+    },
     states: ['body.selection'],
     enter: stepAction(async (root, { signal }) => {
       await pollUntil(() => {
@@ -545,23 +594,26 @@ export const InfiniteScrollSelectAll: StoryObj<StoryProps> = {
   parameters: { scenario: '0179/S4', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Выбор всего в ленте"
+      title={{
+        ru: 'Выбор всего в ленте',
+        en: 'Selecting everything in a feed',
+      }}
       steps={SELECT_ALL}
       args={guideArgs(layout, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(SELECT_ALL[0]!.title, async () => {
+    await step(SELECT_ALL[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await expect(everyChecked(canvas)).toBe(false)
     })
-    await step(SELECT_ALL[1]!.title, async () => {
+    await step(SELECT_ALL[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(selectedCount()).toBe(String(SERVER_TOTAL)))
       await expect(everyChecked(canvas)).toBe(true)
     })
-    await step(SELECT_ALL[2]!.title, async () => {
+    await step(SELECT_ALL[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(feed.rows.length).toBe(BLOCK * 2)

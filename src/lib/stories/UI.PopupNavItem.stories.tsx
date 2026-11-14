@@ -56,12 +56,12 @@ const meta = {
   title: 'Tessera/UI/Popup/NavItem',
   args: { label: 'Filter', value: '2 active', disabled: false },
   argTypes: {
-    label: { control: 'text', description: 'Подпись' },
+    label: { control: 'text', description: 'Label' },
     value: {
       control: 'text',
-      description: 'Короткое значение; пусто — без него',
+      description: 'Short value; empty for none',
     },
-    disabled: { control: 'boolean', description: 'Перехода нет' },
+    disabled: { control: 'boolean', description: 'No navigation' },
   },
   render: args => <NavItemStory {...args} />,
 } satisfies Meta<NavItemStoryArgs>

@@ -245,12 +245,18 @@ const fillNewRow = (root: HTMLElement) => {
 
 const INSERT: readonly GuideStoryStep[] = [
   {
-    title: 'Сохранение по кнопке',
-    hint: 'Приложение сохраняет изменения не сразу, а пакетом — по кнопке пульта в тулбаре. Новые строки тоже ждут сохранения.',
+    title: { ru: 'Сохранение по кнопке', en: 'Saving with a button' },
+    hint: {
+      ru: 'Приложение сохраняет изменения не сразу, а пакетом — по кнопке пульта в тулбаре. Новые строки тоже ждут сохранения.',
+      en: 'The app saves changes not right away but in a batch, with the unsaved changes panel button in the toolbar. New rows wait to be saved too.',
+    },
   },
   {
-    title: 'Новая строка',
-    hint: 'Приложение добавило пустую строку под второй. Она залита тоном несохранённого и коротко вспыхнула; на кнопке пульта — одно несохранённое изменение.',
+    title: { ru: 'Новая строка', en: 'A new row' },
+    hint: {
+      ru: 'Приложение добавило пустую строку под второй. Она залита тоном несохранённого и коротко вспыхнула; на кнопке пульта — одно несохранённое изменение.',
+      en: 'The app added an empty row below the second one. It is filled with the unsaved tone and flashed briefly; the unsaved changes panel button shows one unsaved change.',
+    },
     states: ['body.rowDraft'],
     enter: untilDone(
       root => !!newRow(root),
@@ -258,14 +264,20 @@ const INSERT: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Строка заполнена',
-    hint: 'Пользователь вписал имя и возраст. Значения стоят в ячейках новой строки без отметок ячеек: вся строка пока не сохранена.',
+    title: { ru: 'Строка заполнена', en: 'The row is filled in' },
+    hint: {
+      ru: 'Пользователь вписал имя и возраст. Значения стоят в ячейках новой строки без отметок ячеек: вся строка пока не сохранена.',
+      en: "The user typed a name and an age. The values sit in the new row's cells without cell marks: the whole row is not saved yet.",
+    },
     states: ['body.rowDraft'],
     enter: untilDone(newRowFilled, fillNewRow),
   },
   {
-    title: 'Строка сохранена',
-    hint: 'Пользователь применил всё из пульта. Сервер сохранил строку: заливки нет, это обычная строка данных, несохранённых изменений не осталось.',
+    title: { ru: 'Строка сохранена', en: 'The row is saved' },
+    hint: {
+      ru: 'Пользователь применил всё из пульта. Сервер сохранил строку: заливки нет, это обычная строка данных, несохранённых изменений не осталось.',
+      en: 'The user applied everything from the unsaved changes panel. The server saved the row: there is no fill, it is an ordinary data row, and no unsaved changes are left.',
+    },
     enter: untilDone(
       root => !!savedRow(root) && !newRow(root) && !panelOpen(),
       root => {
@@ -283,7 +295,7 @@ export const RowDraftInsert: StoryObj<StoryProps> = {
   parameters: { scenario: '0178/S8', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Новая строка"
+      title={{ ru: 'Новая строка', en: 'A new row' }}
       steps={INSERT}
       reset={() => rowServer.reset()}
       args={guideArgs(ROWS_ARGS, args)}
@@ -291,15 +303,15 @@ export const RowDraftInsert: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(INSERT[0]!.title, async () => {
+    await step(INSERT[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(INSERT[1]!.title, async () => {
+    await step(INSERT[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(newRow(canvas)).not.toBeNull())
       expect(panelCount(canvas)).toBe(1)
     })
-    await step(INSERT[2]!.title, async () => {
+    await step(INSERT[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(textOf(cellOf(newRow(canvas), 'age'))).toBe(NEW_AGE),
@@ -307,7 +319,7 @@ export const RowDraftInsert: StoryObj<StoryProps> = {
       expect(newRow(canvas)!.querySelector('[data-cell-draft]')).toBeNull()
       expect(consoleText()).not.toContain('onCommitEdits')
     })
-    await step(INSERT[3]!.title, async () => {
+    await step(INSERT[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(savedRow(canvas)).not.toBeNull())
       expect(newRow(canvas)).toBeNull()
@@ -323,12 +335,18 @@ const DELETED = 'item-id-3'
 
 const DELETE: readonly GuideStoryStep[] = [
   {
-    title: 'Удаление строки',
-    hint: 'Приложение сохраняет изменения пакетом по кнопке пульта. У строк в колонке действий — кнопка удаления.',
+    title: { ru: 'Удаление строки', en: 'Deleting a row' },
+    hint: {
+      ru: 'Приложение сохраняет изменения пакетом по кнопке пульта. У строк в колонке действий — кнопка удаления.',
+      en: 'The app saves changes in a batch with the unsaved changes panel button. Rows have a delete button in the actions column.',
+    },
   },
   {
-    title: 'Строка удалена',
-    hint: 'Пользователь удалил третью строку. Она осталась на месте до сохранения: текст приглушён, ячейки не правятся, в колонке действий — кнопка возврата.',
+    title: { ru: 'Строка удалена', en: 'The row was deleted' },
+    hint: {
+      ru: 'Пользователь удалил третью строку. Она осталась на месте до сохранения: текст приглушён, ячейки не правятся, в колонке действий — кнопка возврата.',
+      en: 'The user deleted the third row. It stays in place until saved: its text is dimmed, its cells cannot be edited, and the actions column has a restore button.',
+    },
     states: ['body.rowDraft'],
     enter: untilDone(
       root => deletedRow(root, DELETED),
@@ -336,8 +354,11 @@ const DELETE: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Строка возвращена',
-    hint: 'Пользователь вернул строку. Она снова обычная, несохранённых изменений не осталось.',
+    title: { ru: 'Строка возвращена', en: 'The row is restored' },
+    hint: {
+      ru: 'Пользователь вернул строку. Она снова обычная, несохранённых изменений не осталось.',
+      en: 'The user restored the row. It is an ordinary row again, and no unsaved changes are left.',
+    },
     enter: untilDone(
       root => !!rowEl(root, DELETED) && !deletedRow(root, DELETED),
       root => {
@@ -360,7 +381,7 @@ export const RowDraftDelete: StoryObj<StoryProps> = {
   parameters: { scenario: '0178/S9', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Удаление строки"
+      title={{ ru: 'Удаление строки', en: 'Deleting a row' }}
       steps={DELETE}
       reset={() => rowServer.reset()}
       args={guideArgs(ROWS_ARGS, args)}
@@ -368,15 +389,15 @@ export const RowDraftDelete: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(DELETE[0]!.title, async () => {
+    await step(DELETE[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(DELETE[1]!.title, async () => {
+    await step(DELETE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(deletedRow(canvas, DELETED)).toBe(true))
       expect(panelCount(canvas)).toBe(1)
     })
-    await step(DELETE[2]!.title, async () => {
+    await step(DELETE[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(deletedRow(canvas, DELETED)).toBe(false))
       expect(panelCount(canvas)).toBe(0)
@@ -408,18 +429,30 @@ const makeThreeChanges = (root: HTMLElement) => {
 
 const REFUSED: readonly GuideStoryStep[] = [
   {
-    title: 'Сохранение по кнопке',
-    hint: 'Приложение сохраняет изменения пакетом по кнопке пульта. Сервер сейчас не принимает новые строки.',
+    title: { ru: 'Сохранение по кнопке', en: 'Saving with a button' },
+    hint: {
+      ru: 'Приложение сохраняет изменения пакетом по кнопке пульта. Сервер сейчас не принимает новые строки.',
+      en: 'The app saves changes in a batch with the unsaved changes panel button. The server does not accept new rows right now.',
+    },
   },
   {
-    title: 'Три изменения',
-    hint: 'Приложение добавило строку, пользователь удалил пятую строку и поправил возраст в первой. На кнопке пульта — три несохранённых изменения.',
+    title: { ru: 'Три изменения', en: 'Three changes' },
+    hint: {
+      ru: 'Приложение добавило строку, пользователь удалил пятую строку и поправил возраст в первой. На кнопке пульта — три несохранённых изменения.',
+      en: 'The app added a row, and the user deleted the fifth row and edited the age in the first. The unsaved changes panel button shows three unsaved changes.',
+    },
     states: ['body.rowDraft', 'body.cellDraft'],
     enter: untilDone(threeDone, makeThreeChanges),
   },
   {
-    title: 'Сервер отказал новой строке',
-    hint: 'Пользователь применил всё из пульта. Сервер сохранил правку и удаление и отклонил новую строку: удалённой строки больше нет, правленная ячейка вспыхнула тоном успеха, а новая — тоном отката и осталась несохранённой.',
+    title: {
+      ru: 'Сервер отказал новой строке',
+      en: 'The server refused the new row',
+    },
+    hint: {
+      ru: 'Пользователь применил всё из пульта. Сервер сохранил правку и удаление и отклонил новую строку: удалённой строки больше нет, правленная ячейка вспыхнула тоном успеха, а новая — тоном отката и осталась несохранённой.',
+      en: 'The user applied everything from the unsaved changes panel. The server saved the edit and the deletion and rejected the new row: the deleted row is gone, the edited cell flashed in the success tone, and the new row flashed in the revert tone and stayed unsaved.',
+    },
     states: ['body.rowDraft'],
     enter: untilDone(
       root =>
@@ -443,7 +476,7 @@ export const RowDraftsCommitRefused: StoryObj<StoryProps> = {
   parameters: { scenario: '0178/S10', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Отказ новой строке"
+      title={{ ru: 'Отказ новой строке', en: 'A new row refused' }}
       steps={REFUSED}
       reset={() => {
         rowServer.reset()
@@ -454,14 +487,14 @@ export const RowDraftsCommitRefused: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(REFUSED[0]!.title, async () => {
+    await step(REFUSED[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(REFUSED[1]!.title, async () => {
+    await step(REFUSED[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(panelCount(canvas)).toBe(3))
     })
-    await step(REFUSED[2]!.title, async () => {
+    await step(REFUSED[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(rowEl(canvas, REMOVED)).toBeNull())
       await until(() => expect(newRow(canvas)).not.toBeNull())
@@ -482,12 +515,18 @@ const placeOf = (root: ParentNode, row: HTMLElement | null) =>
 
 const SAVE_IN_PLACE: readonly GuideStoryStep[] = [
   {
-    title: 'Правок нет',
-    hint: 'Приложение сохраняет изменения по кнопке пульта. Пользователь ещё ничего не добавлял.',
+    title: { ru: 'Правок нет', en: 'No edits yet' },
+    hint: {
+      ru: 'Приложение сохраняет изменения по кнопке пульта. Пользователь ещё ничего не добавлял.',
+      en: 'The app saves changes with the unsaved changes panel button. The user has not added anything yet.',
+    },
   },
   {
-    title: 'Новая строка заполнена',
-    hint: 'Приложение сохраняет изменения по кнопке пульта. Пользователь добавил строку под второй и вписал имя и возраст: строка залита тоном несохранённого.',
+    title: { ru: 'Новая строка заполнена', en: 'The new row is filled in' },
+    hint: {
+      ru: 'Приложение сохраняет изменения по кнопке пульта. Пользователь добавил строку под второй и вписал имя и возраст: строка залита тоном несохранённого.',
+      en: 'The app saves changes with the unsaved changes panel button. The user added a row below the second one and typed a name and an age: the row is filled with the unsaved tone.',
+    },
     states: ['body.rowDraft'],
     enter: untilDone(newRowFilled, root => {
       rowServer.reset()
@@ -495,8 +534,11 @@ const SAVE_IN_PLACE: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Строка сохранена на месте',
-    hint: 'Пользователь применил всё из пульта. Сервер сохранил строку под тем же номером, что выдала ей таблица, — это та же строка: она осталась на месте, не погасла и не появилась заново, а коротко вспыхнула тоном успеха.',
+    title: { ru: 'Строка сохранена на месте', en: 'The row is saved in place' },
+    hint: {
+      ru: 'Пользователь применил всё из пульта. Сервер сохранил строку под тем же номером, что выдала ей таблица, — это та же строка: она осталась на месте, не погасла и не появилась заново, а коротко вспыхнула тоном успеха.',
+      en: 'The user applied everything from the unsaved changes panel. The server saved the row under the same id the table gave it, so it is the same row: it stayed in place, did not fade out or reappear, and flashed briefly in the success tone.',
+    },
     immediate: true,
     enter: untilDone(
       root => !!savedRow(root) && !newRow(root) && !panelOpen(),
@@ -515,7 +557,7 @@ export const RowDraftSaveInPlace: StoryObj<StoryProps> = {
   parameters: { scenario: '0181/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Сохранение на месте"
+      title={{ ru: 'Сохранение на месте', en: 'Saving in place' }}
       steps={SAVE_IN_PLACE}
       reset={() => rowServer.reset()}
       args={guideArgs(ROWS_ARGS, args)}
@@ -524,16 +566,16 @@ export const RowDraftSaveInPlace: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     let place = -1
-    await step(SAVE_IN_PLACE[0]!.title, async () => {
+    await step(SAVE_IN_PLACE[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(SAVE_IN_PLACE[1]!.title, async () => {
+    await step(SAVE_IN_PLACE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await waitForRows(canvas)
       await until(() => expect(newRowFilled(canvas)).toBe(true))
       place = placeOf(canvas, newRow(canvas))
     })
-    await step(SAVE_IN_PLACE[2]!.title, async () => {
+    await step(SAVE_IN_PLACE[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(savedRow(canvas)).not.toBeNull())
       expect(newRow(canvas)).toBeNull()

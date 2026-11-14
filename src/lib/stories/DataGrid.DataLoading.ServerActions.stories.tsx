@@ -31,6 +31,7 @@ import {
   stepAction,
 } from './demos/GuideStory'
 import { WithConsole } from './demos/StoryConsole'
+import type { StoryText } from './__mocks__/storyText'
 import { createConsoleLog } from './demos/consoleLog'
 import {
   ACTION_SERVER_PAGE,
@@ -74,7 +75,7 @@ const SERVER_PLUGINS = {
   enableQuickSearch: true,
 } satisfies Partial<StoryProps>
 
-const NOT_SERVER_ACTIONS = 'Строки и колонки приходят с сервера истории'
+const NOT_SERVER_ACTIONS = 'Rows and columns come from the story server'
 
 interface ServerActionsPlaygroundArgs extends StoryProps {
   /** «Сервер» отказывает на каждый запрос. */
@@ -146,7 +147,7 @@ export const ServerActionsPlayground: StoryObj<ServerActionsPlaygroundArgs> = {
     serverRefuses: {
       control: 'boolean',
       description:
-        'Сервер отказывает на каждый запрос: таблица откатывает сортировку и страницу, текст поиска остаётся',
+        'The server refuses every request: the table reverts sorting and the page, and the search text stays',
     },
   },
   render: args => <ServerActionsSandbox {...args} />,
@@ -288,8 +289,11 @@ const refuseSearch = async (root: HTMLElement, signal: AbortSignal) => {
 
 const REFUSED: readonly GuideStoryStep[] = [
   {
-    title: 'Данные с сервера',
-    hint: 'Таблица не сортирует, не ищет и не листает строки сама: каждое такое действие пользователя уходит приложению запросом к серверу. Таблица показывает первую страницу из ответа.',
+    title: { ru: 'Данные с сервера', en: 'Data from the server' },
+    hint: {
+      ru: 'Таблица не сортирует, не ищет и не листает строки сама: каждое такое действие пользователя уходит приложению запросом к серверу. Таблица показывает первую страницу из ответа.',
+      en: 'The table does not sort, search, or page through rows on its own: each such user action goes to the app as a request to the server. The table shows the first page from the response.',
+    },
     props: ({ app, log }) =>
       server.callbacks({
         answer: (rows, total) =>
@@ -305,8 +309,11 @@ const REFUSED: readonly GuideStoryStep[] = [
       }),
   },
   {
-    title: 'Сортировка ждёт ответа',
-    hint: 'Пользователь отсортировал строки по имени, запрос ушёл серверу, ответа пока нет. Под шапкой идёт обновление данных; строки прежние, таблица доступна.',
+    title: { ru: 'Сортировка ждёт ответа', en: 'Sorting waits for a response' },
+    hint: {
+      ru: 'Пользователь отсортировал строки по имени, запрос ушёл серверу, ответа пока нет. Под шапкой идёт обновление данных; строки прежние, таблица доступна.',
+      en: 'The user sorted rows by name, and the request went to the server; there is no response yet. A data refresh is in progress under the header; the rows are unchanged, and the table stays available.',
+    },
     states: ['body.refreshing'],
     enter: stepAction(async (root, { signal }) => {
       guide.mode = 'hold'
@@ -318,8 +325,11 @@ const REFUSED: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Сервер ответил',
-    hint: 'Сервер прислал первую страницу в порядке по имени. Ожидание снято, строки упорядочены по имени.',
+    title: { ru: 'Сервер ответил', en: 'The server responded' },
+    hint: {
+      ru: 'Сервер прислал первую страницу в порядке по имени. Ожидание снято, строки упорядочены по имени.',
+      en: 'The server sent the first page ordered by name. The wait is over, and the rows are ordered by name.',
+    },
     enter: stepAction(async (root, { signal }) => {
       guide.mode = 'answer'
       await sortByName(root, signal)
@@ -327,8 +337,11 @@ const REFUSED: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Сервер отказал',
-    hint: 'Пользователь открыл следующую страницу и, не дождавшись ответа, сменил направление сортировки. Сервер отказал. Таблица вернула сортировку и страницу к последнему ответу сервера, под шапкой — сообщение с причиной и повтором.',
+    title: { ru: 'Сервер отказал', en: 'The server refused' },
+    hint: {
+      ru: 'Пользователь открыл следующую страницу и, не дождавшись ответа, сменил направление сортировки. Сервер отказал. Таблица вернула сортировку и страницу к последнему ответу сервера, под шапкой — сообщение с причиной и повтором.',
+      en: 'The user opened the next page and, without waiting for a response, changed the sort direction. The server refused. The table reverted sorting and the page to the last server response, and a message with the reason and a retry button appears under the header.',
+    },
     states: ['body.loadError'],
     enter: stepAction(async (root, { signal }) => {
       guide.mode = 'answer'
@@ -352,14 +365,20 @@ const REFUSED: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Поиск не удался',
-    hint: 'Пользователь ввёл текст поиска, сервер снова отказал. Введённый текст остался в поле поиска, сообщение под шапкой называет причину и предлагает повторить запрос.',
+    title: { ru: 'Поиск не удался', en: 'The search failed' },
+    hint: {
+      ru: 'Пользователь ввёл текст поиска, сервер снова отказал. Введённый текст остался в поле поиска, сообщение под шапкой называет причину и предлагает повторить запрос.',
+      en: 'The user typed a search query, and the server refused again. The typed text stays in the search field, and the message under the header gives the reason and offers to retry.',
+    },
     states: ['body.loadError'],
     enter: stepAction((root, { signal }) => refuseSearch(root, signal)),
   },
   {
-    title: 'Повтор запроса',
-    hint: 'Сервер снова отвечает, пользователь повторил запрос из сообщения. Тот же поиск ушёл серверу ещё раз: пришли найденные строки, сообщение скрыто.',
+    title: { ru: 'Повтор запроса', en: 'Retrying the request' },
+    hint: {
+      ru: 'Сервер снова отвечает, пользователь повторил запрос из сообщения. Тот же поиск ушёл серверу ещё раз: пришли найденные строки, сообщение скрыто.',
+      en: 'The server is responding again, and the user retried the request from the message. The same search went to the server once more: the matching rows arrived, and the message is hidden.',
+    },
     enter: stepAction(async (root, { signal }) => {
       if (!searchRefused()) await refuseSearch(root, signal)
       guide.mode = 'answer'
@@ -380,14 +399,20 @@ const REFUSED: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Фильтр не применился',
-    hint: 'Пользователь отфильтровал колонку по значению, сервер отказал. Условие осталось в панели фильтра, рядом с ним — значок ошибки, под шапкой — сообщение с причиной и повтором.',
+    title: { ru: 'Фильтр не применился', en: 'The filter was not applied' },
+    hint: {
+      ru: 'Пользователь отфильтровал колонку по значению, сервер отказал. Условие осталось в панели фильтра, рядом с ним — значок ошибки, под шапкой — сообщение с причиной и повтором.',
+      en: 'The user filtered a column by a value, and the server refused. The condition stays in the filter panel with an error icon next to it, and a message with the reason and a retry button appears under the header.',
+    },
     states: ['body.loadError', 'overlay.filterText'],
     enter: stepAction((root, { signal }) => refuseFilter(root, signal)),
   },
   {
-    title: 'Страница не открылась',
-    hint: 'Пользователь открыл следующую страницу, сервер снова отказал. Таблица осталась на прежней странице, сообщение под шапкой называет причину.',
+    title: { ru: 'Страница не открылась', en: 'The page did not open' },
+    hint: {
+      ru: 'Пользователь открыл следующую страницу, сервер снова отказал. Таблица осталась на прежней странице, сообщение под шапкой называет причину.',
+      en: 'The user opened the next page, and the server refused again. The table stayed on the previous page, and the message under the header gives the reason.',
+    },
     states: ['body.loadError'],
     enter: stepAction(async (root, { signal }) => {
       if (!refusedWith('filter name=') && !refusedWith('page 2'))
@@ -420,7 +445,7 @@ export const ServerActionsRefused: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Отказ сервера"
+      title={{ ru: 'Отказ сервера', en: 'Server refusal' }}
       steps={REFUSED}
       reset={() => {
         guide.mode = 'answer'
@@ -443,14 +468,14 @@ export const ServerActionsRefused: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     const first = queryActionServer(initialActionQuery())
-    await step(REFUSED[0]!.title, async () => {
+    await step(REFUSED[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() =>
         expect(firstRowText(canvas, 'name')).toBe(first.rows[0]!.name),
       )
       await until(() => expect(onFirstPage(canvas)).toBe(true))
     })
-    await step(REFUSED[1]!.title, async () => {
+    await step(REFUSED[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(server.holding()).toBe(true))
@@ -460,7 +485,7 @@ export const ServerActionsRefused: StoryObj<StoryProps> = {
       )
       await until(() => expect(consoleText()).toContain('onToggleColumnSort'))
     })
-    await step(REFUSED[2]!.title, async () => {
+    await step(REFUSED[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(server.holding()).toBe(false))
@@ -470,7 +495,7 @@ export const ServerActionsRefused: StoryObj<StoryProps> = {
       )
       await until(() => expect(consoleText()).toContain('by name'))
     })
-    await step(REFUSED[3]!.title, async () => {
+    await step(REFUSED[3]!.title.ru, async () => {
       const answered = ariaSort(canvas)
       await guideNext(canvas)
       await stepDone(canvas)
@@ -487,7 +512,7 @@ export const ServerActionsRefused: StoryObj<StoryProps> = {
       )
       await settle()
     })
-    await step(REFUSED[4]!.title, async () => {
+    await step(REFUSED[4]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       // Черновик: текст поиска остался в поле.
@@ -501,7 +526,7 @@ export const ServerActionsRefused: StoryObj<StoryProps> = {
       )
       await settle()
     })
-    await step(REFUSED[5]!.title, async () => {
+    await step(REFUSED[5]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(banner(canvas)).toBeNull())
@@ -513,7 +538,7 @@ export const ServerActionsRefused: StoryObj<StoryProps> = {
       await until(() => expect(consoleText()).toContain(`search "${SEARCH}"`))
       await settle()
     })
-    await step(REFUSED[6]!.title, async () => {
+    await step(REFUSED[6]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       // Черновик: условие осталось в панели, рядом — значок ошибки.
@@ -525,7 +550,7 @@ export const ServerActionsRefused: StoryObj<StoryProps> = {
       await until(() => expect(consoleText()).toContain('onFilterChange'))
       await settle()
     })
-    await step(REFUSED[7]!.title, async () => {
+    await step(REFUSED[7]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(onFirstPage(canvas)).toBe(true))
@@ -567,7 +592,10 @@ const pendingCancel = (root: HTMLElement) =>
   root.querySelector<HTMLElement>('[data-testid="pending-action-cancel"]')
 
 /** Первый шаг гайдов отмены: «сервер» отвечает в данные приложения и консоль. */
-const cancelServerStep = (title: string, hint: string): GuideStoryStep => ({
+const cancelServerStep = (
+  title: StoryText,
+  hint: StoryText,
+): GuideStoryStep => ({
   title,
   hint,
   props: ({ app, log }) =>
@@ -609,19 +637,28 @@ const searchHeld = (root: HTMLElement, signal: AbortSignal) => {
 
 const CANCEL_SEARCH: readonly GuideStoryStep[] = [
   cancelServerStep(
-    'Поиск на сервере',
-    'Каждый запрос из поля поиска уходит на сервер, ответ приходит не сразу.',
+    { ru: 'Поиск на сервере', en: 'Search on the server' },
+    {
+      ru: 'Каждый запрос из поля поиска уходит на сервер, ответ приходит не сразу.',
+      en: 'Every query from the search field goes to the server, and the response takes a while.',
+    },
   ),
   {
-    title: 'Поиск идёт',
-    hint: 'Пользователь ввёл запрос. Пока сервер ищет, под шапкой светится полоса обновления, прежние строки на месте.',
+    title: { ru: 'Поиск идёт', en: 'The search is running' },
+    hint: {
+      ru: 'Пользователь ввёл запрос. Пока сервер ищет, под шапкой светится полоса обновления, прежние строки на месте.',
+      en: 'The user typed a query. While the server is searching, a refresh bar glows under the header, and the previous rows stay in place.',
+    },
     states: ['body.refreshing'],
     immediate: true,
     enter: stepAction((root, { signal }) => searchHeld(root, signal)),
   },
   {
-    title: 'Поиск идёт долго',
-    hint: 'Сервер не ответил за секунду. Под шапкой появилась плашка о поиске с кнопкой отмены.',
+    title: { ru: 'Поиск идёт долго', en: 'The search is taking a while' },
+    hint: {
+      ru: 'Сервер не ответил за секунду. Под шапкой появилась плашка о поиске с кнопкой отмены.',
+      en: 'The server did not respond within a second. A banner about the search with a cancel button appeared under the header.',
+    },
     states: ['body.refreshing'],
     enter: stepAction(async (root, { signal }) => {
       await searchHeld(root, signal)
@@ -629,8 +666,11 @@ const CANCEL_SEARCH: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Поиск отменён',
-    hint: 'Пользователь нажал отмену в плашке. Плашка и свечение ушли, в поле вернулся прежний запрос, строки те же.',
+    title: { ru: 'Поиск отменён', en: 'The search was cancelled' },
+    hint: {
+      ru: 'Пользователь нажал отмену в плашке. Плашка и свечение ушли, в поле вернулся прежний запрос, строки те же.',
+      en: 'The user pressed cancel in the banner. The banner and the glow are gone, the field shows the previous query again, and the rows are unchanged.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await searchHeld(root, signal)
       await pollUntil(() => !!pendingCancel(root), signal)
@@ -652,7 +692,7 @@ export const ServerActionsCancelSearch: StoryObj<StoryProps> = {
   parameters: { scenario: '0153/S3', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Отмена поиска"
+      title={{ ru: 'Отмена поиска', en: 'Cancelling a search' }}
       steps={CANCEL_SEARCH}
       reset={answerCancel}
       args={guideArgs(cancelGuideArgs, args)}
@@ -662,18 +702,18 @@ export const ServerActionsCancelSearch: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     const labels = storyLabels(args.locale)
     const first = queryActionServer(initialActionQuery())
-    await step(CANCEL_SEARCH[0]!.title, async () => {
+    await step(CANCEL_SEARCH[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await expect(firstRowText(canvas, 'name')).toBe(first.rows[0]!.name)
     })
-    await step(CANCEL_SEARCH[1]!.title, async () => {
+    await step(CANCEL_SEARCH[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(refreshing(canvas)).toBe(true)
       await expect(pendingBanner(canvas)).toBeNull()
       await expect(firstRowText(canvas, 'name')).toBe(first.rows[0]!.name)
     })
-    await step(CANCEL_SEARCH[2]!.title, async () => {
+    await step(CANCEL_SEARCH[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(pendingBanner(canvas)).toHaveTextContent(
@@ -682,7 +722,7 @@ export const ServerActionsCancelSearch: StoryObj<StoryProps> = {
       await expect(pendingCancel(canvas)).toHaveTextContent(labels.cancel)
       await settle()
     })
-    await step(CANCEL_SEARCH[3]!.title, async () => {
+    await step(CANCEL_SEARCH[3]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(searchField(canvas)!.value).toBe('')
@@ -706,19 +746,28 @@ const sortHeld = (root: HTMLElement, signal: AbortSignal) => {
 
 const CANCEL_SORT: readonly GuideStoryStep[] = [
   cancelServerStep(
-    'Сортировка на сервере',
-    'Сервер сортирует строки, ответ приходит не сразу.',
+    { ru: 'Сортировка на сервере', en: 'Sorting on the server' },
+    {
+      ru: 'Сервер сортирует строки, ответ приходит не сразу.',
+      en: 'The server sorts the rows, and the response takes a while.',
+    },
   ),
   {
-    title: 'Сортировка ждёт',
-    hint: 'Пользователь нажал кнопку сортировки колонки. Колонка уже отсортирована, а пока сервер сортирует строки, под шапкой светится полоса обновления.',
+    title: { ru: 'Сортировка ждёт', en: 'Sorting is waiting' },
+    hint: {
+      ru: 'Пользователь нажал кнопку сортировки колонки. Колонка уже отсортирована, а пока сервер сортирует строки, под шапкой светится полоса обновления.',
+      en: 'The user pressed the column sort button. The column already shows as sorted, and while the server sorts the rows, a refresh bar glows under the header.',
+    },
     states: ['body.refreshing'],
     immediate: true,
     enter: stepAction((root, { signal }) => sortHeld(root, signal)),
   },
   {
-    title: 'Сортировка идёт долго',
-    hint: 'Сервер не ответил за секунду. Под шапкой появилась плашка о сортировке с кнопкой отмены.',
+    title: { ru: 'Сортировка идёт долго', en: 'Sorting is taking a while' },
+    hint: {
+      ru: 'Сервер не ответил за секунду. Под шапкой появилась плашка о сортировке с кнопкой отмены.',
+      en: 'The server did not respond within a second. A banner about sorting with a cancel button appeared under the header.',
+    },
     states: ['body.refreshing'],
     enter: stepAction(async (root, { signal }) => {
       await sortHeld(root, signal)
@@ -726,8 +775,11 @@ const CANCEL_SORT: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Сортировка отменена',
-    hint: 'Пользователь нажал отмену в плашке. Колонка снова без сортировки, плашка и свечение ушли, плашки отказа нет.',
+    title: { ru: 'Сортировка отменена', en: 'Sorting was cancelled' },
+    hint: {
+      ru: 'Пользователь нажал отмену в плашке. Колонка снова без сортировки, плашка и свечение ушли, плашки отказа нет.',
+      en: 'The user pressed cancel in the banner. The column is unsorted again, the banner and the glow are gone, and there is no refusal banner.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await sortHeld(root, signal)
       await pollUntil(() => !!pendingCancel(root), signal)
@@ -749,7 +801,7 @@ export const ServerActionsCancelSort: StoryObj<StoryProps> = {
   parameters: { scenario: '0153/S6', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Отмена сортировки"
+      title={{ ru: 'Отмена сортировки', en: 'Cancelling sorting' }}
       steps={CANCEL_SORT}
       reset={answerCancel}
       args={guideArgs(cancelGuideArgs, args)}
@@ -759,18 +811,18 @@ export const ServerActionsCancelSort: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     const labels = storyLabels(args.locale)
     const first = queryActionServer(initialActionQuery())
-    await step(CANCEL_SORT[0]!.title, async () => {
+    await step(CANCEL_SORT[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await expect(ariaSort(canvas)).toBe('none')
     })
-    await step(CANCEL_SORT[1]!.title, async () => {
+    await step(CANCEL_SORT[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(ariaSort(canvas)).not.toBe('none')
       await expect(refreshing(canvas)).toBe(true)
       await expect(pendingBanner(canvas)).toBeNull()
     })
-    await step(CANCEL_SORT[2]!.title, async () => {
+    await step(CANCEL_SORT[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(pendingBanner(canvas)).toHaveTextContent(
@@ -779,7 +831,7 @@ export const ServerActionsCancelSort: StoryObj<StoryProps> = {
       await expect(pendingCancel(canvas)).toHaveTextContent(labels.cancel)
       await settle()
     })
-    await step(CANCEL_SORT[3]!.title, async () => {
+    await step(CANCEL_SORT[3]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(ariaSort(canvas)).toBe('none')

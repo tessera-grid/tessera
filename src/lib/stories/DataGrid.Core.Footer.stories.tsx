@@ -120,25 +120,25 @@ export const FooterPlayground: StoryObj<FooterDefaultArgs> = {
         'serverFailMode',
       ],
       {
-        headerHeight: 'Футер встаёт под шапкой при любой её высоте',
+        headerHeight: 'The footer sits under the header at any header height',
         defaultColumn:
-          'Футер повторяет ширины колонок, своего поведения у него нет',
+          'The footer repeats the column widths and has no behavior of its own',
       },
     ),
   },
   args: { ...FOOTER_ARGS, serverDelayMs: 700, serverFailMode: 'never' },
   // В группе ленты: после её тумблера.
-  argTypes: inCategory('Поиск, фильтры, страницы, экспорт', {
+  argTypes: inCategory('Search, filters, pages, export', {
     serverDelayMs: {
       control: { type: 'range', min: 0, max: 5000, step: 100 },
-      description: 'Время ответа «сервера» ленты, мс',
+      description: 'Response time of the feed\'s "server", ms',
       if: { arg: 'enableInfiniteScroll' },
     },
     serverFailMode: {
       control: 'inline-radio',
       options: ['never', 'always'],
       description:
-        '`always` — «сервер» ленты недоступен: блок отвечает отказом, «Retry» повторяет запрос',
+        '`always`: the feed\'s "server" is unavailable — a block responds with a refusal, and "Retry" repeats the request',
       if: { arg: 'enableInfiniteScroll' },
     },
   }),
@@ -201,12 +201,18 @@ const scrollToEnd = afterRows(root => {
 
 const PINNED: readonly GuideStoryStep[] = [
   {
-    title: 'Футер у нижнего края',
-    hint: 'Строка футера всегда отображается у нижнего края таблицы.',
+    title: { ru: 'Футер у нижнего края', en: 'Footer at the bottom edge' },
+    hint: {
+      ru: 'Строка футера всегда отображается у нижнего края таблицы.',
+      en: 'The footer row always appears at the bottom edge of the table.',
+    },
   },
   {
-    title: 'Прокрутка к середине',
-    hint: 'Строка футера перекрывает собой область прокрутки на любой позиции.',
+    title: { ru: 'Прокрутка к середине', en: 'Scrolled to the middle' },
+    hint: {
+      ru: 'Строка футера перекрывает собой область прокрутки на любой позиции.',
+      en: 'The footer row overlays the scroll area at any scroll position.',
+    },
     enter: scrollToMiddle,
   },
 ]
@@ -226,7 +232,7 @@ export const PinnedFooter: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Футер у нижнего края"
+      title={{ ru: 'Футер у нижнего края', en: 'Footer at the bottom edge' }}
       steps={PINNED}
       args={guideArgs(PINNED_FOOTER_ARGS, args)}
     />
@@ -234,13 +240,13 @@ export const PinnedFooter: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     // В Storybook сценарий проходит человек; `play` — только в тестах каталога.
     if (globals.catalog !== true) return
-    await step(PINNED[0].title, async () => {
+    await step(PINNED[0].title.ru, async () => {
       await waitRows(canvas)
       await until(() =>
         near(rect(footerOf(canvas)).bottom, clientBottom(canvas)),
       )
     })
-    await step(PINNED[1].title, async () => {
+    await step(PINNED[1].title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(scrollerOf(canvas).scrollTop).toBeGreaterThan(0))
       near(rect(footerOf(canvas)).bottom, clientBottom(canvas))
@@ -253,12 +259,21 @@ export const PinnedFooter: StoryObj<StoryProps> = {
 
 const INLINE: readonly GuideStoryStep[] = [
   {
-    title: 'Футер за последней строкой',
-    hint: 'Строка футера отображается следом за последней строкой таблицы.',
+    title: {
+      ru: 'Футер за последней строкой',
+      en: 'Footer after the last row',
+    },
+    hint: {
+      ru: 'Строка футера отображается следом за последней строкой таблицы.',
+      en: 'The footer row appears right after the last row of the table.',
+    },
   },
   {
-    title: 'Прокрутка к концу',
-    hint: 'Строка футера видна, только если пользователь дошёл до конца списка строк.',
+    title: { ru: 'Прокрутка к концу', en: 'Scrolled to the end' },
+    hint: {
+      ru: 'Строка футера видна, только если пользователь дошёл до конца списка строк.',
+      en: 'The footer row is visible only once the user reaches the end of the rows.',
+    },
     enter: scrollToEnd,
   },
 ]
@@ -278,20 +293,23 @@ export const InlineFooter: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Футер за последней строкой"
+      title={{
+        ru: 'Футер за последней строкой',
+        en: 'Footer after the last row',
+      }}
       steps={INLINE}
       args={guideArgs(INLINE_FOOTER_ARGS, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(INLINE[0].title, async () => {
+    await step(INLINE[0].title.ru, async () => {
       await waitRows(canvas)
       await expect(rect(footerOf(canvas)).top).toBeGreaterThanOrEqual(
         clientBottom(canvas),
       )
     })
-    await step(INLINE[1].title, async () => {
+    await step(INLINE[1].title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         near(rect(footerOf(canvas)).top, rect(lastRowOf(canvas)).bottom),
@@ -330,17 +348,32 @@ const scrollAndPressCell = stepAction(async (root, { signal }) => {
 
 const SWITCH: readonly GuideStoryStep[] = [
   {
-    title: 'Футер у нижнего края',
-    hint: 'Строка футера отображается у нижнего края таблицы. Таблица в начале, ничего не выбрано.',
+    title: { ru: 'Футер у нижнего края', en: 'Footer at the bottom edge' },
+    hint: {
+      ru: 'Строка футера отображается у нижнего края таблицы. Таблица в начале, ничего не выбрано.',
+      en: 'The footer row appears at the bottom edge of the table. The table is at the top, and nothing is selected.',
+    },
   },
   {
-    title: 'Пользователь выбрал ячейку в середине',
-    hint: 'Пользователь прокрутил таблицу к середине и выбрал ячейку. Строка футера по-прежнему у нижнего края таблицы.',
+    title: {
+      ru: 'Пользователь выбрал ячейку в середине',
+      en: 'The user selected a cell in the middle',
+    },
+    hint: {
+      ru: 'Пользователь прокрутил таблицу к середине и выбрал ячейку. Строка футера по-прежнему у нижнего края таблицы.',
+      en: 'The user scrolled the table to the middle and selected a cell. The footer row is still at the bottom edge of the table.',
+    },
     enter: scrollAndPressCell,
   },
   {
-    title: 'Футер за последней строкой',
-    hint: 'Приложение открепляет футер: строка футера уходит следом за последней строкой, прокрутка и выбранная ячейка остаются на месте.',
+    title: {
+      ru: 'Футер за последней строкой',
+      en: 'Footer after the last row',
+    },
+    hint: {
+      ru: 'Приложение открепляет футер: строка футера уходит следом за последней строкой, прокрутка и выбранная ячейка остаются на месте.',
+      en: 'The app unpins the footer: the footer row moves to follow the last row, while the scroll position and the selected cell stay put.',
+    },
     props: () => ({ footerPosition: 'inline' }),
   },
 ]
@@ -362,7 +395,10 @@ export const FooterPositionSwitch: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Смена положения футера"
+      title={{
+        ru: 'Смена положения футера',
+        en: 'Switching the footer position',
+      }}
       steps={SWITCH}
       args={guideArgs(FOOTER_POSITION_SWITCH_ARGS, args)}
     />
@@ -372,10 +408,10 @@ export const FooterPositionSwitch: StoryObj<StoryProps> = {
     let scrollTop = 0
     let body: Element | null = null
     let cell: HTMLElement | undefined
-    await step(SWITCH[0].title, async () => {
+    await step(SWITCH[0].title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(SWITCH[1].title, async () => {
+    await step(SWITCH[1].title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(scrollerOf(canvas).scrollTop).toBeGreaterThan(0))
@@ -389,7 +425,7 @@ export const FooterPositionSwitch: StoryObj<StoryProps> = {
         expect(footerOf(canvas).dataset.position).toBe('pinned'),
       )
     })
-    await step(SWITCH[2].title, async () => {
+    await step(SWITCH[2].title.ru, async () => {
       await guideNext(canvas)
       // FT3: положение сменилось, а прокрутка, активная ячейка и тело — те же.
       await until(() =>
@@ -435,19 +471,31 @@ const pressArrowDown = (root: HTMLElement) => {
 
 const KEYBOARD: readonly GuideStoryStep[] = [
   {
-    title: 'Футер за последней строкой',
-    hint: 'Строка футера отображается следом за последней строкой. Фокус вне таблицы.',
+    title: {
+      ru: 'Футер за последней строкой',
+      en: 'Footer after the last row',
+    },
+    hint: {
+      ru: 'Строка футера отображается следом за последней строкой. Фокус вне таблицы.',
+      en: 'The footer row appears right after the last row. Focus is outside the table.',
+    },
   },
   {
-    title: 'Фокус на последней строке',
+    title: { ru: 'Фокус на последней строке', en: 'Focus on the last row' },
     keyboard: true,
-    hint: 'Строка футера отображается следом за последней строкой и сейчас скрыта за нижним краем таблицы.',
+    hint: {
+      ru: 'Строка футера отображается следом за последней строкой и сейчас скрыта за нижним краем таблицы.',
+      en: 'The footer row appears right after the last row and is now hidden past the bottom edge of the table.',
+    },
     enter: focusLastRow,
   },
   {
-    title: 'Стрелка вниз',
+    title: { ru: 'Стрелка вниз', en: 'Arrow down' },
     keyboard: true,
-    hint: 'Фокус переходит на строку футера, таблица автоматически прокручивается до конца.',
+    hint: {
+      ru: 'Фокус переходит на строку футера, таблица автоматически прокручивается до конца.',
+      en: 'Focus moves to the footer row, and the table scrolls to the end automatically.',
+    },
     // Со свежей таблицы фокуса на последней строке нет: сперва он, затем стрелка.
     enter: stepAction(async (root, { signal, onLeave }) => {
       const lastActive = () =>
@@ -485,17 +533,20 @@ export const FooterKeyboard: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Футер с клавиатуры"
+      title={{
+        ru: 'Футер с клавиатуры',
+        en: 'Reaching the footer from the keyboard',
+      }}
       steps={KEYBOARD}
       args={guideArgs(FOOTER_KEYBOARD_ARGS, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(KEYBOARD[0].title, async () => {
+    await step(KEYBOARD[0].title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(KEYBOARD[1].title, async () => {
+    await step(KEYBOARD[1].title.ru, async () => {
       await guideNext(canvas)
       await waitRows(canvas)
       await until(() =>
@@ -509,7 +560,7 @@ export const FooterKeyboard: StoryObj<StoryProps> = {
         ),
       )
     })
-    await step(KEYBOARD[2].title, async () => {
+    await step(KEYBOARD[2].title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(footerOf(canvas).contains(document.activeElement)).toBe(true),
@@ -537,17 +588,29 @@ const failingLoad = () =>
 
 const FEED: readonly GuideStoryStep[] = [
   {
-    title: 'Начало ленты',
-    hint: 'Таблица подгружает строки по мере прокрутки к концу ленты.',
+    title: { ru: 'Начало ленты', en: 'Start of the feed' },
+    hint: {
+      ru: 'Таблица подгружает строки по мере прокрутки к концу ленты.',
+      en: 'The table loads more rows as the user scrolls toward the end of the feed.',
+    },
   },
   {
-    title: 'Футер в бесконечной ленте',
-    hint: 'Футер отображается в конце загруженной ленты.',
+    title: {
+      ru: 'Футер в бесконечной ленте',
+      en: 'The footer in an infinite feed',
+    },
+    hint: {
+      ru: 'Футер отображается в конце загруженной ленты.',
+      en: 'The footer appears at the end of the loaded feed.',
+    },
     enter: scrollToEnd,
   },
   {
-    title: 'Ошибка получения данных',
-    hint: 'Во время загрузки футер отображается после скелетов, а при ошибке — перед строкой с текстом ошибки.',
+    title: { ru: 'Ошибка получения данных', en: 'Data fetch error' },
+    hint: {
+      ru: 'Во время загрузки футер отображается после скелетов, а при ошибке — перед строкой с текстом ошибки.',
+      en: 'While loading, the footer appears after the skeletons, and on an error, it appears before the row with the error message.',
+    },
     props: () => ({ infiniteScrollHasMore: true, onLoadMore: failingLoad }),
     enter: scrollToEnd,
   },
@@ -569,7 +632,10 @@ export const InlineFooterInfiniteScroll: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Футер в бесконечной ленте"
+      title={{
+        ru: 'Футер в бесконечной ленте',
+        en: 'The footer in an infinite feed',
+      }}
       steps={FEED}
       args={guideArgs(INLINE_FOOTER_INFINITE_SCROLL_ARGS, args)}
     />
@@ -578,17 +644,17 @@ export const InlineFooterInfiniteScroll: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     const errorRow = () =>
       canvas.querySelector<HTMLElement>('[data-testid="infinite-scroll-error"]')
-    await step(FEED[0].title, async () => {
+    await step(FEED[0].title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(FEED[1].title, async () => {
+    await step(FEED[1].title.ru, async () => {
       await guideNext(canvas)
       await waitRows(canvas)
       await until(() =>
         near(rect(footerOf(canvas)).top, rect(lastRowOf(canvas)).bottom),
       )
     })
-    await step(FEED[2].title, async () => {
+    await step(FEED[2].title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(errorRow()).not.toBeNull())
       const footer = footerOf(canvas)
@@ -633,12 +699,18 @@ const LARGE_PAGE = 25
 
 const PAGES: readonly GuideStoryStep[] = [
   {
-    title: 'Малый размер страницы',
-    hint: 'Строки страницы помещаются в таблицу — строка футера видна сразу следом за последней из них.',
+    title: { ru: 'Малый размер страницы', en: 'A small page size' },
+    hint: {
+      ru: 'Строки страницы помещаются в таблицу — строка футера видна сразу следом за последней из них.',
+      en: "The page's rows fit in the table, so the footer row is visible right after the last of them.",
+    },
   },
   {
-    title: 'Большой размер страницы',
-    hint: 'Строки страницы не помещаются в таблицу — строка футера видна, когда пользователь докрутит до конца страницы.',
+    title: { ru: 'Большой размер страницы', en: 'A large page size' },
+    hint: {
+      ru: 'Строки страницы не помещаются в таблицу — строка футера видна, когда пользователь докрутит до конца страницы.',
+      en: "The page's rows do not fit in the table, so the footer row becomes visible when the user scrolls to the end of the page.",
+    },
     enter: afterRows(root => {
       pageApi?.setPagination({ pageIndex: 0, pageSize: LARGE_PAGE })
       // Строки новой страницы монтируются к следующему кадру.
@@ -670,7 +742,7 @@ export const InlineFooterPagination: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Футер с пагинацией"
+      title={{ ru: 'Футер с пагинацией', en: 'The footer with pagination' }}
       steps={PAGES}
       args={guideArgs(INLINE_FOOTER_PAGINATION_ARGS, args)}
     />
@@ -678,7 +750,7 @@ export const InlineFooterPagination: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     const rows = () => canvas.querySelectorAll('.data-grid__body-row')
-    await step(PAGES[0].title, async () => {
+    await step(PAGES[0].title.ru, async () => {
       await waitRows(canvas)
       await until(() => expect(rows()).toHaveLength(SMALL_PAGE))
       near(rect(footerOf(canvas)).top, rect(lastRowOf(canvas)).bottom)
@@ -686,7 +758,7 @@ export const InlineFooterPagination: StoryObj<StoryProps> = {
         clientBottom(canvas),
       )
     })
-    await step(PAGES[1].title, async () => {
+    await step(PAGES[1].title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(lastRowOf(canvas).dataset.index).toBe(String(LARGE_PAGE - 1)),
@@ -727,17 +799,26 @@ const scrollToRowEnd = (rowId: string) =>
 
 const SCROLL: readonly GuideStoryStep[] = [
   {
-    title: 'Начало таблицы',
-    hint: 'Таблица открыта в начале. Строка футера отображается следом за последней строкой.',
+    title: { ru: 'Начало таблицы', en: 'Top of the table' },
+    hint: {
+      ru: 'Таблица открыта в начале. Строка футера отображается следом за последней строкой.',
+      en: 'The table is open at the top. The footer row appears right after the last row.',
+    },
   },
   {
-    title: 'Середина таблицы',
-    hint: 'Строка футера находится не в области прокрутки.',
+    title: { ru: 'Середина таблицы', en: 'Middle of the table' },
+    hint: {
+      ru: 'Строка футера находится не в области прокрутки.',
+      en: 'The footer row is outside the scroll area.',
+    },
     enter: scrollToMiddle,
   },
   {
-    title: 'Прокрутка к концу',
-    hint: 'Программная прокрутка доходит до последней строки, включая строку футера.',
+    title: { ru: 'Прокрутка к концу', en: 'Scrolled to the end' },
+    hint: {
+      ru: 'Программная прокрутка доходит до последней строки, включая строку футера.',
+      en: 'Programmatic scrolling reaches the last row, including the footer row.',
+    },
     enter: scrollToRowEnd(LAST_ROW_ID),
   },
 ]
@@ -758,7 +839,7 @@ export const InlineFooterScrollToRow: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Прокрутка к строке"
+      title={{ ru: 'Прокрутка к строке', en: 'Scroll to a row' }}
       steps={SCROLL}
       args={guideArgs(INLINE_FOOTER_SCROLL_TO_ROW_ARGS, args)}
     />
@@ -769,10 +850,10 @@ export const InlineFooterScrollToRow: StoryObj<StoryProps> = {
       canvas.querySelector<HTMLElement>(
         `.data-grid__body-row[data-row-id="${id}"]`,
       )
-    await step(SCROLL[0].title, async () => {
+    await step(SCROLL[0].title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(SCROLL[1].title, async () => {
+    await step(SCROLL[1].title.ru, async () => {
       await guideNext(canvas)
       await waitRows(canvas)
       await until(() => expect(scrollApi).not.toBeNull())
@@ -781,7 +862,7 @@ export const InlineFooterScrollToRow: StoryObj<StoryProps> = {
         clientBottom(canvas),
       )
     })
-    await step(SCROLL[2].title, async () => {
+    await step(SCROLL[2].title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         near(rect(rowById(LAST_ROW_ID)!).bottom, rect(footerOf(canvas)).top),
@@ -809,12 +890,21 @@ const typeSearch = (text: string) => (root: HTMLElement) => {
 
 const SEARCH: readonly GuideStoryStep[] = [
   {
-    title: 'Футер за последней строкой',
-    hint: 'Строка футера отображается следом за последней строкой таблицы.',
+    title: {
+      ru: 'Футер за последней строкой',
+      en: 'Footer after the last row',
+    },
+    hint: {
+      ru: 'Строка футера отображается следом за последней строкой таблицы.',
+      en: 'The footer row appears right after the last row of the table.',
+    },
   },
   {
-    title: 'Данные не найдены',
-    hint: 'Поиск не нашёл ни одной записи. Футер отображается под заглушкой.',
+    title: { ru: 'Данные не найдены', en: 'No data found' },
+    hint: {
+      ru: 'Поиск не нашёл ни одной записи. Футер отображается под заглушкой.',
+      en: 'The search found no records. The footer appears below the placeholder.',
+    },
     enter: typeSearch('zzz'),
   },
 ]
@@ -835,7 +925,10 @@ export const InlineFooterEmptySearch: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Футер и заглушка поиска"
+      title={{
+        ru: 'Футер и заглушка поиска',
+        en: 'The footer and the search placeholder',
+      }}
       steps={SEARCH}
       args={guideArgs(INLINE_FOOTER_EMPTY_SEARCH_ARGS, args)}
     />
@@ -845,7 +938,7 @@ export const InlineFooterEmptySearch: StoryObj<StoryProps> = {
     const stub = () =>
       canvas.querySelector<HTMLElement>('[data-testid="filter-stub"]')
     const head = () => canvas.querySelector<HTMLElement>('.data-grid__head')!
-    await step(SEARCH[0].title, async () => {
+    await step(SEARCH[0].title.ru, async () => {
       await waitRows(canvas)
       await until(() =>
         expect(
@@ -853,7 +946,7 @@ export const InlineFooterEmptySearch: StoryObj<StoryProps> = {
         ).not.toBeNull(),
       )
     })
-    await step(SEARCH[1].title, async () => {
+    await step(SEARCH[1].title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(stub()).not.toBeNull())
       const footer = footerOf(canvas)
@@ -885,12 +978,21 @@ export const InlineFooterEmptySearch: StoryObj<StoryProps> = {
 
 const AUTO_HEIGHT: readonly GuideStoryStep[] = [
   {
-    title: 'Фиксированная высота таблицы',
-    hint: 'Вне зависимости от высоты строка футера находится у нижнего края.',
+    title: { ru: 'Фиксированная высота таблицы', en: 'A fixed table height' },
+    hint: {
+      ru: 'Вне зависимости от высоты строка футера находится у нижнего края.',
+      en: 'Whatever the height, the footer row sits at the bottom edge.',
+    },
   },
   {
-    title: 'Высота таблицы по содержимому',
-    hint: 'Строка футера также находится у нижнего края, но не перекрывает другие строки вне зависимости от их количества.',
+    title: {
+      ru: 'Высота таблицы по содержимому',
+      en: 'Table height by content',
+    },
+    hint: {
+      ru: 'Строка футера также находится у нижнего края, но не перекрывает другие строки вне зависимости от их количества.',
+      en: 'The footer row also sits at the bottom edge but does not overlap other rows, however many there are.',
+    },
     props: () => ({ containerHeight: '', height: '', maxHeight: '' }),
   },
 ]
@@ -910,7 +1012,10 @@ export const FooterAutoHeight: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Позиция футера при разной высоте таблицы"
+      title={{
+        ru: 'Позиция футера при разной высоте таблицы',
+        en: 'Footer position at different table heights',
+      }}
       steps={AUTO_HEIGHT}
       args={guideArgs(FOOTER_AUTO_HEIGHT_ARGS, args)}
     />
@@ -919,14 +1024,14 @@ export const FooterAutoHeight: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     const gap = () =>
       rect(footerOf(canvas)).top - rect(lastRowOf(canvas)).bottom
-    await step(AUTO_HEIGHT[0].title, async () => {
+    await step(AUTO_HEIGHT[0].title.ru, async () => {
       await waitRows(canvas)
       await until(() =>
         near(rect(footerOf(canvas)).bottom, clientBottom(canvas)),
       )
       await expect(gap()).toBeGreaterThan(100)
     })
-    await step(AUTO_HEIGHT[1].title, async () => {
+    await step(AUTO_HEIGHT[1].title.ru, async () => {
       await guideNext(canvas)
       await until(() => near(gap(), 0))
       const scroller = scrollerOf(canvas)

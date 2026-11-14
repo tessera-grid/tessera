@@ -224,8 +224,8 @@ export const ActionStatusPlayground: StoryObj<StoryProps> = {
     maxHeight: '340',
   },
   parameters: showControls(['enableKeyboardNavigation'], {
-    dataCount: 'Строки — свои данные истории',
-    columnCount: 'Колонки — свои колонки истории',
+    dataCount: 'The story supplies its own rows',
+    columnCount: 'The story supplies its own columns',
   }),
   render: function Render(args) {
     const [consoleLog] = useState(createConsoleLog)
@@ -244,12 +244,18 @@ const CHECKBOX_COLUMNS = columnsOf(CHECKBOX_SERVER.save)
 
 const CHECKBOX: readonly GuideStoryStep[] = [
   {
-    title: 'Флажки приложения',
-    hint: 'В колонке наличия — флажок, который приложение поставило в ячейку само. Нажатие на него сохраняет значение на сервере.',
+    title: { ru: 'Флажки приложения', en: "The app's checkboxes" },
+    hint: {
+      ru: 'В колонке наличия — флажок, который приложение поставило в ячейку само. Нажатие на него сохраняет значение на сервере.',
+      en: 'The availability column has a checkbox that the app placed in the cell itself. Clicking it saves the value on the server.',
+    },
   },
   {
-    title: 'Значение сохраняется',
-    hint: 'Пользователь отметил товар. Флажок уже показывает новое значение, по его контуру бежит дуга ожидания, пока сервер не ответит. Ячейка не темнеет: ожидание видно на самом флажке.',
+    title: { ru: 'Значение сохраняется', en: 'The value is being saved' },
+    hint: {
+      ru: 'Пользователь отметил товар. Флажок уже показывает новое значение, по его контуру бежит дуга ожидания, пока сервер не ответит. Ячейка не темнеет: ожидание видно на самом флажке.',
+      en: 'The user checked a product. The checkbox already shows the new value, and a waiting arc runs along its outline until the server responds. The cell does not darken: the waiting shows on the checkbox itself.',
+    },
     states: ['body.pending'],
     enter: untilDone(
       root => busy(checkboxOf(root)),
@@ -260,8 +266,11 @@ const CHECKBOX: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Сервер сохранил',
-    hint: 'Сервер принял значение: дуга ушла, флажок остался отмеченным.',
+    title: { ru: 'Сервер сохранил', en: 'The server saved' },
+    hint: {
+      ru: 'Сервер принял значение: дуга ушла, флажок остался отмеченным.',
+      en: 'The server accepted the value: the arc is gone, and the checkbox stays checked.',
+    },
     enter: untilDone(
       root => !busy(checkboxOf(root)) && checked(checkboxOf(root)),
       root => {
@@ -284,7 +293,10 @@ export const ActionStatusCheckbox: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Флажок с ожиданием"
+      title={{
+        ru: 'Флажок с ожиданием',
+        en: 'A checkbox with a pending state',
+      }}
       steps={CHECKBOX}
       args={guideArgs(
         { columnsOverride: CHECKBOX_COLUMNS, dataOverride: PRODUCTS },
@@ -294,12 +306,12 @@ export const ActionStatusCheckbox: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(CHECKBOX[0]!.title, async () => {
+    await step(CHECKBOX[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(checked(checkboxOf(canvas))).toBe(START.inStock))
       await settle()
     })
-    await step(CHECKBOX[1]!.title, async () => {
+    await step(CHECKBOX[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(busy(checkboxOf(canvas))).toBe(true))
       await until(() =>
@@ -313,7 +325,7 @@ export const ActionStatusCheckbox: StoryObj<StoryProps> = {
         ).toBe(false),
       )
     })
-    await step(CHECKBOX[2]!.title, async () => {
+    await step(CHECKBOX[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(busy(checkboxOf(canvas))).toBe(false))
       await until(() =>
@@ -337,12 +349,18 @@ const reachSwitchRefusal = (root: HTMLElement) => {
 
 const SWITCH: readonly GuideStoryStep[] = [
   {
-    title: 'Переключатели приложения',
-    hint: 'В колонке публикации — переключатель, который приложение поставило в ячейку само. Нажатие сохраняет значение на сервере.',
+    title: { ru: 'Переключатели приложения', en: "The app's switches" },
+    hint: {
+      ru: 'В колонке публикации — переключатель, который приложение поставило в ячейку само. Нажатие сохраняет значение на сервере.',
+      en: 'The publication column has a switch that the app placed in the cell itself. Clicking it saves the value on the server.',
+    },
   },
   {
-    title: 'Значение сохраняется',
-    hint: 'Пользователь переключил публикацию. Переключатель уже в новом положении, по его контуру бежит дуга ожидания.',
+    title: { ru: 'Значение сохраняется', en: 'The value is being saved' },
+    hint: {
+      ru: 'Пользователь переключил публикацию. Переключатель уже в новом положении, по его контуру бежит дуга ожидания.',
+      en: 'The user toggled publishing. The switch is already in its new position, and a waiting arc runs along its outline.',
+    },
     states: ['body.pending'],
     enter: untilDone(
       root => busy(switchOf(root)),
@@ -353,8 +371,11 @@ const SWITCH: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Сервер сохранил',
-    hint: 'Сервер принял значение: дуга ушла, переключатель остался в новом положении.',
+    title: { ru: 'Сервер сохранил', en: 'The server saved' },
+    hint: {
+      ru: 'Сервер принял значение: дуга ушла, переключатель остался в новом положении.',
+      en: 'The server accepted the value: the arc is gone, and the switch stays in its new position.',
+    },
     enter: untilDone(
       root =>
         !busy(switchOf(root)) && checked(switchOf(root)) !== START.published,
@@ -369,8 +390,11 @@ const SWITCH: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Сервер отказал',
-    hint: 'Пользователь переключил ещё раз, но сервер отклонил значение. Переключатель вернулся в прежнее положение, ячейка коротко вспыхнула тоном ошибки, скринридер услышал причину отказа.',
+    title: { ru: 'Сервер отказал', en: 'The server refused' },
+    hint: {
+      ru: 'Пользователь переключил ещё раз, но сервер отклонил значение. Переключатель вернулся в прежнее положение, ячейка коротко вспыхнула тоном ошибки, скринридер услышал причину отказа.',
+      en: 'The user toggled it again, but the server rejected the value. The switch returned to its previous position, the cell briefly flashed in the error tone, and the screen reader announced the reason for the refusal.',
+    },
     immediate: true,
     enter: (root, app) => {
       // Со свежей таблицы переключатель ещё в исходном положении: сперва сохранённое
@@ -407,7 +431,10 @@ export const ActionStatusSwitch: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Переключатель и отказ сервера"
+      title={{
+        ru: 'Переключатель и отказ сервера',
+        en: 'A switch and a server refusal',
+      }}
       steps={SWITCH}
       args={guideArgs(
         { columnsOverride: SWITCH_COLUMNS, dataOverride: PRODUCTS },
@@ -417,19 +444,19 @@ export const ActionStatusSwitch: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(SWITCH[0]!.title, async () => {
+    await step(SWITCH[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(checked(switchOf(canvas))).toBe(START.published))
       await settle()
     })
-    await step(SWITCH[1]!.title, async () => {
+    await step(SWITCH[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(busy(switchOf(canvas))).toBe(true))
       await until(() =>
         expect(checked(switchOf(canvas))).toBe(!START.published),
       )
     })
-    await step(SWITCH[2]!.title, async () => {
+    await step(SWITCH[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(busy(switchOf(canvas))).toBe(false))
       await until(() =>
@@ -437,7 +464,7 @@ export const ActionStatusSwitch: StoryObj<StoryProps> = {
       )
       await settle()
     })
-    await step(SWITCH[3]!.title, async () => {
+    await step(SWITCH[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(flashOf(canvas, 'published')).toBe('reverted'))
       // Вспышка — в кадре отказа, значение из данных — следующим рендером ячейки.
@@ -458,12 +485,21 @@ const NEXT = nextPriority(START.priority)
 
 const DOUBLE: readonly GuideStoryStep[] = [
   {
-    title: 'Приоритет без кнопки правки',
-    hint: 'Приоритет меняется двойным щелчком по тексту: следующий по кругу. Контрола в ячейке нет — показать ожидание на нём негде.',
+    title: {
+      ru: 'Приоритет без кнопки правки',
+      en: 'Priority without an edit button',
+    },
+    hint: {
+      ru: 'Приоритет меняется двойным щелчком по тексту: следующий по кругу. Контрола в ячейке нет — показать ожидание на нём негде.',
+      en: 'Double-clicking the text cycles the priority to the next one. The cell has no control to show the waiting on.',
+    },
   },
   {
-    title: 'Значение сохраняется',
-    hint: 'Пользователь дважды щёлкнул по приоритету. В ячейке новое значение, она чуть темнеет и по ней проходит блик, пока сервер не ответит.',
+    title: { ru: 'Значение сохраняется', en: 'The value is being saved' },
+    hint: {
+      ru: 'Пользователь дважды щёлкнул по приоритету. В ячейке новое значение, она чуть темнеет и по ней проходит блик, пока сервер не ответит.',
+      en: 'The user double-clicked a priority. The cell shows the new value and darkens slightly, and a shimmer runs across it until the server responds.',
+    },
     states: ['body.menuPending'],
     enter: untilDone(
       root => cellBusy(root, 'priority'),
@@ -474,8 +510,11 @@ const DOUBLE: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Сервер сохранил',
-    hint: 'Сервер принял значение: волна ушла, ячейка коротко вспыхнула тоном успеха.',
+    title: { ru: 'Сервер сохранил', en: 'The server saved' },
+    hint: {
+      ru: 'Сервер принял значение: волна ушла, ячейка коротко вспыхнула тоном успеха.',
+      en: 'The server accepted the value: the wave is gone, and the cell briefly flashed in the success tone.',
+    },
     immediate: true,
     enter: untilDone(
       root =>
@@ -501,7 +540,7 @@ export const ActionStatusDoubleClick: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Двойной щелчок и волна"
+      title={{ ru: 'Двойной щелчок и волна', en: 'A double click and a wave' }}
       steps={DOUBLE}
       args={guideArgs(
         { columnsOverride: DOUBLE_COLUMNS, dataOverride: PRODUCTS },
@@ -511,12 +550,12 @@ export const ActionStatusDoubleClick: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(DOUBLE[0]!.title, async () => {
+    await step(DOUBLE[0]!.title.ru, async () => {
       await waitForRows(canvas)
       expect(priorityOf(canvas)!.textContent).toBe(START.priority)
       await settle()
     })
-    await step(DOUBLE[1]!.title, async () => {
+    await step(DOUBLE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(cellBusy(canvas, 'priority')).toBe(true))
       expect(priorityOf(canvas)!.textContent).toBe(NEXT)
@@ -524,7 +563,7 @@ export const ActionStatusDoubleClick: StoryObj<StoryProps> = {
         cellOf(canvas, ROW, 'priority')!.hasAttribute('data-pending-wave'),
       ).toBe(true)
     })
-    await step(DOUBLE[2]!.title, async () => {
+    await step(DOUBLE[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(flashOf(canvas, 'priority')).toBe('accepted'))
       expect(cellBusy(canvas, 'priority')).toBe(false)
@@ -631,18 +670,27 @@ const reachArchiving = (root: HTMLElement) => {
 
 const BUSY_STEPS: readonly GuideStoryStep[] = [
   {
-    title: 'Правка и действие строки',
-    hint: 'Ячейки товара можно править, у строки есть действие архивации. Сохранение и действие ждут ответа сервера.',
+    title: { ru: 'Правка и действие строки', en: 'Editing and a row action' },
+    hint: {
+      ru: 'Ячейки товара можно править, у строки есть действие архивации. Сохранение и действие ждут ответа сервера.',
+      en: "The product's cells can be edited, and the row has an archive action. Both the save and the action wait for the server's response.",
+    },
   },
   {
-    title: 'Значение сохраняется',
-    hint: 'Пользователь сохранил новое название товара, сервер ещё не ответил. Новое название уже в ячейке, ячейка под волной ожидания.',
+    title: { ru: 'Значение сохраняется', en: 'The value is being saved' },
+    hint: {
+      ru: 'Пользователь сохранил новое название товара, сервер ещё не ответил. Новое название уже в ячейке, ячейка под волной ожидания.',
+      en: 'The user saved a new product name, and the server has not responded yet. The new name is already in the cell, and the cell is under the waiting wave.',
+    },
     states: ['body.menuPending'],
     enter: untilDone(root => waved(root, 'name'), reachSaving),
   },
   {
-    title: 'Изменение не принято',
-    hint: 'Пользователь попытался снова открыть правку этой ячейки, пока значение сохраняется. Изменение не принято: ячейка коротко вспыхнула тоном отката, правка не открылась.',
+    title: { ru: 'Изменение не принято', en: 'The change was not accepted' },
+    hint: {
+      ru: 'Пользователь попытался снова открыть правку этой ячейки, пока значение сохраняется. Изменение не принято: ячейка коротко вспыхнула тоном отката, правка не открылась.',
+      en: 'The user tried to edit this cell again while its value was being saved. The change was not accepted: the cell briefly flashed in the revert tone, and editing did not open.',
+    },
     states: ['body.menuPending'],
     immediate: true,
     enter: untilDone(
@@ -655,8 +703,11 @@ const BUSY_STEPS: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Действие строки идёт',
-    hint: 'Сервер сохранил название, и пользователь запустил действие строки. Теперь под волной ожидания вся строка.',
+    title: { ru: 'Действие строки идёт', en: 'A row action is running' },
+    hint: {
+      ru: 'Сервер сохранил название, и пользователь запустил действие строки. Теперь под волной ожидания вся строка.',
+      en: 'The server saved the name, and the user started a row action. Now the whole row is under the waiting wave.',
+    },
     states: ['body.menuPending'],
     enter: untilDone(
       root =>
@@ -667,8 +718,14 @@ const BUSY_STEPS: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Правка строки не принята',
-    hint: 'Пользователь попытался править другую ячейку строки, пока действие идёт. Ячейка вспыхнула тоном отката, правка не открылась.',
+    title: {
+      ru: 'Правка строки не принята',
+      en: 'The row edit was not accepted',
+    },
+    hint: {
+      ru: 'Пользователь попытался править другую ячейку строки, пока действие идёт. Ячейка вспыхнула тоном отката, правка не открылась.',
+      en: 'The user tried to edit another cell of the row while the action was running. The cell flashed in the revert tone, and editing did not open.',
+    },
     states: ['body.menuPending'],
     immediate: true,
     enter: untilDone(
@@ -689,7 +746,7 @@ export const BusyObjectIgnored: StoryObj<StoryProps> = {
   parameters: { scenario: '0177/S3', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Изменение занятого объекта"
+      title={{ ru: 'Изменение занятого объекта', en: 'Changing a busy object' }}
       steps={BUSY_STEPS}
       args={guideArgs(
         {
@@ -715,18 +772,18 @@ export const BusyObjectIgnored: StoryObj<StoryProps> = {
     const live = () =>
       document.querySelector('[role="status"][aria-live="polite"]')
         ?.textContent ?? ''
-    await step(BUSY_STEPS[0]!.title, async () => {
+    await step(BUSY_STEPS[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(archiveButton(canvas)).not.toBeNull())
       await settle()
     })
-    await step(BUSY_STEPS[1]!.title, async () => {
+    await step(BUSY_STEPS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(waved(canvas, 'name')).toBe(true))
       await until(() => expect(waved(canvas, 'priority')).toBe(false))
       await until(() => expect(textIn(canvas, 'name')).toBe(RENAMED))
     })
-    await step(BUSY_STEPS[2]!.title, async () => {
+    await step(BUSY_STEPS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(cellOf(canvas, ROW, 'name')).toHaveAttribute(
@@ -741,13 +798,13 @@ export const BusyObjectIgnored: StoryObj<StoryProps> = {
         ),
       )
     })
-    await step(BUSY_STEPS[3]!.title, async () => {
+    await step(BUSY_STEPS[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(waved(canvas, 'priority')).toBe(true))
       await until(() => expect(waved(canvas, 'name')).toBe(true))
       await until(() => expect(textIn(canvas, 'name')).toBe(RENAMED))
     })
-    await step(BUSY_STEPS[4]!.title, async () => {
+    await step(BUSY_STEPS[4]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(cellOf(canvas, ROW, 'priority')).toHaveAttribute(
@@ -776,12 +833,18 @@ const reachPriorityRefusal = (root: HTMLElement) => {
 
 const RETRY_STEPS: readonly GuideStoryStep[] = [
   {
-    title: 'Ячейки приложения',
-    hint: 'В колонке приоритета — текст приложения: двойной щелчок ставит следующий приоритет и сохраняет его на сервере.',
+    title: { ru: 'Ячейки приложения', en: "The app's cells" },
+    hint: {
+      ru: 'В колонке приоритета — текст приложения: двойной щелчок ставит следующий приоритет и сохраняет его на сервере.',
+      en: "The priority column holds the app's text: a double click sets the next priority and saves it on the server.",
+    },
   },
   {
-    title: 'Сервер отказал',
-    hint: 'Пользователь сменил приоритет, но сервер отклонил значение. В ячейке прежний приоритет, в её правом верхнем углу — отметка отказа.',
+    title: { ru: 'Сервер отказал', en: 'The server refused' },
+    hint: {
+      ru: 'Пользователь сменил приоритет, но сервер отклонил значение. В ячейке прежний приоритет, в её правом верхнем углу — отметка отказа.',
+      en: 'The user changed the priority, but the server rejected the value. The cell shows the previous priority, with a refusal mark in its top right corner.',
+    },
     states: ['body.error'],
     enter: untilDone(
       root => !!issueIn(root, 'priority') && !cellBusy(root, 'priority'),
@@ -789,8 +852,11 @@ const RETRY_STEPS: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Отметка открыта',
-    hint: 'Пользователь нажал на отметку. Поповер показывает причину отказа и предлагает повторить сохранение: приложение сообщило таблице, как повторить своё действие.',
+    title: { ru: 'Отметка открыта', en: "The mark's popover is open" },
+    hint: {
+      ru: 'Пользователь нажал на отметку. Поповер показывает причину отказа и предлагает повторить сохранение: приложение сообщило таблице, как повторить своё действие.',
+      en: 'The user clicked the mark. The popover shows the reason for the refusal and offers to retry the save: the app told the table how to repeat its action.',
+    },
     states: ['body.error', 'overlay.cellIssue'],
     enter: untilDone(
       () => !!issuePopover(),
@@ -801,8 +867,11 @@ const RETRY_STEPS: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Повтор принят',
-    hint: 'Пользователь повторил сохранение, и сервер принял значение. В ячейке новый приоритет, отметки отказа больше нет.',
+    title: { ru: 'Повтор принят', en: 'The retry was accepted' },
+    hint: {
+      ru: 'Пользователь повторил сохранение, и сервер принял значение. В ячейке новый приоритет, отметки отказа больше нет.',
+      en: 'The user retried the save, and the server accepted the value. The cell shows the new priority, and the refusal mark is gone.',
+    },
     enter: untilDone(
       root =>
         !issueIn(root, 'priority') &&
@@ -825,7 +894,7 @@ export const ActionStatusRetry: StoryObj<StoryProps> = {
   parameters: { scenario: '0177/S5', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Повтор из отметки"
+      title={{ ru: 'Повтор из отметки', en: 'Retry from the mark' }}
       steps={RETRY_STEPS}
       args={guideArgs(
         { columnsOverride: RETRY_COLUMNS, dataOverride: PRODUCTS },
@@ -835,14 +904,14 @@ export const ActionStatusRetry: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(RETRY_STEPS[0]!.title, async () => {
+    await step(RETRY_STEPS[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() =>
         expect(priorityOf(canvas)?.textContent).toBe(START.priority),
       )
       await settle()
     })
-    await step(RETRY_STEPS[1]!.title, async () => {
+    await step(RETRY_STEPS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(issueIn(canvas, 'priority')).not.toBeNull())
       await until(() =>
@@ -850,14 +919,14 @@ export const ActionStatusRetry: StoryObj<StoryProps> = {
       )
       await settle()
     })
-    await step(RETRY_STEPS[2]!.title, async () => {
+    await step(RETRY_STEPS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(issuePopover()).not.toBeNull())
       expect(popoverAction('retry')).not.toBeNull()
       expect(popoverAction('discard')).not.toBeNull()
       await settle()
     })
-    await step(RETRY_STEPS[3]!.title, async () => {
+    await step(RETRY_STEPS[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(priorityOf(canvas)?.textContent).toBe(
@@ -894,12 +963,18 @@ const cancelSaveItem = () =>
 
 const CANCEL_STEPS: readonly GuideStoryStep[] = [
   {
-    title: 'Правка ячеек',
-    hint: 'Название товара можно править: сохранённое значение уходит на сервер.',
+    title: { ru: 'Правка ячеек', en: 'Cell editing' },
+    hint: {
+      ru: 'Название товара можно править: сохранённое значение уходит на сервер.',
+      en: 'The product name can be edited: the saved value goes to the server.',
+    },
   },
   {
-    title: 'Значение сохраняется',
-    hint: 'Пользователь сохранил новое название товара, сервер отвечает долго. Ячейка под волной ожидания.',
+    title: { ru: 'Значение сохраняется', en: 'The value is being saved' },
+    hint: {
+      ru: 'Пользователь сохранил новое название товара, сервер отвечает долго. Ячейка под волной ожидания.',
+      en: 'The user saved a new product name, and the server is slow to respond. The cell is under the waiting wave.',
+    },
     states: ['body.menuPending'],
     enter: untilDone(
       root => waved(root, 'name'),
@@ -910,8 +985,11 @@ const CANCEL_STEPS: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Меню ячейки',
-    hint: 'Пользователь открыл контекстное меню ячейки. Пока значение сохраняется, в меню есть пункт отмены сохранения.',
+    title: { ru: 'Меню ячейки', en: 'The cell menu' },
+    hint: {
+      ru: 'Пользователь открыл контекстное меню ячейки. Пока значение сохраняется, в меню есть пункт отмены сохранения.',
+      en: "The user opened the cell's context menu. While the value is being saved, the menu has an item to cancel the save.",
+    },
     states: ['body.menuPending', 'overlay.contextMenu'],
     enter: untilDone(
       () => !!cancelSaveItem(),
@@ -924,8 +1002,11 @@ const CANCEL_STEPS: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Сохранение отменено',
-    hint: 'Пользователь отменил сохранение. Волны больше нет, в ячейке снова прежнее название; отмена — не ошибка, отметки отказа нет.',
+    title: { ru: 'Сохранение отменено', en: 'The save was canceled' },
+    hint: {
+      ru: 'Пользователь отменил сохранение. Волны больше нет, в ячейке снова прежнее название; отмена — не ошибка, отметки отказа нет.',
+      en: 'The user canceled the save. The wave is gone, and the cell shows the previous name again; canceling is not an error, so there is no refusal mark.',
+    },
     enter: untilDone(
       root =>
         !cancelSaveItem() &&
@@ -949,7 +1030,7 @@ export const CellSaveCancelMenu: StoryObj<StoryProps> = {
   parameters: { scenario: '0177/S8', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Отмена сохранения"
+      title={{ ru: 'Отмена сохранения', en: 'Canceling a save' }}
       steps={CANCEL_STEPS}
       args={guideArgs(
         {
@@ -966,21 +1047,21 @@ export const CellSaveCancelMenu: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(CANCEL_STEPS[0]!.title, async () => {
+    await step(CANCEL_STEPS[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(waved(canvas, 'name')).toBe(false))
       await settle()
     })
-    await step(CANCEL_STEPS[1]!.title, async () => {
+    await step(CANCEL_STEPS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(waved(canvas, 'name')).toBe(true))
       await until(() => expect(textIn(canvas, 'name')).toBe(RENAMED))
     })
-    await step(CANCEL_STEPS[2]!.title, async () => {
+    await step(CANCEL_STEPS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(cancelSaveItem()).not.toBeNull())
     })
-    await step(CANCEL_STEPS[3]!.title, async () => {
+    await step(CANCEL_STEPS[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(waved(canvas, 'name')).toBe(false))
       await until(() => expect(textIn(canvas, 'name')).toBe(START.name))
@@ -1031,18 +1112,27 @@ const reportOwnFailure = () => {
 
 const OWN_LABEL_STEPS: readonly GuideStoryStep[] = [
   {
-    title: 'Товары',
-    hint: 'Приложение показывает товары с приоритетом. Кнопка журнала в тулбаре без счётчика: отказов пока не было.',
+    title: { ru: 'Товары', en: 'Products' },
+    hint: {
+      ru: 'Приложение показывает товары с приоритетом. Кнопка журнала в тулбаре без счётчика: отказов пока не было.',
+      en: 'The app shows products with a priority. The failure log button in the toolbar has no counter: there have been no refusals yet.',
+    },
   },
   {
-    title: 'Пересчёт в фоне',
-    hint: 'Приложение пересчитало приоритет в фоне и назвало действие своей подписью. Сервер отказал: на кнопке журнала появился счётчик.',
+    title: { ru: 'Пересчёт в фоне', en: 'A background recalculation' },
+    hint: {
+      ru: 'Приложение пересчитало приоритет в фоне и назвало действие своей подписью. Сервер отказал: на кнопке журнала появился счётчик.',
+      en: 'The app recalculated the priority in the background and named the action with its own label. The server refused, and a counter appeared on the failure log button.',
+    },
     states: ['panel.toolbar'],
     enter: untilDone(() => ownCounter() === '1', reportOwnFailure),
   },
   {
-    title: 'Журнал',
-    hint: 'Пользователь открыл журнал. Запись называет действие подписью приложения как есть, причина — из ответа сервера.',
+    title: { ru: 'Журнал', en: 'The log' },
+    hint: {
+      ru: 'Пользователь открыл журнал. Запись называет действие подписью приложения как есть, причина — из ответа сервера.',
+      en: "The user opened the log. The entry names the action with the app's label as is, and the reason comes from the server's response.",
+    },
     states: ['overlay.failureLog'],
     enter: untilDone(
       () => !!ownLog()?.textContent?.includes(OWN_LABEL),
@@ -1060,7 +1150,7 @@ export const ActionStatusOwnLabel: StoryObj<StoryProps> = {
   parameters: { scenario: '0182/S3', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Своя подпись действия"
+      title={{ ru: 'Своя подпись действия', en: 'A custom action label' }}
       steps={OWN_LABEL_STEPS}
       args={guideArgs(
         {
@@ -1076,18 +1166,18 @@ export const ActionStatusOwnLabel: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(OWN_LABEL_STEPS[0]!.title, async () => {
+    await step(OWN_LABEL_STEPS[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(ownLogButton()).not.toBeNull())
       await until(() => expect(ownCounter()).toBe(''))
       await settle()
     })
-    await step(OWN_LABEL_STEPS[1]!.title, async () => {
+    await step(OWN_LABEL_STEPS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(ownCounter()).toBe('1'))
       await settle()
     })
-    await step(OWN_LABEL_STEPS[2]!.title, async () => {
+    await step(OWN_LABEL_STEPS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(ownLog()?.textContent).toContain(OWN_LABEL))
       await until(() =>

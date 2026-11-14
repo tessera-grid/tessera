@@ -268,26 +268,38 @@ const redoneCheck = (root: HTMLElement) =>
 
 const UNDO_PASTE: readonly GuideStoryStep[] = [
   {
-    title: 'Цены можно править',
-    hint: 'Приложение разрешило править цену и остаток. Над таблицей — кнопки отмены, повтора и истории изменений; правок ещё не было, отменять нечего.',
+    title: { ru: 'Цены можно править', en: 'Prices are editable' },
+    hint: {
+      ru: 'Приложение разрешило править цену и остаток. Над таблицей — кнопки отмены, повтора и истории изменений; правок ещё не было, отменять нечего.',
+      en: 'The app allowed editing the price and the stock. Above the table are the undo, redo, and change history buttons; there have been no edits yet, so there is nothing to undo.',
+    },
   },
   {
-    title: 'Блок вставлен',
-    hint: 'Пользователь выбрал цену во второй строке и вставил три числа. Цены трёх строк изменились, сервер их сохранил. Кнопка отмены теперь называет вставку.',
+    title: { ru: 'Блок вставлен', en: 'A block was pasted' },
+    hint: {
+      ru: 'Пользователь выбрал цену во второй строке и вставил три числа. Цены трёх строк изменились, сервер их сохранил. Кнопка отмены теперь называет вставку.',
+      en: 'The user selected the price in the second row and pasted three numbers. The prices of three rows changed, and the server saved them. The undo button now names the paste.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(pastedCheck, paste),
   },
   {
-    title: 'Вставка отменена',
-    hint: 'Пользователь нажал Ctrl+Z. Таблица вернула прежние цены тем же путём, каким сохраняет правки, — сервер получил прежние значения. Отменённые ячейки выделены.',
+    title: { ru: 'Вставка отменена', en: 'Paste undone' },
+    hint: {
+      ru: 'Пользователь нажал Ctrl+Z. Таблица вернула прежние цены тем же путём, каким сохраняет правки, — сервер получил прежние значения. Отменённые ячейки выделены.',
+      en: 'The user pressed Ctrl+Z. The table restored the previous prices the same way it saves edits: the server received the previous values. The undone cells are selected.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(undoneCheck, root =>
       afterPaste(root, () => once('undo', () => pressUndo(root))),
     ),
   },
   {
-    title: 'Вставка повторена',
-    hint: 'Пользователь нажал кнопку повтора над таблицей. Вставленные цены вернулись, и вставку снова можно отменить.',
+    title: { ru: 'Вставка повторена', en: 'Paste redone' },
+    hint: {
+      ru: 'Пользователь нажал кнопку повтора над таблицей. Вставленные цены вернулись, и вставку снова можно отменить.',
+      en: 'The user pressed the redo button above the table. The pasted prices came back, and the paste can be undone again.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(redoneCheck, root => {
       if (!done.has('undo')) {
@@ -306,7 +318,7 @@ export const UndoPaste: StoryObj<StoryProps> = {
   parameters: { scenario: '0222/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Отмена вставки"
+      title={{ ru: 'Отмена вставки', en: 'Undoing a paste' }}
       steps={UNDO_PASTE}
       reset={resetGuide}
       args={guideArgs(BASE_ARGS, args)}
@@ -314,12 +326,12 @@ export const UndoPaste: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(UNDO_PASTE[0]!.title, async () => {
+    await step(UNDO_PASTE[0]!.title.ru, async () => {
       await waitForRows(canvasElement)
     })
-    await step(UNDO_PASTE[1]!.title, () => next(canvasElement, pastedCheck))
-    await step(UNDO_PASTE[2]!.title, () => next(canvasElement, undoneCheck))
-    await step(UNDO_PASTE[3]!.title, () => next(canvasElement, redoneCheck))
+    await step(UNDO_PASTE[1]!.title.ru, () => next(canvasElement, pastedCheck))
+    await step(UNDO_PASTE[2]!.title.ru, () => next(canvasElement, undoneCheck))
+    await step(UNDO_PASTE[3]!.title.ru, () => next(canvasElement, redoneCheck))
     await settle()
   },
 }
@@ -346,24 +358,36 @@ const heldUndo = (root: HTMLElement) =>
 
 const UNDO_ON_SERVER: readonly GuideStoryStep[] = [
   {
-    title: 'Правки сохраняет сервер',
-    hint: 'Каждая правка цены уходит на сервер. Отмена — тоже правка: таблица отправляет прежние значения и ждёт ответа.',
+    title: { ru: 'Правки сохраняет сервер', en: 'The server saves edits' },
+    hint: {
+      ru: 'Каждая правка цены уходит на сервер. Отмена — тоже правка: таблица отправляет прежние значения и ждёт ответа.',
+      en: 'Every price edit goes to the server. An undo is an edit too: the table sends the previous values and waits for a response.',
+    },
   },
   {
-    title: 'Блок вставлен',
-    hint: 'Пользователь вставил три цены, сервер их сохранил.',
+    title: { ru: 'Блок вставлен', en: 'A block was pasted' },
+    hint: {
+      ru: 'Пользователь вставил три цены, сервер их сохранил.',
+      en: 'The user pasted three prices, and the server saved them.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(pastedCheck, paste),
   },
   {
-    title: 'Отмена ждёт сервера',
-    hint: 'Пользователь нажал Ctrl+Z. Таблица отправила прежние цены, сервер ещё не ответил: ячейки ждут ответа.',
+    title: { ru: 'Отмена ждёт сервера', en: 'The undo waits for the server' },
+    hint: {
+      ru: 'Пользователь нажал Ctrl+Z. Таблица отправила прежние цены, сервер ещё не ответил: ячейки ждут ответа.',
+      en: 'The user pressed Ctrl+Z. The table sent the previous prices, and the server has not responded yet: the cells are waiting for a response.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(undoWaitsCheck, heldUndo),
   },
   {
-    title: 'Сервер принял отмену',
-    hint: 'Сервер сохранил прежние цены. Ожидание закончилось, отмена сделана.',
+    title: { ru: 'Сервер принял отмену', en: 'The server accepted the undo' },
+    hint: {
+      ru: 'Сервер сохранил прежние цены. Ожидание закончилось, отмена сделана.',
+      en: 'The server saved the previous prices. The waiting is over, and the undo is done.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(undoSavedCheck, root => {
       if (!undoWaitsCheck(root)) heldUndo(root)
@@ -371,8 +395,11 @@ const UNDO_ON_SERVER: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Сервер отклонил повтор',
-    hint: 'Пользователь нажал кнопку повтора, а сервер отказал. Цены остались прежними, над таблицей — плашка с причиной и кнопкой повтора; в истории повтор остался на месте.',
+    title: { ru: 'Сервер отклонил повтор', en: 'The server rejected the redo' },
+    hint: {
+      ru: 'Пользователь нажал кнопку повтора, а сервер отказал. Цены остались прежними, над таблицей — плашка с причиной и кнопкой повтора; в истории повтор остался на месте.',
+      en: 'The user pressed the redo button, but the server refused. The prices stayed as they were; above the table is a banner with the reason and a retry button, and the redo stays in place in the history.',
+    },
     enter: untilDone(redoRefusedCheck, root => {
       if (!undoSavedCheck(root)) {
         if (!undoWaitsCheck(root)) heldUndo(root)
@@ -393,7 +420,7 @@ export const UndoOnServer: StoryObj<StoryProps> = {
   parameters: { scenario: '0222/S2', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Отмена на сервере"
+      title={{ ru: 'Отмена на сервере', en: 'Undo on the server' }}
       steps={UNDO_ON_SERVER}
       reset={resetGuide}
       args={guideArgs(BASE_ARGS, args)}
@@ -401,17 +428,19 @@ export const UndoOnServer: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(UNDO_ON_SERVER[0]!.title, async () => {
+    await step(UNDO_ON_SERVER[0]!.title.ru, async () => {
       await waitForRows(canvasElement)
     })
-    await step(UNDO_ON_SERVER[1]!.title, () => next(canvasElement, pastedCheck))
-    await step(UNDO_ON_SERVER[2]!.title, () =>
+    await step(UNDO_ON_SERVER[1]!.title.ru, () =>
+      next(canvasElement, pastedCheck),
+    )
+    await step(UNDO_ON_SERVER[2]!.title.ru, () =>
       next(canvasElement, undoWaitsCheck),
     )
-    await step(UNDO_ON_SERVER[3]!.title, () =>
+    await step(UNDO_ON_SERVER[3]!.title.ru, () =>
       next(canvasElement, undoSavedCheck),
     )
-    await step(UNDO_ON_SERVER[4]!.title, () =>
+    await step(UNDO_ON_SERVER[4]!.title.ru, () =>
       next(canvasElement, redoRefusedCheck),
     )
     await settle()
@@ -434,18 +463,30 @@ const heldPaste = (root: HTMLElement) => {
 
 const UNDO_WHILE_PENDING: readonly GuideStoryStep[] = [
   {
-    title: 'Сервер отвечает не сразу',
-    hint: 'Правки цены уходят на сервер, ответ задерживается.',
+    title: {
+      ru: 'Сервер отвечает не сразу',
+      en: 'The server responds with a delay',
+    },
+    hint: {
+      ru: 'Правки цены уходят на сервер, ответ задерживается.',
+      en: 'Price edits go to the server, and the response is delayed.',
+    },
   },
   {
-    title: 'Вставка ждёт сервера',
-    hint: 'Пользователь вставил три цены. Сервер ещё не ответил: ячейки ждут.',
+    title: { ru: 'Вставка ждёт сервера', en: 'The paste waits for the server' },
+    hint: {
+      ru: 'Пользователь вставил три цены. Сервер ещё не ответил: ячейки ждут.',
+      en: 'The user pasted three prices. The server has not responded yet: the cells are waiting.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(pasteWaitsCheck, heldPaste),
   },
   {
-    title: 'Отмена встала в очередь',
-    hint: 'Пользователь сразу нажал Ctrl+Z. Отменять ещё нечего наверняка: неизвестно, сохранит ли сервер вставку. Отмена встала в очередь — кнопка отмены над таблицей ждёт вместе с ячейками, и её можно остановить.',
+    title: { ru: 'Отмена встала в очередь', en: 'The undo is queued' },
+    hint: {
+      ru: 'Пользователь сразу нажал Ctrl+Z. Отменять ещё нечего наверняка: неизвестно, сохранит ли сервер вставку. Отмена встала в очередь — кнопка отмены над таблицей ждёт вместе с ячейками, и её можно остановить.',
+      en: 'The user pressed Ctrl+Z right away. There is nothing to undo for sure yet: it is not known whether the server will save the paste. The undo is queued: the undo button above the table waits along with the cells, and it can be stopped.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(queuedCheck, root => {
       if (!pasteWaitsCheck(root)) heldPaste(root)
@@ -453,8 +494,14 @@ const UNDO_WHILE_PENDING: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Сервер ответил — вставка отменена',
-    hint: 'Сервер сохранил вставку, и сразу за ней ушла отмена: цены вернулись к прежним.',
+    title: {
+      ru: 'Сервер ответил — вставка отменена',
+      en: 'The server responded, and the paste is undone',
+    },
+    hint: {
+      ru: 'Сервер сохранил вставку, и сразу за ней ушла отмена: цены вернулись к прежним.',
+      en: 'The server saved the paste, and the undo went right after it: the prices returned to their previous values.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(settledCheck, root => {
       if (!queuedCheck(root)) {
@@ -473,7 +520,7 @@ export const UndoWhilePending: StoryObj<StoryProps> = {
   parameters: { scenario: '0222/S3', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Отмена во время сохранения"
+      title={{ ru: 'Отмена во время сохранения', en: 'Undo while saving' }}
       steps={UNDO_WHILE_PENDING}
       reset={resetGuide}
       args={guideArgs(BASE_ARGS, args)}
@@ -481,16 +528,16 @@ export const UndoWhilePending: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(UNDO_WHILE_PENDING[0]!.title, async () => {
+    await step(UNDO_WHILE_PENDING[0]!.title.ru, async () => {
       await waitForRows(canvasElement)
     })
-    await step(UNDO_WHILE_PENDING[1]!.title, () =>
+    await step(UNDO_WHILE_PENDING[1]!.title.ru, () =>
       next(canvasElement, pasteWaitsCheck),
     )
-    await step(UNDO_WHILE_PENDING[2]!.title, () =>
+    await step(UNDO_WHILE_PENDING[2]!.title.ru, () =>
       next(canvasElement, queuedCheck),
     )
-    await step(UNDO_WHILE_PENDING[3]!.title, () =>
+    await step(UNDO_WHILE_PENDING[3]!.title.ru, () =>
       next(canvasElement, settledCheck),
     )
     await settle()
@@ -524,25 +571,40 @@ const colleagueChanges = (app: GuideApp) =>
 
 const UNDO_CONFLICT: readonly GuideStoryStep[] = [
   {
-    title: 'Таблицу правят двое',
-    hint: 'Цены правит пользователь, а данные таблицы обновляются и правками коллеги.',
+    title: { ru: 'Таблицу правят двое', en: 'Two people edit the table' },
+    hint: {
+      ru: 'Цены правит пользователь, а данные таблицы обновляются и правками коллеги.',
+      en: "The user edits prices, and the table's data is also updated with a colleague's edits.",
+    },
   },
   {
-    title: 'Блок вставлен',
-    hint: 'Пользователь вставил три цены, сервер их сохранил.',
+    title: { ru: 'Блок вставлен', en: 'A block was pasted' },
+    hint: {
+      ru: 'Пользователь вставил три цены, сервер их сохранил.',
+      en: 'The user pasted three prices, and the server saved them.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(pastedCheck, paste),
   },
   {
-    title: 'Коллега изменил цену',
-    hint: 'Пришли новые данные: коллега поставил свою цену в первую из вставленных ячеек.',
+    title: { ru: 'Коллега изменил цену', en: 'A colleague changed a price' },
+    hint: {
+      ru: 'Пришли новые данные: коллега поставил свою цену в первую из вставленных ячеек.',
+      en: 'New data arrived: a colleague put their own price in the first of the pasted cells.',
+    },
     enter: untilDone(changedCheck, (root, app: GuideApp) =>
       afterPaste(root, () => colleagueChanges(app)),
     ),
   },
   {
-    title: 'Отмена не тронула чужую правку',
-    hint: 'Пользователь нажал Ctrl+Z. Две цены вернулись к прежним, а цену коллеги отмена пропустила: чужая правка не пропала молча. Скринридер слышит, сколько ячеек пропущено.',
+    title: {
+      ru: 'Отмена не тронула чужую правку',
+      en: "The undo left someone else's edit alone",
+    },
+    hint: {
+      ru: 'Пользователь нажал Ctrl+Z. Две цены вернулись к прежним, а цену коллеги отмена пропустила: чужая правка не пропала молча. Скринридер слышит, сколько ячеек пропущено.',
+      en: "The user pressed Ctrl+Z. Two prices returned to their previous values, but the undo skipped the colleague's price: someone else's edit did not silently disappear. Screen reader users hear how many cells were skipped.",
+    },
     states: ['body.cellRange'],
     enter: untilDone(skippedCheck, (root, app: GuideApp) => {
       if (!changedCheck(root)) {
@@ -560,7 +622,7 @@ export const UndoConflict: StoryObj<StoryProps> = {
   parameters: { scenario: '0222/S4', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Чужая правка"
+      title={{ ru: 'Чужая правка', en: "Someone else's edit" }}
       steps={UNDO_CONFLICT}
       reset={resetGuide}
       args={guideArgs(BASE_ARGS, args)}
@@ -568,12 +630,18 @@ export const UndoConflict: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(UNDO_CONFLICT[0]!.title, async () => {
+    await step(UNDO_CONFLICT[0]!.title.ru, async () => {
       await waitForRows(canvasElement)
     })
-    await step(UNDO_CONFLICT[1]!.title, () => next(canvasElement, pastedCheck))
-    await step(UNDO_CONFLICT[2]!.title, () => next(canvasElement, changedCheck))
-    await step(UNDO_CONFLICT[3]!.title, () => next(canvasElement, skippedCheck))
+    await step(UNDO_CONFLICT[1]!.title.ru, () =>
+      next(canvasElement, pastedCheck),
+    )
+    await step(UNDO_CONFLICT[2]!.title.ru, () =>
+      next(canvasElement, changedCheck),
+    )
+    await step(UNDO_CONFLICT[3]!.title.ru, () =>
+      next(canvasElement, skippedCheck),
+    )
     await settle()
   },
 }
@@ -642,27 +710,42 @@ const rewindTo = (root: HTMLElement) => {
 
 const HISTORY_REWIND: readonly GuideStoryStep[] = [
   {
-    title: 'История изменений',
-    hint: 'Над таблицей — кнопка истории: она показывает правки по порядку и возвращает таблицу к любой из них.',
+    title: { ru: 'История изменений', en: 'Change history' },
+    hint: {
+      ru: 'Над таблицей — кнопка истории: она показывает правки по порядку и возвращает таблицу к любой из них.',
+      en: 'Above the table is the history button: it shows the edits in order and returns the table to any of them.',
+    },
   },
   {
-    title: 'Три правки',
-    hint: 'Пользователь поменял по очереди три цены — в первой, второй и третьей строках.',
+    title: { ru: 'Три правки', en: 'Three edits' },
+    hint: {
+      ru: 'Пользователь поменял по очереди три цены — в первой, второй и третьей строках.',
+      en: 'The user changed three prices one after another, in the first, second, and third rows.',
+    },
     enter: untilDone(editsCheck, editNext),
   },
   {
-    title: 'История открыта',
-    hint: 'Пользователь открыл историю: три правки, новые сверху, ни одна не отменена. У каждой — время; синяя точка отмечает текущую, последнюю.',
+    title: { ru: 'История открыта', en: 'The history is open' },
+    hint: {
+      ru: 'Пользователь открыл историю: три правки, новые сверху, ни одна не отменена. У каждой — время; синяя точка отмечает текущую, последнюю.',
+      en: 'The user opened the history: three edits, newest first, none undone. Each has a time; a blue dot marks the current, latest one.',
+    },
     enter: untilDone(openCheck, openHistory),
   },
   {
-    title: 'Откат к первой правке',
-    hint: 'Пользователь нажал на первую правку. Таблица отменила две правки над ней по очереди; они в списке приглушены, а первая правка выделена как текущая.',
+    title: { ru: 'Откат к первой правке', en: 'Back to the first edit' },
+    hint: {
+      ru: 'Пользователь нажал на первую правку. Таблица отменила две правки над ней по очереди; они в списке приглушены, а первая правка выделена как текущая.',
+      en: 'The user clicked the first edit. The table undid the two edits above it one by one; they are dimmed in the list, and the first edit is highlighted as the current one.',
+    },
     enter: untilDone(rewoundCheck, rewindTo),
   },
   {
-    title: 'Повтор до второй правки',
-    hint: 'Пользователь нажал на приглушённую вторую правку. Таблица повторила её, третья осталась отменённой.',
+    title: { ru: 'Повтор до второй правки', en: 'Redo up to the second edit' },
+    hint: {
+      ru: 'Пользователь нажал на приглушённую вторую правку. Таблица повторила её, третья осталась отменённой.',
+      en: 'The user clicked the dimmed second edit. The table redid it, and the third stayed undone.',
+    },
     enter: untilDone(forwardCheck, root => {
       if (!rewoundCheck(root)) {
         rewindTo(root)
@@ -679,7 +762,7 @@ export const HistoryRewind: StoryObj<StoryProps> = {
   parameters: { scenario: '0222/S5', ...guideControls() },
   render: args => (
     <GuideStory
-      title="История изменений"
+      title={{ ru: 'История изменений', en: 'Change history' }}
       steps={HISTORY_REWIND}
       reset={resetGuide}
       args={guideArgs(BASE_ARGS, args)}
@@ -687,15 +770,19 @@ export const HistoryRewind: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(HISTORY_REWIND[0]!.title, async () => {
+    await step(HISTORY_REWIND[0]!.title.ru, async () => {
       await waitForRows(canvasElement)
     })
-    await step(HISTORY_REWIND[1]!.title, () => next(canvasElement, editsCheck))
-    await step(HISTORY_REWIND[2]!.title, () => next(canvasElement, openCheck))
-    await step(HISTORY_REWIND[3]!.title, () =>
+    await step(HISTORY_REWIND[1]!.title.ru, () =>
+      next(canvasElement, editsCheck),
+    )
+    await step(HISTORY_REWIND[2]!.title.ru, () =>
+      next(canvasElement, openCheck),
+    )
+    await step(HISTORY_REWIND[3]!.title.ru, () =>
       next(canvasElement, rewoundCheck),
     )
-    await step(HISTORY_REWIND[4]!.title, () =>
+    await step(HISTORY_REWIND[4]!.title.ru, () =>
       next(canvasElement, forwardCheck),
     )
     await settle()
@@ -731,24 +818,39 @@ const undoDrafts = (root: HTMLElement) => {
 
 const UNDO_DRAFTS: readonly GuideStoryStep[] = [
   {
-    title: 'Правки копятся',
-    hint: 'Приложение сохраняет правки по кнопке: изменённые ячейки ждут, пока пользователь не применит их.',
+    title: { ru: 'Правки копятся', en: 'Edits pile up' },
+    hint: {
+      ru: 'Приложение сохраняет правки по кнопке: изменённые ячейки ждут, пока пользователь не применит их.',
+      en: 'The app saves edits when a button is pressed: changed cells wait until the user applies them.',
+    },
   },
   {
-    title: 'Вставка — неприменённая',
-    hint: 'Пользователь вставил три цены. На сервер ничего не ушло: ячейки отмечены как неприменённые.',
+    title: { ru: 'Вставка — неприменённая', en: 'The paste is unapplied' },
+    hint: {
+      ru: 'Пользователь вставил три цены. На сервер ничего не ушло: ячейки отмечены как неприменённые.',
+      en: 'The user pasted three prices. Nothing went to the server: the cells are marked as unapplied.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(draftsCheck, paste),
   },
   {
-    title: 'Отмена без сервера',
-    hint: 'Пользователь нажал Ctrl+Z. Неприменённые цены ушли, вернулись прежние — без запроса на сервер.',
+    title: { ru: 'Отмена без сервера', en: 'Undo without the server' },
+    hint: {
+      ru: 'Пользователь нажал Ctrl+Z. Неприменённые цены ушли, вернулись прежние — без запроса на сервер.',
+      en: 'The user pressed Ctrl+Z. The unapplied prices went away, and the previous ones came back, with no request to the server.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(draftsUndoneCheck, undoDrafts),
   },
   {
-    title: 'Повтор вернул неприменённое',
-    hint: 'Пользователь нажал Ctrl+Shift+Z. Вставленные цены снова ждут применения.',
+    title: {
+      ru: 'Повтор вернул неприменённое',
+      en: 'The redo brought back the unapplied edits',
+    },
+    hint: {
+      ru: 'Пользователь нажал Ctrl+Shift+Z. Вставленные цены снова ждут применения.',
+      en: 'The user pressed Ctrl+Shift+Z. The pasted prices are waiting to be applied again.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(draftsBackCheck, root => {
       if (!draftsUndoneCheck(root)) {
@@ -766,7 +868,7 @@ export const UndoDrafts: StoryObj<StoryProps> = {
   parameters: { scenario: '0222/S6', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Отмена неприменённого"
+      title={{ ru: 'Отмена неприменённого', en: 'Undoing unapplied edits' }}
       steps={UNDO_DRAFTS}
       reset={resetGuide}
       args={guideArgs(DRAFT_ARGS, args)}
@@ -774,14 +876,14 @@ export const UndoDrafts: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(UNDO_DRAFTS[0]!.title, async () => {
+    await step(UNDO_DRAFTS[0]!.title.ru, async () => {
       await waitForRows(canvasElement)
     })
-    await step(UNDO_DRAFTS[1]!.title, () => next(canvasElement, draftsCheck))
-    await step(UNDO_DRAFTS[2]!.title, () =>
+    await step(UNDO_DRAFTS[1]!.title.ru, () => next(canvasElement, draftsCheck))
+    await step(UNDO_DRAFTS[2]!.title.ru, () =>
       next(canvasElement, draftsUndoneCheck),
     )
-    await step(UNDO_DRAFTS[3]!.title, () =>
+    await step(UNDO_DRAFTS[3]!.title.ru, () =>
       next(canvasElement, draftsBackCheck),
     )
     await settle()
@@ -852,27 +954,42 @@ const refuse = (root: HTMLElement, app: GuideApp) => {
 
 const APP_ENTRY: readonly GuideStoryStep[] = [
   {
-    title: 'Действие приложения',
-    hint: 'Приложение умеет архивировать товар своей кнопкой и кладёт это действие в историю таблицы, чтобы его тоже можно было отменить.',
+    title: { ru: 'Действие приложения', en: 'An app action' },
+    hint: {
+      ru: 'Приложение умеет архивировать товар своей кнопкой и кладёт это действие в историю таблицы, чтобы его тоже можно было отменить.',
+      en: 'The app can archive a product with its own button and puts this action into the table history so that it can be undone too.',
+    },
   },
   {
-    title: 'Товар в архиве',
-    hint: 'Приложение пометило товар архивным и положило действие в историю.',
+    title: { ru: 'Товар в архиве', en: 'The product is archived' },
+    hint: {
+      ru: 'Приложение пометило товар архивным и положило действие в историю.',
+      en: 'The app marked the product as archived and put the action into the history.',
+    },
     enter: untilDone(archivedCheck, (_root, app: GuideApp) => archive(app)),
   },
   {
-    title: 'Отмена ждёт сервера',
-    hint: 'Пользователь нажал Ctrl+Z. Приложение отправило запрос на возврат товара из архива, ответа ещё нет.',
+    title: { ru: 'Отмена ждёт сервера', en: 'The undo waits for the server' },
+    hint: {
+      ru: 'Пользователь нажал Ctrl+Z. Приложение отправило запрос на возврат товара из архива, ответа ещё нет.',
+      en: 'The user pressed Ctrl+Z. The app sent a request to restore the product from the archive, and there is no response yet.',
+    },
     enter: untilDone(appWaitsCheck, appUndo),
   },
   {
-    title: 'Сервер отказал',
-    hint: 'Сервер отклонил возврат: товар остался в архиве, отказ записан в журнал отказов, действие осталось в истории.',
+    title: { ru: 'Сервер отказал', en: 'The server refused' },
+    hint: {
+      ru: 'Сервер отклонил возврат: товар остался в архиве, отказ записан в журнал отказов, действие осталось в истории.',
+      en: 'The server rejected the restore: the product stayed archived, the refusal went into the failure log, and the action stayed in the history.',
+    },
     enter: untilDone(appRefusedCheck, refuse),
   },
   {
-    title: 'Повтор отмены принят',
-    hint: 'Пользователь снова нажал Ctrl+Z, и сервер принял возврат: товар больше не в архиве.',
+    title: { ru: 'Повтор отмены принят', en: 'The repeated undo was accepted' },
+    hint: {
+      ru: 'Пользователь снова нажал Ctrl+Z, и сервер принял возврат: товар больше не в архиве.',
+      en: 'The user pressed Ctrl+Z again, and the server accepted the restore: the product is no longer archived.',
+    },
     enter: untilDone(appUndoneCheck, (root, app: GuideApp) => {
       if (!appRefusedCheck(root)) {
         refuse(root, app)
@@ -898,7 +1015,10 @@ export const AppHistoryEntry: StoryObj<StoryProps> = {
   parameters: { scenario: '0222/S8', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Своё действие в истории"
+      title={{
+        ru: 'Своё действие в истории',
+        en: "The app's own action in the history",
+      }}
       steps={APP_ENTRY}
       reset={resetGuide}
       args={guideArgs(APP_ARGS, args)}
@@ -906,13 +1026,17 @@ export const AppHistoryEntry: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(APP_ENTRY[0]!.title, async () => {
+    await step(APP_ENTRY[0]!.title.ru, async () => {
       await waitForRows(canvasElement)
     })
-    await step(APP_ENTRY[1]!.title, () => next(canvasElement, archivedCheck))
-    await step(APP_ENTRY[2]!.title, () => next(canvasElement, appWaitsCheck))
-    await step(APP_ENTRY[3]!.title, () => next(canvasElement, appRefusedCheck))
-    await step(APP_ENTRY[4]!.title, () => next(canvasElement, appUndoneCheck))
+    await step(APP_ENTRY[1]!.title.ru, () => next(canvasElement, archivedCheck))
+    await step(APP_ENTRY[2]!.title.ru, () => next(canvasElement, appWaitsCheck))
+    await step(APP_ENTRY[3]!.title.ru, () =>
+      next(canvasElement, appRefusedCheck),
+    )
+    await step(APP_ENTRY[4]!.title.ru, () =>
+      next(canvasElement, appUndoneCheck),
+    )
     await settle()
   },
 }
@@ -996,29 +1120,44 @@ const restoreRow = (root: HTMLElement) => {
 
 const UNDO_ROW_DELETE: readonly GuideStoryStep[] = [
   {
-    title: 'Удаление по кнопке',
-    hint: 'Приложение сохраняет изменения по кнопке пульта и даёт удалить товар кнопкой в строке.',
+    title: { ru: 'Удаление по кнопке', en: 'Deleting with a button' },
+    hint: {
+      ru: 'Приложение сохраняет изменения по кнопке пульта и даёт удалить товар кнопкой в строке.',
+      en: 'The app saves changes when a button in the unsaved changes panel is pressed and lets the user delete a product with a button in its row.',
+    },
   },
   {
-    title: 'Строка удалена',
-    hint: 'Пользователь удалил бутылку для воды. Строка приглушена и ждёт применения.',
+    title: { ru: 'Строка удалена', en: 'The row was deleted' },
+    hint: {
+      ru: 'Пользователь удалил бутылку для воды. Строка приглушена и ждёт применения.',
+      en: 'The user deleted the water bottle. The row is dimmed and waits to be applied.',
+    },
     states: ['body.rowDraft'],
     enter: untilDone(deletedCheck, deleteRowStep),
   },
   {
-    title: 'Удаление применено',
-    hint: 'Пользователь применил изменения из пульта. Сервер удалил товар, строки больше нет.',
+    title: { ru: 'Удаление применено', en: 'The deletion is applied' },
+    hint: {
+      ru: 'Пользователь применил изменения из пульта. Сервер удалил товар, строки больше нет.',
+      en: 'The user applied the changes from the unsaved changes panel. The server deleted the product, and the row is gone.',
+    },
     enter: untilDone(deleteAppliedCheck, applyDelete),
   },
   {
-    title: 'Отмена вернула строку',
-    hint: 'Пользователь нажал кнопку отмены над таблицей. Товар вернулся на прежнее место новой строкой: на сервере его уже нет, поэтому строка ждёт применения.',
+    title: { ru: 'Отмена вернула строку', en: 'The undo brought the row back' },
+    hint: {
+      ru: 'Пользователь нажал кнопку отмены над таблицей. Товар вернулся на прежнее место новой строкой: на сервере его уже нет, поэтому строка ждёт применения.',
+      en: 'The user pressed the undo button above the table. The product returned to its previous place as a new row: it is no longer on the server, so the row is waiting to be applied.',
+    },
     states: ['body.rowDraft'],
     enter: untilDone(restoredCheck, restoreRow),
   },
   {
-    title: 'Товар снова сохранён',
-    hint: 'Пользователь применил изменения из пульта. Сервер снова сохранил товар под прежним id, строка стала обычной.',
+    title: { ru: 'Товар снова сохранён', en: 'The product is saved again' },
+    hint: {
+      ru: 'Пользователь применил изменения из пульта. Сервер снова сохранил товар под прежним id, строка стала обычной.',
+      en: 'The user applied the changes from the unsaved changes panel. The server saved the product again under its previous id, and the row became a regular one.',
+    },
     enter: untilDone(savedAgainCheck, root => {
       if (restoredCheck(root)) applyAll(root)
       // Строка сохранена — ждём, пока пульт закроется.
@@ -1033,7 +1172,7 @@ export const UndoRowDelete: StoryObj<StoryProps> = {
   parameters: { scenario: '0222/S9', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Отмена удаления строки"
+      title={{ ru: 'Отмена удаления строки', en: 'Undoing a row deletion' }}
       steps={UNDO_ROW_DELETE}
       reset={resetGuide}
       args={guideArgs(ROW_DRAFT_ARGS, args)}
@@ -1041,19 +1180,19 @@ export const UndoRowDelete: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(UNDO_ROW_DELETE[0]!.title, async () => {
+    await step(UNDO_ROW_DELETE[0]!.title.ru, async () => {
       await waitForRows(canvasElement)
     })
-    await step(UNDO_ROW_DELETE[1]!.title, () =>
+    await step(UNDO_ROW_DELETE[1]!.title.ru, () =>
       next(canvasElement, deletedCheck),
     )
-    await step(UNDO_ROW_DELETE[2]!.title, () =>
+    await step(UNDO_ROW_DELETE[2]!.title.ru, () =>
       next(canvasElement, deleteAppliedCheck),
     )
-    await step(UNDO_ROW_DELETE[3]!.title, () =>
+    await step(UNDO_ROW_DELETE[3]!.title.ru, () =>
       next(canvasElement, restoredCheck),
     )
-    await step(UNDO_ROW_DELETE[4]!.title, () =>
+    await step(UNDO_ROW_DELETE[4]!.title.ru, () =>
       next(canvasElement, savedAgainCheck),
     )
     await settle()
@@ -1120,27 +1259,42 @@ const refuseMove = (root: HTMLElement) => {
 
 const UNDO_ROW_MOVE: readonly GuideStoryStep[] = [
   {
-    title: 'Порядок товаров',
-    hint: 'Приложение даёт переставлять товары ручкой строки и сохраняет порядок на сервере.',
+    title: { ru: 'Порядок товаров', en: 'Product order' },
+    hint: {
+      ru: 'Приложение даёт переставлять товары ручкой строки и сохраняет порядок на сервере.',
+      en: "The app lets the user reorder products with the row's drag handle and saves the order on the server.",
+    },
   },
   {
-    title: 'Строка перенесена',
-    hint: 'Пользователь опустил офисное кресло на строку ниже пунктом меню ручки. Сервер сохранил новый порядок, и перенос можно отменить.',
+    title: { ru: 'Строка перенесена', en: 'The row was moved' },
+    hint: {
+      ru: 'Пользователь опустил офисное кресло на строку ниже пунктом меню ручки. Сервер сохранил новый порядок, и перенос можно отменить.',
+      en: 'The user moved the office chair one row down with a drag handle menu item. The server saved the new order, and the move can be undone.',
+    },
     enter: untilDone(movedCheck, moveDown),
   },
   {
-    title: 'Отмена ждёт сервера',
-    hint: 'Пользователь нажал кнопку отмены над таблицей. Кресло вернулось на прежнее место и ждёт ответа сервера.',
+    title: { ru: 'Отмена ждёт сервера', en: 'The undo waits for the server' },
+    hint: {
+      ru: 'Пользователь нажал кнопку отмены над таблицей. Кресло вернулось на прежнее место и ждёт ответа сервера.',
+      en: "The user pressed the undo button above the table. The chair returned to its previous place and is waiting for the server's response.",
+    },
     enter: untilDone(moveWaitsCheck, undoMove),
   },
   {
-    title: 'Сервер отказал',
-    hint: 'Сервер не принял возврат: кресло вернулось на новое место и коротко вспыхнуло, перенос остался в истории.',
+    title: { ru: 'Сервер отказал', en: 'The server refused' },
+    hint: {
+      ru: 'Сервер не принял возврат: кресло вернулось на новое место и коротко вспыхнуло, перенос остался в истории.',
+      en: 'The server did not accept the move back: the chair returned to its new place and flashed briefly, and the move stayed in the history.',
+    },
     enter: untilDone(moveRefusedCheck, refuseMove),
   },
   {
-    title: 'Повтор отмены принят',
-    hint: 'Пользователь снова нажал кнопку отмены, и сервер принял возврат: кресло на прежнем месте.',
+    title: { ru: 'Повтор отмены принят', en: 'The repeated undo was accepted' },
+    hint: {
+      ru: 'Пользователь снова нажал кнопку отмены, и сервер принял возврат: кресло на прежнем месте.',
+      en: 'The user pressed the undo button again, and the server accepted the move back: the chair is in its previous place.',
+    },
     enter: untilDone(moveUndoneCheck, root => {
       if (!moveRefusedCheck(root)) {
         refuseMove(root)
@@ -1160,7 +1314,7 @@ export const UndoRowMove: StoryObj<StoryProps> = {
   parameters: { scenario: '0222/S10', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Отмена переноса строки"
+      title={{ ru: 'Отмена переноса строки', en: 'Undoing a row move' }}
       steps={UNDO_ROW_MOVE}
       reset={resetGuide}
       args={guideArgs(MOVE_ARGS, args)}
@@ -1168,17 +1322,19 @@ export const UndoRowMove: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(UNDO_ROW_MOVE[0]!.title, async () => {
+    await step(UNDO_ROW_MOVE[0]!.title.ru, async () => {
       await waitForRows(canvasElement)
     })
-    await step(UNDO_ROW_MOVE[1]!.title, () => next(canvasElement, movedCheck))
-    await step(UNDO_ROW_MOVE[2]!.title, () =>
+    await step(UNDO_ROW_MOVE[1]!.title.ru, () =>
+      next(canvasElement, movedCheck),
+    )
+    await step(UNDO_ROW_MOVE[2]!.title.ru, () =>
       next(canvasElement, moveWaitsCheck),
     )
-    await step(UNDO_ROW_MOVE[3]!.title, () =>
+    await step(UNDO_ROW_MOVE[3]!.title.ru, () =>
       next(canvasElement, moveRefusedCheck),
     )
-    await step(UNDO_ROW_MOVE[4]!.title, () =>
+    await step(UNDO_ROW_MOVE[4]!.title.ru, () =>
       next(canvasElement, moveUndoneCheck),
     )
     await settle()
@@ -1217,27 +1373,42 @@ const backToOriginal = (root: HTMLElement) => {
 
 const BACK_TO_ORIGINAL: readonly GuideStoryStep[] = [
   {
-    title: 'История изменений',
-    hint: 'Над таблицей — кнопка истории: она показывает правки по порядку и возвращает таблицу к любой из них или к виду до первой правки.',
+    title: { ru: 'История изменений', en: 'Change history' },
+    hint: {
+      ru: 'Над таблицей — кнопка истории: она показывает правки по порядку и возвращает таблицу к любой из них или к виду до первой правки.',
+      en: 'Above the table is the history button: it shows the edits in order and returns the table to any of them or to how it looked before the first edit.',
+    },
   },
   {
-    title: 'Три правки',
-    hint: 'Пользователь поменял по очереди три цены — в первой, второй и третьей строках.',
+    title: { ru: 'Три правки', en: 'Three edits' },
+    hint: {
+      ru: 'Пользователь поменял по очереди три цены — в первой, второй и третьей строках.',
+      en: 'The user changed three prices one after another, in the first, second, and third rows.',
+    },
     enter: untilDone(editsCheck, editNext),
   },
   {
-    title: 'История открыта',
-    hint: 'Пользователь открыл историю: три правки, новые сверху, последняя выделена как текущая. Внизу — кнопка возврата к исходному виду.',
+    title: { ru: 'История открыта', en: 'The history is open' },
+    hint: {
+      ru: 'Пользователь открыл историю: три правки, новые сверху, последняя выделена как текущая. Внизу — кнопка возврата к исходному виду.',
+      en: 'The user opened the history: three edits, newest first, with the latest highlighted as the current one. At the bottom is a button that returns to the original view.',
+    },
     enter: untilDone(openCheck, openHistory),
   },
   {
-    title: 'Исходный вид',
-    hint: 'Пользователь нажал кнопку возврата к исходному виду. Таблица отменила правки по очереди, начиная с последней: цены прежние, а правки остались в списке приглушёнными — к ним можно вернуться.',
+    title: { ru: 'Исходный вид', en: 'The original view' },
+    hint: {
+      ru: 'Пользователь нажал кнопку возврата к исходному виду. Таблица отменила правки по очереди, начиная с последней: цены прежние, а правки остались в списке приглушёнными — к ним можно вернуться.',
+      en: 'The user pressed the button that returns to the original view. The table undid the edits one by one, starting with the latest: the prices are back to their previous values, and the edits stay dimmed in the list, so the user can return to them.',
+    },
     enter: untilDone(originalCheck, backToOriginal),
   },
   {
-    title: 'Всё возвращено',
-    hint: 'Пользователь нажал на верхнюю, самую новую правку. Таблица повторила все три правки по очереди.',
+    title: { ru: 'Всё возвращено', en: 'Everything is restored' },
+    hint: {
+      ru: 'Пользователь нажал на верхнюю, самую новую правку. Таблица повторила все три правки по очереди.',
+      en: 'The user clicked the top, newest edit. The table redid all three edits one by one.',
+    },
     enter: untilDone(allBackCheck, root => {
       if (!originalCheck(root)) {
         backToOriginal(root)
@@ -1254,7 +1425,7 @@ export const HistoryBackToOriginal: StoryObj<StoryProps> = {
   parameters: { scenario: '0222/S11', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Исходный вид"
+      title={{ ru: 'Исходный вид', en: 'The original view' }}
       steps={BACK_TO_ORIGINAL}
       reset={resetGuide}
       args={guideArgs(BASE_ARGS, args)}
@@ -1262,17 +1433,19 @@ export const HistoryBackToOriginal: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(BACK_TO_ORIGINAL[0]!.title, async () => {
+    await step(BACK_TO_ORIGINAL[0]!.title.ru, async () => {
       await waitForRows(canvasElement)
     })
-    await step(BACK_TO_ORIGINAL[1]!.title, () =>
+    await step(BACK_TO_ORIGINAL[1]!.title.ru, () =>
       next(canvasElement, editsCheck),
     )
-    await step(BACK_TO_ORIGINAL[2]!.title, () => next(canvasElement, openCheck))
-    await step(BACK_TO_ORIGINAL[3]!.title, () =>
+    await step(BACK_TO_ORIGINAL[2]!.title.ru, () =>
+      next(canvasElement, openCheck),
+    )
+    await step(BACK_TO_ORIGINAL[3]!.title.ru, () =>
       next(canvasElement, originalCheck),
     )
-    await step(BACK_TO_ORIGINAL[4]!.title, () =>
+    await step(BACK_TO_ORIGINAL[4]!.title.ru, () =>
       next(canvasElement, allBackCheck),
     )
     await settle()
@@ -1307,23 +1480,35 @@ const discardEverything = (root: HTMLElement) => {
 
 const UNDO_DISCARD: readonly GuideStoryStep[] = [
   {
-    title: 'Правки копятся',
-    hint: 'Приложение сохраняет правки по кнопке: изменённые ячейки ждут применения, а пульт над таблицей собирает их и умеет отбросить.',
+    title: { ru: 'Правки копятся', en: 'Edits pile up' },
+    hint: {
+      ru: 'Приложение сохраняет правки по кнопке: изменённые ячейки ждут применения, а пульт над таблицей собирает их и умеет отбросить.',
+      en: 'The app saves edits when a button is pressed: changed cells wait to be applied, and the unsaved changes panel above the table collects them and can discard them.',
+    },
   },
   {
-    title: 'Вставка — неприменённая',
-    hint: 'Пользователь вставил три цены. На сервер ничего не ушло: ячейки отмечены как неприменённые.',
+    title: { ru: 'Вставка — неприменённая', en: 'The paste is unapplied' },
+    hint: {
+      ru: 'Пользователь вставил три цены. На сервер ничего не ушло: ячейки отмечены как неприменённые.',
+      en: 'The user pasted three prices. Nothing went to the server: the cells are marked as unapplied.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(draftsCheck, paste),
   },
   {
-    title: 'Всё отброшено',
-    hint: 'Пользователь открыл пульт и отбросил все изменения. Пульт пуст, цены прежние, а в истории изменений появилась запись об отбрасывании.',
+    title: { ru: 'Всё отброшено', en: 'Everything is discarded' },
+    hint: {
+      ru: 'Пользователь открыл пульт и отбросил все изменения. Пульт пуст, цены прежние, а в истории изменений появилась запись об отбрасывании.',
+      en: 'The user opened the unsaved changes panel and discarded all changes. The panel is empty, the prices are back to their previous values, and the change history has an entry for the discard.',
+    },
     enter: untilDone(discardedCheck, discardEverything),
   },
   {
-    title: 'Отбрасывание отменено',
-    hint: 'Пользователь нажал Ctrl+Z. Сначала отменяется последнее действие — отбрасывание: три цены вернулись неприменёнными и снова в пульте.',
+    title: { ru: 'Отбрасывание отменено', en: 'The discard is undone' },
+    hint: {
+      ru: 'Пользователь нажал Ctrl+Z. Сначала отменяется последнее действие — отбрасывание: три цены вернулись неприменёнными и снова в пульте.',
+      en: 'The user pressed Ctrl+Z. The latest action, the discard, is undone first: the three prices came back unapplied and are in the panel again.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(discardUndoneCheck, root => {
       if (!discardedCheck(root)) {
@@ -1341,7 +1526,7 @@ export const UndoDiscard: StoryObj<StoryProps> = {
   parameters: { scenario: '0222/S12', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Отмена отбрасывания"
+      title={{ ru: 'Отмена отбрасывания', en: 'Undoing a discard' }}
       steps={UNDO_DISCARD}
       reset={resetGuide}
       args={guideArgs(DRAFT_ARGS, args)}
@@ -1349,14 +1534,16 @@ export const UndoDiscard: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(UNDO_DISCARD[0]!.title, async () => {
+    await step(UNDO_DISCARD[0]!.title.ru, async () => {
       await waitForRows(canvasElement)
     })
-    await step(UNDO_DISCARD[1]!.title, () => next(canvasElement, draftsCheck))
-    await step(UNDO_DISCARD[2]!.title, () =>
+    await step(UNDO_DISCARD[1]!.title.ru, () =>
+      next(canvasElement, draftsCheck),
+    )
+    await step(UNDO_DISCARD[2]!.title.ru, () =>
       next(canvasElement, discardedCheck),
     )
-    await step(UNDO_DISCARD[3]!.title, () =>
+    await step(UNDO_DISCARD[3]!.title.ru, () =>
       next(canvasElement, discardUndoneCheck),
     )
     await settle()
@@ -1408,23 +1595,38 @@ const applyAndShow = (root: HTMLElement) => {
 
 const HISTORY_APPLIED: readonly GuideStoryStep[] = [
   {
-    title: 'Правки копятся',
-    hint: 'Приложение сохраняет правки по кнопке. История изменений отмечает правки, которые ещё не ушли на сервер, и момент, когда их применили.',
+    title: { ru: 'Правки копятся', en: 'Edits pile up' },
+    hint: {
+      ru: 'Приложение сохраняет правки по кнопке. История изменений отмечает правки, которые ещё не ушли на сервер, и момент, когда их применили.',
+      en: 'The app saves edits when a button is pressed. The change history marks the edits that have not gone to the server yet and the moment they were applied.',
+    },
   },
   {
-    title: 'Вставка — неприменённая',
-    hint: 'Пользователь вставил три цены. На сервер ничего не ушло: ячейки отмечены как неприменённые.',
+    title: { ru: 'Вставка — неприменённая', en: 'The paste is unapplied' },
+    hint: {
+      ru: 'Пользователь вставил три цены. На сервер ничего не ушло: ячейки отмечены как неприменённые.',
+      en: 'The user pasted three prices. Nothing went to the server: the cells are marked as unapplied.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(draftsCheck, paste),
   },
   {
-    title: 'Неприменённое в истории',
-    hint: 'Пользователь открыл историю изменений. Точка у вставки — тона неприменённого: эти правки ещё не отправлены.',
+    title: {
+      ru: 'Неприменённое в истории',
+      en: 'Unapplied changes in the history',
+    },
+    hint: {
+      ru: 'Пользователь открыл историю изменений. Точка у вставки — тона неприменённого: эти правки ещё не отправлены.',
+      en: 'The user opened the change history. The dot next to the paste is in the unapplied tone: these edits have not been sent yet.',
+    },
     enter: untilDone(unsavedShownCheck, showUnsaved),
   },
   {
-    title: 'Изменения применены',
-    hint: 'Пользователь применил изменения из пульта и снова открыл историю. Сервер сохранил три цены: точка у вставки синяя, а над вставкой — отметка, сколько изменений применено и когда.',
+    title: { ru: 'Изменения применены', en: 'The changes are applied' },
+    hint: {
+      ru: 'Пользователь применил изменения из пульта и снова открыл историю. Сервер сохранил три цены: точка у вставки синяя, а над вставкой — отметка, сколько изменений применено и когда.',
+      en: 'The user applied the changes from the unsaved changes panel and opened the history again. The server saved the three prices: the dot next to the paste is blue, and above the paste is a mark showing how many changes were applied and when.',
+    },
     enter: untilDone(appliedShownCheck, applyAndShow),
   },
 ]
@@ -1435,7 +1637,10 @@ export const HistoryApplied: StoryObj<StoryProps> = {
   parameters: { scenario: '0222/S13', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Неприменённое в истории"
+      title={{
+        ru: 'Неприменённое в истории',
+        en: 'Unapplied changes in the history',
+      }}
       steps={HISTORY_APPLIED}
       reset={resetGuide}
       args={guideArgs(DRAFT_ARGS, args)}
@@ -1443,16 +1648,16 @@ export const HistoryApplied: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(HISTORY_APPLIED[0]!.title, async () => {
+    await step(HISTORY_APPLIED[0]!.title.ru, async () => {
       await waitForRows(canvasElement)
     })
-    await step(HISTORY_APPLIED[1]!.title, () =>
+    await step(HISTORY_APPLIED[1]!.title.ru, () =>
       next(canvasElement, draftsCheck),
     )
-    await step(HISTORY_APPLIED[2]!.title, () =>
+    await step(HISTORY_APPLIED[2]!.title.ru, () =>
       next(canvasElement, unsavedShownCheck),
     )
-    await step(HISTORY_APPLIED[3]!.title, () =>
+    await step(HISTORY_APPLIED[3]!.title.ru, () =>
       next(canvasElement, appliedShownCheck),
     )
     await settle()

@@ -25,16 +25,16 @@ const meta = {
     size: {
       control: 'inline-radio',
       options: ['sm', 'dot'],
-      description: 'Счётчик или точка',
+      description: 'Counter or dot',
     },
     tone: {
       control: 'inline-radio',
       options: TONES,
-      description: 'Тон состояния',
+      description: 'State tone',
     },
     value: {
       control: { type: 'number', min: 0, max: 999 },
-      description: 'Число счётчика',
+      description: 'Counter value',
     },
   },
   render: ({ size, tone, value }) => (

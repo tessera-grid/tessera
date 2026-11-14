@@ -96,7 +96,7 @@ const meta = {
     depth: {
       control: 'inline-radio',
       options: [1, 2, 3],
-      description: 'Уровней групп над строками',
+      description: 'Number of group levels above the rows',
     },
   },
   render: ({ depth }) => (

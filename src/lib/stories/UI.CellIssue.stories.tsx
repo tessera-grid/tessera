@@ -60,11 +60,10 @@ const meta = {
     tone: {
       control: 'inline-radio',
       options: ['error', 'draft'],
-      description:
-        'Отказ или ошибка — красный; несохранённое изменение — цвет черновика',
+      description: 'Refusal or error — red; unsaved change — the draft color',
     },
-    reason: { control: 'text', description: 'Причина: подсказка и поповер' },
-    actions: { control: 'boolean', description: 'Действия в поповере' },
+    reason: { control: 'text', description: 'Reason: tooltip and popover' },
+    actions: { control: 'boolean', description: 'Actions in the popover' },
   },
   render: function Render({ tone, reason, actions }) {
     const texts = issueTexts(useStoryLabels())

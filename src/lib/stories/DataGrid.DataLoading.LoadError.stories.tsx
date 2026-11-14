@@ -42,7 +42,7 @@ const refreshing = (root: ParentNode) =>
   !!root.querySelector('.data-grid-theme[data-refreshing]')
 
 const SERVER_ERROR = new Error('Server responded 503 Service Unavailable')
-const NOT_LOAD_ERROR = 'На ошибку загрузки не влияет'
+const NOT_LOAD_ERROR = 'Does not affect the load error'
 
 /** Повтор приложения: ответ на него ведёт «сервер» обвязки (`retrySucceeds`). */
 const retry = () => {}
@@ -79,10 +79,10 @@ export const LoadErrorPlayground: StoryObj<LoadErrorPlaygroundArgs> = {
   argTypes: {
     errorReason: {
       control: 'text',
-      description: 'Причина ошибки загрузки, пусто — ошибки нет',
+      description: 'Load error reason; empty means no error',
     },
-    firstLoad: { control: 'boolean', description: 'Данных нет' },
-    retryable: { control: 'boolean', description: 'Повтор загрузки' },
+    firstLoad: { control: 'boolean', description: 'No data' },
+    retryable: { control: 'boolean', description: 'Retry loading' },
   },
   render: function Render({ errorReason, firstLoad, retryable, ...args }) {
     const [consoleLog] = useState(createConsoleLog)
@@ -137,24 +137,36 @@ const SCENARIO_ARGS = {
 
 const REFRESH_ERROR: readonly GuideStoryStep[] = [
   {
-    title: 'Данные загружены',
-    hint: 'Таблица отображает данные, полученные от сервера.',
+    title: { ru: 'Данные загружены', en: 'Data loaded' },
+    hint: {
+      ru: 'Таблица отображает данные, полученные от сервера.',
+      en: 'The table shows the data received from the server.',
+    },
   },
   {
-    title: 'Обновление данных',
-    hint: 'Приложение запросило данные заново. Таблица находится в состоянии обновления, но остаётся доступной для взаимодействия.',
+    title: { ru: 'Обновление данных', en: 'Data refresh' },
+    hint: {
+      ru: 'Приложение запросило данные заново. Таблица находится в состоянии обновления, но остаётся доступной для взаимодействия.',
+      en: 'The app requested the data again. The table is refreshing but stays available for interaction.',
+    },
     props: () => ({ loading: 'refresh' }),
     states: ['body.refreshing'],
   },
   {
-    title: 'Ошибка обновления',
-    hint: 'Сервер не смог вернуть данные. Таблица показывает индикатор ошибки и сообщение с причиной и возможностью повторить запрос; ранее загруженные данные остаются доступны.',
+    title: { ru: 'Ошибка обновления', en: 'Refresh error' },
+    hint: {
+      ru: 'Сервер не смог вернуть данные. Таблица показывает индикатор ошибки и сообщение с причиной и возможностью повторить запрос; ранее загруженные данные остаются доступны.',
+      en: 'The server could not return the data. The table shows an error indicator and a message with the reason and a way to retry; the previously loaded data remains available.',
+    },
     props: () => ({ loading: false, loadError: SERVER_ERROR }),
     states: ['body.loadError'],
   },
   {
-    title: 'Повторный запрос',
-    hint: 'Пользователь повторил запрос. Данные обновлены, сообщение об ошибке скрыто.',
+    title: { ru: 'Повторный запрос', en: 'The request is sent again' },
+    hint: {
+      ru: 'Пользователь повторил запрос. Данные обновлены, сообщение об ошибке скрыто.',
+      en: 'The user retried the request. The data is refreshed, and the error message is hidden.',
+    },
     enter: pressRetry,
   },
 ]
@@ -169,7 +181,7 @@ export const LoadErrorRefresh: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Ошибка обновления"
+      title={{ ru: 'Ошибка обновления', en: 'Refresh error' }}
       steps={REFRESH_ERROR}
       args={guideArgs(SCENARIO_ARGS, args)}
     />
@@ -177,17 +189,17 @@ export const LoadErrorRefresh: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     // В Storybook сценарий проходит человек; `play` — только в тестах каталога.
     if (globals.catalog !== true) return
-    await step(REFRESH_ERROR[0]!.title, async () => {
+    await step(REFRESH_ERROR[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(banner(canvas)).toBeNull())
     })
-    await step(REFRESH_ERROR[1]!.title, async () => {
+    await step(REFRESH_ERROR[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(refreshing(canvas)).toBe(true))
       await until(() => expect(dataRows(canvas).length).toBeGreaterThan(0))
       await settle()
     })
-    await step(REFRESH_ERROR[2]!.title, async () => {
+    await step(REFRESH_ERROR[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(banner(canvas)).toHaveTextContent('Server responded 503'),
@@ -199,7 +211,7 @@ export const LoadErrorRefresh: StoryObj<StoryProps> = {
       )
       await settle()
     })
-    await step(REFRESH_ERROR[3]!.title, async () => {
+    await step(REFRESH_ERROR[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(banner(canvas)).toBeNull())
       await until(() => expect(refreshing(canvas)).toBe(false))
@@ -213,19 +225,31 @@ export const LoadErrorRefresh: StoryObj<StoryProps> = {
 
 const FIRST_LOAD_ERROR: readonly GuideStoryStep[] = [
   {
-    title: 'Ожидание данных от сервера',
-    hint: 'Данных ещё нет. Тело таблицы находится в состоянии загрузки.',
+    title: {
+      ru: 'Ожидание данных от сервера',
+      en: 'Waiting for data from the server',
+    },
+    hint: {
+      ru: 'Данных ещё нет. Тело таблицы находится в состоянии загрузки.',
+      en: 'There is no data yet. The table body is loading.',
+    },
     props: () => ({ loading: 'initial', dataOverride: [] }),
   },
   {
-    title: 'Ошибка загрузки',
-    hint: 'Сервер не смог вернуть данные. Вместо строк отображается заглушка с причиной ошибки и возможностью повторить запрос.',
+    title: { ru: 'Ошибка загрузки', en: 'Load error' },
+    hint: {
+      ru: 'Сервер не смог вернуть данные. Вместо строк отображается заглушка с причиной ошибки и возможностью повторить запрос.',
+      en: 'The server could not return the data. Instead of rows, a placeholder shows the error reason and a way to retry.',
+    },
     props: () => ({ loading: false, loadError: SERVER_ERROR }),
     states: ['body.loadFailed'],
   },
   {
-    title: 'Повторный запрос',
-    hint: 'Пользователь повторил запрос. Данные получены и отображаются на месте заглушки.',
+    title: { ru: 'Повторный запрос', en: 'The request is sent again' },
+    hint: {
+      ru: 'Пользователь повторил запрос. Данные получены и отображаются на месте заглушки.',
+      en: 'The user retried the request. The data arrived and is shown in place of the placeholder.',
+    },
     enter: pressRetry,
   },
 ]
@@ -240,14 +264,14 @@ export const LoadErrorFirstLoad: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Ошибка первой загрузки"
+      title={{ ru: 'Ошибка первой загрузки', en: 'First load error' }}
       steps={FIRST_LOAD_ERROR}
       args={guideArgs(SCENARIO_ARGS, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(FIRST_LOAD_ERROR[0]!.title, async () => {
+    await step(FIRST_LOAD_ERROR[0]!.title.ru, async () => {
       await until(() =>
         expect(
           canvas.querySelector('.data-grid__body-row--skeleton'),
@@ -255,7 +279,7 @@ export const LoadErrorFirstLoad: StoryObj<StoryProps> = {
       )
       await expect(stub(canvas)).toBeNull()
     })
-    await step(FIRST_LOAD_ERROR[1]!.title, async () => {
+    await step(FIRST_LOAD_ERROR[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(stub(canvas)).toHaveTextContent('Server responded 503'),
@@ -263,7 +287,7 @@ export const LoadErrorFirstLoad: StoryObj<StoryProps> = {
       await expect(dataRows(canvas)).toHaveLength(0)
       await settle()
     })
-    await step(FIRST_LOAD_ERROR[2]!.title, async () => {
+    await step(FIRST_LOAD_ERROR[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(dataRows(canvas).length).toBeGreaterThan(0))
       await expect(stub(canvas)).toBeNull()

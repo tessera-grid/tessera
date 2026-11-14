@@ -6,6 +6,7 @@ import baseline from './guide-fresh-baseline.json'
 import { loadStories } from './contrast-helpers'
 import { GuideStory, guideArgs } from '../../demos/GuideStory'
 import { FRESH_ATTR, guideNext, until } from '../../__mocks__/catalogPlay'
+import { both } from '../storyText.helpers'
 
 // Проход гайдов со свежей таблицей (ADR 0117, SN73): каждый гайд проходит свой `play`, но
 // перед каждым «Далее» ставится пометка «Таблица изменена» — шаг открывает таблицу заново
@@ -34,15 +35,18 @@ const walkFresh = async (run: () => Promise<void>) => {
 // Стенд: шаг 3 без действия держится на прокрутке шага 2 — со свежей таблицей не доходит.
 const SCROLL = 200
 const STAND = [
-  { title: 'Таблица в покое', hint: 'Шаг только показывает таблицу.' },
   {
-    title: 'Таблица прокручена',
-    hint: 'Действие прокручивает таблицу.',
+    title: both('Таблица в покое'),
+    hint: both('Шаг только показывает таблицу.'),
+  },
+  {
+    title: both('Таблица прокручена'),
+    hint: both('Действие прокручивает таблицу.'),
     enter: (root: HTMLElement) => {
       root.querySelector('.data-grid__container')!.scrollTop = SCROLL
     },
   },
-  { title: 'Прокрутка на месте', hint: 'Шаг без действия.' },
+  { title: both('Прокрутка на месте'), hint: both('Шаг без действия.') },
 ]
 const scrollTop = () =>
   document.querySelector<HTMLElement>('.data-grid__container')?.scrollTop ?? 0
@@ -62,7 +66,7 @@ describe('проход гайдов со свежей таблицей (ADR 0117
     const stand = async () => {
       const screen = await render(
         <GuideStory
-          title="Стенд свежей таблицы"
+          title={both('Стенд свежей таблицы')}
           steps={STAND}
           args={guideArgs(
             { dataCount: 200, height: 320 },

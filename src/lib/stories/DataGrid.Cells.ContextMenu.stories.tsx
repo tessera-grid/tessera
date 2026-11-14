@@ -123,12 +123,18 @@ const steady = () => {
 
 const MENU: readonly GuideStoryStep[] = [
   {
-    title: 'Меню ещё не открыто',
-    hint: 'Приложение включило контекстное меню таблицы. Пользователь ещё не нажимал по ячейкам.',
+    title: { ru: 'Меню ещё не открыто', en: 'The menu is not open yet' },
+    hint: {
+      ru: 'Приложение включило контекстное меню таблицы. Пользователь ещё не нажимал по ячейкам.',
+      en: "The app turned on the table's context menu. The user has not clicked any cells yet.",
+    },
   },
   {
-    title: 'Меню у курсора',
-    hint: 'Пользователь нажал правой кнопкой по ячейке. Ячейка выделилась, а у курсора открылось меню таблицы вместо меню браузера.',
+    title: { ru: 'Меню у курсора', en: 'The menu at the pointer' },
+    hint: {
+      ru: 'Пользователь нажал правой кнопкой по ячейке. Ячейка выделилась, а у курсора открылось меню таблицы вместо меню браузера.',
+      en: "The user right-clicked a cell. The cell was selected, and the table's menu opened at the pointer instead of the browser's menu.",
+    },
     states: ['overlay.contextMenu'],
     enter: root => {
       const still = steady()
@@ -139,8 +145,11 @@ const MENU: readonly GuideStoryStep[] = [
     },
   },
   {
-    title: 'Ячейка скопирована',
-    hint: 'Пользователь выбрал копирование. Меню закрылось, значение ячейки попало в буфер, в консоли запись о копировании.',
+    title: { ru: 'Ячейка скопирована', en: 'The cell is copied' },
+    hint: {
+      ru: 'Пользователь выбрал копирование. Меню закрылось, значение ячейки попало в буфер, в консоли запись о копировании.',
+      en: "The user chose to copy. The menu closed, the cell's value went to the clipboard, and the console shows a copy entry.",
+    },
     enter: root => {
       const chosen = { done: false }
       return untilDone(
@@ -156,8 +165,11 @@ const MENU: readonly GuideStoryStep[] = [
     },
   },
   {
-    title: 'Меню внутри диапазона',
-    hint: 'Пользователь выделил несколько ячеек и открыл меню на одной из них. Выделение осталось, копирование возьмёт весь диапазон.',
+    title: { ru: 'Меню внутри диапазона', en: 'The menu inside a range' },
+    hint: {
+      ru: 'Пользователь выделил несколько ячеек и открыл меню на одной из них. Выделение осталось, копирование возьмёт весь диапазон.',
+      en: 'The user selected several cells and opened the menu on one of them. The selection stayed, and copying will take the whole range.',
+    },
     states: ['overlay.contextMenu'],
     enter: root => {
       const still = steady()
@@ -177,8 +189,11 @@ const MENU: readonly GuideStoryStep[] = [
     },
   },
   {
-    title: 'Диапазон скопирован',
-    hint: 'Пользователь выбрал копирование. Меню закрылось, а в буфер попал весь диапазон, а не одна ячейка: три строки по три значения, как в таблице. Вставка в электронную таблицу разложит их по ячейкам, в текстовый редактор — строками со значениями через табуляцию.',
+    title: { ru: 'Диапазон скопирован', en: 'The range is copied' },
+    hint: {
+      ru: 'Пользователь выбрал копирование. Меню закрылось, а в буфер попал весь диапазон, а не одна ячейка: три строки по три значения, как в таблице. Вставка в электронную таблицу разложит их по ячейкам, в текстовый редактор — строками со значениями через табуляцию.',
+      en: 'The user chose to copy. The menu closed, and the whole range went to the clipboard, not just one cell: three rows of three values, as in the table. Pasting into a spreadsheet spreads them across cells; pasting into a text editor gives lines with tab-separated values.',
+    },
     states: ['body.cellRange'],
     enter: root => {
       const chosen = { done: false }
@@ -217,7 +232,7 @@ export const ContextMenuCell: StoryObj<StoryProps> = {
   parameters: { scenario: '0030/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Контекстное меню ячейки"
+      title={{ ru: 'Контекстное меню ячейки', en: 'Cell context menu' }}
       steps={MENU}
       args={guideArgs(
         {
@@ -233,10 +248,10 @@ export const ContextMenuCell: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(MENU[0]!.title, async () => {
+    await step(MENU[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(MENU[1]!.title, async () => {
+    await step(MENU[1]!.title.ru, async () => {
       await guideNext(canvas)
       await waitForRows(canvas)
       await until(() => expect(openMenu()).not.toBeNull())
@@ -251,19 +266,19 @@ export const ContextMenuCell: StoryObj<StoryProps> = {
           Math.abs(menu.top - (cell.top + cell.height / 2)),
       ).toBeLessThan(24)
     })
-    await step(MENU[2]!.title, async () => {
+    await step(MENU[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(openMenu()).toBeNull())
       await until(() => expect(consoleText()).toContain('cellSelection:copy'))
     })
-    await step(MENU[3]!.title, async () => {
+    await step(MENU[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(openMenu()).not.toBeNull())
       expect(selectedCells(canvas)).toBe(RANGE_CELLS)
       expect(openMenu()!.querySelector(COPY)).not.toBeNull()
       await settle()
     })
-    await step(MENU[4]!.title, async () => {
+    await step(MENU[4]!.title.ru, async () => {
       // Что меню кладёт в буфер — перехватом записи: буфер страницы тест не читает.
       const clipboard = navigator.clipboard
       const write = clipboard.write
@@ -348,12 +363,21 @@ const startRecalculate = (root: HTMLElement) => {
 
 const ASYNC_ITEMS: readonly GuideStoryStep[] = [
   {
-    title: 'Меню ещё не открыто',
-    hint: 'Приложение добавило в меню ячейки действие, которое выполняет сервер. Пользователь ещё не открывал меню.',
+    title: { ru: 'Меню ещё не открыто', en: 'The menu is not open yet' },
+    hint: {
+      ru: 'Приложение добавило в меню ячейки действие, которое выполняет сервер. Пользователь ещё не открывал меню.',
+      en: 'The app added to the cell menu an action that the server runs. The user has not opened the menu yet.',
+    },
   },
   {
-    title: 'Меню с действием сервера',
-    hint: 'Приложение добавило в меню ячейки действие, которое выполняет сервер. Пользователь открыл меню правой кнопкой по ячейке.',
+    title: {
+      ru: 'Меню с действием сервера',
+      en: 'A menu with a server action',
+    },
+    hint: {
+      ru: 'Приложение добавило в меню ячейки действие, которое выполняет сервер. Пользователь открыл меню правой кнопкой по ячейке.',
+      en: 'The app added to the cell menu an action that the server runs. The user opened the menu by right-clicking a cell.',
+    },
     states: ['overlay.contextMenu'],
     enter: root => {
       run.started = false
@@ -371,8 +395,11 @@ const ASYNC_ITEMS: readonly GuideStoryStep[] = [
     },
   },
   {
-    title: 'Действие выполняется',
-    hint: 'Пользователь выбрал пересчёт и, пока сервер отвечает, снова открыл меню. Ячейка чуть темнеет и по ней проходит светлый блик — она занята, а пункт ждёт ответа: его подпись предлагает отменить пересчёт.',
+    title: { ru: 'Действие выполняется', en: 'The action is running' },
+    hint: {
+      ru: 'Пользователь выбрал пересчёт и, пока сервер отвечает, снова открыл меню. Ячейка чуть темнеет и по ней проходит светлый блик — она занята, а пункт ждёт ответа: его подпись предлагает отменить пересчёт.',
+      en: 'The user chose to recalculate and, while the server was responding, opened the menu again. The cell darkens slightly and a light sheen runs across it: it is busy, and the item is waiting for a response, with its label offering to cancel the recalculation.',
+    },
     states: ['overlay.contextMenu'],
     immediate: true,
     enter: untilDone(
@@ -384,8 +411,11 @@ const ASYNC_ITEMS: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Отказ на ячейке',
-    hint: 'Сервер не выполнил пересчёт. Меню закрыто, и ячейка, где его запускали, коротко вспыхивает тоном отказа — отказ виден там, где начато действие.',
+    title: { ru: 'Отказ на ячейке', en: 'Refusal on the cell' },
+    hint: {
+      ru: 'Сервер не выполнил пересчёт. Меню закрыто, и ячейка, где его запускали, коротко вспыхивает тоном отказа — отказ виден там, где начато действие.',
+      en: 'The server did not run the recalculation. The menu is closed, and the cell where it was started flashes briefly in the refusal tone: the refusal shows where the action began.',
+    },
     immediate: true,
     enter: root => {
       // Вспышка — от запуска, который шаг видел занятым, а не прежняя.
@@ -405,8 +435,11 @@ const ASYNC_ITEMS: readonly GuideStoryStep[] = [
     },
   },
   {
-    title: 'Сервер отказал',
-    hint: 'При следующем открытии меню у пункта значок ошибки, его подсказка — причина; отказ объявлен.',
+    title: { ru: 'Сервер отказал', en: 'The server refused' },
+    hint: {
+      ru: 'При следующем открытии меню у пункта значок ошибки, его подсказка — причина; отказ объявлен.',
+      en: 'The next time the menu opens, the item has an error icon, and its tooltip gives the reason; the refusal is announced.',
+    },
     states: ['overlay.contextMenu'],
     enter: root => {
       run.reopened = false
@@ -437,7 +470,10 @@ export const ContextMenuAsyncItems: StoryObj<StoryProps> = {
   parameters: { scenario: '0078/S2', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Действие сервера в меню"
+      title={{
+        ru: 'Действие сервера в меню',
+        en: 'A server action in the menu',
+      }}
       steps={ASYNC_ITEMS}
       reset={() => {
         run.started = false
@@ -459,17 +495,17 @@ export const ContextMenuAsyncItems: StoryObj<StoryProps> = {
   ),
   play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(ASYNC_ITEMS[0]!.title, async () => {
+    await step(ASYNC_ITEMS[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(ASYNC_ITEMS[1]!.title, async () => {
+    await step(ASYNC_ITEMS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await waitForRows(canvas)
       await until(() => expect(recalculate()).not.toBeNull())
       await settle()
       expectPopupInCanvas(canvas, openMenu()!)
     })
-    await step(ASYNC_ITEMS[2]!.title, async () => {
+    await step(ASYNC_ITEMS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(recalculatePending()).toBe(true))
       // Ждущий пункт доступен и предлагает отмену (ADR 0153, §3).
@@ -484,7 +520,7 @@ export const ContextMenuAsyncItems: StoryObj<StoryProps> = {
       await until(() => expect(busyCell(canvas)).toBe(true))
       await until(() => expect(pendingShown(1)).toBe(true))
     })
-    await step(ASYNC_ITEMS[3]!.title, async () => {
+    await step(ASYNC_ITEMS[3]!.title.ru, async () => {
       const flash = watchFlash(
         canvas,
         `.data-grid__body-row[data-row-id="${ASYNC_TARGET.row}"] [data-column-id="${ASYNC_TARGET.column}"]`,
@@ -497,7 +533,7 @@ export const ContextMenuAsyncItems: StoryObj<StoryProps> = {
       await until(() => expect(openMenu()).toBeNull())
       await until(() => expect(busyCell(canvas)).toBe(false))
     })
-    await step(ASYNC_ITEMS[4]!.title, async () => {
+    await step(ASYNC_ITEMS[4]!.title.ru, async () => {
       releaseFlash(canvas)
       await until(() => expect(flashedCell(canvas)).toBe(false))
       await guideNext(canvas)
@@ -575,12 +611,18 @@ const selectAndOpen = (root: HTMLElement) => {
 
 const REFUSED_ON_SELECTION: readonly GuideStoryStep[] = [
   {
-    title: 'Ничего не выделено',
-    hint: 'В контекстном меню есть заполнение выделения, его выполняет сервер. Пользователь ещё не выделял ячейки.',
+    title: { ru: 'Ничего не выделено', en: 'Nothing is selected' },
+    hint: {
+      ru: 'В контекстном меню есть заполнение выделения, его выполняет сервер. Пользователь ещё не выделял ячейки.',
+      en: 'The context menu has an action that fills the selection, and the server runs it. The user has not selected any cells yet.',
+    },
   },
   {
-    title: 'Меню на выделении',
-    hint: 'Пользователь выделил шесть ячеек и открыл меню на одной из них. Заполнение применяется ко всему выделению, его выполняет сервер.',
+    title: { ru: 'Меню на выделении', en: 'The menu on a selection' },
+    hint: {
+      ru: 'Пользователь выделил шесть ячеек и открыл меню на одной из них. Заполнение применяется ко всему выделению, его выполняет сервер.',
+      en: 'The user selected six cells and opened the menu on one of them. The fill applies to the whole selection, and the server runs it.',
+    },
     states: ['overlay.contextMenu'],
     enter: root => {
       const still = steady()
@@ -595,8 +637,14 @@ const REFUSED_ON_SELECTION: readonly GuideStoryStep[] = [
     },
   },
   {
-    title: 'Выделение ждёт ответа',
-    hint: 'Пользователь выбрал заполнение. Меню закрылось; пока сервер отвечает, всё выделение чуть темнеет и по нему проходит светлый блик — оно занято.',
+    title: {
+      ru: 'Выделение ждёт ответа',
+      en: 'The selection waits for a response',
+    },
+    hint: {
+      ru: 'Пользователь выбрал заполнение. Меню закрылось; пока сервер отвечает, всё выделение чуть темнеет и по нему проходит светлый блик — оно занято.',
+      en: 'The user chose to fill. The menu closed; while the server responds, the whole selection darkens slightly and a light sheen runs across it: it is busy.',
+    },
     states: ['body.menuPending'],
     enter: root => {
       FILL_SERVER.runs.hold()
@@ -613,8 +661,11 @@ const REFUSED_ON_SELECTION: readonly GuideStoryStep[] = [
     },
   },
   {
-    title: 'Отказ на выделении',
-    hint: 'Сервер отказал. Всё выделение коротко вспыхивает тоном отказа — там, где применялось действие; отказ объявлен.',
+    title: { ru: 'Отказ на выделении', en: 'Refusal on the selection' },
+    hint: {
+      ru: 'Сервер отказал. Всё выделение коротко вспыхивает тоном отказа — там, где применялось действие; отказ объявлен.',
+      en: 'The server refused. The whole selection flashes briefly in the refusal tone, where the action was applied; the refusal is announced.',
+    },
     immediate: true,
     enter: root => {
       FILL_SERVER.runs.release()
@@ -636,7 +687,10 @@ export const ContextMenuRefusedOnSelection: StoryObj<StoryProps> = {
   parameters: { scenario: '0152/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Отказ действия над выделением"
+      title={{
+        ru: 'Отказ действия над выделением',
+        en: 'An action on a selection refused',
+      }}
       steps={REFUSED_ON_SELECTION}
       args={guideArgs(
         {
@@ -654,10 +708,10 @@ export const ContextMenuRefusedOnSelection: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(REFUSED_ON_SELECTION[0]!.title, async () => {
+    await step(REFUSED_ON_SELECTION[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(REFUSED_ON_SELECTION[1]!.title, async () => {
+    await step(REFUSED_ON_SELECTION[1]!.title.ru, async () => {
       await guideNext(canvas)
       await waitForRows(canvas)
       await until(() => expect(fillItem()).not.toBeNull())
@@ -665,7 +719,7 @@ export const ContextMenuRefusedOnSelection: StoryObj<StoryProps> = {
       await settle()
       expectPopupInCanvas(canvas, openMenu()!)
     })
-    await step(REFUSED_ON_SELECTION[2]!.title, async () => {
+    await step(REFUSED_ON_SELECTION[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(allBusy(canvas)).toBe(true))
       await until(() => expect(pendingShown(SELECTION_CELLS)).toBe(true))
@@ -674,7 +728,7 @@ export const ContextMenuRefusedOnSelection: StoryObj<StoryProps> = {
         at(canvas, { row: 'item-id-1', column: 'firstName' }),
       ).not.toHaveAttribute('aria-busy')
     })
-    await step(REFUSED_ON_SELECTION[3]!.title, async () => {
+    await step(REFUSED_ON_SELECTION[3]!.title.ru, async () => {
       const flash = watchFlash(canvas, '.data-grid__body-cell', 'reverted')
       holdFlash(canvas)
       await guideNext(canvas)
@@ -735,20 +789,32 @@ const cancelItemShown = (root: HTMLElement) => {
 
 const CANCEL_FROM_MENU: readonly GuideStoryStep[] = [
   {
-    title: 'Ничего не выделено',
-    hint: 'В контекстном меню есть действие, которое сервер выполняет долго. Пользователь ещё не выделял ячейки.',
+    title: { ru: 'Ничего не выделено', en: 'Nothing is selected' },
+    hint: {
+      ru: 'В контекстном меню есть действие, которое сервер выполняет долго. Пользователь ещё не выделял ячейки.',
+      en: 'The context menu has an action that takes the server a long time. The user has not selected any cells yet.',
+    },
   },
   {
-    title: 'Выделен диапазон',
-    hint: 'Пользователь выделил несколько ячеек. В контекстном меню есть действие, которое сервер выполняет долго.',
+    title: { ru: 'Выделен диапазон', en: 'A range is selected' },
+    hint: {
+      ru: 'Пользователь выделил несколько ячеек. В контекстном меню есть действие, которое сервер выполняет долго.',
+      en: 'The user selected several cells. The context menu has an action that takes the server a long time.',
+    },
     enter: untilDone(
       root => selectedCells(root) === SELECTION_CELLS && !openMenu(),
       selectRange,
     ),
   },
   {
-    title: 'Действие над выделением ждёт',
-    hint: 'Пользователь выбрал пересчёт. Меню закрылось, ячейки выделения под подложкой ожидания с бликом.',
+    title: {
+      ru: 'Действие над выделением ждёт',
+      en: 'The action on the selection is waiting',
+    },
+    hint: {
+      ru: 'Пользователь выбрал пересчёт. Меню закрылось, ячейки выделения под подложкой ожидания с бликом.',
+      en: 'The user chose to recalculate. The menu closed, and the selected cells are under the waiting overlay with a sheen.',
+    },
     states: ['body.menuPending'],
     enter: root => {
       RECALC_SERVER.runs.hold()
@@ -759,8 +825,11 @@ const CANCEL_FROM_MENU: readonly GuideStoryStep[] = [
     },
   },
   {
-    title: 'Пункт предлагает отмену',
-    hint: 'Пользователь снова открыл меню на выделении. Ждущий пункт доступен: подпись предлагает отменить пересчёт, у правого края крутится спиннер.',
+    title: { ru: 'Пункт предлагает отмену', en: 'The item offers to cancel' },
+    hint: {
+      ru: 'Пользователь снова открыл меню на выделении. Ждущий пункт доступен: подпись предлагает отменить пересчёт, у правого края крутится спиннер.',
+      en: 'The user opened the menu on the selection again. The waiting item is available: its label offers to cancel the recalculation, and a spinner rotates at its right edge.',
+    },
     states: ['overlay.contextMenu', 'body.menuPending'],
     enter: root => {
       RECALC_SERVER.runs.hold()
@@ -776,8 +845,11 @@ const CANCEL_FROM_MENU: readonly GuideStoryStep[] = [
     },
   },
   {
-    title: 'Действие отменено',
-    hint: 'Пользователь выбрал этот пункт. Меню закрылось, подложка и блик сняты, отметки ошибки нет.',
+    title: { ru: 'Действие отменено', en: 'The action was canceled' },
+    hint: {
+      ru: 'Пользователь выбрал этот пункт. Меню закрылось, подложка и блик сняты, отметки ошибки нет.',
+      en: 'The user chose this item. The menu closed, the overlay and sheen are gone, and there is no error mark.',
+    },
     enter: root => {
       RECALC_SERVER.runs.hold()
       let cancelled = false
@@ -805,7 +877,10 @@ export const ContextMenuCancelFromMenu: StoryObj<StoryProps> = {
   parameters: { scenario: '0153/S2', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Отмена действия из меню"
+      title={{
+        ru: 'Отмена действия из меню',
+        en: 'Canceling an action from the menu',
+      }}
       steps={CANCEL_FROM_MENU}
       args={guideArgs(
         {
@@ -824,21 +899,21 @@ export const ContextMenuCancelFromMenu: StoryObj<StoryProps> = {
   play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     const labels = storyLabels(args.locale)
-    await step(CANCEL_FROM_MENU[0]!.title, async () => {
+    await step(CANCEL_FROM_MENU[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(CANCEL_FROM_MENU[1]!.title, async () => {
+    await step(CANCEL_FROM_MENU[1]!.title.ru, async () => {
       await guideNext(canvas)
       await waitForRows(canvas)
       await until(() => expect(selectedCells(canvas)).toBe(SELECTION_CELLS))
       expect(openMenu()).toBeNull()
     })
-    await step(CANCEL_FROM_MENU[2]!.title, async () => {
+    await step(CANCEL_FROM_MENU[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(allBusy(canvas)).toBe(true))
       await until(() => expect(openMenu()).toBeNull())
     })
-    await step(CANCEL_FROM_MENU[3]!.title, async () => {
+    await step(CANCEL_FROM_MENU[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(recalcItem()?.hasAttribute('data-pending')).toBe(true),
@@ -849,7 +924,7 @@ export const ContextMenuCancelFromMenu: StoryObj<StoryProps> = {
       await settle()
       expectPopupInCanvas(canvas, openMenu()!)
     })
-    await step(CANCEL_FROM_MENU[4]!.title, async () => {
+    await step(CANCEL_FROM_MENU[4]!.title.ru, async () => {
       const flash = watchFlash(canvas, '.data-grid__body-cell', 'reverted')
       await guideNext(canvas)
       await until(() => expect(selectionIdle(canvas)).toBe(true))
@@ -952,12 +1027,21 @@ const tableRefused = (root: HTMLElement) => {
 
 const WHOLE_TABLE: readonly GuideStoryStep[] = [
   {
-    title: 'Меню ещё не открыто',
-    hint: 'В контекстном меню есть действие, которое пересчитывает всю таблицу на сервере. Пользователь ещё не открывал меню.',
+    title: { ru: 'Меню ещё не открыто', en: 'The menu is not open yet' },
+    hint: {
+      ru: 'В контекстном меню есть действие, которое пересчитывает всю таблицу на сервере. Пользователь ещё не открывал меню.',
+      en: 'The context menu has an action that recalculates the whole table on the server. The user has not opened the menu yet.',
+    },
   },
   {
-    title: 'Действие над всей таблицей',
-    hint: 'В контекстном меню есть действие, которое пересчитывает всю таблицу на сервере.',
+    title: {
+      ru: 'Действие над всей таблицей',
+      en: 'An action on the whole table',
+    },
+    hint: {
+      ru: 'В контекстном меню есть действие, которое пересчитывает всю таблицу на сервере.',
+      en: 'The context menu has an action that recalculates the whole table on the server.',
+    },
     states: ['overlay.contextMenu'],
     enter: root => {
       const still = steady()
@@ -971,8 +1055,11 @@ const WHOLE_TABLE: readonly GuideStoryStep[] = [
     },
   },
   {
-    title: 'Таблица ждёт',
-    hint: 'Пользователь выбрал пересчёт. Под шапкой светится полоса обновления, строки приглушены — меняется вся таблица.',
+    title: { ru: 'Таблица ждёт', en: 'The table is waiting' },
+    hint: {
+      ru: 'Пользователь выбрал пересчёт. Под шапкой светится полоса обновления, строки приглушены — меняется вся таблица.',
+      en: 'The user chose to recalculate. A refresh bar glows under the header and the rows are dimmed: the whole table is changing.',
+    },
     states: ['body.refreshing'],
     enter: root => {
       TABLE_SERVER.runs.hold()
@@ -983,8 +1070,11 @@ const WHOLE_TABLE: readonly GuideStoryStep[] = [
     },
   },
   {
-    title: 'Сервер отказал',
-    hint: 'Сервер не пересчитал таблицу. Под шапкой — сообщение с причиной и повтором.',
+    title: { ru: 'Сервер отказал', en: 'The server refused' },
+    hint: {
+      ru: 'Сервер не пересчитал таблицу. Под шапкой — сообщение с причиной и повтором.',
+      en: 'The server did not recalculate the table. Under the header, a message shows the reason and offers a retry.',
+    },
     states: ['body.loadError'],
     enter: untilDone(
       root => !!banner(root) && !refreshing(root) && !openMenu(),
@@ -992,8 +1082,11 @@ const WHOLE_TABLE: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Повтор удался',
-    hint: 'Пользователь повторил действие из сообщения, сервер ответил. Свечение и сообщение ушли.',
+    title: { ru: 'Повтор удался', en: 'The retry succeeded' },
+    hint: {
+      ru: 'Пользователь повторил действие из сообщения, сервер ответил. Свечение и сообщение ушли.',
+      en: 'The user retried the action from the message, and the server responded. The glow and the message are gone.',
+    },
     enter: untilDone(
       root =>
         tableRun.succeeded && !banner(root) && !refreshing(root) && !openMenu(),
@@ -1016,7 +1109,10 @@ export const ContextMenuWholeTable: StoryObj<StoryProps> = {
   parameters: { scenario: '0155/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Действие над всей таблицей"
+      title={{
+        ru: 'Действие над всей таблицей',
+        en: 'An action on the whole table',
+      }}
       steps={WHOLE_TABLE}
       args={guideArgs(
         {
@@ -1034,31 +1130,31 @@ export const ContextMenuWholeTable: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(WHOLE_TABLE[0]!.title, async () => {
+    await step(WHOLE_TABLE[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(WHOLE_TABLE[1]!.title, async () => {
+    await step(WHOLE_TABLE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await waitForRows(canvas)
       await until(() => expect(tableItem()).not.toBeNull())
       await settle()
       expectPopupInCanvas(canvas, openMenu()!)
     })
-    await step(WHOLE_TABLE[2]!.title, async () => {
+    await step(WHOLE_TABLE[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(refreshing(canvas)).toBe(true))
       expect(openMenu()).toBeNull()
       expect(banner(canvas)).toBeNull()
       expect(canvas.querySelector('[data-pending-wave]')).toBeNull()
     })
-    await step(WHOLE_TABLE[3]!.title, async () => {
+    await step(WHOLE_TABLE[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(banner(canvas)).not.toBeNull())
       await until(() => expect(refreshing(canvas)).toBe(false))
       expect(banner(canvas)!.textContent).toContain(TABLE_REFUSAL)
       expect(retryButton(canvas)).not.toBeNull()
     })
-    await step(WHOLE_TABLE[4]!.title, async () => {
+    await step(WHOLE_TABLE[4]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(tableRun.succeeded).toBe(true))
       await until(() => expect(banner(canvas)).toBeNull())
@@ -1076,12 +1172,18 @@ const pendingCancel = (root: ParentNode) =>
 
 const WHOLE_TABLE_CANCEL: readonly GuideStoryStep[] = [
   {
-    title: 'Таблица в покое',
-    hint: 'В контекстном меню есть пересчёт всей таблицы на сервере. Пользователь ещё не открывал меню.',
+    title: { ru: 'Таблица в покое', en: 'The table at rest' },
+    hint: {
+      ru: 'В контекстном меню есть пересчёт всей таблицы на сервере. Пользователь ещё не открывал меню.',
+      en: 'The context menu has an action that recalculates the whole table on the server. The user has not opened the menu yet.',
+    },
   },
   {
-    title: 'Таблица ждёт',
-    hint: 'Пользователь выбрал пересчёт всей таблицы. Под шапкой светится полоса обновления, строки приглушены.',
+    title: { ru: 'Таблица ждёт', en: 'The table is waiting' },
+    hint: {
+      ru: 'Пользователь выбрал пересчёт всей таблицы. Под шапкой светится полоса обновления, строки приглушены.',
+      en: 'The user chose to recalculate the whole table. A refresh bar glows under the header, and the rows are dimmed.',
+    },
     states: ['body.refreshing'],
     enter: root => {
       TABLE_SERVER.runs.hold()
@@ -1096,8 +1198,11 @@ const WHOLE_TABLE_CANCEL: readonly GuideStoryStep[] = [
     },
   },
   {
-    title: 'Ожидание затянулось',
-    hint: 'Ответа нет дольше секунды. Под шапкой появилось сообщение с именем действия и кнопкой отмены.',
+    title: { ru: 'Ожидание затянулось', en: 'The wait dragged on' },
+    hint: {
+      ru: 'Ответа нет дольше секунды. Под шапкой появилось сообщение с именем действия и кнопкой отмены.',
+      en: "There has been no response for more than a second. A message with the action's name and a cancel button appeared under the header.",
+    },
     enter: root => {
       TABLE_SERVER.runs.hold()
       return untilDone(
@@ -1107,8 +1212,11 @@ const WHOLE_TABLE_CANCEL: readonly GuideStoryStep[] = [
     },
   },
   {
-    title: 'Действие отменено',
-    hint: 'Пользователь отменил пересчёт. Свечение и сообщение ушли, таблица осталась прежней, ошибки нет.',
+    title: { ru: 'Действие отменено', en: 'The action was canceled' },
+    hint: {
+      ru: 'Пользователь отменил пересчёт. Свечение и сообщение ушли, таблица осталась прежней, ошибки нет.',
+      en: 'The user canceled the recalculation. The glow and the message are gone, the table stayed as it was, and there is no error.',
+    },
     enter: root => {
       TABLE_SERVER.runs.hold()
       let cancelled = false
@@ -1137,7 +1245,10 @@ export const ContextMenuWholeTableCancel: StoryObj<StoryProps> = {
   parameters: { scenario: '0153/S11', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Отмена действия над всей таблицей"
+      title={{
+        ru: 'Отмена действия над всей таблицей',
+        en: 'Canceling an action on the whole table',
+      }}
       steps={WHOLE_TABLE_CANCEL}
       args={guideArgs(
         {
@@ -1155,22 +1266,22 @@ export const ContextMenuWholeTableCancel: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(WHOLE_TABLE_CANCEL[0]!.title, async () => {
+    await step(WHOLE_TABLE_CANCEL[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(WHOLE_TABLE_CANCEL[1]!.title, async () => {
+    await step(WHOLE_TABLE_CANCEL[1]!.title.ru, async () => {
       await guideNext(canvas)
       await waitForRows(canvas)
       await until(() => expect(refreshing(canvas)).toBe(true))
       expect(openMenu()).toBeNull()
     })
-    await step(WHOLE_TABLE_CANCEL[2]!.title, async () => {
+    await step(WHOLE_TABLE_CANCEL[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(pendingBanner(canvas)).not.toBeNull())
       expect(pendingCancel(canvas)).not.toBeNull()
       expect(banner(canvas)).toBeNull()
     })
-    await step(WHOLE_TABLE_CANCEL[3]!.title, async () => {
+    await step(WHOLE_TABLE_CANCEL[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(pendingBanner(canvas)).toBeNull())
       await until(() => expect(refreshing(canvas)).toBe(false))
@@ -1217,12 +1328,18 @@ const rowDeleted = (root: ParentNode) =>
 
 const DANGER_ITEM: readonly GuideStoryStep[] = [
   {
-    title: 'Меню ещё не открыто',
-    hint: 'Приложение добавило в меню ячейки своё действие удаления строки и пометило его как опасное. Пользователь ещё не открывал меню.',
+    title: { ru: 'Меню ещё не открыто', en: 'The menu is not open yet' },
+    hint: {
+      ru: 'Приложение добавило в меню ячейки своё действие удаления строки и пометило его как опасное. Пользователь ещё не открывал меню.',
+      en: 'The app added its own row delete action to the cell menu and marked it as dangerous. The user has not opened the menu yet.',
+    },
   },
   {
-    title: 'Опасный пункт в меню',
-    hint: 'Приложение добавило в меню ячейки своё действие удаления строки и пометило его как опасное. Пользователь открыл меню: этот пункт выделен тоном опасного действия сразу, без наведения, остальные — обычные.',
+    title: { ru: 'Опасный пункт в меню', en: 'A dangerous item in the menu' },
+    hint: {
+      ru: 'Приложение добавило в меню ячейки своё действие удаления строки и пометило его как опасное. Пользователь открыл меню: этот пункт выделен тоном опасного действия сразу, без наведения, остальные — обычные.',
+      en: 'The app added its own row delete action to the cell menu and marked it as dangerous. The user opened the menu: this item is highlighted in the danger tone right away, without hovering, and the rest are ordinary.',
+    },
     states: ['overlay.contextMenu'],
     enter: root => {
       const still = steady()
@@ -1234,8 +1351,14 @@ const DANGER_ITEM: readonly GuideStoryStep[] = [
     },
   },
   {
-    title: 'Строка помечена удалённой',
-    hint: 'Пользователь выбрал удаление. Меню закрылось, строка осталась на месте до сохранения: текст приглушён, на кнопке пульта — одно несохранённое изменение.',
+    title: {
+      ru: 'Строка помечена удалённой',
+      en: 'The row is marked as deleted',
+    },
+    hint: {
+      ru: 'Пользователь выбрал удаление. Меню закрылось, строка осталась на месте до сохранения: текст приглушён, на кнопке пульта — одно несохранённое изменение.',
+      en: 'The user chose to delete it. The menu closed, and the row stayed in place until saved: its text is dimmed, and the unsaved changes panel button shows one unsaved change.',
+    },
     states: ['body.rowDraft'],
     enter: untilDone(
       root => rowDeleted(root) && !openMenu(),
@@ -1254,7 +1377,10 @@ export const ContextMenuDangerAction: StoryObj<StoryProps> = {
   parameters: { scenario: '0206/S2', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Опасное действие в меню"
+      title={{
+        ru: 'Опасное действие в меню',
+        en: 'A dangerous action in the menu',
+      }}
       steps={DANGER_ITEM}
       args={guideArgs(
         {
@@ -1276,17 +1402,17 @@ export const ContextMenuDangerAction: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(DANGER_ITEM[0]!.title, async () => {
+    await step(DANGER_ITEM[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(DANGER_ITEM[1]!.title, async () => {
+    await step(DANGER_ITEM[1]!.title.ru, async () => {
       await guideNext(canvas)
       await waitForRows(canvas)
       await until(() => expect(deleteItem()).not.toBeNull())
       await settle()
       expectPopupInCanvas(canvas, openMenu()!)
     })
-    await step(DANGER_ITEM[2]!.title, async () => {
+    await step(DANGER_ITEM[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(rowDeleted(canvas)).toBe(true))
       expect(openMenu()).toBeNull()

@@ -80,8 +80,9 @@ const stepsName = (node: ts.Node) => {
 const titlesOf = (array: ts.Expression | undefined) =>
   array && ts.isArrayLiteralExpression(array)
     ? array.elements.flatMap(element => {
+        // Название шага — пара `{ ru, en }`, имя шага — русское (ADR 0225, §5).
         const title = ts.isObjectLiteralExpression(element)
-          ? stringOf(propOf(element, 'title'))
+          ? stringOf(propOf(propOf(element, 'title'), 'ru'))
           : undefined
         return title === undefined ? [] : [title]
       })

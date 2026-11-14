@@ -113,8 +113,8 @@ export const TextWrapPlayground: StoryObj<StoryProps> = {
       'headerHeight',
     ],
     {
-      dataCount: 'строки с заметками задаёт история',
-      columnCount: 'колонки задаёт история',
+      dataCount: 'the story provides rows with notes',
+      columnCount: 'the story provides the columns',
     },
   ),
   args: {
@@ -177,20 +177,32 @@ const variedRows = (root: ParentNode) =>
 
 const CLAMPED: readonly GuideStoryStep[] = [
   {
-    title: 'Длинный текст обрезан',
-    hint: 'Заметка не помещается в одну строку: видно начало, конец скрыт за многоточием.',
+    title: { ru: 'Длинный текст обрезан', en: 'Long text is truncated' },
+    hint: {
+      ru: 'Заметка не помещается в одну строку: видно начало, конец скрыт за многоточием.',
+      en: 'The note does not fit on one line: the beginning is visible, and the end is hidden behind an ellipsis.',
+    },
     props: () => ({ columnsOverride: PLAIN as never }),
   },
   {
-    title: 'Текст переносится',
-    hint: 'Колонка заметок переносит текст: в строку помещается три строки текста, последняя кончается многоточием. Высота строк прежняя.',
+    title: { ru: 'Текст переносится', en: 'Text wraps' },
+    hint: {
+      ru: 'Колонка заметок переносит текст: в строку помещается три строки текста, последняя кончается многоточием. Высота строк прежняя.',
+      en: 'The notes column wraps text: a row fits three lines of text, and the last one ends with an ellipsis. The row height is unchanged.',
+    },
     props: () => ({
       columnsOverride: CLAMP as never,
     }),
   },
   {
-    title: 'Полный текст — в подсказке',
-    hint: 'Пользователь навёл указатель на обрезанную заметку — подсказка показывает её целиком.',
+    title: {
+      ru: 'Полный текст — в подсказке',
+      en: 'The full text is in the tooltip',
+    },
+    hint: {
+      ru: 'Пользователь навёл указатель на обрезанную заметку — подсказка показывает её целиком.',
+      en: 'The user hovered over a truncated note, and the tooltip shows it in full.',
+    },
     pseudo: {
       hover: '.data-grid__body-row[data-row-id="4"] [data-column-id="note"]',
     },
@@ -210,7 +222,10 @@ export const TextWrapClamped: StoryObj<StoryProps> = {
   parameters: { scenario: '0218/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Перенос в высоте строки"
+      title={{
+        ru: 'Перенос в высоте строки',
+        en: 'Wrapping within the row height',
+      }}
       steps={CLAMPED}
       args={guideArgs(
         { ...GRID, rowHeight: 72, dataOverride: notes(40) },
@@ -220,13 +235,13 @@ export const TextWrapClamped: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(CLAMPED[0]!.title, async () => {
+    await step(CLAMPED[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await expect(getComputedStyle(noteTitle(canvas, '4')!).whiteSpace).toBe(
         'nowrap',
       )
     })
-    await step(CLAMPED[1]!.title, async () => {
+    await step(CLAMPED[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(getComputedStyle(noteTitle(canvas, '4')!).whiteSpace).toBe(
@@ -236,7 +251,7 @@ export const TextWrapClamped: StoryObj<StoryProps> = {
       await expect(heightOf(rowOf(canvas, '4'))).toBe(72)
       await settle()
     })
-    await step(CLAMPED[2]!.title, async () => {
+    await step(CLAMPED[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await settle()
@@ -248,16 +263,28 @@ export const TextWrapClamped: StoryObj<StoryProps> = {
 
 const AUTO: readonly GuideStoryStep[] = [
   {
-    title: 'Строки растут по содержимому',
-    hint: 'Колонка заметок задаёт высоту строки: короткая заметка — строка обычной высоты, длинная — строка выше, текст виден целиком.',
+    title: {
+      ru: 'Строки растут по содержимому',
+      en: 'Rows grow with their content',
+    },
+    hint: {
+      ru: 'Колонка заметок задаёт высоту строки: короткая заметка — строка обычной высоты, длинная — строка выше, текст виден целиком.',
+      en: 'The notes column sets the row height: a short note keeps the row at its usual height, a long one makes the row taller, and the text is visible in full.',
+    },
     props: () => ({
       columnsOverride: AUTO_COLUMNS as never,
       textWrapMaxLines: 10,
     }),
   },
   {
-    title: 'Длинная заметка упирается в предел',
-    hint: 'Предел — четыре строки текста: самая длинная заметка обрезана многоточием, строка выше не становится. Полный текст — в подсказке.',
+    title: {
+      ru: 'Длинная заметка упирается в предел',
+      en: 'A long note hits the limit',
+    },
+    hint: {
+      ru: 'Предел — четыре строки текста: самая длинная заметка обрезана многоточием, строка выше не становится. Полный текст — в подсказке.',
+      en: 'The limit is four lines of text: the longest note is truncated with an ellipsis, and the row grows no taller. The full text is in the tooltip.',
+    },
     props: () => ({
       columnsOverride: AUTO_COLUMNS as never,
       textWrapMaxLines: 4,
@@ -271,7 +298,7 @@ export const TextWrapAutoHeight: StoryObj<StoryProps> = {
   parameters: { scenario: '0218/S2', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Высота строк по содержимому"
+      title={{ ru: 'Высота строк по содержимому', en: 'Row height by content' }}
       steps={AUTO}
       args={guideArgs({ ...GRID, dataOverride: notes(40) }, args)}
     />
@@ -279,12 +306,12 @@ export const TextWrapAutoHeight: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     let tall = 0
-    await step(AUTO[0]!.title, async () => {
+    await step(AUTO[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(variedRows(canvas)).toBe(true))
       tall = heightOf(rowOf(canvas, '4'))
     })
-    await step(AUTO[1]!.title, async () => {
+    await step(AUTO[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(heightOf(rowOf(canvas, '4'))).toBeLessThan(tall))
       await settle()
@@ -298,12 +325,21 @@ const NARROW = 160
 
 const RESIZE: readonly GuideStoryStep[] = [
   {
-    title: 'Колонка заметок широкая',
-    hint: 'Колонка заметок широкая: короткие заметки — в одну строку, длинные — в несколько, заголовок — в одну.',
+    title: { ru: 'Колонка заметок широкая', en: 'The notes column is wide' },
+    hint: {
+      ru: 'Колонка заметок широкая: короткие заметки — в одну строку, длинные — в несколько, заголовок — в одну.',
+      en: 'The notes column is wide: short notes take one line, long ones take several, and the header takes one.',
+    },
   },
   {
-    title: 'Пользователь сузил колонку',
-    hint: 'Пользователь протянул край колонки влево. Текст переносится на больше строк: строки и шапка стали выше, пока край ещё ехал.',
+    title: {
+      ru: 'Пользователь сузил колонку',
+      en: 'The user narrowed a column',
+    },
+    hint: {
+      ru: 'Пользователь протянул край колонки влево. Текст переносится на больше строк: строки и шапка стали выше, пока край ещё ехал.',
+      en: 'The user dragged the column edge to the left. The text wraps onto more lines: the rows and the header grew taller while the edge was still moving.',
+    },
     enter: stepAction(async (root, step) => {
       await pollUntil(
         () => gridDrawn(root) && !!separatorOf(root, 'note'),
@@ -330,7 +366,7 @@ export const TextWrapResizeColumn: StoryObj<StoryProps> = {
   parameters: { scenario: '0218/S3', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Сужение колонки"
+      title={{ ru: 'Сужение колонки', en: 'Narrowing a column' }}
       steps={RESIZE}
       args={guideArgs(
         {
@@ -351,13 +387,13 @@ export const TextWrapResizeColumn: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     let head = 0
     let row = 0
-    await step(RESIZE[0]!.title, async () => {
+    await step(RESIZE[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await settle()
       head = heightOf(canvas.querySelector('.data-grid__head'))
       row = heightOf(rowOf(canvas, '4'))
     })
-    await step(RESIZE[1]!.title, async () => {
+    await step(RESIZE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() =>
@@ -413,13 +449,19 @@ const NESTED_AUTO = nestedColumns({ autoHeaderHeight: true })
 
 const HEADER: readonly GuideStoryStep[] = [
   {
-    title: 'Заголовки обрезаны',
-    hint: 'Длинные заголовки не помещаются: видно начало, конец скрыт за многоточием.',
+    title: { ru: 'Заголовки обрезаны', en: 'Headers are truncated' },
+    hint: {
+      ru: 'Длинные заголовки не помещаются: видно начало, конец скрыт за многоточием.',
+      en: 'Long headers do not fit: the beginning is visible, and the end is hidden behind an ellipsis.',
+    },
     props: () => ({ columnsOverride: NESTED_PLAIN as never }),
   },
   {
-    title: 'Заголовки переносятся',
-    hint: 'Заголовки переносятся — не больше трёх строк, дальше многоточие и подсказка. Каждый уровень шапки вырос до своего самого высокого заголовка, колонка клиента занимает оба уровня.',
+    title: { ru: 'Заголовки переносятся', en: 'Headers wrap' },
+    hint: {
+      ru: 'Заголовки переносятся — не больше трёх строк, дальше многоточие и подсказка. Каждый уровень шапки вырос до своего самого высокого заголовка, колонка клиента занимает оба уровня.',
+      en: 'Headers wrap onto at most three lines; beyond that come an ellipsis and a tooltip. Each header level grew to fit its tallest header, and the client column spans both levels.',
+    },
     props: () => ({
       columnsOverride: NESTED_AUTO as never,
     }),
@@ -432,7 +474,7 @@ export const TextWrapHeader: StoryObj<StoryProps> = {
   parameters: { scenario: '0218/S4', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Длинные заголовки"
+      title={{ ru: 'Длинные заголовки', en: 'Long headers' }}
       steps={HEADER}
       args={guideArgs({ ...GRID, dataOverride: notes(20) }, args)}
     />
@@ -440,11 +482,11 @@ export const TextWrapHeader: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     let head = 0
-    await step(HEADER[0]!.title, async () => {
+    await step(HEADER[0]!.title.ru, async () => {
       await waitForRows(canvas)
       head = heightOf(canvas.querySelector('.data-grid__head'))
     })
-    await step(HEADER[1]!.title, async () => {
+    await step(HEADER[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(
@@ -462,12 +504,21 @@ const TARGET = '120'
 
 const KEYBOARD: readonly GuideStoryStep[] = [
   {
-    title: 'Строки разной высоты',
-    hint: 'У строк своя высота по заметке. Таблица в начале.',
+    title: { ru: 'Строки разной высоты', en: 'Rows of different heights' },
+    hint: {
+      ru: 'У строк своя высота по заметке. Таблица в начале.',
+      en: 'Each row has its own height based on its note. The table is scrolled to the top.',
+    },
   },
   {
-    title: 'Пользователь нажал PageDown',
-    hint: 'Пользователь встал на первую ячейку и нажал PageDown. Активной стала строка на высоту экрана ниже: таблица отсчитала её по высотам строк, а не по их числу, и прокрутилась, чтобы её показать.',
+    title: {
+      ru: 'Пользователь нажал PageDown',
+      en: 'The user pressed PageDown',
+    },
+    hint: {
+      ru: 'Пользователь встал на первую ячейку и нажал PageDown. Активной стала строка на высоту экрана ниже: таблица отсчитала её по высотам строк, а не по их числу, и прокрутилась, чтобы её показать.',
+      en: 'The user focused the first cell and pressed PageDown. The row one screen height below became active: the table measured the distance by row heights rather than by the number of rows, and scrolled to show that row.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await pollUntil(() => gridDrawn(root), signal)
       const active =
@@ -483,8 +534,11 @@ const KEYBOARD: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Приложение открыло запись',
-    hint: 'Приложение прокрутило таблицу к записи далеко внизу: строка встала к верху таблицы, хотя высоты строк до неё таблица ещё не знала.',
+    title: { ru: 'Приложение открыло запись', en: 'The app opened a record' },
+    hint: {
+      ru: 'Приложение прокрутило таблицу к записи далеко внизу: строка встала к верху таблицы, хотя высоты строк до неё таблица ещё не знала.',
+      en: 'The app scrolled the table to a record far below: the row landed at the top of the table, even though the table did not yet know the heights of the rows before it.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await pollUntil(() => gridDrawn(root) && !!guideTable, signal)
       await guideTable!.scrollToRow(TARGET, { align: 'start' })
@@ -499,7 +553,10 @@ export const TextWrapKeyboard: StoryObj<StoryProps> = {
   parameters: { scenario: '0218/S5', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Клавиатура и прокрутка к записи"
+      title={{
+        ru: 'Клавиатура и прокрутка к записи',
+        en: 'Keyboard and scrolling to a record',
+      }}
       steps={KEYBOARD}
       args={guideArgs(
         {
@@ -515,16 +572,16 @@ export const TextWrapKeyboard: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(KEYBOARD[0]!.title, async () => {
+    await step(KEYBOARD[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(KEYBOARD[1]!.title, async () => {
+    await step(KEYBOARD[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(scrollerOf(canvas).scrollTop).toBeGreaterThan(0))
       await settle()
     })
-    await step(KEYBOARD[2]!.title, async () => {
+    await step(KEYBOARD[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(rowOf(canvas, TARGET)).not.toBeNull())
@@ -553,12 +610,21 @@ const layerOf = (root: HTMLElement) => scrollLayer(scrollerOf(root))
 
 const SERVER: readonly GuideStoryStep[] = [
   {
-    title: 'Миллион строк с заметками',
-    hint: 'Строки приходят с сервера блоками и растут по заметкам. Пока блок в пути, его строки — скелеты высотой оценки.',
+    title: { ru: 'Миллион строк с заметками', en: 'A million rows with notes' },
+    hint: {
+      ru: 'Строки приходят с сервера блоками и растут по заметкам. Пока блок в пути, его строки — скелеты высотой оценки.',
+      en: 'Rows come from the server in blocks and grow with their notes. While a block is on its way, its rows are skeletons of the estimated height.',
+    },
   },
   {
-    title: 'Пользователь перешёл в середину',
-    hint: 'Пользователь протянул ползунок к середине списка. Сервер прислал строки, они выросли по заметкам — видимые строки при этом не сдвинулись.',
+    title: {
+      ru: 'Пользователь перешёл в середину',
+      en: 'The user went to the middle',
+    },
+    hint: {
+      ru: 'Пользователь протянул ползунок к середине списка. Сервер прислал строки, они выросли по заметкам — видимые строки при этом не сдвинулись.',
+      en: 'The user dragged the scrollbar thumb to the middle of the list. The server sent the rows, and they grew with their notes; the visible rows did not shift.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await pollUntil(() => gridDrawn(root), signal)
       const layer = layerOf(root)
@@ -579,7 +645,7 @@ export const TextWrapServer: StoryObj<StoryProps> = {
   parameters: { scenario: '0218/S6', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Серверные строки"
+      title={{ ru: 'Серверные строки', en: 'Server rows' }}
       steps={SERVER}
       args={guideArgs(
         {
@@ -598,10 +664,10 @@ export const TextWrapServer: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(SERVER[0]!.title, async () => {
+    await step(SERVER[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(SERVER[1]!.title, async () => {
+    await step(SERVER[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(variedRows(canvas)).toBe(true))
@@ -614,12 +680,21 @@ export const TextWrapServer: StoryObj<StoryProps> = {
 
 const MOTION: readonly GuideStoryStep[] = [
   {
-    title: 'Строки разной высоты',
-    hint: 'Строки идут по клиентам, у каждой своя высота по заметке.',
+    title: { ru: 'Строки разной высоты', en: 'Rows of different heights' },
+    hint: {
+      ru: 'Строки идут по клиентам, у каждой своя высота по заметке.',
+      en: 'Rows are ordered by client, and each has its own height based on its note.',
+    },
   },
   {
-    title: 'Пользователь отсортировал по городу',
-    hint: 'Строки переехали на новые места и сохранили свою высоту: каждая едет со своего прежнего места.',
+    title: {
+      ru: 'Пользователь отсортировал по городу',
+      en: 'The user sorted by city',
+    },
+    hint: {
+      ru: 'Строки переехали на новые места и сохранили свою высоту: каждая едет со своего прежнего места.',
+      en: 'The rows moved to their new places and kept their heights: each one moves from its previous place.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await pollUntil(() => gridDrawn(root) && !!guideTable, signal)
       guideTable!.setSorting([{ id: 'city', desc: true }])
@@ -640,7 +715,10 @@ export const TextWrapMotion: StoryObj<StoryProps> = {
   parameters: { scenario: '0218/S7', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Сортировка строк разной высоты"
+      title={{
+        ru: 'Сортировка строк разной высоты',
+        en: 'Sorting rows of different heights',
+      }}
       steps={MOTION}
       args={guideArgs(
         {
@@ -657,13 +735,13 @@ export const TextWrapMotion: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     let first = ''
-    await step(MOTION[0]!.title, async () => {
+    await step(MOTION[0]!.title.ru, async () => {
       await waitForRows(canvas)
       first = canvas.querySelector<HTMLElement>(
         '.data-grid__body-row[data-index="0"]',
       )!.dataset.rowId!
     })
-    await step(MOTION[1]!.title, async () => {
+    await step(MOTION[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() =>

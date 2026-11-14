@@ -3,9 +3,9 @@
  * шаги идут сами. Раскрытая — шаги степпером в один ряд (пройденные — зелёные) и кнопки
  * «Назад», «Далее», «Сначала»; `play` в тестах нажимает те же кнопки. Шаг, пройденный
  * «Далее» или воспроизведением, отмечается взрывом конфетти, при уменьшенном движении —
- * без него; нажатие на шаг переходит к нему сразу, без анимаций. Сворачивается, как `DemoPanel`; кнопки шагов видны и в свёрнутой.
+ * без него; нажатие на шаг переходит к нему сразу, без анимаций; кнопки шагов видны и в свёрнутой.
  */
-import { type ReactNode, useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 
 import { Check as CheckIcon, Pause, Play, Undo2 } from 'lucide-react'
 
@@ -15,12 +15,16 @@ import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
 import { useLatest } from '../../util/useLatest'
 import { Button } from '../../ui/Button'
 import { useIcons } from '../../ui/icons'
+import { useStoryLocale } from '../__mocks__/storyLocale'
+import { type StoryText, textOf } from '../__mocks__/storyText'
 import { keepsFocus } from './guideFocus'
+import { shellText, type StoryShellKey } from './storyShell'
 
 export interface GuideStep {
-  title: string
+  /** Название шага; русское — ещё и имя шага в `play` (ADR 0225, §5). */
+  title: StoryText
   /** Что делает клиент или сервер и что видно в итоге шага. */
-  hint: ReactNode
+  hint: StoryText
 }
 
 /** Текущий шаг и номер прохода: «Сначала» перемонтирует грид, как новое открытие. */
@@ -272,7 +276,7 @@ export const GuidePanel = ({
   stepBusy = false,
   defaultExpanded = false,
 }: {
-  title: string
+  title: StoryText
   steps: readonly GuideStep[]
   /** Индекс текущего шага. */
   step: number
@@ -289,6 +293,10 @@ export const GuidePanel = ({
   stepBusy?: boolean
   defaultExpanded?: boolean
 }) => {
+  const locale = useStoryLocale()
+  const text = (key: StoryShellKey, params?: Record<string, unknown>) =>
+    shellText(locale, key, params)
+  const name = textOf(title, locale)
   const [expanded, setExpanded] = useState(defaultExpanded)
   const id = useId()
   const last = steps.length - 1
@@ -589,7 +597,7 @@ export const GuidePanel = ({
     // ушёл бы над страницей полосой её фона. Класс темы — токены кнопок кита.
     <div className={DATA_GRID_THEME_CLASS} style={{ padding: '12px 16px' }}>
       <section
-        aria-label={`Scenario: ${title}`}
+        aria-label={text('guideRegion', { title: name })}
         data-testid="guide"
         data-busy={blocking || undefined}
         // Нажатие на панель не забирает фокус у поля ввода и поповера таблицы: открытая
@@ -636,11 +644,7 @@ export const GuidePanel = ({
               aria-controls={id}
               disabled={toggleLocked}
               tooltipWhenDisabled
-              tooltip={
-                toggleLocked
-                  ? 'Шаг выполняется: панель можно свернуть после него'
-                  : undefined
-              }
+              tooltip={toggleLocked ? text('guideToggleLocked') : undefined}
               onClick={() => {
                 if (!toggleLocked) setExpanded(open => !open)
               }}
@@ -665,7 +669,9 @@ export const GuidePanel = ({
               // Подпись сжимается: у кнопки кита ширина по содержимому.
               style={{ flex: '0 1 auto', minWidth: 0, maxWidth: '100%' }}
             >
-              <strong style={ellipsis}>Гайд · {title}</strong>
+              <strong style={ellipsis}>
+                {text('guideTitle', { title: name })}
+              </strong>
               <span
                 style={{
                   flex: 'none',
@@ -674,12 +680,18 @@ export const GuidePanel = ({
                 }}
               >
                 {finished
-                  ? '· пройден'
-                  : `· шаг ${step + 1} из ${steps.length}`}
+                  ? text('guideFinished')
+                  : text('guideStepOf', {
+                      step: step + 1,
+                      count: steps.length,
+                    })}
               </span>
             </Button>
             <span style={{ ...ellipsis, flex: '1 1 0', minWidth: 0 }}>
-              {!expanded && !finished && steps[step]?.title}
+              {!expanded &&
+                !finished &&
+                steps[step] &&
+                textOf(steps[step].title, locale)}
             </span>
             {/*
              * Пометка — в сжимаемой части шапки: она не переносит шапку на вторую строку и
@@ -696,17 +708,17 @@ export const GuidePanel = ({
                     color: 'var(--muted-foreground)',
                   }}
                 >
-                  Таблица изменена
+                  {text('guideChanged')}
                 </span>
                 <Button
                   variant="ghost"
                   data-testid="guide-restore"
                   onClick={onRestore}
-                  tooltip="Таблица изменена: открыть шаг заново"
+                  tooltip={text('guideRestoreTooltip')}
                   icon={<Undo2 aria-hidden="true" />}
                   style={{ flex: 'none' }}
                 >
-                  Вернуть шаг
+                  {text('guideRestore')}
                 </Button>
               </>
             )}
@@ -723,7 +735,7 @@ export const GuidePanel = ({
               )
             }
           >
-            {playing ? 'Пауза' : 'Воспроизвести'}
+            {playing ? text('guidePause') : text('guidePlay')}
           </Button>
         </div>
         {/*
@@ -831,7 +843,7 @@ export const GuidePanel = ({
               >
                 {steps.map((item, index) => (
                   <li
-                    key={`${index}-${item.title}`}
+                    key={`${index}-${item.title.ru}`}
                     aria-current={index === step ? 'step' : undefined}
                     style={{
                       display: 'flex',
@@ -919,7 +931,7 @@ export const GuidePanel = ({
                       <strong
                         style={{ fontWeight: index === step ? 600 : 500 }}
                       >
-                        {item.title}
+                        {textOf(item.title, locale)}
                       </strong>
                       <span
                         style={{
@@ -927,7 +939,7 @@ export const GuidePanel = ({
                           lineHeight: 1.4,
                         }}
                       >
-                        {item.hint}
+                        {textOf(item.hint, locale)}
                       </span>
                     </button>
                   </li>
@@ -949,7 +961,7 @@ export const GuidePanel = ({
                 onClick={back}
                 icon={<BackIcon aria-hidden="true" />}
               >
-                Назад
+                {text('guideBack')}
               </Button>
               <span style={{ flex: 1 }} />
               <Button
@@ -958,7 +970,7 @@ export const GuidePanel = ({
                 onClick={restart}
                 icon={<RestartIcon aria-hidden="true" />}
               >
-                Сначала
+                {text('guideRestart')}
               </Button>
               <Button
                 data-testid="guide-next"
@@ -968,7 +980,11 @@ export const GuidePanel = ({
                   step === last ? <CheckIcon aria-hidden="true" /> : undefined
                 }
               >
-                {finished ? 'Пройдено' : step === last ? 'Закончить' : 'Далее'}
+                {finished
+                  ? text('guideDone')
+                  : step === last
+                    ? text('guideFinish')
+                    : text('guideNext')}
                 {step < last && <NextIcon aria-hidden="true" />}
               </Button>
             </div>

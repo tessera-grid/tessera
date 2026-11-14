@@ -75,15 +75,21 @@ const TOOLBAR_ARGS = {
 
 /** Грид открыт, данных ещё нет. */
 const OPENED: GuideStoryStep = {
-  title: 'Данные загружаются',
-  hint: 'Данные ещё не пришли. Поиск и настройки вида уже работают, их результат станет запросом к данным. Выгружать пока нечего, поэтому на месте кнопки выгрузки — состояние загрузки.',
+  title: { ru: 'Данные загружаются', en: 'Data is loading' },
+  hint: {
+    ru: 'Данные ещё не пришли. Поиск и настройки вида уже работают, их результат станет запросом к данным. Выгружать пока нечего, поэтому на месте кнопки выгрузки — состояние загрузки.',
+    en: "The data hasn't arrived yet. Search and view settings already work; their result will become part of the data request. There's nothing to export yet, so a loading state stands in place of the export button.",
+  },
   props: () => ({ loading: 'initial', dataOverride: [] }),
 }
 
 /** Ответ сервера: данные и конец загрузки приходят одним обновлением. */
 const ANSWERED: GuideStoryStep = {
-  title: 'Данные загружены',
-  hint: 'Данные пришли. Кнопка выгрузки встаёт на место состояния загрузки, остальные кнопки тулбара не сдвигаются.',
+  title: { ru: 'Данные загружены', en: 'Data loaded' },
+  hint: {
+    ru: 'Данные пришли. Кнопка выгрузки встаёт на место состояния загрузки, остальные кнопки тулбара не сдвигаются.',
+    en: "The data arrived. The export button takes the place of the loading state, and the other toolbar buttons don't move.",
+  },
   props: ({ rows }) => ({ loading: false, dataOverride: rows }),
 }
 
@@ -124,7 +130,10 @@ export const ToolbarInitialLoading: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Тулбар до прихода данных"
+      title={{
+        ru: 'Тулбар до прихода данных',
+        en: 'The toolbar before data arrives',
+      }}
       steps={INITIAL_LOADING}
       args={guideArgs(TOOLBAR_ARGS, args)}
     />
@@ -134,7 +143,7 @@ export const ToolbarInitialLoading: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     let skeleton = rect(canvas)
     let view = rect(canvas)
-    await step(INITIAL_LOADING[0]!.title, async () => {
+    await step(INITIAL_LOADING[0]!.title.ru, async () => {
       await waitTestId('export-skeleton')
       await waitTestId('quick-search')
       await expect(byTestId('export-button')).toBeNull()
@@ -145,7 +154,7 @@ export const ToolbarInitialLoading: StoryObj<StoryProps> = {
       skeleton = rect(byTestId('export-skeleton')!)
       view = rect(byTestId('view-settings-button')!)
     })
-    await step(INITIAL_LOADING[1]!.title, async () => {
+    await step(INITIAL_LOADING[1]!.title.ru, async () => {
       await guideNext(canvas)
       await waitTestId('export-button')
       await expectSameBox(rect(byTestId('export-button')!), skeleton)
@@ -181,16 +190,31 @@ const matches = (row: Record<string, unknown>) =>
 const SEARCH_BEFORE_DATA: readonly GuideStoryStep[] = [
   {
     ...OPENED,
-    hint: 'Данные ещё не пришли, а поиск идёт на сервере. Поле поиска уже доступно, тело таблицы в состоянии загрузки.',
+    hint: {
+      ru: 'Данные ещё не пришли, а поиск идёт на сервере. Поле поиска уже доступно, тело таблицы в состоянии загрузки.',
+      en: "The data hasn't arrived yet, and search runs on the server. The search field is already available, and the table body is in a loading state.",
+    },
   },
   {
-    title: `Пользователь ищет «${QUERY}» до прихода данных`,
-    hint: 'Пользователь ввёл запрос, не дожидаясь данных. Запрос сразу ушёл приложению, тело таблицы по-прежнему ждёт ответа.',
+    title: {
+      ru: `Пользователь ищет «${QUERY}» до прихода данных`,
+      en: `The user searches for “${QUERY}” before data arrives`,
+    },
+    hint: {
+      ru: 'Пользователь ввёл запрос, не дожидаясь данных. Запрос сразу ушёл приложению, тело таблицы по-прежнему ждёт ответа.',
+      en: 'The user typed a query without waiting for the data. The query went straight to the app, and the table body is still waiting for a response.',
+    },
     enter: typeSearch(QUERY),
   },
   {
-    title: 'Сервер ответил по запросу',
-    hint: 'Сервер вернул строки по запросу пользователя. Таблица показывает только найденные строки.',
+    title: {
+      ru: 'Сервер ответил по запросу',
+      en: 'The server answered the query',
+    },
+    hint: {
+      ru: 'Сервер вернул строки по запросу пользователя. Таблица показывает только найденные строки.',
+      en: "The server returned rows for the user's query. The table shows only the rows found.",
+    },
     props: ({ rows }) => ({
       loading: false,
       dataOverride: rows.filter(matches),
@@ -207,7 +231,10 @@ export const ToolbarSearchBeforeDataServer: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Серверный поиск до прихода данных"
+      title={{
+        ru: 'Серверный поиск до прихода данных',
+        en: 'Server search before data arrives',
+      }}
       steps={SEARCH_BEFORE_DATA}
       args={guideArgs(
         {
@@ -228,18 +255,18 @@ export const ToolbarSearchBeforeDataServer: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     searchRequests.length = 0
     const dataRows = () => canvas.querySelectorAll('.data-grid__body-row')
-    await step(SEARCH_BEFORE_DATA[0]!.title, async () => {
+    await step(SEARCH_BEFORE_DATA[0]!.title.ru, async () => {
       await waitTestId('quick-search')
       await expect(dataRows()).toHaveLength(0)
       await expect(skeletonRow(canvas)).not.toBeNull()
     })
-    await step(SEARCH_BEFORE_DATA[1]!.title, async () => {
+    await step(SEARCH_BEFORE_DATA[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(searchRequests.at(-1)).toBe(QUERY))
       await expect(dataRows()).toHaveLength(0)
       await expect(skeletonRow(canvas)).not.toBeNull()
     })
-    await step(SEARCH_BEFORE_DATA[2]!.title, async () => {
+    await step(SEARCH_BEFORE_DATA[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(dataRows().length).toBeGreaterThan(0))
       for (const row of dataRows()) {
@@ -254,8 +281,14 @@ export const ToolbarSearchBeforeDataServer: StoryObj<StoryProps> = {
 
 const COLUMNS_ARRIVE: readonly GuideStoryStep[] = [
   {
-    title: 'Ожидание списка колонок от сервера',
-    hint: 'Структура таблицы ещё неизвестна. Поле поиска, кнопка настроек вида, кнопка выгрузки и тело таблицы в состоянии загрузки.',
+    title: {
+      ru: 'Ожидание списка колонок от сервера',
+      en: 'Waiting for the column list from the server',
+    },
+    hint: {
+      ru: 'Структура таблицы ещё неизвестна. Поле поиска, кнопка настроек вида, кнопка выгрузки и тело таблицы в состоянии загрузки.',
+      en: "The table's structure isn't known yet. The search field, the view settings button, the export button, and the table body are in a loading state.",
+    },
     props: () => ({
       loading: 'initial',
       dataOverride: [],
@@ -263,8 +296,11 @@ const COLUMNS_ARRIVE: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Колонки загружены',
-    hint: 'Сервер вернул список колонок, данные ещё не пришли. Поле поиска и кнопка настроек вида встают на место состояния загрузки, кнопка выгрузки ждёт данных.',
+    title: { ru: 'Колонки загружены', en: 'Columns loaded' },
+    hint: {
+      ru: 'Сервер вернул список колонок, данные ещё не пришли. Поле поиска и кнопка настроек вида встают на место состояния загрузки, кнопка выгрузки ждёт данных.',
+      en: "The server returned the column list, but the data hasn't arrived yet. The search field and the view settings button take the place of the loading state, and the export button waits for the data.",
+    },
     props: () => ({ columnsOverride: undefined }),
   },
   ANSWERED,
@@ -279,7 +315,10 @@ export const ToolbarColumnsArrive: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Колонки приходят с сервера"
+      title={{
+        ru: 'Колонки приходят с сервера',
+        en: 'Columns come from the server',
+      }}
       steps={COLUMNS_ARRIVE}
       args={guideArgs(TOOLBAR_ARGS, args)}
     />
@@ -288,7 +327,7 @@ export const ToolbarColumnsArrive: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     let field = rect(canvas)
     let columns = rect(canvas)
-    await step(COLUMNS_ARRIVE[0]!.title, async () => {
+    await step(COLUMNS_ARRIVE[0]!.title.ru, async () => {
       await waitTestId('quick-search-skeleton')
       await waitTestId('view-settings-skeleton')
       await waitTestId('export-skeleton')
@@ -296,7 +335,7 @@ export const ToolbarColumnsArrive: StoryObj<StoryProps> = {
       field = rect(byTestId('quick-search-skeleton')!)
       columns = rect(byTestId('view-settings-skeleton')!)
     })
-    await step(COLUMNS_ARRIVE[1]!.title, async () => {
+    await step(COLUMNS_ARRIVE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await waitTestId('quick-search')
       await waitTestId('view-settings-button')
@@ -304,7 +343,7 @@ export const ToolbarColumnsArrive: StoryObj<StoryProps> = {
       await expectSameBox(rect(byTestId('view-settings-button')!), columns)
       await expect(byTestId('export-skeleton')).not.toBeNull()
     })
-    await step(COLUMNS_ARRIVE[2]!.title, async () => {
+    await step(COLUMNS_ARRIVE[2]!.title.ru, async () => {
       await guideNext(canvas)
       await waitTestId('export-button')
     })
@@ -339,17 +378,29 @@ const box = (testId: string) =>
 
 const OWN_ORDER: readonly GuideStoryStep[] = [
   {
-    title: 'Кнопки на местах по умолчанию',
-    hint: 'Слева — поле поиска, справа — кнопка настроек вида и выгрузка.',
+    title: {
+      ru: 'Кнопки на местах по умолчанию',
+      en: 'Buttons in their default places',
+    },
+    hint: {
+      ru: 'Слева — поле поиска, справа — кнопка настроек вида и выгрузка.',
+      en: 'The search field is on the left; the view settings button and export are on the right.',
+    },
   },
   {
-    title: 'Выгрузка слева',
-    hint: 'Приложение поставило кнопку выгрузки в левую группу, сразу после поля поиска. Стрелки клавиатуры проходят кнопки тулбара в новом порядке.',
+    title: { ru: 'Выгрузка слева', en: 'Export on the left' },
+    hint: {
+      ru: 'Приложение поставило кнопку выгрузки в левую группу, сразу после поля поиска. Стрелки клавиатуры проходят кнопки тулбара в новом порядке.',
+      en: 'The app moved the export button to the left group, right after the search field. The arrow keys move through the toolbar buttons in the new order.',
+    },
     props: () => ({ dataExportToolbar: EXPORT_LEFT }),
   },
   {
-    title: 'Поле поиска убрано',
-    hint: 'Приложению поле поиска не нужно — его больше нет, выгрузка встала первой слева.',
+    title: { ru: 'Поле поиска убрано', en: 'The search field is removed' },
+    hint: {
+      ru: 'Приложению поле поиска не нужно — его больше нет, выгрузка встала первой слева.',
+      en: "The app doesn't need the search field, so it's gone, and export is now first on the left.",
+    },
     props: () => ({ quickSearchToolbar: false }),
   },
 ]
@@ -363,14 +414,14 @@ export const ToolbarOwnOrder: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Свой порядок кнопок"
+      title={{ ru: 'Свой порядок кнопок', en: 'A custom button order' }}
       steps={OWN_ORDER}
       args={guideArgs(OWN_ORDER_ARGS, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(OWN_ORDER[0]!.title, async () => {
+    await step(OWN_ORDER[0]!.title.ru, async () => {
       await until(() => expect(box('export-button')).not.toBeNull())
       await until(() => expect(box('quick-search')).not.toBeNull())
       await until(() =>
@@ -379,7 +430,7 @@ export const ToolbarOwnOrder: StoryObj<StoryProps> = {
         ),
       )
     })
-    await step(OWN_ORDER[1]!.title, async () => {
+    await step(OWN_ORDER[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(box('export-button')!.right).toBeLessThan(
@@ -393,7 +444,7 @@ export const ToolbarOwnOrder: StoryObj<StoryProps> = {
       )
       await settle()
     })
-    await step(OWN_ORDER[2]!.title, async () => {
+    await step(OWN_ORDER[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(box('quick-search')).toBeNull())
       await until(() =>

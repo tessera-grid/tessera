@@ -97,8 +97,14 @@ const amountsDesc = () =>
 
 const NUMBER_STRING: readonly GuideStoryStep[] = [
   {
-    title: 'Суммы хранятся строками',
-    hint: 'Сервер отдаёт суммы строками, чтобы не терять знаки: у двух самых больших сумм различается только последняя цифра. Таблица показывает суммы как есть, цифры одной ширины.',
+    title: {
+      ru: 'Суммы хранятся строками',
+      en: 'Amounts are stored as strings',
+    },
+    hint: {
+      ru: 'Сервер отдаёт суммы строками, чтобы не терять знаки: у двух самых больших сумм различается только последняя цифра. Таблица показывает суммы как есть, цифры одной ширины.',
+      en: 'The server sends amounts as strings so no digits are lost: the two largest amounts differ only in the last digit. The table shows the amounts as they are, with digits of equal width.',
+    },
     props: () => ({
       columnsOverride: AMOUNT_COLUMNS,
       dataOverride: AMOUNT_ROWS,
@@ -106,8 +112,14 @@ const NUMBER_STRING: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Пользователь отсортировал по сумме',
-    hint: 'Суммы упорядочены по значению от большей к меньшей, с учётом знака. Две самые большие суммы стоят в верном порядке, хотя обычным числом они бы совпали.',
+    title: {
+      ru: 'Пользователь отсортировал по сумме',
+      en: 'The user sorted by amount',
+    },
+    hint: {
+      ru: 'Суммы упорядочены по значению от большей к меньшей, с учётом знака. Две самые большие суммы стоят в верном порядке, хотя обычным числом они бы совпали.',
+      en: 'The amounts are ordered by value from largest to smallest, taking the sign into account. The two largest amounts are in the right order, even though as regular numbers they would be equal.',
+    },
     enter: sortTo('amount', 'descending'),
   },
 ]
@@ -118,21 +130,21 @@ export const DataTypesNumberString: StoryObj<StoryProps> = {
   parameters: { scenario: '0174/S3', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Суммы строками"
+      title={{ ru: 'Суммы строками', en: 'Amounts as strings' }}
       steps={NUMBER_STRING}
       args={guideArgs({ height: '560' }, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(NUMBER_STRING[0]!.title, async () => {
+    await step(NUMBER_STRING[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() =>
         expect(amountTexts(canvas)).toEqual(AMOUNT_ROWS.map(row => row.amount)),
       )
       await expect(cellOf(canvas, 0, 'amount')!.dataset.align).toBeUndefined()
     })
-    await step(NUMBER_STRING[1]!.title, async () => {
+    await step(NUMBER_STRING[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(amountTexts(canvas)).toEqual(amountsDesc()))
       const [first, second] = amountTexts(canvas)
@@ -146,8 +158,14 @@ export const DataTypesNumberString: StoryObj<StoryProps> = {
 
 const AMOUNT_EXPORT: readonly GuideStoryStep[] = [
   {
-    title: 'Суммы строками и выгрузка',
-    hint: 'Суммы хранятся строками. К выгрузке подключён формат Excel.',
+    title: {
+      ru: 'Суммы строками и выгрузка',
+      en: 'Amounts as strings and export',
+    },
+    hint: {
+      ru: 'Суммы хранятся строками. К выгрузке подключён формат Excel.',
+      en: 'Amounts are stored as strings. The Excel format is added to export.',
+    },
     props: () => ({
       columnsOverride: AMOUNT_COLUMNS,
       dataOverride: AMOUNT_ROWS,
@@ -157,8 +175,11 @@ const AMOUNT_EXPORT: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Пользователь выбрал Excel',
-    hint: 'В настройках выгрузки выбран формат Excel.',
+    title: { ru: 'Пользователь выбрал Excel', en: 'The user chose Excel' },
+    hint: {
+      ru: 'В настройках выгрузки выбран формат Excel.',
+      en: 'The Excel format is selected in the export settings.',
+    },
     states: ['overlay.export'],
     enter: stepAction(async (root, { signal }) => {
       await openExportPanel(root, signal)
@@ -166,8 +187,11 @@ const AMOUNT_EXPORT: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Пользователь выгрузил',
-    hint: 'Скачался файл Excel. Суммы в нём — числа, с ними можно считать. Сумма длиннее пятнадцати знаков записана текстом: числом Excel её бы округлил.',
+    title: { ru: 'Пользователь выгрузил', en: 'The user exported' },
+    hint: {
+      ru: 'Скачался файл Excel. Суммы в нём — числа, с ними можно считать. Сумма длиннее пятнадцати знаков записана текстом: числом Excel её бы округлил.',
+      en: 'An Excel file was downloaded. The amounts in it are numbers you can calculate with. An amount longer than fifteen digits is written as text, because Excel would round it as a number.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await openExportPanel(root, signal)
       await chooseAxis('format', 'xlsx', signal)
@@ -182,7 +206,10 @@ export const DataTypesNumberStringExport: StoryObj<StoryProps> = {
   parameters: { scenario: '0174/S4', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Суммы строками в Excel"
+      title={{
+        ru: 'Суммы строками в Excel',
+        en: 'Amounts as strings in Excel',
+      }}
       steps={AMOUNT_EXPORT}
       args={guideArgs({ height: '460' }, args)}
     />
@@ -191,16 +218,16 @@ export const DataTypesNumberStringExport: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     const download = interceptDownload()
     try {
-      await step(AMOUNT_EXPORT[0]!.title, async () => {
+      await step(AMOUNT_EXPORT[0]!.title.ru, async () => {
         await waitForRows(canvas)
       })
-      await step(AMOUNT_EXPORT[1]!.title, async () => {
+      await step(AMOUNT_EXPORT[1]!.title.ru, async () => {
         await guideNext(canvas)
         await stepDone(canvas)
         await expect(axisChecked('format', 'xlsx')).toBe(true)
         await settle()
       })
-      await step(AMOUNT_EXPORT[2]!.title, async () => {
+      await step(AMOUNT_EXPORT[2]!.title.ru, async () => {
         await guideNext(canvas)
         await stepDone(canvas)
         await expect(download.names).toEqual(['export.xlsx'])
@@ -234,12 +261,18 @@ const typedAmount = (root: ParentNode) =>
 
 const DECIMAL_EDIT: readonly GuideStoryStep[] = [
   {
-    title: 'Суммы строками',
-    hint: 'Сервер отдаёт суммы строками, чтобы не терять знаки. Их можно править: при наведении на ячейку появляется кнопка правки.',
+    title: { ru: 'Суммы строками', en: 'Amounts as strings' },
+    hint: {
+      ru: 'Сервер отдаёт суммы строками, чтобы не терять знаки. Их можно править: при наведении на ячейку появляется кнопка правки.',
+      en: 'The server sends amounts as strings so no digits are lost. They can be edited: hovering over a cell shows an edit button.',
+    },
   },
   {
-    title: 'Поле правки суммы',
-    hint: 'Пользователь нажал кнопку правки суммы. В поле та же сумма — все значащие цифры, с десятичным знаком языка таблицы.',
+    title: { ru: 'Поле правки суммы', en: 'The amount edit field' },
+    hint: {
+      ru: 'Пользователь нажал кнопку правки суммы. В поле та же сумма — все значащие цифры, с десятичным знаком языка таблицы.',
+      en: "The user pressed the edit button on an amount. The field holds the same amount: all significant digits, with the decimal separator of the table's language.",
+    },
     states: ['body.editing'],
     enter: untilDone(
       root => !!productInput(root, 'amount'),
@@ -247,8 +280,11 @@ const DECIMAL_EDIT: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Сумма сохранена',
-    hint: 'Пользователь набрал сумму из восемнадцати цифр и нажал Enter. В ячейке и в сохранённом значении все знаки — сумма не округлилась.',
+    title: { ru: 'Сумма сохранена', en: 'The amount was saved' },
+    hint: {
+      ru: 'Пользователь набрал сумму из восемнадцати цифр и нажал Enter. В ячейке и в сохранённом значении все знаки — сумма не округлилась.',
+      en: 'The user typed an eighteen-digit amount and pressed Enter. The cell and the saved value keep all the digits: the amount was not rounded.',
+    },
     enter: untilDone(
       root =>
         !productInput(root, 'amount') &&
@@ -269,7 +305,7 @@ export const EditingDecimalString: StoryObj<StoryProps> = {
   parameters: { scenario: '0175/S12', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Правка десятичной строки"
+      title={{ ru: 'Правка десятичной строки', en: 'Editing a decimal string' }}
       steps={DECIMAL_EDIT}
       args={guideArgs(
         {
@@ -286,11 +322,11 @@ export const EditingDecimalString: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(DECIMAL_EDIT[0]!.title, async () => {
+    await step(DECIMAL_EDIT[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(productText(canvas, 'amount')).toBe(ORIGINAL))
     })
-    await step(DECIMAL_EDIT[1]!.title, async () => {
+    await step(DECIMAL_EDIT[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(productInput(canvas, 'amount')).not.toBeNull())
       // Конечные нули дробной части поле не показывает — значение то же.
@@ -300,7 +336,7 @@ export const EditingDecimalString: StoryObj<StoryProps> = {
         ),
       )
     })
-    await step(DECIMAL_EDIT[2]!.title, async () => {
+    await step(DECIMAL_EDIT[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(productInput(canvas, 'amount')).toBeNull())
       await until(() => expect(productText(canvas, 'amount')).toBe(NEW_AMOUNT))

@@ -29,6 +29,8 @@ import {
   stepAction,
 } from './demos/GuideStory'
 import { type ConsoleLog, loggedCallback } from './demos/consoleLog'
+import { shellText } from './demos/storyShell'
+import type { StoryText } from './__mocks__/storyText'
 import type { StoryProps } from './DataGridStory.types'
 import { StoryComponent } from './DataGridStory'
 import { dataGridMeta } from './dataGridMeta'
@@ -183,7 +185,7 @@ export const PluginApiPlayground: StoryObj<SessionsArgs> = {
         'allowEditing',
         'pageSizesPreset',
       ],
-      { dataCount: 'данные подаёт демо' },
+      { dataCount: 'the demo supplies the data' },
     ),
   },
   render: function Render(
@@ -217,13 +219,22 @@ const expandRow = (root: HTMLElement, id: string) =>
 
 const REACTIVE: readonly GuideStoryStep[] = [
   {
-    title: 'Дерево свёрнуто',
-    hint: 'Строки показаны верхним уровнем, глубина раскрытия — три уровня.',
+    title: { ru: 'Дерево свёрнуто', en: 'The tree is collapsed' },
+    hint: {
+      ru: 'Строки показаны верхним уровнем, глубина раскрытия — три уровня.',
+      en: 'Rows are shown at the top level, and they can be expanded three levels deep.',
+    },
     props: () => ({ rowExpandingMaxDepth: 3 }),
   },
   {
-    title: 'Пользователь раскрыл строку и её дочернюю',
-    hint: 'Под строкой видны дочерние строки, а под первой дочерней — её собственные.',
+    title: {
+      ru: 'Пользователь раскрыл строку и её дочернюю',
+      en: 'The user expanded a row and its child',
+    },
+    hint: {
+      ru: 'Под строкой видны дочерние строки, а под первой дочерней — её собственные.',
+      en: 'Child rows are visible under the row, and the first child shows its own child rows.',
+    },
     // Новое открытие таблицы на шаге — с тем же раскрытием.
     props: () => ({ initialExpanded: { [ROOT]: true, [CHILD]: true } }),
     enter: untilDone(
@@ -232,13 +243,25 @@ const REACTIVE: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Приложение уменьшило глубину',
-    hint: 'Приложение разрешило раскрывать только один уровень. Раскрытие дочерней строки скрыто, но таблица его помнит.',
+    title: {
+      ru: 'Приложение уменьшило глубину',
+      en: 'The app reduced the depth',
+    },
+    hint: {
+      ru: 'Приложение разрешило раскрывать только один уровень. Раскрытие дочерней строки скрыто, но таблица его помнит.',
+      en: "The app allowed expanding only one level. The child row's expansion is hidden, but the table remembers it.",
+    },
     props: () => ({ rowExpandingMaxDepth: 1 }),
   },
   {
-    title: 'Приложение вернуло глубину',
-    hint: 'Глубина снова три уровня: дочерняя строка раскрыта, как была, раскрывать её заново не нужно.',
+    title: {
+      ru: 'Приложение вернуло глубину',
+      en: 'The app restored the depth',
+    },
+    hint: {
+      ru: 'Глубина снова три уровня: дочерняя строка раскрыта, как была, раскрывать её заново не нужно.',
+      en: 'The depth is three levels again: the child row is expanded as before, so there is no need to expand it again.',
+    },
     props: () => ({ rowExpandingMaxDepth: 3 }),
   },
 ]
@@ -255,7 +278,10 @@ export const PluginApiReactiveArgs: StoryObj<SessionsArgs> = {
     const [data] = useState(makeReactiveTree)
     return (
       <GuideStory
-        title="Аргументы плагина на лету"
+        title={{
+          ru: 'Аргументы плагина на лету',
+          en: 'Plugin arguments on the fly',
+        }}
         steps={REACTIVE}
         args={guideArgs(
           { ...GRID, dataOverride: data, enableRowExpanding: true },
@@ -266,11 +292,11 @@ export const PluginApiReactiveArgs: StoryObj<SessionsArgs> = {
   },
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(REACTIVE[0]!.title, async () => {
+    await step(REACTIVE[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(isExpanded(canvas, ROOT)).toBe(false))
     })
-    await step(REACTIVE[1]!.title, async () => {
+    await step(REACTIVE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(isExpanded(canvas, ROOT) && isExpanded(canvas, CHILD)).toBe(
@@ -278,12 +304,12 @@ export const PluginApiReactiveArgs: StoryObj<SessionsArgs> = {
         ),
       )
     })
-    await step(REACTIVE[2]!.title, async () => {
+    await step(REACTIVE[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(isExpanded(canvas, CHILD)).toBe(false))
       await until(() => expect(isExpanded(canvas, ROOT)).toBe(true))
     })
-    await step(REACTIVE[3]!.title, async () => {
+    await step(REACTIVE[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(isExpanded(canvas, CHILD)).toBe(true))
       await settle()
@@ -327,26 +353,38 @@ const typeDraft = (root: HTMLElement) => {
 
 const REVOKE: readonly GuideStoryStep[] = [
   {
-    title: 'Правка разрешена',
-    hint: 'Приложение разрешает править ячейки: при наведении в ячейке появляется кнопка правки.',
+    title: { ru: 'Правка разрешена', en: 'Editing is allowed' },
+    hint: {
+      ru: 'Приложение разрешает править ячейки: при наведении в ячейке появляется кнопка правки.',
+      en: 'The app allows editing cells: hovering over a cell shows an edit button.',
+    },
     props: () => ({
       cellEditingCanEditCell: canEditDemoCell,
       onEditCancel: accept,
     }),
   },
   {
-    title: 'Пользователь правит ячейку',
-    hint: 'Пользователь открыл поле правки и ввёл новое значение, но ещё не сохранил его.',
+    title: { ru: 'Пользователь правит ячейку', en: 'The user edits a cell' },
+    hint: {
+      ru: 'Пользователь открыл поле правки и ввёл новое значение, но ещё не сохранил его.',
+      en: 'The user opened the edit field and typed a new value but has not saved it yet.',
+    },
     states: ['body.editing'],
     enter: untilDone(hasDraft, typeDraft),
   },
   {
-    title: 'Приложение запретило правку',
-    hint: 'Пока поле открыто, приложение запретило править ячейки. Поле закрылось, в ячейке прежнее значение, а введённый черновик приложение получило в колбэке отмены вместе с причиной.',
+    title: {
+      ru: 'Приложение запретило правку',
+      en: 'The app disallowed editing',
+    },
+    hint: {
+      ru: 'Пока поле открыто, приложение запретило править ячейки. Поле закрылось, в ячейке прежнее значение, а введённый черновик приложение получило в колбэке отмены вместе с причиной.',
+      en: 'While the field was open, the app disallowed editing cells. The field closed, the cell keeps its previous value, and the app received the typed draft in the cancel callback along with the reason.',
+    },
     enter: stepAction(async (root, { signal }, app) => {
       // Черновик — до запрета, если шаг открыли, минуя прошлый.
       for (let tries = 0; !hasDraft(root); tries++) {
-        if (tries > 80) throw new Error('Шаг гайда не открыл правку')
+        if (tries > 80) throw new Error('The guide step did not open editing')
         typeDraft(root)
         await sleep(100)
         signal.throwIfAborted()
@@ -363,7 +401,10 @@ export const PluginApiRevokeEditing: StoryObj<SessionsArgs> = {
   parameters: { scenario: '0039/S2', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Запрет правки посреди сессии"
+      title={{
+        ru: 'Запрет правки посреди сессии',
+        en: 'Disallowing editing mid-session',
+      }}
       steps={REVOKE}
       args={guideArgs(
         { ...GRID, dataCount: 10, enableCellEditing: true },
@@ -374,16 +415,16 @@ export const PluginApiRevokeEditing: StoryObj<SessionsArgs> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     let original: string | undefined
-    await step(REVOKE[0]!.title, async () => {
+    await step(REVOKE[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(editButtonOf(canvas)).not.toBeNull())
       original = editCellText(canvas)
     })
-    await step(REVOKE[1]!.title, async () => {
+    await step(REVOKE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(editInputOf(canvas)?.value).toBe(DRAFT))
     })
-    await step(REVOKE[2]!.title, async () => {
+    await step(REVOKE[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       expect(editInputOf(canvas)).toBeNull()
@@ -422,18 +463,33 @@ const DRAG_CALLBACKS = { onRowDragEnd: accept, onRowDragCancel: accept }
 
 const CALLBACKS: readonly GuideStoryStep[] = [
   {
-    title: 'Таблица с перетаскиванием',
-    hint: 'Строки переставляются перетаскиванием за ручку. Итог каждого перетаскивания приложение получает в колбэке, журнал — в консоли под таблицей.',
+    title: { ru: 'Таблица с перетаскиванием', en: 'A table with dragging' },
+    hint: {
+      ru: 'Строки переставляются перетаскиванием за ручку. Итог каждого перетаскивания приложение получает в колбэке, журнал — в консоли под таблицей.',
+      en: 'Rows are reordered by dragging their drag handle. The app receives the outcome of each drag in a callback, and the log is in the console below the table.',
+    },
     props: () => DRAG_CALLBACKS,
   },
   {
-    title: 'Пользователь перетащил строку',
-    hint: 'Строка встала на новое место, приложение получило её и новое место.',
+    title: {
+      ru: 'Пользователь перетащил строку',
+      en: 'The user dragged a row',
+    },
+    hint: {
+      ru: 'Строка встала на новое место, приложение получило её и новое место.',
+      en: 'The row moved to its new place, and the app received the row and its new place.',
+    },
     enter: stepAction((root, { signal }) => moveFirstRow(root, signal)),
   },
   {
-    title: 'Пользователь отменил перетаскивание',
-    hint: 'Пользователь взял строку и нажал Escape. Строка осталась на месте, приложение получило отмену с причиной.',
+    title: {
+      ru: 'Пользователь отменил перетаскивание',
+      en: 'The user canceled the drag',
+    },
+    hint: {
+      ru: 'Пользователь взял строку и нажал Escape. Строка осталась на месте, приложение получило отмену с причиной.',
+      en: 'The user picked up a row and pressed Escape. The row stayed in place, and the app received the cancellation with a reason.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await moveFirstRow(root, signal)
       const order = rowIdOrder(root).join()
@@ -459,7 +515,7 @@ export const SessionCallbacks: StoryObj<SessionsArgs> = {
   },
   render: args => (
     <GuideStory
-      title="Колбэки перетаскивания"
+      title={{ ru: 'Колбэки перетаскивания', en: 'Drag callbacks' }}
       steps={CALLBACKS}
       args={guideArgs(
         { ...GRID, dataCount: 30, enableRowDragging: true },
@@ -469,17 +525,17 @@ export const SessionCallbacks: StoryObj<SessionsArgs> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(CALLBACKS[0]!.title, async () => {
+    await step(CALLBACKS[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await expect(rowAt(canvas, 0).querySelector(HANDLE)).not.toBeNull()
     })
-    await step(CALLBACKS[1]!.title, async () => {
+    await step(CALLBACKS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(consoleText()).toContain('onRowDragEnd')
       await expect(consoleText()).toContain(`rowId:"${DRAGGED}"`)
     })
-    await step(CALLBACKS[2]!.title, async () => {
+    await step(CALLBACKS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(consoleText()).toContain('onRowDragCancel'))
@@ -550,21 +606,39 @@ const RESIZE_CALLBACKS = {
 
 const RESIZE: readonly GuideStoryStep[] = [
   {
-    title: 'Таблица с протяжкой ширины',
-    hint: 'Ширина колонок меняется протяжкой границы заголовка. Итог каждого изменения приложение получает в колбэке, журнал — в консоли под таблицей.',
+    title: {
+      ru: 'Таблица с протяжкой ширины',
+      en: 'A table with column resizing',
+    },
+    hint: {
+      ru: 'Ширина колонок меняется протяжкой границы заголовка. Итог каждого изменения приложение получает в колбэке, журнал — в консоли под таблицей.',
+      en: "Column widths are changed by dragging a header's border. The app receives the outcome of each change in a callback, and the log is in the console below the table.",
+    },
     props: () => RESIZE_CALLBACKS,
   },
   {
-    title: 'Пользователь расширил колонку',
-    hint: 'Пользователь протянул границу заголовка и отпустил. Колонка стала шире, приложение получило новую ширину.',
+    title: {
+      ru: 'Пользователь расширил колонку',
+      en: 'The user made a column wider',
+    },
+    hint: {
+      ru: 'Пользователь протянул границу заголовка и отпустил. Колонка стала шире, приложение получило новую ширину.',
+      en: "The user dragged the header's border and released it. The column got wider, and the app received the new width.",
+    },
     enter: stepAction(async (root, step) => {
       const { release } = await pullGrip(root, step)
       release()
     }),
   },
   {
-    title: 'Пользователь отменил протяжку',
-    hint: 'Пользователь начал тянуть границу и нажал Escape. Ширина вернулась к прежней, приложение получило отмену с причиной.',
+    title: {
+      ru: 'Пользователь отменил протяжку',
+      en: 'The user canceled resizing',
+    },
+    hint: {
+      ru: 'Пользователь начал тянуть границу и нажал Escape. Ширина вернулась к прежней, приложение получило отмену с причиной.',
+      en: 'The user started dragging the border and pressed Escape. The width returned to what it was, and the app received the cancellation with a reason.',
+    },
     enter: stepAction(async (root, step) => {
       const { before, release } = await pullGrip(root, step)
       cancelDrag()
@@ -580,7 +654,7 @@ export const PluginApiResizeCallbacks: StoryObj<SessionsArgs> = {
   parameters: { scenario: '0040/S5', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Колбэки протяжки ширины"
+      title={{ ru: 'Колбэки протяжки ширины', en: 'Resize callbacks' }}
       steps={RESIZE}
       args={guideArgs({ ...GRID, enableColumnSizing: true }, args)}
     />
@@ -588,7 +662,7 @@ export const PluginApiResizeCallbacks: StoryObj<SessionsArgs> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     let start = 0
-    await step(RESIZE[0]!.title, async () => {
+    await step(RESIZE[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() =>
         expect(
@@ -597,7 +671,7 @@ export const PluginApiResizeCallbacks: StoryObj<SessionsArgs> = {
       )
       start = widthOf(canvas)
     })
-    await step(RESIZE[1]!.title, async () => {
+    await step(RESIZE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() =>
@@ -613,7 +687,7 @@ export const PluginApiResizeCallbacks: StoryObj<SessionsArgs> = {
         expect(Number(width?.[1])).toBeGreaterThan(start + RESIZE_BY / 2),
       )
     })
-    await step(RESIZE[2]!.title, async () => {
+    await step(RESIZE[2]!.title.ru, async () => {
       const wide = widthOf(canvas)
       await guideNext(canvas)
       await stepDone(canvas)
@@ -635,7 +709,13 @@ export const PluginApiResizeCallbacks: StoryObj<SessionsArgs> = {
 /** Набор функций задаёт гайд: базовые контролы скрыты. */
 const GUIDED = guideControls()
 
-const guided = (title: string, steps: readonly GuideStoryStep[]) =>
+/** Источник действия в консоли — на любом языке истории. */
+const sourceText = (key: 'consoleSourcePointer' | 'consoleSourceKeyboard') =>
+  `(?:${shellText('ru', key)}|${shellText('en', key)})`
+const POINTER = sourceText('consoleSourcePointer')
+const KEYBOARD = sourceText('consoleSourceKeyboard')
+
+const guided = (title: StoryText, steps: readonly GuideStoryStep[]) =>
   function Render(args: StoryProps) {
     return (
       <GuideStory
@@ -646,6 +726,7 @@ const guided = (title: string, steps: readonly GuideStoryStep[]) =>
           ...GRID,
           ...meta.args,
           colorMode: args.colorMode,
+          locale: args.locale,
         })}
       />
     )
@@ -697,7 +778,7 @@ const sortByKeyboard = async (root: HTMLElement, signal: AbortSignal) => {
   const column = (cell: HTMLElement | null) =>
     Number(cell?.getAttribute('aria-colindex'))
   for (let tries = 0; activeCell(root) !== head(); tries++) {
-    if (tries > 30) throw new Error('Шаг гайда не дошёл до заголовка')
+    if (tries > 30) throw new Error('The guide step did not reach the header')
     const active = activeCell(root)
     if (!active?.classList.contains('data-grid__head-cell'))
       press(root, 'ArrowUp')
@@ -711,19 +792,28 @@ const sortByKeyboard = async (root: HTMLElement, signal: AbortSignal) => {
 
 const DEBUG_ACTIONS: readonly GuideStoryStep[] = [
   {
-    title: 'Журнал пуст',
-    hint: 'Приложение записывает каждое действие пользователя в свой журнал. Журнал — в консоли под таблицей, пока он пуст.',
+    title: { ru: 'Журнал пуст', en: 'The log is empty' },
+    hint: {
+      ru: 'Приложение записывает каждое действие пользователя в свой журнал. Журнал — в консоли под таблицей, пока он пуст.',
+      en: 'The app writes every user action to its own log. The log is in the console below the table and is empty for now.',
+    },
     props: () => ({ enableColumnSorting: true }),
   },
   {
-    title: 'Сортировка мышью',
-    hint: 'Пользователь нажал кнопку сортировки в заголовке колонки. В журнале появилось первое действие — сортировка, источник — мышь.',
+    title: { ru: 'Сортировка мышью', en: 'Sorting with the mouse' },
+    hint: {
+      ru: 'Пользователь нажал кнопку сортировки в заголовке колонки. В журнале появилось первое действие — сортировка, источник — мышь.',
+      en: 'The user pressed the sort button in a column header. The first action appeared in the log: sorting, with the mouse as its source.',
+    },
     enter: stepAction((root, { signal }) => sortByMouse(root, signal)),
   },
   {
-    title: 'Сортировка клавишей',
+    title: { ru: 'Сортировка клавишей', en: 'Sorting with a key' },
     keyboard: true,
-    hint: 'Пользователь перешёл в заголовок с клавиатуры и нажал Enter. В журнале — то же действие, источник — клавиатура.',
+    hint: {
+      ru: 'Пользователь перешёл в заголовок с клавиатуры и нажал Enter. В журнале — то же действие, источник — клавиатура.',
+      en: 'The user moved to the header with the keyboard and pressed Enter. The log shows the same action, with the keyboard as its source.',
+    },
     props: () => ({ enableKeyboardNavigation: true }),
     // Сортировка мышью — до клавиши, если шаг открыли, минуя прошлый.
     enter: stepAction(async (root, { signal }) => {
@@ -742,26 +832,30 @@ export const PluginApiDebugActions: StoryObj<StoryProps> = {
     requirements: ['AL1'],
     ...GUIDED,
   },
-  render: guided('Журнал действий', DEBUG_ACTIONS),
+  render: guided({ ru: 'Журнал действий', en: 'Action log' }, DEBUG_ACTIONS),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(DEBUG_ACTIONS[0].title, async () => {
+    await step(DEBUG_ACTIONS[0].title.ru, async () => {
       await waitForRows(canvas)
       // Действий ещё нет: номера «#N» стоят только у действий.
       expect(consoleText()).not.toMatch(/#d/)
     })
-    await step(DEBUG_ACTIONS[1].title, async () => {
+    await step(DEBUG_ACTIONS[1].title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() =>
-        expect(consoleText()).toMatch(/#1\b[^\n]*columnSorting[^\n]*мышь/),
+        expect(consoleText()).toMatch(
+          new RegExp(`#1\\b[^\\n]*columnSorting[^\\n]*${POINTER}`),
+        ),
       )
     })
-    await step(DEBUG_ACTIONS[2].title, async () => {
+    await step(DEBUG_ACTIONS[2].title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() =>
-        expect(consoleText()).toMatch(/columnSorting\.toggle[^\n]*клавиатура/),
+        expect(consoleText()).toMatch(
+          new RegExp(`columnSorting\\.toggle[^\\n]*${KEYBOARD}`),
+        ),
       )
     })
     await settle()
@@ -867,19 +961,28 @@ const pressFavorite = (index: number) => (root: HTMLElement) => {
 
 const OUTCOME_FLASH: readonly GuideStoryStep[] = [
   {
-    title: 'Кнопка избранного',
-    hint: 'Приложение ставит в ячейки колонки имени кнопку избранного. Нажатие сразу отмечает строку и отправляет запрос на сервер.',
+    title: { ru: 'Кнопка избранного', en: 'A favorite button' },
+    hint: {
+      ru: 'Приложение ставит в ячейки колонки имени кнопку избранного. Нажатие сразу отмечает строку и отправляет запрос на сервер.',
+      en: "The app places a favorite button in the name column's cells. Pressing it marks the row right away and sends a request to the server.",
+    },
     props: () => ({ extraPlugins: FAVORITE_ACCEPTS }),
   },
   {
-    title: 'Сервер принял',
-    hint: 'Нажата кнопка первой строки: пока сервер отвечает, кнопка ждёт. Запись принята — ячейка с кнопкой коротко вспыхивает тоном успеха, отметка остаётся.',
+    title: { ru: 'Сервер принял', en: 'The server accepted' },
+    hint: {
+      ru: 'Нажата кнопка первой строки: пока сервер отвечает, кнопка ждёт. Запись принята — ячейка с кнопкой коротко вспыхивает тоном успеха, отметка остаётся.',
+      en: "The first row's button was pressed: while the server responds, the button waits. The write was accepted, so the cell with the button briefly flashes in the success tone, and the mark stays.",
+    },
     enter: pressFavorite(0),
     immediate: true,
   },
   {
-    title: 'Сервер отказал',
-    hint: 'Теперь сервер отказывает. Нажата кнопка второй строки: отметка возвращается, ячейка с кнопкой вспыхивает тоном отказа. Повторное нажатие повторит запрос.',
+    title: { ru: 'Сервер отказал', en: 'The server refused' },
+    hint: {
+      ru: 'Теперь сервер отказывает. Нажата кнопка второй строки: отметка возвращается, ячейка с кнопкой вспыхивает тоном отказа. Повторное нажатие повторит запрос.',
+      en: "Now the server refuses. The second row's button was pressed: the mark is reverted, and the cell with the button flashes in the refusal tone. Pressing it again retries the request.",
+    },
     props: () => ({ extraPlugins: FAVORITE_REFUSES }),
     enter: pressFavorite(1),
     immediate: true,
@@ -894,7 +997,10 @@ export const OutcomeFlashFromApp: StoryObj<StoryProps> = {
     requirements: ['OF21'],
     ...GUIDED,
   },
-  render: guided('Итог действия в ячейке', OUTCOME_FLASH),
+  render: guided(
+    { ru: 'Итог действия в ячейке', en: 'An action outcome in a cell' },
+    OUTCOME_FLASH,
+  ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     const flashOf = (index: number) =>
@@ -920,11 +1026,11 @@ export const OutcomeFlashFromApp: StoryObj<StoryProps> = {
           .map(animation => animation.finished.catch(() => {})),
       )
     }
-    await step(OUTCOME_FLASH[0].title, async () => {
+    await step(OUTCOME_FLASH[0].title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(favoriteOf(canvas, 0)).not.toBeNull())
     })
-    await step(OUTCOME_FLASH[1].title, async () => {
+    await step(OUTCOME_FLASH[1].title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(flashOf(0)).toBe('accepted'))
       // Вспыхивает ячейка с кнопкой, а не строка целиком.
@@ -932,7 +1038,7 @@ export const OutcomeFlashFromApp: StoryObj<StoryProps> = {
       await iconAtRest(0)
       expect(button(0).closest('[data-button-active]')).not.toBeNull()
     })
-    await step(OUTCOME_FLASH[2].title, async () => {
+    await step(OUTCOME_FLASH[2].title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(flashOf(1)).toBe('reverted'))
       await iconAtRest(1)
@@ -980,13 +1086,19 @@ const starButton = (root: ParentNode) =>
 
 const REPORT_ACTION: readonly GuideStoryStep[] = [
   {
-    title: 'Кнопка плагина',
-    hint: 'Плагин автора поставил в тулбар свою кнопку. Других плагинов в таблице нет: сообщать о действиях умеет сама таблица.',
+    title: { ru: 'Кнопка плагина', en: 'A plugin button' },
+    hint: {
+      ru: 'Плагин автора поставил в тулбар свою кнопку. Других плагинов в таблице нет: сообщать о действиях умеет сама таблица.',
+      en: "The author's plugin placed its own button in the toolbar. The table has no other plugins: reporting actions is something the table does itself.",
+    },
     props: () => ({ extraPlugins: STAR_ROWS }),
   },
   {
-    title: 'Нажатие кнопки',
-    hint: 'Пользователь нажал кнопку плагина. Плагин сообщил таблице своё действие: оно попало в журнал под таблицей, а кнопка показывает его номер.',
+    title: { ru: 'Нажатие кнопки', en: 'A button press' },
+    hint: {
+      ru: 'Пользователь нажал кнопку плагина. Плагин сообщил таблице своё действие: оно попало в журнал под таблицей, а кнопка показывает его номер.',
+      en: "The user pressed the plugin's button. The plugin reported its action to the table: the action went into the log below the table, and the button shows its number.",
+    },
     // Пользователь нажимает кнопку мышью: одно нажатие — одно действие.
     enter: stepAction(async (root, { signal }) => {
       await pollUntil(() => !!starButton(root), signal)
@@ -1003,18 +1115,23 @@ export const PluginApiReportAction: StoryObj<StoryProps> = {
     requirements: ['AL2'],
     ...GUIDED,
   },
-  render: guided('Действие плагина', REPORT_ACTION),
+  render: guided(
+    { ru: 'Действие плагина', en: 'A plugin action' },
+    REPORT_ACTION,
+  ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(REPORT_ACTION[0].title, async () => {
+    await step(REPORT_ACTION[0].title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(starButton(canvas)).not.toBeNull())
     })
-    await step(REPORT_ACTION[1].title, async () => {
+    await step(REPORT_ACTION[1].title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() =>
-        expect(consoleText()).toMatch(/#1\b[^\n]*starRows · starAll[^\n]*мышь/),
+        expect(consoleText()).toMatch(
+          new RegExp(`#1\\b[^\\n]*starRows · starAll[^\\n]*${POINTER}`),
+        ),
       )
       expect(starButton(canvas)!.textContent).toBe('Star rows · #1')
     })
@@ -1119,18 +1236,30 @@ const markFirstRow = (root: HTMLElement) => markOf(root, MARKED_ROW)?.click()
 
 const CELL_BUTTON: readonly GuideStoryStep[] = [
   {
-    title: 'Кнопка плагина в ячейках',
-    hint: 'Автор плагина поставил в ячейки колонки имени свою кнопку избранного. Пока ни одна строка не отмечена.',
+    title: { ru: 'Кнопка плагина в ячейках', en: 'A plugin button in cells' },
+    hint: {
+      ru: 'Автор плагина поставил в ячейки колонки имени свою кнопку избранного. Пока ни одна строка не отмечена.',
+      en: "The plugin author placed their own favorite button in the name column's cells. No row is marked yet.",
+    },
     props: ({ log }) => ({ extraPlugins: favoriteRowsOf(log) }),
   },
   {
-    title: 'Пользователь отметил строку',
-    hint: 'Пользователь нажал кнопку в первой строке. Плагин запомнил отметку в своём состоянии: кнопка показана включённой, приложение получило колбэк со строкой и отметкой.',
+    title: { ru: 'Пользователь отметил строку', en: 'The user marked a row' },
+    hint: {
+      ru: 'Пользователь нажал кнопку в первой строке. Плагин запомнил отметку в своём состоянии: кнопка показана включённой, приложение получило колбэк со строкой и отметкой.',
+      en: 'The user pressed the button in the first row. The plugin stored the mark in its state: the button is shown as on, and the app received a callback with the row and the mark.',
+    },
     enter: untilDone(root => isMarked(root, MARKED_ROW), markFirstRow),
   },
   {
-    title: 'Отметка пережила прокрутку',
-    hint: 'Пользователь прокрутил таблицу вниз и обратно. Строка ушла из виду и вернулась с отметкой: состояние хранит плагин, а не кнопка.',
+    title: {
+      ru: 'Отметка пережила прокрутку',
+      en: 'The mark survived scrolling',
+    },
+    hint: {
+      ru: 'Пользователь прокрутил таблицу вниз и обратно. Строка ушла из виду и вернулась с отметкой: состояние хранит плагин, а не кнопка.',
+      en: 'The user scrolled the table down and back. The row went out of view and came back with its mark: the plugin keeps the state, not the button.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await pollUntil(() => !!markOf(root, MARKED_ROW), signal)
       if (!isMarked(root, MARKED_ROW)) markFirstRow(root)
@@ -1150,19 +1279,19 @@ export const PluginApiCellButton: StoryObj<StoryProps> = {
   parameters: { scenario: '0028/S1', ...GUIDED },
   render: args => (
     <GuideStory
-      title="Кнопка плагина в ячейке"
+      title={{ ru: 'Кнопка плагина в ячейке', en: 'A plugin button in a cell' }}
       steps={CELL_BUTTON}
       args={guideArgs({ ...GRID, dataCount: 100 }, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(CELL_BUTTON[0]!.title, async () => {
+    await step(CELL_BUTTON[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(markOf(canvas, MARKED_ROW)).not.toBeNull())
       expect(markedRows(canvas)).toBe(0)
     })
-    await step(CELL_BUTTON[1]!.title, async () => {
+    await step(CELL_BUTTON[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(isMarked(canvas, MARKED_ROW)).toBe(true))
       await until(() =>
@@ -1171,7 +1300,7 @@ export const PluginApiCellButton: StoryObj<StoryProps> = {
         ),
       )
     })
-    await step(CELL_BUTTON[2]!.title, async () => {
+    await step(CELL_BUTTON[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       expect(isMarked(canvas, MARKED_ROW)).toBe(true)
@@ -1251,8 +1380,11 @@ const appMarked = new WeakMap<ConsoleLog, ReturnType<typeof appFavoritesWith>>()
 
 const CONTROLLED: readonly GuideStoryStep[] = [
   {
-    title: 'Отметки задало приложение',
-    hint: 'Приложение передало плагину отметки двух строк. Таблица показывает эти строки отмеченными.',
+    title: { ru: 'Отметки задало приложение', en: 'The app set the marks' },
+    hint: {
+      ru: 'Приложение передало плагину отметки двух строк. Таблица показывает эти строки отмеченными.',
+      en: 'The app passed marks for two rows to the plugin. The table shows these rows as marked.',
+    },
     props: ({ log, app }) => {
       if (!appMarked.has(log))
         appMarked.set(log, appFavoritesWith(APP_MARKS, app, log))
@@ -1260,8 +1392,11 @@ const CONTROLLED: readonly GuideStoryStep[] = [
     },
   },
   {
-    title: 'Пользователь снял отметку',
-    hint: 'Пользователь нажал кнопку отмеченной строки. Плагин передал приложению новый набор отметок, приложение сохранило его, и отметка снята.',
+    title: { ru: 'Пользователь снял отметку', en: 'The user removed a mark' },
+    hint: {
+      ru: 'Пользователь нажал кнопку отмеченной строки. Плагин передал приложению новый набор отметок, приложение сохранило его, и отметка снята.',
+      en: 'The user pressed the button on a marked row. The plugin passed the new set of marks to the app, the app saved it, and the mark is removed.',
+    },
     enter: untilDone(
       root => !!markOf(root, UNMARKED_ROW) && !isMarked(root, UNMARKED_ROW),
       root => {
@@ -1270,8 +1405,14 @@ const CONTROLLED: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Приложение сбросило отметки',
-    hint: 'Приложение передало плагину пустой набор. Отметки сняты во всех строках, хотя пользователь их не трогал.',
+    title: {
+      ru: 'Приложение сбросило отметки',
+      en: 'The app cleared the marks',
+    },
+    hint: {
+      ru: 'Приложение передало плагину пустой набор. Отметки сняты во всех строках, хотя пользователь их не трогал.',
+      en: 'The app passed the plugin an empty set. The marks are removed from every row, even though the user did not touch them.',
+    },
     enter: (_root, app) =>
       app.update(props => {
         const current = props.extraPlugins
@@ -1291,16 +1432,22 @@ const CONTROLLED: readonly GuideStoryStep[] = [
 export const PluginApiControlledState: StoryObj<StoryProps> = {
   name: 'Controlled state',
   parameters: { scenario: '0028/S2', ...GUIDED },
-  render: guided('Состояние плагина у приложения', CONTROLLED),
+  render: guided(
+    {
+      ru: 'Состояние плагина у приложения',
+      en: 'Plugin state held by the app',
+    },
+    CONTROLLED,
+  ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(CONTROLLED[0]!.title, async () => {
+    await step(CONTROLLED[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(isMarked(canvas, UNMARKED_ROW)).toBe(true))
       await until(() => expect(isMarked(canvas, KEPT_ROW)).toBe(true))
       await until(() => expect(markedRows(canvas)).toBe(2))
     })
-    await step(CONTROLLED[1]!.title, async () => {
+    await step(CONTROLLED[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(isMarked(canvas, UNMARKED_ROW)).toBe(false))
       await until(() => expect(isMarked(canvas, KEPT_ROW)).toBe(true))
@@ -1310,7 +1457,7 @@ export const PluginApiControlledState: StoryObj<StoryProps> = {
         ),
       )
     })
-    await step(CONTROLLED[2]!.title, async () => {
+    await step(CONTROLLED[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(markedRows(canvas)).toBe(0))
       await until(() => expect(markOf(canvas, KEPT_ROW)).not.toBeNull())
@@ -1400,13 +1547,22 @@ const flagAllOf = (root: ParentNode) =>
 
 const SERVICE_COLUMN: readonly GuideStoryStep[] = [
   {
-    title: 'Служебная колонка плагина',
-    hint: 'Плагин добавил свою служебную колонку: в заголовке — кнопка для всех строк, в каждой строке — кнопка для этой строки.',
+    title: { ru: 'Служебная колонка плагина', en: 'A plugin service column' },
+    hint: {
+      ru: 'Плагин добавил свою служебную колонку: в заголовке — кнопка для всех строк, в каждой строке — кнопка для этой строки.',
+      en: 'The plugin added its own service column: the header has a button for all rows, and each row has a button for that row.',
+    },
     props: ({ log }) => ({ extraPlugins: rowFlagsOf(log) }),
   },
   {
-    title: 'Пользователь нажал кнопку строки',
-    hint: 'Пользователь нажал кнопку в первой строке. Кнопка вызвала колбэк плагина: приложение получило строку, журнал — в консоли под таблицей.',
+    title: {
+      ru: 'Пользователь нажал кнопку строки',
+      en: 'The user pressed a row button',
+    },
+    hint: {
+      ru: 'Пользователь нажал кнопку в первой строке. Кнопка вызвала колбэк плагина: приложение получило строку, журнал — в консоли под таблицей.',
+      en: "The user pressed the button in the first row. The button called the plugin's callback: the app received the row, and the log is in the console below the table.",
+    },
     enter: stepAction(async (root, { signal }) => {
       await pollUntil(() => !!flagOf(root, FLAGGED_ROW), signal)
       clickByMouse(flagOf(root, FLAGGED_ROW)!)
@@ -1418,15 +1574,18 @@ const SERVICE_COLUMN: readonly GuideStoryStep[] = [
 export const PluginApiServiceColumn: StoryObj<StoryProps> = {
   name: 'Service column',
   parameters: { scenario: '0028/S3', ...GUIDED },
-  render: guided('Служебная колонка плагина', SERVICE_COLUMN),
+  render: guided(
+    { ru: 'Служебная колонка плагина', en: 'A plugin service column' },
+    SERVICE_COLUMN,
+  ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(SERVICE_COLUMN[0]!.title, async () => {
+    await step(SERVICE_COLUMN[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(flagAllOf(canvas)).not.toBeNull())
       expect(flagOf(canvas, FLAGGED_ROW)).not.toBeNull()
     })
-    await step(SERVICE_COLUMN[1]!.title, async () => {
+    await step(SERVICE_COLUMN[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() =>
@@ -1491,13 +1650,19 @@ const checkboxOf = (root: ParentNode, row: string) =>
 
 const CRASH: readonly GuideStoryStep[] = [
   {
-    title: 'Плагин работает',
-    hint: 'В ячейках колонки имени — кнопка стороннего плагина с числом визитов, рядом работают встроенные плагины: выбор строк и сортировка.',
+    title: { ru: 'Плагин работает', en: 'The plugin works' },
+    hint: {
+      ru: 'В ячейках колонки имени — кнопка стороннего плагина с числом визитов, рядом работают встроенные плагины: выбор строк и сортировка.',
+      en: "The name column's cells have a third-party plugin's button with a visit count, and built-in plugins work alongside it: row selection and sorting.",
+    },
     props: () => ({ dataOverride: crashRows(), extraPlugins: VISITS_BADGE }),
   },
   {
-    title: 'Плагин упал на строке',
-    hint: 'Приложение передало строку без числа визитов, и компонент плагина бросил на ней ошибку. На месте его кнопки в этой строке пусто; остальные строки и встроенные плагины работают, ошибка — в консоли браузера.',
+    title: { ru: 'Плагин упал на строке', en: 'The plugin crashed on a row' },
+    hint: {
+      ru: 'Приложение передало строку без числа визитов, и компонент плагина бросил на ней ошибку. На месте его кнопки в этой строке пусто; остальные строки и встроенные плагины работают, ошибка — в консоли браузера.',
+      en: "The app passed a row without a visit count, and the plugin's component threw an error on it. In that row, the spot where its button would be is empty; the other rows and the built-in plugins work, and the error is in the browser console.",
+    },
     enter: (_root, app) =>
       app.update(props => ({ ...props, dataOverride: brokenRows() })),
   },
@@ -1511,13 +1676,13 @@ export const PluginApiPluginCrash: StoryObj<StoryProps> = {
     consoleErrors: {
       expected: [VISITS_FAILURE],
       reason:
-        'Шаг гайда показывает падение компонента плагина: React и таблица пишут его ошибку в консоль (ADR 0037, S1).',
+        'A guide step shows a plugin component crashing: React and the table write its error to the console (ADR 0037, S1).',
     },
     ...GUIDED,
   },
   render: args => (
     <GuideStory
-      title="Падение плагина"
+      title={{ ru: 'Падение плагина', en: 'A plugin crash' }}
       steps={CRASH}
       args={guideArgs(
         { ...GRID, enableRowSelection: true, enableColumnSorting: true },
@@ -1527,13 +1692,13 @@ export const PluginApiPluginCrash: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(CRASH[0]!.title, async () => {
+    await step(CRASH[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(visitsOf(canvas, CRASH_ROW)).not.toBeNull())
       expect(checkboxOf(canvas, CRASH_ROW)).not.toBeNull()
       expect(canvas.querySelector('.column-sort__button')).not.toBeNull()
     })
-    await step(CRASH[1]!.title, async () => {
+    await step(CRASH[1]!.title.ru, async () => {
       // Сообщения консоли за шаг — проверка, а не событие: шаг их только вызывает.
       const logged: string[] = []
       const error = console.error
@@ -1626,18 +1791,27 @@ const bothHeld = (root: HTMLElement, signal: AbortSignal) =>
 
 const CANCEL_ALL: readonly GuideStoryStep[] = [
   {
-    title: 'Кнопка приложения',
-    hint: 'Над таблицей есть своя кнопка приложения: она отменяет всё, чего таблица ждёт.',
+    title: { ru: 'Кнопка приложения', en: 'An app button' },
+    hint: {
+      ru: 'Над таблицей есть своя кнопка приложения: она отменяет всё, чего таблица ждёт.',
+      en: "Above the table is the app's own button: it cancels everything the table is waiting for.",
+    },
   },
   {
-    title: 'Ждут два действия',
-    hint: 'Пользователь запустил действие строки и выгрузку: ячейки строки чуть темнеют и по ним проходит светлый блик, кнопка выгрузки показывает ожидание.',
+    title: { ru: 'Ждут два действия', en: 'Two actions are waiting' },
+    hint: {
+      ru: 'Пользователь запустил действие строки и выгрузку: ячейки строки чуть темнеют и по ним проходит светлый блик, кнопка выгрузки показывает ожидание.',
+      en: "The user started a row action and an export: the row's cells darken slightly and a light shimmer runs across them, and the export button shows that it is waiting.",
+    },
     states: ['body.pending'],
     enter: stepAction((root, { signal }) => bothHeld(root, signal)),
   },
   {
-    title: 'Всё отменено',
-    hint: 'Пользователь нажал кнопку приложения. Таблица тихо прервала оба запроса: ожидание снято, отметок ошибки нет.',
+    title: { ru: 'Всё отменено', en: 'Everything was canceled' },
+    hint: {
+      ru: 'Пользователь нажал кнопку приложения. Таблица тихо прервала оба запроса: ожидание снято, отметок ошибки нет.',
+      en: "The user pressed the app's button. The table quietly aborted both requests: the waiting state is cleared, and there are no error marks.",
+    },
     enter: stepAction(async (root, { signal }) => {
       await bothHeld(root, signal)
       root.querySelector<HTMLElement>('[data-testid="cancel-all"]')!.click()
@@ -1655,7 +1829,10 @@ export const PluginApiCancelPending: StoryObj<StoryProps> = {
   parameters: { scenario: '0153/S5', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Отмена всего ожидающего"
+      title={{
+        ru: 'Отмена всего ожидающего',
+        en: 'Canceling everything pending',
+      }}
       steps={CANCEL_ALL}
       args={guideArgs(
         {
@@ -1681,7 +1858,7 @@ export const PluginApiCancelPending: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(CANCEL_ALL[0]!.title, async () => {
+    await step(CANCEL_ALL[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() =>
         expect(
@@ -1689,14 +1866,14 @@ export const PluginApiCancelPending: StoryObj<StoryProps> = {
         ).not.toBeNull(),
       )
     })
-    await step(CANCEL_ALL[1]!.title, async () => {
+    await step(CANCEL_ALL[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(rowWaits(canvas)).toBe(true)
       await expect(canvas.querySelector('[data-pending-wave]')).not.toBeNull()
       await expect(busyButton(exportButtonOf(canvas))).toBe(true)
     })
-    await step(CANCEL_ALL[2]!.title, async () => {
+    await step(CANCEL_ALL[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(rowWaits(canvas)).toBe(false)
@@ -1730,18 +1907,30 @@ const changedCells = (root: ParentNode) =>
 
 const BODY_ATTRIBUTES: readonly GuideStoryStep[] = [
   {
-    title: 'Плагин подключён',
-    hint: 'Плагин автора отмечает изменённые ячейки. Изменений пока нет, отметок нет.',
+    title: { ru: 'Плагин подключён', en: 'The plugin is connected' },
+    hint: {
+      ru: 'Плагин автора отмечает изменённые ячейки. Изменений пока нет, отметок нет.',
+      en: "The author's plugin marks changed cells. There are no changes yet, so there are no marks.",
+    },
     props: () => ({ extraPlugins: [changes({ changed: [] })] }),
   },
   {
-    title: 'Приложение передало изменённые ячейки',
-    hint: 'Приложение передало плагину три изменённые ячейки. Плагин пометил их и задал цвет метки, полоску у левого края ячейки рисует оформление автора.',
+    title: {
+      ru: 'Приложение передало изменённые ячейки',
+      en: 'The app passed the changed cells',
+    },
+    hint: {
+      ru: 'Приложение передало плагину три изменённые ячейки. Плагин пометил их и задал цвет метки, полоску у левого края ячейки рисует оформление автора.',
+      en: "The app passed three changed cells to the plugin. The plugin marked them and set the mark's color; the author's styling draws a strip at the cell's left edge.",
+    },
     props: () => ({ extraPlugins: [changes({ changed: CHANGED })] }),
   },
   {
-    title: 'Изменилась ещё одна ячейка',
-    hint: 'Приложение добавило ещё одну ячейку. Метку получила только она, прежние метки остались на месте.',
+    title: { ru: 'Изменилась ещё одна ячейка', en: 'One more cell changed' },
+    hint: {
+      ru: 'Приложение добавило ещё одну ячейку. Метку получила только она, прежние метки остались на месте.',
+      en: 'The app added one more cell. Only that cell got a mark, and the earlier marks stayed in place.',
+    },
     props: () => ({ extraPlugins: [changes({ changed: MORE_CHANGED })] }),
   },
 ]
@@ -1750,14 +1939,17 @@ const BODY_ATTRIBUTES: readonly GuideStoryStep[] = [
 export const PluginApiBodyAttributes: StoryObj<StoryProps> = {
   name: 'Body attributes',
   parameters: { scenario: '0173/S1', ...GUIDED },
-  render: guided('Отметки ячеек плагином', BODY_ATTRIBUTES),
+  render: guided(
+    { ru: 'Отметки ячеек плагином', en: 'Cell marks by a plugin' },
+    BODY_ATTRIBUTES,
+  ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(BODY_ATTRIBUTES[0]!.title, async () => {
+    await step(BODY_ATTRIBUTES[0]!.title.ru, async () => {
       await waitForRows(canvas)
       expect(changedCells(canvas)).toEqual([])
     })
-    await step(BODY_ATTRIBUTES[1]!.title, async () => {
+    await step(BODY_ATTRIBUTES[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(changedCells(canvas).sort()).toEqual([...CHANGED].sort()),
@@ -1766,7 +1958,7 @@ export const PluginApiBodyAttributes: StoryObj<StoryProps> = {
       expect(cell.style.getPropertyValue('--changes-tone')).not.toBe('')
       expect(getComputedStyle(cell).backgroundImage).not.toBe('none')
     })
-    await step(BODY_ATTRIBUTES[2]!.title, async () => {
+    await step(BODY_ATTRIBUTES[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(changedCells(canvas).sort()).toEqual([...MORE_CHANGED].sort()),
@@ -1782,13 +1974,22 @@ const cellCardOf = () =>
 
 const BODY_EVENTS: readonly GuideStoryStep[] = [
   {
-    title: 'Плагин подключён',
-    hint: 'Плагин автора добавил свой жест: двойной щелчок по ячейке открывает карточку с её значением.',
+    title: { ru: 'Плагин подключён', en: 'The plugin is connected' },
+    hint: {
+      ru: 'Плагин автора добавил свой жест: двойной щелчок по ячейке открывает карточку с её значением.',
+      en: "The author's plugin added its own gesture: double-clicking a cell opens a card with its value.",
+    },
     props: () => ({ extraPlugins: [cellCard()] }),
   },
   {
-    title: 'Пользователь дважды щёлкнул по ячейке',
-    hint: 'Под ячейкой открылась карточка автора с названием колонки и значением. Ячейка обведена, пока карточка открыта.',
+    title: {
+      ru: 'Пользователь дважды щёлкнул по ячейке',
+      en: 'The user double-clicked a cell',
+    },
+    hint: {
+      ru: 'Под ячейкой открылась карточка автора с названием колонки и значением. Ячейка обведена, пока карточка открыта.',
+      en: "The author's card with the column name and the value opened below the cell. The cell is outlined while the card is open.",
+    },
     enter: untilDone(
       () => !!cellCardOf(),
       root =>
@@ -1798,8 +1999,14 @@ const BODY_EVENTS: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Пользователь закрыл карточку',
-    hint: 'Карточка закрылась, обводка ячейки снята.',
+    title: {
+      ru: 'Пользователь закрыл карточку',
+      en: 'The user closed the card',
+    },
+    hint: {
+      ru: 'Карточка закрылась, обводка ячейки снята.',
+      en: 'The card closed, and the cell outline is gone.',
+    },
     enter: untilDone(
       root =>
         !cellCardOf() &&
@@ -1822,15 +2029,18 @@ const BODY_EVENTS: readonly GuideStoryStep[] = [
 export const PluginApiBodyEvents: StoryObj<StoryProps> = {
   name: 'Body events',
   parameters: { scenario: '0173/S2', ...GUIDED },
-  render: guided('Свой жест над телом', BODY_EVENTS),
+  render: guided(
+    { ru: 'Свой жест над телом', en: 'A custom gesture over the body' },
+    BODY_EVENTS,
+  ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     const cell = () => bodyCell(canvas, CARD_CELL.rowId, CARD_CELL.columnId)!
-    await step(BODY_EVENTS[0]!.title, async () => {
+    await step(BODY_EVENTS[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(cellCardOf()).toBeNull())
     })
-    await step(BODY_EVENTS[1]!.title, async () => {
+    await step(BODY_EVENTS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(cellCardOf()).not.toBeNull())
       const value = cell().querySelector(
@@ -1842,7 +2052,7 @@ export const PluginApiBodyEvents: StoryObj<StoryProps> = {
       )
       await settle()
     })
-    await step(BODY_EVENTS[2]!.title, async () => {
+    await step(BODY_EVENTS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(cellCardOf()).toBeNull())
       await until(() =>
@@ -1889,17 +2099,26 @@ const markCell = (
 
 const BODY_KEYS: readonly GuideStoryStep[] = [
   {
-    title: 'Своя клавиша плагина',
-    hint: 'В таблице включена клавиатурная навигация. Плагин автора назначил свою клавишу: она отмечает активную ячейку.',
+    title: { ru: 'Своя клавиша плагина', en: "The plugin's own key" },
+    hint: {
+      ru: 'В таблице включена клавиатурная навигация. Плагин автора назначил свою клавишу: она отмечает активную ячейку.',
+      en: "Keyboard navigation is on in the table. The author's plugin assigned its own key, which marks the active cell.",
+    },
     props: () => ({
       enableKeyboardNavigation: true,
       extraPlugins: [keyMarks()],
     }),
   },
   {
-    title: 'Пользователь нажал клавишу плагина',
+    title: {
+      ru: 'Пользователь нажал клавишу плагина',
+      en: "The user pressed the plugin's key",
+    },
     keyboard: true,
-    hint: 'Пользователь выбрал ячейку и нажал клавишу плагина. Ячейка отмечена полоской у левого края, активная ячейка осталась на месте: клавишу взял плагин.',
+    hint: {
+      ru: 'Пользователь выбрал ячейку и нажал клавишу плагина. Ячейка отмечена полоской у левого края, активная ячейка осталась на месте: клавишу взял плагин.',
+      en: "The user picked a cell and pressed the plugin's key. The cell is marked with a strip at its left edge, and the active cell stayed in place: the plugin took the key.",
+    },
     enter: untilDone(
       root =>
         markedCells(root).includes(cellKey(KEY_CELL.rowId, KEY_CELL.columnId)),
@@ -1907,9 +2126,15 @@ const BODY_KEYS: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Стрелка и снова клавиша плагина',
+    title: {
+      ru: 'Стрелка и снова клавиша плагина',
+      en: "An arrow key and the plugin's key again",
+    },
     keyboard: true,
-    hint: 'Стрелку плагин не берёт: она сдвинула активную ячейку вниз, как обычно. Клавиша плагина отметила и новую ячейку.',
+    hint: {
+      ru: 'Стрелку плагин не берёт: она сдвинула активную ячейку вниз, как обычно. Клавиша плагина отметила и новую ячейку.',
+      en: "The plugin does not take the arrow key, so the key moved the active cell down as usual. The plugin's key marked the new cell too.",
+    },
     enter: untilDone(
       root =>
         markedCells(root).includes(
@@ -1927,22 +2152,25 @@ const BODY_KEYS: readonly GuideStoryStep[] = [
 export const PluginApiBodyKeys: StoryObj<StoryProps> = {
   name: 'Body keys',
   parameters: { scenario: '0173/S3', ...GUIDED },
-  render: guided('Своя клавиша плагина', BODY_KEYS),
+  render: guided(
+    { ru: 'Своя клавиша плагина', en: "The plugin's own key" },
+    BODY_KEYS,
+  ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     const first = cellKey(KEY_CELL.rowId, KEY_CELL.columnId)
     const next = cellKey(NEXT_CELL.rowId, NEXT_CELL.columnId)
-    await step(BODY_KEYS[0]!.title, async () => {
+    await step(BODY_KEYS[0]!.title.ru, async () => {
       await waitForRows(canvas)
       expect(markedCells(canvas)).toEqual([])
     })
-    await step(BODY_KEYS[1]!.title, async () => {
+    await step(BODY_KEYS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(markedCells(canvas)).toEqual([first]))
       expect(activeCellKey(canvas)).toBe(first)
       await settle()
     })
-    await step(BODY_KEYS[2]!.title, async () => {
+    await step(BODY_KEYS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(markedCells(canvas).sort()).toEqual([first, next].sort()),
@@ -1969,24 +2197,33 @@ const rowCheckbox = (root: ParentNode) =>
 
 const MISSING_SLICE: readonly GuideStoryStep[] = [
   {
-    title: 'Плагин подключён',
-    hint: 'Плагин автора отмечает ячейки выбранных строк. Выбор строк он читает из состояния таблицы, но не перечислил его среди срезов, на которые подписан его вклад.',
+    title: { ru: 'Плагин подключён', en: 'The plugin is connected' },
+    hint: {
+      ru: 'Плагин автора отмечает ячейки выбранных строк. Выбор строк он читает из состояния таблицы, но не перечислил его среди срезов, на которые подписан его вклад.',
+      en: "The author's plugin marks the cells of selected rows. It reads row selection from the table state but did not list it among the slices its contribution subscribes to.",
+    },
     props: () => ({
       enableRowSelection: true,
       extraPlugins: [selectedMarks({ declareSlice: false })],
     }),
   },
   {
-    title: 'Пользователь выбрал строку',
-    hint: 'Строка выбрана, а её ячейки без отметок: вклад подписан только на свои срезы, и смена выбора его не будит. В консоли браузера — предупреждение для разработчика с названием среза, который вклад не объявил.',
+    title: { ru: 'Пользователь выбрал строку', en: 'The user selected a row' },
+    hint: {
+      ru: 'Строка выбрана, а её ячейки без отметок: вклад подписан только на свои срезы, и смена выбора его не будит. В консоли браузера — предупреждение для разработчика с названием среза, который вклад не объявил.',
+      en: 'The row is selected, but its cells have no marks: the contribution subscribes only to its own slices, so a selection change does not wake it. The browser console has a developer warning naming the slice the contribution did not declare.',
+    },
     enter: untilDone(
       root => rowSelected(root),
       root => rowCheckbox(root)?.click(),
     ),
   },
   {
-    title: 'Автор объявил срез',
-    hint: 'Автор добавил выбор строк в срезы вклада. Ячейки выбранной строки отмечены, следующий выбор отметится сразу.',
+    title: { ru: 'Автор объявил срез', en: 'The author declared the slice' },
+    hint: {
+      ru: 'Автор добавил выбор строк в срезы вклада. Ячейки выбранной строки отмечены, следующий выбор отметится сразу.',
+      en: "The author added row selection to the contribution's slices. The selected row's cells are marked, and the next selection will be marked right away.",
+    },
     props: () => ({
       enableRowSelection: true,
       extraPlugins: [selectedMarks({ declareSlice: true })],
@@ -2004,19 +2241,22 @@ const MISSING_SLICE: readonly GuideStoryStep[] = [
 export const PluginApiBodyMissingSlice: StoryObj<StoryProps> = {
   name: 'Body slices',
   parameters: { scenario: '0195/S1', ...GUIDED },
-  render: guided('Срезы вклада в тело', MISSING_SLICE),
+  render: guided(
+    { ru: 'Срезы вклада в тело', en: 'Body contribution slices' },
+    MISSING_SLICE,
+  ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(MISSING_SLICE[0]!.title, async () => {
+    await step(MISSING_SLICE[0]!.title.ru, async () => {
       await waitForRows(canvas)
       expect(sliceMarks(canvas)).toBe(0)
     })
-    await step(MISSING_SLICE[1]!.title, async () => {
+    await step(MISSING_SLICE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(rowSelected(canvas)).toBe(true))
       expect(sliceMarks(canvas)).toBe(0)
     })
-    await step(MISSING_SLICE[2]!.title, async () => {
+    await step(MISSING_SLICE[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(sliceMarks(canvas)).toBeGreaterThan(0))
       await settle()
@@ -2050,11 +2290,12 @@ const ARCHIVE_ROWS = [
   })(),
 ]
 /** Перевод приложения: свой ключ плагина в том же словаре, что подписи таблицы. */
-const ARCHIVE_RU = { 'archiveRows.archive': 'Архивировать' }
+const ARCHIVE_LABEL: StoryText = { ru: 'Архивировать', en: 'Archive' }
+const ARCHIVE_RU = { 'archiveRows.archive': ARCHIVE_LABEL.ru }
 
 const archiveNamedButton = (root: ParentNode) =>
   root.querySelector<HTMLElement>(
-    `.data-grid__body-row[data-row-id="${ARCHIVED_NAMES_ROW}"] button:is([aria-label$="Archive"], [aria-label$="Архивировать"])`,
+    `.data-grid__body-row[data-row-id="${ARCHIVED_NAMES_ROW}"] button:is([aria-label$="${ARCHIVE_LABEL.en}"], [aria-label$="${ARCHIVE_LABEL.ru}"])`,
   )
 const namesLog = () =>
   document.querySelector<HTMLElement>('[data-testid="failure-log"]')
@@ -2063,21 +2304,30 @@ const namesLogButton = () =>
 
 const ACTION_NAMES_STEPS: readonly GuideStoryStep[] = [
   {
-    title: 'Действие плагина',
-    hint: 'Плагин добавил строкам действие архивации и объявил его подпись. Кнопка строки называет действие по-английски.',
+    title: { ru: 'Действие плагина', en: 'A plugin action' },
+    hint: {
+      ru: 'Плагин добавил строкам действие архивации и объявил его подпись. Кнопка строки называет действие по-английски.',
+      en: "The plugin added an archive action to the rows and declared its label. The row's button names the action in English.",
+    },
   },
   {
-    title: 'Перевод приложения',
-    hint: 'Приложение переключило язык и перевело подпись плагина в своём словаре. Кнопка строки называет действие по-русски.',
+    title: { ru: 'Перевод приложения', en: "The app's translation" },
+    hint: {
+      ru: 'Приложение переключило язык и перевело подпись плагина в своём словаре. Кнопка строки называет действие по-русски.',
+      en: "The app switched the language and translated the plugin's label in its own dictionary. The row's button names the action in Russian.",
+    },
     props: () => ({ locale: 'ru', localization: ARCHIVE_RU }),
   },
   {
-    title: 'Сервер отказал',
-    hint: 'Пользователь архивировал строку, сервер отказал. Пользователь открыл журнал: запись называет действие той же переведённой подписью.',
+    title: { ru: 'Сервер отказал', en: 'The server refused' },
+    hint: {
+      ru: 'Пользователь архивировал строку, сервер отказал. Пользователь открыл журнал: запись называет действие той же переведённой подписью.',
+      en: 'The user archived a row, and the server refused. The user opened the log: the entry names the action with the same translated label.',
+    },
     states: ['overlay.failureLog'],
     props: () => ({ locale: 'ru', localization: ARCHIVE_RU }),
     enter: untilDone(
-      () => !!namesLog()?.textContent?.includes('Архивировать'),
+      () => !!namesLog()?.textContent?.includes(ARCHIVE_LABEL.ru),
       root => {
         ARCHIVE_NAMES_SERVER.answer(false)
         const counted = namesLogButton()?.querySelector(
@@ -2096,7 +2346,7 @@ export const PluginApiActionNames: StoryObj<StoryProps> = {
   parameters: { scenario: '0182/S2', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Подписи действий плагина"
+      title={{ ru: 'Подписи действий плагина', en: 'Plugin action labels' }}
       steps={ACTION_NAMES_STEPS}
       args={guideArgs(
         {
@@ -2113,7 +2363,7 @@ export const PluginApiActionNames: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(ACTION_NAMES_STEPS[0]!.title, async () => {
+    await step(ACTION_NAMES_STEPS[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() =>
         expect(
@@ -2122,19 +2372,19 @@ export const PluginApiActionNames: StoryObj<StoryProps> = {
       )
       await settle()
     })
-    await step(ACTION_NAMES_STEPS[1]!.title, async () => {
+    await step(ACTION_NAMES_STEPS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(
           archiveNamedButton(canvas)?.getAttribute('aria-label'),
-        ).toContain('Архивировать'),
+        ).toContain(ARCHIVE_LABEL.ru),
       )
       await settle()
     })
-    await step(ACTION_NAMES_STEPS[2]!.title, async () => {
+    await step(ACTION_NAMES_STEPS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
-        expect(namesLog()?.textContent).toContain('Архивировать'),
+        expect(namesLog()?.textContent).toContain(ARCHIVE_LABEL.ru),
       )
       await settle()
     })

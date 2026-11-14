@@ -80,8 +80,8 @@ export const ServerPaginationPlayground: StoryObj<PaginationPlaygroundArgs> = {
   parameters: showControls(
     ['knownTotal', 'enablePagination', 'paginationInitialPageSize'],
     {
-      dataCount: 'строки подаёт «сервер» демо',
-      columnCount: 'колонки задаёт демо',
+      dataCount: 'the demo server provides the rows',
+      columnCount: 'the demo provides the columns',
     },
   ),
   args: {
@@ -92,7 +92,7 @@ export const ServerPaginationPlayground: StoryObj<PaginationPlaygroundArgs> = {
   },
   argTypes: {
     knownTotal: {
-      description: 'Сервер сообщает итог строк сразу',
+      description: 'The server reports the row total right away',
       control: 'boolean',
     },
   },
@@ -128,15 +128,24 @@ const openLast = async (root: HTMLElement, signal: AbortSignal) => {
 
 const PAGES: readonly GuideStoryStep[] = [
   {
-    title: 'Строки с сервера',
-    hint: 'Сервер отдаёт строки блоками по сто, таблица показывает их страницами по двадцать пять. Один блок закрывает первые четыре страницы.',
+    title: { ru: 'Строки с сервера', en: 'Rows from the server' },
+    hint: {
+      ru: 'Сервер отдаёт строки блоками по сто, таблица показывает их страницами по двадцать пять. Один блок закрывает первые четыре страницы.',
+      en: 'The server sends rows in blocks of one hundred, and the table shows them in pages of twenty-five. One block covers the first four pages.',
+    },
     props: pagedProps(
       serverProps({ total: TOTAL, knownTotal: true, blockSize: BLOCK }),
     ),
   },
   {
-    title: 'Пользователь открыл последнюю страницу',
-    hint: 'Строк этой страницы в таблице ещё нет. Страница показана сразу: пока сервер отвечает, на месте строк — скелеты.',
+    title: {
+      ru: 'Пользователь открыл последнюю страницу',
+      en: 'The user opened the last page',
+    },
+    hint: {
+      ru: 'Строк этой страницы в таблице ещё нет. Страница показана сразу: пока сервер отвечает, на месте строк — скелеты.',
+      en: 'The table does not have the rows of this page yet. The page is shown right away: while the server is responding, skeletons stand in for the rows.',
+    },
     states: ['body.skeleton'],
     enter: stepAction(async (root, { signal }) => {
       if (hasRow(root, LAST_ROW) || server.held.length > 0) return
@@ -144,8 +153,11 @@ const PAGES: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Сервер ответил',
-    hint: 'Строки последней страницы пришли и встали на место скелетов.',
+    title: { ru: 'Сервер ответил', en: 'The server responded' },
+    hint: {
+      ru: 'Строки последней страницы пришли и встали на место скелетов.',
+      en: 'The rows of the last page arrived and took the place of the skeletons.',
+    },
     enter: stepAction(async (root, { signal }) => {
       if (server.held.length === 0 && !hasRow(root, LAST_ROW)) {
         await openLast(root, signal)
@@ -156,8 +168,14 @@ const PAGES: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Пользователь вернулся на первую страницу',
-    hint: 'Первую страницу таблица уже загружала: она открылась сразу, без запроса к серверу.',
+    title: {
+      ru: 'Пользователь вернулся на первую страницу',
+      en: 'The user returned to the first page',
+    },
+    hint: {
+      ru: 'Первую страницу таблица уже загружала: она открылась сразу, без запроса к серверу.',
+      en: 'The table had already loaded the first page: it opened right away, without a request to the server.',
+    },
     enter: stepAction(async (root, { signal }) => {
       if (!hasRow(root, LAST_ROW) && !hasRow(root, 0)) {
         await openLast(root, signal)
@@ -177,29 +195,29 @@ export const ServerPaginationPages: StoryObj<StoryProps> = {
   parameters: { scenario: '0158/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Страницы с сервера"
+      title={{ ru: 'Страницы с сервера', en: 'Pages from the server' }}
       steps={PAGES}
       args={guideArgs(layout, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(PAGES[0]!.title, async () => {
+    await step(PAGES[0]!.title.ru, async () => {
       await until(() => expect(hasRow(canvas, 0)).toBe(true))
       await until(() => expect(pageRange(canvas)).toMatch(/^1–25\D+100\D?000$/))
     })
-    await step(PAGES[1]!.title, async () => {
+    await step(PAGES[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(skeletonRows(canvas)).toBeGreaterThan(0))
     })
-    await step(PAGES[2]!.title, async () => {
+    await step(PAGES[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(skeletonRows(canvas)).toBe(0))
       await settle()
     })
-    await step(PAGES[3]!.title, async () => {
+    await step(PAGES[3]!.title.ru, async () => {
       const requests = server.starts.length
       await guideNext(canvas)
       await stepDone(canvas)
@@ -233,8 +251,11 @@ const reachEnd = async (root: HTMLElement, signal: AbortSignal) => {
 
 const UNKNOWN_TOTAL: readonly GuideStoryStep[] = [
   {
-    title: 'Итог неизвестен',
-    hint: 'Сервер не сообщает, сколько всего строк. Пейджер показывает диапазон страницы без итога, а последнюю страницу открыть нельзя: где кончается список, ещё неизвестно.',
+    title: { ru: 'Итог неизвестен', en: 'The total is unknown' },
+    hint: {
+      ru: 'Сервер не сообщает, сколько всего строк. Пейджер показывает диапазон страницы без итога, а последнюю страницу открыть нельзя: где кончается список, ещё неизвестно.',
+      en: 'The server does not report how many rows there are in total. The pager shows the page range without a total, and the last page cannot be opened: where the list ends is not known yet.',
+    },
     props: pagedProps(
       serverProps({
         total: SHORT_TOTAL,
@@ -245,8 +266,14 @@ const UNKNOWN_TOTAL: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Пользователь дошёл до конца списка',
-    hint: 'Сервер отдал блок короче обычного: список кончился. Теперь итог известен — пейджер показывает его, а кнопка следующей страницы погашена.',
+    title: {
+      ru: 'Пользователь дошёл до конца списка',
+      en: 'The user reached the end of the list',
+    },
+    hint: {
+      ru: 'Сервер отдал блок короче обычного: список кончился. Теперь итог известен — пейджер показывает его, а кнопка следующей страницы погашена.',
+      en: 'The server sent a block shorter than usual: the list has ended. Now the total is known: the pager shows it, and the next page button is disabled.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await reachEnd(root, signal)
     }),
@@ -259,14 +286,14 @@ export const ServerPaginationUnknownTotal: StoryObj<StoryProps> = {
   parameters: { scenario: '0158/S2', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Итог неизвестен"
+      title={{ ru: 'Итог неизвестен', en: 'The total is unknown' }}
       steps={UNKNOWN_TOTAL}
       args={guideArgs(layout, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(UNKNOWN_TOTAL[0]!.title, async () => {
+    await step(UNKNOWN_TOTAL[0]!.title.ru, async () => {
       await until(() => expect(hasRow(canvas, 0)).toBe(true))
       await until(() =>
         expect(offButton(pageButton(canvas, 'last'))).toBe(true),
@@ -275,7 +302,7 @@ export const ServerPaginationUnknownTotal: StoryObj<StoryProps> = {
         expect(offButton(pageButton(canvas, 'next'))).toBe(false),
       )
     })
-    await step(UNKNOWN_TOTAL[1]!.title, async () => {
+    await step(UNKNOWN_TOTAL[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(pageRange(canvas)).toMatch(/^201–230\D+230$/))
@@ -292,8 +319,11 @@ const pageNumberOf = (root: ParentNode, page: number) =>
 
 const NUMBERS_WITH_TOTAL: readonly GuideStoryStep[] = [
   {
-    title: 'Итог неизвестен',
-    hint: 'Сервер не сообщает, сколько всего строк, поэтому номеров нет: переход на произвольную страницу мог бы уйти за конец списка. Видны кнопки первой, предыдущей, следующей и последней страниц.',
+    title: { ru: 'Итог неизвестен', en: 'The total is unknown' },
+    hint: {
+      ru: 'Сервер не сообщает, сколько всего строк, поэтому номеров нет: переход на произвольную страницу мог бы уйти за конец списка. Видны кнопки первой, предыдущей, следующей и последней страниц.',
+      en: 'The server does not report how many rows there are in total, so there are no page numbers: jumping to an arbitrary page could go past the end of the list. The first, previous, next, and last page buttons are visible.',
+    },
     props: pagedProps(
       serverProps({
         total: SHORT_TOTAL,
@@ -304,8 +334,11 @@ const NUMBERS_WITH_TOTAL: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Итог стал известен',
-    hint: 'Пользователь дошёл до конца списка, и таблица узнала число строк. Под таблицей появился ряд номеров.',
+    title: { ru: 'Итог стал известен', en: 'The total became known' },
+    hint: {
+      ru: 'Пользователь дошёл до конца списка, и таблица узнала число строк. Под таблицей появился ряд номеров.',
+      en: 'The user reached the end of the list, and the table learned the number of rows. A row of page numbers appeared under the table.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await reachEnd(root, signal)
       await pollUntil(() => !!pageNumberOf(root, 1), signal)
@@ -319,21 +352,24 @@ export const PaginationUnknownTotal: StoryObj<StoryProps> = {
   parameters: { scenario: '0192/S5', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Номера при неизвестном итоге"
+      title={{
+        ru: 'Номера при неизвестном итоге',
+        en: 'Page numbers with an unknown total',
+      }}
       steps={NUMBERS_WITH_TOTAL}
       args={guideArgs(layout, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(NUMBERS_WITH_TOTAL[0]!.title, async () => {
+    await step(NUMBERS_WITH_TOTAL[0]!.title.ru, async () => {
       await until(() => expect(hasRow(canvas, 0)).toBe(true))
       await until(() => expect(pageNumberOf(canvas, 1)).toBeNull())
       await until(() =>
         expect(offButton(pageButton(canvas, 'last'))).toBe(true),
       )
     })
-    await step(NUMBERS_WITH_TOTAL[1]!.title, async () => {
+    await step(NUMBERS_WITH_TOTAL[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(pageNumberOf(canvas, 5)).not.toBeNull()
@@ -368,21 +404,36 @@ const expandFirst = async (root: HTMLElement, signal: AbortSignal) => {
 
 const GROUPS: readonly GuideStoryStep[] = [
   {
-    title: 'Группы по страницам',
-    hint: 'Сервер группирует строки по городам. Страница считает строки верхнего уровня — на каждой по две группы.',
+    title: { ru: 'Группы по страницам', en: 'Groups across pages' },
+    hint: {
+      ru: 'Сервер группирует строки по городам. Страница считает строки верхнего уровня — на каждой по две группы.',
+      en: 'The server groups rows by city. A page counts top-level rows, so each page has two groups.',
+    },
     props: pagedProps(groupProps({ grouping: ['city'] }), GROUP_PAGE),
     states: ['body.groups'],
   },
   {
-    title: 'Пользователь раскрыл группу',
-    hint: 'Строки раскрытой группы — на её странице: страница стала длиннее, но на ней по-прежнему две группы.',
+    title: {
+      ru: 'Пользователь раскрыл группу',
+      en: 'The user expanded a group',
+    },
+    hint: {
+      ru: 'Строки раскрытой группы — на её странице: страница стала длиннее, но на ней по-прежнему две группы.',
+      en: 'The rows of the expanded group are on its page: the page got longer, but it still has two groups.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await expandFirst(root, signal)
     }),
   },
   {
-    title: 'Пользователь открыл следующую страницу',
-    hint: 'Следующая страница начинается со следующей группы, как и до раскрытия: раскрытие границ страниц не сдвигает.',
+    title: {
+      ru: 'Пользователь открыл следующую страницу',
+      en: 'The user opened the next page',
+    },
+    hint: {
+      ru: 'Следующая страница начинается со следующей группы, как и до раскрытия: раскрытие границ страниц не сдвигает.',
+      en: 'The next page starts with the next group, just as before expanding: expanding does not shift page boundaries.',
+    },
     enter: stepAction(async (root, { signal }) => {
       if (!groupRow(root, 'Oslo')) {
         await expandFirst(root, signal)
@@ -399,7 +450,7 @@ export const ServerPaginationGroups: StoryObj<StoryProps> = {
   parameters: { scenario: '0158/S3', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Группы на страницах"
+      title={{ ru: 'Группы на страницах', en: 'Groups on pages' }}
       steps={GROUPS}
       reset={() => {
         groupServer.refuse = false
@@ -409,20 +460,20 @@ export const ServerPaginationGroups: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(GROUPS[0]!.title, async () => {
+    await step(GROUPS[0]!.title.ru, async () => {
       await until(() => expect(!!groupRow(canvas, 'Berlin')).toBe(true))
       await until(() => expect(pageRange(canvas)).toMatch(/^1–2\D+5$/))
       await expect(groupRow(canvas, 'Lima')).not.toBeNull()
       await until(() => expect(groupRow(canvas, 'Oslo')).toBeNull())
     })
-    await step(GROUPS[1]!.title, async () => {
+    await step(GROUPS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(pageRange(canvas)).toMatch(/^1–2\D+5$/)
       await expect(groupRow(canvas, 'Oslo')).toBeNull()
       await settle()
     })
-    await step(GROUPS[2]!.title, async () => {
+    await step(GROUPS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(pageRange(canvas)).toMatch(/^3–4\D+5$/)
@@ -492,8 +543,11 @@ const showRow = (rowId: string) => void editingTable?.scrollToRow(rowId)
 
 const EDITING: readonly GuideStoryStep[] = [
   {
-    title: 'Строки с сервера',
-    hint: 'Сервер отдаёт строки блоками, таблица показывает их страницами. Возраст можно править: у ячеек колонки при наведении появляется кнопка правки.',
+    title: { ru: 'Строки с сервера', en: 'Rows from the server' },
+    hint: {
+      ru: 'Сервер отдаёт строки блоками, таблица показывает их страницами. Возраст можно править: у ячеек колонки при наведении появляется кнопка правки.',
+      en: 'The server sends rows in blocks, and the table shows them in pages. Age is editable: hovering over a cell in that column shows an edit button.',
+    },
     props: context => {
       const props = pagedProps(
         serverProps({ total: TOTAL, knownTotal: true, blockSize: BLOCK }),
@@ -506,16 +560,25 @@ const EDITING: readonly GuideStoryStep[] = [
     },
   },
   {
-    title: 'Пользователь начал правку',
-    hint: 'Пользователь открыл правку возраста и набрал новое значение, но ещё не сохранил его.',
+    title: { ru: 'Пользователь начал правку', en: 'The user started editing' },
+    hint: {
+      ru: 'Пользователь открыл правку возраста и набрал новое значение, но ещё не сохранил его.',
+      en: 'The user opened the age editor and typed a new value but has not saved it yet.',
+    },
     states: ['body.editing'],
     enter: stepAction(async (root, { signal }) => {
       await startDraft(root, signal)
     }),
   },
   {
-    title: 'Приложение показало другую строку',
-    hint: 'Пока правка открыта, приложение показало строку другой страницы — например, по ссылке из уведомления. Строки с правкой на экране нет, но правка не закончилась.',
+    title: {
+      ru: 'Приложение показало другую строку',
+      en: 'The app revealed another row',
+    },
+    hint: {
+      ru: 'Пока правка открыта, приложение показало строку другой страницы — например, по ссылке из уведомления. Строки с правкой на экране нет, но правка не закончилась.',
+      en: 'While the editor was open, the app revealed a row on another page, for example from a link in a notification. The row being edited is off screen, but the edit has not ended.',
+    },
     enter: stepAction(async (root, { signal }) => {
       if (ageCell(root)) {
         await startDraft(root, signal)
@@ -525,8 +588,14 @@ const EDITING: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Приложение вернулось к правке',
-    hint: 'Приложение снова показало строку с правкой. Поле правки открыто, в нём набранное значение: ничего не сохранено и не потеряно.',
+    title: {
+      ru: 'Приложение вернулось к правке',
+      en: 'The app returned to the edit',
+    },
+    hint: {
+      ru: 'Приложение снова показало строку с правкой. Поле правки открыто, в нём набранное значение: ничего не сохранено и не потеряно.',
+      en: 'The app revealed the row being edited again. The editor is open with the typed value: nothing has been saved or lost.',
+    },
     enter: stepAction(async (root, { signal }) => {
       if (ageCell(root) && !ageInput(root)) {
         await startDraft(root, signal)
@@ -545,28 +614,31 @@ export const ServerPaginationEditing: StoryObj<StoryProps> = {
   parameters: { scenario: '0158/S4', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Черновик на другой странице"
+      title={{
+        ru: 'Черновик на другой странице',
+        en: 'A draft on another page',
+      }}
       steps={EDITING}
       args={guideArgs(layout, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(EDITING[0]!.title, async () => {
+    await step(EDITING[0]!.title.ru, async () => {
       await until(() => expect(hasRow(canvas, 0)).toBe(true))
     })
-    await step(EDITING[1]!.title, async () => {
+    await step(EDITING[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(ageInput(canvas)?.value).toBe(DRAFT)
     })
-    await step(EDITING[2]!.title, async () => {
+    await step(EDITING[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(ageInput(canvas)).toBeNull()
       await settle()
     })
-    await step(EDITING[3]!.title, async () => {
+    await step(EDITING[3]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(ageInput(canvas)?.value).toBe(DRAFT)

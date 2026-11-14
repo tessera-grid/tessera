@@ -209,7 +209,7 @@ export const forced = <S extends TwinSource>(
   base: TwinSource = {},
 ): S => {
   if (!parametersOf(meta, story).vrStates) {
-    throw new Error('forced: близнец — только у истории каталога (vrStates)')
+    throw new Error('forced: a twin is only for a catalog story (vrStates)')
   }
   forcedTwinSources.add(story)
   return forcedTwin(meta, story, base)
@@ -225,7 +225,7 @@ export const registerStepTwin = (
   step: number,
 ) => {
   if (!parametersOf(meta, story).scenario) {
-    throw new Error('forcedStep: близнец шага — только у истории сценария')
+    throw new Error('forcedStep: a step twin is only for a scenario story')
   }
   stepTwins.set(story, [...(stepTwins.get(story) ?? []), step])
 }

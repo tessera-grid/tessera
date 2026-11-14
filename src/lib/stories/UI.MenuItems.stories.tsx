@@ -104,7 +104,7 @@ const meta = {
     state: {
       control: 'select',
       options: Object.keys(STATE),
-      description: 'Состояние пункта «Sort ascending»',
+      description: 'State of the “Sort ascending” item',
     },
   },
   render: function Render({ state }) {

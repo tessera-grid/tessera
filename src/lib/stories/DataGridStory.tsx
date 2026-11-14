@@ -45,6 +45,7 @@ import {
 } from './__mocks__/utils/argsToPlugins'
 import type { StoryProps } from './DataGridStory.types'
 import { sizeArg } from './__mocks__/utils/normalizeArgs'
+import { textOf } from './__mocks__/storyText'
 import { ConsoleContext } from './demos/consoleContext'
 import { StoryRowsContext, type WriteStoryCell } from './demos/storyRows'
 import { loggedCallback, loggedCallbacks } from './demos/consoleLog'
@@ -581,7 +582,8 @@ const StoryGrid = memo(
               fontSize: 13,
             }}
           >
-            Панель приложения · {appPanelHeight}px
+            {textOf({ ru: 'Панель приложения', en: 'App panel' }, locale)} ·{' '}
+            {appPanelHeight}px
           </div>
         )}
         <StoryRowsContext.Provider value={writeCell}>
@@ -613,10 +615,15 @@ const StoryGrid = memo(
               fontSize: 12,
             }}
           >
-            Контейнер приложения ·{' '}
+            {textOf(
+              { ru: 'Контейнер приложения', en: 'App container' },
+              locale,
+            )}{' '}
+            ·{' '}
             {typeof container === 'number'
               ? `${container}px`
-              : (container ?? 'без высоты')}
+              : (container ??
+                textOf({ ru: 'без высоты', en: 'no height' }, locale))}
           </div>
         )}
         <Grid

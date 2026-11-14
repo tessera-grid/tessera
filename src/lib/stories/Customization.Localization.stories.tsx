@@ -25,6 +25,13 @@ import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
+import { shellText } from './demos/storyShell'
+import { storyLabels } from './__mocks__/storyLabels'
+import { columnFilteringLabels } from '../plugins/columnFiltering/labels'
+import { columnVisibilityLabels } from '../plugins/columnVisibility/labels'
+import { paginationLabels } from '../plugins/pagination/labels'
+import { quickSearchLabels } from '../plugins/quickSearch/labels'
+import { rowSelectionLabels } from '../plugins/rowSelection/labels'
 
 /**
  * Подписи таблицы словарём «ключ → значение» (ADR 0132, S1–S4). Язык Playground — в
@@ -52,7 +59,7 @@ const LABELLED = {
   enableColumnVisibility: true,
 } satisfies Partial<StoryProps>
 
-const NOT_LABELS = 'На подписи не влияет'
+const NOT_LABELS = 'Does not affect the labels'
 
 /** Таблица по-русски; переключатель Language в тулбаре возвращает английский. */
 export const LocalizationPlayground: StoryObj<StoryProps> = {
@@ -108,7 +115,11 @@ const toolbarOf = (root: ParentNode) =>
 const scrollerOf = (root: ParentNode) =>
   root.querySelector<HTMLElement>('.data-grid__container')!
 const bodyOf = (root: ParentNode) => root.querySelector('.data-grid__body')
-const recreated = () => consoleText().includes('Грид пересоздан')
+/** Запись пересоздания — на любом языке: шаг гайда меняет язык консоли. */
+const recreated = () =>
+  (['en', 'ru'] as const).some(locale =>
+    consoleText().includes(shellText(locale, 'lifecycleRecreated')),
+  )
 
 /** Действие шага — после отрисовки строк: первый шаг входит при монтировании грида. */
 const afterRows =
@@ -148,9 +159,18 @@ const typeSearch = (root: HTMLElement, text: string) => {
   input.dispatchEvent(new Event('input', { bubbles: true }))
 }
 
-const NBSP = ' '
-
 // --- ADR 0132 S1 ---------------------------------------------------------------------
+
+/** Подписи таблицы на русском — язык, на который гайды переключают таблицу. */
+const RU = storyLabels('ru')
+
+/** Счётчик «Выбрано: N колонок» с любым числом — в форме слова для 5. */
+const selectedColumnsPattern = new RegExp(
+  columnVisibilityLabels(RU)
+    .selectedColumns(5)
+    .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    .replace('5', '\\d+'),
+)
 
 /** Закрыть открытое меню или панель — как `Escape` пользователя. */
 const closePopups = pressEscape
@@ -171,18 +191,27 @@ const openWith = (button: (root: ParentNode) => HTMLElement | null) =>
 
 const FROM_JSON: readonly GuideStoryStep[] = [
   {
-    title: 'Подписи по умолчанию',
-    hint: 'Без словаря таблица подписана по-английски: поле «Search», диапазон «1–25 of 1,000».',
+    title: { ru: 'Подписи по умолчанию', en: 'Default labels' },
+    hint: {
+      ru: 'Без словаря таблица подписана по-английски: поле «Search», диапазон «1–25 of 1,000».',
+      en: 'Without a dictionary, the table labels are in English: the field says “Search”, and the range reads “1–25 of 1,000”.',
+    },
   },
   {
-    title: 'Словарь из JSON',
-    hint: 'Приложение передаёт словарь из JSON-файла и язык `ru-RU`: поле «Поиск», диапазон «1–25 из 1 000» — число с русским разделителем.',
+    title: { ru: 'Словарь из JSON', en: 'A dictionary from JSON' },
+    hint: {
+      ru: 'Приложение передаёт словарь из JSON-файла и язык `ru-RU`: поле «Поиск», диапазон «1–25 из 1 000» — число с русским разделителем.',
+      en: 'The app passes a dictionary from a JSON file and the `ru-RU` locale: the search field and the page range are now in Russian, and 1,000 uses the Russian thousands separator.',
+    },
     props: () => ({ locale: 'ru' }),
     enter: closePopups,
   },
   {
-    title: 'Меню «Колонки»',
-    hint: 'Меню колонок тоже по-русски: поле «Найти колонку», флажок «Все колонки», счётчик «Выбрано: N колонок» и кнопка «Сбросить».',
+    title: { ru: 'Меню «Колонки»', en: 'The columns menu' },
+    hint: {
+      ru: 'Меню колонок тоже по-русски: поле «Найти колонку», флажок «Все колонки», счётчик «Выбрано: N колонок» и кнопка «Сбросить».',
+      en: 'The columns menu is in Russian too: the column search field, the all-columns checkbox, the selected-columns counter, and the reset button.',
+    },
     // Раздел «Колонки» «Настроек вида» (ADR 0215): сначала «Настройки вида», затем раздел.
     enter: untilDone(
       () => !!viewSettingsSectionOpen('columns'),
@@ -193,8 +222,11 @@ const FROM_JSON: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Фильтр колонки',
-    hint: 'Панель фильтра колонки «Country»: условие «Содержит», кнопка «Сбросить».',
+    title: { ru: 'Фильтр колонки', en: 'Column filter' },
+    hint: {
+      ru: 'Панель фильтра колонки «Country»: условие «Содержит», кнопка «Сбросить».',
+      en: 'The filter panel of the “Country” column: the contains condition and the reset button are in Russian.',
+    },
     enter: untilDone(
       () => !!document.querySelector('[data-testid="filter-panel"]'),
       root => {
@@ -214,7 +246,10 @@ export const LocalizationFromJson: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Перевод из файла приложения"
+      title={{
+        ru: 'Перевод из файла приложения',
+        en: 'Translation from the app file',
+      }}
       steps={FROM_JSON}
       args={guideArgs(
         { ...LABELLED, height: TABLE_HEIGHT },
@@ -225,35 +260,49 @@ export const LocalizationFromJson: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     // В Storybook сценарий проходит человек; `play` — только в тестах каталога.
     if (globals.catalog !== true) return
-    await step(FROM_JSON[0].title, async () => {
+    await step(FROM_JSON[0].title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(rangeOf(canvas)).toBe('1–25 of 1,000'))
       await until(() => expect(searchOf(canvas)?.placeholder).toBe('Search'))
     })
-    await step(FROM_JSON[1].title, async () => {
+    await step(FROM_JSON[1].title.ru, async () => {
       await guideNext(canvas)
-      await until(() => expect(rangeOf(canvas)).toBe(`1–25 из 1${NBSP}000`))
-      await until(() => expect(searchOf(canvas)?.placeholder).toBe('Поиск'))
+      await until(() =>
+        expect(rangeOf(canvas)).toBe(
+          paginationLabels(RU).pageRange(1, 25, 1000),
+        ),
+      )
+      await until(() =>
+        expect(searchOf(canvas)?.placeholder).toBe(
+          quickSearchLabels(RU).search,
+        ),
+      )
     })
-    await step(FROM_JSON[2].title, async () => {
+    await step(FROM_JSON[2].title.ru, async () => {
       await guideNext(canvas)
       await until(() => {
         const panel = document.querySelector<HTMLInputElement>(
           '[role="dialog"] input',
         )
-        expect(panel?.placeholder).toBe('Найти колонку')
-        expect(popupText('[role="dialog"]')).toContain('Все колонки')
-        expect(popupText('[role="dialog"]')).toMatch(/Выбрано: \d+ колонок/)
-        expect(popupText('[role="dialog"]')).toContain('Сбросить')
+        expect(panel?.placeholder).toBe(
+          columnVisibilityLabels(RU).searchColumns,
+        )
+        expect(popupText('[role="dialog"]')).toContain(
+          columnVisibilityLabels(RU).allColumns,
+        )
+        expect(popupText('[role="dialog"]')).toMatch(selectedColumnsPattern)
+        expect(popupText('[role="dialog"]')).toContain(
+          columnVisibilityLabels(RU).resetColumns,
+        )
       })
       await settle()
     })
-    await step(FROM_JSON[3].title, async () => {
+    await step(FROM_JSON[3].title.ru, async () => {
       await guideNext(canvas)
       await until(() => {
         const text = popupText('[data-testid="filter-panel"]')
-        expect(text).toContain('Содержит')
-        expect(text).toContain('Сбросить')
+        expect(text).toContain(columnFilteringLabels(RU).filterContains)
+        expect(text).toContain(columnFilteringLabels(RU).filterReset)
       })
       await until(() =>
         expect(
@@ -274,12 +323,21 @@ const SCROLL = 200
 
 const SWITCH: readonly GuideStoryStep[] = [
   {
-    title: 'Английский интерфейс',
-    hint: 'Таблица подписана по-английски. Пользователь ещё ничего не искал и не выбирал.',
+    title: { ru: 'Английский интерфейс', en: 'English interface' },
+    hint: {
+      ru: 'Таблица подписана по-английски. Пользователь ещё ничего не искал и не выбирал.',
+      en: 'The table labels are in English. The user has not searched for or selected anything yet.',
+    },
   },
   {
-    title: 'Пользователь нашёл и выбрал строки',
-    hint: 'Пользователь нашёл «1», прокрутил таблицу и выбрал две строки.',
+    title: {
+      ru: 'Пользователь нашёл и выбрал строки',
+      en: 'The user found and selected rows',
+    },
+    hint: {
+      ru: 'Пользователь нашёл «1», прокрутил таблицу и выбрал две строки.',
+      en: 'The user searched for “1”, scrolled the table, and selected two rows.',
+    },
     enter: afterRows(root => {
       typeSearch(root, SEARCH)
       // Строки на новом месте монтируются к следующему кадру — выбор после прокрутки.
@@ -290,8 +348,11 @@ const SWITCH: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Русский интерфейс',
-    hint: 'Приложение переключает язык: подписи по-русски, таблица не пересоздаётся — поиск, выбор и прокрутка на месте.',
+    title: { ru: 'Русский интерфейс', en: 'Russian interface' },
+    hint: {
+      ru: 'Приложение переключает язык: подписи по-русски, таблица не пересоздаётся — поиск, выбор и прокрутка на месте.',
+      en: 'The app switches the language: the labels are in Russian, and the table is not recreated: the search, the selection, and the scroll position stay as they were.',
+    },
     props: () => ({ locale: 'ru' }),
   },
 ]
@@ -305,7 +366,10 @@ export const LocalizationSwitch: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Смена языка на лету"
+      title={{
+        ru: 'Смена языка на лету',
+        en: 'Switching the language on the fly',
+      }}
       steps={SWITCH}
       args={guideArgs(
         // Поиск сразу: строки выбираются среди найденных.
@@ -324,10 +388,10 @@ export const LocalizationSwitch: StoryObj<StoryProps> = {
       await until(() => expect(bodyOf(canvas)).toBe(body))
       await until(() => expect(recreated()).toBe(false))
     }
-    await step(SWITCH[0].title, async () => {
+    await step(SWITCH[0].title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(SWITCH[1].title, async () => {
+    await step(SWITCH[1].title.ru, async () => {
       await guideNext(canvas)
       await waitForRows(canvas)
       await until(() => expect(selectedOf(canvas)).toBe('2 rows selected'))
@@ -340,12 +404,12 @@ export const LocalizationSwitch: StoryObj<StoryProps> = {
       scrollTop = scrollerOf(canvas).scrollTop
       body = bodyOf(canvas)
     })
-    await step(SWITCH[2].title, async () => {
+    await step(SWITCH[2].title.ru, async () => {
       await guideNext(canvas)
-      await until(() => expect(selectedOf(canvas)).toBe('Выбрано: 2 строки'))
       await until(() =>
-        expect(toolbarOf(canvas)).toBe('Панель инструментов таблицы'),
+        expect(selectedOf(canvas)).toBe(rowSelectionLabels(RU).selectedRows(2)),
       )
+      await until(() => expect(toolbarOf(canvas)).toBe(RU.toolbar))
       await kept()
     })
     await settle()
@@ -356,12 +420,18 @@ export const LocalizationSwitch: StoryObj<StoryProps> = {
 
 const OVERRIDES: readonly GuideStoryStep[] = [
   {
-    title: 'Подписи по умолчанию',
-    hint: 'Поле «Search», диапазон «1–25 of 1,000».',
+    title: { ru: 'Подписи по умолчанию', en: 'Default labels' },
+    hint: {
+      ru: 'Поле «Search», диапазон «1–25 of 1,000».',
+      en: 'The field says “Search”, and the range reads “1–25 of 1,000”.',
+    },
   },
   {
-    title: 'Свои формулировки',
-    hint: 'Приложение меняет две подписи: поле «Find a person», диапазон «Rows 1–25 of 1,000». Остальные — по умолчанию: «Rows per page».',
+    title: { ru: 'Свои формулировки', en: 'Custom wording' },
+    hint: {
+      ru: 'Приложение меняет две подписи: поле «Find a person», диапазон «Rows 1–25 of 1,000». Остальные — по умолчанию: «Rows per page».',
+      en: 'The app changes two labels: the field says “Find a person”, and the range reads “Rows 1–25 of 1,000”. The rest keep their defaults, such as “Rows per page”.',
+    },
     props: () => ({
       localization: {
         'quickSearch.search': 'Find a person',
@@ -380,7 +450,7 @@ export const LocalizationOverrides: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Свои формулировки"
+      title={{ ru: 'Свои формулировки', en: 'Custom wording' }}
       steps={OVERRIDES}
       args={guideArgs(
         { ...LABELLED, height: TABLE_HEIGHT },
@@ -390,12 +460,12 @@ export const LocalizationOverrides: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(OVERRIDES[0].title, async () => {
+    await step(OVERRIDES[0].title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(rangeOf(canvas)).toBe('1–25 of 1,000'))
       await until(() => expect(searchOf(canvas)?.placeholder).toBe('Search'))
     })
-    await step(OVERRIDES[1].title, async () => {
+    await step(OVERRIDES[1].title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(rangeOf(canvas)).toBe('Rows 1–25 of 1,000'))
       await until(() =>
@@ -429,17 +499,26 @@ const selectAllRows = afterRows(root => {
 
 const FUNCTION: readonly GuideStoryStep[] = [
   {
-    title: 'Строки не выбраны',
-    hint: 'Приложение включило счётчик выбранных строк. Пока ничего не выбрано.',
+    title: { ru: 'Строки не выбраны', en: 'No rows are selected' },
+    hint: {
+      ru: 'Приложение включило счётчик выбранных строк. Пока ничего не выбрано.',
+      en: 'The app turned on the selected rows counter. Nothing is selected yet.',
+    },
   },
   {
-    title: 'Выбраны все строки',
-    hint: 'Пользователь выбрал все строки: «1,000 rows selected» — подпись по умолчанию.',
+    title: { ru: 'Выбраны все строки', en: 'All rows are selected' },
+    hint: {
+      ru: 'Пользователь выбрал все строки: «1,000 rows selected» — подпись по умолчанию.',
+      en: 'The user selected all rows: “1,000 rows selected” is the default label.',
+    },
     enter: selectAllRows,
   },
   {
-    title: 'Подпись функцией',
-    hint: 'Порог шаблоном не выразить — приложение передаёт функцию: «99+ rows selected».',
+    title: { ru: 'Подпись функцией', en: 'A label as a function' },
+    hint: {
+      ru: 'Порог шаблоном не выразить — приложение передаёт функцию: «99+ rows selected».',
+      en: 'A threshold cannot be expressed with a template, so the app passes a function: “99+ rows selected”.',
+    },
     props: () => ({
       localization: { 'rowSelection.selectedRows': selectedRowsCapped },
     }),
@@ -464,7 +543,7 @@ export const LocalizationFunction: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Подпись функцией"
+      title={{ ru: 'Подпись функцией', en: 'A label as a function' }}
       steps={FUNCTION}
       args={guideArgs(FUNCTION_ARGS, {
         colorMode: args.colorMode,
@@ -474,15 +553,15 @@ export const LocalizationFunction: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(FUNCTION[0].title, async () => {
+    await step(FUNCTION[0].title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(FUNCTION[1].title, async () => {
+    await step(FUNCTION[1].title.ru, async () => {
       await guideNext(canvas)
       await waitForRows(canvas)
       await until(() => expect(selectedOf(canvas)).toBe('1,000 rows selected'))
     })
-    await step(FUNCTION[2].title, async () => {
+    await step(FUNCTION[2].title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(selectedOf(canvas)).toBe('99+ rows selected'))
     })

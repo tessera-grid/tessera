@@ -86,12 +86,18 @@ const ADDED_TAG = 'sale'
 
 const EDIT_MULTI: readonly GuideStoryStep[] = [
   {
-    title: 'Метки товаров',
-    hint: 'Метки — несколько вариантов из списка. Их можно править: при наведении на ячейку появляется кнопка правки.',
+    title: { ru: 'Метки товаров', en: 'Product tags' },
+    hint: {
+      ru: 'Метки — несколько вариантов из списка. Их можно править: при наведении на ячейку появляется кнопка правки.',
+      en: 'Tags are several options from a list. They are editable: hovering over a cell shows an edit button.',
+    },
   },
   {
-    title: 'Список с флажками',
-    hint: 'Пользователь нажал кнопку правки меток. Под ячейкой поиск и список с флажками, отмечены метки из ячейки.',
+    title: { ru: 'Список с флажками', en: 'A list with checkboxes' },
+    hint: {
+      ru: 'Пользователь нажал кнопку правки меток. Под ячейкой поиск и список с флажками, отмечены метки из ячейки.',
+      en: "The user clicked the edit button for the tags. Below the cell are a search field and a list with checkboxes; the cell's tags are checked.",
+    },
     states: ['body.editing', 'overlay.multiSelectEditor'],
     enter: untilDone(
       root => !!tagBox('new'),
@@ -101,8 +107,11 @@ const EDIT_MULTI: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Метка отмечена',
-    hint: 'Пользователь отметил ещё одну метку. Под списком ячейка показывает черновик, но правка ещё не сохранена: значение уйдёт в данные по Enter.',
+    title: { ru: 'Метка отмечена', en: 'A tag is checked' },
+    hint: {
+      ru: 'Пользователь отметил ещё одну метку. Под списком ячейка показывает черновик, но правка ещё не сохранена: значение уйдёт в данные по Enter.',
+      en: 'The user checked one more tag. Beneath the list, the cell shows a draft, but the edit is not saved yet: the value will go to the data when Enter is pressed.',
+    },
     states: ['body.editing', 'overlay.multiSelectEditor'],
     enter: untilDone(
       root => tagChecked(ADDED_TAG),
@@ -113,8 +122,11 @@ const EDIT_MULTI: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Метки сохранены',
-    hint: 'Пользователь нажал Enter. Список закрылся, в ячейке новые метки.',
+    title: { ru: 'Метки сохранены', en: 'The tags are saved' },
+    hint: {
+      ru: 'Пользователь нажал Enter. Список закрылся, в ячейке новые метки.',
+      en: 'The user pressed Enter. The list closed, and the cell shows the new tags.',
+    },
     enter: untilDone(
       root => !multiPopup() && optionCellText(root, 'tags').includes('Sale'),
       root => {
@@ -133,28 +145,31 @@ export const EditingMultiSelect: StoryObj<StoryProps> = {
   parameters: { scenario: '0175/S6', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Выбор нескольких вариантов"
+      title={{
+        ru: 'Выбор нескольких вариантов',
+        en: 'Picking several options',
+      }}
       steps={EDIT_MULTI}
       args={guideArgs(optionArgs, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(EDIT_MULTI[0]!.title, async () => {
+    await step(EDIT_MULTI[0]!.title.ru, async () => {
       await waitForRows(canvas)
       expect(optionCellText(canvas, 'tags')).not.toContain('Sale')
     })
-    await step(EDIT_MULTI[1]!.title, async () => {
+    await step(EDIT_MULTI[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(tagChecked('new')).toBe(true))
       expect(tagChecked(ADDED_TAG)).toBe(false)
     })
-    await step(EDIT_MULTI[2]!.title, async () => {
+    await step(EDIT_MULTI[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(tagChecked(ADDED_TAG)).toBe(true))
       expect(consoleText()).not.toContain('onCellEdit')
     })
-    await step(EDIT_MULTI[3]!.title, async () => {
+    await step(EDIT_MULTI[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => {
         expect(multiPopup()).toBeNull()
@@ -182,8 +197,14 @@ const filterSale = async (root: HTMLElement, signal: AbortSignal) => {
 
 const MULTI_FILTER: readonly GuideStoryStep[] = [
   {
-    title: 'Метки без настройки фильтра',
-    hint: 'У товара может быть несколько меток, у колонки заданы тип и варианты. Фильтры в таблице подключены, но сама колонка фильтр не настраивала.',
+    title: {
+      ru: 'Метки без настройки фильтра',
+      en: 'Tags without a filter setup',
+    },
+    hint: {
+      ru: 'У товара может быть несколько меток, у колонки заданы тип и варианты. Фильтры в таблице подключены, но сама колонка фильтр не настраивала.',
+      en: 'A product can have several tags, and the column has a type and options set. Filtering is enabled in the table, but the column itself has not configured a filter.',
+    },
     props: () => ({
       columnsOverride: columnsOf('number', ['name', 'tags']),
       dataOverride: FILTER_ROWS,
@@ -192,8 +213,14 @@ const MULTI_FILTER: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Пользователь открыл фильтр меток',
-    hint: 'Тип колонки — несколько вариантов, поэтому панель предлагает список меток с флажками и поиском.',
+    title: {
+      ru: 'Пользователь открыл фильтр меток',
+      en: 'The user opened the tag filter',
+    },
+    hint: {
+      ru: 'Тип колонки — несколько вариантов, поэтому панель предлагает список меток с флажками и поиском.',
+      en: "The column's type allows several options, so the panel offers a list of tags with checkboxes and a search field.",
+    },
     states: ['overlay.filterOptions'],
     enter: stepAction(async (root, { signal }) => {
       await openPanel(root, 'tags', signal)
@@ -201,8 +228,11 @@ const MULTI_FILTER: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Пользователь отметил метку',
-    hint: 'Остались товары, среди меток которых есть отмеченная. Нижняя панель называет число оставшихся строк.',
+    title: { ru: 'Пользователь отметил метку', en: 'The user checked a tag' },
+    hint: {
+      ru: 'Остались товары, среди меток которых есть отмеченная. Нижняя панель называет число оставшихся строк.',
+      en: 'Only products that have the checked tag among their tags remain. The status bar shows the number of remaining rows.',
+    },
     enter: stepAction((root, { signal }) => filterSale(root, signal)),
   },
 ]
@@ -213,23 +243,26 @@ export const DataTypesMultiSelectFilter: StoryObj<StoryProps> = {
   parameters: { scenario: '0172/S17', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Фильтр нескольких вариантов"
+      title={{
+        ru: 'Фильтр нескольких вариантов',
+        en: 'Filtering by several options',
+      }}
       steps={MULTI_FILTER}
       args={guideArgs({ height: '460' }, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(MULTI_FILTER[0]!.title, async () => {
+    await step(MULTI_FILTER[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(MULTI_FILTER[1]!.title, async () => {
+    await step(MULTI_FILTER[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       expect(optionOf('new')).not.toBeNull()
       await settle()
     })
-    await step(MULTI_FILTER[2]!.title, async () => {
+    await step(MULTI_FILTER[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       expect(shownCount()).toBe(ON_SALE)

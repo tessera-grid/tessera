@@ -98,16 +98,16 @@ const meta = {
     footerLabel: '',
   },
   argTypes: {
-    title: { control: 'text', description: 'Заголовок; пусто — без заголовка' },
-    body: { control: 'text', description: 'Содержимое' },
+    title: { control: 'text', description: 'Title; empty — no title' },
+    body: { control: 'text', description: 'Content' },
     buttons: {
       control: 'inline-radio',
       options: [0, 1, 2],
-      description: 'Кнопок внизу',
+      description: 'Number of buttons at the bottom',
     },
     footerLabel: {
       control: 'text',
-      description: 'Подпись слева в ряду кнопок',
+      description: 'A label on the left of the button row',
     },
   },
   render: args => <PanelStory {...args} />,

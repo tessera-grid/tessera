@@ -50,14 +50,14 @@ interface EditingPlaygroundArgs extends StoryProps {
 export const ServerEditingPlayground: StoryObj<EditingPlaygroundArgs> = {
   name: 'Playground',
   parameters: showControls(['saveDelayMs'], {
-    dataCount: 'строки подаёт «сервер» демо',
-    columnCount: 'колонки задаёт демо',
+    dataCount: 'the demo server provides the rows',
+    columnCount: 'the demo sets the columns',
   }),
   // «Сервер» сохраняет правку и возвращает строку: числа — числами.
   args: { ...layout, saveDelayMs: 800 },
   argTypes: {
     saveDelayMs: {
-      description: 'Время ответа «сервера» на сохранение, мс',
+      description: 'Server response time for a save, ms',
       control: { type: 'range', min: 0, max: 3000, step: 100 },
     },
   },
@@ -160,19 +160,28 @@ const editProps: GuideStoryStep['props'] = context => ({
 
 const EDIT_CELL: readonly GuideStoryStep[] = [
   {
-    title: 'Строки с сервера',
-    hint: 'Сервер отдаёт строки блоками, данные строк держит таблица. Возраст можно править: у ячеек колонки при наведении появляется кнопка правки.',
+    title: { ru: 'Строки с сервера', en: 'Rows from the server' },
+    hint: {
+      ru: 'Сервер отдаёт строки блоками, данные строк держит таблица. Возраст можно править: у ячеек колонки при наведении появляется кнопка правки.',
+      en: 'The server sends rows in blocks, and the table holds the row data. Age can be edited: hovering a cell in that column shows an edit button.',
+    },
     props: editProps,
   },
   {
-    title: 'Пользователь сохранил правку',
-    hint: 'Пользователь поправил возраст и сохранил. Пока сервер отвечает, в ячейке — введённое значение, ячейка чуть темнеет и по ней проходит светлый блик.',
+    title: { ru: 'Пользователь сохранил правку', en: 'The user saved an edit' },
+    hint: {
+      ru: 'Пользователь поправил возраст и сохранил. Пока сервер отвечает, в ячейке — введённое значение, ячейка чуть темнеет и по ней проходит светлый блик.',
+      en: 'The user edited the age and saved it. While the server is responding, the cell shows the entered value, darkens slightly, and a light shimmer runs across it.',
+    },
     states: ['body.pending'],
     enter: untilDone(agePending, saveAge),
   },
   {
-    title: 'Сервер сохранил запись',
-    hint: 'Сервер сохранил запись и вернул её: возраст округлён до целого. Таблица показывает сохранённое значение, ячейка коротко вспыхнула.',
+    title: { ru: 'Сервер сохранил запись', en: 'The server saved the record' },
+    hint: {
+      ru: 'Сервер сохранил запись и вернул её: возраст округлён до целого. Таблица показывает сохранённое значение, ячейка коротко вспыхнула.',
+      en: 'The server saved the record and returned it with the age rounded to a whole number. The table shows the saved value, and the cell flashed briefly.',
+    },
     immediate: true,
     enter: untilDone(
       root => ageText(root) === SAVED_AGE && !agePending(root),
@@ -187,24 +196,24 @@ export const ServerRowModelEditCell: StoryObj<StoryProps> = {
   parameters: { scenario: '0139/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Правка на сервере"
+      title={{ ru: 'Правка на сервере', en: 'Editing on the server' }}
       steps={EDIT_CELL}
       args={guideArgs(layout, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(EDIT_CELL[0]!.title, async () => {
+    await step(EDIT_CELL[0]!.title.ru, async () => {
       await until(() => expect(hasRow(canvas, 0)).toBe(true))
       await until(() => expect(ageText(canvas)).toBe('25'))
     })
     // Шаги правки идут таймером до своего состояния — ждём само состояние.
-    await step(EDIT_CELL[1]!.title, async () => {
+    await step(EDIT_CELL[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(agePending(canvas)).toBe(true))
       await expect(ageText(canvas)).toBe(TYPED_AGE)
     })
-    await step(EDIT_CELL[2]!.title, async () => {
+    await step(EDIT_CELL[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(ageText(canvas)).toBe(SAVED_AGE))
       await settle()
@@ -301,24 +310,36 @@ const undoAway = (root: HTMLElement) => {
 
 const SERVER_UNDO: readonly GuideStoryStep[] = [
   {
-    title: 'Строки с сервера',
-    hint: 'Сервер отдаёт строки блоками, таблица держит в памяти только два блока. Возраст можно править, над таблицей — кнопки отмены и повтора.',
+    title: { ru: 'Строки с сервера', en: 'Rows from the server' },
+    hint: {
+      ru: 'Сервер отдаёт строки блоками, таблица держит в памяти только два блока. Возраст можно править, над таблицей — кнопки отмены и повтора.',
+      en: 'The server sends rows in blocks, and the table keeps only two blocks in memory. Age can be edited, and undo and redo buttons are above the table.',
+    },
     props: undoProps,
   },
   {
-    title: 'Возраст поправлен',
-    hint: 'Пользователь поправил возраст во второй строке и сохранил. Сервер принял правку.',
+    title: { ru: 'Возраст поправлен', en: 'The age was edited' },
+    hint: {
+      ru: 'Пользователь поправил возраст во второй строке и сохранил. Сервер принял правку.',
+      en: 'The user edited the age in the second row and saved it. The server accepted the edit.',
+    },
     states: ['body.pending'],
     enter: untilDone(ageSaved, saveAge),
   },
   {
-    title: 'Таблица прокручена вниз',
-    hint: 'Пользователь прокрутил таблицу в конец. Блок с поправленной строкой ушёл из памяти таблицы.',
+    title: { ru: 'Таблица прокручена вниз', en: 'The table is scrolled down' },
+    hint: {
+      ru: 'Пользователь прокрутил таблицу в конец. Блок с поправленной строкой ушёл из памяти таблицы.',
+      en: "The user scrolled the table to the end. The block with the edited row was dropped from the table's memory.",
+    },
     enter: untilDone(scrolledAway, awayAfterEdit),
   },
   {
-    title: 'Отмена вернула возраст',
-    hint: 'Пользователь нажал кнопку отмены. Строки в памяти таблицы уже не было: таблица запросила её у сервера, проверила, что возраст в ней прежний после правки, отправила прежнее значение и прокрутила к строке.',
+    title: { ru: 'Отмена вернула возраст', en: 'Undo restored the age' },
+    hint: {
+      ru: 'Пользователь нажал кнопку отмены. Строки в памяти таблицы уже не было: таблица запросила её у сервера, проверила, что возраст в ней прежний после правки, отправила прежнее значение и прокрутила к строке.',
+      en: "The user pressed the undo button. The row was no longer in the table's memory: the table requested it from the server, checked that its age had not changed since the edit, sent the previous value, and scrolled to the row.",
+    },
     enter: untilDone(backAtTop, undoAway),
   },
 ]
@@ -329,7 +350,7 @@ export const ServerUndo: StoryObj<StoryProps> = {
   parameters: { scenario: '0222/S7', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Отмена ушедшей правки"
+      title={{ ru: 'Отмена ушедшей правки', en: 'Undoing an edit out of view' }}
       steps={SERVER_UNDO}
       reset={() => {
         savedAges.clear()
@@ -341,18 +362,18 @@ export const ServerUndo: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(SERVER_UNDO[0]!.title, async () => {
+    await step(SERVER_UNDO[0]!.title.ru, async () => {
       await until(() => expect(ageText(canvas)).toBe(ORIGINAL_AGE))
     })
-    await step(SERVER_UNDO[1]!.title, async () => {
+    await step(SERVER_UNDO[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(ageSaved(canvas)).toBe(true))
     })
-    await step(SERVER_UNDO[2]!.title, async () => {
+    await step(SERVER_UNDO[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(scrolledAway(canvas)).toBe(true))
     })
-    await step(SERVER_UNDO[3]!.title, async () => {
+    await step(SERVER_UNDO[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(backAtTop(canvas)).toBe(true))
       await settle()

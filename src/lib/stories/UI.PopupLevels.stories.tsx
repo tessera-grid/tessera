@@ -95,7 +95,7 @@ const meta = {
     level: {
       control: 'inline-radio',
       options: ['first', 'nested'],
-      description: 'Уровень при открытии',
+      description: 'Level when opened',
     },
   },
   render: args => <LevelsStory key={args.level} {...args} />,

@@ -91,12 +91,21 @@ const onSecondPage = () => rangeText().startsWith(`${PAGE + 1}–`)
 
 const COUNT_STEPS: readonly GuideStoryStep[] = [
   {
-    title: 'Ничего не выбрано',
-    hint: 'Нижняя панель на месте: слева пусто, справа пейджер.',
+    title: { ru: 'Ничего не выбрано', en: 'No selection yet' },
+    hint: {
+      ru: 'Нижняя панель на месте: слева пусто, справа пейджер.',
+      en: 'The status bar is in place: empty on the left, the pager on the right.',
+    },
   },
   {
-    title: 'Пользователь выбрал две строки',
-    hint: 'Слева в нижней панели появилось число выбранных строк.',
+    title: {
+      ru: 'Пользователь выбрал две строки',
+      en: 'The user selected two rows',
+    },
+    hint: {
+      ru: 'Слева в нижней панели появилось число выбранных строк.',
+      en: 'The number of selected rows appeared on the left of the status bar.',
+    },
     states: ['body.selection'],
     enter: untilDone(
       root => FIRST_PAGE.every(id => isSelected(root, id)),
@@ -104,8 +113,14 @@ const COUNT_STEPS: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Пользователь выбрал строку на другой странице',
-    hint: 'Строки первой страницы не видны, но учтены: счётчик показывает выбор со всех страниц.',
+    title: {
+      ru: 'Пользователь выбрал строку на другой странице',
+      en: 'The user selected a row on another page',
+    },
+    hint: {
+      ru: 'Строки первой страницы не видны, но учтены: счётчик показывает выбор со всех страниц.',
+      en: 'The rows from the first page are out of view but still counted: the counter shows the selection across all pages.',
+    },
     states: ['body.selection'],
     enter: stepAction(async (root, { signal }) => {
       await pollUntil(() => {
@@ -137,7 +152,7 @@ export const SelectedCount: StoryObj<StoryProps> = {
   parameters: { scenario: '0038/S2', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Счётчик выбранных строк"
+      title={{ ru: 'Счётчик выбранных строк', en: 'Selected rows counter' }}
       steps={COUNT_STEPS}
       args={guideArgs(
         {
@@ -154,18 +169,18 @@ export const SelectedCount: StoryObj<StoryProps> = {
   play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     const labels = storyLabels(args.locale)
-    await step(COUNT_STEPS[0]!.title, async () => {
+    await step(COUNT_STEPS[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await expect(statusBar()).not.toBeNull()
       await expect(counterText()).toBe('')
     })
-    await step(COUNT_STEPS[1]!.title, async () => {
+    await step(COUNT_STEPS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(counterText()).toBe(rowSelectionLabels(labels).selectedRows(2)),
       )
     })
-    await step(COUNT_STEPS[2]!.title, async () => {
+    await step(COUNT_STEPS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(onSecondPage()).toBe(true)
@@ -199,18 +214,27 @@ const inFrame = () => {
 
 const NARROW_STEPS: readonly GuideStoryStep[] = [
   {
-    title: 'Широкая таблица',
-    hint: 'Нижняя панель в одну строку: счётчик слева, пейджер справа.',
+    title: { ru: 'Широкая таблица', en: 'A wide table' },
+    hint: {
+      ru: 'Нижняя панель в одну строку: счётчик слева, пейджер справа.',
+      en: 'The status bar fits on one line: the counter on the left, the pager on the right.',
+    },
     props: () => ({ containerWidth: 760 }),
   },
   {
-    title: 'Таблица сузилась',
-    hint: 'Панель не помещается и переходит в компактный вид: подпись размера страницы скрыта, но список назван ею для скринридера.',
+    title: { ru: 'Таблица сузилась', en: 'The table got narrower' },
+    hint: {
+      ru: 'Панель не помещается и переходит в компактный вид: подпись размера страницы скрыта, но список назван ею для скринридера.',
+      en: 'The bar no longer fits and switches to a compact layout: the page size label is hidden, but it still names the list for screen readers.',
+    },
     props: () => ({ containerWidth: 460 }),
   },
   {
-    title: 'Таблица стала ещё уже',
-    hint: 'Панель в две строки: счётчик сверху, пейджер снизу. Все кнопки внутри рамки, последняя строка таблицы не уходит под панель.',
+    title: { ru: 'Таблица стала ещё уже', en: 'The table got even narrower' },
+    hint: {
+      ru: 'Панель в две строки: счётчик сверху, пейджер снизу. Все кнопки внутри рамки, последняя строка таблицы не уходит под панель.',
+      en: 'The bar takes two lines: the counter on top, the pager below. All buttons stay inside the frame, and the last row of the table is not hidden under the bar.',
+    },
     states: ['panel.narrow'],
     props: () => ({ containerWidth: 300 }),
   },
@@ -222,7 +246,7 @@ export const PanelsNarrowStatusBar: StoryObj<StoryProps> = {
   parameters: { scenario: '0038/S3', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Узкая таблица"
+      title={{ ru: 'Узкая таблица', en: 'A narrow table' }}
       steps={NARROW_STEPS}
       args={guideArgs(
         {
@@ -250,16 +274,16 @@ export const PanelsNarrowStatusBar: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(NARROW_STEPS[0]!.title, async () => {
+    await step(NARROW_STEPS[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(layout()).toBe('full'))
       await until(() => expect(counterText()).not.toBe(''))
     })
-    await step(NARROW_STEPS[1]!.title, async () => {
+    await step(NARROW_STEPS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(layout()).toBe('compact'))
     })
-    await step(NARROW_STEPS[2]!.title, async () => {
+    await step(NARROW_STEPS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(layout()).toBe('stacked'))
       await until(() => expect(inFrame()).toBe(true))

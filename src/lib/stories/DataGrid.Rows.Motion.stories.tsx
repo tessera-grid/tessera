@@ -72,12 +72,18 @@ const childShown = (root: HTMLElement) => !!bodyRow(root, CHILD)
 
 const TREE: readonly GuideStoryStep[] = [
   {
-    title: 'Дерево свёрнуто',
-    hint: 'Строки с детьми свёрнуты.',
+    title: { ru: 'Дерево свёрнуто', en: 'The tree is collapsed' },
+    hint: {
+      ru: 'Строки с детьми свёрнуты.',
+      en: 'Rows with child rows are collapsed.',
+    },
   },
   {
-    title: 'Пользователь раскрыл строку',
-    hint: 'Дети въехали под строку, строки ниже плавно сдвинулись вниз.',
+    title: { ru: 'Пользователь раскрыл строку', en: 'The user expanded a row' },
+    hint: {
+      ru: 'Дети въехали под строку, строки ниже плавно сдвинулись вниз.',
+      en: 'The child rows slid in under the row, and the rows below moved down smoothly.',
+    },
     enter: untilDone(
       root => expanded(root) && childShown(root),
       root => {
@@ -86,8 +92,14 @@ const TREE: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Пользователь свернул строку',
-    hint: 'Дети ушли, строки ниже плавно поднялись на их место.',
+    title: {
+      ru: 'Пользователь свернул строку',
+      en: 'The user collapsed a row',
+    },
+    hint: {
+      ru: 'Дети ушли, строки ниже плавно поднялись на их место.',
+      en: 'The child rows left, and the rows below moved up smoothly into their place.',
+    },
     enter: untilDone(
       root => !expanded(root) && !childShown(root),
       root => {
@@ -107,7 +119,7 @@ export const RowMotionTree: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Раскрытие и сворачивание"
+      title={{ ru: 'Раскрытие и сворачивание', en: 'Expand and collapse' }}
       steps={TREE}
       args={guideArgs(
         { ...GRID, dataNesting: 'nested', enableRowExpanding: true },
@@ -117,17 +129,17 @@ export const RowMotionTree: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(TREE[0]!.title, async () => {
+    await step(TREE[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(toggle(canvas)).toBeTruthy())
       await expect(childShown(canvas)).toBe(false)
     })
-    await step(TREE[1]!.title, async () => {
+    await step(TREE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(childShown(canvas)).toBe(true))
       await settle()
     })
-    await step(TREE[2]!.title, async () => {
+    await step(TREE[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(childShown(canvas)).toBe(false))
       await until(() => expect(ghost(canvas)).toBeNull())
@@ -172,17 +184,29 @@ const typeSearch = (root: HTMLElement) => {
 
 const SORT_SEARCH: readonly GuideStoryStep[] = [
   {
-    title: 'Строки в порядке данных',
-    hint: 'Таблица без сортировки и поиска.',
+    title: { ru: 'Строки в порядке данных', en: 'Rows in data order' },
+    hint: {
+      ru: 'Таблица без сортировки и поиска.',
+      en: 'The table has no sorting or search.',
+    },
   },
   {
-    title: 'Пользователь отсортировал по имени',
-    hint: 'Строки плавно переехали на новые места.',
+    title: {
+      ru: 'Пользователь отсортировал по имени',
+      en: 'The user sorted by name',
+    },
+    hint: {
+      ru: 'Строки плавно переехали на новые места.',
+      en: 'The rows moved smoothly to their new places.',
+    },
     enter: untilDone(sorted, sortByName),
   },
   {
-    title: 'Пользователь ищет',
-    hint: 'Строки без совпадений погасли, оставшиеся сдвинулись вверх.',
+    title: { ru: 'Пользователь ищет', en: 'The user searches' },
+    hint: {
+      ru: 'Строки без совпадений погасли, оставшиеся сдвинулись вверх.',
+      en: 'Rows without matches faded out, and the remaining ones moved up.',
+    },
     enter: untilDone(
       root => sorted(root) && searchField(root)?.value === QUERY,
       root => {
@@ -202,7 +226,7 @@ export const RowMotionSearch: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Сортировка и поиск"
+      title={{ ru: 'Сортировка и поиск', en: 'Sort and search' }}
       steps={SORT_SEARCH}
       args={guideArgs(
         { ...GRID, enableColumnSorting: true, enableQuickSearch: true },
@@ -222,18 +246,18 @@ export const RowMotionSearch: StoryObj<StoryProps> = {
         canvas.querySelector('[aria-rowcount]')?.getAttribute('aria-rowcount'),
       )
     let rows = 0
-    await step(SORT_SEARCH[0]!.title, async () => {
+    await step(SORT_SEARCH[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(sorted(canvas)).toBe(false))
       await until(() => expect(isAscending(namesOf(canvas))).toBe(false))
     })
-    await step(SORT_SEARCH[1]!.title, async () => {
+    await step(SORT_SEARCH[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(isAscending(namesOf(canvas))).toBe(true))
       await settle()
       rows = modelRows()
     })
-    await step(SORT_SEARCH[2]!.title, async () => {
+    await step(SORT_SEARCH[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(
@@ -257,12 +281,18 @@ const NEXT = 'item-id-4'
 
 const DELETE: readonly GuideStoryStep[] = [
   {
-    title: 'Строки на своих местах',
-    hint: 'Таблица показывает данные приложения.',
+    title: { ru: 'Строки на своих местах', en: 'Rows in their places' },
+    hint: {
+      ru: 'Таблица показывает данные приложения.',
+      en: "The table shows the app's data.",
+    },
   },
   {
-    title: 'Приложение удалило строку',
-    hint: 'Строки больше нет в данных. Она погасла на своём месте, затем строки ниже плавно поднялись и закрыли щель.',
+    title: { ru: 'Приложение удалило строку', en: 'The app deleted a row' },
+    hint: {
+      ru: 'Строки больше нет в данных. Она погасла на своём месте, затем строки ниже плавно поднялись и закрыли щель.',
+      en: 'The row is no longer in the data. It faded out in place, then the rows below moved up smoothly and closed the gap.',
+    },
     props: ({ rows }) => ({
       dataOverride: rows.filter(row => row.id !== REMOVED),
     }),
@@ -278,18 +308,18 @@ export const RowMotionDelete: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Удаление строки"
+      title={{ ru: 'Удаление строки', en: 'Deleting a row' }}
       steps={DELETE}
       args={guideArgs(GRID, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(DELETE[0]!.title, async () => {
+    await step(DELETE[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(bodyRow(canvas, REMOVED)).toBeTruthy())
     })
-    await step(DELETE[1]!.title, async () => {
+    await step(DELETE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(bodyRow(canvas, REMOVED)).toBeFalsy())
       await until(() => expect(ghost(canvas)).toBeNull())

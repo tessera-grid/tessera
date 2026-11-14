@@ -75,18 +75,33 @@ const isGroupRow = (id: string) => id.startsWith('gender:')
 
 const BY_APPLICATION: readonly GuideStoryStep[] = [
   {
-    title: 'Строки без группировки',
-    hint: 'Группировкой управляет приложение, кнопок группировки в заголовках нет. Строки идут списком.',
+    title: { ru: 'Строки без группировки', en: 'Rows without grouping' },
+    hint: {
+      ru: 'Группировкой управляет приложение, кнопок группировки в заголовках нет. Строки идут списком.',
+      en: 'The app controls grouping, and the headers have no grouping buttons. The rows form a flat list.',
+    },
     props: () => ({ enableRowGroupingModel: true }),
   },
   {
-    title: 'Приложение группирует по полу',
-    hint: 'Приложение сгруппировало строки по полу. Таблица показывает свёрнутые группы.',
+    title: {
+      ru: 'Приложение группирует по полу',
+      en: 'The app groups by gender',
+    },
+    hint: {
+      ru: 'Приложение сгруппировало строки по полу. Таблица показывает свёрнутые группы.',
+      en: 'The app grouped the rows by gender. The table shows collapsed groups.',
+    },
     props: () => ({ rowGroupingModelGrouping: ['gender'] }),
   },
   {
-    title: 'Приложение раскрывает группы',
-    hint: 'Приложение раскрыло все группы. Таблица показывает строки внутри групп, кнопок группировки по-прежнему нет.',
+    title: {
+      ru: 'Приложение раскрывает группы',
+      en: 'The app expands the groups',
+    },
+    hint: {
+      ru: 'Приложение раскрыло все группы. Таблица показывает строки внутри групп, кнопок группировки по-прежнему нет.',
+      en: 'The app expanded all groups. The table shows the rows inside the groups, and there are still no grouping buttons.',
+    },
     props: () => ({
       enableRowExpandingModel: true,
       rowExpandingModelExpanded: true,
@@ -103,7 +118,7 @@ export const GroupingByApplication: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Группировка от приложения"
+      title={{ ru: 'Группировка от приложения', en: 'Grouping from the app' }}
       steps={BY_APPLICATION}
       args={guideArgs(
         {
@@ -120,17 +135,17 @@ export const GroupingByApplication: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     // В Storybook сценарий проходит человек; `play` — только в тестах каталога.
     if (globals.catalog !== true) return
-    await step(BY_APPLICATION[0].title, async () => {
+    await step(BY_APPLICATION[0].title.ru, async () => {
       await waitForRows(canvas)
       expect(canvas.querySelector('.column-group__button')).toBeNull()
       expect(rowIdsOf(canvas).some(isGroupRow)).toBe(false)
     })
-    await step(BY_APPLICATION[1].title, async () => {
+    await step(BY_APPLICATION[1].title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(rowIdsOf(canvas).every(isGroupRow)).toBe(true))
       expect(canvas.querySelector('.column-group__button')).toBeNull()
     })
-    await step(BY_APPLICATION[2].title, async () => {
+    await step(BY_APPLICATION[2].title.ru, async () => {
       await guideNext(canvas)
       await until(() => {
         const ids = rowIdsOf(canvas)
@@ -208,12 +223,21 @@ const scrollToSecondGroup = async (root: HTMLElement, gap: number) => {
 
 const STICKY: readonly GuideStoryStep[] = [
   {
-    title: 'Группы раскрыты',
-    hint: 'Строки сгруппированы по полу, группы раскрыты. Строка группы — над её строками.',
+    title: { ru: 'Группы раскрыты', en: 'Groups are expanded' },
+    hint: {
+      ru: 'Строки сгруппированы по полу, группы раскрыты. Строка группы — над её строками.',
+      en: 'The rows are grouped by gender, and the groups are expanded. A group row sits above its rows.',
+    },
   },
   {
-    title: 'Пользователь прокрутил группу',
-    hint: 'Строка группы ушла вверх, но держится под шапкой, пока видны её строки: видно, в какой группе пользователь. Линия отделяет её от строк ниже.',
+    title: {
+      ru: 'Пользователь прокрутил группу',
+      en: 'The user scrolled through a group',
+    },
+    hint: {
+      ru: 'Строка группы ушла вверх, но держится под шапкой, пока видны её строки: видно, в какой группе пользователь. Линия отделяет её от строк ниже.',
+      en: 'The group row scrolled up but sticks under the header while its rows are visible, so the user can see which group they are in. A line separates it from the rows below.',
+    },
     enter: untilDone(
       root => stickyIds(root).length === 1 && stickyTop(root) === 0,
       root => {
@@ -223,15 +247,24 @@ const STICKY: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Следующая группа подошла',
-    hint: 'Строка следующей группы подошла к липкой и выталкивает её вверх: под шапкой окажется новая группа.',
+    title: { ru: 'Следующая группа подошла', en: 'The next group arrived' },
+    hint: {
+      ru: 'Строка следующей группы подошла к липкой и выталкивает её вверх: под шапкой окажется новая группа.',
+      en: 'The next group row reached the sticky one and is pushing it up: the new group will end up under the header.',
+    },
     enter: stepAction(async root => {
       await scrollToSecondGroup(root, 0.5)
     }),
   },
   {
-    title: 'Пользователь свернул группу из липкой строки',
-    hint: 'Нажатие на шеврон липкой строки свернуло её группу, и таблица прокрутила к строке группы: она снова на своём месте в списке, липких строк нет.',
+    title: {
+      ru: 'Пользователь свернул группу из липкой строки',
+      en: 'The user collapsed a group from the sticky row',
+    },
+    hint: {
+      ru: 'Нажатие на шеврон липкой строки свернуло её группу, и таблица прокрутила к строке группы: она снова на своём месте в списке, липких строк нет.',
+      en: 'Clicking the chevron of the sticky row collapsed its group, and the table scrolled to the group row: it is back in its place in the list, and there are no sticky rows.',
+    },
     enter: untilDone(
       root =>
         stickyIds(root).length === 0 &&
@@ -261,7 +294,7 @@ export const GroupingStickyRows: StoryObj<StoryProps> = {
   parameters: { scenario: '0160/S3', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Липкие строки групп"
+      title={{ ru: 'Липкие строки групп', en: 'Sticky group rows' }}
       steps={STICKY}
       args={guideArgs(STICKY_ARGS, args)}
     />
@@ -270,22 +303,22 @@ export const GroupingStickyRows: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     // Первая группа — до прокрутки: ушедшая вверх строка тела выходит из окна.
     let firstGroup: string | undefined
-    await step(STICKY[0]!.title, async () => {
+    await step(STICKY[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await expect(stickyIds(canvas)).toEqual([])
       firstGroup = groupIds(canvas)[0]
     })
-    await step(STICKY[1]!.title, async () => {
+    await step(STICKY[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(stickyIds(canvas)).toHaveLength(1))
       await expect(stickyIds(canvas)[0]).toBe(firstGroup)
     })
-    await step(STICKY[2]!.title, async () => {
+    await step(STICKY[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(stickyTop(canvas)).toBeLessThan(0))
     })
-    await step(STICKY[3]!.title, async () => {
+    await step(STICKY[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(stickyIds(canvas)).toEqual([]))
       // Окно после сворачивания дорисовывается порциями (ADR 0203).
@@ -348,12 +381,21 @@ const typeSearch = (text: string) => (root: HTMLElement) => {
 
 const FILTERED_COUNT: readonly GuideStoryStep[] = [
   {
-    title: 'Сколько строк в группах',
-    hint: 'Рядом со значением группы стоит число строк данных внутри неё, а не число подгрупп.',
+    title: {
+      ru: 'Сколько строк в группах',
+      en: 'How many rows are in the groups',
+    },
+    hint: {
+      ru: 'Рядом со значением группы стоит число строк данных внутри неё, а не число подгрупп.',
+      en: 'Next to the group value is the number of data rows inside it, not the number of subgroups.',
+    },
   },
   {
-    title: 'Найдена часть строк',
-    hint: 'Поиск оставил часть строк, поэтому число в группах уменьшилось: оно считает только то, что осталось.',
+    title: { ru: 'Найдена часть строк', en: 'Some rows were found' },
+    hint: {
+      ru: 'Поиск оставил часть строк, поэтому число в группах уменьшилось: оно считает только то, что осталось.',
+      en: 'The search left only some of the rows, so the counts in the groups went down: they count only what remains.',
+    },
     enter: typeSearch('Support'),
   },
 ]
@@ -364,7 +406,10 @@ export const GroupRowCountFiltered: StoryObj<StoryProps> = {
   parameters: { scenario: '0184/S5', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Число строк группы и поиск"
+      title={{
+        ru: 'Число строк группы и поиск',
+        en: 'Group row count and search',
+      }}
       steps={FILTERED_COUNT}
       args={guideArgs(
         { ...STAFF_ARGS, enableQuickSearch: true, quickSearchDebounceMs: 0 },
@@ -374,7 +419,7 @@ export const GroupRowCountFiltered: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(FILTERED_COUNT[0]!.title, async () => {
+    await step(FILTERED_COUNT[0]!.title.ru, async () => {
       await until(() => expect(groupCounts(canvas)).toEqual(['(5)', '(2)']))
       await until(() =>
         expect(
@@ -382,7 +427,7 @@ export const GroupRowCountFiltered: StoryObj<StoryProps> = {
         ).not.toBeNull(),
       )
     })
-    await step(FILTERED_COUNT[1]!.title, async () => {
+    await step(FILTERED_COUNT[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(groupCounts(canvas)).toEqual(['(3)', '(3)']))
     })
@@ -392,12 +437,18 @@ export const GroupRowCountFiltered: StoryObj<StoryProps> = {
 
 const COUNT_OFF: readonly GuideStoryStep[] = [
   {
-    title: 'Число строк видно',
-    hint: 'По умолчанию строка группы показывает число строк данных.',
+    title: { ru: 'Число строк видно', en: 'The row count is shown' },
+    hint: {
+      ru: 'По умолчанию строка группы показывает число строк данных.',
+      en: 'By default, a group row shows the number of data rows.',
+    },
   },
   {
-    title: 'Число строк скрыто',
-    hint: 'Приложение отключило число: в строке группы осталось только её значение.',
+    title: { ru: 'Число строк скрыто', en: 'The row count is hidden' },
+    hint: {
+      ru: 'Приложение отключило число: в строке группы осталось только её значение.',
+      en: 'The app turned the count off: the group row shows only its value.',
+    },
     props: () => ({ rowGroupingGroupRowCount: false }),
   },
 ]
@@ -408,17 +459,17 @@ export const GroupRowCountOff: StoryObj<StoryProps> = {
   parameters: { scenario: '0184/S6', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Без числа строк"
+      title={{ ru: 'Без числа строк', en: 'Without the row count' }}
       steps={COUNT_OFF}
       args={guideArgs(STAFF_ARGS, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(COUNT_OFF[0]!.title, async () => {
+    await step(COUNT_OFF[0]!.title.ru, async () => {
       await until(() => expect(groupCounts(canvas)).toEqual(['(5)', '(2)']))
     })
-    await step(COUNT_OFF[1]!.title, async () => {
+    await step(COUNT_OFF[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(groupCounts(canvas)).toEqual([]))
     })

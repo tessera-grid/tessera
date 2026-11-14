@@ -17,6 +17,7 @@ import type { StoryProps } from './DataGridStory.types'
 import { StoryComponent } from './DataGridStory'
 import { dataGridMeta } from './dataGridMeta'
 import type { CatalogState } from './__mocks__/catalog'
+import type { StoryText } from './__mocks__/storyText'
 import {
   byTestId,
   guideNext,
@@ -163,8 +164,8 @@ interface StepLife {
 interface AssembledPopup {
   /** Имя в контроле `Playground`. */
   id: string
-  title: string
-  hint: string
+  title: StoryText
+  hint: StoryText
   /** Файлы `grid/` и `plugins/` с попапом Base UI, который показывает шаг (PK9). */
   sources: readonly string[]
   states?: CatalogState[]
@@ -221,8 +222,11 @@ const openToolbarPopover = (
 const POPUPS: readonly AssembledPopup[] = [
   {
     id: 'columnMenu',
-    title: 'Меню колонки',
-    hint: 'Пользователь открыл меню колонки. Кнопки заголовка свёрнуты в него, поповер собран из поверхности, групп и пунктов.',
+    title: { ru: 'Меню колонки', en: 'The column menu' },
+    hint: {
+      ru: 'Пользователь открыл меню колонки. Кнопки заголовка свёрнуты в него, поповер собран из поверхности, групп и пунктов.',
+      en: 'The user opened the column menu. The header buttons are collapsed into it, and the popover is assembled from a surface, groups and items.',
+    },
     sources: [
       'grid/headerActions/ActionMenu',
       'grid/headerActions/ActionMenuPopup',
@@ -235,8 +239,11 @@ const POPUPS: readonly AssembledPopup[] = [
   },
   {
     id: 'inlineMenu',
-    title: 'Мини-меню кнопки заголовка',
-    hint: 'Пользователь нажал кнопку закрепления: сторону надо выбрать. Мини-меню собрано из тех же поверхности и пунктов, что и меню колонки.',
+    title: { ru: 'Мини-меню кнопки заголовка', en: 'Header button mini menu' },
+    hint: {
+      ru: 'Пользователь нажал кнопку закрепления: сторону надо выбрать. Мини-меню собрано из тех же поверхности и пунктов, что и меню колонки.',
+      en: 'The user pressed the pin button, and a side has to be chosen. The mini menu is assembled from the same surface and items as the column menu.',
+    },
     sources: ['grid/headerActions/ActionInlineMenu'],
     shown: openedMenu,
     parts: [ITEM],
@@ -244,8 +251,11 @@ const POPUPS: readonly AssembledPopup[] = [
   },
   {
     id: 'filterText',
-    title: 'Панель фильтра текста',
-    hint: 'Пользователь открыл фильтр текстовой колонки. Панель собрана из поверхности, заголовка с кнопкой сброса, кнопки списка условий и поля ввода.',
+    title: { ru: 'Панель фильтра текста', en: 'Text filter panel' },
+    hint: {
+      ru: 'Пользователь открыл фильтр текстовой колонки. Панель собрана из поверхности, заголовка с кнопкой сброса, кнопки списка условий и поля ввода.',
+      en: 'The user opened the filter of a text column. The panel is assembled from a surface, a title with a reset button, a condition list button and an input field.',
+    },
     sources: [
       'grid/headerActions/ActionPanel',
       'grid/headerActions/ActionPanelPopup',
@@ -261,8 +271,11 @@ const POPUPS: readonly AssembledPopup[] = [
   },
   {
     id: 'operatorSelect',
-    title: 'Список условий',
-    hint: 'Пользователь открыл список условий фильтра. Список собран из поверхности и пунктов с отметкой выбранного.',
+    title: { ru: 'Список условий', en: 'Condition list' },
+    hint: {
+      ru: 'Пользователь открыл список условий фильтра. Список собран из поверхности и пунктов с отметкой выбранного.',
+      en: 'The user opened the list of filter conditions. The list is assembled from a surface and items, with the selected one checked.',
+    },
     sources: ['plugins/columnFiltering/OperatorSelect'],
     shown: openedList,
     parts: [ITEM],
@@ -277,8 +290,11 @@ const POPUPS: readonly AssembledPopup[] = [
   },
   {
     id: 'filterOptions',
-    title: 'Панель фильтра вариантов',
-    hint: 'Пользователь открыл фильтр колонки с вариантами. Панель собрана из поверхности, поля поиска и списка вариантов с флажками и счётчиками.',
+    title: { ru: 'Панель фильтра вариантов', en: 'Option filter panel' },
+    hint: {
+      ru: 'Пользователь открыл фильтр колонки с вариантами. Панель собрана из поверхности, поля поиска и списка вариантов с флажками и счётчиками.',
+      en: 'The user opened the filter of a column with options. The panel is assembled from a surface, a search field and a list of options with checkboxes and counters.',
+    },
     sources: [],
     states: ['overlay.filterOptions'],
     shown: panel,
@@ -291,8 +307,11 @@ const POPUPS: readonly AssembledPopup[] = [
   },
   {
     id: 'filterDate',
-    title: 'Панель фильтра даты',
-    hint: 'Пользователь открыл фильтр даты. Панель собрана из поверхности, кнопки списка условий и календаря.',
+    title: { ru: 'Панель фильтра даты', en: 'Date filter panel' },
+    hint: {
+      ru: 'Пользователь открыл фильтр даты. Панель собрана из поверхности, кнопки списка условий и календаря.',
+      en: 'The user opened the date filter. The panel is assembled from a surface, a condition list button and a calendar.',
+    },
     sources: [],
     states: ['overlay.filterDate'],
     shown: panel,
@@ -304,8 +323,11 @@ const POPUPS: readonly AssembledPopup[] = [
   },
   {
     id: 'view',
-    title: 'Настройки вида',
-    hint: 'Приложение задало фильтр, пользователь открыл настройки вида и раздел фильтров. Панель собрана из поверхности, строки возврата, записей условий и кнопки сброса внизу.',
+    title: { ru: 'Настройки вида', en: 'View settings' },
+    hint: {
+      ru: 'Приложение задало фильтр, пользователь открыл настройки вида и раздел фильтров. Панель собрана из поверхности, строки возврата, записей условий и кнопки сброса внизу.',
+      en: 'The app set a filter, and the user opened the view settings and then the filters section. The panel is assembled from a surface, a back row, condition entries and a reset button at the bottom.',
+    },
     sources: ['grid/ViewSettings/ViewSettingsPopover'],
     shown: () =>
       viewSettingsSectionOpen('filter') ? viewSettingsPopover() : null,
@@ -322,8 +344,11 @@ const POPUPS: readonly AssembledPopup[] = [
   },
   {
     id: 'contextMenu',
-    title: 'Контекстное меню',
-    hint: 'Пользователь нажал правой кнопкой на ячейку. Поповер собран из поверхности и пунктов, как меню колонки.',
+    title: { ru: 'Контекстное меню', en: 'Context menu' },
+    hint: {
+      ru: 'Пользователь нажал правой кнопкой на ячейку. Поповер собран из поверхности и пунктов, как меню колонки.',
+      en: 'The user right-clicked a cell. The popover is assembled from a surface and items, like the column menu.',
+    },
     sources: ['plugins/contextMenu/ContextMenuPopup'],
     states: ['overlay.contextMenu'],
     shown: openedMenu,
@@ -340,8 +365,11 @@ const POPUPS: readonly AssembledPopup[] = [
   },
   {
     id: 'handleMenu',
-    title: 'Меню ручки строки',
-    hint: 'Пользователь нажал ручку строки: перенести её можно и без перетаскивания. Меню собрано из поверхности и пунктов.',
+    title: { ru: 'Меню ручки строки', en: 'Row drag handle menu' },
+    hint: {
+      ru: 'Пользователь нажал ручку строки: перенести её можно и без перетаскивания. Меню собрано из поверхности и пунктов.',
+      en: "The user pressed a row's drag handle: the row can also be moved without dragging. The menu is assembled from a surface and items.",
+    },
     sources: [],
     shown: openedMenu,
     parts: [ITEM],
@@ -349,8 +377,11 @@ const POPUPS: readonly AssembledPopup[] = [
   },
   {
     id: 'columns',
-    title: 'Выбор колонок',
-    hint: 'Пользователь открыл раздел колонок в настройках вида. Панель собрана из поверхности, заголовка со счётчиком, поля поиска и дерева пунктов с флажками.',
+    title: { ru: 'Выбор колонок', en: 'Column picker' },
+    hint: {
+      ru: 'Пользователь открыл раздел колонок в настройках вида. Панель собрана из поверхности, заголовка со счётчиком, поля поиска и дерева пунктов с флажками.',
+      en: 'The user opened the columns section in the view settings. The panel is assembled from a surface, a title with a counter, a search field and a tree of items with checkboxes.',
+    },
     sources: [],
     states: ['overlay.columns'],
     shown: () => byTestId('column-visibility-menu'),
@@ -360,8 +391,11 @@ const POPUPS: readonly AssembledPopup[] = [
   },
   {
     id: 'export',
-    title: 'Настройки выгрузки',
-    hint: 'Пользователь открыл настройки выгрузки. Панель собрана из поверхности, групп с подписью и кнопки внизу.',
+    title: { ru: 'Настройки выгрузки', en: 'Export settings' },
+    hint: {
+      ru: 'Пользователь открыл настройки выгрузки. Панель собрана из поверхности, групп с подписью и кнопки внизу.',
+      en: 'The user opened the export settings. The panel is assembled from a surface, labeled groups and a button at the bottom.',
+    },
     sources: ['plugins/dataExport/ExportPanel'],
     states: ['overlay.export'],
     shown: exportPanel,
@@ -370,8 +404,11 @@ const POPUPS: readonly AssembledPopup[] = [
   },
   {
     id: 'pageSize',
-    title: 'Размер страницы',
-    hint: 'Пользователь открыл список размеров страницы. Кнопка списка та же, что у условий фильтра, список собран из поверхности и пунктов с отметкой выбранного.',
+    title: { ru: 'Размер страницы', en: 'Page size' },
+    hint: {
+      ru: 'Пользователь открыл список размеров страницы. Кнопка списка та же, что у условий фильтра, список собран из поверхности и пунктов с отметкой выбранного.',
+      en: 'The user opened the list of page sizes. The list button is the same as for filter conditions, and the list is assembled from a surface and items, with the selected one checked.',
+    },
     sources: ['plugins/pagination/PageSizeSelect'],
     shown: openedList,
     parts: [ITEM],
@@ -384,8 +421,11 @@ const POPUPS: readonly AssembledPopup[] = [
   },
   {
     id: 'dateEdit',
-    title: 'Правка даты',
-    hint: 'Пользователь нажал кнопку правки даты. Поповер собран из поверхности, календаря и кнопки очистки внизу.',
+    title: { ru: 'Правка даты', en: 'Date editing' },
+    hint: {
+      ru: 'Пользователь нажал кнопку правки даты. Поповер собран из поверхности, календаря и кнопки очистки внизу.',
+      en: 'The user pressed the edit button on a date. The popover is assembled from a surface, a calendar and a clear button at the bottom.',
+    },
     sources: ['plugins/cellEditing/EditPopover'],
     states: ['body.editing', 'overlay.dateEditor'],
     shown: datePopup,
@@ -399,8 +439,11 @@ const POPUPS: readonly AssembledPopup[] = [
   },
   {
     id: 'optionEdit',
-    title: 'Правка варианта',
-    hint: 'Пользователь нажал кнопку правки статуса. Поповер собран из поверхности, поля поиска, пунктов с отметкой выбранного и кнопки очистки внизу.',
+    title: { ru: 'Правка варианта', en: 'Option editing' },
+    hint: {
+      ru: 'Пользователь нажал кнопку правки статуса. Поповер собран из поверхности, поля поиска, пунктов с отметкой выбранного и кнопки очистки внизу.',
+      en: 'The user pressed the edit button on a status. The popover is assembled from a surface, a search field, items with the selected one checked, and a clear button at the bottom.',
+    },
     sources: ['plugins/cellEditing/OptionEditors'],
     states: ['body.editing', 'overlay.optionEditor'],
     shown: optionsPopup,
@@ -414,8 +457,11 @@ const POPUPS: readonly AssembledPopup[] = [
   },
   {
     id: 'cellIssue',
-    title: 'Отметка ячейки',
-    hint: 'Пользователь нажал отметку ошибки в ячейке. Панель собрана из поверхности, заголовка и текста причины.',
+    title: { ru: 'Отметка ячейки', en: 'Cell mark' },
+    hint: {
+      ru: 'Пользователь нажал отметку ошибки в ячейке. Панель собрана из поверхности, заголовка и текста причины.',
+      en: 'The user pressed the error mark in a cell. The panel is assembled from a surface, a title and the reason text.',
+    },
     sources: [],
     states: ['overlay.cellIssue'],
     shown: issuePopover,
@@ -429,8 +475,11 @@ const POPUPS: readonly AssembledPopup[] = [
   },
   {
     id: 'failureLog',
-    title: 'Журнал отказов',
-    hint: 'Пользователь открыл журнал отказов. Панель собрана из поверхности, заголовка и записей отказов.',
+    title: { ru: 'Журнал отказов', en: 'Failure log' },
+    hint: {
+      ru: 'Пользователь открыл журнал отказов. Панель собрана из поверхности, заголовка и записей отказов.',
+      en: 'The user opened the failure log. The panel is assembled from a surface, a title and the failure entries.',
+    },
     sources: ['plugins/failureLog/FailureLogPopover'],
     states: ['overlay.failureLog'],
     shown: () => byTestId('failure-log'),
@@ -444,8 +493,11 @@ const POPUPS: readonly AssembledPopup[] = [
   },
   {
     id: 'unsavedChanges',
-    title: 'Несохранённые изменения',
-    hint: 'Пользователь открыл список несохранённых изменений. Панель собрана из поверхности, заголовка, записей и кнопок внизу.',
+    title: { ru: 'Несохранённые изменения', en: 'Unsaved changes' },
+    hint: {
+      ru: 'Пользователь открыл список несохранённых изменений. Панель собрана из поверхности, заголовка, записей и кнопок внизу.',
+      en: 'The user opened the list of unsaved changes. The panel is assembled from a surface, a title, entries and buttons at the bottom.',
+    },
     sources: ['plugins/unsavedChanges/UnsavedChangesPopover'],
     states: ['overlay.unsavedChanges'],
     shown: () => byTestId('unsaved-changes'),
@@ -459,8 +511,11 @@ const POPUPS: readonly AssembledPopup[] = [
   },
   {
     id: 'editHistory',
-    title: 'История изменений',
-    hint: 'Пользователь открыл историю изменений. Панель собрана из поверхности, заголовка и заглушки: правок ещё не было.',
+    title: { ru: 'История изменений', en: 'Change history' },
+    hint: {
+      ru: 'Пользователь открыл историю изменений. Панель собрана из поверхности, заголовка и заглушки: правок ещё не было.',
+      en: 'The user opened the change history. The panel is assembled from a surface, a title and a placeholder, since there have been no edits yet.',
+    },
     sources: ['plugins/editHistory/HistoryPopover'],
     shown: () => byTestId('edit-history'),
     parts: [],
@@ -493,7 +548,7 @@ const reach = async (
 
 // --- Playground -----------------------------------------------------------------------
 
-const OWN_TABLE = 'Таблицу задаёт раздел: на ней есть все поповеры'
+const OWN_TABLE = 'The section sets up the table, which has every popover'
 const OWN_CONTROLS = {
   columnCount: OWN_TABLE,
   dataCount: OWN_TABLE,
@@ -513,7 +568,7 @@ export const AssembledPlayground: StoryObj<AssembledArgs> = {
     popup: {
       control: 'select',
       options: POPUPS.map(popup => popup.id),
-      description: 'Поповер',
+      description: 'Popover',
     },
   },
   parameters: showControls(['popup'], OWN_CONTROLS),
@@ -554,8 +609,11 @@ export const AssembledPlayground: StoryObj<AssembledArgs> = {
 
 const STEPS: readonly GuideStoryStep[] = [
   {
-    title: 'Таблица',
-    hint: 'На таблице включены все функции, у которых есть поповер. Дальше — по шагу на каждый поповер таблицы и то, из каких блоков он собран.',
+    title: { ru: 'Таблица', en: 'The table' },
+    hint: {
+      ru: 'На таблице включены все функции, у которых есть поповер. Дальше — по шагу на каждый поповер таблицы и то, из каких блоков он собран.',
+      en: 'Every feature that has a popover is turned on in the table. Next comes one step for each popover of the table, showing which blocks it is assembled from.',
+    },
   },
   ...POPUPS.map((popup): GuideStoryStep => ({
     title: popup.title,
@@ -586,35 +644,35 @@ export const PopupAssembled: StoryObj<StoryProps> = {
   parameters: { scenario: '0183/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Поповеры таблицы"
+      title={{ ru: 'Поповеры таблицы', en: 'Table popovers' }}
       steps={STEPS}
       args={guideArgs(GRID, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(STEPS[0]!.title, async () => {
+    await step(STEPS[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await expect(openMenu()).toBeNull()
       await settle()
     })
-    await step(STEPS[1]!.title, () => expectPopup(canvas, 'columnMenu'))
-    await step(STEPS[2]!.title, () => expectPopup(canvas, 'inlineMenu'))
-    await step(STEPS[3]!.title, () => expectPopup(canvas, 'filterText'))
-    await step(STEPS[4]!.title, () => expectPopup(canvas, 'operatorSelect'))
-    await step(STEPS[5]!.title, () => expectPopup(canvas, 'filterOptions'))
-    await step(STEPS[6]!.title, () => expectPopup(canvas, 'filterDate'))
-    await step(STEPS[7]!.title, () => expectPopup(canvas, 'view'))
-    await step(STEPS[8]!.title, () => expectPopup(canvas, 'contextMenu'))
-    await step(STEPS[9]!.title, () => expectPopup(canvas, 'handleMenu'))
-    await step(STEPS[10]!.title, () => expectPopup(canvas, 'columns'))
-    await step(STEPS[11]!.title, () => expectPopup(canvas, 'export'))
-    await step(STEPS[12]!.title, () => expectPopup(canvas, 'pageSize'))
-    await step(STEPS[13]!.title, () => expectPopup(canvas, 'dateEdit'))
-    await step(STEPS[14]!.title, () => expectPopup(canvas, 'optionEdit'))
-    await step(STEPS[15]!.title, () => expectPopup(canvas, 'cellIssue'))
-    await step(STEPS[16]!.title, () => expectPopup(canvas, 'failureLog'))
-    await step(STEPS[17]!.title, () => expectPopup(canvas, 'unsavedChanges'))
-    await step(STEPS[18]!.title, () => expectPopup(canvas, 'editHistory'))
+    await step(STEPS[1]!.title.ru, () => expectPopup(canvas, 'columnMenu'))
+    await step(STEPS[2]!.title.ru, () => expectPopup(canvas, 'inlineMenu'))
+    await step(STEPS[3]!.title.ru, () => expectPopup(canvas, 'filterText'))
+    await step(STEPS[4]!.title.ru, () => expectPopup(canvas, 'operatorSelect'))
+    await step(STEPS[5]!.title.ru, () => expectPopup(canvas, 'filterOptions'))
+    await step(STEPS[6]!.title.ru, () => expectPopup(canvas, 'filterDate'))
+    await step(STEPS[7]!.title.ru, () => expectPopup(canvas, 'view'))
+    await step(STEPS[8]!.title.ru, () => expectPopup(canvas, 'contextMenu'))
+    await step(STEPS[9]!.title.ru, () => expectPopup(canvas, 'handleMenu'))
+    await step(STEPS[10]!.title.ru, () => expectPopup(canvas, 'columns'))
+    await step(STEPS[11]!.title.ru, () => expectPopup(canvas, 'export'))
+    await step(STEPS[12]!.title.ru, () => expectPopup(canvas, 'pageSize'))
+    await step(STEPS[13]!.title.ru, () => expectPopup(canvas, 'dateEdit'))
+    await step(STEPS[14]!.title.ru, () => expectPopup(canvas, 'optionEdit'))
+    await step(STEPS[15]!.title.ru, () => expectPopup(canvas, 'cellIssue'))
+    await step(STEPS[16]!.title.ru, () => expectPopup(canvas, 'failureLog'))
+    await step(STEPS[17]!.title.ru, () => expectPopup(canvas, 'unsavedChanges'))
+    await step(STEPS[18]!.title.ru, () => expectPopup(canvas, 'editHistory'))
   },
 }

@@ -142,24 +142,45 @@ const sortByCountry = (root: HTMLElement) => {
 
 const MULTI_SORT: readonly GuideStoryStep[] = [
   {
-    title: 'Таблица без сортировки',
-    hint: 'Строки идут в порядке данных, в заголовках — кнопки сортировки.',
+    title: { ru: 'Таблица без сортировки', en: 'The table is unsorted' },
+    hint: {
+      ru: 'Строки идут в порядке данных, в заголовках — кнопки сортировки.',
+      en: 'Rows follow the data order, and the headers have sort buttons.',
+    },
   },
   {
-    title: 'Пользователь навёл указатель на кнопку сортировки',
-    hint: 'Подсказка у кнопки называет, что сделает нажатие.',
+    title: {
+      ru: 'Пользователь навёл указатель на кнопку сортировки',
+      en: 'The user hovered over a sort button',
+    },
+    hint: {
+      ru: 'Подсказка у кнопки называет, что сделает нажатие.',
+      en: "The button's tooltip says what a click will do.",
+    },
     states: ['overlay.tooltip'],
     enter: (root, app) =>
       untilDone(() => !!openTooltip(), hoverOnce('country'))(root, app),
   },
   {
-    title: 'Пользователь отсортировал по стране',
-    hint: 'Строки упорядочены по стране, кнопка в заголовке показывает направление.',
+    title: {
+      ru: 'Пользователь отсортировал по стране',
+      en: 'The user sorted by country',
+    },
+    hint: {
+      ru: 'Строки упорядочены по стране, кнопка в заголовке показывает направление.',
+      en: 'Rows are ordered by country, and the header button shows the direction.',
+    },
     enter: untilDone(root => sorted(root, 'country'), sortByCountry),
   },
   {
-    title: 'Пользователь добавил вторую колонку',
-    hint: 'С зажатой клавишей Shift пользователь нажал кнопку сортировки имени. Строки упорядочены по стране, а внутри одной страны — по имени. На кнопке второй колонки — её номер в порядке сортировки.',
+    title: {
+      ru: 'Пользователь добавил вторую колонку',
+      en: 'The user added a second column',
+    },
+    hint: {
+      ru: 'С зажатой клавишей Shift пользователь нажал кнопку сортировки имени. Строки упорядочены по стране, а внутри одной страны — по имени. На кнопке второй колонки — её номер в порядке сортировки.',
+      en: "Holding Shift, the user clicked the sort button of the name column. Rows are ordered by country, and within each country by name. The second column's button shows its position in the sort order.",
+    },
     states: ['head.sorting'],
     enter: untilDone(
       root => sorted(root, 'country') && sorted(root, 'firstName'),
@@ -180,7 +201,10 @@ export const ColumnMultiSorting: StoryObj<StoryProps> = {
   parameters: vrModes({ scenario: '0012/S1', ...guideControls() }),
   render: args => (
     <GuideStory
-      title="Сортировка по нескольким колонкам"
+      title={{
+        ru: 'Сортировка по нескольким колонкам',
+        en: 'Sorting by several columns',
+      }}
       steps={MULTI_SORT}
       args={guideArgs(
         {
@@ -198,12 +222,12 @@ export const ColumnMultiSorting: StoryObj<StoryProps> = {
   play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     const labels = storyLabels(args.locale)
-    await step(MULTI_SORT[0]!.title, async () => {
+    await step(MULTI_SORT[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await expect(sortButtonOf(canvas, 'country')).not.toBeNull()
       await expect(sorted(canvas, 'country')).toBe(false)
     })
-    await step(MULTI_SORT[1]!.title, async () => {
+    await step(MULTI_SORT[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect([
@@ -213,12 +237,12 @@ export const ColumnMultiSorting: StoryObj<StoryProps> = {
       )
       await settle()
     })
-    await step(MULTI_SORT[2]!.title, async () => {
+    await step(MULTI_SORT[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(sorted(canvas, 'country')).toBe(true))
       await expect(sorted(canvas, 'firstName')).toBe(false)
     })
-    await step(MULTI_SORT[3]!.title, async () => {
+    await step(MULTI_SORT[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(priorityOf(canvas, 'firstName')).toBe('2'))
       await expect(sorted(canvas, 'country')).toBe(true)
@@ -260,20 +284,35 @@ const byName = (names: string[]) => {
 
 const OPTION_LABELS: readonly GuideStoryStep[] = [
   {
-    title: 'Колонки с вариантами',
-    hint: 'Статус берёт значения из списка вариантов, менеджер — из справочника. В ячейках — подписи, а хранятся коды.',
+    title: { ru: 'Колонки с вариантами', en: 'Columns with options' },
+    hint: {
+      ru: 'Статус берёт значения из списка вариантов, менеджер — из справочника. В ячейках — подписи, а хранятся коды.',
+      en: 'The status column takes its values from a list of options, and the manager column from a lookup. Cells show labels, while codes are stored.',
+    },
   },
   {
-    title: 'Пользователь отсортировал статус',
-    hint: 'Строки идут в порядке вариантов списка, а не по алфавиту подписей. Первое нажатие сортирует по убыванию: первым — последний вариант.',
+    title: {
+      ru: 'Пользователь отсортировал статус',
+      en: 'The user sorted the status column',
+    },
+    hint: {
+      ru: 'Строки идут в порядке вариантов списка, а не по алфавиту подписей. Первое нажатие сортирует по убыванию: первым — последний вариант.',
+      en: 'Rows follow the order of the options in the list, not the alphabetical order of labels. The first click sorts in descending order, so the last option comes first.',
+    },
     enter: untilDone(
       root => sorted(root, 'status'),
       root => press(sortButtonOf(root, 'status')),
     ),
   },
   {
-    title: 'Пользователь отсортировал менеджера',
-    hint: 'Строки упорядочены по имени менеджера из справочника, а не по коду.',
+    title: {
+      ru: 'Пользователь отсортировал менеджера',
+      en: 'The user sorted the manager column',
+    },
+    hint: {
+      ru: 'Строки упорядочены по имени менеджера из справочника, а не по коду.',
+      en: "Rows are ordered by the manager's name from the lookup, not by code.",
+    },
     enter: untilDone(
       root => sorted(root, 'managerId'),
       root => press(sortButtonOf(root, 'managerId')),
@@ -291,7 +330,10 @@ export const ColumnSortingOptionLabels: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Сортировка по подписи вариантов"
+      title={{
+        ru: 'Сортировка по подписи вариантов',
+        en: 'Sorting by option labels',
+      }}
       steps={OPTION_LABELS}
       args={guideArgs(
         {
@@ -308,11 +350,11 @@ export const ColumnSortingOptionLabels: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(OPTION_LABELS[0]!.title, async () => {
+    await step(OPTION_LABELS[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await expect(firstRowText(canvas, 'managerId')).not.toMatch(/^m[0-9]+$/)
     })
-    await step(OPTION_LABELS[1]!.title, async () => {
+    await step(OPTION_LABELS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(firstRowText(canvas, 'status')).toBe(statusLabels.at(-1)),
@@ -321,7 +363,7 @@ export const ColumnSortingOptionLabels: StoryObj<StoryProps> = {
         inOptionOrder(cellsOf(canvas, 'status').filter(Boolean), statusLabels),
       ).toBe(true)
     })
-    await step(OPTION_LABELS[2]!.title, async () => {
+    await step(OPTION_LABELS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(byName(cellsOf(canvas, 'managerId').filter(Boolean))).toBe(true),
@@ -352,18 +394,33 @@ const isSorted = (values: number[], desc: boolean) =>
 
 const EXTERNAL_SORTING: readonly GuideStoryStep[] = [
   {
-    title: 'Порядок данных',
-    hint: 'Сортировкой управляет приложение, у таблицы нет своих кнопок сортировки. Строки идут в порядке данных.',
+    title: { ru: 'Порядок данных', en: 'Data order' },
+    hint: {
+      ru: 'Сортировкой управляет приложение, у таблицы нет своих кнопок сортировки. Строки идут в порядке данных.',
+      en: 'The app controls sorting; the table has no sort buttons of its own. Rows follow the data order.',
+    },
     props: () => ({ enableColumnSortingModel: true }),
   },
   {
-    title: 'Приложение сортирует по возрасту',
-    hint: 'Пользователь нажал кнопку сортировки в интерфейсе приложения. Таблица показывает строки по возрастанию возраста, кнопок сортировки в заголовках по-прежнему нет.',
+    title: {
+      ru: 'Приложение сортирует по возрасту',
+      en: 'The app sorts by age',
+    },
+    hint: {
+      ru: 'Пользователь нажал кнопку сортировки в интерфейсе приложения. Таблица показывает строки по возрастанию возраста, кнопок сортировки в заголовках по-прежнему нет.',
+      en: "The user clicked a sort button in the app's interface. The table shows rows in ascending order of age; the headers still have no sort buttons.",
+    },
     props: () => ({ columnSortingModelSorting: [{ id: 'age', desc: false }] }),
   },
   {
-    title: 'Приложение сортирует по убыванию',
-    hint: 'Приложение сменило направление сортировки. Таблица заново упорядочивает строки по убыванию возраста.',
+    title: {
+      ru: 'Приложение сортирует по убыванию',
+      en: 'The app sorts in descending order',
+    },
+    hint: {
+      ru: 'Приложение сменило направление сортировки. Таблица заново упорядочивает строки по убыванию возраста.',
+      en: 'The app switched the sort direction. The table reorders the rows in descending order of age.',
+    },
     props: () => ({ columnSortingModelSorting: [{ id: 'age', desc: true }] }),
   },
 ]
@@ -377,7 +434,10 @@ export const SortingExternalControls: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Сортировка кнопками приложения"
+      title={{
+        ru: 'Сортировка кнопками приложения',
+        en: "Sorting with the app's buttons",
+      }}
       steps={EXTERNAL_SORTING}
       args={guideArgs(
         {
@@ -393,16 +453,16 @@ export const SortingExternalControls: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     // В Storybook сценарий проходит человек; `play` — только в тестах каталога.
     if (globals.catalog !== true) return
-    await step(EXTERNAL_SORTING[0].title, async () => {
+    await step(EXTERNAL_SORTING[0].title.ru, async () => {
       await waitForRows(canvas)
       expect(canvas.querySelector('.column-sort__button')).toBeNull()
     })
-    await step(EXTERNAL_SORTING[1].title, async () => {
+    await step(EXTERNAL_SORTING[1].title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(isSorted(agesOf(canvas), false)).toBe(true))
       expect(canvas.querySelector('.column-sort__button')).toBeNull()
     })
-    await step(EXTERNAL_SORTING[2].title, async () => {
+    await step(EXTERNAL_SORTING[2].title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(isSorted(agesOf(canvas), true)).toBe(true))
     })

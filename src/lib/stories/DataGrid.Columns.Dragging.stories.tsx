@@ -45,7 +45,7 @@ const meta = {
 
 export default meta
 
-const NOT_COLUMNS = 'На перенос колонок не влияет'
+const NOT_COLUMNS = 'Does not affect column moves'
 
 /** Колонки с ручкой переноса в заголовке в покое (ADR 0130, §7). */
 export const ColumnDraggingPlayground: StoryObj<StoryProps> = {
@@ -205,12 +205,18 @@ const releaseOnPress = () => {
 
 const COLUMN_MOVE: readonly GuideStoryStep[] = [
   {
-    title: 'Ручка колонки',
-    hint: 'У заголовка колонки есть ручка переноса: за неё колонку берут, чтобы переставить. Ручка появляется при наведении на заголовок.',
+    title: { ru: 'Ручка колонки', en: 'The column drag handle' },
+    hint: {
+      ru: 'У заголовка колонки есть ручка переноса: за неё колонку берут, чтобы переставить. Ручка появляется при наведении на заголовок.',
+      en: 'A column header has a drag handle: the column is grabbed by it to be moved. The handle appears when the pointer hovers over the header.',
+    },
   },
   {
-    title: 'Пользователь ведёт колонку',
-    hint: 'Пользователь взял вторую колонку за ручку и ведёт её к началу таблицы. Заголовок колонки следует за указателем, а на месте вставки колонки расступаются.',
+    title: { ru: 'Пользователь ведёт колонку', en: 'The user drags a column' },
+    hint: {
+      ru: 'Пользователь взял вторую колонку за ручку и ведёт её к началу таблицы. Заголовок колонки следует за указателем, а на месте вставки колонки расступаются.',
+      en: 'The user grabbed the second column by its handle and is dragging it toward the start of the table. The column header follows the pointer, and the columns move apart where it will be dropped.',
+    },
     // Ручка видна и в облаке заголовка: наведение шапки в forced-colors контура не даёт.
     states: ['drag.columnHandle', 'drag.column'],
     // Шаг готов, когда колонка удержана и нажатие её отпускает: клик посреди движения
@@ -226,8 +232,11 @@ const COLUMN_MOVE: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Колонка переставлена',
-    hint: 'Пользователь отпустил колонку. Она встаёт на новое место, соседние колонки сдвигаются.',
+    title: { ru: 'Колонка переставлена', en: 'The column is moved' },
+    hint: {
+      ru: 'Пользователь отпустил колонку. Она встаёт на новое место, соседние колонки сдвигаются.',
+      en: 'The user released the column. It takes its new place, and the neighboring columns shift.',
+    },
     enter: afterRows(async root => {
       if (heldColumn) return dropHeldAtStart()
       // Переход сразу к шагу: колонку берут и отпускают у начала таблицы.
@@ -257,7 +266,10 @@ export const ColumnDraggingMove: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Перенос колонки мышью"
+      title={{
+        ru: 'Перенос колонки мышью',
+        en: 'Moving a column with the mouse',
+      }}
       steps={COLUMN_MOVE}
       reset={dropHeldColumn}
       args={guideArgs(COLUMN_MOVE_ARGS, args)}
@@ -278,14 +290,14 @@ export const ColumnDraggingMove: StoryObj<StoryProps> = {
       )
     }
     let second: string | undefined
-    await step(COLUMN_MOVE[0]!.title, async () => {
+    await step(COLUMN_MOVE[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() =>
         expect(canvas.querySelector(`${HEAD} ${HANDLE}`)).not.toBeNull(),
       )
       second = headOrder(canvas)[1]
     })
-    await step(COLUMN_MOVE[1]!.title, async () => {
+    await step(COLUMN_MOVE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() =>
@@ -293,7 +305,7 @@ export const ColumnDraggingMove: StoryObj<StoryProps> = {
       )
       await until(() => expect(place()).toBe(true))
     })
-    await step(COLUMN_MOVE[2]!.title, async () => {
+    await step(COLUMN_MOVE[2]!.title.ru, async () => {
       // Нажатие «Далее» отпустило бы колонку над панелью: шаг отпускает её у начала.
       await dropHeldAtStart()
       await guideNext(canvas)
@@ -403,29 +415,50 @@ const serverStep =
 
 const COLUMN_SERVER: readonly GuideStoryStep[] = [
   {
-    title: 'Порядок колонок хранит сервер',
-    hint: 'Приложение сохраняет порядок колонок на сервере: каждый перенос колонки ждёт его ответа.',
+    title: {
+      ru: 'Порядок колонок хранит сервер',
+      en: 'The server stores the column order',
+    },
+    hint: {
+      ru: 'Приложение сохраняет порядок колонок на сервере: каждый перенос колонки ждёт его ответа.',
+      en: 'The app saves the column order on the server, so every column move waits for its response.',
+    },
   },
   {
-    title: 'Перенос ждёт сервера',
-    hint: 'Пользователь переставил колонку. Пока сервер не ответил, ячейки колонки показывают ожидание, а повторно перенести колонку нельзя.',
+    title: {
+      ru: 'Перенос ждёт сервера',
+      en: 'The move is waiting for the server',
+    },
+    hint: {
+      ru: 'Пользователь переставил колонку. Пока сервер не ответил, ячейки колонки показывают ожидание, а повторно перенести колонку нельзя.',
+      en: "The user moved a column. Until the server responds, the column's cells show a waiting state, and the column cannot be moved again.",
+    },
     states: ['drag.pending'],
     enter: afterRows(serverStep({ waiting: 'country' })),
   },
   {
-    title: 'Сервер сохранил',
-    hint: 'Сервер ответил. Ожидание закончилось, колонка осталась на новом месте и коротко вспыхнула тоном успеха.',
+    title: { ru: 'Сервер сохранил', en: 'The server saved' },
+    hint: {
+      ru: 'Сервер ответил. Ожидание закончилось, колонка осталась на новом месте и коротко вспыхнула тоном успеха.',
+      en: 'The server responded. The wait ended, and the column stayed in its new place and flashed briefly in the success tone.',
+    },
     enter: afterRows(serverStep({ saved: ['country'] })),
   },
   {
-    title: 'Отказ сервера',
-    hint: 'Пользователь переставил другую колонку, но сервер отказал. Колонка вернулась к прежним соседям и коротко вспыхнула тоном ошибки.',
+    title: { ru: 'Отказ сервера', en: 'Server refusal' },
+    hint: {
+      ru: 'Пользователь переставил другую колонку, но сервер отказал. Колонка вернулась к прежним соседям и коротко вспыхнула тоном ошибки.',
+      en: 'The user moved another column, but the server refused. The column returned to its previous neighbors and flashed briefly in the error tone.',
+    },
     states: ['drag.rejected'],
     enter: afterRows(serverStep({ saved: ['country'], refused: 'lastName' })),
   },
   {
-    title: 'Отказ без отката',
-    hint: 'Приложение не возвращает колонку при отказе. Отклонённая колонка остаётся там, куда её переставили, и коротко вспыхивает тоном ошибки.',
+    title: { ru: 'Отказ без отката', en: 'A refusal without a revert' },
+    hint: {
+      ru: 'Приложение не возвращает колонку при отказе. Отклонённая колонка остаётся там, куда её переставили, и коротко вспыхивает тоном ошибки.',
+      en: 'The app does not move the column back on refusal. The refused column stays where it was moved and flashes briefly in the error tone.',
+    },
     props: () => ({ columnDraggingRevertOnReject: false }),
     enter: afterRows(serverStep({ saved: ['country'], refused: 'age' })),
   },
@@ -453,7 +486,10 @@ export const ColumnDraggingServer: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Перенос колонки с сервером"
+      title={{
+        ru: 'Перенос колонки с сервером',
+        en: 'Moving a column with the server',
+      }}
       steps={COLUMN_SERVER}
       reset={() => {
         pendingColumnSaves.length = 0
@@ -467,11 +503,11 @@ export const ColumnDraggingServer: StoryObj<StoryProps> = {
       canvas.querySelector<HTMLElement>(`${HEAD}[data-column-id="${id}"]`)!
     const handle = (id: string) => head(id).querySelector<HTMLElement>(HANDLE)!
     const slow = { timeout: 5000 }
-    await step(COLUMN_SERVER[0]!.title, async () => {
+    await step(COLUMN_SERVER[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(head('country')).not.toBeNull())
     })
-    await step(COLUMN_SERVER[1]!.title, async () => {
+    await step(COLUMN_SERVER[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(movedRight(canvas, 'country')).toBe(true))
       await until(() =>
@@ -484,7 +520,7 @@ export const ColumnDraggingServer: StoryObj<StoryProps> = {
       )
       await releaseFocus()
     })
-    await step(COLUMN_SERVER[2]!.title, async () => {
+    await step(COLUMN_SERVER[2]!.title.ru, async () => {
       const placed = headOrder(canvas)
       await guideNext(canvas)
       await until(() =>
@@ -498,7 +534,7 @@ export const ColumnDraggingServer: StoryObj<StoryProps> = {
         ),
       )
     })
-    await step(COLUMN_SERVER[3]!.title, async () => {
+    await step(COLUMN_SERVER[3]!.title.ru, async () => {
       const before = headOrder(canvas)
       await guideNext(canvas)
       await waitFor(
@@ -522,7 +558,7 @@ export const ColumnDraggingServer: StoryObj<StoryProps> = {
       )
       await releaseFocus()
     })
-    await step(COLUMN_SERVER[4]!.title, async () => {
+    await step(COLUMN_SERVER[4]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(head('age')).toHaveAttribute('data-column-flash', 'reverted'),
@@ -577,17 +613,29 @@ const GROUP_MOVED: NestedMove = {
 
 const NESTED_MOVE: readonly GuideStoryStep[] = [
   {
-    title: 'Группы колонок',
-    hint: 'Колонки сгруппированы. Колонку можно переставить только среди соседей её группы, а группу — среди групп того же уровня.',
+    title: { ru: 'Группы колонок', en: 'Column groups' },
+    hint: {
+      ru: 'Колонки сгруппированы. Колонку можно переставить только среди соседей её группы, а группу — среди групп того же уровня.',
+      en: 'The columns are grouped. A column can be moved only among its neighbors in the group, and a group only among groups of the same level.',
+    },
   },
   {
-    title: 'Колонка переставлена в группе',
-    hint: 'Пользователь переставил колонку внутри группы. Порядок колонок группы изменился, заголовок группы остался над ними.',
+    title: {
+      ru: 'Колонка переставлена в группе',
+      en: 'The column is moved within its group',
+    },
+    hint: {
+      ru: 'Пользователь переставил колонку внутри группы. Порядок колонок группы изменился, заголовок группы остался над ними.',
+      en: "The user moved a column inside its group. The order of the group's columns changed, and the group header stayed above them.",
+    },
     enter: afterRows(nestedStep([LEAF_SWAPPED])),
   },
   {
-    title: 'Группа переставлена',
-    hint: 'Пользователь переставил группу. Все её колонки переехали вместе с ней одним блоком.',
+    title: { ru: 'Группа переставлена', en: 'The group is moved' },
+    hint: {
+      ru: 'Пользователь переставил группу. Все её колонки переехали вместе с ней одним блоком.',
+      en: 'The user moved a group. All its columns moved with it as one block.',
+    },
     enter: afterRows(nestedStep([LEAF_SWAPPED, GROUP_MOVED])),
   },
 ]
@@ -601,7 +649,10 @@ export const DraggingNested: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Перенос под вложенной шапкой"
+      title={{
+        ru: 'Перенос под вложенной шапкой',
+        en: 'Moving under a nested header',
+      }}
       steps={NESTED_MOVE}
       args={guideArgs(
         {
@@ -619,11 +670,11 @@ export const DraggingNested: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     const nameGroup = () =>
       canvas.querySelector<HTMLElement>(`${HEAD}[data-column-id="name"]`)!
-    await step(NESTED_MOVE[0]!.title, async () => {
+    await step(NESTED_MOVE[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await expect(before(canvas, 'firstName', 'lastName')).toBe(true)
     })
-    await step(NESTED_MOVE[1]!.title, async () => {
+    await step(NESTED_MOVE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(before(canvas, 'lastName', 'firstName')).toBe(true),
@@ -638,7 +689,7 @@ export const DraggingNested: StoryObj<StoryProps> = {
       await releaseFocus()
       await settle()
     })
-    await step(NESTED_MOVE[2]!.title, async () => {
+    await step(NESTED_MOVE[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(before(canvas, 'info', 'name')).toBe(true))
       // Колонки группы — рядом, блоком.

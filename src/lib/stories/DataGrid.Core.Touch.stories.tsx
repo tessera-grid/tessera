@@ -22,7 +22,7 @@ const meta = {
 
 export default meta
 
-const NOT_TOUCH = 'На касания не влияет'
+const NOT_TOUCH = 'Does not affect touch'
 
 /** Плагины с целями под палец: кнопки шапки и ячеек, грип, ручки, флажки, меню. */
 export const TouchPlayground: StoryObj<StoryProps> = {

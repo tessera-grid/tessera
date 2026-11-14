@@ -27,11 +27,11 @@ const meta = {
   title: 'Tessera/UI/Tooltip',
   args: { side: 'top' },
   argTypes: {
-    title: { control: 'text', description: 'Текст подсказки' },
+    title: { control: 'text', description: 'Tooltip text' },
     side: {
       control: 'inline-radio',
       options: SIDES,
-      description: 'Сторона появления',
+      description: 'Side the tooltip appears on',
     },
   },
   render: function Render({ title, side }) {

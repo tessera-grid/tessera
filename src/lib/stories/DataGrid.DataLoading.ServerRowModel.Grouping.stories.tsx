@@ -61,19 +61,19 @@ interface GroupingPlaygroundArgs extends StoryProps {
 export const ServerGroupingPlayground: StoryObj<GroupingPlaygroundArgs> = {
   name: 'Playground',
   parameters: showControls(['groupBy', 'groupCounts'], {
-    dataCount: 'строки подаёт «сервер» демо',
-    columnCount: 'колонки задаёт демо',
+    dataCount: 'the demo server provides the rows',
+    columnCount: 'the demo sets the columns',
   }),
   // Список сгруппирован по городу при открытии: группы приходят с сервера свёрнутыми.
   args: { ...layout, groupBy: 'city', groupCounts: true },
   argTypes: {
     groupBy: {
-      description: 'Колонка, по которой список сгруппирован при открытии',
+      description: 'The column the list is grouped by when it opens',
       control: 'select',
       options: ['none', 'city', 'vip'],
     },
     groupCounts: {
-      description: 'Сервер присылает число строк каждой группы',
+      description: 'The server sends the row count of each group',
       control: 'boolean',
     },
   },
@@ -112,13 +112,22 @@ const groupByCity = async (root: HTMLElement, signal: AbortSignal) => {
 
 const GROUP_BY: readonly GuideStoryStep[] = [
   {
-    title: 'Пользователь открыл список',
-    hint: 'Сервер отдаёт сто тысяч строк блоками. Таблица держит только те, что рядом с экраном.',
+    title: { ru: 'Пользователь открыл список', en: 'The user opened the list' },
+    hint: {
+      ru: 'Сервер отдаёт сто тысяч строк блоками. Таблица держит только те, что рядом с экраном.',
+      en: 'The server returns a hundred thousand rows in blocks. The table keeps only the ones near the screen.',
+    },
     props: groupProps({}),
   },
   {
-    title: 'Пользователь сгруппировал по городу',
-    hint: 'Группы по всем строкам знает только сервер, поэтому таблица попросила у него группы и вернулась к началу. Пока ответ в пути, на экране прежние строки в состоянии обновления данных.',
+    title: {
+      ru: 'Пользователь сгруппировал по городу',
+      en: 'The user grouped by city',
+    },
+    hint: {
+      ru: 'Группы по всем строкам знает только сервер, поэтому таблица попросила у него группы и вернулась к началу. Пока ответ в пути, на экране прежние строки в состоянии обновления данных.',
+      en: 'Only the server knows the groups across all rows, so the table asked it for the groups and went back to the top. While the response is on its way, the screen shows the previous rows in the data refresh state.',
+    },
     states: ['body.refreshing'],
     enter: stepAction(async (root, { signal }) => {
       if (server.held.length > 0 || groupRows(root).length > 0) return
@@ -126,8 +135,11 @@ const GROUP_BY: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Сервер ответил',
-    hint: 'Каждая строка — город: рядом с названием число строк в нём, в колонках визитов и возраста — сумма и среднее, которые посчитал сервер.',
+    title: { ru: 'Сервер ответил', en: 'The server responded' },
+    hint: {
+      ru: 'Каждая строка — город: рядом с названием число строк в нём, в колонках визитов и возраста — сумма и среднее, которые посчитал сервер.',
+      en: 'Each row is a city: next to the name is its row count, and the visits and age columns show the sum and the average the server calculated.',
+    },
     enter: stepAction(async (root, { signal }) => {
       if (server.held.length === 0 && groupRows(root).length === 0) {
         await groupByCity(root, signal)
@@ -148,7 +160,7 @@ export const ServerRowModelGroupBy: StoryObj<StoryProps> = {
   parameters: { scenario: '0144/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Группировка на сервере"
+      title={{ ru: 'Группировка на сервере', en: 'Grouping on the server' }}
       steps={GROUP_BY}
       reset={() => {
         groupServer.refuse = false
@@ -158,17 +170,17 @@ export const ServerRowModelGroupBy: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(GROUP_BY[0]!.title, async () => {
+    await step(GROUP_BY[0]!.title.ru, async () => {
       await until(() => expect(hasRow(canvas, 0)).toBe(true))
       await until(() => expect(groupRows(canvas)).toHaveLength(0))
     })
-    await step(GROUP_BY[1]!.title, async () => {
+    await step(GROUP_BY[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(refreshing(canvas)).toBe(true)
       await expect(server.held.length).toBeGreaterThan(0)
     })
-    await step(GROUP_BY[2]!.title, async () => {
+    await step(GROUP_BY[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       const paris = groupRowOf(canvas, 'Paris')!
@@ -200,13 +212,22 @@ const parisRowsShown = (root: HTMLElement) =>
 
 const EXPAND_GROUP: readonly GuideStoryStep[] = [
   {
-    title: 'Список сгруппирован по городу',
-    hint: 'Каждая строка — город с числом строк и агрегатами. Самих строк городов таблица ещё не загружала.',
+    title: {
+      ru: 'Список сгруппирован по городу',
+      en: 'The list is grouped by city',
+    },
+    hint: {
+      ru: 'Каждая строка — город с числом строк и агрегатами. Самих строк городов таблица ещё не загружала.',
+      en: "Each row is a city with its row count and aggregates. The table has not loaded the cities' rows yet.",
+    },
     props: groupProps({ grouping: ['city'] }),
   },
   {
-    title: 'Пользователь раскрыл город',
-    hint: 'Таблица попросила у сервера строки только этого города. Число строк в нём уже известно, поэтому скелеты заняли всю высоту группы, и полоса прокрутки не прыгнет, когда строки придут.',
+    title: { ru: 'Пользователь раскрыл город', en: 'The user expanded a city' },
+    hint: {
+      ru: 'Таблица попросила у сервера строки только этого города. Число строк в нём уже известно, поэтому скелеты заняли всю высоту группы, и полоса прокрутки не прыгнет, когда строки придут.',
+      en: 'The table asked the server for the rows of this city only. Its row count is already known, so skeletons took the full height of the group, and the scrollbar will not jump when the rows arrive.',
+    },
     states: ['body.skeleton'],
     enter: stepAction(async (root, { signal }) => {
       if (parisRowsShown(root) || server.held.length > 0) return
@@ -214,8 +235,11 @@ const EXPAND_GROUP: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Сервер ответил',
-    hint: 'Строки города встали под ним с отступом уровня. Остальные приходят блоками по мере прокрутки, как у списка без группировки.',
+    title: { ru: 'Сервер ответил', en: 'The server responded' },
+    hint: {
+      ru: 'Строки города встали под ним с отступом уровня. Остальные приходят блоками по мере прокрутки, как у списка без группировки.',
+      en: "The city's rows took their place below it, indented one level. The rest arrive in blocks as the user scrolls, as in a list without grouping.",
+    },
     enter: stepAction(async (root, { signal }) => {
       if (server.held.length === 0 && !parisRowsShown(root)) {
         await expandParis(root, signal)
@@ -236,7 +260,10 @@ export const ServerRowModelExpandGroup: StoryObj<StoryProps> = {
   parameters: { scenario: '0144/S2', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Строки группы с сервера"
+      title={{
+        ru: 'Строки группы с сервера',
+        en: 'Group rows from the server',
+      }}
       steps={EXPAND_GROUP}
       args={guideArgs(layout, args)}
     />
@@ -247,11 +274,11 @@ export const ServerRowModelExpandGroup: StoryObj<StoryProps> = {
       server.parents.filter(
         id => id === groupRowOf(canvas, 'Paris')?.dataset.rowId,
       )
-    await step(EXPAND_GROUP[0]!.title, async () => {
+    await step(EXPAND_GROUP[0]!.title.ru, async () => {
       await until(() => expect(!!groupRowOf(canvas, 'Paris')).toBe(true))
       await until(() => expect(parisRequests()).toEqual([]))
     })
-    await step(EXPAND_GROUP[1]!.title, async () => {
+    await step(EXPAND_GROUP[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(parisRequests()).toHaveLength(1)
@@ -261,7 +288,7 @@ export const ServerRowModelExpandGroup: StoryObj<StoryProps> = {
         canvas.querySelector('[aria-rowcount]')?.getAttribute('aria-rowcount'),
       ).toBe(String(5 + parisCount() + 1))
     })
-    await step(EXPAND_GROUP[2]!.title, async () => {
+    await step(EXPAND_GROUP[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(parisRowsShown(canvas)).toBe(true)
@@ -298,13 +325,22 @@ const cellText = (row: HTMLElement, columnId: string) =>
 
 const TOTALS: readonly GuideStoryStep[] = [
   {
-    title: 'Итог в футере',
-    hint: 'Под списком — итог по всем ста тысячам строк: сумма визитов и средний возраст. Его посчитал сервер, загружены лишь строки рядом с экраном.',
+    title: { ru: 'Итог в футере', en: 'The total in the footer' },
+    hint: {
+      ru: 'Под списком — итог по всем ста тысячам строк: сумма визитов и средний возраст. Его посчитал сервер, загружены лишь строки рядом с экраном.',
+      en: 'Below the list is the total over all one hundred thousand rows: the sum of visits and the average age. The server calculated it; only the rows near the screen are loaded.',
+    },
     props: groupProps({ search: true }),
   },
   {
-    title: 'Пользователь ищет город',
-    hint: 'Поиск выполняет сервер, поэтому таблица попросила у него новое начало списка вместе с новым итогом. Пока ответ в пути, на экране прежние строки и прежний итог в состоянии обновления данных.',
+    title: {
+      ru: 'Пользователь ищет город',
+      en: 'The user searches for a city',
+    },
+    hint: {
+      ru: 'Поиск выполняет сервер, поэтому таблица попросила у него новое начало списка вместе с новым итогом. Пока ответ в пути, на экране прежние строки и прежний итог в состоянии обновления данных.',
+      en: 'The server runs the search, so the table asked it for a new start of the list along with a new total. While the response is on its way, the screen shows the previous rows and the previous total in the data refresh state.',
+    },
     states: ['body.refreshing'],
     enter: stepAction(async (root, { signal }) => {
       if (server.held.length > 0 || footerOf(root, 'visits') !== allVisits()) {
@@ -314,8 +350,11 @@ const TOTALS: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Сервер ответил',
-    hint: 'В списке только строки этого города, а итог в футере посчитан по ним — по всей найденной выборке, а не по загруженным строкам.',
+    title: { ru: 'Сервер ответил', en: 'The server responded' },
+    hint: {
+      ru: 'В списке только строки этого города, а итог в футере посчитан по ним — по всей найденной выборке, а не по загруженным строкам.',
+      en: "The list has only this city's rows, and the total in the footer is calculated from them: over the whole search result, not over the loaded rows.",
+    },
     enter: stepAction(async (root, { signal }) => {
       if (
         server.held.length === 0 &&
@@ -339,25 +378,28 @@ export const ServerRowModelTotals: StoryObj<StoryProps> = {
   parameters: { scenario: '0144/S3', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Итог списка с сервера"
+      title={{
+        ru: 'Итог списка с сервера',
+        en: 'The list total from the server',
+      }}
       steps={TOTALS}
       args={guideArgs(layout, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(TOTALS[0]!.title, async () => {
+    await step(TOTALS[0]!.title.ru, async () => {
       await until(() => expect(hasRow(canvas, 0)).toBe(true))
       await until(() => expect(footerOf(canvas, 'visits')).toBe(allVisits()))
     })
-    await step(TOTALS[1]!.title, async () => {
+    await step(TOTALS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(refreshing(canvas)).toBe(true)
       await expect(searchField(canvas)!.value).toBe(TOTALS_QUERY)
       await expect(footerOf(canvas, 'visits')).toBe(allVisits())
     })
-    await step(TOTALS[2]!.title, async () => {
+    await step(TOTALS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(footerOf(canvas, 'visits')).toBe(
@@ -374,13 +416,22 @@ export const ServerRowModelTotals: StoryObj<StoryProps> = {
 
 const GROUPING_REFUSED: readonly GuideStoryStep[] = [
   {
-    title: 'Пользователь открыл список',
-    hint: 'Сервер отдаёт строки списка блоками, группировки нет.',
+    title: { ru: 'Пользователь открыл список', en: 'The user opened the list' },
+    hint: {
+      ru: 'Сервер отдаёт строки списка блоками, группировки нет.',
+      en: "The server returns the list's rows in blocks; there is no grouping.",
+    },
     props: groupProps({}),
   },
   {
-    title: 'Пользователь сгруппировал по городу',
-    hint: 'Таблица попросила у сервера группы. Пока ответ в пути, на экране прежние строки в состоянии обновления данных.',
+    title: {
+      ru: 'Пользователь сгруппировал по городу',
+      en: 'The user grouped by city',
+    },
+    hint: {
+      ru: 'Таблица попросила у сервера группы. Пока ответ в пути, на экране прежние строки в состоянии обновления данных.',
+      en: 'The table asked the server for groups. While the response is on its way, the screen shows the previous rows in the data refresh state.',
+    },
     states: ['body.refreshing'],
     enter: stepAction(async (root, { signal }) => {
       groupServer.refuse = true
@@ -389,8 +440,11 @@ const GROUPING_REFUSED: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Сервер отказал',
-    hint: 'Сервер не смог сгруппировать список. Таблица вернулась к прежнему виду без группировки, а плашка над строками называет причину и предлагает повторить.',
+    title: { ru: 'Сервер отказал', en: 'The server refused' },
+    hint: {
+      ru: 'Сервер не смог сгруппировать список. Таблица вернулась к прежнему виду без группировки, а плашка над строками называет причину и предлагает повторить.',
+      en: 'The server could not group the list. The table returned to its previous ungrouped view, and a banner above the rows names the reason and offers a retry.',
+    },
     enter: stepAction(async (root, { signal }) => {
       groupServer.refuse = true
       if (server.held.length === 0 && !failureShown(root)) {
@@ -409,7 +463,7 @@ export const ServerRowModelGroupingRefused: StoryObj<StoryProps> = {
   parameters: { scenario: '0144/S4', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Отказ в группировке"
+      title={{ ru: 'Отказ в группировке', en: 'Grouping refused' }}
       steps={GROUPING_REFUSED}
       reset={() => {
         groupServer.refuse = true
@@ -419,17 +473,17 @@ export const ServerRowModelGroupingRefused: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(GROUPING_REFUSED[0]!.title, async () => {
+    await step(GROUPING_REFUSED[0]!.title.ru, async () => {
       await until(() => expect(hasRow(canvas, 0)).toBe(true))
       await until(() => expect(groupRows(canvas)).toHaveLength(0))
     })
-    await step(GROUPING_REFUSED[1]!.title, async () => {
+    await step(GROUPING_REFUSED[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(refreshing(canvas)).toBe(true)
       await expect(server.held.length).toBeGreaterThan(0)
     })
-    await step(GROUPING_REFUSED[2]!.title, async () => {
+    await step(GROUPING_REFUSED[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(failureShown(canvas)).toBe(true)
@@ -474,8 +528,11 @@ const expandAll = async (root: HTMLElement, signal: AbortSignal) => {
 
 const EXPAND_ALL: readonly GuideStoryStep[] = [
   {
-    title: 'Группы свёрнуты',
-    hint: 'Сервер сгруппировал строки по городу; группы свёрнуты, их строки таблица ещё не загружала. В шапке колонки с кнопками раскрытия — кнопка, которая раскрывает все группы сразу.',
+    title: { ru: 'Группы свёрнуты', en: 'Groups are collapsed' },
+    hint: {
+      ru: 'Сервер сгруппировал строки по городу; группы свёрнуты, их строки таблица ещё не загружала. В шапке колонки с кнопками раскрытия — кнопка, которая раскрывает все группы сразу.',
+      en: 'The server grouped the rows by city; the groups are collapsed, and the table has not loaded their rows yet. The header of the column with expand buttons has a button that expands all groups at once.',
+    },
     // Отказ прошлого гайда снят до открытия таблицы: она открывается с группами.
     props: context => {
       groupServer.refuse = false
@@ -483,8 +540,14 @@ const EXPAND_ALL: readonly GuideStoryStep[] = [
     },
   },
   {
-    title: 'Пользователь раскрыл всё',
-    hint: 'Раскрыты все группы, но строки таблица попросила только у групп на экране: под ними — блоки скелетов, пока ответ в пути. Группы ниже попросят свои строки, когда до них дойдёт прокрутка.',
+    title: {
+      ru: 'Пользователь раскрыл всё',
+      en: 'The user expanded everything',
+    },
+    hint: {
+      ru: 'Раскрыты все группы, но строки таблица попросила только у групп на экране: под ними — блоки скелетов, пока ответ в пути. Группы ниже попросят свои строки, когда до них дойдёт прокрутка.',
+      en: 'All groups are expanded, but the table asked only for the rows of the groups on screen: below them are skeleton blocks while the response is on its way. Groups further down will ask for their rows when scrolling reaches them.',
+    },
     states: ['body.skeleton'],
     enter: stepAction(async (root, { signal }) => {
       if (server.held.length > 0 || firstGroupLoaded(root)) return
@@ -492,8 +555,11 @@ const EXPAND_ALL: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Сервер ответил',
-    hint: 'Строки первой группы встали под ней с отступом уровня. Кнопка в шапке теперь сворачивает всё.',
+    title: { ru: 'Сервер ответил', en: 'The server responded' },
+    hint: {
+      ru: 'Строки первой группы встали под ней с отступом уровня. Кнопка в шапке теперь сворачивает всё.',
+      en: "The first group's rows took their place below it, indented one level. The button in the header now collapses everything.",
+    },
     enter: stepAction(async (root, { signal }) => {
       if (server.held.length === 0 && !firstGroupLoaded(root)) {
         await expandAll(root, signal)
@@ -514,27 +580,27 @@ export const ServerGroupingExpandAll: StoryObj<StoryProps> = {
   parameters: { scenario: '0160/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Раскрыть всё"
+      title={{ ru: 'Раскрыть всё', en: 'Expand all' }}
       steps={EXPAND_ALL}
       args={guideArgs(layout, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(EXPAND_ALL[0]!.title, async () => {
+    await step(EXPAND_ALL[0]!.title.ru, async () => {
       await until(() => expect(groupRows(canvas).length > 0).toBe(true))
       await until(() =>
         expect(groupRows(canvas).some(groupExpanded)).toBe(false),
       )
     })
-    await step(EXPAND_ALL[1]!.title, async () => {
+    await step(EXPAND_ALL[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(groupRows(canvas).every(groupExpanded)).toBe(true)
       // Строки просят только группы на экране.
       await expect(new Set(server.parents).size).toBeLessThanOrEqual(2)
     })
-    await step(EXPAND_ALL[2]!.title, async () => {
+    await step(EXPAND_ALL[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(firstGroupLoaded(canvas)).toBe(true)
@@ -554,13 +620,25 @@ const groupCountOf = (canvas: HTMLElement) =>
 
 const ROW_COUNT: readonly GuideStoryStep[] = [
   {
-    title: 'Сервер прислал число подгрупп',
-    hint: 'Рядом с городом стоит число его подгрупп: сервер сообщил только их, этого хватает, чтобы раскрыть группу.',
+    title: {
+      ru: 'Сервер прислал число подгрупп',
+      en: 'The server sent the subgroup count',
+    },
+    hint: {
+      ru: 'Рядом с городом стоит число его подгрупп: сервер сообщил только их, этого хватает, чтобы раскрыть группу.',
+      en: 'Next to the city is the number of its subgroups: the server reported only those, which is enough to expand the group.',
+    },
     props: groupProps({ grouping: NESTED_GROUPS, rowCounts: false }),
   },
   {
-    title: 'Сервер прислал число строк',
-    hint: 'Теперь сервер сообщает и число строк данных, поэтому рядом с городом стоит оно: человеку важнее, сколько записей внутри.',
+    title: {
+      ru: 'Сервер прислал число строк',
+      en: 'The server sent the row count',
+    },
+    hint: {
+      ru: 'Теперь сервер сообщает и число строк данных, поэтому рядом с городом стоит оно: человеку важнее, сколько записей внутри.',
+      en: 'Now the server reports the number of data rows too, so that is what appears next to the city: a person cares more about how many records are inside.',
+    },
     props: groupProps({ grouping: NESTED_GROUPS, rowCounts: true }),
     remount: true,
     enter: stepAction(async (root, { signal }) => {
@@ -575,18 +653,18 @@ export const ServerGroupRowCount: StoryObj<StoryProps> = {
   parameters: { scenario: '0184/S7', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Число строк группы"
+      title={{ ru: 'Число строк группы', en: 'Group row count' }}
       steps={ROW_COUNT}
       args={guideArgs(layout, args)}
     />
   ),
   play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(ROW_COUNT[0]!.title, async () => {
+    await step(ROW_COUNT[0]!.title.ru, async () => {
       await until(() => expect(!!groupRowOf(canvas, 'Paris')).toBe(true))
       await until(() => expect(groupCountOf(canvas)).toBe('(3)'))
     })
-    await step(ROW_COUNT[1]!.title, async () => {
+    await step(ROW_COUNT[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() =>

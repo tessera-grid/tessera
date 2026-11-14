@@ -64,11 +64,11 @@ const meta = {
   },
   argTypes: {
     shown: { control: 'boolean' },
-    icon: { control: 'boolean', description: 'Иконка слева' },
+    icon: { control: 'boolean', description: 'Icon on the left' },
     title: { control: 'text' },
     description: { control: 'text' },
-    action: { control: 'boolean', description: 'Кнопка повтора' },
-    dismissible: { control: 'boolean', description: 'Кнопка закрытия' },
+    action: { control: 'boolean', description: 'Retry button' },
+    dismissible: { control: 'boolean', description: 'Close button' },
   },
   parameters: { requirements: ['LE19'] },
   render: args => (

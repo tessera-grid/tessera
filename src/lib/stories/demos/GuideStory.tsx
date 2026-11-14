@@ -32,6 +32,14 @@ import type { CatalogState } from '../__mocks__/catalog'
 import { getData } from '../__mocks__/data'
 import { normalizeArgs } from '../__mocks__/utils/normalizeArgs'
 import { type GuideStep, GuidePanel, useGuide } from './GuidePanel'
+import { StoryLocaleProvider } from '../__mocks__/storyLocale'
+import {
+  type StoryLocale,
+  type StoryText,
+  storyLocaleOf,
+  textOf,
+} from '../__mocks__/storyText'
+import { shellText } from './storyShell'
 import {
   createFocusGuard,
   type FocusGuard,
@@ -432,7 +440,8 @@ export const GuideStory = ({
   reset,
   showActions: showActionsProp,
 }: {
-  title: string
+  /** Название гайда: пара `{ ru, en }` (ADR 0225). */
+  title: StoryText
   steps: readonly GuideStoryStep[]
   args: StoryProps
   /**
@@ -877,7 +886,7 @@ export const GuideStory = ({
         event.stopImmediatePropagation()
         event.preventDefault()
         console.error(
-          `Гайд: действие остановленного шага шлёт «${event.type}» (ADR 0117, SN68)`,
+          `Guide: the action of a stopped step sends "${event.type}" (ADR 0117, SN68)`,
         )
         return
       }
@@ -1053,9 +1062,9 @@ export const GuideStory = ({
   useEffect(() => {
     if (firstActs)
       console.error(
-        `Гайд «${title}»: у шага 1 есть действие — шаг 1 только показывает исходное состояние (ADR 0117, SN71).`,
+        `Guide "${title.en}": step 1 has an action — step 1 only shows the initial state (ADR 0117, SN71).`,
       )
-  }, [firstActs, title])
+  }, [firstActs, title.en])
   // Что поменяло приложение посреди шага — в консоль, как действие истории.
   useEffect(() => {
     if (appProps)
@@ -1069,7 +1078,11 @@ export const GuideStory = ({
   useIsomorphicLayoutEffect(() => {
     consoleLog.action({
       plugin: 'story',
-      action: `Шаг ${guide.step + 1} · ${stepTitle}`,
+      action: (locale: StoryLocale) =>
+        shellText(locale, 'guideStepAction', {
+          step: guide.step + 1,
+          title: stepTitle ? textOf(stepTitle, locale) : '',
+        }),
       source: 'story',
     })
   }, [consoleLog, guide.step, guide.run, stepTitle])
@@ -1126,51 +1139,56 @@ export const GuideStory = ({
       stop?.()
     }
   }, [enter, app, guide.step, guide.run, shown.rewinds, ready])
+  // Язык грида на текущем шаге — язык гайда и консоли (ADR 0225, §3).
+  const locale = storyLocaleOf(live?.locale ?? props.locale ?? args.locale)
   return (
-    <div
-      ref={root}
-      data-guide-root=""
-      data-guide-step={guide.step}
-      style={{ display: 'flex', flexDirection: 'column' }}
-    >
-      <GuidePanel
-        title={title}
-        steps={steps}
-        step={guide.step}
-        onBack={guide.back}
-        onNext={guide.next}
-        onRestart={guide.restart}
-        onJump={guide.jump}
-        changed={shown.changed}
-        onRestore={restore}
-        stepBusy={stepBusy}
-      />
+    <StoryLocaleProvider value={locale}>
       <div
-        ref={table}
-        style={{ display: 'contents' }}
-        onPointerDownCapture={onInput}
-        onTouchStartCapture={onInput}
-        onKeyDownCapture={event => {
-          if (!PASSIVE_KEYS.has(event.key)) onInput(event)
-        }}
-        onWheelCapture={event => {
-          if (!event.nativeEvent.isTrusted) return
-          if (running() && table.current?.contains(event.target as Node)) return
-          wheelAt.current = performance.now()
-        }}
+        ref={root}
+        data-guide-root=""
+        data-guide-step={guide.step}
+        style={{ display: 'flex', flexDirection: 'column' }}
       >
-        {ready && (
-          <StoryComponent
-            key={mount}
-            {...args}
-            {...props}
-            {...live}
-            extraPlugins={plugins}
-            consoleLog={consoleLog}
-          />
-        )}
+        <GuidePanel
+          title={title}
+          steps={steps}
+          step={guide.step}
+          onBack={guide.back}
+          onNext={guide.next}
+          onRestart={guide.restart}
+          onJump={guide.jump}
+          changed={shown.changed}
+          onRestore={restore}
+          stepBusy={stepBusy}
+        />
+        <div
+          ref={table}
+          style={{ display: 'contents' }}
+          onPointerDownCapture={onInput}
+          onTouchStartCapture={onInput}
+          onKeyDownCapture={event => {
+            if (!PASSIVE_KEYS.has(event.key)) onInput(event)
+          }}
+          onWheelCapture={event => {
+            if (!event.nativeEvent.isTrusted) return
+            if (running() && table.current?.contains(event.target as Node))
+              return
+            wheelAt.current = performance.now()
+          }}
+        >
+          {ready && (
+            <StoryComponent
+              key={mount}
+              {...args}
+              {...props}
+              {...live}
+              extraPlugins={plugins}
+              consoleLog={consoleLog}
+            />
+          )}
+        </div>
+        <StoryConsole log={consoleLog} />
       </div>
-      <StoryConsole log={consoleLog} />
-    </div>
+    </StoryLocaleProvider>
   )
 }

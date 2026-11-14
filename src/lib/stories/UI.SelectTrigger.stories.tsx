@@ -75,8 +75,11 @@ const meta = {
   title: 'Tessera/UI/SelectTrigger',
   args: { pending: false, failed: false },
   argTypes: {
-    pending: { control: 'boolean', description: 'Ждёт загрузки списка' },
-    failed: { control: 'boolean', description: 'Загрузка отказала' },
+    pending: {
+      control: 'boolean',
+      description: 'Waiting for the list to load',
+    },
+    failed: { control: 'boolean', description: 'Loading failed' },
   },
   render: args => <SelectStory {...args} />,
 } satisfies Meta<SelectTriggerStoryArgs>

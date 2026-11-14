@@ -90,12 +90,12 @@ const meta = {
     depth: {
       control: 'inline-radio',
       options: [0, 1],
-      description: 'Верхний уровень или раздел',
+      description: 'Top level or a section',
     },
     status: {
       control: 'inline-radio',
       options: ['done', 'loading', 'failed'],
-      description: 'Пункты загружены, грузятся или отказ',
+      description: 'Items loaded, still loading, or refused',
     },
   },
   render: function Render(args) {

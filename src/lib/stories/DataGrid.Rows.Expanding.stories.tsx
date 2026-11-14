@@ -119,12 +119,24 @@ const confirmRow = (root: ParentNode) =>
 
 const CONFIRMED: readonly GuideStoryStep[] = [
   {
-    title: 'Раскрытие подтверждает сервер',
-    hint: 'Приложение подтверждает каждое раскрытие на сервере. Строки с детьми раскрываются кнопкой раскрытия.',
+    title: {
+      ru: 'Раскрытие подтверждает сервер',
+      en: 'The server confirms expanding',
+    },
+    hint: {
+      ru: 'Приложение подтверждает каждое раскрытие на сервере. Строки с детьми раскрываются кнопкой раскрытия.',
+      en: 'The app confirms every expand on the server. Rows with child rows expand with the expand button.',
+    },
   },
   {
-    title: 'Раскрытие ждёт сервера',
-    hint: 'Пользователь раскрыл строку. Строка сразу раскрыта, а пока сервер не ответил, ячейки строки чуть темнеют и по ним проходит светлый блик.',
+    title: {
+      ru: 'Раскрытие ждёт сервера',
+      en: 'Expanding waits for the server',
+    },
+    hint: {
+      ru: 'Пользователь раскрыл строку. Строка сразу раскрыта, а пока сервер не ответил, ячейки строки чуть темнеют и по ним проходит светлый блик.',
+      en: 'The user expanded a row. The row is expanded right away, and until the server responds, its cells darken slightly and a light shimmer runs across them.',
+    },
     states: ['body.pending'],
     enter: untilDone(
       root => isPending(confirmRow(root)),
@@ -135,8 +147,11 @@ const CONFIRMED: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Сервер подтвердил',
-    hint: 'Сервер ответил. Ожидание со строки снято, строка остаётся раскрытой.',
+    title: { ru: 'Сервер подтвердил', en: 'The server confirmed' },
+    hint: {
+      ru: 'Сервер ответил. Ожидание со строки снято, строка остаётся раскрытой.',
+      en: 'The server responded. The row is no longer waiting and stays expanded.',
+    },
     enter: untilDone(
       root => isExpanded(confirmRow(root)) && !isPending(confirmRow(root)),
       root => {
@@ -157,7 +172,10 @@ export const ExpandingConfirmed: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Раскрытие ждёт сервера"
+      title={{
+        ru: 'Раскрытие ждёт сервера',
+        en: 'Expanding waits for the server',
+      }}
       steps={CONFIRMED}
       args={guideArgs(
         {
@@ -173,12 +191,12 @@ export const ExpandingConfirmed: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(CONFIRMED[0]!.title, async () => {
+    await step(CONFIRMED[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(toggleIn(confirmRow(canvas))).not.toBeNull())
       await until(() => expect(isExpanded(confirmRow(canvas))).toBe(false))
     })
-    await step(CONFIRMED[1]!.title, async () => {
+    await step(CONFIRMED[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(isPending(confirmRow(canvas))).toBe(true))
       await until(() => expect(isExpanded(confirmRow(canvas))).toBe(true))
@@ -192,7 +210,7 @@ export const ExpandingConfirmed: StoryObj<StoryProps> = {
         expect(toggleIn(confirmRow(canvas))).not.toHaveAttribute('aria-busy'),
       )
     })
-    await step(CONFIRMED[2]!.title, async () => {
+    await step(CONFIRMED[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(isPending(confirmRow(canvas))).toBe(false))
       await until(() => expect(isExpanded(confirmRow(canvas))).toBe(true))
@@ -300,12 +318,18 @@ const emptyIsLeaf = (root: HTMLElement) =>
 
 const LAZY_CHILDREN: readonly GuideStoryStep[] = [
   {
-    title: 'Дети на сервере',
-    hint: 'У строк есть дети, но в данных их ещё нет. У таких строк — кнопка раскрытия.',
+    title: { ru: 'Дети на сервере', en: 'Child rows on the server' },
+    hint: {
+      ru: 'У строк есть дети, но в данных их ещё нет. У таких строк — кнопка раскрытия.',
+      en: 'The rows have child rows, but they are not in the data yet. Such rows have an expand button.',
+    },
   },
   {
-    title: 'Дети загружаются',
-    hint: 'Пользователь раскрыл строку. Кнопка раскрытия показывает ожидание ответа сервера, под строкой — скелет будущих детей.',
+    title: { ru: 'Дети загружаются', en: 'Child rows are loading' },
+    hint: {
+      ru: 'Пользователь раскрыл строку. Кнопка раскрытия показывает ожидание ответа сервера, под строкой — скелет будущих детей.',
+      en: 'The user expanded a row. The expand button shows it is waiting for the server, and a skeleton of the future child rows appears under the row.',
+    },
     states: ['body.pending'],
     enter: untilDone(
       root => isPending(rowOf(root, CHILDREN.first)),
@@ -316,14 +340,20 @@ const LAZY_CHILDREN: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Дети пришли',
-    hint: 'Сервер вернул детей. Они встали под строкой и коротко подсвечены как новые.',
+    title: { ru: 'Дети пришли', en: 'Child rows arrived' },
+    hint: {
+      ru: 'Сервер вернул детей. Они встали под строкой и коротко подсвечены как новые.',
+      en: 'The server returned the child rows. They appeared under the row and are briefly highlighted as new.',
+    },
     immediate: true,
     enter: untilDone(childrenArrived, bringChildren),
   },
   {
-    title: 'Детей нет',
-    hint: 'Пользователь раскрыл другую строку, и сервер вернул пустой ответ. Строка стала обычной, кнопки раскрытия у неё нет.',
+    title: { ru: 'Детей нет', en: 'No child rows' },
+    hint: {
+      ru: 'Пользователь раскрыл другую строку, и сервер вернул пустой ответ. Строка стала обычной, кнопки раскрытия у неё нет.',
+      en: 'The user expanded another row, and the server returned an empty response. The row became a regular one with no expand button.',
+    },
     enter: untilDone(
       root => childrenArrived(root) && emptyIsLeaf(root),
       root => {
@@ -333,8 +363,11 @@ const LAZY_CHILDREN: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Загрузка не удалась',
-    hint: 'Сервер не ответил на раскрытие третьей строки. Строка свёрнута и коротко вспыхнула тоном ошибки.',
+    title: { ru: 'Загрузка не удалась', en: 'Loading failed' },
+    hint: {
+      ru: 'Сервер не ответил на раскрытие третьей строки. Строка свёрнута и коротко вспыхнула тоном ошибки.',
+      en: 'The server did not respond to expanding the third row. The row is collapsed, and it briefly flashed in the error tone.',
+    },
     immediate: true,
     enter: untilDone(
       root => childrenArrived(root) && emptyIsLeaf(root) && failedShown(root),
@@ -357,7 +390,7 @@ export const ExpandingLazyChildren: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Дети с сервера"
+      title={{ ru: 'Дети с сервера', en: 'Child rows from the server' }}
       steps={LAZY_CHILDREN}
       args={guideArgs(
         {
@@ -374,14 +407,14 @@ export const ExpandingLazyChildren: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(LAZY_CHILDREN[0]!.title, async () => {
+    await step(LAZY_CHILDREN[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() =>
         expect(toggleIn(rowOf(canvas, CHILDREN.first))).not.toBeNull(),
       )
       await expect(hasChildRows(canvas)).toBe(false)
     })
-    await step(LAZY_CHILDREN[1]!.title, async () => {
+    await step(LAZY_CHILDREN[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(isPending(rowOf(canvas, CHILDREN.first))).toBe(true),
@@ -396,7 +429,7 @@ export const ExpandingLazyChildren: StoryObj<StoryProps> = {
         ).not.toBeNull(),
       )
     })
-    await step(LAZY_CHILDREN[2]!.title, async () => {
+    await step(LAZY_CHILDREN[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(hasChildRows(canvas)).toBe(true))
       await expect(
@@ -411,11 +444,11 @@ export const ExpandingLazyChildren: StoryObj<StoryProps> = {
         ).toBeNull(),
       )
     })
-    await step(LAZY_CHILDREN[3]!.title, async () => {
+    await step(LAZY_CHILDREN[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(emptyIsLeaf(canvas)).toBe(true))
     })
-    await step(LAZY_CHILDREN[4]!.title, async () => {
+    await step(LAZY_CHILDREN[4]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(failedShown(canvas)).toBe(true))
       await expect(isExpanded(rowOf(canvas, CHILDREN.failed))).toBe(false)
@@ -464,12 +497,24 @@ const expandPending = (root: ParentNode) =>
 
 const EXPAND_REJECTED: readonly GuideStoryStep[] = [
   {
-    title: 'Раскрытие подтверждает сервер',
-    hint: 'Приложение подтверждает каждое раскрытие строки на сервере. Строки с детьми раскрываются кнопкой раскрытия.',
+    title: {
+      ru: 'Раскрытие подтверждает сервер',
+      en: 'The server confirms expanding',
+    },
+    hint: {
+      ru: 'Приложение подтверждает каждое раскрытие строки на сервере. Строки с детьми раскрываются кнопкой раскрытия.',
+      en: 'The app confirms every row expand on the server. Rows with child rows expand with the expand button.',
+    },
   },
   {
-    title: 'Раскрытие ждёт сервера',
-    hint: 'Пользователь раскрыл строку. Строка сразу раскрыта, а пока сервер не ответил, ячейки строки чуть темнеют и по ним проходит светлый блик.',
+    title: {
+      ru: 'Раскрытие ждёт сервера',
+      en: 'Expanding waits for the server',
+    },
+    hint: {
+      ru: 'Пользователь раскрыл строку. Строка сразу раскрыта, а пока сервер не ответил, ячейки строки чуть темнеют и по ним проходит светлый блик.',
+      en: 'The user expanded a row. The row is expanded right away, and until the server responds, its cells darken slightly and a light shimmer runs across them.',
+    },
     states: ['body.pending'],
     enter: untilDone(expandPending, root => {
       EXPAND_SERVER.hold()
@@ -477,8 +522,11 @@ const EXPAND_REJECTED: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Сервер отказал',
-    hint: 'Сервер отклонил раскрытие. Строка свёрнута обратно и коротко вспыхивает тоном ошибки.',
+    title: { ru: 'Сервер отказал', en: 'The server refused' },
+    hint: {
+      ru: 'Сервер отклонил раскрытие. Строка свёрнута обратно и коротко вспыхивает тоном ошибки.',
+      en: 'The server rejected the expand. The row is collapsed again and briefly flashes in the error tone.',
+    },
     immediate: true,
     enter: untilDone(
       root => expandableOf(root)?.getAttribute('data-flash') === 'reverted',
@@ -499,7 +547,7 @@ export const ExpandingRejected: StoryObj<StoryProps> = {
   parameters: { scenario: '0134/S3', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Отказ в раскрытии"
+      title={{ ru: 'Отказ в раскрытии', en: 'Expand refused' }}
       steps={EXPAND_REJECTED}
       args={guideArgs(
         {
@@ -518,12 +566,12 @@ export const ExpandingRejected: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(EXPAND_REJECTED[0]!.title, async () => {
+    await step(EXPAND_REJECTED[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(toggleOf(canvas)).not.toBeNull())
       expect(expandableOf(canvas)).not.toHaveAttribute('data-expanded', 'true')
     })
-    await step(EXPAND_REJECTED[1]!.title, async () => {
+    await step(EXPAND_REJECTED[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(expandPending(canvas)).toBe(true))
       expect(expandableOf(canvas)).toHaveAttribute('data-expanded', 'true')
@@ -532,7 +580,7 @@ export const ExpandingRejected: StoryObj<StoryProps> = {
       ).not.toBeNull()
       expect(toggleOf(canvas)).not.toHaveAttribute('aria-busy')
     })
-    await step(EXPAND_REJECTED[2]!.title, async () => {
+    await step(EXPAND_REJECTED[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(expandableOf(canvas)).toHaveAttribute('data-flash', 'reverted'),
@@ -577,18 +625,30 @@ let toggleCancelled = false
 
 const CANCEL_EXPAND: readonly GuideStoryStep[] = [
   {
-    title: 'Дети с сервера',
-    hint: 'Дети строки приходят с сервера при раскрытии.',
+    title: { ru: 'Дети с сервера', en: 'Child rows from the server' },
+    hint: {
+      ru: 'Дети строки приходят с сервера при раскрытии.',
+      en: "A row's child rows come from the server when it expands.",
+    },
   },
   {
-    title: 'Дети грузятся',
-    hint: 'Пользователь раскрыл строку. Кнопка раскрытия показывает ожидание, под строкой — скелет будущих детей.',
+    title: { ru: 'Дети грузятся', en: 'Child rows are on their way' },
+    hint: {
+      ru: 'Пользователь раскрыл строку. Кнопка раскрытия показывает ожидание, под строкой — скелет будущих детей.',
+      en: 'The user expanded a row. The expand button shows it is waiting, and a skeleton of the future child rows appears under the row.',
+    },
     states: ['body.pending'],
     enter: untilDone(childrenWait, expandHeld),
   },
   {
-    title: 'Кнопка предлагает отмену',
-    hint: 'Пользователь навёл указатель на кнопку раскрытия. Появился знак остановки, подсказка предлагает отменить раскрытие.',
+    title: {
+      ru: 'Кнопка предлагает отмену',
+      en: 'The button offers to cancel',
+    },
+    hint: {
+      ru: 'Пользователь навёл указатель на кнопку раскрытия. Появился знак остановки, подсказка предлагает отменить раскрытие.',
+      en: 'The user hovered over the expand button. A stop sign appeared, and a tooltip offers to cancel the expand.',
+    },
     states: ['body.pending'],
     pseudo: { hover: CANCEL_TOGGLE },
     enter: stepAction(async (root, { signal, onLeave }) => {
@@ -600,8 +660,11 @@ const CANCEL_EXPAND: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Раскрытие отменено',
-    hint: 'Пользователь нажал на кнопку. Строка свернулась обратно, без вспышки и отметки ошибки.',
+    title: { ru: 'Раскрытие отменено', en: 'The expand is canceled' },
+    hint: {
+      ru: 'Пользователь нажал на кнопку. Строка свернулась обратно, без вспышки и отметки ошибки.',
+      en: 'The user pressed the button. The row collapsed back, with no flash and no error mark.',
+    },
     enter: (root: HTMLElement) => {
       toggleCancelled = false
       return untilDone(
@@ -624,7 +687,7 @@ export const ExpandingCancel: StoryObj<StoryProps> = {
   parameters: { scenario: '0153/S9', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Отмена раскрытия"
+      title={{ ru: 'Отмена раскрытия', en: 'Canceling an expand' }}
       steps={CANCEL_EXPAND}
       args={guideArgs(
         {
@@ -642,12 +705,12 @@ export const ExpandingCancel: StoryObj<StoryProps> = {
   play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     const labels = storyLabels(args.locale)
-    await step(CANCEL_EXPAND[0]!.title, async () => {
+    await step(CANCEL_EXPAND[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(cancelToggle(canvas)).not.toBeNull())
       await until(() => expect(firstExpanded(canvas)).toBe(false))
     })
-    await step(CANCEL_EXPAND[1]!.title, async () => {
+    await step(CANCEL_EXPAND[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(childrenWait(canvas)).toBe(true))
       // Скелет будущих детей — сразу под строкой (ADR 0155, §3).
@@ -659,7 +722,7 @@ export const ExpandingCancel: StoryObj<StoryProps> = {
         ).not.toBeNull(),
       )
     })
-    await step(CANCEL_EXPAND[2]!.title, async () => {
+    await step(CANCEL_EXPAND[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(toggleArmed(canvas)).toBe(true))
       await until(() =>
@@ -669,7 +732,7 @@ export const ExpandingCancel: StoryObj<StoryProps> = {
         ),
       )
     })
-    await step(CANCEL_EXPAND[3]!.title, async () => {
+    await step(CANCEL_EXPAND[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(firstExpanded(canvas)).toBe(false))
       await until(() => expect(childrenWait(canvas)).toBe(false))
@@ -708,12 +771,21 @@ const EXPAND_ALL_ARGS = {
 
 const EXPAND_ALL: readonly GuideStoryStep[] = [
   {
-    title: 'Дерево свёрнуто',
-    hint: 'Строки с детьми свёрнуты. В шапке колонки с кнопками раскрытия — кнопка, которая раскрывает все строки сразу.',
+    title: { ru: 'Дерево свёрнуто', en: 'The tree is collapsed' },
+    hint: {
+      ru: 'Строки с детьми свёрнуты. В шапке колонки с кнопками раскрытия — кнопка, которая раскрывает все строки сразу.',
+      en: 'Rows with child rows are collapsed. The header of the column with the expand buttons has a button that expands all rows at once.',
+    },
   },
   {
-    title: 'Пользователь раскрыл всё',
-    hint: 'Раскрыты все строки с детьми на всех уровнях. Кнопка в шапке теперь сворачивает всё — её имя и подсказка сменились.',
+    title: {
+      ru: 'Пользователь раскрыл всё',
+      en: 'The user expanded everything',
+    },
+    hint: {
+      ru: 'Раскрыты все строки с детьми на всех уровнях. Кнопка в шапке теперь сворачивает всё — её имя и подсказка сменились.',
+      en: 'All rows with child rows are expanded at every level. The header button now collapses everything, and its name and tooltip changed.',
+    },
     enter: untilDone(
       root => allShownExpanded(root) && rowsInOrder(root).length > 10,
       root => {
@@ -722,8 +794,14 @@ const EXPAND_ALL: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Пользователь свернул всё',
-    hint: 'Все строки свёрнуты разом, видны только корни. Кнопка в шапке снова раскрывает всё.',
+    title: {
+      ru: 'Пользователь свернул всё',
+      en: 'The user collapsed everything',
+    },
+    hint: {
+      ru: 'Все строки свёрнуты разом, видны только корни. Кнопка в шапке снова раскрывает всё.',
+      en: 'All rows collapsed at once, and only the root rows are visible. The header button expands everything again.',
+    },
     enter: untilDone(noneExpanded, root => {
       if (!noneExpanded(root)) expandAllButton(root)?.click()
     }),
@@ -736,7 +814,7 @@ export const ExpandingExpandAll: StoryObj<StoryProps> = {
   parameters: { scenario: '0160/S2', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Раскрыть всё"
+      title={{ ru: 'Раскрыть всё', en: 'Expand all' }}
       steps={EXPAND_ALL}
       args={guideArgs(EXPAND_ALL_ARGS, args)}
     />
@@ -744,7 +822,7 @@ export const ExpandingExpandAll: StoryObj<StoryProps> = {
   play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     const labels = storyLabels(args.locale)
-    await step(EXPAND_ALL[0]!.title, async () => {
+    await step(EXPAND_ALL[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(expandAllButton(canvas)).not.toBeNull())
       await until(() => expect(noneExpanded(canvas)).toBe(true))
@@ -754,7 +832,7 @@ export const ExpandingExpandAll: StoryObj<StoryProps> = {
         ),
       )
     })
-    await step(EXPAND_ALL[1]!.title, async () => {
+    await step(EXPAND_ALL[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(
@@ -767,7 +845,7 @@ export const ExpandingExpandAll: StoryObj<StoryProps> = {
         ),
       )
     })
-    await step(EXPAND_ALL[2]!.title, async () => {
+    await step(EXPAND_ALL[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(noneExpanded(canvas)).toBe(true))
       await until(() =>
@@ -816,19 +894,31 @@ const restoredRefused = (root: HTMLElement) => {
 
 const LAZY_RESTORED: readonly GuideStoryStep[] = [
   {
-    title: 'Таблица открылась с раскрытыми строками',
-    hint: 'Приложение вернуло раскрытие, сохранённое в прошлый раз. Детей этих строк в данных нет, и таблица сама запросила их у сервера: кнопки раскрытия заняты, под строками стоят скелеты.',
+    title: {
+      ru: 'Таблица открылась с раскрытыми строками',
+      en: 'The table opened with expanded rows',
+    },
+    hint: {
+      ru: 'Приложение вернуло раскрытие, сохранённое в прошлый раз. Детей этих строк в данных нет, и таблица сама запросила их у сервера: кнопки раскрытия заняты, под строками стоят скелеты.',
+      en: "The app restored the expanded rows saved last time. These rows' child rows are not in the data, so the table requested them from the server itself: the expand buttons are busy, and skeletons sit under the rows.",
+    },
     states: ['body.pending'],
     remount: true,
   },
   {
-    title: 'Дети пришли',
-    hint: 'Сервер вернул детей первой строки. Они встали под строкой и коротко вспыхнули.',
+    title: { ru: 'Дети пришли', en: 'Child rows arrived' },
+    hint: {
+      ru: 'Сервер вернул детей первой строки. Они встали под строкой и коротко вспыхнули.',
+      en: "The server returned the first row's child rows. They appeared under the row and flashed briefly.",
+    },
     enter: untilDone(restoredChildren, () => RESTORED.answer(RESTORED.first)),
   },
   {
-    title: 'Загрузка не удалась',
-    hint: 'Сервер не ответил на запрос другой строки. Она свернулась и коротко вспыхнула; повторить запрос можно кнопкой раскрытия.',
+    title: { ru: 'Загрузка не удалась', en: 'Loading failed' },
+    hint: {
+      ru: 'Сервер не ответил на запрос другой строки. Она свернулась и коротко вспыхнула; повторить запрос можно кнопкой раскрытия.',
+      en: 'The server did not respond to the request for another row. It collapsed and flashed briefly; the request can be retried with the expand button.',
+    },
     enter: untilDone(
       root => restoredChildren(root) && restoredRefused(root),
       () => {
@@ -848,7 +938,10 @@ export const ExpandingLazyRestored: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Раскрытые строки при открытии"
+      title={{
+        ru: 'Раскрытые строки при открытии',
+        en: 'Expanded rows on open',
+      }}
       steps={LAZY_RESTORED}
       args={guideArgs(
         {
@@ -866,7 +959,7 @@ export const ExpandingLazyRestored: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(LAZY_RESTORED[0]!.title, async () => {
+    await step(LAZY_RESTORED[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() =>
         expect(isPending(rowOf(canvas, RESTORED.first))).toBe(true),
@@ -875,11 +968,11 @@ export const ExpandingLazyRestored: StoryObj<StoryProps> = {
         expect(isPending(rowOf(canvas, RESTORED.failed))).toBe(true),
       )
     })
-    await step(LAZY_RESTORED[1]!.title, async () => {
+    await step(LAZY_RESTORED[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(restoredChildren(canvas)).toBe(true))
     })
-    await step(LAZY_RESTORED[2]!.title, async () => {
+    await step(LAZY_RESTORED[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(restoredRefused(canvas)).toBe(true))
       await expect(isExpanded(rowOf(canvas, RESTORED.failed))).toBe(false)

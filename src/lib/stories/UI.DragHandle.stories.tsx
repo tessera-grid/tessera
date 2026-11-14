@@ -24,9 +24,9 @@ const meta = {
     kind: {
       control: 'inline-radio',
       options: ['row', 'column'],
-      description: 'Ручка строки или колонки',
+      description: 'Row or column handle',
     },
-    disabled: { control: 'boolean', description: 'Перенос запрещён' },
+    disabled: { control: 'boolean', description: 'Moving is not allowed' },
   },
   render: function Render({ kind, disabled }) {
     const labels = useStoryLabels()

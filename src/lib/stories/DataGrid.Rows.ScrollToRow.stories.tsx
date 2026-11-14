@@ -103,18 +103,30 @@ const flashed = (root: HTMLElement, id: string) =>
 
 const SCROLL: readonly GuideStoryStep[] = [
   {
-    title: 'Начало таблицы',
-    hint: 'Таблица открыта в начале, нужная строка далеко внизу.',
+    title: { ru: 'Начало таблицы', en: 'Top of the table' },
+    hint: {
+      ru: 'Таблица открыта в начале, нужная строка далеко внизу.',
+      en: 'The table is open at the top; the target row is far below.',
+    },
   },
   {
-    title: 'Приложение показало строку',
-    hint: 'Приложение попросило таблицу показать строку. Таблица прокрутилась к ней, строка коротко вспыхнула.',
+    title: { ru: 'Приложение показало строку', en: 'The app revealed a row' },
+    hint: {
+      ru: 'Приложение попросило таблицу показать строку. Таблица прокрутилась к ней, строка коротко вспыхнула.',
+      en: 'The app asked the table to reveal a row. The table scrolled to it, and the row flashed briefly.',
+    },
     enter: showRow(FAR),
     immediate: true,
   },
   {
-    title: 'Строка внутри свёрнутой ветки',
-    hint: 'Приложение попросило показать строку из свёрнутой ветки. Таблица раскрыла её родителей и прокрутилась к ней, строка коротко вспыхнула.',
+    title: {
+      ru: 'Строка внутри свёрнутой ветки',
+      en: 'A row inside a collapsed branch',
+    },
+    hint: {
+      ru: 'Приложение попросило показать строку из свёрнутой ветки. Таблица раскрыла её родителей и прокрутилась к ней, строка коротко вспыхнула.',
+      en: "The app asked to reveal a row from a collapsed branch. The table expanded the row's parents and scrolled to it, and the row flashed briefly.",
+    },
     enter: showRow(DEEP),
     immediate: true,
   },
@@ -130,7 +142,7 @@ export const ScrollToRowShow: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Прокрутка к строке"
+      title={{ ru: 'Прокрутка к строке', en: 'Scroll to a row' }}
       steps={SCROLL}
       args={guideArgs(
         { ...GRID, dataOverride: rows, extraPlugins: [scrollHost] },
@@ -142,16 +154,16 @@ export const ScrollToRowShow: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     const expanded = (id: string) =>
       bodyRow(canvas, id)?.getAttribute('data-expanded') === 'true'
-    await step(SCROLL[0]!.title, async () => {
+    await step(SCROLL[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await expect(bodyRow(canvas, FAR)).toBeFalsy()
     })
-    await step(SCROLL[1]!.title, async () => {
+    await step(SCROLL[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(flashed(canvas, FAR)).toBe(true))
     })
-    await step(SCROLL[2]!.title, async () => {
+    await step(SCROLL[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(flashed(canvas, DEEP)).toBe(true))

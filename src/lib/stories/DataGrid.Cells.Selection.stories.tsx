@@ -112,20 +112,29 @@ const selectBothRanges = (root: HTMLElement) => {
 
 const RANGE: readonly GuideStoryStep[] = [
   {
-    title: 'Ничего не выделено',
-    hint: 'Приложение включило выделение ячеек. Пользователь ещё ничего не выделял.',
+    title: { ru: 'Ничего не выделено', en: 'Nothing is selected' },
+    hint: {
+      ru: 'Приложение включило выделение ячеек. Пользователь ещё ничего не выделял.',
+      en: 'The app enabled cell selection. The user has not selected anything yet.',
+    },
   },
   {
-    title: 'Ячейка выделена',
-    hint: 'Пользователь щёлкнул ячейку. Она выделена и стала активной.',
+    title: { ru: 'Ячейка выделена', en: 'A cell is selected' },
+    hint: {
+      ru: 'Пользователь щёлкнул ячейку. Она выделена и стала активной.',
+      en: 'The user clicked a cell. It is now selected and active.',
+    },
     enter: untilDone(
       root => isSelected(at(root, FIRST)) && selectedCells(root) === 1,
       selectOne,
     ),
   },
   {
-    title: 'Диапазон выделен',
-    hint: 'Пользователь щёлкнул другую ячейку с зажатым Shift. Выделен прямоугольник между ними, у него общий контур.',
+    title: { ru: 'Диапазон выделен', en: 'The range is selected' },
+    hint: {
+      ru: 'Пользователь щёлкнул другую ячейку с зажатым Shift. Выделен прямоугольник между ними, у него общий контур.',
+      en: 'The user clicked another cell while holding Shift. The rectangle between them is selected and has a single outline.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(
       root => selectedCells(root) === FIRST_CELLS,
@@ -133,8 +142,11 @@ const RANGE: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Второй диапазон',
-    hint: 'Пользователь протянул выделение по другим ячейкам с зажатым Ctrl (Cmd на Mac). Добавился второй диапазон, первый остался.',
+    title: { ru: 'Второй диапазон', en: 'A second range' },
+    hint: {
+      ru: 'Пользователь протянул выделение по другим ячейкам с зажатым Ctrl (Cmd на Mac). Добавился второй диапазон, первый остался.',
+      en: 'The user dragged a selection across other cells while holding Ctrl (Cmd on Mac). A second range was added, and the first one remains.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(
       root => selectedCells(root) === BOTH_CELLS,
@@ -142,8 +154,11 @@ const RANGE: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Выделение скопировано',
-    hint: 'Пользователь нажал Ctrl+C. Значения обоих диапазонов попали в буфер — таблицей и текстом через табуляцию, а в консоли появилась запись о копировании.',
+    title: { ru: 'Выделение скопировано', en: 'The selection is copied' },
+    hint: {
+      ru: 'Пользователь нажал Ctrl+C. Значения обоих диапазонов попали в буфер — таблицей и текстом через табуляцию, а в консоли появилась запись о копировании.',
+      en: 'The user pressed Ctrl+C. The values of both ranges went to the clipboard, as a table and as tab-separated text, and a copy entry appeared in the console.',
+    },
     states: ['body.cellRange'],
     enter: root => {
       const copied = { done: false }
@@ -167,31 +182,31 @@ export const CellSelectionRange: StoryObj<StoryProps> = {
   parameters: { scenario: '0029/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Выделение и копирование"
+      title={{ ru: 'Выделение и копирование', en: 'Selecting and copying' }}
       steps={RANGE}
       args={guideArgs({ enableCellSelection: true, ...GRID }, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(RANGE[0]!.title, async () => {
+    await step(RANGE[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(RANGE[1]!.title, async () => {
+    await step(RANGE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await waitForRows(canvas)
       await until(() => expect(selectedCells(canvas)).toBe(1))
       expect(isSelected(at(canvas, FIRST))).toBe(true)
     })
-    await step(RANGE[2]!.title, async () => {
+    await step(RANGE[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(selectedCells(canvas)).toBe(FIRST_CELLS))
     })
-    await step(RANGE[3]!.title, async () => {
+    await step(RANGE[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(selectedCells(canvas)).toBe(BOTH_CELLS))
     })
-    await step(RANGE[4]!.title, async () => {
+    await step(RANGE[4]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(consoleText()).toContain('copy'))
       const data = copyFrom(at(canvas, FIRST))
@@ -215,12 +230,24 @@ const ACROSS_CELLS = 12
 
 const PREDICATE: readonly GuideStoryStep[] = [
   {
-    title: 'Колонку возраста выделять нельзя',
-    hint: 'Приложение запретило выделять ячейки возраста, и щелчок по ним выделения не даёт.',
+    title: {
+      ru: 'Колонку возраста выделять нельзя',
+      en: 'The age column cannot be selected',
+    },
+    hint: {
+      ru: 'Приложение запретило выделять ячейки возраста, и щелчок по ним выделения не даёт.',
+      en: 'The app disallowed selecting age cells, so clicking them does not select anything.',
+    },
   },
   {
-    title: 'Диапазон через запрещённую колонку',
-    hint: 'Пользователь выделил с Shift диапазон поперёк таблицы. Ячейки возраста в него не вошли, остальные выделены.',
+    title: {
+      ru: 'Диапазон через запрещённую колонку',
+      en: 'A range across a disallowed column',
+    },
+    hint: {
+      ru: 'Пользователь выделил с Shift диапазон поперёк таблицы. Ячейки возраста в него не вошли, остальные выделены.',
+      en: 'The user selected a range across the table with Shift. The age cells were left out, and the rest are selected.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(
       root => selectedCells(root) === ACROSS_CELLS,
@@ -238,7 +265,10 @@ export const CellSelectionPredicate: StoryObj<StoryProps> = {
   parameters: { scenario: '0029/S2', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Запрет выделения колонки"
+      title={{
+        ru: 'Запрет выделения колонки',
+        en: 'Disallowing selection in a column',
+      }}
       steps={PREDICATE}
       args={guideArgs(
         {
@@ -253,13 +283,13 @@ export const CellSelectionPredicate: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     const age = () => cellOf(canvas, FIRST.row, 'age')!
-    await step(PREDICATE[0]!.title, async () => {
+    await step(PREDICATE[0]!.title.ru, async () => {
       await waitForRows(canvas)
       pressCell(age())
       await settle()
       expect(selectedCells(canvas)).toBe(0)
     })
-    await step(PREDICATE[1]!.title, async () => {
+    await step(PREDICATE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(selectedCells(canvas)).toBe(ACROSS_CELLS))
       expect(isSelected(age())).toBe(false)
@@ -294,22 +324,37 @@ const selectedCellIds = (root: ParentNode) =>
 
 const BY_COMMAND: readonly GuideStoryStep[] = [
   {
-    title: 'Выделения нет',
-    hint: 'Приложение подключило подсветку выделения без жестов: мышью и клавишами выделить нельзя, копировать нечего.',
+    title: { ru: 'Выделения нет', en: 'No selection' },
+    hint: {
+      ru: 'Приложение подключило подсветку выделения без жестов: мышью и клавишами выделить нельзя, копировать нечего.',
+      en: 'The app enabled selection highlighting without gestures: nothing can be selected with the mouse or keys, and there is nothing to copy.',
+    },
     props: () => ({
       enableCellSelectionModel: true,
       enableKeyboardNavigation: true,
     }),
   },
   {
-    title: 'Приложение выделяет найденное',
-    hint: 'Приложение нашло значения и выделило их своей командой. Найденные ячейки обведены общим контуром.',
+    title: {
+      ru: 'Приложение выделяет найденное',
+      en: 'The app selects search results',
+    },
+    hint: {
+      ru: 'Приложение нашло значения и выделило их своей командой. Найденные ячейки обведены общим контуром.',
+      en: 'The app found some values and selected them with its own command. The found cells share a single outline.',
+    },
     states: ['body.cellRange'],
     props: () => ({ cellSelectionModelCellSelection: FOUND }),
   },
   {
-    title: 'Щелчок не меняет выделение',
-    hint: 'Пользователь щёлкнул ячейку. Она стала активной, а выделение осталось тем, что задало приложение.',
+    title: {
+      ru: 'Щелчок не меняет выделение',
+      en: 'A click does not change the selection',
+    },
+    hint: {
+      ru: 'Пользователь щёлкнул ячейку. Она стала активной, а выделение осталось тем, что задало приложение.',
+      en: 'The user clicked a cell. It became active, and the selection remains as the app set it.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(
       root =>
@@ -330,7 +375,10 @@ export const CellSelectionByCommand: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Выделение командой приложения"
+      title={{
+        ru: 'Выделение командой приложения',
+        en: 'Selection by an app command',
+      }}
       steps={BY_COMMAND}
       args={guideArgs(GRID, args)}
     />
@@ -346,15 +394,15 @@ export const CellSelectionByCommand: StoryObj<StoryProps> = {
       'item-id-3/firstName',
       'item-id-3/lastName',
     ]
-    await step(BY_COMMAND[0]!.title, async () => {
+    await step(BY_COMMAND[0]!.title.ru, async () => {
       await waitForRows(canvas)
       expect(selectedCellIds(canvas)).toEqual([])
     })
-    await step(BY_COMMAND[1]!.title, async () => {
+    await step(BY_COMMAND[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(selectedCellIds(canvas).sort()).toEqual(found))
     })
-    await step(BY_COMMAND[2]!.title, async () => {
+    await step(BY_COMMAND[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(cellOf(canvas, CLICKED.row, CLICKED.column)).toHaveAttribute(
@@ -393,19 +441,31 @@ const selectCorners = (root: HTMLElement) => {
 
 const FOLLOWS_SORT: readonly GuideStoryStep[] = [
   {
-    title: 'Ничего не выделено',
-    hint: 'Строки идут в исходном порядке. Пользователь ещё ничего не выделял.',
+    title: { ru: 'Ничего не выделено', en: 'Nothing is selected' },
+    hint: {
+      ru: 'Строки идут в исходном порядке. Пользователь ещё ничего не выделял.',
+      en: 'The rows are in their original order. The user has not selected anything yet.',
+    },
     props: () => ({ enableColumnSorting: true }),
   },
   {
-    title: 'Диапазон выделен',
-    hint: 'Пользователь выделил прямоугольник между двумя ячейками. Строки идут в исходном порядке.',
+    title: { ru: 'Диапазон выделен', en: 'The range is selected' },
+    hint: {
+      ru: 'Пользователь выделил прямоугольник между двумя ячейками. Строки идут в исходном порядке.',
+      en: 'The user selected a rectangle between two cells. The rows are in their original order.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(cornersSelected, selectCorners),
   },
   {
-    title: 'Пользователь отсортировал таблицу',
-    hint: 'Пользователь отсортировал таблицу по имени. Строки переехали, и выделение переехало вместе с ними: прямоугольник стоит между теми же строками-углами на их новых местах.',
+    title: {
+      ru: 'Пользователь отсортировал таблицу',
+      en: 'The user sorted the table',
+    },
+    hint: {
+      ru: 'Пользователь отсортировал таблицу по имени. Строки переехали, и выделение переехало вместе с ними: прямоугольник стоит между теми же строками-углами на их новых местах.',
+      en: 'The user sorted the table by name. The rows moved, and the selection moved with them: the rectangle spans the same corner rows at their new positions.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(
       root => sortOf(root) !== 'none' && cornersSelected(root),
@@ -427,7 +487,10 @@ export const CellSelectionFollowsSort: StoryObj<StoryProps> = {
   parameters: { scenario: '0180/S2', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Выделение едет со строками"
+      title={{
+        ru: 'Выделение едет со строками',
+        en: 'The selection moves with the rows',
+      }}
       steps={FOLLOWS_SORT}
       // Все строки на экране: углы видны и после сортировки.
       args={guideArgs(
@@ -439,16 +502,16 @@ export const CellSelectionFollowsSort: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     let before: (string | null | undefined)[] = []
-    await step(FOLLOWS_SORT[0]!.title, async () => {
+    await step(FOLLOWS_SORT[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(FOLLOWS_SORT[1]!.title, async () => {
+    await step(FOLLOWS_SORT[1]!.title.ru, async () => {
       await guideNext(canvas)
       await waitForRows(canvas)
       await until(() => expect(cornersSelected(canvas)).toBe(true))
       before = [CORNER_A.row, CORNER_B.row].map(id => rowIndexOf(canvas, id))
     })
-    await step(FOLLOWS_SORT[2]!.title, async () => {
+    await step(FOLLOWS_SORT[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(sortOf(canvas)).not.toBe('none'))
       await until(() => expect(cornersSelected(canvas)).toBe(true))
@@ -563,24 +626,39 @@ const holdHandle = async (root: HTMLElement, step: StepRun) => {
 
 const RANGE_HANDLE: readonly GuideStoryStep[] = [
   {
-    title: 'Ничего не выделено',
-    hint: 'Приложение включило выделение ячеек с маркером в углу диапазона. Пользователь ещё ничего не выделял.',
+    title: { ru: 'Ничего не выделено', en: 'Nothing is selected' },
+    hint: {
+      ru: 'Приложение включило выделение ячеек с маркером в углу диапазона. Пользователь ещё ничего не выделял.',
+      en: 'The app enabled cell selection with a handle in the corner of the range. The user has not selected anything yet.',
+    },
   },
   {
-    title: 'Выделен диапазон',
-    hint: 'Пользователь выделил диапазон ячеек. В правом нижнем углу выделения — маркер: за него диапазон растягивают и сужают.',
+    title: { ru: 'Выделен диапазон', en: 'A range is selected' },
+    hint: {
+      ru: 'Пользователь выделил диапазон ячеек. В правом нижнем углу выделения — маркер: за него диапазон растягивают и сужают.',
+      en: 'The user selected a range of cells. The bottom-right corner of the selection has a handle that you drag to grow or shrink the range.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(firstRangeSelected, selectFirstRange),
   },
   {
-    title: 'Пользователь тянет маркер',
-    hint: 'Пользователь взял маркер и тянет его вниз и вправо. Диапазон растёт вслед за указателем, а левый верхний угол остаётся на месте.',
+    title: { ru: 'Пользователь тянет маркер', en: 'The user drags the handle' },
+    hint: {
+      ru: 'Пользователь взял маркер и тянет его вниз и вправо. Диапазон растёт вслед за указателем, а левый верхний угол остаётся на месте.',
+      en: 'The user grabbed the handle and is dragging it down and to the right. The range grows with the pointer, and the top-left corner stays in place.',
+    },
     states: ['body.cellRange'],
     enter: stepAction(holdHandle),
   },
   {
-    title: 'Пользователь отпустил маркер',
-    hint: 'Пользователь отпустил маркер. Выделен новый диапазон, а маркер — в его правом нижнем углу.',
+    title: {
+      ru: 'Пользователь отпустил маркер',
+      en: 'The user released the handle',
+    },
+    hint: {
+      ru: 'Пользователь отпустил маркер. Выделен новый диапазон, а маркер — в его правом нижнем углу.',
+      en: 'The user released the handle. The new range is selected, with the handle in its bottom-right corner.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(
       root => handleRangeSelected(root) && !!handleOf(root),
@@ -607,29 +685,29 @@ export const CellSelectionHandle: StoryObj<StoryProps> = {
   parameters: { scenario: '0198/S3', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Маркер диапазона"
+      title={{ ru: 'Маркер диапазона', en: 'The range handle' }}
       steps={RANGE_HANDLE}
       args={guideArgs({ enableCellSelection: true, ...GRID }, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(RANGE_HANDLE[0]!.title, async () => {
+    await step(RANGE_HANDLE[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(RANGE_HANDLE[1]!.title, async () => {
+    await step(RANGE_HANDLE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await waitForRows(canvas)
       await until(() => expect(firstRangeSelected(canvas)).toBe(true))
       await until(() => expect(handleOf(canvas)).not.toBeNull())
       expectHandleAtCorner(canvas, at(canvas, FIRST_END))
     })
-    await step(RANGE_HANDLE[2]!.title, async () => {
+    await step(RANGE_HANDLE[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(handleRangeSelected(canvas)).toBe(true))
       expect(handleOf(canvas)!.hasAttribute('data-dragging')).toBe(true)
     })
-    await step(RANGE_HANDLE[3]!.title, async () => {
+    await step(RANGE_HANDLE[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(handleOf(canvas)!.hasAttribute('data-dragging')).toBe(false),
@@ -782,20 +860,35 @@ const touchOne = async (root: HTMLElement, signal?: AbortSignal) => {
 
 const TOUCH: readonly GuideStoryStep[] = [
   {
-    title: 'Ничего не выделено',
-    hint: 'Приложение включило выделение ячеек. Пользователь ещё не касался таблицы.',
+    title: { ru: 'Ничего не выделено', en: 'Nothing is selected' },
+    hint: {
+      ru: 'Приложение включило выделение ячеек. Пользователь ещё не касался таблицы.',
+      en: 'The app enabled cell selection. The user has not touched the table yet.',
+    },
   },
   {
-    title: 'Пользователь коснулся ячейки',
-    hint: 'Пользователь коснулся ячейки пальцем. Ячейка выделена, а в левом верхнем и правом нижнем углу выделения — круги: за них диапазон растягивают пальцем.',
+    title: {
+      ru: 'Пользователь коснулся ячейки',
+      en: 'The user touched a cell',
+    },
+    hint: {
+      ru: 'Пользователь коснулся ячейки пальцем. Ячейка выделена, а в левом верхнем и правом нижнем углу выделения — круги: за них диапазон растягивают пальцем.',
+      en: 'The user touched a cell with a finger. The cell is selected, and the top-left and bottom-right corners of the selection have circles that you drag with a finger to grow the range.',
+    },
     states: ['body.cellRangeTouch'],
     enter: stepAction(async (root, step) => {
       await touchOne(root, step.signal)
     }),
   },
   {
-    title: 'Пользователь тянет нижний круг',
-    hint: 'Пользователь тянет правый нижний круг вниз. Диапазон растёт вслед за пальцем, а левый верхний угол остаётся на месте.',
+    title: {
+      ru: 'Пользователь тянет нижний круг',
+      en: 'The user drags the bottom circle',
+    },
+    hint: {
+      ru: 'Пользователь тянет правый нижний круг вниз. Диапазон растёт вслед за пальцем, а левый верхний угол остаётся на месте.',
+      en: 'The user is dragging the bottom-right circle down. The range grows with the finger, and the top-left corner stays in place.',
+    },
     states: ['body.cellRangeTouch'],
     enter: stepAction(async (root, step) => {
       await touchOne(root, step.signal)
@@ -804,8 +897,14 @@ const TOUCH: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Пользователь тянет верхний круг',
-    hint: 'Пользователь отпустил нижний круг и тянет левый верхний вверх. Теперь на месте остаётся правый нижний угол, а верхняя граница диапазона следует за пальцем.',
+    title: {
+      ru: 'Пользователь тянет верхний круг',
+      en: 'The user drags the top circle',
+    },
+    hint: {
+      ru: 'Пользователь отпустил нижний круг и тянет левый верхний вверх. Теперь на месте остаётся правый нижний угол, а верхняя граница диапазона следует за пальцем.',
+      en: 'The user released the bottom circle and is dragging the top-left one up. Now the bottom-right corner stays in place, and the top edge of the range follows the finger.',
+    },
     states: ['body.cellRangeTouch'],
     enter: stepAction(async (root, step) => {
       if (!touchRange(root, 3, 5)) {
@@ -818,8 +917,14 @@ const TOUCH: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Пользователь отпустил круг',
-    hint: 'Пользователь отпустил круг. Выделен новый диапазон, круги — в его углах. Движение пальца по таблице мимо кругов по-прежнему прокручивает её.',
+    title: {
+      ru: 'Пользователь отпустил круг',
+      en: 'The user released the circle',
+    },
+    hint: {
+      ru: 'Пользователь отпустил круг. Выделен новый диапазон, круги — в его углах. Движение пальца по таблице мимо кругов по-прежнему прокручивает её.',
+      en: 'The user released the circle. The new range is selected, with circles in its corners. Moving a finger across the table away from the circles still scrolls it.',
+    },
     states: ['body.cellRangeTouch'],
     enter: stepAction(async (root, step) => {
       if (touchRange(root, 1, 5)) return
@@ -841,33 +946,33 @@ export const CellSelectionTouch: StoryObj<StoryProps> = {
   parameters: { scenario: '0198/S4', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Выделение пальцем"
+      title={{ ru: 'Выделение пальцем', en: 'Selecting by touch' }}
       steps={TOUCH}
       args={guideArgs({ enableCellSelection: true, ...GRID }, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(TOUCH[0]!.title, async () => {
+    await step(TOUCH[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(TOUCH[1]!.title, async () => {
+    await step(TOUCH[1]!.title.ru, async () => {
       await guideNext(canvas)
       await waitForRows(canvas)
       await until(() => expect(touchRange(canvas, 3, 3)).toBe(true))
       expectHandleAtCorner(canvas, at(canvas, TOUCHED))
     })
-    await step(TOUCH[2]!.title, async () => {
+    await step(TOUCH[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(touchRange(canvas, 3, 5)).toBe(true))
       await until(() => expect(dragging(canvas, 'end')).toBe(true))
     })
-    await step(TOUCH[3]!.title, async () => {
+    await step(TOUCH[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(touchRange(canvas, 1, 5)).toBe(true))
       await until(() => expect(dragging(canvas, 'start')).toBe(true))
     })
-    await step(TOUCH[4]!.title, async () => {
+    await step(TOUCH[4]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(dragging(canvas, 'start')).toBe(false))
       await until(() => expect(touchRange(canvas, 1, 5)).toBe(true))

@@ -2,6 +2,8 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { expect, userEvent, waitFor } from 'storybook/test'
 
 import { settle } from './__mocks__/catalogPlay'
+import type { StoryText } from './__mocks__/storyText'
+import { shellText, type StoryShellKey } from './demos/storyShell'
 
 import {
   MIN_PANEL_WIDTH,
@@ -16,7 +18,7 @@ import {
  * Storybook не попадает (`.storybook/main.ts`).
  */
 interface SandboxArgs {
-  title: string
+  title: 'short' | 'long'
   stepCount: number
   stepTitle: 'short' | 'long'
   stepHint: 'none' | 'short' | 'long'
@@ -27,156 +29,338 @@ interface SandboxArgs {
 
 /** Действие шага: короткое и длинное название, короткое и длинное пояснение. */
 interface Action {
-  title: [short: string, long: string]
-  hint: [short: string, long: string]
+  title: [short: StoryText, long: StoryText]
+  hint: [short: StoryText, long: StoryText]
 }
+
+/** Название сценария: короткое и не помещающееся в строку панели. */
+const TITLES: Record<SandboxArgs['title'], StoryText> = {
+  short: { ru: 'Работа с заказами', en: 'Working with orders' },
+  long: {
+    ru: 'Очень длинное название сценария, которое не помещается в строку панели',
+    en: 'A very long scenario title that does not fit on one line of the panel',
+  },
+}
+
+const NO_HINT: StoryText = { ru: '', en: '' }
 
 /** Шаги песочницы — правдоподобный путь пользователя по таблице заказов. */
 const ACTIONS: readonly Action[] = [
   {
-    title: ['Открыть заказы', 'Открыть раздел заказов в личном кабинете'],
-    hint: [
-      'Таблица показывает скелет.',
-      'Пока сервер готовит первую страницу, таблица рисует скелет по своей раскладке: колонки, ширины и служебные колонки уже на местах.',
+    title: [
+      { ru: 'Открыть заказы', en: 'Open orders' },
+      {
+        ru: 'Открыть раздел заказов в личном кабинете',
+        en: 'Open the orders section of the account',
+      },
     ],
-  },
-  {
-    title: ['Данные пришли', 'Сервер вернул первую страницу заказов'],
     hint: [
-      'Строки встают на место скелета.',
-      'Строки встают ровно на место скелета: заголовки не сдвигаются, полоса прокрутки появляется, только если строк больше, чем помещается.',
-    ],
-  },
-  {
-    title: ['Сортировка по дате', 'Отсортировать заказы по дате оформления'],
-    hint: [
-      'Новые заказы — сверху.',
-      'Нажатие на заголовок «Дата» сортирует по убыванию: самые свежие заказы поднимаются наверх, стрелка в заголовке показывает направление.',
+      { ru: 'Таблица показывает скелет.', en: 'The table shows a skeleton.' },
+      {
+        ru: 'Пока сервер готовит первую страницу, таблица рисует скелет по своей раскладке: колонки, ширины и служебные колонки уже на местах.',
+        en: 'While the server prepares the first page, the table draws a skeleton of its layout: columns, widths, and service columns are already in place.',
+      },
     ],
   },
   {
     title: [
-      'Фильтр по статусу',
-      'Оставить только заказы в статусе «Ожидает оплаты»',
+      { ru: 'Данные пришли', en: 'Data arrived' },
+      {
+        ru: 'Сервер вернул первую страницу заказов',
+        en: 'The server returned the first page of orders',
+      },
     ],
     hint: [
-      'Видны только неоплаченные.',
-      'В панели фильтра колонки «Статус» отмечен один вариант; над таблицей появляется сводка условия, счётчик показывает «12 из 240».',
+      {
+        ru: 'Строки встают на место скелета.',
+        en: 'Rows take the place of the skeleton.',
+      },
+      {
+        ru: 'Строки встают ровно на место скелета: заголовки не сдвигаются, полоса прокрутки появляется, только если строк больше, чем помещается.',
+        en: 'Rows land exactly where the skeleton was: the headers do not shift, and a scrollbar appears only if there are more rows than fit.',
+      },
     ],
   },
   {
     title: [
-      'Поиск клиента',
-      'Найти заказы клиента по фамилии в быстром поиске',
+      { ru: 'Сортировка по дате', en: 'Sort by date' },
+      {
+        ru: 'Отсортировать заказы по дате оформления',
+        en: 'Sort orders by the date they were placed',
+      },
     ],
     hint: [
-      'Совпадения подсвечены.',
-      'Быстрый поиск ищет по видимым колонкам с задержкой ввода; совпадения в ячейках подсвечены, остальные строки скрыты.',
-    ],
-  },
-  {
-    title: ['Раскрыть заказ', 'Раскрыть заказ, чтобы увидеть его позиции'],
-    hint: [
-      'Позиции подгружаются.',
-      'Позиции заказа приходят с сервера при раскрытии: шеврон показывает ожидание, затем вложенные строки появляются с отступом и линиями дерева.',
-    ],
-  },
-  {
-    title: ['Выбрать строки', 'Отметить несколько заказов флажками'],
-    hint: [
-      'Счётчик выбранных растёт.',
-      'Флажки в служебной колонке отмечают строки; нижняя панель показывает число выбранных, а «выбрать всё» учитывает фильтр.',
+      { ru: 'Новые заказы — сверху.', en: 'Newest orders on top.' },
+      {
+        ru: 'Нажатие на заголовок «Дата» сортирует по убыванию: самые свежие заказы поднимаются наверх, стрелка в заголовке показывает направление.',
+        en: 'Clicking the “Date” header sorts in descending order: the most recent orders move to the top, and an arrow in the header shows the direction.',
+      },
     ],
   },
   {
-    title: ['Изменить сумму', 'Исправить сумму заказа прямо в ячейке'],
+    title: [
+      { ru: 'Фильтр по статусу', en: 'Filter by status' },
+      {
+        ru: 'Оставить только заказы в статусе «Ожидает оплаты»',
+        en: 'Keep only orders awaiting payment',
+      },
+    ],
     hint: [
-      'Ячейка ждёт сервер.',
-      'После ввода значение уходит на сервер: ячейка светится ожиданием, остальные ячейки можно править, не дожидаясь ответа.',
+      { ru: 'Видны только неоплаченные.', en: 'Only unpaid orders are shown.' },
+      {
+        ru: 'В панели фильтра колонки «Статус» отмечен один вариант; над таблицей появляется сводка условия, счётчик показывает «12 из 240».',
+        en: 'One option is checked in the “Status” column filter panel; a summary of the condition appears above the table, and the counter shows “12 of 240”.',
+      },
     ],
   },
   {
-    title: ['Сервер отказал', 'Сервер отклонил новую сумму заказа'],
+    title: [
+      { ru: 'Поиск клиента', en: 'Find a customer' },
+      {
+        ru: 'Найти заказы клиента по фамилии в быстром поиске',
+        en: 'Find the orders of a customer by last name with quick search',
+      },
+    ],
     hint: [
-      'Ячейка в ошибке.',
-      'Ячейка возвращает прежнее значение, вспыхивает красным и показывает причину отказа; повторная правка открывает черновик с текстом ошибки.',
+      { ru: 'Совпадения подсвечены.', en: 'Matches are highlighted.' },
+      {
+        ru: 'Быстрый поиск ищет по видимым колонкам с задержкой ввода; совпадения в ячейках подсвечены, остальные строки скрыты.',
+        en: 'Quick search looks through the visible columns after a typing delay; matches in cells are highlighted, and the other rows are hidden.',
+      },
     ],
   },
   {
-    title: ['Закрепить колонку', 'Закрепить колонку «Клиент» слева'],
+    title: [
+      { ru: 'Раскрыть заказ', en: 'Expand an order' },
+      {
+        ru: 'Раскрыть заказ, чтобы увидеть его позиции',
+        en: 'Expand an order to see its line items',
+      },
+    ],
     hint: [
-      'Колонка не уезжает.',
-      'При горизонтальной прокрутке закреплённая колонка остаётся на месте, а остальные проходят под ней с тенью на границе.',
+      { ru: 'Позиции подгружаются.', en: 'Line items are loading.' },
+      {
+        ru: 'Позиции заказа приходят с сервера при раскрытии: шеврон показывает ожидание, затем вложенные строки появляются с отступом и линиями дерева.',
+        en: 'The line items come from the server on expand: the chevron shows the wait, then the nested rows appear indented, with tree lines.',
+      },
     ],
   },
   {
-    title: ['Переставить колонки', 'Перетащить колонку «Сумма» ближе к началу'],
+    title: [
+      { ru: 'Выбрать строки', en: 'Select rows' },
+      { ru: 'Отметить несколько заказов флажками', en: 'Check several orders' },
+    ],
     hint: [
-      'Колонки съезжают.',
-      'Во время перетаскивания соседние колонки плавно расступаются; после броска заголовки, строки и итоги встают в новом порядке.',
+      { ru: 'Счётчик выбранных растёт.', en: 'The selected count grows.' },
+      {
+        ru: 'Флажки в служебной колонке отмечают строки; нижняя панель показывает число выбранных, а «выбрать всё» учитывает фильтр.',
+        en: 'Checkboxes in the service column mark rows; the status bar shows how many are selected, and “select all” respects the filter.',
+      },
     ],
   },
   {
-    title: ['Скрыть колонку', 'Скрыть служебную колонку «Комментарий»'],
+    title: [
+      { ru: 'Изменить сумму', en: 'Change the amount' },
+      {
+        ru: 'Исправить сумму заказа прямо в ячейке',
+        en: 'Fix the order amount right in the cell',
+      },
+    ],
     hint: [
-      'Меню «Колонки».',
-      'В меню «Колонки» снят флажок; кнопка тулбара показывает точку активного действия, пока скрыта хотя бы одна колонка.',
+      { ru: 'Ячейка ждёт сервер.', en: 'The cell waits for the server.' },
+      {
+        ru: 'После ввода значение уходит на сервер: ячейка светится ожиданием, остальные ячейки можно править, не дожидаясь ответа.',
+        en: 'After input, the value goes to the server: the cell shows that it is waiting, and other cells can be edited without waiting for the response.',
+      },
     ],
   },
   {
-    title: ['Сменить страницу', 'Перейти на третью страницу результатов'],
+    title: [
+      { ru: 'Сервер отказал', en: 'The server refused' },
+      {
+        ru: 'Сервер отклонил новую сумму заказа',
+        en: 'The server rejected the new order amount',
+      },
+    ],
     hint: [
-      'Новая страница.',
-      'Пагинатор переключает страницу; прокрутка возвращается к началу, выбор строк сохраняется между страницами.',
+      { ru: 'Ячейка в ошибке.', en: 'The cell shows an error.' },
+      {
+        ru: 'Ячейка возвращает прежнее значение, вспыхивает красным и показывает причину отказа; повторная правка открывает черновик с текстом ошибки.',
+        en: 'The cell returns to its previous value, flashes red, and shows the reason for the refusal; editing it again opens a draft with the error text.',
+      },
     ],
   },
   {
-    title: ['Группировка', 'Сгруппировать заказы по менеджеру'],
+    title: [
+      { ru: 'Закрепить колонку', en: 'Pin a column' },
+      {
+        ru: 'Закрепить колонку «Клиент» слева',
+        en: 'Pin the Customer column to the left',
+      },
+    ],
     hint: [
-      'Группы со счётчиками.',
-      'Строки собираются в группы по менеджеру; у каждой группы свой счётчик строк и сумма в футере.',
+      { ru: 'Колонка не уезжает.', en: 'The column stays put.' },
+      {
+        ru: 'При горизонтальной прокрутке закреплённая колонка остаётся на месте, а остальные проходят под ней с тенью на границе.',
+        en: 'During horizontal scrolling, the pinned column stays in place, and the others slide under it with a shadow at the edge.',
+      },
     ],
   },
   {
-    title: ['Переставить строку', 'Перетащить заказ в другую группу'],
+    title: [
+      { ru: 'Переставить колонки', en: 'Reorder columns' },
+      {
+        ru: 'Перетащить колонку «Сумма» ближе к началу',
+        en: 'Drag the Amount column closer to the start',
+      },
+    ],
     hint: [
-      'Превью броска.',
-      'Пока строка в воздухе, на месте броска виден слот с отступом уровня; пауза над свёрнутой группой раскрывает её.',
+      { ru: 'Колонки съезжают.', en: 'Columns shift aside.' },
+      {
+        ru: 'Во время перетаскивания соседние колонки плавно расступаются; после броска заголовки, строки и итоги встают в новом порядке.',
+        en: 'While dragging, neighboring columns smoothly make room; after the drop, headers, rows, and totals settle in the new order.',
+      },
     ],
   },
   {
-    title: ['Быстрая прокрутка', 'Прокрутить список к концу колесом мыши'],
+    title: [
+      { ru: 'Скрыть колонку', en: 'Hide a column' },
+      {
+        ru: 'Скрыть служебную колонку «Комментарий»',
+        en: 'Hide the Comment service column',
+      },
+    ],
     hint: [
-      'Ячейки — скелеты.',
-      'На большой скорости ячейки рисуются скелетами, чтобы кадр не проседал; при остановке на их место встаёт содержимое.',
+      { ru: 'Меню «Колонки».', en: 'The “Columns” menu.' },
+      {
+        ru: 'В меню «Колонки» снят флажок; кнопка тулбара показывает точку активного действия, пока скрыта хотя бы одна колонка.',
+        en: 'A checkbox is cleared in the “Columns” menu; the toolbar button shows an active dot while at least one column is hidden.',
+      },
     ],
   },
   {
-    title: ['Наверх', 'Вернуться к началу списка кнопкой «Наверх»'],
+    title: [
+      { ru: 'Сменить страницу', en: 'Change the page' },
+      {
+        ru: 'Перейти на третью страницу результатов',
+        en: 'Go to the third page of results',
+      },
+    ],
     hint: [
-      'Плавная прокрутка.',
-      'Кнопка в нижней панели прокручивает к первой строке: издалека — прыжком, последний экран — плавно; фокус остаётся на кнопке.',
+      { ru: 'Новая страница.', en: 'A new page.' },
+      {
+        ru: 'Пагинатор переключает страницу; прокрутка возвращается к началу, выбор строк сохраняется между страницами.',
+        en: 'The pager switches the page; scrolling returns to the top, and row selection is kept across pages.',
+      },
     ],
   },
   {
-    title: ['Обновить данные', 'Обновить список, не сбрасывая фильтры'],
+    title: [
+      { ru: 'Группировка', en: 'Grouping' },
+      {
+        ru: 'Сгруппировать заказы по менеджеру',
+        en: 'Group orders by manager',
+      },
+    ],
     hint: [
-      'Свечение под заголовками.',
-      'Пока идёт обновление, под заголовками течёт свечение, строки приглушены и не прыгают; фильтры и выбор сохраняются.',
+      { ru: 'Группы со счётчиками.', en: 'Groups with counters.' },
+      {
+        ru: 'Строки собираются в группы по менеджеру; у каждой группы свой счётчик строк и сумма в футере.',
+        en: 'Rows are gathered into groups by manager; each group has its own row count and a total in the footer.',
+      },
     ],
   },
   {
-    title: ['Выгрузить в Excel', 'Выгрузить отфильтрованные заказы в Excel'],
+    title: [
+      { ru: 'Переставить строку', en: 'Move a row' },
+      {
+        ru: 'Перетащить заказ в другую группу',
+        en: 'Drag an order into another group',
+      },
+    ],
     hint: [
-      'Файл скачивается.',
-      'Панель выгрузки предлагает строки и колонки: «как на экране», «выбранные», «все»; файл открывается в Excel с типами и закреплённой строкой заголовков.',
+      { ru: 'Превью броска.', en: 'Drop preview.' },
+      {
+        ru: 'Пока строка в воздухе, на месте броска виден слот с отступом уровня; пауза над свёрнутой группой раскрывает её.',
+        en: 'While the row is in the air, a slot with the level indent shows where it will land; pausing over a collapsed group expands it.',
+      },
     ],
   },
   {
-    title: ['Готово', 'Закрыть раздел заказов'],
+    title: [
+      { ru: 'Быстрая прокрутка', en: 'Fast scrolling' },
+      {
+        ru: 'Прокрутить список к концу колесом мыши',
+        en: 'Scroll the list to the end with the mouse wheel',
+      },
+    ],
     hint: [
-      'Сценарий пройден.',
-      'Все действия пройдены: таблица вернулась в исходное состояние, фильтры и сортировка сохранены до следующего открытия.',
+      { ru: 'Ячейки — скелеты.', en: 'Cells become skeletons.' },
+      {
+        ru: 'На большой скорости ячейки рисуются скелетами, чтобы кадр не проседал; при остановке на их место встаёт содержимое.',
+        en: 'At high speed, cells are drawn as skeletons so frames do not drop; when scrolling stops, the content takes their place.',
+      },
+    ],
+  },
+  {
+    title: [
+      { ru: 'Наверх', en: 'Back to top' },
+      {
+        ru: 'Вернуться к началу списка кнопкой «Наверх»',
+        en: 'Return to the start of the list with the back-to-top button',
+      },
+    ],
+    hint: [
+      { ru: 'Плавная прокрутка.', en: 'Smooth scrolling.' },
+      {
+        ru: 'Кнопка в нижней панели прокручивает к первой строке: издалека — прыжком, последний экран — плавно; фокус остаётся на кнопке.',
+        en: 'The button in the status bar scrolls to the first row: it jumps most of the way and scrolls the last screen smoothly; focus stays on the button.',
+      },
+    ],
+  },
+  {
+    title: [
+      { ru: 'Обновить данные', en: 'Refresh data' },
+      {
+        ru: 'Обновить список, не сбрасывая фильтры',
+        en: 'Refresh the list without resetting filters',
+      },
+    ],
+    hint: [
+      { ru: 'Свечение под заголовками.', en: 'A glow under the headers.' },
+      {
+        ru: 'Пока идёт обновление, под заголовками течёт свечение, строки приглушены и не прыгают; фильтры и выбор сохраняются.',
+        en: 'While the refresh runs, a glow flows under the headers, rows are dimmed and do not jump; filters and selection are kept.',
+      },
+    ],
+  },
+  {
+    title: [
+      { ru: 'Выгрузить в Excel', en: 'Export to Excel' },
+      {
+        ru: 'Выгрузить отфильтрованные заказы в Excel',
+        en: 'Export the filtered orders to Excel',
+      },
+    ],
+    hint: [
+      { ru: 'Файл скачивается.', en: 'The file downloads.' },
+      {
+        ru: 'Панель выгрузки предлагает строки и колонки: «как на экране», «выбранные», «все»; файл открывается в Excel с типами и закреплённой строкой заголовков.',
+        en: 'The export panel offers rows and columns: “as on screen”, “selected”, or “all”; the file opens in Excel with types and a frozen header row.',
+      },
+    ],
+  },
+  {
+    title: [
+      { ru: 'Готово', en: 'Done' },
+      { ru: 'Закрыть раздел заказов', en: 'Close the orders section' },
+    ],
+    hint: [
+      { ru: 'Сценарий пройден.', en: 'The scenario is complete.' },
+      {
+        ru: 'Все действия пройдены: таблица вернулась в исходное состояние, фильтры и сортировка сохранены до следующего открытия.',
+        en: 'All actions are done: the table is back in its initial state, and filters and sorting are kept until the section is opened again.',
+      },
     ],
   },
 ]
@@ -190,7 +374,10 @@ const makeSteps = ({
     const action = ACTIONS[i % ACTIONS.length]!
     return {
       title: action.title[stepTitle === 'long' ? 1 : 0],
-      hint: stepHint === 'none' ? '' : action.hint[stepHint === 'long' ? 1 : 0],
+      hint:
+        stepHint === 'none'
+          ? NO_HINT
+          : action.hint[stepHint === 'long' ? 1 : 0],
     }
   })
 
@@ -205,7 +392,7 @@ const Sandbox = (args: SandboxArgs) => {
       <GuidePanel
         // Смена `expanded` в панели Controls — новое исходное состояние панели.
         key={String(args.expanded)}
-        title={args.title}
+        title={TITLES[args.title]}
         steps={steps}
         step={Math.min(guide.step, steps.length - 1)}
         onBack={guide.back}
@@ -223,7 +410,7 @@ const meta = {
   render: args => <Sandbox {...args} />,
   parameters: { layout: 'fullscreen' },
   args: {
-    title: 'Работа с заказами',
+    title: 'short',
     stepCount: 3,
     stepTitle: 'short',
     stepHint: 'short',
@@ -231,7 +418,7 @@ const meta = {
     containerWidth: 0,
   },
   argTypes: {
-    title: { control: 'text' },
+    title: { control: 'inline-radio', options: ['short', 'long'] },
     stepCount: { control: { type: 'range', min: 1, max: 20 } },
     stepTitle: { control: 'inline-radio', options: ['short', 'long'] },
     stepHint: {
@@ -267,8 +454,7 @@ export const GuidePanelManySteps: StoryObj<SandboxArgs> = {
   name: 'Many long steps',
   parameters: { requirements: ['SN18'] },
   args: {
-    title:
-      'Очень длинное название сценария, которое не помещается в строку панели',
+    title: 'long',
     stepCount: 12,
     stepTitle: 'long',
     stepHint: 'long',
@@ -333,8 +519,7 @@ export const GuidePanelNarrow: StoryObj<SandboxArgs> = {
   name: 'Narrow',
   parameters: { requirements: ['SN19'] },
   args: {
-    title:
-      'Очень длинное название сценария, которое не помещается в строку панели',
+    title: 'long',
     stepCount: 8,
     stepTitle: 'long',
     stepHint: 'short',
@@ -406,6 +591,8 @@ export const GuidePanelCompleted: StoryObj<SandboxArgs> = {
   parameters: { requirements: ['SN16'] },
   play: async ({ canvasElement, globals }) => {
     if (globals.catalog !== true) return
+    const text = (key: StoryShellKey, params?: Record<string, unknown>) =>
+      shellText(globals.locale, key, params)
     const next = canvasElement.querySelector<HTMLButtonElement>(
       '[data-testid="guide-next"]',
     )!
@@ -413,13 +600,13 @@ export const GuidePanelCompleted: StoryObj<SandboxArgs> = {
       '[data-testid="guide-toggle"]',
     )!
     await nextStep(canvasElement)
-    await expect(next).toHaveTextContent('Далее')
+    await expect(next).toHaveTextContent(text('guideNext'))
     // «Далее» на предпоследнем шаге: последний шаг выполняется сразу при переходе.
     await nextStep(canvasElement)
-    await waitFor(() => expect(toggle).toHaveTextContent('пройден'))
-    await expect(next).toHaveTextContent('Пройдено')
+    await waitFor(() => expect(toggle).toHaveTextContent(text('guideFinished')))
+    await expect(next).toHaveTextContent(text('guideDone'))
     await expect(next).toBeDisabled()
-    await expect(canvasElement).not.toHaveTextContent('Закончить')
+    await expect(canvasElement).not.toHaveTextContent(text('guideFinish'))
     const states = () =>
       [...canvasElement.querySelectorAll<HTMLElement>('[data-step-state]')].map(
         badge => badge.dataset.stepState,
@@ -429,12 +616,16 @@ export const GuidePanelCompleted: StoryObj<SandboxArgs> = {
     await userEvent.click(
       canvasElement.querySelector<HTMLElement>('[data-testid="guide-back"]')!,
     )
-    await waitFor(() => expect(toggle).toHaveTextContent('шаг 2 из 3'))
+    await waitFor(() =>
+      expect(toggle).toHaveTextContent(
+        text('guideStepOf', { step: 2, count: 3 }),
+      ),
+    )
     await waitFor(() => expect(next).toBeEnabled())
-    await expect(next).toHaveTextContent('Далее')
+    await expect(next).toHaveTextContent(text('guideNext'))
     await expect(states()).toEqual(['done', 'current', 'next'])
     await nextStep(canvasElement)
-    await waitFor(() => expect(toggle).toHaveTextContent('пройден'))
+    await waitFor(() => expect(toggle).toHaveTextContent(text('guideFinished')))
     await settle()
   },
 }

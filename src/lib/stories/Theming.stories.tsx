@@ -30,6 +30,8 @@ import { guideNext, settle, until } from './__mocks__/catalogPlay'
 import { guideControls } from './__mocks__/utils/dataGridControls'
 import type { StoryProps } from './DataGridStory.types'
 import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import { type StoryText, textOf } from './__mocks__/storyText'
+import { useStoryText } from './__mocks__/storyLocale'
 
 // История витрины темизации: контролы Storybook меняют цвет токена, значение
 // прокидывается в грид инлайн-`style` обёртки (бьёт дефолты слоя из theme.css).
@@ -50,8 +52,8 @@ interface TokenControl {
   arg: string
   /** Читаемая подпись контрола. */
   label: string
-  /** Описание для колонки Description в панели контролов. */
-  desc: string
+  /** Описание для колонки Description в панели контролов; палитра рисует его на языке истории. */
+  desc: StoryText | string
 }
 
 // Апстрим-палитра shadcn — верхний рычаг: правка влияет на все токены грида.
@@ -60,55 +62,82 @@ const PALETTE: TokenControl[] = [
     token: '--background',
     arg: 'background',
     label: 'background',
-    desc: 'Базовый фон холста. Задаёт фон нечётных строк, их закреплённых ячеек и drag-клона.',
+    desc: {
+      ru: 'Базовый фон холста. Задаёт фон нечётных строк, их закреплённых ячеек и drag-клона.',
+      en: 'Base canvas background. Sets the background of odd rows, their pinned cells, and the drag clone.',
+    },
   },
   {
     token: '--foreground',
     arg: 'foreground',
     label: 'foreground',
-    desc: 'Основные «чернила» (текст/иконки). База для hover/selected-фонов, цвета контролов, скелетона, фокус-ринга.',
+    desc: {
+      ru: 'Основные «чернила» (текст/иконки). База для hover/selected-фонов, цвета контролов, скелетона, фокус-ринга.',
+      en: 'Main “ink” (text/icons). The base for hover/selected backgrounds, control colors, the skeleton, and the focus ring.',
+    },
   },
   {
     token: '--card',
     arg: 'card',
     label: 'card',
-    desc: 'Фон карточки. Задаёт фон чётных строк, их закреплённых ячеек, кнопок действий и thumb переключателя.',
+    desc: {
+      ru: 'Фон карточки. Задаёт фон чётных строк, их закреплённых ячеек, кнопок действий и thumb переключателя.',
+      en: 'Card background. Sets the background of even rows, their pinned cells, action buttons, and the switch thumb.',
+    },
   },
   {
     token: '--muted',
     arg: 'muted',
     label: 'muted',
-    desc: 'Приглушённый фон. Задаёт фон шапки и футера, включая закреплённые ячейки шапки.',
+    desc: {
+      ru: 'Приглушённый фон. Задаёт фон шапки и футера, включая закреплённые ячейки шапки.',
+      en: 'Muted background. Sets the background of the header and footer, including pinned header cells.',
+    },
   },
   {
     token: '--primary',
     arg: 'primary',
     label: 'primary',
-    desc: 'Акцент/чернила. Задаёт аутлайн ячейки, заливку чекбокса, включённый трек switch, accent.',
+    desc: {
+      ru: 'Акцент/чернила. Задаёт аутлайн ячейки, заливку чекбокса, включённый трек switch, accent.',
+      en: 'Accent/ink. Sets the cell outline, checkbox fill, the switch track when on, and accent.',
+    },
   },
   {
     token: '--primary-foreground',
     arg: 'primaryForeground',
     label: 'primary-foreground',
-    desc: 'Контраст к primary. Задаёт цвет галочки чекбокса.',
+    desc: {
+      ru: 'Контраст к primary. Задаёт цвет галочки чекбокса.',
+      en: 'Contrast color for primary. Sets the checkbox check mark color.',
+    },
   },
   {
     token: '--border',
     arg: 'border',
     label: 'border',
-    desc: 'Цвет hairline-границ. Задаёт границы контролов и разделитель закреплённых колонок.',
+    desc: {
+      ru: 'Цвет hairline-границ. Задаёт границы контролов и разделитель закреплённых колонок.',
+      en: 'Hairline border color. Sets control borders and the pinned column divider.',
+    },
   },
   {
     token: '--destructive',
     arg: 'destructive',
     label: 'destructive',
-    desc: 'Цвет ошибки/опасности. Свет и плашка ошибки загрузки, отказ действия, полоски слота при недопустимом drop.',
+    desc: {
+      ru: 'Цвет ошибки/опасности. Свет и плашка ошибки загрузки, отказ действия, полоски слота при недопустимом drop.',
+      en: 'Error/danger color. The load error glow and banner, action refusal, and slot bars on an invalid drop.',
+    },
   },
   {
     token: '--info',
     arg: 'info',
     label: 'info (loader)',
-    desc: 'Семантический синий (статус). По умолчанию — цвет бегущей полосы прогресс-бара.',
+    desc: {
+      ru: 'Семантический синий (статус). По умолчанию — цвет бегущей полосы прогресс-бара.',
+      en: 'Semantic blue (status). By default, the color of the moving progress bar.',
+    },
   },
 ]
 
@@ -119,85 +148,127 @@ const SEMANTIC: TokenControl[] = [
     token: '--tsr-sys-fg',
     arg: 'sysFg',
     label: 'sys-fg',
-    desc: 'Роль «чернил». База для текста, hover/selected-оверлеев, контролов, скелетона.',
+    desc: {
+      ru: 'Роль «чернил». База для текста, hover/selected-оверлеев, контролов, скелетона.',
+      en: 'The “ink” role. The base for text, hover/selected overlays, controls, and the skeleton.',
+    },
   },
   {
     token: '--tsr-sys-bg',
     arg: 'sysBg',
     label: 'sys-bg',
-    desc: 'Роль базового фона. Фон нечётных строк, их закреплённых ячеек и drag-клона.',
+    desc: {
+      ru: 'Роль базового фона. Фон нечётных строк, их закреплённых ячеек и drag-клона.',
+      en: 'The base background role. The background of odd rows, their pinned cells, and the drag clone.',
+    },
   },
   {
     token: '--tsr-sys-surface',
     arg: 'sysSurface',
     label: 'sys-surface',
-    desc: 'Роль поверхности. Фон чётных строк, их закреплённых ячеек, кнопок действий, thumb переключателя.',
+    desc: {
+      ru: 'Роль поверхности. Фон чётных строк, их закреплённых ячеек, кнопок действий, thumb переключателя.',
+      en: 'The surface role. The background of even rows, their pinned cells, action buttons, and the switch thumb.',
+    },
   },
   {
     token: '--tsr-sys-muted',
     arg: 'sysMuted',
     label: 'sys-muted',
-    desc: 'Роль приглушённого фона. Шапка и футер, включая закреплённые ячейки шапки.',
+    desc: {
+      ru: 'Роль приглушённого фона. Шапка и футер, включая закреплённые ячейки шапки.',
+      en: 'The muted background role. The header and footer, including pinned header cells.',
+    },
   },
   {
     token: '--tsr-sys-accent',
     arg: 'sysAccent',
     label: 'sys-accent',
-    desc: 'Роль акцента. Аутлайн ячейки, чекбокс, трек switch, accept-drop.',
+    desc: {
+      ru: 'Роль акцента. Аутлайн ячейки, чекбокс, трек switch, accept-drop.',
+      en: 'The accent role. The cell outline, checkbox, switch track, and accept-drop.',
+    },
   },
   {
     token: '--tsr-sys-accent-fg',
     arg: 'sysAccentFg',
     label: 'sys-accent-fg',
-    desc: 'Контраст к accent. Цвет галочки чекбокса.',
+    desc: {
+      ru: 'Контраст к accent. Цвет галочки чекбокса.',
+      en: 'Contrast color for accent. The checkbox check mark color.',
+    },
   },
   {
     token: '--tsr-sys-border',
     arg: 'sysBorder',
     label: 'sys-border',
-    desc: 'Роль границы. Границы контролов, разделитель закреплённых колонок.',
+    desc: {
+      ru: 'Роль границы. Границы контролов, разделитель закреплённых колонок.',
+      en: 'The border role. Control borders and the pinned column divider.',
+    },
   },
   {
     token: '--tsr-sys-ring',
     arg: 'sysRing',
     label: 'sys-ring',
-    desc: 'База кольца фокуса контролов.',
+    desc: {
+      ru: 'База кольца фокуса контролов.',
+      en: 'The base of the control focus ring.',
+    },
   },
   {
     token: '--tsr-sys-danger',
     arg: 'sysDanger',
     label: 'sys-danger',
-    desc: 'Роль опасности. Свет и плашка ошибки загрузки, отказ действия, полоски слота при недопустимом drop.',
+    desc: {
+      ru: 'Роль опасности. Свет и плашка ошибки загрузки, отказ действия, полоски слота при недопустимом drop.',
+      en: 'The danger role. The load error glow and banner, action refusal, and slot bars on an invalid drop.',
+    },
   },
   {
     token: '--tsr-sys-info',
     arg: 'sysInfo',
     label: 'sys-info',
-    desc: 'Роль статуса. По умолчанию — цвет полосы прогресс-бара.',
+    desc: {
+      ru: 'Роль статуса. По умолчанию — цвет полосы прогресс-бара.',
+      en: 'The status role. By default, the progress bar color.',
+    },
   },
   {
     token: '--tsr-sys-success',
     arg: 'sysSuccess',
     label: 'sys-success',
-    desc: 'Роль успеха. Тон подсветки и вспышки «успех» — в демо вторая строка.',
+    desc: {
+      ru: 'Роль успеха. Тон подсветки и вспышки «успех» — в демо вторая строка.',
+      en: 'The success role. The tone of the “success” highlight and flash; the second row in the demo.',
+    },
   },
   {
     token: '--tsr-sys-warning',
     arg: 'sysWarning',
     label: 'sys-warning',
-    desc: 'Роль предупреждения. Тон подсветки и вспышки «предупреждение» — в демо третья строка.',
+    desc: {
+      ru: 'Роль предупреждения. Тон подсветки и вспышки «предупреждение» — в демо третья строка.',
+      en: 'The warning role. The tone of the “warning” highlight and flash; the third row in the demo.',
+    },
   },
   {
     token: '--tsr-sys-overlay-hover',
     arg: 'sysOverlayHover',
     label: 'sys-overlay-hover',
-    desc: 'Слой наведения строк и ячеек целиком. Силу тона без смены цвета задаёт tint-hover.',
+    desc: {
+      ru: 'Слой наведения строк и ячеек целиком. Силу тона без смены цвета задаёт tint-hover.',
+      en: 'The hover layer of rows and cells as a whole. tint-hover sets its strength without changing the color.',
+    },
   },
   {
     token: '--tsr-sys-overlay-selected',
     arg: 'sysOverlaySelected',
     label: 'sys-overlay-selected',
-    desc: 'Слой выбранной строки целиком. Силу тона без смены цвета задаёт tint-selected.',
+    desc: {
+      ru: 'Слой выбранной строки целиком. Силу тона без смены цвета задаёт tint-selected.',
+      en: 'The selected row layer as a whole. tint-selected sets its strength without changing the color.',
+    },
   },
 ]
 
@@ -207,157 +278,235 @@ const GRID_TOKENS: TokenControl[] = [
     token: '--tsr-comp-head-bg',
     arg: 'headBg',
     label: 'head-bg',
-    desc: 'Фон ячеек шапки.',
+    desc: {
+      ru: 'Фон ячеек шапки.',
+      en: 'Header cell background.',
+    },
   },
   {
     token: '--tsr-comp-head-cell-hovered-bg',
     arg: 'headHoverBg',
     label: 'head-cell-hovered-bg',
-    desc: 'Фон ячейки шапки при наведении.',
+    desc: {
+      ru: 'Фон ячейки шапки при наведении.',
+      en: 'Header cell background on hover.',
+    },
   },
   {
     token: '--tsr-comp-head-cell-pinned-bg',
     arg: 'headPinnedBg',
     label: 'head-cell-pinned-bg',
-    desc: 'Фон закреплённой ячейки шапки.',
+    desc: {
+      ru: 'Фон закреплённой ячейки шапки.',
+      en: 'Pinned header cell background.',
+    },
   },
   {
     token: '--tsr-comp-row-bg',
     arg: 'rowBg',
     label: 'row-bg',
-    desc: 'Фон чётных строк тела.',
+    desc: {
+      ru: 'Фон чётных строк тела.',
+      en: 'Background of even body rows.',
+    },
   },
   {
     token: '--tsr-comp-row-odd-bg',
     arg: 'rowOddBg',
     label: 'row-odd-bg',
-    desc: 'Фон нечётных строк (зебра).',
+    desc: {
+      ru: 'Фон нечётных строк (зебра).',
+      en: 'Background of odd rows (zebra).',
+    },
   },
   {
     token: '--tsr-comp-row-hovered-bg',
     arg: 'rowHoverBg',
     label: 'row-hovered-bg',
-    desc: 'Слой строки при наведении курсора — поверх её фона.',
+    desc: {
+      ru: 'Слой строки при наведении курсора — поверх её фона.',
+      en: 'The row layer on hover, over its background.',
+    },
   },
   {
     token: '--tsr-comp-row-selected-bg',
     arg: 'rowSelectedBg',
     label: 'row-selected-bg',
-    desc: 'Слой выбранной (отмеченной) строки — поверх её фона.',
+    desc: {
+      ru: 'Слой выбранной (отмеченной) строки — поверх её фона.',
+      en: 'The layer of a selected (checked) row, over its background.',
+    },
   },
   {
     token: '--tsr-comp-row-selected-hovered-bg',
     arg: 'rowSelectedHoverBg',
     label: 'row-selected-hovered-bg',
-    desc: 'Слой выбранной строки под курсором.',
+    desc: {
+      ru: 'Слой выбранной строки под курсором.',
+      en: 'The layer of a selected row under the pointer.',
+    },
   },
   {
     token: '--tsr-comp-cell-divider-color',
     arg: 'cellDivider',
     label: 'cell-divider-color',
-    desc: 'Разделители строк и ячеек.',
+    desc: {
+      ru: 'Разделители строк и ячеек.',
+      en: 'Row and cell dividers.',
+    },
   },
   {
     token: '--tsr-comp-frame-border-color',
     arg: 'frameBorder',
     label: 'frame-border-color',
-    desc: 'Рамка вокруг таблицы с тулбаром и нижней панелью.',
+    desc: {
+      ru: 'Рамка вокруг таблицы с тулбаром и нижней панелью.',
+      en: 'The frame around the table with the toolbar and status bar.',
+    },
   },
   {
     token: '--tsr-comp-toolbar-bg',
     arg: 'toolbarBg',
     label: 'toolbar-bg',
-    desc: 'Фон тулбара над таблицей.',
+    desc: {
+      ru: 'Фон тулбара над таблицей.',
+      en: 'Background of the toolbar above the table.',
+    },
   },
   {
     token: '--tsr-comp-status-bar-bg',
     arg: 'statusBarBg',
     label: 'status-bar-bg',
-    desc: 'Фон нижней панели со счётчиком выбранных строк.',
+    desc: {
+      ru: 'Фон нижней панели со счётчиком выбранных строк.',
+      en: 'Background of the status bar with the selected rows counter.',
+    },
   },
   {
     token: '--tsr-comp-cell-outline-color',
     arg: 'cellOutline',
     label: 'cell-outline-color',
-    desc: 'Обводка ячейки тела при наведении и рамка поля правки в фокусе.',
+    desc: {
+      ru: 'Обводка ячейки тела при наведении и рамка поля правки в фокусе.',
+      en: 'Body cell outline on hover and the frame of a focused edit field.',
+    },
   },
   {
     token: '--tsr-comp-cell-pinned-left-bg',
     arg: 'pinnedBg',
     label: 'cell-pinned-left-bg',
-    desc: 'Фон закреплённой ячейки чётной строки; у закреплённых справа — он же. Наведение и выбор ложатся слоем строки поверх.',
+    desc: {
+      ru: 'Фон закреплённой ячейки чётной строки; у закреплённых справа — он же. Наведение и выбор ложатся слоем строки поверх.',
+      en: 'Background of a pinned cell in an even row; the same for cells pinned on the right. Hover and selection are applied on top as the row layer.',
+    },
   },
   {
     token: '--tsr-comp-cell-odd-pinned-left-bg',
     arg: 'pinnedOddBg',
     label: 'cell-odd-pinned-left-bg',
-    desc: 'Фон закреплённой ячейки нечётной строки (зебра).',
+    desc: {
+      ru: 'Фон закреплённой ячейки нечётной строки (зебра).',
+      en: 'Background of a pinned cell in an odd row (zebra).',
+    },
   },
   {
     token: '--tsr-comp-cell-pinned-border-color',
     arg: 'pinnedBorder',
     label: 'cell-pinned-border-color',
-    desc: 'Цвет границы-разделителя закреплённых колонок.',
+    desc: {
+      ru: 'Цвет границы-разделителя закреплённых колонок.',
+      en: 'Color of the pinned column divider.',
+    },
   },
   {
     token: '--tsr-comp-control-color',
     arg: 'controlColor',
     label: 'control-color',
-    desc: 'Цвет кнопок-иконок в покое: шапка, ячейки, строки, тулбар, меню, пагинация, поиск.',
+    desc: {
+      ru: 'Цвет кнопок-иконок в покое: шапка, ячейки, строки, тулбар, меню, пагинация, поиск.',
+      en: 'Color of icon buttons at rest: header, cells, rows, toolbar, menus, pagination, search.',
+    },
   },
   {
     token: '--tsr-comp-control-active-color',
     arg: 'controlActive',
     label: 'control-active-color',
-    desc: 'Цвет активного контрола (напр. включённой сортировки).',
+    desc: {
+      ru: 'Цвет активного контрола (напр. включённой сортировки).',
+      en: 'Color of an active control (e.g., active sorting).',
+    },
   },
   {
     token: '--tsr-comp-focus-ring',
     arg: 'focusRing',
     label: 'focus-ring',
-    desc: 'Цвет кольца фокуса на чекбоксе/переключателе/кнопке.',
+    desc: {
+      ru: 'Цвет кольца фокуса на чекбоксе/переключателе/кнопке.',
+      en: 'Focus ring color on a checkbox/switch/button.',
+    },
   },
   {
     token: '--tsr-comp-checkbox-checked-bg',
     arg: 'checkboxBg',
     label: 'checkbox-checked-bg',
-    desc: 'Фон отмеченного чекбокса выбора строки.',
+    desc: {
+      ru: 'Фон отмеченного чекбокса выбора строки.',
+      en: 'Background of a checked row selection checkbox.',
+    },
   },
   {
     token: '--tsr-comp-checkbox-check-color',
     arg: 'checkboxCheck',
     label: 'checkbox-check-color',
-    desc: 'Цвет галочки внутри чекбокса.',
+    desc: {
+      ru: 'Цвет галочки внутри чекбокса.',
+      en: 'Color of the check mark inside the checkbox.',
+    },
   },
   {
     token: '--tsr-comp-action-button-bg',
     arg: 'actionBg',
     label: 'action-button-bg',
-    desc: 'Непрозрачный фон кнопок действий строки поверх содержимого; тень — `shadow-action`.',
+    desc: {
+      ru: 'Непрозрачный фон кнопок действий строки поверх содержимого; тень — `shadow-action`.',
+      en: 'Opaque background of row action buttons over the content; the shadow is `shadow-action`.',
+    },
   },
   {
     token: '--tsr-comp-accent',
     arg: 'accent',
     label: 'accent',
-    desc: 'Акцент интерфейса: отметка выбранного пункта меню, панель фильтра, текущая страница пагинации.',
+    desc: {
+      ru: 'Акцент интерфейса: отметка выбранного пункта меню, панель фильтра, текущая страница пагинации.',
+      en: 'Interface accent: the selected menu item mark, the filter panel, and the current pagination page.',
+    },
   },
   {
     token: '--tsr-comp-skeleton-bg',
     arg: 'skeletonBg',
     label: 'skeleton-bg',
-    desc: 'Базовый цвет скелетон-заглушки при загрузке.',
+    desc: {
+      ru: 'Базовый цвет скелетон-заглушки при загрузке.',
+      en: 'Base color of the loading skeleton.',
+    },
   },
   {
     token: '--tsr-comp-loader-bar',
     arg: 'loaderBar',
     label: 'loader-bar',
-    desc: 'Основной цвет свечения обновления под шапкой и индикатора включённой кнопки; три других оттенка свечения — свои токены `sys-info-sky/-indigo/-violet`.',
+    desc: {
+      ru: 'Основной цвет свечения обновления под шапкой и индикатора включённой кнопки; три других оттенка свечения — свои токены `sys-info-sky/-indigo/-violet`.',
+      en: 'Main color of the refresh glow under the header and of the active button indicator; the three other glow shades have their own tokens `sys-info-sky/-indigo/-violet`.',
+    },
   },
   {
     token: '--tsr-comp-scrollbar-thumb',
     arg: 'scrollbarThumb',
     label: 'scrollbar-thumb',
-    desc: 'Цвет ползунка тонкого скроллбара.',
+    desc: {
+      ru: 'Цвет ползунка тонкого скроллбара.',
+      en: 'Color of the thin scrollbar thumb.',
+    },
   },
 ]
 
@@ -366,7 +515,7 @@ const SHADOW_COLOR: TokenControl = {
   token: '--tsr-comp-shadow-color',
   arg: 'shadowColor',
   label: 'shadow-color',
-  desc: 'Цвет основных теней (шапка, футер, drag-оверлеи). Единый рычаг тональности теней.',
+  desc: 'Color of the main shadows (header, footer, drag overlays). A single lever for the shadow tone.',
 }
 
 // Полные значения теней по поверхностям — text-контролы (box-shadow целиком).
@@ -378,35 +527,35 @@ const SHADOW_TOKENS: ShadowControl[] = [
     token: '--tsr-comp-shadow-head',
     arg: 'shadowHead',
     label: 'shadow-head',
-    desc: 'Тень под шапкой при скролле (box-shadow целиком).',
+    desc: 'Shadow under the header while scrolling (the whole box-shadow).',
     default: '0 4px 8px var(--tsr-comp-shadow-color)',
   },
   {
     token: '--tsr-comp-shadow-footer',
     arg: 'shadowFooter',
     label: 'shadow-footer',
-    desc: 'Тень над футером (box-shadow целиком).',
+    desc: 'Shadow above the footer (the whole box-shadow).',
     default: '0 -4px 8px var(--tsr-comp-shadow-color)',
   },
   {
     token: '--tsr-comp-shadow-drag',
     arg: 'shadowDrag',
     label: 'shadow-drag',
-    desc: 'Тень клона строки/колонки при перетаскивании.',
+    desc: 'Shadow of the row/column clone while dragging.',
     default: 'var(--tsr-comp-shadow-color) 0 2px 4px 2px',
   },
   {
     token: '--tsr-comp-shadow-drop-bubble',
     arg: 'shadowBubble',
     label: 'shadow-drop-bubble',
-    desc: 'Тень бейджа-счётчика при перетаскивании нескольких строк.',
+    desc: 'Shadow of the counter badge when dragging several rows.',
     default: '0 1px 2px 0 rgba(0, 0, 0, 0.08)',
   },
   {
     token: '--tsr-comp-shadow-action',
     arg: 'shadowAction',
     label: 'shadow-action',
-    desc: 'Тень всплывающих кнопок действий над строкой.',
+    desc: 'Shadow of the pop-up action buttons over a row.',
     default: '0px 0px 4px 2px var(--tsr-sys-shadow-elevated)',
   },
 ]
@@ -425,7 +574,7 @@ const TINT_TOKENS: NumberControl[] = [
     token: '--tsr-sys-tint-hover',
     arg: 'tintHover',
     label: 'tint-hover',
-    desc: 'Сила слоя наведения строк и ячеек, % цвета текста.',
+    desc: 'Strength of the row and cell hover layer, % of the text color.',
     default: 4,
     unit: '%',
     min: 0,
@@ -435,7 +584,7 @@ const TINT_TOKENS: NumberControl[] = [
     token: '--tsr-sys-tint-selected',
     arg: 'tintSelected',
     label: 'tint-selected',
-    desc: 'Сила слоя выбранной строки, % цвета текста.',
+    desc: 'Strength of the selected row layer, % of the text color.',
     default: 6,
     unit: '%',
     min: 0,
@@ -445,7 +594,7 @@ const TINT_TOKENS: NumberControl[] = [
     token: '--tsr-sys-tint-pinned',
     arg: 'tintPinned',
     label: 'tint-pinned',
-    desc: 'Подложка закреплённых колонок, % цвета текста.',
+    desc: 'Pinned column backdrop, % of the text color.',
     default: 3,
     unit: '%',
     min: 0,
@@ -455,7 +604,7 @@ const TINT_TOKENS: NumberControl[] = [
     token: '--tsr-sys-tint-fill',
     arg: 'tintFill',
     label: 'tint-fill',
-    desc: 'Заливки без текста: скелет, ползунок прокрутки, % цвета текста.',
+    desc: 'Fills without text: skeleton, scrollbar thumb, % of the text color.',
     default: 10,
     unit: '%',
     min: 0,
@@ -469,7 +618,7 @@ const SIZE_TOKENS: NumberControl[] = [
     token: '--tsr-comp-row-height',
     arg: 'rowHeight',
     label: 'row-height',
-    desc: 'Высота строки тела, px.',
+    desc: 'Body row height, px.',
     default: 50,
     unit: 'px',
     min: 32,
@@ -479,7 +628,7 @@ const SIZE_TOKENS: NumberControl[] = [
     token: '--tsr-comp-head-row-height',
     arg: 'headRowHeight',
     label: 'head-row-height',
-    desc: 'Высота строки шапки, px. Пока не задана — как у строк тела.',
+    desc: 'Header row height, px. When not set, matches the body rows.',
     default: 50,
     unit: 'px',
     min: 32,
@@ -489,7 +638,7 @@ const SIZE_TOKENS: NumberControl[] = [
     token: '--tsr-comp-grid-button-size',
     arg: 'gridButtonSize',
     label: 'grid-button-size',
-    desc: 'Кнопки в шапке, ячейках и строках, px; колонка выбора — по ним же. Кнопки тулбара не меняются.',
+    desc: 'Buttons in the header, cells, and rows, px; the selection column follows them. Toolbar buttons do not change.',
     default: 28,
     unit: 'px',
     min: 20,
@@ -499,7 +648,7 @@ const SIZE_TOKENS: NumberControl[] = [
     token: '--tsr-comp-cell-content-padding-x',
     arg: 'cellPaddingX',
     label: 'cell-content-padding-x',
-    desc: 'Отступ содержимого от краёв ячейки, px.',
+    desc: 'Content padding from the cell edges, px.',
     default: 12,
     unit: 'px',
     min: 4,
@@ -509,7 +658,7 @@ const SIZE_TOKENS: NumberControl[] = [
     token: '--tsr-comp-cell-font-size',
     arg: 'cellFontSize',
     label: 'cell-font-size',
-    desc: 'Кегль текста ячеек и шапки, px.',
+    desc: 'Font size of cell and header text, px.',
     default: 13,
     unit: 'px',
     min: 11,
@@ -519,7 +668,7 @@ const SIZE_TOKENS: NumberControl[] = [
     token: '--tsr-sys-radius',
     arg: 'radius',
     label: 'sys-radius',
-    desc: 'Скругление рамки таблицы, кнопок, меню и тултипов, px.',
+    desc: 'Corner radius of the table frame, buttons, menus, and tooltips, px.',
     default: 8,
     unit: 'px',
     min: 0,
@@ -534,7 +683,7 @@ const FONT_FAMILY: TokenControl = {
   token: '--tsr-comp-font-family',
   arg: 'fontFamily',
   label: 'font-family',
-  desc: 'Шрифт таблицы (CSS font-family); пусто — шрифт темы.',
+  desc: 'Table font (CSS font-family); empty means the theme font.',
 }
 
 // Цветовые токены (резолвятся в rgb для свотчей); тени-строки — отдельно.
@@ -650,7 +799,7 @@ const numberArgTypes = (
       arg,
       {
         name: label,
-        description: desc,
+        description: textOf(desc, 'en'),
         control: { type: 'range', min, max, step: 1 },
         table: { category },
       },
@@ -782,7 +931,7 @@ const colorArgTypes = (
       arg,
       {
         name: label,
-        description: desc,
+        description: textOf(desc, 'en'),
         control: { type: 'color' },
         table: { category },
       },
@@ -811,38 +960,38 @@ const meta = {
     loading: {
       name: 'loading (loader)',
       description:
-        'Загрузка данных: `refresh` — свечение под шапкой (токены loader-*), наведение на время гаснет; `initial` — скелет первой загрузки (skeleton-bg).',
+        'Data loading: `refresh` shows a glow under the header (loader-* tokens), and hover highlighting is off while it lasts; `initial` shows the first-load skeleton (skeleton-bg).',
       control: 'inline-radio',
       options: ['off', 'refresh', 'initial'],
-      table: { category: 'Режим' },
+      table: { category: 'Mode' },
     },
     loadError: {
       name: 'loadError',
       description:
-        'Отказ загрузки: красный свет под шапкой и плашка — чтобы увидеть destructive/sys-danger.',
+        'Load failure: a red glow under the header and a banner, to preview destructive/sys-danger.',
       control: 'boolean',
-      table: { category: 'Режим' },
+      table: { category: 'Mode' },
     },
-    ...colorArgTypes(PALETTE, 'shadcn — мост (broad)'),
+    ...colorArgTypes(PALETTE, 'shadcn bridge (broad)'),
     ...colorArgTypes(SEMANTIC, 'Semantic (--tsr-sys-*)'),
     ...colorArgTypes(GRID_TOKENS, 'Component (--tsr-comp-*)'),
-    ...colorArgTypes([SHADOW_COLOR], 'Тени'),
-    ...numberArgTypes(TINT_TOKENS, 'Тона (--tsr-sys-tint-*)'),
-    ...numberArgTypes(SIZE_TOKENS, 'Размеры'),
+    ...colorArgTypes([SHADOW_COLOR], 'Shadows'),
+    ...numberArgTypes(TINT_TOKENS, 'Tints (--tsr-sys-tint-*)'),
+    ...numberArgTypes(SIZE_TOKENS, 'Sizes'),
     fontFamily: {
       name: FONT_FAMILY.label,
-      description: FONT_FAMILY.desc,
+      description: textOf(FONT_FAMILY.desc, 'en'),
       control: { type: 'text' },
-      table: { category: 'Размеры' },
+      table: { category: 'Sizes' },
     },
     ...Object.fromEntries(
       SHADOW_TOKENS.map(({ arg, label, desc }) => [
         arg,
         {
           name: label,
-          description: desc,
+          description: textOf(desc, 'en'),
           control: { type: 'text' },
-          table: { category: 'Тени' },
+          table: { category: 'Shadows' },
         },
       ]),
     ),
@@ -871,16 +1020,21 @@ export const Playground: StoryObj<ThemingArgs> = {
 // Группы палитры = те же массивы, что питают контролы Playground (от общего
 // уровня к частному). Overlay-токены полупрозрачны, поэтому свотчам
 // даём рамку `--tsr-sys-border` — иначе на нейтральном фоне их не видно.
-const PALETTE_GROUPS: { title: string; tokens: TokenControl[] }[] = [
-  { title: 'Мост shadcn (broad)', tokens: PALETTE },
-  { title: 'Semantic (--tsr-sys-*)', tokens: SEMANTIC },
-  { title: 'Component (--tsr-comp-*)', tokens: GRID_TOKENS },
-]
+const PALETTE_GROUPS: { title: StoryText | string; tokens: TokenControl[] }[] =
+  [
+    {
+      title: { ru: 'Мост shadcn (broad)', en: 'shadcn bridge (broad)' },
+      tokens: PALETTE,
+    },
+    { title: 'Semantic (--tsr-sys-*)', tokens: SEMANTIC },
+    { title: 'Component (--tsr-comp-*)', tokens: GRID_TOKENS },
+  ]
 
 // Один свотч: цвет читаем со смонтированного элемента (getComputedStyle внутри
 // тематизированной колонки → значение именно этой темы, включая раскрытый
 // color-mix, который браузер отдаёт готовым rgb/rgba).
 const Swatch = ({ token, label, desc }: TokenControl) => {
+  const t = useStoryText()
   const ref = useRef<HTMLDivElement>(null)
   const [value, setValue] = useState('')
 
@@ -905,7 +1059,7 @@ const Swatch = ({ token, label, desc }: TokenControl) => {
       <figcaption
         style={{ marginTop: 8, fontSize: 12, lineHeight: 1.45, minWidth: 0 }}
       >
-        <div style={{ fontWeight: 600 }}>{desc}</div>
+        <div style={{ fontWeight: 600 }}>{t(desc)}</div>
         <code
           style={{
             display: 'block',
@@ -927,47 +1081,54 @@ const Swatch = ({ token, label, desc }: TokenControl) => {
 
 // Одна колонка = одна тема. Класс `.data-grid-theme[.dark]` открывает скоуп
 // токенов (dark-класс заодно активирует .dark-палитру shadcn из global.css).
-const PaletteColumn = ({ mode }: { mode: 'light' | 'dark' }) => (
-  <div
-    className={
-      mode === 'dark' ? `${DATA_GRID_THEME_CLASS} dark` : DATA_GRID_THEME_CLASS
-    }
-    style={{
-      flex: '1 1 380px',
-      minWidth: 340,
-      padding: 24,
-      borderRadius: 16,
-      background: 'var(--tsr-sys-bg)',
-      color: 'var(--tsr-sys-fg)',
-      border: '1px solid var(--tsr-sys-border)',
-    }}
-  >
-    <h3 style={{ margin: '0 0 20px', fontSize: 15 }}>
-      {mode === 'dark' ? 'Тёмная тема' : 'Светлая тема'}
-    </h3>
-    {PALETTE_GROUPS.map(({ title, tokens }) => (
-      <section key={title} style={{ marginBottom: 24 }}>
-        <div
-          style={{
-            marginBottom: 12,
-            fontSize: 11,
-            fontWeight: 600,
-            letterSpacing: 0.5,
-            textTransform: 'uppercase',
-            opacity: 0.6,
-          }}
-        >
-          {title}
-        </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
-          {tokens.map(t => (
-            <Swatch key={t.token} {...t} />
-          ))}
-        </div>
-      </section>
-    ))}
-  </div>
-)
+const PaletteColumn = ({ mode }: { mode: 'light' | 'dark' }) => {
+  const t = useStoryText()
+  return (
+    <div
+      className={
+        mode === 'dark'
+          ? `${DATA_GRID_THEME_CLASS} dark`
+          : DATA_GRID_THEME_CLASS
+      }
+      style={{
+        flex: '1 1 380px',
+        minWidth: 340,
+        padding: 24,
+        borderRadius: 16,
+        background: 'var(--tsr-sys-bg)',
+        color: 'var(--tsr-sys-fg)',
+        border: '1px solid var(--tsr-sys-border)',
+      }}
+    >
+      <h3 style={{ margin: '0 0 20px', fontSize: 15 }}>
+        {mode === 'dark'
+          ? t({ ru: 'Тёмная тема', en: 'Dark theme' })
+          : t({ ru: 'Светлая тема', en: 'Light theme' })}
+      </h3>
+      {PALETTE_GROUPS.map(({ title, tokens }) => (
+        <section key={textOf(title, 'en')} style={{ marginBottom: 24 }}>
+          <div
+            style={{
+              marginBottom: 12,
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: 0.5,
+              textTransform: 'uppercase',
+              opacity: 0.6,
+            }}
+          >
+            {t(title)}
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+            {tokens.map(t => (
+              <Swatch key={t.token} {...t} />
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
+  )
+}
 
 const PaletteBoard = memo(() => (
   <div
@@ -1033,24 +1194,45 @@ const darkContainer = (root: HTMLElement) => {
 
 const SOURCES: readonly GuideStoryStep[] = [
   {
-    title: 'Тема по странице',
-    hint: 'Таблица не задаёт себе тему, а следует теме страницы.',
+    title: { ru: 'Тема по странице', en: 'Theme from the page' },
+    hint: {
+      ru: 'Таблица не задаёт себе тему, а следует теме страницы.',
+      en: 'The table does not set its own theme; it follows the page theme.',
+    },
     props: () => ({ colorMode: 'auto' }),
   },
   {
-    title: 'Приложение затемнило контейнер',
-    hint: 'У контейнера таблицы тёмная тема. Таблица следует ближайшему предку и становится тёмной, цвета берёт из тёмной палитры приложения.',
+    title: {
+      ru: 'Приложение затемнило контейнер',
+      en: 'The app made the container dark',
+    },
+    hint: {
+      ru: 'У контейнера таблицы тёмная тема. Таблица следует ближайшему предку и становится тёмной, цвета берёт из тёмной палитры приложения.',
+      en: "The table container has a dark theme. The table follows its nearest ancestor and turns dark, taking its colors from the app's dark palette.",
+    },
     enter: darkContainer,
   },
   {
-    title: 'Таблице задана светлая тема',
-    hint: 'Приложение задало таблице светлую тему внутри тёмного контейнера. Таблица светлая на своих светлых значениях, тёмный предок на неё не действует.',
+    title: {
+      ru: 'Таблице задана светлая тема',
+      en: 'The table is set to the light theme',
+    },
+    hint: {
+      ru: 'Приложение задало таблице светлую тему внутри тёмного контейнера. Таблица светлая на своих светлых значениях, тёмный предок на неё не действует.',
+      en: 'The app set the light theme on the table inside a dark container. The table is light, using its own light values, and the dark ancestor has no effect on it.',
+    },
     props: () => ({ colorMode: 'light' }),
     enter: darkContainer,
   },
   {
-    title: 'Таблице задана тёмная тема',
-    hint: 'Контейнер снова светлый, а приложение задало таблице тёмную тему. Таблица тёмная на светлой странице.',
+    title: {
+      ru: 'Таблице задана тёмная тема',
+      en: 'The table is set to the dark theme',
+    },
+    hint: {
+      ru: 'Контейнер снова светлый, а приложение задало таблице тёмную тему. Таблица тёмная на светлой странице.',
+      en: 'The container is light again, and the app set the dark theme on the table. The table is dark on a light page.',
+    },
     props: () => ({ colorMode: 'dark' }),
   },
 ]
@@ -1068,7 +1250,7 @@ export const ThemeSources: StoryObj<ThemingArgs> = {
     <>
       <style>{SOURCE_CONTAINER_CSS}</style>
       <GuideStory
-        title="Источник темы"
+        title={{ ru: 'Источник темы', en: 'Theme source' }}
         steps={SOURCES}
         args={guideArgs(
           {
@@ -1088,24 +1270,24 @@ export const ThemeSources: StoryObj<ThemingArgs> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     const page = globals.theme === 'dark' ? 'dark' : 'light'
-    await step(SOURCES[0]!.title, async () => {
+    await step(SOURCES[0]!.title.ru, async () => {
       await until(() => expect(schemeOf(canvas)).toBe(page))
     })
-    await step(SOURCES[1]!.title, async () => {
+    await step(SOURCES[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(schemeOf(canvas)).toBe('dark'))
       await until(() =>
         expect(wrapperOf(canvas)!.parentElement!.classList).toContain('dark'),
       )
     })
-    await step(SOURCES[2]!.title, async () => {
+    await step(SOURCES[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(schemeOf(canvas)).toBe('light'))
       await until(() =>
         expect(wrapperOf(canvas)!.parentElement!.classList).toContain('dark'),
       )
     })
-    await step(SOURCES[3]!.title, async () => {
+    await step(SOURCES[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(schemeOf(canvas)).toBe('dark'))
       await until(() =>
@@ -1163,12 +1345,18 @@ const PALETTE_GRID = {
 
 const DEFAULT_PALETTE: readonly GuideStoryStep[] = [
   {
-    title: 'Приложение без палитры',
-    hint: 'Приложение не задаёт свои цвета. Таблица берёт встроенную палитру: нейтральные поверхности и линии, акцент выбора и загрузки.',
+    title: { ru: 'Приложение без палитры', en: 'An app without a palette' },
+    hint: {
+      ru: 'Приложение не задаёт свои цвета. Таблица берёт встроенную палитру: нейтральные поверхности и линии, акцент выбора и загрузки.',
+      en: 'The app does not set its own colors. The table uses its built-in palette: neutral surfaces and lines, and an accent for selection and loading.',
+    },
   },
   {
-    title: 'Тёмная тема',
-    hint: 'Приложение включило таблице тёмную тему. Встроенная палитра сменила все цвета разом, текст и линии остались читаемыми.',
+    title: { ru: 'Тёмная тема', en: 'Dark theme' },
+    hint: {
+      ru: 'Приложение включило таблице тёмную тему. Встроенная палитра сменила все цвета разом, текст и линии остались читаемыми.',
+      en: 'The app turned on the dark theme for the table. The built-in palette changed all colors at once, and the text and lines stayed readable.',
+    },
     props: () => ({ colorMode: 'dark' }),
   },
 ]
@@ -1181,7 +1369,7 @@ export const ThemingDefaultPalette: StoryObj<ThemingArgs> = {
   render: storyArgs => (
     <div style={WITHOUT_PALETTE}>
       <GuideStory
-        title="Палитра по умолчанию"
+        title={{ ru: 'Палитра по умолчанию', en: 'Default palette' }}
         steps={DEFAULT_PALETTE}
         args={guideArgs(
           PALETTE_GRID,
@@ -1192,7 +1380,7 @@ export const ThemingDefaultPalette: StoryObj<ThemingArgs> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(DEFAULT_PALETTE[0]!.title, async () => {
+    await step(DEFAULT_PALETTE[0]!.title.ru, async () => {
       await until(() => expect(wrapperOf(canvas)).not.toBeNull())
       const shade = globals.theme === 'dark' ? 'oklch(70.7%' : 'oklch(54.6%'
       await until(() =>
@@ -1200,7 +1388,7 @@ export const ThemingDefaultPalette: StoryObj<ThemingArgs> = {
       )
       await settle()
     })
-    await step(DEFAULT_PALETTE[1]!.title, async () => {
+    await step(DEFAULT_PALETTE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(schemeOf(canvas)).toBe('dark'))
       await until(() =>
@@ -1216,17 +1404,29 @@ const quickSearchField = (root: ParentNode) =>
 
 const SHADCN_PALETTE: readonly GuideStoryStep[] = [
   {
-    title: 'Палитра приложения',
-    hint: 'Приложение использует стандартную тему shadcn. Таблица берёт из неё текст, поверхности, линии и цвет ошибки и выглядит частью приложения.',
+    title: { ru: 'Палитра приложения', en: 'The app palette' },
+    hint: {
+      ru: 'Приложение использует стандартную тему shadcn. Таблица берёт из неё текст, поверхности, линии и цвет ошибки и выглядит частью приложения.',
+      en: 'The app uses the standard shadcn theme. The table takes the text, surfaces, lines, and error color from it and looks like part of the app.',
+    },
   },
   {
-    title: 'Приложение сменило акцент',
-    hint: 'Приложение задало свой основной цвет. Флажки выбора и включённые кнопки таблицы приняли его без настройки самой таблицы.',
+    title: {
+      ru: 'Приложение сменило акцент',
+      en: 'The app changed the accent',
+    },
+    hint: {
+      ru: 'Приложение задало свой основной цвет. Флажки выбора и включённые кнопки таблицы приняли его без настройки самой таблицы.',
+      en: 'The app set its own primary color. The selection checkboxes and active table buttons picked it up without configuring the table itself.',
+    },
     enter: root => setRoles(root, { '--primary': APP_PRIMARY }),
   },
   {
-    title: 'Кольцо фокуса таблицы',
-    hint: 'Приложение задало и свой цвет кольца фокуса, но таблица оставила своё: его выводит цвет текста, поэтому оно заметно на любом фоне. Пользователь перешёл к полю поиска.',
+    title: { ru: 'Кольцо фокуса таблицы', en: 'The table focus ring' },
+    hint: {
+      ru: 'Приложение задало и свой цвет кольца фокуса, но таблица оставила своё: его выводит цвет текста, поэтому оно заметно на любом фоне. Пользователь перешёл к полю поиска.',
+      en: 'The app also set its own focus ring color, but the table kept its own: it is derived from the text color, so it stands out on any background. The user moved to the search field.',
+    },
     keyboard: true,
     enter: root => {
       const undo = setRoles(root, {
@@ -1246,7 +1446,7 @@ export const ThemingShadcnPalette: StoryObj<ThemingArgs> = {
   parameters: { scenario: '0191/S2', ...guideControls() },
   render: storyArgs => (
     <GuideStory
-      title="Палитра приложения"
+      title={{ ru: 'Палитра приложения', en: 'The app palette' }}
       steps={SHADCN_PALETTE}
       args={guideArgs(
         { ...PALETTE_GRID, enableQuickSearch: true },
@@ -1256,18 +1456,18 @@ export const ThemingShadcnPalette: StoryObj<ThemingArgs> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(SHADCN_PALETTE[0]!.title, async () => {
+    await step(SHADCN_PALETTE[0]!.title.ru, async () => {
       await until(() => expect(wrapperOf(canvas)).not.toBeNull())
       await settle()
     })
-    await step(SHADCN_PALETTE[1]!.title, async () => {
+    await step(SHADCN_PALETTE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(rawToken(canvas, '--tsr-sys-accent')).toBe(APP_PRIMARY),
       )
       await settle()
     })
-    await step(SHADCN_PALETTE[2]!.title, async () => {
+    await step(SHADCN_PALETTE[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(document.activeElement).toBe(quickSearchField(canvas)),
@@ -1287,12 +1487,21 @@ const UNSAVED_ROW = getData(PALETTE_GRID.dataCount)[1]!.id as string
 
 const UNSAVED_ROLE: readonly GuideStoryStep[] = [
   {
-    title: 'Несохранённая правка',
-    hint: 'В таблице есть правка, которую ещё не сохранили. Уголок ячейки и счётчик на кнопке показывают её своим цветом, отдельным от цвета ошибок.',
+    title: { ru: 'Несохранённая правка', en: 'An unsaved edit' },
+    hint: {
+      ru: 'В таблице есть правка, которую ещё не сохранили. Уголок ячейки и счётчик на кнопке показывают её своим цветом, отдельным от цвета ошибок.',
+      en: 'The table has an edit that is not saved yet. The cell corner and the counter on the button show it in its own color, separate from the error color.',
+    },
   },
   {
-    title: 'Приложение задало свой цвет',
-    hint: 'Приложение переопределило роль несохранённого в своей теме. Уголок ячейки и счётчик сменили цвет вместе.',
+    title: {
+      ru: 'Приложение задало свой цвет',
+      en: 'The app set its own color',
+    },
+    hint: {
+      ru: 'Приложение переопределило роль несохранённого в своей теме. Уголок ячейки и счётчик сменили цвет вместе.',
+      en: 'The app overrode the unsaved-changes role in its theme. The cell corner and the counter changed color together.',
+    },
     props: () => ({ gridClassName: OWN_UNSAVED }),
   },
 ]
@@ -1306,7 +1515,7 @@ export const ThemingUnsavedRole: StoryObj<ThemingArgs> = {
     <>
       <style>{OWN_UNSAVED_CSS}</style>
       <GuideStory
-        title="Цвет несохранённого"
+        title={{ ru: 'Цвет несохранённого', en: 'Unsaved changes color' }}
         steps={UNSAVED_ROLE}
         args={guideArgs(
           {
@@ -1330,7 +1539,7 @@ export const ThemingUnsavedRole: StoryObj<ThemingArgs> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(UNSAVED_ROLE[0]!.title, async () => {
+    await step(UNSAVED_ROLE[0]!.title.ru, async () => {
       await until(() =>
         expect(
           canvas.querySelector(
@@ -1340,7 +1549,7 @@ export const ThemingUnsavedRole: StoryObj<ThemingArgs> = {
       )
       await settle()
     })
-    await step(UNSAVED_ROLE[1]!.title, async () => {
+    await step(UNSAVED_ROLE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(rawToken(canvas, '--tsr-sys-unsaved')).toBe(APP_UNSAVED),
@@ -1391,12 +1600,21 @@ const GRID_BUTTON_ARGS: Partial<StoryProps> = {
 
 const GRID_BUTTONS: readonly GuideStoryStep[] = [
   {
-    title: 'Кнопки по умолчанию',
-    hint: 'Тема приложения размер кнопок не задаёт. Кнопки в заголовке, ячейках и строках — 28px, колонки выбора и раскрытия строк — 36px. Кнопки панели над таблицей — 32px. В примере кнопки ячеек и строк показаны сразу, обычно они появляются при наведении.',
+    title: { ru: 'Кнопки по умолчанию', en: 'Default buttons' },
+    hint: {
+      ru: 'Тема приложения размер кнопок не задаёт. Кнопки в заголовке, ячейках и строках — 28px, колонки выбора и раскрытия строк — 36px. Кнопки панели над таблицей — 32px. В примере кнопки ячеек и строк показаны сразу, обычно они появляются при наведении.',
+      en: 'The app theme does not set the button size. Buttons in the header, cells, and rows are 28px, and the row selection and expand columns are 36px. Toolbar buttons above the table are 32px. In this example, cell and row buttons are shown right away; normally they appear on hover.',
+    },
   },
   {
-    title: 'Тема задала крупные кнопки',
-    hint: 'Приложение указало в своей теме размер кнопок таблицы 32px. Кнопки в заголовке, ячейках и строках — 32px, колонки выбора и раскрытия — 40px. Кнопки панели над таблицей по-прежнему 32px.',
+    title: {
+      ru: 'Тема задала крупные кнопки',
+      en: 'The theme set larger buttons',
+    },
+    hint: {
+      ru: 'Приложение указало в своей теме размер кнопок таблицы 32px. Кнопки в заголовке, ячейках и строках — 32px, колонки выбора и раскрытия — 40px. Кнопки панели над таблицей по-прежнему 32px.',
+      en: 'The app set the table button size to 32px in its theme. Buttons in the header, cells, and rows are 32px, and the row selection and expand columns are 40px. Toolbar buttons above the table are still 32px.',
+    },
     props: () => ({ gridClassName: LARGE_BUTTONS }),
   },
 ]
@@ -1413,7 +1631,10 @@ export const ThemingGridButtonSize: StoryObj<ThemingArgs> = {
     <div className={BUTTONS_SHOWN}>
       <style>{GRID_BUTTONS_CSS}</style>
       <GuideStory
-        title="Размер кнопок таблицы из темы"
+        title={{
+          ru: 'Размер кнопок таблицы из темы',
+          en: 'Table button size from the theme',
+        }}
         steps={GRID_BUTTONS}
         args={guideArgs(
           GRID_BUTTON_ARGS,
@@ -1449,7 +1670,7 @@ export const ThemingGridButtonSize: StoryObj<ThemingArgs> = {
           toolbar: 32,
         }),
       )
-    await step(GRID_BUTTONS[0].title, async () => {
+    await step(GRID_BUTTONS[0].title.ru, async () => {
       await expectSizes(28, 36)
       // Кнопки ячеек и строк видны без наведения: подсказка шага это обещает.
       for (const selector of [
@@ -1465,7 +1686,7 @@ export const ThemingGridButtonSize: StoryObj<ThemingArgs> = {
         )
       }
     })
-    await step(GRID_BUTTONS[1].title, async () => {
+    await step(GRID_BUTTONS[1].title.ru, async () => {
       await guideNext(canvas)
       await expectSizes(32, 40)
     })
@@ -1489,12 +1710,21 @@ const dividerOf = (root: ParentNode) =>
 
 const DIVIDERS: readonly GuideStoryStep[] = [
   {
-    title: 'Без линий между колонками',
-    hint: 'Колонки таблицы разделяет только расстояние между ними, строки — горизонтальные линии.',
+    title: { ru: 'Без линий между колонками', en: 'No lines between columns' },
+    hint: {
+      ru: 'Колонки таблицы разделяет только расстояние между ними, строки — горизонтальные линии.',
+      en: 'The table columns are separated only by the space between them, and the rows by horizontal lines.',
+    },
   },
   {
-    title: 'Приложение включило линии',
-    hint: 'Приложение задало в своей теме толщину линии между колонками. Шапку и тело разделили вертикальные линии — таблица выглядит как сетка, ширины колонок прежние.',
+    title: {
+      ru: 'Приложение включило линии',
+      en: 'The app turned on the lines',
+    },
+    hint: {
+      ru: 'Приложение задало в своей теме толщину линии между колонками. Шапку и тело разделили вертикальные линии — таблица выглядит как сетка, ширины колонок прежние.',
+      en: 'The app set the width of the line between columns in its theme. Vertical lines now divide the header and body, so the table looks like a grid, and the column widths are unchanged.',
+    },
     props: () => ({ gridClassName: COLUMN_DIVIDERS }),
   },
 ]
@@ -1508,7 +1738,7 @@ export const ThemingColumnDividers: StoryObj<ThemingArgs> = {
     <>
       <style>{COLUMN_DIVIDERS_CSS}</style>
       <GuideStory
-        title="Линии между колонками"
+        title={{ ru: 'Линии между колонками', en: 'Lines between columns' }}
         steps={DIVIDERS}
         args={guideArgs(
           PALETTE_GRID,
@@ -1519,11 +1749,11 @@ export const ThemingColumnDividers: StoryObj<ThemingArgs> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(DIVIDERS[0]!.title, async () => {
+    await step(DIVIDERS[0]!.title.ru, async () => {
       await until(() => expect(dividerOf(canvas)).toBe('0px'))
       await settle()
     })
-    await step(DIVIDERS[1]!.title, async () => {
+    await step(DIVIDERS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(dividerOf(canvas)).toBe('1px'))
       await settle()

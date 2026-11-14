@@ -18,6 +18,7 @@ import {
   stepAction,
 } from './demos/GuideStory'
 import { StoryComponent } from './DataGridStory'
+import type { StoryText } from './__mocks__/storyText'
 import { layout, hasRow, refreshing } from './__mocks__/serverRowModelGuide'
 import {
   childrenOf,
@@ -58,18 +59,18 @@ export const ServerTransactionsPlayground: StoryObj<TransactionsPlaygroundArgs> 
   {
     name: 'Playground',
     parameters: showControls(['liveUpdates', 'liveIntervalMs'], {
-      dataCount: 'строки подаёт «сервер» демо',
-      columnCount: 'колонки задаёт демо',
+      dataCount: 'the demo server supplies the rows',
+      columnCount: 'the demo sets the columns',
     }),
     args: { ...layout, liveUpdates: false, liveIntervalMs: 1000 },
     argTypes: {
       liveUpdates: {
         description:
-          'Сервер шлёт поток изменений: новые, изменённые и удалённые записи',
+          'The server streams changes: new, changed and deleted records',
         control: 'boolean',
       },
       liveIntervalMs: {
-        description: 'Период изменений «сервера», мс',
+        description: 'Interval between server changes, ms',
         control: { type: 'range', min: 200, max: 3000, step: 100 },
         if: { arg: 'liveUpdates' },
       },
@@ -89,8 +90,8 @@ export const ServerTransactionsPlayground: StoryObj<TransactionsPlaygroundArgs> 
   }
 
 /** Первый шаг каждого гайда: окно пришло с «сервера». */
-const atRest = (hint: string, props = txProps()): GuideStoryStep => ({
-  title: 'Строки с сервера',
+const atRest = (hint: StoryText, props = txProps()): GuideStoryStep => ({
+  title: { ru: 'Строки с сервера', en: 'Rows from the server' },
   hint,
   props,
 })
@@ -146,27 +147,42 @@ const addChild = async (root: HTMLElement, signal: AbortSignal) => {
 
 const ADD: readonly GuideStoryStep[] = [
   atRest(
-    'Сервер отдаёт строки блоками. Когда пользователь добавляет запись, сервер сохраняет её и сообщает приложению её место в списке.',
+    {
+      ru: 'Сервер отдаёт строки блоками. Когда пользователь добавляет запись, сервер сохраняет её и сообщает приложению её место в списке.',
+      en: 'The server returns rows in blocks. When the user adds a record, the server saves it and tells the app where it goes in the list.',
+    },
     txProps([], true),
   ),
   {
-    title: 'Пользователь добавил запись',
-    hint: 'Сервер сохранил запись и вернул её место — четвёртая строка. Таблица вставила её туда без нового запроса: строки ниже съехали на одну, новая строка коротко вспыхнула.',
+    title: { ru: 'Пользователь добавил запись', en: 'The user added a record' },
+    hint: {
+      ru: 'Сервер сохранил запись и вернул её место — четвёртая строка. Таблица вставила её туда без нового запроса: строки ниже съехали на одну, новая строка коротко вспыхнула.',
+      en: 'The server saved the record and returned its position: the fourth row. The table inserted it there without a new request: the rows below moved down by one, and the new row flashed briefly.',
+    },
     immediate: true,
     enter: stepAction(async (root, { signal }) => {
       await addRecord(root, signal)
     }),
   },
   {
-    title: 'Пользователь раскрыл строку',
-    hint: 'Вложенные строки пришли с сервера и встали под родителем с отступом уровня.',
+    title: { ru: 'Пользователь раскрыл строку', en: 'The user expanded a row' },
+    hint: {
+      ru: 'Вложенные строки пришли с сервера и встали под родителем с отступом уровня.',
+      en: 'The child rows arrived from the server and appeared under the parent, indented one level.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await expandBranch(root, signal)
     }),
   },
   {
-    title: 'Запись в раскрытой ветке',
-    hint: 'Пользователь добавил вложенную запись. Сервер вернул её место внутри ветки — вторая. Таблица вставила её туда без нового запроса: строки ниже съехали, новая строка вспыхнула.',
+    title: {
+      ru: 'Запись в раскрытой ветке',
+      en: 'A record in an expanded branch',
+    },
+    hint: {
+      ru: 'Пользователь добавил вложенную запись. Сервер вернул её место внутри ветки — вторая. Таблица вставила её туда без нового запроса: строки ниже съехали, новая строка вспыхнула.',
+      en: 'The user added a nested record. The server returned its position inside the branch: the second row. The table inserted it there without a new request: the rows below moved down, and the new row flashed.',
+    },
     immediate: true,
     enter: stepAction(async (root, { signal }) => {
       await addChild(root, signal)
@@ -180,17 +196,17 @@ export const ServerTransactionAdd: StoryObj<StoryProps> = {
   parameters: { scenario: '0157/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Новая запись"
+      title={{ ru: 'Новая запись', en: 'A new record' }}
       steps={ADD}
       args={guideArgs(layout, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(ADD[0]!.title, async () => {
+    await step(ADD[0]!.title.ru, async () => {
       await until(() => expect(hasRow(canvas, 0)).toBe(true))
     })
-    await step(ADD[1]!.title, async () => {
+    await step(ADD[1]!.title.ru, async () => {
       const requests = txServer.requests
       await guideNext(canvas)
       await stepDone(canvas)
@@ -199,7 +215,7 @@ export const ServerTransactionAdd: StoryObj<StoryProps> = {
       await expect(txServer.requests).toBe(requests)
       await settle()
     })
-    await step(ADD[2]!.title, async () => {
+    await step(ADD[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(indexOfRow(canvas, `${BRANCH}.0`)).toBe(
@@ -207,7 +223,7 @@ export const ServerTransactionAdd: StoryObj<StoryProps> = {
       )
       await settle()
     })
-    await step(ADD[3]!.title, async () => {
+    await step(ADD[3]!.title.ru, async () => {
       const requests = txServer.requests
       await guideNext(canvas)
       await stepDone(canvas)
@@ -245,7 +261,10 @@ const checkDoomed = async (root: HTMLElement, signal: AbortSignal) => {
 
 const REMOVE: readonly GuideStoryStep[] = [
   atRest(
-    'Сервер отдаёт строки блоками, у каждой строки — флажок выбора. Пока ничего не выбрано.',
+    {
+      ru: 'Сервер отдаёт строки блоками, у каждой строки — флажок выбора. Пока ничего не выбрано.',
+      en: 'The server returns rows in blocks, and each row has a selection checkbox. Nothing is selected yet.',
+    },
     context => ({
       ...txProps()!(context),
       enableRowSelection: true,
@@ -253,16 +272,22 @@ const REMOVE: readonly GuideStoryStep[] = [
     }),
   ),
   {
-    title: 'Пользователь выбрал строки',
-    hint: 'Пользователь отметил три строки, нижняя панель считает выбранные.',
+    title: { ru: 'Пользователь выбрал строки', en: 'The user selected rows' },
+    hint: {
+      ru: 'Пользователь отметил три строки, нижняя панель считает выбранные.',
+      en: 'The user checked three rows, and the status bar counts the selected ones.',
+    },
     states: ['body.selection'],
     enter: stepAction(async (root, { signal }) => {
       await checkDoomed(root, signal)
     }),
   },
   {
-    title: 'Сервер удалил строки',
-    hint: 'Пользователь удалил выбранные строки, сервер подтвердил. Таблица убрала их без нового запроса: удалённые строки погасли на своих местах, затем строки ниже поднялись и закрыли промежутки. Выбор снят, итог уменьшился на три.',
+    title: { ru: 'Сервер удалил строки', en: 'The server deleted the rows' },
+    hint: {
+      ru: 'Пользователь удалил выбранные строки, сервер подтвердил. Таблица убрала их без нового запроса: удалённые строки погасли на своих местах, затем строки ниже поднялись и закрыли промежутки. Выбор снят, итог уменьшился на три.',
+      en: 'The user deleted the selected rows, and the server confirmed the deletion. The table removed them without a new request: the deleted rows faded out in place, then the rows below moved up to close the gaps. The selection is cleared, and the total dropped by three.',
+    },
     enter: stepAction(async (root, { signal }) => {
       if (txServer.items.some(item => item.id === DOOMED[0])) {
         await checkDoomed(root, signal)
@@ -285,22 +310,22 @@ export const ServerTransactionRemove: StoryObj<StoryProps> = {
   parameters: { scenario: '0157/S2', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Удаление строк"
+      title={{ ru: 'Удаление строк', en: 'Deleting rows' }}
       steps={REMOVE}
       args={guideArgs(layout, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(REMOVE[0]!.title, async () => {
+    await step(REMOVE[0]!.title.ru, async () => {
       await until(() => expect(hasRow(canvas, 0)).toBe(true))
     })
-    await step(REMOVE[1]!.title, async () => {
+    await step(REMOVE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(selectedCount(canvas)).toContain('3')
     })
-    await step(REMOVE[2]!.title, async () => {
+    await step(REMOVE[2]!.title.ru, async () => {
       const requests = txServer.requests
       await guideNext(canvas)
       await stepDone(canvas)
@@ -318,12 +343,16 @@ const LIVE_TICKS = 4
 const LIVE_TICK_MS = 800
 
 const LIVE: readonly GuideStoryStep[] = [
-  atRest(
-    'Сервер отдаёт строки блоками. Данные на сервере меняют и другие пользователи, сервер сообщает о каждом изменении.',
-  ),
+  atRest({
+    ru: 'Сервер отдаёт строки блоками. Данные на сервере меняют и другие пользователи, сервер сообщает о каждом изменении.',
+    en: 'The server returns rows in blocks. Other users also change the data on the server, and the server reports every change.',
+  }),
   {
-    title: 'Сервер шлёт изменения',
-    hint: 'Сервер сообщает о новых, изменённых и удалённых записях, приложение передаёт их таблице по мере прихода. Новые строки встают на свои места и вспыхивают, изменённые обновляются на месте, удалённые уходят. Изменения одного кадра таблица применяет вместе, перезапросов нет.',
+    title: { ru: 'Сервер шлёт изменения', en: 'The server sends changes' },
+    hint: {
+      ru: 'Сервер сообщает о новых, изменённых и удалённых записях, приложение передаёт их таблице по мере прихода. Новые строки встают на свои места и вспыхивают, изменённые обновляются на месте, удалённые уходят. Изменения одного кадра таблица применяет вместе, перезапросов нет.',
+      en: 'The server reports new, changed and deleted records, and the app passes them to the table as they arrive. New rows take their places and flash, changed rows update in place, and deleted rows go away. The table applies changes that arrive in the same frame together, without re-requesting rows.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await pollUntil(() => hasRow(root, 0), signal)
       for (let tick = txServer.created + 1; tick <= LIVE_TICKS; tick++) {
@@ -341,17 +370,17 @@ export const ServerTransactionLive: StoryObj<StoryProps> = {
   parameters: { scenario: '0157/S3', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Живые данные"
+      title={{ ru: 'Живые данные', en: 'Live data' }}
       steps={LIVE}
       args={guideArgs(layout, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(LIVE[0]!.title, async () => {
+    await step(LIVE[0]!.title.ru, async () => {
       await until(() => expect(hasRow(canvas, 0)).toBe(true))
     })
-    await step(LIVE[1]!.title, async () => {
+    await step(LIVE[1]!.title.ru, async () => {
       const requests = txServer.requests
       await guideNext(canvas)
       await stepDone(canvas)
@@ -378,12 +407,19 @@ const addWithoutPlace = () => {
 }
 
 const REFETCH: readonly GuideStoryStep[] = [
-  atRest(
-    'Сервер отдаёт строки блоками и сам решает порядок списка: где окажется новая запись, приложение не знает.',
-  ),
+  atRest({
+    ru: 'Сервер отдаёт строки блоками и сам решает порядок списка: где окажется новая запись, приложение не знает.',
+    en: 'The server returns rows in blocks and decides the list order itself: the app does not know where a new record will end up.',
+  }),
   {
-    title: 'Приложение добавило запись без места',
-    hint: 'Приложение передало новую запись, но её место знает только сервер. Таблица тихо перезапросила видимые строки: прежние остаются на экране под свечением обновления.',
+    title: {
+      ru: 'Приложение добавило запись без места',
+      en: 'The app added a record without a position',
+    },
+    hint: {
+      ru: 'Приложение передало новую запись, но её место знает только сервер. Таблица тихо перезапросила видимые строки: прежние остаются на экране под свечением обновления.',
+      en: 'The app passed a new record, but only the server knows its position. The table quietly re-requested the visible rows: the previous ones stay on screen under the refresh glow.',
+    },
     states: ['body.refreshing'],
     enter: stepAction(async (root, { signal }) => {
       await pollUntil(() => hasRow(root, 0), signal)
@@ -393,8 +429,11 @@ const REFETCH: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Сервер ответил',
-    hint: 'Ответ пришёл: новая запись встала на своё место в списке и коротко вспыхнула, итог вырос на одну.',
+    title: { ru: 'Сервер ответил', en: 'The server responded' },
+    hint: {
+      ru: 'Ответ пришёл: новая запись встала на своё место в списке и коротко вспыхнула, итог вырос на одну.',
+      en: 'The response arrived: the new record took its place in the list and flashed briefly, and the total grew by one.',
+    },
     immediate: true,
     enter: stepAction(async (root, { signal }) => {
       await pollUntil(() => hasRow(root, 0), signal)
@@ -415,22 +454,22 @@ export const ServerTransactionRefetch: StoryObj<StoryProps> = {
   parameters: { scenario: '0157/S4', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Запись без места"
+      title={{ ru: 'Запись без места', en: 'A record without a position' }}
       steps={REFETCH}
       args={guideArgs(layout, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(REFETCH[0]!.title, async () => {
+    await step(REFETCH[0]!.title.ru, async () => {
       await until(() => expect(hasRow(canvas, 0)).toBe(true))
     })
-    await step(REFETCH[1]!.title, async () => {
+    await step(REFETCH[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(hasRow(canvas, 2)).toBe(true)
     })
-    await step(REFETCH[2]!.title, async () => {
+    await step(REFETCH[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(indexOfRow(canvas, 'item-id-2')).toBe(SERVER_PLACE + 1)

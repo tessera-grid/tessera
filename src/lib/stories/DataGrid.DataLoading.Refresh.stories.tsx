@@ -24,7 +24,7 @@ const meta = {
 
 export default meta
 
-const NOT_REFRESH = 'На обновление данных не влияет'
+const NOT_REFRESH = 'Does not affect data refresh'
 
 const refreshing = (root: ParentNode) =>
   !!root.querySelector('[data-refreshing] .data-grid__loader')
@@ -70,18 +70,27 @@ const firstRowId = (root: ParentNode) =>
 
 const DATA_UPDATE: readonly GuideStoryStep[] = [
   {
-    title: 'Данные загружены',
-    hint: 'Таблица отображает данные, полученные от сервера.',
+    title: { ru: 'Данные загружены', en: 'Data loaded' },
+    hint: {
+      ru: 'Таблица отображает данные, полученные от сервера.',
+      en: 'The table shows the data received from the server.',
+    },
   },
   {
-    title: 'Обновление данных',
-    hint: 'Приложение запросило данные заново. Таблица находится в состоянии обновления, но остаётся доступной для взаимодействия.',
+    title: { ru: 'Обновление данных', en: 'Data refresh' },
+    hint: {
+      ru: 'Приложение запросило данные заново. Таблица находится в состоянии обновления, но остаётся доступной для взаимодействия.',
+      en: 'The app requested the data again. The table is refreshing but stays available for interaction.',
+    },
     props: () => ({ loading: 'refresh' }),
     states: ['body.refreshing'],
   },
   {
-    title: 'Данные обновлены',
-    hint: 'Сервер вернул данные. Таблица выходит из состояния обновления и отображает полученные данные.',
+    title: { ru: 'Данные обновлены', en: 'Data refreshed' },
+    hint: {
+      ru: 'Сервер вернул данные. Таблица выходит из состояния обновления и отображает полученные данные.',
+      en: 'The server returned the data. The table leaves the refreshing state and shows the data it received.',
+    },
     props: ({ rows }) => ({
       loading: false,
       dataOverride: [...rows].reverse(),
@@ -98,7 +107,7 @@ export const RefreshDataUpdate: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Обновление данных"
+      title={{ ru: 'Обновление данных', en: 'Data refresh' }}
       steps={DATA_UPDATE}
       args={guideArgs({ dataCount: 50, height: '400' }, args)}
     />
@@ -107,17 +116,17 @@ export const RefreshDataUpdate: StoryObj<StoryProps> = {
     // В Storybook сценарий проходит человек; `play` — только в тестах каталога.
     if (globals.catalog !== true) return
     let before: string | undefined
-    await step(DATA_UPDATE[0]!.title, async () => {
+    await step(DATA_UPDATE[0]!.title.ru, async () => {
       await waitForRows(canvas)
       before = firstRowId(canvas)
       await expect(refreshing(canvas)).toBe(false)
     })
-    await step(DATA_UPDATE[1]!.title, async () => {
+    await step(DATA_UPDATE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(refreshing(canvas)).toBe(true))
       await settle()
     })
-    await step(DATA_UPDATE[2]!.title, async () => {
+    await step(DATA_UPDATE[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(refreshing(canvas)).toBe(false))
       await until(() => expect(firstRowId(canvas)).not.toBe(before))

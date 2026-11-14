@@ -188,29 +188,56 @@ const LARGE_ARGS: Partial<StoryProps> = {
 
 const STEPS: readonly GuideStoryStep[] = [
   {
-    title: 'Сто тысяч строк в памяти',
-    hint: 'Приложение передало таблице сто тысяч строк. Все они в памяти: таблица сама сортирует, фильтрует и группирует их, без сервера.',
+    title: {
+      ru: 'Сто тысяч строк в памяти',
+      en: 'A hundred thousand rows in memory',
+    },
+    hint: {
+      ru: 'Приложение передало таблице сто тысяч строк. Все они в памяти: таблица сама сортирует, фильтрует и группирует их, без сервера.',
+      en: 'The app passed a hundred thousand rows to the table. They are all in memory: the table sorts, filters, and groups them itself, without a server.',
+    },
     props: () => ({ dataOverride: bigRows(), extraPlugins: [stateHost()] }),
   },
   {
-    title: 'Строки отсортированы по возрасту',
-    hint: 'Пользователь отсортировал колонку возраста. Таблица упорядочила все сто тысяч строк и показывает младших сверху.',
+    title: {
+      ru: 'Строки отсортированы по возрасту',
+      en: 'Rows are sorted by age',
+    },
+    hint: {
+      ru: 'Пользователь отсортировал колонку возраста. Таблица упорядочила все сто тысяч строк и показывает младших сверху.',
+      en: 'The user sorted the age column. The table ordered all hundred thousand rows and shows the youngest at the top.',
+    },
     enter: showLevel(1),
   },
   {
-    title: 'Строки отфильтрованы по стране',
-    hint: 'Пользователь оставил строки, в названии страны которых есть сочетание land. Таблица показывает только их, по-прежнему по возрасту.',
+    title: {
+      ru: 'Строки отфильтрованы по стране',
+      en: 'Rows are filtered by country',
+    },
+    hint: {
+      ru: 'Пользователь оставил строки, в названии страны которых есть сочетание land. Таблица показывает только их, по-прежнему по возрасту.',
+      en: 'The user kept only the rows whose country name contains the letters land. The table shows just those, still ordered by age.',
+    },
     enter: showLevel(2),
   },
   {
-    title: 'Строки сгруппированы по полу',
-    hint: 'Пользователь сгруппировал строки по полу. Таблица показывает группы раскрытыми, рядом со значением группы — число её строк; внутри группы строки идут по возрасту.',
+    title: {
+      ru: 'Строки сгруппированы по полу',
+      en: 'Rows are grouped by gender',
+    },
+    hint: {
+      ru: 'Пользователь сгруппировал строки по полу. Таблица показывает группы раскрытыми, рядом со значением группы — число её строк; внутри группы строки идут по возрасту.',
+      en: "The user grouped the rows by gender. The table shows the groups expanded, with each group's row count next to its value; within a group, rows are ordered by age.",
+    },
     states: ['body.groups'],
     enter: showLevel(3),
   },
   {
-    title: 'Поле правки открыто',
-    hint: 'Пользователь нажал кнопку правки в ячейке возраста пятой строки первой группы и набрал возраст младше всех.',
+    title: { ru: 'Поле правки открыто', en: 'The edit field is open' },
+    hint: {
+      ru: 'Пользователь нажал кнопку правки в ячейке возраста пятой строки первой группы и набрал возраст младше всех.',
+      en: 'The user pressed the edit button in the age cell of the fifth row of the first group and typed an age lower than all the others.',
+    },
     states: ['body.editing'],
     enter: untilDone(
       root =>
@@ -220,8 +247,14 @@ const STEPS: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Строка поднялась наверх группы',
-    hint: 'Пользователь нажал Enter. Приложение заменило в данных одну строку, таблица пересобрала только её: строка поднялась наверх своей группы, строки над её прежним местом сдвинулись вниз.',
+    title: {
+      ru: 'Строка поднялась наверх группы',
+      en: 'The row moved to the top of its group',
+    },
+    hint: {
+      ru: 'Пользователь нажал Enter. Приложение заменило в данных одну строку, таблица пересобрала только её: строка поднялась наверх своей группы, строки над её прежним местом сдвинулись вниз.',
+      en: 'The user pressed Enter. The app replaced one row in the data, and the table rebuilt only that row: it moved to the top of its group, and the rows above its old position shifted down.',
+    },
     enter: untilDone(
       root =>
         large.edited !== undefined &&
@@ -242,18 +275,21 @@ export const ClientRowModelLargeTable: StoryObj<StoryProps> = {
   parameters: { scenario: '0200/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Сто тысяч строк в памяти"
+      title={{
+        ru: 'Сто тысяч строк в памяти',
+        en: 'A hundred thousand rows in memory',
+      }}
       steps={STEPS}
       args={guideArgs(LARGE_ARGS, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(STEPS[0]!.title, async () => {
+    await step(STEPS[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(rowIdAt(canvas, 0)).toBe('item-id-0'))
     })
-    await step(STEPS[1]!.title, async () => {
+    await step(STEPS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(host.applied?.level).toBe(1))
       await until(() =>
@@ -262,25 +298,25 @@ export const ClientRowModelLargeTable: StoryObj<StoryProps> = {
         ).toBeLessThanOrEqual(Number(ageText(canvas, rowIdAt(canvas, 3)!))),
       )
     })
-    await step(STEPS[2]!.title, async () => {
+    await step(STEPS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(levelShown(canvas, 2)).toBe(true))
       for (const i of [0, 1, 2, 3])
         await expect(countryText(canvas, rowIdAt(canvas, i)!)).toContain('land')
     })
-    await step(STEPS[3]!.title, async () => {
+    await step(STEPS[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(levelShown(canvas, 3)).toBe(true))
       await settle()
     })
-    await step(STEPS[4]!.title, async () => {
+    await step(STEPS[4]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(inputOf(canvas, large.edited!)?.value).toBe(NEW_AGE),
       )
       await expect(indexOfRow(canvas, large.edited!)).toBe(EDITED_AT)
     })
-    await step(STEPS[5]!.title, async () => {
+    await step(STEPS[5]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(inputOf(canvas, large.edited!)).toBeNull())
       await until(() =>

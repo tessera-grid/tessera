@@ -76,16 +76,19 @@ const meta = {
     kind: {
       control: 'inline-radio',
       options: ['row', 'column'],
-      description: 'Что тянут: строку или колонку',
+      description: 'What is dragged: a row or a column',
     },
-    text: { control: 'text', description: 'Текст первой ячейки или заголовка' },
+    text: {
+      control: 'text',
+      description: 'Text of the first cell or the header',
+    },
     count: {
       control: { type: 'number', min: 0, max: 999 },
-      description: 'Вложенных строк — бабл; 0 — без бабла',
+      description: 'Number of nested rows, shown in a bubble; 0 — no bubble',
     },
     invalid: {
       control: 'boolean',
-      description: 'Над местом, куда бросить нельзя',
+      description: 'Over a place where dropping is not allowed',
     },
   },
   render: args => (

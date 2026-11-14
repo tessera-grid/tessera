@@ -132,43 +132,43 @@ const twinStep = <S extends TwinSource>(
 
 export const HighContrastKeyboardMovingStep1 = {
   ...twinStep(cellsKeyboardStories, cellsKeyboardStories.KeyboardMoving, 1),
-  name: 'Cells/Keyboard — Move around, шаг 1',
+  name: 'Cells/Keyboard — Move around, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastKeyboardMovingStep2 = {
   ...twinStep(cellsKeyboardStories, cellsKeyboardStories.KeyboardMoving, 2),
-  name: 'Cells/Keyboard — Move around, шаг 2',
+  name: 'Cells/Keyboard — Move around, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastKeyboardMovingStep3 = {
   ...twinStep(cellsKeyboardStories, cellsKeyboardStories.KeyboardMoving, 3),
-  name: 'Cells/Keyboard — Move around, шаг 3',
+  name: 'Cells/Keyboard — Move around, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastKeyboardActionsStep1 = {
   ...twinStep(cellsKeyboardStories, cellsKeyboardStories.KeyboardActions, 1),
-  name: 'Cells/Keyboard — Actions without a mouse, шаг 1',
+  name: 'Cells/Keyboard — Actions without a mouse, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastKeyboardActionsStep2 = {
   ...twinStep(cellsKeyboardStories, cellsKeyboardStories.KeyboardActions, 2),
-  name: 'Cells/Keyboard — Actions without a mouse, шаг 2',
+  name: 'Cells/Keyboard — Actions without a mouse, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastKeyboardActionsStep3 = {
   ...twinStep(cellsKeyboardStories, cellsKeyboardStories.KeyboardActions, 3),
-  name: 'Cells/Keyboard — Actions without a mouse, шаг 3',
+  name: 'Cells/Keyboard — Actions without a mouse, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastKeyboardActionsStep4 = {
   ...twinStep(cellsKeyboardStories, cellsKeyboardStories.KeyboardActions, 4),
-  name: 'Cells/Keyboard — Actions without a mouse, шаг 4',
+  name: 'Cells/Keyboard — Actions without a mouse, step 4',
   tags: ['!test'],
 }
 
@@ -184,7 +184,7 @@ export const HighContrastColumnMultiSortingStep1 = {
     columnsSortingStories.ColumnMultiSorting,
     1,
   ),
-  name: 'Columns/Sorting — Multi-sort, шаг 1',
+  name: 'Columns/Sorting — Multi-sort, step 1',
   tags: ['!test'],
 }
 
@@ -194,7 +194,7 @@ export const HighContrastColumnMultiSortingStep2 = {
     columnsSortingStories.ColumnMultiSorting,
     2,
   ),
-  name: 'Columns/Sorting — Multi-sort, шаг 2',
+  name: 'Columns/Sorting — Multi-sort, step 2',
   tags: ['!test'],
 }
 
@@ -204,7 +204,7 @@ export const HighContrastColumnMultiSortingStep3 = {
     columnsSortingStories.ColumnMultiSorting,
     3,
   ),
-  name: 'Columns/Sorting — Multi-sort, шаг 3',
+  name: 'Columns/Sorting — Multi-sort, step 3',
   tags: ['!test'],
 }
 
@@ -214,7 +214,7 @@ export const HighContrastColumnMultiSortingStep4 = {
     columnsSortingStories.ColumnMultiSorting,
     4,
   ),
-  name: 'Columns/Sorting — Multi-sort, шаг 4',
+  name: 'Columns/Sorting — Multi-sort, step 4',
   tags: ['!test'],
 }
 
@@ -224,7 +224,7 @@ export const HighContrastColumnSortingOptionLabelsStep1 = {
     columnsSortingStories.ColumnSortingOptionLabels,
     1,
   ),
-  name: 'Columns/Sorting — Option labels, шаг 1',
+  name: 'Columns/Sorting — Option labels, step 1',
   tags: ['!test'],
 }
 
@@ -234,7 +234,7 @@ export const HighContrastColumnSortingOptionLabelsStep2 = {
     columnsSortingStories.ColumnSortingOptionLabels,
     2,
   ),
-  name: 'Columns/Sorting — Option labels, шаг 2',
+  name: 'Columns/Sorting — Option labels, step 2',
   tags: ['!test'],
 }
 
@@ -244,7 +244,7 @@ export const HighContrastColumnSortingOptionLabelsStep3 = {
     columnsSortingStories.ColumnSortingOptionLabels,
     3,
   ),
-  name: 'Columns/Sorting — Option labels, шаг 3',
+  name: 'Columns/Sorting — Option labels, step 3',
   tags: ['!test'],
 }
 
@@ -254,7 +254,7 @@ export const HighContrastColumnVisibilityWithHeaderMenuStep1 = {
     columnsVisibilityStories.ColumnVisibilityWithHeaderMenu,
     1,
   ),
-  name: 'Columns/Visibility — With header menu, шаг 1',
+  name: 'Columns/Visibility — With header menu, step 1',
   tags: ['!test'],
 }
 
@@ -264,7 +264,7 @@ export const HighContrastColumnVisibilityWithHeaderMenuStep2 = {
     columnsVisibilityStories.ColumnVisibilityWithHeaderMenu,
     2,
   ),
-  name: 'Columns/Visibility — With header menu, шаг 2',
+  name: 'Columns/Visibility — With header menu, step 2',
   tags: ['!test'],
 }
 
@@ -274,7 +274,7 @@ export const HighContrastColumnVisibilityWithHeaderMenuStep3 = {
     columnsVisibilityStories.ColumnVisibilityWithHeaderMenu,
     3,
   ),
-  name: 'Columns/Visibility — With header menu, шаг 3',
+  name: 'Columns/Visibility — With header menu, step 3',
   tags: ['!test'],
 }
 
@@ -284,7 +284,7 @@ export const HighContrastColumnVisibilityWithHeaderMenuStep4 = {
     columnsVisibilityStories.ColumnVisibilityWithHeaderMenu,
     4,
   ),
-  name: 'Columns/Visibility — With header menu, шаг 4',
+  name: 'Columns/Visibility — With header menu, step 4',
   tags: ['!test'],
 }
 
@@ -294,7 +294,7 @@ export const HighContrastInfiniteScrollUnknownTotalStep1 = {
     infiniteScrollStories.InfiniteScrollUnknownTotal,
     1,
   ),
-  name: 'Data loading/Infinite scroll — Unknown total, шаг 1',
+  name: 'Data loading/Infinite scroll — Unknown total, step 1',
   tags: ['!test'],
 }
 
@@ -304,7 +304,7 @@ export const HighContrastInfiniteScrollUnknownTotalStep2 = {
     infiniteScrollStories.InfiniteScrollUnknownTotal,
     2,
   ),
-  name: 'Data loading/Infinite scroll — Unknown total, шаг 2',
+  name: 'Data loading/Infinite scroll — Unknown total, step 2',
   tags: ['!test'],
 }
 
@@ -314,7 +314,7 @@ export const HighContrastInfiniteScrollUnknownTotalStep3 = {
     infiniteScrollStories.InfiniteScrollUnknownTotal,
     3,
   ),
-  name: 'Data loading/Infinite scroll — Unknown total, шаг 3',
+  name: 'Data loading/Infinite scroll — Unknown total, step 3',
   tags: ['!test'],
 }
 
@@ -324,7 +324,7 @@ export const HighContrastInfiniteScrollErrorsStep1 = {
     infiniteScrollStories.InfiniteScrollErrors,
     1,
   ),
-  name: 'Data loading/Infinite scroll — Errors, шаг 1',
+  name: 'Data loading/Infinite scroll — Errors, step 1',
   tags: ['!test'],
 }
 
@@ -334,7 +334,7 @@ export const HighContrastInfiniteScrollErrorsStep2 = {
     infiniteScrollStories.InfiniteScrollErrors,
     2,
   ),
-  name: 'Data loading/Infinite scroll — Errors, шаг 2',
+  name: 'Data loading/Infinite scroll — Errors, step 2',
   tags: ['!test'],
 }
 
@@ -344,7 +344,7 @@ export const HighContrastInfiniteScrollErrorsStep3 = {
     infiniteScrollStories.InfiniteScrollErrors,
     3,
   ),
-  name: 'Data loading/Infinite scroll — Errors, шаг 3',
+  name: 'Data loading/Infinite scroll — Errors, step 3',
   tags: ['!test'],
 }
 
@@ -354,7 +354,7 @@ export const HighContrastInfiniteScrollServerQueryStep1 = {
     infiniteScrollStories.InfiniteScrollServerQuery,
     1,
   ),
-  name: 'Data loading/Infinite scroll — Server sort & filter, шаг 1',
+  name: 'Data loading/Infinite scroll — Server sort & filter, step 1',
   tags: ['!test'],
 }
 
@@ -364,7 +364,7 @@ export const HighContrastInfiniteScrollServerQueryStep2 = {
     infiniteScrollStories.InfiniteScrollServerQuery,
     2,
   ),
-  name: 'Data loading/Infinite scroll — Server sort & filter, шаг 2',
+  name: 'Data loading/Infinite scroll — Server sort & filter, step 2',
   tags: ['!test'],
 }
 
@@ -374,7 +374,7 @@ export const HighContrastInfiniteScrollServerQueryStep3 = {
     infiniteScrollStories.InfiniteScrollServerQuery,
     3,
   ),
-  name: 'Data loading/Infinite scroll — Server sort & filter, шаг 3',
+  name: 'Data loading/Infinite scroll — Server sort & filter, step 3',
   tags: ['!test'],
 }
 
@@ -384,7 +384,7 @@ export const HighContrastServerRowModelJumpStep1 = {
     serverRowModelStories.ServerRowModelJump,
     1,
   ),
-  name: 'Data loading/Server row model — Jump to the middle, шаг 1',
+  name: 'Data loading/Server row model — Jump to the middle, step 1',
   tags: ['!test'],
 }
 
@@ -394,7 +394,7 @@ export const HighContrastServerRowModelJumpStep2 = {
     serverRowModelStories.ServerRowModelJump,
     2,
   ),
-  name: 'Data loading/Server row model — Jump to the middle, шаг 2',
+  name: 'Data loading/Server row model — Jump to the middle, step 2',
   tags: ['!test'],
 }
 
@@ -404,7 +404,7 @@ export const HighContrastServerRowModelJumpStep3 = {
     serverRowModelStories.ServerRowModelJump,
     3,
   ),
-  name: 'Data loading/Server row model — Jump to the middle, шаг 3',
+  name: 'Data loading/Server row model — Jump to the middle, step 3',
   tags: ['!test'],
 }
 
@@ -414,7 +414,7 @@ export const HighContrastServerRowModelBlockErrorStep1 = {
     serverRowModelStories.ServerRowModelBlockError,
     1,
   ),
-  name: 'Data loading/Server row model — Block error, шаг 1',
+  name: 'Data loading/Server row model — Block error, step 1',
   tags: ['!test'],
 }
 
@@ -424,7 +424,7 @@ export const HighContrastServerRowModelBlockErrorStep2 = {
     serverRowModelStories.ServerRowModelBlockError,
     2,
   ),
-  name: 'Data loading/Server row model — Block error, шаг 2',
+  name: 'Data loading/Server row model — Block error, step 2',
   tags: ['!test'],
 }
 
@@ -434,7 +434,7 @@ export const HighContrastServerRowModelBlockErrorStep3 = {
     serverRowModelStories.ServerRowModelBlockError,
     3,
   ),
-  name: 'Data loading/Server row model — Block error, шаг 3',
+  name: 'Data loading/Server row model — Block error, step 3',
   tags: ['!test'],
 }
 
@@ -444,7 +444,7 @@ export const HighContrastServerRowModelUnknownTotalStep1 = {
     serverRowModelStories.ServerRowModelUnknownTotal,
     1,
   ),
-  name: 'Data loading/Server row model — Unknown total, шаг 1',
+  name: 'Data loading/Server row model — Unknown total, step 1',
   tags: ['!test'],
 }
 
@@ -454,7 +454,7 @@ export const HighContrastServerRowModelUnknownTotalStep2 = {
     serverRowModelStories.ServerRowModelUnknownTotal,
     2,
   ),
-  name: 'Data loading/Server row model — Unknown total, шаг 2',
+  name: 'Data loading/Server row model — Unknown total, step 2',
   tags: ['!test'],
 }
 
@@ -464,7 +464,7 @@ export const HighContrastServerRowModelUnknownTotalStep3 = {
     serverRowModelStories.ServerRowModelUnknownTotal,
     3,
   ),
-  name: 'Data loading/Server row model — Unknown total, шаг 3',
+  name: 'Data loading/Server row model — Unknown total, step 3',
   tags: ['!test'],
 }
 
@@ -474,7 +474,7 @@ export const HighContrastServerRowModelUnknownTotalStep4 = {
     serverRowModelStories.ServerRowModelUnknownTotal,
     4,
   ),
-  name: 'Data loading/Server row model — Unknown total, шаг 4',
+  name: 'Data loading/Server row model — Unknown total, step 4',
   tags: ['!test'],
 }
 
@@ -484,7 +484,7 @@ export const HighContrastServerRowModelSortingStep1 = {
     serverRowModelStories.ServerRowModelSorting,
     1,
   ),
-  name: 'Data loading/Server row model — Sorting, шаг 1',
+  name: 'Data loading/Server row model — Sorting, step 1',
   tags: ['!test'],
 }
 
@@ -494,7 +494,7 @@ export const HighContrastServerRowModelSortingStep2 = {
     serverRowModelStories.ServerRowModelSorting,
     2,
   ),
-  name: 'Data loading/Server row model — Sorting, шаг 2',
+  name: 'Data loading/Server row model — Sorting, step 2',
   tags: ['!test'],
 }
 
@@ -504,7 +504,7 @@ export const HighContrastServerRowModelSortingStep3 = {
     serverRowModelStories.ServerRowModelSorting,
     3,
   ),
-  name: 'Data loading/Server row model — Sorting, шаг 3',
+  name: 'Data loading/Server row model — Sorting, step 3',
   tags: ['!test'],
 }
 
@@ -514,7 +514,7 @@ export const HighContrastServerRowModelSortingStep4 = {
     serverRowModelStories.ServerRowModelSorting,
     4,
   ),
-  name: 'Data loading/Server row model — Sorting, шаг 4',
+  name: 'Data loading/Server row model — Sorting, step 4',
   tags: ['!test'],
 }
 
@@ -524,7 +524,7 @@ export const HighContrastServerRowModelSortingStep5 = {
     serverRowModelStories.ServerRowModelSorting,
     5,
   ),
-  name: 'Data loading/Server row model — Sorting, шаг 5',
+  name: 'Data loading/Server row model — Sorting, step 5',
   tags: ['!test'],
 }
 
@@ -534,7 +534,7 @@ export const HighContrastServerRowModelOpenAtRecordStep1 = {
     serverRowModelStories.ServerRowModelOpenAtRecord,
     1,
   ),
-  name: 'Data loading/Server row model — Open at record, шаг 1',
+  name: 'Data loading/Server row model — Open at record, step 1',
   tags: ['!test'],
 }
 
@@ -544,7 +544,7 @@ export const HighContrastServerRowModelOpenAtRecordStep2 = {
     serverRowModelStories.ServerRowModelOpenAtRecord,
     2,
   ),
-  name: 'Data loading/Server row model — Open at record, шаг 2',
+  name: 'Data loading/Server row model — Open at record, step 2',
   tags: ['!test'],
 }
 
@@ -554,7 +554,7 @@ export const HighContrastServerRowModelOpenAtRecordStep3 = {
     serverRowModelStories.ServerRowModelOpenAtRecord,
     3,
   ),
-  name: 'Data loading/Server row model — Open at record, шаг 3',
+  name: 'Data loading/Server row model — Open at record, step 3',
   tags: ['!test'],
 }
 
@@ -564,7 +564,7 @@ export const HighContrastServerRowModelSelectAllExceptStep1 = {
     serverSelectionStories.ServerRowModelSelectAllExcept,
     1,
   ),
-  name: 'Data loading/Server row model/Selection — Select all except, шаг 1',
+  name: 'Data loading/Server row model/Selection — Select all except, step 1',
   tags: ['!test'],
 }
 
@@ -574,7 +574,7 @@ export const HighContrastServerRowModelSelectAllExceptStep2 = {
     serverSelectionStories.ServerRowModelSelectAllExcept,
     2,
   ),
-  name: 'Data loading/Server row model/Selection — Select all except, шаг 2',
+  name: 'Data loading/Server row model/Selection — Select all except, step 2',
   tags: ['!test'],
 }
 
@@ -584,7 +584,7 @@ export const HighContrastServerRowModelSelectAllExceptStep3 = {
     serverSelectionStories.ServerRowModelSelectAllExcept,
     3,
   ),
-  name: 'Data loading/Server row model/Selection — Select all except, шаг 3',
+  name: 'Data loading/Server row model/Selection — Select all except, step 3',
   tags: ['!test'],
 }
 
@@ -594,7 +594,7 @@ export const HighContrastServerRowModelSelectAllExceptStep4 = {
     serverSelectionStories.ServerRowModelSelectAllExcept,
     4,
   ),
-  name: 'Data loading/Server row model/Selection — Select all except, шаг 4',
+  name: 'Data loading/Server row model/Selection — Select all except, step 4',
   tags: ['!test'],
 }
 
@@ -604,7 +604,7 @@ export const HighContrastServerRowModelLazyChildrenStep1 = {
     serverLazyChildrenStories.ServerRowModelLazyChildren,
     1,
   ),
-  name: 'Data loading/Server row model/Lazy children — Lazy children, шаг 1',
+  name: 'Data loading/Server row model/Lazy children — Lazy children, step 1',
   tags: ['!test'],
 }
 
@@ -614,7 +614,7 @@ export const HighContrastServerRowModelLazyChildrenStep2 = {
     serverLazyChildrenStories.ServerRowModelLazyChildren,
     2,
   ),
-  name: 'Data loading/Server row model/Lazy children — Lazy children, шаг 2',
+  name: 'Data loading/Server row model/Lazy children — Lazy children, step 2',
   tags: ['!test'],
 }
 
@@ -624,7 +624,7 @@ export const HighContrastServerRowModelLazyChildrenStep3 = {
     serverLazyChildrenStories.ServerRowModelLazyChildren,
     3,
   ),
-  name: 'Data loading/Server row model/Lazy children — Lazy children, шаг 3',
+  name: 'Data loading/Server row model/Lazy children — Lazy children, step 3',
   tags: ['!test'],
 }
 
@@ -634,7 +634,7 @@ export const HighContrastServerRowModelEditCellStep1 = {
     serverEditingStories.ServerRowModelEditCell,
     1,
   ),
-  name: 'Data loading/Server row model/Editing — Edit a cell, шаг 1',
+  name: 'Data loading/Server row model/Editing — Edit a cell, step 1',
   tags: ['!test'],
 }
 
@@ -644,7 +644,7 @@ export const HighContrastServerRowModelEditCellStep2 = {
     serverEditingStories.ServerRowModelEditCell,
     2,
   ),
-  name: 'Data loading/Server row model/Editing — Edit a cell, шаг 2',
+  name: 'Data loading/Server row model/Editing — Edit a cell, step 2',
   tags: ['!test'],
 }
 
@@ -654,7 +654,7 @@ export const HighContrastServerRowModelEditCellStep3 = {
     serverEditingStories.ServerRowModelEditCell,
     3,
   ),
-  name: 'Data loading/Server row model/Editing — Edit a cell, шаг 3',
+  name: 'Data loading/Server row model/Editing — Edit a cell, step 3',
   tags: ['!test'],
 }
 
@@ -664,7 +664,7 @@ export const HighContrastServerTransactionAddStep1 = {
     serverTransactionsStories.ServerTransactionAdd,
     1,
   ),
-  name: 'Data loading/Server row model/Transactions — Add a row, шаг 1',
+  name: 'Data loading/Server row model/Transactions — Add a row, step 1',
   tags: ['!test'],
 }
 
@@ -674,7 +674,7 @@ export const HighContrastServerTransactionAddStep2 = {
     serverTransactionsStories.ServerTransactionAdd,
     2,
   ),
-  name: 'Data loading/Server row model/Transactions — Add a row, шаг 2',
+  name: 'Data loading/Server row model/Transactions — Add a row, step 2',
   tags: ['!test'],
 }
 
@@ -684,7 +684,7 @@ export const HighContrastServerTransactionAddStep3 = {
     serverTransactionsStories.ServerTransactionAdd,
     3,
   ),
-  name: 'Data loading/Server row model/Transactions — Add a row, шаг 3',
+  name: 'Data loading/Server row model/Transactions — Add a row, step 3',
   tags: ['!test'],
 }
 
@@ -694,7 +694,7 @@ export const HighContrastServerTransactionAddStep4 = {
     serverTransactionsStories.ServerTransactionAdd,
     4,
   ),
-  name: 'Data loading/Server row model/Transactions — Add a row, шаг 4',
+  name: 'Data loading/Server row model/Transactions — Add a row, step 4',
   tags: ['!test'],
 }
 
@@ -704,7 +704,7 @@ export const HighContrastServerTransactionRemoveStep1 = {
     serverTransactionsStories.ServerTransactionRemove,
     1,
   ),
-  name: 'Data loading/Server row model/Transactions — Remove selected rows, шаг 1',
+  name: 'Data loading/Server row model/Transactions — Remove selected rows, step 1',
   tags: ['!test'],
 }
 
@@ -714,7 +714,7 @@ export const HighContrastServerTransactionRemoveStep2 = {
     serverTransactionsStories.ServerTransactionRemove,
     2,
   ),
-  name: 'Data loading/Server row model/Transactions — Remove selected rows, шаг 2',
+  name: 'Data loading/Server row model/Transactions — Remove selected rows, step 2',
   tags: ['!test'],
 }
 
@@ -724,7 +724,7 @@ export const HighContrastServerTransactionRemoveStep3 = {
     serverTransactionsStories.ServerTransactionRemove,
     3,
   ),
-  name: 'Data loading/Server row model/Transactions — Remove selected rows, шаг 3',
+  name: 'Data loading/Server row model/Transactions — Remove selected rows, step 3',
   tags: ['!test'],
 }
 
@@ -734,7 +734,7 @@ export const HighContrastServerTransactionLiveStep1 = {
     serverTransactionsStories.ServerTransactionLive,
     1,
   ),
-  name: 'Data loading/Server row model/Transactions — Live updates, шаг 1',
+  name: 'Data loading/Server row model/Transactions — Live updates, step 1',
   tags: ['!test'],
 }
 
@@ -744,7 +744,7 @@ export const HighContrastServerTransactionLiveStep2 = {
     serverTransactionsStories.ServerTransactionLive,
     2,
   ),
-  name: 'Data loading/Server row model/Transactions — Live updates, шаг 2',
+  name: 'Data loading/Server row model/Transactions — Live updates, step 2',
   tags: ['!test'],
 }
 
@@ -754,7 +754,7 @@ export const HighContrastServerTransactionRefetchStep1 = {
     serverTransactionsStories.ServerTransactionRefetch,
     1,
   ),
-  name: 'Data loading/Server row model/Transactions — Add a row without a place, шаг 1',
+  name: 'Data loading/Server row model/Transactions — Add a row without a place, step 1',
   tags: ['!test'],
 }
 
@@ -764,7 +764,7 @@ export const HighContrastServerTransactionRefetchStep2 = {
     serverTransactionsStories.ServerTransactionRefetch,
     2,
   ),
-  name: 'Data loading/Server row model/Transactions — Add a row without a place, шаг 2',
+  name: 'Data loading/Server row model/Transactions — Add a row without a place, step 2',
   tags: ['!test'],
 }
 
@@ -774,7 +774,7 @@ export const HighContrastServerTransactionRefetchStep3 = {
     serverTransactionsStories.ServerTransactionRefetch,
     3,
   ),
-  name: 'Data loading/Server row model/Transactions — Add a row without a place, шаг 3',
+  name: 'Data loading/Server row model/Transactions — Add a row without a place, step 3',
   tags: ['!test'],
 }
 
@@ -784,7 +784,7 @@ export const HighContrastServerPaginationPagesStep1 = {
     serverPaginationStories.ServerPaginationPages,
     1,
   ),
-  name: 'Data loading/Server row model/Pagination — Load pages, шаг 1',
+  name: 'Data loading/Server row model/Pagination — Load pages, step 1',
   tags: ['!test'],
 }
 
@@ -794,7 +794,7 @@ export const HighContrastServerPaginationPagesStep2 = {
     serverPaginationStories.ServerPaginationPages,
     2,
   ),
-  name: 'Data loading/Server row model/Pagination — Load pages, шаг 2',
+  name: 'Data loading/Server row model/Pagination — Load pages, step 2',
   tags: ['!test'],
 }
 
@@ -804,7 +804,7 @@ export const HighContrastServerPaginationPagesStep3 = {
     serverPaginationStories.ServerPaginationPages,
     3,
   ),
-  name: 'Data loading/Server row model/Pagination — Load pages, шаг 3',
+  name: 'Data loading/Server row model/Pagination — Load pages, step 3',
   tags: ['!test'],
 }
 
@@ -814,7 +814,7 @@ export const HighContrastServerPaginationPagesStep4 = {
     serverPaginationStories.ServerPaginationPages,
     4,
   ),
-  name: 'Data loading/Server row model/Pagination — Load pages, шаг 4',
+  name: 'Data loading/Server row model/Pagination — Load pages, step 4',
   tags: ['!test'],
 }
 
@@ -824,7 +824,7 @@ export const HighContrastServerPaginationUnknownTotalStep1 = {
     serverPaginationStories.ServerPaginationUnknownTotal,
     1,
   ),
-  name: 'Data loading/Server row model/Pagination — Unknown total, шаг 1',
+  name: 'Data loading/Server row model/Pagination — Unknown total, step 1',
   tags: ['!test'],
 }
 
@@ -834,7 +834,7 @@ export const HighContrastServerPaginationUnknownTotalStep2 = {
     serverPaginationStories.ServerPaginationUnknownTotal,
     2,
   ),
-  name: 'Data loading/Server row model/Pagination — Unknown total, шаг 2',
+  name: 'Data loading/Server row model/Pagination — Unknown total, step 2',
   tags: ['!test'],
 }
 
@@ -844,7 +844,7 @@ export const HighContrastServerPaginationGroupsStep1 = {
     serverPaginationStories.ServerPaginationGroups,
     1,
   ),
-  name: 'Data loading/Server row model/Pagination — Groups on pages, шаг 1',
+  name: 'Data loading/Server row model/Pagination — Groups on pages, step 1',
   tags: ['!test'],
 }
 
@@ -854,7 +854,7 @@ export const HighContrastServerPaginationGroupsStep2 = {
     serverPaginationStories.ServerPaginationGroups,
     2,
   ),
-  name: 'Data loading/Server row model/Pagination — Groups on pages, шаг 2',
+  name: 'Data loading/Server row model/Pagination — Groups on pages, step 2',
   tags: ['!test'],
 }
 
@@ -864,7 +864,7 @@ export const HighContrastServerPaginationGroupsStep3 = {
     serverPaginationStories.ServerPaginationGroups,
     3,
   ),
-  name: 'Data loading/Server row model/Pagination — Groups on pages, шаг 3',
+  name: 'Data loading/Server row model/Pagination — Groups on pages, step 3',
   tags: ['!test'],
 }
 
@@ -874,7 +874,7 @@ export const HighContrastServerPaginationEditingStep1 = {
     serverPaginationStories.ServerPaginationEditing,
     1,
   ),
-  name: 'Data loading/Server row model/Pagination — Draft across pages, шаг 1',
+  name: 'Data loading/Server row model/Pagination — Draft across pages, step 1',
   tags: ['!test'],
 }
 
@@ -884,7 +884,7 @@ export const HighContrastServerPaginationEditingStep2 = {
     serverPaginationStories.ServerPaginationEditing,
     2,
   ),
-  name: 'Data loading/Server row model/Pagination — Draft across pages, шаг 2',
+  name: 'Data loading/Server row model/Pagination — Draft across pages, step 2',
   tags: ['!test'],
 }
 
@@ -894,7 +894,7 @@ export const HighContrastServerPaginationEditingStep3 = {
     serverPaginationStories.ServerPaginationEditing,
     3,
   ),
-  name: 'Data loading/Server row model/Pagination — Draft across pages, шаг 3',
+  name: 'Data loading/Server row model/Pagination — Draft across pages, step 3',
   tags: ['!test'],
 }
 
@@ -904,25 +904,25 @@ export const HighContrastServerPaginationEditingStep4 = {
     serverPaginationStories.ServerPaginationEditing,
     4,
   ),
-  name: 'Data loading/Server row model/Pagination — Draft across pages, шаг 4',
+  name: 'Data loading/Server row model/Pagination — Draft across pages, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastServerDragMoveStep1 = {
   ...twinStep(serverDraggingStories, serverDraggingStories.ServerDragMove, 1),
-  name: 'Data loading/Server row model/Dragging — Move a row, шаг 1',
+  name: 'Data loading/Server row model/Dragging — Move a row, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastServerDragMoveStep2 = {
   ...twinStep(serverDraggingStories, serverDraggingStories.ServerDragMove, 2),
-  name: 'Data loading/Server row model/Dragging — Move a row, шаг 2',
+  name: 'Data loading/Server row model/Dragging — Move a row, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastServerDragMoveStep3 = {
   ...twinStep(serverDraggingStories, serverDraggingStories.ServerDragMove, 3),
-  name: 'Data loading/Server row model/Dragging — Move a row, шаг 3',
+  name: 'Data loading/Server row model/Dragging — Move a row, step 3',
   tags: ['!test'],
 }
 
@@ -932,7 +932,7 @@ export const HighContrastServerDragRefusedStep1 = {
     serverDraggingStories.ServerDragRefused,
     1,
   ),
-  name: 'Data loading/Server row model/Dragging — Move refused, шаг 1',
+  name: 'Data loading/Server row model/Dragging — Move refused, step 1',
   tags: ['!test'],
 }
 
@@ -942,7 +942,7 @@ export const HighContrastServerDragRefusedStep2 = {
     serverDraggingStories.ServerDragRefused,
     2,
   ),
-  name: 'Data loading/Server row model/Dragging — Move refused, шаг 2',
+  name: 'Data loading/Server row model/Dragging — Move refused, step 2',
   tags: ['!test'],
 }
 
@@ -952,61 +952,61 @@ export const HighContrastServerDragRefusedStep3 = {
     serverDraggingStories.ServerDragRefused,
     3,
   ),
-  name: 'Data loading/Server row model/Dragging — Move refused, шаг 3',
+  name: 'Data loading/Server row model/Dragging — Move refused, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastServerDragTreeStep1 = {
   ...twinStep(serverDraggingStories, serverDraggingStories.ServerDragTree, 1),
-  name: 'Data loading/Server row model/Dragging — Move into a branch, шаг 1',
+  name: 'Data loading/Server row model/Dragging — Move into a branch, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastServerDragTreeStep2 = {
   ...twinStep(serverDraggingStories, serverDraggingStories.ServerDragTree, 2),
-  name: 'Data loading/Server row model/Dragging — Move into a branch, шаг 2',
+  name: 'Data loading/Server row model/Dragging — Move into a branch, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastServerDragTreeStep3 = {
   ...twinStep(serverDraggingStories, serverDraggingStories.ServerDragTree, 3),
-  name: 'Data loading/Server row model/Dragging — Move into a branch, шаг 3',
+  name: 'Data loading/Server row model/Dragging — Move into a branch, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastServerDragTreeStep4 = {
   ...twinStep(serverDraggingStories, serverDraggingStories.ServerDragTree, 4),
-  name: 'Data loading/Server row model/Dragging — Move into a branch, шаг 4',
+  name: 'Data loading/Server row model/Dragging — Move into a branch, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastServerDragTreeStep5 = {
   ...twinStep(serverDraggingStories, serverDraggingStories.ServerDragTree, 5),
-  name: 'Data loading/Server row model/Dragging — Move into a branch, шаг 5',
+  name: 'Data loading/Server row model/Dragging — Move into a branch, step 5',
   tags: ['!test'],
 }
 
 export const HighContrastServerDragGroupsStep1 = {
   ...twinStep(serverDraggingStories, serverDraggingStories.ServerDragGroups, 1),
-  name: 'Data loading/Server row model/Dragging — Move to another group, шаг 1',
+  name: 'Data loading/Server row model/Dragging — Move to another group, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastServerDragGroupsStep2 = {
   ...twinStep(serverDraggingStories, serverDraggingStories.ServerDragGroups, 2),
-  name: 'Data loading/Server row model/Dragging — Move to another group, шаг 2',
+  name: 'Data loading/Server row model/Dragging — Move to another group, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastServerDragGroupsStep3 = {
   ...twinStep(serverDraggingStories, serverDraggingStories.ServerDragGroups, 3),
-  name: 'Data loading/Server row model/Dragging — Move to another group, шаг 3',
+  name: 'Data loading/Server row model/Dragging — Move to another group, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastServerDragGroupsStep4 = {
   ...twinStep(serverDraggingStories, serverDraggingStories.ServerDragGroups, 4),
-  name: 'Data loading/Server row model/Dragging — Move to another group, шаг 4',
+  name: 'Data loading/Server row model/Dragging — Move to another group, step 4',
   tags: ['!test'],
 }
 
@@ -1016,7 +1016,7 @@ export const HighContrastServerGroupingExpandAllStep1 = {
     serverGroupingStories.ServerGroupingExpandAll,
     1,
   ),
-  name: 'Data loading/Server row model/Grouping — Expand all, шаг 1',
+  name: 'Data loading/Server row model/Grouping — Expand all, step 1',
   tags: ['!test'],
 }
 
@@ -1026,7 +1026,7 @@ export const HighContrastServerGroupingExpandAllStep2 = {
     serverGroupingStories.ServerGroupingExpandAll,
     2,
   ),
-  name: 'Data loading/Server row model/Grouping — Expand all, шаг 2',
+  name: 'Data loading/Server row model/Grouping — Expand all, step 2',
   tags: ['!test'],
 }
 
@@ -1036,49 +1036,49 @@ export const HighContrastServerGroupingExpandAllStep3 = {
     serverGroupingStories.ServerGroupingExpandAll,
     3,
   ),
-  name: 'Data loading/Server row model/Grouping — Expand all, шаг 3',
+  name: 'Data loading/Server row model/Grouping — Expand all, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastExpandingExpandAllStep1 = {
   ...twinStep(rowsExpandingStories, rowsExpandingStories.ExpandingExpandAll, 1),
-  name: 'Rows/Expanding — Expand all, шаг 1',
+  name: 'Rows/Expanding — Expand all, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastExpandingExpandAllStep2 = {
   ...twinStep(rowsExpandingStories, rowsExpandingStories.ExpandingExpandAll, 2),
-  name: 'Rows/Expanding — Expand all, шаг 2',
+  name: 'Rows/Expanding — Expand all, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastExpandingExpandAllStep3 = {
   ...twinStep(rowsExpandingStories, rowsExpandingStories.ExpandingExpandAll, 3),
-  name: 'Rows/Expanding — Expand all, шаг 3',
+  name: 'Rows/Expanding — Expand all, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastGroupingStickyRowsStep1 = {
   ...twinStep(rowsGroupingStories, rowsGroupingStories.GroupingStickyRows, 1),
-  name: 'Rows/Grouping — Sticky group rows, шаг 1',
+  name: 'Rows/Grouping — Sticky group rows, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastGroupingStickyRowsStep2 = {
   ...twinStep(rowsGroupingStories, rowsGroupingStories.GroupingStickyRows, 2),
-  name: 'Rows/Grouping — Sticky group rows, шаг 2',
+  name: 'Rows/Grouping — Sticky group rows, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastGroupingStickyRowsStep3 = {
   ...twinStep(rowsGroupingStories, rowsGroupingStories.GroupingStickyRows, 3),
-  name: 'Rows/Grouping — Sticky group rows, шаг 3',
+  name: 'Rows/Grouping — Sticky group rows, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastGroupingStickyRowsStep4 = {
   ...twinStep(rowsGroupingStories, rowsGroupingStories.GroupingStickyRows, 4),
-  name: 'Rows/Grouping — Sticky group rows, шаг 4',
+  name: 'Rows/Grouping — Sticky group rows, step 4',
   tags: ['!test'],
 }
 
@@ -1088,7 +1088,7 @@ export const HighContrastServerStickyBranchesStep1 = {
     serverLazyChildrenStories.ServerStickyBranches,
     1,
   ),
-  name: 'Data loading/Server row model/Lazy children — Sticky branches, шаг 1',
+  name: 'Data loading/Server row model/Lazy children — Sticky branches, step 1',
   tags: ['!test'],
 }
 
@@ -1098,7 +1098,7 @@ export const HighContrastServerStickyBranchesStep2 = {
     serverLazyChildrenStories.ServerStickyBranches,
     2,
   ),
-  name: 'Data loading/Server row model/Lazy children — Sticky branches, шаг 2',
+  name: 'Data loading/Server row model/Lazy children — Sticky branches, step 2',
   tags: ['!test'],
 }
 
@@ -1108,7 +1108,7 @@ export const HighContrastServerStickyBranchesStep3 = {
     serverLazyChildrenStories.ServerStickyBranches,
     3,
   ),
-  name: 'Data loading/Server row model/Lazy children — Sticky branches, шаг 3',
+  name: 'Data loading/Server row model/Lazy children — Sticky branches, step 3',
   tags: ['!test'],
 }
 
@@ -1118,7 +1118,7 @@ export const HighContrastServerTreeLinesStep1 = {
     serverLazyChildrenStories.ServerTreeLines,
     1,
   ),
-  name: 'Data loading/Server row model/Lazy children — Tree lines, шаг 1',
+  name: 'Data loading/Server row model/Lazy children — Tree lines, step 1',
   tags: ['!test'],
 }
 
@@ -1128,7 +1128,7 @@ export const HighContrastServerTreeLinesStep2 = {
     serverLazyChildrenStories.ServerTreeLines,
     2,
   ),
-  name: 'Data loading/Server row model/Lazy children — Tree lines, шаг 2',
+  name: 'Data loading/Server row model/Lazy children — Tree lines, step 2',
   tags: ['!test'],
 }
 
@@ -1138,7 +1138,7 @@ export const HighContrastServerTreeLinesStep3 = {
     serverLazyChildrenStories.ServerTreeLines,
     3,
   ),
-  name: 'Data loading/Server row model/Lazy children — Tree lines, шаг 3',
+  name: 'Data loading/Server row model/Lazy children — Tree lines, step 3',
   tags: ['!test'],
 }
 
@@ -1148,7 +1148,7 @@ export const HighContrastServerTreeLinesStep4 = {
     serverLazyChildrenStories.ServerTreeLines,
     4,
   ),
-  name: 'Data loading/Server row model/Lazy children — Tree lines, шаг 4',
+  name: 'Data loading/Server row model/Lazy children — Tree lines, step 4',
   tags: ['!test'],
 }
 
@@ -1158,7 +1158,7 @@ export const HighContrastServerRowModelMillionRowsStep1 = {
     serverRowModelStories.ServerRowModelMillionRows,
     1,
   ),
-  name: 'Data loading/Server row model — Million rows, шаг 1',
+  name: 'Data loading/Server row model — Million rows, step 1',
   tags: ['!test'],
 }
 
@@ -1168,7 +1168,7 @@ export const HighContrastServerRowModelMillionRowsStep2 = {
     serverRowModelStories.ServerRowModelMillionRows,
     2,
   ),
-  name: 'Data loading/Server row model — Million rows, шаг 2',
+  name: 'Data loading/Server row model — Million rows, step 2',
   tags: ['!test'],
 }
 
@@ -1178,7 +1178,7 @@ export const HighContrastServerRowModelMillionRowsStep3 = {
     serverRowModelStories.ServerRowModelMillionRows,
     3,
   ),
-  name: 'Data loading/Server row model — Million rows, шаг 3',
+  name: 'Data loading/Server row model — Million rows, step 3',
   tags: ['!test'],
 }
 
@@ -1188,7 +1188,7 @@ export const HighContrastServerRowModelMillionRowsStep4 = {
     serverRowModelStories.ServerRowModelMillionRows,
     4,
   ),
-  name: 'Data loading/Server row model — Million rows, шаг 4',
+  name: 'Data loading/Server row model — Million rows, step 4',
   tags: ['!test'],
 }
 
@@ -1198,7 +1198,7 @@ export const HighContrastServerRowModelGroupByStep1 = {
     serverGroupingStories.ServerRowModelGroupBy,
     1,
   ),
-  name: 'Data loading/Server row model/Grouping — Group by a column, шаг 1',
+  name: 'Data loading/Server row model/Grouping — Group by a column, step 1',
   tags: ['!test'],
 }
 
@@ -1208,7 +1208,7 @@ export const HighContrastServerRowModelGroupByStep2 = {
     serverGroupingStories.ServerRowModelGroupBy,
     2,
   ),
-  name: 'Data loading/Server row model/Grouping — Group by a column, шаг 2',
+  name: 'Data loading/Server row model/Grouping — Group by a column, step 2',
   tags: ['!test'],
 }
 
@@ -1218,7 +1218,7 @@ export const HighContrastServerRowModelGroupByStep3 = {
     serverGroupingStories.ServerRowModelGroupBy,
     3,
   ),
-  name: 'Data loading/Server row model/Grouping — Group by a column, шаг 3',
+  name: 'Data loading/Server row model/Grouping — Group by a column, step 3',
   tags: ['!test'],
 }
 
@@ -1228,7 +1228,7 @@ export const HighContrastServerRowModelExpandGroupStep1 = {
     serverGroupingStories.ServerRowModelExpandGroup,
     1,
   ),
-  name: 'Data loading/Server row model/Grouping — Expand a group, шаг 1',
+  name: 'Data loading/Server row model/Grouping — Expand a group, step 1',
   tags: ['!test'],
 }
 
@@ -1238,7 +1238,7 @@ export const HighContrastServerRowModelExpandGroupStep2 = {
     serverGroupingStories.ServerRowModelExpandGroup,
     2,
   ),
-  name: 'Data loading/Server row model/Grouping — Expand a group, шаг 2',
+  name: 'Data loading/Server row model/Grouping — Expand a group, step 2',
   tags: ['!test'],
 }
 
@@ -1248,7 +1248,7 @@ export const HighContrastServerRowModelExpandGroupStep3 = {
     serverGroupingStories.ServerRowModelExpandGroup,
     3,
   ),
-  name: 'Data loading/Server row model/Grouping — Expand a group, шаг 3',
+  name: 'Data loading/Server row model/Grouping — Expand a group, step 3',
   tags: ['!test'],
 }
 
@@ -1258,7 +1258,7 @@ export const HighContrastServerRowModelTotalsStep1 = {
     serverGroupingStories.ServerRowModelTotals,
     1,
   ),
-  name: 'Data loading/Server row model/Grouping — Totals in the footer, шаг 1',
+  name: 'Data loading/Server row model/Grouping — Totals in the footer, step 1',
   tags: ['!test'],
 }
 
@@ -1268,7 +1268,7 @@ export const HighContrastServerRowModelTotalsStep2 = {
     serverGroupingStories.ServerRowModelTotals,
     2,
   ),
-  name: 'Data loading/Server row model/Grouping — Totals in the footer, шаг 2',
+  name: 'Data loading/Server row model/Grouping — Totals in the footer, step 2',
   tags: ['!test'],
 }
 
@@ -1278,7 +1278,7 @@ export const HighContrastServerRowModelTotalsStep3 = {
     serverGroupingStories.ServerRowModelTotals,
     3,
   ),
-  name: 'Data loading/Server row model/Grouping — Totals in the footer, шаг 3',
+  name: 'Data loading/Server row model/Grouping — Totals in the footer, step 3',
   tags: ['!test'],
 }
 
@@ -1288,7 +1288,7 @@ export const HighContrastServerRowModelGroupingRefusedStep1 = {
     serverGroupingStories.ServerRowModelGroupingRefused,
     1,
   ),
-  name: 'Data loading/Server row model/Grouping — Grouping refused, шаг 1',
+  name: 'Data loading/Server row model/Grouping — Grouping refused, step 1',
   tags: ['!test'],
 }
 
@@ -1298,7 +1298,7 @@ export const HighContrastServerRowModelGroupingRefusedStep2 = {
     serverGroupingStories.ServerRowModelGroupingRefused,
     2,
   ),
-  name: 'Data loading/Server row model/Grouping — Grouping refused, шаг 2',
+  name: 'Data loading/Server row model/Grouping — Grouping refused, step 2',
   tags: ['!test'],
 }
 
@@ -1308,7 +1308,7 @@ export const HighContrastServerRowModelGroupingRefusedStep3 = {
     serverGroupingStories.ServerRowModelGroupingRefused,
     3,
   ),
-  name: 'Data loading/Server row model/Grouping — Grouping refused, шаг 3',
+  name: 'Data loading/Server row model/Grouping — Grouping refused, step 3',
   tags: ['!test'],
 }
 
@@ -1318,7 +1318,7 @@ export const HighContrastServerRangeSelectionStep1 = {
     serverCellSelectionStories.ServerRangeSelection,
     1,
   ),
-  name: 'Data loading/Server row model/Cell selection — Select a range, шаг 1',
+  name: 'Data loading/Server row model/Cell selection — Select a range, step 1',
   tags: ['!test'],
 }
 
@@ -1328,7 +1328,7 @@ export const HighContrastServerRangeSelectionStep2 = {
     serverCellSelectionStories.ServerRangeSelection,
     2,
   ),
-  name: 'Data loading/Server row model/Cell selection — Select a range, шаг 2',
+  name: 'Data loading/Server row model/Cell selection — Select a range, step 2',
   tags: ['!test'],
 }
 
@@ -1338,7 +1338,7 @@ export const HighContrastServerRangeSelectionStep3 = {
     serverCellSelectionStories.ServerRangeSelection,
     3,
   ),
-  name: 'Data loading/Server row model/Cell selection — Select a range, шаг 3',
+  name: 'Data loading/Server row model/Cell selection — Select a range, step 3',
   tags: ['!test'],
 }
 
@@ -1348,7 +1348,7 @@ export const HighContrastServerRangeSelectionStep4 = {
     serverCellSelectionStories.ServerRangeSelection,
     4,
   ),
-  name: 'Data loading/Server row model/Cell selection — Select a range, шаг 4',
+  name: 'Data loading/Server row model/Cell selection — Select a range, step 4',
   tags: ['!test'],
 }
 
@@ -1358,7 +1358,7 @@ export const HighContrastServerRangeSelectionStep5 = {
     serverCellSelectionStories.ServerRangeSelection,
     5,
   ),
-  name: 'Data loading/Server row model/Cell selection — Select a range, шаг 5',
+  name: 'Data loading/Server row model/Cell selection — Select a range, step 5',
   tags: ['!test'],
 }
 
@@ -1368,7 +1368,7 @@ export const HighContrastServerCopyLoadsRowsStep1 = {
     serverCellSelectionStories.ServerCopyLoadsRows,
     1,
   ),
-  name: 'Data loading/Server row model/Cell selection — Copy loads the rows, шаг 1',
+  name: 'Data loading/Server row model/Cell selection — Copy loads the rows, step 1',
   tags: ['!test'],
 }
 
@@ -1378,7 +1378,7 @@ export const HighContrastServerCopyLoadsRowsStep2 = {
     serverCellSelectionStories.ServerCopyLoadsRows,
     2,
   ),
-  name: 'Data loading/Server row model/Cell selection — Copy loads the rows, шаг 2',
+  name: 'Data loading/Server row model/Cell selection — Copy loads the rows, step 2',
   tags: ['!test'],
 }
 
@@ -1388,7 +1388,7 @@ export const HighContrastServerCopyLoadsRowsStep3 = {
     serverCellSelectionStories.ServerCopyLoadsRows,
     3,
   ),
-  name: 'Data loading/Server row model/Cell selection — Copy loads the rows, шаг 3',
+  name: 'Data loading/Server row model/Cell selection — Copy loads the rows, step 3',
   tags: ['!test'],
 }
 
@@ -1398,7 +1398,7 @@ export const HighContrastServerCopyLoadsRowsStep4 = {
     serverCellSelectionStories.ServerCopyLoadsRows,
     4,
   ),
-  name: 'Data loading/Server row model/Cell selection — Copy loads the rows, шаг 4',
+  name: 'Data loading/Server row model/Cell selection — Copy loads the rows, step 4',
   tags: ['!test'],
 }
 
@@ -1408,7 +1408,7 @@ export const HighContrastServerCopyOverLimitStep1 = {
     serverCellSelectionStories.ServerCopyOverLimit,
     1,
   ),
-  name: 'Data loading/Server row model/Cell selection — Copy over the limit, шаг 1',
+  name: 'Data loading/Server row model/Cell selection — Copy over the limit, step 1',
   tags: ['!test'],
 }
 
@@ -1418,7 +1418,7 @@ export const HighContrastServerCopyOverLimitStep2 = {
     serverCellSelectionStories.ServerCopyOverLimit,
     2,
   ),
-  name: 'Data loading/Server row model/Cell selection — Copy over the limit, шаг 2',
+  name: 'Data loading/Server row model/Cell selection — Copy over the limit, step 2',
   tags: ['!test'],
 }
 
@@ -1428,7 +1428,7 @@ export const HighContrastServerCopyOverLimitStep3 = {
     serverCellSelectionStories.ServerCopyOverLimit,
     3,
   ),
-  name: 'Data loading/Server row model/Cell selection — Copy over the limit, шаг 3',
+  name: 'Data loading/Server row model/Cell selection — Copy over the limit, step 3',
   tags: ['!test'],
 }
 
@@ -1438,7 +1438,7 @@ export const HighContrastServerCopyRefusedStep1 = {
     serverCellSelectionStories.ServerCopyRefused,
     1,
   ),
-  name: 'Data loading/Server row model/Cell selection — Copy refused by the server, шаг 1',
+  name: 'Data loading/Server row model/Cell selection — Copy refused by the server, step 1',
   tags: ['!test'],
 }
 
@@ -1448,7 +1448,7 @@ export const HighContrastServerCopyRefusedStep2 = {
     serverCellSelectionStories.ServerCopyRefused,
     2,
   ),
-  name: 'Data loading/Server row model/Cell selection — Copy refused by the server, шаг 2',
+  name: 'Data loading/Server row model/Cell selection — Copy refused by the server, step 2',
   tags: ['!test'],
 }
 
@@ -1458,7 +1458,7 @@ export const HighContrastServerCopyRefusedStep3 = {
     serverCellSelectionStories.ServerCopyRefused,
     3,
   ),
-  name: 'Data loading/Server row model/Cell selection — Copy refused by the server, шаг 3',
+  name: 'Data loading/Server row model/Cell selection — Copy refused by the server, step 3',
   tags: ['!test'],
 }
 
@@ -1468,7 +1468,7 @@ export const HighContrastServerCopyRefusedStep4 = {
     serverCellSelectionStories.ServerCopyRefused,
     4,
   ),
-  name: 'Data loading/Server row model/Cell selection — Copy refused by the server, шаг 4',
+  name: 'Data loading/Server row model/Cell selection — Copy refused by the server, step 4',
   tags: ['!test'],
 }
 
@@ -1519,61 +1519,61 @@ export const HighContrastRowGroupingPlayground = {
 
 export const HighContrastFilteringTextStep1 = {
   ...twinStep(filteringStories, filteringStories.FilteringText, 1),
-  name: 'Filtering — Text filter, шаг 1',
+  name: 'Filtering — Text filter, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringTextStep2 = {
   ...twinStep(filteringStories, filteringStories.FilteringText, 2),
-  name: 'Filtering — Text filter, шаг 2',
+  name: 'Filtering — Text filter, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringTextStep3 = {
   ...twinStep(filteringStories, filteringStories.FilteringText, 3),
-  name: 'Filtering — Text filter, шаг 3',
+  name: 'Filtering — Text filter, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringEmptyStep1 = {
   ...twinStep(filteringStories, filteringStories.FilteringEmpty, 1),
-  name: 'Filtering — Empty result, шаг 1',
+  name: 'Filtering — Empty result, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringEmptyStep2 = {
   ...twinStep(filteringStories, filteringStories.FilteringEmpty, 2),
-  name: 'Filtering — Empty result, шаг 2',
+  name: 'Filtering — Empty result, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringEmptyStep3 = {
   ...twinStep(filteringStories, filteringStories.FilteringEmpty, 3),
-  name: 'Filtering — Empty result, шаг 3',
+  name: 'Filtering — Empty result, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringServerStep1 = {
   ...twinStep(filteringStories, filteringStories.FilteringServer, 1),
-  name: 'Filtering — Server, шаг 1',
+  name: 'Filtering — Server, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringServerStep2 = {
   ...twinStep(filteringStories, filteringStories.FilteringServer, 2),
-  name: 'Filtering — Server, шаг 2',
+  name: 'Filtering — Server, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringServerStep3 = {
   ...twinStep(filteringStories, filteringStories.FilteringServer, 3),
-  name: 'Filtering — Server, шаг 3',
+  name: 'Filtering — Server, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringServerStep4 = {
   ...twinStep(filteringStories, filteringStories.FilteringServer, 4),
-  name: 'Filtering — Server, шаг 4',
+  name: 'Filtering — Server, step 4',
   tags: ['!test'],
 }
 
@@ -1583,7 +1583,7 @@ export const HighContrastFilteringServerFiltersClientSearchStep1 = {
     filteringStories.FilteringServerFiltersClientSearch,
     1,
   ),
-  name: 'Filtering — Server filters, client search, шаг 1',
+  name: 'Filtering — Server filters, client search, step 1',
   tags: ['!test'],
 }
 
@@ -1593,7 +1593,7 @@ export const HighContrastFilteringServerFiltersClientSearchStep2 = {
     filteringStories.FilteringServerFiltersClientSearch,
     2,
   ),
-  name: 'Filtering — Server filters, client search, шаг 2',
+  name: 'Filtering — Server filters, client search, step 2',
   tags: ['!test'],
 }
 
@@ -1603,199 +1603,199 @@ export const HighContrastFilteringServerFiltersClientSearchStep3 = {
     filteringStories.FilteringServerFiltersClientSearch,
     3,
   ),
-  name: 'Filtering — Server filters, client search, шаг 3',
+  name: 'Filtering — Server filters, client search, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringTreeStep1 = {
   ...twinStep(filteringStories, filteringStories.FilteringTree, 1),
-  name: 'Filtering — Tree, шаг 1',
+  name: 'Filtering — Tree, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringTreeStep2 = {
   ...twinStep(filteringStories, filteringStories.FilteringTree, 2),
-  name: 'Filtering — Tree, шаг 2',
+  name: 'Filtering — Tree, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastQuickSearchNoColumnsStep1 = {
   ...twinStep(filteringStories, filteringStories.QuickSearchNoColumns, 1),
-  name: 'Filtering — Quick search, no searchable columns, шаг 1',
+  name: 'Filtering — Quick search, no searchable columns, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastQuickSearchNoColumnsStep2 = {
   ...twinStep(filteringStories, filteringStories.QuickSearchNoColumns, 2),
-  name: 'Filtering — Quick search, no searchable columns, шаг 2',
+  name: 'Filtering — Quick search, no searchable columns, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringDatesStep1 = {
   ...twinStep(filteringStories, filteringStories.FilteringDates, 1),
-  name: 'Filtering — Dates, шаг 1',
+  name: 'Filtering — Dates, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringDatesStep2 = {
   ...twinStep(filteringStories, filteringStories.FilteringDates, 2),
-  name: 'Filtering — Dates, шаг 2',
+  name: 'Filtering — Dates, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringDatesStep3 = {
   ...twinStep(filteringStories, filteringStories.FilteringDates, 3),
-  name: 'Filtering — Dates, шаг 3',
+  name: 'Filtering — Dates, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringDatesStep4 = {
   ...twinStep(filteringStories, filteringStories.FilteringDates, 4),
-  name: 'Filtering — Dates, шаг 4',
+  name: 'Filtering — Dates, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringDatesStep5 = {
   ...twinStep(filteringStories, filteringStories.FilteringDates, 5),
-  name: 'Filtering — Dates, шаг 5',
+  name: 'Filtering — Dates, step 5',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringOptionsStep1 = {
   ...twinStep(filteringStories, filteringStories.FilteringOptions, 1),
-  name: 'Filtering — Select & multiselect, шаг 1',
+  name: 'Filtering — Select & multiselect, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringOptionsStep2 = {
   ...twinStep(filteringStories, filteringStories.FilteringOptions, 2),
-  name: 'Filtering — Select & multiselect, шаг 2',
+  name: 'Filtering — Select & multiselect, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringOptionsStep3 = {
   ...twinStep(filteringStories, filteringStories.FilteringOptions, 3),
-  name: 'Filtering — Select & multiselect, шаг 3',
+  name: 'Filtering — Select & multiselect, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringOptionsStep4 = {
   ...twinStep(filteringStories, filteringStories.FilteringOptions, 4),
-  name: 'Filtering — Select & multiselect, шаг 4',
+  name: 'Filtering — Select & multiselect, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringLookupServerStep1 = {
   ...twinStep(filteringStories, filteringStories.FilteringLookupServer, 1),
-  name: 'Filtering — Lookup (server), шаг 1',
+  name: 'Filtering — Lookup (server), step 1',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringLookupServerStep2 = {
   ...twinStep(filteringStories, filteringStories.FilteringLookupServer, 2),
-  name: 'Filtering — Lookup (server), шаг 2',
+  name: 'Filtering — Lookup (server), step 2',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringLookupServerStep3 = {
   ...twinStep(filteringStories, filteringStories.FilteringLookupServer, 3),
-  name: 'Filtering — Lookup (server), шаг 3',
+  name: 'Filtering — Lookup (server), step 3',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringLookupServerStep4 = {
   ...twinStep(filteringStories, filteringStories.FilteringLookupServer, 4),
-  name: 'Filtering — Lookup (server), шаг 4',
+  name: 'Filtering — Lookup (server), step 4',
   tags: ['!test'],
 }
 
 export const HighContrastExportDirectStep1 = {
   ...twinStep(exportStories, exportStories.ExportDirect, 1),
-  name: 'Export — Direct click, шаг 1',
+  name: 'Export — Direct click, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastExportDirectStep2 = {
   ...twinStep(exportStories, exportStories.ExportDirect, 2),
-  name: 'Export — Direct click, шаг 2',
+  name: 'Export — Direct click, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastExportPresetsStep1 = {
   ...twinStep(exportStories, exportStories.ExportPresets, 1),
-  name: 'Export — Settings and quick sets, шаг 1',
+  name: 'Export — Settings and quick sets, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastExportPresetsStep2 = {
   ...twinStep(exportStories, exportStories.ExportPresets, 2),
-  name: 'Export — Settings and quick sets, шаг 2',
+  name: 'Export — Settings and quick sets, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastExportPresetsStep3 = {
   ...twinStep(exportStories, exportStories.ExportPresets, 3),
-  name: 'Export — Settings and quick sets, шаг 3',
+  name: 'Export — Settings and quick sets, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastExportPresetsStep4 = {
   ...twinStep(exportStories, exportStories.ExportPresets, 4),
-  name: 'Export — Settings and quick sets, шаг 4',
+  name: 'Export — Settings and quick sets, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastExportServerStep1 = {
   ...twinStep(exportStories, exportStories.ExportServer, 1),
-  name: 'Export — Server, шаг 1',
+  name: 'Export — Server, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastExportServerStep2 = {
   ...twinStep(exportStories, exportStories.ExportServer, 2),
-  name: 'Export — Server, шаг 2',
+  name: 'Export — Server, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastExportServerStep3 = {
   ...twinStep(exportStories, exportStories.ExportServer, 3),
-  name: 'Export — Server, шаг 3',
+  name: 'Export — Server, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastExportServerStep4 = {
   ...twinStep(exportStories, exportStories.ExportServer, 4),
-  name: 'Export — Server, шаг 4',
+  name: 'Export — Server, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastExportServerStep5 = {
   ...twinStep(exportStories, exportStories.ExportServer, 5),
-  name: 'Export — Server, шаг 5',
+  name: 'Export — Server, step 5',
   tags: ['!test'],
 }
 
 export const HighContrastExportExcelStep1 = {
   ...twinStep(exportStories, exportStories.ExportExcel, 1),
-  name: 'Export — Excel, шаг 1',
+  name: 'Export — Excel, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastExportExcelStep2 = {
   ...twinStep(exportStories, exportStories.ExportExcel, 2),
-  name: 'Export — Excel, шаг 2',
+  name: 'Export — Excel, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastExportExcelStep3 = {
   ...twinStep(exportStories, exportStories.ExportExcel, 3),
-  name: 'Export — Excel, шаг 3',
+  name: 'Export — Excel, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastExportExcelStep4 = {
   ...twinStep(exportStories, exportStories.ExportExcel, 4),
-  name: 'Export — Excel, шаг 4',
+  name: 'Export — Excel, step 4',
   tags: ['!test'],
 }
 
@@ -1819,73 +1819,73 @@ export const HighContrastToolbarPlayground = {
 
 export const HighContrastRowActionMenuStep1 = {
   ...twinStep(rowsActionsStories, rowsActionsStories.RowActionMenu, 1),
-  name: 'Rows/Actions — Action menu, шаг 1',
+  name: 'Rows/Actions — Action menu, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastRowActionMenuStep2 = {
   ...twinStep(rowsActionsStories, rowsActionsStories.RowActionMenu, 2),
-  name: 'Rows/Actions — Action menu, шаг 2',
+  name: 'Rows/Actions — Action menu, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastRowActionMenuStep3 = {
   ...twinStep(rowsActionsStories, rowsActionsStories.RowActionMenu, 3),
-  name: 'Rows/Actions — Action menu, шаг 3',
+  name: 'Rows/Actions — Action menu, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastRowActionsNestedStep1 = {
   ...twinStep(rowsActionsStories, rowsActionsStories.RowActionsNested, 1),
-  name: 'Rows/Actions — Nested sections, шаг 1',
+  name: 'Rows/Actions — Nested sections, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastRowActionsNestedStep2 = {
   ...twinStep(rowsActionsStories, rowsActionsStories.RowActionsNested, 2),
-  name: 'Rows/Actions — Nested sections, шаг 2',
+  name: 'Rows/Actions — Nested sections, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastRowActionsNestedStep3 = {
   ...twinStep(rowsActionsStories, rowsActionsStories.RowActionsNested, 3),
-  name: 'Rows/Actions — Nested sections, шаг 3',
+  name: 'Rows/Actions — Nested sections, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastRowActionsNestedStep4 = {
   ...twinStep(rowsActionsStories, rowsActionsStories.RowActionsNested, 4),
-  name: 'Rows/Actions — Nested sections, шаг 4',
+  name: 'Rows/Actions — Nested sections, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastRowActionsNestedStep5 = {
   ...twinStep(rowsActionsStories, rowsActionsStories.RowActionsNested, 5),
-  name: 'Rows/Actions — Nested sections, шаг 5',
+  name: 'Rows/Actions — Nested sections, step 5',
   tags: ['!test'],
 }
 
 export const HighContrastRowActionsNestedStep6 = {
   ...twinStep(rowsActionsStories, rowsActionsStories.RowActionsNested, 6),
-  name: 'Rows/Actions — Nested sections, шаг 6',
+  name: 'Rows/Actions — Nested sections, step 6',
   tags: ['!test'],
 }
 
 export const HighContrastRowActionsAsyncStep1 = {
   ...twinStep(rowsActionsStories, rowsActionsStories.RowActionsAsync, 1),
-  name: 'Rows/Actions — Async action, шаг 1',
+  name: 'Rows/Actions — Async action, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastRowActionsAsyncStep2 = {
   ...twinStep(rowsActionsStories, rowsActionsStories.RowActionsAsync, 2),
-  name: 'Rows/Actions — Async action, шаг 2',
+  name: 'Rows/Actions — Async action, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastRowActionsAsyncStep3 = {
   ...twinStep(rowsActionsStories, rowsActionsStories.RowActionsAsync, 3),
-  name: 'Rows/Actions — Async action, шаг 3',
+  name: 'Rows/Actions — Async action, step 3',
   tags: ['!test'],
 }
 
@@ -1909,55 +1909,55 @@ export const HighContrastRowSelectionPlayground = {
 
 export const HighContrastBackToTopReturnStep1 = {
   ...twinStep(rowsBackToTopStories, rowsBackToTopStories.BackToTopReturn, 1),
-  name: 'Rows/Back to top — Return to top, шаг 1',
+  name: 'Rows/Back to top — Return to top, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastBackToTopReturnStep2 = {
   ...twinStep(rowsBackToTopStories, rowsBackToTopStories.BackToTopReturn, 2),
-  name: 'Rows/Back to top — Return to top, шаг 2',
+  name: 'Rows/Back to top — Return to top, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastBackToTopReturnStep3 = {
   ...twinStep(rowsBackToTopStories, rowsBackToTopStories.BackToTopReturn, 3),
-  name: 'Rows/Back to top — Return to top, шаг 3',
+  name: 'Rows/Back to top — Return to top, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastBackToTopWideStep1 = {
   ...twinStep(rowsBackToTopStories, rowsBackToTopStories.BackToTopWide, 1),
-  name: 'Rows/Back to top — Wide table, шаг 1',
+  name: 'Rows/Back to top — Wide table, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastBackToTopWideStep2 = {
   ...twinStep(rowsBackToTopStories, rowsBackToTopStories.BackToTopWide, 2),
-  name: 'Rows/Back to top — Wide table, шаг 2',
+  name: 'Rows/Back to top — Wide table, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastBackToTopWideStep3 = {
   ...twinStep(rowsBackToTopStories, rowsBackToTopStories.BackToTopWide, 3),
-  name: 'Rows/Back to top — Wide table, шаг 3',
+  name: 'Rows/Back to top — Wide table, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastExpandingConfirmedStep1 = {
   ...twinStep(rowsExpandingStories, rowsExpandingStories.ExpandingConfirmed, 1),
-  name: 'Rows/Expanding — Expand confirmed by the server, шаг 1',
+  name: 'Rows/Expanding — Expand confirmed by the server, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastExpandingConfirmedStep2 = {
   ...twinStep(rowsExpandingStories, rowsExpandingStories.ExpandingConfirmed, 2),
-  name: 'Rows/Expanding — Expand confirmed by the server, шаг 2',
+  name: 'Rows/Expanding — Expand confirmed by the server, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastExpandingConfirmedStep3 = {
   ...twinStep(rowsExpandingStories, rowsExpandingStories.ExpandingConfirmed, 3),
-  name: 'Rows/Expanding — Expand confirmed by the server, шаг 3',
+  name: 'Rows/Expanding — Expand confirmed by the server, step 3',
   tags: ['!test'],
 }
 
@@ -1967,7 +1967,7 @@ export const HighContrastExpandingLazyRestoredStep1 = {
     rowsExpandingStories.ExpandingLazyRestored,
     1,
   ),
-  name: 'Rows/Expanding — Expanded on open, шаг 1',
+  name: 'Rows/Expanding — Expanded on open, step 1',
   tags: ['!test'],
 }
 
@@ -1977,7 +1977,7 @@ export const HighContrastExpandingLazyRestoredStep2 = {
     rowsExpandingStories.ExpandingLazyRestored,
     2,
   ),
-  name: 'Rows/Expanding — Expanded on open, шаг 2',
+  name: 'Rows/Expanding — Expanded on open, step 2',
   tags: ['!test'],
 }
 
@@ -1987,7 +1987,7 @@ export const HighContrastExpandingLazyRestoredStep3 = {
     rowsExpandingStories.ExpandingLazyRestored,
     3,
   ),
-  name: 'Rows/Expanding — Expanded on open, шаг 3',
+  name: 'Rows/Expanding — Expanded on open, step 3',
   tags: ['!test'],
 }
 
@@ -1997,7 +1997,7 @@ export const HighContrastExpandingLazyChildrenStep1 = {
     rowsExpandingStories.ExpandingLazyChildren,
     1,
   ),
-  name: 'Rows/Expanding — Lazy children (server), шаг 1',
+  name: 'Rows/Expanding — Lazy children (server), step 1',
   tags: ['!test'],
 }
 
@@ -2007,7 +2007,7 @@ export const HighContrastExpandingLazyChildrenStep2 = {
     rowsExpandingStories.ExpandingLazyChildren,
     2,
   ),
-  name: 'Rows/Expanding — Lazy children (server), шаг 2',
+  name: 'Rows/Expanding — Lazy children (server), step 2',
   tags: ['!test'],
 }
 
@@ -2017,7 +2017,7 @@ export const HighContrastExpandingLazyChildrenStep3 = {
     rowsExpandingStories.ExpandingLazyChildren,
     3,
   ),
-  name: 'Rows/Expanding — Lazy children (server), шаг 3',
+  name: 'Rows/Expanding — Lazy children (server), step 3',
   tags: ['!test'],
 }
 
@@ -2027,7 +2027,7 @@ export const HighContrastExpandingLazyChildrenStep4 = {
     rowsExpandingStories.ExpandingLazyChildren,
     4,
   ),
-  name: 'Rows/Expanding — Lazy children (server), шаг 4',
+  name: 'Rows/Expanding — Lazy children (server), step 4',
   tags: ['!test'],
 }
 
@@ -2037,7 +2037,7 @@ export const HighContrastExpandingLazyChildrenStep5 = {
     rowsExpandingStories.ExpandingLazyChildren,
     5,
   ),
-  name: 'Rows/Expanding — Lazy children (server), шаг 5',
+  name: 'Rows/Expanding — Lazy children (server), step 5',
   tags: ['!test'],
 }
 
@@ -2047,7 +2047,7 @@ export const HighContrastHighlightDeleteConfirmationStep1 = {
     rowsHighlightStories.HighlightDeleteConfirmation,
     1,
   ),
-  name: 'Rows/Highlight — Delete confirmation, шаг 1',
+  name: 'Rows/Highlight — Delete confirmation, step 1',
   tags: ['!test'],
 }
 
@@ -2057,7 +2057,7 @@ export const HighContrastHighlightDeleteConfirmationStep2 = {
     rowsHighlightStories.HighlightDeleteConfirmation,
     2,
   ),
-  name: 'Rows/Highlight — Delete confirmation, шаг 2',
+  name: 'Rows/Highlight — Delete confirmation, step 2',
   tags: ['!test'],
 }
 
@@ -2067,7 +2067,7 @@ export const HighContrastHighlightDeleteConfirmationStep3 = {
     rowsHighlightStories.HighlightDeleteConfirmation,
     3,
   ),
-  name: 'Rows/Highlight — Delete confirmation, шаг 3',
+  name: 'Rows/Highlight — Delete confirmation, step 3',
   tags: ['!test'],
 }
 
@@ -2077,55 +2077,55 @@ export const HighContrastHighlightDeleteConfirmationStep4 = {
     rowsHighlightStories.HighlightDeleteConfirmation,
     4,
   ),
-  name: 'Rows/Highlight — Delete confirmation, шаг 4',
+  name: 'Rows/Highlight — Delete confirmation, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastHighlightMarksStep1 = {
   ...twinStep(rowsHighlightStories, rowsHighlightStories.HighlightMarks, 1),
-  name: 'Rows/Highlight — Search, cell and column, шаг 1',
+  name: 'Rows/Highlight — Search, cell and column, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastHighlightMarksStep2 = {
   ...twinStep(rowsHighlightStories, rowsHighlightStories.HighlightMarks, 2),
-  name: 'Rows/Highlight — Search, cell and column, шаг 2',
+  name: 'Rows/Highlight — Search, cell and column, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastHighlightMarksStep3 = {
   ...twinStep(rowsHighlightStories, rowsHighlightStories.HighlightMarks, 3),
-  name: 'Rows/Highlight — Search, cell and column, шаг 3',
+  name: 'Rows/Highlight — Search, cell and column, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastHighlightMarksStep4 = {
   ...twinStep(rowsHighlightStories, rowsHighlightStories.HighlightMarks, 4),
-  name: 'Rows/Highlight — Search, cell and column, шаг 4',
+  name: 'Rows/Highlight — Search, cell and column, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastHighlightMarksStep5 = {
   ...twinStep(rowsHighlightStories, rowsHighlightStories.HighlightMarks, 5),
-  name: 'Rows/Highlight — Search, cell and column, шаг 5',
+  name: 'Rows/Highlight — Search, cell and column, step 5',
   tags: ['!test'],
 }
 
 export const HighContrastGroupSelectionStep1 = {
   ...twinStep(rowsSelectionStories, rowsSelectionStories.GroupSelection, 1),
-  name: 'Rows/Selection — Select a group, шаг 1',
+  name: 'Rows/Selection — Select a group, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastGroupSelectionStep2 = {
   ...twinStep(rowsSelectionStories, rowsSelectionStories.GroupSelection, 2),
-  name: 'Rows/Selection — Select a group, шаг 2',
+  name: 'Rows/Selection — Select a group, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastGroupSelectionStep3 = {
   ...twinStep(rowsSelectionStories, rowsSelectionStories.GroupSelection, 3),
-  name: 'Rows/Selection — Select a group, шаг 3',
+  name: 'Rows/Selection — Select a group, step 3',
   tags: ['!test'],
 }
 
@@ -2135,7 +2135,7 @@ export const HighContrastGroupSelectFilteredStep1 = {
     rowsSelectionStories.GroupSelectFiltered,
     1,
   ),
-  name: 'Rows/Selection — Select a group while searching, шаг 1',
+  name: 'Rows/Selection — Select a group while searching, step 1',
   tags: ['!test'],
 }
 
@@ -2145,7 +2145,7 @@ export const HighContrastGroupSelectFilteredStep2 = {
     rowsSelectionStories.GroupSelectFiltered,
     2,
   ),
-  name: 'Rows/Selection — Select a group while searching, шаг 2',
+  name: 'Rows/Selection — Select a group while searching, step 2',
   tags: ['!test'],
 }
 
@@ -2155,7 +2155,7 @@ export const HighContrastGroupSelectFilteredStep3 = {
     rowsSelectionStories.GroupSelectFiltered,
     3,
   ),
-  name: 'Rows/Selection — Select a group while searching, шаг 3',
+  name: 'Rows/Selection — Select a group while searching, step 3',
   tags: ['!test'],
 }
 
@@ -2165,109 +2165,109 @@ export const HighContrastGroupSelectFilteredStep4 = {
     rowsSelectionStories.GroupSelectFiltered,
     4,
   ),
-  name: 'Rows/Selection — Select a group while searching, шаг 4',
+  name: 'Rows/Selection — Select a group while searching, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastGroupSelectRegroupStep1 = {
   ...twinStep(rowsSelectionStories, rowsSelectionStories.GroupSelectRegroup, 1),
-  name: 'Rows/Selection — Change grouping with a selection, шаг 1',
+  name: 'Rows/Selection — Change grouping with a selection, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastGroupSelectRegroupStep2 = {
   ...twinStep(rowsSelectionStories, rowsSelectionStories.GroupSelectRegroup, 2),
-  name: 'Rows/Selection — Change grouping with a selection, шаг 2',
+  name: 'Rows/Selection — Change grouping with a selection, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastGroupSelectRegroupStep3 = {
   ...twinStep(rowsSelectionStories, rowsSelectionStories.GroupSelectRegroup, 3),
-  name: 'Rows/Selection — Change grouping with a selection, шаг 3',
+  name: 'Rows/Selection — Change grouping with a selection, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastGroupDragMoveStep1 = {
   ...twinStep(rowsDraggingStories, rowsDraggingStories.GroupDragMove, 1),
-  name: 'Rows/Dragging — Move to another group, шаг 1',
+  name: 'Rows/Dragging — Move to another group, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastGroupDragMoveStep2 = {
   ...twinStep(rowsDraggingStories, rowsDraggingStories.GroupDragMove, 2),
-  name: 'Rows/Dragging — Move to another group, шаг 2',
+  name: 'Rows/Dragging — Move to another group, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastGroupDragMoveStep3 = {
   ...twinStep(rowsDraggingStories, rowsDraggingStories.GroupDragMove, 3),
-  name: 'Rows/Dragging — Move to another group, шаг 3',
+  name: 'Rows/Dragging — Move to another group, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastGroupDragRefusedStep1 = {
   ...twinStep(rowsDraggingStories, rowsDraggingStories.GroupDragRefused, 1),
-  name: 'Rows/Dragging — Move refused by the server, шаг 1',
+  name: 'Rows/Dragging — Move refused by the server, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastGroupDragRefusedStep2 = {
   ...twinStep(rowsDraggingStories, rowsDraggingStories.GroupDragRefused, 2),
-  name: 'Rows/Dragging — Move refused by the server, шаг 2',
+  name: 'Rows/Dragging — Move refused by the server, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastGroupDragRefusedStep3 = {
   ...twinStep(rowsDraggingStories, rowsDraggingStories.GroupDragRefused, 3),
-  name: 'Rows/Dragging — Move refused by the server, шаг 3',
+  name: 'Rows/Dragging — Move refused by the server, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastRowMotionTreeStep1 = {
   ...twinStep(rowsMotionStories, rowsMotionStories.RowMotionTree, 1),
-  name: 'Rows/Motion — Tree, шаг 1',
+  name: 'Rows/Motion — Tree, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastRowMotionTreeStep2 = {
   ...twinStep(rowsMotionStories, rowsMotionStories.RowMotionTree, 2),
-  name: 'Rows/Motion — Tree, шаг 2',
+  name: 'Rows/Motion — Tree, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastRowMotionTreeStep3 = {
   ...twinStep(rowsMotionStories, rowsMotionStories.RowMotionTree, 3),
-  name: 'Rows/Motion — Tree, шаг 3',
+  name: 'Rows/Motion — Tree, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastRowMotionSearchStep1 = {
   ...twinStep(rowsMotionStories, rowsMotionStories.RowMotionSearch, 1),
-  name: 'Rows/Motion — Sort and search, шаг 1',
+  name: 'Rows/Motion — Sort and search, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastRowMotionSearchStep2 = {
   ...twinStep(rowsMotionStories, rowsMotionStories.RowMotionSearch, 2),
-  name: 'Rows/Motion — Sort and search, шаг 2',
+  name: 'Rows/Motion — Sort and search, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastRowMotionSearchStep3 = {
   ...twinStep(rowsMotionStories, rowsMotionStories.RowMotionSearch, 3),
-  name: 'Rows/Motion — Sort and search, шаг 3',
+  name: 'Rows/Motion — Sort and search, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastRowMotionDeleteStep1 = {
   ...twinStep(rowsMotionStories, rowsMotionStories.RowMotionDelete, 1),
-  name: 'Rows/Motion — Delete a row, шаг 1',
+  name: 'Rows/Motion — Delete a row, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastRowMotionDeleteStep2 = {
   ...twinStep(rowsMotionStories, rowsMotionStories.RowMotionDelete, 2),
-  name: 'Rows/Motion — Delete a row, шаг 2',
+  name: 'Rows/Motion — Delete a row, step 2',
   tags: ['!test'],
 }
 
@@ -2277,7 +2277,7 @@ export const HighContrastScrollToRowShowStep1 = {
     rowsScrollToRowStories.ScrollToRowShow,
     1,
   ),
-  name: 'Rows/Scroll to row — Show a row, шаг 1',
+  name: 'Rows/Scroll to row — Show a row, step 1',
   tags: ['!test'],
 }
 
@@ -2287,7 +2287,7 @@ export const HighContrastScrollToRowShowStep2 = {
     rowsScrollToRowStories.ScrollToRowShow,
     2,
   ),
-  name: 'Rows/Scroll to row — Show a row, шаг 2',
+  name: 'Rows/Scroll to row — Show a row, step 2',
   tags: ['!test'],
 }
 
@@ -2297,43 +2297,43 @@ export const HighContrastScrollToRowShowStep3 = {
     rowsScrollToRowStories.ScrollToRowShow,
     3,
   ),
-  name: 'Rows/Scroll to row — Show a row, шаг 3',
+  name: 'Rows/Scroll to row — Show a row, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastBatchRowSelectionStep1 = {
   ...twinStep(rowsSelectionStories, rowsSelectionStories.BatchRowSelection, 1),
-  name: 'Rows/Selection — Select all rows, шаг 1',
+  name: 'Rows/Selection — Select all rows, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastBatchRowSelectionStep2 = {
   ...twinStep(rowsSelectionStories, rowsSelectionStories.BatchRowSelection, 2),
-  name: 'Rows/Selection — Select all rows, шаг 2',
+  name: 'Rows/Selection — Select all rows, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastBatchRowSelectionStep3 = {
   ...twinStep(rowsSelectionStories, rowsSelectionStories.BatchRowSelection, 3),
-  name: 'Rows/Selection — Select all rows, шаг 3',
+  name: 'Rows/Selection — Select all rows, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastSubRowSelectionStep1 = {
   ...twinStep(rowsSelectionStories, rowsSelectionStories.SubRowSelection, 1),
-  name: 'Rows/Selection — Parent with children, шаг 1',
+  name: 'Rows/Selection — Parent with children, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastSubRowSelectionStep2 = {
   ...twinStep(rowsSelectionStories, rowsSelectionStories.SubRowSelection, 2),
-  name: 'Rows/Selection — Parent with children, шаг 2',
+  name: 'Rows/Selection — Parent with children, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastSubRowSelectionStep3 = {
   ...twinStep(rowsSelectionStories, rowsSelectionStories.SubRowSelection, 3),
-  name: 'Rows/Selection — Parent with children, шаг 3',
+  name: 'Rows/Selection — Parent with children, step 3',
   tags: ['!test'],
 }
 
@@ -2343,7 +2343,7 @@ export const HighContrastSelectionSubRowsSelfStep1 = {
     rowsSelectionStories.SelectionSubRowsSelf,
     1,
   ),
-  name: 'Rows/Selection — Each row on its own, шаг 1',
+  name: 'Rows/Selection — Each row on its own, step 1',
   tags: ['!test'],
 }
 
@@ -2353,7 +2353,7 @@ export const HighContrastSelectionSubRowsSelfStep2 = {
     rowsSelectionStories.SelectionSubRowsSelf,
     2,
   ),
-  name: 'Rows/Selection — Each row on its own, шаг 2',
+  name: 'Rows/Selection — Each row on its own, step 2',
   tags: ['!test'],
 }
 
@@ -2363,7 +2363,7 @@ export const HighContrastSelectionSubRowsSelfStep3 = {
     rowsSelectionStories.SelectionSubRowsSelf,
     3,
   ),
-  name: 'Rows/Selection — Each row on its own, шаг 3',
+  name: 'Rows/Selection — Each row on its own, step 3',
   tags: ['!test'],
 }
 
@@ -2375,7 +2375,7 @@ export const HighContrastCellSelectionByCommandStep1 = {
     cellsSelectionStories.CellSelectionByCommand,
     1,
   ),
-  name: 'Cells/Selection — By command, шаг 1',
+  name: 'Cells/Selection — By command, step 1',
   tags: ['!test'],
 }
 
@@ -2385,7 +2385,7 @@ export const HighContrastCellSelectionByCommandStep2 = {
     cellsSelectionStories.CellSelectionByCommand,
     2,
   ),
-  name: 'Cells/Selection — By command, шаг 2',
+  name: 'Cells/Selection — By command, step 2',
   tags: ['!test'],
 }
 
@@ -2395,7 +2395,7 @@ export const HighContrastCellSelectionByCommandStep3 = {
     cellsSelectionStories.CellSelectionByCommand,
     3,
   ),
-  name: 'Cells/Selection — By command, шаг 3',
+  name: 'Cells/Selection — By command, step 3',
   tags: ['!test'],
 }
 
@@ -2405,7 +2405,7 @@ export const HighContrastSortingExternalControlsStep1 = {
     columnsSortingStories.SortingExternalControls,
     1,
   ),
-  name: 'Columns/Sorting — External controls, шаг 1',
+  name: 'Columns/Sorting — External controls, step 1',
   tags: ['!test'],
 }
 
@@ -2415,7 +2415,7 @@ export const HighContrastSortingExternalControlsStep2 = {
     columnsSortingStories.SortingExternalControls,
     2,
   ),
-  name: 'Columns/Sorting — External controls, шаг 2',
+  name: 'Columns/Sorting — External controls, step 2',
   tags: ['!test'],
 }
 
@@ -2425,67 +2425,67 @@ export const HighContrastSortingExternalControlsStep3 = {
     columnsSortingStories.SortingExternalControls,
     3,
   ),
-  name: 'Columns/Sorting — External controls, шаг 3',
+  name: 'Columns/Sorting — External controls, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastPinnedFooterStep1 = {
   ...twinStep(coreFooterStories, coreFooterStories.PinnedFooter, 1),
-  name: 'Core/Footer — Pinned, шаг 1',
+  name: 'Core/Footer — Pinned, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastPinnedFooterStep2 = {
   ...twinStep(coreFooterStories, coreFooterStories.PinnedFooter, 2),
-  name: 'Core/Footer — Pinned, шаг 2',
+  name: 'Core/Footer — Pinned, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastInlineFooterStep1 = {
   ...twinStep(coreFooterStories, coreFooterStories.InlineFooter, 1),
-  name: 'Core/Footer — Inline, шаг 1',
+  name: 'Core/Footer — Inline, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastInlineFooterStep2 = {
   ...twinStep(coreFooterStories, coreFooterStories.InlineFooter, 2),
-  name: 'Core/Footer — Inline, шаг 2',
+  name: 'Core/Footer — Inline, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastFooterPositionSwitchStep1 = {
   ...twinStep(coreFooterStories, coreFooterStories.FooterPositionSwitch, 1),
-  name: 'Core/Footer — Position switch, шаг 1',
+  name: 'Core/Footer — Position switch, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastFooterPositionSwitchStep2 = {
   ...twinStep(coreFooterStories, coreFooterStories.FooterPositionSwitch, 2),
-  name: 'Core/Footer — Position switch, шаг 2',
+  name: 'Core/Footer — Position switch, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastFooterPositionSwitchStep3 = {
   ...twinStep(coreFooterStories, coreFooterStories.FooterPositionSwitch, 3),
-  name: 'Core/Footer — Position switch, шаг 3',
+  name: 'Core/Footer — Position switch, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastFooterKeyboardStep1 = {
   ...twinStep(coreFooterStories, coreFooterStories.FooterKeyboard, 1),
-  name: 'Core/Footer — Keyboard, шаг 1',
+  name: 'Core/Footer — Keyboard, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastFooterKeyboardStep2 = {
   ...twinStep(coreFooterStories, coreFooterStories.FooterKeyboard, 2),
-  name: 'Core/Footer — Keyboard, шаг 2',
+  name: 'Core/Footer — Keyboard, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastFooterKeyboardStep3 = {
   ...twinStep(coreFooterStories, coreFooterStories.FooterKeyboard, 3),
-  name: 'Core/Footer — Keyboard, шаг 3',
+  name: 'Core/Footer — Keyboard, step 3',
   tags: ['!test'],
 }
 
@@ -2495,7 +2495,7 @@ export const HighContrastInlineFooterInfiniteScrollStep1 = {
     coreFooterStories.InlineFooterInfiniteScroll,
     1,
   ),
-  name: 'Core/Footer — Inline — infinite scroll, шаг 1',
+  name: 'Core/Footer — Inline — infinite scroll, step 1',
   tags: ['!test'],
 }
 
@@ -2505,7 +2505,7 @@ export const HighContrastInlineFooterInfiniteScrollStep2 = {
     coreFooterStories.InlineFooterInfiniteScroll,
     2,
   ),
-  name: 'Core/Footer — Inline — infinite scroll, шаг 2',
+  name: 'Core/Footer — Inline — infinite scroll, step 2',
   tags: ['!test'],
 }
 
@@ -2515,157 +2515,157 @@ export const HighContrastInlineFooterInfiniteScrollStep3 = {
     coreFooterStories.InlineFooterInfiniteScroll,
     3,
   ),
-  name: 'Core/Footer — Inline — infinite scroll, шаг 3',
+  name: 'Core/Footer — Inline — infinite scroll, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastInlineFooterPaginationStep1 = {
   ...twinStep(coreFooterStories, coreFooterStories.InlineFooterPagination, 1),
-  name: 'Core/Footer — Inline — pagination, шаг 1',
+  name: 'Core/Footer — Inline — pagination, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastInlineFooterPaginationStep2 = {
   ...twinStep(coreFooterStories, coreFooterStories.InlineFooterPagination, 2),
-  name: 'Core/Footer — Inline — pagination, шаг 2',
+  name: 'Core/Footer — Inline — pagination, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastInlineFooterScrollToRowStep1 = {
   ...twinStep(coreFooterStories, coreFooterStories.InlineFooterScrollToRow, 1),
-  name: 'Core/Footer — Inline — scroll to row, шаг 1',
+  name: 'Core/Footer — Inline — scroll to row, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastInlineFooterScrollToRowStep2 = {
   ...twinStep(coreFooterStories, coreFooterStories.InlineFooterScrollToRow, 2),
-  name: 'Core/Footer — Inline — scroll to row, шаг 2',
+  name: 'Core/Footer — Inline — scroll to row, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastInlineFooterScrollToRowStep3 = {
   ...twinStep(coreFooterStories, coreFooterStories.InlineFooterScrollToRow, 3),
-  name: 'Core/Footer — Inline — scroll to row, шаг 3',
+  name: 'Core/Footer — Inline — scroll to row, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastInlineFooterEmptySearchStep1 = {
   ...twinStep(coreFooterStories, coreFooterStories.InlineFooterEmptySearch, 1),
-  name: 'Core/Footer — Inline — empty search, шаг 1',
+  name: 'Core/Footer — Inline — empty search, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastInlineFooterEmptySearchStep2 = {
   ...twinStep(coreFooterStories, coreFooterStories.InlineFooterEmptySearch, 2),
-  name: 'Core/Footer — Inline — empty search, шаг 2',
+  name: 'Core/Footer — Inline — empty search, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastFooterAutoHeightStep1 = {
   ...twinStep(coreFooterStories, coreFooterStories.FooterAutoHeight, 1),
-  name: 'Core/Footer — Auto height, шаг 1',
+  name: 'Core/Footer — Auto height, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastFooterAutoHeightStep2 = {
   ...twinStep(coreFooterStories, coreFooterStories.FooterAutoHeight, 2),
-  name: 'Core/Footer — Auto height, шаг 2',
+  name: 'Core/Footer — Auto height, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastSizingFixedHeightStep1 = {
   ...twinStep(coreSizingStories, coreSizingStories.SizingFixedHeight, 1),
-  name: 'Core/Sizing — Fixed height, шаг 1',
+  name: 'Core/Sizing — Fixed height, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastSizingFixedHeightStep2 = {
   ...twinStep(coreSizingStories, coreSizingStories.SizingFixedHeight, 2),
-  name: 'Core/Sizing — Fixed height, шаг 2',
+  name: 'Core/Sizing — Fixed height, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastSizingFillContainerStep1 = {
   ...twinStep(coreSizingStories, coreSizingStories.SizingFillContainer, 1),
-  name: 'Core/Sizing — Fill container, шаг 1',
+  name: 'Core/Sizing — Fill container, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastSizingFillContainerStep2 = {
   ...twinStep(coreSizingStories, coreSizingStories.SizingFillContainer, 2),
-  name: 'Core/Sizing — Fill container, шаг 2',
+  name: 'Core/Sizing — Fill container, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastSizingFillContainerStep3 = {
   ...twinStep(coreSizingStories, coreSizingStories.SizingFillContainer, 3),
-  name: 'Core/Sizing — Fill container, шаг 3',
+  name: 'Core/Sizing — Fill container, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastSizingFlexLayoutStep1 = {
   ...twinStep(coreSizingStories, coreSizingStories.SizingFlexLayout, 1),
-  name: 'Core/Sizing — Flex layout, шаг 1',
+  name: 'Core/Sizing — Flex layout, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastSizingFlexLayoutStep2 = {
   ...twinStep(coreSizingStories, coreSizingStories.SizingFlexLayout, 2),
-  name: 'Core/Sizing — Flex layout, шаг 2',
+  name: 'Core/Sizing — Flex layout, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastSizingContentHeightStep1 = {
   ...twinStep(coreSizingStories, coreSizingStories.SizingContentHeight, 1),
-  name: 'Core/Sizing — Content height, шаг 1',
+  name: 'Core/Sizing — Content height, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastSizingContentHeightStep2 = {
   ...twinStep(coreSizingStories, coreSizingStories.SizingContentHeight, 2),
-  name: 'Core/Sizing — Content height, шаг 2',
+  name: 'Core/Sizing — Content height, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastSizingRowHeightStep1 = {
   ...twinStep(coreSizingStories, coreSizingStories.SizingRowHeight, 1),
-  name: 'Core/Sizing — Row height, шаг 1',
+  name: 'Core/Sizing — Row height, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastSizingRowHeightStep2 = {
   ...twinStep(coreSizingStories, coreSizingStories.SizingRowHeight, 2),
-  name: 'Core/Sizing — Row height, шаг 2',
+  name: 'Core/Sizing — Row height, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastSizingRowHeightStep3 = {
   ...twinStep(coreSizingStories, coreSizingStories.SizingRowHeight, 3),
-  name: 'Core/Sizing — Row height, шаг 3',
+  name: 'Core/Sizing — Row height, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastSizingRowHeightStep4 = {
   ...twinStep(coreSizingStories, coreSizingStories.SizingRowHeight, 4),
-  name: 'Core/Sizing — Row height, шаг 4',
+  name: 'Core/Sizing — Row height, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastSizingRowHeightStep5 = {
   ...twinStep(coreSizingStories, coreSizingStories.SizingRowHeight, 5),
-  name: 'Core/Sizing — Row height, шаг 5',
+  name: 'Core/Sizing — Row height, step 5',
   tags: ['!test'],
 }
 
 export const HighContrastSizingHeaderHeightStep1 = {
   ...twinStep(coreSizingStories, coreSizingStories.SizingHeaderHeight, 1),
-  name: 'Core/Sizing — Header height, шаг 1',
+  name: 'Core/Sizing — Header height, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastSizingHeaderHeightStep2 = {
   ...twinStep(coreSizingStories, coreSizingStories.SizingHeaderHeight, 2),
-  name: 'Core/Sizing — Header height, шаг 2',
+  name: 'Core/Sizing — Header height, step 2',
   tags: ['!test'],
 }
 
@@ -2675,7 +2675,7 @@ export const HighContrastResizingDefaultColumnWidthStep1 = {
     columnsResizingStories.ResizingDefaultColumnWidth,
     1,
   ),
-  name: 'Columns/Resizing — Default column width, шаг 1',
+  name: 'Columns/Resizing — Default column width, step 1',
   tags: ['!test'],
 }
 
@@ -2685,7 +2685,7 @@ export const HighContrastResizingDefaultColumnWidthStep2 = {
     columnsResizingStories.ResizingDefaultColumnWidth,
     2,
   ),
-  name: 'Columns/Resizing — Default column width, шаг 2',
+  name: 'Columns/Resizing — Default column width, step 2',
   tags: ['!test'],
 }
 
@@ -2695,25 +2695,25 @@ export const HighContrastResizingDefaultColumnWidthStep3 = {
     columnsResizingStories.ResizingDefaultColumnWidth,
     3,
   ),
-  name: 'Columns/Resizing — Default column width, шаг 3',
+  name: 'Columns/Resizing — Default column width, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastSizingThemeTokensStep1 = {
   ...twinStep(coreSizingStories, coreSizingStories.SizingThemeTokens, 1),
-  name: 'Core/Sizing — Theme tokens, шаг 1',
+  name: 'Core/Sizing — Theme tokens, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastSizingThemeTokensStep2 = {
   ...twinStep(coreSizingStories, coreSizingStories.SizingThemeTokens, 2),
-  name: 'Core/Sizing — Theme tokens, шаг 2',
+  name: 'Core/Sizing — Theme tokens, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastSizingThemeTokensStep3 = {
   ...twinStep(coreSizingStories, coreSizingStories.SizingThemeTokens, 3),
-  name: 'Core/Sizing — Theme tokens, шаг 3',
+  name: 'Core/Sizing — Theme tokens, step 3',
   tags: ['!test'],
 }
 
@@ -2723,7 +2723,7 @@ export const HighContrastIncreasedContrastEnableStep1 = {
     coreIncreasedContrastStories.IncreasedContrastEnable,
     1,
   ),
-  name: 'Customization/Increased contrast — Enable increased contrast, шаг 1',
+  name: 'Customization/Increased contrast — Enable increased contrast, step 1',
   tags: ['!test'],
 }
 
@@ -2733,7 +2733,7 @@ export const HighContrastIncreasedContrastEnableStep2 = {
     coreIncreasedContrastStories.IncreasedContrastEnable,
     2,
   ),
-  name: 'Customization/Increased contrast — Enable increased contrast, шаг 2',
+  name: 'Customization/Increased contrast — Enable increased contrast, step 2',
   tags: ['!test'],
 }
 
@@ -2743,7 +2743,7 @@ export const HighContrastIncreasedContrastEnableStep3 = {
     coreIncreasedContrastStories.IncreasedContrastEnable,
     3,
   ),
-  name: 'Customization/Increased contrast — Enable increased contrast, шаг 3',
+  name: 'Customization/Increased contrast — Enable increased contrast, step 3',
   tags: ['!test'],
 }
 
@@ -2753,7 +2753,7 @@ export const HighContrastIncreasedContrastEnableStep4 = {
     coreIncreasedContrastStories.IncreasedContrastEnable,
     4,
   ),
-  name: 'Customization/Increased contrast — Enable increased contrast, шаг 4',
+  name: 'Customization/Increased contrast — Enable increased contrast, step 4',
   tags: ['!test'],
 }
 
@@ -2763,7 +2763,7 @@ export const HighContrastIncreasedContrastRecipeStep1 = {
     coreIncreasedContrastStories.IncreasedContrastRecipe,
     1,
   ),
-  name: 'Customization/Increased contrast — Own levers and palette, шаг 1',
+  name: 'Customization/Increased contrast — Own levers and palette, step 1',
   tags: ['!test'],
 }
 
@@ -2773,253 +2773,253 @@ export const HighContrastIncreasedContrastRecipeStep2 = {
     coreIncreasedContrastStories.IncreasedContrastRecipe,
     2,
   ),
-  name: 'Customization/Increased contrast — Own levers and palette, шаг 2',
+  name: 'Customization/Increased contrast — Own levers and palette, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastThemingGridButtonSizeStep1 = {
   ...twinStep(themingStories, themingStories.ThemingGridButtonSize, 1),
-  name: 'Theming — Grid button size, шаг 1',
+  name: 'Theming — Grid button size, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastThemingGridButtonSizeStep2 = {
   ...twinStep(themingStories, themingStories.ThemingGridButtonSize, 2),
-  name: 'Theming — Grid button size, шаг 2',
+  name: 'Theming — Grid button size, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastThemeSourcesStep1 = {
   ...twinStep(themingStories, themingStories.ThemeSources, 1),
-  name: 'Theming — Theme sources, шаг 1',
+  name: 'Theming — Theme sources, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastThemeSourcesStep2 = {
   ...twinStep(themingStories, themingStories.ThemeSources, 2),
-  name: 'Theming — Theme sources, шаг 2',
+  name: 'Theming — Theme sources, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastThemeSourcesStep3 = {
   ...twinStep(themingStories, themingStories.ThemeSources, 3),
-  name: 'Theming — Theme sources, шаг 3',
+  name: 'Theming — Theme sources, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastThemeSourcesStep4 = {
   ...twinStep(themingStories, themingStories.ThemeSources, 4),
-  name: 'Theming — Theme sources, шаг 4',
+  name: 'Theming — Theme sources, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastSkeletonDataArrivesStep1 = {
   ...twinStep(coreSkeletonStories, coreSkeletonStories.SkeletonDataArrives, 1),
-  name: 'Data loading/Skeleton — Data arrives, шаг 1',
+  name: 'Data loading/Skeleton — Data arrives, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastSkeletonDataArrivesStep2 = {
   ...twinStep(coreSkeletonStories, coreSkeletonStories.SkeletonDataArrives, 2),
-  name: 'Data loading/Skeleton — Data arrives, шаг 2',
+  name: 'Data loading/Skeleton — Data arrives, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastSkeletonDataArrivesStep3 = {
   ...twinStep(coreSkeletonStories, coreSkeletonStories.SkeletonDataArrives, 3),
-  name: 'Data loading/Skeleton — Data arrives, шаг 3',
+  name: 'Data loading/Skeleton — Data arrives, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastSkeletonDataArrivesStep4 = {
   ...twinStep(coreSkeletonStories, coreSkeletonStories.SkeletonDataArrives, 4),
-  name: 'Data loading/Skeleton — Data arrives, шаг 4',
+  name: 'Data loading/Skeleton — Data arrives, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastSkeletonDataArrivesStep5 = {
   ...twinStep(coreSkeletonStories, coreSkeletonStories.SkeletonDataArrives, 5),
-  name: 'Data loading/Skeleton — Data arrives, шаг 5',
+  name: 'Data loading/Skeleton — Data arrives, step 5',
   tags: ['!test'],
 }
 
 export const HighContrastSkeletonDataArrivesStep6 = {
   ...twinStep(coreSkeletonStories, coreSkeletonStories.SkeletonDataArrives, 6),
-  name: 'Data loading/Skeleton — Data arrives, шаг 6',
+  name: 'Data loading/Skeleton — Data arrives, step 6',
   tags: ['!test'],
 }
 
 export const HighContrastSkeletonRowsCountStep1 = {
   ...twinStep(coreSkeletonStories, coreSkeletonStories.SkeletonRowsCount, 1),
-  name: 'Data loading/Skeleton — Rows count, шаг 1',
+  name: 'Data loading/Skeleton — Rows count, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastSkeletonRowsCountStep2 = {
   ...twinStep(coreSkeletonStories, coreSkeletonStories.SkeletonRowsCount, 2),
-  name: 'Data loading/Skeleton — Rows count, шаг 2',
+  name: 'Data loading/Skeleton — Rows count, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastSkeletonRowsCountStep3 = {
   ...twinStep(coreSkeletonStories, coreSkeletonStories.SkeletonRowsCount, 3),
-  name: 'Data loading/Skeleton — Rows count, шаг 3',
+  name: 'Data loading/Skeleton — Rows count, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastSkeletonRowsCountStep4 = {
   ...twinStep(coreSkeletonStories, coreSkeletonStories.SkeletonRowsCount, 4),
-  name: 'Data loading/Skeleton — Rows count, шаг 4',
+  name: 'Data loading/Skeleton — Rows count, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastSkeletonRowsCountStep5 = {
   ...twinStep(coreSkeletonStories, coreSkeletonStories.SkeletonRowsCount, 5),
-  name: 'Data loading/Skeleton — Rows count, шаг 5',
+  name: 'Data loading/Skeleton — Rows count, step 5',
   tags: ['!test'],
 }
 
 export const HighContrastSkeletonRowsCountStep6 = {
   ...twinStep(coreSkeletonStories, coreSkeletonStories.SkeletonRowsCount, 6),
-  name: 'Data loading/Skeleton — Rows count, шаг 6',
+  name: 'Data loading/Skeleton — Rows count, step 6',
   tags: ['!test'],
 }
 
 export const HighContrastSkeletonColumnsCountStep1 = {
   ...twinStep(coreSkeletonStories, coreSkeletonStories.SkeletonColumnsCount, 1),
-  name: 'Data loading/Skeleton — Columns count, шаг 1',
+  name: 'Data loading/Skeleton — Columns count, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastSkeletonColumnsCountStep2 = {
   ...twinStep(coreSkeletonStories, coreSkeletonStories.SkeletonColumnsCount, 2),
-  name: 'Data loading/Skeleton — Columns count, шаг 2',
+  name: 'Data loading/Skeleton — Columns count, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastSkeletonColumnsCountStep3 = {
   ...twinStep(coreSkeletonStories, coreSkeletonStories.SkeletonColumnsCount, 3),
-  name: 'Data loading/Skeleton — Columns count, шаг 3',
+  name: 'Data loading/Skeleton — Columns count, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastStubsNoColumnsStep1 = {
   ...twinStep(coreStubsStories, coreStubsStories.StubsNoColumns, 1),
-  name: 'Core/Stubs — No columns, шаг 1',
+  name: 'Core/Stubs — No columns, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastStubsNoColumnsStep2 = {
   ...twinStep(coreStubsStories, coreStubsStories.StubsNoColumns, 2),
-  name: 'Core/Stubs — No columns, шаг 2',
+  name: 'Core/Stubs — No columns, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastStubsColumnsHiddenStep1 = {
   ...twinStep(coreStubsStories, coreStubsStories.StubsColumnsHidden, 1),
-  name: 'Core/Stubs — All columns hidden, шаг 1',
+  name: 'Core/Stubs — All columns hidden, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastStubsColumnsHiddenStep2 = {
   ...twinStep(coreStubsStories, coreStubsStories.StubsColumnsHidden, 2),
-  name: 'Core/Stubs — All columns hidden, шаг 2',
+  name: 'Core/Stubs — All columns hidden, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastStubsNoDataStep1 = {
   ...twinStep(coreStubsStories, coreStubsStories.StubsNoData, 1),
-  name: 'Core/Stubs — No data, шаг 1',
+  name: 'Core/Stubs — No data, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastStubsNoDataStep2 = {
   ...twinStep(coreStubsStories, coreStubsStories.StubsNoData, 2),
-  name: 'Core/Stubs — No data, шаг 2',
+  name: 'Core/Stubs — No data, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastStubsCustomStep1 = {
   ...twinStep(coreStubsStories, coreStubsStories.StubsCustom, 1),
-  name: 'Core/Stubs — Custom stubs, шаг 1',
+  name: 'Core/Stubs — Custom stubs, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastStubsCustomStep2 = {
   ...twinStep(coreStubsStories, coreStubsStories.StubsCustom, 2),
-  name: 'Core/Stubs — Custom stubs, шаг 2',
+  name: 'Core/Stubs — Custom stubs, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastStubsPluginReasonStep1 = {
   ...twinStep(coreStubsStories, coreStubsStories.StubsPluginReason, 1),
-  name: 'Core/Stubs — Plugin reason, шаг 1',
+  name: 'Core/Stubs — Plugin reason, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastStubsPluginReasonStep2 = {
   ...twinStep(coreStubsStories, coreStubsStories.StubsPluginReason, 2),
-  name: 'Core/Stubs — Plugin reason, шаг 2',
+  name: 'Core/Stubs — Plugin reason, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastExportOwnButtonStep1 = {
   ...twinStep(exportStories, exportStories.ExportOwnButton, 1),
-  name: 'Export — Own button, шаг 1',
+  name: 'Export — Own button, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastExportOwnButtonStep2 = {
   ...twinStep(exportStories, exportStories.ExportOwnButton, 2),
-  name: 'Export — Own button, шаг 2',
+  name: 'Export — Own button, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastExportServerInitialLoadingStep1 = {
   ...twinStep(exportStories, exportStories.ExportServerInitialLoading, 1),
-  name: 'Export — Server, initial loading, шаг 1',
+  name: 'Export — Server, initial loading, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastExportServerInitialLoadingStep2 = {
   ...twinStep(exportStories, exportStories.ExportServerInitialLoading, 2),
-  name: 'Export — Server, initial loading, шаг 2',
+  name: 'Export — Server, initial loading, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringExternalFormStep1 = {
   ...twinStep(filteringStories, filteringStories.FilteringExternalForm, 1),
-  name: 'Filtering — External form, шаг 1',
+  name: 'Filtering — External form, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringExternalFormStep2 = {
   ...twinStep(filteringStories, filteringStories.FilteringExternalForm, 2),
-  name: 'Filtering — External form, шаг 2',
+  name: 'Filtering — External form, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringExternalFormStep3 = {
   ...twinStep(filteringStories, filteringStories.FilteringExternalForm, 3),
-  name: 'Filtering — External form, шаг 3',
+  name: 'Filtering — External form, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastSavedViewRestoreStep1 = {
   ...twinStep(filteringStories, filteringStories.SavedViewRestore, 1),
-  name: 'Filtering — Saved view, шаг 1',
+  name: 'Filtering — Saved view, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastSavedViewRestoreStep2 = {
   ...twinStep(filteringStories, filteringStories.SavedViewRestore, 2),
-  name: 'Filtering — Saved view, шаг 2',
+  name: 'Filtering — Saved view, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastSavedViewRestoreStep3 = {
   ...twinStep(filteringStories, filteringStories.SavedViewRestore, 3),
-  name: 'Filtering — Saved view, шаг 3',
+  name: 'Filtering — Saved view, step 3',
   tags: ['!test'],
 }
 
@@ -3029,7 +3029,7 @@ export const HighContrastPaginationOwnPagerStep1 = {
     panelsPaginationStories.PaginationOwnPager,
     1,
   ),
-  name: 'Panels/Pagination — Own pager, шаг 1',
+  name: 'Panels/Pagination — Own pager, step 1',
   tags: ['!test'],
 }
 
@@ -3039,7 +3039,7 @@ export const HighContrastPaginationOwnPagerStep2 = {
     panelsPaginationStories.PaginationOwnPager,
     2,
   ),
-  name: 'Panels/Pagination — Own pager, шаг 2',
+  name: 'Panels/Pagination — Own pager, step 2',
   tags: ['!test'],
 }
 
@@ -3049,7 +3049,7 @@ export const HighContrastPaginationOwnPagerStep3 = {
     panelsPaginationStories.PaginationOwnPager,
     3,
   ),
-  name: 'Panels/Pagination — Own pager, шаг 3',
+  name: 'Panels/Pagination — Own pager, step 3',
   tags: ['!test'],
 }
 
@@ -3059,7 +3059,7 @@ export const HighContrastPaginationServerStep1 = {
     panelsPaginationStories.PaginationServer,
     1,
   ),
-  name: 'Panels/Pagination — Server, шаг 1',
+  name: 'Panels/Pagination — Server, step 1',
   tags: ['!test'],
 }
 
@@ -3069,7 +3069,7 @@ export const HighContrastPaginationServerStep2 = {
     panelsPaginationStories.PaginationServer,
     2,
   ),
-  name: 'Panels/Pagination — Server, шаг 2',
+  name: 'Panels/Pagination — Server, step 2',
   tags: ['!test'],
 }
 
@@ -3079,25 +3079,25 @@ export const HighContrastPaginationServerStep3 = {
     panelsPaginationStories.PaginationServer,
     3,
   ),
-  name: 'Panels/Pagination — Server, шаг 3',
+  name: 'Panels/Pagination — Server, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastSelectedCountStep1 = {
   ...twinStep(panelsStatusBarStories, panelsStatusBarStories.SelectedCount, 1),
-  name: 'Panels/Status bar — Selected count, шаг 1',
+  name: 'Panels/Status bar — Selected count, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastSelectedCountStep2 = {
   ...twinStep(panelsStatusBarStories, panelsStatusBarStories.SelectedCount, 2),
-  name: 'Panels/Status bar — Selected count, шаг 2',
+  name: 'Panels/Status bar — Selected count, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastSelectedCountStep3 = {
   ...twinStep(panelsStatusBarStories, panelsStatusBarStories.SelectedCount, 3),
-  name: 'Panels/Status bar — Selected count, шаг 3',
+  name: 'Panels/Status bar — Selected count, step 3',
   tags: ['!test'],
 }
 
@@ -3107,7 +3107,7 @@ export const HighContrastPanelsNarrowStatusBarStep1 = {
     panelsStatusBarStories.PanelsNarrowStatusBar,
     1,
   ),
-  name: 'Panels/Status bar — Narrow, шаг 1',
+  name: 'Panels/Status bar — Narrow, step 1',
   tags: ['!test'],
 }
 
@@ -3117,7 +3117,7 @@ export const HighContrastPanelsNarrowStatusBarStep2 = {
     panelsStatusBarStories.PanelsNarrowStatusBar,
     2,
   ),
-  name: 'Panels/Status bar — Narrow, шаг 2',
+  name: 'Panels/Status bar — Narrow, step 2',
   tags: ['!test'],
 }
 
@@ -3127,7 +3127,7 @@ export const HighContrastPanelsNarrowStatusBarStep3 = {
     panelsStatusBarStories.PanelsNarrowStatusBar,
     3,
   ),
-  name: 'Panels/Status bar — Narrow, шаг 3',
+  name: 'Panels/Status bar — Narrow, step 3',
   tags: ['!test'],
 }
 
@@ -3137,7 +3137,7 @@ export const HighContrastToolbarInitialLoadingStep1 = {
     panelsToolbarStories.ToolbarInitialLoading,
     1,
   ),
-  name: 'Panels/Toolbar — Initial loading, шаг 1',
+  name: 'Panels/Toolbar — Initial loading, step 1',
   tags: ['!test'],
 }
 
@@ -3147,7 +3147,7 @@ export const HighContrastToolbarInitialLoadingStep2 = {
     panelsToolbarStories.ToolbarInitialLoading,
     2,
   ),
-  name: 'Panels/Toolbar — Initial loading, шаг 2',
+  name: 'Panels/Toolbar — Initial loading, step 2',
   tags: ['!test'],
 }
 
@@ -3157,7 +3157,7 @@ export const HighContrastToolbarSearchBeforeDataServerStep1 = {
     panelsToolbarStories.ToolbarSearchBeforeDataServer,
     1,
   ),
-  name: 'Panels/Toolbar — Search before data (server), шаг 1',
+  name: 'Panels/Toolbar — Search before data (server), step 1',
   tags: ['!test'],
 }
 
@@ -3167,7 +3167,7 @@ export const HighContrastToolbarSearchBeforeDataServerStep2 = {
     panelsToolbarStories.ToolbarSearchBeforeDataServer,
     2,
   ),
-  name: 'Panels/Toolbar — Search before data (server), шаг 2',
+  name: 'Panels/Toolbar — Search before data (server), step 2',
   tags: ['!test'],
 }
 
@@ -3177,7 +3177,7 @@ export const HighContrastToolbarSearchBeforeDataServerStep3 = {
     panelsToolbarStories.ToolbarSearchBeforeDataServer,
     3,
   ),
-  name: 'Panels/Toolbar — Search before data (server), шаг 3',
+  name: 'Panels/Toolbar — Search before data (server), step 3',
   tags: ['!test'],
 }
 
@@ -3187,7 +3187,7 @@ export const HighContrastToolbarColumnsArriveStep1 = {
     panelsToolbarStories.ToolbarColumnsArrive,
     1,
   ),
-  name: 'Panels/Toolbar — Columns arrive, шаг 1',
+  name: 'Panels/Toolbar — Columns arrive, step 1',
   tags: ['!test'],
 }
 
@@ -3197,7 +3197,7 @@ export const HighContrastToolbarColumnsArriveStep2 = {
     panelsToolbarStories.ToolbarColumnsArrive,
     2,
   ),
-  name: 'Panels/Toolbar — Columns arrive, шаг 2',
+  name: 'Panels/Toolbar — Columns arrive, step 2',
   tags: ['!test'],
 }
 
@@ -3207,193 +3207,193 @@ export const HighContrastToolbarColumnsArriveStep3 = {
     panelsToolbarStories.ToolbarColumnsArrive,
     3,
   ),
-  name: 'Panels/Toolbar — Columns arrive, шаг 3',
+  name: 'Panels/Toolbar — Columns arrive, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiReactiveArgsStep1 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiReactiveArgs, 1),
-  name: 'Plugin API — Reactive arguments, шаг 1',
+  name: 'Plugin API — Reactive arguments, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiReactiveArgsStep2 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiReactiveArgs, 2),
-  name: 'Plugin API — Reactive arguments, шаг 2',
+  name: 'Plugin API — Reactive arguments, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiReactiveArgsStep3 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiReactiveArgs, 3),
-  name: 'Plugin API — Reactive arguments, шаг 3',
+  name: 'Plugin API — Reactive arguments, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiReactiveArgsStep4 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiReactiveArgs, 4),
-  name: 'Plugin API — Reactive arguments, шаг 4',
+  name: 'Plugin API — Reactive arguments, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastSessionCallbacksStep1 = {
   ...twinStep(pluginApiStories, pluginApiStories.SessionCallbacks, 1),
-  name: 'Plugin API — Drag callbacks, шаг 1',
+  name: 'Plugin API — Drag callbacks, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastSessionCallbacksStep2 = {
   ...twinStep(pluginApiStories, pluginApiStories.SessionCallbacks, 2),
-  name: 'Plugin API — Drag callbacks, шаг 2',
+  name: 'Plugin API — Drag callbacks, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastSessionCallbacksStep3 = {
   ...twinStep(pluginApiStories, pluginApiStories.SessionCallbacks, 3),
-  name: 'Plugin API — Drag callbacks, шаг 3',
+  name: 'Plugin API — Drag callbacks, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiDebugActionsStep1 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiDebugActions, 1),
-  name: 'Plugin API — Debug actions, шаг 1',
+  name: 'Plugin API — Debug actions, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiDebugActionsStep2 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiDebugActions, 2),
-  name: 'Plugin API — Debug actions, шаг 2',
+  name: 'Plugin API — Debug actions, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiDebugActionsStep3 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiDebugActions, 3),
-  name: 'Plugin API — Debug actions, шаг 3',
+  name: 'Plugin API — Debug actions, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiReportActionStep1 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiReportAction, 1),
-  name: 'Plugin API — Report action, шаг 1',
+  name: 'Plugin API — Report action, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiReportActionStep2 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiReportAction, 2),
-  name: 'Plugin API — Report action, шаг 2',
+  name: 'Plugin API — Report action, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastOutcomeFlashFromAppStep1 = {
   ...twinStep(pluginApiStories, pluginApiStories.OutcomeFlashFromApp, 1),
-  name: 'Plugin API — Outcome flash, шаг 1',
+  name: 'Plugin API — Outcome flash, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastOutcomeFlashFromAppStep2 = {
   ...twinStep(pluginApiStories, pluginApiStories.OutcomeFlashFromApp, 2),
-  name: 'Plugin API — Outcome flash, шаг 2',
+  name: 'Plugin API — Outcome flash, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastOutcomeFlashFromAppStep3 = {
   ...twinStep(pluginApiStories, pluginApiStories.OutcomeFlashFromApp, 3),
-  name: 'Plugin API — Outcome flash, шаг 3',
+  name: 'Plugin API — Outcome flash, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiRevokeEditingStep1 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiRevokeEditing, 1),
-  name: 'Plugin API — Revoke editing, шаг 1',
+  name: 'Plugin API — Revoke editing, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiRevokeEditingStep2 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiRevokeEditing, 2),
-  name: 'Plugin API — Revoke editing, шаг 2',
+  name: 'Plugin API — Revoke editing, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiRevokeEditingStep3 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiRevokeEditing, 3),
-  name: 'Plugin API — Revoke editing, шаг 3',
+  name: 'Plugin API — Revoke editing, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiResizeCallbacksStep1 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiResizeCallbacks, 1),
-  name: 'Plugin API — Resize callbacks, шаг 1',
+  name: 'Plugin API — Resize callbacks, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiResizeCallbacksStep2 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiResizeCallbacks, 2),
-  name: 'Plugin API — Resize callbacks, шаг 2',
+  name: 'Plugin API — Resize callbacks, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiResizeCallbacksStep3 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiResizeCallbacks, 3),
-  name: 'Plugin API — Resize callbacks, шаг 3',
+  name: 'Plugin API — Resize callbacks, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiCellButtonStep1 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiCellButton, 1),
-  name: 'Plugin API — Cell button, шаг 1',
+  name: 'Plugin API — Cell button, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiCellButtonStep2 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiCellButton, 2),
-  name: 'Plugin API — Cell button, шаг 2',
+  name: 'Plugin API — Cell button, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiCellButtonStep3 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiCellButton, 3),
-  name: 'Plugin API — Cell button, шаг 3',
+  name: 'Plugin API — Cell button, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiControlledStateStep1 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiControlledState, 1),
-  name: 'Plugin API — Controlled state, шаг 1',
+  name: 'Plugin API — Controlled state, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiControlledStateStep2 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiControlledState, 2),
-  name: 'Plugin API — Controlled state, шаг 2',
+  name: 'Plugin API — Controlled state, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiControlledStateStep3 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiControlledState, 3),
-  name: 'Plugin API — Controlled state, шаг 3',
+  name: 'Plugin API — Controlled state, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiServiceColumnStep1 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiServiceColumn, 1),
-  name: 'Plugin API — Service column, шаг 1',
+  name: 'Plugin API — Service column, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiServiceColumnStep2 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiServiceColumn, 2),
-  name: 'Plugin API — Service column, шаг 2',
+  name: 'Plugin API — Service column, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiPluginCrashStep1 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiPluginCrash, 1),
-  name: 'Plugin API — Plugin crash, шаг 1',
+  name: 'Plugin API — Plugin crash, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiPluginCrashStep2 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiPluginCrash, 2),
-  name: 'Plugin API — Plugin crash, шаг 2',
+  name: 'Plugin API — Plugin crash, step 2',
   tags: ['!test'],
 }
 
@@ -3403,7 +3403,7 @@ export const HighContrastGroupingByApplicationStep1 = {
     rowsGroupingStories.GroupingByApplication,
     1,
   ),
-  name: 'Rows/Grouping — By application, шаг 1',
+  name: 'Rows/Grouping — By application, step 1',
   tags: ['!test'],
 }
 
@@ -3413,7 +3413,7 @@ export const HighContrastGroupingByApplicationStep2 = {
     rowsGroupingStories.GroupingByApplication,
     2,
   ),
-  name: 'Rows/Grouping — By application, шаг 2',
+  name: 'Rows/Grouping — By application, step 2',
   tags: ['!test'],
 }
 
@@ -3423,7 +3423,7 @@ export const HighContrastGroupingByApplicationStep3 = {
     rowsGroupingStories.GroupingByApplication,
     3,
   ),
-  name: 'Rows/Grouping — By application, шаг 3',
+  name: 'Rows/Grouping — By application, step 3',
   tags: ['!test'],
 }
 
@@ -3433,7 +3433,7 @@ export const HighContrastSelectionByRowClickStep1 = {
     rowsSelectionStories.SelectionByRowClick,
     1,
   ),
-  name: 'Rows/Selection — By row click, шаг 1',
+  name: 'Rows/Selection — By row click, step 1',
   tags: ['!test'],
 }
 
@@ -3443,7 +3443,7 @@ export const HighContrastSelectionByRowClickStep2 = {
     rowsSelectionStories.SelectionByRowClick,
     2,
   ),
-  name: 'Rows/Selection — By row click, шаг 2',
+  name: 'Rows/Selection — By row click, step 2',
   tags: ['!test'],
 }
 
@@ -3453,7 +3453,7 @@ export const HighContrastSelectionByRowClickStep3 = {
     rowsSelectionStories.SelectionByRowClick,
     3,
   ),
-  name: 'Rows/Selection — By row click, шаг 3',
+  name: 'Rows/Selection — By row click, step 3',
   tags: ['!test'],
 }
 
@@ -3463,7 +3463,7 @@ export const HighContrastRowsSelectionSelectAllFilteredStep1 = {
     rowsSelectionStories.RowsSelectionSelectAllFiltered,
     1,
   ),
-  name: 'Rows/Selection — Select all found rows, шаг 1',
+  name: 'Rows/Selection — Select all found rows, step 1',
   tags: ['!test'],
 }
 
@@ -3473,7 +3473,7 @@ export const HighContrastRowsSelectionSelectAllFilteredStep2 = {
     rowsSelectionStories.RowsSelectionSelectAllFiltered,
     2,
   ),
-  name: 'Rows/Selection — Select all found rows, шаг 2',
+  name: 'Rows/Selection — Select all found rows, step 2',
   tags: ['!test'],
 }
 
@@ -3483,7 +3483,7 @@ export const HighContrastRowsSelectionSelectAllFilteredStep3 = {
     rowsSelectionStories.RowsSelectionSelectAllFiltered,
     3,
   ),
-  name: 'Rows/Selection — Select all found rows, шаг 3',
+  name: 'Rows/Selection — Select all found rows, step 3',
   tags: ['!test'],
 }
 
@@ -3493,7 +3493,7 @@ export const HighContrastRowsSelectionSelectAllFilteredStep4 = {
     rowsSelectionStories.RowsSelectionSelectAllFiltered,
     4,
   ),
-  name: 'Rows/Selection — Select all found rows, шаг 4',
+  name: 'Rows/Selection — Select all found rows, step 4',
   tags: ['!test'],
 }
 
@@ -3503,7 +3503,7 @@ export const HighContrastRowsSelectionSelectAllFilteredStep5 = {
     rowsSelectionStories.RowsSelectionSelectAllFiltered,
     5,
   ),
-  name: 'Rows/Selection — Select all found rows, шаг 5',
+  name: 'Rows/Selection — Select all found rows, step 5',
   tags: ['!test'],
 }
 
@@ -3513,7 +3513,7 @@ export const HighContrastRowsSelectionSelectAllCurrentPageStep1 = {
     rowsSelectionStories.RowsSelectionSelectAllCurrentPage,
     1,
   ),
-  name: 'Rows/Selection — Select all on the page, шаг 1',
+  name: 'Rows/Selection — Select all on the page, step 1',
   tags: ['!test'],
 }
 
@@ -3523,7 +3523,7 @@ export const HighContrastRowsSelectionSelectAllCurrentPageStep2 = {
     rowsSelectionStories.RowsSelectionSelectAllCurrentPage,
     2,
   ),
-  name: 'Rows/Selection — Select all on the page, шаг 2',
+  name: 'Rows/Selection — Select all on the page, step 2',
   tags: ['!test'],
 }
 
@@ -3533,73 +3533,73 @@ export const HighContrastRowsSelectionSelectAllCurrentPageStep3 = {
     rowsSelectionStories.RowsSelectionSelectAllCurrentPage,
     3,
   ),
-  name: 'Rows/Selection — Select all on the page, шаг 3',
+  name: 'Rows/Selection — Select all on the page, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastTreeDataReadOnlyStep1 = {
   ...twinStep(rowsTreeDataStories, rowsTreeDataStories.TreeDataReadOnly, 1),
-  name: 'Rows/Tree data — Read only, шаг 1',
+  name: 'Rows/Tree data — Read only, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastTreeDataReadOnlyStep2 = {
   ...twinStep(rowsTreeDataStories, rowsTreeDataStories.TreeDataReadOnly, 2),
-  name: 'Rows/Tree data — Read only, шаг 2',
+  name: 'Rows/Tree data — Read only, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastTreeDataReadOnlyStep3 = {
   ...twinStep(rowsTreeDataStories, rowsTreeDataStories.TreeDataReadOnly, 3),
-  name: 'Rows/Tree data — Read only, шаг 3',
+  name: 'Rows/Tree data — Read only, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastTreeDataWithToggleStep1 = {
   ...twinStep(rowsTreeDataStories, rowsTreeDataStories.TreeDataWithToggle, 1),
-  name: 'Rows/Tree data — With toggle, шаг 1',
+  name: 'Rows/Tree data — With toggle, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastTreeDataWithToggleStep2 = {
   ...twinStep(rowsTreeDataStories, rowsTreeDataStories.TreeDataWithToggle, 2),
-  name: 'Rows/Tree data — With toggle, шаг 2',
+  name: 'Rows/Tree data — With toggle, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastTreeDataWithToggleStep3 = {
   ...twinStep(rowsTreeDataStories, rowsTreeDataStories.TreeDataWithToggle, 3),
-  name: 'Rows/Tree data — With toggle, шаг 3',
+  name: 'Rows/Tree data — With toggle, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastRowDraggingMoveStep1 = {
   ...twinStep(rowsDraggingStories, rowsDraggingStories.RowDraggingMove, 1),
-  name: 'Rows/Dragging — Move, шаг 1',
+  name: 'Rows/Dragging — Move, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastRowDraggingMoveStep2 = {
   ...twinStep(rowsDraggingStories, rowsDraggingStories.RowDraggingMove, 2),
-  name: 'Rows/Dragging — Move, шаг 2',
+  name: 'Rows/Dragging — Move, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastRowDraggingMoveStep3 = {
   ...twinStep(rowsDraggingStories, rowsDraggingStories.RowDraggingMove, 3),
-  name: 'Rows/Dragging — Move, шаг 3',
+  name: 'Rows/Dragging — Move, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastRowDraggingMoveStep4 = {
   ...twinStep(rowsDraggingStories, rowsDraggingStories.RowDraggingMove, 4),
-  name: 'Rows/Dragging — Move, шаг 4',
+  name: 'Rows/Dragging — Move, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastRowDraggingMoveStep5 = {
   ...twinStep(rowsDraggingStories, rowsDraggingStories.RowDraggingMove, 5),
-  name: 'Rows/Dragging — Move, шаг 5',
+  name: 'Rows/Dragging — Move, step 5',
   tags: ['!test'],
 }
 
@@ -3609,7 +3609,7 @@ export const HighContrastRowDraggingCollapsedGroupsStep1 = {
     rowsDraggingStories.RowDraggingCollapsedGroups,
     1,
   ),
-  name: 'Rows/Dragging — Collapsed groups, шаг 1',
+  name: 'Rows/Dragging — Collapsed groups, step 1',
   tags: ['!test'],
 }
 
@@ -3619,7 +3619,7 @@ export const HighContrastRowDraggingCollapsedGroupsStep2 = {
     rowsDraggingStories.RowDraggingCollapsedGroups,
     2,
   ),
-  name: 'Rows/Dragging — Collapsed groups, шаг 2',
+  name: 'Rows/Dragging — Collapsed groups, step 2',
   tags: ['!test'],
 }
 
@@ -3629,7 +3629,7 @@ export const HighContrastRowDraggingCollapsedGroupsStep3 = {
     rowsDraggingStories.RowDraggingCollapsedGroups,
     3,
   ),
-  name: 'Rows/Dragging — Collapsed groups, шаг 3',
+  name: 'Rows/Dragging — Collapsed groups, step 3',
   tags: ['!test'],
 }
 
@@ -3639,7 +3639,7 @@ export const HighContrastColumnDraggingMoveStep1 = {
     columnsDraggingStories.ColumnDraggingMove,
     1,
   ),
-  name: 'Columns/Dragging — Move, шаг 1',
+  name: 'Columns/Dragging — Move, step 1',
   tags: ['!test'],
 }
 
@@ -3649,7 +3649,7 @@ export const HighContrastColumnDraggingMoveStep2 = {
     columnsDraggingStories.ColumnDraggingMove,
     2,
   ),
-  name: 'Columns/Dragging — Move, шаг 2',
+  name: 'Columns/Dragging — Move, step 2',
   tags: ['!test'],
 }
 
@@ -3659,7 +3659,7 @@ export const HighContrastColumnDraggingMoveStep3 = {
     columnsDraggingStories.ColumnDraggingMove,
     3,
   ),
-  name: 'Columns/Dragging — Move, шаг 3',
+  name: 'Columns/Dragging — Move, step 3',
   tags: ['!test'],
 }
 
@@ -3669,7 +3669,7 @@ export const HighContrastColumnDraggingServerStep1 = {
     columnsDraggingStories.ColumnDraggingServer,
     1,
   ),
-  name: 'Columns/Dragging — Dragging — Server, шаг 1',
+  name: 'Columns/Dragging — Dragging — Server, step 1',
   tags: ['!test'],
 }
 
@@ -3679,7 +3679,7 @@ export const HighContrastColumnDraggingServerStep2 = {
     columnsDraggingStories.ColumnDraggingServer,
     2,
   ),
-  name: 'Columns/Dragging — Dragging — Server, шаг 2',
+  name: 'Columns/Dragging — Dragging — Server, step 2',
   tags: ['!test'],
 }
 
@@ -3689,7 +3689,7 @@ export const HighContrastColumnDraggingServerStep3 = {
     columnsDraggingStories.ColumnDraggingServer,
     3,
   ),
-  name: 'Columns/Dragging — Dragging — Server, шаг 3',
+  name: 'Columns/Dragging — Dragging — Server, step 3',
   tags: ['!test'],
 }
 
@@ -3699,7 +3699,7 @@ export const HighContrastColumnDraggingServerStep4 = {
     columnsDraggingStories.ColumnDraggingServer,
     4,
   ),
-  name: 'Columns/Dragging — Dragging — Server, шаг 4',
+  name: 'Columns/Dragging — Dragging — Server, step 4',
   tags: ['!test'],
 }
 
@@ -3709,43 +3709,43 @@ export const HighContrastColumnDraggingServerStep5 = {
     columnsDraggingStories.ColumnDraggingServer,
     5,
   ),
-  name: 'Columns/Dragging — Dragging — Server, шаг 5',
+  name: 'Columns/Dragging — Dragging — Server, step 5',
   tags: ['!test'],
 }
 
 export const HighContrastRowDraggingLazyTreeStep1 = {
   ...twinStep(rowsDraggingStories, rowsDraggingStories.RowDraggingLazyTree, 1),
-  name: 'Rows/Dragging — Lazy tree (server), шаг 1',
+  name: 'Rows/Dragging — Lazy tree (server), step 1',
   tags: ['!test'],
 }
 
 export const HighContrastRowDraggingLazyTreeStep2 = {
   ...twinStep(rowsDraggingStories, rowsDraggingStories.RowDraggingLazyTree, 2),
-  name: 'Rows/Dragging — Lazy tree (server), шаг 2',
+  name: 'Rows/Dragging — Lazy tree (server), step 2',
   tags: ['!test'],
 }
 
 export const HighContrastRowDraggingLazyTreeStep3 = {
   ...twinStep(rowsDraggingStories, rowsDraggingStories.RowDraggingLazyTree, 3),
-  name: 'Rows/Dragging — Lazy tree (server), шаг 3',
+  name: 'Rows/Dragging — Lazy tree (server), step 3',
   tags: ['!test'],
 }
 
 export const HighContrastRowDraggingLazyTreeStep4 = {
   ...twinStep(rowsDraggingStories, rowsDraggingStories.RowDraggingLazyTree, 4),
-  name: 'Rows/Dragging — Lazy tree (server), шаг 4',
+  name: 'Rows/Dragging — Lazy tree (server), step 4',
   tags: ['!test'],
 }
 
 export const HighContrastRowDraggingLazyTreeStep5 = {
   ...twinStep(rowsDraggingStories, rowsDraggingStories.RowDraggingLazyTree, 5),
-  name: 'Rows/Dragging — Lazy tree (server), шаг 5',
+  name: 'Rows/Dragging — Lazy tree (server), step 5',
   tags: ['!test'],
 }
 
 export const HighContrastRowDraggingLazyTreeStep6 = {
   ...twinStep(rowsDraggingStories, rowsDraggingStories.RowDraggingLazyTree, 6),
-  name: 'Rows/Dragging — Lazy tree (server), шаг 6',
+  name: 'Rows/Dragging — Lazy tree (server), step 6',
   tags: ['!test'],
 }
 
@@ -3755,7 +3755,7 @@ export const HighContrastLocalizationFromJsonStep1 = {
     customizationLocalizationStories.LocalizationFromJson,
     1,
   ),
-  name: 'Customization/Localization — From JSON, шаг 1',
+  name: 'Customization/Localization — From JSON, step 1',
   tags: ['!test'],
 }
 
@@ -3765,7 +3765,7 @@ export const HighContrastLocalizationFromJsonStep2 = {
     customizationLocalizationStories.LocalizationFromJson,
     2,
   ),
-  name: 'Customization/Localization — From JSON, шаг 2',
+  name: 'Customization/Localization — From JSON, step 2',
   tags: ['!test'],
 }
 
@@ -3775,7 +3775,7 @@ export const HighContrastLocalizationFromJsonStep3 = {
     customizationLocalizationStories.LocalizationFromJson,
     3,
   ),
-  name: 'Customization/Localization — From JSON, шаг 3',
+  name: 'Customization/Localization — From JSON, step 3',
   tags: ['!test'],
 }
 
@@ -3785,7 +3785,7 @@ export const HighContrastLocalizationFromJsonStep4 = {
     customizationLocalizationStories.LocalizationFromJson,
     4,
   ),
-  name: 'Customization/Localization — From JSON, шаг 4',
+  name: 'Customization/Localization — From JSON, step 4',
   tags: ['!test'],
 }
 
@@ -3795,7 +3795,7 @@ export const HighContrastLocalizationSwitchStep1 = {
     customizationLocalizationStories.LocalizationSwitch,
     1,
   ),
-  name: 'Customization/Localization — Switch language, шаг 1',
+  name: 'Customization/Localization — Switch language, step 1',
   tags: ['!test'],
 }
 
@@ -3805,7 +3805,7 @@ export const HighContrastLocalizationSwitchStep2 = {
     customizationLocalizationStories.LocalizationSwitch,
     2,
   ),
-  name: 'Customization/Localization — Switch language, шаг 2',
+  name: 'Customization/Localization — Switch language, step 2',
   tags: ['!test'],
 }
 
@@ -3815,7 +3815,7 @@ export const HighContrastLocalizationSwitchStep3 = {
     customizationLocalizationStories.LocalizationSwitch,
     3,
   ),
-  name: 'Customization/Localization — Switch language, шаг 3',
+  name: 'Customization/Localization — Switch language, step 3',
   tags: ['!test'],
 }
 
@@ -3825,7 +3825,7 @@ export const HighContrastLocalizationOverridesStep1 = {
     customizationLocalizationStories.LocalizationOverrides,
     1,
   ),
-  name: 'Customization/Localization — Own wording, шаг 1',
+  name: 'Customization/Localization — Own wording, step 1',
   tags: ['!test'],
 }
 
@@ -3835,7 +3835,7 @@ export const HighContrastLocalizationOverridesStep2 = {
     customizationLocalizationStories.LocalizationOverrides,
     2,
   ),
-  name: 'Customization/Localization — Own wording, шаг 2',
+  name: 'Customization/Localization — Own wording, step 2',
   tags: ['!test'],
 }
 
@@ -3845,7 +3845,7 @@ export const HighContrastLocalizationFunctionStep1 = {
     customizationLocalizationStories.LocalizationFunction,
     1,
   ),
-  name: 'Customization/Localization — Function label, шаг 1',
+  name: 'Customization/Localization — Function label, step 1',
   tags: ['!test'],
 }
 
@@ -3855,7 +3855,7 @@ export const HighContrastLocalizationFunctionStep2 = {
     customizationLocalizationStories.LocalizationFunction,
     2,
   ),
-  name: 'Customization/Localization — Function label, шаг 2',
+  name: 'Customization/Localization — Function label, step 2',
   tags: ['!test'],
 }
 
@@ -3865,7 +3865,7 @@ export const HighContrastLocalizationFunctionStep3 = {
     customizationLocalizationStories.LocalizationFunction,
     3,
   ),
-  name: 'Customization/Localization — Function label, шаг 3',
+  name: 'Customization/Localization — Function label, step 3',
   tags: ['!test'],
 }
 
@@ -3875,7 +3875,7 @@ export const HighContrastColumnVisibilityToggleAllStep1 = {
     columnsVisibilityStories.ColumnVisibilityToggleAll,
     1,
   ),
-  name: 'Columns/Visibility — Toggle all, шаг 1',
+  name: 'Columns/Visibility — Toggle all, step 1',
   tags: ['!test'],
 }
 
@@ -3885,7 +3885,7 @@ export const HighContrastColumnVisibilityToggleAllStep2 = {
     columnsVisibilityStories.ColumnVisibilityToggleAll,
     2,
   ),
-  name: 'Columns/Visibility — Toggle all, шаг 2',
+  name: 'Columns/Visibility — Toggle all, step 2',
   tags: ['!test'],
 }
 
@@ -3895,7 +3895,7 @@ export const HighContrastColumnVisibilityToggleAllStep3 = {
     columnsVisibilityStories.ColumnVisibilityToggleAll,
     3,
   ),
-  name: 'Columns/Visibility — Toggle all, шаг 3',
+  name: 'Columns/Visibility — Toggle all, step 3',
   tags: ['!test'],
 }
 
@@ -3905,7 +3905,7 @@ export const HighContrastColumnVisibilityToggleAllStep4 = {
     columnsVisibilityStories.ColumnVisibilityToggleAll,
     4,
   ),
-  name: 'Columns/Visibility — Toggle all, шаг 4',
+  name: 'Columns/Visibility — Toggle all, step 4',
   tags: ['!test'],
 }
 
@@ -3915,7 +3915,7 @@ export const HighContrastColumnVisibilityToggleAllStep5 = {
     columnsVisibilityStories.ColumnVisibilityToggleAll,
     5,
   ),
-  name: 'Columns/Visibility — Toggle all, шаг 5',
+  name: 'Columns/Visibility — Toggle all, step 5',
   tags: ['!test'],
 }
 
@@ -3925,7 +3925,7 @@ export const HighContrastColumnVisibilityNestedTreeStep1 = {
     columnsVisibilityStories.ColumnVisibilityNestedTree,
     1,
   ),
-  name: 'Columns/Visibility — Nested headers, шаг 1',
+  name: 'Columns/Visibility — Nested headers, step 1',
   tags: ['!test'],
 }
 
@@ -3935,7 +3935,7 @@ export const HighContrastColumnVisibilityNestedTreeStep2 = {
     columnsVisibilityStories.ColumnVisibilityNestedTree,
     2,
   ),
-  name: 'Columns/Visibility — Nested headers, шаг 2',
+  name: 'Columns/Visibility — Nested headers, step 2',
   tags: ['!test'],
 }
 
@@ -3945,7 +3945,7 @@ export const HighContrastColumnVisibilityNestedTreeStep3 = {
     columnsVisibilityStories.ColumnVisibilityNestedTree,
     3,
   ),
-  name: 'Columns/Visibility — Nested headers, шаг 3',
+  name: 'Columns/Visibility — Nested headers, step 3',
   tags: ['!test'],
 }
 
@@ -3955,49 +3955,49 @@ export const HighContrastColumnVisibilityNestedTreeStep4 = {
     columnsVisibilityStories.ColumnVisibilityNestedTree,
     4,
   ),
-  name: 'Columns/Visibility — Nested headers, шаг 4',
+  name: 'Columns/Visibility — Nested headers, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastLoadErrorRefreshStep1 = {
   ...twinStep(coreLoadErrorStories, coreLoadErrorStories.LoadErrorRefresh, 1),
-  name: 'Data loading/Load error — Refresh error, шаг 1',
+  name: 'Data loading/Load error — Refresh error, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastLoadErrorRefreshStep2 = {
   ...twinStep(coreLoadErrorStories, coreLoadErrorStories.LoadErrorRefresh, 2),
-  name: 'Data loading/Load error — Refresh error, шаг 2',
+  name: 'Data loading/Load error — Refresh error, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastLoadErrorRefreshStep3 = {
   ...twinStep(coreLoadErrorStories, coreLoadErrorStories.LoadErrorRefresh, 3),
-  name: 'Data loading/Load error — Refresh error, шаг 3',
+  name: 'Data loading/Load error — Refresh error, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastLoadErrorRefreshStep4 = {
   ...twinStep(coreLoadErrorStories, coreLoadErrorStories.LoadErrorRefresh, 4),
-  name: 'Data loading/Load error — Refresh error, шаг 4',
+  name: 'Data loading/Load error — Refresh error, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastLoadErrorFirstLoadStep1 = {
   ...twinStep(coreLoadErrorStories, coreLoadErrorStories.LoadErrorFirstLoad, 1),
-  name: 'Data loading/Load error — First load error, шаг 1',
+  name: 'Data loading/Load error — First load error, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastLoadErrorFirstLoadStep2 = {
   ...twinStep(coreLoadErrorStories, coreLoadErrorStories.LoadErrorFirstLoad, 2),
-  name: 'Data loading/Load error — First load error, шаг 2',
+  name: 'Data loading/Load error — First load error, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastLoadErrorFirstLoadStep3 = {
   ...twinStep(coreLoadErrorStories, coreLoadErrorStories.LoadErrorFirstLoad, 3),
-  name: 'Data loading/Load error — First load error, шаг 3',
+  name: 'Data loading/Load error — First load error, step 3',
   tags: ['!test'],
 }
 
@@ -4007,7 +4007,7 @@ export const HighContrastServerActionsRefusedStep1 = {
     dataLoadingServerActionsStories.ServerActionsRefused,
     1,
   ),
-  name: 'Data loading/Server actions — Refused by the server, шаг 1',
+  name: 'Data loading/Server actions — Refused by the server, step 1',
   tags: ['!test'],
 }
 
@@ -4017,7 +4017,7 @@ export const HighContrastServerActionsRefusedStep2 = {
     dataLoadingServerActionsStories.ServerActionsRefused,
     2,
   ),
-  name: 'Data loading/Server actions — Refused by the server, шаг 2',
+  name: 'Data loading/Server actions — Refused by the server, step 2',
   tags: ['!test'],
 }
 
@@ -4027,7 +4027,7 @@ export const HighContrastServerActionsRefusedStep3 = {
     dataLoadingServerActionsStories.ServerActionsRefused,
     3,
   ),
-  name: 'Data loading/Server actions — Refused by the server, шаг 3',
+  name: 'Data loading/Server actions — Refused by the server, step 3',
   tags: ['!test'],
 }
 
@@ -4037,7 +4037,7 @@ export const HighContrastServerActionsRefusedStep4 = {
     dataLoadingServerActionsStories.ServerActionsRefused,
     4,
   ),
-  name: 'Data loading/Server actions — Refused by the server, шаг 4',
+  name: 'Data loading/Server actions — Refused by the server, step 4',
   tags: ['!test'],
 }
 
@@ -4047,7 +4047,7 @@ export const HighContrastServerActionsRefusedStep5 = {
     dataLoadingServerActionsStories.ServerActionsRefused,
     5,
   ),
-  name: 'Data loading/Server actions — Refused by the server, шаг 5',
+  name: 'Data loading/Server actions — Refused by the server, step 5',
   tags: ['!test'],
 }
 
@@ -4057,7 +4057,7 @@ export const HighContrastServerActionsRefusedStep6 = {
     dataLoadingServerActionsStories.ServerActionsRefused,
     6,
   ),
-  name: 'Data loading/Server actions — Refused by the server, шаг 6',
+  name: 'Data loading/Server actions — Refused by the server, step 6',
   tags: ['!test'],
 }
 
@@ -4067,7 +4067,7 @@ export const HighContrastServerActionsRefusedStep7 = {
     dataLoadingServerActionsStories.ServerActionsRefused,
     7,
   ),
-  name: 'Data loading/Server actions — Refused by the server, шаг 7',
+  name: 'Data loading/Server actions — Refused by the server, step 7',
   tags: ['!test'],
 }
 
@@ -4077,7 +4077,7 @@ export const HighContrastServerActionsRefusedStep8 = {
     dataLoadingServerActionsStories.ServerActionsRefused,
     8,
   ),
-  name: 'Data loading/Server actions — Refused by the server, шаг 8',
+  name: 'Data loading/Server actions — Refused by the server, step 8',
   tags: ['!test'],
 }
 
@@ -4087,7 +4087,7 @@ export const HighContrastRefreshDataUpdateStep1 = {
     dataLoadingRefreshStories.RefreshDataUpdate,
     1,
   ),
-  name: 'Data loading/Refresh — Data update, шаг 1',
+  name: 'Data loading/Refresh — Data update, step 1',
   tags: ['!test'],
 }
 
@@ -4097,7 +4097,7 @@ export const HighContrastRefreshDataUpdateStep2 = {
     dataLoadingRefreshStories.RefreshDataUpdate,
     2,
   ),
-  name: 'Data loading/Refresh — Data update, шаг 2',
+  name: 'Data loading/Refresh — Data update, step 2',
   tags: ['!test'],
 }
 
@@ -4107,7 +4107,7 @@ export const HighContrastRefreshDataUpdateStep3 = {
     dataLoadingRefreshStories.RefreshDataUpdate,
     3,
   ),
-  name: 'Data loading/Refresh — Data update, шаг 3',
+  name: 'Data loading/Refresh — Data update, step 3',
   tags: ['!test'],
 }
 
@@ -4117,7 +4117,7 @@ export const HighContrastIconsOwnSetStep1 = {
     customizationIconsStories.IconsOwnSet,
     1,
   ),
-  name: 'Customization/Icons — Own icons, шаг 1',
+  name: 'Customization/Icons — Own icons, step 1',
   tags: ['!test'],
 }
 
@@ -4127,37 +4127,37 @@ export const HighContrastIconsOwnSetStep2 = {
     customizationIconsStories.IconsOwnSet,
     2,
   ),
-  name: 'Customization/Icons — Own icons, шаг 2',
+  name: 'Customization/Icons — Own icons, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastLongTextCellsStep1 = {
   ...twinStep(coreLongTextStories, coreLongTextStories.LongTextCells, 1),
-  name: 'Core/Long text — Cells, шаг 1',
+  name: 'Core/Long text — Cells, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastLongTextCellsStep2 = {
   ...twinStep(coreLongTextStories, coreLongTextStories.LongTextCells, 2),
-  name: 'Core/Long text — Cells, шаг 2',
+  name: 'Core/Long text — Cells, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastLongTextMenusStep1 = {
   ...twinStep(coreLongTextStories, coreLongTextStories.LongTextMenus, 1),
-  name: 'Core/Long text — Menus and panels, шаг 1',
+  name: 'Core/Long text — Menus and panels, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastLongTextMenusStep2 = {
   ...twinStep(coreLongTextStories, coreLongTextStories.LongTextMenus, 2),
-  name: 'Core/Long text — Menus and panels, шаг 2',
+  name: 'Core/Long text — Menus and panels, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastLongTextMenusStep3 = {
   ...twinStep(coreLongTextStories, coreLongTextStories.LongTextMenus, 3),
-  name: 'Core/Long text — Menus and panels, шаг 3',
+  name: 'Core/Long text — Menus and panels, step 3',
   tags: ['!test'],
 }
 
@@ -4167,7 +4167,7 @@ export const HighContrastHeaderGroupedStep1 = {
     columnsHeaderGroupsStories.HeaderGrouped,
     1,
   ),
-  name: 'Columns/Header groups — Grouped columns, шаг 1',
+  name: 'Columns/Header groups — Grouped columns, step 1',
   tags: ['!test'],
 }
 
@@ -4177,7 +4177,7 @@ export const HighContrastHeaderGroupedStep2 = {
     columnsHeaderGroupsStories.HeaderGrouped,
     2,
   ),
-  name: 'Columns/Header groups — Grouped columns, шаг 2',
+  name: 'Columns/Header groups — Grouped columns, step 2',
   tags: ['!test'],
 }
 
@@ -4187,7 +4187,7 @@ export const HighContrastHeaderGroupedStep3 = {
     columnsHeaderGroupsStories.HeaderGrouped,
     3,
   ),
-  name: 'Columns/Header groups — Grouped columns, шаг 3',
+  name: 'Columns/Header groups — Grouped columns, step 3',
   tags: ['!test'],
 }
 
@@ -4197,7 +4197,7 @@ export const HighContrastHeaderMenuInMenuStep1 = {
     columnsHeaderMenuStories.HeaderMenuInMenu,
     1,
   ),
-  name: 'Columns/Header menu — Actions in menu, шаг 1',
+  name: 'Columns/Header menu — Actions in menu, step 1',
   tags: ['!test'],
 }
 
@@ -4207,7 +4207,7 @@ export const HighContrastHeaderMenuInMenuStep2 = {
     columnsHeaderMenuStories.HeaderMenuInMenu,
     2,
   ),
-  name: 'Columns/Header menu — Actions in menu, шаг 2',
+  name: 'Columns/Header menu — Actions in menu, step 2',
   tags: ['!test'],
 }
 
@@ -4217,7 +4217,7 @@ export const HighContrastHeaderMenuInMenuStep3 = {
     columnsHeaderMenuStories.HeaderMenuInMenu,
     3,
   ),
-  name: 'Columns/Header menu — Actions in menu, шаг 3',
+  name: 'Columns/Header menu — Actions in menu, step 3',
   tags: ['!test'],
 }
 
@@ -4227,7 +4227,7 @@ export const HighContrastHeaderMenuInMenuStep4 = {
     columnsHeaderMenuStories.HeaderMenuInMenu,
     4,
   ),
-  name: 'Columns/Header menu — Actions in menu, шаг 4',
+  name: 'Columns/Header menu — Actions in menu, step 4',
   tags: ['!test'],
 }
 
@@ -4237,7 +4237,7 @@ export const HighContrastHeaderMenuActiveActionsStep1 = {
     columnsHeaderMenuStories.HeaderMenuActiveActions,
     1,
   ),
-  name: 'Columns/Header menu — Active actions, шаг 1',
+  name: 'Columns/Header menu — Active actions, step 1',
   tags: ['!test'],
 }
 
@@ -4247,7 +4247,7 @@ export const HighContrastHeaderMenuActiveActionsStep2 = {
     columnsHeaderMenuStories.HeaderMenuActiveActions,
     2,
   ),
-  name: 'Columns/Header menu — Active actions, шаг 2',
+  name: 'Columns/Header menu — Active actions, step 2',
   tags: ['!test'],
 }
 
@@ -4257,7 +4257,7 @@ export const HighContrastHeaderMenuActiveActionsStep3 = {
     columnsHeaderMenuStories.HeaderMenuActiveActions,
     3,
   ),
-  name: 'Columns/Header menu — Active actions, шаг 3',
+  name: 'Columns/Header menu — Active actions, step 3',
   tags: ['!test'],
 }
 
@@ -4267,7 +4267,7 @@ export const HighContrastHeaderMenuActiveActionsStep4 = {
     columnsHeaderMenuStories.HeaderMenuActiveActions,
     4,
   ),
-  name: 'Columns/Header menu — Active actions, шаг 4',
+  name: 'Columns/Header menu — Active actions, step 4',
   tags: ['!test'],
 }
 
@@ -4277,7 +4277,7 @@ export const HighContrastHeaderMenuActiveActionsStep5 = {
     columnsHeaderMenuStories.HeaderMenuActiveActions,
     5,
   ),
-  name: 'Columns/Header menu — Active actions, шаг 5',
+  name: 'Columns/Header menu — Active actions, step 5',
   tags: ['!test'],
 }
 
@@ -4287,7 +4287,7 @@ export const HighContrastHeaderMenuActiveActionsStep6 = {
     columnsHeaderMenuStories.HeaderMenuActiveActions,
     6,
   ),
-  name: 'Columns/Header menu — Active actions, шаг 6',
+  name: 'Columns/Header menu — Active actions, step 6',
   tags: ['!test'],
 }
 
@@ -4297,7 +4297,7 @@ export const HighContrastHeaderMenuAsyncActionsStep1 = {
     columnsHeaderMenuStories.HeaderMenuAsyncActions,
     1,
   ),
-  name: 'Columns/Header menu — Async actions, шаг 1',
+  name: 'Columns/Header menu — Async actions, step 1',
   tags: ['!test'],
 }
 
@@ -4307,7 +4307,7 @@ export const HighContrastHeaderMenuAsyncActionsStep2 = {
     columnsHeaderMenuStories.HeaderMenuAsyncActions,
     2,
   ),
-  name: 'Columns/Header menu — Async actions, шаг 2',
+  name: 'Columns/Header menu — Async actions, step 2',
   tags: ['!test'],
 }
 
@@ -4317,7 +4317,7 @@ export const HighContrastHeaderMenuAsyncActionsStep3 = {
     columnsHeaderMenuStories.HeaderMenuAsyncActions,
     3,
   ),
-  name: 'Columns/Header menu — Async actions, шаг 3',
+  name: 'Columns/Header menu — Async actions, step 3',
   tags: ['!test'],
 }
 
@@ -4327,7 +4327,7 @@ export const HighContrastHeaderMenuAsyncActionsStep4 = {
     columnsHeaderMenuStories.HeaderMenuAsyncActions,
     4,
   ),
-  name: 'Columns/Header menu — Async actions, шаг 4',
+  name: 'Columns/Header menu — Async actions, step 4',
   tags: ['!test'],
 }
 
@@ -4337,7 +4337,7 @@ export const HighContrastHeaderMenuAsyncActionsStep5 = {
     columnsHeaderMenuStories.HeaderMenuAsyncActions,
     5,
   ),
-  name: 'Columns/Header menu — Async actions, шаг 5',
+  name: 'Columns/Header menu — Async actions, step 5',
   tags: ['!test'],
 }
 
@@ -4347,7 +4347,7 @@ export const HighContrastHeaderMenuAsyncActionsStep6 = {
     columnsHeaderMenuStories.HeaderMenuAsyncActions,
     6,
   ),
-  name: 'Columns/Header menu — Async actions, шаг 6',
+  name: 'Columns/Header menu — Async actions, step 6',
   tags: ['!test'],
 }
 
@@ -4357,7 +4357,7 @@ export const HighContrastHeaderMenuNarrowActiveStep1 = {
     columnsHeaderMenuStories.HeaderMenuNarrowActive,
     1,
   ),
-  name: 'Columns/Header menu — Narrow column, шаг 1',
+  name: 'Columns/Header menu — Narrow column, step 1',
   tags: ['!test'],
 }
 
@@ -4367,7 +4367,7 @@ export const HighContrastHeaderMenuNarrowActiveStep2 = {
     columnsHeaderMenuStories.HeaderMenuNarrowActive,
     2,
   ),
-  name: 'Columns/Header menu — Narrow column, шаг 2',
+  name: 'Columns/Header menu — Narrow column, step 2',
   tags: ['!test'],
 }
 
@@ -4377,7 +4377,7 @@ export const HighContrastHeaderMenuNarrowActiveStep3 = {
     columnsHeaderMenuStories.HeaderMenuNarrowActive,
     3,
   ),
-  name: 'Columns/Header menu — Narrow column, шаг 3',
+  name: 'Columns/Header menu — Narrow column, step 3',
   tags: ['!test'],
 }
 
@@ -4387,7 +4387,7 @@ export const HighContrastHeaderMenuNarrowActiveStep4 = {
     columnsHeaderMenuStories.HeaderMenuNarrowActive,
     4,
   ),
-  name: 'Columns/Header menu — Narrow column, шаг 4',
+  name: 'Columns/Header menu — Narrow column, step 4',
   tags: ['!test'],
 }
 
@@ -4397,7 +4397,7 @@ export const HighContrastHeaderMenuNarrowActiveStep5 = {
     columnsHeaderMenuStories.HeaderMenuNarrowActive,
     5,
   ),
-  name: 'Columns/Header menu — Narrow column, шаг 5',
+  name: 'Columns/Header menu — Narrow column, step 5',
   tags: ['!test'],
 }
 
@@ -4407,55 +4407,55 @@ export const HighContrastHeaderMenuNarrowActiveStep6 = {
     columnsHeaderMenuStories.HeaderMenuNarrowActive,
     6,
   ),
-  name: 'Columns/Header menu — Narrow column, шаг 6',
+  name: 'Columns/Header menu — Narrow column, step 6',
   tags: ['!test'],
 }
 
 export const HighContrastPinningColumnsStep1 = {
   ...twinStep(columnsPinningStories, columnsPinningStories.PinningColumns, 1),
-  name: 'Columns/Pinning — Pin columns, шаг 1',
+  name: 'Columns/Pinning — Pin columns, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastPinningColumnsStep2 = {
   ...twinStep(columnsPinningStories, columnsPinningStories.PinningColumns, 2),
-  name: 'Columns/Pinning — Pin columns, шаг 2',
+  name: 'Columns/Pinning — Pin columns, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastPinningColumnsStep3 = {
   ...twinStep(columnsPinningStories, columnsPinningStories.PinningColumns, 3),
-  name: 'Columns/Pinning — Pin columns, шаг 3',
+  name: 'Columns/Pinning — Pin columns, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastPinningColumnsStep4 = {
   ...twinStep(columnsPinningStories, columnsPinningStories.PinningColumns, 4),
-  name: 'Columns/Pinning — Pin columns, шаг 4',
+  name: 'Columns/Pinning — Pin columns, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastPinningColumnsStep5 = {
   ...twinStep(columnsPinningStories, columnsPinningStories.PinningColumns, 5),
-  name: 'Columns/Pinning — Pin columns, шаг 5',
+  name: 'Columns/Pinning — Pin columns, step 5',
   tags: ['!test'],
 }
 
 export const HighContrastPinningNestedStep1 = {
   ...twinStep(columnsPinningStories, columnsPinningStories.PinningNested, 1),
-  name: 'Columns/Pinning — Header groups, шаг 1',
+  name: 'Columns/Pinning — Header groups, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastPinningNestedStep2 = {
   ...twinStep(columnsPinningStories, columnsPinningStories.PinningNested, 2),
-  name: 'Columns/Pinning — Header groups, шаг 2',
+  name: 'Columns/Pinning — Header groups, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastPinningNestedStep3 = {
   ...twinStep(columnsPinningStories, columnsPinningStories.PinningNested, 3),
-  name: 'Columns/Pinning — Header groups, шаг 3',
+  name: 'Columns/Pinning — Header groups, step 3',
   tags: ['!test'],
 }
 
@@ -4465,7 +4465,7 @@ export const HighContrastResizingColumnsStep1 = {
     columnsResizingStories.ResizingColumns,
     1,
   ),
-  name: 'Columns/Resizing — Resize columns, шаг 1',
+  name: 'Columns/Resizing — Resize columns, step 1',
   tags: ['!test'],
 }
 
@@ -4475,7 +4475,7 @@ export const HighContrastResizingColumnsStep2 = {
     columnsResizingStories.ResizingColumns,
     2,
   ),
-  name: 'Columns/Resizing — Resize columns, шаг 2',
+  name: 'Columns/Resizing — Resize columns, step 2',
   tags: ['!test'],
 }
 
@@ -4485,7 +4485,7 @@ export const HighContrastResizingColumnsStep3 = {
     columnsResizingStories.ResizingColumns,
     3,
   ),
-  name: 'Columns/Resizing — Resize columns, шаг 3',
+  name: 'Columns/Resizing — Resize columns, step 3',
   tags: ['!test'],
 }
 
@@ -4495,7 +4495,7 @@ export const HighContrastResizingColumnsStep4 = {
     columnsResizingStories.ResizingColumns,
     4,
   ),
-  name: 'Columns/Resizing — Resize columns, шаг 4',
+  name: 'Columns/Resizing — Resize columns, step 4',
   tags: ['!test'],
 }
 
@@ -4505,7 +4505,7 @@ export const HighContrastResizingPastEdgeStep1 = {
     columnsResizingStories.ResizingPastEdge,
     1,
   ),
-  name: 'Columns/Resizing — Resize past the edge, шаг 1',
+  name: 'Columns/Resizing — Resize past the edge, step 1',
   tags: ['!test'],
 }
 
@@ -4515,7 +4515,7 @@ export const HighContrastResizingPastEdgeStep2 = {
     columnsResizingStories.ResizingPastEdge,
     2,
   ),
-  name: 'Columns/Resizing — Resize past the edge, шаг 2',
+  name: 'Columns/Resizing — Resize past the edge, step 2',
   tags: ['!test'],
 }
 
@@ -4525,73 +4525,73 @@ export const HighContrastResizingPastEdgeStep3 = {
     columnsResizingStories.ResizingPastEdge,
     3,
   ),
-  name: 'Columns/Resizing — Resize past the edge, шаг 3',
+  name: 'Columns/Resizing — Resize past the edge, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastDraggingNestedStep1 = {
   ...twinStep(columnsDraggingStories, columnsDraggingStories.DraggingNested, 1),
-  name: 'Columns/Dragging — Header groups, шаг 1',
+  name: 'Columns/Dragging — Header groups, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastDraggingNestedStep2 = {
   ...twinStep(columnsDraggingStories, columnsDraggingStories.DraggingNested, 2),
-  name: 'Columns/Dragging — Header groups, шаг 2',
+  name: 'Columns/Dragging — Header groups, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastDraggingNestedStep3 = {
   ...twinStep(columnsDraggingStories, columnsDraggingStories.DraggingNested, 3),
-  name: 'Columns/Dragging — Header groups, шаг 3',
+  name: 'Columns/Dragging — Header groups, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastEditingValueStep1 = {
   ...twinStep(cellsEditingStories, cellsEditingStories.EditingValue, 1),
-  name: 'Cells/Editing — Edit a value, шаг 1',
+  name: 'Cells/Editing — Edit a value, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastEditingValueStep2 = {
   ...twinStep(cellsEditingStories, cellsEditingStories.EditingValue, 2),
-  name: 'Cells/Editing — Edit a value, шаг 2',
+  name: 'Cells/Editing — Edit a value, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastEditingValueStep3 = {
   ...twinStep(cellsEditingStories, cellsEditingStories.EditingValue, 3),
-  name: 'Cells/Editing — Edit a value, шаг 3',
+  name: 'Cells/Editing — Edit a value, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastEditingServerStep1 = {
   ...twinStep(cellsEditingStories, cellsEditingStories.EditingServer, 1),
-  name: 'Cells/Editing — Server save, шаг 1',
+  name: 'Cells/Editing — Server save, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastEditingServerStep2 = {
   ...twinStep(cellsEditingStories, cellsEditingStories.EditingServer, 2),
-  name: 'Cells/Editing — Server save, шаг 2',
+  name: 'Cells/Editing — Server save, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastEditingServerStep3 = {
   ...twinStep(cellsEditingStories, cellsEditingStories.EditingServer, 3),
-  name: 'Cells/Editing — Server save, шаг 3',
+  name: 'Cells/Editing — Server save, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastEditingServerStep4 = {
   ...twinStep(cellsEditingStories, cellsEditingStories.EditingServer, 4),
-  name: 'Cells/Editing — Server save, шаг 4',
+  name: 'Cells/Editing — Server save, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastEditingServerStep5 = {
   ...twinStep(cellsEditingStories, cellsEditingStories.EditingServer, 5),
-  name: 'Cells/Editing — Server save, шаг 5',
+  name: 'Cells/Editing — Server save, step 5',
   tags: ['!test'],
 }
 
@@ -4601,7 +4601,7 @@ export const HighContrastEditingRevertedWhileAwayStep1 = {
     cellsEditingStories.EditingRevertedWhileAway,
     1,
   ),
-  name: 'Cells/Editing — Refused while editing another cell, шаг 1',
+  name: 'Cells/Editing — Refused while editing another cell, step 1',
   tags: ['!test'],
 }
 
@@ -4611,7 +4611,7 @@ export const HighContrastEditingRevertedWhileAwayStep2 = {
     cellsEditingStories.EditingRevertedWhileAway,
     2,
   ),
-  name: 'Cells/Editing — Refused while editing another cell, шаг 2',
+  name: 'Cells/Editing — Refused while editing another cell, step 2',
   tags: ['!test'],
 }
 
@@ -4621,7 +4621,7 @@ export const HighContrastEditingRevertedWhileAwayStep3 = {
     cellsEditingStories.EditingRevertedWhileAway,
     3,
   ),
-  name: 'Cells/Editing — Refused while editing another cell, шаг 3',
+  name: 'Cells/Editing — Refused while editing another cell, step 3',
   tags: ['!test'],
 }
 
@@ -4631,73 +4631,73 @@ export const HighContrastEditingRevertedWhileAwayStep4 = {
     cellsEditingStories.EditingRevertedWhileAway,
     4,
   ),
-  name: 'Cells/Editing — Refused while editing another cell, шаг 4',
+  name: 'Cells/Editing — Refused while editing another cell, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastExpandingRejectedStep1 = {
   ...twinStep(rowsExpandingStories, rowsExpandingStories.ExpandingRejected, 1),
-  name: 'Rows/Expanding — Expand refused by the server, шаг 1',
+  name: 'Rows/Expanding — Expand refused by the server, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastExpandingRejectedStep2 = {
   ...twinStep(rowsExpandingStories, rowsExpandingStories.ExpandingRejected, 2),
-  name: 'Rows/Expanding — Expand refused by the server, шаг 2',
+  name: 'Rows/Expanding — Expand refused by the server, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastExpandingRejectedStep3 = {
   ...twinStep(rowsExpandingStories, rowsExpandingStories.ExpandingRejected, 3),
-  name: 'Rows/Expanding — Expand refused by the server, шаг 3',
+  name: 'Rows/Expanding — Expand refused by the server, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastEditingSessionStep1 = {
   ...twinStep(cellsEditingStories, cellsEditingStories.EditingSession, 1),
-  name: 'Cells/Editing — Draft survives, шаг 1',
+  name: 'Cells/Editing — Draft survives, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastEditingSessionStep2 = {
   ...twinStep(cellsEditingStories, cellsEditingStories.EditingSession, 2),
-  name: 'Cells/Editing — Draft survives, шаг 2',
+  name: 'Cells/Editing — Draft survives, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastEditingSessionStep3 = {
   ...twinStep(cellsEditingStories, cellsEditingStories.EditingSession, 3),
-  name: 'Cells/Editing — Draft survives, шаг 3',
+  name: 'Cells/Editing — Draft survives, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastEditingSessionStep4 = {
   ...twinStep(cellsEditingStories, cellsEditingStories.EditingSession, 4),
-  name: 'Cells/Editing — Draft survives, шаг 4',
+  name: 'Cells/Editing — Draft survives, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastEditingSessionStep5 = {
   ...twinStep(cellsEditingStories, cellsEditingStories.EditingSession, 5),
-  name: 'Cells/Editing — Draft survives, шаг 5',
+  name: 'Cells/Editing — Draft survives, step 5',
   tags: ['!test'],
 }
 
 export const HighContrastEditingConflictStep1 = {
   ...twinStep(cellsEditingStories, cellsEditingStories.EditingConflict, 1),
-  name: 'Cells/Editing — Conflict blocks save, шаг 1',
+  name: 'Cells/Editing — Conflict blocks save, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastEditingConflictStep2 = {
   ...twinStep(cellsEditingStories, cellsEditingStories.EditingConflict, 2),
-  name: 'Cells/Editing — Conflict blocks save, шаг 2',
+  name: 'Cells/Editing — Conflict blocks save, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastEditingConflictStep3 = {
   ...twinStep(cellsEditingStories, cellsEditingStories.EditingConflict, 3),
-  name: 'Cells/Editing — Conflict blocks save, шаг 3',
+  name: 'Cells/Editing — Conflict blocks save, step 3',
   tags: ['!test'],
 }
 
@@ -4707,7 +4707,7 @@ export const HighContrastCellSelectionRangeStep1 = {
     cellsSelectionStories.CellSelectionRange,
     1,
   ),
-  name: 'Cells/Selection — Select and copy, шаг 1',
+  name: 'Cells/Selection — Select and copy, step 1',
   tags: ['!test'],
 }
 
@@ -4717,7 +4717,7 @@ export const HighContrastCellSelectionRangeStep2 = {
     cellsSelectionStories.CellSelectionRange,
     2,
   ),
-  name: 'Cells/Selection — Select and copy, шаг 2',
+  name: 'Cells/Selection — Select and copy, step 2',
   tags: ['!test'],
 }
 
@@ -4727,7 +4727,7 @@ export const HighContrastCellSelectionRangeStep3 = {
     cellsSelectionStories.CellSelectionRange,
     3,
   ),
-  name: 'Cells/Selection — Select and copy, шаг 3',
+  name: 'Cells/Selection — Select and copy, step 3',
   tags: ['!test'],
 }
 
@@ -4737,7 +4737,7 @@ export const HighContrastCellSelectionRangeStep4 = {
     cellsSelectionStories.CellSelectionRange,
     4,
   ),
-  name: 'Cells/Selection — Select and copy, шаг 4',
+  name: 'Cells/Selection — Select and copy, step 4',
   tags: ['!test'],
 }
 
@@ -4747,7 +4747,7 @@ export const HighContrastCellSelectionRangeStep5 = {
     cellsSelectionStories.CellSelectionRange,
     5,
   ),
-  name: 'Cells/Selection — Select and copy, шаг 5',
+  name: 'Cells/Selection — Select and copy, step 5',
   tags: ['!test'],
 }
 
@@ -4757,7 +4757,7 @@ export const HighContrastCellSelectionPredicateStep1 = {
     cellsSelectionStories.CellSelectionPredicate,
     1,
   ),
-  name: 'Cells/Selection — Forbidden column, шаг 1',
+  name: 'Cells/Selection — Forbidden column, step 1',
   tags: ['!test'],
 }
 
@@ -4767,7 +4767,7 @@ export const HighContrastCellSelectionPredicateStep2 = {
     cellsSelectionStories.CellSelectionPredicate,
     2,
   ),
-  name: 'Cells/Selection — Forbidden column, шаг 2',
+  name: 'Cells/Selection — Forbidden column, step 2',
   tags: ['!test'],
 }
 
@@ -4777,7 +4777,7 @@ export const HighContrastContextMenuCellStep1 = {
     cellsContextMenuStories.ContextMenuCell,
     1,
   ),
-  name: 'Cells/Context menu — Menu on a cell, шаг 1',
+  name: 'Cells/Context menu — Menu on a cell, step 1',
   tags: ['!test'],
 }
 
@@ -4787,7 +4787,7 @@ export const HighContrastContextMenuCellStep2 = {
     cellsContextMenuStories.ContextMenuCell,
     2,
   ),
-  name: 'Cells/Context menu — Menu on a cell, шаг 2',
+  name: 'Cells/Context menu — Menu on a cell, step 2',
   tags: ['!test'],
 }
 
@@ -4797,7 +4797,7 @@ export const HighContrastContextMenuCellStep3 = {
     cellsContextMenuStories.ContextMenuCell,
     3,
   ),
-  name: 'Cells/Context menu — Menu on a cell, шаг 3',
+  name: 'Cells/Context menu — Menu on a cell, step 3',
   tags: ['!test'],
 }
 
@@ -4807,7 +4807,7 @@ export const HighContrastContextMenuCellStep4 = {
     cellsContextMenuStories.ContextMenuCell,
     4,
   ),
-  name: 'Cells/Context menu — Menu on a cell, шаг 4',
+  name: 'Cells/Context menu — Menu on a cell, step 4',
   tags: ['!test'],
 }
 
@@ -4817,7 +4817,7 @@ export const HighContrastContextMenuCellStep5 = {
     cellsContextMenuStories.ContextMenuCell,
     5,
   ),
-  name: 'Cells/Context menu — Menu on a cell, шаг 5',
+  name: 'Cells/Context menu — Menu on a cell, step 5',
   tags: ['!test'],
 }
 
@@ -4827,7 +4827,7 @@ export const HighContrastServerGroupSelectionStep1 = {
     serverSelectionStories.ServerGroupSelection,
     1,
   ),
-  name: 'Data loading/Server row model/Selection — Select a group, шаг 1',
+  name: 'Data loading/Server row model/Selection — Select a group, step 1',
   tags: ['!test'],
 }
 
@@ -4837,7 +4837,7 @@ export const HighContrastServerGroupSelectionStep2 = {
     serverSelectionStories.ServerGroupSelection,
     2,
   ),
-  name: 'Data loading/Server row model/Selection — Select a group, шаг 2',
+  name: 'Data loading/Server row model/Selection — Select a group, step 2',
   tags: ['!test'],
 }
 
@@ -4847,7 +4847,7 @@ export const HighContrastServerGroupSelectionStep3 = {
     serverSelectionStories.ServerGroupSelection,
     3,
   ),
-  name: 'Data loading/Server row model/Selection — Select a group, шаг 3',
+  name: 'Data loading/Server row model/Selection — Select a group, step 3',
   tags: ['!test'],
 }
 
@@ -4857,7 +4857,7 @@ export const HighContrastServerGroupSelectionStep4 = {
     serverSelectionStories.ServerGroupSelection,
     4,
   ),
-  name: 'Data loading/Server row model/Selection — Select a group, шаг 4',
+  name: 'Data loading/Server row model/Selection — Select a group, step 4',
   tags: ['!test'],
 }
 
@@ -4867,7 +4867,7 @@ export const HighContrastServerGroupSelectResetStep1 = {
     serverSelectionStories.ServerGroupSelectReset,
     1,
   ),
-  name: 'Data loading/Server row model/Selection — Regrouping clears the selection, шаг 1',
+  name: 'Data loading/Server row model/Selection — Regrouping clears the selection, step 1',
   tags: ['!test'],
 }
 
@@ -4877,7 +4877,7 @@ export const HighContrastServerGroupSelectResetStep2 = {
     serverSelectionStories.ServerGroupSelectReset,
     2,
   ),
-  name: 'Data loading/Server row model/Selection — Regrouping clears the selection, шаг 2',
+  name: 'Data loading/Server row model/Selection — Regrouping clears the selection, step 2',
   tags: ['!test'],
 }
 
@@ -4887,7 +4887,7 @@ export const HighContrastServerGroupSelectResetStep3 = {
     serverSelectionStories.ServerGroupSelectReset,
     3,
   ),
-  name: 'Data loading/Server row model/Selection — Regrouping clears the selection, шаг 3',
+  name: 'Data loading/Server row model/Selection — Regrouping clears the selection, step 3',
   tags: ['!test'],
 }
 
@@ -4897,7 +4897,7 @@ export const HighContrastServerGroupSelectCountStep1 = {
     serverSelectionStories.ServerGroupSelectCount,
     1,
   ),
-  name: 'Data loading/Server row model/Selection — Count without group sizes, шаг 1',
+  name: 'Data loading/Server row model/Selection — Count without group sizes, step 1',
   tags: ['!test'],
 }
 
@@ -4907,7 +4907,7 @@ export const HighContrastServerGroupSelectCountStep2 = {
     serverSelectionStories.ServerGroupSelectCount,
     2,
   ),
-  name: 'Data loading/Server row model/Selection — Count without group sizes, шаг 2',
+  name: 'Data loading/Server row model/Selection — Count without group sizes, step 2',
   tags: ['!test'],
 }
 
@@ -4917,7 +4917,7 @@ export const HighContrastServerGroupSelectCountStep3 = {
     serverSelectionStories.ServerGroupSelectCount,
     3,
   ),
-  name: 'Data loading/Server row model/Selection — Count without group sizes, шаг 3',
+  name: 'Data loading/Server row model/Selection — Count without group sizes, step 3',
   tags: ['!test'],
 }
 
@@ -4927,7 +4927,7 @@ export const HighContrastServerTreeSelectBranchStep1 = {
     serverSelectionStories.ServerTreeSelectBranch,
     1,
   ),
-  name: 'Data loading/Server row model/Selection — Select a tree branch, шаг 1',
+  name: 'Data loading/Server row model/Selection — Select a tree branch, step 1',
   tags: ['!test'],
 }
 
@@ -4937,7 +4937,7 @@ export const HighContrastServerTreeSelectBranchStep2 = {
     serverSelectionStories.ServerTreeSelectBranch,
     2,
   ),
-  name: 'Data loading/Server row model/Selection — Select a tree branch, шаг 2',
+  name: 'Data loading/Server row model/Selection — Select a tree branch, step 2',
   tags: ['!test'],
 }
 
@@ -4947,7 +4947,7 @@ export const HighContrastServerTreeSelectBranchStep3 = {
     serverSelectionStories.ServerTreeSelectBranch,
     3,
   ),
-  name: 'Data loading/Server row model/Selection — Select a tree branch, шаг 3',
+  name: 'Data loading/Server row model/Selection — Select a tree branch, step 3',
   tags: ['!test'],
 }
 
@@ -4957,7 +4957,7 @@ export const HighContrastServerTreeSelectBranchStep4 = {
     serverSelectionStories.ServerTreeSelectBranch,
     4,
   ),
-  name: 'Data loading/Server row model/Selection — Select a tree branch, шаг 4',
+  name: 'Data loading/Server row model/Selection — Select a tree branch, step 4',
   tags: ['!test'],
 }
 
@@ -4967,127 +4967,127 @@ export const HighContrastServerTreeSelectBranchStep5 = {
     serverSelectionStories.ServerTreeSelectBranch,
     5,
   ),
-  name: 'Data loading/Server row model/Selection — Select a tree branch, шаг 5',
+  name: 'Data loading/Server row model/Selection — Select a tree branch, step 5',
   tags: ['!test'],
 }
 
 export const HighContrastCellErrorsFixValuesStep1 = {
   ...twinStep(cellsErrorsStories, cellsErrorsStories.CellErrorsFixValues, 1),
-  name: 'Cells/Errors — Fix invalid values, шаг 1',
+  name: 'Cells/Errors — Fix invalid values, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastCellErrorsFixValuesStep2 = {
   ...twinStep(cellsErrorsStories, cellsErrorsStories.CellErrorsFixValues, 2),
-  name: 'Cells/Errors — Fix invalid values, шаг 2',
+  name: 'Cells/Errors — Fix invalid values, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastCellErrorsReadOnlyStep1 = {
   ...twinStep(cellsErrorsStories, cellsErrorsStories.CellErrorsReadOnly, 1),
-  name: 'Cells/Errors — Read-only table, шаг 1',
+  name: 'Cells/Errors — Read-only table, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastCellErrorsReadOnlyStep2 = {
   ...twinStep(cellsErrorsStories, cellsErrorsStories.CellErrorsReadOnly, 2),
-  name: 'Cells/Errors — Read-only table, шаг 2',
+  name: 'Cells/Errors — Read-only table, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastCellErrorsRefusalStep1 = {
   ...twinStep(cellsErrorsStories, cellsErrorsStories.CellErrorsRefusal, 1),
-  name: 'Cells/Errors — Refusal and data error, шаг 1',
+  name: 'Cells/Errors — Refusal and data error, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastCellErrorsRefusalStep2 = {
   ...twinStep(cellsErrorsStories, cellsErrorsStories.CellErrorsRefusal, 2),
-  name: 'Cells/Errors — Refusal and data error, шаг 2',
+  name: 'Cells/Errors — Refusal and data error, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastCellErrorsRefusalStep3 = {
   ...twinStep(cellsErrorsStories, cellsErrorsStories.CellErrorsRefusal, 3),
-  name: 'Cells/Errors — Refusal and data error, шаг 3',
+  name: 'Cells/Errors — Refusal and data error, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastCellFailureRetryStep1 = {
   ...twinStep(cellsErrorsStories, cellsErrorsStories.CellFailureRetry, 1),
-  name: 'Cells/Errors — Refused edit and retry, шаг 1',
+  name: 'Cells/Errors — Refused edit and retry, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastCellFailureRetryStep2 = {
   ...twinStep(cellsErrorsStories, cellsErrorsStories.CellFailureRetry, 2),
-  name: 'Cells/Errors — Refused edit and retry, шаг 2',
+  name: 'Cells/Errors — Refused edit and retry, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastCellFailureRetryStep3 = {
   ...twinStep(cellsErrorsStories, cellsErrorsStories.CellFailureRetry, 3),
-  name: 'Cells/Errors — Refused edit and retry, шаг 3',
+  name: 'Cells/Errors — Refused edit and retry, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastCellFailureRetryStep4 = {
   ...twinStep(cellsErrorsStories, cellsErrorsStories.CellFailureRetry, 4),
-  name: 'Cells/Errors — Refused edit and retry, шаг 4',
+  name: 'Cells/Errors — Refused edit and retry, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastCellFailureRetryStep5 = {
   ...twinStep(cellsErrorsStories, cellsErrorsStories.CellFailureRetry, 5),
-  name: 'Cells/Errors — Refused edit and retry, шаг 5',
+  name: 'Cells/Errors — Refused edit and retry, step 5',
   tags: ['!test'],
 }
 
 export const HighContrastCellFailureDiscardStep1 = {
   ...twinStep(cellsErrorsStories, cellsErrorsStories.CellFailureDiscard, 1),
-  name: 'Cells/Errors — Refused checkbox, discard, шаг 1',
+  name: 'Cells/Errors — Refused checkbox, discard, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastCellFailureDiscardStep2 = {
   ...twinStep(cellsErrorsStories, cellsErrorsStories.CellFailureDiscard, 2),
-  name: 'Cells/Errors — Refused checkbox, discard, шаг 2',
+  name: 'Cells/Errors — Refused checkbox, discard, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastCellFailureDiscardStep3 = {
   ...twinStep(cellsErrorsStories, cellsErrorsStories.CellFailureDiscard, 3),
-  name: 'Cells/Errors — Refused checkbox, discard, шаг 3',
+  name: 'Cells/Errors — Refused checkbox, discard, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastCellFailureDiscardStep4 = {
   ...twinStep(cellsErrorsStories, cellsErrorsStories.CellFailureDiscard, 4),
-  name: 'Cells/Errors — Refused checkbox, discard, шаг 4',
+  name: 'Cells/Errors — Refused checkbox, discard, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastCellFailureDiscardMenuStep1 = {
   ...twinStep(cellsErrorsStories, cellsErrorsStories.CellFailureDiscardMenu, 1),
-  name: 'Cells/Errors — Discard from the menu, шаг 1',
+  name: 'Cells/Errors — Discard from the menu, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastCellFailureDiscardMenuStep2 = {
   ...twinStep(cellsErrorsStories, cellsErrorsStories.CellFailureDiscardMenu, 2),
-  name: 'Cells/Errors — Discard from the menu, шаг 2',
+  name: 'Cells/Errors — Discard from the menu, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastCellFailureDiscardMenuStep3 = {
   ...twinStep(cellsErrorsStories, cellsErrorsStories.CellFailureDiscardMenu, 3),
-  name: 'Cells/Errors — Discard from the menu, шаг 3',
+  name: 'Cells/Errors — Discard from the menu, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastCellFailureDiscardMenuStep4 = {
   ...twinStep(cellsErrorsStories, cellsErrorsStories.CellFailureDiscardMenu, 4),
-  name: 'Cells/Errors — Discard from the menu, шаг 4',
+  name: 'Cells/Errors — Discard from the menu, step 4',
   tags: ['!test'],
 }
 
@@ -5097,7 +5097,7 @@ export const HighContrastCellFailureExternalChangeStep1 = {
     cellsErrorsStories.CellFailureExternalChange,
     1,
   ),
-  name: 'Cells/Errors — Value changed elsewhere, шаг 1',
+  name: 'Cells/Errors — Value changed elsewhere, step 1',
   tags: ['!test'],
 }
 
@@ -5107,7 +5107,7 @@ export const HighContrastCellFailureExternalChangeStep2 = {
     cellsErrorsStories.CellFailureExternalChange,
     2,
   ),
-  name: 'Cells/Errors — Value changed elsewhere, шаг 2',
+  name: 'Cells/Errors — Value changed elsewhere, step 2',
   tags: ['!test'],
 }
 
@@ -5117,7 +5117,7 @@ export const HighContrastCellFailureExternalChangeStep3 = {
     cellsErrorsStories.CellFailureExternalChange,
     3,
   ),
-  name: 'Cells/Errors — Value changed elsewhere, шаг 3',
+  name: 'Cells/Errors — Value changed elsewhere, step 3',
   tags: ['!test'],
 }
 
@@ -5127,25 +5127,25 @@ export const HighContrastCellFailureExternalChangeStep4 = {
     cellsErrorsStories.CellFailureExternalChange,
     4,
   ),
-  name: 'Cells/Errors — Value changed elsewhere, шаг 4',
+  name: 'Cells/Errors — Value changed elsewhere, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastCellFailureAppResetStep1 = {
   ...twinStep(cellsErrorsStories, cellsErrorsStories.CellFailureAppReset, 1),
-  name: 'Cells/Errors — Reset by the application, шаг 1',
+  name: 'Cells/Errors — Reset by the application, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastCellFailureAppResetStep2 = {
   ...twinStep(cellsErrorsStories, cellsErrorsStories.CellFailureAppReset, 2),
-  name: 'Cells/Errors — Reset by the application, шаг 2',
+  name: 'Cells/Errors — Reset by the application, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastCellFailureAppResetStep3 = {
   ...twinStep(cellsErrorsStories, cellsErrorsStories.CellFailureAppReset, 3),
-  name: 'Cells/Errors — Reset by the application, шаг 3',
+  name: 'Cells/Errors — Reset by the application, step 3',
   tags: ['!test'],
 }
 
@@ -5155,7 +5155,7 @@ export const HighContrastContextMenuAsyncItemsStep1 = {
     cellsContextMenuStories.ContextMenuAsyncItems,
     1,
   ),
-  name: 'Cells/Context menu — Async items, шаг 1',
+  name: 'Cells/Context menu — Async items, step 1',
   tags: ['!test'],
 }
 
@@ -5165,7 +5165,7 @@ export const HighContrastContextMenuAsyncItemsStep2 = {
     cellsContextMenuStories.ContextMenuAsyncItems,
     2,
   ),
-  name: 'Cells/Context menu — Async items, шаг 2',
+  name: 'Cells/Context menu — Async items, step 2',
   tags: ['!test'],
 }
 
@@ -5175,7 +5175,7 @@ export const HighContrastContextMenuAsyncItemsStep3 = {
     cellsContextMenuStories.ContextMenuAsyncItems,
     3,
   ),
-  name: 'Cells/Context menu — Async items, шаг 3',
+  name: 'Cells/Context menu — Async items, step 3',
   tags: ['!test'],
 }
 
@@ -5185,7 +5185,7 @@ export const HighContrastContextMenuAsyncItemsStep4 = {
     cellsContextMenuStories.ContextMenuAsyncItems,
     4,
   ),
-  name: 'Cells/Context menu — Async items, шаг 4',
+  name: 'Cells/Context menu — Async items, step 4',
   tags: ['!test'],
 }
 
@@ -5195,7 +5195,7 @@ export const HighContrastContextMenuAsyncItemsStep5 = {
     cellsContextMenuStories.ContextMenuAsyncItems,
     5,
   ),
-  name: 'Cells/Context menu — Async items, шаг 5',
+  name: 'Cells/Context menu — Async items, step 5',
   tags: ['!test'],
 }
 
@@ -5205,7 +5205,7 @@ export const HighContrastContextMenuRefusedOnSelectionStep1 = {
     cellsContextMenuStories.ContextMenuRefusedOnSelection,
     1,
   ),
-  name: 'Cells/Context menu — Refused on a selection, шаг 1',
+  name: 'Cells/Context menu — Refused on a selection, step 1',
   tags: ['!test'],
 }
 
@@ -5215,7 +5215,7 @@ export const HighContrastContextMenuRefusedOnSelectionStep2 = {
     cellsContextMenuStories.ContextMenuRefusedOnSelection,
     2,
   ),
-  name: 'Cells/Context menu — Refused on a selection, шаг 2',
+  name: 'Cells/Context menu — Refused on a selection, step 2',
   tags: ['!test'],
 }
 
@@ -5225,7 +5225,7 @@ export const HighContrastContextMenuRefusedOnSelectionStep3 = {
     cellsContextMenuStories.ContextMenuRefusedOnSelection,
     3,
   ),
-  name: 'Cells/Context menu — Refused on a selection, шаг 3',
+  name: 'Cells/Context menu — Refused on a selection, step 3',
   tags: ['!test'],
 }
 
@@ -5235,7 +5235,7 @@ export const HighContrastContextMenuRefusedOnSelectionStep4 = {
     cellsContextMenuStories.ContextMenuRefusedOnSelection,
     4,
   ),
-  name: 'Cells/Context menu — Refused on a selection, шаг 4',
+  name: 'Cells/Context menu — Refused on a selection, step 4',
   tags: ['!test'],
 }
 
@@ -5245,7 +5245,7 @@ export const HighContrastContextMenuDangerActionStep1 = {
     cellsContextMenuStories.ContextMenuDangerAction,
     1,
   ),
-  name: 'Cells/Context menu — Own dangerous action, шаг 1',
+  name: 'Cells/Context menu — Own dangerous action, step 1',
   tags: ['!test'],
 }
 
@@ -5255,7 +5255,7 @@ export const HighContrastContextMenuDangerActionStep2 = {
     cellsContextMenuStories.ContextMenuDangerAction,
     2,
   ),
-  name: 'Cells/Context menu — Own dangerous action, шаг 2',
+  name: 'Cells/Context menu — Own dangerous action, step 2',
   tags: ['!test'],
 }
 
@@ -5265,31 +5265,31 @@ export const HighContrastContextMenuDangerActionStep3 = {
     cellsContextMenuStories.ContextMenuDangerAction,
     3,
   ),
-  name: 'Cells/Context menu — Own dangerous action, шаг 3',
+  name: 'Cells/Context menu — Own dangerous action, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastRowActionsCancelStep1 = {
   ...twinStep(rowsActionsStories, rowsActionsStories.RowActionsCancel, 1),
-  name: 'Rows/Actions — Cancel an action, шаг 1',
+  name: 'Rows/Actions — Cancel an action, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastRowActionsCancelStep2 = {
   ...twinStep(rowsActionsStories, rowsActionsStories.RowActionsCancel, 2),
-  name: 'Rows/Actions — Cancel an action, шаг 2',
+  name: 'Rows/Actions — Cancel an action, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastRowActionsCancelStep3 = {
   ...twinStep(rowsActionsStories, rowsActionsStories.RowActionsCancel, 3),
-  name: 'Rows/Actions — Cancel an action, шаг 3',
+  name: 'Rows/Actions — Cancel an action, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastRowActionsCancelStep4 = {
   ...twinStep(rowsActionsStories, rowsActionsStories.RowActionsCancel, 4),
-  name: 'Rows/Actions — Cancel an action, шаг 4',
+  name: 'Rows/Actions — Cancel an action, step 4',
   tags: ['!test'],
 }
 
@@ -5299,7 +5299,7 @@ export const HighContrastContextMenuCancelFromMenuStep1 = {
     cellsContextMenuStories.ContextMenuCancelFromMenu,
     1,
   ),
-  name: 'Cells/Context menu — Cancel from the menu, шаг 1',
+  name: 'Cells/Context menu — Cancel from the menu, step 1',
   tags: ['!test'],
 }
 
@@ -5309,7 +5309,7 @@ export const HighContrastContextMenuCancelFromMenuStep2 = {
     cellsContextMenuStories.ContextMenuCancelFromMenu,
     2,
   ),
-  name: 'Cells/Context menu — Cancel from the menu, шаг 2',
+  name: 'Cells/Context menu — Cancel from the menu, step 2',
   tags: ['!test'],
 }
 
@@ -5319,7 +5319,7 @@ export const HighContrastContextMenuCancelFromMenuStep3 = {
     cellsContextMenuStories.ContextMenuCancelFromMenu,
     3,
   ),
-  name: 'Cells/Context menu — Cancel from the menu, шаг 3',
+  name: 'Cells/Context menu — Cancel from the menu, step 3',
   tags: ['!test'],
 }
 
@@ -5329,7 +5329,7 @@ export const HighContrastContextMenuCancelFromMenuStep4 = {
     cellsContextMenuStories.ContextMenuCancelFromMenu,
     4,
   ),
-  name: 'Cells/Context menu — Cancel from the menu, шаг 4',
+  name: 'Cells/Context menu — Cancel from the menu, step 4',
   tags: ['!test'],
 }
 
@@ -5339,7 +5339,7 @@ export const HighContrastContextMenuCancelFromMenuStep5 = {
     cellsContextMenuStories.ContextMenuCancelFromMenu,
     5,
   ),
-  name: 'Cells/Context menu — Cancel from the menu, шаг 5',
+  name: 'Cells/Context menu — Cancel from the menu, step 5',
   tags: ['!test'],
 }
 
@@ -5349,7 +5349,7 @@ export const HighContrastServerActionsCancelSearchStep1 = {
     dataLoadingServerActionsStories.ServerActionsCancelSearch,
     1,
   ),
-  name: 'Data loading/Server actions — Cancel a search, шаг 1',
+  name: 'Data loading/Server actions — Cancel a search, step 1',
   tags: ['!test'],
 }
 
@@ -5359,7 +5359,7 @@ export const HighContrastServerActionsCancelSearchStep2 = {
     dataLoadingServerActionsStories.ServerActionsCancelSearch,
     2,
   ),
-  name: 'Data loading/Server actions — Cancel a search, шаг 2',
+  name: 'Data loading/Server actions — Cancel a search, step 2',
   tags: ['!test'],
 }
 
@@ -5369,7 +5369,7 @@ export const HighContrastServerActionsCancelSearchStep3 = {
     dataLoadingServerActionsStories.ServerActionsCancelSearch,
     3,
   ),
-  name: 'Data loading/Server actions — Cancel a search, шаг 3',
+  name: 'Data loading/Server actions — Cancel a search, step 3',
   tags: ['!test'],
 }
 
@@ -5379,7 +5379,7 @@ export const HighContrastServerActionsCancelSearchStep4 = {
     dataLoadingServerActionsStories.ServerActionsCancelSearch,
     4,
   ),
-  name: 'Data loading/Server actions — Cancel a search, шаг 4',
+  name: 'Data loading/Server actions — Cancel a search, step 4',
   tags: ['!test'],
 }
 
@@ -5389,7 +5389,7 @@ export const HighContrastServerActionsCancelSortStep1 = {
     dataLoadingServerActionsStories.ServerActionsCancelSort,
     1,
   ),
-  name: 'Data loading/Server actions — Cancel sorting, шаг 1',
+  name: 'Data loading/Server actions — Cancel sorting, step 1',
   tags: ['!test'],
 }
 
@@ -5399,7 +5399,7 @@ export const HighContrastServerActionsCancelSortStep2 = {
     dataLoadingServerActionsStories.ServerActionsCancelSort,
     2,
   ),
-  name: 'Data loading/Server actions — Cancel sorting, шаг 2',
+  name: 'Data loading/Server actions — Cancel sorting, step 2',
   tags: ['!test'],
 }
 
@@ -5409,7 +5409,7 @@ export const HighContrastServerActionsCancelSortStep3 = {
     dataLoadingServerActionsStories.ServerActionsCancelSort,
     3,
   ),
-  name: 'Data loading/Server actions — Cancel sorting, шаг 3',
+  name: 'Data loading/Server actions — Cancel sorting, step 3',
   tags: ['!test'],
 }
 
@@ -5419,127 +5419,127 @@ export const HighContrastServerActionsCancelSortStep4 = {
     dataLoadingServerActionsStories.ServerActionsCancelSort,
     4,
   ),
-  name: 'Data loading/Server actions — Cancel sorting, шаг 4',
+  name: 'Data loading/Server actions — Cancel sorting, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastExportCancelStep1 = {
   ...twinStep(exportStories, exportStories.ExportCancel, 1),
-  name: 'Export — Cancel an export, шаг 1',
+  name: 'Export — Cancel an export, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastExportCancelStep2 = {
   ...twinStep(exportStories, exportStories.ExportCancel, 2),
-  name: 'Export — Cancel an export, шаг 2',
+  name: 'Export — Cancel an export, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastExportCancelStep3 = {
   ...twinStep(exportStories, exportStories.ExportCancel, 3),
-  name: 'Export — Cancel an export, шаг 3',
+  name: 'Export — Cancel an export, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastExportCancelStep4 = {
   ...twinStep(exportStories, exportStories.ExportCancel, 4),
-  name: 'Export — Cancel an export, шаг 4',
+  name: 'Export — Cancel an export, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiCancelPendingStep1 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiCancelPending, 1),
-  name: 'Plugin API — Cancel everything pending, шаг 1',
+  name: 'Plugin API — Cancel everything pending, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiCancelPendingStep2 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiCancelPending, 2),
-  name: 'Plugin API — Cancel everything pending, шаг 2',
+  name: 'Plugin API — Cancel everything pending, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiCancelPendingStep3 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiCancelPending, 3),
-  name: 'Plugin API — Cancel everything pending, шаг 3',
+  name: 'Plugin API — Cancel everything pending, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiBodyAttributesStep1 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiBodyAttributes, 1),
-  name: 'Plugin API — Body attributes, шаг 1',
+  name: 'Plugin API — Body attributes, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiBodyAttributesStep2 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiBodyAttributes, 2),
-  name: 'Plugin API — Body attributes, шаг 2',
+  name: 'Plugin API — Body attributes, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiBodyAttributesStep3 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiBodyAttributes, 3),
-  name: 'Plugin API — Body attributes, шаг 3',
+  name: 'Plugin API — Body attributes, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiBodyEventsStep1 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiBodyEvents, 1),
-  name: 'Plugin API — Body events, шаг 1',
+  name: 'Plugin API — Body events, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiBodyEventsStep2 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiBodyEvents, 2),
-  name: 'Plugin API — Body events, шаг 2',
+  name: 'Plugin API — Body events, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiBodyEventsStep3 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiBodyEvents, 3),
-  name: 'Plugin API — Body events, шаг 3',
+  name: 'Plugin API — Body events, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiBodyKeysStep1 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiBodyKeys, 1),
-  name: 'Plugin API — Body keys, шаг 1',
+  name: 'Plugin API — Body keys, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiBodyKeysStep2 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiBodyKeys, 2),
-  name: 'Plugin API — Body keys, шаг 2',
+  name: 'Plugin API — Body keys, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiBodyKeysStep3 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiBodyKeys, 3),
-  name: 'Plugin API — Body keys, шаг 3',
+  name: 'Plugin API — Body keys, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringServerCancelStep1 = {
   ...twinStep(filteringStories, filteringStories.FilteringServerCancel, 1),
-  name: 'Filtering — Cancel a server filter, шаг 1',
+  name: 'Filtering — Cancel a server filter, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringServerCancelStep2 = {
   ...twinStep(filteringStories, filteringStories.FilteringServerCancel, 2),
-  name: 'Filtering — Cancel a server filter, шаг 2',
+  name: 'Filtering — Cancel a server filter, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringServerCancelStep3 = {
   ...twinStep(filteringStories, filteringStories.FilteringServerCancel, 3),
-  name: 'Filtering — Cancel a server filter, шаг 3',
+  name: 'Filtering — Cancel a server filter, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringServerCancelStep4 = {
   ...twinStep(filteringStories, filteringStories.FilteringServerCancel, 4),
-  name: 'Filtering — Cancel a server filter, шаг 4',
+  name: 'Filtering — Cancel a server filter, step 4',
   tags: ['!test'],
 }
 
@@ -5549,7 +5549,7 @@ export const HighContrastPaginationServerCancelStep1 = {
     panelsPaginationStories.PaginationServerCancel,
     1,
   ),
-  name: 'Panels/Pagination — Cancel a page change, шаг 1',
+  name: 'Panels/Pagination — Cancel a page change, step 1',
   tags: ['!test'],
 }
 
@@ -5559,7 +5559,7 @@ export const HighContrastPaginationServerCancelStep2 = {
     panelsPaginationStories.PaginationServerCancel,
     2,
   ),
-  name: 'Panels/Pagination — Cancel a page change, шаг 2',
+  name: 'Panels/Pagination — Cancel a page change, step 2',
   tags: ['!test'],
 }
 
@@ -5569,7 +5569,7 @@ export const HighContrastPaginationServerCancelStep3 = {
     panelsPaginationStories.PaginationServerCancel,
     3,
   ),
-  name: 'Panels/Pagination — Cancel a page change, шаг 3',
+  name: 'Panels/Pagination — Cancel a page change, step 3',
   tags: ['!test'],
 }
 
@@ -5579,31 +5579,31 @@ export const HighContrastPaginationServerCancelStep4 = {
     panelsPaginationStories.PaginationServerCancel,
     4,
   ),
-  name: 'Panels/Pagination — Cancel a page change, шаг 4',
+  name: 'Panels/Pagination — Cancel a page change, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastExpandingCancelStep1 = {
   ...twinStep(rowsExpandingStories, rowsExpandingStories.ExpandingCancel, 1),
-  name: 'Rows/Expanding — Cancel loading children, шаг 1',
+  name: 'Rows/Expanding — Cancel loading children, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastExpandingCancelStep2 = {
   ...twinStep(rowsExpandingStories, rowsExpandingStories.ExpandingCancel, 2),
-  name: 'Rows/Expanding — Cancel loading children, шаг 2',
+  name: 'Rows/Expanding — Cancel loading children, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastExpandingCancelStep3 = {
   ...twinStep(rowsExpandingStories, rowsExpandingStories.ExpandingCancel, 3),
-  name: 'Rows/Expanding — Cancel loading children, шаг 3',
+  name: 'Rows/Expanding — Cancel loading children, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastExpandingCancelStep4 = {
   ...twinStep(rowsExpandingStories, rowsExpandingStories.ExpandingCancel, 4),
-  name: 'Rows/Expanding — Cancel loading children, шаг 4',
+  name: 'Rows/Expanding — Cancel loading children, step 4',
   tags: ['!test'],
 }
 
@@ -5613,7 +5613,7 @@ export const HighContrastServerCopyCancelStep1 = {
     serverCellSelectionStories.ServerCopyCancel,
     1,
   ),
-  name: 'Data loading/Server row model/Cell selection — Cancel copying, шаг 1',
+  name: 'Data loading/Server row model/Cell selection — Cancel copying, step 1',
   tags: ['!test'],
 }
 
@@ -5623,7 +5623,7 @@ export const HighContrastServerCopyCancelStep2 = {
     serverCellSelectionStories.ServerCopyCancel,
     2,
   ),
-  name: 'Data loading/Server row model/Cell selection — Cancel copying, шаг 2',
+  name: 'Data loading/Server row model/Cell selection — Cancel copying, step 2',
   tags: ['!test'],
 }
 
@@ -5633,7 +5633,7 @@ export const HighContrastServerCopyCancelStep3 = {
     serverCellSelectionStories.ServerCopyCancel,
     3,
   ),
-  name: 'Data loading/Server row model/Cell selection — Cancel copying, шаг 3',
+  name: 'Data loading/Server row model/Cell selection — Cancel copying, step 3',
   tags: ['!test'],
 }
 
@@ -5643,7 +5643,7 @@ export const HighContrastServerCopyCancelStep4 = {
     serverCellSelectionStories.ServerCopyCancel,
     4,
   ),
-  name: 'Data loading/Server row model/Cell selection — Cancel copying, шаг 4',
+  name: 'Data loading/Server row model/Cell selection — Cancel copying, step 4',
   tags: ['!test'],
 }
 
@@ -5653,61 +5653,61 @@ export const HighContrastServerCopyCancelStep5 = {
     serverCellSelectionStories.ServerCopyCancel,
     5,
   ),
-  name: 'Data loading/Server row model/Cell selection — Cancel copying, шаг 5',
+  name: 'Data loading/Server row model/Cell selection — Cancel copying, step 5',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringServerApplyStep1 = {
   ...twinStep(filteringStories, filteringStories.FilteringServerApply, 1),
-  name: 'Filtering — Apply a server filter, шаг 1',
+  name: 'Filtering — Apply a server filter, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringServerApplyStep2 = {
   ...twinStep(filteringStories, filteringStories.FilteringServerApply, 2),
-  name: 'Filtering — Apply a server filter, шаг 2',
+  name: 'Filtering — Apply a server filter, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringServerApplyStep3 = {
   ...twinStep(filteringStories, filteringStories.FilteringServerApply, 3),
-  name: 'Filtering — Apply a server filter, шаг 3',
+  name: 'Filtering — Apply a server filter, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringServerApplyStep4 = {
   ...twinStep(filteringStories, filteringStories.FilteringServerApply, 4),
-  name: 'Filtering — Apply a server filter, шаг 4',
+  name: 'Filtering — Apply a server filter, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringServerReapplyStep1 = {
   ...twinStep(filteringStories, filteringStories.FilteringServerReapply, 1),
-  name: 'Filtering — Reapply after cancel, шаг 1',
+  name: 'Filtering — Reapply after cancel, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringServerReapplyStep2 = {
   ...twinStep(filteringStories, filteringStories.FilteringServerReapply, 2),
-  name: 'Filtering — Reapply after cancel, шаг 2',
+  name: 'Filtering — Reapply after cancel, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringServerReapplyStep3 = {
   ...twinStep(filteringStories, filteringStories.FilteringServerReapply, 3),
-  name: 'Filtering — Reapply after cancel, шаг 3',
+  name: 'Filtering — Reapply after cancel, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringServerReapplyStep4 = {
   ...twinStep(filteringStories, filteringStories.FilteringServerReapply, 4),
-  name: 'Filtering — Reapply after cancel, шаг 4',
+  name: 'Filtering — Reapply after cancel, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastFilteringServerReapplyStep5 = {
   ...twinStep(filteringStories, filteringStories.FilteringServerReapply, 5),
-  name: 'Filtering — Reapply after cancel, шаг 5',
+  name: 'Filtering — Reapply after cancel, step 5',
   tags: ['!test'],
 }
 
@@ -5717,7 +5717,7 @@ export const HighContrastContextMenuWholeTableCancelStep1 = {
     cellsContextMenuStories.ContextMenuWholeTableCancel,
     1,
   ),
-  name: 'Cells/Context menu — Whole table — Cancel, шаг 1',
+  name: 'Cells/Context menu — Whole table — Cancel, step 1',
   tags: ['!test'],
 }
 
@@ -5727,7 +5727,7 @@ export const HighContrastContextMenuWholeTableCancelStep2 = {
     cellsContextMenuStories.ContextMenuWholeTableCancel,
     2,
   ),
-  name: 'Cells/Context menu — Whole table — Cancel, шаг 2',
+  name: 'Cells/Context menu — Whole table — Cancel, step 2',
   tags: ['!test'],
 }
 
@@ -5737,7 +5737,7 @@ export const HighContrastContextMenuWholeTableCancelStep3 = {
     cellsContextMenuStories.ContextMenuWholeTableCancel,
     3,
   ),
-  name: 'Cells/Context menu — Whole table — Cancel, шаг 3',
+  name: 'Cells/Context menu — Whole table — Cancel, step 3',
   tags: ['!test'],
 }
 
@@ -5747,7 +5747,7 @@ export const HighContrastContextMenuWholeTableCancelStep4 = {
     cellsContextMenuStories.ContextMenuWholeTableCancel,
     4,
   ),
-  name: 'Cells/Context menu — Whole table — Cancel, шаг 4',
+  name: 'Cells/Context menu — Whole table — Cancel, step 4',
   tags: ['!test'],
 }
 
@@ -5757,7 +5757,7 @@ export const HighContrastContextMenuWholeTableStep1 = {
     cellsContextMenuStories.ContextMenuWholeTable,
     1,
   ),
-  name: 'Cells/Context menu — Whole table, шаг 1',
+  name: 'Cells/Context menu — Whole table, step 1',
   tags: ['!test'],
 }
 
@@ -5767,7 +5767,7 @@ export const HighContrastContextMenuWholeTableStep2 = {
     cellsContextMenuStories.ContextMenuWholeTable,
     2,
   ),
-  name: 'Cells/Context menu — Whole table, шаг 2',
+  name: 'Cells/Context menu — Whole table, step 2',
   tags: ['!test'],
 }
 
@@ -5777,7 +5777,7 @@ export const HighContrastContextMenuWholeTableStep3 = {
     cellsContextMenuStories.ContextMenuWholeTable,
     3,
   ),
-  name: 'Cells/Context menu — Whole table, шаг 3',
+  name: 'Cells/Context menu — Whole table, step 3',
   tags: ['!test'],
 }
 
@@ -5787,7 +5787,7 @@ export const HighContrastContextMenuWholeTableStep4 = {
     cellsContextMenuStories.ContextMenuWholeTable,
     4,
   ),
-  name: 'Cells/Context menu — Whole table, шаг 4',
+  name: 'Cells/Context menu — Whole table, step 4',
   tags: ['!test'],
 }
 
@@ -5797,7 +5797,7 @@ export const HighContrastContextMenuWholeTableStep5 = {
     cellsContextMenuStories.ContextMenuWholeTable,
     5,
   ),
-  name: 'Cells/Context menu — Whole table, шаг 5',
+  name: 'Cells/Context menu — Whole table, step 5',
   tags: ['!test'],
 }
 
@@ -5807,7 +5807,7 @@ export const HighContrastActionStatusCheckboxStep1 = {
     cellsActionStatusStories.ActionStatusCheckbox,
     1,
   ),
-  name: 'Cells/Action status — Checkbox in a cell, шаг 1',
+  name: 'Cells/Action status — Checkbox in a cell, step 1',
   tags: ['!test'],
 }
 
@@ -5817,7 +5817,7 @@ export const HighContrastActionStatusCheckboxStep2 = {
     cellsActionStatusStories.ActionStatusCheckbox,
     2,
   ),
-  name: 'Cells/Action status — Checkbox in a cell, шаг 2',
+  name: 'Cells/Action status — Checkbox in a cell, step 2',
   tags: ['!test'],
 }
 
@@ -5827,7 +5827,7 @@ export const HighContrastActionStatusCheckboxStep3 = {
     cellsActionStatusStories.ActionStatusCheckbox,
     3,
   ),
-  name: 'Cells/Action status — Checkbox in a cell, шаг 3',
+  name: 'Cells/Action status — Checkbox in a cell, step 3',
   tags: ['!test'],
 }
 
@@ -5837,7 +5837,7 @@ export const HighContrastActionStatusSwitchStep1 = {
     cellsActionStatusStories.ActionStatusSwitch,
     1,
   ),
-  name: 'Cells/Action status — Switch refused by the server, шаг 1',
+  name: 'Cells/Action status — Switch refused by the server, step 1',
   tags: ['!test'],
 }
 
@@ -5847,7 +5847,7 @@ export const HighContrastActionStatusSwitchStep2 = {
     cellsActionStatusStories.ActionStatusSwitch,
     2,
   ),
-  name: 'Cells/Action status — Switch refused by the server, шаг 2',
+  name: 'Cells/Action status — Switch refused by the server, step 2',
   tags: ['!test'],
 }
 
@@ -5857,7 +5857,7 @@ export const HighContrastActionStatusSwitchStep3 = {
     cellsActionStatusStories.ActionStatusSwitch,
     3,
   ),
-  name: 'Cells/Action status — Switch refused by the server, шаг 3',
+  name: 'Cells/Action status — Switch refused by the server, step 3',
   tags: ['!test'],
 }
 
@@ -5867,7 +5867,7 @@ export const HighContrastActionStatusSwitchStep4 = {
     cellsActionStatusStories.ActionStatusSwitch,
     4,
   ),
-  name: 'Cells/Action status — Switch refused by the server, шаг 4',
+  name: 'Cells/Action status — Switch refused by the server, step 4',
   tags: ['!test'],
 }
 
@@ -5877,7 +5877,7 @@ export const HighContrastActionStatusDoubleClickStep1 = {
     cellsActionStatusStories.ActionStatusDoubleClick,
     1,
   ),
-  name: 'Cells/Action status — Double-click without a control, шаг 1',
+  name: 'Cells/Action status — Double-click without a control, step 1',
   tags: ['!test'],
 }
 
@@ -5887,7 +5887,7 @@ export const HighContrastActionStatusDoubleClickStep2 = {
     cellsActionStatusStories.ActionStatusDoubleClick,
     2,
   ),
-  name: 'Cells/Action status — Double-click without a control, шаг 2',
+  name: 'Cells/Action status — Double-click without a control, step 2',
   tags: ['!test'],
 }
 
@@ -5897,7 +5897,7 @@ export const HighContrastActionStatusDoubleClickStep3 = {
     cellsActionStatusStories.ActionStatusDoubleClick,
     3,
   ),
-  name: 'Cells/Action status — Double-click without a control, шаг 3',
+  name: 'Cells/Action status — Double-click without a control, step 3',
   tags: ['!test'],
 }
 
@@ -5907,7 +5907,7 @@ export const HighContrastBusyObjectIgnoredStep1 = {
     cellsActionStatusStories.BusyObjectIgnored,
     1,
   ),
-  name: 'Cells/Action status — Change while saving, шаг 1',
+  name: 'Cells/Action status — Change while saving, step 1',
   tags: ['!test'],
 }
 
@@ -5917,7 +5917,7 @@ export const HighContrastBusyObjectIgnoredStep2 = {
     cellsActionStatusStories.BusyObjectIgnored,
     2,
   ),
-  name: 'Cells/Action status — Change while saving, шаг 2',
+  name: 'Cells/Action status — Change while saving, step 2',
   tags: ['!test'],
 }
 
@@ -5927,7 +5927,7 @@ export const HighContrastBusyObjectIgnoredStep3 = {
     cellsActionStatusStories.BusyObjectIgnored,
     3,
   ),
-  name: 'Cells/Action status — Change while saving, шаг 3',
+  name: 'Cells/Action status — Change while saving, step 3',
   tags: ['!test'],
 }
 
@@ -5937,7 +5937,7 @@ export const HighContrastBusyObjectIgnoredStep4 = {
     cellsActionStatusStories.BusyObjectIgnored,
     4,
   ),
-  name: 'Cells/Action status — Change while saving, шаг 4',
+  name: 'Cells/Action status — Change while saving, step 4',
   tags: ['!test'],
 }
 
@@ -5947,7 +5947,7 @@ export const HighContrastBusyObjectIgnoredStep5 = {
     cellsActionStatusStories.BusyObjectIgnored,
     5,
   ),
-  name: 'Cells/Action status — Change while saving, шаг 5',
+  name: 'Cells/Action status — Change while saving, step 5',
   tags: ['!test'],
 }
 
@@ -5957,7 +5957,7 @@ export const HighContrastActionStatusRetryStep1 = {
     cellsActionStatusStories.ActionStatusRetry,
     1,
   ),
-  name: 'Cells/Action status — Retry from the mark, шаг 1',
+  name: 'Cells/Action status — Retry from the mark, step 1',
   tags: ['!test'],
 }
 
@@ -5967,7 +5967,7 @@ export const HighContrastActionStatusRetryStep2 = {
     cellsActionStatusStories.ActionStatusRetry,
     2,
   ),
-  name: 'Cells/Action status — Retry from the mark, шаг 2',
+  name: 'Cells/Action status — Retry from the mark, step 2',
   tags: ['!test'],
 }
 
@@ -5977,7 +5977,7 @@ export const HighContrastActionStatusRetryStep3 = {
     cellsActionStatusStories.ActionStatusRetry,
     3,
   ),
-  name: 'Cells/Action status — Retry from the mark, шаг 3',
+  name: 'Cells/Action status — Retry from the mark, step 3',
   tags: ['!test'],
 }
 
@@ -5987,7 +5987,7 @@ export const HighContrastActionStatusRetryStep4 = {
     cellsActionStatusStories.ActionStatusRetry,
     4,
   ),
-  name: 'Cells/Action status — Retry from the mark, шаг 4',
+  name: 'Cells/Action status — Retry from the mark, step 4',
   tags: ['!test'],
 }
 
@@ -5997,7 +5997,7 @@ export const HighContrastCellSaveCancelMenuStep1 = {
     cellsActionStatusStories.CellSaveCancelMenu,
     1,
   ),
-  name: 'Cells/Action status — Cancel saving from the menu, шаг 1',
+  name: 'Cells/Action status — Cancel saving from the menu, step 1',
   tags: ['!test'],
 }
 
@@ -6007,7 +6007,7 @@ export const HighContrastCellSaveCancelMenuStep2 = {
     cellsActionStatusStories.CellSaveCancelMenu,
     2,
   ),
-  name: 'Cells/Action status — Cancel saving from the menu, шаг 2',
+  name: 'Cells/Action status — Cancel saving from the menu, step 2',
   tags: ['!test'],
 }
 
@@ -6017,7 +6017,7 @@ export const HighContrastCellSaveCancelMenuStep3 = {
     cellsActionStatusStories.CellSaveCancelMenu,
     3,
   ),
-  name: 'Cells/Action status — Cancel saving from the menu, шаг 3',
+  name: 'Cells/Action status — Cancel saving from the menu, step 3',
   tags: ['!test'],
 }
 
@@ -6027,7 +6027,7 @@ export const HighContrastCellSaveCancelMenuStep4 = {
     cellsActionStatusStories.CellSaveCancelMenu,
     4,
   ),
-  name: 'Cells/Action status — Cancel saving from the menu, шаг 4',
+  name: 'Cells/Action status — Cancel saving from the menu, step 4',
   tags: ['!test'],
 }
 
@@ -6037,7 +6037,7 @@ export const HighContrastDataTypesCustomTypeStep1 = {
     columnsDataTypesStories.DataTypesCustomType,
     1,
   ),
-  name: 'Columns/Data types/Overview — Custom type, шаг 1',
+  name: 'Columns/Data types/Overview — Custom type, step 1',
   tags: ['!test'],
 }
 
@@ -6047,7 +6047,7 @@ export const HighContrastDataTypesCustomTypeStep2 = {
     columnsDataTypesStories.DataTypesCustomType,
     2,
   ),
-  name: 'Columns/Data types/Overview — Custom type, шаг 2',
+  name: 'Columns/Data types/Overview — Custom type, step 2',
   tags: ['!test'],
 }
 
@@ -6057,7 +6057,7 @@ export const HighContrastDataTypesOverrideBuiltInStep1 = {
     columnsDataTypesStories.DataTypesOverrideBuiltIn,
     1,
   ),
-  name: 'Columns/Data types/Overview — Override built-in type, шаг 1',
+  name: 'Columns/Data types/Overview — Override built-in type, step 1',
   tags: ['!test'],
 }
 
@@ -6067,7 +6067,7 @@ export const HighContrastDataTypesOverrideBuiltInStep2 = {
     columnsDataTypesStories.DataTypesOverrideBuiltIn,
     2,
   ),
-  name: 'Columns/Data types/Overview — Override built-in type, шаг 2',
+  name: 'Columns/Data types/Overview — Override built-in type, step 2',
   tags: ['!test'],
 }
 
@@ -6077,7 +6077,7 @@ export const HighContrastDataTypesLocaleStep1 = {
     columnsDataTypesStories.DataTypesLocale,
     1,
   ),
-  name: 'Columns/Data types/Overview — Switch language, шаг 1',
+  name: 'Columns/Data types/Overview — Switch language, step 1',
   tags: ['!test'],
 }
 
@@ -6087,7 +6087,7 @@ export const HighContrastDataTypesLocaleStep2 = {
     columnsDataTypesStories.DataTypesLocale,
     2,
   ),
-  name: 'Columns/Data types/Overview — Switch language, шаг 2',
+  name: 'Columns/Data types/Overview — Switch language, step 2',
   tags: ['!test'],
 }
 
@@ -6097,7 +6097,7 @@ export const HighContrastDataTypesLocaleStep3 = {
     columnsDataTypesStories.DataTypesLocale,
     3,
   ),
-  name: 'Columns/Data types/Overview — Switch language, шаг 3',
+  name: 'Columns/Data types/Overview — Switch language, step 3',
   tags: ['!test'],
 }
 
@@ -6107,7 +6107,7 @@ export const HighContrastDataTypesSearchStep1 = {
     columnsDataTypesStories.DataTypesSearch,
     1,
   ),
-  name: 'Columns/Data types/Overview — Search shown text, шаг 1',
+  name: 'Columns/Data types/Overview — Search shown text, step 1',
   tags: ['!test'],
 }
 
@@ -6117,7 +6117,7 @@ export const HighContrastDataTypesSearchStep2 = {
     columnsDataTypesStories.DataTypesSearch,
     2,
   ),
-  name: 'Columns/Data types/Overview — Search shown text, шаг 2',
+  name: 'Columns/Data types/Overview — Search shown text, step 2',
   tags: ['!test'],
 }
 
@@ -6127,7 +6127,7 @@ export const HighContrastDataTypesSearchStep3 = {
     columnsDataTypesStories.DataTypesSearch,
     3,
   ),
-  name: 'Columns/Data types/Overview — Search shown text, шаг 3',
+  name: 'Columns/Data types/Overview — Search shown text, step 3',
   tags: ['!test'],
 }
 
@@ -6137,7 +6137,7 @@ export const HighContrastEditingTypeEditorStep1 = {
     columnsDataTypesStories.EditingTypeEditor,
     1,
   ),
-  name: 'Columns/Data types/Overview — Editor of a data type, шаг 1',
+  name: 'Columns/Data types/Overview — Editor of a data type, step 1',
   tags: ['!test'],
 }
 
@@ -6147,7 +6147,7 @@ export const HighContrastEditingTypeEditorStep2 = {
     columnsDataTypesStories.EditingTypeEditor,
     2,
   ),
-  name: 'Columns/Data types/Overview — Editor of a data type, шаг 2',
+  name: 'Columns/Data types/Overview — Editor of a data type, step 2',
   tags: ['!test'],
 }
 
@@ -6157,7 +6157,7 @@ export const HighContrastEditingTypeEditorStep3 = {
     columnsDataTypesStories.EditingTypeEditor,
     3,
   ),
-  name: 'Columns/Data types/Overview — Editor of a data type, шаг 3',
+  name: 'Columns/Data types/Overview — Editor of a data type, step 3',
   tags: ['!test'],
 }
 
@@ -6167,7 +6167,7 @@ export const HighContrastEditingBooleanStep1 = {
     columnsDataTypesBooleanStories.EditingBoolean,
     1,
   ),
-  name: 'Columns/Data types/Boolean — Toggle, шаг 1',
+  name: 'Columns/Data types/Boolean — Toggle, step 1',
   tags: ['!test'],
 }
 
@@ -6177,7 +6177,7 @@ export const HighContrastEditingBooleanStep2 = {
     columnsDataTypesBooleanStories.EditingBoolean,
     2,
   ),
-  name: 'Columns/Data types/Boolean — Toggle, шаг 2',
+  name: 'Columns/Data types/Boolean — Toggle, step 2',
   tags: ['!test'],
 }
 
@@ -6187,7 +6187,7 @@ export const HighContrastEditingBooleanStep3 = {
     columnsDataTypesBooleanStories.EditingBoolean,
     3,
   ),
-  name: 'Columns/Data types/Boolean — Toggle, шаг 3',
+  name: 'Columns/Data types/Boolean — Toggle, step 3',
   tags: ['!test'],
 }
 
@@ -6197,7 +6197,7 @@ export const HighContrastEditingBooleanKeyboardStep1 = {
     columnsDataTypesBooleanStories.EditingBooleanKeyboard,
     1,
   ),
-  name: 'Columns/Data types/Boolean — Toggle and select with the keyboard, шаг 1',
+  name: 'Columns/Data types/Boolean — Toggle and select with the keyboard, step 1',
   tags: ['!test'],
 }
 
@@ -6207,7 +6207,7 @@ export const HighContrastEditingBooleanKeyboardStep2 = {
     columnsDataTypesBooleanStories.EditingBooleanKeyboard,
     2,
   ),
-  name: 'Columns/Data types/Boolean — Toggle and select with the keyboard, шаг 2',
+  name: 'Columns/Data types/Boolean — Toggle and select with the keyboard, step 2',
   tags: ['!test'],
 }
 
@@ -6217,7 +6217,7 @@ export const HighContrastEditingBooleanKeyboardStep3 = {
     columnsDataTypesBooleanStories.EditingBooleanKeyboard,
     3,
   ),
-  name: 'Columns/Data types/Boolean — Toggle and select with the keyboard, шаг 3',
+  name: 'Columns/Data types/Boolean — Toggle and select with the keyboard, step 3',
   tags: ['!test'],
 }
 
@@ -6227,7 +6227,7 @@ export const HighContrastDataTypesBooleanFilterStep1 = {
     columnsDataTypesBooleanStories.DataTypesBooleanFilter,
     1,
   ),
-  name: 'Columns/Data types/Boolean — Filter, шаг 1',
+  name: 'Columns/Data types/Boolean — Filter, step 1',
   tags: ['!test'],
 }
 
@@ -6237,7 +6237,7 @@ export const HighContrastDataTypesBooleanFilterStep2 = {
     columnsDataTypesBooleanStories.DataTypesBooleanFilter,
     2,
   ),
-  name: 'Columns/Data types/Boolean — Filter, шаг 2',
+  name: 'Columns/Data types/Boolean — Filter, step 2',
   tags: ['!test'],
 }
 
@@ -6247,7 +6247,7 @@ export const HighContrastDataTypesBooleanFilterStep3 = {
     columnsDataTypesBooleanStories.DataTypesBooleanFilter,
     3,
   ),
-  name: 'Columns/Data types/Boolean — Filter, шаг 3',
+  name: 'Columns/Data types/Boolean — Filter, step 3',
   tags: ['!test'],
 }
 
@@ -6257,7 +6257,7 @@ export const HighContrastDataTypesBooleanFilterStep4 = {
     columnsDataTypesBooleanStories.DataTypesBooleanFilter,
     4,
   ),
-  name: 'Columns/Data types/Boolean — Filter, шаг 4',
+  name: 'Columns/Data types/Boolean — Filter, step 4',
   tags: ['!test'],
 }
 
@@ -6267,7 +6267,7 @@ export const HighContrastDataTypesFilterStep1 = {
     columnsDataTypesDateStories.DataTypesFilter,
     1,
   ),
-  name: 'Columns/Data types/Date — Filter, шаг 1',
+  name: 'Columns/Data types/Date — Filter, step 1',
   tags: ['!test'],
 }
 
@@ -6277,7 +6277,7 @@ export const HighContrastDataTypesFilterStep2 = {
     columnsDataTypesDateStories.DataTypesFilter,
     2,
   ),
-  name: 'Columns/Data types/Date — Filter, шаг 2',
+  name: 'Columns/Data types/Date — Filter, step 2',
   tags: ['!test'],
 }
 
@@ -6287,7 +6287,7 @@ export const HighContrastDataTypesFilterStep3 = {
     columnsDataTypesDateStories.DataTypesFilter,
     3,
   ),
-  name: 'Columns/Data types/Date — Filter, шаг 3',
+  name: 'Columns/Data types/Date — Filter, step 3',
   tags: ['!test'],
 }
 
@@ -6297,7 +6297,7 @@ export const HighContrastDataTypesFilterStep4 = {
     columnsDataTypesDateStories.DataTypesFilter,
     4,
   ),
-  name: 'Columns/Data types/Date — Filter, шаг 4',
+  name: 'Columns/Data types/Date — Filter, step 4',
   tags: ['!test'],
 }
 
@@ -6307,7 +6307,7 @@ export const HighContrastEditingDateStep1 = {
     columnsDataTypesDateStories.EditingDate,
     1,
   ),
-  name: 'Columns/Data types/Date — Edit, шаг 1',
+  name: 'Columns/Data types/Date — Edit, step 1',
   tags: ['!test'],
 }
 
@@ -6317,7 +6317,7 @@ export const HighContrastEditingDateStep2 = {
     columnsDataTypesDateStories.EditingDate,
     2,
   ),
-  name: 'Columns/Data types/Date — Edit, шаг 2',
+  name: 'Columns/Data types/Date — Edit, step 2',
   tags: ['!test'],
 }
 
@@ -6327,7 +6327,7 @@ export const HighContrastEditingDateStep3 = {
     columnsDataTypesDateStories.EditingDate,
     3,
   ),
-  name: 'Columns/Data types/Date — Edit, шаг 3',
+  name: 'Columns/Data types/Date — Edit, step 3',
   tags: ['!test'],
 }
 
@@ -6337,7 +6337,7 @@ export const HighContrastEditingDateClearStep1 = {
     columnsDataTypesDateStories.EditingDateClear,
     1,
   ),
-  name: 'Columns/Data types/Date — Clear, шаг 1',
+  name: 'Columns/Data types/Date — Clear, step 1',
   tags: ['!test'],
 }
 
@@ -6347,7 +6347,7 @@ export const HighContrastEditingDateClearStep2 = {
     columnsDataTypesDateStories.EditingDateClear,
     2,
   ),
-  name: 'Columns/Data types/Date — Clear, шаг 2',
+  name: 'Columns/Data types/Date — Clear, step 2',
   tags: ['!test'],
 }
 
@@ -6357,7 +6357,7 @@ export const HighContrastEditingDateClearStep3 = {
     columnsDataTypesDateStories.EditingDateClear,
     3,
   ),
-  name: 'Columns/Data types/Date — Clear, шаг 3',
+  name: 'Columns/Data types/Date — Clear, step 3',
   tags: ['!test'],
 }
 
@@ -6367,7 +6367,7 @@ export const HighContrastDataTypesDateSortStep1 = {
     columnsDataTypesDateStories.DataTypesDateSort,
     1,
   ),
-  name: 'Columns/Data types/Date — Sort, шаг 1',
+  name: 'Columns/Data types/Date — Sort, step 1',
   tags: ['!test'],
 }
 
@@ -6377,7 +6377,7 @@ export const HighContrastDataTypesDateSortStep2 = {
     columnsDataTypesDateStories.DataTypesDateSort,
     2,
   ),
-  name: 'Columns/Data types/Date — Sort, шаг 2',
+  name: 'Columns/Data types/Date — Sort, step 2',
   tags: ['!test'],
 }
 
@@ -6387,7 +6387,7 @@ export const HighContrastDataTypesDateSortStep3 = {
     columnsDataTypesDateStories.DataTypesDateSort,
     3,
   ),
-  name: 'Columns/Data types/Date — Sort, шаг 3',
+  name: 'Columns/Data types/Date — Sort, step 3',
   tags: ['!test'],
 }
 
@@ -6397,7 +6397,7 @@ export const HighContrastDataTypesDateExcelStep1 = {
     columnsDataTypesDateStories.DataTypesDateExcel,
     1,
   ),
-  name: 'Columns/Data types/Date — Export to Excel, шаг 1',
+  name: 'Columns/Data types/Date — Export to Excel, step 1',
   tags: ['!test'],
 }
 
@@ -6407,7 +6407,7 @@ export const HighContrastDataTypesDateExcelStep2 = {
     columnsDataTypesDateStories.DataTypesDateExcel,
     2,
   ),
-  name: 'Columns/Data types/Date — Export to Excel, шаг 2',
+  name: 'Columns/Data types/Date — Export to Excel, step 2',
   tags: ['!test'],
 }
 
@@ -6417,7 +6417,7 @@ export const HighContrastDataTypesDateExcelStep3 = {
     columnsDataTypesDateStories.DataTypesDateExcel,
     3,
   ),
-  name: 'Columns/Data types/Date — Export to Excel, шаг 3',
+  name: 'Columns/Data types/Date — Export to Excel, step 3',
   tags: ['!test'],
 }
 
@@ -6427,7 +6427,7 @@ export const HighContrastEditingDateTimeStep1 = {
     columnsDataTypesDateTimeStories.EditingDateTime,
     1,
   ),
-  name: 'Columns/Data types/Date & time — Edit, шаг 1',
+  name: 'Columns/Data types/Date & time — Edit, step 1',
   tags: ['!test'],
 }
 
@@ -6437,7 +6437,7 @@ export const HighContrastEditingDateTimeStep2 = {
     columnsDataTypesDateTimeStories.EditingDateTime,
     2,
   ),
-  name: 'Columns/Data types/Date & time — Edit, шаг 2',
+  name: 'Columns/Data types/Date & time — Edit, step 2',
   tags: ['!test'],
 }
 
@@ -6447,7 +6447,7 @@ export const HighContrastEditingDateTimeStep3 = {
     columnsDataTypesDateTimeStories.EditingDateTime,
     3,
   ),
-  name: 'Columns/Data types/Date & time — Edit, шаг 3',
+  name: 'Columns/Data types/Date & time — Edit, step 3',
   tags: ['!test'],
 }
 
@@ -6457,7 +6457,7 @@ export const HighContrastDataTypesDateTimeFilterStep1 = {
     columnsDataTypesDateTimeStories.DataTypesDateTimeFilter,
     1,
   ),
-  name: 'Columns/Data types/Date & time — Filter, шаг 1',
+  name: 'Columns/Data types/Date & time — Filter, step 1',
   tags: ['!test'],
 }
 
@@ -6467,7 +6467,7 @@ export const HighContrastDataTypesDateTimeFilterStep2 = {
     columnsDataTypesDateTimeStories.DataTypesDateTimeFilter,
     2,
   ),
-  name: 'Columns/Data types/Date & time — Filter, шаг 2',
+  name: 'Columns/Data types/Date & time — Filter, step 2',
   tags: ['!test'],
 }
 
@@ -6477,7 +6477,7 @@ export const HighContrastDataTypesDateTimeFilterStep3 = {
     columnsDataTypesDateTimeStories.DataTypesDateTimeFilter,
     3,
   ),
-  name: 'Columns/Data types/Date & time — Filter, шаг 3',
+  name: 'Columns/Data types/Date & time — Filter, step 3',
   tags: ['!test'],
 }
 
@@ -6487,7 +6487,7 @@ export const HighContrastDataTypesNumberStringStep1 = {
     columnsDataTypesDecimalStringStories.DataTypesNumberString,
     1,
   ),
-  name: 'Columns/Data types/Decimal string — Exact order, шаг 1',
+  name: 'Columns/Data types/Decimal string — Exact order, step 1',
   tags: ['!test'],
 }
 
@@ -6497,7 +6497,7 @@ export const HighContrastDataTypesNumberStringStep2 = {
     columnsDataTypesDecimalStringStories.DataTypesNumberString,
     2,
   ),
-  name: 'Columns/Data types/Decimal string — Exact order, шаг 2',
+  name: 'Columns/Data types/Decimal string — Exact order, step 2',
   tags: ['!test'],
 }
 
@@ -6507,7 +6507,7 @@ export const HighContrastDataTypesNumberStringExportStep1 = {
     columnsDataTypesDecimalStringStories.DataTypesNumberStringExport,
     1,
   ),
-  name: 'Columns/Data types/Decimal string — Export to Excel, шаг 1',
+  name: 'Columns/Data types/Decimal string — Export to Excel, step 1',
   tags: ['!test'],
 }
 
@@ -6517,7 +6517,7 @@ export const HighContrastDataTypesNumberStringExportStep2 = {
     columnsDataTypesDecimalStringStories.DataTypesNumberStringExport,
     2,
   ),
-  name: 'Columns/Data types/Decimal string — Export to Excel, шаг 2',
+  name: 'Columns/Data types/Decimal string — Export to Excel, step 2',
   tags: ['!test'],
 }
 
@@ -6527,7 +6527,7 @@ export const HighContrastDataTypesNumberStringExportStep3 = {
     columnsDataTypesDecimalStringStories.DataTypesNumberStringExport,
     3,
   ),
-  name: 'Columns/Data types/Decimal string — Export to Excel, шаг 3',
+  name: 'Columns/Data types/Decimal string — Export to Excel, step 3',
   tags: ['!test'],
 }
 
@@ -6537,7 +6537,7 @@ export const HighContrastEditingDecimalStringStep1 = {
     columnsDataTypesDecimalStringStories.EditingDecimalString,
     1,
   ),
-  name: 'Columns/Data types/Decimal string — Edit, шаг 1',
+  name: 'Columns/Data types/Decimal string — Edit, step 1',
   tags: ['!test'],
 }
 
@@ -6547,7 +6547,7 @@ export const HighContrastEditingDecimalStringStep2 = {
     columnsDataTypesDecimalStringStories.EditingDecimalString,
     2,
   ),
-  name: 'Columns/Data types/Decimal string — Edit, шаг 2',
+  name: 'Columns/Data types/Decimal string — Edit, step 2',
   tags: ['!test'],
 }
 
@@ -6557,7 +6557,7 @@ export const HighContrastEditingDecimalStringStep3 = {
     columnsDataTypesDecimalStringStories.EditingDecimalString,
     3,
   ),
-  name: 'Columns/Data types/Decimal string — Edit, шаг 3',
+  name: 'Columns/Data types/Decimal string — Edit, step 3',
   tags: ['!test'],
 }
 
@@ -6567,7 +6567,7 @@ export const HighContrastEditingMultiSelectStep1 = {
     columnsDataTypesMultiSelectStories.EditingMultiSelect,
     1,
   ),
-  name: 'Columns/Data types/Multi select — Choose several, шаг 1',
+  name: 'Columns/Data types/Multi select — Choose several, step 1',
   tags: ['!test'],
 }
 
@@ -6577,7 +6577,7 @@ export const HighContrastEditingMultiSelectStep2 = {
     columnsDataTypesMultiSelectStories.EditingMultiSelect,
     2,
   ),
-  name: 'Columns/Data types/Multi select — Choose several, шаг 2',
+  name: 'Columns/Data types/Multi select — Choose several, step 2',
   tags: ['!test'],
 }
 
@@ -6587,7 +6587,7 @@ export const HighContrastEditingMultiSelectStep3 = {
     columnsDataTypesMultiSelectStories.EditingMultiSelect,
     3,
   ),
-  name: 'Columns/Data types/Multi select — Choose several, шаг 3',
+  name: 'Columns/Data types/Multi select — Choose several, step 3',
   tags: ['!test'],
 }
 
@@ -6597,7 +6597,7 @@ export const HighContrastEditingMultiSelectStep4 = {
     columnsDataTypesMultiSelectStories.EditingMultiSelect,
     4,
   ),
-  name: 'Columns/Data types/Multi select — Choose several, шаг 4',
+  name: 'Columns/Data types/Multi select — Choose several, step 4',
   tags: ['!test'],
 }
 
@@ -6607,7 +6607,7 @@ export const HighContrastDataTypesMultiSelectFilterStep1 = {
     columnsDataTypesMultiSelectStories.DataTypesMultiSelectFilter,
     1,
   ),
-  name: 'Columns/Data types/Multi select — Filter, шаг 1',
+  name: 'Columns/Data types/Multi select — Filter, step 1',
   tags: ['!test'],
 }
 
@@ -6617,7 +6617,7 @@ export const HighContrastDataTypesMultiSelectFilterStep2 = {
     columnsDataTypesMultiSelectStories.DataTypesMultiSelectFilter,
     2,
   ),
-  name: 'Columns/Data types/Multi select — Filter, шаг 2',
+  name: 'Columns/Data types/Multi select — Filter, step 2',
   tags: ['!test'],
 }
 
@@ -6627,7 +6627,7 @@ export const HighContrastDataTypesMultiSelectFilterStep3 = {
     columnsDataTypesMultiSelectStories.DataTypesMultiSelectFilter,
     3,
   ),
-  name: 'Columns/Data types/Multi select — Filter, шаг 3',
+  name: 'Columns/Data types/Multi select — Filter, step 3',
   tags: ['!test'],
 }
 
@@ -6637,7 +6637,7 @@ export const HighContrastDataTypesEditNumberStep1 = {
     columnsDataTypesNumberStories.DataTypesEditNumber,
     1,
   ),
-  name: 'Columns/Data types/Number — Edit with a decimal comma, шаг 1',
+  name: 'Columns/Data types/Number — Edit with a decimal comma, step 1',
   tags: ['!test'],
 }
 
@@ -6647,7 +6647,7 @@ export const HighContrastDataTypesEditNumberStep2 = {
     columnsDataTypesNumberStories.DataTypesEditNumber,
     2,
   ),
-  name: 'Columns/Data types/Number — Edit with a decimal comma, шаг 2',
+  name: 'Columns/Data types/Number — Edit with a decimal comma, step 2',
   tags: ['!test'],
 }
 
@@ -6657,7 +6657,7 @@ export const HighContrastDataTypesEditNumberStep3 = {
     columnsDataTypesNumberStories.DataTypesEditNumber,
     3,
   ),
-  name: 'Columns/Data types/Number — Edit with a decimal comma, шаг 3',
+  name: 'Columns/Data types/Number — Edit with a decimal comma, step 3',
   tags: ['!test'],
 }
 
@@ -6667,7 +6667,7 @@ export const HighContrastEditingNumberStep1 = {
     columnsDataTypesNumberStories.EditingNumber,
     1,
   ),
-  name: 'Columns/Data types/Number — Edit, шаг 1',
+  name: 'Columns/Data types/Number — Edit, step 1',
   tags: ['!test'],
 }
 
@@ -6677,7 +6677,7 @@ export const HighContrastEditingNumberStep2 = {
     columnsDataTypesNumberStories.EditingNumber,
     2,
   ),
-  name: 'Columns/Data types/Number — Edit, шаг 2',
+  name: 'Columns/Data types/Number — Edit, step 2',
   tags: ['!test'],
 }
 
@@ -6687,7 +6687,7 @@ export const HighContrastEditingNumberStep3 = {
     columnsDataTypesNumberStories.EditingNumber,
     3,
   ),
-  name: 'Columns/Data types/Number — Edit, шаг 3',
+  name: 'Columns/Data types/Number — Edit, step 3',
   tags: ['!test'],
 }
 
@@ -6697,7 +6697,7 @@ export const HighContrastEditingNumberStep4 = {
     columnsDataTypesNumberStories.EditingNumber,
     4,
   ),
-  name: 'Columns/Data types/Number — Edit, шаг 4',
+  name: 'Columns/Data types/Number — Edit, step 4',
   tags: ['!test'],
 }
 
@@ -6707,7 +6707,7 @@ export const HighContrastDataTypesNumberSortStep1 = {
     columnsDataTypesNumberStories.DataTypesNumberSort,
     1,
   ),
-  name: 'Columns/Data types/Number — Sort, шаг 1',
+  name: 'Columns/Data types/Number — Sort, step 1',
   tags: ['!test'],
 }
 
@@ -6717,7 +6717,7 @@ export const HighContrastDataTypesNumberSortStep2 = {
     columnsDataTypesNumberStories.DataTypesNumberSort,
     2,
   ),
-  name: 'Columns/Data types/Number — Sort, шаг 2',
+  name: 'Columns/Data types/Number — Sort, step 2',
   tags: ['!test'],
 }
 
@@ -6727,7 +6727,7 @@ export const HighContrastDataTypesNumberSortStep3 = {
     columnsDataTypesNumberStories.DataTypesNumberSort,
     3,
   ),
-  name: 'Columns/Data types/Number — Sort, шаг 3',
+  name: 'Columns/Data types/Number — Sort, step 3',
   tags: ['!test'],
 }
 
@@ -6737,7 +6737,7 @@ export const HighContrastDataTypesNumberFilterStep1 = {
     columnsDataTypesNumberStories.DataTypesNumberFilter,
     1,
   ),
-  name: 'Columns/Data types/Number — Filter, шаг 1',
+  name: 'Columns/Data types/Number — Filter, step 1',
   tags: ['!test'],
 }
 
@@ -6747,7 +6747,7 @@ export const HighContrastDataTypesNumberFilterStep2 = {
     columnsDataTypesNumberStories.DataTypesNumberFilter,
     2,
   ),
-  name: 'Columns/Data types/Number — Filter, шаг 2',
+  name: 'Columns/Data types/Number — Filter, step 2',
   tags: ['!test'],
 }
 
@@ -6757,7 +6757,7 @@ export const HighContrastDataTypesNumberFilterStep3 = {
     columnsDataTypesNumberStories.DataTypesNumberFilter,
     3,
   ),
-  name: 'Columns/Data types/Number — Filter, шаг 3',
+  name: 'Columns/Data types/Number — Filter, step 3',
   tags: ['!test'],
 }
 
@@ -6767,7 +6767,7 @@ export const HighContrastDataTypesNumberExcelStep1 = {
     columnsDataTypesNumberStories.DataTypesNumberExcel,
     1,
   ),
-  name: 'Columns/Data types/Number — Export to Excel, шаг 1',
+  name: 'Columns/Data types/Number — Export to Excel, step 1',
   tags: ['!test'],
 }
 
@@ -6777,7 +6777,7 @@ export const HighContrastDataTypesNumberExcelStep2 = {
     columnsDataTypesNumberStories.DataTypesNumberExcel,
     2,
   ),
-  name: 'Columns/Data types/Number — Export to Excel, шаг 2',
+  name: 'Columns/Data types/Number — Export to Excel, step 2',
   tags: ['!test'],
 }
 
@@ -6787,7 +6787,7 @@ export const HighContrastDataTypesNumberExcelStep3 = {
     columnsDataTypesNumberStories.DataTypesNumberExcel,
     3,
   ),
-  name: 'Columns/Data types/Number — Export to Excel, шаг 3',
+  name: 'Columns/Data types/Number — Export to Excel, step 3',
   tags: ['!test'],
 }
 
@@ -6797,7 +6797,7 @@ export const HighContrastDataTypesObjectStep1 = {
     columnsDataTypesObjectStories.DataTypesObject,
     1,
   ),
-  name: 'Columns/Data types/Object — Sort and filter records, шаг 1',
+  name: 'Columns/Data types/Object — Sort and filter records, step 1',
   tags: ['!test'],
 }
 
@@ -6807,7 +6807,7 @@ export const HighContrastDataTypesObjectStep2 = {
     columnsDataTypesObjectStories.DataTypesObject,
     2,
   ),
-  name: 'Columns/Data types/Object — Sort and filter records, шаг 2',
+  name: 'Columns/Data types/Object — Sort and filter records, step 2',
   tags: ['!test'],
 }
 
@@ -6817,7 +6817,7 @@ export const HighContrastDataTypesObjectStep3 = {
     columnsDataTypesObjectStories.DataTypesObject,
     3,
   ),
-  name: 'Columns/Data types/Object — Sort and filter records, шаг 3',
+  name: 'Columns/Data types/Object — Sort and filter records, step 3',
   tags: ['!test'],
 }
 
@@ -6827,7 +6827,7 @@ export const HighContrastDataTypesObjectStep4 = {
     columnsDataTypesObjectStories.DataTypesObject,
     4,
   ),
-  name: 'Columns/Data types/Object — Sort and filter records, шаг 4',
+  name: 'Columns/Data types/Object — Sort and filter records, step 4',
   tags: ['!test'],
 }
 
@@ -6837,7 +6837,7 @@ export const HighContrastDataTypesObjectLabelStep1 = {
     columnsDataTypesObjectStories.DataTypesObjectLabel,
     1,
   ),
-  name: 'Columns/Data types/Object — Key and label, шаг 1',
+  name: 'Columns/Data types/Object — Key and label, step 1',
   tags: ['!test'],
 }
 
@@ -6847,7 +6847,7 @@ export const HighContrastDataTypesObjectLabelStep2 = {
     columnsDataTypesObjectStories.DataTypesObjectLabel,
     2,
   ),
-  name: 'Columns/Data types/Object — Key and label, шаг 2',
+  name: 'Columns/Data types/Object — Key and label, step 2',
   tags: ['!test'],
 }
 
@@ -6857,7 +6857,7 @@ export const HighContrastEditingLookupStep1 = {
     columnsDataTypesObjectStories.EditingLookup,
     1,
   ),
-  name: 'Columns/Data types/Object — Choose from a directory, шаг 1',
+  name: 'Columns/Data types/Object — Choose from a directory, step 1',
   tags: ['!test'],
 }
 
@@ -6867,7 +6867,7 @@ export const HighContrastEditingLookupStep2 = {
     columnsDataTypesObjectStories.EditingLookup,
     2,
   ),
-  name: 'Columns/Data types/Object — Choose from a directory, шаг 2',
+  name: 'Columns/Data types/Object — Choose from a directory, step 2',
   tags: ['!test'],
 }
 
@@ -6877,7 +6877,7 @@ export const HighContrastEditingLookupStep3 = {
     columnsDataTypesObjectStories.EditingLookup,
     3,
   ),
-  name: 'Columns/Data types/Object — Choose from a directory, шаг 3',
+  name: 'Columns/Data types/Object — Choose from a directory, step 3',
   tags: ['!test'],
 }
 
@@ -6887,7 +6887,7 @@ export const HighContrastEditingLookupStep4 = {
     columnsDataTypesObjectStories.EditingLookup,
     4,
   ),
-  name: 'Columns/Data types/Object — Choose from a directory, шаг 4',
+  name: 'Columns/Data types/Object — Choose from a directory, step 4',
   tags: ['!test'],
 }
 
@@ -6897,7 +6897,7 @@ export const HighContrastEditingLookupStep5 = {
     columnsDataTypesObjectStories.EditingLookup,
     5,
   ),
-  name: 'Columns/Data types/Object — Choose from a directory, шаг 5',
+  name: 'Columns/Data types/Object — Choose from a directory, step 5',
   tags: ['!test'],
 }
 
@@ -6907,7 +6907,7 @@ export const HighContrastEditingRecordFromDataStep1 = {
     columnsDataTypesObjectStories.EditingRecordFromData,
     1,
   ),
-  name: 'Columns/Data types/Object — Choose a record from the table, шаг 1',
+  name: 'Columns/Data types/Object — Choose a record from the table, step 1',
   tags: ['!test'],
 }
 
@@ -6917,7 +6917,7 @@ export const HighContrastEditingRecordFromDataStep2 = {
     columnsDataTypesObjectStories.EditingRecordFromData,
     2,
   ),
-  name: 'Columns/Data types/Object — Choose a record from the table, шаг 2',
+  name: 'Columns/Data types/Object — Choose a record from the table, step 2',
   tags: ['!test'],
 }
 
@@ -6927,7 +6927,7 @@ export const HighContrastEditingRecordFromDataStep3 = {
     columnsDataTypesObjectStories.EditingRecordFromData,
     3,
   ),
-  name: 'Columns/Data types/Object — Choose a record from the table, шаг 3',
+  name: 'Columns/Data types/Object — Choose a record from the table, step 3',
   tags: ['!test'],
 }
 
@@ -6937,7 +6937,7 @@ export const HighContrastEditingSelectStep1 = {
     columnsDataTypesSelectStories.EditingSelect,
     1,
   ),
-  name: 'Columns/Data types/Select — Choose, шаг 1',
+  name: 'Columns/Data types/Select — Choose, step 1',
   tags: ['!test'],
 }
 
@@ -6947,7 +6947,7 @@ export const HighContrastEditingSelectStep2 = {
     columnsDataTypesSelectStories.EditingSelect,
     2,
   ),
-  name: 'Columns/Data types/Select — Choose, шаг 2',
+  name: 'Columns/Data types/Select — Choose, step 2',
   tags: ['!test'],
 }
 
@@ -6957,7 +6957,7 @@ export const HighContrastEditingSelectStep3 = {
     columnsDataTypesSelectStories.EditingSelect,
     3,
   ),
-  name: 'Columns/Data types/Select — Choose, шаг 3',
+  name: 'Columns/Data types/Select — Choose, step 3',
   tags: ['!test'],
 }
 
@@ -6967,7 +6967,7 @@ export const HighContrastEditingSelectStep4 = {
     columnsDataTypesSelectStories.EditingSelect,
     4,
   ),
-  name: 'Columns/Data types/Select — Choose, шаг 4',
+  name: 'Columns/Data types/Select — Choose, step 4',
   tags: ['!test'],
 }
 
@@ -6977,7 +6977,7 @@ export const HighContrastDataTypesSelectFilterStep1 = {
     columnsDataTypesSelectStories.DataTypesSelectFilter,
     1,
   ),
-  name: 'Columns/Data types/Select — Filter, шаг 1',
+  name: 'Columns/Data types/Select — Filter, step 1',
   tags: ['!test'],
 }
 
@@ -6987,7 +6987,7 @@ export const HighContrastDataTypesSelectFilterStep2 = {
     columnsDataTypesSelectStories.DataTypesSelectFilter,
     2,
   ),
-  name: 'Columns/Data types/Select — Filter, шаг 2',
+  name: 'Columns/Data types/Select — Filter, step 2',
   tags: ['!test'],
 }
 
@@ -6997,7 +6997,7 @@ export const HighContrastDataTypesSelectFilterStep3 = {
     columnsDataTypesSelectStories.DataTypesSelectFilter,
     3,
   ),
-  name: 'Columns/Data types/Select — Filter, шаг 3',
+  name: 'Columns/Data types/Select — Filter, step 3',
   tags: ['!test'],
 }
 
@@ -7007,7 +7007,7 @@ export const HighContrastDataTypesTextSortStep1 = {
     columnsDataTypesTextStories.DataTypesTextSort,
     1,
   ),
-  name: 'Columns/Data types/Text — Sort, шаг 1',
+  name: 'Columns/Data types/Text — Sort, step 1',
   tags: ['!test'],
 }
 
@@ -7017,7 +7017,7 @@ export const HighContrastDataTypesTextSortStep2 = {
     columnsDataTypesTextStories.DataTypesTextSort,
     2,
   ),
-  name: 'Columns/Data types/Text — Sort, шаг 2',
+  name: 'Columns/Data types/Text — Sort, step 2',
   tags: ['!test'],
 }
 
@@ -7027,7 +7027,7 @@ export const HighContrastDataTypesTextSortStep3 = {
     columnsDataTypesTextStories.DataTypesTextSort,
     3,
   ),
-  name: 'Columns/Data types/Text — Sort, шаг 3',
+  name: 'Columns/Data types/Text — Sort, step 3',
   tags: ['!test'],
 }
 
@@ -7037,7 +7037,7 @@ export const HighContrastDataTypesTextFilterStep1 = {
     columnsDataTypesTextStories.DataTypesTextFilter,
     1,
   ),
-  name: 'Columns/Data types/Text — Filter, шаг 1',
+  name: 'Columns/Data types/Text — Filter, step 1',
   tags: ['!test'],
 }
 
@@ -7047,7 +7047,7 @@ export const HighContrastDataTypesTextFilterStep2 = {
     columnsDataTypesTextStories.DataTypesTextFilter,
     2,
   ),
-  name: 'Columns/Data types/Text — Filter, шаг 2',
+  name: 'Columns/Data types/Text — Filter, step 2',
   tags: ['!test'],
 }
 
@@ -7057,7 +7057,7 @@ export const HighContrastDataTypesTextFilterStep3 = {
     columnsDataTypesTextStories.DataTypesTextFilter,
     3,
   ),
-  name: 'Columns/Data types/Text — Filter, шаг 3',
+  name: 'Columns/Data types/Text — Filter, step 3',
   tags: ['!test'],
 }
 
@@ -7067,7 +7067,7 @@ export const HighContrastDataTypesTextFilterStep4 = {
     columnsDataTypesTextStories.DataTypesTextFilter,
     4,
   ),
-  name: 'Columns/Data types/Text — Filter, шаг 4',
+  name: 'Columns/Data types/Text — Filter, step 4',
   tags: ['!test'],
 }
 
@@ -7077,7 +7077,7 @@ export const HighContrastEditingTextStep1 = {
     columnsDataTypesTextStories.EditingText,
     1,
   ),
-  name: 'Columns/Data types/Text — Edit, шаг 1',
+  name: 'Columns/Data types/Text — Edit, step 1',
   tags: ['!test'],
 }
 
@@ -7087,7 +7087,7 @@ export const HighContrastEditingTextStep2 = {
     columnsDataTypesTextStories.EditingText,
     2,
   ),
-  name: 'Columns/Data types/Text — Edit, шаг 2',
+  name: 'Columns/Data types/Text — Edit, step 2',
   tags: ['!test'],
 }
 
@@ -7097,7 +7097,7 @@ export const HighContrastEditingTextStep3 = {
     columnsDataTypesTextStories.EditingText,
     3,
   ),
-  name: 'Columns/Data types/Text — Edit, шаг 3',
+  name: 'Columns/Data types/Text — Edit, step 3',
   tags: ['!test'],
 }
 
@@ -7113,7 +7113,7 @@ export const HighContrastFailureLogRowStep1 = {
     panelsFailureLogStories.FailureLogRow,
     1,
   ),
-  name: 'Panels/Failure log — Refused row action, шаг 1',
+  name: 'Panels/Failure log — Refused row action, step 1',
   tags: ['!test'],
 }
 
@@ -7123,7 +7123,7 @@ export const HighContrastFailureLogRowStep2 = {
     panelsFailureLogStories.FailureLogRow,
     2,
   ),
-  name: 'Panels/Failure log — Refused row action, шаг 2',
+  name: 'Panels/Failure log — Refused row action, step 2',
   tags: ['!test'],
 }
 
@@ -7133,7 +7133,7 @@ export const HighContrastFailureLogRowStep3 = {
     panelsFailureLogStories.FailureLogRow,
     3,
   ),
-  name: 'Panels/Failure log — Refused row action, шаг 3',
+  name: 'Panels/Failure log — Refused row action, step 3',
   tags: ['!test'],
 }
 
@@ -7143,7 +7143,7 @@ export const HighContrastFailureLogRowStep4 = {
     panelsFailureLogStories.FailureLogRow,
     4,
   ),
-  name: 'Panels/Failure log — Refused row action, шаг 4',
+  name: 'Panels/Failure log — Refused row action, step 4',
   tags: ['!test'],
 }
 
@@ -7153,7 +7153,7 @@ export const HighContrastFailureLogOffscreenStep1 = {
     panelsFailureLogStories.FailureLogOffscreen,
     1,
   ),
-  name: 'Panels/Failure log — Failures off screen, шаг 1',
+  name: 'Panels/Failure log — Failures off screen, step 1',
   tags: ['!test'],
 }
 
@@ -7163,7 +7163,7 @@ export const HighContrastFailureLogOffscreenStep2 = {
     panelsFailureLogStories.FailureLogOffscreen,
     2,
   ),
-  name: 'Panels/Failure log — Failures off screen, шаг 2',
+  name: 'Panels/Failure log — Failures off screen, step 2',
   tags: ['!test'],
 }
 
@@ -7173,7 +7173,7 @@ export const HighContrastFailureLogOffscreenStep3 = {
     panelsFailureLogStories.FailureLogOffscreen,
     3,
   ),
-  name: 'Panels/Failure log — Failures off screen, шаг 3',
+  name: 'Panels/Failure log — Failures off screen, step 3',
   tags: ['!test'],
 }
 
@@ -7183,7 +7183,7 @@ export const HighContrastFailureLogOffscreenStep4 = {
     panelsFailureLogStories.FailureLogOffscreen,
     4,
   ),
-  name: 'Panels/Failure log — Failures off screen, шаг 4',
+  name: 'Panels/Failure log — Failures off screen, step 4',
   tags: ['!test'],
 }
 
@@ -7193,7 +7193,7 @@ export const HighContrastFailureLogOffscreenStep5 = {
     panelsFailureLogStories.FailureLogOffscreen,
     5,
   ),
-  name: 'Panels/Failure log — Failures off screen, шаг 5',
+  name: 'Panels/Failure log — Failures off screen, step 5',
   tags: ['!test'],
 }
 
@@ -7203,73 +7203,73 @@ export const HighContrastFailureLogOffscreenStep6 = {
     panelsFailureLogStories.FailureLogOffscreen,
     6,
   ),
-  name: 'Panels/Failure log — Failures off screen, шаг 6',
+  name: 'Panels/Failure log — Failures off screen, step 6',
   tags: ['!test'],
 }
 
 export const HighContrastFilterDraftClosedPanelStep1 = {
   ...twinStep(filteringStories, filteringStories.FilterDraftClosedPanel, 1),
-  name: 'Filtering — Unapplied condition, шаг 1',
+  name: 'Filtering — Unapplied condition, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastFilterDraftClosedPanelStep2 = {
   ...twinStep(filteringStories, filteringStories.FilterDraftClosedPanel, 2),
-  name: 'Filtering — Unapplied condition, шаг 2',
+  name: 'Filtering — Unapplied condition, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastFilterDraftClosedPanelStep3 = {
   ...twinStep(filteringStories, filteringStories.FilterDraftClosedPanel, 3),
-  name: 'Filtering — Unapplied condition, шаг 3',
+  name: 'Filtering — Unapplied condition, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastFilterDraftClosedPanelStep4 = {
   ...twinStep(filteringStories, filteringStories.FilterDraftClosedPanel, 4),
-  name: 'Filtering — Unapplied condition, шаг 4',
+  name: 'Filtering — Unapplied condition, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastFilterDraftAfterRefusalStep1 = {
   ...twinStep(filteringStories, filteringStories.FilterDraftAfterRefusal, 1),
-  name: 'Filtering — Refused condition, шаг 1',
+  name: 'Filtering — Refused condition, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastFilterDraftAfterRefusalStep2 = {
   ...twinStep(filteringStories, filteringStories.FilterDraftAfterRefusal, 2),
-  name: 'Filtering — Refused condition, шаг 2',
+  name: 'Filtering — Refused condition, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastFilterDraftAfterRefusalStep3 = {
   ...twinStep(filteringStories, filteringStories.FilterDraftAfterRefusal, 3),
-  name: 'Filtering — Refused condition, шаг 3',
+  name: 'Filtering — Refused condition, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastFilterDraftAfterRefusalStep4 = {
   ...twinStep(filteringStories, filteringStories.FilterDraftAfterRefusal, 4),
-  name: 'Filtering — Refused condition, шаг 4',
+  name: 'Filtering — Refused condition, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastDraftsFromUrlStep1 = {
   ...twinStep(filteringStories, filteringStories.DraftsFromUrl, 1),
-  name: 'Filtering — Restore unapplied conditions, шаг 1',
+  name: 'Filtering — Restore unapplied conditions, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastDraftsFromUrlStep2 = {
   ...twinStep(filteringStories, filteringStories.DraftsFromUrl, 2),
-  name: 'Filtering — Restore unapplied conditions, шаг 2',
+  name: 'Filtering — Restore unapplied conditions, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastDraftsFromUrlStep3 = {
   ...twinStep(filteringStories, filteringStories.DraftsFromUrl, 3),
-  name: 'Filtering — Restore unapplied conditions, шаг 3',
+  name: 'Filtering — Restore unapplied conditions, step 3',
   tags: ['!test'],
 }
 
@@ -7288,7 +7288,7 @@ export const HighContrastUnsavedChangesApplyStep1 = {
     panelsUnsavedChangesStories.UnsavedChangesApply,
     1,
   ),
-  name: 'Panels/Unsaved changes — Apply from the panel, шаг 1',
+  name: 'Panels/Unsaved changes — Apply from the panel, step 1',
   tags: ['!test'],
 }
 
@@ -7298,7 +7298,7 @@ export const HighContrastUnsavedChangesApplyStep2 = {
     panelsUnsavedChangesStories.UnsavedChangesApply,
     2,
   ),
-  name: 'Panels/Unsaved changes — Apply from the panel, шаг 2',
+  name: 'Panels/Unsaved changes — Apply from the panel, step 2',
   tags: ['!test'],
 }
 
@@ -7308,7 +7308,7 @@ export const HighContrastUnsavedChangesApplyStep3 = {
     panelsUnsavedChangesStories.UnsavedChangesApply,
     3,
   ),
-  name: 'Panels/Unsaved changes — Apply from the panel, шаг 3',
+  name: 'Panels/Unsaved changes — Apply from the panel, step 3',
   tags: ['!test'],
 }
 
@@ -7318,7 +7318,7 @@ export const HighContrastUnsavedChangesApplyStep4 = {
     panelsUnsavedChangesStories.UnsavedChangesApply,
     4,
   ),
-  name: 'Panels/Unsaved changes — Apply from the panel, шаг 4',
+  name: 'Panels/Unsaved changes — Apply from the panel, step 4',
   tags: ['!test'],
 }
 
@@ -7328,7 +7328,7 @@ export const HighContrastUnsavedChangesDangerActionsStep1 = {
     panelsUnsavedChangesStories.UnsavedChangesDangerActions,
     1,
   ),
-  name: 'Panels/Unsaved changes — Discard from the panel, шаг 1',
+  name: 'Panels/Unsaved changes — Discard from the panel, step 1',
   tags: ['!test'],
 }
 
@@ -7338,7 +7338,7 @@ export const HighContrastUnsavedChangesDangerActionsStep2 = {
     panelsUnsavedChangesStories.UnsavedChangesDangerActions,
     2,
   ),
-  name: 'Panels/Unsaved changes — Discard from the panel, шаг 2',
+  name: 'Panels/Unsaved changes — Discard from the panel, step 2',
   tags: ['!test'],
 }
 
@@ -7348,7 +7348,7 @@ export const HighContrastUnsavedChangesDangerActionsStep3 = {
     panelsUnsavedChangesStories.UnsavedChangesDangerActions,
     3,
   ),
-  name: 'Panels/Unsaved changes — Discard from the panel, шаг 3',
+  name: 'Panels/Unsaved changes — Discard from the panel, step 3',
   tags: ['!test'],
 }
 
@@ -7358,7 +7358,7 @@ export const HighContrastUnsavedChangesDangerActionsStep4 = {
     panelsUnsavedChangesStories.UnsavedChangesDangerActions,
     4,
   ),
-  name: 'Panels/Unsaved changes — Discard from the panel, шаг 4',
+  name: 'Panels/Unsaved changes — Discard from the panel, step 4',
   tags: ['!test'],
 }
 
@@ -7368,7 +7368,7 @@ export const HighContrastUnsavedChangesDotHintStep1 = {
     panelsUnsavedChangesStories.UnsavedChangesDotHint,
     1,
   ),
-  name: 'Panels/Unsaved changes — Dot hint, шаг 1',
+  name: 'Panels/Unsaved changes — Dot hint, step 1',
   tags: ['!test'],
 }
 
@@ -7378,7 +7378,7 @@ export const HighContrastUnsavedChangesDotHintStep2 = {
     panelsUnsavedChangesStories.UnsavedChangesDotHint,
     2,
   ),
-  name: 'Panels/Unsaved changes — Dot hint, шаг 2',
+  name: 'Panels/Unsaved changes — Dot hint, step 2',
   tags: ['!test'],
 }
 
@@ -7388,31 +7388,31 @@ export const HighContrastUnsavedChangesDotHintStep3 = {
     panelsUnsavedChangesStories.UnsavedChangesDotHint,
     3,
   ),
-  name: 'Panels/Unsaved changes — Dot hint, шаг 3',
+  name: 'Panels/Unsaved changes — Dot hint, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastManualSaveCellsStep1 = {
   ...twinStep(cellsEditingStories, cellsEditingStories.ManualSaveCells, 1),
-  name: 'Cells/Editing — Save by button, шаг 1',
+  name: 'Cells/Editing — Save by button, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastManualSaveCellsStep2 = {
   ...twinStep(cellsEditingStories, cellsEditingStories.ManualSaveCells, 2),
-  name: 'Cells/Editing — Save by button, шаг 2',
+  name: 'Cells/Editing — Save by button, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastManualSaveCellsStep3 = {
   ...twinStep(cellsEditingStories, cellsEditingStories.ManualSaveCells, 3),
-  name: 'Cells/Editing — Save by button, шаг 3',
+  name: 'Cells/Editing — Save by button, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastManualSaveCellsStep4 = {
   ...twinStep(cellsEditingStories, cellsEditingStories.ManualSaveCells, 4),
-  name: 'Cells/Editing — Save by button, шаг 4',
+  name: 'Cells/Editing — Save by button, step 4',
   tags: ['!test'],
 }
 
@@ -7422,7 +7422,7 @@ export const HighContrastManualSavePartialRefusalStep1 = {
     cellsEditingStories.ManualSavePartialRefusal,
     1,
   ),
-  name: 'Cells/Editing — Refused part of the batch, шаг 1',
+  name: 'Cells/Editing — Refused part of the batch, step 1',
   tags: ['!test'],
 }
 
@@ -7432,7 +7432,7 @@ export const HighContrastManualSavePartialRefusalStep2 = {
     cellsEditingStories.ManualSavePartialRefusal,
     2,
   ),
-  name: 'Cells/Editing — Refused part of the batch, шаг 2',
+  name: 'Cells/Editing — Refused part of the batch, step 2',
   tags: ['!test'],
 }
 
@@ -7442,31 +7442,31 @@ export const HighContrastManualSavePartialRefusalStep3 = {
     cellsEditingStories.ManualSavePartialRefusal,
     3,
   ),
-  name: 'Cells/Editing — Refused part of the batch, шаг 3',
+  name: 'Cells/Editing — Refused part of the batch, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastCellDraftRollbackStep1 = {
   ...twinStep(cellsEditingStories, cellsEditingStories.CellDraftRollback, 1),
-  name: 'Cells/Editing — Roll back an edit, шаг 1',
+  name: 'Cells/Editing — Roll back an edit, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastCellDraftRollbackStep2 = {
   ...twinStep(cellsEditingStories, cellsEditingStories.CellDraftRollback, 2),
-  name: 'Cells/Editing — Roll back an edit, шаг 2',
+  name: 'Cells/Editing — Roll back an edit, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastCellDraftRollbackStep3 = {
   ...twinStep(cellsEditingStories, cellsEditingStories.CellDraftRollback, 3),
-  name: 'Cells/Editing — Roll back an edit, шаг 3',
+  name: 'Cells/Editing — Roll back an edit, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastCellDraftRollbackStep4 = {
   ...twinStep(cellsEditingStories, cellsEditingStories.CellDraftRollback, 4),
-  name: 'Cells/Editing — Roll back an edit, шаг 4',
+  name: 'Cells/Editing — Roll back an edit, step 4',
   tags: ['!test'],
 }
 
@@ -7478,79 +7478,79 @@ export const HighContrastRowEditingPlayground = {
 
 export const HighContrastRowDraftSaveInPlaceStep1 = {
   ...twinStep(rowsEditingStories, rowsEditingStories.RowDraftSaveInPlace, 1),
-  name: 'Rows/Editing — Save a row in place, шаг 1',
+  name: 'Rows/Editing — Save a row in place, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastRowDraftSaveInPlaceStep2 = {
   ...twinStep(rowsEditingStories, rowsEditingStories.RowDraftSaveInPlace, 2),
-  name: 'Rows/Editing — Save a row in place, шаг 2',
+  name: 'Rows/Editing — Save a row in place, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastRowDraftSaveInPlaceStep3 = {
   ...twinStep(rowsEditingStories, rowsEditingStories.RowDraftSaveInPlace, 3),
-  name: 'Rows/Editing — Save a row in place, шаг 3',
+  name: 'Rows/Editing — Save a row in place, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastRowDraftInsertStep1 = {
   ...twinStep(rowsEditingStories, rowsEditingStories.RowDraftInsert, 1),
-  name: 'Rows/Editing — Add a row, шаг 1',
+  name: 'Rows/Editing — Add a row, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastRowDraftInsertStep2 = {
   ...twinStep(rowsEditingStories, rowsEditingStories.RowDraftInsert, 2),
-  name: 'Rows/Editing — Add a row, шаг 2',
+  name: 'Rows/Editing — Add a row, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastRowDraftInsertStep3 = {
   ...twinStep(rowsEditingStories, rowsEditingStories.RowDraftInsert, 3),
-  name: 'Rows/Editing — Add a row, шаг 3',
+  name: 'Rows/Editing — Add a row, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastRowDraftInsertStep4 = {
   ...twinStep(rowsEditingStories, rowsEditingStories.RowDraftInsert, 4),
-  name: 'Rows/Editing — Add a row, шаг 4',
+  name: 'Rows/Editing — Add a row, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastRowDraftDeleteStep1 = {
   ...twinStep(rowsEditingStories, rowsEditingStories.RowDraftDelete, 1),
-  name: 'Rows/Editing — Delete and restore a row, шаг 1',
+  name: 'Rows/Editing — Delete and restore a row, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastRowDraftDeleteStep2 = {
   ...twinStep(rowsEditingStories, rowsEditingStories.RowDraftDelete, 2),
-  name: 'Rows/Editing — Delete and restore a row, шаг 2',
+  name: 'Rows/Editing — Delete and restore a row, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastRowDraftDeleteStep3 = {
   ...twinStep(rowsEditingStories, rowsEditingStories.RowDraftDelete, 3),
-  name: 'Rows/Editing — Delete and restore a row, шаг 3',
+  name: 'Rows/Editing — Delete and restore a row, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastRowDraftsCommitRefusedStep1 = {
   ...twinStep(rowsEditingStories, rowsEditingStories.RowDraftsCommitRefused, 1),
-  name: 'Rows/Editing — Refused new row, шаг 1',
+  name: 'Rows/Editing — Refused new row, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastRowDraftsCommitRefusedStep2 = {
   ...twinStep(rowsEditingStories, rowsEditingStories.RowDraftsCommitRefused, 2),
-  name: 'Rows/Editing — Refused new row, шаг 2',
+  name: 'Rows/Editing — Refused new row, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastRowDraftsCommitRefusedStep3 = {
   ...twinStep(rowsEditingStories, rowsEditingStories.RowDraftsCommitRefused, 3),
-  name: 'Rows/Editing — Refused new row, шаг 3',
+  name: 'Rows/Editing — Refused new row, step 3',
   tags: ['!test'],
 }
 
@@ -7560,7 +7560,7 @@ export const HighContrastPaginationServerSelectAllExceptStep1 = {
     panelsPaginationStories.PaginationServerSelectAllExcept,
     1,
   ),
-  name: 'Panels/Pagination — Server, select all except, шаг 1',
+  name: 'Panels/Pagination — Server, select all except, step 1',
   tags: ['!test'],
 }
 
@@ -7570,7 +7570,7 @@ export const HighContrastPaginationServerSelectAllExceptStep2 = {
     panelsPaginationStories.PaginationServerSelectAllExcept,
     2,
   ),
-  name: 'Panels/Pagination — Server, select all except, шаг 2',
+  name: 'Panels/Pagination — Server, select all except, step 2',
   tags: ['!test'],
 }
 
@@ -7580,7 +7580,7 @@ export const HighContrastPaginationServerSelectAllExceptStep3 = {
     panelsPaginationStories.PaginationServerSelectAllExcept,
     3,
   ),
-  name: 'Panels/Pagination — Server, select all except, шаг 3',
+  name: 'Panels/Pagination — Server, select all except, step 3',
   tags: ['!test'],
 }
 
@@ -7590,7 +7590,7 @@ export const HighContrastPaginationServerSelectAllExceptStep4 = {
     panelsPaginationStories.PaginationServerSelectAllExcept,
     4,
   ),
-  name: 'Panels/Pagination — Server, select all except, шаг 4',
+  name: 'Panels/Pagination — Server, select all except, step 4',
   tags: ['!test'],
 }
 
@@ -7600,7 +7600,7 @@ export const HighContrastInfiniteScrollSelectAllStep1 = {
     infiniteScrollStories.InfiniteScrollSelectAll,
     1,
   ),
-  name: 'Data loading/Infinite scroll — Select all, шаг 1',
+  name: 'Data loading/Infinite scroll — Select all, step 1',
   tags: ['!test'],
 }
 
@@ -7610,7 +7610,7 @@ export const HighContrastInfiniteScrollSelectAllStep2 = {
     infiniteScrollStories.InfiniteScrollSelectAll,
     2,
   ),
-  name: 'Data loading/Infinite scroll — Select all, шаг 2',
+  name: 'Data loading/Infinite scroll — Select all, step 2',
   tags: ['!test'],
 }
 
@@ -7620,7 +7620,7 @@ export const HighContrastInfiniteScrollSelectAllStep3 = {
     infiniteScrollStories.InfiniteScrollSelectAll,
     3,
   ),
-  name: 'Data loading/Infinite scroll — Select all, шаг 3',
+  name: 'Data loading/Infinite scroll — Select all, step 3',
   tags: ['!test'],
 }
 
@@ -7630,7 +7630,7 @@ export const HighContrastCellSelectionRangesAnyModeStep1 = {
     serverCellSelectionStories.CellSelectionRangesAnyMode,
     1,
   ),
-  name: 'Data loading/Server row model/Cell selection — Read the selection, шаг 1',
+  name: 'Data loading/Server row model/Cell selection — Read the selection, step 1',
   tags: ['!test'],
 }
 
@@ -7640,7 +7640,7 @@ export const HighContrastCellSelectionRangesAnyModeStep2 = {
     serverCellSelectionStories.CellSelectionRangesAnyMode,
     2,
   ),
-  name: 'Data loading/Server row model/Cell selection — Read the selection, шаг 2',
+  name: 'Data loading/Server row model/Cell selection — Read the selection, step 2',
   tags: ['!test'],
 }
 
@@ -7650,7 +7650,7 @@ export const HighContrastCellSelectionRangesAnyModeStep3 = {
     serverCellSelectionStories.CellSelectionRangesAnyMode,
     3,
   ),
-  name: 'Data loading/Server row model/Cell selection — Read the selection, шаг 3',
+  name: 'Data loading/Server row model/Cell selection — Read the selection, step 3',
   tags: ['!test'],
 }
 
@@ -7660,7 +7660,7 @@ export const HighContrastCellSelectionFollowsSortStep1 = {
     cellsSelectionStories.CellSelectionFollowsSort,
     1,
   ),
-  name: 'Cells/Selection — Follows sorting, шаг 1',
+  name: 'Cells/Selection — Follows sorting, step 1',
   tags: ['!test'],
 }
 
@@ -7670,7 +7670,7 @@ export const HighContrastCellSelectionFollowsSortStep2 = {
     cellsSelectionStories.CellSelectionFollowsSort,
     2,
   ),
-  name: 'Cells/Selection — Follows sorting, шаг 2',
+  name: 'Cells/Selection — Follows sorting, step 2',
   tags: ['!test'],
 }
 
@@ -7680,7 +7680,7 @@ export const HighContrastCellSelectionFollowsSortStep3 = {
     cellsSelectionStories.CellSelectionFollowsSort,
     3,
   ),
-  name: 'Cells/Selection — Follows sorting, шаг 3',
+  name: 'Cells/Selection — Follows sorting, step 3',
   tags: ['!test'],
 }
 
@@ -7690,7 +7690,7 @@ export const HighContrastCellSelectionHandleStep1 = {
     cellsSelectionStories.CellSelectionHandle,
     1,
   ),
-  name: 'Cells/Selection — Range handle, шаг 1',
+  name: 'Cells/Selection — Range handle, step 1',
   tags: ['!test'],
 }
 
@@ -7700,7 +7700,7 @@ export const HighContrastCellSelectionHandleStep2 = {
     cellsSelectionStories.CellSelectionHandle,
     2,
   ),
-  name: 'Cells/Selection — Range handle, шаг 2',
+  name: 'Cells/Selection — Range handle, step 2',
   tags: ['!test'],
 }
 
@@ -7710,7 +7710,7 @@ export const HighContrastCellSelectionHandleStep3 = {
     cellsSelectionStories.CellSelectionHandle,
     3,
   ),
-  name: 'Cells/Selection — Range handle, шаг 3',
+  name: 'Cells/Selection — Range handle, step 3',
   tags: ['!test'],
 }
 
@@ -7720,7 +7720,7 @@ export const HighContrastCellSelectionHandleStep4 = {
     cellsSelectionStories.CellSelectionHandle,
     4,
   ),
-  name: 'Cells/Selection — Range handle, шаг 4',
+  name: 'Cells/Selection — Range handle, step 4',
   tags: ['!test'],
 }
 
@@ -7730,7 +7730,7 @@ export const HighContrastCellSelectionTouchStep1 = {
     cellsSelectionStories.CellSelectionTouch,
     1,
   ),
-  name: 'Cells/Selection — Select by touch, шаг 1',
+  name: 'Cells/Selection — Select by touch, step 1',
   tags: ['!test'],
 }
 
@@ -7740,7 +7740,7 @@ export const HighContrastCellSelectionTouchStep2 = {
     cellsSelectionStories.CellSelectionTouch,
     2,
   ),
-  name: 'Cells/Selection — Select by touch, шаг 2',
+  name: 'Cells/Selection — Select by touch, step 2',
   tags: ['!test'],
 }
 
@@ -7750,7 +7750,7 @@ export const HighContrastCellSelectionTouchStep3 = {
     cellsSelectionStories.CellSelectionTouch,
     3,
   ),
-  name: 'Cells/Selection — Select by touch, шаг 3',
+  name: 'Cells/Selection — Select by touch, step 3',
   tags: ['!test'],
 }
 
@@ -7760,7 +7760,7 @@ export const HighContrastCellSelectionTouchStep4 = {
     cellsSelectionStories.CellSelectionTouch,
     4,
   ),
-  name: 'Cells/Selection — Select by touch, шаг 4',
+  name: 'Cells/Selection — Select by touch, step 4',
   tags: ['!test'],
 }
 
@@ -7770,7 +7770,7 @@ export const HighContrastCellSelectionTouchStep5 = {
     cellsSelectionStories.CellSelectionTouch,
     5,
   ),
-  name: 'Cells/Selection — Select by touch, шаг 5',
+  name: 'Cells/Selection — Select by touch, step 5',
   tags: ['!test'],
 }
 
@@ -7780,7 +7780,7 @@ export const HighContrastFailureLogLanguageSwitchStep1 = {
     panelsFailureLogStories.FailureLogLanguageSwitch,
     1,
   ),
-  name: 'Panels/Failure log — Switch language, шаг 1',
+  name: 'Panels/Failure log — Switch language, step 1',
   tags: ['!test'],
 }
 
@@ -7790,7 +7790,7 @@ export const HighContrastFailureLogLanguageSwitchStep2 = {
     panelsFailureLogStories.FailureLogLanguageSwitch,
     2,
   ),
-  name: 'Panels/Failure log — Switch language, шаг 2',
+  name: 'Panels/Failure log — Switch language, step 2',
   tags: ['!test'],
 }
 
@@ -7800,25 +7800,25 @@ export const HighContrastFailureLogLanguageSwitchStep3 = {
     panelsFailureLogStories.FailureLogLanguageSwitch,
     3,
   ),
-  name: 'Panels/Failure log — Switch language, шаг 3',
+  name: 'Panels/Failure log — Switch language, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiActionNamesStep1 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiActionNames, 1),
-  name: 'Plugin API — Action names, шаг 1',
+  name: 'Plugin API — Action names, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiActionNamesStep2 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiActionNames, 2),
-  name: 'Plugin API — Action names, шаг 2',
+  name: 'Plugin API — Action names, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiActionNamesStep3 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiActionNames, 3),
-  name: 'Plugin API — Action names, шаг 3',
+  name: 'Plugin API — Action names, step 3',
   tags: ['!test'],
 }
 
@@ -7828,7 +7828,7 @@ export const HighContrastActionStatusOwnLabelStep1 = {
     cellsActionStatusStories.ActionStatusOwnLabel,
     1,
   ),
-  name: 'Cells/Action status — Own action label, шаг 1',
+  name: 'Cells/Action status — Own action label, step 1',
   tags: ['!test'],
 }
 
@@ -7838,7 +7838,7 @@ export const HighContrastActionStatusOwnLabelStep2 = {
     cellsActionStatusStories.ActionStatusOwnLabel,
     2,
   ),
-  name: 'Cells/Action status — Own action label, шаг 2',
+  name: 'Cells/Action status — Own action label, step 2',
   tags: ['!test'],
 }
 
@@ -7848,7 +7848,7 @@ export const HighContrastActionStatusOwnLabelStep3 = {
     cellsActionStatusStories.ActionStatusOwnLabel,
     3,
   ),
-  name: 'Cells/Action status — Own action label, шаг 3',
+  name: 'Cells/Action status — Own action label, step 3',
   tags: ['!test'],
 }
 
@@ -7858,7 +7858,7 @@ export const HighContrastColumnTotalsSearchStep1 = {
     coreColumnTotalsStories.ColumnTotalsSearch,
     1,
   ),
-  name: 'Core/Column totals — Search changes the total, шаг 1',
+  name: 'Core/Column totals — Search changes the total, step 1',
   tags: ['!test'],
 }
 
@@ -7868,7 +7868,7 @@ export const HighContrastColumnTotalsSearchStep2 = {
     coreColumnTotalsStories.ColumnTotalsSearch,
     2,
   ),
-  name: 'Core/Column totals — Search changes the total, шаг 2',
+  name: 'Core/Column totals — Search changes the total, step 2',
   tags: ['!test'],
 }
 
@@ -7878,7 +7878,7 @@ export const HighContrastColumnTotalsOwnFooterStep1 = {
     coreColumnTotalsStories.ColumnTotalsOwnFooter,
     1,
   ),
-  name: 'Core/Column totals — Own footer, шаг 1',
+  name: 'Core/Column totals — Own footer, step 1',
   tags: ['!test'],
 }
 
@@ -7888,7 +7888,7 @@ export const HighContrastColumnTotalsOwnFooterStep2 = {
     coreColumnTotalsStories.ColumnTotalsOwnFooter,
     2,
   ),
-  name: 'Core/Column totals — Own footer, шаг 2',
+  name: 'Core/Column totals — Own footer, step 2',
   tags: ['!test'],
 }
 
@@ -7898,7 +7898,7 @@ export const HighContrastColumnTotalsTreeStep1 = {
     coreColumnTotalsStories.ColumnTotalsTree,
     1,
   ),
-  name: 'Core/Column totals — Tree, шаг 1',
+  name: 'Core/Column totals — Tree, step 1',
   tags: ['!test'],
 }
 
@@ -7908,7 +7908,7 @@ export const HighContrastColumnTotalsTreeStep2 = {
     coreColumnTotalsStories.ColumnTotalsTree,
     2,
   ),
-  name: 'Core/Column totals — Tree, шаг 2',
+  name: 'Core/Column totals — Tree, step 2',
   tags: ['!test'],
 }
 
@@ -7918,7 +7918,7 @@ export const HighContrastColumnTotalsServerPageStep1 = {
     coreColumnTotalsStories.ColumnTotalsServerPage,
     1,
   ),
-  name: 'Core/Column totals — Server page, шаг 1',
+  name: 'Core/Column totals — Server page, step 1',
   tags: ['!test'],
 }
 
@@ -7928,7 +7928,7 @@ export const HighContrastColumnTotalsServerPageStep2 = {
     coreColumnTotalsStories.ColumnTotalsServerPage,
     2,
   ),
-  name: 'Core/Column totals — Server page, шаг 2',
+  name: 'Core/Column totals — Server page, step 2',
   tags: ['!test'],
 }
 
@@ -7938,7 +7938,7 @@ export const HighContrastGroupRowCountFilteredStep1 = {
     rowsGroupingStories.GroupRowCountFiltered,
     1,
   ),
-  name: 'Rows/Grouping — Row count, search, шаг 1',
+  name: 'Rows/Grouping — Row count, search, step 1',
   tags: ['!test'],
 }
 
@@ -7948,19 +7948,19 @@ export const HighContrastGroupRowCountFilteredStep2 = {
     rowsGroupingStories.GroupRowCountFiltered,
     2,
   ),
-  name: 'Rows/Grouping — Row count, search, шаг 2',
+  name: 'Rows/Grouping — Row count, search, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastGroupRowCountOffStep1 = {
   ...twinStep(rowsGroupingStories, rowsGroupingStories.GroupRowCountOff, 1),
-  name: 'Rows/Grouping — Row count, off, шаг 1',
+  name: 'Rows/Grouping — Row count, off, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastGroupRowCountOffStep2 = {
   ...twinStep(rowsGroupingStories, rowsGroupingStories.GroupRowCountOff, 2),
-  name: 'Rows/Grouping — Row count, off, шаг 2',
+  name: 'Rows/Grouping — Row count, off, step 2',
   tags: ['!test'],
 }
 
@@ -7970,7 +7970,7 @@ export const HighContrastServerGroupRowCountStep1 = {
     serverGroupingStories.ServerGroupRowCount,
     1,
   ),
-  name: 'Server row model/Grouping — Row count, шаг 1',
+  name: 'Server row model/Grouping — Row count, step 1',
   tags: ['!test'],
 }
 
@@ -7980,7 +7980,7 @@ export const HighContrastServerGroupRowCountStep2 = {
     serverGroupingStories.ServerGroupRowCount,
     2,
   ),
-  name: 'Server row model/Grouping — Row count, шаг 2',
+  name: 'Server row model/Grouping — Row count, step 2',
   tags: ['!test'],
 }
 
@@ -7990,7 +7990,7 @@ export const HighContrastServerPageSelectAllStep1 = {
     serverSelectionStories.ServerPageSelectAll,
     1,
   ),
-  name: 'Data loading/Server row model/Selection — Select the page, шаг 1',
+  name: 'Data loading/Server row model/Selection — Select the page, step 1',
   tags: ['!test'],
 }
 
@@ -8000,7 +8000,7 @@ export const HighContrastServerPageSelectAllStep2 = {
     serverSelectionStories.ServerPageSelectAll,
     2,
   ),
-  name: 'Data loading/Server row model/Selection — Select the page, шаг 2',
+  name: 'Data loading/Server row model/Selection — Select the page, step 2',
   tags: ['!test'],
 }
 
@@ -8010,7 +8010,7 @@ export const HighContrastServerPageSelectAllStep3 = {
     serverSelectionStories.ServerPageSelectAll,
     3,
   ),
-  name: 'Data loading/Server row model/Selection — Select the page, шаг 3',
+  name: 'Data loading/Server row model/Selection — Select the page, step 3',
   tags: ['!test'],
 }
 
@@ -8020,7 +8020,7 @@ export const HighContrastServerPageSelectAllStep4 = {
     serverSelectionStories.ServerPageSelectAll,
     4,
   ),
-  name: 'Data loading/Server row model/Selection — Select the page, шаг 4',
+  name: 'Data loading/Server row model/Selection — Select the page, step 4',
   tags: ['!test'],
 }
 
@@ -8030,7 +8030,7 @@ export const HighContrastServerPageSelectAllWaitsStep1 = {
     serverSelectionStories.ServerPageSelectAllWaits,
     1,
   ),
-  name: 'Data loading/Server row model/Selection — Page still loading, шаг 1',
+  name: 'Data loading/Server row model/Selection — Page still loading, step 1',
   tags: ['!test'],
 }
 
@@ -8040,7 +8040,7 @@ export const HighContrastServerPageSelectAllWaitsStep2 = {
     serverSelectionStories.ServerPageSelectAllWaits,
     2,
   ),
-  name: 'Data loading/Server row model/Selection — Page still loading, шаг 2',
+  name: 'Data loading/Server row model/Selection — Page still loading, step 2',
   tags: ['!test'],
 }
 
@@ -8050,7 +8050,7 @@ export const HighContrastServerPageSelectAllWaitsStep3 = {
     serverSelectionStories.ServerPageSelectAllWaits,
     3,
   ),
-  name: 'Data loading/Server row model/Selection — Page still loading, шаг 3',
+  name: 'Data loading/Server row model/Selection — Page still loading, step 3',
   tags: ['!test'],
 }
 
@@ -8060,7 +8060,7 @@ export const HighContrastServerPageSelectAllRefusedStep1 = {
     serverSelectionStories.ServerPageSelectAllRefused,
     1,
   ),
-  name: 'Data loading/Server row model/Selection — Page refused, шаг 1',
+  name: 'Data loading/Server row model/Selection — Page refused, step 1',
   tags: ['!test'],
 }
 
@@ -8070,7 +8070,7 @@ export const HighContrastServerPageSelectAllRefusedStep2 = {
     serverSelectionStories.ServerPageSelectAllRefused,
     2,
   ),
-  name: 'Data loading/Server row model/Selection — Page refused, шаг 2',
+  name: 'Data loading/Server row model/Selection — Page refused, step 2',
   tags: ['!test'],
 }
 
@@ -8080,7 +8080,7 @@ export const HighContrastServerPageSelectAllRefusedStep3 = {
     serverSelectionStories.ServerPageSelectAllRefused,
     3,
   ),
-  name: 'Data loading/Server row model/Selection — Page refused, шаг 3',
+  name: 'Data loading/Server row model/Selection — Page refused, step 3',
   tags: ['!test'],
 }
 
@@ -8090,55 +8090,55 @@ export const HighContrastServerPageSelectAllRefusedStep4 = {
     serverSelectionStories.ServerPageSelectAllRefused,
     4,
   ),
-  name: 'Data loading/Server row model/Selection — Page refused, шаг 4',
+  name: 'Data loading/Server row model/Selection — Page refused, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastServerRowIndentStep1 = {
   ...twinStep(serverDraggingStories, serverDraggingStories.ServerRowIndent, 1),
-  name: 'Data loading/Server row model/Dragging — Indent a row, шаг 1',
+  name: 'Data loading/Server row model/Dragging — Indent a row, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastServerRowIndentStep2 = {
   ...twinStep(serverDraggingStories, serverDraggingStories.ServerRowIndent, 2),
-  name: 'Data loading/Server row model/Dragging — Indent a row, шаг 2',
+  name: 'Data loading/Server row model/Dragging — Indent a row, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastServerRowIndentStep3 = {
   ...twinStep(serverDraggingStories, serverDraggingStories.ServerRowIndent, 3),
-  name: 'Data loading/Server row model/Dragging — Indent a row, шаг 3',
+  name: 'Data loading/Server row model/Dragging — Indent a row, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastServerRowIndentStep4 = {
   ...twinStep(serverDraggingStories, serverDraggingStories.ServerRowIndent, 4),
-  name: 'Data loading/Server row model/Dragging — Indent a row, шаг 4',
+  name: 'Data loading/Server row model/Dragging — Indent a row, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastServerRowOutdentStep1 = {
   ...twinStep(serverDraggingStories, serverDraggingStories.ServerRowOutdent, 1),
-  name: 'Data loading/Server row model/Dragging — Outdent a row, шаг 1',
+  name: 'Data loading/Server row model/Dragging — Outdent a row, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastServerRowOutdentStep2 = {
   ...twinStep(serverDraggingStories, serverDraggingStories.ServerRowOutdent, 2),
-  name: 'Data loading/Server row model/Dragging — Outdent a row, шаг 2',
+  name: 'Data loading/Server row model/Dragging — Outdent a row, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastServerRowOutdentStep3 = {
   ...twinStep(serverDraggingStories, serverDraggingStories.ServerRowOutdent, 3),
-  name: 'Data loading/Server row model/Dragging — Outdent a row, шаг 3',
+  name: 'Data loading/Server row model/Dragging — Outdent a row, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastServerRowOutdentStep4 = {
   ...twinStep(serverDraggingStories, serverDraggingStories.ServerRowOutdent, 4),
-  name: 'Data loading/Server row model/Dragging — Outdent a row, шаг 4',
+  name: 'Data loading/Server row model/Dragging — Outdent a row, step 4',
   tags: ['!test'],
 }
 
@@ -8148,7 +8148,7 @@ export const HighContrastServerRowIndentRefusedStep1 = {
     serverDraggingStories.ServerRowIndentRefused,
     1,
   ),
-  name: 'Data loading/Server row model/Dragging — Branch refused, шаг 1',
+  name: 'Data loading/Server row model/Dragging — Branch refused, step 1',
   tags: ['!test'],
 }
 
@@ -8158,7 +8158,7 @@ export const HighContrastServerRowIndentRefusedStep2 = {
     serverDraggingStories.ServerRowIndentRefused,
     2,
   ),
-  name: 'Data loading/Server row model/Dragging — Branch refused, шаг 2',
+  name: 'Data loading/Server row model/Dragging — Branch refused, step 2',
   tags: ['!test'],
 }
 
@@ -8168,7 +8168,7 @@ export const HighContrastServerRowIndentRefusedStep3 = {
     serverDraggingStories.ServerRowIndentRefused,
     3,
   ),
-  name: 'Data loading/Server row model/Dragging — Branch refused, шаг 3',
+  name: 'Data loading/Server row model/Dragging — Branch refused, step 3',
   tags: ['!test'],
 }
 
@@ -8178,7 +8178,7 @@ export const HighContrastServerRowNextGroupStep1 = {
     serverDraggingStories.ServerRowNextGroup,
     1,
   ),
-  name: 'Data loading/Server row model/Dragging — Move to the next group, шаг 1',
+  name: 'Data loading/Server row model/Dragging — Move to the next group, step 1',
   tags: ['!test'],
 }
 
@@ -8188,7 +8188,7 @@ export const HighContrastServerRowNextGroupStep2 = {
     serverDraggingStories.ServerRowNextGroup,
     2,
   ),
-  name: 'Data loading/Server row model/Dragging — Move to the next group, шаг 2',
+  name: 'Data loading/Server row model/Dragging — Move to the next group, step 2',
   tags: ['!test'],
 }
 
@@ -8198,7 +8198,7 @@ export const HighContrastServerRowNextGroupStep3 = {
     serverDraggingStories.ServerRowNextGroup,
     3,
   ),
-  name: 'Data loading/Server row model/Dragging — Move to the next group, шаг 3',
+  name: 'Data loading/Server row model/Dragging — Move to the next group, step 3',
   tags: ['!test'],
 }
 
@@ -8208,25 +8208,25 @@ export const HighContrastServerRowNextGroupStep4 = {
     serverDraggingStories.ServerRowNextGroup,
     4,
   ),
-  name: 'Data loading/Server row model/Dragging — Move to the next group, шаг 4',
+  name: 'Data loading/Server row model/Dragging — Move to the next group, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastExportServerRowsViewStep1 = {
   ...twinStep(serverExportStories, serverExportStories.ExportServerRowsView, 1),
-  name: 'Data loading/Server row model/Export — Export the result, шаг 1',
+  name: 'Data loading/Server row model/Export — Export the result, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastExportServerRowsViewStep2 = {
   ...twinStep(serverExportStories, serverExportStories.ExportServerRowsView, 2),
-  name: 'Data loading/Server row model/Export — Export the result, шаг 2',
+  name: 'Data loading/Server row model/Export — Export the result, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastExportServerRowsViewStep3 = {
   ...twinStep(serverExportStories, serverExportStories.ExportServerRowsView, 3),
-  name: 'Data loading/Server row model/Export — Export the result, шаг 3',
+  name: 'Data loading/Server row model/Export — Export the result, step 3',
   tags: ['!test'],
 }
 
@@ -8236,7 +8236,7 @@ export const HighContrastExportServerRowsLimitStep1 = {
     serverExportStories.ExportServerRowsLimit,
     1,
   ),
-  name: 'Data loading/Server row model/Export — Over the limit, шаг 1',
+  name: 'Data loading/Server row model/Export — Over the limit, step 1',
   tags: ['!test'],
 }
 
@@ -8246,7 +8246,7 @@ export const HighContrastExportServerRowsLimitStep2 = {
     serverExportStories.ExportServerRowsLimit,
     2,
   ),
-  name: 'Data loading/Server row model/Export — Over the limit, шаг 2',
+  name: 'Data loading/Server row model/Export — Over the limit, step 2',
   tags: ['!test'],
 }
 
@@ -8256,7 +8256,7 @@ export const HighContrastExportServerRowsRefusedStep1 = {
     serverExportStories.ExportServerRowsRefused,
     1,
   ),
-  name: 'Data loading/Server row model/Export — Refused by the server, шаг 1',
+  name: 'Data loading/Server row model/Export — Refused by the server, step 1',
   tags: ['!test'],
 }
 
@@ -8266,7 +8266,7 @@ export const HighContrastExportServerRowsRefusedStep2 = {
     serverExportStories.ExportServerRowsRefused,
     2,
   ),
-  name: 'Data loading/Server row model/Export — Refused by the server, шаг 2',
+  name: 'Data loading/Server row model/Export — Refused by the server, step 2',
   tags: ['!test'],
 }
 
@@ -8276,7 +8276,7 @@ export const HighContrastExportServerRowsRefusedStep3 = {
     serverExportStories.ExportServerRowsRefused,
     3,
   ),
-  name: 'Data loading/Server row model/Export — Refused by the server, шаг 3',
+  name: 'Data loading/Server row model/Export — Refused by the server, step 3',
   tags: ['!test'],
 }
 
@@ -8286,7 +8286,7 @@ export const HighContrastPopupAssembledStep1 = {
     uiPopupAssembledStories.PopupAssembled,
     1,
   ),
-  name: 'UI/Popup/Assembled — Popups assembled, шаг 1',
+  name: 'UI/Popup/Assembled — Popups assembled, step 1',
   tags: ['!test'],
 }
 
@@ -8296,7 +8296,7 @@ export const HighContrastPopupAssembledStep2 = {
     uiPopupAssembledStories.PopupAssembled,
     2,
   ),
-  name: 'UI/Popup/Assembled — Popups assembled, шаг 2',
+  name: 'UI/Popup/Assembled — Popups assembled, step 2',
   tags: ['!test'],
 }
 
@@ -8306,7 +8306,7 @@ export const HighContrastPopupAssembledStep3 = {
     uiPopupAssembledStories.PopupAssembled,
     3,
   ),
-  name: 'UI/Popup/Assembled — Popups assembled, шаг 3',
+  name: 'UI/Popup/Assembled — Popups assembled, step 3',
   tags: ['!test'],
 }
 
@@ -8316,7 +8316,7 @@ export const HighContrastPopupAssembledStep4 = {
     uiPopupAssembledStories.PopupAssembled,
     4,
   ),
-  name: 'UI/Popup/Assembled — Popups assembled, шаг 4',
+  name: 'UI/Popup/Assembled — Popups assembled, step 4',
   tags: ['!test'],
 }
 
@@ -8326,7 +8326,7 @@ export const HighContrastPopupAssembledStep5 = {
     uiPopupAssembledStories.PopupAssembled,
     5,
   ),
-  name: 'UI/Popup/Assembled — Popups assembled, шаг 5',
+  name: 'UI/Popup/Assembled — Popups assembled, step 5',
   tags: ['!test'],
 }
 
@@ -8336,7 +8336,7 @@ export const HighContrastPopupAssembledStep6 = {
     uiPopupAssembledStories.PopupAssembled,
     6,
   ),
-  name: 'UI/Popup/Assembled — Popups assembled, шаг 6',
+  name: 'UI/Popup/Assembled — Popups assembled, step 6',
   tags: ['!test'],
 }
 
@@ -8346,7 +8346,7 @@ export const HighContrastPopupAssembledStep7 = {
     uiPopupAssembledStories.PopupAssembled,
     7,
   ),
-  name: 'UI/Popup/Assembled — Popups assembled, шаг 7',
+  name: 'UI/Popup/Assembled — Popups assembled, step 7',
   tags: ['!test'],
 }
 
@@ -8356,7 +8356,7 @@ export const HighContrastPopupAssembledStep8 = {
     uiPopupAssembledStories.PopupAssembled,
     8,
   ),
-  name: 'UI/Popup/Assembled — Popups assembled, шаг 8',
+  name: 'UI/Popup/Assembled — Popups assembled, step 8',
   tags: ['!test'],
 }
 
@@ -8366,7 +8366,7 @@ export const HighContrastPopupAssembledStep9 = {
     uiPopupAssembledStories.PopupAssembled,
     9,
   ),
-  name: 'UI/Popup/Assembled — Popups assembled, шаг 9',
+  name: 'UI/Popup/Assembled — Popups assembled, step 9',
   tags: ['!test'],
 }
 
@@ -8376,7 +8376,7 @@ export const HighContrastPopupAssembledStep10 = {
     uiPopupAssembledStories.PopupAssembled,
     10,
   ),
-  name: 'UI/Popup/Assembled — Popups assembled, шаг 10',
+  name: 'UI/Popup/Assembled — Popups assembled, step 10',
   tags: ['!test'],
 }
 
@@ -8386,7 +8386,7 @@ export const HighContrastPopupAssembledStep11 = {
     uiPopupAssembledStories.PopupAssembled,
     11,
   ),
-  name: 'UI/Popup/Assembled — Popups assembled, шаг 11',
+  name: 'UI/Popup/Assembled — Popups assembled, step 11',
   tags: ['!test'],
 }
 
@@ -8396,7 +8396,7 @@ export const HighContrastPopupAssembledStep12 = {
     uiPopupAssembledStories.PopupAssembled,
     12,
   ),
-  name: 'UI/Popup/Assembled — Popups assembled, шаг 12',
+  name: 'UI/Popup/Assembled — Popups assembled, step 12',
   tags: ['!test'],
 }
 
@@ -8406,7 +8406,7 @@ export const HighContrastPopupAssembledStep13 = {
     uiPopupAssembledStories.PopupAssembled,
     13,
   ),
-  name: 'UI/Popup/Assembled — Popups assembled, шаг 13',
+  name: 'UI/Popup/Assembled — Popups assembled, step 13',
   tags: ['!test'],
 }
 
@@ -8416,7 +8416,7 @@ export const HighContrastPopupAssembledStep14 = {
     uiPopupAssembledStories.PopupAssembled,
     14,
   ),
-  name: 'UI/Popup/Assembled — Popups assembled, шаг 14',
+  name: 'UI/Popup/Assembled — Popups assembled, step 14',
   tags: ['!test'],
 }
 
@@ -8426,7 +8426,7 @@ export const HighContrastPopupAssembledStep15 = {
     uiPopupAssembledStories.PopupAssembled,
     15,
   ),
-  name: 'UI/Popup/Assembled — Popups assembled, шаг 15',
+  name: 'UI/Popup/Assembled — Popups assembled, step 15',
   tags: ['!test'],
 }
 
@@ -8436,7 +8436,7 @@ export const HighContrastPopupAssembledStep16 = {
     uiPopupAssembledStories.PopupAssembled,
     16,
   ),
-  name: 'UI/Popup/Assembled — Popups assembled, шаг 16',
+  name: 'UI/Popup/Assembled — Popups assembled, step 16',
   tags: ['!test'],
 }
 
@@ -8446,7 +8446,7 @@ export const HighContrastPopupAssembledStep17 = {
     uiPopupAssembledStories.PopupAssembled,
     17,
   ),
-  name: 'UI/Popup/Assembled — Popups assembled, шаг 17',
+  name: 'UI/Popup/Assembled — Popups assembled, step 17',
   tags: ['!test'],
 }
 
@@ -8456,7 +8456,7 @@ export const HighContrastPopupAssembledStep18 = {
     uiPopupAssembledStories.PopupAssembled,
     18,
   ),
-  name: 'UI/Popup/Assembled — Popups assembled, шаг 18',
+  name: 'UI/Popup/Assembled — Popups assembled, step 18',
   tags: ['!test'],
 }
 
@@ -8466,49 +8466,49 @@ export const HighContrastPopupAssembledStep19 = {
     uiPopupAssembledStories.PopupAssembled,
     19,
   ),
-  name: 'UI/Popup/Assembled — Popups assembled, шаг 19',
+  name: 'UI/Popup/Assembled — Popups assembled, step 19',
   tags: ['!test'],
 }
 
 export const HighContrastThemingDefaultPaletteStep1 = {
   ...twinStep(themingStories, themingStories.ThemingDefaultPalette, 1),
-  name: 'Theming — Default palette, шаг 1',
+  name: 'Theming — Default palette, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastThemingDefaultPaletteStep2 = {
   ...twinStep(themingStories, themingStories.ThemingDefaultPalette, 2),
-  name: 'Theming — Default palette, шаг 2',
+  name: 'Theming — Default palette, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastThemingShadcnPaletteStep1 = {
   ...twinStep(themingStories, themingStories.ThemingShadcnPalette, 1),
-  name: 'Theming — App palette, шаг 1',
+  name: 'Theming — App palette, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastThemingShadcnPaletteStep2 = {
   ...twinStep(themingStories, themingStories.ThemingShadcnPalette, 2),
-  name: 'Theming — App palette, шаг 2',
+  name: 'Theming — App palette, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastThemingShadcnPaletteStep3 = {
   ...twinStep(themingStories, themingStories.ThemingShadcnPalette, 3),
-  name: 'Theming — App palette, шаг 3',
+  name: 'Theming — App palette, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastThemingUnsavedRoleStep1 = {
   ...twinStep(themingStories, themingStories.ThemingUnsavedRole, 1),
-  name: 'Theming — Unsaved role, шаг 1',
+  name: 'Theming — Unsaved role, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastThemingUnsavedRoleStep2 = {
   ...twinStep(themingStories, themingStories.ThemingUnsavedRole, 2),
-  name: 'Theming — Unsaved role, шаг 2',
+  name: 'Theming — Unsaved role, step 2',
   tags: ['!test'],
 }
 
@@ -8518,7 +8518,7 @@ export const HighContrastPaginationPageNumbersStep1 = {
     panelsPaginationStories.PaginationPageNumbers,
     1,
   ),
-  name: 'Panels/Pagination — Page numbers, шаг 1',
+  name: 'Panels/Pagination — Page numbers, step 1',
   tags: ['!test'],
 }
 
@@ -8528,7 +8528,7 @@ export const HighContrastPaginationPageNumbersStep2 = {
     panelsPaginationStories.PaginationPageNumbers,
     2,
   ),
-  name: 'Panels/Pagination — Page numbers, шаг 2',
+  name: 'Panels/Pagination — Page numbers, step 2',
   tags: ['!test'],
 }
 
@@ -8538,7 +8538,7 @@ export const HighContrastPaginationPageNumbersStep3 = {
     panelsPaginationStories.PaginationPageNumbers,
     3,
   ),
-  name: 'Panels/Pagination — Page numbers, шаг 3',
+  name: 'Panels/Pagination — Page numbers, step 3',
   tags: ['!test'],
 }
 
@@ -8548,7 +8548,7 @@ export const HighContrastPaginationPageInputStep1 = {
     panelsPaginationStories.PaginationPageInput,
     1,
   ),
-  name: 'Panels/Pagination — Page input, шаг 1',
+  name: 'Panels/Pagination — Page input, step 1',
   tags: ['!test'],
 }
 
@@ -8558,7 +8558,7 @@ export const HighContrastPaginationPageInputStep2 = {
     panelsPaginationStories.PaginationPageInput,
     2,
   ),
-  name: 'Panels/Pagination — Page input, шаг 2',
+  name: 'Panels/Pagination — Page input, step 2',
   tags: ['!test'],
 }
 
@@ -8568,7 +8568,7 @@ export const HighContrastPaginationPageInputStep3 = {
     panelsPaginationStories.PaginationPageInput,
     3,
   ),
-  name: 'Panels/Pagination — Page input, шаг 3',
+  name: 'Panels/Pagination — Page input, step 3',
   tags: ['!test'],
 }
 
@@ -8578,7 +8578,7 @@ export const HighContrastPaginationNarrowPageNumbersStep1 = {
     panelsPaginationStories.PaginationNarrowPageNumbers,
     1,
   ),
-  name: 'Panels/Pagination — Narrow panel, шаг 1',
+  name: 'Panels/Pagination — Narrow panel, step 1',
   tags: ['!test'],
 }
 
@@ -8588,7 +8588,7 @@ export const HighContrastPaginationNarrowPageNumbersStep2 = {
     panelsPaginationStories.PaginationNarrowPageNumbers,
     2,
   ),
-  name: 'Panels/Pagination — Narrow panel, шаг 2',
+  name: 'Panels/Pagination — Narrow panel, step 2',
   tags: ['!test'],
 }
 
@@ -8598,7 +8598,7 @@ export const HighContrastPaginationNarrowPageNumbersStep3 = {
     panelsPaginationStories.PaginationNarrowPageNumbers,
     3,
   ),
-  name: 'Panels/Pagination — Narrow panel, шаг 3',
+  name: 'Panels/Pagination — Narrow panel, step 3',
   tags: ['!test'],
 }
 
@@ -8608,7 +8608,7 @@ export const HighContrastPaginationServerPageRefusedStep1 = {
     panelsPaginationStories.PaginationServerPageRefused,
     1,
   ),
-  name: 'Panels/Pagination — Refused page, шаг 1',
+  name: 'Panels/Pagination — Refused page, step 1',
   tags: ['!test'],
 }
 
@@ -8618,7 +8618,7 @@ export const HighContrastPaginationServerPageRefusedStep2 = {
     panelsPaginationStories.PaginationServerPageRefused,
     2,
   ),
-  name: 'Panels/Pagination — Refused page, шаг 2',
+  name: 'Panels/Pagination — Refused page, step 2',
   tags: ['!test'],
 }
 
@@ -8628,7 +8628,7 @@ export const HighContrastPaginationServerPageRefusedStep3 = {
     panelsPaginationStories.PaginationServerPageRefused,
     3,
   ),
-  name: 'Panels/Pagination — Refused page, шаг 3',
+  name: 'Panels/Pagination — Refused page, step 3',
   tags: ['!test'],
 }
 
@@ -8638,7 +8638,7 @@ export const HighContrastPaginationUnknownTotalStep1 = {
     serverPaginationStories.PaginationUnknownTotal,
     1,
   ),
-  name: 'Data loading/Server row model/Pagination — Page numbers after the total, шаг 1',
+  name: 'Data loading/Server row model/Pagination — Page numbers after the total, step 1',
   tags: ['!test'],
 }
 
@@ -8648,7 +8648,7 @@ export const HighContrastPaginationUnknownTotalStep2 = {
     serverPaginationStories.PaginationUnknownTotal,
     2,
   ),
-  name: 'Data loading/Server row model/Pagination — Page numbers after the total, шаг 2',
+  name: 'Data loading/Server row model/Pagination — Page numbers after the total, step 2',
   tags: ['!test'],
 }
 
@@ -8658,7 +8658,7 @@ export const HighContrastClientTransactionsEditLargeTableStep1 = {
     clientTransactionsStories.ClientTransactionsEditLargeTable,
     1,
   ),
-  name: 'Data loading/Client transactions — Edit a large sorted table, шаг 1',
+  name: 'Data loading/Client transactions — Edit a large sorted table, step 1',
   tags: ['!test'],
 }
 
@@ -8668,7 +8668,7 @@ export const HighContrastClientTransactionsEditLargeTableStep2 = {
     clientTransactionsStories.ClientTransactionsEditLargeTable,
     2,
   ),
-  name: 'Data loading/Client transactions — Edit a large sorted table, шаг 2',
+  name: 'Data loading/Client transactions — Edit a large sorted table, step 2',
   tags: ['!test'],
 }
 
@@ -8678,7 +8678,7 @@ export const HighContrastClientTransactionsEditLargeTableStep3 = {
     clientTransactionsStories.ClientTransactionsEditLargeTable,
     3,
   ),
-  name: 'Data loading/Client transactions — Edit a large sorted table, шаг 3',
+  name: 'Data loading/Client transactions — Edit a large sorted table, step 3',
   tags: ['!test'],
 }
 
@@ -8688,7 +8688,7 @@ export const HighContrastClientTransactionsAddRemoveStep1 = {
     clientTransactionsStories.ClientTransactionsAddRemove,
     1,
   ),
-  name: 'Data loading/Client transactions — Add and remove rows, шаг 1',
+  name: 'Data loading/Client transactions — Add and remove rows, step 1',
   tags: ['!test'],
 }
 
@@ -8698,7 +8698,7 @@ export const HighContrastClientTransactionsAddRemoveStep2 = {
     clientTransactionsStories.ClientTransactionsAddRemove,
     2,
   ),
-  name: 'Data loading/Client transactions — Add and remove rows, шаг 2',
+  name: 'Data loading/Client transactions — Add and remove rows, step 2',
   tags: ['!test'],
 }
 
@@ -8708,7 +8708,7 @@ export const HighContrastClientTransactionsAddRemoveStep3 = {
     clientTransactionsStories.ClientTransactionsAddRemove,
     3,
   ),
-  name: 'Data loading/Client transactions — Add and remove rows, шаг 3',
+  name: 'Data loading/Client transactions — Add and remove rows, step 3',
   tags: ['!test'],
 }
 
@@ -8718,7 +8718,7 @@ export const HighContrastClientTransactionsAddRemoveStep4 = {
     clientTransactionsStories.ClientTransactionsAddRemove,
     4,
   ),
-  name: 'Data loading/Client transactions — Add and remove rows, шаг 4',
+  name: 'Data loading/Client transactions — Add and remove rows, step 4',
   tags: ['!test'],
 }
 
@@ -8728,7 +8728,7 @@ export const HighContrastClientTransactionsShiftLargeTableStep1 = {
     clientTransactionsStories.ClientTransactionsShiftLargeTable,
     1,
   ),
-  name: 'Data loading/Client transactions — Shift rows in a large table, шаг 1',
+  name: 'Data loading/Client transactions — Shift rows in a large table, step 1',
   tags: ['!test'],
 }
 
@@ -8738,7 +8738,7 @@ export const HighContrastClientTransactionsShiftLargeTableStep2 = {
     clientTransactionsStories.ClientTransactionsShiftLargeTable,
     2,
   ),
-  name: 'Data loading/Client transactions — Shift rows in a large table, шаг 2',
+  name: 'Data loading/Client transactions — Shift rows in a large table, step 2',
   tags: ['!test'],
 }
 
@@ -8748,7 +8748,7 @@ export const HighContrastClientTransactionsShiftLargeTableStep3 = {
     clientTransactionsStories.ClientTransactionsShiftLargeTable,
     3,
   ),
-  name: 'Data loading/Client transactions — Shift rows in a large table, шаг 3',
+  name: 'Data loading/Client transactions — Shift rows in a large table, step 3',
   tags: ['!test'],
 }
 
@@ -8758,7 +8758,7 @@ export const HighContrastClientTransactionsShiftLargeTableStep4 = {
     clientTransactionsStories.ClientTransactionsShiftLargeTable,
     4,
   ),
-  name: 'Data loading/Client transactions — Shift rows in a large table, шаг 4',
+  name: 'Data loading/Client transactions — Shift rows in a large table, step 4',
   tags: ['!test'],
 }
 
@@ -8768,7 +8768,7 @@ export const HighContrastClientTransactionsWithoutHandlerStep1 = {
     clientTransactionsStories.ClientTransactionsWithoutHandler,
     1,
   ),
-  name: 'Data loading/Client transactions — Without a data handler, шаг 1',
+  name: 'Data loading/Client transactions — Without a data handler, step 1',
   tags: ['!test'],
 }
 
@@ -8778,7 +8778,7 @@ export const HighContrastClientTransactionsWithoutHandlerStep2 = {
     clientTransactionsStories.ClientTransactionsWithoutHandler,
     2,
   ),
-  name: 'Data loading/Client transactions — Without a data handler, шаг 2',
+  name: 'Data loading/Client transactions — Without a data handler, step 2',
   tags: ['!test'],
 }
 
@@ -8788,7 +8788,7 @@ export const HighContrastClientRowModelLargeTableStep1 = {
     clientRowModelStories.ClientRowModelLargeTable,
     1,
   ),
-  name: 'Data loading/Client row model — Sort, filter, group and edit a large table, шаг 1',
+  name: 'Data loading/Client row model — Sort, filter, group and edit a large table, step 1',
   tags: ['!test'],
 }
 
@@ -8798,7 +8798,7 @@ export const HighContrastClientRowModelLargeTableStep2 = {
     clientRowModelStories.ClientRowModelLargeTable,
     2,
   ),
-  name: 'Data loading/Client row model — Sort, filter, group and edit a large table, шаг 2',
+  name: 'Data loading/Client row model — Sort, filter, group and edit a large table, step 2',
   tags: ['!test'],
 }
 
@@ -8808,7 +8808,7 @@ export const HighContrastClientRowModelLargeTableStep3 = {
     clientRowModelStories.ClientRowModelLargeTable,
     3,
   ),
-  name: 'Data loading/Client row model — Sort, filter, group and edit a large table, шаг 3',
+  name: 'Data loading/Client row model — Sort, filter, group and edit a large table, step 3',
   tags: ['!test'],
 }
 
@@ -8818,7 +8818,7 @@ export const HighContrastClientRowModelLargeTableStep4 = {
     clientRowModelStories.ClientRowModelLargeTable,
     4,
   ),
-  name: 'Data loading/Client row model — Sort, filter, group and edit a large table, шаг 4',
+  name: 'Data loading/Client row model — Sort, filter, group and edit a large table, step 4',
   tags: ['!test'],
 }
 
@@ -8828,7 +8828,7 @@ export const HighContrastClientRowModelLargeTableStep5 = {
     clientRowModelStories.ClientRowModelLargeTable,
     5,
   ),
-  name: 'Data loading/Client row model — Sort, filter, group and edit a large table, шаг 5',
+  name: 'Data loading/Client row model — Sort, filter, group and edit a large table, step 5',
   tags: ['!test'],
 }
 
@@ -8838,25 +8838,25 @@ export const HighContrastClientRowModelLargeTableStep6 = {
     clientRowModelStories.ClientRowModelLargeTable,
     6,
   ),
-  name: 'Data loading/Client row model — Sort, filter, group and edit a large table, шаг 6',
+  name: 'Data loading/Client row model — Sort, filter, group and edit a large table, step 6',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiBodyMissingSliceStep1 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiBodyMissingSlice, 1),
-  name: 'Plugin API — Body slices, шаг 1',
+  name: 'Plugin API — Body slices, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiBodyMissingSliceStep2 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiBodyMissingSlice, 2),
-  name: 'Plugin API — Body slices, шаг 2',
+  name: 'Plugin API — Body slices, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastPluginApiBodyMissingSliceStep3 = {
   ...twinStep(pluginApiStories, pluginApiStories.PluginApiBodyMissingSlice, 3),
-  name: 'Plugin API — Body slices, шаг 3',
+  name: 'Plugin API — Body slices, step 3',
   tags: ['!test'],
 }
 
@@ -8866,7 +8866,7 @@ export const HighContrastVisibilityHideSortedColumnStep1 = {
     columnsVisibilityStories.VisibilityHideSortedColumn,
     1,
   ),
-  name: 'Columns/Visibility — Hide a sorted column, шаг 1',
+  name: 'Columns/Visibility — Hide a sorted column, step 1',
   tags: ['!test'],
 }
 
@@ -8876,7 +8876,7 @@ export const HighContrastVisibilityHideSortedColumnStep2 = {
     columnsVisibilityStories.VisibilityHideSortedColumn,
     2,
   ),
-  name: 'Columns/Visibility — Hide a sorted column, шаг 2',
+  name: 'Columns/Visibility — Hide a sorted column, step 2',
   tags: ['!test'],
 }
 
@@ -8886,7 +8886,7 @@ export const HighContrastVisibilityHideSortedColumnStep3 = {
     columnsVisibilityStories.VisibilityHideSortedColumn,
     3,
   ),
-  name: 'Columns/Visibility — Hide a sorted column, шаг 3',
+  name: 'Columns/Visibility — Hide a sorted column, step 3',
   tags: ['!test'],
 }
 
@@ -8896,7 +8896,7 @@ export const HighContrastVisibilityClearHiddenTransformsStep1 = {
     columnsVisibilityStories.VisibilityClearHiddenTransforms,
     1,
   ),
-  name: 'Columns/Visibility — Clear a hidden column sorting, шаг 1',
+  name: 'Columns/Visibility — Clear a hidden column sorting, step 1',
   tags: ['!test'],
 }
 
@@ -8906,7 +8906,7 @@ export const HighContrastVisibilityClearHiddenTransformsStep2 = {
     columnsVisibilityStories.VisibilityClearHiddenTransforms,
     2,
   ),
-  name: 'Columns/Visibility — Clear a hidden column sorting, шаг 2',
+  name: 'Columns/Visibility — Clear a hidden column sorting, step 2',
   tags: ['!test'],
 }
 
@@ -8916,7 +8916,7 @@ export const HighContrastVisibilityClearHiddenTransformsStep3 = {
     columnsVisibilityStories.VisibilityClearHiddenTransforms,
     3,
   ),
-  name: 'Columns/Visibility — Clear a hidden column sorting, шаг 3',
+  name: 'Columns/Visibility — Clear a hidden column sorting, step 3',
   tags: ['!test'],
 }
 
@@ -8926,7 +8926,7 @@ export const HighContrastVisibilityClearHiddenTransformsStep4 = {
     columnsVisibilityStories.VisibilityClearHiddenTransforms,
     4,
   ),
-  name: 'Columns/Visibility — Clear a hidden column sorting, шаг 4',
+  name: 'Columns/Visibility — Clear a hidden column sorting, step 4',
   tags: ['!test'],
 }
 
@@ -8936,7 +8936,7 @@ export const HighContrastHeaderGroupsWideGroupsStep1 = {
     columnsHeaderGroupsStories.HeaderGroupsWideGroups,
     1,
   ),
-  name: 'Columns/Header groups — Wide groups, шаг 1',
+  name: 'Columns/Header groups — Wide groups, step 1',
   tags: ['!test'],
 }
 
@@ -8946,7 +8946,7 @@ export const HighContrastHeaderGroupsWideGroupsStep2 = {
     columnsHeaderGroupsStories.HeaderGroupsWideGroups,
     2,
   ),
-  name: 'Columns/Header groups — Wide groups, шаг 2',
+  name: 'Columns/Header groups — Wide groups, step 2',
   tags: ['!test'],
 }
 
@@ -8956,37 +8956,37 @@ export const HighContrastHeaderGroupsWideGroupsStep3 = {
     columnsHeaderGroupsStories.HeaderGroupsWideGroups,
     3,
   ),
-  name: 'Columns/Header groups — Wide groups, шаг 3',
+  name: 'Columns/Header groups — Wide groups, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastThemingColumnDividersStep1 = {
   ...twinStep(themingStories, themingStories.ThemingColumnDividers, 1),
-  name: 'Theming — Column dividers, шаг 1',
+  name: 'Theming — Column dividers, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastThemingColumnDividersStep2 = {
   ...twinStep(themingStories, themingStories.ThemingColumnDividers, 2),
-  name: 'Theming — Column dividers, шаг 2',
+  name: 'Theming — Column dividers, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastToolbarOwnOrderStep1 = {
   ...twinStep(panelsToolbarStories, panelsToolbarStories.ToolbarOwnOrder, 1),
-  name: 'Panels/Toolbar — Own button order, шаг 1',
+  name: 'Panels/Toolbar — Own button order, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastToolbarOwnOrderStep2 = {
   ...twinStep(panelsToolbarStories, panelsToolbarStories.ToolbarOwnOrder, 2),
-  name: 'Panels/Toolbar — Own button order, шаг 2',
+  name: 'Panels/Toolbar — Own button order, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastToolbarOwnOrderStep3 = {
   ...twinStep(panelsToolbarStories, panelsToolbarStories.ToolbarOwnOrder, 3),
-  name: 'Panels/Toolbar — Own button order, шаг 3',
+  name: 'Panels/Toolbar — Own button order, step 3',
   tags: ['!test'],
 }
 
@@ -8996,7 +8996,7 @@ export const HighContrastViewSummaryStep1 = {
     panelsViewSettingsStories.ViewSettingsSummary,
     1,
   ),
-  name: 'Panels/View settings — Hidden column settings, шаг 1',
+  name: 'Panels/View settings — Hidden column settings, step 1',
   tags: ['!test'],
 }
 
@@ -9006,7 +9006,7 @@ export const HighContrastViewSummaryStep2 = {
     panelsViewSettingsStories.ViewSettingsSummary,
     2,
   ),
-  name: 'Panels/View settings — Hidden column settings, шаг 2',
+  name: 'Panels/View settings — Hidden column settings, step 2',
   tags: ['!test'],
 }
 
@@ -9016,7 +9016,7 @@ export const HighContrastViewSummaryStep3 = {
     panelsViewSettingsStories.ViewSettingsSummary,
     3,
   ),
-  name: 'Panels/View settings — Hidden column settings, шаг 3',
+  name: 'Panels/View settings — Hidden column settings, step 3',
   tags: ['!test'],
 }
 
@@ -9026,7 +9026,7 @@ export const HighContrastViewSummaryStep4 = {
     panelsViewSettingsStories.ViewSettingsSummary,
     4,
   ),
-  name: 'Panels/View settings — Hidden column settings, шаг 4',
+  name: 'Panels/View settings — Hidden column settings, step 4',
   tags: ['!test'],
 }
 
@@ -9036,7 +9036,7 @@ export const HighContrastViewColumnsStep1 = {
     panelsViewSettingsStories.ViewSettingsColumns,
     1,
   ),
-  name: 'Panels/View settings — Columns section, шаг 1',
+  name: 'Panels/View settings — Columns section, step 1',
   tags: ['!test'],
 }
 
@@ -9046,7 +9046,7 @@ export const HighContrastViewColumnsStep2 = {
     panelsViewSettingsStories.ViewSettingsColumns,
     2,
   ),
-  name: 'Panels/View settings — Columns section, шаг 2',
+  name: 'Panels/View settings — Columns section, step 2',
   tags: ['!test'],
 }
 
@@ -9056,7 +9056,7 @@ export const HighContrastViewColumnsStep3 = {
     panelsViewSettingsStories.ViewSettingsColumns,
     3,
   ),
-  name: 'Panels/View settings — Columns section, шаг 3',
+  name: 'Panels/View settings — Columns section, step 3',
   tags: ['!test'],
 }
 
@@ -9066,7 +9066,7 @@ export const HighContrastViewOwnSectionStep1 = {
     panelsViewSettingsStories.ViewSettingsOwnSection,
     1,
   ),
-  name: 'Panels/View settings — Own section, шаг 1',
+  name: 'Panels/View settings — Own section, step 1',
   tags: ['!test'],
 }
 
@@ -9076,7 +9076,7 @@ export const HighContrastViewOwnSectionStep2 = {
     panelsViewSettingsStories.ViewSettingsOwnSection,
     2,
   ),
-  name: 'Panels/View settings — Own section, шаг 2',
+  name: 'Panels/View settings — Own section, step 2',
   tags: ['!test'],
 }
 
@@ -9086,7 +9086,7 @@ export const HighContrastViewOwnSectionStep3 = {
     panelsViewSettingsStories.ViewSettingsOwnSection,
     3,
   ),
-  name: 'Panels/View settings — Own section, шаг 3',
+  name: 'Panels/View settings — Own section, step 3',
   tags: ['!test'],
 }
 
@@ -9096,7 +9096,7 @@ export const HighContrastViewServerRefusedStep1 = {
     panelsViewSettingsStories.ViewSettingsServerRefused,
     1,
   ),
-  name: 'Panels/View settings — Refused by the server, шаг 1',
+  name: 'Panels/View settings — Refused by the server, step 1',
   tags: ['!test'],
 }
 
@@ -9106,7 +9106,7 @@ export const HighContrastViewServerRefusedStep2 = {
     panelsViewSettingsStories.ViewSettingsServerRefused,
     2,
   ),
-  name: 'Panels/View settings — Refused by the server, шаг 2',
+  name: 'Panels/View settings — Refused by the server, step 2',
   tags: ['!test'],
 }
 
@@ -9116,7 +9116,7 @@ export const HighContrastViewServerRefusedStep3 = {
     panelsViewSettingsStories.ViewSettingsServerRefused,
     3,
   ),
-  name: 'Panels/View settings — Refused by the server, шаг 3',
+  name: 'Panels/View settings — Refused by the server, step 3',
   tags: ['!test'],
 }
 
@@ -9126,7 +9126,7 @@ export const HighContrastFlexFillStep1 = {
     columnsFlexWidthStories.FlexFillWidth,
     1,
   ),
-  name: 'Columns/Flex width — Fill the width, шаг 1',
+  name: 'Columns/Flex width — Fill the width, step 1',
   tags: ['!test'],
 }
 
@@ -9136,7 +9136,7 @@ export const HighContrastFlexFillStep2 = {
     columnsFlexWidthStories.FlexFillWidth,
     2,
   ),
-  name: 'Columns/Flex width — Fill the width, шаг 2',
+  name: 'Columns/Flex width — Fill the width, step 2',
   tags: ['!test'],
 }
 
@@ -9146,37 +9146,37 @@ export const HighContrastFlexFillStep3 = {
     columnsFlexWidthStories.FlexFillWidth,
     3,
   ),
-  name: 'Columns/Flex width — Fill the width, шаг 3',
+  name: 'Columns/Flex width — Fill the width, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastFlexResizeStep1 = {
   ...twinStep(columnsFlexWidthStories, columnsFlexWidthStories.FlexResize, 1),
-  name: 'Columns/Flex width — Resize a flex column, шаг 1',
+  name: 'Columns/Flex width — Resize a flex column, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastFlexResizeStep2 = {
   ...twinStep(columnsFlexWidthStories, columnsFlexWidthStories.FlexResize, 2),
-  name: 'Columns/Flex width — Resize a flex column, шаг 2',
+  name: 'Columns/Flex width — Resize a flex column, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastFlexResizeStep3 = {
   ...twinStep(columnsFlexWidthStories, columnsFlexWidthStories.FlexResize, 3),
-  name: 'Columns/Flex width — Resize a flex column, шаг 3',
+  name: 'Columns/Flex width — Resize a flex column, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastFlexOverflowStep1 = {
   ...twinStep(columnsFlexWidthStories, columnsFlexWidthStories.FlexOverflow, 1),
-  name: 'Columns/Flex width — Columns do not fit, шаг 1',
+  name: 'Columns/Flex width — Columns do not fit, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastFlexOverflowStep2 = {
   ...twinStep(columnsFlexWidthStories, columnsFlexWidthStories.FlexOverflow, 2),
-  name: 'Columns/Flex width — Columns do not fit, шаг 2',
+  name: 'Columns/Flex width — Columns do not fit, step 2',
   tags: ['!test'],
 }
 
@@ -9186,7 +9186,7 @@ export const HighContrastAutosizeColumnsStep1 = {
     columnsResizingStories.AutosizeColumns,
     1,
   ),
-  name: 'Columns/Resizing — Autosize columns, шаг 1',
+  name: 'Columns/Resizing — Autosize columns, step 1',
   tags: ['!test'],
 }
 
@@ -9196,7 +9196,7 @@ export const HighContrastAutosizeColumnsStep2 = {
     columnsResizingStories.AutosizeColumns,
     2,
   ),
-  name: 'Columns/Resizing — Autosize columns, шаг 2',
+  name: 'Columns/Resizing — Autosize columns, step 2',
   tags: ['!test'],
 }
 
@@ -9206,19 +9206,19 @@ export const HighContrastAutosizeColumnsStep3 = {
     columnsResizingStories.AutosizeColumns,
     3,
   ),
-  name: 'Columns/Resizing — Autosize columns, шаг 3',
+  name: 'Columns/Resizing — Autosize columns, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastAutosizeOnDataStep1 = {
   ...twinStep(columnsResizingStories, columnsResizingStories.AutosizeOnData, 1),
-  name: 'Columns/Resizing — Autosize on data, шаг 1',
+  name: 'Columns/Resizing — Autosize on data, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastAutosizeOnDataStep2 = {
   ...twinStep(columnsResizingStories, columnsResizingStories.AutosizeOnData, 2),
-  name: 'Columns/Resizing — Autosize on data, шаг 2',
+  name: 'Columns/Resizing — Autosize on data, step 2',
   tags: ['!test'],
 }
 
@@ -9228,7 +9228,7 @@ export const HighContrastTextWrapClampedStep1 = {
     columnsTextWrapStories.TextWrapClamped,
     1,
   ),
-  name: 'Columns/Text wrap — Wrap within the row, шаг 1',
+  name: 'Columns/Text wrap — Wrap within the row, step 1',
   tags: ['!test'],
 }
 
@@ -9238,7 +9238,7 @@ export const HighContrastTextWrapClampedStep2 = {
     columnsTextWrapStories.TextWrapClamped,
     2,
   ),
-  name: 'Columns/Text wrap — Wrap within the row, шаг 2',
+  name: 'Columns/Text wrap — Wrap within the row, step 2',
   tags: ['!test'],
 }
 
@@ -9248,7 +9248,7 @@ export const HighContrastTextWrapClampedStep3 = {
     columnsTextWrapStories.TextWrapClamped,
     3,
   ),
-  name: 'Columns/Text wrap — Wrap within the row, шаг 3',
+  name: 'Columns/Text wrap — Wrap within the row, step 3',
   tags: ['!test'],
 }
 
@@ -9258,7 +9258,7 @@ export const HighContrastTextWrapAutoHeightStep1 = {
     columnsTextWrapStories.TextWrapAutoHeight,
     1,
   ),
-  name: 'Columns/Text wrap — Rows grow with content, шаг 1',
+  name: 'Columns/Text wrap — Rows grow with content, step 1',
   tags: ['!test'],
 }
 
@@ -9268,7 +9268,7 @@ export const HighContrastTextWrapAutoHeightStep2 = {
     columnsTextWrapStories.TextWrapAutoHeight,
     2,
   ),
-  name: 'Columns/Text wrap — Rows grow with content, шаг 2',
+  name: 'Columns/Text wrap — Rows grow with content, step 2',
   tags: ['!test'],
 }
 
@@ -9278,7 +9278,7 @@ export const HighContrastTextWrapResizeColumnStep1 = {
     columnsTextWrapStories.TextWrapResizeColumn,
     1,
   ),
-  name: 'Columns/Text wrap — Narrow a column, шаг 1',
+  name: 'Columns/Text wrap — Narrow a column, step 1',
   tags: ['!test'],
 }
 
@@ -9288,19 +9288,19 @@ export const HighContrastTextWrapResizeColumnStep2 = {
     columnsTextWrapStories.TextWrapResizeColumn,
     2,
   ),
-  name: 'Columns/Text wrap — Narrow a column, шаг 2',
+  name: 'Columns/Text wrap — Narrow a column, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastTextWrapHeaderStep1 = {
   ...twinStep(columnsTextWrapStories, columnsTextWrapStories.TextWrapHeader, 1),
-  name: 'Columns/Text wrap — Long headers, шаг 1',
+  name: 'Columns/Text wrap — Long headers, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastTextWrapHeaderStep2 = {
   ...twinStep(columnsTextWrapStories, columnsTextWrapStories.TextWrapHeader, 2),
-  name: 'Columns/Text wrap — Long headers, шаг 2',
+  name: 'Columns/Text wrap — Long headers, step 2',
   tags: ['!test'],
 }
 
@@ -9310,7 +9310,7 @@ export const HighContrastTextWrapKeyboardStep1 = {
     columnsTextWrapStories.TextWrapKeyboard,
     1,
   ),
-  name: 'Columns/Text wrap — Keyboard and scroll to a record, шаг 1',
+  name: 'Columns/Text wrap — Keyboard and scroll to a record, step 1',
   tags: ['!test'],
 }
 
@@ -9320,7 +9320,7 @@ export const HighContrastTextWrapKeyboardStep2 = {
     columnsTextWrapStories.TextWrapKeyboard,
     2,
   ),
-  name: 'Columns/Text wrap — Keyboard and scroll to a record, шаг 2',
+  name: 'Columns/Text wrap — Keyboard and scroll to a record, step 2',
   tags: ['!test'],
 }
 
@@ -9330,31 +9330,31 @@ export const HighContrastTextWrapKeyboardStep3 = {
     columnsTextWrapStories.TextWrapKeyboard,
     3,
   ),
-  name: 'Columns/Text wrap — Keyboard and scroll to a record, шаг 3',
+  name: 'Columns/Text wrap — Keyboard and scroll to a record, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastTextWrapServerStep1 = {
   ...twinStep(columnsTextWrapStories, columnsTextWrapStories.TextWrapServer, 1),
-  name: 'Columns/Text wrap — Server rows, шаг 1',
+  name: 'Columns/Text wrap — Server rows, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastTextWrapServerStep2 = {
   ...twinStep(columnsTextWrapStories, columnsTextWrapStories.TextWrapServer, 2),
-  name: 'Columns/Text wrap — Server rows, шаг 2',
+  name: 'Columns/Text wrap — Server rows, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastTextWrapMotionStep1 = {
   ...twinStep(columnsTextWrapStories, columnsTextWrapStories.TextWrapMotion, 1),
-  name: 'Columns/Text wrap — Sort rows of different heights, шаг 1',
+  name: 'Columns/Text wrap — Sort rows of different heights, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastTextWrapMotionStep2 = {
   ...twinStep(columnsTextWrapStories, columnsTextWrapStories.TextWrapMotion, 2),
-  name: 'Columns/Text wrap — Sort rows of different heights, шаг 2',
+  name: 'Columns/Text wrap — Sort rows of different heights, step 2',
   tags: ['!test'],
 }
 
@@ -9364,7 +9364,7 @@ export const HighContrastPasteFromSpreadsheetStep1 = {
     cellsPasteFillStories.PasteFromSpreadsheet,
     1,
   ),
-  name: 'Cells/Paste & fill — Paste from a spreadsheet, шаг 1',
+  name: 'Cells/Paste & fill — Paste from a spreadsheet, step 1',
   tags: ['!test'],
 }
 
@@ -9374,7 +9374,7 @@ export const HighContrastPasteFromSpreadsheetStep2 = {
     cellsPasteFillStories.PasteFromSpreadsheet,
     2,
   ),
-  name: 'Cells/Paste & fill — Paste from a spreadsheet, шаг 2',
+  name: 'Cells/Paste & fill — Paste from a spreadsheet, step 2',
   tags: ['!test'],
 }
 
@@ -9384,7 +9384,7 @@ export const HighContrastPasteOneIntoRangeStep1 = {
     cellsPasteFillStories.PasteOneIntoRange,
     1,
   ),
-  name: 'Cells/Paste & fill — One value into a range, шаг 1',
+  name: 'Cells/Paste & fill — One value into a range, step 1',
   tags: ['!test'],
 }
 
@@ -9394,19 +9394,19 @@ export const HighContrastPasteOneIntoRangeStep2 = {
     cellsPasteFillStories.PasteOneIntoRange,
     2,
   ),
-  name: 'Cells/Paste & fill — One value into a range, шаг 2',
+  name: 'Cells/Paste & fill — One value into a range, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastPasteWithErrorsStep1 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.PasteWithErrors, 1),
-  name: 'Cells/Paste & fill — Read-only and invalid cells, шаг 1',
+  name: 'Cells/Paste & fill — Read-only and invalid cells, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastPasteWithErrorsStep2 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.PasteWithErrors, 2),
-  name: 'Cells/Paste & fill — Read-only and invalid cells, шаг 2',
+  name: 'Cells/Paste & fill — Read-only and invalid cells, step 2',
   tags: ['!test'],
 }
 
@@ -9416,7 +9416,7 @@ export const HighContrastPasteRefusedByServerStep1 = {
     cellsPasteFillStories.PasteRefusedByServer,
     1,
   ),
-  name: 'Cells/Paste & fill — Refused by the server, шаг 1',
+  name: 'Cells/Paste & fill — Refused by the server, step 1',
   tags: ['!test'],
 }
 
@@ -9426,7 +9426,7 @@ export const HighContrastPasteRefusedByServerStep2 = {
     cellsPasteFillStories.PasteRefusedByServer,
     2,
   ),
-  name: 'Cells/Paste & fill — Refused by the server, шаг 2',
+  name: 'Cells/Paste & fill — Refused by the server, step 2',
   tags: ['!test'],
 }
 
@@ -9436,7 +9436,7 @@ export const HighContrastPasteRefusedByServerStep3 = {
     cellsPasteFillStories.PasteRefusedByServer,
     3,
   ),
-  name: 'Cells/Paste & fill — Refused by the server, шаг 3',
+  name: 'Cells/Paste & fill — Refused by the server, step 3',
   tags: ['!test'],
 }
 
@@ -9446,67 +9446,67 @@ export const HighContrastPasteRefusedByServerStep4 = {
     cellsPasteFillStories.PasteRefusedByServer,
     4,
   ),
-  name: 'Cells/Paste & fill — Refused by the server, шаг 4',
+  name: 'Cells/Paste & fill — Refused by the server, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastPasteManualSaveStep1 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.PasteManualSave, 1),
-  name: 'Cells/Paste & fill — Paste, then save by button, шаг 1',
+  name: 'Cells/Paste & fill — Paste, then save by button, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastPasteManualSaveStep2 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.PasteManualSave, 2),
-  name: 'Cells/Paste & fill — Paste, then save by button, шаг 2',
+  name: 'Cells/Paste & fill — Paste, then save by button, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastClearAndCutStep1 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.ClearAndCut, 1),
-  name: 'Cells/Paste & fill — Clear and cut, шаг 1',
+  name: 'Cells/Paste & fill — Clear and cut, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastClearAndCutStep2 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.ClearAndCut, 2),
-  name: 'Cells/Paste & fill — Clear and cut, шаг 2',
+  name: 'Cells/Paste & fill — Clear and cut, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastClearAndCutStep3 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.ClearAndCut, 3),
-  name: 'Cells/Paste & fill — Clear and cut, шаг 3',
+  name: 'Cells/Paste & fill — Clear and cut, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastOwnBulkEditStep1 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.OwnBulkEdit, 1),
-  name: 'Cells/Paste & fill — Own action in the context menu, шаг 1',
+  name: 'Cells/Paste & fill — Own action in the context menu, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastOwnBulkEditStep2 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.OwnBulkEdit, 2),
-  name: 'Cells/Paste & fill — Own action in the context menu, шаг 2',
+  name: 'Cells/Paste & fill — Own action in the context menu, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastPasteConfirmStep1 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.PasteConfirm, 1),
-  name: 'Cells/Paste & fill — Confirm before pasting, шаг 1',
+  name: 'Cells/Paste & fill — Confirm before pasting, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastPasteConfirmStep2 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.PasteConfirm, 2),
-  name: 'Cells/Paste & fill — Confirm before pasting, шаг 2',
+  name: 'Cells/Paste & fill — Confirm before pasting, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastPasteConfirmStep3 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.PasteConfirm, 3),
-  name: 'Cells/Paste & fill — Confirm before pasting, шаг 3',
+  name: 'Cells/Paste & fill — Confirm before pasting, step 3',
   tags: ['!test'],
 }
 
@@ -9516,7 +9516,7 @@ export const HighContrastPasteFromSpreadsheetStep3 = {
     cellsPasteFillStories.PasteFromSpreadsheet,
     3,
   ),
-  name: 'Cells/Paste & fill — Paste from a spreadsheet, шаг 3',
+  name: 'Cells/Paste & fill — Paste from a spreadsheet, step 3',
   tags: ['!test'],
 }
 
@@ -9526,13 +9526,13 @@ export const HighContrastPasteOneIntoRangeStep3 = {
     cellsPasteFillStories.PasteOneIntoRange,
     3,
   ),
-  name: 'Cells/Paste & fill — One value into a range, шаг 3',
+  name: 'Cells/Paste & fill — One value into a range, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastPasteWithErrorsStep3 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.PasteWithErrors, 3),
-  name: 'Cells/Paste & fill — Read-only and invalid cells, шаг 3',
+  name: 'Cells/Paste & fill — Read-only and invalid cells, step 3',
   tags: ['!test'],
 }
 
@@ -9542,121 +9542,121 @@ export const HighContrastPasteRefusedByServerStep5 = {
     cellsPasteFillStories.PasteRefusedByServer,
     5,
   ),
-  name: 'Cells/Paste & fill — Refused by the server, шаг 5',
+  name: 'Cells/Paste & fill — Refused by the server, step 5',
   tags: ['!test'],
 }
 
 export const HighContrastPasteManualSaveStep3 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.PasteManualSave, 3),
-  name: 'Cells/Paste & fill — Paste, then save by button, шаг 3',
+  name: 'Cells/Paste & fill — Paste, then save by button, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastClearAndCutStep4 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.ClearAndCut, 4),
-  name: 'Cells/Paste & fill — Clear and cut, шаг 4',
+  name: 'Cells/Paste & fill — Clear and cut, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastOwnBulkEditStep3 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.OwnBulkEdit, 3),
-  name: 'Cells/Paste & fill — Own action in the context menu, шаг 3',
+  name: 'Cells/Paste & fill — Own action in the context menu, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastPasteConfirmStep4 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.PasteConfirm, 4),
-  name: 'Cells/Paste & fill — Confirm before pasting, шаг 4',
+  name: 'Cells/Paste & fill — Confirm before pasting, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastOwnBulkEditStep4 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.OwnBulkEdit, 4),
-  name: 'Cells/Paste & fill — Own action in the context menu, шаг 4',
+  name: 'Cells/Paste & fill — Own action in the context menu, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastFillCopyStep1 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.FillCopy, 1),
-  name: 'Cells/Paste & fill — Drag a value down, шаг 1',
+  name: 'Cells/Paste & fill — Drag a value down, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastFillCopyStep2 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.FillCopy, 2),
-  name: 'Cells/Paste & fill — Drag a value down, шаг 2',
+  name: 'Cells/Paste & fill — Drag a value down, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastFillCopyStep3 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.FillCopy, 3),
-  name: 'Cells/Paste & fill — Drag a value down, шаг 3',
+  name: 'Cells/Paste & fill — Drag a value down, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastFillCopyStep4 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.FillCopy, 4),
-  name: 'Cells/Paste & fill — Drag a value down, шаг 4',
+  name: 'Cells/Paste & fill — Drag a value down, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastFillSeriesStep1 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.FillSeries, 1),
-  name: 'Cells/Paste & fill — Continue a series, шаг 1',
+  name: 'Cells/Paste & fill — Continue a series, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastFillSeriesStep2 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.FillSeries, 2),
-  name: 'Cells/Paste & fill — Continue a series, шаг 2',
+  name: 'Cells/Paste & fill — Continue a series, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastFillSeriesStep3 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.FillSeries, 3),
-  name: 'Cells/Paste & fill — Continue a series, шаг 3',
+  name: 'Cells/Paste & fill — Continue a series, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastFillSeriesStep4 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.FillSeries, 4),
-  name: 'Cells/Paste & fill — Continue a series, шаг 4',
+  name: 'Cells/Paste & fill — Continue a series, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastFillSeriesStep5 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.FillSeries, 5),
-  name: 'Cells/Paste & fill — Continue a series, шаг 5',
+  name: 'Cells/Paste & fill — Continue a series, step 5',
   tags: ['!test'],
 }
 
 export const HighContrastFillDownKeyboardStep1 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.FillDownKeyboard, 1),
-  name: 'Cells/Paste & fill — Fill down and right from the keyboard, шаг 1',
+  name: 'Cells/Paste & fill — Fill down and right from the keyboard, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastFillDownKeyboardStep2 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.FillDownKeyboard, 2),
-  name: 'Cells/Paste & fill — Fill down and right from the keyboard, шаг 2',
+  name: 'Cells/Paste & fill — Fill down and right from the keyboard, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastFillDownKeyboardStep3 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.FillDownKeyboard, 3),
-  name: 'Cells/Paste & fill — Fill down and right from the keyboard, шаг 3',
+  name: 'Cells/Paste & fill — Fill down and right from the keyboard, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastFillDownKeyboardStep4 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.FillDownKeyboard, 4),
-  name: 'Cells/Paste & fill — Fill down and right from the keyboard, шаг 4',
+  name: 'Cells/Paste & fill — Fill down and right from the keyboard, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastFillDownKeyboardStep5 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.FillDownKeyboard, 5),
-  name: 'Cells/Paste & fill — Fill down and right from the keyboard, шаг 5',
+  name: 'Cells/Paste & fill — Fill down and right from the keyboard, step 5',
   tags: ['!test'],
 }
 
@@ -9666,7 +9666,7 @@ export const HighContrastBulkEditCtrlEnterStep1 = {
     cellsPasteFillStories.BulkEditCtrlEnter,
     1,
   ),
-  name: 'Cells/Paste & fill — Edit the whole range, шаг 1',
+  name: 'Cells/Paste & fill — Edit the whole range, step 1',
   tags: ['!test'],
 }
 
@@ -9676,7 +9676,7 @@ export const HighContrastBulkEditCtrlEnterStep2 = {
     cellsPasteFillStories.BulkEditCtrlEnter,
     2,
   ),
-  name: 'Cells/Paste & fill — Edit the whole range, шаг 2',
+  name: 'Cells/Paste & fill — Edit the whole range, step 2',
   tags: ['!test'],
 }
 
@@ -9686,7 +9686,7 @@ export const HighContrastBulkEditCtrlEnterStep3 = {
     cellsPasteFillStories.BulkEditCtrlEnter,
     3,
   ),
-  name: 'Cells/Paste & fill — Edit the whole range, шаг 3',
+  name: 'Cells/Paste & fill — Edit the whole range, step 3',
   tags: ['!test'],
 }
 
@@ -9696,7 +9696,7 @@ export const HighContrastBulkEditCtrlEnterStep4 = {
     cellsPasteFillStories.BulkEditCtrlEnter,
     4,
   ),
-  name: 'Cells/Paste & fill — Edit the whole range, шаг 4',
+  name: 'Cells/Paste & fill — Edit the whole range, step 4',
   tags: ['!test'],
 }
 
@@ -9706,7 +9706,7 @@ export const HighContrastServerPasteLoadsRowsStep1 = {
     serverCellSelectionStories.ServerPasteLoadsRows,
     1,
   ),
-  name: 'Data loading/Server row model/Cell selection — Paste loads the rows, шаг 1',
+  name: 'Data loading/Server row model/Cell selection — Paste loads the rows, step 1',
   tags: ['!test'],
 }
 
@@ -9716,7 +9716,7 @@ export const HighContrastServerPasteLoadsRowsStep2 = {
     serverCellSelectionStories.ServerPasteLoadsRows,
     2,
   ),
-  name: 'Data loading/Server row model/Cell selection — Paste loads the rows, шаг 2',
+  name: 'Data loading/Server row model/Cell selection — Paste loads the rows, step 2',
   tags: ['!test'],
 }
 
@@ -9726,7 +9726,7 @@ export const HighContrastServerPasteLoadsRowsStep3 = {
     serverCellSelectionStories.ServerPasteLoadsRows,
     3,
   ),
-  name: 'Data loading/Server row model/Cell selection — Paste loads the rows, шаг 3',
+  name: 'Data loading/Server row model/Cell selection — Paste loads the rows, step 3',
   tags: ['!test'],
 }
 
@@ -9736,7 +9736,7 @@ export const HighContrastCellSelectionRangesAnyModeStep4 = {
     serverCellSelectionStories.CellSelectionRangesAnyMode,
     4,
   ),
-  name: 'Data loading/Server row model/Cell selection — Read the selection, шаг 4',
+  name: 'Data loading/Server row model/Cell selection — Read the selection, step 4',
   tags: ['!test'],
 }
 
@@ -9746,7 +9746,7 @@ export const HighContrastServerPasteLoadsRowsStep4 = {
     serverCellSelectionStories.ServerPasteLoadsRows,
     4,
   ),
-  name: 'Data loading/Server row model/Cell selection — Paste loads the rows, шаг 4',
+  name: 'Data loading/Server row model/Cell selection — Paste loads the rows, step 4',
   tags: ['!test'],
 }
 
@@ -9756,7 +9756,7 @@ export const HighContrastServerPasteLoadsRowsStep5 = {
     serverCellSelectionStories.ServerPasteLoadsRows,
     5,
   ),
-  name: 'Data loading/Server row model/Cell selection — Paste loads the rows, шаг 5',
+  name: 'Data loading/Server row model/Cell selection — Paste loads the rows, step 5',
   tags: ['!test'],
 }
 
@@ -9766,7 +9766,7 @@ export const HighContrastValueChangeFlashUpdateStep1 = {
     cellsValueChangeFlashStories.ValueChangeFlashUpdate,
     1,
   ),
-  name: 'Cells/Value change flash — Update from the server, шаг 1',
+  name: 'Cells/Value change flash — Update from the server, step 1',
   tags: ['!test'],
 }
 
@@ -9776,7 +9776,7 @@ export const HighContrastValueChangeFlashUpdateStep2 = {
     cellsValueChangeFlashStories.ValueChangeFlashUpdate,
     2,
   ),
-  name: 'Cells/Value change flash — Update from the server, шаг 2',
+  name: 'Cells/Value change flash — Update from the server, step 2',
   tags: ['!test'],
 }
 
@@ -9786,7 +9786,7 @@ export const HighContrastValueChangeFlashDirectionStep1 = {
     cellsValueChangeFlashStories.ValueChangeFlashDirection,
     1,
   ),
-  name: 'Cells/Value change flash — Rise and fall, шаг 1',
+  name: 'Cells/Value change flash — Rise and fall, step 1',
   tags: ['!test'],
 }
 
@@ -9796,7 +9796,7 @@ export const HighContrastValueChangeFlashDirectionStep2 = {
     cellsValueChangeFlashStories.ValueChangeFlashDirection,
     2,
   ),
-  name: 'Cells/Value change flash — Rise and fall, шаг 2',
+  name: 'Cells/Value change flash — Rise and fall, step 2',
   tags: ['!test'],
 }
 
@@ -9806,7 +9806,7 @@ export const HighContrastValueChangeFlashOwnEditStep1 = {
     cellsValueChangeFlashStories.ValueChangeFlashOwnEdit,
     1,
   ),
-  name: 'Cells/Value change flash — Own edit and a colleague, шаг 1',
+  name: 'Cells/Value change flash — Own edit and a colleague, step 1',
   tags: ['!test'],
 }
 
@@ -9816,7 +9816,7 @@ export const HighContrastValueChangeFlashOwnEditStep2 = {
     cellsValueChangeFlashStories.ValueChangeFlashOwnEdit,
     2,
   ),
-  name: 'Cells/Value change flash — Own edit and a colleague, шаг 2',
+  name: 'Cells/Value change flash — Own edit and a colleague, step 2',
   tags: ['!test'],
 }
 
@@ -9826,7 +9826,7 @@ export const HighContrastValueChangeFlashOwnEditStep3 = {
     cellsValueChangeFlashStories.ValueChangeFlashOwnEdit,
     3,
   ),
-  name: 'Cells/Value change flash — Own edit and a colleague, шаг 3',
+  name: 'Cells/Value change flash — Own edit and a colleague, step 3',
   tags: ['!test'],
 }
 
@@ -9836,7 +9836,7 @@ export const HighContrastValueChangeFlashOverFillStep1 = {
     cellsValueChangeFlashStories.ValueChangeFlashOverFill,
     1,
   ),
-  name: 'Cells/Value change flash — Flash over a highlight, шаг 1',
+  name: 'Cells/Value change flash — Flash over a highlight, step 1',
   tags: ['!test'],
 }
 
@@ -9846,7 +9846,7 @@ export const HighContrastValueChangeFlashOverFillStep2 = {
     cellsValueChangeFlashStories.ValueChangeFlashOverFill,
     2,
   ),
-  name: 'Cells/Value change flash — Flash over a highlight, шаг 2',
+  name: 'Cells/Value change flash — Flash over a highlight, step 2',
   tags: ['!test'],
 }
 
@@ -9856,7 +9856,7 @@ export const HighContrastValueChangeFlashColorsStep1 = {
     cellsValueChangeFlashStories.ValueChangeFlashColors,
     1,
   ),
-  name: 'Cells/Value change flash — Flash colors, шаг 1',
+  name: 'Cells/Value change flash — Flash colors, step 1',
   tags: ['!test'],
 }
 
@@ -9866,7 +9866,7 @@ export const HighContrastValueChangeFlashColorsStep2 = {
     cellsValueChangeFlashStories.ValueChangeFlashColors,
     2,
   ),
-  name: 'Cells/Value change flash — Flash colors, шаг 2',
+  name: 'Cells/Value change flash — Flash colors, step 2',
   tags: ['!test'],
 }
 
@@ -9876,7 +9876,7 @@ export const HighContrastValueChangeFlashColorsStep3 = {
     cellsValueChangeFlashStories.ValueChangeFlashColors,
     3,
   ),
-  name: 'Cells/Value change flash — Flash colors, шаг 3',
+  name: 'Cells/Value change flash — Flash colors, step 3',
   tags: ['!test'],
 }
 
@@ -9886,7 +9886,7 @@ export const HighContrastValueChangeFlashColorsStep4 = {
     cellsValueChangeFlashStories.ValueChangeFlashColors,
     4,
   ),
-  name: 'Cells/Value change flash — Flash colors, шаг 4',
+  name: 'Cells/Value change flash — Flash colors, step 4',
   tags: ['!test'],
 }
 
@@ -9896,7 +9896,7 @@ export const HighContrastValueChangeFlashColorsStep5 = {
     cellsValueChangeFlashStories.ValueChangeFlashColors,
     5,
   ),
-  name: 'Cells/Value change flash — Flash colors, шаг 5',
+  name: 'Cells/Value change flash — Flash colors, step 5',
   tags: ['!test'],
 }
 
@@ -9906,7 +9906,7 @@ export const HighContrastValueChangeFlashColorsStep6 = {
     cellsValueChangeFlashStories.ValueChangeFlashColors,
     6,
   ),
-  name: 'Cells/Value change flash — Flash colors, шаг 6',
+  name: 'Cells/Value change flash — Flash colors, step 6',
   tags: ['!test'],
 }
 
@@ -9916,253 +9916,253 @@ export const HighContrastValueChangeFlashColorsStep7 = {
     cellsValueChangeFlashStories.ValueChangeFlashColors,
     7,
   ),
-  name: 'Cells/Value change flash — Flash colors, шаг 7',
+  name: 'Cells/Value change flash — Flash colors, step 7',
   tags: ['!test'],
 }
 
 export const HighContrastUndoPasteStep1 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoPaste, 1),
-  name: 'Cells/Undo & redo — Undo a paste, шаг 1',
+  name: 'Cells/Undo & redo — Undo a paste, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastUndoPasteStep2 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoPaste, 2),
-  name: 'Cells/Undo & redo — Undo a paste, шаг 2',
+  name: 'Cells/Undo & redo — Undo a paste, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastUndoPasteStep3 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoPaste, 3),
-  name: 'Cells/Undo & redo — Undo a paste, шаг 3',
+  name: 'Cells/Undo & redo — Undo a paste, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastUndoPasteStep4 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoPaste, 4),
-  name: 'Cells/Undo & redo — Undo a paste, шаг 4',
+  name: 'Cells/Undo & redo — Undo a paste, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastUndoOnServerStep1 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoOnServer, 1),
-  name: 'Cells/Undo & redo — Undo saved on the server, шаг 1',
+  name: 'Cells/Undo & redo — Undo saved on the server, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastUndoOnServerStep2 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoOnServer, 2),
-  name: 'Cells/Undo & redo — Undo saved on the server, шаг 2',
+  name: 'Cells/Undo & redo — Undo saved on the server, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastUndoOnServerStep3 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoOnServer, 3),
-  name: 'Cells/Undo & redo — Undo saved on the server, шаг 3',
+  name: 'Cells/Undo & redo — Undo saved on the server, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastUndoOnServerStep4 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoOnServer, 4),
-  name: 'Cells/Undo & redo — Undo saved on the server, шаг 4',
+  name: 'Cells/Undo & redo — Undo saved on the server, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastUndoOnServerStep5 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoOnServer, 5),
-  name: 'Cells/Undo & redo — Undo saved on the server, шаг 5',
+  name: 'Cells/Undo & redo — Undo saved on the server, step 5',
   tags: ['!test'],
 }
 
 export const HighContrastUndoWhilePendingStep1 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoWhilePending, 1),
-  name: 'Cells/Undo & redo — Undo while saving, шаг 1',
+  name: 'Cells/Undo & redo — Undo while saving, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastUndoWhilePendingStep2 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoWhilePending, 2),
-  name: 'Cells/Undo & redo — Undo while saving, шаг 2',
+  name: 'Cells/Undo & redo — Undo while saving, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastUndoWhilePendingStep3 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoWhilePending, 3),
-  name: 'Cells/Undo & redo — Undo while saving, шаг 3',
+  name: 'Cells/Undo & redo — Undo while saving, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastUndoWhilePendingStep4 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoWhilePending, 4),
-  name: 'Cells/Undo & redo — Undo while saving, шаг 4',
+  name: 'Cells/Undo & redo — Undo while saving, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastUndoConflictStep1 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoConflict, 1),
-  name: 'Cells/Undo & redo — Changed by someone else, шаг 1',
+  name: 'Cells/Undo & redo — Changed by someone else, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastUndoConflictStep2 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoConflict, 2),
-  name: 'Cells/Undo & redo — Changed by someone else, шаг 2',
+  name: 'Cells/Undo & redo — Changed by someone else, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastUndoConflictStep3 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoConflict, 3),
-  name: 'Cells/Undo & redo — Changed by someone else, шаг 3',
+  name: 'Cells/Undo & redo — Changed by someone else, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastUndoConflictStep4 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoConflict, 4),
-  name: 'Cells/Undo & redo — Changed by someone else, шаг 4',
+  name: 'Cells/Undo & redo — Changed by someone else, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastHistoryRewindStep1 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.HistoryRewind, 1),
-  name: 'Cells/Undo & redo — Rewind with the history, шаг 1',
+  name: 'Cells/Undo & redo — Rewind with the history, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastHistoryRewindStep2 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.HistoryRewind, 2),
-  name: 'Cells/Undo & redo — Rewind with the history, шаг 2',
+  name: 'Cells/Undo & redo — Rewind with the history, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastHistoryRewindStep3 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.HistoryRewind, 3),
-  name: 'Cells/Undo & redo — Rewind with the history, шаг 3',
+  name: 'Cells/Undo & redo — Rewind with the history, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastHistoryRewindStep4 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.HistoryRewind, 4),
-  name: 'Cells/Undo & redo — Rewind with the history, шаг 4',
+  name: 'Cells/Undo & redo — Rewind with the history, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastHistoryRewindStep5 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.HistoryRewind, 5),
-  name: 'Cells/Undo & redo — Rewind with the history, шаг 5',
+  name: 'Cells/Undo & redo — Rewind with the history, step 5',
   tags: ['!test'],
 }
 
 export const HighContrastUndoDraftsStep1 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoDrafts, 1),
-  name: 'Cells/Undo & redo — Undo unsaved changes, шаг 1',
+  name: 'Cells/Undo & redo — Undo unsaved changes, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastUndoDraftsStep2 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoDrafts, 2),
-  name: 'Cells/Undo & redo — Undo unsaved changes, шаг 2',
+  name: 'Cells/Undo & redo — Undo unsaved changes, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastUndoDraftsStep3 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoDrafts, 3),
-  name: 'Cells/Undo & redo — Undo unsaved changes, шаг 3',
+  name: 'Cells/Undo & redo — Undo unsaved changes, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastUndoDraftsStep4 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoDrafts, 4),
-  name: 'Cells/Undo & redo — Undo unsaved changes, шаг 4',
+  name: 'Cells/Undo & redo — Undo unsaved changes, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastAppHistoryEntryStep1 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.AppHistoryEntry, 1),
-  name: 'Cells/Undo & redo — Own action in the history, шаг 1',
+  name: 'Cells/Undo & redo — Own action in the history, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastAppHistoryEntryStep2 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.AppHistoryEntry, 2),
-  name: 'Cells/Undo & redo — Own action in the history, шаг 2',
+  name: 'Cells/Undo & redo — Own action in the history, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastAppHistoryEntryStep3 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.AppHistoryEntry, 3),
-  name: 'Cells/Undo & redo — Own action in the history, шаг 3',
+  name: 'Cells/Undo & redo — Own action in the history, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastAppHistoryEntryStep4 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.AppHistoryEntry, 4),
-  name: 'Cells/Undo & redo — Own action in the history, шаг 4',
+  name: 'Cells/Undo & redo — Own action in the history, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastAppHistoryEntryStep5 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.AppHistoryEntry, 5),
-  name: 'Cells/Undo & redo — Own action in the history, шаг 5',
+  name: 'Cells/Undo & redo — Own action in the history, step 5',
   tags: ['!test'],
 }
 
 export const HighContrastUndoRowDeleteStep1 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoRowDelete, 1),
-  name: 'Cells/Undo & redo — Undo a row delete, шаг 1',
+  name: 'Cells/Undo & redo — Undo a row delete, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastUndoRowDeleteStep2 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoRowDelete, 2),
-  name: 'Cells/Undo & redo — Undo a row delete, шаг 2',
+  name: 'Cells/Undo & redo — Undo a row delete, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastUndoRowDeleteStep3 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoRowDelete, 3),
-  name: 'Cells/Undo & redo — Undo a row delete, шаг 3',
+  name: 'Cells/Undo & redo — Undo a row delete, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastUndoRowDeleteStep4 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoRowDelete, 4),
-  name: 'Cells/Undo & redo — Undo a row delete, шаг 4',
+  name: 'Cells/Undo & redo — Undo a row delete, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastUndoRowDeleteStep5 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoRowDelete, 5),
-  name: 'Cells/Undo & redo — Undo a row delete, шаг 5',
+  name: 'Cells/Undo & redo — Undo a row delete, step 5',
   tags: ['!test'],
 }
 
 export const HighContrastUndoRowMoveStep1 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoRowMove, 1),
-  name: 'Cells/Undo & redo — Undo a row move, шаг 1',
+  name: 'Cells/Undo & redo — Undo a row move, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastUndoRowMoveStep2 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoRowMove, 2),
-  name: 'Cells/Undo & redo — Undo a row move, шаг 2',
+  name: 'Cells/Undo & redo — Undo a row move, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastUndoRowMoveStep3 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoRowMove, 3),
-  name: 'Cells/Undo & redo — Undo a row move, шаг 3',
+  name: 'Cells/Undo & redo — Undo a row move, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastUndoRowMoveStep4 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoRowMove, 4),
-  name: 'Cells/Undo & redo — Undo a row move, шаг 4',
+  name: 'Cells/Undo & redo — Undo a row move, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastUndoRowMoveStep5 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoRowMove, 5),
-  name: 'Cells/Undo & redo — Undo a row move, шаг 5',
+  name: 'Cells/Undo & redo — Undo a row move, step 5',
   tags: ['!test'],
 }
 
@@ -10172,7 +10172,7 @@ export const HighContrastHistoryBackToOriginalStep1 = {
     cellsUndoRedoStories.HistoryBackToOriginal,
     1,
   ),
-  name: 'Cells/Undo & redo — Back to original, шаг 1',
+  name: 'Cells/Undo & redo — Back to original, step 1',
   tags: ['!test'],
 }
 
@@ -10182,7 +10182,7 @@ export const HighContrastHistoryBackToOriginalStep2 = {
     cellsUndoRedoStories.HistoryBackToOriginal,
     2,
   ),
-  name: 'Cells/Undo & redo — Back to original, шаг 2',
+  name: 'Cells/Undo & redo — Back to original, step 2',
   tags: ['!test'],
 }
 
@@ -10192,7 +10192,7 @@ export const HighContrastHistoryBackToOriginalStep3 = {
     cellsUndoRedoStories.HistoryBackToOriginal,
     3,
   ),
-  name: 'Cells/Undo & redo — Back to original, шаг 3',
+  name: 'Cells/Undo & redo — Back to original, step 3',
   tags: ['!test'],
 }
 
@@ -10202,7 +10202,7 @@ export const HighContrastHistoryBackToOriginalStep4 = {
     cellsUndoRedoStories.HistoryBackToOriginal,
     4,
   ),
-  name: 'Cells/Undo & redo — Back to original, шаг 4',
+  name: 'Cells/Undo & redo — Back to original, step 4',
   tags: ['!test'],
 }
 
@@ -10212,7 +10212,7 @@ export const HighContrastHistoryBackToOriginalStep5 = {
     cellsUndoRedoStories.HistoryBackToOriginal,
     5,
   ),
-  name: 'Cells/Undo & redo — Back to original, шаг 5',
+  name: 'Cells/Undo & redo — Back to original, step 5',
   tags: ['!test'],
 }
 
@@ -10222,7 +10222,7 @@ export const HighContrastLargePasteConfirmStep1 = {
     cellsPasteFillStories.LargePasteConfirm,
     1,
   ),
-  name: 'Cells/Paste & fill — Confirm a large paste, шаг 1',
+  name: 'Cells/Paste & fill — Confirm a large paste, step 1',
   tags: ['!test'],
 }
 
@@ -10232,7 +10232,7 @@ export const HighContrastLargePasteConfirmStep2 = {
     cellsPasteFillStories.LargePasteConfirm,
     2,
   ),
-  name: 'Cells/Paste & fill — Confirm a large paste, шаг 2',
+  name: 'Cells/Paste & fill — Confirm a large paste, step 2',
   tags: ['!test'],
 }
 
@@ -10242,7 +10242,7 @@ export const HighContrastLargePasteConfirmStep3 = {
     cellsPasteFillStories.LargePasteConfirm,
     3,
   ),
-  name: 'Cells/Paste & fill — Confirm a large paste, шаг 3',
+  name: 'Cells/Paste & fill — Confirm a large paste, step 3',
   tags: ['!test'],
 }
 
@@ -10252,96 +10252,96 @@ export const HighContrastLargePasteConfirmStep4 = {
     cellsPasteFillStories.LargePasteConfirm,
     4,
   ),
-  name: 'Cells/Paste & fill — Confirm a large paste, шаг 4',
+  name: 'Cells/Paste & fill — Confirm a large paste, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastPasteOverLimitStep1 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.PasteOverLimit, 1),
-  name: 'Cells/Paste & fill — Paste over the limit, шаг 1',
+  name: 'Cells/Paste & fill — Paste over the limit, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastPasteOverLimitStep2 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.PasteOverLimit, 2),
-  name: 'Cells/Paste & fill — Paste over the limit, шаг 2',
+  name: 'Cells/Paste & fill — Paste over the limit, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastPasteOverLimitStep3 = {
   ...twinStep(cellsPasteFillStories, cellsPasteFillStories.PasteOverLimit, 3),
-  name: 'Cells/Paste & fill — Paste over the limit, шаг 3',
+  name: 'Cells/Paste & fill — Paste over the limit, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastUndoDiscardStep1 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoDiscard, 1),
-  name: 'Cells/Undo & redo — Undo a discard, шаг 1',
+  name: 'Cells/Undo & redo — Undo a discard, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastUndoDiscardStep2 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoDiscard, 2),
-  name: 'Cells/Undo & redo — Undo a discard, шаг 2',
+  name: 'Cells/Undo & redo — Undo a discard, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastUndoDiscardStep3 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoDiscard, 3),
-  name: 'Cells/Undo & redo — Undo a discard, шаг 3',
+  name: 'Cells/Undo & redo — Undo a discard, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastUndoDiscardStep4 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoDiscard, 4),
-  name: 'Cells/Undo & redo — Undo a discard, шаг 4',
+  name: 'Cells/Undo & redo — Undo a discard, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastHistoryAppliedStep1 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.HistoryApplied, 1),
-  name: 'Cells/Undo & redo — Unsaved and applied in the history, шаг 1',
+  name: 'Cells/Undo & redo — Unsaved and applied in the history, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastHistoryAppliedStep2 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.HistoryApplied, 2),
-  name: 'Cells/Undo & redo — Unsaved and applied in the history, шаг 2',
+  name: 'Cells/Undo & redo — Unsaved and applied in the history, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastHistoryAppliedStep3 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.HistoryApplied, 3),
-  name: 'Cells/Undo & redo — Unsaved and applied in the history, шаг 3',
+  name: 'Cells/Undo & redo — Unsaved and applied in the history, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastHistoryAppliedStep4 = {
   ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.HistoryApplied, 4),
-  name: 'Cells/Undo & redo — Unsaved and applied in the history, шаг 4',
+  name: 'Cells/Undo & redo — Unsaved and applied in the history, step 4',
   tags: ['!test'],
 }
 
 export const HighContrastServerUndoStep1 = {
   ...twinStep(serverEditingStories, serverEditingStories.ServerUndo, 1),
-  name: 'Data loading/Server row model/Editing — Undo an edit off the window, шаг 1',
+  name: 'Data loading/Server row model/Editing — Undo an edit off the window, step 1',
   tags: ['!test'],
 }
 
 export const HighContrastServerUndoStep2 = {
   ...twinStep(serverEditingStories, serverEditingStories.ServerUndo, 2),
-  name: 'Data loading/Server row model/Editing — Undo an edit off the window, шаг 2',
+  name: 'Data loading/Server row model/Editing — Undo an edit off the window, step 2',
   tags: ['!test'],
 }
 
 export const HighContrastServerUndoStep3 = {
   ...twinStep(serverEditingStories, serverEditingStories.ServerUndo, 3),
-  name: 'Data loading/Server row model/Editing — Undo an edit off the window, шаг 3',
+  name: 'Data loading/Server row model/Editing — Undo an edit off the window, step 3',
   tags: ['!test'],
 }
 
 export const HighContrastServerUndoStep4 = {
   ...twinStep(serverEditingStories, serverEditingStories.ServerUndo, 4),
-  name: 'Data loading/Server row model/Editing — Undo an edit off the window, шаг 4',
+  name: 'Data loading/Server row model/Editing — Undo an edit off the window, step 4',
   tags: ['!test'],
 }

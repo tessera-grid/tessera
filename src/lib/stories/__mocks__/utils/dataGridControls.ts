@@ -188,7 +188,7 @@ const unless = (arg: string, type: InputType): InputType => ({
 })
 
 export const dataGridArgTypes = {
-  ...inCategory('Данные и размеры', {
+  ...inCategory('Data and sizes', {
     columnCount: unless('columnsOverride', columnCountType),
     dataCount: unless('dataOverride', dataCountType),
     dataNesting: unless('dataOverride', dataNestingType),
@@ -201,7 +201,7 @@ export const dataGridArgTypes = {
     maxHeight: maxHeightType,
     showStub: showStubType,
   }),
-  ...inCategory('Ядро: панели и состояния', {
+  ...inCategory('Core: panels and states', {
     dataMode: dataModeType,
     timeZone: timeZoneType,
     loading: loadingType,
@@ -222,7 +222,7 @@ export const dataGridArgTypes = {
     locale: localeType,
   }),
   ...inCategory(
-    'Колонки',
+    'Columns',
     {
       enableColumnSorting: enableColumnSortingType,
       ...when('enableColumnSorting', {
@@ -235,10 +235,10 @@ export const dataGridArgTypes = {
         columnSortingModelMultiSort: columnSortingModelMultiSortType,
       }),
     },
-    'Сортировка',
+    'Sorting',
   ),
   ...inCategory(
-    'Колонки',
+    'Columns',
     {
       enableColumnPinning: enableColumnPinningType,
       pinFirstColumn: pinFirstColumnType,
@@ -247,10 +247,10 @@ export const dataGridArgTypes = {
         columnPinningLeafPinning: columnPinningLeafPinningType,
       }),
     },
-    'Закрепление',
+    'Pinning',
   ),
   ...inCategory(
-    'Колонки',
+    'Columns',
     {
       enableColumnSizing: enableColumnSizingType,
       ...when('enableColumnSizing', {
@@ -268,10 +268,10 @@ export const dataGridArgTypes = {
         headerActionMenuThreshold: headerActionMenuThresholdType,
       }),
     },
-    'Ширина, порядок, видимость',
+    'Width, order, visibility',
   ),
   ...inCategory(
-    'Строки',
+    'Rows',
     {
       enableRowSelection: enableRowSelectionType,
       ...when('enableRowSelection', {
@@ -284,10 +284,10 @@ export const dataGridArgTypes = {
         rowSelectionModelSubRows: rowSelectionModelSubRowsType,
       }),
     },
-    'Выбор',
+    'Selection',
   ),
   ...inCategory(
-    'Строки',
+    'Rows',
     {
       enableRowExpanding: enableRowExpandingType,
       ...when('enableRowExpanding', {
@@ -300,10 +300,10 @@ export const dataGridArgTypes = {
       enableRowExpandingModel: enableRowExpandingModelType,
       enableTreeLines: enableTreeLinesType,
     },
-    'Раскрытие',
+    'Expanding',
   ),
   ...inCategory(
-    'Строки',
+    'Rows',
     {
       enableTextWrap: enableTextWrapType,
       ...when('enableTextWrap', {
@@ -312,10 +312,10 @@ export const dataGridArgTypes = {
         textWrapHeaderMaxLines: textWrapHeaderMaxLinesType,
       }),
     },
-    'Высота по содержимому',
+    'Auto height',
   ),
   ...inCategory(
-    'Строки',
+    'Rows',
     {
       enableRowDragging: enableRowDraggingType,
       ...when('enableRowDragging', {
@@ -329,10 +329,10 @@ export const dataGridArgTypes = {
       }),
       enableRowGroupingModel: enableRowGroupingModelType,
     },
-    'Порядок и группировка',
+    'Order and grouping',
   ),
   ...inCategory(
-    'Строки',
+    'Rows',
     {
       enableRowActions: enableRowActionsType,
       ...when('enableRowActions', {
@@ -347,9 +347,9 @@ export const dataGridArgTypes = {
         rowActionMenuThreshold: rowActionMenuThresholdType,
       }),
     },
-    'Действия',
+    'Actions',
   ),
-  ...inCategory('Ячейки и клавиатура', {
+  ...inCategory('Cells and keyboard', {
     enableCellEditing: enableCellEditingType,
     ...when('enableCellEditing', {
       cellEditingSearchDebounceMs: cellEditingSearchDebounceMsType,
@@ -382,7 +382,7 @@ export const dataGridArgTypes = {
     }),
     enableContextMenu: enableContextMenuType,
   }),
-  ...inCategory('Поиск, фильтры, страницы, экспорт', {
+  ...inCategory('Search, filters, pages, export', {
     enableQuickSearch: enableQuickSearchType,
     ...when('enableQuickSearch', {
       quickSearchDebounceMs: quickSearchDebounceMsType,
@@ -496,7 +496,7 @@ export const guideControls = () => {
     Object.fromEntries(
       BASE_CONTROLS.map(name => [
         name,
-        'Таблицу и её функции по шагам задаёт гайд; вариации — в Playground',
+        'The guide sets up the table and its features step by step; variations are in Playground',
       ]),
     ),
   )

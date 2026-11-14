@@ -25,12 +25,12 @@ const meta = {
     layout: 'full',
   },
   argTypes: {
-    full: { control: 'text', description: 'Полная форма' },
-    short: { control: 'text', description: 'Короткая форма' },
+    full: { control: 'text', description: 'Full form' },
+    short: { control: 'text', description: 'Short form' },
     layout: {
       control: 'inline-radio',
       options: ['full', 'compact'],
-      description: 'Вид нижней панели: полный или компактный (узкая таблица)',
+      description: 'Status bar layout: full or compact (for a narrow table)',
     },
   },
   render: function Render({ full, short, layout }) {

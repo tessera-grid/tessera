@@ -30,7 +30,7 @@ const meta = {
 
 export default meta
 
-const NOT_PINNING = 'На закрепление не влияет'
+const NOT_PINNING = 'Does not affect pinning'
 
 export const ColumnPinningPlayground: StoryObj<StoryProps> = {
   name: 'Playground',
@@ -125,12 +125,18 @@ const scrollToMiddle = (root: HTMLElement) => {
 
 const PIN_COLUMNS: readonly GuideStoryStep[] = [
   {
-    title: 'Колонки в таблице',
-    hint: 'Таблица шире области просмотра, у колонок в заголовке — кнопка закрепления. Ни одна колонка не закреплена.',
+    title: { ru: 'Колонки в таблице', en: 'Columns in the table' },
+    hint: {
+      ru: 'Таблица шире области просмотра, у колонок в заголовке — кнопка закрепления. Ни одна колонка не закреплена.',
+      en: 'The table is wider than the viewport, and column headers have a pin button. No column is pinned.',
+    },
   },
   {
-    title: 'Выбор стороны',
-    hint: 'Пользователь нажал кнопку закрепления колонки, которую можно закрепить с обеих сторон. Открылось меню: закрепить слева или справа.',
+    title: { ru: 'Выбор стороны', en: 'Choosing a side' },
+    hint: {
+      ru: 'Пользователь нажал кнопку закрепления колонки, которую можно закрепить с обеих сторон. Открылось меню: закрепить слева или справа.',
+      en: 'The user clicked the pin button of a column that can be pinned to either side. A menu opened: pin to the left or to the right.',
+    },
     states: ['overlay.menu'],
     enter: afterRows((root, signal) => {
       let tries = 0
@@ -149,14 +155,26 @@ const PIN_COLUMNS: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Колонка закреплена слева',
-    hint: 'Пользователь выбрал закрепление слева. Колонка встаёт к левому краю и отделяется от остальных разделителем.',
+    title: {
+      ru: 'Колонка закреплена слева',
+      en: 'The column is pinned to the left',
+    },
+    hint: {
+      ru: 'Пользователь выбрал закрепление слева. Колонка встаёт к левому краю и отделяется от остальных разделителем.',
+      en: 'The user chose to pin it to the left. The column moves to the left edge, and a divider separates it from the rest.',
+    },
     states: ['body.pinnedStart'],
     enter: afterRows(pinAll([[LEFT, 'start']])),
   },
   {
-    title: 'Колонка закреплена справа',
-    hint: 'Пользователь закрепил другую колонку у правого края. Она встаёт к правому краю, разделитель — с её левой стороны.',
+    title: {
+      ru: 'Колонка закреплена справа',
+      en: 'The column is pinned to the right',
+    },
+    hint: {
+      ru: 'Пользователь закрепил другую колонку у правого края. Она встаёт к правому краю, разделитель — с её левой стороны.',
+      en: 'The user pinned another column to the right edge. It moves to the right edge, with the divider on its left side.',
+    },
     states: ['body.pinnedStart', 'body.pinnedEnd'],
     enter: afterRows(
       pinAll([
@@ -166,8 +184,11 @@ const PIN_COLUMNS: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Прокрутка по горизонтали',
-    hint: 'Пользователь прокрутил таблицу. Закреплённые колонки остаются на месте, остальные проходят между ними.',
+    title: { ru: 'Прокрутка по горизонтали', en: 'Horizontal scrolling' },
+    hint: {
+      ru: 'Пользователь прокрутил таблицу. Закреплённые колонки остаются на месте, остальные проходят между ними.',
+      en: 'The user scrolled the table. Pinned columns stay in place, and the rest scroll between them.',
+    },
     states: ['body.pinnedStart', 'body.pinnedEnd'],
     enter: afterRows(
       pinAll(
@@ -190,7 +211,7 @@ export const PinningColumns: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Закрепление колонок"
+      title={{ ru: 'Закрепление колонок', en: 'Column pinning' }}
       steps={PIN_COLUMNS}
       args={guideArgs(
         { enableColumnPinning: true, dataCount: 40, height: '360' },
@@ -202,7 +223,7 @@ export const PinningColumns: StoryObj<StoryProps> = {
     // В Storybook сценарий проходит человек; `play` — только в тестах каталога.
     if (globals.catalog !== true) return
     const scroller = () => scrollerOf(canvas)
-    await step(PIN_COLUMNS[0]!.title, async () => {
+    await step(PIN_COLUMNS[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await expect(pinButtonOf(canvas, LEFT)).not.toBeNull()
       await expect(canvas.querySelector('[data-cell-pinned="left"]')).toBeNull()
@@ -210,7 +231,7 @@ export const PinningColumns: StoryObj<StoryProps> = {
         scroller().clientWidth,
       )
     })
-    await step(PIN_COLUMNS[1]!.title, async () => {
+    await step(PIN_COLUMNS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(
@@ -221,7 +242,7 @@ export const PinningColumns: StoryObj<StoryProps> = {
       )
       await settle()
     })
-    await step(PIN_COLUMNS[2]!.title, async () => {
+    await step(PIN_COLUMNS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(pinnedSide(canvas, LEFT)).toBe('left'))
       const scrollerLeft = box(scroller()).left
@@ -232,7 +253,7 @@ export const PinningColumns: StoryObj<StoryProps> = {
       )
       await settle()
     })
-    await step(PIN_COLUMNS[3]!.title, async () => {
+    await step(PIN_COLUMNS[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(pinnedSide(canvas, RIGHT)).toBe('right'))
       const right = box(scroller()).left + scroller().clientWidth
@@ -243,7 +264,7 @@ export const PinningColumns: StoryObj<StoryProps> = {
       )
       await settle()
     })
-    await step(PIN_COLUMNS[4]!.title, async () => {
+    await step(PIN_COLUMNS[4]!.title.ru, async () => {
       const left = box(headCellsOf(canvas, LEFT)[0]!).left
       const right = box(headCellsOf(canvas, RIGHT)[0]!).left
       await guideNext(canvas)
@@ -267,18 +288,30 @@ const LEAF_GROUP = 'info'
 
 const PIN_NESTED: readonly GuideStoryStep[] = [
   {
-    title: 'Группы колонок',
-    hint: 'Колонки сгруппированы. Закрепить можно только группу верхнего уровня: кнопка закрепления есть у её заголовка, у колонок внутри группы её нет.',
+    title: { ru: 'Группы колонок', en: 'Column groups' },
+    hint: {
+      ru: 'Колонки сгруппированы. Закрепить можно только группу верхнего уровня: кнопка закрепления есть у её заголовка, у колонок внутри группы её нет.',
+      en: 'The columns are grouped. Only a top-level group can be pinned: its header has a pin button, and the columns inside the group do not.',
+    },
   },
   {
-    title: 'Группа закреплена',
-    hint: 'Пользователь закрепил группу. Все её колонки встают к левому краю одним блоком.',
+    title: { ru: 'Группа закреплена', en: 'The group is pinned' },
+    hint: {
+      ru: 'Пользователь закрепил группу. Все её колонки встают к левому краю одним блоком.',
+      en: 'The user pinned the group. All its columns move to the left edge as one block.',
+    },
     states: ['body.pinnedStart'],
     enter: afterRows(pinAll([[GROUP, 'start']])),
   },
   {
-    title: 'Закрепление колонки из группы',
-    hint: 'Приложение разрешило закреплять отдельные колонки внутри групп. Пользователь закрепил одну колонку из группы: она уходит к левому краю, а заголовок группы делится на части.',
+    title: {
+      ru: 'Закрепление колонки из группы',
+      en: 'Pinning a column from a group',
+    },
+    hint: {
+      ru: 'Приложение разрешило закреплять отдельные колонки внутри групп. Пользователь закрепил одну колонку из группы: она уходит к левому краю, а заголовок группы делится на части.',
+      en: 'The app allowed pinning individual columns inside groups. The user pinned one column from a group: it moves to the left edge, and the group header splits into parts.',
+    },
     props: () => ({ columnPinningLeafPinning: true }),
     states: ['body.pinnedStart'],
     enter: afterRows(
@@ -299,7 +332,10 @@ export const PinningNested: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Закрепление под вложенной шапкой"
+      title={{
+        ru: 'Закрепление под вложенной шапкой',
+        en: 'Pinning under a nested header',
+      }}
       steps={PIN_NESTED}
       args={guideArgs(
         {
@@ -314,19 +350,19 @@ export const PinningNested: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(PIN_NESTED[0]!.title, async () => {
+    await step(PIN_NESTED[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await expect(pinButtonOf(canvas, GROUP)).not.toBeNull()
       await expect(pinButtonOf(canvas, 'firstName')).toBeNull()
       await expect(pinButtonOf(canvas, LEAF)).toBeNull()
     })
-    await step(PIN_NESTED[1]!.title, async () => {
+    await step(PIN_NESTED[1]!.title.ru, async () => {
       await guideNext(canvas)
       for (const id of ['firstName', 'lastName'])
         await until(() => expect(pinnedSide(canvas, id)).toBe('left'))
       await settle()
     })
-    await step(PIN_NESTED[2]!.title, async () => {
+    await step(PIN_NESTED[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(pinnedSide(canvas, LEAF)).toBe('left'))
       await until(() =>

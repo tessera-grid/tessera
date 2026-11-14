@@ -125,11 +125,11 @@ const meta = {
     kind: {
       control: 'inline-radio',
       options: ['row', 'column'],
-      description: 'Ручка строки или колонки',
+      description: 'Row or column drag handle',
     },
     atStart: {
       control: 'boolean',
-      description: 'Первая строка или колонка: перенос к началу недоступен',
+      description: 'First row or column: moving to the start is unavailable',
     },
   },
   render: args => (

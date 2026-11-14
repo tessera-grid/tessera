@@ -132,8 +132,11 @@ const filterManager = async (root: HTMLElement, signal: AbortSignal) => {
 
 const OBJECT: readonly GuideStoryStep[] = [
   {
-    title: 'Менеджеры — записи',
-    hint: 'У каждой строки в колонке менеджера — запись с номером и именем. Таблица показывает имя.',
+    title: { ru: 'Менеджеры — записи', en: 'Managers are records' },
+    hint: {
+      ru: 'У каждой строки в колонке менеджера — запись с номером и именем. Таблица показывает имя.',
+      en: 'Each row has a record with an id and a name in the manager column. The table shows the name.',
+    },
     props: () => ({
       columnsOverride: [
         ...columnsOf('number', ['name', 'price']),
@@ -146,13 +149,25 @@ const OBJECT: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Пользователь отсортировал по менеджеру',
-    hint: 'Пользователь нажал кнопку сортировки дважды. Строки упорядочены по имени менеджера, по алфавиту.',
+    title: {
+      ru: 'Пользователь отсортировал по менеджеру',
+      en: 'The user sorted by manager',
+    },
+    hint: {
+      ru: 'Пользователь нажал кнопку сортировки дважды. Строки упорядочены по имени менеджера, по алфавиту.',
+      en: "The user clicked the sort button twice. The rows are ordered alphabetically by the manager's name.",
+    },
     enter: sortTo('manager', 'ascending'),
   },
   {
-    title: 'Пользователь открыл фильтр менеджера',
-    hint: 'Панель предлагает список имён с флажками и числом строк у каждого.',
+    title: {
+      ru: 'Пользователь открыл фильтр менеджера',
+      en: 'The user opened the manager filter',
+    },
+    hint: {
+      ru: 'Панель предлагает список имён с флажками и числом строк у каждого.',
+      en: 'The panel offers a list of names with checkboxes and a row count for each.',
+    },
     states: ['overlay.filterOptions'],
     enter: stepAction(async (root, { signal }) => {
       await openPanel(root, 'manager', signal)
@@ -160,8 +175,14 @@ const OBJECT: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Пользователь отметил менеджера',
-    hint: 'Остались строки этого менеджера. Записи из разных строк таблица узнаёт по номеру, поэтому все они попали в отбор.',
+    title: {
+      ru: 'Пользователь отметил менеджера',
+      en: 'The user checked a manager',
+    },
+    hint: {
+      ru: 'Остались строки этого менеджера. Записи из разных строк таблица узнаёт по номеру, поэтому все они попали в отбор.',
+      en: "Only this manager's rows remain. The table recognizes records from different rows by their id, so all of them made it through the filter.",
+    },
     enter: stepAction((root, { signal }) => filterManager(root, signal)),
   },
 ]
@@ -172,7 +193,7 @@ export const DataTypesObject: StoryObj<StoryProps> = {
   parameters: { scenario: '0174/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Записи в колонке"
+      title={{ ru: 'Записи в колонке', en: 'Records in a column' }}
       steps={OBJECT}
       args={guideArgs({ height: '460' }, args)}
     />
@@ -184,11 +205,11 @@ export const DataTypesObject: StoryObj<StoryProps> = {
     const count = MANAGED_ROWS.filter(
       row => row.manager.id === OBJECT_MANAGER.id,
     ).length
-    await step(OBJECT[0]!.title, async () => {
+    await step(OBJECT[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await expect(managerTexts(canvas)[0]).toBe(MANAGED_ROWS[0]!.manager.name)
     })
-    await step(OBJECT[1]!.title, async () => {
+    await step(OBJECT[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(sortOf(canvas, 'manager')).toBe('ascending'))
       const texts = managerTexts(canvas)
@@ -197,7 +218,7 @@ export const DataTypesObject: StoryObj<StoryProps> = {
       )
       await expect(texts[0]).toBe(MANAGERS[0]!.name)
     })
-    await step(OBJECT[2]!.title, async () => {
+    await step(OBJECT[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(optionOf(OBJECT_MANAGER.id)?.textContent).toContain(
@@ -208,7 +229,7 @@ export const DataTypesObject: StoryObj<StoryProps> = {
       )
       await settle()
     })
-    await step(OBJECT[3]!.title, async () => {
+    await step(OBJECT[3]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(filteredCount()).toBe(
@@ -232,8 +253,11 @@ const ownerColumn = (dataType: string): ColumnDef<any, any> => ({
 
 const OBJECT_LABEL: readonly GuideStoryStep[] = [
   {
-    title: 'Запись без настройки',
-    hint: 'Приложение назначило колонке владельца тип записи, но у его записей нет полей, которые таблица понимает сама: номер лежит в другом поле, имя — в двух. Ячейки пусты, в консоли разработчика — предупреждение о записи без номера.',
+    title: { ru: 'Запись без настройки', en: 'A record without setup' },
+    hint: {
+      ru: 'Приложение назначило колонке владельца тип записи, но у его записей нет полей, которые таблица понимает сама: номер лежит в другом поле, имя — в двух. Ячейки пусты, в консоли разработчика — предупреждение о записи без номера.',
+      en: 'The app gave the owner column the record type, but its records lack the fields the table understands on its own: the id is in a different field, and the name is split across two. The cells are empty, and the developer console shows a warning about a record without an id.',
+    },
     props: () => ({
       columnsOverride: [
         ...columnsOf('number', ['name', 'price']),
@@ -243,8 +267,14 @@ const OBJECT_LABEL: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Приложение описало запись',
-    hint: 'Приложение описало свой тип «человек»: где у записи номер и как из её полей собрать подпись. Колонка владельца показывает имя и фамилию.',
+    title: {
+      ru: 'Приложение описало запись',
+      en: 'The app described the record',
+    },
+    hint: {
+      ru: 'Приложение описало свой тип «человек»: где у записи номер и как из её полей собрать подпись. Колонка владельца показывает имя и фамилию.',
+      en: 'The app described its own "person" type: where the record keeps its id and how to build a label from its fields. The owner column shows the first and last name.',
+    },
     props: () => ({
       columnsOverride: [
         ...columnsOf('number', ['name', 'price']),
@@ -261,7 +291,7 @@ export const DataTypesObjectLabel: StoryObj<StoryProps> = {
   parameters: { scenario: '0174/S2', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Ключ и подпись записи"
+      title={{ ru: 'Ключ и подпись записи', en: "A record's key and label" }}
       steps={OBJECT_LABEL}
       args={guideArgs({ dataCount: 20, height: '360' }, args)}
     />
@@ -269,11 +299,11 @@ export const DataTypesObjectLabel: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     const { owner } = OWNED_ROWS[0]!
-    await step(OBJECT_LABEL[0]!.title, async () => {
+    await step(OBJECT_LABEL[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(textOf(canvas, 0, 'owner')).toBe(''))
     })
-    await step(OBJECT_LABEL[1]!.title, async () => {
+    await step(OBJECT_LABEL[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(textOf(canvas, 0, 'owner')).toBe(`${owner.first} ${owner.last}`),
@@ -291,12 +321,18 @@ const NEW_MANAGER = 'm4'
 
 const EDIT_LOOKUP: readonly GuideStoryStep[] = [
   {
-    title: 'Менеджеры из справочника',
-    hint: 'Менеджер — запись из справочника на сервере: в ячейке его имя. Его можно править: при наведении на ячейку появляется кнопка правки.',
+    title: { ru: 'Менеджеры из справочника', en: 'Managers from a lookup' },
+    hint: {
+      ru: 'Менеджер — запись из справочника на сервере: в ячейке его имя. Его можно править: при наведении на ячейку появляется кнопка правки.',
+      en: 'A manager is a record from a lookup on the server; the cell shows their name. The manager can be edited: hovering over the cell shows an edit button.',
+    },
   },
   {
-    title: 'Справочник загружается',
-    hint: 'Пользователь нажал кнопку правки. Сервер ещё не ответил: под полем поиска — строки-заготовки списка.',
+    title: { ru: 'Справочник загружается', en: 'The lookup is loading' },
+    hint: {
+      ru: 'Пользователь нажал кнопку правки. Сервер ещё не ответил: под полем поиска — строки-заготовки списка.',
+      en: 'The user clicked the edit button. The server has not responded yet: under the search field, the list shows skeleton rows.',
+    },
     states: ['body.editing', 'overlay.optionEditor'],
     enter: untilDone(
       root => lookupStatus() === 'loading',
@@ -307,8 +343,11 @@ const EDIT_LOOKUP: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Сервер отказал',
-    hint: 'Справочник не загрузился. Под полем поиска — сообщение об ошибке и кнопка повтора.',
+    title: { ru: 'Сервер отказал', en: 'The server refused' },
+    hint: {
+      ru: 'Справочник не загрузился. Под полем поиска — сообщение об ошибке и кнопка повтора.',
+      en: 'The lookup failed to load. Under the search field are an error message and a retry button.',
+    },
     states: ['body.editing', 'overlay.optionEditor'],
     enter: untilDone(
       root => lookupFailed(),
@@ -320,8 +359,11 @@ const EDIT_LOOKUP: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Справочник загружен',
-    hint: 'Пользователь нажал повтор, сервер ответил. В списке записи справочника, текущая отмечена.',
+    title: { ru: 'Справочник загружен', en: 'The lookup has loaded' },
+    hint: {
+      ru: 'Пользователь нажал повтор, сервер ответил. В списке записи справочника, текущая отмечена.',
+      en: 'The user clicked retry, and the server responded. The list shows the lookup records, with the current one checked.',
+    },
     states: ['body.editing', 'overlay.optionEditor'],
     enter: untilDone(
       root => !!optionItem(NEW_MANAGER),
@@ -338,8 +380,11 @@ const EDIT_LOOKUP: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Запись сохранена',
-    hint: 'Пользователь выбрал другого менеджера. Поле закрылось, в ячейке его имя, а в данных — вся запись.',
+    title: { ru: 'Запись сохранена', en: 'The record was saved' },
+    hint: {
+      ru: 'Пользователь выбрал другого менеджера. Поле закрылось, в ячейке его имя, а в данных — вся запись.',
+      en: "The user chose another manager. The editor closed; the cell shows the manager's name, and the data holds the whole record.",
+    },
     enter: untilDone(
       root => !selectField() && optionCellText(root, 'manager') === 'Dana',
       root => {
@@ -357,7 +402,7 @@ export const EditingLookup: StoryObj<StoryProps> = {
   parameters: { scenario: '0175/S5', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Выбор из справочника"
+      title={{ ru: 'Выбор из справочника', en: 'Choosing from a lookup' }}
       steps={EDIT_LOOKUP}
       args={guideArgs(
         {
@@ -372,24 +417,24 @@ export const EditingLookup: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(EDIT_LOOKUP[0]!.title, async () => {
+    await step(EDIT_LOOKUP[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(optionCellText(canvas, 'manager')).toBe('Ann'))
     })
-    await step(EDIT_LOOKUP[1]!.title, async () => {
+    await step(EDIT_LOOKUP[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(lookupStatus()).toBe('loading'))
     })
-    await step(EDIT_LOOKUP[2]!.title, async () => {
+    await step(EDIT_LOOKUP[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(lookupFailed()).toBe(true))
     })
-    await step(EDIT_LOOKUP[3]!.title, async () => {
+    await step(EDIT_LOOKUP[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(optionItem(NEW_MANAGER)).not.toBeNull())
       expect(optionItem('m1')).toHaveAttribute('data-selected')
     })
-    await step(EDIT_LOOKUP[4]!.title, async () => {
+    await step(EDIT_LOOKUP[4]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(optionCellText(canvas, 'manager')).toBe('Dana'))
       expect(selectField()).toBeNull()
@@ -403,12 +448,18 @@ const PICKED = 'm3'
 
 const EDIT_RECORD_FROM_DATA: readonly GuideStoryStep[] = [
   {
-    title: 'Менеджеры без справочника',
-    hint: 'Менеджер — запись с ключом и именем. Справочника у колонки нет: записи лежат только в строках таблицы.',
+    title: { ru: 'Менеджеры без справочника', en: 'Managers without a lookup' },
+    hint: {
+      ru: 'Менеджер — запись с ключом и именем. Справочника у колонки нет: записи лежат только в строках таблицы.',
+      en: 'A manager is a record with a key and a name. The column has no lookup: the records live only in the table rows.',
+    },
   },
   {
-    title: 'Записи из таблицы',
-    hint: 'Пользователь нажал кнопку правки менеджера. В списке — менеджеры, которые уже встречаются в таблице, текущий отмечен.',
+    title: { ru: 'Записи из таблицы', en: 'Records from the table' },
+    hint: {
+      ru: 'Пользователь нажал кнопку правки менеджера. В списке — менеджеры, которые уже встречаются в таблице, текущий отмечен.',
+      en: 'The user clicked the manager edit button. The list shows the managers already present in the table, with the current one checked.',
+    },
     states: ['body.editing', 'overlay.optionEditor'],
     enter: untilDone(
       () => !!optionItem(PICKED),
@@ -418,8 +469,11 @@ const EDIT_RECORD_FROM_DATA: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Запись сохранена',
-    hint: 'Пользователь выбрал другого менеджера. Поле закрылось, в ячейке его имя, а в данных — та же запись, что и в другой строке.',
+    title: { ru: 'Запись сохранена', en: 'The record was saved' },
+    hint: {
+      ru: 'Пользователь выбрал другого менеджера. Поле закрылось, в ячейке его имя, а в данных — та же запись, что и в другой строке.',
+      en: "The user chose another manager. The editor closed; the cell shows the manager's name, and the data holds the same record as in another row.",
+    },
     enter: untilDone(
       root => !selectField() && optionCellText(root, 'manager') === 'Cy',
       root => {
@@ -436,7 +490,7 @@ export const EditingRecordFromData: StoryObj<StoryProps> = {
   parameters: { scenario: '0175/S9', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Запись из таблицы"
+      title={{ ru: 'Запись из таблицы', en: 'A record from the table' }}
       steps={EDIT_RECORD_FROM_DATA}
       args={guideArgs(
         {
@@ -451,16 +505,16 @@ export const EditingRecordFromData: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(EDIT_RECORD_FROM_DATA[0]!.title, async () => {
+    await step(EDIT_RECORD_FROM_DATA[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(optionCellText(canvas, 'manager')).toBe('Ann'))
     })
-    await step(EDIT_RECORD_FROM_DATA[1]!.title, async () => {
+    await step(EDIT_RECORD_FROM_DATA[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(optionItem(PICKED)).not.toBeNull())
       expect(optionItem('m1')).toHaveAttribute('data-selected')
     })
-    await step(EDIT_RECORD_FROM_DATA[2]!.title, async () => {
+    await step(EDIT_RECORD_FROM_DATA[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(optionCellText(canvas, 'manager')).toBe('Cy'))
       expect(selectField()).toBeNull()

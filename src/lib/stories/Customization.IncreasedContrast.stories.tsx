@@ -193,23 +193,35 @@ const hover = (target: HTMLElement) => {
 
 const ENABLE: readonly GuideStoryStep[] = [
   {
-    title: 'Обычный контраст',
-    hint: 'Приложение не задаёт контраст, система его не просит: выбранные строки и линии дерева — бледные тона.',
+    title: { ru: 'Обычный контраст', en: 'Normal contrast' },
+    hint: {
+      ru: 'Приложение не задаёт контраст, система его не просит: выбранные строки и линии дерева — бледные тона.',
+      en: "The app doesn't set contrast, and the system doesn't ask for it: selected rows and tree lines use pale tones.",
+    },
     props: () => ({ contrast: 'auto' }),
   },
   {
-    title: 'Повышенный контраст',
-    hint: 'Приложение включает contrast="more": выбранные строки обведены контуром, линии дерева темнее.',
+    title: { ru: 'Повышенный контраст', en: 'Increased contrast' },
+    hint: {
+      ru: 'Приложение включает contrast="more": выбранные строки обведены контуром, линии дерева темнее.',
+      en: 'The app turns on contrast="more": selected rows get an outline, and tree lines are darker.',
+    },
     props: () => ({ contrast: 'more' }),
   },
   {
-    title: 'Наведение на строку',
-    hint: 'Наведите указатель на строку — её обводит контур, а не только бледная заливка.',
+    title: { ru: 'Наведение на строку', en: 'Hovering over a row' },
+    hint: {
+      ru: 'Наведите указатель на строку — её обводит контур, а не только бледная заливка.',
+      en: 'Hover over a row: it gets an outline, not just a pale fill.',
+    },
     pseudo: { hover: HOVERED_ROW },
   },
   {
-    title: 'Меню колонки',
-    hint: 'У меню рамка поверх тени; пункт под указателем обведён контуром.',
+    title: { ru: 'Меню колонки', en: 'The column menu' },
+    hint: {
+      ru: 'У меню рамка поверх тени; пункт под указателем обведён контуром.',
+      en: 'The menu has a border over its shadow; the item under the pointer is outlined.',
+    },
     enter: stepAction(async (root, { signal }) => {
       const kebab = () =>
         root.querySelector<HTMLElement>(
@@ -234,7 +246,7 @@ export const IncreasedContrastEnable: StoryObj<StoryProps> = {
   },
   render: storyArgs => (
     <GuideStory
-      title="Повышенный контраст"
+      title={{ ru: 'Повышенный контраст', en: 'Increased contrast' }}
       steps={ENABLE}
       args={guideArgs(args, storyArgs)}
     />
@@ -242,7 +254,7 @@ export const IncreasedContrastEnable: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, id, step }) => {
     if (globals.catalog !== true) return
     let line = 0
-    await step(ENABLE[0].title, async () => {
+    await step(ENABLE[0].title.ru, async () => {
       await until(() => expect(selectedRow(canvas)).not.toBeNull())
       await settle()
       await until(() =>
@@ -255,7 +267,7 @@ export const IncreasedContrastEnable: StoryObj<StoryProps> = {
       )
       line = contrastToBg(canvas, treeLineColor(canvas))
     })
-    await step(ENABLE[1].title, async () => {
+    await step(ENABLE[1].title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(gridTheme(canvas)).toHaveAttribute('data-tsr-contrast', 'more'),
@@ -271,7 +283,7 @@ export const IncreasedContrastEnable: StoryObj<StoryProps> = {
         ),
       )
     })
-    await step(ENABLE[2].title, async () => {
+    await step(ENABLE[2].title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(canvas.querySelector(HOVERED_ROW)).not.toBeNull(),
@@ -289,7 +301,7 @@ export const IncreasedContrastEnable: StoryObj<StoryProps> = {
       row.classList.remove('pseudo-hover')
       await settle()
     })
-    await step(ENABLE[3].title, async () => {
+    await step(ENABLE[3].title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       const menu = await waitForPopup('menu')
@@ -332,12 +344,18 @@ const recipe = (root: HTMLElement) => {
 
 const RECIPE_STEPS: readonly GuideStoryStep[] = [
   {
-    title: 'Надстройка из коробки',
-    hint: 'Повышенный контраст включён: рамка грида — цвет палитры приложения, тона наведения и выбора — из надстройки.',
+    title: { ru: 'Надстройка из коробки', en: 'The built-in setup' },
+    hint: {
+      ru: 'Повышенный контраст включён: рамка грида — цвет палитры приложения, тона наведения и выбора — из надстройки.',
+      en: "Increased contrast is on: the grid border uses the app's palette color, and the hover and selection tones come from the built-in setup.",
+    },
   },
   {
-    title: 'Правило приложения',
-    hint: 'Приложение задаёт свою рамку палитры и свои доли тона наведения и выбора: рамка грида синяя, заливка выбранных строк плотнее. Правило перебивает надстройку без !important.',
+    title: { ru: 'Правило приложения', en: 'An app rule' },
+    hint: {
+      ru: 'Приложение задаёт свою рамку палитры и свои доли тона наведения и выбора: рамка грида синяя, заливка выбранных строк плотнее. Правило перебивает надстройку без !important.',
+      en: 'The app sets its own palette border and its own mix ratios for the hover and selection tones: the grid border is blue, and selected rows have a denser fill. The rule overrides the built-in setup without !important.',
+    },
     enter: recipe,
   },
 ]
@@ -353,7 +371,7 @@ export const IncreasedContrastRecipe: StoryObj<StoryProps> = {
     <>
       <style>{RECIPE}</style>
       <GuideStory
-        title="Свои рычаги и палитра"
+        title={{ ru: 'Свои рычаги и палитра', en: 'Custom levers and palette' }}
         steps={RECIPE_STEPS}
         args={guideArgs(args, storyArgs)}
       />
@@ -362,7 +380,7 @@ export const IncreasedContrastRecipe: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     let fill = 0
-    await step(RECIPE_STEPS[0].title, async () => {
+    await step(RECIPE_STEPS[0].title.ru, async () => {
       await until(() => expect(selectedRow(canvas)).not.toBeNull())
       await settle()
       expect(getComputedStyle(gridTheme(canvas)).borderTopColor).not.toBe(
@@ -370,7 +388,7 @@ export const IncreasedContrastRecipe: StoryObj<StoryProps> = {
       )
       fill = contrastToBg(canvas, rowStateColor(selectedRow(canvas)!))
     })
-    await step(RECIPE_STEPS[1].title, async () => {
+    await step(RECIPE_STEPS[1].title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(getComputedStyle(gridTheme(canvas)).borderTopColor).toBe(

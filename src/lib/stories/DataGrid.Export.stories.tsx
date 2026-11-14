@@ -36,6 +36,7 @@ import {
   zipEntryText,
 } from './__mocks__/exportGuide'
 import { storyLabels } from './__mocks__/storyLabels'
+import { useStoryText } from './__mocks__/storyLocale'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
   GuideStory,
@@ -85,12 +86,24 @@ export const ExportPlayground: StoryObj<StoryProps> = {
 
 const DIRECT: readonly GuideStoryStep[] = [
   {
-    title: 'Одна комбинация выгрузки',
-    hint: 'Приложение разрешило выгружать только видимые колонки всех строк, поэтому настроек нет.',
+    title: {
+      ru: 'Одна комбинация выгрузки',
+      en: 'A single export combination',
+    },
+    hint: {
+      ru: 'Приложение разрешило выгружать только видимые колонки всех строк, поэтому настроек нет.',
+      en: 'The app allows exporting only the visible columns of all rows, so there are no settings.',
+    },
   },
   {
-    title: 'Пользователь выгрузил таблицу',
-    hint: 'Пользователь нажал кнопку выгрузки, файл скачался сразу, без панели.',
+    title: {
+      ru: 'Пользователь выгрузил таблицу',
+      en: 'The user exported the table',
+    },
+    hint: {
+      ru: 'Пользователь нажал кнопку выгрузки, файл скачался сразу, без панели.',
+      en: 'The user clicked the export button, and the file downloaded right away, without a panel.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await pollUntil(() => !!exportButton(), signal)
       const before = exported.length
@@ -106,7 +119,7 @@ export const ExportDirect: StoryObj<StoryProps> = {
   parameters: { scenario: '0044/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Выгрузка одним нажатием"
+      title={{ ru: 'Выгрузка одним нажатием', en: 'Export with one click' }}
       steps={DIRECT}
       args={guideArgs(
         {
@@ -123,11 +136,11 @@ export const ExportDirect: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     const download = interceptDownload()
     try {
-      await step(DIRECT[0]!.title, async () => {
+      await step(DIRECT[0]!.title.ru, async () => {
         await waitForRows(canvas)
         await until(() => expect(exportButton()).not.toBeNull())
       })
-      await step(DIRECT[1]!.title, async () => {
+      await step(DIRECT[1]!.title.ru, async () => {
         await guideNext(canvas)
         await stepDone(canvas)
         await expect(download.names).toEqual(['export.csv'])
@@ -146,18 +159,36 @@ const PRESET = 'everything'
 
 const PRESETS: readonly GuideStoryStep[] = [
   {
-    title: 'Таблица с сортировкой, страницами и выбором',
-    hint: 'Набор строк для выгрузки зависит от включённых функций.',
+    title: {
+      ru: 'Таблица с сортировкой, страницами и выбором',
+      en: 'A table with sorting, pages and selection',
+    },
+    hint: {
+      ru: 'Набор строк для выгрузки зависит от включённых функций.',
+      en: 'Which rows can be exported depends on the enabled features.',
+    },
   },
   {
-    title: 'Пользователь открыл настройки выгрузки',
-    hint: 'Панель предлагает строки и колонки: с учётом сортировки, текущую страницу, выбранные строки. Выбранные строки недоступны, пока ничего не выбрано. Сверху — быстрые наборы.',
+    title: {
+      ru: 'Пользователь открыл настройки выгрузки',
+      en: 'The user opened the export settings',
+    },
+    hint: {
+      ru: 'Панель предлагает строки и колонки: с учётом сортировки, текущую страницу, выбранные строки. Выбранные строки недоступны, пока ничего не выбрано. Сверху — быстрые наборы.',
+      en: 'The panel offers row and column options: rows in sorted order, the current page, the selected rows. The selected rows option is unavailable while nothing is selected. Quick sets are at the top.',
+    },
     states: ['overlay.export'],
     enter: stepAction((root, { signal }) => openExportPanel(root, signal)),
   },
   {
-    title: 'Пользователь выбрал быстрый набор',
-    hint: 'Набор заполнил строки и колонки, выгрузка ещё не началась.',
+    title: {
+      ru: 'Пользователь выбрал быстрый набор',
+      en: 'The user chose a quick set',
+    },
+    hint: {
+      ru: 'Набор заполнил строки и колонки, выгрузка ещё не началась.',
+      en: 'The set filled in the rows and columns; the export has not started yet.',
+    },
     states: ['overlay.export'],
     enter: stepAction(async (root, { signal }) => {
       await openExportPanel(root, signal)
@@ -169,8 +200,11 @@ const PRESETS: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Пользователь выгрузил',
-    hint: 'Скачался файл с выбранными строками и колонками.',
+    title: { ru: 'Пользователь выгрузил', en: 'The user exported' },
+    hint: {
+      ru: 'Скачался файл с выбранными строками и колонками.',
+      en: 'A file with the chosen rows and columns downloaded.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await openExportPanel(root, signal)
       await repeat(
@@ -189,7 +223,7 @@ export const ExportPresets: StoryObj<StoryProps> = {
   parameters: { scenario: '0044/S2', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Настройки выгрузки"
+      title={{ ru: 'Настройки выгрузки', en: 'Export settings' }}
       steps={PRESETS}
       args={guideArgs(
         {
@@ -222,10 +256,10 @@ export const ExportPresets: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     const download = interceptDownload()
     try {
-      await step(PRESETS[0]!.title, async () => {
+      await step(PRESETS[0]!.title.ru, async () => {
         await waitForRows(canvas)
       })
-      await step(PRESETS[1]!.title, async () => {
+      await step(PRESETS[1]!.title.ru, async () => {
         await guideNext(canvas)
         await stepDone(canvas)
         for (const value of ['view', 'page', 'selected'])
@@ -237,13 +271,13 @@ export const ExportPresets: StoryObj<StoryProps> = {
         await expect(byTestId(`export-preset-${PRESET}`)).not.toBeNull()
         await settle()
       })
-      await step(PRESETS[2]!.title, async () => {
+      await step(PRESETS[2]!.title.ru, async () => {
         await guideNext(canvas)
         await stepDone(canvas)
         await expect(download.names).toEqual([])
         await settle()
       })
-      await step(PRESETS[3]!.title, async () => {
+      await step(PRESETS[3]!.title.ru, async () => {
         await guideNext(canvas)
         await stepDone(canvas)
         await expect(download.names).toEqual(['export.csv'])
@@ -314,20 +348,32 @@ const exportAll = async (root: HTMLElement, signal: AbortSignal) => {
 
 const SERVER: readonly GuideStoryStep[] = [
   {
-    title: 'Выгрузка на сервере',
-    hint: 'Всё, кроме текущей страницы, собирает сервер приложения.',
+    title: { ru: 'Выгрузка на сервере', en: 'Export on the server' },
+    hint: {
+      ru: 'Всё, кроме текущей страницы, собирает сервер приложения.',
+      en: "The app's server builds everything except the current page.",
+    },
   },
   {
-    title: 'Пользователь выгружает все строки',
-    hint: 'Запрос ушёл серверу, кнопка выгрузки показывает ожидание.',
+    title: {
+      ru: 'Пользователь выгружает все строки',
+      en: 'The user exports all rows',
+    },
+    hint: {
+      ru: 'Запрос ушёл серверу, кнопка выгрузки показывает ожидание.',
+      en: 'The request went to the server; the export button shows that it is waiting.',
+    },
     enter: stepAction(async (root, { signal }) => {
       exportServer.hold()
       await exportAll(root, signal)
     }),
   },
   {
-    title: 'Сервер собрал файл',
-    hint: 'Ожидание погасло, приложение отдало файл.',
+    title: { ru: 'Сервер собрал файл', en: 'The server built the file' },
+    hint: {
+      ru: 'Ожидание погасло, приложение отдало файл.',
+      en: 'The waiting indicator disappeared, and the app delivered the file.',
+    },
     enter: stepAction(async (root, { signal }) => {
       exportServer.hold()
       await exportAll(root, signal)
@@ -336,8 +382,14 @@ const SERVER: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Пользователь выгрузил текущую страницу',
-    hint: 'Страницу таблица собрала сама и сразу скачала файл.',
+    title: {
+      ru: 'Пользователь выгрузил текущую страницу',
+      en: 'The user exported the current page',
+    },
+    hint: {
+      ru: 'Страницу таблица собрала сама и сразу скачала файл.',
+      en: 'The table built the page itself and downloaded the file right away.',
+    },
     enter: stepAction(async (root, { signal }) => {
       exportServer.release()
       await pollUntil(() => !exportBusy(), signal)
@@ -347,8 +399,14 @@ const SERVER: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Сервер не собрал файл',
-    hint: 'Пользователь снова выгрузил все строки, но сервер отказал. Файла нет: ожидание на кнопке выгрузки остановилось, отметки на кнопке нет. Таблица не изменилась, поэтому сообщения под шапкой нет.',
+    title: {
+      ru: 'Сервер не собрал файл',
+      en: 'The server failed to build the file',
+    },
+    hint: {
+      ru: 'Пользователь снова выгрузил все строки, но сервер отказал. Файла нет: ожидание на кнопке выгрузки остановилось, отметки на кнопке нет. Таблица не изменилась, поэтому сообщения под шапкой нет.',
+      en: 'The user exported all rows again, but the server refused. There is no file: the waiting indicator on the export button stopped, and the button has no mark. The table did not change, so there is no message under the header.',
+    },
     enter: stepAction(async (root, { signal }) => {
       const before = exportServer.refusals()
       exportServer.refuse()
@@ -376,7 +434,7 @@ export const ExportServer: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Выгрузка на сервере"
+      title={{ ru: 'Выгрузка на сервере', en: 'Export on the server' }}
       steps={SERVER}
       args={guideArgs(
         {
@@ -399,29 +457,29 @@ export const ExportServer: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     const download = interceptDownload()
     try {
-      await step(SERVER[0]!.title, async () => {
+      await step(SERVER[0]!.title.ru, async () => {
         await waitForRows(canvas)
       })
-      await step(SERVER[1]!.title, async () => {
+      await step(SERVER[1]!.title.ru, async () => {
         await guideNext(canvas)
         await stepDone(canvas)
         await expect(exportBusy()).toBe(true)
         await expect(consoleText()).toContain('onExport')
         await expect(download.names).toEqual([])
       })
-      await step(SERVER[2]!.title, async () => {
+      await step(SERVER[2]!.title.ru, async () => {
         await guideNext(canvas)
         await stepDone(canvas)
         await expect(exportBusy()).toBe(false)
         await expect(download.names).toEqual([])
       })
-      await step(SERVER[3]!.title, async () => {
+      await step(SERVER[3]!.title.ru, async () => {
         await guideNext(canvas)
         await stepDone(canvas)
         await expect(download.names).toEqual(['export.csv'])
         await expect(consoleText()).toContain('onExported')
       })
-      await step(SERVER[4]!.title, async () => {
+      await step(SERVER[4]!.title.ru, async () => {
         await guideNext(canvas)
         await stepDone(canvas)
         await expect(exportBusy()).toBe(false)
@@ -468,12 +526,18 @@ const excel = (() => {
 
 const EXCEL: readonly GuideStoryStep[] = [
   {
-    title: 'Два формата',
-    hint: 'Рядом с CSV подключён формат Excel.',
+    title: { ru: 'Два формата', en: 'Two formats' },
+    hint: {
+      ru: 'Рядом с CSV подключён формат Excel.',
+      en: 'The Excel format is enabled alongside CSV.',
+    },
   },
   {
-    title: 'Пользователь выбрал Excel',
-    hint: 'В настройках выгрузки выбран формат Excel.',
+    title: { ru: 'Пользователь выбрал Excel', en: 'The user chose Excel' },
+    hint: {
+      ru: 'В настройках выгрузки выбран формат Excel.',
+      en: 'The Excel format is chosen in the export settings.',
+    },
     states: ['overlay.export'],
     enter: stepAction(async (root, { signal }) => {
       excel.allow()
@@ -482,8 +546,11 @@ const EXCEL: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Пользователь выгрузил',
-    hint: 'Скачался файл Excel с данными таблицы.',
+    title: { ru: 'Пользователь выгрузил', en: 'The user exported' },
+    hint: {
+      ru: 'Скачался файл Excel с данными таблицы.',
+      en: 'An Excel file with the table data downloaded.',
+    },
     enter: stepAction(async (root, { signal }) => {
       excel.allow()
       await openExportPanel(root, signal)
@@ -492,8 +559,11 @@ const EXCEL: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Файл не собран',
-    hint: 'Пользователь снова выгрузил Excel, но собрать файл не удалось. Файла нет: ожидание на кнопке выгрузки остановилось, отметки на кнопке нет.',
+    title: { ru: 'Файл не собран', en: 'The file was not built' },
+    hint: {
+      ru: 'Пользователь снова выгрузил Excel, но собрать файл не удалось. Файла нет: ожидание на кнопке выгрузки остановилось, отметки на кнопке нет.',
+      en: 'The user exported to Excel again, but the file could not be built. There is no file: the waiting indicator on the export button stopped, and the button has no mark.',
+    },
     enter: stepAction(async (root, { signal }) => {
       const before = excel.state.refusals
       excel.refuse()
@@ -518,7 +588,7 @@ export const ExportExcel: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Выгрузка в Excel"
+      title={{ ru: 'Выгрузка в Excel', en: 'Export to Excel' }}
       steps={EXCEL}
       args={guideArgs(
         {
@@ -535,16 +605,16 @@ export const ExportExcel: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     const download = interceptDownload()
     try {
-      await step(EXCEL[0]!.title, async () => {
+      await step(EXCEL[0]!.title.ru, async () => {
         await waitForRows(canvas)
       })
-      await step(EXCEL[1]!.title, async () => {
+      await step(EXCEL[1]!.title.ru, async () => {
         await guideNext(canvas)
         await stepDone(canvas)
         await expect(axisChecked('format', 'xlsx')).toBe(true)
         await settle()
       })
-      await step(EXCEL[2]!.title, async () => {
+      await step(EXCEL[2]!.title.ru, async () => {
         await guideNext(canvas)
         await stepDone(canvas)
         await expect(download.names).toEqual(['export.xlsx'])
@@ -557,7 +627,7 @@ export const ExportExcel: StoryObj<StoryProps> = {
           `<t xml:space="preserve">${firstCell}</t>`,
         )
       })
-      await step(EXCEL[3]!.title, async () => {
+      await step(EXCEL[3]!.title.ru, async () => {
         await guideNext(canvas)
         await stepDone(canvas)
         await expect(exportBusy()).toBe(false)
@@ -574,15 +644,18 @@ export const ExportExcel: StoryObj<StoryProps> = {
 // --- ADR 0120, S6 --------------------------------------------------------------------
 
 /** Своя кнопка приложения: выгрузка методом модели `table.exportData`. */
-const OwnExportButton = ({ table }: ToolbarComponentProps) => (
-  <Button
-    variant="outline"
-    data-testid="own-export"
-    onClick={() => void table.exportData({ rows: 'all' })}
-  >
-    Выгрузить всё
-  </Button>
-)
+const OwnExportButton = ({ table }: ToolbarComponentProps) => {
+  const t = useStoryText()
+  return (
+    <Button
+      variant="outline"
+      data-testid="own-export"
+      onClick={() => void table.exportData({ rows: 'all' })}
+    >
+      {t({ ru: 'Выгрузить всё', en: 'Export all' })}
+    </Button>
+  )
+}
 
 /** Кнопка приложения в тулбаре — свой слот, без плагина интерфейса выгрузки. */
 const OWN_EXPORT_BUTTON = [
@@ -601,12 +674,21 @@ const skeletonRow = (root: ParentNode) =>
 
 const OWN_BUTTON: readonly GuideStoryStep[] = [
   {
-    title: 'Своя кнопка выгрузки',
-    hint: 'Выгрузкой управляет приложение. В тулбаре нет кнопки выгрузки таблицы, есть только кнопка приложения.',
+    title: { ru: 'Своя кнопка выгрузки', en: 'A custom export button' },
+    hint: {
+      ru: 'Выгрузкой управляет приложение. В тулбаре нет кнопки выгрузки таблицы, есть только кнопка приложения.',
+      en: "The app controls the export. The toolbar has no table export button, only the app's own button.",
+    },
   },
   {
-    title: 'Приложение выгружает данные',
-    hint: 'Пользователь нажал кнопку приложения, и приложение попросило таблицу выгрузить все строки. Таблица собрала файл и скачала его.',
+    title: {
+      ru: 'Приложение выгружает данные',
+      en: 'The app exports the data',
+    },
+    hint: {
+      ru: 'Пользователь нажал кнопку приложения, и приложение попросило таблицу выгрузить все строки. Таблица собрала файл и скачала его.',
+      en: "The user clicked the app's button, and the app asked the table to export all rows. The table built the file and downloaded it.",
+    },
     // Пользователь нажимает кнопку приложения: одно нажатие — один файл.
     enter: stepAction(async (root, { signal }) => {
       await pollUntil(() => !!ownExportButton(root), signal)
@@ -624,7 +706,10 @@ export const ExportOwnButton: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Выгрузка своей кнопкой"
+      title={{
+        ru: 'Выгрузка своей кнопкой',
+        en: 'Export with a custom button',
+      }}
       steps={OWN_BUTTON}
       args={guideArgs(
         {
@@ -644,13 +729,13 @@ export const ExportOwnButton: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     const download = interceptDownload()
     try {
-      await step(OWN_BUTTON[0].title, async () => {
+      await step(OWN_BUTTON[0].title.ru, async () => {
         await waitForRows(canvas)
         // Своя кнопка приходит слотом тулбара позже строк.
         await until(() => expect(ownExportButton(canvas)).not.toBeNull())
         expect(canvas.querySelector('[data-testid="export-button"]')).toBeNull()
       })
-      await step(OWN_BUTTON[1].title, async () => {
+      await step(OWN_BUTTON[1].title.ru, async () => {
         await guideNext(canvas)
         await stepDone(canvas)
         await until(() => expect(download.names).toEqual(['export.csv']))
@@ -667,13 +752,22 @@ const serverExports: string[] = []
 
 const SERVER_BEFORE_DATA: readonly GuideStoryStep[] = [
   {
-    title: 'Данные загружаются',
-    hint: 'Данные ещё не пришли, а выгрузку собирает сервер. Тело таблицы в состоянии загрузки, кнопка выгрузки уже доступна.',
+    title: { ru: 'Данные загружаются', en: 'Data is loading' },
+    hint: {
+      ru: 'Данные ещё не пришли, а выгрузку собирает сервер. Тело таблицы в состоянии загрузки, кнопка выгрузки уже доступна.',
+      en: 'The data has not arrived yet, and exports are built by the server. The table body is in the loading state, and the export button is already available.',
+    },
     props: () => ({ loading: 'initial', dataOverride: [] }),
   },
   {
-    title: 'Пользователь выгружает до прихода данных',
-    hint: 'Пользователь нажал кнопку выгрузки. Запрос ушёл приложению, файл соберёт сервер; таблица продолжает ждать данных.',
+    title: {
+      ru: 'Пользователь выгружает до прихода данных',
+      en: 'The user exports before the data arrives',
+    },
+    hint: {
+      ru: 'Пользователь нажал кнопку выгрузки. Запрос ушёл приложению, файл соберёт сервер; таблица продолжает ждать данных.',
+      en: 'The user clicked the export button. The request went to the app, and the server will build the file; the table keeps waiting for the data.',
+    },
     enter: root =>
       root.querySelector<HTMLElement>('[data-testid="export-button"]')?.click(),
   },
@@ -688,7 +782,10 @@ export const ExportServerInitialLoading: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Серверная выгрузка до прихода данных"
+      title={{
+        ru: 'Серверная выгрузка до прихода данных',
+        en: 'Server export before the data arrives',
+      }}
       steps={SERVER_BEFORE_DATA}
       args={guideArgs(
         {
@@ -707,12 +804,12 @@ export const ExportServerInitialLoading: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     serverExports.length = 0
-    await step(SERVER_BEFORE_DATA[0]!.title, async () => {
+    await step(SERVER_BEFORE_DATA[0]!.title.ru, async () => {
       await until(() => expect(exportButton()).not.toBeNull())
       expect(byTestId('export-skeleton')).toBeNull()
       expect(skeletonRow(canvas)).not.toBeNull()
     })
-    await step(SERVER_BEFORE_DATA[1]!.title, async () => {
+    await step(SERVER_BEFORE_DATA[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(serverExports).toEqual(['all']))
       expect(skeletonRow(canvas)).not.toBeNull()
@@ -756,17 +853,29 @@ const exportCancelArmed = async (root: HTMLElement, signal: AbortSignal) => {
 
 const CANCEL_EXPORT: readonly GuideStoryStep[] = [
   {
-    title: 'Выгрузка в Excel',
-    hint: 'Таблица выгружается в Excel, большой файл собирается долго.',
+    title: { ru: 'Выгрузка в Excel', en: 'Export to Excel' },
+    hint: {
+      ru: 'Таблица выгружается в Excel, большой файл собирается долго.',
+      en: 'The table is exported to Excel; a large file takes a long time to build.',
+    },
   },
   {
-    title: 'Файл собирается',
-    hint: 'Пользователь нажал выгрузку. Кнопка показывает ожидание по контуру.',
+    title: { ru: 'Файл собирается', en: 'The file is being built' },
+    hint: {
+      ru: 'Пользователь нажал выгрузку. Кнопка показывает ожидание по контуру.',
+      en: 'The user clicked the export button. The button shows a waiting indicator along its outline.',
+    },
     enter: stepAction((root, { signal }) => exportHeld(root, signal)),
   },
   {
-    title: 'Кнопка предлагает отмену',
-    hint: 'Пользователь навёл указатель на занятую кнопку. Внутри дуги появился знак остановки, подсказка предлагает отменить выгрузку.',
+    title: {
+      ru: 'Кнопка предлагает отмену',
+      en: 'The button offers to cancel',
+    },
+    hint: {
+      ru: 'Пользователь навёл указатель на занятую кнопку. Внутри дуги появился знак остановки, подсказка предлагает отменить выгрузку.',
+      en: 'The user hovered over the busy button. A stop icon appeared inside the arc, and the tooltip offers to cancel the export.',
+    },
     pseudo: { hover: '[data-testid="export-button"]' },
     enter: stepAction(async (root, { signal, onLeave }) => {
       await exportCancelArmed(root, signal)
@@ -774,8 +883,11 @@ const CANCEL_EXPORT: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Выгрузка отменена',
-    hint: 'Пользователь нажал на кнопку. Сборка прервана, файл не скачан, отметки ошибки на кнопке нет.',
+    title: { ru: 'Выгрузка отменена', en: 'The export was canceled' },
+    hint: {
+      ru: 'Пользователь нажал на кнопку. Сборка прервана, файл не скачан, отметки ошибки на кнопке нет.',
+      en: 'The user clicked the button. Building was interrupted, no file was downloaded, and the button has no error mark.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await exportCancelArmed(root, signal)
       exportButton()!.click()
@@ -790,7 +902,7 @@ export const ExportCancel: StoryObj<StoryProps> = {
   parameters: { scenario: '0153/S4', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Отмена выгрузки"
+      title={{ ru: 'Отмена выгрузки', en: 'Canceling an export' }}
       steps={CANCEL_EXPORT}
       args={guideArgs(
         {
@@ -809,17 +921,17 @@ export const ExportCancel: StoryObj<StoryProps> = {
     const labels = storyLabels(args.locale)
     const download = interceptDownload()
     try {
-      await step(CANCEL_EXPORT[0]!.title, async () => {
+      await step(CANCEL_EXPORT[0]!.title.ru, async () => {
         await waitForRows(canvas)
         await until(() => expect(exportButton()).not.toBeNull())
       })
-      await step(CANCEL_EXPORT[1]!.title, async () => {
+      await step(CANCEL_EXPORT[1]!.title.ru, async () => {
         await guideNext(canvas)
         await stepDone(canvas)
         await expect(exportWaits()).toBe(true)
         await expect(exportPanel()).toBeNull()
       })
-      await step(CANCEL_EXPORT[2]!.title, async () => {
+      await step(CANCEL_EXPORT[2]!.title.ru, async () => {
         await guideNext(canvas)
         await stepDone(canvas)
         await expect(exportArmed()).toBe(true)
@@ -828,7 +940,7 @@ export const ExportCancel: StoryObj<StoryProps> = {
           labels.cancelAction(dataExportLabels(labels).export),
         )
       })
-      await step(CANCEL_EXPORT[3]!.title, async () => {
+      await step(CANCEL_EXPORT[3]!.title.ru, async () => {
         await guideNext(canvas)
         await stepDone(canvas)
         await expect(exportWaits()).toBe(false)

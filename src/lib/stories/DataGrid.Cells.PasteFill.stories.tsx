@@ -205,12 +205,18 @@ const sheetPasted = (root: ParentNode) =>
 
 const FROM_SPREADSHEET: readonly GuideStoryStep[] = [
   {
-    title: 'Ячейки, которые можно править',
-    hint: 'Приложение разрешило править возраст, пол и число визитов. Пользователь скопировал в другой таблице три строки: возраст и пол.',
+    title: { ru: 'Ячейки, которые можно править', en: 'Editable cells' },
+    hint: {
+      ru: 'Приложение разрешило править возраст, пол и число визитов. Пользователь скопировал в другой таблице три строки: возраст и пол.',
+      en: 'The app allowed editing the age, gender and visit count. The user copied three rows of age and gender from another table.',
+    },
   },
   {
-    title: 'Ячейка выбрана',
-    hint: 'Пользователь нажал на ячейку возраста во второй строке. С неё начнётся вставка.',
+    title: { ru: 'Ячейка выбрана', en: 'A cell is active' },
+    hint: {
+      ru: 'Пользователь нажал на ячейку возраста во второй строке. С неё начнётся вставка.',
+      en: 'The user clicked the age cell in the second row. The paste will start from it.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(
       root => selectedAt(root, 'item-id-2', 'age'),
@@ -218,8 +224,11 @@ const FROM_SPREADSHEET: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Блок вставлен',
-    hint: 'Пользователь нажал Ctrl+V. Три строки буфера легли в возраст и пол трёх строк подряд, начиная с выбранной ячейки, и вставленный блок выделен. Сервер принял изменения одним запросом, ячейки коротко вспыхнули тоном успеха.',
+    title: { ru: 'Блок вставлен', en: 'A block was pasted' },
+    hint: {
+      ru: 'Пользователь нажал Ctrl+V. Три строки буфера легли в возраст и пол трёх строк подряд, начиная с выбранной ячейки, и вставленный блок выделен. Сервер принял изменения одним запросом, ячейки коротко вспыхнули тоном успеха.',
+      en: 'The user pressed Ctrl+V. The three clipboard rows went into the age and gender of three consecutive rows, starting from the active cell, and the pasted block is selected. The server accepted the changes in one request, and the cells flashed briefly in the success tone.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(sheetPasted, root => {
       if (!selectedAt(root, 'item-id-2', 'age'))
@@ -235,7 +244,7 @@ export const PasteFromSpreadsheet: StoryObj<StoryProps> = {
   parameters: { scenario: '0219/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Вставка из таблицы"
+      title={{ ru: 'Вставка из таблицы', en: 'Pasting from a spreadsheet' }}
       steps={FROM_SPREADSHEET}
       reset={() => {
         pasteServer.reset()
@@ -246,16 +255,16 @@ export const PasteFromSpreadsheet: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(FROM_SPREADSHEET[0]!.title, async () => {
+    await step(FROM_SPREADSHEET[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(FROM_SPREADSHEET[1]!.title, async () => {
+    await step(FROM_SPREADSHEET[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(selectedAt(canvas, 'item-id-2', 'age')).toBe(true),
       )
     })
-    await step(FROM_SPREADSHEET[2]!.title, async () => {
+    await step(FROM_SPREADSHEET[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(sheetPasted(canvas)).toBe(true))
       expect(selectedAt(canvas, 'item-id-4', 'gender')).toBe(true)
@@ -277,12 +286,18 @@ const onePasted = (root: ParentNode) =>
 
 const ONE_INTO_RANGE: readonly GuideStoryStep[] = [
   {
-    title: 'Ячейки, которые можно править',
-    hint: 'Приложение разрешило править возраст, пол и число визитов. Пользователь скопировал одно число.',
+    title: { ru: 'Ячейки, которые можно править', en: 'Editable cells' },
+    hint: {
+      ru: 'Приложение разрешило править возраст, пол и число визитов. Пользователь скопировал одно число.',
+      en: 'The app allowed editing the age, gender and visit count. The user copied a single number.',
+    },
   },
   {
-    title: 'Выделен диапазон',
-    hint: 'Пользователь протянул выделение по возрасту в четырёх строках.',
+    title: { ru: 'Выделен диапазон', en: 'A range is selected' },
+    hint: {
+      ru: 'Пользователь протянул выделение по возрасту в четырёх строках.',
+      en: 'The user dragged a selection across the age cells in four rows.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(
       root => rangeSelected(root, 'age', RANGE_ROWS),
@@ -290,8 +305,14 @@ const ONE_INTO_RANGE: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Одно значение во всём диапазоне',
-    hint: 'Пользователь нажал Ctrl+V. Одно значение из буфера легло во все выделенные ячейки — так правят много ячеек сразу.',
+    title: {
+      ru: 'Одно значение во всём диапазоне',
+      en: 'One value across the whole range',
+    },
+    hint: {
+      ru: 'Пользователь нажал Ctrl+V. Одно значение из буфера легло во все выделенные ячейки — так правят много ячеек сразу.',
+      en: 'The user pressed Ctrl+V. The single value from the clipboard went into all selected cells: this is how you edit many cells at once.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(onePasted, root => {
       if (!rangeSelected(root, 'age', RANGE_ROWS))
@@ -307,7 +328,10 @@ export const PasteOneIntoRange: StoryObj<StoryProps> = {
   parameters: { scenario: '0219/S2', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Одно значение во весь диапазон"
+      title={{
+        ru: 'Одно значение во весь диапазон',
+        en: 'One value into the whole range',
+      }}
       steps={ONE_INTO_RANGE}
       reset={() => {
         pasteServer.reset()
@@ -318,16 +342,16 @@ export const PasteOneIntoRange: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(ONE_INTO_RANGE[0]!.title, async () => {
+    await step(ONE_INTO_RANGE[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(ONE_INTO_RANGE[1]!.title, async () => {
+    await step(ONE_INTO_RANGE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(rangeSelected(canvas, 'age', RANGE_ROWS)).toBe(true),
       )
     })
-    await step(ONE_INTO_RANGE[2]!.title, async () => {
+    await step(ONE_INTO_RANGE[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(onePasted(canvas)).toBe(true))
       await settle()
@@ -347,12 +371,18 @@ const errorsPasted = (root: ParentNode) =>
 
 const WITH_ERRORS_STEPS: readonly GuideStoryStep[] = [
   {
-    title: 'Что можно править',
-    hint: 'Приложение разрешило править возраст, пол и число визитов, а фамилию — нет. Пользователь скопировал три строки: фамилию и возраст, и в одной строке возраст записан словом.',
+    title: { ru: 'Что можно править', en: 'What can be edited' },
+    hint: {
+      ru: 'Приложение разрешило править возраст, пол и число визитов, а фамилию — нет. Пользователь скопировал три строки: фамилию и возраст, и в одной строке возраст записан словом.',
+      en: 'The app allowed editing the age, gender and visit count, but not the last name. The user copied three rows of last name and age, and in one row the age is written as a word.',
+    },
   },
   {
-    title: 'Ячейка выбрана',
-    hint: 'Пользователь нажал на ячейку фамилии в первой строке. С неё начнётся вставка.',
+    title: { ru: 'Ячейка выбрана', en: 'A cell is active' },
+    hint: {
+      ru: 'Пользователь нажал на ячейку фамилии в первой строке. С неё начнётся вставка.',
+      en: 'The user clicked the last name cell in the first row. The paste will start from it.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(
       root => selectedAt(root, 'item-id-1', 'lastName'),
@@ -360,8 +390,11 @@ const WITH_ERRORS_STEPS: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Вставлено, кроме ошибок',
-    hint: 'Пользователь нажал Ctrl+V. Фамилии не изменились: их править нельзя. Два числа легли в возраст. Слово не разобралось как число: эта ячейка не изменилась, в её углу отметка с причиной.',
+    title: { ru: 'Вставлено, кроме ошибок', en: 'Pasted, except for errors' },
+    hint: {
+      ru: 'Пользователь нажал Ctrl+V. Фамилии не изменились: их править нельзя. Два числа легли в возраст. Слово не разобралось как число: эта ячейка не изменилась, в её углу отметка с причиной.',
+      en: 'The user pressed Ctrl+V. The last names did not change because they cannot be edited. Two numbers went into the age. The word could not be parsed as a number: that cell did not change, and its corner has a mark with the reason.',
+    },
     states: ['body.error'],
     enter: untilDone(errorsPasted, root => {
       if (!selectedAt(root, 'item-id-1', 'lastName'))
@@ -377,7 +410,7 @@ export const PasteWithErrors: StoryObj<StoryProps> = {
   parameters: { scenario: '0219/S3', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Вставка с ошибками"
+      title={{ ru: 'Вставка с ошибками', en: 'Pasting with errors' }}
       steps={WITH_ERRORS_STEPS}
       reset={() => {
         pasteServer.reset()
@@ -389,19 +422,19 @@ export const PasteWithErrors: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     let lastNames: (string | undefined)[] = []
-    await step(WITH_ERRORS_STEPS[0]!.title, async () => {
+    await step(WITH_ERRORS_STEPS[0]!.title.ru, async () => {
       await waitForRows(canvas)
       lastNames = ['item-id-1', 'item-id-2', 'item-id-3'].map(row =>
         textOf(canvas, row, 'lastName'),
       )
     })
-    await step(WITH_ERRORS_STEPS[1]!.title, async () => {
+    await step(WITH_ERRORS_STEPS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(selectedAt(canvas, 'item-id-1', 'lastName')).toBe(true),
       )
     })
-    await step(WITH_ERRORS_STEPS[2]!.title, async () => {
+    await step(WITH_ERRORS_STEPS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(errorsPasted(canvas)).toBe(true))
       expect(
@@ -443,12 +476,18 @@ const retryButton = () => byTestId('load-error-retry')
 
 const REFUSED: readonly GuideStoryStep[] = [
   {
-    title: 'Сервер сохраняет вставку',
-    hint: 'Приложение сохраняет вставку на сервере одним запросом. Сейчас сервер отвечает не сразу и в первый раз откажет.',
+    title: { ru: 'Сервер сохраняет вставку', en: 'The server saves the paste' },
+    hint: {
+      ru: 'Приложение сохраняет вставку на сервере одним запросом. Сейчас сервер отвечает не сразу и в первый раз откажет.',
+      en: 'The app saves the paste on the server in one request. This time the server responds with a delay and will refuse the first attempt.',
+    },
   },
   {
-    title: 'Выделен диапазон',
-    hint: 'Пользователь протянул выделение по возрасту в трёх строках.',
+    title: { ru: 'Выделен диапазон', en: 'A range is selected' },
+    hint: {
+      ru: 'Пользователь протянул выделение по возрасту в трёх строках.',
+      en: 'The user dragged a selection across the age cells in three rows.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(
       root => rangeSelected(root, 'age', REFUSED_ROWS),
@@ -456,8 +495,11 @@ const REFUSED: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Вставка ждёт сервера',
-    hint: 'Пользователь нажал Ctrl+V. В ячейках уже новое значение, но сервер ещё не ответил: ячейки ждут.',
+    title: { ru: 'Вставка ждёт сервера', en: 'The paste waits for the server' },
+    hint: {
+      ru: 'Пользователь нажал Ctrl+V. В ячейках уже новое значение, но сервер ещё не ответил: ячейки ждут.',
+      en: 'The user pressed Ctrl+V. The cells already show the new value, but the server has not responded yet: the cells are waiting.',
+    },
     states: ['body.pending'],
     enter: untilDone(allPending, root => {
       pasteServer.held = true
@@ -471,8 +513,11 @@ const REFUSED: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Сервер отказал',
-    hint: 'Сервер отказал всей вставке. В ячейках снова прежние значения. Причина отказа — одна плашка под шапкой таблицы с кнопкой повтора, а не отметки на каждой ячейке.',
+    title: { ru: 'Сервер отказал', en: 'The server refused' },
+    hint: {
+      ru: 'Сервер отказал всей вставке. В ячейках снова прежние значения. Причина отказа — одна плашка под шапкой таблицы с кнопкой повтора, а не отметки на каждой ячейке.',
+      en: 'The server refused the whole paste. The cells show the previous values again. The refusal reason appears in a single banner below the table header with a retry button, not as marks on every cell.',
+    },
     states: ['body.loadError'],
     enter: untilDone(refusedBack, root => {
       if (allPending(root)) pasteServer.release()
@@ -490,8 +535,11 @@ const REFUSED: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Повтор удался',
-    hint: 'Пользователь нажал кнопку повтора на плашке. Та же вставка ушла на сервер ещё раз, и теперь сервер её принял: плашка ушла, в ячейках новое значение.',
+    title: { ru: 'Повтор удался', en: 'The retry succeeded' },
+    hint: {
+      ru: 'Пользователь нажал кнопку повтора на плашке. Та же вставка ушла на сервер ещё раз, и теперь сервер её принял: плашка ушла, в ячейках новое значение.',
+      en: 'The user clicked the retry button on the banner. The same paste went to the server once more, and this time the server accepted it: the banner is gone, and the cells show the new value.',
+    },
     enter: (root, app) => {
       // Со свежей таблицы отказа ещё не было: сперва отклонённая вставка, затем повтор.
       let refused = false
@@ -525,7 +573,7 @@ export const PasteRefusedByServer: StoryObj<StoryProps> = {
   parameters: { scenario: '0219/S4', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Сервер отказал вставке"
+      title={{ ru: 'Сервер отказал вставке', en: 'The server refused a paste' }}
       steps={REFUSED}
       reset={() => {
         pasteServer.reset()
@@ -537,23 +585,23 @@ export const PasteRefusedByServer: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(REFUSED[0]!.title, async () => {
+    await step(REFUSED[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(REFUSED[1]!.title, async () => {
+    await step(REFUSED[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(rangeSelected(canvas, 'age', REFUSED_ROWS)).toBe(true),
       )
     })
-    await step(REFUSED[2]!.title, async () => {
+    await step(REFUSED[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(allPending(canvas)).toBe(true))
       await until(() =>
         expect(textOf(canvas, REFUSED_ROWS[0]!, 'age')).toBe(REFUSED_VALUE),
       )
     })
-    await step(REFUSED[3]!.title, async () => {
+    await step(REFUSED[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(refusedBack(canvas)).toBe(true))
       await until(() =>
@@ -562,7 +610,7 @@ export const PasteRefusedByServer: StoryObj<StoryProps> = {
         ),
       )
     })
-    await step(REFUSED[4]!.title, async () => {
+    await step(REFUSED[4]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(retried(canvas)).toBe(true))
       await settle()
@@ -609,12 +657,18 @@ const applied = (root: ParentNode) =>
 
 const MANUAL: readonly GuideStoryStep[] = [
   {
-    title: 'Сохранение по кнопке',
-    hint: 'Приложение сохраняет изменения не сразу, а пакетом — по кнопке пульта в тулбаре.',
+    title: { ru: 'Сохранение по кнопке', en: 'Saving with a button' },
+    hint: {
+      ru: 'Приложение сохраняет изменения не сразу, а пакетом — по кнопке пульта в тулбаре.',
+      en: 'The app does not save changes right away; it saves them in a batch from the unsaved changes button in the toolbar.',
+    },
   },
   {
-    title: 'Вставлено несохранённым',
-    hint: 'Пользователь выбрал ячейку возраста в первой строке и вставил три числа. Новые значения видны в ячейках, но ещё не сохранены: в углу каждой ячейки отметка несохранённого изменения, на кнопке пульта — их число.',
+    title: { ru: 'Вставлено несохранённым', en: 'Pasted as unsaved' },
+    hint: {
+      ru: 'Пользователь выбрал ячейку возраста в первой строке и вставил три числа. Новые значения видны в ячейках, но ещё не сохранены: в углу каждой ячейки отметка несохранённого изменения, на кнопке пульта — их число.',
+      en: 'The user picked the age cell in the first row and pasted three numbers. The new values show in the cells but are not saved yet: each cell has an unsaved change mark in its corner, and the unsaved changes button shows their count.',
+    },
     states: ['body.cellDraft'],
     enter: untilDone(drafted, root => {
       if (!selectedAt(root, 'item-id-1', 'age'))
@@ -623,8 +677,11 @@ const MANUAL: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Сохранено пакетом',
-    hint: 'Пользователь открыл пульт и нажал «Применить всё». Вставленные значения ушли на сервер одним запросом и сохранены: отметки исчезли.',
+    title: { ru: 'Сохранено пакетом', en: 'Saved in a batch' },
+    hint: {
+      ru: 'Пользователь открыл пульт и нажал «Применить всё». Вставленные значения ушли на сервер одним запросом и сохранены: отметки исчезли.',
+      en: 'The user opened the unsaved changes panel and clicked "Apply all". The pasted values went to the server in one request and are saved: the marks disappeared.',
+    },
     enter: untilDone(applied, root => {
       if (!drafted(root)) {
         if (!selectedAt(root, 'item-id-1', 'age'))
@@ -641,7 +698,10 @@ export const PasteManualSave: StoryObj<StoryProps> = {
   parameters: { scenario: '0219/S5', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Вставка с сохранением по кнопке"
+      title={{
+        ru: 'Вставка с сохранением по кнопке',
+        en: 'Pasting with manual saving',
+      }}
       steps={MANUAL}
       reset={() => {
         pasteServer.reset()
@@ -652,15 +712,15 @@ export const PasteManualSave: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(MANUAL[0]!.title, async () => {
+    await step(MANUAL[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(MANUAL[1]!.title, async () => {
+    await step(MANUAL[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(drafted(canvas)).toBe(true))
       expect(consoleText()).not.toContain('onCommitEdits')
     })
-    await step(MANUAL[2]!.title, async () => {
+    await step(MANUAL[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(applied(canvas)).toBe(true))
       expect(consoleText()).toContain('onCommitEdits')
@@ -698,12 +758,18 @@ const cutOnce = (root: ParentNode) => {
 
 const CLEAR_AND_CUT: readonly GuideStoryStep[] = [
   {
-    title: 'Ячейки, которые можно править',
-    hint: 'Приложение разрешило править возраст, пол и число визитов.',
+    title: { ru: 'Ячейки, которые можно править', en: 'Editable cells' },
+    hint: {
+      ru: 'Приложение разрешило править возраст, пол и число визитов.',
+      en: 'The app allowed editing the age, gender and visit count.',
+    },
   },
   {
-    title: 'Диапазон очищен',
-    hint: 'Пользователь выделил число визитов в трёх строках и нажал Delete. Ячейки стали пустыми.',
+    title: { ru: 'Диапазон очищен', en: 'The range is cleared' },
+    hint: {
+      ru: 'Пользователь выделил число визитов в трёх строках и нажал Delete. Ячейки стали пустыми.',
+      en: 'The user selected the visit count in three rows and pressed Delete. The cells became empty.',
+    },
     states: ['body.cellRange'],
     keyboard: true,
     enter: untilDone(cleared, root => {
@@ -713,8 +779,11 @@ const CLEAR_AND_CUT: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Значение вырезано',
-    hint: 'Пользователь выбрал ячейку возраста и нажал Ctrl+X. Значение ушло в буфер, ячейка стала пустой.',
+    title: { ru: 'Значение вырезано', en: 'The value is cut' },
+    hint: {
+      ru: 'Пользователь выбрал ячейку возраста и нажал Ctrl+X. Значение ушло в буфер, ячейка стала пустой.',
+      en: 'The user picked an age cell and pressed Ctrl+X. The value went to the clipboard, and the cell became empty.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(cutDone, root => {
       if (!selectedAt(root, CUT_ROW, 'age')) selectCell(root, CUT_ROW, 'age')
@@ -722,8 +791,11 @@ const CLEAR_AND_CUT: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Вырезанное вставлено',
-    hint: 'Пользователь выбрал ячейку возраста двумя строками ниже и нажал Ctrl+V. Значение переехало в неё.',
+    title: { ru: 'Вырезанное вставлено', en: 'The cut value is pasted' },
+    hint: {
+      ru: 'Пользователь выбрал ячейку возраста двумя строками ниже и нажал Ctrl+V. Значение переехало в неё.',
+      en: 'The user picked the age cell two rows below and pressed Ctrl+V. The value moved into it.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(moved, root => {
       if (!cutDone(root)) {
@@ -742,7 +814,7 @@ export const ClearAndCut: StoryObj<StoryProps> = {
   parameters: { scenario: '0219/S10', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Очистка и вырезание"
+      title={{ ru: 'Очистка и вырезание', en: 'Clearing and cutting' }}
       steps={CLEAR_AND_CUT}
       reset={() => {
         pasteServer.reset()
@@ -755,18 +827,18 @@ export const ClearAndCut: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(CLEAR_AND_CUT[0]!.title, async () => {
+    await step(CLEAR_AND_CUT[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(CLEAR_AND_CUT[1]!.title, async () => {
+    await step(CLEAR_AND_CUT[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(cleared(canvas)).toBe(true))
     })
-    await step(CLEAR_AND_CUT[2]!.title, async () => {
+    await step(CLEAR_AND_CUT[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(cutDone(canvas)).toBe(true))
     })
-    await step(CLEAR_AND_CUT[3]!.title, async () => {
+    await step(CLEAR_AND_CUT[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(moved(canvas)).toBe(true))
       await settle()
@@ -832,12 +904,18 @@ const selectAndOpenMenu = (root: HTMLElement) => {
 
 const OWN_BULK: readonly GuideStoryStep[] = [
   {
-    title: 'Пункт меню приложения',
-    hint: 'Приложение добавило в меню ячейки визитов свой пункт: он обнуляет число визитов в выделенных ячейках. Записывает таблица — по тем же правилам, что и вставка.',
+    title: { ru: 'Пункт меню приложения', en: "The app's menu item" },
+    hint: {
+      ru: 'Приложение добавило в меню ячейки визитов свой пункт: он обнуляет число визитов в выделенных ячейках. Записывает таблица — по тем же правилам, что и вставка.',
+      en: 'The app added its own item to the visit cell menu: it resets the visit count to zero in the selected cells. The table writes the values following the same rules as a paste.',
+    },
   },
   {
-    title: 'Выделен диапазон',
-    hint: 'Пользователь протянул выделение по числу визитов в четырёх строках.',
+    title: { ru: 'Выделен диапазон', en: 'A range is selected' },
+    hint: {
+      ru: 'Пользователь протянул выделение по числу визитов в четырёх строках.',
+      en: 'The user dragged a selection across the visit count cells in four rows.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(
       root => rangeSelected(root, 'visits', OWN_ROWS) && !openMenu(),
@@ -848,8 +926,11 @@ const OWN_BULK: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Меню открыто',
-    hint: 'Пользователь нажал правой кнопкой внутри выделения. В меню рядом с пунктами таблицы — пункт приложения.',
+    title: { ru: 'Меню открыто', en: 'The menu is open' },
+    hint: {
+      ru: 'Пользователь нажал правой кнопкой внутри выделения. В меню рядом с пунктами таблицы — пункт приложения.',
+      en: "The user right-clicked inside the selection. The menu shows the app's item next to the table's items.",
+    },
     states: ['overlay.contextMenu'],
     enter: untilDone(
       root => rangeSelected(root, 'visits', OWN_ROWS) && !!resetItem(),
@@ -857,8 +938,11 @@ const OWN_BULK: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Визиты обнулены',
-    hint: 'Пользователь выбрал пункт приложения. Меню закрылось, во всех выделенных ячейках ноль; сервер принял изменения одним запросом.',
+    title: { ru: 'Визиты обнулены', en: 'The visits are reset to zero' },
+    hint: {
+      ru: 'Пользователь выбрал пункт приложения. Меню закрылось, во всех выделенных ячейках ноль; сервер принял изменения одним запросом.',
+      en: "The user chose the app's item. The menu closed, and all selected cells show zero; the server accepted the changes in one request.",
+    },
     enter: untilDone(
       root => zeroed(root) && !openMenu(),
       root => {
@@ -876,7 +960,10 @@ export const OwnBulkEdit: StoryObj<StoryProps> = {
   parameters: { scenario: '0219/S11', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Своя массовая правка в меню"
+      title={{
+        ru: 'Своя массовая правка в меню',
+        en: 'A custom bulk edit in the menu',
+      }}
       steps={OWN_BULK}
       reset={() => pasteServer.reset()}
       args={guideArgs(
@@ -892,21 +979,21 @@ export const OwnBulkEdit: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(OWN_BULK[0]!.title, async () => {
+    await step(OWN_BULK[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(OWN_BULK[1]!.title, async () => {
+    await step(OWN_BULK[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(rangeSelected(canvas, 'visits', OWN_ROWS)).toBe(true),
       )
     })
-    await step(OWN_BULK[2]!.title, async () => {
+    await step(OWN_BULK[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(resetItem()).not.toBeNull())
       expectPopupInCanvas(canvas, openMenu()!)
     })
-    await step(OWN_BULK[3]!.title, async () => {
+    await step(OWN_BULK[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(zeroed(canvas)).toBe(true))
       expect(openMenu()).toBeNull()
@@ -978,22 +1065,34 @@ const answerOnce =
 
 const CONFIRM: readonly GuideStoryStep[] = [
   {
-    title: 'Вопрос перед вставкой',
-    hint: 'Приложение разбирает буфер само и перед вставкой просит таблицу спросить пользователя.',
+    title: { ru: 'Вопрос перед вставкой', en: 'A question before pasting' },
+    hint: {
+      ru: 'Приложение разбирает буфер само и перед вставкой просит таблицу спросить пользователя.',
+      en: 'The app parses the clipboard itself and asks the table to check with the user before pasting.',
+    },
   },
   {
-    title: 'Вопрос задан',
-    hint: 'Пользователь выбрал ячейку возраста и нажал Ctrl+V. Под шапкой таблицы плашка с вопросом, вставлять ли это значение, и двумя кнопками: галочка вставляет, крестик отменяет вставку.',
+    title: { ru: 'Вопрос задан', en: 'The question is asked' },
+    hint: {
+      ru: 'Пользователь выбрал ячейку возраста и нажал Ctrl+V. Под шапкой таблицы плашка с вопросом, вставлять ли это значение, и двумя кнопками: галочка вставляет, крестик отменяет вставку.',
+      en: 'The user picked an age cell and pressed Ctrl+V. Below the table header, a banner asks whether to paste this value and has two buttons: the check mark pastes, and the cross cancels the paste.',
+    },
     enter: untilDone(asking, askToPaste),
   },
   {
-    title: 'Вставка отменена',
-    hint: 'Пользователь нажал крестик. Вставка отменена: ячейка не изменилась, плашка ушла.',
+    title: { ru: 'Вставка отменена', en: 'The paste is canceled' },
+    hint: {
+      ru: 'Пользователь нажал крестик. Вставка отменена: ячейка не изменилась, плашка ушла.',
+      en: 'The user clicked the cross. The paste is canceled: the cell did not change, and the banner is gone.',
+    },
     enter: answerOnce(false, declined),
   },
   {
-    title: 'Вставка подтверждена',
-    hint: 'Пользователь снова нажал Ctrl+V и ответил галочкой. Значение легло в ячейку, сервер его принял.',
+    title: { ru: 'Вставка подтверждена', en: 'The paste is confirmed' },
+    hint: {
+      ru: 'Пользователь снова нажал Ctrl+V и ответил галочкой. Значение легло в ячейку, сервер его принял.',
+      en: 'The user pressed Ctrl+V again and answered with the check mark. The value went into the cell, and the server accepted it.',
+    },
     enter: answerOnce(true, accepted),
   },
 ]
@@ -1004,7 +1103,7 @@ export const PasteConfirm: StoryObj<StoryProps> = {
   parameters: { scenario: '0219/S12', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Подтверждение вставки"
+      title={{ ru: 'Подтверждение вставки', en: 'Confirming a paste' }}
       steps={CONFIRM}
       reset={() => {
         pasteServer.reset()
@@ -1016,22 +1115,22 @@ export const PasteConfirm: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(CONFIRM[0]!.title, async () => {
+    await step(CONFIRM[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(CONFIRM[1]!.title, async () => {
+    await step(CONFIRM[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(asking(canvas)).toBe(true))
       expect(
         canvas.querySelector('[data-testid="pending-action-banner"]'),
       ).toBeNull()
     })
-    await step(CONFIRM[2]!.title, async () => {
+    await step(CONFIRM[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(declined(canvas)).toBe(true))
       expect(consoleText()).not.toContain('onCommitEdits')
     })
-    await step(CONFIRM[3]!.title, async () => {
+    await step(CONFIRM[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(accepted(canvas)).toBe(true))
       expect(consoleText()).toContain('onCommitEdits')
@@ -1075,22 +1174,37 @@ const LARGE_ARGS = {
 
 const LARGE_CONFIRM: readonly GuideStoryStep[] = [
   {
-    title: 'Вопрос перед большой правкой',
-    hint: 'Приложение просит таблицу спрашивать, прежде чем менять больше четырёх ячеек за раз, — чтобы большая вставка не прошла случайно.',
+    title: {
+      ru: 'Вопрос перед большой правкой',
+      en: 'A question before a large edit',
+    },
+    hint: {
+      ru: 'Приложение просит таблицу спрашивать, прежде чем менять больше четырёх ячеек за раз, — чтобы большая вставка не прошла случайно.',
+      en: 'The app asks the table to ask the user before changing more than four cells at once, so that a large paste does not happen by accident.',
+    },
   },
   {
-    title: 'Вопрос задан',
-    hint: 'Пользователь выбрал ячейку возраста во второй строке и вставил три строки буфера — шесть ячеек. Таблица ещё ничего не изменила: под шапкой вопрос, менять ли шесть ячеек.',
+    title: { ru: 'Вопрос задан', en: 'The question is asked' },
+    hint: {
+      ru: 'Пользователь выбрал ячейку возраста во второй строке и вставил три строки буфера — шесть ячеек. Таблица ещё ничего не изменила: под шапкой вопрос, менять ли шесть ячеек.',
+      en: 'The user picked the age cell in the second row and pasted three clipboard rows, which is six cells. The table has not changed anything yet: below the header, a question asks whether to change six cells.',
+    },
     enter: untilDone(asking, pasteSheet),
   },
   {
-    title: 'Вставка отменена',
-    hint: 'Пользователь нажал крестик. Ячейки не изменились, вопрос ушёл.',
+    title: { ru: 'Вставка отменена', en: 'The paste is canceled' },
+    hint: {
+      ru: 'Пользователь нажал крестик. Ячейки не изменились, вопрос ушёл.',
+      en: 'The user clicked the cross. The cells did not change, and the question is gone.',
+    },
     enter: answerLimit(false, limitDeclined),
   },
   {
-    title: 'Вставка подтверждена',
-    hint: 'Пользователь вставил снова и ответил галочкой. Шесть ячеек изменились, сервер принял их одним запросом.',
+    title: { ru: 'Вставка подтверждена', en: 'The paste is confirmed' },
+    hint: {
+      ru: 'Пользователь вставил снова и ответил галочкой. Шесть ячеек изменились, сервер принял их одним запросом.',
+      en: 'The user pasted again and answered with the check mark. Six cells changed, and the server accepted them in one request.',
+    },
     enter: answerLimit(true, limitAccepted),
   },
 ]
@@ -1101,7 +1215,7 @@ export const LargePasteConfirm: StoryObj<StoryProps> = {
   parameters: { scenario: '0223/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Большая вставка"
+      title={{ ru: 'Большая вставка', en: 'A large paste' }}
       steps={LARGE_CONFIRM}
       reset={() => {
         pasteServer.reset()
@@ -1113,19 +1227,19 @@ export const LargePasteConfirm: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(LARGE_CONFIRM[0]!.title, async () => {
+    await step(LARGE_CONFIRM[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(LARGE_CONFIRM[1]!.title, async () => {
+    await step(LARGE_CONFIRM[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(asking(canvas)).toBe(true))
     })
-    await step(LARGE_CONFIRM[2]!.title, async () => {
+    await step(LARGE_CONFIRM[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(limitDeclined(canvas)).toBe(true))
       expect(consoleText()).not.toContain('onCommitEdits')
     })
-    await step(LARGE_CONFIRM[3]!.title, async () => {
+    await step(LARGE_CONFIRM[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(limitAccepted(canvas)).toBe(true))
       expect(consoleText()).toContain('onCommitEdits')
@@ -1162,17 +1276,26 @@ const pasteBig = (root: HTMLElement) => {
 
 const OVER_LIMIT: readonly GuideStoryStep[] = [
   {
-    title: 'Предел правки',
-    hint: 'Приложение разрешает менять не больше шести ячеек за раз.',
+    title: { ru: 'Предел правки', en: 'An edit limit' },
+    hint: {
+      ru: 'Приложение разрешает менять не больше шести ячеек за раз.',
+      en: 'The app allows changing at most six cells at once.',
+    },
   },
   {
-    title: 'Вставка отклонена',
-    hint: 'Пользователь вставил пять строк буфера — десять ячеек. Таблица ничего не изменила: под шапкой плашка, что десять ячеек — больше шести за раз.',
+    title: { ru: 'Вставка отклонена', en: 'The paste is rejected' },
+    hint: {
+      ru: 'Пользователь вставил пять строк буфера — десять ячеек. Таблица ничего не изменила: под шапкой плашка, что десять ячеек — больше шести за раз.',
+      en: 'The user pasted five clipboard rows, which is ten cells. The table changed nothing: below the header, a banner says that ten cells are more than six at once.',
+    },
     enter: untilDone(overRefused, pasteBig),
   },
   {
-    title: 'Вставка в пределах',
-    hint: 'Пользователь закрыл плашку и вставил три строки — шесть ячеек. Они легли без вопроса, сервер их принял.',
+    title: { ru: 'Вставка в пределах', en: 'A paste within the limit' },
+    hint: {
+      ru: 'Пользователь закрыл плашку и вставил три строки — шесть ячеек. Они легли без вопроса, сервер их принял.',
+      en: 'The user closed the banner and pasted three rows, which is six cells. They were pasted without a question, and the server accepted them.',
+    },
     enter: untilDone(
       root => !errorBanner() && sheetPasted(root),
       root => {
@@ -1199,7 +1322,7 @@ export const PasteOverLimit: StoryObj<StoryProps> = {
   parameters: { scenario: '0223/S2', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Предел правки"
+      title={{ ru: 'Предел правки', en: 'An edit limit' }}
       steps={OVER_LIMIT}
       reset={() => {
         pasteServer.reset()
@@ -1212,15 +1335,15 @@ export const PasteOverLimit: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(OVER_LIMIT[0]!.title, async () => {
+    await step(OVER_LIMIT[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(OVER_LIMIT[1]!.title, async () => {
+    await step(OVER_LIMIT[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(overRefused(canvas)).toBe(true))
       expect(consoleText()).not.toContain('onCommitEdits')
     })
-    await step(OVER_LIMIT[2]!.title, async () => {
+    await step(OVER_LIMIT[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(sheetPasted(canvas)).toBe(true))
       expect(consoleText()).toContain('onCommitEdits')
@@ -1410,12 +1533,18 @@ const copyFilled = (root: ParentNode) =>
 
 const FILL_COPY: readonly GuideStoryStep[] = [
   {
-    title: 'Протяжка значения включена',
-    hint: 'Приложение разрешило править возраст, пол и число визитов и включило протяжку значения маркером.',
+    title: { ru: 'Протяжка значения включена', en: 'Fill by dragging is on' },
+    hint: {
+      ru: 'Приложение разрешило править возраст, пол и число визитов и включило протяжку значения маркером.',
+      en: 'The app allowed editing the age, gender and visit count and enabled filling values with the fill handle.',
+    },
   },
   {
-    title: 'Ячейка выбрана',
-    hint: 'Пользователь нажал на ячейку возраста во второй строке. В правом нижнем углу ячейки — квадрат маркера.',
+    title: { ru: 'Ячейка выбрана', en: 'A cell is active' },
+    hint: {
+      ru: 'Пользователь нажал на ячейку возраста во второй строке. В правом нижнем углу ячейки — квадрат маркера.',
+      en: 'The user clicked the age cell in the second row. The bottom-right corner of the cell has the square fill handle.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(
       root =>
@@ -1425,14 +1554,20 @@ const FILL_COPY: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Пользователь тянет маркер',
-    hint: 'Пользователь взял квадрат и тянет его вниз. Пунктирная рамка показывает ячейки, куда ляжет значение; пока кнопка мыши нажата, данные не меняются.',
+    title: { ru: 'Пользователь тянет маркер', en: 'The user drags the handle' },
+    hint: {
+      ru: 'Пользователь взял квадрат и тянет его вниз. Пунктирная рамка показывает ячейки, куда ляжет значение; пока кнопка мыши нажата, данные не меняются.',
+      en: 'The user grabbed the square and is dragging it down. A dashed frame shows the cells that will receive the value; the data does not change while the mouse button is held down.',
+    },
     states: ['body.cellRange', 'body.fillFrame'],
     enter: stepAction(holdFill(COPY_FROM, COPY_TO)),
   },
   {
-    title: 'Значение протянуто',
-    hint: 'Пользователь отпустил кнопку. Возраст из второй строки лёг в три ячейки ниже, сервер принял изменения одним запросом, ячейки коротко вспыхнули тоном успеха. Выделены исходная ячейка и заполненные.',
+    title: { ru: 'Значение протянуто', en: 'The value is filled' },
+    hint: {
+      ru: 'Пользователь отпустил кнопку. Возраст из второй строки лёг в три ячейки ниже, сервер принял изменения одним запросом, ячейки коротко вспыхнули тоном успеха. Выделены исходная ячейка и заполненные.',
+      en: 'The user released the button. The age from the second row went into the three cells below, the server accepted the changes in one request, and the cells flashed briefly in the success tone. The source cell and the filled cells are selected.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(copyFilled, root => fillOnce(root, COPY_FROM, COPY_TO)),
   },
@@ -1444,7 +1579,7 @@ export const FillCopy: StoryObj<StoryProps> = {
   parameters: { scenario: '0219/S6', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Протяжка значения"
+      title={{ ru: 'Протяжка значения', en: 'Filling a value by dragging' }}
       steps={FILL_COPY}
       reset={() => {
         pasteServer.reset()
@@ -1455,19 +1590,19 @@ export const FillCopy: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(FILL_COPY[0]!.title, async () => {
+    await step(FILL_COPY[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(FILL_COPY[1]!.title, async () => {
+    await step(FILL_COPY[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(fillHandleOf(canvas)).not.toBeNull())
     })
-    await step(FILL_COPY[2]!.title, async () => {
+    await step(FILL_COPY[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(fillFrameShown(canvas)).toBe(true))
       expect(consoleText()).not.toContain('onCommitEdits')
     })
-    await step(FILL_COPY[3]!.title, async () => {
+    await step(FILL_COPY[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(copyFilled(canvas)).toBe(true))
       expect(fillFrameShown(canvas)).toBe(false)
@@ -1540,12 +1675,18 @@ const datesFilled = (root: ParentNode) =>
 
 const FILL_SERIES: readonly GuideStoryStep[] = [
   {
-    title: 'Цены с шагом',
-    hint: 'В первых двух строках цены 10 и 20. Приложение разрешило править цену и дату доставки и включило протяжку значения маркером.',
+    title: { ru: 'Цены с шагом', en: 'Prices with a step' },
+    hint: {
+      ru: 'В первых двух строках цены 10 и 20. Приложение разрешило править цену и дату доставки и включило протяжку значения маркером.',
+      en: 'The first two rows have prices of 10 and 20. The app allowed editing the price and delivery date and enabled filling values with the fill handle.',
+    },
   },
   {
-    title: 'Выделены две цены',
-    hint: 'Пользователь выделил цены в первых двух строках.',
+    title: { ru: 'Выделены две цены', en: 'Two prices are selected' },
+    hint: {
+      ru: 'Пользователь выделил цены в первых двух строках.',
+      en: 'The user selected the prices in the first two rows.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(
       root => rangeSelected(root, 'price', PRICE_ROWS) && !!fillHandleOf(root),
@@ -1553,8 +1694,11 @@ const FILL_SERIES: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Ряд цен продолжен',
-    hint: 'Пользователь протянул маркер на три строки вниз. Две цены с одинаковым шагом протяжка продолжила рядом: каждая следующая больше на тот же шаг.',
+    title: { ru: 'Ряд цен продолжен', en: 'The price series is continued' },
+    hint: {
+      ru: 'Пользователь протянул маркер на три строки вниз. Две цены с одинаковым шагом протяжка продолжила рядом: каждая следующая больше на тот же шаг.',
+      en: 'The user dragged the fill handle three rows down. The fill continued the two evenly spaced prices as a series: each next price is larger by the same step.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(pricesFilled, root => {
       if (!rangeSelected(root, 'price', PRICE_ROWS))
@@ -1563,8 +1707,11 @@ const FILL_SERIES: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Выбрана дата',
-    hint: 'Пользователь нажал на дату доставки в шестой строке.',
+    title: { ru: 'Выбрана дата', en: 'A date is active' },
+    hint: {
+      ru: 'Пользователь нажал на дату доставки в шестой строке.',
+      en: 'The user clicked the delivery date in the sixth row.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(
       root =>
@@ -1577,8 +1724,11 @@ const FILL_SERIES: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Ряд дат с Alt',
-    hint: 'Пользователь протянул маркер на две строки вниз, удерживая Alt. Без него одна дата повторилась бы, а с ним протяжка ведёт ряд по дням.',
+    title: { ru: 'Ряд дат с Alt', en: 'A date series with Alt' },
+    hint: {
+      ru: 'Пользователь протянул маркер на две строки вниз, удерживая Alt. Без него одна дата повторилась бы, а с ним протяжка ведёт ряд по дням.',
+      en: 'The user dragged the fill handle two rows down while holding Alt. Without it, the single date would repeat; with it, the fill builds a series by day.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(datesFilled, root =>
       fillOnce(root, DATE_FROM, DATE_TO, true),
@@ -1592,7 +1742,7 @@ export const FillSeries: StoryObj<StoryProps> = {
   parameters: { scenario: '0219/S7', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Ряд протяжкой"
+      title={{ ru: 'Ряд протяжкой', en: 'A series by dragging' }}
       steps={FILL_SERIES}
       reset={() => {
         pasteServer.reset()
@@ -1603,26 +1753,26 @@ export const FillSeries: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(FILL_SERIES[0]!.title, async () => {
+    await step(FILL_SERIES[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(FILL_SERIES[1]!.title, async () => {
+    await step(FILL_SERIES[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(rangeSelected(canvas, 'price', PRICE_ROWS)).toBe(true),
       )
     })
-    await step(FILL_SERIES[2]!.title, async () => {
+    await step(FILL_SERIES[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(pricesFilled(canvas)).toBe(true))
     })
-    await step(FILL_SERIES[3]!.title, async () => {
+    await step(FILL_SERIES[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(selectedAt(canvas, DATE_FROM.row, DATE_FROM.column)).toBe(true),
       )
     })
-    await step(FILL_SERIES[4]!.title, async () => {
+    await step(FILL_SERIES[4]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(datesFilled(canvas)).toBe(true))
       await settle()
@@ -1665,12 +1815,18 @@ const pressFill = (
 
 const FILL_KEYBOARD: readonly GuideStoryStep[] = [
   {
-    title: 'Ячейки, которые можно править',
-    hint: 'Приложение разрешило править имя, фамилию, возраст, пол и число визитов.',
+    title: { ru: 'Ячейки, которые можно править', en: 'Editable cells' },
+    hint: {
+      ru: 'Приложение разрешило править имя, фамилию, возраст, пол и число визитов.',
+      en: 'The app allowed editing the first name, last name, age, gender and visit count.',
+    },
   },
   {
-    title: 'Выделен диапазон',
-    hint: 'Пользователь выделил возраст в четырёх строках.',
+    title: { ru: 'Выделен диапазон', en: 'A range is selected' },
+    hint: {
+      ru: 'Пользователь выделил возраст в четырёх строках.',
+      en: 'The user selected the age in four rows.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(
       root => rangeSelected(root, 'age', DOWN_ROWS),
@@ -1678,8 +1834,11 @@ const FILL_KEYBOARD: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Заполнено вниз',
-    hint: 'Пользователь нажал Ctrl+D. Возраст из первой строки диапазона лёг в остальные его ячейки.',
+    title: { ru: 'Заполнено вниз', en: 'Filled down' },
+    hint: {
+      ru: 'Пользователь нажал Ctrl+D. Возраст из первой строки диапазона лёг в остальные его ячейки.',
+      en: 'The user pressed Ctrl+D. The age from the first row of the range went into its other cells.',
+    },
     states: ['body.cellRange'],
     keyboard: true,
     enter: untilDone(downFilled, root => {
@@ -1689,8 +1848,14 @@ const FILL_KEYBOARD: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Выделены имя и фамилия',
-    hint: 'Пользователь выделил имя и фамилию в седьмой строке.',
+    title: {
+      ru: 'Выделены имя и фамилия',
+      en: 'The first and last name are selected',
+    },
+    hint: {
+      ru: 'Пользователь выделил имя и фамилию в седьмой строке.',
+      en: 'The user selected the first and last name in the seventh row.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(rightSelected, root => {
       const first = cellOf(root, RIGHT_ROW, 'firstName')
@@ -1699,8 +1864,11 @@ const FILL_KEYBOARD: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Заполнено вправо',
-    hint: 'Пользователь нажал Ctrl+R. Имя из первой колонки диапазона легло в фамилию.',
+    title: { ru: 'Заполнено вправо', en: 'Filled right' },
+    hint: {
+      ru: 'Пользователь нажал Ctrl+R. Имя из первой колонки диапазона легло в фамилию.',
+      en: 'The user pressed Ctrl+R. The first name from the first column of the range went into the last name.',
+    },
     states: ['body.cellRange'],
     keyboard: true,
     enter: untilDone(rightFilled, root => {
@@ -1724,7 +1892,7 @@ export const FillDownKeyboard: StoryObj<StoryProps> = {
   parameters: { scenario: '0219/S8', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Заполнение с клавиатуры"
+      title={{ ru: 'Заполнение с клавиатуры', en: 'Filling from the keyboard' }}
       steps={FILL_KEYBOARD}
       reset={() => pasteServer.reset()}
       args={guideArgs(KEYBOARD_ARGS, args)}
@@ -1732,24 +1900,24 @@ export const FillDownKeyboard: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(FILL_KEYBOARD[0]!.title, async () => {
+    await step(FILL_KEYBOARD[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(FILL_KEYBOARD[1]!.title, async () => {
+    await step(FILL_KEYBOARD[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(rangeSelected(canvas, 'age', DOWN_ROWS)).toBe(true),
       )
     })
-    await step(FILL_KEYBOARD[2]!.title, async () => {
+    await step(FILL_KEYBOARD[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(downFilled(canvas)).toBe(true))
     })
-    await step(FILL_KEYBOARD[3]!.title, async () => {
+    await step(FILL_KEYBOARD[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(rightSelected(canvas)).toBe(true))
     })
-    await step(FILL_KEYBOARD[4]!.title, async () => {
+    await step(FILL_KEYBOARD[4]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(rightFilled(canvas)).toBe(true))
       await settle()
@@ -1774,12 +1942,18 @@ const bulkFilled = (root: ParentNode) =>
 
 const BULK_EDIT: readonly GuideStoryStep[] = [
   {
-    title: 'Ячейки, которые можно править',
-    hint: 'Приложение разрешило править возраст, пол и число визитов.',
+    title: { ru: 'Ячейки, которые можно править', en: 'Editable cells' },
+    hint: {
+      ru: 'Приложение разрешило править возраст, пол и число визитов.',
+      en: 'The app allowed editing the age, gender and visit count.',
+    },
   },
   {
-    title: 'Выделен диапазон',
-    hint: 'Пользователь выделил возраст в трёх строках.',
+    title: { ru: 'Выделен диапазон', en: 'A range is selected' },
+    hint: {
+      ru: 'Пользователь выделил возраст в трёх строках.',
+      en: 'The user selected the age in three rows.',
+    },
     states: ['body.cellRange'],
     enter: untilDone(
       root => rangeSelected(root, 'age', BULK_ROWS),
@@ -1787,8 +1961,11 @@ const BULK_EDIT: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Набрано значение',
-    hint: 'Пользователь нажал F2 и набрал новый возраст в первой ячейке диапазона. Выделение осталось.',
+    title: { ru: 'Набрано значение', en: 'A value is typed' },
+    hint: {
+      ru: 'Пользователь нажал F2 и набрал новый возраст в первой ячейке диапазона. Выделение осталось.',
+      en: 'The user pressed F2 and typed a new age in the first cell of the range. The selection remains.',
+    },
     states: ['body.cellRange', 'body.editing'],
     keyboard: true,
     enter: untilDone(
@@ -1805,8 +1982,14 @@ const BULK_EDIT: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Значение во всём диапазоне',
-    hint: 'Пользователь нажал Ctrl+Enter. Набранное значение легло во все ячейки диапазона одним запросом, правка закрылась.',
+    title: {
+      ru: 'Значение во всём диапазоне',
+      en: 'The value across the whole range',
+    },
+    hint: {
+      ru: 'Пользователь нажал Ctrl+Enter. Набранное значение легло во все ячейки диапазона одним запросом, правка закрылась.',
+      en: 'The user pressed Ctrl+Enter. The typed value went into all cells of the range in one request, and the editor closed.',
+    },
     states: ['body.cellRange'],
     keyboard: true,
     enter: untilDone(bulkFilled, root => {
@@ -1826,7 +2009,7 @@ export const BulkEditCtrlEnter: StoryObj<StoryProps> = {
   parameters: { scenario: '0219/S9', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Правка всего диапазона"
+      title={{ ru: 'Правка всего диапазона', en: 'Editing the whole range' }}
       steps={BULK_EDIT}
       reset={() => pasteServer.reset()}
       args={guideArgs(BASE_ARGS, args)}
@@ -1834,20 +2017,20 @@ export const BulkEditCtrlEnter: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(BULK_EDIT[0]!.title, async () => {
+    await step(BULK_EDIT[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(BULK_EDIT[1]!.title, async () => {
+    await step(BULK_EDIT[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(rangeSelected(canvas, 'age', BULK_ROWS)).toBe(true),
       )
     })
-    await step(BULK_EDIT[2]!.title, async () => {
+    await step(BULK_EDIT[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(bulkInput(canvas)?.value).toBe(BULK_VALUE))
     })
-    await step(BULK_EDIT[3]!.title, async () => {
+    await step(BULK_EDIT[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(bulkFilled(canvas)).toBe(true))
       expect(consoleText()).toContain('onCommitEdits')

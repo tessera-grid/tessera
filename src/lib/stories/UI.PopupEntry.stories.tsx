@@ -145,16 +145,16 @@ const meta = {
     tone: {
       control: 'inline-radio',
       options: ['error', 'draft'],
-      description: 'Отказ или несохранённое изменение',
+      description: 'A refusal or an unsaved change',
     },
     markHint: {
       control: 'text',
-      description: 'Подсказка точки по наведению; пусто — без неё',
+      description: 'Dot tooltip on hover; empty means none',
     },
-    label: { control: 'text', description: 'Подпись записи' },
-    reason: { control: 'text', description: 'Причина; пусто — без неё' },
-    showable: { control: 'boolean', description: 'Переход к цели нажатием' },
-    actions: { control: 'boolean', description: 'Кнопки записи' },
+    label: { control: 'text', description: 'Entry label' },
+    reason: { control: 'text', description: 'Reason; empty means none' },
+    showable: { control: 'boolean', description: 'Click to go to the target' },
+    actions: { control: 'boolean', description: 'Entry buttons' },
   },
   render: args => <EntryList entries={[args]} />,
 } satisfies Meta<EntryStoryArgs>

@@ -89,21 +89,30 @@ const pressSpaceOnStock = (root: HTMLElement) => {
 
 const EDIT_BOOLEAN: readonly GuideStoryStep[] = [
   {
-    title: 'Флажки наличия',
-    hint: 'Наличие на складе — флажок во всю ячейку. Кнопки правки нет: нажатие в ячейке сразу меняет значение.',
+    title: { ru: 'Флажки наличия', en: 'In-stock checkboxes' },
+    hint: {
+      ru: 'Наличие на складе — флажок во всю ячейку. Кнопки правки нет: нажатие в ячейке сразу меняет значение.',
+      en: 'In-stock status is a checkbox that fills the whole cell. There is no edit button: a click in the cell changes the value right away.',
+    },
   },
   {
-    title: 'Флажок переключён',
-    hint: 'Пользователь нажал на ячейку. Значение сразу переключилось и сохранилось — без поля правки.',
+    title: { ru: 'Флажок переключён', en: 'The checkbox is toggled' },
+    hint: {
+      ru: 'Пользователь нажал на ячейку. Значение сразу переключилось и сохранилось — без поля правки.',
+      en: 'The user clicked the cell. The value toggled and was saved right away, without an edit field.',
+    },
     enter: untilDone(
       root => checkedIn(root),
       root => stockBox(root)?.click(),
     ),
   },
   {
-    title: 'Пробел с клавиатуры',
+    title: { ru: 'Пробел с клавиатуры', en: 'Space on the keyboard' },
     keyboard: true,
-    hint: 'Пользователь перешёл на ячейку клавиатурой и нажал пробел. Значение переключилось обратно и тоже сохранилось.',
+    hint: {
+      ru: 'Пользователь перешёл на ячейку клавиатурой и нажал пробел. Значение переключилось обратно и тоже сохранилось.',
+      en: 'The user moved to the cell with the keyboard and pressed Space. The value toggled back and was saved as well.',
+    },
     // Со свежей таблицы флажок ещё не переключали: сперва нажатие, затем пробел.
     enter: (root, app) => {
       let pressed = false
@@ -131,24 +140,24 @@ export const EditingBoolean: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Правка флажка"
+      title={{ ru: 'Правка флажка', en: 'Editing a checkbox' }}
       steps={EDIT_BOOLEAN}
       args={guideArgs(productArgs, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(EDIT_BOOLEAN[0]!.title, async () => {
+    await step(EDIT_BOOLEAN[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(checkedIn(canvas)).toBe(false))
     })
-    await step(EDIT_BOOLEAN[1]!.title, async () => {
+    await step(EDIT_BOOLEAN[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(checkedIn(canvas)).toBe(true))
       await until(() => expect(productInput(canvas, 'inStock')).toBeNull())
       await until(() => expect(consoleText()).toMatch(/value:true/))
     })
-    await step(EDIT_BOOLEAN[2]!.title, async () => {
+    await step(EDIT_BOOLEAN[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(checkedIn(canvas)).toBe(false))
       await until(() => expect(consoleText()).toMatch(/value:false/))
@@ -175,22 +184,37 @@ const keyOnStock = (root: HTMLElement, shiftKey: boolean) => {
 
 const EDIT_BOOLEAN_KEYBOARD: readonly GuideStoryStep[] = [
   {
-    title: 'Флажок в ячейке',
-    hint: 'Наличие на складе можно править: для скринридера значение ячейки — флажок. Строки таблицы можно выбирать.',
+    title: { ru: 'Флажок в ячейке', en: 'A checkbox in the cell' },
+    hint: {
+      ru: 'Наличие на складе можно править: для скринридера значение ячейки — флажок. Строки таблицы можно выбирать.',
+      en: "In-stock status is editable: to a screen reader, the cell's value is a checkbox. Table rows can be selected.",
+    },
   },
   {
-    title: 'Пробел переключает флажок',
+    title: {
+      ru: 'Пробел переключает флажок',
+      en: 'Space toggles the checkbox',
+    },
     keyboard: true,
-    hint: 'Пользователь перешёл на ячейку наличия клавиатурой и нажал пробел. Флажок переключился и сохранился, строка не выбрана.',
+    hint: {
+      ru: 'Пользователь перешёл на ячейку наличия клавиатурой и нажал пробел. Флажок переключился и сохранился, строка не выбрана.',
+      en: 'The user moved to the in-stock cell with the keyboard and pressed Space. The checkbox toggled and was saved; the row is not selected.',
+    },
     enter: untilDone(
       root => stockToggle(root)?.getAttribute('aria-checked') === 'true',
       root => keyOnStock(root, false),
     ),
   },
   {
-    title: 'Shift+Space выбирает строку',
+    title: {
+      ru: 'Shift+Space выбирает строку',
+      en: 'Shift+Space selects the row',
+    },
     keyboard: true,
-    hint: 'На той же ячейке пользователь нажал пробел с Shift. Строка выбрана, флажок не изменился.',
+    hint: {
+      ru: 'На той же ячейке пользователь нажал пробел с Shift. Строка выбрана, флажок не изменился.',
+      en: 'On the same cell, the user pressed Shift+Space. The row is selected, and the checkbox did not change.',
+    },
     states: ['body.selection'],
     enter: untilDone(
       root => rowSelected(root),
@@ -208,27 +232,30 @@ export const EditingBooleanKeyboard: StoryObj<StoryProps> = {
   parameters: { scenario: '0175/S10', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Флажок и выбор строки с клавиатуры"
+      title={{
+        ru: 'Флажок и выбор строки с клавиатуры',
+        en: 'Checkbox and row selection with the keyboard',
+      }}
       steps={EDIT_BOOLEAN_KEYBOARD}
       args={guideArgs({ ...productArgs, enableRowSelection: true }, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(EDIT_BOOLEAN_KEYBOARD[0]!.title, async () => {
+    await step(EDIT_BOOLEAN_KEYBOARD[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() =>
         expect(stockToggle(canvas)).toHaveAttribute('aria-checked', 'false'),
       )
     })
-    await step(EDIT_BOOLEAN_KEYBOARD[1]!.title, async () => {
+    await step(EDIT_BOOLEAN_KEYBOARD[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(stockToggle(canvas)).toHaveAttribute('aria-checked', 'true'),
       )
       expect(rowSelected(canvas)).toBe(false)
     })
-    await step(EDIT_BOOLEAN_KEYBOARD[2]!.title, async () => {
+    await step(EDIT_BOOLEAN_KEYBOARD[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(rowSelected(canvas)).toBe(true))
       expect(stockToggle(canvas)).toHaveAttribute('aria-checked', 'true')
@@ -260,8 +287,14 @@ const filterStock = async (
 
 const BOOLEAN_FILTER: readonly GuideStoryStep[] = [
   {
-    title: 'Наличие без настройки фильтра',
-    hint: 'Наличие — булево, у колонки задан только тип данных. Фильтры в таблице подключены, но сама колонка фильтр не настраивала.',
+    title: {
+      ru: 'Наличие без настройки фильтра',
+      en: 'In-stock status without filter setup',
+    },
+    hint: {
+      ru: 'Наличие — булево, у колонки задан только тип данных. Фильтры в таблице подключены, но сама колонка фильтр не настраивала.',
+      en: 'In-stock status is a boolean; the column only sets its data type. Filters are turned on in the table, but the column itself did not set up a filter.',
+    },
     props: () => ({
       columnsOverride: columnsOf('number', ['name', 'inStock']),
       dataOverride: FILTER_ROWS,
@@ -270,23 +303,35 @@ const BOOLEAN_FILTER: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Пользователь открыл фильтр наличия',
-    hint: 'Тип колонки — булево, поэтому панель предлагает выбор из вариантов: все, да, нет и пусто. Пока выбраны все.',
+    title: {
+      ru: 'Пользователь открыл фильтр наличия',
+      en: 'The user opened the stock filter',
+    },
+    hint: {
+      ru: 'Тип колонки — булево, поэтому панель предлагает выбор из вариантов: все, да, нет и пусто. Пока выбраны все.',
+      en: 'The column type is boolean, so the panel offers a choice of options: all, yes, no, and empty. For now, the choice is all.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await openPanel(root, 'inStock', signal)
       await pollUntil(() => booleanChosen('all'), signal)
     }),
   },
   {
-    title: 'Пользователь выбрал «да»',
-    hint: 'Остались товары в наличии. Нижняя панель называет число оставшихся строк.',
+    title: { ru: 'Пользователь выбрал «да»', en: 'The user chose “yes”' },
+    hint: {
+      ru: 'Остались товары в наличии. Нижняя панель называет число оставшихся строк.',
+      en: 'Only in-stock products remain. The status bar shows the number of remaining rows.',
+    },
     enter: stepAction((root, { signal }) =>
       filterStock(root, 'yes', IN_STOCK, signal),
     ),
   },
   {
-    title: 'Пользователь выбрал «нет»',
-    hint: 'Остались товары, которых нет в наличии.',
+    title: { ru: 'Пользователь выбрал «нет»', en: 'The user chose “no”' },
+    hint: {
+      ru: 'Остались товары, которых нет в наличии.',
+      en: 'Only out-of-stock products remain.',
+    },
     enter: stepAction((root, { signal }) =>
       filterStock(root, 'no', OUT_OF_STOCK, signal),
     ),
@@ -299,17 +344,17 @@ export const DataTypesBooleanFilter: StoryObj<StoryProps> = {
   parameters: { scenario: '0172/S14', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Фильтр булева"
+      title={{ ru: 'Фильтр булева', en: 'Boolean filter' }}
       steps={BOOLEAN_FILTER}
       args={guideArgs({ height: '460' }, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(BOOLEAN_FILTER[0]!.title, async () => {
+    await step(BOOLEAN_FILTER[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(BOOLEAN_FILTER[1]!.title, async () => {
+    await step(BOOLEAN_FILTER[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       expect(
@@ -317,12 +362,12 @@ export const DataTypesBooleanFilter: StoryObj<StoryProps> = {
       ).not.toBeNull()
       await settle()
     })
-    await step(BOOLEAN_FILTER[2]!.title, async () => {
+    await step(BOOLEAN_FILTER[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       expect(shownCount()).toBe(IN_STOCK)
     })
-    await step(BOOLEAN_FILTER[3]!.title, async () => {
+    await step(BOOLEAN_FILTER[3]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       expect(shownCount()).toBe(OUT_OF_STOCK)

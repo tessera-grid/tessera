@@ -70,7 +70,7 @@ const meta = {
   title: 'Tessera/UI/LinearProgress',
   args: { active: true },
   argTypes: {
-    active: { control: 'boolean', description: 'Данные обновляются' },
+    active: { control: 'boolean', description: 'Data is refreshing' },
   },
   render: ({ active }) => (
     <UiCanvas>

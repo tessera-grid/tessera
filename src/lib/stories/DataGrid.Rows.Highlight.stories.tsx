@@ -226,24 +226,42 @@ const markForDeletion =
 
 const DELETE: readonly GuideStoryStep[] = [
   {
-    title: 'Действие удаления',
-    hint: 'У строк есть действие удаления. Удаление приложение подтверждает отдельно.',
+    title: { ru: 'Действие удаления', en: 'A delete action' },
+    hint: {
+      ru: 'У строк есть действие удаления. Удаление приложение подтверждает отдельно.',
+      en: 'Rows have a delete action. The app confirms the deletion separately.',
+    },
   },
   {
-    title: 'Пользователь удаляет строку',
-    hint: 'Пользователь нажал удаление. Строка подсвечена тоном опасности, приложение спрашивает подтверждение.',
+    title: { ru: 'Пользователь удаляет строку', en: 'The user deletes a row' },
+    hint: {
+      ru: 'Пользователь нажал удаление. Строка подсвечена тоном опасности, приложение спрашивает подтверждение.',
+      en: 'The user clicked delete. The row is highlighted in the danger tone, and the app asks for confirmation.',
+    },
     states: ['body.highlight'],
     enter: markForDeletion([FIRST]),
   },
   {
-    title: 'Пользователь удаляет ещё одну строку',
-    hint: 'Обе строки подсвечены, приложение спрашивает об удалении двух строк.',
+    title: {
+      ru: 'Пользователь удаляет ещё одну строку',
+      en: 'The user deletes another row',
+    },
+    hint: {
+      ru: 'Обе строки подсвечены, приложение спрашивает об удалении двух строк.',
+      en: 'Both rows are highlighted, and the app asks about deleting two rows.',
+    },
     states: ['body.highlight'],
     enter: markForDeletion([FIRST, SECOND]),
   },
   {
-    title: 'Пользователь подтвердил удаление',
-    hint: 'Строки ушли из таблицы, подсветки больше нет.',
+    title: {
+      ru: 'Пользователь подтвердил удаление',
+      en: 'The user confirmed the deletion',
+    },
+    hint: {
+      ru: 'Строки ушли из таблицы, подсветки больше нет.',
+      en: 'The rows were removed from the table, and the highlight is gone.',
+    },
     enter: (root, app) => {
       const pressed = new Set<string>()
       return untilDone<{
@@ -281,7 +299,10 @@ export const HighlightDeleteConfirmation: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Подсветка до подтверждения"
+      title={{
+        ru: 'Подсветка до подтверждения',
+        en: 'Highlight until confirmation',
+      }}
       steps={DELETE}
       reset={() => deletion.decide(false)}
       args={guideArgs(
@@ -303,7 +324,7 @@ export const HighlightDeleteConfirmation: StoryObj<StoryProps> = {
       canvas.querySelector('.data-grid__container')!.getBoundingClientRect()
         .top - byTestId('data-grid-toolbar')!.getBoundingClientRect().top
     let gridTop = 0
-    await step(DELETE[0]!.title, async () => {
+    await step(DELETE[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(deleteButton(canvas, FIRST)).toBeTruthy())
       await until(() => {
@@ -315,7 +336,7 @@ export const HighlightDeleteConfirmation: StoryObj<StoryProps> = {
       })
       gridTop = top()
     })
-    await step(DELETE[1]!.title, async () => {
+    await step(DELETE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(danger(canvas, FIRST)).toBe(true))
       await until(() =>
@@ -323,7 +344,7 @@ export const HighlightDeleteConfirmation: StoryObj<StoryProps> = {
       )
       await until(() => expect(top()).toBe(gridTop))
     })
-    await step(DELETE[2]!.title, async () => {
+    await step(DELETE[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(danger(canvas, SECOND)).toBe(true))
       await until(() => expect(danger(canvas, FIRST)).toBe(true))
@@ -333,7 +354,7 @@ export const HighlightDeleteConfirmation: StoryObj<StoryProps> = {
         ),
       )
     })
-    await step(DELETE[3]!.title, async () => {
+    await step(DELETE[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(bodyRow(canvas, FIRST)).toBeFalsy())
       await until(() => expect(bodyRow(canvas, SECOND)).toBeFalsy())
@@ -427,30 +448,45 @@ const markedCell = (root: HTMLElement) =>
 
 const MARKS: readonly GuideStoryStep[] = [
   {
-    title: 'Поиск пуст',
-    hint: 'В поиске приложения нет запроса, ячейки не подсвечены.',
+    title: { ru: 'Поиск пуст', en: 'The search is empty' },
+    hint: {
+      ru: 'В поиске приложения нет запроса, ячейки не подсвечены.',
+      en: "The app's search has no query, and no cells are highlighted.",
+    },
   },
   {
-    title: 'Пользователь ищет',
-    hint: 'Пользователь ввёл запрос в поиске приложения. Ячейки с совпадениями подсвечены.',
+    title: { ru: 'Пользователь ищет', en: 'The user searches' },
+    hint: {
+      ru: 'Пользователь ввёл запрос в поиске приложения. Ячейки с совпадениями подсвечены.',
+      en: "The user typed a query in the app's search. Cells with matches are highlighted.",
+    },
     states: ['body.highlight'],
     enter: applyMarks(searchMarks),
   },
   {
-    title: 'Приложение отметило ячейку',
-    hint: 'Приложение подсветило ячейку с результатом действия.',
+    title: { ru: 'Приложение отметило ячейку', en: 'The app marked a cell' },
+    hint: {
+      ru: 'Приложение подсветило ячейку с результатом действия.',
+      en: 'The app highlighted the cell with the result of an action.',
+    },
     states: ['body.highlight'],
     enter: applyMarks(searchMarks, cellMark),
   },
   {
-    title: 'Приложение отметило колонку',
-    hint: 'Приложение подсветило всю колонку итогов.',
+    title: { ru: 'Приложение отметило колонку', en: 'The app marked a column' },
+    hint: {
+      ru: 'Приложение подсветило всю колонку итогов.',
+      en: 'The app highlighted the whole totals column.',
+    },
     states: ['body.highlight'],
     enter: applyMarks(searchMarks, cellMark, columnMark),
   },
   {
-    title: 'Приложение отметило диапазон',
-    hint: 'Приложение подсветило прямоугольник ячеек — две строки в двух колонках — одной отметкой.',
+    title: { ru: 'Приложение отметило диапазон', en: 'The app marked a range' },
+    hint: {
+      ru: 'Приложение подсветило прямоугольник ячеек — две строки в двух колонках — одной отметкой.',
+      en: 'The app highlighted a rectangle of cells, two rows by two columns, with a single mark.',
+    },
     states: ['body.highlight'],
     enter: applyMarks(searchMarks, cellMark, columnMark, rangeMark),
   },
@@ -465,7 +501,7 @@ export const HighlightMarks: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Отметки приложения"
+      title={{ ru: 'Отметки приложения', en: 'Marks from the app' }}
       steps={MARKS}
       args={guideArgs(
         {
@@ -480,21 +516,21 @@ export const HighlightMarks: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(MARKS[0]!.title, async () => {
+    await step(MARKS[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(MARKS[1]!.title, async () => {
+    await step(MARKS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await waitForRows(canvas)
       await until(() => expect(searchCells(canvas).length).toBeGreaterThan(0))
       await expect(markedCell(canvas)).toBeFalsy()
     })
-    await step(MARKS[2]!.title, async () => {
+    await step(MARKS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(markedCell(canvas)).toBeTruthy())
       await expect(searchCells(canvas).length).toBeGreaterThan(0)
     })
-    await step(MARKS[3]!.title, async () => {
+    await step(MARKS[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(headCell(canvas, 'total')).toHaveAttribute(
@@ -505,7 +541,7 @@ export const HighlightMarks: StoryObj<StoryProps> = {
       await expect(markedCell(canvas)).toBeTruthy()
       await settle()
     })
-    await step(MARKS[4]!.title, async () => {
+    await step(MARKS[4]!.title.ru, async () => {
       await guideNext(canvas)
       const rangeCells = () =>
         RANGE_ROWS.flatMap(row =>

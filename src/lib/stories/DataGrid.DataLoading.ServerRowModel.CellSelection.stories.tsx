@@ -76,20 +76,20 @@ export const ServerCellSelectionPlayground: StoryObj<CellSelectionPlaygroundArgs
   {
     name: 'Playground',
     parameters: showControls(['serverTotal', 'maxCopyRows'], {
-      dataCount: 'строки подаёт «сервер» демо',
-      columnCount: 'колонки задаёт демо',
+      dataCount: 'Rows come from the demo server',
+      columnCount: 'Columns are set by the demo',
     }),
     // Сто тысяч строк: копирование большого диапазона догружает строки с сервера.
     args: { ...layout, serverTotal: 100_000, maxCopyRows: 10_000 },
     argTypes: {
       serverTotal: {
-        description: 'Строк на «сервере»',
+        description: 'Rows on the server',
         control: 'select',
         options: [2000, 100_000, 1_000_000],
       },
       maxCopyRows: {
         description:
-          'Сколько строк можно скопировать; больше — таблица отказывает без запросов',
+          'Maximum number of rows to copy; above it, the table refuses without sending requests',
         control: 'select',
         options: [1000, 10_000, 100_000],
       },
@@ -211,8 +211,11 @@ const growRange = async (root: HTMLElement, signal: AbortSignal) => {
 
 const RANGE_SELECTION: readonly GuideStoryStep[] = [
   {
-    title: 'Строки с сервера',
-    hint: 'Строки приходят с сервера блоками. Пользователь ещё ничего не выделял.',
+    title: { ru: 'Строки с сервера', en: 'Rows from the server' },
+    hint: {
+      ru: 'Строки приходят с сервера блоками. Пользователь ещё ничего не выделял.',
+      en: "Rows come from the server in blocks. The user hasn't selected anything yet.",
+    },
     props: serverProps({
       total: RANGE_TOTAL,
       knownTotal: true,
@@ -221,8 +224,11 @@ const RANGE_SELECTION: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Ячейка выделена',
-    hint: 'Пользователь щёлкнул ячейку в начале списка. Она выделена и стала активной.',
+    title: { ru: 'Ячейка выделена', en: 'A cell is selected' },
+    hint: {
+      ru: 'Пользователь щёлкнул ячейку в начале списка. Она выделена и стала активной.',
+      en: 'The user clicked a cell at the start of the list. It is selected and is now the active cell.',
+    },
     enter: stepAction(async (root, { signal }) => {
       server.hold = false
       release()
@@ -230,8 +236,11 @@ const RANGE_SELECTION: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Диапазон протяжкой',
-    hint: 'Пользователь протянул выделение мышью на три строки и три колонки. Диапазон залит, у него общий контур, начальная ячейка не залита.',
+    title: { ru: 'Диапазон протяжкой', en: 'A range by dragging' },
+    hint: {
+      ru: 'Пользователь протянул выделение мышью на три строки и три колонки. Диапазон залит, у него общий контур, начальная ячейка не залита.',
+      en: "The user dragged the selection with the mouse across three rows and three columns. The range is filled and has a single outline; the starting cell isn't filled.",
+    },
     states: ['body.cellRange'],
     enter: stepAction(async (root, { signal }) => {
       server.hold = false
@@ -244,15 +253,24 @@ const RANGE_SELECTION: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Диапазон на экраны вниз',
+    title: {
+      ru: 'Диапазон на экраны вниз',
+      en: 'A range several screens down',
+    },
     keyboard: true,
-    hint: 'Пользователь трижды нажал Shift+PageDown. Диапазон вырос на три экрана, и таблица прокрутилась к его краю. Строки, которые теперь на экране, ещё в пути с сервера: их скелеты внутри диапазона залиты так же.',
+    hint: {
+      ru: 'Пользователь трижды нажал Shift+PageDown. Диапазон вырос на три экрана, и таблица прокрутилась к его краю. Строки, которые теперь на экране, ещё в пути с сервера: их скелеты внутри диапазона залиты так же.',
+      en: 'The user pressed Shift+PageDown three times. The range grew by three screens, and the table scrolled to its edge. The rows now on screen are still on their way from the server: their skeletons inside the range are filled the same way.',
+    },
     states: ['body.skeleton', 'body.cellRange'],
     enter: stepAction((root, { signal }) => growRange(root, signal)),
   },
   {
-    title: 'Строки пришли',
-    hint: 'Сервер ответил: строки встали на место скелетов, диапазон остался прежним.',
+    title: { ru: 'Строки пришли', en: 'Rows arrived' },
+    hint: {
+      ru: 'Сервер ответил: строки встали на место скелетов, диапазон остался прежним.',
+      en: 'The server responded: the rows replaced the skeletons, and the range stayed the same.',
+    },
     states: ['body.cellRange'],
     enter: stepAction(async (root, { signal }) => {
       // Со свежей таблицы диапазона ещё нет: сперва он, как на прошлом шаге.
@@ -273,7 +291,10 @@ export const ServerRangeSelection: StoryObj<StoryProps> = {
   parameters: { scenario: '0146/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Диапазон через незагруженные строки"
+      title={{
+        ru: 'Диапазон через незагруженные строки',
+        en: 'A range across unloaded rows',
+      }}
       steps={RANGE_SELECTION}
       reset={() => {
         server.hold = false
@@ -284,17 +305,17 @@ export const ServerRangeSelection: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(RANGE_SELECTION[0]!.title, async () => {
+    await step(RANGE_SELECTION[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(RANGE_SELECTION[1]!.title, async () => {
+    await step(RANGE_SELECTION[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() =>
         expect(isSelected(cellAt(canvas, 0, 'name'))).toBe(true),
       )
     })
-    await step(RANGE_SELECTION[2]!.title, async () => {
+    await step(RANGE_SELECTION[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(selectedCellCount(canvas)).toBe(9))
@@ -305,13 +326,13 @@ export const ServerRangeSelection: StoryObj<StoryProps> = {
         ).toBe('true'),
       )
     })
-    await step(RANGE_SELECTION[3]!.title, async () => {
+    await step(RANGE_SELECTION[3]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(skeletonRows(canvas)).toBeGreaterThan(0))
       await until(() => expect(selectedPending(canvas)).toBeGreaterThan(0))
     })
-    await step(RANGE_SELECTION[4]!.title, async () => {
+    await step(RANGE_SELECTION[4]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(skeletonRows(canvas)).toBe(0))
@@ -331,8 +352,11 @@ const copyHeld = async (root: HTMLElement, signal: AbortSignal) => {
 
 const COPY_LOADS: readonly GuideStoryStep[] = [
   {
-    title: 'Строки с сервера',
-    hint: 'Строки приходят с сервера блоками, загружены только строки у начала. Пользователь ещё ничего не выделял.',
+    title: { ru: 'Строки с сервера', en: 'Rows from the server' },
+    hint: {
+      ru: 'Строки приходят с сервера блоками, загружены только строки у начала. Пользователь ещё ничего не выделял.',
+      en: "Rows come from the server in blocks, and only the rows near the start are loaded. The user hasn't selected anything yet.",
+    },
     props: serverProps({
       total: SMALL_TOTAL,
       knownTotal: true,
@@ -341,8 +365,11 @@ const COPY_LOADS: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Выделена вся таблица',
-    hint: 'Пользователь щёлкнул первую ячейку, прокрутил таблицу в конец и щёлкнул последнюю ячейку с зажатым Shift. Выделено всё, а загружены только строки начала и конца списка.',
+    title: { ru: 'Выделена вся таблица', en: 'The whole table is selected' },
+    hint: {
+      ru: 'Пользователь щёлкнул первую ячейку, прокрутил таблицу в конец и щёлкнул последнюю ячейку с зажатым Shift. Выделено всё, а загружены только строки начала и конца списка.',
+      en: 'The user clicked the first cell, scrolled the table to the end, and Shift-clicked the last cell. Everything is selected, but only the rows at the start and end of the list are loaded.',
+    },
     states: ['body.cellRange'],
     enter: stepAction(async (root, { signal }) => {
       server.hold = false
@@ -351,8 +378,11 @@ const COPY_LOADS: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Копирование ждёт строк',
-    hint: 'Пользователь нажал Ctrl+C. Таблица запросила у сервера строки выделения, которых у неё нет, и ждёт ответа. В консоли — запись о начале копирования.',
+    title: { ru: 'Копирование ждёт строк', en: 'Copying is waiting for rows' },
+    hint: {
+      ru: 'Пользователь нажал Ctrl+C. Таблица запросила у сервера строки выделения, которых у неё нет, и ждёт ответа. В консоли — запись о начале копирования.',
+      en: "The user pressed Ctrl+C. The table requested the selected rows it doesn't have from the server and is waiting for the response. The console has an entry about the copy starting.",
+    },
     states: ['body.cellRange'],
     enter: stepAction(async (root, { signal }) => {
       if (server.held.length > 0) return
@@ -360,8 +390,11 @@ const COPY_LOADS: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Выделение скопировано',
-    hint: 'Сервер ответил. В буфер попали все две тысячи строк — таблицей и текстом через табуляцию, а в консоли появилась запись об успешном копировании.',
+    title: { ru: 'Выделение скопировано', en: 'The selection is copied' },
+    hint: {
+      ru: 'Сервер ответил. В буфер попали все две тысячи строк — таблицей и текстом через табуляцию, а в консоли появилась запись об успешном копировании.',
+      en: 'The server responded. All two thousand rows went to the clipboard, both as a table and as tab-separated text, and the console shows an entry about the successful copy.',
+    },
     states: ['body.cellRange'],
     enter: stepAction(async (root, { signal }) => {
       if (server.held.length === 0) await copyHeld(root, signal)
@@ -378,7 +411,10 @@ export const ServerCopyLoadsRows: StoryObj<StoryProps> = {
   parameters: { scenario: '0146/S2', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Копирование с догрузкой"
+      title={{
+        ru: 'Копирование с догрузкой',
+        en: 'Copying with on-demand loading',
+      }}
       steps={COPY_LOADS}
       reset={() => {
         server.hold = false
@@ -390,10 +426,10 @@ export const ServerCopyLoadsRows: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     const written = clipboardWrites()
-    await step(COPY_LOADS[0]!.title, async () => {
+    await step(COPY_LOADS[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(COPY_LOADS[1]!.title, async () => {
+    await step(COPY_LOADS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(isSelected(cellAt(canvas, SMALL_TOTAL - 1, 'visits'))).toBe(
@@ -404,14 +440,14 @@ export const ServerCopyLoadsRows: StoryObj<StoryProps> = {
         server.starts.filter(start => start > 0 && start < SMALL_TOTAL - 100),
       ).toEqual([])
     })
-    await step(COPY_LOADS[2]!.title, async () => {
+    await step(COPY_LOADS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(server.held.length).toBeGreaterThan(0)
       await expect(consoleText()).toContain('copy')
       await expect(written).toEqual([])
     })
-    await step(COPY_LOADS[3]!.title, async () => {
+    await step(COPY_LOADS[3]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(written).toHaveLength(1))
@@ -430,8 +466,11 @@ const selectAllCells = (root: HTMLElement, signal: AbortSignal) =>
 
 const COPY_OVER_LIMIT: readonly GuideStoryStep[] = [
   {
-    title: 'Строки с сервера',
-    hint: 'В выборке пятьдесят тысяч строк, они приходят с сервера блоками. Пользователь ещё ничего не выделял.',
+    title: { ru: 'Строки с сервера', en: 'Rows from the server' },
+    hint: {
+      ru: 'В выборке пятьдесят тысяч строк, они приходят с сервера блоками. Пользователь ещё ничего не выделял.',
+      en: "The result set has fifty thousand rows, and they come from the server in blocks. The user hasn't selected anything yet.",
+    },
     props: serverProps({
       total: LIMIT_TOTAL,
       knownTotal: true,
@@ -440,16 +479,22 @@ const COPY_OVER_LIMIT: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Выделена вся таблица',
-    hint: 'Пользователь щёлкнул первую ячейку, прокрутил таблицу в конец и щёлкнул последнюю ячейку с зажатым Shift. Выделены все пятьдесят тысяч строк.',
+    title: { ru: 'Выделена вся таблица', en: 'The whole table is selected' },
+    hint: {
+      ru: 'Пользователь щёлкнул первую ячейку, прокрутил таблицу в конец и щёлкнул последнюю ячейку с зажатым Shift. Выделены все пятьдесят тысяч строк.',
+      en: 'The user clicked the first cell, scrolled the table to the end, and Shift-clicked the last cell. All fifty thousand rows are selected.',
+    },
     states: ['body.cellRange'],
     enter: stepAction(async (root, { signal }) => {
       await selectAllCells(root, signal)
     }),
   },
   {
-    title: 'Строк слишком много',
-    hint: 'Пользователь нажал Ctrl+C. Строк больше, чем таблица кладёт в буфер, поэтому копирование не выполнено, а сервер запросов не получил. Плашка над таблицей называет предел и советует выгрузку.',
+    title: { ru: 'Строк слишком много', en: 'Too many rows' },
+    hint: {
+      ru: 'Пользователь нажал Ctrl+C. Строк больше, чем таблица кладёт в буфер, поэтому копирование не выполнено, а сервер запросов не получил. Плашка над таблицей называет предел и советует выгрузку.',
+      en: 'The user pressed Ctrl+C. There are more rows than the table puts on the clipboard, so nothing was copied and the server received no requests. A banner above the table states the limit and suggests an export.',
+    },
     states: ['body.cellRange', 'body.loadError'],
     enter: stepAction(async (root, { signal }) => {
       if (banner(root)) return
@@ -466,7 +511,7 @@ export const ServerCopyOverLimit: StoryObj<StoryProps> = {
   parameters: { scenario: '0146/S3', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Копирование больше предела"
+      title={{ ru: 'Копирование больше предела', en: 'Copying over the limit' }}
       steps={COPY_OVER_LIMIT}
       args={guideArgs(layout, args)}
     />
@@ -474,17 +519,17 @@ export const ServerCopyOverLimit: StoryObj<StoryProps> = {
   play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     const labels = storyLabels(args.locale)
-    await step(COPY_OVER_LIMIT[0]!.title, async () => {
+    await step(COPY_OVER_LIMIT[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(COPY_OVER_LIMIT[1]!.title, async () => {
+    await step(COPY_OVER_LIMIT[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(isSelected(cellAt(canvas, LIMIT_TOTAL - 1, 'visits'))).toBe(
         true,
       )
     })
-    await step(COPY_OVER_LIMIT[2]!.title, async () => {
+    await step(COPY_OVER_LIMIT[2]!.title.ru, async () => {
       const asked = server.starts.length
       await guideNext(canvas)
       await stepDone(canvas)
@@ -509,8 +554,11 @@ const copyRefused = async (root: HTMLElement, signal: AbortSignal) => {
 
 const COPY_REFUSED: readonly GuideStoryStep[] = [
   {
-    title: 'Строки с сервера',
-    hint: 'Строки приходят с сервера блоками, загружены только строки у начала. Пользователь ещё ничего не выделял.',
+    title: { ru: 'Строки с сервера', en: 'Rows from the server' },
+    hint: {
+      ru: 'Строки приходят с сервера блоками, загружены только строки у начала. Пользователь ещё ничего не выделял.',
+      en: "Rows come from the server in blocks, and only the rows near the start are loaded. The user hasn't selected anything yet.",
+    },
     props: serverProps({
       total: SMALL_TOTAL,
       knownTotal: true,
@@ -520,8 +568,11 @@ const COPY_REFUSED: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Выделена вся таблица',
-    hint: 'Пользователь щёлкнул первую ячейку, прокрутил таблицу в конец и щёлкнул последнюю ячейку с зажатым Shift. Выделено всё, а загружены только строки начала и конца списка.',
+    title: { ru: 'Выделена вся таблица', en: 'The whole table is selected' },
+    hint: {
+      ru: 'Пользователь щёлкнул первую ячейку, прокрутил таблицу в конец и щёлкнул последнюю ячейку с зажатым Shift. Выделено всё, а загружены только строки начала и конца списка.',
+      en: 'The user clicked the first cell, scrolled the table to the end, and Shift-clicked the last cell. Everything is selected, but only the rows at the start and end of the list are loaded.',
+    },
     states: ['body.cellRange'],
     enter: stepAction(async (root, { signal }) => {
       server.failed.clear()
@@ -529,8 +580,11 @@ const COPY_REFUSED: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Сервер отказал',
-    hint: 'Пользователь нажал Ctrl+C, а сервер не отдал часть недостающих строк. Буфер не изменился, плашка над таблицей называет причину и предлагает повторить.',
+    title: { ru: 'Сервер отказал', en: 'The server refused' },
+    hint: {
+      ru: 'Пользователь нажал Ctrl+C, а сервер не отдал часть недостающих строк. Буфер не изменился, плашка над таблицей называет причину и предлагает повторить.',
+      en: "The user pressed Ctrl+C, and the server didn't return some of the missing rows. The clipboard didn't change, and a banner above the table states the reason and offers a retry.",
+    },
     states: ['body.cellRange', 'body.loadError'],
     enter: stepAction(async (root, { signal }) => {
       if (banner(root)) return
@@ -538,8 +592,11 @@ const COPY_REFUSED: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Повтор удался',
-    hint: 'Пользователь нажал кнопку повтора на плашке. Сервер ответил, выделение скопировано, плашка закрылась, а в консоли появилась запись об успешном копировании.',
+    title: { ru: 'Повтор удался', en: 'The retry succeeded' },
+    hint: {
+      ru: 'Пользователь нажал кнопку повтора на плашке. Сервер ответил, выделение скопировано, плашка закрылась, а в консоли появилась запись об успешном копировании.',
+      en: 'The user clicked the retry button on the banner. The server responded, the selection is copied, the banner closed, and the console shows an entry about the successful copy.',
+    },
     states: ['body.cellRange'],
     enter: stepAction(async (root, { signal }) => {
       if (!banner(root)) {
@@ -563,7 +620,10 @@ export const ServerCopyRefused: StoryObj<StoryProps> = {
   parameters: { scenario: '0146/S4', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Отказ сервера при копировании"
+      title={{
+        ru: 'Отказ сервера при копировании',
+        en: 'A server refusal while copying',
+      }}
       steps={COPY_REFUSED}
       reset={() => server.failed.clear()}
       args={guideArgs(layout, args)}
@@ -573,17 +633,17 @@ export const ServerCopyRefused: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     const labels = storyLabels(args.locale)
     const written = clipboardWrites()
-    await step(COPY_REFUSED[0]!.title, async () => {
+    await step(COPY_REFUSED[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(COPY_REFUSED[1]!.title, async () => {
+    await step(COPY_REFUSED[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(isSelected(cellAt(canvas, SMALL_TOTAL - 1, 'visits'))).toBe(
         true,
       )
     })
-    await step(COPY_REFUSED[2]!.title, async () => {
+    await step(COPY_REFUSED[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       const text = banner(canvas)!.textContent
@@ -591,7 +651,7 @@ export const ServerCopyRefused: StoryObj<StoryProps> = {
       await expect(text).toContain(SERVER_FAILURE)
       await expect(written).toEqual([])
     })
-    await step(COPY_REFUSED[3]!.title, async () => {
+    await step(COPY_REFUSED[3]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(banner(canvas)).toBeNull()
@@ -616,8 +676,11 @@ const copyHinted = async (root: HTMLElement, signal: AbortSignal) => {
 
 const CANCEL_COPY: readonly GuideStoryStep[] = [
   {
-    title: 'Строки с сервера',
-    hint: 'Строки приходят с сервера блоками, загружены только строки у начала. Пользователь ещё ничего не выделял.',
+    title: { ru: 'Строки с сервера', en: 'Rows from the server' },
+    hint: {
+      ru: 'Строки приходят с сервера блоками, загружены только строки у начала. Пользователь ещё ничего не выделял.',
+      en: "Rows come from the server in blocks, and only the rows near the start are loaded. The user hasn't selected anything yet.",
+    },
     props: serverProps({
       total: SMALL_TOTAL,
       knownTotal: true,
@@ -626,8 +689,14 @@ const CANCEL_COPY: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Выделение шире загруженного',
-    hint: 'Пользователь выделил строки, которых ещё нет в браузере.',
+    title: {
+      ru: 'Выделение шире загруженного',
+      en: "The selection is wider than what's loaded",
+    },
+    hint: {
+      ru: 'Пользователь выделил строки, которых ещё нет в браузере.',
+      en: "The user selected rows that aren't in the browser yet.",
+    },
     states: ['body.cellRange'],
     enter: stepAction(async (root, { signal }) => {
       server.hold = false
@@ -636,8 +705,11 @@ const CANCEL_COPY: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Копирование ждёт строк',
-    hint: 'Пользователь скопировал выделение, таблица догружает строки.',
+    title: { ru: 'Копирование ждёт строк', en: 'Copying is waiting for rows' },
+    hint: {
+      ru: 'Пользователь скопировал выделение, таблица догружает строки.',
+      en: 'The user copied the selection, and the table is loading the remaining rows.',
+    },
     states: ['body.cellRange'],
     immediate: true,
     enter: stepAction(async (root, { signal }) => {
@@ -646,14 +718,20 @@ const CANCEL_COPY: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Копирование идёт долго',
-    hint: 'Под шапкой появилась плашка о копировании с кнопкой отмены.',
+    title: { ru: 'Копирование идёт долго', en: 'Copying takes a while' },
+    hint: {
+      ru: 'Под шапкой появилась плашка о копировании с кнопкой отмены.',
+      en: 'A banner about the copy with a cancel button appeared below the header.',
+    },
     states: ['body.cellRange'],
     enter: stepAction((root, { signal }) => copyHinted(root, signal)),
   },
   {
-    title: 'Копирование отменено',
-    hint: 'Пользователь нажал Escape. Плашка ушла, буфер обмена не изменился, выделение на месте.',
+    title: { ru: 'Копирование отменено', en: 'Copying is canceled' },
+    hint: {
+      ru: 'Пользователь нажал Escape. Плашка ушла, буфер обмена не изменился, выделение на месте.',
+      en: "The user pressed Escape. The banner is gone, the clipboard didn't change, and the selection stays in place.",
+    },
     states: ['body.cellRange'],
     enter: stepAction(async (root, { signal }) => {
       await copyHinted(root, signal)
@@ -672,7 +750,7 @@ export const ServerCopyCancel: StoryObj<StoryProps> = {
   parameters: { scenario: '0153/S10', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Отмена копирования"
+      title={{ ru: 'Отмена копирования', en: 'Canceling a copy' }}
       steps={CANCEL_COPY}
       reset={() => {
         server.hold = false
@@ -685,29 +763,29 @@ export const ServerCopyCancel: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     const labels = storyLabels(args.locale)
     const written = clipboardWrites()
-    await step(CANCEL_COPY[0]!.title, async () => {
+    await step(CANCEL_COPY[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(CANCEL_COPY[1]!.title, async () => {
+    await step(CANCEL_COPY[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(isSelected(cellAt(canvas, SMALL_TOTAL - 1, 'visits'))).toBe(
         true,
       )
     })
-    await step(CANCEL_COPY[2]!.title, async () => {
+    await step(CANCEL_COPY[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(server.held.length).toBeGreaterThan(0)
       await expect(pendingBanner(canvas)).toBeNull()
     })
-    await step(CANCEL_COPY[3]!.title, async () => {
+    await step(CANCEL_COPY[3]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(pendingBanner(canvas)).toHaveTextContent(labels.pendingCopy)
       await settle()
     })
-    await step(CANCEL_COPY[4]!.title, async () => {
+    await step(CANCEL_COPY[4]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await settle()
@@ -758,8 +836,11 @@ const READ_BLOCK = 10
 
 const READ_RANGES: readonly GuideStoryStep[] = [
   {
-    title: 'Строки с сервера',
-    hint: 'Таблица показывает строки с сервера. Приложение читает выделение одной функцией таблицы — той же, что в клиентском режиме, — и пишет его в консоль.',
+    title: { ru: 'Строки с сервера', en: 'Rows from the server' },
+    hint: {
+      ru: 'Таблица показывает строки с сервера. Приложение читает выделение одной функцией таблицы — той же, что в клиентском режиме, — и пишет его в консоль.',
+      en: 'The table shows rows from the server. The app reads the selection with a single table function, the same one as in client mode, and writes it to the console.',
+    },
     props: context => {
       const props = serverProps({
         total: RANGE_TOTAL,
@@ -774,8 +855,14 @@ const READ_RANGES: readonly GuideStoryStep[] = [
     },
   },
   {
-    title: 'Пользователь выделил диапазон',
-    hint: 'Пользователь протянул выделение на три строки и три колонки. Консоль показывает места строк, колонки и строки-углы.',
+    title: {
+      ru: 'Пользователь выделил диапазон',
+      en: 'The user selected a range',
+    },
+    hint: {
+      ru: 'Пользователь протянул выделение на три строки и три колонки. Консоль показывает места строк, колонки и строки-углы.',
+      en: 'The user dragged the selection across three rows and three columns. The console shows the row positions, the columns, and the corner rows.',
+    },
     states: ['body.cellRange'],
     enter: stepAction(async (root, { signal }) => {
       server.hold = false
@@ -788,9 +875,15 @@ const READ_RANGES: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Угол ушёл в незагруженные строки',
+    title: {
+      ru: 'Угол ушёл в незагруженные строки',
+      en: 'A corner moved into unloaded rows',
+    },
     keyboard: true,
-    hint: 'Пользователь трижды нажал Shift+PageDown. Второй угол диапазона — на строке, которая ещё в пути с сервера: её место известно, а сама строка — ещё нет, и консоль второй угол не называет.',
+    hint: {
+      ru: 'Пользователь трижды нажал Shift+PageDown. Второй угол диапазона — на строке, которая ещё в пути с сервера: её место известно, а сама строка — ещё нет, и консоль второй угол не называет.',
+      en: "The user pressed Shift+PageDown three times. The range's second corner is on a row that is still on its way from the server: its position is known, but the row itself isn't yet, so the console doesn't name the second corner.",
+    },
     states: ['body.skeleton', 'body.cellRange'],
     enter: stepAction(async (root, { signal }) => {
       if (selectedPending(root) > 0) return
@@ -798,8 +891,11 @@ const READ_RANGES: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Строки пришли',
-    hint: 'Сервер прислал строки. Диапазон тот же, но теперь приложение знает и строку второго угла: тот же вызов вернул её id, и консоль называет оба угла.',
+    title: { ru: 'Строки пришли', en: 'Rows arrived' },
+    hint: {
+      ru: 'Сервер прислал строки. Диапазон тот же, но теперь приложение знает и строку второго угла: тот же вызов вернул её id, и консоль называет оба угла.',
+      en: "The server sent the rows. The range is the same, but now the app also knows the second corner's row: the same call returned its id, and the console names both corners.",
+    },
     states: ['body.cellRange'],
     enter: stepAction(async (root, { signal }) => {
       if (selectedPending(root) === 0 && !secondCornerKnown())
@@ -845,7 +941,10 @@ export const CellSelectionRangesAnyMode: StoryObj<StoryProps> = {
   parameters: { scenario: '0180/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Чтение выделения приложением"
+      title={{
+        ru: 'Чтение выделения приложением',
+        en: 'The app reads the selection',
+      }}
       steps={READ_RANGES}
       reset={() => {
         server.hold = false
@@ -856,10 +955,10 @@ export const CellSelectionRangesAnyMode: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(READ_RANGES[0]!.title, async () => {
+    await step(READ_RANGES[0]!.title.ru, async () => {
       await until(() => expect(hasRow(canvas, 0)).toBe(true))
     })
-    await step(READ_RANGES[1]!.title, async () => {
+    await step(READ_RANGES[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() =>
@@ -868,12 +967,12 @@ export const CellSelectionRangesAnyMode: StoryObj<StoryProps> = {
         ),
       )
     })
-    await step(READ_RANGES[2]!.title, async () => {
+    await step(READ_RANGES[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(consoleText()).toMatch(/corners item-id-0 → —/))
     })
-    await step(READ_RANGES[3]!.title, async () => {
+    await step(READ_RANGES[3]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(selectedPending(canvas)).toBe(0)
@@ -922,8 +1021,11 @@ const pasteHeld = async (root: HTMLElement, signal: AbortSignal) => {
 
 const PASTE_LOADS: readonly GuideStoryStep[] = [
   {
-    title: 'Строки с сервера',
-    hint: 'Строки приходят с сервера блоками по десять. Приложение разрешило править возраст и число визитов.',
+    title: { ru: 'Строки с сервера', en: 'Rows from the server' },
+    hint: {
+      ru: 'Строки приходят с сервера блоками по десять. Приложение разрешило править возраст и число визитов.',
+      en: 'Rows come from the server in blocks of ten. The app allowed editing the age and visit count.',
+    },
     props: context => {
       const props = serverProps({
         total: PASTE_TOTAL,
@@ -950,8 +1052,11 @@ const PASTE_LOADS: readonly GuideStoryStep[] = [
     },
   },
   {
-    title: 'Ячейка выбрана',
-    hint: 'Пользователь щёлкнул ячейку возраста в первой строке.',
+    title: { ru: 'Ячейка выбрана', en: 'A cell is active' },
+    hint: {
+      ru: 'Пользователь щёлкнул ячейку возраста в первой строке.',
+      en: 'The user clicked the age cell in the first row.',
+    },
     states: ['body.cellRange'],
     enter: stepAction(async (root, { signal }) => {
       savedCells.clear()
@@ -965,8 +1070,11 @@ const PASTE_LOADS: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Вставка ждёт строк',
-    hint: 'Пользователь вставил из буфера столбец из сорока значений. Они лягут в возраст сорока строк подряд, начиная с выбранной ячейки, а строк дальше экрана у таблицы нет: она запросила их у сервера и ждёт. Над таблицей плашка ожидания вставки с кнопкой отмены; данные пока не изменились.',
+    title: { ru: 'Вставка ждёт строк', en: 'Pasting is waiting for rows' },
+    hint: {
+      ru: 'Пользователь вставил из буфера столбец из сорока значений. Они лягут в возраст сорока строк подряд, начиная с выбранной ячейки, а строк дальше экрана у таблицы нет: она запросила их у сервера и ждёт. Над таблицей плашка ожидания вставки с кнопкой отмены; данные пока не изменились.',
+      en: "The user pasted a column of forty values from the clipboard. They will go into the age column of forty consecutive rows, starting from the active cell, but the table doesn't have the rows beyond the screen: it requested them from the server and is waiting. Above the table is a banner about the pending paste with a cancel button; the data hasn't changed yet.",
+    },
     states: ['body.cellRange'],
     enter: stepAction(async (root, { signal }) => {
       if (server.held.length > 0) return
@@ -974,8 +1082,11 @@ const PASTE_LOADS: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Значения вставлены',
-    hint: 'Сервер прислал строки. Значения легли в возраст сорока строк подряд от выбранной ячейки одним запросом сохранения, плашка ушла, вставленный блок выделен.',
+    title: { ru: 'Значения вставлены', en: 'The values are pasted' },
+    hint: {
+      ru: 'Сервер прислал строки. Значения легли в возраст сорока строк подряд от выбранной ячейки одним запросом сохранения, плашка ушла, вставленный блок выделен.',
+      en: 'The server sent the rows. The values went into the age column of forty consecutive rows, starting from the active cell, in a single save request; the banner is gone, and the pasted block is selected.',
+    },
     states: ['body.cellRange'],
     enter: stepAction(async (root, { signal }) => {
       if (pasteWritten(root)) return
@@ -986,8 +1097,14 @@ const PASTE_LOADS: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Конец вставленного блока',
-    hint: 'Пользователь прокрутил таблицу вниз. Выделенный блок кончается на сороковой строке: вставка заняла столько строк, сколько значений было в буфере, а возраст ниже остался прежним.',
+    title: {
+      ru: 'Конец вставленного блока',
+      en: 'The end of the pasted block',
+    },
+    hint: {
+      ru: 'Пользователь прокрутил таблицу вниз. Выделенный блок кончается на сороковой строке: вставка заняла столько строк, сколько значений было в буфере, а возраст ниже остался прежним.',
+      en: 'The user scrolled the table down. The selected block ends at the fortieth row: the paste took as many rows as there were values on the clipboard, and the ages below stayed the same.',
+    },
     states: ['body.cellRange'],
     enter: stepAction(async (root, { signal }) => {
       if (!pasteWritten(root) && !blockEndShown(root)) {
@@ -1021,7 +1138,10 @@ export const ServerPasteLoadsRows: StoryObj<StoryProps> = {
   parameters: { scenario: '0219/S13', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Вставка с догрузкой"
+      title={{
+        ru: 'Вставка с догрузкой',
+        en: 'Pasting with on-demand loading',
+      }}
       steps={PASTE_LOADS}
       reset={() => {
         savedCells.clear()
@@ -1033,15 +1153,15 @@ export const ServerPasteLoadsRows: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step, args }) => {
     if (globals.catalog !== true) return
-    await step(PASTE_LOADS[0]!.title, async () => {
+    await step(PASTE_LOADS[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(PASTE_LOADS[1]!.title, async () => {
+    await step(PASTE_LOADS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(isSelected(cellAt(canvas, 0, 'age'))).toBe(true)
     })
-    await step(PASTE_LOADS[2]!.title, async () => {
+    await step(PASTE_LOADS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(pendingBanner(canvas)!.textContent).toContain(
@@ -1049,13 +1169,13 @@ export const ServerPasteLoadsRows: StoryObj<StoryProps> = {
       )
       await expect(consoleText()).not.toContain('onCommitEdits')
     })
-    await step(PASTE_LOADS[3]!.title, async () => {
+    await step(PASTE_LOADS[3]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(ageText(canvas, 0)).toBe(PASTED[0])
       await expect(consoleText()).toContain('onCommitEdits')
     })
-    await step(PASTE_LOADS[4]!.title, async () => {
+    await step(PASTE_LOADS[4]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(blockEndShown(canvas)).toBe(true)

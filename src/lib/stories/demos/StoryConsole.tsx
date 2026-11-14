@@ -9,6 +9,8 @@ import { DATA_GRID_THEME_CLASS } from '../../ui/theme'
 import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
 import { Button } from '../../ui/Button'
 import { useIcons } from '../../ui/icons'
+import { useStoryLocale } from '../__mocks__/storyLocale'
+import type { StoryLocale } from '../__mocks__/storyText'
 import { ConsoleFilters } from './ConsoleFilters'
 import { ConsoleContext } from './consoleContext'
 import { useArgsActions } from './useArgsActions'
@@ -18,7 +20,9 @@ import {
   type ConsoleKind,
   type ConsoleLog,
   type ConsoleSource,
+  consoleTextOf,
 } from './consoleLog'
+import { shellText, type StoryShellKey } from './storyShell'
 
 /** Скругление рамки грида: `--tsr-sys-radius` → `--radius-md`. */
 const RADIUS = 'var(--radius-md, 8px)'
@@ -29,18 +33,18 @@ const LIST_HEIGHT = 240
 /** Список у последней записи, если до низа меньше, px. */
 const STICK = 4
 
-const KIND_LABEL: Record<ConsoleKind, string> = {
-  action: 'Действие',
-  callback: 'Колбэк',
-  state: 'Состояние',
-  lifecycle: 'Цикл',
+const KIND_LABEL: Record<ConsoleKind, StoryShellKey> = {
+  action: 'consoleKindAction',
+  callback: 'consoleKindCallback',
+  state: 'consoleKindState',
+  lifecycle: 'consoleKindLifecycle',
 }
 
-const FILTER_LABEL: Record<ConsoleKind, string> = {
-  action: 'Действия',
-  callback: 'Колбэки',
-  state: 'Состояние',
-  lifecycle: 'Жизненный цикл',
+const FILTER_LABEL: Record<ConsoleKind, StoryShellKey> = {
+  action: 'consoleFilterAction',
+  callback: 'consoleFilterCallback',
+  state: 'consoleFilterState',
+  lifecycle: 'consoleFilterLifecycle',
 }
 
 /** Метка вида — фигура рядом с подписью вида, цветом не несёт смысла одна. */
@@ -52,25 +56,12 @@ const KIND_COLOR: Record<ConsoleKind, string> = {
 }
 
 /** Источник действия словом. */
-const SOURCE_LABEL: Record<ConsoleSource, string> = {
-  pointer: 'мышь',
-  keyboard: 'клавиатура',
-  api: 'API',
-  auto: 'грид',
-  story: 'история',
-}
-
-/** «1 событие», «2 события», «5 событий». */
-const events = (count: number) => {
-  const mod10 = count % 10
-  const mod100 = count % 100
-  const word =
-    mod10 === 1 && mod100 !== 11
-      ? 'событие'
-      : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)
-        ? 'события'
-        : 'событий'
-  return `${count} ${word}`
+const SOURCE_LABEL: Record<ConsoleSource, StoryShellKey> = {
+  pointer: 'consoleSourcePointer',
+  keyboard: 'consoleSourceKeyboard',
+  api: 'consoleSourceApi',
+  auto: 'consoleSourceAuto',
+  story: 'consoleSourceStory',
 }
 
 const pad = (value: number, size = 2) => String(value).padStart(size, '0')
@@ -81,13 +72,13 @@ const clock = (time: number) => {
   return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
 }
 
-/** Длительность колбэка: `0.4 мс`, `12 мс`, `1.25 с`. */
-const duration = (ms: number) =>
+/** Длительность колбэка: `0.4 ms`, `12 ms`, `1.25 s`. */
+const duration = (ms: number, locale: StoryLocale) =>
   ms < 10
-    ? `${ms.toFixed(1)} мс`
+    ? shellText(locale, 'consoleMilliseconds', { value: ms.toFixed(1) })
     : ms < 1000
-      ? `${Math.round(ms)} мс`
-      : `${(ms / 1000).toFixed(2)} с`
+      ? shellText(locale, 'consoleMilliseconds', { value: Math.round(ms) })
+      : shellText(locale, 'consoleSeconds', { value: (ms / 1000).toFixed(2) })
 
 const MUTED = 'var(--muted-foreground)'
 
@@ -124,7 +115,11 @@ const cell = (style: Partial<CSSStyleDeclaration> = {}) => {
 }
 
 /** Строка таблицы записей: тип, событие с деталями и «×N», время, длительность. */
-const paintEntry = (row: HTMLTableRowElement, entry: ConsoleEntry) => {
+const paintEntry = (
+  row: HTMLTableRowElement,
+  entry: ConsoleEntry,
+  locale: StoryLocale,
+) => {
   row.dataset.consoleKind = entry.kind
   const dot = span('', {
     display: 'inline-block',
@@ -137,9 +132,9 @@ const paintEntry = (row: HTMLTableRowElement, entry: ConsoleEntry) => {
   })
   dot.setAttribute('aria-hidden', 'true')
   const kind = cell({ color: MUTED, whiteSpace: 'nowrap' })
-  kind.append(dot, KIND_LABEL[entry.kind])
+  kind.append(dot, shellText(locale, KIND_LABEL[entry.kind]))
   const name = document.createElement('strong')
-  name.textContent = entry.name
+  name.textContent = consoleTextOf(entry.name, locale)
   // Запись группы — под своим действием, с отступом.
   const event = cell({
     wordBreak: 'break-word',
@@ -156,10 +151,15 @@ const paintEntry = (row: HTMLTableRowElement, entry: ConsoleEntry) => {
     label.dataset.consoleLabel = ''
     event.append(label)
   }
-  if (entry.detail) event.append(` ${entry.detail}`)
+  const detail = consoleTextOf(entry.detail, locale)
+  if (detail) event.append(` ${detail}`)
   if (entry.count > 1) event.append(span(` ×${entry.count}`, { color: MUTED }))
   if (entry.source) {
-    event.append(span(` · ${SOURCE_LABEL[entry.source]}`, { color: MUTED }))
+    event.append(
+      span(` · ${shellText(locale, SOURCE_LABEL[entry.source])}`, {
+        color: MUTED,
+      }),
+    )
   }
   if (entry.cause !== undefined) {
     event.append(span(` ← #${entry.cause}`, { color: MUTED }))
@@ -170,7 +170,7 @@ const paintEntry = (row: HTMLTableRowElement, entry: ConsoleEntry) => {
   time.dataset.consoleTime = ''
   const took = cell({ ...numbers, paddingRight: '0' })
   took.textContent =
-    entry.duration === undefined ? '' : duration(entry.duration)
+    entry.duration === undefined ? '' : duration(entry.duration, locale)
   took.dataset.consoleDuration = ''
   row.replaceChildren(kind, event, time, took)
 }
@@ -187,6 +187,8 @@ export const StoryConsole = ({
   actions?: ReactNode
   defaultExpanded?: boolean
 }) => {
+  const locale = useStoryLocale()
+  const text = (key: StoryShellKey) => shellText(locale, key)
   const [expanded, setExpanded] = useState(defaultExpanded)
   const [hidden, setHidden] = useState<ReadonlySet<ConsoleKind>>(new Set())
   const id = useId()
@@ -224,7 +226,8 @@ export const StoryConsole = ({
     const paint = () => {
       const entries = log.entries()
       const total = entries.reduce((sum, entry) => sum + entry.count, 0)
-      if (count.current) count.current.textContent = `· ${events(total)}`
+      if (count.current)
+        count.current.textContent = `· ${shellText(locale, 'consoleEvents', { count: total })}`
       const shown = entries.filter(entry => !hidden.has(entry.kind))
       const keep = new Set(shown.map(entry => entry.id))
       for (const [entryId, item] of items) {
@@ -240,7 +243,7 @@ export const StoryConsole = ({
           items.set(entry.id, item)
         }
         if (painted.get(item) !== entry) {
-          paintEntry(item, entry)
+          paintEntry(item, entry, locale)
           painted.set(item, entry)
         }
         return item
@@ -272,7 +275,7 @@ export const StoryConsole = ({
       alive = false
       unsubscribe()
     }
-  }, [log, hidden])
+  }, [log, hidden, locale])
   useIsomorphicLayoutEffect(() => {
     const element = list.current
     if (element && expanded && stuck.current) {
@@ -289,7 +292,7 @@ export const StoryConsole = ({
   return (
     <div className={DATA_GRID_THEME_CLASS} style={{ padding: '12px 16px' }}>
       <section
-        aria-label="Консоль"
+        aria-label={text('consoleTitle')}
         data-testid="story-console"
         style={{
           display: 'flex',
@@ -336,7 +339,7 @@ export const StoryConsole = ({
               </span>
             }
           >
-            <strong>Консоль</strong>
+            <strong>{text('consoleTitle')}</strong>
             <span
               ref={count}
               data-console-count
@@ -383,7 +386,12 @@ export const StoryConsole = ({
             >
               <ConsoleFilters
                 kinds={CONSOLE_KINDS}
-                labels={FILTER_LABEL}
+                labels={{
+                  action: text(FILTER_LABEL.action),
+                  callback: text(FILTER_LABEL.callback),
+                  state: text(FILTER_LABEL.state),
+                  lifecycle: text(FILTER_LABEL.lifecycle),
+                }}
                 colors={KIND_COLOR}
                 hidden={hidden}
                 onToggle={toggleKind}
@@ -395,14 +403,14 @@ export const StoryConsole = ({
                 style={{ marginLeft: 'auto' }}
                 onClick={log.clear}
               >
-                Очистить
+                {text('consoleClear')}
               </Button>
             </div>
             <div
               ref={list}
               role="log"
               aria-live="off"
-              aria-label="События таблицы"
+              aria-label={text('consoleLog')}
               data-testid="story-console-log"
               tabIndex={0}
               onScroll={event => {
@@ -428,7 +436,7 @@ export const StoryConsole = ({
                   color: MUTED,
                 }}
               >
-                Событий пока нет
+                {text('consoleEmpty')}
               </div>
               <table
                 ref={table}
@@ -440,16 +448,16 @@ export const StoryConsole = ({
                 <thead>
                   <tr>
                     <th scope="col" style={{ ...HEAD }}>
-                      Тип
+                      {text('consoleColumnKind')}
                     </th>
                     <th scope="col" style={{ ...HEAD }}>
-                      Событие
+                      {text('consoleColumnEvent')}
                     </th>
                     <th scope="col" style={HEAD}>
-                      Время
+                      {text('consoleColumnTime')}
                     </th>
                     <th scope="col" style={HEAD}>
-                      Длительность
+                      {text('consoleColumnDuration')}
                     </th>
                   </tr>
                 </thead>

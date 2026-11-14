@@ -50,13 +50,14 @@ const meta = {
   title: 'Tessera/UI/Field',
   args: { value: '', error: '', disabled: false },
   argTypes: {
-    value: { control: 'text', description: 'Значение' },
+    value: { control: 'text', description: 'Value' },
     placeholder: {
       control: 'text',
-      description: 'Подсказка в пустом поле; не задана — «Значение» из словаря',
+      description:
+        'Placeholder in an empty field; when unset, the dictionary’s “Value” text',
     },
-    error: { control: 'text', description: 'Текст ошибки; пусто — без ошибки' },
-    disabled: { control: 'boolean', description: 'Выключено' },
+    error: { control: 'text', description: 'Error text; empty means no error' },
+    disabled: { control: 'boolean', description: 'Disabled' },
   },
   render: args => <FieldStory {...args} />,
 } satisfies Meta<FieldStoryArgs>

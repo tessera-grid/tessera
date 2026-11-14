@@ -11,7 +11,12 @@ import { StoryComponent } from '../../DataGridStory'
 import type { StoryProps } from '../../DataGridStory.types'
 import { dataGridMeta } from '../../dataGridMeta'
 import { WithConsole } from '../../demos/StoryConsole'
-import { type ConsoleLog, createConsoleLog } from '../../demos/consoleLog'
+import {
+  type ConsoleLog,
+  consoleTextOf,
+  createConsoleLog,
+} from '../../demos/consoleLog'
+import { shellText, type StoryShellKey } from '../../demos/storyShell'
 import { settle } from '../../__mocks__/catalogPlay'
 import { normalizeArgs } from '../../__mocks__/utils/normalizeArgs'
 import { humanClick } from '../helpers'
@@ -42,6 +47,10 @@ const motion = commands as unknown as {
 const viewport = { width: innerWidth, height: innerHeight }
 beforeAll(() => page.viewport(1280, 900))
 afterAll(() => page.viewport(viewport.width, viewport.height))
+
+/** Текст оболочки: тесты идут на языке `en` (ADR 0225). */
+const shell = (key: StoryShellKey, params?: Record<string, unknown>) =>
+  shellText('en', key, params)
 
 const byTestId = (id: string) =>
   document.querySelector<HTMLElement>(`[data-testid="${id}"]`)
@@ -108,7 +117,7 @@ describe('консоль историй (ADR 0124)', () => {
     expect(toggle().getAttribute('aria-expanded')).toBe('false')
     await expect
       .poll(() => toggle().textContent)
-      .toMatch(/Консоль\s*· \d+ событи/)
+      .toMatch(/Console\s*· \d+ event/)
     expect(list().closest('[inert]')).not.toBeNull()
     // Тело свёрнуто: обёртка списка — без высоты.
     expect(list().parentElement!.getBoundingClientRect().height).toBeLessThan(1)
@@ -201,7 +210,7 @@ describe('консоль историй (ADR 0124)', () => {
       getComputedStyle(element).display !== 'none'
     await expect.poll(() => shown(table())).toBe(false)
     expect(shown(empty())).toBe(true)
-    expect(empty().textContent).toBe('Событий пока нет')
+    expect(empty().textContent).toBe('No events yet')
     await expect
       .poll(() => list().getBoundingClientRect().height, { timeout: 3000 })
       .toBeGreaterThan(200)
@@ -231,24 +240,31 @@ describe('консоль историй (ADR 0124)', () => {
     const headers = [...list().querySelectorAll('thead th')].map(
       header => header.textContent,
     )
-    expect(headers).toEqual(['Тип', 'Событие', 'Время', 'Длительность'])
+    expect(headers).toEqual([
+      shell('consoleColumnKind'),
+      shell('consoleColumnEvent'),
+      shell('consoleColumnTime'),
+      shell('consoleColumnDuration'),
+    ])
     const cells = (row: HTMLElement) =>
       [...row.querySelectorAll<HTMLElement>('td')].map(each =>
         each.textContent!.trim(),
       )
     expect(cells(last)).toEqual([
-      'Состояние',
+      shell('consoleKindState'),
       'sorting [{id:"country"}] ×2',
       expect.stringMatching(/^\d{2}:\d{2}:\d{2}$/),
       '',
     ])
     expect(cells(items().at(-2)!).slice(0, 2)).toEqual([
-      'Действие',
-      'server page 39 · история',
+      shell('consoleKindAction'),
+      `server page 39 · ${shell('consoleSourceStory')}`,
     ])
     log.write('callback', 'onSave', '1')
     log.measured(log.entries().at(-1)!.id, 12.4)
-    await expect.poll(() => cells(items().at(-1)!)[3]).toBe('12 мс')
+    await expect
+      .poll(() => cells(items().at(-1)!)[3])
+      .toBe(shell('consoleMilliseconds', { value: 12 }))
     const atBottom = () =>
       list().scrollTop + list().clientHeight >= list().scrollHeight - 4
     await expect.poll(atBottom).toBe(true)
@@ -294,10 +310,10 @@ describe('консоль историй (ADR 0124)', () => {
     ]
     await expect.poll(() => rows().length).toBe(4)
     expect(rows().map(item => item.textContent)).toEqual([
-      'Действия',
-      'Колбэки',
-      'Состояние',
-      'Жизненный цикл',
+      shell('consoleFilterAction'),
+      shell('consoleFilterCallback'),
+      shell('consoleFilterState'),
+      shell('consoleFilterLifecycle'),
     ])
     expect(
       rows().every(
@@ -324,7 +340,7 @@ describe('консоль историй (ADR 0124)', () => {
       ...byTestId('story-console-filters-menu')!.querySelectorAll<HTMLElement>(
         'button',
       ),
-    ].find(button => button.textContent === 'Показать все')!
+    ].find(button => button.textContent === 'Show all')!
     await humanClick(showAll)
     await expect.poll(() => kinds()).toEqual(all)
 
@@ -333,7 +349,7 @@ describe('консоль историй (ADR 0124)', () => {
     await humanClick(byTestId('story-console-clear')!)
     await expect.poll(() => kinds().size).toBe(0)
     expect(log.entries()).toEqual([])
-    expect(list().textContent).toContain('Событий пока нет')
+    expect(list().textContent).toContain('No events yet')
   })
 
   test('CL15: действие грида из onDebugAction — строка вида «Действие» с номером, плагином, действием, деталями и источником; итог с cause ссылается на номер исходного действия', async () => {
@@ -349,7 +365,11 @@ describe('консоль историй (ADR 0124)', () => {
     ]
     await expect
       .poll(() => actionRows().at(-1)?.textContent)
-      .toMatch(/#\d+ columnSorting «[^»]+» \{column:"country"\} · мышь/)
+      .toMatch(
+        new RegExp(
+          `#\\d+ columnSorting «[^»]+» \\{column:"country"\\} · ${shell('consoleSourcePointer')}`,
+        ),
+      )
     const sorted = actionRows().at(-1)!
     expect(sorted.dataset.consoleChild).toBeUndefined()
     // Итог ссылается на номер исходного действия.
@@ -362,7 +382,9 @@ describe('консоль историй (ADR 0124)', () => {
     })
     await expect
       .poll(() => actionRows().at(-1)?.textContent)
-      .toMatch(/rowActions · deleteRowRejected · грид ← #41/)
+      .toContain(
+        `rowActions · deleteRowRejected · ${shell('consoleSourceAuto')} ← #41`,
+      )
   })
 
   test('CL16: шаг гайда и смена аргумента Storybook — действия истории', async () => {
@@ -370,14 +392,14 @@ describe('консоль историй (ADR 0124)', () => {
     await expect.poll(() => byTestId('story-console')).not.toBeNull()
     await expect
       .poll(() => list().textContent)
-      .toContain('Шаг 1 · Таблица открыта')
+      .toContain('Step 1 · The table is open')
     toggle().click()
     byTestId('guide-toggle')!.click()
     await expect.poll(() => byTestId('guide-next')).not.toBeNull()
     byTestId('guide-next')!.click()
     await expect
       .poll(() => list().textContent, { timeout: 3000 })
-      .toContain('Шаг 2 · Включена сортировка')
+      .toContain('Step 2 · Sorting is enabled')
     await guide.unmount()
 
     // Смена аргумента — «Контрол <ключ>: было → стало», перед её последствиями.
@@ -398,13 +420,13 @@ describe('консоль историй (ADR 0124)', () => {
         log
           .entries()
           .filter(entry => entry.kind === 'action')
-          .map(entry => entry.name),
+          .map(entry => consoleTextOf(entry.name, 'en')),
       )
-      .toContain('Контрол enableRowDragging: true → false')
-    const names = log.entries().map(entry => entry.name)
+      .toContain('Control enableRowDragging: true → false')
+    const names = log.entries().map(entry => consoleTextOf(entry.name, 'en'))
     expect(
-      names.indexOf('Контрол enableRowDragging: true → false'),
-    ).toBeLessThan(names.lastIndexOf('Плагины'))
+      names.indexOf('Control enableRowDragging: true → false'),
+    ).toBeLessThan(names.lastIndexOf(shell('lifecyclePlugins')))
   })
 
   test('CL9: консоль не добавляет гриду работы — коммиты React, отрисованные компоненты и пересборки моделей строк при сортировке с консолью и без неё одинаковы', async ({
@@ -470,7 +492,7 @@ describe('консоль историй (ADR 0124)', () => {
           .toBeGreaterThan(0)
         const panel = byTestId('story-console')!
         expect(panel.tagName).toBe('SECTION')
-        expect(panel.getAttribute('aria-label')).toBe('Консоль')
+        expect(panel.getAttribute('aria-label')).toBe('Console')
         expect(list().getAttribute('role')).toBe('log')
         expect(list().getAttribute('aria-live')).toBe('off')
         // eslint-disable-next-line no-await-in-loop
@@ -533,7 +555,7 @@ describe('консоль историй (ADR 0124)', () => {
         title: title.getBoundingClientRect().toJSON(),
         height: panel.getBoundingClientRect().height,
       }
-      count.textContent = '· 99999 событий'
+      count.textContent = '· 99999 events'
       expect(title.getBoundingClientRect().toJSON()).toEqual(before.title)
       expect(panel.getBoundingClientRect().height).toBe(before.height)
       expect(getComputedStyle(count).visibility).toBe('hidden')

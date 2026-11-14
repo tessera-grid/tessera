@@ -163,37 +163,55 @@ export const RowDraggingTreeLines: StoryObj<StoryProps> = {
 
 const ROW_MOVE: readonly GuideStoryStep[] = [
   {
-    title: 'Ручка строки',
-    hint: 'Наведите строку — слева появляется ручка: за неё строку берут, чтобы перенести.',
+    title: { ru: 'Ручка строки', en: 'The row drag handle' },
+    hint: {
+      ru: 'Наведите строку — слева появляется ручка: за неё строку берут, чтобы перенести.',
+      en: 'Hover over a row: a drag handle appears on the left. You grab the row by it to move it.',
+    },
     states: ['drag.rowHandle'],
     pseudo: { hover: `${ROW}[data-row-id="row-0"]` },
   },
   {
-    title: 'Строку взяли за ручку',
-    hint: 'Возьмите строку за ручку и ведите над группой. Облако со строкой идёт за указателем, на месте броска — слот-скелет на уровне будущего родителя, линии дерева — как после броска.',
+    title: {
+      ru: 'Строку взяли за ручку',
+      en: 'A row was grabbed by its drag handle',
+    },
+    hint: {
+      ru: 'Возьмите строку за ручку и ведите над группой. Облако со строкой идёт за указателем, на месте броска — слот-скелет на уровне будущего родителя, линии дерева — как после броска.',
+      en: 'Grab a row by its drag handle and move it over a group. A cloud with the row follows the pointer; at the drop spot, a skeleton slot sits at the level of the future parent, and the tree lines look as they will after the drop.',
+    },
     states: ['drag.row'],
     enter: stepAction((root, run) =>
       holdRowAtLevel(root, 'row-0', 'node-0-0', 1, run),
     ),
   },
   {
-    title: 'Группа не вкладывается',
-    hint: 'Ведите группу с детьми вправо под последнюю строку другой группы: дерево не глубже двух уровней, поэтому слот остаётся на верхнем уровне. Бросок положит группу туда, где стоит слот.',
+    title: { ru: 'Группа не вкладывается', en: "A group can't be nested" },
+    hint: {
+      ru: 'Ведите группу с детьми вправо под последнюю строку другой группы: дерево не глубже двух уровней, поэтому слот остаётся на верхнем уровне. Бросок положит группу туда, где стоит слот.',
+      en: 'Move a group with child rows to the right, below the last row of another group: the tree is at most two levels deep, so the slot stays at the top level. The drop puts the group where the slot is.',
+    },
     enter: stepAction((root, run) =>
       holdRowAtLevel(root, 'node-0', 'node-1-1', 1, run),
     ),
   },
   {
-    title: 'Недопустимое место',
-    hint: 'Ведите группу с детьми между строками другой группы: здесь есть место только на уровне детей, а группу внутрь не вкладывают. Строка под указателем в тоне ошибки — бросок здесь не сработает; слот показывает, куда она встала бы.',
+    title: { ru: 'Недопустимое место', en: 'An invalid spot' },
+    hint: {
+      ru: 'Ведите группу с детьми между строками другой группы: здесь есть место только на уровне детей, а группу внутрь не вкладывают. Строка под указателем в тоне ошибки — бросок здесь не сработает; слот показывает, куда она встала бы.',
+      en: "Move a group with child rows between the rows of another group: there's room here only at the child level, and a group can't be nested inside. The row under the pointer takes the error tone, meaning a drop here won't work; the slot shows where it would go.",
+    },
     states: ['drag.rowInvalid'],
     enter: stepAction((root, run) =>
       holdRowAtLevel(root, 'node-0', 'node-1', 1, run),
     ),
   },
   {
-    title: 'Бросок',
-    hint: 'Отпустите строку на допустимом месте: облако пропадает, строка встаёт на место и коротко вспыхивает.',
+    title: { ru: 'Бросок', en: 'The drop' },
+    hint: {
+      ru: 'Отпустите строку на допустимом месте: облако пропадает, строка встаёт на место и коротко вспыхивает.',
+      en: 'Release the row at a valid spot: the cloud disappears, and the row takes its place and flashes briefly.',
+    },
     states: ['drag.landed'],
     immediate: true,
     enter: stepAction(async (root, run) => {
@@ -232,7 +250,7 @@ export const RowDraggingMove: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Перенос строки мышью"
+      title={{ ru: 'Перенос строки мышью', en: 'Moving a row with the mouse' }}
       steps={ROW_MOVE}
       args={guideArgs(ROW_MOVE_ARGS, args)}
     />
@@ -244,13 +262,13 @@ export const RowDraggingMove: StoryObj<StoryProps> = {
       canvas
         .querySelector('.data-grid__container')!
         .hasAttribute('data-row-drop-invalid')
-    await step(ROW_MOVE[0].title, async () => {
+    await step(ROW_MOVE[0].title.ru, async () => {
       await until(() => expect(rowOf(canvas, 'node-0-1')).not.toBeNull())
       await until(() =>
         expect(rowOf(canvas, 'row-0')!.querySelector(HANDLE)).not.toBeNull(),
       )
     })
-    await step(ROW_MOVE[1].title, async () => {
+    await step(ROW_MOVE[1].title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() =>
@@ -264,7 +282,7 @@ export const RowDraggingMove: StoryObj<StoryProps> = {
       )
       await until(() => expect(invalid()).toBe(false))
     })
-    await step(ROW_MOVE[2].title, async () => {
+    await step(ROW_MOVE[2].title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       // Слот группы — на верхнем уровне, хотя указатель на уровне детей.
@@ -273,7 +291,7 @@ export const RowDraggingMove: StoryObj<StoryProps> = {
       )
       await until(() => expect(invalid()).toBe(false))
     })
-    await step(ROW_MOVE[3].title, async () => {
+    await step(ROW_MOVE[3].title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(invalid()).toBe(true))
@@ -282,7 +300,7 @@ export const RowDraggingMove: StoryObj<StoryProps> = {
         expect(indentOf(canvas, DRAG_FILL)).toBe(rowIndent(canvas, 'node-1-0')),
       )
     })
-    await step(ROW_MOVE[4].title, async () => {
+    await step(ROW_MOVE[4].title.ru, async () => {
       // Вспышка держится на время снимка (ADR 0130, DG6): токен — до броска шага.
       canvas
         .querySelector<HTMLElement>('.data-grid-theme')!
@@ -323,7 +341,7 @@ const pauseOver = async (
     signal.throwIfAborted()
     const parent = root.querySelector<HTMLElement>('[data-row-drop-parent]')
     if (parent?.dataset.rowId === groupId) break
-    if (tries === 12) throw new Error(`Место броска не в группе ${groupId}`)
+    if (tries === 12) throw new Error(`Drop spot is not in group ${groupId}`)
     const box = rowOf(root, groupId)!.getBoundingClientRect()
     const below = !parent || parent.getBoundingClientRect().top < box.top
     y = Math.min(Math.max(y + (below ? 6 : -6), box.top + 2), box.bottom - 2)
@@ -344,12 +362,18 @@ const pauseOver = async (
  */
 const COLLAPSED_GROUPS: readonly GuideStoryStep[] = [
   {
-    title: 'Группы свёрнуты',
-    hint: 'Строки двух уровней: группы свёрнуты, их дети не видны.',
+    title: { ru: 'Группы свёрнуты', en: 'Groups are collapsed' },
+    hint: {
+      ru: 'Строки двух уровней: группы свёрнуты, их дети не видны.',
+      en: "Rows on two levels: the groups are collapsed, and their child rows aren't visible.",
+    },
   },
   {
-    title: 'Пауза над группой',
-    hint: 'Возьмите строку за ручку и задержите над свёрнутой группой на уровне её детей: через паузу группа раскрывается, будущий родитель обведён.',
+    title: { ru: 'Пауза над группой', en: 'Pausing over a group' },
+    hint: {
+      ru: 'Возьмите строку за ручку и задержите над свёрнутой группой на уровне её детей: через паузу группа раскрывается, будущий родитель обведён.',
+      en: 'Grab a row by its drag handle and hold it over a collapsed group at the level of its child rows: after a pause, the group expands, and the future parent is outlined.',
+    },
     states: ['drag.groupParent'],
     enter: stepAction(async (root, run) => {
       // Сначала на корневом уровне: там пауза ничего не раскрывает.
@@ -358,8 +382,11 @@ const COLLAPSED_GROUPS: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Бросок в другую группу',
-    hint: 'Задержите строку над второй группой и отпустите: строка ложится в неё, а первая группа, раскрытая паузой, снова свёрнута.',
+    title: { ru: 'Бросок в другую группу', en: 'Dropping into another group' },
+    hint: {
+      ru: 'Задержите строку над второй группой и отпустите: строка ложится в неё, а первая группа, раскрытая паузой, снова свёрнута.',
+      en: 'Hold the row over the second group and release it: the row goes into it, and the first group, which the pause expanded, collapses again.',
+    },
     enter: stepAction(async (root, run) => {
       const held = await holdRowAtLevel(root, 'row-0', 'row-1', 0, run)
       await pauseOver(root, held, 'node-1', run.signal)
@@ -400,7 +427,10 @@ export const RowDraggingCollapsedGroups: StoryObj<StoryProps> = {
     )
     return (
       <GuideStory
-        title="Бросок в свёрнутую группу"
+        title={{
+          ru: 'Бросок в свёрнутую группу',
+          en: 'Dropping into a collapsed group',
+        }}
         steps={COLLAPSED_GROUPS}
         args={gridArgs}
       />
@@ -409,17 +439,17 @@ export const RowDraggingCollapsedGroups: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     // В Storybook сценарий проходит человек; `play` — только в тестах каталога.
     if (globals.catalog !== true) return
-    await step(COLLAPSED_GROUPS[0].title, async () => {
+    await step(COLLAPSED_GROUPS[0].title.ru, async () => {
       await until(() => expect(rowOf(canvas, 'node-2')).not.toBeNull())
       expect(rowOf(canvas, 'node-1-0')).toBeNull()
     })
-    await step(COLLAPSED_GROUPS[1].title, async () => {
+    await step(COLLAPSED_GROUPS[1].title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       expect(rowOf(canvas, 'node-1-0')).not.toBeNull()
       expect(rowOf(canvas, 'node-1')).toHaveAttribute('data-row-drop-parent')
     })
-    await step(COLLAPSED_GROUPS[2].title, async () => {
+    await step(COLLAPSED_GROUPS[2].title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(document.querySelector(OVERLAY)).toBeNull())
@@ -588,34 +618,58 @@ const lazyTreeUpTo = (count: number) =>
 
 const LAZY_TREE: readonly GuideStoryStep[] = [
   {
-    title: 'Ленивое дерево',
-    hint: 'Дети групп приходят с сервера при раскрытии. Группы свёрнуты.',
+    title: { ru: 'Ленивое дерево', en: 'A lazy tree' },
+    hint: {
+      ru: 'Дети групп приходят с сервера при раскрытии. Группы свёрнуты.',
+      en: "The groups' child rows come from the server when expanded. The groups are collapsed.",
+    },
   },
   {
-    title: 'Пользователь раскрыл группы',
-    hint: 'Первая группа и её первая подгруппа раскрыты — их дети пришли с сервера.',
+    title: {
+      ru: 'Пользователь раскрыл группы',
+      en: 'The user expanded the groups',
+    },
+    hint: {
+      ru: 'Первая группа и её первая подгруппа раскрыты — их дети пришли с сервера.',
+      en: 'The first group and its first subgroup are expanded; their child rows came from the server.',
+    },
     enter: lazyTreeUpTo(2),
   },
   {
-    title: 'Перенос ждёт сервера',
-    hint: 'Строку бросили в свёрнутую группу: пауза загрузила её детей, перенос сохраняется на сервере — ячейки строки чуть темнеют и по ним проходит светлый блик.',
+    title: {
+      ru: 'Перенос ждёт сервера',
+      en: 'The move is waiting for the server',
+    },
+    hint: {
+      ru: 'Строку бросили в свёрнутую группу: пауза загрузила её детей, перенос сохраняется на сервере — ячейки строки чуть темнеют и по ним проходит светлый блик.',
+      en: "The row was dropped into a collapsed group: the pause loaded its child rows, and the move is being saved on the server. The row's cells darken slightly, and a light shimmer passes over them.",
+    },
     states: ['drag.pending'],
     enter: lazyTreeUpTo(3),
   },
   {
-    title: 'Сервер сохранил',
-    hint: 'Ответ пришёл: ожидание снято, строка осталась в новой группе и коротко вспыхнула тоном успеха.',
+    title: { ru: 'Сервер сохранил', en: 'The server saved' },
+    hint: {
+      ru: 'Ответ пришёл: ожидание снято, строка осталась в новой группе и коротко вспыхнула тоном успеха.',
+      en: 'The response arrived: the waiting state is cleared, and the row stayed in the new group and flashed briefly in the success tone.',
+    },
     enter: lazyTreeUpTo(4),
   },
   {
-    title: 'Отказ сервера',
-    hint: 'Следующий перенос сервер отклонил: строка вернулась на прежнее место и коротко вспыхнула тоном ошибки.',
+    title: { ru: 'Отказ сервера', en: 'Server refusal' },
+    hint: {
+      ru: 'Следующий перенос сервер отклонил: строка вернулась на прежнее место и коротко вспыхнула тоном ошибки.',
+      en: 'The server rejected the next move: the row returned to its previous place and flashed briefly in the error tone.',
+    },
     states: ['drag.rejected'],
     enter: lazyTreeUpTo(6),
   },
   {
-    title: 'Отказ без отката',
-    hint: 'С `revertOnReject: false` отклонённая строка остаётся там, куда её бросили, и коротко вспыхивает тоном ошибки.',
+    title: { ru: 'Отказ без отката', en: 'A refusal without a revert' },
+    hint: {
+      ru: 'С `revertOnReject: false` отклонённая строка остаётся там, куда её бросили, и коротко вспыхивает тоном ошибки.',
+      en: 'With `revertOnReject: false`, the rejected row stays where it was dropped and flashes briefly in the error tone.',
+    },
     props: () => ({ rowDraggingRevertOnReject: false }),
     enter: lazyTreeUpTo(8),
   },
@@ -656,7 +710,7 @@ export const RowDraggingLazyTree: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Перенос в ленивом дереве"
+      title={{ ru: 'Перенос в ленивом дереве', en: 'Moving in a lazy tree' }}
       steps={LAZY_TREE}
       args={guideArgs(LAZY_TREE_ARGS, args)}
     />
@@ -671,15 +725,15 @@ export const RowDraggingLazyTree: StoryObj<StoryProps> = {
         .map(item => item.dataset.rowId)
     const slow = { timeout: 10_000 }
 
-    await step(LAZY_TREE[0].title, async () => {
+    await step(LAZY_TREE[0].title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(LAZY_TREE[1].title, async () => {
+    await step(LAZY_TREE[1].title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(rowOf(canvas, 'node-0-0-2')).not.toBeNull())
     })
-    await step(LAZY_TREE[2].title, async () => {
+    await step(LAZY_TREE[2].title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() =>
@@ -698,7 +752,7 @@ export const RowDraggingLazyTree: StoryObj<StoryProps> = {
         handleOf('node-0-0-0').querySelector('svg[data-pending-arc]'),
       ).toBeNull()
     })
-    await step(LAZY_TREE[3].title, async () => {
+    await step(LAZY_TREE[3].title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() =>
@@ -711,7 +765,7 @@ export const RowDraggingLazyTree: StoryObj<StoryProps> = {
         'accepted',
       )
     })
-    await step(LAZY_TREE[4].title, async () => {
+    await step(LAZY_TREE[4].title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await waitFor(() => {
@@ -729,7 +783,7 @@ export const RowDraggingLazyTree: StoryObj<StoryProps> = {
         handleOf('node-0-0-1').querySelector('[data-failure-indicator]'),
       ).toBeNull()
     })
-    await step(LAZY_TREE[5].title, async () => {
+    await step(LAZY_TREE[5].title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() =>
@@ -824,7 +878,7 @@ const dropInOtherGroup = async (root: HTMLElement, run: StepRun) => {
     const slot = root.querySelector(DRAG_FILL)!.getBoundingClientRect()
     const group = rowOf(root, TO_GROUP)!.getBoundingClientRect()
     if (Math.abs(slot.top - group.bottom) < 2) break
-    if (tries === 12) throw new Error(`Слот не под группой ${TO_GROUP}`)
+    if (tries === 12) throw new Error(`Slot is not under group ${TO_GROUP}`)
     y += slot.top < group.top ? 6 : -6
     await held.moveTo({ x: held.xAt(1), y }, 2)
   }
@@ -832,12 +886,21 @@ const dropInOtherGroup = async (root: HTMLElement, run: StepRun) => {
 }
 
 const GROUP_INTRO: GuideStoryStep = {
-  title: 'Строки по командам',
-  hint: 'Строки сгруппированы по команде. Чтобы сменить команду, строку переносят в другую группу.',
+  title: { ru: 'Строки по командам', en: 'Rows by team' },
+  hint: {
+    ru: 'Строки сгруппированы по команде. Чтобы сменить команду, строку переносят в другую группу.',
+    en: "Rows are grouped by team. To change a row's team, you move it to another group.",
+  },
 }
 const GROUP_DROPPED: GuideStoryStep = {
-  title: 'Пользователь перенёс строку в другую группу',
-  hint: 'Строка встала в другой группе, а сервер ещё сохраняет перенос: строка занята.',
+  title: {
+    ru: 'Пользователь перенёс строку в другую группу',
+    en: 'The user moved a row to another group',
+  },
+  hint: {
+    ru: 'Строка встала в другой группе, а сервер ещё сохраняет перенос: строка занята.',
+    en: 'The row landed in another group, and the server is still saving the move: the row is busy.',
+  },
   states: ['drag.pending'],
   enter: stepAction(async (root, run) => {
     await dropInOtherGroup(root, run)
@@ -849,8 +912,11 @@ const GROUP_MOVE: readonly GuideStoryStep[] = [
   GROUP_INTRO,
   GROUP_DROPPED,
   {
-    title: 'Сервер подтвердил',
-    hint: 'Сервер сохранил перенос, и приложение записало новую команду в свои данные. Строка осталась в новой группе.',
+    title: { ru: 'Сервер подтвердил', en: 'The server confirmed' },
+    hint: {
+      ru: 'Сервер сохранил перенос, и приложение записало новую команду в свои данные. Строка осталась в новой группе.',
+      en: 'The server saved the move, and the app wrote the new team into its data. The row stayed in the new group.',
+    },
     enter: stepAction(async (root, run, app) => {
       await dropInOtherGroup(root, run)
       await pollUntil(() => !!groupServer.move, run.signal)
@@ -875,25 +941,25 @@ export const GroupDragMove: StoryObj<StoryProps> = {
   parameters: { scenario: '0186/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Перенос в другую группу"
+      title={{ ru: 'Перенос в другую группу', en: 'Moving to another group' }}
       steps={GROUP_MOVE}
       args={guideArgs(GROUP_GRID, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(GROUP_MOVE[0]!.title, async () => {
+    await step(GROUP_MOVE[0]!.title.ru, async () => {
       await until(() => expect(rowOf(canvas, TO_GROUP)).toBeTruthy())
       await expect(inOtherGroup(canvas)).toBe(false)
     })
-    await step(GROUP_MOVE[1]!.title, async () => {
+    await step(GROUP_MOVE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(document.querySelector(OVERLAY)).toBeNull())
       await expect(inOtherGroup(canvas)).toBe(true)
       await expect(waitingOnServer(canvas)).toBe(true)
     })
-    await step(GROUP_MOVE[2]!.title, async () => {
+    await step(GROUP_MOVE[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(inOtherGroup(canvas)).toBe(true)
@@ -907,8 +973,11 @@ const GROUP_REFUSED: readonly GuideStoryStep[] = [
   GROUP_INTRO,
   GROUP_DROPPED,
   {
-    title: 'Сервер отказал',
-    hint: 'Сервер не принял перенос. Данные приложения не менялись, поэтому строка вернулась в свою группу и коротко вспыхнула.',
+    title: { ru: 'Сервер отказал', en: 'The server refused' },
+    hint: {
+      ru: 'Сервер не принял перенос. Данные приложения не менялись, поэтому строка вернулась в свою группу и коротко вспыхнула.',
+      en: "The server didn't accept the move. The app's data didn't change, so the row returned to its group and flashed briefly.",
+    },
     immediate: true,
     enter: stepAction(async (root, run) => {
       await dropInOtherGroup(root, run)
@@ -925,23 +994,23 @@ export const GroupDragRefused: StoryObj<StoryProps> = {
   parameters: { scenario: '0186/S2', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Отказ в переносе"
+      title={{ ru: 'Отказ в переносе', en: 'A refused move' }}
       steps={GROUP_REFUSED}
       args={guideArgs(GROUP_GRID, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(GROUP_REFUSED[0]!.title, async () => {
+    await step(GROUP_REFUSED[0]!.title.ru, async () => {
       await until(() => expect(rowOf(canvas, TO_GROUP)).toBeTruthy())
     })
-    await step(GROUP_REFUSED[1]!.title, async () => {
+    await step(GROUP_REFUSED[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(document.querySelector(OVERLAY)).toBeNull())
       await expect(inOtherGroup(canvas)).toBe(true)
     })
-    await step(GROUP_REFUSED[2]!.title, async () => {
+    await step(GROUP_REFUSED[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(inOtherGroup(canvas)).toBe(false)

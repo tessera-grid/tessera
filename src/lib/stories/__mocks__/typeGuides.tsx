@@ -12,7 +12,7 @@ import {
 import { productColumns } from './dataTypesData'
 
 export const OWN_TABLE =
-  'Строки и колонки задаёт раздел: по колонке на каждый тип'
+  'The section sets rows and columns: one column per type'
 
 // --- Чтение ячеек в `play` ----------------------------------------------------------
 

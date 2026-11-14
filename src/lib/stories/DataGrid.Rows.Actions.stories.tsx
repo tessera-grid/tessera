@@ -113,18 +113,33 @@ const ACTION = 'duplicate'
 
 const ACTION_MENU: readonly GuideStoryStep[] = [
   {
-    title: 'Действия строки в меню',
-    hint: 'У строк больше действий, чем помещается в колонку. Таблица собирает их в меню строки, у каждой строки — кнопка меню.',
+    title: { ru: 'Действия строки в меню', en: 'Row actions in a menu' },
+    hint: {
+      ru: 'У строк больше действий, чем помещается в колонку. Таблица собирает их в меню строки, у каждой строки — кнопка меню.',
+      en: 'Rows have more actions than fit in the column. The table gathers them into a row menu, and each row has a menu button.',
+    },
   },
   {
-    title: 'Пользователь открыл меню строки',
-    hint: 'Пользователь нажал кнопку меню строки. Меню показывает действия этой строки.',
+    title: {
+      ru: 'Пользователь открыл меню строки',
+      en: 'The user opened the row menu',
+    },
+    hint: {
+      ru: 'Пользователь нажал кнопку меню строки. Меню показывает действия этой строки.',
+      en: "The user pressed the row's menu button. The menu shows the actions of this row.",
+    },
     states: ['overlay.menu'],
     enter: stepAction((root, { signal }) => openRowMenu(root, signal)),
   },
   {
-    title: 'Пользователь выбрал действие',
-    hint: 'Пользователь выбрал действие в меню. Меню закрылось, приложение выполнило действие строки.',
+    title: {
+      ru: 'Пользователь выбрал действие',
+      en: 'The user chose an action',
+    },
+    hint: {
+      ru: 'Пользователь выбрал действие в меню. Меню закрылось, приложение выполнило действие строки.',
+      en: "The user chose an action in the menu. The menu closed, and the app ran the row's action.",
+    },
     enter: stepAction(async (root, { signal }) => {
       await openRowMenu(root, signal)
       await choose(ACTION, () => !openMenu(), signal)
@@ -141,7 +156,10 @@ export const RowActionMenu: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Действие из меню строки"
+      title={{
+        ru: 'Действие из меню строки',
+        en: 'An action from the row menu',
+      }}
       steps={ACTION_MENU}
       args={guideArgs(
         {
@@ -158,7 +176,7 @@ export const RowActionMenu: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(ACTION_MENU[0]!.title, async () => {
+    await step(ACTION_MENU[0]!.title.ru, async () => {
       await waitForRows(canvas)
       // Кнопки меню строк приходят с модулем меню — позже строк.
       await until(() =>
@@ -166,7 +184,7 @@ export const RowActionMenu: StoryObj<StoryProps> = {
       )
       await expect(openMenu()).toBeNull()
     })
-    await step(ACTION_MENU[1]!.title, async () => {
+    await step(ACTION_MENU[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(
@@ -174,7 +192,7 @@ export const RowActionMenu: StoryObj<StoryProps> = {
       ).toHaveLength(3)
       await settle()
     })
-    await step(ACTION_MENU[2]!.title, async () => {
+    await step(ACTION_MENU[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(openMenu()).toBeNull()
@@ -219,34 +237,58 @@ const inSection = async (
 
 const NESTED: readonly GuideStoryStep[] = [
   {
-    title: 'Меню строки закрыто',
-    hint: 'У каждой строки — меню действий. Пункты с разделами меняют значения записи.',
+    title: { ru: 'Меню строки закрыто', en: 'The row menu is closed' },
+    hint: {
+      ru: 'У каждой строки — меню действий. Пункты с разделами меняют значения записи.',
+      en: "Each row has an actions menu. Items with sections change the record's values.",
+    },
   },
   {
-    title: 'Пользователь открыл меню строки',
-    hint: 'Пункты с разделами показывают текущее значение записи и стрелку перехода в раздел.',
+    title: {
+      ru: 'Пользователь открыл меню строки',
+      en: 'The user opened the row menu',
+    },
+    hint: {
+      ru: 'Пункты с разделами показывают текущее значение записи и стрелку перехода в раздел.',
+      en: "Items with sections show the record's current value and an arrow that leads into the section.",
+    },
     states: ['overlay.menu'],
     enter: stepAction((root, { signal }) => openRowMenu(root, signal)),
   },
   {
-    title: 'Пользователь открыл раздел статуса',
-    hint: 'Меню сменило содержимое на месте: варианты статуса, текущий отмечен, сверху — возврат назад.',
+    title: {
+      ru: 'Пользователь открыл раздел статуса',
+      en: 'The user opened the status section',
+    },
+    hint: {
+      ru: 'Меню сменило содержимое на месте: варианты статуса, текущий отмечен, сверху — возврат назад.',
+      en: 'The menu replaced its content in place: the status options, with the current one checked and a way back at the top.',
+    },
     states: ['overlay.submenu'],
     enter: stepAction((root, { signal }) =>
       inSection(root, 'demoStatus', inStatusSection, signal),
     ),
   },
   {
-    title: 'Пользователь сменил статус',
-    hint: 'Пользователь выбрал новый статус. Меню закрылось, у записи новый статус.',
+    title: {
+      ru: 'Пользователь сменил статус',
+      en: 'The user changed the status',
+    },
+    hint: {
+      ru: 'Пользователь выбрал новый статус. Меню закрылось, у записи новый статус.',
+      en: 'The user chose a new status. The menu closed, and the record has the new status.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await inSection(root, 'demoStatus', inStatusSection, signal)
       await choose(`status:${STATUS}`, () => !openMenu(), signal)
     }),
   },
   {
-    title: 'Метки не загрузились',
-    hint: 'Пользователь открыл раздел меток, но сервер не ответил. Раздел показывает ошибку и возможность повторить загрузку.',
+    title: { ru: 'Метки не загрузились', en: 'Labels failed to load' },
+    hint: {
+      ru: 'Пользователь открыл раздел меток, но сервер не ответил. Раздел показывает ошибку и возможность повторить загрузку.',
+      en: 'The user opened the labels section, but the server did not respond. The section shows an error and a way to retry loading.',
+    },
     states: ['overlay.submenu'],
     enter: stepAction((root, { signal }) => {
       labelsDown = true
@@ -254,8 +296,11 @@ const NESTED: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Пользователь отмечает метки',
-    hint: 'Повторная загрузка удалась. Пользователь отметил метку, и меню не закрылось — можно отметить ещё одну.',
+    title: { ru: 'Пользователь отмечает метки', en: 'The user checks labels' },
+    hint: {
+      ru: 'Повторная загрузка удалась. Пользователь отметил метку, и меню не закрылось — можно отметить ещё одну.',
+      en: 'The retry succeeded. The user checked a label, and the menu stayed open, so another one can be checked.',
+    },
     states: ['overlay.submenu'],
     enter: stepAction(async (root, { signal }) => {
       labelsDown = false
@@ -291,7 +336,7 @@ export const RowActionsNested: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Разделы меню строки"
+      title={{ ru: 'Разделы меню строки', en: 'Row menu sections' }}
       steps={NESTED}
       args={guideArgs(
         {
@@ -310,10 +355,10 @@ export const RowActionsNested: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(NESTED[0]!.title, async () => {
+    await step(NESTED[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(NESTED[1]!.title, async () => {
+    await step(NESTED[1]!.title.ru, async () => {
       await guideNext(canvas)
       await waitForRows(canvas)
       await stepDone(canvas)
@@ -323,7 +368,7 @@ export const RowActionsNested: StoryObj<StoryProps> = {
       await expect(marked(status)).toBe(true)
       await settle()
     })
-    await step(NESTED[2]!.title, async () => {
+    await step(NESTED[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(openMenu()!.querySelector('[data-menu-back]')).not.toBeNull()
@@ -332,7 +377,7 @@ export const RowActionsNested: StoryObj<StoryProps> = {
       ).toHaveLength(1)
       await settle()
     })
-    await step(NESTED[3]!.title, async () => {
+    await step(NESTED[3]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(openMenu()).toBeNull()
@@ -340,14 +385,14 @@ export const RowActionsNested: StoryObj<StoryProps> = {
       // Пункт раздела назван своей подписью, а не id (ADR 0182, AN23).
       await expect(consoleText()).toContain(`«${STATUS}»`)
     })
-    await step(NESTED[4]!.title, async () => {
+    await step(NESTED[4]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(labelsFailed()).toBe(true)
       await expect(itemOf('demoStatus')).toBeNull()
       await settle()
     })
-    await step(NESTED[5]!.title, async () => {
+    await step(NESTED[5]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(labelItem()).toHaveAttribute('aria-checked', 'true')
@@ -409,12 +454,21 @@ const archive = (root: HTMLElement, done: () => boolean, signal: AbortSignal) =>
 
 const ASYNC_ACTION: readonly GuideStoryStep[] = [
   {
-    title: 'Действие строки на сервере',
-    hint: 'Приложение добавило в меню строки действие, которое выполняет сервер. У каждой строки — кнопка меню.',
+    title: {
+      ru: 'Действие строки на сервере',
+      en: 'A row action on the server',
+    },
+    hint: {
+      ru: 'Приложение добавило в меню строки действие, которое выполняет сервер. У каждой строки — кнопка меню.',
+      en: 'The app added an action to the row menu that the server performs. Each row has a menu button.',
+    },
   },
   {
-    title: 'Действие выполняется',
-    hint: 'Пользователь выбрал архивирование в меню строки. Меню закрылось; пока сервер выполняет действие, ячейки строки чуть темнеют и по ним проходит светлый блик.',
+    title: { ru: 'Действие выполняется', en: 'The action is running' },
+    hint: {
+      ru: 'Пользователь выбрал архивирование в меню строки. Меню закрылось; пока сервер выполняет действие, ячейки строки чуть темнеют и по ним проходит светлый блик.',
+      en: "The user chose archiving in the row menu. The menu closed; while the server performs the action, the row's cells darken slightly and a light shimmer runs across them.",
+    },
     states: ['body.pending'],
     enter: stepAction((root, { signal }) => {
       archiveRefused = false
@@ -423,8 +477,11 @@ const ASYNC_ACTION: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Сервер отказал',
-    hint: 'Сервер не выполнил действие. Ожидание со строки снято, строка коротко вспыхивает тоном отказа, подсказка кнопки меню строки называет невыполненное действие.',
+    title: { ru: 'Сервер отказал', en: 'The server refused' },
+    hint: {
+      ru: 'Сервер не выполнил действие. Ожидание со строки снято, строка коротко вспыхивает тоном отказа, подсказка кнопки меню строки называет невыполненное действие.',
+      en: "The server did not perform the action. The row is no longer waiting; it briefly flashes in the refusal tone, and the tooltip of the row's menu button names the action that failed.",
+    },
     states: ['body.error'],
     enter: stepAction(async (root, { signal }) => {
       archiveRefused = true
@@ -447,7 +504,10 @@ export const RowActionsAsync: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Действие строки на сервере"
+      title={{
+        ru: 'Действие строки на сервере',
+        en: 'A row action on the server',
+      }}
       steps={ASYNC_ACTION}
       args={guideArgs(
         {
@@ -467,7 +527,7 @@ export const RowActionsAsync: StoryObj<StoryProps> = {
   play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     const labels = storyLabels(args.locale)
-    await step(ASYNC_ACTION[0]!.title, async () => {
+    await step(ASYNC_ACTION[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(kebabOf(canvas)).not.toBeNull())
       await expect(rowBusy(canvas)).toBe(false)
@@ -476,7 +536,7 @@ export const RowActionsAsync: StoryObj<StoryProps> = {
       canvas.querySelectorAll<HTMLElement>(
         `.data-grid__body-row[data-row-id="${MENU_ROW}"] [data-column-id]`,
       )
-    await step(ASYNC_ACTION[1]!.title, async () => {
+    await step(ASYNC_ACTION[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(openMenu()).toBeNull()
@@ -491,7 +551,7 @@ export const RowActionsAsync: StoryObj<StoryProps> = {
         kebabOf(canvas)?.querySelector('svg[data-pending-arc]'),
       ).toBeNull()
     })
-    await step(ASYNC_ACTION[2]!.title, async () => {
+    await step(ASYNC_ACTION[2]!.title.ru, async () => {
       const flash = watchFlash(
         canvas,
         `.data-grid__body-row[data-row-id="${MENU_ROW}"]`,
@@ -568,24 +628,36 @@ const cancelItemShown = async (root: HTMLElement, signal: AbortSignal) => {
 
 const CANCEL_ACTION: readonly GuideStoryStep[] = [
   {
-    title: 'Долгое действие строки',
-    hint: 'Приложение добавило в меню строки действие, которое сервер выполняет долго. У каждой строки есть кнопка меню.',
+    title: { ru: 'Долгое действие строки', en: 'A long row action' },
+    hint: {
+      ru: 'Приложение добавило в меню строки действие, которое сервер выполняет долго. У каждой строки есть кнопка меню.',
+      en: 'The app added an action to the row menu that takes the server a long time. Each row has a menu button.',
+    },
   },
   {
-    title: 'Действие выполняется',
-    hint: 'Пользователь выбрал архивирование в меню строки. Пока сервер работает, ячейки строки чуть темнеют и по ним проходит светлый блик.',
+    title: { ru: 'Действие выполняется', en: 'The action is running' },
+    hint: {
+      ru: 'Пользователь выбрал архивирование в меню строки. Пока сервер работает, ячейки строки чуть темнеют и по ним проходит светлый блик.',
+      en: "The user chose archiving in the row menu. While the server works, the row's cells darken slightly and a light shimmer runs across them.",
+    },
     states: ['body.pending'],
     enter: stepAction((root, { signal }) => archiveHeld(root, signal)),
   },
   {
-    title: 'Пункт предлагает отмену',
-    hint: 'Пользователь снова открыл меню строки. Ждущий пункт доступен: подпись предлагает отменить архивирование, у правого края крутится спиннер.',
+    title: { ru: 'Пункт предлагает отмену', en: 'The item offers to cancel' },
+    hint: {
+      ru: 'Пользователь снова открыл меню строки. Ждущий пункт доступен: подпись предлагает отменить архивирование, у правого края крутится спиннер.',
+      en: 'The user opened the row menu again. The waiting item is available: its label offers to cancel archiving, and a spinner spins at its right edge.',
+    },
     states: ['overlay.menu', 'body.pending'],
     enter: stepAction((root, { signal }) => cancelItemShown(root, signal)),
   },
   {
-    title: 'Действие отменено',
-    hint: 'Пользователь выбрал этот пункт. Таблица прервала запрос: меню закрылось, ожидание снято, нет ни отметки ошибки, ни вспышки, строка такая же, как до действия.',
+    title: { ru: 'Действие отменено', en: 'The action was canceled' },
+    hint: {
+      ru: 'Пользователь выбрал этот пункт. Таблица прервала запрос: меню закрылось, ожидание снято, нет ни отметки ошибки, ни вспышки, строка такая же, как до действия.',
+      en: 'The user chose that item. The table aborted the request: the menu closed, the waiting state is cleared, there is no error mark or flash, and the row looks the same as before the action.',
+    },
     enter: stepAction(async (root, { signal }) => {
       // Меню с ждущим пунктом осталось с прошлого шага — нажать его сразу.
       if (!cancelItemPending()) await cancelItemShown(root, signal)
@@ -604,7 +676,7 @@ export const RowActionsCancel: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Отмена действия строки"
+      title={{ ru: 'Отмена действия строки', en: 'Canceling a row action' }}
       steps={CANCEL_ACTION}
       args={guideArgs(
         {
@@ -628,12 +700,12 @@ export const RowActionsCancel: StoryObj<StoryProps> = {
       canvas.querySelectorAll<HTMLElement>(
         `.data-grid__body-row[data-row-id="${MENU_ROW}"] [data-column-id]`,
       )
-    await step(CANCEL_ACTION[0]!.title, async () => {
+    await step(CANCEL_ACTION[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(kebabOf(canvas)).not.toBeNull())
       await expect(rowBusy(canvas)).toBe(false)
     })
-    await step(CANCEL_ACTION[1]!.title, async () => {
+    await step(CANCEL_ACTION[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(canvas.querySelector('[data-pending-wave]')).not.toBeNull()
@@ -641,7 +713,7 @@ export const RowActionsCancel: StoryObj<StoryProps> = {
         await expect(cell).toHaveAttribute('aria-busy', 'true')
       }
     })
-    await step(CANCEL_ACTION[2]!.title, async () => {
+    await step(CANCEL_ACTION[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       const item = cancelItem()!
@@ -650,7 +722,7 @@ export const RowActionsCancel: StoryObj<StoryProps> = {
       // У кебаба «стопа» нет: он открывает меню (ADR 0153, §2).
       await expect(kebabOf(canvas)).not.toHaveAttribute('data-cancel-armed')
     })
-    await step(CANCEL_ACTION[3]!.title, async () => {
+    await step(CANCEL_ACTION[3]!.title.ru, async () => {
       const flash = watchFlash(
         canvas,
         `.data-grid__body-row[data-row-id="${MENU_ROW}"]`,

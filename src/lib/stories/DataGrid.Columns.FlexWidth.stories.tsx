@@ -39,7 +39,7 @@ const meta = {
 
 export default meta
 
-const NOT_COLUMNS = 'На ширину колонок не влияет'
+const NOT_COLUMNS = 'Does not affect column widths'
 
 export const FlexWidthPlayground: StoryObj<StoryProps> = {
   name: 'Playground',
@@ -143,18 +143,30 @@ const FLEX_ARGS: Partial<StoryProps> = {
 
 const FILL: readonly GuideStoryStep[] = [
   {
-    title: 'Колонки делят ширину таблицы',
-    hint: 'Колонки растянуты на всю ширину таблицы: свободного места справа нет, горизонтальной прокрутки тоже.',
+    title: {
+      ru: 'Колонки делят ширину таблицы',
+      en: 'Columns share the table width',
+    },
+    hint: {
+      ru: 'Колонки растянуты на всю ширину таблицы: свободного места справа нет, горизонтальной прокрутки тоже.',
+      en: 'The columns stretch across the full table width: there is no empty space on the right and no horizontal scrolling.',
+    },
     props: () => ({ containerWidth: 800 }),
   },
   {
-    title: 'Окно стало уже',
-    hint: 'Таблица сузилась, и колонки сузились вместе с ней: они по-прежнему делят всю ширину поровну.',
+    title: { ru: 'Окно стало уже', en: 'The window got narrower' },
+    hint: {
+      ru: 'Таблица сузилась, и колонки сузились вместе с ней: они по-прежнему делят всю ширину поровну.',
+      en: 'The table got narrower, and the columns shrank with it: they still share the full width equally.',
+    },
     enter: resizeWindowTo(560),
   },
   {
-    title: 'Окно стало шире',
-    hint: 'Таблица расширилась — колонки снова заняли всю её ширину.',
+    title: { ru: 'Окно стало шире', en: 'The window got wider' },
+    hint: {
+      ru: 'Таблица расширилась — колонки снова заняли всю её ширину.',
+      en: 'The table got wider, and the columns again fill its full width.',
+    },
     enter: resizeWindowTo(900),
   },
 ]
@@ -165,7 +177,7 @@ export const FlexFillWidth: StoryObj<StoryProps> = {
   parameters: { scenario: '0216/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Колонки на всю ширину"
+      title={{ ru: 'Колонки на всю ширину', en: 'Full-width columns' }}
       steps={FILL}
       args={guideArgs({ ...FLEX_ARGS, columnCount: 3 }, args)}
     />
@@ -173,19 +185,19 @@ export const FlexFillWidth: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     let wide = 0
-    await step(FILL[0]!.title, async () => {
+    await step(FILL[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(filled(canvas)).toBe(true))
       wide = width(canvas, 'firstName')
     })
-    await step(FILL[1]!.title, async () => {
+    await step(FILL[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(width(canvas, 'firstName')).toBeLessThan(wide))
       await until(() => expect(filled(canvas)).toBe(true))
       await settle()
     })
-    await step(FILL[2]!.title, async () => {
+    await step(FILL[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() =>
@@ -204,12 +216,21 @@ const RESIZED_WIDTH = 320
 
 const RESIZE: readonly GuideStoryStep[] = [
   {
-    title: 'Колонки растянуты',
-    hint: 'Все колонки делят ширину таблицы поровну.',
+    title: { ru: 'Колонки растянуты', en: 'The columns are stretched' },
+    hint: {
+      ru: 'Все колонки делят ширину таблицы поровну.',
+      en: 'All columns share the table width equally.',
+    },
   },
   {
-    title: 'Пользователь протянул колонку',
-    hint: 'Пользователь сделал первую колонку шире. Теперь её ширина задана, а остальные колонки делят то, что осталось.',
+    title: {
+      ru: 'Пользователь протянул колонку',
+      en: 'The user resized a column',
+    },
+    hint: {
+      ru: 'Пользователь сделал первую колонку шире. Теперь её ширина задана, а остальные колонки делят то, что осталось.',
+      en: 'The user made the first column wider. Its width is now set, and the other columns share what is left.',
+    },
     enter: stepAction(async (root, step) => {
       await pollUntil(
         () => filled(root) && !!separatorOf(root, RESIZED),
@@ -227,8 +248,14 @@ const RESIZE: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Пользователь сбросил ширину',
-    hint: 'Пользователь сбросил ширину колонки в меню ручки: она снова делит ширину таблицы наравне с другими.',
+    title: {
+      ru: 'Пользователь сбросил ширину',
+      en: 'The user reset the width',
+    },
+    hint: {
+      ru: 'Пользователь сбросил ширину колонки в меню ручки: она снова делит ширину таблицы наравне с другими.',
+      en: 'The user reset the column width from the resize grip menu: it again shares the table width equally with the others.',
+    },
     enter: stepAction(async (root, step) => {
       await pollUntil(
         () => !!sizingApi && !!separatorOf(root, RESIZED),
@@ -249,7 +276,10 @@ export const FlexResize: StoryObj<StoryProps> = {
   parameters: { scenario: '0216/S2', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Протяжка растянутой колонки"
+      title={{
+        ru: 'Протяжка растянутой колонки',
+        en: 'Resizing a stretched column',
+      }}
       steps={RESIZE}
       args={guideArgs({ ...FLEX_ARGS, containerWidth: 900 }, args)}
     />
@@ -257,12 +287,12 @@ export const FlexResize: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     let share = 0
-    await step(RESIZE[0]!.title, async () => {
+    await step(RESIZE[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(filled(canvas)).toBe(true))
       share = width(canvas, 'lastName')
     })
-    await step(RESIZE[1]!.title, async () => {
+    await step(RESIZE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(width(canvas, RESIZED)).toBe(RESIZED_WIDTH))
@@ -270,7 +300,7 @@ export const FlexResize: StoryObj<StoryProps> = {
       await until(() => expect(filled(canvas)).toBe(true))
       await settle()
     })
-    await step(RESIZE[2]!.title, async () => {
+    await step(RESIZE[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(width(canvas, 'lastName')).toBe(share))
@@ -287,12 +317,21 @@ const MIN = 150
 
 const OVERFLOW: readonly GuideStoryStep[] = [
   {
-    title: 'Колонки не помещаются',
-    hint: 'Колонкам нужно больше места, чем есть в таблице: каждая на своей наименьшей ширине, и таблица прокручивается по горизонтали.',
+    title: { ru: 'Колонки не помещаются', en: 'The columns do not fit' },
+    hint: {
+      ru: 'Колонкам нужно больше места, чем есть в таблице: каждая на своей наименьшей ширине, и таблица прокручивается по горизонтали.',
+      en: 'The columns need more space than the table has: each is at its minimum width, and the table scrolls horizontally.',
+    },
   },
   {
-    title: 'Пользователь прокрутил таблицу',
-    hint: 'Пользователь прокрутил таблицу вправо и видит последние колонки.',
+    title: {
+      ru: 'Пользователь прокрутил таблицу',
+      en: 'The user scrolled the table',
+    },
+    hint: {
+      ru: 'Пользователь прокрутил таблицу вправо и видит последние колонки.',
+      en: 'The user scrolled the table to the right and sees the last columns.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await pollUntil(() => gridDrawn(root), signal)
       const scroller = scrollerOf(root)
@@ -315,7 +354,7 @@ export const FlexOverflow: StoryObj<StoryProps> = {
   parameters: { scenario: '0216/S3', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Колонки шире таблицы"
+      title={{ ru: 'Колонки шире таблицы', en: 'Columns wider than the table' }}
       steps={OVERFLOW}
       args={guideArgs(
         {
@@ -329,13 +368,13 @@ export const FlexOverflow: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(OVERFLOW[0]!.title, async () => {
+    await step(OVERFLOW[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(width(canvas, 'firstName')).toBe(MIN))
       const scroller = scrollerOf(canvas)
       await expect(scroller.scrollWidth).toBeGreaterThan(scroller.clientWidth)
     })
-    await step(OVERFLOW[1]!.title, async () => {
+    await step(OVERFLOW[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() =>

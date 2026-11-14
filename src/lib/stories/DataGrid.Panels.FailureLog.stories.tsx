@@ -178,12 +178,18 @@ const reachArchiveRefusal = (root: HTMLElement) => {
 
 const ROW_STEPS: readonly GuideStoryStep[] = [
   {
-    title: 'Действия строк',
-    hint: 'У строк есть действие архивации, его выполняет сервер. Кнопка журнала в тулбаре без счётчика: отказов пока не было.',
+    title: { ru: 'Действия строк', en: 'Row actions' },
+    hint: {
+      ru: 'У строк есть действие архивации, его выполняет сервер. Кнопка журнала в тулбаре без счётчика: отказов пока не было.',
+      en: 'Rows have an archive action that the server performs. The failure log button in the toolbar has no counter: there have been no refusals yet.',
+    },
   },
   {
-    title: 'Сервер отказал',
-    hint: 'Пользователь архивировал строку, но сервер отказал. Строка коротко вспыхнула тоном отката, на кнопке журнала появился счётчик отказов.',
+    title: { ru: 'Сервер отказал', en: 'The server refused' },
+    hint: {
+      ru: 'Пользователь архивировал строку, но сервер отказал. Строка коротко вспыхнула тоном отката, на кнопке журнала появился счётчик отказов.',
+      en: 'The user archived a row, but the server refused. The row flashed briefly in the revert tone, and a refusal counter appeared on the failure log button.',
+    },
     states: ['panel.toolbar'],
     immediate: true,
     enter: untilDone(
@@ -192,8 +198,11 @@ const ROW_STEPS: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Журнал открыт',
-    hint: 'Пользователь прокрутил таблицу вниз и открыл журнал. Запись показывает действие, строку, причину отказа и время.',
+    title: { ru: 'Журнал открыт', en: 'The log is open' },
+    hint: {
+      ru: 'Пользователь прокрутил таблицу вниз и открыл журнал. Запись показывает действие, строку, причину отказа и время.',
+      en: 'The user scrolled the table down and opened the failure log. The entry shows the action, the row, the refusal reason, and the time.',
+    },
     states: ['overlay.failureLog'],
     enter: untilDone(
       root => !!entryOf(ARCHIVED) && !rowEl(root, ARCHIVED),
@@ -206,8 +215,11 @@ const ROW_STEPS: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Переход к строке',
-    hint: 'Пользователь выбрал переход к строке. Таблица прокрутилась к ней, строка вспыхнула.',
+    title: { ru: 'Переход к строке', en: 'Going to the row' },
+    hint: {
+      ru: 'Пользователь выбрал переход к строке. Таблица прокрутилась к ней, строка вспыхнула.',
+      en: 'The user chose to go to the row. The table scrolled to it, and the row flashed.',
+    },
     immediate: true,
     // Журнал закрывается после перехода анимацией выхода — шаг ждёт её конца.
     enter: untilDone(
@@ -227,7 +239,7 @@ export const FailureLogRow: StoryObj<StoryProps> = {
   parameters: { scenario: '0177/S6', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Отказ действия строки"
+      title={{ ru: 'Отказ действия строки', en: 'Refused row action' }}
       steps={ROW_STEPS}
       args={guideArgs(
         {
@@ -249,17 +261,17 @@ export const FailureLogRow: StoryObj<StoryProps> = {
   play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     const labels = storyLabels(args.locale)
-    await step(ROW_STEPS[0]!.title, async () => {
+    await step(ROW_STEPS[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(logButton()).not.toBeNull())
       expect(hasFailures()).toBe(false)
       await settle()
     })
-    await step(ROW_STEPS[1]!.title, async () => {
+    await step(ROW_STEPS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(counter()).toBe('1'))
     })
-    await step(ROW_STEPS[2]!.title, async () => {
+    await step(ROW_STEPS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(entryOf(ARCHIVED)).not.toBeNull())
       const entry = entryOf(ARCHIVED)!
@@ -269,7 +281,7 @@ export const FailureLogRow: StoryObj<StoryProps> = {
       expect(entry.querySelector('time')).not.toBeNull()
       await settle()
     })
-    await step(ROW_STEPS[3]!.title, async () => {
+    await step(ROW_STEPS[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(flashed(rowEl(canvas, ARCHIVED))).toBe(true))
       await until(() => expect(log()).toBeNull())
@@ -305,18 +317,27 @@ const saveInBackground = () => {
 
 const OFFSCREEN_STEPS: readonly GuideStoryStep[] = [
   {
-    title: 'Журнал в тулбаре',
-    hint: 'Кнопка журнала стоит в тулбаре всегда; счётчик на ней появляется, когда есть нерешённые отказы. Сейчас их нет.',
+    title: { ru: 'Журнал в тулбаре', en: 'The failure log in the toolbar' },
+    hint: {
+      ru: 'Кнопка журнала стоит в тулбаре всегда; счётчик на ней появляется, когда есть нерешённые отказы. Сейчас их нет.',
+      en: 'The failure log button is always in the toolbar; a counter appears on it when there are unresolved refusals. There are none right now.',
+    },
   },
   {
-    title: 'Три отказа',
-    hint: 'Приложение сохранило три значения в фоне, сервер отказал во всех. На экране одна ячейка с отметкой отказа, счётчик журнала показывает все три.',
+    title: { ru: 'Три отказа', en: 'Three refusals' },
+    hint: {
+      ru: 'Приложение сохранило три значения в фоне, сервер отказал во всех. На экране одна ячейка с отметкой отказа, счётчик журнала показывает все три.',
+      en: 'The app saved three values in the background, and the server refused all of them. One cell on screen has a refusal mark, and the failure log counter shows all three.',
+    },
     states: ['body.error', 'panel.toolbar'],
     enter: untilDone(() => counter() === '3', saveInBackground),
   },
   {
-    title: 'Журнал открыт',
-    hint: 'Пользователь открыл журнал. Три записи, новые сверху: колонка и строка, причина и время.',
+    title: { ru: 'Журнал открыт', en: 'The log is open' },
+    hint: {
+      ru: 'Пользователь открыл журнал. Три записи, новые сверху: колонка и строка, причина и время.',
+      en: 'The user opened the failure log. There are three entries, newest first: the column and row, the reason, and the time.',
+    },
     states: ['overlay.failureLog'],
     enter: untilDone(
       () => entries().length === 3,
@@ -327,8 +348,11 @@ const OFFSCREEN_STEPS: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Переход к ячейке',
-    hint: 'Пользователь выбрал переход к ячейке ниже видимой области. Таблица прокрутилась к ней, ячейка вспыхнула; в её углу — отметка отказа.',
+    title: { ru: 'Переход к ячейке', en: 'Going to the cell' },
+    hint: {
+      ru: 'Пользователь выбрал переход к ячейке ниже видимой области. Таблица прокрутилась к ней, ячейка вспыхнула; в её углу — отметка отказа.',
+      en: 'The user chose to go to a cell below the visible area. The table scrolled to it, and the cell flashed; a refusal mark sits in its corner.',
+    },
     immediate: true,
     enter: untilDone(
       root => flashed(cellEl(root, FAR)) && !log(),
@@ -339,8 +363,11 @@ const OFFSCREEN_STEPS: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Запись закрыта',
-    hint: 'Пользователь закрыл эту запись. Отметка ячейки ушла, счётчик журнала уменьшился.',
+    title: { ru: 'Запись закрыта', en: 'The entry is closed' },
+    hint: {
+      ru: 'Пользователь закрыл эту запись. Отметка ячейки ушла, счётчик журнала уменьшился.',
+      en: 'The user closed this entry. The cell mark is gone, and the failure log counter went down.',
+    },
     enter: untilDone(
       root =>
         counter() === '2' &&
@@ -352,8 +379,11 @@ const OFFSCREEN_STEPS: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Отказ решён',
-    hint: 'Приложение повторило одно сохранение, и сервер его принял. Запись ушла из журнала сама, счётчик снова уменьшился.',
+    title: { ru: 'Отказ решён', en: 'The refusal is resolved' },
+    hint: {
+      ru: 'Приложение повторило одно сохранение, и сервер его принял. Запись ушла из журнала сама, счётчик снова уменьшился.',
+      en: 'The app retried one save, and the server accepted it. The entry left the failure log on its own, and the counter went down again.',
+    },
     enter: untilDone(
       () => counter() === '1' && !!log(),
       () => {
@@ -379,7 +409,7 @@ export const FailureLogOffscreen: StoryObj<StoryProps> = {
   parameters: { scenario: '0177/S7', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Отказы вне экрана"
+      title={{ ru: 'Отказы вне экрана', en: 'Refusals off screen' }}
       steps={OFFSCREEN_STEPS}
       args={guideArgs(
         {
@@ -399,13 +429,13 @@ export const FailureLogOffscreen: StoryObj<StoryProps> = {
   play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     const labels = storyLabels(args.locale)
-    await step(OFFSCREEN_STEPS[0]!.title, async () => {
+    await step(OFFSCREEN_STEPS[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(logButton()).not.toBeNull())
       await until(() => expect(hasFailures()).toBe(false))
       await settle()
     })
-    await step(OFFSCREEN_STEPS[1]!.title, async () => {
+    await step(OFFSCREEN_STEPS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(counter()).toBe('3'))
       await until(() =>
@@ -416,7 +446,7 @@ export const FailureLogOffscreen: StoryObj<StoryProps> = {
       await until(() => expect(rowEl(canvas, FAR)).toBeNull())
       await settle()
     })
-    await step(OFFSCREEN_STEPS[2]!.title, async () => {
+    await step(OFFSCREEN_STEPS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(entries()).toHaveLength(3))
       await until(() =>
@@ -431,7 +461,7 @@ export const FailureLogOffscreen: StoryObj<StoryProps> = {
       )
       await settle()
     })
-    await step(OFFSCREEN_STEPS[3]!.title, async () => {
+    await step(OFFSCREEN_STEPS[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(flashed(cellEl(canvas, FAR))).toBe(true))
       await until(() => expect(log()).toBeNull())
@@ -441,7 +471,7 @@ export const FailureLogOffscreen: StoryObj<StoryProps> = {
         ).not.toBeNull(),
       )
     })
-    await step(OFFSCREEN_STEPS[4]!.title, async () => {
+    await step(OFFSCREEN_STEPS[4]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(counter()).toBe('2'))
       // Со свежей таблицы ячейка вдали может быть вне окна — отметки на ней тогда нет.
@@ -452,7 +482,7 @@ export const FailureLogOffscreen: StoryObj<StoryProps> = {
       )
       await settle()
     })
-    await step(OFFSCREEN_STEPS[5]!.title, async () => {
+    await step(OFFSCREEN_STEPS[5]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(counter()).toBe('1'))
       await settle()
@@ -480,12 +510,18 @@ const NAMED_SEED = [
 
 const LANGUAGE_STEPS: readonly GuideStoryStep[] = [
   {
-    title: 'Журнал закрыт',
-    hint: 'Поиск на сервере и сохранение ячейки не удались. Журнал отказов пока закрыт.',
+    title: { ru: 'Журнал закрыт', en: 'The log is closed' },
+    hint: {
+      ru: 'Поиск на сервере и сохранение ячейки не удались. Журнал отказов пока закрыт.',
+      en: 'A server search and a cell save failed. The failure log is still closed.',
+    },
   },
   {
-    title: 'Журнал на английском',
-    hint: 'Поиск на сервере и сохранение ячейки не удались. Пользователь открыл журнал: записи называют действия на языке таблицы.',
+    title: { ru: 'Журнал на английском', en: 'The log in English' },
+    hint: {
+      ru: 'Поиск на сервере и сохранение ячейки не удались. Пользователь открыл журнал: записи называют действия на языке таблицы.',
+      en: "A server search and a cell save failed. The user opened the failure log: the entries name the actions in the table's language.",
+    },
     states: ['overlay.failureLog'],
     enter: untilDone(
       () => entries().length === 2,
@@ -495,8 +531,11 @@ const LANGUAGE_STEPS: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Русский интерфейс',
-    hint: 'Приложение переключило язык. Те же записи называют действия по-русски, журнал и таблица не пересоздаются.',
+    title: { ru: 'Русский интерфейс', en: 'Russian interface' },
+    hint: {
+      ru: 'Приложение переключило язык. Те же записи называют действия по-русски, журнал и таблица не пересоздаются.',
+      en: 'The app switched the language. The same entries name the actions in Russian, and neither the failure log nor the table is recreated.',
+    },
     states: ['overlay.failureLog'],
     props: () => ({ locale: 'ru' }),
     enter: untilDone(
@@ -514,7 +553,10 @@ export const FailureLogLanguageSwitch: StoryObj<StoryProps> = {
   parameters: { scenario: '0182/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Смена языка у записей журнала"
+      title={{
+        ru: 'Смена языка у записей журнала',
+        en: 'Switching the language of log entries',
+      }}
       steps={LANGUAGE_STEPS}
       args={guideArgs(
         {
@@ -534,10 +576,10 @@ export const FailureLogLanguageSwitch: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     const en = storyLabels('en')
     const ru = storyLabels('ru')
-    await step(LANGUAGE_STEPS[0]!.title, async () => {
+    await step(LANGUAGE_STEPS[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(LANGUAGE_STEPS[1]!.title, async () => {
+    await step(LANGUAGE_STEPS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await waitForRows(canvas)
       await until(() => expect(entries()).toHaveLength(2))
@@ -545,7 +587,7 @@ export const FailureLogLanguageSwitch: StoryObj<StoryProps> = {
       expect(log()!.textContent).toContain(en.actionSave)
       await settle()
     })
-    await step(LANGUAGE_STEPS[2]!.title, async () => {
+    await step(LANGUAGE_STEPS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(log()?.textContent).toContain(ru.actionSearch))
       expect(log()!.textContent).toContain(ru.actionSave)

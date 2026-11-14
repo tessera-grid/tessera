@@ -127,12 +127,21 @@ const openTips = () =>
 
 const CELLS: readonly GuideStoryStep[] = [
   {
-    title: 'Длинный текст в ячейках',
-    hint: 'Текст, который не помещается в ячейку, обрезается многоточием. Высота строк при этом не меняется.',
+    title: { ru: 'Длинный текст в ячейках', en: 'Long text in cells' },
+    hint: {
+      ru: 'Текст, который не помещается в ячейку, обрезается многоточием. Высота строк при этом не меняется.',
+      en: "Text that doesn't fit in a cell is cut off with an ellipsis. Row height stays the same.",
+    },
   },
   {
-    title: 'Пользователь навёл указатель на ячейку',
-    hint: 'Над обрезанной ячейкой появляется подсказка с полным текстом.',
+    title: {
+      ru: 'Пользователь навёл указатель на ячейку',
+      en: 'The user hovered over a cell',
+    },
+    hint: {
+      ru: 'Над обрезанной ячейкой появляется подсказка с полным текстом.',
+      en: 'A tooltip with the full text appears over the truncated cell.',
+    },
     states: ['overlay.tooltip'],
     // Указатель над обрезанным текстом, как при наведении мышью.
     enter: afterRows(root =>
@@ -155,7 +164,7 @@ export const LongTextCells: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Длинный текст в ячейках"
+      title={{ ru: 'Длинный текст в ячейках', en: 'Long text in cells' }}
       steps={CELLS}
       args={guideArgs(
         {
@@ -171,12 +180,12 @@ export const LongTextCells: StoryObj<StoryProps> = {
   play: async ({ canvasElement: canvas, globals, step }) => {
     // В Storybook сценарий проходит человек; `play` — только в тестах каталога.
     if (globals.catalog !== true) return
-    await step(CELLS[0]!.title, async () => {
+    await step(CELLS[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(truncated(longNameTitle(canvas))).toBe(true))
       await expect(openTips()).toEqual([])
     })
-    await step(CELLS[1]!.title, async () => {
+    await step(CELLS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(openTips()).toContain(LONG_NAME))
       await settle()
@@ -193,20 +202,29 @@ const statusBarLayout = (root: ParentNode) =>
 
 const MENUS: readonly GuideStoryStep[] = [
   {
-    title: 'Меню закрыто',
-    hint: 'У пунктов меню строки длинные подписи. Пользователь ещё не открывал меню.',
+    title: { ru: 'Меню закрыто', en: 'The menu is closed' },
+    hint: {
+      ru: 'У пунктов меню строки длинные подписи. Пользователь ещё не открывал меню.',
+      en: "The row menu items have long labels. The user hasn't opened the menu yet.",
+    },
   },
   {
-    title: 'Меню строки',
-    hint: 'Длинный пункт меню переносится на несколько строк, а само меню не становится шире заданного предела.',
+    title: { ru: 'Меню строки', en: 'The row menu' },
+    hint: {
+      ru: 'Длинный пункт меню переносится на несколько строк, а само меню не становится шире заданного предела.',
+      en: 'A long menu item wraps onto several lines, and the menu itself never grows wider than its set limit.',
+    },
     states: ['overlay.menu'],
     enter: afterRows((root, signal) =>
       openMenuBy(() => rowMenuOf(root), signal),
     ),
   },
   {
-    title: 'Узкая таблица',
-    hint: 'Пользователь выбрал строки в узкой таблице. Нижняя панель переходит на компактную раскладку, и счётчики показываются в короткой форме.',
+    title: { ru: 'Узкая таблица', en: 'A narrow table' },
+    hint: {
+      ru: 'Пользователь выбрал строки в узкой таблице. Нижняя панель переходит на компактную раскладку, и счётчики показываются в короткой форме.',
+      en: 'The user selected rows in a narrow table. The status bar switches to a compact layout, and the counters show in their short form.',
+    },
     props: () => ({ containerWidth: 360 }),
     enter: afterRows(root => {
       pressEscape()
@@ -230,7 +248,10 @@ export const LongTextMenus: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Длинный текст в меню и панелях"
+      title={{
+        ru: 'Длинный текст в меню и панелях',
+        en: 'Long text in menus and panels',
+      }}
       steps={MENUS}
       args={guideArgs(
         { ...LONG_LABELS, height: '400', containerWidth: 560 },
@@ -240,10 +261,10 @@ export const LongTextMenus: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(MENUS[0]!.title, async () => {
+    await step(MENUS[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(MENUS[1]!.title, async () => {
+    await step(MENUS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await waitForRows(canvas)
       await until(() =>
@@ -261,7 +282,7 @@ export const LongTextMenus: StoryObj<StoryProps> = {
       )
       await settle()
     })
-    await step(MENUS[2]!.title, async () => {
+    await step(MENUS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(['compact', 'stacked']).toContain(statusBarLayout(canvas)),

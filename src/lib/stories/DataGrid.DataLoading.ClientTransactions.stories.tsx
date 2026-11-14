@@ -83,11 +83,11 @@ export const ClientTransactionsPlayground: StoryObj<ClientPlaygroundArgs> = {
   argTypes: {
     liveUpdates: {
       description:
-        'Приложение шлёт поток изменений: новые, изменённые и удалённые строки',
+        'The app sends a stream of changes: new, changed, and deleted rows',
       control: 'boolean',
     },
     liveIntervalMs: {
-      description: 'Период изменений приложения, мс',
+      description: 'Interval between app changes, ms',
       control: { type: 'range', min: 200, max: 3000, step: 100 },
       if: { arg: 'liveUpdates' },
     },
@@ -155,12 +155,21 @@ const draftAge = (root: HTMLElement) => {
 
 const LARGE: readonly GuideStoryStep[] = [
   {
-    title: 'Таблица отсортирована по возрасту',
-    hint: 'В таблице тысяча строк, они отсортированы по возрасту. Приложение хранит данные у себя: при правке оно заменяет объект изменённой строки новым, остальные строки оставляет прежними.',
+    title: {
+      ru: 'Таблица отсортирована по возрасту',
+      en: 'The table is sorted by age',
+    },
+    hint: {
+      ru: 'В таблице тысяча строк, они отсортированы по возрасту. Приложение хранит данные у себя: при правке оно заменяет объект изменённой строки новым, остальные строки оставляет прежними.',
+      en: "The table has a thousand rows sorted by age. The app keeps the data on its side: on an edit, it replaces the edited row's object with a new one and keeps the other rows as they were.",
+    },
   },
   {
-    title: 'Поле правки открыто',
-    hint: 'Пользователь нажал кнопку правки в ячейке возраста шестой строки и набрал возраст младше всех в таблице.',
+    title: { ru: 'Поле правки открыто', en: 'The edit field is open' },
+    hint: {
+      ru: 'Пользователь нажал кнопку правки в ячейке возраста шестой строки и набрал возраст младше всех в таблице.',
+      en: "The user clicked the edit button in the age cell of the sixth row and typed an age lower than anyone else's in the table.",
+    },
     states: ['body.editing'],
     enter: untilDone(
       root =>
@@ -170,8 +179,14 @@ const LARGE: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Строка встала на своё место',
-    hint: 'Пользователь нажал Enter. Приложение положило в таблицу новые данные, в которых изменилась одна строка. Таблица пересобрала только её: строка поднялась на первое место по сортировке, остальные строки сдвинулись вниз.',
+    title: {
+      ru: 'Строка встала на своё место',
+      en: 'The row moved into place',
+    },
+    hint: {
+      ru: 'Пользователь нажал Enter. Приложение положило в таблицу новые данные, в которых изменилась одна строка. Таблица пересобрала только её: строка поднялась на первое место по сортировке, остальные строки сдвинулись вниз.',
+      en: 'The user pressed Enter. The app put new data into the table with one row changed. The table rebuilt only that row: it rose to first place in the sort order, and the other rows shifted down.',
+    },
     enter: untilDone(
       root =>
         large.edited !== undefined &&
@@ -192,23 +207,23 @@ export const ClientTransactionsEditLargeTable: StoryObj<StoryProps> = {
   parameters: { scenario: '0194/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Правка в большой таблице"
+      title={{ ru: 'Правка в большой таблице', en: 'Editing in a large table' }}
       steps={LARGE}
       args={guideArgs(LARGE_ARGS, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(LARGE[0]!.title, async () => {
+    await step(LARGE[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(LARGE[1]!.title, async () => {
+    await step(LARGE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(inputOf(canvas, large.edited!)?.value).toBe(NEW_AGE),
       )
     })
-    await step(LARGE[2]!.title, async () => {
+    await step(LARGE[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(indexOfRow(canvas, large.edited!)).toBe(0))
       await expect(ageText(canvas, large.edited!)).toBe(NEW_AGE)
@@ -265,8 +280,11 @@ const addRows = () => {
 
 const ADD_REMOVE: readonly GuideStoryStep[] = [
   {
-    title: 'Строки приложения',
-    hint: 'Приложение хранит данные у себя и меняет строки транзакцией: таблица собирает новые данные из прежних, приложение кладёт их к себе.',
+    title: { ru: 'Строки приложения', en: "The app's rows" },
+    hint: {
+      ru: 'Приложение хранит данные у себя и меняет строки транзакцией: таблица собирает новые данные из прежних, приложение кладёт их к себе.',
+      en: 'The app keeps the data on its side and changes rows with a transaction: the table builds new data from the previous data, and the app stores it.',
+    },
     props: () => ({
       extraPlugins: [clientTxSeed],
       onDataChange: keepData,
@@ -274,8 +292,11 @@ const ADD_REMOVE: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Ячейки выделены',
-    hint: 'В колонке имени выделены ячейки трёх строк.',
+    title: { ru: 'Ячейки выделены', en: 'Cells are selected' },
+    hint: {
+      ru: 'В колонке имени выделены ячейки трёх строк.',
+      en: 'Cells in three rows of the name column are selected.',
+    },
     states: ['body.selection'],
     enter: stepAction(async (root, { signal }) => {
       await pollUntil(() => !!rowById(root, SELECTED[0]!), signal)
@@ -284,8 +305,11 @@ const ADD_REMOVE: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Приложение добавило строки',
-    hint: 'Приложение добавило две строки второй и третьей. Нетронутые строки остались прежними, новые встали на место, строки ниже съехали — выделение съехало вместе со своими строками.',
+    title: { ru: 'Приложение добавило строки', en: 'The app added rows' },
+    hint: {
+      ru: 'Приложение добавило две строки второй и третьей. Нетронутые строки остались прежними, новые встали на место, строки ниже съехали — выделение съехало вместе со своими строками.',
+      en: 'The app added two rows as the second and third. Untouched rows stayed as they were, the new ones took their places, and the rows below shifted down; the selection moved along with its rows.',
+    },
     immediate: true,
     enter: stepAction(async (root, { signal }) => {
       await pollUntil(() => !!rowById(root, SELECTED[0]!), signal)
@@ -298,8 +322,11 @@ const ADD_REMOVE: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Приложение удалило строку',
-    hint: 'Приложение удалило первую строку. Строки ниже поднялись, выделение поднялось вместе с ними.',
+    title: { ru: 'Приложение удалило строку', en: 'The app deleted a row' },
+    hint: {
+      ru: 'Приложение удалило первую строку. Строки ниже поднялись, выделение поднялось вместе с ними.',
+      en: 'The app deleted the first row. The rows below moved up, and the selection moved up with them.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await pollUntil(() => !!rowById(root, SELECTED[0]!), signal)
       if (!selectionShown(root)) selectRows()
@@ -321,24 +348,24 @@ export const ClientTransactionsAddRemove: StoryObj<StoryProps> = {
   parameters: { scenario: '0194/S2', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Строки транзакцией"
+      title={{ ru: 'Строки транзакцией', en: 'Rows by transaction' }}
       steps={ADD_REMOVE}
       args={guideArgs(layout, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(ADD_REMOVE[0]!.title, async () => {
+    await step(ADD_REMOVE[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(ADD_REMOVE[1]!.title, async () => {
+    await step(ADD_REMOVE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() =>
         expect(selectedRows(canvas)).toEqual([...SELECTED].sort()),
       )
     })
-    await step(ADD_REMOVE[2]!.title, async () => {
+    await step(ADD_REMOVE[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(clientTx.result).toBe('applied'))
@@ -349,7 +376,7 @@ export const ClientTransactionsAddRemove: StoryObj<StoryProps> = {
       )
       await settle()
     })
-    await step(ADD_REMOVE[3]!.title, async () => {
+    await step(ADD_REMOVE[3]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(indexOfRow(canvas, SELECTED[0]!)).toBe(3))
@@ -423,8 +450,11 @@ const removedShown = (root: ParentNode) =>
 
 const SHIFTS: readonly GuideStoryStep[] = [
   {
-    title: 'Сто тысяч строк',
-    hint: 'В таблице сто тысяч строк. Приложение хранит данные у себя: оно меняет строки транзакцией, таблица собирает из прежних данных новые и отдаёт их приложению. Строку можно перенести за ручку.',
+    title: { ru: 'Сто тысяч строк', en: 'A hundred thousand rows' },
+    hint: {
+      ru: 'В таблице сто тысяч строк. Приложение хранит данные у себя: оно меняет строки транзакцией, таблица собирает из прежних данных новые и отдаёт их приложению. Строку можно перенести за ручку.',
+      en: 'The table has a hundred thousand rows. The app keeps the data on its side: it changes rows with a transaction, and the table builds new data from the previous data and hands it to the app. A row can be moved by its drag handle.',
+    },
     props: () => ({
       dataOverride: bigRows(),
       extraPlugins: [clientTxSeed],
@@ -432,8 +462,14 @@ const SHIFTS: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Строки добавлены между другими',
-    hint: 'Приложение добавило три строки третьей, четвёртой и пятой. Строки ниже остались прежними и съехали вниз — таблица не пересобирала их, поэтому новые строки появились сразу, как при добавлении в конец, и коротко вспыхнули.',
+    title: {
+      ru: 'Строки добавлены между другими',
+      en: 'Rows were added between others',
+    },
+    hint: {
+      ru: 'Приложение добавило три строки третьей, четвёртой и пятой. Строки ниже остались прежними и съехали вниз — таблица не пересобирала их, поэтому новые строки появились сразу, как при добавлении в конец, и коротко вспыхнули.',
+      en: "The app added three rows as the third, fourth, and fifth. The rows below stayed as they were and shifted down; the table didn't rebuild them, so the new rows appeared right away, just as when rows are added at the end, and flashed briefly.",
+    },
     immediate: true,
     enter: stepAction(async (root, { signal }) => {
       showTop()
@@ -443,8 +479,11 @@ const SHIFTS: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Строки удалены',
-    hint: 'Приложение удалило три добавленные строки. Они погасли на месте, затем строки ниже поднялись на свои места — тоже без пересборки остальных ста тысяч.',
+    title: { ru: 'Строки удалены', en: 'Rows were deleted' },
+    hint: {
+      ru: 'Приложение удалило три добавленные строки. Они погасли на месте, затем строки ниже поднялись на свои места — тоже без пересборки остальных ста тысяч.',
+      en: 'The app deleted the three added rows. They faded out in place, then the rows below moved up into their places, again without rebuilding the other hundred thousand.',
+    },
     enter: stepAction(async (root, { signal }) => {
       showTop()
       await pollUntil(() => !!rowById(root, MOVED), signal)
@@ -453,8 +492,11 @@ const SHIFTS: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Строка перенесена',
-    hint: 'Пользователь взял первую строку за ручку и бросил её ниже четвёртой. Таблица пересобрала одну перенесённую строку: она встала на новое место и коротко вспыхнула, строки между её прежним и новым местом сдвинулись вверх.',
+    title: { ru: 'Строка перенесена', en: 'The row was moved' },
+    hint: {
+      ru: 'Пользователь взял первую строку за ручку и бросил её ниже четвёртой. Таблица пересобрала одну перенесённую строку: она встала на новое место и коротко вспыхнула, строки между её прежним и новым местом сдвинулись вверх.',
+      en: 'The user grabbed the first row by its drag handle and dropped it below the fourth. The table rebuilt only the moved row: it took its new place and flashed briefly, and the rows between its old and new places shifted up.',
+    },
     states: ['drag.landed'],
     immediate: true,
     enter: stepAction(async (root, run) => {
@@ -477,18 +519,21 @@ export const ClientTransactionsShiftLargeTable: StoryObj<StoryProps> = {
   parameters: { scenario: '0199/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Строки в середине большой таблицы"
+      title={{
+        ru: 'Строки в середине большой таблицы',
+        en: 'Rows in the middle of a large table',
+      }}
       steps={SHIFTS}
       args={guideArgs(SHIFT_ARGS, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(SHIFTS[0]!.title, async () => {
+    await step(SHIFTS[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(indexOfRow(canvas, 'item-id-2')).toBe(2))
     })
-    await step(SHIFTS[1]!.title, async () => {
+    await step(SHIFTS[1]!.title.ru, async () => {
       // Вспышка новых строк держится на время снимка (ADR 0199, MS15): токен — до транзакции.
       canvas
         .querySelector<HTMLElement>('.data-grid-theme')!
@@ -512,14 +557,14 @@ export const ClientTransactionsShiftLargeTable: StoryObj<StoryProps> = {
       )
       await settle()
     })
-    await step(SHIFTS[2]!.title, async () => {
+    await step(SHIFTS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(SHIFTED_ADDED.every(id => !rowById(canvas, id))).toBe(true)
       await expect(indexOfRow(canvas, 'item-id-2')).toBe(2)
       await settle()
     })
-    await step(SHIFTS[3]!.title, async () => {
+    await step(SHIFTS[3]!.title.ru, async () => {
       // Вспышка броска держится на время снимка (ADR 0130, DG6): токен задан до шага 2.
       await guideNext(canvas)
       await stepDone(canvas)
@@ -542,13 +587,25 @@ const REFUSED = 'item-new-1'
 
 const WITHOUT_HANDLER: readonly GuideStoryStep[] = [
   {
-    title: 'Данные только у приложения',
-    hint: 'Приложение не передало таблице обработчик новых данных: менять данные может только оно само.',
+    title: {
+      ru: 'Данные только у приложения',
+      en: 'Only the app holds the data',
+    },
+    hint: {
+      ru: 'Приложение не передало таблице обработчик новых данных: менять данные может только оно само.',
+      en: "The app didn't give the table a handler for new data: only the app itself can change the data.",
+    },
     props: () => ({ extraPlugins: [clientTxSeed] }),
   },
   {
-    title: 'Транзакция не применена',
-    hint: 'Приложение попросило добавить строку. Таблице некуда отдать новые данные: транзакция не применена, строки прежние, в консоли браузера — предупреждение для разработчика.',
+    title: {
+      ru: 'Транзакция не применена',
+      en: 'The transaction is not applied',
+    },
+    hint: {
+      ru: 'Приложение попросило добавить строку. Таблице некуда отдать новые данные: транзакция не применена, строки прежние, в консоли браузера — предупреждение для разработчика.',
+      en: 'The app asked to add a row. The table has nowhere to send the new data: the transaction is not applied, the rows are unchanged, and the browser console shows a warning for the developer.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await pollUntil(() => !!rowIdAt(root, 0), signal)
       if (clientTx.result === undefined) transact({ add: [newRow()], index: 0 })
@@ -562,7 +619,7 @@ export const ClientTransactionsWithoutHandler: StoryObj<StoryProps> = {
   parameters: { scenario: '0194/S3', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Без обработчика данных"
+      title={{ ru: 'Без обработчика данных', en: 'Without a data handler' }}
       steps={WITHOUT_HANDLER}
       reset={() => {
         clientTx.result = undefined
@@ -572,10 +629,10 @@ export const ClientTransactionsWithoutHandler: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(WITHOUT_HANDLER[0]!.title, async () => {
+    await step(WITHOUT_HANDLER[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(WITHOUT_HANDLER[1]!.title, async () => {
+    await step(WITHOUT_HANDLER[1]!.title.ru, async () => {
       const first = rowIdAt(canvas, 0)
       await guideNext(canvas)
       await stepDone(canvas)

@@ -147,8 +147,11 @@ const savedText = () => moneyIn('ru-RU', SAVED_PRICE)
 
 const EDIT_COMMA: readonly GuideStoryStep[] = [
   {
-    title: 'Цены на русском языке',
-    hint: 'Строки приходят с сервера, таблица на русском языке. Цена показана с пробелом между разрядами и запятой перед дробной частью.',
+    title: { ru: 'Цены на русском языке', en: 'Prices in Russian' },
+    hint: {
+      ru: 'Строки приходят с сервера, таблица на русском языке. Цена показана с пробелом между разрядами и запятой перед дробной частью.',
+      en: 'Rows come from the server, and the table is in Russian. The price is shown with a space between digit groups and a comma before the fractional part.',
+    },
     props: () => ({
       locale: 'ru',
       columnsOverride: columnsOf('money', ['name', 'price', 'quantity']),
@@ -168,8 +171,11 @@ const EDIT_COMMA: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Пользователь набрал цену',
-    hint: 'Пользователь открыл правку цены и набрал число так, как его пишут по-русски: с пробелом между разрядами и десятичной запятой.',
+    title: { ru: 'Пользователь набрал цену', en: 'The user typed a price' },
+    hint: {
+      ru: 'Пользователь открыл правку цены и набрал число так, как его пишут по-русски: с пробелом между разрядами и десятичной запятой.',
+      en: 'The user opened the price editor and typed a number the way it is written in Russian: with a space between digit groups and a decimal comma.',
+    },
     states: ['body.editing'],
     enter: untilDone(
       root => priceInput(root)?.value === TYPED_PRICE,
@@ -177,8 +183,11 @@ const EDIT_COMMA: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Таблица сохранила число',
-    hint: 'Пользователь нажал Enter. Таблица разобрала набранный текст по правилам языка и записала в строку число: ячейка показывает новую цену в том же виде, что и остальные.',
+    title: { ru: 'Таблица сохранила число', en: 'The table saved the number' },
+    hint: {
+      ru: 'Пользователь нажал Enter. Таблица разобрала набранный текст по правилам языка и записала в строку число: ячейка показывает новую цену в том же виде, что и остальные.',
+      en: "The user pressed Enter. The table parsed the typed text according to the language's rules and wrote a number into the row: the cell shows the new price in the same form as the others.",
+    },
     enter: untilDone(
       root => !priceInput(root) && priceText(root) === savedText(),
       savePrice,
@@ -192,24 +201,27 @@ export const DataTypesEditNumber: StoryObj<StoryProps> = {
   parameters: { scenario: '0172/S8', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Правка числа по языку"
+      title={{
+        ru: 'Правка числа по языку',
+        en: 'Locale-aware number editing',
+      }}
       steps={EDIT_COMMA}
       args={guideArgs({ height: '400' }, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(EDIT_COMMA[0]!.title, async () => {
+    await step(EDIT_COMMA[0]!.title.ru, async () => {
       await until(() =>
         expect(priceText(canvas)).toBe(moneyIn('ru-RU', COMMA_ROWS[0]!.price)),
       )
       await until(() => expect(priceEditButton(canvas)).not.toBeNull())
     })
-    await step(EDIT_COMMA[1]!.title, async () => {
+    await step(EDIT_COMMA[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(priceInput(canvas)?.value).toBe(TYPED_PRICE))
     })
-    await step(EDIT_COMMA[2]!.title, async () => {
+    await step(EDIT_COMMA[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(priceInput(canvas)).toBeNull())
       await until(() => expect(priceText(canvas)).toBe(savedText()))
@@ -223,12 +235,21 @@ const NEW_PRICE = '1250'
 
 const EDIT_NUMBER: readonly GuideStoryStep[] = [
   {
-    title: 'Цены на языке таблицы',
-    hint: 'Цена — число в формате денег на языке таблицы. Её можно править: при наведении на ячейку появляется кнопка правки.',
+    title: {
+      ru: 'Цены на языке таблицы',
+      en: "Prices in the table's language",
+    },
+    hint: {
+      ru: 'Цена — число в формате денег на языке таблицы. Её можно править: при наведении на ячейку появляется кнопка правки.',
+      en: "The price is a number in a currency format in the table's language. It is editable: hovering over a cell shows an edit button.",
+    },
   },
   {
-    title: 'Поле правки числа',
-    hint: 'Пользователь нажал кнопку правки цены. В поле то же число с десятичным знаком языка таблицы, без знака валюты и разрядов.',
+    title: { ru: 'Поле правки числа', en: 'The number editor' },
+    hint: {
+      ru: 'Пользователь нажал кнопку правки цены. В поле то же число с десятичным знаком языка таблицы, без знака валюты и разрядов.',
+      en: "The user clicked the price's edit button. The field holds the same number with the decimal separator of the table's language, without a currency sign or digit grouping.",
+    },
     states: ['body.editing'],
     enter: untilDone(
       root => !!productInput(root, 'price'),
@@ -236,8 +257,11 @@ const EDIT_NUMBER: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Не число',
-    hint: 'Пользователь набрал буквы и нажал Enter. Значение не сохранено: поле осталось открытым, под ним текст ошибки.',
+    title: { ru: 'Не число', en: 'Not a number' },
+    hint: {
+      ru: 'Пользователь набрал буквы и нажал Enter. Значение не сохранено: поле осталось открытым, под ним текст ошибки.',
+      en: 'The user typed letters and pressed Enter. The value is not saved: the field stayed open, with an error message below it.',
+    },
     states: ['body.editing'],
     enter: untilDone(
       root => fieldError(root, 'price') !== '',
@@ -245,8 +269,11 @@ const EDIT_NUMBER: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Число сохранено',
-    hint: 'Пользователь набрал число и нажал Enter. Поле закрылось, в ячейке новая цена в формате денег.',
+    title: { ru: 'Число сохранено', en: 'The number is saved' },
+    hint: {
+      ru: 'Пользователь набрал число и нажал Enter. Поле закрылось, в ячейке новая цена в формате денег.',
+      en: 'The user typed a number and pressed Enter. The field closed, and the cell shows the new price in the currency format.',
+    },
     enter: untilDone(
       root =>
         !productInput(root, 'price') &&
@@ -266,7 +293,7 @@ export const EditingNumber: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Правка числа"
+      title={{ ru: 'Правка числа', en: 'Editing a number' }}
       steps={EDIT_NUMBER}
       args={guideArgs(productArgs, args)}
     />
@@ -276,7 +303,7 @@ export const EditingNumber: StoryObj<StoryProps> = {
     const locale = localeOf(args)
     const labels = storyLabels(args.locale)
     const original = EDIT_ROWS[0]!.price
-    await step(EDIT_NUMBER[0]!.title, async () => {
+    await step(EDIT_NUMBER[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() =>
         expect(productText(canvas, 'price')).toBe(dollars(locale, original)),
@@ -285,7 +312,7 @@ export const EditingNumber: StoryObj<StoryProps> = {
         expect(productEditButton(canvas, 'price')).not.toBeNull(),
       )
     })
-    await step(EDIT_NUMBER[1]!.title, async () => {
+    await step(EDIT_NUMBER[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(productInput(canvas, 'price')).not.toBeNull())
       await until(() =>
@@ -296,7 +323,7 @@ export const EditingNumber: StoryObj<StoryProps> = {
         ),
       )
     })
-    await step(EDIT_NUMBER[2]!.title, async () => {
+    await step(EDIT_NUMBER[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(fieldError(canvas, 'price')).toBe(
@@ -314,7 +341,7 @@ export const EditingNumber: StoryObj<StoryProps> = {
       )
       await until(() => expect(consoleText()).not.toContain('onCellEdit'))
     })
-    await step(EDIT_NUMBER[3]!.title, async () => {
+    await step(EDIT_NUMBER[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(productInput(canvas, 'price')).toBeNull())
       await until(() =>
@@ -336,8 +363,11 @@ export const EditingNumber: StoryObj<StoryProps> = {
 
 const NUMBER_SORT: readonly GuideStoryStep[] = [
   {
-    title: 'Цены в порядке данных',
-    hint: 'Товары идут в порядке данных. У двух товаров нет цены — их ячейки пусты.',
+    title: { ru: 'Цены в порядке данных', en: 'Prices in data order' },
+    hint: {
+      ru: 'Товары идут в порядке данных. У двух товаров нет цены — их ячейки пусты.',
+      en: 'Products follow the data order. Two products have no price, so their cells are empty.',
+    },
     props: () => ({
       columnsOverride: columnsOf('number', ['name', 'price']),
       dataOverride: SORT_ROWS,
@@ -345,13 +375,25 @@ const NUMBER_SORT: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Пользователь отсортировал по цене',
-    hint: 'Цены сравниваются как числа, а не как текст: от большей к меньшей, тысяча выше двухсот. Товары без цены — в конце.',
+    title: {
+      ru: 'Пользователь отсортировал по цене',
+      en: 'The user sorted by price',
+    },
+    hint: {
+      ru: 'Цены сравниваются как числа, а не как текст: от большей к меньшей, тысяча выше двухсот. Товары без цены — в конце.',
+      en: 'Prices are compared as numbers, not as text: from highest to lowest, with a thousand above two hundred. Products without a price come last.',
+    },
     enter: sortTo('price', 'descending'),
   },
   {
-    title: 'Пользователь сменил направление',
-    hint: 'Пользователь нажал кнопку сортировки ещё раз. Цены идут от меньшей к большей, товары без цены по-прежнему в конце.',
+    title: {
+      ru: 'Пользователь сменил направление',
+      en: 'The user changed the direction',
+    },
+    hint: {
+      ru: 'Пользователь нажал кнопку сортировки ещё раз. Цены идут от меньшей к большей, товары без цены по-прежнему в конце.',
+      en: 'The user clicked the sort button again. Prices go from lowest to highest, and products without a price still come last.',
+    },
     enter: sortTo('price', 'ascending'),
   },
 ]
@@ -362,20 +404,20 @@ export const DataTypesNumberSort: StoryObj<StoryProps> = {
   parameters: { scenario: '0172/S9', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Сортировка чисел"
+      title={{ ru: 'Сортировка чисел', en: 'Sorting numbers' }}
       steps={NUMBER_SORT}
       args={guideArgs({ height: '560' }, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(NUMBER_SORT[0]!.title, async () => {
+    await step(NUMBER_SORT[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() =>
         expect(rowIds(canvas)).toEqual(idsOf(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)),
       )
     })
-    await step(NUMBER_SORT[1]!.title, async () => {
+    await step(NUMBER_SORT[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(rowIds(canvas).slice(0, 8)).toEqual(
@@ -385,7 +427,7 @@ export const DataTypesNumberSort: StoryObj<StoryProps> = {
       expect(sortOf(canvas, 'price')).toBe('descending')
       expect(rowIds(canvas).slice(8).sort()).toEqual(idsOf(3, 9).sort())
     })
-    await step(NUMBER_SORT[2]!.title, async () => {
+    await step(NUMBER_SORT[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(rowIds(canvas).slice(0, 8)).toEqual(
@@ -418,8 +460,14 @@ const filterAbove = async (root: HTMLElement, signal: AbortSignal) => {
 
 const NUMBER_FILTER: readonly GuideStoryStep[] = [
   {
-    title: 'Цены без настройки фильтра',
-    hint: 'Цена — число, у колонки задан только тип данных. Фильтры в таблице подключены, но сама колонка фильтр не настраивала.',
+    title: {
+      ru: 'Цены без настройки фильтра',
+      en: 'Prices without a filter setup',
+    },
+    hint: {
+      ru: 'Цена — число, у колонки задан только тип данных. Фильтры в таблице подключены, но сама колонка фильтр не настраивала.',
+      en: 'The price is a number, and the column has only a data type set. Filtering is enabled in the table, but the column itself has not configured a filter.',
+    },
     props: () => ({
       columnsOverride: columnsOf('number', ['name', 'price']),
       dataOverride: FILTER_ROWS,
@@ -428,8 +476,14 @@ const NUMBER_FILTER: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Пользователь открыл фильтр цены',
-    hint: 'Тип колонки — число, поэтому панель предлагает условия сравнения чисел и поле для числа.',
+    title: {
+      ru: 'Пользователь открыл фильтр цены',
+      en: 'The user opened the price filter',
+    },
+    hint: {
+      ru: 'Тип колонки — число, поэтому панель предлагает условия сравнения чисел и поле для числа.',
+      en: "The column's type is number, so the panel offers number comparison conditions and a field for a number.",
+    },
     states: ['overlay.filterText'],
     enter: stepAction(async (root, { signal }) => {
       await openPanel(root, 'price', signal)
@@ -437,8 +491,14 @@ const NUMBER_FILTER: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Пользователь отобрал цены больше границы',
-    hint: 'Пользователь выбрал условие «больше» и набрал число. Остались товары дороже: цены сравниваются как числа. Нижняя панель называет число оставшихся строк.',
+    title: {
+      ru: 'Пользователь отобрал цены больше границы',
+      en: 'The user kept prices above a threshold',
+    },
+    hint: {
+      ru: 'Пользователь выбрал условие «больше» и набрал число. Остались товары дороже: цены сравниваются как числа. Нижняя панель называет число оставшихся строк.',
+      en: 'The user chose the "greater than" condition and typed a number. More expensive products remain: prices are compared as numbers. The status bar shows the number of remaining rows.',
+    },
     enter: stepAction((root, { signal }) => filterAbove(root, signal)),
   },
 ]
@@ -449,23 +509,23 @@ export const DataTypesNumberFilter: StoryObj<StoryProps> = {
   parameters: { scenario: '0172/S13', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Фильтр чисел"
+      title={{ ru: 'Фильтр чисел', en: 'Filtering numbers' }}
       steps={NUMBER_FILTER}
       args={guideArgs({ height: '460' }, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(NUMBER_FILTER[0]!.title, async () => {
+    await step(NUMBER_FILTER[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(NUMBER_FILTER[1]!.title, async () => {
+    await step(NUMBER_FILTER[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       expect(filterValueField()).toHaveAttribute('inputmode', 'decimal')
       await settle()
     })
-    await step(NUMBER_FILTER[2]!.title, async () => {
+    await step(NUMBER_FILTER[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       expect(shownCount()).toBe(above)
@@ -488,8 +548,11 @@ const exportXlsx = async (root: HTMLElement, signal: AbortSignal) => {
 
 const NUMBER_EXCEL: readonly GuideStoryStep[] = [
   {
-    title: 'Цена и количество',
-    hint: 'В таблице цена и количество — числа. К выгрузке подключён формат Excel.',
+    title: { ru: 'Цена и количество', en: 'Price and quantity' },
+    hint: {
+      ru: 'В таблице цена и количество — числа. К выгрузке подключён формат Excel.',
+      en: 'In the table, price and quantity are numbers. The Excel format is enabled for export.',
+    },
     props: () => ({
       columnsOverride: columnsOf('number', ['name', 'price', 'quantity']),
       dataOverride: EXPORT_ROWS,
@@ -499,14 +562,20 @@ const NUMBER_EXCEL: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Пользователь выбрал Excel',
-    hint: 'В настройках выгрузки выбран формат Excel.',
+    title: { ru: 'Пользователь выбрал Excel', en: 'The user chose Excel' },
+    hint: {
+      ru: 'В настройках выгрузки выбран формат Excel.',
+      en: 'The Excel format is selected in the export settings.',
+    },
     states: ['overlay.export'],
     enter: stepAction((root, { signal }) => exportXlsx(root, signal)),
   },
   {
-    title: 'Пользователь выгрузил',
-    hint: 'Скачался файл Excel. Цена и количество в нём — числа: их можно считать и сортировать по значению, а не как текст.',
+    title: { ru: 'Пользователь выгрузил', en: 'The user exported' },
+    hint: {
+      ru: 'Скачался файл Excel. Цена и количество в нём — числа: их можно считать и сортировать по значению, а не как текст.',
+      en: 'An Excel file was downloaded. In it, price and quantity are numbers: they can be used in calculations and sorted by value, not as text.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await exportXlsx(root, signal)
       await runExport(signal)
@@ -520,7 +589,7 @@ export const DataTypesNumberExcel: StoryObj<StoryProps> = {
   parameters: { scenario: '0172/S6', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Выгрузка чисел в Excel"
+      title={{ ru: 'Выгрузка чисел в Excel', en: 'Exporting numbers to Excel' }}
       steps={NUMBER_EXCEL}
       args={guideArgs({ height: '460' }, args)}
     />
@@ -529,16 +598,16 @@ export const DataTypesNumberExcel: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     const download = interceptDownload()
     try {
-      await step(NUMBER_EXCEL[0]!.title, async () => {
+      await step(NUMBER_EXCEL[0]!.title.ru, async () => {
         await waitForRows(canvas)
       })
-      await step(NUMBER_EXCEL[1]!.title, async () => {
+      await step(NUMBER_EXCEL[1]!.title.ru, async () => {
         await guideNext(canvas)
         await stepDone(canvas)
         expect(axisChecked('format', 'xlsx')).toBe(true)
         await settle()
       })
-      await step(NUMBER_EXCEL[2]!.title, async () => {
+      await step(NUMBER_EXCEL[2]!.title.ru, async () => {
         await guideNext(canvas)
         await stepDone(canvas)
         expect(download.names).toEqual(['export.xlsx'])

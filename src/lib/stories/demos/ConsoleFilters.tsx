@@ -13,7 +13,9 @@ import type { ContrastMode } from '../../ui/theme/types'
 import { Button } from '../../ui/Button'
 import { POPUP_SIDE_OFFSET } from '../../ui/Popup/offset'
 import { Checkbox } from '../../ui/Checkbox/Checkbox'
+import { useStoryLocale } from '../__mocks__/storyLocale'
 import type { ConsoleKind } from './consoleLog'
+import { shellText } from './storyShell'
 
 import styles from './ConsoleFilters.module.css'
 
@@ -33,6 +35,7 @@ export const ConsoleFilters = ({
   onToggle: (kind: ConsoleKind) => void
   onShowAll: () => void
 }) => {
+  const locale = useStoryLocale()
   const triggerRef = useRef<HTMLButtonElement>(null)
   // Портал — в body: тему и контраст истории он берёт у предка кнопки при открытии.
   const [theme, setTheme] = useState({
@@ -62,7 +65,7 @@ export const ConsoleFilters = ({
             variant="outline"
             data-testid="story-console-filters"
           >
-            Фильтры
+            {shellText(locale, 'consoleFilters')}
             <span aria-hidden="true" className={styles.chevron}>
               <ChevronDown width={14} height={14} />
             </span>
@@ -78,7 +81,7 @@ export const ConsoleFilters = ({
           data-tsr-contrast={contrastAttribute(theme.contrast)}
         >
           <Popover.Popup
-            aria-label="Фильтры консоли"
+            aria-label={shellText(locale, 'consoleFiltersMenu')}
             finalFocus={triggerRef}
             className={clsx(portalThemeClass(theme.dark), styles.popup)}
             data-testid="story-console-filters-menu"
@@ -109,7 +112,7 @@ export const ConsoleFilters = ({
                   disabled={hidden.size === 0}
                   onClick={onShowAll}
                 >
-                  Показать все
+                  {shellText(locale, 'consoleShowAll')}
                 </Button>
               </div>
             </div>

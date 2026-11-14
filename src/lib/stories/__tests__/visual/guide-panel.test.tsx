@@ -27,6 +27,7 @@ import {
 import { pressCell, untilDone } from '../../__mocks__/cellGestures'
 import { HANDLE, ROW, rowIdOrder } from '../../rowDragging.dnd'
 import { openViewSettingsSection } from '../../__mocks__/viewSettings'
+import { both } from '../storyText.helpers'
 
 // Панель гайда историй (ADR 0117, SN14–SN15, SN17, SN21–SN27, SN33–SN35, SN40–SN58, SN69, SN74) — с
 // движением: каталог гоняет истории с уменьшенным движением, и порядок конфетти и сдвига
@@ -105,7 +106,7 @@ describe('панель сценария (ADR 0117)', () => {
       const menu = () => document.querySelector('[role="menu"]')
       await humanClick(byId('guide-toggle'))
       await sleep(600)
-      for (const step of ['2 из 5', '3 из 5', '4 из 5']) {
+      for (const step of ['2 of 5', '3 of 5', '4 of 5']) {
         await expect
           .poll(() => button('guide-next').disabled, { timeout: 8000 })
           .toBe(false)
@@ -157,7 +158,7 @@ describe('панель сценария (ADR 0117)', () => {
       await humanClick(button('guide-next'))
       await expect
         .poll(() => byId('guide').textContent, { timeout: 5000 })
-        .toContain('3 из 5')
+        .toContain('3 of 5')
       // Черновик не сохранён: поле открыто, фокус — в нём.
       expect(input()?.value).toBe('55')
       expect(document.activeElement).toBe(input())
@@ -171,8 +172,8 @@ describe('панель сценария (ADR 0117)', () => {
     await expect.poll(() => byId('guide-toggle')).toBeTruthy()
     const toggle = byId('guide-toggle')
     expect(toggle.getAttribute('aria-expanded')).toBe('false')
-    expect(toggle.textContent).toMatch(/Гайд · .+· шаг 1 из 3/)
-    expect(byId('guide-play').textContent).toContain('Воспроизвести')
+    expect(toggle.textContent).toMatch(/Guide · .+· step 1 of 3/)
+    expect(byId('guide-play').textContent).toContain('Play')
     // Кнопки шагов — в свёрнутом теле: вне фокуса и дерева доступности.
     for (const id of ['guide-back', 'guide-next', 'guide-restart']) {
       expect(byId(id).closest('[inert]'), id).not.toBeNull()
@@ -225,7 +226,7 @@ describe('панель сценария (ADR 0117)', () => {
       bar.getBoundingClientRect().width /
       bar.parentElement!.getBoundingClientRect().width
     const toggle = byId('guide-toggle')
-    expect(toggle.textContent).toMatch(/шаг 4 из/)
+    expect(toggle.textContent).toMatch(/step 4 of/)
     expect(fillOf()).toBe(0)
     const x = slideOf()
 
@@ -246,7 +247,7 @@ describe('панель сценария (ADR 0117)', () => {
       const fill = fillOf()
       if (stepChangedAt < 0) fills.push(fill)
       if (fillDoneAt < 0 && fill > 0.99) fillDoneAt = now
-      if (stepChangedAt < 0 && /шаг 5 из/.test(toggle.textContent ?? '')) {
+      if (stepChangedAt < 0 && /step 5 of/.test(toggle.textContent ?? '')) {
         stepChangedAt = now
         // Значок нового шага — текущий и «подпрыгивает».
         nextPopped =
@@ -267,7 +268,7 @@ describe('панель сценария (ADR 0117)', () => {
     expect(movedEarly).toBe(false)
     expect(nextPopped).toBe(true)
     expect(disabledDuring).toBe(true)
-    expect(toggle.textContent).toMatch(/шаг 5 из/)
+    expect(toggle.textContent).toMatch(/step 5 of/)
     expect(fillOf()).toBeGreaterThan(0.99)
     await expect.poll(() => Math.abs(slideOf() - x)).toBeGreaterThan(100)
   })
@@ -283,7 +284,7 @@ describe('панель сценария (ADR 0117)', () => {
       bar.parentElement!.getBoundingClientRect().width
     const start = performance.now()
     button('guide-play').click()
-    await expect.poll(() => byId('guide-play').textContent).toContain('Пауза')
+    await expect.poll(() => byId('guide-play').textContent).toContain('Pause')
     // Первый шаг: полоска заливается всё время шага, значок до конца текущий.
     const fills: number[] = []
     let fillStart = -1
@@ -291,7 +292,7 @@ describe('панель сценария (ADR 0117)', () => {
     let currentDuring = true
     let stepChangedAt = -1
     while (performance.now() - start < 5000) {
-      if (/шаг 2 из 3/.test(toggle.textContent ?? '')) {
+      if (/step 2 of 3/.test(toggle.textContent ?? '')) {
         stepChangedAt = performance.now() - start
         break
       }
@@ -312,13 +313,13 @@ describe('панель сценария (ADR 0117)', () => {
     // Последний шаг ждать нечего: пройден сразу при переходе на него.
     await expect
       .poll(() => toggle.textContent, { timeout: 5000, interval: 5 })
-      .toMatch(/шаг 3 из 3|пройден/)
+      .toMatch(/step 3 of 3|completed/)
     const lastAt = performance.now()
     await expect
       .poll(() => toggle.textContent, { timeout: 5000, interval: 5 })
-      .toContain('пройден')
+      .toContain('completed')
     expect(performance.now() - lastAt).toBeLessThan(300)
-    expect(byId('guide-play').textContent).toContain('Воспроизвести')
+    expect(byId('guide-play').textContent).toContain('Play')
     expect(
       [...document.querySelectorAll<HTMLElement>('[data-step-state]')].map(
         each => each.dataset.stepState,
@@ -341,8 +342,8 @@ describe('панель сценария (ADR 0117)', () => {
     const paused = firstFill()
     expect(paused).toBeGreaterThan(0.4)
     await sleep(2500)
-    expect(byId('guide-toggle').textContent).toContain('шаг 1 из 3')
-    expect(byId('guide-play').textContent).toContain('Воспроизвести')
+    expect(byId('guide-toggle').textContent).toContain('step 1 of 3')
+    expect(byId('guide-play').textContent).toContain('Play')
     expect(Math.abs(firstFill() - paused)).toBeLessThan(0.02)
     expect(confetti()).toHaveLength(0)
 
@@ -351,14 +352,14 @@ describe('панель сценария (ADR 0117)', () => {
     const resumed = performance.now()
     button('guide-play').click()
     let restartedFromZero = false
-    while (!/шаг 2 из 3/.test(byId('guide-toggle').textContent ?? '')) {
+    while (!/step 2 of 3/.test(byId('guide-toggle').textContent ?? '')) {
       if (performance.now() - resumed > 5000) break
       if (firstFill() < paused - 0.02) restartedFromZero = true
       await frame()
     }
     const resumeTook = performance.now() - resumed
     expect(restartedFromZero).toBe(false)
-    expect(byId('guide-toggle').textContent).toContain('шаг 2 из 3')
+    expect(byId('guide-toggle').textContent).toContain('step 2 of 3')
     expect(resumeTook).toBeLessThan(1500 * (1 - paused) + 400)
     await expect.poll(confetti, { timeout: 3000 }).toHaveLength(0)
     await pausedScreen.unmount()
@@ -374,13 +375,13 @@ describe('панель сценария (ADR 0117)', () => {
     button('guide-next').click()
     let dropped = false
     const started = performance.now()
-    while (!/шаг 2 из 3/.test(byId('guide-toggle').textContent ?? '')) {
+    while (!/step 2 of 3/.test(byId('guide-toggle').textContent ?? '')) {
       if (performance.now() - started > 3000) break
       if (firstFill() < from - 0.02) dropped = true
       await frame()
     }
     expect(dropped).toBe(false)
-    expect(byId('guide-toggle').textContent).toContain('шаг 2 из 3')
+    expect(byId('guide-toggle').textContent).toContain('step 2 of 3')
     // Конфетти пройденного шага догорают: следующий тест начинает без них.
     await expect.poll(confetti, { timeout: 3000 }).toHaveLength(0)
     await view.unmount()
@@ -397,7 +398,7 @@ describe('панель сценария (ADR 0117)', () => {
         // Шаг сменился в пределах кадра, без конфетти и перехода ряда.
         await frame()
         await frame()
-        expect(byId('guide-toggle').textContent).toContain(`шаг ${i + 2} из`)
+        expect(byId('guide-toggle').textContent).toContain(`step ${i + 2} of`)
         expect(confetti()).toHaveLength(0)
         expect(
           byId('guide-steps').querySelector('ol')!.getAnimations(),
@@ -449,7 +450,7 @@ describe('панель сценария (ADR 0117)', () => {
       await settled()
       button('guide-next').click()
     }
-    await expect.poll(() => toggle.textContent).toContain('пройден')
+    await expect.poll(() => toggle.textContent).toContain('completed')
     await idle()
     const lastBadge = document.querySelector<HTMLElement>(
       '[data-step-index="2"]',
@@ -477,7 +478,7 @@ describe('панель сценария (ADR 0117)', () => {
       pieces = Math.max(pieces, confetti().length)
       if (stepBackAt < 0) fills.push(fill)
       if (emptyAt < 0 && fill < 0.01) emptyAt = now
-      if (stepBackAt < 0 && /шаг 2 из 3/.test(toggle.textContent ?? '')) {
+      if (stepBackAt < 0 && /step 2 of 3/.test(toggle.textContent ?? '')) {
         stepBackAt = now
         // Шаг вернулся: значок — число и «подпрыгивает».
         expect(badge.dataset.stepState).toBe('current')
@@ -502,7 +503,7 @@ describe('панель сценария (ADR 0117)', () => {
 
     // Снова вперёд — последний шаг выполняется опять.
     button('guide-next').click()
-    await expect.poll(() => toggle.textContent).toContain('пройден')
+    await expect.poll(() => toggle.textContent).toContain('completed')
     expect(lastBadge.dataset.stepState).toBe('done')
     // Конфетти последнего шага догорают: следующий тест считает свои.
     await idle()
@@ -557,7 +558,7 @@ describe('панель сценария (ADR 0117)', () => {
     const before = slideOf()
     stepButton(4).click()
     await frame()
-    expect(toggle.textContent).toMatch(/шаг 5 из/)
+    expect(toggle.textContent).toMatch(/step 5 of/)
     expect(states()).toEqual(statesAt(4, count))
     for (let index = 0; index < 4; index++) {
       expect(fillOf(index)).toBeGreaterThan(0.99)
@@ -574,7 +575,7 @@ describe('панель сценария (ADR 0117)', () => {
 
     // Назад через название шага настоящим нажатием: полоски пусты, шаги снова будущие.
     await userEvent.click(stepButton(1).querySelector('strong')!)
-    expect(toggle.textContent).toMatch(/шаг 2 из/)
+    expect(toggle.textContent).toMatch(/step 2 of/)
     expect(states()).toEqual(statesAt(1, count))
     for (let index = 1; index < 4; index++) expect(fillOf(index)).toBe(0)
     expect(confetti()).toHaveLength(0)
@@ -587,7 +588,7 @@ describe('панель сценария (ADR 0117)', () => {
     expect(byId('guide').dataset.busy).toBe('true')
     stepButton(6).click()
     await frame()
-    expect(toggle.textContent).toMatch(/шаг 7 из/)
+    expect(toggle.textContent).toMatch(/step 7 of/)
     expect(states()).toEqual(statesAt(6, count))
     // Значок, пройденный «Далее», доигрывает её подпрыгивание — оно не от перехода.
     expect(
@@ -596,7 +597,7 @@ describe('панель сценария (ADR 0117)', () => {
       ),
     ).toHaveLength(0)
     await sleep(400)
-    expect(toggle.textContent).toMatch(/шаг 7 из/)
+    expect(toggle.textContent).toMatch(/step 7 of/)
     expect(button('guide-next').disabled).toBe(false)
 
     // Посреди воспроизведения — нажатие на шаг останавливает его.
@@ -605,17 +606,17 @@ describe('панель сценария (ADR 0117)', () => {
     await expect.poll(() => fillOf(6), { interval: 5 }).toBeGreaterThan(0.1)
     stepButton(2).click()
     await frame()
-    expect(toggle.textContent).toMatch(/шаг 3 из/)
-    expect(byId('guide-play').textContent).toContain('Воспроизвести')
+    expect(toggle.textContent).toMatch(/step 3 of/)
+    expect(byId('guide-play').textContent).toContain('Play')
     expect(stepAnimations()).toHaveLength(0)
     await sleep(1700)
-    expect(toggle.textContent).toMatch(/шаг 3 из/)
+    expect(toggle.textContent).toMatch(/step 3 of/)
 
     // Нажатие на последний шаг выполняет его сразу и без конфетти (SN16).
     await idle()
     stepButton(count - 1).click()
     await frame()
-    expect(toggle.textContent).toContain('пройден')
+    expect(toggle.textContent).toContain('completed')
     expect(states()).toEqual(statesAt(count, count))
     expect(button('guide-next').disabled).toBe(true)
     expect(confetti()).toHaveLength(0)
@@ -712,7 +713,7 @@ describe('панель сценария (ADR 0117)', () => {
         button('guide-next').click()
         await expect
           .poll(() => byId('guide-toggle').textContent)
-          .toContain(`шаг ${step} из`)
+          .toContain(`step ${step} of`)
       }
       await goTo(2)
       // «Иерархия данных»: подстроки есть, линий и колонки раскрытия ещё нет.
@@ -795,7 +796,7 @@ describe('панель сценария (ADR 0117)', () => {
     // Воспроизведение в свёрнутой панели: линия растёт посреди шага, а не скачком.
     byId('guide-play').click()
     await expect.poll(share).toBeGreaterThan(0.1)
-    expect(byId('guide-toggle').textContent).toContain('шаг 1 из 3')
+    expect(byId('guide-toggle').textContent).toContain('step 1 of 3')
     const [running] = bar().getAnimations()
     expect(running!.effect!.getComputedTiming().duration).toBe(1500)
     // «Пауза» замораживает линию на месте.
@@ -809,13 +810,15 @@ describe('панель сценария (ADR 0117)', () => {
     byId('guide-play').click()
     await expect
       .poll(() => byId('guide-toggle').textContent, { timeout: 8000 })
-      .toContain('пройден')
+      .toContain('completed')
     expect(share()).toBeCloseTo(1, 2)
 
     // Перезапуск: линия сразу пустая, без отката.
     byId('guide-play').click()
     await expect.poll(() => bar().getAnimations()).toEqual([])
-    await expect.poll(() => byId('guide-toggle').textContent).toContain('шаг 1')
+    await expect
+      .poll(() => byId('guide-toggle').textContent)
+      .toContain('step 1')
     expect(share()).toBeLessThan(0.05)
     byId('guide-play').click()
 
@@ -834,7 +837,7 @@ describe('панель сценария (ADR 0117)', () => {
       byId('guide-play').click()
       await expect
         .poll(() => byId('guide-toggle').textContent, { timeout: 8000 })
-        .toContain('шаг 2')
+        .toContain('step 2')
       expect(bar().getAnimations()).toEqual([])
       expect(share()).toBeCloseTo(0.5, 2)
     } finally {
@@ -849,8 +852,8 @@ describe('панель сценария (ADR 0117)', () => {
 const run = { enters: 0, pending: false, release: false }
 const INPUT_STEPS: readonly GuideStoryStep[] = [
   {
-    title: 'Таблица открыта',
-    hint: 'Действие шага нажимает ячейку и клавишу.',
+    title: both('Таблица открыта'),
+    hint: both('Действие шага нажимает ячейку и клавишу.'),
     enter: root => {
       run.enters++
       run.pending = true
@@ -868,10 +871,10 @@ const INPUT_STEPS: readonly GuideStoryStep[] = [
       return () => clearInterval(timer)
     },
   },
-  { title: 'Без действия', hint: 'Шаг только показывает таблицу.' },
+  { title: both('Без действия'), hint: both('Шаг только показывает таблицу.') },
   {
-    title: 'Действие идёт',
-    hint: 'Действие ждёт, пока тест его отпустит.',
+    title: both('Действие идёт'),
+    hint: both('Действие ждёт, пока тест его отпустит.'),
     enter: stepAction(async (_root, step) => {
       await pollUntil(() => run.release, step.signal, 60_000)
     }),
@@ -880,7 +883,7 @@ const INPUT_STEPS: readonly GuideStoryStep[] = [
 
 const InputGuide = () => (
   <GuideStory
-    title="Ввод человека"
+    title={both('Ввод человека')}
     steps={INPUT_STEPS}
     args={guideArgs(
       { dataCount: 200, height: 320, enableColumnVisibility: true },
@@ -944,8 +947,8 @@ describe('ввод человека посреди гайда (ADR 0117)', () =>
       await wheelTable(200)
       await expect.poll(changed).not.toBeNull()
       expect(scroller().scrollTop).toBeGreaterThan(0)
-      expect(changed()!.textContent).toBe('Таблица изменена')
-      expect(byId('guide-restore').textContent).toContain('Вернуть шаг')
+      expect(changed()!.textContent).toBe('Table changed')
+      expect(byId('guide-restore').textContent).toContain('Restore step')
       expect(byId('guide-restore').closest('[inert]')).toBeNull()
       await humanClick(byId('guide-restore'))
       await expect.poll(changed).toBeNull()
@@ -1005,14 +1008,14 @@ describe('ввод человека посреди гайда (ADR 0117)', () =>
       // «Далее» на шаг без действия: таблица заново, а не прокрученная.
       await scrollTable()
       button('guide-next').click()
-      await expect.poll(stepText).toContain('шаг 2 из 3')
+      await expect.poll(stepText).toContain('step 2 of 3')
       await fresh()
 
       // «Назад» — заново и с действием целевого шага.
       await scrollTable()
       const enters = run.enters
       button('guide-back').click()
-      await expect.poll(stepText).toContain('шаг 1 из 3')
+      await expect.poll(stepText).toContain('step 1 of 3')
       await fresh()
       await expect.poll(() => run.enters).toBeGreaterThan(enters)
       await opened()
@@ -1028,13 +1031,13 @@ describe('ввод человека посреди гайда (ADR 0117)', () =>
       // Нажатие на шаг.
       await scrollTable()
       document.querySelector<HTMLElement>('[data-step-button="1"]')!.click()
-      await expect.poll(stepText).toContain('шаг 2 из 3')
+      await expect.poll(stepText).toContain('step 2 of 3')
       await fresh()
 
       // «Сначала».
       await scrollTable()
       byId('guide-restart').click()
-      await expect.poll(stepText).toContain('шаг 1 из 3')
+      await expect.poll(stepText).toContain('step 1 of 3')
       await fresh()
     } finally {
       await screen.unmount()
@@ -1057,15 +1060,15 @@ describe('ввод человека посреди гайда (ADR 0117)', () =>
       await expect.poll(share, { interval: 5 }).toBeGreaterThan(0.1)
       await wheelTable(200)
       await expect.poll(changed).not.toBeNull()
-      expect(byId('guide-play').textContent).toContain('Воспроизвести')
+      expect(byId('guide-play').textContent).toContain('Play')
       await sleep(100)
       const paused = share()
       await sleep(2000)
-      expect(stepText()).toContain('шаг 1 из 3')
+      expect(stepText()).toContain('step 1 of 3')
       expect(share()).toBeCloseTo(paused, 2)
 
       byId('guide-play').click()
-      await expect.poll(stepText, { timeout: 5000 }).toContain('шаг 2 из 3')
+      await expect.poll(stepText, { timeout: 5000 }).toContain('step 2 of 3')
       byId('guide-play').click()
       await expect.poll(() => scroller()?.scrollTop).toBe(0)
       expect(changed()).toBeNull()
@@ -1141,7 +1144,7 @@ describe('ввод человека посреди гайда (ADR 0117)', () =>
       await userEvent.hover(toggle())
       await expect
         .poll(tooltipText, { timeout: 2000 })
-        .toContain('Шаг выполняется')
+        .toContain('A step is running')
 
       // Шаг дошёл — кнопка снова доступна.
       run.release = true
@@ -1176,7 +1179,7 @@ describe('ввод человека посреди гайда (ADR 0117)', () =>
       // Показ нажатия действием шага.
       screen = await render(
         <GuideStory
-          title="Ввод человека"
+          title={both('Ввод человека')}
           steps={INPUT_STEPS}
           args={guideArgs(
             { dataCount: 200, height: 320 },
@@ -1212,15 +1215,15 @@ describe('ввод человека посреди гайда (ADR 0117)', () =>
       let acted = 0
       const quiet = await render(
         <GuideStory
-          title="Начало гайда"
+          title={both('Начало гайда')}
           steps={[
             {
-              title: 'Таблица в покое',
-              hint: 'Шаг только показывает таблицу.',
+              title: both('Таблица в покое'),
+              hint: both('Шаг только показывает таблицу.'),
             },
             {
-              title: 'Действие',
-              hint: 'Действие прокручивает таблицу.',
+              title: both('Действие'),
+              hint: both('Действие прокручивает таблицу.'),
               enter: root => {
                 acted++
                 root.querySelector('.data-grid__container')!.scrollTop = 200
@@ -1256,10 +1259,14 @@ describe('ввод человека посреди гайда (ADR 0117)', () =>
 
       const acting = await render(
         <GuideStory
-          title="Действие сразу"
+          title={both('Действие сразу')}
           steps={[
-            { title: 'Действие', hint: 'Шаг 1 действует.', enter: () => {} },
-            { title: 'Итог', hint: 'Итог.' },
+            {
+              title: both('Действие'),
+              hint: both('Шаг 1 действует.'),
+              enter: () => {},
+            },
+            { title: both('Итог'), hint: both('Итог.') },
           ]}
           args={guideArgs(
             { dataCount: 20 },
@@ -1293,27 +1300,27 @@ describe('ввод человека посреди гайда (ADR 0117)', () =>
     }
     const screen = await render(
       <GuideStory
-        title="Сброс обвязки"
+        title={both('Сброс обвязки')}
         reset={() => {
           server.state = 'fresh'
           server.resets++
         }}
         steps={[
           {
-            title: 'Таблица в покое',
-            hint: 'Шаг только показывает таблицу.',
+            title: both('Таблица в покое'),
+            hint: both('Шаг только показывает таблицу.'),
             props: () => ({ extraPlugins: [probe] }),
           },
           {
-            title: 'Обвязка изменена',
-            hint: 'Шаг меняет «сервер».',
+            title: both('Обвязка изменена'),
+            hint: both('Шаг меняет «сервер».'),
             enter: () => {
               server.state = 'used'
             },
           },
           {
-            title: 'Обвязка прочитана',
-            hint: 'Шаг смотрит на «сервер».',
+            title: both('Обвязка прочитана'),
+            hint: both('Шаг смотрит на «сервер».'),
             enter: () => {
               seenByStep3.push(server.state)
             },
@@ -1341,14 +1348,14 @@ describe('ввод человека посреди гайда (ADR 0117)', () =>
 
       // «Далее» без пометки — та же таблица: обвязка идёт дальше от шага 2.
       button('guide-next').click()
-      await expect.poll(stepText).toContain('шаг 2 из 3')
+      await expect.poll(stepText).toContain('step 2 of 3')
       button('guide-next').click()
       await expect.poll(() => seenByStep3).toEqual(['used'])
       expect(server.resets).toBe(1)
 
       // Откат через шаг с действием — таблица заново, обвязка сброшена до неё.
       button('guide-back').click()
-      await expect.poll(stepText).toContain('шаг 2 из 3')
+      await expect.poll(stepText).toContain('step 2 of 3')
       await reopened(2)
       await expect.poll(() => server.state).toBe('used')
 
@@ -1365,7 +1372,7 @@ describe('ввод человека посреди гайда (ADR 0117)', () =>
       byId('guide-restore').click()
       await reopened(4)
       byId('guide-restart').click()
-      await expect.poll(stepText).toContain('шаг 1 из 3')
+      await expect.poll(stepText).toContain('step 1 of 3')
       await reopened(5)
     } finally {
       await screen.unmount()
@@ -1377,7 +1384,9 @@ describe('ввод человека посреди гайда (ADR 0117)', () =>
       { dataCount: 30, height: 400, enableRowDragging: true },
       { colorMode: 'light', locale: 'en' },
     )
-    const steps: readonly GuideStoryStep[] = [{ title: 'Строки', hint: '' }]
+    const steps: readonly GuideStoryStep[] = [
+      { title: both('Строки'), hint: both('') },
+    ]
     const rowAt = (index: number) =>
       document.querySelector<HTMLElement>(`${ROW}[data-index="${index}"]`)!
     /**
@@ -1386,7 +1395,7 @@ describe('ввод человека посреди гайда (ADR 0117)', () =>
      */
     const drop = async () => {
       const screen = await render(
-        <GuideStory title="Бросок" steps={steps} args={args} />,
+        <GuideStory title={both('Бросок')} steps={steps} args={args} />,
       )
       try {
         await expect
@@ -1428,13 +1437,15 @@ describe('ввод человека посреди гайда (ADR 0117)', () =>
       { dataCount: 30, height: 400, enableRowDragging: true },
       { colorMode: 'light', locale: 'en' },
     )
-    const steps: readonly GuideStoryStep[] = [{ title: 'Строки', hint: '' }]
+    const steps: readonly GuideStoryStep[] = [
+      { title: both('Строки'), hint: both('') },
+    ]
     const rowAt = (index: number) =>
       document.querySelector<HTMLElement>(`${ROW}[data-index="${index}"]`)!
     /** Строку 0 держат у нижнего края строки 3, `during` — пока держат; порядок после броска. */
     const drop = async (during: () => Promise<void>) => {
       const screen = await render(
-        <GuideStory title="Бросок" steps={steps} args={args} />,
+        <GuideStory title={both('Бросок')} steps={steps} args={args} />,
       )
       try {
         await expect
@@ -1492,9 +1503,11 @@ describe('ввод человека посреди гайда (ADR 0117)', () =>
       { dataCount: 30, columnCount: 20, height: 300 },
       { colorMode: 'light', locale: 'en' },
     )
-    const steps: readonly GuideStoryStep[] = [{ title: 'Таблица', hint: '' }]
+    const steps: readonly GuideStoryStep[] = [
+      { title: both('Таблица'), hint: both('') },
+    ]
     const screen = await render(
-      <GuideStory title="Цель вне вида" steps={steps} args={args} />,
+      <GuideStory title={both('Цель вне вида')} steps={steps} args={args} />,
     )
     const cells = () => [
       ...document.querySelectorAll<HTMLElement>(
@@ -1588,11 +1601,11 @@ describe('остановка шага вводом человека (ADR 0117)',
     loop.acts = 0
     const looping = await render(
       <GuideStory
-        title="Цикл шага"
+        title={both('Цикл шага')}
         steps={[
           {
-            title: 'Цикл',
-            hint: '',
+            title: both('Цикл'),
+            hint: both(''),
             enter: untilDone(
               () => false,
               () => {
@@ -1618,11 +1631,11 @@ describe('остановка шага вводом человека (ADR 0117)',
     const clicks: Event[] = []
     const showing = await render(
       <GuideStory
-        title="Показ шага"
+        title={both('Показ шага')}
         steps={[
           {
-            title: 'Нажатие',
-            hint: '',
+            title: both('Нажатие'),
+            hint: both(''),
             enter: afterRows(root => {
               const cell = root.querySelector<HTMLElement>(
                 `${ROW}[data-index="3"] [data-column-id="country"]`,
@@ -1675,7 +1688,7 @@ describe('остановка шага вводом человека (ADR 0117)',
       await userEvent.hover(byId('guide-restore'))
       await expect
         .poll(() => document.body.textContent)
-        .toContain('Таблица изменена: открыть шаг заново')
+        .toContain('The table was changed: open the step again')
     } finally {
       await screen.unmount()
     }
@@ -1703,10 +1716,10 @@ describe('остановка шага вводом человека (ADR 0117)',
     }
     const screen = await render(
       <GuideStory
-        title="Шаг без отмены"
+        title={both('Шаг без отмены')}
         steps={[
-          { title: 'Утечка', hint: '', enter: leak },
-          { title: 'Дальше', hint: '' },
+          { title: both('Утечка'), hint: both(''), enter: leak },
+          { title: both('Дальше'), hint: both('') },
         ]}
         args={STOP_ARGS}
       />,
@@ -1720,7 +1733,7 @@ describe('остановка шага вводом человека (ADR 0117)',
       await sleep(500)
       expect(loop.clicks).toBe(clicks)
       expect(errors).toHaveBeenCalledWith(
-        'Гайд: действие остановленного шага шлёт «click» (ADR 0117, SN68)',
+        'Guide: the action of a stopped step sends "click" (ADR 0117, SN68)',
       )
       // Переход открывает таблицу заново и снимает остановку: щелчки снова доходят.
       await expandGuide()
@@ -1741,11 +1754,13 @@ describe('показ действий шага (ADR 0117)', () => {
     { dataCount: 10, columnCount: 6, enableCellEditing: true },
     { colorMode: 'light', locale: 'en' },
   )
-  const steps: readonly GuideStoryStep[] = [{ title: 'Таблица', hint: '' }]
+  const steps: readonly GuideStoryStep[] = [
+    { title: both('Таблица'), hint: both('') },
+  ]
   const mount = (showActions?: boolean) =>
     render(
       <GuideStory
-        title="Показ действий"
+        title={both('Показ действий')}
         steps={steps}
         args={args}
         showActions={showActions}
@@ -2099,7 +2114,7 @@ describe('показ действий шага (ADR 0117)', () => {
     await page.viewport(1000, height)
     const screen = await render(
       <GuideStory
-        title="Показ действий"
+        title={both('Показ действий')}
         steps={steps}
         args={guideArgs(
           { dataCount: 10, columnCount: 6, enableRowSelection: true },
@@ -2240,10 +2255,10 @@ describe('показ действий шага (ADR 0117)', () => {
     )
     const screen = await render(
       <GuideStory
-        title="Меню и панель"
+        title={both('Меню и панель')}
         steps={[
-          { title: 'Таблица', hint: '' },
-          { title: 'Дальше', hint: '' },
+          { title: both('Таблица'), hint: both('') },
+          { title: both('Дальше'), hint: both('') },
         ]}
         args={menuArgs}
       />,
@@ -2285,10 +2300,10 @@ describe('показ действий шага (ADR 0117)', () => {
         '.data-grid__body-row[data-index="2"] [data-column-id="country"]',
       )
     const steps: readonly GuideStoryStep[] = [
-      { title: 'Таблица', hint: '' },
+      { title: both('Таблица'), hint: both('') },
       {
-        title: 'Нажатие',
-        hint: '',
+        title: both('Нажатие'),
+        hint: both(''),
         enter: untilDone(
           () => clicks.length > 0,
           root => {
@@ -2305,7 +2320,7 @@ describe('показ действий шага (ADR 0117)', () => {
     ]
     const screen = await render(
       <GuideStory
-        title="Одно нажатие"
+        title={both('Одно нажатие')}
         steps={steps}
         args={guideArgs(
           { dataCount: 10, columnCount: 6 },
@@ -2373,10 +2388,10 @@ const tableReleased = () => {
   )
 }
 const FOCUS_STEPS: readonly GuideStoryStep[] = [
-  { title: 'Таблица', hint: '' },
+  { title: both('Таблица'), hint: both('') },
   {
-    title: 'Нажатие ячейки',
-    hint: '',
+    title: both('Нажатие ячейки'),
+    hint: both(''),
     // Нажатие сделало ячейку активной; фокус с неё гайд снимает.
     enter: untilDone(
       () => focusCell()?.dataset.knActive === 'true',
@@ -2387,8 +2402,8 @@ const FOCUS_STEPS: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Меню закрыто',
-    hint: '',
+    title: both('Меню закрыто'),
+    hint: both(''),
     enter: stepAction(async (_root, { signal }) => {
       await pollUntil(() => {
         if (!visibilityMenu()) openViewSettingsSection(document, 'columns')
@@ -2402,13 +2417,13 @@ const FOCUS_STEPS: readonly GuideStoryStep[] = [
       )
     }),
   },
-  { title: 'Поле', hint: '', enter: () => field().focus() },
+  { title: both('Поле'), hint: both(''), enter: () => field().focus() },
 ]
 const KEY_STEPS: readonly GuideStoryStep[] = [
-  { title: 'Таблица', hint: '' },
+  { title: both('Таблица'), hint: both('') },
   {
-    title: 'Стрелка вниз',
-    hint: '',
+    title: both('Стрелка вниз'),
+    hint: both(''),
     keyboard: true,
     enter: untilDone(
       () => !!document.activeElement?.closest(`${ROW}[data-index="2"]`),
@@ -2437,7 +2452,7 @@ const mountFocusGuide = async (steps: readonly GuideStoryStep[]) => {
   input.id = 'guide-field'
   document.body.append(input)
   const screen = await render(
-    <GuideStory title="Фокус" steps={steps} args={focusArgs} />,
+    <GuideStory title={both('Фокус')} steps={steps} args={focusArgs} />,
   )
   await expect.poll(() => !!focusCell()).toBe(true)
   await humanClick(byId('guide-toggle'))
@@ -2459,8 +2474,8 @@ const quiet = () => sleep(500)
 describe('фокус после шага (ADR 0117)', () => {
   test('SN55: нажатие по панели вне поля и поповера — как нажатие мимо таблицы: фокус на кнопке панели без кольца, признак ввода — указатель', async () => {
     const guide = await mountFocusGuide([
-      { title: 'Таблица', hint: '' },
-      { title: 'Дальше', hint: '' },
+      { title: both('Таблица'), hint: both('') },
+      { title: both('Дальше'), hint: both('') },
     ])
     try {
       focusCell().focus()
@@ -2594,8 +2609,8 @@ describe('фокус после шага (ADR 0117)', () => {
 
   test('SN58: фокус, поставленный нажатием человека в таблице, гайд не снимает', async () => {
     const guide = await mountFocusGuide([
-      { title: 'Таблица', hint: '' },
-      { title: 'Дальше', hint: '' },
+      { title: both('Таблица'), hint: both('') },
+      { title: both('Дальше'), hint: both('') },
     ])
     try {
       await humanClick(button('guide-next'))
@@ -2635,10 +2650,10 @@ describe('фокус после шага (ADR 0117)', () => {
       )
     }
     const guide = await mountFocusGuide([
-      { title: 'Таблица', hint: '' },
+      { title: both('Таблица'), hint: both('') },
       {
-        title: 'Щелчки',
-        hint: '',
+        title: both('Щелчки'),
+        hint: both(''),
         enter: () => {
           if (clicked) return
           clicked = true

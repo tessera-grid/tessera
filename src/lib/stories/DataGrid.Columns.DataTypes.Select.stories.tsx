@@ -81,12 +81,18 @@ const STATUS_QUERY = 'arch'
 
 const EDIT_SELECT: readonly GuideStoryStep[] = [
   {
-    title: 'Статусы товаров',
-    hint: 'Статус — один вариант из списка. Его можно править: при наведении на ячейку появляется кнопка правки.',
+    title: { ru: 'Статусы товаров', en: 'Product statuses' },
+    hint: {
+      ru: 'Статус — один вариант из списка. Его можно править: при наведении на ячейку появляется кнопка правки.',
+      en: 'A status is one option from a list. It can be edited: hovering over a cell shows an edit button.',
+    },
   },
   {
-    title: 'Поле с поиском',
-    hint: 'Пользователь нажал кнопку правки статуса. Под ячейкой открылся список: сверху поле поиска, ниже все варианты, текущий отмечен, внизу — очистка значения.',
+    title: { ru: 'Поле с поиском', en: 'A field with search' },
+    hint: {
+      ru: 'Пользователь нажал кнопку правки статуса. Под ячейкой открылся список: сверху поле поиска, ниже все варианты, текущий отмечен, внизу — очистка значения.',
+      en: 'The user clicked the status edit button. A list opened below the cell: a search field on top, all options below it with the current one checked, and a way to clear the value at the bottom.',
+    },
     states: ['body.editing', 'overlay.optionEditor'],
     enter: untilDone(
       root => !!optionItem('active'),
@@ -96,8 +102,11 @@ const EDIT_SELECT: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Поиск сужает список',
-    hint: 'Пользователь набрал начало подписи. В списке остались только подходящие варианты.',
+    title: { ru: 'Поиск сужает список', en: 'Search narrows the list' },
+    hint: {
+      ru: 'Пользователь набрал начало подписи. В списке остались только подходящие варианты.',
+      en: 'The user typed the start of a label. Only matching options remain in the list.',
+    },
     states: ['body.editing', 'overlay.optionEditor'],
     enter: untilDone(
       root => !optionItem('active') && !!optionItem('archived'),
@@ -109,8 +118,11 @@ const EDIT_SELECT: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Вариант сохранён',
-    hint: 'Пользователь нажал Enter. Список закрылся, в ячейке новый статус.',
+    title: { ru: 'Вариант сохранён', en: 'The option is saved' },
+    hint: {
+      ru: 'Пользователь нажал Enter. Список закрылся, в ячейке новый статус.',
+      en: 'The user pressed Enter. The list closed, and the cell shows the new status.',
+    },
     enter: untilDone(
       root => !selectField() && optionCellText(root, 'status') === 'Archived',
       root => {
@@ -131,30 +143,30 @@ export const EditingSelect: StoryObj<StoryProps> = {
   parameters: { scenario: '0175/S4', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Выбор варианта"
+      title={{ ru: 'Выбор варианта', en: 'Choosing an option' }}
       steps={EDIT_SELECT}
       args={guideArgs(optionArgs, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(EDIT_SELECT[0]!.title, async () => {
+    await step(EDIT_SELECT[0]!.title.ru, async () => {
       await waitForRows(canvas)
       expect(optionCellText(canvas, 'status')).toBe('Draft')
     })
-    await step(EDIT_SELECT[1]!.title, async () => {
+    await step(EDIT_SELECT[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(optionItem('active')).not.toBeNull())
       expect(optionItem('draft')).toHaveAttribute('data-selected')
     })
-    await step(EDIT_SELECT[2]!.title, async () => {
+    await step(EDIT_SELECT[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => {
         expect(optionItem('archived')).not.toBeNull()
         expect(optionItem('active')).toBeNull()
       })
     })
-    await step(EDIT_SELECT[3]!.title, async () => {
+    await step(EDIT_SELECT[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(optionCellText(canvas, 'status')).toBe('Archived'),
@@ -183,8 +195,14 @@ const filterArchived = async (root: HTMLElement, signal: AbortSignal) => {
 
 const SELECT_FILTER: readonly GuideStoryStep[] = [
   {
-    title: 'Статусы без настройки фильтра',
-    hint: 'Статус — один вариант из списка, у колонки заданы тип и варианты. Фильтры в таблице подключены, но сама колонка фильтр не настраивала.',
+    title: {
+      ru: 'Статусы без настройки фильтра',
+      en: 'Statuses without filter setup',
+    },
+    hint: {
+      ru: 'Статус — один вариант из списка, у колонки заданы тип и варианты. Фильтры в таблице подключены, но сама колонка фильтр не настраивала.',
+      en: "A status is one option from a list; the column has a type and options set. Filtering is enabled in the table, but the column itself doesn't configure a filter.",
+    },
     props: () => ({
       columnsOverride: columnsOf('number', ['name', 'status']),
       dataOverride: FILTER_ROWS,
@@ -193,8 +211,14 @@ const SELECT_FILTER: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Пользователь открыл фильтр статуса',
-    hint: 'Тип колонки — вариант, поэтому панель предлагает список вариантов с флажками и поиском.',
+    title: {
+      ru: 'Пользователь открыл фильтр статуса',
+      en: 'The user opened the status filter',
+    },
+    hint: {
+      ru: 'Тип колонки — вариант, поэтому панель предлагает список вариантов с флажками и поиском.',
+      en: 'The column has the option type, so the panel offers a list of options with checkboxes and search.',
+    },
     states: ['overlay.filterOptions'],
     enter: stepAction(async (root, { signal }) => {
       await openPanel(root, 'status', signal)
@@ -202,8 +226,14 @@ const SELECT_FILTER: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Пользователь отметил вариант',
-    hint: 'Остались товары с отмеченным статусом. Нижняя панель называет число оставшихся строк.',
+    title: {
+      ru: 'Пользователь отметил вариант',
+      en: 'The user checked an option',
+    },
+    hint: {
+      ru: 'Остались товары с отмеченным статусом. Нижняя панель называет число оставшихся строк.',
+      en: 'Only products with the checked status remain. The status bar shows how many rows are left.',
+    },
     enter: stepAction((root, { signal }) => filterArchived(root, signal)),
   },
 ]
@@ -214,24 +244,24 @@ export const DataTypesSelectFilter: StoryObj<StoryProps> = {
   parameters: { scenario: '0172/S16', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Фильтр варианта"
+      title={{ ru: 'Фильтр варианта', en: 'Option filter' }}
       steps={SELECT_FILTER}
       args={guideArgs({ height: '460' }, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(SELECT_FILTER[0]!.title, async () => {
+    await step(SELECT_FILTER[0]!.title.ru, async () => {
       await waitForRows(canvas)
     })
-    await step(SELECT_FILTER[1]!.title, async () => {
+    await step(SELECT_FILTER[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       expect(optionOf('draft')).not.toBeNull()
       expect(optionOf('active')).not.toBeNull()
       await settle()
     })
-    await step(SELECT_FILTER[2]!.title, async () => {
+    await step(SELECT_FILTER[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       expect(shownCount()).toBe(ARCHIVED)

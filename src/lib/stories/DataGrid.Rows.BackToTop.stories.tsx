@@ -109,19 +109,31 @@ const TOP = 'back-to-top'
 
 const RETURN: readonly GuideStoryStep[] = [
   {
-    title: 'Начало таблицы',
-    hint: 'Таблица открыта в начале. Кнопки возврата нет: возвращаться некуда.',
+    title: { ru: 'Начало таблицы', en: 'Top of the table' },
+    hint: {
+      ru: 'Таблица открыта в начале. Кнопки возврата нет: возвращаться некуда.',
+      en: 'The table is open at the top. There is no back button: there is nowhere to return to.',
+    },
   },
   {
-    title: 'Пользователь пролистал вниз',
-    hint: 'Пользователь прокрутил таблицу больше чем на два экрана. В нижней панели появилась кнопка возврата в начало.',
+    title: { ru: 'Пользователь пролистал вниз', en: 'The user scrolled down' },
+    hint: {
+      ru: 'Пользователь прокрутил таблицу больше чем на два экрана. В нижней панели появилась кнопка возврата в начало.',
+      en: 'The user scrolled the table down by more than two screens. A back-to-top button appeared in the status bar.',
+    },
     enter: stepAction((root, { signal }) =>
       scrollAway(root, 'top', TOP, signal),
     ),
   },
   {
-    title: 'Пользователь вернулся в начало',
-    hint: 'Пользователь нажал кнопку возврата. Таблица прокрутилась к первой строке, кнопка возврата больше не активна.',
+    title: {
+      ru: 'Пользователь вернулся в начало',
+      en: 'The user returned to the top',
+    },
+    hint: {
+      ru: 'Пользователь нажал кнопку возврата. Таблица прокрутилась к первой строке, кнопка возврата больше не активна.',
+      en: 'The user clicked the back button. The table scrolled to the first row, and the back button is no longer active.',
+    },
     enter: stepAction((root, { signal }) => returnBy(root, 'top', TOP, signal)),
   },
 ]
@@ -136,19 +148,19 @@ export const BackToTopReturn: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Возврат в начало"
+      title={{ ru: 'Возврат в начало', en: 'Back to the top' }}
       steps={RETURN}
       args={guideArgs({ ...GRID, columnCount: 8 }, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(RETURN[0]!.title, async () => {
+    await step(RETURN[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await expect(scrollerOf(canvas).scrollTop).toBe(0)
       await until(() => expect(shown(TOP)).toBe(false))
     })
-    await step(RETURN[1]!.title, async () => {
+    await step(RETURN[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(scrollerOf(canvas).scrollTop).toBeGreaterThan(
@@ -157,7 +169,7 @@ export const BackToTopReturn: StoryObj<StoryProps> = {
       await expect(shown(TOP)).toBe(true)
       await expect(inStatusBar(TOP)).toBe(true)
     })
-    await step(RETURN[2]!.title, async () => {
+    await step(RETURN[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(scrollerOf(canvas).scrollTop).toBe(0)
@@ -173,19 +185,34 @@ const START = 'back-to-start'
 
 const WIDE: readonly GuideStoryStep[] = [
   {
-    title: 'Широкая таблица',
-    hint: 'Колонок больше, чем помещается на экране. Кнопок возврата нет.',
+    title: { ru: 'Широкая таблица', en: 'A wide table' },
+    hint: {
+      ru: 'Колонок больше, чем помещается на экране. Кнопок возврата нет.',
+      en: 'There are more columns than fit on the screen. There are no back buttons.',
+    },
   },
   {
-    title: 'Пользователь пролистал вправо',
-    hint: 'Пользователь прокрутил таблицу вправо больше чем на два экрана. В нижней панели появилась кнопка возврата к первой колонке.',
+    title: {
+      ru: 'Пользователь пролистал вправо',
+      en: 'The user scrolled right',
+    },
+    hint: {
+      ru: 'Пользователь прокрутил таблицу вправо больше чем на два экрана. В нижней панели появилась кнопка возврата к первой колонке.',
+      en: 'The user scrolled the table to the right by more than two screens. A back-to-first-column button appeared in the status bar.',
+    },
     enter: stepAction((root, { signal }) =>
       scrollAway(root, 'left', START, signal),
     ),
   },
   {
-    title: 'Пользователь вернулся к первой колонке',
-    hint: 'Пользователь нажал кнопку. Таблица прокрутилась к первой колонке, вертикальная прокрутка не изменилась, кнопка возврата больше не активна.',
+    title: {
+      ru: 'Пользователь вернулся к первой колонке',
+      en: 'The user returned to the first column',
+    },
+    hint: {
+      ru: 'Пользователь нажал кнопку. Таблица прокрутилась к первой колонке, вертикальная прокрутка не изменилась, кнопка возврата больше не активна.',
+      en: 'The user clicked the button. The table scrolled to the first column, the vertical scroll position did not change, and the back button is no longer active.',
+    },
     enter: stepAction((root, { signal }) =>
       returnBy(root, 'left', START, signal),
     ),
@@ -202,14 +229,14 @@ export const BackToTopWide: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Возврат к первой колонке"
+      title={{ ru: 'Возврат к первой колонке', en: 'Back to the first column' }}
       steps={WIDE}
       args={guideArgs({ ...GRID, columnCount: 40 }, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(WIDE[0]!.title, async () => {
+    await step(WIDE[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() =>
         expect(scrollerOf(canvas).scrollWidth).toBeGreaterThan(
@@ -219,13 +246,13 @@ export const BackToTopWide: StoryObj<StoryProps> = {
       await until(() => expect(shown(START)).toBe(false))
       await until(() => expect(shown(TOP)).toBe(false))
     })
-    await step(WIDE[1]!.title, async () => {
+    await step(WIDE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(shown(START)).toBe(true))
       await until(() => expect(inStatusBar(START)).toBe(true))
     })
-    await step(WIDE[2]!.title, async () => {
+    await step(WIDE[2]!.title.ru, async () => {
       const top = scrollerOf(canvas).scrollTop
       await guideNext(canvas)
       await stepDone(canvas)

@@ -18,6 +18,12 @@ import {
 } from './__mocks__/catalogPlay'
 import { untilDone } from './__mocks__/cellGestures'
 import { storyLabels } from './__mocks__/storyLabels'
+import {
+  type StoryLocale,
+  type StoryText,
+  storyLocaleOf,
+  textOf,
+} from './__mocks__/storyText'
 import { getData } from './__mocks__/data'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
@@ -123,12 +129,21 @@ const openViewSettings = (root: HTMLElement) => {
 
 const SUMMARY: readonly GuideStoryStep[] = [
   {
-    title: 'Таблица настроена',
-    hint: 'Строки отфильтрованы по фамилии и отсортированы по ней в обратном порядке, а колонка фамилии скрыта. Число на кнопке настроек вида — сколько настроек сейчас меняет таблицу.',
+    title: { ru: 'Таблица настроена', en: 'The table is set up' },
+    hint: {
+      ru: 'Строки отфильтрованы по фамилии и отсортированы по ней в обратном порядке, а колонка фамилии скрыта. Число на кнопке настроек вида — сколько настроек сейчас меняет таблицу.',
+      en: 'Rows are filtered by last name and sorted by it in reverse order, and the last name column is hidden. The number on the view settings button shows how many settings are currently changing the table.',
+    },
   },
   {
-    title: 'Пользователь открыл настройки вида',
-    hint: 'Каждая строка говорит, сколько в разделе включено: одно условие фильтра, один уровень сортировки, одна скрытая колонка. Группировки нет — её строка погашена.',
+    title: {
+      ru: 'Пользователь открыл настройки вида',
+      en: 'The user opened the view settings',
+    },
+    hint: {
+      ru: 'Каждая строка говорит, сколько в разделе включено: одно условие фильтра, один уровень сортировки, одна скрытая колонка. Группировки нет — её строка погашена.',
+      en: 'Each row shows how much is turned on in its section: one filter condition, one sorting level, one hidden column. There is no grouping, so its row is dimmed.',
+    },
     states: ['overlay.viewSettings'],
     enter: untilDone(
       () =>
@@ -137,8 +152,14 @@ const SUMMARY: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Пользователь открыл сортировку',
-    hint: 'Раздел перечисляет уровни сортировки: фамилия по убыванию, с отметкой, что колонка скрыта.',
+    title: {
+      ru: 'Пользователь открыл сортировку',
+      en: 'The user opened sorting',
+    },
+    hint: {
+      ru: 'Раздел перечисляет уровни сортировки: фамилия по убыванию, с отметкой, что колонка скрыта.',
+      en: 'The section lists the sorting levels: last name, descending, with a mark that the column is hidden.',
+    },
     states: ['overlay.viewSettings'],
     enter: untilDone(
       () => !!viewSettingsSectionOpen('sorting'),
@@ -146,8 +167,14 @@ const SUMMARY: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Пользователь снял сортировку',
-    hint: 'Последний уровень снят — раздел закрылся, строка сортировки погасла, число на кнопке уменьшилось.',
+    title: {
+      ru: 'Пользователь снял сортировку',
+      en: 'The user removed sorting',
+    },
+    hint: {
+      ru: 'Последний уровень снят — раздел закрылся, строка сортировки погасла, число на кнопке уменьшилось.',
+      en: 'The last level is removed: the section closed, the sorting row dimmed, and the number on the button went down.',
+    },
     states: ['overlay.viewSettings'],
     enter: untilDone(
       () =>
@@ -167,19 +194,19 @@ export const ViewSettingsSummary: StoryObj<StoryProps> = {
   parameters: { scenario: '0215/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Настройки вида"
+      title={{ ru: 'Настройки вида', en: 'View settings' }}
       steps={SUMMARY}
       args={guideArgs(VIEW_ARGS, args)}
     />
   ),
   play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(SUMMARY[0]!.title, async () => {
+    await step(SUMMARY[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(headCell(canvas, HIDDEN)).toBeNull())
       await until(() => expect(viewSettingsCount(canvas)).toBe('3'))
     })
-    await step(SUMMARY[1]!.title, async () => {
+    await step(SUMMARY[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(viewSettingsRow('sorting')).not.toBeNull())
       await expect(
@@ -188,13 +215,13 @@ export const ViewSettingsSummary: StoryObj<StoryProps> = {
       await expect(viewSettingsRow('grouping')!.dataset.active).toBeUndefined()
       await settle()
     })
-    await step(SUMMARY[2]!.title, async () => {
+    await step(SUMMARY[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(levelsOf()).toHaveLength(1))
       await expect(levelsOf()[0]!.dataset.hiddenColumn).toBe('true')
       await settle()
     })
-    await step(SUMMARY[3]!.title, async () => {
+    await step(SUMMARY[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() =>
         expect(viewSettingsRow('sorting')?.dataset.active).toBeUndefined(),
@@ -225,12 +252,21 @@ const columnBox = (id: string) =>
 
 const COLUMNS: readonly GuideStoryStep[] = [
   {
-    title: 'Все колонки видны',
-    hint: 'Таблица показывает все колонки. Настройки вида ничего не меняют — числа на их кнопке нет.',
+    title: { ru: 'Все колонки видны', en: 'All columns are visible' },
+    hint: {
+      ru: 'Таблица показывает все колонки. Настройки вида ничего не меняют — числа на их кнопке нет.',
+      en: 'The table shows all columns. The view settings change nothing, so their button has no number.',
+    },
   },
   {
-    title: 'Пользователь открыл раздел колонок',
-    hint: 'Раздел колонок открывается и тогда, когда ничего не скрыто: в нём колонки скрывают. Поле поиска уже в фокусе.',
+    title: {
+      ru: 'Пользователь открыл раздел колонок',
+      en: 'The user opened the columns section',
+    },
+    hint: {
+      ru: 'Раздел колонок открывается и тогда, когда ничего не скрыто: в нём колонки скрывают. Поле поиска уже в фокусе.',
+      en: 'The columns section opens even when nothing is hidden: this is where columns get hidden. The search field already has focus.',
+    },
     states: ['overlay.viewSettings'],
     enter: untilDone(
       root => !!columnBox(HIDDEN) && !!headCell(root, HIDDEN),
@@ -243,8 +279,11 @@ const COLUMNS: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Пользователь скрыл колонку',
-    hint: 'Колонки фамилии больше нет в таблице, на кнопке настроек вида появилось число.',
+    title: { ru: 'Пользователь скрыл колонку', en: 'The user hid a column' },
+    hint: {
+      ru: 'Колонки фамилии больше нет в таблице, на кнопке настроек вида появилось число.',
+      en: 'The last name column is gone from the table, and a number appeared on the view settings button.',
+    },
     states: ['overlay.viewSettings'],
     enter: untilDone(
       root => !headCell(root, HIDDEN),
@@ -263,24 +302,27 @@ export const ViewSettingsColumns: StoryObj<StoryProps> = {
   parameters: { scenario: '0215/S2', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Колонки в настройках вида"
+      title={{
+        ru: 'Колонки в настройках вида',
+        en: 'Columns in the view settings',
+      }}
       steps={COLUMNS}
       args={guideArgs(COLUMNS_ARGS, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(COLUMNS[0]!.title, async () => {
+    await step(COLUMNS[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(viewSettingsButton(canvas)).not.toBeNull())
       await until(() => expect(viewSettingsCount(canvas)).toBeNull())
     })
-    await step(COLUMNS[1]!.title, async () => {
+    await step(COLUMNS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(columnBox(HIDDEN)).not.toBeNull())
       await settle()
     })
-    await step(COLUMNS[2]!.title, async () => {
+    await step(COLUMNS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(headCell(canvas, HIDDEN)).toBeNull())
       await until(() => expect(viewSettingsCount(canvas)).toBe('1'))
@@ -297,39 +339,50 @@ interface OnlyMineHooks {
   onTurnOff?: () => void
 }
 
-/** Раздел автора: состояние держит приложение, плагин читает его живо и снимает колбэком. */
-const onlyMineSection: ViewSettingsSection = {
-  id: 'onlyMine',
-  plugin: 'onlyMine',
-  icon: 'filterActive',
-  slices: [],
-  label: () => 'Только мои строки',
-  active: table =>
-    !!readPluginHooks<OnlyMineHooks>(table as never, 'onlyMine').on,
-  value: table =>
-    readPluginHooks<OnlyMineHooks>(table as never, 'onlyMine').on
-      ? 'вкл.'
-      : 'выкл.',
-  levels: table => [
-    {
-      id: 'mine',
-      label: 'Ответственный — я',
-      removeLabel: 'Показать все строки',
-      remove: () =>
-        readPluginHooks<OnlyMineHooks>(
-          table as never,
-          'onlyMine',
-        ).onTurnOff?.(),
-    },
-  ],
+const ON: StoryText = { ru: 'вкл.', en: 'on' }
+const OFF: StoryText = { ru: 'выкл.', en: 'off' }
+/** Значение раздела «выключено» на любом языке: действие шага языка не знает. */
+const isOff = (value: string | null) => value === OFF.ru || value === OFF.en
+
+/**
+ * Раздел автора на языке истории: состояние держит приложение, плагин читает его живо и
+ * снимает колбэком. Подписи таблицы языка не несут, поэтому раздел собран под язык.
+ */
+const onlyMineSection = (locale: StoryLocale): ViewSettingsSection => {
+  const t = (text: StoryText) => textOf(text, locale)
+  const hooks = (table: unknown) =>
+    readPluginHooks<OnlyMineHooks>(table as never, 'onlyMine')
+  return {
+    id: 'onlyMine',
+    plugin: 'onlyMine',
+    icon: 'filterActive',
+    slices: [],
+    label: () => t({ ru: 'Только мои строки', en: 'Only my rows' }),
+    active: table => !!hooks(table).on,
+    value: table => t(hooks(table).on ? ON : OFF),
+    levels: table => [
+      {
+        id: 'mine',
+        label: t({ ru: 'Ответственный — я', en: 'Assignee: me' }),
+        removeLabel: t({ ru: 'Показать все строки', en: 'Show all rows' }),
+        remove: () => hooks(table).onTurnOff?.(),
+      },
+    ],
+  }
 }
 
-const onlyMine = definePlugin<OnlyMineHooks>()({
-  id: 'onlyMine',
-  diagnose: () => undefined,
-  hooks: o => ({ on: o.on, onTurnOff: o.onTurnOff }),
-  viewSettingsSections: [onlyMineSection],
-})
+const onlyMineFor = (locale: StoryLocale) =>
+  definePlugin<OnlyMineHooks>()({
+    id: 'onlyMine',
+    diagnose: () => undefined,
+    hooks: o => ({ on: o.on, onTurnOff: o.onTurnOff }),
+    viewSettingsSections: [onlyMineSection(locale)],
+  })
+
+/** Плагин раздела на каждый язык — один раз на модуль. */
+const ONLY_MINE = { en: onlyMineFor('en'), ru: onlyMineFor('ru') }
+const onlyMine = (locale: string | undefined) =>
+  ONLY_MINE[storyLocaleOf(locale)]
 
 const ALL_ROWS = getData(40)
 /** Строки текущего пользователя — каждая третья. */
@@ -346,35 +399,52 @@ const OWN_ARGS: Partial<StoryProps> = {
 
 const OWN: readonly GuideStoryStep[] = [
   {
-    title: 'Только мои строки',
-    hint: 'Приложение показывает только строки текущего пользователя. Его плагин добавил в настройки вида свой раздел.',
-    props: ({ app }) => ({
+    title: { ru: 'Только мои строки', en: 'Only my rows' },
+    hint: {
+      ru: 'Приложение показывает только строки текущего пользователя. Его плагин добавил в настройки вида свой раздел.',
+      en: "The app shows only the current user's rows. Its plugin added its own section to the view settings.",
+    },
+    props: ({ app, args }) => ({
       dataOverride: MY_ROWS,
       extraPlugins: [
-        onlyMine({
+        onlyMine(args.locale)({
           on: true,
           onTurnOff: () =>
             app.update(props => ({
               ...props,
               dataOverride: ALL_ROWS,
-              extraPlugins: [onlyMine({ on: false }) as TesseraFeatureEntry],
+              extraPlugins: [
+                onlyMine(args.locale)({ on: false }) as TesseraFeatureEntry,
+              ],
             })),
         }) as TesseraFeatureEntry,
       ],
     }),
   },
   {
-    title: 'Раздел приложения в настройках вида',
-    hint: 'Строка раздела стоит после встроенных — с именем, значком и значением, которые задал плагин.',
+    title: {
+      ru: 'Раздел приложения в настройках вида',
+      en: "The app's section in the view settings",
+    },
+    hint: {
+      ru: 'Строка раздела стоит после встроенных — с именем, значком и значением, которые задал плагин.',
+      en: 'The section row comes after the built-in ones, with the name, icon, and value that the plugin set.',
+    },
     states: ['overlay.viewSettings'],
     enter: untilDone(() => !!viewSettingsRow('onlyMine'), openViewSettings),
   },
   {
-    title: 'Пользователь показал все строки',
-    hint: 'Кнопкой в разделе пользователь снял ограничение: приложение вернуло все строки, строка раздела погасла.',
+    title: {
+      ru: 'Пользователь показал все строки',
+      en: 'The user showed all rows',
+    },
+    hint: {
+      ru: 'Кнопкой в разделе пользователь снял ограничение: приложение вернуло все строки, строка раздела погасла.',
+      en: 'With the button in the section, the user removed the restriction: the app brought back all rows, and the section row dimmed.',
+    },
     states: ['overlay.viewSettings'],
     enter: untilDone(
-      () => valueOf('onlyMine') === 'выкл.',
+      () => isOff(valueOf('onlyMine')),
       root => {
         if (removeOf('mine')) removeOf('mine')!.click()
         else openViewSettingsSection(root, 'onlyMine')
@@ -389,25 +459,29 @@ export const ViewSettingsOwnSection: StoryObj<StoryProps> = {
   parameters: { scenario: '0215/S3', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Свой раздел"
+      title={{ ru: 'Свой раздел', en: 'A custom section' }}
       steps={OWN}
       args={guideArgs(OWN_ARGS, args)}
     />
   ),
-  play: async ({ canvasElement: canvas, globals, step }) => {
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(OWN[0]!.title, async () => {
+    await step(OWN[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(viewSettingsCount(canvas)).toBe('1'))
     })
-    await step(OWN[1]!.title, async () => {
+    await step(OWN[1]!.title.ru, async () => {
       await guideNext(canvas)
-      await until(() => expect(valueOf('onlyMine')).toBe('вкл.'))
+      await until(() =>
+        expect(valueOf('onlyMine')).toBe(textOf(ON, args.locale)),
+      )
       await settle()
     })
-    await step(OWN[2]!.title, async () => {
+    await step(OWN[2]!.title.ru, async () => {
       await guideNext(canvas)
-      await until(() => expect(valueOf('onlyMine')).toBe('выкл.'))
+      await until(() =>
+        expect(valueOf('onlyMine')).toBe(textOf(OFF, args.locale)),
+      )
       await expect(viewSettingsCount(canvas)).toBeNull()
       await settle()
     })
@@ -447,12 +521,24 @@ const banner = (root: HTMLElement) =>
 
 const REFUSED: readonly GuideStoryStep[] = [
   {
-    title: 'Сортировка на сервере по скрытой колонке',
-    hint: 'Строки сортирует сервер — по фамилии в обратном порядке. Колонка фамилии скрыта.',
+    title: {
+      ru: 'Сортировка на сервере по скрытой колонке',
+      en: 'Server sorting by a hidden column',
+    },
+    hint: {
+      ru: 'Строки сортирует сервер — по фамилии в обратном порядке. Колонка фамилии скрыта.',
+      en: 'The server sorts the rows by last name in reverse order. The last name column is hidden.',
+    },
   },
   {
-    title: 'Пользователь открыл сортировку',
-    hint: 'Раздел сортировки в настройках вида: фамилия с отметкой, что колонка скрыта.',
+    title: {
+      ru: 'Пользователь открыл сортировку',
+      en: 'The user opened sorting',
+    },
+    hint: {
+      ru: 'Раздел сортировки в настройках вида: фамилия с отметкой, что колонка скрыта.',
+      en: 'The sorting section in the view settings: last name, with a mark that the column is hidden.',
+    },
     states: ['overlay.viewSettings'],
     enter: untilDone(
       () => !!viewSettingsSectionOpen('sorting'),
@@ -460,8 +546,11 @@ const REFUSED: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: 'Сервер отказал',
-    hint: 'Пользователь снял сортировку, таблица отправила запрос серверу, сервер отказал. Сортировка вернулась, под шапкой — сообщение с причиной и повтором.',
+    title: { ru: 'Сервер отказал', en: 'The server refused' },
+    hint: {
+      ru: 'Пользователь снял сортировку, таблица отправила запрос серверу, сервер отказал. Сортировка вернулась, под шапкой — сообщение с причиной и повтором.',
+      en: 'The user removed sorting, the table sent a request to the server, and the server refused. The sorting came back, and below the header there is a message with the reason and a retry button.',
+    },
     states: ['body.loadError'],
     enter: stepAction(async (root, { signal }) => {
       await pollUntil(() => {
@@ -484,23 +573,23 @@ export const ViewSettingsServerRefused: StoryObj<StoryProps> = {
   parameters: { scenario: '0215/S4', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Отказ сервера"
+      title={{ ru: 'Отказ сервера', en: 'Server refusal' }}
       steps={REFUSED}
       args={guideArgs(REFUSED_ARGS, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(REFUSED[0]!.title, async () => {
+    await step(REFUSED[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(viewSettingsCount(canvas)).toBe('2'))
     })
-    await step(REFUSED[1]!.title, async () => {
+    await step(REFUSED[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(levelsOf()).toHaveLength(1))
       await settle()
     })
-    await step(REFUSED[2]!.title, async () => {
+    await step(REFUSED[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(banner(canvas)).toHaveTextContent(SORT_REFUSAL)

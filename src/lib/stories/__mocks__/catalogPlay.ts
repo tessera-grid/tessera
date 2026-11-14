@@ -35,7 +35,7 @@ export const repeat = async (
 ) => {
   for (let tries = 0; !done();) {
     if (!showing()) {
-      if (++tries > 61) throw new Error(`Шаг гайда не дождался: ${done}`)
+      if (++tries > 61) throw new Error(`Guide step timed out: ${done}`)
       act()
     }
     await sleep(200)
@@ -83,7 +83,7 @@ export const pollUntil = async (
   signal?.throwIfAborted()
   while (!check()) {
     if (waited > timeout) {
-      throw new Error(`Шаг гайда не дождался: ${check.toString()}`)
+      throw new Error(`Guide step timed out: ${check.toString()}`)
     }
     const before = performance.now()
     await sleep(16)
@@ -159,7 +159,7 @@ export const forcedStep = <S extends TwinSource>(
       }
       const root = context.canvasElement?.querySelector('[data-guide-root]')
       const pseudo = root
-        ? guideSteps.get(root)?.find(item => item.title === reached)?.pseudo
+        ? guideSteps.get(root)?.find(item => item.title.ru === reached)?.pseudo
         : undefined
       if (pseudo && context.id) await applyPseudoStates(context.id, pseudo)
       await settle()

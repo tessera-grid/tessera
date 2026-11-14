@@ -69,19 +69,19 @@ interface SelectionPlaygroundArgs extends StoryProps {
 export const ServerSelectionPlayground: StoryObj<SelectionPlaygroundArgs> = {
   name: 'Playground',
   parameters: showControls(['groupBy', 'groupCounts'], {
-    dataCount: 'строки подаёт «сервер» демо',
-    columnCount: 'колонки задаёт демо',
+    dataCount: 'the demo server provides the rows',
+    columnCount: 'the demo sets the columns',
   }),
   // Список без группировки: флажки строк и «выбрать всё» в шапке.
   args: { ...layout, groupBy: 'none', groupCounts: true },
   argTypes: {
     groupBy: {
-      description: 'Колонка, по которой список сгруппирован при открытии',
+      description: 'The column the list is grouped by when it opens',
       control: 'select',
       options: ['none', 'city'],
     },
     groupCounts: {
-      description: 'Сервер присылает число строк каждой группы',
+      description: 'The server sends the row count of each group',
       control: 'boolean',
     },
   },
@@ -156,8 +156,11 @@ const uncheckSome = async (root: HTMLElement, signal: AbortSignal) => {
 
 const SELECT_ALL_EXCEPT: readonly GuideStoryStep[] = [
   {
-    title: 'Список с флажками',
-    hint: 'Сервер отдаёт строки блоками, у каждой строки — флажок выбора. Пока ничего не выбрано.',
+    title: { ru: 'Список с флажками', en: 'A list with checkboxes' },
+    hint: {
+      ru: 'Сервер отдаёт строки блоками, у каждой строки — флажок выбора. Пока ничего не выбрано.',
+      en: 'The server returns rows in blocks, and each row has a selection checkbox. Nothing is selected yet.',
+    },
     props: ({ app, ...context }) => ({
       ...serverProps({
         total: SELECT_TOTAL,
@@ -179,24 +182,42 @@ const SELECT_ALL_EXCEPT: readonly GuideStoryStep[] = [
     }),
   },
   {
-    title: 'Пользователь выбрал всё',
-    hint: 'Флажок в шапке выбрал весь список — десять тысяч строк, хотя загружена лишь малая их часть. Нижняя панель считает весь итог, новых запросов к серверу нет.',
+    title: {
+      ru: 'Пользователь выбрал всё',
+      en: 'The user selected everything',
+    },
+    hint: {
+      ru: 'Флажок в шапке выбрал весь список — десять тысяч строк, хотя загружена лишь малая их часть. Нижняя панель считает весь итог, новых запросов к серверу нет.',
+      en: 'The header checkbox selected the whole list, ten thousand rows, even though only a small part of them is loaded. The status bar counts the full total, and no new requests go to the server.',
+    },
     states: ['body.selection'],
     enter: stepAction(async (root, { signal }) => {
       await selectAll(root, signal)
     }),
   },
   {
-    title: 'Пользователь снял две строки',
-    hint: 'Снятые строки стали исключениями: остальные по-прежнему выбраны, флажок в шапке показывает частичный выбор, счётчик уменьшился на две.',
+    title: {
+      ru: 'Пользователь снял две строки',
+      en: 'The user deselected two rows',
+    },
+    hint: {
+      ru: 'Снятые строки стали исключениями: остальные по-прежнему выбраны, флажок в шапке показывает частичный выбор, счётчик уменьшился на две.',
+      en: 'The deselected rows became exceptions: the rest are still selected, the header checkbox shows a partial selection, and the counter went down by two.',
+    },
     states: ['body.selection'],
     enter: stepAction(async (root, { signal }) => {
       await uncheckSome(root, signal)
     }),
   },
   {
-    title: 'Пользователь выгрузил выбранное',
-    hint: 'Файл собирает сервер: приложение получило запрос «все строки, кроме двух снятых» вместе с текущей выборкой. Пока сервер готовит файл, кнопка выгрузки ждёт.',
+    title: {
+      ru: 'Пользователь выгрузил выбранное',
+      en: 'The user exported the selection',
+    },
+    hint: {
+      ru: 'Файл собирает сервер: приложение получило запрос «все строки, кроме двух снятых» вместе с текущей выборкой. Пока сервер готовит файл, кнопка выгрузки ждёт.',
+      en: 'The server builds the file: the app received the request "all rows except the two deselected ones" along with the current result set. While the server prepares the file, the export button is waiting.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await uncheckSome(root, signal)
       await pollUntil(() => !!exportButton(root), signal)
@@ -217,7 +238,7 @@ export const ServerRowModelSelectAllExcept: StoryObj<StoryProps> = {
   parameters: { scenario: '0138/S6', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Выбрать всё, кроме"
+      title={{ ru: 'Выбрать всё, кроме', en: 'Select all except' }}
       steps={SELECT_ALL_EXCEPT}
       args={guideArgs(layout, args)}
     />
@@ -225,12 +246,12 @@ export const ServerRowModelSelectAllExcept: StoryObj<StoryProps> = {
   play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     const labels = storyLabels(args.locale)
-    await step(SELECT_ALL_EXCEPT[0]!.title, async () => {
+    await step(SELECT_ALL_EXCEPT[0]!.title.ru, async () => {
       await until(() => expect(hasRow(canvas, 0)).toBe(true))
       await until(() => expect(isChecked(rowCheckbox(canvas, 0))).toBe(false))
       await until(() => expect(selectedCount(canvas)).toBe(''))
     })
-    await step(SELECT_ALL_EXCEPT[1]!.title, async () => {
+    await step(SELECT_ALL_EXCEPT[1]!.title.ru, async () => {
       const before = server.starts.length
       await guideNext(canvas)
       await stepDone(canvas)
@@ -243,7 +264,7 @@ export const ServerRowModelSelectAllExcept: StoryObj<StoryProps> = {
       )
       await expect(server.starts.length).toBe(before)
     })
-    await step(SELECT_ALL_EXCEPT[2]!.title, async () => {
+    await step(SELECT_ALL_EXCEPT[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(headCheckbox(canvas)).toHaveAttribute('data-indeterminate')
@@ -259,7 +280,7 @@ export const ServerRowModelSelectAllExcept: StoryObj<StoryProps> = {
         ),
       )
     })
-    await step(SELECT_ALL_EXCEPT[3]!.title, async () => {
+    await step(SELECT_ALL_EXCEPT[3]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(selectExport.request?.selection).toEqual({
@@ -353,29 +374,50 @@ const uncheckFirstRow = async (root: HTMLElement, signal: AbortSignal) => {
 
 const GROUP_SELECTION: readonly GuideStoryStep[] = [
   {
-    title: 'Список сгруппирован по городу',
-    hint: 'Каждая строка — город с числом строк в нём. Самих строк городов таблица не загружала, у каждого города — свой флажок.',
+    title: {
+      ru: 'Список сгруппирован по городу',
+      en: 'The list is grouped by city',
+    },
+    hint: {
+      ru: 'Каждая строка — город с числом строк в нём. Самих строк городов таблица не загружала, у каждого города — свой флажок.',
+      en: "Each row is a city with its row count. The table has not loaded the cities' rows, and each city has its own checkbox.",
+    },
     props: groupSelectProps({ exported: true }),
   },
   {
-    title: 'Пользователь выбрал город',
-    hint: 'Флажок города выбрал все его строки, хотя ни одна не загружена: запросов к серверу не было. Нижняя панель считает строки города по числу, которое прислал сервер.',
+    title: { ru: 'Пользователь выбрал город', en: 'The user selected a city' },
+    hint: {
+      ru: 'Флажок города выбрал все его строки, хотя ни одна не загружена: запросов к серверу не было. Нижняя панель считает строки города по числу, которое прислал сервер.',
+      en: "The city's checkbox selected all its rows, even though none is loaded: there were no requests to the server. The status bar counts the city's rows by the number the server sent.",
+    },
     states: ['body.selection'],
     enter: stepAction(async (root, { signal }) => {
       await selectCity(root, signal)
     }),
   },
   {
-    title: 'Пользователь снял одну строку',
-    hint: 'Строки города пришли уже выбранными. Снятая строка стала исключением внутри города, поэтому флажок города показывает частичный выбор, а счётчик уменьшился на одну.',
+    title: {
+      ru: 'Пользователь снял одну строку',
+      en: 'The user deselected one row',
+    },
+    hint: {
+      ru: 'Строки города пришли уже выбранными. Снятая строка стала исключением внутри города, поэтому флажок города показывает частичный выбор, а счётчик уменьшился на одну.',
+      en: "The city's rows arrived already selected. The deselected row became an exception inside the city, so the city's checkbox shows a partial selection, and the counter went down by one.",
+    },
     states: ['body.selection'],
     enter: stepAction(async (root, { signal }) => {
       await uncheckFirstRow(root, signal)
     }),
   },
   {
-    title: 'Пользователь выгрузил выбранное',
-    hint: 'Файл собирает сервер: приложение получило запрос «весь город, кроме одной строки» вместе с текущей выборкой. Пока сервер готовит файл, кнопка выгрузки ждёт.',
+    title: {
+      ru: 'Пользователь выгрузил выбранное',
+      en: 'The user exported the selection',
+    },
+    hint: {
+      ru: 'Файл собирает сервер: приложение получило запрос «весь город, кроме одной строки» вместе с текущей выборкой. Пока сервер готовит файл, кнопка выгрузки ждёт.',
+      en: 'The server builds the file: the app received the request "the whole city except one row" along with the current result set. While the server prepares the file, the export button is waiting.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await uncheckFirstRow(root, signal)
       await pollUntil(() => !!exportButton(root), signal)
@@ -396,7 +438,7 @@ export const ServerGroupSelection: StoryObj<StoryProps> = {
   parameters: { scenario: '0148/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Выбор группы целиком"
+      title={{ ru: 'Выбор группы целиком', en: 'Selecting a whole group' }}
       steps={GROUP_SELECTION}
       reset={() => {
         groupServer.refuse = false
@@ -408,14 +450,14 @@ export const ServerGroupSelection: StoryObj<StoryProps> = {
     if (globals.catalog !== true) return
     const labels = storyLabels(args.locale)
     const paris = parisItems().length
-    await step(GROUP_SELECTION[0]!.title, async () => {
+    await step(GROUP_SELECTION[0]!.title.ru, async () => {
       await until(() => expect(!!groupCheckbox(canvas, 'Paris')).toBe(true))
       await until(() =>
         expect(isChecked(groupCheckbox(canvas, 'Paris'))).toBe(false),
       )
       await until(() => expect(selectedCount(canvas)).toBe(''))
     })
-    await step(GROUP_SELECTION[1]!.title, async () => {
+    await step(GROUP_SELECTION[1]!.title.ru, async () => {
       const parents = server.parents.length
       await guideNext(canvas)
       await stepDone(canvas)
@@ -427,7 +469,7 @@ export const ServerGroupSelection: StoryObj<StoryProps> = {
       )
       await expect(server.parents.length).toBe(parents)
     })
-    await step(GROUP_SELECTION[2]!.title, async () => {
+    await step(GROUP_SELECTION[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(isPartial(groupCheckbox(canvas, 'Paris'))).toBe(true)
@@ -438,7 +480,7 @@ export const ServerGroupSelection: StoryObj<StoryProps> = {
         ),
       )
     })
-    await step(GROUP_SELECTION[3]!.title, async () => {
+    await step(GROUP_SELECTION[3]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(selectExport.request?.selection).toEqual({
@@ -470,21 +512,36 @@ const ungroup = async (root: HTMLElement, signal: AbortSignal) => {
 
 const GROUP_SELECT_RESET: readonly GuideStoryStep[] = [
   {
-    title: 'Список сгруппирован по городу',
-    hint: 'Каждая строка — город с числом строк в нём и своим флажком. Пока ничего не выбрано.',
+    title: {
+      ru: 'Список сгруппирован по городу',
+      en: 'The list is grouped by city',
+    },
+    hint: {
+      ru: 'Каждая строка — город с числом строк в нём и своим флажком. Пока ничего не выбрано.',
+      en: 'Each row is a city with its row count and its own checkbox. Nothing is selected yet.',
+    },
     props: groupSelectProps(),
   },
   {
-    title: 'Пользователь выбрал город',
-    hint: 'Флажок города выбрал все его строки, а нижняя панель их посчитала.',
+    title: { ru: 'Пользователь выбрал город', en: 'The user selected a city' },
+    hint: {
+      ru: 'Флажок города выбрал все его строки, а нижняя панель их посчитала.',
+      en: "The city's checkbox selected all its rows, and the status bar counted them.",
+    },
     states: ['body.selection'],
     enter: stepAction(async (root, { signal }) => {
       await selectCity(root, signal)
     }),
   },
   {
-    title: 'Пользователь убрал группировку',
-    hint: 'Без группировки городов в списке нет, и выбор, сделанный по городам, потерял смысл — таблица его сняла. Сервер прислал строки без групп, ни одна не выбрана.',
+    title: {
+      ru: 'Пользователь убрал группировку',
+      en: 'The user removed grouping',
+    },
+    hint: {
+      ru: 'Без группировки городов в списке нет, и выбор, сделанный по городам, потерял смысл — таблица его сняла. Сервер прислал строки без групп, ни одна не выбрана.',
+      en: 'Without grouping there are no cities in the list, so a selection made by city no longer makes sense, and the table cleared it. The server sent rows without groups, and none is selected.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await ungroup(root, signal)
     }),
@@ -497,7 +554,10 @@ export const ServerGroupSelectReset: StoryObj<StoryProps> = {
   parameters: { scenario: '0148/S2', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Выбор и смена группировки"
+      title={{
+        ru: 'Выбор и смена группировки',
+        en: 'Selection and a change of grouping',
+      }}
       steps={GROUP_SELECT_RESET}
       reset={() => {
         groupServer.refuse = false
@@ -507,19 +567,19 @@ export const ServerGroupSelectReset: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await step(GROUP_SELECT_RESET[0]!.title, async () => {
+    await step(GROUP_SELECT_RESET[0]!.title.ru, async () => {
       await until(() => expect(!!groupCheckbox(canvas, 'Paris')).toBe(true))
       await until(() =>
         expect(isChecked(groupCheckbox(canvas, 'Paris'))).toBe(false),
       )
     })
-    await step(GROUP_SELECT_RESET[1]!.title, async () => {
+    await step(GROUP_SELECT_RESET[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(isChecked(groupCheckbox(canvas, 'Paris'))).toBe(true)
       await until(() => expect(selectedCount(canvas)).not.toBe(''))
     })
-    await step(GROUP_SELECT_RESET[2]!.title, async () => {
+    await step(GROUP_SELECT_RESET[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(groupRows(canvas)).toHaveLength(0)
@@ -532,21 +592,36 @@ export const ServerGroupSelectReset: StoryObj<StoryProps> = {
 
 const GROUP_SELECT_COUNT: readonly GuideStoryStep[] = [
   {
-    title: 'Сервер не знает размер групп',
-    hint: 'Каждая строка — город, но числа строк в городах сервер не прислал. Флажки у городов есть и так.',
+    title: {
+      ru: 'Сервер не знает размер групп',
+      en: 'The server does not know the group sizes',
+    },
+    hint: {
+      ru: 'Каждая строка — город, но числа строк в городах сервер не прислал. Флажки у городов есть и так.',
+      en: 'Each row is a city, but the server did not send the row counts of the cities. The cities have checkboxes anyway.',
+    },
     props: groupSelectProps({ counts: false }),
   },
   {
-    title: 'Пользователь выбрал город',
-    hint: 'Сколько строк в городе, таблица не знает, поэтому нижняя панель считает выбранные города, а не строки.',
+    title: { ru: 'Пользователь выбрал город', en: 'The user selected a city' },
+    hint: {
+      ru: 'Сколько строк в городе, таблица не знает, поэтому нижняя панель считает выбранные города, а не строки.',
+      en: 'The table does not know how many rows the city has, so the status bar counts selected cities, not rows.',
+    },
     states: ['body.selection'],
     enter: stepAction(async (root, { signal }) => {
       await selectCity(root, signal)
     }),
   },
   {
-    title: 'Пользователь выбрал строку другого города',
-    hint: 'Отдельно выбранная строка считается сама по себе: нижняя панель показывает и строки, и города.',
+    title: {
+      ru: 'Пользователь выбрал строку другого города',
+      en: 'The user selected a row from another city',
+    },
+    hint: {
+      ru: 'Отдельно выбранная строка считается сама по себе: нижняя панель показывает и строки, и города.',
+      en: 'A row selected separately is counted on its own: the status bar shows both rows and cities.',
+    },
     states: ['body.selection'],
     enter: stepAction(async (root, { signal }) => {
       await selectCity(root, signal)
@@ -563,7 +638,10 @@ export const ServerGroupSelectCount: StoryObj<StoryProps> = {
   parameters: { scenario: '0148/S3', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Счётчик без размера групп"
+      title={{
+        ru: 'Счётчик без размера групп',
+        en: 'The counter without group sizes',
+      }}
       steps={GROUP_SELECT_COUNT}
       reset={() => {
         groupServer.refuse = false
@@ -574,11 +652,11 @@ export const ServerGroupSelectCount: StoryObj<StoryProps> = {
   play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     const labels = storyLabels(args.locale)
-    await step(GROUP_SELECT_COUNT[0]!.title, async () => {
+    await step(GROUP_SELECT_COUNT[0]!.title.ru, async () => {
       await until(() => expect(!!groupCheckbox(canvas, 'Paris')).toBe(true))
       await until(() => expect(selectedCount(canvas)).toBe(''))
     })
-    await step(GROUP_SELECT_COUNT[1]!.title, async () => {
+    await step(GROUP_SELECT_COUNT[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() =>
@@ -590,7 +668,7 @@ export const ServerGroupSelectCount: StoryObj<StoryProps> = {
         ),
       )
     })
-    await step(GROUP_SELECT_COUNT[2]!.title, async () => {
+    await step(GROUP_SELECT_COUNT[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() =>
@@ -670,37 +748,58 @@ const branchArrived = async (root: HTMLElement, signal: AbortSignal) => {
 
 const BRANCH_SELECTION: readonly GuideStoryStep[] = [
   {
-    title: 'Дерево с флажками',
-    hint: 'Сервер отдаёт верхний уровень списка блоками, у каждой строки — флажок. Вложенных строк таблица ещё не загружала, ничего не выбрано.',
+    title: { ru: 'Дерево с флажками', en: 'A tree with checkboxes' },
+    hint: {
+      ru: 'Сервер отдаёт верхний уровень списка блоками, у каждой строки — флажок. Вложенных строк таблица ещё не загружала, ничего не выбрано.',
+      en: 'The server returns the top level of the list in blocks, and each row has a checkbox. The table has not loaded any nested rows yet, and nothing is selected.',
+    },
     props: branchSelectProps,
   },
   {
-    title: 'Пользователь выбрал строку со вложенными',
-    hint: 'Флажок выбрал строку вместе со всеми вложенными, хотя ни одна из них не загружена: запросов к серверу не было. Сколько их, таблица не знает, поэтому нижняя панель считает строки и ветки по отдельности.',
+    title: {
+      ru: 'Пользователь выбрал строку со вложенными',
+      en: 'The user selected a row with nested rows',
+    },
+    hint: {
+      ru: 'Флажок выбрал строку вместе со всеми вложенными, хотя ни одна из них не загружена: запросов к серверу не было. Сколько их, таблица не знает, поэтому нижняя панель считает строки и ветки по отдельности.',
+      en: 'The checkbox selected the row along with all its nested rows, even though none of them is loaded: there were no requests to the server. The table does not know how many there are, so the status bar counts rows and branches separately.',
+    },
     states: ['body.selection'],
     enter: stepAction(async (root, { signal }) => {
       await selectBranch(root, signal)
     }),
   },
   {
-    title: 'Пользователь раскрыл строку',
-    hint: 'Таблица попросила у сервера вложенные строки. Пока ответ в пути, под строкой — блок строк-скелетов.',
+    title: { ru: 'Пользователь раскрыл строку', en: 'The user expanded a row' },
+    hint: {
+      ru: 'Таблица попросила у сервера вложенные строки. Пока ответ в пути, под строкой — блок строк-скелетов.',
+      en: 'The table asked the server for the nested rows. While the response is on its way, a block of skeleton rows sits below the row.',
+    },
     states: ['body.selection', 'body.skeleton'],
     enter: stepAction(async (root, { signal }) => {
       await openBranch(root, signal)
     }),
   },
   {
-    title: 'Сервер ответил',
-    hint: 'Вложенные строки пришли уже выбранными. Теперь размер ветки известен, и нижняя панель считает выбранные строки точно.',
+    title: { ru: 'Сервер ответил', en: 'The server responded' },
+    hint: {
+      ru: 'Вложенные строки пришли уже выбранными. Теперь размер ветки известен, и нижняя панель считает выбранные строки точно.',
+      en: 'The nested rows arrived already selected. Now the branch size is known, and the status bar counts the selected rows exactly.',
+    },
     states: ['body.selection'],
     enter: stepAction(async (root, { signal }) => {
       await branchArrived(root, signal)
     }),
   },
   {
-    title: 'Пользователь снял одну вложенную строку',
-    hint: 'Снятая строка стала исключением внутри ветки: флажок родителя показывает частичный выбор, счётчик уменьшился на одну.',
+    title: {
+      ru: 'Пользователь снял одну вложенную строку',
+      en: 'The user deselected one nested row',
+    },
+    hint: {
+      ru: 'Снятая строка стала исключением внутри ветки: флажок родителя показывает частичный выбор, счётчик уменьшился на одну.',
+      en: "The deselected row became an exception inside the branch: the parent's checkbox shows a partial selection, and the counter went down by one.",
+    },
     states: ['body.selection'],
     enter: stepAction(async (root, { signal }) => {
       await branchArrived(root, signal)
@@ -723,7 +822,7 @@ export const ServerTreeSelectBranch: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title="Выбор ветки дерева"
+      title={{ ru: 'Выбор ветки дерева', en: 'Selecting a tree branch' }}
       steps={BRANCH_SELECTION}
       args={guideArgs(layout, args)}
     />
@@ -731,14 +830,14 @@ export const ServerTreeSelectBranch: StoryObj<StoryProps> = {
   play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     const labels = storyLabels(args.locale)
-    await step(BRANCH_SELECTION[0]!.title, async () => {
+    await step(BRANCH_SELECTION[0]!.title.ru, async () => {
       await until(() => expect(hasRow(canvas, 0)).toBe(true))
       await until(() =>
         expect(isChecked(treeCheckbox(canvas, BRANCH_PARENT))).toBe(false),
       )
       await until(() => expect(selectedCount(canvas)).toBe(''))
     })
-    await step(BRANCH_SELECTION[1]!.title, async () => {
+    await step(BRANCH_SELECTION[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(isChecked(treeCheckbox(canvas, BRANCH_PARENT))).toBe(true)
@@ -752,13 +851,13 @@ export const ServerTreeSelectBranch: StoryObj<StoryProps> = {
       )
       await expect(server.parents).not.toContain(BRANCH_PARENT)
     })
-    await step(BRANCH_SELECTION[2]!.title, async () => {
+    await step(BRANCH_SELECTION[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(skeletonRows(canvas)).toBeGreaterThan(0)
       await expect(server.parents).toContain(BRANCH_PARENT)
     })
-    await step(BRANCH_SELECTION[3]!.title, async () => {
+    await step(BRANCH_SELECTION[3]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       for (let k = 0; k < TREE_CHILDREN; k++) {
@@ -775,7 +874,7 @@ export const ServerTreeSelectBranch: StoryObj<StoryProps> = {
         ),
       )
     })
-    await step(BRANCH_SELECTION[4]!.title, async () => {
+    await step(BRANCH_SELECTION[4]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(isPartial(treeCheckbox(canvas, BRANCH_PARENT))).toBe(true)
@@ -845,28 +944,49 @@ const toSecondPage = async (root: HTMLElement, signal: AbortSignal) => {
 
 const SELECT_PAGE: readonly GuideStoryStep[] = [
   {
-    title: 'Список страницами',
-    hint: 'Сервер отдаёт строки страницами, у каждой строки есть флажок. Флажок в шапке относится к текущей странице.',
+    title: { ru: 'Список страницами', en: 'A list in pages' },
+    hint: {
+      ru: 'Сервер отдаёт строки страницами, у каждой строки есть флажок. Флажок в шапке относится к текущей странице.',
+      en: 'The server returns rows in pages, and each row has a checkbox. The header checkbox applies to the current page.',
+    },
     props: pageProps(PAGE_SIZE, PAGE_SIZE),
   },
   {
-    title: 'Пользователь выбрал страницу',
-    hint: 'Флажок в шапке выбрал строки этой страницы. Нижняя панель считает только их.',
+    title: {
+      ru: 'Пользователь выбрал страницу',
+      en: 'The user selected the page',
+    },
+    hint: {
+      ru: 'Флажок в шапке выбрал строки этой страницы. Нижняя панель считает только их.',
+      en: 'The header checkbox selected the rows of this page. The status bar counts only them.',
+    },
     states: ['body.selection'],
     enter: stepAction(async (root, { signal }) => {
       await selectPage(root, signal)
     }),
   },
   {
-    title: 'Пользователь перешёл на вторую страницу',
-    hint: 'Здесь ничего не выбрано, флажок в шапке пуст, счётчик прежний.',
+    title: {
+      ru: 'Пользователь перешёл на вторую страницу',
+      en: 'The user went to the second page',
+    },
+    hint: {
+      ru: 'Здесь ничего не выбрано, флажок в шапке пуст, счётчик прежний.',
+      en: 'Nothing is selected here, the header checkbox is empty, and the counter is unchanged.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await toSecondPage(root, signal)
     }),
   },
   {
-    title: 'Пользователь выбрал вторую страницу',
-    hint: 'Выбор прибавился к первой, счётчик показывает строки двух страниц.',
+    title: {
+      ru: 'Пользователь выбрал вторую страницу',
+      en: 'The user selected the second page',
+    },
+    hint: {
+      ru: 'Выбор прибавился к первой, счётчик показывает строки двух страниц.',
+      en: "This selection was added to the first page's, and the counter shows the rows of both pages.",
+    },
     enter: stepAction(async (root, { signal }) => {
       await toSecondPage(root, signal)
       await selectPage(root, signal)
@@ -880,7 +1000,7 @@ export const ServerPageSelectAll: StoryObj<StoryProps> = {
   parameters: { scenario: '0188/S1', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Выбор страницы"
+      title={{ ru: 'Выбор страницы', en: 'Selecting a page' }}
       steps={SELECT_PAGE}
       args={guideArgs(layout, args)}
     />
@@ -894,22 +1014,22 @@ export const ServerPageSelectAll: StoryObj<StoryProps> = {
           rowSelectionLabels(labels).selectedRows(rows),
         ),
       )
-    await step(SELECT_PAGE[0]!.title, async () => {
+    await step(SELECT_PAGE[0]!.title.ru, async () => {
       await until(() => expect(hasRow(canvas, 0)).toBe(true))
       await until(() => expect(isChecked(headCheckbox(canvas))).toBe(false))
     })
-    await step(SELECT_PAGE[1]!.title, async () => {
+    await step(SELECT_PAGE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await counted(PAGE_SIZE)
     })
-    await step(SELECT_PAGE[2]!.title, async () => {
+    await step(SELECT_PAGE[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(isChecked(headCheckbox(canvas))).toBe(false))
       await counted(PAGE_SIZE)
     })
-    await step(SELECT_PAGE[3]!.title, async () => {
+    await step(SELECT_PAGE[3]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await counted(PAGE_SIZE * 2)
@@ -929,20 +1049,32 @@ const pressWaitingHead = async (root: HTMLElement, signal: AbortSignal) => {
 
 const WAITS: readonly GuideStoryStep[] = [
   {
-    title: 'Часть страницы загружена',
-    hint: 'Страница длиннее блока, остальные строки сервер ещё не присылал.',
+    title: { ru: 'Часть страницы загружена', en: 'Part of the page is loaded' },
+    hint: {
+      ru: 'Страница длиннее блока, остальные строки сервер ещё не присылал.',
+      en: 'The page is longer than a block, and the server has not sent the remaining rows yet.',
+    },
     props: pageProps(LONG_PAGE, SHORT_BLOCK),
   },
   {
-    title: 'Пользователь нажал флажок',
-    hint: 'Незагруженные строки выбрать нельзя, поэтому таблица запросила их. Флажок ждёт, выбор пока не изменился.',
+    title: {
+      ru: 'Пользователь нажал флажок',
+      en: 'The user clicked the checkbox',
+    },
+    hint: {
+      ru: 'Незагруженные строки выбрать нельзя, поэтому таблица запросила их. Флажок ждёт, выбор пока не изменился.',
+      en: 'Rows that are not loaded cannot be selected, so the table requested them. The checkbox is waiting, and the selection has not changed yet.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await pressWaitingHead(root, signal)
     }),
   },
   {
-    title: 'Строки пришли',
-    hint: 'Сервер ответил, выбрана вся страница, и счётчик это показывает.',
+    title: { ru: 'Строки пришли', en: 'Rows arrived' },
+    hint: {
+      ru: 'Сервер ответил, выбрана вся страница, и счётчик это показывает.',
+      en: 'The server responded, the whole page is selected, and the counter shows it.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await pressWaitingHead(root, signal)
       server.hold = false
@@ -958,7 +1090,7 @@ export const ServerPageSelectAllWaits: StoryObj<StoryProps> = {
   parameters: { scenario: '0188/S2', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Страница ещё грузится"
+      title={{ ru: 'Страница ещё грузится', en: 'The page is still loading' }}
       steps={WAITS}
       args={guideArgs(layout, args)}
     />
@@ -966,17 +1098,17 @@ export const ServerPageSelectAllWaits: StoryObj<StoryProps> = {
   play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     const labels = storyLabels(args.locale)
-    await step(WAITS[0]!.title, async () => {
+    await step(WAITS[0]!.title.ru, async () => {
       await until(() => expect(hasRow(canvas, 0)).toBe(true))
       await until(() => expect(selectedCount(canvas)).toBe(''))
     })
-    await step(WAITS[1]!.title, async () => {
+    await step(WAITS[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(headWaits(canvas)).toBe(true)
       await expect(selectedCount(canvas)).toBe('')
     })
-    await step(WAITS[2]!.title, async () => {
+    await step(WAITS[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() =>
@@ -1005,27 +1137,42 @@ const refusePage = async (root: HTMLElement, signal: AbortSignal) => {
 
 const PAGE_REFUSED: readonly GuideStoryStep[] = [
   {
-    title: 'Часть страницы загружена',
-    hint: 'Остальные строки сервер ещё не присылал.',
+    title: { ru: 'Часть страницы загружена', en: 'Part of the page is loaded' },
+    hint: {
+      ru: 'Остальные строки сервер ещё не присылал.',
+      en: 'The server has not sent the remaining rows yet.',
+    },
     props: pageProps(LONG_PAGE, SHORT_BLOCK, FAILED_BLOCK),
   },
   {
-    title: 'Пользователь нажал флажок',
-    hint: 'Таблица запросила недостающие строки, флажок ждёт.',
+    title: {
+      ru: 'Пользователь нажал флажок',
+      en: 'The user clicked the checkbox',
+    },
+    hint: {
+      ru: 'Таблица запросила недостающие строки, флажок ждёт.',
+      en: 'The table requested the missing rows, and the checkbox is waiting.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await pressWaitingHead(root, signal)
     }),
   },
   {
-    title: 'Сервер отказал',
-    hint: 'Выбор остался прежним, плашка называет причину и предлагает повторить.',
+    title: { ru: 'Сервер отказал', en: 'The server refused' },
+    hint: {
+      ru: 'Выбор остался прежним, плашка называет причину и предлагает повторить.',
+      en: 'The selection stayed the same, and a banner names the reason and offers a retry.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await refusePage(root, signal)
     }),
   },
   {
-    title: 'Пользователь повторил',
-    hint: 'Строки пришли, выбрана вся страница.',
+    title: { ru: 'Пользователь повторил', en: 'The user retried' },
+    hint: {
+      ru: 'Строки пришли, выбрана вся страница.',
+      en: 'Rows arrived, and the whole page is selected.',
+    },
     enter: stepAction(async (root, { signal }) => {
       await refusePage(root, signal)
       root
@@ -1042,7 +1189,7 @@ export const ServerPageSelectAllRefused: StoryObj<StoryProps> = {
   parameters: { scenario: '0188/S3', ...guideControls() },
   render: args => (
     <GuideStory
-      title="Отказ в строках страницы"
+      title={{ ru: 'Отказ в строках страницы', en: 'Page rows refused' }}
       steps={PAGE_REFUSED}
       reset={() => {
         server.failed.delete(FAILED_BLOCK)
@@ -1053,21 +1200,21 @@ export const ServerPageSelectAllRefused: StoryObj<StoryProps> = {
   play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     const labels = storyLabels(args.locale)
-    await step(PAGE_REFUSED[0]!.title, async () => {
+    await step(PAGE_REFUSED[0]!.title.ru, async () => {
       await until(() => expect(hasRow(canvas, 0)).toBe(true))
     })
-    await step(PAGE_REFUSED[1]!.title, async () => {
+    await step(PAGE_REFUSED[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(headWaits(canvas)).toBe(true))
     })
-    await step(PAGE_REFUSED[2]!.title, async () => {
+    await step(PAGE_REFUSED[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() => expect(failureBanner(canvas)).not.toBeNull())
       await until(() => expect(selectedCount(canvas)).toBe(''))
     })
-    await step(PAGE_REFUSED[3]!.title, async () => {
+    await step(PAGE_REFUSED[3]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
       await until(() =>
