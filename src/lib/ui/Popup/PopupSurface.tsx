@@ -3,13 +3,19 @@
  * `Popover`, `Menu`, `Combobox`, `Select` — с темой портала, зазором до якоря и видом поверхности
  * (ADR 0017, PP1–PP6). Опции примитива задаются на его элементах, свой класс попапа — размеры.
  */
-import type { ReactElement, ReactNode } from 'react'
+import {
+  cloneElement,
+  type ReactElement,
+  type ReactNode,
+  useContext,
+} from 'react'
 
 import { useRender } from '@base-ui/react/use-render'
 import clsx from 'clsx'
 
 import { usePortalThemeClass, usePortalThemeData } from '../theme'
 import { POPUP_SIDE_OFFSET } from './offset'
+import { STATIC_COLLISION_AVOIDANCE, StaticPopupsContext } from './staticPopups'
 
 import styles from './Popup.module.css'
 
@@ -31,6 +37,16 @@ export const PopupSurface = ({
 }: PopupSurfaceProps) => {
   const themeClass = usePortalThemeClass()
   const themeData = usePortalThemeData()
+  const staticPopups = useContext(StaticPopupsContext)
+  // Свои опции элемента главнее пропсов useRender: стенд задаёт их клоном позиционера.
+  const placed = staticPopups
+    ? cloneElement(positioner as ReactElement<Record<string, unknown>>, {
+        collisionAvoidance: STATIC_COLLISION_AVOIDANCE,
+        ...(staticPopups.anchor
+          ? { anchor: staticPopups.anchor, side: 'bottom', align: 'start' }
+          : {}),
+      })
+    : positioner
   const surface = useRender({
     render: popup,
     props: {
@@ -39,7 +55,7 @@ export const PopupSurface = ({
     },
   })
   return useRender({
-    render: positioner,
+    render: placed,
     props: {
       ...themeData,
       sideOffset: POPUP_SIDE_OFFSET,

@@ -10,10 +10,9 @@
   border-top: 1px solid var(--tsr-comp-popup-divider-color);
 }
 
-/* Подпись — стилем заголовка поповера (PK4), по краю подписей пунктов. */
+/* Подпись — стилем заголовка поповера (PK4), по краю подписей пунктов, на поле поповера сверху и снизу. */
 .label {
-  padding: var(--tsr-comp-popup-padding) var(--tsr-comp-popup-item-padding-x)
-    2px;
+  padding: var(--tsr-comp-popup-padding) var(--tsr-comp-popup-item-padding-x);
   font-size: var(--tsr-comp-popup-title-font-size);
   font-weight: 600;
 }

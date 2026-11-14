@@ -8,14 +8,9 @@
   white-space: nowrap;
 }
 
+/* Блоки поповера — на двойном поле (ADR 0183, PK37). */
 .popup {
   display: flex;
   flex-direction: column;
-  gap: var(--tsr-comp-popup-padding);
-}
-
-/* Низ поповера: «Очистить значение» — кнопкой поповера-панели (ED16; ADR 0017, PP12). */
-.footer[data-popup-footer] {
-  /* Поповеры правки разводят детей зазором в поле: до кнопки — зазор и это поле, двойное поле. */
-  padding-block-start: var(--tsr-comp-popup-padding);
+  gap: calc(var(--tsr-comp-popup-padding) * 2);
 }

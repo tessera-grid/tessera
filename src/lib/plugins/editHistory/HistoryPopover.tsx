@@ -269,7 +269,7 @@ const HistoryList = ({ table }: { table: unknown }) => {
       </div>
       <PopupFooter>
         <Button
-          variant="outline"
+          variant="ghost"
           data-action="back-to-original"
           disabled={position === 0}
           pending={rewinding}

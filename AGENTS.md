@@ -1001,7 +1001,7 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       ([ADR 0149](docs/decisions/0149-plugin-cost-on-scroll.md)).
     - _Кит поповеров:_ `popup-kit` (PK2–PK6, PK12–PK16, PK18–PK21, PK27–PK30 — блоки поповера и
       контролы по историям `Tessera/UI/*`, потребители по исходникам; PP11–PP13 ADR 0017 — раскладка
-      панели), модульный `popupKit` (PK1, PK7 — поверхность только `PopupSurface`, календарь без
+      панели; PK37 — двойное поле между блоками поповеров правки — в `option-editors`), модульный `popupKit` (PK1, PK7 — поверхность только `PopupSurface`, календарь без
       ядра и только в ленивых модулях), PK11 — `check:tree-shaking`, перф PK10 — в `interaction`
       ([ADR 0183](docs/decisions/0183-popup-kit.md)).
     - _Заполнитель поля:_ `field-placeholder` (PK26 — токен и порог текста, CX21 — аудит матрицы считает
@@ -1494,7 +1494,7 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       `button` (BN1–BN6, BN9–BN11 — кнопка с подписью `Button`: токены, `outline` и `ghost`,
       семейство F5, ожидание, высокая контрастность, axe, встроенные кнопки, размер и вес
       подписи, отступ при иконке), модульные
-      `uiStories` (BN7) и `uiKitButtons` (BN8 — страж кнопок по месту)
+      `uiStories` (BN7) и `uiKitButtons` (BN8 — страж кнопок по месту; BN13 — кнопки на поверхности таблицы с рамкой); BN12 — вариант кнопок в поповерах — в `popup-kit`
       ([ADR 0097](docs/decisions/0097-text-button.md)); `button-system` (UB1–UB4, UB7, UB11 —
       общие токены `Button` и `IconButton`, формы `circle` и `square`, состояния, тултип
       в базе, кнопки историй по токенам, кольцо фокуса у всех вариантов), модульные `uiStories` (UB5 — истории

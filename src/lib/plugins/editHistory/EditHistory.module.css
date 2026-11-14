@@ -46,7 +46,19 @@
   outline-offset: -1px;
 }
 
+/*
+ * Цель записи второй строкой — как строка цели в журнале отказов и пульте: кеглем пункта, цветом
+ * подписи раздела (ADR 0222, §11).
+ */
+.item [data-popup-item-caption] {
+  margin-top: 0;
+  font-size: inherit;
+  color: var(--tsr-comp-popup-group-label-color);
+}
+
+/* Действие — полужирным, как название записи журнала отказов и пульта; цель — обычным. */
 .item [data-history-label] {
+  font-weight: 600;
   overflow-wrap: anywhere;
 }
 

@@ -5,6 +5,9 @@ import { afterEach, describe, expect, test } from 'vitest'
 
 import '../../../ui/theme/theme.css'
 import { DATA_GRID_THEME_CLASS } from '../../../ui/theme'
+import { useCreateTable } from '../../../core/useCreateTable'
+import { DataGrid } from '../../../grid/DataGrid'
+import { cellEditing, editHistory } from '../../../plugins'
 import { Bubble } from '../../../ui/Bubble'
 import { CellIssue } from '../../../ui/CellIssue'
 import { UiCanvas } from '../../__mocks__/UiCanvas'
@@ -233,7 +236,7 @@ describe('Блоки поповера', () => {
       .toBe('Ctrl+K')
   })
 
-  test('PK4: подпись группы — стилем заголовка поповера, линия между группами, над кнопками панели линии нет', async () => {
+  test('PK4: подпись группы — стилем заголовка поповера, на поле поповера сверху и снизу, линия между группами, над кнопками панели линии нет', async () => {
     await render(<Group.PopupGroupPlayground />)
     await expect
       .poll(() => document.querySelector('[data-divided]'))
@@ -249,6 +252,17 @@ describe('Блоки поповера', () => {
     )
     expect(Number(style.fontWeight)).toBeGreaterThanOrEqual(600)
     expect(style.textTransform).toBe('none')
+    // Под подписью — поле поповера: от подписи до первого пункта группы.
+    const field = px(divided, '--tsr-comp-popup-padding')
+    expect(parseFloat(style.paddingBottom)).toBe(field)
+    expect(
+      Math.round(
+        label.nextElementSibling!.getBoundingClientRect().top -
+          label.getBoundingClientRect().bottom,
+      ),
+    ).toBe(0)
+    const second = groups[1]!.firstElementChild!
+    expect(parseFloat(getComputedStyle(second).paddingTop)).toBe(field)
     expect(groups[0]!.hasAttribute('data-divided')).toBe(false)
     expect(sourceOf('ExportPanel')).toContain('<PopupGroup')
   })
@@ -1080,4 +1094,210 @@ describe('Пункт, запись и поле по линиям поповер�
     expect(box(entryOf('entry-body')).height).toBeGreaterThan(height)
     await screen.unmount()
   })
+})
+
+/** Таблица с историей правок: стенд «К исходному виду» для BN12. */
+let historyApi:
+  | { writeCells: (cells: unknown[], options: unknown) => Promise<unknown> }
+  | undefined
+const HISTORY_ROWS = [{ id: 'r1', name: 'Row 1' }]
+const HistoryHost = () => {
+  const table = useCreateTable({
+    columns: [{ id: 'name', accessorKey: 'name', header: 'Name' }] as never,
+    data: HISTORY_ROWS,
+    getRowId: (row: { id: string }) => row.id,
+    plugins: [
+      cellEditing({ onCellEdit: () => {} } as never),
+      editHistory(),
+    ] as never,
+  })
+  historyApi = table as never
+  return (
+    <div style={{ width: 600, height: 300 }}>
+      <DataGrid table={table as never} height={260} />
+    </div>
+  )
+}
+
+describe('Вариант кнопки по месту (ADR 0097, §4а)', () => {
+  /** Поповеры таблицы из истории «Поповеры таблицы». */
+  const POPUP_IDS = [
+    'columnMenu',
+    'inlineMenu',
+    'filterText',
+    'operatorSelect',
+    'filterOptions',
+    'filterDate',
+    'view',
+    'contextMenu',
+    'handleMenu',
+    'columns',
+    'export',
+    'pageSize',
+    'dateEdit',
+    'optionEdit',
+    'cellIssue',
+    'failureLog',
+    'unsavedChanges',
+    'editHistory',
+  ]
+  /** Кнопка, которую поповер показывает, когда его содержимое пришло: её ждём перед проверкой. */
+  const EXPECTED: Record<string, string> = {
+    filterText: '[data-testid="filter-reset"]',
+    filterOptions: '[data-testid="filter-select-all"]',
+    filterDate: '[data-testid="filter-reset"]',
+    export: '[data-testid="export-run"]',
+    dateEdit: '[data-testid="edit-clear-value"]',
+    optionEdit: '[data-testid="edit-clear-value"]',
+    failureLog: '[data-action="clear-all"]',
+    unsavedChanges: '[data-action="apply-all"]',
+  }
+  /** Поповеры верхнего уровня: вложенные списки — внутри своих. */
+  const topPopups = () =>
+    [...document.querySelectorAll<HTMLElement>('[data-side]')].filter(
+      popup =>
+        popup.getBoundingClientRect().height > 0 &&
+        !popup.parentElement?.closest('[data-side]'),
+    )
+  /** Кнопки с подписью — база кита `Button`. */
+  const textButtons = (root: ParentNode) => [
+    ...root.querySelectorAll<HTMLElement>('.data-grid__button[data-variant]'),
+  ]
+  /** Поповер и его кнопки перестали меняться: ленивые панели пришли. */
+  const settled = async () => {
+    let last = ''
+    let same = 0
+    await expect
+      .poll(
+        () => {
+          const now = topPopups()
+            .map(
+              popup =>
+                `${popup.textContent?.length}:${textButtons(popup).length}`,
+            )
+            .join('|')
+          same = now !== '' && now === last ? same + 1 : 0
+          last = now
+          return same
+        },
+        { interval: 250, timeout: 8000 },
+      )
+      .toBeGreaterThanOrEqual(3)
+  }
+  const verdict = (popup: HTMLElement) => {
+    const buttons = textButtons(popup)
+    const outlines = buttons.filter(
+      button => button.dataset.variant === 'outline',
+    )
+    return {
+      buttons: buttons.map(
+        button => `${button.textContent?.trim()}:${button.dataset.variant}`,
+      ),
+      // Рамка — у одного главного действия и только рядом с другим действием.
+      ok:
+        outlines.length === 0 || (outlines.length === 1 && buttons.length > 1),
+    }
+  }
+
+  test('BN12: кнопки с подписью в поповерах — ghost; outline — только у главного действия, когда кнопок действий в поповере несколько; одно действие — ghost', async () => {
+    let seen = 0
+    let outlined = 0
+    for (const id of POPUP_IDS) {
+      // eslint-disable-next-line no-await-in-loop
+      const screen = await opened(id)
+      try {
+        if (EXPECTED[id])
+          // eslint-disable-next-line no-await-in-loop
+          await expect
+            .poll(() => document.querySelector('[data-side] ' + EXPECTED[id]), {
+              timeout: 10_000,
+              message: id,
+            })
+            .not.toBeNull()
+        // eslint-disable-next-line no-await-in-loop
+        await settled()
+        for (const popup of topPopups()) {
+          const { buttons, ok } = verdict(popup)
+          seen += buttons.length
+          outlined += buttons.filter(b => b.endsWith(':outline')).length
+          expect(ok, `${id}: ${buttons.join(', ')}`).toBe(true)
+        }
+      } finally {
+        // eslint-disable-next-line no-await-in-loop
+        await screen.unmount()
+      }
+    }
+    // Проверка не пустая: кнопки нашлись, главное действие пары — с рамкой («Apply all»).
+    expect(seen).toBeGreaterThan(5)
+    expect(outlined).toBeGreaterThan(0)
+
+    // История с правкой: «К исходному виду» — одно действие, без рамки.
+    const history = await render(<HistoryHost />)
+    try {
+      await expect.poll(() => historyApi).toBeTruthy()
+      await historyApi!.writeCells(
+        [{ rowId: 'r1', columnId: 'name', value: 'Changed' }],
+        {
+          source: 'paste',
+        },
+      )
+      const button = () =>
+        document.querySelector<HTMLElement>(
+          '[data-testid="edit-history-button"]',
+        )
+      await expect.poll(button).not.toBeNull()
+      await userEvent.click(button()!)
+      const original = () =>
+        document.querySelector<HTMLElement>(
+          '[data-side] [data-action="back-to-original"]',
+        )
+      await expect.poll(original).not.toBeNull()
+      expect(original()!.dataset.variant).toBe('ghost')
+    } finally {
+      await history.unmount()
+    }
+
+    // Поповер отметки с одним главным действием — без рамки; с двумя — рамка у главного.
+    for (const actions of [
+      [{ id: 'retry', label: 'Retry', primary: true, onSelect: () => {} }],
+      [
+        {
+          id: 'discard',
+          label: 'Discard',
+          tone: 'danger' as const,
+          onSelect: () => {},
+        },
+        { id: 'retry', label: 'Retry', primary: true, onSelect: () => {} },
+      ],
+    ]) {
+      // eslint-disable-next-line no-await-in-loop
+      const screen = await render(
+        <UiCanvas>
+          <CellIssue
+            reason="The server refused the value"
+            label="Save failed"
+            actions={actions}
+          />
+        </UiCanvas>,
+      )
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        await userEvent.click(
+          document.querySelector<HTMLElement>('[data-cell-issue]')!,
+        )
+        const retry = () =>
+          document.querySelector<HTMLElement>(
+            '[data-side] [data-action="retry"]',
+          )
+        // eslint-disable-next-line no-await-in-loop
+        await expect.poll(retry).not.toBeNull()
+        expect(retry()!.dataset.variant, `${actions.length} действий`).toBe(
+          actions.length > 1 ? 'outline' : 'ghost',
+        )
+      } finally {
+        // eslint-disable-next-line no-await-in-loop
+        await screen.unmount()
+      }
+    }
+  }, 180_000)
 })

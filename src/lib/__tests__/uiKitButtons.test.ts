@@ -121,6 +121,27 @@ describe('страж UI-кита', () => {
       expect(why.length).toBeGreaterThan(10)
     }
   })
+
+  it('BN13: кнопки с подписью на поверхности таблицы — плашки, заглушки, строка ошибки ленты — outline', () => {
+    // Компоненты поверхности таблицы, где есть `Button` (ADR 0097, §4а).
+    const surface = [
+      'grid/loadError/LoadError.tsx',
+      'grid/loadError/PendingActionBanner.tsx',
+      'grid/stubs/EmptyStub.tsx',
+      'ui/LoadMoreError/LoadMoreError.tsx',
+    ]
+    for (const file of surface) {
+      const source = readFileSync(join(LIB, file), 'utf8')
+      const buttons = [...source.matchAll(/<Button\b([\s\S]*?)>/g)].map(
+        match => match[1]!,
+      )
+      expect(buttons.length, file).toBeGreaterThan(0)
+      for (const attributes of buttons) {
+        const variant = /variant="(\w+)"/.exec(attributes)?.[1] ?? 'outline'
+        expect(variant, file).toBe('outline')
+      }
+    }
+  })
 })
 
 /** `Toolbar.Button` вне кнопки тулбара: файл → причина. */

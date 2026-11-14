@@ -463,6 +463,22 @@ describe('История правок на настоящих событиях (
     expect(detail.getBoundingClientRect().top).toBeGreaterThanOrEqual(
       action.getBoundingClientRect().bottom - 1,
     )
+    // Цель — кеглем пункта и цветом подписи раздела, как строка цели журнала отказов и пульта.
+    const groupLabel = document.createElement('span')
+    groupLabel.style.color = 'var(--tsr-comp-popup-group-label-color)'
+    entries()[1]!.append(groupLabel)
+    expect(getComputedStyle(detail).fontSize).toBe(
+      getComputedStyle(action).fontSize,
+    )
+    expect(getComputedStyle(detail).color).toBe(
+      getComputedStyle(groupLabel).color,
+    )
+    groupLabel.remove()
+    // Действие — полужирным, цель — обычным: иерархия насыщенностью, кегль один.
+    expect(Number(getComputedStyle(action).fontWeight)).toBeGreaterThanOrEqual(
+      600,
+    )
+    expect(Number(getComputedStyle(detail).fontWeight)).toBeLessThan(600)
     // Текущая — последняя действующая запись: выделена и отмечена для скринридера.
     const currentOf = (entry: HTMLElement) =>
       entry.querySelector('[aria-current="step"]') !== null

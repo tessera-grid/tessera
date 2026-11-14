@@ -856,4 +856,37 @@ describe('редакторы вариантов (ADR 0175)', () => {
       )
       .toBe(3)
   })
+
+  test('PK37: блоки поповеров правки вариантов, мультивыбора и даты — поле, список, календарь, кнопка подвала — стоят друг от друга на двойном поле поповера (ADR 0183)', async () => {
+    const { onEditCancel } = await renderGrid()
+    const opened = {
+      status: popup,
+      tags: () => document.querySelector('[data-testid="edit-multiselect"]'),
+      released: () => document.querySelector('[data-testid="edit-date"]'),
+    }
+    for (const [column, open] of Object.entries(opened)) {
+      await openEdit(column)
+      await expect.poll(open).not.toBeNull()
+      await expect.poll(clearValue).not.toBeNull()
+      await settle()
+      // Блоки — дети поповера, в котором лежит подвал с кнопкой очистки.
+      const blocks = clearValue()!.closest(
+        '[data-popup-footer]',
+      )!.parentElement!
+      const padding = parseFloat(
+        getComputedStyle(blocks).getPropertyValue('--tsr-comp-popup-padding'),
+      )
+      const boxes = [...blocks.children]
+        .map(child => child.getBoundingClientRect())
+        .filter(box => box.height > 0)
+      expect(boxes.length, column).toBeGreaterThanOrEqual(2)
+      const gaps = boxes
+        .slice(1)
+        .map((box, index) => Math.round(box.top - boxes[index]!.bottom))
+      expect(gaps, column).toEqual(gaps.map(() => padding * 2))
+      await userEvent.keyboard('{Escape}')
+      await expect.poll(open).toBeNull()
+    }
+    expect(onEditCancel).toHaveBeenCalled()
+  })
 })

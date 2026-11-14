@@ -40,7 +40,7 @@ export const useFocusReturn = (anchor: RefObject<HTMLElement | null>) =>
 export const ClearValue = ({ onClear }: { onClear: () => void }) => {
   const labels = useLocalization()
   return (
-    <PopupFooter className={styles.footer}>
+    <PopupFooter>
       <Button variant="ghost" onClick={onClear} data-testid="edit-clear-value">
         {cellEditingLabels(labels).editClear}
       </Button>

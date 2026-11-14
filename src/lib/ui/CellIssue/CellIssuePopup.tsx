@@ -81,7 +81,12 @@ const CellIssuePopup = ({
                 ? ordered.map(action => (
                     <Button
                       key={action.id}
-                      variant={action.primary ? 'outline' : 'ghost'}
+                      // Рамка — у главного действия, когда действий несколько (ADR 0097, §4а).
+                      variant={
+                        action.primary && ordered.length > 1
+                          ? 'outline'
+                          : 'ghost'
+                      }
                       tone={action.tone}
                       data-action={action.id}
                       onClick={() => {
@@ -96,7 +101,7 @@ const CellIssuePopup = ({
             }
           >
             {details && details.length > 0 ? (
-              <dl className={styles.details}>
+              <dl className={styles.details} data-popup-text="">
                 {details.map(detail => (
                   <div key={detail.label} className={styles.detail}>
                     <dt>{detail.label}</dt>
@@ -105,7 +110,9 @@ const CellIssuePopup = ({
                 ))}
               </dl>
             ) : (
-              <p className={styles.reason}>{reason}</p>
+              <p className={styles.reason} data-popup-text="">
+                {reason}
+              </p>
             )}
           </PopupPanel>
         </PopupSurface>

@@ -1,8 +1,8 @@
-/* Редакторы вариантов (ADR 0175): поповер с полем поиска, окно виртуального списка и низ. */
+/* Редакторы вариантов (ADR 0175): поповер с полем поиска, окно виртуального списка и низ; блоки — на двойном поле (ADR 0183, PK37). */
 .popup {
   display: flex;
   flex-direction: column;
-  gap: var(--tsr-comp-popup-padding);
+  gap: calc(var(--tsr-comp-popup-padding) * 2);
   width: max(var(--anchor-width), var(--tsr-comp-column-menu-width));
   max-width: calc(100vw - 16px);
 }
@@ -36,7 +36,7 @@
 .multi {
   display: flex;
   flex-direction: column;
-  gap: var(--tsr-comp-popup-padding);
+  gap: calc(var(--tsr-comp-popup-padding) * 2);
   width: var(--tsr-comp-column-menu-width);
   max-width: calc(100vw - 16px);
 }
