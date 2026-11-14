@@ -20,7 +20,8 @@ import { useDecorators, wrappersOf } from './pluginWrappers'
 import { hasStickyRows, StickyRows } from './StickyRows'
 import { isPlaceholderRow } from '../core/lazyPlaceholder'
 import { FailedRow, PendingRow } from './PendingRow'
-import { getTreeAria } from './treeAria'
+import { getTreeAria, withRootWindow } from './treeAria'
+import { rootWindowOf } from '../core/pagination'
 import { rowCellsOf } from './rowCells'
 import { useWindowData } from '../core/bodyContributions'
 import { useActiveCellIndex } from '../core/keyboardNavigation'
@@ -63,6 +64,15 @@ interface TableBodyProps {
 }
 
 const NO_FAILURES: readonly RowFailure[] = []
+
+type SourceTreeAria = ReturnType<NonNullable<RowSource['treeAria']>>
+
+/** Размер набора с неизвестным итогом — `-1` только в атрибуте (ADR 0226, §3). */
+const ariaSetSizeOf = (aria: SourceTreeAria) =>
+  aria && (aria.sizeKnown === false ? -1 : aria.setSize)
+
+const sourceTreeOf = (aria: SourceTreeAria) =>
+  aria && { ...aria, setSize: ariaSetSizeOf(aria)! }
 
 /**
  * Место блока, который не загрузился: от отрисованной строки — в растянутой области место не
@@ -121,17 +131,19 @@ export const Body = ({
   // Серверная модель строк считает `aria-*` дерева сама: массива строк у неё нет
   // (ADR 0138, §14).
   const sourceAria = rowSource.treeAria
+  // Строки верхнего уровня страницы — в наборе всего списка (ADR 0226, §2).
+  const roots = rootWindowOf(table, rowSource)
   const treeAria = useMemo(
     () =>
       !treeRows
         ? undefined
         : sourceAria
           ? {
-              setSize: (index: number) => sourceAria(index)?.setSize ?? 1,
+              setSize: (index: number) => ariaSetSizeOf(sourceAria(index)) ?? 1,
               posInSet: (index: number) => sourceAria(index)?.posInSet ?? 1,
             }
-          : getTreeAria(rows),
-    [treeRows, rows, sourceAria],
+          : withRootWindow(getTreeAria(rows), rows, roots.offset, roots.total),
+    [treeRows, rows, sourceAria, roots.offset, roots.total],
   )
   const rowCount = rowSource.count()
   const drop = dropPreview ?? null
@@ -236,7 +248,9 @@ export const Body = ({
             if (!row) {
               const place = windowData.skeletonOf(virtualRow.index)
               const pendingProps = {
-                tree: treeRows ? sourceAria?.(virtualRow.index) : undefined,
+                tree: treeRows
+                  ? sourceTreeOf(sourceAria?.(virtualRow.index))
+                  : undefined,
                 skeletonTree: place ? { ...place, parent: false } : undefined,
                 window: place ? windowData.rowOf(virtualRow.index) : undefined,
                 table,

@@ -348,6 +348,7 @@ export class BlockTree<TData, TRow, TQuery> {
           level: place.node.depth + 1,
           posInSet: place.local + 1,
           setSize: place.node.store.count(),
+          sizeKnown: place.node.store.isTotalKnown(),
         }
       : undefined
   }

@@ -867,7 +867,11 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       `wcag-22` (DA1–DA6 — меню на ручках вместо перетаскивания, TS1–TS2 — зона
       нажатия 24×24, [ADR 0034](docs/decisions/0034-wcag-22-dragging-and-target-size.md));
       модульный `treeAria` (TA1–TA2 — `aria-*` дерева без объекта на строку), перф TA3 —
-      в `interaction` ([ADR 0065](docs/decisions/0065-tree-aria-without-row-objects.md)).
+      в `interaction` ([ADR 0065](docs/decisions/0065-tree-aria-without-row-objects.md));
+      сквозь страницы — модульный `treeAria.dom` (SZ1, SZ3–SZ4 — клиентская и серверная пагинация,
+      лента), визуальные `tree-aria-pages` (SZ2 — пейджер мышью и клавиатурой, axe), SZ5 — в
+      `server-row-model` (`-1` при неизвестном итоге), SZ6 — в `screen-reader`
+      ([ADR 0226](docs/decisions/0226-tree-aria-across-pages.md)).
     - _Межплагинность:_ `cross-plugin` (X1–X6 — пары плагинов вместе,
       [ADR 0023](docs/decisions/0023-cross-plugin-interactions.md); X7–X10 — пагинация
       с выбором, правкой, перестановкой строк и выделением ячеек,

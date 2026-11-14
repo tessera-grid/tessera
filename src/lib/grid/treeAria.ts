@@ -75,3 +75,26 @@ const countByParentId = (rows: readonly TreeRow[]): TreeAriaIndex => {
 
 export const getTreeAria = (rows: readonly TreeRow[]): TreeAriaIndex =>
   countInTreeOrder(rows) ?? countByParentId(rows)
+
+/**
+ * Строки верхнего уровня страницы — в наборе всего списка (ADR 0226, §2): место со смещением
+ * страницы, размер — итог списка; `total` не задан — размер по строкам модели.
+ */
+export const withRootWindow = (
+  aria: TreeAriaIndex,
+  rows: readonly TreeRow[],
+  offset: number,
+  total: number | undefined,
+): TreeAriaIndex =>
+  offset === 0 && total === undefined
+    ? aria
+    : {
+        setSize: index =>
+          rows[index].depth === 0 && total !== undefined
+            ? total
+            : aria.setSize(index),
+        posInSet: index =>
+          rows[index].depth === 0
+            ? offset + aria.posInSet(index)
+            : aria.posInSet(index),
+      }

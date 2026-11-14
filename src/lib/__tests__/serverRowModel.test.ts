@@ -353,6 +353,8 @@ describe('aria-* дерева серверной модели (ADR 0138, §14)',
           level: row.depth + 1,
           posInSet: client.posInSet(index),
           setSize: client.setSize(index),
+          // Каждый ответ несёт итог ветки (ADR 0226, §3).
+          sizeKnown: true,
         })
       })
     }

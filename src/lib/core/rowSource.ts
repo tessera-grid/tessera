@@ -72,9 +72,16 @@ export interface RowSource<TRow = unknown> {
    * `aria-*` дерева строки по индексу: уровень, место среди соседей и их число — для
    * строк, которых нет в массиве `rows` (серверная модель, ADR 0138, §14).
    */
-  treeAria?: (
-    index: number,
-  ) => { level: number; posInSet: number; setSize: number } | undefined
+  treeAria?: (index: number) =>
+    | {
+        level: number
+        posInSet: number
+        /** Оценка по загруженному, когда итог неизвестен: её читают линии, перенос и вложение. */
+        setSize: number
+        /** Итог набора известен; нет — у строки `aria-setsize="-1"` (ADR 0226, §3). */
+        sizeKnown?: boolean
+      }
+    | undefined
   /** `id` предков строки дерева от корня (серверная модель, ADR 0162). */
   ancestors?: (id: string) => readonly string[]
   /**

@@ -81,6 +81,45 @@ export const getRowWindow = (
   }
 }
 
+export interface RootWindow {
+  /** Строк верхнего уровня до первой строки текущей страницы. */
+  offset: number
+  /** Строк верхнего уровня во всём списке: `-1` — неизвестно, `undefined` — по строкам модели. */
+  total: number | undefined
+}
+
+const OWN_ROOTS: RootWindow = { offset: 0, total: undefined }
+
+/**
+ * Место строк верхнего уровня страницы в списке для `aria-posinset`/`aria-setsize` дерева
+ * (ADR 0226, §2): страницы режутся по верхнему уровню, итог — до нарезки.
+ */
+export const rootWindowOf = (
+  table: unknown,
+  source?: Pick<RowSource, 'treeAria'>,
+): RootWindow => {
+  // Серверная модель строк считает набор строки сама (§3).
+  if (source?.treeAria) return OWN_ROOTS
+  const t = table as PaginatedTable & {
+    getRowCount: () => number
+    options: { getTotalRowCount?: (table: unknown) => number | undefined }
+  }
+  const page = activePageOf(table)
+  if (page) {
+    // Страницы с сервера без итога: плагин инертен — страниц нет (PG8).
+    if (
+      dataModeOf(table, 'pagination') === 'server' &&
+      t.options.rowCount === undefined
+    ) {
+      return OWN_ROOTS
+    }
+    return { offset: page.pageIndex * page.pageSize, total: t.getRowCount() }
+  }
+  // Лента: итог — её `rowCount` или неизвестен (ADR 0081).
+  const total = t.options.getTotalRowCount?.(table)
+  return total === undefined ? OWN_ROOTS : { offset: 0, total }
+}
+
 interface PageChangeTable {
   store: { get: () => Record<string, unknown> }
   options: { enableKeyboardNavigation?: boolean }

@@ -15,6 +15,7 @@ import {
   columnPinning,
   columnSorting,
   infiniteScroll,
+  pagination,
   rowGrouping,
   columnSortingModel,
   quickSearch,
@@ -1613,10 +1614,9 @@ describe('Серверная модель строк (ADR 0138)', () => {
         expect(q('[role="treegrid"]')).not.toBeNull()
         expect(aria(rowOf('r1'))).toEqual(['1', '2', '1000'])
         await humanClick(toggleOf('r1')!)
-        // Незагруженная строка ветки: уровень и место из источника, до ответа — блок.
-        await expect
-          .poll(() => aria(pendingRow(3)))
-          .toEqual(['2', '2', `${BLOCK}`])
+        // Незагруженная строка ветки: уровень и место из источника; итог ветки до ответа
+        // неизвестен (ADR 0226, SZ5).
+        await expect.poll(() => aria(pendingRow(3))).toEqual(['2', '2', '-1'])
         const children = calls.find(call => call.request.parentId === 'r1')!
         children.settle(treeAnswer(children.request))
         await expect
@@ -1636,6 +1636,60 @@ describe('Серверная модель строк (ADR 0138)', () => {
           },
         })
         expect(violations).toEqual([])
+      } finally {
+        await screen.unmount()
+      }
+    })
+
+    test('SZ5: у строки и незагруженной строки набора с неизвестным итогом — строк верхнего уровня или ветки — aria-setsize="-1", с известным — итог; со страницами aria-posinset строк верхнего уровня сквозной', async () => {
+      // Дети ждут ответа из теста; полный блок корней без итога — итог корней неизвестен.
+      const { calls, getRows } = server(request =>
+        request.parentId ? undefined : treeAnswer(request),
+      )
+      let api: { setPageIndex: (index: number) => void } | undefined
+      const mount = (rowCount?: number) =>
+        render(
+          <Grid
+            getRows={getRows}
+            rowCount={rowCount}
+            keyboard
+            plugins={[
+              rowExpanding({ hasChildren }),
+              pagination({ initialPageSize: 25 }),
+            ]}
+            onTable={table => {
+              api = table as never
+            }}
+          />,
+        )
+      const aria = (row: Element | null) =>
+        row && [
+          row.getAttribute('aria-level'),
+          row.getAttribute('aria-posinset'),
+          row.getAttribute('aria-setsize'),
+        ]
+      let screen = await mount()
+      try {
+        await expect.poll(() => aria(rowOf('r0'))).toEqual(['1', '1', '-1'])
+        api!.setPageIndex(1)
+        await expect.poll(() => aria(rowOf('r25'))).toEqual(['1', '26', '-1'])
+
+        await humanClick(toggleOf('r26')!)
+        await expect.poll(() => aria(pendingRow(2))).toEqual(['2', '1', '-1'])
+        const children = calls.find(call => call.request.parentId === 'r26')!
+        children.settle(treeAnswer(children.request))
+        await expect
+          .poll(() => aria(rowOf('r26.0')))
+          .toEqual(['2', '1', `${CHILDREN}`])
+      } finally {
+        await screen.unmount()
+      }
+
+      screen = await mount(1000)
+      try {
+        await expect.poll(() => aria(rowOf('r0'))).toEqual(['1', '1', '1000'])
+        api!.setPageIndex(1)
+        await expect.poll(() => aria(rowOf('r25'))).toEqual(['1', '26', '1000'])
       } finally {
         await screen.unmount()
       }

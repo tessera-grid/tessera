@@ -8,6 +8,9 @@ import { plainGroupingArgs } from '../stories'
 import { waitForGrid } from './core-helpers'
 import { tableLabels } from '../labels'
 import { rowSelectionModelLabels } from '../../../plugins/rowSelectionModel/labels'
+import { DataGrid } from '../../../grid/DataGrid'
+import { useCreateTable } from '../../../core/useCreateTable'
+import { pagination, rowExpanding } from '../../../plugins'
 
 // Уровень 2 (ADR 0033): эмулятор скринридера `@guidepup/virtual-screen-reader`
 // слушает фокус и live-области реального DOM; грид ведётся реальными клавишами,
@@ -15,6 +18,39 @@ import { rowSelectionModelLabels } from '../../../plugins/rowSelectionModel/labe
 
 const settle = () => new Promise(resolve => setTimeout(resolve, 300))
 const spoken = () => virtual.spokenPhraseLog()
+
+interface TreeItem {
+  id: string
+  name: string
+  subRows?: TreeItem[]
+}
+
+/** Дерево по страницам: 60 строк верхнего уровня, у каждой третьей — вложенные (ADR 0226). */
+const PagedTree = () => {
+  const table = useCreateTable({
+    enableKeyboardNavigation: true,
+    columns: [{ id: 'name', accessorKey: 'name', header: 'Name' }] as never,
+    data: Array.from({ length: 60 }, (_, index): TreeItem => ({
+      id: `r${index}`,
+      name: `Name ${index}`,
+      subRows:
+        index % 3 === 0
+          ? [{ id: `r${index}.0`, name: `Child ${index}` }]
+          : undefined,
+    })),
+    getRowId: (row: TreeItem) => row.id,
+    getSubRows: (row: TreeItem) => row.subRows,
+    plugins: [
+      rowExpanding(),
+      pagination({ initialPageSize: 25, pageNumbers: false }),
+    ] as never,
+  })
+  return (
+    <div style={{ width: 600, height: 500 }}>
+      <DataGrid table={table as never} />
+    </div>
+  )
+}
 
 afterEach(async () => {
   await virtual.stop()
@@ -170,6 +206,26 @@ describe('Эмулятор скринридера (SR)', () => {
     await settle()
     expect((await spoken()).at(-1)).toMatch(
       /^row, .*, not expanded, level 1, position 1, .*set size \d+$/,
+    )
+  })
+
+  test('SZ6: на второй странице фокус на строке верхнего уровня озвучивает её позицию среди всех строк верхнего уровня списка', async () => {
+    await render(<PagedTree />)
+    await waitForGrid()
+    await userEvent.click(
+      document.querySelector<HTMLElement>('[data-page-action="next"]')!,
+    )
+    await expect
+      .poll(() => bodyRows()[0]?.getAttribute('data-row-id'))
+      .toBe('r25')
+    await virtual.start({ container: document.body })
+    // Строка без вложенных: ← переводит фокус с ячейки на строку.
+    bodyRows()[1]!.querySelector<HTMLElement>('[data-kn-cell]')!.focus()
+
+    await userEvent.keyboard('{ArrowLeft}')
+    await settle()
+    expect((await spoken()).at(-1)).toMatch(
+      /^row, .*level 1, position 27, .*set size 60$/,
     )
   })
 })
