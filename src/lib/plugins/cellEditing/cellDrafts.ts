@@ -15,6 +15,7 @@ import {
   commitDrafts,
 } from './session'
 import { rowDeleteDraftKind, rowInsertDraftKind } from './rowDrafts'
+import { noteDiscard } from './discardNotes'
 import type { CellEditingHooks, CellEditingState } from './types'
 
 const hooksOf = (table: unknown) =>
@@ -23,6 +24,22 @@ const hooksOf = (table: unknown) =>
 export const cellValueDraftKind: DraftKind = {
   kind: CELL_VALUE_DRAFT,
   action: 'edit',
+  // Отброшенный черновик — запись истории: «было» — черновик, «стало» — данные (ADR 0222, §14).
+  discard: (table, draft) => {
+    if (!('cell' in draft.target)) return
+    const [rowId, columnId] = draft.target.cell
+    const row = rowSourceOf<{ getValue: (id: string) => unknown }>(table).byId(
+      rowId,
+    )
+    noteDiscard(table, {
+      cell: {
+        rowId,
+        columnId,
+        before: (draft.value as CellDraftValue).value,
+        after: row?.getValue(columnId),
+      },
+    })
+  },
   describe: (_labels, draft) => (draft.value as CellDraftValue).text,
   // Значение из данных; строка не загружена (серверная модель) — прежнего не знаем.
   previous: (_labels, draft, table) => {

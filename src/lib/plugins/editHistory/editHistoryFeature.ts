@@ -7,6 +7,8 @@ import { assignTableAPIs } from '@tanstack/react-table'
 import type { RowData, TableFeature, TableFeatures } from '../../types'
 import {
   type AppHistoryEntry,
+  type EditHistoryChange,
+  type EditHistorySource,
   type EditHistoryState,
   canRedo,
   canUndo,
@@ -30,7 +32,7 @@ interface EditHistoryTableAPI {
   clearHistory: () => void
   getHistory: () => EditHistoryState
   /** Положить свою запись приложения; возвращает её id. */
-  pushHistory: (entry: AppHistoryEntry) => string
+  pushHistory: (entry: AppHistoryEntry) => string | undefined
 }
 
 /* eslint-disable @typescript-eslint/no-unused-vars -- generics карт обязаны
@@ -51,8 +53,14 @@ declare module '@tanstack/react-table' {
   > {
     /** Опции таблицы, которые выставляет плагин (ADR 0167). */
     editHistoryFeature: {
+      /** Виды изменений, которые история пишет (ADR 0222, §16); не задано — все. */
+      editHistorySources?: readonly EditHistorySource[]
+      /** Пишется ли изменение (§16). */
+      editHistoryCanRecordChange?: (change: EditHistoryChange) => boolean
       /** Предел записей истории (ADR 0222, §2). */
       editHistoryLimit?: number
+      /** Ячеек во всех записях истории (ADR 0223, §4). */
+      editHistoryMaxCells?: number
       /** Конфликт при отмене: пропустить ячейку или писать поверх (§6). */
       editHistoryConflict?: 'skip' | 'overwrite'
       /** Пункты «Отменить» и «Повторить» в контекстном меню (§11). */

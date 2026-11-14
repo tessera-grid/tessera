@@ -24,6 +24,7 @@ import {
 import { setPluginState } from '../../core/definePlugin'
 import { reportAction, type DebugActionSource } from '../../core/debugActions'
 import { getDisplayColumns } from '../../core/displayColumns'
+import { readDrafts } from '../../core/drafts/drafts'
 import { flashOutcome } from '../../core/flashes/flashFeature'
 import {
   reportFailure,
@@ -45,7 +46,7 @@ export const ID = 'editHistory'
 /** Запись приложения (ADR 0222, §12). */
 export interface AppHistoryEntry {
   label: string
-  /** Цель «Показать» и выделения. */
+  /** Цель вспышки и выделения. */
   target?: HighlightTarget
   undo: (context: { signal: AbortSignal }) => unknown
   redo: (context: { signal: AbortSignal }) => unknown
@@ -53,15 +54,41 @@ export interface AppHistoryEntry {
 
 export type EditHistorySource = CellsWritten['source'] | 'app'
 
+/**
+ * Изменение, которое история может записать (ADR 0222, §16): вид, ячейки, строки и перенос; у
+ * записи приложения — её подпись.
+ */
+export interface EditHistoryChange {
+  source: Exclude<EditHistorySource, 'undo' | 'redo' | 'apply'>
+  cells: readonly WrittenCell[]
+  rows?: readonly WrittenRow[]
+  move?: WrittenMove
+  label?: string
+}
+
 /** Запись истории для приложения и попапа. */
 export interface EditHistoryEntry {
   id: string
+  /** Подпись одной строкой: действие и цель. */
   label: string
+  /** Действие записи — первая строка пункта попапа. */
+  action: string
+  /** Цель — ячейка, строка или число ячеек — вторая строка пункта. */
+  detail?: string
   source: EditHistorySource
   time: number
   /** Ячеек в записи; у записи приложения — 0. */
   cells: number
   target?: HighlightTarget
+  /** Изменения записи ещё не применены — у ячеек и строк есть черновики (§14). */
+  unsaved: boolean
+}
+
+/** «Применить» после записи `after`: разделитель списка, не шаг (§14). */
+export interface EditHistoryApplied {
+  after: string
+  count: number
+  time: number
 }
 
 /** Срез плагина: счётчики для перерисовки кнопок и попапа. */
@@ -87,10 +114,14 @@ export interface EditHistoryState {
   /** Число выполненных записей: `entries[position - 1]` отменяется следующей. */
   position: number
   busy: boolean
+  /** Применения с сохранёнными изменениями, от старых к новым (§14). */
+  applied: readonly EditHistoryApplied[]
 }
 
 export interface EditHistoryConfig {
   limit: number
+  /** Ячеек во всех записях вместе (ADR 0223, §4). */
+  maxCells: number
   conflict: 'skip' | 'overwrite'
 }
 
@@ -126,6 +157,10 @@ interface Stack {
   echo: Map<string, { stale: unknown; fresh: unknown }>
   /** Эхо последнего переноса: прежнее место строки ещё в данных приложения — не конфликт. */
   moveEcho?: { rowId: string; stale: RowPlace; fresh: RowPlace }
+  /** Что изменил идущий переход к записи — вспышка после него (§11). */
+  changed?: HighlightTarget[]
+  /** Разделители «Применено» (§14). */
+  applied: EditHistoryApplied[]
 }
 
 const stacks = new WeakMap<object, Stack>()
@@ -146,6 +181,7 @@ const stackOf = (table: unknown): Stack => {
       version: 0,
       waiters: new Set(),
       echo: new Map(),
+      applied: [],
     }
     stacks.set(key, stack)
   }
@@ -154,17 +190,32 @@ const stackOf = (table: unknown): Stack => {
 
 type ConfigTable = {
   options: {
+    editHistorySources?: readonly EditHistorySource[]
+    editHistoryCanRecordChange?: (change: EditHistoryChange) => boolean
     editHistoryLimit?: number
+    editHistoryMaxCells?: number
     editHistoryConflict?: 'skip' | 'overwrite'
   }
 }
+
+/** Ячеек во всей истории по умолчанию (ADR 0223, §4). */
+export const DEFAULT_MAX_CELLS = 50_000
 
 const configOf = (table: unknown): EditHistoryConfig => {
   const { options } = table as ConfigTable
   return {
     limit: Math.max(1, options.editHistoryLimit ?? 30),
+    maxCells: Math.max(1, options.editHistoryMaxCells ?? DEFAULT_MAX_CELLS),
     conflict: options.editHistoryConflict ?? 'skip',
   }
+}
+
+/** Пишется ли изменение (§16): вид в списке `sources` и согласие `canRecordChange`. */
+const recordable = (table: unknown, change: EditHistoryChange) => {
+  const { options } = table as ConfigTable
+  const sources = options.editHistorySources
+  if (sources && !sources.includes(change.source)) return false
+  return options.editHistoryCanRecordChange?.(change) ?? true
 }
 
 const publish = (table: unknown) => {
@@ -199,13 +250,45 @@ const actionOfSource = (source: EditHistorySource) =>
             ? source
             : source === 'bulk'
               ? 'bulkEdit'
-              : 'write',
+              : source === 'discard'
+                ? 'cellDraftRollback'
+                : 'write',
       }
 
-const entryLabel = (table: unknown, entry: Entry, labels: TableLabels) => {
-  if (entry.app) return entry.app.label
-  const own = editHistoryLabels(labels)
+/** Действие записи и её цель — ячейка или строка — либо число ячеек. */
+interface EntryParts {
+  action: string
+  target?: string
+  count?: number
+}
+
+const entryParts = (
+  table: unknown,
+  entry: Entry,
+  labels: TableLabels,
+): EntryParts => {
+  if (entry.app) return { action: entry.app.label }
   const rowId = entry.move?.rowId ?? entry.rows?.[0]?.rowId
+  // Отбрасывание одной строки — по строке; с ячейками — числом всего отброшенного (§14).
+  if (entry.source === 'discard' && entry.rows && entry.cells.length > 0)
+    return {
+      action: actionLabelOf(table, actionOfSource('discard'), labels),
+      count: entry.cells.length + entry.rows.length,
+    }
+  if (entry.source === 'discard' && entry.rows?.length === 1) {
+    const change = entry.rows[0]!.change
+    return {
+      action: actionLabelOf(
+        table,
+        {
+          plugin: 'cellEditing',
+          action: change === 'delete' ? 'rowInsertDiscard' : 'rowDeleteDiscard',
+        },
+        labels,
+      ),
+      target: objectTargetText(table, { row: rowId! }, labels),
+    }
+  }
   if (rowId !== undefined) {
     const action = entry.move
       ? { plugin: 'rowDragging', action: 'commitMove' }
@@ -214,23 +297,31 @@ const entryLabel = (table: unknown, entry: Entry, labels: TableLabels) => {
           action:
             entry.rows![0]!.change === 'insert' ? 'rowInsert' : 'rowDelete',
         }
-    return own.entryCell(
-      actionLabelOf(table, action, labels),
-      objectTargetText(table, { row: rowId }, labels),
-    )
+    return {
+      action: actionLabelOf(table, action, labels),
+      target: objectTargetText(table, { row: rowId }, labels),
+    }
   }
-  const name = actionLabelOf(table, actionOfSource(entry.source), labels)
+  const action = actionLabelOf(table, actionOfSource(entry.source), labels)
   const [first] = entry.cells
   return entry.cells.length === 1 && first
-    ? own.entryCell(
-        name,
-        objectTargetText(
+    ? {
+        action,
+        target: objectTargetText(
           table,
           { cell: [first.rowId, first.columnId] },
           labels,
         ),
-      )
-    : own.entryCells(name, entry.cells.length)
+      }
+    : { action, count: entry.cells.length }
+}
+
+/** Подпись записи одной строкой — для имён кнопок и объявлений. */
+const entryLabel = (table: unknown, entry: Entry, labels: TableLabels) => {
+  const own = editHistoryLabels(labels)
+  const { action, target, count } = entryParts(table, entry, labels)
+  if (target !== undefined) return own.entryCell(action, target)
+  return count !== undefined ? own.entryCells(action, count) : action
 }
 
 const labelsOf = (table: unknown) => announcerLabels(table) ?? ENGLISH_LABELS
@@ -263,17 +354,28 @@ export const historyOf = (
   labels: TableLabels = labelsOf(table),
 ): EditHistoryState => {
   const stack = stackOf(table)
+  const drafted = draftKeysOf(table)
   return {
-    entries: stack.entries.map(entry => ({
-      id: entry.id,
-      label: entryLabel(table, entry, labels),
-      source: entry.source,
-      time: entry.time,
-      cells: entry.cells.length,
-      ...(targetOfEntry(entry) ? { target: targetOfEntry(entry) } : {}),
-    })),
+    entries: stack.entries.map((entry, index) => {
+      const own = editHistoryLabels(labels)
+      const { action, target, count } = entryParts(table, entry, labels)
+      const detail =
+        target ?? (count !== undefined ? own.historyCells(count) : undefined)
+      return {
+        id: entry.id,
+        label: entryLabel(table, entry, labels),
+        action,
+        ...(detail !== undefined ? { detail } : {}),
+        source: entry.source,
+        time: entry.time,
+        cells: entry.cells.length,
+        ...(targetOfEntry(entry) ? { target: targetOfEntry(entry) } : {}),
+        unsaved: index < stack.position && hasDrafts(drafted, entry),
+      }
+    }),
     position: stack.position,
     busy: stack.busy > 0,
+    applied: stack.applied,
   }
 }
 
@@ -298,13 +400,50 @@ export const nextLabel = (
 
 // --- Запись -----------------------------------------------------------------------
 
+/** Ячеек в записи для предела объёма: строка и перенос — одна, запись приложения — ноль. */
+const sizeOfEntry = (entry: Entry) =>
+  entry.app
+    ? 0
+    : (entry.rows?.length ?? 0) + (entry.move ? 1 : 0) + entry.cells.length
+
+/** Ключи ячеек и строк с черновиками (§14). */
+const draftKeysOf = (table: unknown) => {
+  const keys = new Set<string>()
+  for (const draft of readDrafts(table)) {
+    if ('cell' in draft.target)
+      keys.add(
+        keyOf({ rowId: draft.target.cell[0], columnId: draft.target.cell[1] }),
+      )
+    else if ('row' in draft.target) keys.add(`row:${draft.target.row}`)
+  }
+  return keys
+}
+
+/** У ячеек или строк записи есть черновики — её изменения ещё не применены. */
+const hasDrafts = (keys: ReadonlySet<string>, entry: Entry) =>
+  keys.size > 0 &&
+  (entry.cells.some(cell => keys.has(keyOf(cell))) ||
+    !!entry.rows?.some(row => keys.has(`row:${row.rowId}`)))
+
+/** Разделители, чьи записи ушли, уходят вместе с ними (§14). */
+const pruneApplied = (stack: Stack) => {
+  const ids = new Set(stack.entries.map(entry => entry.id))
+  stack.applied = stack.applied.filter(mark => ids.has(mark.after))
+}
+
 const push = (table: unknown, entry: Entry) => {
   const stack = stackOf(table)
   stack.entries = stack.entries.slice(0, stack.position)
+  pruneApplied(stack)
   stack.entries.push(entry)
-  const { limit } = configOf(table)
+  const { limit, maxCells } = configOf(table)
   if (stack.entries.length > limit)
     stack.entries.splice(0, stack.entries.length - limit)
+  // Объём истории (ADR 0223, §4): старые записи уходят, пока сумма больше предела; новая — всегда.
+  let total = stack.entries.reduce((sum, item) => sum + sizeOfEntry(item), 0)
+  while (total > maxCells && stack.entries.length > 1)
+    total -= sizeOfEntry(stack.entries.shift()!)
+  pruneApplied(stack)
   stack.position = stack.entries.length
   publish(table)
 }
@@ -332,15 +471,40 @@ const remember = (
  */
 export const recordWritten = (table: unknown, record: CellsWritten) => {
   const stack = stackOf(table)
-  if (record.source === 'undo' || record.source === 'redo') {
+  if (record.source === 'apply') {
+    const after = stack.entries[stack.position - 1]
+    if (after && (record.applied ?? 0) > 0) {
+      stack.applied = [
+        ...stack.applied,
+        { after: after.id, count: record.applied!, time: Date.now() },
+      ]
+      publish(table)
+    }
+  } else if (record.source === 'undo' || record.source === 'redo') {
     if (stack.own) stack.own(record)
     else settleLate(table, record)
+  } else if (
+    !recordable(table, {
+      source: record.source,
+      cells: record.cells,
+      ...(record.rows ? { rows: record.rows } : {}),
+      ...(record.move ? { move: record.move } : {}),
+    })
+  ) {
+    // Не записанное (§16) — без записи; эхо своей записи остаётся: данные приложения догонят.
+    if (record.move)
+      stack.moveEcho = {
+        rowId: record.move.rowId,
+        stale: record.move.from,
+        fresh: record.move.to,
+      }
+    else if (record.cells.length > 0) remember(table, record.cells, 'redo')
   } else if (record.rows && record.rows.length > 0) {
     push(table, {
       id: `history-${++entries}`,
       source: record.source,
       time: Date.now(),
-      cells: [],
+      cells: record.cells,
       rows: record.rows,
     })
   } else if (record.move) {
@@ -395,8 +559,10 @@ const settleLate = (table: unknown, record: CellsWritten) => {
   publish(table)
 }
 
-/** Своя запись приложения (§12); возвращает id записи. */
+/** Своя запись приложения (§12); возвращает id записи, не записанная (§16) — `undefined`. */
 export const pushHistory = (table: unknown, app: AppHistoryEntry) => {
+  if (!recordable(table, { source: 'app', cells: [], label: app.label }))
+    return undefined
   const id = `history-${++entries}`
   push(table, { id, source: 'app', time: Date.now(), cells: [], app })
   return id
@@ -470,14 +636,17 @@ const prepare = (
 }
 
 /**
- * Выделить ячейки записи и прокрутить к ним (§9); скрытые — объявить. `show` — «Показать» (§11):
- * область по центру и вспышка, как у «Показать» журнала отказов и пульта.
+ * Выделить ячейки записи и прокрутить к ним (§9); скрытые — объявить. `show` — нажатие на текущую
+ * запись (§11): область по центру и вспышка, как у «Показать» журнала отказов и пульта; иначе область
+ * копится для вспышки в конце перехода.
  */
 const reveal = (
   table: unknown,
   cells: readonly WrittenCell[],
   indexes?: ReadonlyMap<string, number>,
   show = false,
+  /** Шаг записан черновиками — без вспышки сохранения. */
+  draft = false,
 ) => {
   const source = rowSourceOf<{ id: string }>(table)
   const columns = getDisplayColumns(
@@ -524,21 +693,20 @@ const reveal = (
     ...(source.keyByIndex ? { index: top.index } : {}),
     ...(show ? { align: 'center' as const } : {}),
   })
-  if (show)
-    flashOutcome(
-      table,
-      top === bottom && left === right
-        ? { cell: [top.id, left.id] }
-        : {
-            range: {
-              anchorRowId: top.id,
-              anchorColumnId: left.id,
-              focusRowId: bottom.id,
-              focusColumnId: right.id,
-            },
+  const target: HighlightTarget =
+    top === bottom && left === right
+      ? { cell: [top.id, left.id] }
+      : {
+          range: {
+            anchorRowId: top.id,
+            anchorColumnId: left.id,
+            focusRowId: bottom.id,
+            focusColumnId: right.id,
           },
-      'arrived',
-    )
+        }
+  if (show) flashOutcome(table, target, 'arrived')
+  // Переход к записи: черновики вспышки сохранения не дают — их область вспыхнет в конце (§11).
+  else if (draft) stackOf(table).changed?.push(target)
   return hidden
 }
 
@@ -662,7 +830,7 @@ const writeBack = async (
   cells: readonly WrittenCell[],
   direction: Direction,
   rows: ReadonlyMap<string, LoadedRow>,
-): Promise<CellsWritten | 'none'> => {
+): Promise<CellsWritten | 'none' | 'limited'> => {
   const stack = stackOf(table)
   let settled: CellsWritten | undefined
   let resolve: (record: CellsWritten) => void = () => {}
@@ -681,6 +849,8 @@ const writeBack = async (
       })),
       rows.size > 0 ? { source: direction, rows } : { source: direction },
     )
+    // Отказ предела (ADR 0223, §4) уже показан плашкой — шаг просто не сделан.
+    if (report?.limited) return 'limited'
     if (!report || report.written === 0) return 'none'
     return settled ?? (await done)
   } finally {
@@ -709,6 +879,7 @@ const stepCells = async (
     return false
   }
   const result = await writeBack(table, writes, direction, loaded)
+  if (result === 'limited') return false
   if (result === 'none') {
     notes.push(all => editHistoryLabels(all).announceNotWritable(writes.length))
     return false
@@ -734,7 +905,7 @@ const stepCells = async (
   }
   remember(table, done, direction)
   publish(table)
-  if (reveal(table, done, entry.indexes))
+  if (reveal(table, done, entry.indexes, false, !!result.draft))
     notes.push(all => editHistoryLabels(all).announceHidden)
   return true
 }
@@ -748,6 +919,8 @@ const stepRows = (
   entry: Entry,
   direction: Direction,
   notes: Note[],
+  /** Запись со строками и ячейками: шаг делает часть ячеек. */
+  advance = true,
 ) => {
   const writer = cellWriterOf(table)
   if (!writer) {
@@ -764,10 +937,12 @@ const stepRows = (
         : row,
     ),
   )
+  if (!advance) return true
   const stack = stackOf(table)
   stack.position += direction === 'undo' ? -1 : 1
   publish(table)
   void scrollToRow(table as never, entry.rows![0]!.rowId)
+  stack.changed?.push(...entry.rows!.map(row => ({ row: row.rowId })))
   return true
 }
 
@@ -925,11 +1100,14 @@ export const step = (
     const notes: Note[] = []
     const ok = entry.app
       ? await stepApp(table, entry, direction)
-      : entry.rows
-        ? stepRows(table, entry, direction, notes)
-        : entry.move
-          ? await stepMove(table, entry, index, direction, notes)
-          : await stepCells(table, entry, index, direction, notes)
+      : entry.rows && entry.cells.length > 0
+        ? (stepRows(table, entry, direction, notes, false),
+          await stepCells(table, entry, index, direction, notes))
+        : entry.rows
+          ? stepRows(table, entry, direction, notes)
+          : entry.move
+            ? await stepMove(table, entry, index, direction, notes)
+            : await stepCells(table, entry, index, direction, notes)
     if (ok || notes.length > 0)
       announceLabel(table, all =>
         [
@@ -972,19 +1150,35 @@ export const rewind = async (
     detail: { id: entryId },
     source,
   })
-  if (entryId === null) {
-    while (stack.position > 0)
-      if (!(await step(table, 'undo', source))) return false
-    return true
-  }
-  for (;;) {
-    const index = stack.entries.findIndex(entry => entry.id === entryId)
-    if (index < 0) return false
-    if (index < stack.position - 1) {
-      if (!(await step(table, 'undo', source))) return false
-    } else if (index >= stack.position) {
-      if (!(await step(table, 'redo', source))) return false
-    } else return true
+  // Переход к записи (§11): изменённое за переход вспыхивает в конце; уже на месте — показать её.
+  stack.changed = []
+  let moved = false
+  try {
+    if (entryId === null) {
+      while (stack.position > 0) {
+        moved = true
+        if (!(await step(table, 'undo', source))) return false
+      }
+      return true
+    }
+    for (;;) {
+      const index = stack.entries.findIndex(entry => entry.id === entryId)
+      if (index < 0) return false
+      if (index < stack.position - 1) {
+        moved = true
+        if (!(await step(table, 'undo', source))) return false
+      } else if (index >= stack.position) {
+        moved = true
+        if (!(await step(table, 'redo', source))) return false
+      } else {
+        if (!moved) showEntry(table, entryId)
+        return true
+      }
+    }
+  } finally {
+    const changed = stack.changed
+    stack.changed = undefined
+    if (changed.length > 0) flashOutcome(table, changed, 'arrived')
   }
 }
 
@@ -994,7 +1188,7 @@ export const cancelStep = (table: unknown) => {
   if (stackOf(table).own) cancelPending(table, { kind: 'cellEdit' })
 }
 
-/** Показать ячейки записи без отката (§11). */
+/** Показать ячейки записи без отката — нажатие на текущую запись (§11). */
 export const showEntry = (table: unknown, entryId: string) => {
   const entry = stackOf(table).entries.find(item => item.id === entryId)
   if (

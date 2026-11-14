@@ -267,6 +267,9 @@ export const MODEL_PARITY: ParityBase = {
     same: [
       'enabled',
       'limit',
+      'maxCells',
+      'sources',
+      'canRecordChange',
       'conflict',
       'toolbar',
       'contextMenu',

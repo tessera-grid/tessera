@@ -8,6 +8,7 @@ import { constructRow } from '@tanstack/react-table'
 import { readPluginHooks } from '../../core/definePlugin'
 import { commonOptionsOf } from '../../core/commonFeature'
 import { notifyCellsWritten, type WrittenRow } from '../../core/cellWrites'
+import { noteDiscard } from './discardNotes'
 import { flashOutcome } from '../../core/flashes/flashFeature'
 import {
   type Draft,
@@ -553,6 +554,15 @@ export const rowInsertDraftKind = (
     valuesText(labels, table, (draft.value as RowInsertValue).values),
   apply: (table, draft) => commit(table, [draft]),
   applyAll: table => commitAll(table),
+  // Новая строка уходит — запись истории (ADR 0222, §14).
+  discard: (table, draft) =>
+    noteDiscard(table, {
+      row: {
+        rowId: (draft.target as { row: string }).row,
+        change: 'delete',
+        ...(draft.value as RowInsertValue),
+      },
+    }),
   active: rowsActive,
   rowMark: 'inserted',
 })
@@ -566,6 +576,19 @@ export const rowDeleteDraftKind = (
   action: 'rowDelete',
   apply: (table, draft) => commit(table, [draft]),
   applyAll: table => commitAll(table),
+  // Удалённая строка возвращается — запись истории (ADR 0222, §14).
+  discard: (table, draft) => {
+    const rowId = (draft.target as { row: string }).row
+    const row = (table as RowsTable).getRowSource().byId(rowId)
+    noteDiscard(table, {
+      row: {
+        rowId,
+        change: 'insert',
+        values: row?.original,
+        ...placeInList(table, rowId),
+      },
+    })
+  },
   active: rowsActive,
   rowMark: 'deleted',
 })

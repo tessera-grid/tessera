@@ -44,6 +44,7 @@ import {
   TBT_TARGET_MS,
 } from '../perf.constants'
 import { againstBase, ceilingOver, medianRun } from './baseline'
+import type { ScrollWorkResult } from '../perf.commands'
 import type {
   HeaderAction,
   MenuAction,
@@ -78,6 +79,7 @@ import { pasteData } from '../../../plugins/cellSelection/paste'
 import { columnTotals } from '../../../plugins/columnTotals'
 import { quickSearchModel } from '../../../plugins/quickSearchModel'
 import { failureLog } from '../../../plugins/failureLog'
+import { unsavedChanges } from '../../../plugins/unsavedChanges'
 import { renderPluginsGrid, renderGrid } from './hosts'
 import { DRAFTS, applyAllDrafts, readDrafts } from '../../../core/drafts/drafts'
 import { setPluginState } from '../../../core/definePlugin'
@@ -6625,6 +6627,8 @@ const mountPasteGrid = async (columnCount: number, dataCount: number) => {
   const screen = renderPluginsGrid({
     columnCount,
     dataCount,
+    // Меряется объём вставки, а не пределы записи (ADR 0223).
+    writeLimits: false,
     plugins: [
       cellEditing({ onCommitEdits: () => Promise.resolve() } as never),
       cellSelection(),
@@ -6737,6 +6741,8 @@ describe('Отмена вставки — объём', () => {
         const screen = renderPluginsGrid({
           columnCount: UD23_COLUMNS,
           dataCount: 10_000,
+          // Меряется отмена, а не пределы записи (ADR 0223).
+          writeLimits: false,
           plugins: [
             cellEditing({ onCommitEdits: () => Promise.resolve() } as never),
             cellSelection(),
@@ -6818,6 +6824,124 @@ describe('Отмена вставки — объём', () => {
         undo.longestMs,
         `отмена longest=${undo.longestMs.toFixed(0)}ms, вставка longest=${base.longestMs.toFixed(0)}ms`,
       ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 4,
+  )
+})
+
+// Пределы записи (ADR 0223, LM11): запись порогов вопроса и отказа и отмена большей — вся работа
+// главного потока; значения — в разделе «Замер» ADR 0223, порог отказа — не дольше 1 с.
+const LM11_COLUMNS = 10
+describe('Пределы записи — замер порогов', () => {
+  test(
+    'LM11: запись и отмена confirm и max ячеек на клиенте под ×4 троттлингом CPU — вся работа главного потока',
+    async () => {
+      type WriteTable = PasteTable & {
+        writeCells: (
+          changes: { rowId: string; columnId: string; value: unknown }[],
+        ) => Promise<{ written: number }>
+        undo: () => Promise<boolean>
+        canUndo: () => boolean
+      }
+      const mountWrites = async () => {
+        let table: WriteTable | undefined
+        const screen = renderPluginsGrid({
+          columnCount: LM11_COLUMNS,
+          dataCount: 10_000,
+          writeLimits: false,
+          plugins: [
+            cellEditing({ onCommitEdits: () => Promise.resolve() } as never),
+            cellSelection(),
+            editHistory({ maxCells: 1_000_000 }),
+            {
+              id: 'perfWriteLimits',
+              setup: t => {
+                table = t as never
+              },
+            },
+          ],
+        })
+        await expect.poll(() => table).toBeTruthy()
+        await waitForGrid()
+        const columns = Object.entries(table!.getCellSelectionColumnIndexes())
+          .sort((a, b) => a[1] - b[1])
+          .map(([id]) => id)
+        let round = 0
+        // Каждый вызов пишет новые значения: прогрев и замер — одна и та же работа.
+        const changes = (count: number) => {
+          round++
+          return Array.from({ length: count }, (_, i) => ({
+            rowId: table!.getRowSource().at(Math.floor(i / LM11_COLUMNS))!.id,
+            columnId: columns[i % LM11_COLUMNS]!,
+            value: (i + round) % 90,
+          }))
+        }
+        return { table: table!, screen, changes }
+      }
+      const writeCase = async (count: number) => {
+        const { table, screen, changes } = await mountWrites()
+        let written = 0
+        const result = await measureInteractionWork(async () => {
+          written = (await table.writeCells(changes(count))).written
+        })
+        expect(written).toBe(count)
+        ;(await screen).unmount()
+        return result
+      }
+      const undoCase = async (count: number) => {
+        const { table, screen, changes } = await mountWrites()
+        const result = await measureInteractionWork(
+          async () => {
+            await table.writeCells(changes(count))
+            await expect.poll(() => table.canUndo()).toBe(true)
+            await table.undo()
+          },
+          { warmup: false },
+        )
+        ;(await screen).unmount()
+        return result
+      }
+      const record = (
+        id: string,
+        label: string,
+        size: string,
+        r: ScrollWorkResult,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size,
+          plugins: 'cellEditing, cellSelection, editHistory',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'total',
+              valueMs: r.totalMs,
+              targetMs: 1000,
+              ...r,
+            },
+          ],
+        })
+      await record(
+        'LM11-confirm',
+        'запись 10 000 ячеек',
+        '1000×10',
+        await writeCase(10_000),
+      )
+      await record(
+        'LM11-max',
+        'запись 100 000 ячеек',
+        '10 000×10',
+        await writeCase(100_000),
+      )
+      await record(
+        'LM11-undo',
+        'запись и отмена 100 000 ячеек',
+        '10 000×10',
+        await undoCase(100_000),
+      )
     },
     PERF_TIMEOUT * 4,
   )
@@ -6971,6 +7095,271 @@ describe('Вспышка при смене значения извне', () => {
       expect(
         lit.longestMs,
         `с плагином ${lit.longestMs.toFixed(1)}ms (база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Подсказки точек пульта (ADR 0224, MH7): открытие пульта с 1000 записями с подсказкой точки
+// против той же выборки без неё — пустой текст в словаре полосы подсказки не ставит.
+const MH7_COST = { ratio: 1.15, plusMs: 10 }
+const MH7_DRAFTS = Array.from({ length: 100 }, (_, row) =>
+  Array.from({ length: 10 }, (_, column) => ({
+    kind: 'cellValue',
+    target: { cell: [`item-id-${row}`, `col_${column}`] },
+    value: { value: `v${row}`, text: `v${row}` },
+  })),
+).flat()
+const pultButton = () =>
+  document.querySelector<HTMLElement>('[data-testid="unsaved-changes-button"]')
+const pult = () =>
+  document.querySelector<HTMLElement>('[data-testid="unsaved-changes"]')
+describe('Отзывчивость — подсказки точек пульта', () => {
+  test(
+    'MH7: открытие пульта с 1000 записями с подсказками точек не дороже той же выборки без них',
+    async () => {
+      const measure = async (hints: boolean) => {
+        const screen = renderPluginsGrid({
+          ...LARGE,
+          initialDrafts: MH7_DRAFTS as never,
+          localization: (hints
+            ? undefined
+            : { 'unsavedChanges.markHint': '' }) as never,
+          plugins: [
+            cellEditing({
+              saveMode: 'manual',
+              onCommitEdits: () => undefined,
+            } as never),
+            unsavedChanges(),
+          ],
+        })
+        await expect.poll(pultButton).toBeTruthy()
+        const strips = () =>
+          pult()?.querySelectorAll('[data-popup-entry-mark-hint]').length ?? 0
+        const open = async () => {
+          pultButton()!.click()
+          await expect
+            .poll(() => pult()?.querySelectorAll('[data-draft-kind]').length)
+            .toBeGreaterThan(0)
+        }
+        const result = await measureInteractionWork(open, {
+          afterWarmup: async () => {
+            // Прогрев открыл пульт — с полосами подсказок или без них; замер открывает заново.
+            expect(strips() > 0).toBe(hints)
+            document.dispatchEvent(
+              new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+            )
+            pultButton()!.click()
+            await expect.poll(pult).toBeNull()
+          },
+        })
+        expect(strips() > 0).toBe(hints)
+        ;(await screen).unmount()
+        return result
+      }
+
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const hinted = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = ceilingOver(base.longestMs, MH7_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof hinted,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '1000×1000',
+          plugins: 'unsavedChanges',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('MH7-base', 'пульт без подсказок', base, false)
+      await record('MH7', 'пульт с подсказками', hinted, true)
+
+      expect(
+        hinted.longestMs,
+        `с подсказками: longest=${hinted.longestMs.toFixed(1)}ms, без: ${base.longestMs.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Открытие пульта (ADR 0178, DR57): 1000 черновиков ячеек против 10 — список виртуализирован,
+// открытие рисует окно, а не все записи.
+const DR57_COST = { ratio: 1.5, plusMs: 30 }
+const dr57Drafts = (count: number) =>
+  MH7_DRAFTS.slice(0, count).map(draft => ({ ...draft }))
+describe('Отзывчивость — открытие пульта', () => {
+  test(
+    'DR57: открытие пульта с 1000 черновиками ячеек не дороже открытия с 10 больше чем в 1,5 раза плюс 30 мс',
+    async () => {
+      const measure = async (many: boolean) => {
+        const screen = renderPluginsGrid({
+          ...LARGE,
+          initialDrafts: dr57Drafts(many ? 1000 : 10) as never,
+          plugins: [
+            cellEditing({
+              saveMode: 'manual',
+              onCommitEdits: () => undefined,
+            } as never),
+            unsavedChanges(),
+          ],
+        })
+        await expect.poll(pultButton).toBeTruthy()
+        const open = async () => {
+          pultButton()!.click()
+          await expect
+            .poll(() => pult()?.querySelectorAll('[data-draft-kind]').length)
+            .toBeGreaterThan(0)
+        }
+        const result = await measureInteractionWork(open, {
+          afterWarmup: async () => {
+            pultButton()!.click()
+            await expect.poll(pult).toBeNull()
+          },
+        })
+        ;(await screen).unmount()
+        return result
+      }
+
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const many = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = ceilingOver(base.longestMs, DR57_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof many,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '1000×1000',
+          plugins: 'unsavedChanges',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('DR57-base', 'пульт с 10 черновиками', base, false)
+      await record('DR57', 'пульт с 1000 черновиками', many, true)
+
+      expect(
+        many.longestMs,
+        `1000: longest=${many.longestMs.toFixed(1)}ms, 10: ${base.longestMs.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Вход в раздел «Сортировка» «Настроек вида» (ADR 0215, VW19): 1000 уровней против 10 — список
+// уровней виртуализирован, вход рисует окно.
+const VW19_COST = { ratio: 1.5, plusMs: 30 }
+const sortingRow = () =>
+  settingsPopover()?.querySelector<HTMLElement>(
+    '[data-popup-level] [data-view-settings-section="sorting"]',
+  )
+const sortingLevels = () =>
+  settingsPopover()?.querySelectorAll('[data-view-settings-level]').length ?? 0
+describe('Отзывчивость — уровни «Настроек вида»', () => {
+  test(
+    'VW19: вход в раздел с 1000 уровнями сортировки не дороже входа с 10 больше чем в 1,5 раза плюс 30 мс',
+    async () => {
+      const measure = async (many: boolean) => {
+        const screen = renderPluginsGrid({
+          ...LARGE,
+          plugins: [
+            columnSorting({
+              initialSorting: Array.from(
+                { length: many ? 1000 : 10 },
+                (_, i) => ({ id: `col_${i}`, desc: false }),
+              ),
+            }),
+          ],
+        })
+        await expect
+          .poll(() =>
+            settingsButton()?.hasAttribute('data-base-ui-click-trigger'),
+          )
+          .toBe(true)
+        settingsButton()!.click()
+        await expect.poll(sortingRow).toBeTruthy()
+        const enter = async () => {
+          sortingRow()!.click()
+          await expect.poll(sortingLevels).toBeGreaterThan(0)
+        }
+        const result = await measureInteractionWork(enter, {
+          afterWarmup: async () => {
+            // Прогрев вошёл в раздел; замер входит заново с первого уровня.
+            expect(sortingLevels()).toBeGreaterThan(0)
+            backRow()!.click()
+            await expect.poll(sortingRow).toBeTruthy()
+            await expect.poll(sortingLevels).toBe(0)
+          },
+        })
+        ;(await screen).unmount()
+        return result
+      }
+
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const many = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = ceilingOver(base.longestMs, VW19_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof many,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '1000×1000',
+          plugins: 'columnSorting',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('VW19-base', '10 уровней', base, false)
+      await record('VW19', '1000 уровней', many, true)
+
+      expect(
+        many.longestMs,
+        `1000: longest=${many.longestMs.toFixed(1)}ms, 10: ${base.longestMs.toFixed(1)}ms`,
       ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,

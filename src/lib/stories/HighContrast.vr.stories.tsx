@@ -7362,6 +7362,36 @@ export const HighContrastUnsavedChangesDangerActionsStep4 = {
   tags: ['!test'],
 }
 
+export const HighContrastUnsavedChangesDotHintStep1 = {
+  ...twinStep(
+    panelsUnsavedChangesStories,
+    panelsUnsavedChangesStories.UnsavedChangesDotHint,
+    1,
+  ),
+  name: 'Panels/Unsaved changes — Dot hint, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastUnsavedChangesDotHintStep2 = {
+  ...twinStep(
+    panelsUnsavedChangesStories,
+    panelsUnsavedChangesStories.UnsavedChangesDotHint,
+    2,
+  ),
+  name: 'Panels/Unsaved changes — Dot hint, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastUnsavedChangesDotHintStep3 = {
+  ...twinStep(
+    panelsUnsavedChangesStories,
+    panelsUnsavedChangesStories.UnsavedChangesDotHint,
+    3,
+  ),
+  name: 'Panels/Unsaved changes — Dot hint, шаг 3',
+  tags: ['!test'],
+}
+
 export const HighContrastManualSaveCellsStep1 = {
   ...twinStep(cellsEditingStories, cellsEditingStories.ManualSaveCells, 1),
   name: 'Cells/Editing — Save by button, шаг 1',
@@ -10183,6 +10213,112 @@ export const HighContrastHistoryBackToOriginalStep5 = {
     5,
   ),
   name: 'Cells/Undo & redo — Back to original, шаг 5',
+  tags: ['!test'],
+}
+
+export const HighContrastLargePasteConfirmStep1 = {
+  ...twinStep(
+    cellsPasteFillStories,
+    cellsPasteFillStories.LargePasteConfirm,
+    1,
+  ),
+  name: 'Cells/Paste & fill — Confirm a large paste, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastLargePasteConfirmStep2 = {
+  ...twinStep(
+    cellsPasteFillStories,
+    cellsPasteFillStories.LargePasteConfirm,
+    2,
+  ),
+  name: 'Cells/Paste & fill — Confirm a large paste, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastLargePasteConfirmStep3 = {
+  ...twinStep(
+    cellsPasteFillStories,
+    cellsPasteFillStories.LargePasteConfirm,
+    3,
+  ),
+  name: 'Cells/Paste & fill — Confirm a large paste, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastLargePasteConfirmStep4 = {
+  ...twinStep(
+    cellsPasteFillStories,
+    cellsPasteFillStories.LargePasteConfirm,
+    4,
+  ),
+  name: 'Cells/Paste & fill — Confirm a large paste, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastPasteOverLimitStep1 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.PasteOverLimit, 1),
+  name: 'Cells/Paste & fill — Paste over the limit, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastPasteOverLimitStep2 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.PasteOverLimit, 2),
+  name: 'Cells/Paste & fill — Paste over the limit, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastPasteOverLimitStep3 = {
+  ...twinStep(cellsPasteFillStories, cellsPasteFillStories.PasteOverLimit, 3),
+  name: 'Cells/Paste & fill — Paste over the limit, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoDiscardStep1 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoDiscard, 1),
+  name: 'Cells/Undo & redo — Undo a discard, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoDiscardStep2 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoDiscard, 2),
+  name: 'Cells/Undo & redo — Undo a discard, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoDiscardStep3 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoDiscard, 3),
+  name: 'Cells/Undo & redo — Undo a discard, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastUndoDiscardStep4 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.UndoDiscard, 4),
+  name: 'Cells/Undo & redo — Undo a discard, шаг 4',
+  tags: ['!test'],
+}
+
+export const HighContrastHistoryAppliedStep1 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.HistoryApplied, 1),
+  name: 'Cells/Undo & redo — Unsaved and applied in the history, шаг 1',
+  tags: ['!test'],
+}
+
+export const HighContrastHistoryAppliedStep2 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.HistoryApplied, 2),
+  name: 'Cells/Undo & redo — Unsaved and applied in the history, шаг 2',
+  tags: ['!test'],
+}
+
+export const HighContrastHistoryAppliedStep3 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.HistoryApplied, 3),
+  name: 'Cells/Undo & redo — Unsaved and applied in the history, шаг 3',
+  tags: ['!test'],
+}
+
+export const HighContrastHistoryAppliedStep4 = {
+  ...twinStep(cellsUndoRedoStories, cellsUndoRedoStories.HistoryApplied, 4),
+  name: 'Cells/Undo & redo — Unsaved and applied in the history, шаг 4',
   tags: ['!test'],
 }
 

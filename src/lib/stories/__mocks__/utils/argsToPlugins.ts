@@ -184,6 +184,10 @@ const ASYNC_SLOT_ACTIONS = [...asyncRowActionsDemo, ...asyncHeaderActionsDemo()]
 const capitalize = (name: string) => name[0]!.toUpperCase() + name.slice(1)
 
 /** Аргументы фабрики из аргументов истории: тумблер, подопции по префиксу, колбэки. */
+/** Контрол видов истории без отметок — «не задано»: пишутся все (ADR 0222, §16). */
+const historyArgs = <T extends { sources?: readonly unknown[] }>(args: T): T =>
+  args.sources?.length ? args : { ...args, sources: undefined }
+
 const argsOf = <F extends FactoryName>(
   toggles: FeatureToggles,
   name: F,
@@ -254,7 +258,7 @@ export const argsToPlugins = (o: FeatureToggles) => {
     columnTotals(argsOf(o, 'columnTotals')),
     failureLog(argsOf(o, 'failureLog')),
     unsavedChanges(argsOf(o, 'unsavedChanges')),
-    editHistory(argsOf(o, 'editHistory')),
+    editHistory(historyArgs(argsOf(o, 'editHistory'))),
     // Демо-производитель действий строки как единые дескрипторы (`RowAction`):
     // инлайн — ряд row-кнопок, при `rowActionMenu` схлопываются в overflow-кебаб.
     {

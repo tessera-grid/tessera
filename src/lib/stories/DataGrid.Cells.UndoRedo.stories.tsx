@@ -46,7 +46,7 @@ import type { RowAction } from '../core/headerActions'
  * Отмена и повтор правок (ADR 0222): Ctrl+Z после вставки, отмена на сервере с ответом и
  * отказом, отмена ждущей правки, пропуск ячейки, изменённой извне, история с откатом к шагу,
  * отмена черновиков, своё действие приложения в истории, отмена удаления и переноса строки,
- * возврат к исходному виду.
+ * возврат к исходному виду, отмена отбрасывания и неприменённое в истории.
  */
 const meta = {
   ...dataGridMeta,
@@ -111,6 +111,7 @@ export const UndoRedoPlayground: StoryObj<StoryProps> = {
   parameters: showControls([
     'enableEditHistory',
     'editHistoryLimit',
+    'editHistorySources',
     'editHistoryConflict',
     'editHistoryContextMenu',
     'editHistoryToolbar',
@@ -651,7 +652,7 @@ const HISTORY_REWIND: readonly GuideStoryStep[] = [
   },
   {
     title: 'История открыта',
-    hint: 'Пользователь открыл историю: три правки, новые сверху, ни одна не отменена. У каждой — время и кнопка, которая показывает её ячейки.',
+    hint: 'Пользователь открыл историю: три правки, новые сверху, ни одна не отменена. У каждой — время; синяя точка отмечает текущую, последнюю.',
     enter: untilDone(openCheck, openHistory),
   },
   {
@@ -1273,6 +1274,186 @@ export const HistoryBackToOriginal: StoryObj<StoryProps> = {
     )
     await step(BACK_TO_ORIGINAL[4]!.title, () =>
       next(canvasElement, allBackCheck),
+    )
+    await settle()
+  },
+}
+
+// --- ADR 0222, S12 --------------------------------------------------------------------
+
+const discardAllButton = () =>
+  document.querySelector<HTMLElement>('[data-action="discard-all"]')
+const noDrafts = (root: HTMLElement) =>
+  ROWS_PASTED.every(row => !draftAt(root, row))
+
+const discardedCheck = (root: HTMLElement) =>
+  done.has('discardAll') && noDrafts(root) && pricesAre(root, ORIGINAL)
+const discardUndoneCheck = (root: HTMLElement) =>
+  done.has('undoDiscard') && draftsCheck(root)
+
+/** Открыть пульт и отбросить всё; нажатие посреди открытия пульт пропускает — до итога. */
+const discardEverything = (root: HTMLElement) => {
+  if (!done.has('discardAll') && !draftsCheck(root)) {
+    paste(root)
+    return
+  }
+  if (!panelOpen()) {
+    if (!noDrafts(root)) panelButton(root)?.click()
+    return
+  }
+  done.add('discardAll')
+  discardAllButton()?.click()
+}
+
+const UNDO_DISCARD: readonly GuideStoryStep[] = [
+  {
+    title: 'Правки копятся',
+    hint: 'Приложение сохраняет правки по кнопке: изменённые ячейки ждут применения, а пульт над таблицей собирает их и умеет отбросить.',
+  },
+  {
+    title: 'Вставка — неприменённая',
+    hint: 'Пользователь вставил три цены. На сервер ничего не ушло: ячейки отмечены как неприменённые.',
+    states: ['body.cellRange'],
+    enter: untilDone(draftsCheck, paste),
+  },
+  {
+    title: 'Всё отброшено',
+    hint: 'Пользователь открыл пульт и отбросил все изменения. Пульт пуст, цены прежние, а в истории изменений появилась запись об отбрасывании.',
+    enter: untilDone(discardedCheck, discardEverything),
+  },
+  {
+    title: 'Отбрасывание отменено',
+    hint: 'Пользователь нажал Ctrl+Z. Сначала отменяется последнее действие — отбрасывание: три цены вернулись неприменёнными и снова в пульте.',
+    states: ['body.cellRange'],
+    enter: untilDone(discardUndoneCheck, root => {
+      if (!discardedCheck(root)) {
+        discardEverything(root)
+        return
+      }
+      once('undoDiscard', () => pressUndo(root))
+    }),
+  },
+]
+
+/** ADR 0222, S12: отброшенные в пульте изменения возвращает Ctrl+Z. */
+export const UndoDiscard: StoryObj<StoryProps> = {
+  name: 'Undo a discard',
+  parameters: { scenario: '0222/S12', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Отмена отбрасывания"
+      steps={UNDO_DISCARD}
+      reset={resetGuide}
+      args={guideArgs(DRAFT_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(UNDO_DISCARD[0]!.title, async () => {
+      await waitForRows(canvasElement)
+    })
+    await step(UNDO_DISCARD[1]!.title, () => next(canvasElement, draftsCheck))
+    await step(UNDO_DISCARD[2]!.title, () =>
+      next(canvasElement, discardedCheck),
+    )
+    await step(UNDO_DISCARD[3]!.title, () =>
+      next(canvasElement, discardUndoneCheck),
+    )
+    await settle()
+  },
+}
+
+// --- ADR 0222, S13 --------------------------------------------------------------------
+
+const historyEntry = () =>
+  document.querySelector<HTMLElement>('[data-history-entry]')
+const appliedMark = () =>
+  document.querySelector<HTMLElement>('[data-history-applied]')
+
+const unsavedShownCheck = (root: HTMLElement) =>
+  draftsCheck(root) &&
+  historyOpen() &&
+  historyEntry()?.hasAttribute('data-unsaved') === true
+const appliedShownCheck = (root: HTMLElement) =>
+  done.has('apply') &&
+  historyOpen() &&
+  !!appliedMark() &&
+  historyEntry()?.hasAttribute('data-unsaved') === false &&
+  pricesAre(root, PASTED)
+
+const showUnsaved = (root: HTMLElement) => {
+  if (!draftsCheck(root)) {
+    paste(root)
+    return
+  }
+  if (!historyOpen()) once('open', () => pressToolbar('edit-history-button'))
+}
+
+/** «Применить всё» в пульте, затем снова открыть историю: пульт её закрыл. */
+const applyAndShow = (root: HTMLElement) => {
+  if (!done.has('apply')) {
+    if (!draftsCheck(root)) {
+      paste(root)
+      return
+    }
+    if (panelOpen()) {
+      done.add('apply')
+      applyAll(root)
+    } else panelButton(root)?.click()
+    return
+  }
+  if (!pricesAre(root, PASTED) || panelOpen()) return
+  if (!historyOpen()) once('reopen', () => pressToolbar('edit-history-button'))
+}
+
+const HISTORY_APPLIED: readonly GuideStoryStep[] = [
+  {
+    title: 'Правки копятся',
+    hint: 'Приложение сохраняет правки по кнопке. История изменений отмечает правки, которые ещё не ушли на сервер, и момент, когда их применили.',
+  },
+  {
+    title: 'Вставка — неприменённая',
+    hint: 'Пользователь вставил три цены. На сервер ничего не ушло: ячейки отмечены как неприменённые.',
+    states: ['body.cellRange'],
+    enter: untilDone(draftsCheck, paste),
+  },
+  {
+    title: 'Неприменённое в истории',
+    hint: 'Пользователь открыл историю изменений. Точка у вставки — тона неприменённого: эти правки ещё не отправлены.',
+    enter: untilDone(unsavedShownCheck, showUnsaved),
+  },
+  {
+    title: 'Изменения применены',
+    hint: 'Пользователь применил изменения из пульта и снова открыл историю. Сервер сохранил три цены: точка у вставки синяя, а над вставкой — отметка, сколько изменений применено и когда.',
+    enter: untilDone(appliedShownCheck, applyAndShow),
+  },
+]
+
+/** ADR 0222, S13: история показывает неприменённое и момент применения. */
+export const HistoryApplied: StoryObj<StoryProps> = {
+  name: 'Unsaved and applied in the history',
+  parameters: { scenario: '0222/S13', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Неприменённое в истории"
+      steps={HISTORY_APPLIED}
+      reset={resetGuide}
+      args={guideArgs(DRAFT_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(HISTORY_APPLIED[0]!.title, async () => {
+      await waitForRows(canvasElement)
+    })
+    await step(HISTORY_APPLIED[1]!.title, () =>
+      next(canvasElement, draftsCheck),
+    )
+    await step(HISTORY_APPLIED[2]!.title, () =>
+      next(canvasElement, unsavedShownCheck),
+    )
+    await step(HISTORY_APPLIED[3]!.title, () =>
+      next(canvasElement, appliedShownCheck),
     )
     await settle()
   },

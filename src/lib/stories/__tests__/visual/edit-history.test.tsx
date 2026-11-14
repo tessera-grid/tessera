@@ -13,6 +13,7 @@ import {
   contextMenu,
   editHistory,
   serverRowModel,
+  unsavedChanges,
   valueChangeFlash,
   type EditHistoryOptions,
 } from '../../../plugins'
@@ -20,6 +21,7 @@ import type {
   CellEditBatch,
   CellEditBatchResult,
 } from '../../../plugins/cellEditing/types'
+import { commitAllDrafts } from '../../../plugins/cellEditing/session'
 import { editHistoryLabels } from '../../../plugins/editHistory/labels'
 import { ENGLISH_LABELS } from '../../../core/localization'
 import { humanClick } from '../helpers'
@@ -67,9 +69,17 @@ let answer: (batch: CellEditBatch) => unknown = () => undefined
 interface GridProps {
   history?: EditHistoryOptions | false
   role?: 'table' | 'grid' | 'treegrid'
+  /** Сохранение по кнопке (ADR 0178); `pult` — с пультом несохранённого. */
+  manual?: boolean
+  pult?: boolean
 }
 
-const Grid = ({ history = {}, role = 'grid' }: GridProps) => {
+const Grid = ({
+  history = {},
+  role = 'grid',
+  manual = false,
+  pult = false,
+}: GridProps) => {
   const [rows, setRows] = useState(ROWS)
   const table = useCreateTable({
     columns: COLUMNS as never,
@@ -78,6 +88,7 @@ const Grid = ({ history = {}, role = 'grid' }: GridProps) => {
     enableKeyboardNavigation: role !== 'table',
     plugins: [
       cellEditing({
+        ...(manual ? { saveMode: 'manual' } : {}),
         onCellEdit: () => {},
         onCommitEdits: (batch: CellEditBatch) => {
           const write = (result: CellEditBatchResult | void) => {
@@ -108,6 +119,7 @@ const Grid = ({ history = {}, role = 'grid' }: GridProps) => {
       columnFilteringModel(),
       valueChangeFlash(),
       ...(history === false ? [] : [editHistory(history)]),
+      ...(pult ? [unsavedChanges()] : []),
     ] as never,
   })
   api = table
@@ -414,7 +426,7 @@ describe('История правок на настоящих событиях (
     await screen.unmount()
   })
 
-  test('UD18: «История» — записи новые сверху с подписью, временем и числом ячеек, текущая запись выделена, откаченные приглушены; «Показать» выделяет ячейки записи, прокручивает к ним и вспыхивает их областью без отката; historyPanel false её убирает', async () => {
+  test('UD18: «История» — записи новые сверху: действие первой строкой, цель — ячейка, строка или число ячеек — второй, время справа; записи — пункты списка: текущая на серой подложке выбранного пункта с точкой и подсказкой по наведению, прочие приглушены; нажатие на текущую запись выделяет её ячейки, прокручивает к ним и вспыхивает их областью без отката; historyPanel false её убирает', async () => {
     let screen = await mount()
     for (const [row, value] of [
       ['1', 91],
@@ -439,27 +451,67 @@ describe('История правок на настоящих событиях (
     expect(entries()[0]!.hasAttribute('data-undone')).toBe(true)
     expect(entries()[1]!.hasAttribute('data-undone')).toBe(false)
     expect(entries()[0]!.querySelector('time')).not.toBeNull()
-    expect(entries()[1]!.textContent).toContain(history[1].label)
+    // Действие — первой строкой, цель — второй, отдельным блоком ниже.
+    const action = entries()[1]!.querySelector<HTMLElement>(
+      '[data-history-label]',
+    )!
+    const detail = entries()[1]!.querySelector<HTMLElement>(
+      '[data-history-detail]',
+    )!
+    expect(action.textContent).toBe(history[1].action)
+    expect(detail.textContent).toBe(history[1].detail)
+    expect(detail.getBoundingClientRect().top).toBeGreaterThanOrEqual(
+      action.getBoundingClientRect().bottom - 1,
+    )
     // Текущая — последняя действующая запись: выделена и отмечена для скринридера.
     const currentOf = (entry: HTMLElement) =>
       entry.querySelector('[aria-current="step"]') !== null
     expect(entries().map(currentOf)).toEqual([false, true, false])
     const fill = (entry: HTMLElement) =>
-      getComputedStyle(entry.querySelector('[data-popup-entry]')!)
+      getComputedStyle(entry.querySelector('[data-history-item]')!)
         .backgroundColor
     expect(fill(entries()[1]!)).not.toBe(fill(entries()[2]!))
+    // Признак текущей — точка: у остальных записей точек нет.
+    const dot = (entry: HTMLElement) =>
+      entry.querySelector<HTMLElement>('[data-history-dot]')
+    expect(entries().map(entry => !!dot(entry))).toEqual([false, true, false])
+    // Подсказка точки по наведению.
+    await userEvent.hover(
+      entries()[1]!.querySelector<HTMLElement>('[data-history-dot]')!,
+    )
+    await expect
+      .poll(() =>
+        [...document.querySelectorAll('[data-side]')].some(
+          el => el.textContent?.trim() === labels.historyCurrent,
+        ),
+      )
+      .toBe(true)
+    await userEvent.unhover(
+      entries()[1]!.querySelector<HTMLElement>('[data-history-dot]')!,
+    )
+    // Подпись «Отменено» — только для скринридера.
+    expect(entries()[0]!.textContent).toContain(labels.historyUndone)
+    expect(
+      [...entries()[0]!.querySelectorAll('span')].some(
+        span =>
+          span.textContent?.trim() === labels.historyUndone &&
+          span.getBoundingClientRect().width > 1,
+      ),
+    ).toBe(false)
     const color = (el: Element) =>
       getComputedStyle(el.querySelector('[data-history-label]')!).color
     expect(color(entries()[0]!)).not.toBe(color(entries()[1]!))
-    // «Показать» — выделение без отката.
-    // Кнопка записи проявляется наведением: нажатие по месту попало бы в само облачко.
-    entries()[2]!.querySelector<HTMLElement>('[data-action="reveal"]')!.click()
+    // Нажатие на текущую запись — по месту её точки, как по облачку, — её ячейки без отката:
+    // выделение, прокрутка и вспышка.
+    await humanClick(
+      entries()[1]!.querySelector<HTMLElement>('[data-history-dot]')!,
+    )
     await expect
       .poll(() => api.store.get().cellSelection)
-      .toMatchObject([{ anchorRowId: '1', focusRowId: '1' }])
+      .toMatchObject([{ anchorRowId: '2', focusRowId: '2' }])
     // Вспышка показывает, куда смотреть: выделение одной ячейки — лишь рамка.
     await expect
-      .poll(() => cell('1')!.getAttribute('data-flash'))
+      .poll(() => cell('2')!.getAttribute('data-flash'), { interval: 20 })
       .toBe('arrived')
     expect(api.getHistory().position).toBe(2)
     await screen.unmount()
@@ -526,14 +578,16 @@ describe('История правок на настоящих событиях (
       .toBe(true)
   })
 
-  test('UD19: нажатие на выполненную запись откатывает к ней по очереди и останавливается на первом отказе; на откаченную — повторяет до неё; стрелки и Enter делают то же с клавиатуры', async () => {
-    await mount()
+  test('UD19: нажатие на выполненную запись откатывает к ней по очереди и останавливается на первом отказе; на откаченную — повторяет до неё; после перехода изменённое вспыхивает; стрелки и Enter делают то же с клавиатуры', async () => {
+    const auto = await mount()
     for (const [row, value] of [
       ['1', 91],
       ['2', 92],
       ['3', 93],
     ] as const)
       await write(row, value)
+    // Кнопка истории — из ленивого модуля.
+    await expect.poll(() => byTestId('edit-history-button')).not.toBeNull()
     await humanClick(byTestId('edit-history-button')!)
     const entries = () => [
       ...document.querySelectorAll<HTMLElement>('[data-history-entry]'),
@@ -541,9 +595,13 @@ describe('История правок на настоящих событиях (
     const main = (index: number) =>
       entries()[index]!.querySelector<HTMLElement>('button')!
     await expect.poll(() => entries().length).toBe(3)
+    const flashed = () =>
+      ['1', '2', '3'].filter(row => cell(row)?.hasAttribute('data-flash'))
     await humanClick(main(2))
     await expect.poll(() => api.getHistory().position).toBe(1)
     expect([priceOf('1'), priceOf('2'), priceOf('3')]).toEqual([91, 12, 13])
+    // Изменённое переходом — вторая и третья цены — вспыхивает сохранением шагов.
+    await expect.poll(flashed, { interval: 20 }).toEqual(['2', '3'])
     await humanClick(main(1))
     await expect.poll(() => api.getHistory().position).toBe(2)
     expect(priceOf('2')).toBe(92)
@@ -558,6 +616,29 @@ describe('История правок на настоящих событиях (
     await humanClick(main(2))
     await expect.poll(() => api.getHistory().busy).toBe(false)
     expect(api.getHistory().position).toBe(3)
+    await auto.unmount()
+    // Режим «Применить»: шаги — черновики без вспышки сохранения, область вспыхивает приходом.
+    const manual = await mount({ manual: true })
+    for (const [row, value] of [
+      ['1', 91],
+      ['2', 92],
+    ] as const) {
+      await api.writeCells([{ rowId: row, columnId: 'price', value }], {
+        source: 'paste',
+      })
+      await expect
+        .poll(() => !!cell(row)?.querySelector('[data-cell-draft]'))
+        .toBe(true)
+    }
+    await expect.poll(() => byTestId('edit-history-button')).not.toBeNull()
+    await humanClick(byTestId('edit-history-button')!)
+    await expect.poll(() => entries().length).toBe(2)
+    await humanClick(main(1))
+    await expect.poll(() => api.getHistory().position).toBe(1)
+    await expect
+      .poll(() => cell('2')?.getAttribute('data-flash'), { interval: 20 })
+      .toBe('arrived')
+    await manual.unmount()
   })
 
   test('UD22: axe с color-contrast у кнопок, пунктов меню и попапа истории в обеих темах и ролях table, grid, treegrid; в forced-colors текущая запись и приглушение видны системными цветами', async () => {
@@ -604,8 +685,8 @@ describe('История правок на настоящих событиях (
     // Текущая запись — кромкой системного выделения, толще кромок остальных облачков.
     const edge = (selector: string) =>
       getComputedStyle(document.querySelector(selector)!).outlineWidth
-    expect(edge('[data-popup-entry][data-current]')).toBe('2px')
-    expect(edge('[data-undone] [data-popup-entry]')).toBe('1px')
+    expect(edge('[data-history-item][data-selected]')).toBe('2px')
+    expect(edge('[data-undone] [data-history-item]')).not.toBe('2px')
     expect(getComputedStyle(undone).color).not.toBe(
       getComputedStyle(done).color,
     )
@@ -704,5 +785,159 @@ describe('История правок в серверной модели (ADR 02
     expect(api.getHistory().position).toBe(0)
     // Таблица прокручена к строке по её месту при записи.
     await expect.poll(() => cell('s1')).not.toBeNull()
+  })
+
+  /** Запись в режиме «Применить»: ячейка получает черновик, данные прежние. */
+  const writeDraft = async (rowId: string, value: number) => {
+    await api.writeCells([{ rowId, columnId: 'price', value }], {
+      source: 'paste',
+    })
+    await expect
+      .poll(() => !!cell(rowId)?.querySelector('[data-cell-draft]'))
+      .toBe(true)
+  }
+  const openHistory = async () => {
+    await expect.poll(() => byTestId('edit-history-button')).not.toBeNull()
+    await humanClick(byTestId('edit-history-button')!)
+    await expect.poll(() => byTestId('edit-history')).not.toBeNull()
+  }
+  const historyEntries = () => [
+    ...document.querySelectorAll<HTMLElement>('[data-history-entry]'),
+  ]
+  const draftMarks = () =>
+    ['1', '2', '3'].filter(
+      row => !!cell(row)?.querySelector('[data-cell-draft]'),
+    )
+
+  test('UD37: после отбрасывания Ctrl+Z сначала отменяет отбрасывание: черновики возвращаются, объявления «изменено извне» нет', async () => {
+    await mount({ manual: true, pult: true })
+    await api.writeCells(
+      ['1', '2', '3'].map(rowId => ({ rowId, columnId: 'price', value: 90 })),
+      { source: 'paste' },
+    )
+    await expect.poll(draftMarks).toEqual(['1', '2', '3'])
+    // «Отменить всё» пульта; кнопка пульта — из ленивого модуля.
+    await expect.poll(() => byTestId('unsaved-changes-button')).not.toBeNull()
+    await humanClick(byTestId('unsaved-changes-button')!)
+    const discardAll = () =>
+      document.querySelector<HTMLElement>('[data-action="discard-all"]')
+    await expect.poll(discardAll).not.toBeNull()
+    await humanClick(discardAll()!)
+    await expect.poll(draftMarks).toEqual([])
+    await userEvent.keyboard('{Escape}')
+    // Пульт возвращает фокус своей кнопке, закрываясь: ячейку выбираем после.
+    await expect.poll(() => byTestId('unsaved-changes')).toBeNull()
+    await focusCell('1')
+    await userEvent.keyboard('{Control>}z{/Control}')
+    await expect.poll(draftMarks).toEqual(['1', '2', '3'])
+    const live = [...document.querySelectorAll('[aria-live]')]
+      .map(region => region.textContent)
+      .join('|')
+    expect(live).not.toContain(labels.announceConflicts(3))
+    expect(live).not.toContain(labels.announceConflicts(1))
+  })
+
+  test('UD38: точка — только у текущей записи: тона черновика, пока её изменения не применены, синяя — после «Применить»; неприменённые записи подписаны для скринридера — с пультом и без', async () => {
+    for (const pult of [true, false]) {
+      const screen = await mount({ manual: true, pult })
+      await writeDraft('1', 91)
+      await writeDraft('2', 92)
+      await openHistory()
+      const entry = () => historyEntries()[0]!
+      expect(entry().hasAttribute('data-unsaved')).toBe(true)
+      // Прошлая неприменённая запись — без точки, но подписана для скринридера.
+      const older = historyEntries()[1]!
+      expect(older.hasAttribute('data-unsaved')).toBe(true)
+      expect(older.querySelector('[data-history-dot]')).toBeNull()
+      expect(older.textContent).toContain(labels.historyUnsaved)
+      // Точка тона черновика — иного цвета, чем точка применённой записи.
+      const dotColor = () =>
+        getComputedStyle(
+          entry().querySelector<HTMLElement>('[data-history-dot]')!,
+        ).backgroundColor
+      const unsavedColor = dotColor()
+      expect(entry().textContent).toContain(labels.historyUnsaved)
+      await userEvent.keyboard('{Escape}')
+      // «Применить» — из кода: пометка уходит у открытого попапа.
+      await openHistory()
+      act(() => commitAllDrafts(api))
+      await expect.poll(() => entry().hasAttribute('data-unsaved')).toBe(false)
+      expect(entry().textContent).not.toContain(labels.historyUnsaved)
+      expect(dotColor()).not.toBe(unsavedColor)
+      await userEvent.keyboard('{Escape}')
+      await screen.unmount()
+    }
+  })
+
+  test('UD39: «Применить» с сохранёнными изменениями кладёт разделитель «Применено, N изменений» со временем; Ctrl+Z и откат к шагу его не касаются; уходит с вытесненными записями; без сохранённых изменений разделителя нет', async () => {
+    const screen = await mount({ manual: true, history: { limit: 3 } })
+    await writeDraft('1', 91)
+    await writeDraft('2', 92)
+    act(() => commitAllDrafts(api))
+    await expect.poll(() => api.getHistory().applied.length).toBe(1)
+    await openHistory()
+    const mark = () =>
+      document.querySelector<HTMLElement>('[data-history-applied]')
+    expect(mark()!.textContent).toContain(labels.historyApplied(2))
+    expect(mark()!.querySelector('time')).not.toBeNull()
+    // Разделитель — над записью, после которой применили.
+    expect(mark()!.getBoundingClientRect().top).toBeLessThan(
+      historyEntries()[0]!.getBoundingClientRect().top,
+    )
+    await userEvent.keyboard('{Escape}')
+    // Шаг отмены разделитель не тратит: отменяется сама правка.
+    await focusCell('2')
+    await userEvent.keyboard('{Control>}z{/Control}')
+    await expect.poll(() => api.getHistory().position).toBe(1)
+    expect(api.getHistory().applied).toHaveLength(1)
+    // Сервер отказал всему пакету — разделителя нет.
+    answer = batch => ({
+      refused: batch.cells.map(item => ({
+        rowId: item.rowId,
+        columnId: item.columnId,
+        reason: 'no',
+      })),
+    })
+    act(() => commitAllDrafts(api))
+    await new Promise(resolve => setTimeout(resolve, 100))
+    expect(api.getHistory().applied).toHaveLength(1)
+    // Вытеснение: новые записи сверх предела уносят запись разделителя и его самого.
+    answer = () => undefined
+    await writeDraft('3', 93)
+    await writeDraft('4', 94)
+    await writeDraft('5', 95)
+    await expect.poll(() => api.getHistory().applied.length).toBe(0)
+    await screen.unmount()
+  })
+
+  test('UD40: пометка неприменённого и разделитель — axe с color-contrast в обеих темах, видны в forced-colors', async () => {
+    await mount({ manual: true })
+    await writeDraft('1', 91)
+    act(() => commitAllDrafts(api))
+    await expect.poll(() => api.getHistory().applied.length).toBe(1)
+    await writeDraft('2', 92)
+    await openHistory()
+    await expect
+      .poll(() => document.querySelector('[data-history-applied]'))
+      .not.toBeNull()
+    expect(historyEntries()[0]!.hasAttribute('data-unsaved')).toBe(true)
+    await inBothThemes(async () => {
+      const result = await axe.run(byTestId('edit-history')!, {
+        ...AXE_OPTIONS,
+        rules: { ...AXE_OPTIONS.rules, 'color-contrast': { enabled: true } },
+      })
+      expect(result.violations.map(v => v.id)).toEqual([])
+    })
+    await pointer.forcedColors(true)
+    const mark = document.querySelector<HTMLElement>('[data-history-applied]')!
+    expect(getComputedStyle(mark).color).not.toBe('rgba(0, 0, 0, 0)')
+    const dot =
+      historyEntries()[0]!.querySelector<HTMLElement>('[data-history-dot]')!
+    const shown = getComputedStyle(dot)
+    expect(
+      shown.backgroundColor !== 'rgba(0, 0, 0, 0)' ||
+        shown.borderStyle !== 'none' ||
+        shown.outlineStyle !== 'none',
+    ).toBe(true)
   })
 })

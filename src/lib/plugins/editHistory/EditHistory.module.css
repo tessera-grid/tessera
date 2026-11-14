@@ -1,4 +1,4 @@
-/* История правок (ADR 0222, §11): попап со списком записей облачками, как у журнала отказов. */
+/* История правок (ADR 0222, §11): попап со списком записей — пунктами, как выбор размера страницы. */
 .popup {
   width: var(--tsr-comp-popup-max-width);
   max-width: calc(100vw - 16px);
@@ -14,40 +14,68 @@
   width: 100%;
 }
 
-/* Место записи в окне; зазор между облачками — её верхнее поле, у первой его нет. */
+/* Место записи в окне. */
 .entry {
   position: absolute;
   inset-inline: 0;
   top: 0;
-  padding-block-start: var(--tsr-comp-popup-padding);
 }
 
-.entry[data-index='0'] {
-  padding-block-start: 0;
-}
-
-.label {
-  overflow-wrap: anywhere;
-}
-
-/* Откаченная запись — приглушённым цветом подписи раздела, не прозрачностью: текст держит контраст. */
-[data-undone] .label,
-.undone {
+/*
+ * Запись — пункт-кнопка: текущая — серой подложкой выбранного пункта кита, прочие — приглушённым
+ * цветом подписи раздела (не прозрачностью: текст держит контраст).
+ */
+.item {
+  width: 100%;
+  margin: 0;
+  border: 0;
+  background: transparent;
   color: var(--tsr-comp-popup-group-label-color);
-  font-weight: normal;
+  font: inherit;
+  text-align: start;
+}
+
+.item[data-selected] {
+  color: inherit;
+}
+
+.item:not([data-selected]):hover,
+.item:focus-visible {
+  background-color: var(--tsr-comp-control-hover-bg);
+  outline: var(--tsr-comp-popup-item-highlighted-outline);
+  outline-offset: -1px;
+}
+
+.item [data-history-label] {
+  overflow-wrap: anywhere;
 }
 
 .time {
   flex: none;
+  margin-inline-start: auto;
   color: var(--tsr-comp-popup-group-label-color);
-  font-weight: normal;
   font-variant-numeric: tabular-nums;
 }
 
-/* Высокая контрастность: приглушение — системным цветом недоступного текста. */
+/* Разделитель «Применено» (ADR 0222, §14) — подписью раздела, как у пульта черновиков (PK33). */
+.applied {
+  display: flex;
+  justify-content: space-between;
+  gap: calc(var(--tsr-comp-popup-padding) * 2);
+  padding: var(--tsr-comp-popup-padding) var(--tsr-comp-popup-item-padding-x);
+  color: var(--tsr-comp-popup-group-label-color);
+  font-size: var(--tsr-comp-popup-title-font-size);
+  font-weight: 600;
+}
+
+/* Высокая контрастность: приглушение — системным серым, текущая запись — рамкой `Highlight`. */
 @media (forced-colors: active) {
-  [data-undone] .label,
-  .undone {
+  .item:not([data-selected]) {
     color: GrayText;
+  }
+
+  .item[data-selected] {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
   }
 }

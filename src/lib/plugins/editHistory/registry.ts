@@ -13,7 +13,8 @@ import {
 } from '../../shared/toolbarPlacement'
 import { redoContextAction, undoContextAction } from './contextActions'
 import { editHistoryFeature } from './editHistoryFeature'
-import { EMPTY_SLICE, ID, recordWritten } from './history'
+import { EMPTY_SLICE, ID, recordWritten, DEFAULT_MAX_CELLS } from './history'
+import type { EditHistoryChange, EditHistorySource } from './history'
 import { HistoryButton, UndoRedoButtons } from './HistoryButtons'
 import { editHistoryKeys } from './keys'
 import { editHistoryLabels } from './labels'
@@ -24,8 +25,17 @@ export const EDIT_HISTORY_TOOLBAR_GROUP = 'history'
 export interface EditHistoryOptions {
   /** `false` — плагин отключён. */
   enabled?: boolean
+  /**
+   * Виды изменений, которые пишутся в историю (ADR 0222, §16): `'edit'`, `'paste'`, `'row'`, `'app'`…;
+   * не задано — все. Не записанное не отменяется.
+   */
+  sources?: readonly EditHistorySource[]
+  /** Пишется ли изменение (§16): вместе со `sources` — запись, если согласны оба. */
+  canRecordChange?: (change: EditHistoryChange) => boolean
   /** Предел записей; старейшая уходит. По умолчанию 30. */
   limit?: number
+  /** Ячеек во всех записях вместе; старейшие уходят. По умолчанию 50 000 (ADR 0223). */
+  maxCells?: number
   /** Ячейка изменилась извне после записи: пропустить (по умолчанию) или писать поверх. */
   conflict?: 'skip' | 'overwrite'
   /** Кнопки «Отменить» и «Повторить» в тулбаре; `false` — без них. */
@@ -55,7 +65,10 @@ const editHistoryEntry = definePlugin<EditHistoryOptions>()({
   state: () => EMPTY_SLICE,
   options: o => ({
     cellsWritten: recordWritten,
+    editHistorySources: o.sources,
+    editHistoryCanRecordChange: o.canRecordChange,
     editHistoryLimit: o.limit ?? 30,
+    editHistoryMaxCells: o.maxCells ?? DEFAULT_MAX_CELLS,
     editHistoryConflict: o.conflict ?? 'skip',
     editHistoryContextMenu: o.contextMenu !== false,
   }),
@@ -90,6 +103,8 @@ export const editHistory = withBody(editHistoryEntry, { keys: editHistoryKeys })
 
 export type {
   AppHistoryEntry,
+  EditHistoryChange,
+  EditHistorySource,
   EditHistoryEntry,
   EditHistoryState,
 } from './history'

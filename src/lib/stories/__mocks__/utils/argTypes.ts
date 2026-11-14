@@ -560,6 +560,33 @@ export const editHistoryLimitType = numberControl(
   { min: 1, max: 200, step: 1 },
   '30',
 )
+export const editHistoryMaxCellsType = numberControl(
+  'Сколько ячеек помнят все записи истории вместе (`maxCells`); старейшие уходят',
+  { min: 1, max: 1_000_000, step: 1000 },
+  '50000',
+)
+/** Виды изменений, которые пишутся в историю (ADR 0222, §16). */
+export const editHistorySourcesType: InputType = {
+  control: 'check',
+  options: [
+    'edit',
+    'paste',
+    'fill',
+    'fillDown',
+    'fillRight',
+    'bulk',
+    'clear',
+    'cut',
+    'api',
+    'row',
+    'move',
+    'discard',
+    'app',
+  ],
+  description:
+    'Какие изменения пишутся в историю (`sources`); ничего не отмечено — все. Не записанное не отменяется',
+  table: { defaultValue: { summary: 'все' } },
+}
 export const editHistoryConflictType = radioControl(
   'Ячейка изменилась извне после правки (`conflict`): `skip` — отмена её пропускает, `overwrite` — пишет поверх',
   ['skip', 'overwrite'],

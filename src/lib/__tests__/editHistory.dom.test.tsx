@@ -13,8 +13,10 @@ import { registerAnnouncer } from '../core/announcer'
 import { cancelPending } from '../core/cancellation'
 import type { DebugAction } from '../core/debugActions'
 import { readPluginHooks } from '../core/definePlugin'
+import { type Draft, discardDraft } from '../core/drafts/drafts'
 import { readFailures } from '../core/failures/failuresFeature'
 import { ENGLISH_LABELS } from '../core/localization'
+import { readServerAction } from '../core/serverActions'
 import { useCreateTable } from '../core/useCreateTable'
 import {
   cellEditing,
@@ -65,6 +67,10 @@ interface HostProps {
   saveMode?: 'auto' | 'manual'
   conflict?: 'skip' | 'overwrite'
   limit?: number
+  maxCells?: number
+  sources?: readonly string[]
+  canRecordChange?: (change: any) => boolean
+  writeLimits?: { confirm?: number; max?: number } | false
   canEditCell?: (ctx: { column: { id: string } }) => boolean
   onDebugAction?: (action: DebugAction) => void
   /** Перенос строк: `onRowDragEnd` получает каждый перенос. */
@@ -84,6 +90,7 @@ const apply = (rows: Row[], batch: CellEditBatch, refused: Set<string>) =>
   insertRows(
     rows.filter(row => !(batch.deletes ?? []).some(d => d.rowId === row.id)),
     batch,
+    refused,
   ).map(row => {
     const cells = batch.cells.filter(
       cell =>
@@ -98,8 +105,10 @@ const apply = (rows: Row[], batch: CellEditBatch, refused: Set<string>) =>
   })
 
 /** Новые строки пакета — за строкой над ними, как у приложения (ADR 0178, §7). */
-const insertRows = (rows: Row[], batch: CellEditBatch) =>
+// Отказ строки приходит без колонки: отказанную новую строку приложение не добавляет.
+const insertRows = (rows: Row[], batch: CellEditBatch, refused: Set<string>) =>
   (batch.inserts ?? []).reduce((next, insert) => {
+    if (refused.has(`${insert.rowId}:undefined`)) return next
     const at = insert.after
       ? next.findIndex(row => row.id === insert.after) + 1
       : 0
@@ -113,6 +122,10 @@ const Host = ({
   saveMode = 'auto',
   conflict,
   limit,
+  maxCells,
+  sources,
+  canRecordChange,
+  writeLimits,
   canEditCell,
   onDebugAction,
   onRowDragEnd,
@@ -125,6 +138,7 @@ const Host = ({
     data: rows,
     getRowId: (row: Row) => row.id,
     ...(onDebugAction ? { onDebugAction } : {}),
+    ...(writeLimits === undefined ? {} : { writeLimits }),
     plugins: [
       cellEditing({
         saveMode,
@@ -176,7 +190,10 @@ const Host = ({
       editHistory({
         ...(conflict ? { conflict } : {}),
         ...(limit ? { limit } : {}),
-      }),
+        ...(maxCells ? { maxCells } : {}),
+        ...(sources ? { sources } : {}),
+        ...(canRecordChange ? { canRecordChange } : {}),
+      } as never),
     ],
   } as never)
   return null
@@ -681,6 +698,159 @@ describe('История правок (ADR 0222)', () => {
     expect(await rewindAll()).toBe(true)
   })
 
+  it('LM5: шаг истории, после которого черновиков стало бы больше max, отказывает с причиной; запись остаётся на месте', async () => {
+    render({ saveMode: 'manual', writeLimits: { max: 10 } })
+    await write([
+      { rowId: '1', columnId: 'age', value: 91 },
+      { rowId: '2', columnId: 'age', value: 92 },
+    ])
+    await act(async () => {
+      commitAllDrafts(table)
+    })
+    await flush()
+    expect(ageOf('1')).toBe(91)
+    // Предел опускают: отмена применённой правки дала бы два черновика при max 1.
+    render({ saveMode: 'manual', writeLimits: { max: 1 } })
+    expect(await undo()).toBe(false)
+    expect(table.getHistory().position).toBe(1)
+    expect(table.getHistory().entries).toHaveLength(1)
+    expect(readServerAction(table).failed?.kind).toBe('write')
+    expect(table.getDrafts()).toEqual([])
+  })
+
+  it('LM7: maxCells — сумма ячеек записей больше предела: уходят самые старые записи; запись больше предела остаётся одна', async () => {
+    render({ maxCells: 3 })
+    await write([
+      { rowId: '1', columnId: 'age', value: 91 },
+      { rowId: '2', columnId: 'age', value: 92 },
+    ])
+    await write([
+      { rowId: '3', columnId: 'age', value: 93 },
+      { rowId: '4', columnId: 'age', value: 94 },
+    ])
+    // Четыре ячейки при пределе три — первая запись ушла.
+    expect(table.getHistory().entries).toHaveLength(1)
+    expect(table.getHistory().entries[0].cells).toBe(2)
+    await write(
+      ['0', '1', '2', '3', '4'].map(rowId => ({
+        rowId,
+        columnId: 'age',
+        value: 70,
+      })),
+    )
+    expect(table.getHistory().entries).toHaveLength(1)
+    expect(table.getHistory().entries[0].cells).toBe(5)
+  })
+
+  it('UD35: отбрасывание черновиков ячеек — одна запись истории на действие; отмена возвращает черновики с прежними значениями, повтор снова отбрасывает', async () => {
+    render({ saveMode: 'manual' })
+    await write([
+      { rowId: '1', columnId: 'age', value: 91 },
+      { rowId: '2', columnId: 'age', value: 92 },
+      { rowId: '3', columnId: 'age', value: 93 },
+    ])
+    const cellDrafts = () =>
+      (table.getDrafts() as Draft[]).filter(draft => draft.kind === 'cellValue')
+    expect(cellDrafts()).toHaveLength(3)
+    // «Отменить всё» пульта — один проход по черновикам: одна запись.
+    act(() => {
+      for (const draft of cellDrafts()) discardDraft(table, draft)
+    })
+    await flush()
+    const { entries } = table.getHistory()
+    expect(entries).toHaveLength(2)
+    expect(entries[1]).toMatchObject({ source: 'discard', cells: 3 })
+    expect(cellDrafts()).toHaveLength(0)
+    await undo()
+    expect(
+      cellDrafts().map(
+        (draft: Draft) => (draft.value as { value: unknown }).value,
+      ),
+    ).toEqual([91, 92, 93])
+    await redo()
+    expect(cellDrafts()).toHaveLength(0)
+    // Одна ячейка — запись на одну цель.
+    await undo()
+    act(() => discardDraft(table, cellDrafts()[0]!))
+    await flush()
+    expect(table.getHistory().entries.at(-1)).toMatchObject({
+      source: 'discard',
+      cells: 1,
+    })
+  })
+
+  it('UD36: «Откатить» новой или удалённой строки и «Отбросить» отказанной строки в журнале отказов — запись истории; отмена возвращает черновик строки, повтор снова откатывает', async () => {
+    let refuseRows = false
+    render({
+      saveMode: 'manual',
+      flat: true,
+      answer: batch =>
+        refuseRows
+          ? {
+              refused: (batch.inserts ?? []).map(item => ({
+                rowId: item.rowId,
+                reason: 'no',
+              })),
+            }
+          : undefined,
+    })
+    const kinds = (rowId: string) =>
+      (table.getDrafts() as Draft[])
+        .filter(draft => 'row' in draft.target && draft.target.row === rowId)
+        .map(draft => draft.kind)
+    const rowDraftOf = (rowId: string) =>
+      (table.getDrafts() as Draft[]).find(
+        draft => 'row' in draft.target && draft.target.row === rowId,
+      )!
+    // Новая строка: откат убирает её, отмена отката возвращает.
+    let id = ''
+    act(() => {
+      id = table.addRow({ name: 'New', age: 50 }, { index: 1 })
+    })
+    act(() => discardDraft(table, rowDraftOf(id)))
+    await flush()
+    expect(table.getHistory().entries.at(-1)).toMatchObject({
+      source: 'discard',
+    })
+    expect(kinds(id)).toEqual([])
+    await undo()
+    expect(kinds(id)).toEqual(['rowInsert'])
+    await redo()
+    expect(kinds(id)).toEqual([])
+    // Удалённая строка: откат возвращает её, отмена отката снова удаляет.
+    act(() => table.removeRow('2'))
+    act(() => discardDraft(table, rowDraftOf('2')))
+    await flush()
+    expect(kinds('2')).toEqual([])
+    await undo()
+    expect(kinds('2')).toEqual(['rowDelete'])
+    await redo()
+    expect(kinds('2')).toEqual([])
+    // Журнал отказов: «Отбросить» отказанной новой строки — тоже запись.
+    refuseRows = true
+    act(() => {
+      id = table.addRow({ name: 'Refused', age: 51 }, { index: 1 })
+    })
+    await act(async () => {
+      commitAllDrafts(table)
+    })
+    await flush()
+    const failure = Object.values(readFailures(table)).find(
+      item => 'row' in item.target && item.target.row === id,
+    )!
+    expect(failure.discard).toBeDefined()
+    const before = table.getHistory().entries.length
+    act(() => failure.discard!())
+    await flush()
+    expect(kinds(id)).toEqual([])
+    expect(table.getHistory().entries).toHaveLength(before + 1)
+    expect(table.getHistory().entries.at(-1)).toMatchObject({
+      source: 'discard',
+    })
+    await undo()
+    expect(kinds(id)).toEqual(['rowInsert'])
+  })
+
   it('UD26: режим «Применить» — addRow даёт запись; отмена убирает новую строку, а применённую — кладёт черновик удаления; повтор возвращает строку с тем же id, значениями и местом', async () => {
     render({ saveMode: 'manual', flat: true })
     let id = ''
@@ -809,5 +979,127 @@ describe('История правок (ADR 0222)', () => {
   it('UD25: умолчание маркера — режим range и при включённой истории', () => {
     render()
     expect(table.options.cellSelectionHandle.mode).toBe('range')
+  })
+
+  it('UD41: sources — пишутся только изменения перечисленных видов: ячеек, строк, отбрасывания и записи приложения; не записанное в попапе не видно и Ctrl+Z его не отменяет', async () => {
+    render({ sources: ['paste'], saveMode: 'manual', flat: true })
+    await write([{ rowId: '0', columnId: 'age', value: 70 }], 'paste')
+    await write([{ rowId: '1', columnId: 'age', value: 71 }], 'api')
+    let id: string | undefined = ''
+    act(() => {
+      table.addRow({ name: 'New', age: 50 }, { index: 1 })
+      id = table.pushHistory({ label: 'Mine', undo: () => {}, redo: () => {} })
+    })
+    await flush()
+    expect(id).toBeUndefined()
+    expect(
+      table
+        .getHistory()
+        .entries.map((entry: { source: string }) => entry.source),
+    ).toEqual(['paste'])
+    // Отбрасывание черновика — тоже вид: без 'discard' записи нет.
+    const draft = (table.getDrafts() as Draft[]).find(
+      item => 'cell' in item.target && item.target.cell[0] === '1',
+    )!
+    act(() => discardDraft(table, draft))
+    await flush()
+    expect(table.getHistory().entries).toHaveLength(1)
+    expect(await undo()).toBe(true)
+    expect(await undo()).toBe(false)
+  })
+
+  it('UD42: canRecordChange получает вид, ячейки, строки и перенос, у записи приложения — подпись; запись пишется, если вид в sources и предикат согласен; pushHistory не записанной возвращает undefined', async () => {
+    const seen: any[] = []
+    render({
+      sources: ['paste', 'app'],
+      canRecordChange: change => {
+        seen.push(change)
+        return change.source === 'app'
+          ? change.label === 'Kept'
+          : change.cells.every(
+              (cell: { columnId: string }) => cell.columnId === 'age',
+            )
+      },
+    })
+    await write([{ rowId: '0', columnId: 'age', value: 70 }])
+    await write([{ rowId: '1', columnId: 'name', value: 'Other' }])
+    await write([{ rowId: '2', columnId: 'age', value: 72 }], 'api')
+    let kept: string | undefined
+    let dropped: string | undefined = ''
+    act(() => {
+      kept = table.pushHistory({
+        label: 'Kept',
+        undo: () => {},
+        redo: () => {},
+      })
+      dropped = table.pushHistory({
+        label: 'Dropped',
+        undo: () => {},
+        redo: () => {},
+      })
+    })
+    expect(typeof kept).toBe('string')
+    expect(dropped).toBeUndefined()
+    expect(seen[0]).toMatchObject({
+      source: 'paste',
+      cells: [{ rowId: '0', columnId: 'age', before: 20, after: 70 }],
+    })
+    // Вид вне sources до предиката не доходит.
+    expect(seen.map(change => change.source)).toEqual([
+      'paste',
+      'paste',
+      'app',
+      'app',
+    ])
+    expect(seen.find(change => change.source === 'app')).toMatchObject({
+      label: 'Kept',
+      cells: [],
+    })
+    expect(
+      table
+        .getHistory()
+        .entries.map((entry: { source: string }) => entry.source),
+    ).toEqual(['paste', 'app'])
+  })
+
+  it('UD43: смена sources и canRecordChange на лету действует на новые изменения, прежние записи остаются', async () => {
+    render({ sources: ['paste'] })
+    await write([{ rowId: '0', columnId: 'age', value: 70 }])
+    render({ sources: ['api'] })
+    await write([{ rowId: '1', columnId: 'age', value: 71 }])
+    await write([{ rowId: '2', columnId: 'age', value: 72 }], 'api')
+    expect(
+      table
+        .getHistory()
+        .entries.map((entry: { source: string }) => entry.source),
+    ).toEqual(['paste', 'api'])
+    render({ canRecordChange: () => false })
+    await write([{ rowId: '3', columnId: 'age', value: 73 }])
+    expect(table.getHistory().entries).toHaveLength(2)
+    render({})
+    await write([{ rowId: '4', columnId: 'age', value: 74 }])
+    expect(table.getHistory().entries).toHaveLength(3)
+  })
+
+  it("UD44: отмена записи, чьи ячейки с тех пор изменило не записанное в историю изменение, — конфликт: 'skip' пропускает ячейку и объявляет, 'overwrite' пишет поверх", async () => {
+    render({ sources: ['paste'] })
+    await write([
+      { rowId: '0', columnId: 'age', value: 70 },
+      { rowId: '1', columnId: 'age', value: 71 },
+    ])
+    await write([{ rowId: '0', columnId: 'age', value: 80 }], 'api')
+    expect(table.getHistory().entries).toHaveLength(1)
+    announce()
+    await undo()
+    expect(ageOf('0')).toBe(80)
+    expect(ageOf('1')).toBe(21)
+    expect(said()).toContain(own.announceConflicts(1))
+    act(() => root!.unmount())
+    root = undefined
+    render({ sources: ['paste'], conflict: 'overwrite' })
+    await write([{ rowId: '0', columnId: 'age', value: 70 }])
+    await write([{ rowId: '0', columnId: 'age', value: 80 }], 'api')
+    await undo()
+    expect(ageOf('0')).toBe(20)
   })
 })

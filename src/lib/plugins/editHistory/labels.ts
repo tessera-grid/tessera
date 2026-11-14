@@ -18,12 +18,19 @@ export interface EditHistoryLabels {
   historyEmpty: string
   /** Пояснение пустой истории. */
   historyEmptyDescription: string
-  /** Запись истории: показать её ячейки. */
-  historyShow: string
   /** Кнопка подвала попапа: к виду до первой правки (§11). */
   historyOriginal: string
   /** Откаченная запись — для скринридера. */
   historyUndone: string
+  /** Пометка записи, чьи изменения ещё не применены (§14). */
+  historyUnsaved: string
+  /** Подсказка точки текущей записи (§11). */
+  historyCurrent: string
+  historyCurrentUnsaved: string
+  /** Разделитель «Применить» (§14). */
+  historyApplied: (count: number) => string
+  /** Вторая строка пункта попапа у операции над несколькими ячейками. */
+  historyCells: (count: number) => string
   /** Запись операции над несколькими ячейками (`name` — действие, `count` — ячеек). */
   entryCells: (name: string, count: number) => string
   /** Запись правки одной ячейки (`name` — действие, `target` — ячейка). */
@@ -59,9 +66,15 @@ export const editHistoryLabels = defineLabels<EditHistoryLabels>()(
     history: 'Change history',
     historyEmpty: 'No changes yet',
     historyEmptyDescription: 'Edits you make in the table will appear here',
-    historyShow: 'Show',
     historyOriginal: 'Back to original',
     historyUndone: 'Undone',
+    historyUnsaved: 'Not applied',
+    historyCurrent: 'Current state',
+    historyCurrentUnsaved: 'Current state, not applied',
+    historyApplied: 'Applied, {count} changes',
+    historyApplied_one: 'Applied, {count} change',
+    historyCells: '{count} cells',
+    historyCells_one: '{count} cell',
     entryCells: '{name}, {count} cells',
     entryCells_one: '{name}, {count} cell',
     entryCell: '{name}: {target}',
@@ -82,7 +95,9 @@ export const editHistoryLabels = defineLabels<EditHistoryLabels>()(
   {
     undoEntry: ['name'],
     redoEntry: ['name'],
+    historyCells: ['count'],
     entryCells: ['name', 'count'],
+    historyApplied: ['count'],
     entryCell: ['name', 'target'],
     announceUndone: ['name'],
     announceRedone: ['name'],

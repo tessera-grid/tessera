@@ -14,7 +14,7 @@ import { ENTRY, exportNames, firstParamProps, typeProps } from './publicTypes'
 const TYPES_TIMEOUT = 120_000
 
 /** Объект предиката разрешения: `can<Глагол><Объект>`. */
-const PREDICATE = /^can[A-Z][a-z]+(Cell|Row|Column|Header)$/
+const PREDICATE = /^can[A-Z][a-z]+(Cell|Row|Column|Header|Change)$/
 
 describe('правило имён (ADR 0106)', () => {
   it(

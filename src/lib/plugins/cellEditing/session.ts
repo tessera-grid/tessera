@@ -51,6 +51,7 @@ import {
   removeDrafts,
   setDraft as putDraft,
   writeDrafts,
+  discardDraft,
 } from '../../core/drafts/drafts'
 import {
   type CellWriteSource,
@@ -1254,6 +1255,16 @@ export const commitDrafts = (table: unknown, drafts: readonly Draft[]) => {
     removeAfterAppData(table, handedOver)
     flashOutcome(table, reverted, 'reverted')
     flashOutcome(table, accepted, 'accepted')
+    // Применено хоть что-то — разделитель в истории (ADR 0222, §14).
+    const applied = saved.size + settledRows.size
+    if (applied > 0)
+      notifyCellsWritten(table, {
+        id: `apply-${attempt}`,
+        source: 'apply',
+        cells: [],
+        refused: [],
+        applied,
+      })
   }
   const answerOf = (answer: unknown) => {
     const batch = answer as CellEditBatchResult | undefined
@@ -1727,7 +1738,13 @@ const reportRowFailure = (table: unknown, draft: Draft, reason: string) => {
       )
       if (current) commitDrafts(table, [current])
     },
-    discard: () => removeDraft(table, draft.kind, { row: rowId }),
+    // Тем же путём, что пульт: отбрасывание — запись истории (ADR 0222, §14).
+    discard: () => {
+      const current = readDrafts(table).find(
+        item => item.kind === draft.kind && rowKeyOf(item) === rowKeyOf(draft),
+      )
+      if (current) discardDraft(table, current)
+    },
   })
 }
 

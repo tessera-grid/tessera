@@ -18,6 +18,10 @@ const BUTTON_EXCEPTIONS: Record<string, { count: number; why: string }> = {
     count: 1,
     why: 'быстрые наборы — пункты меню панели (вид пункта поповера, ADR 0074), не кнопки',
   },
+  'plugins/editHistory/HistoryPopover.tsx': {
+    count: 1,
+    why: 'записи истории — пункты списка (вид пункта поповера, ADR 0222, §11), не кнопки',
+  },
 }
 
 const sources = (dir: string): string[] =>
