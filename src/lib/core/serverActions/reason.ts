@@ -15,6 +15,7 @@ const FAILED_LABEL = {
   fill: 'serverActionFailedFill',
   undo: 'serverActionFailedUndo',
   redo: 'serverActionFailedRedo',
+  write: 'serverActionFailedWrite',
 } as const satisfies Record<ServerActionKind, keyof TableLabels>
 
 /** Причина отказа серверного действия: текст сервера (AS10), иначе подпись действия. */

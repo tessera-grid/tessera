@@ -4341,6 +4341,8 @@ describe('Производительность прокрутки — пакет
         let table: WriteTable | undefined
         const screen = renderPluginsGrid({
           ...LARGE,
+          // 100 000 ячеек — больше предела записи по умолчанию (ADR 0223).
+          writeLimits: false,
           plugins: [
             // Сервер не отвечает: ячейки пакета ждут весь замер.
             cellEditing({

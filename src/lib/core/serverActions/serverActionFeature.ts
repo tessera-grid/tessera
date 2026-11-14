@@ -29,6 +29,7 @@ export type ServerActionKind =
   | 'fill'
   | 'undo'
   | 'redo'
+  | 'write'
 
 /** Контрол, начавший действие: на нём свет ожидания и вспышка отказа (ADR 0116, §3). */
 export interface ServerActionCause {
@@ -53,21 +54,27 @@ export interface ServerActionStatus {
     attempt: number
     error: unknown
     cause?: ServerActionCause
-    /** Повторить отказавшее действие с теми же аргументами. */
-    retry: () => void
+    /** Повторить отказавшее действие с теми же аргументами; без него — плашка без повтора. */
+    retry?: () => void
   }
   /**
    * Действие ждёт догрузки строк (ADR 0146, ADR 0188): плашка ожидания и Escape (ADR 0153, §5), без
    * свечения обновления. Обновления среза без этого поля его не трогают.
    */
   loadingRows?: {
-    kind: 'copy' | 'selectPage' | 'paste' | 'fill' | 'undo' | 'redo'
+    kind: 'copy' | 'selectPage' | 'paste' | 'fill' | 'undo' | 'redo' | 'write'
     since: number
     /**
      * Вставка спрашивает пользователя (ADR 0219, WR3, WR42): ответ «Вставить» — `accept`;
      * в вопросе — одно значение буфера или число его значений.
      */
-    confirm?: { accept: () => void; value?: string; count: number }
+    confirm?: {
+      accept: () => void
+      value?: string
+      count: number
+      /** Вопрос предела записи (ADR 0223, §2): «Изменить N ячеек?», а не «Вставить?». */
+      limit?: boolean
+    }
   }
 }
 

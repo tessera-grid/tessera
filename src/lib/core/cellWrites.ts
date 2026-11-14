@@ -56,7 +56,7 @@ export interface WrittenMove {
  */
 export interface CellsWritten {
   id: string
-  source: CellWriteSource | 'edit' | 'row' | 'move'
+  source: CellWriteSource | 'edit' | 'row' | 'move' | 'discard' | 'apply'
   cells: readonly WrittenCell[]
   refused: readonly { rowId: string; columnId: string }[]
   draft?: boolean
@@ -67,6 +67,8 @@ export interface CellsWritten {
   move?: WrittenMove
   /** Перенос отклонён (§13). */
   failed?: boolean
+  /** «Применить» сохранило столько изменений (ADR 0222, §14); у источника `'apply'`. */
+  applied?: number
 }
 
 /** Исполнитель переноса строки — плагин перетаскивания строк (ADR 0222, §13). */
@@ -108,6 +110,29 @@ export interface CellWriteOptions {
   source?: CellWriteSource
 }
 
+/** Пределы одной операции записи в ячейках (ADR 0223, §1). */
+export interface WriteLimits {
+  /** Больше стольких ячеек — вопрос перед записью. */
+  confirm?: number
+  /** Больше стольких ячеек — отказ без записи. */
+  max?: number
+}
+
+/** Пределы по умолчанию (ADR 0223, §6). */
+export const DEFAULT_WRITE_LIMITS = { confirm: 5_000, max: 15_000 } as const
+
+type LimitsTable = { options?: { writeLimits?: WriteLimits | false } }
+
+/** Пределы записи таблицы; `writeLimits: false` — без пределов. */
+export const writeLimitsOf = (table: unknown): Required<WriteLimits> => {
+  const limits = (table as LimitsTable | undefined)?.options?.writeLimits
+  if (limits === false) return { confirm: Infinity, max: Infinity }
+  return {
+    confirm: limits?.confirm ?? DEFAULT_WRITE_LIMITS.confirm,
+    max: limits?.max ?? DEFAULT_WRITE_LIMITS.max,
+  }
+}
+
 /** Итог разбора операции: что записано, пропущено и не разобрано (сохранение — отдельно). */
 export interface CellWriteReport {
   /** Id операции — он же `id` пакета `onCommitEdits`. */
@@ -118,6 +143,10 @@ export interface CellWriteReport {
   skipped: number
   /** Текст не разобрался по типу или не прошёл `validate`. */
   invalid: number
+  /** Операция больше предела `max` — ничего не записано (ADR 0223). */
+  limited?: { count: number; max: number }
+  /** На вопрос предела ответили «нет» — ничего не записано. */
+  declined?: boolean
 }
 
 /**

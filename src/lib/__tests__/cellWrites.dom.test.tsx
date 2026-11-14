@@ -11,7 +11,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { registerAnnouncer } from '../core/announcer'
 import { cancelPending } from '../core/cancellation'
-import type { Draft } from '../core/drafts/drafts'
+import { type Draft, discardDraft } from '../core/drafts/drafts'
 import { cellFailureKey, readFailures } from '../core/failures/failuresFeature'
 import { ENGLISH_LABELS } from '../core/localization'
 import { readServerAction } from '../core/serverActions'
@@ -23,6 +23,7 @@ import {
   serverRowModel,
 } from '../plugins'
 import { parseEditText } from '../plugins/cellEditing/editValue'
+import { commitAllDrafts } from '../plugins/cellEditing/session'
 import type {
   CellEditBatch,
   CellEditBatchResult,
@@ -38,6 +39,7 @@ import { fillChanges } from '../plugins/cellSelection/fill'
 import { fillMode } from '../plugins/cellSelection/rangeHandle'
 import type { CellSelectionHandleOptions } from '../plugins/cellSelection/types'
 import { fillSeries } from '../shared/fillSeries'
+import { __resetLogger } from '../util/logger'
 
 ;(
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -156,6 +158,8 @@ interface HostProps {
   maxCopyRows?: number
   locale?: string
   timeZone?: string
+  /** Пределы записи (ADR 0223). */
+  writeLimits?: { confirm?: number; max?: number } | false
 }
 
 const Host = ({
@@ -177,6 +181,7 @@ const Host = ({
   maxCopyRows,
   locale,
   timeZone,
+  writeLimits,
 }: HostProps) => {
   captured = useCreateTable({
     columns: columns as never,
@@ -186,6 +191,7 @@ const Host = ({
     ...(onDebugAction ? { onDebugAction } : {}),
     ...(locale ? { locale } : {}),
     ...(timeZone ? { timeZone } : {}),
+    ...(writeLimits === undefined ? {} : { writeLimits }),
     plugins: [
       cellEditing({
         saveMode,
@@ -1108,5 +1114,196 @@ describe('вставка в серверной модели строк (ADR 0219
     expect((failed?.error as Error).message).toBe(
       cellSelectionLabels(ENGLISH_LABELS).writeTooManyRows(5, 3),
     )
+  })
+
+  it('LM8: серверная модель — запись подчиняется и writeLimits, и cellSelectionMaxCopyRows', async () => {
+    const onCommitEdits = vi.fn(() => undefined)
+    const backend = await mountServer({
+      onCommitEdits,
+      writeLimits: { max: 2 },
+    })
+    selectIndex(0, 'age')
+    let done: Promise<void> | undefined
+    act(() => {
+      done = pasteData(captured, { text: '1\n2\n3', html: '' }, 'api')
+    })
+    await flush()
+    await backend.answerAll()
+    await act(async () => {
+      await done
+    })
+    // Строки догружены, но ячеек больше writeLimits.max — отказ без пакета.
+    expect(onCommitEdits).not.toHaveBeenCalled()
+    const failed = readServerAction(captured).failed
+    expect(failed?.kind).toBe('write')
+    expect((failed?.error as Error).message).toBe(
+      ENGLISH_LABELS.writeOverLimit(3, 2),
+    )
+  })
+})
+
+describe('пределы записи (ADR 0223)', () => {
+  const ages = () =>
+    ['0', '1', '2', '3'].map(id =>
+      captured.getRowSource().byId(id)?.getValue('age'),
+    )
+  const write = async (
+    changes: { rowId: string; columnId: string; value: unknown }[],
+  ) => {
+    let report: Record<string, unknown> | undefined
+    await act(async () => {
+      report = await captured.writeCells(changes)
+    })
+    return report!
+  }
+  const drafts = () =>
+    (captured.getDrafts() as Draft[]).filter(
+      draft => draft.kind === 'cellValue',
+    ).length
+
+  it('LM1: предел считает ячейки, которые операция действительно запишет: только для чтения, служебные и ждущие сохранения в счёт не входят', async () => {
+    const onCommitEdits = vi.fn(() => undefined)
+    render({
+      onCommitEdits,
+      canEditCell: ctx => ctx.column.id === 'age',
+      writeLimits: { max: 3 },
+    })
+    // Шесть изменений, три из них — в колонку только для чтения: в счёт идут три.
+    const changes = ['0', '1', '2'].flatMap(rowId => [
+      { rowId, columnId: 'name', value: 'x' },
+      { rowId, columnId: 'age', value: 90 },
+    ])
+    const report = await write(changes)
+    expect(report.limited).toBeUndefined()
+    expect(report).toMatchObject({ written: 3, skipped: 3 })
+    // Ячейки, ждущие сохранения, тоже не в счёт: пакет висит — три ячейки ждут.
+    onCommitEdits.mockImplementation(() => new Promise(() => {}) as never)
+    await write(
+      ['0', '1', '2'].map(rowId => ({ rowId, columnId: 'age', value: 91 })),
+    )
+    const more = await write(
+      ['0', '1', '2', '3'].map(rowId => ({
+        rowId,
+        columnId: 'age',
+        value: 92,
+      })),
+    )
+    expect(more.limited).toBeUndefined()
+    expect(more).toMatchObject({ written: 1, skipped: 3 })
+  })
+
+  it('LM4: режим «Применить» — запись, переводящая черновики через confirm, спрашивает, больше max — отказ; черновик строки — один, ячейка с черновиком второй раз не считается', async () => {
+    render({ saveMode: 'manual', writeLimits: { confirm: 2, max: 3 } })
+    select(['0', 'age', '1', 'age'])
+    await paste('50\n51')
+    expect(drafts()).toBe(2)
+    expect(readServerAction(captured).loadingRows).toBeUndefined()
+    // Третий черновик переводит через confirm — вопрос.
+    select(['2', 'age', '2', 'age'])
+    let pasting: Promise<void> | undefined
+    act(() => {
+      pasting = pasteData(captured, { text: '52', html: '' }, 'api')
+    })
+    await flush()
+    const question = readServerAction(captured).loadingRows
+    expect(question).toMatchObject({
+      kind: 'write',
+      confirm: { count: 1, limit: true },
+    })
+    expect(drafts()).toBe(2)
+    act(() => question!.confirm!.accept())
+    await act(async () => {
+      await pasting
+    })
+    expect(drafts()).toBe(3)
+    // Ячейка с черновиком второй раз не считается — без вопроса и отказа.
+    select(['0', 'age', '0', 'age'])
+    await paste('60')
+    expect(readServerAction(captured).loadingRows).toBeUndefined()
+    expect(readServerAction(captured).failed).toBeUndefined()
+    // Четвёртый черновик — больше max: отказ, черновиков по-прежнему три.
+    select(['3', 'age', '3', 'age'])
+    await paste('53')
+    expect(readServerAction(captured).failed?.kind).toBe('write')
+    expect(drafts()).toBe(3)
+    // Черновик строки — один: с ним уже три черновика у max 3 без ячеек.
+    act(() => root?.unmount())
+    root = undefined
+    render({ saveMode: 'manual', writeLimits: { confirm: 10, max: 3 } })
+    act(() => {
+      captured.addRow({ name: 'New', age: 1 })
+    })
+    const report = await write(
+      ['0', '1', '2'].map(rowId => ({ rowId, columnId: 'age', value: 70 })),
+    )
+    expect(report.limited).toEqual({ count: 3, max: 3 })
+    const fits = await write(
+      ['0', '1'].map(rowId => ({ rowId, columnId: 'age', value: 70 })),
+    )
+    expect(fits.limited).toBeUndefined()
+  })
+
+  it('LM6: table.writeCells больше max — отказ в отчёте limited без вопроса и предупреждение в разработке; не больше max — запись без вопроса', async () => {
+    // Предупреждение выводится раз на ключ: прежние тесты его уже выводили.
+    __resetLogger()
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      render({ writeLimits: { confirm: 1, max: 2 } })
+      const before = ages()
+      const over = await write(
+        ['0', '1', '2'].map(rowId => ({ rowId, columnId: 'age', value: 80 })),
+      )
+      expect(over).toMatchObject({ written: 0, limited: { count: 3, max: 2 } })
+      expect(ages()).toEqual(before)
+      expect(readServerAction(captured).loadingRows).toBeUndefined()
+      expect(warn.mock.calls.flat().join(' ')).toContain('writeLimits')
+      // Больше confirm, не больше max — запись без вопроса.
+      const fits = await write(
+        ['0', '1'].map(rowId => ({ rowId, columnId: 'age', value: 81 })),
+      )
+      expect(fits).toMatchObject({ written: 2 })
+      expect(readServerAction(captured).loadingRows).toBeUndefined()
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('LM9: отбрасывание черновиков и «Применить всё» пределу не подчиняются', async () => {
+    const onCommitEdits = vi.fn(() => undefined)
+    const initial: Draft[] = ['0', '1', '2', '3'].map(rowId => ({
+      kind: 'cellValue',
+      target: { cell: [rowId, 'age'] },
+      value: { value: 99, text: '99' },
+    }))
+    render({
+      saveMode: 'manual',
+      onCommitEdits,
+      writeLimits: { confirm: 1, max: 2 },
+    })
+    act(() => {
+      for (const draft of initial) captured.setDraft(draft)
+    })
+    expect(drafts()).toBe(4)
+    // «Применить всё» — пакет из четырёх ячеек сверх max, без вопроса.
+    await act(async () => {
+      commitAllDrafts(captured)
+    })
+    await flush()
+    expect(onCommitEdits).toHaveBeenCalledTimes(1)
+    expect((onCommitEdits.mock.calls[0] as unknown[])[0]).toMatchObject({
+      cells: expect.arrayContaining([expect.objectContaining({ rowId: '3' })]),
+    })
+    expect(readServerAction(captured).loadingRows).toBeUndefined()
+    expect(readServerAction(captured).failed).toBeUndefined()
+    // Отбросить четыре черновика — тоже без вопроса и отказа.
+    act(() => {
+      for (const draft of initial) captured.setDraft(draft)
+    })
+    act(() => {
+      for (const draft of captured.getDrafts() as Draft[])
+        discardDraft(captured, draft)
+    })
+    expect(drafts()).toBe(0)
+    expect(readServerAction(captured).loadingRows).toBeUndefined()
   })
 })

@@ -30,6 +30,8 @@ export interface TableLabels {
   viewSettingsSectionName: (section: string, value: string) => string
   /** Значок скрытой колонки у имени уровня: тултип и доступное имя. */
   viewSettingsHiddenColumn: string
+  /** Подсказка точки уровня (ADR 0224). */
+  viewSettingsLevelHint: string
   /** Доступное имя кебаб-кнопки меню действий строки (`aria-label`/тултип) */
   rowMenu: string
   /** Доступное имя кебаба, в который свёрнуты включённые действия (`count` — их число) */
@@ -73,6 +75,14 @@ export interface TableLabels {
   /** Отмена и повтор ждут строк серверной модели (ADR 0222, §7) */
   pendingUndo: string
   pendingRedo: string
+  /** Запись в ячейки ждёт ответа на вопрос предела (ADR 0223) */
+  pendingWrite: string
+  /** Вопрос предела записи и его кнопки (ADR 0223, §2) */
+  writeQuestion: (count: number) => string
+  writeConfirm: string
+  writeDecline: string
+  /** Отказ предела записи: ячеек больше предела (ADR 0223, §2) */
+  writeOverLimit: (count: number, max: number) => string
   /** Вопрос перед вставкой на месте плашки ожидания и его кнопки (ADR 0219, WR3) */
   pasteQuestionValue: (value: string) => string
   pasteQuestionCount: (count: number) => string
@@ -92,6 +102,7 @@ export interface TableLabels {
   actionFill: string
   actionUndo: string
   actionRedo: string
+  actionWrite: string
   /** Доступное имя строки «назад» раздела меню (ADR 0079) */
   menuBack: (section: string) => string
   /** Объявление: открыт раздел меню */
@@ -163,6 +174,7 @@ export interface TableLabels {
   serverActionFailedFill: string
   serverActionFailedUndo: string
   serverActionFailedRedo: string
+  serverActionFailedWrite: string
   serverActionFailedSelectPage: string
   /** Объявление числа строк после применения фильтра или поиска */
   announceFilteredRows: (count: number) => string
@@ -232,6 +244,7 @@ export const DEFAULT_LABELS = {
   viewSettingsOn: 'active',
   viewSettingsSectionName: '{section}: {value}',
   viewSettingsHiddenColumn: 'Column hidden',
+  viewSettingsLevelHint: 'In effect',
   rowMenu: 'Row options',
   withActiveCount: '{name}, {count} active',
   loadFailed: "Couldn't load {name}. Try again.",
@@ -258,6 +271,12 @@ export const DEFAULT_LABELS = {
   pendingFill: 'Filling…',
   pendingUndo: 'Undoing…',
   pendingRedo: 'Redoing…',
+  pendingWrite: 'Changing cells…',
+  writeQuestion: 'Change {count} cells?',
+  writeQuestion_one: 'Change {count} cell?',
+  writeConfirm: 'Change',
+  writeDecline: "Don't change",
+  writeOverLimit: '{count} cells — more than {max} at once',
   pasteQuestionValue: 'Paste "{value}"?',
   pasteQuestionCount: 'Paste {count} values?',
   pasteQuestionCount_one: 'Paste {count} value?',
@@ -275,6 +294,7 @@ export const DEFAULT_LABELS = {
   actionFill: 'Filling',
   actionUndo: 'Undo',
   actionRedo: 'Redo',
+  actionWrite: 'Changing cells',
   menuBack: 'Back, {section}',
   announceMenuSection: '{section} menu',
   sectionLoadFailed: "Couldn't load",
@@ -315,6 +335,7 @@ export const DEFAULT_LABELS = {
   serverActionFailedFill: "The cells weren't filled",
   serverActionFailedUndo: "The change wasn't undone",
   serverActionFailedRedo: "The change wasn't redone",
+  serverActionFailedWrite: "The cells weren't changed",
   serverActionFailedSelectPage: "The page rows weren't selected",
   announceLoadError: "Couldn't refresh the data",
   announceLoadErrorReason: "Couldn't refresh the data: {reason}",

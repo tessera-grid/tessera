@@ -416,15 +416,17 @@ const DataGridView = <D extends LabelDictionary = LabelDictionary>({
     hasRows:
       !listError &&
       (rowCount > 0 || (!appFailed && (!!failed || !!menuFailure))),
-    // Отказ копирования — не обновления данных: свой заголовок (ADR 0146, §4).
+    // Отказ копирования, вставки и предела записи — не обновления данных: свой заголовок (ADR 0146, §4; ADR 0223).
     title:
       !appFailed && !listError && failed?.kind === 'copy'
         ? labels.serverActionFailedCopy
         : !appFailed && !listError && failed?.kind === 'paste'
           ? labels.serverActionFailedPaste
-          : !appFailed && !listError && !failed && menuFailure?.entry.name
-            ? labels.actionsFailed(menuFailure.entry.name(labels))
-            : undefined,
+          : !appFailed && !listError && failed?.kind === 'write'
+            ? labels.serverActionFailedWrite
+            : !appFailed && !listError && !failed && menuFailure?.entry.name
+              ? labels.actionsFailed(menuFailure.entry.name(labels))
+              : undefined,
   })
 
   // Скелет первой загрузки — строго по флагу приложения (ADR 0060, §5); отказ без строк

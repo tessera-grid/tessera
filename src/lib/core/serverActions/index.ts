@@ -185,6 +185,7 @@ const isServer = (t: ServerTable, kind: ServerActionKind) => {
     case 'fill':
     case 'undo':
     case 'redo':
+    case 'write':
       return false
     default:
       return dataModeOf(t, kind) === 'server'
@@ -336,6 +337,8 @@ export const serverActionName = (
       return labels.actionUndo
     case 'redo':
       return labels.actionRedo
+    case 'write':
+      return labels.actionWrite
   }
 }
 
@@ -367,6 +370,8 @@ export const serverActionPendingTitle = (
       return labels.pendingUndo
     case 'redo':
       return labels.pendingRedo
+    case 'write':
+      return labels.pendingWrite
   }
 }
 
@@ -436,6 +441,7 @@ const SERVER_ACTION_PLUGIN: Record<ServerActionKind, string> = {
   fill: 'cellSelection',
   undo: 'editHistory',
   redo: 'editHistory',
+  write: 'cellEditing',
 }
 
 export const runServerAction = (

@@ -65,6 +65,7 @@ import type {
   CellWriter,
   CellsWritten,
   RowMover,
+  WriteLimits,
 } from './cellWrites'
 
 // --- Payload-типы контракта --------------------------------------------------
@@ -98,6 +99,11 @@ export interface CoreOptions {
   totalRowCount?: number
   /** Язык форм слова, чисел и списков в подписях (BCP 47), по умолчанию `en-US` (ADR 0169, §5). */
   locale?: string
+  /**
+   * Пределы одной операции записи в ячейках (ADR 0223): больше `confirm` — вопрос, больше `max`
+   * — отказ; по умолчанию 5 000 и 15 000, `false` — без пределов.
+   */
+  writeLimits?: WriteLimits | false
   /** Свои типы данных колонок и замена полей встроенных (ADR 0172, §1). */
   dataTypes?: DataTypeRegistry
   /**

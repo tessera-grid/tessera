@@ -28,6 +28,8 @@ interface PluginsGridProps {
   dataMode?: DataMode
   /** Черновики при монтировании (ADR 0178). */
   initialDrafts?: readonly Draft[]
+  /** Пределы записи (ADR 0223); `false` — замер без них. */
+  writeLimits?: { confirm?: number; max?: number } | false
 }
 
 /**
@@ -44,6 +46,7 @@ const PluginsGrid = ({
   locale,
   dataMode,
   initialDrafts,
+  writeLimits,
 }: PluginsGridProps) => {
   const columns = useColumns(columnCount)
   const data = useMemo(
@@ -56,6 +59,7 @@ const PluginsGrid = ({
     locale,
     dataMode,
     initialDrafts,
+    writeLimits,
     plugins: plugins as never,
   })
   return (

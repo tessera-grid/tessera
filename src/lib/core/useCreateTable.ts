@@ -121,6 +121,8 @@ const CORE_OPTION_KINDS: Record<
   onDataChange: 'callback',
   rowHeight: 'render',
   headerHeight: 'render',
+  // Читается при записи, как колбэк: объект, заданный литералом, не будит отрисовку.
+  writeLimits: 'callback',
 }
 const CORE_OPTION_KEYS = Object.keys(CORE_OPTION_KINDS) as (keyof CoreOptions)[]
 const RENDER_OPTION_KEYS = CORE_OPTION_KEYS.filter(

@@ -206,9 +206,10 @@ export interface PerfMetric {
   kind: 'animation' | 'load'
   /**
    * Какая величина сверяется: p95 (прокрутка), longest (отрисовка), tbt (пачка задач) или
-   * frame — средний интервал кадра прокрутки (ADR 0149, PS8).
+   * frame — средний интервал кадра прокрутки (ADR 0149, PS8), total — вся работа главного потока
+   * (ADR 0223, LM11).
    */
-  metric: 'p95' | 'longest' | 'tbt' | 'frame'
+  metric: 'p95' | 'longest' | 'tbt' | 'frame' | 'total'
   /** Значение метрики, мс. */
   valueMs: number
   /** Цель RAIL/CWV, мс: в дашборде — «в цели» или «вне цели», без гейта (ADR 0099). */
@@ -240,6 +241,7 @@ export interface PerfRecord {
     | 'cellEditing, cellSelection'
     | 'cellEditing, cellSelection, editHistory'
     | 'failureLog'
+    | 'unsavedChanges'
     | 'cellErrors'
     | 'columnFiltering'
     | 'rowExpanding'

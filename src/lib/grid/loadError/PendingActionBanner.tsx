@@ -80,6 +80,7 @@ export const cancelServerPending = (table: unknown, event?: unknown) => {
     cancelPending(table, { kind: 'paste' }, source) +
     cancelPending(table, { kind: 'fill' }, source) +
     cancelPending(table, { kind: 'history' }, source) +
+    cancelPending(table, { kind: 'write' }, source) +
     cancelTableActions(table, source)
   )
 }
@@ -125,14 +126,16 @@ export const PendingActionBanner = ({
         shown
         className={clsx('data-grid__pending-action', styles.banner)}
         title={
-          confirm.value !== undefined && confirm.count === 1
-            ? labels.pasteQuestionValue(clipped(confirm.value))
-            : labels.pasteQuestionCount(confirm.count)
+          confirm.limit
+            ? labels.writeQuestion(confirm.count)
+            : confirm.value !== undefined && confirm.count === 1
+              ? labels.pasteQuestionValue(clipped(confirm.value))
+              : labels.pasteQuestionCount(confirm.count)
         }
         action={
           <span className={styles.questionButtons}>
             <IconButton
-              label={labels.pasteConfirm}
+              label={confirm.limit ? labels.writeConfirm : labels.pasteConfirm}
               shape="square"
               onClick={confirm.accept}
               data-testid="paste-confirm"
@@ -141,7 +144,7 @@ export const PendingActionBanner = ({
             </IconButton>
             {/* Отказ теряет вставляемое: тон отказа (ADR 0206). */}
             <IconButton
-              label={labels.pasteDecline}
+              label={confirm.limit ? labels.writeDecline : labels.pasteDecline}
               shape="square"
               tone="danger"
               onClick={() => {

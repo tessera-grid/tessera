@@ -1040,6 +1040,195 @@ export const PasteConfirm: StoryObj<StoryProps> = {
   },
 }
 
+// --- ADR 0223: пределы записи ---------------------------------------------------------
+
+/** Ответ на вопрос предела — один раз за проход шага, затем только ждать итога. */
+const LIMIT_ROW = 'item-id-2'
+let limitOriginal: string | undefined
+const limitDeclined = (root: ParentNode) =>
+  !asking(root) && textOf(root, LIMIT_ROW, 'age') === limitOriginal
+const limitAccepted = (root: ParentNode) => !asking(root) && sheetPasted(root)
+
+/** Выбрать ячейку и вставить три строки, если вопрос ещё не задан. */
+const pasteSheet = (root: HTMLElement) => {
+  if (!selectedAt(root, LIMIT_ROW, 'age')) selectCell(root, LIMIT_ROW, 'age')
+  else if (!asking(root)) {
+    limitOriginal ??= textOf(root, LIMIT_ROW, 'age')
+    pasted = false
+    pasteOnce(root, LIMIT_ROW, 'age', SHEET)
+  }
+}
+const answerLimit =
+  (ok: boolean, done: (root: HTMLElement) => boolean) =>
+  (root: HTMLElement, app: GuideApp) => {
+    let answered = false
+    return untilDone(done, root => {
+      if (asking(root)) answered = answerAsk(root, ok) || answered
+      else if (!answered) pasteSheet(root)
+    })(root, app)
+  }
+
+const LARGE_ARGS = {
+  ...BASE_ARGS,
+  writeLimits: { confirm: 4, max: 20 },
+} satisfies Partial<StoryProps>
+
+const LARGE_CONFIRM: readonly GuideStoryStep[] = [
+  {
+    title: 'Вопрос перед большой правкой',
+    hint: 'Приложение просит таблицу спрашивать, прежде чем менять больше четырёх ячеек за раз, — чтобы большая вставка не прошла случайно.',
+  },
+  {
+    title: 'Вопрос задан',
+    hint: 'Пользователь выбрал ячейку возраста во второй строке и вставил три строки буфера — шесть ячеек. Таблица ещё ничего не изменила: под шапкой вопрос, менять ли шесть ячеек.',
+    enter: untilDone(asking, pasteSheet),
+  },
+  {
+    title: 'Вставка отменена',
+    hint: 'Пользователь нажал крестик. Ячейки не изменились, вопрос ушёл.',
+    enter: answerLimit(false, limitDeclined),
+  },
+  {
+    title: 'Вставка подтверждена',
+    hint: 'Пользователь вставил снова и ответил галочкой. Шесть ячеек изменились, сервер принял их одним запросом.',
+    enter: answerLimit(true, limitAccepted),
+  },
+]
+
+/** ADR 0223, S1: вставка больше порога вопроса ждёт ответа; отказ и подтверждение. */
+export const LargePasteConfirm: StoryObj<StoryProps> = {
+  name: 'Confirm a large paste',
+  parameters: { scenario: '0223/S1', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Большая вставка"
+      steps={LARGE_CONFIRM}
+      reset={() => {
+        pasteServer.reset()
+        pasted = false
+        limitOriginal = undefined
+      }}
+      args={guideArgs(LARGE_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(LARGE_CONFIRM[0]!.title, async () => {
+      await waitForRows(canvas)
+    })
+    await step(LARGE_CONFIRM[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(asking(canvas)).toBe(true))
+    })
+    await step(LARGE_CONFIRM[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(limitDeclined(canvas)).toBe(true))
+      expect(consoleText()).not.toContain('onCommitEdits')
+    })
+    await step(LARGE_CONFIRM[3]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(limitAccepted(canvas)).toBe(true))
+      expect(consoleText()).toContain('onCommitEdits')
+      await settle()
+    })
+  },
+}
+
+/** Пять строк буфера — десять ячеек, больше предела. */
+const BIG_SHEET = '41\tmale\n42\tfemale\n43\tmale\n44\tfemale\n45\tmale\n'
+
+const OVER_ARGS = {
+  ...BASE_ARGS,
+  writeLimits: { confirm: 6, max: 6 },
+} satisfies Partial<StoryProps>
+
+let overOriginal: string | undefined
+let overPasted = false
+const overRefused = (root: ParentNode) =>
+  !!errorBanner() && textOf(root, LIMIT_ROW, 'age') === overOriginal
+
+/** Вставить пять строк — больше предела. */
+const pasteBig = (root: HTMLElement) => {
+  if (!selectedAt(root, LIMIT_ROW, 'age')) {
+    selectCell(root, LIMIT_ROW, 'age')
+    return
+  }
+  if (overPasted) return
+  overOriginal ??= textOf(root, LIMIT_ROW, 'age')
+  overPasted = true
+  const cell = cellOf(root, LIMIT_ROW, 'age')
+  if (cell) pasteInto(cell, BIG_SHEET)
+}
+
+const OVER_LIMIT: readonly GuideStoryStep[] = [
+  {
+    title: 'Предел правки',
+    hint: 'Приложение разрешает менять не больше шести ячеек за раз.',
+  },
+  {
+    title: 'Вставка отклонена',
+    hint: 'Пользователь вставил пять строк буфера — десять ячеек. Таблица ничего не изменила: под шапкой плашка, что десять ячеек — больше шести за раз.',
+    enter: untilDone(overRefused, pasteBig),
+  },
+  {
+    title: 'Вставка в пределах',
+    hint: 'Пользователь закрыл плашку и вставил три строки — шесть ячеек. Они легли без вопроса, сервер их принял.',
+    enter: untilDone(
+      root => !errorBanner() && sheetPasted(root),
+      root => {
+        if (!overRefused(root) && !overPasted) {
+          pasteBig(root)
+          return
+        }
+        const dismiss = errorBanner()?.querySelector<HTMLElement>(
+          '[data-alert-dismiss]',
+        )
+        if (dismiss) {
+          dismiss.click()
+          return
+        }
+        pasteOnce(root, LIMIT_ROW, 'age', SHEET)
+      },
+    ),
+  },
+]
+
+/** ADR 0223, S2: вставка больше предела отклонена; вставка в пределах проходит. */
+export const PasteOverLimit: StoryObj<StoryProps> = {
+  name: 'Paste over the limit',
+  parameters: { scenario: '0223/S2', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Предел правки"
+      steps={OVER_LIMIT}
+      reset={() => {
+        pasteServer.reset()
+        pasted = false
+        overPasted = false
+        overOriginal = undefined
+      }}
+      args={guideArgs(OVER_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(OVER_LIMIT[0]!.title, async () => {
+      await waitForRows(canvas)
+    })
+    await step(OVER_LIMIT[1]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(overRefused(canvas)).toBe(true))
+      expect(consoleText()).not.toContain('onCommitEdits')
+    })
+    await step(OVER_LIMIT[2]!.title, async () => {
+      await guideNext(canvas)
+      await until(() => expect(sheetPasted(canvas)).toBe(true))
+      expect(consoleText()).toContain('onCommitEdits')
+      await settle()
+    })
+  },
+}
+
 // --- ADR 0219, этап 2: протяжка и заполнение ------------------------------------------------
 
 /** Квадрат маркера угла активного диапазона. */

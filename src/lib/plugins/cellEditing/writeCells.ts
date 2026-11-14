@@ -29,6 +29,7 @@ import { inferDataType } from './columnDataType'
 import { columnOf, editTextOf, parseEditText } from './editValue'
 import { cellEditingLabels } from './labels'
 import { isDeletedRow, writeDraftRows } from './rowDrafts'
+import { checkWriteLimit } from './writeLimit'
 import {
   cellKey,
   commitCellPackage,
@@ -228,6 +229,16 @@ const write = async (
       waves.set(key, !isBoolean(change.columnId))
     }
   }
+
+  // Пределы операции (ADR 0223): сверх них ничего не записано.
+  const verdict = await checkWriteLimit(
+    table,
+    cells,
+    source,
+    hooks.saveMode === 'manual',
+  )
+  if (verdict !== 'ok')
+    return { id, written: 0, skipped, invalid: invalid.length, ...verdict }
 
   // Новый итог ячейки снимает её прежний отказ; невалидный текст — свой отказ.
   let written: ReadonlySet<string> | ReadonlyMap<string, unknown> = pending

@@ -511,6 +511,8 @@ const StoryGrid = memo(
       // Календари дат — на языке истории (ADR 0175, §3).
       dateLocale: locale === 'ru' ? ruDateLocale : undefined,
       timeZone: options.timeZone,
+      // Пределы записи (ADR 0223): истории пределов задают их малыми.
+      writeLimits: options.writeLimits,
       dataTypes: options.dataTypes,
       loading:
         retry === 'loading'

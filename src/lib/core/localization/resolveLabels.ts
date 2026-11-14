@@ -38,6 +38,8 @@ export const LABEL_PARAMS = {
   pendingAction: ['name'],
   pasteQuestionValue: ['value'],
   pasteQuestionCount: ['count'],
+  writeQuestion: ['count'],
+  writeOverLimit: ['count', 'max'],
   menuBack: ['section'],
   announceMenuSection: ['section'],
   announceStillSaving: ['name'],

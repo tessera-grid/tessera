@@ -76,6 +76,8 @@ interface GridProps {
     clip: { text: string; html: string },
     context: { signal: AbortSignal; confirm: () => Promise<boolean> },
   ) => string[][] | null | PromiseLike<string[][] | null>
+  /** Пределы записи (ADR 0223). */
+  writeLimits?: { confirm?: number; max?: number } | false
 }
 
 const Grid = ({
@@ -87,6 +89,7 @@ const Grid = ({
   applies = false,
   role = 'table',
   parseClipboard,
+  writeLimits,
 }: GridProps) => {
   const [data, setData] = useState<Row[]>(
     role === 'treegrid'
@@ -114,6 +117,7 @@ const Grid = ({
     getRowId: (row: Row) => row.id,
     getSubRows: (row: Row) => row.children,
     enableKeyboardNavigation: navigation || role !== 'table',
+    ...(writeLimits === undefined ? {} : { writeLimits }),
     plugins: [
       cellEditing({
         enabled: editing,
@@ -575,5 +579,106 @@ describe('Вставка и очистка выделения (ADR 0219)', () =>
     } finally {
       await screen.unmount()
     }
+  })
+})
+
+describe('Пределы записи (ADR 0223)', () => {
+  const question = () =>
+    document.querySelector<HTMLElement>('[data-testid="paste-question"]')
+  const yes = () =>
+    question()!.querySelector<HTMLElement>('[data-testid="paste-confirm"]')!
+  const no = () =>
+    question()!.querySelector<HTMLElement>('[data-testid="paste-decline"]')!
+  const announced = () =>
+    [...document.querySelectorAll('[aria-live]')]
+      .map(region => region.textContent)
+      .join('|')
+
+  test('LM2: жест записи больше confirm и не больше max ячеек — вопрос на месте плашки ожидания с числом ячеек; галочка записывает, крестик и Escape отменяют без записи', async () => {
+    const onCommitEdits = vi.fn()
+    await mount({
+      onCommitEdits,
+      navigation: true,
+      writeLimits: { confirm: 2, max: 10 },
+    })
+    // Крестик — ничего не записано.
+    await selectCells(cell('0'))
+    pasteText(cell('0'), '50\n51\n52')
+    await expect.poll(question).not.toBeNull()
+    expect(question()!.textContent).toContain(tableLabels.writeQuestion(3))
+    expect(yes().getAttribute('aria-label')).toBe(tableLabels.writeConfirm)
+    expect(no().getAttribute('aria-label')).toBe(tableLabels.writeDecline)
+    await humanClick(no())
+    await expect.poll(question).toBeNull()
+    expect(onCommitEdits).not.toHaveBeenCalled()
+    expect(textOf('0')).toBe('20')
+    // Escape — тоже без записи.
+    await selectCells(cell('0'))
+    pasteText(cell('0'), '50\n51\n52')
+    await expect.poll(question).not.toBeNull()
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(question).toBeNull()
+    expect(onCommitEdits).not.toHaveBeenCalled()
+    // Галочка — запись трёх ячеек одним пакетом.
+    await selectCells(cell('0'))
+    pasteText(cell('0'), '50\n51\n52')
+    await expect.poll(question).not.toBeNull()
+    await humanClick(yes())
+    await expect.poll(() => onCommitEdits.mock.calls.length).toBe(1)
+    expect(cellsOf(onCommitEdits.mock.calls[0]![0])).toEqual([
+      ['0', 'age', 50],
+      ['1', 'age', 51],
+      ['2', 'age', 52],
+    ])
+    // Не больше confirm — без вопроса.
+    await selectCells(cell('5'))
+    pasteText(cell('5'), '60\n61')
+    await expect.poll(() => onCommitEdits.mock.calls.length).toBe(2)
+    expect(question()).toBeNull()
+  })
+
+  test('LM3: больше max — отказ без записи: плашка отказа записи и объявление с числом ячеек и пределом', async () => {
+    const onCommitEdits = vi.fn()
+    await mount({ onCommitEdits, writeLimits: { confirm: 1, max: 2 } })
+    await selectCells(cell('0'))
+    pasteText(cell('0'), '50\n51\n52')
+    const reason = tableLabels.writeOverLimit(3, 2)
+    await expect.poll(() => errorBanner()?.textContent ?? '').toContain(reason)
+    // Заголовок — отказ записи, а не обновления данных.
+    expect(errorBanner()!.textContent).toContain(
+      tableLabels.serverActionFailedWrite,
+    )
+    expect(question()).toBeNull()
+    expect(onCommitEdits).not.toHaveBeenCalled()
+    expect(['0', '1', '2'].map(row => textOf(row))).toEqual(['20', '21', '22'])
+    await expect.poll(announced).toContain(reason)
+  })
+
+  test('LM10: вопрос и отказ предела — axe с color-contrast в обеих темах, видны в forced-colors, подписи из словаря', async () => {
+    const screen = await mount({ writeLimits: { confirm: 1, max: 3 } })
+    const axeClean = async () => {
+      await inBothThemes(async () => {
+        const result = await axe.run(document.body, {
+          ...AXE_OPTIONS,
+          rules: { ...AXE_OPTIONS.rules, 'color-contrast': { enabled: true } },
+        })
+        expect(result.violations.map(v => v.id)).toEqual([])
+      })
+    }
+    await selectCells(cell('0'))
+    pasteText(cell('0'), '50\n51')
+    await expect.poll(question).not.toBeNull()
+    await axeClean()
+    await commands.forcedColors(true)
+    expect(getComputedStyle(question()!).outlineStyle).toBe('solid')
+    await commands.forcedColors(false)
+    await humanClick(no())
+    await expect.poll(question).toBeNull()
+    pasteText(cell('0'), '50\n51\n52\n53')
+    await expect.poll(errorBanner).not.toBeNull()
+    await axeClean()
+    await commands.forcedColors(true)
+    expect(getComputedStyle(errorBanner()!).outlineStyle).toBe('solid')
+    await screen.unmount()
   })
 })

@@ -19,6 +19,7 @@ export type PendingKind =
   | 'cellEdit'
   | 'selectPage'
   | 'history'
+  | 'write'
 
 /** Источник отмены — в канал действий (ADR 0125). */
 export type CancelSource = 'pointer' | 'keyboard' | 'api'

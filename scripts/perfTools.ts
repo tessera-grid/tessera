@@ -93,7 +93,7 @@ export const exitCodeOf = (verdicts: Verdict[]) =>
 
 export interface RecordedMetric {
   axis?: 'y' | 'x'
-  metric: 'p95' | 'longest' | 'tbt' | 'frame'
+  metric: 'p95' | 'longest' | 'tbt' | 'frame' | 'total'
   valueMs: number
 }
 
@@ -303,7 +303,7 @@ export const removeWorktree = (repo: string, { dir, linked }: Worktree) => {
 export interface ReportMetric {
   axis?: 'y' | 'x'
   kind: 'animation' | 'load'
-  metric: 'p95' | 'longest' | 'tbt' | 'frame'
+  metric: 'p95' | 'longest' | 'tbt' | 'frame' | 'total'
   valueMs: number
   targetMs: number
   ceilingMs?: number
