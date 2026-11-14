@@ -1,4 +1,4 @@
-# 0215 — Настройки вида: одна кнопка вместо сводокundefined модульный |undefined визуальный |undefined визуальный |undefined визуальный |undefined визуальный |undefined визуальный |undefined визуальный |undefined модульный |undefined модульный |undefined модульный |undefined визуальный |undefined визуальный |undefined скрипт `check:tree-shaking` |undefined модульный |undefined визуальный |
+# 0215 — Настройки вида: одна кнопка вместо сводок
 
 - **Статус:** Принято (прожарка 2026-11-11)
 - **Дата:** 2026-11-11
