@@ -16,6 +16,8 @@ export interface UnsavedChangesLabels {
   /** Кнопки внизу пульта. */
   draftApplyAll: string
   draftDiscardAll: string
+  /** Подсказка точки записи (ADR 0224). */
+  markHint: string
 }
 
 export const unsavedChangesLabels = defineLabels<UnsavedChangesLabels>()(
@@ -31,6 +33,7 @@ export const unsavedChangesLabels = defineLabels<UnsavedChangesLabels>()(
     draftDiscard: 'Discard',
     draftApplyAll: 'Apply all',
     draftDiscardAll: 'Discard all',
+    markHint: 'Not applied',
   },
   {
     unsavedChangesButton: ['count'],

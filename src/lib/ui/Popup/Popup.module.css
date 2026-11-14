@@ -110,7 +110,8 @@
 .item {
   display: flex;
   align-items: var(--_item-align, center);
-  gap: 8px;
+  --_item-gap: 8px;
+  gap: var(--_item-gap);
   box-sizing: border-box;
   min-height: var(--tsr-comp-popup-item-min-height);
   padding: var(--_item-padding-block, 6px)

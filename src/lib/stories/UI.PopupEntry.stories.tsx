@@ -24,13 +24,13 @@ import { defaultControls, noControls } from './__mocks__/utils/dataGridControls'
  */
 interface EntryStoryArgs {
   tone: 'error' | 'draft'
+  /** Подсказка точки (ADR 0224); пусто — без неё. */
+  markHint?: string
   /** Пусто — «правка ячейки» и цель записи из словаря таблицы. */
   label?: string
   reason: string
   showable: boolean
   actions: boolean
-  /** Текущая запись списка — шаг истории, на котором стоит таблица. */
-  current?: boolean
 }
 
 /** Подписи записей, как у журнала: действие и цель — «Возраст · строка 12». */
@@ -49,20 +49,20 @@ const useEntryLabels = () => {
 
 const Entry = ({
   tone,
+  markHint,
   label,
   reason,
   showable,
   actions,
-  current,
 }: EntryStoryArgs) => {
   const icons = useIcons()
   const texts = useEntryLabels()
   return (
     <PopupEntry
       mark={<Bubble size="dot" tone={tone} />}
+      markHint={markHint || undefined}
       label={label || texts.editCell}
       onShow={showable ? () => {} : undefined}
-      current={current}
       aside={
         <time
           dateTime="2026-03-12T09:30:00"
@@ -147,11 +147,14 @@ const meta = {
       options: ['error', 'draft'],
       description: 'Отказ или несохранённое изменение',
     },
+    markHint: {
+      control: 'text',
+      description: 'Подсказка точки по наведению; пусто — без неё',
+    },
     label: { control: 'text', description: 'Подпись записи' },
     reason: { control: 'text', description: 'Причина; пусто — без неё' },
     showable: { control: 'boolean', description: 'Переход к цели нажатием' },
     actions: { control: 'boolean', description: 'Кнопки записи' },
-    current: { control: 'boolean', description: 'Текущая запись списка' },
   },
   render: args => <EntryList entries={[args]} />,
 } satisfies Meta<EntryStoryArgs>
@@ -164,11 +167,11 @@ export const PopupEntryPlayground: Story = {
   name: 'Playground',
   parameters: defaultControls(
     'tone',
+    'markHint',
     'label',
     'reason',
     'showable',
     'actions',
-    'current',
   ),
 }
 

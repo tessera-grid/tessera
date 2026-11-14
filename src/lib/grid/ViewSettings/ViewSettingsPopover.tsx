@@ -38,6 +38,7 @@ import {
 } from '../../ui/Popup/PopupLevels'
 import { PopupSurface } from '../../ui/Popup/PopupSurface'
 import { useScrollFade } from '../../ui/Popup/useScrollFade'
+import { useVirtualizer } from '../../../vendor/tanstack-virtual/react-virtual'
 import { StatusIcon } from '../../ui/StatusIcon/StatusIcon'
 import { ToolbarButton } from '../../ui/ToolbarButton'
 import { Tooltip } from '../../ui/Tooltip'
@@ -100,6 +101,12 @@ const SectionRow = ({
   )
 }
 
+/** Оценка высоты уровня до замера; окно — плюс уровни рядом. */
+const LEVEL_ESTIMATE = 56
+const LEVEL_OVERSCAN = 4
+/** Высота окна до замера — не выше окна списка карточек (`cardsScroll`). */
+const LEVEL_WINDOW = 320
+
 const SectionLevels = ({
   section,
   table,
@@ -112,63 +119,89 @@ const SectionLevels = ({
   onRemove: (index: number, count: number) => void
 }) => {
   const { clear: ClearIcon, hideColumn: HiddenIcon } = useIcons()
-  const listRef = useScrollFade<HTMLUListElement>()
   const levels = section.levels?.(table, labels) ?? []
+  // Уровней бывает столько же, сколько колонок: рисуются окно и несколько рядом (ADR 0215, VW18).
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const scrollerRef = useScrollFade(scrollRef)
+  const virtualizer = useVirtualizer({
+    count: levels.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => LEVEL_ESTIMATE,
+    overscan: LEVEL_OVERSCAN,
+    getItemKey: index => levels[index]!.id,
+    // Окно до замера: уровни есть с первого кадра — фокус входа в раздел ставится на первый.
+    initialRect: { width: 0, height: LEVEL_WINDOW },
+  })
   return (
-    <ul ref={listRef} className={styles.levels} data-popup-scroller="">
-      {levels.map((level, index) => (
-        <li
-          key={level.id}
-          data-view-settings-level={level.id}
-          data-hidden-column={level.hidden || undefined}
-        >
-          <PopupEntry
-            fit
-            mark={<Bubble size="dot" tone="active" />}
-            label={
-              level.hidden ? (
-                <span className={styles.levelLabel}>
-                  <span className={styles.levelName}>{level.label}</span>
-                  {/* Колонка уровня скрыта — значок у её имени (ADR 0215, §3). */}
-                  <StatusIcon
-                    tone="neutral"
-                    reason={labels.viewSettingsHiddenColumn}
-                    icon={<HiddenIcon width={14} height={14} aria-hidden />}
-                    data-testid="view-settings-hidden"
-                  />
-                </span>
-              ) : (
-                level.label
-              )
-            }
-            actions={
-              <ItemButton
-                label={level.removeLabel}
-                onClick={event => {
-                  onRemove(index, levels.length)
-                  level.remove(sourceOf(event))
-                }}
-                data-view-settings-remove=""
-                data-testid="view-settings-remove"
+    <div ref={scrollerRef} className={styles.levels} data-popup-scroller="">
+      <ul
+        className={styles.levelList}
+        data-count={levels.length}
+        style={{ height: virtualizer.getTotalSize() }}
+      >
+        {virtualizer.getVirtualItems().map(item => {
+          const index = item.index
+          const level = levels[index]!
+          return (
+            <li
+              key={item.key}
+              ref={virtualizer.measureElement}
+              data-index={index}
+              className={styles.level}
+              style={{ transform: `translateY(${item.start}px)` }}
+              data-view-settings-level={level.id}
+              data-hidden-column={level.hidden || undefined}
+            >
+              <PopupEntry
+                fit
+                mark={<Bubble size="dot" tone="active" />}
+                markHint={labels.viewSettingsLevelHint}
+                label={
+                  level.hidden ? (
+                    <span className={styles.levelLabel}>
+                      <span className={styles.levelName}>{level.label}</span>
+                      {/* Колонка уровня скрыта — значок у её имени (ADR 0215, §3). */}
+                      <StatusIcon
+                        tone="neutral"
+                        reason={labels.viewSettingsHiddenColumn}
+                        icon={<HiddenIcon width={14} height={14} aria-hidden />}
+                        data-testid="view-settings-hidden"
+                      />
+                    </span>
+                  ) : (
+                    level.label
+                  )
+                }
+                actions={
+                  <ItemButton
+                    label={level.removeLabel}
+                    onClick={event => {
+                      onRemove(index, levels.length)
+                      level.remove(sourceOf(event))
+                    }}
+                    data-view-settings-remove=""
+                    data-testid="view-settings-remove"
+                  >
+                    <ClearIcon />
+                  </ItemButton>
+                }
               >
-                <ClearIcon />
-              </ItemButton>
-            }
-          >
-            {level.description !== undefined && (
-              <Tooltip title={level.description} overflowOnly>
-                <span
-                  className={styles.description}
-                  data-view-settings-description=""
-                >
-                  {capitalized(level.description)}
-                </span>
-              </Tooltip>
-            )}
-          </PopupEntry>
-        </li>
-      ))}
-    </ul>
+                {level.description !== undefined && (
+                  <Tooltip title={level.description} overflowOnly>
+                    <span
+                      className={styles.description}
+                      data-view-settings-description=""
+                    >
+                      {capitalized(level.description)}
+                    </span>
+                  </Tooltip>
+                )}
+              </PopupEntry>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
   )
 }
 
@@ -276,11 +309,14 @@ export const ViewSettingsPopover = ({
     }
     if (target.kind === 'removed') {
       if (popup.contains(document.activeElement)) return
-      const removes = popup.querySelectorAll<HTMLElement>(
-        '[data-view-settings-remove]',
+      // Список виртуализирован: кнопка — по месту уровня, а не по порядку в DOM.
+      const count = Number(
+        popup.querySelector<HTMLElement>('[data-count]')?.dataset.count ?? 0,
       )
       ;(
-        removes[Math.min(target.index, removes.length - 1)] ??
+        popup.querySelector<HTMLElement>(
+          `[data-view-settings-level][data-index="${Math.min(target.index, count - 1)}"] [data-view-settings-remove]`,
+        ) ??
         popup.querySelector<HTMLElement>('[data-view-settings-reset]') ??
         popup.querySelector<HTMLElement>('[data-popup-level-back]')
       )?.focus()

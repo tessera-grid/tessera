@@ -5,6 +5,7 @@
 // внутри него, а правый клик до загрузки открывает меню после неё (ADR 0061, LZ6–LZ10).
 // ADR 0030.
 import { type DebugActionSource, reportAction } from '../../core/debugActions'
+import { LONG_PRESS_MS, LONG_PRESS_SLOP } from '../../util/longPress'
 import { CELL_STATE_ACTIONS } from './cellStateActions'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
@@ -34,9 +35,6 @@ const MENU_LOAD = {
 }
 
 const CELL = '.data-grid__body-cell[data-column-id]'
-/** Долгое нажатие пальцем (ADR 0086, §5): удержание и допуск сдвига. */
-const LONG_PRESS_MS = 500
-const LONG_PRESS_SLOP = 10
 
 interface OpenState {
   x: number

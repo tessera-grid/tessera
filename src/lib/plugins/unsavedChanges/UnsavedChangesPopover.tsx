@@ -31,6 +31,10 @@ import { Stub } from '../../ui/Stub'
 import { useIcons } from '../../ui/icons'
 import { PopupEntry } from '../../ui/Popup/PopupEntry'
 import { useScrollFade } from '../../ui/Popup/useScrollFade'
+import {
+  defaultRangeExtractor,
+  useVirtualizer,
+} from '../../../vendor/tanstack-virtual/react-virtual'
 import hidden from '../../ui/visuallyHidden.module.css'
 import { ToolbarButton } from '../../ui/ToolbarButton'
 import {
@@ -39,7 +43,7 @@ import {
   showTarget,
 } from '../../shared/objectTarget'
 
-import { type DraftSection, draftSections } from './sections'
+import { draftSections } from './sections'
 import styles from './UnsavedChanges.module.css'
 import { unsavedChangesLabels } from './labels'
 
@@ -112,6 +116,7 @@ const DraftEntry = ({
   return (
     <PopupEntry
       mark={<Bubble size="dot" tone="draft" />}
+      markHint={unsavedChangesLabels(labels).markHint}
       label={
         <>
           {operation && <span>{draftKindLabel(table, kind, labels)} </span>}
@@ -163,56 +168,42 @@ const DraftEntry = ({
   )
 }
 
-const EntryList = ({
-  table,
-  drafts,
-  ...handlers
-}: { table: unknown; drafts: readonly Draft[] } & EntryHandlers &
-  ({ 'aria-label': string } | { 'aria-labelledby': string })) => {
-  const { onDiscarded, onDone, ...named } = handlers
-  return (
-    <div role="list" className={styles.list} {...named}>
-      {drafts.map(draft => (
-        <div
-          key={draftKeyOf(draft.kind, draft.target)}
-          role="listitem"
-          data-draft-kind={draft.kind}
-        >
-          <DraftEntry
-            table={table}
-            draft={draft}
-            onDiscarded={onDiscarded}
-            onDone={onDone}
-          />
-        </div>
-      ))}
-    </div>
-  )
+/** Оценка высоты облачка и заголовка раздела до замера; окно — плюс записи рядом. */
+const ENTRY_ESTIMATE = 48
+const TITLE_ESTIMATE = 30
+const OVERSCAN = 4
+
+/** Ряд списка пульта: заголовок раздела или запись своего списка. */
+type Row =
+  | { kind: 'title'; list: number }
+  | { kind: 'entry'; list: number; draft: Draft; first: boolean }
+
+/** Список пульта: изменения данных или раздел; его записи — ряды `first`–`last`. */
+interface List {
+  kind: string | undefined
+  first: number
+  last: number
+  title?: number
 }
 
-/** Раздел черновиков с целью-колонкой: заголовок вида и его записи (DR44). */
-const Section = ({
-  table,
-  section,
-  ...handlers
-}: { table: unknown; section: DraftSection } & EntryHandlers) => {
-  const labels = useLocalization()
-  const id = useId()
-  const kind = draftKindOf(table, section.kind)
-  return (
-    <>
-      <p id={id} className={styles.sectionTitle}>
-        {kind?.sectionLabel?.(labels) ??
-          (kind && draftKindLabel(table, kind, labels))}
-      </p>
-      <EntryList
-        table={table}
-        drafts={section.drafts}
-        aria-labelledby={id}
-        {...handlers}
-      />
-    </>
-  )
+/** Ряды пульта одним рядом для виртуализатора: изменения данных, затем разделы с заголовками. */
+const rowsOf = (drafts: readonly Draft[]) => {
+  const { data, sections } = draftSections(drafts)
+  const rows: Row[] = []
+  const lists: List[] = []
+  const push = (kind: string | undefined, items: readonly Draft[]) => {
+    const list = lists.length
+    const title = kind === undefined ? undefined : rows.length
+    if (title !== undefined) rows.push({ kind: 'title', list })
+    const first = rows.length
+    items.forEach((draft, index) =>
+      rows.push({ kind: 'entry', list, draft, first: index === 0 }),
+    )
+    lists.push({ kind, first, last: rows.length - 1, title })
+  }
+  if (data.length > 0) push(undefined, data)
+  for (const section of sections) push(section.kind, section.drafts)
+  return { rows, lists }
 }
 
 const DraftList = ({
@@ -232,7 +223,29 @@ const DraftList = ({
   )
   // Открытая правка без черновиков — кнопки внизу остаются: «Применить всё» её сохранит.
   const open = useOpenDrafts(table)
-  const scrollerRef = useScrollFade<HTMLDivElement>()
+  const { rows, lists } = rowsOf(drafts)
+  const titleId = useId()
+  // Заголовки разделов — всегда в DOM: на них ссылается имя списка раздела (DR56).
+  const titles = lists.flatMap(list => list.title ?? [])
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const scrollerRef = useScrollFade(scrollRef)
+  const virtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: index =>
+      rows[index]!.kind === 'title' ? TITLE_ESTIMATE : ENTRY_ESTIMATE,
+    overscan: OVERSCAN,
+    getItemKey: index => {
+      const row = rows[index]!
+      return row.kind === 'title'
+        ? `title:${lists[row.list]!.kind}`
+        : draftKeyOf(row.draft.kind, row.draft.target)
+    },
+    rangeExtractor: range =>
+      [...new Set([...titles, ...defaultRangeExtractor(range)])].sort(
+        (x, y) => x - y,
+      ),
+  })
   if (drafts.length === 0 && open === 0)
     return (
       <Stub
@@ -245,27 +258,90 @@ const DraftList = ({
         data-testid="unsaved-changes-empty"
       />
     )
-  const { data, sections } = draftSections(drafts)
   const handlers = { onDiscarded, onDone }
+  const items = virtualizer.getVirtualItems()
+  const placed = virtualizer.measurementsCache
+  const nameOf = (list: List) => {
+    const kind =
+      list.kind === undefined ? undefined : draftKindOf(table, list.kind)
+    return (
+      kind?.sectionLabel?.(labels) ??
+      (kind && draftKindLabel(table, kind, labels))
+    )
+  }
   return (
     <>
       <div ref={scrollerRef} className={styles.scroller} data-popup-scroller="">
-        {data.length > 0 && (
-          <EntryList
-            table={table}
-            drafts={data}
-            aria-label={unsavedChangesLabels(labels).unsavedChanges}
-            {...handlers}
-          />
-        )}
-        {sections.map(section => (
-          <Section
-            key={section.kind}
-            table={table}
-            section={section}
-            {...handlers}
-          />
-        ))}
+        <div
+          className={styles.rows}
+          style={{ height: virtualizer.getTotalSize() }}
+        >
+          {items.map(item =>
+            rows[item.index]!.kind === 'title' ? (
+              <p
+                key={item.key}
+                ref={virtualizer.measureElement}
+                id={`${titleId}-${rows[item.index]!.list}`}
+                data-index={item.index}
+                className={styles.sectionTitle}
+                style={{ transform: `translateY(${item.start}px)` }}
+              >
+                {nameOf(lists[rows[item.index]!.list]!)}
+              </p>
+            ) : null,
+          )}
+          {lists.map((list, index) => {
+            const own = items.filter(
+              item =>
+                rows[item.index]!.kind === 'entry' &&
+                rows[item.index]!.list === index,
+            )
+            if (own.length === 0) return null
+            // Список стоит от своей первой записи до последней, записи — от его верха.
+            const top = placed[list.first]?.start ?? 0
+            const bottom = placed[list.last]?.end ?? top
+            return (
+              <div
+                key={list.kind ?? 'data'}
+                role="list"
+                className={styles.list}
+                style={{ top, height: bottom - top }}
+                {...(list.title === undefined
+                  ? {
+                      'aria-label': unsavedChangesLabels(labels).unsavedChanges,
+                    }
+                  : { 'aria-labelledby': `${titleId}-${index}` })}
+              >
+                {own.map(item => {
+                  const row = rows[item.index] as Extract<
+                    Row,
+                    { kind: 'entry' }
+                  >
+                  return (
+                    <div
+                      key={item.key}
+                      ref={virtualizer.measureElement}
+                      role="listitem"
+                      data-index={item.index}
+                      data-draft-kind={row.draft.kind}
+                      data-first={row.first || undefined}
+                      className={styles.entry}
+                      style={{
+                        transform: `translateY(${item.start - top}px)`,
+                      }}
+                    >
+                      <DraftEntry
+                        table={table}
+                        draft={row.draft}
+                        {...handlers}
+                      />
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          })}
+        </div>
       </div>
       <PopupFooter>
         <Button

@@ -11,6 +11,7 @@ import { Check } from 'lucide-react'
 import clsx from 'clsx'
 
 import { useIcons } from '../icons'
+import { Tooltip } from '../Tooltip'
 
 import styles from './PopupItem.module.css'
 
@@ -19,6 +20,11 @@ export interface PopupItemProps extends HTMLAttributes<HTMLElement> {
   render?: ReactElement
   /** Значок слева; `null` — пустое место значка, подпись на одной линии с соседями. */
   icon?: ReactNode
+  /**
+   * Что значит значок — цветная точка (ADR 0224): подсказка над областью от края пункта до подписи
+   * на всю высоту; на касаниях — удержанием.
+   */
+  iconHint?: string
   label?: ReactNode
   /** Подсказка справа от подписи: сочетание клавиш, «по возрастанию». */
   hint?: ReactNode
@@ -35,6 +41,7 @@ export const PopupItem = forwardRef<HTMLElement, PopupItemProps>(
     {
       render,
       icon,
+      iconHint,
       label,
       hint,
       caption,
@@ -55,11 +62,27 @@ export const PopupItem = forwardRef<HTMLElement, PopupItemProps>(
         className: clsx(wrap ? styles.wrap : styles.item, className),
         children: (
           <>
-            {icon !== undefined && (
-              <span className={styles.icon} data-popup-item-icon="" aria-hidden>
-                {icon}
-              </span>
-            )}
+            {icon !== undefined &&
+              (iconHint ? (
+                <Tooltip title={iconHint} longPress>
+                  <span
+                    className={styles.icon}
+                    data-popup-item-icon=""
+                    data-hint=""
+                    aria-hidden
+                  >
+                    {icon}
+                  </span>
+                </Tooltip>
+              ) : (
+                <span
+                  className={styles.icon}
+                  data-popup-item-icon=""
+                  aria-hidden
+                >
+                  {icon}
+                </span>
+              ))}
             {label !== undefined && (
               // Части пункта находят по data-атрибутам, а не по именам классов.
               <span className={styles.label} data-popup-item-label="">

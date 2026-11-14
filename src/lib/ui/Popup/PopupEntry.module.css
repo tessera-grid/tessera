@@ -53,16 +53,10 @@
   );
 }
 
-.entry:has(.show:hover) {
+.entry:has(.show:hover),
+.entry:has(.markHint[data-show]:hover) {
   background-color: var(--tsr-comp-popup-card-hover-bg);
   outline: var(--tsr-comp-popup-card-hover-outline);
-}
-
-/* Текущая запись — тоном выделения таблицы; наведение её не меняет. */
-.entry[data-current],
-.entry[data-current]:has(.show:hover) {
-  background-color: var(--tsr-comp-popup-card-current-bg);
-  outline: var(--tsr-comp-popup-card-current-outline);
 }
 
 .entry:has(.show:focus-visible) {
@@ -77,6 +71,29 @@
   justify-content: center;
   width: var(--tsr-comp-button-icon-size);
   height: var(--_head);
+}
+
+/*
+ * Полоса подсказки точки (ADR 0224, MH1): от края облачка до подписи на всю высоту, поверх области
+ * перехода — нажатие на неё передаётся подписи-кнопке.
+ */
+.markHint {
+  position: absolute;
+  z-index: 1;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: calc(
+    var(--tsr-comp-popup-item-padding-x) + var(--tsr-comp-button-icon-size) +
+      var(--tsr-comp-popup-padding) * 2
+  );
+  border-start-start-radius: var(--tsr-comp-popup-item-radius);
+  border-end-start-radius: var(--tsr-comp-popup-item-radius);
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+.markHint[data-show] {
+  cursor: pointer;
 }
 
 .head {

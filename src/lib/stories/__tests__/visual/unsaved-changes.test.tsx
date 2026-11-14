@@ -5,7 +5,7 @@ import { describe, expect, test } from 'vitest'
 import type { Draft } from '../../../core/drafts/drafts'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
-import { columnFiltering, unsavedChanges } from '../../../plugins'
+import { cellEditing, columnFiltering, unsavedChanges } from '../../../plugins'
 import { humanClick } from '../helpers'
 import { tableLabels } from '../labels'
 import { waitForGrid } from './core-helpers'
@@ -180,6 +180,93 @@ describe('Пульт черновиков (ADR 0178)', () => {
       await expect.poll(popover).toBeNull()
       await expect.poll(() => filterActive('city')).toBe(true)
       expect(api.getDrafts()).toHaveLength(0)
+    } finally {
+      await screen.unmount()
+    }
+  })
+})
+
+// Пульт с тысячей черновиков (ADR 0178, DR56): список виртуализирован.
+const MANY_ROWS = Array.from({ length: 1000 }, (_, i) => ({
+  id: String(i),
+  name: `Name ${i}`,
+  city: 'Paris',
+}))
+const MANY_DRAFTS: Draft[] = [
+  ...MANY_ROWS.map((row): Draft => ({
+    kind: 'cellValue',
+    target: { cell: [row.id, 'name'] },
+    value: { value: `New ${row.id}`, text: `New ${row.id}` },
+  })),
+  draftOn('city', 'Rome'),
+]
+const ManyGrid = () => {
+  const table = useCreateTable({
+    columns: COLUMNS as never,
+    data: MANY_ROWS,
+    getRowId: (row: (typeof MANY_ROWS)[number]) => row.id,
+    dataMode: { filtering: 'server' },
+    initialDrafts: MANY_DRAFTS,
+    plugins: [
+      cellEditing({ saveMode: 'manual', onCommitEdits: () => {} } as never),
+      columnFiltering({ onFilterChange: () => Promise.resolve() }),
+      unsavedChanges(),
+    ] as never,
+  })
+  return (
+    <div style={{ width: 760, height: 480 }}>
+      <DataGrid table={table as never} height={440} />
+    </div>
+  )
+}
+
+describe('Пульт с тысячей черновиков (ADR 0178)', () => {
+  test('DR56: пульт рисует записи окна прокрутки и несколько рядом — при 1000 черновиках в DOM не больше 30 записей; прокрутка до конца показывает последнюю запись и раздел фильтров с заголовком; список изменений данных назван именем пульта, список раздела — заголовком раздела', async () => {
+    const screen = await render(<ManyGrid />)
+    try {
+      await waitForGrid()
+      await expect.poll(button).not.toBeNull()
+      await openPanel()
+      await expect.poll(() => entries().length).toBeGreaterThan(0)
+      expect(entries().length).toBeLessThanOrEqual(30)
+      // Первая запись — первая правка; список данных назван именем пульта.
+      const own = unsavedChangesLabels(tableLabels)
+      const dataList = entries()[0]!.closest<HTMLElement>('[role="list"]')!
+      expect(entries()[0]!.textContent).toContain('New 0')
+      expect(dataList.getAttribute('aria-label')).toBe(own.unsavedChanges)
+
+      // Прокрутка до конца: последняя правка и раздел фильтров с заголовком.
+      const scroller = popover()!.querySelector<HTMLElement>(
+        '[data-popup-scroller]',
+      )!
+      for (let i = 0; i < 5; i++) {
+        scroller.scrollTop = scroller.scrollHeight
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise(resolve => requestAnimationFrame(resolve))
+      }
+      await expect
+        .poll(() =>
+          entries().some(entry => entry.textContent?.includes('New 999')),
+        )
+        .toBe(true)
+      expect(entries().length).toBeLessThanOrEqual(30)
+      const filter = entries().find(
+        entry => entry.dataset.draftKind === 'columnFilter',
+      )!
+      expect(filter).toBeTruthy()
+      const filterList = filter.closest<HTMLElement>('[role="list"]')!
+      const title = document.getElementById(
+        filterList.getAttribute('aria-labelledby')!,
+      )!
+      expect(title.textContent).toBe(columnFilteringLabels(tableLabels).filters)
+      // Заголовок — над записью раздела, запись видна в окне прокрутки.
+      expect(title.getBoundingClientRect().bottom).toBeLessThanOrEqual(
+        filter.getBoundingClientRect().top + 1,
+      )
+      const box = scroller.getBoundingClientRect()
+      expect(filter.getBoundingClientRect().bottom).toBeLessThanOrEqual(
+        box.bottom + 1,
+      )
     } finally {
       await screen.unmount()
     }

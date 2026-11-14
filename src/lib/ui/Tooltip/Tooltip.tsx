@@ -5,13 +5,16 @@ import {
   useState,
   type ElementType,
   type FocusEvent,
+  type MouseEvent,
   type PointerEvent,
   type ReactElement,
   type ReactNode,
   type Ref,
+  type TouchEvent,
 } from 'react'
 
 import { assignRef } from '../assignRef'
+import { LONG_PRESS_MS, LONG_PRESS_SLOP } from '../../util/longPress'
 import { preloadable } from '../../util/preloadable'
 import { REACT_MAJOR } from '../../util/reactVersion'
 
@@ -30,6 +33,11 @@ export interface TooltipProps {
   delayDuration?: number
   /** Показывать, только когда текст триггера обрезан `…` (ADR 0083). */
   overflowOnly?: boolean
+  /**
+   * На касаниях подсказку показывает удержание пальца (ADR 0224, MH3); касание, открывшее её, не
+   * нажимает триггер.
+   */
+  longPress?: boolean
 }
 
 /**
@@ -104,6 +112,11 @@ interface TriggerProps {
   onPointerEnter?: (event: PointerEvent) => void
   onPointerLeave?: (event: PointerEvent) => void
   onPointerDown?: (event: PointerEvent) => void
+  onPointerMove?: (event: PointerEvent) => void
+  onPointerUp?: (event: PointerEvent) => void
+  onPointerCancel?: (event: PointerEvent) => void
+  onTouchEnd?: (event: TouchEvent) => void
+  onContextMenu?: (event: MouseEvent) => void
   onFocus?: (event: FocusEvent) => void
   onBlur?: (event: FocusEvent) => void
 }
@@ -120,6 +133,7 @@ export const Tooltip = ({
   side = 'top',
   delayDuration = 200,
   overflowOnly = false,
+  longPress = false,
 }: TooltipProps) => {
   const anchorRef = useRef<HTMLElement | null>(null)
   useEffect(trackInput, [])
@@ -129,8 +143,30 @@ export const Tooltip = ({
   const [open, setOpen] = useState(false)
 
   const childRef = elementRef(children)
-  const { onPointerEnter, onPointerLeave, onPointerDown, onFocus, onBlur } =
-    children.props as TriggerProps
+  const {
+    onPointerEnter,
+    onPointerLeave,
+    onPointerDown,
+    onPointerMove,
+    onPointerUp,
+    onPointerCancel,
+    onTouchEnd,
+    onContextMenu,
+    onFocus,
+    onBlur,
+  } = children.props as TriggerProps
+  // Удержание пальца: ждущее и открывшее подсказку.
+  const press = useRef<{
+    id: number
+    x: number
+    y: number
+    timer: ReturnType<typeof setTimeout>
+  } | null>(null)
+  const [held, setHeld] = useState(false)
+  const stopPress = () => {
+    if (press.current) clearTimeout(press.current.timer)
+    press.current = null
+  }
   const setAnchor = useCallback(
     (node: HTMLElement | null) => {
       anchorRef.current = node
@@ -153,7 +189,29 @@ export const Tooltip = ({
   const hide = () => {
     clearTimeout(timer.current)
     setOpen(false)
+    setHeld(false)
   }
+
+  // Подсказку, открытую удержанием, закрывают следующее касание и прокрутка.
+  useEffect(() => {
+    if (!held) return
+    const close = (event: Event) => {
+      if (
+        event.type === 'pointerdown' &&
+        anchorRef.current?.contains(event.target as Node)
+      )
+        return
+      setOpen(false)
+      setHeld(false)
+    }
+    window.addEventListener('pointerdown', close, true)
+    window.addEventListener('scroll', close, true)
+    return () => {
+      window.removeEventListener('pointerdown', close, true)
+      window.removeEventListener('scroll', close, true)
+    }
+  }, [held])
+  useEffect(() => stopPress, [])
 
   const hideSoon = () => {
     clearTimeout(timer.current)
@@ -191,6 +249,8 @@ export const Tooltip = ({
     },
     onPointerLeave: (event: PointerEvent) => {
       onPointerLeave?.(event)
+      // Палец, открывший подсказку удержанием, уходит с триггера при отпускании.
+      if (held && event.pointerType === 'touch') return
       // Подсказку без обрезки указатель проходит насквозь (ADR 0100) — ждать его нечего.
       if (overflowOnly) hideSoon()
       else hide()
@@ -198,6 +258,48 @@ export const Tooltip = ({
     onPointerDown: (event: PointerEvent) => {
       onPointerDown?.(event)
       hide()
+      stopPress()
+      if (!longPress || event.pointerType !== 'touch' || !event.isPrimary)
+        return
+      const { pointerId: id, clientX: x, clientY: y } = event
+      press.current = {
+        id,
+        x,
+        y,
+        timer: setTimeout(() => {
+          press.current = null
+          setMounted(true)
+          setOpen(true)
+          setHeld(true)
+        }, LONG_PRESS_MS),
+      }
+    },
+    onPointerMove: (event: PointerEvent) => {
+      onPointerMove?.(event)
+      const at = press.current
+      if (
+        at?.id === event.pointerId &&
+        Math.hypot(event.clientX - at.x, event.clientY - at.y) > LONG_PRESS_SLOP
+      )
+        stopPress()
+    },
+    onPointerUp: (event: PointerEvent) => {
+      onPointerUp?.(event)
+      stopPress()
+    },
+    onPointerCancel: (event: PointerEvent) => {
+      onPointerCancel?.(event)
+      stopPress()
+    },
+    // Отпускание после удержания — не нажатие: без отмены браузер пришлёт `click`.
+    onTouchEnd: (event: TouchEvent) => {
+      onTouchEnd?.(event)
+      if (held && event.cancelable) event.preventDefault()
+    },
+    // Своё удержание вместо системного меню Android.
+    onContextMenu: (event: MouseEvent) => {
+      onContextMenu?.(event)
+      if (longPress && (press.current || held)) event.preventDefault()
     },
     onFocus: (event: FocusEvent) => {
       onFocus?.(event)

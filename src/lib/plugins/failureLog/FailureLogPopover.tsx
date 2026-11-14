@@ -100,6 +100,7 @@ const FailureEntry = ({
   return (
     <PopupEntry
       mark={<Bubble size="dot" tone="error" />}
+      markHint={failureLogLabels(labels).markHint}
       label={
         <>
           {failureName(table, failure, labels)}

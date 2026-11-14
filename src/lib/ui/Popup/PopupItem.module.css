@@ -73,6 +73,27 @@
   color: currentColor;
 }
 
+/*
+ * Значок с подсказкой (ADR 0224, MH1): область — от края пункта до подписи на всю его высоту, место
+ * значка и подписи прежнее. Удержание пальцем — подсказка, а не выноска и выделение.
+ */
+.icon[data-hint] {
+  box-sizing: border-box;
+  align-self: stretch;
+  height: auto;
+  min-width: calc(
+    var(--tsr-comp-button-icon-size) + var(--tsr-comp-popup-item-padding-x) +
+      var(--_item-gap)
+  );
+  margin-block: calc(-1 * var(--_item-padding-block, 6px));
+  margin-inline: calc(-1 * var(--tsr-comp-popup-item-padding-x))
+    calc(-1 * var(--_item-gap));
+  padding: var(--_item-padding-block, 6px) var(--_item-gap)
+    var(--_item-padding-block, 6px) var(--tsr-comp-popup-item-padding-x);
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
 .label {
   flex: 1;
   min-width: 0;

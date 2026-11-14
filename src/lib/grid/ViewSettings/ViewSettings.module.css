@@ -31,11 +31,26 @@
 
 .levels {
   composes: cardsScroll from '../../ui/Popup/Popup.module.css';
-  display: flex;
-  flex-direction: column;
-  gap: var(--tsr-comp-popup-padding);
+}
+
+/* Уровни в окне прокрутки: место уровня — в списке по замеру; зазор — верхнее поле, у первого нет. */
+.levelList {
+  position: relative;
+  width: 100%;
   margin: 0;
+  padding: 0;
   list-style: none;
+}
+
+.level {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  padding-block-start: var(--tsr-comp-popup-padding);
+}
+
+.level[data-index='0'] {
+  padding-block-start: 0;
 }
 
 .description {

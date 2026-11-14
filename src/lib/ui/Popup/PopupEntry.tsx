@@ -4,12 +4,19 @@
  * цели, её область растянута на облачко, кнопки записи лежат поверх.
  */
 import type { MouseEvent, ReactNode } from 'react'
-import { useId } from 'react'
+import { useId, useRef } from 'react'
+
+import { Tooltip } from '../Tooltip'
 
 import styles from './PopupEntry.module.css'
 
 export interface PopupEntryProps {
   mark: ReactNode
+  /**
+   * Что значит точка (ADR 0224): подсказка над полосой от края облачка до подписи на всю его
+   * высоту; на касаниях — удержанием. Нажатие на полосу — переход `onShow`.
+   */
+  markHint?: string
   label: ReactNode
   /** Переход к цели записи; без него облачко не нажимается. */
   onShow?: (event: MouseEvent<HTMLButtonElement>) => void
@@ -18,52 +25,57 @@ export interface PopupEntryProps {
   actions?: ReactNode
   /** Высота по содержимому: иначе облачка одной высоты, на две строки содержимого. */
   fit?: boolean
-  /** Текущая запись списка — шаг, на котором стоит таблица (ADR 0222, §11). */
-  current?: boolean
   children?: ReactNode
 }
 
 export const PopupEntry = ({
   mark,
+  markHint,
   label,
   onShow,
   aside,
   actions,
   fit,
-  current,
   children,
 }: PopupEntryProps) => {
   const id = useId()
+  const showRef = useRef<HTMLButtonElement>(null)
   return (
     <div
       className={styles.entry}
       data-popup-entry=""
       data-fit={fit || undefined}
-      data-current={current || undefined}
     >
       <span className={styles.mark} data-popup-entry-mark="" aria-hidden>
         {mark}
       </span>
+      {markHint && (
+        <Tooltip title={markHint} longPress>
+          <span
+            className={styles.markHint}
+            data-popup-entry-mark-hint=""
+            data-show={onShow ? '' : undefined}
+            aria-hidden
+            onClick={() => showRef.current?.click()}
+          />
+        </Tooltip>
+      )}
       <div className={styles.head}>
         {onShow ? (
           // Переход озвучивает подпись, а содержимое облачка — описанием.
           <button
+            ref={showRef}
             type="button"
             className={styles.show}
             data-popup-entry-label=""
             data-action="show"
             aria-describedby={children ? id : undefined}
-            aria-current={current ? 'step' : undefined}
             onClick={onShow}
           >
             {label}
           </button>
         ) : (
-          <span
-            className={styles.label}
-            data-popup-entry-label=""
-            aria-current={current ? 'step' : undefined}
-          >
+          <span className={styles.label} data-popup-entry-label="">
             {label}
           </span>
         )}

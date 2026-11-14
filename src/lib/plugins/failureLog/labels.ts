@@ -18,6 +18,8 @@ export interface FailureLogLabels {
   failureClose: string
   /** Объявление новой записи журнала: число записей. */
   announceFailureLogged: (count: number) => string
+  /** Подсказка точки записи (ADR 0224). */
+  markHint: string
 }
 
 export const failureLogLabels = defineLabels<FailureLogLabels>()(
@@ -32,6 +34,7 @@ export const failureLogLabels = defineLabels<FailureLogLabels>()(
     failureShow: 'Show',
     failureClose: 'Close',
     announceFailureLogged: 'Failures in the log: {count}',
+    markHint: 'Not done',
   },
   {
     failureLogButton: ['count'],

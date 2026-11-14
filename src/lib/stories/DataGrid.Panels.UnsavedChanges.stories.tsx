@@ -10,12 +10,15 @@ import { vrStates } from './__mocks__/catalog'
 import {
   byTestId,
   guideNext,
+  pointAt,
   pollUntil,
   settle,
   stepDone,
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
+import { storyLabels } from './__mocks__/storyLabels'
+import { unsavedChangesLabels } from '../plugins/unsavedChanges/labels'
 import { filterActive } from './__mocks__/filterGuide'
 import { filteringColumns } from './__mocks__/filteringData'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
@@ -421,6 +424,82 @@ export const UnsavedChangesDangerActions: StoryObj<StoryProps> = {
       await stepDone(canvas)
       await expect(countOf()).toBe(0)
       await expect(entries()).toHaveLength(0)
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0224 S1 ----------------------------------------------------------------------
+
+/** Полоса подсказки точки первой записи пульта. */
+const markHintOf = () =>
+  byTestId('unsaved-changes')?.querySelector<HTMLElement>(
+    '[data-popup-entry-mark-hint]',
+  ) ?? null
+/** Текст открытой подсказки: не поповера, у которого тоже есть `data-side`. */
+const hintText = () =>
+  document.querySelector('[data-tooltip-popup]')?.textContent?.trim() ?? ''
+/** Указатель на полосу — один раз: повтор перезапускал бы задержку подсказки. */
+const pointed = new WeakSet<Element>()
+const pointOnce = (element: HTMLElement | null) => {
+  if (!element || pointed.has(element)) return
+  pointed.add(element)
+  pointAt(element)
+}
+
+const DOT_HINT: readonly GuideStoryStep[] = [
+  {
+    title: 'Два условия не применены',
+    hint: 'Пользователь набрал условия фильтров двух колонок и не применил их. На кнопке пульта в тулбаре — число неприменённых изменений.',
+    states: ['head.draft'],
+  },
+  {
+    title: 'Пульт открыт',
+    hint: 'Пользователь открыл пульт. Слева у каждой записи — точка цвета неприменённого.',
+    states: ['overlay.unsavedChanges'],
+    enter: stepAction((_root, { signal }) => openPanel(signal)),
+  },
+  {
+    title: 'Подсказка точки',
+    hint: 'Пользователь навёл указатель на точку записи. Подсказка говорит, что значит точка: изменение не применено. На касаниях подсказку показывает удержание пальца.',
+    states: ['overlay.unsavedChanges', 'overlay.tooltip'],
+    enter: stepAction(async (_root, { signal }) => {
+      await openPanel(signal)
+      await pollUntil(() => {
+        pointOnce(markHintOf())
+        return hintText() !== ''
+      }, signal)
+    }),
+  },
+]
+
+/** ADR 0224, S1: пользователь узнаёт по подсказке, что значит точка записи пульта. */
+export const UnsavedChangesDotHint: StoryObj<StoryProps> = {
+  name: 'Dot hint',
+  parameters: { scenario: '0224/S1', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title="Подсказка точки"
+      steps={DOT_HINT}
+      args={guideArgs(GRID, args)}
+    />
+  ),
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const own = unsavedChangesLabels(storyLabels(args.locale))
+    await step(DOT_HINT[0]!.title, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(countOf()).toBe(2))
+    })
+    await step(DOT_HINT[1]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(entries()).toHaveLength(2)
+    })
+    await step(DOT_HINT[2]!.title, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await until(() => expect(hintText()).toBe(own.markHint))
       await settle()
     })
   },

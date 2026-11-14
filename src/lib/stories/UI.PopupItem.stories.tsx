@@ -23,6 +23,8 @@ interface ItemStoryArgs {
   /** Пусто — «По возрастанию» из словаря таблицы. */
   label?: string
   icon: boolean
+  /** Подсказка значка (ADR 0224); пусто — без неё. */
+  iconHint: string
   hint: string
   status: PopupItemStatus | 'none'
   disabled: boolean
@@ -49,6 +51,7 @@ const meta = {
   title: 'Tessera/UI/Popup/Item',
   args: {
     icon: true,
+    iconHint: '',
     hint: '',
     status: 'checked',
     disabled: false,
@@ -57,6 +60,10 @@ const meta = {
   argTypes: {
     label: { control: 'text', description: 'Подпись' },
     icon: { control: 'boolean', description: 'Значок слева' },
+    iconHint: {
+      control: 'text',
+      description: 'Подсказка значка по наведению; пусто — без неё',
+    },
     hint: { control: 'text', description: 'Подсказка справа от подписи' },
     status: {
       control: 'select',
@@ -69,7 +76,15 @@ const meta = {
       description: 'Подпись переносится, значки — по первой строке',
     },
   },
-  render: function Render({ label, icon, hint, status, disabled, wrap }) {
+  render: function Render({
+    label,
+    icon,
+    iconHint,
+    hint,
+    status,
+    disabled,
+    wrap,
+  }) {
     const sortAscending = columnSortingLabels(useStoryLabels()).sortAscending
     return (
       <Surface>
@@ -77,6 +92,7 @@ const meta = {
           wrap={wrap}
           render={<Menu.Item disabled={disabled} />}
           icon={icon ? <ArrowDownWideNarrow width={16} height={16} /> : null}
+          iconHint={iconHint || undefined}
           label={label || sortAscending}
           hint={hint || undefined}
           end={
@@ -97,6 +113,7 @@ export const PopupItemPlayground: Story = {
   parameters: defaultControls(
     'label',
     'icon',
+    'iconHint',
     'hint',
     'status',
     'disabled',

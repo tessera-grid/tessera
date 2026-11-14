@@ -452,3 +452,79 @@ describe('«Настройки вида» (ADR 0215)', () => {
     await expect.poll(() => motion(viewSettingsLevel()!)).toMatch(/InFromStart/)
   })
 })
+
+// Тысяча уровней сортировки (ADR 0215, VW18): список уровней виртуализирован.
+const WIDE_COLUMNS = Array.from({ length: 1000 }, (_, i) => ({
+  id: `col_${i}`,
+  accessorKey: `col_${i}`,
+  header: `Column ${i}`,
+}))
+const WIDE_DATA = Array.from({ length: 5 }, (_, row) => ({
+  id: String(row),
+  ...Object.fromEntries(WIDE_COLUMNS.map(column => [column.id, row])),
+}))
+const WideGrid = () => {
+  const table = useCreateTable({
+    columns: WIDE_COLUMNS as never,
+    data: WIDE_DATA,
+    getRowId: (row: { id: string }) => row.id,
+    plugins: [
+      columnSorting({
+        initialSorting: WIDE_COLUMNS.map(column => ({
+          id: column.id,
+          desc: false,
+        })),
+      }),
+    ] as never,
+  } as never)
+  return (
+    <div style={{ width: 800, height: 420 }}>
+      <DataGrid table={table as never} />
+    </div>
+  )
+}
+
+describe('«Настройки вида» — тысяча уровней (ADR 0215)', () => {
+  test('VW18: уровни раздела виртуализированы — при 1000 уровнях в DOM не больше 30; прокрутка до конца показывает последний; снятие уровня в конце списка переводит фокус на соседний уровень', async () => {
+    const screen = await render(<WideGrid />)
+    try {
+      await waitForGrid()
+      await openSettingsSection('sorting')
+      await expect.poll(() => levels().length).toBeGreaterThan(0)
+      expect(levels().length).toBeLessThanOrEqual(30)
+      // Фокус входа — на снятие первого уровня: уровни есть с первого кадра.
+      await expect
+        .poll(() => document.activeElement === removeOf(levels()[0]!))
+        .toBe(true)
+
+      const scroller = viewSettingsLevel()!.querySelector<HTMLElement>(
+        '[data-popup-scroller]',
+      )!
+      for (let i = 0; i < 5; i++) {
+        scroller.scrollTop = scroller.scrollHeight
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise(resolve => requestAnimationFrame(resolve))
+      }
+      const last = () =>
+        levels().find(level => level.dataset.viewSettingsLevel === 'col_999')
+      await expect.poll(last).toBeTruthy()
+      expect(levels().length).toBeLessThanOrEqual(30)
+
+      // Снятие последнего уровня — фокус на новый последний, 999-й по месту.
+      removeOf(last()!).focus()
+      await userEvent.keyboard('{Enter}')
+      await expect.poll(last).toBeUndefined()
+      await expect
+        .poll(
+          () =>
+            document.activeElement?.closest<HTMLElement>(
+              '[data-view-settings-level]',
+            )?.dataset.viewSettingsLevel,
+        )
+        .toBe('col_998')
+      await userEvent.keyboard('{Escape}')
+    } finally {
+      await screen.unmount()
+    }
+  })
+})

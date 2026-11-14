@@ -2,7 +2,7 @@ import { useState } from 'react'
 import axe from 'axe-core'
 import { commands, server, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
-import { afterEach, describe, expect, test } from 'vitest'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 import { humanClick, revealedHandleWidth, settledCenter } from '../helpers'
 
 import { Stories, renderGrid } from '../helpers'
@@ -37,6 +37,8 @@ import { columnDraggingLabels } from '../../../plugins/columnDragging/labels'
 import { rowDraggingLabels } from '../../../plugins/rowDragging/labels'
 import { cellEditingLabels } from '../../../plugins/cellEditing/labels'
 import { columnPinningLabels } from '../../../plugins/columnPinning/labels'
+import { Bubble } from '../../../ui/Bubble'
+import { PopupEntry } from '../../../ui/Popup/PopupEntry'
 
 // Касания (ADR 0086, TU1–TU12, TU14): проект `touch` в `npm test` — Chromium без
 // наведения и с грубым указателем — и проект `mobile` в `test:engines` (iPhone, Pixel).
@@ -1580,6 +1582,73 @@ describe('Отмена и повтор касанием (ADR 0222)', () => {
       await expect.poll(price).toBe(1)
       await touch.realTap(await settledCenter(() => button('redo-button')))
       await expect.poll(price).toBe(99)
+    } finally {
+      await screen.unmount()
+    }
+  })
+})
+
+describe('Подсказка точки пальцем (ADR 0224)', () => {
+  const HINT = 'What the dot means'
+  const hintShown = () =>
+    [...document.querySelectorAll('[data-tooltip-popup]')].some(
+      el => el.textContent?.trim() === HINT,
+    )
+
+  test('MH3: касание — удержание области точки 500 мс без сдвига показывает подсказку и не нажимает пункт; короткое касание нажимает пункт; следующее касание закрывает подсказку', async ({
+    skip,
+  }) => {
+    skip(!chromium, 'удержание пальца — CDP Chromium')
+    const onShow = vi.fn()
+    const screen = await render(
+      <div
+        className="data-grid-theme"
+        style={{ width: 320, padding: 16, paddingBottom: 200 }}
+      >
+        <PopupEntry
+          mark={<Bubble size="dot" tone="draft" />}
+          markHint={HINT}
+          label="Price · row 3"
+          onShow={onShow}
+        />
+        <p data-testid="elsewhere" style={{ height: 80 }}>
+          Elsewhere
+        </p>
+      </div>,
+    )
+    try {
+      const strip = await vi.waitFor(() => {
+        const found = document.querySelector<HTMLElement>(
+          '[data-popup-entry-mark-hint]',
+        )
+        if (!found) throw new Error('нет полосы')
+        return found
+      })
+      const at = center(strip)
+      // Удержание: подсказка, отпускание пункт не нажимает.
+      await touch.realTouchDown([at])
+      await wait(LONG_PRESS_WAIT_MS)
+      await expect.poll(hintShown).toBe(true)
+      await touch.realTouchUp()
+      await wait(200)
+      expect(onShow).not.toHaveBeenCalled()
+      expect(hintShown()).toBe(true)
+      // Следующее касание мимо закрывает подсказку.
+      await touch.realTap(
+        center(document.querySelector('[data-testid="elsewhere"]')!),
+      )
+      await expect.poll(hintShown).toBe(false)
+      // Короткое касание — нажатие пункта, без подсказки.
+      await touch.realTap(at)
+      await expect.poll(() => onShow.mock.calls.length).toBe(1)
+      await wait(LONG_PRESS_WAIT_MS)
+      expect(hintShown()).toBe(false)
+      // Сдвиг больше 10px отменяет удержание.
+      await touch.realTouchDown([at])
+      await touch.realTouchMove(at, { x: at.x, y: at.y + 16 }, 2)
+      await wait(LONG_PRESS_WAIT_MS)
+      expect(hintShown()).toBe(false)
+      await touch.realTouchUp()
     } finally {
       await screen.unmount()
     }
