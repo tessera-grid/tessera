@@ -94,6 +94,15 @@ const lazyIndexes = (
   }
 }
 
+/** Число строк и строки окна на своих местах не изменились. */
+const sameWindow = (
+  prev: readonly { id: string }[],
+  next: readonly { id: string }[],
+  window: readonly VirtualItem[],
+) =>
+  prev.length === next.length &&
+  window.every(item => prev[item.index]?.id === next[item.index]?.id)
+
 /** Копия строки — только вид: без ролей, `id`, фокуса и классов, по которым её ищут. */
 const asGhost = (row: HTMLElement) => {
   for (const node of [row, ...row.querySelectorAll<HTMLElement>('*')]) {
@@ -139,8 +148,16 @@ export class RowMotion extends Component<RowMotionProps> {
     ) {
       return null
     }
-    const bodyTop = body.getBoundingClientRect().top
     const { virtualRows } = this.props
+    // Новая модель с теми же строками окна (набор следующей буквы поиска) движение не
+    // обрывает: строки доезжают, призраки догорают (RM35).
+    if (
+      !this.props.source?.keyByIndex &&
+      sameWindow(prev.getRows(), this.props.getRows(), virtualRows)
+    ) {
+      return null
+    }
+    const bodyTop = body.getBoundingClientRect().top
     const next = new Set(virtualRows.map(item => this.idAt(item.index)))
     const before = new Map<string, number>()
     const leaving = new Map<string, HTMLElement>()

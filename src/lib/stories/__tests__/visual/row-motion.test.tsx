@@ -861,6 +861,45 @@ describe('Движение строк (ADR 0107)', () => {
     expect(frames.at(-1)).toBeCloseTo(frames[0], 0)
   })
 
+  test('RM35: смена модели с теми же строками окна посреди движения его не прерывает — призраки догорают, строки встают в срок первой смены', async () => {
+    slowMotion(800)
+    const ITEMS = Array.from({ length: 40 }, (_, k) => ({
+      id: `r${k}`,
+      name: k % 2 ? `odd ${k}` : `even ${k}`,
+    }))
+    let table!: { setGlobalFilter: (value: string) => void }
+    const Grid = () => {
+      const created = useCreateTable({
+        columns: [{ id: 'name', accessorKey: 'name', header: 'Name' }] as never,
+        data: ITEMS,
+        getRowId: (row: { id: string }) => row.id,
+        plugins: [quickSearchModel()] as never,
+      })
+      table = created as unknown as typeof table
+      return (
+        <div style={{ width: 600, height: 420 }}>
+          <DataGrid table={created as never} />
+        </div>
+      )
+    }
+    await render(<Grid />)
+    await expect.poll(() => rowById('r5')).not.toBeNull()
+
+    const startedAt = performance.now()
+    table.setGlobalFilter('odd')
+    await expect.poll(() => ghosts().length).toBeGreaterThan(0)
+    await sleep(400)
+    const leaving = ghosts().length
+    // Набор следующей буквы: новая модель с теми же строками.
+    table.setGlobalFilter('od')
+    await nextFrame()
+    await nextFrame()
+    expect(ghosts()).toHaveLength(leaving)
+    expect(still()).toBe(false)
+    await sleep(startedAt + 800 + 200 - performance.now())
+    expect(still()).toBe(true)
+  })
+
   test('RM14: prefers-reduced-motion — без движения, проявления и призраков', async () => {
     await pointer.reducedMotion(true)
     try {
