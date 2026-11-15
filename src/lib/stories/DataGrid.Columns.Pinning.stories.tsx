@@ -186,8 +186,8 @@ const PIN_COLUMNS: readonly GuideStoryStep[] = [
   {
     title: { ru: 'Прокрутка по горизонтали', en: 'Horizontal scrolling' },
     hint: {
-      ru: 'Пользователь прокрутил таблицу. Закреплённые колонки остаются на месте, остальные проходят между ними.',
-      en: 'The user scrolled the table. Pinned columns stay in place, and the rest scroll between them.',
+      ru: 'Пользователь прокрутил таблицу. Закреплённые колонки и их итоги внизу остаются на месте, остальные проходят между ними.',
+      en: 'The user scrolled the table. Pinned columns and their totals at the bottom stay in place, and the rest scroll between them.',
     },
     states: ['body.pinnedStart', 'body.pinnedEnd'],
     enter: afterRows(
@@ -202,6 +202,12 @@ const PIN_COLUMNS: readonly GuideStoryStep[] = [
   },
 ]
 
+/** Ячейка строки итогов колонки. */
+const footerCellOf = (root: ParentNode, columnId: string) =>
+  root.querySelector<HTMLElement>(
+    `.data-grid__footer-cell[data-column-id="${columnId}"]`,
+  )
+
 /** ADR 0011, S1: пользователь закрепляет колонки слева и справа и прокручивает таблицу. */
 export const PinningColumns: StoryObj<StoryProps> = {
   name: 'Pin columns',
@@ -214,7 +220,12 @@ export const PinningColumns: StoryObj<StoryProps> = {
       title={{ ru: 'Закрепление колонок', en: 'Column pinning' }}
       steps={PIN_COLUMNS}
       args={guideArgs(
-        { enableColumnPinning: true, dataCount: 40, height: '360' },
+        {
+          enableColumnPinning: true,
+          enableFooter: true,
+          dataCount: 40,
+          height: '360',
+        },
         args,
       )}
     />
@@ -267,11 +278,22 @@ export const PinningColumns: StoryObj<StoryProps> = {
     await step(PIN_COLUMNS[4]!.title.ru, async () => {
       const left = box(headCellsOf(canvas, LEFT)[0]!).left
       const right = box(headCellsOf(canvas, RIGHT)[0]!).left
+      const totalLeft = box(footerCellOf(canvas, LEFT)!).left
+      const totalRight = box(footerCellOf(canvas, RIGHT)!).left
       await guideNext(canvas)
       await until(() => expect(scroller().scrollLeft).toBeGreaterThan(0))
       await expect(box(headCellsOf(canvas, LEFT)[0]!).left).toBeCloseTo(left, 0)
       await expect(box(headCellsOf(canvas, RIGHT)[0]!).left).toBeCloseTo(
         right,
+        0,
+      )
+      // Итоги закреплённых колонок — над своими колонками (ADR 0118, FT5).
+      await expect(box(footerCellOf(canvas, LEFT)!).left).toBeCloseTo(
+        totalLeft,
+        0,
+      )
+      await expect(box(footerCellOf(canvas, RIGHT)!).left).toBeCloseTo(
+        totalRight,
         0,
       )
       await settle()

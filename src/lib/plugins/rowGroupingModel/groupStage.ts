@@ -23,6 +23,11 @@ import {
 } from '../../shared/rowMoves'
 import type { RowData, Table, TableFeatures } from '../../types'
 import { childrenOf } from '../../core/rowEngine/displayChildren'
+import {
+  aggregatesAllNodes,
+  hasLazyChildren,
+  withDescendants,
+} from '../../shared/aggregation'
 
 interface StageRow {
   id: string
@@ -115,6 +120,7 @@ const aggregateOf = (
   group: StageRow,
   subRows: StageRow[],
   rowsAt: (maxDepth: number) => StageRow[],
+  depth = aggregationDepth(column.columnDef.maxAggregationDepth),
 ) => {
   const entries = column.getAggregationFns?.()
   if (!entries) return undefined
@@ -130,8 +136,8 @@ const aggregateOf = (
     columnId: column.id,
     getValue: row => row.getValue(column.id),
     groupingRow: group,
-    maxDepth: aggregationDepth(column.columnDef.maxAggregationDepth),
-    rows: rowsAt(aggregationDepth(column.columnDef.maxAggregationDepth)),
+    maxDepth: depth,
+    rows: rowsAt(depth),
     table: column.table,
   }
   const subResultOf = (value: unknown, id: string | undefined) => {
@@ -212,6 +218,38 @@ const groupBy = (
   return groups
 }
 
+/**
+ * Агрегат колонки строки-группы по её строкам: колонка `'all'` складывает строки с потомками,
+ * а в ленивом дереве значения не даёт — часть потомков не загружена (ADR 0229, §4–§5).
+ */
+const groupValueOf = (
+  table: StageTable,
+  layout: Layout,
+  column: StageColumn,
+  group: StageRow,
+  members: StageRow[],
+  subRows: StageRow[],
+) => {
+  if (aggregatesAllNodes(column.columnDef)) {
+    if (hasLazyChildren(table)) return undefined
+    return aggregateOf(
+      column,
+      group,
+      subRows,
+      () =>
+        layout.flat
+          ? members
+          : withDescendants(members, row => childrenOf(layout.input, row)),
+      0,
+    )
+  }
+  return aggregateOf(column, group, subRows, (maxDepth: number) =>
+    layout.flat || maxDepth === 0
+      ? members
+      : leavesOf(layout, members, maxDepth),
+  )
+}
+
 /** Строка-группа: поля группы и значения задаются при создании, до публикации строки. */
 const makeGroup = (
   table: StageTable,
@@ -247,11 +285,7 @@ const makeGroup = (
       } else {
         const column = table.getColumn(target)
         value = column
-          ? aggregateOf(column, row, subRows, (maxDepth: number) =>
-              layout.flat || maxDepth === 0
-                ? members
-                : leavesOf(layout, members, maxDepth),
-            )
+          ? groupValueOf(table, layout, column, row, members, subRows)
           : undefined
       }
       values.set(target, value)

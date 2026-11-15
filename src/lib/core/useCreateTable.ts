@@ -159,7 +159,10 @@ export type UseCreateTableParams<
     /** Колбэки срезов колонок (прокидываются в опции v9 как есть). */
     handlers?: CoreTableHandlers
 
-    /** Размеры колонок без своих; дополняет умолчания (`minSize` 48, `maxSize` 750). */
+    /**
+     * Умолчания колонок без своих: размеры дополняют умолчания (`minSize` 48, `maxSize` 750),
+     * `aggregationScope` — строки дерева в агрегатах (ADR 0229).
+     */
     defaultColumn?: DefaultColumnSizing
   }
 
@@ -260,12 +263,14 @@ export const useCreateTable = <
         minSize: defaultColumn?.minSize,
         maxSize: defaultColumn?.maxSize,
         flex: defaultColumn?.flex,
+        aggregationScope: defaultColumn?.aggregationScope,
       }),
     [
       defaultColumn?.size,
       defaultColumn?.minSize,
       defaultColumn?.maxSize,
       defaultColumn?.flex,
+      defaultColumn?.aggregationScope,
     ],
   )
 

@@ -512,6 +512,7 @@ describe('серверная модель строк на таблице (ADR 01
       globalFilter: '',
       grouping: [],
       aggregations: {},
+      aggregationScopes: {},
     })
     expect(exports[0]!.selection).toEqual({ all: true, except: ['r3'] })
   })

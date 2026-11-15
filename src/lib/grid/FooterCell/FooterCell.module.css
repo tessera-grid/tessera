@@ -54,21 +54,31 @@
   }
 }
 
-/* Подсветка колонки (ADR 0080) и вспышка итога над ней (ADR 0134): слои фона футера. */
-.footer__cell:is([data-column-highlight], [data-column-flash]) {
+/*
+ * Подсветка колонки (ADR 0080), вспышка итога колонки над ней (ADR 0134) и вспышка смены итога
+ * сверху (ADR 0221, §9): слои фона футера.
+ */
+.footer__cell:is([data-column-highlight], [data-column-flash], [data-flash]) {
   background-image:
+    linear-gradient(var(--tsr-flash-cell), var(--tsr-flash-cell)),
     linear-gradient(var(--tsr-flash-column), var(--tsr-flash-column)),
     linear-gradient(var(--tsr-highlight-column), var(--tsr-highlight-column));
 }
 
-/* Подсветка проявляется и гаснет одним переходом (ADR 0101), вспышка — временем итога. */
-.footer__cell:is([data-column-highlight], [data-column-flash]) {
+/* Подсветка проявляется и гаснет одним переходом (ADR 0101), вспышки — временем итога. */
+.footer__cell:is([data-column-highlight], [data-column-flash], [data-flash]) {
   transition:
     var(--tsr-comp-row-transition),
     --tsr-highlight-column var(--tsr-comp-highlight-fade-duration)
       var(--tsr-comp-motion-easing-out),
+    --tsr-flash-cell var(--tsr-flash-time) var(--tsr-comp-motion-easing-out),
     --tsr-flash-column var(--tsr-column-flash-time)
       var(--tsr-comp-motion-easing-out);
+}
+
+/* Стрелка роста и падения итога — та же, что у ячейки тела, со всеми её видами (ADR 0221, §6). */
+.flash-direction {
+  composes: flash-direction from '../BodyCell/BodyCell.module.css';
 }
 
 /* Высокая контрастность (ADR 0087): подсветка колонки и вспышка `reverted` — `Mark`. */

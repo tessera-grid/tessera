@@ -201,17 +201,20 @@ const scrollToEnd = afterRows(root => {
 
 const PINNED: readonly GuideStoryStep[] = [
   {
-    title: { ru: 'Футер у нижнего края', en: 'Footer at the bottom edge' },
+    title: {
+      ru: 'Строка итогов у нижнего края',
+      en: 'Totals row at the bottom edge',
+    },
     hint: {
-      ru: 'Строка футера всегда отображается у нижнего края таблицы.',
-      en: 'The footer row always appears at the bottom edge of the table.',
+      ru: 'Строка итогов закреплена у нижнего края таблицы.',
+      en: 'The totals row is pinned to the bottom edge of the table.',
     },
   },
   {
     title: { ru: 'Прокрутка к середине', en: 'Scrolled to the middle' },
     hint: {
-      ru: 'Строка футера перекрывает собой область прокрутки на любой позиции.',
-      en: 'The footer row overlays the scroll area at any scroll position.',
+      ru: 'Строки прокручиваются под строкой итогов, она остаётся на месте.',
+      en: 'The rows scroll under the totals row, which stays in place.',
     },
     enter: scrollToMiddle,
   },
@@ -232,7 +235,10 @@ export const PinnedFooter: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title={{ ru: 'Футер у нижнего края', en: 'Footer at the bottom edge' }}
+      title={{
+        ru: 'Строка итогов у нижнего края',
+        en: 'Totals row at the bottom edge',
+      }}
       steps={PINNED}
       args={guideArgs(PINNED_FOOTER_ARGS, args)}
     />
@@ -260,19 +266,19 @@ export const PinnedFooter: StoryObj<StoryProps> = {
 const INLINE: readonly GuideStoryStep[] = [
   {
     title: {
-      ru: 'Футер за последней строкой',
-      en: 'Footer after the last row',
+      ru: 'Строка итогов за последней строкой',
+      en: 'Totals row after the last row',
     },
     hint: {
-      ru: 'Строка футера отображается следом за последней строкой таблицы.',
-      en: 'The footer row appears right after the last row of the table.',
+      ru: 'Строка итогов идёт сразу за последней строкой.',
+      en: 'The totals row comes right after the last row.',
     },
   },
   {
     title: { ru: 'Прокрутка к концу', en: 'Scrolled to the end' },
     hint: {
-      ru: 'Строка футера видна, только если пользователь дошёл до конца списка строк.',
-      en: 'The footer row is visible only once the user reaches the end of the rows.',
+      ru: 'Строка итогов видна только в конце таблицы.',
+      en: 'The totals row is visible only at the end of the table.',
     },
     enter: scrollToEnd,
   },
@@ -294,8 +300,8 @@ export const InlineFooter: StoryObj<StoryProps> = {
   render: args => (
     <GuideStory
       title={{
-        ru: 'Футер за последней строкой',
-        en: 'Footer after the last row',
+        ru: 'Строка итогов за последней строкой',
+        en: 'Totals row after the last row',
       }}
       steps={INLINE}
       args={guideArgs(INLINE_FOOTER_ARGS, args)}
@@ -348,31 +354,34 @@ const scrollAndPressCell = stepAction(async (root, { signal }) => {
 
 const SWITCH: readonly GuideStoryStep[] = [
   {
-    title: { ru: 'Футер у нижнего края', en: 'Footer at the bottom edge' },
+    title: {
+      ru: 'Строка итогов у нижнего края',
+      en: 'Totals row at the bottom edge',
+    },
     hint: {
-      ru: 'Строка футера отображается у нижнего края таблицы. Таблица в начале, ничего не выбрано.',
-      en: 'The footer row appears at the bottom edge of the table. The table is at the top, and nothing is selected.',
+      ru: 'Строка итогов закреплена у нижнего края таблицы.',
+      en: 'The totals row is pinned to the bottom edge of the table.',
     },
   },
   {
     title: {
-      ru: 'Пользователь выбрал ячейку в середине',
-      en: 'The user selected a cell in the middle',
+      ru: 'Выбрана ячейка в середине',
+      en: 'A cell in the middle is selected',
     },
     hint: {
-      ru: 'Пользователь прокрутил таблицу к середине и выбрал ячейку. Строка футера по-прежнему у нижнего края таблицы.',
-      en: 'The user scrolled the table to the middle and selected a cell. The footer row is still at the bottom edge of the table.',
+      ru: 'Таблица прокручена, ячейка выбрана — строка итогов на месте.',
+      en: 'The table is scrolled and a cell is selected; the totals row stays in place.',
     },
     enter: scrollAndPressCell,
   },
   {
     title: {
-      ru: 'Футер за последней строкой',
-      en: 'Footer after the last row',
+      ru: 'Строка итогов за последней строкой',
+      en: 'Totals row after the last row',
     },
     hint: {
-      ru: 'Приложение открепляет футер: строка футера уходит следом за последней строкой, прокрутка и выбранная ячейка остаются на месте.',
-      en: 'The app unpins the footer: the footer row moves to follow the last row, while the scroll position and the selected cell stay put.',
+      ru: 'Приложение открепило строку итогов: она ушла за последнюю строку, прокрутка и выбор на месте.',
+      en: 'The app unpinned the totals row: it moved after the last row, while the scroll and the selection stayed put.',
     },
     props: () => ({ footerPosition: 'inline' }),
   },
@@ -396,8 +405,8 @@ export const FooterPositionSwitch: StoryObj<StoryProps> = {
   render: args => (
     <GuideStory
       title={{
-        ru: 'Смена положения футера',
-        en: 'Switching the footer position',
+        ru: 'Смена положения строки итогов',
+        en: 'Moving the totals row',
       }}
       steps={SWITCH}
       args={guideArgs(FOOTER_POSITION_SWITCH_ARGS, args)}
@@ -472,20 +481,20 @@ const pressArrowDown = (root: HTMLElement) => {
 const KEYBOARD: readonly GuideStoryStep[] = [
   {
     title: {
-      ru: 'Футер за последней строкой',
-      en: 'Footer after the last row',
+      ru: 'Строка итогов за последней строкой',
+      en: 'Totals row after the last row',
     },
     hint: {
-      ru: 'Строка футера отображается следом за последней строкой. Фокус вне таблицы.',
-      en: 'The footer row appears right after the last row. Focus is outside the table.',
+      ru: 'Строка итогов идёт за последней строкой, фокус вне таблицы.',
+      en: 'The totals row comes after the last row; focus is outside the table.',
     },
   },
   {
     title: { ru: 'Фокус на последней строке', en: 'Focus on the last row' },
     keyboard: true,
     hint: {
-      ru: 'Строка футера отображается следом за последней строкой и сейчас скрыта за нижним краем таблицы.',
-      en: 'The footer row appears right after the last row and is now hidden past the bottom edge of the table.',
+      ru: 'Фокус на последней строке, строка итогов — сразу под нижним краем.',
+      en: 'Focus is on the last row; the totals row is just below the bottom edge.',
     },
     enter: focusLastRow,
   },
@@ -493,8 +502,8 @@ const KEYBOARD: readonly GuideStoryStep[] = [
     title: { ru: 'Стрелка вниз', en: 'Arrow down' },
     keyboard: true,
     hint: {
-      ru: 'Фокус переходит на строку футера, таблица автоматически прокручивается до конца.',
-      en: 'Focus moves to the footer row, and the table scrolls to the end automatically.',
+      ru: 'Фокус перешёл на строку итогов, таблица докрутилась до конца.',
+      en: 'Focus moved to the totals row, and the table scrolled to the end.',
     },
     // Со свежей таблицы фокуса на последней строке нет: сперва он, затем стрелка.
     enter: stepAction(async (root, { signal, onLeave }) => {
@@ -534,8 +543,8 @@ export const FooterKeyboard: StoryObj<StoryProps> = {
   render: args => (
     <GuideStory
       title={{
-        ru: 'Футер с клавиатуры',
-        en: 'Reaching the footer from the keyboard',
+        ru: 'Строка итогов с клавиатуры',
+        en: 'Reaching the totals row from the keyboard',
       }}
       steps={KEYBOARD}
       args={guideArgs(FOOTER_KEYBOARD_ARGS, args)}
@@ -590,26 +599,26 @@ const FEED: readonly GuideStoryStep[] = [
   {
     title: { ru: 'Начало ленты', en: 'Start of the feed' },
     hint: {
-      ru: 'Таблица подгружает строки по мере прокрутки к концу ленты.',
-      en: 'The table loads more rows as the user scrolls toward the end of the feed.',
+      ru: 'Строки подгружаются по мере прокрутки.',
+      en: 'Rows load as you scroll.',
     },
   },
   {
     title: {
-      ru: 'Футер в бесконечной ленте',
-      en: 'The footer in an infinite feed',
+      ru: 'Строка итогов в бесконечной ленте',
+      en: 'Totals row in an infinite feed',
     },
     hint: {
-      ru: 'Футер отображается в конце загруженной ленты.',
-      en: 'The footer appears at the end of the loaded feed.',
+      ru: 'Строка итогов идёт за последней загруженной строкой.',
+      en: 'The totals row comes after the last loaded row.',
     },
     enter: scrollToEnd,
   },
   {
-    title: { ru: 'Ошибка получения данных', en: 'Data fetch error' },
+    title: { ru: 'Ошибка загрузки', en: 'Load error' },
     hint: {
-      ru: 'Во время загрузки футер отображается после скелетов, а при ошибке — перед строкой с текстом ошибки.',
-      en: 'While loading, the footer appears after the skeletons, and on an error, it appears before the row with the error message.',
+      ru: 'При загрузке строка итогов стоит после скелетов, при ошибке — перед строкой ошибки.',
+      en: 'While loading, the totals row comes after the skeletons; on an error, before the error row.',
     },
     props: () => ({ infiniteScrollHasMore: true, onLoadMore: failingLoad }),
     enter: scrollToEnd,
@@ -633,8 +642,8 @@ export const InlineFooterInfiniteScroll: StoryObj<StoryProps> = {
   render: args => (
     <GuideStory
       title={{
-        ru: 'Футер в бесконечной ленте',
-        en: 'The footer in an infinite feed',
+        ru: 'Строка итогов в бесконечной ленте',
+        en: 'Totals row in an infinite feed',
       }}
       steps={FEED}
       args={guideArgs(INLINE_FOOTER_INFINITE_SCROLL_ARGS, args)}
@@ -701,15 +710,15 @@ const PAGES: readonly GuideStoryStep[] = [
   {
     title: { ru: 'Малый размер страницы', en: 'A small page size' },
     hint: {
-      ru: 'Строки страницы помещаются в таблицу — строка футера видна сразу следом за последней из них.',
-      en: "The page's rows fit in the table, so the footer row is visible right after the last of them.",
+      ru: 'Строки страницы помещаются — строка итогов видна сразу.',
+      en: "The page's rows fit, so the totals row is visible right away.",
     },
   },
   {
     title: { ru: 'Большой размер страницы', en: 'A large page size' },
     hint: {
-      ru: 'Строки страницы не помещаются в таблицу — строка футера видна, когда пользователь докрутит до конца страницы.',
-      en: "The page's rows do not fit in the table, so the footer row becomes visible when the user scrolls to the end of the page.",
+      ru: 'Строки страницы не помещаются — строка итогов видна в конце страницы.',
+      en: "The page's rows don't fit, so the totals row is visible at the end of the page.",
     },
     enter: afterRows(root => {
       pageApi?.setPagination({ pageIndex: 0, pageSize: LARGE_PAGE })
@@ -742,7 +751,10 @@ export const InlineFooterPagination: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title={{ ru: 'Футер с пагинацией', en: 'The footer with pagination' }}
+      title={{
+        ru: 'Строка итогов с пагинацией',
+        en: 'Totals row with pagination',
+      }}
       steps={PAGES}
       args={guideArgs(INLINE_FOOTER_PAGINATION_ARGS, args)}
     />
@@ -801,23 +813,23 @@ const SCROLL: readonly GuideStoryStep[] = [
   {
     title: { ru: 'Начало таблицы', en: 'Top of the table' },
     hint: {
-      ru: 'Таблица открыта в начале. Строка футера отображается следом за последней строкой.',
-      en: 'The table is open at the top. The footer row appears right after the last row.',
+      ru: 'Таблица в начале, строка итогов за последней строкой.',
+      en: 'The table is at the top; the totals row comes after the last row.',
     },
   },
   {
     title: { ru: 'Середина таблицы', en: 'Middle of the table' },
     hint: {
-      ru: 'Строка футера находится не в области прокрутки.',
-      en: 'The footer row is outside the scroll area.',
+      ru: 'Таблица прокручена к середине — строки итогов не видно.',
+      en: 'The table is scrolled to the middle; the totals row is not visible.',
     },
     enter: scrollToMiddle,
   },
   {
     title: { ru: 'Прокрутка к концу', en: 'Scrolled to the end' },
     hint: {
-      ru: 'Программная прокрутка доходит до последней строки, включая строку футера.',
-      en: 'Programmatic scrolling reaches the last row, including the footer row.',
+      ru: 'Приложение прокрутило к последней строке — видна и строка итогов.',
+      en: 'The app scrolled to the last row; the totals row is visible too.',
     },
     enter: scrollToRowEnd(LAST_ROW_ID),
   },
@@ -891,19 +903,19 @@ const typeSearch = (text: string) => (root: HTMLElement) => {
 const SEARCH: readonly GuideStoryStep[] = [
   {
     title: {
-      ru: 'Футер за последней строкой',
-      en: 'Footer after the last row',
+      ru: 'Строка итогов за последней строкой',
+      en: 'Totals row after the last row',
     },
     hint: {
-      ru: 'Строка футера отображается следом за последней строкой таблицы.',
-      en: 'The footer row appears right after the last row of the table.',
+      ru: 'Строка итогов идёт сразу за последней строкой.',
+      en: 'The totals row comes right after the last row.',
     },
   },
   {
-    title: { ru: 'Данные не найдены', en: 'No data found' },
+    title: { ru: 'Ничего не найдено', en: 'Nothing found' },
     hint: {
-      ru: 'Поиск не нашёл ни одной записи. Футер отображается под заглушкой.',
-      en: 'The search found no records. The footer appears below the placeholder.',
+      ru: 'Поиск ничего не нашёл — строка итогов под заглушкой.',
+      en: 'The search found nothing; the totals row is below the placeholder.',
     },
     enter: typeSearch('zzz'),
   },
@@ -926,8 +938,8 @@ export const InlineFooterEmptySearch: StoryObj<StoryProps> = {
   render: args => (
     <GuideStory
       title={{
-        ru: 'Футер и заглушка поиска',
-        en: 'The footer and the search placeholder',
+        ru: 'Строка итогов и пустой поиск',
+        en: 'Totals row and an empty search',
       }}
       steps={SEARCH}
       args={guideArgs(INLINE_FOOTER_EMPTY_SEARCH_ARGS, args)}
@@ -978,20 +990,20 @@ export const InlineFooterEmptySearch: StoryObj<StoryProps> = {
 
 const AUTO_HEIGHT: readonly GuideStoryStep[] = [
   {
-    title: { ru: 'Фиксированная высота таблицы', en: 'A fixed table height' },
+    title: { ru: 'Фиксированная высота', en: 'Fixed height' },
     hint: {
-      ru: 'Вне зависимости от высоты строка футера находится у нижнего края.',
-      en: 'Whatever the height, the footer row sits at the bottom edge.',
+      ru: 'Строка итогов у нижнего края таблицы.',
+      en: 'The totals row is at the bottom edge of the table.',
     },
   },
   {
     title: {
-      ru: 'Высота таблицы по содержимому',
-      en: 'Table height by content',
+      ru: 'Высота по строкам',
+      en: 'Height by rows',
     },
     hint: {
-      ru: 'Строка футера также находится у нижнего края, но не перекрывает другие строки вне зависимости от их количества.',
-      en: 'The footer row also sits at the bottom edge but does not overlap other rows, however many there are.',
+      ru: 'Таблица по высоте строк, строка итогов сразу под ними.',
+      en: 'The table is as tall as its rows; the totals row is right below them.',
     },
     props: () => ({ containerHeight: '', height: '', maxHeight: '' }),
   },
@@ -1013,8 +1025,8 @@ export const FooterAutoHeight: StoryObj<StoryProps> = {
   render: args => (
     <GuideStory
       title={{
-        ru: 'Позиция футера при разной высоте таблицы',
-        en: 'Footer position at different table heights',
+        ru: 'Строка итогов при разной высоте таблицы',
+        en: 'Totals row at different table heights',
       }}
       steps={AUTO_HEIGHT}
       args={guideArgs(FOOTER_AUTO_HEIGHT_ARGS, args)}
@@ -1040,5 +1052,92 @@ export const FooterAutoHeight: StoryObj<StoryProps> = {
       )
     })
     await settle()
+  },
+}
+
+// --- S10 -----------------------------------------------------------------------------
+
+/** Первая строка дерева — её раскрывает шаг (дети у каждой 10-й строки мока). */
+const firstRowOf = (root: ParentNode) =>
+  root.querySelector<HTMLElement>('.data-grid__body-row[data-index="0"]')
+
+/** Кнопка раскрытия первой строки: в роли table состояние раскрытия несёт она. */
+const firstToggleOf = (root: ParentNode) =>
+  firstRowOf(root)?.querySelector<HTMLElement>('.row-expand-button')
+
+/** Пользователь раскрывает первую строку. */
+const expandFirstRow = (root: HTMLElement) => {
+  const toggle = firstToggleOf(root)
+  if (toggle && toggle.getAttribute('aria-expanded') !== 'true') toggle.click()
+}
+
+const EXPAND: readonly GuideStoryStep[] = [
+  {
+    title: {
+      ru: 'Строка итогов за последней строкой',
+      en: 'Totals row after the last row',
+    },
+    hint: {
+      ru: 'Строка итогов идёт сразу за последней строкой.',
+      en: 'The totals row comes right after the last row.',
+    },
+  },
+  {
+    title: { ru: 'Строка раскрыта', en: 'The row is expanded' },
+    hint: {
+      ru: 'Строка раскрыта — строка итогов плавно съехала вместе со строками.',
+      en: 'A row is expanded — the totals row moved down smoothly along with the rows.',
+    },
+    enter: afterRows(expandFirstRow),
+  },
+]
+
+const INLINE_FOOTER_EXPANDING_ARGS = {
+  ...FOOTER_ARGS,
+  dataCount: 5,
+  dataNesting: 'nested',
+  footerPosition: 'inline',
+  enableRowExpanding: true,
+  enableTreeLines: true,
+} satisfies Partial<StoryProps>
+
+/** S10: раскрытая строка сдвигает строку итогов тем же движением, что строки. */
+export const InlineFooterRowExpanding: StoryObj<StoryProps> = {
+  name: 'Inline — row expanding',
+  parameters: {
+    scenario: '0118/S10',
+    ...guideControls(),
+  },
+  render: args => (
+    <GuideStory
+      title={{
+        ru: 'Строка итогов и раскрытие строки',
+        en: 'Totals row and row expanding',
+      }}
+      steps={EXPAND}
+      args={guideArgs(INLINE_FOOTER_EXPANDING_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    let before = 0
+    await step(EXPAND[0].title.ru, async () => {
+      await waitRows(canvas)
+      await until(() =>
+        near(rect(footerOf(canvas)).top, rect(lastRowOf(canvas)).bottom),
+      )
+      before = rect(footerOf(canvas)).top
+    })
+    await step(EXPAND[1].title.ru, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(firstToggleOf(canvas)?.getAttribute('aria-expanded')).toBe(
+          'true',
+        ),
+      )
+      await settle()
+      await expect(rect(footerOf(canvas)).top).toBeGreaterThan(before)
+      near(rect(footerOf(canvas)).top, rect(lastRowOf(canvas)).bottom)
+    })
   },
 }

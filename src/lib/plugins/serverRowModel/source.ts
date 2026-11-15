@@ -31,7 +31,10 @@ import {
   rowSelectionValueOf,
   setRowSelectionValue,
 } from '../../core/rowSelectionAll'
-import { serverAggregationsOf } from '../../shared/serverAggregations'
+import {
+  serverAggregationScopesOf,
+  serverAggregationsOf,
+} from '../../shared/serverAggregations'
 import { isThenable } from '../../util/thenable'
 import { BlockTree, type ExpandedRows } from './tree'
 import { removeRowDrafts } from '../../core/drafts/drafts'
@@ -58,7 +61,12 @@ const HIDDEN_TAB_FALLBACK_MS = 100
 
 type Query = Pick<
   ServerRowsRequest,
-  'sorting' | 'columnFilters' | 'globalFilter' | 'grouping' | 'aggregations'
+  | 'sorting'
+  | 'columnFilters'
+  | 'globalFilter'
+  | 'grouping'
+  | 'aggregations'
+  | 'aggregationScopes'
 >
 
 interface ServerColumn {
@@ -182,6 +190,7 @@ const queryOf = (t: ServerTable): Query => {
     globalFilter: (state.globalFilter ?? '') as string,
     grouping: (state.grouping ?? []) as string[],
     aggregations: serverAggregationsOf(t),
+    aggregationScopes: serverAggregationScopesOf(t),
   }
 }
 
@@ -870,7 +879,9 @@ const createServerSource = (table: unknown): ServerSource => {
       settleNext()
     },
     sync: () => {
-      sync()
+      const pending = next
+      const generation = sync()
+      return generation !== null && generation !== pending
     },
     whenLoaded: () =>
       new Promise<void>((resolve, reject) => {

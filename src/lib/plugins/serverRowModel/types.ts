@@ -17,6 +17,8 @@ export interface ServerRowsRequest {
   groupKeys: unknown[]
   /** Колонка → имя её `aggregationFn` (`sum`, `count`, `mean`…); только строковые. */
   aggregations: Record<string, string>
+  /** Колонки с `aggregationScope: 'all'`: итог и агрегаты групп — по всем узлам дерева (ADR 0229). */
+  aggregationScopes: Record<string, 'all'>
 }
 
 export interface ServerRowsResponse<TData = unknown> {

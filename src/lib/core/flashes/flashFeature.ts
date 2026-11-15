@@ -238,6 +238,26 @@ export const flashOutcome = (
   sweep(table)
 }
 
+/** Ключ вспышки итога колонки в футере (ADR 0221, §9): `f` — по колонке, как `k` у колонки. */
+export const footerFlashKey = (columnId: string) => `f\u0000${columnId}`
+
+/** Вспышки итогов колонок в футере одной записью (ADR 0221, §9). */
+export const flashFooterTotals = (
+  table: unknown,
+  entries: readonly { columnId: string; outcome: FlashOutcome }[],
+) => {
+  if (entries.length === 0) return
+  const until = performance.now() + flashTiming(table).hold
+  write(table, prev => {
+    const next = { ...prev }
+    for (const { columnId, outcome } of entries) {
+      next[footerFlashKey(columnId)] = { outcome, id: nextId++, until }
+    }
+    return next
+  })
+  sweep(table)
+}
+
 /** Вспышка диапазонов вокруг ячейки: последняя по времени. */
 export const rangeFlashAt = (
   table: unknown,

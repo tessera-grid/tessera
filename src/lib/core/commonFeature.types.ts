@@ -190,6 +190,18 @@ export interface CoreOptions {
 }
 
 /** Опции `commonFeature`: опции ядра и каналы сборки и плагинов (ADR 0164). */
+/** Итог колонки в ячейке футера — сторожу вспышки (ADR 0221, §9). */
+export interface ColumnTotalWatch {
+  table: unknown
+  columnId: string
+  total: unknown
+  /** Прежний итог; при монтировании ячейки — `undefined`. */
+  previous: unknown
+  mounted: boolean
+  /** Ячейка футера: видна ли она в области прокрутки. */
+  element: HTMLElement | null
+}
+
 export interface CommonOptions extends CoreOptions {
   /**
    * Значение ячейки для отрисовки, которого строка ещё не несёт: стадия переноса между группами
@@ -205,6 +217,11 @@ export interface CommonOptions extends CoreOptions {
   estimatedRowHeight?: number
   /** Итог колонки на клиенте: с ним футер есть без флага (ADR 0184, §4, §7). */
   columnTotalOf?: (table: unknown, columnId: string) => unknown
+  /**
+   * Сторож итога колонки (ADR 0221, §9): ячейка футера зовёт его при монтировании и при смене
+   * итога; ставит плагин valueChangeFlash.
+   */
+  watchColumnTotal?: (watch: ColumnTotalWatch) => void
   hooks?: CommonHooks
   slots?: RenderSlotsV9
   slotActions?: SlotActionsV9

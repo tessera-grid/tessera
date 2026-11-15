@@ -2573,6 +2573,18 @@ export const HighContrastFooterAutoHeightStep2 = {
   tags: ['!test'],
 }
 
+export const HighContrastInlineFooterRowExpandingStep1 = {
+  ...twinStep(coreFooterStories, coreFooterStories.InlineFooterRowExpanding, 1),
+  name: 'Core/Footer — Inline — row expanding, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastInlineFooterRowExpandingStep2 = {
+  ...twinStep(coreFooterStories, coreFooterStories.InlineFooterRowExpanding, 2),
+  name: 'Core/Footer — Inline — row expanding, step 2',
+  tags: ['!test'],
+}
+
 export const HighContrastSizingFixedHeightStep1 = {
   ...twinStep(coreSizingStories, coreSizingStories.SizingFixedHeight, 1),
   name: 'Core/Sizing — Fixed height, step 1',
@@ -7912,6 +7924,156 @@ export const HighContrastColumnTotalsTreeStep2 = {
   tags: ['!test'],
 }
 
+export const HighContrastColumnTotalsEditingStep1 = {
+  ...twinStep(
+    coreColumnTotalsStories,
+    coreColumnTotalsStories.ColumnTotalsEditing,
+    1,
+  ),
+  name: 'Core/Column totals — Edit a value, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnTotalsEditingStep2 = {
+  ...twinStep(
+    coreColumnTotalsStories,
+    coreColumnTotalsStories.ColumnTotalsEditing,
+    2,
+  ),
+  name: 'Core/Column totals — Edit a value, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnTotalsDraftsStep1 = {
+  ...twinStep(
+    coreColumnTotalsStories,
+    coreColumnTotalsStories.ColumnTotalsDrafts,
+    1,
+  ),
+  name: 'Core/Column totals — Edit before applying, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnTotalsDraftsStep2 = {
+  ...twinStep(
+    coreColumnTotalsStories,
+    coreColumnTotalsStories.ColumnTotalsDrafts,
+    2,
+  ),
+  name: 'Core/Column totals — Edit before applying, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnTotalsDraftsStep3 = {
+  ...twinStep(
+    coreColumnTotalsStories,
+    coreColumnTotalsStories.ColumnTotalsDrafts,
+    3,
+  ),
+  name: 'Core/Column totals — Edit before applying, step 3',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnTotalsAllNodesSearchStep1 = {
+  ...twinStep(
+    coreColumnTotalsStories,
+    coreColumnTotalsStories.ColumnTotalsAllNodesSearch,
+    1,
+  ),
+  name: 'Core/Column totals — All tree rows — search, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnTotalsAllNodesSearchStep2 = {
+  ...twinStep(
+    coreColumnTotalsStories,
+    coreColumnTotalsStories.ColumnTotalsAllNodesSearch,
+    2,
+  ),
+  name: 'Core/Column totals — All tree rows — search, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnTotalsAllNodesGroupsStep1 = {
+  ...twinStep(
+    coreColumnTotalsStories,
+    coreColumnTotalsStories.ColumnTotalsAllNodesGroups,
+    1,
+  ),
+  name: 'Core/Column totals — All tree rows — grouping, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnTotalsAllNodesGroupsStep2 = {
+  ...twinStep(
+    coreColumnTotalsStories,
+    coreColumnTotalsStories.ColumnTotalsAllNodesGroups,
+    2,
+  ),
+  name: 'Core/Column totals — All tree rows — grouping, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnTotalsLazyTreeStep1 = {
+  ...twinStep(
+    coreColumnTotalsStories,
+    coreColumnTotalsStories.ColumnTotalsLazyTree,
+    1,
+  ),
+  name: 'Core/Column totals — All tree rows — lazy children, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnTotalsLazyTreeStep2 = {
+  ...twinStep(
+    coreColumnTotalsStories,
+    coreColumnTotalsStories.ColumnTotalsLazyTree,
+    2,
+  ),
+  name: 'Core/Column totals — All tree rows — lazy children, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnTotalsLazyTreeStep3 = {
+  ...twinStep(
+    coreColumnTotalsStories,
+    coreColumnTotalsStories.ColumnTotalsLazyTree,
+    3,
+  ),
+  name: 'Core/Column totals — All tree rows — lazy children, step 3',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnTotalsServerTreeStep1 = {
+  ...twinStep(
+    coreColumnTotalsStories,
+    coreColumnTotalsStories.ColumnTotalsServerTree,
+    1,
+  ),
+  name: 'Core/Column totals — All tree rows — server row model, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnTotalsServerTreeStep2 = {
+  ...twinStep(
+    coreColumnTotalsStories,
+    coreColumnTotalsStories.ColumnTotalsServerTree,
+    2,
+  ),
+  name: 'Core/Column totals — All tree rows — server row model, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnTotalsServerTreeStep3 = {
+  ...twinStep(
+    coreColumnTotalsStories,
+    coreColumnTotalsStories.ColumnTotalsServerTree,
+    3,
+  ),
+  name: 'Core/Column totals — All tree rows — server row model, step 3',
+  tags: ['!test'],
+}
+
 export const HighContrastColumnTotalsServerPageStep1 = {
   ...twinStep(
     coreColumnTotalsStories,
@@ -9847,6 +10009,36 @@ export const HighContrastValueChangeFlashOverFillStep2 = {
     2,
   ),
   name: 'Cells/Value change flash — Flash over a highlight, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastValueChangeFlashTotalsStep1 = {
+  ...twinStep(
+    cellsValueChangeFlashStories,
+    cellsValueChangeFlashStories.ValueChangeFlashTotals,
+    1,
+  ),
+  name: 'Cells/Value change flash — Totals in the footer, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastValueChangeFlashTotalsStep2 = {
+  ...twinStep(
+    cellsValueChangeFlashStories,
+    cellsValueChangeFlashStories.ValueChangeFlashTotals,
+    2,
+  ),
+  name: 'Cells/Value change flash — Totals in the footer, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastValueChangeFlashTotalsStep3 = {
+  ...twinStep(
+    cellsValueChangeFlashStories,
+    cellsValueChangeFlashStories.ValueChangeFlashTotals,
+    3,
+  ),
+  name: 'Cells/Value change flash — Totals in the footer, step 3',
   tags: ['!test'],
 }
 

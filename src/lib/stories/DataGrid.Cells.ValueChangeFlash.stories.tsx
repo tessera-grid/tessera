@@ -683,3 +683,102 @@ export const ValueChangeFlashColors: StoryObj<StoryProps> = {
     })
   },
 }
+
+// --- S6: итог в футере ----------------------------------------------------------------
+
+const TOTAL_VISITS = 99_999
+
+const totalCell = (root: ParentNode) =>
+  root.querySelector<HTMLElement>(
+    '.data-grid__footer-cell[data-column-id="visits"]',
+  )
+const totalFlash = (root: ParentNode) =>
+  totalCell(root)?.getAttribute('data-flash') ?? null
+const searchField = (root: ParentNode) =>
+  root.querySelector<HTMLInputElement>('[data-testid="quick-search"]')
+
+const TOTALS: readonly GuideStoryStep[] = [
+  {
+    title: { ru: 'Итоги в футере', en: 'Totals in the footer' },
+    hint: {
+      ru: 'Внизу таблицы — итоги по всем строкам.',
+      en: 'The bottom of the table shows totals across all rows.',
+    },
+    props: seedProps,
+  },
+  {
+    title: { ru: 'Данные обновились', en: 'The data was updated' },
+    hint: {
+      ru: 'Визитов стало больше — итог вспыхнул и показал рост.',
+      en: 'There are more visits now — the total flashed and showed the rise.',
+    },
+    immediate: true,
+    enter: stepAction(async (root, { signal }) => {
+      await rowsReady(root, signal)
+      const row = dataRowId(1)!
+      push({ [row]: { visits: TOTAL_VISITS } })
+      await pollUntil(() => dataValue(row, 'visits') === TOTAL_VISITS, signal)
+    }),
+  },
+  {
+    title: { ru: 'Поиск', en: 'Search' },
+    hint: {
+      ru: 'Поиск оставил часть строк — итог пересчитан без вспышки.',
+      en: 'The search left only some of the rows — the total was recalculated without a flash.',
+    },
+    enter: stepAction(async (root, { signal }) => {
+      await rowsReady(root, signal)
+      const text = String(dataValue(dataRowId(0)!, 'firstName') ?? '')
+      await pollUntil(() => !!searchField(root), signal)
+      const field = searchField(root)!
+      if (field.value !== text) typeInto(field, text)
+    }),
+  },
+]
+
+/** ADR 0221, S6: данные обновились — итог вспыхнул; поиск сменил итог без вспышки. */
+export const ValueChangeFlashTotals: StoryObj<StoryProps> = {
+  name: 'Totals in the footer',
+  parameters: { scenario: '0221/S6', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title={{ ru: 'Вспышка итога', en: 'Total flash' }}
+      steps={TOTALS}
+      args={guideArgs(
+        {
+          ...layout,
+          enableValueChangeFlash: true,
+          valueChangeFlashColumnDefault: 'direction',
+          enableColumnTotals: true,
+          enableFooter: true,
+          enableQuickSearch: true,
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(TOTALS[0]!.title.ru, async () => {
+      await waitForRows(canvas)
+      await until(() =>
+        expect(totalCell(canvas)?.textContent?.trim()).toBeTruthy(),
+      )
+    })
+    await step(TOTALS[1]!.title.ru, async () => {
+      await guideNext(canvas)
+      await until(() => expect(totalFlash(canvas)).toBe('up'))
+      expect(
+        totalCell(canvas)?.querySelector<HTMLElement>('[data-flash-direction]')
+          ?.dataset.flashDirection,
+      ).toBe('up')
+    })
+    await step(TOTALS[2]!.title.ru, async () => {
+      const before = totalCell(canvas)?.textContent
+      await guideNext(canvas)
+      await until(() => expect(totalCell(canvas)?.textContent).not.toBe(before))
+      await until(() => expect(totalFlash(canvas)).toBeNull())
+      await settle()
+    })
+  },
+}

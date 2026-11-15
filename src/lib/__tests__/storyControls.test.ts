@@ -47,6 +47,7 @@ const WITHOUT_CONTROL: Record<string, string> = {
   dataExportModelAllow: 'оси своей кнопки выгрузки задаёт история',
   dataExportModelMaxLoadedRows: 'предел своей кнопки выгрузки задаёт история',
   infiniteScrollHasMore: 'конец ленты знает история с сервером',
+  columnTotalsTotals: 'итоги сервера задаёт история',
   headerActionMenuSlots: 'список кнопок — из кода плагинов',
   cellEditingEditing: 'состояние правки у приложения — своя история',
   cellEditingInitialEditing: 'состояние правки у приложения — своя история',

@@ -103,6 +103,8 @@ export interface ExportRequest {
     grouping: string[]
     /** Колонка → имя её `aggregationFn`; только явные строковые. */
     aggregations: Record<string, string>
+    /** Колонки с `aggregationScope: 'all'` (ADR 0229). */
+    aggregationScopes: Record<string, 'all'>
   }
   selection?: RowSelectionValue
   /** Только в `onExported`. */

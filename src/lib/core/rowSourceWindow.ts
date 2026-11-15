@@ -56,6 +56,20 @@ export const useRowSourceWindow = (
     }
   }, [source, conditions, virtualizer])
 
+  // Новые колонки могут сменить агрегаты и их режим в запросе (ADR 0229, §7): источник сам
+  // сверяет запрос и начинает список заново, только если он сменился.
+  const { columns } = (table as { options: { columns?: unknown } }).options
+  const previousColumns = useRef(columns)
+  useIsomorphicLayoutEffect(() => {
+    if (!source.sync || previousColumns.current === columns) return
+    previousColumns.current = columns
+    if (!source.sync()) return
+    const scroller = virtualizer.scrollElement
+    if (scroller instanceof HTMLElement) {
+      scrollGridTo(scroller, { top: 0 }, 'instant')
+    }
+  }, [source, columns, virtualizer])
+
   // Окно — в индексах страницы: другая страница — другие строки при том же окне (ADR 0158).
   const page = useTableState(table as never, s => s.pagination)
   useIsomorphicLayoutEffect(() => {

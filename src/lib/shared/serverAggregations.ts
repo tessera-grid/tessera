@@ -31,3 +31,21 @@ export const serverAggregationsOf = (table: unknown): Record<string, string> =>
       return []
     }),
   )
+
+/** Колонки с агрегатом по всем узлам дерева (ADR 0229, §7): колонка → `'all'`. */
+export const serverAggregationScopesOf = (
+  table: unknown,
+): Record<string, 'all'> =>
+  Object.fromEntries(
+    (
+      (
+        table as {
+          getAllLeafColumns?: () => (AggregationColumn & {
+            columnDef: { aggregationScope?: unknown }
+          })[]
+        }
+      ).getAllLeafColumns?.() ?? []
+    )
+      .filter(({ columnDef }) => columnDef.aggregationScope === 'all')
+      .map(({ id }) => [id, 'all' as const]),
+  )

@@ -8,6 +8,7 @@ import { definePlugin } from '../../core/definePlugin'
 import { neverInert } from '../../core/pluginDiagnostics'
 import type { ValueChangeFlashHooks } from './types'
 import { valueChangeFlashFeature } from './valueChangeFlashFeature'
+import { watchTotalsWith } from './totals'
 import { ID, valueChangeFlashBody } from './watch'
 
 export interface ValueChangeFlashOptions {
@@ -23,6 +24,13 @@ const valueChangeFlashEntry = definePlugin<ValueChangeFlashOptions>()({
   diagnose: neverInert,
   hooks: (o): ValueChangeFlashHooks => ({
     columnDefault: o.columnDefault ?? true,
+  }),
+  // Итоги футера вспыхивают по тем же правилам колонки (ADR 0221, §9).
+  options: o => ({
+    watchColumnTotal:
+      o.enabled === false
+        ? undefined
+        : watchTotalsWith(o.columnDefault ?? true),
   }),
 })
 

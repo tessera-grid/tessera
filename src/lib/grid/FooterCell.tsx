@@ -1,5 +1,5 @@
 // FooterCell: ячейка футера (footer через flexRender).
-import { memo } from 'react'
+import { memo, useRef } from 'react'
 
 import { flexRender } from '@tanstack/react-table'
 import clsx from 'clsx'
@@ -16,7 +16,14 @@ import type { Header } from '../types'
 import { getCellPinningParams, pinnedSideToDom } from './cellPinningParams'
 import { getHeaderSizeVariable, getVirtualCellLeft } from './columnSizes'
 import { highlightRender, useColumnHighlight } from './highlight'
-import { flashRender, useColumnFlash } from './flash'
+import {
+  directionOf,
+  flashRender,
+  useColumnFlash,
+  useFooterFlash,
+} from './flash'
+import { assignRef } from '../ui/assignRef'
+import { useIsomorphicLayoutEffect } from '../util/useIsomorphicLayoutEffect'
 
 import styles from '../grid/FooterCell/FooterCell.module.css'
 
@@ -27,6 +34,8 @@ export interface FooterCellProps {
   /** Строки и состояние таблицы — ключи перерисовки мемо, ячейка их не читает. */
   rows?: unknown
   state?: unknown
+  /** Функция итога таблицы — ключ перерисовки: новые итоги приложения (ADR 0229). */
+  totalOf?: unknown
 }
 
 /** Итог текстом: массив (`extent`, `unique`) — через запятую, объект читает свой `footer`. */
@@ -64,14 +73,46 @@ export const FooterCell = memo(({ header, absoluteLeft }: FooterCellProps) => {
   // ячейке (GS14).
   const total = table.getColumnTotal(header.column.id)
   const { footer } = header.column.columnDef
+  const totalFlash = useFooterFlash(table, header.column.id)
   const flashed = flashRender([
+    { layer: 'cell', entry: totalFlash },
     { layer: 'column', entry: useColumnFlash(table, header.column.id) },
   ])
+  // Рост и падение итога — ещё и стрелкой, как у ячейки (ADR 0221, §9).
+  const direction = directionOf(totalFlash)
+  const text = header.isPlaceholder
+    ? null
+    : footer !== undefined
+      ? flexRender(footer, header.getContext())
+      : totalText(table, header.column, total)
+
+  // Сторож итога (ADR 0221, §9): при монтировании и при смене итога.
+  const cellRef = useRef<HTMLDivElement | null>(null)
+  const seen = useRef<{ total: unknown } | undefined>(undefined)
+  const watchTotal = table.options.watchColumnTotal
+  const columnId = header.column.id
+  useIsomorphicLayoutEffect(() => {
+    if (!watchTotal || header.isPlaceholder) return
+    const previous = seen.current
+    if (previous && Object.is(previous.total, total)) return
+    seen.current = { total }
+    watchTotal({
+      table,
+      columnId,
+      total,
+      previous: previous?.total,
+      mounted: !previous,
+      element: cellRef.current,
+    })
+  }, [watchTotal, total, table, columnId, header.isPlaceholder])
 
   return (
     <div
       key={header.id}
-      ref={nav?.ref}
+      ref={element => {
+        cellRef.current = element
+        assignRef(nav?.ref, element)
+      }}
       tabIndex={nav?.tabIndex}
       onFocus={nav?.onFocus}
       onBlur={nav?.onBlur}
@@ -104,14 +145,16 @@ export const FooterCell = memo(({ header, absoluteLeft }: FooterCellProps) => {
       data-first-cell-in-row={header.column.getIsFirstColumn()}
       data-last-cell-in-row={header.column.getIsLastColumn()}
     >
+      {direction && (
+        <span
+          aria-hidden
+          className={styles['flash-direction']}
+          data-flash-direction={direction.outcome}
+          data-out={direction.out}
+        />
+      )}
       <CellWrapperContent>
-        <CellWrapperTitle>
-          {header.isPlaceholder
-            ? null
-            : footer !== undefined
-              ? flexRender(footer, header.getContext())
-              : totalText(table, header.column, total)}
-        </CellWrapperTitle>
+        <CellWrapperTitle>{text}</CellWrapperTitle>
       </CellWrapperContent>
     </div>
   )

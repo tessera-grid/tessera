@@ -16,7 +16,10 @@ import {
   rowSelectionValueOf,
   tableAllSelection,
 } from '../../core/rowSelectionAll'
-import { serverAggregationsOf } from '../../shared/serverAggregations'
+import {
+  serverAggregationScopesOf,
+  serverAggregationsOf,
+} from '../../shared/serverAggregations'
 import { dataExportModelLabels } from './labels'
 import type {
   ExportColumn,
@@ -221,6 +224,7 @@ export const serverRowsRequestOf = (
       globalFilter: (state.globalFilter ?? '') as string,
       grouping: (state.grouping ?? []) as string[],
       aggregations: serverAggregationsOf(table),
+      aggregationScopes: serverAggregationScopesOf(table),
     },
     selection: rowSelectionValueOf(table),
   }

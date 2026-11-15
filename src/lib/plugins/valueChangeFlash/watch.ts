@@ -26,7 +26,7 @@ type Pending = Map<string, { cell: [string, string]; outcome: FlashOutcome }>
 const queues = new WeakMap<object, Pending>()
 
 /** Кадр без браузера (серверный рендер, тесты в node) — следующая задача. */
-const nextFrame = (run: () => void) => {
+export const nextFrame = (run: () => void) => {
   if (typeof requestAnimationFrame === 'function') requestAnimationFrame(run)
   else setTimeout(run, 0)
 }
@@ -61,14 +61,14 @@ const enqueue = (
   queue.set(`${rowId}\u0000${columnId}`, { cell: [rowId, columnId], outcome })
 }
 
-interface WatchColumn extends CompareColumn {
+export interface WatchColumn extends CompareColumn {
   columnDef: ValueChangeFlashColumnDef
   getIsActionsColumn: () => boolean
   getServiceColumn: () => unknown
 }
 
 /** Вид колонки: своё поле или умолчание плагина; служебные колонки не вспыхивают. */
-const modeOf = (
+export const modeOf = (
   column: WatchColumn,
   columnDefault: ValueChangeFlashHooks['columnDefault'],
 ) =>

@@ -27,6 +27,7 @@ export const COLUMN_DEF_FIELDS: Record<string, string> = {
   autoHeaderHeight: '0218',
   changeFlash: '0221',
   skeletonCell: '0060',
+  aggregationScope: '0229',
 }
 
 /** Опции ядра `CommonOptions`. */
@@ -45,6 +46,7 @@ export const CORE_OPTIONS: Record<string, string> = {
   enableFooter: '0106',
   enableKeyboardNavigation: '0170',
   columnTotalOf: '0184',
+  watchColumnTotal: '0221',
   cellValueOverride: '0200',
   enableIncrementalRender: '0203',
   enableOverflowTooltip: '0075',

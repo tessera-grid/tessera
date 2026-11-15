@@ -37,6 +37,8 @@ export const Footer = ({
   // Ключ — геттер: dev-журнал React обошёл бы массив строк в пропсах (ADR 0199, MS12).
   const rowsKey = rowsGetterOf(rows)
   const state = table?.store.get()
+  // Новые итоги приложения (ADR 0229, AG8) — новая функция итога.
+  const totalOf = table?.options.columnTotalOf
 
   return (
     <div
@@ -74,6 +76,7 @@ export const Footer = ({
                     header={h}
                     rows={rowsKey}
                     state={state}
+                    totalOf={totalOf}
                   />
                 )),
                 ...centerH.map(({ header, start }) => (
@@ -83,6 +86,7 @@ export const Footer = ({
                     absoluteLeft={start}
                     rows={rowsKey}
                     state={state}
+                    totalOf={totalOf}
                   />
                 )),
                 ...endH.map(h => (
@@ -91,6 +95,7 @@ export const Footer = ({
                     header={h}
                     rows={rowsKey}
                     state={state}
+                    totalOf={totalOf}
                   />
                 )),
               ]}

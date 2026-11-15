@@ -237,6 +237,7 @@ useCreateTable({
 | S7  | Приложение прокручивает к строке по низу области — в `'inline'` последняя строка встаёт над итогами, итоги видны целиком | FT7        | `InlineFooterScrollToRow`    |
 | S8  | Пользователь ищет и ничего не находит — в `'inline'` заглушка под шапкой, футер под ней                                  | FT10       | `InlineFooterEmptySearch`    |
 | S9  | Приложение убирает высоту у короткой таблицы — пустое место над футером уходит, футер сразу под строками                 | FT2, FT15  | `FooterAutoHeight`           |
+| S10 | Пользователь раскрывает строку — в `'inline'` строка итогов съезжает тем же движением, что строки                        | FT12       | `InlineFooterRowExpanding`   |
 
 Истории — в `src/lib/stories/DataGrid.Core.Footer.stories.tsx`
 (`Tessera/DataGrid/Core/Footer`). Там же — история каталога `Playground` (`head.footer`,

@@ -4,7 +4,11 @@
  * `-out`, а переменная снята — слой уходит переходом к прозрачному.
  */
 import { useTableState } from '../core/reactivity'
-import type { FlashEntry, Flashes } from '../core/flashes/flashFeature'
+import {
+  type FlashEntry,
+  type Flashes,
+  footerFlashKey,
+} from '../core/flashes/flashFeature'
 import { columnHighlightKey } from '../core/highlights/highlightFeature'
 
 type Layer = 'row' | 'cell' | 'column'
@@ -52,6 +56,14 @@ export const directionOf = (entry: FlashEntry | undefined) =>
 /** Вспышка колонки — для ячеек заголовка и футера. */
 export const useColumnFlash = (table: unknown, columnId: string) => {
   const key = columnHighlightKey(columnId)
+  return useTableState(table as never, (state: unknown) => ({
+    flash: (state as { flashes?: Flashes }).flashes?.[key],
+  })).flash as FlashEntry | undefined
+}
+
+/** Вспышка итога колонки в футере (ADR 0221, §9). */
+export const useFooterFlash = (table: unknown, columnId: string) => {
+  const key = footerFlashKey(columnId)
   return useTableState(table as never, (state: unknown) => ({
     flash: (state as { flashes?: Flashes }).flashes?.[key],
   })).flash as FlashEntry | undefined

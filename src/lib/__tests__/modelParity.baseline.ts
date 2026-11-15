@@ -255,7 +255,7 @@ export const MODEL_PARITY: ParityBase = {
     same: ['enabled', 'threshold', 'horizontalThreshold', 'axes'],
   },
   columnTotals: {
-    same: ['enabled'],
+    same: ['enabled', 'totals'],
   },
   failureLog: {
     same: ['toolbar', 'enabled'],

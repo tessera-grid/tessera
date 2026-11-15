@@ -1,15 +1,24 @@
 /**
- * Итоги колонок в футере настоящим рендером (ADR 0184; CT2, CT3, CT10): текст по типу колонки,
- * свой `footer` главнее итога в клиентском режиме и в серверной модели строк, доступность.
+ * Итоги колонок в футере настоящим рендером (ADR 0184; CT2, CT3, CT10, CT13): текст по типу
+ * колонки, свой `footer` главнее итога в клиентском режиме и в серверной модели строк,
+ * доступность, пересчёт после правки.
  */
+import { useState } from 'react'
 import axe from 'axe-core'
 import { render } from 'vitest-browser-react'
+import { userEvent } from 'vitest/browser'
 import { describe, expect, test } from 'vitest'
 
 import '../../../ui/theme/theme.css'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
-import { columnTotals, rowExpanding, serverRowModel } from '../../../plugins'
+import {
+  cellEditing,
+  columnTotals,
+  rowExpanding,
+  serverRowModel,
+} from '../../../plugins'
+import { humanClick } from '../helpers'
 import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
 
 interface Item {
@@ -154,6 +163,50 @@ describe('итоги колонок в футере (ADR 0184)', () => {
     await waitForFooter()
     await expect.poll(() => footerOf('amount')).toBe('Sum: 777')
     await server.unmount()
+  })
+
+  test('CT13: правка ячейки, записанная в данные, пересчитывает итог её колонки в футере', async () => {
+    const Editable = () => {
+      const [data, setData] = useState(ROWS)
+      return (
+        <Grid
+          locale="en-US"
+          data={data}
+          plugins={[
+            columnTotals(),
+            cellEditing({
+              onCellEdit: ({ rowId, columnId, value }) =>
+                setData(rows =>
+                  rows.map(row =>
+                    row.id === rowId ? { ...row, [columnId]: value } : row,
+                  ),
+                ),
+            }),
+          ]}
+        />
+      )
+    }
+    const screen = await render(<Editable />)
+    await waitForFooter()
+    await expect.poll(() => footerOf('amount')).toBe('$4,000')
+    const cell = () =>
+      document.querySelector<HTMLElement>(
+        '.data-grid__body-row[data-row-id="r1"] .data-grid__body-cell[data-column-id="amount"]',
+      )!
+    await userEvent.hover(cell())
+    // Кнопка проявляется переходом: клик Playwright ждёт, пока она встанет.
+    await expect
+      .poll(
+        () => getComputedStyle(cell().querySelector('.cell__button')!).opacity,
+      )
+      .toBe('1')
+    await humanClick(cell().querySelector<HTMLElement>('.cell__button button')!)
+    await expect.poll(() => cell().querySelector('input')).not.toBeNull()
+    await userEvent.fill(cell().querySelector('input')!, '3000')
+    await userEvent.keyboard('{Enter}')
+    // 3000 + 2500 + 500.
+    await expect.poll(() => footerOf('amount')).toBe('$6,000')
+    await screen.unmount()
   })
 
   test('CT10: футер с итогами — axe с color-contrast в обеих темах и ролях table, grid, treegrid', async () => {

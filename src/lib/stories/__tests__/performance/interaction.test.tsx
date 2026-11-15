@@ -5640,6 +5640,118 @@ describe('Отзывчивость — итоги колонок', () => {
   )
 })
 
+// Итог дерева по всем узлам (ADR 0229, AG10): смена поиска на дереве из 100 000 строк (25 000
+// корней по три ребёнка) с итогом `'all'` против того же с `'top'`. Цена — обход всех строк.
+const AG10_COST = { ratio: 1.3, plusMs: 30 }
+interface TreeTotalsRow {
+  id: string
+  name: string
+  a: number
+  subRows?: TreeTotalsRow[]
+}
+const TREE_TOTALS_ROWS: TreeTotalsRow[] = Array.from(
+  { length: 25_000 },
+  (_, index) => ({
+    id: `p${index}`,
+    name: `Name ${index % 10}`,
+    a: index,
+    subRows: [0, 1, 2].map(child => ({
+      id: `p${index}-${child}`,
+      name: `Name ${(index + child) % 10}`,
+      a: child,
+    })),
+  }),
+)
+const treeTotalsColumns = (scope: 'top' | 'all') => [
+  { id: 'name', accessorKey: 'name', header: 'Name', enableGlobalFilter: true },
+  {
+    id: 'a',
+    accessorKey: 'a',
+    header: 'a',
+    aggregationFn: 'sum',
+    aggregationScope: scope,
+    enableGlobalFilter: false,
+  },
+]
+const TreeTotalsGrid = ({ scope }: { scope: 'top' | 'all' }) => {
+  const table = useCreateTable({
+    columns: treeTotalsColumns(scope) as never,
+    data: TREE_TOTALS_ROWS,
+    getRowId: (row: TreeTotalsRow) => row.id,
+    getSubRows: (row: TreeTotalsRow) => row.subRows,
+    plugins: [quickSearchModel(), rowExpanding(), columnTotals()] as never,
+  })
+  totalsTable = table as never
+  return (
+    <div style={{ height: 600 }}>
+      <DataGrid table={table as never} />
+    </div>
+  )
+}
+
+describe('Отзывчивость — итог дерева по всем узлам', () => {
+  test(
+    "AG10: смена поиска на дереве из 100 000 строк с итогом 'all' — против той же с 'top'",
+    async () => {
+      const measure = async (all: boolean) => {
+        await render(<TreeTotalsGrid scope={all ? 'all' : 'top'} />)
+        await waitForGrid()
+        let query = 0
+        let shown: unknown
+        const result = await measureInteractionWork(
+          async () => totalsTable.setGlobalFilter(`Name ${++query % 10}`),
+          {
+            afterWarmup: () => {
+              shown = totalsTable.getColumnTotal('a')
+              return expect(shown).toEqual(expect.any(Number))
+            },
+          },
+        )
+        // Замер пересчитал итог новой выборки.
+        expect(totalsTable.getColumnTotal('a')).not.toBe(shown)
+        await cleanup()
+        return result
+      }
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const withAll = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = ceilingOver(base.longestMs, AG10_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '100 000×2 (дерево)',
+          plugins: 'footer',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('AG10-base', "поиск с итогом 'top'", base, false)
+      await record('AG10', "поиск с итогом 'all'", withAll, true)
+
+      expect(
+        withAll.longestMs,
+        `'all' longest=${withAll.longestMs.toFixed(1)}ms, база ${base.longestMs.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
 // Различия серверной модели с клиентом (ADR 0188–0190): нажатие на флажок страницы, вложение и
 // сборка файла против той же работы в базе без догрузки.
 const headBox = () =>

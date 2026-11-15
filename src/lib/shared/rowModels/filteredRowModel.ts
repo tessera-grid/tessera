@@ -643,3 +643,14 @@ export const createSearchAwareFilteredRowModel =
       return run()
     }
   }
+
+/**
+ * Модель после отбора — вход группировки (`getPreGroupedRowModel`): по её строкам считают итоги
+ * колонок по всем узлам дерева (ADR 0229).
+ */
+export const preGroupedModelOf = <TRow>(
+  table: unknown,
+): { rows: readonly TRow[] } =>
+  (
+    table as { getPreGroupedRowModel: () => { rows: readonly TRow[] } }
+  ).getPreGroupedRowModel()
