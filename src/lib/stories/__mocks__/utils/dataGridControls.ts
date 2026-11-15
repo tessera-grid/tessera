@@ -54,6 +54,7 @@ import {
   enableAnnouncementsType,
   enableBackToTopType,
   enableColumnTotalsType,
+  enableColumnAggregationType,
   enableFailureLogType,
   enableUnsavedChangesType,
   enableCellEditingType,
@@ -418,6 +419,7 @@ export const dataGridArgTypes = {
       serverRowModelMaxBlocks: serverRowModelMaxBlocksType,
     }),
     enableColumnTotals: enableColumnTotalsType,
+    enableColumnAggregation: enableColumnAggregationType,
     enableFailureLog: enableFailureLogType,
     ...when('enableFailureLog', {
       failureLogToolbar: failureLogToolbarType,
@@ -644,6 +646,7 @@ export const dataGridDefaultArgs = {
   serverRowModelMaxBlocks: 100,
   enableBackToTop: false,
   enableColumnTotals: false,
+  enableColumnAggregation: false,
   enableFailureLog: false,
   enableUnsavedChanges: false,
   enableEditHistory: false,

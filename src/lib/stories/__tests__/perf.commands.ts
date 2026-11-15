@@ -275,6 +275,7 @@ export interface PerfRecord {
     | 'columnSizing'
     | 'columnPinning'
     | 'columnSorting, columnFiltering, rowGrouping'
+    | 'rowGrouping, columnTotals, columnAggregation'
     | 'textWrap'
   /** Кратность CPU-троттлинга во время замера (1 = без троттлинга). */
   cpuThrottle: number

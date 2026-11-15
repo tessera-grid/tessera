@@ -6,7 +6,7 @@ import clsx from 'clsx'
 
 import { CellWrapperContent } from '../grid/CellWrapperContent'
 import { CellWrapperTitle } from '../grid/CellWrapperTitle'
-import { formatDataTypeValue } from '../core/dataTypeFormat'
+import { formatAggregateValue } from '../core/dataTypeFormat'
 import { getDisplayColumnIndex } from '../core/displayColumns'
 import {
   NAV_CELL_ATTR,
@@ -40,12 +40,13 @@ export interface FooterCellProps {
 
 /** Итог текстом: массив (`extent`, `unique`) — через запятую, объект читает свой `footer`. */
 const totalText = (
-  table: Parameters<typeof formatDataTypeValue>[0],
-  column: Parameters<typeof formatDataTypeValue>[1],
+  table: Parameters<typeof formatAggregateValue>[0],
+  column: Parameters<typeof formatAggregateValue>[1],
   total: unknown,
 ) => {
+  // Счётная функция — целое число по языку таблицы, а не по типу колонки (ADR 0230, §5).
   const text = (value: unknown) =>
-    formatDataTypeValue(table, column, value, undefined)
+    formatAggregateValue(table, column, value, undefined)
   if (total === undefined || total === null) return null
   if (Array.isArray(total)) return total.map(text).join(', ')
   return typeof total === 'object' && !(total instanceof Date)
@@ -85,6 +86,11 @@ export const FooterCell = memo(({ header, absoluteLeft }: FooterCellProps) => {
     : footer !== undefined
       ? flexRender(footer, header.getContext())
       : totalText(table, header.column, total)
+  // Имя функции перед числом (ADR 0230, §4): только у итога без своего `footer`.
+  const label =
+    footer === undefined && text
+      ? table.options.columnTotalLabel?.(table, header.column.id)
+      : undefined
 
   // Сторож итога (ADR 0221, §9): при монтировании и при смене итога.
   const cellRef = useRef<HTMLDivElement | null>(null)
@@ -154,7 +160,22 @@ export const FooterCell = memo(({ header, absoluteLeft }: FooterCellProps) => {
         />
       )}
       <CellWrapperContent>
-        <CellWrapperTitle>{text}</CellWrapperTitle>
+        <CellWrapperTitle>
+          {label ? (
+            // Подпись сокращается первой, число видно целиком (SU7).
+            <span className={styles['footer__total']}>
+              <span
+                className={styles['footer__total-label']}
+                data-total-label=""
+              >
+                {label}
+              </span>
+              <span className={styles['footer__total-value']}>{text}</span>
+            </span>
+          ) : (
+            text
+          )}
+        </CellWrapperTitle>
       </CellWrapperContent>
     </div>
   )

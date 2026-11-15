@@ -60,6 +60,8 @@ export type ServerActionResult = void | PromiseLike<unknown>
 interface Snapshot {
   sorting?: unknown
   grouping?: unknown
+  /** Выбор функций колонок (ADR 0230, §7). */
+  columnAggregations?: unknown
   /** Выбор — откатывается вместе с группировкой, которая его сбросила (ADR 0148, §4). */
   rowSelection?: RowSelectionValue
   pagination?: { pageIndex: number; pageSize: number }
@@ -93,6 +95,7 @@ interface ServerTable {
     }
     pagination?: { get: () => Snapshot['pagination'] }
     grouping?: { get: () => unknown }
+    columnAggregations?: { get: () => unknown }
     rowSelection?: { get: () => unknown }
     columnFilters?: { get: () => unknown }
     globalFilter?: { get: () => unknown }
@@ -101,6 +104,7 @@ interface ServerTable {
   setGlobalFilter?: (value: never) => void
   setSorting?: (sorting: never) => void
   setGrouping?: (grouping: never) => void
+  setColumnAggregations?: (aggregations: never) => void
   resetExpanded?: (defaultState?: boolean) => void
   setPagination?: (pagination: never) => void
 }
@@ -110,7 +114,7 @@ const chains = new WeakMap<object, Chain>()
 const revertPolicies = new WeakMap<object, Map<RevertedSlice, boolean>>()
 
 /** Срез, который откат возвращает к состоянию до цепочки. */
-export type RevertedSlice = 'sorting' | 'pagination'
+export type RevertedSlice = 'sorting' | 'pagination' | 'columnAggregations'
 
 /**
  * Политика отката среза при отказе (ADR 0167, §3): плагин объявляет её в `setup`, отдаёт
@@ -177,8 +181,9 @@ const isServer = (t: ServerTable, kind: ServerActionKind) => {
     // Страницы серверной модели строк — из её кэша, ждать нечего (ADR 0158).
     case 'pagination':
       return dataModeOf(t, kind) === 'server' && !serverRowModelReason(t)
-    // Группирует сервер только в серверной модели строк (ADR 0144).
+    // Группирует и сводит сервер только в серверной модели строк (ADR 0144, ADR 0230).
     case 'grouping':
+    case 'aggregation':
     case 'copy':
     case 'selectPage':
     case 'paste':
@@ -199,6 +204,7 @@ export const isServerAction = (table: unknown, kind: ServerActionKind) =>
 const snapshotOf = (t: ServerTable): Snapshot => ({
   sorting: t.atoms.sorting?.get(),
   grouping: t.atoms.grouping?.get(),
+  columnAggregations: t.atoms.columnAggregations?.get(),
   rowSelection: t.atoms.rowSelection ? rowSelectionValueOf(t) : undefined,
   pagination: t.atoms.pagination?.get(),
   columnFilters: t.atoms.columnFilters?.get(),
@@ -256,10 +262,26 @@ const cancelPageRestore = (store: object) => {
  * Откат к состоянию до цепочки; колбэки действий он не зовёт (как PG6). Отмена (`force`)
  * откатывает и при `revertOnReject: false`.
  */
+/** Выбор функций колонок — к снимку (ADR 0230, §7). */
+const setAggregationsTo = (
+  t: ServerTable,
+  { columnAggregations }: Snapshot,
+) => {
+  if (
+    columnAggregations !== undefined &&
+    t.atoms.columnAggregations?.get() !== columnAggregations
+  ) {
+    t.setColumnAggregations?.(columnAggregations as never)
+  }
+}
+
 const revert = (t: ServerTable, snapshot: Snapshot, force = false) => {
   const { sorting, pagination } = snapshot
   const { atoms, store } = t
   setGroupingTo(t, snapshot)
+  if (force || revertsOnReject(t, 'columnAggregations')) {
+    setAggregationsTo(t, snapshot)
+  }
   const restorePage = () => {
     if (
       (force || revertsOnReject(t, 'pagination')) &&
@@ -325,6 +347,8 @@ export const serverActionName = (
       return labels.actionPage
     case 'grouping':
       return labels.actionGrouping
+    case 'aggregation':
+      return labels.actionAggregation
     case 'copy':
       return labels.actionCopy
     case 'selectPage':
@@ -358,6 +382,8 @@ export const serverActionPendingTitle = (
       return labels.pendingPage
     case 'grouping':
       return labels.pendingGrouping
+    case 'aggregation':
+      return labels.pendingAggregation
     case 'copy':
       return labels.pendingCopy
     case 'selectPage':
@@ -398,6 +424,7 @@ export const serverCancelProps = (
 const restore = (t: ServerTable, snapshot: Snapshot) => {
   const { sorting, pagination } = snapshot
   setGroupingTo(t, snapshot)
+  setAggregationsTo(t, snapshot)
   if (sorting !== undefined && !sameSorting(t.atoms.sorting?.get(), sorting)) {
     t.setSorting?.(sorting as never)
   }
@@ -435,6 +462,7 @@ const SERVER_ACTION_PLUGIN: Record<ServerActionKind, string> = {
   search: 'quickSearch',
   pagination: 'pagination',
   grouping: 'rowGrouping',
+  aggregation: 'columnAggregation',
   copy: 'cellSelection',
   selectPage: 'rowSelection',
   paste: 'cellSelection',

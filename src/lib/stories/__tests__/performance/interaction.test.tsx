@@ -92,6 +92,7 @@ import { rowSelection } from '../../../plugins/rowSelection'
 import { columnSorting } from '../../../plugins/columnSorting'
 import { useCreateTable } from '../../../core/useCreateTable'
 import {
+  columnAggregation,
   columnFilteringModel,
   columnSortingModel,
   rowGroupingModel,
@@ -7472,6 +7473,101 @@ describe('Отзывчивость — уровни «Настроек вида�
       expect(
         many.longestMs,
         `1000: longest=${many.longestMs.toFixed(1)}ms, 10: ${base.longestMs.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Сводка колонки (ADR 0230, SU16): смена функции колонки при группировке 100 000 строк против
+// смены сортировки той же выборки. Цена — пересборка значений строк-групп и итога.
+const SU16_COST = { ratio: 1.5, plusMs: 0 }
+let summaryTable: {
+  setSorting: (sorting: { id: string; desc: boolean }[]) => void
+  setColumnAggregations: (value: Record<string, string>) => void
+  getColumnTotal: (columnId: string) => unknown
+}
+const SummaryGrid = () => {
+  const table = useCreateTable({
+    columns: TOTALS_COLUMNS as never,
+    data: TOTALS_ROWS,
+    getRowId: (row: { id: string }) => row.id,
+    plugins: [
+      columnSortingModel(),
+      rowGroupingModel({ initialGrouping: ['name'] }),
+      columnTotals(),
+      columnAggregation(),
+    ] as never,
+  })
+  summaryTable = table as never
+  return (
+    <div style={{ height: 600 }}>
+      <DataGrid table={table as never} />
+    </div>
+  )
+}
+
+describe('Отзывчивость — сводка колонки', () => {
+  test(
+    'SU16: смена функции колонки при группировке 100 000 строк — против смены сортировки той же выборки',
+    async () => {
+      const measure = async (summary: boolean) => {
+        await render(<SummaryGrid />)
+        await waitForGrid()
+        let step = 0
+        const result = await measureInteractionWork(async () => {
+          step += 1
+          if (summary) {
+            summaryTable.setColumnAggregations({
+              a: step % 2 ? 'mean' : 'max',
+            })
+          } else {
+            summaryTable.setSorting([{ id: 'a', desc: step % 2 === 1 }])
+          }
+        })
+        // Замер смены функции мерил пересчёт: итог — по последней выбранной функции.
+        if (summary) {
+          expect(summaryTable.getColumnTotal('a')).toBe(
+            step % 2 ? 49_999.5 : 99_999,
+          )
+        }
+        await cleanup()
+        return result
+      }
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const withSummary = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = ceilingOver(base.longestMs, SU16_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '100 000×4',
+          plugins: 'rowGrouping, columnTotals, columnAggregation',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('SU16-base', 'смена сортировки', base, false)
+      await record('SU16', 'смена функции колонки', withSummary, true)
+
+      expect(
+        withSummary.longestMs,
+        `сводка longest=${withSummary.longestMs.toFixed(1)}ms, база ${base.longestMs.toFixed(1)}ms`,
       ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,

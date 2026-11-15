@@ -1,7 +1,8 @@
 /**
  * Стандартный набор функций агрегации TanStack: общий у модели группировки и итогов колонок
  * (ADR 0184). Один объект — плагины вместе не перезаписывают опции друг друга. Поле колонки
- * `aggregationScope` (ADR 0229) читают итог колонок, модель группировки и серверная модель.
+ * `aggregationScope` (ADR 0229) читают итог колонок, модель группировки и серверная модель;
+ * выбор функции пользователем (ADR 0230) — модель группировки по ключу `aggregationChoiceOf`.
  */
 import {
   aggregationFn_count,
@@ -12,10 +13,25 @@ import {
   aggregationFn_min,
   aggregationFn_sum,
   aggregationFn_unique,
+  constructAggregationFn,
   rowAggregationFeature,
 } from '@tanstack/react-table'
 
 import type { RowData, TableFeature, TableFeatures } from '../types'
+
+/** Число разных значений колонки (ADR 0230, §2): строки без значения не считаются. */
+export const aggregationFn_uniqueCount = constructAggregationFn({
+  aggregate: context => {
+    const values = new Set<unknown>()
+    for (const row of context.rows) {
+      const value = context.getValue(row)
+      if (value !== undefined && value !== null && value !== '') {
+        values.add(value instanceof Date ? value.getTime() : value)
+      }
+    }
+    return values.size
+  },
+})
 
 export const aggregationFns = {
   sum: aggregationFn_sum,
@@ -26,6 +42,7 @@ export const aggregationFns = {
   mean: aggregationFn_mean,
   median: aggregationFn_median,
   unique: aggregationFn_unique,
+  uniqueCount: aggregationFn_uniqueCount,
 }
 
 /** Поле колонки `aggregationScope` — фича без поведения, только поле в карте фич. */
@@ -63,6 +80,17 @@ export const aggregationFeatures = {
   aggregationScopeFeature,
   aggregationFns,
 }
+
+/**
+ * Выбор функций колонок пользователем (ADR 0230, §1): ссылка среза — ключ, по которому модель
+ * группировки пересчитывает значения строк-групп. Без плагина сводки — `undefined`.
+ */
+export const aggregationChoiceOf = (table: unknown): unknown =>
+  (
+    table as {
+      atoms?: { columnAggregations?: { get: () => unknown } }
+    }
+  ).atoms?.columnAggregations?.get()
 
 /** Колонка складывает все строки дерева. */
 export const aggregatesAllNodes = (columnDef: unknown) =>

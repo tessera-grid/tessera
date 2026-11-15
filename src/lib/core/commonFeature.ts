@@ -21,7 +21,7 @@ import type { CommonOptions } from './commonFeature.types'
 import { announce } from './announcer'
 import { type ActionRef, actionLabelOf } from './actions'
 import { createActionReporter } from './debugActions'
-import { formatDataTypeValue } from './dataTypeFormat'
+import { formatAggregateValue, formatDataTypeValue } from './dataTypeFormat'
 import { resolveDataType } from './dataTypes'
 import {
   createPluginErrorRegistry,
@@ -46,22 +46,30 @@ export const commonOptionsOf = (table: unknown): CommonOptions =>
 interface DefaultCellProps {
   table: object
   column: { id: string; columnDef: object }
-  row?: { original: unknown }
+  row?: { original: unknown; groupingColumnId?: string }
   getValue: () => unknown
   renderValue: () => unknown
 }
 
-/** Ячейка по умолчанию; грид узнаёт её, чтобы нарисовать значок булева (ADR 0172, DT6). */
-export const defaultCell = (props: DefaultCellProps) =>
-  formatDataTypeValue(
-    props.table as never,
-    props.column,
-    // Колонка без типа показывает запасное значение таблицы, как стоковая ячейка.
-    resolveDataType(props.table as never, props.column)
-      ? props.getValue()
-      : props.renderValue(),
-    props.row?.original,
-  ) || null
+/**
+ * Ячейка по умолчанию; грид узнаёт её, чтобы нарисовать значок булева (ADR 0172, DT6). В строке-
+ * группе значение колонки — агрегат: счётная функция даёт целое число (ADR 0230, §5).
+ */
+export const defaultCell = (props: DefaultCellProps) => {
+  // Колонка без типа показывает запасное значение таблицы, как стоковая ячейка.
+  const value = resolveDataType(props.table as never, props.column)
+    ? props.getValue()
+    : props.renderValue()
+  const grouping = props.row?.groupingColumnId
+  const format =
+    grouping !== undefined && grouping !== props.column.id
+      ? formatAggregateValue
+      : formatDataTypeValue
+  return (
+    format(props.table as never, props.column, value, props.row?.original) ||
+    null
+  )
+}
 
 export const commonFeature: TableFeature = {
   getDefaultTableOptions: () => ({

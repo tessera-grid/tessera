@@ -68,6 +68,8 @@ export interface TableLabels {
   pendingSearch: string
   pendingPage: string
   pendingGrouping: string
+  /** Плашка ожидания смены сводки колонки (ADR 0230, §7) */
+  pendingAggregation: string
   pendingCopy: string
   pendingSelectPage: string
   pendingPaste: string
@@ -96,6 +98,8 @@ export interface TableLabels {
   actionSearch: string
   actionPage: string
   actionGrouping: string
+  /** Действие: сводка колонки (ADR 0230, §7) */
+  actionAggregation: string
   actionCopy: string
   actionSelectPage: string
   actionPaste: string
@@ -169,6 +173,8 @@ export interface TableLabels {
   serverActionFailedSearch: string
   serverActionFailedPagination: string
   serverActionFailedGrouping: string
+  /** Отказ сервера в смене сводки колонки (ADR 0230, §7) */
+  serverActionFailedAggregation: string
   serverActionFailedCopy: string
   serverActionFailedPaste: string
   serverActionFailedFill: string
@@ -265,6 +271,7 @@ export const DEFAULT_LABELS = {
   pendingSearch: 'Searching…',
   pendingPage: 'Loading the page…',
   pendingGrouping: 'Grouping…',
+  pendingAggregation: 'Summarizing…',
   pendingCopy: 'Copying…',
   pendingSelectPage: 'Selecting the page…',
   pendingPaste: 'Pasting…',
@@ -288,6 +295,7 @@ export const DEFAULT_LABELS = {
   actionSearch: 'Search',
   actionPage: 'Page loading',
   actionGrouping: 'Grouping',
+  actionAggregation: 'Summary',
   actionCopy: 'Copying',
   actionSelectPage: 'Selecting the page',
   actionPaste: 'Pasting',
@@ -330,6 +338,7 @@ export const DEFAULT_LABELS = {
   serverActionFailedSearch: "Search wasn't applied",
   serverActionFailedPagination: "The page didn't change",
   serverActionFailedGrouping: "Grouping wasn't applied",
+  serverActionFailedAggregation: "Summary wasn't applied",
   serverActionFailedCopy: "The cells weren't copied",
   serverActionFailedPaste: "The cells weren't pasted",
   serverActionFailedFill: "The cells weren't filled",

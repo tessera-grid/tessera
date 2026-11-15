@@ -42,6 +42,8 @@ export const useRowSourceWindow = (
     s.columnFilters,
     s.globalFilter,
     (s as { grouping?: unknown }).grouping,
+    // Выбор функций колонок меняет агрегаты запроса (ADR 0230, §7).
+    (s as { columnAggregations?: unknown }).columnAggregations,
   ]) as readonly unknown[]
   const previousConditions = useRef(conditions)
   useIsomorphicLayoutEffect(() => {

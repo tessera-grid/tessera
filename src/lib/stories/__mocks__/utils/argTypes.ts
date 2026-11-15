@@ -641,6 +641,9 @@ export const serverRowModelMaxBlocksType = numberControl(
 export const enableColumnTotalsType = booleanControl(
   'Totals in the footer for columns with an explicit aggregate',
 )
+export const enableColumnAggregationType = booleanControl(
+  'Summary of a column: the user picks the function of the total and of group values in the column menu (`columnAggregation` plugin)',
+)
 export const enableFailureLogType = booleanControl(
   'Failure log in the toolbar: a button with a count while there are unresolved refusals; it only joins a toolbar that is already shown (`failureLog` plugin)',
 )

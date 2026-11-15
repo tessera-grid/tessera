@@ -18,6 +18,7 @@ import {
   ChevronUp,
   ChevronsLeft,
   ChevronsRight,
+  Sigma,
   ChevronsDown,
   ChevronsUpDown,
   Eraser,
@@ -86,6 +87,8 @@ export interface TableIcons {
   group: IconComponent
   /** Сгруппированная колонка (по умолчанию — та же, что `group`) */
   grouped: IconComponent
+  /** Сводка колонки — функция итога и значений групп (ADR 0230) */
+  summary: IconComponent
   /** Разворачивание строк */
   expand: IconComponent
   /** Раскрытая строка: по умолчанию тот же шеврон с поворотом; свой значок — без поворота */
@@ -201,6 +204,7 @@ export const DEFAULT_ICONS: TableIcons = {
   pinned: Pin,
   group: Group,
   grouped: Group,
+  summary: Sigma,
   expand: ChevronDown,
   expanded: ChevronDown,
   expandAll: ChevronsDown,

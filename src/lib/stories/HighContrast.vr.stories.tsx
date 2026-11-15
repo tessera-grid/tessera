@@ -7,6 +7,7 @@ import * as cellsActionStatusStories from './DataGrid.Cells.ActionStatus.stories
 import * as cellsSelectionStories from './DataGrid.Cells.Selection.stories'
 import * as columnsSortingStories from './DataGrid.Columns.Sorting.stories'
 import * as coreColumnTotalsStories from './DataGrid.Core.ColumnTotals.stories'
+import * as columnsSummaryStories from './DataGrid.Columns.Summary.stories'
 import * as coreFooterStories from './DataGrid.Core.Footer.stories'
 import * as customizationLocalizationStories from './Customization.Localization.stories'
 import * as coreIncreasedContrastStories from './Customization.IncreasedContrast.stories'
@@ -10535,5 +10536,133 @@ export const HighContrastServerUndoStep3 = {
 export const HighContrastServerUndoStep4 = {
   ...twinStep(serverEditingStories, serverEditingStories.ServerUndo, 4),
   name: 'Data loading/Server row model/Editing — Undo an edit off the window, step 4',
+  tags: ['!test'],
+}
+
+export const HighContrastSummaryPickStep1 = {
+  ...twinStep(columnsSummaryStories, columnsSummaryStories.SummaryPick, 1),
+  name: 'Columns/Summary — Pick a function, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastSummaryPickStep2 = {
+  ...twinStep(columnsSummaryStories, columnsSummaryStories.SummaryPick, 2),
+  name: 'Columns/Summary — Pick a function, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastSummaryPickStep3 = {
+  ...twinStep(columnsSummaryStories, columnsSummaryStories.SummaryPick, 3),
+  name: 'Columns/Summary — Pick a function, step 3',
+  tags: ['!test'],
+}
+
+export const HighContrastSummaryGroupsStep1 = {
+  ...twinStep(columnsSummaryStories, columnsSummaryStories.SummaryGroups, 1),
+  name: 'Columns/Summary — Groups, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastSummaryGroupsStep2 = {
+  ...twinStep(columnsSummaryStories, columnsSummaryStories.SummaryGroups, 2),
+  name: 'Columns/Summary — Groups, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastSummaryNoneStep1 = {
+  ...twinStep(columnsSummaryStories, columnsSummaryStories.SummaryNone, 1),
+  name: 'Columns/Summary — No summary, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastSummaryNoneStep2 = {
+  ...twinStep(columnsSummaryStories, columnsSummaryStories.SummaryNone, 2),
+  name: 'Columns/Summary — No summary, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastSummaryAllowedStep1 = {
+  ...twinStep(columnsSummaryStories, columnsSummaryStories.SummaryAllowed, 1),
+  name: 'Columns/Summary — Allowed functions, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastSummaryAllowedStep2 = {
+  ...twinStep(columnsSummaryStories, columnsSummaryStories.SummaryAllowed, 2),
+  name: 'Columns/Summary — Allowed functions, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastSummaryViewSettingsStep1 = {
+  ...twinStep(
+    columnsSummaryStories,
+    columnsSummaryStories.SummaryViewSettings,
+    1,
+  ),
+  name: 'Columns/Summary — View settings, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastSummaryViewSettingsStep2 = {
+  ...twinStep(
+    columnsSummaryStories,
+    columnsSummaryStories.SummaryViewSettings,
+    2,
+  ),
+  name: 'Columns/Summary — View settings, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastSummaryViewSettingsStep3 = {
+  ...twinStep(
+    columnsSummaryStories,
+    columnsSummaryStories.SummaryViewSettings,
+    3,
+  ),
+  name: 'Columns/Summary — View settings, step 3',
+  tags: ['!test'],
+}
+
+export const HighContrastSummaryRestoreStep1 = {
+  ...twinStep(columnsSummaryStories, columnsSummaryStories.SummaryRestore, 1),
+  name: 'Columns/Summary — Restore a saved choice, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastSummaryRestoreStep2 = {
+  ...twinStep(columnsSummaryStories, columnsSummaryStories.SummaryRestore, 2),
+  name: 'Columns/Summary — Restore a saved choice, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastSummaryServerStep1 = {
+  ...twinStep(columnsSummaryStories, columnsSummaryStories.SummaryServer, 1),
+  name: 'Columns/Summary — Server row model, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastSummaryServerStep2 = {
+  ...twinStep(columnsSummaryStories, columnsSummaryStories.SummaryServer, 2),
+  name: 'Columns/Summary — Server row model, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastSummaryServerRefusedStep1 = {
+  ...twinStep(
+    columnsSummaryStories,
+    columnsSummaryStories.SummaryServerRefused,
+    1,
+  ),
+  name: 'Columns/Summary — Refused by the server, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastSummaryServerRefusedStep2 = {
+  ...twinStep(
+    columnsSummaryStories,
+    columnsSummaryStories.SummaryServerRefused,
+    2,
+  ),
+  name: 'Columns/Summary — Refused by the server, step 2',
   tags: ['!test'],
 }

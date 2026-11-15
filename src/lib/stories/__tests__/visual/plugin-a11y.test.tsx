@@ -68,6 +68,10 @@ const PLUGIN_ARGS: Record<string, GridArgs> = {
   pagination: { enablePagination: true },
   backToTop: { enableBackToTop: true, enablePagination: true },
   columnTotals: { enableColumnTotals: true },
+  columnAggregation: {
+    enableColumnAggregation: true,
+    enableColumnTotals: true,
+  },
   // Кнопка журнала видна только с отказами: сам журнал проверяет JR6 (ADR 0177).
   failureLog: { enableFailureLog: true, enableToolbar: true },
   editHistory: {

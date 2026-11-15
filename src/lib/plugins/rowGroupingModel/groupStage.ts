@@ -25,6 +25,7 @@ import type { RowData, Table, TableFeatures } from '../../types'
 import { childrenOf } from '../../core/rowEngine/displayChildren'
 import {
   aggregatesAllNodes,
+  aggregationChoiceOf,
   hasLazyChildren,
   withDescendants,
 } from '../../shared/aggregation'
@@ -299,6 +300,8 @@ interface Grouped {
   input: StageModel
   grouping: unknown
   columns: unknown
+  /** Выбор функций пользователем (ADR 0230): другой выбор — другие значения групп. */
+  choice: unknown
   movesKey: string
   layout: Layout
   output: StageModel
@@ -800,11 +803,13 @@ export const createGroupStage =
       const moves = readRowMoves(table)
       const movesKey = groupMovesKey(moves)
       const columnsOption = t.options.columns
+      const choice = aggregationChoiceOf(table)
       if (
         last &&
         last.input === input &&
         last.grouping === grouping &&
         last.columns === columnsOption &&
+        last.choice === choice &&
         last.movesKey === movesKey
       ) {
         return last.output
@@ -813,6 +818,7 @@ export const createGroupStage =
         last &&
         last.grouping === grouping &&
         last.columns === columnsOption &&
+        last.choice === choice &&
         last.movesKey === movesKey
       if (same) Object.assign(last!.layout, { moves, input })
       const patched = same ? patchGroups(t, last!, input) : undefined
@@ -835,6 +841,7 @@ export const createGroupStage =
           input,
           grouping,
           columns: columnsOption,
+          choice,
           movesKey,
           layout,
           output: modelOf(rows, flatRows, byId(flatRows)),

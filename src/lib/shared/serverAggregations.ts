@@ -21,6 +21,12 @@ export const serverAggregationsOf = (table: unknown): Record<string, string> =>
       if (typeof aggregationFn === 'string') {
         return aggregationFn === 'auto' ? [] : [[id, aggregationFn]]
       }
+      // Своя функция сводки уходит серверу своим именем (ADR 0230, §2).
+      const named =
+        typeof aggregationFn === 'object'
+          ? (aggregationFn as { name?: unknown } | null)?.name
+          : undefined
+      if (typeof named === 'string') return [[id, named]]
       if (aggregationFn !== undefined) {
         logWarn(
           table as never,

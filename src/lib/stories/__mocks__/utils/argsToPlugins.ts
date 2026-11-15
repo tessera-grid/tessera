@@ -1,5 +1,6 @@
 import {
   backToTop,
+  columnAggregation,
   columnTotals,
   failureLog,
   unsavedChanges,
@@ -96,6 +97,7 @@ const FACTORIES = {
   serverRowModel,
   backToTop,
   columnTotals,
+  columnAggregation,
   failureLog,
   unsavedChanges,
   editHistory,
@@ -256,6 +258,7 @@ export const argsToPlugins = (o: FeatureToggles) => {
     serverRowModel(argsOf(o, 'serverRowModel')),
     backToTop(argsOf(o, 'backToTop')),
     columnTotals(argsOf(o, 'columnTotals')),
+    columnAggregation(argsOf(o, 'columnAggregation')),
     failureLog(argsOf(o, 'failureLog')),
     unsavedChanges(argsOf(o, 'unsavedChanges')),
     editHistory(historyArgs(argsOf(o, 'editHistory'))),

@@ -105,3 +105,25 @@
 .footer__cell[data-cell-pinned='right'] {
   order: var(--tsr-virtual-end-order, 0);
 }
+
+/*
+ * Итог с именем функции (ADR 0230, §4): подпись и число в одну строку, выравнивание — по типу
+ * колонки; при нехватке места `…` сокращает подпись, число видно целиком (SU7).
+ */
+.footer__total {
+  display: inline-flex;
+  max-width: 100%;
+  gap: var(--tsr-comp-cell-content-gap);
+  vertical-align: top;
+}
+
+.footer__total-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--tsr-comp-total-label-color);
+}
+
+.footer__total-value {
+  flex-shrink: 0;
+}

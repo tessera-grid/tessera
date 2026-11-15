@@ -34,6 +34,7 @@ export const CORE_ACTIONS: ActionLabels = {
   search: labels => labels.actionSearch,
   pagination: labels => labels.actionPage,
   grouping: labels => labels.actionGrouping,
+  aggregation: labels => labels.actionAggregation,
   copy: labels => labels.actionCopy,
   rowTransaction: labels => labels.actionRowTransaction,
 }

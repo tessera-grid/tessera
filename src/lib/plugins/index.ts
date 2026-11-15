@@ -84,6 +84,13 @@ export {
 } from './infiniteScroll'
 export { backToTop, type BackToTopOptions } from './backToTop'
 export { columnTotals, type ColumnTotalsOptions } from './columnTotals'
+export {
+  columnAggregation,
+  type ColumnAggregationColumnDef,
+  type ColumnAggregationFunction,
+  type ColumnAggregationOptions,
+  type ColumnAggregationsState,
+} from './columnAggregation'
 export { failureLog, type FailureLogOptions } from './failureLog'
 export { unsavedChanges, type UnsavedChangesOptions } from './unsavedChanges'
 export {

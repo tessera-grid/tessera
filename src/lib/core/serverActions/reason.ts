@@ -9,6 +9,7 @@ const FAILED_LABEL = {
   search: 'serverActionFailedSearch',
   pagination: 'serverActionFailedPagination',
   grouping: 'serverActionFailedGrouping',
+  aggregation: 'serverActionFailedAggregation',
   copy: 'serverActionFailedCopy',
   selectPage: 'serverActionFailedSelectPage',
   paste: 'serverActionFailedPaste',

@@ -257,6 +257,17 @@ export const MODEL_PARITY: ParityBase = {
   columnTotals: {
     same: ['enabled', 'totals'],
   },
+  columnAggregation: {
+    same: [
+      'enabled',
+      'columnAggregations',
+      'onColumnAggregationsChange',
+      'initialColumnAggregations',
+      'functions',
+      'canSummarizeColumn',
+      'revertOnReject',
+    ],
+  },
   failureLog: {
     same: ['toolbar', 'enabled'],
   },

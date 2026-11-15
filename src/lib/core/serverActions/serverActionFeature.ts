@@ -23,6 +23,7 @@ export type ServerActionKind =
   | 'search'
   | 'pagination'
   | 'grouping'
+  | 'aggregation'
   | 'copy'
   | 'selectPage'
   | 'paste'

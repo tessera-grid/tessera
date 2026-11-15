@@ -13,6 +13,7 @@ import { columnFilteringLabels } from './lib/plugins/columnFiltering/labels'
 import { columnPinningLabels } from './lib/plugins/columnPinning/labels'
 import { columnSizingLabels } from './lib/plugins/columnSizing/labels'
 import { columnSortingLabels } from './lib/plugins/columnSorting/labels'
+import { columnAggregationLabels } from './lib/plugins/columnAggregation/labels'
 import { columnVisibilityLabels } from './lib/plugins/columnVisibility/labels'
 import { contextMenuLabels } from './lib/plugins/contextMenu/labels'
 import { dataExportLabels } from './lib/plugins/dataExport/labels'
@@ -43,6 +44,7 @@ export const allLabelSets = [
   columnPinningLabels,
   columnSizingLabels,
   columnSortingLabels,
+  columnAggregationLabels,
   columnVisibilityLabels,
   contextMenuLabels,
   dataExportLabels,

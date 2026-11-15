@@ -815,6 +815,13 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       `tree-totals` (AG3, AG8, AG11 — предок найденной строки, `totals` на лету, новые колонки в SSRM),
       перф AG10 — в `interaction`, истории «Core/Column totals» S1–S4
       ([ADR 0229](docs/decisions/0229-tree-totals-over-all-nodes.md)).
+    - _Сводка колонки:_ модульный `columnAggregation.dom` (SU1–SU4, SU6, SU10, SU13–SU14 — срез главнее
+      `aggregationFn`, итог и значения групп, список функций по типу, свои функции, когда есть пункт,
+      начальный выбор и колбэк, запрос серверной выгрузки, подписи), визуальный `column-summary` (SU5,
+      SU7–SU9, SU11–SU12, SU15, SU18 — пункт «Сводка» со списком, имя функции у итога, точка на кебабе,
+      раздел «Настроек вида», серверная модель с откатом, без вспышки, axe и `forced-colors`, счётные
+      функции целым числом), перф SU16 — в `interaction`, SU17 — `check:tree-shaking`, истории
+      «Columns/Summary» (S1–S8) ([ADR 0230](docs/decisions/0230-column-summary.md)).
     - _Экспорт:_ `export` (EX1, EX6–EX9, EX23, EX25–EX28, EX31–EX32 — кнопка тулбара,
       панель настроек по осям, быстрые наборы, скачивание, серверный режим, axe),
       модульные `export` (EX2–EX5, EX10–EX22, EX24, EX29–EX30 — оси по плагинам, `allow`,

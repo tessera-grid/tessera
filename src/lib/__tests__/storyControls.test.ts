@@ -48,6 +48,14 @@ const WITHOUT_CONTROL: Record<string, string> = {
   dataExportModelMaxLoadedRows: 'предел своей кнопки выгрузки задаёт история',
   infiniteScrollHasMore: 'конец ленты знает история с сервером',
   columnTotalsTotals: 'итоги сервера задаёт история',
+  columnAggregationColumnAggregations:
+    'выбор у приложения — история восстановления выбора',
+  columnAggregationInitialColumnAggregations:
+    'сохранённый выбор задаёт история восстановления',
+  columnAggregationFunctions:
+    'свои функции — объекты с кодом, их задаёт история',
+  columnAggregationRevertOnReject:
+    'откат при отказе показывает серверная история',
   headerActionMenuSlots: 'список кнопок — из кода плагинов',
   cellEditingEditing: 'состояние правки у приложения — своя история',
   cellEditingInitialEditing: 'состояние правки у приложения — своя история',

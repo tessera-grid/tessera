@@ -222,6 +222,8 @@ export interface CommonOptions extends CoreOptions {
    * итога; ставит плагин valueChangeFlash.
    */
   watchColumnTotal?: (watch: ColumnTotalWatch) => void
+  /** Имя функции итога колонки перед числом (ADR 0230, §4); ставит плагин columnAggregation. */
+  columnTotalLabel?: (table: unknown, columnId: string) => string | undefined
   hooks?: CommonHooks
   slots?: RenderSlotsV9
   slotActions?: SlotActionsV9

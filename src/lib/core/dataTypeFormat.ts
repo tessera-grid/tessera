@@ -276,6 +276,31 @@ export const formatDataTypeValue = (
 ): string =>
   formatTyped(table, column, resolveDataType(table, column), value, row)
 
+/** Функции агрегата, которые считают строки, а не значения колонки (ADR 0230, §5). */
+const COUNTING_AGGREGATIONS: readonly unknown[] = ['count', 'uniqueCount']
+
+const INTEGER: Intl.NumberFormatOptions = { maximumFractionDigits: 0 }
+
+/**
+ * Значение агрегата колонки — итог или значение строки-группы (ADR 0230, §5): у счётной функции —
+ * целое число по языку таблицы, иначе — текст по типу колонки.
+ */
+export const formatAggregateValue = (
+  table: FormatTable,
+  column: FormatColumn & { columnDef: { aggregationFn?: unknown } },
+  value: unknown,
+  row: unknown,
+): string =>
+  typeof value === 'number' &&
+  COUNTING_AGGREGATIONS.includes(column.columnDef.aggregationFn)
+    ? formatterOf(
+        'number',
+        INTEGER,
+        table.options.locale ?? DEFAULT_LOCALE,
+        undefined,
+      ).format(value)
+    : formatDataTypeValue(table, column, value, row)
+
 /**
  * Форматтер колонки с типом, разрешённым один раз (ADR 0201, §4): тот же текст, что
  * `formatDataTypeValue`, без разрешения типа на каждое значение.
