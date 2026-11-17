@@ -2,6 +2,7 @@
 import './src/lib/stories/__tests__/reactCommits'
 
 import { setProjectAnnotations } from '@storybook/react-vite'
+import { pinTestPlatform } from './src/lib/stories/__mocks__/platformKeys'
 import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest'
 import { cleanup, configure } from 'vitest-browser-react/pure'
 
@@ -32,3 +33,6 @@ afterEach(unknownActions.stop)
 // StrictMode по умолчанию (ADR 0091, EV3): эффекты и рендер запускаются дважды, как в
 // разработке у потребителя. В перф-прогоне React продовый — там StrictMode ничего не делает.
 configure({ reactStrictMode: true })
+
+// Платформа клавиатуры одна на любой машине (ADR 0232, KX11).
+pinTestPlatform()

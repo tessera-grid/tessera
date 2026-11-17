@@ -11,6 +11,7 @@ import clsx from 'clsx'
 
 import { usePendingControl } from '../buttonStates/useButtonStates'
 import { CheckboxIcon, CheckboxView } from './CheckboxView'
+import { Tooltip } from '../Tooltip'
 
 import styles from './Checkbox.module.css'
 
@@ -20,6 +21,9 @@ export interface CheckboxProps {
   disabled?: boolean
   /** Имя флажка; в режиме `readOnly` — значение для скринридера: «Да» или «Нет». */
   label?: string
+  /** Тултип, например сочетание клавиш; по умолчанию его нет. */
+  tooltip?: string
+  'aria-keyshortcuts'?: string
   /**
    * Только значение (ADR 0172, DT18): тот же вид, но не нажимается и не в порядке фокуса;
    * скринридеру — картинка с именем `label`.
@@ -46,6 +50,7 @@ export const Checkbox = forwardRef<HTMLElement, CheckboxProps>(
       indeterminate,
       disabled,
       label,
+      tooltip,
       readOnly,
       tabIndex,
       pending,
@@ -69,7 +74,7 @@ export const Checkbox = forwardRef<HTMLElement, CheckboxProps>(
       )
     }
 
-    return (
+    const control = (
       <span {...busy.host}>
         <BaseCheckbox.Root
           {...rest}
@@ -95,6 +100,13 @@ export const Checkbox = forwardRef<HTMLElement, CheckboxProps>(
         </BaseCheckbox.Root>
         {busy.arc}
       </span>
+    )
+    return tooltip ? (
+      <Tooltip title={tooltip} longPress>
+        {control}
+      </Tooltip>
+    ) : (
+      control
     )
   },
 )

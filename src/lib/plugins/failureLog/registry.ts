@@ -1,9 +1,11 @@
 /**
- * Плагин журнала отказов (ADR 0177, §7): кнопка тулбара с красным счётчиком, пока в реестре
- * отказов ядра есть записи; поповер — список записей с переходом к цели, повтором и закрытием.
+ * Плагин журнала отказов (ADR 0177, §7; ADR 0227, §4): кнопка тулбара с красным счётчиком записей
+ * журнала, пока в реестре отказов ядра есть записи; поповер — записи и группы с переходом к цели,
+ * повтором, сбрасыванием правки и закрытием; `table.showFailureLog()` открывает его.
  * Тулбар кнопка не вызывает: она встаёт в тулбар, который у таблицы уже есть.
  */
 import { announceLabel } from '../../core/announcer'
+import type { Failures } from '../../core/failures/failuresFeature'
 import {
   placeToolbarSlot,
   type ToolbarPlacementOption,
@@ -11,6 +13,8 @@ import {
 import { definePlugin } from '../../core/definePlugin'
 import { neverInert } from '../../core/pluginDiagnostics'
 import { FailureLogButton } from './FailureLogButton'
+import { failureLogFeature } from './failureLogFeature'
+import { journalCount } from './journal'
 import { failureLogLabels } from './labels'
 
 /** Группа тулбара: последней справа, после групп потребителя (ранг — `core/toolbar`). */
@@ -22,14 +26,14 @@ export interface FailureLogOptions extends ToolbarPlacementOption {
 }
 
 type FailuresAtom = {
-  get: () => Record<string, unknown> | undefined
-  subscribe: (listener: (next: Record<string, unknown>) => void) => {
+  get: () => Failures | undefined
+  subscribe: (listener: (next: Failures) => void) => {
     unsubscribe: () => void
   }
 }
 
 /**
- * Новая запись — объявление числа записей (JR4). Отдельной задачей: источник отказа
+ * Новая запись — объявление числа записей журнала (JR4). Отдельной задачей: источник отказа
  * объявляет причину в том же кадре, и live-область оставила бы только одно из двух.
  */
 const announceNewRecords = (table: unknown) => {
@@ -45,7 +49,9 @@ const announceNewRecords = (table: unknown) => {
     clearTimeout(timer)
     timer = setTimeout(() =>
       announceLabel(table, labels =>
-        failureLogLabels(labels).announceFailureLogged(known.size),
+        failureLogLabels(labels).announceFailureLogged(
+          journalCount(atom.get()),
+        ),
       ),
     )
   })
@@ -60,10 +66,15 @@ export const failureLog = definePlugin<FailureLogOptions>()({
   labels: [failureLogLabels],
   actions: {
     clearAll: labels => failureLogLabels(labels).failureClearAll,
+    discardAll: labels => failureLogLabels(labels).failureDiscardAll,
     close: labels => failureLogLabels(labels).failureClose,
+    discard: labels => labels.failureDiscard,
     show: labels => failureLogLabels(labels).failureShow,
     retry: labels => labels.failureRetry,
+    retryGroup: labels => labels.failureRetry,
+    discardGroup: labels => failureLogLabels(labels).failureDiscardGroup,
   },
+  features: { failureLogFeature },
   diagnose: neverInert,
   setup: () => table => announceNewRecords(table),
   slots: o =>

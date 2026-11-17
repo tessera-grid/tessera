@@ -32,6 +32,7 @@ import {
   type ActionStatus,
   type ActionStatusEntry,
   readActionStatus,
+  type TableNotice,
   writeActionStatus,
 } from './actionStatusFeature'
 import type {
@@ -464,6 +465,26 @@ export const dismissTableActionFailure = (table: unknown, key: string) =>
       ? { ...status, [key]: { ...status[key], dismissed: true } }
       : status,
   )
+
+interface ShownNotice {
+  key: string
+  notice: TableNotice
+}
+
+const tableNotices = new WeakMap<ActionStatus, ShownNotice | null>()
+
+/** Итог действия всей таблицы для плашки — последний показанный; один объект на срез. */
+export const tableNotice = (status: ActionStatus | undefined) => {
+  if (!status) return undefined
+  let shown = tableNotices.get(status)
+  if (shown === undefined) {
+    shown = null
+    for (const [key, entry] of Object.entries(status))
+      if (entry.notice) shown = { key, notice: entry.notice }
+    tableNotices.set(status, shown)
+  }
+  return shown ?? undefined
+}
 
 /** Состояние кебаба: ждущие и неувиденные упавшие действия. */
 export interface KebabStatus {

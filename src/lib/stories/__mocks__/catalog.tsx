@@ -55,6 +55,9 @@ export const CATALOG_STATES = {
     'empty',
     'loadError',
     'loadFailed',
+    // Итог «Применить» (ADR 0227, §1): плашка в тоне успеха и плашка частичного итога.
+    'applySaved',
+    'applyPartly',
   ],
   head: [
     'sorting',
@@ -85,10 +88,17 @@ export const CATALOG_STATES = {
     'cellIssue',
     // Журнал отказов (ADR 0177, §7).
     'failureLog',
+    // Журнал отказов (ADR 0227, §4, §6): группа отказов, её второй уровень и вопрос перед
+    // сбрасыванием всех правок.
+    'failureGroup',
+    'failureGroupLevel',
+    'failureQuestion',
     // Пульт черновиков (ADR 0178, §8).
     'unsavedChanges',
     // Поповер «Настроек вида» и его разделы (ADR 0215).
     'viewSettings',
+    // Сводка сочетаний текущей таблицы (ADR 0232, KX17–KX19).
+    'shortcuts',
   ],
   panel: ['toolbar', 'statusBar', 'pagination', 'narrow'],
   // Перетаскивание (ADR 0130): шаги гайдов историй строк и колонок.

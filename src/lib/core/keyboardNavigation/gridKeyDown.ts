@@ -9,6 +9,12 @@ import { getDisplayColumns } from '../displayColumns'
 import { isFooterInline } from '../footer'
 import { keyComboOf, runKeyboardAction } from '../keyboardActions'
 import {
+  type KeyboardPlatform,
+  anyModifier,
+  keyboardPlatformOf,
+  primaryModifier,
+} from '../keyboardPlatform'
+import {
   ACTION_KEYS,
   findKeyboardAction,
   getCellWidgets,
@@ -67,7 +73,8 @@ export const handleGridKeyDown = (
   }
 
   const t = table as NavTable
-  const modified = event.ctrlKey || event.metaKey || event.altKey
+  const modified = anyModifier(event)
+  const platform = keyboardPlatformOf(table)
   trackingOf(t).follow = undefined
 
   // Tab — выход из грида: фокус на стража, нативный обход продолжится от него.
@@ -80,7 +87,7 @@ export const handleGridKeyDown = (
   }
 
   // Клавиша меню — событие `contextmenu` на ячейке: меню открывает тот, кто его слушает.
-  if (isContextMenuKey(event)) {
+  if (isContextMenuKey(event, platform)) {
     if (openContextMenuAt(cell)) event.preventDefault()
     return
   }
@@ -132,7 +139,7 @@ export const handleGridKeyDown = (
   // Ctrl+Enter — к кнопкам ячейки без её действия: замена F2 (KB12).
   if (
     event.key === 'Enter' &&
-    (event.ctrlKey || event.metaKey) &&
+    primaryModifier(event, platform) &&
     !event.altKey &&
     !event.shiftKey
   ) {
@@ -203,7 +210,7 @@ export const handleGridKeyDown = (
     return
   }
   // Без плагина Ctrl+A — браузеру, Shift со стрелкой ячейку не двигает.
-  if (isSelectAllKey(event)) {
+  if (isSelectAllKey(event, platform)) {
     return
   }
   if (event.shiftKey && !event.altKey && ARROW_DIRECTIONS[event.key]) {
@@ -234,6 +241,7 @@ export const handleGridKeyDown = (
   }
 
   const resolved = resolveNavigationKey(active, event, {
+    platform,
     rowCount: getNavRowCount(t),
     columnCount: getDisplayColumns(t).ids.length,
     pageRows,
@@ -265,8 +273,11 @@ export const handleGridKeyDown = (
 }
 
 /** Ctrl/Cmd+A — по коду клавиши, на любой раскладке (ADR 0220, KC1). */
-const isSelectAllKey = (event: { code: string } & Modifiers) =>
-  (event.ctrlKey || event.metaKey) &&
+const isSelectAllKey = (
+  event: { code: string } & Modifiers,
+  platform: KeyboardPlatform,
+) =>
+  primaryModifier(event, platform) &&
   !event.altKey &&
   !event.shiftKey &&
   event.code === 'KeyA'

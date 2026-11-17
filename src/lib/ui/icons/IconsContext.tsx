@@ -23,6 +23,7 @@ import {
   ChevronsUpDown,
   Eraser,
   CircleAlert,
+  CircleCheck,
   Clock,
   Columns3,
   Download,
@@ -152,6 +153,10 @@ export interface TableIcons {
   emptyState: IconComponent
   /** Плашка и заглушка ошибки загрузки данных (ADR 0096) */
   loadFailed: IconComponent
+  /** Плашка `Alert` в тоне успеха без своей иконки (ADR 0227) */
+  alertSuccess: IconComponent
+  /** Плашка `Alert` в нейтральном тоне без своей иконки (ADR 0227) */
+  alertNeutral: IconComponent
   /** Кнопка «наверх» в нижней панели (ADR 0082) */
   backToTop: IconComponent
   /** Кнопка журнала отказов в тулбаре (ADR 0177) */
@@ -164,7 +169,7 @@ export interface TableIcons {
   unsavedChanges: IconComponent
   /** «Применить» черновика в пульте (ADR 0178) */
   draftApply: IconComponent
-  /** «Отбросить» черновика в пульте (ADR 0178) */
+  /** «Сбросить» черновика в пульте (ADR 0178) */
   draftDiscard: IconComponent
   /** Иллюстрация пустого пульта черновиков (ADR 0178) */
   unsavedChangesEmpty: IconComponent
@@ -240,6 +245,8 @@ export const DEFAULT_ICONS: TableIcons = {
   retry: RotateCw,
   emptyState: EmptyStateIllustration,
   loadFailed: CircleAlert,
+  alertSuccess: CircleCheck,
+  alertNeutral: Info,
   backToTop: ArrowUpToLine,
   failureLog: CircleAlert,
   failureShow: LocateFixed,

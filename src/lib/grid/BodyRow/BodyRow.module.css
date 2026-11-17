@@ -27,7 +27,8 @@
    * нет: это место броска, а не строка под указателем (ADR 0108).
    */
 
-  :where(:global(.data-grid-theme):not([data-refreshing]))
+  :where(:root:not([data-tsr-input='touch']))
+    :where(:global(.data-grid-theme):not([data-refreshing]))
     &:hover:where(:not([data-row-draggable='true'])) {
     --tsr-row-state: var(--tsr-comp-row-hovered-bg);
 
@@ -46,7 +47,8 @@
 
   /* Выбранная строка под наведением */
 
-  :where(:global(.data-grid-theme):not([data-refreshing]))
+  :where(:root:not([data-tsr-input='touch']))
+    :where(:global(.data-grid-theme):not([data-refreshing]))
     &:hover:is([data-selected='true']):where(
       :not([data-row-draggable='true'])
     ) {
@@ -202,7 +204,8 @@
    * Наведение и будущий родитель слота (ADR 0109, §4) — рамкой на слое строки поверх
    * ячеек: контур самой строки перекрыли бы ячейки и их разделители.
    */
-  :where(:global(.data-grid-theme):not([data-refreshing]))
+  :where(:root:not([data-tsr-input='touch']))
+    :where(:global(.data-grid-theme):not([data-refreshing]))
     .body__row:hover::after,
   .body__row[data-row-drop-parent]::after {
     content: '';
@@ -213,7 +216,8 @@
     border: 2px solid Highlight;
   }
 
-  .body__row[data-selected='true']:hover::after {
+  :where(:root:not([data-tsr-input='touch']))
+    .body__row[data-selected='true']:hover::after {
     border-color: HighlightText;
   }
 

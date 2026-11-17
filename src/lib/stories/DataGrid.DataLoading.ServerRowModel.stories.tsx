@@ -1,4 +1,5 @@
 import { Meta, StoryObj } from '@storybook/react'
+import { mod } from './__mocks__/platformKeys'
 import { expect } from 'storybook/test'
 import type { TesseraFeatureEntry } from '../core/features'
 import type { StoryProps } from './DataGridStory.types'
@@ -41,13 +42,15 @@ import {
   layerOf,
   nextFrame,
   press,
+  searchProps,
 } from './__mocks__/serverRowModelGuide'
 
 /**
  * Серверная модель строк (ADR 0138): `Playground` — триста тысяч строк с «сервера» в покое,
  * объём, итог, отказы и размер блока — контролами; S1 — прыжок в середину, S2 — отказ
  * блока и повтор, S3 — итог неизвестен, S4 — смена сортировки, S5 — открыть на записи;
- * ADR 0142, S1 — миллион строк: ползунком в конец, колесом и клавишами. Группировка, выбор
+ * ADR 0142, S1 — миллион строк: ползунком в конец, колесом и клавишами; ADR 0228, S1 — поиск
+ * сужает список, оставшиеся строки подтягиваются. Группировка, выбор
  * строк, выделение ячеек, правка и вложенные строки — в подразделах (ADR 0151).
  */
 const meta = {
@@ -904,7 +907,7 @@ const MILLION_ROWS: readonly GuideStoryStep[] = [
       await nextFrame()
       const cell = lastRowCell(root)!
       cell.focus({ preventScroll: true })
-      press(cell, 'Home', { ctrlKey: true })
+      press(cell, 'Home', mod())
       await nextFrame()
       // Ctrl+Home ведёт в шапку, стрелка вниз — в первую строку (ADR 0021).
       press(document.activeElement as HTMLElement, 'ArrowDown')
@@ -955,6 +958,111 @@ export const ServerRowModelMillionRows: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await stepDone(canvas)
       await expect(activeRowIndex(canvas)).toBe(0)
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0228 S1 ---------------------------------------------------------------------
+
+const NARROW_QUERY = 'Paris'
+/** Строка города: каждая пятая в наборе «сервера» — вторая в найденном списке. */
+const NARROW_KEPT = 'item-id-5'
+const narrowField = (root: HTMLElement) =>
+  root.querySelector<HTMLInputElement>('input[data-testid="quick-search"]')
+const rowIndexOf = (root: HTMLElement, id: string) =>
+  root.querySelector<HTMLElement>(`.data-grid__body-row[data-row-id="${id}"]`)
+    ?.dataset.index
+const narrowed = (root: HTMLElement) =>
+  rowIndexOf(root, NARROW_KEPT) === '1' && !refreshing(root)
+
+/** Пользователь ищет город; «сервер» держит ответ. */
+const searchCity = async (root: HTMLElement, signal: AbortSignal) => {
+  await pollUntil(() => !!narrowField(root) && hasRow(root, 0), signal)
+  server.hold = true
+  const field = narrowField(root)!
+  field.focus()
+  const setValue = Object.getOwnPropertyDescriptor(
+    HTMLInputElement.prototype,
+    'value',
+  )!.set!
+  setValue.call(field, NARROW_QUERY)
+  field.dispatchEvent(new Event('input', { bubbles: true }))
+  await pollUntil(() => server.held.length > 0 && refreshing(root), signal)
+}
+
+const SEARCH_MOTION: readonly GuideStoryStep[] = [
+  {
+    title: { ru: 'Начало списка', en: 'The start of the list' },
+    hint: {
+      ru: 'Сервер отдаёт строки блоками, таблица показывает начало списка.',
+      en: 'The server returns rows in blocks, and the table shows the start of the list.',
+    },
+    props: searchProps,
+  },
+  {
+    title: {
+      ru: 'Пользователь ищет город',
+      en: 'The user searches for a city',
+    },
+    hint: {
+      ru: 'Поиск выполняет сервер, поэтому таблица попросила у него новое начало списка. Пока ответ в пути, на экране прежние строки в состоянии обновления данных.',
+      en: 'The server runs the search, so the table asked it for a new start of the list. While the response is on its way, the screen shows the previous rows in the data refresh state.',
+    },
+    states: ['body.refreshing'],
+    enter: stepAction(async (root, { signal }) => {
+      if (server.held.length > 0 || narrowed(root)) return
+      await searchCity(root, signal)
+    }),
+  },
+  {
+    title: { ru: 'Сервер ответил', en: 'The server responded' },
+    hint: {
+      ru: 'Строки этого города, которые уже были на экране, подтянулись к своим новым местам, остальные погасли. Строки, которых на экране не было, проявились на своих местах.',
+      en: "The rows of this city that were already on screen moved up to their new places, and the others faded out. The rows that weren't on screen faded in at their places.",
+    },
+    enter: stepAction(async (root, { signal }) => {
+      if (server.held.length === 0 && !narrowed(root)) {
+        await searchCity(root, signal)
+      }
+      server.hold = false
+      release()
+      await pollUntil(() => narrowed(root), signal)
+    }),
+  },
+]
+
+/** ADR 0228, S1: поиск сужает список — оставшиеся строки подтягиваются, прочие гаснут. */
+export const ServerRowModelSearchMotion: StoryObj<StoryProps> = {
+  name: 'Search narrows the list',
+  parameters: { scenario: '0228/S1', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title={{
+        ru: 'Поиск сужает список',
+        en: 'Search narrows the list',
+      }}
+      steps={SEARCH_MOTION}
+      args={guideArgs(layout, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(SEARCH_MOTION[0]!.title.ru, async () => {
+      await until(() => expect(hasRow(canvas, 0)).toBe(true))
+    })
+    await step(SEARCH_MOTION[1]!.title.ru, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(refreshing(canvas)).toBe(true)
+      await expect(narrowField(canvas)!.value).toBe(NARROW_QUERY)
+      await expect(rowIndexOf(canvas, NARROW_KEPT)).toBe('5')
+    })
+    await step(SEARCH_MOTION[2]!.title.ru, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(rowIndexOf(canvas, NARROW_KEPT)).toBe('1')
+      await expect(hasRow(canvas, 1)).toBe(false)
       await settle()
     })
   },

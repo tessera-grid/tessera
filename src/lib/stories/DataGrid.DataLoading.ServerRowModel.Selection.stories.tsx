@@ -293,6 +293,7 @@ export const ServerRowModelSelectAllExcept: StoryObj<StoryProps> = {
         globalFilter: '',
         grouping: [],
         aggregations: {},
+        aggregationScopes: {},
       })
       await expect(exportButton(canvas)).toHaveAttribute('aria-busy', 'true')
     })

@@ -102,6 +102,55 @@ const visibleRows = (root: ParentNode) => {
     row => rect(row).top >= top - 1 && rect(row).bottom <= bottom + 1,
   ).length
 }
+/** Номер первой строки у верха области — под шапкой. */
+const firstShown = (root: ParentNode) => {
+  const top = rect(headOf(root)).bottom
+  return (
+    rowsOf(root)
+      .filter(row => rect(row).bottom > top + 1)
+      .sort((a, b) => rect(a).top - rect(b).top)[0]
+      ?.getAttribute('data-index') ?? undefined
+  )
+}
+
+/** Ячейка в фокусе — активная ячейка клавиатурной навигации. */
+const focusedCell = (root: ParentNode) => {
+  const active = root.querySelector<HTMLElement>(
+    '.data-grid__body-cell[data-kn-cell][data-kn-active="true"]',
+  )
+  return active && document.activeElement === active ? active : null
+}
+const rowIndexOf = (cell: Element | null) =>
+  Number(cell?.closest('.data-grid__body-row')?.getAttribute('data-index'))
+
+/** Пользователь встал на ячейку первой строки экрана и нажал клавишу листания вниз. */
+const pageDown = (root: HTMLElement) => {
+  let start: number | undefined
+  const run = () => {
+    const focused = focusedCell(root)
+    if (start !== undefined && rowIndexOf(focused) > start) return
+    if (!focused) {
+      const first = firstShown(root)
+      root
+        .querySelector<HTMLElement>(
+          `.data-grid__body-row[data-index="${first}"] .data-grid__body-cell[data-kn-cell]`,
+        )
+        ?.focus()
+    } else {
+      start ??= rowIndexOf(focused)
+      focused.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'PageDown',
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
+    }
+    setTimeout(run, 80)
+  }
+  setTimeout(run, 0)
+}
+
 const recreated = () => {
   const text = consoleText()
   return (
@@ -129,17 +178,17 @@ const scrollToMiddle = afterRows(root => {
 
 const FIXED: readonly GuideStoryStep[] = [
   {
-    title: { ru: 'Высота 300px', en: 'Height of 300px' },
+    title: { ru: 'Своя высота таблицы', en: 'The table height of its own' },
     hint: {
-      ru: 'Приложение задаёт таблице высоту числом. Таблица ниже контейнера, строки, которые не поместились, прокручиваются внутри.',
-      en: 'The app sets the table height as a number. The table is shorter than its container, and the rows that do not fit scroll inside it.',
+      ru: 'Приложение задало таблице высоту — строки, которые не поместились, прокручиваются внутри.',
+      en: 'The app set the table height; rows that do not fit scroll inside it.',
     },
   },
   {
     title: { ru: 'Строк стало меньше', en: 'Fewer rows' },
     hint: {
-      ru: 'Осталось три строки — высота таблицы та же, раскладка страницы не прыгает.',
-      en: 'Three rows are left. The table height stays the same, so the page layout does not jump.',
+      ru: 'Осталось три строки — высота таблицы та же, страница не прыгает.',
+      en: 'Three rows are left; the table height stays the same, and the page does not jump.',
     },
     props: () => ({ dataCount: 3 }),
   },
@@ -190,25 +239,25 @@ export const SizingFixedHeight: StoryObj<StoryProps> = {
 
 const FILL: readonly GuideStoryStep[] = [
   {
-    title: { ru: 'Вся высота контейнера', en: 'The full container height' },
+    title: { ru: 'Вся высота блока', en: 'The full block height' },
     hint: {
-      ru: 'Приложение задаёт высоту `100%`: таблица занимает весь контейнер высотой 400px.',
-      en: 'The app sets the height to `100%`: the table fills the whole 400px-tall container.',
+      ru: 'Таблица занимает весь блок страницы.',
+      en: 'The table fills the whole page block.',
     },
   },
   {
-    title: { ru: 'Контейнер вырос', en: 'The container grew' },
+    title: { ru: 'Блок вырос', en: 'The block grew' },
     hint: {
-      ru: 'Контейнер стал 600px — таблица выросла вместе с ним и показывает больше строк. Таблица не пересоздаётся.',
-      en: 'The container is now 600px tall. The table grew with it and shows more rows. The table is not recreated.',
+      ru: 'Блок страницы стал выше — таблица выросла вместе с ним и показывает больше строк.',
+      en: 'The page block got taller; the table grew with it and shows more rows.',
     },
     props: () => ({ containerHeight: '600' }),
   },
   {
-    title: { ru: 'Половина контейнера', en: 'Half of the container' },
+    title: { ru: 'Половина блока', en: 'Half of the block' },
     hint: {
-      ru: 'Высота `50%` — таблица занимает половину контейнера.',
-      en: 'With a height of `50%`, the table takes up half of the container.',
+      ru: 'Таблица занимает половину блока.',
+      en: 'The table takes up half of the block.',
     },
     props: () => ({ height: '50%' }),
   },
@@ -277,15 +326,15 @@ const FLEX: readonly GuideStoryStep[] = [
   {
     title: { ru: 'Таблица под панелью', en: 'The table below a panel' },
     hint: {
-      ru: 'Над таблицей — панель приложения. С высотой `auto` таблица занимает остаток контейнера до его низа, даже когда строк мало.',
-      en: 'An app panel sits above the table. With the height set to `auto`, the table takes up the rest of the container down to its bottom, even when there are few rows.',
+      ru: 'Над таблицей — панель приложения. Таблица занимает остаток блока до его низа, даже когда строк мало.',
+      en: 'An app panel sits above the table. The table takes up the rest of the block down to its bottom, even when there are few rows.',
     },
   },
   {
     title: { ru: 'Панель выросла', en: 'The panel grew' },
     hint: {
-      ru: 'Панель приложения стала выше — таблица уменьшилась на столько же, низ таблицы остался у низа контейнера.',
-      en: 'The app panel got taller. The table shrank by the same amount, and its bottom stayed at the bottom of the container.',
+      ru: 'Панель стала выше — таблица уменьшилась на столько же, её низ остался у низа блока.',
+      en: 'The panel got taller; the table shrank by the same amount, and its bottom stayed at the bottom of the block.',
     },
     props: () => ({ appPanelHeight: PANEL_GROWN }),
   },
@@ -351,15 +400,15 @@ const CONTENT: readonly GuideStoryStep[] = [
   {
     title: { ru: 'Три строки', en: 'Three rows' },
     hint: {
-      ru: 'Ни у контейнера, ни у таблицы нет высоты — таблица по высоте хедера колонок и строк, пустого места под строками нет.',
-      en: 'Neither the container nor the table has a set height. The table is as tall as its column header and rows, with no empty space below the rows.',
+      ru: 'Высоты нет ни у блока, ни у таблицы — таблица по высоте заголовков и строк, пустого места под строками нет.',
+      en: 'Neither the block nor the table has a height; the table is as tall as its headers and rows, with no empty space below the rows.',
     },
   },
   {
     title: { ru: 'Строк стало много', en: 'Many rows now' },
     hint: {
-      ru: 'Пришло 100 строк — таблица выросла до предела `maxHeight: 400`, остальные строки прокручиваются внутри.',
-      en: '100 rows arrived. The table grew up to the `maxHeight: 400` limit, and the remaining rows scroll inside it.',
+      ru: 'Пришло 100 строк — таблица выросла до своего предела, остальные строки прокручиваются внутри.',
+      en: '100 rows arrived; the table grew up to its limit, and the remaining rows scroll inside it.',
     },
     props: () => ({ dataCount: 100 }),
   },
@@ -415,8 +464,8 @@ const ROWS: readonly GuideStoryStep[] = [
   {
     title: { ru: 'Высота по умолчанию', en: 'Default height' },
     hint: {
-      ru: 'Строки тела и футера — по 50px.',
-      en: 'Body and footer rows are 50px each.',
+      ru: 'Строки и строка итогов — обычной высоты.',
+      en: 'The rows and the totals row have the normal height.',
     },
   },
   {
@@ -425,34 +474,43 @@ const ROWS: readonly GuideStoryStep[] = [
       en: 'The table is scrolled to the middle',
     },
     hint: {
-      ru: 'Пользователь прокрутил таблицу к середине. Строки тела и футера — по 50px.',
-      en: 'The user scrolled the table to the middle. Body and footer rows are 50px each.',
+      ru: 'Пользователь прокрутил таблицу к середине.',
+      en: 'The user scrolled the table to the middle.',
     },
     enter: scrollToMiddle,
   },
   {
     title: { ru: 'Компактные строки', en: 'Compact rows' },
     hint: {
-      ru: 'Приложение задаёт `rowHeight: 40`: строки и футер ниже, в таблице помещается больше строк. Прокрутка не сбрасывается, таблица не пересоздаётся.',
-      en: 'The app sets `rowHeight: 40`: the rows and the footer are shorter, so more rows fit in the table. The scroll position is kept, and the table is not recreated.',
+      ru: 'Приложение сделало строки компактнее — помещается больше строк, сверху та же строка, что и раньше.',
+      en: 'The app made the rows more compact; more rows fit, and the same row stays at the top.',
     },
     props: () => ({ rowHeight: 40 }),
   },
   {
     title: { ru: 'Просторные строки', en: 'Spacious rows' },
     hint: {
-      ru: '`rowHeight: 64` — строки и футер выше, строк помещается меньше.',
-      en: 'With `rowHeight: 64`, the rows and the footer are taller, so fewer rows fit.',
+      ru: 'Приложение сделало строки просторнее — помещается меньше строк, сверху та же строка.',
+      en: 'The app made the rows more spacious; fewer rows fit, and the same row stays at the top.',
     },
     props: () => ({ rowHeight: 64 }),
   },
   {
     title: { ru: 'Меньше минимума', en: 'Below the minimum' },
     hint: {
-      ru: '`rowHeight: 30` меньше минимума: строки — 40px, ниже кнопки строки не поместились бы. В режиме разработки — предупреждение в консоли браузера.',
-      en: '`rowHeight: 30` is below the minimum: rows are 40px, since row buttons would not fit in anything shorter. In development mode, a warning appears in the browser console.',
+      ru: 'Приложение попросило строки ниже минимума — строки остались минимальной высоты: ниже не поместятся кнопки строки. В режиме разработки — предупреждение в консоли.',
+      en: 'The app asked for rows below the minimum; the rows kept the minimum height, since row buttons would not fit in anything shorter. In development mode, a warning appears in the console.',
     },
     props: () => ({ rowHeight: 30 }),
+  },
+  {
+    title: { ru: 'Листание страницами', en: 'Paging' },
+    hint: {
+      ru: 'Пользователь нажал клавишу листания вниз — таблица пролистала на экран строк новой высоты.',
+      en: 'The user pressed the page-down key; the table moved down by a screen of rows of the new height.',
+    },
+    keyboard: true,
+    enter: pageDown,
   },
 ]
 
@@ -461,6 +519,7 @@ const ROW_HEIGHT_ARGS = {
   height: '460',
   dataCount: 200,
   enableFooter: true,
+  enableKeyboardNavigation: true,
 } satisfies Partial<StoryProps>
 
 /** ADR 0077, S1: приложение меняет высоту строк на лету. */
@@ -486,7 +545,7 @@ export const SizingRowHeight: StoryObj<StoryProps> = {
       })
     let body: Element | null = null
     let visible = 0
-    let scrollTop = 0
+    let first: string | undefined
     await step(ROWS[0].title.ru, async () => {
       await waitForRows(canvas)
     })
@@ -497,19 +556,14 @@ export const SizingRowHeight: StoryObj<StoryProps> = {
       await rowsAre(50)
       body = bodyOf(canvas)
       visible = visibleRows(canvas)
-      scrollTop = scrollerOf(canvas).scrollTop
+      first = firstShown(canvas)
     })
     await step(ROWS[2].title.ru, async () => {
       await guideNext(canvas)
       await rowsAre(40)
       await until(() => expect(visibleRows(canvas)).toBeGreaterThan(visible))
-      // Не сброшена: та же область, сдвиг — не больше прежней строки.
-      await until(() => expect(scrollerOf(canvas).scrollTop).toBeGreaterThan(0))
-      await until(() =>
-        expect(
-          Math.abs(scrollerOf(canvas).scrollTop - scrollTop),
-        ).toBeLessThanOrEqual(50),
-      )
+      // Сверху та же строка (RH10).
+      await until(() => expect(firstShown(canvas)).toBe(first))
       await until(() => expect(bodyOf(canvas)).toBe(body))
       await until(() => expect(recreated()).toBe(false))
       visible = visibleRows(canvas)
@@ -518,6 +572,7 @@ export const SizingRowHeight: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await rowsAre(64)
       await until(() => expect(visibleRows(canvas)).toBeLessThan(visible))
+      await until(() => expect(firstShown(canvas)).toBe(first))
     })
     await step(ROWS[4].title.ru, async () => {
       // Предупреждение печатается раз за сессию: прежние прогоны его не гасят.
@@ -535,6 +590,16 @@ export const SizingRowHeight: StoryObj<StoryProps> = {
         warn.mockRestore()
       }
     })
+    await step(ROWS[5].title.ru, async () => {
+      const page = visibleRows(canvas)
+      await guideNext(canvas)
+      // Активная строка ушла вниз на экран строк новой высоты (RH6).
+      await until(() =>
+        expect(rowIndexOf(focusedCell(canvas))).toBeGreaterThanOrEqual(
+          Number(firstShown(canvas)) + page - 2,
+        ),
+      )
+    })
     await settle()
   },
 }
@@ -549,15 +614,15 @@ const HEADER: readonly GuideStoryStep[] = [
   {
     title: { ru: 'Шапка высотой строк', en: 'A header as tall as the rows' },
     hint: {
-      ru: 'Без `headerHeight` каждая строка вложенного хедера колонок — как строка тела, 44px.',
-      en: 'Without `headerHeight`, each row of the nested column header is as tall as a body row, 44px.',
+      ru: 'Заголовки в несколько уровней — каждый уровень высотой со строку.',
+      en: 'Headers have several levels; each level is as tall as a row.',
     },
   },
   {
-    title: { ru: 'Высокий хедер колонок', en: 'A tall column header' },
+    title: { ru: 'Высокие заголовки', en: 'Tall headers' },
     hint: {
-      ru: 'Приложение задаёт `headerHeight: 72`: каждая строка хедера колонок — 72px, строки тела остались 44px.',
-      en: 'The app sets `headerHeight: 72`: each column header row is 72px, while body rows stay at 44px.',
+      ru: 'Приложение сделало заголовки выше — каждый уровень выше строки, строки прежние.',
+      en: 'The app made the headers taller; each level is taller than a row, and the rows are unchanged.',
     },
     props: () => ({ headerHeight: 72 }),
   },
@@ -577,7 +642,7 @@ export const SizingHeaderHeight: StoryObj<StoryProps> = {
   },
   render: args => (
     <GuideStory
-      title={{ ru: 'Высота хедера колонок', en: 'Column header height' }}
+      title={{ ru: 'Высота заголовков', en: 'Header height' }}
       steps={HEADER}
       args={guideArgs(HEADER_HEIGHT_ARGS, args)}
     />
@@ -612,26 +677,26 @@ const THEME: readonly GuideStoryStep[] = [
   {
     title: { ru: 'Высота по умолчанию', en: 'Default height' },
     hint: {
-      ru: 'Строки и хедер колонок — по 50px.',
-      en: 'The rows and the column header are 50px each.',
+      ru: 'Строки и заголовки — обычной высоты.',
+      en: 'The rows and the headers have the normal height.',
     },
   },
   {
     title: { ru: 'Тема приложения', en: 'The app theme' },
     hint: {
-      ru: 'Тема приложения в CSS задаёт `--tsr-comp-row-height: 40px` и `--tsr-comp-head-row-height: 64px`, параметров `rowHeight` и `headerHeight` у `useCreateTable` нет: строки 40px, хедер колонок 64px.',
-      en: 'The app theme sets `--tsr-comp-row-height: 40px` and `--tsr-comp-head-row-height: 64px` in CSS, and `useCreateTable` gets no `rowHeight` or `headerHeight`: rows are 40px and the column header is 64px.',
+      ru: 'Тема приложения задала свою высоту строк и заголовков — таблица без своих настроек взяла её.',
+      en: 'The app theme set its own height for rows and headers; the table without its own settings took it.',
     },
     props: () => ({ gridClassName: APP_THEME }),
   },
   {
     title: {
-      ru: 'Параметр главнее темы',
-      en: 'The option overrides the theme',
+      ru: 'Таблица главнее темы',
+      en: 'The table overrides the theme',
     },
     hint: {
-      ru: 'Приложение передаёт в `useCreateTable` `rowHeight: 56` — строки 56px: параметр главнее темы. Хедер колонок по-прежнему из темы, 64px.',
-      en: 'The app passes `rowHeight: 56` to `useCreateTable`, so rows are 56px: the option overrides the theme. The column header height still comes from the theme: 64px.',
+      ru: 'Приложение задало высоту строк самой таблице — она главнее темы; заголовки по-прежнему из темы.',
+      en: 'The app set the row height on the table itself; it overrides the theme, and the headers still come from the theme.',
     },
     props: () => ({ rowHeight: 56 }),
   },

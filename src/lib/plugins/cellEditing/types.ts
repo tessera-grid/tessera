@@ -47,6 +47,28 @@ export interface SubmittedCell {
   error?: string
   /** Номер отправки: поздний итог прежней отправки игнорируется. */
   attempt: number
+  /** Применение или операция записи, в которой отказ пришёл (ADR 0227, §3). */
+  batch?: string
+}
+
+/**
+ * Итог последнего применения черновиков (ADR 0227, §1): по нему плашка. Новое применение
+ * заменяет запись.
+ */
+export interface ApplyOutcome {
+  /** Id применения — тот же `batch` у его отказов. */
+  id: string
+  /** Сохранено правок ячеек и строк. */
+  saved: number
+  /** Не сохранено. */
+  refused: number
+  /** Запрос не прошёл целиком: причина; `refused` — все правки применения. */
+  failed?: { reason: string }
+  /**
+   * Применить несохранённое ещё раз одним вызовом `onCommitEdits`: при отказе целиком — тот же
+   * набор, иначе отказанные. Нечего повторять — поля нет.
+   */
+  retry?: () => void
 }
 
 /**
@@ -63,6 +85,8 @@ export interface CellEditingState {
   active: EditingCell
   submitted: Record<string, SubmittedCell>
   packages?: Readonly<Record<string, PendingPackage>>
+  /** Итог последнего применения черновиков, пока плашку не закрыли (ADR 0227, §1). */
+  applied?: ApplyOutcome
 }
 
 /** Данные коммита нового значения ячейки. */

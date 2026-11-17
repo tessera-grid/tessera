@@ -96,6 +96,8 @@ export interface MenuAction<TCtx = any> extends NamedAction<TCtx> {
    * вторая строка под подписью: что будет после выбора (ADR 0204, HT5).
    */
   hint?: (ctx: TCtx, labels: TableLabels) => string | undefined
+  /** Сочетание в форме `Mod+Z` (Mod — Cmd на Apple, Ctrl на остальных; ADR 0232, KX14). */
+  shortcut?: string
   /**
    * `false` — выбор не закрывает меню (переопределяет умолчание раздела); пункт с
    * `active` становится флажком меню (ADR 0079).

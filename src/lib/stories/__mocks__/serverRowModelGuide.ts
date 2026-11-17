@@ -358,6 +358,27 @@ export const groupProps =
     extraPlugins: [serverReset],
   })
 
+/** Сто тысяч строк без группировки с поиском на «сервере» (ADR 0228, S1). */
+export const searchProps: GuideStoryStep['props'] = () => ({
+  columnsOverride: filteringColumns,
+  dataOverride: [],
+  enableServerRowModel: true,
+  serverRowModelBlockSize: GROUP_BLOCK,
+  rowCount: GROUP_TOTAL,
+  enableQuickSearch: true,
+  serverRowModelGetRows: (request: ServerRowsRequest) =>
+    new Promise<ServerRowsResponse<GroupItem>>(resolve => {
+      server.starts.push(request.start)
+      const answer = () => {
+        if (request.signal.aborted) return
+        resolve(groupAnswer(request))
+      }
+      if (server.hold) server.held.push(answer)
+      else setTimeout(answer, SERVER_DELAY_MS)
+    }),
+  extraPlugins: [serverReset],
+})
+
 export const groupButton = (root: HTMLElement) =>
   root.querySelector<HTMLElement>(
     '.data-grid__head-cell[data-column-id="city"] .column-group__button',

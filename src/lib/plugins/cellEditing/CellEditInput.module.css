@@ -13,6 +13,14 @@
   min-width: 0;
 }
 
+/* Поле и кнопки «Готово» и «Отмена» на касании — в ряд (ADR 0231, §8). */
+.touchRow {
+  display: flex;
+  align-items: center;
+  gap: var(--tsr-comp-cell-content-gap);
+  min-width: 0;
+}
+
 /* Обёртка редактора для перехвата Ctrl+Enter: в раскладке ячейки её нет. */
 .editHost {
   display: contents;

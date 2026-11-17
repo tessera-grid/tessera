@@ -24,7 +24,7 @@ const hooksOf = (table: unknown) =>
 export const cellValueDraftKind: DraftKind = {
   kind: CELL_VALUE_DRAFT,
   action: 'edit',
-  // Отброшенный черновик — запись истории: «было» — черновик, «стало» — данные (ADR 0222, §14).
+  // Сброшенный черновик — запись истории: «было» — черновик, «стало» — данные (ADR 0222, §14).
   discard: (table, draft) => {
     if (!('cell' in draft.target)) return
     const [rowId, columnId] = draft.target.cell

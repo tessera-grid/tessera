@@ -18,8 +18,10 @@ export interface ToolbarButtonProps
     Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'>,
     DerivedButtonProps,
     ActiveProps {
-  /** Тултип и доступное имя кнопки. */
+  /** Доступное имя кнопки. */
   label: string
+  /** Тултип кнопки; по умолчанию — её доступное имя. */
+  tooltip?: string
   icon: ReactNode
   /** Триггер всплывающего окна (напр. `<Popover.Trigger />`) — рендер-проп Base UI. */
   render?: ReactElement
@@ -33,6 +35,7 @@ export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(
   (
     {
       label,
+      tooltip,
       icon,
       active,
       count,
@@ -58,6 +61,7 @@ export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(
       render={
         <IconButton
           label={label}
+          tooltip={tooltip}
           shape="square"
           active={active}
           count={count}

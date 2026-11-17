@@ -137,6 +137,30 @@ export const sortHeaderAction: HeaderAction = {
       },
     ]
 
+    // Уровень мультисортировки без клавиши-модификатора — касанию и мыши (ADR 0231, §7).
+    const others = (
+      table as unknown as {
+        atoms: { sorting: { get: () => { id: string }[] } }
+      }
+    ).atoms.sorting
+      .get()
+      .filter(sort => sort.id !== column.id)
+    if (!current && others.length > 0 && column.getCanMultiSort()) {
+      items.push({
+        id: 'add',
+        label: columnSortingLabels(labels).addToSorting,
+        icon: <SortActionIcon direction="asc" />,
+        onSelect: () =>
+          runServerAction(
+            table,
+            'sorting',
+            () => column.toggleSorting(false, true),
+            context => onToggleColumnSort(column.id, 'asc', context),
+            menuCause,
+          ),
+      })
+    }
+
     if (table.options.enableSortingRemoval) {
       items.push({
         id: 'clear',

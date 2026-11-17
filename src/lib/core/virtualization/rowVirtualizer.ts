@@ -343,13 +343,26 @@ export const useRowVirtualizer = ({
     [table, virtualizer, rows, needs, rowHeight, estimate],
   )
 
-  // Новая высота: замеры строк прежней высоты больше не верны.
+  // Новая высота: замеры строк прежней высоты больше не верны. Прокрутка держит первую строку
+  // экрана (ADR 0077, RH10): её место — по прежней высоте, смещение в строке — в долях строки.
   const measuredHeight = useRef(rowHeight)
   useIsomorphicLayoutEffect(() => {
-    if (measuredHeight.current !== rowHeight) {
-      measuredHeight.current = rowHeight
-      virtualizer.measure()
-    }
+    const previous = measuredHeight.current
+    if (previous === rowHeight) return
+    measuredHeight.current = rowHeight
+    const scroller = getScrollElement()
+    const top = scroller ? scrollLayer(scroller).top() : 0
+    const seen = anchorSeen.current
+    const index = seen?.index ?? Math.floor(top / previous)
+    const rest = top - (seen?.start ?? index * previous)
+    virtualizer.measure()
+    if (!scroller || top <= 0) return
+    scrollGridTo(
+      scroller,
+      { top: startOf(index) + (rest * rowHeight) / previous },
+      'instant',
+    )
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- место строки читается на смену высоты
   }, [rowHeight, virtualizer])
 
   // Строки на экране — от фактической прокрутки: в растянутой области их виртуальное

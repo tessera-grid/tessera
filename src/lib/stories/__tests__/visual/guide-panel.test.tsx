@@ -22,6 +22,7 @@ import {
   pollUntil,
   pressEscape,
   repeat,
+  settle,
   shieldHeldDrag,
 } from '../../__mocks__/catalogPlay'
 import { pressCell, untilDone } from '../../__mocks__/cellGestures'
@@ -962,6 +963,8 @@ describe('ввод человека посреди гайда (ADR 0117)', () =>
         })
         .toBe(true)
       expect(changed()).toBeNull()
+      // Поповер доиграл въезд: настоящий клик ждёт неподвижную цель.
+      await settle()
       await userEvent.click(
         visibilityMenu()!.querySelector<HTMLElement>(
           '[data-column-id] [role="checkbox"]',

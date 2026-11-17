@@ -524,11 +524,11 @@ const table = useCreateTable({
 | `dataExportModel()`      | Метод `table.exportData` для своих кнопок: форматы, оси, серверный режим | `dataExport()`      |
 
 > ♿ **Доступность.** Грид строит валидное ARIA-дерево и доступные имена всегда
-> ([ADR 0020](docs/decisions/0020-accessibility.md)), но WCAG 2.1.1 (всё, что
-> доступно указателем, доступно и с клавиатуры) выполняется **только с опцией
-> `useCreateTable({ enableKeyboardNavigation: true })`** ([ADR 0031](docs/decisions/0031-wcag-keyboard.md)). Без
-> неё грид — `role="table"` для чтения: область прокрутки, футер и перестановка
-> колонок/строк с клавиатуры недоступны. Изменения (сортировка, выбор, копирование,
+> ([ADR 0020](docs/decisions/0020-accessibility.md)); WCAG 2.1.1 выполняется и с
+> `useCreateTable({ enableKeyboardNavigation: true })`, и без неё
+> ([ADR 0232](docs/decisions/0232-keyboard-for-every-feature.md)). Без опции грид —
+> `role="table"`: контролы доступны по `Tab`, скрытые кнопки видны по фокусу, а
+> перестановка идёт через меню ручек. Изменения (сортировка, выбор, копирование,
 > загрузка) объявляются скринридеру; свои сообщения — `table.announce(text)`,
 > отключить объявления ядра — `useCreateTable({ enableAnnouncements: false })`
 > ([ADR 0032](docs/decisions/0032-wcag-aa-remainder.md)). Всё, что делается

@@ -4,6 +4,10 @@
  * строки пропускает исполнитель записи.
  */
 import type { KeyboardEvent } from 'react'
+import {
+  keyboardPlatformOf,
+  primaryModifier,
+} from '../../core/keyboardPlatform'
 
 import { writeCells } from '../../core/cellWrites'
 import { reportAction } from '../../core/debugActions'
@@ -74,7 +78,7 @@ export const bulkEditOnKey = (
 ) => {
   if (
     event.key !== 'Enter' ||
-    !(event.ctrlKey || event.metaKey) ||
+    !primaryModifier(event, keyboardPlatformOf(table)) ||
     event.altKey ||
     event.shiftKey
   )

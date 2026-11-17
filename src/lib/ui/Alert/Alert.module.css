@@ -48,6 +48,14 @@
   color: var(--tsr-comp-alert-icon-color);
 }
 
+.alert[data-tone='success'] .icon {
+  color: var(--tsr-comp-alert-success-color);
+}
+
+.alert[data-tone='neutral'] .icon {
+  color: var(--tsr-comp-alert-neutral-color);
+}
+
 /* Плашка шире содержимого — свободное место за текстом, кнопки у правого края (LE22). */
 .text {
   flex: 1 1 auto;

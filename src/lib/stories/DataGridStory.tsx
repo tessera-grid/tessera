@@ -533,6 +533,7 @@ const StoryGrid = memo(
       enableStatusBar: panelFlag(options.enableStatusBar),
       enableAnnouncements: options.enableAnnouncements,
       enableKeyboardNavigation: options.enableKeyboardNavigation,
+      keyboardPlatform: options.keyboardPlatform,
       onActiveCellChange: (pluginArgs as CoreOptions).onActiveCellChange,
       enableOverflowTooltip: options.enableOverflowTooltip,
       enableRowAnimation: options.enableRowAnimation,

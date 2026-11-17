@@ -522,7 +522,7 @@ const GridPopups = () => {
       >
         <Editor table={table} columnId="tags" editor={MultiSelectEditor} />
       </Cell>
-      <Cell title={{ ru: 'Журнал отказов', en: 'Failure log' }} height={300}>
+      <Cell title={{ ru: 'Журнал ошибок', en: 'Error log' }} height={300}>
         <FailureLogPopover
           table={table}
           label="Failures"

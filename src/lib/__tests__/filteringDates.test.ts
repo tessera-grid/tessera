@@ -83,7 +83,7 @@ const COLUMNS = [
 const build = (
   plugins: any[] = [columnFiltering()],
   data: object[] = DATA,
-  timeZone: string | undefined = 'UTC',
+  timeZone: string | null | undefined = 'UTC',
 ) => {
   const entries = [
     {
@@ -99,7 +99,7 @@ const build = (
     columns: injectServiceColumns(COLUMNS as any[], folded.serviceColumns),
     getRowId: (row: Item) => row.id,
     ...folded.options,
-    timeZone,
+    timeZone: timeZone ?? undefined,
     hooks: resolveHooks(foldHooks(entries)),
     pluginDiagnostics: folded.pluginDiagnostics,
     logLevel: 'error',
@@ -115,7 +115,7 @@ const filtered = (
   timeZone: string | null = 'UTC',
 ) => {
   // null — без timeZone, в поясе среды.
-  const table = build([columnFiltering()], DATA, timeZone ?? undefined)
+  const table = build([columnFiltering()], DATA, timeZone)
   table.setColumnFilters([{ id: columnId, value: filter }])
   return ids(table)
 }

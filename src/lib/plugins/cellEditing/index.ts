@@ -1,6 +1,7 @@
 export { cellEditing, type CellEditingOptions } from './registry'
 
 export type {
+  ApplyOutcome,
   CellEditingHooks,
   CellEditCommit,
   CellEditCancel,

@@ -107,8 +107,9 @@
   приход), `--tsr-comp-flash-accepted-bg` и `--tsr-comp-flash-reverted-bg` (зелёный и красный итога
   записи), `--tsr-comp-flash-changed-bg` (смена значения извне, роль `--tsr-sys-changed`),
   `--tsr-comp-flash-up-bg` и `--tsr-comp-flash-down-bg` (рост и падение); стрелка роста и падения —
-  `--tsr-comp-flash-up-color`, `--tsr-comp-flash-down-color`, `--tsr-comp-flash-direction-size`;
-  удержание и угасание любого итога — `--tsr-comp-flash-duration` и `--tsr-comp-flash-fade-duration`.
+  `--tsr-comp-flash-up-color`, `--tsr-comp-flash-down-color`, `--tsr-comp-flash-direction-size`
+  (75 % `--tsr-sys-success-strong` и `--tsr-sys-danger` к цвету текста смесью в sRGB: в `oklch`
+  ахроматичный текст уводит оттенок зелёного к оливковому); удержание и угасание любого итога — `--tsr-comp-flash-duration` и `--tsr-comp-flash-fade-duration`.
   Тоны непрозрачны — оттенок поверх `--tsr-sys-surface`: слои `--tsr-flash-cell`/`-column`/`-row` —
   верхние слои фона, над тинтом выделения, подсветкой, выбором и наведением, и с ними не смешиваются
   (ADR 0221, §6); вспышка строки повторена слоем ячеек с подсветкой или тинтом. Тема с полупрозрачным
@@ -189,6 +190,17 @@
   поверхность поповера, 36rem); подписи — `loadErrorTitle`, `loadFailedTitle`, `loadRetry`,
   `loadErrorDismiss`, `announceLoadError`, `announceLoadFailed`; иконка плашки —
   `icons.loadFailed`, у заглушки — общая иллюстрация `icons.emptyState` (ADR 0123).
+- **Плашка итога успехом** (ADR [0227](../decisions/0227-apply-outcome.md), §8): `Alert` с
+  `tone="success"` — тон несёт только иконка `icons.alertSuccess` цветом
+  `--tsr-comp-alert-success-color` (роль `--tsr-sys-success-strong`: `green-600` в светлой теме,
+  `green-400` в тёмной, без моста к `--success`, не ниже 3:1 на поверхности плашки); рамки нет,
+  в `forced-colors` — обычный контур плашки. Ловушка: смесь роли с цветом текста `in oklch`
+  желтит — ахроматический текст с оттенком 0° тянет оттенок смеси к ~90°.
+- **Плашка итога в нейтральном тоне** (ADR [0227](../decisions/0227-apply-outcome.md), §8):
+  `Alert` с `tone="neutral"` (сохранена часть правок) — тон несёт только иконка
+  `icons.alertNeutral` цветом `--tsr-comp-alert-neutral-color` (по умолчанию
+  `--tsr-comp-control-color`, приглушённый цвет значков кнопок кита: 12:1 на поверхности плашки
+  светлой темы, 8:1 — тёмной); рамки нет, в `forced-colors` — обычный контур плашки.
 - **Индикатор включённого действия** (ADR [0062](../decisions/0062-active-action-indicator.md)):
   точка на кнопке заголовка и кебабе, номер приоритета сортировки, счётчики тулбара —
   `--tsr-comp-active-indicator` (по умолчанию `--tsr-comp-loader-bar`), цифры —
@@ -391,7 +403,9 @@ ADR [0087](../decisions/0087-forced-colors.md)). Переопределённы�
 Дефолтные inline-SVG живут в `ui/icons`; `IconsProvider` сливает проп потребителя
 `icons` поверх `DEFAULT_ICONS`; кнопки-плагины читают их через `useIcons()`. Галочка вопроса
 перед вставкой — `pasteConfirm`, крестик отказа рядом — общий `clear`
-([ADR 0219](../decisions/0219-paste-fill-and-bulk-edit.md), WR42).
+([ADR 0219](../decisions/0219-paste-fill-and-bulk-edit.md), WR42); те же значки у блока вопроса
+кита `Question` (ADR 0227, §6). Иконка плашки в тоне успеха без своей — `alertSuccess`, в нейтральном тоне — `alertNeutral`
+([ADR 0227](../decisions/0227-apply-outcome.md), §8).
 
 ## Локализация
 

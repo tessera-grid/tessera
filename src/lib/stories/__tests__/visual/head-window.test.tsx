@@ -4,6 +4,7 @@ import { describe, expect, onTestFinished, test } from 'vitest'
 
 import { getScroller, renderGrid, revealCellButtons } from '../helpers'
 import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
+import { hiddenOnMount } from '../../__mocks__/viewSettings'
 
 // Одна раскладка шапки (ADR 0207): виртуализация колонок при группах шапки (NV1–NV3, NV5–NV7),
 // липкая подпись группы (NV4), линии между колонками токеном темы и граница группы (NV9–NV10),
@@ -274,7 +275,7 @@ describe('Одна раскладка шапки (ADR 0207)', () => {
     expect(head('g9')).not.toBeNull()
   })
 
-  test('NV9: токен --tsr-comp-column-divider-width: 0 по умолчанию — вертикальных линий между колонками нет; заданный — линия в шапке, теле и футере, с группами и без; ширины колонок от токена не меняются', async () => {
+  test('NV9: токен --tsr-comp-column-divider-width: 0 по умолчанию — вертикальных линий в теле, футере и плоской шапке нет; заданный — линия в шапке, теле и футере, с группами и без; ширины колонок от токена не меняются', async () => {
     await viewport()
     const width = (cell: Element) => getComputedStyle(cell).borderRightWidth
     const cells = () => ({
@@ -288,17 +289,22 @@ describe('Одна раскладка шапки (ADR 0207)', () => {
     })
     const footer = (columns: { id: string }[]) =>
       columns.map(column => ({ ...column, footer: () => 'Σ' }))
-    for (const columns of [
-      footer(flatColumns(30)),
-      groupedColumns(30).map(group =>
-        'columns' in group
-          ? { ...group, columns: footer(group.columns) }
-          : group,
-      ),
-    ]) {
+    for (const [nested, columns] of [
+      [false, footer(flatColumns(30))],
+      [
+        true,
+        groupedColumns(30).map(group =>
+          'columns' in group
+            ? { ...group, columns: footer(group.columns) }
+            : group,
+        ),
+      ],
+    ] as const) {
       const screen = await mount(columns, 30, { enableFooter: true })
       const { head: h, body, footer: f } = cells()
-      for (const cell of [h, body, f]) expect(width(cell)).toBe('0px')
+      // Во вложенной шапке линия есть и при нулевом токене (NV10).
+      expect(width(h)).toBe(nested ? '1px' : '0px')
+      for (const cell of [body, f]) expect(width(cell)).toBe('0px')
       const before = [h, body, f].map(cell => box(cell).width)
       document
         .querySelector<HTMLElement>('.data-grid-theme')!
@@ -314,18 +320,91 @@ describe('Одна раскладка шапки (ADR 0207)', () => {
     }
   })
 
-  test('NV10: граница группы в шапке видна при любом значении токена: линия по правому краю заголовка группы и последнего листа группы', async () => {
-    await viewport()
-    await mount(groupedColumns(30), 30)
+  test('NV10: во вложенной шапке линия у каждого заголовка при любом значении токена — у листа без группы перед группой, у листьев внутри группы, у подгруппы и листа рядом с ней, у последнего видимого листа при скрытом соседе, у закреплённой колонки; ширины колонок не меняются; в плоской шапке линий нет; цвет линии — разделителя шапки', async () => {
+    await viewport(1400)
     const border = (id: string) => getComputedStyle(head(id)!).borderRightWidth
-    expect(border('g0')).toBe('1px')
-    expect(border('c9')).toBe('1px')
-    expect(border('c8')).toBe('0px')
-    expect(head('g0')!.hasAttribute('data-group-end')).toBe(true)
+    const marked = (id: string) => head(id)!.hasAttribute('data-head-divider')
+
+    // Плоская шапка: линий между колонками нет (токен 0, NV9).
+    let screen = await mount(flatColumns(10), 10)
+    for (const id of ['c0', 'c1', 'c9']) {
+      expect(border(id)).toBe('0px')
+      expect(marked(id)).toBe(false)
+    }
+    await screen.unmount()
+
+    // Три уровня: лист без группы, группа из двух листьев, группа с подгруппой и листом.
+    const nested = [
+      { ...leaf(0), id: 'country', accessorKey: 'c0', header: 'Country' },
+      {
+        id: 'name',
+        header: 'Name',
+        columns: [
+          { ...leaf(1), id: 'first', accessorKey: 'c1', header: 'First' },
+          { ...leaf(2), id: 'last', accessorKey: 'c2', header: 'Last' },
+        ],
+      },
+      {
+        id: 'info',
+        header: 'Info',
+        columns: [
+          {
+            id: 'more',
+            header: 'More info',
+            columns: [
+              { ...leaf(3), id: 'age', accessorKey: 'c3', header: 'Age' },
+              { ...leaf(4), id: 'gender', accessorKey: 'c4', header: 'Gender' },
+            ],
+          },
+          { ...leaf(5), id: 'visits', accessorKey: 'c5', header: 'Visits' },
+        ],
+      },
+      { ...leaf(6), id: 'status', accessorKey: 'c6', header: 'Status' },
+    ]
+    const ALL = [
+      'country',
+      'name',
+      'first',
+      'last',
+      'info',
+      'more',
+      'age',
+      'gender',
+      'visits',
+      'status',
+    ]
+    screen = await mount(nested, 7)
+    for (const id of ALL) {
+      expect([id, border(id)]).toEqual([id, '1px'])
+      expect([id, marked(id)]).toEqual([id, true])
+    }
+    // Линия внутри ширины колонки: ширина листа — его размер.
+    for (const id of ['first', 'last', 'age', 'gender', 'visits']) {
+      expect(Math.round(head(id)!.getBoundingClientRect().width)).toBe(SIZE)
+    }
     // Цвет — разделителя: в forced-colors тема подменяет его цветом режима (HC19).
-    expect(getComputedStyle(head('c9')!).borderRightColor).toBe(
-      getComputedStyle(head('g0')!).borderBottomColor,
+    expect(getComputedStyle(head('first')!).borderRightColor).toBe(
+      getComputedStyle(head('name')!).borderBottomColor,
     )
+    await screen.unmount()
+
+    // Скрытый лист группы: у оставшегося листа и у группы линия на месте.
+    screen = await mount(nested, 7, { extraPlugins: [hiddenOnMount('last')] })
+    await expect.poll(() => head('last')).toBeNull()
+    expect(border('first')).toBe('1px')
+    expect(border('name')).toBe('1px')
+    await screen.unmount()
+
+    // Закреплённая слева колонка перед группой: линия у неё и у листьев группы.
+    await mount(nested, 7, {
+      enableColumnPinning: true,
+      initialColumnPinning: { start: ['country'], end: [] },
+    })
+    await expect
+      .poll(() => head('country')!.getAttribute('data-cell-pinned'))
+      .toBe('left')
+    expect(border('country')).toBe('1px')
+    expect(border('first')).toBe('1px')
   })
 
   test('NV12: axe с color-contrast в обеих темах — вложенная шапка после прокрутки колонок и таблица с линиями между колонками без нарушений', async () => {

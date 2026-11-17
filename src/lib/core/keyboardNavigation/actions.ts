@@ -1,5 +1,6 @@
 /** Режим действия: виджеты ячейки, действия плагинов, фокус на строке treegrid. */
 import { reportNavigation } from './model'
+import { type KeyboardPlatform, primaryModifier } from '../keyboardPlatform'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 
 import {
@@ -48,13 +49,16 @@ export const restoreFocusIfLost = (cell: HTMLElement) => {
 
 export const ACTION_KEYS = new Set([' ', 'Enter', 'F2'])
 
-/** `Ctrl+Shift+Enter` — замена `Shift+F10` для клавиатур без F-ряда (KB14). */
-export const isContextMenuKey = (event: ReactKeyboardEvent<HTMLElement>) =>
+/** `Ctrl+Shift+Enter` (на Apple `Cmd+Shift+Enter`) — замена `Shift+F10` без F-ряда (KB14, KX12). */
+export const isContextMenuKey = (
+  event: ReactKeyboardEvent<HTMLElement>,
+  platform: KeyboardPlatform,
+) =>
   event.key === 'ContextMenu' ||
   (event.key === 'F10' && event.shiftKey) ||
   (event.key === 'Enter' &&
     event.shiftKey &&
-    (event.ctrlKey || event.metaKey) &&
+    primaryModifier(event, platform) &&
     !event.altKey)
 
 /** Контекст активной ячейки для канала `keyboardActions`. */

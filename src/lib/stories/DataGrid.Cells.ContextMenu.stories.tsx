@@ -31,9 +31,16 @@ import {
 import { storyLabels } from './__mocks__/storyLabels'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import {
+  GuideStory,
+  type GuideStoryStep,
+  guideArgs,
+  stepAction,
+} from './demos/GuideStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
+import * as touch from './__mocks__/touchGuides'
+import * as touchPlay from './__mocks__/catalogPlay'
 
 /** Контекстное меню (ADR 0030). */
 const meta = {
@@ -1417,6 +1424,88 @@ export const ContextMenuDangerAction: StoryObj<StoryProps> = {
       await until(() => expect(rowDeleted(canvas)).toBe(true))
       expect(openMenu()).toBeNull()
       await settle()
+    })
+  },
+}
+
+// --- Долгое нажатие пальцем (ADR 0231, S7) --------------------------------------------
+
+const touchCellOf = (root: ParentNode) =>
+  root.querySelector<HTMLElement>(
+    '.data-grid__body-row[data-index="2"] .data-grid__body-cell[data-column-id="firstName"]',
+  )
+
+const holdTouchCell = async (
+  root: HTMLElement,
+  signal: AbortSignal,
+  move = 0,
+) => {
+  touchPlay.pressEscape()
+  await touchPlay.pollUntil(
+    () => !touch.openMenu() && !!touchCellOf(root),
+    signal,
+  )
+  await touch.holdTarget(touchCellOf(root)!, signal, move)
+}
+
+const LONG_PRESS: readonly GuideStoryStep[] = [
+  {
+    title: { ru: 'Меню закрыто', en: 'The menu is closed' },
+    hint: {
+      ru: 'Контекстное меню ячейки открывается долгим нажатием.',
+      en: 'The cell context menu opens with a long press.',
+    },
+  },
+  {
+    title: { ru: 'Долгое нажатие', en: 'A long press' },
+    hint: {
+      ru: 'Пользователь задержал палец на ячейке — в точке касания открылось меню.',
+      en: 'The user held a finger on a cell; the menu opened at the touch point.',
+    },
+    states: ['overlay.contextMenu'],
+    enter: stepAction(async (root, { signal }) => holdTouchCell(root, signal)),
+  },
+  {
+    title: { ru: 'Палец сдвинулся', en: 'The finger moved' },
+    hint: {
+      ru: 'Пользователь сдвинул палец раньше срока — меню не открылось.',
+      en: 'The user moved the finger before the time was up; the menu did not open.',
+    },
+    enter: stepAction(async (root, { signal }) =>
+      holdTouchCell(root, signal, 30),
+    ),
+  },
+]
+
+/** ADR 0231, S7: долгое нажатие открывает контекстное меню, сдвиг пальца его отменяет. */
+export const ContextMenuLongPress: StoryObj<StoryProps> = {
+  name: 'Long press',
+  globals: touch.PHONE,
+  parameters: { scenario: '0231/S7', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title={{ ru: 'Меню долгим нажатием', en: 'A menu on a long press' }}
+      steps={LONG_PRESS}
+      args={guideArgs(touch.TOUCH_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(LONG_PRESS[0]!.title.ru, async () => {
+      await touchPlay.waitForRows(canvas)
+      await expect(touch.openMenu()).toBeNull()
+    })
+    await step(LONG_PRESS[1]!.title.ru, async () => {
+      await touchPlay.guideNext(canvas)
+      await touchPlay.stepDone(canvas)
+      await touchPlay.until(() => expect(touch.openMenu()).not.toBeNull())
+      await touchPlay.settle()
+    })
+    await step(LONG_PRESS[2]!.title.ru, async () => {
+      await touchPlay.guideNext(canvas)
+      await touchPlay.stepDone(canvas)
+      await expect(touch.openMenu()).toBeNull()
+      await touchPlay.settle()
     })
   },
 }

@@ -64,6 +64,7 @@ export const CORE_OPTIONS: Record<string, string> = {
   groupRows: '0170',
   headerHeight: '0077',
   hooks: '0027',
+  keyboardPlatform: '0232',
   keyboardActions: '0021',
   columnTransforms: '0204',
   viewSettingsSections: '0215',

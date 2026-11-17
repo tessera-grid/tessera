@@ -7,6 +7,7 @@ import { actionDetailOf, actionOwnerOf } from '../actionOwners'
 import { cancelSourceOf } from '../cancellation'
 import { type DebugActionSource, reportAction, sourceOf } from '../debugActions'
 import { useLocalization } from '../localization'
+import { keyboardShortcut } from '../keyboardShortcut'
 import {
   type Availability,
   type AvailabilityCheck,
@@ -148,6 +149,13 @@ export const useMenuItemGroups = ({
       // У раздела подсказка — значение перед шевроном, у пункта — вторая строка (ADR 0204, HT5).
       const hint = section ? action.hint?.(context, labels) : undefined
       const caption = section ? undefined : action.hint?.(context, labels)
+      const shortcut = action.shortcut
+        ? keyboardShortcut(
+            (context as { table?: unknown }).table,
+            labels,
+            action.shortcut,
+          )
+        : undefined
 
       return {
         key: action.id,
@@ -163,6 +171,7 @@ export const useMenuItemGroups = ({
           label: running ? labels.cancelAction(item.label) : item.label,
           section,
           hint,
+          shortcut,
           caption,
           tone: toneOf(action, context),
           checkbox: keepOpen && !!action.active,

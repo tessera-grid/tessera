@@ -610,8 +610,8 @@ const DISCARD_STEPS: readonly GuideStoryStep[] = [
   {
     title: { ru: 'Отметка открыта', en: "The mark's popover is open" },
     hint: {
-      ru: 'Пользователь нажал на отметку. Поповер показывает причину отказа и предлагает повторить сохранение или отбросить изменение; флажок от этого нажатия не переключился.',
-      en: 'The user clicked the mark. A popover shows the refusal reason and offers to retry the save or discard the change; the checkbox did not toggle from this click.',
+      ru: 'Пользователь нажал на отметку. Поповер показывает причину отказа и предлагает повторить сохранение или сбросить изменение; флажок от этого нажатия не переключился.',
+      en: 'The user clicked the mark. A popover shows the refusal reason and offers to retry the save or revert the change; the checkbox did not toggle from this click.',
     },
     states: ['body.error', 'overlay.cellIssue'],
     enter: untilDone(
@@ -623,10 +623,10 @@ const DISCARD_STEPS: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: { ru: 'Изменение отброшено', en: 'The change is discarded' },
+    title: { ru: 'Изменение сброшено', en: 'The change is reverted' },
     hint: {
-      ru: 'Пользователь отбросил изменение. Отметки отказа больше нет, флажок показывает значение из данных.',
-      en: 'The user discarded the change. The refusal mark is gone, and the checkbox shows the value from the data.',
+      ru: 'Пользователь сбросил изменение. Отметки отказа больше нет, флажок показывает значение из данных.',
+      en: 'The user reverted the change. The refusal mark is gone, and the checkbox shows the value from the data.',
     },
     enter: untilDone(
       root =>
@@ -643,9 +643,9 @@ const DISCARD_STEPS: readonly GuideStoryStep[] = [
   },
 ]
 
-/** ADR 0177, S2: флажок в ячейке отказан, пользователь отбрасывает изменение. */
+/** ADR 0177, S2: флажок в ячейке отказан, пользователь сбрасывает изменение. */
 export const CellFailureDiscard: StoryObj<StoryProps> = {
-  name: 'Refused checkbox, discard',
+  name: 'Refused checkbox, revert',
   parameters: { scenario: '0177/S2', ...guideControls() },
   render: args => (
     <GuideStory
@@ -777,8 +777,8 @@ const DISCARD_MENU_STEPS: readonly GuideStoryStep[] = [
   {
     title: { ru: 'Меню ячейки', en: 'The cell menu' },
     hint: {
-      ru: 'Пользователь открыл контекстное меню ячейки. В нём два действия с отказом: повторить сохранение и отбросить изменение.',
-      en: "The user opened the cell's context menu. It has two actions for the refusal: retry the save and discard the change.",
+      ru: 'Пользователь открыл контекстное меню ячейки. В нём два действия с отказом: повторить сохранение и сбросить изменение.',
+      en: "The user opened the cell's context menu. It has two actions for the refusal: retry the save and revert the change.",
     },
     states: ['body.error', 'overlay.contextMenu'],
     enter: untilDone(
@@ -790,10 +790,10 @@ const DISCARD_MENU_STEPS: readonly GuideStoryStep[] = [
     ),
   },
   {
-    title: { ru: 'Изменение отброшено', en: 'The change is discarded' },
+    title: { ru: 'Изменение сброшено', en: 'The change is reverted' },
     hint: {
-      ru: 'Пользователь отбросил изменение. Отметки больше нет; новая правка начнётся со значения из данных, а не с отклонённого.',
-      en: 'The user discarded the change. The mark is gone; a new edit will start from the value in the data, not from the rejected one.',
+      ru: 'Пользователь сбросил изменение. Отметки больше нет; новая правка начнётся со значения из данных, а не с отклонённого.',
+      en: 'The user reverted the change. The mark is gone; a new edit will start from the value in the data, not from the rejected one.',
     },
     enter: untilDone(
       root =>
@@ -810,13 +810,13 @@ const DISCARD_MENU_STEPS: readonly GuideStoryStep[] = [
   },
 ]
 
-/** ADR 0177, S9: пользователь отбрасывает отклонённое изменение из контекстного меню. */
+/** ADR 0177, S9: пользователь сбрасывает отклонённое изменение из контекстного меню. */
 export const CellFailureDiscardMenu: StoryObj<StoryProps> = {
-  name: 'Discard from the menu',
+  name: 'Revert from the menu',
   parameters: { scenario: '0177/S9', ...guideControls() },
   render: args => (
     <GuideStory
-      title={{ ru: 'Отбросить из меню', en: 'Discarding from the menu' }}
+      title={{ ru: 'Сбросить из меню', en: 'Reverting from the menu' }}
       steps={DISCARD_MENU_STEPS}
       args={guideArgs(
         {
@@ -931,8 +931,8 @@ const EXTERNAL_STEPS: readonly GuideStoryStep[] = [
   {
     title: { ru: 'Строка удалена', en: 'The row was deleted' },
     hint: {
-      ru: 'Вторую строку удалили на сервере, и она ушла из таблицы. Вместе с ней ушёл и её отказ: в журнале отказов он не остаётся.',
-      en: 'The second row was deleted on the server and disappeared from the table. Its refusal went with it and does not stay in the failure log.',
+      ru: 'Вторую строку удалили на сервере, и она ушла из таблицы. Вместе с ней ушёл и её отказ: в журнале ошибок он не остаётся.',
+      en: 'The second row was deleted on the server and disappeared from the table. Its refusal went with it and does not stay in the error log.',
     },
     enter: (root, app) => {
       const removed = { done: false }
@@ -1017,7 +1017,7 @@ const RESET_SEED = [
     resetTable = table
   }),
 ]
-/** Сброс в коде приложения: как «Закрыть» журнала — отбросить значение и снять запись. */
+/** Сброс в коде приложения: как «Закрыть» журнала — сбросить значение и снять запись. */
 const resetFailures = (table: FailureTable) => {
   for (const failure of table.getFailures()) {
     failure.discard?.()

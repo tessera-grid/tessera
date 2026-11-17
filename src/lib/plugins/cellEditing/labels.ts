@@ -16,6 +16,9 @@ export interface CellEditingLabels {
   editConflict: string
   /** Пункт поля с поиском, очищающий значение ячейки (ADR 0175, ED8) */
   editClear: string
+  /** Кнопки поля правки на касании: сохранить, как Enter, и отменить, как Escape (ADR 0231, §8) */
+  editDone: string
+  editCancel: string
   /** Поиск по вариантам в редакторе ячейки (ADR 0175, ED19) */
   editSearchOptions: string
   /** Редактор ячейки: вариантов нет */
@@ -70,6 +73,18 @@ export interface CellEditingLabels {
   announceWriteSaved: (name: string) => string
   /** Объявление: пакет операции не сохранён */
   announceWriteFailed: (name: string, error: string) => string
+  /** Итог применения (ADR 0227, §1) — плашка и объявление: сохранено всё */
+  applySaved: (count: number) => string
+  /** Итог применения: отказано части — сколько сохранено из общего числа */
+  applyPartly: (saved: number, total: number) => string
+  /** Итог применения: сервер отказал всем правкам */
+  applyNone: (total: number) => string
+  /** Итог применения: запрос не прошёл целиком */
+  applyFailed: (reason: string) => string
+  /** Действие плашки частичного итога: открыть журнал отказов */
+  applyShow: string
+  /** Действие плашки частичного итога без журнала: применить несохранённое повторно */
+  applyRetry: string
 }
 
 export const cellEditingLabels = defineLabels<CellEditingLabels>()(
@@ -81,6 +96,8 @@ export const cellEditingLabels = defineLabels<CellEditingLabels>()(
     editInvalidNumber: 'Enter a number',
     editInvalidValue: 'Invalid value',
     editClear: 'Clear value',
+    editDone: 'Done',
+    editCancel: 'Cancel editing',
     editConflict: 'The value changed while you were editing — not saved',
     editSearchOptions: 'Search values',
     editNoOptions: 'No values',
@@ -90,7 +107,7 @@ export const cellEditingLabels = defineLabels<CellEditingLabels>()(
     cellDraftKind: 'Edit',
     cellDraft: 'Unsaved change',
     cellDraftReason: 'Was: {was}. Now: {now}',
-    cellDraftRollback: 'Roll back',
+    cellDraftRollback: 'Revert',
     rowInsertDraftKind: 'New row',
     rowDeleteDraftKind: 'Deleted row',
     rowInsertDraftMore: '{values} and {count} more',
@@ -100,7 +117,7 @@ export const cellEditingLabels = defineLabels<CellEditingLabels>()(
     actionChangeDraft: 'Change the draft',
     actionValidationFailed: 'Check the value',
     actionToggle: 'Toggle the value',
-    actionRowDraftDiscard: 'Undo the row change',
+    actionRowDraftDiscard: 'Revert the row change',
     actionPaste: 'Paste',
     actionCut: 'Cut',
     actionClear: 'Clear cells',
@@ -115,6 +132,13 @@ export const cellEditingLabels = defineLabels<CellEditingLabels>()(
     announceWriteInvalid: '{count} not recognized',
     announceWriteSaved: '{name}: saved',
     announceWriteFailed: '{name}: not saved. {error}',
+    applySaved: 'Saved {count} changes',
+    applySaved_one: 'Saved {count} change',
+    applyPartly: 'Saved {saved} of {total}',
+    applyNone: 'Nothing was saved: 0 of {total}',
+    applyFailed: 'Changes were not saved: {reason}',
+    applyShow: 'Show',
+    applyRetry: 'Retry unsaved',
   },
   {
     editCellValue: ['column'],
@@ -127,6 +151,10 @@ export const cellEditingLabels = defineLabels<CellEditingLabels>()(
     announceWriteInvalid: ['count'],
     announceWriteSaved: ['name'],
     announceWriteFailed: ['name', 'error'],
+    applySaved: ['count'],
+    applyPartly: ['saved', 'total'],
+    applyNone: ['total'],
+    applyFailed: ['reason'],
   },
 )
 

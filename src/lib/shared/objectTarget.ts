@@ -60,21 +60,26 @@ export const objectTargetText = (
 export const canShowTarget = (target: FailureTarget) =>
   'cell' in target || 'row' in target || 'column' in target
 
-/** Прокрутить к цели записи и вспыхнуть её (JR3). */
+/**
+ * Прокрутить к цели записи и вспыхнуть её (JR3); прокрутка не удалась — без вспышки, `false`
+ * (ADR 0227, AO12).
+ */
 export const showTarget = async (
   table: unknown,
   target: FailureTarget,
   outcome: FlashOutcome = 'reverted',
-) => {
+): Promise<boolean> => {
   const t = table as LogTable
   if ('cell' in target || 'row' in target) {
     const rowId = 'cell' in target ? target.cell[0] : target.row
     // По центру: у краёв цель закрыли бы поповер журнала и липкие шапка и футер.
-    await t.scrollToRow(rowId, {
+    const found = await t.scrollToRow(rowId, {
       align: 'center',
       expandParents: true,
       ...('cell' in target ? { columnId: target.cell[1] } : {}),
     })
+    if (!found) return false
   }
   flashOutcome(table, target as FlashTarget, outcome)
+  return true
 }

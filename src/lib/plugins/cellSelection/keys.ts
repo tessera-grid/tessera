@@ -6,7 +6,13 @@ import type {
   NavigationKeyEvent,
   NavigationKeys,
 } from '../../core/bodyContributions'
+import {
+  type KeyboardPlatform,
+  keyboardPlatformOf,
+  primaryModifier,
+} from '../../core/keyboardPlatform'
 import { getDisplayColumns } from '../../core/displayColumns'
+import { cellSelectionLabels } from './labels'
 import { scrollToRowIndex } from '../../core/scrollToRow/scrollToRowFeature'
 import {
   ARROW_DIRECTIONS,
@@ -221,7 +227,7 @@ const extendSelectionByKey = (
   event: NavigationKeyEvent,
   pageRows: number,
 ): boolean => {
-  const ctrl = event.ctrlKey || event.metaKey
+  const ctrl = primaryModifier(event, keyboardPlatformOf(t))
   const page = !ctrl && (event.key === 'PageDown' || event.key === 'PageUp')
   const corner = ctrl && (event.key === 'End' || event.key === 'Home')
   if (!event.shiftKey || event.altKey || (!page && !corner)) {
@@ -254,14 +260,21 @@ const extendSelectionByKey = (
 }
 
 /** Ctrl/Cmd+буква без Shift и Alt — по коду клавиши, а не по букве раскладки. */
-const isCtrlCode = (event: NavigationKeyEvent, code: string) =>
-  (event.ctrlKey || event.metaKey) &&
+const isCtrlCode = (
+  event: NavigationKeyEvent,
+  code: string,
+  platform: KeyboardPlatform,
+) =>
+  primaryModifier(event, platform) &&
   !event.altKey &&
   !event.shiftKey &&
   event.code === code
 
 /** Ctrl/Cmd+A — по коду клавиши, на любой раскладке (ADR 0220, KC1). */
-const isSelectAllKey = (event: NavigationKeyEvent) => isCtrlCode(event, 'KeyA')
+const isSelectAllKey = (
+  event: NavigationKeyEvent,
+  platform: KeyboardPlatform,
+) => isCtrlCode(event, 'KeyA', platform)
 
 /** Ctrl+A: выделить все ячейки; без cellSelection клавиша остаётся браузеру. */
 const selectAllCellsIn = (t: NavTable): boolean => {
@@ -279,9 +292,42 @@ const selectAllCellsIn = (t: NavTable): boolean => {
 /** Вклад выделения ячеек в клавиши навигации. */
 export const cellSelectionKeys: NavigationKeys = {
   id: 'cellSelection',
+  shortcuts: [
+    {
+      combo: 'Mod+A',
+      section: 'selection',
+      label: labels => labels.shortcutSelectAllCells,
+    },
+    {
+      combo: 'Mod+C',
+      section: 'editing',
+      label: labels => cellSelectionLabels(labels).copy,
+    },
+    {
+      combo: 'Mod+X',
+      section: 'editing',
+      label: labels => cellSelectionLabels(labels).cut,
+    },
+    {
+      combo: 'Mod+V',
+      section: 'editing',
+      label: labels => cellSelectionLabels(labels).paste,
+    },
+    {
+      combo: 'Mod+D',
+      section: 'editing',
+      label: labels => cellSelectionLabels(labels).fillDown,
+    },
+    {
+      combo: 'Mod+R',
+      section: 'editing',
+      label: labels => cellSelectionLabels(labels).fillRight,
+    },
+  ],
   onKey: (event, { table, active, pageRows }) => {
     const t = table as unknown as NavTable
-    if (isSelectAllKey(event)) return selectAllCellsIn(t)
+    const platform = keyboardPlatformOf(table)
+    if (isSelectAllKey(event, platform)) return selectAllCellsIn(t)
     // Delete и Backspace очищают выделение (ADR 0219, WR20).
     if (
       (event.key === 'Delete' || event.key === 'Backspace') &&
@@ -297,9 +343,9 @@ export const cellSelectionKeys: NavigationKeys = {
     }
     // Ctrl/Cmd+D и Ctrl/Cmd+R заполняют вниз и вправо (WR19); закладку и перезагрузку браузер
     // не получает, даже когда заполнять нечем.
-    const fillAxis = isCtrlCode(event, 'KeyD')
+    const fillAxis = isCtrlCode(event, 'KeyD', platform)
       ? 'y'
-      : isCtrlCode(event, 'KeyR')
+      : isCtrlCode(event, 'KeyR', platform)
         ? 'x'
         : undefined
     if (fillAxis && isCellSelectionActive(t) && canPaste(table)) {
@@ -313,7 +359,7 @@ export const cellSelectionKeys: NavigationKeys = {
         t,
         active,
         direction,
-        event.ctrlKey || event.metaKey,
+        primaryModifier(event, platform),
       )
     }
     return false

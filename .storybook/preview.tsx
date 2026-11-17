@@ -125,6 +125,13 @@ const preview: Preview = {
   // Сообщения `console.error`, которые история пишет нарочно (ADR 0093, VR18).
   beforeEach: ({ parameters }) => {
     expectConsoleErrors(parameters.consoleErrors as ConsoleErrors | undefined)
+    // Палец прошлой истории не переходит в следующую: вид без наведения — только по касанию
+    // в своей истории (ADR 0231, §2).
+    if (
+      typeof document !== 'undefined' &&
+      document.documentElement.getAttribute('data-tsr-input') === 'touch'
+    )
+      document.documentElement.removeAttribute('data-tsr-input')
   },
   // Число на вкладке Controls Storybook считает по всем argTypes с контролом, без учёта
   // `controls.include`: скрытым списком контролам — `table.disable` (ADR 0117).

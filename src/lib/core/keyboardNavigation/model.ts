@@ -46,6 +46,8 @@ export const NAV_TARGET_SELECTOR = `[${NAV_CELL_ATTR}], [${NAV_ROW_ATTR}]`
 
 export const SCROLLER_SELECTOR = '[data-resizing]'
 export const HEAD_SELECTOR = '.data-grid__head'
+/** Строки стопки липких строк групп и веток (ADR 0160): копии поверх тела. */
+export const STICKY_ROWS_SELECTOR = '[data-sticky-rows] [data-row-id]'
 export const FOOTER_SELECTOR = '.data-grid__footer'
 export const BODY_ROW_SELECTOR = '.data-grid__body-row'
 export const FALLBACK_ROW_HEIGHT = 50

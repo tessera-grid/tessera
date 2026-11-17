@@ -683,6 +683,9 @@ export const GuideStory = ({
       phase: 'down' | 'up',
     ) => {
       const down = phase === 'down'
+      // Шаг касания показывается касанием: признак ввода «палец» не сбивается (ADR 0231).
+      const finger =
+        document.documentElement.getAttribute(INPUT_MODALITY_ATTR) === 'touch'
       const at = {
         bubbles: true,
         cancelable: true,
@@ -695,8 +698,8 @@ export const GuideStory = ({
       deliver(
         new PointerEvent(down ? 'pointerdown' : 'pointerup', {
           ...at,
-          pointerId: 1,
-          pointerType: 'mouse',
+          pointerId: finger ? 7 : 1,
+          pointerType: finger ? 'touch' : 'mouse',
           isPrimary: true,
         }),
         target,

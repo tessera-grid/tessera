@@ -17,6 +17,7 @@ import {
 import { storyLabels } from './__mocks__/storyLabels'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import { untilDone } from './__mocks__/cellGestures'
 import type { ConsoleLog } from './demos/consoleLog'
 import { openViewSettingsSection } from './__mocks__/viewSettings'
 import { columnVisibilityLabels } from '../plugins/columnVisibility/labels'
@@ -109,8 +110,8 @@ const NO_COLUMNS: readonly GuideStoryStep[] = [
       en: 'Waiting for the column list from the server',
     },
     hint: {
-      ru: 'Структура таблицы еще неизвестна. Тулбар, тело таблицы и статусбар находятся в состоянии загрузки.',
-      en: 'The structure of the table is not known yet. The toolbar, the table body, and the status bar are in the loading state.',
+      ru: 'Структура таблицы ещё неизвестна — панели и строки грузятся.',
+      en: 'The table structure is not known yet; the panels and rows are loading.',
     },
     props: () => ({
       loading: 'initial',
@@ -124,8 +125,8 @@ const NO_COLUMNS: readonly GuideStoryStep[] = [
       en: 'Data arrived, columns did not',
     },
     hint: {
-      ru: 'Список колонок отсутствует. В таблице отображается заглушка, без заголовков и строк.',
-      en: 'There is no column list. The table shows a placeholder, with no headers or rows.',
+      ru: 'Сервер прислал строки без колонок — на месте таблицы заглушка, кнопки панели, которым нечего делать, выключены.',
+      en: 'The server sent rows without columns; a placeholder replaces the table, and panel buttons with nothing to do are turned off.',
     },
     props: ({ rows }) => ({ loading: false, dataOverride: rows }),
   },
@@ -212,13 +213,10 @@ const hideAllFromMenu = (root: HTMLElement) => {
 
 const COLUMNS_HIDDEN: readonly GuideStoryStep[] = [
   {
-    title: {
-      ru: 'Видимость колонок в тулбаре',
-      en: 'Column visibility in the toolbar',
-    },
+    title: { ru: 'Таблица с колонками', en: 'A table with columns' },
     hint: {
-      ru: 'Таблица отображает список колонок. Включен виджет по управлению их видимостью.',
-      en: 'The table shows its columns. A control for their visibility is turned on.',
+      ru: 'У таблицы есть меню колонок, все колонки видны.',
+      en: 'The table has a column menu; all columns are visible.',
     },
   },
   {
@@ -227,10 +225,36 @@ const COLUMNS_HIDDEN: readonly GuideStoryStep[] = [
       en: 'The user hid all columns',
     },
     hint: {
-      ru: 'Пользователь снял флажок всех колонок в меню видимости. Все колонки скрыты, в таблице отображается заглушка.',
-      en: 'The user cleared the checkbox for all columns in the visibility menu. All columns are hidden, and the table shows a placeholder.',
+      ru: 'Пользователь скрыл все колонки в меню — на месте таблицы заглушка с кнопкой вернуть их.',
+      en: 'The user hid all columns in the menu; a placeholder with a button to bring them back replaces the table.',
     },
     enter: hideAllFromMenu,
+  },
+  {
+    title: { ru: 'Колонки возвращены', en: 'Columns are back' },
+    hint: {
+      ru: 'Пользователь нажал кнопку заглушки — все колонки снова видны.',
+      en: 'The user pressed the placeholder button; all columns are visible again.',
+    },
+    enter: root => {
+      let hiding = false
+      let shown = false
+      return untilDone(
+        current => shown && bodyRows(current).length > 0,
+        current => {
+          const showAll = byTestId('columns-hidden-show-all')
+          if (showAll) {
+            showAll.click()
+            shown = true
+            return
+          }
+          if (!hiding && !shown) {
+            hiding = true
+            hideAllFromMenu(current)
+          }
+        },
+      )(root, undefined as never)
+    },
   },
 ]
 
@@ -256,7 +280,7 @@ export const StubsColumnsHidden: StoryObj<StoryProps> = {
       await expect(
         canvas.querySelectorAll('[role="columnheader"]').length,
       ).toBeGreaterThan(0)
-      await expect(byTestId('view-settings-button')).not.toBeNull()
+      await waitTestId('view-settings-button')
       await expect(byTestId('view-settings-button')).not.toHaveAttribute(
         'data-active',
       )
@@ -283,6 +307,14 @@ export const StubsColumnsHidden: StoryObj<StoryProps> = {
         'true',
       )
     })
+    await step(COLUMNS_HIDDEN[2]!.title.ru, async () => {
+      await guideNext(canvas)
+      await until(() => expect(byTestId('columns-hidden-stub')).toBeNull())
+      await until(() => expect(bodyRows(canvas).length).toBeGreaterThan(0))
+      await expect(
+        canvas.querySelectorAll('[role="columnheader"]').length,
+      ).toBeGreaterThan(0)
+    })
     await settle()
   },
 }
@@ -293,8 +325,8 @@ const NO_DATA: readonly GuideStoryStep[] = [
   {
     title: { ru: 'Данные загружаются', en: 'Data is loading' },
     hint: {
-      ru: 'Данных еще нет, в теле таблицы отображаются скелеты.',
-      en: 'There is no data yet; the table body shows skeletons.',
+      ru: 'Данных ещё нет — на месте строк скелеты.',
+      en: 'There is no data yet; skeletons stand in place of the rows.',
     },
     props: () => ({ loading: 'initial', dataOverride: [] }),
   },
@@ -304,10 +336,18 @@ const NO_DATA: readonly GuideStoryStep[] = [
       en: 'The server has no data',
     },
     hint: {
-      ru: 'В теле таблицы отображается заглушка.',
-      en: 'The table body shows a placeholder.',
+      ru: 'Сервер ответил пустым списком — на месте строк заглушка.',
+      en: 'The server answered with an empty list; a placeholder stands in place of the rows.',
     },
     props: () => ({ loading: false }),
+  },
+  {
+    title: { ru: 'Низкая таблица', en: 'A short table' },
+    hint: {
+      ru: 'Таблица стала ниже — картинка заглушки убрана целиком, текст остался.',
+      en: 'The table got shorter; the placeholder picture is removed entirely, and the text stays.',
+    },
+    props: () => ({ containerHeight: '260', height: '160', maxHeight: '160' }),
   },
 ]
 
@@ -343,6 +383,16 @@ export const StubsNoData: StoryObj<StoryProps> = {
       await expect(byTestId('no-data-stub')!.querySelector('svg')).not.toBe(
         null,
       )
+    })
+    await step(NO_DATA[2]!.title.ru, async () => {
+      await guideNext(canvas)
+      // Картинка целиком или никак (ES15): текст на месте, картинки нет.
+      await until(() =>
+        expect(
+          byTestId('no-data-stub')!.querySelector('svg')?.closest('[hidden]'),
+        ).not.toBeNull(),
+      )
+      await expect(byTestId('no-data-stub')).toHaveTextContent(labels.noData)
     })
     await settle()
   },
@@ -383,8 +433,8 @@ const OWN_STUB: readonly GuideStoryStep[] = [
   {
     title: { ru: 'Данные загружаются', en: 'Data is loading' },
     hint: {
-      ru: 'Данных еще нет, в теле таблицы отображаются скелеты.',
-      en: 'There is no data yet; the table body shows skeletons.',
+      ru: 'Данных ещё нет — на месте строк скелеты.',
+      en: 'There is no data yet; skeletons stand in place of the rows.',
     },
     props: ({ log }) => ({
       loading: 'initial',
@@ -398,8 +448,8 @@ const OWN_STUB: readonly GuideStoryStep[] = [
       en: 'The server has no data',
     },
     hint: {
-      ru: 'Приложение заменило заглушку таблицы своей. В теле таблицы отображается заглушка приложения с его текстом и действием.',
-      en: "The app replaced the table's placeholder with its own. The table body shows the app's placeholder with its text and action.",
+      ru: 'Сервер ответил пустым списком — на месте строк заглушка приложения со своим текстом и действием.',
+      en: "The server answered with an empty list; the app's placeholder with its own text and action stands in place of the rows.",
     },
     props: () => ({ loading: false }),
   },

@@ -293,11 +293,18 @@ describe('строки до сохранения (ADR 0178, §7)', () => {
         expect(
           button.querySelector('[data-active-indicator][data-shown="true"]'),
         ).toBeNull()
-        let opacity = 1
-        for (let node: Element | null = button; node; node = node.parentElement)
-          opacity *= Number(getComputedStyle(node).opacity)
+        const opacity = () => {
+          let value = 1
+          for (
+            let node: Element | null = button;
+            node;
+            node = node.parentElement
+          )
+            value *= Number(getComputedStyle(node).opacity)
+          return value
+        }
         // Не приглушена, как содержимое удалённой строки (токен — 0,6).
-        expect(opacity, label).toBeGreaterThan(0.95)
+        await expect.poll(opacity).toBeGreaterThan(0.95)
       }
       // Пульт перечисляет черновики строк.
       await humanClick(

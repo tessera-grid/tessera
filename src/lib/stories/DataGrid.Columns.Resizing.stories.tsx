@@ -31,6 +31,8 @@ import {
 } from './demos/GuideStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
+import * as touch from './__mocks__/touchGuides'
+import * as touchPlay from './__mocks__/catalogPlay'
 
 /**
  * Ширина колонок (ADR 0013, ADR 0111): протяжка ручки на границе заголовков, кнопки
@@ -750,6 +752,93 @@ export const AutosizeOnData: StoryObj<StoryProps> = {
         expect(fittedWidth(canvas, 'name')).toBeGreaterThan(short + 50),
       )
       await settle()
+    })
+  },
+}
+
+// --- Ширина пальцем (ADR 0231, S6) ----------------------------------------------------
+
+const TOUCH_WIDEN = 80
+
+const touchGripOf = (root: ParentNode) =>
+  root
+    .querySelector<HTMLElement>(
+      '.data-grid__head-cell:has(.resize__handler--column)',
+    )
+    ?.querySelector<HTMLElement>('.resize__handler--column') ?? null
+
+const touchGripHead = (root: ParentNode) =>
+  touchGripOf(root)?.closest<HTMLElement>('.data-grid__head-cell') ?? null
+
+let touchStartWidth = 0
+
+const BY_TOUCH: readonly GuideStoryStep[] = [
+  {
+    title: { ru: 'Полоска ширины видна', en: 'The width strip is visible' },
+    hint: {
+      ru: 'Без наведения у заголовков видна полоска, за которую меняют ширину колонки.',
+      en: 'Without hover, headers show the strip that changes the column width.',
+    },
+  },
+  {
+    title: { ru: 'Ширина пальцем', en: 'Width with a finger' },
+    hint: {
+      ru: 'Пользователь протянул полоску пальцем — колонка стала шире.',
+      en: 'The user dragged the strip with a finger; the column got wider.',
+    },
+    enter: stepAction(async (root, { signal }) => {
+      await touchPlay.pollUntil(() => !!touchGripOf(root), signal)
+      touchStartWidth = touchGripHead(root)!.getBoundingClientRect().width
+      await touch.touchDrag(touchGripOf(root)!, TOUCH_WIDEN, signal)
+    }),
+  },
+  {
+    title: { ru: 'Меню ширины', en: 'The width menu' },
+    hint: {
+      ru: 'Пользователь коснулся полоски и отпустил — открылось меню ширины.',
+      en: 'The user tapped the strip and let go; the width menu opened.',
+    },
+    states: ['overlay.menu'],
+    enter: stepAction(async (root, { signal }) => {
+      await touchPlay.pollUntil(() => !!touchGripOf(root), signal)
+      if (!touch.openMenu()) touch.tapButton(touchGripOf(root))
+      await touchPlay.pollUntil(() => !!touch.openMenu(), signal)
+    }),
+  },
+]
+
+/** ADR 0231, S6: ширина колонки пальцем и меню ширины касанием полоски. */
+export const ResizingByTouch: StoryObj<StoryProps> = {
+  name: 'Width with a finger',
+  globals: touch.PHONE,
+  parameters: { scenario: '0231/S6', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title={{ ru: 'Ширина колонки пальцем', en: 'Column width with a finger' }}
+      steps={BY_TOUCH}
+      args={guideArgs(touch.TOUCH_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(BY_TOUCH[0]!.title.ru, async () => {
+      await touchPlay.waitForRows(canvas)
+      await touchPlay.until(() => expect(touchGripOf(canvas)).not.toBeNull())
+    })
+    await step(BY_TOUCH[1]!.title.ru, async () => {
+      await touchPlay.guideNext(canvas)
+      await touchPlay.stepDone(canvas)
+      await touchPlay.until(() =>
+        expect(
+          touchGripHead(canvas)!.getBoundingClientRect().width,
+        ).toBeGreaterThan(touchStartWidth + TOUCH_WIDEN / 2),
+      )
+    })
+    await step(BY_TOUCH[2]!.title.ru, async () => {
+      await touchPlay.guideNext(canvas)
+      await touchPlay.stepDone(canvas)
+      await expect(touch.openMenu()).not.toBeNull()
+      await touchPlay.settle()
     })
   },
 }

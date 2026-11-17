@@ -45,7 +45,7 @@ declare module 'vitest/browser' {
 }
 
 // Сохранение правок по кнопке (ADR 0178, §4–§6; DR15, DR16, DR18, DR20, DR22, DR23): ячейка
-// показывает черновик, модели считают по данным; уголок и «Откатить»; открытая правка в пульте;
+// показывает черновик, модели считают по данным; уголок и «Сбросить»; открытая правка в пульте;
 // доступность; цвет несохранённого; общий поповер отметки. DR14, DR17, DR19, DR24, DR25 —
 // модульные (`manualSave.dom`), DR21 — перф в `scroll`, DR26 — в `interaction`.
 
@@ -217,7 +217,7 @@ describe('Сохранение по кнопке (ADR 0178)', () => {
     }
   })
 
-  test('DR16: ячейка с черновиком — уголок кита на месте треугольника отказа, отказ главнее; нажатие — поповер «было, стало, Откатить»; «Откатить» — и в контекстном меню', async () => {
+  test('DR16: ячейка с черновиком — уголок кита на месте треугольника отказа, отказ главнее; нажатие — поповер «было, стало, Откатить»; «Сбросить» — и в контекстном меню', async () => {
     const screen = await mount()
     try {
       await draftAge('1', '77')
@@ -231,7 +231,7 @@ describe('Сохранение по кнопке (ADR 0178)', () => {
       expect(Math.abs(at.right - box.right)).toBeLessThanOrEqual(1)
       expect(Math.abs(at.top - box.top)).toBeLessThanOrEqual(1)
 
-      // Поповер: было, стало, «Откатить».
+      // Поповер: было, стало, «Сбросить».
       await humanClick(mark)
       await expect.poll(popover).not.toBeNull()
       expect(details()).toEqual([
@@ -244,7 +244,7 @@ describe('Сохранение по кнопке (ADR 0178)', () => {
       await expect.poll(() => corner('1')).toBeNull()
       expect(text('1')).toBe('21')
 
-      // Контекстное меню ячейки с черновиком — «Откатить».
+      // Контекстное меню ячейки с черновиком — «Сбросить».
       await draftAge('2', '5')
       await userEvent.click(cell('2')!, { button: 'right' })
       const item = await expect
@@ -345,7 +345,7 @@ describe('Сохранение по кнопке (ADR 0178)', () => {
     }
   })
 
-  test('DR20: отметка черновика — в описании ячейки для скринридера; «Откатить» доступен с клавиатуры; axe и forced-colors уголка', async () => {
+  test('DR20: отметка черновика — в описании ячейки для скринридера; «Сбросить» доступен с клавиатуры; axe и forced-colors уголка', async () => {
     const screen = await mount('grid')
     try {
       await draftAge('1', '77')
@@ -358,7 +358,7 @@ describe('Сохранение по кнопке (ADR 0178)', () => {
         cellEditingLabels(tableLabels).cellDraftReason('21', '77'),
       )
 
-      // С клавиатуры: фокус на отметке, Enter — поповер, Tab до «Откатить», Enter.
+      // С клавиатуры: фокус на отметке, Enter — поповер, Tab до «Сбросить», Enter.
       mark.focus()
       await userEvent.keyboard('{Enter}')
       await expect.poll(popover).not.toBeNull()
@@ -453,7 +453,7 @@ describe('Сохранение по кнопке (ADR 0178)', () => {
     }
   })
 
-  test('DR23: поповер отметки ячейки один у отказа, ошибки данных и черновика: заголовок без отметки, причина — цветом текста ошибки, «Было» и «Стало» — обычным, внизу кнопки справа, без разделителя над ними, главная — с рамкой; не уже --tsr-comp-popup-min-width', async () => {
+  test('DR23: поповер отметки ячейки один у отказа, ошибки данных и черновика: заголовок без отметки, причина — цветом текста ошибки, «Было» и «Стало» — обычным, внизу кнопки справа, без разделителя над ними, главная — с рамкой, когда действий больше одного, единственное — без рамки; не уже --tsr-comp-popup-min-width', async () => {
     const Host = () => {
       const table = useCreateTable({
         columns: COLUMNS as never,
@@ -591,7 +591,7 @@ describe('Сохранение по кнопке (ADR 0178)', () => {
       expect(view.buttons).toEqual([])
       await close()
 
-      // Черновик: «Было» и «Стало», внизу «Откатить» — справа с рамкой.
+      // Черновик: «Было» и «Стало», внизу «Сбросить» — справа; действие одно — без рамки.
       await draftAge('1', '77')
       view = layout(await open(corner('1')!))
       expect(view.title).toBe(cellEditingLabels(tableLabels).cellDraft)
@@ -600,7 +600,7 @@ describe('Сохранение по кнопке (ADR 0178)', () => {
       expect(view.divider).toBe(false)
       // Узкое содержимое не сужает поповер: кнопка справа, а не посередине.
       expect(view.width).toBeGreaterThanOrEqual(minWidth - 0.5)
-      expect(view.buttons).toEqual([['rollback', 'outline']])
+      expect(view.buttons).toEqual([['rollback', 'ghost']])
       expect(view.justify).toBe('flex-end')
       expect(view.right!).toBeCloseTo(failureRight, 0)
       expect(details()).toEqual([

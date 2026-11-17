@@ -250,7 +250,7 @@ const APPLY: readonly GuideStoryStep[] = [
     title: { ru: 'Пульт открыт', en: 'The unsaved changes panel is open' },
     hint: {
       ru: 'Пользователь открыл пульт: оба условия — в разделе фильтров, у каждого — колонка и что задано, переход к колонке, применение и отказ от изменения.',
-      en: 'The user opened the unsaved changes panel: both conditions are in the filters section, each with its column and what was set, plus buttons to go to the column, apply the change, and discard it.',
+      en: 'The user opened the unsaved changes panel: both conditions are in the filters section, each with its column and what was set, plus buttons to go to the column, apply the change, and revert it.',
     },
     states: ['overlay.unsavedChanges'],
     enter: stepAction((_root, { signal }) => openPanel(signal)),
@@ -348,7 +348,7 @@ const DISCARD_ARGS = {
   initialDrafts: CELL_DRAFTS,
 } satisfies Partial<StoryProps>
 
-/** Пульт открыт; правка `text` отброшена кнопкой своей записи. */
+/** Пульт открыт; правка `text` сброшена кнопкой своей записи. */
 const discardEntry = async (text: string, signal: AbortSignal) => {
   const entry = () =>
     entries().find(item => item.textContent?.includes(text)) ?? null
@@ -374,25 +374,25 @@ const DISCARD: readonly GuideStoryStep[] = [
     title: { ru: 'Пульт открыт', en: 'The unsaved changes panel is open' },
     hint: {
       ru: 'Пользователь поправил три ячейки и не сохранил правки, затем открыл пульт. Кнопка отказа у каждой правки и кнопка отказа от всех внизу выделены тоном опасного действия сразу, без наведения: они безвозвратно теряют правки, а применение и переход к ячейке — нет.',
-      en: 'The user edited three cells without saving, then opened the unsaved changes panel. The discard button on each edit and the discard-all button at the bottom are styled as dangerous actions right away, without hovering: they lose the edits for good, while applying and going to the cell do not.',
+      en: 'The user edited three cells without saving, then opened the unsaved changes panel. The revert button on each edit and the revert-all button at the bottom are styled as dangerous actions right away, without hovering: they lose the edits for good, while applying and going to the cell do not.',
     },
     states: ['overlay.unsavedChanges'],
     enter: stepAction((_root, { signal }) => openPanel(signal)),
   },
   {
-    title: { ru: 'Одна правка отброшена', en: 'One edit is discarded' },
+    title: { ru: 'Одна правка сброшена', en: 'One edit is reverted' },
     hint: {
       ru: 'Пользователь отказался от правки города прямо в пульте. Её запись ушла, пульт остался открытым; в ячейке снова прежнее значение, на кнопке пульта — две несохранённые правки.',
-      en: 'The user discarded the city edit right in the panel. Its entry disappeared, and the panel stayed open; the cell shows its previous value again, and the panel button shows two unsaved edits.',
+      en: 'The user reverted the city edit right in the panel. Its entry disappeared, and the panel stayed open; the cell shows its previous value again, and the panel button shows two unsaved edits.',
     },
     states: ['overlay.unsavedChanges', 'body.cellDraft'],
     enter: stepAction((_root, { signal }) => discardEntry(DISCARDED, signal)),
   },
   {
-    title: { ru: 'Всё отброшено', en: 'Everything is discarded' },
+    title: { ru: 'Всё сброшено', en: 'Everything is reverted' },
     hint: {
       ru: 'Пользователь отказался от всех оставшихся правок. Пульт пуст, несохранённых изменений не осталось, в ячейках — прежние значения.',
-      en: 'The user discarded all the remaining edits. The panel is empty, no unsaved changes are left, and the cells show their previous values.',
+      en: 'The user reverted all the remaining edits. The panel is empty, no unsaved changes are left, and the cells show their previous values.',
     },
     states: ['overlay.unsavedChanges'],
     enter: stepAction(async (_root, { signal }) => {
@@ -411,15 +411,15 @@ const DISCARD: readonly GuideStoryStep[] = [
   },
 ]
 
-/** ADR 0206, S1: пользователь отбрасывает правки из пульта — опасные кнопки видны сразу. */
+/** ADR 0206, S1: пользователь сбрасывает правки из пульта — опасные кнопки видны сразу. */
 export const UnsavedChangesDangerActions: StoryObj<StoryProps> = {
-  name: 'Discard from the panel',
+  name: 'Revert from the panel',
   parameters: { scenario: '0206/S1', ...guideControls() },
   render: args => (
     <GuideStory
       title={{
         ru: 'Отказ от правок в пульте',
-        en: 'Discarding edits in the unsaved changes panel',
+        en: 'Reverting edits in the unsaved changes panel',
       }}
       steps={DISCARD}
       args={guideArgs(DISCARD_ARGS, args)}

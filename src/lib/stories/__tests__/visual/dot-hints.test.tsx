@@ -312,14 +312,19 @@ const openBy = async (button: string, popup: string) => {
   return testId(popup)!
 }
 const closePopups = async () => {
+  const closed = () =>
+    ['unsaved-changes', 'failure-log', 'edit-history'].every(id => !testId(id))
   await userEvent.keyboard('{Escape}')
-  await expect
-    .poll(() =>
-      ['unsaved-changes', 'failure-log', 'edit-history'].every(
-        id => !testId(id),
-      ),
-    )
-    .toBe(true)
+  // Если по фокусу видна подсказка точки, первый Escape гасит её (ADR 0232, KX9).
+  if (
+    !(await expect
+      .poll(closed)
+      .toBe(true)
+      .catch(() => false))
+  ) {
+    await userEvent.keyboard('{Escape}')
+  }
+  await expect.poll(closed).toBe(true)
 }
 /** Место элемента не меняется два кадра подряд — анимация въезда кончилась. */
 const settledBox = async (element: HTMLElement) => {

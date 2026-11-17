@@ -37,7 +37,10 @@
 }
 
 /* Низкая специфичность — любой прикладной hover перекрывает базовый; занятая — без наведения */
-:where(.iconButton:not(:disabled, [data-disabled], [aria-busy='true'])):hover {
+:where(:root:not([data-tsr-input='touch']))
+  :where(
+    .iconButton:not(:disabled, [data-disabled], [aria-busy='true'])
+  ):hover {
   background-color: var(--tsr-comp-control-hover-bg);
 }
 
@@ -49,7 +52,8 @@
   color: var(--tsr-comp-control-active-color);
 }
 
-:where(.iconButton[data-active]):hover,
+:where(:root:not([data-tsr-input='touch']))
+  :where(.iconButton[data-active]):hover,
 .iconButton[data-popup-open] {
   background-color: var(--tsr-comp-control-active-hover-bg);
 }
@@ -150,6 +154,24 @@
   }
 }
 
+/* Касание на экране с наведением — тот же «стоп» (ADR 0231, §2). */
+:where(:root[data-tsr-input='touch'])
+  .iconButton[data-cancel-armed]
+  > .cancelIcon {
+  display: flex;
+}
+
+:where(:root[data-tsr-input='touch'])
+  .iconButton[data-cancel-armed]
+  > :not(
+    .cancelIcon,
+    [data-pending-arc],
+    [data-failure-indicator],
+    [data-active-indicator]
+  ) {
+  visibility: hidden;
+}
+
 /*
  * Тон опасного действия (ADR 0206, DX2): значок красный и в покое, наведение и фокус с клавиатуры —
  * бледно-красная подложка. Выключенная и занятая — без тона (DX4).
@@ -162,11 +184,17 @@
   color: var(--tsr-comp-button-danger-color);
 }
 
+:where(:root:not([data-tsr-input='touch']))
+  .iconButton[data-tone='danger']:not(
+    :disabled,
+    [data-disabled],
+    [aria-busy='true']
+  ):hover,
 .iconButton[data-tone='danger']:not(
     :disabled,
     [data-disabled],
     [aria-busy='true']
-  ):is(:hover, :focus-visible) {
+  ):focus-visible {
   background-color: var(--tsr-comp-danger-hover-bg);
 }
 
@@ -211,7 +239,8 @@
   transition: var(--tsr-comp-overlay-hover-transition);
 }
 
-.iconButton[data-variant='overlay']:hover:not(
+:where(:root:not([data-tsr-input='touch']))
+  .iconButton[data-variant='overlay']:hover:not(
     :disabled,
     [aria-busy='true']
   )::before {

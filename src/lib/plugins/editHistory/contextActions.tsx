@@ -21,6 +21,7 @@ const nameParams =
 export const undoContextAction: ContextMenuAction = {
   id: 'undo',
   order: 'last',
+  shortcut: 'Mod+Z',
   icon: () => <UndoIcon />,
   visible: inMenu,
   params: nameParams('undo'),
@@ -34,6 +35,7 @@ export const undoContextAction: ContextMenuAction = {
 export const redoContextAction: ContextMenuAction = {
   id: 'redo',
   order: 'last',
+  shortcut: 'Mod+Shift+Z',
   icon: () => <RedoIcon />,
   visible: inMenu,
   params: nameParams('redo'),

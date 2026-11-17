@@ -185,6 +185,7 @@ const write = async (
       if (!parsed) {
         invalid.push({
           action,
+          batch: id,
           target: { cell: [row.id, change.columnId] },
           reason: invalidReason(
             table,
@@ -202,6 +203,7 @@ const write = async (
     if (message) {
       invalid.push({
         action,
+        batch: id,
         target: { cell: [row.id, change.columnId] },
         reason: invalidReason(table, change.columnId, current, text, message),
       })

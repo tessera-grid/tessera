@@ -1,18 +1,45 @@
 import { useState } from 'react'
 import { Meta, StoryObj } from '@storybook/react'
+import { expect } from 'storybook/test'
 import type { StoryProps } from './DataGridStory.types'
 import { StoryComponent } from './DataGridStory'
 import { dataGridMeta } from './dataGridMeta'
-import { showControls } from './__mocks__/utils/dataGridControls'
+import {
+  afterRows,
+  guideNext,
+  pollUntil,
+  pressEscape,
+  settle,
+  stepDone,
+  tooltipText,
+  until,
+  waitForRows,
+} from './__mocks__/catalogPlay'
+import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
+import {
+  PHONE,
+  TOUCH_ARGS,
+  holdTarget,
+  moveMouse,
+  openMenu,
+  tapButton,
+  tapTarget,
+} from './__mocks__/touchGuides'
+import { overflowColumns, overflowData } from './__mocks__/overflowColumns'
+import {
+  GuideStory,
+  type GuideStoryStep,
+  guideArgs,
+  stepAction,
+} from './demos/GuideStory'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 
 /**
- * Касания (ADR 0086): таблица в окне телефона со всеми целями под палец. Таблица узнаёт
- * касания по экрану без наведения и с грубым указателем и по событиям пальца: окно
- * Storybook меняет только размер — проверяйте в режиме устройства DevTools браузера
- * или с телефона.
+ * Касания (ADR 0086, ADR 0231): таблица в окне телефона со всеми целями под палец. Таблица
+ * узнаёт палец по событиям касания и по экрану без наведения: окно Storybook меняет только
+ * размер — проверяйте в режиме устройства DevTools браузера или с телефона.
  */
 const meta = {
   ...dataGridMeta,
@@ -45,7 +72,7 @@ export const TouchPlayground: StoryObj<StoryProps> = {
       defaultColumn: NOT_TOUCH,
     },
   ),
-  globals: { viewport: { value: 'mobile2', isRotated: false } },
+  globals: PHONE,
   args: {
     enableColumnSorting: true,
     enableColumnSizing: true,
@@ -68,5 +95,441 @@ export const TouchPlayground: StoryObj<StoryProps> = {
         <StoryComponent {...normalizeArgs(args)} />
       </WithConsole>
     )
+  },
+}
+
+// --- Помощники -----------------------------------------------------------------------
+
+/** Колонка с кнопкой правки ячейки. */
+const EDIT_COLUMN = 'age'
+
+const rowAt = (root: ParentNode, index: number) =>
+  root.querySelector<HTMLElement>(`.data-grid__body-row[data-index="${index}"]`)
+
+const cellAt = (root: ParentNode, index: number, column = EDIT_COLUMN) =>
+  rowAt(root, index)?.querySelector<HTMLElement>(
+    `.data-grid__body-cell[data-column-id="${column}"]`,
+  ) ?? null
+
+const headOf = (root: ParentNode, id: string) =>
+  root.querySelector<HTMLElement>(
+    `.data-grid__head-cell[data-column-id="${id}"]`,
+  )
+
+/** Чип строки виден: скрытый гасит свою заливку (buttonVisibility.css). */
+const chipShown = (el: Element | null | undefined) =>
+  !!el && getComputedStyle(el).backgroundColor !== 'rgba(0, 0, 0, 0)'
+
+/** Скрытая кнопка видна: непрозрачна и раскрыта. */
+const shown = (el: Element | null | undefined) =>
+  !!el &&
+  Number(getComputedStyle(el).opacity) === 1 &&
+  el.getBoundingClientRect().width > 1
+
+// --- S1 ------------------------------------------------------------------------------
+
+const BUTTONS: readonly GuideStoryStep[] = [
+  {
+    title: { ru: 'Кнопки скрыты', en: 'Buttons are hidden' },
+    hint: {
+      ru: 'На сенсорном экране кнопки ячеек скрыты, пока ячейки не коснулись.',
+      en: 'On a touch screen, cell buttons stay hidden until the cell is touched.',
+    },
+  },
+  {
+    title: { ru: 'Касание ячейки', en: 'A cell is touched' },
+    hint: {
+      ru: 'Пользователь коснулся ячейки — у неё появились кнопки.',
+      en: 'The user touched a cell; its buttons appeared.',
+    },
+    enter: afterRows(root => tapTarget(cellAt(root, 1))),
+  },
+  {
+    title: { ru: 'Касание другой ячейки', en: 'Another cell is touched' },
+    hint: {
+      ru: 'Пользователь коснулся другой ячейки — кнопки переехали к ней.',
+      en: 'The user touched another cell; the buttons moved to it.',
+    },
+    enter: afterRows(root => {
+      tapTarget(cellAt(root, 1))
+      tapTarget(cellAt(root, 4))
+    }),
+  },
+]
+
+/** ADR 0231, S1: касание ячейки показывает её кнопки, касание другой — переносит. */
+export const TouchCellButtons: StoryObj<StoryProps> = {
+  name: 'Touch a cell',
+  globals: PHONE,
+  parameters: { scenario: '0231/S1', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title={{ ru: 'Кнопки ячейки по касанию', en: 'Cell buttons on touch' }}
+      steps={BUTTONS}
+      args={guideArgs(TOUCH_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const cellButtons = (index: number) => [
+      ...(cellAt(canvas, index)?.querySelectorAll('.cell__button--hidden') ??
+        []),
+    ]
+    await step(BUTTONS[0]!.title.ru, async () => {
+      await waitForRows(canvas)
+      await expect(canvas.querySelector('[data-touched]')).toBeNull()
+      await expect(cellButtons(1).filter(shown)).toEqual([])
+    })
+    await step(BUTTONS[1]!.title.ru, async () => {
+      await guideNext(canvas)
+      await until(() => expect(cellButtons(1).length).toBeGreaterThan(0))
+      await until(() => expect(cellButtons(1).every(shown)).toBe(true))
+    })
+    await step(BUTTONS[2]!.title.ru, async () => {
+      await guideNext(canvas)
+      await until(() => expect(cellButtons(4).every(shown)).toBe(true))
+      await until(() => expect(cellButtons(1).filter(shown)).toEqual([]))
+      await settle()
+    })
+  },
+}
+
+// --- S2 ------------------------------------------------------------------------------
+
+const ROW_ARGS = {
+  ...TOUCH_ARGS,
+  enableRowActionMenu: true,
+  rowActionMenuMode: 'always',
+} satisfies Partial<StoryProps>
+
+const rowKebabOf = (root: ParentNode, index: number) =>
+  rowAt(root, index)?.querySelector<HTMLElement>('[data-action-menu]') ?? null
+
+const ROW: readonly GuideStoryStep[] = [
+  {
+    title: { ru: 'Кнопка меню скрыта', en: 'The menu button is hidden' },
+    hint: {
+      ru: 'Кнопка меню строки скрыта, пока строки не коснулись.',
+      en: 'The row menu button stays hidden until the row is touched.',
+    },
+  },
+  {
+    title: { ru: 'Касание строки', en: 'A row is touched' },
+    hint: {
+      ru: 'Пользователь коснулся строки — появилась кнопка её меню.',
+      en: 'The user touched a row; its menu button appeared.',
+    },
+    enter: afterRows(root => {
+      pressEscape()
+      tapTarget(cellAt(root, 2, 'firstName'))
+    }),
+  },
+  {
+    title: { ru: 'Меню строки', en: 'The row menu' },
+    hint: {
+      ru: 'Пользователь коснулся кнопки — открылось меню строки.',
+      en: 'The user tapped the button; the row menu opened.',
+    },
+    states: ['overlay.menu'],
+    enter: stepAction(async (root, { signal }) => {
+      tapTarget(cellAt(root, 2, 'firstName'))
+      await pollUntil(() => !!rowKebabOf(root, 2), signal)
+      if (!openMenu()) rowKebabOf(root, 2)!.click()
+      await pollUntil(() => !!openMenu(), signal)
+    }),
+  },
+]
+
+/** ADR 0231, S2: касание строки показывает её кнопки, кебаб строки открывает меню. */
+export const TouchRowButtons: StoryObj<StoryProps> = {
+  name: 'Touch a row',
+  globals: PHONE,
+  parameters: { scenario: '0231/S2', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title={{ ru: 'Меню строки по касанию', en: 'The row menu on touch' }}
+      steps={ROW}
+      args={guideArgs(ROW_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(ROW[0]!.title.ru, async () => {
+      await waitForRows(canvas)
+      await expect(chipShown(rowKebabOf(canvas, 2))).toBe(false)
+    })
+    await step(ROW[1]!.title.ru, async () => {
+      await guideNext(canvas)
+      await until(() => expect(chipShown(rowKebabOf(canvas, 2))).toBe(true))
+    })
+    await step(ROW[2]!.title.ru, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(openMenu()).not.toBeNull()
+      await settle()
+    })
+  },
+}
+
+// --- S3 ------------------------------------------------------------------------------
+
+/** Ноутбук с сенсорным экраном: мышь и палец на одном экране. */
+const HYBRID_ARGS = {
+  enableColumnSorting: true,
+  enableColumnFiltering: true,
+  columnCount: 6,
+  dataCount: 40,
+  height: '420',
+} satisfies Partial<StoryProps>
+
+const headButtons = (root: ParentNode) => [
+  ...(headOf(root, 'firstName')?.querySelectorAll('.cell__button--hidden') ??
+    []),
+]
+
+const HYBRID: readonly GuideStoryStep[] = [
+  {
+    title: { ru: 'Экран с мышью', en: 'A screen with a mouse' },
+    hint: {
+      ru: 'Кнопки шапки появляются при наведении мыши.',
+      en: 'Header buttons appear on mouse hover.',
+    },
+  },
+  {
+    title: { ru: 'Касание пальцем', en: 'A finger touch' },
+    hint: {
+      ru: 'Пользователь коснулся таблицы пальцем — кнопки шапки видны без наведения.',
+      en: 'The user touched the table with a finger; header buttons show without hover.',
+    },
+    enter: afterRows(root => tapTarget(cellAt(root, 2, 'firstName'))),
+  },
+  {
+    title: { ru: 'Снова мышь', en: 'The mouse again' },
+    hint: {
+      ru: 'Пользователь сдвинул мышь — таблица снова в обычном виде.',
+      en: 'The user moved the mouse; the table looks as usual again.',
+    },
+    enter: afterRows(root => {
+      tapTarget(cellAt(root, 2, 'firstName'))
+      moveMouse()
+    }),
+  },
+]
+
+/** ADR 0231, S3: на экране с мышью касание показывает кнопки шапки, мышь возвращает вид. */
+export const TouchHybridDevice: StoryObj<StoryProps> = {
+  name: 'Touch on a laptop',
+  parameters: { scenario: '0231/S3', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title={{
+        ru: 'Палец и мышь на одном экране',
+        en: 'A finger and a mouse on one screen',
+      }}
+      steps={HYBRID}
+      // Палец из прошлой истории не переходит в эту: экран начинает с мыши.
+      reset={moveMouse}
+      args={guideArgs(HYBRID_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(HYBRID[0]!.title.ru, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(headButtons(canvas).length).toBeGreaterThan(1))
+      await expect(headButtons(canvas).filter(shown)).toEqual([])
+    })
+    await step(HYBRID[1]!.title.ru, async () => {
+      await guideNext(canvas)
+      await until(() => expect(headButtons(canvas).every(shown)).toBe(true))
+    })
+    await step(HYBRID[2]!.title.ru, async () => {
+      await guideNext(canvas)
+      await until(() => expect(headButtons(canvas).filter(shown)).toEqual([]))
+      await settle()
+    })
+  },
+}
+
+// --- S4 ------------------------------------------------------------------------------
+
+const sortButtonOf = (root: ParentNode) =>
+  headOf(root, 'firstName')?.querySelector<HTMLElement>(
+    'button.column-sort__button, .column-sort__button button',
+  ) ?? null
+
+const HINT: readonly GuideStoryStep[] = [
+  {
+    title: { ru: 'Кнопки без подписей', en: 'Buttons without labels' },
+    hint: {
+      ru: 'Подпись кнопки со значком показывает удержание пальцем.',
+      en: 'Holding a finger on an icon button shows its label.',
+    },
+  },
+  {
+    title: { ru: 'Удержание кнопки', en: 'A button is held' },
+    hint: {
+      ru: 'Пользователь задержал палец на кнопке — появилась её подпись, колонка не отсортирована.',
+      en: 'The user held a finger on the button; its label appeared and the column is not sorted.',
+    },
+    states: ['overlay.tooltip'],
+    enter: stepAction(async (root, { signal }) => {
+      await pollUntil(() => !!sortButtonOf(root), signal)
+      await holdTarget(sortButtonOf(root)!, signal)
+    }),
+  },
+  {
+    title: { ru: 'Касание кнопки', en: 'The button is tapped' },
+    hint: {
+      ru: 'Пользователь коснулся кнопки и отпустил — колонка отсортирована.',
+      en: 'The user tapped the button and let go; the column is sorted.',
+    },
+    enter: afterRows(root => {
+      if (headOf(root, 'firstName')?.getAttribute('aria-sort') === 'none')
+        tapButton(sortButtonOf(root))
+    }),
+  },
+]
+
+/** ADR 0231, S4: удержание иконочной кнопки показывает её подпись, касание — нажимает. */
+export const TouchIconHint: StoryObj<StoryProps> = {
+  name: 'Button label on hold',
+  globals: PHONE,
+  parameters: { scenario: '0231/S4', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title={{ ru: 'Подпись кнопки удержанием', en: 'A button label on hold' }}
+      steps={HINT}
+      args={guideArgs(TOUCH_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const sorted = () => headOf(canvas, 'firstName')?.getAttribute('aria-sort')
+    await step(HINT[0]!.title.ru, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(sortButtonOf(canvas)).not.toBeNull())
+    })
+    await step(HINT[1]!.title.ru, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      const tips = () =>
+        [...document.querySelectorAll('[data-tooltip-popup][data-open]')].map(
+          tip => tip.textContent?.trim(),
+        )
+      await until(() =>
+        expect(tips()).toContain(
+          sortButtonOf(canvas)!.getAttribute('aria-label'),
+        ),
+      )
+      await expect(sorted()).toBe('none')
+    })
+    await step(HINT[2]!.title.ru, async () => {
+      await guideNext(canvas)
+      await until(() => expect(sorted()).not.toBe('none'))
+      await settle()
+    })
+  },
+}
+
+// --- S5 ------------------------------------------------------------------------------
+
+const LONG_NAME = 'Bartholomew Montgomery-Fitzgerald'
+
+const TRUNCATED_ARGS = {
+  enableContextMenu: true,
+  enableCellSelection: true,
+  columnsOverride: overflowColumns,
+  dataOverride: overflowData,
+  containerWidth: 360,
+  height: '420',
+} satisfies Partial<StoryProps>
+
+const longTitle = (root: ParentNode) =>
+  [
+    ...root.querySelectorAll<HTMLElement>('.data-grid__cell-wrapper-title'),
+  ].find(title => title.textContent === LONG_NAME) ?? null
+
+/** Пункт «Показать полностью» — по id действия, а не по подписи языка. */
+const showFullItem = () =>
+  openMenu()?.querySelector<HTMLElement>('[data-action-id$="showFullText"]') ??
+  null
+
+const holdLongCell = async (root: HTMLElement, signal: AbortSignal) => {
+  pressEscape()
+  await pollUntil(() => !openMenu() && !!longTitle(root), signal)
+  await holdTarget(longTitle(root)!, signal)
+  await pollUntil(() => !!openMenu(), signal)
+}
+
+const TRUNCATED: readonly GuideStoryStep[] = [
+  {
+    title: { ru: 'Текст обрезан', en: 'The text is cut off' },
+    hint: {
+      ru: 'Длинное имя не помещается в колонку и обрезано.',
+      en: 'A long name does not fit the column and is cut off.',
+    },
+  },
+  {
+    title: { ru: 'Меню ячейки', en: 'The cell menu' },
+    hint: {
+      ru: 'Пользователь задержал палец на ячейке — первым пунктом меню предложено показать текст целиком.',
+      en: 'The user held a finger on the cell; the first menu item offers to show the whole text.',
+    },
+    states: ['overlay.contextMenu'],
+    enter: stepAction(async (root, { signal }) => holdLongCell(root, signal)),
+  },
+  {
+    title: { ru: 'Текст целиком', en: 'The whole text' },
+    hint: {
+      ru: 'Пользователь выбрал пункт — подсказка показывает текст целиком.',
+      en: 'The user picked the item; a tooltip shows the whole text.',
+    },
+    states: ['overlay.tooltip'],
+    enter: stepAction(async (root, { signal }) => {
+      if (!showFullItem()) await holdLongCell(root, signal)
+      tapButton(showFullItem())
+      await pollUntil(() => tooltipText() === LONG_NAME, signal)
+    }),
+  },
+]
+
+/** ADR 0231, S5: обрезанный текст пальцем — пункт контекстного меню показывает его целиком. */
+export const TouchTruncatedText: StoryObj<StoryProps> = {
+  name: 'Cut-off text',
+  globals: PHONE,
+  parameters: { scenario: '0231/S5', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title={{
+        ru: 'Обрезанный текст пальцем',
+        en: 'Cut-off text with a finger',
+      }}
+      steps={TRUNCATED}
+      args={guideArgs(TRUNCATED_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const steps = TRUNCATED
+    await step(steps[0]!.title.ru, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(longTitle(canvas)).not.toBeNull())
+    })
+    await step(steps[1]!.title.ru, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      const items = [
+        ...openMenu()!.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+      ]
+      await expect(items[0]).toBe(showFullItem())
+      await settle()
+    })
+    await step(steps[2]!.title.ru, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(tooltipText()).toBe(LONG_NAME)
+      await settle()
+    })
   },
 }

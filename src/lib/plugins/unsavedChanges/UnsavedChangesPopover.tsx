@@ -1,9 +1,11 @@
 /**
  * Поповер пульта черновиков (ADR 0178, §8; DR11, DR42–DR47): изменения данных облачками в порядке
- * появления, черновики колонок — разделом ниже; у записи «Применить» и «Откатить», нажатие на неё
- * показывает цель; внизу «Применить всё» и «Отменить всё». Переход и применение закрывают пульт. Отдельный чанк: открытием управляет эагерная кнопка (`UnsavedChangesButton`).
+ * появления, черновики колонок — разделом ниже; у записи «Применить» и «Сбросить», нажатие на неё
+ * показывает цель; внизу «Применить всё» и «Сбросить всё». Применение и переход к найденной цели
+ * закрывают пульт; цель не нашлась — у записи строка ошибки (ADR 0227, §7). Отдельный чанк:
+ * открытием управляет эагерная кнопка (`UnsavedChangesButton`).
  */
-import { type ReactNode, useId, useRef } from 'react'
+import { type ReactNode, useId, useRef, useState } from 'react'
 
 import { Popover } from '@base-ui/react/popover'
 
@@ -21,6 +23,7 @@ import {
 } from '../../core/drafts/drafts'
 import { PopupFooter, PopupPanel } from '../../ui/Popup/PopupPanel'
 import { PopupSurface } from '../../ui/Popup/PopupSurface'
+import { announceLabel } from '../../core/announcer'
 import { reportAction, userSourceOf } from '../../core/debugActions'
 import { useLocalization } from '../../core/localization'
 import { useSliceProjection } from '../../core/reactivity'
@@ -95,6 +98,9 @@ interface EntryHandlers {
   onDiscarded: () => void
   /** Переход к цели и «Применить» закрывают пульт. */
   onDone: () => void
+  /** Ключи записей, к цели которых перейти не удалось. */
+  notFound: ReadonlySet<string>
+  onNotFound: (key: string) => void
 }
 
 const DraftEntry = ({
@@ -102,6 +108,8 @@ const DraftEntry = ({
   draft,
   onDiscarded,
   onDone,
+  notFound,
+  onNotFound,
 }: { table: unknown; draft: Draft } & EntryHandlers) => {
   const labels = useLocalization()
   const icons = useIcons()
@@ -132,9 +140,17 @@ const DraftEntry = ({
         canShowTarget(draft.target)
           ? event => {
               report(table, 'show', draft, event)
-              onDone()
-              void showTarget(table, draft.target, 'arrived')
+              void showTarget(table, draft.target, 'arrived').then(found =>
+                found
+                  ? onDone()
+                  : onNotFound(draftKeyOf(draft.kind, draft.target)),
+              )
             }
+          : undefined
+      }
+      error={
+        notFound.has(draftKeyOf(draft.kind, draft.target))
+          ? unsavedChangesLabels(labels).targetNotFound
           : undefined
       }
       actions={
@@ -208,9 +224,9 @@ const rowsOf = (drafts: readonly Draft[]) => {
 
 const DraftList = ({
   table,
-  onDiscarded,
-  onDone,
+  ...handlers
 }: { table: unknown } & EntryHandlers) => {
+  const { onDiscarded, onDone } = handlers
   const labels = useLocalization()
   const icons = useIcons()
   const drafts = useSliceProjection(
@@ -258,7 +274,6 @@ const DraftList = ({
         data-testid="unsaved-changes-empty"
       />
     )
-  const handlers = { onDiscarded, onDone }
   const items = virtualizer.getVirtualItems()
   const placed = virtualizer.measurementsCache
   const nameOf = (list: List) => {
@@ -383,11 +398,18 @@ export const UnsavedChangesPopover = ({
   const labels = useLocalization()
   const triggerRef = useRef<HTMLButtonElement>(null)
   const popupRef = useRef<HTMLDivElement>(null)
-  // Отброшенная запись уносит свои кнопки, «Отменить всё» — себя: фокус — на пульт.
+  const [notFound, setNotFound] = useState<ReadonlySet<string>>(() => new Set())
+  // Сброшенная запись уносит свои кнопки, «Сбросить всё» — себя: фокус — на пульт.
   const keepFocus = () => requestAnimationFrame(() => popupRef.current?.focus())
 
   return (
-    <Popover.Root open={open} onOpenChange={onOpenChange}>
+    <Popover.Root
+      open={open}
+      onOpenChange={next => {
+        if (next) setNotFound(new Set())
+        onOpenChange(next)
+      }}
+    >
       <ToolbarButton
         ref={triggerRef}
         label={label}
@@ -416,6 +438,14 @@ export const UnsavedChangesPopover = ({
               table={table}
               onDiscarded={keepFocus}
               onDone={() => onOpenChange(false)}
+              notFound={notFound}
+              onNotFound={key => {
+                setNotFound(prev => new Set(prev).add(key))
+                announceLabel(
+                  table,
+                  all => unsavedChangesLabels(all).targetNotFound,
+                )
+              }}
             />
           </PopupPanel>
         </PopupSurface>

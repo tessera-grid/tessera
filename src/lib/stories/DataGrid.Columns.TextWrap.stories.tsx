@@ -15,11 +15,16 @@ import {
   pointAt,
   pollUntil,
   settle,
+  sleep,
   stepDone,
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
+import { untilDone } from './__mocks__/cellGestures'
 import { dragGripTo, separatorOf } from './__mocks__/columnGrip'
+import { holdRowAtLevel } from './__mocks__/rowDragHold'
+import { press, typeInto } from './__mocks__/typeGuides'
+import { DRAG_FILL } from './rowDragging.dnd'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
@@ -752,6 +757,352 @@ export const TextWrapMotion: StoryObj<StoryProps> = {
         ).not.toBe(first),
       )
       await settle()
+    })
+  },
+}
+
+// --- S8: правка ячейки ---------------------------------------------------------------
+
+const EDIT_ROW = '4'
+const SHORT_NOTE = 'Done.'
+
+const noteCellOf = (root: ParentNode, id: string) =>
+  rowOf(root, id)?.querySelector<HTMLElement>(
+    '.data-grid__body-cell[data-column-id="note"]',
+  ) ?? null
+const noteInputOf = (root: ParentNode, id: string) =>
+  noteCellOf(root, id)?.querySelector<HTMLInputElement>('input') ?? null
+
+/** Открыть правку заметки кнопкой ячейки. */
+const openNote = (root: HTMLElement, id: string) =>
+  noteCellOf(root, id)
+    ?.querySelector<HTMLElement>('.cell__button button')
+    ?.click()
+
+const EDIT: readonly GuideStoryStep[] = [
+  {
+    title: { ru: 'Строки по содержимому', en: 'Rows by content' },
+    hint: {
+      ru: 'Строки с длинными заметками выше остальных.',
+      en: 'Rows with long notes are taller than the rest.',
+    },
+  },
+  {
+    title: { ru: 'Правка открыта', en: 'An edit is open' },
+    hint: {
+      ru: 'Пользователь открыл правку длинной заметки — пока он правит, высота строки не меняется.',
+      en: 'The user opened an edit of a long note; while it is open, the row height does not change.',
+    },
+    enter: untilDone(
+      root => !!noteInputOf(root, EDIT_ROW),
+      root => openNote(root, EDIT_ROW),
+    ),
+  },
+  {
+    title: { ru: 'Правка сохранена', en: 'The edit is saved' },
+    hint: {
+      ru: 'Пользователь сохранил короткую заметку — строка стала ниже под новый текст.',
+      en: 'The user saved a short note; the row got shorter to fit the new text.',
+    },
+    enter: untilDone(
+      root =>
+        !noteInputOf(root, EDIT_ROW) &&
+        noteTitle(root, EDIT_ROW)?.textContent === SHORT_NOTE,
+      root => {
+        const input = noteInputOf(root, EDIT_ROW)
+        if (!input) openNote(root, EDIT_ROW)
+        else if (input.value !== SHORT_NOTE) typeInto(input, SHORT_NOTE)
+        else press(input, 'Enter')
+      },
+    ),
+  },
+]
+
+/** ADR 0218, S8: правка держит высоту строки, сохранение её перемеряет. */
+export const TextWrapEdit: StoryObj<StoryProps> = {
+  name: 'Edit a cell',
+  parameters: { scenario: '0218/S8', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title={{ ru: 'Правка высокой строки', en: 'Editing a tall row' }}
+      steps={EDIT}
+      args={guideArgs(
+        {
+          ...GRID,
+          columnsOverride: AUTO_COLUMNS as never,
+          dataOverride: notes(40),
+          enableCellEditing: true,
+          editableColumns: ['note'],
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(EDIT[0]!.title.ru, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(variedRows(canvas)).toBe(true))
+    })
+    await step(EDIT[1]!.title.ru, async () => {
+      await guideNext(canvas)
+      await until(() => expect(noteInputOf(canvas, EDIT_ROW)).not.toBeNull())
+      // Строка высокой заметки — выше двух обычных и в правке.
+      await expect(heightOf(rowOf(canvas, EDIT_ROW))).toBeGreaterThan(90)
+      await settle()
+    })
+    await step(EDIT[2]!.title.ru, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(noteTitle(canvas, EDIT_ROW)?.textContent).toBe(SHORT_NOTE),
+      )
+      await until(() =>
+        expect(heightOf(rowOf(canvas, EDIT_ROW))).toBeLessThanOrEqual(60),
+      )
+      await settle()
+    })
+  },
+}
+
+// --- S9: значение пришло извне -------------------------------------------------------
+
+const GROWN_ROW = '0'
+const LONG_NOTE = NOTES[4]!
+
+const withNote = (id: string, note: string) =>
+  notes(40).map(row => (row.id === id ? { ...row, note } : row))
+
+const EXTERNAL: readonly GuideStoryStep[] = [
+  {
+    title: { ru: 'Короткая заметка', en: 'A short note' },
+    hint: {
+      ru: 'У первой строки короткая заметка — строка обычной высоты.',
+      en: 'The first row has a short note; the row has its usual height.',
+    },
+  },
+  {
+    title: { ru: 'Заметка выросла', en: 'The note grew' },
+    hint: {
+      ru: 'Приложение получило длинную заметку — строка выросла под неё.',
+      en: 'The app received a long note; the row grew to fit it.',
+    },
+    enter: (_root, app) =>
+      app.update(props => ({
+        ...props,
+        dataOverride: withNote(GROWN_ROW, LONG_NOTE),
+      })),
+  },
+]
+
+/** ADR 0218, S9: новое значение извне перемеряет строку. */
+export const TextWrapExternalChange: StoryObj<StoryProps> = {
+  name: 'Value changes outside',
+  parameters: { scenario: '0218/S9', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title={{ ru: 'Новое значение извне', en: 'A new value from outside' }}
+      steps={EXTERNAL}
+      args={guideArgs(
+        {
+          ...GRID,
+          columnsOverride: AUTO_COLUMNS as never,
+          dataOverride: notes(40),
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(EXTERNAL[0]!.title.ru, async () => {
+      await waitForRows(canvas)
+      await until(() =>
+        expect(heightOf(rowOf(canvas, GROWN_ROW))).toBeLessThanOrEqual(60),
+      )
+    })
+    await step(EXTERNAL[1]!.title.ru, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(noteTitle(canvas, GROWN_ROW)?.textContent).toBe(LONG_NOTE),
+      )
+      await until(() =>
+        expect(heightOf(rowOf(canvas, GROWN_ROW))).toBeGreaterThan(90),
+      )
+      await settle()
+    })
+  },
+}
+
+// --- S10: записи добавлены выше экрана ------------------------------------------------
+
+const ANCHOR_ROW = '20'
+
+/** Строка у верха области — под шапкой. */
+const firstShownId = (root: ParentNode) => {
+  const head = root.querySelector('.data-grid__head')
+  const top = head ? head.getBoundingClientRect().bottom : 0
+  return [
+    ...root.querySelectorAll<HTMLElement>('.data-grid__body-row[data-row-id]'),
+  ]
+    .filter(row => row.getBoundingClientRect().bottom > top + 1)
+    .sort(
+      (a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top,
+    )[0]
+    ?.getAttribute('data-row-id')
+}
+
+/** Пять новых записей с длинными заметками — в начало списка. */
+const ADDED = Array.from({ length: 5 }, (_, i) => ({
+  id: `new-${i}`,
+  name: `New client ${i + 1}`,
+  note: NOTES[(i % 2) * 2 + 2]!,
+  city: CITIES[i]!,
+}))
+
+/** Пользователь прокручивает таблицу вниз, пока строка ANCHOR_ROW не встанет у верха. */
+const scrollToAnchor = async (root: HTMLElement, signal: AbortSignal) => {
+  await pollUntil(() => gridDrawn(root), signal)
+  const scroller = scrollerOf(root)
+  while (firstShownId(root) !== ANCHOR_ROW) {
+    const row = rowOf(root, ANCHOR_ROW)
+    const head = root.querySelector('.data-grid__head')!.getBoundingClientRect()
+    const gap = row ? row.getBoundingClientRect().top - head.bottom : 120
+    scroller.scrollTop += Math.max(-120, Math.min(120, Math.round(gap)))
+    await sleep(40)
+    signal.throwIfAborted()
+  }
+}
+
+const INSERT: readonly GuideStoryStep[] = [
+  {
+    title: { ru: 'Строки по содержимому', en: 'Rows by content' },
+    hint: {
+      ru: 'Строки с длинными заметками выше остальных.',
+      en: 'Rows with long notes are taller than the rest.',
+    },
+  },
+  {
+    title: { ru: 'Таблица прокручена', en: 'The table is scrolled' },
+    hint: {
+      ru: 'Пользователь прокрутил таблицу вниз.',
+      en: 'The user scrolled the table down.',
+    },
+    enter: stepAction(async (root, { signal }) => scrollToAnchor(root, signal)),
+  },
+  {
+    title: { ru: 'Записи добавлены в начало', en: 'Records added at the top' },
+    hint: {
+      ru: 'Приложение добавило записи в начало списка — на экране те же строки.',
+      en: 'The app added records at the top of the list; the same rows stay on screen.',
+    },
+    enter: stepAction(async (root, { signal }, app) => {
+      await scrollToAnchor(root, signal)
+      // Записи приходят, когда прокрутка уже встала.
+      await pollUntil(() => firstShownId(root) === ANCHOR_ROW, signal)
+      await sleep(300)
+      signal.throwIfAborted()
+      app.update(props => ({
+        ...props,
+        dataOverride: [...ADDED, ...notes(40)],
+      }))
+    }),
+  },
+]
+
+/** ADR 0218, S10: вставка выше экрана держит строки на экране. */
+export const TextWrapInsertAbove: StoryObj<StoryProps> = {
+  name: 'Records added above',
+  parameters: { scenario: '0218/S10', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title={{ ru: 'Записи выше экрана', en: 'Records above the screen' }}
+      steps={INSERT}
+      args={guideArgs(
+        {
+          ...GRID,
+          columnsOverride: AUTO_COLUMNS as never,
+          dataOverride: notes(40),
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(INSERT[0]!.title.ru, async () => {
+      await waitForRows(canvas)
+    })
+    await step(INSERT[1]!.title.ru, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await until(() => expect(firstShownId(canvas)).toBe(ANCHOR_ROW))
+    })
+    await step(INSERT[2]!.title.ru, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await until(() => expect(rowOf(canvas, 'new-0')).toBeNull())
+      await until(() => expect(firstShownId(canvas)).toBe(ANCHOR_ROW))
+      await settle()
+      await expect(firstShownId(canvas)).toBe(ANCHOR_ROW)
+    })
+  },
+}
+
+// --- S11: перетаскивание высокой строки -----------------------------------------------
+
+const DRAG: readonly GuideStoryStep[] = [
+  {
+    title: { ru: 'Строки по содержимому', en: 'Rows by content' },
+    hint: {
+      ru: 'Строки с длинными заметками выше остальных.',
+      en: 'Rows with long notes are taller than the rest.',
+    },
+  },
+  {
+    title: { ru: 'Строка поднята', en: 'A row is lifted' },
+    hint: {
+      ru: 'Пользователь взял высокую строку за ручку — место под неё в списке той же высоты, соседи сдвинулись на неё.',
+      en: 'The user grabbed a tall row by its handle; its place in the list is just as tall, and the neighbours moved by that much.',
+    },
+    states: ['drag.row'],
+    enter: stepAction(async (root, run) => {
+      await holdRowAtLevel(root, EDIT_ROW, '1', 0, run, 'name')
+    }),
+  },
+]
+
+/** ADR 0218, S11: место броска высотой с перетаскиваемую строку. */
+export const TextWrapDrag: StoryObj<StoryProps> = {
+  name: 'Drag a tall row',
+  parameters: { scenario: '0218/S11', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title={{ ru: 'Перетаскивание высокой строки', en: 'Dragging a tall row' }}
+      steps={DRAG}
+      args={guideArgs(
+        {
+          ...GRID,
+          columnsOverride: AUTO_COLUMNS as never,
+          dataOverride: notes(40),
+          enableRowDragging: true,
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(DRAG[0]!.title.ru, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(variedRows(canvas)).toBe(true))
+    })
+    await step(DRAG[1]!.title.ru, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      const slot = canvas.querySelector<HTMLElement>(DRAG_FILL)
+      await expect(slot).not.toBeNull()
+      // Место высокой строки — выше двух обычных.
+      await expect(heightOf(slot)).toBeGreaterThan(90)
     })
   },
 }

@@ -13,6 +13,8 @@ export interface MenuItemModel {
   /** Пункт-раздел: справа шеврон и `hint`, `aria-haspopup`. */
   section: boolean
   hint?: string
+  /** Сочетание в виде платформы и для `aria-keyshortcuts` (ADR 0232, KX14). */
+  shortcut?: { text: string; aria: string }
   /** Вторая строка мелким текстом под подписью: что будет после выбора (ADR 0204, HT5). */
   caption?: string
   /** Тон опасного действия (ADR 0206): пункт красный. */

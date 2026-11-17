@@ -102,6 +102,7 @@ const CORE_OPTION_KINDS: Record<
   enableStatusBar: 'render',
   enableAnnouncements: 'render',
   enableKeyboardNavigation: 'render',
+  keyboardPlatform: 'render',
   activeCell: 'state',
   onActiveCellChange: 'callback',
   initialActiveCell: 'initial',

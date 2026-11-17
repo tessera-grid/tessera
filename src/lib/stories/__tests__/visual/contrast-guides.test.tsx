@@ -420,6 +420,9 @@ const hasFindings = (result: GuideResult) =>
   result.fit.length > 0 ||
   result.guard.length > 0
 
+/** Только истории, чьё имя содержит строку, — для разбора; общие реестры тогда не сверяются. */
+const ONLY = import.meta.env.VITE_CONTRAST_ONLY as string | undefined
+
 describe('Шаги гайдов в матрице контраста (ADR 0089, §7)', () => {
   beforeAll(async () => {
     // Окно матрицы (§6): снимок без сжатия; консоль истории — не грид, на время обхода
@@ -433,7 +436,8 @@ describe('Шаги гайдов в матрице контраста (ADR 0089, 
       ({ path, story, Story }) =>
         Story.parameters.scenario &&
         !path.includes('.dev.stories') &&
-        !(story in WITHOUT_GUIDE),
+        !(story in WITHOUT_GUIDE) &&
+        (!ONLY || `${path} ${story}`.includes(ONLY)),
     )
     for (const { story, Story } of guides) {
       let result = await walkGuide(story, Story)

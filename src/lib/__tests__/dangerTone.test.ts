@@ -18,11 +18,11 @@ const LIB = fileURLToPath(new URL('..', import.meta.url))
 
 /** Опасные действия: ключ словаря → подпись по умолчанию и файл словаря. */
 const DANGER_KEYS = {
-  failureDiscard: ['Discard change', 'core/localization/labels.ts'],
-  cellDraftRollback: ['Roll back', 'plugins/cellEditing/labels.ts'],
+  failureDiscard: ['Revert change', 'core/localization/labels.ts'],
+  cellDraftRollback: ['Revert', 'plugins/cellEditing/labels.ts'],
   rowInsertDiscard: ['Remove row', 'plugins/cellEditing/labels.ts'],
-  draftDiscard: ['Discard', 'plugins/unsavedChanges/labels.ts'],
-  draftDiscardAll: ['Discard all', 'plugins/unsavedChanges/labels.ts'],
+  draftDiscard: ['Revert', 'plugins/unsavedChanges/labels.ts'],
+  draftDiscardAll: ['Revert all', 'plugins/unsavedChanges/labels.ts'],
 } as const
 
 /** Подписи опасных действий строкой — встроенные и демо-действие «Delete». */

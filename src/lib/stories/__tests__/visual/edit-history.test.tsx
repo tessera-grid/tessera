@@ -825,14 +825,14 @@ describe('История правок в серверной модели (ADR 02
       row => !!cell(row)?.querySelector('[data-cell-draft]'),
     )
 
-  test('UD37: после отбрасывания Ctrl+Z сначала отменяет отбрасывание: черновики возвращаются, объявления «изменено извне» нет', async () => {
+  test('UD37: после сбрасывания Ctrl+Z сначала отменяет сбрасывание: черновики возвращаются, объявления «изменено извне» нет', async () => {
     await mount({ manual: true, pult: true })
     await api.writeCells(
       ['1', '2', '3'].map(rowId => ({ rowId, columnId: 'price', value: 90 })),
       { source: 'paste' },
     )
     await expect.poll(draftMarks).toEqual(['1', '2', '3'])
-    // «Отменить всё» пульта; кнопка пульта — из ленивого модуля.
+    // «Сбросить всё» пульта; кнопка пульта — из ленивого модуля.
     await expect.poll(() => byTestId('unsaved-changes-button')).not.toBeNull()
     await humanClick(byTestId('unsaved-changes-button')!)
     const discardAll = () =>

@@ -48,6 +48,7 @@ const MenuItem = ({
       data-has-tooltip={tooltip ? '' : undefined}
       data-pending={item.pending || undefined}
       aria-busy={item.pending || undefined}
+      aria-keyshortcuts={item.shortcut?.aria}
       aria-describedby={
         description ? descriptionId : item.caption ? captionId : undefined
       }
@@ -65,7 +66,7 @@ const MenuItem = ({
       data-tone={item.tone}
       icon={withIcons ? (item.icon ?? null) : undefined}
       label={item.label}
-      hint={item.hint}
+      hint={item.shortcut?.text ?? item.hint}
       caption={
         item.caption === undefined ? undefined : (
           <span id={captionId}>{item.caption}</span>

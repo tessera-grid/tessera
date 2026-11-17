@@ -16,6 +16,7 @@ import { Popover } from '@base-ui/react/popover'
 
 import { sourceOf } from '../../core/debugActions'
 import { type TableLabels, useLocalization } from '../../core/localization'
+import { shortcutDefinitions } from '../../core/shortcuts'
 import {
   type ViewSettingsPanel,
   type ViewSettingsSection,
@@ -38,6 +39,7 @@ import {
 } from '../../ui/Popup/PopupLevels'
 import { PopupSurface } from '../../ui/Popup/PopupSurface'
 import { useScrollFade } from '../../ui/Popup/useScrollFade'
+import { openShortcuts } from '../Shortcuts/Shortcuts'
 import { useVirtualizer } from '../../../vendor/tanstack-virtual/react-virtual'
 import { StatusIcon } from '../../ui/StatusIcon/StatusIcon'
 import { ToolbarButton } from '../../ui/ToolbarButton'
@@ -266,6 +268,7 @@ export const ViewSettingsPopover = ({
   onOpenChange,
 }: ViewSettingsPopoverProps) => {
   const labels = useLocalization()
+  const { info: ShortcutIcon } = useIcons()
   const triggerRef = useRef<HTMLButtonElement>(null)
   // Переход между уровнями — сдвигом, как разделы меню (ADR 0079; ADR 0215, §3).
   const levels = usePopupLevels()
@@ -401,6 +404,16 @@ export const ViewSettingsPopover = ({
             onOpen={() => enter(section.id)}
           />
         ))}
+        <PopupNavItem
+          icon={<ShortcutIcon width={16} height={16} />}
+          label={labels.shortcuts}
+          value={String(shortcutDefinitions(table).length)}
+          data-view-settings-section="shortcuts"
+          onClick={() => {
+            onOpenChange(false)
+            openShortcuts(table)
+          }}
+        />
       </div>
     </PopupPanel>
   )

@@ -742,7 +742,7 @@ describe('История правок (ADR 0222)', () => {
     expect(table.getHistory().entries[0].cells).toBe(5)
   })
 
-  it('UD35: отбрасывание черновиков ячеек — одна запись истории на действие; отмена возвращает черновики с прежними значениями, повтор снова отбрасывает', async () => {
+  it('UD35: сбрасывание черновиков ячеек — одна запись истории на действие; отмена возвращает черновики с прежними значениями, повтор снова сбрасывает', async () => {
     render({ saveMode: 'manual' })
     await write([
       { rowId: '1', columnId: 'age', value: 91 },
@@ -752,7 +752,7 @@ describe('История правок (ADR 0222)', () => {
     const cellDrafts = () =>
       (table.getDrafts() as Draft[]).filter(draft => draft.kind === 'cellValue')
     expect(cellDrafts()).toHaveLength(3)
-    // «Отменить всё» пульта — один проход по черновикам: одна запись.
+    // «Сбросить всё» пульта — один проход по черновикам: одна запись.
     act(() => {
       for (const draft of cellDrafts()) discardDraft(table, draft)
     })
@@ -779,7 +779,7 @@ describe('История правок (ADR 0222)', () => {
     })
   })
 
-  it('UD36: «Откатить» новой или удалённой строки и «Отбросить» отказанной строки в журнале отказов — запись истории; отмена возвращает черновик строки, повтор снова откатывает', async () => {
+  it('UD36: «Сбросить» новой или удалённой строки и «Сбросить» отказанной строки в журнале отказов — запись истории; отмена возвращает черновик строки, повтор снова откатывает', async () => {
     let refuseRows = false
     render({
       saveMode: 'manual',
@@ -826,7 +826,7 @@ describe('История правок (ADR 0222)', () => {
     expect(kinds('2')).toEqual(['rowDelete'])
     await redo()
     expect(kinds('2')).toEqual([])
-    // Журнал отказов: «Отбросить» отказанной новой строки — тоже запись.
+    // Журнал отказов: «Сбросить» отказанной новой строки — тоже запись.
     refuseRows = true
     act(() => {
       id = table.addRow({ name: 'Refused', age: 51 }, { index: 1 })
@@ -849,6 +849,44 @@ describe('История правок (ADR 0222)', () => {
     })
     await undo()
     expect(kinds(id)).toEqual(['rowInsert'])
+  })
+
+  it('AO13: «Сбросить правку» отклонённой ячейки из журнала отказов при подключённой истории правок — запись истории; отмена возвращает черновик', async () => {
+    render({
+      saveMode: 'manual',
+      answer: batch => ({
+        refused: batch.cells
+          .filter(cell => cell.rowId === '1')
+          .map(cell => ({ ...cell, reason: 'no' })),
+      }),
+    })
+    await write([
+      { rowId: '1', columnId: 'age', value: 91 },
+      { rowId: '2', columnId: 'age', value: 92 },
+    ])
+    await act(async () => {
+      commitAllDrafts(table)
+    })
+    await flush()
+    const failure = Object.values(readFailures(table)).find(
+      item => 'cell' in item.target && item.target.cell[0] === '1',
+    )!
+    const cellDraft = () =>
+      (table.getDrafts() as Draft[]).find(
+        draft => draft.kind === 'cellValue' && 'cell' in draft.target,
+      )
+    expect(cellDraft()).toBeDefined()
+    const before = table.getHistory().entries.length
+    act(() => failure.discard!())
+    await flush()
+    expect(cellDraft()).toBeUndefined()
+    expect(table.getHistory().entries).toHaveLength(before + 1)
+    expect(table.getHistory().entries.at(-1)).toMatchObject({
+      source: 'discard',
+      cells: 1,
+    })
+    await undo()
+    expect((cellDraft()!.value as { value: unknown }).value).toBe(91)
   })
 
   it('UD26: режим «Применить» — addRow даёт запись; отмена убирает новую строку, а применённую — кладёт черновик удаления; повтор возвращает строку с тем же id, значениями и местом', async () => {
@@ -981,7 +1019,7 @@ describe('История правок (ADR 0222)', () => {
     expect(table.options.cellSelectionHandle.mode).toBe('range')
   })
 
-  it('UD41: sources — пишутся только изменения перечисленных видов: ячеек, строк, отбрасывания и записи приложения; не записанное в попапе не видно и Ctrl+Z его не отменяет', async () => {
+  it('UD41: sources — пишутся только изменения перечисленных видов: ячеек, строк, сбрасывания и записи приложения; не записанное в попапе не видно и Ctrl+Z его не отменяет', async () => {
     render({ sources: ['paste'], saveMode: 'manual', flat: true })
     await write([{ rowId: '0', columnId: 'age', value: 70 }], 'paste')
     await write([{ rowId: '1', columnId: 'age', value: 71 }], 'api')
@@ -997,7 +1035,7 @@ describe('История правок (ADR 0222)', () => {
         .getHistory()
         .entries.map((entry: { source: string }) => entry.source),
     ).toEqual(['paste'])
-    // Отбрасывание черновика — тоже вид: без 'discard' записи нет.
+    // Сбрасывание черновика — тоже вид: без 'discard' записи нет.
     const draft = (table.getDrafts() as Draft[]).find(
       item => 'cell' in item.target && item.target.cell[0] === '1',
     )!

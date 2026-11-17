@@ -23,8 +23,7 @@ import {
 } from '../../core/serverActions'
 import { Alert } from '../../ui/Alert'
 import { Button } from '../../ui/Button'
-import { IconButton } from '../../ui/IconButton'
-import { useIcons } from '../../ui/icons'
+import { Question } from '../../ui/Question'
 import { parseDuration } from '../../util/cssTime'
 
 import styles from './LoadError.module.css'
@@ -92,7 +91,6 @@ export const PendingActionBanner = ({
   onCancelled,
 }: PendingActionBannerProps) => {
   const labels = useLocalization()
-  const icons = useIcons()
   const { kind, attempt, name, confirm } = useTableState(
     table as never,
     state => pendingOf(state as PendingSlices),
@@ -119,11 +117,8 @@ export const PendingActionBanner = ({
   // Вопрос перед вставкой (ADR 0219, WR3): сразу, на месте плашки ожидания; галочка вставляет,
   // крестик отменяет вставку — как «Отмена» плашки.
   if (confirm && !blocked) {
-    const ConfirmIcon = icons.pasteConfirm
-    const DeclineIcon = icons.clear
     return (
-      <Alert
-        shown
+      <Question
         className={clsx('data-grid__pending-action', styles.banner)}
         title={
           confirm.limit
@@ -132,30 +127,14 @@ export const PendingActionBanner = ({
               ? labels.pasteQuestionValue(clipped(confirm.value))
               : labels.pasteQuestionCount(confirm.count)
         }
-        action={
-          <span className={styles.questionButtons}>
-            <IconButton
-              label={confirm.limit ? labels.writeConfirm : labels.pasteConfirm}
-              shape="square"
-              onClick={confirm.accept}
-              data-testid="paste-confirm"
-            >
-              <ConfirmIcon width={16} height={16} />
-            </IconButton>
-            {/* Отказ теряет вставляемое: тон отказа (ADR 0206). */}
-            <IconButton
-              label={confirm.limit ? labels.writeDecline : labels.pasteDecline}
-              shape="square"
-              tone="danger"
-              onClick={() => {
-                if (cancelServerPending(table) > 0) onCancelled()
-              }}
-              data-testid="paste-decline"
-            >
-              <DeclineIcon width={16} height={16} />
-            </IconButton>
-          </span>
-        }
+        confirmLabel={confirm.limit ? labels.writeConfirm : labels.pasteConfirm}
+        declineLabel={confirm.limit ? labels.writeDecline : labels.pasteDecline}
+        onConfirm={() => confirm.accept()}
+        onDecline={() => {
+          if (cancelServerPending(table) > 0) onCancelled()
+        }}
+        // Отказ теряет вставляемое: тон отказа (ADR 0206).
+        danger="decline"
         data-testid="paste-question"
       />
     )

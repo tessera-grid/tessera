@@ -38,6 +38,7 @@ import { trackStickyGeometry } from '../core/stickyGeometry'
 import { trackTouchedCell } from '../core/touchedCell'
 import { RowRevealContext, createRowReveal, trackRowReveal } from './rowReveal'
 import { OverflowTooltip } from './OverflowTooltip'
+import { Shortcuts } from './Shortcuts/Shortcuts'
 import {
   DATA_GRID_THEME_CLASS,
   contrastAttribute,
@@ -67,6 +68,7 @@ import {
   PendingActionBanner,
   cancelServerPending,
 } from './loadError/PendingActionBanner'
+import { TableNoticeBanner } from './loadError/TableNoticeBanner'
 import { useLoadError } from './loadError/useLoadError'
 import { hasLoadError } from '../core/loadError'
 import { isSkeletonShown } from '../core/skeletonOptions'
@@ -224,6 +226,7 @@ const DataGridView = <D extends LabelDictionary = LabelDictionary>({
   const scrollableNodeRef = useRef<HTMLDivElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const getScrollElement = useCallback(() => scrollableNodeRef.current, [])
+  const getRootElement = useCallback(() => wrapperRef.current, [])
   // Ключ перечитывания токенов: тема и появление корня (без строк — ветка заглушки).
   const themeKey = `${colorMode}|${className}|${rowCount > 0}`
   const heights = useRowHeights(table, wrapperRef, themeKey)
@@ -603,6 +606,11 @@ const DataGridView = <D extends LabelDictionary = LabelDictionary>({
                         blocked={loadError.bannerShown}
                         onCancelled={focusBody}
                       />
+                      <TableNoticeBanner
+                        table={table}
+                        blocked={loadError.bannerShown}
+                        onDismissed={focusBody}
+                      />
                       <RootHooks
                         table={table}
                         getScrollElement={getScrollElement}
@@ -614,6 +622,10 @@ const DataGridView = <D extends LabelDictionary = LabelDictionary>({
                       {enableOverflowTooltip && (
                         <OverflowTooltip getScrollElement={getScrollElement} />
                       )}
+                      <Shortcuts
+                        table={table}
+                        getRootElement={getRootElement}
+                      />
                       {keyboardNavigation && (
                         <div
                           ref={guardBeforeRef}

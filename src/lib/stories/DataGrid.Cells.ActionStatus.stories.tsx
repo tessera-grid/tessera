@@ -1115,14 +1115,14 @@ const OWN_LABEL_STEPS: readonly GuideStoryStep[] = [
     title: { ru: 'Товары', en: 'Products' },
     hint: {
       ru: 'Приложение показывает товары с приоритетом. Кнопка журнала в тулбаре без счётчика: отказов пока не было.',
-      en: 'The app shows products with a priority. The failure log button in the toolbar has no counter: there have been no refusals yet.',
+      en: 'The app shows products with a priority. The error log button in the toolbar has no counter: there have been no refusals yet.',
     },
   },
   {
     title: { ru: 'Пересчёт в фоне', en: 'A background recalculation' },
     hint: {
       ru: 'Приложение пересчитало приоритет в фоне и назвало действие своей подписью. Сервер отказал: на кнопке журнала появился счётчик.',
-      en: 'The app recalculated the priority in the background and named the action with its own label. The server refused, and a counter appeared on the failure log button.',
+      en: 'The app recalculated the priority in the background and named the action with its own label. The server refused, and a counter appeared on the error log button.',
     },
     states: ['panel.toolbar'],
     enter: untilDone(() => ownCounter() === '1', reportOwnFailure),

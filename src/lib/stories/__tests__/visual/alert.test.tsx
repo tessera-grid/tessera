@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 
 import axe from 'axe-core'
 import { userEvent } from 'vitest/browser'
@@ -7,9 +7,15 @@ import { describe, expect, test, vi } from 'vitest'
 
 import '../../../ui/theme/theme.css'
 import { DATA_GRID_THEME_CLASS } from '../../../ui/theme'
-import { Alert } from '../../../ui/Alert'
+import { Alert, type AlertProps } from '../../../ui/Alert'
 import { Button } from '../../../ui/Button'
-import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
+import {
+  AXE_OPTIONS,
+  backgroundOf,
+  contrast,
+  inBothThemes,
+  toRgba,
+} from './a11y-helpers'
 
 // Примитив кита `ui/Alert` (ADR 0096, §9, LE18): плашка вне грида. LE19 — история
 // `UI/Alert`; плашка под шапкой грида — `load-error.test.tsx`.
@@ -25,6 +31,8 @@ const Harness = ({
   onDismiss = () => {},
   bare = false,
   style,
+  tone,
+  icon = <svg data-testid="alert-icon" width={16} height={16} />,
 }: {
   shown?: boolean
   title?: string
@@ -35,6 +43,8 @@ const Harness = ({
   /** Без действия и закрытия: последним стоит текст. */
   bare?: boolean
   style?: CSSProperties
+  tone?: 'success' | 'neutral'
+  icon?: ReactNode
 }) => (
   <div
     className={DATA_GRID_THEME_CLASS}
@@ -47,7 +57,8 @@ const Harness = ({
   >
     <Alert
       shown={shown}
-      icon={<svg data-testid="alert-icon" width={16} height={16} />}
+      tone={tone}
+      icon={icon}
       title={title}
       description={description}
       action={
@@ -74,7 +85,7 @@ const tooltipShows = (text: string) =>
   )
 
 describe('Плашка кита Alert (ADR 0096)', () => {
-  test('LE24: уходя, плашка держит последний вид — заголовок, описание, действие и ширину, хотя потребитель уже снял их; действие и закрытие больше не срабатывают', async () => {
+  test('LE24: уходя, плашка держит последний вид — заголовок, описание, действие, тон с иконкой и ширину, хотя потребитель уже снял их; действие и закрытие больше не срабатывают', async () => {
     const onAction = vi.fn()
     const onDismiss = vi.fn()
     const slow = {
@@ -110,6 +121,23 @@ describe('Плашка кита Alert (ADR 0096)', () => {
     expect(onAction).not.toHaveBeenCalled()
     expect(onDismiss).not.toHaveBeenCalled()
     await screen.unmount()
+
+    // Тон и иконка: потребитель снял тон и подставил иконку отказа — плашка уходит с прежними.
+    const toned = await render(
+      <Harness style={slow} tone="success" icon={null} />,
+    )
+    await toned.rerender(
+      <Harness
+        style={slow}
+        shown={false}
+        icon={<svg data-testid="other-icon" width={16} height={16} />}
+      />,
+    )
+    expect(alert()!.hasAttribute('data-leaving')).toBe(true)
+    expect(alert()!.getAttribute('data-tone')).toBe('success')
+    expect(alert()!.querySelector('[data-icon="alertSuccess"]')).not.toBeNull()
+    expect(alert()!.querySelector('[data-testid="other-icon"]')).toBeNull()
+    await toned.unmount()
   })
 
   test('LE18: иконка, заголовок, описание одной строкой с … и тултипом, действие и квадратная кнопка закрытия с подписью; текст без кнопок отстоит от правого края, как иконка от левого; кнопки со скруглением кита, угол плашки больше на её отступ; вид — токены --tsr-comp-alert-*; появление и уход токенами движения, уходя держит описание и не откликается на указатель; axe в обеих темах', async () => {
@@ -246,5 +274,129 @@ describe('Плашка кита Alert (ADR 0096)', () => {
       `${10 + parseFloat(getComputedStyle(alert()!).paddingTop)}px`,
     )
     await rounded.unmount()
+  })
+  test('AO19: tone="success" красит только иконку токеном успеха — зелёным, tone="neutral" — только иконку «информация» токеном нейтрального цвета не ниже 3:1 к фону; рамки нет, как у обычной плашки; hideAfter зовёт onHide через заданное время, отсчёт стоит под указателем и при фокусе внутри и после их ухода идёт заново; без пропов вид прежний', async () => {
+    const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+    const Toned = (props: Partial<AlertProps>) => (
+      <div
+        className={DATA_GRID_THEME_CLASS}
+        style={{ width: 420, padding: 16 }}
+      >
+        <button data-testid="outside">Outside</button>
+        <Alert
+          shown
+          title="Saved 3 changes"
+          action={<Button data-testid="alert-action">Undo</Button>}
+          dismiss={{ label: 'Dismiss', onClick: () => {} }}
+          data-testid="alert"
+          {...props}
+        />
+      </div>
+    )
+    const token = (name: string) => {
+      const probe = document.createElement('span')
+      probe.style.color = `var(${name})`
+      alert()!.parentElement!.append(probe)
+      const color = getComputedStyle(probe).color
+      probe.remove()
+      return color
+    }
+    const iconColor = () =>
+      getComputedStyle(alert()!.firstElementChild!.firstElementChild!).color
+
+    // Без пропов — прежний вид: иконка потребителя цветом ошибки, рамки нет, сама не уходит.
+    const onHideIdle = vi.fn()
+    const view = await render(
+      <Toned
+        icon={<svg data-testid="alert-icon" width={16} height={16} />}
+        onHide={onHideIdle}
+      />,
+    )
+    await expect.poll(alert).not.toBeNull()
+    expect(alert()!.hasAttribute('data-tone')).toBe(false)
+    expect(iconColor()).toBe(token('--tsr-comp-alert-icon-color'))
+    expect(getComputedStyle(alert()!).outlineStyle).toBe('none')
+
+    // Тон успеха без своей иконки — иконка `alertSuccess` цветом успеха; рамки нет.
+    await view.rerender(<Toned tone="success" />)
+    const success = token('--tsr-comp-alert-success-color')
+    expect(success).not.toBe(token('--tsr-comp-alert-icon-color'))
+    expect(alert()!.firstElementChild!.querySelector('svg')).not.toBeNull()
+    expect(iconColor()).toBe(success)
+    expect(getComputedStyle(alert()!).outlineStyle).toBe('none')
+    // Зелёный в обеих темах: оттенок HSL иконки — между жёлтым (60°) и бирюзовым (180°).
+    await inBothThemes(async () => {
+      const [r, g, b] = toRgba(iconColor()).map(c => c / 255)
+      const max = Math.max(r!, g!, b!)
+      const min = Math.min(r!, g!, b!)
+      expect(max).toBe(g)
+      const hue = 60 * (2 + (b! - r!) / (max - min))
+      expect(hue).toBeGreaterThan(90)
+      expect(hue).toBeLessThan(170)
+    })
+
+    // Нейтральный тон без своей иконки — иконка `alertNeutral` нейтральным цветом; рамки нет.
+    await view.rerender(<Toned tone="neutral" />)
+    expect(alert()!.getAttribute('data-tone')).toBe('neutral')
+    const neutral = token('--tsr-comp-alert-neutral-color')
+    expect(neutral).not.toBe(token('--tsr-comp-alert-icon-color'))
+    expect(neutral).not.toBe(success)
+    expect(
+      alert()!.firstElementChild!.querySelector(
+        'svg[data-icon="alertNeutral"]',
+      ),
+    ).not.toBeNull()
+    expect(iconColor()).toBe(neutral)
+    expect(getComputedStyle(alert()!).outlineStyle).toBe('none')
+    // Значок — не ниже 3:1 к фону плашки в обеих темах.
+    await inBothThemes(async () => {
+      const ratio = contrast(toRgba(iconColor()), backgroundOf(alert()))
+      expect(ratio).toBeGreaterThanOrEqual(3)
+    })
+    expect(onHideIdle).not.toHaveBeenCalled()
+    await view.unmount()
+
+    // Указатель вдали — onHide через заданное время, один раз.
+    const onHide = vi.fn()
+    const timed = await render(
+      <Toned key="timed" tone="success" hideAfter={300} onHide={onHide} />,
+    )
+    expect(onHide).not.toHaveBeenCalled()
+    await expect.poll(() => onHide.mock.calls.length).toBe(1)
+    await timed.unmount()
+
+    // Под указателем отсчёт стоит; уход указателя запускает его заново.
+    const onHideHover = vi.fn()
+    const hovered = await render(
+      <Toned key="hover" hideAfter={300} onHide={onHideHover} />,
+    )
+    await userEvent.hover(alert()!)
+    await wait(700)
+    expect(onHideHover).not.toHaveBeenCalled()
+    await userEvent.hover(document.querySelector('[data-testid="outside"]')!)
+    await expect.poll(() => onHideHover.mock.calls.length).toBe(1)
+    await hovered.unmount()
+
+    // Фокус внутри — отсчёт стоит; фокус ушёл наружу — отсчёт идёт заново.
+    const onHideFocus = vi.fn()
+    const focused = await render(
+      <Toned key="focus" hideAfter={300} onHide={onHideFocus} />,
+    )
+    document.querySelector<HTMLElement>('[data-testid="outside"]')!.focus()
+    await userEvent.tab()
+    expect(alert()!.contains(document.activeElement)).toBe(true)
+    await wait(400)
+    // Фокус переходит между кнопками плашки — отсчёт так и стоит.
+    await userEvent.tab()
+    expect(alert()!.contains(document.activeElement)).toBe(true)
+    await wait(400)
+    expect(onHideFocus).not.toHaveBeenCalled()
+    await userEvent.tab({ shift: true })
+    await userEvent.tab({ shift: true })
+    expect(document.activeElement).toBe(
+      document.querySelector('[data-testid="outside"]'),
+    )
+    await expect.poll(() => onHideFocus.mock.calls.length).toBe(1)
+    await focused.unmount()
   })
 })

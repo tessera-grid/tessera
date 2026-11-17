@@ -638,7 +638,7 @@ describe('Вспышка при смене значения: вид', () => {
     await screen.unmount()
   })
 
-  test('VC14: текст на тонах changed, up, down — 4.5:1, стрелка — 3:1 в обеих темах; тоны отличимы между собой и от arrived; axe без нарушений', async () => {
+  test('VC14: текст на тонах changed, up, down — 4.5:1, стрелка — 3:1 в обеих темах, роста — зелёная, падения — красная; тоны отличимы между собой и от arrived; axe без нарушений', async () => {
     holdLong()
     const screen = await mount()
     await inBothThemes(async () => {
@@ -696,6 +696,29 @@ describe('Вспышка при смене значения: вид', () => {
           ).toBeGreaterThanOrEqual(3)
         }
       }
+      // Стрелка роста — зелёная (оттенок HSL между 90° и 170°), падения — красная (у 0°).
+      const arrowTone = (rowId: string) => {
+        const [r, g, b] = toRgba(
+          getComputedStyle(arrowOf(rowId, 'price')!).backgroundColor,
+        ).map(v => v / 255)
+        const max = Math.max(r!, g!, b!)
+        const min = Math.min(r!, g!, b!)
+        const d = max - min || 1
+        const h =
+          max === r
+            ? ((g! - b!) / d) % 6
+            : max === g
+              ? (b! - r!) / d + 2
+              : (r! - g!) / d + 4
+        return { top: max === r ? 'r' : max === g ? 'g' : 'b', hue: h * 60 }
+      }
+      const up = arrowTone('r1')
+      expect(up.top, 'стрелка роста').toBe('g')
+      expect(up.hue).toBeGreaterThan(90)
+      expect(up.hue).toBeLessThan(170)
+      const down = arrowTone('r2')
+      expect(down.top, 'стрелка падения').toBe('r')
+      expect(Math.abs(down.hue), 'стрелка падения').toBeLessThan(15)
       const { violations } = await axe.run(
         document.querySelector<HTMLElement>('[role="table"]')!,
         {

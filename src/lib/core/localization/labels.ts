@@ -32,6 +32,27 @@ export interface TableLabels {
   viewSettingsHiddenColumn: string
   /** Подсказка точки уровня (ADR 0224). */
   viewSettingsLevelHint: string
+  /** Сводка сочетаний клавиш и её поиск (ADR 0232, KX17–KX19). */
+  shortcuts: string
+  shortcutsSearch: string
+  shortcutsEmpty: string
+  shortcutNavigation: string
+  shortcutSelection: string
+  shortcutEditing: string
+  shortcutMoving: string
+  shortcutMenu: string
+  shortcutMoveCell: string
+  shortcutCellEdge: string
+  shortcutPage: string
+  shortcutActionMode: string
+  shortcutContextMenu: string
+  shortcutSelectAllCells: string
+  shortcutCmd: string
+  shortcutCtrl: string
+  shortcutOption: string
+  shortcutAlt: string
+  shortcutShiftApple: string
+  shortcutShift: string
   /** Доступное имя кебаб-кнопки меню действий строки (`aria-label`/тултип) */
   rowMenu: string
   /** Доступное имя кебаба, в который свёрнуты включённые действия (`count` — их число) */
@@ -119,7 +140,7 @@ export interface TableLabels {
   cellError: string
   /** Повтор отклонённого сохранения в поповере отметки ячейки (ADR 0177). */
   failureRetry: string
-  /** Отбросить отклонённое изменение ячейки (ADR 0177). */
+  /** Сбросить отклонённое изменение ячейки (ADR 0177). */
   failureDiscard: string
   /** Кнопка действия с неприменённым черновиком (ADR 0178, §3). */
   actionDraft: (action: string) => string
@@ -251,6 +272,26 @@ export const DEFAULT_LABELS = {
   viewSettingsSectionName: '{section}: {value}',
   viewSettingsHiddenColumn: 'Column hidden',
   viewSettingsLevelHint: 'In effect',
+  shortcuts: 'Keyboard shortcuts',
+  shortcutsSearch: 'Search actions',
+  shortcutsEmpty: 'No shortcuts found',
+  shortcutNavigation: 'Navigation',
+  shortcutSelection: 'Selection',
+  shortcutEditing: 'Editing',
+  shortcutMoving: 'Reordering',
+  shortcutMenu: 'Menus',
+  shortcutMoveCell: 'Move one cell',
+  shortcutCellEdge: 'First or last cell',
+  shortcutPage: 'Previous or next page',
+  shortcutActionMode: 'Enter action mode',
+  shortcutContextMenu: 'Open the context menu',
+  shortcutSelectAllCells: 'Select all cells',
+  shortcutCmd: '⌘',
+  shortcutCtrl: 'Ctrl',
+  shortcutOption: '⌥',
+  shortcutAlt: 'Alt',
+  shortcutShiftApple: '⇧',
+  shortcutShift: 'Shift',
   rowMenu: 'Row options',
   withActiveCount: '{name}, {count} active',
   loadFailed: "Couldn't load {name}. Try again.",
@@ -309,7 +350,7 @@ export const DEFAULT_LABELS = {
   saveFailed: "Couldn't save",
   cellError: 'Cell error',
   failureRetry: 'Retry',
-  failureDiscard: 'Discard change',
+  failureDiscard: 'Revert change',
   actionDraft: '{action}, not applied',
   actionActiveDraft: '{action}, a change is not applied',
   draftWas: 'Was',

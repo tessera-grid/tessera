@@ -515,9 +515,9 @@ describe('Вставка и очистка выделения (ADR 0219)', () =>
     const pendingBanner = () =>
       document.querySelector('[data-testid="pending-action-banner"]')
     const yes = () =>
-      question()!.querySelector<HTMLElement>('[data-testid="paste-confirm"]')!
+      question()!.querySelector<HTMLElement>('[data-question-confirm]')!
     const no = () =>
-      question()!.querySelector<HTMLElement>('[data-testid="paste-decline"]')!
+      question()!.querySelector<HTMLElement>('[data-question-decline]')!
     try {
       await selectCells(cell('1'))
       pasteText(cell('1'), '50')
@@ -586,9 +586,9 @@ describe('Пределы записи (ADR 0223)', () => {
   const question = () =>
     document.querySelector<HTMLElement>('[data-testid="paste-question"]')
   const yes = () =>
-    question()!.querySelector<HTMLElement>('[data-testid="paste-confirm"]')!
+    question()!.querySelector<HTMLElement>('[data-question-confirm]')!
   const no = () =>
-    question()!.querySelector<HTMLElement>('[data-testid="paste-decline"]')!
+    question()!.querySelector<HTMLElement>('[data-question-decline]')!
   const announced = () =>
     [...document.querySelectorAll('[aria-live]')]
       .map(region => region.textContent)

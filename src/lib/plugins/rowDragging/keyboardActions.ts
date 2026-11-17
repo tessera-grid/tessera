@@ -6,11 +6,17 @@
  */
 import type { CellKeyboardAction } from '../../core/keyboardActions'
 import { isMovableRow, moveRow, nestRow, unnestRow } from './moveRow'
+import { rowDraggingLabels } from './labels'
 
 export const moveRowKeyboardAction: CellKeyboardAction = {
   id: 'rowDragging.move',
   scope: 'cell',
   keys: ['Alt+Shift+ArrowUp', 'Alt+Shift+ArrowDown'],
+  shortcut: {
+    combo: 'Alt+Shift+ArrowUp',
+    section: 'moving',
+    label: labels => rowDraggingLabels(labels).moveRow,
+  },
   visible: ({ row, table }) => isMovableRow(row, table),
   run: ({ row, table }, event) =>
     moveRow(row, table, event.key === 'ArrowUp' ? -1 : 1),
@@ -25,6 +31,11 @@ export const nestRowKeyboardAction: CellKeyboardAction = {
   id: 'rowDragging.nest',
   scope: 'cell',
   keys: ['Alt+Shift+ArrowRight', 'Alt+Shift+ArrowLeft'],
+  shortcut: {
+    combo: 'Alt+Shift+ArrowRight',
+    section: 'moving',
+    label: labels => rowDraggingLabels(labels).actionNest,
+  },
   visible: ({ row, table }) => isMovableRow(row, table),
   run: ({ row, table }, event) =>
     event.key === 'ArrowLeft' ? unnestRow(row, table) : nestRow(row, table),

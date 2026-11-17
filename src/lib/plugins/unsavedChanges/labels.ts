@@ -18,6 +18,8 @@ export interface UnsavedChangesLabels {
   draftDiscardAll: string
   /** Подсказка точки записи (ADR 0224). */
   markHint: string
+  /** Прокрутка к цели записи не удалась (ADR 0227, §7). */
+  targetNotFound: string
 }
 
 export const unsavedChangesLabels = defineLabels<UnsavedChangesLabels>()(
@@ -30,10 +32,11 @@ export const unsavedChangesLabels = defineLabels<UnsavedChangesLabels>()(
       'Changes you have not applied yet will appear here',
     draftShow: 'Show',
     draftApply: 'Apply',
-    draftDiscard: 'Discard',
+    draftDiscard: 'Revert',
     draftApplyAll: 'Apply all',
-    draftDiscardAll: 'Discard all',
+    draftDiscardAll: 'Revert all',
     markHint: 'Not applied',
+    targetNotFound: "Couldn't find the row",
   },
   {
     unsavedChangesButton: ['count'],

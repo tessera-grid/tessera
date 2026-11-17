@@ -7,6 +7,7 @@
 import clsx from 'clsx'
 
 import { useLocalization } from '../../core/localization'
+import { keyboardShortcut, shortcutTitle } from '../../core/keyboardShortcut'
 import { logWarn } from '../../util/logger'
 import { IconButton } from '../../ui/IconButton'
 import { HiddenButtonContext } from '../../ui/IconButton/iconReveal'
@@ -74,7 +75,17 @@ export const ActionButton = ({
       disabled={disabled}
       aria-disabled={disabled}
       label={label}
+      tooltip={
+        action.shortcut
+          ? shortcutTitle(context.table, labels, label, action.shortcut)
+          : undefined
+      }
       aria-label={ariaLabel}
+      aria-keyshortcuts={
+        action.shortcut
+          ? keyboardShortcut(context.table, labels, action.shortcut).aria
+          : undefined
+      }
       data-action-id={action.id}
     >
       {action.icon(context)}

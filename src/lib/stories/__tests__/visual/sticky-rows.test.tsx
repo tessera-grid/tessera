@@ -297,9 +297,10 @@ describe('липкие строки групп и веток (ADR 0160)', () => 
         }
 
         // Шеврон копии T0/C1: группа свёрнута, её строка — сразу под копией T0.
-        await userEvent.click(
-          copies()[1]!.querySelector<HTMLElement>('.row-expand-button')!,
-        )
+        const copyToggle = () =>
+          copies()[1]?.querySelector<HTMLElement>('.row-expand-button') ?? null
+        await expect.poll(copyToggle).not.toBeNull()
+        await userEvent.click(copyToggle()!)
         await expect.poll(() => realRow(t0c1)?.dataset.expanded).toBe('false')
         await expect.poll(copyIds).toEqual([t0])
         await expect

@@ -475,10 +475,10 @@ const POPUPS: readonly AssembledPopup[] = [
   },
   {
     id: 'failureLog',
-    title: { ru: 'Журнал отказов', en: 'Failure log' },
+    title: { ru: 'Журнал ошибок', en: 'Error log' },
     hint: {
-      ru: 'Пользователь открыл журнал отказов. Панель собрана из поверхности, заголовка и записей отказов.',
-      en: 'The user opened the failure log. The panel is assembled from a surface, a title and the failure entries.',
+      ru: 'Пользователь открыл журнал ошибок. Панель собрана из поверхности, заголовка и записей отказов.',
+      en: 'The user opened the error log. The panel is assembled from a surface, a title and the failure entries.',
     },
     sources: ['plugins/failureLog/FailureLogPopover'],
     states: ['overlay.failureLog'],
@@ -525,6 +525,35 @@ const POPUPS: readonly AssembledPopup[] = [
         () => byTestId('edit-history'),
         signal,
       ),
+  },
+  {
+    id: 'shortcuts',
+    title: { ru: 'Сочетания клавиш', en: 'Keyboard shortcuts' },
+    hint: {
+      ru: 'Пользователь открыл сводку сочетаний из настроек вида. Панель собрана из поверхности, заголовка, поля поиска и записей действий.',
+      en: 'The user opened the keyboard shortcuts from view settings. The panel is assembled from a surface, a title, a search field and action entries.',
+    },
+    sources: ['grid/Shortcuts/Shortcuts'],
+    states: ['overlay.shortcuts'],
+    shown: () => byTestId('keyboard-shortcuts'),
+    parts: ['[data-shortcuts-list]'],
+    open: async (_root, { signal }) => {
+      await openToolbarPopover(
+        'view-settings-button',
+        viewSettingsPopover,
+        signal,
+      )
+      await repeat(
+        () => !!byTestId('keyboard-shortcuts'),
+        () =>
+          document
+            .querySelector<HTMLElement>(
+              '[data-view-settings-section="shortcuts"]',
+            )
+            ?.click(),
+        signal,
+      )
+    },
   },
 ]
 
@@ -674,5 +703,6 @@ export const PopupAssembled: StoryObj<StoryProps> = {
     await step(STEPS[16]!.title.ru, () => expectPopup(canvas, 'failureLog'))
     await step(STEPS[17]!.title.ru, () => expectPopup(canvas, 'unsavedChanges'))
     await step(STEPS[18]!.title.ru, () => expectPopup(canvas, 'editHistory'))
+    await step(STEPS[19]!.title.ru, () => expectPopup(canvas, 'shortcuts'))
   },
 }

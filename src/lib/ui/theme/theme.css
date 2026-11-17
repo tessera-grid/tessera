@@ -42,6 +42,7 @@
   --tsr-ref-orange-400: oklch(75% 0.183 55.934);
   --tsr-ref-green-400: oklch(79.2% 0.209 151.711);
   --tsr-ref-green-500: oklch(72.3% 0.219 149.579);
+  --tsr-ref-green-600: oklch(62.7% 0.194 149.214);
   --tsr-ref-sky-400: oklch(74.6% 0.16 232.661);
   --tsr-ref-sky-500: oklch(68.5% 0.169 237.323);
   --tsr-ref-sky-600: oklch(58.8% 0.158 241.966);
@@ -100,6 +101,9 @@
   /* Несохранённое (ADR 0178, §4): черновики — не ниже 3:1 к фону, цифры на нём — 4,5:1. */
   --tsr-sys-unsaved: var(--tsr-ref-amber-700);
   --tsr-sys-success: var(--success, var(--tsr-ref-green-500));
+  /* Успех значком на поверхности (ADR 0227, §8): не ниже 3:1 к ней — ступень 600, в тёмной
+   * теме 400; без моста: `--success` приложения — тон заливки. */
+  --tsr-sys-success-strong: var(--tsr-ref-green-600);
   /* Смена значения извне (ADR 0221): синий, янтарь и зелёный заняты. */
   --tsr-sys-changed: var(--tsr-ref-violet-500);
 
@@ -208,6 +212,7 @@
   --tsr-sys-warning: var(--warning, var(--tsr-ref-amber-400));
   --tsr-sys-unsaved: var(--tsr-ref-orange-400);
   --tsr-sys-success: var(--success, var(--tsr-ref-green-400));
+  --tsr-sys-success-strong: var(--tsr-ref-green-400);
   --tsr-sys-changed: var(--tsr-ref-violet-400);
   --tsr-sys-elevated: color-mix(
     in oklch,
@@ -541,16 +546,16 @@
     var(--tsr-sys-surface)
   );
   /*
-   * Стрелка роста и падения (ADR 0221, §6): треугольник в отступе у начала ячейки; тон темнее
-   * роли к цвету текста — не ниже 3:1 на своей вспышке.
+   * Стрелка роста и падения (ADR 0221, §6): треугольник в отступе у начала ячейки; роль, сдвинутая
+   * к цвету текста, — не ниже 3:1 на своей вспышке. Смесь в sRGB: в oklch оттенок уходит к 0°.
    */
   --tsr-comp-flash-up-color: color-mix(
-    in oklch,
-    var(--tsr-sys-success) 60%,
+    in srgb,
+    var(--tsr-sys-success-strong) 75%,
     var(--tsr-sys-fg)
   );
   --tsr-comp-flash-down-color: color-mix(
-    in oklch,
+    in srgb,
     var(--tsr-sys-danger) 75%,
     var(--tsr-sys-fg)
   );
@@ -942,6 +947,11 @@
   );
   --tsr-comp-alert-max-width: 36rem;
   --tsr-comp-alert-icon-color: var(--tsr-sys-danger);
+  /* Тон успеха (ADR 0227, §8): только иконка — зелёный значка успеха, без смеси с текстом:
+   * в oklch она уводит оттенок к жёлтому. */
+  --tsr-comp-alert-success-color: var(--tsr-sys-success-strong);
+  /* Нейтральный тон (ADR 0227, §8): иконка — приглушённым цветом значков кнопок кита. */
+  --tsr-comp-alert-neutral-color: var(--tsr-comp-control-color);
   /* Приглушённое описание — как причина отказа ленты, с её надстройкой контраста. */
   --tsr-comp-alert-description-color: var(--tsr-comp-load-more-reason-color);
   /* Имя функции перед итогом колонки (ADR 0230, §4): приглушённый текст, как подпись группы. */
@@ -1013,6 +1023,8 @@
 
 :where(.data-grid-theme) {
   color-scheme: var(--tsr-sys-scheme);
+  /* Касание без двойного нажатия для масштаба и его задержки; грип и ручки — `none` (ADR 0231, §4). */
+  touch-action: manipulation;
 }
 
 /*

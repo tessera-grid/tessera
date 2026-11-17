@@ -203,6 +203,7 @@ describe('«Настройки вида» (ADR 0215)', () => {
       'grouping',
       'columns',
       'own',
+      'shortcuts',
     ])
     for (const id of rowIds()) {
       const row = viewSettingsRow(id!)!
@@ -214,6 +215,7 @@ describe('«Настройки вида» (ADR 0215)', () => {
     // Сортировка активна, «Колонки» — своя панель: открываются. Фильтр и группировка — нет.
     expect(chevron('sorting')).toBe(true)
     expect(chevron('columns')).toBe(true)
+    expect(chevron('shortcuts')).toBe(true)
     expect(chevron('filter')).toBe(false)
     expect(viewSettingsRow('filter')!.getAttribute('aria-disabled')).toBe(
       'true',
@@ -342,6 +344,9 @@ describe('«Настройки вида» (ADR 0215)', () => {
     await expect.poll(() => levels().length).toBe(1)
     await focused(() => removeOf(levels()[0]!))
 
+    // Первый Escape гасит подсказку точки, второй закрывает поповер (ADR 0232, KX9).
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(viewSettingsPopover).not.toBeNull()
     await userEvent.keyboard('{Escape}')
     await expect.poll(viewSettingsPopover).toBeNull()
   })

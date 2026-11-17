@@ -8,6 +8,8 @@ export interface ColumnSortingLabels {
   sortDescending: string
   /** Тултип «сбросить сортировку» */
   clearSort: string
+  /** Пункт меню колонки: следующий уровень мультисортировки (ADR 0231, §7) */
+  addToSorting: string
   /**
    * Доступное имя приоритета столбца в мультисортировке (`position` из `total`,
    * 1-based). Уходит в `aria-label` кнопки — числовой бейдж приоритета скринридер
@@ -38,6 +40,7 @@ export const columnSortingLabels = defineLabels<ColumnSortingLabels>()(
     sortAscending: 'Sort ascending',
     sortDescending: 'Sort descending',
     clearSort: 'Clear sorting',
+    addToSorting: 'Add to sorting',
     sortPriority: 'Sort priority {position} of {total}',
     actionSort: 'Sort',
     transformName: 'sorting',

@@ -90,6 +90,7 @@ import {
   enableInfiniteScrollType,
   enableServerRowModelType,
   enableKeyboardNavigationType,
+  keyboardPlatformType,
   enableOverflowTooltipType,
   enableRowAnimationType,
   enableColumnAnimationType,
@@ -216,6 +217,7 @@ export const dataGridArgTypes = {
     enableStatusBar: enableStatusBarType,
     enableAnnouncements: enableAnnouncementsType,
     enableKeyboardNavigation: enableKeyboardNavigationType,
+    keyboardPlatform: keyboardPlatformType,
     enableOverflowTooltip: enableOverflowTooltipType,
     enableRowAnimation: enableRowAnimationType,
     enableColumnAnimation: enableColumnAnimationType,
@@ -624,6 +626,7 @@ export const dataGridDefaultArgs = {
   cellSelectionPaste: true,
   enableContextMenu: false,
   enableKeyboardNavigation: false,
+  keyboardPlatform: 'auto',
 
   enableQuickSearch: false,
   quickSearchDebounceMs: DEFAULT_QUICK_SEARCH_OPTIONS.debounceMs,

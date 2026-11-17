@@ -525,6 +525,11 @@ export const cellSelectionPasteType = booleanControl(
 export const enableContextMenuType = booleanControl(
   'A context menu on right click (`contextMenu` plugin)',
 )
+export const keyboardPlatformType = radioControl(
+  'Keyboard platform (`keyboardPlatform`): `apple` — shortcuts with Cmd, `other` — with Ctrl, `auto` — by the browser',
+  ['auto', 'apple', 'other'],
+  'auto',
+)
 export const enableKeyboardNavigationType = booleanControl(
   'Arrow-key navigation between cells: the grid role, roving tabindex (`enableKeyboardNavigation`)',
 )
@@ -645,7 +650,7 @@ export const enableColumnAggregationType = booleanControl(
   'Summary of a column: the user picks the function of the total and of group values in the column menu (`columnAggregation` plugin)',
 )
 export const enableFailureLogType = booleanControl(
-  'Failure log in the toolbar: a button with a count while there are unresolved refusals; it only joins a toolbar that is already shown (`failureLog` plugin)',
+  'Error log in the toolbar: a button with a count while there are unresolved refusals; it only joins a toolbar that is already shown (`failureLog` plugin)',
 )
 export const enableUnsavedChangesType = booleanControl(
   'Unsaved changes panel in the toolbar: a button with a count of unapplied changes and their list; it only joins a toolbar that is already shown (`unsavedChanges` plugin)',
@@ -728,7 +733,7 @@ export const quickSearchToolbarType = toolbarPlacementControl('Search')
 export const dataExportToolbarType = toolbarPlacementControl('Export')
 export const unsavedChangesToolbarType =
   toolbarPlacementControl('Unsaved changes')
-export const failureLogToolbarType = toolbarPlacementControl('Failure log')
+export const failureLogToolbarType = toolbarPlacementControl('Error log')
 export const editHistoryToolbarType = toolbarPlacementControl('Undo and Redo')
 export const editHistoryHistoryPanelType =
   toolbarPlacementControl('Change history')

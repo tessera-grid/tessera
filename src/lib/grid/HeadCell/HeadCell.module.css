@@ -20,8 +20,8 @@
     border-bottom: 1px solid var(--tsr-comp-cell-divider-color);
   }
 
-  /* Граница группы видна при любом токене: где группа кончается (ADR 0207, §4, NV10). */
-  &[data-group-end] {
+  /* Во вложенной шапке линия у каждого заголовка при любом токене (ADR 0207, §4, NV10). */
+  &[data-head-divider] {
     border-right-width: max(1px, var(--tsr-comp-column-divider-width));
   }
 
@@ -190,6 +190,11 @@
     }
   }
 
+  /* Касание на экране с наведением — кнопки видны, промежутки есть (ADR 0231, §2). */
+  :where(:root[data-tsr-input='touch']) & :global(.cell__button--hidden) {
+    --tsr-head-hidden-gap: initial;
+  }
+
   & :where(:global(.cell__button--hidden)) {
     margin-inline-start: var(--tsr-head-hidden-gap);
   }
@@ -261,7 +266,8 @@
 
   /* Бэкграунд заголовка при наведении и протяжке ширины */
 
-  &:hover:not([data-actions-column-cell='true']),
+  :where(:root:not([data-tsr-input='touch']))
+    &:hover:not([data-actions-column-cell='true']),
   &:is([data-column-resizing='true']) {
     --tsr-head-cell-bg: var(--tsr-comp-head-cell-hovered-bg);
   }
@@ -362,7 +368,8 @@
    * Наведение — контур `Highlight`, как у ячейки тела: смену фона режим снимает. Нижний
    * край — над линией под шапкой: строка шапки — свой слой, линию поверх неё не перекрыть.
    */
-  .head__cell:hover:not([data-actions-column-cell='true'])::before {
+  :where(:root:not([data-tsr-input='touch']))
+    .head__cell:hover:not([data-actions-column-cell='true'])::before {
     content: '';
     position: absolute;
     inset: 0 0 1px;

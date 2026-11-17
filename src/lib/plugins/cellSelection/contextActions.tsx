@@ -22,6 +22,7 @@ import { cellSelectionLabels } from './labels'
 export const copyContextAction: ContextMenuAction = {
   id: 'cellSelection:copy',
   order: 0,
+  shortcut: 'Mod+C',
   icon: () => <Copy width={16} height={16} />,
   label: labels => cellSelectionLabels(labels).copy,
   // Показываем, когда ячейка под курсором входит в выделение (для одной и для
@@ -43,6 +44,7 @@ const writable = (ctx: Parameters<ContextMenuAction['onSelect']>[0]) =>
 export const cutContextAction: ContextMenuAction = {
   id: 'cellSelection:cut',
   order: 1,
+  shortcut: 'Mod+X',
   icon: () => <Scissors width={16} height={16} />,
   label: labels => cellSelectionLabels(labels).cut,
   visible: ctx => ctx.selection.isInSelection && canPaste(ctx.table),
@@ -54,6 +56,7 @@ export const cutContextAction: ContextMenuAction = {
 export const pasteContextAction: ContextMenuAction = {
   id: 'cellSelection:paste',
   order: 2,
+  shortcut: 'Mod+V',
   icon: () => <ClipboardPaste width={16} height={16} />,
   label: labels => cellSelectionLabels(labels).paste,
   visible: ctx => ctx.selection.isInSelection && canPaste(ctx.table),
@@ -79,6 +82,7 @@ export const clearContextAction: ContextMenuAction = {
 export const fillDownContextAction: ContextMenuAction = {
   id: 'cellSelection:fillDown',
   order: 4,
+  shortcut: 'Mod+D',
   icon: () => <ArrowDownToLine width={16} height={16} />,
   label: labels => cellSelectionLabels(labels).fillDown,
   visible: ctx => ctx.selection.isInSelection && canPaste(ctx.table),
@@ -92,6 +96,7 @@ export const fillDownContextAction: ContextMenuAction = {
 export const fillRightContextAction: ContextMenuAction = {
   id: 'cellSelection:fillRight',
   order: 5,
+  shortcut: 'Mod+R',
   icon: () => <ArrowRightToLine width={16} height={16} />,
   label: labels => cellSelectionLabels(labels).fillRight,
   visible: ctx => ctx.selection.isInSelection && canPaste(ctx.table),

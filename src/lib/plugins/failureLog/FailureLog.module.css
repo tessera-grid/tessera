@@ -46,3 +46,14 @@
   font-weight: normal;
   overflow-wrap: anywhere;
 }
+
+/* Уровень журнала — во всю ширину поповера. */
+.panel {
+  min-width: 0;
+}
+
+/* Вопрос перед отбрасыванием всех правок — на месте кнопок внизу (ADR 0227, §6). */
+.question {
+  flex: 1 1 auto;
+  min-width: 0;
+}

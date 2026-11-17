@@ -72,6 +72,8 @@ export const cellEditing = definePlugin<CellEditingOptions>()({
   actions: {
     edit: labels => cellEditingLabels(labels).cellDraftKind,
     commit: { plugin: 'core', action: 'save' },
+    // Итог применения черновиков (ADR 0227, AO18).
+    applied: { plugin: 'core', action: 'save' },
     changeDraft: labels => cellEditingLabels(labels).actionChangeDraft,
     validationFailed: labels =>
       cellEditingLabels(labels).actionValidationFailed,

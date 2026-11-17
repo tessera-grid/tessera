@@ -7,6 +7,7 @@
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 
 import { actionDetailOf, actionOwnerOf } from './actionOwners'
+import type { KeyboardShortcutDefinition } from './keyboardShortcut'
 import type { CellComponentProps, HeaderComponentProps } from './createSlots'
 import { type DebugActionSource, reportAction } from './debugActions'
 
@@ -19,6 +20,8 @@ interface KeyboardActionBase<TCtx> {
    * цифра сочетания — по коду клавиши, на любой раскладке; регистр буквы не важен (ADR 0220).
    */
   keys: string[]
+  /** Сочетание и подпись для сводки клавиш (ADR 0232, KX18). */
+  shortcut?: KeyboardShortcutDefinition
   /**
    * Действие раскрывает/сворачивает строку: его вызывает и фокус на строке
    * treegrid (`→`/`←`, ADR 0032, W16), не зная плагина-владельца.

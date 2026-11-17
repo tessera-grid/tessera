@@ -197,18 +197,11 @@ export const HeadCellView = ({
     return null
   }
 
-  // Заголовок группы и последний видимый лист группы — граница группы в шапке (ADR 0207, §4).
   const isGroup = header.column.columns.length > 0
-  const parent = header.column.parent
-  const groupEnd =
-    isGroup ||
-    (!!parent &&
-      parent
-        .getLeafColumns()
-        .filter(column => column.getIsVisible())
-        .at(-1)?.id === header.column.id)
-
   const headerRowCount = table.getHeaderGroups().length
+  // Во вложенной шапке линия у каждого заголовка: под общей подписью группы видно, где кончается
+  // каждый лист и каждая подгруппа (ADR 0207, §4).
+  const headDivider = headerRowCount > 1
   const reachesLastRow =
     getHeaderRowStart(header) + header.rowSpan === headerRowCount
 
@@ -279,7 +272,7 @@ export const HeadCellView = ({
       data-last-headers-row={reachesLastRow}
       data-header-stretched={header.rowSpan > 1 || undefined}
       data-header-group={isGroup || undefined}
-      data-group-end={groupEnd || undefined}
+      data-head-divider={headDivider || undefined}
       data-first-header-in-row={header.getIsFirstHeader()}
       data-last-header-in-row={header.getIsLastHeader()}
       data-header-full-height={header.getIsFullHeightHeader()}

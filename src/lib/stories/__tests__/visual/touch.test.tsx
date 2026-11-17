@@ -31,12 +31,43 @@ import {
   columnPinning,
   columnSizing,
   headerActionMenu,
+  rowSelection,
+  rowExpanding,
+  rowGrouping,
+  rowDragging,
+  rowActions,
+  rowActionMenu,
+  cellSelection,
+  contextMenu,
+  pagination,
+  backToTop,
+  failureLog,
+  unsavedChanges,
+  columnVisibility,
+  columnAggregation,
+  quickSearch,
+  exportFormats,
+  columnTotals,
 } from '../../../plugins'
 import { columnSizingLabels } from '../../../plugins/columnSizing/labels'
+import { cellSelectionLabels } from '../../../plugins/cellSelection/labels'
+import type { RowAction } from '../../../core/headerActions'
+import { definePlugin } from '../../../core/definePlugin'
+import { dataExportLabels } from '../../../plugins/dataExport/labels'
+import { backToTopLabels } from '../../../plugins/backToTop/labels'
+import { paginationLabels } from '../../../plugins/pagination/labels'
+import { rowExpandingLabels } from '../../../plugins/rowExpanding/labels'
+import { rowSelectionLabels } from '../../../plugins/rowSelection/labels'
+import { columnAggregationLabels } from '../../../plugins/columnAggregation/labels'
+import { columnVisibilityLabels } from '../../../plugins/columnVisibility/labels'
+import { quickSearchLabels } from '../../../plugins/quickSearch/labels'
 import { columnDraggingLabels } from '../../../plugins/columnDragging/labels'
 import { rowDraggingLabels } from '../../../plugins/rowDragging/labels'
 import { cellEditingLabels } from '../../../plugins/cellEditing/labels'
 import { columnPinningLabels } from '../../../plugins/columnPinning/labels'
+import { contextMenuLabels } from '../../../plugins/contextMenu/labels'
+import { columnSortingLabels } from '../../../plugins/columnSorting/labels'
+import { overflowColumns, overflowData } from '../../__mocks__/overflowColumns'
 import { Bubble } from '../../../ui/Bubble'
 import { PopupEntry } from '../../../ui/Popup/PopupEntry'
 
@@ -1232,7 +1263,7 @@ const IssueGrid = () => {
 }
 
 describe('Треугольник отказа ячейки на касаниях (ADR 0177)', () => {
-  test('OB10: треугольник — кнопка с зоной 24×24; нажатие, касание и Enter открывают поповер с причиной, «Отбросить изменение» и «Повторить», если источник умеет повторять; касание угла не переключает флажок булевой ячейки', async () => {
+  test('OB10: треугольник — кнопка с зоной 24×24; нажатие, касание и Enter открывают поповер с причиной, «Сбросить изменение» и «Повторить», если источник умеет повторять; касание угла не переключает флажок булевой ячейки', async () => {
     issueEdits = 0
     const screen = await render(<IssueGrid />)
     try {
@@ -1269,7 +1300,7 @@ describe('Треугольник отказа ячейки на касаниях
       const zone = issue('r1', 'inStock')!.getBoundingClientRect()
       expect(Math.min(zone.width, zone.height)).toBeGreaterThanOrEqual(24)
 
-      // Касание угла: поповер с причиной, «Повторить» и «Отбросить»; флажок не переключён.
+      // Касание угла: поповер с причиной, «Повторить» и «Сбросить»; флажок не переключён.
       const edits = issueEdits
       await touch.realTap({ x: zone.right - 3, y: zone.top + 3 })
       await expect.poll(popover).not.toBeNull()
@@ -1291,7 +1322,7 @@ describe('Треугольник отказа ячейки на касаниях
       expect(actionsOf()).toEqual(['discard', 'retry'])
       await close()
 
-      // Источник без повтора — только «Отбросить»; с повтором — и «Повторить».
+      // Источник без повтора — только «Сбросить»; с повтором — и «Повторить».
       void issueTable
         .trackCellAction(
           { cell: ['r2', 'name'] },
@@ -1386,6 +1417,9 @@ describe('Маркеры выделения пальцем (ADR 0198, этап 2
   const dragCircle = async (corner: 'start' | 'end', to: HTMLElement) => {
     const from = center(handleOf(corner)!)
     await touch.realTouchDown([from])
+    await expect
+      .poll(() => handleOf(corner)?.hasAttribute('data-dragging'))
+      .toBe(true)
     await touch.realTouchMove(from, center(to), 10)
     await touch.realTouchUp()
   }
@@ -1652,5 +1686,670 @@ describe('Подсказка точки пальцем (ADR 0224)', () => {
     } finally {
       await screen.unmount()
     }
+  })
+})
+
+describe('Касание каждой фичи (ADR 0231)', () => {
+  /** Тексты подсказок на экране. */
+  const openTips = () =>
+    [...document.querySelectorAll('[data-tooltip-popup][data-open]')].map(
+      element => element.textContent ?? '',
+    )
+  /** Удержание пальца дольше долгого нажатия. */
+  const hold = async (el: Element) => {
+    await touch.realTouchDown([center(el)])
+    await wait(LONG_PRESS_WAIT_MS)
+  }
+  const release = async () => {
+    await touch.realTouchUp()
+    await wait(100)
+  }
+  const titleOf = (text: string) =>
+    [
+      ...document.querySelectorAll<HTMLElement>(
+        '.data-grid__cell-wrapper-title',
+      ),
+    ].find(element => element.textContent === text)!
+  const LONG_NAME = 'Bartholomew Montgomery-Fitzgerald'
+  const SHORT_CITY = 'Saint Petersburg'
+
+  test('TV6: удержание иконочной кнопки пальцем 500 мс без сдвига показывает её подсказку, касание без удержания нажимает; долгое нажатие на кнопке в ячейке контекстное меню не открывает', async ({
+    skip,
+  }) => {
+    skip(!chromium, 'удержание пальца — CDP Chromium')
+    renderGrid({
+      columnCount: 6,
+      dataCount: 20,
+      enableColumnSorting: true,
+      enableCellEditing: true,
+      enableContextMenu: true,
+      actionsDemo: 'async',
+    })
+    await waitForGrid()
+    const row = rowAt(2)
+    await tapCell(row, 'age')
+    const edit = () =>
+      cellOf(row, 'age').querySelector<HTMLElement>(
+        `[aria-label="${cellEditingLabels(tableLabels).editCell}"]`,
+      )!
+    await settle(row)
+    await hold(edit())
+    try {
+      await expect
+        .poll(openTips, { timeout: 2000 })
+        .toContain(cellEditingLabels(tableLabels).editCell)
+      expect(menu(), 'кнопка в ячейке — не меню ячейки').toBeNull()
+    } finally {
+      await release()
+    }
+    expect(menu()).toBeNull()
+
+    const headCell = headById(dataColumn())
+    const sort = headCell.querySelector<HTMLElement>(
+      'button.column-sort__button, .column-sort__button button',
+    )!
+    const name = sort.getAttribute('aria-label')!
+    const sortState = () => headCell.getAttribute('aria-sort')
+    const before = sortState()
+    // Прокрутка закрывает подсказку, открытую удержанием.
+    scroller().scrollLeft = 0
+    await expect.poll(openTips).toEqual([])
+
+    await hold(sort)
+    try {
+      await expect.poll(openTips, { timeout: 2000 }).toContain(name)
+    } finally {
+      await release()
+    }
+    expect(sortState(), 'удержание не нажимает').toBe(before)
+
+    await touch.realTap(center(sort))
+    await expect.poll(sortState).not.toBe(before)
+  })
+
+  test('TV7: касание: у ячейки с обрезанным текстом первый пункт контекстного меню «Показать полностью» показывает подсказку с полным текстом; у необрезанной пункта нет; без контекстного меню удержание обрезанной ячейки показывает подсказку', async ({
+    skip,
+  }) => {
+    skip(!chromium, 'удержание пальца — CDP Chromium')
+    const label = contextMenuLabels(tableLabels).showFullText
+    const items = () =>
+      [...(menu()?.querySelectorAll('[role="menuitem"]') ?? [])].map(
+        item => item.textContent?.trim() ?? '',
+      )
+    const withMenu = await render(
+      <composed.DataGridPlayground
+        columnsOverride={overflowColumns}
+        dataOverride={overflowData}
+        containerHeight="560"
+        height="460"
+        enableContextMenu
+        actionsDemo="async"
+      />,
+    )
+    await waitForGrid()
+    await hold(titleOf(LONG_NAME))
+    await expect.poll(menu, { timeout: 5000 }).toBeTruthy()
+    await release()
+    await expect.poll(() => items()[0]).toBe(label)
+    await touch.realTap(
+      center(
+        [...menu()!.querySelectorAll('[role="menuitem"]')].find(
+          item => item.textContent?.trim() === label,
+        )!,
+      ),
+    )
+    await expect.poll(openTips, { timeout: 2000 }).toContain(LONG_NAME)
+    await touch.realTap(center(document.querySelector(HEAD_CELL)!))
+    await expect.poll(openTips, { timeout: 2000 }).not.toContain(LONG_NAME)
+
+    // Колонка города — у правого края узкого экрана: в окно.
+    titleOf(SHORT_CITY).scrollIntoView({ block: 'nearest', inline: 'center' })
+    await wait(100)
+    await hold(titleOf(SHORT_CITY))
+    await expect.poll(menu, { timeout: 5000 }).toBeTruthy()
+    await release()
+    expect(items()).not.toContain(label)
+    await closeMenu()
+    await withMenu.unmount()
+
+    await render(
+      <composed.DataGridPlayground
+        columnsOverride={overflowColumns}
+        dataOverride={overflowData}
+        containerHeight="560"
+        height="460"
+      />,
+    )
+    await waitForGrid()
+    await hold(titleOf(LONG_NAME))
+    await expect.poll(openTips, { timeout: 2000 }).toContain(LONG_NAME)
+    await release()
+    expect(openTips()).toContain(LONG_NAME)
+    await touch.realTap(center(document.querySelector(HEAD_CELL)!))
+    await expect.poll(openTips, { timeout: 2000 }).not.toContain(LONG_NAME)
+  })
+})
+
+describe('Касание: мультисортировка из меню (ADR 0231)', () => {
+  const itemLabels = () =>
+    [
+      ...(menu()?.querySelectorAll(
+        '[role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"]',
+      ) ?? []),
+    ].map(item => item.textContent?.trim() ?? '')
+  const itemByLabel = (label: string) =>
+    [
+      ...(menu()?.querySelectorAll<HTMLElement>('[role^="menuitem"]') ?? []),
+    ].find(item => item.textContent?.trim() === label)
+  const openKebab = async (columnId: string) => {
+    scroller().scrollLeft = 0
+    const kebab =
+      headById(columnId).querySelector<HTMLElement>('[data-action-menu]')!
+    kebab.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+    await touch.realTap(center(kebab))
+    await expect.poll(menu, { timeout: 5000 }).toBeTruthy()
+  }
+
+  test('TV8: при включённой мультисортировке и сортировке по другой колонке меню колонки предлагает «Добавить к сортировке»: колонка встаёт следующим уровнем; без сортировки по другим колонкам пункта нет', async () => {
+    // Кнопки шапки — в меню колонки: сортировку пальцем дают его пункты.
+    renderGrid({
+      columnCount: 6,
+      dataCount: 20,
+      enableColumnSorting: true,
+      enableHeaderActionMenu: true,
+      headerActionMenuMode: 'always',
+    })
+    await waitForGrid()
+    const sortLabels = columnSortingLabels(tableLabels)
+    const add = sortLabels.addToSorting
+
+    await openKebab('lastName')
+    expect(itemLabels()).not.toContain(add)
+    await touch.realTap(center(itemByLabel(sortLabels.sortAscending)!))
+    await expect
+      .poll(() => headById('lastName').getAttribute('aria-sort'))
+      .toBe('ascending')
+    await expect.poll(menu).toBeNull()
+
+    await openKebab('lastName')
+    expect(itemLabels(), 'у отсортированной колонки пункта нет').not.toContain(
+      add,
+    )
+    await closeMenu()
+
+    await openKebab('firstName')
+    await touch.realTap(center(itemByLabel(add)!))
+    await expect
+      .poll(() => headById('firstName').getAttribute('aria-sort'))
+      .toBe('ascending')
+    expect(headById('lastName').getAttribute('aria-sort')).toBe('ascending')
+    // Колонка — следующий уровень: строки по-прежнему идут по первому уровню.
+    const lastNames = [...document.querySelectorAll<HTMLElement>(BODY_ROW)]
+      .sort(
+        (x, y) => x.getBoundingClientRect().top - y.getBoundingClientRect().top,
+      )
+      .map(row => cellOf(row, 'lastName').textContent?.trim() ?? '')
+    expect(lastNames).toEqual([...lastNames].sort((x, y) => x.localeCompare(y)))
+    await expect.poll(menu).toBeNull()
+  })
+})
+
+// Касание каждой фичи (ADR 0231, TV11–TV27): путь пользователя пальцем, теми же касаниями
+// Chromium, что и TU. Стенд — своя таблица: столбцы текста, вариантов и чисел.
+interface TouchItem {
+  id: string
+  name: string
+  city: string
+  amount: number
+  subRows?: TouchItem[]
+}
+
+const CITIES = ['Rome', 'Paris', 'Berlin']
+const TOUCH_DATA: TouchItem[] = Array.from({ length: 60 }, (_, index) => ({
+  id: `r${index}`,
+  name: `Name ${index}`,
+  city: CITIES[index % 3]!,
+  amount: index * 10,
+}))
+const TOUCH_TREE: TouchItem[] = TOUCH_DATA.slice(0, 10).map(item => ({
+  ...item,
+  subRows: [0, 1].map(child => ({
+    ...item,
+    id: `${item.id}-${child}`,
+    name: `${item.name}.${child}`,
+  })),
+}))
+const TOUCH_COLUMNS = [
+  { id: 'name', accessorKey: 'name', header: 'Name', size: 140 },
+  {
+    id: 'city',
+    accessorKey: 'city',
+    header: 'City',
+    size: 130,
+    dataType: 'select',
+  },
+  {
+    id: 'amount',
+    accessorKey: 'amount',
+    header: 'Amount',
+    size: 130,
+    dataType: 'number',
+  },
+]
+
+interface TouchGridProps {
+  plugins: unknown[]
+  data?: TouchItem[]
+  options?: Record<string, unknown>
+}
+
+const TouchGrid = ({ plugins, data = TOUCH_DATA, options }: TouchGridProps) => {
+  const table = useCreateTable({
+    columns: TOUCH_COLUMNS as never,
+    data,
+    getRowId: (row: TouchItem) => row.id,
+    getSubRows: (row: TouchItem) => row.subRows,
+    enableToolbar: true,
+    enableStatusBar: true,
+    plugins: plugins as never,
+    ...options,
+  })
+  return (
+    <div style={{ height: 600 }}>
+      <DataGrid table={table as never} height={560} />
+    </div>
+  )
+}
+
+const mountTouch = async (props: TouchGridProps) => {
+  const screen = await render(<TouchGrid {...props} />)
+  await waitForGrid()
+  return screen
+}
+
+/** Коснуться элемента: сперва в окно, затем пальцем в центр. */
+const tapOn = async (get: () => Element | null | undefined) => {
+  // Элемент ищется в момент касания: перерисовка таблицы меняет узлы.
+  await expect.poll(get).toBeTruthy()
+  get()!.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  await new Promise(resolve => requestAnimationFrame(resolve))
+  await touch.realTap(await settledCenter(() => get() as HTMLElement))
+}
+const rowById = (id: string) =>
+  document.querySelector<HTMLElement>(`${BODY_ROW}[data-row-id='${id}']`)
+const visibleRowIds = () =>
+  Array.from(document.querySelectorAll<HTMLElement>(`${BODY_ROW}[data-row-id]`))
+    .sort(
+      (a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top,
+    )
+    .map(row => row.dataset.rowId!)
+const cityTexts = () =>
+  Array.from(
+    document.querySelectorAll<HTMLElement>(`${BODY_ROW}[data-row-id]`),
+  ).map(row => cellOf(row, 'city').textContent?.trim() ?? '')
+const headKebab = (id: string) =>
+  headById(id).querySelector<HTMLElement>('[data-action-menu]')!
+const menuItem = (label: string) =>
+  Array.from(
+    menu()?.querySelectorAll<HTMLElement>('[role^="menuitem"]') ?? [],
+  ).find(item => item.textContent?.trim().startsWith(label))
+
+describe('Касание каждой фичи (ADR 0231, TV11–TV27)', () => {
+  test('TV11: касание кнопки сортировки сортирует колонку', async () => {
+    await mountTouch({ plugins: [columnSorting()] })
+    await tapOn(() => headById('name').querySelector('.column-sort__button'))
+    // Направление первого нажатия — по типу колонки; сортировка включена.
+    await expect
+      .poll(() => headById('name').getAttribute('aria-sort'))
+      .toMatch(/^(ascending|descending)$/)
+  })
+
+  test('TV12: касанием открывается панель фильтра колонки, вариант чек-листа отмечается касанием, отбор применяется', async () => {
+    await mountTouch({ plugins: [columnFiltering({ debounceMs: 0 })] })
+    await tapOn(() => headById('city').querySelector('.column-filter__button'))
+    const panel = () =>
+      document.querySelector<HTMLElement>('[data-testid="filter-panel"]')
+    await expect.poll(panel, { timeout: 5000 }).not.toBeNull()
+    const rome = () =>
+      panel()!.querySelector<HTMLElement>(
+        '[data-option-index][data-value="Rome"] [role="checkbox"]',
+      )
+    await expect.poll(rome).not.toBeNull()
+    await tapOn(() => rome())
+    await expect.poll(() => rome()!.getAttribute('aria-checked')).toBe('true')
+    await expect.poll(() => [...new Set(cityTexts())]).toEqual(['Rome'])
+  })
+
+  test('TV13: касание поля поиска даёт фокус для ввода; кнопка очистки очищает касанием', async () => {
+    await mountTouch({ plugins: [quickSearch({ debounceMs: 0 })] })
+    const field = () =>
+      document.querySelector<HTMLInputElement>(
+        `input[aria-label="${quickSearchLabels(tableLabels).search}"]`,
+      )!
+    await tapOn(() => field())
+    await expect.poll(() => document.activeElement).toBe(field())
+    await userEvent.keyboard('Name 7')
+    await expect.poll(() => visibleRowIds()).toEqual(['r7'])
+    const clear = () =>
+      document.querySelector<HTMLElement>('[data-testid="quick-search-clear"]')
+    await expect.poll(clear).not.toBeNull()
+    await tapOn(() => clear())
+    await expect.poll(() => field().value).toBe('')
+    await expect.poll(() => visibleRowIds().length).toBeGreaterThan(1)
+  })
+
+  test('TV14: касанием из кебаба колонка закрепляется слева', async () => {
+    await mountTouch({
+      plugins: [columnPinning(), headerActionMenu({ mode: 'always' })],
+    })
+    await tapOn(() => headKebab('amount'))
+    await expect.poll(menu, { timeout: 5000 }).toBeTruthy()
+    const pin = columnPinningLabels(tableLabels)
+    const direct = menuItem(pin.pinLeft)
+    await tapOn(() => direct ?? menuItem(pin.pin))
+    if (!direct) {
+      // Раздел закрепления — пункт стороны внутри.
+      await expect.poll(() => menuItem(pin.pinLeft)).toBeTruthy()
+      await tapOn(() => menuItem(pin.pinLeft))
+    }
+    await expect
+      .poll(() => headById('amount').getAttribute('data-cell-pinned'))
+      .toBe('left')
+  })
+
+  test('TV15: в разделе «Колонки» «Настроек вида» касание флажка скрывает колонку', async () => {
+    await mountTouch({ plugins: [columnVisibility()] })
+    await tapOn(() =>
+      document.querySelector('[data-testid="view-settings-button"]'),
+    )
+    const columns = columnVisibilityLabels(tableLabels).columns
+    const section = () =>
+      Array.from(
+        document.querySelectorAll<HTMLElement>(
+          '[data-testid="view-settings-popover"] button',
+        ),
+      ).find(button => button.textContent?.startsWith(columns))
+    await expect.poll(section, { timeout: 5000 }).toBeTruthy()
+    await tapOn(() => section())
+    const box = () =>
+      document.querySelector<HTMLElement>(
+        '[role="checkbox"][aria-label="City"]',
+      )
+    await expect.poll(box).toBeTruthy()
+    await tapOn(() => box())
+    await expect
+      .poll(() => document.querySelector(`${HEAD_CELL}[data-column-id='city']`))
+      .toBeNull()
+  })
+
+  test('TV16: касанием из кебаба выбирается функция сводки колонки', async () => {
+    await mountTouch({
+      plugins: [
+        columnTotals(),
+        columnAggregation(),
+        headerActionMenu({ mode: 'always' }),
+      ],
+      options: { enableFooter: true },
+    })
+    const labels = columnAggregationLabels(tableLabels)
+    await tapOn(() => headKebab('amount'))
+    await expect
+      .poll(() => menuItem(labels.summary), { timeout: 5000 })
+      .toBeTruthy()
+    await tapOn(() => menuItem(labels.summary))
+    await expect.poll(() => menuItem(labels.max)).toBeTruthy()
+    await tapOn(() => menuItem(labels.max))
+    const footer = () =>
+      document.querySelector<HTMLElement>(
+        `.data-grid__footer-cell[data-column-id='amount']`,
+      )?.textContent ?? ''
+    await expect.poll(footer).toContain(labels.max)
+    expect(footer()).toContain('590')
+  })
+
+  test('TV17: касание флажка строки выбирает строку, флажка шапки — все строки', async () => {
+    await mountTouch({ plugins: [rowSelection()] })
+    const rowBox = () =>
+      rowById('r2')!.querySelector<HTMLElement>('[role="checkbox"]')!
+    await tapOn(() => rowBox())
+    await expect.poll(() => rowBox().getAttribute('aria-checked')).toBe('true')
+    await tapOn(() => document.querySelector(`${HEAD_CELL} [role="checkbox"]`))
+    await expect
+      .poll(() =>
+        Array.from(
+          document.querySelectorAll(`${BODY_ROW} [role="checkbox"]`),
+        ).every(box => box.getAttribute('aria-checked') === 'true'),
+      )
+      .toBe(true)
+  })
+
+  test('TV18: касание шеврона раскрывает строку, кнопки «Раскрыть всё» — все строки', async () => {
+    await mountTouch({ plugins: [rowExpanding()], data: TOUCH_TREE })
+    const labels = rowExpandingLabels(tableLabels)
+    await tapOn(() =>
+      rowById('r1')!.querySelector(`[aria-label="${labels.expandRow}"]`)!,
+    )
+    await expect.poll(() => rowById('r1-0')).not.toBeNull()
+    await tapOn(() =>
+      document.querySelector(
+        `${HEAD_CELL} [aria-label="${labels.expandAll}"]`,
+      )!,
+    )
+    await expect.poll(() => rowById('r0-0')).not.toBeNull()
+    expect(rowById('r2-1')).not.toBeNull()
+  })
+
+  test('TV19: касание кнопки группировки в шапке группирует по колонке', async () => {
+    await mountTouch({ plugins: [rowGrouping()] })
+    await tapOn(() => headById('city').querySelector('.column-group__button'))
+    await expect
+      .poll(() => document.querySelectorAll('[data-group-value]').length)
+      .toBe(3)
+  })
+})
+
+describe('Касание каждой фичи (ADR 0231, TV20–TV27)', () => {
+  const statusText = () =>
+    document.querySelector('[data-testid="data-grid-status-bar"]')
+      ?.textContent ?? ''
+
+  test('TV20: палец, держащий перетаскиваемую строку у нижнего края области, прокручивает таблицу', async () => {
+    await mountTouch({ plugins: [rowDragging()] })
+    const handle = () => rowById('r1')?.querySelector<HTMLElement>(HANDLE)
+    await expect.poll(handle).toBeTruthy()
+    const from = await settledCenter(() => handle()!)
+    const area = scroller().getBoundingClientRect()
+    const to = { x: from.x, y: area.bottom - 6 }
+    const top = () => scrollLayer(scroller()).top()
+    expect(top()).toBe(0)
+    await touch.realTouchDown([from])
+    try {
+      await touch.realTouchMove(from, to, 16)
+      await expect.poll(top, { timeout: 4000 }).toBeGreaterThan(40)
+    } finally {
+      await touch.realTouchUp()
+    }
+  })
+
+  test('TV21: касание кебаба строки открывает меню строки, касание пункта выполняет действие', async () => {
+    const archived: string[] = []
+    const archive: RowAction = {
+      id: 'touchArchive',
+      slot: 'actionRowSlot',
+      icon: () => <span aria-hidden />,
+      label: () => 'Archive',
+      onSelect: ({ row }) => {
+        archived.push(row.id)
+      },
+    }
+    const probe = definePlugin()({ id: 'touchProbe', slotActions: [archive] })
+    await mountTouch({
+      plugins: [probe(), rowActions(), rowActionMenu({ mode: 'always' })],
+    })
+    // Кнопки строки видны у тронутой строки (ADR 0086).
+    await tapOn(() => rowById('r2') && cellOf(rowById('r2')!, 'name'))
+    await tapOn(() => rowById('r2')!.querySelector('[data-action-menu]'))
+    await expect.poll(menu, { timeout: 5000 }).toBeTruthy()
+    await tapOn(() => menuItem('Archive'))
+    await expect.poll(() => archived).toEqual(['r2'])
+  })
+
+  test('TV22: пункт «Копировать» контекстного меню, открытого долгим нажатием, копирует выделенные ячейки', async () => {
+    const written: string[] = []
+    const clipboard = navigator.clipboard
+    const write = vi
+      .spyOn(clipboard, 'write')
+      .mockImplementation(async items => {
+        for (const item of items)
+          written.push(await (await item.getType('text/plain')).text())
+      })
+    const writeText = vi
+      .spyOn(clipboard, 'writeText')
+      .mockImplementation(async text => {
+        written.push(text)
+      })
+    try {
+      await mountTouch({ plugins: [cellSelection(), contextMenu()] })
+      const cell = () => cellOf(rowById('r2')!, 'name')
+      await tapOn(cell)
+      await expect
+        .poll(() => cell().getAttribute('data-cell-selected'))
+        .toBe('true')
+      await touch.realTouchDown([await settledCenter(cell)])
+      await wait(LONG_PRESS_WAIT_MS)
+      await touch.realTouchUp()
+      await expect.poll(menu, { timeout: 5000 }).toBeTruthy()
+      await tapOn(() => menuItem(cellSelectionLabels(tableLabels).copy))
+      await expect.poll(() => written).toEqual(['Name 2'])
+    } finally {
+      write.mockRestore()
+      writeText.mockRestore()
+    }
+  })
+
+  test('TV23: касание кнопки «Следующая страница» листает, касание выбора размера страницы меняет его', async () => {
+    await mountTouch({ plugins: [pagination({ pageNumbers: false })] })
+    const labels = paginationLabels(tableLabels)
+    await tapOn(() =>
+      document.querySelector(`[aria-label="${labels.nextPage}"]`),
+    )
+    await expect.poll(() => visibleRowIds()[0]).not.toBe('r0')
+    await tapOn(() =>
+      document.querySelector('[data-testid="page-size-select"]'),
+    )
+    const option = () =>
+      Array.from(
+        document.querySelectorAll<HTMLElement>('[role="option"]'),
+      ).find(item => item.textContent?.trim() === '10')
+    await expect.poll(option, { timeout: 5000 }).toBeTruthy()
+    await tapOn(option)
+    await expect.poll(statusText).toMatch(/1.10/)
+    await expect.poll(() => visibleRowIds()[0]).toBe('r0')
+  })
+
+  test('TV24: касание кнопки «наверх» прокручивает к началу', async () => {
+    await mountTouch({ plugins: [backToTop()] })
+    scroller().scrollTop = 1200
+    const button = () =>
+      document.querySelector<HTMLElement>(
+        `[aria-label="${backToTopLabels(tableLabels).backToTop}"]`,
+      )
+    await expect.poll(button, { timeout: 5000 }).toBeTruthy()
+    await tapOn(button)
+    await expect
+      .poll(() => scrollLayer(scroller()).top(), { timeout: 5000 })
+      .toBe(0)
+  })
+
+  test('TV25: касанием открываются журнал отказов и пульт несохранённых изменений', async () => {
+    await mountTouch({ plugins: [failureLog(), unsavedChanges()] })
+    await tapOn(() =>
+      document.querySelector('[data-testid="failure-log-button"]'),
+    )
+    await expect
+      .poll(() => document.querySelector('[data-testid="failure-log"]'), {
+        timeout: 5000,
+      })
+      .toBeTruthy()
+    await userEvent.keyboard('{Escape}')
+    await expect
+      .poll(() => document.querySelector('[data-testid="failure-log"]'))
+      .toBeNull()
+    await tapOn(() =>
+      document.querySelector('[data-testid="unsaved-changes-button"]'),
+    )
+    await expect
+      .poll(() => document.querySelector('[data-testid="unsaved-changes"]'), {
+        timeout: 5000,
+      })
+      .toBeTruthy()
+    await userEvent.keyboard('{Escape}')
+  })
+
+  test('TV26: касанием открывается панель выгрузки и выбирается формат', async () => {
+    const json = {
+      id: 'json',
+      label: 'JSON',
+      extension: 'json',
+      mimeType: 'application/json',
+      serialize: ({ rows }: { rows: unknown[][] }) => JSON.stringify(rows),
+    }
+    await mountTouch({
+      plugins: [dataExport({ formats: [exportFormats.csv(), json] })],
+    })
+    await tapOn(() => document.querySelector('[data-testid="export-button"]'))
+    await expect
+      .poll(() => document.querySelector('[data-testid="export-panel"]'), {
+        timeout: 5000,
+      })
+      .toBeTruthy()
+    const radio = () =>
+      document.querySelector<HTMLElement>(
+        '[data-testid="export-axis-format"] [role="radio"][data-value="json"]',
+      )
+    await tapOn(radio)
+    await expect.poll(() => radio()!.getAttribute('aria-checked')).toBe('true')
+    await userEvent.keyboard('{Escape}')
+  })
+
+  test('TV27: под вложенной шапкой колонку переносят пальцем за ручку', async ({
+    skip,
+  }) => {
+    skip(!chromium, 'жест пальцем по шагам — CDP Chromium')
+    renderGrid({
+      columnCount: 8,
+      dataCount: 20,
+      headerNesting: 'nested',
+      enableColumnDragging: true,
+    })
+    await waitForGrid()
+    const leaves = () =>
+      Array.from(
+        document.querySelectorAll<HTMLElement>(
+          `${HEAD_CELL}[data-last-headers-row='true'][data-column-id]`,
+        ),
+      )
+        .sort(
+          (a, b) =>
+            a.getBoundingClientRect().left - b.getBoundingClientRect().left,
+        )
+        .map(cell => cell.getAttribute('data-column-id'))
+    const before = leaves()
+    expect(before.indexOf('firstName')).toBeLessThan(before.indexOf('lastName'))
+    const first = headById('firstName')
+    const from = await settledCenter(() =>
+      first.querySelector<HTMLElement>(HANDLE)!,
+    )
+    const to = {
+      x: from.x + first.getBoundingClientRect().width * 1.6,
+      y: from.y,
+    }
+    await touch.realTouchDown([from])
+    await touch.realTouchMove(from, to, 16)
+    await wait(50)
+    await touch.realTouchUp()
+    await expect
+      .poll(() => leaves().indexOf('firstName'))
+      .toBeGreaterThan(leaves().indexOf('lastName'))
   })
 })

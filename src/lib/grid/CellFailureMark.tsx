@@ -1,7 +1,7 @@
 /**
  * Треугольник отказа сохранения значения ячейки (ADR 0177, §5): из реестра отказов, один и
  * тот же для любого содержимого ячейки. «Повторить» — если источник умеет повторять сам,
- * «Отбросить изменение» — всегда.
+ * «Сбросить изменение» — всегда.
  */
 import { type Failure, resolveFailure } from '../core/failures/failuresFeature'
 import { useLocalization } from '../core/localization'

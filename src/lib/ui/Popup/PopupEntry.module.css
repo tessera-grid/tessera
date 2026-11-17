@@ -160,3 +160,19 @@
     outline-color: Highlight;
   }
 }
+
+/* Строка ошибки записи (ADR 0227, §7): значок и текст в тоне ошибки. */
+.error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--tsr-comp-popup-padding);
+  color: var(--tsr-comp-error-text-color);
+  overflow-wrap: anywhere;
+}
+
+/* Значок — высотой строки текста. */
+.errorIcon {
+  flex: none;
+  width: var(--_line);
+  height: var(--_line);
+}

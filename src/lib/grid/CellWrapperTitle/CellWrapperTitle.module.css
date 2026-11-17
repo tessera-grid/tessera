@@ -36,3 +36,7 @@
     min-width: 0;
   }
 }
+
+:where(:root[data-tsr-input='touch']) .cell__title {
+  min-width: 0;
+}

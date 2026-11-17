@@ -58,7 +58,8 @@
   border-color: var(--tsr-comp-danger-border-color);
 }
 
-.button[data-tone='danger']:not(
+:where(:root:not([data-tsr-input='touch']))
+  .button[data-tone='danger']:not(
     :disabled,
     [data-disabled],
     [aria-busy='true']
@@ -72,7 +73,8 @@
 }
 
 /* Низкая специфичность — прикладной hover перекрывает базовый. */
-:where(.button:not(:disabled, [data-disabled], [aria-busy='true'])):hover {
+:where(:root:not([data-tsr-input='touch']))
+  :where(.button:not(:disabled, [data-disabled], [aria-busy='true'])):hover {
   background-color: var(--tsr-comp-control-hover-bg);
 }
 
@@ -109,7 +111,8 @@
     border-color: ButtonText;
   }
 
-  .button[data-tone='danger']:not(
+  :where(:root:not([data-tsr-input='touch']))
+    .button[data-tone='danger']:not(
       :disabled,
       [data-disabled],
       [aria-busy='true']

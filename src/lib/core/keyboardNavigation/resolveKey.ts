@@ -1,5 +1,6 @@
 /** Чистый резолвер навигационных клавиш: следующая активная ячейка без DOM. */
 import type { ActiveCell } from './model'
+import { type KeyboardPlatform, primaryModifier } from '../keyboardPlatform'
 
 export interface NavigationKeyEvent {
   key: string
@@ -16,6 +17,8 @@ export interface NavigationBounds {
   pageRows: number
   /** Число строк шапки (> 1 — вложенная); по умолчанию 1. */
   headerRowCount?: number
+  /** Платформа клавиатуры: основной модификатор (ADR 0232, KX11). */
+  platform: KeyboardPlatform
 }
 
 /**
@@ -25,9 +28,19 @@ export interface NavigationBounds {
 export const resolveNavigationKey = (
   active: ActiveCell,
   event: NavigationKeyEvent,
-  { rowCount, columnCount, pageRows, headerRowCount = 1 }: NavigationBounds,
+  {
+    rowCount,
+    columnCount,
+    pageRows,
+    headerRowCount = 1,
+    platform,
+  }: NavigationBounds,
 ): ActiveCell | null => {
-  if (event.shiftKey) {
+  // Второй модификатор платформы — не навигация: его сочетания у системы (ADR 0232, KX11).
+  if (
+    event.shiftKey ||
+    (platform === 'apple' ? event.ctrlKey : event.metaKey)
+  ) {
     return null
   }
   const lastRow = rowCount - 1
@@ -36,7 +49,7 @@ export const resolveNavigationKey = (
     Math.min(Math.max(row, -headerRowCount), lastRow)
   const clampColumn = (column: number) =>
     Math.min(Math.max(column, 0), lastColumn)
-  const ctrl = event.ctrlKey || event.metaKey
+  const ctrl = primaryModifier(event, platform)
   const { rowIndex, columnIndex } = active
 
   // Alt+↑/↓ — на экран: замена PageUp/PageDown для компактных клавиатур (KB13).

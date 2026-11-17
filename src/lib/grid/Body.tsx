@@ -217,6 +217,7 @@ export const Body = ({
           getRows={getRows}
           source={rowSource}
           listVersion={rowSource.version?.()}
+          epoch={rowSource.refreshing?.() ? undefined : rowSource.epoch?.()}
           virtualRows={virtualRows}
           bodyRef={bodyRef}
           placeOf={

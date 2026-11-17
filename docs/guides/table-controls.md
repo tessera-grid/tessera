@@ -5,12 +5,15 @@
 [0021](../decisions/0021-keyboard-navigation.md),
 [0031](../decisions/0031-wcag-keyboard.md),
 [0032](../decisions/0032-wcag-aa-remainder.md),
-[0034](../decisions/0034-wcag-22-dragging-and-target-size.md).
+[0034](../decisions/0034-wcag-22-dragging-and-target-size.md),
+[0232](../decisions/0232-keyboard-for-every-feature.md).
 
 ## Что должно быть включено
 
-Клавиатурное управление работает **только с опцией
-`useCreateTable({ enableKeyboardNavigation: true })`**. Без неё грид — таблица для чтения: мышью всё работает, а `Tab` в ячейки не заходит.
+Переход стрелками между ячейками и сочетания на активной ячейке работают с опцией
+`useCreateTable({ enableKeyboardNavigation: true })`. Без неё грид — таблица для чтения, но
+все контролы доступны по `Tab`, скрытые кнопки видны по фокусу, а перестановка идёт через
+меню ручек (KX3).
 
 Каждая возможность — свой плагин. Например, выделение ячеек требует
 `cellSelection()`, правка — `cellEditing()`. Если плагина нет, его клавиши ничего
@@ -32,7 +35,7 @@ readers** (только в `npm run storybook`) и в **Tessera → DataGrid**:
 | **Screen readers — Row moving** | перестановка строк и колонок                              |
 | **Keyboard Navigation**         | базовая навигация                                         |
 
-В остальных историях клавиатурной навигации нет.
+Обход без стрелок, фокус, подсказки, платформа и сводка — в **Cells/Keyboard**.
 
 Откройте историю кнопкой «Open canvas in new tab» (иконка справа вверху). Иначе
 `Tab` сначала обходит панели самого Storybook и до таблицы доходит не сразу.

@@ -13,7 +13,7 @@ import { unsavedChangesLabels } from '../../../plugins/unsavedChanges/labels'
 import { columnFilteringLabels } from '../../../plugins/columnFiltering/labels'
 
 // Пульт черновиков (ADR 0178, §8; DR11): кнопка тулбара со счётчиком, поповер черновиков,
-// переход к цели, применение, отбрасывание, «Применить всё» и «Отменить всё».
+// переход к цели, применение, сбрасывание, «Применить всё» и «Сбросить всё».
 
 const COLUMNS = [
   { id: 'name', accessorKey: 'name', header: 'Name', size: 240 },
@@ -106,7 +106,7 @@ const mount = async () => {
 }
 
 describe('Пульт черновиков (ADR 0178)', () => {
-  test('DR11: плагин unsavedChanges() — кнопка тулбара со счётчиком; поповер — список с переходом к цели нажатием на запись, «Применить», «Отбросить» у записи и «Применить всё», «Отменить всё» внизу; переход и применение закрывают поповер', async () => {
+  test('DR11: плагин unsavedChanges() — кнопка тулбара со счётчиком; поповер — список с переходом к цели нажатием на запись, «Применить», «Сбросить» у записи и «Применить всё», «Сбросить всё» внизу; переход и применение закрывают поповер', async () => {
     const screen = await mount()
     try {
       // Без черновиков: без счётчика, пустой пульт — компактная заглушка.
@@ -150,7 +150,7 @@ describe('Пульт черновиков (ADR 0178)', () => {
       await expect.poll(popover).toBeNull()
       await expect.poll(() => columnFlashed('name')).toBe(true)
 
-      // «Отбросить» снимает черновик, пульт остаётся открытым.
+      // «Сбросить» снимает черновик, пульт остаётся открытым.
       await openPanel()
       await humanClick(actionOf(entryOf('Rome'), 'discard'))
       await expect.poll(() => entries().length).toBe(1)
@@ -164,7 +164,7 @@ describe('Пульт черновиков (ADR 0178)', () => {
       expect(requests).toHaveLength(1)
       await expect.poll(count).toBe('0')
 
-      // «Отменить всё» снимает все, «Применить всё» применяет все.
+      // «Сбросить всё» снимает все, «Применить всё» применяет все.
       api.setDraft(draftOn('city', 'Paris'))
       api.setDraft(draftOn('name', 'Name 2'))
       await openPanel()

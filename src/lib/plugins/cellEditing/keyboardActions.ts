@@ -9,6 +9,7 @@ import type { CellKeyboardAction } from '../../core/keyboardActions'
 import { readPluginHooks } from '../../core/definePlugin'
 import { beginEdit, togglesInPlace } from './editors'
 import { isCellPending } from './session'
+import { cellEditingLabels } from './labels'
 import type { CellEditingHooks } from './types'
 
 const hooksOf = (table: unknown) =>
@@ -27,6 +28,11 @@ export const editCellKeyboardAction: CellKeyboardAction = {
   id: 'cellEditing.start',
   scope: 'cell',
   keys: ['Enter', 'F2'],
+  shortcut: {
+    combo: 'Enter',
+    section: 'editing',
+    label: labels => cellEditingLabels(labels).editCell,
+  },
   visible: isEditable,
   run,
 }

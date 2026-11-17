@@ -26,11 +26,15 @@ import {
 import { StoryComponent } from './DataGridStory'
 import type { CellEditCommit } from '../plugins'
 import type { CellEditBatch } from '../plugins/cellEditing/types'
+import { cellEditingLabels } from '../plugins/cellEditing/labels'
+import type { Draft } from '../core/drafts/drafts'
+import { storyLabels } from './__mocks__/storyLabels'
 import { layout, hasRow, serverProps } from './__mocks__/serverRowModelGuide'
 
 /**
  * Правка ячейки в серверной модели (ADR 0139): `Playground` — строки с «сервера» с правкой
- * ячеек, время ответа сохранения — контролом; S1 — сервер возвращает сохранённую строку.
+ * ячеек, время ответа сохранения — контролом; S1 — сервер возвращает сохранённую строку;
+ * ADR 0227, S4 — строку удалили на сервере, пока её правка ждала сохранения.
  */
 const meta = {
   ...dataGridMeta,
@@ -376,6 +380,232 @@ export const ServerUndo: StoryObj<StoryProps> = {
     await step(SERVER_UNDO[3]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(backAtTop(canvas)).toBe(true))
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0227, S4 ---------------------------------------------------------------------
+
+/** Строка, которую удалили на сервере, пока её правка ждала сохранения. */
+const GONE_ROW = 'item-id-2'
+/** Ответ «сервера» своими словами: таблица показывает его как есть. */
+const GONE_REASON = `Record ${GONE_ROW} not found`
+const KEPT_AGE = '40'
+const GONE_AGE = '41'
+const GONE_DRAFTS: Draft[] = [
+  [EDIT_ROW, KEPT_AGE],
+  [GONE_ROW, GONE_AGE],
+].map(([row, age]) => ({
+  kind: 'cellValue',
+  target: { cell: [row!, 'age'] },
+  value: { value: Number(age), text: age! },
+}))
+
+const goneProps: GuideStoryStep['props'] = () => ({
+  columnsOverride: filteringColumns,
+  dataOverride: [],
+  enableServerRowModel: true,
+  serverRowModelBlockSize: EDIT_BLOCK,
+  rowCount: EDIT_TOTAL,
+  serverRowModelGetRows: ({ start, end }: { start: number; end: number }) =>
+    Promise.resolve({
+      rows: Array.from({ length: end - start }, (_, k) => rowAt(start + k)),
+    }),
+  enableCellEditing: true,
+  cellEditingSaveMode: 'manual',
+  enableUnsavedChanges: true,
+  enableFailureLog: true,
+  enableToolbar: true,
+  initialDrafts: GONE_DRAFTS,
+  // «Сервер» сохраняет правки, а правке удалённой строки отказывает своим текстом.
+  onCommitEdits: (batch: CellEditBatch) => {
+    for (const cell of batch.cells)
+      if (cell.rowId !== GONE_ROW) savedAges.set(cell.rowId, cell.value)
+    return {
+      refused: batch.cells
+        .filter(cell => cell.rowId === GONE_ROW)
+        .map(cell => ({
+          rowId: cell.rowId,
+          columnId: cell.columnId,
+          reason: GONE_REASON,
+        })),
+    }
+  },
+})
+
+const ageCellAt = (root: ParentNode, row: string) =>
+  root.querySelector<HTMLElement>(
+    `.data-grid__body-row[data-row-id="${row}"] .data-grid__body-cell[data-column-id="age"]`,
+  )
+const drafted = (root: ParentNode, row: string) =>
+  !!ageCellAt(root, row)?.querySelector('[data-cell-draft]')
+/** Значение в ячейке — без кнопки правки и отметок. */
+const ageTextAt = (root: ParentNode, row: string) => {
+  const copy = ageCellAt(root, row)?.cloneNode(true) as HTMLElement | undefined
+  copy
+    ?.querySelectorAll('.cell__button, [data-cell-issue], [data-cell-draft]')
+    .forEach(button => button.remove())
+  return copy?.textContent?.trim()
+}
+const pultButton = (root: ParentNode) =>
+  root.querySelector<HTMLElement>('[data-testid="unsaved-changes-button"]')
+const pultOpen = () =>
+  !!document.querySelector('[data-testid="unsaved-changes"]')
+/** Пульт открыт — нажать «Применить всё»; закрыт — открыть. */
+const applyAll = (root: HTMLElement) => {
+  if (!pultOpen()) pultButton(root)?.click()
+  else document.querySelector<HTMLElement>('[data-action="apply-all"]')?.click()
+}
+const notice = (root: ParentNode) => {
+  const element = root.querySelector<HTMLElement>(
+    '[data-testid="table-notice"]',
+  )
+  return element && !element.hasAttribute('data-leaving') ? element : null
+}
+const noticeAction = (root: ParentNode) =>
+  notice(root)?.querySelector<HTMLElement>(
+    '[data-testid="table-notice-action"]',
+  ) ?? null
+const goneLog = () =>
+  document.querySelector<HTMLElement>('[data-testid="failure-log"]')
+const goneEntry = () =>
+  [
+    ...(goneLog()?.querySelectorAll<HTMLElement>('[data-failure-key]') ?? []),
+  ].find(entry => entry.getAttribute('data-failure-key')?.includes(GONE_ROW)) ??
+  null
+const logBubble = (root: ParentNode) =>
+  root
+    .querySelector('[data-testid="failure-log-button"]')
+    ?.querySelector('[data-active-indicator]')
+
+const refused = (root: ParentNode, row: string) =>
+  !!ageCellAt(root, row)?.querySelector('[data-cell-issue]')
+/** Одна правка сохранена, правка удалённой строки осталась в ячейке с отметкой отказа. */
+const goneApplied = (root: ParentNode) =>
+  !!noticeAction(root) &&
+  !drafted(root, EDIT_ROW) &&
+  ageTextAt(root, EDIT_ROW) === KEPT_AGE &&
+  refused(root, GONE_ROW) &&
+  ageTextAt(root, GONE_ROW) === GONE_AGE
+const reachGone = (root: HTMLElement) => {
+  if (!goneApplied(root)) applyAll(root)
+}
+const goneShown = () => !!goneEntry()
+/** Журнал — кнопкой плашки; плашка уже ушла, а отказ на месте — кнопкой тулбара. */
+const reachGoneLog = (root: HTMLElement) => {
+  if (goneLog()) return
+  const show = noticeAction(root)
+  if (show) return show.click()
+  if (!refused(root, GONE_ROW)) return reachGone(root)
+  root.querySelector<HTMLElement>('[data-testid="failure-log-button"]')?.click()
+}
+const goneDiscarded = (root: ParentNode) =>
+  !drafted(root, GONE_ROW) &&
+  !refused(root, GONE_ROW) &&
+  ageTextAt(root, GONE_ROW) === String(filteringItemAt(2).age) &&
+  logBubble(root)?.getAttribute('data-shown') !== 'true' &&
+  ageTextAt(root, EDIT_ROW) === KEPT_AGE &&
+  // Плашка ушла целиком, без уходящего кадра.
+  !root.querySelector('[data-testid="table-notice"]')
+
+const ROW_GONE: readonly GuideStoryStep[] = [
+  {
+    title: { ru: 'Правки ждут сохранения', en: 'Edits waiting to be saved' },
+    hint: {
+      ru: 'Сервер отдаёт строки блоками, правки сохраняются пакетом по кнопке пульта в тулбаре. Пользователь поправил возраст в двух строках, а одну из них тем временем удалили на сервере.',
+      en: 'The server sends rows in blocks, and edits are saved as a batch using the unsaved changes panel button in the toolbar. The user edited the age in two rows, and meanwhile one of them was deleted on the server.',
+    },
+    props: goneProps,
+    states: ['body.cellDraft'],
+  },
+  {
+    title: {
+      ru: 'Сервер отказал одной правке',
+      en: 'The server refused one edit',
+    },
+    hint: {
+      ru: 'Пользователь применил всё из пульта. Сервер сохранил одну правку, а другой отказал: её строки у него больше нет, и он ответил своим текстом ошибки. Плашка над таблицей говорит, сколько изменений сохранено из общего числа; отказанная правка осталась в ячейке с отметкой отказа.',
+      en: 'The user applied everything from the unsaved changes panel. The server saved one edit and refused the other: it no longer has that row, and it replied with its own error text. The notice above the table says how many changes were saved out of the total; the refused edit stays in the cell with a refusal mark.',
+    },
+    states: ['body.applyPartly'],
+    enter: untilDone(goneApplied, reachGone),
+  },
+  {
+    title: { ru: 'Запись в журнале', en: 'The entry in the log' },
+    hint: {
+      ru: 'Пользователь нажал на плашке кнопку показа: открылся журнал, а плашка ушла — разбор отказа теперь в журнале. Запись в журнале — как у любого отказа: действие, колонка и номер строки, ниже — ответ сервера его словами. Почему сервер отказал, таблица знает только из этого ответа. У записи есть переход к строке, повтор и кнопка, которая сбрасывает правку.',
+      en: 'The user clicked the show button on the notice: the log opened and the notice left, since the refusal is now handled in the log. The log entry looks like any other refusal: the action, the column and the row number, and below them the server reply in its own words. The table knows why the server refused only from this reply. The entry has a way to go to the row, a retry button and a button that reverts the edit.',
+    },
+    states: ['overlay.failureLog'],
+    enter: untilDone(goneShown, reachGoneLog),
+  },
+  {
+    title: { ru: 'Правка сброшена', en: 'The edit is reverted' },
+    hint: {
+      ru: 'Пользователь сбросил правку из журнала. Запись ушла, в ячейке снова значение из данных, несохранённых изменений не осталось.',
+      en: 'The user reverted the edit from the log. The entry is gone, the cell shows the value from the data again, and no unsaved changes are left.',
+    },
+    enter: untilDone(goneDiscarded, root => {
+      const discard = goneEntry()?.querySelector<HTMLElement>(
+        '[data-action="discard"]',
+      )
+      if (discard) discard.click()
+      else if (drafted(root, GONE_ROW) || refused(root, GONE_ROW))
+        reachGoneLog(root)
+    }),
+  },
+]
+
+/** ADR 0227, S4: строку удалили на сервере — сервер отказывает своим текстом, правку сбрасывают. */
+export const ServerEditingRowGone: StoryObj<StoryProps> = {
+  name: 'Row is gone',
+  parameters: { scenario: '0227/S4', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title={{ ru: 'Строку удалили', en: 'The row was deleted' }}
+      steps={ROW_GONE}
+      reset={() => savedAges.clear()}
+      args={guideArgs(layout, args)}
+    />
+  ),
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const own = cellEditingLabels(storyLabels(args.locale))
+    await step(ROW_GONE[0]!.title.ru, async () => {
+      await until(() => expect(hasRow(canvas, 2)).toBe(true))
+      await until(() => expect(drafted(canvas, GONE_ROW)).toBe(true))
+      expect(notice(canvas)).toBeNull()
+    })
+    await step(ROW_GONE[1]!.title.ru, async () => {
+      await guideNext(canvas)
+      await until(() => expect(goneApplied(canvas)).toBe(true))
+      expect(notice(canvas)!.querySelector('[id]')!.textContent).toBe(
+        own.applyPartly(1, 2),
+      )
+      expect(ageTextAt(canvas, GONE_ROW)).toBe(GONE_AGE)
+      await settle()
+    })
+    await step(ROW_GONE[2]!.title.ru, async () => {
+      await guideNext(canvas)
+      await until(() => expect(goneShown()).toBe(true))
+      expect(notice(canvas)).toBeNull()
+      const entry = goneEntry()!
+      const labels = storyLabels(args.locale)
+      expect(
+        entry.querySelector('[data-failure-target]')!.textContent!.trim(),
+      ).toBe(labels.failureTargetCell('Age', 3))
+      expect(entry.querySelector('[data-failure-reason]')!.textContent).toBe(
+        GONE_REASON,
+      )
+      expect(entry.querySelector('[data-action="retry"]')).not.toBeNull()
+      expect(entry.querySelector('[data-action="show"]')).not.toBeNull()
+      expect(entry.querySelector('[data-action="discard"]')).not.toBeNull()
+      await settle()
+    })
+    await step(ROW_GONE[3]!.title.ru, async () => {
+      await guideNext(canvas)
+      await until(() => expect(goneDiscarded(canvas)).toBe(true))
       await settle()
     })
   },

@@ -27,6 +27,7 @@ import {
   subRowsOf,
 } from '../rowSelectionModel/selectionHelpers'
 import { setScopeSelected } from './selectAllScope'
+import { rowSelectionLabels } from './labels'
 import type { RowSelectionHooks } from './types'
 
 /** Может ли строка переключаться сейчас (те же гейты, что у чекбокса строки). */
@@ -131,6 +132,11 @@ export const toggleRowKeyboardAction: CellKeyboardAction = {
   scope: 'cell',
   // Shift+Space — выбор строки и на ячейке, где пробел занят её действием (ADR 0175, ED20).
   keys: [' ', 'Shift+ '],
+  shortcut: {
+    combo: 'Space',
+    section: 'selection',
+    label: labels => rowSelectionLabels(labels).selectRow,
+  },
   visible: ({ row }) => getCanToggleRow(row),
   run: ({ row, table }, event) =>
     toggleRowSelection(

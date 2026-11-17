@@ -178,7 +178,7 @@ export type FeatureToggles = Toggles &
 
 /** Тумблеры стендов тестов: плагины и навигация — опция ядра (ADR 0170, §1). */
 export type GridToggles = FeatureToggles &
-  Pick<CoreOptions, 'enableKeyboardNavigation'>
+  Pick<CoreOptions, 'enableKeyboardNavigation' | 'keyboardPlatform'>
 
 /** Действия асинхронного демо строки и колонки — одни на все рендеры. */
 const ASYNC_SLOT_ACTIONS = [...asyncRowActionsDemo, ...asyncHeaderActionsDemo()]

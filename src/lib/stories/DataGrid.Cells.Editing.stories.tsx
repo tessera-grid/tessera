@@ -10,10 +10,15 @@ import { getData } from './__mocks__/data'
 import {
   consoleText,
   guideNext,
+  pollUntil,
+  pressEscape,
   settle,
+  sleep,
+  stepDone,
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
+import { storyLabels } from './__mocks__/storyLabels'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import {
@@ -21,10 +26,14 @@ import {
   GuideStory,
   type GuideStoryStep,
   guideArgs,
+  stepAction,
 } from './demos/GuideStory'
+import type { Draft } from '../core/drafts/drafts'
+import { cellEditingLabels } from '../plugins/cellEditing/labels'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 import { typeInto, press } from './__mocks__/typeGuides'
+import * as touch from './__mocks__/touchGuides'
 import type {
   CellEditBatch,
   CellEditBatchResult,
@@ -901,11 +910,14 @@ const MANUAL_SAVE: readonly GuideStoryStep[] = [
   {
     title: { ru: 'Сервер сохранил', en: 'The server saved' },
     hint: {
-      ru: 'Сервер принял пакет. Ожидание снято, уголки исчезли, ячейки коротко вспыхивают тоном успеха; несохранённых изменений не осталось.',
-      en: 'The server accepted the batch. The waiting state is cleared, the corner marks are gone, and the cells flash briefly in the success tone; no unsaved changes are left.',
+      ru: 'Сервер принял пакет. Ожидание снято, уголки исчезли, ячейки коротко вспыхивают тоном успеха; несохранённых изменений не осталось. Над таблицей плашка говорит, сколько изменений сохранено, и через несколько секунд уходит сама.',
+      en: 'The server accepted the batch. The waiting state is cleared, the corner marks are gone, and the cells flash briefly in the success tone; no unsaved changes are left. A notice above the table says how many changes were saved and leaves on its own in a few seconds.',
     },
+    states: ['body.applySaved'],
+    immediate: true,
     enter: untilDone(
       root =>
+        savedNotice(root) &&
         MANUAL_EDITS.every(
           ([row, value]) =>
             !pending(root, row) &&
@@ -965,7 +977,8 @@ export const ManualSaveCells: StoryObj<StoryProps> = {
         expect(draftMarked(canvas, row)).toBe(false)
         await until(() => expect(ageText(canvas, row)).toBe(value))
       }
-      await settle()
+      await until(() => expect(savedNotice(canvas)).toBe(true))
+      await noticeEntered(canvas)
     })
   },
 }
@@ -1001,12 +1014,15 @@ const PARTIAL: readonly GuideStoryStep[] = [
       en: 'The server refused one cell',
     },
     hint: {
-      ru: 'Пользователь применил всё из пульта. Сервер сохранил одну правку и отклонил другую. Сохранённая ячейка вспыхнула тоном успеха; у отклонённой в углу отметка отказа с причиной, а несохранённое значение осталось в ячейке.',
-      en: 'The user applied everything from the unsaved changes panel. The server saved one edit and rejected the other. The saved cell flashed in the success tone; the rejected one has a refusal mark with the reason in its corner, and its unsaved value stayed in the cell.',
+      ru: 'Пользователь применил всё из пульта. Сервер сохранил одну правку и отклонил другую. Сохранённая ячейка вспыхнула тоном успеха; у отклонённой в углу отметка отказа с причиной, а несохранённое значение осталось в ячейке. Над таблицей плашка говорит, сколько изменений сохранено из общего числа; на ней кнопка показа журнала ошибок, сама она не уходит.',
+      en: 'The user applied everything from the unsaved changes panel. The server saved one edit and rejected the other. The saved cell flashed in the success tone; the rejected one has a refusal mark with the reason in its corner, and its unsaved value stayed in the cell. Above the table, a notice says how many changes were saved out of the total, with a button that opens the error log; it does not leave on its own.',
     },
-    states: ['body.error'],
+    states: ['body.error', 'body.applyPartly'],
     enter: untilDone(
-      root => failed(root, REFUSED_ROW) && !draftMarked(root, 'item-id-1'),
+      root =>
+        failed(root, REFUSED_ROW) &&
+        !draftMarked(root, 'item-id-1') &&
+        failedNotice(root),
       root => {
         batchServer.refuseRow = REFUSED_ROW
         if (PARTIAL_EDITS.some(([row]) => !draftMarked(root, row)))
@@ -1032,7 +1048,7 @@ export const ManualSavePartialRefusal: StoryObj<StoryProps> = {
       args={guideArgs(MANUAL_ARGS, args)}
     />
   ),
-  play: async ({ canvasElement: canvas, globals, step }) => {
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(PARTIAL[0]!.title.ru, async () => {
       await waitForRows(canvas)
@@ -1050,6 +1066,10 @@ export const ManualSavePartialRefusal: StoryObj<StoryProps> = {
         expect(ageText(canvas, 'item-id-1')).toBe(PARTIAL_EDITS[0]![1]),
       )
       expect(panelCount(canvas)).toBe(1)
+      await until(() => expect(failedNotice(canvas)).toBe(true))
+      expect(noticeTitle(canvas)).toBe(
+        cellEditingLabels(storyLabels(args.locale)).applyPartly(1, 2),
+      )
       await settle()
     })
   },
@@ -1164,6 +1184,416 @@ export const CellDraftRollback: StoryObj<StoryProps> = {
       await until(() => expect(draftMarked(canvas, ROLLBACK_ROW)).toBe(false))
       await until(() => expect(ageText(canvas, ROLLBACK_ROW)).toBe(before))
       await until(() => expect(panelCount(canvas)).toBe(0))
+      await settle()
+    })
+  },
+}
+
+// --- ADR 0227 S1, S3 -----------------------------------------------------------------
+
+/** «Сервер» пакета: принимает всё или, когда недоступен, отклоняет запрос целиком. */
+const APPLY_DOWN = 'The server is unavailable'
+const applyServer = {
+  down: false,
+  save: (): Promise<CellEditBatchResult | void> =>
+    applyServer.down
+      ? Promise.reject(new Error(APPLY_DOWN))
+      : Promise.resolve(),
+}
+
+/** Три правки возраста, набранные до начала сценария. */
+const APPLY_DRAFTS: Draft[] = MANUAL_EDITS.map(([row, value]) => ({
+  kind: 'cellValue',
+  target: { cell: [row, 'age'] },
+  value: { value: Number(value), text: value },
+}))
+
+const APPLY_ARGS = {
+  ...MANUAL_ARGS,
+  // Строки — с первой отрисовки: черновики строк, которых в данных нет, таблица снимает.
+  dataOverride: getData(MANUAL_ARGS.dataCount),
+  enableFailureLog: true,
+  onCommitEdits: applyServer.save,
+  initialDrafts: APPLY_DRAFTS,
+} satisfies Partial<StoryProps>
+
+/** Плашка итога над таблицей, пока она не уходит. */
+const notice = (root: ParentNode) => {
+  const element = root.querySelector<HTMLElement>(
+    '[data-testid="table-notice"]',
+  )
+  return element && !element.hasAttribute('data-leaving') ? element : null
+}
+const noticeAction = (root: ParentNode) =>
+  notice(root)?.querySelector<HTMLElement>(
+    '[data-testid="table-notice-action"]',
+  ) ?? null
+const noticeTitle = (root: ParentNode) =>
+  notice(root)?.querySelector('[id]')?.textContent ?? ''
+const savedNotice = (root: ParentNode) =>
+  notice(root)?.getAttribute('data-tone') === 'success'
+const failedNotice = (root: ParentNode) =>
+  !!notice(root) && !savedNotice(root) && !!noticeAction(root)
+/**
+ * Появление плашки доведено до конца: снимок короткого шага застаёт её целиком, а вспышки
+ * ячеек остаются.
+ */
+const noticeEntered = async (root: ParentNode) => {
+  for (const animation of notice(root)?.getAnimations({ subtree: true }) ?? [])
+    animation.finish()
+  await until(() => expect(getComputedStyle(notice(root)!).opacity).toBe('1'))
+}
+
+const logButton = (root: ParentNode) =>
+  root.querySelector<HTMLElement>('[data-testid="failure-log-button"]')
+const log = () =>
+  document.querySelector<HTMLElement>('[data-testid="failure-log"]')
+const logEntries = () => [
+  ...(log()?.querySelectorAll<HTMLElement>('[role="listitem"]') ?? []),
+]
+/** Записей журнала по счётчику на его кнопке; без счётчика — ноль. */
+const logCount = (root: ParentNode) => {
+  const bubble = logButton(root)?.querySelector('[data-active-indicator]')
+  return bubble?.getAttribute('data-shown') === 'true'
+    ? Number(bubble.textContent)
+    : 0
+}
+
+/** Правки сохранены: черновиков нет, в ячейках новые значения. */
+const allSaved = (root: ParentNode) =>
+  panelCount(root) === 0 &&
+  MANUAL_EDITS.every(
+    ([row, value]) => !draftMarked(root, row) && ageText(root, row) === value,
+  )
+/** Правки остались черновиками без отметки отказа. */
+const draftsKept = (root: ParentNode) =>
+  MANUAL_EDITS.every(([row]) => draftMarked(root, row) && !failed(root, row))
+
+const APPLY_SAVED: readonly GuideStoryStep[] = [
+  {
+    title: { ru: 'Правки ждут сохранения', en: 'Edits waiting to be saved' },
+    hint: {
+      ru: 'Приложение сохраняет правки пакетом по кнопке пульта в тулбаре. Пользователь уже поправил возраст в трёх строках: в углу каждой ячейки отметка несохранённого изменения.',
+      en: 'The app saves edits as a batch using the unsaved changes panel button in the toolbar. The user has already edited the age in three rows: each cell has an unsaved change mark in its corner.',
+    },
+    states: ['body.cellDraft'],
+  },
+  {
+    title: { ru: 'Всё сохранено', en: 'Everything is saved' },
+    hint: {
+      ru: 'Пользователь применил всё из пульта, и сервер принял все три правки. Отметки ушли, а над таблицей плашка в тоне успеха говорит, сколько изменений сохранено. Через несколько секунд она уйдёт сама.',
+      en: 'The user applied everything from the unsaved changes panel, and the server accepted all three edits. The marks are gone, and a notice in the success tone above the table says how many changes were saved. In a few seconds it will leave on its own.',
+    },
+    states: ['body.applySaved'],
+    immediate: true,
+    // Пульт, закрывшись после применения, ушёл: шаг — плашка над таблицей.
+    enter: untilDone(root => savedNotice(root) && !panelOpen(), applyAll),
+  },
+  {
+    title: { ru: 'Плашка ушла сама', en: 'The notice left on its own' },
+    hint: {
+      ru: 'Пользователь ничего не нажимал, и через три секунды плашка ушла сама. В ячейках сохранённые значения, несохранённых изменений нет.',
+      en: "The user didn't click anything, and after three seconds the notice left on its own. The cells show the saved values, and no unsaved changes are left.",
+    },
+    enter: stepAction(async (root, { signal }) => {
+      let applied = false
+      while (!allSaved(root)) {
+        applied = true
+        applyAll(root)
+        await sleep(150)
+        signal.throwIfAborted()
+      }
+      // Со свежей таблицы плашка сперва появляется; уходит она через три секунды.
+      if (applied) await pollUntil(() => savedNotice(root), signal)
+      await pollUntil(() => !notice(root), signal, 10_000)
+    }),
+  },
+]
+
+/** ADR 0227, S1: сервер принял все правки пакета — плашка подтверждает и уходит сама. */
+export const CellsEditingApplySaved: StoryObj<StoryProps> = {
+  name: 'Apply: all saved',
+  parameters: { scenario: '0227/S1', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title={{ ru: 'Всё сохранено', en: 'Everything saved' }}
+      steps={APPLY_SAVED}
+      reset={() => {
+        applyServer.down = false
+      }}
+      args={guideArgs(APPLY_ARGS, args)}
+    />
+  ),
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const own = cellEditingLabels(storyLabels(args.locale))
+    await step(APPLY_SAVED[0]!.title.ru, async () => {
+      await waitForRows(canvas)
+      await until(() =>
+        expect(MANUAL_EDITS.every(([row]) => draftMarked(canvas, row))).toBe(
+          true,
+        ),
+      )
+      expect(notice(canvas)).toBeNull()
+    })
+    await step(APPLY_SAVED[1]!.title.ru, async () => {
+      await guideNext(canvas)
+      await until(() => expect(savedNotice(canvas)).toBe(true))
+      expect(noticeTitle(canvas)).toBe(own.applySaved(3))
+      expect(noticeAction(canvas)).toBeNull()
+      await until(() => expect(panelOpen()).toBe(false))
+      await noticeEntered(canvas)
+      await until(() => expect(allSaved(canvas)).toBe(true))
+    })
+    await step(APPLY_SAVED[2]!.title.ru, async () => {
+      await guideNext(canvas)
+      // Плашка уходит через три секунды — дольше ожидания проверки.
+      await stepDone(canvas)
+      expect(notice(canvas)).toBeNull()
+      expect(allSaved(canvas)).toBe(true)
+      await settle()
+    })
+  },
+}
+
+/** Запрос не прошёл: плашка с повтором, одна запись журнала, правки — черновики. */
+const requestFailed = (root: ParentNode) =>
+  failedNotice(root) && logCount(root) === 1 && draftsKept(root)
+const reachRequestFailed = (root: HTMLElement) => {
+  applyServer.down = true
+  applyAll(root)
+}
+
+const APPLY_FAILED: readonly GuideStoryStep[] = [
+  {
+    title: { ru: 'Правки ждут сохранения', en: 'Edits waiting to be saved' },
+    hint: {
+      ru: 'Приложение сохраняет правки пакетом по кнопке пульта в тулбаре. Пользователь уже поправил возраст в трёх строках, но сервер сейчас недоступен.',
+      en: 'The app saves edits as a batch using the unsaved changes panel button in the toolbar. The user has already edited the age in three rows, but the server is unavailable right now.',
+    },
+    states: ['body.cellDraft'],
+  },
+  {
+    title: { ru: 'Запрос не прошёл', en: 'The request failed' },
+    hint: {
+      ru: 'Пользователь применил всё из пульта, но запрос до сервера не дошёл. Ни одну правку сервер не отклонил, поэтому на ячейках нет отметок отказа: правки остались несохранёнными. Над таблицей одна плашка с причиной и повтором, на кнопке журнала одна запись.',
+      en: "The user applied everything from the unsaved changes panel, but the request didn't reach the server. The server rejected none of the edits, so the cells have no refusal marks: the edits stay unsaved. Above the table there is one notice with the reason and a retry, and the error log button shows one entry.",
+    },
+    states: ['body.loadError', 'panel.toolbar'],
+    enter: untilDone(requestFailed, reachRequestFailed),
+  },
+  {
+    title: { ru: 'Одна запись в журнале', en: 'One entry in the log' },
+    hint: {
+      ru: 'Пользователь открыл журнал ошибок. В нём одна запись о применении целиком — с причиной и временем, а не запись на каждую ячейку.',
+      en: 'The user opened the error log. It has one entry about the whole apply, with the reason and the time, not one entry per cell.',
+    },
+    states: ['overlay.failureLog'],
+    enter: untilDone(
+      () => logEntries().length === 1,
+      root => {
+        if (!requestFailed(root)) reachRequestFailed(root)
+        else if (!log()) logButton(root)?.click()
+      },
+    ),
+  },
+  {
+    title: { ru: 'Повтор сохранил', en: 'The retry saved' },
+    hint: {
+      ru: 'Сервер снова доступен, и пользователь нажал повтор на плашке. Те же правки ушли одним пакетом и сохранились: плашка показывает итог в тоне успеха, а запись ушла из журнала — счётчика на его кнопке больше нет.',
+      en: 'The server is available again, and the user clicked retry on the notice. The same edits went out as one batch and were saved: the notice shows the result in the success tone, and the entry left the error log, so its button has no counter anymore.',
+    },
+    states: ['body.applySaved'],
+    immediate: true,
+    enter: untilDone(
+      root =>
+        savedNotice(root) && allSaved(root) && logCount(root) === 0 && !log(),
+      root => {
+        // Нажатие на плашку мимо открытого журнала закрывает его.
+        if (log()) return pressEscape()
+        if (savedNotice(root)) return
+        if (!failedNotice(root)) return reachRequestFailed(root)
+        applyServer.down = false
+        noticeAction(root)?.click()
+      },
+    ),
+  },
+]
+
+/** ADR 0227, S3: запрос «Применить» не прошёл — одна плашка и одна запись, повтор сохраняет. */
+export const CellsEditingApplyFailed: StoryObj<StoryProps> = {
+  name: 'Apply: request failed',
+  parameters: { scenario: '0227/S3', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title={{ ru: 'Запрос не прошёл', en: 'The request failed' }}
+      steps={APPLY_FAILED}
+      reset={() => {
+        applyServer.down = false
+      }}
+      args={guideArgs(APPLY_ARGS, args)}
+    />
+  ),
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const labels = storyLabels(args.locale)
+    const own = cellEditingLabels(labels)
+    await step(APPLY_FAILED[0]!.title.ru, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(draftsKept(canvas)).toBe(true))
+      expect(logCount(canvas)).toBe(0)
+    })
+    await step(APPLY_FAILED[1]!.title.ru, async () => {
+      await guideNext(canvas)
+      await until(() => expect(requestFailed(canvas)).toBe(true))
+      expect(noticeTitle(canvas)).toBe(own.applyFailed(APPLY_DOWN))
+      expect(noticeAction(canvas)!.textContent).toBe(labels.loadRetry)
+      expect(
+        canvas.querySelectorAll('[data-testid="table-notice"]'),
+      ).toHaveLength(1)
+      await settle()
+    })
+    await step(APPLY_FAILED[2]!.title.ru, async () => {
+      await guideNext(canvas)
+      await until(() => expect(logEntries()).toHaveLength(1))
+      expect(logEntries()[0]!.textContent).toContain(APPLY_DOWN)
+      await settle()
+    })
+    await step(APPLY_FAILED[3]!.title.ru, async () => {
+      await guideNext(canvas)
+      await until(() => expect(savedNotice(canvas)).toBe(true))
+      expect(noticeTitle(canvas)).toBe(own.applySaved(3))
+      await until(() => expect(allSaved(canvas)).toBe(true))
+      await until(() => expect(logCount(canvas)).toBe(0))
+      await until(() => expect(log()).toBeNull())
+      await noticeEntered(canvas)
+    })
+  },
+}
+
+// --- «Готово» и «Отмена» пальцем (ADR 0231, S10) --------------------------------------
+
+const TOUCH_EDIT_ROW = 'item-id-1'
+
+const touchEditButton = (root: ParentNode, action: 'done' | 'cancel') =>
+  ageCellOf(root, TOUCH_EDIT_ROW)?.querySelector<HTMLElement>(
+    `[data-edit-action="${action}"]`,
+  ) ?? null
+
+/** Открыть правку возраста пальцем: касание ячейки, затем её кнопки. */
+const openTouchEdit = async (root: HTMLElement, signal: AbortSignal) => {
+  await pollUntil(() => !!ageCellOf(root, TOUCH_EDIT_ROW), signal)
+  if (inputOf(root, TOUCH_EDIT_ROW)) return
+  touch.tapTarget(ageCellOf(root, TOUCH_EDIT_ROW))
+  await pollUntil(() => !!editButtonOf(root, TOUCH_EDIT_ROW), signal)
+  touch.tapButton(editButtonOf(root, TOUCH_EDIT_ROW))
+  await pollUntil(() => !!touchEditButton(root, 'done'), signal)
+}
+
+let touchEditOriginal: string | undefined
+
+/** Набрать значение и коснуться кнопки поля. */
+const finishTouchEdit = async (
+  root: HTMLElement,
+  signal: AbortSignal,
+  value: string,
+  action: 'done' | 'cancel',
+) => {
+  await openTouchEdit(root, signal)
+  typeInto(inputOf(root, TOUCH_EDIT_ROW)!, value)
+  touch.tapButton(touchEditButton(root, action))
+  await pollUntil(() => !inputOf(root, TOUCH_EDIT_ROW), signal)
+}
+
+const DONE_CANCEL: readonly GuideStoryStep[] = [
+  {
+    title: { ru: 'Правка пальцем', en: 'Editing with a finger' },
+    hint: {
+      ru: 'На сенсорном экране правку открывает кнопка ячейки.',
+      en: 'On a touch screen, the cell button opens editing.',
+    },
+  },
+  {
+    title: { ru: 'Поле правки', en: 'The edit field' },
+    hint: {
+      ru: 'Пользователь открыл правку — рядом с полем кнопки сохранить и отменить.',
+      en: 'The user opened editing; buttons to save and to cancel sit next to the field.',
+    },
+    states: ['body.editing'],
+    enter: stepAction(async (root, { signal }) => openTouchEdit(root, signal)),
+  },
+  {
+    title: { ru: 'Отмена', en: 'Cancel' },
+    hint: {
+      ru: 'Пользователь набрал число и отменил правку — в ячейке прежнее значение.',
+      en: 'The user typed a number and cancelled; the cell keeps its old value.',
+    },
+    enter: stepAction(async (root, { signal }) =>
+      finishTouchEdit(root, signal, '77', 'cancel'),
+    ),
+  },
+  {
+    title: { ru: 'Сохранение', en: 'Saving' },
+    hint: {
+      ru: 'Пользователь набрал число и сохранил — значение в ячейке.',
+      en: 'The user typed a number and saved; the value is in the cell.',
+    },
+    enter: stepAction(async (root, { signal }) => {
+      if (ageText(root, TOUCH_EDIT_ROW) !== '42')
+        await finishTouchEdit(root, signal, '42', 'done')
+    }),
+  },
+]
+
+/** ADR 0231, S10: правка пальцем — «Готово» сохраняет, «Отмена» возвращает прежнее значение. */
+export const CellEditingDoneCancel: StoryObj<StoryProps> = {
+  name: 'Done and cancel by touch',
+  globals: touch.PHONE,
+  parameters: { scenario: '0231/S10', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title={{
+        ru: 'Сохранить и отменить пальцем',
+        en: 'Save and cancel by touch',
+      }}
+      steps={DONE_CANCEL}
+      args={guideArgs(
+        {
+          enableCellEditing: true,
+          columnCount: 6,
+          dataCount: 40,
+          containerWidth: 360,
+          height: '420',
+        },
+        args,
+      )}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(DONE_CANCEL[0]!.title.ru, async () => {
+      await waitForRows(canvas)
+      await until(() =>
+        expect(ageCellOf(canvas, TOUCH_EDIT_ROW)).not.toBeNull(),
+      )
+      touchEditOriginal = ageText(canvas, TOUCH_EDIT_ROW)
+    })
+    await step(DONE_CANCEL[1]!.title.ru, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(touchEditButton(canvas, 'done')).not.toBeNull()
+      await expect(touchEditButton(canvas, 'cancel')).not.toBeNull()
+      await settle()
+    })
+    await step(DONE_CANCEL[2]!.title.ru, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(ageText(canvas, TOUCH_EDIT_ROW)).toBe(touchEditOriginal)
+    })
+    await step(DONE_CANCEL[3]!.title.ru, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await until(() => expect(ageText(canvas, TOUCH_EDIT_ROW)).toBe('42'))
       await settle()
     })
   },

@@ -18,10 +18,3 @@
     calc(var(--tsr-comp-head-height) + calc(var(--tsr-ref-space-1) * 2))
   );
 }
-
-/* Кнопки вопроса перед вставкой (ADR 0219, WR42) — плотным рядом, как кнопки заголовка. */
-.questionButtons {
-  flex: none;
-  display: inline-flex;
-  gap: var(--tsr-comp-head-button-gap);
-}

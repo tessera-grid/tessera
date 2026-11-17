@@ -33,25 +33,38 @@ import {
 } from '../../core/definePlugin'
 import type { CellComponentProps } from '../../core/createSlots'
 import { flashOutcome } from '../../core/flashes/flashFeature'
+import { useSliceProjection } from '../../core/reactivity'
 import type { FlashTarget } from '../../core/highlights/highlightFeature'
 import {
+  type FailureBulk,
+  type FailureReport,
   cellFailureKey,
-  reportFailure,
+  failureKeyOf,
+  readFailures,
+  reportFailures,
   resolveFailure,
+  resolveFailures,
+  whenBatchResolved,
+  whenFailureGone,
 } from '../../core/failures/failuresFeature'
 import {
   type ActionStatus,
+  type ActionStatusEntry,
+  closeTableNotice,
+  showTableNotice,
+  type TableNotice,
   writeActionStatus,
 } from '../../core/headerActions/actionStatusFeature'
 import { columnOf, editTextOf, parseEditText, sameEditValue } from './editValue'
 import {
   type Draft,
+  draftKeyOf,
+  draftKindOf,
   readDrafts,
   removeDraft,
   removeDrafts,
   setDraft as putDraft,
   writeDrafts,
-  discardDraft,
 } from '../../core/drafts/drafts'
 import {
   type CellWriteSource,
@@ -70,6 +83,7 @@ import {
   writeNewRowValues,
 } from './rowDrafts'
 import type {
+  ApplyOutcome,
   CellEditBatchResult,
   RowInsertBatchItem,
   CellEditingHooks,
@@ -132,10 +146,20 @@ export const readEditingState = (table: unknown): CellEditingState =>
   ((table as SessionTable).atoms[EDIT_SESSION_KEY]?.get() as
     CellEditingState | undefined) ?? EMPTY_EDITING_STATE
 
-const writeEditingState = (table: unknown, next: CellEditingState) => {
+/** Отказы, которые пишутся в реестр вместе с отказами отправленных ячеек — одной записью. */
+interface FailureChanges {
+  reports?: readonly FailureReport[]
+  resolve?: readonly string[]
+}
+
+const writeEditingState = (
+  table: unknown,
+  next: CellEditingState,
+  failures?: FailureChanges,
+) => {
   const prev = readEditingState(table).submitted
   setPluginState(table, ID, next)
-  syncSubmitted(table, prev, next.submitted)
+  syncSubmitted(table, prev, next.submitted, failures)
 }
 
 const pendingKey = (key: string) => `cellEdit:${key}`
@@ -160,30 +184,40 @@ const syncAppSubmitted = (table: unknown) => {
 
 /**
  * Отправленные ячейки — в общих срезах ядра (ADR 0177, §1, §5): ожидание — волна ячейки
- * (у булева — его флажок, ADR 0176), отказ — запись реестра отказов с повтором и «Отбросить»;
+ * (у булева — его флажок, ADR 0176), отказ — запись реестра отказов с повтором и «Сбросить»;
  * по ней ячейка рисует треугольник.
  */
 const syncSubmitted = (
   table: unknown,
   prev: Record<string, SubmittedCell>,
   next: Record<string, SubmittedCell>,
+  failures?: FailureChanges,
 ) => {
   synced.set((table as { store: object }).store, next)
-  if (prev === next) return
+  if (prev === next) {
+    if (failures)
+      reportFailures(table, failures.reports ?? [], failures.resolve)
+    return
+  }
   const pendingGone: string[] = []
   const pendingNew: SubmittedCell[] = []
+  const resolved: string[] = [...(failures?.resolve ?? [])]
+  const reports: FailureReport[] = []
   for (const [key, entry] of Object.entries(prev)) {
     const now = next[key]
     if (now && sameAttempt(entry, now)) continue
     if (entry.status === 'pending') pendingGone.push(key)
     if (entry.status === 'error' && now?.status !== 'error')
-      resolveFailure(table, cellFailureKey(entry.rowId, entry.columnId))
+      resolved.push(cellFailureKey(entry.rowId, entry.columnId))
   }
   for (const [key, entry] of Object.entries(next)) {
     if (sameAttempt(prev[key], entry)) continue
     if (entry.status === 'pending') pendingNew.push(entry)
-    if (entry.status === 'error') reportCellFailure(table, key, entry)
+    if (entry.status === 'error')
+      reports.push(cellFailureReport(table, key, entry))
   }
+  // Отказы одного ответа — одной записью в реестр (ADR 0227, AO5).
+  reportFailures(table, [...reports, ...(failures?.reports ?? [])], resolved)
   if (pendingGone.length === 0 && pendingNew.length === 0) return
   writeActionStatus(table, status => {
     const out: ActionStatus = { ...status }
@@ -205,20 +239,33 @@ const syncSubmitted = (
 /** Правка ячейки в справочнике действий (ADR 0182). */
 const EDIT_ACTION = { plugin: 'cellEditing', action: 'edit' }
 
-const reportCellFailure = (
+/** Запись реестра об отказе ячейки: за ней стоит правка — `discard`. */
+const cellFailureReport = (
   table: unknown,
   key: string,
   entry: SubmittedCell,
-) => {
+): FailureReport => {
   const labels = announcerLabels(table) ?? ENGLISH_LABELS
-  return reportFailure(table, {
+  return {
     action: EDIT_ACTION,
     target: { cell: [entry.rowId, entry.columnId] },
     reason: entry.error ?? labels.saveFailed,
     retry: () => retrySubmitted(table, key),
     discard: () => discardSubmitted(table, key),
-  })
+    ...(entry.batch ? { batch: entry.batch } : {}),
+    // Повтор набором — правки применения: у них есть черновики (ADR 0227, AO8).
+    bulk: bulkOf(table, !!entry.batch?.startsWith(APPLY_BATCH)),
+  }
 }
+
+/** Действия набора отказов правок одним вызовом: журнал зовёт их с ключами записей. */
+const bulkOf = (table: unknown, retry: boolean): FailureBulk => ({
+  owner: ID,
+  discard: keys => discardFailedEdits(table, keys),
+  ...(retry
+    ? { retry: (keys: readonly string[]) => retryFailedEdits(table, keys) }
+    : {}),
+})
 
 /** Повтор отклонённого сохранения из поповера отметки (ADR 0177, §5). */
 const retrySubmitted = (table: unknown, key: string) => {
@@ -239,20 +286,101 @@ const retrySubmitted = (table: unknown, key: string) => {
   })
 }
 
-/** «Отбросить изменение»: отклонённое значение удаляется, черновик уходит в `onEditCancel`. */
+/**
+ * «Сбросить изменение»: отклонённое значение удаляется, черновик уходит в `onEditCancel`.
+ * Черновик сбрасывается тем же путём, что из пульта: запись истории (ADR 0227, AO13).
+ */
 const discardSubmitted = (table: unknown, key: string) => {
-  const state = readEditingState(table)
-  const entry = state.submitted[key]
+  const entry = readEditingState(table).submitted[key]
   if (!entry || entry.status !== 'error') return
-  removeDraft(table, CELL_VALUE_DRAFT, { cell: [entry.rowId, entry.columnId] })
+  discardFailedEdits(table, [{ rowId: entry.rowId, columnId: entry.columnId }])
+}
+
+/** Отказ из реестра — по его ключу — или цель правки: ячейка или, без `columnId`, строка. */
+export type FailedEditRef = string | { rowId: string; columnId?: string }
+
+const refTargets = (table: unknown, refs: readonly FailedEditRef[]) => {
+  const failures = readFailures(table)
+  const cells = new Set<string>()
+  const rows = new Set<string>()
+  for (const ref of refs) {
+    const target =
+      typeof ref === 'string'
+        ? failures[ref]?.target
+        : ref.columnId === undefined
+          ? { row: ref.rowId }
+          : { cell: [ref.rowId, ref.columnId] as [string, string] }
+    if (!target) continue
+    if ('cell' in target) cells.add(cellKey(...target.cell))
+    else if ('row' in target) rows.add(target.row)
+  }
+  return { cells, rows }
+}
+
+/** Черновики правок по целям: ячейки и строки до сохранения. */
+const draftsAt = (
+  table: unknown,
+  { cells, rows }: { cells: ReadonlySet<string>; rows: ReadonlySet<string> },
+) =>
+  readDrafts(table).filter(draft =>
+    draft.kind === CELL_VALUE_DRAFT && 'cell' in draft.target
+      ? cells.has(cellKey(...draft.target.cell))
+      : isRowDraft(draft) && rows.has((draft.target as { row: string }).row),
+  )
+
+/**
+ * Повторить правки набора отказов одним вызовом `onCommitEdits` (ADR 0227, §4, AO8): черновики
+ * ячеек и строк этих отказов — одним пакетом.
+ */
+export const retryFailedEdits = (
+  table: unknown,
+  refs: readonly FailedEditRef[],
+) => {
+  const drafts = draftsAt(table, refTargets(table, refs))
+  if (drafts.length > 0) commitDrafts(table, drafts)
+}
+
+/**
+ * Сбросить правки набора отказов (ADR 0227, §4, AO8): черновики — одной записью в срез
+ * черновиков, отказы — одной записью в реестр; сбрасывание — запись истории, как из пульта
+ * (ADR 0222, §14); черновики ячеек — в `onEditCancel`.
+ */
+export const discardFailedEdits = (
+  table: unknown,
+  refs: readonly FailedEditRef[],
+) => {
+  const targets = refTargets(table, refs)
+  const drafts = draftsAt(table, targets)
+  for (const draft of drafts)
+    draftKindOf(table, draft.kind)?.discard?.(table, draft)
+  const chosen = new Set(drafts)
+  removeDrafts(table, draft => chosen.has(draft))
+  const state = readEditingState(table)
+  const dropped: SubmittedCell[] = []
   const submitted = { ...state.submitted }
-  delete submitted[key]
-  const active = isEditingCell(state.active, entry.rowId, entry.columnId)
-    ? null
-    : state.active
-  writeEditingState(table, { active, submitted })
-  readPluginHooks<Partial<CellEditingHooks>>(table as never, ID).onEditCancel?.(
-    {
+  for (const key of targets.cells) {
+    const entry = submitted[key]
+    if (entry?.status !== 'error') continue
+    dropped.push(entry)
+    delete submitted[key]
+  }
+  const active =
+    state.active &&
+    targets.cells.has(
+      cellKey(state.active.cell.rowId, state.active.cell.columnId),
+    )
+      ? null
+      : state.active
+  const resolve = [...targets.rows].map(row => failureKeyOf({ row }))
+  if (dropped.length > 0 || active !== state.active)
+    writeEditingState(table, { ...state, active, submitted }, { resolve })
+  else resolveFailures(table, resolve)
+  const { onEditCancel } = readPluginHooks<Partial<CellEditingHooks>>(
+    table as never,
+    ID,
+  )
+  for (const entry of dropped)
+    onEditCancel?.({
       rowId: entry.rowId,
       columnId: entry.columnId,
       reason: 'cancel',
@@ -260,8 +388,7 @@ const discardSubmitted = (table: unknown, key: string) => {
       text: entry.text,
       original: entry.original,
       ...(entry.error ? { error: entry.error } : {}),
-    },
-  )
+    })
 }
 
 /** Вид черновика значения ячейки в режиме сохранения по кнопке (ADR 0178, §5). */
@@ -541,7 +668,7 @@ export const endEditSession = (table: unknown) => {
   if (key && state.submitted[key]?.status === 'error') {
     const submitted = { ...state.submitted }
     delete submitted[key]
-    writeEditingState(table, { active: null, submitted })
+    writeEditingState(table, { ...state, active: null, submitted })
     return
   }
   writeEditingState(table, { ...state, active: null })
@@ -876,9 +1003,12 @@ const submitValue = (
     session = false,
     current,
     onSettled,
+    batch,
   }: {
     session?: boolean
     current?: unknown
+    /** Операция записи: её `id` несёт отказ (ADR 0227, AO21). */
+    batch?: string
     /** Итог сохранения: сохранено, отклонено или прервано «стопом». */
     onSettled?: (outcome: boolean | 'cancelled') => void
   } = {},
@@ -918,6 +1048,7 @@ const submitValue = (
   const state = readEditingState(table)
   const attempt = ++lastAttempt
   writeEditingState(table, {
+    ...state,
     active: session ? null : state.active,
     submitted: {
       ...state.submitted,
@@ -929,6 +1060,7 @@ const submitValue = (
         original,
         status: 'pending',
         attempt,
+        ...(batch ? { batch } : {}),
       },
     },
   })
@@ -1064,6 +1196,9 @@ type TransactionTable = {
 
 const committing = new WeakSet<object>()
 
+/** Префикс id применения черновиков — `batch` его отказов (ADR 0227, §3). */
+const APPLY_BATCH = 'apply-'
+
 /** Все черновики пакета: открытая правка, ячейки и строки (ADR 0178, §7). */
 export const commitAllDrafts = (table: unknown) => {
   // «Применить всё» зовёт каждый вид пакета: пакет уходит один раз за проход.
@@ -1144,6 +1279,9 @@ export const commitDrafts = (table: unknown, drafts: readonly Draft[]) => {
   )
   const controller = new AbortController()
   const attempt = ++lastAttempt
+  const batchId = `${APPLY_BATCH}${attempt}`
+  const sentDrafts = [...sent, ...rowDrafts]
+  dropStaleApplyFailures(table, sentDrafts)
   const settleOwn = markOwnWrites(table, [
     ...cells,
     ...inserts.map(({ rowId }) => ({ rowId })),
@@ -1159,9 +1297,9 @@ export const commitDrafts = (table: unknown, drafts: readonly Draft[]) => {
   settleOwnOn(result, settleOwn)
   reportOutcome(table, { plugin: ID, action: 'commit' }, result)
 
-  // Ответ — одной записью в каждый срез: ожидание, черновики, вспышки, кэш строк (DR26).
+  // Ответ — одной записью в каждый срез: ожидание, черновики, отказы, вспышки, кэш строк (DR26).
   const settle = (
-    refused: Map<string, string>,
+    refused: Map<string, Refusal>,
     answered: boolean,
     savedRows: Map<string, unknown>,
   ) => {
@@ -1172,13 +1310,15 @@ export const commitDrafts = (table: unknown, drafts: readonly Draft[]) => {
     const reverted: FlashTarget[] = []
     const saved = new Set<Draft>()
     const rows = new Map<string, { columnId: string; value: unknown }[]>()
+    // Отказанные — их повторяет плашка итога.
+    const again: FailedEditRef[] = []
     cells.forEach((cell, index) => {
       const key = cellKey(cell.rowId, cell.columnId)
       const entry = submitted[key]
       if (answered && (!entry || entry.attempt !== attempt)) return
       const target = { cell: [cell.rowId, cell.columnId] as [string, string] }
-      const error = refused.get(key)
-      if (error !== undefined) {
+      const refusal = refused.get(key)
+      if (refusal !== undefined) {
         submitted[key] = {
           rowId: cell.rowId,
           columnId: cell.columnId,
@@ -1186,10 +1326,12 @@ export const commitDrafts = (table: unknown, drafts: readonly Draft[]) => {
           text: cell.text,
           original: cell.original,
           status: 'error',
-          error,
+          error: refusal.reason,
           attempt,
+          batch: batchId,
         }
         reverted.push(target)
+        again.push({ rowId: cell.rowId, columnId: cell.columnId })
         return
       }
       delete submitted[key]
@@ -1206,12 +1348,14 @@ export const commitDrafts = (table: unknown, drafts: readonly Draft[]) => {
     const handedOver: string[] = []
     const add: { row: unknown; index: number | undefined }[] = []
     const remove: string[] = []
+    const rowReports: FailureReport[] = []
     for (const draft of rowDrafts) {
       const rowId = (draft.target as { row: string }).row
-      const error = refused.get(rowId)
-      if (error !== undefined) {
+      const refusal = refused.get(rowId)
+      if (refusal !== undefined) {
         reverted.push({ row: rowId })
-        reportRowFailure(table, draft, error)
+        rowReports.push(rowFailureReport(table, draft, refusal, batchId))
+        again.push({ rowId })
         continue
       }
       settledRows.add(rowId)
@@ -1227,7 +1371,24 @@ export const commitDrafts = (table: unknown, drafts: readonly Draft[]) => {
       if (kept && !isServerRows(table)) handedOver.push(rowId)
       else if (kept && cacheIndex.get(rowId) !== undefined) cached.push(rowId)
     }
-    writeEditingState(table, { ...state, submitted })
+    const applied = saved.size + settledRows.size
+    const outcome: ApplyOutcome = {
+      id: batchId,
+      saved: applied,
+      refused: reverted.length,
+      ...(again.length > 0
+        ? { retry: () => retryFailedEdits(table, again) }
+        : {}),
+    }
+    const counted = outcome.saved + outcome.refused > 0
+    writeEditingState(
+      table,
+      { ...state, submitted, ...(counted ? { applied: outcome } : {}) },
+      {
+        reports: rowReports,
+        resolve: [...settledRows].map(row => failureKeyOf({ row })),
+      },
+    )
     for (const [rowId, values] of rows) writeSavedRow(table, rowId, values)
     const t = table as TransactionTable
     if (isServerRows(table) && t.applyRowTransaction) {
@@ -1253,28 +1414,93 @@ export const commitDrafts = (table: unknown, drafts: readonly Draft[]) => {
     })
     removeWhenCached(table, cached)
     removeAfterAppData(table, handedOver)
-    flashOutcome(table, reverted, 'reverted')
-    flashOutcome(table, accepted, 'accepted')
+    // Сверх предела итог говорят плашка и объявление (ADR 0227, AO14).
+    if (reverted.length + accepted.length <= OUTCOME_FLASH_LIMIT) {
+      flashOutcome(table, reverted, 'reverted')
+      flashOutcome(table, accepted, 'accepted')
+    }
+    if (counted) reportApplyOutcome(table, outcome)
     // Применено хоть что-то — разделитель в истории (ADR 0222, §14).
-    const applied = saved.size + settledRows.size
     if (applied > 0)
       notifyCellsWritten(table, {
-        id: `apply-${attempt}`,
+        id: batchId,
         source: 'apply',
         cells: [],
         refused: [],
         applied,
       })
   }
+
+  /**
+   * Запрос не прошёл целиком (ADR 0227, §2, AO3): отказ применения, а не ячеек — одна запись
+   * реестра с целью-таблицей и повтором того же набора; черновики остаются без отметки отказа.
+   */
+  const fail = (reason: unknown) => {
+    for (const draft of rowDrafts) rowsFlying.delete(rowKeyOf(draft))
+    const state = readEditingState(table)
+    const submitted = { ...state.submitted }
+    const reverted: FlashTarget[] = []
+    for (const cell of cells) {
+      const key = cellKey(cell.rowId, cell.columnId)
+      const entry = submitted[key]
+      if (entry?.attempt !== attempt || entry.status !== 'pending') continue
+      delete submitted[key]
+      reverted.push({ cell: [cell.rowId, cell.columnId] })
+    }
+    for (const draft of rowDrafts)
+      reverted.push({ row: (draft.target as { row: string }).row })
+    const labels = announcerLabels(table) ?? ENGLISH_LABELS
+    const error = rejectionText(reason) ?? labels.saveFailed
+    const key = applyFailureKey(attempt)
+    const keys = new Set(sentDrafts.map(keyOfDraft))
+    const retry = () => {
+      resolveFailure(table, key)
+      openApplyFailures(table).delete(key)
+      const current = readDrafts(table).filter(draft =>
+        keys.has(keyOfDraft(draft)),
+      )
+      if (current.length > 0) commitDrafts(table, current)
+    }
+    openApplyFailures(table).set(key, keys)
+    const outcome: ApplyOutcome = {
+      id: batchId,
+      saved: 0,
+      refused: cells.length + rowDrafts.length,
+      failed: { reason: error },
+      retry,
+    }
+    writeEditingState(
+      table,
+      { ...state, submitted, applied: outcome },
+      {
+        reports: [
+          {
+            key,
+            action: COMMIT_ACTION,
+            target: { table: true },
+            reason: error,
+            retry,
+            batch: batchId,
+          },
+        ],
+      },
+    )
+    // Запись закрыли в журнале — уходит и плашка этого применения.
+    whenFailureGone(table, key, () => closeApplyOutcome(table, batchId))
+    if (reverted.length <= OUTCOME_FLASH_LIMIT)
+      flashOutcome(table, reverted, 'reverted')
+    reportApplyOutcome(table, outcome)
+  }
+
   const answerOf = (answer: unknown) => {
     const batch = answer as CellEditBatchResult | undefined
     return {
-      refused: new Map(
+      refused: new Map<string, Refusal>(
         (batch?.refused ?? []).map(item => [
           item.columnId === undefined
             ? item.rowId
             : cellKey(item.rowId, item.columnId),
-          item.reason,
+          { reason: item.reason },
         ]),
       ),
       saved: new Map((batch?.saved ?? []).map(item => [item.rowId, item.row])),
@@ -1300,28 +1526,184 @@ export const commitDrafts = (table: unknown, drafts: readonly Draft[]) => {
       attempt,
     }
   writeEditingState(table, { ...state, submitted })
-  result.then(
-    answer => {
-      const { refused, saved } = answerOf(answer)
-      settle(refused, true, saved)
+  result.then(answer => {
+    const { refused, saved } = answerOf(answer)
+    settle(refused, true, saved)
+  }, fail)
+}
+
+/** Отказ правки в ответе пакета. */
+interface Refusal {
+  reason: string
+}
+
+/** Применение черновиков в справочнике действий: «Сохранить» ядра (ADR 0227, §2). */
+const COMMIT_ACTION = { plugin: ID, action: 'commit' }
+
+const applyFailureKey = (attempt: number) => `cellEditing:apply:${attempt}`
+
+const keyOfDraft = (draft: Draft) => draftKeyOf(draft.kind, draft.target)
+
+/** Открытые отказы применения целиком: ключ записи → ключи черновиков набора (по store). */
+const applyFailures = new WeakMap<object, Map<string, Set<string>>>()
+const openApplyFailures = (table: unknown) => {
+  const { store } = table as { store: object }
+  let map = applyFailures.get(store)
+  if (!map) {
+    map = new Map()
+    applyFailures.set(store, map)
+  }
+  return map
+}
+
+/**
+ * Новое применение решает прежний отказ применения целиком, если весь его набор — в новом
+ * пакете или черновиков набора больше нет.
+ */
+const dropStaleApplyFailures = (table: unknown, sent: readonly Draft[]) => {
+  const open = openApplyFailures(table)
+  if (open.size === 0) return
+  const now = new Set(sent.map(keyOfDraft))
+  const present = new Set(readDrafts(table).map(keyOfDraft))
+  const stale: string[] = []
+  for (const [key, keys] of open)
+    if ([...keys].every(item => now.has(item) || !present.has(item)))
+      stale.push(key)
+  for (const key of stale) open.delete(key)
+  if (stale.length > 0) resolveFailures(table, stale)
+}
+
+/** Текст итога применения — плашка и объявление (ADR 0227, §1, AO15). */
+export const applyOutcomeText = (
+  labels: TableLabels,
+  outcome: ApplyOutcome,
+): string => {
+  const own = cellEditingLabels(labels)
+  if (outcome.failed) return own.applyFailed(outcome.failed.reason)
+  if (outcome.refused === 0) return own.applySaved(outcome.saved)
+  const total = outcome.saved + outcome.refused
+  return outcome.saved === 0
+    ? own.applyNone(total)
+    : own.applyPartly(outcome.saved, total)
+}
+
+/** Через столько мс плашка полного успеха уходит сама (ADR 0227, AO1). */
+export const APPLY_SAVED_HIDE_AFTER = 3000
+
+/** Ключ итога применения в канале плашки: новое применение заменяет прежнее (AO4). */
+const APPLY_NOTICE_KEY = 'cellEditing:applied'
+
+const failureLogOf = (table: unknown) =>
+  (table as { showFailureLog?: () => void }).showFailureLog
+
+/**
+ * Действие плашки: повтор отказа целиком; при отказе части — журнал (плашка уходит, разбор —
+ * в журнале), без него — повтор.
+ */
+const applyNoticeAction = (
+  table: unknown,
+  outcome: ApplyOutcome,
+): TableNotice['action'] => {
+  const { retry } = outcome
+  if (outcome.failed)
+    return retry && { label: labels => labels.loadRetry, run: retry }
+  if (outcome.refused === 0 || (!failureLogOf(table) && !retry)) return
+  return {
+    label: labels =>
+      failureLogOf(table)
+        ? cellEditingLabels(labels).applyShow
+        : cellEditingLabels(labels).applyRetry,
+    run: () => {
+      if (!failureLogOf(table)) return retry?.()
+      ;(table as { showFailureLog: () => void }).showFailureLog()
+      closeApplyOutcome(table, outcome.id)
     },
-    reason => {
-      const labels = announcerLabels(table) ?? ENGLISH_LABELS
-      const error = rejectionText(reason) ?? labels.saveFailed
-      settle(
-        new Map([
-          ...cells.map(
-            cell => [cellKey(cell.rowId, cell.columnId), error] as const,
-          ),
-          ...rowDrafts.map(
-            draft => [(draft.target as { row: string }).row, error] as const,
-          ),
-        ]),
-        true,
-        new Map(),
-      )
+  }
+}
+
+/** Итог применения — плашкой цели-таблицы (ADR 0227, §1). */
+const showApplyNotice = (table: unknown, outcome: ApplyOutcome) => {
+  const saved = !outcome.failed && outcome.refused === 0
+  // Сохранена часть — не провал: нейтральный тон; ничего и сбой запроса — вид отказа.
+  const partly = !outcome.failed && outcome.refused > 0 && outcome.saved > 0
+  const action = applyNoticeAction(table, outcome)
+  showTableNotice(table, APPLY_NOTICE_KEY, {
+    title: labels => applyOutcomeText(labels, outcome),
+    ...(saved && { tone: 'success', hideAfter: APPLY_SAVED_HIDE_AFTER }),
+    ...(partly && { tone: 'neutral' }),
+    ...(action && { action }),
+    onClose: () => closeApplyOutcome(table, outcome.id),
+  })
+}
+
+/** Итог применения — одна плашка, одно объявление и действие канала (ADR 0227, AO15, AO18). */
+const reportApplyOutcome = (table: unknown, outcome: ApplyOutcome) => {
+  showApplyNotice(table, outcome)
+  watchApplyOutcome(table, outcome)
+  announceLabel(table, labels => applyOutcomeText(labels, outcome))
+  reportAction(table, {
+    plugin: ID,
+    action: 'applied',
+    detail: {
+      id: outcome.id,
+      saved: outcome.saved,
+      refused: outcome.refused,
+      ...(outcome.failed ? { failed: outcome.failed.reason } : {}),
     },
+    source: 'auto',
+  })
+}
+
+/** Подписка последнего частичного итога на решение его отказов (по store). */
+const outcomeWatches = new WeakMap<object, () => void>()
+
+const dropOutcomeWatch = (table: unknown) => {
+  const { store } = table as { store?: object }
+  if (!store) return
+  outcomeWatches.get(store)?.()
+  outcomeWatches.delete(store)
+}
+
+/**
+ * Частичный итог уходит, когда решён последний отказ его применения: правки сброшены,
+ * сохранены повтором или исправлены (ADR 0227, AO22). У итогов «всё сохранено» и «запрос не
+ * прошёл» свой уход.
+ */
+const watchApplyOutcome = (table: unknown, outcome: ApplyOutcome) => {
+  dropOutcomeWatch(table)
+  const { store } = table as { store?: object }
+  if (!store || outcome.failed || outcome.refused === 0) return
+  outcomeWatches.set(
+    store,
+    whenBatchResolved(table, outcome.id, () => {
+      outcomeWatches.delete(store)
+      closeApplyOutcome(table, outcome.id)
+    }),
   )
+}
+
+/** Итог последнего применения, пока его не закрыли; нет — `undefined`. */
+export const readApplyOutcome = (table: unknown): ApplyOutcome | undefined =>
+  readEditingState(table).applied
+
+/** Итог последнего применения — перерисовывает только при его смене. */
+export const useApplyOutcome = (table: unknown): ApplyOutcome | undefined =>
+  useSliceProjection(
+    table,
+    EDIT_SESSION_KEY,
+    (state?: CellEditingState) => state?.applied,
+  )
+
+/** Закрыть итог применения (крестик плашки, её уход); `id` — только если он ещё последний. */
+export const closeApplyOutcome = (table: unknown, id?: string) => {
+  const state = readEditingState(table)
+  if (state.applied && id !== undefined && state.applied.id !== id) return
+  dropOutcomeWatch(table)
+  closeTableNotice(table, APPLY_NOTICE_KEY)
+  if (!state.applied) return
+  const next = { ...state }
+  delete next.applied
+  writeEditingState(table, next)
 }
 
 /** Ячейка пакета операции записи: значение и прежнее значение — в типе колонки. */
@@ -1357,6 +1739,7 @@ const writeActionOfEditing = (source: CellWriteSource) => ({
 })
 
 const packageStatusKey = (id: string) => `cellWrite:${id}`
+const packageFailureKey = (id: string) => `cellWrite:${id}`
 const packagePendingKey = (id: string) => `cellWrite:${id}:pending`
 
 /** Номер отправки для пакета: исполнитель собирает ячейки ожидания до вызова колбэка. */
@@ -1399,8 +1782,9 @@ export const commitCellPackage = (table: unknown, pkg: CellPackage) => {
   const action = writeActionOf(source)
   const statusKey = packageStatusKey(id)
   const pendingKey = packagePendingKey(id)
-  // Повтор снимает прежнюю плашку отказа этой операции.
+  // Повтор снимает прежнюю плашку отказа этой операции и её запись в реестре.
   writeActionStatus(table, status => withoutKey(status, statusKey))
+  resolveFailure(table, packageFailureKey(id))
   const controller = new AbortController()
   const settleOwn = markOwnWrites(table, cells)
   const result = hooks.onCommitEdits?.(
@@ -1438,19 +1822,24 @@ export const commitCellPackage = (table: unknown, pkg: CellPackage) => {
       (batch?.refused ?? []).flatMap(item =>
         item.columnId === undefined
           ? []
-          : [[cellKey(item.rowId, item.columnId), item.reason] as const],
+          : [[cellKey(item.rowId, item.columnId), item] as const],
       ),
     )
     if (answered) dropPending()
-    // Отказанные ячейки — отказом на объекте; их обычно немного.
+    // Отказанные ячейки — отказом на объекте с `batch` операции (ADR 0227, AO21).
     if (refused.size > 0) {
       const state = readEditingState(table)
       const submitted = { ...state.submitted }
       const reverted: FlashTarget[] = []
-      for (const [key, error] of refused) {
+      for (const [key, item] of refused) {
         const cell = pending.get(key)
         if (!cell) continue
-        submitted[key] = { ...cell, status: 'error', error }
+        submitted[key] = {
+          ...cell,
+          status: 'error',
+          error: item.reason,
+          batch: id,
+        }
         reverted.push({ cell: [cell.rowId, cell.columnId] })
       }
       writeEditingState(table, { ...state, submitted })
@@ -1484,7 +1873,7 @@ export const commitCellPackage = (table: unknown, pkg: CellPackage) => {
           ? cellEditingLabels(all).announceWriteSaved(name(all))
           : cellEditingLabels(all).announceWriteFailed(
               name(all),
-              [...refused.values()][0] ?? all.saveFailed,
+              [...refused.values()][0]?.reason ?? all.saveFailed,
             ),
       )
   }
@@ -1539,26 +1928,35 @@ export const commitCellPackage = (table: unknown, pkg: CellPackage) => {
       const labels = announcerLabels(table) ?? ENGLISH_LABELS
       const error = rejectionText(reason) ?? labels.saveFailed
       const retry = () => commitCellPackage(table, pkg)
-      const dismiss = () =>
-        writeActionStatus(table, status => withoutKey(status, statusKey))
-      writeActionStatus(table, status => ({
-        ...status,
-        [statusKey]: {
-          failed: true,
-          table: true,
-          error: reason,
-          name,
-          reason: () => error,
-          retry,
-        },
-      }))
-      reportFailure(table, {
-        action,
-        target: { table: true },
-        reason: error,
+      const entry: ActionStatusEntry = {
+        failed: true,
+        table: true,
+        error: reason,
+        name,
+        reason: () => error,
         retry,
-        discard: dismiss,
-      })
+      }
+      writeActionStatus(table, status => ({ ...status, [statusKey]: entry }))
+      // За записью правки нет — без `discard`; закрыли запись — уходит и плашка (ADR 0227, §6).
+      const key = packageFailureKey(id)
+      reportFailures(table, [
+        {
+          key,
+          action,
+          target: { table: true },
+          reason: error,
+          retry,
+          batch: id,
+        },
+      ])
+      whenFailureGone(table, key, () =>
+        writeActionStatus(table, status =>
+          // Закрытая плашка — тот же отказ с пометкой: его узнаём по повтору.
+          status[statusKey]?.retry === retry
+            ? withoutKey(status, statusKey)
+            : status,
+        ),
+      )
       flashCells('reverted')
       notifyPackage(table, pkg, undefined, 'refused')
       announceLabel(table, all =>
@@ -1647,6 +2045,7 @@ export const submitCells = (
   cells.forEach((cell, index) =>
     submitValue(table, cell, cell.value, cell.text, cell.original, hooks, {
       onSettled: settled(index),
+      batch: operation.id,
     }),
   )
 }
@@ -1713,43 +2112,39 @@ export const storeCellDrafts = (
     )
 }
 
-/** Отказ строки пакета — отказ на объекте с повтором и откатом (ADR 0177). */
-const reportRowFailure = (table: unknown, draft: Draft, reason: string) => {
+/**
+ * Отказ строки пакета — запись реестра с повтором и откатом (ADR 0177): отметки у строки нет,
+ * итог говорит объявление применения (ADR 0227, AO15).
+ */
+const rowFailureReport = (
+  table: unknown,
+  draft: Draft,
+  { reason }: Refusal,
+  batch: string,
+): FailureReport => {
   const rowId = (draft.target as { row: string }).row
-  const action = {
-    plugin: 'cellEditing',
-    action: draft.kind === ROW_INSERT_DRAFT ? 'rowInsert' : 'rowDelete',
-  }
-  // Отметки у строки нет — вспышка отката, объявление и запись реестра (ADR 0177, OB13).
-  announceLabel(table, all =>
-    cellEditingLabels(all).announceSaveFailed(
-      actionLabelOf(table, action, all),
-      objectTargetText(table, { row: rowId }, all),
-      reason,
-    ),
-  )
-  reportFailure(table, {
-    action,
+  return {
+    action: {
+      plugin: 'cellEditing',
+      action: draft.kind === ROW_INSERT_DRAFT ? 'rowInsert' : 'rowDelete',
+    },
     target: { row: rowId },
     reason,
+    batch,
     retry: () => {
       const current = readDrafts(table).find(
-        item => item.kind === draft.kind && rowKeyOf(item) === rowKeyOf(draft),
+        item => rowKeyOf(item) === rowKeyOf(draft),
       )
       if (current) commitDrafts(table, [current])
     },
-    // Тем же путём, что пульт: отбрасывание — запись истории (ADR 0222, §14).
-    discard: () => {
-      const current = readDrafts(table).find(
-        item => item.kind === draft.kind && rowKeyOf(item) === rowKeyOf(draft),
-      )
-      if (current) discardDraft(table, current)
-    },
-  })
+    // Тем же путём, что пульт: сбрасывание — запись истории (ADR 0222, §14).
+    discard: () => discardFailedEdits(table, [{ rowId }]),
+    bulk: bulkOf(table, true),
+  }
 }
 
 /**
- * Отмена ждущего сохранения — тихо, как «Отбросить» (ADR 0177, §8): в ячейке снова значение из
+ * Отмена ждущего сохранения — тихо, как «Сбросить» (ADR 0177, §8): в ячейке снова значение из
  * данных, черновик — в `onEditCancel` с причиной `cancel`, вспышки и отметки нет.
  */
 const cancelSubmitted = (
@@ -1816,21 +2211,33 @@ const reconcileSubmitted = (
     return
   }
   const dropped: [SubmittedCell, EditCancelReason][] = []
+  const source = table.getRowSource()
+  // Серверная модель: строки нет в кэше — она не загружена или вытеснена (ADR 0227, AO20).
+  const partial = !!source.whenLoaded
   for (const [, entry] of entries) {
     // «Ошибку», открытую в правку, ведёт активная сессия.
     if (isEditingCell(state.active, entry.rowId, entry.columnId)) {
       continue
     }
-    if (!hasCell(table, entry)) {
+    const row = source.byId(entry.rowId)
+    if (
+      (!row && !partial) ||
+      !table.getAllLeafColumns().some(column => column.id === entry.columnId)
+    ) {
       dropped.push([entry, 'unavailable'])
     } else if (!enabled) {
       dropped.push([entry, 'revoke'])
     } else if (
       entry.status === 'error' &&
-      !Object.is(
-        table.getRowSource().byId(entry.rowId)!.getValue(entry.columnId),
-        entry.original,
-      )
+      entry.batch?.startsWith(APPLY_BATCH) &&
+      !cellDraftOf(table, entry.rowId, entry.columnId)
+    ) {
+      // Отказ применения уходит с черновиком: его сбросили (ADR 0227, §6).
+      dropped.push([entry, 'cancel'])
+    } else if (
+      row &&
+      entry.status === 'error' &&
+      !Object.is(row.getValue(entry.columnId), entry.original)
     ) {
       dropped.push([entry, 'conflict'])
     }

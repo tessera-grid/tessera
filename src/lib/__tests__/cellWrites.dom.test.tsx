@@ -1268,7 +1268,7 @@ describe('пределы записи (ADR 0223)', () => {
     }
   })
 
-  it('LM9: отбрасывание черновиков и «Применить всё» пределу не подчиняются', async () => {
+  it('LM9: сбрасывание черновиков и «Применить всё» пределу не подчиняются', async () => {
     const onCommitEdits = vi.fn(() => undefined)
     const initial: Draft[] = ['0', '1', '2', '3'].map(rowId => ({
       kind: 'cellValue',
@@ -1295,7 +1295,7 @@ describe('пределы записи (ADR 0223)', () => {
     })
     expect(readServerAction(captured).loadingRows).toBeUndefined()
     expect(readServerAction(captured).failed).toBeUndefined()
-    // Отбросить четыре черновика — тоже без вопроса и отказа.
+    // Сбросить четыре черновика — тоже без вопроса и отказа.
     act(() => {
       for (const draft of initial) captured.setDraft(draft)
     })

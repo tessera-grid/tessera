@@ -140,6 +140,16 @@ describe('Overflow tooltip — тултип у обрезанного текст
     await tipShown(LONG_NAME)
     await userEvent.tab()
     await tipHidden(LONG_NAME)
+
+    // Последний ввод — клавиша, фокус ставит скрипт после нажатия мышью: браузер не даёт
+    // `:focus-visible`, но фокус клавиатурный, как для кольца фокуса (ADR 0084, CB5).
+    const cell = title(LONG_NAME).closest<HTMLElement>('[data-kn-cell]')!
+    await userEvent.click(document.body)
+    document.body.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }),
+    )
+    cell.focus()
+    await tipShown(LONG_NAME)
     await view.unmount()
 
     await renderOverflow({ enableKeyboardNavigation: false })

@@ -87,6 +87,19 @@
   }
 }
 
+/* Касание на экране с наведением — тот же «стоп» (ADR 0231, §2). */
+:where(:root[data-tsr-input='touch'])
+  .trigger[data-cancel-armed]
+  > .cancelIcon {
+  display: flex;
+}
+
+:where(:root[data-tsr-input='touch'])
+  .trigger[data-cancel-armed]
+  > :not(.cancelIcon, [data-pending-arc], [data-failure-indicator]) {
+  visibility: hidden;
+}
+
 /* Рамка 1px перекрашивается в цвет кольца, кольцо добирает остаток до ширины токена. */
 .trigger:focus-visible {
   border-color: var(--tsr-comp-focus-ring);

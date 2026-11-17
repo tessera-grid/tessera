@@ -7,6 +7,7 @@ import type { ToolbarComponentProps } from '../../core/createSlots'
 import { pluginStateKey } from '../../core/definePlugin'
 import { useLazyPopover } from '../../core/lazyOpening'
 import { useLocalization } from '../../core/localization'
+import { keyboardShortcut, shortcutTitle } from '../../core/keyboardShortcut'
 import { useSlice } from '../../core/reactivity'
 import { ToolbarButton } from '../../ui/ToolbarButton'
 import { preloadable } from '../../util/preloadable'
@@ -34,18 +35,20 @@ export const UndoRedoButtons = ({ table }: ToolbarComponentProps) => {
   const button = (direction: 'undo' | 'redo') => {
     const name = direction === 'undo' ? undoName : redoName
     const pending = slice.running === direction
+    const combo = direction === 'undo' ? 'Mod+Z' : 'Mod+Shift+Z'
+    const text = name
+      ? direction === 'undo'
+        ? own.undoEntry(name)
+        : own.redoEntry(name)
+      : direction === 'undo'
+        ? own.undo
+        : own.redo
     return (
       <ToolbarButton
         key={direction}
-        label={
-          name
-            ? direction === 'undo'
-              ? own.undoEntry(name)
-              : own.redoEntry(name)
-            : direction === 'undo'
-              ? own.undo
-              : own.redo
-        }
+        label={text}
+        tooltip={shortcutTitle(table, labels, text, combo)}
+        aria-keyshortcuts={keyboardShortcut(table, labels, combo).aria}
         icon={direction === 'undo' ? <UndoIcon /> : <RedoIcon />}
         disabled={!name && !pending}
         tooltipWhenDisabled

@@ -8,6 +8,7 @@
  * используем прямой merge интерфейса (эскейп).
  */
 import type { DayPickerLocale } from '@daypicker/react'
+import type { KeyboardPlatformOption } from './keyboardPlatform'
 import type { ColumnOptionsDef } from './columnOptions'
 import type { ServiceColumnInfo } from './createColumns'
 import type {
@@ -140,6 +141,11 @@ export interface CoreOptions {
    * `tabindex` и клавиши; без флага — `role="table"`.
    */
   enableKeyboardNavigation?: boolean
+  /**
+   * Платформа клавиатуры (ADR 0232, KX11): `apple` — основной модификатор `Cmd`, `other` — `Ctrl`;
+   * `auto` (по умолчанию) — по браузеру.
+   */
+  keyboardPlatform?: KeyboardPlatformOption
   /** Активная ячейка у приложения — индексы отображения (KN31, ADR 0171, §4). */
   activeCell?: ActiveCell
   /** Активная ячейка сменилась — стрелками, кликом или Tab. */

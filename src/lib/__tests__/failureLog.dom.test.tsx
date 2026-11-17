@@ -85,7 +85,7 @@ describe('Журнал отказов (ADR 0177)', () => {
       })
     })
     await tick()
-    const logged = said.filter(text => text.startsWith('Failures in the log'))
+    const logged = said.filter(text => text.startsWith('Errors in the log'))
     expect(logged).toEqual([
       failureLogLabels(ENGLISH_LABELS).announceFailureLogged(1),
       failureLogLabels(ENGLISH_LABELS).announceFailureLogged(3),
@@ -103,7 +103,7 @@ describe('Журнал отказов (ADR 0177)', () => {
       (captured.getFailures() as Failure[]).map(failure => failure.target),
     ).toEqual([{ row: 'r2' }, { row: 'r3' }])
     expect(
-      said.filter(text => text.startsWith('Failures in the log')),
+      said.filter(text => text.startsWith('Errors in the log')),
     ).toHaveLength(2)
   })
 

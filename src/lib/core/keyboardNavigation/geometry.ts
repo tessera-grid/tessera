@@ -7,6 +7,7 @@ import {
   FALLBACK_ROW_HEIGHT,
   FOOTER_SELECTOR,
   HEAD_SELECTOR,
+  STICKY_ROWS_SELECTOR,
 } from './model'
 
 /**
@@ -86,7 +87,13 @@ export const ensureCellVisible = (
 ) => {
   const rect = cell.getBoundingClientRect()
   if (!isSticky) {
-    const { top, bottom } = getBodyViewport(scroller)
+    const viewport = getBodyViewport(scroller)
+    const { bottom } = viewport
+    // Стопка липких строк закрывает верх тела: ячейка встаёт под неё (ADR 0232, KX6).
+    const top = [...scroller.querySelectorAll(STICKY_ROWS_SELECTOR)].reduce(
+      (edge, row) => Math.max(edge, row.getBoundingClientRect().bottom),
+      viewport.top,
+    )
     const span = rowSpanOf(cell, scroller, rect)
     // Строка выше видимой области встаёт верхом к краю (ADR 0218, §7).
     if (span.top < top || span.bottom - span.top > bottom - top) {

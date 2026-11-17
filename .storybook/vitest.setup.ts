@@ -1,4 +1,5 @@
 import { composeStory } from '@storybook/react'
+import { pinTestPlatform } from '../src/lib/stories/__mocks__/platformKeys'
 import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest'
 
 import {
@@ -55,3 +56,6 @@ afterEach(() => {
     throw new Error(`console.error в истории:\n${errors.join('\n')}`)
   }
 })
+
+// Платформа клавиатуры одна на любой машине (ADR 0232, KX11).
+pinTestPlatform()

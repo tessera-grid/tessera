@@ -4,7 +4,7 @@
  * запускает Web Animations от старта к местам модели. Класс — ради
  * `getSnapshotBeforeUpdate`: только он видит DOM до изменений коммита. Серверная модель
  * (ADR 0157, §4) массива строк не имеет: смена — по номеру раскладки, прежние места — по
- * журналу смен списка.
+ * журналу смен списка; новая выборка (ADR 0228) — по её номеру, план только по окну.
  */
 import { Component, createRef, type ReactNode, type RefObject } from 'react'
 
@@ -33,6 +33,11 @@ interface RowMotionProps {
   source?: RowSource<{ id: string }>
   /** Номер раскладки источника по индексу. */
   listVersion?: number
+  /**
+   * Номер выборки на экране (ADR 0228); `undefined` — новая выборка ещё грузится и на экране
+   * прежняя.
+   */
+  epoch?: number
   virtualRows: readonly VirtualItem[]
   bodyRef: RefObject<HTMLDivElement | null>
   /**
@@ -49,6 +54,8 @@ interface Snapshot {
   leaving: Map<string, HTMLElement>
   prevRows: readonly { id: string }[]
   prevVersion?: number
+  /** На экране новая выборка: прежних мест нет, план — только по окну (ADR 0228, §2). */
+  newEpoch: boolean
   /** Позиция прокрутки до коммита: запоздавшее событие прежней прокрутки не обрывает движение. */
   scrolledAt: { top: number; left: number }
   /**
@@ -131,6 +138,8 @@ export class RowMotion extends Component<RowMotionProps> {
   private timer: ReturnType<typeof setTimeout> | undefined
   private scroller: Element | null = null
   private scrolledAt = { top: 0, left: 0 }
+  /** Выборка, чьи строки сейчас в DOM. */
+  private shownEpoch = this.props.epoch
 
   componentDidMount() {
     // `inert` атрибутом: в React 18 у пропа нет булевой формы.
@@ -139,10 +148,14 @@ export class RowMotion extends Component<RowMotionProps> {
 
   getSnapshotBeforeUpdate(prev: RowMotionProps): Snapshot | null {
     const body = this.props.bodyRef.current
+    const { epoch } = this.props
+    const newEpoch = epoch !== undefined && epoch !== this.shownEpoch
+    if (epoch !== undefined) this.shownEpoch = epoch
     if (
       !body ||
       (prev.getRows === this.props.getRows &&
-        prev.listVersion === this.props.listVersion) ||
+        prev.listVersion === this.props.listVersion &&
+        !newEpoch) ||
       !this.props.enabled ||
       prefersReducedMotion()
     ) {
@@ -153,6 +166,7 @@ export class RowMotion extends Component<RowMotionProps> {
     // обрывает: строки доезжают, призраки догорают (RM35).
     if (
       !this.props.source?.keyByIndex &&
+      !newEpoch &&
       sameWindow(prev.getRows(), this.props.getRows(), virtualRows)
     ) {
       return null
@@ -178,6 +192,7 @@ export class RowMotion extends Component<RowMotionProps> {
       leaving,
       prevRows: prev.getRows(),
       prevVersion: prev.listVersion,
+      newEpoch,
       scrolledAt: {
         top: scroller?.scrollTop ?? 0,
         left: scroller?.scrollLeft ?? 0,
@@ -254,6 +269,7 @@ export class RowMotion extends Component<RowMotionProps> {
     leaving,
     prevRows,
     prevVersion,
+    newEpoch,
     scrolledAt,
     timing,
     viewport,
@@ -264,11 +280,12 @@ export class RowMotion extends Component<RowMotionProps> {
     const { getRows, source, virtualRows } = this.props
     const rows = getRows()
     if (!body || virtualRows.length === 0) return
+    // Журнал прежней выборки к новой не применяется (ADR 0228, §2).
     const batches =
-      source?.keyByIndex && prevVersion !== undefined
+      source?.keyByIndex && prevVersion !== undefined && !newEpoch
         ? source.changesSince?.(prevVersion)
         : undefined
-    if (source?.keyByIndex && !batches) return
+    if (source?.keyByIndex && !batches && !newEpoch) return
     const { placeOf } = this.props
     const rowSize = virtualRows[0].size
     const offset = virtualRows[0].start - virtualRows[0].index * rowSize
@@ -295,30 +312,37 @@ export class RowMotion extends Component<RowMotionProps> {
       ]
     })
     const mounted = new Set(after.map(row => row.id))
+    const indexInSource = (id: string) => {
+      const index = source!.indexOf(id)
+      return index === -1 ? undefined : index
+    }
     const plan = planRowMotion({
       before,
       after,
       rowSize,
       startOf,
-      // Пришедшие в окно ищутся в прошлой модели, ушедшие из окна — в новой.
-      prevIndexOf: batches
-        ? id => {
-            const index = source!.indexOf(id)
-            return index === -1 ? undefined : priorIndex(index, batches)
-          }
-        : lazyIndexes(
-            prevRows,
-            after.filter(row => !before.has(row.id)).map(row => row.id),
-          ),
-      nextIndexOf: batches
-        ? id => {
-            const index = source!.indexOf(id)
-            return index === -1 ? undefined : index
-          }
-        : lazyIndexes(
-            rows,
-            [...before.keys()].filter(id => !mounted.has(id)),
-          ),
+      // Пришедшие в окно ищутся в прошлой модели, ушедшие из окна — в новой. Новая выборка:
+      // прежних мест нет — вошедшие проявляются, ушедшие ищутся в её загруженных блоках.
+      prevIndexOf: newEpoch
+        ? () => undefined
+        : batches
+          ? id => {
+              const index = indexInSource(id)
+              return index === undefined
+                ? undefined
+                : priorIndex(index, batches)
+            }
+          : lazyIndexes(
+              prevRows,
+              after.filter(row => !before.has(row.id)).map(row => row.id),
+            ),
+      nextIndexOf:
+        newEpoch || batches
+          ? indexInSource
+          : lazyIndexes(
+              rows,
+              [...before.keys()].filter(id => !mounted.has(id)),
+            ),
     })
     if (!plan) return
     this.start(
@@ -332,13 +356,16 @@ export class RowMotion extends Component<RowMotionProps> {
       viewport,
       footer && {
         ...footer,
-        // Строки разной высоты: тело выросло на свою разницу, а не на число строк × высоту.
-        shift: placeOf
-          ? body.clientHeight - footer.bodyHeight
-          : (batches
-              ? batches.flat().reduce((sum, change) => sum + change.delta, 0)
-              : rows.length - prevRows.length) * rowSize,
+        // Строки разной высоты и новая выборка: тело выросло на свою разницу, а не на число
+        // строк × высоту.
+        shift:
+          placeOf || newEpoch
+            ? body.clientHeight - footer.bodyHeight
+            : (batches
+                ? batches.flat().reduce((sum, change) => sum + change.delta, 0)
+                : rows.length - prevRows.length) * rowSize,
       },
+      newEpoch,
     )
   }
 
@@ -352,6 +379,7 @@ export class RowMotion extends Component<RowMotionProps> {
     timing: Snapshot['timing'],
     viewport: Snapshot['viewport'],
     footer: (NonNullable<Snapshot['footer']> & { shift: number }) | null,
+    newEpoch: boolean,
   ) {
     if (
       plan.moves.size === 0 &&
@@ -370,10 +398,12 @@ export class RowMotion extends Component<RowMotionProps> {
 
     // Строки, удалённые из данных, сперва гаснут на своём месте, затем строки закрывают щель
     // (ADR 0157, §4): иначе соседи наезжают на призрак и удаления не видно. Строки фильтра,
-    // поиска и свёрнутые в источнике остаются.
+    // поиска и свёрнутые в источнике остаются; ушедшие с новой выборкой гаснут вместе со
+    // сдвигом, как при фильтре на клиенте (ADR 0228).
     const { source } = this.props
     const removing =
       !!source &&
+      !newEpoch &&
       plan.exits.some(
         exit =>
           exit.to === null &&

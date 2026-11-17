@@ -15,6 +15,7 @@ import {
 import { storeReactivityBindings } from '../../../../../node_modules/@tanstack/table-core/dist/store-reactivity-bindings.js'
 import { useCallback, useMemo, useState } from 'react'
 import { cleanup, render } from 'vitest-browser-react'
+import { userEvent } from 'vitest/browser'
 import { describe, expect, test } from 'vitest'
 
 import {
@@ -82,6 +83,11 @@ import { failureLog } from '../../../plugins/failureLog'
 import { unsavedChanges } from '../../../plugins/unsavedChanges'
 import { renderPluginsGrid, renderGrid } from './hosts'
 import { DRAFTS, applyAllDrafts, readDrafts } from '../../../core/drafts/drafts'
+import {
+  readFailures,
+  resolveFailures,
+} from '../../../core/failures/failuresFeature'
+import type { CellEditBatch } from '../../../plugins/cellEditing/types'
 import { setPluginState } from '../../../core/definePlugin'
 import { cellSelection } from '../../../plugins/cellSelection'
 import { columnSizing } from '../../../plugins/columnSizing'
@@ -4061,6 +4067,125 @@ describe('Отзывчивость взаимодействий — сервер
   )
 })
 
+// Движение строк серверной модели при смене выборки (ADR 0228, EM10): поиск, оставивший
+// чётные строки из 1 000 000, — с движением против той же смены без него.
+const EM10_TOTAL = 1_000_000
+const EM10_COST = { ratio: 1.45, plusMs: 8 }
+/** Поиск `even` — чётные строки: уцелевшие в окне едут, прочие гаснут. */
+const searchRows = ({
+  start,
+  end,
+  globalFilter,
+}: {
+  start: number
+  end: number
+  globalFilter: string
+}) =>
+  globalFilter === 'even'
+    ? {
+        rows: Array.from(
+          { length: end - start },
+          (_, k) => feedRows(2 * (start + k), 1)[0]!,
+        ),
+        rowCount: EM10_TOTAL / 2,
+      }
+    : { rows: feedRows(start, end - start), rowCount: EM10_TOTAL }
+let setSearch: ((value: string) => void) | undefined
+const ServerSearchGrid = ({ motion }: { motion: boolean }) => {
+  const table = useCreateTable({
+    rowCount: EM10_TOTAL,
+    columns: FEED_COLUMNS as never,
+    data: NO_FEED,
+    getRowId: (row: FeedRow) => row.id,
+    enableRowAnimation: motion,
+    plugins: [
+      serverRowModel({
+        blockSize: 100,
+        getRows: request => Promise.resolve(searchRows(request)),
+      }),
+      quickSearchModel(),
+    ] as never,
+  })
+  setSearch = value =>
+    (
+      table as unknown as { setGlobalFilter: (v: string) => void }
+    ).setGlobalFilter(value)
+  return (
+    <div style={{ width: 600, height: 520 }}>
+      <DataGrid table={table as never} height={500} />
+    </div>
+  )
+}
+
+describe('Отзывчивость — движение строк серверной модели', () => {
+  test(
+    'EM10: смена поиска в серверной модели на 1 000 000 строк с движением — не дольше той же смены с enableRowAnimation: false больше чем на 45 % или 8 мс',
+    async () => {
+      const measure = async (motion: boolean) => {
+        await render(<ServerSearchGrid motion={motion} />)
+        const idAt = (index: number) =>
+          document
+            .querySelector(`.data-grid__body-row[data-index="${index}"]`)
+            ?.getAttribute('data-row-id')
+        await expect.poll(() => idAt(1)).toBe('f1')
+        const result = await measureInteractionWork(
+          async () => {
+            setSearch!('even')
+            await expect.poll(() => idAt(1)).toBe('f2')
+          },
+          {
+            afterWarmup: async () => {
+              setSearch!('')
+              await expect.poll(() => idAt(1)).toBe('f1')
+              await new Promise(resolve =>
+                setTimeout(resolve, MOTION_SETTLE_MS),
+              )
+            },
+          },
+        )
+        expect(idAt(1)).toBe('f2')
+        await cleanup()
+        return result
+      }
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const variant = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = ceilingOver(base.longestMs, EM10_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '1 000 000×3',
+          plugins: 'serverRowModel',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('EM10-base', 'поиск без движения строк', base, false)
+      await record('EM10', 'поиск с движением строк', variant, true)
+      expect(
+        variant.longestMs,
+        `longest=${variant.longestMs.toFixed(1)}ms (база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
 // Транзакции строк SSRM (ADR 0157, RT12): вставка 100 строк одной транзакцией при итоге
 // 1 000 000 против 100 вызовов `setRowData` той же таблицы — пересборка блоков на месте не
 // дороже замены строк.
@@ -5150,6 +5275,122 @@ describe('Применить всё — много черновиков', () => 
       expect(
         many.longestMs,
         `10 000: longest=${many.longestMs.toFixed(1)}ms, 1000: ${base.longestMs.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Итог «Применить» с отказами (ADR 0227, AO17): 1000 черновиков, отказанных ответом пакета с
+// десятью разными причинами, против тех же черновиков, сохранённых целиком. Отказы пишутся
+// одной записью в срез, журнал собирает группы.
+const AO17_COST = { ratio: 1.5, plusMs: 50 }
+const AO17_ROWS = 100
+describe('Применить всё — отказ всех черновиков', () => {
+  test(
+    'AO17: применение 1000 черновиков, из которых отказаны все 1000, — самая долгая задача не больше чем в 1,5 раза или на 50 мс длиннее применения тех же черновиков без отказов',
+    async () => {
+      const measure = async (refuse: boolean) => {
+        let table: unknown
+        const screen = renderPluginsGrid({
+          ...LARGE,
+          plugins: [
+            cellEditing({
+              saveMode: 'manual',
+              onCommitEdits: (batch: CellEditBatch) =>
+                refuse
+                  ? {
+                      refused: batch.cells.map(cell => ({
+                        rowId: cell.rowId,
+                        columnId: cell.columnId,
+                        reason: `Reason ${Number(cell.rowId.split('-').at(-1)) % 10}`,
+                      })),
+                    }
+                  : undefined,
+            } as never),
+            unsavedChanges(),
+            failureLog(),
+            {
+              id: 'perfDrafts',
+              setup: t => {
+                table = t
+              },
+            },
+          ],
+        })
+        await expect.poll(() => table).toBeTruthy()
+        const seed = () => {
+          resolveFailures(table, Object.keys(readFailures(table)))
+          setPluginState(
+            table,
+            DRAFTS,
+            Array.from({ length: AO17_ROWS }, (_, row) =>
+              DR26_COLUMNS.map(column => ({
+                kind: 'cellValue',
+                target: { cell: [`item-id-${row}`, column] },
+                value: { value: `v${row}`, text: `v${row}` },
+              })),
+            ).flat(),
+          )
+        }
+        const expectOutcome = () => {
+          // Отказ оставляет черновики и пишет отказ на каждую ячейку; успех снимает черновики.
+          expect(readDrafts(table)).toHaveLength(refuse ? 1000 : 0)
+          expect(Object.keys(readFailures(table))).toHaveLength(
+            refuse ? 1000 : 0,
+          )
+        }
+        seed()
+        const result = await measureInteractionWork(
+          async () => {
+            applyAllDrafts(table)
+          },
+          {
+            afterWarmup: () => {
+              expectOutcome()
+              seed()
+            },
+          },
+        )
+        expectOutcome()
+        ;(await screen).unmount()
+        return result
+      }
+
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const refused = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = ceilingOver(base.longestMs, AO17_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof refused,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '1000×1000',
+          plugins: 'failureLog',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('AO17-base', '1000 черновиков сохранены', base, false)
+      await record('AO17', '1000 черновиков отказаны', refused, true)
+
+      expect(
+        refused.longestMs,
+        `отказ: longest=${refused.longestMs.toFixed(1)}ms (база ${base.longestMs.toFixed(1)}ms, потолок ${ceiling.toFixed(1)})`,
       ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,
@@ -7568,6 +7809,88 @@ describe('Отзывчивость — сводка колонки', () => {
       expect(
         withSummary.longestMs,
         `сводка longest=${withSummary.longestMs.toFixed(1)}ms, база ${base.longestMs.toFixed(1)}ms`,
+      ).toBeLessThanOrEqual(ceiling)
+    },
+    PERF_TIMEOUT * 2,
+  )
+})
+
+// Сводка сочетаний со всеми плагинами (ADR 0232, KX20): открытие против «Настроек вида».
+const KX20_COST = { ratio: 1.5, plusMs: 50 }
+const shortcutsSheet = () =>
+  document.querySelector('[data-testid="keyboard-shortcuts"]')
+describe('Отзывчивость — сводка сочетаний', () => {
+  test(
+    'KX20: открытие сводки со всеми плагинами против открытия «Настроек вида»',
+    async () => {
+      const measure = async (shortcuts: boolean) => {
+        const screen = renderGrid({
+          ...SMALL,
+          ...ALL_PLUGINS,
+          enableKeyboardNavigation: true,
+        })
+        await waitForGrid()
+        await expect.poll(settingsButton).toBeTruthy()
+        const open = async () => {
+          if (shortcuts) {
+            document
+              .querySelector<HTMLElement>('.data-grid__body-cell')!
+              .focus()
+            await userEvent.keyboard('{Control>}/{/Control}')
+            await expect.poll(shortcutsSheet).toBeTruthy()
+          } else {
+            settingsButton()!.click()
+            await expect.poll(settingsPopover).toBeTruthy()
+          }
+        }
+        const result = await measureInteractionWork(open, {
+          afterWarmup: async () => {
+            expect(
+              shortcuts ? shortcutsSheet() : settingsPopover(),
+            ).toBeTruthy()
+            await userEvent.keyboard('{Escape}')
+            await expect
+              .poll(() => (shortcuts ? shortcutsSheet() : settingsPopover()))
+              .toBeFalsy()
+          },
+        })
+        ;(await screen).unmount()
+        return result
+      }
+
+      const runs = await againstBase(measure)
+      const base = medianRun(runs.base, r => r.longestMs)
+      const sheet = medianRun(runs.variant, r => r.longestMs)
+      const ceiling = ceilingOver(base.longestMs, KX20_COST)
+      const record = (
+        id: string,
+        label: string,
+        r: typeof base,
+        gated: boolean,
+      ) =>
+        recordPerf({
+          id,
+          label,
+          operation: 'interaction',
+          size: '30×500',
+          plugins: 'all',
+          cpuThrottle: CPU_THROTTLE_RATE,
+          metrics: [
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling : undefined,
+              ...r,
+            },
+          ],
+        })
+      await record('KX20-base', 'открытие «Настроек вида»', base, false)
+      await record('KX20', 'открытие сводки сочетаний', sheet, true)
+      expect(
+        sheet.longestMs,
+        `сводка longest=${sheet.longestMs.toFixed(1)}ms, база ${base.longestMs.toFixed(1)}ms`,
       ).toBeLessThanOrEqual(ceiling)
     },
     PERF_TIMEOUT * 2,

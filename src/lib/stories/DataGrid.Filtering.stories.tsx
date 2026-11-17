@@ -260,7 +260,10 @@ const search = async (
   done: () => boolean,
   signal: AbortSignal,
 ) => {
-  await pollUntil(() => !!byTestId('quick-search'), signal)
+  await pollUntil(() => {
+    const field = byTestId('quick-search') as HTMLInputElement | null
+    return !!field && !field.disabled
+  }, signal)
   type(byTestId('quick-search'), text)
   await pollUntil(done, signal)
 }
@@ -450,6 +453,8 @@ const SERVER: readonly GuideStoryStep[] = [
         root,
         SEARCH,
         () =>
+          request.search === SEARCH &&
+          request.columnIds.length === 4 &&
           allMatch(root, 'city', SEARCH) &&
           allMatch(root, 'name', NAME) &&
           serverAnswered(root),
@@ -468,12 +473,19 @@ const SERVER: readonly GuideStoryStep[] = [
       await search(
         root,
         SEARCH,
-        () => allMatch(root, 'city', SEARCH) && serverAnswered(root),
+        () =>
+          request.search === SEARCH &&
+          request.columnIds.length === 4 &&
+          allMatch(root, 'city', SEARCH) &&
+          serverAnswered(root),
         signal,
       )
       await hideAge(root, signal)
       await pollUntil(
-        () => !request.columnIds.includes('age') && serverAnswered(root),
+        () =>
+          request.columnIds.length === 3 &&
+          !request.columnIds.includes('age') &&
+          serverAnswered(root),
         signal,
       )
     }),
@@ -551,8 +563,14 @@ export const FilteringServer: StoryObj<StoryProps> = {
     await step(SERVER[3]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(searchHint()).toBe(
-        quickSearchLabels(labels).searchColumnsHint(['Name', 'City', 'Visits']),
+      await until(() =>
+        expect(searchHint()).toBe(
+          quickSearchLabels(labels).searchColumnsHint([
+            'Name',
+            'City',
+            'Visits',
+          ]),
+        ),
       )
       await settle()
     })
@@ -1214,6 +1232,18 @@ const lookupColumnsOf = (log: ConsoleLog) => {
 let lookupSeq = 0
 /** Номер запроса, на который «сервер» уже ответил. */
 let lookupAnswered = 0
+let lookupTable: unknown
+/** Ответ прошлого открытия таблицы не завершает ожидание нового. */
+const lookupReset: TesseraFeatureEntry = {
+  id: 'filteringLookupReset',
+  setup: table => {
+    const store = (table as { store: unknown }).store
+    if (lookupTable === store) return
+    lookupTable = store
+    lookupSeq += 1
+    lookupAnswered = lookupSeq
+  },
+}
 const optionNames = () =>
   [
     ...document.querySelectorAll(
@@ -1352,6 +1382,7 @@ export const FilteringLookupServer: StoryObj<StoryProps> = {
           dataMode: { filtering: 'server' },
           rowCount: OPTION_TOTAL,
           totalRowCount: OPTION_TOTAL,
+          extraPlugins: [lookupReset],
         },
         args,
       )}

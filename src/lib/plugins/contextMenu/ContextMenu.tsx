@@ -7,6 +7,8 @@
 import { type DebugActionSource, reportAction } from '../../core/debugActions'
 import { LONG_PRESS_MS, LONG_PRESS_SLOP } from '../../util/longPress'
 import { CELL_STATE_ACTIONS } from './cellStateActions'
+import { showFullTextAction } from './fullTextAction'
+import { truncatedTitleIn } from '../../core/overflowText'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useLazyOpening } from '../../core/lazyOpening'
@@ -35,6 +37,9 @@ const MENU_LOAD = {
 }
 
 const CELL = '.data-grid__body-cell[data-column-id]'
+/** Контрол в ячейке: кнопка, флажок, ручка. */
+const CELL_CONTROL =
+  "button, [role='button'], [role='checkbox'], input, .drag__handler--column"
 
 interface OpenState {
   x: number
@@ -123,7 +128,14 @@ export const ContextMenu = ({ table, getScrollElement }: ContextMenuProps) => {
   /** Пальцы на экране и открытие меню в точке — для долгого нажатия. */
   const fingers = useRef(new Set<number>())
   const openAtRef = useRef<
-    ((target: EventTarget | null, x: number, y: number) => boolean) | null
+    | ((
+        target: EventTarget | null,
+        x: number,
+        y: number,
+        source?: DebugActionSource,
+        touch?: boolean,
+      ) => boolean)
+    | null
   >(null)
   const labels = useLocalization()
   const opening = useLazyOpening(table)
@@ -207,6 +219,7 @@ export const ContextMenu = ({ table, getScrollElement }: ContextMenuProps) => {
       x: number,
       y: number,
       source: DebugActionSource = 'pointer',
+      touch = false,
     ) => {
       const scroller = getScrollElement()
       const cellEl = (target as Element | null)?.closest?.(CELL)
@@ -232,7 +245,14 @@ export const ContextMenu = ({ table, getScrollElement }: ContextMenuProps) => {
       if (actions.length === 0) {
         return false
       }
-      const next = { x, y, actions, context }
+      // Касанию полный текст обрезанной ячейки — первым пунктом (ADR 0231, §6).
+      const title = touch ? truncatedTitleIn(cellEl) : null
+      const next = {
+        x,
+        y,
+        actions: title ? [showFullTextAction(title), ...actions] : actions,
+        context,
+      }
       reportAction(t, {
         plugin: 'contextMenu',
         action: 'openMenu',
@@ -311,6 +331,8 @@ export const ContextMenu = ({ table, getScrollElement }: ContextMenuProps) => {
       const scroller = getScrollElement()
       const target = event.target as Element | null
       if (!scroller?.contains(target) || !target?.closest(CELL)) return
+      // Удержание кнопки в ячейке — её подсказка, а не меню ячейки (ADR 0231, §5).
+      if (target.closest(CELL_CONTROL)) return
       const { clientX: x, clientY: y } = event
       press = {
         id: event.pointerId,
@@ -319,7 +341,7 @@ export const ContextMenu = ({ table, getScrollElement }: ContextMenuProps) => {
         scroll: scrollOf(scroller),
         timer: window.setTimeout(() => {
           press = null
-          opened = !!openAtRef.current?.(target, x, y)
+          opened = !!openAtRef.current?.(target, x, y, 'pointer', true)
         }, LONG_PRESS_MS),
       }
     }

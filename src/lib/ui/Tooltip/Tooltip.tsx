@@ -38,6 +38,11 @@ export interface TooltipProps {
    * нажимает триггер.
    */
   longPress?: boolean
+  /**
+   * Показать подсказку извне — фокусом с клавиатуры на её владельце (ADR 0232, KX9); наведение и
+   * фокус триггера показывают её и без этого.
+   */
+  shown?: boolean
 }
 
 /**
@@ -134,6 +139,7 @@ export const Tooltip = ({
   delayDuration = 200,
   overflowOnly = false,
   longPress = false,
+  shown,
 }: TooltipProps) => {
   const anchorRef = useRef<HTMLElement | null>(null)
   useEffect(trackInput, [])
@@ -141,6 +147,10 @@ export const Tooltip = ({
   // Монтируем чанк попапа только после первого взаимодействия и держим смонтированным.
   const [mounted, setMounted] = useState(false)
   const [open, setOpen] = useState(false)
+  // Показ извне — фокусом с клавиатуры на владельце; показанная однажды остаётся смонтированной
+  // и доигрывает уход.
+  if (shown && !mounted) setMounted(true)
+  const visible = open || !!shown
 
   const childRef = elementRef(children)
   const {
@@ -327,7 +337,7 @@ export const Tooltip = ({
       {active && mounted && (
         <TooltipPopup.Component
           fallback={null}
-          open={open}
+          open={visible}
           onOpenChange={setOpen}
           anchor={anchorRef}
           side={side}

@@ -8,6 +8,7 @@ import type { RowSelectionState } from '@tanstack/react-table'
 import { reportAction, sourceOf } from '../../core/debugActions'
 import { pluginStateKey, type PluginHeaderProps } from '../../core/definePlugin'
 import { useLocalization } from '../../core/localization'
+import { keyboardShortcut, shortcutTitle } from '../../core/keyboardShortcut'
 import { partialRowsReason } from '../../core/dataMode'
 import { useKeyedSlice, useTableState } from '../../core/reactivity'
 import {
@@ -37,6 +38,8 @@ export const HeadSelectionComponent = ({
   hooks,
 }: PluginHeaderProps<Partial<RowSelectionHooks>>) => {
   const labels = useLocalization()
+  const selectAllLabel = rowSelectionLabels(labels).selectAll
+  const selectAllShortcut = keyboardShortcut(table, labels, 'Mod+A')
 
   const selection =
     useKeyedSlice<RowSelectionState>(table, 'rowSelection') ?? {}
@@ -77,7 +80,9 @@ export const HeadSelectionComponent = ({
         onCheckedChange={(_, event) =>
           toggleServerPage(table, hooks, sourceOf(event))
         }
-        label={rowSelectionLabels(labels).selectAll}
+        label={selectAllLabel}
+        tooltip={shortcutTitle(table, labels, selectAllLabel, 'Mod+A')}
+        aria-keyshortcuts={selectAllShortcut.aria}
       />
     )
   }
@@ -109,7 +114,9 @@ export const HeadSelectionComponent = ({
             : Object.values(rowSelectionValueOf(table)).some(Boolean)
         }
         onCheckedChange={(_, event) => handleSelectAll(event)}
-        label={rowSelectionLabels(labels).selectAll}
+        label={selectAllLabel}
+        tooltip={shortcutTitle(table, labels, selectAllLabel, 'Mod+A')}
+        aria-keyshortcuts={selectAllShortcut.aria}
       />
     )
   }
@@ -137,7 +144,9 @@ export const HeadSelectionComponent = ({
       indeterminate={indeterminate}
       onCheckedChange={(_, event) => handleSelectAll(event)}
       disabled={disabled}
-      label={rowSelectionLabels(labels).selectAll}
+      label={selectAllLabel}
+      tooltip={shortcutTitle(table, labels, selectAllLabel, 'Mod+A')}
+      aria-keyshortcuts={selectAllShortcut.aria}
     />
   )
 }

@@ -167,6 +167,46 @@ describe('Высота строк и шапки, ширина колонок п�
     expect(lastBottom).toBeGreaterThanOrEqual(bottom)
   })
 
+  test('RH10: смена высоты строк прокрученной таблицы держит первую видимую строку у верха области', async () => {
+    const view = await render(
+      <composed.SizingPlayground
+        rowHeight={50}
+        dataNesting="flat"
+        dataCount={200}
+      />,
+    )
+    await waitForRows()
+    const scroller = getScroller()
+    scroller.scrollTop = 50 * 60 + 20
+    const firstShown = () => {
+      const top = document.querySelector(HEAD)!.getBoundingClientRect().bottom
+      return rows()
+        .filter(row => row.getBoundingClientRect().bottom > top + 1)
+        .sort(
+          (a, b) =>
+            a.getBoundingClientRect().top - b.getBoundingClientRect().top,
+        )[0]!.dataset.index
+    }
+    await expect.poll(firstShown).toBe('60')
+
+    for (const height of [70, 40]) {
+      // eslint-disable-next-line no-await-in-loop
+      await view.rerender(
+        <composed.SizingPlayground
+          rowHeight={height}
+          dataNesting="flat"
+          dataCount={200}
+        />,
+      )
+      // eslint-disable-next-line no-await-in-loop
+      await expect
+        .poll(() => new Set(rows().map(heightOf)))
+        .toEqual(new Set([height]))
+      // eslint-disable-next-line no-await-in-loop
+      await expect.poll(firstShown).toBe('60')
+    }
+  })
+
   test('RH6: PageUp/PageDown листают на число строк новой высоты', async () => {
     await render(<composed.KeyboardPlayground rowHeight={80} />)
     await waitForRows()

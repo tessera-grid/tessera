@@ -2,7 +2,7 @@
  * Реестр черновиков (ADR 0178, §1): введённое, но не применённое — условие фильтра, значение
  * ячейки, строка до сохранения. Срез — только данные `{ kind, target, value }`, по записи на
  * пару вида и цели: приложение сохраняет его и возвращает опциями ядра `drafts`,
- * `onDraftsChange`, `initialDrafts`. Как применить, отбросить и подписать черновик, объявляет
+ * `onDraftsChange`, `initialDrafts`. Как применить, сбросить и подписать черновик, объявляет
  * плагин — владелец вида.
  */
 import { logWarn } from '../../util/logger'
@@ -72,7 +72,7 @@ export interface DraftKind {
    */
   openKey?: string
   isOpen?: (slice: unknown) => boolean
-  /** Отбросить черновик; без поля — только снять запись. */
+  /** Сбросить черновик; без поля — только снять запись. */
   discard?: (table: unknown, draft: Draft) => void
   /** Вид работает в этой таблице; `false` — его черновики инертны (DR8). */
   active?: (table: unknown) => boolean
@@ -213,7 +213,7 @@ export const activeDrafts = (table: unknown): Draft[] => {
   return readDrafts(table).filter(draft => kinds.has(draft.kind))
 }
 
-/** Отбросить черновик: поведение вида, затем снять запись. */
+/** Сбросить черновик: поведение вида, затем снять запись. */
 export const discardDraft = (table: unknown, draft: Draft) => {
   draftKindOf(table, draft.kind)?.discard?.(table, draft)
   removeDraft(table, draft.kind, draft.target)

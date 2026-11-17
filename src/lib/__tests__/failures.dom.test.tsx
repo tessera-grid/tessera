@@ -132,7 +132,7 @@ const failureOf = (rowId: string) =>
   readFailures(captured)[cellFailureKey(rowId, 'name')]
 
 describe('Реестр отказов (ADR 0177)', () => {
-  it('OB11: отметку отказа снимают успешное сохранение ячейки, «Отбросить», изменение значения извне и удаление строки; не снимают время, прокрутка, сортировка, страница, фильтр и уход строки из окна', async () => {
+  it('OB11: отметку отказа снимают успешное сохранение ячейки, «Сбросить», изменение значения извне и удаление строки; не снимают время, прокрутка, сортировка, страница, фильтр и уход строки из окна', async () => {
     const answers: ReturnType<typeof deferred>[] = []
     const onEditCancel = vi.fn()
     const plugins = [
@@ -188,7 +188,7 @@ describe('Реестр отказов (ADR 0177)', () => {
     await flush()
     expect(failureOf('1')).toBeUndefined()
 
-    // «Отбросить».
+    // «Сбросить».
     await refuse('1', 'Z')
     act(() => failureOf('1')!.discard!())
     expect(failureOf('1')).toBeUndefined()

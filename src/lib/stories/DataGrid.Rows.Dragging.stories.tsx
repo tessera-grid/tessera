@@ -43,6 +43,8 @@ import {
   guideArgs,
   stepAction,
 } from './demos/GuideStory'
+import * as touch from './__mocks__/touchGuides'
+import * as touchPlay from './__mocks__/catalogPlay'
 
 /** Перетаскивание строк (ADR 0006). */
 const meta = {
@@ -1020,6 +1022,107 @@ export const GroupDragRefused: StoryObj<StoryProps> = {
         ),
       )
       await settle()
+    })
+  },
+}
+
+// --- Перестановка пальцем (ADR 0231, S8) ----------------------------------------------
+
+const touchRowAt = (root: ParentNode, index: number) =>
+  root.querySelector<HTMLElement>(`.data-grid__body-row[data-index="${index}"]`)
+
+const touchHandleOf = (root: ParentNode, index: number) =>
+  touchRowAt(root, index)?.querySelector<HTMLElement>(
+    '.drag__handler--column',
+  ) ?? null
+
+let touchFirstRow: string | null = null
+
+const BY_FINGER: readonly GuideStoryStep[] = [
+  {
+    title: { ru: 'Ручки строк видны', en: 'Row handles are visible' },
+    hint: {
+      ru: 'Без наведения у строк видны ручки перетаскивания.',
+      en: 'Without hover, rows show their drag handles.',
+    },
+  },
+  {
+    title: {
+      ru: 'Строка перенесена пальцем',
+      en: 'A row is moved with a finger',
+    },
+    hint: {
+      ru: 'Пользователь протянул строку за ручку вниз — она встала на новое место.',
+      en: 'The user dragged a row down by its handle; it landed in a new place.',
+    },
+    enter: stepAction(async (root, { signal }) => {
+      touchPlay.pressEscape()
+      await touchPlay.pollUntil(
+        () => !!touchHandleOf(root, 0) && !!touchRowAt(root, 3),
+        signal,
+      )
+      const target = touchPlay.centerOf(touchRowAt(root, 3)!)
+      const held = await touchPlay.dragHold(
+        touchHandleOf(root, 0)!,
+        { x: touchPlay.centerOf(touchHandleOf(root, 0)!).x, y: target.y + 6 },
+        12,
+        signal,
+        'touch',
+      )
+      await held.release()
+    }),
+  },
+  {
+    title: { ru: 'Меню перестановки', en: 'The move menu' },
+    hint: {
+      ru: 'Пользователь коснулся ручки и отпустил — открылось меню перестановки.',
+      en: 'The user tapped a handle and let go; the move menu opened.',
+    },
+    states: ['overlay.menu'],
+    enter: stepAction(async (root, { signal }) => {
+      await touchPlay.pollUntil(() => !!touchHandleOf(root, 1), signal)
+      if (!touch.openMenu()) touchHandleOf(root, 1)!.click()
+      await touchPlay.pollUntil(() => !!touch.openMenu(), signal)
+    }),
+  },
+]
+
+/** ADR 0231, S8: строку переносят пальцем за ручку, касание ручки открывает меню. */
+export const RowDraggingByTouch: StoryObj<StoryProps> = {
+  name: 'Move with a finger',
+  globals: touch.PHONE,
+  parameters: { scenario: '0231/S8', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title={{ ru: 'Перестановка пальцем', en: 'Moving with a finger' }}
+      steps={BY_FINGER}
+      args={guideArgs(touch.TOUCH_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(BY_FINGER[0]!.title.ru, async () => {
+      await touchPlay.waitForRows(canvas)
+      await touchPlay.until(() =>
+        expect(touchHandleOf(canvas, 0)).not.toBeNull(),
+      )
+      touchFirstRow = touchRowAt(canvas, 0)!.getAttribute('data-row-id')
+    })
+    await step(BY_FINGER[1]!.title.ru, async () => {
+      await touchPlay.guideNext(canvas)
+      await touchPlay.stepDone(canvas)
+      await touchPlay.until(() =>
+        expect(touchRowAt(canvas, 0)!.getAttribute('data-row-id')).not.toBe(
+          touchFirstRow,
+        ),
+      )
+      await touchPlay.settle()
+    })
+    await step(BY_FINGER[2]!.title.ru, async () => {
+      await touchPlay.guideNext(canvas)
+      await touchPlay.stepDone(canvas)
+      await expect(touch.openMenu()).not.toBeNull()
+      await touchPlay.settle()
     })
   },
 }

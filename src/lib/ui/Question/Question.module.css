@@ -1,0 +1,6 @@
+/* Кнопки вопроса — в ряд с зазором кнопок шапки, как у плашки вопроса записи (ADR 0223). */
+.buttons {
+  flex: none;
+  display: inline-flex;
+  gap: var(--tsr-comp-head-button-gap);
+}

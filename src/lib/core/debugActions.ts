@@ -54,6 +54,8 @@ const lastInputModality = (): 'pointer' | 'keyboard' | undefined => {
     typeof document === 'undefined'
       ? null
       : document.documentElement.getAttribute(INPUT_MODALITY_ATTR)
+  // Палец — источник `pointer`, как мышь.
+  if (value === 'touch') return 'pointer'
   return value === 'pointer' || value === 'keyboard' ? value : undefined
 }
 

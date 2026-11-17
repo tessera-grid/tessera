@@ -16,6 +16,7 @@ import * as uiPopupAssembledStories from './UI.PopupAssembled.stories'
 import * as coreSizingStories from './DataGrid.Core.Sizing.stories'
 import * as coreSkeletonStories from './DataGrid.DataLoading.Skeleton.stories'
 import * as coreStubsStories from './DataGrid.Core.Stubs.stories'
+import * as coreTouchStories from './DataGrid.Core.Touch.stories'
 import * as exportStories from './DataGrid.Export.stories'
 import * as filteringStories from './DataGrid.Filtering.stories'
 import * as panelsPaginationStories from './DataGrid.Panels.Pagination.stories'
@@ -170,6 +171,141 @@ export const HighContrastKeyboardActionsStep3 = {
 export const HighContrastKeyboardActionsStep4 = {
   ...twinStep(cellsKeyboardStories, cellsKeyboardStories.KeyboardActions, 4),
   name: 'Cells/Keyboard — Actions without a mouse, step 4',
+  tags: ['!test'],
+}
+
+export const HighContrastKeyboardWithoutGridStep1 = {
+  ...twinStep(
+    cellsKeyboardStories,
+    cellsKeyboardStories.KeyboardWithoutGrid,
+    1,
+  ),
+  name: 'Cells/Keyboard — Without cell navigation, step 1',
+  tags: ['!test'],
+}
+export const HighContrastKeyboardWithoutGridStep2 = {
+  ...twinStep(
+    cellsKeyboardStories,
+    cellsKeyboardStories.KeyboardWithoutGrid,
+    2,
+  ),
+  name: 'Cells/Keyboard — Without cell navigation, step 2',
+  tags: ['!test'],
+}
+export const HighContrastKeyboardWithoutGridStep3 = {
+  ...twinStep(
+    cellsKeyboardStories,
+    cellsKeyboardStories.KeyboardWithoutGrid,
+    3,
+  ),
+  name: 'Cells/Keyboard — Without cell navigation, step 3',
+  tags: ['!test'],
+}
+export const HighContrastKeyboardFocusInViewStep1 = {
+  ...twinStep(
+    cellsKeyboardStories,
+    cellsKeyboardStories.KeyboardFocusInView,
+    1,
+  ),
+  name: 'Cells/Keyboard — Focus stays in view, step 1',
+  tags: ['!test'],
+}
+export const HighContrastKeyboardFocusInViewStep2 = {
+  ...twinStep(
+    cellsKeyboardStories,
+    cellsKeyboardStories.KeyboardFocusInView,
+    2,
+  ),
+  name: 'Cells/Keyboard — Focus stays in view, step 2',
+  tags: ['!test'],
+}
+export const HighContrastKeyboardFocusInViewStep3 = {
+  ...twinStep(
+    cellsKeyboardStories,
+    cellsKeyboardStories.KeyboardFocusInView,
+    3,
+  ),
+  name: 'Cells/Keyboard — Focus stays in view, step 3',
+  tags: ['!test'],
+}
+export const HighContrastKeyboardHintsStep1 = {
+  ...twinStep(cellsKeyboardStories, cellsKeyboardStories.KeyboardHints, 1),
+  name: 'Cells/Keyboard — Hints from keyboard focus, step 1',
+  tags: ['!test'],
+}
+export const HighContrastKeyboardHintsStep2 = {
+  ...twinStep(cellsKeyboardStories, cellsKeyboardStories.KeyboardHints, 2),
+  name: 'Cells/Keyboard — Hints from keyboard focus, step 2',
+  tags: ['!test'],
+}
+export const HighContrastKeyboardHintsStep3 = {
+  ...twinStep(cellsKeyboardStories, cellsKeyboardStories.KeyboardHints, 3),
+  name: 'Cells/Keyboard — Hints from keyboard focus, step 3',
+  tags: ['!test'],
+}
+export const HighContrastKeyboardPlatformStep1 = {
+  ...twinStep(cellsKeyboardStories, cellsKeyboardStories.KeyboardPlatform, 1),
+  name: 'Cells/Keyboard — Platform shortcuts, step 1',
+  tags: ['!test'],
+}
+export const HighContrastKeyboardPlatformStep2 = {
+  ...twinStep(cellsKeyboardStories, cellsKeyboardStories.KeyboardPlatform, 2),
+  name: 'Cells/Keyboard — Platform shortcuts, step 2',
+  tags: ['!test'],
+}
+export const HighContrastKeyboardPlatformStep3 = {
+  ...twinStep(cellsKeyboardStories, cellsKeyboardStories.KeyboardPlatform, 3),
+  name: 'Cells/Keyboard — Platform shortcuts, step 3',
+  tags: ['!test'],
+}
+export const HighContrastKeyboardPlatformStep4 = {
+  ...twinStep(cellsKeyboardStories, cellsKeyboardStories.KeyboardPlatform, 4),
+  name: 'Cells/Keyboard — Platform shortcuts, step 4',
+  tags: ['!test'],
+}
+export const HighContrastKeyboardShortcutsSheetStep1 = {
+  ...twinStep(
+    cellsKeyboardStories,
+    cellsKeyboardStories.KeyboardShortcutsSheet,
+    1,
+  ),
+  name: 'Cells/Keyboard — Shortcuts sheet, step 1',
+  tags: ['!test'],
+}
+export const HighContrastKeyboardShortcutsSheetStep2 = {
+  ...twinStep(
+    cellsKeyboardStories,
+    cellsKeyboardStories.KeyboardShortcutsSheet,
+    2,
+  ),
+  name: 'Cells/Keyboard — Shortcuts sheet, step 2',
+  tags: ['!test'],
+}
+export const HighContrastKeyboardShortcutsSheetStep3 = {
+  ...twinStep(
+    cellsKeyboardStories,
+    cellsKeyboardStories.KeyboardShortcutsSheet,
+    3,
+  ),
+  name: 'Cells/Keyboard — Shortcuts sheet, step 3',
+  tags: ['!test'],
+}
+export const HighContrastKeyboardShortcutsSheetStep4 = {
+  ...twinStep(
+    cellsKeyboardStories,
+    cellsKeyboardStories.KeyboardShortcutsSheet,
+    4,
+  ),
+  name: 'Cells/Keyboard — Shortcuts sheet, step 4',
+  tags: ['!test'],
+}
+export const HighContrastKeyboardShortcutsSheetStep5 = {
+  ...twinStep(
+    cellsKeyboardStories,
+    cellsKeyboardStories.KeyboardShortcutsSheet,
+    5,
+  ),
+  name: 'Cells/Keyboard — Shortcuts sheet, step 5',
   tags: ['!test'],
 }
 
@@ -1190,6 +1326,36 @@ export const HighContrastServerRowModelMillionRowsStep4 = {
     4,
   ),
   name: 'Data loading/Server row model — Million rows, step 4',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelSearchMotionStep1 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelSearchMotion,
+    1,
+  ),
+  name: 'Data loading/Server row model — Search narrows the list, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelSearchMotionStep2 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelSearchMotion,
+    2,
+  ),
+  name: 'Data loading/Server row model — Search narrows the list, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerRowModelSearchMotionStep3 = {
+  ...twinStep(
+    serverRowModelStories,
+    serverRowModelStories.ServerRowModelSearchMotion,
+    3,
+  ),
+  name: 'Data loading/Server row model — Search narrows the list, step 3',
   tags: ['!test'],
 }
 
@@ -2670,6 +2836,12 @@ export const HighContrastSizingRowHeightStep5 = {
   tags: ['!test'],
 }
 
+export const HighContrastSizingRowHeightStep6 = {
+  ...twinStep(coreSizingStories, coreSizingStories.SizingRowHeight, 6),
+  name: 'Core/Sizing — Row height, step 6',
+  tags: ['!test'],
+}
+
 export const HighContrastSizingHeaderHeightStep1 = {
   ...twinStep(coreSizingStories, coreSizingStories.SizingHeaderHeight, 1),
   name: 'Core/Sizing — Header height, step 1',
@@ -2940,6 +3112,12 @@ export const HighContrastStubsColumnsHiddenStep2 = {
   tags: ['!test'],
 }
 
+export const HighContrastStubsColumnsHiddenStep3 = {
+  ...twinStep(coreStubsStories, coreStubsStories.StubsColumnsHidden, 3),
+  name: 'Core/Stubs — All columns hidden, step 3',
+  tags: ['!test'],
+}
+
 export const HighContrastStubsNoDataStep1 = {
   ...twinStep(coreStubsStories, coreStubsStories.StubsNoData, 1),
   name: 'Core/Stubs — No data, step 1',
@@ -2949,6 +3127,12 @@ export const HighContrastStubsNoDataStep1 = {
 export const HighContrastStubsNoDataStep2 = {
   ...twinStep(coreStubsStories, coreStubsStories.StubsNoData, 2),
   name: 'Core/Stubs — No data, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastStubsNoDataStep3 = {
+  ...twinStep(coreStubsStories, coreStubsStories.StubsNoData, 3),
+  name: 'Core/Stubs — No data, step 3',
   tags: ['!test'],
 }
 
@@ -2973,6 +3157,254 @@ export const HighContrastStubsPluginReasonStep1 = {
 export const HighContrastStubsPluginReasonStep2 = {
   ...twinStep(coreStubsStories, coreStubsStories.StubsPluginReason, 2),
   name: 'Core/Stubs — Plugin reason, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastTouchCellButtonsStep1 = {
+  ...twinStep(coreTouchStories, coreTouchStories.TouchCellButtons, 1),
+  name: 'Core/Touch — Touch a cell, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastTouchCellButtonsStep2 = {
+  ...twinStep(coreTouchStories, coreTouchStories.TouchCellButtons, 2),
+  name: 'Core/Touch — Touch a cell, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastTouchCellButtonsStep3 = {
+  ...twinStep(coreTouchStories, coreTouchStories.TouchCellButtons, 3),
+  name: 'Core/Touch — Touch a cell, step 3',
+  tags: ['!test'],
+}
+
+export const HighContrastTouchRowButtonsStep1 = {
+  ...twinStep(coreTouchStories, coreTouchStories.TouchRowButtons, 1),
+  name: 'Core/Touch — Touch a row, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastTouchRowButtonsStep2 = {
+  ...twinStep(coreTouchStories, coreTouchStories.TouchRowButtons, 2),
+  name: 'Core/Touch — Touch a row, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastTouchRowButtonsStep3 = {
+  ...twinStep(coreTouchStories, coreTouchStories.TouchRowButtons, 3),
+  name: 'Core/Touch — Touch a row, step 3',
+  tags: ['!test'],
+}
+
+export const HighContrastTouchHybridDeviceStep1 = {
+  ...twinStep(coreTouchStories, coreTouchStories.TouchHybridDevice, 1),
+  name: 'Core/Touch — Touch on a laptop, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastTouchHybridDeviceStep2 = {
+  ...twinStep(coreTouchStories, coreTouchStories.TouchHybridDevice, 2),
+  name: 'Core/Touch — Touch on a laptop, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastTouchHybridDeviceStep3 = {
+  ...twinStep(coreTouchStories, coreTouchStories.TouchHybridDevice, 3),
+  name: 'Core/Touch — Touch on a laptop, step 3',
+  tags: ['!test'],
+}
+
+export const HighContrastTouchIconHintStep1 = {
+  ...twinStep(coreTouchStories, coreTouchStories.TouchIconHint, 1),
+  name: 'Core/Touch — Button label on hold, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastTouchIconHintStep2 = {
+  ...twinStep(coreTouchStories, coreTouchStories.TouchIconHint, 2),
+  name: 'Core/Touch — Button label on hold, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastTouchIconHintStep3 = {
+  ...twinStep(coreTouchStories, coreTouchStories.TouchIconHint, 3),
+  name: 'Core/Touch — Button label on hold, step 3',
+  tags: ['!test'],
+}
+
+export const HighContrastTouchTruncatedTextStep1 = {
+  ...twinStep(coreTouchStories, coreTouchStories.TouchTruncatedText, 1),
+  name: 'Core/Touch — Cut-off text, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastTouchTruncatedTextStep2 = {
+  ...twinStep(coreTouchStories, coreTouchStories.TouchTruncatedText, 2),
+  name: 'Core/Touch — Cut-off text, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastTouchTruncatedTextStep3 = {
+  ...twinStep(coreTouchStories, coreTouchStories.TouchTruncatedText, 3),
+  name: 'Core/Touch — Cut-off text, step 3',
+  tags: ['!test'],
+}
+
+export const HighContrastResizingByTouchStep1 = {
+  ...twinStep(
+    columnsResizingStories,
+    columnsResizingStories.ResizingByTouch,
+    1,
+  ),
+  name: 'Columns/Resizing — Width with a finger, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastResizingByTouchStep2 = {
+  ...twinStep(
+    columnsResizingStories,
+    columnsResizingStories.ResizingByTouch,
+    2,
+  ),
+  name: 'Columns/Resizing — Width with a finger, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastResizingByTouchStep3 = {
+  ...twinStep(
+    columnsResizingStories,
+    columnsResizingStories.ResizingByTouch,
+    3,
+  ),
+  name: 'Columns/Resizing — Width with a finger, step 3',
+  tags: ['!test'],
+}
+
+export const HighContrastContextMenuLongPressStep1 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuLongPress,
+    1,
+  ),
+  name: 'Cells/Context menu — Long press, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastContextMenuLongPressStep2 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuLongPress,
+    2,
+  ),
+  name: 'Cells/Context menu — Long press, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastContextMenuLongPressStep3 = {
+  ...twinStep(
+    cellsContextMenuStories,
+    cellsContextMenuStories.ContextMenuLongPress,
+    3,
+  ),
+  name: 'Cells/Context menu — Long press, step 3',
+  tags: ['!test'],
+}
+
+export const HighContrastRowDraggingByTouchStep1 = {
+  ...twinStep(rowsDraggingStories, rowsDraggingStories.RowDraggingByTouch, 1),
+  name: 'Rows/Dragging — Move with a finger, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastRowDraggingByTouchStep2 = {
+  ...twinStep(rowsDraggingStories, rowsDraggingStories.RowDraggingByTouch, 2),
+  name: 'Rows/Dragging — Move with a finger, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastRowDraggingByTouchStep3 = {
+  ...twinStep(rowsDraggingStories, rowsDraggingStories.RowDraggingByTouch, 3),
+  name: 'Rows/Dragging — Move with a finger, step 3',
+  tags: ['!test'],
+}
+
+export const HighContrastSortingAddFromMenuStep1 = {
+  ...twinStep(
+    columnsSortingStories,
+    columnsSortingStories.SortingAddFromMenu,
+    1,
+  ),
+  name: 'Columns/Sorting — Add to sorting from the menu, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastSortingAddFromMenuStep2 = {
+  ...twinStep(
+    columnsSortingStories,
+    columnsSortingStories.SortingAddFromMenu,
+    2,
+  ),
+  name: 'Columns/Sorting — Add to sorting from the menu, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastSortingAddFromMenuStep3 = {
+  ...twinStep(
+    columnsSortingStories,
+    columnsSortingStories.SortingAddFromMenu,
+    3,
+  ),
+  name: 'Columns/Sorting — Add to sorting from the menu, step 3',
+  tags: ['!test'],
+}
+
+export const HighContrastSortingAddFromMenuStep4 = {
+  ...twinStep(
+    columnsSortingStories,
+    columnsSortingStories.SortingAddFromMenu,
+    4,
+  ),
+  name: 'Columns/Sorting — Add to sorting from the menu, step 4',
+  tags: ['!test'],
+}
+
+export const HighContrastCellEditingDoneCancelStep1 = {
+  ...twinStep(
+    cellsEditingStories,
+    cellsEditingStories.CellEditingDoneCancel,
+    1,
+  ),
+  name: 'Cells/Editing — Done and cancel by touch, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastCellEditingDoneCancelStep2 = {
+  ...twinStep(
+    cellsEditingStories,
+    cellsEditingStories.CellEditingDoneCancel,
+    2,
+  ),
+  name: 'Cells/Editing — Done and cancel by touch, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastCellEditingDoneCancelStep3 = {
+  ...twinStep(
+    cellsEditingStories,
+    cellsEditingStories.CellEditingDoneCancel,
+    3,
+  ),
+  name: 'Cells/Editing — Done and cancel by touch, step 3',
+  tags: ['!test'],
+}
+
+export const HighContrastCellEditingDoneCancelStep4 = {
+  ...twinStep(
+    cellsEditingStories,
+    cellsEditingStories.CellEditingDoneCancel,
+    4,
+  ),
+  name: 'Cells/Editing — Done and cancel by touch, step 4',
   tags: ['!test'],
 }
 
@@ -4156,6 +4588,66 @@ export const HighContrastLongTextCellsStep2 = {
   tags: ['!test'],
 }
 
+export const HighContrastLongTextCellsStep3 = {
+  ...twinStep(coreLongTextStories, coreLongTextStories.LongTextCells, 3),
+  name: 'Core/Long text — Cells, step 3',
+  tags: ['!test'],
+}
+
+export const HighContrastLongTextCellsStep4 = {
+  ...twinStep(coreLongTextStories, coreLongTextStories.LongTextCells, 4),
+  name: 'Core/Long text — Cells, step 4',
+  tags: ['!test'],
+}
+
+export const HighContrastLongTextCellsStep5 = {
+  ...twinStep(coreLongTextStories, coreLongTextStories.LongTextCells, 5),
+  name: 'Core/Long text — Cells, step 5',
+  tags: ['!test'],
+}
+
+export const HighContrastLongTextNarrowColumnStep1 = {
+  ...twinStep(coreLongTextStories, coreLongTextStories.LongTextNarrowColumn, 1),
+  name: 'Core/Long text — Narrow a column, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastLongTextNarrowColumnStep2 = {
+  ...twinStep(coreLongTextStories, coreLongTextStories.LongTextNarrowColumn, 2),
+  name: 'Core/Long text — Narrow a column, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastLongTextNarrowColumnStep3 = {
+  ...twinStep(coreLongTextStories, coreLongTextStories.LongTextNarrowColumn, 3),
+  name: 'Core/Long text — Narrow a column, step 3',
+  tags: ['!test'],
+}
+
+export const HighContrastLongTextNarrowColumnStep4 = {
+  ...twinStep(coreLongTextStories, coreLongTextStories.LongTextNarrowColumn, 4),
+  name: 'Core/Long text — Narrow a column, step 4',
+  tags: ['!test'],
+}
+
+export const HighContrastLongTextKeyboardStep1 = {
+  ...twinStep(coreLongTextStories, coreLongTextStories.LongTextKeyboard, 1),
+  name: 'Core/Long text — Keyboard, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastLongTextKeyboardStep2 = {
+  ...twinStep(coreLongTextStories, coreLongTextStories.LongTextKeyboard, 2),
+  name: 'Core/Long text — Keyboard, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastLongTextKeyboardStep3 = {
+  ...twinStep(coreLongTextStories, coreLongTextStories.LongTextKeyboard, 3),
+  name: 'Core/Long text — Keyboard, step 3',
+  tags: ['!test'],
+}
+
 export const HighContrastLongTextMenusStep1 = {
   ...twinStep(coreLongTextStories, coreLongTextStories.LongTextMenus, 1),
   name: 'Core/Long text — Menus and panels, step 1',
@@ -4171,6 +4663,36 @@ export const HighContrastLongTextMenusStep2 = {
 export const HighContrastLongTextMenusStep3 = {
   ...twinStep(coreLongTextStories, coreLongTextStories.LongTextMenus, 3),
   name: 'Core/Long text — Menus and panels, step 3',
+  tags: ['!test'],
+}
+
+export const HighContrastLongTextListsStep1 = {
+  ...twinStep(coreLongTextStories, coreLongTextStories.LongTextLists, 1),
+  name: 'Core/Long text — Lists, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastLongTextListsStep2 = {
+  ...twinStep(coreLongTextStories, coreLongTextStories.LongTextLists, 2),
+  name: 'Core/Long text — Lists, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastLongTextListsStep3 = {
+  ...twinStep(coreLongTextStories, coreLongTextStories.LongTextLists, 3),
+  name: 'Core/Long text — Lists, step 3',
+  tags: ['!test'],
+}
+
+export const HighContrastLongTextListsStep4 = {
+  ...twinStep(coreLongTextStories, coreLongTextStories.LongTextLists, 4),
+  name: 'Core/Long text — Lists, step 4',
+  tags: ['!test'],
+}
+
+export const HighContrastLongTextListsStep5 = {
+  ...twinStep(coreLongTextStories, coreLongTextStories.LongTextLists, 5),
+  name: 'Core/Long text — Lists, step 5',
   tags: ['!test'],
 }
 
@@ -8633,6 +9155,16 @@ export const HighContrastPopupAssembledStep19 = {
   tags: ['!test'],
 }
 
+export const HighContrastPopupAssembledStep20 = {
+  ...twinStep(
+    uiPopupAssembledStories,
+    uiPopupAssembledStories.PopupAssembled,
+    20,
+  ),
+  name: 'UI/Popup/Assembled — Popups assembled, step 20',
+  tags: ['!test'],
+}
+
 export const HighContrastThemingDefaultPaletteStep1 = {
   ...twinStep(themingStories, themingStories.ThemingDefaultPalette, 1),
   name: 'Theming — Default palette, step 1',
@@ -9518,6 +10050,86 @@ export const HighContrastTextWrapMotionStep1 = {
 export const HighContrastTextWrapMotionStep2 = {
   ...twinStep(columnsTextWrapStories, columnsTextWrapStories.TextWrapMotion, 2),
   name: 'Columns/Text wrap — Sort rows of different heights, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastTextWrapEditStep1 = {
+  ...twinStep(columnsTextWrapStories, columnsTextWrapStories.TextWrapEdit, 1),
+  name: 'Columns/Text wrap — Edit a cell, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastTextWrapEditStep2 = {
+  ...twinStep(columnsTextWrapStories, columnsTextWrapStories.TextWrapEdit, 2),
+  name: 'Columns/Text wrap — Edit a cell, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastTextWrapEditStep3 = {
+  ...twinStep(columnsTextWrapStories, columnsTextWrapStories.TextWrapEdit, 3),
+  name: 'Columns/Text wrap — Edit a cell, step 3',
+  tags: ['!test'],
+}
+
+export const HighContrastTextWrapExternalChangeStep1 = {
+  ...twinStep(
+    columnsTextWrapStories,
+    columnsTextWrapStories.TextWrapExternalChange,
+    1,
+  ),
+  name: 'Columns/Text wrap — Value changes outside, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastTextWrapExternalChangeStep2 = {
+  ...twinStep(
+    columnsTextWrapStories,
+    columnsTextWrapStories.TextWrapExternalChange,
+    2,
+  ),
+  name: 'Columns/Text wrap — Value changes outside, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastTextWrapInsertAboveStep1 = {
+  ...twinStep(
+    columnsTextWrapStories,
+    columnsTextWrapStories.TextWrapInsertAbove,
+    1,
+  ),
+  name: 'Columns/Text wrap — Records added above, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastTextWrapInsertAboveStep2 = {
+  ...twinStep(
+    columnsTextWrapStories,
+    columnsTextWrapStories.TextWrapInsertAbove,
+    2,
+  ),
+  name: 'Columns/Text wrap — Records added above, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastTextWrapInsertAboveStep3 = {
+  ...twinStep(
+    columnsTextWrapStories,
+    columnsTextWrapStories.TextWrapInsertAbove,
+    3,
+  ),
+  name: 'Columns/Text wrap — Records added above, step 3',
+  tags: ['!test'],
+}
+
+export const HighContrastTextWrapDragStep1 = {
+  ...twinStep(columnsTextWrapStories, columnsTextWrapStories.TextWrapDrag, 1),
+  name: 'Columns/Text wrap — Drag a tall row, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastTextWrapDragStep2 = {
+  ...twinStep(columnsTextWrapStories, columnsTextWrapStories.TextWrapDrag, 2),
+  name: 'Columns/Text wrap — Drag a tall row, step 2',
   tags: ['!test'],
 }
 
@@ -10536,6 +11148,206 @@ export const HighContrastServerUndoStep3 = {
 export const HighContrastServerUndoStep4 = {
   ...twinStep(serverEditingStories, serverEditingStories.ServerUndo, 4),
   name: 'Data loading/Server row model/Editing — Undo an edit off the window, step 4',
+  tags: ['!test'],
+}
+
+export const HighContrastCellsEditingApplySavedStep1 = {
+  ...twinStep(
+    cellsEditingStories,
+    cellsEditingStories.CellsEditingApplySaved,
+    1,
+  ),
+  name: 'Cells/Editing — Apply: all saved, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastCellsEditingApplySavedStep2 = {
+  ...twinStep(
+    cellsEditingStories,
+    cellsEditingStories.CellsEditingApplySaved,
+    2,
+  ),
+  name: 'Cells/Editing — Apply: all saved, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastCellsEditingApplySavedStep3 = {
+  ...twinStep(
+    cellsEditingStories,
+    cellsEditingStories.CellsEditingApplySaved,
+    3,
+  ),
+  name: 'Cells/Editing — Apply: all saved, step 3',
+  tags: ['!test'],
+}
+
+export const HighContrastFailureLogApplyGroupStep1 = {
+  ...twinStep(
+    panelsFailureLogStories,
+    panelsFailureLogStories.FailureLogApplyGroup,
+    1,
+  ),
+  name: 'Panels/Failure log — Apply: partly refused, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastFailureLogApplyGroupStep2 = {
+  ...twinStep(
+    panelsFailureLogStories,
+    panelsFailureLogStories.FailureLogApplyGroup,
+    2,
+  ),
+  name: 'Panels/Failure log — Apply: partly refused, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastFailureLogApplyGroupStep3 = {
+  ...twinStep(
+    panelsFailureLogStories,
+    panelsFailureLogStories.FailureLogApplyGroup,
+    3,
+  ),
+  name: 'Panels/Failure log — Apply: partly refused, step 3',
+  tags: ['!test'],
+}
+
+export const HighContrastFailureLogApplyGroupStep4 = {
+  ...twinStep(
+    panelsFailureLogStories,
+    panelsFailureLogStories.FailureLogApplyGroup,
+    4,
+  ),
+  name: 'Panels/Failure log — Apply: partly refused, step 4',
+  tags: ['!test'],
+}
+
+export const HighContrastCellsEditingApplyFailedStep1 = {
+  ...twinStep(
+    cellsEditingStories,
+    cellsEditingStories.CellsEditingApplyFailed,
+    1,
+  ),
+  name: 'Cells/Editing — Apply: request failed, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastCellsEditingApplyFailedStep2 = {
+  ...twinStep(
+    cellsEditingStories,
+    cellsEditingStories.CellsEditingApplyFailed,
+    2,
+  ),
+  name: 'Cells/Editing — Apply: request failed, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastCellsEditingApplyFailedStep3 = {
+  ...twinStep(
+    cellsEditingStories,
+    cellsEditingStories.CellsEditingApplyFailed,
+    3,
+  ),
+  name: 'Cells/Editing — Apply: request failed, step 3',
+  tags: ['!test'],
+}
+
+export const HighContrastCellsEditingApplyFailedStep4 = {
+  ...twinStep(
+    cellsEditingStories,
+    cellsEditingStories.CellsEditingApplyFailed,
+    4,
+  ),
+  name: 'Cells/Editing — Apply: request failed, step 4',
+  tags: ['!test'],
+}
+
+export const HighContrastServerEditingRowGoneStep1 = {
+  ...twinStep(
+    serverEditingStories,
+    serverEditingStories.ServerEditingRowGone,
+    1,
+  ),
+  name: 'Data loading/Server row model/Editing — Row is gone, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastServerEditingRowGoneStep2 = {
+  ...twinStep(
+    serverEditingStories,
+    serverEditingStories.ServerEditingRowGone,
+    2,
+  ),
+  name: 'Data loading/Server row model/Editing — Row is gone, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastServerEditingRowGoneStep3 = {
+  ...twinStep(
+    serverEditingStories,
+    serverEditingStories.ServerEditingRowGone,
+    3,
+  ),
+  name: 'Data loading/Server row model/Editing — Row is gone, step 3',
+  tags: ['!test'],
+}
+
+export const HighContrastServerEditingRowGoneStep4 = {
+  ...twinStep(
+    serverEditingStories,
+    serverEditingStories.ServerEditingRowGone,
+    4,
+  ),
+  name: 'Data loading/Server row model/Editing — Row is gone, step 4',
+  tags: ['!test'],
+}
+
+export const HighContrastFailureLogDiscardAllStep1 = {
+  ...twinStep(
+    panelsFailureLogStories,
+    panelsFailureLogStories.FailureLogDiscardAll,
+    1,
+  ),
+  name: 'Panels/Failure log — Discard all, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastFailureLogDiscardAllStep2 = {
+  ...twinStep(
+    panelsFailureLogStories,
+    panelsFailureLogStories.FailureLogDiscardAll,
+    2,
+  ),
+  name: 'Panels/Failure log — Discard all, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastFailureLogDiscardAllStep3 = {
+  ...twinStep(
+    panelsFailureLogStories,
+    panelsFailureLogStories.FailureLogDiscardAll,
+    3,
+  ),
+  name: 'Panels/Failure log — Discard all, step 3',
+  tags: ['!test'],
+}
+
+export const HighContrastFailureLogDiscardAllStep4 = {
+  ...twinStep(
+    panelsFailureLogStories,
+    panelsFailureLogStories.FailureLogDiscardAll,
+    4,
+  ),
+  name: 'Panels/Failure log — Discard all, step 4',
+  tags: ['!test'],
+}
+
+export const HighContrastFailureLogDiscardAllStep5 = {
+  ...twinStep(
+    panelsFailureLogStories,
+    panelsFailureLogStories.FailureLogDiscardAll,
+    5,
+  ),
+  name: 'Panels/Failure log — Discard all, step 5',
   tags: ['!test'],
 }
 

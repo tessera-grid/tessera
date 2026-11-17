@@ -723,7 +723,7 @@ describe('Ожидание и отказ на объекте (ADR 0177)', () => 
     }
   })
 
-  test('OB16: контекстное меню и кебаб занятого объекта несут «Отменить сохранение» или «Отменить действие»; помеченной ячейки — «Повторить сохранение» и «Отбросить изменение»', async () => {
+  test('OB16: контекстное меню и кебаб занятого объекта несут «Отменить сохранение» или «Отменить действие»; помеченной ячейки — «Повторить сохранение» и «Сбросить изменение»', async () => {
     const screen = await mount()
     const openContextMenu = async (cell: HTMLElement) => {
       await userEvent.click(cell, { button: 'right' })
@@ -771,7 +771,7 @@ describe('Ожидание и отказ на объекте (ADR 0177)', () => 
       await expect.poll(() => lastCall('remove').signal?.aborted).toBe(true)
       await expect.poll(() => waved(cellEl('r4', 'city'))).toBe(false)
 
-      // Отклонённое сохранение — «Повторить сохранение» и «Отбросить изменение».
+      // Отклонённое сохранение — «Повторить сохранение» и «Сбросить изменение».
       await pressEdit(cellEl('r3', 'name'))
       await expect.poll(() => editorOf(cellEl('r3', 'name'))).not.toBeNull()
       await userEvent.keyboard('{Control>}a{/Control}Draft{Enter}')

@@ -42,7 +42,8 @@
   outline: 1px solid transparent;
   outline-offset: -1px;
 
-  :where(:global(.data-grid-theme):not([data-refreshing]))
+  :where(:root:not([data-tsr-input='touch']))
+    :where(:global(.data-grid-theme):not([data-refreshing]))
     &:hover:not([data-actions-column-cell='true']):is(
       [data-cell-interact='true']
     ) {
@@ -74,6 +75,12 @@
       -webkit-user-select: none;
       -webkit-touch-callout: none;
     }
+  }
+
+  :where(:root[data-tsr-input='touch']) :global([data-context-menu-touch]) & {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
   }
 
   &[data-cell-selected='true'] {
@@ -407,7 +414,8 @@
   }
 
   /* Наведение ячейки — контур `Highlight`: цвет токена браузер подменил бы. */
-  :where(:global(.data-grid-theme):not([data-refreshing]))
+  :where(:root:not([data-tsr-input='touch']))
+    :where(:global(.data-grid-theme):not([data-refreshing]))
     .body__cell:hover:not(
       [data-actions-column-cell='true']
     )[data-cell-interact='true'] {

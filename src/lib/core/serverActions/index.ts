@@ -14,7 +14,11 @@ import {
 } from '../cancellation'
 import { dataModeOf } from '../dataMode'
 import { reportAction } from '../debugActions'
-import { reportFailure, resolveFailure } from '../failures/failuresFeature'
+import {
+  reportFailure,
+  resolveFailure,
+  whenFailureGone,
+} from '../failures/failuresFeature'
 import type { TableLabels } from '../localization'
 import { ENGLISH_LABELS } from '../localization/resolveLabels'
 import { serverRowModelReason } from '../pluginDiagnostics'
@@ -613,8 +617,12 @@ export const runServerAction = (
       target: { table: true },
       reason: serverActionReason({ kind, error }, labels),
       retry,
-      // Запись закрыта в журнале — уходит и плашка (ADR 0177, §7).
-      discard: () => dismissServerActionError(table),
+    })
+    // За записью правки нет — без `discard`; запись закрыли — уходит и плашка этого отказа
+    // (ADR 0227, §6).
+    whenFailureGone(table, SERVER_FAILURE_KEY, () => {
+      if (readServerAction(table).failed?.attempt === attempt)
+        dismissServerActionError(table)
     })
   }
   result.then(

@@ -18,7 +18,7 @@ import { useStoryLabels } from './__mocks__/storyLocale'
 import { defaultControls, noControls } from './__mocks__/utils/dataGridControls'
 
 /**
- * Запись поповера со списком (ADR 0178, §8) — облачко журнала отказов и пульта несохранённых
+ * Запись поповера со списком (ADR 0178, §8) — облачко журнала ошибок и пульта несохранённых
  * изменений: точка слева, подпись, время и кнопки записи в строке, под ней — причина. С
  * переходом к цели подпись — кнопка. Тон, текст, переход и кнопки — в панели.
  */
@@ -31,6 +31,8 @@ interface EntryStoryArgs {
   reason: string
   showable: boolean
   actions: boolean
+  /** Строка ошибки действия записи; пусто — без неё. */
+  error?: string
 }
 
 /** Подписи записей, как у журнала: действие и цель — «Возраст · строка 12». */
@@ -54,6 +56,7 @@ const Entry = ({
   reason,
   showable,
   actions,
+  error,
 }: EntryStoryArgs) => {
   const icons = useIcons()
   const texts = useEntryLabels()
@@ -63,6 +66,7 @@ const Entry = ({
       markHint={markHint || undefined}
       label={label || texts.editCell}
       onShow={showable ? () => {} : undefined}
+      error={error || undefined}
       aside={
         <time
           dateTime="2026-03-12T09:30:00"
@@ -155,6 +159,10 @@ const meta = {
     reason: { control: 'text', description: 'Reason; empty means none' },
     showable: { control: 'boolean', description: 'Click to go to the target' },
     actions: { control: 'boolean', description: 'Entry buttons' },
+    error: {
+      control: 'text',
+      description: 'Error line of a failed entry action; empty means none',
+    },
   },
   render: args => <EntryList entries={[args]} />,
 } satisfies Meta<EntryStoryArgs>
@@ -172,10 +180,25 @@ export const PopupEntryPlayground: Story = {
     'reason',
     'showable',
     'actions',
+    'error',
   ),
 }
 
-/** Список записей, как в журнале отказов и пульте изменений. */
+/** Переход к цели не удался (ADR 0227, §7): строка ошибки под причиной. */
+export const PopupEntryError: Story = {
+  name: 'Action failed',
+  parameters: noControls(),
+  render: function Render(args) {
+    const labels = useStoryLabels()
+    return (
+      <EntryList
+        entries={[{ ...args, error: failureLogLabels(labels).targetNotFound }]}
+      />
+    )
+  },
+}
+
+/** Список записей, как в журнале ошибок и пульте изменений. */
 export const PopupEntryList: Story = {
   name: 'List',
   parameters: noControls(),

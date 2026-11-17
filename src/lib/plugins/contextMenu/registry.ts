@@ -27,6 +27,9 @@ const contextMenuEntry = definePlugin<ContextMenuOptions>()({
       plugin: 'cellEditing',
       action: 'rowDraftDiscard',
     },
+    // Пункт касания у обрезанной ячейки (ADR 0231, §6) — вне списка пунктов: виден не всем вводам.
+    'contextMenu:showFullText': labels =>
+      contextMenuLabels(labels).showFullText,
   },
   // Свои пункты меню видны не всегда: без чужих пунктов меню по-прежнему пустое.
   diagnose: table => noContextMenuActionsReason(table, CELL_STATE_ACTIONS),

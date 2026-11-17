@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { mod } from './__mocks__/platformKeys'
 import { RotateCcw } from 'lucide-react'
 import { Meta, StoryObj } from '@storybook/react'
 import { expect } from 'storybook/test'
@@ -30,6 +31,7 @@ import {
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
+import { applyNoticeEntered, applySavedNotice } from './__mocks__/applyNotice'
 import { typeInto } from './__mocks__/typeGuides'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
@@ -654,6 +656,9 @@ const applied = (root: ParentNode) =>
       !pendingAt(root, row, 'age') &&
       textOf(root, row, 'age') === value,
   )
+/** Сохранено, и над таблицей плашка итога в тоне успеха. */
+const applySettled = (root: ParentNode) =>
+  applied(root) && applySavedNotice(root)
 
 const MANUAL: readonly GuideStoryStep[] = [
   {
@@ -679,10 +684,12 @@ const MANUAL: readonly GuideStoryStep[] = [
   {
     title: { ru: 'Сохранено пакетом', en: 'Saved in a batch' },
     hint: {
-      ru: 'Пользователь открыл пульт и нажал «Применить всё». Вставленные значения ушли на сервер одним запросом и сохранены: отметки исчезли.',
-      en: 'The user opened the unsaved changes panel and clicked "Apply all". The pasted values went to the server in one request and are saved: the marks disappeared.',
+      ru: 'Пользователь открыл пульт и нажал «Применить всё». Вставленные значения ушли на сервер одним запросом и сохранены: отметки исчезли. Над таблицей плашка говорит, сколько изменений сохранено, и через несколько секунд уходит сама.',
+      en: 'The user opened the unsaved changes panel and clicked "Apply all". The pasted values went to the server in one request and are saved: the marks disappeared. A notice above the table says how many changes were saved and leaves on its own in a few seconds.',
     },
-    enter: untilDone(applied, root => {
+    states: ['body.applySaved'],
+    immediate: true,
+    enter: untilDone(applySettled, root => {
       if (!drafted(root)) {
         if (!selectedAt(root, 'item-id-1', 'age'))
           selectCell(root, 'item-id-1', 'age')
@@ -722,9 +729,9 @@ export const PasteManualSave: StoryObj<StoryProps> = {
     })
     await step(MANUAL[2]!.title.ru, async () => {
       await guideNext(canvas)
-      await until(() => expect(applied(canvas)).toBe(true))
+      await until(() => expect(applySettled(canvas)).toBe(true))
       expect(consoleText()).toContain('onCommitEdits')
-      await settle()
+      await applyNoticeEntered(canvas)
     })
   },
 }
@@ -1042,7 +1049,7 @@ const askToPaste = (root: HTMLElement) => {
 /** Ответить на вопрос: галочка — вставить, крестик — не вставлять. */
 const answerAsk = (root: HTMLElement, ok: boolean) => {
   const button = question(root)?.querySelector<HTMLElement>(
-    ok ? '[data-testid="paste-confirm"]' : '[data-testid="paste-decline"]',
+    ok ? '[data-question-confirm]' : '[data-question-decline]',
   )
   if (!button) return false
   button.click()
@@ -1810,7 +1817,7 @@ const pressFill = (
   code: 'KeyD' | 'KeyR',
 ) => {
   const cell = cellOf(root, row, column)
-  if (cell) pressKey(cell, code === 'KeyD' ? 'd' : 'r', { code, ctrlKey: true })
+  if (cell) pressKey(cell, code === 'KeyD' ? 'd' : 'r', { code, ...mod() })
 }
 
 const FILL_KEYBOARD: readonly GuideStoryStep[] = [
@@ -1995,7 +2002,7 @@ const BULK_EDIT: readonly GuideStoryStep[] = [
     enter: untilDone(bulkFilled, root => {
       const input = bulkInput(root)
       if (input && input.value !== BULK_VALUE) typeInto(input, BULK_VALUE)
-      else if (input) pressKey(input, 'Enter', { ctrlKey: true })
+      else if (input) pressKey(input, 'Enter', mod())
       else if (!rangeSelected(root, 'age', BULK_ROWS))
         selectRows(root, 'age', BULK_ROWS)
       else pressKey(cellOf(root, BULK_ROWS[0]!, 'age')!, 'F2')

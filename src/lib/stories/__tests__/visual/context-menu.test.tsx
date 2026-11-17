@@ -70,7 +70,7 @@ const selectedCount = (container: HTMLElement) =>
 const menuEl = () => document.querySelector('[role="menu"]')
 const menuItems = () =>
   Array.from(document.querySelectorAll('[role="menuitem"]')).map(i =>
-    i.textContent?.trim(),
+    i.querySelector('[data-popup-item-label]')?.textContent?.trim(),
   )
 
 type ContextMenuArgs = Partial<

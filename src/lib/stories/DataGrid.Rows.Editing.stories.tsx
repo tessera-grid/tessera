@@ -16,14 +16,22 @@ import {
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
+import {
+  applyNotice,
+  applyNoticeEntered,
+  applyPartlyNotice,
+  applySavedNotice,
+} from './__mocks__/applyNotice'
 import { untilDone } from './__mocks__/cellGestures'
 import { seed } from './__mocks__/seed'
+import { storyLabels } from './__mocks__/storyLabels'
 import { press, typeInto } from './__mocks__/typeGuides'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
+import { cellEditingLabels } from '../plugins/cellEditing/labels'
 import type {
   CellEditBatch,
   CellEditBatchResult,
@@ -275,11 +283,17 @@ const INSERT: readonly GuideStoryStep[] = [
   {
     title: { ru: 'Строка сохранена', en: 'The row is saved' },
     hint: {
-      ru: 'Пользователь применил всё из пульта. Сервер сохранил строку: заливки нет, это обычная строка данных, несохранённых изменений не осталось.',
-      en: 'The user applied everything from the unsaved changes panel. The server saved the row: there is no fill, it is an ordinary data row, and no unsaved changes are left.',
+      ru: 'Пользователь применил всё из пульта. Сервер сохранил строку: заливки нет, это обычная строка данных, несохранённых изменений не осталось. Над таблицей плашка говорит, что изменение сохранено, и через несколько секунд уходит сама.',
+      en: 'The user applied everything from the unsaved changes panel. The server saved the row: there is no fill, it is an ordinary data row, and no unsaved changes are left. A notice above the table says the change was saved and leaves on its own in a few seconds.',
     },
+    states: ['body.applySaved'],
+    immediate: true,
     enter: untilDone(
-      root => !!savedRow(root) && !newRow(root) && !panelOpen(),
+      root =>
+        !!savedRow(root) &&
+        !newRow(root) &&
+        !panelOpen() &&
+        applySavedNotice(root),
       root => {
         if (savedRow(root)) return
         if (!newRowFilled(root)) fillNewRow(root)
@@ -298,7 +312,7 @@ export const RowDraftInsert: StoryObj<StoryProps> = {
       title={{ ru: 'Новая строка', en: 'A new row' }}
       steps={INSERT}
       reset={() => rowServer.reset()}
-      args={guideArgs(ROWS_ARGS, args)}
+      args={guideArgs({ ...ROWS_ARGS, dataCount: 3 }, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
@@ -324,7 +338,8 @@ export const RowDraftInsert: StoryObj<StoryProps> = {
       await until(() => expect(savedRow(canvas)).not.toBeNull())
       expect(newRow(canvas)).toBeNull()
       expect(panelCount(canvas)).toBe(0)
-      await settle()
+      await until(() => expect(applySavedNotice(canvas)).toBe(true))
+      await applyNoticeEntered(canvas)
     })
   },
 }
@@ -450,16 +465,17 @@ const REFUSED: readonly GuideStoryStep[] = [
       en: 'The server refused the new row',
     },
     hint: {
-      ru: 'Пользователь применил всё из пульта. Сервер сохранил правку и удаление и отклонил новую строку: удалённой строки больше нет, правленная ячейка вспыхнула тоном успеха, а новая — тоном отката и осталась несохранённой.',
-      en: 'The user applied everything from the unsaved changes panel. The server saved the edit and the deletion and rejected the new row: the deleted row is gone, the edited cell flashed in the success tone, and the new row flashed in the revert tone and stayed unsaved.',
+      ru: 'Пользователь применил всё из пульта. Сервер сохранил правку и удаление и отклонил новую строку: удалённой строки больше нет, правленная ячейка вспыхнула тоном успеха, а новая — тоном отката и осталась несохранённой. Над таблицей плашка говорит, сколько изменений сохранено из общего числа; на ней кнопка показа журнала ошибок, сама она не уходит.',
+      en: 'The user applied everything from the unsaved changes panel. The server saved the edit and the deletion and rejected the new row: the deleted row is gone, the edited cell flashed in the success tone, and the new row flashed in the revert tone and stayed unsaved. Above the table, a notice says how many changes were saved out of the total, with a button that opens the error log; it does not leave on its own.',
     },
-    states: ['body.rowDraft'],
+    states: ['body.rowDraft', 'body.applyPartly'],
     enter: untilDone(
       root =>
         !rowEl(root, REMOVED) &&
         !!newRow(root) &&
         panelCount(root) === 1 &&
-        !panelOpen(),
+        !panelOpen() &&
+        applyPartlyNotice(root),
       root => {
         rowServer.refuseInserts = true
         if (!rowEl(root, REMOVED)) return
@@ -485,7 +501,7 @@ export const RowDraftsCommitRefused: StoryObj<StoryProps> = {
       args={guideArgs(ROWS_ARGS, args)}
     />
   ),
-  play: async ({ canvasElement: canvas, globals, step }) => {
+  play: async ({ args, canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     await step(REFUSED[0]!.title.ru, async () => {
       await waitForRows(canvas)
@@ -502,6 +518,11 @@ export const RowDraftsCommitRefused: StoryObj<StoryProps> = {
         expect(textOf(cellOf(rowEl(canvas, EDITED), 'age'))).toBe(EDITED_AGE),
       )
       await until(() => expect(panelCount(canvas)).toBe(1))
+      await until(() => expect(applyPartlyNotice(canvas)).toBe(true))
+      // Сохранены правка ячейки и удаление, новой строке отказано: 2 из 3.
+      expect(applyNotice(canvas)!.querySelector('[id]')!.textContent).toBe(
+        cellEditingLabels(storyLabels(args.locale)).applyPartly(2, 3),
+      )
       await settle()
     })
   },
@@ -536,12 +557,17 @@ const SAVE_IN_PLACE: readonly GuideStoryStep[] = [
   {
     title: { ru: 'Строка сохранена на месте', en: 'The row is saved in place' },
     hint: {
-      ru: 'Пользователь применил всё из пульта. Сервер сохранил строку под тем же номером, что выдала ей таблица, — это та же строка: она осталась на месте, не погасла и не появилась заново, а коротко вспыхнула тоном успеха.',
-      en: 'The user applied everything from the unsaved changes panel. The server saved the row under the same id the table gave it, so it is the same row: it stayed in place, did not fade out or reappear, and flashed briefly in the success tone.',
+      ru: 'Пользователь применил всё из пульта. Сервер сохранил строку под тем же номером, что выдала ей таблица, — это та же строка: она осталась на месте, не погасла и не появилась заново, а коротко вспыхнула тоном успеха. Над таблицей плашка говорит, что изменение сохранено, и через несколько секунд уходит сама.',
+      en: 'The user applied everything from the unsaved changes panel. The server saved the row under the same id the table gave it, so it is the same row: it stayed in place, did not fade out or reappear, and flashed briefly in the success tone. A notice above the table says the change was saved and leaves on its own in a few seconds.',
     },
+    states: ['body.applySaved'],
     immediate: true,
     enter: untilDone(
-      root => !!savedRow(root) && !newRow(root) && !panelOpen(),
+      root =>
+        !!savedRow(root) &&
+        !newRow(root) &&
+        !panelOpen() &&
+        applySavedNotice(root),
       root => {
         if (savedRow(root)) return
         if (!newRowFilled(root)) fillNewRow(root)
@@ -560,7 +586,7 @@ export const RowDraftSaveInPlace: StoryObj<StoryProps> = {
       title={{ ru: 'Сохранение на месте', en: 'Saving in place' }}
       steps={SAVE_IN_PLACE}
       reset={() => rowServer.reset()}
-      args={guideArgs(ROWS_ARGS, args)}
+      args={guideArgs({ ...ROWS_ARGS, dataCount: 3 }, args)}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
@@ -581,7 +607,8 @@ export const RowDraftSaveInPlace: StoryObj<StoryProps> = {
       expect(newRow(canvas)).toBeNull()
       expect(placeOf(canvas, savedRow(canvas))).toBe(place)
       expect(canvas.querySelector('[data-row-ghost]')).toBeNull()
-      await settle()
+      await until(() => expect(applySavedNotice(canvas)).toBe(true))
+      await applyNoticeEntered(canvas)
     })
   },
 }

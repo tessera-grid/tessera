@@ -12,8 +12,10 @@ import {
   firstRowText,
   guideNext,
   headCell,
+  headKebab,
   orderedRows,
   pollUntil,
+  pressEscape,
   releaseFocus,
   settle,
   stepDone,
@@ -467,5 +469,134 @@ export const SortingExternalControls: StoryObj<StoryProps> = {
       await until(() => expect(isSorted(agesOf(canvas), true)).toBe(true))
     })
     await settle()
+  },
+}
+
+// --- Добавить к сортировке (ADR 0231, S9) ---------------------------------------------
+
+const ADD_SORT_ARGS = {
+  enableColumnSorting: true,
+  enableHeaderActionMenu: true,
+  headerActionMenuMode: 'always',
+  columnCount: 6,
+  dataCount: 40,
+  height: '420',
+} satisfies Partial<StoryProps>
+
+const sortItem = (item: string) =>
+  document.querySelector<HTMLElement>(
+    `[role="menu"] [data-action-id="columnSorting"][data-item-id="${item}"]`,
+  )
+
+/** Открыть меню колонки `column` и выбрать в нём пункт сортировки `item`. */
+const pickSortItem = async (
+  root: HTMLElement,
+  column: string,
+  item: string,
+  signal: AbortSignal,
+) => {
+  if (!sortItem(item)) {
+    pressEscape()
+    await pollUntil(() => !document.querySelector('[role="menu"]'), signal)
+    headKebab(root, column)?.click()
+    await pollUntil(() => !!sortItem(item), signal)
+  }
+  sortItem(item)!.click()
+}
+
+/** Фамилия отсортирована — исходное состояние шагов после первого. */
+const sortByLastName = async (root: HTMLElement, signal: AbortSignal) => {
+  await pollUntil(() => !!headKebab(root, 'lastName'), signal)
+  if (sortOf(root, 'lastName') === 'none')
+    await pickSortItem(root, 'lastName', 'asc', signal)
+  await pollUntil(() => sortOf(root, 'lastName') !== 'none', signal)
+}
+
+const ADD_SORT: readonly GuideStoryStep[] = [
+  {
+    title: { ru: 'Сортировки нет', en: 'No sorting' },
+    hint: {
+      ru: 'Сортировку задают пункты меню колонки.',
+      en: 'Sorting is set from the column menu.',
+    },
+  },
+  {
+    title: { ru: 'Сортировка по фамилии', en: 'Sorted by last name' },
+    hint: {
+      ru: 'Пользователь выбрал сортировку в меню колонки — строки упорядочены по ней.',
+      en: 'The user picked sorting in the column menu; the rows follow it.',
+    },
+    enter: stepAction(async (root, { signal }) => sortByLastName(root, signal)),
+  },
+  {
+    title: { ru: 'Меню другой колонки', en: 'Another column menu' },
+    hint: {
+      ru: 'В меню другой колонки есть пункт добавить её к сортировке.',
+      en: 'Another column menu offers to add the column to the sorting.',
+    },
+    states: ['overlay.menu'],
+    enter: stepAction(async (root, { signal }) => {
+      await sortByLastName(root, signal)
+      pressEscape()
+      await pollUntil(() => !document.querySelector('[role="menu"]'), signal)
+      headKebab(root, 'firstName')?.click()
+      await pollUntil(() => !!sortItem('add'), signal)
+    }),
+  },
+  {
+    title: { ru: 'Второй уровень', en: 'The second level' },
+    hint: {
+      ru: 'Пользователь выбрал пункт — колонка стала вторым уровнем сортировки.',
+      en: 'The user picked the item; the column became the second sorting level.',
+    },
+    enter: stepAction(async (root, { signal }) => {
+      await sortByLastName(root, signal)
+      if (sortOf(root, 'firstName') === 'none')
+        await pickSortItem(root, 'firstName', 'add', signal)
+      await pollUntil(() => sortOf(root, 'firstName') !== 'none', signal)
+    }),
+  },
+]
+
+/** ADR 0231, S9: пользователь добавляет колонку к сортировке пунктом меню. */
+export const SortingAddFromMenu: StoryObj<StoryProps> = {
+  name: 'Add to sorting from the menu',
+  parameters: { scenario: '0231/S9', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title={{
+        ru: 'Второй уровень из меню',
+        en: 'A second level from the menu',
+      }}
+      steps={ADD_SORT}
+      args={guideArgs(ADD_SORT_ARGS, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    await step(ADD_SORT[0]!.title.ru, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(headKebab(canvas, 'firstName')).not.toBeNull())
+      await expect(sortOf(canvas, 'lastName')).toBe('none')
+    })
+    await step(ADD_SORT[1]!.title.ru, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(sortOf(canvas, 'lastName')).not.toBe('none')
+      await expect(sortOf(canvas, 'firstName')).toBe('none')
+    })
+    await step(ADD_SORT[2]!.title.ru, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(sortItem('add')).not.toBeNull()
+      await settle()
+    })
+    await step(ADD_SORT[3]!.title.ru, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(sortOf(canvas, 'firstName')).not.toBe('none')
+      await expect(sortOf(canvas, 'lastName')).not.toBe('none')
+      await settle()
+    })
   },
 }

@@ -38,8 +38,26 @@ export interface Failure {
   time: number
   /** Повтор — есть, только если источник умеет повторять сам. */
   retry?: () => unknown
-  /** Отбросить отклонённое изменение; запись уходит после вызова. */
+  /**
+   * За записью стоит несохранённая правка: сбросить её; запись уходит после вызова
+   * (ADR 0227, §6). У записи без правки поля нет — её только закрывают.
+   */
   discard?: () => void
+  /** Одно применение: отказы с одним `batch` и одной причиной журнал показывает группой. */
+  batch?: string
+  /**
+   * Действия над набором записей одного источника одним вызовом (ADR 0227, §4): журнал зовёт
+   * функцию первой записи с ключами всех записей того же `owner`; без поля — `retry`/`discard`
+   * каждой записи.
+   */
+  bulk?: FailureBulk
+}
+
+export interface FailureBulk {
+  /** Источник: записи с одним `owner` принимают ключи друг друга. */
+  owner: string
+  retry?: (keys: readonly string[]) => void
+  discard?: (keys: readonly string[]) => void
 }
 
 export type Failures = Record<string, Failure>
@@ -133,10 +151,16 @@ export const readFailures = (table: unknown): Failures =>
 
 type ValueRow = { getValue: (columnId: string) => unknown }
 
+type FailureRowSource = {
+  byId: (id: string) => unknown
+  whenLoaded?: unknown
+}
+
+const sourceOf = (table: unknown) =>
+  (table as { getRowSource?: () => FailureRowSource }).getRowSource?.()
+
 const rowOf = (table: unknown, rowId: string) =>
-  (table as { getRowSource?: () => { byId: (id: string) => unknown } })
-    .getRowSource?.()
-    ?.byId(rowId) as ValueRow | undefined
+  sourceOf(table)?.byId(rowId) as ValueRow | undefined
 
 /** Значение ячейки на момент отказа: изменилось извне — отказ решён (ADR 0177, §5). */
 const reportedValues = new WeakMap<Failure, unknown>()
@@ -158,12 +182,19 @@ export const reportFailure = (table: unknown, report: FailureReport) => {
   return failure.key
 }
 
-/** Записать отказы одной записью в срез (ADR 0219, WR10): отказы ячеек операции. */
+/**
+ * Записать отказы одной записью в срез (ADR 0219, WR10; ADR 0227, §3): отказы одного ответа;
+ * `resolve` — ключи снятых отказов, в той же записи. `onFailure` — на каждый отказ.
+ */
 export const reportFailures = (
   table: unknown,
   reports: readonly FailureReport[],
+  resolve: readonly string[] = [],
 ) => {
-  if (reports.length === 0) return
+  if (reports.length === 0) {
+    if (resolve.length > 0) resolveFailures(table, resolve)
+    return
+  }
   const now = Date.now()
   const failures = reports.map(report => {
     const failure: Failure = {
@@ -180,6 +211,7 @@ export const reportFailures = (
   })
   write(table, prev => {
     const next = { ...prev }
+    for (const key of resolve) delete next[key]
     for (const failure of failures) next[failure.key] = failure
     return next
   })
@@ -225,18 +257,22 @@ export const resolveFailure = (table: unknown, key: string) =>
 
 /**
  * Отказы значений ячеек, чья строка ушла из данных или чьё значение изменилось извне, решены
- * (ADR 0177, §5, OB11); прочие цели ведут их источники.
+ * (ADR 0177, §5, OB11); прочие цели ведут их источники. Серверная модель строк: строки нет в
+ * кэше — она не загружена или вытеснена, отказ остаётся (ADR 0227, AO20).
  */
 export const pruneFailures = (table: unknown) => {
   const failures = readFailures(table)
+  const source = sourceOf(table)
+  const partial = !!source?.whenLoaded
   const gone: string[] = []
   for (const failure of Object.values(failures)) {
     if (!('cell' in failure.target)) continue
     const [rowId, columnId] = failure.target.cell
-    const row = rowOf(table, rowId)
+    const row = source?.byId(rowId) as ValueRow | undefined
     if (
-      !row ||
-      (reportedValues.has(failure) &&
+      (!row && !partial) ||
+      (row &&
+        reportedValues.has(failure) &&
         !Object.is(row.getValue(columnId), reportedValues.get(failure)))
     )
       gone.push(failure.key)
@@ -247,6 +283,75 @@ export const pruneFailures = (table: unknown) => {
     for (const key of gone) delete next[key]
     return next
   })
+}
+
+/**
+ * Позвать `done` один раз, когда запись `key` ушла из реестра или её заменил новый отказ:
+ * закрытие записи без правки снимает то, что источник показывает рядом (ADR 0227, §6).
+ * Возвращает снятие подписки.
+ */
+export const whenFailureGone = (
+  table: unknown,
+  key: string,
+  done: () => void,
+): (() => void) => {
+  const failure = readFailures(table)[key]
+  const store = (
+    table as {
+      store?: {
+        subscribe: (listener: () => void) => { unsubscribe: () => void }
+      }
+    }
+  ).store
+  if (!failure || !store) return () => {}
+  let live = true
+  const subscription = store.subscribe(() => {
+    if (!live || readFailures(table)[key] === failure) return
+    live = false
+    subscription.unsubscribe()
+    done()
+  })
+  return () => {
+    live = false
+    subscription.unsubscribe()
+  }
+}
+
+/**
+ * Позвать `done` один раз, когда в реестре не осталось ни одной записи с этим `batch`: отказы
+ * одного применения решены (ADR 0227, AO22). Записей нет уже сейчас — `done` не зовётся.
+ * Возвращает снятие подписки.
+ */
+export const whenBatchResolved = (
+  table: unknown,
+  batch: string,
+  done: () => void,
+): (() => void) => {
+  const store = (
+    table as {
+      store?: {
+        subscribe: (listener: () => void) => { unsubscribe: () => void }
+      }
+    }
+  ).store
+  const holds = (failures: Failures) =>
+    Object.values(failures).some(failure => failure.batch === batch)
+  let seen = readFailures(table)
+  if (!store || !holds(seen)) return () => {}
+  let live = true
+  const subscription = store.subscribe(() => {
+    const failures = readFailures(table)
+    if (!live || failures === seen) return
+    seen = failures
+    if (holds(failures)) return
+    live = false
+    subscription.unsubscribe()
+    done()
+  })
+  return () => {
+    live = false
+    subscription.unsubscribe()
+  }
 }
 
 /**

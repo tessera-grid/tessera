@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { mod } from './__mocks__/platformKeys'
 import { Trash2 } from 'lucide-react'
 import { Meta, StoryObj } from '@storybook/react'
 import { expect } from 'storybook/test'
@@ -22,6 +23,11 @@ import {
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
+import {
+  applyNotice,
+  applyNoticeEntered,
+  applySavedNotice,
+} from './__mocks__/applyNotice'
 import { seed } from './__mocks__/seed'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
@@ -46,7 +52,7 @@ import type { RowAction } from '../core/headerActions'
  * Отмена и повтор правок (ADR 0222): Ctrl+Z после вставки, отмена на сервере с ответом и
  * отказом, отмена ждущей правки, пропуск ячейки, изменённой извне, история с откатом к шагу,
  * отмена черновиков, своё действие приложения в истории, отмена удаления и переноса строки,
- * возврат к исходному виду, отмена отбрасывания и неприменённое в истории.
+ * возврат к исходному виду, отмена сбрасывания и неприменённое в истории.
  */
 const meta = {
   ...dataGridMeta,
@@ -223,13 +229,13 @@ const paste = (root: HTMLElement) => {
   once('paste', () => pasteInto(cell, PASTED.join('\n')))
 }
 
-/** Ctrl+Z или Ctrl+Shift+Z на активной ячейке. */
+/** Отмена или повтор модификатором платформы на активной ячейке. */
 const pressUndo = (root: HTMLElement, redo = false) => {
   const cell = first(root)
   if (cell)
     pressKey(cell, redo ? 'Z' : 'z', {
       code: 'KeyZ',
-      ctrlKey: true,
+      ...mod(),
       shiftKey: redo,
     })
 }
@@ -979,8 +985,8 @@ const APP_ENTRY: readonly GuideStoryStep[] = [
   {
     title: { ru: 'Сервер отказал', en: 'The server refused' },
     hint: {
-      ru: 'Сервер отклонил возврат: товар остался в архиве, отказ записан в журнал отказов, действие осталось в истории.',
-      en: 'The server rejected the restore: the product stayed archived, the refusal went into the failure log, and the action stayed in the history.',
+      ru: 'Сервер отклонил возврат: товар остался в архиве, отказ записан в журнал ошибок, действие осталось в истории.',
+      en: 'The server rejected the restore: the product stayed archived, the refusal went into the error log, and the action stayed in the history.',
     },
     enter: untilDone(appRefusedCheck, refuse),
   },
@@ -1086,16 +1092,20 @@ const applyAll = (root: HTMLElement) => {
 
 const deletedCheck = (root: HTMLElement) =>
   rowDraftOf(root, DELETED) === 'deleted'
+/** Плашки итога над таблицей нет совсем — и уходящей. */
+const noNotice = (root: ParentNode) =>
+  !root.querySelector('[data-testid="table-notice"]')
 // Пульт после «Применить всё» закрывается сам.
 const deleteAppliedCheck = (root: HTMLElement) =>
-  !rowOf(root, DELETED) && !panelOpen()
+  !rowOf(root, DELETED) && !panelOpen() && applySavedNotice(root)
 const restoredCheck = (root: HTMLElement) =>
-  done.has('undo') && rowDraftOf(root, DELETED) === 'inserted'
+  done.has('undo') && rowDraftOf(root, DELETED) === 'inserted' && noNotice(root)
 const savedAgainCheck = (root: HTMLElement) =>
   done.has('undo') &&
   !!rowOf(root, DELETED) &&
   rowDraftOf(root, DELETED) === undefined &&
-  !panelOpen()
+  !panelOpen() &&
+  applySavedNotice(root)
 
 const deleteRowStep = (root: HTMLElement) => {
   if (deletedCheck(root)) return
@@ -1111,8 +1121,14 @@ const applyDelete = (root: HTMLElement) => {
 }
 
 const restoreRow = (root: HTMLElement) => {
-  if (!deleteAppliedCheck(root)) {
+  if (!done.has('undo') && (rowOf(root, DELETED) || panelOpen())) {
     applyDelete(root)
+    return
+  }
+  // Плашка итога удаления закрыта крестиком, затем отмена.
+  const notice = applyNotice(root)
+  if (notice) {
+    notice.querySelector<HTMLElement>('[data-alert-dismiss]')?.click()
     return
   }
   once('undo', () => pressToolbar('undo-button'))
@@ -1138,16 +1154,18 @@ const UNDO_ROW_DELETE: readonly GuideStoryStep[] = [
   {
     title: { ru: 'Удаление применено', en: 'The deletion is applied' },
     hint: {
-      ru: 'Пользователь применил изменения из пульта. Сервер удалил товар, строки больше нет.',
-      en: 'The user applied the changes from the unsaved changes panel. The server deleted the product, and the row is gone.',
+      ru: 'Пользователь применил изменения из пульта. Сервер удалил товар, строки больше нет. Над таблицей плашка говорит, что изменение сохранено, и через несколько секунд уходит сама.',
+      en: 'The user applied the changes from the unsaved changes panel. The server deleted the product, and the row is gone. A notice above the table says the change was saved and leaves on its own in a few seconds.',
     },
+    states: ['body.applySaved'],
+    immediate: true,
     enter: untilDone(deleteAppliedCheck, applyDelete),
   },
   {
     title: { ru: 'Отмена вернула строку', en: 'The undo brought the row back' },
     hint: {
-      ru: 'Пользователь нажал кнопку отмены над таблицей. Товар вернулся на прежнее место новой строкой: на сервере его уже нет, поэтому строка ждёт применения.',
-      en: 'The user pressed the undo button above the table. The product returned to its previous place as a new row: it is no longer on the server, so the row is waiting to be applied.',
+      ru: 'Пользователь закрыл плашку итога и нажал кнопку отмены над таблицей. Товар вернулся на прежнее место новой строкой: на сервере его уже нет, поэтому строка ждёт применения.',
+      en: 'The user closed the result notice and pressed the undo button above the table. The product returned to its previous place as a new row: it is no longer on the server, so the row is waiting to be applied.',
     },
     states: ['body.rowDraft'],
     enter: untilDone(restoredCheck, restoreRow),
@@ -1155,9 +1173,11 @@ const UNDO_ROW_DELETE: readonly GuideStoryStep[] = [
   {
     title: { ru: 'Товар снова сохранён', en: 'The product is saved again' },
     hint: {
-      ru: 'Пользователь применил изменения из пульта. Сервер снова сохранил товар под прежним id, строка стала обычной.',
-      en: 'The user applied the changes from the unsaved changes panel. The server saved the product again under its previous id, and the row became a regular one.',
+      ru: 'Пользователь применил изменения из пульта. Сервер снова сохранил товар под прежним id, строка стала обычной. Над таблицей снова плашка о сохранённом изменении, она уходит сама.',
+      en: 'The user applied the changes from the unsaved changes panel. The server saved the product again under its previous id, and the row became a regular one. A notice about the saved change shows above the table again and leaves on its own.',
     },
+    states: ['body.applySaved'],
+    immediate: true,
     enter: untilDone(savedAgainCheck, root => {
       if (restoredCheck(root)) applyAll(root)
       // Строка сохранена — ждём, пока пульт закроется.
@@ -1186,16 +1206,17 @@ export const UndoRowDelete: StoryObj<StoryProps> = {
     await step(UNDO_ROW_DELETE[1]!.title.ru, () =>
       next(canvasElement, deletedCheck),
     )
-    await step(UNDO_ROW_DELETE[2]!.title.ru, () =>
-      next(canvasElement, deleteAppliedCheck),
-    )
+    await step(UNDO_ROW_DELETE[2]!.title.ru, async () => {
+      await next(canvasElement, deleteAppliedCheck)
+      await applyNoticeEntered(canvasElement)
+    })
     await step(UNDO_ROW_DELETE[3]!.title.ru, () =>
       next(canvasElement, restoredCheck),
     )
-    await step(UNDO_ROW_DELETE[4]!.title.ru, () =>
-      next(canvasElement, savedAgainCheck),
-    )
-    await settle()
+    await step(UNDO_ROW_DELETE[4]!.title.ru, async () => {
+      await next(canvasElement, savedAgainCheck)
+      await applyNoticeEntered(canvasElement)
+    })
   },
 }
 
@@ -1464,7 +1485,7 @@ const discardedCheck = (root: HTMLElement) =>
 const discardUndoneCheck = (root: HTMLElement) =>
   done.has('undoDiscard') && draftsCheck(root)
 
-/** Открыть пульт и отбросить всё; нажатие посреди открытия пульт пропускает — до итога. */
+/** Открыть пульт и сбросить всё; нажатие посреди открытия пульт пропускает — до итога. */
 const discardEverything = (root: HTMLElement) => {
   if (!done.has('discardAll') && !draftsCheck(root)) {
     paste(root)
@@ -1482,8 +1503,8 @@ const UNDO_DISCARD: readonly GuideStoryStep[] = [
   {
     title: { ru: 'Правки копятся', en: 'Edits pile up' },
     hint: {
-      ru: 'Приложение сохраняет правки по кнопке: изменённые ячейки ждут применения, а пульт над таблицей собирает их и умеет отбросить.',
-      en: 'The app saves edits when a button is pressed: changed cells wait to be applied, and the unsaved changes panel above the table collects them and can discard them.',
+      ru: 'Приложение сохраняет правки по кнопке: изменённые ячейки ждут применения, а пульт над таблицей собирает их и умеет сбросить.',
+      en: 'The app saves edits when a button is pressed: changed cells wait to be applied, and the unsaved changes panel above the table collects them and can revert them.',
     },
   },
   {
@@ -1496,18 +1517,18 @@ const UNDO_DISCARD: readonly GuideStoryStep[] = [
     enter: untilDone(draftsCheck, paste),
   },
   {
-    title: { ru: 'Всё отброшено', en: 'Everything is discarded' },
+    title: { ru: 'Всё сброшено', en: 'Everything is reverted' },
     hint: {
-      ru: 'Пользователь открыл пульт и отбросил все изменения. Пульт пуст, цены прежние, а в истории изменений появилась запись об отбрасывании.',
-      en: 'The user opened the unsaved changes panel and discarded all changes. The panel is empty, the prices are back to their previous values, and the change history has an entry for the discard.',
+      ru: 'Пользователь открыл пульт и сбросил все изменения. Пульт пуст, цены прежние, а в истории изменений появилась запись об сбрасывании.',
+      en: 'The user opened the unsaved changes panel and reverted all changes. The panel is empty, the prices are back to their previous values, and the change history has an entry for the revert.',
     },
     enter: untilDone(discardedCheck, discardEverything),
   },
   {
-    title: { ru: 'Отбрасывание отменено', en: 'The discard is undone' },
+    title: { ru: 'Сбрасывание отменено', en: 'The revert is undone' },
     hint: {
-      ru: 'Пользователь нажал Ctrl+Z. Сначала отменяется последнее действие — отбрасывание: три цены вернулись неприменёнными и снова в пульте.',
-      en: 'The user pressed Ctrl+Z. The latest action, the discard, is undone first: the three prices came back unapplied and are in the panel again.',
+      ru: 'Пользователь нажал Ctrl+Z. Сначала отменяется последнее действие — сбрасывание: три цены вернулись неприменёнными и снова в пульте.',
+      en: 'The user pressed Ctrl+Z. The latest action, the revert, is undone first: the three prices came back unapplied and are in the panel again.',
     },
     states: ['body.cellRange'],
     enter: untilDone(discardUndoneCheck, root => {
@@ -1520,13 +1541,13 @@ const UNDO_DISCARD: readonly GuideStoryStep[] = [
   },
 ]
 
-/** ADR 0222, S12: отброшенные в пульте изменения возвращает Ctrl+Z. */
+/** ADR 0222, S12: сброшенные в пульте изменения возвращает Ctrl+Z. */
 export const UndoDiscard: StoryObj<StoryProps> = {
-  name: 'Undo a discard',
+  name: 'Undo a revert',
   parameters: { scenario: '0222/S12', ...guideControls() },
   render: args => (
     <GuideStory
-      title={{ ru: 'Отмена отбрасывания', en: 'Undoing a discard' }}
+      title={{ ru: 'Отмена сбрасывания', en: 'Undoing a revert' }}
       steps={UNDO_DISCARD}
       reset={resetGuide}
       args={guideArgs(DRAFT_ARGS, args)}
@@ -1566,7 +1587,8 @@ const appliedShownCheck = (root: HTMLElement) =>
   historyOpen() &&
   !!appliedMark() &&
   historyEntry()?.hasAttribute('data-unsaved') === false &&
-  pricesAre(root, PASTED)
+  pricesAre(root, PASTED) &&
+  applySavedNotice(root)
 
 const showUnsaved = (root: HTMLElement) => {
   if (!draftsCheck(root)) {
@@ -1624,9 +1646,11 @@ const HISTORY_APPLIED: readonly GuideStoryStep[] = [
   {
     title: { ru: 'Изменения применены', en: 'The changes are applied' },
     hint: {
-      ru: 'Пользователь применил изменения из пульта и снова открыл историю. Сервер сохранил три цены: точка у вставки синяя, а над вставкой — отметка, сколько изменений применено и когда.',
-      en: 'The user applied the changes from the unsaved changes panel and opened the history again. The server saved the three prices: the dot next to the paste is blue, and above the paste is a mark showing how many changes were applied and when.',
+      ru: 'Пользователь применил изменения из пульта и снова открыл историю. Сервер сохранил три цены: точка у вставки синяя, а над вставкой — отметка, сколько изменений применено и когда. Над таблицей плашка говорит, сколько изменений сохранено, и через несколько секунд уходит сама.',
+      en: 'The user applied the changes from the unsaved changes panel and opened the history again. The server saved the three prices: the dot next to the paste is blue, and above the paste is a mark showing how many changes were applied and when. A notice above the table says how many changes were saved and leaves on its own in a few seconds.',
     },
+    states: ['body.applySaved'],
+    immediate: true,
     enter: untilDone(appliedShownCheck, applyAndShow),
   },
 ]
@@ -1643,7 +1667,15 @@ export const HistoryApplied: StoryObj<StoryProps> = {
       }}
       steps={HISTORY_APPLIED}
       reset={resetGuide}
-      args={guideArgs(DRAFT_ARGS, args)}
+      args={guideArgs(
+        {
+          ...DRAFT_ARGS,
+          containerHeight: '340',
+          height: '240',
+          maxHeight: '240',
+        },
+        args,
+      )}
     />
   ),
   play: async ({ canvasElement, globals, step }) => {
@@ -1657,9 +1689,9 @@ export const HistoryApplied: StoryObj<StoryProps> = {
     await step(HISTORY_APPLIED[2]!.title.ru, () =>
       next(canvasElement, unsavedShownCheck),
     )
-    await step(HISTORY_APPLIED[3]!.title.ru, () =>
-      next(canvasElement, appliedShownCheck),
-    )
-    await settle()
+    await step(HISTORY_APPLIED[3]!.title.ru, async () => {
+      await next(canvasElement, appliedShownCheck)
+      await applyNoticeEntered(canvasElement)
+    })
   },
 }

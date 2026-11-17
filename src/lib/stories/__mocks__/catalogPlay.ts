@@ -193,6 +193,8 @@ export const dragHold = async (
   target: Point,
   steps = 12,
   signal?: AbortSignal,
+  /** `'touch'` — палец: тот же жест, события пальца (ADR 0086). */
+  pointerType: 'mouse' | 'touch' = 'mouse',
 ) => {
   const before = centerOf(handle)
   const outside = (value: number, size: number) => value < 0 || value > size
@@ -217,7 +219,7 @@ export const dragHold = async (
         cancelable: true,
         composed: true,
         pointerId: 1,
-        pointerType: 'mouse',
+        pointerType,
         isPrimary: true,
         button: 0,
         buttons: type === 'pointerup' ? 0 : 1,

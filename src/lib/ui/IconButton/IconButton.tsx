@@ -86,8 +86,10 @@ export interface IconButtonProps
     ButtonTooltipProps,
     ActiveProps,
     ToneProps {
-  /** Доступное имя и тултип кнопки. */
+  /** Доступное имя кнопки. */
   label?: string
+  /** Тултип кнопки; по умолчанию — её доступное имя. */
+  tooltip?: string
   /** `ghost` — прозрачная; `overlay` — непрозрачный чип поверх контента (действия строки). */
   variant?: 'ghost' | 'overlay'
   /** Форма: `circle` — круг (кнопки шапки, ячейки, строки), `square` — скруглённый квадрат (панели). */
@@ -113,6 +115,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
   (
     {
       label,
+      tooltip,
       tooltipSide,
       tooltipWhenDisabled = false,
       variant = 'ghost',
@@ -237,10 +240,11 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
 
     // Без подписи тултипа нет — и обёртки тоже: кнопок в гриде много. Занятая кнопка тултип
     // не показывает.
-    return name ? (
+    return name || tooltip ? (
       <Tooltip
-        title={name}
+        title={tooltip ?? name}
         side={tooltipSide}
+        longPress
         disabled={
           !states.armed &&
           ((!!disabled && !tooltipWhenDisabled) || pending || busy)

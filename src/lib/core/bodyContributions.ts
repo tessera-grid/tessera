@@ -16,6 +16,7 @@ import {
 import { useSelector } from '@tanstack/react-store'
 
 import type { DropPreview } from './dragSession'
+import type { KeyboardShortcutDefinition } from './keyboardShortcut'
 import {
   type RenderVersionAtom,
   usePluginRenderVersionAtom,
@@ -229,6 +230,8 @@ export interface NavigationKeyContext {
 /** Вклад в клавиши навигации (ADR 0170, §4). */
 export interface NavigationKeys {
   id: string
+  /** Сочетания для сводки клавиш (ADR 0232, KX18). */
+  shortcuts?: readonly KeyboardShortcutDefinition[]
   /** Клавиша до хода активной ячейки; `true` — плагин её взял. */
   onKey?: (event: NavigationKeyEvent, context: NavigationKeyContext) => boolean
   /** Активная ячейка сменилась с клавиатуры. */

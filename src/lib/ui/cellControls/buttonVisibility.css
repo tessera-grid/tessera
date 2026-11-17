@@ -124,6 +124,16 @@
   }
 }
 
+/* Касание на экране с наведением — тот же вид (ADR 0231, §2). */
+:where(:root[data-tsr-input='touch'])
+  .data-grid__head-cell
+  .cell__button--hidden:not([data-button-active='true']) {
+  opacity: 1;
+  grid-template-columns: minmax(0, 1fr);
+  overflow: unset;
+  min-width: 0;
+}
+
 .data-grid__body-cell[data-touched]
   .cell__button--hidden:not([data-button-active='true']) {
   opacity: 1;
@@ -172,6 +182,42 @@
   }
 }
 
+/* Касание на экране с наведением — те же зоны (ADR 0231, §2). */
+:where(:root[data-tsr-input='touch'])
+  :where(.data-grid__head-cell, .data-grid__body-cell)
+  :where(button, [role='button'], [role='checkbox'], .drag__handler--column) {
+  position: relative;
+}
+
+:where(:root[data-tsr-input='touch'])
+  :where(.data-grid__head-cell, .data-grid__body-cell)
+  :where(button, [role='button'], [role='checkbox'])::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+}
+
+/* Специфичность выше зоны ручки в заголовке (HeadCell.module.css). */
+:where(:root[data-tsr-input='touch'])
+  :is(.data-grid__head-cell, .data-grid__body-cell)[class]
+  :is(
+    button,
+    [role='button'],
+    [role='checkbox'],
+    .drag__handler--column
+  )::before {
+  top: -100vh;
+  bottom: -100vh;
+}
+
+/* Слой наведения кнопки строки на касаниях не нужен — он стал бы полосой. */
+:where(:root[data-tsr-input='touch'])
+  .data-grid__body-row
+  .row__button
+  button::before {
+  background-color: transparent;
+}
+
 /*
  * Кнопки действий строки — вариант «поверх контента» (ADR 0017). Колонка действий
  * закреплена и по умолчанию ПРОЗРАЧНА, поэтому при горизонтальной прокрутке контент
@@ -187,6 +233,13 @@
   box-shadow: var(--tsr-comp-shadow-action);
 }
 
+/* Кольцо фокуса — поверх тени чипа: тень не перекрывает кольцо (ADR 0232, KX5). */
+:is(.data-grid__body-row, [data-row-ghost]) .row__button button:focus-visible {
+  box-shadow:
+    0 0 0 var(--tsr-comp-focus-ring-width) var(--tsr-comp-focus-ring),
+    var(--tsr-comp-shadow-action);
+}
+
 /* Слой hover: под значком, над фоном. */
 .data-grid__body-row .row__button button::before {
   content: '';
@@ -199,7 +252,8 @@
   transition: var(--tsr-comp-overlay-hover-transition);
 }
 
-:where(.data-grid-theme:not([data-refreshing]))
+:where(:root:not([data-tsr-input='touch']))
+  :where(.data-grid-theme:not([data-refreshing]))
   .data-grid__body-row
   .row__button
   button:hover:not(:disabled)::before {

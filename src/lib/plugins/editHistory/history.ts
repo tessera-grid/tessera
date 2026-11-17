@@ -269,7 +269,7 @@ const entryParts = (
 ): EntryParts => {
   if (entry.app) return { action: entry.app.label }
   const rowId = entry.move?.rowId ?? entry.rows?.[0]?.rowId
-  // Отбрасывание одной строки — по строке; с ячейками — числом всего отброшенного (§14).
+  // Сбрасывание одной строки — по строке; с ячейками — числом всего сброшенного (§14).
   if (entry.source === 'discard' && entry.rows && entry.cells.length > 0)
     return {
       action: actionLabelOf(table, actionOfSource('discard'), labels),

@@ -6,12 +6,18 @@ import type { CellKeyboardAction } from '../../core/keyboardActions'
 import { readPluginHooks } from '../../core/definePlugin'
 import { COLUMN_EXPANDING_ID } from './rowExpandingColumn'
 import { toggleRowExpanded } from './toggleRowExpanded'
+import { rowExpandingLabels } from './labels'
 import type { RowExpandingHooks } from './types'
 
 export const toggleExpandedKeyboardAction: CellKeyboardAction = {
   id: 'rowExpanding.toggle',
   scope: 'cell',
   keys: ['Enter'],
+  shortcut: {
+    combo: 'Enter',
+    section: 'navigation',
+    label: labels => rowExpandingLabels(labels).actionToggleRow,
+  },
   expands: true,
   // Колонка раскрытия (и её уровни под группировкой) — где живёт кнопка.
   visible: ({ row, column }) =>

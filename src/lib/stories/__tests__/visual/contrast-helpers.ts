@@ -758,6 +758,10 @@ export const auditRoots = (
 export const ALLOWED_INCOMPLETE: Record<string, string> = {
   bgGradient:
     'фон ячейки — сплошные слои подсветки и диапазона; effectiveBg складывает их, CX2',
+  imgNode:
+    'контейнер текста с SVG: axe фон не определяет, текст и фон проверяет аудит узлов CX1–CX5',
+  elmPartiallyObscuring:
+    'поповер накрывает свою цель: её текст проверяет аудит узлов, содержимое поповера — axe и CX1–CX5',
   pseudoContent:
     'линии дерева и отметки — псевдоэлементы без текста; текст строки считает CX1',
   shortTextContent:
@@ -878,7 +882,9 @@ export const loadStories = async (): Promise<CatalogStory[]> => {
 export const gridsAndPopups = (container: HTMLElement) => {
   const grids = [...container.querySelectorAll('[data-tsr-grid]')]
   const popups = [...document.querySelectorAll(POPUP_ROOTS)].filter(
-    el => !container.contains(el),
+    el =>
+      !container.contains(el) &&
+      !el.closest('[data-ending-style], [data-closed]'),
   )
   const outer = popups.filter(
     el => !popups.some(other => other !== el && other.contains(el)),
