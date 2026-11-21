@@ -108,12 +108,12 @@ export type LimitVerdict =
   'ok' | { limited: { count: number; max: number } } | { declined: true }
 
 /** Проверить операцию пределами таблицы; жест сверх `confirm` ждёт ответа на вопрос. */
-export const checkWriteLimit = async (
+export const checkWriteLimit = (
   table: unknown,
   cells: readonly LimitCell[],
   source: CellWriteSource,
   manual: boolean,
-): Promise<LimitVerdict> => {
+): LimitVerdict | Promise<LimitVerdict> => {
   const { confirm, max } = writeLimitsOf(table)
   if (cells.length === 0 || (confirm === Infinity && max === Infinity))
     return 'ok'
@@ -133,7 +133,9 @@ export const checkWriteLimit = async (
   const crosses = drafts
     ? drafts.before <= confirm && drafts.after > confirm
     : size > confirm
-  if (crosses && asks(source) && !(await ask(table, cells.length)))
-    return { declined: true }
+  if (crosses && asks(source))
+    return ask(table, cells.length).then(yes =>
+      yes ? 'ok' : { declined: true },
+    )
   return 'ok'
 }

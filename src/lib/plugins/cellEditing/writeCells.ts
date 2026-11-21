@@ -5,6 +5,8 @@
  * кнопке, иначе `onCommitEdits` или `onCellEdit` по ячейке. Работа идёт кусками с уступкой
  * главного потока (§10).
  */
+import { inOneCommit } from '../../util/oneCommit'
+
 import { announceLabel, announcerLabels } from '../../core/announcer'
 import type {
   CellWrite,
@@ -233,62 +235,65 @@ const write = async (
   }
 
   // Пределы операции (ADR 0223): сверх них ничего не записано.
-  const verdict = await checkWriteLimit(
+  const checked = checkWriteLimit(
     table,
     cells,
     source,
     hooks.saveMode === 'manual',
   )
+  const verdict = checked instanceof Promise ? await checked : checked
   if (verdict !== 'ok')
     return { id, written: 0, skipped, invalid: invalid.length, ...verdict }
 
-  // Новый итог ячейки снимает её прежний отказ; невалидный текст — свой отказ.
-  let written: ReadonlySet<string> | ReadonlyMap<string, unknown> = pending
-  resolveCellFailures(table, (rowId, columnId) => {
-    if (!packaged && written === pending)
-      written = new Set(cells.map(cell => cellKey(cell.rowId, cell.columnId)))
-    return written.has(cellKey(rowId, columnId))
-  })
-  reportFailures(table, invalid)
   const report: CellWriteReport = {
     id,
     written: cells.length,
     skipped,
     invalid: invalid.length,
   }
-  reportAction(table, {
-    ...action,
-    detail: { ...report, source },
-    source: source === 'api' ? 'api' : 'auto',
-  })
-  announceLabel(table, all => {
-    const labels = cellEditingLabels(all)
-    const name = actionLabelOf(table, action, all)
-    return [
-      labels.announceWritten(name, report.written),
-      report.skipped > 0 ? labels.announceWriteSkipped(report.skipped) : '',
-      report.invalid > 0 ? labels.announceWriteInvalid(report.invalid) : '',
-    ]
-      .filter(Boolean)
-      .join(', ')
-  })
+  inOneCommit(() => {
+    // Новый итог ячейки снимает её прежний отказ; невалидный текст — свой отказ.
+    let written: ReadonlySet<string> | ReadonlyMap<string, unknown> = pending
+    resolveCellFailures(table, (rowId, columnId) => {
+      if (!packaged && written === pending)
+        written = new Set(cells.map(cell => cellKey(cell.rowId, cell.columnId)))
+      return written.has(cellKey(rowId, columnId))
+    })
+    reportFailures(table, invalid)
+    reportAction(table, {
+      ...action,
+      detail: { ...report, source },
+      source: source === 'api' ? 'api' : 'auto',
+    })
+    announceLabel(table, all => {
+      const labels = cellEditingLabels(all)
+      const name = actionLabelOf(table, action, all)
+      return [
+        labels.announceWritten(name, report.written),
+        report.skipped > 0 ? labels.announceWriteSkipped(report.skipped) : '',
+        report.invalid > 0 ? labels.announceWriteInvalid(report.invalid) : '',
+      ]
+        .filter(Boolean)
+        .join(', ')
+    })
 
-  if (cells.length === 0) return report
-  if (hooks.saveMode === 'manual') {
-    storeCellDrafts(table, cells, { id, source })
-    return report
-  }
-  if (packaged) {
-    commitCellPackage(table, { id, source, cells, pending, waves })
-    return report
-  }
-  if (cells.length > PER_CELL_HINT)
-    logWarn(
-      table as never,
-      `cellEditing: ${cells.length} cells are saved one by one through onCellEdit — set onCommitEdits to save an operation in one call`,
-      'cellEditing:perCellWrite',
-    )
-  submitCells(table, cells, { id, source })
+    if (cells.length === 0) return
+    if (hooks.saveMode === 'manual') {
+      storeCellDrafts(table, cells, { id, source })
+      return
+    }
+    if (packaged) {
+      commitCellPackage(table, { id, source, cells, pending, waves })
+      return
+    }
+    if (cells.length > PER_CELL_HINT)
+      logWarn(
+        table as never,
+        `cellEditing: ${cells.length} cells are saved one by one through onCellEdit — set onCommitEdits to save an operation in one call`,
+        'cellEditing:perCellWrite',
+      )
+    submitCells(table, cells, { id, source })
+  })
   return report
 }
 
