@@ -30,7 +30,9 @@ export const trackStickyGeometry = (getScroller: () => HTMLElement | null) => {
   if (!needsSync()) return () => {}
   const onPress = (event: Event) => {
     const scroller = getScroller()
-    if (!scroller?.contains(event.target as Node)) return
+    const target = event.target
+    if (!scroller || !(target instanceof Node) || !scroller.contains(target))
+      return
     if (
       event instanceof KeyboardEvent &&
       event.key !== 'Enter' &&
