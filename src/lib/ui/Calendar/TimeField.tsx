@@ -79,8 +79,23 @@ const clockOf = (locale?: string) => {
 const wrap = (value: number, size: number) => ((value % size) + size) % size
 
 /** Колонка списка открывается на выбранном: он посередине, а не за краем. */
-const centerPressed = (column: HTMLDivElement | null) =>
-  centerSelected(column, '[aria-pressed="true"]')
+const centerPressed = (column: HTMLDivElement | null) => {
+  if (!column) return
+  let attempts = 0
+  const center = () => {
+    if (!column.isConnected || ++attempts > 8) return
+    centerSelected(column, '[aria-pressed="true"]')
+    const selected = column.querySelector<HTMLElement>('[aria-pressed="true"]')
+    if (!selected) return
+    const outer = column.getBoundingClientRect()
+    const inner = selected.getBoundingClientRect()
+    const offset = Math.abs(
+      inner.top + inner.height / 2 - (outer.top + outer.height / 2),
+    )
+    if (offset > inner.height / 2) requestAnimationFrame(center)
+  }
+  requestAnimationFrame(center)
+}
 
 export const TimeField = ({
   value,
