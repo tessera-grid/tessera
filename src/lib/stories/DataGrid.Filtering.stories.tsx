@@ -469,17 +469,6 @@ const SERVER: readonly GuideStoryStep[] = [
       en: "The column dropped out of the search too: the app repeated the request with the new list of columns, and the search field's tooltip names them.",
     },
     enter: stepAction(async (root, { signal }) => {
-      await filterByName(root, signal)
-      await search(
-        root,
-        SEARCH,
-        () =>
-          request.search === SEARCH &&
-          request.columnIds.length === 4 &&
-          allMatch(root, 'city', SEARCH) &&
-          serverAnswered(root),
-        signal,
-      )
       await hideAge(root, signal)
       await pollUntil(
         () =>
@@ -516,6 +505,7 @@ export const FilteringServer: StoryObj<StoryProps> = {
         },
         args,
       )}
+      atomicSteps
     />
   ),
   play: async ({ args, canvasElement: canvas, globals, step }) => {
@@ -1348,7 +1338,6 @@ const LOOKUP: readonly GuideStoryStep[] = [
       en: 'The filters section names the manager by name, not by code.',
     },
     enter: stepAction(async (root, { signal }) => {
-      await filterManager(root, signal)
       await repeat(
         () => !!viewSettingsSectionOpen('filter'),
         () => openViewSettingsSection(root, 'filter'),
@@ -1386,6 +1375,7 @@ export const FilteringLookupServer: StoryObj<StoryProps> = {
         },
         args,
       )}
+      atomicSteps
     />
   ),
   play: async ({ args, canvasElement: canvas, globals, step }) => {

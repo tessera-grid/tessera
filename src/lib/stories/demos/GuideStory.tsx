@@ -46,6 +46,7 @@ import {
   keepsFocus,
   OWN_CHROME,
   GUIDE_FRESH,
+  GUIDE_REAL_INPUT,
   STEP_ACTION_DONE,
 } from './guideFocus'
 import { StoryConsole } from './StoryConsole'
@@ -439,6 +440,7 @@ export const GuideStory = ({
   args,
   reset,
   showActions: showActionsProp,
+  atomicSteps = false,
 }: {
   /** Название гайда: пара `{ ru, en }` (ADR 0225). */
   title: StoryText
@@ -451,9 +453,15 @@ export const GuideStory = ({
   reset?: () => void
   /** Показ действий шага (SN46–SN52); по умолчанию — только в живом Storybook. */
   showActions?: boolean
+  /** Действия только своих шагов; предыдущие при восстановлении проигрывает навигатор. */
+  atomicSteps?: boolean
 }) => {
   const [showActions] = useState(() => showActionsProp ?? isLiveStorybook())
   const guide = useGuide(steps.length)
+  const [replay, setReplay] = useState<{ target: number }>()
+  const replayRef = useLatest(replay)
+  const guideNextRef = useLatest(guide.next)
+  const visibleStep = replay?.target ?? guide.step
   // Журнал консоли живёт, пока открыта история: «Сначала» его не стирает.
   const [consoleLog] = useState(createConsoleLog)
   const rows = useMemo(
@@ -520,6 +528,36 @@ export const GuideStory = ({
   const markChangedRef = useLatest(markChanged)
   const restore = () =>
     setShown(prev => ({ ...prev, rewinds: prev.rewinds + 1, changed: false }))
+  const replayTo = (target: number) => {
+    setReplay({ target: Math.min(steps.length - 1, Math.max(0, target)) })
+    guide.restart()
+  }
+  const next = () => {
+    if (!atomicSteps) return guide.next()
+    const target = Math.min(steps.length - 1, visibleStep + 1)
+    if (!replay && !shown.changed && target === guide.step + 1) guide.next()
+    else replayTo(target)
+  }
+  const back = () => {
+    if (!atomicSteps) return guide.back()
+    replayTo(visibleStep - 1)
+  }
+  const jump = (index: number) => {
+    if (!atomicSteps) return guide.jump(index)
+    const target = Math.min(steps.length - 1, Math.max(0, index))
+    if (target === visibleStep && !shown.changed) return
+    if (!replay && !shown.changed && target === guide.step + 1)
+      guide.jump(target)
+    else replayTo(target)
+  }
+  const restart = () => {
+    if (!atomicSteps) return guide.restart()
+    replayTo(0)
+  }
+  const restoreStep = () => {
+    if (!atomicSteps) return restore()
+    replayTo(visibleStep)
+  }
   const root = useRef<HTMLDivElement>(null)
   // Шаг выполняется: действие во времени или показ нажатия — панель не сворачивается (SN74).
   const [stepBusy, setStepBusy] = useState(false)
@@ -529,12 +567,17 @@ export const GuideStory = ({
     const observer = new MutationObserver(() =>
       setStepBusy(
         node.dataset.stepAction === 'running' ||
-          node.hasAttribute('data-guide-showing'),
+          node.hasAttribute('data-guide-showing') ||
+          node.hasAttribute('data-guide-replaying'),
       ),
     )
     observer.observe(node, {
       attributes: true,
-      attributeFilter: ['data-step-action', 'data-guide-showing'],
+      attributeFilter: [
+        'data-step-action',
+        'data-guide-showing',
+        'data-guide-replaying',
+      ],
     })
     return () => observer.disconnect()
   }, [])
@@ -547,7 +590,9 @@ export const GuideStory = ({
       instance.current = grid
     },
   }))
-  const running = () => root.current?.dataset.stepAction === 'running'
+  const running = () =>
+    root.current?.dataset.stepAction === 'running' ||
+    root.current?.hasAttribute('data-guide-replaying')
   // Ввод человека в таблицу, её меню и поповеры (порталы — по дереву React). Пока идёт
   // действие шага, ввод в саму таблицу гасит щит ниже — он пометки не ставит.
   const onInput = (event: SyntheticEvent) => {
@@ -563,7 +608,12 @@ export const GuideStory = ({
     // Щит — на корне гайда: у обёртки таблицы (`display: contents`) нет бокса, и
     // Chromium прокручивает колесом мимо её слушателя.
     const shield = (event: Event) => {
-      if (!event.isTrusted || guideRoot.dataset.stepAction !== 'running') return
+      if (!event.isTrusted || guideRoot.hasAttribute(GUIDE_REAL_INPUT)) return
+      if (
+        guideRoot.dataset.stepAction !== 'running' &&
+        !guideRoot.hasAttribute('data-guide-replaying')
+      )
+        return
       if (!area.contains(event.target as Node)) return
       if (event instanceof KeyboardEvent && event.key === 'Tab') return
       event.preventDefault()
@@ -597,10 +647,11 @@ export const GuideStory = ({
   // События действия шага (SN45–SN52): ждут, пока таблица докрутится до ячейки-цели, а
   // цель нажатия покажет наведение и нажатие, затем доходят в прежнем порядке; ввод в поле
   // идёт по символу.
+  const demoActions = showActions && (!replay || guide.step === replay.target)
   useEffect(() => {
     const area = table.current
     if (!area) return
-    const demo = showActions
+    const demo = demoActions
       ? createGuideDemo(
           window.matchMedia('(prefers-reduced-motion: reduce)').matches,
         )
@@ -885,7 +936,14 @@ export const GuideStory = ({
       const target = event.target
       if (human() || replays.has(event) || replaying || !target) return
       // Шаг остановлен: его действие таблицу не трогает, а шаг без отмены виден (SN68).
-      if (stopped && target instanceof Element && !target.closest(OWN_CHROME)) {
+      // pointerout/mouseout от userEvent приходят на body и таблицы не касаются.
+      if (
+        stopped &&
+        target instanceof Element &&
+        target !== document.body &&
+        target !== document.documentElement &&
+        !target.closest(OWN_CHROME)
+      ) {
         event.stopImmediatePropagation()
         event.preventDefault()
         console.error(
@@ -954,9 +1012,18 @@ export const GuideStory = ({
         event.preventDefault()
         return
       }
-      // Нажатие кнопки мыши — волна сразу, событие не ждёт (SN50).
+      // Нажатие кнопки мыши — волна сразу, событие не ждёт (SN50). Совместимые
+      // `pointerdown`, `mousedown` и `click` одного жеста показываются одной волной.
       if (demo && PRESSING.has(event.type) && !scroll) {
-        demo.click(pointOf(event, target, 0, 0))
+        if (!shown) {
+          demo.click(pointOf(event, target, 0, 0))
+          gesture = {
+            target,
+            type: event.type,
+            state: stateOf(target),
+            until: performance.now() + GESTURE_MS,
+          }
+        }
         return
       }
       const press =
@@ -1035,7 +1102,7 @@ export const GuideStory = ({
       showControl.current = undefined
       demo?.dispose()
     }
-  }, [showActions])
+  }, [demoActions])
   const mount = `${guide.run}-${mounts}-${shown.rewinds}`
   const live = appProps?.mount === mount ? appProps.props : undefined
   const ownPlugins =
@@ -1079,6 +1146,7 @@ export const GuideStory = ({
   // Шаг гайда — действие истории (ADR 0124, CL16): до эффектов грида, которые он вызовет.
   const stepTitle = steps[guide.step]?.title
   useIsomorphicLayoutEffect(() => {
+    if (replay) return
     consoleLog.action({
       plugin: 'story',
       action: (locale: StoryLocale) =>
@@ -1088,7 +1156,7 @@ export const GuideStory = ({
         }),
       source: 'story',
     })
-  }, [consoleLog, guide.step, guide.run, stepTitle])
+  }, [consoleLog, guide.step, guide.run, stepTitle, replay])
   useArgsActions(consoleLog, args)
   // Фокус после шага (SN56–SN58): сторож — до действия шага, его эффект ниже.
   const keyboardStep = useLatest(steps[guide.step]?.keyboard === true)
@@ -1108,9 +1176,16 @@ export const GuideStory = ({
     showControl.current?.resume()
     leaveStep.current = undefined
     let stop: (() => void) | undefined
+    let stopReplay: (() => void) | undefined
     let cancelled = false
     let timer: ReturnType<typeof setTimeout> | undefined
     const startedAt = performance.now()
+    const finishReplay = () => {
+      const restoration = replayRef.current
+      if (cancelled || !restoration) return
+      if (guide.step < restoration.target) guideNextRef.current()
+      else setReplay(undefined)
+    }
     const start = () => {
       const node = root.current
       if (cancelled || !node) return
@@ -1124,24 +1199,42 @@ export const GuideStory = ({
         return
       }
       const leave = enter?.(node, app)
-      if (typeof leave !== 'function') return
-      let left = false
-      const done = () => {
-        if (left) return
-        left = true
-        ;(leave as () => void)()
+      if (replayRef.current) {
+        if (node.dataset.stepAction === 'running') {
+          const done = () => queueMicrotask(finishReplay)
+          node.addEventListener(STEP_ACTION_DONE, done)
+          stopReplay = () => node.removeEventListener(STEP_ACTION_DONE, done)
+        } else queueMicrotask(finishReplay)
       }
-      stop = done
-      leaveStep.current = done
+      if (typeof leave === 'function') {
+        let left = false
+        const done = () => {
+          if (left) return
+          left = true
+          ;(leave as () => void)()
+        }
+        stop = done
+        leaveStep.current = done
+      }
     }
     start()
     return () => {
       cancelled = true
       if (timer !== undefined) clearTimeout(timer)
+      stopReplay?.()
       if (stop && leaveStep.current === stop) leaveStep.current = undefined
       stop?.()
     }
-  }, [enter, app, guide.step, guide.run, shown.rewinds, ready])
+  }, [
+    enter,
+    app,
+    guide.step,
+    guide.run,
+    shown.rewinds,
+    ready,
+    replayRef,
+    guideNextRef,
+  ])
   // Язык грида на текущем шаге — язык гайда и консоли (ADR 0225, §3).
   const locale = storyLocaleOf(live?.locale ?? props.locale ?? args.locale)
   return (
@@ -1150,19 +1243,21 @@ export const GuideStory = ({
         ref={root}
         data-guide-root=""
         data-guide-step={guide.step}
+        data-guide-replaying={replay ? '' : undefined}
         style={{ display: 'flex', flexDirection: 'column' }}
       >
         <GuidePanel
           title={title}
           steps={steps}
-          step={guide.step}
-          onBack={guide.back}
-          onNext={guide.next}
-          onRestart={guide.restart}
-          onJump={guide.jump}
+          step={visibleStep}
+          onBack={back}
+          onNext={next}
+          onRestart={restart}
+          onJump={jump}
           changed={shown.changed}
-          onRestore={restore}
+          onRestore={restoreStep}
           stepBusy={stepBusy}
+          restoring={replay !== undefined}
         />
         <div
           ref={table}

@@ -274,6 +274,7 @@ export const GuidePanel = ({
   changed = false,
   onRestore,
   stepBusy = false,
+  restoring = false,
   defaultExpanded = false,
 }: {
   title: StoryText
@@ -291,6 +292,8 @@ export const GuidePanel = ({
   onRestore?: () => void
   /** Идёт действие шага или показ нажатия. */
   stepBusy?: boolean
+  /** Атомарный гайд ещё проигрывает предыдущие шаги или целевой. */
+  restoring?: boolean
   defaultExpanded?: boolean
 }) => {
   const locale = useStoryLocale()
@@ -599,7 +602,7 @@ export const GuidePanel = ({
       <section
         aria-label={text('guideRegion', { title: name })}
         data-testid="guide"
-        data-busy={blocking || undefined}
+        data-busy={blocking || restoring || undefined}
         // Нажатие на панель не забирает фокус у поля ввода и поповера таблицы: открытая
         // правка не сохраняется потерей фокуса, состояние шага остаётся (SN35).
         onMouseDown={event => {

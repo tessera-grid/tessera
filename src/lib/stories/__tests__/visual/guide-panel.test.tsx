@@ -965,11 +965,21 @@ describe('ввод человека посреди гайда (ADR 0117)', () =>
       expect(changed()).toBeNull()
       // Поповер доиграл въезд: настоящий клик ждёт неподвижную цель.
       await settle()
-      await userEvent.click(
-        visibilityMenu()!.querySelector<HTMLElement>(
+      const visibilityCheckbox = () =>
+        visibilityMenu()?.querySelector<HTMLElement>(
           '[data-column-id] [role="checkbox"]',
-        )!,
-      )
+        )
+      await expect.poll(visibilityCheckbox).not.toBeNull()
+      const at = centerOf(visibilityCheckbox()!)
+      await (
+        commands as unknown as {
+          realDrag: (
+            from: { x: number; y: number },
+            to: { x: number; y: number },
+            steps?: number,
+          ) => Promise<void>
+        }
+      ).realDrag(at, at, 1)
       await expect.poll(changed).not.toBeNull()
       await humanClick(byId('guide-restore'))
       await expect.poll(changed).toBeNull()

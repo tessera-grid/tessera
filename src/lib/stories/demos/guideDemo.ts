@@ -6,6 +6,7 @@
  * доступности; показ живёт только в живом Storybook.
  */
 
+import { INPUT_MODALITY_ATTR } from '../../core/inputModality'
 import { keyNameOf } from '../../core/keyboardActions'
 
 export interface Point {
@@ -85,8 +86,11 @@ const drop = (element: HTMLElement) => {
   layers.delete(element)
 }
 
-/** Цель и её предки: наведение и нажатие у человека — на всей цепочке. */
+/** Мышь — цель и её предки, касание — только цель: фон строки не подсвечивается. */
 const chainOf = (target: Element) => {
+  if (target.closest('[data-action-menu]')) return []
+  if (document.documentElement.getAttribute(INPUT_MODALITY_ATTR) === 'touch')
+    return [target]
   const chain: Element[] = []
   for (
     let node: Element | null = target;

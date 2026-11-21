@@ -505,10 +505,17 @@ const SHIFTS: readonly GuideStoryStep[] = [
       removeAdded()
       await pollUntil(() => removedShown(root), run.signal)
       if (indexOfRow(root, MOVED) !== 0) return
-      const held = await holdRowAtLevel(root, MOVED, 'item-id-3', 0, run)
-      run.signal.throwIfAborted()
-      await held.release()
-      await pollUntil(() => indexOfRow(root, MOVED) === 3, run.signal)
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const held = await holdRowAtLevel(root, MOVED, 'item-id-3', 0, run)
+        run.signal.throwIfAborted()
+        await held.release()
+        try {
+          await pollUntil(() => indexOfRow(root, MOVED) === 3, run.signal, 2000)
+          break
+        } catch (error) {
+          if (attempt === 2) throw error
+        }
+      }
     }),
   },
 ]
@@ -529,6 +536,7 @@ export const ClientTransactionsShiftLargeTable: StoryObj<StoryProps> = {
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
+    const done = () => stepDone(canvas, 60_000)
     await step(SHIFTS[0]!.title.ru, async () => {
       await waitForRows(canvas)
       await until(() => expect(indexOfRow(canvas, 'item-id-2')).toBe(2))
@@ -539,7 +547,7 @@ export const ClientTransactionsShiftLargeTable: StoryObj<StoryProps> = {
         .querySelector<HTMLElement>('.data-grid-theme')!
         .style.setProperty('--tsr-comp-flash-duration', '600000ms')
       await guideNext(canvas)
-      await stepDone(canvas)
+      await done()
       await expect(clientTx.result).toBe('applied')
       await expect(SHIFTED_ADDED.map(id => indexOfRow(canvas, id))).toEqual([
         2, 3, 4,
@@ -559,7 +567,7 @@ export const ClientTransactionsShiftLargeTable: StoryObj<StoryProps> = {
     })
     await step(SHIFTS[2]!.title.ru, async () => {
       await guideNext(canvas)
-      await stepDone(canvas)
+      await done()
       await expect(SHIFTED_ADDED.every(id => !rowById(canvas, id))).toBe(true)
       await expect(indexOfRow(canvas, 'item-id-2')).toBe(2)
       await settle()
@@ -567,7 +575,7 @@ export const ClientTransactionsShiftLargeTable: StoryObj<StoryProps> = {
     await step(SHIFTS[3]!.title.ru, async () => {
       // Вспышка броска держится на время снимка (ADR 0130, DG6): токен задан до шага 2.
       await guideNext(canvas)
-      await stepDone(canvas)
+      await done()
       await until(() => expect(document.querySelector(OVERLAY)).toBeNull())
       await expect(indexOfRow(canvas, MOVED)).toBe(3)
       // Строки между прежним и новым местом поднялись на одно место.

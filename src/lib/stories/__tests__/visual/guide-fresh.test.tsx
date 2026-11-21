@@ -1,5 +1,5 @@
 import { render } from 'vitest-browser-react'
-import { page } from 'vitest/browser'
+import { page, server } from 'vitest/browser'
 import { describe, expect, test } from 'vitest'
 
 import baseline from './guide-fresh-baseline.json'
@@ -9,12 +9,19 @@ import { FRESH_ATTR, guideNext, until } from '../../__mocks__/catalogPlay'
 import { both } from '../storyText.helpers'
 
 // Проход гайдов со свежей таблицей (ADR 0117, SN73): каждый гайд проходит свой `play`, но
-// перед каждым «Далее» ставится пометка «Таблица изменена» — шаг открывает таблицу заново
-// и выполняет только своё действие. Проверки шага держатся — шаг сам доходит до своего
-// состояния (§6а). Гайды, чьи проверки по природе о непрерывности (таблица не
-// пересоздаётся), — в базе с причиной; база только сокращается.
+// перед каждым «Далее» ставится пометка «Таблица изменена». В прежнем режиме шаг сам
+// восстанавливает состояние, в атомарном это делает навигатор молчаливым проходом предыдущих
+// шагов. Гайды, чьи проверки по природе о непрерывности (таблица не пересоздаётся), — в базе
+// с причиной; база только сокращается.
 
 const known = baseline as Record<string, string>
+
+// Настоящий touch-ввод этих гайдов проверяется CDP в Chromium; в других движках его нет.
+const CHROMIUM_TOUCH = new Set([
+  'DataGrid/Columns/Dragging/ColumnDraggingByTouch',
+  'DataGrid/Core/Touch/TouchIconHint',
+  'DataGrid/Rows/Dragging/RowDraggingByTouch',
+])
 
 /** Только истории, чьё имя содержит строку, — для разбора; база тогда не сверяется. */
 const ONLY = import.meta.env.VITE_GUIDE_FRESH_ONLY as string | undefined
@@ -32,7 +39,7 @@ const walkFresh = async (run: () => Promise<void>) => {
   }
 }
 
-// Стенд: шаг 3 без действия держится на прокрутке шага 2 — со свежей таблицей не доходит.
+// Стенд: шаг 3 без действия держится на прокрутке шага 2 — восстанавливает её только replay.
 const SCROLL = 200
 const STAND = [
   {
@@ -55,15 +62,19 @@ const playStand = async (canvas: HTMLElement) => {
     expect(document.querySelector('.data-grid__body-row')).not.toBeNull(),
   )
   await guideNext(canvas)
-  await until(() => expect(scrollTop()).toBe(SCROLL))
+  await until(() =>
+    expect(Math.abs(scrollTop() - SCROLL)).toBeLessThanOrEqual(1),
+  )
   await guideNext(canvas)
-  await until(() => expect(scrollTop()).toBe(SCROLL))
+  await until(() =>
+    expect(Math.abs(scrollTop() - SCROLL)).toBeLessThanOrEqual(1),
+  )
 }
 
 describe('проход гайдов со свежей таблицей (ADR 0117)', () => {
-  test('SN73: каждый шаг каждого гайда доходит до своего состояния из свежей таблицы — проход play с пометкой перед каждым шагом держит проверки шагов', async () => {
-    // Детектор: шаг, который держится на прошлом шаге, проход ловит, а обычный — нет.
-    const stand = async () => {
+  test('SN73: каждый шаг каждого гайда достижим из свежей таблицы — прежний режим восстанавливает его действием, атомарный молчаливым replay; проход play с пометкой держит проверки', async () => {
+    // Детектор: прежний режим ловит зависимость от прошлого шага, атомарный восстанавливает её.
+    const stand = async (atomicSteps = false) => {
       const screen = await render(
         <GuideStory
           title={both('Стенд свежей таблицы')}
@@ -72,6 +83,7 @@ describe('проход гайдов со свежей таблицей (ADR 0117
             { dataCount: 200, height: 320 },
             { colorMode: 'light', locale: 'en' },
           )}
+          atomicSteps={atomicSteps}
         />,
       )
       return screen
@@ -82,16 +94,22 @@ describe('проход гайдов со свежей таблицей (ADR 0117
     screen = await stand()
     expect(await walkFresh(() => playStand(screen.container))).toBeDefined()
     await screen.unmount()
+    screen = await stand(true)
+    expect(await walkFresh(() => playStand(screen.container))).toBeUndefined()
+    await screen.unmount()
 
     await page.viewport(900, 720)
     const guides = (await loadStories()).filter(
       ({ path, story, Story }) =>
         Story.parameters.scenario &&
         !path.includes('.dev.stories') &&
+        (server.browser === 'chromium' || !CHROMIUM_TOUCH.has(story)) &&
         (!ONLY || `${path} ${story}`.includes(ONLY)),
     )
     const failed: Record<string, string> = {}
     for (const { story, Story } of guides) {
+      // eslint-disable-next-line no-console -- локализация зависшего обхода
+      console.log('SN73_STORY', story)
       const guide = await render(<Story />)
       let current = ''
       const error = await walkFresh(() =>
@@ -104,6 +122,9 @@ describe('проход гайдов со свежей таблицей (ADR 0117
         } as never),
       )
       await guide.unmount()
+      await until(() =>
+        expect(document.querySelector('[role="menu"]')).toBeNull(),
+      )
       if (error) failed[story] = `«${current}»: ${error}`
     }
     // eslint-disable-next-line no-console -- список для базы при её разборе

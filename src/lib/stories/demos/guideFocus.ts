@@ -44,6 +44,8 @@ export const STEP_ACTION_DONE = 'guide-step-action-done'
  * каждым шагом (ADR 0117, SN73) ставит её тем же путём, что ввод человека.
  */
 export const GUIDE_FRESH = 'guide-fresh'
+/** Шаг ждёт настоящего касания: его ввод разрешён и не считается посторонним. */
+export const GUIDE_REAL_INPUT = 'data-guide-real-input'
 
 export interface FocusGuard {
   /** Переход к шагу: фокус человека снова не его, итог шага — после действия. */
@@ -68,7 +70,8 @@ export const createFocusGuard = (
   let modality: string | null | undefined
   const busy = () =>
     guide.dataset.stepAction === 'running' ||
-    guide.hasAttribute('data-guide-showing')
+    guide.hasAttribute('data-guide-showing') ||
+    guide.hasAttribute('data-guide-replaying')
   const release = (actionDone = false) => {
     window.clearTimeout(timer)
     timer = 0
