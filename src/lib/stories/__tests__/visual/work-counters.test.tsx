@@ -325,6 +325,7 @@ describe('Счётчики работы', () => {
       )!,
     )
     await expect.poll(() => answer).toBeDefined()
+    await waitForQuietDocument(300)
     const children = getData(5).map((row, index) => ({
       ...row,
       id: `child-${index}`,
@@ -824,9 +825,11 @@ describe('Счётчики работы — ручка колонки (ADR 0114)
         '.data-grid__body-row[data-row-id]',
       ),
     ]
-    const work = await measure(() =>
-      held.find(call => call.start === BLOCK)!.answer(),
-    )
+    const work = await measure(async () => {
+      held.find(call => call.start === BLOCK)!.answer()
+      await expect.poll(() => rowAt(BLOCK)?.dataset.rowId).toBe(all[BLOCK]!.id)
+      await waitForQuietDocument(300)
+    })
     await expect.poll(() => rowAt(BLOCK)?.dataset.rowId).toBe(all[BLOCK]!.id)
     const arrived = [
       ...document.querySelectorAll<HTMLElement>(

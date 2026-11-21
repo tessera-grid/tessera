@@ -215,8 +215,6 @@ describe('Касания (ADR 0086)', () => {
     const buttons = hiddenButtons(head)
     expect(buttons.length).toBeGreaterThan(1)
     await expect.poll(() => buttons.filter(b => !shown(b)).length).toBe(0)
-  })
-
     expect(head.querySelector('[data-action-menu]')).not.toBeNull()
     expect(head.querySelector(HANDLE)).not.toBeNull()
     expect(head.querySelector(GRIP)).not.toBeNull()
@@ -264,6 +262,8 @@ describe('Касания (ADR 0086)', () => {
     await expect
       .poll(() => withoutMenu.filter(button => !shown(button)).length)
       .toBe(0)
+  })
+
   for (const keyboard of [false, true]) {
     test(`TU2: без наведения кнопки тела видны у тронутой ячейки и строки, касание другой ячейки переносит их (keyboardNavigation ${keyboard ? 'вкл' : 'выкл'})`, async () => {
       renderGrid({
@@ -1115,6 +1115,15 @@ describe('Включённые действия в ряду заголовка (
       }
       expect(sorted()).toBe('none')
     }
+    const originalMatchMedia = window.matchMedia.bind(window)
+    const mediaMock = vi
+      .spyOn(window, 'matchMedia')
+      .mockImplementation(query =>
+        query === '(pointer: coarse)'
+          ? ({ matches: false } as MediaQueryList)
+          : originalMatchMedia(query),
+      )
+    setInputModality('pointer')
     try {
       // Ширина на одну кнопку и кебаб.
       for (let width = 140; width <= 300; width += 5) {
@@ -1143,15 +1152,6 @@ describe('Включённые действия в ряду заголовка (
       await expect.poll(row).toEqual(['pin', 'menu'])
 
       // Клавиатура: фокус остаётся на кнопке, ряд ждёт ухода фокуса.
-    const originalMatchMedia = window.matchMedia.bind(window)
-    const mediaMock = vi
-      .spyOn(window, 'matchMedia')
-      .mockImplementation(query =>
-        query === '(pointer: coarse)'
-          ? ({ matches: false } as MediaQueryList)
-          : originalMatchMedia(query),
-      )
-    setInputModality('pointer')
       await sortOn()
       sortButton().focus()
       await userEvent.keyboard('{Enter}')
@@ -1193,6 +1193,7 @@ describe('Включённые действия в ряду заголовка (
       await expect.poll(row).toEqual(['menu'])
       await expect.poll(bubbleOpacity).toBe('1')
     } finally {
+      mediaMock.mockRestore()
       await screen.unmount()
     }
   })
@@ -1221,7 +1222,6 @@ describe('Редакторы по типу пальцем (ADR 0175)', () => {
             ],
           },
           {
-      mediaMock.mockRestore()
             id: 'tags',
             accessorKey: 'tags',
             header: 'Tags',
@@ -1972,12 +1972,17 @@ describe('Касание: мультисортировка из меню (ADR 02
       .toBe('ascending')
     expect(headById('lastName').getAttribute('aria-sort')).toBe('ascending')
     // Колонка — следующий уровень: строки по-прежнему идут по первому уровню.
-    const lastNames = [...document.querySelectorAll<HTMLElement>(BODY_ROW)]
-      .sort(
-        (x, y) => x.getBoundingClientRect().top - y.getBoundingClientRect().top,
-      )
-      .map(row => cellOf(row, 'lastName').textContent?.trim() ?? '')
-    expect(lastNames).toEqual([...lastNames].sort((x, y) => x.localeCompare(y)))
+    const lastNames = () =>
+      [...document.querySelectorAll<HTMLElement>(BODY_ROW)]
+        .sort(
+          (x, y) =>
+            x.getBoundingClientRect().top - y.getBoundingClientRect().top,
+        )
+        .map(row => cellOf(row, 'lastName').textContent?.trim() ?? '')
+    await expect.poll(() => lastNames().every(Boolean)).toBe(true)
+    expect(lastNames()).toEqual(
+      [...lastNames()].sort((x, y) => x.localeCompare(y)),
+    )
     await expect.poll(menu).toBeNull()
   })
 })
@@ -2255,12 +2260,12 @@ describe('Касание каждой фичи (ADR 0231, TV20–TV27)', () => {
     expect(top()).toBe(0)
     await touch.realTouchDown([from])
     try {
+      await wait(300)
       await touch.realTouchMove(from, to, 16)
       await expect.poll(top, { timeout: 4000 }).toBeGreaterThan(40)
     } finally {
       await touch.realTouchUp()
     }
-      await wait(300)
   })
 
   test('TV21: касание кебаба строки открывает меню строки, касание пункта выполняет действие', async () => {
@@ -2286,7 +2291,10 @@ describe('Касание каждой фичи (ADR 0231, TV20–TV27)', () => {
     await expect.poll(() => archived).toEqual(['r2'])
   })
 
-  test('TV22: пункт «Копировать» контекстного меню, открытого долгим нажатием, копирует выделенные ячейки', async () => {
+  test('TV22: пункт «Копировать» контекстного меню, открытого долгим нажатием, копирует выделенные ячейки', async ({
+    skip,
+  }) => {
+    skip(!chromium, 'удержание пальца — CDP Chromium')
     const written: string[] = []
     const clipboard = navigator.clipboard
     const write = vi
@@ -2437,6 +2445,7 @@ describe('Касание каждой фичи (ADR 0231, TV20–TV27)', () => {
       y: from.y,
     }
     await touch.realTouchDown([from])
+    await wait(300)
     await touch.realTouchMove(from, to, 16)
     await wait(50)
     await touch.realTouchUp()
@@ -2444,8 +2453,6 @@ describe('Касание каждой фичи (ADR 0231, TV20–TV27)', () => {
       .poll(() => leaves().indexOf('firstName'))
       .toBeGreaterThan(leaves().indexOf('lastName'))
   })
-})
-    await wait(300)
 
   test('TU15: перетаскивание и нажатие мимо снимают data-touched и скрывают кнопки, а выделение и активная ячейка сохраняются', async ({
     skip,
@@ -2510,3 +2517,4 @@ describe('Касание каждой фичи (ADR 0231, TV20–TV27)', () => {
       await screen.unmount()
     }
   })
+})

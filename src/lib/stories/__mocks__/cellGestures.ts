@@ -93,17 +93,28 @@ export const rightClickCell = (cell: HTMLElement) => {
   mouse(cell, 'contextmenu', { button: 2 })
 }
 
-/** Копирование с клавиатуры: событие `copy` от ячейки; что положено в буфер — в ответе. */
-export const copyFrom = (cell: HTMLElement) => {
-  const clipboardData = new DataTransfer()
-  const event = new ClipboardEvent('copy', {
+const clipboardEvent = (
+  type: 'copy' | 'cut' | 'paste',
+  clipboardData: DataTransfer,
+) => {
+  const event = new ClipboardEvent(type, {
     bubbles: true,
     cancelable: true,
     clipboardData,
   })
+  // Firefox отдаёт обработчикам свой пустой буфер вместо переданного.
+  if (event.clipboardData !== clipboardData) {
+    Object.defineProperty(event, 'clipboardData', { value: clipboardData })
+  }
+  return event
+}
+
+/** Копирование с клавиатуры: событие `copy` от ячейки; что положено в буфер — в ответе. */
+export const copyFrom = (cell: HTMLElement) => {
+  const clipboardData = new DataTransfer()
+  const event = clipboardEvent('copy', clipboardData)
   cell.dispatchEvent(event)
-  // Firefox отдаёт обработчикам свой буфер события, а не переданный.
-  return event.clipboardData ?? clipboardData
+  return event.clipboardData!
 }
 
 /**
@@ -111,30 +122,17 @@ export const copyFrom = (cell: HTMLElement) => {
  * или Google Sheets, или буфером прежнего копирования таблицы (ADR 0219).
  */
 export const pasteInto = (cell: HTMLElement, data: string | DataTransfer) => {
-  let clipboardData = data
-  if (typeof data === 'string') {
-    clipboardData = new DataTransfer()
-    clipboardData.setData('text/plain', data)
-  }
-  cell.dispatchEvent(
-    new ClipboardEvent('paste', {
-      bubbles: true,
-      cancelable: true,
-      clipboardData: clipboardData as DataTransfer,
-    }),
-  )
+  const clipboardData = typeof data === 'string' ? new DataTransfer() : data
+  if (typeof data === 'string') clipboardData.setData('text/plain', data)
+  cell.dispatchEvent(clipboardEvent('paste', clipboardData))
 }
 
 /** Вырезание с клавиатуры: событие `cut` от ячейки; что положено в буфер — в ответе. */
 export const cutFrom = (cell: HTMLElement) => {
   const clipboardData = new DataTransfer()
-  const event = new ClipboardEvent('cut', {
-    bubbles: true,
-    cancelable: true,
-    clipboardData,
-  })
+  const event = clipboardEvent('cut', clipboardData)
   cell.dispatchEvent(event)
-  return event.clipboardData ?? clipboardData
+  return event.clipboardData!
 }
 
 /**

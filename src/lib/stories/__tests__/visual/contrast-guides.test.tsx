@@ -28,6 +28,7 @@ import {
   style,
   styleMeasure,
 } from './contrast-helpers'
+import { parkPointer } from '../pointer'
 import { CATALOG_STATES } from '../../__mocks__/catalog'
 import { applyPseudoStates } from '../../__mocks__/catalogPlay'
 import { type GuideStoryStep, guideSteps } from '../../demos/GuideStory'
@@ -246,6 +247,7 @@ const walkGuide = async (story: string, Story: ComposedState) => {
   const played: string[] = []
   const later: { title: string; combo: Combo }[] = []
   let panel: readonly GuideStoryStep[] | undefined
+  await parkPointer()
   const screen = await render(<Story />)
   const runStep = async (title: string, play: () => Promise<void>) => {
     await play()
@@ -291,6 +293,7 @@ const walkGuide = async (story: string, Story: ComposedState) => {
     }
   }
   for (const { title, combo } of later) {
+    await parkPointer()
     const replay = await render(<Story />)
     await applyCombo(combo, { finish: false })
     try {
@@ -440,9 +443,13 @@ describe('Шаги гайдов в матрице контраста (ADR 0089, 
         (!ONLY || `${path} ${story}`.includes(ONLY)),
     )
     for (const { story, Story } of guides) {
+      // eslint-disable-next-line no-console -- прогресс долгой матрицы контраста
+      console.log(`[contrast-guides] ${walked + 1}/${guides.length} ${story}`)
       let result = await walkGuide(story, Story)
-      // Вне Chromium снимок режима и axe срываются случайным кадром: находка — та, что повторилась.
-      if (!CHROMIUM && hasFindings(result))
+      // Случайный кадр подтверждается повтором. В Chromium повторяем только историю
+      // с новой находкой: известные записи базы не удлиняют обход.
+      const fresh = result.findings.some(finding => !(finding.key in known))
+      if ((!CHROMIUM || fresh) && hasFindings(result))
         result = await walkGuide(story, Story)
       for (const key of Object.keys(all) as (keyof GuideResult)[]) {
         ;(all[key] as unknown[]).push(...result[key])

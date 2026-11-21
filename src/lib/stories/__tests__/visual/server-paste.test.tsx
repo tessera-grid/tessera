@@ -119,13 +119,14 @@ const centerOf = (element: Element) => {
 const pasteText = (target: HTMLElement, text: string) => {
   const data = new DataTransfer()
   data.setData('text/plain', text)
-  target.dispatchEvent(
-    new ClipboardEvent('paste', {
-      bubbles: true,
-      cancelable: true,
-      clipboardData: data,
-    }),
-  )
+  const event = new ClipboardEvent('paste', {
+    bubbles: true,
+    cancelable: true,
+    clipboardData: data,
+  })
+  if (event.clipboardData !== data)
+    Object.defineProperty(event, 'clipboardData', { value: data })
+  target.dispatchEvent(event)
 }
 
 const scrollTo = async (index: number) => {

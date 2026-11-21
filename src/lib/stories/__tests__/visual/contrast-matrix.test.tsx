@@ -25,6 +25,7 @@ import {
   style,
   styleMeasure,
 } from './contrast-helpers'
+import { parkPointer } from '../pointer'
 
 // Матрица контраста (ADR 0089, CX1–CX11) по каталогу визуальных состояний (ADR 0093):
 // каждая история-состояние — в двух палитрах, двух темах и двух режимах. Текст —
@@ -116,6 +117,7 @@ describe('Матрица контраста (ADR 0089) по каталогу (AD
     await page.viewport(900, 720)
     for (const { story, states, Story } of await catalogStories()) {
       const requirement = requirementOf(states[0]!)
+      await parkPointer()
       const screen = await render(<Story />)
       await Story.play?.({ canvasElement: screen.container })
       const audit: StoryAudit = { story, requirement, states, checked: {} }

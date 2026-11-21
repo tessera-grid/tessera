@@ -788,10 +788,13 @@ describe('Row expanding: answer batching', () => {
       row => answers[row.id as keyof typeof answers].promise as never,
     )
     await waitRow('other')
-    await humanClick(toggleOf('lazy')!)
     await humanClick(toggleOf('other')!)
     await expect
       .poll(() => toggleOf('other')!.getAttribute('aria-busy'))
+      .toBe('true')
+    await humanClick(toggleOf('lazy')!)
+    await expect
+      .poll(() => toggleOf('lazy')!.getAttribute('aria-busy'))
       .toBe('true')
     answers.lazy.resolve(kids('lazy', 2))
     await wait(0)

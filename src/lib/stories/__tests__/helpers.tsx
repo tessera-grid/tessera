@@ -99,11 +99,11 @@ export const rowState = (element: Element) =>
   getComputedStyle(element).getPropertyValue('--tsr-row-state').trim()
 
 /**
- * Навести указатель на элемент. Firefox и WebKit: `userEvent.hover` ищет элемент по подписи,
- * а её часть есть и в других именах — настоящим указателем в центр элемента.
+ * Навести указатель на элемент. Вне Chromium и при `real` — настоящим движением в центр:
+ * поиск по подписи неоднозначен, если её часть есть и в других именах.
  */
-export const pointTo = async (element: Element) => {
-  if (server.browser === 'chromium') {
+export const pointTo = async (element: Element, real = false) => {
+  if (!real && server.browser === 'chromium') {
     await userEvent.hover(element)
     return
   }
@@ -128,8 +128,8 @@ export const pointTo = async (element: Element) => {
  * (ADR 0076): клик по кнопке посреди раскрытия уходит мимо. Бесконечные анимации
  * (кольцо ожидания) не ждём.
  */
-export const revealCellButtons = async (cell: Element) => {
-  await pointTo(cell)
+export const revealCellButtons = async (cell: Element, real = false) => {
+  await pointTo(cell, real)
   await new Promise(resolve => requestAnimationFrame(resolve))
   await Promise.all(
     cell

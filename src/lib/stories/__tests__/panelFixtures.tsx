@@ -27,7 +27,7 @@ const openFilter =
   (column: string): Play =>
   async ({ canvasElement }) => {
     await waitForRows(canvasElement)
-    await revealCellButtons(headCell(canvasElement, column))
+    await revealCellButtons(headCell(canvasElement, column), true)
     await openPopup(() =>
       headCell(canvasElement, column).querySelector<HTMLElement>(
         '.column-filter__button',

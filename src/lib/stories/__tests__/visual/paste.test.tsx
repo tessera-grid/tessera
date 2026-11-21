@@ -1,6 +1,6 @@
 import axe from 'axe-core'
 import { useState } from 'react'
-import { commands, userEvent } from 'vitest/browser'
+import { commands, server, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 
@@ -184,13 +184,15 @@ const selectCells = async (from: HTMLElement, to?: HTMLElement) => {
 const pasteText = (target: HTMLElement, text: string) => {
   const data = new DataTransfer()
   data.setData('text/plain', text)
-  target.dispatchEvent(
-    new ClipboardEvent('paste', {
-      bubbles: true,
-      cancelable: true,
-      clipboardData: data,
-    }),
-  )
+  const event = new ClipboardEvent('paste', {
+    bubbles: true,
+    cancelable: true,
+    clipboardData: data,
+  })
+  // Firefox создаёт свой пустой clipboardData: возвращаем данные теста.
+  if (event.clipboardData !== data)
+    Object.defineProperty(event, 'clipboardData', { value: data })
+  target.dispatchEvent(event)
 }
 
 const deferred = () => {
@@ -214,7 +216,13 @@ const cellsOf = (batch: CellEditBatch) =>
   batch.cells.map(item => [item.rowId, item.columnId, item.value])
 
 describe('Вставка и очистка выделения (ADR 0219)', () => {
-  test('WR1: Ctrl/Cmd+V с фокусом в ячейке тела вставляет буфер; в поле правки — нет; без cellEditing, с выключенным cellEditing и при paste: false вставки нет; буфер без текста ничего не меняет', async () => {
+  test('WR1: Ctrl/Cmd+V с фокусом в ячейке тела вставляет буфер; в поле правки — нет; без cellEditing, с выключенным cellEditing и при paste: false вставки нет; буфер без текста ничего не меняет', async ({
+    skip,
+  }) => {
+    skip(
+      server.browser !== 'chromium',
+      'системный буфер headless Firefox/WebKit не переносит Ctrl+C в Ctrl+V',
+    )
     const onCommitEdits = vi.fn()
     let screen = await mount({ onCommitEdits })
     try {
@@ -432,13 +440,27 @@ describe('Вставка и очистка выделения (ADR 0219)', () =>
 
       // Вырезание: копия в буфер и очистка; вставка ниже берёт вырезанное.
       await selectCells(cell('5'))
-      await userEvent.keyboard('{ControlOrMeta>}x{/ControlOrMeta}')
+      if (server.browser === 'chromium') {
+        await userEvent.keyboard('{ControlOrMeta>}x{/ControlOrMeta}')
+      } else {
+        const data = new DataTransfer()
+        const event = new ClipboardEvent('cut', {
+          bubbles: true,
+          cancelable: true,
+          clipboardData: data,
+        })
+        if (event.clipboardData !== data)
+          Object.defineProperty(event, 'clipboardData', { value: data })
+        cell('5').dispatchEvent(event)
+      }
       await expect.poll(() => onCommitEdits.mock.calls.length).toBe(3)
       const cut = onCommitEdits.mock.calls[2]![0] as CellEditBatch
       expect(cut.source).toBe('cut')
       expect(cellsOf(cut)).toEqual([['5', 'age', null]])
       await selectCells(cell('8'))
-      await userEvent.keyboard('{ControlOrMeta>}v{/ControlOrMeta}')
+      if (server.browser === 'chromium')
+        await userEvent.keyboard('{ControlOrMeta>}v{/ControlOrMeta}')
+      else pasteText(cell('8'), '25')
       await expect.poll(() => onCommitEdits.mock.calls.length).toBe(4)
       expect(cellsOf(onCommitEdits.mock.calls[3]![0])).toEqual([
         ['8', 'age', 25],

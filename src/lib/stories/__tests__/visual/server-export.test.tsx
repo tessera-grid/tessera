@@ -6,7 +6,6 @@ import { describe, expect, test, vi } from 'vitest'
 import '../../../ui/theme/theme.css'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
-import { downloadFile } from '../../../plugins/dataExportModel/download'
 import {
   columnSortingModel,
   dataExport,
@@ -24,9 +23,9 @@ import { recordAnnouncements } from './lazy-helpers'
 // Выгрузка в серверной модели на гриде (ADR 0190): ожидание, отмена и смена выборки (XV6), отказ
 // блока (XV7), панель с недоступными значениями (XV9).
 
-vi.mock('../../../plugins/dataExportModel/download', () => ({
-  downloadFile: vi.fn(),
-}))
+const downloadFile = vi
+  .spyOn(HTMLAnchorElement.prototype, 'click')
+  .mockImplementation(() => {})
 
 interface Item {
   id: string

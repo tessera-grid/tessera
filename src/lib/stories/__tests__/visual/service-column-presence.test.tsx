@@ -127,7 +127,7 @@ describe('Service column presence', () => {
     )
     await expect.poll(() => hasColumn(COLUMN_EXPANDING_ID)).toBe(false)
     await expect
-      .poll(() => checkbox('row-0')?.getAttribute('aria-checked'))
+      .poll(() => rowById('row-0')?.getAttribute('data-selected'))
       .toBe('true')
     expect(width()).toBe(resized)
 
@@ -141,7 +141,7 @@ describe('Service column presence', () => {
     await expect.poll(() => hasColumn(COLUMN_EXPANDING_ID)).toBe(true)
     await expect.poll(() => rowById('node-0-0')).not.toBeNull()
     await expect
-      .poll(() => checkbox('row-0')?.getAttribute('aria-checked'))
+      .poll(() => rowById('row-0')?.getAttribute('data-selected'))
       .toBe('true')
     expect(width()).toBe(resized)
   })

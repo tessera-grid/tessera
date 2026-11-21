@@ -330,8 +330,8 @@ describe('Перенос текста и высота строк по содер
     await waitForGrid()
     await expect.poll(() => heightOf(rowOf('1'))).toBeGreaterThan(ROW_HEIGHT)
     const title = titleOf('1', 'note')!
-    // Текст целиком: строка — текст и отступы по высоте.
-    expect(title.scrollHeight).toBe(title.clientHeight)
+    // Текст целиком: строка — текст и отступы по высоте. Пиксель округления Firefox — не обрезка.
+    expect(title.scrollHeight).toBeLessThanOrEqual(title.clientHeight + 1)
     expect(heightOf(rowOf('1'))).toBe(heightOf(title) + 2 * PADDING_Y)
     expect(heightOf(rowOf('2'))).toBe(ROW_HEIGHT)
     expect(heightOf(rowOf('0'))).toBe(ROW_HEIGHT)
@@ -1011,7 +1011,8 @@ describe('Перенос текста и высота строк по содер
     expect(await table.scrollToRowIndex(999_990, { align: 'start' })).toBe(true)
     await loadedWindow()
     await frames(3)
-    expect(Math.abs(topOf(rowOf('999990')) - bodyTop())).toBeLessThanOrEqual(1)
+    // В растянутой области Firefox округляет две экранные координаты независимо.
+    expect(Math.abs(topOf(rowOf('999990')) - bodyTop())).toBeLessThanOrEqual(2)
   })
 
   test('AH16: SSRM — незагруженные строки и скелеты блока высотой оценки, строка ошибки блока высотой строки; блок, пришедший выше экрана, не сдвигает видимые строки', async () => {
@@ -1104,6 +1105,10 @@ describe('Перенос текста и высота строк по содер
     await waitForGrid()
     await frames(3)
     const body = document.querySelector<HTMLElement>('.data-grid__body')!
+    // Под нагрузкой короткое движение может закончиться до первого замера.
+    body
+      .closest<HTMLElement>('.data-grid-theme')!
+      .style.setProperty('--tsr-comp-row-motion-duration', '1500ms')
     const footer = () =>
       document.querySelector<HTMLElement>('.data-grid__footer')!
     const heights = new Set(mountedRows().map(heightOf))
@@ -1114,8 +1119,9 @@ describe('Перенос текста и высота строк по содер
 
     // Сортировка — строки едут с прежних мест.
     table.setSorting([{ id: 'name', desc: true }])
-    await frame()
-    expect(body.getAnimations({ subtree: true }).length).toBeGreaterThan(0)
+    await expect
+      .poll(() => body.getAnimations({ subtree: true }).length)
+      .toBeGreaterThan(0)
     for (const animation of document.getAnimations()) {
       animation.pause()
       animation.currentTime = 0
@@ -1130,18 +1136,19 @@ describe('Перенос текста и высота строк по содер
 
     // Удаление высоких строк — призраки своей высоты, футер стартует с прежнего места.
     const before = topOf(footer())
+    const ghosts = () => [
+      ...document.querySelectorAll<HTMLElement>('[data-row-ghost]'),
+    ]
     setData(data.filter(row => !['0', '3', '6'].includes(row.id)))
-    await frame()
+    await expect.poll(() => ghosts().length).toBeGreaterThan(0)
     for (const animation of document.getAnimations()) {
       animation.pause()
       animation.currentTime = 0
     }
-    const ghosts = [
-      ...document.querySelectorAll<HTMLElement>('[data-row-ghost]'),
-    ]
-    expect(ghosts.length).toBeGreaterThan(0)
-    for (const ghost of ghosts) expect(heights.has(heightOf(ghost))).toBe(true)
-    expect(ghosts.some(ghost => heightOf(ghost) > ROW_HEIGHT)).toBe(true)
+    const leaving = ghosts()
+    expect(leaving.length).toBeGreaterThan(0)
+    for (const ghost of leaving) expect(heights.has(heightOf(ghost))).toBe(true)
+    expect(leaving.some(ghost => heightOf(ghost) > ROW_HEIGHT)).toBe(true)
     expect(Math.abs(topOf(footer()) - before)).toBeLessThanOrEqual(1)
     // Последний кадр движения — уже на новом месте: после движения футер не прыгает.
     for (const animation of document.getAnimations()) {
@@ -1183,10 +1190,11 @@ describe('Перенос текста и высота строк по содер
     await expect.poll(() => heightOf(rowOf('1'))).toBeGreaterThan(ROW_HEIGHT)
     const tall = heightOf(rowOf('1'))
     const row = rowOf('1')!
-    await userEvent.hover(row)
-    const handle = row
-      .querySelector<HTMLElement>('.drag__handler--column')!
-      .getBoundingClientRect()
+    const handleElement = row.querySelector<HTMLElement>(
+      '.drag__handler--column',
+    )!
+    await userEvent.hover(handleElement)
+    const handle = handleElement.getBoundingClientRect()
     const from = {
       x: handle.left + handle.width / 2,
       y: handle.top + handle.height / 2,

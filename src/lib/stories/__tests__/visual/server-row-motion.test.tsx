@@ -58,9 +58,11 @@ interface Held {
 /** «Сервер»: отвечает сразу или держит ответы, пока тест их не отпустит; `refuse` — отказ. */
 const server = () => {
   const held: Held[] = []
+  const calls: ServerRowsRequest[] = []
   const state = { hold: false, refuse: false }
-  const getRows = (request: ServerRowsRequest) =>
-    new Promise<ServerRowsResponse<Item>>((resolve, reject) => {
+  const getRows = (request: ServerRowsRequest) => {
+    calls.push(request)
+    return new Promise<ServerRowsResponse<Item>>((resolve, reject) => {
       const answer = () => {
         if (state.refuse) {
           reject(new Error('down'))
@@ -75,13 +77,14 @@ const server = () => {
       if (state.hold) held.push({ request, answer })
       else answer()
     })
+  }
   const release = () => {
     state.hold = false
     for (const call of held.splice(0)) {
       if (!call.request.signal.aborted) call.answer()
     }
   }
-  return { held, state, getRows, release }
+  return { calls, held, state, getRows, release }
 }
 
 const Grid = ({
@@ -212,11 +215,13 @@ const changeSelection = async <T,>(
   srv: ReturnType<typeof server>,
   change: () => Promise<unknown>,
   read: () => T,
+  ready?: () => boolean,
 ) => {
   srv.state.hold = true
   await change()
   await expect.poll(glowing).toBe(true)
   await expect.poll(() => srv.held.length).toBeGreaterThan(0)
+  if (ready) await expect.poll(ready).toBe(true)
   const frames = await sampleFrames(read, () => srv.release())
   await expect.poll(glowing).toBe(false)
   return frames
@@ -362,19 +367,33 @@ describe('Движение строк серверной модели при с�
       await expect
         .poll(() => scroller().hasAttribute('data-fast-scrolling'))
         .toBe(false)
-      const frames = await changeSelection(srv, typeSearch('narrow'), () => ({
-        skeletons: skeletonRows().length,
-        loaded: body().querySelectorAll(':scope > [data-row-id]').length,
-        skeletonMoving: skeletonRows().some(
-          row => translated(row) || getComputedStyle(row).opacity !== '1',
-        ),
-        skeletonGhosts: ghosts().filter(
-          ghost =>
-            ghost.hasAttribute('data-pending-row') ||
-            !!ghost.querySelector('[data-skeleton]'),
-        ).length,
-        r8: rowById('r8') && topOf(rowById('r8')!),
-      }))
+      await expect
+        .poll(() =>
+          [0, 5, 10].every(start =>
+            srv.calls.some(request => request.start === start),
+          ),
+        )
+        .toBe(true)
+      const frames = await changeSelection(
+        srv,
+        typeSearch('narrow'),
+        () => ({
+          skeletons: skeletonRows().length,
+          loaded: body().querySelectorAll(':scope > [data-row-id]').length,
+          skeletonMoving: skeletonRows().some(
+            row => translated(row) || getComputedStyle(row).opacity !== '1',
+          ),
+          skeletonGhosts: ghosts().filter(
+            ghost =>
+              ghost.hasAttribute('data-pending-row') ||
+              !!ghost.querySelector('[data-skeleton]'),
+          ).length,
+          r8: rowById('r8') && topOf(rowById('r8')!),
+        }),
+        () =>
+          skeletonRows().length > 0 &&
+          body().querySelectorAll(':scope > [data-row-id]').length > 0,
+      )
       await settleRowMotion()
       // До прихода окна — и скелеты, и прежние строки; прежние едут.
       expect(frames[0]!.skeletons).toBeGreaterThan(0)

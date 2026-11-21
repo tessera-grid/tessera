@@ -665,7 +665,9 @@ export const ValueChangeFlashColors: StoryObj<StoryProps> = {
     await step(COLORS[4]!.title.ru, async () => {
       await guideNext(canvas)
       await flashed(COLOR_ROWS.accepted, 'age', 'accepted')
-      expect(ageValue(canvas, COLOR_ROWS.accepted)).toBe(ACCEPTED_AGE)
+      await until(() =>
+        expect(ageValue(canvas, COLOR_ROWS.accepted)).toBe(ACCEPTED_AGE),
+      )
     })
     await step(COLORS[5]!.title.ru, async () => {
       await guideNext(canvas)
