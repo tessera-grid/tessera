@@ -87,6 +87,8 @@ const touch = commands as unknown as {
   realTouchDown: (fingers: Point[]) => Promise<void>
   realTouchMove: (from: Point, to: Point, steps?: number) => Promise<void>
   realTouchUp: () => Promise<void>
+  realMouseDown: (at: Point) => Promise<void>
+  realMouseUp: () => Promise<void>
 }
 
 const chromium = server.browser === 'chromium'
@@ -525,7 +527,7 @@ describe('Касания (ADR 0086)', () => {
     }
   })
 
-  test('TU9: колонку и строку тянут пальцем за ручку; свайп по ячейке прокручивает грид и ничего не тянет', async ({
+  test('TU9: колонку и строку тянут после удержания 250 мс; ранний сдвиг больше 8 px отменяет ожидание; свайп по ячейке прокручивает грид', async ({
     skip,
   }) => {
     skip(!chromium, 'жест пальцем по шагам — CDP Chromium')
@@ -536,17 +538,39 @@ describe('Касания (ADR 0086)', () => {
       enableRowDragging: true,
     })
     await waitForGrid()
+    const overlay = () =>
+      document.querySelector(
+        '.data-grid-head__cell--overlay, .data-grid__body-row--overlay, [data-dnd-overlay]',
+      )
     const drag = async (from: Point, to: Point) => {
       await touch.realTouchDown([from])
-      await touch.realTouchMove(from, to, 16)
-      await wait(50)
-      await touch.realTouchUp()
+      try {
+        await wait(300)
+        await touch.realTouchMove(from, to, 16)
+        await wait(50)
+      } finally {
+        await touch.realTouchUp()
+      }
+    }
+    const premature = async (from: Point, to: Point) => {
+      await touch.realTouchDown([from])
+      try {
+        await touch.realTouchMove(from, to, 1)
+        await wait(300)
+        expect(overlay()).toBeNull()
+      } finally {
+        await touch.realTouchUp()
+      }
+      await wait(100)
+      expect(menu()).toBeNull()
     }
 
     const columns = headOrder()
     const first = headById(dataColumn())
     const columnHandle = first.querySelector<HTMLElement>(HANDLE)!
     const from = center(columnHandle)
+    await premature(from, { x: from.x + 20, y: from.y })
+    expect(headOrder()).toEqual(columns)
     await drag(from, {
       x: from.x + first.getBoundingClientRect().width * 1.6,
       y: from.y,
@@ -561,6 +585,8 @@ describe('Касания (ADR 0086)', () => {
     await expect.poll(() => rowAt(1).querySelector(HANDLE)).not.toBeNull()
     const rowHandle = rowAt(1).querySelector<HTMLElement>(HANDLE)!
     const start = center(rowHandle)
+    await premature(start, { x: start.x, y: start.y + 20 })
+    expect(rowOrder()).toEqual(rows)
     await drag(start, { x: start.x, y: start.y + rowAt(1).offsetHeight * 2.6 })
     await expect.poll(rowOrder).not.toEqual(rows)
     // Анимация броска строки.
@@ -827,6 +853,7 @@ describe('Касания — бросок в свёрнутые группы (AD
       const group = rowById('node-1')!.getBoundingClientRect()
       const to = { x: from.x + shift, y: group.top + group.height / 2 + 6 }
       await touch.realTouchDown([from])
+      await wait(300)
       await touch.realTouchMove(from, to, 16)
       // Палец стоит: пауза раскрывает группу.
       await expect
@@ -873,6 +900,7 @@ describe('Ручка колонки на касаниях (ADR 0114)', () => {
       const from = center(handle)
       await touch.realTouchDown([from])
       try {
+        await wait(300)
         await touch.realTouchMove(from, { x: from.x + 60, y: from.y }, 6)
         const overlay = () =>
           document.querySelector<HTMLElement>('.data-grid-head__cell--overlay')
@@ -2213,7 +2241,10 @@ describe('Касание каждой фичи (ADR 0231, TV20–TV27)', () => {
     document.querySelector('[data-testid="data-grid-status-bar"]')
       ?.textContent ?? ''
 
-  test('TV20: палец, держащий перетаскиваемую строку у нижнего края области, прокручивает таблицу', async () => {
+  test('TV20: палец, держащий перетаскиваемую строку у нижнего края области, прокручивает таблицу', async ({
+    skip,
+  }) => {
+    skip(!chromium, 'жест пальцем по шагам — CDP Chromium')
     await mountTouch({ plugins: [rowDragging()] })
     const handle = () => rowById('r1')?.querySelector<HTMLElement>(HANDLE)
     await expect.poll(handle).toBeTruthy()
@@ -2229,6 +2260,7 @@ describe('Касание каждой фичи (ADR 0231, TV20–TV27)', () => {
     } finally {
       await touch.realTouchUp()
     }
+      await wait(300)
   })
 
   test('TV21: касание кебаба строки открывает меню строки, касание пункта выполняет действие', async () => {
@@ -2413,3 +2445,68 @@ describe('Касание каждой фичи (ADR 0231, TV20–TV27)', () => {
       .toBeGreaterThan(leaves().indexOf('lastName'))
   })
 })
+    await wait(300)
+
+  test('TU15: перетаскивание и нажатие мимо снимают data-touched и скрывают кнопки, а выделение и активная ячейка сохраняются', async ({
+    skip,
+  }) => {
+    skip(!chromium, 'жест пальцем по шагам — CDP Chromium')
+    const screen = await renderGrid({
+      columnCount: 4,
+      dataCount: 10,
+      enableCellSelection: true,
+      enableKeyboardNavigation: true,
+      enableRowDragging: true,
+      enableRowActionMenu: true,
+      rowActionMenuMode: 'always',
+    })
+    try {
+      await waitForGrid()
+      const first = rowAt(1)
+      const firstCell = cellOf(first, dataColumn())
+      await tapCell(first, dataColumn())
+      await settle(first)
+      expect(touchedButtons(first, dataColumn()).every(shown)).toBe(true)
+      expect(firstCell).toHaveAttribute('data-kn-active', 'true')
+      expect(firstCell).toHaveAttribute('data-cell-selected', 'true')
+
+      scroller().scrollLeft = 0
+      await wait(100)
+      const from = center(first.querySelector(HANDLE)!)
+      const to = center(rowAt(4).querySelector(HANDLE)!)
+      await touch.realTouchDown([from])
+      await wait(300)
+      await touch.realTouchMove(from, to, 16)
+      await wait(50)
+      await expect.poll(() => first.hasAttribute('data-touched')).toBe(false)
+      const firstMenuButton = first.querySelector('[data-action-menu]')
+      expect(firstMenuButton === null || !shown(firstMenuButton)).toBe(true)
+      expect(firstCell).toHaveAttribute('data-kn-active', 'true')
+      expect(firstCell).toHaveAttribute('data-cell-selected', 'true')
+      await touch.realTouchUp()
+      scroller().scrollLeft = 0
+      await wait(100)
+
+      const second = rowAt(2)
+      const secondCell = cellOf(second, dataColumn())
+      await tapCell(second, dataColumn())
+      await settle(second)
+      expect(touchedButtons(second, dataColumn()).every(shown)).toBe(true)
+      await expect
+        .poll(() => secondCell.getAttribute('data-kn-active'))
+        .toBe('true')
+      await touch.realMouseDown({ x: 1, y: 1 })
+      await touch.realMouseUp()
+      await expect.poll(() => second.hasAttribute('data-touched')).toBe(false)
+      const secondMenuButton = second.querySelector('[data-action-menu]')
+      expect(secondMenuButton === null || !shown(secondMenuButton)).toBe(true)
+      await expect
+        .poll(() => secondCell.getAttribute('data-kn-active'))
+        .toBe('true')
+      expect(secondCell).toHaveAttribute('data-cell-selected', 'true')
+    } finally {
+      await touch.realTouchUp().catch(() => undefined)
+      await touch.realMouseUp().catch(() => undefined)
+      await screen.unmount()
+    }
+  })

@@ -45,7 +45,11 @@ export const useHandleMenu = (
     onIntent: () => void HandleMenuPopupImpl.load().catch(noop),
     onCancel: opening.cancel,
   }
-  return { open, close: () => setOpen(false), request, trigger }
+  const close = () => {
+    opening.cancel()
+    setOpen(false)
+  }
+  return { open, close, request, trigger }
 }
 
 export interface HandleMenuProps {

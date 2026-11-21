@@ -16,7 +16,6 @@ import {
   type DragStartEvent,
   DragOverlay,
   MouseSensor,
-  PointerSensor,
   TouchSensor,
   closestCenter,
   useDndContext,
@@ -35,12 +34,14 @@ import { dragRowsOf } from './dragRows'
 import { readRowNestingIndent } from '../../core/rowNesting'
 import { createDropLevel } from './dropLevel'
 import {
+  NonTouchPointerSensor,
   Z_INDEX,
   adjustOverlayPosition,
   autoScrollOnlyY,
   dndAccessibility,
   measuring,
   sensorOptions,
+  touchSensorOptions,
 } from '../../shared/dnd/parameters'
 import { DragHandler } from '../../shared/dnd'
 import { windowedListSortingStrategy } from './windowedListSortingStrategy'
@@ -242,9 +243,9 @@ const DndBodyWrapper = ({
     activeId === null ? NO_SORTABLE_ROWS : getSortableRowIds(rows, virtualRows)
 
   const sensors = useSensors(
-    useSensor(PointerSensor, sensorOptions),
+    useSensor(NonTouchPointerSensor, sensorOptions),
     useSensor(MouseSensor, sensorOptions),
-    useSensor(TouchSensor, sensorOptions),
+    useSensor(TouchSensor, touchSensorOptions),
   )
 
   return (

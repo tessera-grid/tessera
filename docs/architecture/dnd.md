@@ -141,7 +141,8 @@ Tessera поставляет **кастомную стратегию колли�
 
 Сенсоры dnd-kit (`Pointer`, `Mouse`, `Touch`) в обеих обёртках получают
 `activationConstraint: { distance: 5 }` (`shared/dnd/parameters.ts`): перетаскивание
-начинается после сдвига на 5 px. Короткое нажатие — обычный клик: ручка
+начинается для мыши и пера после сдвига на 5 px, для пальца — после удержания 250 мс
+без сдвига больше 8 px. Короткое нажатие — обычный клик: ручка
 `DragHandler` — кнопка меню команд перестановки (WCAG 2.5.7,
 [ADR 0034](../decisions/0034-wcag-22-dragging-and-target-size.md)). Пункты меню
 дают плагины (`ColumnDraggingComponent`, `RowDraggingComponent`) и вызывают ту же

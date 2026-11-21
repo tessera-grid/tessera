@@ -241,12 +241,12 @@ export const ServerDragRefused: StoryObj<StoryProps> = {
     await step(REFUSED[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(indexOfRow(canvas, MOVED)).toBe(MOVED_TO)
+      await until(() => expect(indexOfRow(canvas, MOVED)).toBe(MOVED_TO))
     })
     await step(REFUSED[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(indexOfRow(canvas, MOVED)).toBe(1)
+      await until(() => expect(indexOfRow(canvas, MOVED)).toBe(1))
       await settle()
     })
   },

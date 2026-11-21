@@ -661,9 +661,10 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       `react18` (EV1), `packageChecks` (EV7–EV9 — фикстуры, декларации, `'use client'`),
       `rowDragging` (EV10 — чистый `reorderRows`)
       ([ADR 0091](docs/decisions/0091-environment-compatibility.md)).
-    - _Касания:_ `touch` (TU1–TU12, TU14 — кнопки шапки без наведения, кнопки
-      тронутой ячейки, грип и ручки пальцем, долгое нажатие для контекстного меню,
-      зона нажатия во всю высоту ячейки, axe, история `Touch`) — проект `touch` в
+    - _Касания:_ `touch` (TU1–TU12, TU14 — кебаб с bubble и ручка шапки, кнопки
+      тронутой ячейки, грип, перенос после удержания 250 мс, долгое нажатие для контекстного меню,
+      зона нажатия во всю высоту ячейки, axe, история `Touch`; TU15 — `data-touched`
+      снимается при перетаскивании и нажатии мимо, выделение и активная ячейка сохраняются) — проект `touch` в
       `npm test` и `mobile` в `test:engines`; перф TU13 — `performance/touch` в
       проектах `perf` и `perf-touch` ([ADR 0086](docs/decisions/0086-touch-support.md)).
     - _Касания для каждой фичи:_ модульные `touchRegistry` (TV1 — строка реестра касаний у каждого плагина,
@@ -671,7 +672,10 @@ false`), `work-counters` (CO10), `play` историй «Columns/Dragging —
       `touch-hybrid` (TV3–TV5, TV9–TV10 — экран с наведением: вид под палец, наведение не залипает,
       `touch-action`, «Готово» и «Отмена» у поля правки, поле над клавиатурой), `touch` (TV6–TV8,
       TV11–TV27 — подпись кнопки удержанием, обрезанный текст, «Добавить к сортировке», касание каждой
-      фичи); истории S1–S5 — «Core/Touch», S6–S10 — в разделах фич
+      фичи; TV28 — `play` «Core/Touch — Touch a cell»: настоящие `isTrusted`-касания через CDP,
+      полный tap с `click`, фокусом и активной ячейкой, одна визуализация жеста, живой Storybook
+      выполняет шаги сам); истории S1–S5 —
+      «Core/Touch», S6–S11 — в разделах фич
       ([ADR 0231](docs/decisions/0231-touch-for-every-feature.md)).
     - _Клавиатура для каждой фичи:_ модульные `keyboardRegistry` (KX1 — строка каждого экспорта
       `/plugins`) и `keyboardPlatform.dom` (KX11 — основной модификатор `Cmd` на Apple и `Ctrl` на

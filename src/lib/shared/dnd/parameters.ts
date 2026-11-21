@@ -3,6 +3,7 @@ import {
   type MeasuringConfiguration,
   MeasuringStrategy,
   type Modifier,
+  PointerSensor,
 } from '@dnd-kit/core'
 
 import { AUTOSCROLL_THRESHOLD } from '../../core/dragSession'
@@ -90,8 +91,31 @@ export const Z_INDEX = 1501
 
 /** Сдвиг указателя, после которого нажатие — перетаскивание, а не клик (px). */
 export const DRAG_ACTIVATION_DISTANCE = 5
+export const TOUCH_DRAG_ACTIVATION_DELAY = 250
+export const TOUCH_DRAG_ACTIVATION_TOLERANCE = 8
+
+/** PointerSensor не перехватывает палец раньше задержки TouchSensor. */
+export class NonTouchPointerSensor extends PointerSensor {
+  static activators = PointerSensor.activators.map(activator => ({
+    ...activator,
+    handler: (
+      event: Parameters<typeof activator.handler>[0],
+      options: Parameters<typeof activator.handler>[1],
+    ) =>
+      event.nativeEvent.pointerType === 'touch'
+        ? false
+        : activator.handler(event, options),
+  }))
+}
 
 /** Опции сенсоров: короткое нажатие без сдвига — клик по ручке (меню, ADR 0034). */
 export const sensorOptions = {
   activationConstraint: { distance: DRAG_ACTIVATION_DISTANCE },
+}
+
+export const touchSensorOptions = {
+  activationConstraint: {
+    delay: TOUCH_DRAG_ACTIVATION_DELAY,
+    tolerance: TOUCH_DRAG_ACTIVATION_TOLERANCE,
+  },
 }

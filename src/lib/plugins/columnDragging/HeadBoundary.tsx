@@ -8,7 +8,6 @@ import {
   DndContext,
   DragOverlay,
   MouseSensor,
-  PointerSensor,
   TouchSensor,
   useSensor,
   useSensors,
@@ -24,10 +23,12 @@ import type { HeadBoundaryProps } from '../../core/pluginWrappers'
 import { useSlice, useTableState } from '../../core/reactivity'
 import { getColumnDraggingEvents } from './getColumnDraggingEvents'
 import {
+  NonTouchPointerSensor,
   Z_INDEX,
   autoScrollOnlyX,
   dndAccessibility,
   sensorOptions,
+  touchSensorOptions,
 } from '../../shared/dnd/parameters'
 import { horizontalCollisionDetection } from './collisionDetection'
 import { NodeShiftContext, createNodeShiftStore } from './nodeShift'
@@ -105,9 +106,9 @@ const DndHeadWrapper = ({
   }, [forbidden, lost])
 
   const sensors = useSensors(
-    useSensor(PointerSensor, sensorOptions),
+    useSensor(NonTouchPointerSensor, sensorOptions),
     useSensor(MouseSensor, sensorOptions),
-    useSensor(TouchSensor, sensorOptions),
+    useSensor(TouchSensor, touchSensorOptions),
   )
 
   // Плоская шапка — одна группа соседей; во вложенной SortableContext у каждой серии
