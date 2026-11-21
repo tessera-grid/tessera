@@ -21,6 +21,7 @@ import { tableLabels } from '../labels'
 import { scrollLayer } from '../../../core/scrollStretch'
 import { EDGE_ZONE } from '../../../shared/edgeScroll'
 import { useCreateTable } from '../../../core/useCreateTable'
+import { setInputModality } from '../../../core/inputModality'
 import { DataGrid } from '../../../grid/DataGrid'
 import { columnSorting } from '../../../plugins/columnSorting'
 import {
@@ -195,8 +196,8 @@ afterEach(() => {
 })
 
 describe('Касания (ADR 0086)', () => {
-  test('TU1: без наведения скрытые кнопки заголовка — сортировка, фильтр, закрепление, кебаб, ручка — видны всегда', async () => {
-    renderGrid({
+  test('TU1: без наведения действия headerActionMenu, включая активные, — в кебабе с bubble; кебаб, ручка и грип видимы; без меню кнопки остаются инлайн', async () => {
+    const screen = await renderGrid({
       columnCount: 6,
       dataCount: 20,
       enableColumnSorting: true,
@@ -210,10 +211,57 @@ describe('Касания (ADR 0086)', () => {
     expect(matchMedia('(hover: none)').matches).toBe(true)
     const head = headById(dataColumn())
     const buttons = hiddenButtons(head)
-    expect(buttons.length).toBeGreaterThan(2)
+    expect(buttons.length).toBeGreaterThan(1)
     await expect.poll(() => buttons.filter(b => !shown(b)).length).toBe(0)
   })
 
+    expect(head.querySelector('[data-action-menu]')).not.toBeNull()
+    expect(head.querySelector(HANDLE)).not.toBeNull()
+    expect(head.querySelector(GRIP)).not.toBeNull()
+    for (const selector of [
+      '.column-sort__button',
+      '.column-filter__button',
+      '.column-pin__button',
+    ]) {
+      expect(head.querySelector(selector), selector).toBeNull()
+    }
+
+    const kebab = head.querySelector<HTMLElement>('[data-action-menu]')!
+    await touch.realTap(center(kebab))
+    await expect.poll(menu, { timeout: 5000 }).toBeTruthy()
+    const sort = [
+      ...menu()!.querySelectorAll<HTMLElement>('[role^="menuitem"]'),
+    ].find(item =>
+      item.textContent?.includes(
+        columnSortingLabels(tableLabels).sortAscending,
+      ),
+    )!
+    await touch.realTap(center(sort))
+    await expect.poll(() => head.getAttribute('aria-sort')).toBe('ascending')
+    expect(head.querySelector('.column-sort__button')).toBeNull()
+    await expect
+      .poll(() => {
+        const bubble = head.querySelector(
+          '[data-action-menu] [data-active-indicator]',
+        )
+        return !!bubble && getComputedStyle(bubble).opacity === '1'
+      })
+      .toBe(true)
+
+    await screen.unmount()
+    renderGrid({
+      columnCount: 6,
+      dataCount: 20,
+      enableColumnSorting: true,
+      enableColumnFiltering: true,
+      enableColumnPinning: true,
+    })
+    await waitForGrid()
+    const withoutMenu = hiddenButtons(headById(dataColumn()))
+    expect(withoutMenu.length).toBeGreaterThan(1)
+    await expect
+      .poll(() => withoutMenu.filter(button => !shown(button)).length)
+      .toBe(0)
   for (const keyboard of [false, true]) {
     test(`TU2: без наведения кнопки тела видны у тронутой ячейки и строки, касание другой ячейки переносит их (keyboardNavigation ${keyboard ? 'вкл' : 'выкл'})`, async () => {
       renderGrid({
@@ -1009,7 +1057,7 @@ const RowGrid = () => {
 }
 
 describe('Включённые действия в ряду заголовка (ADR 0156)', () => {
-  test('KA4: выключение кнопкой в ряду не перестраивает ряд, пока указатель или фокус в заголовке: второе нажатие снова включает, фокус на кнопке; после ухода ряд перестраивается — мышью, клавиатурой и касанием', async () => {
+  test('KA4: мышь и клавиатура держат ряд, пока указатель или фокус в заголовке; на touch активные действия остаются в кебабе с bubble', async () => {
     const screen = await render(<RowGrid />)
     await waitForGrid()
     const nameHead = () =>
@@ -1067,6 +1115,15 @@ describe('Включённые действия в ряду заголовка (
       await expect.poll(row).toEqual(['pin', 'menu'])
 
       // Клавиатура: фокус остаётся на кнопке, ряд ждёт ухода фокуса.
+    const originalMatchMedia = window.matchMedia.bind(window)
+    const mediaMock = vi
+      .spyOn(window, 'matchMedia')
+      .mockImplementation(query =>
+        query === '(pointer: coarse)'
+          ? ({ matches: false } as MediaQueryList)
+          : originalMatchMedia(query),
+      )
+    setInputModality('pointer')
       await sortOn()
       sortButton().focus()
       await userEvent.keyboard('{Enter}')
@@ -1087,24 +1144,26 @@ describe('Включённые действия в ряду заголовка (
       expect(nameHead().contains(document.activeElement)).toBe(false)
       await expect.poll(row).toEqual(['pin', 'menu'])
 
-      // Касание: заголовок тронут до касания вне его.
+      // Касание: активные действия остаются в кебабе и после ухода с заголовка.
       ;(document.activeElement as HTMLElement | null)?.blur()
       await sortOn()
       if (!chromium) return
-      await touch.realTap(center(sortButton()))
-      await expect.poll(sorted).toBe('none')
-      await wait(100)
-      expect(row()).toEqual(['sort', 'menu'])
-      await touch.realTap(center(sortButton()))
-      await expect.poll(sorted).not.toBe('none')
-      await untilOff(() => touch.realTap(center(sortButton())))
-      await wait(100)
-      expect(row()).toEqual(['sort', 'menu'])
+      mediaMock.mockRestore()
+      setInputModality('touch')
+      await expect.poll(row).toEqual(['menu'])
+      const bubbleOpacity = () =>
+        getComputedStyle(
+          nameHead().querySelector(
+            '[data-action-menu] [data-active-indicator]',
+          )!,
+        ).opacity
+      await expect.poll(bubbleOpacity).toBe('1')
       const cell = document.querySelector<HTMLElement>(
         `${BODY_CELL}[data-column-id="city"]`,
       )!
       await touch.realTap(center(cell))
-      await expect.poll(row).toEqual(['pin', 'menu'])
+      await expect.poll(row).toEqual(['menu'])
+      await expect.poll(bubbleOpacity).toBe('1')
     } finally {
       await screen.unmount()
     }
@@ -1134,6 +1193,7 @@ describe('Редакторы по типу пальцем (ADR 0175)', () => {
             ],
           },
           {
+      mediaMock.mockRestore()
             id: 'tags',
             accessorKey: 'tags',
             header: 'Tags',

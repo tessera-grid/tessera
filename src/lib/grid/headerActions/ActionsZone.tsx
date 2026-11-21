@@ -15,6 +15,7 @@ import {
   type SlotName,
 } from '../../core/headerActions'
 import { useLocalization } from '../../core/localization'
+import { useTouchInput } from '../../core/inputModality'
 import { useTableState } from '../../core/reactivity'
 import { useHasDraftAt } from '../../core/drafts/drafts'
 import { ActionButton } from './ActionButton'
@@ -45,6 +46,14 @@ export const ActionsZone = memo(
   ({ slot, opaqueSlot, context }: ActionsZoneProps) => {
     const { table } = context
     const labels = useLocalization()
+    const touch = useTouchInput(
+      slot === 'leftHeaderSlot' || slot === 'rightHeaderSlot',
+    )
+    const configured = table.options.actionMenu?.[slot]
+    const config =
+      touch && configured
+        ? { ...configured, mode: 'always' as const }
+        : configured
 
     const descriptors: SlotAction[] = table.getSlotActions()?.[slot] ?? []
     const opaque = opaqueSlot ?? []
@@ -91,7 +100,7 @@ export const ActionsZone = memo(
       zoneViewKey({
         actions: descriptors,
         opaqueCount,
-        config: table.options.actionMenu?.[slot],
+        config,
         ctx: context,
         labels,
         capacity: capacityOf(),
@@ -102,7 +111,7 @@ export const ActionsZone = memo(
     const { collapsed, inline, menu } = resolveActionLayout({
       actions: descriptors,
       opaqueCount,
-      config: table.options.actionMenu?.[slot],
+      config,
       ctx: context,
       capacity: capacityOf(),
       active,

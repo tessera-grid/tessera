@@ -1,4 +1,4 @@
-import { commands, page, userEvent } from 'vitest/browser'
+import { commands, page, server, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 
@@ -7,6 +7,7 @@ import { waitForGrid } from './core-helpers'
 import { IconButton } from '../../../ui/IconButton'
 import { INPUT_MODALITY_ATTR } from '../../../core/inputModality'
 import { cellEditingLabels } from '../../../plugins/cellEditing/labels'
+import { columnSortingLabels } from '../../../plugins/columnSorting/labels'
 import { tableLabels } from '../labels'
 
 // Касание на экране с наведением (ADR 0231, TV3–TV4): проект `browser` — Chromium с мышью
@@ -57,36 +58,75 @@ afterEach(async () => {
 })
 
 describe('Касание на экране с наведением (ADR 0231)', () => {
-  test('TV3: при признаке «касание» на экране с наведением кнопки шапки видны без наведения, зона нажатия цели — во всю высоту ячейки; после мыши вид прежний', async () => {
+  test('TV3: при касании на экране с наведением действия headerActionMenu, включая активные, — в кебабе с bubble, ручка видима, зона нажатия — во всю высоту ячейки; после мыши вид прежний', async ({
+    skip,
+  }) => {
+    skip(server.browser !== 'chromium', 'жест касания — CDP Chromium')
     renderGrid({
       columnCount: 5,
       dataCount: 10,
       enableColumnSorting: true,
       enableColumnFiltering: true,
+      enableColumnDragging: true,
       enableHeaderActionMenu: true,
     })
     await waitForGrid()
     expect(matchMedia('(hover: hover)').matches).toBe(true)
-    const buttons = Array.from(
-      head('firstName').querySelectorAll('.cell__button--hidden'),
-    )
-    expect(buttons.length).toBeGreaterThan(1)
+    const buttons = () =>
+      Array.from(head('firstName').querySelectorAll('.cell__button--hidden'))
+    const inlineActions = () =>
+      head('firstName').querySelector(
+        '.column-sort__button, .column-filter__button',
+      )
+    const kebab = () =>
+      head('firstName').querySelector<HTMLElement>('[data-action-menu]')!
+    expect(buttons().length).toBeGreaterThan(1)
     await userEvent.hover(cellOf(rowAt(5), 'lastName'))
-    await expect.poll(() => buttons.filter(shown).length).toBe(0)
+    await expect.poll(() => buttons().filter(shown).length).toBe(0)
     expect(zoneTop()).toBeGreaterThan(-100)
 
     await tap(cellOf(rowAt(2), 'firstName'))
     expect(modality()).toBe('touch')
-    await expect.poll(() => buttons.filter(b => !shown(b)).length).toBe(0)
+    await expect.poll(() => buttons().filter(b => !shown(b)).length).toBe(0)
+    await expect.poll(inlineActions).toBeNull()
+    expect(
+      head('firstName').querySelector('.drag__handler--column'),
+    ).not.toBeNull()
     expect(zoneTop()).toBeLessThan(-100)
+
+    await tap(kebab())
+    await expect
+      .poll(() => document.querySelector('[role="menu"]'))
+      .not.toBeNull()
+    const sort = [
+      ...document.querySelectorAll<HTMLElement>('[role^="menuitem"]'),
+    ].find(item =>
+      item.textContent?.includes(
+        columnSortingLabels(tableLabels).sortAscending,
+      ),
+    )!
+    await tap(sort)
+    await expect
+      .poll(() => head('firstName').getAttribute('aria-sort'))
+      .toBe('ascending')
+    await expect.poll(inlineActions).toBeNull()
+    await expect
+      .poll(() => {
+        const bubble = kebab().querySelector('[data-active-indicator]')
+        return !!bubble && getComputedStyle(bubble).opacity === '1'
+      })
+      .toBe(true)
 
     await userEvent.hover(cellOf(rowAt(5), 'lastName'))
     expect(modality()).toBe('pointer')
-    await expect.poll(() => buttons.filter(shown).length).toBe(0)
+    await expect.poll(() => buttons().filter(shown).length).toBe(1)
     expect(zoneTop()).toBeGreaterThan(-100)
   })
 
-  test('TV4: при признаке «касание» наведение не действует: подсветка строки, контур ячейки, подсветка кнопок кита; после мыши наведение снова действует', async () => {
+  test('TV4: при признаке «касание» наведение не действует: подсветка строки, контур ячейки, подсветка кнопок кита; после мыши наведение снова действует', async ({
+    skip,
+  }) => {
+    skip(server.browser !== 'chromium', 'жест касания — CDP Chromium')
     renderGrid({ columnCount: 5, dataCount: 10 })
     await waitForGrid()
     const { container } = await render(
@@ -167,9 +207,9 @@ describe('Касание на экране с наведением (ADR 0231)', 
       '[data-testid="data-grid-status-bar"]',
     ]
     for (const selector of parts) {
-      const el = document.querySelector(selector)
-      expect(el, selector).not.toBeNull()
-      expect(effective(el!), selector).toBe('manipulation')
+      const el = () => document.querySelector(selector)
+      await expect.poll(el).not.toBeNull()
+      expect(effective(el()!), selector).toBe('manipulation')
     }
     for (const selector of [
       '.resize__handler--column',
@@ -191,7 +231,10 @@ describe('Касание на экране с наведением (ADR 0231)', 
     )
     await userEvent.keyboard('{Escape}')
   })
-  test('TV9: на сенсорном экране у поля правки ячейки кнопки «Готово» и «Отмена»: «Готово» сохраняет, как Enter, «Отмена» отменяет с причиной `cancel`, как Escape; при мыши кнопок нет', async () => {
+  test('TV9: на сенсорном экране у поля правки ячейки кнопки «Готово» и «Отмена»: «Готово» сохраняет, как Enter, «Отмена» отменяет с причиной `cancel`, как Escape; при мыши кнопок нет', async ({
+    skip,
+  }) => {
+    skip(server.browser !== 'chromium', 'жест касания — CDP Chromium')
     const onCellEdit = vi.fn()
     const onEditCancel = vi.fn()
     renderGrid({

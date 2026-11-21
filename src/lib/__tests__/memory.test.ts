@@ -24,6 +24,8 @@ const BOUNDED: Record<string, string> = {
   'plugins/textWrap/measure.ts:deferred':
     'наблюдение ячеек, смонтированных в колбэке наблюдателя: очищается следующим кадром',
   'core/inputModality.ts:MODIFIER_KEYS': 'константный набор клавиш',
+  'core/inputModality.ts:listeners':
+    'подписчики раскладки смонтированных заголовков: удаляются при размонтировании',
   'core/keyboardNavigation/actions.ts:ACTION_KEYS': 'константный набор клавиш',
   'ui/Popup/useMenuLeave.ts:LEAVING': 'константный набор причин',
   'plugins/columnFiltering/describeFilter.ts:DATE_OPERATORS':
