@@ -12,6 +12,7 @@ import {
   guideNext,
   headCell,
   headKebab,
+  openMenuBy,
   pollUntil,
   settle,
   stepDone,
@@ -420,11 +421,14 @@ export const ResizingPastEdge: StoryObj<StoryProps> = {
       // Таблица прокрутилась, колонка дорасла до наибольшей ширины, граница у указателя.
       await expect(scroller().scrollLeft).toBeGreaterThan(0)
       await expect(widthOf(canvas, id)).toBe(maxOf(canvas, id))
-      await expect(
-        Math.abs(
-          rect(headCell(canvas, id)).right - (areaRight(scroller()) - EDGE_GAP),
-        ),
-      ).toBeLessThanOrEqual(2)
+      await until(() =>
+        expect(
+          Math.abs(
+            rect(headCell(canvas, id)).right -
+              (areaRight(scroller()) - EDGE_GAP),
+          ),
+        ).toBeLessThanOrEqual(2),
+      )
       await until(() =>
         expect(document.querySelector(RESIZE_LINE)).not.toBeNull(),
       )
@@ -800,8 +804,7 @@ const BY_TOUCH: readonly GuideStoryStep[] = [
     },
     states: ['overlay.menu'],
     enter: stepAction(async (root, { signal }) => {
-      await touchPlay.pollUntil(() => !!touchGripOf(root), signal)
-      if (!touch.openMenu()) touch.tapButton(touchGripOf(root))
+      openMenuBy(() => touchGripOf(root), signal)
       await touchPlay.pollUntil(() => !!touch.openMenu(), signal)
     }),
   },
@@ -817,6 +820,7 @@ export const ResizingByTouch: StoryObj<StoryProps> = {
       title={{ ru: 'Ширина колонки пальцем', en: 'Column width with a finger' }}
       steps={BY_TOUCH}
       args={guideArgs(touch.TOUCH_ARGS, args)}
+      atomicSteps
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {

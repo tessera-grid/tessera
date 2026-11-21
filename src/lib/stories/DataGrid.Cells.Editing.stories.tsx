@@ -1499,7 +1499,6 @@ const finishTouchEdit = async (
   value: string,
   action: 'done' | 'cancel',
 ) => {
-  await openTouchEdit(root, signal)
   typeInto(inputOf(root, TOUCH_EDIT_ROW)!, value)
   touch.tapButton(touchEditButton(root, action))
   await pollUntil(() => !inputOf(root, TOUCH_EDIT_ROW), signal)
@@ -1539,8 +1538,10 @@ const DONE_CANCEL: readonly GuideStoryStep[] = [
       en: 'The user typed a number and saved; the value is in the cell.',
     },
     enter: stepAction(async (root, { signal }) => {
-      if (ageText(root, TOUCH_EDIT_ROW) !== '42')
+      if (ageText(root, TOUCH_EDIT_ROW) !== '42') {
+        await openTouchEdit(root, signal)
         await finishTouchEdit(root, signal, '42', 'done')
+      }
     }),
   },
 ]
@@ -1557,6 +1558,7 @@ export const CellEditingDoneCancel: StoryObj<StoryProps> = {
         en: 'Save and cancel by touch',
       }}
       steps={DONE_CANCEL}
+      atomicSteps
       args={guideArgs(
         {
           enableCellEditing: true,

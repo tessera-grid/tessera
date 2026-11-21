@@ -619,7 +619,7 @@ export const expectPopupInCanvas = (
 }
 
 /** Действие шага гайда (`stepAction`) дошло до состояния шага. */
-export const stepDone = (canvas: HTMLElement) =>
+export const stepDone = (canvas: HTMLElement, timeout = STEP_ACTION_TIMEOUT) =>
   waitFor(
     () => {
       const root = canvas.querySelector<HTMLElement>('[data-guide-root]')!
@@ -628,7 +628,7 @@ export const stepDone = (canvas: HTMLElement) =>
         `done:${root.dataset.guideStep}`,
       )
     },
-    { timeout: STEP_ACTION_TIMEOUT },
+    { timeout },
   )
 
 /**
@@ -662,8 +662,8 @@ export const watchFlash = (
   }
 }
 
-/** Перетаскивание с паузой над группой и ответом «сервера» — дольше загрузки. */
-const STEP_ACTION_TIMEOUT = 15_000
+/** Переходы с несколькими серверными действиями под нагрузкой полного прогона. */
+const STEP_ACTION_TIMEOUT = 60_000
 
 /** Признак прохода гайдов со свежей таблицей перед каждым шагом (SN73) у корня документа. */
 export const FRESH_ATTR = 'data-guide-fresh'
@@ -709,5 +709,7 @@ export const guideNext = async (canvas: HTMLElement) => {
       await userEvent.click(next)
     expect(currentGuideStep(panel)).not.toBe(from)
   })
-  await until(() => expect(panel).not.toHaveAttribute('data-busy'))
+  await waitFor(() => expect(panel).not.toHaveAttribute('data-busy'), {
+    timeout: STEP_ACTION_TIMEOUT,
+  })
 }

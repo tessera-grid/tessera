@@ -6,7 +6,9 @@ import { StoryComponent } from './DataGridStory'
 import { dataGridMeta } from './dataGridMeta'
 import {
   afterRows,
+  FRESH_ATTR,
   guideNext,
+  openMenuBy,
   pollUntil,
   pressEscape,
   settle,
@@ -19,9 +21,11 @@ import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
   PHONE,
   TOUCH_ARGS,
+  hasRealTouchDrivers,
   holdTarget,
   moveMouse,
   openMenu,
+  realTapTarget,
   tapButton,
   tapTarget,
 } from './__mocks__/touchGuides'
@@ -59,6 +63,7 @@ export const TouchPlayground: StoryObj<StoryProps> = {
       'enableColumnSorting',
       'enableColumnSizing',
       'enableColumnDragging',
+      'enableHeaderActionMenu',
       'enableRowSelection',
       'enableRowDragging',
       'enableCellEditing',
@@ -77,6 +82,7 @@ export const TouchPlayground: StoryObj<StoryProps> = {
     enableColumnSorting: true,
     enableColumnSizing: true,
     enableColumnDragging: true,
+    enableHeaderActionMenu: true,
     enableRowDragging: true,
     enableRowSelection: true,
     enableCellEditing: true,
@@ -128,6 +134,11 @@ const shown = (el: Element | null | undefined) =>
 
 // --- S1 ------------------------------------------------------------------------------
 
+const CELL_BUTTONS_ARGS = { ...TOUCH_ARGS, enableKeyboardNavigation: true }
+
+const touched = (root: ParentNode, index: number) =>
+  !!cellAt(root, index)?.hasAttribute('data-touched')
+
 const BUTTONS: readonly GuideStoryStep[] = [
   {
     title: { ru: 'Кнопки скрыты', en: 'Buttons are hidden' },
@@ -142,7 +153,10 @@ const BUTTONS: readonly GuideStoryStep[] = [
       ru: 'Пользователь коснулся ячейки — у неё появились кнопки.',
       en: 'The user touched a cell; its buttons appeared.',
     },
-    enter: afterRows(root => tapTarget(cellAt(root, 1))),
+    enter: realTapTarget(
+      root => cellAt(root, 1),
+      root => touched(root, 1),
+    ),
   },
   {
     title: { ru: 'Касание другой ячейки', en: 'Another cell is touched' },
@@ -150,10 +164,10 @@ const BUTTONS: readonly GuideStoryStep[] = [
       ru: 'Пользователь коснулся другой ячейки — кнопки переехали к ней.',
       en: 'The user touched another cell; the buttons moved to it.',
     },
-    enter: afterRows(root => {
-      tapTarget(cellAt(root, 1))
-      tapTarget(cellAt(root, 4))
-    }),
+    enter: realTapTarget(
+      root => cellAt(root, 4),
+      root => touched(root, 4),
+    ),
   },
 ]
 
@@ -161,16 +175,29 @@ const BUTTONS: readonly GuideStoryStep[] = [
 export const TouchCellButtons: StoryObj<StoryProps> = {
   name: 'Touch a cell',
   globals: PHONE,
-  parameters: { scenario: '0231/S1', ...guideControls() },
+  parameters: {
+    scenario: '0231/S1',
+    requirements: ['TV28'],
+    ...guideControls(),
+  },
   render: args => (
     <GuideStory
       title={{ ru: 'Кнопки ячейки по касанию', en: 'Cell buttons on touch' }}
       steps={BUTTONS}
-      args={guideArgs(TOUCH_ARGS, args)}
+      args={guideArgs(CELL_BUTTONS_ARGS, args)}
+      atomicSteps
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
+    const trusted: boolean[] = []
+    canvas.addEventListener(
+      'pointerdown',
+      event => {
+        if (event.pointerType === 'touch') trusted.push(event.isTrusted)
+      },
+      true,
+    )
     const cellButtons = (index: number) => [
       ...(cellAt(canvas, index)?.querySelectorAll('.cell__button--hidden') ??
         []),
@@ -182,15 +209,31 @@ export const TouchCellButtons: StoryObj<StoryProps> = {
     })
     await step(BUTTONS[1]!.title.ru, async () => {
       await guideNext(canvas)
+      await settle()
       await until(() => expect(cellButtons(1).length).toBeGreaterThan(0))
       await until(() => expect(cellButtons(1).every(shown)).toBe(true))
+      await until(() =>
+        expect(cellAt(canvas, 1)).toHaveAttribute('data-kn-active', 'true'),
+      )
     })
     await step(BUTTONS[2]!.title.ru, async () => {
       await guideNext(canvas)
+      await settle()
+      await until(() => expect(cellButtons(4).length).toBeGreaterThan(0))
       await until(() => expect(cellButtons(4).every(shown)).toBe(true))
+      await until(() =>
+        expect(cellAt(canvas, 4)).toHaveAttribute('data-kn-active', 'true'),
+      )
       await until(() => expect(cellButtons(1).filter(shown)).toEqual([]))
       await settle()
     })
+    if (
+      hasRealTouchDrivers(canvas) &&
+      !document.documentElement.hasAttribute(FRESH_ATTR)
+    ) {
+      expect(trusted.length).toBeGreaterThanOrEqual(2)
+      expect(trusted.every(Boolean)).toBe(true)
+    }
   },
 }
 
@@ -219,10 +262,7 @@ const ROW: readonly GuideStoryStep[] = [
       ru: 'Пользователь коснулся строки — появилась кнопка её меню.',
       en: 'The user touched a row; its menu button appeared.',
     },
-    enter: afterRows(root => {
-      pressEscape()
-      tapTarget(cellAt(root, 2, 'firstName'))
-    }),
+    enter: realTapTarget(root => cellAt(root, 2, 'firstName')),
   },
   {
     title: { ru: 'Меню строки', en: 'The row menu' },
@@ -231,12 +271,10 @@ const ROW: readonly GuideStoryStep[] = [
       en: 'The user tapped the button; the row menu opened.',
     },
     states: ['overlay.menu'],
-    enter: stepAction(async (root, { signal }) => {
-      tapTarget(cellAt(root, 2, 'firstName'))
-      await pollUntil(() => !!rowKebabOf(root, 2), signal)
-      if (!openMenu()) rowKebabOf(root, 2)!.click()
-      await pollUntil(() => !!openMenu(), signal)
-    }),
+    enter: realTapTarget(
+      root => rowKebabOf(root, 2),
+      () => !!openMenu(),
+    ),
   },
 ]
 
@@ -250,6 +288,7 @@ export const TouchRowButtons: StoryObj<StoryProps> = {
       title={{ ru: 'Меню строки по касанию', en: 'The row menu on touch' }}
       steps={ROW}
       args={guideArgs(ROW_ARGS, args)}
+      atomicSteps
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
@@ -277,6 +316,9 @@ export const TouchRowButtons: StoryObj<StoryProps> = {
 const HYBRID_ARGS = {
   enableColumnSorting: true,
   enableColumnFiltering: true,
+  enableColumnPinning: true,
+  enableColumnDragging: true,
+  enableHeaderActionMenu: true,
   columnCount: 6,
   dataCount: 40,
   height: '420',
@@ -287,49 +329,83 @@ const headButtons = (root: ParentNode) => [
     []),
 ]
 
+const headerKebabOf = (root: ParentNode) =>
+  headOf(root, 'firstName')?.querySelector<HTMLElement>('[data-action-menu]') ??
+  null
+
+const inlineHeaderActions = (root: ParentNode) =>
+  headOf(root, 'firstName')?.querySelector(
+    '.column-sort__button, .column-filter__button, .column-pin__button',
+  ) ?? null
+
+const sortAscendingItem = () =>
+  openMenu()?.querySelector<HTMLElement>(
+    '[data-action-id="columnSorting"][data-item-id="asc"]',
+  ) ?? null
+
+const openHeaderActions = stepAction(async (root, { signal }) => {
+  openMenuBy(() => headerKebabOf(root), signal)
+  await pollUntil(() => !!sortAscendingItem(), signal)
+})
+
 const HYBRID: readonly GuideStoryStep[] = [
   {
     title: { ru: 'Экран с мышью', en: 'A screen with a mouse' },
     hint: {
-      ru: 'Кнопки шапки появляются при наведении мыши.',
-      en: 'Header buttons appear on mouse hover.',
+      ru: 'При работе мышью кнопки шапки появляются по наведению.',
+      en: 'With a mouse, header buttons appear on hover.',
     },
   },
   {
     title: { ru: 'Касание пальцем', en: 'A finger touch' },
     hint: {
-      ru: 'Пользователь коснулся таблицы пальцем — кнопки шапки видны без наведения.',
-      en: 'The user touched the table with a finger; header buttons show without hover.',
+      ru: 'После касания видны кнопка меню и ручка переноса. Остальные действия собраны в меню.',
+      en: 'After a touch, the menu button and drag handle are visible. The other actions are in the menu.',
     },
-    enter: afterRows(root => tapTarget(cellAt(root, 2, 'firstName'))),
+    enter: realTapTarget(root => cellAt(root, 2, 'firstName')),
+  },
+  {
+    title: { ru: 'Действия в меню', en: 'Actions in the menu' },
+    hint: {
+      ru: 'Кнопка меню открывается сразу. Внутри доступны сортировка, фильтр и закрепление.',
+      en: 'The menu button opens immediately. Sorting, filtering, and pinning are available inside.',
+    },
+    states: ['overlay.menu'],
+    enter: openHeaderActions,
+  },
+  {
+    title: { ru: 'Активное действие', en: 'An active action' },
+    hint: {
+      ru: 'Пользователь включил сортировку. Кнопка действия осталась в меню, а точка на кнопке меню показывает активное состояние.',
+      en: 'The user enabled sorting. The action stays in the menu, and a dot on the menu button shows the active state.',
+    },
+    enter: stepAction(async () => tapButton(sortAscendingItem())),
   },
   {
     title: { ru: 'Снова мышь', en: 'The mouse again' },
     hint: {
-      ru: 'Пользователь сдвинул мышь — таблица снова в обычном виде.',
-      en: 'The user moved the mouse; the table looks as usual again.',
+      ru: 'Движение мыши возвращает обычную раскладку заголовков.',
+      en: 'Moving the mouse restores the usual header layout.',
     },
-    enter: afterRows(root => {
-      tapTarget(cellAt(root, 2, 'firstName'))
-      moveMouse()
-    }),
+    enter: afterRows(moveMouse),
   },
 ]
 
-/** ADR 0231, S3: на экране с мышью касание показывает кнопки шапки, мышь возвращает вид. */
+/** ADR 0231, S3: касание оставляет кебаб и ручку, активные действия отмечает bubble. */
 export const TouchHybridDevice: StoryObj<StoryProps> = {
   name: 'Touch on a laptop',
   parameters: { scenario: '0231/S3', ...guideControls() },
   render: args => (
     <GuideStory
       title={{
-        ru: 'Палец и мышь на одном экране',
-        en: 'A finger and a mouse on one screen',
+        ru: 'Действия заголовка на сенсорном ноутбуке',
+        en: 'Header actions on a touchscreen laptop',
       }}
       steps={HYBRID}
       // Палец из прошлой истории не переходит в эту: экран начинает с мыши.
       reset={moveMouse}
       args={guideArgs(HYBRID_ARGS, args)}
+      atomicSteps
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
@@ -342,21 +418,45 @@ export const TouchHybridDevice: StoryObj<StoryProps> = {
     await step(HYBRID[1]!.title.ru, async () => {
       await guideNext(canvas)
       await until(() => expect(headButtons(canvas).every(shown)).toBe(true))
+      await expect(inlineHeaderActions(canvas)).toBeNull()
+      await expect(headerKebabOf(canvas)).not.toBeNull()
     })
     await step(HYBRID[2]!.title.ru, async () => {
       await guideNext(canvas)
-      await until(() => expect(headButtons(canvas).filter(shown)).toEqual([]))
+      await stepDone(canvas)
+      await expect(openMenu()).not.toBeNull()
+      await expect(sortAscendingItem()).not.toBeNull()
+      await settle()
+    })
+    await step(HYBRID[3]!.title.ru, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await until(() =>
+        expect(headOf(canvas, 'firstName')).toHaveAttribute(
+          'aria-sort',
+          'ascending',
+        ),
+      )
+      await expect(inlineHeaderActions(canvas)).toBeNull()
+      await until(() => {
+        const bubble = headerKebabOf(canvas)?.querySelector(
+          '[data-active-indicator]',
+        )
+        expect(!!bubble && getComputedStyle(bubble).opacity === '1').toBe(true)
+      })
+      await settle()
+    })
+    await step(HYBRID[4]!.title.ru, async () => {
+      await guideNext(canvas)
+      await until(() =>
+        expect(headButtons(canvas).some(button => !shown(button))).toBe(true),
+      )
       await settle()
     })
   },
 }
 
 // --- S4 ------------------------------------------------------------------------------
-
-const sortButtonOf = (root: ParentNode) =>
-  headOf(root, 'firstName')?.querySelector<HTMLElement>(
-    'button.column-sort__button, .column-sort__button button',
-  ) ?? null
 
 const HINT: readonly GuideStoryStep[] = [
   {
@@ -369,25 +469,23 @@ const HINT: readonly GuideStoryStep[] = [
   {
     title: { ru: 'Удержание кнопки', en: 'A button is held' },
     hint: {
-      ru: 'Пользователь задержал палец на кнопке — появилась её подпись, колонка не отсортирована.',
-      en: 'The user held a finger on the button; its label appeared and the column is not sorted.',
+      ru: 'Пользователь задержал палец на кнопке меню — появилась её подпись, меню не открылось.',
+      en: 'The user held a finger on the menu button; its label appeared and the menu did not open.',
     },
     states: ['overlay.tooltip'],
     enter: stepAction(async (root, { signal }) => {
-      await pollUntil(() => !!sortButtonOf(root), signal)
-      await holdTarget(sortButtonOf(root)!, signal)
+      await pollUntil(() => !!headerKebabOf(root), signal)
+      await holdTarget(headerKebabOf(root)!, signal)
     }),
   },
   {
     title: { ru: 'Касание кнопки', en: 'The button is tapped' },
     hint: {
-      ru: 'Пользователь коснулся кнопки и отпустил — колонка отсортирована.',
-      en: 'The user tapped the button and let go; the column is sorted.',
+      ru: 'Короткое касание кнопки меню открывает его.',
+      en: 'A short tap on the menu button opens it.',
     },
-    enter: afterRows(root => {
-      if (headOf(root, 'firstName')?.getAttribute('aria-sort') === 'none')
-        tapButton(sortButtonOf(root))
-    }),
+    states: ['overlay.menu'],
+    enter: openHeaderActions,
   },
 ]
 
@@ -401,14 +499,14 @@ export const TouchIconHint: StoryObj<StoryProps> = {
       title={{ ru: 'Подпись кнопки удержанием', en: 'A button label on hold' }}
       steps={HINT}
       args={guideArgs(TOUCH_ARGS, args)}
+      atomicSteps
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    const sorted = () => headOf(canvas, 'firstName')?.getAttribute('aria-sort')
     await step(HINT[0]!.title.ru, async () => {
       await waitForRows(canvas)
-      await until(() => expect(sortButtonOf(canvas)).not.toBeNull())
+      await until(() => expect(headerKebabOf(canvas)).not.toBeNull())
     })
     await step(HINT[1]!.title.ru, async () => {
       await guideNext(canvas)
@@ -419,14 +517,15 @@ export const TouchIconHint: StoryObj<StoryProps> = {
         )
       await until(() =>
         expect(tips()).toContain(
-          sortButtonOf(canvas)!.getAttribute('aria-label'),
+          headerKebabOf(canvas)!.getAttribute('aria-label'),
         ),
       )
-      await expect(sorted()).toBe('none')
+      await expect(openMenu()).toBeNull()
     })
     await step(HINT[2]!.title.ru, async () => {
       await guideNext(canvas)
-      await until(() => expect(sorted()).not.toBe('none'))
+      await stepDone(canvas)
+      await until(() => expect(openMenu()).not.toBeNull())
       await settle()
     })
   },
@@ -487,7 +586,6 @@ const TRUNCATED: readonly GuideStoryStep[] = [
     },
     states: ['overlay.tooltip'],
     enter: stepAction(async (root, { signal }) => {
-      if (!showFullItem()) await holdLongCell(root, signal)
       tapButton(showFullItem())
       await pollUntil(() => tooltipText() === LONG_NAME, signal)
     }),
@@ -507,6 +605,7 @@ export const TouchTruncatedText: StoryObj<StoryProps> = {
       }}
       steps={TRUNCATED}
       args={guideArgs(TRUNCATED_ARGS, args)}
+      atomicSteps
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {

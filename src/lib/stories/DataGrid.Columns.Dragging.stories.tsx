@@ -31,6 +31,7 @@ import {
 } from './demos/GuideStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
+import * as touch from './__mocks__/touchGuides'
 
 /**
  * Перенос колонок (ADR 0006, ADR 0130, ADR 0114, ADR 0052): мышью за ручку, с сервером,
@@ -699,5 +700,136 @@ export const DraggingNested: StoryObj<StoryProps> = {
       await releaseFocus()
       await settle()
     })
+  },
+}
+
+// --- ADR 0231, S11: перенос колонки пальцем ---------------------------------------------
+
+const TOUCH_COLUMN = 'firstName'
+
+const touchColumnHandle = (root: ParentNode) => handleOf(root, TOUCH_COLUMN)
+
+const touchControlShown = (control: HTMLElement | null) => {
+  const wrapper = control?.closest('.cell__button--hidden')
+  return (
+    !!wrapper &&
+    Number(getComputedStyle(wrapper).opacity) === 1 &&
+    wrapper.getBoundingClientRect().width > 1
+  )
+}
+
+const touchColumnDestination = (root: HTMLElement) =>
+  centerOf(headCell(root, 'lastName'))
+
+const COLUMN_BY_FINGER: readonly GuideStoryStep[] = [
+  {
+    title: { ru: 'Кебаб и ручка видны', en: 'The menu and handle are visible' },
+    hint: {
+      ru: 'На сенсорном экране кнопка меню и ручка переноса доступны без наведения.',
+      en: 'On a touch screen, the menu button and drag handle are available without hover.',
+    },
+  },
+  {
+    title: { ru: 'Сдвиг без удержания', en: 'Movement without holding' },
+    hint: {
+      ru: 'Палец сдвинулся раньше удержания — колонка осталась на месте, меню не открылось.',
+      en: 'The finger moved before the hold delay; the column stayed in place and the menu did not open.',
+    },
+    enter: touch.realTouchDragTarget(
+      touchColumnHandle,
+      touchColumnDestination,
+      false,
+    ),
+  },
+  {
+    title: { ru: 'Перенос после удержания', en: 'A move after holding' },
+    hint: {
+      ru: 'Пользователь удержал ручку, затем протянул колонку в сторону — порядок колонок изменился.',
+      en: 'The user held the handle and dragged the column sideways; the column order changed.',
+    },
+    enter: touch.realTouchDragTarget(touchColumnHandle, touchColumnDestination),
+  },
+  {
+    title: { ru: 'Меню перестановки', en: 'The move menu' },
+    hint: {
+      ru: 'Короткое касание ручки открыло меню перестановки.',
+      en: 'A short tap on the handle opened the move menu.',
+    },
+    states: ['overlay.menu'],
+    enter: touch.realTapTarget(touchColumnHandle, () => !!touch.openMenu()),
+  },
+]
+
+/** ADR 0231, S11: колонку переносят после удержания, короткое касание открывает меню. */
+export const ColumnDraggingByTouch: StoryObj<StoryProps> = {
+  name: 'Move with a finger',
+  globals: touch.PHONE,
+  parameters: { scenario: '0231/S11', ...guideControls() },
+  render: args => (
+    <GuideStory
+      title={{
+        ru: 'Перенос колонки пальцем',
+        en: 'Moving a column with a finger',
+      }}
+      steps={COLUMN_BY_FINGER}
+      reset={touch.resetTouchInput}
+      args={guideArgs(
+        {
+          enableColumnDragging: true,
+          enableColumnSorting: true,
+          enableHeaderActionMenu: true,
+          columnCount: 8,
+          dataCount: 30,
+          containerWidth: 360,
+          height: '420',
+        },
+        args,
+      )}
+      atomicSteps
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals, step }) => {
+    if (globals.catalog !== true) return
+    const trusted: boolean[] = []
+    canvas.addEventListener(
+      'pointerdown',
+      event => {
+        if (event.pointerType === 'touch') trusted.push(event.isTrusted)
+      },
+      true,
+    )
+    let initialOrder: (string | undefined)[] = []
+    await step(COLUMN_BY_FINGER[0]!.title.ru, async () => {
+      await waitForRows(canvas)
+      await until(() => expect(touchColumnHandle(canvas)).not.toBeNull())
+      expect(touchControlShown(touchColumnHandle(canvas))).toBe(true)
+      const kebab = headCell(canvas, TOUCH_COLUMN).querySelector<HTMLElement>(
+        '[data-action-menu]',
+      )
+      expect(touchControlShown(kebab)).toBe(true)
+      initialOrder = headOrder(canvas)
+    })
+    await step(COLUMN_BY_FINGER[1]!.title.ru, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(headOrder(canvas)).toEqual(initialOrder)
+      await expect(document.querySelector('[role="menu"]')).toBeNull()
+    })
+    await step(COLUMN_BY_FINGER[2]!.title.ru, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await until(() => expect(headOrder(canvas)).not.toEqual(initialOrder))
+      await settle()
+    })
+    await step(COLUMN_BY_FINGER[3]!.title.ru, async () => {
+      await guideNext(canvas)
+      await stepDone(canvas)
+      await expect(document.querySelector('[role="menu"]')).not.toBeNull()
+      await settle()
+    })
+    if (touch.hasRealTouchDrivers()) {
+      expect(trusted.length).toBeGreaterThanOrEqual(3)
+      expect(trusted.every(Boolean)).toBe(true)
+    }
   },
 }

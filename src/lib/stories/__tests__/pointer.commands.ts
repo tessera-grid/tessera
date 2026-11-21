@@ -9,15 +9,31 @@ type Page = Parameters<BrowserCommand<[]>>[0]['page']
 
 /** Клиентские координаты тестового iframe → координаты страницы Playwright. */
 const toPage = async (page: Page) => {
-  // Тест рендерится в последнем дочернем iframe оркестратора Vitest.
-  const frame = page.frames().at(-1)!
+  const frames = page.frames()
+  let frame = frames.at(-1)!
+  for (let index = frames.length - 1; index >= 0; index--) {
+    const candidate = frames[index]!
+    const hasGrid = await candidate
+      .evaluate(
+        () =>
+          !!document.querySelector('.data-grid__container, [data-guide-root]'),
+      )
+      .catch(() => false)
+    if (hasGrid) {
+      frame = candidate
+      break
+    }
+  }
   const box = (await (await frame.frameElement()).boundingBox())!
   const width = await frame.evaluate(() => window.innerWidth)
   const scale = box.width / width
-  return ({ x, y }: Point) => [box.x + x * scale, box.y + y * scale] as const
+  return Object.assign(
+    ({ x, y }: Point) => [box.x + x * scale, box.y + y * scale] as const,
+    { frame },
+  )
 }
 
-/** Пауза между последним движением и отпусканием кнопки — чуть больше кадра. */
+/** Пауза между событиями жеста и перед отпусканием — чуть больше кадра. */
 const HUMAN_RELEASE_MS = 32
 /** Шаг движения — раз в кадр, как у человека: цель броска считается по кадрам. */
 const HUMAN_STEP_MS = 16
@@ -99,9 +115,52 @@ export const realWheel: BrowserCommand<
   await Promise.all(sent)
 }
 
-// Касание пальцем (ADR 0084, CB4): контекст с `hasTouch` — мобильная эмуляция.
+const tapGestures = new WeakMap<Page, { at: Point; promise: Promise<void> }>()
+
+// Касание пальцем без смены медиа-признаков экрана: CDP в Chromium, touchscreen в остальных.
+// StrictMode может повторить действие шага, пока первый жест идёт: повтор объединяем,
+// а касание другой цели ставим следом, чтобы их touchStart/touchEnd не пересекались.
 export const realTap: BrowserCommand<[at: Point]> = async ({ page }, at) => {
-  await page.touchscreen.tap(...(await toPage(page))(at))
+  const previous = tapGestures.get(page)
+  if (previous?.at.x === at.x && previous.at.y === at.y) {
+    await previous.promise
+    return
+  }
+  const promise = (async () => {
+    await previous?.promise
+    const to = await toPage(page)
+    const [x, y] = to(at)
+    if (page.context().browser()?.browserType().name() !== 'chromium') {
+      await page.touchscreen.tap(x, y)
+      return
+    }
+    const session = await page.context().newCDPSession(page)
+    try {
+      await session.send('Input.dispatchTouchEvent', {
+        type: 'touchStart',
+        touchPoints: [{ x, y, id: 1 }],
+      })
+      await page.waitForTimeout(HUMAN_RELEASE_MS)
+      await session.send('Input.dispatchTouchEvent', {
+        type: 'touchEnd',
+        touchPoints: [],
+      })
+      await to.frame.evaluate(
+        () =>
+          new Promise<void>(resolve =>
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+          ),
+      )
+    } finally {
+      await session.detach()
+    }
+  })()
+  tapGestures.set(page, { at, promise })
+  try {
+    await promise
+  } finally {
+    if (tapGestures.get(page)?.promise === promise) tapGestures.delete(page)
+  }
 }
 
 // Жест прокрутки пальцем: Playwright двигает палец только через CDP Chromium. Шаги
@@ -146,7 +205,6 @@ type CDPSession = Awaited<
 
 /** Сессия CDP на страницу: жест пальцем живёт в сессии, начавшей его. */
 const touchSessions = new WeakMap<Page, Promise<CDPSession>>()
-
 const sendTouch = async (page: Page, type: TouchType, fingers: Point[]) => {
   const at = await toPage(page)
   let session = touchSessions.get(page)

@@ -2,7 +2,12 @@
 import './src/lib/stories/__tests__/reactCommits'
 
 import { setProjectAnnotations } from '@storybook/react-vite'
+import { commands } from 'vitest/browser'
 import { pinTestPlatform } from './src/lib/stories/__mocks__/platformKeys'
+import {
+  setRealTapDriver,
+  setRealTouchDragDriver,
+} from './src/lib/stories/__mocks__/touchGuides'
 import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest'
 import { cleanup, configure } from 'vitest-browser-react/pure'
 
@@ -11,6 +16,34 @@ import { parkPointer } from './src/lib/stories/__tests__/pointer'
 import { collectGarbage } from './.storybook/collectGarbage'
 import { watchUnknownActions } from './.storybook/consoleErrors'
 import preview from './.storybook/preview'
+
+setRealTapDriver(at =>
+  (
+    commands as unknown as {
+      realTap: (at: { x: number; y: number }) => Promise<void>
+    }
+  ).realTap(at),
+)
+
+setRealTouchDragDriver(async (from, to, hold) => {
+  const touch = commands as unknown as {
+    realTouchDown: (points: { x: number; y: number }[]) => Promise<void>
+    realTouchMove: (
+      from: { x: number; y: number },
+      to: { x: number; y: number },
+      steps?: number,
+    ) => Promise<void>
+    realTouchUp: () => Promise<void>
+  }
+  await touch.realTouchDown([from])
+  try {
+    if (hold) await new Promise(resolve => setTimeout(resolve, 300))
+    await touch.realTouchMove(from, to, hold ? 12 : 1)
+    if (hold) await new Promise(resolve => setTimeout(resolve, 50))
+  } finally {
+    await touch.realTouchUp()
+  }
+})
 
 // Wire the Storybook preview annotations into portable stories so
 // composeStories() renders them exactly as Storybook does.

@@ -1487,6 +1487,7 @@ export const ContextMenuLongPress: StoryObj<StoryProps> = {
       title={{ ru: 'Меню долгим нажатием', en: 'A menu on a long press' }}
       steps={LONG_PRESS}
       args={guideArgs(touch.TOUCH_ARGS, args)}
+      atomicSteps
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {

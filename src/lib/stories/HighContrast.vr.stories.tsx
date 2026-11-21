@@ -3214,6 +3214,18 @@ export const HighContrastTouchHybridDeviceStep3 = {
   tags: ['!test'],
 }
 
+export const HighContrastTouchHybridDeviceStep4 = {
+  ...twinStep(coreTouchStories, coreTouchStories.TouchHybridDevice, 4),
+  name: 'Core/Touch — Touch on a laptop, step 4',
+  tags: ['!test'],
+}
+
+export const HighContrastTouchHybridDeviceStep5 = {
+  ...twinStep(coreTouchStories, coreTouchStories.TouchHybridDevice, 5),
+  name: 'Core/Touch — Touch on a laptop, step 5',
+  tags: ['!test'],
+}
+
 export const HighContrastTouchIconHintStep1 = {
   ...twinStep(coreTouchStories, coreTouchStories.TouchIconHint, 1),
   name: 'Core/Touch — Button label on hold, step 1',
@@ -3325,6 +3337,58 @@ export const HighContrastRowDraggingByTouchStep2 = {
 export const HighContrastRowDraggingByTouchStep3 = {
   ...twinStep(rowsDraggingStories, rowsDraggingStories.RowDraggingByTouch, 3),
   name: 'Rows/Dragging — Move with a finger, step 3',
+  tags: ['!test'],
+}
+
+export const HighContrastRowDraggingByTouchStep4 = {
+  ...twinStep(rowsDraggingStories, rowsDraggingStories.RowDraggingByTouch, 4),
+  name: 'Rows/Dragging — Move with a finger, step 4',
+  tags: ['!test'],
+}
+
+export const HighContrastRowDraggingByTouchStep5 = {
+  ...twinStep(rowsDraggingStories, rowsDraggingStories.RowDraggingByTouch, 5),
+  name: 'Rows/Dragging — Move with a finger, step 5',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnDraggingByTouchStep1 = {
+  ...twinStep(
+    columnsDraggingStories,
+    columnsDraggingStories.ColumnDraggingByTouch,
+    1,
+  ),
+  name: 'Columns/Dragging — Move with a finger, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnDraggingByTouchStep2 = {
+  ...twinStep(
+    columnsDraggingStories,
+    columnsDraggingStories.ColumnDraggingByTouch,
+    2,
+  ),
+  name: 'Columns/Dragging — Move with a finger, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnDraggingByTouchStep3 = {
+  ...twinStep(
+    columnsDraggingStories,
+    columnsDraggingStories.ColumnDraggingByTouch,
+    3,
+  ),
+  name: 'Columns/Dragging — Move with a finger, step 3',
+  tags: ['!test'],
+}
+
+export const HighContrastColumnDraggingByTouchStep4 = {
+  ...twinStep(
+    columnsDraggingStories,
+    columnsDraggingStories.ColumnDraggingByTouch,
+    4,
+  ),
+  name: 'Columns/Dragging — Move with a finger, step 4',
   tags: ['!test'],
 }
 

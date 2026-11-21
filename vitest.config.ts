@@ -131,6 +131,7 @@ export default defineConfig({
             browser: {
               enabled: true,
               headless: true,
+              commands: testCommands,
               provider: playwright({
                 launchOptions: {
                   channel: 'chromium',

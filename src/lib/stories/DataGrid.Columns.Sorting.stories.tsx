@@ -14,6 +14,7 @@ import {
   headCell,
   headKebab,
   orderedRows,
+  openMenuBy,
   pollUntil,
   pressEscape,
   releaseFocus,
@@ -536,10 +537,9 @@ const ADD_SORT: readonly GuideStoryStep[] = [
     },
     states: ['overlay.menu'],
     enter: stepAction(async (root, { signal }) => {
-      await sortByLastName(root, signal)
       pressEscape()
       await pollUntil(() => !document.querySelector('[role="menu"]'), signal)
-      headKebab(root, 'firstName')?.click()
+      openMenuBy(() => headKebab(root, 'firstName'), signal)
       await pollUntil(() => !!sortItem('add'), signal)
     }),
   },
@@ -550,7 +550,6 @@ const ADD_SORT: readonly GuideStoryStep[] = [
       en: 'The user picked the item; the column became the second sorting level.',
     },
     enter: stepAction(async (root, { signal }) => {
-      await sortByLastName(root, signal)
       if (sortOf(root, 'firstName') === 'none')
         await pickSortItem(root, 'firstName', 'add', signal)
       await pollUntil(() => sortOf(root, 'firstName') !== 'none', signal)
@@ -570,6 +569,7 @@ export const SortingAddFromMenu: StoryObj<StoryProps> = {
       }}
       steps={ADD_SORT}
       args={guideArgs(ADD_SORT_ARGS, args)}
+      atomicSteps
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {

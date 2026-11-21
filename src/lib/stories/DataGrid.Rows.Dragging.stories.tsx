@@ -1031,63 +1031,93 @@ export const GroupDragRefused: StoryObj<StoryProps> = {
 const touchRowAt = (root: ParentNode, index: number) =>
   root.querySelector<HTMLElement>(`.data-grid__body-row[data-index="${index}"]`)
 
+const touchRowById = (root: ParentNode, id: string) =>
+  root.querySelector<HTMLElement>(`.data-grid__body-row[data-row-id="${id}"]`)
+
 const touchHandleOf = (root: ParentNode, index: number) =>
   touchRowAt(root, index)?.querySelector<HTMLElement>(
     '.drag__handler--column',
   ) ?? null
 
+const touchHandleById = (root: ParentNode, id: string) =>
+  touchRowById(root, id)?.querySelector<HTMLElement>(
+    '.drag__handler--column',
+  ) ?? null
+
+const touchHandleShown = (handle: HTMLElement | null) => {
+  const wrapper =
+    handle?.querySelector('.cell__button--hidden') ??
+    handle?.closest('.cell__button--hidden')
+  return (
+    !!wrapper &&
+    Number(getComputedStyle(wrapper).opacity) === 1 &&
+    wrapper.getBoundingClientRect().width > 1
+  )
+}
+
+const touchDestination = (root: HTMLElement, index: number) => ({
+  x: touchPlay.centerOf(touchHandleById(root, 'item-id-0')!).x,
+  y: touchPlay.centerOf(touchRowAt(root, index)!).y + 6,
+})
+
 let touchFirstRow: string | null = null
 
 const BY_FINGER: readonly GuideStoryStep[] = [
   {
-    title: { ru: 'Ручки строк видны', en: 'Row handles are visible' },
+    title: { ru: 'Ручка скрыта', en: 'The handle is hidden' },
     hint: {
-      ru: 'Без наведения у строк видны ручки перетаскивания.',
-      en: 'Without hover, rows show their drag handles.',
+      ru: 'Кнопки строки не занимают место, пока пользователь её не коснулся.',
+      en: 'Row buttons stay out of the way until the user touches the row.',
     },
   },
   {
-    title: {
-      ru: 'Строка перенесена пальцем',
-      en: 'A row is moved with a finger',
-    },
+    title: { ru: 'Касание строки', en: 'A row is touched' },
     hint: {
-      ru: 'Пользователь протянул строку за ручку вниз — она встала на новое место.',
-      en: 'The user dragged a row down by its handle; it landed in a new place.',
+      ru: 'Касание строки показало её ручку переноса.',
+      en: 'Touching the row revealed its drag handle.',
     },
-    enter: stepAction(async (root, { signal }) => {
-      touchPlay.pressEscape()
-      await touchPlay.pollUntil(
-        () => !!touchHandleOf(root, 0) && !!touchRowAt(root, 3),
-        signal,
-      )
-      const target = touchPlay.centerOf(touchRowAt(root, 3)!)
-      const held = await touchPlay.dragHold(
-        touchHandleOf(root, 0)!,
-        { x: touchPlay.centerOf(touchHandleOf(root, 0)!).x, y: target.y + 6 },
-        12,
-        signal,
-        'touch',
-      )
-      await held.release()
-    }),
+    enter: touch.realTapTarget(root =>
+      touchRowAt(root, 0)?.querySelector('[data-column-id="firstName"]'),
+    ),
+  },
+  {
+    title: { ru: 'Сдвиг без удержания', en: 'Movement without holding' },
+    hint: {
+      ru: 'Палец сдвинулся раньше удержания — строка осталась на месте, меню не открылось.',
+      en: 'The finger moved before the hold delay; the row stayed in place and the menu did not open.',
+    },
+    enter: touch.realTouchDragTarget(
+      root => touchHandleById(root, 'item-id-0'),
+      root => touchDestination(root, 2),
+      false,
+    ),
+  },
+  {
+    title: { ru: 'Перенос после удержания', en: 'A move after holding' },
+    hint: {
+      ru: 'Пользователь удержал ручку, затем протянул строку вниз — она встала на новое место.',
+      en: 'The user held the handle and dragged the row down; it landed in a new place.',
+    },
+    enter: touch.realTouchDragTarget(
+      root => touchHandleById(root, 'item-id-0'),
+      root => touchDestination(root, 3),
+    ),
   },
   {
     title: { ru: 'Меню перестановки', en: 'The move menu' },
     hint: {
-      ru: 'Пользователь коснулся ручки и отпустил — открылось меню перестановки.',
-      en: 'The user tapped a handle and let go; the move menu opened.',
+      ru: 'Короткое касание ручки открыло меню перестановки.',
+      en: 'A short tap on the handle opened the move menu.',
     },
     states: ['overlay.menu'],
-    enter: stepAction(async (root, { signal }) => {
-      await touchPlay.pollUntil(() => !!touchHandleOf(root, 1), signal)
-      if (!touch.openMenu()) touchHandleOf(root, 1)!.click()
-      await touchPlay.pollUntil(() => !!touch.openMenu(), signal)
-    }),
+    enter: touch.realTapTarget(
+      root => touchHandleById(root, 'item-id-0'),
+      () => !!touch.openMenu(),
+    ),
   },
 ]
 
-/** ADR 0231, S8: строку переносят пальцем за ручку, касание ручки открывает меню. */
+/** ADR 0231, S8: строку переносят после удержания, короткое касание открывает меню. */
 export const RowDraggingByTouch: StoryObj<StoryProps> = {
   name: 'Move with a finger',
   globals: touch.PHONE,
@@ -1097,18 +1127,48 @@ export const RowDraggingByTouch: StoryObj<StoryProps> = {
       title={{ ru: 'Перестановка пальцем', en: 'Moving with a finger' }}
       steps={BY_FINGER}
       args={guideArgs(touch.TOUCH_ARGS, args)}
+      atomicSteps
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
+    const trusted: boolean[] = []
+    canvas.addEventListener(
+      'pointerdown',
+      event => {
+        if (event.pointerType === 'touch') trusted.push(event.isTrusted)
+      },
+      true,
+    )
     await step(BY_FINGER[0]!.title.ru, async () => {
       await touchPlay.waitForRows(canvas)
       await touchPlay.until(() =>
         expect(touchHandleOf(canvas, 0)).not.toBeNull(),
       )
+      expect(touchHandleShown(touchHandleOf(canvas, 0))).toBe(false)
       touchFirstRow = touchRowAt(canvas, 0)!.getAttribute('data-row-id')
     })
     await step(BY_FINGER[1]!.title.ru, async () => {
+      await touchPlay.guideNext(canvas)
+      await touchPlay.stepDone(canvas)
+      await expect(touchRowById(canvas, 'item-id-0')).toHaveAttribute(
+        'data-touched',
+      )
+      await touchPlay.until(() =>
+        expect(touchHandleShown(touchHandleById(canvas, 'item-id-0'))).toBe(
+          true,
+        ),
+      )
+    })
+    await step(BY_FINGER[2]!.title.ru, async () => {
+      await touchPlay.guideNext(canvas)
+      await touchPlay.stepDone(canvas)
+      await expect(touchRowAt(canvas, 0)!.getAttribute('data-row-id')).toBe(
+        touchFirstRow,
+      )
+      await expect(touch.openMenu()).toBeNull()
+    })
+    await step(BY_FINGER[3]!.title.ru, async () => {
       await touchPlay.guideNext(canvas)
       await touchPlay.stepDone(canvas)
       await touchPlay.until(() =>
@@ -1118,11 +1178,15 @@ export const RowDraggingByTouch: StoryObj<StoryProps> = {
       )
       await touchPlay.settle()
     })
-    await step(BY_FINGER[2]!.title.ru, async () => {
+    await step(BY_FINGER[4]!.title.ru, async () => {
       await touchPlay.guideNext(canvas)
       await touchPlay.stepDone(canvas)
       await expect(touch.openMenu()).not.toBeNull()
       await touchPlay.settle()
     })
+    if (touch.hasRealTouchDrivers()) {
+      expect(trusted.length).toBeGreaterThanOrEqual(4)
+      expect(trusted.every(Boolean)).toBe(true)
+    }
   },
 }
