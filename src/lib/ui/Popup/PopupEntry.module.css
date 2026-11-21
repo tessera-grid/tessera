@@ -86,8 +86,6 @@
     var(--tsr-comp-popup-item-padding-x) + var(--tsr-comp-button-icon-size) +
       var(--tsr-comp-popup-padding) * 2
   );
-  border-start-start-radius: var(--tsr-comp-popup-item-radius);
-  border-end-start-radius: var(--tsr-comp-popup-item-radius);
   -webkit-touch-callout: none;
   user-select: none;
 }

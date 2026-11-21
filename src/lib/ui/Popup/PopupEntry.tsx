@@ -7,7 +7,7 @@ import type { FocusEvent, KeyboardEvent, MouseEvent, ReactNode } from 'react'
 import { useId, useRef, useState } from 'react'
 
 import { useIcons } from '../icons'
-import { Tooltip } from '../Tooltip'
+import { isKeyboardInput, Tooltip } from '../Tooltip/Tooltip'
 
 import styles from './PopupEntry.module.css'
 
@@ -46,9 +46,8 @@ export const PopupEntry = ({
   const showRef = useRef<HTMLButtonElement>(null)
   // Подсказка точки по фокусу с клавиатуры на записи (ADR 0232, KX9; WCAG 1.4.13).
   const [hintShown, setHintShown] = useState(false)
-  const onFocus = (event: FocusEvent<HTMLDivElement>) => {
-    if (markHint && (event.target as HTMLElement).matches(':focus-visible'))
-      setHintShown(true)
+  const onFocus = () => {
+    if (markHint && isKeyboardInput()) setHintShown(true)
   }
   const onBlur = (event: FocusEvent<HTMLDivElement>) => {
     if (!event.currentTarget.contains(event.relatedTarget as Node | null))

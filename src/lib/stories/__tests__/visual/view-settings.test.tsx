@@ -345,6 +345,9 @@ describe('«Настройки вида» (ADR 0215)', () => {
     await focused(() => removeOf(levels()[0]!))
 
     // Первый Escape гасит подсказку точки, второй закрывает поповер (ADR 0232, KX9).
+    await expect
+      .poll(() => document.querySelector('[data-tooltip-popup]')?.textContent)
+      .toBe(tableLabels.viewSettingsLevelHint)
     await userEvent.keyboard('{Escape}')
     await expect.poll(viewSettingsPopover).not.toBeNull()
     await userEvent.keyboard('{Escape}')

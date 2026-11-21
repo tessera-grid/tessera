@@ -101,9 +101,19 @@ const tooltipGone = () =>
   )
 const hoverAt = async (target: HTMLElement, x: number, y: number) => {
   const box = target.getBoundingClientRect()
-  await userEvent.hover(target, {
-    position: { x: x, y: Math.min(y, box.height - 1) },
-  })
+  const at = {
+    x: box.left + x,
+    y: box.top + Math.min(y, box.height - 1),
+  }
+  await (
+    commands as unknown as {
+      realMouseMove: (
+        from: { x: number; y: number },
+        to: { x: number; y: number },
+        steps?: number,
+      ) => Promise<void>
+    }
+  ).realMouseMove(at, at, 1)
 }
 
 const mountKit = async () => {

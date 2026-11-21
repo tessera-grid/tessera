@@ -102,6 +102,8 @@ const trackInput = () => {
   )
 }
 
+export const isKeyboardInput = () => keyboardInput
+
 /** Пауза перед закрытием подсказки обрезанного текста: указатель успевает перейти на неё. */
 const CLOSE_DELAY = 150
 
