@@ -13,8 +13,6 @@ When writing UI, prefer breaking larger components up into smaller parts.
 ALWAYS write a Storybook story for any component written. If editing a component, ensure appropriate changes have been made to stories for
 that component.
 
-
-
 ## How to write good stories
 
 Goal: Cover every distinct piece of business logic and state the component can reach (happy paths, error/edge states, loading,
@@ -84,7 +82,7 @@ Instead of `parameters.docs.autodocs` in main.js, use tags:
 // .storybook/preview.js or in individual stories
 export default {
   tags: ['autodocs'], // generates autodocs for all stories
-};
+}
 ```
 
 ### Mocking imports in Storybook
@@ -95,16 +93,16 @@ To mock imports in Storybook, use Storybook's mocking features. ALWAYS mock exte
    To mock dependendencies, you MUST register a module mock in `.storybook/preview.ts` (or equivalent):
 
 ```js
-import {sb} from 'storybook/test';
+import { sb } from 'storybook/test'
 
 // Prefer spy mocks (keeps functions, but allows to override them and spy on them)
-sb.mock(import('some-library'), {spy: true});
+sb.mock(import('some-library'), { spy: true })
 ```
 
 **Important: Use file extensions when referring to relative files!**
 
 ```js
-sb.mock(import('./relative/module.ts'), {spy: true});
+sb.mock(import('./relative/module.ts'), { spy: true })
 ```
 
 2. **Specify mock values in stories**:
@@ -140,22 +138,22 @@ Before doing this ensure you have mocked the import in the preview file.
 
 ```ts
 // ✅ Correct: Use canvas directly
-play: async ({canvas}) => {
-  await canvas.getByLabelText('Submit').click();
-};
+play: async ({ canvas }) => {
+  await canvas.getByLabelText('Submit').click()
+}
 
 // ⚠️ Also acceptable: Use `canvasElement` with `within`
-import {within} from 'storybook/test';
+import { within } from 'storybook/test'
 
-play: async ({canvasElement}) => {
-  const canvas = within(canvasElement);
-  await canvas.getByLabelText('Submit').click();
-};
+play: async ({ canvasElement }) => {
+  const canvas = within(canvasElement)
+  await canvas.getByLabelText('Submit').click()
+}
 
 // ❌ Wrong: Do NOT use within(canvas)
-play: async ({canvas}) => {
-  const screen = within(canvas); // Error!
-};
+play: async ({ canvas }) => {
+  const screen = within(canvas) // Error!
+}
 ```
 
 ### Key Requirements
