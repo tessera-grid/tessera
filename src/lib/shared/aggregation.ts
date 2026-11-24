@@ -85,10 +85,12 @@ export const aggregationFeatures = {
  * Выбор функций колонок пользователем (ADR 0230, §1): ссылка среза — ключ, по которому модель
  * группировки пересчитывает значения строк-групп. Без плагина сводки — `undefined`.
  */
-export const aggregationChoiceOf = (table: unknown): unknown =>
+type AggregationChoice = Readonly<Record<string, string | null>>
+
+export const aggregationChoiceOf = (table: unknown) =>
   (
     table as {
-      atoms?: { columnAggregations?: { get: () => unknown } }
+      atoms?: { columnAggregations?: { get: () => AggregationChoice } }
     }
   ).atoms?.columnAggregations?.get()
 

@@ -11,6 +11,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { registerAnnouncer } from '../core/announcer'
 import { cancelPending } from '../core/cancellation'
+import { DEFAULT_WRITE_LIMITS } from '../core/cellWrites'
 import { type Draft, discardDraft } from '../core/drafts/drafts'
 import { cellFailureKey, readFailures } from '../core/failures/failuresFeature'
 import { ENGLISH_LABELS } from '../core/localization'
@@ -23,7 +24,13 @@ import {
   serverRowModel,
 } from '../plugins'
 import { parseEditText } from '../plugins/cellEditing/editValue'
-import { commitAllDrafts } from '../plugins/cellEditing/session'
+import {
+  cellEditingViewOf,
+  commitAllDrafts,
+  EDIT_SESSION_KEY,
+  isCellPending,
+  readEditingState,
+} from '../plugins/cellEditing/session'
 import type {
   CellEditBatch,
   CellEditBatchResult,
@@ -604,6 +611,106 @@ describe('вставка из буфера и запись в ячейки (ADR 
     warn.mockRestore()
   })
 
+  it('LM12: уже решённый пакет блокирует повторную запись, а вид ожидания публикуется только для ждущего пакета', async () => {
+    const delayed = deferred<CellEditBatchResult | void>()
+    const onCommitEdits = vi
+      .fn()
+      .mockResolvedValueOnce(undefined)
+      .mockReturnValueOnce(delayed.promise)
+    render({ onCommitEdits })
+    const views: { locked: boolean; visible: boolean }[] = []
+    const subscription = captured.atoms[EDIT_SESSION_KEY].subscribe(() => {
+      views.push({
+        locked: isCellPending(captured, '0', 'age'),
+        visible:
+          cellEditingViewOf(readEditingState(captured), '0', 'age') !== null,
+      })
+    })
+    try {
+      const write = () =>
+        captured.writeCells([{ rowId: '0', columnId: 'age', value: 50 }])
+      await act(async () => {
+        const first = write()
+        expect(isCellPending(captured, '0', 'age')).toBe(true)
+        expect(
+          cellEditingViewOf(readEditingState(captured), '0', 'age'),
+        ).toBeNull()
+        expect((await write()).written).toBe(0)
+        await first
+      })
+      expect(views.some(view => view.visible)).toBe(false)
+      expect(isCellPending(captured, '0', 'age')).toBe(false)
+
+      await act(async () => {
+        await write()
+      })
+      expect(views).toContainEqual({ locked: true, visible: true })
+      await act(async () => {
+        expect(cancelPending(captured, { kind: 'cellEdit' })).toBe(1)
+        delayed.resolve(undefined)
+      })
+      expect(isCellPending(captured, '0', 'age')).toBe(false)
+      expect(
+        cellEditingViewOf(readEditingState(captured), '0', 'age'),
+      ).toBeNull()
+
+      views.length = 0
+      onCommitEdits.mockResolvedValueOnce(undefined)
+      await act(async () => {
+        const writing = write()
+        expect(cancelPending(captured, { kind: 'cellEdit' })).toBe(1)
+        await writing
+      })
+      expect(views.some(view => view.visible)).toBe(false)
+    } finally {
+      subscription.unsubscribe()
+    }
+  })
+
+  it('крупная отмена публикует ожидание только для ответа дольше ближайшей микрозадачи', async () => {
+    const count = DEFAULT_WRITE_LIMITS.confirm
+    const data = Array.from({ length: count }, (_, id) => ({
+      ...ROWS[0]!,
+      id: String(id),
+    }))
+    const delayed = deferred<CellEditBatchResult | void>()
+    const onCommitEdits = vi
+      .fn()
+      .mockImplementationOnce(async () => {
+        await Promise.resolve()
+      })
+      .mockReturnValueOnce(delayed.promise)
+    render({ data, onCommitEdits })
+    const visible = vi.fn()
+    const view = () => cellEditingViewOf(readEditingState(captured), '0', 'age')
+    const subscription = captured.atoms[EDIT_SESSION_KEY].subscribe(() => {
+      if (view()) visible()
+    })
+    const changes = data.map(row => ({
+      rowId: row.id,
+      columnId: 'age',
+      value: 50,
+    }))
+    const undo = async () => {
+      expect(
+        (await captured.writeCells(changes, { source: 'undo' })).written,
+      ).toBe(count)
+    }
+    try {
+      await act(undo)
+      expect(visible).not.toHaveBeenCalled()
+      expect(isCellPending(captured, '0', 'age')).toBe(false)
+      await act(undo)
+      expect(visible).toHaveBeenCalled()
+      expect(isCellPending(captured, '0', 'age')).toBe(true)
+      await act(async () => delayed.resolve(undefined))
+      expect(view()).toBeNull()
+      expect(isCellPending(captured, '0', 'age')).toBe(false)
+    } finally {
+      subscription.unsubscribe()
+    }
+  })
+
   it('WR15: одно объявление на операцию — записано, пропущено, с ошибкой; у асинхронного пакета — итог; тексты из словаря с формами числа', async () => {
     const say = vi.fn()
     const answer = deferred<CellEditBatchResult | void>()
@@ -684,6 +791,21 @@ describe('вставка из буфера и запись в ячейки (ADR 
     expect(failures[cellFailureKey('3', 'age')]?.reason).toBe(
       'Enter a number: "abc"',
     )
+
+    render({ onCommitEdits })
+    const row = captured.getRowSource().byId('2')
+    const readCellContexts = vi.spyOn(row, 'getAllCellsByColumnId')
+    try {
+      await act(async () => {
+        report = await captured.writeCells([
+          { rowId: '2', columnId: 'age', value: 80 },
+        ])
+      })
+      expect(report).toMatchObject({ written: 1, skipped: 0, invalid: 0 })
+      expect(readCellContexts).not.toHaveBeenCalled()
+    } finally {
+      readCellContexts.mockRestore()
+    }
   })
 
   it('WR30: дерево и группировка — вставка идёт по видимому списку, свёрнутые ветки не заполняются; строки-группы места не занимают', async () => {
@@ -1007,13 +1129,24 @@ describe('вставка в серверной модели строк (ADR 0219
           resolve({ rows: ROWS.slice(start, end), rowCount: ROWS.length })
         })
       })
-    const answerAll = async () => {
-      while (waiting.length > 0) {
+    const answerAll = async (operation?: Promise<void>) => {
+      let settled = !operation
+      const markSettled = () => {
+        settled = true
+      }
+      void operation?.then(markSettled, markSettled)
+      while (waiting.length > 0 || !settled) {
         await act(async () => {
           for (const answer of waiting.splice(0)) answer()
         })
         await flush()
+        // Серверная модель может уступить поток между пачками запросов.
+        if (!settled && waiting.length === 0)
+          await vi.waitFor(() =>
+            expect(settled || waiting.length > 0).toBe(true),
+          )
       }
+      await operation
     }
     return { getRows, answerAll, most: () => most }
   }
@@ -1066,10 +1199,7 @@ describe('вставка в серверной модели строк (ADR 0219
     await flush()
     expect(readServerAction(captured).loadingRows?.kind).toBe('paste')
     expect(onCommitEdits).not.toHaveBeenCalled()
-    await backend.answerAll()
-    await act(async () => {
-      await done
-    })
+    await backend.answerAll(done)
     expect(backend.most()).toBeLessThanOrEqual(4)
     expect(readServerAction(captured).loadingRows).toBeUndefined()
     const batch = onCommitEdits.mock.calls[0]![0]
@@ -1095,10 +1225,7 @@ describe('вставка в серверной модели строк (ADR 0219
     expect(readServerAction(captured).loadingRows?.kind).toBe('paste')
     selectIndex(1, 'name')
     expect(readServerAction(captured).loadingRows).toBeUndefined()
-    await backend.answerAll()
-    await act(async () => {
-      await done
-    })
+    await backend.answerAll(done)
     expect(onCommitEdits).toHaveBeenCalledTimes(1)
     expect(say).toHaveBeenCalledWith(
       ENGLISH_LABELS.announceActionCancelled(ENGLISH_LABELS.actionPaste),
@@ -1128,10 +1255,7 @@ describe('вставка в серверной модели строк (ADR 0219
       done = pasteData(captured, { text: '1\n2\n3', html: '' }, 'api')
     })
     await flush()
-    await backend.answerAll()
-    await act(async () => {
-      await done
-    })
+    await backend.answerAll(done)
     // Строки догружены, но ячеек больше writeLimits.max — отказ без пакета.
     expect(onCommitEdits).not.toHaveBeenCalled()
     const failed = readServerAction(captured).failed

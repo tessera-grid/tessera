@@ -368,4 +368,49 @@ describe('Покой и рост полосы (ADR 0202, §1а)', () => {
       await screen.unmount()
     }
   })
+
+  test('WB14: замена окна клиента покрывает видимую область до роста полосы', async () => {
+    let table!: TransactionTable
+    const screen = await render(
+      <WideTransactionGrid onTable={t => (table = t)} />,
+    )
+    let observer: MutationObserver | undefined
+    try {
+      const scroller = getScroller()
+      const rows = () =>
+        scroller.querySelectorAll('.data-grid__body > [data-index]')
+      const count = () => rows().length
+      await expect.poll(uncoveredY).toBe(0)
+      // Сначала монтируется видимое окно. Дождаться запаса, который заменит транзакция.
+      await expect
+        .poll(
+          () => Array.from(rows()).at(-1)?.getBoundingClientRect().top ?? 0,
+          { timeout: 3000 },
+        )
+        .toBeGreaterThanOrEqual(
+          scroller.getBoundingClientRect().top + scroller.clientHeight,
+        )
+      const shown = () => scroller.querySelector('[data-row-id="replacement0"]')
+      let changed: { gap: number; count: number } | undefined
+      observer = new MutationObserver(() => {
+        if (!changed && shown()) changed = { gap: uncoveredY(), count: count() }
+      })
+      observer.observe(scroller, { childList: true, subtree: true })
+      // Число строк прежнее, но обе граничные строки полосы меняют id.
+      const first = ROWS.slice(0, 50)
+      table.applyRowTransaction({
+        remove: first.map(row => row.id),
+        add: first.map((row, i) => ({ ...row, id: `replacement${i}` })),
+        index: 0,
+      })
+      await expect.poll(() => changed).toBeDefined()
+      expect(changed!.gap).toBe(0)
+      await expect
+        .poll(count, { timeout: 3000 })
+        .toBeGreaterThan(changed!.count)
+    } finally {
+      observer?.disconnect()
+      await screen.unmount()
+    }
+  })
 })

@@ -326,6 +326,9 @@ const EntryList = <T,>({
     estimateSize: () => ENTRY_ESTIMATE,
     overscan: OVERSCAN,
     getItemKey: index => keyOf(items[index]!),
+    // Высота длинной записи меняет прокрутку и размер поповера.
+    // Отложенный замер не меняет раскладку внутри ResizeObserver.
+    useAnimationFrameWithResizeObserver: true,
     // Окно до замера: записи есть с первого кадра — фокус входа ставится на первую.
     initialRect: { width: 0, height: LIST_WINDOW },
   })

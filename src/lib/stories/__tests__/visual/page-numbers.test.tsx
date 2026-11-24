@@ -435,9 +435,11 @@ describe('Номера страниц (ADR 0192)', () => {
     expect(fill()).not.toEqual(
       toRgba(getComputedStyle(number(2)!).backgroundColor),
     )
-    expect(toRgba(getComputedStyle(number(1)!).color)).toEqual(
-      toRgba(tokenColor('--tsr-comp-segments-selected-color', number(1)!)),
-    )
+    await expect
+      .poll(() => toRgba(getComputedStyle(number(1)!).color))
+      .toEqual(
+        toRgba(tokenColor('--tsr-comp-segments-selected-color', number(1)!)),
+      )
     await fx.forcedColors(false)
     await screen.unmount()
 

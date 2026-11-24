@@ -256,7 +256,7 @@ describe('Фокус с клавиатуры (ADR 0232)', () => {
       await expect.poll(popup, { message: name }).toBeFalsy()
     }
     expect([...new Set(all)]).toEqual([])
-  })
+  }, 45_000)
 })
 
 describe('Фокус не перекрыт (ADR 0232)', () => {

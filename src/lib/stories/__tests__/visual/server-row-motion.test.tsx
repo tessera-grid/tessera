@@ -1,9 +1,10 @@
 import { render } from 'vitest-browser-react'
 import { commands, userEvent } from 'vitest/browser'
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 
 import '../../../ui/theme/theme.css'
 import type { TesseraFeatureEntry } from '../../../core/features'
+import type { RowSource } from '../../../core/rowSource'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import {
@@ -58,10 +59,8 @@ interface Held {
 /** «Сервер»: отвечает сразу или держит ответы, пока тест их не отпустит; `refuse` — отказ. */
 const server = () => {
   const held: Held[] = []
-  const calls: ServerRowsRequest[] = []
   const state = { hold: false, refuse: false }
   const getRows = (request: ServerRowsRequest) => {
-    calls.push(request)
     return new Promise<ServerRowsResponse<Item>>((resolve, reject) => {
       const answer = () => {
         if (state.refuse) {
@@ -84,7 +83,7 @@ const server = () => {
       if (!call.request.signal.aborted) call.answer()
     }
   }
-  return { calls, held, state, getRows, release }
+  return { held, state, getRows, release }
 }
 
 const Grid = ({
@@ -93,12 +92,14 @@ const Grid = ({
   blockSize = 100,
   maxBlocks,
   rowAnimation,
+  onRowSource,
 }: {
   getRows: ReturnType<typeof server>['getRows']
   plugins?: readonly TesseraFeatureEntry[]
   blockSize?: number
   maxBlocks?: number
   rowAnimation?: boolean
+  onRowSource?: (source: RowSource) => void
 }) => {
   const table = useCreateTable({
     rowCount: TOTAL,
@@ -114,6 +115,7 @@ const Grid = ({
       ...plugins,
     ] as never,
   })
+  if (onRowSource) onRowSource(table.getRowSource())
   return (
     <div style={{ width: 600, height: 420 }}>
       <DataGrid table={table as never} />
@@ -269,7 +271,7 @@ describe('Движение строк серверной модели при с�
         const away = ghostOf('N1')
         const gone = ghostOf('N3')
         return {
-          away: away && { top: topOf(away), opacity: opacityOf(away) },
+          away: away && { origin: away.offsetTop, top: topOf(away) },
           gone: gone && { top: topOf(gone), opacity: opacityOf(gone) },
         }
       })
@@ -277,7 +279,8 @@ describe('Движение строк серверной модели при с�
       // r1 ушла на место 60 загруженного блока: призрак едет вниз от своего места.
       const away = frames.flatMap(frame => (frame.away ? [frame.away] : []))
       expect(away.length).toBeGreaterThan(2)
-      expect(away[0]!.top).toBeCloseTo(size, 0)
+      // Первый снятый кадр может быть уже в пути. Положение до translate видно в offsetTop.
+      expect(away[0]!.origin).toBeCloseTo(size, 0)
       expect(Math.max(...away.map(frame => frame.top))).toBeGreaterThan(
         3 * size,
       )
@@ -359,7 +362,13 @@ describe('Движение строк серверной модели при с�
   test('EM6: скелеты незагруженных строк нового окна не едут и не становятся призраками', async () => {
     // Первый блок вытеснен прокруткой: после прокрутки к началу верх окна — скелеты, ниже —
     // прежние строки, пока не придёт окно новой выборки.
-    const { srv, screen } = await mount({ blockSize: 5, maxBlocks: 2 })
+    let rows!: RowSource
+    const { srv, screen } = await mount({
+      blockSize: 5,
+      maxBlocks: 2,
+      onRowSource: source => (rows = source),
+    })
+    const animate = vi.spyOn(Element.prototype, 'animate')
     try {
       const size = rowHeight()
       scroller().scrollTop = SKELETON_SCROLL * size
@@ -367,13 +376,13 @@ describe('Движение строк серверной модели при с�
       await expect
         .poll(() => scroller().hasAttribute('data-fast-scrolling'))
         .toBe(false)
-      await expect
-        .poll(() =>
-          [0, 5, 10].every(start =>
-            srv.calls.some(request => request.start === start),
-          ),
-        )
-        .toBe(true)
+      await expect.poll(() => rows.indexOf('r0')).toBe(-1)
+      // Удерживаем повторный запрос первого блока при возврате к началу.
+      // Так прежнее окно уже содержит скелеты и r8, когда начинается поиск.
+      srv.state.hold = true
+      scroller().scrollTop = 0
+      await expect.poll(() => skeletonRows().length).toBeGreaterThan(0)
+      await expect.poll(() => rowById('r8')).not.toBeNull()
       const frames = await changeSelection(
         srv,
         typeSearch('narrow'),
@@ -388,26 +397,31 @@ describe('Движение строк серверной модели при с�
               ghost.hasAttribute('data-pending-row') ||
               !!ghost.querySelector('[data-skeleton]'),
           ).length,
-          r8: rowById('r8') && topOf(rowById('r8')!),
         }),
         () =>
           skeletonRows().length > 0 &&
-          body().querySelectorAll(':scope > [data-row-id]').length > 0,
+          !!rowById('r8') &&
+          srv.held.some(
+            ({ request }) =>
+              request.globalFilter === 'narrow' && !request.signal.aborted,
+          ),
       )
       await settleRowMotion()
-      // До прихода окна — и скелеты, и прежние строки; прежние едут.
+      // До прихода окна видны скелеты и прежние строки. Сдвиг r8 проверяем по
+      // ключевым кадрам: под нагрузкой браузер может пропустить промежуточные кадры.
       expect(frames[0]!.skeletons).toBeGreaterThan(0)
       expect(frames[0]!.loaded).toBeGreaterThan(0)
+      const r8 = rowById('r8')!
+      expect(topOf(r8)).toBeCloseTo(5 * size, 0)
       expect(
-        passesBetween(
-          frames.map(frame => frame.r8 ?? 8 * size),
-          8 * size,
-          5 * size,
-        ),
-      ).toBe(true)
+        animate.mock.calls
+          .filter((_, index) => animate.mock.contexts[index] === r8)
+          .map(([keyframes]) => keyframes),
+      ).toContainEqual([{ translate: `0 ${3 * size}px` }, { translate: '0 0' }])
       expect(frames.every(frame => !frame.skeletonMoving)).toBe(true)
       expect(frames.every(frame => frame.skeletonGhosts === 0)).toBe(true)
     } finally {
+      animate.mockRestore()
       await screen.unmount()
     }
   })

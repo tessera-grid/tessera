@@ -369,34 +369,43 @@ describe('Тулбар до прихода данных (ADR 0122)', () => {
     ]
     const waitBars = () =>
       expect.poll(() => byTestId('export-skeleton')).not.toBeNull()
-    const lightShift = (bar: Element) =>
-      new DOMMatrix(getComputedStyle(bar, '::after').transform).m41
+    const layerOf = () =>
+      document.querySelector<SVGSVGElement>('[data-skeleton-wave-layer]')
+    const animationsOf = () =>
+      document
+        .getAnimations()
+        .filter(animation => animation.id === SKELETON_WAVE_ANIMATION)
 
     const shared = await render(<Host columns={NO_COLUMNS} />)
     await waitBars()
+    await expect.poll(() => animationsOf().length).toBe(1)
+    const layer = layerOf()!
+    const target = layer.querySelector('[data-skeleton-wave-band]')!
+    expect((animationsOf()[0]!.effect as KeyframeEffect).target).toBe(target)
     const frame = document.querySelector<HTMLElement>('[data-skeleton-wave]')!
     const waveWidth = Number.parseFloat(
       getComputedStyle(frame).getPropertyValue(
         '--tsr-comp-skeleton-wave-width',
       ),
     )
+    near(
+      Number(target.querySelector('rect:nth-child(2)')!.getAttribute('width')),
+      waveWidth,
+    )
+    const origin = layer.getBoundingClientRect()
+    const clip = layer.querySelector<SVGPathElement>('clipPath > path')!
+    // Полоса общая, а маска включает каждый скелет тулбара.
     for (const id of ids) {
       const bar = barOf(id)
       expect(frame.contains(bar), id).toBe(true)
-      // Блик — полоса общей волны рамки, а не своя волна полоски.
-      near(
-        Number.parseFloat(getComputedStyle(bar, '::after').width),
-        waveWidth,
-        id,
-      )
+      const box = bar.getBoundingClientRect()
       expect(
-        document
-          .getAnimations()
-          .some(
-            animation =>
-              animation.id === SKELETON_WAVE_ANIMATION &&
-              (animation.effect as KeyframeEffect).target === bar,
+        clip.isPointInFill(
+          new DOMPoint(
+            box.left + box.width / 2 - origin.left,
+            box.top + box.height / 2 - origin.top,
           ),
+        ),
         id,
       ).toBe(true)
     }
@@ -405,10 +414,8 @@ describe('Тулбар до прихода данных (ADR 0122)', () => {
     await fx.reducedMotion(true)
     const reduced = await render(<Host columns={NO_COLUMNS} />)
     await waitBars()
-    for (const id of ids) {
-      // Полоса целиком за левым краем скелета: света нет.
-      expect(lightShift(barOf(id)), id).toBeLessThanOrEqual(-waveWidth / 2)
-    }
+    await expect.poll(() => layerOf()?.style.visibility).toBe('hidden')
+    expect(animationsOf()).toHaveLength(0)
     await reduced.unmount()
     await fx.reducedMotion(false)
 

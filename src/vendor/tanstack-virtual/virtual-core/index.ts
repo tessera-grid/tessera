@@ -362,6 +362,11 @@ export interface VirtualizerOptions<
     instance: Virtualizer<TScrollElement, TItemElement>,
     cb: ObserveOffsetCallBack,
   ) => void | (() => void)
+  // Tessera (ADR 0143, ADR 0142): an offset adapter can provide a limit in
+  // the same coordinate space. Undefined falls back to the native extent.
+  getElementMaxScrollOffset?: (
+    instance: Virtualizer<TScrollElement, TItemElement>,
+  ) => number | undefined
   // Optional
   debug?: boolean
   initialRect?: Rect
@@ -2464,6 +2469,8 @@ export class Virtualizer<
   private _elementMaxScrollOffset = (): number | null => {
     const el = this.scrollElement
     if (el === null) return null
+    const adaptedMax = this.options.getElementMaxScrollOffset?.(this)
+    if (adaptedMax !== undefined) return adaptedMax
     if ('scrollHeight' in el) {
       return this.options.horizontal
         ? el.scrollWidth - el.clientWidth

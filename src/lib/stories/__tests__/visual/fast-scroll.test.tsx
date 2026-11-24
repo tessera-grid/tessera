@@ -75,20 +75,24 @@ describe('Быстрая прокрутка', () => {
     )
     expect(ahead.length).toBeGreaterThan(0)
     const before = new Set(bodyRows())
-    // Рывок на высоту области: строки полосы встают в видимую часть, полоса пополняется.
-    const steps = Math.ceil(scroller.clientHeight / 100) + 1
-    for (let i = 0; i < steps; i++) {
-      scroller.scrollTop += 100
-      // eslint-disable-next-line no-await-in-loop
-      await nextFrame()
-    }
+    // Первый рывок включает режим. Следующий сдвиг пополняет полосу уже в сессии.
+    scroller.scrollTop += 100
+    await expect
+      .poll(() => scroller.hasAttribute('data-fast-scrolling'))
+      .toBe(true)
+    scroller.scrollTop += scroller.clientHeight
+    await expect
+      .poll(
+        () => bodyRows().some(row => !before.has(row) && hasSkeleton(row)),
+        {
+          interval: 10,
+        },
+      )
+      .toBe(true)
     const rows = bodyRows()
     const shown = ahead.filter(row => rows.includes(row))
     expect(shown.length).toBeGreaterThan(0)
     expect(shown.filter(hasSkeleton)).toEqual([])
-    const refilled = rows.filter(row => !before.has(row))
-    expect(refilled.length).toBeGreaterThan(0)
-    expect(refilled.some(hasSkeleton)).toBe(true)
   })
 
   test('FS7: медленная прокрутка настоящим колесом с паузой главного потока не показывает скелетов', async () => {

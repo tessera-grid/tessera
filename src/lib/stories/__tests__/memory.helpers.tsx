@@ -173,15 +173,21 @@ export const settled = async (container: ParentNode = document) => {
 }
 
 /**
- * Ждёт, пока число узлов перестанет меняться два кадра подряд: полоса окна и первый рендер
- * дорастают в следующих кадрах (ADR 0202, ADR 0203), и счёт узлов посреди роста — шум.
+ * Ждёт конца порций окна и двух кадров с одинаковым числом узлов (ADR 0202, ADR 0203).
+ * Под нагрузкой пауза между порциями бывает длиннее двух кадров.
  */
 export const settledDom = async (container: ParentNode = document) => {
   let last = -1
   for (let i = 0; i < 60; i++) {
     await frames(2)
     const count = container.querySelectorAll('*').length
-    if (count === last) return
+    if (
+      count === last &&
+      !container.querySelector(
+        '[data-tsr-grid-pending], [data-portions-pending]',
+      )
+    )
+      return
     last = count
   }
 }

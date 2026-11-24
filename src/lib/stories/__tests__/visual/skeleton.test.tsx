@@ -605,25 +605,20 @@ describe('Скелет первой загрузки (ADR 0060)', () => {
       }
       // Волна: проход рамки и пауза — от базовой длительности движения (×16 и ×10/3,
       // общая волна рамки, ADR 0121).
-      await expect
-        .poll(() =>
-          document
-            .getAnimations()
-            .find(
-              animation =>
-                animation.id === SKELETON_WAVE_ANIMATION &&
-                (animation.effect as KeyframeEffect).target === bar,
-            ),
-        )
-        .toBeDefined()
-      const wave = document
-        .getAnimations()
-        .find(
-          animation =>
-            animation.id === SKELETON_WAVE_ANIMATION &&
-            (animation.effect as KeyframeEffect).target === bar,
-        )!
-        .effect!.getComputedTiming()
+      const animation = () => {
+        const target = bar
+          .closest('[data-skeleton-wave]')!
+          .querySelector('[data-skeleton-wave-band]')
+        return document
+          .getAnimations()
+          .find(
+            candidate =>
+              candidate.id === SKELETON_WAVE_ANIMATION &&
+              (candidate.effect as KeyframeEffect).target === target,
+          )
+      }
+      await expect.poll(animation).toBeDefined()
+      const wave = animation()!.effect!.getComputedTiming()
       expect(wave.duration).toBe(4800)
       expect(wave.delay).toBe(1000)
       await screen.unmount()

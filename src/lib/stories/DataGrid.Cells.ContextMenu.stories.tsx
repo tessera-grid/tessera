@@ -322,6 +322,12 @@ const recalculate = () =>
 const recalculatePending = () => !!recalculate()?.hasAttribute('data-pending')
 const recalculateFailed = () =>
   !!recalculate()?.querySelector('[data-action-failed]')
+const expectAsyncMenuInCanvas = (canvas: HTMLElement) =>
+  until(() => {
+    const menu = openMenu()
+    expect(menu).not.toBeNull()
+    expectPopupInCanvas(canvas, menu!)
+  })
 /**
  * Знак ожидания у `count` ячеек (ADR 0152, §3): волна у каждой или неподвижный свет —
  * при уменьшенном движении, как в тестах каталога.
@@ -510,7 +516,7 @@ export const ContextMenuAsyncItems: StoryObj<StoryProps> = {
       await waitForRows(canvas)
       await until(() => expect(recalculate()).not.toBeNull())
       await settle()
-      expectPopupInCanvas(canvas, openMenu()!)
+      await expectAsyncMenuInCanvas(canvas)
     })
     await step(ASYNC_ITEMS[2]!.title.ru, async () => {
       await guideNext(canvas)
@@ -553,7 +559,7 @@ export const ContextMenuAsyncItems: StoryObj<StoryProps> = {
         ),
       )
       await settle()
-      expectPopupInCanvas(canvas, openMenu()!)
+      await expectAsyncMenuInCanvas(canvas)
     })
   },
 }

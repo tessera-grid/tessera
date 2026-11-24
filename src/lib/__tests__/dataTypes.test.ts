@@ -710,9 +710,9 @@ describe('тип numberString (ADR 0174, этап 2)', () => {
     { id: 'i', amount: '10' },
     { id: 'j', amount: '9.999' },
   ]
-  const amounts = (plugins: unknown[]) =>
+  const amounts = (plugins: unknown[], data = AMOUNTS) =>
     hostTable({
-      data: AMOUNTS,
+      data,
       getRowId: (row: { id: string }) => row.id,
       columns: [
         {
@@ -730,15 +730,26 @@ describe('тип numberString (ADR 0174, этап 2)', () => {
 
   it('TY10: сортировка numberString — десятичным сравнением строк без перевода во float: значения, неотличимые во float, упорядочены верно; знак, ведущие нули и "-0" — по значению; нечисловая строка и пусто — в конце', () => {
     expect(Number(AMOUNTS[0]!.amount)).toBe(Number(AMOUNTS[1]!.amount))
-    const table = amounts([columnSorting()])
+    const table = amounts(
+      [columnSorting()],
+      [
+        ...AMOUNTS,
+        { id: 'k', amount: '-1.25001' },
+        { id: 'l', amount: '0.50001' },
+        { id: 'm', amount: '0.50000' },
+      ],
+    )
     const sorted = (desc: boolean) => {
       table.setSorting([{ id: 'amount', desc }])
       return idsOf(table.getSortedRowModel())
     }
     expect(sorted(false)).toEqual([
+      'k',
       'e',
       'c',
       'd',
+      'm',
+      'l',
       'f',
       'j',
       'i',
@@ -753,9 +764,12 @@ describe('тип numberString (ADR 0174, этап 2)', () => {
       'i',
       'j',
       'f',
+      'l',
       'd',
+      'm',
       'c',
       'e',
+      'k',
       'g',
       'h',
     ])

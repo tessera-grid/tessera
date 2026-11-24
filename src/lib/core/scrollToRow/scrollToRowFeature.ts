@@ -389,11 +389,30 @@ const place = async (
     behavior = 'instant'
   }
 
+  const inWindow = () => {
+    const range = viewport.rows.range
+    return (
+      range &&
+      target.index !== undefined &&
+      target.index >= range.startIndex &&
+      target.index <= range.endIndex
+    )
+  }
   for (let attempt = 0; attempt < 5 && alive(); attempt++) {
-    const row =
+    let row =
       target.rowId === undefined
         ? undefined
         : rowElement(scroller, target.rowId)
+    if (target.rowId !== undefined && !row && inWindow()) {
+      const id = target.rowId
+      // Виртуализатор уже дошёл до цели, но React ещё монтирует окно по порциям.
+      const drawn = await until(
+        () => !!rowElement(scroller, id) || !inWindow(),
+        alive,
+      )
+      if (!drawn || !alive()) return false
+      row = rowElement(scroller, id)
+    }
     if (target.rowId !== undefined && !row) {
       // Строки разной высоты: прыжок по оценке промахнулся мимо окна.
       const planned = withInlineFooter(

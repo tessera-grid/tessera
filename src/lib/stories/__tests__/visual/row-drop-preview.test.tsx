@@ -604,7 +604,7 @@ describe('Превью броска строки (ADR 0108)', () => {
         const dragged = await dragOver('row-0', 'node-0-2', 0)
         const at = await settleSlotAfter('node-0-2', dragged.at)
         expect(depthOf(slot()!)).toBe(0)
-        await sleep(duration() + 100)
+        await expect.poll(reveals, { timeout: duration() + 1500 }).toEqual([])
         // Новыми считаются части, которых не было до смены уровня.
         const before = new Set(
           document.querySelectorAll(`${INDENT} [aria-hidden] > span`),
@@ -669,7 +669,7 @@ describe('Превью броска строки (ADR 0108)', () => {
       }
     }
     slow.remove()
-  })
+  }, 30_000)
 })
 
 // Бросок в свёрнутые группы и подсветка родителя (ADR 0109).

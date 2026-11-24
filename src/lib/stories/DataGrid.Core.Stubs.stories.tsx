@@ -192,6 +192,7 @@ export const StubsNoColumns: StoryObj<StoryProps> = {
  * `Escape`: заглушку ничто не заслоняет (ADR 0133).
  */
 const hideAllFromMenu = (root: HTMLElement) => {
+  let timer: ReturnType<typeof setTimeout>
   const menu = () =>
     document.querySelector<HTMLElement>(
       '[data-testid="column-visibility-menu"]',
@@ -206,9 +207,10 @@ const hideAllFromMenu = (root: HTMLElement) => {
       return
     }
     openViewSettingsSection(root, 'columns')
-    setTimeout(run, 100)
+    timer = setTimeout(run, 100)
   }
-  setTimeout(run, 0)
+  timer = setTimeout(run, 0)
+  return () => clearTimeout(timer)
 }
 
 const COLUMNS_HIDDEN: readonly GuideStoryStep[] = [
@@ -237,23 +239,25 @@ const COLUMNS_HIDDEN: readonly GuideStoryStep[] = [
       en: 'The user pressed the placeholder button; all columns are visible again.',
     },
     enter: root => {
-      let hiding = false
+      let stopHiding: (() => void) | undefined
       let shown = false
-      return untilDone(
+      const stopShowing = untilDone(
         current => shown && bodyRows(current).length > 0,
         current => {
           const showAll = byTestId('columns-hidden-show-all')
           if (showAll) {
+            stopHiding?.()
             showAll.click()
             shown = true
             return
           }
-          if (!hiding && !shown) {
-            hiding = true
-            hideAllFromMenu(current)
-          }
+          if (!stopHiding && !shown) stopHiding = hideAllFromMenu(current)
         },
       )(root, undefined as never)
+      return () => {
+        stopShowing()
+        stopHiding?.()
+      }
     },
   },
 ]
@@ -309,11 +313,16 @@ export const StubsColumnsHidden: StoryObj<StoryProps> = {
     })
     await step(COLUMNS_HIDDEN[2]!.title.ru, async () => {
       await guideNext(canvas)
-      await until(() => expect(byTestId('columns-hidden-stub')).toBeNull())
-      await until(() => expect(bodyRows(canvas).length).toBeGreaterThan(0))
-      await expect(
-        canvas.querySelectorAll('[role="columnheader"]').length,
-      ).toBeGreaterThan(0)
+      await until(() => {
+        expect(byTestId('columns-hidden-stub')).toBeNull()
+        expect(bodyRows(canvas).length).toBeGreaterThan(0)
+        expect(
+          canvas.querySelectorAll('[role="columnheader"]').length,
+        ).toBeGreaterThan(0)
+        expect(byTestId('view-settings-button')).not.toHaveAttribute(
+          'data-active',
+        )
+      })
     })
     await settle()
   },

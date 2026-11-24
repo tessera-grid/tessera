@@ -1,4 +1,4 @@
-import { render } from 'vitest-browser-react'
+import { cleanup, render } from 'vitest-browser-react'
 import { page, server } from 'vitest/browser'
 import { describe, expect, test } from 'vitest'
 
@@ -7,6 +7,7 @@ import { loadStories } from './contrast-helpers'
 import { GuideStory, guideArgs } from '../../demos/GuideStory'
 import { FRESH_ATTR, guideNext, until } from '../../__mocks__/catalogPlay'
 import { both } from '../storyText.helpers'
+import { parkPointer } from '../pointer'
 
 // Проход гайдов со свежей таблицей (ADR 0117, SN73): каждый гайд проходит свой `play`, но
 // перед каждым «Далее» ставится пометка «Таблица изменена». В прежнем режиме шаг сам
@@ -90,13 +91,13 @@ describe('проход гайдов со свежей таблицей (ADR 0117
     }
     let screen = await stand()
     await playStand(screen.container)
-    await screen.unmount()
+    await cleanup()
     screen = await stand()
     expect(await walkFresh(() => playStand(screen.container))).toBeDefined()
-    await screen.unmount()
+    await cleanup()
     screen = await stand(true)
     expect(await walkFresh(() => playStand(screen.container))).toBeUndefined()
-    await screen.unmount()
+    await cleanup()
 
     await page.viewport(900, 720)
     const guides = (await loadStories()).filter(
@@ -110,6 +111,7 @@ describe('проход гайдов со свежей таблицей (ADR 0117
     for (const { story, Story } of guides) {
       // eslint-disable-next-line no-console -- локализация зависшего обхода
       console.log('SN73_STORY', story)
+      await parkPointer()
       const guide = await render(<Story />)
       let current = ''
       const error = await walkFresh(() =>
@@ -121,7 +123,7 @@ describe('проход гайдов со свежей таблицей (ADR 0117
           },
         } as never),
       )
-      await guide.unmount()
+      await cleanup()
       await until(() =>
         expect(document.querySelector('[role="menu"]')).toBeNull(),
       )

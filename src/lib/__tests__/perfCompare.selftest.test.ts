@@ -8,7 +8,7 @@ import type { CompareReport } from '../../../scripts/perfTools'
 
 // Самопроверка `perf:compare` настоящими прогонами (ADR 0099, PF15–PF16): ложных тревог
 // нет, подмешанная работа ловится. Идёт отдельно — `npm run perf:selftest`, ~20 мин;
-// B — рабочая копия, A — HEAD: на чистом дереве это одна ревизия.
+// Обе стороны берут HEAD из одного временного дерева, даже если рабочая копия изменена.
 
 const CASES = 'P2,P10'
 const TIMEOUT = 60 * 60_000
@@ -16,7 +16,14 @@ const TIMEOUT = 60 * 60_000
 const compare = (...extra: string[]): CompareReport => {
   const { status } = spawnSync(
     process.execPath,
-    ['scripts/perf-compare.mjs', 'HEAD', '--cases', CASES, ...extra],
+    [
+      'scripts/perf-compare.mjs',
+      'HEAD',
+      '--same-revision',
+      '--cases',
+      CASES,
+      ...extra,
+    ],
     { stdio: 'inherit' },
   )
   expect(status === 0 || status === 1, `perf:compare: код ${status}`).toBe(true)

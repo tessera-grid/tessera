@@ -1,10 +1,13 @@
 /**
- * Поле колонки плагина valueChangeFlash (ADR 0221, §2): какие колонки вспыхивают при смене
- * значения извне и с направлением ли. Фича без поведения — только поле в карте фич.
+ * Плагин valueChangeFlash (ADR 0221): отмечает свои записи и добавляет настройки вспышек
+ * в определение колонки.
  */
+import { trackOwnWrites } from '../../shared/ownWrites'
 import type { RowData, TableFeature, TableFeatures } from '../../types'
 
-export const valueChangeFlashFeature: TableFeature = {}
+export const valueChangeFlashFeature: TableFeature = {
+  constructTableAPIs: trackOwnWrites,
+}
 
 export interface ValueChangeFlashColumnDef {
   /** `false` — колонка не вспыхивает; `'direction'` — тон и стрелка роста или падения. */

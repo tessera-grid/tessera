@@ -492,12 +492,15 @@ const CALLBACKS: readonly GuideStoryStep[] = [
     },
     enter: stepAction(async (root, { signal }) => {
       await moveFirstRow(root, signal)
-      const order = rowIdOrder(root).join()
-      await beginDrag(rowAt(root, 0).querySelector<HTMLElement>(HANDLE)!)
+      const row = rowAt(root, 0)
+      const id = row.dataset.rowId
+      await beginDrag(row.querySelector<HTMLElement>(HANDLE)!)
       await pollUntil(() => !!root.querySelector(OVERLAY), signal)
       cancelDrag()
+      await pollUntil(() => !root.querySelector(OVERLAY), signal)
+      // Запас виртуализатора может измениться при отмене. Проверяем место взятой строки.
       await pollUntil(
-        () => !root.querySelector(OVERLAY) && rowIdOrder(root).join() === order,
+        () => !!id && rowAt(root, 0)?.dataset.rowId === id,
         signal,
       )
       await clicksBack(signal)
@@ -1701,7 +1704,13 @@ export const PluginApiPluginCrash: StoryObj<StoryProps> = {
     await step(CRASH[1]!.title.ru, async () => {
       // Сообщения консоли за шаг — проверка, а не событие: шаг их только вызывает.
       const logged: string[] = []
+      const unexpected: string[] = []
+      // React 18 в dev сообщает о вложенной ошибке через window, даже когда её поймала граница.
+      const onError = (event: ErrorEvent) => {
+        if (!VISITS_FAILURE.test(event.message)) unexpected.push(event.message)
+      }
       const error = console.error
+      window.addEventListener('error', onError)
       console.error = (...args: unknown[]) => {
         logged.push(args.map(String).join(' '))
         error(...args)
@@ -1716,7 +1725,9 @@ export const PluginApiPluginCrash: StoryObj<StoryProps> = {
         )
       } finally {
         console.error = error
+        window.removeEventListener('error', onError)
       }
+      expect(unexpected).toEqual([])
       expect(checkboxOf(canvas, CRASH_ROW)).not.toBeNull()
       expect(visitsOf(canvas, 'item-id-1')).not.toBeNull()
       expect(canvas.querySelector('.column-sort__button')).not.toBeNull()

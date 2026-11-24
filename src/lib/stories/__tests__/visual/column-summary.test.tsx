@@ -187,7 +187,12 @@ describe('сводка колонки (ADR 0230)', () => {
 
     // Клавиатурой: Enter на пункте списка.
     await openSummary()
-    item('Max')!.focus()
+    await userEvent.keyboard('{Home}')
+    for (let step = 0; step < items().length; step++) {
+      if (document.activeElement === item('Max')) break
+      await userEvent.keyboard('{ArrowDown}')
+    }
+    expect(document.activeElement).toBe(item('Max'))
     await userEvent.keyboard('{Enter}')
     await expect.poll(menu).toBeNull()
     await expect.poll(() => footerText()).toContain('$3,000.00')

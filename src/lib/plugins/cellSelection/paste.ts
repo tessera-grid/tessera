@@ -5,14 +5,19 @@
  */
 import { announceLabel } from '../../core/announcer'
 import { cancelPending } from '../../core/cancellation'
-import { type CellWrite, cellWriterOf, writeCells } from '../../core/cellWrites'
+import {
+  type CellWrite,
+  cellWriterOf,
+  DEFAULT_WRITE_LIMITS,
+  writeCells,
+} from '../../core/cellWrites'
 import { reportAction } from '../../core/debugActions'
 import { ENGLISH_LABELS } from '../../core/localization'
 import { announcerLabels } from '../../core/announcer'
 import { rowSourceOf } from '../../core/rowSource'
 import { readServerAction, writeServerAction } from '../../core/serverActions'
 import { isThenable } from '../../util/thenable'
-import { timeSlicer } from '../../util/timeSlice'
+import { timeSlicer, yieldToMain } from '../../util/timeSlice'
 import {
   clipboardRows,
   TESSERA_FORMAT,
@@ -104,7 +109,10 @@ const targetOf = (
   rowAt: (index: number) => PasteRow | undefined,
 ): Target => {
   const t = table as PasteTable
-  const count = rowSourceOf(table).count()
+  const source = rowSourceOf<PasteRow>(table)
+  // У клиента берём готовый список один раз: `at` заново обращается к движку строк.
+  const clientRows = source.keyByIndex ? undefined : source.rows?.()
+  const count = clientRows?.length ?? source.count()
 
   const targetColumns: string[] = []
   for (
@@ -118,7 +126,7 @@ const targetOf = (
 
   const rows: { id: string; index: number }[] = []
   for (let r = bound.minRowIndex; r < count && rows.length < height; r++) {
-    const row = rowAt(r)
+    const row = clientRows ? clientRows[r] : rowAt(r)
     if (!row) break
     if (isPassedRow(table, row)) continue
     rows.push({ id: row.id, index: r })
@@ -227,6 +235,12 @@ const pasteClip = async (
       const targets = ranges.map((bound, i) =>
         targetOf(table, bound, columns, sizes[i]!, rows.at),
       )
+      const cellCount = targets.reduce(
+        (count, target) => count + target.rows.length * target.columns.length,
+        0,
+      )
+      // Большой буфер: после сбора целей новая задача строит изменения ячеек.
+      if (cellCount > DEFAULT_WRITE_LIMITS.max) await yieldToMain()
       const changes: CellWrite[] = []
       for (const target of targets)
         await changesOf(target, clip, width, changes)

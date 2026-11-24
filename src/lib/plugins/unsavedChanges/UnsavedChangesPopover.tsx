@@ -250,6 +250,8 @@ const DraftList = ({
     getScrollElement: () => scrollRef.current,
     estimateSize: index =>
       rows[index]!.kind === 'title' ? TITLE_ESTIMATE : ENTRY_ESTIMATE,
+    // Изменение высоты записи меняет размер списка и поповера.
+    useAnimationFrameWithResizeObserver: true,
     overscan: OVERSCAN,
     getItemKey: index => {
       const row = rows[index]!

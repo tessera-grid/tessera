@@ -74,14 +74,14 @@ const columnDefOf = (table: unknown, columnId: string) =>
   ).getColumn(columnId)?.columnDef ?? {}) as TextWrapColumnDef
 
 /** Строк текста в высоте строки: высота без отступов по высоте на высоту строки текста. */
-const fitLines = (scroller: HTMLElement, heightVar: string) => {
-  const style = getComputedStyle(scroller)
+const fitLines = (
+  style: CSSStyleDeclaration,
+  lineHeight: number,
+  heightVar: string,
+) => {
   const rowHeight = parseFloat(style.getPropertyValue(heightVar))
   const padding = parseFloat(
     style.getPropertyValue('--tsr-comp-cell-wrap-padding-y'),
-  )
-  const lineHeight = parseFloat(
-    getComputedStyle(document.documentElement).fontSize,
   )
   if (!(rowHeight > 0) || !(lineHeight > 0)) return 1
   return Math.max(
@@ -126,14 +126,14 @@ const useTextWrapRoot = ({ table, getScrollElement }: RootHookProps) => {
   useLayoutEffect(() => {
     const scroller = getScrollElement()
     if (!scroller) return
-    scroller.style.setProperty(
-      '--tsr-text-wrap-fit',
-      String(fitLines(scroller, '--tsr-comp-row-height')),
+    const style = getComputedStyle(scroller)
+    const lineHeight = parseFloat(
+      getComputedStyle(scroller.ownerDocument.documentElement).fontSize,
     )
-    scroller.style.setProperty(
-      '--tsr-text-wrap-head-fit',
-      String(fitLines(scroller, '--tsr-comp-head-row-height')),
-    )
+    const bodyLines = fitLines(style, lineHeight, '--tsr-comp-row-height')
+    const headLines = fitLines(style, lineHeight, '--tsr-comp-head-row-height')
+    scroller.style.setProperty('--tsr-text-wrap-fit', String(bodyLines))
+    scroller.style.setProperty('--tsr-text-wrap-head-fit', String(headLines))
     if (headMaxLines !== undefined) {
       scroller.style.setProperty(
         '--tsr-text-wrap-head-max-lines',
@@ -163,11 +163,17 @@ const useTextWrapRoot = ({ table, getScrollElement }: RootHookProps) => {
 export const textWrapBody: BodyContributions = {
   cell: {
     id: 'textWrap',
-    slices: [],
-    // Свой предел строк колонки — переменной стиля ячейки.
-    select: (_state, { cell }) =>
-      maxLinesOf(cell.column.columnDef as TextWrapColumnDef) ?? null,
-    render: maxLines =>
+    slices: ['columnSizing'],
+    // `autoHeight` меряет новую ширину в микрозадаче коммита, до ResizeObserver.
+    select: (_state, { cell }) => {
+      const column = cell.column.columnDef as TextWrapColumnDef
+      return {
+        maxLines: maxLinesOf(column) ?? null,
+        measuredWidth:
+          wrapModeOf(column) === 'auto' ? cell.column.getSize() : undefined,
+      }
+    },
+    render: ({ maxLines }) =>
       maxLines === null
         ? null
         : { style: { '--tsr-text-wrap-max-lines': String(maxLines) } },

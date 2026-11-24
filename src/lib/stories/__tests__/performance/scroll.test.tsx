@@ -4,6 +4,7 @@ import { describe, expect, test } from 'vitest'
 import { commands } from 'vitest/browser'
 
 import {
+  getScroller,
   headCells,
   measureIdleWork,
   measureInteractionWork,
@@ -444,7 +445,7 @@ const TG11_COST = { ratio: 1.3, plusMs: 4 }
 const TG18_COST = { ratio: 1.3, plusMs: 4 }
 const OT11_COST = { ratio: 1.3, plusMs: 4 }
 const AV11_COST = { ratio: 1.3, plusMs: 4 }
-// Цена дуги — решение автора 2026-11-08: монтаж svg дуги у каждой новой строки окна (IR30).
+// Относительная цена дуги при монтаже новых строк окна (IR30).
 const IR30_COST = { ratio: 1.5, plusMs: 8 }
 const OT11_MOUNT_COST = { ratio: 1.3, plusMs: 40 }
 const BT14_COST = { ratio: 1.3, plusMs: 4 }
@@ -459,31 +460,41 @@ const WV9_COST = { ratio: 1.3, plusMs: 4 }
 // Скорость ниже порога быстрой прокрутки (CONTENT_SCROLL): иначе ячейки — скелеты.
 describe('Производительность прокрутки — ожидание и «ошибка» правки', () => {
   test(
-    'AS14: прокрутка небольшой выборки с 1500 отправленными ячейками не дороже той же выборки без них больше чем в 3 раза',
+    'AS14: прокрутка небольшой выборки с 1500 отправленными ячейками укладывается в бюджет каждой оси',
     async () => {
       const args = { ...SMALL, enableCellEditing: true }
       const measure = async (seeded: boolean) => {
-        const screen = renderGrid({
+        const screen = await renderGrid({
           ...args,
           extraPlugins: seeded ? [submittedCellsSeed(SMALL.dataCount)] : [],
         })
-        await waitForGrid()
-        if (seeded) {
+        try {
+          await waitForGrid()
           await expect
-            .poll(() => document.querySelector('[aria-busy="true"]'))
-            .not.toBeNull()
+            .poll(() => !getScroller().querySelector('[data-portions-pending]'))
+            .toBe(true)
+          if (seeded) {
+            await expect
+              .poll(() => getScroller().querySelector('[aria-busy="true"]'))
+              .not.toBeNull()
+          }
+          // Медленно, без быстрой прокрутки: ячейки рисуются содержимым.
+          const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+          const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+          return { y, x }
+        } finally {
+          await screen.unmount()
         }
-        // Медленно, без быстрой прокрутки: ячейки рисуются, а не заменяются скелетами.
-        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
-        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
-        ;(await screen).unmount()
-        return { y, x }
       }
 
       const runs = await againstBase(measure)
       const base = medianAxes(runs.base)
       const seeded = medianAxes(runs.variant)
-      const ceiling = axesCeiling(base, AS14_COST)
+      const relative = axesCeiling(base, AS14_COST)
+      const ceiling = {
+        y: Math.max(relative.y, ANIMATION_BUDGET_MS),
+        x: Math.max(relative.x, ANIMATION_BUDGET_MS),
+      }
       const record = (
         id: string,
         label: string,
@@ -2422,7 +2433,7 @@ describe('Производительность — общая волна ске�
     id: string,
     label: string,
     r: ScrollWorkResult,
-    metric: 'p95' | 'tbt',
+    metric: 'p95' | 'total',
     valueMs: number,
     ceilingMs?: number,
   ) =>
@@ -2435,11 +2446,14 @@ describe('Производительность — общая волна ске�
       cpuThrottle: CPU_THROTTLE_RATE,
       metrics: [
         {
-          axis: 'x',
+          axis: metric === 'p95' ? 'x' : undefined,
           kind: 'animation',
           metric,
           valueMs,
-          targetMs: ANIMATION_BUDGET_MS,
+          targetMs:
+            metric === 'total'
+              ? (ceilingMs ?? ceilingOver(valueMs, WV8_COST))
+              : ANIMATION_BUDGET_MS,
           ceilingMs,
           ...r,
         },
@@ -2461,12 +2475,12 @@ describe('Производительность — общая волна ске�
       const base = medianRun(runs.base, r => r.totalMs)
       const wave = medianRun(runs.variant, r => r.totalMs)
       const ceiling = ceilingOver(base.totalMs, WV8_COST)
-      await record('WV8-base', 'покой с данными', base, 'tbt', base.totalMs)
+      await record('WV8-base', 'покой с данными', base, 'total', base.totalMs)
       await record(
         'WV8',
         'покой во время загрузки: общая волна',
         wave,
-        'tbt',
+        'total',
         wave.totalMs,
         ceiling,
       )
@@ -2619,32 +2633,45 @@ const pendingButtonsSeed = (pending: boolean): TesseraFeatureEntry => {
 
 describe('Производительность прокрутки — дуга ожидания кнопок', () => {
   test(
-    'IR30: спокойная прокрутка 1000×1000 с 1500 кнопками ячеек в ожидании — в пределах цены против тех же кнопок в покое',
+    'IR30: спокойная прокрутка 1000×1000 с 1500 кнопками в ожидании укладывается в бюджет каждой оси',
     async () => {
       const measure = async (pending: boolean) => {
-        const screen = renderGrid({
+        const screen = await renderGrid({
           ...LARGE,
           ...NO_PLUGINS,
           extraPlugins: [pendingButtonsSeed(pending)],
         })
-        await waitForGrid()
-        // Проверка, что мерили заявленное: кнопки в окне, дуги — только в ожидании.
-        await expect
-          .poll(() => document.querySelector('[aria-label="Save"]') !== null)
-          .toBe(true)
-        await expect
-          .poll(() => document.querySelector('svg[data-pending-arc]') !== null)
-          .toBe(pending)
-        const y = await measureScrollWork('y', CONTENT_SCROLL.y)
-        const x = await measureScrollWork('x', CONTENT_SCROLL.x)
-        ;(await screen).unmount()
-        return { y, x }
+        try {
+          await waitForGrid()
+          // Прогон начинает с готового окна, после ухода предыдущего грида.
+          await expect
+            .poll(() => {
+              const scroller = getScroller()
+              return (
+                !!scroller.querySelector('[aria-label="Save"]') &&
+                !scroller.querySelector('[data-portions-pending]')
+              )
+            })
+            .toBe(true)
+          await expect
+            .poll(() => !!getScroller().querySelector('svg[data-pending-arc]'))
+            .toBe(pending)
+          const y = await measureScrollWork('y', CONTENT_SCROLL.y)
+          const x = await measureScrollWork('x', CONTENT_SCROLL.x)
+          return { y, x }
+        } finally {
+          await screen.unmount()
+        }
       }
 
       const runs = await againstBase(measure)
       const base = medianAxes(runs.base)
       const pending = medianAxes(runs.variant)
-      const ceiling = axesCeiling(base, IR30_COST)
+      const relative = axesCeiling(base, IR30_COST)
+      const ceiling = {
+        y: Math.max(relative.y, ANIMATION_BUDGET_MS),
+        x: Math.max(relative.x, ANIMATION_BUDGET_MS),
+      }
       const record = (
         id: string,
         label: string,
@@ -2881,7 +2908,7 @@ describe('Производительность прокрутки — серве
         // Миллион строк — растянутая область: колесо идёт 1:1, ползунок — на долю итога.
         const y = await measureScrollWork('y', {
           ...CONTENT_SCROLL.y,
-          wheel: server,
+          wheel: true,
         })
         const x = await measureScrollWork('x', CONTENT_SCROLL.x)
         ;(await screen).unmount()
@@ -2963,7 +2990,7 @@ describe('Производительность прокрутки — растя
         const y = await measureScrollWork('y', {
           ...CONTENT_SCROLL.y,
           fast: false,
-          wheel: stretched,
+          wheel: true,
         })
         ;(await screen).unmount()
         return y

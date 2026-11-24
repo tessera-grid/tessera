@@ -31,18 +31,19 @@ const tableKey = (table: unknown) =>
 const keyOf = (rowId: string, columnId?: string) =>
   columnId === undefined ? `r:${rowId}` : `c:${rowId}\u0000${columnId}`
 
+/** Включить отметки для потребителя вспышек изменений. */
+export const trackOwnWrites = (table: unknown) => {
+  const key = tableKey(table)
+  if (!marks.has(key)) marks.set(key, new Map())
+}
+
 /** Отметить записи до вызова колбэка; вернуть «ответ пришёл» — вызвать один раз. */
 export const markOwnWrites = (
   table: unknown,
   writes: readonly OwnWrite[],
 ): (() => void) => {
-  if (writes.length === 0) return () => {}
-  const key = tableKey(table)
-  let map = marks.get(key)
-  if (!map) {
-    map = new Map()
-    marks.set(key, map)
-  }
+  const map = marks.get(tableKey(table))
+  if (!map || writes.length === 0) return () => {}
   // Отметки, чьё эхо так и не пришло, уходят при следующей записи.
   const now = performance.now()
   for (const [k, mark] of map) if (!live(mark, now)) map.delete(k)

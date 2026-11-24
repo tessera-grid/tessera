@@ -205,6 +205,27 @@ describe('Включённое состояние кнопок (ADR 0129)', () =
     expect(drafted.tone).toBe(tokenColor('--tsr-comp-draft-color'))
     await screen.rerender(<Kit active={false} draft={false} />)
     expect(look(), 'точка несохранённого гаснет своим тоном').toEqual(drafted)
+
+    // Смена настроек движения посреди ухода отменяет CSS-переход без transitionend.
+    await shownBefore({ active: true, count: 3 })
+    const bubble = bubbleOf(kit())!
+    bubble.style.transitionDuration = '5s'
+    await screen.rerender(<Kit active={false} count={0} />)
+    await expect
+      .poll(() =>
+        bubble
+          .getAnimations()
+          .some(
+            animation =>
+              animation.playState === 'running' &&
+              typeof animation.currentTime === 'number' &&
+              animation.currentTime > 0,
+          ),
+      )
+      .toBe(true)
+    expect(look().text).toBe('3')
+    bubble.style.transitionProperty = 'none'
+    await expect.poll(() => look().text).toBe('')
     await screen.unmount()
   })
 

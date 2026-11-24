@@ -12,6 +12,32 @@
   inherits: false;
 }
 
+/* Тинт и кромки читает сама ячейка. Содержимое получает готовую тень. */
+@property --tsr-cell-selection-tint {
+  syntax: '*';
+  inherits: false;
+}
+
+@property --tsr-sel-edge-top {
+  syntax: '*';
+  inherits: false;
+}
+
+@property --tsr-sel-edge-right {
+  syntax: '*';
+  inherits: false;
+}
+
+@property --tsr-sel-edge-bottom {
+  syntax: '*';
+  inherits: false;
+}
+
+@property --tsr-sel-edge-left {
+  syntax: '*';
+  inherits: false;
+}
+
 .body__cell {
   contain: layout paint;
   display: flex;
@@ -248,7 +274,8 @@
   background: var(--tsr-comp-pending-bg);
 }
 
-:is(.body__cell, .body__filler)[data-pending-wave]::before {
+:where(:global([data-pending-wave-animated]))
+  :is(.body__cell, .body__filler)[data-pending-wave]::before {
   content: '';
   position: absolute;
   z-index: -1;
@@ -295,12 +322,6 @@
 
 .body__cell[data-actions-column-cell='true'][data-cell-first-right-pinned='true'][data-cell-odd-right-pinned='true'][data-pending-wave] {
   background-color: var(--tsr-comp-row-odd-bg);
-}
-
-/* Без блика — одна подложка: уменьшенное движение или цель больше порога (usePendingWave). */
-:global([data-pending-wave-still])
-  :is(.body__cell, .body__filler)[data-pending-wave]::before {
-  display: none;
 }
 
 .body__cell[data-tree-depth] {
@@ -404,11 +425,15 @@
   }
 
   :is(.body__cell, .body__filler)[data-pending-wave]::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
     display: block;
     forced-color-adjust: none;
     inset: 0;
     width: auto;
     transform: none;
+    pointer-events: none;
     background: none;
     border: 1px dotted Highlight;
   }

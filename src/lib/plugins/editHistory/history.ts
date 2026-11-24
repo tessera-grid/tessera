@@ -12,6 +12,8 @@ import {
 } from '../../core/cancellation'
 import {
   type CellsWritten,
+  type CellWrite,
+  DEFAULT_WRITE_LIMITS,
   type RowPlace,
   type WrittenCell,
   type WrittenMove,
@@ -21,6 +23,7 @@ import {
   shownCellValue,
   writeCells,
 } from '../../core/cellWrites'
+import { followDataChanges } from '../../core/dataFollow'
 import { setPluginState } from '../../core/definePlugin'
 import { reportAction, type DebugActionSource } from '../../core/debugActions'
 import { getDisplayColumns } from '../../core/displayColumns'
@@ -30,7 +33,10 @@ import {
   reportFailure,
   resolveFailure,
 } from '../../core/failures/failuresFeature'
-import type { HighlightTarget } from '../../core/highlights/highlightFeature'
+import type {
+  HighlightTarget,
+  RangeTarget,
+} from '../../core/highlights/highlightFeature'
 import { actionLabelOf } from '../../core/actions'
 import { ENGLISH_LABELS, type TableLabels } from '../../core/localization'
 import { announcerLabels } from '../../core/announcer'
@@ -40,6 +46,8 @@ import { readServerAction, writeServerAction } from '../../core/serverActions'
 import { sameCellValue, type CompareColumn } from '../../shared/cellValues'
 import { objectTargetText } from '../../shared/objectTarget'
 import { editHistoryLabels } from './labels'
+import { REACT_MAJOR } from '../../util/reactVersion'
+import { timeSlicer, yieldToMain } from '../../util/timeSlice'
 
 export const ID = 'editHistory'
 
@@ -130,6 +138,7 @@ interface Entry {
   source: EditHistorySource
   time: number
   cells: readonly WrittenCell[]
+  uniqueCells?: boolean
   app?: AppHistoryEntry
   /** Серверная модель: место строки в списке при записи — догрузка под шаг (§7). */
   indexes?: ReadonlyMap<string, number>
@@ -139,10 +148,18 @@ interface Entry {
   move?: WrittenMove
 }
 
+interface WriteEcho {
+  cells: readonly WrittenCell[]
+  direction: Direction
+  uniqueCells: boolean
+  find: (key: string) => WrittenCell | undefined
+}
+
 interface Stack {
   entries: Entry[]
   position: number
   chain: Promise<unknown>
+  rewindChain?: Promise<boolean>
   busy: number
   running?: Direction
   version: number
@@ -154,7 +171,8 @@ interface Stack {
    * Эхо последней сохранённой записи: прежнее и новое значение ячеек, пока данные приложения
    * не приняли записанное (React-состояние приложения обновится позже) — не конфликт.
    */
-  echo: Map<string, { stale: unknown; fresh: unknown }>
+  echo?: WriteEcho
+  unfollowReveal?: () => void
   /** Эхо последнего переноса: прежнее место строки ещё в данных приложения — не конфликт. */
   moveEcho?: { rowId: string; stale: RowPlace; fresh: RowPlace }
   /** Что изменил идущий переход к записи — вспышка после него (§11). */
@@ -180,7 +198,6 @@ const stackOf = (table: unknown): Stack => {
       busy: 0,
       version: 0,
       waiters: new Set(),
-      echo: new Map(),
       applied: [],
     }
     stacks.set(key, stack)
@@ -453,16 +470,21 @@ const remember = (
   table: unknown,
   cells: readonly WrittenCell[],
   direction: Direction,
+  uniqueCells = false,
 ) => {
-  const echo = new Map<string, { stale: unknown; fresh: unknown }>()
-  for (const cell of cells)
-    echo.set(
-      keyOf(cell),
-      direction === 'undo'
-        ? { stale: cell.after, fresh: cell.before }
-        : { stale: cell.before, fresh: cell.after },
-    )
-  stackOf(table).echo = echo
+  let index: Map<string, WrittenCell> | undefined
+  stackOf(table).echo = {
+    cells,
+    direction,
+    uniqueCells,
+    find: key => {
+      if (!index) {
+        index = new Map()
+        for (const cell of cells) index.set(keyOf(cell), cell)
+      }
+      return index.get(key)
+    },
+  }
 }
 
 /**
@@ -498,13 +520,15 @@ export const recordWritten = (table: unknown, record: CellsWritten) => {
         stale: record.move.from,
         fresh: record.move.to,
       }
-    else if (record.cells.length > 0) remember(table, record.cells, 'redo')
+    else if (record.cells.length > 0)
+      remember(table, record.cells, 'redo', record.uniqueCells)
   } else if (record.rows && record.rows.length > 0) {
     push(table, {
       id: `history-${++entries}`,
       source: record.source,
       time: Date.now(),
       cells: record.cells,
+      uniqueCells: record.uniqueCells,
       rows: record.rows,
     })
   } else if (record.move) {
@@ -521,7 +545,7 @@ export const recordWritten = (table: unknown, record: CellsWritten) => {
       move: record.move,
     })
   } else if (record.cells.length > 0) {
-    remember(table, record.cells, 'redo')
+    remember(table, record.cells, 'redo', record.uniqueCells)
     const source = rowSourceOf<{ id: string }>(table)
     const indexes = source.keyByIndex
       ? new Map(
@@ -536,6 +560,7 @@ export const recordWritten = (table: unknown, record: CellsWritten) => {
       source: record.source,
       time: Date.now(),
       cells: record.cells,
+      uniqueCells: record.uniqueCells,
       ...(indexes ? { indexes } : {}),
     })
   }
@@ -555,7 +580,7 @@ const settleLate = (table: unknown, record: CellsWritten) => {
   const keys = new Set(entry.cells.map(keyOf))
   if (!record.cells.every(cell => keys.has(keyOf(cell)))) return
   stack.position += undo ? -1 : 1
-  remember(table, entry.cells, undo ? 'undo' : 'redo')
+  remember(table, entry.cells, undo ? 'undo' : 'redo', entry.uniqueCells)
   publish(table)
 }
 
@@ -570,6 +595,7 @@ export const pushHistory = (table: unknown, app: AppHistoryEntry) => {
 
 export const clearHistory = (table: unknown) => {
   const stack = stackOf(table)
+  stack.unfollowReveal?.()
   stack.entries = []
   stack.position = 0
   publish(table)
@@ -596,76 +622,128 @@ interface ColumnsTable {
   getColumn: (id: string) => CompareColumn | undefined
 }
 
+const dataOf = (table: unknown) =>
+  (table as { options: { data?: unknown } }).options.data
+
 /** Ячейки записи, которые можно писать: строка и колонка есть, значение не менялось извне. */
 const prepare = (
   table: unknown,
   entry: Entry,
   direction: Direction,
   loaded: ReadonlyMap<string, LoadedRow>,
+  batchSize = Infinity,
 ) => {
-  const source = rowSourceOf<{ id: string }>(table)
+  const source = rowSourceOf<LoadedRow>(table)
+  const columns = new Map<string, CompareColumn | undefined>()
+  const rows = new Map<string, LoadedRow | undefined>()
   const { conflict } = configOf(table)
   const { echo } = stackOf(table)
-  const writes: WrittenCell[] = []
-  let changed = 0
-  let missing = 0
-  for (const cell of entry.cells) {
-    const column = (table as ColumnsTable).getColumn(cell.columnId)
-    const fetched = loaded.get(cell.rowId)
-    if (!column || (!source.byId(cell.rowId) && !fetched)) {
-      missing++
-      continue
-    }
-    const expected = direction === 'undo' ? cell.after : cell.before
-    const now = fetched
-      ? fetched.getValue(cell.columnId)
-      : shownCellValue(table, cell.rowId, cell.columnId)
-    const pending = echo.get(keyOf(cell))
-    const same =
-      sameCellValue(table, column, now, expected) ||
-      (pending !== undefined &&
-        sameCellValue(table, column, now, pending.stale) &&
-        sameCellValue(table, column, expected, pending.fresh))
-    if (conflict === 'skip' && !same) {
-      changed++
-      continue
-    }
-    writes.push(cell)
+  const sameEntry = echo?.uniqueCells && echo.cells === entry.cells
+  const echoedUndo = echo?.direction === 'undo'
+  const result = {
+    writes: [] as WrittenCell[],
+    changes: [] as CellWrite[],
+    changed: 0,
+    missing: 0,
   }
-  return { writes, changed, missing }
+  let index = 0
+  const advance = () => {
+    const end = Math.min(index + batchSize, entry.cells.length)
+    for (; index < end; index++) {
+      const cell = entry.cells[index]!
+      if (!columns.has(cell.columnId))
+        columns.set(
+          cell.columnId,
+          (table as ColumnsTable).getColumn(cell.columnId),
+        )
+      const column = columns.get(cell.columnId)
+      if (!column) {
+        result.missing++
+        continue
+      }
+      if (!rows.has(cell.rowId))
+        rows.set(cell.rowId, loaded.get(cell.rowId) ?? source.byId(cell.rowId))
+      const row = rows.get(cell.rowId)
+      if (!row) {
+        result.missing++
+        continue
+      }
+      if (conflict === 'skip') {
+        const expected = direction === 'undo' ? cell.after : cell.before
+        const now = loaded.has(cell.rowId)
+          ? row.getValue(cell.columnId)
+          : shownCellValue(table, cell.rowId, cell.columnId, row)
+        if (!sameCellValue(table, column, now, expected)) {
+          // У только что записанного шага ячейка уже есть в том же массиве.
+          const pending = sameEntry ? cell : echo?.find(keyOf(cell))
+          if (
+            !pending ||
+            !sameCellValue(
+              table,
+              column,
+              now,
+              echoedUndo ? pending.after : pending.before,
+            ) ||
+            !sameCellValue(
+              table,
+              column,
+              expected,
+              echoedUndo ? pending.before : pending.after,
+            )
+          ) {
+            result.changed++
+            continue
+          }
+        }
+      }
+      result.writes.push(cell)
+      result.changes.push({
+        rowId: cell.rowId,
+        columnId: cell.columnId,
+        value: direction === 'undo' ? cell.before : cell.after,
+      })
+    }
+    return index < entry.cells.length
+  }
+  return { result, advance }
 }
 
-/**
- * Выделить ячейки записи и прокрутить к ним (§9); скрытые — объявить. `show` — нажатие на текущую
- * запись (§11): область по центру и вспышка, как у «Показать» журнала отказов и пульта; иначе область
- * копится для вспышки в конце перехода.
- */
-const reveal = (
+/** Актуальные границы записанных ячеек, включая признак скрытых (§9). */
+const planReveal = (
   table: unknown,
   cells: readonly WrittenCell[],
   indexes?: ReadonlyMap<string, number>,
-  show = false,
-  /** Шаг записан черновиками — без вспышки сохранения. */
-  draft = false,
 ) => {
   const source = rowSourceOf<{ id: string }>(table)
   const columns = getDisplayColumns(
     table as Parameters<typeof getDisplayColumns>[0],
-  ).ids
+  ).indexById
+  const rowIndexes = new Map<string, number>()
   let top: { index: number; id: string } | undefined
   let bottom: { index: number; id: string } | undefined
   let left: { index: number; id: string } | undefined
   let right: { index: number; id: string } | undefined
   let hidden = false
+  let rowId: string | undefined
+  let row = -1
   for (const cell of cells) {
-    // Серверная модель: строки, ушедшей из кэша, в списке нет — место из записи (§7).
-    const listed = source.indexOf(cell.rowId)
-    const row =
-      listed < 0 && source.keyByIndex
-        ? (indexes?.get(cell.rowId) ?? -1)
-        : listed
-    const column = columns.indexOf(cell.columnId)
-    if (row < 0 || column < 0) {
+    const column = columns.get(cell.columnId) ?? -1
+    if (column < 0) {
+      hidden = true
+      continue
+    }
+    if (rowId !== cell.rowId) {
+      rowId = cell.rowId
+      const known = rowIndexes.get(rowId)
+      if (known === undefined) {
+        const listed = source.indexOf(rowId)
+        // Серверная модель: строка ушла из кэша — берём место из записи (§7).
+        row =
+          listed < 0 && source.keyByIndex ? (indexes?.get(rowId) ?? -1) : listed
+        rowIndexes.set(rowId, row)
+      } else row = known
+    }
+    if (row < 0) {
       hidden = true
       continue
     }
@@ -676,38 +754,135 @@ const reveal = (
     if (!right || column > right.index)
       right = { index: column, id: cell.columnId }
   }
-  if (!top || !bottom || !left || !right) return hidden
-  const t = table as {
-    setCellSelection?: (updater: () => unknown[]) => void
+  return {
+    hidden,
+    byIndex: source.keyByIndex,
+    rectangle:
+      top && bottom && left && right ? { top, bottom, left, right } : undefined,
   }
-  t.setCellSelection?.(() => [
-    {
-      anchorRowId: top.id,
-      anchorColumnId: left.id,
-      focusRowId: bottom.id,
-      focusColumnId: right.id,
-    },
-  ])
+}
+
+/**
+ * Выделить ячейки записи и прокрутить к ним (§9). `show` центрирует и вспыхивает
+ * текущую запись (§11). Шаг черновиков копит область для вспышки в конце перехода.
+ */
+const applyReveal = (
+  table: unknown,
+  { hidden, byIndex, rectangle }: ReturnType<typeof planReveal>,
+  show: boolean,
+  draft: boolean,
+) => {
+  if (!rectangle) return hidden
+  const { top, bottom, left, right } = rectangle
+  const t = table as {
+    setCellSelection?: (
+      updater: (current: RevealedRange[]) => RevealedRange[],
+    ) => void
+  }
+  const range = {
+    anchorRowId: top.id,
+    anchorColumnId: left.id,
+    focusRowId: bottom.id,
+    focusColumnId: right.id,
+  }
+  t.setCellSelection?.(current => {
+    const first = current?.[0]
+    return current?.length === 1 &&
+      first &&
+      first.operation !== 'exclude' &&
+      sameRangeIds(first, range) &&
+      (first.anchorRowIndex === undefined ||
+        first.anchorRowIndex === top.index) &&
+      (first.focusRowIndex === undefined ||
+        first.focusRowIndex === bottom.index)
+      ? current
+      : [range]
+  })
   void scrollToRow(table as never, top.id, {
     columnId: left.id,
-    ...(source.keyByIndex ? { index: top.index } : {}),
+    ...(byIndex ? { index: top.index } : {}),
     ...(show ? { align: 'center' as const } : {}),
   })
   const target: HighlightTarget =
-    top === bottom && left === right
-      ? { cell: [top.id, left.id] }
-      : {
-          range: {
-            anchorRowId: top.id,
-            anchorColumnId: left.id,
-            focusRowId: bottom.id,
-            focusColumnId: right.id,
-          },
-        }
+    top === bottom && left === right ? { cell: [top.id, left.id] } : { range }
   if (show) flashOutcome(table, target, 'arrived')
   // Переход к записи: черновики вспышки сохранения не дают — их область вспыхнет в конце (§11).
   else if (draft) stackOf(table).changed?.push(target)
   return hidden
+}
+
+const reveal = (
+  table: unknown,
+  cells: readonly WrittenCell[],
+  indexes?: ReadonlyMap<string, number>,
+  show = false,
+  draft = false,
+) => applyReveal(table, planReveal(table, cells, indexes), show, draft)
+
+type RevealedRange = RangeTarget['range'] & {
+  operation?: 'include' | 'exclude'
+}
+
+const sameRangeIds = (a: RevealedRange, b: RevealedRange) =>
+  a.anchorRowId === b.anchorRowId &&
+  a.focusRowId === b.focusRowId &&
+  a.anchorColumnId === b.anchorColumnId &&
+  a.focusColumnId === b.focusColumnId
+
+/** Повторить показ после коммита данных, если приложение подтвердило запись раньше. */
+const followReveal = (
+  table: unknown,
+  cells: readonly WrittenCell[],
+  indexes: ReadonlyMap<string, number> | undefined,
+  direction: Direction,
+) => {
+  const stack = stackOf(table)
+  const echo = stack.echo
+  const selection = (
+    table as {
+      atoms?: {
+        cellSelection?: { get: () => readonly RevealedRange[] | undefined }
+      }
+    }
+  ).atoms?.cellSelection
+  const shown = selection?.get()
+  const stop = () => {
+    unfollow()
+    stack.unfollowReveal = undefined
+  }
+  const unfollow = followDataChanges(table, () => {
+    const current = selection?.get()
+    // Коммит обновляет индексы углов. Сравниваем строки и колонки по id.
+    const stillShown =
+      current === shown ||
+      (current?.length === 1 &&
+        shown?.length === 1 &&
+        sameRangeIds(current[0]!, shown[0]!) &&
+        current[0]!.operation === shown[0]!.operation)
+    if (stack.echo !== echo || !stillShown) {
+      stop()
+      return
+    }
+    const source = rowSourceOf<LoadedRow>(table)
+    const arrived = cells.every(cell => {
+      const row = source.byId(cell.rowId)
+      const column = (table as ColumnsTable).getColumn(cell.columnId)
+      return (
+        row &&
+        column &&
+        sameCellValue(
+          table,
+          column,
+          row.getValue(cell.columnId),
+          direction === 'undo' ? cell.before : cell.after,
+        )
+      )
+    })
+    if (!arrived) return
+    stop()
+    reveal(table, cells, indexes)
+  })
+  stack.unfollowReveal = stop
 }
 
 /** Пометка шага для общего объявления: несколько объявлений одного кадра живая область теряет. */
@@ -827,7 +1002,7 @@ const loadRows = async (
 /** Записать ячейки обратно и дождаться итога своей записи. */
 const writeBack = async (
   table: unknown,
-  cells: readonly WrittenCell[],
+  changes: readonly CellWrite[],
   direction: Direction,
   rows: ReadonlyMap<string, LoadedRow>,
 ): Promise<CellsWritten | 'none' | 'limited'> => {
@@ -842,11 +1017,7 @@ const writeBack = async (
   try {
     const report = await writeCells(
       table,
-      cells.map(cell => ({
-        rowId: cell.rowId,
-        columnId: cell.columnId,
-        value: direction === 'undo' ? cell.before : cell.after,
-      })),
+      changes,
       rows.size > 0 ? { source: direction, rows } : { source: direction },
     )
     // Отказ предела (ADR 0223, §4) уже показан плашкой — шаг просто не сделан.
@@ -869,7 +1040,42 @@ const stepCells = async (
   const stack = stackOf(table)
   const loaded = await loadRows(table, entry, direction)
   if (!loaded) return false
-  const { writes, changed, missing } = prepare(table, entry, direction, loaded)
+  const sliced =
+    entry.cells.length > DEFAULT_WRITE_LIMITS.max &&
+    !rowSourceOf(table).keyByIndex
+  const position = stack.position
+  if (sliced) await yieldToMain()
+  const input = table as {
+    store: { get: () => unknown }
+    options: { data: unknown; columns: unknown }
+  }
+  const { data, columns } = input.options
+  const state = sliced ? input.store.get() : undefined
+  const writer = sliced ? cellWriterOf(table) : undefined
+  let preparation = prepare(
+    table,
+    entry,
+    direction,
+    loaded,
+    sliced ? 256 : Infinity,
+  )
+  if (sliced) {
+    const slice = timeSlicer(4)
+    while (preparation.advance()) await slice()
+    if (stack.entries[index] !== entry || stack.position !== position)
+      return false
+    // Если во время паузы изменились данные или состояние, сверяем весь шаг заново.
+    if (
+      data !== input.options.data ||
+      columns !== input.options.columns ||
+      state !== input.store.get() ||
+      writer !== cellWriterOf(table)
+    ) {
+      preparation = prepare(table, entry, direction, loaded)
+      preparation.advance()
+    }
+  } else preparation.advance()
+  const { writes, changes, changed, missing } = preparation.result
   notes.push(...skipNotes({ changed, missing }))
   if (writes.length === 0) {
     // Записи без ячеек нечего отменять — она уходит (§6).
@@ -878,16 +1084,30 @@ const stepCells = async (
     publish(table)
     return false
   }
-  const result = await writeBack(table, writes, direction, loaded)
+  const beforeData = dataOf(table)
+  const result = await writeBack(table, changes, direction, loaded)
   if (result === 'limited') return false
   if (result === 'none') {
     notes.push(all => editHistoryLabels(all).announceNotWritable(writes.length))
     return false
   }
   if (result.cancelled && result.cells.length === 0) return false
-  const saved = new Set(result.cells.map(keyOf))
-  const done = writes.filter(cell => saved.has(keyOf(cell)))
-  const rest = writes.filter(cell => !saved.has(keyOf(cell)))
+  let done = writes
+  const rest: WrittenCell[] = []
+  const allSaved =
+    result.cells.length === writes.length &&
+    result.cells.every(
+      (cell, i) =>
+        cell.rowId === writes[i]!.rowId &&
+        cell.columnId === writes[i]!.columnId,
+    )
+  if (!allSaved) {
+    const saved = new Set(result.cells.map(keyOf))
+    done = []
+    for (const cell of writes) {
+      ;(saved.has(keyOf(cell)) ? done : rest).push(cell)
+    }
+  }
   if (done.length === 0) {
     stack.entries[index] = { ...entry, cells: writes }
     publish(table)
@@ -903,10 +1123,44 @@ const stepCells = async (
     stack.entries.splice(index, 1, ...(rest.length ? [moved, left] : [moved]))
     stack.position++
   }
-  remember(table, done, direction)
-  publish(table)
-  if (reveal(table, done, entry.indexes, false, !!result.draft))
-    notes.push(all => editHistoryLabels(all).announceHidden)
+  remember(table, done, direction, entry.uniqueCells)
+  // В React 18 запись store может завершиться раньше коммита клиентских данных.
+  // У крупного клиентского шага окно с новыми данными коммитится отдельно
+  // от уведомления подписчиков истории и показа выделения.
+  const liveClient = !result.draft && !rowSourceOf(table).keyByIndex
+  const showAfterCommit =
+    liveClient &&
+    (REACT_MAJOR < 19 || done.length >= DEFAULT_WRITE_LIMITS.confirm)
+  const publishAfterCommit =
+    !sliced && liveClient && done.length >= DEFAULT_WRITE_LIMITS.confirm
+  if (!publishAfterCommit) publish(table)
+  if (sliced || showAfterCommit) await yieldToMain()
+  if (publishAfterCommit) publish(table)
+  let hidden: boolean
+  if (sliced) {
+    const geometry = planReveal(table, done, entry.indexes)
+    const source = rowSourceOf(table).rows?.()
+    const columns = input.options.columns
+    const state = input.store.get()
+    await yieldToMain()
+    const ready =
+      columns === input.options.columns &&
+      state === input.store.get() &&
+      source === rowSourceOf(table).rows?.()
+    hidden = applyReveal(
+      table,
+      ready ? geometry : planReveal(table, done, entry.indexes),
+      false,
+      !!result.draft,
+    )
+  } else hidden = reveal(table, done, entry.indexes, false, !!result.draft)
+  if (hidden) notes.push(all => editHistoryLabels(all).announceHidden)
+  if (
+    !result.draft &&
+    !rowSourceOf(table).keyByIndex &&
+    beforeData === dataOf(table)
+  )
+    followReveal(table, done, entry.indexes, direction)
   return true
 }
 
@@ -1077,8 +1331,11 @@ export const step = (
     await Promise.race([savesSettled(table), stopped])
     unregister()
     if (queued.signal.aborted) return false
-    stack.running = direction
-    publish(table)
+    stack.unfollowReveal?.()
+    if (stack.running !== direction) {
+      stack.running = direction
+      publish(table)
+    }
     const index = direction === 'undo' ? stack.position - 1 : stack.position
     const entry = stack.entries[index]
     if (!entry) {
@@ -1135,10 +1392,9 @@ export const step = (
 /**
  * Откат или повтор до записи (§11): шаги по очереди, остановка на первом, что не сделал шаг.
  * Выполненная запись — откат так, чтобы она осталась последней выполненной; откаченная — повтор
- * до неё включительно.
+ * до неё включительно. `null` — откат к виду до первой правки.
  */
-/** Откат или повтор до записи (§11); `null` — откат всех записей, к виду до первой правки. */
-export const rewind = async (
+const rewindTo = async (
   table: unknown,
   entryId: string | null,
   source: DebugActionSource,
@@ -1151,7 +1407,8 @@ export const rewind = async (
     source,
   })
   // Переход к записи (§11): изменённое за переход вспыхивает в конце; уже на месте — показать её.
-  stack.changed = []
+  const changed: HighlightTarget[] = []
+  stack.changed = changed
   let moved = false
   try {
     if (entryId === null) {
@@ -1176,10 +1433,24 @@ export const rewind = async (
       }
     }
   } finally {
-    const changed = stack.changed
     stack.changed = undefined
     if (changed.length > 0) flashOutcome(table, changed, 'arrived')
   }
+}
+
+/** Повторный переход ждёт целиком предыдущий, чтобы шаги и вспышки не смешивались. */
+export const rewind = (
+  table: unknown,
+  entryId: string | null,
+  source: DebugActionSource,
+): Promise<boolean> => {
+  const stack = stackOf(table)
+  const run = () => rewindTo(table, entryId, source)
+  const result = (stack.rewindChain ?? Promise.resolve()).then(run, run)
+  stack.rewindChain = result
+  return result.finally(() => {
+    if (stack.rewindChain === result) stack.rewindChain = undefined
+  })
 }
 
 /** «Стоп» ждущего шага: своя запись ячеек и запись приложения. */
@@ -1190,7 +1461,9 @@ export const cancelStep = (table: unknown) => {
 
 /** Показать ячейки записи без отката — нажатие на текущую запись (§11). */
 export const showEntry = (table: unknown, entryId: string) => {
-  const entry = stackOf(table).entries.find(item => item.id === entryId)
+  const stack = stackOf(table)
+  stack.unfollowReveal?.()
+  const entry = stack.entries.find(item => item.id === entryId)
   if (
     entry &&
     entry.cells.length > 0 &&

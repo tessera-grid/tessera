@@ -62,18 +62,22 @@ export const applyFitted = (
     t.setColumnSizing(old => ({ ...old, ...fixed }))
 }
 
+const isAutosizable = (column: SizedColumn) =>
+  column.getIsVisible() &&
+  !column.getIsActionsColumn?.() &&
+  column.getCanResize?.() !== false
+
+/** Нужен ли пункт подгонки всех колонок в меню. */
+export const hasAutosizableColumns = (table: unknown) =>
+  (table as AutosizeTable).getAllLeafColumns().some(isAutosizable)
+
 /** Колонки данных, которые можно подогнать: видимые, не служебные. */
 export const autosizableColumns = (table: unknown, ids?: readonly string[]) => {
   const t = table as AutosizeTable
   const columns = ids
     ? ids.flatMap(id => t.getColumn(id) ?? [])
     : t.getAllLeafColumns()
-  return columns.filter(
-    column =>
-      column.getIsVisible() &&
-      !column.getIsActionsColumn?.() &&
-      column.getCanResize?.() !== false,
-  )
+  return columns.filter(isAutosizable)
 }
 
 const clamp = (column: SizedColumn, width: number) =>

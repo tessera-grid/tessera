@@ -16,6 +16,7 @@ import {
   settled,
   settledDom,
   track,
+  waitFor,
   warmUpDocument,
   type Tracked,
 } from '../memory.helpers'
@@ -134,7 +135,32 @@ describe('Утечки при пересоздании таблицы', () => {
       await expectCollected(
         tracked.slice(TOGGLE_ORDER.length, TOGGLE_ORDER.length * 2),
       )
-      expectFlat(await measureSlope(change))
+      // Каждый замер — после целого круга, с тем же выключенным плагином.
+      const toggles = TOGGLE_ORDER.length
+      expectFlat(
+        await measureSlope(
+          async index => {
+            await change(index)
+            if ((index + 1) % toggles !== 0) return
+            await settledDom(mounted.container)
+            // Пересчёт ширины после переключения ещё может сменить окно колонок.
+            let changedAt = performance.now()
+            const observer = new MutationObserver(() => {
+              changedAt = performance.now()
+            })
+            observer.observe(mounted.container, {
+              childList: true,
+              subtree: true,
+            })
+            try {
+              await waitFor(() => performance.now() - changedAt >= 300)
+            } finally {
+              observer.disconnect()
+            }
+          },
+          { warmup: toggles, cycles: toggles },
+        ),
+      )
     } finally {
       mounted.unmount()
     }

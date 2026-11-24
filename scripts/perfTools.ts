@@ -213,6 +213,15 @@ export const runRounds = async ({
         samples.set(key, entry)
       }
     }
+    for (const [key, { caseId, A, B }] of samples) {
+      if (!pending.includes(caseId)) continue
+      const missing =
+        A.length < round ? 'A' : B.length < round ? 'B' : undefined
+      if (missing)
+        throw new Error(
+          `perf:compare: нет сопоставимого замера ${key} на стороне ${missing} (раунд ${round})`,
+        )
+    }
     if (round >= min) {
       const undetermined = new Set(
         compare()
@@ -376,6 +385,7 @@ export interface CompareReport {
   generatedAt: string
   ref: string
   sha: string
+  sameRevision?: boolean
   rounds: number
   threshold: number
   results: MetricComparison[]
@@ -386,12 +396,19 @@ export const compareReport = (
   {
     ref,
     sha,
+    sameRevision,
     generatedAt = new Date().toISOString(),
-  }: { ref: string; sha: string; generatedAt?: string },
+  }: {
+    ref: string
+    sha: string
+    sameRevision?: boolean
+    generatedAt?: string
+  },
 ): CompareReport => ({
   generatedAt,
   ref,
   sha,
+  ...(sameRevision ? { sameRevision } : {}),
   rounds: run.rounds,
   threshold: VERDICT_THRESHOLD,
   results: run.results,
@@ -415,8 +432,9 @@ export const formatCompareTable = (report: CompareReport) => {
   )
   const line = (cells: string[]) =>
     cells.map((c, i) => c.padEnd(widths[i]!)).join('  ')
+  const variant = report.sameRevision ? 'та же ревизия' : 'рабочая копия'
   return [
-    `perf:compare: A = ${report.ref} (${report.sha.slice(0, 8)}), B = рабочая копия; раундов ${report.rounds}, порог ±${report.threshold * 100} %`,
+    `perf:compare: A = ${report.ref} (${report.sha.slice(0, 8)}), B = ${variant}; раундов ${report.rounds}, порог ±${report.threshold * 100} %`,
     line(header),
     ...rows.map(line),
   ].join('\n')

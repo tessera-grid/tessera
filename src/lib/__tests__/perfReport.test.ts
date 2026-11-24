@@ -133,6 +133,9 @@ describe('Перф-дашборд', () => {
     })
     const table = formatCompareTable(compare)
     expect(table).toContain('A = master (01234567)')
+    expect(formatCompareTable({ ...compare, sameRevision: true })).toContain(
+      'B = та же ревизия',
+    )
     expect(table).toMatch(
       /P2\/y\/p95\s+10\.0\s+13\.0\s+1\.300\s+1\.210–1\.380\s+регрессия/,
     )

@@ -30,13 +30,44 @@ export const HeaderMetricsContext = createContext<HeaderMetrics | undefined>(
   undefined,
 )
 
+const LENGTHS = [
+  '--tsr-comp-cell-content-padding-x',
+  '--tsr-comp-grid-button-size',
+  '--tsr-comp-button-icon-size',
+  '--tsr-comp-resize-handler-width',
+  '--tsr-comp-head-grip-start',
+  '--tsr-comp-cell-content-gap',
+  '--tsr-comp-head-button-gap',
+  '--tsr-comp-button-size-compact',
+  '--tsr-comp-head-title-min-width',
+  '--tsr-comp-head-grip-gap',
+  '--tsr-comp-drag-handle-inset',
+] as const
+
 /** Длины токенов темы в контексте пробы (`display: none` — без раскладки). */
 const readHeaderMetrics = (probe: HTMLElement): HeaderMetrics => {
   const style = getComputedStyle(probe)
-  const length = (name: string) => {
-    probe.style.width = `var(${name})`
-    return parseFloat(style.width)
+  const values = new Map<string, number>()
+  const probes: { name: string; node: HTMLSpanElement }[] = []
+  for (const name of LENGTHS) {
+    const value = style.getPropertyValue(name).trim()
+    if (/^-?(?:\d+(?:\.\d+)?|\.\d+)px$/.test(value)) {
+      values.set(name, Number.parseFloat(value))
+      continue
+    }
+    // Остальные длины браузер переводит в пиксели в том же контексте темы.
+    const el = probe.ownerDocument.createElement('span')
+    el.style.width = `var(${name})`
+    probes.push({ name, node: el })
   }
+  if (probes.length > 0) {
+    probe.append(...probes.map(({ node }) => node))
+    for (const { name, node } of probes) {
+      values.set(name, Number.parseFloat(getComputedStyle(node).width))
+    }
+    probe.replaceChildren()
+  }
+  const length = (name: (typeof LENGTHS)[number]) => values.get(name)!
   const padding = length('--tsr-comp-cell-content-padding-x')
   const button = length('--tsr-comp-grid-button-size')
   // Без грипа последняя кнопка заходит в отступ на пустоту вокруг иконки (ADR 0135).

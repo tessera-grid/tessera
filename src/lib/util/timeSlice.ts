@@ -2,7 +2,7 @@
  * Долгая работа кусками (ADR 0146, §4): после `sliceMs` работы — уступить главный поток,
  * чтобы ввод и кадры не ждали её конца.
  */
-const yieldToMain = () =>
+export const yieldToMain = () =>
   new Promise<void>(resolve => {
     setTimeout(resolve, 0)
   })

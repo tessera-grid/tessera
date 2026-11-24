@@ -554,9 +554,17 @@ export const SizingRowHeight: StoryObj<StoryProps> = {
       await waitForRows(canvas)
       await until(() => expect(scrollerOf(canvas).scrollTop).toBeGreaterThan(0))
       await rowsAre(50)
+      const viewport = await until(() => {
+        const firstRow = firstShown(canvas)
+        const rowCount = visibleRows(canvas)
+        // После скачка scrollTop виртуализатор может ещё держать прежнее окно.
+        expect(firstRow).toBeDefined()
+        expect(rowCount).toBeGreaterThan(0)
+        return { firstRow, rowCount }
+      })
       body = bodyOf(canvas)
-      visible = visibleRows(canvas)
-      first = firstShown(canvas)
+      visible = viewport.rowCount
+      first = viewport.firstRow
     })
     await step(ROWS[2].title.ru, async () => {
       await guideNext(canvas)

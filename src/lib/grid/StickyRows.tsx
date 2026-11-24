@@ -6,6 +6,7 @@
  * копии сворачивает группу и прокручивает к её строке.
  */
 import { type ReactNode, type MouseEvent, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 
 import { useLatest } from '../util/useLatest'
 
@@ -168,7 +169,7 @@ export const StickyRows = ({
   // Контейнер прокрутки — по блоку: окно грида регистрируется позже эффектов тела.
   const scrollerOf = () =>
     ref.current?.closest<HTMLElement>('.data-grid__container') ?? null
-  const update = useLatest(() => {
+  const update = useLatest((sync = false) => {
     const viewport = viewportOf(table)
     const scroller = scrollerOf()
     if (!viewport || !scroller) return
@@ -180,7 +181,10 @@ export const StickyRows = ({
       scrollLayer(scroller).top(),
       rowHeight,
     )
-    setStack(prev => (sameStack(prev, next) ? prev : next))
+    if (sameStack(stack, next)) return
+    // Копия должна уехать в том же кадре, в котором к ней подошла настоящая строка.
+    if (sync) flushSync(() => setStack(next))
+    else setStack(next)
   })
 
   // Каждая отрисовка тела: строки окна меняет и приход блока серверной модели.
@@ -192,7 +196,7 @@ export const StickyRows = ({
     const scroller = ref.current?.closest<HTMLElement>('.data-grid__container')
     if (!scroller) return
     // Событие прокрутки — раз в кадр, расчёт — поиск делением и строки стопки.
-    const onScroll = () => update.current()
+    const onScroll = () => update.current(true)
     scroller.addEventListener('scroll', onScroll, { passive: true })
     return () => scroller.removeEventListener('scroll', onScroll)
   }, [update])

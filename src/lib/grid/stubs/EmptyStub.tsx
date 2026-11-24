@@ -4,7 +4,6 @@
  * `stubs` заменяет вид, получая действие записи и ошибку загрузки.
  */
 import { useEffect, useRef, useState } from 'react'
-import { flushSync } from 'react-dom'
 
 import { useLocalization } from '../../core/localization'
 import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
@@ -35,17 +34,26 @@ const useBodyRoom = (enabled: boolean) => {
     if (!scroller) return
     const head = scroller.querySelector<HTMLElement>('.data-grid__head')
     const footer = scroller.querySelector<HTMLElement>('.data-grid__footer')
-    // До отрисовки кадра: иначе мелькнула бы заглушка выше своего места.
-    const observer = new ResizeObserver(() => {
-      const next =
+    const measure = () =>
+      setRoom(
         scroller.clientHeight -
-        (head?.offsetHeight ?? 0) -
-        (footer?.offsetHeight ?? 0)
-      flushSync(() => setRoom(next))
+          (head?.offsetHeight ?? 0) -
+          (footer?.offsetHeight ?? 0),
+      )
+    // Первая высота нужна до отрисовки. Изменения внутри ResizeObserver
+    // могут снова поменять размер области через появление полосы прокрутки.
+    measure()
+    let frame = 0
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(measure)
     })
     for (const node of [scroller, head, footer])
       if (node) observer.observe(node)
-    return () => observer.disconnect()
+    return () => {
+      observer.disconnect()
+      cancelAnimationFrame(frame)
+    }
   }, [enabled])
   return [ref, room] as const
 }

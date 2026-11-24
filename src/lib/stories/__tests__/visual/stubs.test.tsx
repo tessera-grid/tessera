@@ -426,29 +426,44 @@ describe('Заглушки пустой таблицы (ADR 0123)', () => {
   })
 
   test('ES15: иллюстрация целиком или никак — в низком гриде скрыта и заголовок виден, место выросло — в полный размер; вместо таблицы и под шапкой', async () => {
-    for (const { props, testId } of [STUBS.noData, STUBS.filtered]) {
-      const stub = () => byTestId(testId)!
-      const media = () => stub().firstElementChild as HTMLElement
-      const view = await render(<Host {...props} gridHeight={180} />)
-      await expect.poll(() => byTestId(testId)).not.toBeNull()
-      await expect.poll(() => media().hidden, { message: testId }).toBe(true)
-      const box = stub().getBoundingClientRect()
-      const title = stub().querySelector('p')!.getBoundingClientRect()
-      expect(title.top, testId).toBeGreaterThanOrEqual(box.top)
-      expect(title.bottom, testId).toBeLessThanOrEqual(box.bottom)
+    const resizeErrors: string[] = []
+    const onError = (event: ErrorEvent) => {
+      if (event.message.includes('ResizeObserver loop'))
+        resizeErrors.push(event.message)
+    }
+    window.addEventListener('error', onError)
+    try {
+      for (const { props, testId } of [STUBS.noData, STUBS.filtered]) {
+        const stub = () => byTestId(testId)!
+        const media = () => stub().firstElementChild as HTMLElement
+        const view = await render(<Host {...props} gridHeight={180} />)
+        await expect.poll(() => byTestId(testId)).not.toBeNull()
+        await expect.poll(() => media().hidden, { message: testId }).toBe(true)
+        const box = stub().getBoundingClientRect()
+        const title = stub().querySelector('p')!.getBoundingClientRect()
+        expect(title.top, testId).toBeGreaterThanOrEqual(box.top)
+        expect(title.bottom, testId).toBeLessThanOrEqual(box.bottom)
 
-      await view.rerender(<Host {...props} gridHeight={600} />)
-      await expect.poll(() => media().hidden, { message: testId }).toBe(false)
-      expect(
-        media().querySelector('svg')!.getBoundingClientRect().height,
-        testId,
-      ).toBe(ILLUSTRATION_SIZE)
-      const shown = stub().getBoundingClientRect()
-      expect(
-        media().getBoundingClientRect().top,
-        testId,
-      ).toBeGreaterThanOrEqual(shown.top)
-      await view.unmount()
+        await view.rerender(<Host {...props} gridHeight={600} />)
+        await expect.poll(() => media().hidden, { message: testId }).toBe(false)
+        expect(
+          media().querySelector('svg')!.getBoundingClientRect().height,
+          testId,
+        ).toBe(ILLUSTRATION_SIZE)
+        const shown = stub().getBoundingClientRect()
+        expect(
+          media().getBoundingClientRect().top,
+          testId,
+        ).toBeGreaterThanOrEqual(shown.top)
+
+        await view.rerender(<Host {...props} gridHeight={180} />)
+        await expect.poll(() => media().hidden, { message: testId }).toBe(true)
+        await new Promise(requestAnimationFrame)
+        await view.unmount()
+      }
+      expect(resizeErrors).toEqual([])
+    } finally {
+      window.removeEventListener('error', onError)
     }
   })
 

@@ -16,39 +16,44 @@ const TAIL = Array.from({ length: 8 }, (_, i) => i + 1)
  * контрола плюс зазор и половина толщины; у круга — половина стороны. Читается из
  * вычисленного стиля контрола при монтировании дуги.
  */
-const fitRadius = (svg: SVGSVGElement | null) => {
-  const button =
-    svg?.dataset.placement === 'outside'
-      ? // Контрол — первый в обёртке: за ним Base UI ставит скрытое поле формы.
-        (svg.parentElement?.firstElementChild ?? svg.parentElement)
-      : svg?.parentElement
-  if (!svg || !button) {
-    return
-  }
-  const radius = getComputedStyle(button).borderTopLeftRadius
-  const width =
-    parseFloat(
-      getComputedStyle(svg).getPropertyValue('--tsr-comp-pending-ring-width'),
-    ) || 1
+const radiusOf = (svg: SVGSVGElement) => {
+  if (!svg.isConnected) return
   const outside = svg.dataset.placement === 'outside'
-  // Не больше половины меньшей стороны: иначе SVG скругляет эллипсом, а не капсулой.
+  const button = outside
+    ? // Контрол — первый в обёртке: за ним Base UI ставит скрытое поле формы.
+      (svg.parentElement?.firstElementChild ?? svg.parentElement)
+    : svg.parentElement
+  if (!button) return
+  const radius = getComputedStyle(button).borderTopLeftRadius
+  if (radius.endsWith('%')) return '50%'
   const box = getComputedStyle(svg)
+  const width =
+    parseFloat(box.getPropertyValue('--tsr-comp-pending-ring-width')) || 1
+  // Не больше половины меньшей стороны: иначе SVG скругляет эллипсом, а не капсулой.
   const half =
     Math.min(parseFloat(box.width), parseFloat(box.height)) / 2 || Infinity
-  const rx = radius.endsWith('%')
-    ? '50%'
-    : String(
-        Math.min(
-          half,
-          Math.max(
-            0,
-            outside
-              ? parseFloat(radius) + width * 1.5
-              : parseFloat(radius) - width / 2,
-          ),
-        ),
-      )
-  svg.querySelectorAll('rect').forEach(rect => rect.setAttribute('rx', rx))
+  const value = parseFloat(radius) + (outside ? width * 1.5 : -width / 2)
+  return `${Math.min(half, Math.max(0, value))}px`
+}
+
+let pendingFit: Set<SVGSVGElement> | undefined
+
+/** В одном коммите может появиться целый ряд дуг. Сначала читаем раскладку, затем пишем. */
+const fitRadius = (svg: SVGSVGElement | null) => {
+  if (!svg) return
+  if (pendingFit) {
+    pendingFit.add(svg)
+    return
+  }
+  const batch = new Set([svg])
+  pendingFit = batch
+  queueMicrotask(() => {
+    pendingFit = undefined
+    const radii = Array.from(batch, svg => [svg, radiusOf(svg)] as const)
+    for (const [svg, radius] of radii) {
+      if (radius !== undefined) svg.style.setProperty('--_radius', radius)
+    }
+  })
 }
 
 /**

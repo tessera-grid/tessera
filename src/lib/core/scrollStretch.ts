@@ -117,6 +117,11 @@ class ScrollLayer {
     return this.extra > 0 ? this.virtual : this.scroller.scrollTop
   }
 
+  /** Смещение для вычислений в координатах DOM, например с getBoundingClientRect. */
+  physicalTop() {
+    return this.scroller.scrollTop
+  }
+
   /** Наибольшая виртуальная позиция. */
   maxTop() {
     return this.physicalMax() + this.extra
@@ -139,6 +144,7 @@ class ScrollLayer {
   private baseListeners = new Set<() => void>()
   /** У строк стоит `translate` остатка. */
   private stamped = false
+  private body: Element | null = null
 
   rowShift() {
     return this.base
@@ -170,7 +176,10 @@ class ScrollLayer {
       this.moveBase(Math.round(shift))
     }
     const residual = this.stretched ? shift - this.rendered : 0
-    const body = this.scroller.querySelector('.data-grid__body')
+    const body =
+      this.body && this.scroller.contains(this.body)
+        ? this.body
+        : (this.body = this.scroller.querySelector('.data-grid__body'))
     if (!body) return
     const value = residual === 0 ? '' : `0 ${-residual}px`
     for (const child of body.children) {

@@ -881,7 +881,8 @@ const ROW_WRITERS: Record<string, string> = {
 
 /** Совпадения шаблона записи, которые не про строки: свой объект модуля. */
 const NOT_ROWS: Record<string, string> = {
-  'grid/useSkeletonWave.ts': 'id анимации волны скелета (Web Animations)',
+  'grid/useSkeletonWave.ts': 'id анимации волны ожидания (Web Animations)',
+  'grid/useSkeletonWaveLayer.ts': 'id анимации волны скелета (Web Animations)',
   'plugins/cellSelectionModel/indexSelection.ts':
     'флаг таблицы на время протяжки выделения',
 }

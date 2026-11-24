@@ -401,27 +401,37 @@ const sliceSourceOf = (
       .map(slice => atoms[slice])
       .filter((atom): atom is SliceAtom => !!atom)
     let last: NodeSnapshot | undefined
+    const listeners = new Set<() => void>()
+    const notify = () => listeners.forEach(listener => listener())
+    let subscriptions: { unsubscribe: () => void }[] | undefined
     source = {
       get: () => {
         const current = version.get()
-        const values = watched.map(atom => atom.get())
         if (
           !last ||
           last.version !== current ||
-          values.some((value, i) => value !== last!.values![i])
+          watched.some((atom, i) => !Object.is(atom.get(), last!.values![i]))
         ) {
-          last = { state: table.store.get(), version: current, values }
+          last = {
+            state: table.store.get(),
+            version: current,
+            values: watched.map(atom => atom.get()),
+          }
         }
         return last
       },
       subscribe: listener => {
-        const subscriptions = [
-          ...watched.map(atom => atom.subscribe(listener)),
-          version.subscribe(listener),
+        listeners.add(listener)
+        subscriptions ??= [
+          ...watched.map(atom => atom.subscribe(notify)),
+          version.subscribe(notify),
         ]
         return {
           unsubscribe: () => {
+            listeners.delete(listener)
+            if (listeners.size > 0 || !subscriptions) return
             for (const subscription of subscriptions) subscription.unsubscribe()
+            subscriptions = undefined
           },
         }
       },

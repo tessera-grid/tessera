@@ -275,7 +275,8 @@ describe('перетаскивание строк в серверной моде
     try {
       await expect.poll(() => rowById('r0')).not.toBeNull()
       // На экране — конец первого блока и начало второго, ещё не пришедшего.
-      container().scrollTop = 14 * rowHeight()
+      const startTop = 14 * rowHeight()
+      container().scrollTop = startTop
       await expect.poll(() => rowById('r16')).not.toBeNull()
       const pending = () =>
         document.querySelector<HTMLElement>(
@@ -302,8 +303,10 @@ describe('перетаскивание строк в серверной моде
         .toBe(true)
       await pointer.realMouseUp()
       await expect.poll(slot).toBeNull()
-      expect(indexOf('r16')).toBe(16)
       expect(ends).toEqual([])
+      // Автопрокрутка могла убрать исходную строку из окна ещё до отпускания.
+      container().scrollTop = startTop
+      await expect.poll(() => indexOf('r16')).toBe(16)
 
       reply(20)
       // Цель — в середине окна: у края автопрокрутка увела бы место броска.

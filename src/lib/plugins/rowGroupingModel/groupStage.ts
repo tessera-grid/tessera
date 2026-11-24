@@ -16,16 +16,13 @@ import {
 } from '../../core/dataChanges'
 import { RowDict, dictModel, editDictOf } from '../../core/rowEngine/rowDict'
 import { positionOf } from '../../core/rowPosition'
-import {
-  groupMovesKey,
-  readRowMoves,
-  type RowMoves,
-} from '../../shared/rowMoves'
+import { readRowMoves, type RowMoves } from '../../shared/rowMoves'
 import type { RowData, Table, TableFeatures } from '../../types'
 import { childrenOf } from '../../core/rowEngine/displayChildren'
 import {
   aggregatesAllNodes,
   aggregationChoiceOf,
+  aggregationFns,
   hasLazyChildren,
   withDescendants,
 } from '../../shared/aggregation'
@@ -251,6 +248,13 @@ const groupValueOf = (
   )
 }
 
+/** Строки входа под группой и уже вычисленные значения её ячеек. */
+const groupData = new WeakMap<
+  StageRow,
+  { members: StageRow[]; values: Map<string, unknown> }
+>()
+const standardAggregates: readonly unknown[] = Object.values(aggregationFns)
+
 /** Строка-группа: поля группы и значения задаются при создании, до публикации строки. */
 const makeGroup = (
   table: StageTable,
@@ -260,6 +264,8 @@ const makeGroup = (
   key: string,
   members: StageRow[],
   subRows: StageRow[],
+  leafRows = layout.flat ? members : leavesOf(layout, members),
+  values = new Map<string, unknown>(),
 ): StageRow => {
   const { id, index, depth, parentId } = place
   const row = constructRow(
@@ -271,12 +277,12 @@ const makeGroup = (
     undefined,
     parentId,
   ) as unknown as StageRow
-  const values = new Map<string, unknown>()
+  groupData.set(row, { members, values })
   Object.assign(row, {
     groupingColumnId: columnId,
     groupingValue: key,
     subRows,
-    leafRows: layout.flat ? members : leavesOf(layout, members),
+    leafRows,
     getValue: (target: string) => {
       if (values.has(target)) return values.get(target)
       const level = layout.columns.indexOf(target)
@@ -301,8 +307,7 @@ interface Grouped {
   grouping: unknown
   columns: unknown
   /** Выбор функций пользователем (ADR 0230): другой выбор — другие значения групп. */
-  choice: unknown
-  movesKey: string
+  choice: ReturnType<typeof aggregationChoiceOf>
   layout: Layout
   output: StageModel
   /** Ключ верхней группы строки входа; собирается при первом инкременте. */
@@ -433,6 +438,75 @@ const modelOf = (
 ): StageModel => {
   const dict = new RowDict(rowsById)
   return dictModel(dict, dict.version(), rows, flatRows)
+}
+
+/** Новый выбор агрегатов меняет только строки-группы (ADR 0230, §1). */
+const refreshGroups = (
+  table: StageTable,
+  previous: Grouped,
+  choice: Grouped['choice'],
+) => {
+  const { layout, output } = previous
+  const { dict, writer } = editDictOf(output)
+  const before = new Map<string, StageRow>()
+  const replacements = new Map<string, StageRow>()
+  const reusable = new Map<string, boolean>()
+  const canReuse = (id: string) => {
+    let result = reusable.get(id)
+    if (result === undefined) {
+      // Функция приложения может читать значения других колонок через таблицу.
+      result =
+        previous.choice?.[id] === undefined &&
+        choice?.[id] === undefined &&
+        (table
+          .getColumn(id)
+          ?.getAggregationFns?.()
+          .every(entry => standardAggregates.includes(entry.aggregationFn)) ??
+          false)
+      reusable.set(id, result)
+    }
+    return result
+  }
+  const refresh = (row: StageRow): StageRow => {
+    const subRows =
+      row.depth + 1 < layout.columns.length
+        ? row.subRows.map(refresh)
+        : row.subRows
+    const { members, values: priorValues } = groupData.get(row)!
+    const values = new Map<string, unknown>()
+    for (const [id, value] of priorValues)
+      if (canReuse(id)) values.set(id, value)
+    const next = makeGroup(
+      table,
+      layout,
+      row,
+      row.groupingColumnId!,
+      row.groupingValue as string,
+      members,
+      subRows,
+      row.leafRows,
+      values,
+    )
+    before.set(row.id, row)
+    replacements.set(row.id, next)
+    writer.set(row.id, next)
+    return next
+  }
+  const rows = output.rows.map(refresh)
+  const flatRows = output.flatRows.map(row =>
+    row.groupingColumnId === undefined
+      ? row
+      : (replacements.get(row.id) ?? row),
+  )
+  const next = dictModel(dict, writer.version, rows, flatRows)
+  recordRowModelChange(next, {
+    prev: output,
+    changed: new Set(replacements.keys()),
+    inserted: new Set(),
+    removed: new Set(),
+    previous: before,
+  })
+  return { ...previous, choice, output: next }
 }
 
 /** Начала участков групп `groups` в `flatRows`. */
@@ -622,8 +696,8 @@ const patchGroups = (
   table: StageTable,
   prev: Grouped,
   input: StageModel,
+  change = rowModelChangeOf(input),
 ): Grouped | undefined => {
-  const change = rowModelChangeOf(input) as RowModelChange | undefined
   if (
     !change ||
     change.prev !== prev.input ||
@@ -749,6 +823,26 @@ const patchGroups = (
   return { ...prev, input, output, topKeys, starts: undefined }
 }
 
+/** Изменения размещения при постановке или снятии стадии переноса (ADR 0186, §3). */
+const movedGroups = (input: StageModel, before: RowMoves, after: RowMoves) => {
+  if (before === after) return undefined
+  const previous = new Map<string, StageRow>()
+  for (const id of new Set([...Object.keys(before), ...Object.keys(after)])) {
+    if (before[id]?.group === after[id]?.group) continue
+    const row = input.rowsById[id]
+    if (row) previous.set(id, row)
+  }
+  return previous.size > 0
+    ? {
+        prev: input,
+        changed: new Set(previous.keys()),
+        inserted: new Set<string>(),
+        removed: new Set<string>(),
+        previous,
+      }
+    : undefined
+}
+
 /** Связи строк без группировки — как `resetRowRelationships` стоковой модели. */
 const resetRelationships = (
   input: StageModel,
@@ -801,27 +895,32 @@ export const createGroupStage =
         return input
       }
       const moves = readRowMoves(table)
-      const movesKey = groupMovesKey(moves)
       const columnsOption = t.options.columns
       const choice = aggregationChoiceOf(table)
-      if (
-        last &&
-        last.input === input &&
-        last.grouping === grouping &&
-        last.columns === columnsOption &&
-        last.choice === choice &&
-        last.movesKey === movesKey
-      ) {
-        return last.output
+      const sameLayout =
+        last && last.grouping === grouping && last.columns === columnsOption
+          ? last
+          : undefined
+      const staged =
+        sameLayout && movedGroups(input, sameLayout.layout.moves, moves)
+      if (sameLayout?.input === input && !staged) {
+        if (sameLayout.choice !== choice)
+          last = refreshGroups(t, sameLayout, choice)
+        return last!.output
       }
-      const same =
-        last &&
-        last.grouping === grouping &&
-        last.columns === columnsOption &&
-        last.choice === choice &&
-        last.movesKey === movesKey
-      if (same) Object.assign(last!.layout, { moves, input })
-      const patched = same ? patchGroups(t, last!, input) : undefined
+      let patched: Grouped | undefined
+      if (sameLayout && sameLayout.choice === choice) {
+        if (!staged) {
+          Object.assign(sameLayout.layout, { moves, input })
+          patched = patchGroups(t, sameLayout, input)
+        } else if (sameLayout.input === input) {
+          const next = {
+            ...sameLayout,
+            layout: { ...sameLayout.layout, moves },
+          }
+          patched = patchGroups(t, next, input, staged)
+        }
+      }
       if (patched) {
         last = patched
       } else {
@@ -842,7 +941,6 @@ export const createGroupStage =
           grouping,
           columns: columnsOption,
           choice,
-          movesKey,
           layout,
           output: modelOf(rows, flatRows, byId(flatRows)),
         }

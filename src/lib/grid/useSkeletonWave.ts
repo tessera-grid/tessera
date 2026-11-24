@@ -1,19 +1,18 @@
 import { type RefObject } from 'react'
 
+import { scrollLayer } from '../core/scrollStretch'
 import { parseDuration } from '../util/cssTime'
 import { useIsomorphicLayoutEffect } from '../util/useIsomorphicLayoutEffect'
-import { SKELETON_WAVE_ATTRIBUTE } from '../ui/Skeleton/Skeleton'
+export {
+  SKELETON_WAVE_ANIMATION,
+  useSkeletonWave,
+} from './useSkeletonWaveLayer'
 
 /**
  * Сколько досчитывать положения после события, мс: виртуализатор колонок сдвигает
  * ячейки после прокрутки без вставки узлов, раскладка колонок встаёт после монтирования.
  */
 const SETTLE_MS = 200
-
-const SKELETONS = `[${SKELETON_WAVE_ATTRIBUTE}]`
-
-/** `id` анимаций блика общей волны. */
-export const SKELETON_WAVE_ANIMATION = 'tsr-skeleton-wave'
 
 const numberOf = (
   style: CSSStyleDeclaration,
@@ -28,75 +27,40 @@ const numberOf = (
  * Проход и задержка волны из токенов темы — через `transition` пробы в рамке: под
  * `prefers-reduced-motion` тема обнуляет переходы, и волны нет.
  */
-const PROBE_ATTRIBUTE = 'data-tsr-skeleton-wave-probe'
-
-const timingOf = (
-  frame: HTMLElement,
-  durationToken: string,
-  delayToken: string | undefined,
-) => {
-  const probe = document.createElement('span')
-  probe.setAttribute(PROBE_ATTRIBUTE, '')
+const timingProbe = (frame: HTMLElement) => {
+  const probe = frame.ownerDocument.createElement('span')
   probe.style.cssText =
-    'position:absolute;visibility:hidden;transition-property:transform;' +
-    `transition-duration:var(${durationToken});` +
-    `transition-delay:${delayToken ? `var(${delayToken})` : '0ms'}`
+    'position:absolute;visibility:hidden;pointer-events:none;transition-property:transform;' +
+    'transition-duration:var(--tsr-comp-pending-wave-duration)'
   frame.append(probe)
+  return probe
+}
+
+const timingOf = (probe: HTMLElement) => {
   const style = getComputedStyle(probe)
-  const timing = {
+  return {
     duration: parseDuration(style.transitionDuration),
     delay: parseDuration(style.transitionDelay),
   }
-  probe.remove()
-  return timing
 }
 
-/** Узлы общей волны: чьи псевдоэлементы светятся и как зовутся их анимации. */
-export interface FrameWave {
-  /** Селектор узлов волны в рамке. */
-  selector: string
-  /** Псевдоэлемент с полосой света. */
-  pseudoElement: '::before' | '::after'
-  /** `id` анимаций блика. */
-  id: string
-  /** Токен прохода; по умолчанию — проход волны скелетов. */
-  durationToken?: string
-  /** Токен паузы до первого прохода; без него волна идёт сразу. */
-  delayToken?: string
-  /** Атрибут, сменой которого узел входит в волну и выходит из неё. */
-  attribute?: string
-  /**
-   * Неподвижный свет вместо волны: признак рамки ставится при уменьшенном движении и когда
-   * узлов в рамке больше порога из токена `limitToken`.
-   */
-  still?: { attribute: string; limitToken: string }
-}
+export const PENDING_WAVE_ANIMATION = 'tsr-pending-wave'
 
-/**
- * Общая волна рамки (ADR 0121; ADR 0152 — волна ожидания на цели действия меню). Блик каждого скелета — своя анимация WAAPI с
- * числовыми кадрами: путь полосы в координатах содержимого тела (смещение в рамке плюс
- * горизонтальная прокрутка, по модулю периода прохода) минус смещение скелета; у всех
- * анимаций — один `startTime`, поэтому на экране одна наклонная полоса. Переменные в
- * общих `@keyframes` композитор Chrome не подставляет — кадры числовые. Прокрутка не
- * меняет смещений прокручиваемых скелетов — их анимации не пересобираются. Работа — по
- * событиям: новые скелеты, смена размера, прокрутка; в покое главный поток свободен.
- */
-export const useFrameWave = (
+const PENDING =
+  '.data-grid__body-cell[data-pending-wave], .data-grid__body-filler[data-pending-wave]'
+const STILL = 'data-pending-wave-still'
+const ANIMATED = 'data-pending-wave-animated'
+const PINNED = '[data-cell-pinned="left"], [data-cell-pinned="right"]'
+
+/** Волна ожидания под содержимым видимых ячеек цели действия (ADR 0152, §3). */
+export const usePendingWave = (
   frameRef: RefObject<HTMLElement | null>,
   active: boolean,
-  {
-    selector,
-    pseudoElement,
-    id,
-    durationToken = '--tsr-comp-skeleton-frame-wave-duration',
-    delayToken,
-    attribute,
-    still,
-  }: FrameWave,
 ) => {
   useIsomorphicLayoutEffect(() => {
     const frame = frameRef.current
     if (!active || !frame) return
+    const probe = timingProbe(frame)
     let start: number | undefined
     const animations = new Map<HTMLElement, Animation>()
     const written = new WeakMap<HTMLElement, string>()
@@ -104,18 +68,38 @@ export const useFrameWave = (
     let request = 0
     let settleUntil = 0
     let measuredAt = 0
+    let scroller: HTMLElement | null = null
+    let scrollLeft = 0
+    let scrollTop = 0
+    let horizontal = false
+    let hasPinnedTargets = false
+    let hasStickyRows = false
+    let bodyScrolledAt = -Infinity
 
     const stopAll = () => {
       animations.forEach(animation => animation.cancel())
       animations.clear()
+      frame.removeAttribute(ANIMATED)
     }
 
     const measure = () => {
       measuredAt = performance.now()
-      const timing = timingOf(frame, durationToken, delayToken)
+      const root = frame.querySelector<HTMLElement>('.data-grid__container')
+      const resetScroll = scroller !== root || frame.hasAttribute(STILL)
+      scroller = root
+      const targets = frame.querySelectorAll<HTMLElement>(PENDING)
+      const style = getComputedStyle(frame)
+      const limit = numberOf(style, '--tsr-comp-pending-wave-limit', Infinity)
+      if (targets.length > limit) {
+        // Учитываем всё смонтированное окно, включая запас виртуализации.
+        frame.toggleAttribute(STILL, true)
+        stopAll()
+        return
+      }
+      const timing = timingOf(probe)
       // В высокой контрастности волны нет: знак ожидания — контур на том же слое.
-      if (timing.duration <= 0 || (still && forced.matches)) {
-        if (still) frame.setAttribute(still.attribute, '')
+      if (timing.duration <= 0 || forced.matches) {
+        frame.toggleAttribute(STILL, true)
         stopAll()
         return
       }
@@ -126,49 +110,54 @@ export const useFrameWave = (
       }
 
       const origin = frame.getBoundingClientRect()
-      const container = frame.querySelector<HTMLElement>(
-        '.data-grid__container',
-      )
-      const scroll = container?.scrollLeft ?? 0
-      const scrollTop = container?.scrollTop ?? 0
-      const style = getComputedStyle(frame)
+      const view = scroller?.getBoundingClientRect() ?? origin
+      const left = scroller?.scrollLeft ?? 0
+      const top = scroller ? scrollLayer(scroller).physicalTop() : 0
+      if (resetScroll) {
+        scrollLeft = left
+        scrollTop = top
+        horizontal = false
+      }
+      hasStickyRows = !!frame.querySelector('[data-sticky-rows]')
       const band = numberOf(style, '--tsr-comp-skeleton-wave-width', 0)
       const tilt = numberOf(style, '--tsr-comp-skeleton-wave-tilt', 0)
       const period = origin.width + band + origin.height * tilt
-      // Ушедшие из рамки и из волны узлы — без анимаций: рамка не держит их узлы.
-      animations.forEach((animation, skeleton) => {
-        if (skeleton.isConnected && skeleton.matches(selector)) return
-        animation.cancel()
-        animations.delete(skeleton)
-      })
-      const skeletons = [...frame.querySelectorAll<HTMLElement>(selector)]
-      if (still) {
-        const limit = numberOf(style, still.limitToken, Infinity)
-        const over = skeletons.length > limit
-        frame.toggleAttribute(still.attribute, over)
-        if (over) {
-          stopAll()
-          return
-        }
-      }
-      // Сначала все чтения, затем записи: одна раскладка на замер. Смещение — в координатах
-      // содержимого по обеим осям: у прокручиваемых узлов прокрутка его не меняет, и их
-      // анимации не пересобираются.
-      const shifts = skeletons.map(skeleton => {
-        const box = skeleton.getBoundingClientRect()
-        const x = box.left - origin.left + scroll
-        const y = box.top - origin.top + scrollTop
+      const shifts = new Map<HTMLElement, number>()
+      hasPinnedTargets = false
+      for (const target of targets) {
+        const box = target.getBoundingClientRect()
+        // При горизонтальной прокрутке запас колонок уже в фазе до входа в экран.
+        if (
+          box.bottom <= view.top ||
+          box.top >= view.bottom ||
+          (!horizontal && (box.right <= view.left || box.left >= view.right))
+        )
+          continue
+        hasPinnedTargets ||= target.matches(PINNED)
+        const x = box.left - origin.left + left
+        const y = box.top - origin.top + top
         const offset = Math.round(x) + Math.round(y) * tilt
-        return period > 0 ? ((offset % period) + period) % period : offset
+        shifts.set(
+          target,
+          period > 0 ? ((offset % period) + period) % period : offset,
+        )
+      }
+      // Передаём эффекты ушедших из видимой области ячеек вошедшим в неё.
+      const recycled: Animation[] = []
+      animations.forEach((animation, target) => {
+        if (shifts.has(target)) return
+        recycled.push(animation)
+        animations.delete(target)
       })
+      frame.removeAttribute(STILL)
+      frame.toggleAttribute(ANIMATED, shifts.size > 0)
       const from = -band
       const to = period - band
-      skeletons.forEach((skeleton, index) => {
-        const shift = shifts[index]!
+      shifts.forEach((shift, target) => {
         const path = `${from - shift} ${to - shift}`
-        const current = animations.get(skeleton)
-        if (current && written.get(skeleton) === path) return
-        written.set(skeleton, path)
+        const current = animations.get(target)
+        if (current && written.get(target) === path) return
+        written.set(target, path)
         const keyframes = [
           { transform: `translateX(${from - shift}px)` },
           { transform: `translateX(${to - shift}px)` },
@@ -177,17 +166,31 @@ export const useFrameWave = (
           ;(current.effect as KeyframeEffect).setKeyframes(keyframes)
           return
         }
-        const animation = skeleton.animate(keyframes, {
+        const spare = recycled.pop()
+        if (spare) {
+          const effect = spare.effect as KeyframeEffect
+          // Прежняя цель уже ушла, а время анимации остаётся общей фазой рамки.
+          effect.setKeyframes(keyframes)
+          effect.target = target
+          animations.set(target, spare)
+          return
+        }
+        const effect = new KeyframeEffect(target, keyframes, {
           ...timing,
           iterations: Infinity,
           easing: 'linear',
-          pseudoElement,
+          pseudoElement: '::before',
         })
-        animation.id = id
-        start ??= (document.timeline.currentTime as number | null) ?? 0
+        const timeline = frame.ownerDocument.timeline
+        const animation = new Animation(effect, timeline)
+        animation.id = PENDING_WAVE_ANIMATION
+        // Проигрывание начнётся сразу с общей фазы: отдельный play() поставил бы
+        // каждый блик в очередь старта и сразу отменился бы присвоением startTime.
+        start ??= (timeline.currentTime as number | null) ?? 0
         animation.startTime = start
-        animations.set(skeleton, animation)
+        animations.set(target, animation)
       })
+      recycled.forEach(animation => animation.cancel())
     }
 
     // Кадр, в котором коммит уже замерен (MutationObserver после прокрутки), — без
@@ -201,17 +204,32 @@ export const useFrameWave = (
       settleUntil = performance.now() + SETTLE_MS
       if (!request) request = requestAnimationFrame(loop)
     }
-    // Проба замера сама меняет рамку — её записи не повод замерять снова.
-    const isProbe = (node: Node) =>
-      node instanceof Element && node.hasAttribute(PROBE_ATTRIBUTE)
-    const onMutation = (records: MutationRecord[]) => {
-      const real = records.some(
-        record =>
-          record.type === 'attributes' ||
-          ![...record.addedNodes, ...record.removedNodes].every(isProbe),
-      )
-      if (!real) return
+    const onMutation = () => {
       measure()
+      if (measuredAt - bodyScrolledAt >= SETTLE_MS) settle()
+    }
+    const onScroll = (event: Event) => {
+      if (scroller && event.target === scroller) {
+        if (frame.hasAttribute(STILL)) {
+          bodyScrolledAt = performance.now()
+          return
+        }
+        const left = scroller.scrollLeft
+        const top = scrollLayer(scroller).physicalTop()
+        const movedHorizontally = left !== scrollLeft
+        const movedVertically = top !== scrollTop
+        const wasHorizontal = horizontal
+        horizontal = movedHorizontally || (horizontal && !movedVertically)
+        scrollLeft = left
+        scrollTop = top
+        if (!hasStickyRows && (!movedHorizontally || !hasPinnedTargets)) {
+          bodyScrolledAt = performance.now()
+          if ((horizontal !== wasHorizontal || movedVertically) && !request)
+            request = requestAnimationFrame(loop)
+          return
+        }
+      }
+      bodyScrolledAt = -Infinity
       settle()
     }
 
@@ -225,66 +243,23 @@ export const useFrameWave = (
     mutations.observe(frame, {
       childList: true,
       subtree: true,
-      ...(attribute && { attributes: true, attributeFilter: [attribute] }),
+      attributes: true,
+      attributeFilter: ['data-pending-wave'],
     })
     // Прокрутка не всплывает: слушаем все области рамки на погружении.
-    frame.addEventListener('scroll', settle, { capture: true, passive: true })
+    frame.addEventListener('scroll', onScroll, { capture: true, passive: true })
     motion.addEventListener('change', settle)
     forced.addEventListener('change', settle)
     return () => {
       cancelAnimationFrame(request)
       resize.disconnect()
       mutations.disconnect()
-      frame.removeEventListener('scroll', settle, { capture: true })
+      frame.removeEventListener('scroll', onScroll, { capture: true })
       motion.removeEventListener('change', settle)
       forced.removeEventListener('change', settle)
+      probe.remove()
       stopAll()
-      if (still) frame.removeAttribute(still.attribute)
+      frame.removeAttribute(STILL)
     }
-  }, [
-    active,
-    frameRef,
-    selector,
-    pseudoElement,
-    id,
-    durationToken,
-    delayToken,
-    attribute,
-    still,
-  ])
+  }, [active, frameRef])
 }
-
-const SKELETON_WAVE: FrameWave = {
-  selector: SKELETONS,
-  pseudoElement: '::after',
-  id: SKELETON_WAVE_ANIMATION,
-  delayToken: '--tsr-comp-skeleton-wave-delay',
-}
-
-/** Общая волна скелетов рамки на время первой загрузки (ADR 0121). */
-export const useSkeletonWave = (
-  frameRef: RefObject<HTMLElement | null>,
-  active: boolean,
-) => useFrameWave(frameRef, active, SKELETON_WAVE)
-
-/** `id` анимаций волны ожидания на цели действия меню. */
-export const PENDING_WAVE_ANIMATION = 'tsr-pending-wave'
-
-const PENDING_WAVE: FrameWave = {
-  selector:
-    '.data-grid__body-cell[data-pending-wave], .data-grid__body-filler[data-pending-wave]',
-  pseudoElement: '::before',
-  id: PENDING_WAVE_ANIMATION,
-  durationToken: '--tsr-comp-pending-wave-duration',
-  attribute: 'aria-busy',
-  still: {
-    attribute: 'data-pending-wave-still',
-    limitToken: '--tsr-comp-pending-wave-limit',
-  },
-}
-
-/** Волна ожидания по ячейкам цели действия меню, пока оно ждёт (ADR 0152, §3). */
-export const usePendingWave = (
-  frameRef: RefObject<HTMLElement | null>,
-  active: boolean,
-) => useFrameWave(frameRef, active, PENDING_WAVE)

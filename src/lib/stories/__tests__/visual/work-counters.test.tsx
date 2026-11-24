@@ -761,7 +761,8 @@ describe('Счётчики работы — ручка колонки (ADR 0114)
       await waitForQuietDocument(300)
       const work = await measure(
         async () => {
-          await userEvent.click(button)
+          // Считаем работу сортировки без коммитов подсказки от наведения и фокуса указателем.
+          button.click()
           await waitForQuietDocument(300)
         },
         { models: ['sortedRowModel'] },
@@ -776,6 +777,7 @@ describe('Счётчики работы — ручка колонки (ADR 0114)
     const listened = await sortOnce(action => actions.push(action))
     // Вариант мерил заявленное: слушатель получил сортировку.
     expect(actions.map(action => action.action)).toContain('columnSorting')
+    expect(base.builds.sortedRowModel).toBe(1)
     expect(listened.commits, describeWork(listened)).toBe(base.commits)
     expect(listened.rendered, describeWork(listened)).toBe(base.rendered)
     expect(listened.builds).toEqual(base.builds)

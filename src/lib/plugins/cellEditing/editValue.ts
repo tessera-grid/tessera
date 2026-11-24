@@ -14,6 +14,7 @@ import type { ColumnOption } from '../../core/columnOptions'
 import type { ResolvedDataType } from '../../core/dataTypes'
 import {
   formatDataTypeValue,
+  formatterOf,
   objectKeyOf,
   objectLabelOf,
 } from '../../core/dataTypeFormat'
@@ -45,12 +46,13 @@ const SHOWN_BASES: readonly string[] = [
   'object',
 ]
 
+const EDIT_NUMBER_FORMAT = { maximumFractionDigits: 100, useGrouping: false }
+
 /** Число в поле — десятичный знак языка таблицы, без разрядов и округления (ED4). */
 const numberText = (value: number | string, locale: string) =>
-  new Intl.NumberFormat(locale, {
-    maximumFractionDigits: 100,
-    useGrouping: false,
-  }).format(value as number)
+  formatterOf('number', EDIT_NUMBER_FORMAT, locale, undefined).format(
+    value as number,
+  )
 
 export const columnOf = (table: unknown, columnId: string) =>
   (table as EditTable).getColumn?.(columnId)

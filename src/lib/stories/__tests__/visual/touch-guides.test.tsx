@@ -3,6 +3,7 @@ import { commands, server } from 'vitest/browser'
 import { renderGrid } from '../helpers'
 import {
   clearRealTouchDrivers,
+  realTapTarget,
   setRealTapDriver,
   setRealTouchDragDriver,
   tapTarget,
@@ -36,6 +37,40 @@ const restoreRealTouchDrivers = () => {
 }
 
 describe('касания в гайдах', () => {
+  test('повтор касания выбирает новую кнопку после перемонтирования цели', async () => {
+    const root = document.createElement('div')
+    root.dataset.guideStep = '1'
+    root.style.cssText = 'position: fixed; top: 30px; left: 30px'
+    const button = document.createElement('button')
+    button.textContent = 'Меню'
+    root.append(button)
+    document.body.append(root)
+    const hits: (Element | null)[] = []
+    let opened = false
+    setRealTapDriver(async ({ x, y }) => {
+      const hit = document.elementFromPoint(x, y)
+      hits.push(hit)
+      if (hit === button) button.replaceWith(button.cloneNode(true))
+      else if (hit?.parentElement === root) opened = true
+    })
+    const stop = realTapTarget(
+      element => element.querySelector('button'),
+      () => opened,
+    )(root, { update: () => {} })
+    try {
+      await expect.poll(() => hits.length, { timeout: 5000 }).toBeGreaterThan(1)
+      expect(hits[1]).toBe(root.firstElementChild)
+      await expect
+        .poll(() => root.getAttribute('data-step-action'))
+        .toBe('done:1')
+    } finally {
+      stop()
+      root.remove()
+      if (server.browser === 'chromium') restoreRealTouchDrivers()
+      else clearRealTouchDrivers()
+    }
+  })
+
   test('tapTarget воспроизводит полный жест: pointerdown/up, mousedown/up, click и фокус активной ячейки', async () => {
     const screen = await renderGrid({
       dataCount: 2,

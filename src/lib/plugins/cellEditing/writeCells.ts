@@ -8,11 +8,12 @@
 import { inOneCommit } from '../../util/oneCommit'
 
 import { announceLabel, announcerLabels } from '../../core/announcer'
-import type {
-  CellWrite,
-  CellWriteReport,
-  CellWriter,
-  CellWriterOptions,
+import {
+  DEFAULT_WRITE_LIMITS,
+  type CellWrite,
+  type CellWriteReport,
+  type CellWriter,
+  type CellWriterOptions,
 } from '../../core/cellWrites'
 import type { CellComponentProps } from '../../core/createSlots'
 import { isNumericBase } from '../../core/dataTypeFormat'
@@ -35,6 +36,7 @@ import { checkWriteLimit } from './writeLimit'
 import {
   cellKey,
   commitCellPackage,
+  DEFAULT_CAN_EDIT_CELL,
   nextAttempt,
   isCellPending,
   isEditingCell,
@@ -65,8 +67,12 @@ interface WriteColumn {
 }
 
 interface WriteTable {
-  getRowSource: () => { byId: (id: string) => WriteRow | undefined }
+  getRowSource: () => {
+    byId: (id: string) => WriteRow | undefined
+    keyByIndex?: boolean
+  }
   getColumn: (id: string) => WriteColumn | undefined
+  getAllLeafColumnsById: () => Record<string, WriteColumn | undefined>
 }
 
 const ID = 'cellEditing'
@@ -77,6 +83,9 @@ const PER_CELL_HINT = 100
 const hooksOf = (table: unknown) =>
   readPluginHooks<Partial<CellEditingHooks>>(table as never, ID)
 
+const hasEditPredicate = (hooks: Partial<CellEditingHooks>) =>
+  !!hooks.canEditCell && hooks.canEditCell !== DEFAULT_CAN_EDIT_CELL
+
 /** Строка-группа клиентской или серверной группировки: в неё не пишут. */
 export const isGroupRow = (row: {
   groupingColumnId?: string
@@ -84,36 +93,44 @@ export const isGroupRow = (row: {
 }) => row.groupingColumnId !== undefined || row.getIsGrouped?.() === true
 
 /**
- * Контекст ячейки, в которую можно записать: не служебная колонка с доступом к значению, не
- * строка-группа и не удалённая строка, не ждёт сохранения и не в открытой правке, `canEditCell`.
+ * Проверка записи и контекст для хуков. TanStack создаёт ячейки строки для всех
+ * листовых колонок при первом обращении. Для записи вне окна они нужны только хукам.
  */
-const writableContext = (
+const writableCell = (
   table: unknown,
   row: WriteRow | undefined,
   columnId: string,
   hooks: Partial<CellEditingHooks>,
-): CellComponentProps | undefined => {
-  if (!row || isGroupRow(row)) return undefined
-  const column = (table as WriteTable).getColumn(columnId)
-  if (!column || column.getIsActionsColumn() || !column.accessorFn)
-    return undefined
+  skipContext: boolean,
+): CellComponentProps | boolean => {
+  if (!row || isGroupRow(row)) return false
+  const t = table as WriteTable
+  const column = skipContext
+    ? t.getAllLeafColumnsById()[columnId]
+    : t.getColumn(columnId)
+  if (!column || column.getIsActionsColumn() || !column.accessorFn) return false
   if (isDeletedRow(table, row.id) || isCellPending(table, row.id, columnId))
-    return undefined
-  if (isEditingCell(readEditSession(table), row.id, columnId)) return undefined
+    return false
+  if (isEditingCell(readEditSession(table), row.id, columnId)) return false
+  if (skipContext) return true
   const ctx = row.getAllCellsByColumnId()[columnId]?.getContext() as
     CellComponentProps | undefined
-  if (!ctx) return undefined
-  if (hooks.canEditCell && !hooks.canEditCell(ctx)) return undefined
+  if (!ctx) return false
+  if (hooks.canEditCell && !hooks.canEditCell(ctx)) return false
   return ctx
 }
 
-const canWrite = (table: unknown, rowId: string, columnId: string) =>
-  !!writableContext(
+const canWrite = (table: unknown, rowId: string, columnId: string) => {
+  const rows = (table as WriteTable).getRowSource()
+  const hooks = hooksOf(table)
+  return !!writableCell(
     table,
-    (table as WriteTable).getRowSource().byId(rowId),
+    rows.byId(rowId),
     columnId,
-    hooksOf(table),
+    hooks,
+    !rows.keyByIndex && !hasEditPredicate(hooks),
   )
+}
 
 let operations = 0
 
@@ -143,6 +160,10 @@ const write = async (
   const hooks = hooksOf(table)
   const action = writeActionOf(source)
   const rows = (table as WriteTable).getRowSource()
+  const skipContext =
+    !rows.keyByIndex && !hasEditPredicate(hooks) && !hooks.validate
+  const reuseHistoryRow =
+    skipContext && (source === 'undo' || source === 'redo')
   const cells: PackageCell[] = []
   const invalid: FailureReport[] = []
   let skipped = 0
@@ -160,14 +181,27 @@ const write = async (
     }
     return known
   }
-  const slice = timeSlicer()
+  const large = changes.length > DEFAULT_WRITE_LIMITS.max
+  const checkEvery = large ? 128 : 256
+  const slice = timeSlicer(large ? 4 : undefined)
+  let lastRowId: string | undefined
+  let lastRow: WriteRow | undefined
   for (let i = 0; i < changes.length; i++) {
-    if (i % 256 === 255) await slice()
+    if ((i + 1) % checkEvery === 0) {
+      await slice()
+      lastRowId = undefined
+    }
     const change = changes[i]!
-    const row =
-      rows.byId(change.rowId) ??
-      (fetched?.get(change.rowId) as WriteRow | undefined)
-    const ctx = writableContext(table, row, change.columnId, hooks)
+    // В клиентском шаге истории соседние ячейки одной строки могут
+    // пользоваться тем же результатом поиска до паузы.
+    if (lastRowId !== change.rowId) {
+      lastRow =
+        rows.byId(change.rowId) ??
+        (fetched?.get(change.rowId) as WriteRow | undefined)
+      if (reuseHistoryRow) lastRowId = change.rowId
+    }
+    const row = lastRow
+    const ctx = writableCell(table, row, change.columnId, hooks, skipContext)
     if (!ctx || !row) {
       skipped++
       continue
@@ -201,7 +235,8 @@ const write = async (
       }
       value = parsed.value
     }
-    const message = hooks.validate?.(value, ctx, text)
+    const message =
+      ctx === true ? undefined : hooks.validate?.(value, ctx, text)
     if (message) {
       invalid.push({
         action,
@@ -251,6 +286,18 @@ const write = async (
     skipped,
     invalid: invalid.length,
   }
+  const announceWritten = () =>
+    announceLabel(table, all => {
+      const labels = cellEditingLabels(all)
+      const name = actionLabelOf(table, action, all)
+      return [
+        labels.announceWritten(name, report.written),
+        report.skipped > 0 ? labels.announceWriteSkipped(report.skipped) : '',
+        report.invalid > 0 ? labels.announceWriteInvalid(report.invalid) : '',
+      ]
+        .filter(Boolean)
+        .join(', ')
+    })
   inOneCommit(() => {
     // Новый итог ячейки снимает её прежний отказ; невалидный текст — свой отказ.
     let written: ReadonlySet<string> | ReadonlyMap<string, unknown> = pending
@@ -265,25 +312,18 @@ const write = async (
       detail: { ...report, source },
       source: source === 'api' ? 'api' : 'auto',
     })
-    announceLabel(table, all => {
-      const labels = cellEditingLabels(all)
-      const name = actionLabelOf(table, action, all)
-      return [
-        labels.announceWritten(name, report.written),
-        report.skipped > 0 ? labels.announceWriteSkipped(report.skipped) : '',
-        report.invalid > 0 ? labels.announceWriteInvalid(report.invalid) : '',
-      ]
-        .filter(Boolean)
-        .join(', ')
-    })
-
+    if (packaged && cells.length > 0) {
+      commitCellPackage(
+        table,
+        { id, source, cells, pending, waves },
+        announceWritten,
+      )
+      return
+    }
+    announceWritten()
     if (cells.length === 0) return
     if (hooks.saveMode === 'manual') {
       storeCellDrafts(table, cells, { id, source })
-      return
-    }
-    if (packaged) {
-      commitCellPackage(table, { id, source, cells, pending, waves })
       return
     }
     if (cells.length > PER_CELL_HINT)

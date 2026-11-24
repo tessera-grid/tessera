@@ -100,7 +100,7 @@ index e4082c0..0a51ede 100644
      return instance._didMount()
    }, [])
 diff --git a/virtual-core/index.ts b/virtual-core/index.ts
-index 83386f3..61b1751 100644
+index 83386f3..b7cd293 100644
 --- a/virtual-core/index.ts
 +++ b/virtual-core/index.ts
 @@ -66,6 +66,13 @@ export interface VirtualItem {
@@ -117,7 +117,19 @@ index 83386f3..61b1751 100644
  export interface Rect {
    width: number
    height: number
-@@ -362,6 +369,12 @@ export interface VirtualizerOptions<
+@@ -355,6 +362,11 @@ export interface VirtualizerOptions<
+     instance: Virtualizer<TScrollElement, TItemElement>,
+     cb: ObserveOffsetCallBack,
+   ) => void | (() => void)
++  // Tessera (ADR 0143, ADR 0142): an offset adapter can provide a limit in
++  // the same coordinate space. Undefined falls back to the native extent.
++  getElementMaxScrollOffset?: (
++    instance: Virtualizer<TScrollElement, TItemElement>,
++  ) => number | undefined
+   // Optional
+   debug?: boolean
+   initialRect?: Rect
+@@ -362,6 +374,12 @@ export interface VirtualizerOptions<
      instance: Virtualizer<TScrollElement, TItemElement>,
      sync: boolean,
    ) => void
@@ -130,7 +142,7 @@ index 83386f3..61b1751 100644
    measureElement?: (
      element: TItemElement,
      entry: ResizeObserverEntry | undefined,
-@@ -375,6 +388,10 @@ export interface VirtualizerOptions<
+@@ -375,6 +393,10 @@ export interface VirtualizerOptions<
    scrollPaddingEnd?: number
    initialOffset?: number | (() => number)
    getItemKey?: (index: number) => Key
@@ -141,7 +153,7 @@ index 83386f3..61b1751 100644
    rangeExtractor?: (range: Range) => Array<number>
    scrollMargin?: number
    gap?: number
-@@ -484,9 +501,24 @@ export class Virtualizer<
+@@ -484,9 +506,24 @@ export class Virtualizer<
    private _singleLaneMeasurements: {
      flat: Float64Array
      items: Array<Key | VirtualItem>
@@ -166,7 +178,7 @@ index 83386f3..61b1751 100644
    private laneAssignments = new Map<number, number>() // index → lane cache
    // Earliest index dirtied since last getMeasurements() rebuild, or null.
    private pendingMin: number | null = null
-@@ -844,6 +876,7 @@ export class Virtualizer<
+@@ -844,6 +881,7 @@ export class Virtualizer<
      // memoised cache. Without this, a stable `getItemKey` reference +
      // unchanged `count` would let getMeasurements() return the old layout.
      if (edgeKeysChanged) {
@@ -174,7 +186,7 @@ index 83386f3..61b1751 100644
        this.pendingMin = 0
        this.itemSizeCacheVersion++
      }
-@@ -1597,10 +1630,61 @@ export class Virtualizer<
+@@ -1597,10 +1635,61 @@ export class Virtualizer<
    private isIndexInRange = (index: number): boolean =>
      index >= 0 && index < this.options.count
  
@@ -238,7 +250,7 @@ index 83386f3..61b1751 100644
          count,
          paddingStart,
          scrollMargin,
-@@ -1609,10 +1693,10 @@ export class Virtualizer<
+@@ -1609,10 +1698,10 @@ export class Virtualizer<
          lanes,
          laneAssignmentMode,
          gap,
@@ -252,7 +264,7 @@ index 83386f3..61b1751 100644
        if (!enabled) {
          this.measurementsCache = []
          this._singleLaneMeasurements = null
-@@ -1651,8 +1735,64 @@ export class Virtualizer<
+@@ -1651,8 +1740,64 @@ export class Virtualizer<
          })
        }
  
@@ -318,7 +330,7 @@ index 83386f3..61b1751 100644
        this.pendingMin = null
  
        // ✅ End settling period when cache is fully built
-@@ -1660,11 +1800,107 @@ export class Virtualizer<
+@@ -1660,11 +1805,107 @@ export class Virtualizer<
          this.lanesSettling = false
        }
  
@@ -426,7 +438,7 @@ index 83386f3..61b1751 100644
        if (lanes === 1) {
          // Reuse flat backing if large enough; else grow (preserving data
          // before `min` to mirror the slice-and-rebuild contract).
-@@ -1679,7 +1915,9 @@ export class Virtualizer<
+@@ -1679,7 +1920,9 @@ export class Virtualizer<
          const items: Array<Key | VirtualItem> =
            min === 0
              ? new Array(count)
@@ -437,7 +449,7 @@ index 83386f3..61b1751 100644
  
          let runningStart: number
          if (min === 0) {
-@@ -1703,7 +1941,16 @@ export class Virtualizer<
+@@ -1703,7 +1946,16 @@ export class Virtualizer<
            runningStart += size + gap
          }
  
@@ -455,7 +467,7 @@ index 83386f3..61b1751 100644
          const view = createLazyMeasurementsView(items, flat)
          this.measurementsCache = view
          return view
-@@ -1973,6 +2220,24 @@ export class Virtualizer<
+@@ -1973,6 +2225,24 @@ export class Virtualizer<
      }
    }
  
@@ -480,7 +492,7 @@ index 83386f3..61b1751 100644
    resizeItem = (index: number, size: number) => {
      if (!this.isIndexInRange(index)) return
  
-@@ -2030,10 +2295,13 @@ export class Virtualizer<
+@@ -2030,10 +2300,13 @@ export class Virtualizer<
            // scrolling up" cascade.
            itemStart + itemSize <= scrollOffset &&
            this.scrollDirection !== 'backward'
@@ -496,7 +508,7 @@ index 83386f3..61b1751 100644
                // The callback expects a VirtualItem; build one lazily only
                // when the consumer actually supplied a custom predicate.
                this.measurementsCache[index] ?? {
-@@ -2052,6 +2320,11 @@ export class Virtualizer<
+@@ -2052,6 +2325,11 @@ export class Virtualizer<
        if (this.pendingMin === null || index < this.pendingMin) {
          this.pendingMin = index
        }
@@ -508,7 +520,16 @@ index 83386f3..61b1751 100644
        this.itemSizeCache.set(key, size)
        this.itemSizeCacheVersion++
  
-@@ -2674,6 +2947,7 @@ export class Virtualizer<
+@@ -2191,6 +2469,8 @@ export class Virtualizer<
+   private _elementMaxScrollOffset = (): number | null => {
+     const el = this.scrollElement
+     if (el === null) return null
++    const adaptedMax = this.options.getElementMaxScrollOffset?.(this)
++    if (adaptedMax !== undefined) return adaptedMax
+     if ('scrollHeight' in el) {
+       return this.options.horizontal
+         ? el.scrollWidth - el.clientWidth
+@@ -2674,6 +2954,7 @@ export class Virtualizer<
      // Without this, a prior resizeItem() that left pendingMin > 0 would
      // cause the rebuild to preserve stale items before that index.
      this.pendingMin = null

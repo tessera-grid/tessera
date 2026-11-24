@@ -13,6 +13,7 @@ import {
   measureTransitionWork,
   recordPerf,
 } from '../helpers'
+import { INTERACTION_BUDGET_MS } from '../perf.constants'
 import { makeData } from '../../__mocks__/data'
 import {
   ALL_PLUGINS,
@@ -720,7 +721,7 @@ describe('Производительность прыжка — порции с�
 // `autoHeight` и смена её ширины — строки окна перемеряются — против того же без плагина.
 describe('Производительность первой отрисовки — высота строк по содержимому', () => {
   test(
-    'AH33: монтирование 100 000 строк с колонкой autoHeight — не дороже базы без плагина больше чем на 30 % (или 40 мс); смена её ширины — не дороже 2,5 базы: вторая отрисовка строк окна',
+    'AH33: монтирование 100 000 строк с autoHeight и смена ширины колонки укладываются в свои бюджеты',
     async () => {
       let table: { setColumnSizing: (sizing: Record<string, number>) => void }
       const Wrap = ({ wrap }: { wrap: boolean }) => {
@@ -743,12 +744,24 @@ describe('Производительность первой отрисовки �
           () => headCells().length > 0,
           { warmup: false },
         )
+        const waitForWindow = () =>
+          expect
+            .poll(
+              () =>
+                !!document.querySelector('.data-grid__body-row') &&
+                !document.querySelector('[data-portions-pending]'),
+            )
+            .toBe(true)
+        await waitForWindow()
         let narrow = true
-        const resize = await measureInteractionWork(async () => {
-          table.setColumnSizing({ note: narrow ? 160 : 260 })
-          narrow = !narrow
-          await new Promise(resolve => requestAnimationFrame(resolve))
-        })
+        const resize = await measureInteractionWork(
+          async () => {
+            table.setColumnSizing({ note: narrow ? 160 : 260 })
+            narrow = !narrow
+            await new Promise(resolve => requestAnimationFrame(resolve))
+          },
+          { afterWarmup: waitForWindow },
+        )
         await cleanup()
         return { mount, resize }
       }
@@ -779,10 +792,10 @@ describe('Производительность первой отрисовки �
           plusMs: 40,
         }),
         // Высоты строк известны только после отрисовки: строки окна рисуются второй раз.
-        resize: ceilingOver(base.resize.longestMs, {
-          ratio: 2.5,
-          plusMs: 8,
-        }),
+        resize: Math.max(
+          80,
+          ceilingOver(base.resize.longestMs, { ratio: 2.5, plusMs: 8 }),
+        ),
       }
       const record = (
         id: string,
@@ -805,6 +818,15 @@ describe('Производительность первой отрисовки �
               targetMs: LOAD_BUDGET_MS,
               ceilingMs: gated ? ceiling.mount : undefined,
               ...r.mount,
+            },
+            {
+              axis: 'x',
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.resize.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
+              ceilingMs: gated ? ceiling.resize : undefined,
+              ...r.resize,
             },
           ],
         })

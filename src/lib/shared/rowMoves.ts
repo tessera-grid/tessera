@@ -50,13 +50,6 @@ export const hasLazyMoves = (moves: RowMoves) => {
   return false
 }
 
-/** Строки в стадии переноса между группами: при смене модель группировки пересобирается. */
-export const groupMovesKey = (moves: RowMoves) => {
-  let key = ''
-  for (const rowId in moves) if (moves[rowId]!.group) key += `${rowId}\u0000`
-  return key
-}
-
 export const readRowMoves = (table: unknown): RowMoves =>
   (
     table as { atoms: { rowMoves?: { get: () => RowMoves } } }

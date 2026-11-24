@@ -134,13 +134,13 @@ describe('Pending arc', () => {
       const radius = getComputedStyle(el).borderTopLeftRadius
       const rx = radius.endsWith('%')
         ? '50%'
-        : String(parseFloat(radius) - width / 2)
+        : `${parseFloat(radius) - width / 2}px`
       // Дорожка и все отрезки дуги лежат на одной линии одной толщины.
       for (const rect of [track, ...tailOf(el)]) {
         expect(parseFloat(getComputedStyle(rect).strokeWidth), label).toBe(
           width,
         )
-        expect(rect.getAttribute('rx'), label).toBe(rx)
+        expect(getComputedStyle(rect).getPropertyValue('rx'), label).toBe(rx)
         expect(boxOf(rect.getBBox()), label).toEqual(boxOf(track.getBBox()))
       }
       // Дорожка — весь контур, без пробелов.
@@ -173,7 +173,9 @@ describe('Pending arc', () => {
     expect(
       token(byLabel('Rounded'), '--tsr-comp-pending-ring-width', 'width'),
     ).toBe('2px')
-    expect(trackOf(byLabel('Rounded')).getAttribute('rx')).toBe('5')
+    expect(
+      getComputedStyle(trackOf(byLabel('Rounded'))).getPropertyValue('rx'),
+    ).toBe('5px')
 
     // Сила дорожки — из токена.
     await screen.rerender(

@@ -23,6 +23,18 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolvePath('src'),
+      'use-sync-external-store/shim/with-selector.js': resolvePath(
+        'src/lib/util/useSyncExternalStore',
+      ),
+      'use-sync-external-store/shim/with-selector': resolvePath(
+        'src/lib/util/useSyncExternalStore',
+      ),
+      'use-sync-external-store/shim/index.js': resolvePath(
+        'src/lib/util/useSyncExternalStore',
+      ),
+      'use-sync-external-store/shim': resolvePath(
+        'src/lib/util/useSyncExternalStore',
+      ),
     },
   },
   plugins: [

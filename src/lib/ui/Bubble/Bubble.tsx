@@ -1,4 +1,4 @@
-import { HTMLAttributes, ReactNode, memo } from 'react'
+import { HTMLAttributes, ReactNode, forwardRef, memo } from 'react'
 
 import clsx from 'clsx'
 
@@ -17,20 +17,20 @@ export interface BubbleProps extends HTMLAttributes<HTMLSpanElement> {
 
 // Позиционирование задаёт потребитель через className — пузырёк только рисует себя.
 export const Bubble = memo(
-  ({
-    size = 'sm',
-    tone = 'accent',
-    className,
-    children,
-    ...rest
-  }: BubbleProps) => (
-    <span
-      className={clsx(styles.bubble, styles[size], styles[tone], className)}
-      {...rest}
-    >
-      {children}
-    </span>
-  ),
+  forwardRef<HTMLSpanElement, BubbleProps>(function Bubble(
+    { size = 'sm', tone = 'accent', className, children, ...rest },
+    ref,
+  ) {
+    return (
+      <span
+        ref={ref}
+        className={clsx(styles.bubble, styles[size], styles[tone], className)}
+        {...rest}
+      >
+        {children}
+      </span>
+    )
+  }),
 )
 
 Bubble.displayName = 'Bubble'

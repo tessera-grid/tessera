@@ -33,6 +33,7 @@ if (!ref) {
 }
 const cases = option('--cases')?.split(',') ?? PR_CASES
 const injectB = option('--inject-b')
+const sameRevision = args.includes('--same-revision')
 const min = Number(option('--min') ?? 5)
 const max = Number(option('--max') ?? 15)
 
@@ -54,6 +55,7 @@ writeFileSync(
     "import { mergeConfig, searchForWorkspaceRoot } from 'vite'",
     "import base from './vitest.perf.config.ts'",
     'export default mergeConfig(base, {',
+    "  cacheDir: '.vite-perf-compare',",
     `  server: { fs: { allow: [searchForWorkspaceRoot(process.cwd()), ${JSON.stringify(resolve(repo, 'node_modules'))}] } },`,
     '})',
     '',
@@ -66,11 +68,12 @@ try {
     min,
     max,
     runSide: async (side, pending, round) => {
-      const cwd = side === 'A' ? tree.dir : repo
+      const useWorktree = side === 'A' || sameRevision
+      const cwd = useWorktree ? tree.dir : repo
       const results = resolve(runsDir, `${side}-${round}.json`)
       // Ревизия до ADR 0099 пишет только в свой latest.json.
       const fallback = resolve(cwd, 'performance-results/latest.json')
-      if (side === 'A') rmSync(fallback, { force: true })
+      if (useWorktree) rmSync(fallback, { force: true })
       const pattern = `\\b(${pending.map(escape).join('|')}):`
       console.log(`раунд ${round}, сторона ${side}: ${pending.join(', ')}`)
       spawnSync(
@@ -79,7 +82,7 @@ try {
           'node_modules/vitest/vitest.mjs',
           'run',
           '--config',
-          side === 'A' ? COMPARE_CONFIG : 'vitest.perf.config.ts',
+          useWorktree ? COMPARE_CONFIG : 'vitest.perf.config.ts',
           '--project',
           'perf',
           '-t',
@@ -112,7 +115,7 @@ try {
       return samplesOf(report.records, pending)
     },
   })
-  const report = compareReport(run, { ref, sha: tree.sha })
+  const report = compareReport(run, { ref, sha: tree.sha, sameRevision })
   writeFileSync(
     resolve(out, 'compare.json'),
     `${JSON.stringify(report, null, 2)}\n`,

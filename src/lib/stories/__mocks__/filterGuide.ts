@@ -33,7 +33,18 @@ export const openPanel = async (
     filterButton(root, column)?.getAttribute('aria-expanded') === 'true'
   if (own()) return
   await closePanel(signal)
-  await repeat(own, () => filterButton(root, column)?.click(), signal)
+  await repeat(
+    own,
+    () => {
+      const button = filterButton(root, column)
+      if (
+        button?.getAttribute('aria-expanded') !== 'true' &&
+        button?.getAttribute('aria-busy') !== 'true'
+      )
+        button?.click()
+    },
+    signal,
+  )
 }
 
 /** Кнопка фильтра колонки отмечена как включённая. */

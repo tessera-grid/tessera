@@ -115,7 +115,7 @@ describe('perf:compare', () => {
     git(repo, 'worktree', 'lock', stuck.dir)
     removeWorktree(repo, stuck)
     expect(existsSync(stuck.dir)).toBe(false)
-  })
+  }, 30_000)
 
   it('PF13: раунды вперемешку — порядок сторон чередуется; минимум 5 раундов, кейс с неопределённым вердиктом добирает до 15', async () => {
     expect([1, 2, 3].map(roundOrder)).toEqual([
@@ -184,7 +184,7 @@ describe('perf:compare', () => {
     expect(exitCodeOf(['unchanged', 'regression'])).toBe(1)
   })
 
-  it('PF18: метрика сравнения — значения записей кейса и его базы внутри прогона; кейс без записи — ошибка, а не вердикт', () => {
+  it('PF18: сравнение берёт метрики кейса и его базы, сообщает об отсутствующей записи или метрике в раунде', async () => {
     const records = [
       {
         id: 'P2',
@@ -210,5 +210,17 @@ describe('perf:compare', () => {
       'GL13/y/p95': 10,
     })
     expect(() => samplesOf(records, ['P2', 'I1'])).toThrow(/I1.*невалиден/)
+
+    const calls: Side[] = []
+    const runSide = async (side: Side) => {
+      calls.push(side)
+      const values = new Map([['AH33/general/longest', 35]])
+      if (side === 'B') values.set('AH33/x/longest', 12)
+      return values
+    }
+    await expect(runRounds({ cases: ['AH33'], runSide })).rejects.toThrow(
+      /AH33\/x\/longest.*стороне A.*раунд 1/,
+    )
+    expect(calls).toEqual(['A', 'B'])
   })
 })

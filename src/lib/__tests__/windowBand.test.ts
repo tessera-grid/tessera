@@ -72,4 +72,18 @@ describe('Полоса окна (ADR 0202)', () => {
     expect(band.grow()).toBe(false)
     expect(span(band(range(3, 12)))).toEqual([2, 22])
   })
+
+  it('WB13: после замены окна рисуются все видимые строки, запас появляется при росте или при прокрутке', () => {
+    const band = createWindowBand()
+    band(range(100, 109))
+    band.rest(true)
+    expect(span(band(range(100, 109)))).toEqual([100, 109])
+    expect(band.grow()).toBe(true)
+    expect(span(band(range(100, 109)))).toEqual([99, 119])
+
+    band.rest(true)
+    expect(span(band(range(100, 109)))).toEqual([100, 109])
+    expect(span(band(range(90, 99)))).toEqual([80, 100])
+    expect(band.grow()).toBe(false)
+  })
 })

@@ -19,7 +19,13 @@ import {
   rowActions,
   rowExpanding,
 } from '../../../plugins'
-import { failureShownOn, humanClick, pendingArcOf, tabInto } from '../helpers'
+import {
+  failureShownOn,
+  humanClick,
+  pendingArcOf,
+  revealCellButtons,
+  tabInto,
+} from '../helpers'
 import { tableLabels } from '../labels'
 import { backgroundOf, contrast, inBothThemes, toRgba } from './a11y-helpers'
 import { waitForGrid } from './core-helpers'
@@ -185,6 +191,12 @@ const headCell = () =>
   )!
 const sortButton = () =>
   headCell().querySelector<HTMLElement>('.column-sort__button')!
+const startSorting = async () => {
+  await revealCellButtons(headCell())
+  await humanClick(sortButton())
+  await expect.poll(() => lastCall('sort')).toBeTruthy()
+  return lastCall('sort')!
+}
 const filterButton = () =>
   headCell().querySelector<HTMLElement>('.column-filter__button')!
 const archiveButton = (id = 'r1') =>
@@ -405,9 +417,7 @@ describe('Отмена длительных операций (ADR 0153)', () => 
     expect(document.querySelector('[data-failure-indicator]')).toBeNull()
 
     // Серверная сортировка: срез к прежнему, без красного света и плашки.
-    await userEvent.hover(headCell())
-    await humanClick(sortButton())
-    const sort = lastCall('sort')!
+    const sort = await startSorting()
     expect(headCell().getAttribute('aria-sort')).not.toBe('none')
     await expect.poll(() => pendingBanner(), { timeout: 3000 }).not.toBeNull()
     await humanClick(
@@ -467,9 +477,7 @@ describe('Отмена длительных операций (ADR 0153)', () => 
 
     // Вместе с серверным действием: заголовок — серверного, отменяет обоих.
     const third = await start()
-    await userEvent.hover(headCell())
-    await humanClick(sortButton())
-    const sort = lastCall('sort')!
+    const sort = await startSorting()
     await expect
       .poll(() => pendingBanner()?.textContent ?? '', { timeout: 3000 })
       .toContain(tableLabels.pendingSorting)
@@ -563,9 +571,7 @@ describe('Отмена длительных операций (ADR 0153)', () => 
     expect(calls.filter(call => call.kind === 'search')).toHaveLength(2)
 
     // Сортировка: кнопка «Отменить» плашки.
-    await userEvent.hover(headCell())
-    await humanClick(sortButton())
-    const sort = lastCall('sort')!
+    const sort = await startSorting()
     await expect
       .poll(() => pendingBanner()?.textContent ?? '', { timeout: 3000 })
       .toContain(tableLabels.pendingSorting)
@@ -587,8 +593,7 @@ describe('Отмена длительных операций (ADR 0153)', () => 
 
   test('CA10: «стоп» и плашка — axe с color-contrast, значок не ниже 3:1 в обеих темах, в forced-colors под наведением — заливка Highlight и «стоп» HighlightText, у плашки — системные цвета', async () => {
     await mount()
-    await userEvent.hover(headCell())
-    await humanClick(sortButton())
+    await startSorting()
     await expect.poll(() => pendingBanner(), { timeout: 3000 }).not.toBeNull()
     await humanClick(exportButton())
     await expect.poll(() => armed(exportButton())).toBe(true)

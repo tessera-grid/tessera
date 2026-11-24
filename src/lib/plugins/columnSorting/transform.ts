@@ -22,6 +22,23 @@ interface SortingTable {
 const sortingOf = (table: unknown): SortEntry[] =>
   (table as SortingTable).atoms.sorting?.get() ?? []
 
+const sortIndexes = new WeakMap<SortEntry[], Map<string, number>>()
+
+/** Один индекс на срез: настройки вида спрашивают приоритет у каждого уровня. */
+const sortIndexOf = (sorting: SortEntry[], columnId: string) => {
+  if (sorting.length <= 1) return sorting[0]?.id === columnId ? 0 : -1
+  let indexes = sortIndexes.get(sorting)
+  if (!indexes) {
+    indexes = new Map()
+    // Если id повторяется, берём его первое место, как при поиске по массиву.
+    for (let i = sorting.length - 1; i >= 0; i--) {
+      indexes.set(sorting[i]!.id, i)
+    }
+    sortIndexes.set(sorting, indexes)
+  }
+  return indexes.get(columnId) ?? -1
+}
+
 export const sortTransform: ColumnTransform = {
   kind: 'sort',
   name: labels => columnSortingLabels(labels).transformName,
@@ -37,7 +54,7 @@ export const sortTransform: ColumnTransform = {
   icon: ({ direction }) => (direction === 'desc' ? 'sortDesc' : 'sortAsc'),
   of: (table, columnId) => {
     const sorting = sortingOf(table)
-    const index = sorting.findIndex(entry => entry.id === columnId)
+    const index = sortIndexOf(sorting, columnId)
     if (index < 0) return undefined
     return {
       direction: sorting[index]!.desc ? 'desc' : 'asc',

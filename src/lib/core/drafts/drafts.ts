@@ -247,9 +247,17 @@ const indexOf = (drafts: readonly Draft[]) => {
   return index
 }
 
+/** Запись вида у цели из индекса текущего среза. */
+export const draftOf = (table: unknown, kind: string, target: DraftTarget) => {
+  const drafts = readDrafts(table)
+  return drafts.length > 0
+    ? indexOf(drafts).get(draftKeyOf(kind, target))
+    : undefined
+}
+
 /** Есть ли запись вида у цели; поиск по указателю среза, без перебора. */
 export const hasDraft = (table: unknown, kind: string, target: DraftTarget) =>
-  indexOf(readDrafts(table)).has(draftKeyOf(kind, target))
+  draftOf(table, kind, target) !== undefined
 
 /** Черновик вида у цели — перерисовывает только подписчика этой цели. */
 export const useDraft = (
@@ -268,7 +276,8 @@ const markOf = (
   drafts: readonly Draft[] | undefined,
   rowId: string,
 ): RowDraftMark | undefined => {
-  const index = indexOf(drafts ?? EMPTY)
+  if (!drafts?.length) return undefined
+  const index = indexOf(drafts)
   for (const kind of draftKindsOf(table)) {
     if (kind.rowMark && index.has(draftKeyOf(kind.kind, { row: rowId })))
       return kind.rowMark

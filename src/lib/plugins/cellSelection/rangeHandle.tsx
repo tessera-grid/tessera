@@ -409,18 +409,20 @@ export const useRangeHandle = ({ table, getScrollElement }: RootHookProps) => {
       if (!handle || !cell || !host) return
       const element = cellOf(scroller, cell)
       if (!element || isEditing(element)) {
-        handle.hidden = true
+        if (!handle.hidden) handle.hidden = true
         return
       }
       const rect = element.getBoundingClientRect()
       const bounds = bodyBounds(scroller, element)
       const x = corner === 'end' ? rect.right : rect.left
       const y = corner === 'end' ? rect.bottom : rect.top
-      handle.hidden =
+      const hidden =
         x < bounds.left - 0.5 ||
         x > bounds.right + 0.5 ||
         y < bounds.top - 0.5 ||
         y > bounds.bottom + 0.5
+      if (handle.hidden !== hidden) handle.hidden = hidden
+      if (hidden) return
       const origin = host.getBoundingClientRect()
       handle.style.left = `${x - origin.left - host.clientLeft}px`
       handle.style.top = `${y - origin.top - host.clientTop}px`
@@ -431,13 +433,15 @@ export const useRangeHandle = ({ table, getScrollElement }: RootHookProps) => {
     }
     place()
     let frame = 0
-    // Строки окна монтируются после прокрутки — ещё раз в следующем кадре.
+    // Прокрутка и монтаж окна могут сработать вместе. Читаем их геометрию перед кадром.
     const later = () => {
-      place()
-      cancelAnimationFrame(frame)
-      frame = requestAnimationFrame(place)
+      if (frame !== 0) return
+      frame = requestAnimationFrame(() => {
+        frame = 0
+        place()
+      })
     }
-    const observer = new ResizeObserver(later)
+    const observer = new ResizeObserver(place)
     observer.observe(scroller)
     const tableElement = scroller.querySelector('.data-grid__table')
     if (tableElement) observer.observe(tableElement)

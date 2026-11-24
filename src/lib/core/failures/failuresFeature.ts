@@ -196,6 +196,7 @@ export const reportFailures = (
     return
   }
   const now = Date.now()
+  let source: FailureRowSource | undefined
   const failures = reports.map(report => {
     const failure: Failure = {
       ...report,
@@ -204,7 +205,8 @@ export const reportFailures = (
     }
     if ('cell' in failure.target) {
       const [rowId, columnId] = failure.target.cell
-      const row = rowOf(table, rowId)
+      const row = (source ??= sourceOf(table))?.byId(rowId) as
+        ValueRow | undefined
       if (row) reportedValues.set(failure, row.getValue(columnId))
     }
     return failure

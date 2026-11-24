@@ -828,7 +828,8 @@ const activeRowIndex = (root: HTMLElement) =>
 
 /** Пользователь протянул ползунок в самый низ. */
 const dragToEnd = async (root: HTMLElement, signal: AbortSignal) => {
-  await pollUntil(() => hasRow(root, 0), signal)
+  // Последний шаг может вернуть ползунок в конец после подъёма колесом.
+  await pollUntil(() => bodyRows(root).length > 0, signal)
   scrollTo(root, 1)
   await pollUntil(() => atEnd(root) && hasRow(root, MILLION_LAST), signal)
 }

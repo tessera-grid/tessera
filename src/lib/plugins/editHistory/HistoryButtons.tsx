@@ -35,6 +35,7 @@ export const UndoRedoButtons = ({ table }: ToolbarComponentProps) => {
   const button = (direction: 'undo' | 'redo') => {
     const name = direction === 'undo' ? undoName : redoName
     const pending = slice.running === direction
+    const unavailable = !name && !pending
     const combo = direction === 'undo' ? 'Mod+Z' : 'Mod+Shift+Z'
     const text = name
       ? direction === 'undo'
@@ -50,12 +51,20 @@ export const UndoRedoButtons = ({ table }: ToolbarComponentProps) => {
         tooltip={shortcutTitle(table, labels, text, combo)}
         aria-keyshortcuts={keyboardShortcut(table, labels, combo).aria}
         icon={direction === 'undo' ? <UndoIcon /> : <RedoIcon />}
-        disabled={!name && !pending}
+        // Кнопка остаётся в группе фокуса, поэтому состав элементов тулбара неизменен.
+        aria-disabled={unavailable || undefined}
+        data-disabled={unavailable || undefined}
         tooltipWhenDisabled
         pending={pending}
         onCancel={() => cancelStep(table)}
         data-testid={`${direction}-button`}
-        onClick={() => void step(table, direction, 'pointer')}
+        onClick={event => {
+          if (unavailable) {
+            event.preventDefault()
+            return
+          }
+          void step(table, direction, 'pointer')
+        }}
       />
     )
   }
@@ -74,7 +83,6 @@ const HistoryPopover = preloadable(() =>
 export const HistoryButton = ({ table }: ToolbarComponentProps) => {
   const labels = useLocalization()
   const label = editHistoryLabels(labels).history
-  useHistorySlice(table)
   const popover = useLazyPopover(
     table,
     HistoryPopover,

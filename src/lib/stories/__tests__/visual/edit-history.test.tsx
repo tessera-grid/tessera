@@ -1,15 +1,18 @@
 import axe from 'axe-core'
-import { useState } from 'react'
+import { startTransition, useState } from 'react'
 import { commands, page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest'
 
 import { useCreateTable } from '../../../core/useCreateTable'
+import { pluginStateKey } from '../../../core/definePlugin'
 import { DataGrid } from '../../../grid/DataGrid'
+import { getBodyViewport } from '../../../core/keyboardNavigation/geometry'
 import {
   cellEditing,
   cellSelection,
   columnFilteringModel,
+  columnSortingModel,
   contextMenu,
   editHistory,
   serverRowModel,
@@ -72,6 +75,8 @@ interface GridProps {
   /** Сохранение по кнопке (ADR 0178); `pult` — с пультом несохранённого. */
   manual?: boolean
   pult?: boolean
+  sorted?: boolean
+  applyData?: (update: () => void) => void
 }
 
 const Grid = ({
@@ -79,6 +84,8 @@ const Grid = ({
   role = 'grid',
   manual = false,
   pult = false,
+  sorted = false,
+  applyData = update => update(),
 }: GridProps) => {
   const [rows, setRows] = useState(ROWS)
   const table = useCreateTable({
@@ -95,16 +102,18 @@ const Grid = ({
             const refused = new Set(
               (result?.refused ?? []).map(item => item.rowId),
             )
-            setRows(prev =>
-              prev.map(row => {
-                const cells = batch.cells.filter(
-                  cell => cell.rowId === row.id && !refused.has(row.id),
-                )
-                return cells.reduce(
-                  (next, cell) => ({ ...next, [cell.columnId]: cell.value }),
-                  row,
-                )
-              }),
+            applyData(() =>
+              setRows(prev =>
+                prev.map(row => {
+                  const cells = batch.cells.filter(
+                    cell => cell.rowId === row.id && !refused.has(row.id),
+                  )
+                  return cells.reduce(
+                    (next, cell) => ({ ...next, [cell.columnId]: cell.value }),
+                    row,
+                  )
+                }),
+              ),
             )
             return result
           }
@@ -117,6 +126,7 @@ const Grid = ({
       cellSelection(),
       contextMenu(),
       columnFilteringModel(),
+      ...(sorted ? [columnSortingModel()] : []),
       valueChangeFlash(),
       ...(history === false ? [] : [editHistory(history)]),
       ...(pult ? [unsavedChanges()] : []),
@@ -334,6 +344,65 @@ describe('История правок на настоящих событиях (
     await expect.poll(live).toContain(labels.announceHidden)
   })
 
+  test('UD45: undo и отложенный redo строят выделение и прокручивают к первой ячейке после пересортировки data', async () => {
+    answer = () => Promise.resolve()
+    let deferData = false
+    let applyRedoData: (() => void) | undefined
+    await mount({
+      sorted: true,
+      applyData: update => {
+        if (deferData) applyRedoData = update
+        else update()
+      },
+    })
+    api.setSorting([{ id: 'price', desc: false }])
+    const firstRow = () => api.getRowSource().at(0)?.id
+    await expect.poll(firstRow).toBe('0')
+    await api.writeCells([
+      { rowId: '0', columnId: 'price', value: 200 },
+      { rowId: '50', columnId: 'price', value: -1 },
+    ])
+    await expect.poll(firstRow).toBe('50')
+    const scroller = document.querySelector<HTMLElement>(
+      '.data-grid__container',
+    )!
+    scroller.scrollTop = scroller.scrollHeight
+    await expect.poll(() => cell('0')).not.toBeNull()
+
+    const expectRevealed = async (anchorRowId: string, focusRowId: string) => {
+      await expect.poll(firstRow).toBe(anchorRowId)
+      await expect
+        .poll(() => api.atoms.cellSelection.get()[0])
+        .toMatchObject({
+          anchorRowId,
+          anchorColumnId: 'price',
+          focusRowId,
+          focusColumnId: 'price',
+        })
+      await expect
+        .poll(() => {
+          const rect = cell(anchorRowId)?.getBoundingClientRect()
+          const { top, bottom } = getBodyViewport(scroller)
+          return !!rect && rect.top >= top - 1 && rect.bottom <= bottom + 1
+        })
+        .toBe(true)
+    }
+
+    expect(await api.undo()).toBe(true)
+    await expectRevealed('0', '50')
+    const result = deferred()
+    deferData = true
+    answer = () => result.promise
+    const redoing = api.redo()
+    await expect.poll(() => cell('0')?.getAttribute('aria-busy')).toBe('true')
+    result.resolve()
+    expect(await redoing).toBe(true)
+    expect(firstRow()).toBe('0')
+    expect(applyRedoData).toBeDefined()
+    startTransition(() => applyRedoData?.())
+    await expectRevealed('50', '0')
+  })
+
   test('UD13: Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z и Ctrl+Y по коду клавиши отменяют и повторяют при фокусе в таблице; в открытом редакторе не перехватываются', async () => {
     await mount()
     await write('1', 91)
@@ -372,10 +441,19 @@ describe('История правок на настоящих событиях (
     let screen = await mount()
     const undo = () => byTestId('undo-button')!
     const redo = () => byTestId('redo-button')!
+    await expect.poll(undo).not.toBeNull()
     expect(
       undo().hasAttribute('disabled') ||
         undo().getAttribute('aria-disabled') === 'true',
     ).toBe(true)
+    const history = api.atoms[pluginStateKey('editHistory')]
+    const version = history.get().version
+    await page.getByTestId('undo-button').click({ force: true })
+    undo().focus()
+    await userEvent.keyboard('{ArrowRight}')
+    expect(redo()).toHaveFocus()
+    await userEvent.keyboard('{Enter} ')
+    expect(history.get().version).toBe(version)
     await write('1', 91)
     const name = api.getHistory().entries[0].label
     await expect
@@ -565,12 +643,12 @@ describe('История правок на настоящих событиях (
     await new Promise(resolve => setTimeout(resolve, 700))
     await humanClick(byTestId('undo-button')!)
     await expect.poll(() => api.getHistory().busy).toBe(false)
-    await expect.poll(() => original()!.hasAttribute('aria-busy')).toBe(false)
     expect(api.getHistory().position).toBe(3)
     // Нажатие на кнопку тулбара закрыло попап — открываем снова.
     await expect.poll(original).toBeNull()
     await humanClick(byTestId('edit-history-button')!)
     await expect.poll(original).not.toBeNull()
+    expect(original()!.hasAttribute('aria-busy')).toBe(false)
     // Отказ второй записи останавливает откат на ней.
     answer = batch =>
       batch.cells.some(item => item.rowId === '2')
@@ -670,11 +748,26 @@ describe('История правок на настоящих событиях (
       await humanClick(byTestId('edit-history-button')!)
       await expect.poll(() => byTestId('edit-history')).not.toBeNull()
       await inBothThemes(async () => {
-        const result = await axe.run(document.body, {
-          ...AXE_OPTIONS,
-          rules: { ...AXE_OPTIONS.rules, 'color-contrast': { enabled: true } },
-        })
-        expect(result.violations.map(v => v.id)).toEqual([])
+        const result = await axe.run(
+          {
+            include: [document.body],
+            // Стражи Base UI перенаправляют фокус и не удерживают его.
+            exclude: [['[data-base-ui-focus-guard]']],
+          },
+          {
+            ...AXE_OPTIONS,
+            rules: {
+              ...AXE_OPTIONS.rules,
+              'color-contrast': { enabled: true },
+            },
+          },
+        )
+        expect(
+          result.violations.map(v => ({
+            id: v.id,
+            targets: v.nodes.map(node => node.target),
+          })),
+        ).toEqual([])
       })
       await userEvent.keyboard('{Escape}')
       rightClick(cell('3')!)
@@ -780,7 +873,10 @@ describe('История правок в серверной модели (ADR 02
     let release!: () => void
     rowsGate = () => new Promise<void>(resolve => (release = resolve))
     const cancelled = api.undo()
-    await expect.poll(() => byTestId('pending-action-cancel')).not.toBeNull()
+    // Плашка появляется после секундной задержки темы.
+    await expect
+      .poll(() => byTestId('pending-action-cancel'), { timeout: 5000 })
+      .not.toBeNull()
     await humanClick(byTestId('pending-action-cancel')!)
     expect(await cancelled).toBe(false)
     release()

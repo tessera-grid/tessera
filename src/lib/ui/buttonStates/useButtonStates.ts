@@ -64,11 +64,18 @@ const usePendingLeave = (ref: RefObject<HTMLElement | null>, lit: boolean) => {
     if (!leaving || !el) {
       return
     }
-    const timer = setTimeout(
-      () => setLeaving(false),
-      longestTransition(phaseLayerOf(el)),
-    )
-    return () => clearTimeout(timer)
+    // Не пересчитываем стили всей таблицы в задаче, которая сняла ожидание.
+    let finish: ReturnType<typeof setTimeout> | undefined
+    const measure = setTimeout(() => {
+      finish = setTimeout(
+        () => setLeaving(false),
+        longestTransition(phaseLayerOf(el)),
+      )
+    }, 0)
+    return () => {
+      clearTimeout(measure)
+      clearTimeout(finish)
+    }
   }, [ref, leaving])
 
   return leaving && !lit

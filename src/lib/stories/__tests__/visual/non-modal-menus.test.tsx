@@ -306,10 +306,6 @@ describe('Немодальные меню', () => {
   })
 
   test('MM6: меню, закрытое выбором пункта, не возвращает фокус на свой триггер, если до конца закрытия нажат другой триггер: второе меню остаётся открытым с фокусом — кебабы строки и заголовка, инлайн-меню', async () => {
-    // Закрытие длиннее нажатия: нажатие на другой триггер всегда приходится на него.
-    slowClose = document.createElement('style')
-    slowClose.textContent = `.data-grid-theme[role="menu"] { --tsr-comp-tooltip-transition: opacity 1s linear, transform 1s linear; }`
-    document.head.append(slowClose)
     const menus = () => [...document.querySelectorAll('[role="menu"]')]
     const pick = async (label: string) => {
       const item = [
@@ -322,28 +318,49 @@ describe('Немодальные меню', () => {
       )!
       await humanClick(item)
     }
+    const pickAndHoldClosing = async (label: string) => {
+      const closing = menu()!
+      // Удерживаем только закрытие первого меню пары до открытия второго.
+      closing.style.setProperty(
+        '--tsr-comp-tooltip-transition',
+        'opacity 4s linear, transform 4s linear',
+      )
+      await pick(label)
+      await expect
+        .poll(() => closing.hasAttribute('data-ending-style'))
+        .toBe(true)
+      await expect.poll(() => closing.getAnimations().length).toBeGreaterThan(0)
+      const transitions = closing.getAnimations()
+      transitions.forEach(transition => transition.pause())
+      return { closing, transitions }
+    }
     const pressRowKebab = async () => {
       await userEvent.hover(cell('r6'))
       await expect.poll(() => rowKebab('r6')).not.toBeNull()
       await humanClick(rowKebab('r6')!)
     }
     // Прежнее меню ещё закрывается; когда оно уходит, второе открыто и держит фокус.
-    const secondKeepsFocus = async () => {
-      expect(menus().length).toBe(2)
+    const secondKeepsFocus = async ({
+      closing,
+      transitions,
+    }: Awaited<ReturnType<typeof pickAndHoldClosing>>) => {
+      await expect.poll(() => menus().length).toBe(2)
+      expect(closing).toHaveAttribute('data-ending-style')
+      transitions.forEach(transition => transition.finish())
       await expect.poll(() => menus().length, { timeout: 3000 }).toBe(1)
       await new Promise(resolve => setTimeout(resolve, 100))
       expect(menus().length).toBe(1)
       expect(menu()!.hasAttribute('data-ending-style')).toBe(false)
       expect(menu()!.contains(document.activeElement)).toBe(true)
       await userEvent.keyboard('{Escape}')
-      await menuClosed()
+      await expect.poll(menu, { timeout: 3000 }).toBeNull()
     }
 
     const screen = await mount()
     await openRowMenu('r1')
-    await pick('Archive')
+    const row = await pickAndHoldClosing('Archive')
     await pressRowKebab()
-    await secondKeepsFocus()
+    await secondKeepsFocus(row)
 
     await userEvent.hover(headCell('city'))
     await humanClick(
@@ -353,9 +370,9 @@ describe('Немодальные меню', () => {
     )
     await expect.poll(menu).not.toBeNull()
     await pick('Freeze')
-    await pick('At start')
+    const header = await pickAndHoldClosing('At start')
     await pressRowKebab()
-    await secondKeepsFocus()
+    await secondKeepsFocus(header)
     await screen.unmount()
 
     await mount({ menus: false })
@@ -364,9 +381,9 @@ describe('Немодальные меню', () => {
       headCell('city').querySelector<HTMLElement>('[aria-label="Freeze"]')!,
     )
     await expect.poll(menu).not.toBeNull()
-    await pick('At start')
+    const inline = await pickAndHoldClosing('At start')
     await userEvent.click(cell('r6'), { button: 'right' })
-    await secondKeepsFocus()
+    await secondKeepsFocus(inline)
   })
 
   const byTestId = (id: string) =>

@@ -73,6 +73,8 @@ const Grid = ({ layout }: { layout: Layout }) => {
     columns: COLUMNS as never,
     data,
     getRowId: (row: { id: string }) => row.id,
+    // Все строки видны: hover нижней строки не прокручивает таблицу к тени шапки.
+    rowHeight: 40,
     state: {
       columnPinning: {
         start: ['a'],

@@ -58,6 +58,8 @@ export interface CellsWritten {
   id: string
   source: CellWriteSource | 'edit' | 'row' | 'move' | 'discard' | 'apply'
   cells: readonly WrittenCell[]
+  /** Исполнитель подтвердил, что ключи ячеек в записи различны. */
+  uniqueCells?: boolean
   refused: readonly { rowId: string; columnId: string }[]
   draft?: boolean
   cancelled?: boolean
@@ -95,8 +97,14 @@ type SettledTable = {
 }
 
 /** Сообщить итог записи слушателю таблицы — плагину истории; без него ничего. */
-export const notifyCellsWritten = (table: unknown, record: CellsWritten) =>
-  (table as SettledTable | undefined)?.options?.cellsWritten?.(table, record)
+export const notifyCellsWritten = (
+  table: unknown,
+  record: CellsWritten | (() => CellsWritten),
+) =>
+  (table as SettledTable | undefined)?.options?.cellsWritten?.(
+    table,
+    typeof record === 'function' ? record() : record,
+  )
 
 /**
  * Изменение одной ячейки: набранный или вставленный текст разбирается по типу колонки,
@@ -167,7 +175,12 @@ export interface CellWriter {
   /** Можно ли записать в ячейку — для вставки, пунктов меню и клавиш. */
   canWrite: (table: unknown, rowId: string, columnId: string) => boolean
   /** Значение, которое ячейка показывает: черновик или данные (ADR 0222, §6). */
-  valueOf: (table: unknown, rowId: string, columnId: string) => unknown
+  valueOf: (
+    table: unknown,
+    rowId: string,
+    columnId: string,
+    row?: { getValue: (columnId: string) => unknown },
+  ) => unknown
   /**
    * Строки до сохранения (ADR 0222, §13): `insert` — вернуть строку (снять черновик удаления или
    * положить черновик вставки), `delete` — убрать её; без записи в историю.
@@ -201,7 +214,8 @@ export const shownCellValue = (
   table: unknown,
   rowId: string,
   columnId: string,
-): unknown => cellWriterOf(table)?.valueOf(table, rowId, columnId)
+  row?: { getValue: (columnId: string) => unknown },
+): unknown => cellWriterOf(table)?.valueOf(table, rowId, columnId, row)
 
 /** Можно ли записать в ячейку; без исполнителя — нет. */
 export const canWriteCell = (

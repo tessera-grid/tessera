@@ -27,6 +27,7 @@ import { wrapWith, wrappersOf } from './pluginWrappers'
 import { SkeletonBody, SkeletonRows } from './SkeletonBody'
 import { SkeletonModeContext } from './skeletonMode'
 import { TableEndRow } from './TableEndRow'
+import { useCalculateColumnSizes } from './useCalculateColumnSizes'
 
 import dataGridStyles from '../grid/DataGrid/DataGrid.module.css'
 import hidden from '../ui/visuallyHidden.module.css'
@@ -87,6 +88,7 @@ export const DataGridTable = ({
   style,
 }: DataGridTableProps) => {
   const { options } = table
+  const columnSizes = useCalculateColumnSizes({ table })
   const wrappers = wrappersOf(table)
   // Иерархия строк (rowExpanding / rowGrouping) — с клавиатурной навигацией грид
   // становится treegrid (ADR 0032, W10).
@@ -184,7 +186,7 @@ export const DataGridTable = ({
       data-footer-position={
         footer ? (skeleton ? 'pinned' : footerPosition) : undefined
       }
-      style={style}
+      style={{ ...columnSizes, ...style }}
     >
       <ColumnMotion
         enabled={options.enableColumnAnimation !== false && !skeleton}

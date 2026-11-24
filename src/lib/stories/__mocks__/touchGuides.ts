@@ -90,6 +90,9 @@ const fireTouchEvent = (
   }
   const event = new Event(type, { bubbles: true, cancelable: true })
   Object.assign(event, {
+    // Без конструктора Touch dnd-kit читает координаты прямо с события.
+    clientX: touches[0]?.clientX,
+    clientY: touches[0]?.clientY,
     touches: end ? [] : touches,
     targetTouches: end ? [] : touches,
     changedTouches: touches,
@@ -148,13 +151,17 @@ export const realTapTarget = (
   settled?: (root: HTMLElement) => boolean,
 ) =>
   stepAction(async (root, { signal }) => {
-    await pollUntil(() => !!target(root), signal)
-    const element = target(root)
-    if (!element) return
-    revealTarget(element)
-    await settle()
-    root.setAttribute(GUIDE_REAL_INPUT, '')
     const tap = async () => {
+      await pollUntil(() => !!target(root), signal)
+      const beforeScroll = target(root)
+      if (!beforeScroll) return
+      revealTarget(beforeScroll)
+      await settle()
+      signal.throwIfAborted()
+      // Прокрутка и повтор шага могут перемонтировать кнопку виртуальной строки.
+      const element = target(root)
+      if (!element) return
+      root.setAttribute(GUIDE_REAL_INPUT, '')
       if (
         realTapDriver &&
         !root.hasAttribute('data-guide-replaying') &&

@@ -81,6 +81,8 @@ const CELL_SLICES = [
 interface TableBodyCellProps {
   cell: Cell<any, any, unknown>
   rowIndex: number
+  firstRow?: boolean
+  lastRow?: boolean
   leftCellSlot?: RegisterSlotParams<any>[]
   rightCellSlot?: RegisterSlotParams<any>[]
   cellSlot?: RegisterSlotParams<any>[]
@@ -103,6 +105,8 @@ export const BodyCell = memo(
   ({
     cell,
     rowIndex,
+    firstRow = cell.row.getIsFirstRow(),
+    lastRow = cell.row.getIsLastRow(),
     leftCellSlot,
     rightCellSlot,
     cellSlot,
@@ -116,8 +120,8 @@ export const BodyCell = memo(
     const table = cell.getContext().table
 
     // Одна подписка ячейки (ADR 0170, CH5): BodyCell — memo по стабильному `cell`, смена
-    // срезов сверху пропом не приходит. Узел — срезы формы колонок (пиннинг, размеры,
-    // порядок, видимость), подсветка, вспышка и ожидание на ячейке и её колонке (ADR 0080,
+    // срезов сверху пропом не приходит. Узел — срезы формы колонок (пиннинг, размеры
+    // при необходимости, порядок, видимость), подсветка, вспышка и ожидание (ADR 0080,
     // ADR 0152), активная ячейка навигации и выборы вкладчиков плагинов; на смену выбора
     // строк, сортировки и раскрытия ячейка не перерисовывается.
     const rowId = cell.row.id
@@ -126,6 +130,16 @@ export const BodyCell = memo(
     const columnKey = columnHighlightKey(columnId)
     const navigation = useContext(KeyboardNavigationContext)
     const contributors = bodyOf(table).cell
+    const pinning = getCellPinningParams(table as never, cell.column as never)
+    // Ширина обычной ячейки обновляется через CSS. React нужен для смещений
+    // закреплённых колонок и слотов, которые получают живой контекст ячейки.
+    const needsColumnSizing =
+      pinning.isStartPinned ||
+      pinning.isEndPinned ||
+      leftCellSlot?.length ||
+      rightCellSlot?.length ||
+      cellSlot?.length ||
+      actionRowSlot?.length
     // Смена значения смонтированной ячейки — вкладчикам с `watch` (ADR 0221, §4).
     useCellValueWatch(contributors, cell)
     const contributionContext: CellContributionContext = {
@@ -158,7 +172,7 @@ export const BodyCell = memo(
         }
         return {
           columnPinning: s.columnPinning,
-          columnSizing: s.columnSizing,
+          columnSizing: needsColumnSizing ? s.columnSizing : undefined,
           columnOrder: s.columnOrder,
           columnVisibility: s.columnVisibility,
           cellHighlight: (s.highlights?.[cellKey] ??
@@ -203,7 +217,7 @@ export const BodyCell = memo(
       isAloneEndPinnedColumn,
       startPinnedOffset,
       endPinnedOffset,
-    } = getCellPinningParams(table as never, cell.column as never)
+    } = pinning
 
     // Слот перетаскивания стоит на глубине места броска (ADR 0108, §2).
     const isSlot = slotDepth !== undefined
@@ -216,15 +230,17 @@ export const BodyCell = memo(
 
     // Слои плагинов перед содержимым — линии дерева в ячейке отступа (ADR 0170, §3); и при
     // быстрой прокрутке, когда слоты не рисуются.
-    const layers = cellLayersOf({
-      table: table as never,
-      columnId,
-      isIndent: isIndentColumn(cell.column as never, table as never),
-      depth,
-      window,
-    })
+    const layers = contributors.some(contributor => contributor.layer)
+      ? cellLayersOf({
+          table: table as never,
+          columnId,
+          isIndent: isIndentColumn(cell.column as never, table as never),
+          depth,
+          window,
+        })
+      : undefined
 
-    const isPinnedColumn = cell.column.getIsPinned()
+    const isPinnedColumn = isStartPinned ? 'start' : isEndPinned ? 'end' : false
     const isActionsColumn = cell.column.getIsActionsColumn()
     const isFillColumn = !!cell.column.getServiceColumn()?.fill
 
@@ -352,7 +368,7 @@ export const BodyCell = memo(
         onBlur={nav?.onBlur}
         {...(nav && { [NAV_CELL_ATTR]: '' })}
         data-kn-active={nav?.isActive || undefined}
-        {...layers.attrs}
+        {...layers?.attrs}
         {...highlighted.attrs}
         {...flashed.attrs}
         aria-busy={!!busy || undefined}
@@ -372,10 +388,10 @@ export const BodyCell = memo(
         data-cell-interact={interact}
         data-first-cell-in-row={cell.column.getIsFirstColumn()}
         data-last-cell-in-row={cell.column.getIsLastColumn()}
-        data-cell-of-first-row={cell.row.getIsFirstRow()}
-        data-cell-of-last-row={cell.row.getIsLastRow()}
+        data-cell-of-first-row={firstRow}
+        data-cell-of-last-row={lastRow}
       >
-        {layers.nodes}
+        {layers?.nodes}
         {direction && (
           <span
             aria-hidden

@@ -37,26 +37,37 @@ export interface CellPinningParams {
   endPinnedOffset: string | undefined
 }
 
+const UNPINNED = Object.freeze({
+  isStartPinned: false,
+  isEndPinned: false,
+  isLastStartPinnedColumn: false,
+  isLastEndPinnedColumn: false,
+  isFirstEndPinnedColumn: false,
+  isAloneEndPinnedColumn: false,
+  startPinnedOffset: undefined,
+  endPinnedOffset: undefined,
+})
+
 export const getCellPinningParams = (
   table: PinningTable,
   column: PinnedColumn,
 ): CellPinningParams => {
   const pinned = column.getIsPinned()
+  if (!pinned) return UNPINNED
   const isStartPinned = pinned === 'start'
   const isEndPinned = pinned === 'end'
-
-  const start = table.getStartVisibleLeafColumns()
-  const end = table.getEndVisibleLeafColumns()
-  const startIndex = start.findIndex(leaf => leaf.id === column.id)
-  const endIndex = end.findIndex(leaf => leaf.id === column.id)
+  const siblings = isStartPinned
+    ? table.getStartVisibleLeafColumns()
+    : table.getEndVisibleLeafColumns()
+  const index = siblings.findIndex(leaf => leaf.id === column.id)
 
   return {
     isStartPinned,
     isEndPinned,
-    isLastStartPinnedColumn: isStartPinned && startIndex === start.length - 1,
-    isLastEndPinnedColumn: isEndPinned && endIndex === end.length - 1,
-    isFirstEndPinnedColumn: isEndPinned && endIndex === 0,
-    isAloneEndPinnedColumn: isEndPinned && end.length === 1,
+    isLastStartPinnedColumn: isStartPinned && index === siblings.length - 1,
+    isLastEndPinnedColumn: isEndPinned && index === siblings.length - 1,
+    isFirstEndPinnedColumn: isEndPinned && index === 0,
+    isAloneEndPinnedColumn: isEndPinned && siblings.length === 1,
     startPinnedOffset: isStartPinned
       ? getPinnedStartOffset(table, column)
       : undefined,

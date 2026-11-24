@@ -151,9 +151,11 @@ describe('Сочетание у действия и сводка (ADR 0232)', ()
     item.focus()
     await keyboard('{Enter}')
     await expect.poll(dialog).not.toBeNull()
-    expect(
-      document.querySelector('[data-testid="view-settings-popover"]'),
-    ).toBeNull()
+    await expect
+      .poll(() =>
+        document.querySelector('[data-testid="view-settings-popover"]'),
+      )
+      .toBeNull()
     await closeSheet()
     expect(document.activeElement).not.toBe(document.body)
     await screen.unmount()

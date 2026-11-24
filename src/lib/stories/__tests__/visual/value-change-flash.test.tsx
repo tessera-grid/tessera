@@ -797,12 +797,17 @@ describe('Вспышка при смене значения: вид', () => {
       const screen = await mount({ flash })
       await settle()
       const grid = document.querySelector('.data-grid-theme')!
+      const rowCount = () =>
+        grid.querySelectorAll('.data-grid__body-row').length
+      const initialRowCount = rowCount()
       const work = await measureWork(grid, async () => {
         update({ r1: { price: 999 } })
         await expect
           .poll(() => cellEl('r1', 'price')!.textContent)
           .toContain('999')
         if (flash) await expect.poll(() => flashOf('r1', 'price')).toBe('up')
+        // Смена ссылки data временно сжимает запас строк. Считаем его восстановление в обоих замерах.
+        await expect.poll(rowCount).toBe(initialRowCount)
       })
       await screen.unmount()
       return work

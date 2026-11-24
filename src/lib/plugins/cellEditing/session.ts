@@ -5,6 +5,8 @@
  * Сохранение с промисом отделяет ячейку от активной правки в `submitted`
  * (ADR 0041, §2): правка других ячеек не ждёт сервера.
  */
+import { batch } from '@tanstack/react-store'
+
 import { announceLabel, announcerLabels } from '../../core/announcer'
 import type { PluginReconcileContext } from '../../core/features'
 import { ENGLISH_LABELS } from '../../core/localization'
@@ -17,12 +19,14 @@ import {
 import {
   type CancelSource,
   cellPendingId,
+  hasPending,
   lateAnswer,
   registerPending,
 } from '../../core/cancellation'
 import type { RowSource } from '../../core/rowSource'
 import { inferDataType, setAtPath } from './columnDataType'
 import { isNumericBase } from '../../core/dataTypeFormat'
+import { inOneCommit } from '../../util/oneCommit'
 import { logWarn } from '../../util/logger'
 import { isThenable, rejectionText } from '../../util/thenable'
 import { markOwnWrites, settleOwnOn } from '../../shared/ownWrites'
@@ -60,6 +64,7 @@ import {
   type Draft,
   draftKeyOf,
   draftKindOf,
+  draftOf,
   readDrafts,
   removeDraft,
   removeDrafts,
@@ -68,6 +73,7 @@ import {
 } from '../../core/drafts/drafts'
 import {
   type CellWriteSource,
+  DEFAULT_WRITE_LIMITS,
   notifyCellsWritten,
   type WrittenCell,
 } from '../../core/cellWrites'
@@ -99,6 +105,8 @@ import { objectTargetText } from '../../shared/objectTarget'
 
 const ID = 'cellEditing'
 export const EDIT_SESSION_KEY = pluginStateKey(ID)
+
+export const DEFAULT_CAN_EDIT_CELL = () => true
 
 export const EMPTY_EDITING_STATE: CellEditingState = {
   active: null,
@@ -406,13 +414,7 @@ export const cellDraftOf = (
   rowId: string,
   columnId: string,
 ): Draft | undefined =>
-  readDrafts(table).find(
-    draft =>
-      draft.kind === CELL_VALUE_DRAFT &&
-      'cell' in draft.target &&
-      draft.target.cell[0] === rowId &&
-      draft.target.cell[1] === columnId,
-  )
+  draftOf(table, CELL_VALUE_DRAFT, { cell: [rowId, columnId] })
 
 const dataValueOf = (table: unknown, rowId: string, columnId: string) =>
   (table as ReconcileTable).getRowSource().byId(rowId)?.getValue(columnId)
@@ -422,11 +424,11 @@ export const shownValueOf = (
   table: unknown,
   rowId: string,
   columnId: string,
+  row?: Pick<SessionRow, 'getValue'>,
 ) => {
   const draft = cellDraftOf(table, rowId, columnId)
-  return draft
-    ? (draft.value as CellDraftValue).value
-    : dataValueOf(table, rowId, columnId)
+  if (draft) return (draft.value as CellDraftValue).value
+  return row ? row.getValue(columnId) : dataValueOf(table, rowId, columnId)
 }
 
 let edits = 0
@@ -538,7 +540,8 @@ export const isCellPending = (
   const state = readEditingState(table)
   const key = cellKey(rowId, columnId)
   return (
-    state.submitted[key]?.status === 'pending' || !!packagedCell(state, key)
+    state.submitted[key]?.status === 'pending' ||
+    hasPending(table, { kind: 'cellEdit', id: key })
   )
 }
 
@@ -1252,6 +1255,7 @@ export const commitDrafts = (table: unknown, drafts: readonly Draft[]) => {
   const deleteDrafts = rowDrafts.filter(
     draft => draft.kind === ROW_DELETE_DRAFT,
   )
+  const source = (table as ReconcileTable).getRowSource()
   const cells = sent.map(draft => {
     const [rowId, columnId] = (draft.target as { cell: [string, string] }).cell
     const { value, text } = draft.value as CellDraftValue
@@ -1260,7 +1264,7 @@ export const commitDrafts = (table: unknown, drafts: readonly Draft[]) => {
       columnId,
       value,
       text,
-      original: dataValueOf(table, rowId, columnId),
+      original: source.byId(rowId)?.getValue(columnId),
     }
   })
   const inserts: RowInsertBatchItem[] = insertDrafts.map(draft => {
@@ -1776,7 +1780,11 @@ const withoutKey = <T extends object>(record: T, key: string): T => {
  * возвращают прежние значения. Отказ части — отказ на ячейках, отказ пакета целиком — одна
  * плашка таблицы с причиной и повтором, без отметок на ячейках.
  */
-export const commitCellPackage = (table: unknown, pkg: CellPackage) => {
+export const commitCellPackage = (
+  table: unknown,
+  pkg: CellPackage,
+  announceWritten?: () => void,
+) => {
   const { id, source, cells, pending, waves } = pkg
   const hooks = readPluginHooks<Partial<CellEditingHooks>>(table as never, ID)
   const action = writeActionOf(source)
@@ -1803,17 +1811,26 @@ export const commitCellPackage = (table: unknown, pkg: CellPackage) => {
     )
   }
   const record = { id, cells: pending }
+  let waiting = true
+  const announceOnce = () => {
+    const announce = announceWritten
+    announceWritten = undefined
+    announce?.()
+  }
   /** Снять ожидание пакета: одна запись в срез правки и одна — в срез ожидания. */
   const dropPending = () => {
-    const state = readEditingState(table)
-    if (state.packages?.[id] === record) {
-      const packages = withoutKey(state.packages, id)
-      writeEditingState(table, {
-        ...state,
-        packages: Object.keys(packages).length > 0 ? packages : undefined,
-      })
-    }
-    writeActionStatus(table, status => withoutKey(status, pendingKey))
+    waiting = false
+    batch(() => {
+      const state = readEditingState(table)
+      if (state.packages?.[id] === record) {
+        const packages = withoutKey(state.packages, id)
+        writeEditingState(table, {
+          ...state,
+          packages: Object.keys(packages).length > 0 ? packages : undefined,
+        })
+      }
+      writeActionStatus(table, status => withoutKey(status, pendingKey))
+    })
   }
 
   const settleAnswer = (answer: unknown, answered: boolean) => {
@@ -1879,19 +1896,10 @@ export const commitCellPackage = (table: unknown, pkg: CellPackage) => {
   }
 
   if (!isThenable(result)) {
+    announceOnce()
     settleAnswer(result, false)
     return
   }
-
-  const state = readEditingState(table)
-  writeEditingState(table, {
-    ...state,
-    packages: { ...state.packages, [id]: record },
-  })
-  writeActionStatus(table, status => ({
-    ...status,
-    [pendingKey]: { pending: true, cells: waves },
-  }))
 
   // Пункт «Отменить сохранение» любой ячейки пакета и `table.cancelPending` — весь пакет: ключ
   // ячейки пакета совпадает с id ожидания ячейки (`cellPendingId`).
@@ -1901,6 +1909,7 @@ export const commitCellPackage = (table: unknown, pkg: CellPackage) => {
     ids: pending,
     cancel: cancelSource => {
       if (controller.signal.aborted) return
+      announceOnce()
       controller.abort()
       unregister()
       dropPending()
@@ -1918,11 +1927,13 @@ export const commitCellPackage = (table: unknown, pkg: CellPackage) => {
   result.then(
     answer => {
       if (controller.signal.aborted) return lateAnswer(table)
+      announceOnce()
       unregister()
       settleAnswer(answer, true)
     },
     reason => {
       if (controller.signal.aborted) return lateAnswer(table, reason)
+      announceOnce()
       unregister()
       dropPending()
       const labels = announcerLabels(table) ?? ENGLISH_LABELS
@@ -1964,6 +1975,32 @@ export const commitCellPackage = (table: unknown, pkg: CellPackage) => {
       )
     },
   )
+
+  const publishPending = () => {
+    if (!waiting) return
+    inOneCommit(() => {
+      // React 18 иначе коммитит объявление раньше состояния ожидания.
+      announceOnce()
+      const current = readEditingState(table)
+      writeEditingState(table, {
+        ...current,
+        packages: { ...current.packages, [id]: record },
+      })
+      if (!waiting) return
+      writeActionStatus(table, status => ({
+        ...status,
+        [pendingKey]: { pending: true, cells: waves },
+      }))
+    })
+  }
+  // Крупный шаг истории даёт ответу из ближайшей микрозадачи сняться до
+  // отрисовки ожидания и пересборки окна с новыми данными.
+  if (
+    cells.length >= DEFAULT_WRITE_LIMITS.confirm &&
+    (source === 'undo' || source === 'redo')
+  )
+    queueMicrotask(() => queueMicrotask(publishPending))
+  else queueMicrotask(publishPending)
 }
 
 /**
@@ -1972,27 +2009,42 @@ export const commitCellPackage = (table: unknown, pkg: CellPackage) => {
  */
 const notifyPackage = (
   table: unknown,
-  { id, source, cells }: Pick<CellPackage, 'id' | 'source' | 'cells'>,
-  refused?: ReadonlyMap<string, unknown>,
-  whole?: 'refused' | 'cancelled',
-) => {
-  const saved: WrittenCell[] = []
-  const lost: { rowId: string; columnId: string }[] = []
-  for (const cell of cells) {
-    const target = { rowId: cell.rowId, columnId: cell.columnId }
-    if (whole === 'refused' || refused?.has(cellKey(cell.rowId, cell.columnId)))
-      lost.push(target)
-    else if (!whole)
-      saved.push({ ...target, before: cell.original, after: cell.value })
-  }
-  notifyCellsWritten(table, {
+  {
     id,
     source,
-    cells: saved,
-    refused: lost,
-    ...(whole === 'cancelled' ? { cancelled: true } : {}),
+    cells,
+    pending,
+  }: Pick<CellPackage, 'id' | 'source' | 'cells' | 'pending'>,
+  refused?: ReadonlyMap<string, unknown>,
+  whole?: 'refused' | 'cancelled',
+) =>
+  notifyCellsWritten(table, () => {
+    const allSaved = !whole && !refused?.size
+    const saved: WrittenCell[] = allSaved
+      ? cells.map(({ rowId, columnId, original, value }) => ({
+          rowId,
+          columnId,
+          before: original,
+          after: value,
+        }))
+      : []
+    const lost: { rowId: string; columnId: string }[] = []
+    if (!allSaved && whole !== 'cancelled') {
+      for (const { rowId, columnId, original, value } of cells) {
+        if (whole === 'refused' || refused?.has(cellKey(rowId, columnId)))
+          lost.push({ rowId, columnId })
+        else saved.push({ rowId, columnId, before: original, after: value })
+      }
+    }
+    return {
+      id,
+      source,
+      cells: saved,
+      uniqueCells: pending.size === cells.length,
+      refused: lost,
+      ...(whole === 'cancelled' ? { cancelled: true } : {}),
+    }
   })
-}
 
 /**
  * Итог пакета, сохранённого по ячейкам через `onCellEdit` или черновиками (ADR 0222, §2): одно
@@ -2181,6 +2233,7 @@ const cancelSubmitted = (
 interface ReconcileTable extends SessionTable {
   getRowSource: () => RowSource<ReconcileRow>
   getAllLeafColumns: () => { id: string; columnDef?: { header?: unknown } }[]
+  getAllLeafColumnsById: () => Record<string, { id: string } | undefined>
 }
 
 interface ReconcileRow extends SessionRow {
@@ -2192,7 +2245,7 @@ interface ReconcileRow extends SessionRow {
 
 const hasCell = (table: ReconcileTable, { rowId, columnId }: Cell) =>
   !!table.getRowSource().byId(rowId) &&
-  table.getAllLeafColumns().some(column => column.id === columnId)
+  !!table.getAllLeafColumnsById()[columnId]
 
 /**
  * Отправленные ячейки, ушедшие из таблицы или выключенного плагина, снимаются; отклонённая,
@@ -2212,6 +2265,7 @@ const reconcileSubmitted = (
   }
   const dropped: [SubmittedCell, EditCancelReason][] = []
   const source = table.getRowSource()
+  const columns = table.getAllLeafColumnsById()
   // Серверная модель: строки нет в кэше — она не загружена или вытеснена (ADR 0227, AO20).
   const partial = !!source.whenLoaded
   for (const [, entry] of entries) {
@@ -2220,10 +2274,7 @@ const reconcileSubmitted = (
       continue
     }
     const row = source.byId(entry.rowId)
-    if (
-      (!row && !partial) ||
-      !table.getAllLeafColumns().some(column => column.id === entry.columnId)
-    ) {
+    if ((!row && !partial) || !columns[entry.columnId]) {
       dropped.push([entry, 'unavailable'])
     } else if (!enabled) {
       dropped.push([entry, 'revoke'])

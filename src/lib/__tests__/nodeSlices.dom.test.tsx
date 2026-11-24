@@ -207,6 +207,44 @@ describe('Подписки узла по объявленным срезам (AD
     ).toBe('seen')
   })
 
+  it('CD9: ячейки одного источника делят подписку на атом до отключения последней', () => {
+    __setLoggerProduction(true)
+    const { plugin } = counting()
+    render(<Host plugins={[plugin()]} />)
+    const atom: {
+      subscribe: (notify: () => void) => { unsubscribe: () => void }
+    } = table.atoms['plugin:counted']
+    const original = atom.subscribe.bind(atom)
+    const unsubscribed = vi.fn()
+    const subscribe = vi.spyOn(atom, 'subscribe').mockImplementation(notify => {
+      const subscription = original(notify)
+      return {
+        unsubscribe: () => {
+          unsubscribed()
+          subscription.unsubscribe()
+        },
+      }
+    })
+
+    try {
+      const remaining = renderCells()
+      renderCells()
+      expect(subscribe).toHaveBeenCalledTimes(1)
+
+      act(() => roots.pop()!.unmount())
+      expect(unsubscribed).not.toHaveBeenCalled()
+      act(() => setPluginState(table, 'counted', 'seen'))
+      expect(
+        remaining.querySelectorAll('[data-counted-value="seen"]'),
+      ).toHaveLength(2)
+
+      act(() => roots.pop()!.unmount())
+      expect(unsubscribed).toHaveBeenCalledTimes(1)
+    } finally {
+      subscribe.mockRestore()
+    }
+  })
+
   it('CD4: в dev смена необъявленного среза пересчитывает выбор и предупреждает с id вкладчика и ключом среза, одно на пару; в production проверки нет', () => {
     const reading = (id: string) =>
       definePlugin<{ enabled?: boolean }>()({

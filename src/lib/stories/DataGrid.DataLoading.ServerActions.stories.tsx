@@ -20,6 +20,7 @@ import {
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
+import { openPanel } from './__mocks__/filterGuide'
 import { filteringColumns } from './__mocks__/filteringData'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { storyLabels } from './__mocks__/storyLabels'
@@ -248,8 +249,6 @@ const searchRefused = () =>
   guide.lastReply.includes(`search "${SEARCH}"`)
 
 const FILTER = 'Alice 1'
-const filterButton = (root: HTMLElement) =>
-  headCell(root, 'name')?.querySelector<HTMLElement>('.column-filter__button')
 const filterPanel = () =>
   document.querySelector<HTMLElement>('[data-testid="filter-panel"]')
 const filterValue = () =>
@@ -261,14 +260,17 @@ const refusedWith = (part: string) =>
   guide.lastReply.startsWith('refused') && guide.lastReply.includes(part)
 
 /** Пользователь фильтрует колонку имён в её панели, «сервер» отказывает. */
-const refuseFilter = (root: HTMLElement, signal: AbortSignal) => {
+const refuseFilter = async (root: HTMLElement, signal: AbortSignal) => {
   guide.mode = 'refuse'
-  return pollUntil(() => {
+  await openPanel(root, 'name', signal)
+  await pollUntil(() => !!filterValue(), signal)
+  type(filterValue(), FILTER)
+  // Ввод гайда может идти по символам. Кнопка должна получить готовое условие.
+  await pollUntil(() => filterValue()?.value === FILTER, signal)
+  await pollUntil(() => {
     if (refusedWith('filter name=') && banner(root) && !refreshing(root))
       return filterFailed()
-    if (!filterPanel()) filterButton(root)?.click()
-    else {
-      type(filterValue(), FILTER)
+    if (!refreshing(root)) {
       // На сервере условие уходит кнопкой «Применить» (ADR 0154).
       document
         .querySelector<HTMLElement>('[data-testid="filter-apply"]')

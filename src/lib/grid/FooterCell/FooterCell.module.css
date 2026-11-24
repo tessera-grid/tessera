@@ -124,6 +124,12 @@
   color: var(--tsr-comp-total-label-color);
 }
 
+@media (forced-colors: active) {
+  .footer__total-label {
+    color: CanvasText;
+  }
+}
+
 .footer__total-value {
   flex-shrink: 0;
 }

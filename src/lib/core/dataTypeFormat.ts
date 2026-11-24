@@ -36,7 +36,7 @@ type Formatter = Intl.NumberFormat | Intl.DateTimeFormat
 const byOptions = new WeakMap<object, Map<string, Formatter>>()
 const NO_OPTIONS = {}
 
-const formatterOf = <TKind extends 'number' | 'date'>(
+export const formatterOf = <TKind extends 'number' | 'date'>(
   kind: TKind,
   options: DataTypeFormat | undefined,
   locale: string,

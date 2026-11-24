@@ -211,6 +211,12 @@ describe('Длинный текст в поповерах черновиков �
       await page.viewport(viewport, 700)
       const screen = await render(<Grid width={width} />)
       await waitForGrid()
+      const resizeErrors: string[] = []
+      const onError = (event: ErrorEvent) => {
+        if (event.message.includes('ResizeObserver loop'))
+          resizeErrors.push(dialog()?.getAttribute('data-testid') ?? 'grid')
+      }
+      window.addEventListener('error', onError)
       try {
         await seed()
         for (const [row, column, attr] of MARKS) {
@@ -257,7 +263,9 @@ describe('Длинный текст в поповерах черновиков �
           await userEvent.keyboard('{Escape}')
           await expect.poll(dialog).toBeNull()
         }
+        expect(resizeErrors, `${viewport}px`).toEqual([])
       } finally {
+        window.removeEventListener('error', onError)
         await screen.unmount()
       }
     }

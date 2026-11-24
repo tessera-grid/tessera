@@ -4,9 +4,9 @@
  * наибольшая из её ячеек; ядро получает её по id строки. Строка, ушедшая из окна, держит
  * последнюю высоту — по ней она вернётся с первого кадра.
  *
- * Новая ячейка меряется сразу, в эффекте своего коммита: строка встаёт своей высотой до
- * кадра. Ячейки, смонтированные внутри колбэка наблюдателя, наблюдаются со следующего кадра:
- * иначе их первое уведомление осталось бы недоставленным в этом кадре.
+ * Замеры коммита идут пачкой в микрозадаче до кадра. Ячейки, смонтированные внутри
+ * колбэка наблюдателя, наблюдаются со следующего кадра, чтобы их первое уведомление
+ * не осталось недоставленным.
  */
 import { flushSync } from 'react-dom'
 
@@ -68,8 +68,8 @@ class Measurer {
   private byWrapper = new Map<Element, Probe>()
   private byRow = new Map<string, Set<Probe>>()
   private observer: ResizeObserver | undefined
-  /** Строки, замеренные в эффекте коммита: высоты уходят микрозадачей до кадра. */
-  private pending = new Set<string>()
+  /** Пробы одного коммита для общего чтения раскладки. */
+  private pending = new Set<Probe>()
 
   constructor(private readonly table: unknown) {}
 
@@ -136,26 +136,26 @@ class Measurer {
         this.observe(wrapper)
       }
     }
-    const need = this.heightOf(probe)
-    if (need !== probe.need) {
-      probe.need = need
-      this.schedule(rowId)
-    }
+    if (this.pending.size === 0) queueMicrotask(() => this.readPending())
+    this.pending.add(probe)
   }
 
   /**
-   * Высота строки из эффекта коммита — микрозадачей: синхронная перерисовка внутри коммита
-   * запрещена, а микрозадача ещё до кадра.
+   * Сначала читаем все высоты после записей стилей коммита, затем обновляем строки
+   * одной пачкой. Микрозадача выполняется до кадра.
    */
-  private schedule(rowId: string) {
-    if (this.pending.size === 0) {
-      queueMicrotask(() => {
-        const rows = [...this.pending]
-        this.pending.clear()
-        flushSync(() => this.flush(rows))
-      })
+  private readPending() {
+    const probes = this.pending
+    this.pending = new Set()
+    const rows = new Set<string>()
+    for (const probe of probes) {
+      if (!this.byRow.get(probe.rowId)?.has(probe)) continue
+      const need = this.heightOf(probe)
+      if (need === probe.need) continue
+      probe.need = need
+      rows.add(probe.rowId)
     }
-    this.pending.add(rowId)
+    if (rows.size > 0) flushSync(() => this.flush(rows))
   }
 
   /** Проба ячейки ушла: строка на месте — высота по оставшимся ячейкам (скрыли колонку). */
@@ -210,6 +210,7 @@ class Measurer {
 
   dispose() {
     this.observer?.disconnect()
+    this.pending.clear()
     this.probes.clear()
     this.byWrapper.clear()
     this.byRow.clear()

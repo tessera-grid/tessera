@@ -57,6 +57,8 @@ export interface TableBodyRowProps {
   stickyLast?: boolean
   stickyPushed?: boolean
   row: Row<any, any>
+  firstRow?: boolean
+  lastRow?: boolean
   /** Ячейки строки: создаются, когда тело их рисует (ADR 0200, EN14). */
   cells: RowCells
   virtualRow: VirtualItem
@@ -153,6 +155,9 @@ const useRowStateSubscription = (
 }
 
 export const BodyRowCells = ({
+  row,
+  firstRow = row.getIsFirstRow(),
+  lastRow = row.getIsLastRow(),
   virtualRow,
   cells,
   virtualColumns: virtualColumnsProp,
@@ -171,6 +176,8 @@ export const BodyRowCells = ({
   const cellProps = (cell: Cell<any, any, unknown>, absoluteLeft?: number) => ({
     cell,
     rowIndex: virtualRow?.index,
+    firstRow,
+    lastRow,
     leftCellSlot,
     rightCellSlot,
     cellSlot,
@@ -327,7 +334,7 @@ export const BodyRow = memo((props: TableBodyRowProps) => {
       data-row-slot-hidden={drag?.slotHidden || undefined}
       data-row-drop-parent={props.dropParent || undefined}
       data-row-interact={interacting}
-      data-last-row={row.getIsLastRow()}
+      data-last-row={props.lastRow ?? row.getIsLastRow()}
       style={
         highlighted.style || flashed.style || contributed.style
           ? {

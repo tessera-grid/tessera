@@ -3,6 +3,7 @@ import { commands, page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 import { humanClick } from '../helpers'
+import { rowSourceOf } from '../../../core/rowSource'
 
 import * as contextMenuStories from '../../DataGrid.Cells.ContextMenu.stories'
 import * as editingStories from '../../DataGrid.Cells.Editing.stories'
@@ -29,6 +30,7 @@ import { pressCell, untilDone } from '../../__mocks__/cellGestures'
 import { HANDLE, ROW, rowIdOrder } from '../../rowDragging.dnd'
 import { openViewSettingsSection } from '../../__mocks__/viewSettings'
 import { both } from '../storyText.helpers'
+import { openColumnsMenu } from '../viewSettings'
 
 // Панель гайда историй (ADR 0117, SN14–SN15, SN17, SN21–SN27, SN33–SN35, SN40–SN58, SN69, SN74) — с
 // движением: каталог гоняет истории с уменьшенным движением, и порядок конфетти и сдвига
@@ -217,6 +219,21 @@ describe('панель сценария (ADR 0117)', () => {
     await settled()
     // Конфетти и прокрутка ленты прошлого шага закончились.
     await expect.poll(confetti, { timeout: 3000 }).toHaveLength(0)
+    const rail = byId('guide-steps')
+    const currentStep = rail.querySelector('[aria-current="step"]')!
+    // До начала плавной прокрутки координаты тоже стоят несколько кадров.
+    await expect
+      .poll(() => {
+        const stepBox = currentStep.getBoundingClientRect()
+        const railBox = rail.getBoundingClientRect()
+        return Math.abs(
+          stepBox.left +
+            stepBox.width / 2 -
+            railBox.left -
+            rail.clientWidth / 2,
+        )
+      })
+      .toBeLessThan(1)
     await slideSettled()
     const badge = document.querySelector<HTMLElement>('[data-step-index="3"]')!
     const nextBadge = document.querySelector<HTMLElement>(
@@ -956,12 +973,7 @@ describe('ввод человека посреди гайда (ADR 0117)', () =>
       await opened()
 
       // Меню, открытое не человеком, пометки не ставит; нажатие в нём (портал) — ставит.
-      await expect
-        .poll(() => {
-          if (!visibilityMenu()) openViewSettingsSection(document, 'columns')
-          return !!visibilityMenu()
-        })
-        .toBe(true)
+      await openColumnsMenu({ click: async button => button.click() })
       expect(changed()).toBeNull()
       // Поповер доиграл въезд: настоящий клик ждёт неподвижную цель.
       await settle()
@@ -969,7 +981,7 @@ describe('ввод человека посреди гайда (ADR 0117)', () =>
         visibilityMenu()?.querySelector<HTMLElement>(
           '[data-column-id] [role="checkbox"]',
         )
-      await expect.poll(visibilityCheckbox).not.toBeNull()
+      await expect.poll(visibilityCheckbox).toBeTruthy()
       const at = centerOf(visibilityCheckbox()!)
       await (
         commands as unknown as {
@@ -1403,34 +1415,51 @@ describe('ввод человека посреди гайда (ADR 0117)', () =>
     const rowAt = (index: number) =>
       document.querySelector<HTMLElement>(`${ROW}[data-index="${index}"]`)!
     /**
-     * Строку 0 держат у нижнего края строки 3 и бросают; порядок строк после броска.
-     * Не над центром: центр — граница «до» и «после», бросок на ней перескакивает.
+     * Строку 0 бросают в нижней половине строки 3, с запасом до соседней строки.
      */
     const drop = async () => {
+      let order: (() => string[] | undefined) | undefined
       const screen = await render(
-        <GuideStory title={both('Бросок')} steps={steps} args={args} />,
+        <GuideStory
+          title={both('Бросок')}
+          steps={steps}
+          args={{
+            ...args,
+            extraPlugins: [
+              {
+                id: 'dropOrderProbe',
+                setup: table => {
+                  order = () =>
+                    rowSourceOf<{ id: string }>(table)
+                      .rows?.()
+                      .map(row => row.id)
+                },
+              },
+            ],
+          }}
+        />,
       )
       try {
         await expect
           .poll(() => document.querySelectorAll(HANDLE).length)
           .toBeGreaterThan(3)
         const handle = rowAt(0).querySelector<HTMLElement>(HANDLE)!
+        const target = rowAt(3).getBoundingClientRect()
         const held = await dragHold(handle, {
           x: centerOf(handle).x,
-          y: rowAt(3).getBoundingClientRect().bottom - 1,
+          y: target.top + target.height * 0.75,
         })
         const box = handle.getBoundingClientRect()
         const inView = box.top >= 0 && box.bottom <= window.innerHeight
-        held.release()
-        await sleep(600)
-        return { order: rowIdOrder(document.body), inView }
+        await held.release()
+        // Прокрутка страницы меняет размер окна, но не порядок модели.
+        await expect.poll(() => order?.()?.indexOf('item-id-0')).toBe(3)
+        return { order: order?.(), inView }
       } finally {
         await screen.unmount()
       }
     }
     const plain = await drop()
-    expect(plain.order.indexOf('item-id-0')).toBeGreaterThan(0)
-
     const spacer = document.createElement('div')
     spacer.style.height = '3000px'
     document.body.prepend(spacer)
@@ -1814,6 +1843,9 @@ describe('показ действий шага (ADR 0117)', () => {
     const screen = await mount(true)
     try {
       await rows().toBeGreaterThan(3)
+      // Указатель от предыдущего теста может попасть на новый элемент при раскладке.
+      // Во время показа гайд восстанавливает наведение после такого pointerover (SN60).
+      await userEvent.hover(guidePanel())
       const cell = cellAt(2, 'country')
       const at = middle(cell)
       const seen = record(cell, [

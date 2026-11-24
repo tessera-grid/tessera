@@ -276,7 +276,6 @@ describe('Плашка кита Alert (ADR 0096)', () => {
     await rounded.unmount()
   })
   test('AO19: tone="success" красит только иконку токеном успеха — зелёным, tone="neutral" — только иконку «информация» токеном нейтрального цвета не ниже 3:1 к фону; рамки нет, как у обычной плашки; hideAfter зовёт onHide через заданное время, отсчёт стоит под указателем и при фокусе внутри и после их ухода идёт заново; без пропов вид прежний', async () => {
-    const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
     const Toned = (props: Partial<AlertProps>) => (
       <div
         className={DATA_GRID_THEME_CLASS}
@@ -356,47 +355,60 @@ describe('Плашка кита Alert (ADR 0096)', () => {
     expect(onHideIdle).not.toHaveBeenCalled()
     await view.unmount()
 
-    // Указатель вдали — onHide через заданное время, один раз.
-    const onHide = vi.fn()
-    const timed = await render(
-      <Toned key="timed" tone="success" hideAfter={300} onHide={onHide} />,
-    )
-    expect(onHide).not.toHaveBeenCalled()
-    await expect.poll(() => onHide.mock.calls.length).toBe(1)
-    await timed.unmount()
+    const advance = async (ms: number) => {
+      await new Promise(resolve => requestAnimationFrame(resolve))
+      await vi.advanceTimersByTimeAsync(ms)
+    }
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      const hideAfter = 300
+      const onHide = vi.fn()
+      const timed = await render(
+        <Toned hideAfter={hideAfter} onHide={onHide} />,
+      )
+      const outside = () =>
+        document.querySelector<HTMLElement>('[data-testid="outside"]')!
+      const expectFullDelay = async () => {
+        await advance(hideAfter - 1)
+        expect(onHide).not.toHaveBeenCalled()
+        await advance(1)
+        expect(onHide).toHaveBeenCalledTimes(1)
+      }
+      await userEvent.hover(outside())
+      await expectFullDelay()
 
-    // Под указателем отсчёт стоит; уход указателя запускает его заново.
-    const onHideHover = vi.fn()
-    const hovered = await render(
-      <Toned key="hover" hideAfter={300} onHide={onHideHover} />,
-    )
-    await userEvent.hover(alert()!)
-    await wait(700)
-    expect(onHideHover).not.toHaveBeenCalled()
-    await userEvent.hover(document.querySelector('[data-testid="outside"]')!)
-    await expect.poll(() => onHideHover.mock.calls.length).toBe(1)
-    await hovered.unmount()
+      onHide.mockClear()
+      await timed.rerender(
+        <Toned key="hover" hideAfter={hideAfter} onHide={onHide} />,
+      )
+      await advance(100)
+      await userEvent.hover(alert()!)
+      await advance(700)
+      expect(onHide).not.toHaveBeenCalled()
+      await userEvent.hover(outside())
+      await expectFullDelay()
 
-    // Фокус внутри — отсчёт стоит; фокус ушёл наружу — отсчёт идёт заново.
-    const onHideFocus = vi.fn()
-    const focused = await render(
-      <Toned key="focus" hideAfter={300} onHide={onHideFocus} />,
-    )
-    document.querySelector<HTMLElement>('[data-testid="outside"]')!.focus()
-    await userEvent.tab()
-    expect(alert()!.contains(document.activeElement)).toBe(true)
-    await wait(400)
-    // Фокус переходит между кнопками плашки — отсчёт так и стоит.
-    await userEvent.tab()
-    expect(alert()!.contains(document.activeElement)).toBe(true)
-    await wait(400)
-    expect(onHideFocus).not.toHaveBeenCalled()
-    await userEvent.tab({ shift: true })
-    await userEvent.tab({ shift: true })
-    expect(document.activeElement).toBe(
-      document.querySelector('[data-testid="outside"]'),
-    )
-    await expect.poll(() => onHideFocus.mock.calls.length).toBe(1)
-    await focused.unmount()
+      onHide.mockClear()
+      await timed.rerender(
+        <Toned key="focus" hideAfter={hideAfter} onHide={onHide} />,
+      )
+      outside().focus()
+      await advance(100)
+      await userEvent.tab()
+      expect(alert()!.contains(document.activeElement)).toBe(true)
+      await advance(400)
+      // Фокус переходит между кнопками плашки — отсчёт так и стоит.
+      await userEvent.tab()
+      expect(alert()!.contains(document.activeElement)).toBe(true)
+      await advance(400)
+      expect(onHide).not.toHaveBeenCalled()
+      await userEvent.tab({ shift: true })
+      await userEvent.tab({ shift: true })
+      expect(document.activeElement).toBe(outside())
+      await expectFullDelay()
+      await timed.unmount()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

@@ -307,6 +307,7 @@ const EDGE_GAP = 8
 
 /** Колонка, которую тянут за край, — самая правая, видимая целиком у начала таблицы. */
 let edgeColumn: string | null = null
+const edgeReleaseScroll = new WeakMap<HTMLElement, number>()
 
 const widthOf = (root: HTMLElement, id: string) =>
   Math.round(rect(headCell(root, id)).width)
@@ -327,7 +328,15 @@ const holdAtEdge = async (root: HTMLElement, step: StepRun) => {
     .sort((a, b) => rect(a).left - rect(b).left)
     .at(-1)!.dataset.columnId!
   edgeColumn = id
-  const held = await holdGrip(root, step, id, () => right - EDGE_GAP)
+  const held = await holdGrip(
+    root,
+    step,
+    id,
+    () => right - EDGE_GAP,
+    () => {
+      edgeReleaseScroll.set(scroller, scroller.scrollLeft)
+    },
+  )
   await pollUntil(() => widthOf(root, id) >= maxOf(root, id), step.signal)
   return held
 }
@@ -413,7 +422,6 @@ export const ResizingPastEdge: StoryObj<StoryProps> = {
       )
       await until(() => expect(scroller().scrollLeft).toBe(0))
     })
-    let scrolled = 0
     await step(PAST_EDGE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
@@ -432,7 +440,6 @@ export const ResizingPastEdge: StoryObj<StoryProps> = {
       await until(() =>
         expect(document.querySelector(RESIZE_LINE)).not.toBeNull(),
       )
-      scrolled = scroller().scrollLeft
     })
     await step(PAST_EDGE[2]!.title.ru, async () => {
       await guideNext(canvas)
@@ -441,7 +448,9 @@ export const ResizingPastEdge: StoryObj<StoryProps> = {
       // Отпущено: линии нет, ширина и прокрутка те же.
       await until(() => expect(document.querySelector(RESIZE_LINE)).toBeNull())
       await expect(widthOf(canvas, id)).toBe(maxOf(canvas, id))
-      await expect(scroller().scrollLeft).toBe(scrolled)
+      const beforeRelease = edgeReleaseScroll.get(scroller())
+      await expect(beforeRelease).toBeGreaterThan(0)
+      await expect(scroller().scrollLeft).toBe(beforeRelease)
       await settle()
     })
   },

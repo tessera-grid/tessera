@@ -331,6 +331,13 @@ describe('строки до сохранения (ADR 0178, §7)', () => {
         buttonIn(rowOf(id), cellEditingLabels(tableLabels).rowInsertDiscard)!,
       )
       await expect.poll(() => rowOf(id)).toBeNull()
+      await expect
+        .poll(() =>
+          rowOf('5')
+            ?.getAnimations()
+            .some(animation => animation.playState === 'running'),
+        )
+        .toBe(false)
       await humanClick(
         buttonIn(rowOf('5'), cellEditingLabels(tableLabels).rowDeleteDiscard)!,
       )

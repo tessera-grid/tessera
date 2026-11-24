@@ -30,6 +30,9 @@ Tessera ([ADR 0143](../../../docs/decisions/0143-tanstack-virtual-fork.md)). Э�
 - **Поправка прокрутки опцией** (`virtual-core/index.ts`, опция
   `shouldAdjustScrollPositionOnItemSizeChange`, ADR 0218): тот же предикат, что поле экземпляра;
   поле главнее.
+- **Предел прокрутки от адаптера** (`virtual-core/index.ts`, опция
+  `getElementMaxScrollOffset`, ADR 0142): в растянутой области виртуализатор сравнивает
+  виртуальную позицию с виртуальным пределом. Без значения действует предел DOM.
 - **Импорт ядра** (`react-virtual/index.tsx`): `../virtual-core` вместо `@tanstack/virtual-core`.
 - **Синхронность по уведомлению** (`react-virtual/index.tsx`, опция `useFlushSync`,
   [ADR 0202](../../../docs/decisions/0202-window-band.md)): булево или функция от

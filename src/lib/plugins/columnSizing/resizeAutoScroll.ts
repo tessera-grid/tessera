@@ -38,7 +38,7 @@ export interface ResizeLimits {
 interface Pointer {
   x: number
   y: number
-  touch: boolean
+  touch?: TouchEvent
 }
 
 /** Движение указателя в той же точке: TanStack пересчитывает ширину от сдвинутой точки нажатия. */
@@ -49,19 +49,13 @@ const repeatMove = ({ x, y, touch }: Pointer) => {
     )
     return
   }
-  if (typeof Touch !== 'function') return
-  const finger = new Touch({
-    identifier: 0,
-    target: document.body,
-    clientX: x,
-    clientY: y,
-  })
+  // TanStack читает touches[0].clientX. Используем последнее реальное касание,
+  // так как WebKit не позволяет создать Touch из JavaScript.
   document.dispatchEvent(
-    new TouchEvent('touchmove', {
-      bubbles: true,
-      cancelable: true,
-      touches: [finger],
-      changedTouches: [finger],
+    Object.assign(new Event('touchmove', { bubbles: true, cancelable: true }), {
+      touches: touch.touches,
+      changedTouches: touch.changedTouches,
+      targetTouches: touch.targetTouches,
     }),
   )
 }
@@ -87,12 +81,12 @@ export const useResizeAutoScroll = (
 
     let pointer: Pointer | null = null
     const onMouse = (event: MouseEvent) => {
-      pointer = { x: event.clientX, y: event.clientY, touch: false }
+      pointer = { x: event.clientX, y: event.clientY }
     }
     const onTouch = (event: TouchEvent) => {
       const finger = event.touches[0]
       if (finger) {
-        pointer = { x: finger.clientX, y: finger.clientY, touch: true }
+        pointer = { x: finger.clientX, y: finger.clientY, touch: event }
       }
     }
 

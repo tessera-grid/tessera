@@ -626,6 +626,10 @@ describe('серверные действия: сочетания и досту�
       inBothThemes(async () => {
         expect((await axe.run(theme(), options)).violations).toEqual([])
       })
+    const alertOpacity = () => {
+      const alert = banner()
+      return alert ? getComputedStyle(alert).opacity : undefined
+    }
     const view = await mount({
       sortingServer: true,
       paginationServer: true,
@@ -637,15 +641,27 @@ describe('серверные действия: сочетания и досту�
     await clean()
 
     lastCall().answer.reject(new Error('Sorting is unavailable'))
-    await expect.poll(banner).not.toBeNull()
+    await expect.poll(alertOpacity).toBe('1')
     await filterBy('x')
     await userEvent.keyboard('{Escape}')
     await expect.poll(panelGone).toBe(true)
     await expect.poll(glowing).toBe(true)
+    // Если прежняя плашка уходит, дождаться конца перехода перед аудитом.
+    await expect
+      .poll(
+        () =>
+          !banner() ||
+          (alertOpacity() === '1' && !banner()?.hasAttribute('data-leaving')),
+      )
+      .toBe(true)
     await clean()
 
     lastCall().answer.reject(SERVER_ERROR)
     await expect.poll(redLight).toBe('on')
+    await expect
+      .poll(() => banner()?.textContent)
+      .toContain(SERVER_ERROR.message)
+    await expect.poll(alertOpacity).toBe('1')
     await clean()
     await view.unmount()
 

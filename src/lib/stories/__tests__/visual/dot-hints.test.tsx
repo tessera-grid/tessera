@@ -216,10 +216,15 @@ describe('Подсказки цветных точек (ADR 0224)', () => {
       expect(onShow).toHaveBeenCalledTimes(1)
       expect(strip.contains(document.activeElement)).toBe(false)
 
-      const icon = iconOf(byTestId('item'))
-      await humanClick(icon)
+      const item = byTestId('item')
+      await humanClick(item)
       expect(onPress).toHaveBeenCalledTimes(1)
-      expect(document.activeElement).toBe(byTestId('item'))
+      const focusAfterItemClick = document.activeElement
+
+      const icon = iconOf(item)
+      await humanClick(icon)
+      expect(onPress).toHaveBeenCalledTimes(2)
+      expect(document.activeElement).toBe(focusAfterItemClick)
       expect(icon.contains(document.activeElement)).toBe(false)
     } finally {
       await screen.unmount()

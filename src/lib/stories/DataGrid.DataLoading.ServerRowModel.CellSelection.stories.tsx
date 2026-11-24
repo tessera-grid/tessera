@@ -446,6 +446,11 @@ export const ServerCopyLoadsRows: StoryObj<StoryProps> = {
       await expect(server.held.length).toBeGreaterThan(0)
       await expect(consoleText()).toContain('copy')
       await expect(written).toEqual([])
+      // Проверка контраста должна застать отрисованную плашку, а не её появление.
+      await until(() => {
+        const banner = pendingBanner(canvas)
+        expect(banner && getComputedStyle(banner).opacity).toBe('1')
+      })
     })
     await step(COPY_LOADS[3]!.title.ru, async () => {
       await guideNext(canvas)

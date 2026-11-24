@@ -103,9 +103,12 @@ export const buildColumnTree = (table: VisibilityTable): ColumnTreeNode[] => {
 }
 
 export const getCheckState = (node: ColumnTreeNode): CheckState => {
-  const visible = node.leaves.filter(leaf => leaf.getIsVisible()).length
-  if (visible === node.leaves.length) return 'checked'
-  return visible === 0 ? 'unchecked' : 'indeterminate'
+  const first = node.leaves[0]
+  if (!first) return 'checked'
+  const visible = first.getIsVisible()
+  if (node.leaves.some(leaf => leaf.getIsVisible() !== visible))
+    return 'indeterminate'
+  return visible ? 'checked' : 'unchecked'
 }
 
 /**

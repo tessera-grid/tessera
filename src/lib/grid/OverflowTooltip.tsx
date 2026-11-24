@@ -70,12 +70,18 @@ export const OverflowTooltip = ({ getScrollElement }: OverflowTooltipProps) => {
       }
     }
     const hideSoon = () => {
+      if (!shown) {
+        hide()
+        return
+      }
       clearTimeout(timer)
       timer = setTimeout(hide, CLOSE_DELAY)
     }
-    const keepOpen = () => clearTimeout(timer)
+    const keepOpen = () => {
+      if (shown) clearTimeout(timer)
+    }
     const show = (title: HTMLElement, delay = OPEN_DELAY) => {
-      if (title === current) {
+      if (title === current && (shown || delay > 0)) {
         keepOpen()
         return
       }
@@ -85,11 +91,13 @@ export const OverflowTooltip = ({ getScrollElement }: OverflowTooltipProps) => {
       // Обрезка — на момент показа: кнопки ячейки к этому времени уже раскрылись.
       timer = setTimeout(() => {
         const text = title.textContent?.trim()
-        if (text && title.isConnected && isTruncated(title)) {
-          anchorRef.current = title
-          shown = true
-          setTip({ text, open: true })
+        if (!text || !title.isConnected || !isTruncated(title)) {
+          current = null
+          return
         }
+        anchorRef.current = title
+        shown = true
+        setTip({ text, open: true })
       }, delay)
     }
     controls.current = { hide, hideSoon, keepOpen }

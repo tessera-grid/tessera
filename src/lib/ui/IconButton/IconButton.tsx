@@ -20,8 +20,12 @@ import { useActiveNameCheck } from './useActiveNameCheck'
 import { useBubbleLook } from './bubbleLook'
 import { RevealedIcon } from './iconReveal'
 import { useIcons } from '../icons/IconsContext'
+import ringStyles from '../ringStates/ringStates.module.css'
 
 import styles from './IconButton.module.css'
+
+const iconButtonClass = clsx('data-grid__icon-button', styles.iconButton)
+const simpleIconButtonClass = clsx(iconButtonClass, ringStyles.ring)
 
 export interface ButtonTooltipProps {
   /** Сторона тултипа. */
@@ -105,6 +109,36 @@ export interface IconButtonProps
   children?: ReactNode
 }
 
+/** Действие, состояние которого показывает сам владелец кнопки (ADR 0177). */
+export const SimpleIconButton = ({
+  label,
+  onClick,
+  children,
+}: Pick<IconButtonProps, 'label' | 'onClick' | 'children'>) => {
+  const button = (
+    <BaseButton
+      type="button"
+      aria-label={label}
+      data-variant="ghost"
+      data-shape="circle"
+      data-bare={children == null || undefined}
+      onClick={onClick}
+      className={simpleIconButtonClass}
+    >
+      <RevealedIcon always={false} holding={false}>
+        {children}
+      </RevealedIcon>
+    </BaseButton>
+  )
+  return label ? (
+    <Tooltip title={label} longPress>
+      {button}
+    </Tooltip>
+  ) : (
+    button
+  )
+}
+
 /**
  * Кнопка-иконка кита (ADR 0098) на базе Base UI Button: сторона
  * `--tsr-comp-button-size`, иконка `--tsr-comp-button-icon-size`, форма `circle` или
@@ -143,7 +177,16 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
     forwardedRef,
   ) => {
     const busy = rest['aria-busy'] === true || rest['aria-busy'] === 'true'
-    const states = useButtonStates(
+    const {
+      ref,
+      className: stateClass,
+      'aria-busy': pendingAriaBusy,
+      'data-pending-leaving': pendingLeaving,
+      onClick: handleClick,
+      arc,
+      active: pendingActive,
+      armed,
+    } = useButtonStates(
       forwardedRef,
       { pending, failed, onCancel },
       onClick,
@@ -163,24 +206,27 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
       !!draft ||
       !!pending ||
       busy ||
-      states.active ||
-      !!states['data-pending-leaving']
+      pendingActive ||
+      !!pendingLeaving
 
     // Неприменённое без включённого — точка несохранённого; включённое главнее.
     const drafted = !active && !!draft
-    const bubble = useBubbleLook(
+    const {
+      ref: bubbleRef,
+      count: bubbleCount,
+      tone: bubbleTone,
+      shown: bubbleShown,
+    } = useBubbleLook(
       {
         count: drafted || !count ? 0 : count,
         tone: drafted ? 'draft' : indicatorTone,
       },
-      (!!active || !!draft) && indicator && !states.active,
+      (!!active || !!draft) && indicator && !pendingActive,
     )
     const icons = useIcons()
     const CancelIcon = icons.cancelAction
-    const name = states.armed ? (cancelLabel ?? label) : label
-    const ariaName = states.armed
-      ? (cancelLabel ?? accessibleName)
-      : accessibleName
+    const name = armed ? (cancelLabel ?? label) : label
+    const ariaName = armed ? (cancelLabel ?? accessibleName) : accessibleName
 
     const button = (
       <BaseButton
@@ -189,9 +235,9 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         focusableWhenDisabled={focusableWhenDisabled || tooltipWhenDisabled}
         {...rest}
         aria-label={ariaName}
-        ref={states.ref}
-        aria-busy={states['aria-busy'] ?? rest['aria-busy']}
-        data-pending-leaving={states['data-pending-leaving']}
+        ref={ref}
+        aria-busy={pendingAriaBusy ?? rest['aria-busy']}
+        data-pending-leaving={pendingLeaving}
         data-variant={variant}
         data-shape={shape}
         data-size={size === 'compact' ? size : undefined}
@@ -199,14 +245,13 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         data-active={active || undefined}
         data-draft={draft || undefined}
         data-tone={tone}
-        data-cancel-armed={states.armed || undefined}
-        onClick={states.onClick}
+        data-cancel-armed={armed || undefined}
+        onClick={handleClick}
         // Взведённый «стоп» отменяет, а не открывает меню, которое триггер открыл бы нажатием.
-        onMouseDown={states.armed ? undefined : rest.onMouseDown}
+        onMouseDown={armed ? undefined : rest.onMouseDown}
         className={clsx(
-          'data-grid__icon-button',
-          styles.iconButton,
-          states.className,
+          iconButtonClass,
+          stateClass,
           className,
           disabled && disabledClassName,
         )}
@@ -216,25 +261,24 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         </RevealedIcon>
         {(active !== undefined || draft !== undefined) && (
           <Bubble
-            size={bubble.count ? 'sm' : 'dot'}
-            tone={bubble.tone}
+            ref={bubbleRef}
+            size={bubbleCount ? 'sm' : 'dot'}
+            tone={bubbleTone}
             className={styles.indicator}
             data-active-indicator=""
-            data-count={bubble.count || undefined}
-            data-shown={bubble.shown}
-            onTransitionEnd={event => bubble.settle(event.currentTarget)}
-            onTransitionCancel={event => bubble.settle(event.currentTarget)}
+            data-count={bubbleCount || undefined}
+            data-shown={bubbleShown}
             aria-hidden
           >
-            {bubble.count ? countText(bubble.count) : null}
+            {bubbleCount ? countText(bubbleCount) : null}
           </Bubble>
         )}
-        {states.armed && (
+        {armed && (
           <span className={styles.cancelIcon} aria-hidden data-cancel-icon="">
             <CancelIcon />
           </span>
         )}
-        {states.arc}
+        {arc}
       </BaseButton>
     )
 
@@ -246,8 +290,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         side={tooltipSide}
         longPress
         disabled={
-          !states.armed &&
-          ((!!disabled && !tooltipWhenDisabled) || pending || busy)
+          !armed && ((!!disabled && !tooltipWhenDisabled) || pending || busy)
         }
       >
         {button}

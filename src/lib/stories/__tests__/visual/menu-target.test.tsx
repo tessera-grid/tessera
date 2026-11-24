@@ -655,7 +655,7 @@ describe('Волна ожидания на цели', () => {
     await expect.poll(() => busy(cellEl('r2', 'ink'))).toBe(true)
     await sleep(300)
     expect(waves()).toHaveLength(0)
-    expect(getComputedStyle(cell, '::before').display).toBe('none')
+    expect(getComputedStyle(cell, '::before').content).toBe('none')
     expect(
       toRgba(getComputedStyle(cell, '::after').backgroundColor)[3],
     ).toBeGreaterThan(0)
@@ -766,7 +766,7 @@ describe('Волна ожидания на цели', () => {
     await expect.poll(() => busy(cellEl('r3', 'ink'))).toBe(true)
     await expect.poll(still).toBe(true)
     expect(waves()).toHaveLength(0)
-    expect(getComputedStyle(cellEl('r2', 'ink')!, '::before').display).toBe(
+    expect(getComputedStyle(cellEl('r2', 'ink')!, '::before').content).toBe(
       'none',
     )
     expect(

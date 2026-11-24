@@ -96,10 +96,13 @@ const sampleFrames = async <T,>(
     requestAnimationFrame(sample)
   }
   requestAnimationFrame(sample)
-  await act()
-  await sleep(ms)
-  sampling = false
-  return frames
+  try {
+    await act()
+    await sleep(ms)
+    return frames
+  } finally {
+    sampling = false
+  }
 }
 
 /** В кадре всё стоит: строки без сдвига и полупрозрачности, призраков нет. */
@@ -243,7 +246,7 @@ const dragFrame = (scroller: HTMLElement) => {
  * Взять первую строку и держать в зоне автопрокрутки у нижнего края: `depth` — доля
  * зоны от её границы (зона — пятая часть высоты), выборка по кадрам.
  */
-const dragToEdge = async (depth = 1) => {
+const dragToEdge = async (depth = 1, movedTargets?: Set<number>) => {
   await render(<composed.RowDraggingPlayground />)
   await expect.poll(() => rowsTopDown().length).toBeGreaterThan(4)
   const [first] = rowsTopDown()
@@ -257,12 +260,43 @@ const dragToEdge = async (depth = 1) => {
     x: from.x,
     y: Math.min(box.bottom - 4, box.bottom - zone * (1 - depth)),
   }
-  const frames = await sampleFrames(
-    () => dragFrame(scroller),
-    () => pointer.realDragHold(from, edge),
-    SETTLE_MS * 2,
-  )
-  return { frames, scroller, rowSize: first.getBoundingClientRect().height }
+  const observer =
+    movedTargets &&
+    new MutationObserver(() => {
+      if (!scroller.hasAttribute('data-scrolling')) return
+      const slot = scroller.querySelector<HTMLElement>(
+        `${BODY_ROW}[data-row-draggable="true"]`,
+      )
+      const target = slot && targetOf(slot)
+      if (!slot || target === null || movedTargets.has(target)) return
+      for (const animation of slot.getAnimations()) {
+        const keys = (animation.effect as KeyframeEffect | null)?.getKeyframes()
+        const first = keys?.[0]?.transform
+        const last = keys?.at(-1)?.transform
+        if (typeof first !== 'string' || typeof last !== 'string') continue
+        const from = new DOMMatrix(first).m42
+        const to = new DOMMatrix(last).m42
+        if (Math.abs(to - target) < 1 && Math.abs(to - from) > 1) {
+          movedTargets.add(target)
+          return
+        }
+      }
+    })
+  observer?.observe(scroller, {
+    attributes: true,
+    subtree: true,
+    attributeFilter: ['style'],
+  })
+  try {
+    const frames = await sampleFrames(
+      () => dragFrame(scroller),
+      () => pointer.realDragHold(from, edge),
+      SETTLE_MS * 2,
+    )
+    return { frames, scroller, rowSize: first.getBoundingClientRect().height }
+  } finally {
+    observer?.disconnect()
+  }
 }
 
 describe('Движение строк (ADR 0107)', () => {
@@ -654,18 +688,19 @@ describe('Движение строк (ADR 0107)', () => {
   })
 
   test('RM24: умеренная прокрутка во время перетаскивания — слот виден и вместе с соседями сдвигается коротким переходом: без скачков, соседи отстают не больше строки, слот — двух', async () => {
-    const { frames, rowSize } = await dragToEdge(0.3)
+    const movedTargets = new Set<number>()
+    const { frames, rowSize } = await dragToEdge(0.3, movedTargets)
     try {
       const scrolled = frames.filter(frame => frame.scrolling)
       expect(scrolled.length).toBeGreaterThan(10)
       expect(scrolled.every(frame => frame.slotOpacity === 1)).toBe(true)
-      // Кадр смены цели: без перехода слот уже на новом месте, с переходом — в пути.
+      // В WebKit кадр может прийти позже перехода. Сам переход фиксируем при
+      // смене его цели, а пределы отставания проверяем в отрисованных кадрах.
       const changed = scrolled.filter(
         (frame, i) => i > 0 && frame.slotTarget !== scrolled[i - 1].slotTarget,
       )
       expect(changed.length).toBeGreaterThan(2)
-      const lags = changed.map(frame => frame.slotLag).sort((a, b) => a - b)
-      expect(lags[lags.length >> 1]).toBeGreaterThan(rowSize * 0.3)
+      expect(movedTargets.size).toBeGreaterThan(2)
       // Две строки: переход и кадр, в котором dnd-kit уже сменил цель.
       expect(
         Math.max(...scrolled.map(frame => frame.slotLag)),

@@ -6,6 +6,7 @@ import { describe, expect, test } from 'vitest'
 import { ENGLISH_LABELS } from '../../../core/localization'
 import { overflowColumns, overflowData } from '../../__mocks__/overflowColumns'
 import { humanClick } from '../helpers'
+import { parkPointer } from '../pointer'
 import { composed } from '../stories'
 import { AXE_OPTIONS, inBothThemes } from './a11y-helpers'
 import { columnSortingLabels } from '../../../plugins/columnSorting/labels'
@@ -143,16 +144,22 @@ describe('Overflow tooltip — тултип у обрезанного текст
 
     // Последний ввод — клавиша, фокус ставит скрипт после нажатия мышью: браузер не даёт
     // `:focus-visible`, но фокус клавиатурный, как для кольца фокуса (ADR 0084, CB5).
-    const cell = title(LONG_NAME).closest<HTMLElement>('[data-kn-cell]')!
-    await userEvent.click(document.body)
+    const text = title(LONG_NAME)
+    const cell = text.closest<HTMLElement>('[data-kn-cell]')!
+    await userEvent.click(document.body, { position: { x: 2, y: 2 } })
     document.body.dispatchEvent(
       new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }),
     )
-    cell.focus()
+    cell.focus({ preventScroll: true })
+    expect(document.activeElement).toBe(cell)
+    text.dispatchEvent(
+      new PointerEvent('pointerover', { bubbles: true, pointerType: 'mouse' }),
+    )
     await tipShown(LONG_NAME)
     await view.unmount()
 
     await renderOverflow({ enableKeyboardNavigation: false })
+    await parkPointer()
     await userEvent.tab()
     await settle()
     expect(openTips()).toEqual([])

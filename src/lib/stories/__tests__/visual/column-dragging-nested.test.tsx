@@ -182,10 +182,10 @@ describe('DnD under nested headers', () => {
         firePointer('pointermove', document, x + dx, y)
         await nextFrame()
       }
-      await expect.poll(() => translateX(head('info'))).toBe(-nameWidth)
-      for (const id of ['more-info', 'age', 'gender', 'visits']) {
-        expect(translateX(head(id)), id).toBe(-nameWidth)
-      }
+      const shifted = ['info', 'more-info', 'age', 'gender', 'visits']
+      await expect
+        .poll(() => shifted.map(id => translateX(head(id))))
+        .toEqual(shifted.map(() => -nameWidth))
       for (const id of ['name', 'firstName', 'lastName']) {
         expect(getComputedStyle(head(id)).opacity, id).toBe('0')
       }

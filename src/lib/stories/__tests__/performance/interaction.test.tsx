@@ -45,7 +45,9 @@ import {
   TBT_TARGET_MS,
 } from '../perf.constants'
 import { againstBase, ceilingOver, medianRun } from './baseline'
-import type { ScrollWorkResult } from '../perf.commands'
+import type { PerfRecord, ScrollWorkResult } from '../perf.commands'
+import { nextFrame } from '../visual/core-helpers'
+import { DEFAULT_WRITE_LIMITS } from '../../../core/cellWrites'
 import type {
   HeaderAction,
   MenuAction,
@@ -141,9 +143,18 @@ const firstBodyCell = () =>
     ".data-grid__body-row[data-index='0'] .data-grid__body-cell[data-kn-cell]",
   )
 
-const clickRowCheckbox = async () => {
-  rowOf(SELECT_ROW)!.querySelector<HTMLElement>('.row-select-checkbox')!.click()
-}
+const rowCheckbox = () =>
+  rowOf(SELECT_ROW)?.querySelector<HTMLElement>('.row-select-checkbox')
+
+const waitForRowCheckbox = () =>
+  expect
+    .poll(
+      () =>
+        !!rowCheckbox() && !document.querySelector('[data-portions-pending]'),
+    )
+    .toBe(true)
+
+const clickRowCheckbox = async () => rowCheckbox()!.click()
 
 /** Прогрев выбрал одну строку, замер снял выбор. */
 const SELECT_CHECKS = {
@@ -598,6 +609,7 @@ const CASES: InteractionCase[] = [
     id: 'I1',
     label: 'выбор строки, небольшая выборка, все плагины',
     args: { ...SMALL, ...ALL_PLUGINS },
+    prepare: waitForRowCheckbox,
     act: clickRowCheckbox,
     ...SELECT_CHECKS,
   },
@@ -605,6 +617,7 @@ const CASES: InteractionCase[] = [
     id: 'I2',
     label: 'выбор строки, большая выборка, все плагины',
     args: { ...LARGE, ...ALL_PLUGINS },
+    prepare: waitForRowCheckbox,
     act: clickRowCheckbox,
     ...SELECT_CHECKS,
   },
@@ -1010,23 +1023,24 @@ describe('Отзывчивость — корень «Все колонки»', 
       const hideAll = medianRun(hideRuns.variant, r => r.longestMs)
 
       const rowsReady = () =>
-        !!document.querySelector('.data-grid__body .data-grid__body-row')
+        !!document.querySelector('.data-grid__body .data-grid__body-row') &&
+        !document.querySelector('[data-portions-pending]')
       const measureShow = async (isRoot: boolean) => {
         if (!isRoot) {
-          const mount = await measureRenderWork(
-            () => renderGrid(HA10_ARGS),
-            rowsReady,
-            { warmup: false },
-          )
+          const mount = await measureTransitionWork(async () => {
+            renderGrid(HA10_ARGS)
+          }, rowsReady)
           await cleanup()
           return mount
         }
         await openHa10Menu()
         const checked = () =>
           rootColumnsCheckbox()!.getAttribute('aria-checked')
-        const result = await measureInteractionWork(
+        rootColumnsCheckbox()!.click()
+        await expect.poll(checked).toBe('false')
+        const result = await measureTransitionWork(
           async () => rootColumnsCheckbox()!.click(),
-          { afterWarmup: () => expect(checked()).toBe('false') },
+          rowsReady,
         )
         expect(checked()).toBe('true')
         expect(rowsReady()).toBe(true)
@@ -3849,7 +3863,7 @@ describe('Кадры — маркер угла выделения', () => {
         const cellOf = (row: number, column: number) =>
           document.querySelector<HTMLElement>(
             `.data-grid__body-row[data-index="${row}"] .data-grid__body-cell[data-column-id="c${column}"]`,
-          )!
+          )
         const centerOf = (el: Element) => {
           const r = el.getBoundingClientRect()
           return {
@@ -3886,7 +3900,15 @@ describe('Кадры — маркер угла выделения', () => {
         // Угол — в окне: строки 1–8, колонки 1–5; шаг меняет ячейку под указателем.
         const target = (step: number) =>
           cellOf(1 + (step % 8), 1 + (Math.floor(step / 8) % 5))
-        const start = cellOf(1, 1)
+        // При порционном рендере первая строка появляется раньше остальной области жеста.
+        await expect
+          .poll(() =>
+            Array.from({ length: HANDLE_STEPS + 1 }, (_, step) =>
+              target(step),
+            ).every(Boolean),
+          )
+          .toBe(true)
+        const start = cellOf(1, 1)!
         if (handle) {
           mouse('mousedown', start, centerOf(start))
           mouse('mouseup', document, centerOf(start))
@@ -3900,7 +3922,7 @@ describe('Кадры — маркер угла выделения', () => {
           async () => {
             const next = () => {
               step++
-              const cell = target(step)
+              const cell = target(step)!
               if (handle) pointer('pointermove', document, centerOf(cell))
               else mouse('mouseover', cell, centerOf(cell))
               if (step < HANDLE_STEPS) requestAnimationFrame(next)
@@ -3909,7 +3931,7 @@ describe('Кадры — маркер угла выделения', () => {
           },
           () => step >= HANDLE_STEPS,
         )
-        const last = target(HANDLE_STEPS)
+        const last = target(HANDLE_STEPS)!
         expect(
           last.hasAttribute('data-cell-selected'),
           'угол протяжки выделен',
@@ -5319,7 +5341,7 @@ describe('Применить всё — отказ всех черновиков
           ],
         })
         await expect.poll(() => table).toBeTruthy()
-        const seed = () => {
+        const seed = async () => {
           resolveFailures(table, Object.keys(readFailures(table)))
           setPluginState(
             table,
@@ -5332,6 +5354,16 @@ describe('Применить всё — отказ всех черновиков
               })),
             ).flat(),
           )
+          // Подготовка черновиков и снятие отказов прогрева не входят в стоимость «Применить».
+          await expect
+            .poll(
+              () =>
+                !!document.querySelector('[data-cell-draft]') &&
+                !document.querySelector(
+                  '[data-cell-issue], [data-portions-pending]',
+                ),
+            )
+            .toBe(true)
         }
         const expectOutcome = () => {
           // Отказ оставляет черновики и пишет отказ на каждую ячейку; успех снимает черновики.
@@ -5340,15 +5372,15 @@ describe('Применить всё — отказ всех черновиков
             refuse ? 1000 : 0,
           )
         }
-        seed()
+        await seed()
         const result = await measureInteractionWork(
           async () => {
             applyAllDrafts(table)
           },
           {
-            afterWarmup: () => {
+            afterWarmup: async () => {
               expectOutcome()
-              seed()
+              await seed()
             },
           },
         )
@@ -6324,7 +6356,7 @@ describe('Отзывчивость взаимодействий — предик
     async () => {
       const measure = async (inline: boolean) => {
         render(<PredicateHost inline={inline} />)
-        await waitForGrid()
+        await waitForRowCheckbox()
         const result = await measureInteractionWork(
           clickRowCheckbox,
           SELECT_CHECKS,
@@ -7091,7 +7123,12 @@ describe('Отмена вставки — объём', () => {
     'UD23: отмена вставки 100 000 ячеек — самая длинная задача не дороже самой вставки больше чем на 10 % (или 5 мс)',
     async () => {
       const measure = async (undo: boolean) => {
-        let table: (PasteTable & { undo: () => Promise<boolean> }) | undefined
+        let table:
+          | (PasteTable & {
+              undo: () => Promise<boolean>
+              redo: () => Promise<boolean>
+            })
+          | undefined
         const screen = renderPluginsGrid({
           columnCount: UD23_COLUMNS,
           dataCount: 10_000,
@@ -7136,9 +7173,18 @@ describe('Отмена вставки — объём', () => {
               (table as never as { canUndo: () => boolean }).canUndo(),
             )
             .toBe(true)
-          result = await measureInteractionWork(async () => {
-            await table!.undo()
-          })
+          result = await measureInteractionWork(
+            async () => {
+              expect(await table!.undo()).toBe(true)
+            },
+            {
+              // Прогрев уже отменил запись. Восстанавливаем её до начала трейса.
+              afterWarmup: async () => {
+                expect(await table!.redo()).toBe(true)
+                await new Promise(resolve => requestAnimationFrame(resolve))
+              },
+            },
+          )
         } else result = await measureInteractionWork(paste)
         ;(await screen).unmount()
         return result
@@ -7183,8 +7229,8 @@ describe('Отмена вставки — объём', () => {
   )
 })
 
-// Пределы записи (ADR 0223, LM11): запись порогов вопроса и отказа и отмена большей — вся работа
-// главного потока; значения — в разделе «Замер» ADR 0223, порог отказа — не дольше 1 с.
+// Пределы записи (ADR 0223, LM11): горячий путь у рабочего предела и стресс-прогон
+// с отключёнными пределами. Время включает всю работу главного потока.
 const LM11_COLUMNS = 10
 describe('Пределы записи — замер порогов', () => {
   test(
@@ -7196,15 +7242,118 @@ describe('Пределы записи — замер порогов', () => {
         ) => Promise<{ written: number }>
         undo: () => Promise<boolean>
         canUndo: () => boolean
+        canRedo: () => boolean
+        atoms: { cellSelection: { get: () => readonly unknown[] } }
       }
-      const mountWrites = async () => {
+      const sortedUndoCase = async (answerDelay: number) => {
+        const columns = Array.from({ length: LM11_COLUMNS }, (_, i) => ({
+          id: `v${i}`,
+          accessorKey: `v${i}`,
+          header: `Value ${i + 1}`,
+          dataType: 'number',
+          size: 100,
+        }))
+        const rowCount = 3_000
+        type Row = { id: string } & Record<string, unknown>
+        const initial: Row[] = Array.from({ length: rowCount }, (_, i) => ({
+          id: String(i),
+          ...Object.fromEntries(columns.map(column => [column.id, i])),
+        }))
+        let table: WriteTable | undefined
+        function SortedGrid() {
+          const [data, setData] = useState(initial)
+          const created = useCreateTable({
+            columns: columns as never,
+            data,
+            plugins: [
+              columnSortingModel({ sorting: [{ id: 'v0', desc: false }] }),
+              cellSelection(),
+              cellEditing({
+                onCommitEdits: async ({ cells }) => {
+                  const patches = new Map<string, Record<string, unknown>>()
+                  for (const cell of cells) {
+                    let patch = patches.get(cell.rowId)
+                    if (!patch) patches.set(cell.rowId, (patch = {}))
+                    patch[cell.columnId] = cell.value
+                  }
+                  if (answerDelay > 0)
+                    await new Promise(resolve =>
+                      setTimeout(resolve, answerDelay),
+                    )
+                  else await Promise.resolve()
+                  setData(prev =>
+                    prev.map(row => {
+                      const patch = patches.get(row.id)
+                      return patch ? { ...row, ...patch } : row
+                    }),
+                  )
+                },
+              }),
+              editHistory(),
+            ] as never,
+          })
+          table = created as never
+          return <DataGrid table={created as never} height={500} />
+        }
+        const screen = await render(<SortedGrid />)
+        await waitForGrid()
+        const rowSource = () => table!.getRowSource()
+        const count = DEFAULT_WRITE_LIMITS.max
+        const changedRows = Math.floor(count / columns.length)
+        const changes = initial.slice(0, changedRows).flatMap((row, index) =>
+          columns.map(column => ({
+            rowId: row.id,
+            columnId: column.id,
+            value: rowCount + index,
+          })),
+        )
+        expect((await table!.writeCells(changes)).written).toBe(changes.length)
+        await expect.poll(() => rowSource().at(0)?.id).toBe(String(changedRows))
+        await expect.poll(() => table!.canUndo()).toBe(true)
+        const scroller = getScroller()
+        scroller.scrollTop = scroller.scrollHeight / 2
+        await expect.poll(() => scroller.scrollTop).toBeGreaterThan(100)
+        const rowHeight = Number.parseFloat(
+          getComputedStyle(scroller).getPropertyValue('--tsr-comp-row-height'),
+        )
+        const startIndex = Math.floor(scroller.scrollTop / rowHeight)
+        const startRow = rowSource().at(startIndex)!
+        // Начальная прокрутка — подготовка сценария, её работа не входит в undo.
+        await expect
+          .poll(
+            () =>
+              rowOf(startRow.id)?.dataset.index === String(startIndex) &&
+              !scroller.querySelector('[data-portions-pending]') &&
+              !scroller.hasAttribute('data-scrolling') &&
+              !scroller.hasAttribute('data-fast-scrolling'),
+          )
+          .toBe(true)
+        const result = await measureInteractionWork(
+          async () => {
+            expect(await table!.undo()).toBe(true)
+            await expect.poll(() => rowSource().at(0)?.id).toBe('0')
+            await expect.poll(() => rowOf('0')?.dataset.index).toBe('0')
+          },
+          { warmup: false },
+        )
+        // Чтение scrollTop в ходе замера само форсировало раскладку из теста.
+        expect(scroller.scrollTop).toBeLessThanOrEqual(1)
+        await screen.unmount()
+        return result
+      }
+      const mountWrites = async (unlimited: boolean, delayed = false) => {
         let table: WriteTable | undefined
         const screen = renderPluginsGrid({
           columnCount: LM11_COLUMNS,
           dataCount: 10_000,
-          writeLimits: false,
+          writeLimits: unlimited ? false : undefined,
           plugins: [
-            cellEditing({ onCommitEdits: () => Promise.resolve() } as never),
+            cellEditing({
+              onCommitEdits: () =>
+                delayed
+                  ? new Promise<void>(resolve => setTimeout(resolve, 50))
+                  : Promise.resolve(),
+            }),
             cellSelection(),
             editHistory({ maxCells: 1_000_000 }),
             {
@@ -7220,38 +7369,66 @@ describe('Пределы записи — замер порогов', () => {
         const columns = Object.entries(table!.getCellSelectionColumnIndexes())
           .sort((a, b) => a[1] - b[1])
           .map(([id]) => id)
-        let round = 0
-        // Каждый вызов пишет новые значения: прогрев и замер — одна и та же работа.
-        const changes = (count: number) => {
-          round++
-          return Array.from({ length: count }, (_, i) => ({
+        const changes = (count: number) =>
+          Array.from({ length: count }, (_, i) => ({
             rowId: table!.getRowSource().at(Math.floor(i / LM11_COLUMNS))!.id,
             columnId: columns[i % LM11_COLUMNS]!,
-            value: (i + round) % 90,
+            value: (i + 1) % 90,
           }))
-        }
         return { table: table!, screen, changes }
       }
-      const writeCase = async (count: number) => {
-        const { table, screen, changes } = await mountWrites()
+      const writeCase = async (count: number, delayed = false) => {
+        const { table, screen, changes } = await mountWrites(
+          count > DEFAULT_WRITE_LIMITS.max,
+          delayed,
+        )
+        const input = changes(count)
         let written = 0
-        const result = await measureInteractionWork(async () => {
-          written = (await table.writeCells(changes(count))).written
-        })
+        const result = await measureInteractionWork(
+          async () => {
+            written = (await table.writeCells(input)).written
+            await expect.poll(() => table.canUndo()).toBe(true)
+          },
+          { warmup: false },
+        )
         expect(written).toBe(count)
         ;(await screen).unmount()
         return result
       }
-      const undoCase = async (count: number) => {
-        const { table, screen, changes } = await mountWrites()
+      const undoCase = async (count: number, delayed = false) => {
+        const { table, screen, changes } = await mountWrites(
+          count > DEFAULT_WRITE_LIMITS.max,
+          delayed,
+        )
+        const input = changes(count)
+        expect((await table.writeCells(input)).written).toBe(count)
+        await expect.poll(() => table.canUndo()).toBe(true)
+        // Дорисовка подготовительной записи относится к записи, а не к отмене.
+        await expect
+          .poll(
+            () =>
+              !getScroller().querySelector(
+                '[data-pending-wave], [data-portions-pending]',
+              ),
+          )
+          .toBe(true)
+        await nextFrame()
+        await nextFrame()
         const result = await measureInteractionWork(
           async () => {
-            await table.writeCells(changes(count))
-            await expect.poll(() => table.canUndo()).toBe(true)
-            await table.undo()
+            expect(await table.undo()).toBe(true)
           },
           { warmup: false },
         )
+        const first = input[0]!
+        const last = input.at(-1)!
+        expect(table.canRedo()).toBe(true)
+        expect(table.atoms.cellSelection.get()[0]).toMatchObject({
+          anchorRowId: first.rowId,
+          anchorColumnId: first.columnId,
+          focusRowId: last.rowId,
+          focusColumnId: last.columnId,
+        })
         ;(await screen).unmount()
         return result
       }
@@ -7260,30 +7437,32 @@ describe('Пределы записи — замер порогов', () => {
         label: string,
         size: string,
         r: ScrollWorkResult,
+        plugins: PerfRecord['plugins'] = 'cellEditing, cellSelection, editHistory',
       ) =>
         recordPerf({
           id,
           label,
           operation: 'interaction',
           size,
-          plugins: 'cellEditing, cellSelection, editHistory',
+          plugins,
           cpuThrottle: CPU_THROTTLE_RATE,
           metrics: [
             {
               kind: 'load',
               metric: 'total',
               valueMs: r.totalMs,
-              targetMs: 1000,
+              targetMs: LOAD_BUDGET_MS,
+              ...r,
+            },
+            {
+              kind: 'load',
+              metric: 'longest',
+              valueMs: r.longestMs,
+              targetMs: INTERACTION_BUDGET_MS,
               ...r,
             },
           ],
         })
-      await record(
-        'LM11-confirm',
-        'запись 10 000 ячеек',
-        '1000×10',
-        await writeCase(10_000),
-      )
       await record(
         'LM11-max',
         'запись 100 000 ячеек',
@@ -7291,11 +7470,47 @@ describe('Пределы записи — замер порогов', () => {
         await writeCase(100_000),
       )
       await record(
-        'LM11-undo',
-        'запись и отмена 100 000 ячеек',
+        'LM11-stress-undo',
+        'отмена 100 000 ячеек',
         '10 000×10',
         await undoCase(100_000),
       )
+      for (const delay of [0, 50]) {
+        const sortedRuns = []
+        for (let round = 0; round < 3; round++)
+          sortedRuns.push(await sortedUndoCase(delay))
+        await record(
+          delay ? 'LM11-sorted-data-delayed-undo' : 'LM11-sorted-data-undo',
+          delay
+            ? 'отмена со сменой данных и порядка строк · ответ через 50 мс'
+            : 'отмена со сменой данных и порядка строк',
+          '3000×10',
+          medianRun(sortedRuns, run => run.longestMs),
+          'cellEditing, cellSelection, columnSortingModel, editHistory',
+        )
+      }
+      for (const count of [
+        DEFAULT_WRITE_LIMITS.confirm,
+        DEFAULT_WRITE_LIMITS.max,
+      ]) {
+        for (const delayed of [false, true]) {
+          const answer = delayed ? 'отложенный ответ' : 'мгновенный ответ'
+          const key = `LM11-${count}-${delayed ? 'delayed' : 'immediate'}`
+          const size = `${count / LM11_COLUMNS}×${LM11_COLUMNS}`
+          await record(
+            key + '-write',
+            `запись · ${answer}`,
+            size,
+            await writeCase(count, delayed),
+          )
+          await record(
+            key + '-undo',
+            `отмена · ${answer}`,
+            size,
+            await undoCase(count, delayed),
+          )
+        }
+      }
     },
     PERF_TIMEOUT * 4,
   )
@@ -7831,11 +8046,12 @@ describe('Отзывчивость — сводка сочетаний', () => {
         })
         await waitForGrid()
         await expect.poll(settingsButton).toBeTruthy()
+        const focusCell = () =>
+          document.querySelector<HTMLElement>('.data-grid__body-cell')
+        await expect.poll(focusCell).not.toBeNull()
         const open = async () => {
           if (shortcuts) {
-            document
-              .querySelector<HTMLElement>('.data-grid__body-cell')!
-              .focus()
+            focusCell()!.focus()
             await userEvent.keyboard('{Control>}/{/Control}')
             await expect.poll(shortcutsSheet).toBeTruthy()
           } else {

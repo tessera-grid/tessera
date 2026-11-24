@@ -123,20 +123,21 @@ describe('Значки скрытых кнопок по месту показа 
     await mount(false)
     const before = [rowAt(5), rowAt(6)].map(row => row.getBoundingClientRect())
     const wrapper = () => mark(5).closest<HTMLElement>('.cell__button')!
+    const readFrame = () => ({
+      icon: iconShown(5),
+      opacity: Number(getComputedStyle(wrapper()).opacity),
+    })
     // Кадры проявления: значок уже есть, а обёртка ещё не проявилась целиком.
     const frames: { icon: boolean; opacity: number }[] = []
     await userEvent.hover(cellAt(5, COLUMN))
     for (let i = 0; i < 30; i++) {
-      frames.push({
-        icon: iconShown(5),
-        opacity: Number(getComputedStyle(wrapper()).opacity),
-      })
+      frames.push(readFrame())
       await new Promise(resolve => requestAnimationFrame(resolve))
     }
     expect(frames.some(f => f.icon && f.opacity > 0 && f.opacity < 1)).toBe(
       true,
     )
-    expect(frames.at(-1)).toEqual({ icon: true, opacity: 1 })
+    await expect.poll(readFrame).toEqual({ icon: true, opacity: 1 })
     const after = [rowAt(5), rowAt(6)].map(row => row.getBoundingClientRect())
     expect(after.map(r => [r.top, r.height])).toEqual(
       before.map(r => [r.top, r.height]),

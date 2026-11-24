@@ -676,10 +676,12 @@ const editNext = (root: HTMLElement) => {
   else pasteInto(cell, next.value)
 }
 
-const historyOpen = () => !!byTestId('edit-history')
-const entries = () =>
-  [...document.querySelectorAll<HTMLElement>('[data-history-entry]')].map(
-    entry => entry.querySelector<HTMLElement>('button'),
+const historyPopup = () =>
+  document.querySelector<HTMLElement>('[data-testid="edit-history"][data-open]')
+const historyOpen = () => !!historyPopup()
+const historyItemAt = (index: number) =>
+  historyPopup()?.querySelector<HTMLElement>(
+    `[role="listitem"][data-index="${index}"] [data-history-item]`,
   )
 const openHistory = (root: HTMLElement) => {
   if (!editsCheck(root)) {
@@ -700,18 +702,21 @@ const forwardCheck = (root: HTMLElement) =>
   textOf(root, 'item-id-2', 'price') === '22' &&
   textOf(root, 'item-id-3', 'price') === '30'
 
-/** Нажать облачко записи: новые сверху, последняя в списке — первая правка. */
-const pressEntry = (fromBottom: number) => {
-  const list = entries()
-  list[list.length - 1 - fromBottom]?.click()
+/** Список виртуальный. Индекс относится ко всей истории, даже если часть узлов ещё не появилась. */
+const pressEntry = (key: string, index: number) => {
+  const entry = historyItemAt(index)
+  if (entry) once(key, () => entry.click())
 }
 
 const rewindTo = (root: HTMLElement) => {
+  // При последовательной отмене цены меняются по одной. После нажатия ждём
+  // результата вместо повторного восстановления трёх исходных правок.
+  if (done.has('rewind')) return
   if (!openCheck(root)) {
     openHistory(root)
     return
   }
-  once('rewind', () => pressEntry(0))
+  pressEntry('rewind', EDITS.length - 1)
 }
 
 const HISTORY_REWIND: readonly GuideStoryStep[] = [
@@ -757,7 +762,7 @@ const HISTORY_REWIND: readonly GuideStoryStep[] = [
         rewindTo(root)
         return
       }
-      once('forward', () => pressEntry(1))
+      pressEntry('forward', EDITS.length - 2)
     }),
   },
 ]
@@ -1365,9 +1370,7 @@ export const UndoRowMove: StoryObj<StoryProps> = {
 // --- ADR 0222, S11 --------------------------------------------------------------------
 
 const originalButton = () =>
-  document.querySelector<HTMLElement>(
-    '[data-testid="edit-history"] [data-action="back-to-original"]',
-  )
+  historyPopup()?.querySelector<HTMLElement>('[data-action="back-to-original"]')
 const pricesOf = (root: HTMLElement) =>
   EDITS.map(({ row }) => textOf(root, row, 'price'))
 const settled = (root: HTMLElement) =>
@@ -1385,11 +1388,13 @@ const allBackCheck = (root: HTMLElement) =>
   pricesOf(root).join() === EDITS.map(({ value }) => value).join()
 
 const backToOriginal = (root: HTMLElement) => {
+  if (done.has('original')) return
   if (!openCheck(root)) {
     openHistory(root)
     return
   }
-  once('original', () => originalButton()?.click())
+  const button = originalButton()
+  if (button) once('original', () => button.click())
 }
 
 const BACK_TO_ORIGINAL: readonly GuideStoryStep[] = [
@@ -1435,7 +1440,10 @@ const BACK_TO_ORIGINAL: readonly GuideStoryStep[] = [
         backToOriginal(root)
         return
       }
-      once('redoAll', () => pressEntry(EDITS.length - 1))
+      const newest = historyItemAt(0)
+      if (newest?.closest('[data-undone]')) {
+        once('redoAll', () => newest.click())
+      }
     }),
   },
 ]
@@ -1466,9 +1474,14 @@ export const HistoryBackToOriginal: StoryObj<StoryProps> = {
     await step(BACK_TO_ORIGINAL[3]!.title.ru, () =>
       next(canvasElement, originalCheck),
     )
-    await step(BACK_TO_ORIGINAL[4]!.title.ru, () =>
-      next(canvasElement, allBackCheck),
-    )
+    await step(BACK_TO_ORIGINAL[4]!.title.ru, async () => {
+      await guideNext(canvasElement)
+      await until(() => {
+        expect(pricesOf(canvasElement)).toEqual(EDITS.map(({ value }) => value))
+        expect(settled(canvasElement)).toBe(true)
+        expect(done.has('redoAll')).toBe(true)
+      })
+    })
     await settle()
   },
 }
@@ -1686,12 +1699,20 @@ export const HistoryApplied: StoryObj<StoryProps> = {
     await step(HISTORY_APPLIED[1]!.title.ru, () =>
       next(canvasElement, draftsCheck),
     )
-    await step(HISTORY_APPLIED[2]!.title.ru, () =>
-      next(canvasElement, unsavedShownCheck),
-    )
+    const historyVisible = () =>
+      until(() => {
+        const popup = historyPopup()
+        expect(popup).toBeTruthy()
+        expect(getComputedStyle(popup!).opacity).toBe('1')
+      })
+    await step(HISTORY_APPLIED[2]!.title.ru, async () => {
+      await next(canvasElement, unsavedShownCheck)
+      await historyVisible()
+    })
     await step(HISTORY_APPLIED[3]!.title.ru, async () => {
       await next(canvasElement, appliedShownCheck)
       await applyNoticeEntered(canvasElement)
+      await historyVisible()
     })
   },
 }

@@ -156,6 +156,24 @@ const RUNTIME_CHECK = `for (const [name, value] of Object.entries(entries)) {
 }
 `
 
+const REACT18_SSR_CHECK = `const columns = [{ accessorKey: 'value', header: 'Value' }]
+const data = [{ value: 1 }]
+
+function App() {
+  const table = useCreateTable({ columns, data })
+  return React.createElement(React.Fragment, null,
+    React.createElement(DataGrid, { table, height: 300 }),
+    React.createElement(Switch, { 'aria-label': 'Package switch' }),
+  )
+}
+
+const html = renderToString(React.createElement(App))
+if (!React.version.startsWith('18.') || !html.includes('data-grid') ||
+    !html.includes('role="switch"') || !html.includes('Package switch')) {
+  throw new Error('Expected DataGrid and Switch to render with React 18')
+}
+`
+
 /** \`tsc\`, который падает только на ошибках фикстуры и деклараций пакета. */
 const TSC = `import { execFileSync } from 'node:child_process'
 
@@ -277,7 +295,7 @@ if (css.length === 0) throw new Error('style.css не попал в сборку
     ],
   },
   {
-    name: 'react18-types',
+    name: 'react18',
     dependencies: {
       react: '^18',
       'react-dom': '^18',
@@ -291,7 +309,23 @@ if (css.length === 0) throw new Error('style.css не попал в сборку
       ...DICTIONARIES,
       'tsc.mjs': TSC,
       'tsconfig.json': tsconfig(BUNDLER, ['app.tsx']),
+      'runtime-esm.mjs': `import React from 'react'
+import { renderToString } from 'react-dom/server'
+import { DataGrid, useCreateTable } from '@tessera-grid/tessera'
+import { Switch } from '@tessera-grid/tessera/ui'
+
+${REACT18_SSR_CHECK}`,
+      'runtime-cjs.cjs': `const React = require('react')
+const { renderToString } = require('react-dom/server')
+const { DataGrid, useCreateTable } = require('@tessera-grid/tessera')
+const { Switch } = require('@tessera-grid/tessera/ui')
+
+${REACT18_SSR_CHECK}`,
     },
-    commands: [['node', 'tsc.mjs', 'tsconfig.json']],
+    commands: [
+      ['node', 'tsc.mjs', 'tsconfig.json'],
+      ['node', 'runtime-esm.mjs'],
+      ['node', 'runtime-cjs.cjs'],
+    ],
   },
 ]

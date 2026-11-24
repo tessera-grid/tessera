@@ -11,8 +11,6 @@ import {
   useState,
 } from 'react'
 
-import { flushSync } from 'react-dom'
-
 import clsx from 'clsx'
 
 import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
@@ -81,21 +79,30 @@ export const Stub = forwardRef<HTMLDivElement, StubProps>(function Stub(
   const mediaHeight = useRef(0)
   const [mediaHidden, setMediaHidden] = useState(false)
 
-  // Рамка или части поменяли размер — проверка до отрисовки кадра.
+  // Начальный размер проверяем до первого кадра. Скрытие иллюстрации меняет
+  // размер наблюдаемых узлов, поэтому ответ на ResizeObserver — в другом кадре.
   const hasMedia = media != null && media !== false
   const parts = `${hasMedia}|${title}|${description ?? ''}|${action != null}`
   useIsomorphicLayoutEffect(() => {
     const root = rootRef.current
     const mediaNode = mediaRef.current
     if (!root || !mediaNode) return
-    const observer = new ResizeObserver(() => {
+    const measure = () => {
       if (!mediaNode.hidden) mediaHeight.current = layoutHeight(mediaNode)
-      const hidden = !mediaFits(root, mediaNode, mediaHeight.current)
-      flushSync(() => setMediaHidden(hidden))
+      setMediaHidden(!mediaFits(root, mediaNode, mediaHeight.current))
+    }
+    measure()
+    let frame = 0
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(measure)
     })
     observer.observe(root)
     for (const child of root.children) observer.observe(child)
-    return () => observer.disconnect()
+    return () => {
+      observer.disconnect()
+      cancelAnimationFrame(frame)
+    }
   }, [parts])
 
   return (

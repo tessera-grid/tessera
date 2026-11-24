@@ -8,6 +8,7 @@ import { useLatest } from '../../util/useLatest'
 interface LoadErrorInput {
   table: unknown
   error: unknown
+  sourceReason?: string
   onRetry?: () => unknown
   /** Приложение уже грузит заново (`loading`). */
   loading: boolean
@@ -25,6 +26,7 @@ interface LoadErrorInput {
 export const useLoadError = ({
   table,
   error,
+  sourceReason,
   onRetry,
   loading,
   hasRows,
@@ -80,7 +82,7 @@ export const useLoadError = ({
     }
   }
 
-  const reason = present ? loadErrorReason(error) : undefined
+  const reason = present ? loadErrorReason(sourceReason ?? error) : undefined
   const announced = useRef(0)
   useEffect(() => {
     if (!present || announced.current === key) {

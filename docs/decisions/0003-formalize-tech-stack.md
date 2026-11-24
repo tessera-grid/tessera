@@ -3,6 +3,12 @@
 - **Статус:** Принято
 - **Дата:** 2026-08-05
 
+> **Актуализировано (2026-11-19).** `use-sync-external-store/shim` и его `with-selector`
+> подменяются в сборке ESM-адаптером `src/lib/util/useSyncExternalStore.ts` на нативном хуке
+> React: CJS-поставка оставляла `require("react")` в ESM-файлах `dist` и роняла runtime у
+> потребителя. Список `external` не изменился; адаптер бандлится и проверяется `check:package`.
+> Контракт подписки с селектором проверяет EV11 ([ADR 0091](0091-environment-compatibility.md)).
+>
 > **Актуализировано (2026-09-15).** Стек приведён к текущему состоянию кода: TanStack
 > Table **v9** (состояние — TanStack Store, [ADR 0026](0026-migrate-to-tanstack-v9.md));
 > контролы — примитивы **Base UI** со стилями на **CSS Modules** (не Tailwind-утилиты и не

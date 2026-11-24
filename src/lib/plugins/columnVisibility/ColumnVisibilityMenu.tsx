@@ -5,7 +5,13 @@
  * при тысячах колонок рисуются только видимые строки (I4–I5).
  */
 import { reportAction, sourceOf } from '../../core/debugActions'
-import { type ReactNode, type RefObject, useRef, useState } from 'react'
+import {
+  type ReactNode,
+  type RefObject,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 
 import { useVirtualizer } from '../../../vendor/tanstack-virtual/react-virtual'
 
@@ -68,12 +74,6 @@ interface TreeRow {
 }
 
 /** Плоский список под корнем «Все колонки»: уровень узла — его глубина + 1. */
-/** Подпись колонки по id — для объявления скрытия. */
-const labelOfId = (table: VisibilityControlTable, id: string) => {
-  const column = table.getAllLeafColumns().find(leaf => leaf.id === id)
-  return column ? labelOf(column) : id
-}
-
 const flatten = (nodes: ColumnTreeNode[], prefix = ''): TreeRow[] =>
   nodes.flatMap((node, index) => {
     const branch = prefix + (index < nodes.length - 1 ? '1' : '0')
@@ -101,7 +101,7 @@ const CheckRow = ({
   onToggle?: (columnIds: string[], visible: boolean) => void
 }) => {
   const state = getCheckState(node)
-  const toggle = getToggle(node)
+  const disabled = !node.leaves.some(leaf => leaf.getCanHide())
 
   return (
     <PopupItem
@@ -110,18 +110,19 @@ const CheckRow = ({
       style={{
         paddingInlineStart: `calc(var(--tsr-comp-popup-item-padding-x) + ${node.depth + 1} * var(--tsr-tree-indent))`,
       }}
-      data-disabled={toggle === null || undefined}
+      data-disabled={disabled || undefined}
       end={end}
     >
       <Checkbox
         className="row-select-checkbox"
         checked={state === 'checked'}
         indeterminate={state === 'indeterminate'}
-        disabled={toggle === null}
+        disabled={disabled}
         label={name}
         // Меню — в композите тулбара: без tabIndex галочки выпали бы из порядка Tab.
-        tabIndex={toggle === null ? undefined : 0}
+        tabIndex={disabled ? undefined : 0}
         onCheckedChange={(_, event) => {
+          const toggle = getToggle(node)
           if (!toggle) return
           reportAction(table, {
             plugin: 'columnVisibility',
@@ -272,7 +273,7 @@ export const ColumnVisibilityMenu = ({
   const scrollerRef = useScrollFade(scrollRef)
 
   // Перерисовка на смену видимости, порядка, закрепления и преобразований (ADR 0204).
-  useTableState(table, state => ({
+  const { pinning } = useTableState(table, state => ({
     visibility: state.columnVisibility,
     order: state.columnOrder,
     pinning: state.columnPinning,
@@ -281,28 +282,47 @@ export const ColumnVisibilityMenu = ({
     grouping: (state as { grouping?: unknown }).grouping,
   }))
   // Колонки, скрытые в этом меню, — у них подсказка «остаются» вместо значков (HT6).
-  const [kept, setKept] = useState<readonly string[]>([])
+  const [kept, setKept] = useState<ReadonlySet<string>>(() => new Set())
   const onToggle = (columnIds: string[], visible: boolean) => {
-    setKept(current =>
-      visible
-        ? current.filter(id => !columnIds.includes(id))
-        : [...current.filter(id => !columnIds.includes(id)), ...columnIds],
-    )
-    if (!visible)
+    setKept(current => {
+      const next = new Set(current)
+      for (const id of columnIds) {
+        if (visible) next.delete(id)
+        else next.add(id)
+      }
+      return next
+    })
+    if (!visible) {
+      const leaves = table.getAllLeafColumnsById()
       announceKeptTransforms(
         table,
         columnIds.map(id => ({
           id,
-          label: labelOfId(control, id),
+          label: leaves[id] ? labelOf(leaves[id]) : id,
         })),
       )
+    }
   }
   const onCleared = (columnId: string) =>
-    setKept(current => current.filter(id => id !== columnId))
+    setKept(current => {
+      if (!current.has(columnId)) return current
+      const next = new Set(current)
+      next.delete(columnId)
+      return next
+    })
 
   const control = table as unknown as VisibilityControlTable
-  const found = filterColumnTree(buildColumnTree(control), query)
-  const rows = flatten(found)
+  const leafColumns = control.getAllLeafColumns()
+  // Узлы хранят колонки; галочки читают их текущую видимость отдельно от дерева.
+  const tree = useMemo(
+    () => buildColumnTree({ getAllLeafColumns: () => leafColumns }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- getIsPinned читает срез внутри колонки
+    [leafColumns, pinning],
+  )
+  const { found, rows } = useMemo(() => {
+    const found = filterColumnTree(tree, query)
+    return { found, rows: flatten(found) }
+  }, [tree, query])
 
   const virtualizer = useVirtualizer({
     count: rows.length,
@@ -401,7 +421,7 @@ export const ColumnVisibilityMenu = ({
                   table={control}
                   top={item.start}
                   labels={labels}
-                  kept={kept.includes(rows[item.index].node.id)}
+                  kept={kept.has(rows[item.index].node.id)}
                   onToggle={onToggle}
                   onCleared={onCleared}
                 />

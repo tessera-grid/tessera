@@ -30,36 +30,7 @@
   }
 }
 
-/* Общая волна рамки грида (ADR 0121): блик каждого скелета — полоса в координатах
- * содержимого, сдвинутая на его смещение; едет анимацией WAAPI с числовыми кадрами
- * (useSkeletonWave), общая фаза — общий `startTime`. Нижние строки отстают на
- * `y × наклон`: свет читается одной наклонной линией, а не вспышками колонок. Покой
- * без анимации — за левым краем. */
+/* При первой загрузке блик рисует общий слой рамки (ADR 0121). */
 :global([data-skeleton-wave]) .wave::after {
-  inset: 0 auto 0 0;
-  width: var(--tsr-comp-skeleton-wave-width);
-  background: linear-gradient(
-    calc(90deg + atan(var(--tsr-comp-skeleton-wave-tilt))),
-    transparent,
-    color-mix(in oklch, var(--tsr-comp-skeleton-frame-wave) 10%, transparent)
-      10%,
-    color-mix(in oklch, var(--tsr-comp-skeleton-frame-wave) 32%, transparent)
-      20%,
-    color-mix(in oklch, var(--tsr-comp-skeleton-frame-wave) 62%, transparent)
-      30%,
-    color-mix(in oklch, var(--tsr-comp-skeleton-frame-wave) 88%, transparent)
-      40%,
-    var(--tsr-comp-skeleton-frame-wave) 50%,
-    color-mix(in oklch, var(--tsr-comp-skeleton-frame-wave) 88%, transparent)
-      60%,
-    color-mix(in oklch, var(--tsr-comp-skeleton-frame-wave) 62%, transparent)
-      70%,
-    color-mix(in oklch, var(--tsr-comp-skeleton-frame-wave) 32%, transparent)
-      80%,
-    color-mix(in oklch, var(--tsr-comp-skeleton-frame-wave) 10%, transparent)
-      90%,
-    transparent
-  );
-  animation: none;
-  transform: translateX(calc(-1 * var(--tsr-comp-skeleton-wave-width)));
+  display: none;
 }

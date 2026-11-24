@@ -31,8 +31,10 @@ export const openViewSettingsSection = (root: ParentNode, id: string) => {
   if (viewSettingsSectionOpen(id)) return true
   const row = viewSettingsRow(id)
   if (row) row.click()
-  else if (!viewSettingsPopover()) viewSettingsButton(root)?.click()
-  else
+  else if (!viewSettingsPopover()) {
+    const button = viewSettingsButton(root)
+    if (button?.getAttribute('aria-expanded') !== 'true') button?.click()
+  } else
     viewSettingsLevel()
       ?.querySelector<HTMLElement>('[data-popup-level-back]')
       ?.click()

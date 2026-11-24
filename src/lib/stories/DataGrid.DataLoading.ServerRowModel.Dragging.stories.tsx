@@ -195,13 +195,13 @@ export const ServerDragMove: StoryObj<StoryProps> = {
     await step(MOVE[1]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(indexOfRow(canvas, MOVED)).toBe(MOVED_TO)
+      await until(() => expect(indexOfRow(canvas, MOVED)).toBe(MOVED_TO))
       await expect(movePending(canvas, MOVED)).toBe(true)
     })
     await step(MOVE[2]!.title.ru, async () => {
       await guideNext(canvas)
       await stepDone(canvas)
-      await expect(indexOfRow(canvas, MOVED)).toBe(MOVED_TO)
+      await until(() => expect(indexOfRow(canvas, MOVED)).toBe(MOVED_TO))
       await settle()
     })
   },

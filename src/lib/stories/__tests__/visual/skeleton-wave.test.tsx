@@ -42,16 +42,35 @@ const nextFrame = () =>
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 const frame = () => document.querySelector<HTMLElement>('[data-skeleton-wave]')!
+const layer = () =>
+  frame().querySelector<SVGSVGElement>('[data-skeleton-wave-layer]')!
+const band = () =>
+  layer().querySelector<SVGRectElement>(
+    '[data-skeleton-wave-band] > rect:nth-child(2)',
+  )!
 const waveBars = () => [
   ...frame().querySelectorAll<HTMLElement>('[data-tsr-skeleton-wave]'),
 ]
 const token = (name: string) =>
   Number.parseFloat(getComputedStyle(frame()).getPropertyValue(name))
-const lightShift = (bar: Element) =>
-  new DOMMatrix(getComputedStyle(bar, '::after').transform).m41
+const lightShift = (bar: Element) => {
+  const box = bar.getBoundingClientRect()
+  const matrix = band().getScreenCTM()!
+  const y = (box.top - matrix.f) / matrix.d
+  return new DOMPoint(0, y).matrixTransform(matrix).x - box.left
+}
+const covered = (bar: Element) => {
+  const origin = layer().getBoundingClientRect()
+  const box = bar.getBoundingClientRect()
+  const x = box.left + box.width / 2 - origin.left
+  const y = box.top + box.height / 2 - origin.top
+  return layer()
+    .querySelector<SVGPathElement>('clipPath > path')!
+    .isPointInFill(new DOMPoint(x, y))
+}
 /** Путь блика за проход: ширина рамки, полоса и высота рамки на наклон. */
 const periodOf = () => {
-  const box = frame().getBoundingClientRect()
+  const box = layer().getBoundingClientRect()
   return (
     box.width +
     token('--tsr-comp-skeleton-wave-width') +
@@ -63,7 +82,7 @@ const periodOf = () => {
  * `y × наклон`, по модулю пути за проход.
  */
 const wavePlace = (bar: Element) => {
-  const origin = frame().getBoundingClientRect()
+  const origin = layer().getBoundingClientRect()
   const box = bar.getBoundingClientRect()
   const period = periodOf()
   const place =
@@ -93,6 +112,7 @@ const pauseAt = async (progress: number) => {
   for (const animation of waveAnimations()) {
     const { delay, duration } = animation.effect!.getComputedTiming()
     animation.pause()
+    await animation.ready
     animation.currentTime =
       Number(delay) + Number(duration) * (((progress % 1) + 1) % 1)
   }
@@ -134,7 +154,7 @@ describe('Общая волна скелетов (ADR 0121)', () => {
       ),
     }
     for (const [kind, list] of Object.entries(kinds)) {
-      expect(list.length, kind).toBeGreaterThan(0)
+      expect(list.some(covered), kind).toBe(true)
     }
     expect(spreadOf(bars.map(wavePlace))).toBeLessThan(3)
 
@@ -232,7 +252,7 @@ describe('Общая волна скелетов (ADR 0121)', () => {
     const band = token('--tsr-comp-skeleton-wave-width')
     const box = bar.getBoundingClientRect()
     // Место полоски в координатах содержимого рамки.
-    const origin = frame().getBoundingClientRect()
+    const origin = layer().getBoundingClientRect()
     const x = box.left - origin.left + getScroller().scrollLeft
     const y = box.top - origin.top
     // Доля прохода, на которой середина полосы — над серединой полоски.
@@ -275,6 +295,7 @@ describe('Общая волна скелетов (ADR 0121)', () => {
     const bars = waveBars()
     const mounted = bars.filter(bar => !before.has(bar))
     expect(mounted.length).toBeGreaterThan(10)
+    expect(mounted.filter(covered).length).toBeGreaterThan(10)
     expect(spreadOf(bars.map(wavePlace))).toBeLessThan(3)
   })
 
@@ -295,9 +316,11 @@ describe('Общая волна скелетов (ADR 0121)', () => {
     expect(timing.duration).toBe(1200)
     expect(timing.delay).toBe(0)
     const bar = waveBars()[0]!
-    const after = getComputedStyle(bar, '::after')
-    expect(after.width).toBe('300px')
-    expect(after.backgroundImage).toContain('rgb(255, 0, 0) 50%')
+    expect(band().getAttribute('width')).toBe('300')
+    const peak = layer().querySelector('stop[offset="0.5"]')!
+    expect(getComputedStyle(peak).getPropertyValue('stop-color')).toBe(
+      'rgb(255, 0, 0)',
+    )
     // Без наклона блик в одной колонке — на одном месте во всех строках.
     const column = waveBars().filter(
       candidate =>
@@ -314,10 +337,8 @@ describe('Общая волна скелетов (ADR 0121)', () => {
     await motion.reducedMotion(true)
     await render(<Stories.DataGridPlayground {...BASE} />)
     await waitWave()
-    for (const candidate of waveBars()) {
-      // Полоса целиком за левым краем скелета.
-      expect(lightShift(candidate)).toBeLessThanOrEqual(-300)
-    }
+    expect(waveAnimations()).toHaveLength(0)
+    expect(getComputedStyle(layer()).visibility).toBe('hidden')
   })
 
   test('WV6: Skeleton из /ui в компоненте слота плагина в нижней панели встаёт в ту же полосу без своих настроек', async () => {
@@ -365,6 +386,7 @@ describe('Общая волна скелетов (ADR 0121)', () => {
     expect(slotBar).not.toBeNull()
     const bars = waveBars()
     expect(bars).toContain(slotBar)
+    expect(covered(slotBar)).toBe(true)
     expect(spreadOf(bars.map(wavePlace))).toBeLessThan(3)
   })
 

@@ -26,9 +26,11 @@ export const holdGrip = async (
   step: StepRun,
   id: string,
   to: (from: { x: number; y: number }) => number,
+  beforeRelease?: () => void,
 ) => {
   const from = centerOf(separatorOf(root, id)!)
   const ours = new WeakSet<Event>()
+  let dispatchedX = from.x
   const fire = (type: string, target: EventTarget, x: number) => {
     const event = new MouseEvent(type, {
       bubbles: true,
@@ -38,14 +40,17 @@ export const holdGrip = async (
       clientX: x,
       clientY: from.y,
     })
+    dispatchedX = event.clientX
     ours.add(event)
     target.dispatchEvent(event)
   }
   let at = from.x
   // Движение в точке удержания — повтор автопрокрутки у края (ADR 0197, §5): пропускается.
   const shield = (event: Event) => {
+    // У WebKit MouseEvent округляет дробную координату. Сравниваем координаты событий.
     const repeat =
-      event.type === 'mousemove' && (event as MouseEvent).clientX === at
+      event.type === 'mousemove' &&
+      (event as MouseEvent).clientX === dispatchedX
     if (!ours.has(event) && !repeat) event.stopPropagation()
   }
   for (const type of ['mousemove', 'mouseup']) {
@@ -55,6 +60,7 @@ export const holdGrip = async (
   const release = () => {
     if (released) return
     released = true
+    beforeRelease?.()
     fire('mouseup', document, at)
     for (const type of ['mousemove', 'mouseup']) {
       window.removeEventListener(type, shield, true)

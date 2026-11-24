@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url'
 import { playwright } from '@vitest/browser-playwright'
 import { configDefaults, defineConfig } from 'vitest/config'
 
+import { EXPOSE_GC } from './.storybook/collectGarbage.ts'
 import {
   MOBILE_SUITE,
   TOUCH_BLINK_SETTINGS,
@@ -65,7 +66,9 @@ export default defineConfig({
           browser: {
             enabled: true,
             headless: true,
-            provider: playwright({ launchOptions: { channel: 'chromium' } }),
+            provider: playwright({
+              launchOptions: { channel: 'chromium', args: [EXPOSE_GC] },
+            }),
             instances: [{ browser: 'chromium' }],
             commands: testCommands,
           },
@@ -98,7 +101,7 @@ export default defineConfig({
             provider: playwright({
               launchOptions: {
                 channel: 'chromium',
-                args: [TOUCH_BLINK_SETTINGS],
+                args: [TOUCH_BLINK_SETTINGS, EXPOSE_GC],
               },
               contextOptions: { hasTouch: true },
             }),

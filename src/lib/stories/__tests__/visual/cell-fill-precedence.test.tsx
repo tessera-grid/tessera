@@ -22,6 +22,7 @@ import {
   snapshot,
   sys,
 } from './contrast-helpers'
+import { parkPointer } from '../pointer'
 
 // Первенство заливок ячейки (ADR 0126, FP1–FP3): стенд с закреплением слева и справа,
 // служебной колонкой выбора, колонкой действий, выбором строк, подсветкой строк, ячеек и
@@ -180,6 +181,7 @@ const near = (a: number[], b: number[], tolerance: number) =>
 describe('Первенство заливок ячейки (ADR 0126)', () => {
   beforeAll(async () => {
     // Окно в рамку раннера: снимок без сжатия.
+    const viewport = { width: innerWidth, height: innerHeight }
     await page.viewport(900, 720)
     try {
       for (const combo of COMBOS) {
@@ -197,10 +199,7 @@ describe('Первенство заливок ячейки (ADR 0126)', () => {
             table.highlight({ column: 'c' })
           }
           await applyCombo(combo)
-          const away = document.querySelector<HTMLElement>(
-            '.data-grid__head-cell',
-          )!
-          await userEvent.hover(away)
+          await parkPointer()
           await settle()
           const rest = await snapshot()
           for (const row of ROWS) {
@@ -238,14 +237,14 @@ describe('Первенство заливок ячейки (ADR 0126)', () => {
               fills: fillsOf(await snapshot(), row),
             })
           }
-          await userEvent.hover(away)
+          await parkPointer()
           await resetCombo()
           await screen.unmount()
         }
       }
     } finally {
       await resetCombo()
-      await page.viewport(414, 896)
+      await page.viewport(viewport.width, viewport.height)
     }
   }, 600_000)
 

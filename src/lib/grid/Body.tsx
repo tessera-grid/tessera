@@ -146,6 +146,8 @@ export const Body = ({
     [treeRows, rows, sourceAria, roots.offset, roots.total],
   )
   const rowCount = rowSource.count()
+  const firstRowId = rowCount ? rowSource.at(0)?.id : undefined
+  const lastRowId = rowCount ? rowSource.at(rowCount - 1)?.id : undefined
   const drop = dropPreview ?? null
   const labels = useLocalization()
   const failures = rowSource.failures?.() ?? NO_FAILURES
@@ -300,6 +302,8 @@ export const Body = ({
             const rowProps = {
               row,
               virtualRow,
+              firstRow: row.id === firstRowId,
+              lastRow: row.id === lastRowId,
               cells: rowCellsOf(table, row),
               leafColumns,
               leftCellSlot,

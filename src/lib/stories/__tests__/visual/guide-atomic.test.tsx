@@ -8,7 +8,7 @@ import {
   guideArgs,
   stepAction,
 } from '../../demos/GuideStory'
-import { pollUntil, settle } from '../../__mocks__/catalogPlay'
+import { pollUntil, settle, until } from '../../__mocks__/catalogPlay'
 import { tapButton } from '../../__mocks__/touchGuides'
 import { both } from '../storyText.helpers'
 
@@ -129,8 +129,11 @@ describe('атомарные шаги гайда (ADR 0117)', () => {
 
       const beforeBack = rings.count()
       await userEvent.click(byId('guide-back'))
-      await expect.poll(() => runs.first).toBe(2)
+      await until(() =>
+        expect(guideRoot()).toHaveAttribute('data-step-action', 'done:1'),
+      )
       await replayDone()
+      expect(runs.first).toBe(2)
       expect(runs.second).toBe(1)
       await expect.poll(() => rings.count() - beforeBack).toBe(perTap)
       expect(cellAt(document, 1)!.hasAttribute('data-touched')).toBe(true)
@@ -141,9 +144,12 @@ describe('атомарные шаги гайда (ADR 0117)', () => {
         .not.toBeNull()
       const beforeRestore = rings.count()
       await userEvent.click(byId('guide-next'))
-      await expect.poll(() => runs.second).toBe(2)
+      await until(() =>
+        expect(guideRoot()).toHaveAttribute('data-step-action', 'done:2'),
+      )
       await replayDone()
       expect(runs.first).toBe(3)
+      expect(runs.second).toBe(2)
       await expect.poll(() => rings.count() - beforeRestore).toBe(perTap)
       expect(cellAt(document, 4)!.hasAttribute('data-touched')).toBe(true)
       await screen.unmount()

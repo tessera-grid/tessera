@@ -111,29 +111,50 @@ export const useRowVirtualizer = ({
 
   // Строка активной ячейки — по её `id`: новый `data` клиента сдвигает строку раньше, чем
   // ячейка переезжает за ней после коммита (ADR 0194, IU12), — строка с фокусом остаётся в окне.
+  const data = list ? table.options.data : undefined
   const [held, setHeld] = useState<{
+    data: typeof data
     list: readonly { id: string }[] | undefined
     index: number | undefined
     /** Строка, что стояла на месте активной ячейки до смены списка. */
     pin: string | undefined
-  }>({ list, index: activeRowIndex, pin: undefined })
+  }>({ data, list, index: activeRowIndex, pin: undefined })
   if (held.list !== list) {
     setHeld({
+      data,
       list,
       index: activeRowIndex,
       pin: held.index === undefined ? undefined : held.list?.[held.index]?.id,
     })
-  } else if (held.index !== activeRowIndex) {
-    setHeld({ list, index: activeRowIndex, pin: undefined })
+  } else if (held.index !== activeRowIndex || held.data !== data) {
+    setHeld({
+      data,
+      list,
+      index: activeRowIndex,
+      pin: held.index === activeRowIndex ? held.pin : undefined,
+    })
   }
   const heldRowIndex =
     held.pin === undefined ? undefined : rows.indexOf(held.pin)
 
   const [band] = useState(createWindowBand)
+  const previousBand = band.current()
+  // После замены всего окна клиента запас рисуется при росте полосы. Иначе строки
+  // вне экрана монтируются вместе с видимыми при обновлении данных и пересортировке.
+  const replaceWindow = !!(
+    list &&
+    previousBand &&
+    held.data !== data &&
+    held.list !== list &&
+    held.list?.length === list.length &&
+    held.list[previousBand[0]]?.id !== list[previousBand[0]]?.id &&
+    held.list[previousBand[1]]?.id !== list[previousBand[1]]?.id
+  )
   const bandVersion = useBandRest(
     band,
     rows.keyByIndex ? rows.version?.() : list,
     isIncremental(table),
+    replaceWindow,
   )
   const rangeExtractor = useRowRangeExtractor({
     band,
@@ -181,6 +202,11 @@ export const useRowVirtualizer = ({
       instance.scrollElement
         ? scrollLayer(instance.scrollElement).subscribe(onOffset)
         : undefined,
+    getElementMaxScrollOffset: instance => {
+      const layer =
+        instance.scrollElement && scrollLayer(instance.scrollElement)
+      return layer?.stretched ? layer.maxTop() : undefined
+    },
     scrollToFn: (offset, { adjustments = 0, behavior }, instance) => {
       if (!instance.scrollElement) return
       // Поправка на высоту строк выше экрана не обрывает щелчок колеса (ADR 0218, AH15).
@@ -315,7 +341,9 @@ export const useRowVirtualizer = ({
     })
   })
   useIsomorphicLayoutEffect(() => {
-    const scroller = getScrollElement()
+    // При равной высоте anchorOf считает место по индексу. Чтение scrollTop
+    // после коммита здесь пересчитало бы стили и раскладку без пользы для якоря.
+    const scroller = variable() ? getScrollElement() : null
     anchorSeen.current = scroller
       ? anchorAt(scrollLayer(scroller).top())
       : undefined
@@ -384,23 +412,23 @@ export const useRowVirtualizer = ({
     () => layer?.rowShift() ?? 0,
     () => 0,
   )
-  const virtualRows =
-    !scroller || !layer?.stretched
-      ? items
-      : items.map(item => {
-          const near = layer.top() - base
-          const reach = scroller.clientHeight * FAR_SCREENS
-          const start = Math.min(
-            Math.max(item.start - base, near - reach),
-            near + reach,
-          )
-          // Тот же объект, пока место строки прежнее: строки мемоизированы по нему.
-          const known = shifted.get(item)
-          if (known?.start === start) return known
-          const row = { ...item, start, end: start + item.size }
-          shifted.set(item, row)
-          return row
-        })
+  let virtualRows = items
+  if (scroller && layer?.stretched) {
+    const near = layer.top() - base
+    const reach = scroller.clientHeight * FAR_SCREENS
+    virtualRows = items.map(item => {
+      const start = Math.min(
+        Math.max(item.start - base, near - reach),
+        near + reach,
+      )
+      // Тот же объект, пока место строки прежнее: строки мемоизированы по нему.
+      const known = shifted.get(item)
+      if (known?.start === start) return known
+      const row = { ...item, start, end: start + item.size }
+      shifted.set(item, row)
+      return row
+    })
+  }
   // Новые строки получают остаток сдвига до кадра.
   useIsomorphicLayoutEffect(() => {
     layer?.commitBase(base)

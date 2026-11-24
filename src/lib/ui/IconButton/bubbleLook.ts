@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+
+import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
 
 export interface BubbleLook {
   /** Число на бабле; 0 — точка. */
@@ -29,13 +31,25 @@ export const useBubbleLook = (look: BubbleLook, shown: boolean) => {
     })
   else if (shown && !same(state.lastShown, look))
     setState({ ...state, lastShown: look })
-  // Запоздавший конец прошлого перехода (WebKit) уход не завершает: у бабла ещё идёт переход.
-  const settle = (bubble?: Element) => {
-    if (bubble?.getAnimations().some(a => a.playState === 'running')) return
-    setState(current =>
-      current.leaving ? { ...current, leaving: false } : current,
-    )
-  }
+  const ref = useRef<HTMLSpanElement>(null)
+  useIsomorphicLayoutEffect(() => {
+    const bubble = ref.current
+    if (!state.leaving || !bubble) return
+    // React 18 не подписывается на onTransitionCancel. Слушаем DOM, пока бабл уходит.
+    const settle = () => {
+      // Запоздавшее событие прежнего перехода (WebKit) не завершает текущий.
+      if (bubble.getAnimations().some(a => a.playState === 'running')) return
+      setState(current =>
+        current.leaving ? { ...current, leaving: false } : current,
+      )
+    }
+    bubble.addEventListener('transitionend', settle)
+    bubble.addEventListener('transitioncancel', settle)
+    return () => {
+      bubble.removeEventListener('transitionend', settle)
+      bubble.removeEventListener('transitioncancel', settle)
+    }
+  }, [state.leaving])
   const view = !shown && state.leaving ? state.lastShown : look
-  return { ...view, shown, settle }
+  return { ...view, shown, ref }
 }

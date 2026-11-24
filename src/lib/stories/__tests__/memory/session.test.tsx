@@ -14,6 +14,7 @@ import {
   mount,
   parkPointer,
   settled,
+  settledDom,
   waitFor,
   warmUpDocument,
   type GridProps,
@@ -184,6 +185,12 @@ describe('Утечки в долгой сессии', () => {
           (element.scrollWidth - element.clientWidth) * fraction
         await frames(3)
       }
+      await waitFor(
+        () =>
+          !element.hasAttribute('data-fast-scrolling') &&
+          !!element.querySelector('[data-row-id="r0"] [data-column-id="c0"]'),
+      )
+      await settledDom(mounted.container)
     }
     try {
       expectFlat(await measureSlope(cycle, { warmup: 2, cycles: 4 }))
@@ -239,6 +246,7 @@ describe('Утечки в долгой сессии', () => {
       )
       await parkPointer()
       await waitFor(() => popup() === null)
+      await settledDom(container)
     }
     try {
       expectFlat(await measureSlope(cycle, { cycles: 4 }))

@@ -240,6 +240,7 @@ export interface PerfRecord {
     | 'cellEditing'
     | 'cellEditing, cellSelection'
     | 'cellEditing, cellSelection, editHistory'
+    | 'cellEditing, cellSelection, columnSortingModel, editHistory'
     | 'failureLog'
     | 'unsavedChanges'
     | 'cellErrors'

@@ -27,7 +27,11 @@ import {
   editCellKeyboardAction,
   toggleCellKeyboardAction,
 } from './keyboardActions'
-import { EMPTY_EDITING_STATE, reconcileEditSession } from './session'
+import {
+  DEFAULT_CAN_EDIT_CELL,
+  EMPTY_EDITING_STATE,
+  reconcileEditSession,
+} from './session'
 import type { CellComponentProps } from '../../core/createSlots'
 import type { CellEditingHooks, CellEditingState } from './types'
 import { cellEditingLabels } from './labels'
@@ -109,7 +113,7 @@ export const cellEditing = definePlugin<CellEditingOptions>()({
   stateName: 'editing',
   reconcile: reconcileEditSession,
   hooks: o => ({
-    canEditCell: o.canEditCell ?? (() => true),
+    canEditCell: o.canEditCell ?? DEFAULT_CAN_EDIT_CELL,
     onCellEdit: o.onCellEdit ?? (() => {}),
     onEditCancel: o.onEditCancel,
     saveMode: o.saveMode,

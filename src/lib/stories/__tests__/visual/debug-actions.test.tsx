@@ -10,7 +10,7 @@ import {
 } from 'vitest'
 
 import { render } from 'vitest-browser-react'
-import { useState } from 'react'
+import { useLayoutEffect, useState } from 'react'
 
 import type { DebugAction } from '../../../core/debugActions'
 import { definePlugin } from '../../../core/definePlugin'
@@ -669,12 +669,20 @@ describe('канал действий (ADR 0125)', () => {
         )
     await expect.poll(() => movable().length).toBeGreaterThan(3)
     const grab = async (cell: HTMLElement) => {
-      await userEvent.hover(cell)
-      const handle = cell.querySelector<HTMLElement>('.drag__handler--column')!
+      const id = cell.dataset.columnId!
+      const handle = () =>
+        headCell(id)?.querySelector<HTMLElement>('.drag__handler--column')
       await expect
-        .poll(() => handle.parentElement!.getBoundingClientRect().width)
+        .poll(async () => {
+          const head = headCell(id)
+          if (!head) return 0
+          const width = () =>
+            handle()?.parentElement?.getBoundingClientRect().width ?? 0
+          if (width() <= 8) await userEvent.hover(head)
+          return width()
+        })
         .toBeGreaterThan(8)
-      const box = handle.getBoundingClientRect()
+      const box = handle()!.getBoundingClientRect()
       return { x: box.left + box.width / 2, y: box.top + box.height / 2 }
     }
     const [first, , third] = movable()
@@ -1119,9 +1127,13 @@ describe('канал действий (ADR 0125)', () => {
 
   test('AL23: infiniteScroll — запрос порции с source auto, повтор; ответ, пустой ответ и ошибка — с cause', async () => {
     const calls: Deferred<void>[] = []
+    let committedRows = 0
     let append: (count: number) => void = () => {}
     const Feed = () => {
       const [rows, setRows] = useState(() => PROBE_DATA.slice(0, 30))
+      useLayoutEffect(() => {
+        committedRows = rows.length
+      }, [rows.length])
       append = count =>
         setRows(prev => [
           ...prev,
@@ -1178,6 +1190,7 @@ describe('канал действий (ADR 0125)', () => {
     const repeat = lastOf('infiniteScroll', 'retryLoadMore')!
     expect(repeat.source).toBe('pointer')
     append(20)
+    await expect.poll(() => committedRows).toBe(50)
     calls[1]!.resolve()
     await expect
       .poll(() => lastOf('infiniteScroll', 'loadMoreResolved'))

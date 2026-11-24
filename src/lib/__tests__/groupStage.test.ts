@@ -13,11 +13,16 @@ import {
   rowAggregationFeature,
 } from '@tanstack/react-table'
 import { storeReactivityBindings } from '../../../node_modules/@tanstack/table-core/dist/store-reactivity-bindings.js'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { resolveHooks } from '../core/createHooks'
-import { buildTesseraFeatures, foldEntries, foldHooks } from '../core/features'
-import { rowGroupingModel } from '../plugins'
+import {
+  buildTesseraFeatures,
+  foldEntries,
+  foldHooks,
+  type TesseraFeatureEntry,
+} from '../core/features'
+import { columnAggregation, rowDragging, rowGroupingModel } from '../plugins'
 
 interface Item {
   id: string
@@ -50,8 +55,8 @@ const REACTIVITY = {
   features: { coreReactivityFeature: storeReactivityBindings() },
 }
 
-const build = (extra: object = {}) => {
-  const all = [REACTIVITY, rowGroupingModel()]
+const build = (extra: object = {}, plugins: TesseraFeatureEntry[] = []) => {
+  const all = [REACTIVITY, rowGroupingModel(), ...plugins]
   const folded = foldEntries(all as never)
   return constructTable({
     features: buildTesseraFeatures(all as never),
@@ -101,6 +106,60 @@ const shape = (table: any) =>
   }))
 
 describe('Стадия группировки движка (ADR 0200)', () => {
+  it('переносит строку между группами в ожидании ответа, сохраняя остальные группы', () => {
+    const table = build({}, [rowDragging()])
+    table.setGrouping(['city'])
+    const initial = table.getGroupedRowModel()
+    const paris = initial.rowsById['city:PARIS']
+
+    table.setRowMoves({
+      r4: { attempt: 1, pending: true, group: { city: 'OSLO' } },
+    })
+    const first = table.getGroupedRowModel()
+    expect(first.rowsById.r4.parentId).toBe('city:OSLO')
+    expect(first.rowsById['city:PARIS']).toBe(paris)
+
+    table.setRowMoves({
+      r4: { attempt: 2, pending: true, group: { city: 'PARIS' } },
+    })
+    const second = table.getGroupedRowModel()
+    expect(second.rowsById.r4.parentId).toBe('city:PARIS')
+    expect(second.rowsById['city:ROME']).toBe(first.rowsById['city:ROME'])
+
+    table.setRowMoves({})
+    expect(table.getGroupedRowModel().rowsById.r4.parentId).toBe('city:ROME')
+  })
+
+  it('меняет агрегаты на двух уровнях, сохраняя состав и порядок листьев', () => {
+    const table = build({}, [columnAggregation()])
+    table.setGrouping(['city', 'team'])
+    const first = table.getGroupedRowModel()
+    const city = first.rows[0]
+    const team = city.subRows[0]
+    const sum = city.getValue('age')
+    const teamSum = team.getValue('age')
+    const mean = city.getValue('mean')
+    const readLeaf = vi.spyOn(team.leafRows[0], 'getValue')
+
+    table.setColumnAggregations({ age: 'count' })
+    const next = table.getGroupedRowModel()
+    const newCity = next.rowsById[city.id]
+    const newTeam = next.rowsById[team.id]
+    expect(newCity.getValue('age')).toBe(city.leafRows.length)
+    expect(newTeam.getValue('age')).toBe(team.leafRows.length)
+    expect(newCity.subRows[0]).toBe(newTeam)
+    expect(newTeam.subRows).toBe(team.subRows)
+    expect(newTeam.leafRows).toBe(team.leafRows)
+    expect(newCity.getValue('mean')).toBe(mean)
+    expect(readLeaf).not.toHaveBeenCalledWith('mean')
+    expect(next.flatRows.map((row: { id: string }) => row.id)).toEqual(
+      first.flatRows.map((row: { id: string }) => row.id),
+    )
+    expect(first.rowsById[city.id]).toBe(city)
+    expect(city.getValue('age')).toBe(sum)
+    expect(team.getValue('age')).toBe(teamSum)
+  })
+
   it('EN15: строки-группы с полями группы и агрегатами, заданными при создании, — итог как у createGroupedRowModel на одном и двух уровнях, при смене data и переезде строки между группами, на дереве с глубиной агрегации; кэши строк не пишутся', () => {
     const ours = build()
     const stock = buildStock()

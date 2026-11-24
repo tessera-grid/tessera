@@ -13,8 +13,8 @@ export interface WindowBand {
   (range: Range): number[]
   /** Первый и последний индекс полосы последнего вызова, без закреплённых далёких строк. */
   current: () => readonly [number, number] | null
-  /** Окно — в покой: видимое и симметричный запас до сдвига по оси или роста (ADR 0202, §1а). */
-  rest: () => void
+  /** Окно — в покой: видимое и, если нужен, симметричный запас (ADR 0202, §1а). */
+  rest: (visibleOnly?: boolean) => void
   /** Полоса дорастает из покоя без сдвига: следующее окно — полоса вперёд. Было ли в покое. */
   grow: () => boolean
   isResting: () => boolean
@@ -30,6 +30,7 @@ export const createWindowBand = (): WindowBand => {
   let lastStart: number | undefined
   let forward = true
   let resting = true
+  let visibleOnly = false
   let last: readonly [number, number] | null = null
   const symmetric = (range: Range) => {
     band = null
@@ -52,7 +53,7 @@ export const createWindowBand = (): WindowBand => {
     }
     lastStart = start
     if (resting) {
-      const indexes = symmetric(range)
+      const indexes = symmetric(visibleOnly ? { ...range, overscan: 0 } : range)
       // Окно покоя — полоса для первого сдвига: держится, пока видимое внутри и впереди есть запас.
       band = last ? [last[0], last[1]] : null
       return indexes
@@ -80,8 +81,9 @@ export const createWindowBand = (): WindowBand => {
   }
   return Object.assign(extract, {
     current: () => last,
-    rest: () => {
+    rest: (onlyVisible = false) => {
       resting = true
+      visibleOnly = onlyVisible
     },
     grow: () => {
       if (!resting) return false
@@ -129,11 +131,12 @@ export const useBandRest = (
   band: WindowBand,
   listKey: unknown,
   deferred: boolean,
+  visibleOnReplace = false,
 ) => {
   const [state, setState] = useState({ key: listKey, version: 0 })
   if (!deferred) band.grow()
   else if (windowBand.enabled && state.key !== listKey) {
-    band.rest()
+    band.rest(visibleOnReplace)
     setState({ key: listKey, version: state.version + 1 })
   }
   useEffect(() => {

@@ -103,6 +103,17 @@ const ids = (from: number, count: number) =>
 const BASE = ids(0, 1000)
 
 describe('Форк TanStack Virtual (ADR 0143)', () => {
+  it('XS13: предел выравнивания остаётся в координатах адаптера прокрутки', () => {
+    const { v, options } = setup(BASE)
+    v.scrollElement = { scrollHeight: 2000, clientHeight: 500 } as Element
+    v.setOptions({ ...options, getElementMaxScrollOffset: () => 12_000 })
+    expect(v.getOffsetForAlignment(10_000, 'start')).toBe(10_000)
+    expect(v.getOffsetForAlignment(20_000, 'start')).toBe(12_000)
+
+    v.setOptions({ ...options, getElementMaxScrollOffset: () => undefined })
+    expect(v.getOffsetForAlignment(10_000, 'start')).toBe(1500)
+  })
+
   it('VF1: код грида импортирует виртуализатор только из src/vendor/tanstack-virtual — ни @tanstack/react-virtual, ни @tanstack/virtual-core нет в импортах исходников и в зависимостях пакета', () => {
     const sources = filesOf(join(ROOT, 'src'))
       .filter(file => /\.(ts|tsx|js|mjs)$/.test(file))

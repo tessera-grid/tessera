@@ -53,6 +53,7 @@
 .arc {
   --_w: var(--tsr-comp-pending-ring-width);
   --_b: var(--tsr-ring-border, 0px);
+  --_radius: 0px;
   --_track: color-mix(
     in srgb,
     var(--tsr-spinner-tone) var(--tsr-comp-pending-track-strength),
@@ -81,6 +82,7 @@
 
 .arc rect {
   fill: none;
+  rx: var(--_radius);
   stroke-width: var(--_w);
 }
 

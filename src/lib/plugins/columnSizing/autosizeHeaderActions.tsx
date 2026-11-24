@@ -5,7 +5,11 @@
 import type { HeaderComponentProps } from '../../core/createSlots'
 import type { HeaderAction } from '../../core/headerActions'
 import { useIcons } from '../../ui/icons'
-import { autosizableColumns, autosizeColumns } from './autosize'
+import {
+  autosizableColumns,
+  autosizeColumns,
+  hasAutosizableColumns,
+} from './autosize'
 import { columnSizingLabels } from './labels'
 
 const ColumnIcon = () => {
@@ -45,7 +49,7 @@ export const autosizeHeaderActions: HeaderAction[] = [
     id: 'columnSizing.autosizeAll',
     slot: 'rightHeaderSlot',
     placement: 'menu',
-    visible: ctx => autosizableColumns(ctx.table).length > 0,
+    visible: ctx => hasAutosizableColumns(ctx.table),
     icon: () => <AllIcon />,
     label: labels => columnSizingLabels(labels).autosizeAllColumns,
     action: () => 'autosizeAll',

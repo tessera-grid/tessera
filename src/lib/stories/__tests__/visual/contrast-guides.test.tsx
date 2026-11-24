@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { render } from 'vitest-browser-react'
+import { cleanup, render } from 'vitest-browser-react'
 import { page, server } from 'vitest/browser'
 import { beforeAll, describe, expect, test } from 'vitest'
 
@@ -105,6 +105,16 @@ const FAST_SCROLL = '[data-fast-scrolling]'
 /** Предел ожидания конца вспышек и быстрой прокрутки, мс (CX19–CX20). */
 const SETTLE_WAIT = 5000
 
+let lastWebKitProgress = performance.now()
+const reportWebKitProgress = (label: string) => {
+  if (server.browser !== 'webkit') return
+  const now = performance.now()
+  if (now - lastWebKitProgress < 30_000) return
+  lastWebKitProgress = now
+  // eslint-disable-next-line no-console -- прогресс длительных снимков внутри одной истории
+  console.log(`[contrast-guides] ${label}`)
+}
+
 /** Узлов `selector` в гриде не осталось; `false` — не за предел. */
 const settled = async (container: HTMLElement, selector: string) => {
   const started = performance.now()
@@ -169,6 +179,9 @@ const auditStep = async (
   const before = new Map<string, Shot | null>()
   if (step.pseudo) {
     for (const combo of combos.filter(c => c.mode === 'forced')) {
+      reportWebKitProgress(
+        `${label} | ${comboLabel(combo)} | до псевдосостояния`,
+      )
       await applyCombo(combo, { finish })
       await settleScroll()
       // Действие шага наводит указатель само (`pointAt`), и смена сочетания может
@@ -184,6 +197,7 @@ const auditStep = async (
     await applyPseudoStates(storyId, step.pseudo)
   }
   for (const combo of combos) {
+    reportWebKitProgress(`${label} | ${comboLabel(combo)}`)
     await applyCombo(combo, { finish })
     await settleScroll()
     const { grids, popups } = gridsAndPopups(container)
@@ -250,6 +264,7 @@ const walkGuide = async (story: string, Story: ComposedState) => {
   await parkPointer()
   const screen = await render(<Story />)
   const runStep = async (title: string, play: () => Promise<void>) => {
+    reportWebKitProgress(`${story} › ${title}`)
     await play()
     panel ??= stepsIn(screen.container)
     const step = panel?.find(s => s.title.ru === title)
@@ -279,7 +294,8 @@ const walkGuide = async (story: string, Story: ComposedState) => {
     result.guard.push(`${story}: play упал — ${(error as Error).message}`)
   }
   await resetCombo()
-  await screen.unmount()
+  // unmount снимает React, но оставляет контейнер и запись корня до общего cleanup.
+  await cleanup()
   // Страж: каждый шаг панели проверен один раз.
   const titles = (panel ?? []).map(s => s.title.ru)
   if (!panel) result.guard.push(`${story}: панель гайда не найдена`)
@@ -325,7 +341,7 @@ const walkGuide = async (story: string, Story: ComposedState) => {
       }
     }
     await resetCombo()
-    await replay.unmount()
+    await cleanup()
   }
   return result
 }
@@ -415,6 +431,8 @@ const WITHOUT_GUIDE: Record<string, string> = {}
 const OWN_KEYS = /^CX1[23] /
 
 const CHROMIUM = server.browser === 'chromium'
+// WebKit снимает кадры для всей матрицы. На Windows 348 из 400 историй заняли три часа.
+const MATRIX_TIMEOUT = (server.browser === 'webkit' ? 5 : 3) * 60 * 60 * 1000
 const hasFindings = (result: GuideResult) =>
   result.findings.some(finding => checked(finding.key)) ||
   result.axeViolations.length > 0 ||
@@ -425,6 +443,13 @@ const hasFindings = (result: GuideResult) =>
 
 /** Только истории, чьё имя содержит строку, — для разбора; общие реестры тогда не сверяются. */
 const ONLY = import.meta.env.VITE_CONTRAST_ONLY as string | undefined
+const newContrastProblems = ({ findings }: GuideResult) =>
+  findings
+    .filter(finding => !(finding.key in known) && checked(finding.key))
+    .map(
+      finding =>
+        `${finding.key} — ${finding.ratio.toFixed(2)}:1 < ${finding.need}:1`,
+    )
 
 describe('Шаги гайдов в матрице контраста (ADR 0089, §7)', () => {
   beforeAll(async () => {
@@ -451,14 +476,25 @@ describe('Шаги гайдов в матрице контраста (ADR 0089, 
       const fresh = result.findings.some(finding => !(finding.key in known))
       if ((!CHROMIUM || fresh) && hasFindings(result))
         result = await walkGuide(story, Story)
+      const problems = [
+        ...result.guard,
+        ...newContrastProblems(result),
+        ...result.axeProblems,
+        ...result.axeViolations
+          .filter(violation => !(violation.key in known))
+          .map(violation => `${violation.key}: ${violation.summary}`),
+      ]
+      if (problems.length > 0) {
+        // eslint-disable-next-line no-console -- причина сбоя видна до окончания всей матрицы
+        console.log('[contrast-guides]', problems.join('\n'))
+      }
       for (const key of Object.keys(all) as (keyof GuideResult)[]) {
         ;(all[key] as unknown[]).push(...result[key])
       }
       walked++
     }
     hide.remove()
-    // WebKit проходит матрицу больше часа: у него нет пропуска снимков по кадрам.
-  }, 10_800_000)
+  }, MATRIX_TIMEOUT)
 
   test('CX12: каждый шаг каждого гайда проверен тем же play в каждом своём сочетании, пороги CX1–CX5 и CX10 держатся', () => {
     expect(walked).toBeGreaterThan(0)
@@ -481,12 +517,7 @@ describe('Шаги гайдов в матрице контраста (ADR 0089, 
       ...all.findings.map(f => f.key),
       ...all.axeViolations.map(v => v.key),
     ])
-    expect(
-      all.findings
-        .filter(f => !(f.key in known))
-        .filter(f => checked(f.key))
-        .map(f => `${f.key} — ${f.ratio.toFixed(2)}:1 < ${f.need}:1`),
-    ).toEqual([])
+    expect(newContrastProblems(all)).toEqual([])
     // База шагов только сокращается, как CX8.
     expect(
       Object.keys(known).filter(key => OWN_KEYS.test(key) && !seen.has(key)),
@@ -529,44 +560,61 @@ describe('Шаги гайдов в матрице контраста (ADR 0089, 
     'stories/light/standard',
   ]
 
-  test('CX13: сочетания шага — обычный режим в двух темах и forced-colors в двух палитрах, шаг со states — все двенадцать; axe в обычных', async () => {
-    for (const audit of all.audits) {
-      const want = audit.states.length ? COMBOS.map(comboLabel) : STEP_LABELS
-      expect(Object.keys(audit.checked).sort(), audit.step).toEqual(want.sort())
-    }
-    expect(
-      all.axeViolations
-        .filter(v => !(v.key in known))
-        .map(v => `${v.key}: ${v.summary}`),
-    ).toEqual([])
-    expect(all.axeProblems).toEqual([])
-    // Стенд: шаг с состоянием каталога — во всех двенадцати.
-    const result = await walkGuide(
-      'Стенд CX13',
-      stand(
-        [
-          REST,
-          { title: both('Состояние'), hint: both(''), states: ['body.hover'] },
-        ],
-        <div>Row text</div>,
-      ),
-    )
-    expect(result.guard).toEqual([])
-    const audit = result.audits.find(a => a.step === 'Состояние')!
-    expect(Object.keys(audit.checked).sort()).toEqual(
-      COMBOS.map(comboLabel).sort(),
-    )
-    expect(
-      Object.keys(
-        result.audits.find(a => a.step === REST.title.ru)!.checked,
-      ).sort(),
-    ).toEqual(STEP_LABELS)
-  })
+  // После матрицы снимки WebKit могут занять больше общего тайм-аута.
+  test(
+    'CX13: сочетания шага — обычный режим в двух темах и forced-colors в двух палитрах, шаг со states — все двенадцать; axe в обычных',
+    { timeout: 60_000 },
+    async () => {
+      for (const audit of all.audits) {
+        const want = audit.states.length ? COMBOS.map(comboLabel) : STEP_LABELS
+        expect(Object.keys(audit.checked).sort(), audit.step).toEqual(
+          want.sort(),
+        )
+      }
+      expect(
+        all.axeViolations
+          .filter(v => !(v.key in known))
+          .map(v => `${v.key}: ${v.summary}`),
+      ).toEqual([])
+      expect(all.axeProblems).toEqual([])
+      // Стенд: шаг с состоянием каталога — во всех двенадцати.
+      const result = await walkGuide(
+        'Стенд CX13',
+        stand(
+          [
+            REST,
+            {
+              title: both('Состояние'),
+              hint: both(''),
+              states: ['body.hover'],
+            },
+          ],
+          <div>Row text</div>,
+        ),
+      )
+      expect(result.guard).toEqual([])
+      const audit = result.audits.find(a => a.step === 'Состояние')!
+      expect(Object.keys(audit.checked).sort()).toEqual(
+        COMBOS.map(comboLabel).sort(),
+      )
+      expect(
+        Object.keys(
+          result.audits.find(a => a.step === REST.title.ru)!.checked,
+        ).sort(),
+      ).toEqual(STEP_LABELS)
+    },
+  )
 
-  test('CX14: псевдо-состояние шага ставится классами pseudo-* и видно в forced-colors системным цветом', async () => {
-    expect(all.pseudo).toEqual([])
-    const walk = (target: string) =>
-      walkGuide(
+  // В WebKit три проверки снимков могут не уложиться в общий тайм-аут.
+  test.each([
+    { target: 'cx14-visible', violations: 0 },
+    { target: 'cx14-hidden', violations: 2 },
+    { target: 'cx14-custom', violations: 2 },
+  ])(
+    'CX14: псевдо-состояние шага видно в forced-colors системным цветом ($target)',
+    async ({ target, violations }) => {
+      expect(all.pseudo).toEqual([])
+      const result = await walkGuide(
         `Стенд CX14 ${target}`,
         stand(
           [
@@ -584,30 +632,25 @@ describe('Шаги гайдов в матрице контраста (ADR 0089, 
           </>,
         ),
       )
-    const visible = await walk('cx14-visible')
-    expect(visible.guard).toEqual([])
-    expect(visible.pseudo).toEqual([])
-    // Наведение без отличия и наведение своим, не системным цветом — нарушения.
-    const hidden = await walk('cx14-hidden')
-    expect(hidden.pseudo).toHaveLength(2)
-    const custom = await walk('cx14-custom')
-    expect(custom.pseudo).toHaveLength(2)
-    // Три стенда со снимками до и после в сочетаниях режима: в WebKit ~9 с без нагрузки.
-  }, 60_000)
+      expect(result.guard).toEqual([])
+      expect(result.pseudo).toHaveLength(violations)
+    },
+    60_000,
+  )
 
-  test('CX15: шаг с immediate проверен сразу, без доведения переходов, во всех своих сочетаниях', async () => {
-    // Вспышка: текст светлеет и за 20 с темнеет до чёрного — доведённый переход её прячет. Долгая:
-    // Firefox снимает сочетания медленнее, и короткая успевала дотемнеть до последнего.
-    const flash = (root: HTMLElement) => {
-      root
-        .querySelector('.cx15-flash')!
-        .animate([{ color: '#d0d0d0' }, { color: '#000' }], {
-          duration: 20_000,
-          fill: 'forwards',
-        })
-    }
-    const walk = (immediate: boolean) =>
-      walkGuide(
+  test.each([true, false])(
+    'CX15: контраст вспышки во всех сочетаниях шага (immediate: %s)',
+    async immediate => {
+      // Доведённый переход скрывает вспышку, а без доводки она видна во всех сочетаниях.
+      const flash = (root: HTMLElement) => {
+        root
+          .querySelector('.cx15-flash')!
+          .animate([{ color: '#d0d0d0' }, { color: '#000' }], {
+            duration: 20_000,
+            fill: 'forwards',
+          })
+      }
+      const result = await walkGuide(
         `Стенд CX15 ${immediate}`,
         stand(
           [
@@ -617,22 +660,19 @@ describe('Шаги гайдов в матрице контраста (ADR 0089, 
           <div className="cx15-flash">Flash text</div>,
         ),
       )
-    const short = await walk(true)
-    expect(short.guard).toEqual([])
-    const flagged = new Set(
-      short.findings
-        .filter(f => f.key.includes('Вспышка') && checked(f.key))
-        .map(f => f.key.split(' | ')[1]),
-    )
-    expect([...flagged].sort()).toEqual(
-      STEP_COMBOS.map(comboLabel).filter(checked).sort(),
-    )
-    const settled = await walk(false)
-    expect(
-      settled.findings.filter(f => f.key.includes('Вспышка') && checked(f.key)),
-    ).toEqual([])
-    // Два стенда со снимками в сочетаниях режима, как у CX14.
-  }, 60_000)
+      expect(result.guard).toEqual([])
+      const flagged = new Set(
+        result.findings
+          .filter(f => f.key.includes('Вспышка') && checked(f.key))
+          .map(f => f.key.split(' | ')[1]),
+      )
+      const expected = immediate
+        ? STEP_COMBOS.map(comboLabel).filter(checked).sort()
+        : []
+      expect([...flagged].sort()).toEqual(expected)
+    },
+    60_000,
+  )
 
   test('CX16: снимок forced-colors — только когда документ в окне; гайд выше окна роняет проверку с причиной', async () => {
     expect(all.fit).toEqual([])
@@ -674,79 +714,86 @@ describe('Шаги гайдов в матрице контраста (ADR 0089, 
     expect(keys.filter(key => key.includes('faded-row'))).toEqual([])
   })
 
-  test('CX19: шаг без immediate проверяется после конца вспышки итога во всех своих сочетаниях; вспышка, не кончившаяся за предел, — сбой стража', async () => {
-    // Вспышка: текст светлый, пока на узле `data-flash`; таймер снимает его через 600 мс.
-    const flash = (ends: boolean) => (root: HTMLElement) => {
-      const el = root.querySelector('.cx19-flash')!
-      el.setAttribute('data-flash', 'reverted')
-      if (ends) setTimeout(() => el.removeAttribute('data-flash'), 600)
-    }
-    const walk = (ends: boolean) =>
-      walkGuide(
+  test.each([true, false])(
+    'CX19: проверка вспышки в обычном шаге (затухает: %s)',
+    async ends => {
+      // Вспышка: текст светлый, пока на узле `data-flash`; таймер снимает его через 600 мс.
+      const flash = (root: HTMLElement) => {
+        const el = root.querySelector('.cx19-flash')!
+        el.setAttribute('data-flash', 'reverted')
+        if (ends) setTimeout(() => el.removeAttribute('data-flash'), 600)
+      }
+      const settled = await walkGuide(
         `Стенд CX19 ${ends}`,
         stand(
-          [REST, { title: both('Отказ'), hint: both(''), enter: flash(ends) }],
+          [REST, { title: both('Отказ'), hint: both(''), enter: flash }],
           <div className="cx19-flash">Flash text</div>,
         ),
       )
-    const settled = await walk(true)
-    expect(settled.guard).toEqual([])
-    const audit = settled.audits.find(a => a.step === 'Отказ')!
-    for (const label of STEP_LABELS) {
-      expect(audit.checked[label], label).toBeGreaterThan(0)
-    }
-    expect(
-      settled.findings
-        .filter(f => f.key.includes('Отказ') && checked(f.key))
-        .map(f => f.key),
-    ).toEqual([])
-    const endless = await walk(false)
-    expect(endless.guard).toEqual([
-      'Стенд CX19 false › Отказ: вспышка итога не кончилась за 5000 мс',
-    ])
-  }, 30_000)
-
-  test('CX20: шаг без immediate проверяется после конца быстрой прокрутки перед каждым своим сочетанием; режим, не кончившийся за предел, — сбой стража', async () => {
-    // Режим: текст светлый, пока на узле `data-fast-scrolling`; таймер снимает его через
-    // 300 мс, смена темы включает снова — как возврат прокрутки после axe.
-    let watch: MutationObserver | undefined
-    const scroll = (ends: boolean) => (root: HTMLElement) => {
-      const el = root.querySelector('.cx20-scroll')!
-      const start = () => {
-        el.setAttribute('data-fast-scrolling', '')
-        if (ends)
-          setTimeout(() => el.removeAttribute('data-fast-scrolling'), 300)
+      if (!ends) {
+        expect(settled.guard).toEqual([
+          'Стенд CX19 false › Отказ: вспышка итога не кончилась за 5000 мс',
+        ])
+        return
       }
-      start()
-      if (!ends) return
-      watch = new MutationObserver(start)
-      watch.observe(document.documentElement, { attributeFilter: ['class'] })
-    }
-    const walk = (ends: boolean) =>
-      walkGuide(
+      expect(settled.guard).toEqual([])
+      const audit = settled.audits.find(a => a.step === 'Отказ')!
+      for (const label of STEP_LABELS) {
+        expect(audit.checked[label], label).toBeGreaterThan(0)
+      }
+      expect(
+        settled.findings
+          .filter(f => f.key.includes('Отказ') && checked(f.key))
+          .map(f => f.key),
+      ).toEqual([])
+    },
+    30_000,
+  )
+
+  test.each([true, false])(
+    'CX20: проверка быстрой прокрутки в обычном шаге (завершается: %s)',
+    async ends => {
+      // Режим: текст светлый, пока на узле `data-fast-scrolling`; таймер снимает его через
+      // 300 мс, смена темы включает снова — как возврат прокрутки после axe.
+      let watch: MutationObserver | undefined
+      const scroll = (root: HTMLElement) => {
+        const el = root.querySelector('.cx20-scroll')!
+        const start = () => {
+          el.setAttribute('data-fast-scrolling', '')
+          if (ends)
+            setTimeout(() => el.removeAttribute('data-fast-scrolling'), 300)
+        }
+        start()
+        if (!ends) return
+        watch = new MutationObserver(start)
+        watch.observe(document.documentElement, { attributeFilter: ['class'] })
+      }
+      const quiet = await walkGuide(
         `Стенд CX20 ${ends}`,
         stand(
-          [REST, { title: both('Рывок'), hint: both(''), enter: scroll(ends) }],
+          [REST, { title: both('Рывок'), hint: both(''), enter: scroll }],
           <div className="cx20-scroll">Row text</div>,
         ),
-      )
-    const quiet = await walk(true)
-    watch?.disconnect()
-    expect(quiet.guard).toEqual([])
-    const audit = quiet.audits.find(a => a.step === 'Рывок')!
-    for (const label of STEP_LABELS) {
-      expect(audit.checked[label], label).toBeGreaterThan(0)
-    }
-    expect(
-      quiet.findings
-        .filter(f => f.key.includes('Рывок') && checked(f.key))
-        .map(f => f.key),
-    ).toEqual([])
-    const endless = await walk(false)
-    expect(endless.guard).toEqual([
-      'Стенд CX20 false › Рывок: быстрая прокрутка не кончилась за 5000 мс',
-    ])
-  }, 30_000)
+      ).finally(() => watch?.disconnect())
+      if (!ends) {
+        expect(quiet.guard).toEqual([
+          'Стенд CX20 false › Рывок: быстрая прокрутка не кончилась за 5000 мс',
+        ])
+        return
+      }
+      expect(quiet.guard).toEqual([])
+      const audit = quiet.audits.find(a => a.step === 'Рывок')!
+      for (const label of STEP_LABELS) {
+        expect(audit.checked[label], label).toBeGreaterThan(0)
+      }
+      expect(
+        quiet.findings
+          .filter(f => f.key.includes('Рывок') && checked(f.key))
+          .map(f => f.key),
+      ).toEqual([])
+    },
+    30_000,
+  )
 
   test('DG2: каждое состояние drag.* объявлено шагом гайда истории сценария перетаскивания и проверено матрицей во всех сочетаниях шага', () => {
     const dragging = ['/Rows/Dragging/', '/Columns/Dragging/']

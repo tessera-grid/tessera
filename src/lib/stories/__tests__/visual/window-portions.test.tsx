@@ -67,18 +67,22 @@ const indexes = () =>
   [...host!.querySelectorAll<HTMLElement>('.data-grid__body-row')].map(row =>
     Number(row.dataset.index),
   )
-/** Номера строк по кадрам, пока их число не перестанет расти десять кадров подряд. */
+/** Номера строк по кадрам до конца порций и десяти кадров без роста запаса. */
 const framesUntilSettled = async () => {
   const frames: number[][] = []
+  const pending = () => host!.querySelector('[data-portions-pending]')
   let stable = 0
   for (let i = 0; i < 300 && stable < 10; i++) {
     // eslint-disable-next-line no-await-in-loop
     await nextFrame()
     const now = indexes()
     stable =
-      now.length > 0 && now.length === frames.at(-1)?.length ? stable + 1 : 0
+      now.length > 0 && !pending() && now.length === frames.at(-1)?.length
+        ? stable + 1
+        : 0
     frames.push(now)
   }
+  expect(stable).toBe(10)
   return frames
 }
 const visibleIndexes = () => {

@@ -43,7 +43,7 @@ afterEach(() => {
 describe('Пакет глазами потребителя', () => {
   it('EV7: фикстуры check:package — ESM на Vite со строгим TS и style.css, Node16 и nodenext, require и import в Node, типы с @types/react@18; tsc падает на своих ошибках, а не на чужих', () => {
     const react19 = FIXTURES.find(fixture => fixture.name === 'react19')!
-    const react18 = FIXTURES.find(fixture => fixture.name === 'react18-types')!
+    const react18 = FIXTURES.find(fixture => fixture.name === 'react18')!
     const commands = react19.commands.map(command => command.join(' '))
 
     expect(react19.files['main.tsx']).toContain(
@@ -70,6 +70,11 @@ describe('Пакет глазами потребителя', () => {
       'node runtime-cjs.cjs',
     ])
     expect(react18.dependencies['@types/react']).toBe('^18')
+    expect(react18.commands.map(command => command.join(' '))).toEqual([
+      'node tsc.mjs tsconfig.json',
+      'node runtime-esm.mjs',
+      'node runtime-cjs.cjs',
+    ])
     // Код потребителя без приведений: таблица из useCreateTable идёт в DataGrid как есть.
     expect(react19.files['app.tsx']).toContain('<DataGrid table={table}')
     expect(react19.files['app.tsx']).not.toContain('as never')

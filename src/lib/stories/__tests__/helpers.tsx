@@ -5,6 +5,7 @@ import { page, server, userEvent } from 'vitest/browser'
 import { expect, onTestFinished } from 'vitest'
 import { cleanup, render } from 'vitest-browser-react'
 
+import { scrollLayer } from '../../core/scrollStretch'
 import { composed } from './stories'
 import type { PerfRecord, ScrollWorkResult } from './perf.commands'
 
@@ -292,15 +293,17 @@ export async function measureScrollWork(
   } = {},
 ): Promise<ScrollWorkResult> {
   const scroller = getScroller()
+  const wheelLayer = axis === 'y' && wheel ? scrollLayer(scroller) : undefined
 
   const distance = () =>
-    axis === 'y'
+    wheelLayer?.maxTop() ??
+    (axis === 'y'
       ? scroller.scrollHeight - scroller.clientHeight
-      : scroller.scrollWidth - scroller.clientWidth
+      : scroller.scrollWidth - scroller.clientWidth)
 
   let wheeled = 0
   const setPos = (pos: number) => {
-    if (axis === 'y' && wheel) {
+    if (wheelLayer) {
       scroller.dispatchEvent(
         new WheelEvent('wheel', {
           deltaY: pos - wheeled,
@@ -309,6 +312,8 @@ export async function measureScrollWork(
         }),
       )
       wheeled = pos
+      // У синтетического WheelEvent нет нативного действия для обычной области.
+      if (!wheelLayer.stretched) scroller.scrollTop = pos
     } else if (axis === 'y') scroller.scrollTop = pos
     else scroller.scrollLeft = pos
   }
@@ -321,7 +326,10 @@ export async function measureScrollWork(
   let last = performance.now()
   const advance = () => {
     const now = performance.now()
-    pos += velocity === undefined ? stepPx : (velocity * (now - last)) / 1000
+    const delta =
+      velocity === undefined ? stepPx : (velocity * (now - last)) / 1000
+    // Длинный кадр не должен превращать движение трекпада в рывок колеса.
+    pos += wheelLayer && !fast ? Math.min(delta, 40) : delta
     last = now
     return Math.min(distance(), pos)
   }
@@ -348,7 +356,6 @@ export async function measureScrollWork(
   const total = distance()
   pos = 0
   last = performance.now()
-  let reached = 0
   // Выборка кадров со скелетами: каждый SAMPLE_EVERY-й кадр, пока прокрутка идёт.
   const samples: boolean[] = []
   const start = performance.now()
@@ -367,12 +374,14 @@ export async function measureScrollWork(
     if (i % SAMPLE_EVERY === 0 && next < total) {
       samples.push(document.querySelector(SKELETON_CELL) !== null)
     }
-    reached = next
     if (next >= total) break
   }
   const frameMs = (previous - start) / measured
 
   const result = await perfCommands.perfTraceStop(id)
+  const reached =
+    wheelLayer?.top() ??
+    (axis === 'y' ? scroller.scrollTop : scroller.scrollLeft)
   // Замер мерит заявленное: прокрутка была, ячейки при скорости ниже порога —
   // содержимое, при шаге на кадр — скелеты быстрой прокрутки.
   if (total <= 0 || reached < Math.min(total, 100)) {

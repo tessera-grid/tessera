@@ -151,11 +151,34 @@ describe('Клавиатурный путь каждой фичи (ADR 0232)', (
     expect(panels.length).toBeGreaterThan(5)
     for (const target of panels) {
       if (!target.isConnected) continue
+      const testId = target.dataset.testid
+      const trigger = () =>
+        testId
+          ? document.querySelector<HTMLElement>(`[data-testid="${testId}"]`)
+          : target
       target.focus()
       await keyboard(
         target.getAttribute('role') === 'combobox' ? '{Enter}' : '{Space}',
       )
+      const popup = () => {
+        const id = trigger()?.getAttribute('aria-controls')
+        return id ? document.getElementById(id) : null
+      }
+      const opensPopup = target.hasAttribute('aria-haspopup')
+      if (opensPopup) {
+        await expect
+          .poll(
+            () =>
+              !!popup() && trigger()?.getAttribute('aria-expanded') === 'true',
+          )
+          .toBe(true)
+      }
+      const opened = opensPopup ? popup() : null
       await keyboard('{Escape}')
+      if (opened)
+        await expect
+          .poll(() => !opened.isConnected && active() === trigger())
+          .toBe(true)
     }
 
     // Открытые поповеры: меню заголовка, фильтр, выгрузка, размер страницы и контекстное меню.
@@ -403,17 +426,20 @@ describe('Клавиатурный путь каждой фичи (ADR 0232)', (
     ].find(el => el.textContent?.includes(labels.summary))!
     summary.focus()
     await keyboard('{ArrowRight}')
-    await expect
-      .poll(() =>
-        [...document.querySelectorAll('[role^="menuitem"]')].some(
-          el => el.textContent?.trim() === labels.mean,
-        ),
-      )
-      .toBe(true)
-    const average = [
-      ...document.querySelectorAll<HTMLElement>('[role^="menuitem"]'),
-    ].find(el => el.textContent?.trim() === labels.mean)!
-    average.focus()
+    const summaryMenu = () =>
+      [...document.querySelectorAll('[role^="menuitem"]')]
+        .find(el => el.textContent?.trim() === labels.mean)
+        ?.closest('[role="menu"]')
+    await expect.poll(() => summaryMenu()?.contains(active())).toBe(true)
+    const choices = summaryMenu()!.querySelectorAll('[role^="menuitem"]').length
+    for (
+      let i = 0;
+      i < choices && active().textContent?.trim() !== labels.mean;
+      i++
+    ) {
+      await keyboard('{ArrowDown}')
+    }
+    expect(active().textContent?.trim()).toBe(labels.mean)
     await keyboard('{Enter}')
     await expect
       .poll(() => document.querySelector('.data-grid__footer')?.textContent)

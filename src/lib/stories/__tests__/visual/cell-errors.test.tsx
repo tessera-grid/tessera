@@ -141,7 +141,6 @@ describe('Ошибка в ячейке (ADR 0150)', () => {
       await expect.poll(tooltip).toBe(ERROR)
 
       await userEvent.keyboard('{Enter}')
-      await humanClick(mark())
       await expect.poll(issuePopover).not.toBeNull()
       expect(issuePopover()!.textContent).toContain(ERROR)
       expect(cellOf(ERROR_ROW)!.querySelector('input')).toBeNull()

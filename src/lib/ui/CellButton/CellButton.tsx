@@ -8,6 +8,7 @@ import {
   type DerivedButtonProps,
   type RevealProps,
 } from '../IconButton'
+import { SimpleIconButton } from '../IconButton/IconButton'
 import { HiddenButtonContext } from '../IconButton/iconReveal'
 
 import '../cellControls/buttonVisibility.css'
@@ -41,3 +42,17 @@ export const CellButton = memo(
 )
 
 CellButton.displayName = 'CellButton'
+
+export const SimpleCellButton = ({
+  label,
+  icon,
+  onClick,
+}: Pick<CellButtonProps, 'label' | 'icon' | 'onClick'>) => (
+  <div className="cell__button cell__button--hidden">
+    <HiddenButtonContext.Provider value={true}>
+      <SimpleIconButton label={label} onClick={onClick}>
+        {icon}
+      </SimpleIconButton>
+    </HiddenButtonContext.Provider>
+  </div>
+)

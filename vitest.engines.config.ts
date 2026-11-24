@@ -24,6 +24,9 @@ const shared = {
 
 export default defineConfig({
   ...base,
+  // Полный прогон долго держит страницы открытыми. Другой набор не должен
+  // обновлять URL предсборки зависимостей под уже открытой страницей.
+  cacheDir: 'node_modules/.vite-engines',
   test: {
     projects: [
       {

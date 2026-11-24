@@ -696,6 +696,18 @@ describe('История правок (ADR 0222)', () => {
     expect(table.getHistory().position).toBe(0)
     expect([ageOf('1'), ageOf('2'), ageOf('3')]).toEqual([21, 22, 23])
     expect(await rewindAll()).toBe(true)
+
+    await write([{ rowId: '1', columnId: 'age', value: 91 }])
+    await write([{ rowId: '2', columnId: 'age', value: 92 }])
+    await act(async () => {
+      const results = await Promise.all([
+        table.rewindHistory(null),
+        table.rewindHistory(null),
+      ])
+      expect(results).toEqual([true, true])
+    })
+    expect(table.getHistory().position).toBe(0)
+    expect([ageOf('1'), ageOf('2')]).toEqual([21, 22])
   })
 
   it('LM5: шаг истории, после которого черновиков стало бы больше max, отказывает с причиной; запись остаётся на месте', async () => {

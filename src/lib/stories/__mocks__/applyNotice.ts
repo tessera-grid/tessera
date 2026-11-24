@@ -20,14 +20,20 @@ export const applyPartlyNotice = (root: ParentNode) =>
   applyNotice(root)?.getAttribute('data-tone') === 'neutral'
 
 /**
- * Появление плашки доведено до конца: снимок шага застаёт её целиком, а вспышки ячеек
- * остаются.
+ * Снимок застаёт плашку целиком и ждёт, пока исчезнет прежнее число черновиков.
+ * Вспышки ячеек остаются.
  */
 export const applyNoticeEntered = async (root: ParentNode) => {
   for (const animation of applyNotice(root)?.getAnimations({
     subtree: true,
   }) ?? [])
     animation.finish()
+  await until(() => {
+    const count = root.querySelector(
+      '[data-testid="unsaved-changes-button"] [data-count][data-shown="false"]',
+    )
+    expect(count ? getComputedStyle(count).opacity : '0').toBe('0')
+  })
   await until(() =>
     expect(getComputedStyle(applyNotice(root)!).opacity).toBe('1'),
   )

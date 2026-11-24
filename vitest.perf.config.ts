@@ -27,6 +27,7 @@ const TOUCH_PERF = 'src/lib/stories/__tests__/performance/touch.test.tsx'
 // Запуск: npm run perf
 export default defineConfig({
   mode: 'production',
+  cacheDir: 'node_modules/.vite-perf',
   plugins: [react()],
   define: {
     'process.env.NODE_ENV': '"production"',
@@ -69,6 +70,8 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'perf',
+          // Временные бюджеты меряются на одном проекте за раз (ADR 0099).
+          sequence: { groupOrder: 0 },
           include: [
             'src/lib/stories/__tests__/performance/**/*.{test,spec}.{ts,tsx}',
           ],
@@ -87,6 +90,7 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'perf-touch',
+          sequence: { groupOrder: 1 },
           include: [TOUCH_PERF],
           browser: {
             enabled: true,
@@ -107,6 +111,7 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'memory-prod',
+          sequence: { groupOrder: 2 },
           include: [MEMORY],
           browser: {
             enabled: true,

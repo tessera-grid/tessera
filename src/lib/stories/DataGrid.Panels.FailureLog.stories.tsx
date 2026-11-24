@@ -228,11 +228,15 @@ const ROW_STEPS: readonly GuideStoryStep[] = [
       en: 'The user chose to go to the row. The table scrolled to it, and the row flashed.',
     },
     immediate: true,
-    // Журнал закрывается после перехода анимацией выхода — шаг ждёт её конца.
+    // Дождаться выхода журнала и восстановления текста после быстрой прокрутки.
     enter: untilDone(
       root =>
-        !!rowEl(root, ARCHIVED) && flashed(rowEl(root, ARCHIVED)) && !log(),
+        !!rowEl(root, ARCHIVED) &&
+        flashed(rowEl(root, ARCHIVED)) &&
+        !scroller(root)?.hasAttribute('data-fast-scrolling') &&
+        !log(),
       root => {
+        if (rowEl(root, ARCHIVED) && flashed(rowEl(root, ARCHIVED))) return
         if (!hasFailures()) return reachArchiveRefusal(root)
         if (!chooseIn(entryOf(ARCHIVED), 'show') && !log()) logButton()!.click()
       },
@@ -290,8 +294,15 @@ export const FailureLogRow: StoryObj<StoryProps> = {
     })
     await step(ROW_STEPS[3]!.title.ru, async () => {
       await guideNext(canvas)
-      await until(() => expect(flashed(rowEl(canvas, ARCHIVED))).toBe(true))
-      await until(() => expect(log()).toBeNull())
+      await until(() => {
+        expect(log()).toBeNull()
+        expect(
+          canvas.querySelector(
+            '[data-fast-scrolling], .data-grid__body [data-skeleton]',
+          ),
+        ).toBeNull()
+        expect(flashed(rowEl(canvas, ARCHIVED))).toBe(true)
+      })
     })
   },
 }

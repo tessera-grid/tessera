@@ -1554,8 +1554,16 @@ describe('Маркеры выделения пальцем (ADR 0198, этап 2
     try {
       const scroller = () =>
         document.querySelector<HTMLElement>('.data-grid__container')!
-      await touch.realTap(center(cellAt(2, 1)))
-      await expect.poll(() => handleOf('end')).not.toBeNull()
+      await expect
+        .poll(() => scroller().querySelector('[data-portions-pending]'))
+        .toBeNull()
+      // Диапазон — предусловие этого теста; выделение коротким тапом проверяет HN5.
+      await userEvent.click(cellAt(2, 1))
+      await expect.poll(selectedCount).toBe(1)
+      await touch.realTap(await settledCenter(() => cellAt(2, 1)))
+      await expect
+        .poll(() => handleOf('end')?.getAttribute('data-selection-handle'))
+        .toBe('circle')
 
       // Удержание круга: ни прокрутки, ни меню, выделение то же.
       const held = center(handleOf('end')!)
@@ -1574,7 +1582,7 @@ describe('Маркеры выделения пальцем (ADR 0198, этап 2
       expect(selectedCount()).toBeLessThanOrEqual(1)
 
       // Долгое нажатие на ячейку — контекстное меню.
-      const target = center(cellAt(6, 0))
+      const target = await settledCenter(() => cellAt(6, 0))
       await touch.realTouchDown([target])
       await wait(LONG_PRESS_WAIT_MS)
       await expect.poll(menu, { timeout: 5000 }).toBeTruthy()

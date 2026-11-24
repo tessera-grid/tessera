@@ -11,8 +11,9 @@ import type {
   ServerRowsResponse,
 } from '../../plugins'
 import type { GuideStoryStep, StepRun } from '../demos/GuideStory'
-import { HANDLE, ROW } from '../rowDragging.dnd'
+import { HANDLE, OVERLAY, ROW } from '../rowDragging.dnd'
 import { cancelDrag, dragHold, pollUntil, shieldHeldDrag } from './catalogPlay'
+import { centerInWindow, layoutStill } from './rowDragHold'
 import {
   type FilteringItem,
   filteringColumns,
@@ -290,18 +291,41 @@ export const dropRow = async (
   { signal, onLeave }: StepRun,
 ) => {
   await pollUntil(() => !!rowOf(root, id) && !!rowOf(root, overId), signal)
-  const handle = rowOf(root, id)!.querySelector<HTMLElement>(HANDLE)!
+  await centerInWindow(rowOf(root, overId)!)
+  await layoutStill(root.querySelector('.data-grid__container')!)
+  signal.throwIfAborted()
+  const row = rowOf(root, id)!
+  const handle = row.querySelector<HTMLElement>(HANDLE)!
   const lift = shieldHeldDrag()
   onLeave(lift)
   onLeave(cancelDrag)
   const from = centerOf(handle)
+  const centerOffset = centerOf(row).y - from.y
   const held = await dragHold(handle, { x: from.x, y: from.y + 8 }, 4, signal)
+  await pollUntil(() => !!document.querySelector(OVERLAY), signal)
+  await layoutStill(rowOf(root, overId)!)
   const over = rowOf(root, overId)!.getBoundingClientRect()
-  const down = over.top > from.y
-  await held.moveTo(
-    { x: from.x, y: over.top + over.height / 2 + (down ? 6 : -6) },
-    12,
-  )
+  const pointer = held.point()
+  const down = over.top > pointer.y
+  // closestCenter сравнивает прямоугольник взятой строки. Пока слот идёт
+  // за указателем, пробуем соседние точки. Индекс слота может идти за событием
+  // с задержкой и относиться к предыдущей точке.
+  const y = over.top + over.height * (down ? 0.75 : 0.25) - centerOffset
+  const store = dragServer.grid?.store as {
+    state: { rowDragging?: { overId?: string } }
+  }
+  const atTarget = () => store.state.rowDragging?.overId === overId
+  for (const offset of [0, 0.5, -0.5, 1, -1]) {
+    await held.moveTo(
+      { x: pointer.x, y: y + over.height * offset },
+      offset === 0 ? 12 : 4,
+    )
+    if (atTarget()) break
+    await layoutStill(root.querySelector('.data-grid__container')!)
+    signal.throwIfAborted()
+    if (atTarget()) break
+  }
+  await pollUntil(atTarget, signal)
   signal.throwIfAborted()
   await held.release()
   lift()

@@ -56,18 +56,16 @@ export const CellEditField = (
   const toggles = usePredicateResult(() => booleanToggle(props))
   // Подписка только на состояние этой ячейки: ввод черновика другие ячейки не
   // перерисовывает.
-  const view = useSliceProjection(
+  const { view, error } = useSliceProjection(
     table,
     EDIT_SESSION_KEY,
-    (state: CellEditingState) => cellEditingViewOf(state, row.id, column.id),
-  )
-  const error = useSliceProjection(
-    table,
-    EDIT_SESSION_KEY,
-    (state: CellEditingState) =>
-      isEditingCell(state.active, row.id, column.id)
-        ? state.active!.invalid
-        : undefined,
+    (state: CellEditingState) => {
+      const view = cellEditingViewOf(state, row.id, column.id)
+      return {
+        view,
+        error: view === 'editing' ? state.active!.invalid : undefined,
+      }
+    },
   )
 
   // Несохранённое значение ячейки (ADR 0178, §5): модели считают по данным, ячейка — по нему.

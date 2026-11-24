@@ -4,6 +4,8 @@
  */
 
 const DECIMAL = /^([+-]?)(\d+)(?:\.(\d+))?$/
+const LEADING_ZEROES = /^0+/
+const TRAILING_ZEROES = /0+$/
 
 /** Знак и цифры: целая часть без ведущих нулей, дробная — без хвостовых; ноль без знака. */
 export interface Decimal {
@@ -25,8 +27,14 @@ export const parseDecimal = (value: unknown): Decimal | undefined => {
   }
   const match = DECIMAL.exec(text)
   if (!match) return undefined
-  const int = match[2]!.replace(/^0+/, '')
-  const frac = (match[3] ?? '').replace(/0+$/, '')
+  const integer = match[2]!
+  const fraction = match[3] ?? ''
+  const int = integer.startsWith('0')
+    ? integer.replace(LEADING_ZEROES, '')
+    : integer
+  const frac = fraction.endsWith('0')
+    ? fraction.replace(TRAILING_ZEROES, '')
+    : fraction
   return {
     negative: match[1] === '-' && (int !== '' || frac !== ''),
     int,
@@ -37,10 +45,8 @@ export const parseDecimal = (value: unknown): Decimal | undefined => {
 const compareMagnitude = (a: Decimal, b: Decimal) => {
   if (a.int.length !== b.int.length) return a.int.length - b.int.length
   if (a.int !== b.int) return a.int < b.int ? -1 : 1
-  const length = Math.max(a.frac.length, b.frac.length)
-  const fa = a.frac.padEnd(length, '0')
-  const fb = b.frac.padEnd(length, '0')
-  return fa === fb ? 0 : fa < fb ? -1 : 1
+  // Хвостовые нули уже сняты, поэтому короткий префикс всегда меньше длинного.
+  return a.frac === b.frac ? 0 : a.frac < b.frac ? -1 : 1
 }
 
 /** Порядок двух десятичных: отрицательное, равное или положительное число. */

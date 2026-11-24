@@ -86,6 +86,12 @@
     color: GrayText;
   }
 
+  .item:not([data-selected]):is(:hover, :focus-visible),
+  .item:not([data-selected]):is(:hover, :focus-visible)
+    :is([data-popup-item-caption], .time) {
+    color: CanvasText;
+  }
+
   .item[data-selected] {
     outline: 2px solid Highlight;
     outline-offset: -2px;

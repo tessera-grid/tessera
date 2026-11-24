@@ -69,7 +69,9 @@ const statuses = await Promise.all(
 
 const merged = spawnSync(
   process.execPath,
-  [VITEST, 'run', `--merge-reports=${blobs}`],
+  // Vitest восстанавливает графы модулей из всех blob-отчётов одновременно.
+  // Полный набор превышает стандартную кучу Node; лимит отдельных шардов тот же.
+  ['--max-old-space-size=8192', VITEST, 'run', `--merge-reports=${blobs}`],
   { stdio: 'inherit' },
 ).status
 console.log(`Всего: ${elapsed()} с`)

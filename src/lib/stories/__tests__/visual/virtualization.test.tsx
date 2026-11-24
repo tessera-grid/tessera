@@ -193,7 +193,9 @@ describe('Виртуализация — filler-паддинги и достиж
 
     // Конец: последняя строка достижима до самого низа.
     await scrollToEnd('y')
-    expect(Math.max(...renderedRowIndexes())).toBe(dataCount - 1)
+    await expect
+      .poll(() => Math.max(...renderedRowIndexes()))
+      .toBe(dataCount - 1)
   })
 
   test('V9: столбец достижим и рендерится в начале, середине и конце списка', async () => {

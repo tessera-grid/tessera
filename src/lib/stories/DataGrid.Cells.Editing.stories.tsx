@@ -4,6 +4,10 @@ import { expect } from 'storybook/test'
 import { type StoryProps } from './DataGridStory.types'
 import { StoryComponent } from './DataGridStory'
 import { dataGridMeta } from './dataGridMeta'
+import {
+  applyNotice as notice,
+  applyNoticeEntered as noticeEntered,
+} from './__mocks__/applyNotice'
 import { createHeldServer, REFUSAL } from './__mocks__/heldServer'
 import { untilDone } from './__mocks__/cellGestures'
 import { getData } from './__mocks__/data'
@@ -1217,13 +1221,6 @@ const APPLY_ARGS = {
   initialDrafts: APPLY_DRAFTS,
 } satisfies Partial<StoryProps>
 
-/** Плашка итога над таблицей, пока она не уходит. */
-const notice = (root: ParentNode) => {
-  const element = root.querySelector<HTMLElement>(
-    '[data-testid="table-notice"]',
-  )
-  return element && !element.hasAttribute('data-leaving') ? element : null
-}
 const noticeAction = (root: ParentNode) =>
   notice(root)?.querySelector<HTMLElement>(
     '[data-testid="table-notice-action"]',
@@ -1234,16 +1231,6 @@ const savedNotice = (root: ParentNode) =>
   notice(root)?.getAttribute('data-tone') === 'success'
 const failedNotice = (root: ParentNode) =>
   !!notice(root) && !savedNotice(root) && !!noticeAction(root)
-/**
- * Появление плашки доведено до конца: снимок короткого шага застаёт её целиком, а вспышки
- * ячеек остаются.
- */
-const noticeEntered = async (root: ParentNode) => {
-  for (const animation of notice(root)?.getAnimations({ subtree: true }) ?? [])
-    animation.finish()
-  await until(() => expect(getComputedStyle(notice(root)!).opacity).toBe('1'))
-}
-
 const logButton = (root: ParentNode) =>
   root.querySelector<HTMLElement>('[data-testid="failure-log-button"]')
 const log = () =>
@@ -1344,6 +1331,15 @@ export const CellsEditingApplySaved: StoryObj<StoryProps> = {
       await until(() => expect(panelOpen()).toBe(false))
       await noticeEntered(canvas)
       await until(() => expect(allSaved(canvas)).toBe(true))
+      // Текст старого счётчика живёт до конца перехода. Аудит этого шага
+      // проверяет кнопку уже после исчезновения счётчика.
+      await until(() =>
+        expect(
+          panelButton(canvas)?.querySelector(
+            '[data-active-indicator][data-count]',
+          ),
+        ).toBeNull(),
+      )
     })
     await step(APPLY_SAVED[2]!.title.ru, async () => {
       await guideNext(canvas)
@@ -1457,6 +1453,10 @@ export const CellsEditingApplyFailed: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await until(() => expect(logEntries()).toHaveLength(1))
       expect(logEntries()[0]!.textContent).toContain(APPLY_DOWN)
+      await until(() => {
+        const popup = log()
+        expect(popup && getComputedStyle(popup).opacity).toBe('1')
+      })
       await settle()
     })
     await step(APPLY_FAILED[3]!.title.ru, async () => {

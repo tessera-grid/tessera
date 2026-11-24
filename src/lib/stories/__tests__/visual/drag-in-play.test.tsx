@@ -6,6 +6,7 @@ import {
   centerOf,
   dragHold,
   settle,
+  shieldHeldDrag,
   type Point,
 } from '../../__mocks__/catalogPlay'
 import { composed } from '../stories'
@@ -122,18 +123,25 @@ describe('Перетаскивание из play (ADR 0130)', () => {
   test('DG5: кадр удержанного перетаскивания детерминирован — после settle два снимка подряд совпадают', async () => {
     await reducedMotion(true)
     for (const hold of [holdRow, holdColumn]) {
-      const { handle, screen } = await hold()
-      held = handle
-      await expect
-        .poll(() => document.querySelector(`${CLOUD}, ${COLUMN_CLOUD}`))
-        .not.toBeNull()
-      await settle()
-      const first = await screenshot()
-      await sleep(300)
-      expect(await screenshot(), hold.name).toBe(first)
-      release(handle)
-      held = undefined
-      await screen.unmount()
+      // Как в гайде, нативный указатель не должен увести удерживаемую строку к краю.
+      const lift = shieldHeldDrag()
+      try {
+        const { handle, screen } = await hold()
+        held = handle
+        await expect
+          .poll(() => document.querySelector(`${CLOUD}, ${COLUMN_CLOUD}`))
+          .not.toBeNull()
+        await settle()
+        const first = await screenshot()
+        await sleep(300)
+        expect(await screenshot(), hold.name).toBe(first)
+        lift()
+        release(handle)
+        held = undefined
+        await screen.unmount()
+      } finally {
+        lift()
+      }
     }
   })
 })

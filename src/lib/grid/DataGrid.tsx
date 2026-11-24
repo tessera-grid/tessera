@@ -9,6 +9,7 @@ import {
   memo,
   startTransition,
   useCallback,
+  useDeferredValue,
   useEffect,
   useMemo,
   useRef,
@@ -97,7 +98,6 @@ import {
 } from '../core/virtualization'
 import { useScrollViewport } from '../core/scrollToRow/viewport'
 import { useDragPointerY } from './useDragPointerY'
-import { useCalculateColumnSizes } from './useCalculateColumnSizes'
 import { columnShiftVars } from './columnSizes'
 import { DataGridTable } from './DataGridTable'
 import { rowsGetterOf } from './rowsGetter'
@@ -184,9 +184,6 @@ const DataGridView = <D extends LabelDictionary = LabelDictionary>({
     return { pending: !!status?.pending, failed: status?.failed }
   })
 
-  const headerGroups = table.getHeaderGroups()
-  const leafColumns: Column<any, any, unknown>[] = table.getVisibleLeafColumns()
-
   // Массив строк — для дерева, линий, движения и места броска в теле, если список загружен
   // целиком; строки тела и их число — у источника (ADR 0138).
   const rowSource = table.getRowSource()
@@ -194,6 +191,106 @@ const DataGridView = <D extends LabelDictionary = LabelDictionary>({
   // Компонентам ниже — геттером: dev-журнал React обошёл бы массив строк (ADR 0199, MS12).
   const getRows = rowsGetterOf(rows)
   const rowCount = rowSource.count()
+
+  const labels = useMemo(
+    () => resolveLabels(localization, locale),
+    [localization, locale],
+  )
+  const loading = options.loading
+  const initialLoading = loading === 'initial'
+  // Ожидание серверного действия — то же свечение обновления без пропа (ADR 0116, §3); окно
+  // новой выборки серверной модели строк — тоже (ADR 0138, §6).
+  // Действие меню над всей таблицей (ADR 0155, §2): свечение и плашка, как у серверного.
+  const tableAction = useTableState(table, s => {
+    const status = (s as { actionStatus?: ActionStatus }).actionStatus
+    return {
+      pending: tableActionPending(status),
+      failure: tableActionFailure(status),
+    }
+  })
+  const refreshLoading =
+    loading === 'refresh' ||
+    !!serverAction.pending ||
+    tableAction.pending ||
+    !!rowSource.refreshing?.()
+  // Отказ серверного действия — та же плашка; ошибка приложения главнее (ADR 0116, §5).
+  const appError = options.loadError
+  const appFailed = hasLoadError(appError)
+  const { failed } = serverAction
+  const actionError = useMemo(
+    () => failed && { message: serverActionReason(failed, labels) },
+    [failed, labels],
+  )
+  const menuFailure = tableAction.failure
+  const menuError = useMemo(
+    () =>
+      menuFailure && {
+        message:
+          menuFailure.entry.reason?.(labels) ?? labels.actionFailedFallback,
+      },
+    [menuFailure, labels],
+  )
+  // Отказ источника, когда не загружено ничего (серверная модель, ADR 0138, §11).
+  const listError = appFailed ? undefined : rowSource.loadError?.()
+  // Отказ загрузки (ADR 0096): с данными — плашка и красный свет, без них — заглушка.
+  const loadError = useLoadError({
+    table,
+    error: appFailed ? appError : (listError ?? actionError ?? menuError),
+    sourceReason: listError?.reason,
+    onRetry: appFailed
+      ? options.onRetry
+      : (listError?.retry ?? failed?.retry ?? menuFailure?.entry.retry),
+    loading: initialLoading || refreshLoading,
+    // Отказ действия — всегда плашка: прежние данные на месте, пусть их и нет.
+    hasRows:
+      !listError &&
+      (rowCount > 0 || (!appFailed && (!!failed || !!menuFailure))),
+    // Отказ копирования, вставки и предела записи — не обновления данных: свой заголовок (ADR 0146, §4; ADR 0223).
+    title:
+      !appFailed && !listError && failed?.kind === 'copy'
+        ? labels.serverActionFailedCopy
+        : !appFailed && !listError && failed?.kind === 'paste'
+          ? labels.serverActionFailedPaste
+          : !appFailed && !listError && failed?.kind === 'write'
+            ? labels.serverActionFailedWrite
+            : !appFailed && !listError && !failed && menuFailure?.entry.name
+              ? labels.actionsFailed(menuFailure.entry.name(labels))
+              : undefined,
+  })
+
+  // Скелет первой загрузки — строго по флагу приложения (ADR 0060, §5); отказ без строк
+  // главнее. Тот же расчёт видят компоненты слотов (SL21).
+  const showSkeleton = isSkeletonShown(table)
+
+  // Заглушка пустой таблицы — первая по приоритету запись реестра (ADR 0123); скелет
+  // главнее любой. `grid` встаёт вместо таблицы, `body` — под шапкой.
+  const stubContext: StubContext = {
+    table,
+    rowCount,
+    loadError: {
+      shown: loadError.stubShown,
+      error: options.loadError,
+      reason: loadError.reason,
+      retry: loadError.retry,
+      pending: loadError.pending,
+    },
+  }
+  const activeStub = showSkeleton
+    ? undefined
+    : resolveStub(stubEntriesOf(table), stubContext)
+  const nextGridStub = activeStub?.placement === 'grid' ? activeStub : undefined
+  // Возвращение из заглушки монтирует всю таблицу, как первый рендер (ADR 0203).
+  const deferGrid = isIncremental(table) && !showSkeleton
+  const deferredGridStub = useDeferredValue(
+    deferGrid ? nextGridStub : undefined,
+  )
+  const gridStub = nextGridStub ?? (deferGrid ? deferredGridStub : undefined)
+  const bodyStub = activeStub?.placement === 'body' ? activeStub : undefined
+  // Заглушка остаётся до перехода React. Раскладку колонок строим при открытии таблицы.
+  const headerGroups = gridStub ? [] : table.getHeaderGroups()
+  const leafColumns: Column<any, any, unknown>[] = gridStub
+    ? []
+    : table.getVisibleLeafColumns()
 
   const isResizingColumns: false | string =
     state.columnResizing?.isResizingColumn ?? false
@@ -255,8 +352,6 @@ const DataGridView = <D extends LabelDictionary = LabelDictionary>({
   // Смена страницы: тело к началу, активная ячейка — на первую строку (ADR 0038).
   usePageChange(table, state.pagination, rowCount, getScrollElement)
 
-  const columnSizes = useCalculateColumnSizes({ table })
-
   const headerGroupsDepth = headerGroups.length
   // Высоты уровней шапки по содержимому (ADR 0218, §10); нет — высота строки шапки.
   const headLevels = useHeadLevelHeights(table)
@@ -272,10 +367,6 @@ const DataGridView = <D extends LabelDictionary = LabelDictionary>({
   // Над телом шапка, под ним — не больше строки футера.
   const aroundBody = headHeight + heights.row
 
-  const labels = useMemo(
-    () => resolveLabels(localization, locale),
-    [localization, locale],
-  )
   // Опечатка в словаре из JSON молча оставила бы английскую подпись (ADR 0132, LC8).
   const labelSets = (table as { options: { labelSets?: LabelSet[] } }).options
     .labelSets
@@ -317,6 +408,7 @@ const DataGridView = <D extends LabelDictionary = LabelDictionary>({
     virtualizer: columnVirtualizer,
   } = useColumnVirtualizer({
     table,
+    enabled: !gridStub,
     getScrollElement,
   })
 
@@ -367,96 +459,10 @@ const DataGridView = <D extends LabelDictionary = LabelDictionary>({
     columnsTotalSize: bodyWidth,
   })
 
-  const loading = options.loading
-  const initialLoading = loading === 'initial'
-  // Ожидание серверного действия — то же свечение обновления без пропа (ADR 0116, §3); окно
-  // новой выборки серверной модели строк — тоже (ADR 0138, §6).
-  // Действие меню над всей таблицей (ADR 0155, §2): свечение и плашка, как у серверного.
-  const tableAction = useTableState(table, s => {
-    const status = (s as { actionStatus?: ActionStatus }).actionStatus
-    return {
-      pending: tableActionPending(status),
-      failure: tableActionFailure(status),
-    }
-  })
-  const refreshLoading =
-    loading === 'refresh' ||
-    !!serverAction.pending ||
-    tableAction.pending ||
-    !!rowSource.refreshing?.()
-  // Отказ серверного действия — та же плашка; ошибка приложения главнее (ADR 0116, §5).
-  const appError = options.loadError
-  const appFailed = hasLoadError(appError)
-  const { failed } = serverAction
-  const actionError = useMemo(
-    () => failed && { message: serverActionReason(failed, labels) },
-    [failed, labels],
-  )
-  const menuFailure = tableAction.failure
-  const menuError = useMemo(
-    () =>
-      menuFailure && {
-        message:
-          menuFailure.entry.reason?.(labels) ?? labels.actionFailedFallback,
-      },
-    [menuFailure, labels],
-  )
-  // Отказ источника, когда не загружено ничего (серверная модель, ADR 0138, §11).
-  const listError = appFailed ? undefined : rowSource.loadError?.()
-  const sourceError = useMemo(
-    () => listError && { message: listError.reason },
-    [listError],
-  )
-  // Отказ загрузки (ADR 0096): с данными — плашка и красный свет, без них — заглушка.
-  const loadError = useLoadError({
-    table,
-    error: appFailed ? appError : (sourceError ?? actionError ?? menuError),
-    onRetry: appFailed
-      ? options.onRetry
-      : (listError?.retry ?? failed?.retry ?? menuFailure?.entry.retry),
-    loading: initialLoading || refreshLoading,
-    // Отказ действия — всегда плашка: прежние данные на месте, пусть их и нет.
-    hasRows:
-      !listError &&
-      (rowCount > 0 || (!appFailed && (!!failed || !!menuFailure))),
-    // Отказ копирования, вставки и предела записи — не обновления данных: свой заголовок (ADR 0146, §4; ADR 0223).
-    title:
-      !appFailed && !listError && failed?.kind === 'copy'
-        ? labels.serverActionFailedCopy
-        : !appFailed && !listError && failed?.kind === 'paste'
-          ? labels.serverActionFailedPaste
-          : !appFailed && !listError && failed?.kind === 'write'
-            ? labels.serverActionFailedWrite
-            : !appFailed && !listError && !failed && menuFailure?.entry.name
-              ? labels.actionsFailed(menuFailure.entry.name(labels))
-              : undefined,
-  })
-
-  // Скелет первой загрузки — строго по флагу приложения (ADR 0060, §5); отказ без строк
-  // главнее. Тот же расчёт видят компоненты слотов (SL21).
-  const showSkeleton = isSkeletonShown(table)
-
-  // Заглушка пустой таблицы — первая по приоритету запись реестра (ADR 0123); скелет
-  // главнее любой. `grid` встаёт вместо таблицы, `body` — под шапкой.
-  const stubContext: StubContext = {
-    table,
-    rowCount,
-    loadError: {
-      shown: loadError.stubShown,
-      error: options.loadError,
-      reason: loadError.reason,
-      retry: loadError.retry,
-      pending: loadError.pending,
-    },
-  }
-  const activeStub = showSkeleton
-    ? undefined
-    : resolveStub(stubEntriesOf(table), stubContext)
-  const gridStub = activeStub?.placement === 'grid' ? activeStub : undefined
-  const bodyStub = activeStub?.placement === 'body' ? activeStub : undefined
+  const visibleStub = gridStub ?? bodyStub
   const stubTitle =
-    activeStub && activeStub.announce !== false
-      ? activeStub.title(labels)
+    visibleStub && visibleStub.announce !== false
+      ? visibleStub.title(labels)
       : undefined
 
   // Заглушки под шапкой — перед футером в таблице, без футера — после таблицы (ADR 0118, §3).
@@ -616,9 +622,11 @@ const DataGridView = <D extends LabelDictionary = LabelDictionary>({
                         getScrollElement={getScrollElement}
                       />
                       <ScrollingAttribute getScrollElement={getScrollElement} />
-                      <PinnedEdgesAttribute
-                        getScrollElement={getScrollElement}
-                      />
+                      {!gridStub && table.getIsSomeColumnsPinned() && (
+                        <PinnedEdgesAttribute
+                          getScrollElement={getScrollElement}
+                        />
+                      )}
                       {enableOverflowTooltip && (
                         <OverflowTooltip getScrollElement={getScrollElement} />
                       )}
@@ -712,7 +720,6 @@ const DataGridView = <D extends LabelDictionary = LabelDictionary>({
                               stubsAboveFooter ? emptyStubs : undefined
                             }
                             style={{
-                              ...columnSizes,
                               ...columnShiftVars(columnShifts),
                               ...virtualPaddingStyles,
                             }}

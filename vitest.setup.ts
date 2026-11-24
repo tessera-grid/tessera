@@ -2,7 +2,7 @@
 import './src/lib/stories/__tests__/reactCommits'
 
 import { setProjectAnnotations } from '@storybook/react-vite'
-import { commands } from 'vitest/browser'
+import { commands, server } from 'vitest/browser'
 import { pinTestPlatform } from './src/lib/stories/__mocks__/platformKeys'
 import {
   setRealTapDriver,
@@ -17,16 +17,11 @@ import { collectGarbage } from './.storybook/collectGarbage'
 import { watchUnknownActions } from './.storybook/consoleErrors'
 import preview from './.storybook/preview'
 
-setRealTapDriver(at =>
-  (
-    commands as unknown as {
-      realTap: (at: { x: number; y: number }) => Promise<void>
-    }
-  ).realTap(at),
-)
-
-setRealTouchDragDriver(async (from, to, hold) => {
+// Гайды используют CDP для жестов в Chromium. Во всех остальных проектах
+// работает встроенный ввод гайда, в том числе в контрасте на обычном экране.
+if (server.browser === 'chromium') {
   const touch = commands as unknown as {
+    realTap: (at: { x: number; y: number }) => Promise<void>
     realTouchDown: (points: { x: number; y: number }[]) => Promise<void>
     realTouchMove: (
       from: { x: number; y: number },
@@ -35,15 +30,18 @@ setRealTouchDragDriver(async (from, to, hold) => {
     ) => Promise<void>
     realTouchUp: () => Promise<void>
   }
-  await touch.realTouchDown([from])
-  try {
-    if (hold) await new Promise(resolve => setTimeout(resolve, 300))
-    await touch.realTouchMove(from, to, hold ? 12 : 1)
-    if (hold) await new Promise(resolve => setTimeout(resolve, 50))
-  } finally {
-    await touch.realTouchUp()
-  }
-})
+  setRealTapDriver(at => touch.realTap(at))
+  setRealTouchDragDriver(async (from, to, hold) => {
+    await touch.realTouchDown([from])
+    try {
+      if (hold) await new Promise(resolve => setTimeout(resolve, 300))
+      await touch.realTouchMove(from, to, hold ? 12 : 1)
+      if (hold) await new Promise(resolve => setTimeout(resolve, 50))
+    } finally {
+      await touch.realTouchUp()
+    }
+  })
+}
 
 // Wire the Storybook preview annotations into portable stories so
 // composeStories() renders them exactly as Storybook does.

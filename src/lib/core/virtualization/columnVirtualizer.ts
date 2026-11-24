@@ -21,6 +21,7 @@ export interface ColumnVirtualizerParams {
 }
 
 const COLUMNS_OVERSCAN = 4
+const NO_COLUMNS: Column<any, any, unknown>[] = []
 
 /** Состав окна: ключ, индекс, начало и ширина каждой колонки. */
 const windowOf = (items: VirtualItem[]) =>
@@ -50,9 +51,9 @@ export const useColumnVirtualizer = ({
 }: ColumnVirtualizerParams) => {
   // Индексы виртуализатора — в порядке отображения (как ячейки строки и заголовки),
   // иначе размер/ключ закреплённой справа колонки попадает в чужой слот.
-  const displayColumns = getDisplayColumns<Column<any, any, unknown>>(
-    table as never,
-  ).columns
+  const displayColumns = enabled
+    ? getDisplayColumns<Column<any, any, unknown>>(table as never).columns
+    : NO_COLUMNS
 
   // Порядок отображения мемоизирован (`getDisplayColumns`): колбэки новые только при его смене.
   const getEstimateSize = useCallback(

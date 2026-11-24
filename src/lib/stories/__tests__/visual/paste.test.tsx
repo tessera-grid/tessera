@@ -476,6 +476,7 @@ describe('Вставка и очистка выделения (ADR 0219)', () =>
       // Возраст по возрастанию: строка 0 — первая. Вставка 99 — строка уходит в конец.
       api.setSorting([{ id: 'age', desc: false }])
       await expect.poll(() => api.getRowSource().at(0)?.id).toBe('0')
+      await expect.poll(() => cell('0')).not.toBeNull()
       await selectCells(cell('0'))
       pasteText(cell('0'), '99')
       await expect
@@ -483,7 +484,9 @@ describe('Вставка и очистка выделения (ADR 0219)', () =>
         .toBe('0')
       const range = api.store.get().cellSelection.at(-1)
       expect([range.anchorRowId, range.focusRowId]).toEqual(['0', '0'])
-      expect(cell('0').getAttribute('data-cell-selected')).toBe('true')
+      await expect
+        .poll(() => cell('0')?.getAttribute('data-cell-selected'))
+        .toBe('true')
     } finally {
       await screen.unmount()
     }

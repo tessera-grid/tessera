@@ -384,23 +384,36 @@ const serverReset: TesseraFeatureEntry = {
 
 const serverAnswered = (root: HTMLElement) => !busy(root)
 
+const searchOnServer = async (root: HTMLElement, signal: AbortSignal) => {
+  await filterByName(root, signal)
+  const ready = () =>
+    request.search === SEARCH &&
+    allMatch(root, 'city', SEARCH) &&
+    allMatch(root, 'name', NAME) &&
+    serverAnswered(root)
+  if (!ready()) await search(root, SEARCH, ready, signal)
+}
+
 /** Пользователь скрывает колонку возраста в разделе «Колонки» «Настроек вида». */
 const hideAge = async (root: HTMLElement, signal: AbortSignal) => {
   const ageBox = () =>
     document.querySelector<HTMLElement>(
       '[data-testid="column-visibility-menu"] [data-column-id="age"] [role="checkbox"]',
     )
-  if (!headCell(root, 'age')) return
   await repeat(
     () => !!ageBox(),
     () => openViewSettingsSection(root, 'columns'),
     signal,
   )
   await repeat(
-    () => !headCell(root, 'age'),
-    () => ageBox()?.click(),
+    () => ageBox()?.getAttribute('aria-checked') === 'false',
+    () => {
+      const box = ageBox()
+      if (box?.getAttribute('aria-checked') === 'true') box.click()
+    },
     signal,
   )
+  await pollUntil(() => !headCell(root, 'age'), signal)
   await repeat(() => !viewSettingsPopover(), pressEscape, signal)
 }
 
@@ -448,18 +461,8 @@ const SERVER: readonly GuideStoryStep[] = [
       en: 'The search went to the server along with the list of columns it covers. Rows matching both conditions arrived.',
     },
     enter: stepAction(async (root, { signal }) => {
-      await filterByName(root, signal)
-      await search(
-        root,
-        SEARCH,
-        () =>
-          request.search === SEARCH &&
-          request.columnIds.length === 4 &&
-          allMatch(root, 'city', SEARCH) &&
-          allMatch(root, 'name', NAME) &&
-          serverAnswered(root),
-        signal,
-      )
+      await searchOnServer(root, signal)
+      await pollUntil(() => request.columnIds.length === 4, signal)
     }),
   },
   {
@@ -469,6 +472,7 @@ const SERVER: readonly GuideStoryStep[] = [
       en: "The column dropped out of the search too: the app repeated the request with the new list of columns, and the search field's tooltip names them.",
     },
     enter: stepAction(async (root, { signal }) => {
+      await searchOnServer(root, signal)
       await hideAge(root, signal)
       await pollUntil(
         () =>
@@ -1338,6 +1342,7 @@ const LOOKUP: readonly GuideStoryStep[] = [
       en: 'The filters section names the manager by name, not by code.',
     },
     enter: stepAction(async (root, { signal }) => {
+      await filterManager(root, signal)
       await repeat(
         () => !!viewSettingsSectionOpen('filter'),
         () => openViewSettingsSection(root, 'filter'),
@@ -1618,10 +1623,6 @@ export const SavedViewRestore: StoryObj<StoryProps> = {
 
 // --- ADR 0153 S7 ---------------------------------------------------------------------
 
-const FILTER_BUTTON =
-  '.data-grid__head-cell[data-column-id="name"] .column-filter__button'
-const filterButtonOf = (root: HTMLElement) =>
-  root.querySelector<HTMLElement>(FILTER_BUTTON)
 const refreshingGrid = (root: HTMLElement) =>
   !!root.querySelector('.data-grid-theme[data-refreshing]')
 /** Запрос фильтра ждёт сервера: ожидание — свечение под шапкой (ADR 0177, §1). */
@@ -1825,19 +1826,17 @@ const filterValueText = () =>
   (byTestId('filter-value') as HTMLInputElement | null)?.value ?? ''
 
 /** Панель фильтра имён открыта, имя набрано, запрос не ушёл. */
-const nameTyped = (root: HTMLElement, signal: AbortSignal) =>
-  pollUntil(() => {
-    if (!panel()) filterButtonOf(root)?.click()
-    else type(byTestId('filter-value'), NAME)
-    return !!panel() && filterValueText() === NAME && applyEnabled()
+const nameTyped = async (root: HTMLElement, signal: AbortSignal) => {
+  await openPanel(root, 'name', signal)
+  await pollUntil(() => {
+    type(byTestId('filter-value'), NAME)
+    return filterValueText() === NAME && applyEnabled()
   }, signal)
+}
 
 /** Панель фильтра имён открыта. */
 const namePanelOpen = (root: HTMLElement, signal: AbortSignal) =>
-  pollUntil(() => {
-    if (!panel()) filterButtonOf(root)?.click()
-    return !!panel()
-  }, signal)
+  openPanel(root, 'name', signal)
 
 /** Условие применено кнопкой, ответ ещё в пути. */
 const nameApplied = async (root: HTMLElement, signal: AbortSignal) => {
@@ -1988,10 +1987,8 @@ const draftShown = async (root: HTMLElement, signal: AbortSignal) => {
     await closePanel(signal)
     await filterCancelled(root, signal)
   }
-  await pollUntil(() => {
-    if (!panel()) filterButtonOf(root)?.click()
-    return !!panel() && filterValueText() === NAME && applyEnabled()
-  }, signal)
+  await namePanelOpen(root, signal)
+  await pollUntil(() => filterValueText() === NAME && applyEnabled(), signal)
 }
 
 const REAPPLY: readonly GuideStoryStep[] = [
@@ -2178,12 +2175,15 @@ const nameDrafted = async (root: HTMLElement, signal: AbortSignal) => {
 
 /** Условие колонки имён применено кнопкой панели, сервер ответил, панель закрыта. */
 const nameFiltered = async (root: HTMLElement, signal: AbortSignal) => {
-  await pollUntil(() => {
-    if (filterActive(root, 'name') && !filterWaits(root)) return true
-    if (!panel()) filterButtonAt(root, 'name')?.click()
-    else if (applyEnabled()) applyButton()!.click()
-    return false
-  }, signal)
+  if (!filterActive(root, 'name') && !filterWaits(root)) {
+    await namePanelOpen(root, signal)
+    await pollUntil(applyEnabled, signal)
+    applyButton()?.click()
+  }
+  await pollUntil(
+    () => filterActive(root, 'name') && !filterWaits(root),
+    signal,
+  )
   await pollUntil(() => allMatch(root, 'name', NAME), signal)
   await closePanel(signal)
 }
