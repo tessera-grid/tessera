@@ -125,10 +125,12 @@ const getRows = ({ start, end, parentId }: ServerRowsRequest) =>
 
 const Server = () => {
   const table = useCreateTable({
-    columns: [{ id: 'name', accessorKey: 'name', header: 'Name' }] as never,
+    columns: COLUMNS as never,
     data: [] as Item[],
     getRowId: (row: Item) => row.id,
+    state: { columnPinning: { start: ['name'], end: ['c9'] } },
     plugins: [
+      columnPinning(),
       serverRowModel({ getRows, blockSize: 20 }),
       rowExpanding({
         hasChildren: (row: { id: string; depth: number }) =>
@@ -243,6 +245,18 @@ describe('липкие строки групп и веток (ADR 0160)', () => 
       await scrollTo(10 * h)
       await expect.poll(copyIds).toEqual(['r3'])
       expect(copyTops()).toEqual([0])
+      const position = (row: HTMLElement, id: string) =>
+        cellOf(row, id).getBoundingClientRect().left
+      const pinnedLeft = position(copies()[0]!, 'name')
+      const pinnedRight = position(copies()[0]!, 'c9')
+      await scrollTo(10 * h, 900)
+      expect(container().scrollLeft).toBe(900)
+      const real = realRow('r3.6')!
+      const copy = copies()[0]!
+      expect(position(copy, 'name')).toBe(pinnedLeft)
+      expect(position(copy, 'c9')).toBe(pinnedRight)
+      for (const id of ['name', 'c4', 'c9'])
+        expect(position(copy, id)).toBe(position(real, id))
       // r4 — сразу за 40 вложенными строками: на месте 44.
       await scrollTo(43.5 * h)
       // После прыжка блок ветки просят, когда быстрая прокрутка кончится (ADR 0138, SD6).

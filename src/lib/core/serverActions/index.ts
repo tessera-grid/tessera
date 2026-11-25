@@ -83,6 +83,8 @@ interface Chain {
   attempt: number
   /** Сортировка и страница до первого действия цепочки — цель отката. */
   confirmed: Snapshot
+  /** Все действия, чьи срезы входят в текущий запрос. */
+  kinds: ReadonlySet<ServerActionKind>
   kind: ServerActionKind
   /** Номер запроса в канале действий — `cause` его итогов. */
   request: number | undefined
@@ -482,6 +484,7 @@ export const runServerAction = (
   apply: () => void,
   notify: (context: ServerActionContext) => unknown,
   cause?: ServerActionCause,
+  retryKinds?: ReadonlySet<ServerActionKind>,
 ): void => {
   const t = table as ServerTable
   if (!isServer(t, kind)) {
@@ -508,6 +511,14 @@ export const runServerAction = (
   const controller = new AbortController()
   const attempt = ++lastAttempt
   const confirmed = previous?.confirmed ?? before
+  const kinds = new Set(previous?.kinds)
+  for (const retried of retryKinds ?? []) kinds.add(retried)
+  kinds.add(kind)
+  const rejectSlices = (attempted: Snapshot) => {
+    const handlers = rejectHandlers.get(t.store)
+    for (const touched of kinds)
+      handlers?.get(touched)?.({ attempted, confirmed })
+  }
 
   let result: unknown
   try {
@@ -549,7 +560,7 @@ export const runServerAction = (
     revert(t, confirmed, true)
     restoreFilters(t, confirmed)
     // Отменённое условие остаётся черновиком, как отказанное (ADR 0154, §2; ADR 0178, §2).
-    rejectHandlers.get(t.store)?.get(kind)?.({ attempted, confirmed })
+    rejectSlices(attempted)
     markLoadCancelled(table)
     writeServerAction(table, () => ({}))
     resolveServerFailure(table)
@@ -568,6 +579,7 @@ export const runServerAction = (
     unregister,
     attempt,
     confirmed,
+    kinds,
     kind,
     request,
   })
@@ -604,9 +616,16 @@ export const runServerAction = (
     })
     const attempted = snapshotOf(t)
     const retry = () =>
-      runServerAction(table, kind, () => restore(t, attempted), notify, cause)
+      runServerAction(
+        table,
+        kind,
+        () => restore(t, attempted),
+        notify,
+        cause,
+        kinds,
+      )
     revert(t, confirmed)
-    rejectHandlers.get(t.store)?.get(kind)?.({ attempted, confirmed })
+    rejectSlices(attempted)
     writeServerAction(table, () => ({
       failed: { kind, attempt, error, cause, retry },
     }))

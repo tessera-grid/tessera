@@ -2,6 +2,7 @@
 // в компонентах). Стейт-снимки (isResizingColumns/rowDragging) читаются реактивно
 // из общего store.
 import { reportAction } from '../core/debugActions'
+import { getDisplayColumns } from '../core/displayColumns'
 import {
   type CSSProperties,
   type FocusEvent,
@@ -288,9 +289,10 @@ const DataGridView = <D extends LabelDictionary = LabelDictionary>({
   const bodyStub = activeStub?.placement === 'body' ? activeStub : undefined
   // Заглушка остаётся до перехода React. Раскладку колонок строим при открытии таблицы.
   const headerGroups = gridStub ? [] : table.getHeaderGroups()
+  // Индексы окна колонок относятся к порядку показа, включая закреплённые края.
   const leafColumns: Column<any, any, unknown>[] = gridStub
     ? []
-    : table.getVisibleLeafColumns()
+    : getDisplayColumns<Column<any, any, unknown>>(table as never).columns
 
   const isResizingColumns: false | string =
     state.columnResizing?.isResizingColumn ?? false

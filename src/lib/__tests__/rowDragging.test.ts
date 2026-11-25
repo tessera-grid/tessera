@@ -126,7 +126,7 @@ describe('rowDragging', () => {
     ).toBe(false)
   })
 
-  it('PC4: активная группировка делает rowDragging инертным и предупреждает', () => {
+  it('PC4: активная клиентская группировка без onRowDragEnd делает rowDragging инертным и предупреждает', () => {
     const { table } = build([rowGrouping()])
     expect(table.getRowModel().rows[0].getCanDrag()).toBe(true)
     expect(warnings()).toHaveLength(0)

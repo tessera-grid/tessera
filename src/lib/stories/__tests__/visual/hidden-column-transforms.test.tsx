@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
@@ -7,9 +8,13 @@ import { DataGrid } from '../../../grid/DataGrid'
 import {
   columnFiltering,
   columnSorting,
+  type ColumnSortingHooks,
   columnVisibility,
   headerActionMenu,
+  paginationModel,
+  serverRowModel,
 } from '../../../plugins'
+import type { ServerRowsRequest } from '../../../plugins/serverRowModel/types'
 import { columnFilteringLabels } from '../../../plugins/columnFiltering/labels'
 import { columnSortingLabels } from '../../../plugins/columnSorting/labels'
 import { columnVisibilityLabels } from '../../../plugins/columnVisibility/labels'
@@ -44,30 +49,85 @@ const DESCRIPTIONS = [
 
 interface Probe {
   actions: { plugin: string; action: string }[]
-  onToggleColumnSort: ReturnType<typeof vi.fn>
+  onToggleColumnSort: ReturnType<
+    typeof vi.fn<ColumnSortingHooks['onToggleColumnSort']>
+  >
 }
 
-const Grid = ({ probe, eraser }: { probe: Probe; eraser?: boolean }) => {
+interface ServerProbe {
+  mode: 'page' | 'ssrm'
+  rows: (
+    query: Pick<ServerRowsRequest, 'sorting' | 'columnFilters'>,
+  ) => Promise<typeof DATA>
+}
+
+const Grid = ({
+  probe,
+  eraser,
+  server,
+}: {
+  probe: Probe
+  eraser?: boolean
+  server?: ServerProbe
+}) => {
+  const [data, setData] = useState(
+    server && server.mode === 'page'
+      ? () => DATA.filter(row => row.city.includes('a'))
+      : DATA,
+  )
+  async function loadPage(signal: AbortSignal) {
+    const query = table.store.get() as unknown as Parameters<
+      ServerProbe['rows']
+    >[0]
+    const rows = await server!.rows(query)
+    if (!signal.aborted) setData(rows)
+  }
+  const sort = columnSorting({
+    initialSorting: [{ id: TRANSFORMED, desc: true }],
+    onToggleColumnSort:
+      server?.mode === 'page'
+        ? (_id, _sort, { signal }) => loadPage(signal)
+        : probe.onToggleColumnSort,
+  })
+  const filter = columnFiltering({
+    initialColumnFilters: [
+      { id: TRANSFORMED, value: { operator: 'contains', value: 'a' } },
+    ],
+    onFilterChange:
+      server?.mode === 'page'
+        ? (_filters, { signal }) => loadPage(signal)
+        : undefined,
+  })
   const table = useCreateTable({
     columns: [
       { id: 'name', accessorKey: 'name', header: 'Name', size: 200 },
       { id: 'city', accessorKey: 'city', header: 'City', size: 200 },
     ] as never,
-    data: DATA,
+    data,
+    ...(server?.mode === 'page'
+      ? { dataMode: 'server' as const, rowCount: data.length }
+      : {}),
     getRowId: (row: (typeof DATA)[number]) => row.id,
     onDebugAction: (action: { plugin: string; action: string }) => {
       probe.actions.push({ plugin: action.plugin, action: action.action })
     },
     plugins: [
-      columnSorting({
-        initialSorting: [{ id: TRANSFORMED, desc: true }],
-        onToggleColumnSort: probe.onToggleColumnSort,
-      } as never),
-      columnFiltering({
-        initialColumnFilters: [
-          { id: TRANSFORMED, value: { operator: 'contains', value: 'a' } },
-        ],
-      } as never),
+      ...(server ? [filter, sort] : [sort, filter]),
+      ...(server?.mode === 'page'
+        ? [paginationModel()]
+        : server
+          ? [
+              serverRowModel({
+                getRows: async (request: ServerRowsRequest) => {
+                  const rows = await server.rows(request)
+                  return {
+                    rows: rows.slice(request.start, request.end),
+                    rowCount: rows.length,
+                  }
+                },
+              }),
+            ]
+          : []),
       columnVisibility(),
       headerActionMenu(),
     ] as never,
@@ -223,7 +283,7 @@ describe('Преобразования скрытых колонок (ADR 0204)'
     await screen.unmount()
   })
 
-  test('HT4: нажатие ластика снимает все преобразования колонки одним действием путями плагинов (канал действий, серверное действие); кнопка уходит, фокус остаётся в меню', async () => {
+  test('HT4: на клиенте ластик снимает преобразования одним действием через плагины; кнопка уходит, фокус остаётся в меню', async () => {
     const { screen, probe } = await mount()
     expect(bodyRows()).toBe(FILTERED_ROWS)
     await openMenu()
@@ -249,7 +309,7 @@ describe('Преобразования скрытых колонок (ADR 0204)'
     expect(
       probe.actions.filter(action => action.plugin === 'columnVisibility'),
     ).toHaveLength(1)
-    // Сортировка снята серверным путём плагина: его колбэк получил колонку.
+    // Сортировка снята через действие плагина: его колбэк получил колонку.
     expect(probe.onToggleColumnSort).toHaveBeenCalledWith(
       TRANSFORMED,
       false,
@@ -259,6 +319,51 @@ describe('Преобразования скрытых колонок (ADR 0204)'
     await expect.poll(bodyRows).toBe(DATA.length)
     await closeMenu()
     await screen.unmount()
+  })
+
+  test('X12: снятие сортировки и фильтра скрытой колонки согласовано с серверной страницей и SSRM при отказе и успехе', async () => {
+    for (const mode of ['page', 'ssrm'] as const) {
+      let rejectClear = true
+      const rows = vi.fn<ServerProbe['rows']>(async query => {
+        if (query.sorting.length || query.columnFilters.length)
+          return DATA.filter(row => row.city.includes('a'))
+        if (rejectClear) throw new Error('Clear rejected')
+        return DATA
+      })
+      const probe: Probe = {
+        actions: [],
+        onToggleColumnSort: vi.fn<ColumnSortingHooks['onToggleColumnSort']>(),
+      }
+      const screen = await render(
+        <Grid probe={probe} server={{ mode, rows }} />,
+      )
+      try {
+        await expect.poll(bodyRows).toBe(FILTERED_ROWS)
+        await openMenu()
+        await hideInMenu(TRANSFORMED)
+        await humanClick(erasersOf(TRANSFORMED)[0]!)
+        await expect
+          .poll(() => document.body.textContent)
+          .toContain('Clear rejected')
+        expect(rows.mock.lastCall?.[0]).toMatchObject({
+          sorting: [],
+          columnFilters: [],
+        })
+        await expect
+          .poll(() => erasersOf(TRANSFORMED)[0]?.dataset.transforms)
+          .toBe('filter sort')
+        expect(bodyRows()).toBe(FILTERED_ROWS)
+        expect(document.activeElement).toBe(boxOf(TRANSFORMED))
+
+        rejectClear = false
+        await humanClick(erasersOf(TRANSFORMED)[0]!)
+        await expect.poll(bodyRows).toBe(DATA.length)
+        expect(erasersOf(TRANSFORMED)).toHaveLength(0)
+        expect(document.activeElement).toBe(boxOf(TRANSFORMED))
+      } finally {
+        await screen.unmount()
+      }
+    }
   })
 
   test('HT5: пункт кебаба «Скрыть колонку» у колонки с преобразованием несёт подсказку по составу; у колонки без преобразований подсказки нет', async () => {

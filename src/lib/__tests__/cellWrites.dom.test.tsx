@@ -20,6 +20,10 @@ import { useCreateTable } from '../core/useCreateTable'
 import {
   cellEditing,
   cellSelection,
+  columnDragging,
+  columnPinning,
+  columnVisibility,
+  rowExpandingModel,
   rowGroupingModel,
   serverRowModel,
 } from '../plugins'
@@ -63,6 +67,7 @@ type Row = {
   tags: string[]
   owner: Owner | null
   team: string
+  children?: Row[]
 }
 
 const OWNERS: Owner[] = [
@@ -156,6 +161,8 @@ interface HostProps {
   handle?: CellSelectionHandleOptions
   grouping?: string[]
   server?: boolean
+  columnLayout?: boolean
+  tree?: boolean
   /** Свой «сервер» серверной модели и размер блока. */
   getRows?: (request: {
     start: number
@@ -183,6 +190,8 @@ const Host = ({
   handle,
   grouping,
   server,
+  columnLayout,
+  tree,
   getRows,
   blockSize,
   maxCopyRows,
@@ -194,12 +203,17 @@ const Host = ({
     columns: columns as never,
     data: server ? [] : data,
     getRowId: (row: Row) => row.id,
+    ...(tree ? { getSubRows: (row: Row) => row.children } : {}),
     ...(onDraftsChange ? { onDraftsChange } : {}),
     ...(onDebugAction ? { onDebugAction } : {}),
     ...(locale ? { locale } : {}),
     ...(timeZone ? { timeZone } : {}),
     ...(writeLimits === undefined ? {} : { writeLimits }),
     plugins: [
+      ...(columnLayout
+        ? [columnVisibility(), columnDragging(), columnPinning()]
+        : []),
+      ...(tree ? [rowExpandingModel()] : []),
       cellEditing({
         saveMode,
         onCellEdit,
@@ -808,7 +822,7 @@ describe('вставка из буфера и запись в ячейки (ADR 
     }
   })
 
-  it('WR30: дерево и группировка — вставка идёт по видимому списку, свёрнутые ветки не заполняются; строки-группы места не занимают', async () => {
+  it('WR30: вставка пропускает свёрнутых детей и строки-группы; сохранённый ключ переносит ту же строку в новую группу', async () => {
     const onCommitEdits = vi.fn()
     render({ onCommitEdits, grouping: ['team'] })
     // Обе группы свёрнуты: видимый список — две строки-группы, в них не пишут.
@@ -851,6 +865,66 @@ describe('вставка из буфера и запись в ячейки (ADR 
       '4',
       '5',
     ])
+
+    // Обычное дерево: строка за свёрнутым родителем получает второе значение.
+    act(() => root?.unmount())
+    root = undefined
+    render({
+      tree: true,
+      data: [{ ...ROWS[0]!, children: [ROWS[1]!] }, ROWS[2]!],
+      onCommitEdits,
+    })
+    select(['0', 'age', '0', 'age'])
+    await paste('80\n90')
+    expect(cellsOf(onCommitEdits.mock.lastCall![0])).toEqual([
+      ['0', 'age', 80],
+      ['2', 'age', 90],
+    ])
+
+    let accept!: () => void
+    const save = vi
+      .fn<NonNullable<HostProps['onCommitEdits']>>()
+      .mockRejectedValueOnce(new Error('Rejected'))
+      .mockImplementationOnce(async batch => {
+        await new Promise<void>(resolve => {
+          accept = resolve
+        })
+        const cell = batch.cells[0]!
+        render({
+          grouping: ['team'],
+          saveMode: 'manual',
+          onCommitEdits: save,
+          data: ROWS.map(row =>
+            row.id === cell.rowId ? { ...row, team: String(cell.value) } : row,
+          ),
+        })
+      })
+    act(() => root?.unmount())
+    root = undefined
+    render({ grouping: ['team'], saveMode: 'manual', onCommitEdits: save })
+    act(() => captured.toggleAllRowsExpanded(true))
+    const groupOf = () =>
+      captured.getRowSource().byId('0').getParentRow()?.groupingValue
+    expect(groupOf()).toBe('A')
+    select(['0', 'team', '0', 'team'])
+    await paste('B')
+    expect(groupOf()).toBe('A')
+    expect(save).not.toHaveBeenCalled()
+    act(() => {
+      commitAllDrafts(captured)
+    })
+    await flush()
+    expect(groupOf()).toBe('A')
+    expect(save).toHaveBeenCalledTimes(1)
+    expect(captured.getDrafts()).toHaveLength(1)
+    act(() => {
+      commitAllDrafts(captured)
+    })
+    expect(groupOf()).toBe('A')
+    await act(async () => {
+      accept()
+    })
+    expect(groupOf()).toBe('B')
   })
 
   it('WR32: у пакета id и source, у ячейки — original и value в типе колонки; обратный пакет с source undo применяется тем же каналом', async () => {
@@ -1241,6 +1315,67 @@ describe('вставка в серверной модели строк (ADR 0219
     expect((failed?.error as Error).message).toBe(
       cellSelectionLabels(ENGLISH_LABELS).writeTooManyRows(5, 3),
     )
+  })
+
+  it('X11: изменение видимых колонок при догрузке строк отменяет вставку SSRM и сохраняет id отправленных целей', async () => {
+    const onCommitEdits = vi.fn(
+      (_batch: CellEditBatch): void | Promise<void> => {},
+    )
+    let done: Promise<void> | undefined
+    const changes = [
+      () => captured.getColumn('age').toggleVisibility(false),
+      () => captured.setColumnOrder(['name', 'born', 'age']),
+      () => captured.getColumn('born').pin('start'),
+    ]
+    for (const change of changes) {
+      const backend = await mountServer({ onCommitEdits, columnLayout: true })
+      const say = vi.fn()
+      registerAnnouncer(captured, { say, labels: ENGLISH_LABELS })
+      selectIndex(0, 'name')
+      act(() => {
+        done = pasteData(
+          captured,
+          { text: 'One\t50\nTwo\t51\nThree\t52', html: '' },
+          'api',
+        )
+      })
+      await flush()
+      expect(readServerAction(captured).loadingRows?.kind).toBe('paste')
+      act(() => {
+        change()
+      })
+      await backend.answerAll(done)
+      expect(onCommitEdits).not.toHaveBeenCalled()
+      expect(captured.getRowSource().byId('0').getValue('name')).toBe('Name 0')
+      expect(captured.getRowSource().byId('0').getValue('age')).toBe(20)
+      expect(say).toHaveBeenCalledWith(
+        ENGLISH_LABELS.announceActionCancelled(ENGLISH_LABELS.actionPaste),
+      )
+    }
+
+    let finishSave!: () => void
+    onCommitEdits.mockImplementation(
+      () =>
+        new Promise<void>(resolve => {
+          finishSave = resolve
+        }),
+    )
+    await mountServer({ onCommitEdits, columnLayout: true })
+    selectIndex(0, 'name')
+    act(() => {
+      done = pasteData(captured, { text: 'Saved\t80', html: '' }, 'api')
+    })
+    await vi.waitFor(() => expect(onCommitEdits).toHaveBeenCalledTimes(1))
+    act(() => captured.getColumn('age').toggleVisibility(false))
+    await act(async () => {
+      finishSave()
+      await done
+    })
+    expect(cellsOf(onCommitEdits.mock.calls[0]![0])).toEqual([
+      ['0', 'name', 'Saved'],
+      ['0', 'age', 80],
+    ])
+    expect(captured.getRowSource().byId('0').getValue('age')).toBe(80)
   })
 
   it('LM8: серверная модель — запись подчиняется и writeLimits, и cellSelectionMaxCopyRows', async () => {

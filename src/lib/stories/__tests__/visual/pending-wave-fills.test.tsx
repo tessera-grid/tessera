@@ -6,7 +6,13 @@ import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import '../../../ui/theme/theme.css'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
-import { columnPinning, rowActions, rowSelection } from '../../../plugins'
+import {
+  columnPinning,
+  rowActions,
+  rowSelection,
+  serverRowModel,
+  type ServerRowsRequest,
+} from '../../../plugins'
 import { setObjectPending } from '../../../shared/objectPending'
 import {
   type Combo,
@@ -39,6 +45,7 @@ const COLUMNS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'].map(id => ({
   size: 110,
 }))
 const ROWS = Array.from({ length: 14 }, (_, i) => `r${i}`)
+const NO_DATA: { id: string }[] = []
 /**
  * Пары «образец — та же строка в ожидании»: чётная, нечётная, выбранная, подсвеченная. Первые
  * строки не берутся: при прокрутке на них ложится тень шапки.
@@ -60,7 +67,13 @@ type Layout = 'actionsAlone' | 'pinnedRight'
 
 let table: { highlight: (target: object) => unknown }
 
-const Grid = ({ layout }: { layout: Layout }) => {
+const Grid = ({
+  layout,
+  server = false,
+}: {
+  layout: Layout
+  server?: boolean
+}) => {
   const data = useMemo(
     () =>
       ROWS.map((id, i) => ({
@@ -71,7 +84,7 @@ const Grid = ({ layout }: { layout: Layout }) => {
   )
   table = useCreateTable({
     columns: COLUMNS as never,
-    data,
+    data: server ? NO_DATA : data,
     getRowId: (row: { id: string }) => row.id,
     // Все строки видны: hover нижней строки не прокручивает таблицу к тени шапки.
     rowHeight: 40,
@@ -82,6 +95,16 @@ const Grid = ({ layout }: { layout: Layout }) => {
       },
     },
     plugins: [
+      ...(server
+        ? [
+            serverRowModel({
+              getRows: ({ start, end }: ServerRowsRequest) => ({
+                rows: data.slice(start, end),
+                rowCount: data.length,
+              }),
+            }),
+          ]
+        : []),
       columnPinning(),
       rowSelection({
         rowSelection: Object.fromEntries(SELECTED.map(id => [id, true])),
@@ -208,6 +231,65 @@ describe('Волна ожидания на цели-строке по пиксе
     await resetCombo()
     await motion.reducedMotion(false)
   })
+
+  test(
+    'X14: в SSRM волна одинаково покрывает закреплённые, центральные, служебные ячейки и действия строки',
+    async () => {
+      await motion.reducedMotion(true)
+      await applyCombo(COMBOS[0]!)
+      try {
+        for (const layout of ['actionsAlone', 'pinnedRight'] as const) {
+          const screen = await render(<Grid layout={layout} server />)
+          try {
+            await rowsMounted()
+            setObjectPending(table, 'row', [{ row: 'r4' }])
+            await expect
+              .poll(() =>
+                cellsOf('r4').every(cell =>
+                  cell.hasAttribute('data-pending-wave'),
+                ),
+              )
+              .toBe(true)
+            for (const position of ['start', 'end'] as const) {
+              await scrollTo(position)
+              await settle()
+              const shot = await snapshot()
+              const deltas = deltasOf(shot, 'r2', shot, 'r4')
+              const visible = new Set(
+                deltas.map(point => point.name.split(':')[0]),
+              )
+              expect(visible.has('a')).toBe(true)
+              expect(visible.has('i')).toBe(
+                layout === 'pinnedRight' || position === 'end',
+              )
+              expect(
+                cellsOf('r2').filter(
+                  cell =>
+                    cell.dataset.actionsColumnCell === 'true' &&
+                    visible.has(cell.dataset.columnId ?? ''),
+                ),
+              ).toHaveLength(2)
+              expect([...visible].some(id => id && /^[b-h]$/.test(id))).toBe(
+                true,
+              )
+              expect(
+                deltas.some(({ delta }) =>
+                  delta.some(value => Math.abs(value) > 3),
+                ),
+              ).toBe(true)
+              expect(uneven(deltas)).toEqual([])
+            }
+          } finally {
+            await screen.unmount()
+          }
+        }
+      } finally {
+        await resetCombo()
+        await motion.reducedMotion(false)
+      }
+    },
+    PIXEL_TIMEOUT,
+  )
 
   test(
     'PW6: волна на цели-строке — одним слоем на каждой ячейке строки: сдвиг заливки против той же строки без ожидания один у закреплённых слева и справа, служебной колонки, колонки действий — одной справа и рядом с закреплённой, прокручиваемых под ними; у чётной, нечётной, выбранной, подсвеченной строки и под указателем; при прилипшем и не прилипшем блоке; в светлой и тёмной теме и повышенном контрасте',

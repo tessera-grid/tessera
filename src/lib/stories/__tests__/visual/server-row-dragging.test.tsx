@@ -8,6 +8,9 @@ import { scrollLayer } from '../../../core/scrollStretch'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import {
+  columnFilteringModel,
+  columnSortingModel,
+  quickSearchModel,
   rowDragging,
   type RowDragEnd,
   rowExpanding,
@@ -132,6 +135,12 @@ const CHILDREN = 2
 const isBranch = (row: { id: string; depth: number }) =>
   row.depth === 0 && (row.id === 'r3' || row.id === 'r5')
 
+interface QueryControls {
+  setSorting: (value: ServerRowsRequest['sorting']) => void
+  setColumnFilters: (value: ServerRowsRequest['columnFilters']) => void
+  setGlobalFilter: (value: string) => void
+}
+
 const Grid = ({
   getRows,
   rowCount = 1000,
@@ -140,6 +149,7 @@ const Grid = ({
   tree = false,
   groups = false,
   height = 420,
+  controls,
 }: {
   getRows: (request: ServerRowsRequest) => Promise<ServerRowsResponse<Item>>
   rowCount?: number
@@ -150,6 +160,7 @@ const Grid = ({
   /** Строки сгруппированы «сервером» по городу. */
   groups?: boolean
   height?: number
+  controls?: (table: QueryControls) => void
 }) => {
   const table = useCreateTable({
     rowCount: groups ? undefined : rowCount,
@@ -163,12 +174,16 @@ const Grid = ({
         getGroupChildCount: (row: Item) => row.count,
       }),
       rowDragging({ onRowDragEnd }),
+      ...(controls
+        ? [columnSortingModel(), columnFilteringModel(), quickSearchModel()]
+        : []),
       ...(tree ? [rowExpanding({ hasChildren: isBranch as never })] : []),
       ...(groups
         ? [rowGrouping({ initialGrouping: ['city'] }), rowExpanding()]
         : []),
     ] as never,
   })
+  controls?.(table as unknown as QueryControls)
   return (
     <div style={{ width: 400, height }}>
       <DataGrid table={table as never} />
@@ -189,6 +204,75 @@ const rowHeight = () =>
   )
 
 describe('перетаскивание строк в серверной модели (ADR 0159)', () => {
+  test('X15: сортировка, фильтр и поиск SSRM убирают перенос; после очистки бросок действует на актуальный список', async () => {
+    let table!: QueryControls
+    const base = server({ total: 12 })
+    const ends: RowDragEnd[] = []
+    const getRows = async (request: ServerRowsRequest) => {
+      const { rows, rowCount } = await base.getRows(request)
+      const transformed =
+        request.sorting.length ||
+        request.columnFilters.length ||
+        request.globalFilter
+      return {
+        rowCount,
+        rows: transformed
+          ? rows.map(row => ({ ...row, name: `Query ${row.name}` }))
+          : rows,
+      }
+    }
+    const screen = await render(
+      <Grid
+        getRows={getRows}
+        rowCount={12}
+        controls={value => {
+          table = value
+        }}
+        onRowDragEnd={end => void ends.push(end)}
+      />,
+    )
+    const handle = () => rowById('r1')?.querySelector(HANDLE)
+    try {
+      await expect.poll(handle).toBeTruthy()
+      const changes = [
+        {
+          apply: () => table.setSorting([{ id: 'country', desc: true }]),
+          clear: () => table.setSorting([]),
+        },
+        {
+          apply: () =>
+            table.setColumnFilters([
+              { id: 'country', value: { operator: 'contains', value: 'N' } },
+            ]),
+          clear: () => table.setColumnFilters([]),
+        },
+        {
+          apply: () => table.setGlobalFilter('N'),
+          clear: () => table.setGlobalFilter(''),
+        },
+      ]
+      for (const { apply, clear } of changes) {
+        apply()
+        await expect
+          .poll(() => rowById('r1')?.textContent)
+          .toContain('Query N1')
+        expect(handle()).toBeNull()
+        expect(ends).toEqual([])
+        clear()
+        await expect
+          .poll(() => rowById('r1')?.textContent)
+          .not.toContain('Query')
+        await expect.poll(handle).toBeTruthy()
+      }
+      await dragOver('r1', 'r4', 0)
+      await release()
+      await expect.poll(() => indexOf('r1')).toBe(4)
+      expect(ends).toEqual([expect.objectContaining({ rowId: 'r1', index: 4 })])
+    } finally {
+      await screen.unmount()
+    }
+  })
+
   test('MV2: бросок мышью — строка сразу на новом месте в кэше, onRowDragEnd получает { parentId, previousParentId, index }, итог не меняется, getRows не зовётся', async () => {
     const { getRows, starts } = server()
     const ends: RowDragEnd[] = []

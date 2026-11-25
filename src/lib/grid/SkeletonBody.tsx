@@ -29,7 +29,7 @@ import { cellLayersOf, type WindowRow } from '../core/bodyContributions'
 import type { Column, Table } from '../types'
 import { CellWrapperContent, getAlignContent } from './CellWrapperContent'
 import { getCellPinningParams, pinnedSideToDom } from './cellPinningParams'
-import { getColumnSizeVariable } from './columnSizes'
+import { getColumnSizeVariable, getVirtualCellLeft } from './columnSizes'
 import { VirtualCenterSpacer } from './VirtualCenterSpacer'
 
 import bodyStyles from '../grid/Body/Body.module.css'
@@ -98,7 +98,7 @@ const getSkeletonColumns = (
       style: {
         width: size,
         ...(absoluteLeft !== undefined
-          ? { left: absoluteLeft }
+          ? { left: getVirtualCellLeft(column.id, absoluteLeft) }
           : {
               minWidth: size,
               left: pinning.startPinnedOffset,

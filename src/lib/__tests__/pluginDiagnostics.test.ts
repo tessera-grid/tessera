@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest'
 import { injectServiceColumns } from '../core/createColumns'
 import { buildTesseraFeatures, foldEntries } from '../core/features'
 import { columnDragging } from '../plugins/columnDragging'
+import { columnFilteringModel } from '../plugins/columnFilteringModel'
 import { columnSorting } from '../plugins/columnSorting'
 import { rowDragging } from '../plugins/rowDragging'
 import { rowGrouping } from '../plugins/rowGrouping'
@@ -56,7 +57,7 @@ describe('getPluginDiagnostics — снимок активности плаги�
     ])
   })
 
-  it('PC13: встроенные плагины сообщают причину инертности из своих гейтов (grouping / sorting)', () => {
+  it('PC13: снимок rowDragging сообщает причины grouping, sorting и filtering из гейтов', () => {
     const grouped = build([rowGrouping(), rowSelection(), rowDragging()])
     grouped.setGrouping(['cat'])
     expect(statusOf(grouped, 'rowSelection').status).toBe('active')
@@ -67,6 +68,13 @@ describe('getPluginDiagnostics — снимок активности плаги�
     sorted.setSorting([{ id: 'name', desc: false }])
     expect(statusOf(sorted, 'rowDragging').reason).toBe('sorting')
     expect(sorted.getRowModel().rows[0].getCanDrag()).toBe(false)
+
+    const filtered = build([columnFilteringModel(), rowDragging()])
+    filtered.setColumnFilters([
+      { id: 'name', value: { operator: 'contains', value: 'X' } },
+    ])
+    expect(statusOf(filtered, 'rowDragging').reason).toBe('filtering')
+    expect(filtered.getRowModel().rows[0].getCanDrag()).toBe(false)
   })
 
   it('ND11: под вложенной шапкой columnDragging и rowDragging не инертны — причины multiLevelHeader нет', () => {

@@ -14,6 +14,7 @@ import {
 import { reportAction } from '../../core/debugActions'
 import { ENGLISH_LABELS } from '../../core/localization'
 import { announcerLabels } from '../../core/announcer'
+import { serverRowModelReason } from '../../core/pluginDiagnostics'
 import { rowSourceOf } from '../../core/rowSource'
 import { readServerAction, writeServerAction } from '../../core/serverActions'
 import { isThenable } from '../../util/thenable'
@@ -213,6 +214,7 @@ const pasteClip = async (
   const width = clip.rows.reduce((max, row) => Math.max(max, row.length), 0)
   if (bounds.length === 0 || height === 0 || width === 0) return
   const columns = columnOrderOf(t)
+  const server = serverRowModelReason(table)
   // Одно значение — во все диапазоны мультивыделения, иначе — в активный (WR7).
   const single = height === 1 && width === 1
   const ranges = single ? bounds : [bounds.at(-1)!]
@@ -244,6 +246,18 @@ const pasteClip = async (
       const changes: CellWrite[] = []
       for (const target of targets)
         await changesOf(target, clip, width, changes)
+      if (server) {
+        const current = columnOrderOf(t)
+        if (
+          current.length !== columns.length ||
+          current.some((id, index) => id !== columns[index])
+        ) {
+          announceLabel(table, all =>
+            all.announceActionCancelled(all.actionPaste),
+          )
+          return
+        }
+      }
       const cut = targets[0]!.rowsCut
       const pasted = writeCells(table, changes, {
         source: 'paste',

@@ -330,7 +330,7 @@ describe('строки до сохранения (ADR 0178, §7)', () => {
     expect(drafts()).toEqual([])
   })
 
-  it('DR33: строки до сохранения работают в плоском клиентском списке и в серверной модели без группировки; в дереве, группировке и ленте addRow и removeRow инертны с причиной в предупреждении', () => {
+  it('DR33: черновики строк работают в плоских источниках, сохраняют цели при смене серверной страницы и инертны в дереве, группировке и ленте', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const inert = (plugins: unknown[], options = {}) => {
       mount([manual(), ...plugins], options)
@@ -354,6 +354,82 @@ describe('строки до сохранения (ADR 0178, §7)', () => {
     expect(add({ name: 'Zed' }, 1)).toBeTruthy()
     act(() => table.removeRow('3'))
     expect(kinds()).toEqual(['rowInsert', 'rowDelete'])
+    act(() => root?.unmount())
+
+    mount([
+      manual(),
+      serverRowModel({
+        getRows: ({ start, end }) => ({
+          rows: ROWS.slice(start, end),
+          rowCount: ROWS.length,
+        }),
+      }),
+    ])
+    act(() => source().observe?.({ first: 0, last: 9, fast: false }))
+    await vi.waitFor(() => expect(ids()[3]).toBe('3'))
+    expect(add({ name: 'SSRM' }, 1)).toBeTruthy()
+    act(() => table.removeRow('3'))
+    expect(kinds()).toEqual(['rowInsert', 'rowDelete'])
+    act(() => root?.unmount())
+
+    const saved = vi.fn()
+    const ServerPage = () => {
+      const [rows, setRows] = useState(() => ROWS.slice(0, 21))
+      const [page, setPage] = useState({ pageIndex: 0, pageSize: 10 })
+      const start = page.pageIndex * page.pageSize
+      table = useCreateTable({
+        columns,
+        data: rows.slice(start, start + page.pageSize),
+        getRowId: (row: Row) => row.id,
+        dataMode: { pagination: 'server' },
+        rowCount: rows.length,
+        plugins: [
+          paginationModel({ pagination: page, onPaginationChange: setPage }),
+          manual(batch => {
+            saved(batch)
+            const inserted = batch.inserts![0]!
+            const row = { ...ROWS[0]!, ...inserted.values, id: inserted.rowId }
+            setRows(current => [
+              ...current.filter(
+                item =>
+                  !batch.deletes?.some(deleted => deleted.rowId === item.id),
+              ),
+              row,
+            ])
+            return { saved: [{ rowId: inserted.rowId, row }] }
+          }),
+        ],
+      } as never)
+      return null
+    }
+    root = createRoot(document.createElement('div'))
+    act(() => root!.render(createElement(ServerPage)))
+    const inserted = add({ name: 'On server' }, 2)!
+    act(() => table.removeRow('3'))
+    act(() => table.removeRow('4'))
+    act(() => table.setPageIndex(1))
+    expect(ids().slice(0, 4)).toEqual(['10', '11', inserted, '12'])
+    expect(table.getPageCount()).toBe(3)
+    expect(drafts().map(draft => draft.target)).toEqual([
+      { row: inserted },
+      { row: '3' },
+      { row: '4' },
+    ])
+    act(() => table.setPageIndex(0))
+    expect(ids()).toContain('3')
+    expect(ids()[2]).toBe(inserted)
+    act(() => table.setPageIndex(1))
+    await saveDrafts()
+    expect(saved).toHaveBeenCalledTimes(1)
+    expect(saved.mock.calls[0]![0]).toMatchObject({
+      inserts: [{ rowId: inserted, after: '1' }],
+      deletes: [{ rowId: '3' }, { rowId: '4' }],
+    })
+    expect(ids().filter(id => id === inserted)).toHaveLength(1)
+    expect(table.getPageCount()).toBe(2)
+    act(() => table.setPageIndex(0))
+    expect(ids()).not.toContain('3')
+    expect(ids()).not.toContain('4')
   })
 
   it('DR41: копирование диапазона берёт значения новой строки из её черновика, в клиентском режиме и в серверной модели; строки ниже новой — свои, без сдвига на неё, в том числе незагруженные', async () => {

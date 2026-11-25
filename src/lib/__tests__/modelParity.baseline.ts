@@ -394,8 +394,8 @@ export const BEHAVIOUR_DIFFERENCES: readonly BehaviourDifference[] = [
   {
     name: 'rowMotionOnSortAndSearch',
     reason:
-      'В SSRM смена выборки заменяет окно: строки едут только при смене списка транзакцией',
-    adr: 157,
+      'В SSRM движение при смене выборки строится по общим id старого и нового окон; при непересекающихся окнах движения нет',
+    adr: 228,
   },
   {
     name: 'hiddenByFilterCount',

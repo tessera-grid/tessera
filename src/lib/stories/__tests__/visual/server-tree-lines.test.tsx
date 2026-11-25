@@ -7,6 +7,9 @@ import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import { getTreeLines } from '../../../plugins/treeLines/branches'
 import {
+  columnDragging,
+  columnPinning,
+  columnVisibility,
   rowDragging,
   rowExpanding,
   rowGrouping,
@@ -44,6 +47,10 @@ const GROUP_COLUMNS = [
   ...COLUMNS,
   { id: 'city', accessorKey: 'city', header: 'City' },
 ]
+const LAYOUT_COLUMNS = [
+  ...GROUP_COLUMNS,
+  { id: 'id', accessorKey: 'id', header: 'ID' },
+].map(column => ({ ...column, size: 110 }))
 const NO_DATA: Item[] = []
 const ROOTS = 30
 const BLOCK = 10
@@ -89,13 +96,16 @@ const server = ({
 const Tree = ({
   getRows,
   drag = false,
+  layout,
 }: {
   getRows: (request: ServerRowsRequest) => Promise<ServerRowsResponse<Item>>
   drag?: boolean
+  layout?: Record<string, unknown>
 }) => {
   const table = useCreateTable({
     rowCount: ROOTS,
-    columns: COLUMNS as never,
+    columns: (layout ? LAYOUT_COLUMNS : COLUMNS) as never,
+    state: layout as never,
     data: NO_DATA,
     getRowId: (row: Item) => row.id,
     plugins: [
@@ -106,6 +116,9 @@ const Tree = ({
       } as never),
       treeLines(),
       ...(drag ? [rowDragging()] : []),
+      ...(layout
+        ? [columnDragging(), columnPinning(), columnVisibility()]
+        : []),
     ] as never,
   })
   return (
@@ -162,6 +175,54 @@ const expandBranch = async () => {
 }
 
 describe('линии дерева в серверной модели (ADR 0161)', () => {
+  test('X13: в SSRM отступ и линии меняют колонку вместе у видимой строки и скелета ветки', async () => {
+    const { getRows, reply } = server({ size: 25, held: [10] })
+    const screen = await render(<Tree getRows={getRows} layout={{}} />)
+    const check = async (columnId: string) => {
+      for (const index of [3, 13]) {
+        const indent = () =>
+          [...atIndex(index)!.querySelectorAll<HTMLElement>('[data-column-id]')]
+            .filter(cell => parseFloat(getComputedStyle(cell).paddingLeft) > 0)
+            .map(cell => cell.dataset.columnId)
+        await expect.poll(indent).toEqual([columnId])
+        const row = atIndex(index)!
+        const lineCell = row.querySelector<HTMLElement>('[data-tree-depth]')!
+        expect(lineCell.dataset.columnId).toBe(columnId)
+        expect(linesOf(row)).toBe(CHILD)
+      }
+    }
+    try {
+      await expandBranch()
+      await expect
+        .poll(() => atIndex(13)?.hasAttribute('data-pending-row'))
+        .toBe(true)
+      await check('country')
+      const pinned = { columnPinning: { start: ['city'], end: [] } }
+      await screen.rerender(<Tree getRows={getRows} layout={pinned} />)
+      await check('city')
+      const hidden = { ...pinned, columnVisibility: { city: false } }
+      await screen.rerender(<Tree getRows={getRows} layout={hidden} />)
+      await check('country')
+      await screen.rerender(
+        <Tree
+          getRows={getRows}
+          layout={{ ...hidden, columnOrder: ['id', 'country', 'city'] }}
+        />,
+      )
+      await check('id')
+      // Сначала завершается перестановка колонок, затем меняется только источник строки.
+      await settleRowMotion()
+      expect(atIndex(13)!.hasAttribute('data-pending-row')).toBe(true)
+      const edges = lineEdges(atIndex(13)!)
+      reply(10)
+      await expect.poll(() => rowById('r2.10')).not.toBeNull()
+      await check('id')
+      expect(lineEdges(atIndex(13)!)).toBe(edges)
+    } finally {
+      await screen.unmount()
+    }
+  })
+
   test('TL10: незагруженные строки ветки — с линиями дерева; приход блока линии не меняет и не сдвигает', async () => {
     // Ветка r2 — 25 детей: строки с 10 — незагруженные, пока тест не ответит.
     const { getRows, reply } = server({ size: 25, held: [10, 20] })
