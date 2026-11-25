@@ -3,7 +3,7 @@ import { composeStories } from '@storybook/react-vite'
 import { addons, composeConfigs, mockChannel } from 'storybook/preview-api'
 import { commands, page } from 'vitest/browser'
 
-import { contrast, effectiveBg, toRgba } from './a11y-helpers'
+import { contrast, effectiveBg, luminance, toRgba } from './a11y-helpers'
 import { PALETTE_ROLES } from '../../__mocks__/catalog'
 
 // Измерения матрицы контраста (ADR 0089): сочетания палитры, темы и режима, фон по
@@ -813,6 +813,40 @@ const passesPointer = (node: axe.NodeResult) => {
 }
 
 /**
+ * Полупрозрачная подсказка может накрывать границу поверхностей. Если её текст
+ * целиком виден, контраст гарантирован по самому близкому к цвету текста фону
+ * из диапазона наложений заливки на чёрное и белое.
+ */
+const tooltipContrastAtEveryBackdrop = (
+  node: axe.NodeResult,
+  more: boolean,
+) => {
+  const el = document.querySelector(node.target.join(' '))
+  if (!el?.matches('[data-tooltip-popup]') || opacityOf(el) !== 1) return false
+  const css = style(el)
+  if (css.backgroundImage !== 'none') return false
+  const rects = textRects(el)
+  if (!rects.length || rects.some(rect => !onScreen(rect, el))) return false
+  const fg = toRgba(css.color)
+  const bg = toRgba(css.backgroundColor)
+  if (fg[3] !== 1 || bg[3] === 0) return false
+  const alpha = bg[3]!
+  const darkest = bg
+    .slice(0, 3)
+    .map(c => c * alpha)
+    .concat(1)
+  const lightest = darkest
+    .slice(0, 3)
+    .map(c => c + 255 * (1 - alpha))
+    .concat(1)
+  const text = luminance(fg)
+  const need = isLarge(el) ? (more ? 4.5 : 3) : more ? 7 : 4.5
+  if (text < luminance(darkest)) return contrast(fg, darkest) >= need
+  if (text > luminance(lightest)) return contrast(fg, lightest) >= need
+  return false
+}
+
+/**
  * Узел под липким предком (шапка, футер, закреплённая колонка) при прокрученном теле:
  * `scrollIntoView` его не сдвигает, и axe считает его частично перекрытым, хотя он
  * виден целиком; его текст считает аудит узлов (CX1–CX5, CX12).
@@ -941,7 +975,9 @@ export const runAxe = async (
           }
           if (
             reason === 'elmPartiallyObscured' &&
-            (insideSticky(node) || passesPointer(node))
+            (insideSticky(node) ||
+              passesPointer(node) ||
+              tooltipContrastAtEveryBackdrop(node, combo.mode === 'more'))
           ) {
             continue
           }

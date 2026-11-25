@@ -21,7 +21,7 @@ import {
 
 const ZOOMS = [0.67, 0.8, 0.9, 1.1, 1.25, 1.5]
 
-// Окно не шире 900px: кадр теста снимается в масштабе 1, без своего уменьшения.
+// Стенд Vitest снимает это окно в масштабе 1.
 const viewport = { width: innerWidth, height: innerHeight }
 beforeAll(() => page.viewport(900, 700))
 afterAll(() => page.viewport(viewport.width, viewport.height))
@@ -30,7 +30,11 @@ describe('Tree lines under fractional zoom', () => {
   test('TL7: lines and arcs stay visible at 67–90 % and 110–150 % zoom', async () => {
     for (const zoom of ZOOMS) {
       const screen = await render(
-        <div style={{ zoom }}>
+        // Холст истории имеет min-height: 100vh. Ограничиваем его внешнюю рамку,
+        // чтобы при увеличении не появилась полоса прокрутки документа.
+        <div
+          style={{ zoom, height: (innerHeight - 1) / zoom, overflow: 'clip' }}
+        >
           <composed.RowExpandingPlayground {...treeLinesArgs} />
         </div>,
       )

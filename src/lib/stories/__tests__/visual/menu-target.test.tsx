@@ -20,7 +20,7 @@ import {
   rowActions,
   rowExpanding,
 } from '../../../plugins'
-import { failureShownOn, humanClick } from '../helpers'
+import { failureShownOn, humanClick, wideViewport } from '../helpers'
 import { tableLabels } from '../labels'
 import { waitForGrid } from './core-helpers'
 import { PENDING_WAVE_ANIMATION } from '../../../grid/useSkeletonWave'
@@ -598,6 +598,7 @@ const pendOnSelection = async () => {
 
 describe('Волна ожидания на цели', () => {
   test('TG13: пока промис ждёт, ячейки цели чуть темнеют и по ним проходит светлый блик — одна наклонная полоса на все ячейки цели, в одной фазе; текст не светится, ячейки вне цели — тоже; итог снимает подложку и блик', async () => {
+    await wideViewport()
     const { probe } = await renderGrid()
     await pendOnSelection()
     await expect.poll(() => waves().length).toBe(9)
@@ -648,6 +649,7 @@ describe('Волна ожидания на цели', () => {
   })
 
   test('TG14: уменьшенное движение — блика нет, ячейки цели остаются под неподвижной подложкой', async () => {
+    await wideViewport()
     await commands.reducedMotion(true)
     const { probe } = await renderGrid()
     await chooseInContext('Recalculate', 'r2', 'ink')

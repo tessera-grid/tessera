@@ -10,6 +10,7 @@ import { PinButton } from '../../../plugins/columnPinning/PinButton'
 import { ResizeHandler } from '../../../plugins/columnSizing/ResizeHandler'
 import { SortButton } from '../../../plugins/columnSorting/SortButton'
 import { GroupButton } from '../../../plugins/rowGrouping/GroupButton'
+import { wideViewport } from '../helpers'
 import { renderHeaderButtons } from './header-buttons-helpers'
 // Контролы рендерятся без DataGrid — тему подключаем явно (иначе токены не заданы).
 import '../../../ui/theme/theme.css'
@@ -123,6 +124,7 @@ describe('Theming matrix — header controls', () => {
 
     // --- PinButton -------------------------------------------------------------
     test('TT-19p pin button pinned color = --tsr-comp-control-active-color', async () => {
+      await wideViewport()
       const c = await renderThemed(<PinButton pinned onClick={noop} />, dark)
       const btn = c.querySelector('.column-pin__button')!
       expect(read(btn, 'color')).toBe(
