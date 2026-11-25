@@ -3,11 +3,11 @@ import { render } from 'vitest-browser-react'
 import { describe, expect, test } from 'vitest'
 
 import {
-  type GuideStoryStep,
-  GuideStory,
+  type DemoStoryStep,
+  DemoStory,
   guideArgs,
   stepAction,
-} from '../../demos/GuideStory'
+} from '../../demos/DemoStory'
 import { pollUntil, settle, until } from '../../__mocks__/catalogPlay'
 import { tapButton } from '../../__mocks__/touchGuides'
 import { both } from '../storyText.helpers'
@@ -59,7 +59,7 @@ const watchRings = () => {
 describe('атомарные шаги гайда (ADR 0117)', () => {
   test('SN75: atomicSteps не меняет прежние гайды; последовательный шаг выполняет только своё действие, прямой переход, откат и восстановление молча проходят предыдущие и показывают только целевой', async () => {
     const runs = { first: 0, second: 0 }
-    const steps: readonly GuideStoryStep[] = [
+    const steps: readonly DemoStoryStep[] = [
       { title: both('В покое'), hint: both('Действия нет.') },
       {
         title: both('Первое касание'),
@@ -82,7 +82,7 @@ describe('атомарные шаги гайда (ADR 0117)', () => {
     ]
     const mount = (atomicSteps: boolean) =>
       render(
-        <GuideStory
+        <DemoStory
           title={both('Атомарные касания')}
           steps={steps}
           args={args()}
@@ -170,7 +170,7 @@ describe('атомарные шаги гайда (ADR 0117)', () => {
     }
   })
 
-  test('SN76: восстановление ждёт stepAction, применяет пропсы и remount по порядку, блокирует ввод, а новый переход отменяет его и начинается из свежей таблицы', async () => {
+  test('SN76: восстановление ждёт stepAction, применяет пропсы и remount по порядку, блокирует ввод и переходы, а «Сначала» отменяет его', async () => {
     const gate = { release: false }
     const runs = {
       firstStarted: 0,
@@ -182,7 +182,7 @@ describe('атомарные шаги гайда (ADR 0117)', () => {
     }
     const rowCount = (root: ParentNode) =>
       root.querySelector('[role="table"]')?.getAttribute('aria-rowcount') ?? ''
-    const steps: readonly GuideStoryStep[] = [
+    const steps: readonly DemoStoryStep[] = [
       { title: both('В покое'), hint: both('Действия нет.') },
       {
         title: both('Двадцать строк'),
@@ -208,7 +208,7 @@ describe('атомарные шаги гайда (ADR 0117)', () => {
       },
     ]
     const screen = await render(
-      <GuideStory
+      <DemoStory
         title={both('Ожидание восстановления')}
         steps={steps}
         args={args()}
@@ -235,6 +235,11 @@ describe('атомарные шаги гайда (ADR 0117)', () => {
       expect(document.querySelector('[data-testid="guide-changed"]')).toBeNull()
       expect(runs.second).toBe(0)
 
+      expect(stepButton(1).disabled).toBe(true)
+      stepButton(1).click()
+      expect(runs.firstStarted).toBe(1)
+      await userEvent.click(byId('guide-restart'))
+      await expect.poll(() => stepButton(1).disabled).toBe(false)
       await userEvent.click(stepButton(1))
       await expect.poll(() => runs.firstStarted).toBe(2)
       expect(runs.firstDone).toBe(0)

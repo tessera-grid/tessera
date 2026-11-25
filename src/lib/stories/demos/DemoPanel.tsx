@@ -20,7 +20,7 @@ import { type StoryText, textOf } from '../__mocks__/storyText'
 import { keepsFocus } from './guideFocus'
 import { shellText, type StoryShellKey } from './storyShell'
 
-export interface GuideStep {
+export interface DemoStep {
   /** Название шага; русское — ещё и имя шага в `play` (ADR 0225, §5). */
   title: StoryText
   /** Что делает клиент или сервер и что видно в итоге шага. */
@@ -263,7 +263,7 @@ const Badge = ({
   )
 }
 
-export const GuidePanel = ({
+export const DemoPanel = ({
   title,
   steps,
   step,
@@ -273,12 +273,13 @@ export const GuidePanel = ({
   onJump,
   changed = false,
   onRestore,
+  onPlay,
   stepBusy = false,
   restoring = false,
   defaultExpanded = false,
 }: {
   title: StoryText
-  steps: readonly GuideStep[]
+  steps: readonly DemoStep[]
   /** Индекс текущего шага. */
   step: number
   onBack: () => void
@@ -290,6 +291,7 @@ export const GuidePanel = ({
   changed?: boolean
   /** Открыть таблицу текущего шага заново. */
   onRestore?: () => void
+  onPlay?: () => void
   /** Идёт действие шага или показ нажатия. */
   stepBusy?: boolean
   /** Атомарный гайд ещё проигрывает предыдущие шаги или целевой. */
@@ -307,7 +309,7 @@ export const GuidePanel = ({
   const [finished, setFinished] = useState(false)
   // Воспроизведение идёт, пока сценарий не пройден; ручной шаг его снимает.
   const [autoplay, setAutoplay] = useState(false)
-  const playing = autoplay && !finished
+  const playing = autoplay && (!finished || stepBusy)
   const list = useRef<HTMLOListElement>(null)
   // Полоска шага `index` к следующему заливается цветом (вперёд) или пустеет (назад);
   // после неё шаг сменяется. `timed` — заливка воспроизведения на всё время шага:
@@ -331,6 +333,8 @@ export const GuidePanel = ({
   // Шаг под указателем: подложка-карточка.
   const [hovered, setHovered] = useState<number | null>(null)
   const blocking = move !== null && !move.timed
+  const stepJumpLocked = stepBusy || restoring
+  const navigationLocked = stepJumpLocked || blocking
   // Сворачивание сдвинуло бы таблицу посреди шага (SN74).
   const toggleLocked = stepBusy || blocking || playing
   const filling = move && !move.back && !move.timed ? move.index : null
@@ -448,7 +452,7 @@ export const GuidePanel = ({
   // Воспроизведение: полоска к следующему шагу заливается всё время шага — и в свёрнутой
   // панели: по ней идёт линия прогресса (SN34); последний шаг выполняется сразу.
   useEffect(() => {
-    if (!playing || move) return
+    if (!playing || move || stepBusy) return
     const timed = step < last && !stillMotion()
     const timer = setTimeout(
       () => {
@@ -458,14 +462,15 @@ export const GuidePanel = ({
       timed || step === last ? 0 : STEP_MS,
     )
     return () => clearTimeout(timer)
-  }, [playing, move, step, last, expanded, advanceRef])
+  }, [playing, move, step, last, expanded, stepBusy, advanceRef])
   const next = () => {
+    if (navigationLocked) return
     setAutoplay(false)
     advance()
   }
   const back = () => {
+    if (navigationLocked) return
     setAutoplay(false)
-    if (blocking) return
     // Из пройденного — к предпоследнему шагу: последний выполнился бы снова.
     if (finished) setFinished(false)
     if (step === 0) return
@@ -479,6 +484,7 @@ export const GuidePanel = ({
   // Нажатие на значок или название шага — сразу к нему, без анимаций: идущий переход
   // шага и воспроизведение прерываются.
   const jumpTo = (index: number) => {
+    if (stepJumpLocked) return
     setAutoplay(false)
     setMove(null)
     setFinished(index === last)
@@ -507,6 +513,7 @@ export const GuidePanel = ({
       fill.current?.play()
       progressFill.current?.play()
     }
+    onPlay?.()
     setAutoplay(true)
   }
   const ellipsis = {
@@ -602,6 +609,8 @@ export const GuidePanel = ({
       <section
         aria-label={text('guideRegion', { title: name })}
         data-testid="guide"
+        data-guide-playing={playing || undefined}
+        data-guide-moving={blocking || undefined}
         data-busy={blocking || restoring || undefined}
         // Нажатие на панель не забирает фокус у поля ввода и поповера таблицы: открытая
         // правка не сохраняется потерей фокуса, состояние шага остаётся (SN35).
@@ -858,6 +867,7 @@ export const GuidePanel = ({
                     <button
                       type="button"
                       data-step-button={index}
+                      disabled={stepJumpLocked}
                       onClick={() => jumpTo(index)}
                       onMouseEnter={() => setHovered(index)}
                       onMouseLeave={() =>
@@ -876,7 +886,7 @@ export const GuidePanel = ({
                         border: 'none',
                         borderRadius: RADIUS,
                         background:
-                          hovered === index
+                          !stepJumpLocked && hovered === index
                             ? 'color-mix(in srgb, var(--muted) 70%, transparent)'
                             : 'transparent',
                         transition: reducedMotion
@@ -884,8 +894,9 @@ export const GuidePanel = ({
                           : `background-color ${POP_MS}ms ease`,
                         font: 'inherit',
                         color: 'inherit',
+                        opacity: stepJumpLocked && index !== step ? 0.6 : 1,
                         textAlign: 'left',
-                        cursor: 'pointer',
+                        cursor: stepJumpLocked ? 'default' : 'pointer',
                       }}
                     >
                       <div
@@ -960,7 +971,7 @@ export const GuidePanel = ({
             >
               <Button
                 data-testid="guide-back"
-                disabled={(step === 0 && !finished) || blocking}
+                disabled={(step === 0 && !finished) || navigationLocked}
                 onClick={back}
                 icon={<BackIcon aria-hidden="true" />}
               >
@@ -977,7 +988,7 @@ export const GuidePanel = ({
               </Button>
               <Button
                 data-testid="guide-next"
-                disabled={finished || blocking}
+                disabled={finished || navigationLocked}
                 onClick={next}
                 icon={
                   step === last ? <CheckIcon aria-hidden="true" /> : undefined

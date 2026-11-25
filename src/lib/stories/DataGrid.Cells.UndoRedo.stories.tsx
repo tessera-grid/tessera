@@ -33,10 +33,10 @@ import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import {
   type GuideApp,
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 import type {
@@ -272,7 +272,7 @@ const undoneCheck = (root: HTMLElement) =>
 const redoneCheck = (root: HTMLElement) =>
   done.has('redo') && pricesAre(root, PASTED)
 
-const UNDO_PASTE: readonly GuideStoryStep[] = [
+const UNDO_PASTE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Цены можно править', en: 'Prices are editable' },
     hint: {
@@ -323,7 +323,7 @@ export const UndoPaste: StoryObj<StoryProps> = {
   name: 'Undo a paste',
   parameters: { scenario: '0222/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Отмена вставки', en: 'Undoing a paste' }}
       steps={UNDO_PASTE}
       reset={resetGuide}
@@ -362,7 +362,7 @@ const heldUndo = (root: HTMLElement) =>
     }),
   )
 
-const UNDO_ON_SERVER: readonly GuideStoryStep[] = [
+const UNDO_ON_SERVER: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Правки сохраняет сервер', en: 'The server saves edits' },
     hint: {
@@ -425,7 +425,7 @@ export const UndoOnServer: StoryObj<StoryProps> = {
   name: 'Undo saved on the server',
   parameters: { scenario: '0222/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Отмена на сервере', en: 'Undo on the server' }}
       steps={UNDO_ON_SERVER}
       reset={resetGuide}
@@ -467,7 +467,7 @@ const heldPaste = (root: HTMLElement) => {
   paste(root)
 }
 
-const UNDO_WHILE_PENDING: readonly GuideStoryStep[] = [
+const UNDO_WHILE_PENDING: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Сервер отвечает не сразу',
@@ -525,7 +525,7 @@ export const UndoWhilePending: StoryObj<StoryProps> = {
   name: 'Undo while saving',
   parameters: { scenario: '0222/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Отмена во время сохранения', en: 'Undo while saving' }}
       steps={UNDO_WHILE_PENDING}
       reset={resetGuide}
@@ -575,7 +575,7 @@ const colleagueChanges = (app: GuideApp) =>
     })),
   )
 
-const UNDO_CONFLICT: readonly GuideStoryStep[] = [
+const UNDO_CONFLICT: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Таблицу правят двое', en: 'Two people edit the table' },
     hint: {
@@ -627,7 +627,7 @@ export const UndoConflict: StoryObj<StoryProps> = {
   name: 'Changed by someone else',
   parameters: { scenario: '0222/S4', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Чужая правка', en: "Someone else's edit" }}
       steps={UNDO_CONFLICT}
       reset={resetGuide}
@@ -719,7 +719,7 @@ const rewindTo = (root: HTMLElement) => {
   pressEntry('rewind', EDITS.length - 1)
 }
 
-const HISTORY_REWIND: readonly GuideStoryStep[] = [
+const HISTORY_REWIND: readonly DemoStoryStep[] = [
   {
     title: { ru: 'История изменений', en: 'Change history' },
     hint: {
@@ -772,7 +772,7 @@ export const HistoryRewind: StoryObj<StoryProps> = {
   name: 'Rewind with the history',
   parameters: { scenario: '0222/S5', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'История изменений', en: 'Change history' }}
       steps={HISTORY_REWIND}
       reset={resetGuide}
@@ -827,7 +827,7 @@ const undoDrafts = (root: HTMLElement) => {
   once('undo', () => pressUndo(root))
 }
 
-const UNDO_DRAFTS: readonly GuideStoryStep[] = [
+const UNDO_DRAFTS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Правки копятся', en: 'Edits pile up' },
     hint: {
@@ -878,7 +878,7 @@ export const UndoDrafts: StoryObj<StoryProps> = {
   name: 'Undo unsaved changes',
   parameters: { scenario: '0222/S6', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Отмена неприменённого', en: 'Undoing unapplied edits' }}
       steps={UNDO_DRAFTS}
       reset={resetGuide}
@@ -963,7 +963,7 @@ const refuse = (root: HTMLElement, app: GuideApp) => {
   once('refused', () => server.release())
 }
 
-const APP_ENTRY: readonly GuideStoryStep[] = [
+const APP_ENTRY: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Действие приложения', en: 'An app action' },
     hint: {
@@ -1025,7 +1025,7 @@ export const AppHistoryEntry: StoryObj<StoryProps> = {
   name: 'Own action in the history',
   parameters: { scenario: '0222/S8', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Своё действие в истории',
         en: "The app's own action in the history",
@@ -1139,7 +1139,7 @@ const restoreRow = (root: HTMLElement) => {
   once('undo', () => pressToolbar('undo-button'))
 }
 
-const UNDO_ROW_DELETE: readonly GuideStoryStep[] = [
+const UNDO_ROW_DELETE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Удаление по кнопке', en: 'Deleting with a button' },
     hint: {
@@ -1196,7 +1196,7 @@ export const UndoRowDelete: StoryObj<StoryProps> = {
   name: 'Undo a row delete',
   parameters: { scenario: '0222/S9', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Отмена удаления строки', en: 'Undoing a row deletion' }}
       steps={UNDO_ROW_DELETE}
       reset={resetGuide}
@@ -1283,7 +1283,7 @@ const refuseMove = (root: HTMLElement) => {
   once('refused', () => server.release())
 }
 
-const UNDO_ROW_MOVE: readonly GuideStoryStep[] = [
+const UNDO_ROW_MOVE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Порядок товаров', en: 'Product order' },
     hint: {
@@ -1339,7 +1339,7 @@ export const UndoRowMove: StoryObj<StoryProps> = {
   name: 'Undo a row move',
   parameters: { scenario: '0222/S10', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Отмена переноса строки', en: 'Undoing a row move' }}
       steps={UNDO_ROW_MOVE}
       reset={resetGuide}
@@ -1397,7 +1397,7 @@ const backToOriginal = (root: HTMLElement) => {
   if (button) once('original', () => button.click())
 }
 
-const BACK_TO_ORIGINAL: readonly GuideStoryStep[] = [
+const BACK_TO_ORIGINAL: readonly DemoStoryStep[] = [
   {
     title: { ru: 'История изменений', en: 'Change history' },
     hint: {
@@ -1453,7 +1453,7 @@ export const HistoryBackToOriginal: StoryObj<StoryProps> = {
   name: 'Back to original',
   parameters: { scenario: '0222/S11', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Исходный вид', en: 'The original view' }}
       steps={BACK_TO_ORIGINAL}
       reset={resetGuide}
@@ -1512,7 +1512,7 @@ const discardEverything = (root: HTMLElement) => {
   discardAllButton()?.click()
 }
 
-const UNDO_DISCARD: readonly GuideStoryStep[] = [
+const UNDO_DISCARD: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Правки копятся', en: 'Edits pile up' },
     hint: {
@@ -1559,7 +1559,7 @@ export const UndoDiscard: StoryObj<StoryProps> = {
   name: 'Undo a revert',
   parameters: { scenario: '0222/S12', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Отмена сбрасывания', en: 'Undoing a revert' }}
       steps={UNDO_DISCARD}
       reset={resetGuide}
@@ -1628,7 +1628,7 @@ const applyAndShow = (root: HTMLElement) => {
   if (!historyOpen()) once('reopen', () => pressToolbar('edit-history-button'))
 }
 
-const HISTORY_APPLIED: readonly GuideStoryStep[] = [
+const HISTORY_APPLIED: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Правки копятся', en: 'Edits pile up' },
     hint: {
@@ -1673,7 +1673,7 @@ export const HistoryApplied: StoryObj<StoryProps> = {
   name: 'Unsaved and applied in the history',
   parameters: { scenario: '0222/S13', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Неприменённое в истории',
         en: 'Unapplied changes in the history',

@@ -37,11 +37,11 @@ import {
   viewSettingsSectionOpen,
 } from './__mocks__/viewSettings'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 
 /**
  * Настройки вида (ADR 0215): одна кнопка тулбара с разделами плагинов — фильтр, сортировка,
@@ -127,7 +127,7 @@ const openViewSettings = (root: HTMLElement) => {
 
 // --- S1 ------------------------------------------------------------------------------
 
-const SUMMARY: readonly GuideStoryStep[] = [
+const SUMMARY: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Таблица настроена', en: 'The table is set up' },
     hint: {
@@ -193,7 +193,7 @@ export const ViewSettingsSummary: StoryObj<StoryProps> = {
   name: 'Hidden column settings',
   parameters: { scenario: '0215/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Настройки вида', en: 'View settings' }}
       steps={SUMMARY}
       args={guideArgs(VIEW_ARGS, args)}
@@ -250,7 +250,7 @@ const columnBox = (id: string) =>
     `[data-column-id="${id}"] [role="checkbox"]`,
   ) ?? null
 
-const COLUMNS: readonly GuideStoryStep[] = [
+const COLUMNS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Все колонки видны', en: 'All columns are visible' },
     hint: {
@@ -301,7 +301,7 @@ export const ViewSettingsColumns: StoryObj<StoryProps> = {
   name: 'Columns section',
   parameters: { scenario: '0215/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Колонки в настройках вида',
         en: 'Columns in the view settings',
@@ -397,7 +397,7 @@ const OWN_ARGS: Partial<StoryProps> = {
   maxHeight: '360',
 }
 
-const OWN: readonly GuideStoryStep[] = [
+const OWN: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Только мои строки', en: 'Only my rows' },
     hint: {
@@ -458,7 +458,7 @@ export const ViewSettingsOwnSection: StoryObj<StoryProps> = {
   name: 'Own section',
   parameters: { scenario: '0215/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Свой раздел', en: 'A custom section' }}
       steps={OWN}
       args={guideArgs(OWN_ARGS, args)}
@@ -519,7 +519,7 @@ const REFUSED_ARGS: Partial<StoryProps> = {
 const banner = (root: HTMLElement) =>
   root.querySelector<HTMLElement>('[data-testid="load-error-banner"]')
 
-const REFUSED: readonly GuideStoryStep[] = [
+const REFUSED: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Сортировка на сервере по скрытой колонке',
@@ -572,7 +572,7 @@ export const ViewSettingsServerRefused: StoryObj<StoryProps> = {
   name: 'Refused by the server',
   parameters: { scenario: '0215/S4', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Отказ сервера', en: 'Server refusal' }}
       steps={REFUSED}
       args={guideArgs(REFUSED_ARGS, args)}

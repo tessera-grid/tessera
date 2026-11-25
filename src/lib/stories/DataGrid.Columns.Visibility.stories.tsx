@@ -17,7 +17,7 @@ import {
 } from './__mocks__/viewSettings'
 import { storyLabels } from './__mocks__/storyLabels'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import { DemoStory, type DemoStoryStep, guideArgs } from './demos/DemoStory'
 import { columnVisibilityLabels } from '../plugins/columnVisibility/labels'
 
 /**
@@ -118,7 +118,7 @@ const onlyGroupHidden = (id: string) => () => {
   return false
 }
 
-const TOGGLE_ALL: readonly GuideStoryStep[] = [
+const TOGGLE_ALL: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Все колонки видны', en: 'All columns are visible' },
     hint: {
@@ -178,7 +178,7 @@ export const ColumnVisibilityToggleAll: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Все колонки одним флажком',
         en: 'All columns with one checkbox',
@@ -273,7 +273,7 @@ const hideFromMenu = (root: HTMLElement) => {
   else openColumnMenu(root)
 }
 
-const HEADER_MENU: readonly GuideStoryStep[] = [
+const HEADER_MENU: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Меню колонок в заголовках',
@@ -345,7 +345,7 @@ export const ColumnVisibilityWithHeaderMenu: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Скрытие колонки из её меню',
         en: 'Hiding a column from its menu',
@@ -448,7 +448,7 @@ const transformedKebabOf = (root: HTMLElement) =>
 const sortedBy = (root: HTMLElement) =>
   !!root.querySelector(`[data-column-id="${TRANSFORMED}"][aria-sort]`)
 
-const HIDE_SORTED: readonly GuideStoryStep[] = [
+const HIDE_SORTED: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Колонка отсортирована и отфильтрована',
@@ -501,7 +501,7 @@ export const VisibilityHideSortedColumn: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Скрытие отсортированной колонки',
         en: 'Hiding a sorted column',
@@ -570,7 +570,7 @@ const reopenedWithIcons = (root: HTMLElement) => {
   }
 }
 
-const CLEAR_HIDDEN: readonly GuideStoryStep[] = [
+const CLEAR_HIDDEN: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Колонка отсортирована и отфильтрована',
@@ -639,7 +639,7 @@ export const VisibilityClearHiddenTransforms: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Сортировка и фильтр скрытой колонки',
         en: 'Sorting and filter of a hidden column',
@@ -686,7 +686,7 @@ export const VisibilityClearHiddenTransforms: StoryObj<StoryProps> = {
 
 // --- ADR 0133 S2 ---------------------------------------------------------------------
 
-const NESTED_TREE: readonly GuideStoryStep[] = [
+const NESTED_TREE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Все колонки видны', en: 'All columns are visible' },
     hint: {
@@ -734,7 +734,7 @@ export const ColumnVisibilityNestedTree: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Группы колонок в меню', en: 'Column groups in the menu' }}
       steps={NESTED_TREE}
       args={guideArgs(

@@ -28,12 +28,12 @@ import { storyLabels } from './__mocks__/storyLabels'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { getData } from './__mocks__/data'
 import {
-  GuideStory,
+  DemoStory,
   type GuideApp,
-  type GuideStoryStep,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import type { ConsoleLog } from './demos/consoleLog'
 import {
   PAGE_SERVER_TOTAL,
@@ -163,7 +163,7 @@ const nextPage = async (root: HTMLElement, signal: AbortSignal) => {
   }, signal)
 }
 
-const SERVER: readonly GuideStoryStep[] = [
+const SERVER: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Страницы на сервере', en: 'Pages on the server' },
     hint: {
@@ -232,7 +232,7 @@ export const PaginationServer: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Страницы на сервере', en: 'Pages on the server' }}
       steps={SERVER}
       args={guideArgs(
@@ -295,7 +295,7 @@ const ownPagerData = getData(OWN_PAGER_ROWS)
 const statusBarOf = (root: ParentNode) =>
   root.querySelector('[data-testid="data-grid-status-bar"]')
 
-const OWN_PAGER: readonly GuideStoryStep[] = [
+const OWN_PAGER: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Первая страница', en: 'The first page' },
     hint: {
@@ -341,7 +341,7 @@ export const PaginationOwnPager: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Свой пейджер приложения', en: "The app's own pager" }}
       steps={OWN_PAGER}
       args={guideArgs(
@@ -429,7 +429,7 @@ const pageLong = async (root: HTMLElement, signal: AbortSignal) => {
   await pollUntil(() => !!pendingCancelOf(root), signal)
 }
 
-const CANCEL_PAGE: readonly GuideStoryStep[] = [
+const CANCEL_PAGE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Страницы на сервере', en: 'Pages on the server' },
     hint: {
@@ -488,7 +488,7 @@ export const PaginationServerCancel: StoryObj<StoryProps> = {
   name: 'Cancel a page change',
   parameters: { scenario: '0153/S8', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Отмена перехода на страницу',
         en: 'Canceling page navigation',
@@ -591,7 +591,7 @@ const uncheckTwo = (root: HTMLElement) => {
     bodyRow(root, id)?.querySelector<HTMLElement>('[role="checkbox"]')?.click()
 }
 
-const SELECT_ALL_EXCEPT: readonly GuideStoryStep[] = [
+const SELECT_ALL_EXCEPT: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Страница с сервера', en: 'A page from the server' },
     hint: {
@@ -668,7 +668,7 @@ export const PaginationServerSelectAllExcept: StoryObj<StoryProps> = {
   name: 'Server, select all except',
   parameters: { scenario: '0179/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Выбор всего, кроме нескольких',
         en: 'Selecting all but a few',
@@ -739,7 +739,7 @@ const openPage = (root: HTMLElement, page: number, signal: AbortSignal) =>
     return false
   }, signal)
 
-const PAGE_NUMBERS: readonly GuideStoryStep[] = [
+const PAGE_NUMBERS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Ряд номеров', en: 'A row of page numbers' },
     hint: {
@@ -776,7 +776,7 @@ export const PaginationPageNumbers: StoryObj<StoryProps> = {
   name: 'Page numbers',
   parameters: { scenario: '0192/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Переход по номеру страницы',
         en: 'Going to a page by its number',
@@ -846,7 +846,7 @@ const typePage = (
     return false
   }, signal)
 
-const PAGE_INPUT: readonly GuideStoryStep[] = [
+const PAGE_INPUT: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Поле номера', en: 'The page number field' },
     hint: {
@@ -884,7 +884,7 @@ export const PaginationPageInput: StoryObj<StoryProps> = {
   name: 'Page input',
   parameters: { scenario: '0192/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Переход вводом номера',
         en: 'Going to a page by typing its number',
@@ -923,7 +923,7 @@ export const PaginationPageInput: StoryObj<StoryProps> = {
   },
 }
 
-const NARROW_NUMBERS: readonly GuideStoryStep[] = [
+const NARROW_NUMBERS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Широкая таблица', en: 'A wide table' },
     hint: {
@@ -955,7 +955,7 @@ export const PaginationNarrowPageNumbers: StoryObj<StoryProps> = {
   name: 'Narrow panel',
   parameters: { scenario: '0192/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Номера в узкой таблице',
         en: 'Page numbers in a narrow table',
@@ -999,7 +999,7 @@ const refusedPage = {
 const failureBanner = (root: ParentNode) =>
   root.querySelector<HTMLElement>('[data-testid="load-error-banner"]')
 
-const PAGE_REFUSED: readonly GuideStoryStep[] = [
+const PAGE_REFUSED: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Страницы на сервере', en: 'Pages on the server' },
     hint: {
@@ -1053,7 +1053,7 @@ export const PaginationServerPageRefused: StoryObj<StoryProps> = {
   name: 'Refused page',
   parameters: { scenario: '0192/S4', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Сервер отказал в странице',
         en: 'The server refused a page',

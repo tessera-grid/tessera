@@ -37,12 +37,12 @@ import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import {
   type GuideApp,
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   type StepRun,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 import type { TesseraFeatureEntry } from '../core/features'
@@ -205,7 +205,7 @@ const sheetPasted = (root: ParentNode) =>
       !pendingAt(root, row, 'age'),
   )
 
-const FROM_SPREADSHEET: readonly GuideStoryStep[] = [
+const FROM_SPREADSHEET: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Ячейки, которые можно править', en: 'Editable cells' },
     hint: {
@@ -245,7 +245,7 @@ export const PasteFromSpreadsheet: StoryObj<StoryProps> = {
   name: 'Paste from a spreadsheet',
   parameters: { scenario: '0219/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Вставка из таблицы', en: 'Pasting from a spreadsheet' }}
       steps={FROM_SPREADSHEET}
       reset={() => {
@@ -286,7 +286,7 @@ const onePasted = (root: ParentNode) =>
       textOf(root, row, 'age') === ONE_VALUE && !pendingAt(root, row, 'age'),
   )
 
-const ONE_INTO_RANGE: readonly GuideStoryStep[] = [
+const ONE_INTO_RANGE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Ячейки, которые можно править', en: 'Editable cells' },
     hint: {
@@ -329,7 +329,7 @@ export const PasteOneIntoRange: StoryObj<StoryProps> = {
   name: 'One value into a range',
   parameters: { scenario: '0219/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Одно значение во весь диапазон',
         en: 'One value into the whole range',
@@ -371,7 +371,7 @@ const errorsPasted = (root: ParentNode) =>
   textOf(root, 'item-id-3', 'age') === '33' &&
   issueAt(root, ERROR_ROW, 'age')
 
-const WITH_ERRORS_STEPS: readonly GuideStoryStep[] = [
+const WITH_ERRORS_STEPS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Что можно править', en: 'What can be edited' },
     hint: {
@@ -411,7 +411,7 @@ export const PasteWithErrors: StoryObj<StoryProps> = {
   name: 'Read-only and invalid cells',
   parameters: { scenario: '0219/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Вставка с ошибками', en: 'Pasting with errors' }}
       steps={WITH_ERRORS_STEPS}
       reset={() => {
@@ -476,7 +476,7 @@ const retried = (root: ParentNode) =>
   )
 const retryButton = () => byTestId('load-error-retry')
 
-const REFUSED: readonly GuideStoryStep[] = [
+const REFUSED: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Сервер сохраняет вставку', en: 'The server saves the paste' },
     hint: {
@@ -574,7 +574,7 @@ export const PasteRefusedByServer: StoryObj<StoryProps> = {
   name: 'Refused by the server',
   parameters: { scenario: '0219/S4', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Сервер отказал вставке', en: 'The server refused a paste' }}
       steps={REFUSED}
       reset={() => {
@@ -660,7 +660,7 @@ const applied = (root: ParentNode) =>
 const applySettled = (root: ParentNode) =>
   applied(root) && applySavedNotice(root)
 
-const MANUAL: readonly GuideStoryStep[] = [
+const MANUAL: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Сохранение по кнопке', en: 'Saving with a button' },
     hint: {
@@ -704,7 +704,7 @@ export const PasteManualSave: StoryObj<StoryProps> = {
   name: 'Paste, then save by button',
   parameters: { scenario: '0219/S5', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Вставка с сохранением по кнопке',
         en: 'Pasting with manual saving',
@@ -763,7 +763,7 @@ const cutOnce = (root: ParentNode) => {
   cutData = cutFrom(cellOf(root, CUT_ROW, 'age')!)
 }
 
-const CLEAR_AND_CUT: readonly GuideStoryStep[] = [
+const CLEAR_AND_CUT: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Ячейки, которые можно править', en: 'Editable cells' },
     hint: {
@@ -820,7 +820,7 @@ export const ClearAndCut: StoryObj<StoryProps> = {
   name: 'Clear and cut',
   parameters: { scenario: '0219/S10', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Очистка и вырезание', en: 'Clearing and cutting' }}
       steps={CLEAR_AND_CUT}
       reset={() => {
@@ -909,7 +909,7 @@ const selectAndOpenMenu = (root: HTMLElement) => {
   }
 }
 
-const OWN_BULK: readonly GuideStoryStep[] = [
+const OWN_BULK: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Пункт меню приложения', en: "The app's menu item" },
     hint: {
@@ -966,7 +966,7 @@ export const OwnBulkEdit: StoryObj<StoryProps> = {
   name: 'Own action in the context menu',
   parameters: { scenario: '0219/S11', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Своя массовая правка в меню',
         en: 'A custom bulk edit in the menu',
@@ -1070,7 +1070,7 @@ const answerOnce =
     })(root, app)
   }
 
-const CONFIRM: readonly GuideStoryStep[] = [
+const CONFIRM: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Вопрос перед вставкой', en: 'A question before pasting' },
     hint: {
@@ -1109,7 +1109,7 @@ export const PasteConfirm: StoryObj<StoryProps> = {
   name: 'Confirm before pasting',
   parameters: { scenario: '0219/S12', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Подтверждение вставки', en: 'Confirming a paste' }}
       steps={CONFIRM}
       reset={() => {
@@ -1179,7 +1179,7 @@ const LARGE_ARGS = {
   writeLimits: { confirm: 4, max: 20 },
 } satisfies Partial<StoryProps>
 
-const LARGE_CONFIRM: readonly GuideStoryStep[] = [
+const LARGE_CONFIRM: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Вопрос перед большой правкой',
@@ -1221,7 +1221,7 @@ export const LargePasteConfirm: StoryObj<StoryProps> = {
   name: 'Confirm a large paste',
   parameters: { scenario: '0223/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Большая вставка', en: 'A large paste' }}
       steps={LARGE_CONFIRM}
       reset={() => {
@@ -1281,7 +1281,7 @@ const pasteBig = (root: HTMLElement) => {
   if (cell) pasteInto(cell, BIG_SHEET)
 }
 
-const OVER_LIMIT: readonly GuideStoryStep[] = [
+const OVER_LIMIT: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Предел правки', en: 'An edit limit' },
     hint: {
@@ -1328,7 +1328,7 @@ export const PasteOverLimit: StoryObj<StoryProps> = {
   name: 'Paste over the limit',
   parameters: { scenario: '0223/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Предел правки', en: 'An edit limit' }}
       steps={OVER_LIMIT}
       reset={() => {
@@ -1538,7 +1538,7 @@ const copyFilled = (root: ParentNode) =>
       !pendingAt(root, row, 'age'),
   )
 
-const FILL_COPY: readonly GuideStoryStep[] = [
+const FILL_COPY: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Протяжка значения включена', en: 'Fill by dragging is on' },
     hint: {
@@ -1585,7 +1585,7 @@ export const FillCopy: StoryObj<StoryProps> = {
   name: 'Drag a value down',
   parameters: { scenario: '0219/S6', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Протяжка значения', en: 'Filling a value by dragging' }}
       steps={FILL_COPY}
       reset={() => {
@@ -1680,7 +1680,7 @@ const datesFilled = (root: ParentNode) =>
   textOf(root, 'item-id-8', 'delivery') === '2026-11-04' &&
   !pendingAt(root, 'item-id-8', 'delivery')
 
-const FILL_SERIES: readonly GuideStoryStep[] = [
+const FILL_SERIES: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Цены с шагом', en: 'Prices with a step' },
     hint: {
@@ -1748,7 +1748,7 @@ export const FillSeries: StoryObj<StoryProps> = {
   name: 'Continue a series',
   parameters: { scenario: '0219/S7', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Ряд протяжкой', en: 'A series by dragging' }}
       steps={FILL_SERIES}
       reset={() => {
@@ -1820,7 +1820,7 @@ const pressFill = (
   if (cell) pressKey(cell, code === 'KeyD' ? 'd' : 'r', { code, ...mod() })
 }
 
-const FILL_KEYBOARD: readonly GuideStoryStep[] = [
+const FILL_KEYBOARD: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Ячейки, которые можно править', en: 'Editable cells' },
     hint: {
@@ -1898,7 +1898,7 @@ export const FillDownKeyboard: StoryObj<StoryProps> = {
   name: 'Fill down and right from the keyboard',
   parameters: { scenario: '0219/S8', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Заполнение с клавиатуры', en: 'Filling from the keyboard' }}
       steps={FILL_KEYBOARD}
       reset={() => pasteServer.reset()}
@@ -1947,7 +1947,7 @@ const bulkFilled = (root: ParentNode) =>
       textOf(root, row, 'age') === BULK_VALUE && !pendingAt(root, row, 'age'),
   )
 
-const BULK_EDIT: readonly GuideStoryStep[] = [
+const BULK_EDIT: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Ячейки, которые можно править', en: 'Editable cells' },
     hint: {
@@ -2015,7 +2015,7 @@ export const BulkEditCtrlEnter: StoryObj<StoryProps> = {
   name: 'Edit the whole range',
   parameters: { scenario: '0219/S9', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Правка всего диапазона', en: 'Editing the whole range' }}
       steps={BULK_EDIT}
       reset={() => pasteServer.reset()}

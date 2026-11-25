@@ -16,7 +16,7 @@ import {
 } from './__mocks__/catalogPlay'
 import { storyLabels } from './__mocks__/storyLabels'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import { DemoStory, type DemoStoryStep, guideArgs } from './demos/DemoStory'
 import { untilDone } from './__mocks__/cellGestures'
 import type { ConsoleLog } from './demos/consoleLog'
 import { openViewSettingsSection } from './__mocks__/viewSettings'
@@ -103,7 +103,7 @@ export const StubsPlayground: StoryObj<StoryProps> = {
 
 // --- S1 ------------------------------------------------------------------------------
 
-const NO_COLUMNS: readonly GuideStoryStep[] = [
+const NO_COLUMNS: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Ожидание списка колонок от сервера',
@@ -140,7 +140,7 @@ export const StubsNoColumns: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Данные без колонок', en: 'Data without columns' }}
       steps={NO_COLUMNS}
       args={guideArgs({ ...FIXED_HEIGHT, ...PANELS }, args)}
@@ -213,7 +213,7 @@ const hideAllFromMenu = (root: HTMLElement) => {
   return () => clearTimeout(timer)
 }
 
-const COLUMNS_HIDDEN: readonly GuideStoryStep[] = [
+const COLUMNS_HIDDEN: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Таблица с колонками', en: 'A table with columns' },
     hint: {
@@ -270,7 +270,7 @@ export const StubsColumnsHidden: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Все колонки скрыты', en: 'All columns hidden' }}
       steps={COLUMNS_HIDDEN}
       args={guideArgs({ ...FIXED_HEIGHT, enableColumnVisibility: true }, args)}
@@ -330,7 +330,7 @@ export const StubsColumnsHidden: StoryObj<StoryProps> = {
 
 // --- S3 ------------------------------------------------------------------------------
 
-const NO_DATA: readonly GuideStoryStep[] = [
+const NO_DATA: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Данные загружаются', en: 'Data is loading' },
     hint: {
@@ -368,7 +368,7 @@ export const StubsNoData: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Пустой ответ', en: 'An empty response' }}
       steps={NO_DATA}
       args={guideArgs(FIXED_HEIGHT, args)}
@@ -438,7 +438,7 @@ const ordersStub = (log: ConsoleLog) => (
   />
 )
 
-const OWN_STUB: readonly GuideStoryStep[] = [
+const OWN_STUB: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Данные загружаются', en: 'Data is loading' },
     hint: {
@@ -472,7 +472,7 @@ export const StubsCustom: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Своя заглушка', en: 'A custom placeholder' }}
       steps={OWN_STUB}
       args={guideArgs(FIXED_HEIGHT, args)}
@@ -504,7 +504,7 @@ export const StubsCustom: StoryObj<StoryProps> = {
 
 // --- S5 ------------------------------------------------------------------------------
 
-const PLUGIN_REASON: readonly GuideStoryStep[] = [
+const PLUGIN_REASON: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Связь есть', en: 'Connected' },
     hint: { ru: 'Таблица со строками.', en: 'The table has rows.' },
@@ -527,7 +527,7 @@ export const StubsPluginReason: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Своя причина плагина', en: "A plugin's own reason" }}
       steps={PLUGIN_REASON}
       args={guideArgs(

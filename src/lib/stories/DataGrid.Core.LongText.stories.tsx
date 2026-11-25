@@ -20,12 +20,12 @@ import {
   waitForRows,
 } from './__mocks__/catalogPlay'
 import { untilDone } from './__mocks__/cellGestures'
+import { dragGripTo, gripOf, separatorOf } from './__mocks__/columnGrip'
 import {
   openViewSettingsSection,
   viewSettingsLevel,
   viewSettingsSectionOpen,
 } from './__mocks__/viewSettings'
-import { definePlugin } from '../core/definePlugin'
 import { overflowColumns, overflowData } from './__mocks__/overflowColumns'
 import {
   textOverflowColumns,
@@ -36,11 +36,11 @@ import {
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 
@@ -162,7 +162,7 @@ const hoverTitle = (find: (root: ParentNode) => HTMLElement | null) =>
 const scrollerOf = (root: ParentNode) =>
   root.querySelector<HTMLElement>('.data-grid__container')
 
-const CELLS: readonly GuideStoryStep[] = [
+const CELLS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Длинный текст в ячейках', en: 'Long text in cells' },
     hint: {
@@ -224,7 +224,7 @@ export const LongTextCells: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Длинный текст в ячейках', en: 'Long text in cells' }}
       steps={CELLS}
       args={guideArgs(
@@ -278,48 +278,22 @@ const NARROWED = 'company'
 const WIDE = 360
 const NARROW = 160
 
-let sizingApi: {
-  setColumnSizing: (sizing: Record<string, number>) => void
-} | null = null
-
-/** Отдаёт таблицу шагам истории — ширину меняют, как протяжкой ручки. */
-const sizingHost = definePlugin<{ enabled?: boolean }>()({
-  id: 'longTextSizingHost',
-  setup: () => table => {
-    sizingApi = table as unknown as NonNullable<typeof sizingApi>
-    sizingApi.setColumnSizing({ [NARROWED]: WIDE })
-    return () => {
-      sizingApi = null
-    }
-  },
-})
+const narrowDemoColumns = overflowColumns.map(column =>
+  column.id === NARROWED ? { ...column, size: WIDE } : column,
+)
 
 /** Пользователь протянул ручку ширины колонки до `width`; `then` — когда ширина встала. */
 const resizeTo = (width: number, then?: (root: HTMLElement) => void) =>
-  afterRows((root, signal) => {
-    let tries = 0
-    const run = () => {
-      if (signal.aborted) return
-      if (!sizingApi) {
-        if (++tries < 40) setTimeout(run, 50)
-        return
-      }
-      // Протяжка начинается нажатием на ручку: нажатие прячет подсказку (OT6).
-      longNameTitle(root)?.dispatchEvent(
-        new PointerEvent('pointerdown', {
-          bubbles: true,
-          pointerType: 'mouse',
-        }),
-      )
-      window.dispatchEvent(
-        new PointerEvent('pointerup', { pointerType: 'mouse' }),
-      )
-      sizingApi.setColumnSizing({ [NARROWED]: width })
-      setTimeout(() => {
-        if (!signal.aborted) then?.(root)
-      }, 100)
-    }
-    run()
+  stepAction(async (root, step) => {
+    await pollUntil(() => !!separatorOf(root, NARROWED), step.signal)
+    const head = gripOf(root, NARROWED)!.closest('[data-column-id]')!
+    if (Math.abs(head.getBoundingClientRect().width - width) > 1)
+      await dragGripTo(root, step, NARROWED, width)
+    await pollUntil(
+      () => Math.abs(head.getBoundingClientRect().width - width) <= 1,
+      step.signal,
+    )
+    then?.(root)
   })
 
 const hoverName = (root: HTMLElement) =>
@@ -327,7 +301,7 @@ const hoverName = (root: HTMLElement) =>
     new PointerEvent('pointerover', { bubbles: true, pointerType: 'mouse' }),
   )
 
-const NARROW_STEPS: readonly GuideStoryStep[] = [
+const NARROW_STEPS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Текст помещается', en: 'The text fits' },
     hint: {
@@ -370,15 +344,15 @@ export const LongTextNarrowColumn: StoryObj<StoryProps> = {
   name: 'Narrow a column',
   parameters: { scenario: '0075/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Сужение колонки', en: 'Narrowing a column' }}
       steps={NARROW_STEPS}
       args={guideArgs(
         {
-          columnsOverride: overflowColumns,
+          columnsOverride: narrowDemoColumns,
           dataOverride: overflowData,
           height: '400',
-          extraPlugins: [sizingHost()],
+          enableColumnSizing: true,
         },
         args,
       )}
@@ -393,6 +367,7 @@ export const LongTextNarrowColumn: StoryObj<StoryProps> = {
     })
     await step(NARROW_STEPS[1]!.title.ru, async () => {
       await guideNext(canvas)
+      await stepDone(canvas)
       await until(() => expect(truncated(longNameTitle(canvas))).toBe(true))
       await expect(openTips()).toEqual([])
     })
@@ -403,6 +378,7 @@ export const LongTextNarrowColumn: StoryObj<StoryProps> = {
     })
     await step(NARROW_STEPS[3]!.title.ru, async () => {
       await guideNext(canvas)
+      await stepDone(canvas)
       await until(() => expect(truncated(longNameTitle(canvas))).toBe(false))
       await until(() => expect(openTips()).toEqual([]))
       await settle()
@@ -444,7 +420,7 @@ const focusLongCell = (root: HTMLElement) => {
 const onLongCell = (root: ParentNode) =>
   activeCell(root)?.textContent?.includes(LONG_PERSON) ?? false
 
-const KEYBOARD: readonly GuideStoryStep[] = [
+const KEYBOARD: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Фокус вне таблицы', en: 'Focus outside the table' },
     hint: {
@@ -498,7 +474,7 @@ export const LongTextKeyboard: StoryObj<StoryProps> = {
   name: 'Keyboard',
   parameters: { scenario: '0075/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Длинный текст с клавиатуры',
         en: 'Long text from the keyboard',
@@ -549,7 +525,7 @@ const statusBarLayout = (root: ParentNode) =>
     .querySelector('[data-status-bar-layout]')
     ?.getAttribute('data-status-bar-layout')
 
-const MENUS: readonly GuideStoryStep[] = [
+const MENUS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Меню закрыто', en: 'The menu is closed' },
     hint: {
@@ -596,7 +572,7 @@ export const LongTextMenus: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Длинный текст в меню и панелях',
         en: 'Long text in menus and panels',
@@ -694,7 +670,7 @@ const openSection = (id: string) =>
     root => openViewSettingsSection(root, id),
   )
 
-const LISTS: readonly GuideStoryStep[] = [
+const LISTS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Длинные имена', en: 'Long names' },
     hint: {
@@ -751,7 +727,7 @@ export const LongTextLists: StoryObj<StoryProps> = {
   name: 'Lists',
   parameters: { scenario: '0083/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Длинные имена в списках', en: 'Long names in lists' }}
       steps={LISTS}
       args={guideArgs(

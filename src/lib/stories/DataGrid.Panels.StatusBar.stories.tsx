@@ -20,11 +20,11 @@ import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { seed } from './__mocks__/seed'
 import { storyLabels } from './__mocks__/storyLabels'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import { rowSelectionLabels } from '../plugins/rowSelection/labels'
 
 /**
@@ -89,7 +89,7 @@ const selectRows = (root: HTMLElement, ids: readonly string[]) => {
 }
 const onSecondPage = () => rangeText().startsWith(`${PAGE + 1}–`)
 
-const COUNT_STEPS: readonly GuideStoryStep[] = [
+const COUNT_STEPS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Ничего не выбрано', en: 'No selection yet' },
     hint: {
@@ -151,7 +151,7 @@ export const SelectedCount: StoryObj<StoryProps> = {
   name: 'Selected count',
   parameters: { scenario: '0038/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Счётчик выбранных строк', en: 'Selected rows counter' }}
       steps={COUNT_STEPS}
       args={guideArgs(
@@ -212,7 +212,7 @@ const inFrame = () => {
   })
 }
 
-const NARROW_STEPS: readonly GuideStoryStep[] = [
+const NARROW_STEPS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Широкая таблица', en: 'A wide table' },
     hint: {
@@ -245,7 +245,7 @@ export const PanelsNarrowStatusBar: StoryObj<StoryProps> = {
   name: 'Narrow',
   parameters: { scenario: '0038/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Узкая таблица', en: 'A narrow table' }}
       steps={NARROW_STEPS}
       args={guideArgs(

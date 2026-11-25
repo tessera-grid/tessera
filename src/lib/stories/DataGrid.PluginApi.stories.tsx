@@ -22,12 +22,12 @@ import { exportFormats } from '../../lib/plugins/dataExport'
 import type { ColumnDef } from '../../lib/types'
 import {
   type GuideApp,
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   type StepRun,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import { type ConsoleLog, loggedCallback } from './demos/consoleLog'
 import { shellText } from './demos/storyShell'
 import type { StoryText } from './__mocks__/storyText'
@@ -210,6 +210,8 @@ export const PluginApiPlayground: StoryObj<SessionsArgs> = {
 
 const ROOT = 'node-0'
 const CHILD = 'node-0-0'
+const SIBLING = 'node-0-1'
+const GRANDCHILD = 'node-0-0-0'
 
 const isExpanded = (root: HTMLElement, id: string) =>
   bodyRow(root, id)?.getAttribute('data-expanded') === 'true'
@@ -217,7 +219,7 @@ const isExpanded = (root: HTMLElement, id: string) =>
 const expandRow = (root: HTMLElement, id: string) =>
   bodyRow(root, id)?.querySelector<HTMLElement>('.row-expand-button')?.click()
 
-const REACTIVE: readonly GuideStoryStep[] = [
+const REACTIVE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Дерево свёрнуто', en: 'The tree is collapsed' },
     hint: {
@@ -275,9 +277,9 @@ export const PluginApiReactiveArgs: StoryObj<SessionsArgs> = {
     ...guideControls(),
   },
   render: function Render(args) {
-    const [data] = useState(makeReactiveTree)
+    const [data] = useState(() => makeReactiveTree().slice(0, 3))
     return (
-      <GuideStory
+      <DemoStory
         title={{
           ru: 'Аргументы плагина на лету',
           en: 'Plugin arguments on the fly',
@@ -294,24 +296,24 @@ export const PluginApiReactiveArgs: StoryObj<SessionsArgs> = {
     if (globals.catalog !== true) return
     await step(REACTIVE[0]!.title.ru, async () => {
       await waitForRows(canvas)
-      await until(() => expect(isExpanded(canvas, ROOT)).toBe(false))
+      await until(() =>
+        expect(bodyRow(canvas, ROOT)).toHaveAttribute('data-expanded', 'false'),
+      )
     })
     await step(REACTIVE[1]!.title.ru, async () => {
       await guideNext(canvas)
-      await until(() =>
-        expect(isExpanded(canvas, ROOT) && isExpanded(canvas, CHILD)).toBe(
-          true,
-        ),
-      )
+      await until(() => expect(bodyRow(canvas, GRANDCHILD)).not.toBeNull())
     })
     await step(REACTIVE[2]!.title.ru, async () => {
       await guideNext(canvas)
-      await until(() => expect(isExpanded(canvas, CHILD)).toBe(false))
-      await until(() => expect(isExpanded(canvas, ROOT)).toBe(true))
+      await until(() => {
+        expect(bodyRow(canvas, GRANDCHILD)).toBeNull()
+        expect(bodyRow(canvas, SIBLING)).not.toBeNull()
+      })
     })
     await step(REACTIVE[3]!.title.ru, async () => {
       await guideNext(canvas)
-      await until(() => expect(isExpanded(canvas, CHILD)).toBe(true))
+      await until(() => expect(bodyRow(canvas, GRANDCHILD)).not.toBeNull())
       await settle()
     })
   },
@@ -351,7 +353,7 @@ const typeDraft = (root: HTMLElement) => {
   input.dispatchEvent(new Event('input', { bubbles: true }))
 }
 
-const REVOKE: readonly GuideStoryStep[] = [
+const REVOKE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Правка разрешена', en: 'Editing is allowed' },
     hint: {
@@ -400,7 +402,7 @@ export const PluginApiRevokeEditing: StoryObj<SessionsArgs> = {
   name: 'Revoke editing',
   parameters: { scenario: '0039/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Запрет правки посреди сессии',
         en: 'Disallowing editing mid-session',
@@ -461,7 +463,7 @@ const moveFirstRow = async (root: HTMLElement, signal: AbortSignal) => {
 
 const DRAG_CALLBACKS = { onRowDragEnd: accept, onRowDragCancel: accept }
 
-const CALLBACKS: readonly GuideStoryStep[] = [
+const CALLBACKS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Таблица с перетаскиванием', en: 'A table with dragging' },
     hint: {
@@ -517,7 +519,7 @@ export const SessionCallbacks: StoryObj<SessionsArgs> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Колбэки перетаскивания', en: 'Drag callbacks' }}
       steps={CALLBACKS}
       args={guideArgs(
@@ -607,7 +609,7 @@ const RESIZE_CALLBACKS = {
   onColumnResizeCancel: accept,
 }
 
-const RESIZE: readonly GuideStoryStep[] = [
+const RESIZE: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Таблица с протяжкой ширины',
@@ -656,7 +658,7 @@ export const PluginApiResizeCallbacks: StoryObj<SessionsArgs> = {
   name: 'Resize callbacks',
   parameters: { scenario: '0040/S5', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Колбэки протяжки ширины', en: 'Resize callbacks' }}
       steps={RESIZE}
       args={guideArgs({ ...GRID, enableColumnSizing: true }, args)}
@@ -718,10 +720,10 @@ const sourceText = (key: 'consoleSourcePointer' | 'consoleSourceKeyboard') =>
 const POINTER = sourceText('consoleSourcePointer')
 const KEYBOARD = sourceText('consoleSourceKeyboard')
 
-const guided = (title: StoryText, steps: readonly GuideStoryStep[]) =>
+const guided = (title: StoryText, steps: readonly DemoStoryStep[]) =>
   function Render(args: StoryProps) {
     return (
-      <GuideStory
+      <DemoStory
         title={title}
         steps={steps}
         // Аргументы Storybook, оставшиеся в URL, функции не включают.
@@ -793,7 +795,7 @@ const sortByKeyboard = async (root: HTMLElement, signal: AbortSignal) => {
   await pollUntil(() => head()!.getAttribute('aria-sort') !== direction, signal)
 }
 
-const DEBUG_ACTIONS: readonly GuideStoryStep[] = [
+const DEBUG_ACTIONS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Журнал пуст', en: 'The log is empty' },
     hint: {
@@ -962,7 +964,7 @@ const pressFavorite = (index: number) => (root: HTMLElement) => {
   press()
 }
 
-const OUTCOME_FLASH: readonly GuideStoryStep[] = [
+const OUTCOME_FLASH: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Кнопка избранного', en: 'A favorite button' },
     hint: {
@@ -1087,7 +1089,7 @@ const STAR_ROWS = [starRows()]
 const starButton = (root: ParentNode) =>
   root.querySelector<HTMLElement>('[data-testid="star-rows"]')
 
-const REPORT_ACTION: readonly GuideStoryStep[] = [
+const REPORT_ACTION: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Кнопка плагина', en: 'A plugin button' },
     hint: {
@@ -1237,7 +1239,7 @@ const isMounted = (root: ParentNode, row: string) =>
 /** Пользователь отмечает первую строку кнопкой плагина. */
 const markFirstRow = (root: HTMLElement) => markOf(root, MARKED_ROW)?.click()
 
-const CELL_BUTTON: readonly GuideStoryStep[] = [
+const CELL_BUTTON: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Кнопка плагина в ячейках', en: 'A plugin button in cells' },
     hint: {
@@ -1281,7 +1283,7 @@ export const PluginApiCellButton: StoryObj<StoryProps> = {
   name: 'Cell button',
   parameters: { scenario: '0028/S1', ...GUIDED },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Кнопка плагина в ячейке', en: 'A plugin button in a cell' }}
       steps={CELL_BUTTON}
       args={guideArgs({ ...GRID, dataCount: 100 }, args)}
@@ -1381,7 +1383,7 @@ const appFavoritesWith = (marks: Marks, app: GuideApp, log?: ConsoleLog) => {
 }
 const appMarked = new WeakMap<ConsoleLog, ReturnType<typeof appFavoritesWith>>()
 
-const CONTROLLED: readonly GuideStoryStep[] = [
+const CONTROLLED: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Отметки задало приложение', en: 'The app set the marks' },
     hint: {
@@ -1548,7 +1550,7 @@ const flagAllOf = (root: ParentNode) =>
     `.data-grid__head-cell[data-column-id="${FLAG_COLUMN}"] [data-testid="flag-all"]`,
   )
 
-const SERVICE_COLUMN: readonly GuideStoryStep[] = [
+const SERVICE_COLUMN: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Служебная колонка плагина', en: 'A plugin service column' },
     hint: {
@@ -1651,7 +1653,7 @@ const checkboxOf = (root: ParentNode, row: string) =>
     `.data-grid__body-row[data-row-id="${row}"] [role="checkbox"]`,
   )
 
-const CRASH: readonly GuideStoryStep[] = [
+const CRASH: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Плагин работает', en: 'The plugin works' },
     hint: {
@@ -1684,7 +1686,7 @@ export const PluginApiPluginCrash: StoryObj<StoryProps> = {
     ...GUIDED,
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Падение плагина', en: 'A plugin crash' }}
       steps={CRASH}
       args={guideArgs(
@@ -1800,7 +1802,7 @@ const bothHeld = (root: HTMLElement, signal: AbortSignal) =>
     return false
   }, signal)
 
-const CANCEL_ALL: readonly GuideStoryStep[] = [
+const CANCEL_ALL: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Кнопка приложения', en: 'An app button' },
     hint: {
@@ -1839,7 +1841,7 @@ export const PluginApiCancelPending: StoryObj<StoryProps> = {
   name: 'Cancel everything pending',
   parameters: { scenario: '0153/S5', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Отмена всего ожидающего',
         en: 'Canceling everything pending',
@@ -1916,7 +1918,7 @@ const changedCells = (root: ParentNode) =>
       `${cell.closest<HTMLElement>('[data-row-id]')!.dataset.rowId}:${cell.dataset.columnId}`,
   )
 
-const BODY_ATTRIBUTES: readonly GuideStoryStep[] = [
+const BODY_ATTRIBUTES: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Плагин подключён', en: 'The plugin is connected' },
     hint: {
@@ -1983,7 +1985,7 @@ const CARD_CELL = { rowId: 'item-id-1', columnId: 'firstName' }
 const cellCardOf = () =>
   document.querySelector<HTMLElement>('[data-testid="cell-card"]')
 
-const BODY_EVENTS: readonly GuideStoryStep[] = [
+const BODY_EVENTS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Плагин подключён', en: 'The plugin is connected' },
     hint: {
@@ -2108,7 +2110,7 @@ const markCell = (
   if (!markedCells(root).includes(key)) pressKey(root, MARK_KEY, MARK_CODE)
 }
 
-const BODY_KEYS: readonly GuideStoryStep[] = [
+const BODY_KEYS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Своя клавиша плагина', en: "The plugin's own key" },
     hint: {
@@ -2206,7 +2208,7 @@ const rowCheckbox = (root: ParentNode) =>
     `.data-grid__body-row[data-row-id="${SLICE_ROW}"] [role="checkbox"]`,
   )
 
-const MISSING_SLICE: readonly GuideStoryStep[] = [
+const MISSING_SLICE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Плагин подключён', en: 'The plugin is connected' },
     hint: {
@@ -2313,7 +2315,7 @@ const namesLog = () =>
 const namesLogButton = () =>
   document.querySelector<HTMLElement>('[data-testid="failure-log-button"]')
 
-const ACTION_NAMES_STEPS: readonly GuideStoryStep[] = [
+const ACTION_NAMES_STEPS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Действие плагина', en: 'A plugin action' },
     hint: {
@@ -2356,7 +2358,7 @@ export const PluginApiActionNames: StoryObj<StoryProps> = {
   name: 'Action names',
   parameters: { scenario: '0182/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Подписи действий плагина', en: 'Plugin action labels' }}
       steps={ACTION_NAMES_STEPS}
       args={guideArgs(

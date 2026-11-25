@@ -27,11 +27,11 @@ import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import {
   type GuideApp,
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import type { Draft } from '../core/drafts/drafts'
 import { cellEditingLabels } from '../plugins/cellEditing/labels'
 import { WithConsole } from './demos/StoryConsole'
@@ -133,7 +133,7 @@ const save = (root: HTMLElement, row: string, value: string) => {
 const VALUE_ROW = 'item-id-1'
 const NEW_AGE = '77'
 
-const EDIT_VALUE: readonly GuideStoryStep[] = [
+const EDIT_VALUE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Ячейки, которые можно править', en: 'Editable cells' },
     hint: {
@@ -171,7 +171,7 @@ export const EditingValue: StoryObj<StoryProps> = {
   name: 'Edit a value',
   parameters: { scenario: '0040/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Правка значения', en: 'Editing a value' }}
       steps={EDIT_VALUE}
       args={guideArgs(
@@ -223,7 +223,7 @@ const reachRefusal = (root: HTMLElement) => {
   if (!pending(root, SERVER_ROW)) save(root, SERVER_ROW, REFUSED_AGE)
 }
 
-const EDIT_SERVER_STEPS: readonly GuideStoryStep[] = [
+const EDIT_SERVER_STEPS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Правок нет', en: 'No edits yet' },
     hint: {
@@ -306,7 +306,7 @@ export const EditingServer: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Сохранение на сервере', en: 'Saving on the server' }}
       steps={EDIT_SERVER_STEPS}
       args={guideArgs(
@@ -395,7 +395,7 @@ const reachAway = (root: HTMLElement) => {
   } else draft(root, OTHER_ROW, OTHER_AGE)
 }
 
-const AWAY: readonly GuideStoryStep[] = [
+const AWAY: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Правок нет', en: 'No edits yet' },
     hint: {
@@ -455,7 +455,7 @@ export const EditingRevertedWhileAway: StoryObj<StoryProps> = {
   name: 'Refused while editing another cell',
   parameters: { scenario: '0134/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Отказ, пока идёт другая правка',
         en: 'A refusal while another edit is in progress',
@@ -549,7 +549,7 @@ const draftThenChange = (
   }
 }
 
-const EDIT_SESSION: readonly GuideStoryStep[] = [
+const EDIT_SESSION: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Правка не открыта', en: 'No edit is open' },
     hint: {
@@ -634,7 +634,7 @@ export const EditingSession: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Черновик правки', en: 'An edit draft' }}
       steps={EDIT_SESSION}
       args={guideArgs(
@@ -691,7 +691,7 @@ export const EditingSession: StoryObj<StoryProps> = {
   },
 }
 
-const EDIT_CONFLICT: readonly GuideStoryStep[] = [
+const EDIT_CONFLICT: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Правка не открыта', en: 'No edit is open' },
     hint: {
@@ -744,7 +744,7 @@ export const EditingConflict: StoryObj<StoryProps> = {
   name: 'Conflict blocks save',
   parameters: { scenario: '0040/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Конфликт правки', en: 'An edit conflict' }}
       steps={EDIT_CONFLICT}
       args={guideArgs(
@@ -872,7 +872,7 @@ const editsDrafted = (
   return true
 }
 
-const MANUAL_SAVE: readonly GuideStoryStep[] = [
+const MANUAL_SAVE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Сохранение по кнопке', en: 'Saving with a button' },
     hint: {
@@ -944,7 +944,7 @@ export const ManualSaveCells: StoryObj<StoryProps> = {
   name: 'Save by button',
   parameters: { scenario: '0178/S5', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Сохранение по кнопке', en: 'Saving with a button' }}
       steps={MANUAL_SAVE}
       reset={() => batchServer.reset()}
@@ -990,7 +990,7 @@ export const ManualSaveCells: StoryObj<StoryProps> = {
 const PARTIAL_EDITS = MANUAL_EDITS.slice(0, 2)
 const REFUSED_ROW = 'item-id-2'
 
-const PARTIAL: readonly GuideStoryStep[] = [
+const PARTIAL: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Сохранение по кнопке', en: 'Saving with a button' },
     hint: {
@@ -1042,7 +1042,7 @@ export const ManualSavePartialRefusal: StoryObj<StoryProps> = {
   name: 'Refused part of the batch',
   parameters: { scenario: '0178/S6', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Отказ части пакета', en: 'A partial batch refusal' }}
       steps={PARTIAL}
       reset={() => {
@@ -1084,7 +1084,7 @@ const ROLLBACK_AGE = '77'
 const rollbackPopover = () =>
   document.querySelector<HTMLElement>('[data-testid="cell-issue-popover"]')
 
-const ROLLBACK: readonly GuideStoryStep[] = [
+const ROLLBACK: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Правок нет', en: 'No edits yet' },
     hint: {
@@ -1152,7 +1152,7 @@ export const CellDraftRollback: StoryObj<StoryProps> = {
   name: 'Roll back an edit',
   parameters: { scenario: '0178/S7', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Откат правки', en: 'Reverting an edit' }}
       steps={ROLLBACK}
       args={guideArgs(MANUAL_ARGS, args)}
@@ -1256,7 +1256,7 @@ const allSaved = (root: ParentNode) =>
 const draftsKept = (root: ParentNode) =>
   MANUAL_EDITS.every(([row]) => draftMarked(root, row) && !failed(root, row))
 
-const APPLY_SAVED: readonly GuideStoryStep[] = [
+const APPLY_SAVED: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Правки ждут сохранения', en: 'Edits waiting to be saved' },
     hint: {
@@ -1302,7 +1302,7 @@ export const CellsEditingApplySaved: StoryObj<StoryProps> = {
   name: 'Apply: all saved',
   parameters: { scenario: '0227/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Всё сохранено', en: 'Everything saved' }}
       steps={APPLY_SAVED}
       reset={() => {
@@ -1360,7 +1360,7 @@ const reachRequestFailed = (root: HTMLElement) => {
   applyAll(root)
 }
 
-const APPLY_FAILED: readonly GuideStoryStep[] = [
+const APPLY_FAILED: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Правки ждут сохранения', en: 'Edits waiting to be saved' },
     hint: {
@@ -1421,7 +1421,7 @@ export const CellsEditingApplyFailed: StoryObj<StoryProps> = {
   name: 'Apply: request failed',
   parameters: { scenario: '0227/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Запрос не прошёл', en: 'The request failed' }}
       steps={APPLY_FAILED}
       reset={() => {
@@ -1504,7 +1504,7 @@ const finishTouchEdit = async (
   await pollUntil(() => !inputOf(root, TOUCH_EDIT_ROW), signal)
 }
 
-const DONE_CANCEL: readonly GuideStoryStep[] = [
+const DONE_CANCEL: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Правка пальцем', en: 'Editing with a finger' },
     hint: {
@@ -1552,7 +1552,7 @@ export const CellEditingDoneCancel: StoryObj<StoryProps> = {
   globals: touch.PHONE,
   parameters: { scenario: '0231/S10', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Сохранить и отменить пальцем',
         en: 'Save and cancel by touch',

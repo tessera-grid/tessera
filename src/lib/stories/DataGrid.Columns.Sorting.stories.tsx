@@ -27,11 +27,11 @@ import { untilDone } from './__mocks__/cellGestures'
 import { storyLabels } from './__mocks__/storyLabels'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import { columnSortingLabels } from '../plugins/columnSorting/labels'
 
 /**
@@ -143,7 +143,7 @@ const sortByCountry = (root: HTMLElement) => {
   if (!sorted(root, 'country')) press(sortButtonOf(root, 'country'))
 }
 
-const MULTI_SORT: readonly GuideStoryStep[] = [
+const MULTI_SORT: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Таблица без сортировки', en: 'The table is unsorted' },
     hint: {
@@ -203,7 +203,7 @@ export const ColumnMultiSorting: StoryObj<StoryProps> = {
   tags: ['vr-modes'],
   parameters: vrModes({ scenario: '0012/S1', ...guideControls() }),
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Сортировка по нескольким колонкам',
         en: 'Sorting by several columns',
@@ -285,7 +285,7 @@ const byName = (names: string[]) => {
   return names.length > 1 && (up || down)
 }
 
-const OPTION_LABELS: readonly GuideStoryStep[] = [
+const OPTION_LABELS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Колонки с вариантами', en: 'Columns with options' },
     hint: {
@@ -332,7 +332,7 @@ export const ColumnSortingOptionLabels: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Сортировка по подписи вариантов',
         en: 'Sorting by option labels',
@@ -395,7 +395,7 @@ const isSorted = (values: number[], desc: boolean) =>
         : values[index - 1]! <= value,
   )
 
-const EXTERNAL_SORTING: readonly GuideStoryStep[] = [
+const EXTERNAL_SORTING: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Порядок данных', en: 'Data order' },
     hint: {
@@ -436,7 +436,7 @@ export const SortingExternalControls: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Сортировка кнопками приложения',
         en: "Sorting with the app's buttons",
@@ -513,7 +513,7 @@ const sortByLastName = async (root: HTMLElement, signal: AbortSignal) => {
   await pollUntil(() => sortOf(root, 'lastName') !== 'none', signal)
 }
 
-const ADD_SORT: readonly GuideStoryStep[] = [
+const ADD_SORT: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Сортировки нет', en: 'No sorting' },
     hint: {
@@ -562,7 +562,7 @@ export const SortingAddFromMenu: StoryObj<StoryProps> = {
   name: 'Add to sorting from the menu',
   parameters: { scenario: '0231/S9', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Второй уровень из меню',
         en: 'A second level from the menu',

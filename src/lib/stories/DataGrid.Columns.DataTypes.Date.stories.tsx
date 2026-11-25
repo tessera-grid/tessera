@@ -1,5 +1,5 @@
 import { exportFormats } from '../plugins/dataExport'
-import { stepAction } from './demos/GuideStory'
+import { stepAction } from './demos/DemoStory'
 import { stepDone } from './__mocks__/catalogPlay'
 import { SORT_ROWS, productRows } from './__mocks__/dataTypesData'
 import {
@@ -38,7 +38,7 @@ import {
 } from './__mocks__/catalogPlay'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import { DemoStory, type DemoStoryStep, guideArgs } from './demos/DemoStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 import { DATE_COLUMNS } from './__mocks__/editingData'
@@ -134,7 +134,7 @@ const filterReleased = async (
   await closePanel(signal)
 }
 
-const FILTER: readonly GuideStoryStep[] = [
+const FILTER: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Колонка дат без настройки фильтра',
@@ -195,7 +195,7 @@ export const DataTypesFilter: StoryObj<StoryProps> = {
   name: 'Filter',
   parameters: { scenario: '0172/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Фильтр по типу данных', en: 'Filtering by data type' }}
       steps={FILTER}
       args={guideArgs({ height: '460' }, args)}
@@ -243,7 +243,7 @@ export const DataTypesFilter: StoryObj<StoryProps> = {
 
 const NEW_DAY = '2026-01-20'
 
-const EDIT_DATE: readonly GuideStoryStep[] = [
+const EDIT_DATE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Даты в таблице', en: 'Dates in the table' },
     hint: {
@@ -285,7 +285,7 @@ export const EditingDate: StoryObj<StoryProps> = {
   name: 'Edit',
   parameters: { scenario: '0175/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Правка даты', en: 'Editing a date' }}
       steps={EDIT_DATE}
       args={guideArgs(
@@ -327,7 +327,7 @@ const clearButton = () =>
   datePopup()?.querySelector<HTMLElement>('[data-testid="edit-clear-value"]') ??
   null
 
-const EDIT_DATE_CLEAR: readonly GuideStoryStep[] = [
+const EDIT_DATE_CLEAR: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Дата в ячейке', en: 'A date in a cell' },
     hint: {
@@ -371,7 +371,7 @@ export const EditingDateClear: StoryObj<StoryProps> = {
   name: 'Clear',
   parameters: { scenario: '0175/S8', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Очистка даты', en: 'Clearing a date' }}
       steps={EDIT_DATE_CLEAR}
       args={guideArgs(
@@ -408,7 +408,7 @@ export const EditingDateClear: StoryObj<StoryProps> = {
 
 // --- ADR 0172, S10: сортировка дат -----------------------------------------------------------
 
-const DATE_SORT: readonly GuideStoryStep[] = [
+const DATE_SORT: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Даты выпуска в порядке данных',
@@ -454,7 +454,7 @@ export const DataTypesDateSort: StoryObj<StoryProps> = {
   name: 'Sort',
   parameters: { scenario: '0172/S10', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Сортировка дат', en: 'Sorting dates' }}
       steps={DATE_SORT}
       args={guideArgs({ height: '560' }, args)}
@@ -496,7 +496,7 @@ const exportXlsx = async (root: HTMLElement, signal: AbortSignal) => {
   await chooseAxis('format', 'xlsx', signal)
 }
 
-const DATE_EXCEL: readonly GuideStoryStep[] = [
+const DATE_EXCEL: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Даты выпуска', en: 'Release dates' },
     hint: {
@@ -539,7 +539,7 @@ export const DataTypesDateExcel: StoryObj<StoryProps> = {
   name: 'Export to Excel',
   parameters: { scenario: '0172/S11', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Выгрузка дат в Excel', en: 'Exporting dates to Excel' }}
       steps={DATE_EXCEL}
       args={guideArgs({ height: '460' }, args)}

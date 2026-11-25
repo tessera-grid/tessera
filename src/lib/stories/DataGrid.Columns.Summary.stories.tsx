@@ -14,7 +14,7 @@ import {
   viewSettingsSectionOpen,
 } from './__mocks__/viewSettings'
 import type { ConsoleLog } from './demos/consoleLog'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import { DemoStory, type DemoStoryStep, guideArgs } from './demos/DemoStory'
 import type { ServerRowsRequest } from '../plugins'
 
 /**
@@ -191,7 +191,7 @@ export const SummaryPlayground: StoryObj<StoryProps> = {
 
 // --- S1 ------------------------------------------------------------------------------
 
-const SUM_AT_BOTTOM: GuideStoryStep = {
+const SUM_AT_BOTTOM: DemoStoryStep = {
   title: { ru: 'Сумма внизу', en: 'A sum at the bottom' },
   hint: {
     ru: 'Внизу колонок — суммы их значений.',
@@ -199,7 +199,7 @@ const SUM_AT_BOTTOM: GuideStoryStep = {
   },
 }
 
-const PICK: readonly GuideStoryStep[] = [
+const PICK: readonly DemoStoryStep[] = [
   SUM_AT_BOTTOM,
   {
     title: { ru: 'Список функций', en: 'The function list' },
@@ -224,7 +224,7 @@ export const SummaryPick: StoryObj<StoryProps> = {
   name: 'Pick a function',
   parameters: { scenario: '0230/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Выбор функции сводки', en: 'Picking a summary function' }}
       steps={PICK}
       args={guideArgs(SUMMARY_ARGS, args)}
@@ -255,7 +255,7 @@ export const SummaryPick: StoryObj<StoryProps> = {
 
 // --- S2 ------------------------------------------------------------------------------
 
-const GROUPS: readonly GuideStoryStep[] = [
+const GROUPS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Группы по городу', en: 'Groups by city' },
     hint: {
@@ -278,7 +278,7 @@ export const SummaryGroups: StoryObj<StoryProps> = {
   name: 'Groups',
   parameters: { scenario: '0230/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Сводка в группах', en: 'Summary in groups' }}
       steps={GROUPS}
       args={guideArgs(
@@ -310,7 +310,7 @@ export const SummaryGroups: StoryObj<StoryProps> = {
 
 // --- S3 ------------------------------------------------------------------------------
 
-const NONE: readonly GuideStoryStep[] = [
+const NONE: readonly DemoStoryStep[] = [
   SUM_AT_BOTTOM,
   {
     title: { ru: 'Сводка убрана', en: 'The summary is removed' },
@@ -327,7 +327,7 @@ export const SummaryNone: StoryObj<StoryProps> = {
   name: 'No summary',
   parameters: { scenario: '0230/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Колонка без сводки', en: 'A column without a summary' }}
       steps={NONE}
       args={guideArgs(SUMMARY_ARGS, args)}
@@ -356,7 +356,7 @@ const ALLOWED_COLUMNS = COLUMNS.map(column =>
     : column,
 )
 
-const ALLOWED: readonly GuideStoryStep[] = [
+const ALLOWED: readonly DemoStoryStep[] = [
   SUM_AT_BOTTOM,
   {
     title: { ru: 'Короткий список', en: 'A short list' },
@@ -373,7 +373,7 @@ export const SummaryAllowed: StoryObj<StoryProps> = {
   name: 'Allowed functions',
   parameters: { scenario: '0230/S4', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Свой список функций', en: 'An own function list' }}
       steps={ALLOWED}
       args={guideArgs(
@@ -411,7 +411,7 @@ const levelOf = (column: string) =>
     `[data-view-settings-level="${column}"]`,
   ) ?? null
 
-const VIEW: readonly GuideStoryStep[] = [
+const VIEW: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Свои функции', en: 'Own functions' },
     hint: {
@@ -453,7 +453,7 @@ export const SummaryViewSettings: StoryObj<StoryProps> = {
   name: 'View settings',
   parameters: { scenario: '0230/S5', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Сводка в настройках вида', en: 'Summary in view settings' }}
       steps={VIEW}
       args={guideArgs(
@@ -488,7 +488,7 @@ export const SummaryViewSettings: StoryObj<StoryProps> = {
 
 // --- S6 ------------------------------------------------------------------------------
 
-const RESTORE: readonly GuideStoryStep[] = [
+const RESTORE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Сохранённый выбор', en: 'A saved choice' },
     hint: {
@@ -511,7 +511,7 @@ export const SummaryRestore: StoryObj<StoryProps> = {
   name: 'Restore a saved choice',
   parameters: { scenario: '0230/S6', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Сохранённая сводка', en: 'A saved summary' }}
       steps={RESTORE}
       args={guideArgs(
@@ -591,7 +591,7 @@ const SERVER_ARGS = {
   enableServerRowModel: true,
 } satisfies Partial<StoryProps>
 
-const SERVER_SUM: GuideStoryStep = {
+const SERVER_SUM: DemoStoryStep = {
   title: { ru: 'Сумма с сервера', en: 'A sum from the server' },
   hint: {
     ru: 'Итоги внизу прислал сервер.',
@@ -599,7 +599,7 @@ const SERVER_SUM: GuideStoryStep = {
   },
 }
 
-const SERVER: readonly GuideStoryStep[] = [
+const SERVER: readonly DemoStoryStep[] = [
   {
     ...SERVER_SUM,
     props: ({ log }) => ({ serverRowModelGetRows: serverRowsOf(log) as never }),
@@ -619,7 +619,7 @@ export const SummaryServer: StoryObj<StoryProps> = {
   name: 'Server row model',
   parameters: { scenario: '0230/S7', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Сводка на сервере', en: 'Summary on the server' }}
       steps={SERVER}
       args={guideArgs(SERVER_ARGS, args)}
@@ -639,7 +639,7 @@ export const SummaryServer: StoryObj<StoryProps> = {
   },
 }
 
-const REFUSED: readonly GuideStoryStep[] = [
+const REFUSED: readonly DemoStoryStep[] = [
   {
     ...SERVER_SUM,
     props: ({ log }) => ({
@@ -664,7 +664,7 @@ export const SummaryServerRefused: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Отказ сервера в сводке',
         en: 'The server refuses a summary',

@@ -37,12 +37,12 @@ import {
 } from './__mocks__/rowDragHold'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   type StepRun,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import * as touch from './__mocks__/touchGuides'
 import * as touchPlay from './__mocks__/catalogPlay'
 
@@ -163,7 +163,7 @@ export const RowDraggingTreeLines: StoryObj<StoryProps> = {
 
 // --- ADR 0130, S1: перенос строки мышью ----------------------------------------------
 
-const ROW_MOVE: readonly GuideStoryStep[] = [
+const ROW_MOVE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Ручка строки', en: 'The row drag handle' },
     hint: {
@@ -251,7 +251,7 @@ export const RowDraggingMove: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Перенос строки мышью', en: 'Moving a row with the mouse' }}
       steps={ROW_MOVE}
       args={guideArgs(ROW_MOVE_ARGS, args)}
@@ -362,7 +362,7 @@ const pauseOver = async (
  * через паузу `rowDraggingExpandDelay` группа раскроется, будущий родитель подсвечен.
  * Группы, раскрытые паузой, после броска сворачиваются, кроме группы броска.
  */
-const COLLAPSED_GROUPS: readonly GuideStoryStep[] = [
+const COLLAPSED_GROUPS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Группы свёрнуты', en: 'Groups are collapsed' },
     hint: {
@@ -428,7 +428,7 @@ export const RowDraggingCollapsedGroups: StoryObj<StoryProps> = {
       [colorMode],
     )
     return (
-      <GuideStory
+      <DemoStory
         title={{
           ru: 'Бросок в свёрнутую группу',
           en: 'Dropping into a collapsed group',
@@ -618,7 +618,7 @@ const lazyTreeUpTo = (count: number) =>
     }
   })
 
-const LAZY_TREE: readonly GuideStoryStep[] = [
+const LAZY_TREE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Ленивое дерево', en: 'A lazy tree' },
     hint: {
@@ -711,7 +711,7 @@ export const RowDraggingLazyTree: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Перенос в ленивом дереве', en: 'Moving in a lazy tree' }}
       steps={LAZY_TREE}
       args={guideArgs(LAZY_TREE_ARGS, args)}
@@ -887,14 +887,14 @@ const dropInOtherGroup = async (root: HTMLElement, run: StepRun) => {
   await held.release()
 }
 
-const GROUP_INTRO: GuideStoryStep = {
+const GROUP_INTRO: DemoStoryStep = {
   title: { ru: 'Строки по командам', en: 'Rows by team' },
   hint: {
     ru: 'Строки сгруппированы по команде. Чтобы сменить команду, строку переносят в другую группу.',
     en: "Rows are grouped by team. To change a row's team, you move it to another group.",
   },
 }
-const GROUP_DROPPED: GuideStoryStep = {
+const GROUP_DROPPED: DemoStoryStep = {
   title: {
     ru: 'Пользователь перенёс строку в другую группу',
     en: 'The user moved a row to another group',
@@ -910,7 +910,7 @@ const GROUP_DROPPED: GuideStoryStep = {
   }),
 }
 
-const GROUP_MOVE: readonly GuideStoryStep[] = [
+const GROUP_MOVE: readonly DemoStoryStep[] = [
   GROUP_INTRO,
   GROUP_DROPPED,
   {
@@ -942,7 +942,7 @@ export const GroupDragMove: StoryObj<StoryProps> = {
   name: 'Move to another group',
   parameters: { scenario: '0186/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Перенос в другую группу', en: 'Moving to another group' }}
       steps={GROUP_MOVE}
       args={guideArgs(GROUP_GRID, args)}
@@ -971,7 +971,7 @@ export const GroupDragMove: StoryObj<StoryProps> = {
   },
 }
 
-const GROUP_REFUSED: readonly GuideStoryStep[] = [
+const GROUP_REFUSED: readonly DemoStoryStep[] = [
   GROUP_INTRO,
   GROUP_DROPPED,
   {
@@ -995,7 +995,7 @@ export const GroupDragRefused: StoryObj<StoryProps> = {
   name: 'Move refused by the server',
   parameters: { scenario: '0186/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Отказ в переносе', en: 'A refused move' }}
       steps={GROUP_REFUSED}
       args={guideArgs(GROUP_GRID, args)}
@@ -1044,6 +1044,13 @@ const touchHandleById = (root: ParentNode, id: string) =>
     '.drag__handler--column',
   ) ?? null
 
+const firstTouchHandle = (root: HTMLElement) => {
+  // Касание ячейки может прокрутить ручку за пределы виртуального окна.
+  const grid = root.querySelector<HTMLElement>('.data-grid__container')
+  if (grid?.scrollLeft) grid.scrollLeft = 0
+  return touchHandleById(root, 'item-id-0')
+}
+
 const touchHandleShown = (handle: HTMLElement | null) => {
   const wrapper =
     handle?.querySelector('.cell__button--hidden') ??
@@ -1062,7 +1069,7 @@ const touchDestination = (root: HTMLElement, index: number) => ({
 
 let touchFirstRow: string | null = null
 
-const BY_FINGER: readonly GuideStoryStep[] = [
+const BY_FINGER: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Ручка скрыта', en: 'The handle is hidden' },
     hint: {
@@ -1076,8 +1083,10 @@ const BY_FINGER: readonly GuideStoryStep[] = [
       ru: 'Касание строки показало её ручку переноса.',
       en: 'Touching the row revealed its drag handle.',
     },
-    enter: touch.realTapTarget(root =>
-      touchRowAt(root, 0)?.querySelector('[data-column-id="firstName"]'),
+    enter: touch.realTapTarget(
+      root =>
+        touchRowAt(root, 0)?.querySelector('[data-column-id="firstName"]'),
+      root => touchHandleShown(firstTouchHandle(root)),
     ),
   },
   {
@@ -1087,7 +1096,7 @@ const BY_FINGER: readonly GuideStoryStep[] = [
       en: 'The finger moved before the hold delay; the row stayed in place and the menu did not open.',
     },
     enter: touch.realTouchDragTarget(
-      root => touchHandleById(root, 'item-id-0'),
+      firstTouchHandle,
       root => touchDestination(root, 2),
       false,
     ),
@@ -1098,9 +1107,8 @@ const BY_FINGER: readonly GuideStoryStep[] = [
       ru: 'Пользователь удержал ручку, затем протянул строку вниз — она встала на новое место.',
       en: 'The user held the handle and dragged the row down; it landed in a new place.',
     },
-    enter: touch.realTouchDragTarget(
-      root => touchHandleById(root, 'item-id-0'),
-      root => touchDestination(root, 3),
+    enter: touch.realTouchDragTarget(firstTouchHandle, root =>
+      touchDestination(root, 3),
     ),
   },
   {
@@ -1110,10 +1118,7 @@ const BY_FINGER: readonly GuideStoryStep[] = [
       en: 'A short tap on the handle opened the move menu.',
     },
     states: ['overlay.menu'],
-    enter: touch.realTapTarget(
-      root => touchHandleById(root, 'item-id-0'),
-      () => !!touch.openMenu(),
-    ),
+    enter: touch.realTapTarget(firstTouchHandle, () => !!touch.openMenu()),
   },
 ]
 
@@ -1123,7 +1128,7 @@ export const RowDraggingByTouch: StoryObj<StoryProps> = {
   globals: touch.PHONE,
   parameters: { scenario: '0231/S8', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Перестановка пальцем', en: 'Moving with a finger' }}
       steps={BY_FINGER}
       args={guideArgs(touch.TOUCH_ARGS, args)}

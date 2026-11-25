@@ -15,7 +15,7 @@
 2. **Шаг атомарен.** Его `enter` выполняет только собственное событие, а не повторяет
    предыдущие. `atomicSteps` включается на уровне целого гайда и мигрируется поэтапно.
 3. **Состояние восстанавливает навигатор.** При прямом переходе, откате или пометке
-   «Таблица изменена» `GuideStory` молча проигрывает предыдущие шаги с их пропсами и
+   «Таблица изменена» `DemoStory` молча проигрывает предыдущие шаги с их пропсами и
    `remount`, затем показывает действие только целевого шага. Не сериализовать таблицу и
    не переносить подготовку в `enter`.
 4. **Асинхронное действие — `stepAction`.** Следующий шаг ждёт его `done`. Синхронный
@@ -36,7 +36,7 @@
 Используем готовые помощники `__mocks__/touchGuides.ts`:
 
 ```ts
-const BUTTONS: readonly GuideStoryStep[] = [
+const BUTTONS: readonly DemoStoryStep[] = [
   { title: both('Кнопки скрыты'), hint: both('Действия нет.') },
   {
     title: both('Касание ячейки'),
@@ -50,7 +50,7 @@ const BUTTONS: readonly GuideStoryStep[] = [
   },
 ]
 
-<GuideStory steps={BUTTONS} args={guideArgs(TOUCH_ARGS, args)} atomicSteps />
+<DemoStory steps={BUTTONS} args={guideArgs(TOUCH_ARGS, args)} atomicSteps />
 ```
 
 - `realTapTarget` сначала восстанавливает `touch`-модальность и раскрывает контролы, затем
@@ -158,7 +158,7 @@ enter: afterRows(root => {
 
 ## Файлы
 
-- `src/lib/stories/demos/GuideStory.tsx` — атомарная навигация и replay.
+- `src/lib/stories/demos/DemoStory.tsx` — атомарная навигация и replay.
 - `src/lib/stories/demos/guideDemo.ts` — волны и псевдоклассы действий.
 - `src/lib/stories/demos/guideFocus.ts` — фокус и ввод шагов.
 - `src/lib/stories/__mocks__/touchGuides.ts` — полный tap, CDP-драйвер, `realTapTarget`.

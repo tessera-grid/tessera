@@ -1,11 +1,11 @@
 import { expect } from 'storybook/test'
 import { guideControls } from './__mocks__/utils/dataGridControls'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import {
   consoleText,
   guideNext,
@@ -89,7 +89,7 @@ export const TextPlayground: StoryObj<StoryProps> = {
 
 // --- ADR 0172, S1: сортировка текста ----------------------------------------------------
 
-const TEXT_SORT: readonly GuideStoryStep[] = [
+const TEXT_SORT: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Названия в порядке данных', en: 'Names in data order' },
     hint: {
@@ -131,7 +131,7 @@ export const DataTypesTextSort: StoryObj<StoryProps> = {
   name: 'Sort',
   parameters: { scenario: '0172/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Сортировка текста', en: 'Sorting text' }}
       steps={TEXT_SORT}
       args={guideArgs({ height: '560' }, args)}
@@ -202,7 +202,7 @@ const filterStarting = async (root: HTMLElement, signal: AbortSignal) => {
   await closePanel(signal)
 }
 
-const TEXT_FILTER: readonly GuideStoryStep[] = [
+const TEXT_FILTER: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Названия без настройки фильтра',
@@ -263,7 +263,7 @@ export const DataTypesTextFilter: StoryObj<StoryProps> = {
   name: 'Filter',
   parameters: { scenario: '0172/S12', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Фильтр текста', en: 'Filtering text' }}
       steps={TEXT_FILTER}
       args={guideArgs({ height: '460' }, args)}
@@ -300,7 +300,7 @@ export const DataTypesTextFilter: StoryObj<StoryProps> = {
 
 const NEW_NAME = 'Desk lamp XL'
 
-const TEXT_EDIT: readonly GuideStoryStep[] = [
+const TEXT_EDIT: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Названия товаров', en: 'Product names' },
     hint: {
@@ -339,7 +339,7 @@ export const EditingText: StoryObj<StoryProps> = {
   name: 'Edit',
   parameters: { scenario: '0175/S11', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Правка текста', en: 'Editing text' }}
       steps={TEXT_EDIT}
       args={guideArgs({ ...productArgs, editableColumns: ['name'] }, args)}

@@ -22,7 +22,7 @@ import {
 } from './__mocks__/viewSettings'
 import { untilDone } from './__mocks__/cellGestures'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import { DemoStory, type DemoStoryStep, guideArgs } from './demos/DemoStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 import { shellText } from './demos/storyShell'
@@ -189,7 +189,7 @@ const openWith = (button: (root: ParentNode) => HTMLElement | null) =>
     requestAnimationFrame(() => button(root)?.click())
   })
 
-const FROM_JSON: readonly GuideStoryStep[] = [
+const FROM_JSON: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Подписи по умолчанию', en: 'Default labels' },
     hint: {
@@ -245,7 +245,7 @@ export const LocalizationFromJson: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Перевод из файла приложения',
         en: 'Translation from the app file',
@@ -321,7 +321,7 @@ export const LocalizationFromJson: StoryObj<StoryProps> = {
 const SEARCH = '1'
 const SCROLL = 200
 
-const SWITCH: readonly GuideStoryStep[] = [
+const SWITCH: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Английский интерфейс', en: 'English interface' },
     hint: {
@@ -365,7 +365,7 @@ export const LocalizationSwitch: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Смена языка на лету',
         en: 'Switching the language on the fly',
@@ -418,7 +418,7 @@ export const LocalizationSwitch: StoryObj<StoryProps> = {
 
 // --- ADR 0132 S3 ---------------------------------------------------------------------
 
-const OVERRIDES: readonly GuideStoryStep[] = [
+const OVERRIDES: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Подписи по умолчанию', en: 'Default labels' },
     hint: {
@@ -449,7 +449,7 @@ export const LocalizationOverrides: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Свои формулировки', en: 'Custom wording' }}
       steps={OVERRIDES}
       args={guideArgs(
@@ -497,7 +497,7 @@ const selectAllRows = afterRows(root => {
   if (all?.getAttribute('aria-checked') !== 'true') all?.click()
 })
 
-const FUNCTION: readonly GuideStoryStep[] = [
+const FUNCTION: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Строки не выбраны', en: 'No rows are selected' },
     hint: {
@@ -542,7 +542,7 @@ export const LocalizationFunction: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Подпись функцией', en: 'A label as a function' }}
       steps={FUNCTION}
       args={guideArgs(FUNCTION_ARGS, {

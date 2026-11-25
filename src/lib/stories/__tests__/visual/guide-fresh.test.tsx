@@ -4,7 +4,7 @@ import { describe, expect, test } from 'vitest'
 
 import baseline from './guide-fresh-baseline.json'
 import { loadStories } from './contrast-helpers'
-import { GuideStory, guideArgs } from '../../demos/GuideStory'
+import { DemoStory, guideArgs } from '../../demos/DemoStory'
 import { FRESH_ATTR, guideNext, until } from '../../__mocks__/catalogPlay'
 import { both } from '../storyText.helpers'
 import { parkPointer } from '../pointer'
@@ -77,7 +77,7 @@ describe('проход гайдов со свежей таблицей (ADR 0117
     // Детектор: прежний режим ловит зависимость от прошлого шага, атомарный восстанавливает её.
     const stand = async (atomicSteps = false) => {
       const screen = await render(
-        <GuideStory
+        <DemoStory
           title={both('Стенд свежей таблицы')}
           steps={STAND}
           args={guideArgs(

@@ -14,7 +14,7 @@ import {
 } from './__mocks__/catalogPlay'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import { DemoStory, type DemoStoryStep, guideArgs } from './demos/DemoStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 
@@ -123,7 +123,7 @@ const scrollToMiddle = (root: HTMLElement) => {
   scroller.scrollLeft = (scroller.scrollWidth - scroller.clientWidth) / 2
 }
 
-const PIN_COLUMNS: readonly GuideStoryStep[] = [
+const PIN_COLUMNS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Колонки в таблице', en: 'Columns in the table' },
     hint: {
@@ -216,7 +216,7 @@ export const PinningColumns: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Закрепление колонок', en: 'Column pinning' }}
       steps={PIN_COLUMNS}
       args={guideArgs(
@@ -308,7 +308,7 @@ const GROUP = 'name'
 const LEAF = 'visits'
 const LEAF_GROUP = 'info'
 
-const PIN_NESTED: readonly GuideStoryStep[] = [
+const PIN_NESTED: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Группы колонок', en: 'Column groups' },
     hint: {
@@ -353,7 +353,7 @@ export const PinningNested: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Закрепление под вложенной шапкой',
         en: 'Pinning under a nested header',

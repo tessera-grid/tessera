@@ -1,4 +1,4 @@
-import { stepAction } from './demos/GuideStory'
+import { stepAction } from './demos/DemoStory'
 import { pollUntil, stepDone } from './__mocks__/catalogPlay'
 import { productRows } from './__mocks__/dataTypesData'
 import {
@@ -24,7 +24,7 @@ import {
 } from './__mocks__/catalogPlay'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import { DemoStory, type DemoStoryStep, guideArgs } from './demos/DemoStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 import {
@@ -79,7 +79,7 @@ export const SelectPlayground: StoryObj<StoryProps> = {
 
 const STATUS_QUERY = 'arch'
 
-const EDIT_SELECT: readonly GuideStoryStep[] = [
+const EDIT_SELECT: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Статусы товаров', en: 'Product statuses' },
     hint: {
@@ -142,7 +142,7 @@ export const EditingSelect: StoryObj<StoryProps> = {
   name: 'Choose',
   parameters: { scenario: '0175/S4', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Выбор варианта', en: 'Choosing an option' }}
       steps={EDIT_SELECT}
       args={guideArgs(optionArgs, args)}
@@ -193,7 +193,7 @@ const filterArchived = async (root: HTMLElement, signal: AbortSignal) => {
   await closePanel(signal)
 }
 
-const SELECT_FILTER: readonly GuideStoryStep[] = [
+const SELECT_FILTER: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Статусы без настройки фильтра',
@@ -243,7 +243,7 @@ export const DataTypesSelectFilter: StoryObj<StoryProps> = {
   name: 'Filter',
   parameters: { scenario: '0172/S16', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Фильтр варианта', en: 'Option filter' }}
       steps={SELECT_FILTER}
       args={guideArgs({ height: '460' }, args)}

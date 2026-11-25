@@ -1,4 +1,4 @@
-import { stepAction } from './demos/GuideStory'
+import { stepAction } from './demos/DemoStory'
 import { pollUntil, stepDone } from './__mocks__/catalogPlay'
 import { productRows } from './__mocks__/dataTypesData'
 import {
@@ -24,7 +24,7 @@ import {
 } from './__mocks__/catalogPlay'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import { DemoStory, type DemoStoryStep, guideArgs } from './demos/DemoStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 import {
@@ -84,7 +84,7 @@ const tagChecked = (value: string) =>
 /** Метки первого товара: «new» и «eco» отмечены, «sale» — нет. */
 const ADDED_TAG = 'sale'
 
-const EDIT_MULTI: readonly GuideStoryStep[] = [
+const EDIT_MULTI: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Метки товаров', en: 'Product tags' },
     hint: {
@@ -144,7 +144,7 @@ export const EditingMultiSelect: StoryObj<StoryProps> = {
   name: 'Choose several',
   parameters: { scenario: '0175/S6', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Выбор нескольких вариантов',
         en: 'Picking several options',
@@ -195,7 +195,7 @@ const filterSale = async (root: HTMLElement, signal: AbortSignal) => {
   await closePanel(signal)
 }
 
-const MULTI_FILTER: readonly GuideStoryStep[] = [
+const MULTI_FILTER: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Метки без настройки фильтра',
@@ -242,7 +242,7 @@ export const DataTypesMultiSelectFilter: StoryObj<StoryProps> = {
   name: 'Filter',
   parameters: { scenario: '0172/S17', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Фильтр нескольких вариантов',
         en: 'Filtering by several options',

@@ -23,11 +23,11 @@ import {
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 import { exportFormats } from '../plugins/dataExport'
@@ -95,7 +95,7 @@ const amountsDesc = () =>
     .map(row => row.amount)
     .sort((a, b) => compareDecimal(parseDecimal(b)!, parseDecimal(a)!))
 
-const NUMBER_STRING: readonly GuideStoryStep[] = [
+const NUMBER_STRING: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Суммы хранятся строками',
@@ -129,7 +129,7 @@ export const DataTypesNumberString: StoryObj<StoryProps> = {
   name: 'Exact order',
   parameters: { scenario: '0174/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Суммы строками', en: 'Amounts as strings' }}
       steps={NUMBER_STRING}
       args={guideArgs({ height: '560' }, args)}
@@ -156,7 +156,7 @@ export const DataTypesNumberString: StoryObj<StoryProps> = {
 
 // --- ADR 0174, S4: суммы строками в Excel -----------------------------------------------
 
-const AMOUNT_EXPORT: readonly GuideStoryStep[] = [
+const AMOUNT_EXPORT: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Суммы строками и выгрузка',
@@ -205,7 +205,7 @@ export const DataTypesNumberStringExport: StoryObj<StoryProps> = {
   name: 'Export to Excel',
   parameters: { scenario: '0174/S4', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Суммы строками в Excel',
         en: 'Amounts as strings in Excel',
@@ -259,7 +259,7 @@ const typedAmount = (root: ParentNode) =>
     ? NEW_AMOUNT.replace('.', ',')
     : NEW_AMOUNT
 
-const DECIMAL_EDIT: readonly GuideStoryStep[] = [
+const DECIMAL_EDIT: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Суммы строками', en: 'Amounts as strings' },
     hint: {
@@ -304,7 +304,7 @@ export const EditingDecimalString: StoryObj<StoryProps> = {
   name: 'Edit',
   parameters: { scenario: '0175/S12', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Правка десятичной строки', en: 'Editing a decimal string' }}
       steps={DECIMAL_EDIT}
       args={guideArgs(

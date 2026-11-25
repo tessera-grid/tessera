@@ -14,12 +14,12 @@ import {
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   type StepRun,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import { StoryComponent } from './DataGridStory'
 import { hasRow, layout, skeletonRows } from './__mocks__/serverRowModelGuide'
 import {
@@ -57,7 +57,7 @@ const meta = {
 export default meta
 
 /** Контекст шага гайда, которого у `Playground` нет: фабрики «сервера» его не читают. */
-const AT_REST = {} as Parameters<NonNullable<GuideStoryStep['props']>>[0]
+const AT_REST = {} as Parameters<NonNullable<DemoStoryStep['props']>>[0]
 
 interface DraggingPlaygroundArgs extends StoryProps {
   saveDelayMs: number
@@ -118,7 +118,7 @@ const TARGET = 'item-id-4'
 /** Место строки после переноса. */
 const MOVED_TO = 4
 
-const atRest: GuideStoryStep = {
+const atRest: DemoStoryStep = {
   title: { ru: 'Строки с сервера', en: 'Rows from the server' },
   hint: {
     ru: 'Сервер отдаёт строки блоками, порядок строк ручной: строку переносят за ручку.',
@@ -141,7 +141,7 @@ const moveRow = stepAction(async (root, run) => {
   await pollUntil(() => movePending(root, MOVED), run.signal)
 })
 
-const moved: GuideStoryStep = {
+const moved: DemoStoryStep = {
   title: { ru: 'Пользователь перенёс строку', en: 'The user moved a row' },
   hint: {
     ru: 'Строка сразу встала на новое место, а сервер ещё сохраняет новый порядок: ячейки строки чуть темнеют и по ним проходит светлый блик.',
@@ -162,7 +162,7 @@ const answer = (ok: boolean) =>
     await pollUntil(() => !movePending(root, MOVED), run.signal)
   })
 
-const MOVE: readonly GuideStoryStep[] = [
+const MOVE: readonly DemoStoryStep[] = [
   atRest,
   moved,
   {
@@ -180,7 +180,7 @@ export const ServerDragMove: StoryObj<StoryProps> = {
   name: 'Move a row',
   parameters: { scenario: '0159/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Перенос на сервере', en: 'Moving on the server' }}
       steps={MOVE}
       reset={manualServer}
@@ -207,7 +207,7 @@ export const ServerDragMove: StoryObj<StoryProps> = {
   },
 }
 
-const REFUSED: readonly GuideStoryStep[] = [
+const REFUSED: readonly DemoStoryStep[] = [
   atRest,
   moved,
   {
@@ -226,7 +226,7 @@ export const ServerDragRefused: StoryObj<StoryProps> = {
   name: 'Move refused',
   parameters: { scenario: '0159/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Отказ в переносе', en: 'Move refused' }}
       steps={REFUSED}
       reset={manualServer}
@@ -311,7 +311,7 @@ const dropIntoBranch = async (root: HTMLElement, run: StepRun) => {
   await held.release()
 }
 
-const TREE: readonly GuideStoryStep[] = [
+const TREE: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Строки с вложенными записями',
@@ -389,7 +389,7 @@ export const ServerDragTree: StoryObj<StoryProps> = {
   name: 'Move into a branch',
   parameters: { scenario: '0159/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Перенос в ветку', en: 'Moving into a branch' }}
       steps={TREE}
       reset={() => {
@@ -493,7 +493,7 @@ const dropIntoLima = async (root: HTMLElement, run: StepRun) => {
   await held.release()
 }
 
-const GROUPS: readonly GuideStoryStep[] = [
+const GROUPS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Строки по городам', en: 'Rows by city' },
     hint: {
@@ -556,7 +556,7 @@ export const ServerDragGroups: StoryObj<StoryProps> = {
   name: 'Move to another group',
   parameters: { scenario: '0159/S4', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Перенос в другую группу', en: 'Moving to another group' }}
       steps={GROUPS}
       reset={manualServer}
@@ -640,7 +640,7 @@ const indentRow = async (root: HTMLElement, signal: AbortSignal) => {
   )
 }
 
-const collapsedBranch: GuideStoryStep = {
+const collapsedBranch: DemoStoryStep = {
   title: {
     ru: 'Дерево со свёрнутыми ветками',
     en: 'A tree with collapsed branches',
@@ -659,7 +659,7 @@ const autoServer = () => {
   dragServer.auto = true
 }
 
-const INDENT: readonly GuideStoryStep[] = [
+const INDENT: readonly DemoStoryStep[] = [
   collapsedBranch,
   {
     title: {
@@ -708,7 +708,7 @@ export const ServerRowIndent: StoryObj<StoryProps> = {
   name: 'Indent a row',
   parameters: { scenario: '0189/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Вложить строку', en: 'Nest a row' }}
       steps={INDENT}
       reset={autoServer}
@@ -753,7 +753,7 @@ const openChildBranch = async (root: HTMLElement, signal: AbortSignal) => {
   await pollUntil(() => !!rowOf(root, CHILD), signal)
 }
 
-const OUTDENT: readonly GuideStoryStep[] = [
+const OUTDENT: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Ветки свёрнуты', en: 'Branches are collapsed' },
     hint: {
@@ -812,7 +812,7 @@ export const ServerRowOutdent: StoryObj<StoryProps> = {
   name: 'Outdent a row',
   parameters: { scenario: '0189/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Вынести строку', en: 'Move a row out' }}
       steps={OUTDENT}
       reset={autoServer}
@@ -848,7 +848,7 @@ export const ServerRowOutdent: StoryObj<StoryProps> = {
   },
 }
 
-const INDENT_REFUSED: readonly GuideStoryStep[] = [
+const INDENT_REFUSED: readonly DemoStoryStep[] = [
   collapsedBranch,
   {
     title: { ru: 'Строка ждёт ветку', en: 'The row waits for the branch' },
@@ -882,7 +882,7 @@ export const ServerRowIndentRefused: StoryObj<StoryProps> = {
   name: 'Branch refused',
   parameters: { scenario: '0189/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Ветка не загрузилась', en: 'The branch did not load' }}
       steps={INDENT_REFUSED}
       reset={autoServer}
@@ -917,7 +917,7 @@ const openFromGroup = async (root: HTMLElement, signal: AbortSignal) => {
   await pollUntil(() => !!rowOf(root, GROUPED_LEAF), signal)
 }
 
-const NEXT_GROUP: readonly GuideStoryStep[] = [
+const NEXT_GROUP: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Группы свёрнуты', en: 'Groups are collapsed' },
     hint: {
@@ -984,7 +984,7 @@ export const ServerRowNextGroup: StoryObj<StoryProps> = {
   name: 'Move to the next group',
   parameters: { scenario: '0189/S4', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'В соседнюю группу', en: 'To the adjacent group' }}
       steps={NEXT_GROUP}
       reset={autoServer}

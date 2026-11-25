@@ -23,11 +23,11 @@ import { storyLabels } from './__mocks__/storyLabels'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import { SERVER_FAILURE } from './demos/serverRowModelDemos'
 import { StoryComponent } from './DataGridStory'
 import type { TesseraFeatureEntry } from '../core/features'
@@ -65,7 +65,7 @@ const meta = {
 export default meta
 
 /** Контекст шага гайда, которого у `Playground` нет: фабрики «сервера» его не читают. */
-const AT_REST = {} as Parameters<NonNullable<GuideStoryStep['props']>>[0]
+const AT_REST = {} as Parameters<NonNullable<DemoStoryStep['props']>>[0]
 
 interface CellSelectionPlaygroundArgs extends StoryProps {
   serverTotal: number
@@ -209,7 +209,7 @@ const growRange = async (root: HTMLElement, signal: AbortSignal) => {
   await pollUntil(() => selectedPending(root) > 0, signal)
 }
 
-const RANGE_SELECTION: readonly GuideStoryStep[] = [
+const RANGE_SELECTION: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Строки с сервера', en: 'Rows from the server' },
     hint: {
@@ -290,7 +290,7 @@ export const ServerRangeSelection: StoryObj<StoryProps> = {
   name: 'Select a range',
   parameters: { scenario: '0146/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Диапазон через незагруженные строки',
         en: 'A range across unloaded rows',
@@ -350,7 +350,7 @@ const copyHeld = async (root: HTMLElement, signal: AbortSignal) => {
   await pollUntil(() => server.held.length > 0, signal)
 }
 
-const COPY_LOADS: readonly GuideStoryStep[] = [
+const COPY_LOADS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Строки с сервера', en: 'Rows from the server' },
     hint: {
@@ -410,7 +410,7 @@ export const ServerCopyLoadsRows: StoryObj<StoryProps> = {
   name: 'Copy loads the rows',
   parameters: { scenario: '0146/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Копирование с догрузкой',
         en: 'Copying with on-demand loading',
@@ -469,7 +469,7 @@ export const ServerCopyLoadsRows: StoryObj<StoryProps> = {
 const selectAllCells = (root: HTMLElement, signal: AbortSignal) =>
   selectToEnd(root, signal, LIMIT_TOTAL)
 
-const COPY_OVER_LIMIT: readonly GuideStoryStep[] = [
+const COPY_OVER_LIMIT: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Строки с сервера', en: 'Rows from the server' },
     hint: {
@@ -515,7 +515,7 @@ export const ServerCopyOverLimit: StoryObj<StoryProps> = {
   name: 'Copy over the limit',
   parameters: { scenario: '0146/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Копирование больше предела', en: 'Copying over the limit' }}
       steps={COPY_OVER_LIMIT}
       args={guideArgs(layout, args)}
@@ -557,7 +557,7 @@ const copyRefused = async (root: HTMLElement, signal: AbortSignal) => {
   await pollUntil(() => !!banner(root), signal)
 }
 
-const COPY_REFUSED: readonly GuideStoryStep[] = [
+const COPY_REFUSED: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Строки с сервера', en: 'Rows from the server' },
     hint: {
@@ -624,7 +624,7 @@ export const ServerCopyRefused: StoryObj<StoryProps> = {
   name: 'Copy refused by the server',
   parameters: { scenario: '0146/S4', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Отказ сервера при копировании',
         en: 'A server refusal while copying',
@@ -679,7 +679,7 @@ const copyHinted = async (root: HTMLElement, signal: AbortSignal) => {
   await pollUntil(() => !!pendingBanner(root), signal)
 }
 
-const CANCEL_COPY: readonly GuideStoryStep[] = [
+const CANCEL_COPY: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Строки с сервера', en: 'Rows from the server' },
     hint: {
@@ -754,7 +754,7 @@ export const ServerCopyCancel: StoryObj<StoryProps> = {
   name: 'Cancel copying',
   parameters: { scenario: '0153/S10', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Отмена копирования', en: 'Canceling a copy' }}
       steps={CANCEL_COPY}
       reset={() => {
@@ -839,7 +839,7 @@ const rangeReader = (log: ConsoleLog): TesseraFeatureEntry => ({
 
 const READ_BLOCK = 10
 
-const READ_RANGES: readonly GuideStoryStep[] = [
+const READ_RANGES: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Строки с сервера', en: 'Rows from the server' },
     hint: {
@@ -945,7 +945,7 @@ export const CellSelectionRangesAnyMode: StoryObj<StoryProps> = {
   name: 'Read the selection',
   parameters: { scenario: '0180/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Чтение выделения приложением',
         en: 'The app reads the selection',
@@ -1024,7 +1024,7 @@ const pasteHeld = async (root: HTMLElement, signal: AbortSignal) => {
   await pollUntil(() => server.held.length > 0 && !!pendingBanner(root), signal)
 }
 
-const PASTE_LOADS: readonly GuideStoryStep[] = [
+const PASTE_LOADS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Строки с сервера', en: 'Rows from the server' },
     hint: {
@@ -1142,7 +1142,7 @@ export const ServerPasteLoadsRows: StoryObj<StoryProps> = {
   name: 'Paste loads the rows',
   parameters: { scenario: '0219/S13', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Вставка с догрузкой',
         en: 'Pasting with on-demand loading',

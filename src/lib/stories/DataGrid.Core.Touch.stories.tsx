@@ -31,11 +31,11 @@ import {
 } from './__mocks__/touchGuides'
 import { overflowColumns, overflowData } from './__mocks__/overflowColumns'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
@@ -139,7 +139,7 @@ const CELL_BUTTONS_ARGS = { ...TOUCH_ARGS, enableKeyboardNavigation: true }
 const touched = (root: ParentNode, index: number) =>
   !!cellAt(root, index)?.hasAttribute('data-touched')
 
-const BUTTONS: readonly GuideStoryStep[] = [
+const BUTTONS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Кнопки скрыты', en: 'Buttons are hidden' },
     hint: {
@@ -181,7 +181,7 @@ export const TouchCellButtons: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Кнопки ячейки по касанию', en: 'Cell buttons on touch' }}
       steps={BUTTONS}
       args={guideArgs(CELL_BUTTONS_ARGS, args)}
@@ -248,7 +248,7 @@ const ROW_ARGS = {
 const rowKebabOf = (root: ParentNode, index: number) =>
   rowAt(root, index)?.querySelector<HTMLElement>('[data-action-menu]') ?? null
 
-const ROW: readonly GuideStoryStep[] = [
+const ROW: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Кнопка меню скрыта', en: 'The menu button is hidden' },
     hint: {
@@ -284,7 +284,7 @@ export const TouchRowButtons: StoryObj<StoryProps> = {
   globals: PHONE,
   parameters: { scenario: '0231/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Меню строки по касанию', en: 'The row menu on touch' }}
       steps={ROW}
       args={guideArgs(ROW_ARGS, args)}
@@ -348,7 +348,7 @@ const openHeaderActions = stepAction(async (root, { signal }) => {
   await pollUntil(() => !!sortAscendingItem(), signal)
 })
 
-const HYBRID: readonly GuideStoryStep[] = [
+const HYBRID: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Экран с мышью', en: 'A screen with a mouse' },
     hint: {
@@ -396,7 +396,7 @@ export const TouchHybridDevice: StoryObj<StoryProps> = {
   name: 'Touch on a laptop',
   parameters: { scenario: '0231/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Действия заголовка на сенсорном ноутбуке',
         en: 'Header actions on a touchscreen laptop',
@@ -458,7 +458,7 @@ export const TouchHybridDevice: StoryObj<StoryProps> = {
 
 // --- S4 ------------------------------------------------------------------------------
 
-const HINT: readonly GuideStoryStep[] = [
+const HINT: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Кнопки без подписей', en: 'Buttons without labels' },
     hint: {
@@ -495,7 +495,7 @@ export const TouchIconHint: StoryObj<StoryProps> = {
   globals: PHONE,
   parameters: { scenario: '0231/S4', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Подпись кнопки удержанием', en: 'A button label on hold' }}
       steps={HINT}
       args={guideArgs(TOUCH_ARGS, args)}
@@ -561,7 +561,7 @@ const holdLongCell = async (root: HTMLElement, signal: AbortSignal) => {
   await pollUntil(() => !!openMenu(), signal)
 }
 
-const TRUNCATED: readonly GuideStoryStep[] = [
+const TRUNCATED: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Текст обрезан', en: 'The text is cut off' },
     hint: {
@@ -598,7 +598,7 @@ export const TouchTruncatedText: StoryObj<StoryProps> = {
   globals: PHONE,
   parameters: { scenario: '0231/S5', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Обрезанный текст пальцем',
         en: 'Cut-off text with a finger',

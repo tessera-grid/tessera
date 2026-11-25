@@ -24,11 +24,11 @@ import {
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 import * as touch from './__mocks__/touchGuides'
@@ -204,7 +204,7 @@ const releaseOnPress = () => {
   }
 }
 
-const COLUMN_MOVE: readonly GuideStoryStep[] = [
+const COLUMN_MOVE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Ручка колонки', en: 'The column drag handle' },
     hint: {
@@ -266,7 +266,7 @@ export const ColumnDraggingMove: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Перенос колонки мышью',
         en: 'Moving a column with the mouse',
@@ -414,7 +414,7 @@ const serverStep =
     setTimeout(run, 0)
   }
 
-const COLUMN_SERVER: readonly GuideStoryStep[] = [
+const COLUMN_SERVER: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Порядок колонок хранит сервер',
@@ -486,7 +486,7 @@ export const ColumnDraggingServer: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Перенос колонки с сервером',
         en: 'Moving a column with the server',
@@ -612,7 +612,7 @@ const GROUP_MOVED: NestedMove = {
   done: root => before(root, 'info', 'name'),
 }
 
-const NESTED_MOVE: readonly GuideStoryStep[] = [
+const NESTED_MOVE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Группы колонок', en: 'Column groups' },
     hint: {
@@ -649,7 +649,7 @@ export const DraggingNested: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Перенос под вложенной шапкой',
         en: 'Moving under a nested header',
@@ -721,7 +721,7 @@ const touchControlShown = (control: HTMLElement | null) => {
 const touchColumnDestination = (root: HTMLElement) =>
   centerOf(headCell(root, 'lastName'))
 
-const COLUMN_BY_FINGER: readonly GuideStoryStep[] = [
+const COLUMN_BY_FINGER: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Кебаб и ручка видны', en: 'The menu and handle are visible' },
     hint: {
@@ -766,7 +766,7 @@ export const ColumnDraggingByTouch: StoryObj<StoryProps> = {
   globals: touch.PHONE,
   parameters: { scenario: '0231/S11', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Перенос колонки пальцем',
         en: 'Moving a column with a finger',

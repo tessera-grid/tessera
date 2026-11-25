@@ -15,11 +15,11 @@ import {
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import {
   SERVER_FAILURE,
   ServerRowModelDemo,
@@ -149,7 +149,7 @@ const jump = async (root: HTMLElement, signal: AbortSignal) => {
   )
 }
 
-const JUMP: readonly GuideStoryStep[] = [
+const JUMP: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Начало списка', en: 'The start of the list' },
     hint: {
@@ -202,7 +202,7 @@ export const ServerRowModelJump: StoryObj<StoryProps> = {
   name: 'Jump to the middle',
   parameters: { scenario: '0138/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Прыжок в середину', en: 'Jumping to the middle' }}
       steps={JUMP}
       args={guideArgs(layout, args)}
@@ -249,7 +249,7 @@ const reachFailure = async (root: HTMLElement, signal: AbortSignal) => {
   await pollUntil(() => !!errorRow(root), signal)
 }
 
-const BLOCK_ERROR: readonly GuideStoryStep[] = [
+const BLOCK_ERROR: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Первые строки', en: 'The first rows' },
     hint: {
@@ -302,7 +302,7 @@ export const ServerRowModelBlockError: StoryObj<StoryProps> = {
   name: 'Block error',
   parameters: { scenario: '0138/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Отказ блока и повтор', en: 'A block refusal and a retry' }}
       steps={BLOCK_ERROR}
       args={guideArgs(layout, args)}
@@ -345,7 +345,7 @@ const toEdge = async (root: HTMLElement, signal: AbortSignal) => {
   await pollUntil(() => server.held.length > 0, signal)
 }
 
-const UNKNOWN: readonly GuideStoryStep[] = [
+const UNKNOWN: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Первый блок', en: 'The first block' },
     hint: {
@@ -415,7 +415,7 @@ export const ServerRowModelUnknownTotal: StoryObj<StoryProps> = {
   name: 'Unknown total',
   parameters: { scenario: '0138/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Итог неизвестен', en: 'The total is unknown' }}
       steps={UNKNOWN}
       args={guideArgs(layout, args)}
@@ -500,7 +500,7 @@ const sortByName = async (root: HTMLElement, signal: AbortSignal) => {
   )
 }
 
-const SORTING: readonly GuideStoryStep[] = [
+const SORTING: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Начало списка', en: 'The start of the list' },
     hint: {
@@ -598,7 +598,7 @@ export const ServerRowModelSorting: StoryObj<StoryProps> = {
   name: 'Sorting',
   parameters: { scenario: '0138/S4', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Смена сортировки', en: 'Changing the sort' }}
       steps={SORTING}
       reset={() => {
@@ -701,7 +701,7 @@ const openRecord = async (root: HTMLElement, signal: AbortSignal) => {
   )
 }
 
-const OPEN_AT_RECORD: readonly GuideStoryStep[] = [
+const OPEN_AT_RECORD: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Таблица открыта в начале',
@@ -759,7 +759,7 @@ export const ServerRowModelOpenAtRecord: StoryObj<StoryProps> = {
   name: 'Open at record',
   parameters: { scenario: '0138/S5', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Открыть на записи', en: 'Open at a record' }}
       steps={OPEN_AT_RECORD}
       args={guideArgs(layout, args)}
@@ -850,7 +850,7 @@ const wheelUp = async (root: HTMLElement, signal: AbortSignal) => {
   await pollUntil(() => Math.abs(layerOf(root).top() - target) < 1, signal)
 }
 
-const MILLION_ROWS: readonly GuideStoryStep[] = [
+const MILLION_ROWS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Миллион строк', en: 'A million rows' },
     hint: {
@@ -926,7 +926,7 @@ export const ServerRowModelMillionRows: StoryObj<StoryProps> = {
   name: 'Million rows',
   parameters: { scenario: '0142/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Миллион строк', en: 'A million rows' }}
       steps={MILLION_ROWS}
       args={guideArgs(layout, args)}
@@ -992,7 +992,7 @@ const searchCity = async (root: HTMLElement, signal: AbortSignal) => {
   await pollUntil(() => server.held.length > 0 && refreshing(root), signal)
 }
 
-const SEARCH_MOTION: readonly GuideStoryStep[] = [
+const SEARCH_MOTION: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Начало списка', en: 'The start of the list' },
     hint: {
@@ -1038,7 +1038,7 @@ export const ServerRowModelSearchMotion: StoryObj<StoryProps> = {
   name: 'Search narrows the list',
   parameters: { scenario: '0228/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Поиск сужает список',
         en: 'Search narrows the list',

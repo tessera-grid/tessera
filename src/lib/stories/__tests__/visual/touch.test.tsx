@@ -398,7 +398,7 @@ describe('Касания (ADR 0086)', () => {
     const area = scroller().getBoundingClientRect()
     const right = area.left + scroller().clientLeft + scroller().clientWidth
     const from = center(head().querySelector(GRIP)!)
-    const edge = { x: right - 6, y: from.y }
+    const edge = { x: right - 1, y: from.y }
     await touch.realTouchDown([from])
     try {
       await touch.realTouchMove(from, edge)
@@ -1518,29 +1518,29 @@ describe('Маркеры выделения пальцем (ADR 0198, этап 2
     skip(!chromium, 'протяжка пальцем — CDP Chromium')
     const screen = await renderSelection()
     try {
-      await touch.realTap(center(cellAt(3, 1)))
+      await touch.realTap(center(cellAt(3, 0)))
       await expect.poll(selectedCount).toBe(1)
       for (const corner of ['start', 'end'] as const) {
         await expect.poll(() => handleOf(corner)).not.toBeNull()
         expect(handleOf(corner)!.getAttribute('data-selection-handle')).toBe(
           'circle',
         )
-        await expectAt(corner, () => cellAt(3, 1))
+        await expectAt(corner, () => cellAt(3, 0))
       }
 
       // Правый нижний круг вниз: левый верхний угол на месте и опорный.
-      await dragCircle('end', cellAt(5, 1))
+      await dragCircle('end', cellAt(5, 0))
       await expect.poll(selectedCount).toBe(3)
-      await expectAt('start', () => cellAt(3, 1))
-      await expectAt('end', () => cellAt(5, 1))
-      expect(focusedAt()).toBe(idOf(3, 1))
+      await expectAt('start', () => cellAt(3, 0))
+      await expectAt('end', () => cellAt(5, 0))
+      expect(focusedAt()).toBe(idOf(3, 0))
 
       // Левый верхний круг вверх: правый нижний угол на месте и становится опорным.
-      await dragCircle('start', cellAt(2, 1))
+      await dragCircle('start', cellAt(2, 0))
       await expect.poll(selectedCount).toBe(4)
-      await expectAt('start', () => cellAt(2, 1))
-      await expectAt('end', () => cellAt(5, 1))
-      await expect.poll(focusedAt).toBe(idOf(5, 1))
+      await expectAt('start', () => cellAt(2, 0))
+      await expectAt('end', () => cellAt(5, 0))
+      await expect.poll(focusedAt).toBe(idOf(5, 0))
     } finally {
       await screen.unmount()
     }

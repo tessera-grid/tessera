@@ -28,11 +28,11 @@ import { DRAG_FILL } from './rowDragging.dnd'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 
 /**
  * Перенос текста и высота строк по содержимому (ADR 0218): `wrapText` переносит текст в
@@ -180,7 +180,7 @@ const variedRows = (root: ParentNode) =>
 
 // --- S1: перенос в высоте строки --------------------------------------------------------
 
-const CLAMPED: readonly GuideStoryStep[] = [
+const CLAMPED: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Длинный текст обрезан', en: 'Long text is truncated' },
     hint: {
@@ -226,7 +226,7 @@ export const TextWrapClamped: StoryObj<StoryProps> = {
   name: 'Wrap within the row',
   parameters: { scenario: '0218/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Перенос в высоте строки',
         en: 'Wrapping within the row height',
@@ -266,7 +266,7 @@ export const TextWrapClamped: StoryObj<StoryProps> = {
 
 // --- S2: высота по содержимому -----------------------------------------------------------
 
-const AUTO: readonly GuideStoryStep[] = [
+const AUTO: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Строки растут по содержимому',
@@ -302,7 +302,7 @@ export const TextWrapAutoHeight: StoryObj<StoryProps> = {
   name: 'Rows grow with content',
   parameters: { scenario: '0218/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Высота строк по содержимому', en: 'Row height by content' }}
       steps={AUTO}
       args={guideArgs({ ...GRID, dataOverride: notes(40) }, args)}
@@ -328,7 +328,7 @@ export const TextWrapAutoHeight: StoryObj<StoryProps> = {
 
 const NARROW = 160
 
-const RESIZE: readonly GuideStoryStep[] = [
+const RESIZE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Колонка заметок широкая', en: 'The notes column is wide' },
     hint: {
@@ -370,7 +370,7 @@ export const TextWrapResizeColumn: StoryObj<StoryProps> = {
   name: 'Narrow a column',
   parameters: { scenario: '0218/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Сужение колонки', en: 'Narrowing a column' }}
       steps={RESIZE}
       args={guideArgs(
@@ -452,7 +452,7 @@ const nestedColumns = (fields: NoteFields) => [
 const NESTED_PLAIN = nestedColumns({})
 const NESTED_AUTO = nestedColumns({ autoHeaderHeight: true })
 
-const HEADER: readonly GuideStoryStep[] = [
+const HEADER: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Заголовки обрезаны', en: 'Headers are truncated' },
     hint: {
@@ -478,7 +478,7 @@ export const TextWrapHeader: StoryObj<StoryProps> = {
   name: 'Long headers',
   parameters: { scenario: '0218/S4', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Длинные заголовки', en: 'Long headers' }}
       steps={HEADER}
       args={guideArgs({ ...GRID, dataOverride: notes(20) }, args)}
@@ -507,7 +507,7 @@ export const TextWrapHeader: StoryObj<StoryProps> = {
 
 const TARGET = '120'
 
-const KEYBOARD: readonly GuideStoryStep[] = [
+const KEYBOARD: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Строки разной высоты', en: 'Rows of different heights' },
     hint: {
@@ -557,7 +557,7 @@ export const TextWrapKeyboard: StoryObj<StoryProps> = {
   name: 'Keyboard and scroll to a record',
   parameters: { scenario: '0218/S5', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Клавиатура и прокрутка к записи',
         en: 'Keyboard and scrolling to a record',
@@ -613,7 +613,7 @@ const serverRows = ({ start, end, signal }: ServerRowsRequest) =>
 
 const layerOf = (root: HTMLElement) => scrollLayer(scrollerOf(root))
 
-const SERVER: readonly GuideStoryStep[] = [
+const SERVER: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Миллион строк с заметками', en: 'A million rows with notes' },
     hint: {
@@ -649,7 +649,7 @@ export const TextWrapServer: StoryObj<StoryProps> = {
   name: 'Server rows',
   parameters: { scenario: '0218/S6', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Серверные строки', en: 'Server rows' }}
       steps={SERVER}
       args={guideArgs(
@@ -683,7 +683,7 @@ export const TextWrapServer: StoryObj<StoryProps> = {
 
 // --- S7: сортировка строк разной высоты ------------------------------------------------------
 
-const MOTION: readonly GuideStoryStep[] = [
+const MOTION: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Строки разной высоты', en: 'Rows of different heights' },
     hint: {
@@ -719,7 +719,7 @@ export const TextWrapMotion: StoryObj<StoryProps> = {
   name: 'Sort rows of different heights',
   parameters: { scenario: '0218/S7', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Сортировка строк разной высоты',
         en: 'Sorting rows of different heights',
@@ -779,7 +779,7 @@ const openNote = (root: HTMLElement, id: string) =>
     ?.querySelector<HTMLElement>('.cell__button button')
     ?.click()
 
-const EDIT: readonly GuideStoryStep[] = [
+const EDIT: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Строки по содержимому', en: 'Rows by content' },
     hint: {
@@ -823,7 +823,7 @@ export const TextWrapEdit: StoryObj<StoryProps> = {
   name: 'Edit a cell',
   parameters: { scenario: '0218/S8', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Правка высокой строки', en: 'Editing a tall row' }}
       steps={EDIT}
       args={guideArgs(
@@ -872,7 +872,7 @@ const LONG_NOTE = NOTES[4]!
 const withNote = (id: string, note: string) =>
   notes(40).map(row => (row.id === id ? { ...row, note } : row))
 
-const EXTERNAL: readonly GuideStoryStep[] = [
+const EXTERNAL: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Короткая заметка', en: 'A short note' },
     hint: {
@@ -899,7 +899,7 @@ export const TextWrapExternalChange: StoryObj<StoryProps> = {
   name: 'Value changes outside',
   parameters: { scenario: '0218/S9', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Новое значение извне', en: 'A new value from outside' }}
       steps={EXTERNAL}
       args={guideArgs(
@@ -973,7 +973,7 @@ const scrollToAnchor = async (root: HTMLElement, signal: AbortSignal) => {
   }
 }
 
-const INSERT: readonly GuideStoryStep[] = [
+const INSERT: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Строки по содержимому', en: 'Rows by content' },
     hint: {
@@ -1014,7 +1014,7 @@ export const TextWrapInsertAbove: StoryObj<StoryProps> = {
   name: 'Records added above',
   parameters: { scenario: '0218/S10', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Записи выше экрана', en: 'Records above the screen' }}
       steps={INSERT}
       args={guideArgs(
@@ -1050,7 +1050,7 @@ export const TextWrapInsertAbove: StoryObj<StoryProps> = {
 
 // --- S11: перетаскивание высокой строки -----------------------------------------------
 
-const DRAG: readonly GuideStoryStep[] = [
+const DRAG: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Строки по содержимому', en: 'Rows by content' },
     hint: {
@@ -1076,7 +1076,7 @@ export const TextWrapDrag: StoryObj<StoryProps> = {
   name: 'Drag a tall row',
   parameters: { scenario: '0218/S11', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Перетаскивание высокой строки', en: 'Dragging a tall row' }}
       steps={DRAG}
       args={guideArgs(

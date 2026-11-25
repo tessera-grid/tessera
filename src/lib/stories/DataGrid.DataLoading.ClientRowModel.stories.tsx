@@ -6,7 +6,7 @@ import { guideNext, settle, until, waitForRows } from './__mocks__/catalogPlay'
 import { untilDone } from './__mocks__/cellGestures'
 import { typeInto, press } from './__mocks__/typeGuides'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import { DemoStory, type DemoStoryStep, guideArgs } from './demos/DemoStory'
 import {
   indexOfRow,
   rowById,
@@ -186,7 +186,7 @@ const LARGE_ARGS: Partial<StoryProps> = {
   enableCellEditing: true,
 }
 
-const STEPS: readonly GuideStoryStep[] = [
+const STEPS: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Сто тысяч строк в памяти',
@@ -274,7 +274,7 @@ export const ClientRowModelLargeTable: StoryObj<StoryProps> = {
   name: 'Sort, filter, group and edit a large table',
   parameters: { scenario: '0200/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Сто тысяч строк в памяти',
         en: 'A hundred thousand rows in memory',

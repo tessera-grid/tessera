@@ -8,7 +8,7 @@ import { vrModes, vrStates } from './__mocks__/catalog'
 import { guideNext, settle, until, waitForRows } from './__mocks__/catalogPlay'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import { DemoStory, type DemoStoryStep, guideArgs } from './demos/DemoStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 
@@ -68,7 +68,7 @@ export const RefreshPlayground: StoryObj<StoryProps> = {
 const firstRowId = (root: ParentNode) =>
   root.querySelector<HTMLElement>('.data-grid__body-row')?.dataset.rowId
 
-const DATA_UPDATE: readonly GuideStoryStep[] = [
+const DATA_UPDATE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Данные загружены', en: 'Data loaded' },
     hint: {
@@ -106,7 +106,7 @@ export const RefreshDataUpdate: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Обновление данных', en: 'Data refresh' }}
       steps={DATA_UPDATE}
       args={guideArgs({ dataCount: 50, height: '400' }, args)}

@@ -19,11 +19,11 @@ import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { typeInto } from './__mocks__/typeGuides'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 
@@ -151,7 +151,7 @@ const lastColumnId = (root: ParentNode) =>
 const MOVE_ROWS = 500
 
 /** Фокус вне таблицы: клавиатурные шаги идут после нажатия на панель гайда. */
-const AT_REST: GuideStoryStep = {
+const AT_REST: DemoStoryStep = {
   title: { ru: 'Фокус вне таблицы', en: 'Focus outside the table' },
   hint: {
     ru: 'Приложение включило работу с таблицей с клавиатуры. Фокус пока вне таблицы, ни одна ячейка не обведена.',
@@ -159,7 +159,7 @@ const AT_REST: GuideStoryStep = {
   },
 }
 
-const MOVE: readonly GuideStoryStep[] = [
+const MOVE: readonly DemoStoryStep[] = [
   AT_REST,
   {
     title: { ru: 'Фокус в таблице', en: 'Focus in the table' },
@@ -196,7 +196,7 @@ export const KeyboardMoving: StoryObj<StoryProps> = {
   name: 'Move around',
   parameters: { scenario: '0021/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Переход по таблице', en: 'Moving around the table' }}
       steps={MOVE}
       args={guideArgs(
@@ -273,7 +273,7 @@ const selectByKeyboard = (root: HTMLElement) => {
   else press(root, ' ')
 }
 
-const ACTIONS: readonly GuideStoryStep[] = [
+const ACTIONS: readonly DemoStoryStep[] = [
   AT_REST,
   {
     title: { ru: 'Сортировка с заголовка', en: 'Sorting from the header' },
@@ -324,7 +324,7 @@ export const KeyboardActions: StoryObj<StoryProps> = {
   name: 'Actions without a mouse',
   parameters: { scenario: '0021/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Действия с клавиатуры', en: 'Keyboard actions' }}
       steps={ACTIONS}
       args={guideArgs(
@@ -426,7 +426,7 @@ const shortcutsSheet = () =>
 const shortcutsList = () =>
   document.querySelector<HTMLElement>('[data-shortcuts-list]')
 
-const WITHOUT_GRID: readonly GuideStoryStep[] = [
+const WITHOUT_GRID: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Без навигации по ячейкам', en: 'Without cell navigation' },
     hint: {
@@ -476,7 +476,7 @@ export const KeyboardWithoutGrid: StoryObj<StoryProps> = {
   name: 'Without cell navigation',
   parameters: { scenario: '0232/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Таблица без стрелок', en: 'Table without cell navigation' }}
       steps={WITHOUT_GRID}
       args={guideArgs(
@@ -519,7 +519,7 @@ export const KeyboardWithoutGrid: StoryObj<StoryProps> = {
   },
 }
 
-const FOCUS_IN_VIEW: readonly GuideStoryStep[] = [
+const FOCUS_IN_VIEW: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Переход к краю таблицы', en: 'Move to the table edge' },
     hint: {
@@ -567,7 +567,7 @@ export const KeyboardFocusInView: StoryObj<StoryProps> = {
   name: 'Focus stays in view',
   parameters: { scenario: '0232/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Фокус остаётся видимым', en: 'Focus stays in view' }}
       steps={FOCUS_IN_VIEW}
       args={guideArgs(
@@ -615,7 +615,7 @@ export const KeyboardFocusInView: StoryObj<StoryProps> = {
   },
 }
 
-const HINTS: readonly GuideStoryStep[] = [
+const HINTS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Фокус на кнопке', en: 'Focus on a button' },
     hint: {
@@ -674,7 +674,7 @@ export const KeyboardHints: StoryObj<StoryProps> = {
   name: 'Hints from keyboard focus',
   parameters: { scenario: '0232/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Подсказки с клавиатуры', en: 'Keyboard hints' }}
       steps={HINTS}
       args={guideArgs(
@@ -728,7 +728,7 @@ const platformValue = (root: ParentNode) =>
     )
     ?.textContent?.trim()
 
-const PLATFORM: readonly GuideStoryStep[] = [
+const PLATFORM: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Сочетания платформы', en: 'Platform shortcuts' },
     hint: {
@@ -809,7 +809,7 @@ export const KeyboardPlatform: StoryObj<StoryProps> = {
   name: 'Platform shortcuts',
   parameters: { scenario: '0232/S4', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Сочетания своей платформы', en: 'Platform shortcuts' }}
       steps={PLATFORM}
       args={guideArgs(
@@ -867,7 +867,7 @@ export const KeyboardPlatform: StoryObj<StoryProps> = {
   },
 }
 
-const SHORTCUTS: readonly GuideStoryStep[] = [
+const SHORTCUTS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Сводка текущей таблицы', en: 'Shortcuts for this table' },
     hint: {
@@ -947,7 +947,7 @@ export const KeyboardShortcutsSheet: StoryObj<StoryProps> = {
   name: 'Shortcuts sheet',
   parameters: { scenario: '0232/S5', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Сочетания клавиш', en: 'Keyboard shortcuts' }}
       steps={SHORTCUTS}
       args={guideArgs(

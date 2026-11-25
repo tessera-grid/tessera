@@ -16,7 +16,7 @@ import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { rowSelectionLabels } from '../plugins/rowSelection/labels'
 import { storyLabels } from './__mocks__/storyLabels'
 import type { StoryText } from './__mocks__/storyText'
-import { GuideStory, type GuideStoryStep, stepAction } from './demos/GuideStory'
+import { DemoStory, type DemoStoryStep, stepAction } from './demos/DemoStory'
 import { shellText, type StoryShellKey } from './demos/storyShell'
 
 /**
@@ -46,10 +46,10 @@ const NO_CONTROLS = showControls(
 /** Одна ссылка на пустые данные: шаги не пишут лишних записей «Данные». */
 const NO_ROWS: never[] = []
 
-const guide = (title: StoryText, steps: readonly GuideStoryStep[]) =>
+const guide = (title: StoryText, steps: readonly DemoStoryStep[]) =>
   function Render(args: StoryProps) {
     return (
-      <GuideStory
+      <DemoStory
         title={title}
         steps={steps}
         // Аргументы Storybook, оставшиеся в URL, функции не включают.
@@ -88,7 +88,7 @@ const consoleOf = (root: ParentNode) =>
 
 // --- S1 ------------------------------------------------------------------------------
 
-const GUIDE_EVENTS: readonly GuideStoryStep[] = [
+const GUIDE_EVENTS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Таблица открыта', en: 'The table is open' },
     hint: {
@@ -133,13 +133,13 @@ const GUIDE_EVENTS: readonly GuideStoryStep[] = [
 
 /** S1: разработчик проходит гайд и видит события каждого шага в консоли. */
 export const ConsoleGuideEvents: StoryObj<StoryProps> = {
-  name: 'Guide events',
+  name: 'Demo events',
   parameters: {
     scenario: '0124/S1',
     requirements: ['CL5'],
     ...NO_CONTROLS,
   },
-  render: guide({ ru: 'События гайда', en: 'Guide events' }, GUIDE_EVENTS),
+  render: guide({ ru: 'События Демо', en: 'Demo events' }, GUIDE_EVENTS),
   play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
     const text = shell(globals.locale)
@@ -178,7 +178,7 @@ export const ConsoleGuideEvents: StoryObj<StoryProps> = {
 /** Шагов протяжки: каждый — свой кадр, как движение мыши. */
 const DRAG_STEPS = 5
 
-const COALESCING: readonly GuideStoryStep[] = [
+const COALESCING: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Таблица с шириной колонок',
@@ -334,7 +334,7 @@ const setFilters = async (
 /** Консоли, у которых шаг скрыл виды: поповер закрыт, и узнать это иначе нельзя. */
 const filtered = new WeakSet<Element>()
 
-const FILTER: readonly GuideStoryStep[] = [
+const FILTER: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Таблица с выбором и сортировкой',
@@ -431,24 +431,24 @@ export const ConsoleFilter: StoryObj<StoryProps> = {
 // --- ADR 0225, S1 --------------------------------------------------------------------
 
 const LANGUAGE_TITLE: StoryText = {
-  ru: 'Язык гайда и консоли',
-  en: 'Guide and console language',
+  ru: 'Язык Демо и консоли',
+  en: 'Demo and console language',
 }
 
-const LANGUAGE: readonly GuideStoryStep[] = [
+const LANGUAGE: readonly DemoStoryStep[] = [
   {
-    title: { ru: 'Гайд на английском', en: 'The guide in English' },
+    title: { ru: 'Демо на английском', en: 'The Demo in English' },
     hint: {
-      ru: 'Язык истории — английский. Панель гайда, тексты шагов, консоль и таблица — на английском.',
-      en: 'The story language is English. The guide panel, the step texts, the console, and the table are in English.',
+      ru: 'Язык истории — английский. Панель Демо, тексты шагов, консоль и таблица — на английском.',
+      en: 'The story language is English. The Demo panel, the step texts, the console, and the table are in English.',
     },
     props: () => ({ locale: 'en', enableRowSelection: true }),
   },
   {
     title: { ru: 'Посетитель выбрал русский', en: 'The visitor chose Russian' },
     hint: {
-      ru: 'Посетитель выбрал русский язык. Гайд, консоль с прежними записями и таблица перешли на русский; шаг и журнал остались на месте.',
-      en: 'The visitor chose Russian. The guide, the console with its earlier records, and the table switched to Russian; the step and the log stayed in place.',
+      ru: 'Посетитель выбрал русский язык. Демо, консоль с прежними записями и таблица перешли на русский; шаг и журнал остались на месте.',
+      en: 'The visitor chose Russian. The Demo, the console with its earlier records, and the table switched to Russian; the step and the log stayed in place.',
     },
     props: () => ({ locale: 'ru' }),
   },
@@ -458,14 +458,14 @@ const LANGUAGE: readonly GuideStoryStep[] = [
       en: 'The visitor switched back to English',
     },
     hint: {
-      ru: 'Посетитель вернул английский язык. Гайд, консоль и таблица снова на английском.',
-      en: 'The visitor switched back to English. The guide, the console, and the table are in English again.',
+      ru: 'Посетитель вернул английский язык. Демо, консоль и таблица снова на английском.',
+      en: 'The visitor switched back to English. The Demo, the console, and the table are in English again.',
     },
     props: () => ({ locale: 'en' }),
   },
 ]
 
-/** Гайд, консоль и таблица на языке шага: как сменил бы его тулбар Language. */
+/** Демо, консоль и таблица на языке шага: как сменил бы его тулбар Language. */
 const inLanguage = (canvas: HTMLElement, locale: 'en' | 'ru') => {
   const text = shell(locale)
   const toggle = canvas.querySelector('[data-testid="guide-toggle"]')

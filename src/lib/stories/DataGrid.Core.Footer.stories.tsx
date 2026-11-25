@@ -24,11 +24,11 @@ import { inCategory } from './__mocks__/utils/argTypes'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 
 /**
  * Футер колонок и его положение (ADR 0118): вид для каталога и по истории на клиентский
@@ -199,7 +199,7 @@ const scrollToEnd = afterRows(root => {
 
 // --- S1 ------------------------------------------------------------------------------
 
-const PINNED: readonly GuideStoryStep[] = [
+const PINNED: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Строка итогов у нижнего края',
@@ -234,7 +234,7 @@ export const PinnedFooter: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Строка итогов у нижнего края',
         en: 'Totals row at the bottom edge',
@@ -263,7 +263,7 @@ export const PinnedFooter: StoryObj<StoryProps> = {
 
 // --- S2 ------------------------------------------------------------------------------
 
-const INLINE: readonly GuideStoryStep[] = [
+const INLINE: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Строка итогов за последней строкой',
@@ -298,7 +298,7 @@ export const InlineFooter: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Строка итогов за последней строкой',
         en: 'Totals row after the last row',
@@ -347,12 +347,10 @@ const scrollAndPressCell = stepAction(async (root, { signal }) => {
   await pollUntil(() => !!firstVisibleCell(root), signal)
   const cell = firstVisibleCell(root)!
   pressCell(cell)
-  // Ячейка станет активной событием фокуса — без фокуса у страницы оно придёт, когда
-  // страницу откроют: холст Storybook при загрузке фокуса не имеет.
-  await pollUntil(() => document.activeElement === cell, signal)
+  await pollUntil(() => cell.dataset.cellSelected === 'true', signal)
 })
 
-const SWITCH: readonly GuideStoryStep[] = [
+const SWITCH: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Строка итогов у нижнего края',
@@ -392,6 +390,7 @@ const FOOTER_POSITION_SWITCH_ARGS = {
   dataCount: 100,
   footerPosition: 'pinned',
   enableKeyboardNavigation: true,
+  enableCellSelection: true,
 } satisfies Partial<StoryProps>
 
 /** S3: приложение переключает положение футера на лету. */
@@ -403,7 +402,7 @@ export const FooterPositionSwitch: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Смена положения строки итогов',
         en: 'Moving the totals row',
@@ -427,6 +426,7 @@ export const FooterPositionSwitch: StoryObj<StoryProps> = {
       // Ячейку нажало действие шага; фокус с неё гайд снимает (ADR 0117, SN56).
       cell = firstVisibleCell(canvas)!
       await until(() => expect(cell!.dataset.knActive).toBe('true'))
+      await until(() => expect(cell!.dataset.cellSelected).toBe('true'))
       await settle()
       scrollTop = scrollerOf(canvas).scrollTop
       body = canvas.querySelector('.data-grid__body')
@@ -446,6 +446,7 @@ export const FooterPositionSwitch: StoryObj<StoryProps> = {
       )
       await until(() => expect(cell!.isConnected).toBe(true))
       await until(() => expect(cell!.dataset.knActive).toBe('true'))
+      await until(() => expect(cell!.dataset.cellSelected).toBe('true'))
       await until(() => expect(cell!.tabIndex).toBe(0))
     })
     await settle()
@@ -478,7 +479,7 @@ const pressArrowDown = (root: HTMLElement) => {
   )
 }
 
-const KEYBOARD: readonly GuideStoryStep[] = [
+const KEYBOARD: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Строка итогов за последней строкой',
@@ -541,7 +542,7 @@ export const FooterKeyboard: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Строка итогов с клавиатуры',
         en: 'Reaching the totals row from the keyboard',
@@ -559,9 +560,7 @@ export const FooterKeyboard: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await waitRows(canvas)
       await until(() =>
-        expect(
-          lastRowOf(canvas).querySelector('[data-kn-active="true"]'),
-        ).not.toBeNull(),
+        expect(lastRowOf(canvas).contains(document.activeElement)).toBe(true),
       )
       await until(() =>
         expect(rect(footerOf(canvas)).top).toBeGreaterThanOrEqual(
@@ -595,7 +594,7 @@ const failingLoad = () =>
     ),
   )
 
-const FEED: readonly GuideStoryStep[] = [
+const FEED: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Начало ленты', en: 'Start of the feed' },
     hint: {
@@ -640,7 +639,7 @@ export const InlineFooterInfiniteScroll: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Строка итогов в бесконечной ленте',
         en: 'Totals row in an infinite feed',
@@ -706,7 +705,7 @@ const PAGE_ROWS = 100
 const SMALL_PAGE = 5
 const LARGE_PAGE = 25
 
-const PAGES: readonly GuideStoryStep[] = [
+const PAGES: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Малый размер страницы', en: 'A small page size' },
     hint: {
@@ -750,7 +749,7 @@ export const InlineFooterPagination: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Строка итогов с пагинацией',
         en: 'Totals row with pagination',
@@ -809,7 +808,7 @@ const LAST_ROW_ID = `item-id-${SCROLL_ROWS - 1}`
 const scrollToRowEnd = (rowId: string) =>
   afterRows(() => void scrollApi?.scrollToRow(rowId, { align: 'end' }))
 
-const SCROLL: readonly GuideStoryStep[] = [
+const SCROLL: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Начало таблицы', en: 'Top of the table' },
     hint: {
@@ -850,7 +849,7 @@ export const InlineFooterScrollToRow: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Прокрутка к строке', en: 'Scroll to a row' }}
       steps={SCROLL}
       args={guideArgs(INLINE_FOOTER_SCROLL_TO_ROW_ARGS, args)}
@@ -900,7 +899,7 @@ const typeSearch = (text: string) => (root: HTMLElement) => {
   input.dispatchEvent(new Event('input', { bubbles: true }))
 }
 
-const SEARCH: readonly GuideStoryStep[] = [
+const SEARCH: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Строка итогов за последней строкой',
@@ -936,7 +935,7 @@ export const InlineFooterEmptySearch: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Строка итогов и пустой поиск',
         en: 'Totals row and an empty search',
@@ -988,7 +987,7 @@ export const InlineFooterEmptySearch: StoryObj<StoryProps> = {
 
 // --- S9 ------------------------------------------------------------------------------
 
-const AUTO_HEIGHT: readonly GuideStoryStep[] = [
+const AUTO_HEIGHT: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Фиксированная высота', en: 'Fixed height' },
     hint: {
@@ -1023,7 +1022,7 @@ export const FooterAutoHeight: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Строка итогов при разной высоте таблицы',
         en: 'Totals row at different table heights',
@@ -1071,7 +1070,7 @@ const expandFirstRow = (root: HTMLElement) => {
   if (toggle && toggle.getAttribute('aria-expanded') !== 'true') toggle.click()
 }
 
-const EXPAND: readonly GuideStoryStep[] = [
+const EXPAND: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Строка итогов за последней строкой',
@@ -1109,7 +1108,7 @@ export const InlineFooterRowExpanding: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Строка итогов и раскрытие строки',
         en: 'Totals row and row expanding',

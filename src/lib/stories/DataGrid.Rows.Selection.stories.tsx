@@ -23,11 +23,11 @@ import {
 } from './__mocks__/catalogPlay'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 
 /**
  * Выбор строк (ADR 0014): `Playground` — выбранные строки в покое; S1 — выбор всех
@@ -116,7 +116,7 @@ const selectAll = (root: HTMLElement) => {
   if (!pageSelected(root)) headCheckbox(root)?.click()
 }
 
-const ALL_ROWS: readonly GuideStoryStep[] = [
+const ALL_ROWS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Строки не выбраны', en: 'No rows are selected' },
     hint: {
@@ -174,7 +174,7 @@ export const BatchRowSelection: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Выбор всех строк', en: 'Selecting all rows' }}
       steps={ALL_ROWS}
       args={guideArgs(
@@ -228,7 +228,7 @@ const selectParent = (root: HTMLElement) => {
     checkboxOf(bodyRow(root, PARENT))?.click()
 }
 
-const SUB_ROWS: readonly GuideStoryStep[] = [
+const SUB_ROWS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Дерево раскрыто', en: 'The tree is expanded' },
     hint: {
@@ -275,7 +275,7 @@ export const SubRowSelection: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Выбор родителя', en: 'Selecting a parent' }}
       steps={SUB_ROWS}
       args={guideArgs(
@@ -329,7 +329,7 @@ const selectOnly = (id: string) => (root: HTMLElement) => {
   if (!selected(bodyRow(root, id))) checkboxOf(bodyRow(root, id))?.click()
 }
 
-const SELF_ROWS: readonly GuideStoryStep[] = [
+const SELF_ROWS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Дерево раскрыто', en: 'The tree is expanded' },
     hint: {
@@ -381,7 +381,7 @@ export const SelectionSubRowsSelf: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Выбор отдельных строк дерева',
         en: 'Selecting individual tree rows',
@@ -449,7 +449,7 @@ const clickRow = (id: string) =>
     await pollUntil(() => rowSelected(root, id), signal)
   })
 
-const ROW_CLICK: readonly GuideStoryStep[] = [
+const ROW_CLICK: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Выбора нет', en: 'Nothing is selected yet' },
     hint: {
@@ -497,7 +497,7 @@ export const SelectionByRowClick: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Выбор щелчком по строке',
         en: 'Selecting a row by clicking it',
@@ -597,7 +597,7 @@ type Link = [
  * после прошлого шага — только недостающие (ADR 0117, §6а).
  */
 const chain =
-  (...links: Link[]): GuideStoryStep['enter'] =>
+  (...links: Link[]): DemoStoryStep['enter'] =>
   (root, app) => {
     let at = -1
     return untilDone(links.at(-1)![0], root => {
@@ -630,7 +630,7 @@ const nextPageSelected: Link = [
   toPage(String(SCOPE_PAGE + 1)),
 ]
 
-const SELECT_FOUND: readonly GuideStoryStep[] = [
+const SELECT_FOUND: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Строки на страницах', en: 'Rows across pages' },
     hint: {
@@ -699,7 +699,7 @@ export const RowsSelectionSelectAllFiltered: StoryObj<StoryProps> = {
   name: 'Select all found rows',
   parameters: { scenario: '0179/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Выбор всех найденных строк',
         en: 'Selecting all found rows',
@@ -739,7 +739,7 @@ export const RowsSelectionSelectAllFiltered: StoryObj<StoryProps> = {
   },
 }
 
-const SELECT_PAGE: readonly GuideStoryStep[] = [
+const SELECT_PAGE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Строки на страницах', en: 'Rows across pages' },
     hint: {
@@ -784,7 +784,7 @@ export const RowsSelectionSelectAllCurrentPage: StoryObj<StoryProps> = {
   name: 'Select all on the page',
   parameters: { scenario: '0179/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Выбор строк страницы', en: "Selecting a page's rows" }}
       steps={SELECT_PAGE}
       args={guideArgs(SCOPE_GRID, args)}
@@ -860,7 +860,7 @@ const groupBy = (column: string, other: string) => (root: HTMLElement) => {
   else if (!groupedBy(root, column)) button(column)?.click()
 }
 
-const GROUP_SELECT: readonly GuideStoryStep[] = [
+const GROUP_SELECT: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Строки сгруппированы', en: 'Rows are grouped' },
     hint: {
@@ -905,7 +905,7 @@ export const GroupSelection: StoryObj<StoryProps> = {
   name: 'Select a group',
   parameters: { scenario: '0185/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Выбор группы', en: 'Selecting a group' }}
       steps={GROUP_SELECT}
       args={guideArgs(GROUP_GRID, args)}
@@ -932,7 +932,7 @@ export const GroupSelection: StoryObj<StoryProps> = {
   },
 }
 
-const GROUP_FILTERED: readonly GuideStoryStep[] = [
+const GROUP_FILTERED: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Строки сгруппированы', en: 'Rows are grouped' },
     hint: {
@@ -1000,7 +1000,7 @@ export const GroupSelectFiltered: StoryObj<StoryProps> = {
   name: 'Select a group while searching',
   parameters: { scenario: '0185/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Выбор группы при поиске',
         en: 'Selecting a group during a search',
@@ -1036,7 +1036,7 @@ export const GroupSelectFiltered: StoryObj<StoryProps> = {
   },
 }
 
-const GROUP_REGROUP: readonly GuideStoryStep[] = [
+const GROUP_REGROUP: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Строки сгруппированы', en: 'Rows are grouped' },
     hint: {
@@ -1096,7 +1096,7 @@ export const GroupSelectRegroup: StoryObj<StoryProps> = {
   name: 'Change grouping with a selection',
   parameters: { scenario: '0185/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Смена группировки', en: 'Changing the grouping' }}
       steps={GROUP_REGROUP}
       args={guideArgs(GROUP_GRID, args)}

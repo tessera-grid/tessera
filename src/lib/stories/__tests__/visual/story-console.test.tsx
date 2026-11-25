@@ -17,7 +17,7 @@ import {
   createConsoleLog,
 } from '../../demos/consoleLog'
 import { shellText, type StoryShellKey } from '../../demos/storyShell'
-import { settle } from '../../__mocks__/catalogPlay'
+import { guideNext, settle } from '../../__mocks__/catalogPlay'
 import { normalizeArgs } from '../../__mocks__/utils/normalizeArgs'
 import { humanClick } from '../helpers'
 import { waitForQuietDocument } from '../memory.helpers'
@@ -394,9 +394,7 @@ describe('консоль историй (ADR 0124)', () => {
       .poll(() => list().textContent)
       .toContain('Step 1 · The table is open')
     toggle().click()
-    byTestId('guide-toggle')!.click()
-    await expect.poll(() => byTestId('guide-next')).not.toBeNull()
-    byTestId('guide-next')!.click()
+    await guideNext(guide.container)
     await expect
       .poll(() => list().textContent, { timeout: 3000 })
       .toContain('Step 2 · Sorting is enabled')

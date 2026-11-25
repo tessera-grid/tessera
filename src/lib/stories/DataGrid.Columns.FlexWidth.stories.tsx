@@ -21,11 +21,11 @@ import { chooseGripItem, dragGripTo, separatorOf } from './__mocks__/columnGrip'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 
 /**
  * Флекс-колонки (ADR 0216): колонки делят ширину таблицы по весам `flex` в пределах своих
@@ -141,7 +141,7 @@ const FLEX_ARGS: Partial<StoryProps> = {
 
 // --- S1: на всю ширину ----------------------------------------------------------------
 
-const FILL: readonly GuideStoryStep[] = [
+const FILL: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Колонки делят ширину таблицы',
@@ -176,7 +176,7 @@ export const FlexFillWidth: StoryObj<StoryProps> = {
   name: 'Fill the width',
   parameters: { scenario: '0216/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Колонки на всю ширину', en: 'Full-width columns' }}
       steps={FILL}
       args={guideArgs({ ...FLEX_ARGS, columnCount: 3 }, args)}
@@ -214,7 +214,7 @@ export const FlexFillWidth: StoryObj<StoryProps> = {
 const RESIZED = 'country'
 const RESIZED_WIDTH = 320
 
-const RESIZE: readonly GuideStoryStep[] = [
+const RESIZE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Колонки растянуты', en: 'The columns are stretched' },
     hint: {
@@ -275,7 +275,7 @@ export const FlexResize: StoryObj<StoryProps> = {
   name: 'Resize a flex column',
   parameters: { scenario: '0216/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Протяжка растянутой колонки',
         en: 'Resizing a stretched column',
@@ -315,7 +315,7 @@ export const FlexResize: StoryObj<StoryProps> = {
 /** Наименьшая ширина колонки имени в данных историй. */
 const MIN = 150
 
-const OVERFLOW: readonly GuideStoryStep[] = [
+const OVERFLOW: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Колонки не помещаются', en: 'The columns do not fit' },
     hint: {
@@ -353,7 +353,7 @@ export const FlexOverflow: StoryObj<StoryProps> = {
   name: 'Columns do not fit',
   parameters: { scenario: '0216/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Колонки шире таблицы', en: 'Columns wider than the table' }}
       steps={OVERFLOW}
       args={guideArgs(

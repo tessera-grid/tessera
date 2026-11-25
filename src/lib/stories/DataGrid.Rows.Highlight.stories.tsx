@@ -27,7 +27,7 @@ import {
 import { untilDone } from './__mocks__/cellGestures'
 import { getData } from './__mocks__/data'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import { DemoStory, type DemoStoryStep, guideArgs } from './demos/DemoStory'
 
 /**
  * Публичная подсветка (ADR 0080): `Playground` — подсвеченные строка, ячейка и колонка;
@@ -209,7 +209,7 @@ const deleteButton = (root: HTMLElement, id: string) =>
  * повторное нажатие сняло бы подсветку, пока приложение её ставит.
  */
 const markForDeletion =
-  (ids: string[]): GuideStoryStep['enter'] =>
+  (ids: string[]): DemoStoryStep['enter'] =>
   (root, app) => {
     const pressed = new Set<string>()
     return untilDone(
@@ -224,7 +224,7 @@ const markForDeletion =
     )(root, app)
   }
 
-const DELETE: readonly GuideStoryStep[] = [
+const DELETE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Действие удаления', en: 'A delete action' },
     hint: {
@@ -298,7 +298,7 @@ export const HighlightDeleteConfirmation: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Подсветка до подтверждения',
         en: 'Highlight until confirmation',
@@ -446,7 +446,7 @@ const markedCell = (root: HTMLElement) =>
     '.data-grid__body-cell[data-column-id="age"][data-highlight="success"]',
   )
 
-const MARKS: readonly GuideStoryStep[] = [
+const MARKS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Поиск пуст', en: 'The search is empty' },
     hint: {
@@ -500,7 +500,7 @@ export const HighlightMarks: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Отметки приложения', en: 'Marks from the app' }}
       steps={MARKS}
       args={guideArgs(

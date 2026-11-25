@@ -20,16 +20,16 @@ import {
   waitForRows,
 } from './__mocks__/catalogPlay'
 import { untilDone } from './__mocks__/cellGestures'
-import { holdGrip, separatorOf } from './__mocks__/columnGrip'
+import { dragGripTo, holdGrip, separatorOf } from './__mocks__/columnGrip'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   type StepRun,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 import * as touch from './__mocks__/touchGuides'
@@ -123,6 +123,12 @@ const withWidths = (sizing: Record<string, number>) =>
     run()
   })
 
+const resizeColumn = (id: string, width: number) =>
+  stepAction(async (root, step) => {
+    await pollUntil(() => !!separatorOf(root, id), step.signal)
+    await dragGripTo(root, step, id, width)
+  })
+
 // --- ADR 0013 S1: ширина колонки ------------------------------------------------------
 
 const RESIZED = 'firstName'
@@ -149,7 +155,7 @@ const holdResize = async (root: HTMLElement, step: StepRun) => {
   await pollUntil(() => !!root.querySelector(RESIZE_LINE), step.signal)
 }
 
-const RESIZE: readonly GuideStoryStep[] = [
+const RESIZE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Колонки в таблице', en: 'Columns in the table' },
     hint: {
@@ -175,7 +181,7 @@ const RESIZE: readonly GuideStoryStep[] = [
       ru: 'Пользователь потянул ручку на границе колонок. Колонка стала шире, а колонки правее сдвинулись вслед за её краем.',
       en: 'The user dragged the grip on the column border. The column got wider, and the columns to its right moved along with its edge.',
     },
-    enter: withWidths({ [RESIZED]: WIDE }),
+    enter: resizeColumn(RESIZED, WIDE),
   },
   {
     title: {
@@ -186,7 +192,7 @@ const RESIZE: readonly GuideStoryStep[] = [
       ru: 'Колонка стала уже, и кнопкам заголовка не хватает места: они уходят в меню колонки.',
       en: 'The column got narrower, and the header buttons run out of room: they move into the column menu.',
     },
-    enter: withWidths({ [RESIZED]: NARROW }),
+    enter: resizeColumn(RESIZED, NARROW),
   },
 ]
 
@@ -199,7 +205,7 @@ export const ResizingColumns: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Ширина колонки', en: 'Column width' }}
       steps={RESIZE}
       args={guideArgs(
@@ -341,7 +347,7 @@ const holdAtEdge = async (root: HTMLElement, step: StepRun) => {
   return held
 }
 
-const PAST_EDGE: readonly GuideStoryStep[] = [
+const PAST_EDGE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Колонки за краем', en: 'Columns past the edge' },
     hint: {
@@ -396,7 +402,7 @@ export const ResizingPastEdge: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Протяжка за край', en: 'Resizing past the edge' }}
       steps={PAST_EDGE}
       args={guideArgs(
@@ -460,7 +466,7 @@ export const ResizingPastEdge: StoryObj<StoryProps> = {
 
 const STRETCHED = 320
 
-const COLUMNS: readonly GuideStoryStep[] = [
+const COLUMNS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Ширина по умолчанию', en: 'Default width' },
     hint: {
@@ -477,7 +483,7 @@ const COLUMNS: readonly GuideStoryStep[] = [
       ru: 'Пользователь растянул одну из колонок шире остальных.',
       en: 'The user made one of the columns wider than the others.',
     },
-    enter: withWidths({ name: STRETCHED }),
+    enter: resizeColumn('name', STRETCHED),
   },
   {
     title: { ru: 'Новая ширина по умолчанию', en: 'A new default width' },
@@ -514,7 +520,7 @@ export const ResizingDefaultColumnWidth: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Ширина колонок по умолчанию', en: 'Default column width' }}
       steps={COLUMNS}
       args={guideArgs(DEFAULT_COLUMN_WIDTH_ARGS, args)}
@@ -575,7 +581,7 @@ const fromNarrow =
   (
     done: (root: HTMLElement) => boolean,
     act: (root: HTMLElement) => void,
-  ): GuideStoryStep['enter'] =>
+  ): DemoStoryStep['enter'] =>
   (root, app) => {
     let narrowed = false
     return untilDone(done, current => {
@@ -597,7 +603,7 @@ const autosizeAllItem = () =>
     '[role="menuitem"][data-action-id="columnSizing.autosizeAll"]',
   )
 
-const AUTOSIZE: readonly GuideStoryStep[] = [
+const AUTOSIZE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Колонки обрезают текст', en: 'Columns cut off text' },
     hint: {
@@ -646,7 +652,7 @@ export const AutosizeColumns: StoryObj<StoryProps> = {
   name: 'Autosize columns',
   parameters: { scenario: '0217/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Ширина по содержимому', en: 'Width by content' }}
       steps={AUTOSIZE}
       args={guideArgs(
@@ -710,7 +716,7 @@ const LONG = rowsOf([
   'Lee',
 ])
 
-const ON_DATA: readonly GuideStoryStep[] = [
+const ON_DATA: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Данные пришли', en: 'Data arrived' },
     hint: {
@@ -734,7 +740,7 @@ export const AutosizeOnData: StoryObj<StoryProps> = {
   name: 'Autosize on data',
   parameters: { scenario: '0217/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Подгонка при приходе данных',
         en: 'Autosizing when data arrives',
@@ -785,7 +791,7 @@ const touchGripHead = (root: ParentNode) =>
 
 let touchStartWidth = 0
 
-const BY_TOUCH: readonly GuideStoryStep[] = [
+const BY_TOUCH: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Полоска ширины видна', en: 'The width strip is visible' },
     hint: {
@@ -825,7 +831,7 @@ export const ResizingByTouch: StoryObj<StoryProps> = {
   globals: touch.PHONE,
   parameters: { scenario: '0231/S6', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Ширина колонки пальцем', en: 'Column width with a finger' }}
       steps={BY_TOUCH}
       args={guideArgs(touch.TOUCH_ARGS, args)}

@@ -9,7 +9,7 @@ import {
   pollUntil,
   shieldHeldDrag,
 } from './catalogPlay'
-import type { StepRun } from '../demos/GuideStory'
+import type { StepRun } from '../demos/DemoStory'
 import { HANDLE, OVERLAY, ROW, USER_CELL, nextFrame } from '../rowDragging.dnd'
 
 export const CLOUD_TITLE = `${OVERLAY} .data-grid__cell-wrapper-title`

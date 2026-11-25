@@ -2,7 +2,8 @@
  * Ручка ширины колонки в шагах гайдов (ADR 0117, SN36): протяжка и меню ручки — события шага,
  * как от мыши пользователя; в живом Storybook гайд показывает нажатие (SN46, SN50).
  */
-import type { StepRun } from '../demos/GuideStory'
+import type { StepRun } from '../demos/DemoStory'
+import { pressWaves } from '../demos/guideDemo'
 import { centerOf, openMenuBy, pollUntil, sleep } from './catalogPlay'
 
 const GRIP = '.resize__handler--column'
@@ -43,6 +44,7 @@ export const holdGrip = async (
     dispatchedX = event.clientX
     ours.add(event)
     target.dispatchEvent(event)
+    return event
   }
   let at = from.x
   // Движение в точке удержания — повтор автопрокрутки у края (ADR 0197, §5): пропускается.
@@ -67,7 +69,9 @@ export const holdGrip = async (
     }
   }
   step.onLeave(release)
-  fire('mousedown', separatorOf(root, id)!, at)
+  const press = fire('mousedown', separatorOf(root, id)!, at)
+  const wave = pressWaves.get(press)
+  if (wave) await wave
   const target = to(from)
   for (let i = 1; i <= 8; i++) {
     step.signal.throwIfAborted()

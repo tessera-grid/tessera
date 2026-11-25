@@ -1,11 +1,11 @@
 import { expect } from 'storybook/test'
 import { guideControls } from './__mocks__/utils/dataGridControls'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import {
   consoleText,
   guideNext,
@@ -94,7 +94,7 @@ export const DateTimePlayground: StoryObj<StoryProps> = {
 const NEW_MOMENT_DAY = '2026-10-02'
 const NEW_TIME = '14:30'
 
-const EDIT_DATE_TIME: readonly GuideStoryStep[] = [
+const EDIT_DATE_TIME: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Время обновления', en: 'Update time' },
     hint: {
@@ -148,7 +148,7 @@ export const EditingDateTime: StoryObj<StoryProps> = {
   name: 'Edit',
   parameters: { scenario: '0175/S13', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Правка даты со временем', en: 'Editing a date with time' }}
       steps={EDIT_DATE_TIME}
       args={guideArgs(
@@ -208,7 +208,7 @@ const filterOnDay = async (root: HTMLElement, signal: AbortSignal) => {
   await closePanel(signal)
 }
 
-const DATE_TIME_FILTER: readonly GuideStoryStep[] = [
+const DATE_TIME_FILTER: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Время обновления без настройки фильтра',
@@ -256,7 +256,7 @@ export const DataTypesDateTimeFilter: StoryObj<StoryProps> = {
   name: 'Filter',
   parameters: { scenario: '0172/S15', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Фильтр даты со временем',
         en: 'Filtering a date with time',

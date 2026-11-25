@@ -46,11 +46,11 @@ import {
 } from './__mocks__/typeGuides'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 
@@ -636,7 +636,7 @@ export const AssembledPlayground: StoryObj<AssembledArgs> = {
 
 // --- ADR 0183, S1 ---------------------------------------------------------------------
 
-const STEPS: readonly GuideStoryStep[] = [
+const STEPS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Таблица', en: 'The table' },
     hint: {
@@ -644,7 +644,7 @@ const STEPS: readonly GuideStoryStep[] = [
       en: 'Every feature that has a popover is turned on in the table. Next comes one step for each popover of the table, showing which blocks it is assembled from.',
     },
   },
-  ...POPUPS.map((popup): GuideStoryStep => ({
+  ...POPUPS.map((popup): DemoStoryStep => ({
     title: popup.title,
     hint: popup.hint,
     ...(popup.states ? { states: popup.states } : {}),
@@ -672,7 +672,7 @@ export const PopupAssembled: StoryObj<StoryProps> = {
   name: 'Popups assembled',
   parameters: { scenario: '0183/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Поповеры таблицы', en: 'Table popovers' }}
       steps={STEPS}
       args={guideArgs(GRID, args)}

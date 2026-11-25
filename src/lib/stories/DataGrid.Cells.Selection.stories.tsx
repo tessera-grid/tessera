@@ -25,12 +25,12 @@ import {
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   type StepRun,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 
@@ -110,7 +110,7 @@ const selectBothRanges = (root: HTMLElement) => {
   else selectFirstRange(root)
 }
 
-const RANGE: readonly GuideStoryStep[] = [
+const RANGE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Ничего не выделено', en: 'Nothing is selected' },
     hint: {
@@ -181,7 +181,7 @@ export const CellSelectionRange: StoryObj<StoryProps> = {
   name: 'Select and copy',
   parameters: { scenario: '0029/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Выделение и копирование', en: 'Selecting and copying' }}
       steps={RANGE}
       args={guideArgs({ enableCellSelection: true, ...GRID }, args)}
@@ -228,7 +228,7 @@ const ACROSS = { row: 'item-id-3', column: 'visits' }
 /** Три строки по колонкам от имени до визитов — четыре колонки без возраста. */
 const ACROSS_CELLS = 12
 
-const PREDICATE: readonly GuideStoryStep[] = [
+const PREDICATE: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Колонку возраста выделять нельзя',
@@ -264,7 +264,7 @@ export const CellSelectionPredicate: StoryObj<StoryProps> = {
   name: 'Forbidden column',
   parameters: { scenario: '0029/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Запрет выделения колонки',
         en: 'Disallowing selection in a column',
@@ -322,7 +322,7 @@ const selectedCellIds = (root: ParentNode) =>
       `${cell.closest<HTMLElement>('[data-row-id]')!.dataset.rowId}/${cell.dataset.columnId}`,
   )
 
-const BY_COMMAND: readonly GuideStoryStep[] = [
+const BY_COMMAND: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Выделения нет', en: 'No selection' },
     hint: {
@@ -374,7 +374,7 @@ export const CellSelectionByCommand: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Выделение командой приложения',
         en: 'Selection by an app command',
@@ -439,7 +439,7 @@ const selectCorners = (root: HTMLElement) => {
   else pressCell(at(root, CORNER_A))
 }
 
-const FOLLOWS_SORT: readonly GuideStoryStep[] = [
+const FOLLOWS_SORT: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Ничего не выделено', en: 'Nothing is selected' },
     hint: {
@@ -486,7 +486,7 @@ export const CellSelectionFollowsSort: StoryObj<StoryProps> = {
   name: 'Follows sorting',
   parameters: { scenario: '0180/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Выделение едет со строками',
         en: 'The selection moves with the rows',
@@ -624,7 +624,7 @@ const holdHandle = async (root: HTMLElement, step: StepRun) => {
   await pollUntil(() => handleRangeSelected(root), step.signal)
 }
 
-const RANGE_HANDLE: readonly GuideStoryStep[] = [
+const RANGE_HANDLE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Ничего не выделено', en: 'Nothing is selected' },
     hint: {
@@ -684,7 +684,7 @@ export const CellSelectionHandle: StoryObj<StoryProps> = {
   name: 'Range handle',
   parameters: { scenario: '0198/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Маркер диапазона', en: 'The range handle' }}
       steps={RANGE_HANDLE}
       args={guideArgs({ enableCellSelection: true, ...GRID }, args)}
@@ -858,7 +858,7 @@ const touchOne = async (root: HTMLElement, signal?: AbortSignal) => {
   await pollUntil(() => touchRange(root, 3, 3), signal)
 }
 
-const TOUCH: readonly GuideStoryStep[] = [
+const TOUCH: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Ничего не выделено', en: 'Nothing is selected' },
     hint: {
@@ -945,7 +945,7 @@ export const CellSelectionTouch: StoryObj<StoryProps> = {
   name: 'Select by touch',
   parameters: { scenario: '0198/S4', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Выделение пальцем', en: 'Selecting by touch' }}
       steps={TOUCH}
       args={guideArgs({ enableCellSelection: true, ...GRID }, args)}

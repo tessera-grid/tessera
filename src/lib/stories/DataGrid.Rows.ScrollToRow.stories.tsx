@@ -18,11 +18,11 @@ import {
 import { getData } from './__mocks__/data'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 
 /**
  * Прокрутка к строке (ADR 0104): `table.scrollToRow` с выравниванием, колонкой и
@@ -101,7 +101,7 @@ const showRow = (id: string) =>
 const flashed = (root: HTMLElement, id: string) =>
   bodyRow(root, id)?.getAttribute('data-flash') === 'arrived'
 
-const SCROLL: readonly GuideStoryStep[] = [
+const SCROLL: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Начало таблицы', en: 'Top of the table' },
     hint: {
@@ -141,7 +141,7 @@ export const ScrollToRowShow: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Прокрутка к строке', en: 'Scroll to a row' }}
       steps={SCROLL}
       args={guideArgs(

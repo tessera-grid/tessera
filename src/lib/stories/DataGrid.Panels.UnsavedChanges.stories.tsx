@@ -24,12 +24,12 @@ import { filteringColumns } from './__mocks__/filteringData'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import {
-  GuideStory,
+  DemoStory,
   type GuideApp,
-  type GuideStoryStep,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import { WithConsole } from './demos/StoryConsole'
 import { type ConsoleLog, createConsoleLog } from './demos/consoleLog'
 import {
@@ -233,7 +233,7 @@ const nameApplied = async (root: HTMLElement, signal: AbortSignal) => {
   )
 }
 
-const APPLY: readonly GuideStoryStep[] = [
+const APPLY: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Два условия не применены',
@@ -294,7 +294,7 @@ export const UnsavedChangesApply: StoryObj<StoryProps> = {
   name: 'Apply from the panel',
   parameters: { scenario: '0178/S4', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Применение из пульта',
         en: 'Applying from the unsaved changes panel',
@@ -362,7 +362,7 @@ const discardEntry = async (text: string, signal: AbortSignal) => {
   )
 }
 
-const DISCARD: readonly GuideStoryStep[] = [
+const DISCARD: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Три несохранённые правки', en: 'Three unsaved edits' },
     hint: {
@@ -416,7 +416,7 @@ export const UnsavedChangesDangerActions: StoryObj<StoryProps> = {
   name: 'Revert from the panel',
   parameters: { scenario: '0206/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Отказ от правок в пульте',
         en: 'Reverting edits in the unsaved changes panel',
@@ -480,7 +480,7 @@ const pointOnce = (element: HTMLElement | null) => {
   pointAt(element)
 }
 
-const DOT_HINT: readonly GuideStoryStep[] = [
+const DOT_HINT: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Два условия не применены',
@@ -523,7 +523,7 @@ export const UnsavedChangesDotHint: StoryObj<StoryProps> = {
   name: 'Dot hint',
   parameters: { scenario: '0224/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Подсказка точки', en: 'The dot hint' }}
       steps={DOT_HINT}
       args={guideArgs(GRID, args)}

@@ -7,10 +7,10 @@ import { shellText, type StoryShellKey } from './demos/storyShell'
 
 import {
   MIN_PANEL_WIDTH,
-  type GuideStep,
-  GuidePanel,
+  type DemoStep,
+  DemoPanel,
   useGuide,
-} from './demos/GuidePanel'
+} from './demos/DemoPanel'
 
 /**
  * Песочница панели сценария (ADR 0117): число шагов (путь по таблице заказов), длина названий и пояснений, свёрнута
@@ -369,7 +369,7 @@ const makeSteps = ({
   stepCount,
   stepTitle,
   stepHint,
-}: SandboxArgs): GuideStep[] =>
+}: SandboxArgs): DemoStep[] =>
   Array.from({ length: Math.max(1, stepCount) }, (_, i) => {
     const action = ACTIONS[i % ACTIONS.length]!
     return {
@@ -381,20 +381,22 @@ const makeSteps = ({
     }
   })
 
-const Sandbox = (args: SandboxArgs) => {
+const Sandbox = (args: SandboxArgs & { startBusy?: boolean }) => {
   const steps = makeSteps(args)
   const guide = useGuide(steps.length)
+  const stepBusy = args.startBusy === true && guide.run === 0
   return (
     <div
       data-testid="sandbox"
       style={{ width: args.containerWidth || undefined, maxWidth: '100%' }}
     >
-      <GuidePanel
+      <DemoPanel
         // Смена `expanded` в панели Controls — новое исходное состояние панели.
         key={String(args.expanded)}
         title={TITLES[args.title]}
         steps={steps}
-        step={Math.min(guide.step, steps.length - 1)}
+        step={Math.min(stepBusy ? 1 : guide.step, steps.length - 1)}
+        stepBusy={stepBusy}
         onBack={guide.back}
         onNext={guide.next}
         onRestart={guide.restart}
@@ -406,7 +408,7 @@ const Sandbox = (args: SandboxArgs) => {
 }
 
 const meta = {
-  title: 'Tessera/Common/Guide panel',
+  title: 'Tessera/Common/Demo panel',
   render: args => <Sandbox {...args} />,
   parameters: { layout: 'fullscreen' },
   args: {
@@ -442,15 +444,38 @@ const nextStep = async (canvas: HTMLElement) => {
 }
 
 /** Все параметры в панели Controls. */
-export const GuidePanelPlayground: StoryObj<SandboxArgs> = {
+export const DemoPanelPlayground: StoryObj<SandboxArgs> = {
   name: 'Playground',
+}
+
+export const DemoPanelStepInProgress: StoryObj<SandboxArgs> = {
+  name: 'Step in progress',
+  render: args => <Sandbox {...args} startBusy />,
+  play: async ({ canvasElement: canvas }) => {
+    const steps = Array.from(
+      canvas.querySelectorAll<HTMLButtonElement>('[data-step-button]'),
+    )
+    const current = canvas.querySelector(
+      '[aria-current="step"] [data-step-button]',
+    )
+    await expect(current).toBe(steps[1])
+    for (const step of steps) {
+      await expect(step).toBeDisabled()
+      await expect(getComputedStyle(step).opacity).toBe(
+        step === current ? '1' : '0.6',
+      )
+    }
+    await expect(
+      canvas.querySelector('[data-testid="guide-restart"]'),
+    ).toBeEnabled()
+  },
 }
 
 /**
  * Много шагов с длинными текстами: лента прокручивается вручную, активный шаг по центру,
  * края с шагами за ними затемнены; перенос названий и пояснений.
  */
-export const GuidePanelManySteps: StoryObj<SandboxArgs> = {
+export const DemoPanelManySteps: StoryObj<SandboxArgs> = {
   name: 'Many long steps',
   parameters: { requirements: ['SN18'] },
   args: {
@@ -515,7 +540,7 @@ export const GuidePanelManySteps: StoryObj<SandboxArgs> = {
  * Узкий экран (360 px): кнопки переносятся, а не вылезают за карточку; шаг — почти на всю
  * ширину окна, соседи — в затемнении по краям.
  */
-export const GuidePanelNarrow: StoryObj<SandboxArgs> = {
+export const DemoPanelNarrow: StoryObj<SandboxArgs> = {
   name: 'Narrow',
   parameters: { requirements: ['SN19'] },
   args: {
@@ -570,7 +595,7 @@ export const GuidePanelNarrow: StoryObj<SandboxArgs> = {
 }
 
 /** Контейнер уже минимума (240 px): карточка держит свою ширину и не сжимается. */
-export const GuidePanelMinWidth: StoryObj<SandboxArgs> = {
+export const DemoPanelMinWidth: StoryObj<SandboxArgs> = {
   name: 'Below minimum width',
   parameters: { requirements: ['SN20'] },
   args: { stepCount: 6, stepTitle: 'long', containerWidth: 240 },
@@ -586,7 +611,7 @@ export const GuidePanelMinWidth: StoryObj<SandboxArgs> = {
 }
 
 /** Сценарий пройден целиком: переход на последний шаг выполняет его, затем «Пройдено», все шаги зелёные. */
-export const GuidePanelCompleted: StoryObj<SandboxArgs> = {
+export const DemoPanelCompleted: StoryObj<SandboxArgs> = {
   name: 'Completed',
   parameters: { requirements: ['SN16'] },
   play: async ({ canvasElement, globals }) => {
@@ -631,7 +656,7 @@ export const GuidePanelCompleted: StoryObj<SandboxArgs> = {
 }
 
 /** Свёрнутая панель — как в историях сценариев по умолчанию. */
-export const GuidePanelCollapsed: StoryObj<SandboxArgs> = {
+export const DemoPanelCollapsed: StoryObj<SandboxArgs> = {
   name: 'Collapsed',
   args: { expanded: false },
 }

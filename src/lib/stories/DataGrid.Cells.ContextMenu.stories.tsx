@@ -32,11 +32,11 @@ import { storyLabels } from './__mocks__/storyLabels'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 import * as touch from './__mocks__/touchGuides'
@@ -95,16 +95,16 @@ const openOnTarget = (root: HTMLElement) => {
   if (!openMenu()) rightClickCell(at(root, TARGET))
 }
 
-/** Угол меню у центра ячейки — там, где пользователь нажал правой кнопкой. */
+/** Меню примыкает к точке нажатия, в том числе после переворота у края окна. */
 const menuAt = (cell: HTMLElement) => {
   const menu = openMenu()
   if (!menu) return false
   const box = cell.getBoundingClientRect()
-  const { left, top } = menu.getBoundingClientRect()
+  const { left, right, top, height } = menu.getBoundingClientRect()
+  const x = box.left + box.width / 2
+  const y = Math.min(box.top + box.height / 2, window.innerHeight - height)
   return (
-    Math.abs(left - (box.left + box.width / 2)) +
-      Math.abs(top - (box.top + box.height / 2)) <
-    24
+    Math.min(Math.abs(left - x), Math.abs(right - x)) + Math.abs(top - y) < 24
   )
 }
 
@@ -128,7 +128,7 @@ const steady = () => {
   }
 }
 
-const MENU: readonly GuideStoryStep[] = [
+const MENU: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Меню ещё не открыто', en: 'The menu is not open yet' },
     hint: {
@@ -238,7 +238,7 @@ export const ContextMenuCell: StoryObj<StoryProps> = {
   name: 'Menu on a cell',
   parameters: { scenario: '0030/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Контекстное меню ячейки', en: 'Cell context menu' }}
       steps={MENU}
       args={guideArgs(
@@ -374,7 +374,7 @@ const startRecalculate = (root: HTMLElement) => {
   } else openAt(at(root, ASYNC_TARGET))
 }
 
-const ASYNC_ITEMS: readonly GuideStoryStep[] = [
+const ASYNC_ITEMS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Меню ещё не открыто', en: 'The menu is not open yet' },
     hint: {
@@ -482,7 +482,7 @@ export const ContextMenuAsyncItems: StoryObj<StoryProps> = {
   name: 'Async items',
   parameters: { scenario: '0078/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Действие сервера в меню',
         en: 'A server action in the menu',
@@ -622,7 +622,7 @@ const selectAndOpen = (root: HTMLElement) => {
   } else openAt(at(root, ON))
 }
 
-const REFUSED_ON_SELECTION: readonly GuideStoryStep[] = [
+const REFUSED_ON_SELECTION: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Ничего не выделено', en: 'Nothing is selected' },
     hint: {
@@ -699,7 +699,7 @@ export const ContextMenuRefusedOnSelection: StoryObj<StoryProps> = {
   name: 'Refused on a selection',
   parameters: { scenario: '0152/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Отказ действия над выделением',
         en: 'An action on a selection refused',
@@ -800,7 +800,7 @@ const cancelItemShown = (root: HTMLElement) => {
   else openAt(at(root, ON))
 }
 
-const CANCEL_FROM_MENU: readonly GuideStoryStep[] = [
+const CANCEL_FROM_MENU: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Ничего не выделено', en: 'Nothing is selected' },
     hint: {
@@ -889,7 +889,7 @@ export const ContextMenuCancelFromMenu: StoryObj<StoryProps> = {
   name: 'Cancel from the menu',
   parameters: { scenario: '0153/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Отмена действия из меню',
         en: 'Canceling an action from the menu',
@@ -1038,7 +1038,7 @@ const tableRefused = (root: HTMLElement) => {
   }
 }
 
-const WHOLE_TABLE: readonly GuideStoryStep[] = [
+const WHOLE_TABLE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Меню ещё не открыто', en: 'The menu is not open yet' },
     hint: {
@@ -1121,7 +1121,7 @@ export const ContextMenuWholeTable: StoryObj<StoryProps> = {
   name: 'Whole table',
   parameters: { scenario: '0155/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Действие над всей таблицей',
         en: 'An action on the whole table',
@@ -1183,7 +1183,7 @@ const pendingBanner = (root: ParentNode) =>
 const pendingCancel = (root: ParentNode) =>
   root.querySelector<HTMLElement>('[data-testid="pending-action-cancel"]')
 
-const WHOLE_TABLE_CANCEL: readonly GuideStoryStep[] = [
+const WHOLE_TABLE_CANCEL: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Таблица в покое', en: 'The table at rest' },
     hint: {
@@ -1257,7 +1257,7 @@ export const ContextMenuWholeTableCancel: StoryObj<StoryProps> = {
   name: 'Whole table — Cancel',
   parameters: { scenario: '0153/S11', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Отмена действия над всей таблицей',
         en: 'Canceling an action on the whole table',
@@ -1339,7 +1339,7 @@ const doomedRow = (root: ParentNode) =>
 const rowDeleted = (root: ParentNode) =>
   doomedRow(root)?.getAttribute('data-row-draft') === 'deleted'
 
-const DANGER_ITEM: readonly GuideStoryStep[] = [
+const DANGER_ITEM: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Меню ещё не открыто', en: 'The menu is not open yet' },
     hint: {
@@ -1389,7 +1389,7 @@ export const ContextMenuDangerAction: StoryObj<StoryProps> = {
   name: 'Own dangerous action',
   parameters: { scenario: '0206/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Опасное действие в меню',
         en: 'A dangerous action in the menu',
@@ -1454,7 +1454,7 @@ const holdTouchCell = async (
   await touch.holdTarget(touchCellOf(root)!, signal, move)
 }
 
-const LONG_PRESS: readonly GuideStoryStep[] = [
+const LONG_PRESS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Меню закрыто', en: 'The menu is closed' },
     hint: {
@@ -1489,7 +1489,7 @@ export const ContextMenuLongPress: StoryObj<StoryProps> = {
   globals: touch.PHONE,
   parameters: { scenario: '0231/S7', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Меню долгим нажатием', en: 'A menu on a long press' }}
       steps={LONG_PRESS}
       args={guideArgs(touch.TOUCH_ARGS, args)}

@@ -29,7 +29,7 @@ import { expect, userEvent } from 'storybook/test'
 import { guideNext, settle, until } from './__mocks__/catalogPlay'
 import { guideControls } from './__mocks__/utils/dataGridControls'
 import type { StoryProps } from './DataGridStory.types'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import { DemoStory, type DemoStoryStep, guideArgs } from './demos/DemoStory'
 import { type StoryText, textOf } from './__mocks__/storyText'
 import { useStoryText } from './__mocks__/storyLocale'
 
@@ -1192,7 +1192,7 @@ const darkContainer = (root: HTMLElement) => {
   }
 }
 
-const SOURCES: readonly GuideStoryStep[] = [
+const SOURCES: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Тема по странице', en: 'Theme from the page' },
     hint: {
@@ -1249,7 +1249,7 @@ export const ThemeSources: StoryObj<ThemingArgs> = {
   render: storyArgs => (
     <>
       <style>{SOURCE_CONTAINER_CSS}</style>
-      <GuideStory
+      <DemoStory
         title={{ ru: 'Источник темы', en: 'Theme source' }}
         steps={SOURCES}
         args={guideArgs(
@@ -1343,7 +1343,7 @@ const PALETTE_GRID = {
   maxHeight: '360',
 } satisfies Partial<StoryProps>
 
-const DEFAULT_PALETTE: readonly GuideStoryStep[] = [
+const DEFAULT_PALETTE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Приложение без палитры', en: 'An app without a palette' },
     hint: {
@@ -1368,7 +1368,7 @@ export const ThemingDefaultPalette: StoryObj<ThemingArgs> = {
   parameters: { scenario: '0191/S1', ...guideControls() },
   render: storyArgs => (
     <div style={WITHOUT_PALETTE}>
-      <GuideStory
+      <DemoStory
         title={{ ru: 'Палитра по умолчанию', en: 'Default palette' }}
         steps={DEFAULT_PALETTE}
         args={guideArgs(
@@ -1402,7 +1402,7 @@ export const ThemingDefaultPalette: StoryObj<ThemingArgs> = {
 const quickSearchField = (root: ParentNode) =>
   root.querySelector<HTMLInputElement>('input[data-testid="quick-search"]')
 
-const SHADCN_PALETTE: readonly GuideStoryStep[] = [
+const SHADCN_PALETTE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Палитра приложения', en: 'The app palette' },
     hint: {
@@ -1445,7 +1445,7 @@ export const ThemingShadcnPalette: StoryObj<ThemingArgs> = {
   args: { locale: 'en' },
   parameters: { scenario: '0191/S2', ...guideControls() },
   render: storyArgs => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Палитра приложения', en: 'The app palette' }}
       steps={SHADCN_PALETTE}
       args={guideArgs(
@@ -1485,7 +1485,7 @@ const OWN_UNSAVED_CSS = `
 `
 const UNSAVED_ROW = getData(PALETTE_GRID.dataCount)[1]!.id as string
 
-const UNSAVED_ROLE: readonly GuideStoryStep[] = [
+const UNSAVED_ROLE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Несохранённая правка', en: 'An unsaved edit' },
     hint: {
@@ -1514,7 +1514,7 @@ export const ThemingUnsavedRole: StoryObj<ThemingArgs> = {
   render: storyArgs => (
     <>
       <style>{OWN_UNSAVED_CSS}</style>
-      <GuideStory
+      <DemoStory
         title={{ ru: 'Цвет несохранённого', en: 'Unsaved changes color' }}
         steps={UNSAVED_ROLE}
         args={guideArgs(
@@ -1598,7 +1598,7 @@ const GRID_BUTTON_ARGS: Partial<StoryProps> = {
   height: '420',
 }
 
-const GRID_BUTTONS: readonly GuideStoryStep[] = [
+const GRID_BUTTONS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Кнопки по умолчанию', en: 'Default buttons' },
     hint: {
@@ -1630,7 +1630,7 @@ export const ThemingGridButtonSize: StoryObj<ThemingArgs> = {
   render: storyArgs => (
     <div className={BUTTONS_SHOWN}>
       <style>{GRID_BUTTONS_CSS}</style>
-      <GuideStory
+      <DemoStory
         title={{
           ru: 'Размер кнопок таблицы из темы',
           en: 'Table button size from the theme',
@@ -1708,7 +1708,7 @@ const dividerOf = (root: ParentNode) =>
     )!,
   ).borderRightWidth
 
-const DIVIDERS: readonly GuideStoryStep[] = [
+const DIVIDERS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Без линий между колонками', en: 'No lines between columns' },
     hint: {
@@ -1737,7 +1737,7 @@ export const ThemingColumnDividers: StoryObj<ThemingArgs> = {
   render: storyArgs => (
     <>
       <style>{COLUMN_DIVIDERS_CSS}</style>
-      <GuideStory
+      <DemoStory
         title={{ ru: 'Линии между колонками', en: 'Lines between columns' }}
         steps={DIVIDERS}
         args={guideArgs(

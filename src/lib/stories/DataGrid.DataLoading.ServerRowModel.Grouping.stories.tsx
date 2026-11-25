@@ -13,11 +13,11 @@ import { storyLabels } from './__mocks__/storyLabels'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import { StoryComponent } from './DataGridStory'
 import {
   layout,
@@ -51,7 +51,7 @@ const meta = {
 export default meta
 
 /** Контекст шага гайда, которого у `Playground` нет: фабрики «сервера» его не читают. */
-const AT_REST = {} as Parameters<NonNullable<GuideStoryStep['props']>>[0]
+const AT_REST = {} as Parameters<NonNullable<DemoStoryStep['props']>>[0]
 
 interface GroupingPlaygroundArgs extends StoryProps {
   groupBy: 'none' | 'city' | 'vip'
@@ -110,7 +110,7 @@ const groupByCity = async (root: HTMLElement, signal: AbortSignal) => {
   await pollUntil(() => server.held.length > 0 && refreshing(root), signal)
 }
 
-const GROUP_BY: readonly GuideStoryStep[] = [
+const GROUP_BY: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Пользователь открыл список', en: 'The user opened the list' },
     hint: {
@@ -159,7 +159,7 @@ export const ServerRowModelGroupBy: StoryObj<StoryProps> = {
   name: 'Group by a column',
   parameters: { scenario: '0144/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Группировка на сервере', en: 'Grouping on the server' }}
       steps={GROUP_BY}
       reset={() => {
@@ -210,7 +210,7 @@ const parisRowsShown = (root: HTMLElement) =>
     row => row.dataset.groupRow !== 'true' && row.dataset.rowId !== undefined,
   )
 
-const EXPAND_GROUP: readonly GuideStoryStep[] = [
+const EXPAND_GROUP: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Список сгруппирован по городу',
@@ -259,7 +259,7 @@ export const ServerRowModelExpandGroup: StoryObj<StoryProps> = {
   name: 'Expand a group',
   parameters: { scenario: '0144/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Строки группы с сервера',
         en: 'Group rows from the server',
@@ -323,7 +323,7 @@ const PARIS_COUNT = /^Paris \(20\D?000\)$/
 const cellText = (row: HTMLElement, columnId: string) =>
   row.querySelector(`[data-column-id="${columnId}"]`)?.textContent ?? ''
 
-const TOTALS: readonly GuideStoryStep[] = [
+const TOTALS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Итог в футере', en: 'The total in the footer' },
     hint: {
@@ -377,7 +377,7 @@ export const ServerRowModelTotals: StoryObj<StoryProps> = {
   name: 'Totals in the footer',
   parameters: { scenario: '0144/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Итог списка с сервера',
         en: 'The list total from the server',
@@ -414,7 +414,7 @@ export const ServerRowModelTotals: StoryObj<StoryProps> = {
   },
 }
 
-const GROUPING_REFUSED: readonly GuideStoryStep[] = [
+const GROUPING_REFUSED: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Пользователь открыл список', en: 'The user opened the list' },
     hint: {
@@ -462,7 +462,7 @@ export const ServerRowModelGroupingRefused: StoryObj<StoryProps> = {
   name: 'Grouping refused',
   parameters: { scenario: '0144/S4', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Отказ в группировке', en: 'Grouping refused' }}
       steps={GROUPING_REFUSED}
       reset={() => {
@@ -526,7 +526,7 @@ const expandAll = async (root: HTMLElement, signal: AbortSignal) => {
   )
 }
 
-const EXPAND_ALL: readonly GuideStoryStep[] = [
+const EXPAND_ALL: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Группы свёрнуты', en: 'Groups are collapsed' },
     hint: {
@@ -579,7 +579,7 @@ export const ServerGroupingExpandAll: StoryObj<StoryProps> = {
   name: 'Expand all',
   parameters: { scenario: '0160/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Раскрыть всё', en: 'Expand all' }}
       steps={EXPAND_ALL}
       args={guideArgs(layout, args)}
@@ -618,7 +618,7 @@ const groupCountOf = (canvas: HTMLElement) =>
     ?.querySelector('[data-group-count]')
     ?.textContent?.trim()
 
-const ROW_COUNT: readonly GuideStoryStep[] = [
+const ROW_COUNT: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Сервер прислал число подгрупп',
@@ -652,7 +652,7 @@ export const ServerGroupRowCount: StoryObj<StoryProps> = {
   name: 'Row count of a group',
   parameters: { scenario: '0184/S7', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Число строк группы', en: 'Group row count' }}
       steps={ROW_COUNT}
       args={guideArgs(layout, args)}

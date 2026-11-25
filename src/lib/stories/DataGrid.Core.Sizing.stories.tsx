@@ -16,7 +16,7 @@ import {
 } from './__mocks__/catalogPlay'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import { DemoStory, type DemoStoryStep, guideArgs } from './demos/DemoStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 import { shellText } from './demos/storyShell'
@@ -176,7 +176,7 @@ const scrollToMiddle = afterRows(root => {
 
 // --- ADR 0131 S1 ---------------------------------------------------------------------
 
-const FIXED: readonly GuideStoryStep[] = [
+const FIXED: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Своя высота таблицы', en: 'The table height of its own' },
     hint: {
@@ -210,7 +210,7 @@ export const SizingFixedHeight: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Таблица фиксированной высоты', en: 'A fixed-height table' }}
       steps={FIXED}
       args={guideArgs(FIXED_HEIGHT_ARGS, args)}
@@ -237,7 +237,7 @@ export const SizingFixedHeight: StoryObj<StoryProps> = {
 
 // --- ADR 0131 S2 ---------------------------------------------------------------------
 
-const FILL: readonly GuideStoryStep[] = [
+const FILL: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Вся высота блока', en: 'The full block height' },
     hint: {
@@ -279,7 +279,7 @@ export const SizingFillContainer: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Таблица по высоте контейнера',
         en: 'A table as tall as its container',
@@ -322,7 +322,7 @@ export const SizingFillContainer: StoryObj<StoryProps> = {
 const PANEL = 80
 const PANEL_GROWN = 200
 
-const FLEX: readonly GuideStoryStep[] = [
+const FLEX: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Таблица под панелью', en: 'The table below a panel' },
     hint: {
@@ -358,7 +358,7 @@ export const SizingFlexLayout: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Таблица в раскладке страницы',
         en: 'A table in the page layout',
@@ -396,7 +396,7 @@ export const SizingFlexLayout: StoryObj<StoryProps> = {
 
 const MAX_HEIGHT = 400
 
-const CONTENT: readonly GuideStoryStep[] = [
+const CONTENT: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Три строки', en: 'Three rows' },
     hint: {
@@ -429,7 +429,7 @@ export const SizingContentHeight: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Высота по числу строк', en: 'Height by row count' }}
       steps={CONTENT}
       args={guideArgs(CONTENT_HEIGHT_ARGS, args)}
@@ -460,7 +460,7 @@ export const SizingContentHeight: StoryObj<StoryProps> = {
 
 // --- ADR 0077 S1 ---------------------------------------------------------------------
 
-const ROWS: readonly GuideStoryStep[] = [
+const ROWS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Высота по умолчанию', en: 'Default height' },
     hint: {
@@ -530,7 +530,7 @@ export const SizingRowHeight: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Высота строк', en: 'Row height' }}
       steps={ROWS}
       args={guideArgs(ROW_HEIGHT_ARGS, args)}
@@ -618,7 +618,7 @@ export const SizingRowHeight: StoryObj<StoryProps> = {
 const HEAD_DEPTH = 3
 const headHeight = (row: number) => HEAD_DEPTH * row + HEAD_DEPTH - 1
 
-const HEADER: readonly GuideStoryStep[] = [
+const HEADER: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Шапка высотой строк', en: 'A header as tall as the rows' },
     hint: {
@@ -649,7 +649,7 @@ export const SizingHeaderHeight: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Высота заголовков', en: 'Header height' }}
       steps={HEADER}
       args={guideArgs(HEADER_HEIGHT_ARGS, args)}
@@ -681,7 +681,7 @@ export const SizingHeaderHeight: StoryObj<StoryProps> = {
 const APP_THEME = 'sizing-app-theme'
 const APP_THEME_CSS = `.${APP_THEME}.${DATA_GRID_THEME_CLASS} { --tsr-comp-row-height: 40px; --tsr-comp-head-row-height: 64px; }`
 
-const THEME: readonly GuideStoryStep[] = [
+const THEME: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Высота по умолчанию', en: 'Default height' },
     hint: {
@@ -720,7 +720,7 @@ export const SizingThemeTokens: StoryObj<StoryProps> = {
   render: args => (
     <>
       <style>{APP_THEME_CSS}</style>
-      <GuideStory
+      <DemoStory
         title={{
           ru: 'Высота из темы приложения',
           en: 'Height from the app theme',

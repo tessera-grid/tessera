@@ -30,7 +30,7 @@ import { seed } from './__mocks__/seed'
 import { storyLabels } from './__mocks__/storyLabels'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import { DemoStory, type DemoStoryStep, guideArgs } from './demos/DemoStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 
@@ -183,7 +183,7 @@ const reachArchiveRefusal = (root: HTMLElement) => {
   if (!hasFailures()) archiveButton(root)?.click()
 }
 
-const ROW_STEPS: readonly GuideStoryStep[] = [
+const ROW_STEPS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Действия строк', en: 'Row actions' },
     hint: {
@@ -249,7 +249,7 @@ export const FailureLogRow: StoryObj<StoryProps> = {
   name: 'Refused row action',
   parameters: { scenario: '0177/S6', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Отказ действия строки', en: 'Refused row action' }}
       steps={ROW_STEPS}
       args={guideArgs(
@@ -333,7 +333,7 @@ const saveInBackground = () => {
       .catch(() => {})
 }
 
-const OFFSCREEN_STEPS: readonly GuideStoryStep[] = [
+const OFFSCREEN_STEPS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Журнал в тулбаре', en: 'The error log in the toolbar' },
     hint: {
@@ -426,7 +426,7 @@ export const FailureLogOffscreen: StoryObj<StoryProps> = {
   name: 'Failures off screen',
   parameters: { scenario: '0177/S7', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Отказы вне экрана', en: 'Refusals off screen' }}
       steps={OFFSCREEN_STEPS}
       args={guideArgs(
@@ -626,7 +626,7 @@ const groupShown = () =>
 const groupLevel = () =>
   !!backButton() && entries().length === 3 && levelSettled()
 
-const PARTLY_STEPS: readonly GuideStoryStep[] = [
+const PARTLY_STEPS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Правки ждут сохранения', en: 'Edits waiting to be saved' },
     hint: {
@@ -672,7 +672,7 @@ export const FailureLogApplyGroup: StoryObj<StoryProps> = {
   name: 'Apply: partly refused',
   parameters: { scenario: '0227/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Отказ части правок', en: 'Some edits refused' }}
       steps={PARTLY_STEPS}
       args={guideArgs(
@@ -752,7 +752,7 @@ const discarded = (root: ParentNode) =>
   // Плашка ушла целиком, без уходящего кадра.
   !root.querySelector('[data-testid="table-notice"]')
 
-const DISCARD_STEPS: readonly GuideStoryStep[] = [
+const DISCARD_STEPS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Двенадцать правок', en: 'Twelve edits' },
     hint: {
@@ -814,7 +814,7 @@ export const FailureLogDiscardAll: StoryObj<StoryProps> = {
   name: 'Revert all',
   parameters: { scenario: '0227/S5', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Сбросить все правки',
         en: 'Reverting all edits',
@@ -888,7 +888,7 @@ const NAMED_SEED = [
   }),
 ]
 
-const LANGUAGE_STEPS: readonly GuideStoryStep[] = [
+const LANGUAGE_STEPS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Журнал закрыт', en: 'The log is closed' },
     hint: {
@@ -932,7 +932,7 @@ export const FailureLogLanguageSwitch: StoryObj<StoryProps> = {
   name: 'Switch language',
   parameters: { scenario: '0182/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Смена языка у записей журнала',
         en: 'Switching the language of log entries',

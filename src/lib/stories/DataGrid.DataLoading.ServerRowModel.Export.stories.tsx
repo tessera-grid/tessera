@@ -28,11 +28,11 @@ import { storyLabels } from './__mocks__/storyLabels'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import { StoryComponent } from './DataGridStory'
 
 /**
@@ -48,7 +48,7 @@ const meta = {
 export default meta
 
 /** Контекст шага гайда, которого у `Playground` нет: фабрики «сервера» его не читают. */
-const AT_REST = {} as Parameters<NonNullable<GuideStoryStep['props']>>[0]
+const AT_REST = {} as Parameters<NonNullable<DemoStoryStep['props']>>[0]
 
 const TOTAL = 300
 const BLOCK = 50
@@ -80,7 +80,7 @@ export const ServerExportPlayground: StoryObj<StoryProps> = {
 }
 
 const exportProps =
-  (failBlock?: number, limit?: number): GuideStoryStep['props'] =>
+  (failBlock?: number, limit?: number): DemoStoryStep['props'] =>
   context => ({
     ...serverProps({
       total: TOTAL,
@@ -113,7 +113,7 @@ const startExport = async (root: HTMLElement, signal: AbortSignal) => {
 
 // --- S1: выгрузка выборки ------------------------------------------------------------
 
-const VIEW: readonly GuideStoryStep[] = [
+const VIEW: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Список без сервиса выгрузки',
@@ -156,7 +156,7 @@ export const ExportServerRowsView: StoryObj<StoryProps> = {
   name: 'Export the result',
   parameters: { scenario: '0190/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Выгрузка выборки', en: 'Exporting the result set' }}
       steps={VIEW}
       args={guideArgs(layout, args)}
@@ -191,7 +191,7 @@ export const ExportServerRowsView: StoryObj<StoryProps> = {
 
 // --- S2: выборка больше предела ------------------------------------------------------
 
-const OVER_LIMIT: readonly GuideStoryStep[] = [
+const OVER_LIMIT: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Выборка больше предела',
@@ -223,7 +223,7 @@ export const ExportServerRowsLimit: StoryObj<StoryProps> = {
   name: 'Over the limit',
   parameters: { scenario: '0190/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Предел выгрузки', en: 'Export limit' }}
       steps={OVER_LIMIT}
       args={guideArgs(layout, args)}
@@ -256,7 +256,7 @@ export const ExportServerRowsLimit: StoryObj<StoryProps> = {
 
 // --- S3: блок не загрузился ----------------------------------------------------------
 
-const REFUSED: readonly GuideStoryStep[] = [
+const REFUSED: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Список с сервера', en: 'A list from the server' },
     hint: {
@@ -297,7 +297,7 @@ export const ExportServerRowsRefused: StoryObj<StoryProps> = {
   name: 'Refused by the server',
   parameters: { scenario: '0190/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Отказ блока', en: 'A block failed to load' }}
       steps={REFUSED}
       reset={() => server.failed.delete(FAILED_BLOCK)}

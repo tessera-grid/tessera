@@ -15,11 +15,11 @@ import {
 } from './__mocks__/catalogPlay'
 import { untilDone } from './__mocks__/cellGestures'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 
 /**
  * Группировка строк (ADR 0016); группировка от приложения без кнопок (ADR 0120); липкие строки
@@ -73,7 +73,7 @@ const rowIdsOf = (root: ParentNode) =>
   orderedRows(root as HTMLElement).map(row => row.dataset.rowId ?? '')
 const isGroupRow = (id: string) => id.startsWith('gender:')
 
-const BY_APPLICATION: readonly GuideStoryStep[] = [
+const BY_APPLICATION: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Строки без группировки', en: 'Rows without grouping' },
     hint: {
@@ -117,7 +117,7 @@ export const GroupingByApplication: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Группировка от приложения', en: 'Grouping from the app' }}
       steps={BY_APPLICATION}
       args={guideArgs(
@@ -221,7 +221,7 @@ const scrollToSecondGroup = async (root: HTMLElement, gap: number) => {
   }
 }
 
-const STICKY: readonly GuideStoryStep[] = [
+const STICKY: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Группы раскрыты', en: 'Groups are expanded' },
     hint: {
@@ -293,7 +293,7 @@ export const GroupingStickyRows: StoryObj<StoryProps> = {
   name: 'Sticky group rows',
   parameters: { scenario: '0160/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Липкие строки групп', en: 'Sticky group rows' }}
       steps={STICKY}
       args={guideArgs(STICKY_ARGS, args)}
@@ -379,7 +379,7 @@ const typeSearch = (text: string) => (root: HTMLElement) => {
   input.dispatchEvent(new Event('input', { bubbles: true }))
 }
 
-const FILTERED_COUNT: readonly GuideStoryStep[] = [
+const FILTERED_COUNT: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Сколько строк в группах',
@@ -405,7 +405,7 @@ export const GroupRowCountFiltered: StoryObj<StoryProps> = {
   name: 'Row count — search',
   parameters: { scenario: '0184/S5', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Число строк группы и поиск',
         en: 'Group row count and search',
@@ -435,7 +435,7 @@ export const GroupRowCountFiltered: StoryObj<StoryProps> = {
   },
 }
 
-const COUNT_OFF: readonly GuideStoryStep[] = [
+const COUNT_OFF: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Число строк видно', en: 'The row count is shown' },
     hint: {
@@ -458,7 +458,7 @@ export const GroupRowCountOff: StoryObj<StoryProps> = {
   name: 'Row count — off',
   parameters: { scenario: '0184/S6', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Без числа строк', en: 'Without the row count' }}
       steps={COUNT_OFF}
       args={guideArgs(STAFF_ARGS, args)}

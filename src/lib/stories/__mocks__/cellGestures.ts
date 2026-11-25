@@ -1,3 +1,6 @@
+import { stepAction } from '../demos/DemoStory'
+import { sleep } from '../demos/guideDemo'
+
 /**
  * Жесты по ячейкам для шагов гайдов и `play`: нажатие, протяжка, правый клик и
  * копирование — событиями DOM, как их шлёт браузер на действия мыши и клавиатуры.
@@ -167,34 +170,23 @@ export const closeMenu = () =>
     new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
   )
 
-/** Последний запуск шага: в StrictMode вход в шаг выполняется дважды. */
-let latestRun = 0
-
 /**
  * Довести таблицу до состояния шага: пока `done` не выполнено, делать следующий шаг
- * `act`. Таймером, а не кадрами: в фоновой вкладке кадры стоят. Новый запуск и уход с
- * шага (возвращённая отмена) останавливают прежний — два цикла мешали бы друг другу.
+ * `act`. Таймером, а не кадрами: в фоновой вкладке кадры стоят.
  */
-export const untilDone =
-  <TApp>(
-    done: (root: HTMLElement) => boolean,
-    act: (root: HTMLElement, app: TApp) => void,
-  ) =>
-  (root: HTMLElement, app: TApp) => {
-    const runId = ++latestRun
+export const untilDone = <TApp>(
+  done: (root: HTMLElement) => boolean,
+  act: (root: HTMLElement, app: TApp) => void,
+) =>
+  stepAction<TApp>(async (root, { signal }, app) => {
     let tries = 0
-    let left = false
-    const run = () => {
-      if (left || runId !== latestRun || done(root)) return
+    await sleep(0)
+    while (!signal.aborted && !done(root)) {
       // Гайд показывает нажатие (ADR 0117, SN46): действие ждёт, а не повторяется.
       if (!root.closest('[data-guide-showing]')) {
         if (++tries > 80) return
         act(root, app)
       }
-      setTimeout(run, 100)
+      await sleep(100)
     }
-    setTimeout(run, 0)
-    return () => {
-      left = true
-    }
-  }
+  })

@@ -7,7 +7,7 @@ import { dataGridMeta } from './dataGridMeta'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { guideNext, settle, until, waitForRows } from './__mocks__/catalogPlay'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import { DemoStory, type DemoStoryStep, guideArgs } from './demos/DemoStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 
@@ -135,7 +135,7 @@ const SCENARIO_ARGS = {
 
 // --- S1 ------------------------------------------------------------------------------
 
-const REFRESH_ERROR: readonly GuideStoryStep[] = [
+const REFRESH_ERROR: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Данные загружены', en: 'Data loaded' },
     hint: {
@@ -180,7 +180,7 @@ export const LoadErrorRefresh: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Ошибка обновления', en: 'Refresh error' }}
       steps={REFRESH_ERROR}
       args={guideArgs(SCENARIO_ARGS, args)}
@@ -223,7 +223,7 @@ export const LoadErrorRefresh: StoryObj<StoryProps> = {
 
 // --- S2 ------------------------------------------------------------------------------
 
-const FIRST_LOAD_ERROR: readonly GuideStoryStep[] = [
+const FIRST_LOAD_ERROR: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Ожидание данных от сервера',
@@ -263,7 +263,7 @@ export const LoadErrorFirstLoad: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Ошибка первой загрузки', en: 'First load error' }}
       steps={FIRST_LOAD_ERROR}
       args={guideArgs(SCENARIO_ARGS, args)}

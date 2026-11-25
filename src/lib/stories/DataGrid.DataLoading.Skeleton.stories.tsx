@@ -11,7 +11,7 @@ import { guideNext, settle, until } from './__mocks__/catalogPlay'
 import { expandAllType } from './__mocks__/utils/argTypes'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import { DemoStory, type DemoStoryStep, guideArgs } from './demos/DemoStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 
@@ -44,7 +44,7 @@ const EXPAND_ALL_CONTROL = {
 }
 
 /** Грид открыт, данных ещё нет — как у настоящего приложения. */
-const OPENED: GuideStoryStep = {
+const OPENED: DemoStoryStep = {
   title: {
     ru: 'Таблица открыта, данные загружаются',
     en: 'The table is open and data is loading',
@@ -57,7 +57,7 @@ const OPENED: GuideStoryStep = {
 }
 
 /** Ответ сервера: данные и конец загрузки приходят одним обновлением. */
-const ANSWERED: GuideStoryStep = {
+const ANSWERED: DemoStoryStep = {
   title: { ru: 'Данные получены', en: 'Data received' },
   hint: {
     ru: 'Строки встают на место скелета, колонки не сдвигаются.',
@@ -172,7 +172,7 @@ const DATA_ARRIVES = [
       en: 'The skeletons are replaced by data and buttons. The table is ready to use.',
     },
   },
-] as const satisfies readonly GuideStoryStep[]
+] as const satisfies readonly DemoStoryStep[]
 
 /**
  * Всё, что видно на скелете: служебные колонки (выбор, перетаскивание, действия;
@@ -266,7 +266,7 @@ export const SkeletonDataArrives: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Получение данных', en: 'Receiving data' }}
       steps={DATA_ARRIVES}
       args={guideArgs(DATA_ARRIVES_ARGS, args)}
@@ -457,11 +457,11 @@ const OWN_ROWS = 2
 /** Высокая область: по высоте помещается больше строк, чем страница шага 2. */
 const ROWS_COUNT_ARGS = {
   containerHeight: '800',
-  height: '700',
-  maxHeight: '700',
+  height: '650',
+  maxHeight: '650',
 } satisfies Partial<StoryProps>
 
-const ROWS_COUNT: readonly GuideStoryStep[] = [
+const ROWS_COUNT: readonly DemoStoryStep[] = [
   {
     ...OPENED,
     title: { ru: 'Строки по высоте области', en: 'Rows by area height' },
@@ -543,7 +543,7 @@ export const SkeletonRowsCount: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Число строк скелета', en: 'Skeleton row count' }}
       steps={ROWS_COUNT}
       args={guideArgs(ROWS_COUNT_ARGS, args)}
@@ -632,7 +632,7 @@ const COLUMNS_COUNT_ARGS = {
   skeletonOptions: { rowsCount: 'auto' },
 } satisfies Partial<StoryProps>
 
-const COLUMNS_COUNT: readonly GuideStoryStep[] = [
+const COLUMNS_COUNT: readonly DemoStoryStep[] = [
   {
     ...OPENED,
     title: {
@@ -682,7 +682,7 @@ export const SkeletonColumnsCount: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Число колонок скелета', en: 'Skeleton column count' }}
       steps={COLUMNS_COUNT}
       args={guideArgs(COLUMNS_COUNT_ARGS, args)}

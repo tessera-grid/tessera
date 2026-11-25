@@ -115,12 +115,12 @@ export const pairOf = (node: ts.Expression | undefined): Pair => {
 export interface GuideText {
   file: string
   line: number
-  /** `title` и `hint` шага или `title` у `GuideStory`. */
+  /** `title` и `hint` шага или `title` у `DemoStory`. */
   what: 'step title' | 'step hint' | 'guide title'
   pair: Pair
 }
 
-/** Тексты гайдов файла: названия и пояснения шагов, названия `GuideStory`. */
+/** Тексты гайдов файла: названия и пояснения шагов, названия `DemoStory`. */
 export const guideTexts = (file: string): GuideText[] => {
   const source = parseStory(file)
   const texts: GuideText[] = []
@@ -147,7 +147,7 @@ export const guideTexts = (file: string): GuideText[] => {
     }
     if (
       (ts.isJsxSelfClosingElement(node) || ts.isJsxOpeningElement(node)) &&
-      node.tagName.getText() === 'GuideStory'
+      node.tagName.getText() === 'DemoStory'
     ) {
       for (const attribute of node.attributes.properties) {
         if (

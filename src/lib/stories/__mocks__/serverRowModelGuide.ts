@@ -10,7 +10,7 @@ import {
   filteringColumns,
   filteringItemAt,
 } from './filteringData'
-import { type GuideStoryStep } from '../demos/GuideStory'
+import { type DemoStoryStep } from '../demos/DemoStory'
 import { SERVER_FAILURE, serverAnswer } from '../demos/serverRowModelDemos'
 
 export const layout = {
@@ -117,7 +117,7 @@ export const serverProps =
     failBlock,
     sortable,
     selection,
-  }: ServerMode): GuideStoryStep['props'] =>
+  }: ServerMode): DemoStoryStep['props'] =>
   () => ({
     columnsOverride: filteringColumns,
     dataOverride: [],
@@ -321,7 +321,7 @@ export const groupProps =
     counts?: boolean
     /** `false` — сервер присылает только прямых детей, `true` — и строки данных. */
     rowCounts?: boolean
-  }): GuideStoryStep['props'] =>
+  }): DemoStoryStep['props'] =>
   () => ({
     columnsOverride: groupingColumns,
     dataOverride: [],
@@ -359,7 +359,7 @@ export const groupProps =
   })
 
 /** Сто тысяч строк без группировки с поиском на «сервере» (ADR 0228, S1). */
-export const searchProps: GuideStoryStep['props'] = () => ({
+export const searchProps: DemoStoryStep['props'] = () => ({
   columnsOverride: filteringColumns,
   dataOverride: [],
   enableServerRowModel: true,
@@ -400,7 +400,7 @@ export const TREE_BLOCK = 50
 export const TREE_CHILDREN = 4
 
 /** Тысяча строк, у каждой — четыре вложенные; вложенные «сервер» держит по `server.hold`. */
-export const treeProps: GuideStoryStep['props'] = () => ({
+export const treeProps: DemoStoryStep['props'] = () => ({
   columnsOverride: filteringColumns,
   dataOverride: [],
   enableServerRowModel: true,

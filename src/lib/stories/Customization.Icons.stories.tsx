@@ -18,7 +18,7 @@ import { dataGridMeta } from './dataGridMeta'
 import { guideNext, settle, until, waitForRows } from './__mocks__/catalogPlay'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import { DemoStory, type DemoStoryStep, guideArgs } from './demos/DemoStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 
@@ -95,7 +95,7 @@ export const IconsPlayground: StoryObj<StoryProps> = {
 const ownIcons = (root: ParentNode) =>
   root.querySelectorAll('svg[data-own-icon]').length
 
-const OWN_SET: readonly GuideStoryStep[] = [
+const OWN_SET: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Иконки по умолчанию', en: 'Default icons' },
     hint: {
@@ -121,7 +121,7 @@ export const IconsOwnSet: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Свои иконки', en: 'Custom icons' }}
       steps={OWN_SET}
       args={guideArgs(WITH_ICONS, args)}

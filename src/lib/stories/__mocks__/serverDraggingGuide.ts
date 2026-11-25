@@ -10,7 +10,7 @@ import type {
   ServerRowsRequest,
   ServerRowsResponse,
 } from '../../plugins'
-import type { GuideStoryStep, StepRun } from '../demos/GuideStory'
+import type { DemoStoryStep, StepRun } from '../demos/DemoStory'
 import { HANDLE, OVERLAY, ROW } from '../rowDragging.dnd'
 import { cancelDrag, dragHold, pollUntil, shieldHeldDrag } from './catalogPlay'
 import { centerInWindow, layoutStill } from './rowDragHold'
@@ -208,7 +208,7 @@ export const dragProps =
     tree = false,
     groups = false,
     blockSize = DRAG_BLOCK,
-  } = {}): GuideStoryStep['props'] =>
+  } = {}): DemoStoryStep['props'] =>
   () => {
     dragServer.groups = groups
     return {

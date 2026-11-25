@@ -25,6 +25,9 @@ export const IDLE_MS = 1500
 const CLICK_MS = 700
 const KEY_MS = 1400
 
+/** Завершение волны конкретного нажатия, если показ её анимировал. */
+export const pressWaves = new WeakMap<Event, Promise<void>>()
+
 const HOVER_CLASS = 'pseudo-hover'
 const ACTIVE_CLASS = 'pseudo-active'
 
@@ -160,16 +163,23 @@ export const createGuideDemo = (reducedMotion: boolean) => {
         border: '2px solid rgb(59 130 246)',
         boxSizing: 'border-box',
       })
-      if (!reducedMotion)
-        ring.animate(
-          [
-            { transform: 'scale(0.4)', opacity: 1 },
-            { transform: 'scale(1.6)', opacity: 0 },
-          ],
-          { duration: CLICK_MS, easing: 'ease-out', fill: 'forwards' },
-        )
+      const animation = reducedMotion
+        ? undefined
+        : ring.animate(
+            [
+              { transform: 'scale(0.4)', opacity: 1 },
+              { transform: 'scale(1.6)', opacity: 0 },
+            ],
+            { duration: CLICK_MS, easing: 'ease-out', fill: 'forwards' },
+          )
       window.setTimeout(() => drop(ring), CLICK_MS)
-      return { follow: place }
+      return {
+        follow: place,
+        finished: animation?.finished.then(
+          () => {},
+          () => {},
+        ),
+      }
     },
     /** Плашка клавиши у цели. */
     key: (label: string, box: DOMRect) => {

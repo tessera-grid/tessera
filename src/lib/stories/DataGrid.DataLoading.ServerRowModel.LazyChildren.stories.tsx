@@ -21,11 +21,11 @@ import { storyLabels } from './__mocks__/storyLabels'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import { serverAnswer } from './demos/serverRowModelDemos'
 import { StoryComponent } from './DataGridStory'
 import {
@@ -56,7 +56,7 @@ const meta = {
 export default meta
 
 /** Контекст шага гайда, которого у `Playground` нет: фабрики «сервера» его не читают. */
-const AT_REST = {} as Parameters<NonNullable<GuideStoryStep['props']>>[0]
+const AT_REST = {} as Parameters<NonNullable<DemoStoryStep['props']>>[0]
 
 interface LazyChildrenPlaygroundArgs extends StoryProps {
   blockSize: number
@@ -125,7 +125,7 @@ const expandParent = async (root: HTMLElement, signal: AbortSignal) => {
   )
 }
 
-const LAZY_CHILDREN: readonly GuideStoryStep[] = [
+const LAZY_CHILDREN: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Строки со вложенными записями',
@@ -174,7 +174,7 @@ export const ServerRowModelLazyChildren: StoryObj<StoryProps> = {
   name: 'Lazy children',
   parameters: { scenario: '0138/S7', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Вложенные строки с сервера',
         en: 'Nested rows from the server',
@@ -230,7 +230,7 @@ export const ServerRowModelLazyChildren: StoryObj<StoryProps> = {
 // --- ADR 0160, S4: липкие ветки дерева SSRM --------------------------------------------
 
 const STICKY_PARENT = 'item-id-0'
-const stickyTreeProps: GuideStoryStep['props'] = context => ({
+const stickyTreeProps: DemoStoryStep['props'] = context => ({
   ...treeProps!(context),
   rowExpandingStickyRows: true,
 })
@@ -255,7 +255,7 @@ const openBranch = async (root: HTMLElement, signal: AbortSignal) => {
   await pollUntil(() => branchOpen(root), signal)
 }
 
-const STICKY_BRANCHES: readonly GuideStoryStep[] = [
+const STICKY_BRANCHES: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Строки со вложенными записями',
@@ -304,7 +304,7 @@ const LINES_BLOCK = 10
 /** Вложенных строк у ветки: сервер их число не сообщает, последний блок короче. */
 const LINES_CHILDREN = 25
 
-const linesProps: GuideStoryStep['props'] = context => ({
+const linesProps: DemoStoryStep['props'] = context => ({
   ...treeProps!(context),
   serverRowModelBlockSize: LINES_BLOCK,
   serverRowModelGetRows: ({
@@ -386,7 +386,7 @@ const secondBlock = async (root: HTMLElement, signal: AbortSignal) => {
   await pollUntil(() => !!childRow(root, LINES_BLOCK * 2 - 1), signal)
 }
 
-const TREE_LINES: readonly GuideStoryStep[] = [
+const TREE_LINES: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Строки со вложенными записями',
@@ -447,7 +447,7 @@ export const ServerTreeLines: StoryObj<StoryProps> = {
   name: 'Tree lines',
   parameters: { scenario: '0161/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Линии дерева', en: 'Tree lines' }}
       steps={TREE_LINES}
       args={guideArgs(layout, args)}
@@ -485,7 +485,7 @@ export const ServerStickyBranches: StoryObj<StoryProps> = {
   name: 'Sticky branches',
   parameters: { scenario: '0160/S4', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Липкие ветки', en: 'Sticky branches' }}
       steps={STICKY_BRANCHES}
       reset={() => {

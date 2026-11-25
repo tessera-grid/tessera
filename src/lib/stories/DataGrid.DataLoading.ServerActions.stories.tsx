@@ -26,11 +26,11 @@ import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { storyLabels } from './__mocks__/storyLabels'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import { WithConsole } from './demos/StoryConsole'
 import type { StoryText } from './__mocks__/storyText'
 import { createConsoleLog } from './demos/consoleLog'
@@ -289,7 +289,7 @@ const refuseSearch = async (root: HTMLElement, signal: AbortSignal) => {
   }, signal)
 }
 
-const REFUSED: readonly GuideStoryStep[] = [
+const REFUSED: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Данные с сервера', en: 'Data from the server' },
     hint: {
@@ -446,7 +446,7 @@ export const ServerActionsRefused: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Отказ сервера', en: 'Server refusal' }}
       steps={REFUSED}
       reset={() => {
@@ -597,7 +597,7 @@ const pendingCancel = (root: HTMLElement) =>
 const cancelServerStep = (
   title: StoryText,
   hint: StoryText,
-): GuideStoryStep => ({
+): DemoStoryStep => ({
   title,
   hint,
   props: ({ app, log }) =>
@@ -637,7 +637,7 @@ const searchHeld = (root: HTMLElement, signal: AbortSignal) => {
   }, signal)
 }
 
-const CANCEL_SEARCH: readonly GuideStoryStep[] = [
+const CANCEL_SEARCH: readonly DemoStoryStep[] = [
   cancelServerStep(
     { ru: 'Поиск на сервере', en: 'Search on the server' },
     {
@@ -693,7 +693,7 @@ export const ServerActionsCancelSearch: StoryObj<StoryProps> = {
   name: 'Cancel a search',
   parameters: { scenario: '0153/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Отмена поиска', en: 'Cancelling a search' }}
       steps={CANCEL_SEARCH}
       reset={answerCancel}
@@ -746,7 +746,7 @@ const sortHeld = (root: HTMLElement, signal: AbortSignal) => {
   }, signal)
 }
 
-const CANCEL_SORT: readonly GuideStoryStep[] = [
+const CANCEL_SORT: readonly DemoStoryStep[] = [
   cancelServerStep(
     { ru: 'Сортировка на сервере', en: 'Sorting on the server' },
     {
@@ -802,7 +802,7 @@ export const ServerActionsCancelSort: StoryObj<StoryProps> = {
   name: 'Cancel sorting',
   parameters: { scenario: '0153/S6', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Отмена сортировки', en: 'Cancelling sorting' }}
       steps={CANCEL_SORT}
       reset={answerCancel}

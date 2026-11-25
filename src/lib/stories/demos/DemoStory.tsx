@@ -14,6 +14,7 @@ import {
 import type { TesseraFeatureEntry } from '../../core/features'
 import { INPUT_MODALITY_ATTR } from '../../core/inputModality'
 import { scrollToRow } from '../../core/scrollToRow/scrollToRowFeature'
+import { DATA_GRID_THEME_CLASS } from '../../ui/theme'
 import { useIsomorphicLayoutEffect } from '../../util/useIsomorphicLayoutEffect'
 import { useLatest } from '../../util/useLatest'
 import {
@@ -22,6 +23,7 @@ import {
   isLiveStorybook,
   keyLabel,
   PRESS_MS,
+  pressWaves,
   sleep,
   TYPE_MS,
 } from './guideDemo'
@@ -31,7 +33,7 @@ import { dataGridMeta } from '../dataGridMeta'
 import type { CatalogState } from '../__mocks__/catalog'
 import { getData } from '../__mocks__/data'
 import { normalizeArgs } from '../__mocks__/utils/normalizeArgs'
-import { type GuideStep, GuidePanel, useGuide } from './GuidePanel'
+import { type DemoStep, DemoPanel, useGuide } from './DemoPanel'
 import { StoryLocaleProvider } from '../__mocks__/storyLocale'
 import {
   type StoryLocale,
@@ -52,6 +54,7 @@ import {
 import { StoryConsole } from './StoryConsole'
 import { type ConsoleLog, createConsoleLog } from './consoleLog'
 import { useArgsActions } from './useArgsActions'
+import styles from './DemoStory.module.css'
 
 /**
  * Что знает шаг: аргументы истории, ответ «сервера» — строки мока по ним — и
@@ -65,7 +68,7 @@ export interface GuideContext {
   log: ConsoleLog
 }
 
-export interface GuideStoryStep extends GuideStep {
+export interface DemoStoryStep extends DemoStep {
   /** Пропсы грида с этого шага: поверх аргументов истории и прежних шагов. */
   props?: (context: GuideContext) => Partial<StoryProps>
   /**
@@ -114,10 +117,10 @@ export interface StepRun {
  * отметка прошлого шага не сходит за отметку нового.
  */
 export const stepAction =
-  (
-    run: (root: HTMLElement, step: StepRun, app: GuideApp) => Promise<unknown>,
+  <TApp = GuideApp,>(
+    run: (root: HTMLElement, step: StepRun, app: TApp) => Promise<unknown>,
   ) =>
-  (root: HTMLElement, app: GuideApp) => {
+  (root: HTMLElement, app: TApp) => {
     const controller = new AbortController()
     const undo: (() => void)[] = []
     const step = root.dataset.guideStep
@@ -131,7 +134,11 @@ export const stepAction =
       })
       // Сбой действия виден в консоли — каталог роняет историю с `console.error`.
       .catch((error: unknown) => {
-        if (!controller.signal.aborted) console.error(error)
+        if (!controller.signal.aborted) {
+          console.error(error)
+          root.dispatchEvent(new Event(STEP_ACTION_DONE))
+          root.setAttribute('data-step-action', `failed:${step}`)
+        }
       })
     return () => {
       controller.abort()
@@ -146,11 +153,26 @@ const PASSIVE_KEYS = new Set(['Tab', 'Shift', 'Control', 'Alt', 'Meta'])
 /** Ввод человека, который до таблицы не доходит, пока идёт действие шага (SN43). */
 const SHIELDED = [
   'pointerdown',
+  'pointerup',
+  'pointermove',
   'mousedown',
+  'mouseup',
   'click',
+  'auxclick',
+  'dblclick',
+  'contextmenu',
   'touchstart',
+  'touchmove',
+  'touchend',
   'wheel',
   'keydown',
+  'keyup',
+  'beforeinput',
+  'copy',
+  'cut',
+  'paste',
+  'dragstart',
+  'drop',
 ]
 
 /**
@@ -416,7 +438,7 @@ const replayOf = (
 const WHEEL_SCROLL_MS = 150
 
 /** Шаги смонтированных гайдов по их корню — их признаки читает матрица контраста. */
-export const guideSteps = new WeakMap<Element, readonly GuideStoryStep[]>()
+export const guideSteps = new WeakMap<Element, readonly DemoStoryStep[]>()
 
 /**
  * Аргументы грида истории сценария с гайдом (ADR 0117, SN27–SN28): умолчания меты и
@@ -434,7 +456,7 @@ export const guideArgs = (
     locale: storybook.locale,
   } as StoryProps)
 
-export const GuideStory = ({
+export const DemoStory = ({
   title,
   steps,
   args,
@@ -444,7 +466,7 @@ export const GuideStory = ({
 }: {
   /** Название гайда: пара `{ ru, en }` (ADR 0225). */
   title: StoryText
-  steps: readonly GuideStoryStep[]
+  steps: readonly DemoStoryStep[]
   args: StoryProps
   /**
    * Сброс обвязки истории вне таблицы (мок-сервер, флажки) перед каждым открытием грида
@@ -559,6 +581,8 @@ export const GuideStory = ({
     replayTo(visibleStep)
   }
   const root = useRef<HTMLDivElement>(null)
+  const preparation = `${guide.run}:${guide.step}:${shown.rewinds}`
+  const [prepared, setPrepared] = useState<string>()
   // Шаг выполняется: действие во времени или показ нажатия — панель не сворачивается (SN74).
   const [stepBusy, setStepBusy] = useState(false)
   useEffect(() => {
@@ -567,6 +591,7 @@ export const GuideStory = ({
     const observer = new MutationObserver(() =>
       setStepBusy(
         node.dataset.stepAction === 'running' ||
+          node.hasAttribute('data-guide-preparing') ||
           node.hasAttribute('data-guide-showing') ||
           node.hasAttribute('data-guide-replaying'),
       ),
@@ -575,6 +600,7 @@ export const GuideStory = ({
       attributes: true,
       attributeFilter: [
         'data-step-action',
+        'data-guide-preparing',
         'data-guide-showing',
         'data-guide-replaying',
       ],
@@ -582,6 +608,20 @@ export const GuideStory = ({
     return () => observer.disconnect()
   }, [])
   const table = useRef<HTMLDivElement>(null)
+  const revealTable = () => {
+    if (!showActions) return
+    const grid = table.current?.querySelector('.data-grid__container')
+    if (!grid) return
+    const { top, bottom, height } = grid.getBoundingClientRect()
+    const visible = Math.min(bottom, window.innerHeight) - Math.max(top, 0)
+    if (visible < Math.min(height, window.innerHeight) / 2)
+      grid.scrollIntoView({
+        block: 'start',
+        inline: 'nearest',
+        behavior: 'instant',
+      })
+  }
+  const revealTableRef = useLatest(revealTable)
   // Экземпляр таблицы — для прокрутки к цели действия шага (SN45).
   const instance = useRef<unknown>(undefined)
   const [probe] = useState<TesseraFeatureEntry>(() => ({
@@ -590,14 +630,17 @@ export const GuideStory = ({
       instance.current = grid
     },
   }))
-  const running = () =>
-    root.current?.dataset.stepAction === 'running' ||
-    root.current?.hasAttribute('data-guide-replaying')
+  const running = (node: HTMLElement) =>
+    node.dataset.stepAction === 'running' ||
+    node.hasAttribute('data-guide-preparing') ||
+    node.hasAttribute('data-guide-showing') ||
+    node.hasAttribute('data-guide-replaying') ||
+    !!node.querySelector('[data-guide-playing], [data-guide-moving]')
   // Ввод человека в таблицу, её меню и поповеры (порталы — по дереву React). Пока идёт
   // действие шага, ввод в саму таблицу гасит щит ниже — он пометки не ставит.
   const onInput = (event: SyntheticEvent) => {
     if (!event.nativeEvent.isTrusted) return
-    if (running() && table.current?.contains(event.target as Node)) return
+    if (root.current && running(root.current)) return
     markChanged()
   }
   const wheelAt = useRef(-Infinity)
@@ -605,34 +648,46 @@ export const GuideStory = ({
     const area = table.current
     const guideRoot = root.current
     if (!area || !guideRoot) return
-    // Щит — на корне гайда: у обёртки таблицы (`display: contents`) нет бокса, и
-    // Chromium прокручивает колесом мимо её слушателя.
     const shield = (event: Event) => {
-      if (!event.isTrusted || guideRoot.hasAttribute(GUIDE_REAL_INPUT)) return
       if (
-        guideRoot.dataset.stepAction !== 'running' &&
-        !guideRoot.hasAttribute('data-guide-replaying')
+        !event.isTrusted ||
+        guideRoot.hasAttribute(GUIDE_REAL_INPUT) ||
+        !(event.target instanceof Element)
       )
         return
-      if (!area.contains(event.target as Node)) return
-      if (event instanceof KeyboardEvent && event.key === 'Tab') return
+      const target = event.target
+      const portal =
+        !target.closest('[data-guide-root]') &&
+        !!target.closest(`.${DATA_GRID_THEME_CLASS}`)
+      if ((!area.contains(target) && !portal) || !running(guideRoot)) return
       event.preventDefault()
-      event.stopPropagation()
+      event.stopImmediatePropagation()
+      if (
+        event instanceof KeyboardEvent &&
+        event.type === 'keydown' &&
+        event.key === 'Tab'
+      )
+        guideRoot
+          .querySelector<HTMLElement>('[data-testid="guide-play"]')
+          ?.focus({ preventScroll: true })
     }
     // Колесо меняет таблицу, только если прокрутило её: иначе оно листает страницу.
     const scrolled = () => {
-      if (performance.now() - wheelAt.current < WHEEL_SCROLL_MS)
+      if (
+        !running(guideRoot) &&
+        performance.now() - wheelAt.current < WHEEL_SCROLL_MS
+      )
         markChangedRef.current()
     }
     for (const type of SHIELDED)
-      guideRoot.addEventListener(type, shield, {
+      window.addEventListener(type, shield, {
         capture: true,
         passive: false,
       })
     area.addEventListener('scroll', scrolled, true)
     return () => {
       for (const type of SHIELDED)
-        guideRoot.removeEventListener(type, shield, { capture: true })
+        window.removeEventListener(type, shield, { capture: true })
       area.removeEventListener('scroll', scrolled, true)
     }
   }, [markChangedRef])
@@ -907,6 +962,7 @@ export const GuideStory = ({
       },
       resume: () => {
         stopped = false
+        gesture = undefined
       },
     }
 
@@ -947,7 +1003,7 @@ export const GuideStory = ({
         event.stopImmediatePropagation()
         event.preventDefault()
         console.error(
-          `Guide: the action of a stopped step sends "${event.type}" (ADR 0117, SN68)`,
+          `Demo: the action of a stopped step sends "${event.type}" (ADR 0117, SN68)`,
         )
         return
       }
@@ -1016,7 +1072,8 @@ export const GuideStory = ({
       // `pointerdown`, `mousedown` и `click` одного жеста показываются одной волной.
       if (demo && PRESSING.has(event.type) && !scroll) {
         if (!shown) {
-          demo.click(pointOf(event, target, 0, 0))
+          const { finished } = demo.click(pointOf(event, target, 0, 0))
+          if (finished) pressWaves.set(event, finished)
           gesture = {
             target,
             type: event.type,
@@ -1132,7 +1189,7 @@ export const GuideStory = ({
   useEffect(() => {
     if (firstActs)
       console.error(
-        `Guide "${title.en}": step 1 has an action — step 1 only shows the initial state (ADR 0117, SN71).`,
+        `Demo "${title.en}": step 1 has an action — step 1 only shows the initial state (ADR 0117, SN71).`,
       )
   }, [firstActs, title.en])
   // Что поменяло приложение посреди шага — в консоль, как действие истории.
@@ -1198,7 +1255,10 @@ export const GuideStory = ({
         timer = setTimeout(start, 16)
         return
       }
+      if (guide.step !== 0 || guide.run !== 0 || shown.rewinds !== 0)
+        revealTableRef.current()
       const leave = enter?.(node, app)
+      setPrepared(preparation)
       if (replayRef.current) {
         if (node.dataset.stepAction === 'running') {
           const done = () => queueMicrotask(finishReplay)
@@ -1234,6 +1294,8 @@ export const GuideStory = ({
     ready,
     replayRef,
     guideNextRef,
+    preparation,
+    revealTableRef,
   ])
   // Язык грида на текущем шаге — язык гайда и консоли (ADR 0225, §3).
   const locale = storyLocaleOf(live?.locale ?? props.locale ?? args.locale)
@@ -1241,12 +1303,15 @@ export const GuideStory = ({
     <StoryLocaleProvider value={locale}>
       <div
         ref={root}
+        className={styles.guide}
         data-guide-root=""
+        data-guide-live={isLiveStorybook() || undefined}
         data-guide-step={guide.step}
+        data-guide-preparing={prepared !== preparation || undefined}
         data-guide-replaying={replay ? '' : undefined}
         style={{ display: 'flex', flexDirection: 'column' }}
       >
-        <GuidePanel
+        <DemoPanel
           title={title}
           steps={steps}
           step={visibleStep}
@@ -1256,7 +1321,8 @@ export const GuideStory = ({
           onJump={jump}
           changed={shown.changed}
           onRestore={restoreStep}
-          stepBusy={stepBusy}
+          onPlay={revealTable}
+          stepBusy={stepBusy || prepared !== preparation}
           restoring={replay !== undefined}
         />
         <div
@@ -1269,8 +1335,7 @@ export const GuideStory = ({
           }}
           onWheelCapture={event => {
             if (!event.nativeEvent.isTrusted) return
-            if (running() && table.current?.contains(event.target as Node))
-              return
+            if (root.current && running(root.current)) return
             wheelAt.current = performance.now()
           }}
         >

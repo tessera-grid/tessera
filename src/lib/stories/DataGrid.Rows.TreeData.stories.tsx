@@ -12,11 +12,11 @@ import {
 } from './__mocks__/catalogPlay'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 
 /**
  * Дерево (ADR 0119): модель `rowExpandingModel` показывает подстроки по `expanded` приложения,
@@ -112,7 +112,7 @@ const READ_ONLY = [
     },
     props: () => ({ enableTreeLines: true }),
   },
-] as const satisfies readonly GuideStoryStep[]
+] as const satisfies readonly DemoStoryStep[]
 
 /**
  * S1: иерархия развёрнута приложением, без переключателя — справочник или структура,
@@ -125,7 +125,7 @@ export const TreeDataReadOnly: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Дерево без переключателя', en: 'A tree without a toggle' }}
       steps={READ_ONLY}
       args={guideArgs(
@@ -231,7 +231,7 @@ const WITH_TOGGLE = [
       await expandRow(root, CHILD, true, signal)
     }),
   },
-] as const satisfies readonly GuideStoryStep[]
+] as const satisfies readonly DemoStoryStep[]
 
 /**
  * S2: дерево с переключателем и линиями — пользователь раскрывает ветку и вложенную
@@ -244,7 +244,7 @@ export const TreeDataWithToggle: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Дерево с переключателем', en: 'A tree with a toggle' }}
       steps={WITH_TOGGLE}
       args={guideArgs(

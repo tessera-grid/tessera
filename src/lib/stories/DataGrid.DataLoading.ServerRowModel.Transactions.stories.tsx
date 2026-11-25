@@ -12,11 +12,11 @@ import {
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import { StoryComponent } from './DataGridStory'
 import type { StoryText } from './__mocks__/storyText'
 import { layout, hasRow, refreshing } from './__mocks__/serverRowModelGuide'
@@ -48,7 +48,7 @@ const meta = {
 export default meta
 
 /** Контекст шага гайда, которого у `Playground` нет: фабрики «сервера» его не читают. */
-const AT_REST = {} as Parameters<NonNullable<GuideStoryStep['props']>>[0]
+const AT_REST = {} as Parameters<NonNullable<DemoStoryStep['props']>>[0]
 
 interface TransactionsPlaygroundArgs extends StoryProps {
   liveUpdates: boolean
@@ -90,7 +90,7 @@ export const ServerTransactionsPlayground: StoryObj<TransactionsPlaygroundArgs> 
   }
 
 /** Первый шаг каждого гайда: окно пришло с «сервера». */
-const atRest = (hint: StoryText, props = txProps()): GuideStoryStep => ({
+const atRest = (hint: StoryText, props = txProps()): DemoStoryStep => ({
   title: { ru: 'Строки с сервера', en: 'Rows from the server' },
   hint,
   props,
@@ -145,7 +145,7 @@ const addChild = async (root: HTMLElement, signal: AbortSignal) => {
   )
 }
 
-const ADD: readonly GuideStoryStep[] = [
+const ADD: readonly DemoStoryStep[] = [
   atRest(
     {
       ru: 'Сервер отдаёт строки блоками. Когда пользователь добавляет запись, сервер сохраняет её и сообщает приложению её место в списке.',
@@ -195,7 +195,7 @@ export const ServerTransactionAdd: StoryObj<StoryProps> = {
   name: 'Add a row',
   parameters: { scenario: '0157/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Новая запись', en: 'A new record' }}
       steps={ADD}
       args={guideArgs(layout, args)}
@@ -259,7 +259,7 @@ const checkDoomed = async (root: HTMLElement, signal: AbortSignal) => {
   }
 }
 
-const REMOVE: readonly GuideStoryStep[] = [
+const REMOVE: readonly DemoStoryStep[] = [
   atRest(
     {
       ru: 'Сервер отдаёт строки блоками, у каждой строки — флажок выбора. Пока ничего не выбрано.',
@@ -309,7 +309,7 @@ export const ServerTransactionRemove: StoryObj<StoryProps> = {
   name: 'Remove selected rows',
   parameters: { scenario: '0157/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Удаление строк', en: 'Deleting rows' }}
       steps={REMOVE}
       args={guideArgs(layout, args)}
@@ -342,7 +342,7 @@ export const ServerTransactionRemove: StoryObj<StoryProps> = {
 const LIVE_TICKS = 4
 const LIVE_TICK_MS = 800
 
-const LIVE: readonly GuideStoryStep[] = [
+const LIVE: readonly DemoStoryStep[] = [
   atRest({
     ru: 'Сервер отдаёт строки блоками. Данные на сервере меняют и другие пользователи, сервер сообщает о каждом изменении.',
     en: 'The server returns rows in blocks. Other users also change the data on the server, and the server reports every change.',
@@ -369,7 +369,7 @@ export const ServerTransactionLive: StoryObj<StoryProps> = {
   name: 'Live updates',
   parameters: { scenario: '0157/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Живые данные', en: 'Live data' }}
       steps={LIVE}
       args={guideArgs(layout, args)}
@@ -406,7 +406,7 @@ const addWithoutPlace = () => {
   transact({ add: [item] })
 }
 
-const REFETCH: readonly GuideStoryStep[] = [
+const REFETCH: readonly DemoStoryStep[] = [
   atRest({
     ru: 'Сервер отдаёт строки блоками и сам решает порядок списка: где окажется новая запись, приложение не знает.',
     en: 'The server returns rows in blocks and decides the list order itself: the app does not know where a new record will end up.',
@@ -453,7 +453,7 @@ export const ServerTransactionRefetch: StoryObj<StoryProps> = {
   name: 'Add a row without a place',
   parameters: { scenario: '0157/S4', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Запись без места', en: 'A record without a position' }}
       steps={REFETCH}
       args={guideArgs(layout, args)}

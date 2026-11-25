@@ -1,0 +1,16 @@
+.guide[data-guide-live] {
+  --guide-scrollbar-gutter: stable;
+}
+
+.guide:not([data-guide-real-input]):is(
+    [data-guide-preparing],
+    [data-guide-showing],
+    [data-guide-replaying],
+    [data-step-action='running'],
+    :has([data-guide-playing], [data-guide-moving])
+  )
+  :global(.data-grid__container) {
+  /* Нативная полоса обходит обработчики событий. Скрипт шага всё ещё может прокручивать грид. */
+  overflow: hidden;
+  scrollbar-gutter: var(--guide-scrollbar-gutter, auto);
+}

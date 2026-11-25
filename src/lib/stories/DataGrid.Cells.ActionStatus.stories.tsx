@@ -12,7 +12,7 @@ import { createHeldServer } from './__mocks__/heldServer'
 import { storyLabels } from './__mocks__/storyLabels'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import { DemoStory, type DemoStoryStep, guideArgs } from './demos/DemoStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 import { useWriteStoryCell } from './demos/storyRows'
@@ -242,7 +242,7 @@ export const ActionStatusPlayground: StoryObj<StoryProps> = {
 const CHECKBOX_SERVER = createHeldServer()
 const CHECKBOX_COLUMNS = columnsOf(CHECKBOX_SERVER.save)
 
-const CHECKBOX: readonly GuideStoryStep[] = [
+const CHECKBOX: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Флажки приложения', en: "The app's checkboxes" },
     hint: {
@@ -292,7 +292,7 @@ export const ActionStatusCheckbox: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Флажок с ожиданием',
         en: 'A checkbox with a pending state',
@@ -347,7 +347,7 @@ const reachSwitchRefusal = (root: HTMLElement) => {
   if (!busy(switchOf(root))) switchOf(root)?.click()
 }
 
-const SWITCH: readonly GuideStoryStep[] = [
+const SWITCH: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Переключатели приложения', en: "The app's switches" },
     hint: {
@@ -430,7 +430,7 @@ export const ActionStatusSwitch: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Переключатель и отказ сервера',
         en: 'A switch and a server refusal',
@@ -483,7 +483,7 @@ const DOUBLE_SERVER = createHeldServer()
 const DOUBLE_COLUMNS = columnsOf(DOUBLE_SERVER.save)
 const NEXT = nextPriority(START.priority)
 
-const DOUBLE: readonly GuideStoryStep[] = [
+const DOUBLE: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Приоритет без кнопки правки',
@@ -539,7 +539,7 @@ export const ActionStatusDoubleClick: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Двойной щелчок и волна', en: 'A double click and a wave' }}
       steps={DOUBLE}
       args={guideArgs(
@@ -641,6 +641,7 @@ const busyActions = definePlugin()({
       slot: 'actionRowSlot',
       icon: () => <Archive width={16} height={16} />,
       label: () => 'Archive',
+      shown: () => true,
       onSelect: () => BUSY_ARCHIVE.save(),
     },
   ],
@@ -668,7 +669,7 @@ const reachArchiving = (root: HTMLElement) => {
   if (!waved(root, 'priority')) archiveButton(root)?.click()
 }
 
-const BUSY_STEPS: readonly GuideStoryStep[] = [
+const BUSY_STEPS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Правка и действие строки', en: 'Editing and a row action' },
     hint: {
@@ -745,7 +746,7 @@ export const BusyObjectIgnored: StoryObj<StoryProps> = {
   name: 'Change while saving',
   parameters: { scenario: '0177/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Изменение занятого объекта', en: 'Changing a busy object' }}
       steps={BUSY_STEPS}
       args={guideArgs(
@@ -831,7 +832,7 @@ const reachPriorityRefusal = (root: HTMLElement) => {
     doubleClick(priorityOf(root))
 }
 
-const RETRY_STEPS: readonly GuideStoryStep[] = [
+const RETRY_STEPS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Ячейки приложения', en: "The app's cells" },
     hint: {
@@ -893,7 +894,7 @@ export const ActionStatusRetry: StoryObj<StoryProps> = {
   name: 'Retry from the mark',
   parameters: { scenario: '0177/S5', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Повтор из отметки', en: 'Retry from the mark' }}
       steps={RETRY_STEPS}
       args={guideArgs(
@@ -961,7 +962,7 @@ const cancelSaveItem = () =>
     '[role="menuitem"][data-action-id="contextMenu:cancelSave"]',
   )
 
-const CANCEL_STEPS: readonly GuideStoryStep[] = [
+const CANCEL_STEPS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Правка ячеек', en: 'Cell editing' },
     hint: {
@@ -1029,7 +1030,7 @@ export const CellSaveCancelMenu: StoryObj<StoryProps> = {
   name: 'Cancel saving from the menu',
   parameters: { scenario: '0177/S8', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Отмена сохранения', en: 'Canceling a save' }}
       steps={CANCEL_STEPS}
       args={guideArgs(
@@ -1110,7 +1111,7 @@ const reportOwnFailure = () => {
     .catch(() => {})
 }
 
-const OWN_LABEL_STEPS: readonly GuideStoryStep[] = [
+const OWN_LABEL_STEPS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Товары', en: 'Products' },
     hint: {
@@ -1149,7 +1150,7 @@ export const ActionStatusOwnLabel: StoryObj<StoryProps> = {
   name: 'Own action label',
   parameters: { scenario: '0182/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Своя подпись действия', en: 'A custom action label' }}
       steps={OWN_LABEL_STEPS}
       args={guideArgs(

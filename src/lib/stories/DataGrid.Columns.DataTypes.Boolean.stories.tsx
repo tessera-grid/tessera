@@ -1,4 +1,4 @@
-import { stepAction } from './demos/GuideStory'
+import { stepAction } from './demos/DemoStory'
 import { pollUntil, stepDone } from './__mocks__/catalogPlay'
 import { closePanel, openPanel, panel } from './__mocks__/filterGuide'
 import {
@@ -23,7 +23,7 @@ import {
 } from './__mocks__/catalogPlay'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import { DemoStory, type DemoStoryStep, guideArgs } from './demos/DemoStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 import { productRows } from './__mocks__/dataTypesData'
@@ -87,7 +87,7 @@ const pressSpaceOnStock = (root: HTMLElement) => {
   cell?.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }))
 }
 
-const EDIT_BOOLEAN: readonly GuideStoryStep[] = [
+const EDIT_BOOLEAN: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Флажки наличия', en: 'In-stock checkboxes' },
     hint: {
@@ -139,7 +139,7 @@ export const EditingBoolean: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Правка флажка', en: 'Editing a checkbox' }}
       steps={EDIT_BOOLEAN}
       args={guideArgs(productArgs, args)}
@@ -182,7 +182,7 @@ const keyOnStock = (root: HTMLElement, shiftKey: boolean) => {
   )
 }
 
-const EDIT_BOOLEAN_KEYBOARD: readonly GuideStoryStep[] = [
+const EDIT_BOOLEAN_KEYBOARD: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Флажок в ячейке', en: 'A checkbox in the cell' },
     hint: {
@@ -231,7 +231,7 @@ export const EditingBooleanKeyboard: StoryObj<StoryProps> = {
   name: 'Toggle and select with the keyboard',
   parameters: { scenario: '0175/S10', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Флажок и выбор строки с клавиатуры',
         en: 'Checkbox and row selection with the keyboard',
@@ -285,7 +285,7 @@ const filterStock = async (
   await closePanel(signal)
 }
 
-const BOOLEAN_FILTER: readonly GuideStoryStep[] = [
+const BOOLEAN_FILTER: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Наличие без настройки фильтра',
@@ -343,7 +343,7 @@ export const DataTypesBooleanFilter: StoryObj<StoryProps> = {
   name: 'Filter',
   parameters: { scenario: '0172/S14', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Фильтр булева', en: 'Boolean filter' }}
       steps={BOOLEAN_FILTER}
       args={guideArgs({ height: '460' }, args)}

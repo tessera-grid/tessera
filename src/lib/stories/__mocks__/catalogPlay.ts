@@ -6,7 +6,7 @@ import {
 import { addons } from 'storybook/preview-api'
 import { expect, userEvent, waitFor } from 'storybook/test'
 
-import { guideSteps } from '../demos/GuideStory'
+import { guideSteps } from '../demos/DemoStory'
 import { GUIDE_FRESH } from '../demos/guideFocus'
 import {
   PLAY_ARGS,
@@ -684,12 +684,17 @@ export const guideNext = async (canvas: HTMLElement) => {
     '[data-testid="guide-toggle"]',
   )!
   if (toggle.getAttribute('aria-expanded') !== 'true') {
+    await waitFor(() => expect(toggle).toBeEnabled(), {
+      timeout: STEP_ACTION_TIMEOUT,
+    })
     await userEvent.click(toggle)
   }
   const next = panel.querySelector<HTMLButtonElement>(
     '[data-testid="guide-next"]',
   )!
-  await until(() => expect(next).toBeEnabled())
+  await waitFor(() => expect(next).toBeEnabled(), {
+    timeout: STEP_ACTION_TIMEOUT,
+  })
   const from = currentGuideStep(panel)
   // Проход со свежей таблицей (SN73): пометка перед переходом — шаг откроет таблицу заново.
   if (document.documentElement.hasAttribute(FRESH_ATTR)) {

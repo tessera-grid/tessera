@@ -14,7 +14,7 @@ import { seed } from './__mocks__/seed'
 import { storyLabels } from './__mocks__/storyLabels'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import { DemoStory, type DemoStoryStep, guideArgs } from './demos/DemoStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 
@@ -114,7 +114,7 @@ const saveVisits = (root: HTMLElement, value: string) => {
 
 // --- ADR 0150 S1 ---------------------------------------------------------------------
 
-const FIX_VALUES: readonly GuideStoryStep[] = [
+const FIX_VALUES: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Ошибки в данных', en: 'Errors in the data' },
     hint: {
@@ -141,7 +141,7 @@ export const CellErrorsFixValues: StoryObj<StoryProps> = {
   name: 'Fix invalid values',
   parameters: { scenario: '0150/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Исправление ошибки', en: 'Fixing an error' }}
       steps={FIX_VALUES}
       args={guideArgs(
@@ -189,7 +189,7 @@ const hoverOnce = (element: HTMLElement | null) => {
   )
 }
 
-const READ_ONLY: readonly GuideStoryStep[] = [
+const READ_ONLY: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Ошибки в таблице только для чтения',
@@ -223,7 +223,7 @@ export const CellErrorsReadOnly: StoryObj<StoryProps> = {
   name: 'Read-only table',
   parameters: { scenario: '0150/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Ошибки без правки', en: 'Errors without editing' }}
       steps={READ_ONLY}
       args={guideArgs(
@@ -270,7 +270,7 @@ export const CellErrorsReadOnly: StoryObj<StoryProps> = {
 /** «Сервер» гайда: отказывает каждому сохранению. */
 const refuse = () => Promise.reject(new Error(REFUSAL))
 
-const REFUSAL_STEPS: readonly GuideStoryStep[] = [
+const REFUSAL_STEPS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Ошибка в данных', en: 'An error in the data' },
     hint: {
@@ -314,7 +314,7 @@ export const CellErrorsRefusal: StoryObj<StoryProps> = {
   name: 'Refusal and data error',
   parameters: { scenario: '0150/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Отказ и ошибка данных', en: 'A refusal and a data error' }}
       steps={REFUSAL_STEPS}
       args={guideArgs(
@@ -406,7 +406,7 @@ const reachRetryRefusal = (root: HTMLElement) => {
   saveRetryVisits(root, RETRIED_VISITS)
 }
 
-const RETRY_STEPS: readonly GuideStoryStep[] = [
+const RETRY_STEPS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Правка ячеек', en: 'Cell editing' },
     hint: {
@@ -482,7 +482,7 @@ export const CellFailureRetry: StoryObj<StoryProps> = {
   name: 'Refused edit and retry',
   parameters: { scenario: '0177/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Отказ сохранения и повтор',
         en: 'A save refusal and a retry',
@@ -590,7 +590,7 @@ const reachStockRefusal = (root: HTMLElement) => {
     stockBox(root)?.click()
 }
 
-const DISCARD_STEPS: readonly GuideStoryStep[] = [
+const DISCARD_STEPS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Флажки в ячейках', en: 'Checkboxes in cells' },
     hint: {
@@ -648,7 +648,7 @@ export const CellFailureDiscard: StoryObj<StoryProps> = {
   name: 'Refused checkbox, revert',
   parameters: { scenario: '0177/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Отказ флажка', en: 'A checkbox refusal' }}
       steps={DISCARD_STEPS}
       args={guideArgs(
@@ -757,7 +757,7 @@ const MENU_SERVER = createHeldServer()
 const reachMenuRefusal = (root: HTMLElement) =>
   reachRefusals(MENU_SERVER, root, [CLEAR_A!])
 
-const DISCARD_MENU_STEPS: readonly GuideStoryStep[] = [
+const DISCARD_MENU_STEPS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Правка ячеек', en: 'Cell editing' },
     hint: {
@@ -815,7 +815,7 @@ export const CellFailureDiscardMenu: StoryObj<StoryProps> = {
   name: 'Revert from the menu',
   parameters: { scenario: '0177/S9', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Сбросить из меню', en: 'Reverting from the menu' }}
       steps={DISCARD_MENU_STEPS}
       args={guideArgs(
@@ -888,7 +888,7 @@ const failureCount = () =>
 const reachExternalRefusals = (root: HTMLElement) =>
   reachRefusals(EXTERNAL_SERVER, root, BOTH())
 
-const EXTERNAL_STEPS: readonly GuideStoryStep[] = [
+const EXTERNAL_STEPS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Правка ячеек', en: 'Cell editing' },
     hint: {
@@ -956,7 +956,7 @@ export const CellFailureExternalChange: StoryObj<StoryProps> = {
   name: 'Value changed elsewhere',
   parameters: { scenario: '0177/S10', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Изменение извне', en: 'A change from outside' }}
       steps={EXTERNAL_STEPS}
       args={guideArgs(
@@ -1027,7 +1027,7 @@ const resetFailures = (table: FailureTable) => {
 const reachResetRefusals = (root: HTMLElement) =>
   reachRefusals(RESET_SERVER, root, BOTH())
 
-const RESET_STEPS: readonly GuideStoryStep[] = [
+const RESET_STEPS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Правка ячеек', en: 'Cell editing' },
     hint: {
@@ -1076,7 +1076,7 @@ export const CellFailureAppReset: StoryObj<StoryProps> = {
   name: 'Reset by the application',
   parameters: { scenario: '0177/S11', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Сброс приложением', en: 'A reset by the app' }}
       steps={RESET_STEPS}
       args={guideArgs(

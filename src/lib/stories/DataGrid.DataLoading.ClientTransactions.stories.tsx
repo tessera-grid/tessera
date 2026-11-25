@@ -15,11 +15,11 @@ import { typeInto, press } from './__mocks__/typeGuides'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import { StoryComponent } from './DataGridStory'
 import {
   clientTx,
@@ -153,7 +153,7 @@ const draftAge = (root: HTMLElement) => {
   else if (input.value !== NEW_AGE) typeInto(input, NEW_AGE)
 }
 
-const LARGE: readonly GuideStoryStep[] = [
+const LARGE: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Таблица отсортирована по возрасту',
@@ -206,7 +206,7 @@ export const ClientTransactionsEditLargeTable: StoryObj<StoryProps> = {
   name: 'Edit a large sorted table',
   parameters: { scenario: '0194/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Правка в большой таблице', en: 'Editing in a large table' }}
       steps={LARGE}
       args={guideArgs(LARGE_ARGS, args)}
@@ -278,7 +278,7 @@ const addRows = () => {
   transact({ add: [newRow(), newRow()], index: 1 })
 }
 
-const ADD_REMOVE: readonly GuideStoryStep[] = [
+const ADD_REMOVE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Строки приложения', en: "The app's rows" },
     hint: {
@@ -347,7 +347,7 @@ export const ClientTransactionsAddRemove: StoryObj<StoryProps> = {
   name: 'Add and remove rows',
   parameters: { scenario: '0194/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Строки транзакцией', en: 'Rows by transaction' }}
       steps={ADD_REMOVE}
       args={guideArgs(layout, args)}
@@ -448,7 +448,7 @@ const removeAdded = () => {
 const removedShown = (root: ParentNode) =>
   SHIFTED_ADDED.every(id => !inData(id)) && indexOfRow(root, 'item-id-2') === 2
 
-const SHIFTS: readonly GuideStoryStep[] = [
+const SHIFTS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Сто тысяч строк', en: 'A hundred thousand rows' },
     hint: {
@@ -525,7 +525,7 @@ export const ClientTransactionsShiftLargeTable: StoryObj<StoryProps> = {
   name: 'Shift rows in a large table',
   parameters: { scenario: '0199/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Строки в середине большой таблицы',
         en: 'Rows in the middle of a large table',
@@ -593,7 +593,7 @@ export const ClientTransactionsShiftLargeTable: StoryObj<StoryProps> = {
 
 const REFUSED = 'item-new-1'
 
-const WITHOUT_HANDLER: readonly GuideStoryStep[] = [
+const WITHOUT_HANDLER: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Данные только у приложения',
@@ -626,7 +626,7 @@ export const ClientTransactionsWithoutHandler: StoryObj<StoryProps> = {
   name: 'Without a data handler',
   parameters: { scenario: '0194/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Без обработчика данных', en: 'Without a data handler' }}
       steps={WITHOUT_HANDLER}
       reset={() => {

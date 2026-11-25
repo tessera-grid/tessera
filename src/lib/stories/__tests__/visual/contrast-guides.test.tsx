@@ -31,7 +31,7 @@ import {
 import { parkPointer } from '../pointer'
 import { CATALOG_STATES } from '../../__mocks__/catalog'
 import { applyPseudoStates } from '../../__mocks__/catalogPlay'
-import { type GuideStoryStep, guideSteps } from '../../demos/GuideStory'
+import { type DemoStoryStep, guideSteps } from '../../demos/DemoStory'
 import { both } from '../storyText.helpers'
 
 // Шаги гайдов в матрице контраста (ADR 0089, §7, CX12–CX16): промежуточные состояния
@@ -84,10 +84,10 @@ const stepsIn = (container: HTMLElement) => {
   return root ? guideSteps.get(root) : undefined
 }
 
-const combosOf = (step: GuideStoryStep) => (step.states ? COMBOS : STEP_COMBOS)
+const combosOf = (step: DemoStoryStep) => (step.states ? COMBOS : STEP_COMBOS)
 
 /** Узлы псевдо-состояния шага. */
-const pseudoTargets = (step: GuideStoryStep) =>
+const pseudoTargets = (step: DemoStoryStep) =>
   Object.values(step.pseudo ?? {})
     .flat()
     .flatMap(selector => [...document.querySelectorAll(selector)])
@@ -105,12 +105,11 @@ const FAST_SCROLL = '[data-fast-scrolling]'
 /** Предел ожидания конца вспышек и быстрой прокрутки, мс (CX19–CX20). */
 const SETTLE_WAIT = 5000
 
-let lastWebKitProgress = performance.now()
-const reportWebKitProgress = (label: string) => {
-  if (server.browser !== 'webkit') return
+let lastProgress = performance.now()
+const reportProgress = (label: string) => {
   const now = performance.now()
-  if (now - lastWebKitProgress < 30_000) return
-  lastWebKitProgress = now
+  if (now - lastProgress < 30_000) return
+  lastProgress = now
   // eslint-disable-next-line no-console -- прогресс длительных снимков внутри одной истории
   console.log(`[contrast-guides] ${label}`)
 }
@@ -133,7 +132,7 @@ const auditStep = async (
   result: GuideResult,
   label: string,
   container: HTMLElement,
-  step: GuideStoryStep,
+  step: DemoStoryStep,
   combos: readonly Combo[],
   storyId: string,
   finish: boolean,
@@ -179,9 +178,7 @@ const auditStep = async (
   const before = new Map<string, Shot | null>()
   if (step.pseudo) {
     for (const combo of combos.filter(c => c.mode === 'forced')) {
-      reportWebKitProgress(
-        `${label} | ${comboLabel(combo)} | до псевдосостояния`,
-      )
+      reportProgress(`${label} | ${comboLabel(combo)} | до псевдосостояния`)
       await applyCombo(combo, { finish })
       await settleScroll()
       // Действие шага наводит указатель само (`pointAt`), и смена сочетания может
@@ -197,7 +194,7 @@ const auditStep = async (
     await applyPseudoStates(storyId, step.pseudo)
   }
   for (const combo of combos) {
-    reportWebKitProgress(`${label} | ${comboLabel(combo)}`)
+    reportProgress(`${label} | ${comboLabel(combo)}`)
     await applyCombo(combo, { finish })
     await settleScroll()
     const { grids, popups } = gridsAndPopups(container)
@@ -260,11 +257,11 @@ const walkGuide = async (story: string, Story: ComposedState) => {
   const result = emptyResult()
   const played: string[] = []
   const later: { title: string; combo: Combo }[] = []
-  let panel: readonly GuideStoryStep[] | undefined
+  let panel: readonly DemoStoryStep[] | undefined
   await parkPointer()
   const screen = await render(<Story />)
   const runStep = async (title: string, play: () => Promise<void>) => {
-    reportWebKitProgress(`${story} › ${title}`)
+    reportProgress(`${story} › ${title}`)
     await play()
     panel ??= stepsIn(screen.container)
     const step = panel?.find(s => s.title.ru === title)
@@ -353,7 +350,7 @@ const walkGuide = async (story: string, Story: ComposedState) => {
  * шаги по порядку, действие шага — `enter`.
  */
 const stand = (
-  steps: readonly GuideStoryStep[],
+  steps: readonly DemoStoryStep[],
   children: ReactNode,
   height?: number,
 ): ComposedState => {
@@ -407,7 +404,7 @@ const stand = (
   }) as unknown as ComposedState
 }
 
-const REST: GuideStoryStep = {
+const REST: DemoStoryStep = {
   title: both('Покой'),
   hint: both('Стенд в покое.'),
 }

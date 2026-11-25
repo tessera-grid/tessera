@@ -9,7 +9,7 @@ import { guideNext, settle, until, waitForRows } from './__mocks__/catalogPlay'
 import { groupedColumns } from './__mocks__/columns'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import { DemoStory, type DemoStoryStep, guideArgs } from './demos/DemoStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 
@@ -107,7 +107,7 @@ const SERVICE_COLUMNS = [
 const serviceCellsOf = (root: ParentNode, id: string) =>
   headCellsOf(root).filter(cell => cell.dataset.columnId?.startsWith(id))
 
-const GROUPED: readonly GuideStoryStep[] = [
+const GROUPED: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Шапка в одну строку', en: 'A single-row header' },
     hint: {
@@ -148,7 +148,7 @@ export const HeaderGrouped: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Многоуровневая шапка', en: 'Multi-level header' }}
       steps={GROUPED}
       args={guideArgs({ dataCount: 20, height: '360' }, args)}
@@ -219,7 +219,7 @@ const scrollColumns = (root: HTMLElement, left: number) => {
 const weekTitle = (root: ParentNode, id: string) =>
   headCellOf(root, id)?.querySelector<HTMLElement>(TITLE)
 
-const WIDE: readonly GuideStoryStep[] = [
+const WIDE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Широкие группы', en: 'Wide groups' },
     hint: {
@@ -253,7 +253,7 @@ export const HeaderGroupsWideGroups: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Широкие группы', en: 'Wide groups' }}
       steps={WIDE}
       args={guideArgs(

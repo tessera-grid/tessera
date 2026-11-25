@@ -39,11 +39,11 @@ import { storyLabels } from './__mocks__/storyLabels'
 import { useStoryText } from './__mocks__/storyLocale'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import { dataExportLabels } from '../plugins/dataExport/labels'
 
 /** Экспорт данных (ADR 0044, ADR 0073): панель настроек, быстрые наборы, Excel, серверный режим; своя кнопка приложения (ADR 0120). */
@@ -84,7 +84,7 @@ export const ExportPlayground: StoryObj<StoryProps> = {
 
 // --- ADR 0044 S1 ---------------------------------------------------------------------
 
-const DIRECT: readonly GuideStoryStep[] = [
+const DIRECT: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Одна комбинация выгрузки',
@@ -118,7 +118,7 @@ export const ExportDirect: StoryObj<StoryProps> = {
   name: 'Direct click',
   parameters: { scenario: '0044/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Выгрузка одним нажатием', en: 'Export with one click' }}
       steps={DIRECT}
       args={guideArgs(
@@ -157,7 +157,7 @@ export const ExportDirect: StoryObj<StoryProps> = {
 
 const PRESET = 'everything'
 
-const PRESETS: readonly GuideStoryStep[] = [
+const PRESETS: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Таблица с сортировкой, страницами и выбором',
@@ -222,7 +222,7 @@ export const ExportPresets: StoryObj<StoryProps> = {
   name: 'Settings and quick sets',
   parameters: { scenario: '0044/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Настройки выгрузки', en: 'Export settings' }}
       steps={PRESETS}
       args={guideArgs(
@@ -346,7 +346,7 @@ const exportAll = async (root: HTMLElement, signal: AbortSignal) => {
   )
 }
 
-const SERVER: readonly GuideStoryStep[] = [
+const SERVER: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Выгрузка на сервере', en: 'Export on the server' },
     hint: {
@@ -433,7 +433,7 @@ export const ExportServer: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Выгрузка на сервере', en: 'Export on the server' }}
       steps={SERVER}
       args={guideArgs(
@@ -524,7 +524,7 @@ const excel = (() => {
   }
 })()
 
-const EXCEL: readonly GuideStoryStep[] = [
+const EXCEL: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Два формата', en: 'Two formats' },
     hint: {
@@ -587,7 +587,7 @@ export const ExportExcel: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Выгрузка в Excel', en: 'Export to Excel' }}
       steps={EXCEL}
       args={guideArgs(
@@ -672,7 +672,7 @@ const ownExportButton = (root: ParentNode) =>
 const skeletonRow = (root: ParentNode) =>
   root.querySelector('.data-grid__body-row--skeleton')
 
-const OWN_BUTTON: readonly GuideStoryStep[] = [
+const OWN_BUTTON: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Своя кнопка выгрузки', en: 'A custom export button' },
     hint: {
@@ -705,7 +705,7 @@ export const ExportOwnButton: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Выгрузка своей кнопкой',
         en: 'Export with a custom button',
@@ -750,7 +750,7 @@ export const ExportOwnButton: StoryObj<StoryProps> = {
 /** Выгрузки, ушедшие «серверу» через `onExport`. */
 const serverExports: string[] = []
 
-const SERVER_BEFORE_DATA: readonly GuideStoryStep[] = [
+const SERVER_BEFORE_DATA: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Данные загружаются', en: 'Data is loading' },
     hint: {
@@ -781,7 +781,7 @@ export const ExportServerInitialLoading: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Серверная выгрузка до прихода данных',
         en: 'Server export before the data arrives',
@@ -851,7 +851,7 @@ const exportCancelArmed = async (root: HTMLElement, signal: AbortSignal) => {
   await pollUntil(exportArmed, signal)
 }
 
-const CANCEL_EXPORT: readonly GuideStoryStep[] = [
+const CANCEL_EXPORT: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Выгрузка в Excel', en: 'Export to Excel' },
     hint: {
@@ -901,7 +901,7 @@ export const ExportCancel: StoryObj<StoryProps> = {
   name: 'Cancel an export',
   parameters: { scenario: '0153/S4', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Отмена выгрузки', en: 'Canceling an export' }}
       steps={CANCEL_EXPORT}
       args={guideArgs(

@@ -1,7 +1,7 @@
 /** Касания в гайдах историй (ADR 0231, §10): CDP в тестах, автоматический жест в живом Storybook. */
 import type { StoryProps } from '../DataGridStory.types'
 import { setInputModality, trackInputModality } from '../../core/inputModality'
-import { stepAction } from '../demos/GuideStory'
+import { stepAction } from '../demos/DemoStory'
 import { GUIDE_REAL_INPUT } from '../demos/guideFocus'
 import { centerOf, FRESH_ATTR, pollUntil, settle, sleep } from './catalogPlay'
 

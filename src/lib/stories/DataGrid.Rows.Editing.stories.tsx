@@ -28,7 +28,7 @@ import { storyLabels } from './__mocks__/storyLabels'
 import { press, typeInto } from './__mocks__/typeGuides'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import { DemoStory, type DemoStoryStep, guideArgs } from './demos/DemoStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 import { cellEditingLabels } from '../plugins/cellEditing/labels'
@@ -251,7 +251,7 @@ const fillNewRow = (root: HTMLElement) => {
   else if (fill(row, 'firstName', NEW_NAME)) fill(row, 'age', NEW_AGE)
 }
 
-const INSERT: readonly GuideStoryStep[] = [
+const INSERT: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Сохранение по кнопке', en: 'Saving with a button' },
     hint: {
@@ -308,7 +308,7 @@ export const RowDraftInsert: StoryObj<StoryProps> = {
   name: 'Add a row',
   parameters: { scenario: '0178/S8', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Новая строка', en: 'A new row' }}
       steps={INSERT}
       reset={() => rowServer.reset()}
@@ -348,7 +348,7 @@ export const RowDraftInsert: StoryObj<StoryProps> = {
 
 const DELETED = 'item-id-3'
 
-const DELETE: readonly GuideStoryStep[] = [
+const DELETE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Удаление строки', en: 'Deleting a row' },
     hint: {
@@ -395,7 +395,7 @@ export const RowDraftDelete: StoryObj<StoryProps> = {
   name: 'Delete and restore a row',
   parameters: { scenario: '0178/S9', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Удаление строки', en: 'Deleting a row' }}
       steps={DELETE}
       reset={() => rowServer.reset()}
@@ -442,7 +442,7 @@ const makeThreeChanges = (root: HTMLElement) => {
   else fill(rowEl(root, EDITED), 'age', EDITED_AGE)
 }
 
-const REFUSED: readonly GuideStoryStep[] = [
+const REFUSED: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Сохранение по кнопке', en: 'Saving with a button' },
     hint: {
@@ -491,7 +491,7 @@ export const RowDraftsCommitRefused: StoryObj<StoryProps> = {
   name: 'Refused new row',
   parameters: { scenario: '0178/S10', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Отказ новой строке', en: 'A new row refused' }}
       steps={REFUSED}
       reset={() => {
@@ -534,7 +534,7 @@ export const RowDraftsCommitRefused: StoryObj<StoryProps> = {
 const placeOf = (root: ParentNode, row: HTMLElement | null) =>
   row ? [...root.querySelectorAll('.data-grid__body-row')].indexOf(row) : -1
 
-const SAVE_IN_PLACE: readonly GuideStoryStep[] = [
+const SAVE_IN_PLACE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Правок нет', en: 'No edits yet' },
     hint: {
@@ -582,7 +582,7 @@ export const RowDraftSaveInPlace: StoryObj<StoryProps> = {
   name: 'Save a row in place',
   parameters: { scenario: '0181/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Сохранение на месте', en: 'Saving in place' }}
       steps={SAVE_IN_PLACE}
       reset={() => rowServer.reset()}

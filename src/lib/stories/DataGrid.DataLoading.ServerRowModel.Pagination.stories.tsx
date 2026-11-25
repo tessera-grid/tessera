@@ -12,11 +12,11 @@ import {
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import { StoryComponent } from './DataGridStory'
 import type { TesseraFeatureEntry } from '../core/features'
 import {
@@ -44,7 +44,7 @@ const meta = {
 export default meta
 
 /** Контекст шага гайда, которого у `Playground` нет: фабрики «сервера» его не читают. */
-const AT_REST = {} as Parameters<NonNullable<GuideStoryStep['props']>>[0]
+const AT_REST = {} as Parameters<NonNullable<DemoStoryStep['props']>>[0]
 
 const TOTAL = 100_000
 const BLOCK = 100
@@ -52,9 +52,9 @@ const PAGE_SIZE = 25
 
 const pagedProps =
   (
-    props: GuideStoryStep['props'],
+    props: DemoStoryStep['props'],
     pageSize = PAGE_SIZE,
-  ): GuideStoryStep['props'] =>
+  ): DemoStoryStep['props'] =>
   context => ({
     ...props!(context),
     enablePagination: true,
@@ -126,7 +126,7 @@ const openLast = async (root: HTMLElement, signal: AbortSignal) => {
   )
 }
 
-const PAGES: readonly GuideStoryStep[] = [
+const PAGES: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Строки с сервера', en: 'Rows from the server' },
     hint: {
@@ -194,7 +194,7 @@ export const ServerPaginationPages: StoryObj<StoryProps> = {
   name: 'Load pages',
   parameters: { scenario: '0158/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Страницы с сервера', en: 'Pages from the server' }}
       steps={PAGES}
       args={guideArgs(layout, args)}
@@ -249,7 +249,7 @@ const reachEnd = async (root: HTMLElement, signal: AbortSignal) => {
   }, signal)
 }
 
-const UNKNOWN_TOTAL: readonly GuideStoryStep[] = [
+const UNKNOWN_TOTAL: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Итог неизвестен', en: 'The total is unknown' },
     hint: {
@@ -285,7 +285,7 @@ export const ServerPaginationUnknownTotal: StoryObj<StoryProps> = {
   name: 'Unknown total',
   parameters: { scenario: '0158/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Итог неизвестен', en: 'The total is unknown' }}
       steps={UNKNOWN_TOTAL}
       args={guideArgs(layout, args)}
@@ -317,7 +317,7 @@ export const ServerPaginationUnknownTotal: StoryObj<StoryProps> = {
 const pageNumberOf = (root: ParentNode, page: number) =>
   root.querySelector<HTMLElement>(`[data-page-number="${page}"]`)
 
-const NUMBERS_WITH_TOTAL: readonly GuideStoryStep[] = [
+const NUMBERS_WITH_TOTAL: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Итог неизвестен', en: 'The total is unknown' },
     hint: {
@@ -351,7 +351,7 @@ export const PaginationUnknownTotal: StoryObj<StoryProps> = {
   name: 'Page numbers after the total',
   parameters: { scenario: '0192/S5', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Номера при неизвестном итоге',
         en: 'Page numbers with an unknown total',
@@ -402,7 +402,7 @@ const expandFirst = async (root: HTMLElement, signal: AbortSignal) => {
   await pollUntil(() => membersShown(root), signal)
 }
 
-const GROUPS: readonly GuideStoryStep[] = [
+const GROUPS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Группы по страницам', en: 'Groups across pages' },
     hint: {
@@ -449,7 +449,7 @@ export const ServerPaginationGroups: StoryObj<StoryProps> = {
   name: 'Groups on pages',
   parameters: { scenario: '0158/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Группы на страницах', en: 'Groups on pages' }}
       steps={GROUPS}
       reset={() => {
@@ -541,7 +541,7 @@ const editingHost: TesseraFeatureEntry = {
  */
 const showRow = (rowId: string) => void editingTable?.scrollToRow(rowId)
 
-const EDITING: readonly GuideStoryStep[] = [
+const EDITING: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Строки с сервера', en: 'Rows from the server' },
     hint: {
@@ -613,7 +613,7 @@ export const ServerPaginationEditing: StoryObj<StoryProps> = {
   name: 'Draft across pages',
   parameters: { scenario: '0158/S4', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Черновик на другой странице',
         en: 'A draft on another page',

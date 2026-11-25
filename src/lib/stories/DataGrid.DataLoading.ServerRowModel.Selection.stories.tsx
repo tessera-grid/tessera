@@ -15,11 +15,11 @@ import { storyLabels } from './__mocks__/storyLabels'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import { StoryComponent } from './DataGridStory'
 import {
   layout,
@@ -59,7 +59,7 @@ const meta = {
 export default meta
 
 /** Контекст шага гайда, которого у `Playground` нет: фабрики «сервера» его не читают. */
-const AT_REST = {} as Parameters<NonNullable<GuideStoryStep['props']>>[0]
+const AT_REST = {} as Parameters<NonNullable<DemoStoryStep['props']>>[0]
 
 interface SelectionPlaygroundArgs extends StoryProps {
   groupBy: 'none' | 'city'
@@ -154,7 +154,7 @@ const uncheckSome = async (root: HTMLElement, signal: AbortSignal) => {
   }
 }
 
-const SELECT_ALL_EXCEPT: readonly GuideStoryStep[] = [
+const SELECT_ALL_EXCEPT: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Список с флажками', en: 'A list with checkboxes' },
     hint: {
@@ -237,7 +237,7 @@ export const ServerRowModelSelectAllExcept: StoryObj<StoryProps> = {
   name: 'Select all except',
   parameters: { scenario: '0138/S6', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Выбрать всё, кроме', en: 'Select all except' }}
       steps={SELECT_ALL_EXCEPT}
       args={guideArgs(layout, args)}
@@ -304,7 +304,7 @@ export const ServerRowModelSelectAllExcept: StoryObj<StoryProps> = {
 
 /** Группировка по городу с флажками выбора; `counts` — сервер присылает число строк групп. */
 const groupSelectProps =
-  ({ counts = true, exported = false } = {}): GuideStoryStep['props'] =>
+  ({ counts = true, exported = false } = {}): DemoStoryStep['props'] =>
   context => ({
     ...groupProps({ grouping: ['city'], counts })!(context),
     enableFooter: false,
@@ -373,7 +373,7 @@ const uncheckFirstRow = async (root: HTMLElement, signal: AbortSignal) => {
   await pollUntil(() => isPartial(groupCheckbox(root, 'Paris')), signal)
 }
 
-const GROUP_SELECTION: readonly GuideStoryStep[] = [
+const GROUP_SELECTION: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Список сгруппирован по городу',
@@ -438,7 +438,7 @@ export const ServerGroupSelection: StoryObj<StoryProps> = {
   name: 'Select a group',
   parameters: { scenario: '0148/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Выбор группы целиком', en: 'Selecting a whole group' }}
       steps={GROUP_SELECTION}
       reset={() => {
@@ -511,7 +511,7 @@ const ungroup = async (root: HTMLElement, signal: AbortSignal) => {
   )
 }
 
-const GROUP_SELECT_RESET: readonly GuideStoryStep[] = [
+const GROUP_SELECT_RESET: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Список сгруппирован по городу',
@@ -554,7 +554,7 @@ export const ServerGroupSelectReset: StoryObj<StoryProps> = {
   name: 'Regrouping clears the selection',
   parameters: { scenario: '0148/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Выбор и смена группировки',
         en: 'Selection and a change of grouping',
@@ -591,7 +591,7 @@ export const ServerGroupSelectReset: StoryObj<StoryProps> = {
   },
 }
 
-const GROUP_SELECT_COUNT: readonly GuideStoryStep[] = [
+const GROUP_SELECT_COUNT: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Сервер не знает размер групп',
@@ -638,7 +638,7 @@ export const ServerGroupSelectCount: StoryObj<StoryProps> = {
   name: 'Count without group sizes',
   parameters: { scenario: '0148/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Счётчик без размера групп',
         en: 'The counter without group sizes',
@@ -693,7 +693,7 @@ const BRANCH_PARENT = 'item-id-1'
 const BRANCH_UNCHECKED = `${BRANCH_PARENT}.2`
 
 /** Дерево «сервера» с флажками у всех строк и выбором ветки целиком. */
-const branchSelectProps: GuideStoryStep['props'] = context => ({
+const branchSelectProps: DemoStoryStep['props'] = context => ({
   ...treeProps!(context),
   enableRowSelection: true,
   rowSelectionSubRows: true,
@@ -747,7 +747,7 @@ const branchArrived = async (root: HTMLElement, signal: AbortSignal) => {
   await pollUntil(() => branchShown(root), signal)
 }
 
-const BRANCH_SELECTION: readonly GuideStoryStep[] = [
+const BRANCH_SELECTION: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Дерево с флажками', en: 'A tree with checkboxes' },
     hint: {
@@ -822,7 +822,7 @@ export const ServerTreeSelectBranch: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Выбор ветки дерева', en: 'Selecting a tree branch' }}
       steps={BRANCH_SELECTION}
       args={guideArgs(layout, args)}
@@ -907,7 +907,7 @@ const pageProps =
     pageSize: number,
     blockSize: number,
     failBlock?: number,
-  ): GuideStoryStep['props'] =>
+  ): DemoStoryStep['props'] =>
   context => ({
     ...serverProps({
       total: PAGE_TOTAL,
@@ -943,7 +943,7 @@ const toSecondPage = async (root: HTMLElement, signal: AbortSignal) => {
   await pollUntil(() => hasRow(root, PAGE_SIZE), signal)
 }
 
-const SELECT_PAGE: readonly GuideStoryStep[] = [
+const SELECT_PAGE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Список страницами', en: 'A list in pages' },
     hint: {
@@ -1000,7 +1000,7 @@ export const ServerPageSelectAll: StoryObj<StoryProps> = {
   name: 'Select the page',
   parameters: { scenario: '0188/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Выбор страницы', en: 'Selecting a page' }}
       steps={SELECT_PAGE}
       args={guideArgs(layout, args)}
@@ -1048,7 +1048,7 @@ const pressWaitingHead = async (root: HTMLElement, signal: AbortSignal) => {
   await pollUntil(() => headWaits(root), signal)
 }
 
-const WAITS: readonly GuideStoryStep[] = [
+const WAITS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Часть страницы загружена', en: 'Part of the page is loaded' },
     hint: {
@@ -1090,7 +1090,7 @@ export const ServerPageSelectAllWaits: StoryObj<StoryProps> = {
   name: 'Page still loading',
   parameters: { scenario: '0188/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Страница ещё грузится', en: 'The page is still loading' }}
       steps={WAITS}
       args={guideArgs(layout, args)}
@@ -1136,7 +1136,7 @@ const refusePage = async (root: HTMLElement, signal: AbortSignal) => {
   await pollUntil(() => !!failureBanner(root), signal)
 }
 
-const PAGE_REFUSED: readonly GuideStoryStep[] = [
+const PAGE_REFUSED: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Часть страницы загружена', en: 'Part of the page is loaded' },
     hint: {
@@ -1189,7 +1189,7 @@ export const ServerPageSelectAllRefused: StoryObj<StoryProps> = {
   name: 'Page refused',
   parameters: { scenario: '0188/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Отказ в строках страницы', en: 'Page rows refused' }}
       steps={PAGE_REFUSED}
       reset={() => {

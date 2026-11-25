@@ -28,11 +28,11 @@ import {
   valueStream,
 } from './__mocks__/valueChangeFlashGuide'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 
 /**
  * Вспышка при смене значения извне (ADR 0221): ячейка мигает, когда её значение пришло новыми
@@ -126,7 +126,7 @@ const seedProps = () => ({
 
 const PUSHED_VISITS = 999
 
-const UPDATE: readonly GuideStoryStep[] = [
+const UPDATE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Данные приложения', en: "The app's data" },
     hint: {
@@ -164,7 +164,7 @@ export const ValueChangeFlashUpdate: StoryObj<StoryProps> = {
   name: 'Update from the server',
   parameters: { scenario: '0221/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Обновление с сервера', en: 'An update from the server' }}
       steps={UPDATE}
       args={guideArgs({ ...layout, enableValueChangeFlash: true }, args)}
@@ -190,7 +190,7 @@ export const ValueChangeFlashUpdate: StoryObj<StoryProps> = {
 
 // --- S2: рост и падение ----------------------------------------------------------------
 
-const DIRECTION: readonly GuideStoryStep[] = [
+const DIRECTION: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Котировки', en: 'Quotes' },
     hint: {
@@ -227,7 +227,7 @@ export const ValueChangeFlashDirection: StoryObj<StoryProps> = {
   name: 'Rise and fall',
   parameters: { scenario: '0221/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Рост и падение', en: 'Rise and fall' }}
       steps={DIRECTION}
       args={guideArgs(
@@ -287,7 +287,7 @@ const saveAge = (root: HTMLElement) => {
   else press(input, 'Enter')
 }
 
-const OWN_EDIT: readonly GuideStoryStep[] = [
+const OWN_EDIT: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Общая таблица', en: 'A shared table' },
     hint: {
@@ -330,7 +330,7 @@ export const ValueChangeFlashOwnEdit: StoryObj<StoryProps> = {
   name: 'Own edit and a colleague',
   parameters: { scenario: '0221/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Своя правка и правка коллеги',
         en: "Your edit and a colleague's edit",
@@ -373,7 +373,7 @@ export const ValueChangeFlashOwnEdit: StoryObj<StoryProps> = {
 const HIGHLIGHTED = HIGHLIGHTED_ROW
 const OVER_VISITS = 777
 
-const OVER_FILL: readonly GuideStoryStep[] = [
+const OVER_FILL: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Подсвеченная строка', en: 'A highlighted row' },
     hint: {
@@ -410,7 +410,7 @@ export const ValueChangeFlashOverFill: StoryObj<StoryProps> = {
   name: 'Flash over a highlight',
   parameters: { scenario: '0221/S4', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Вспышка на подсвеченной строке',
         en: 'A flash on a highlighted row',
@@ -515,7 +515,7 @@ const addedRowOf = (root: ParentNode) =>
     `.data-grid__body-row[data-row-id="${ADDED_ROW}"]`,
   )
 
-const COLORS: readonly GuideStoryStep[] = [
+const COLORS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Тоны вспышек', en: 'Flash tones' },
     hint: {
@@ -626,7 +626,7 @@ export const ValueChangeFlashColors: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Тоны вспышек', en: 'Flash tones' }}
       steps={COLORS}
       args={guideArgs(
@@ -699,7 +699,7 @@ const totalFlash = (root: ParentNode) =>
 const searchField = (root: ParentNode) =>
   root.querySelector<HTMLInputElement>('[data-testid="quick-search"]')
 
-const TOTALS: readonly GuideStoryStep[] = [
+const TOTALS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Итоги в футере', en: 'Totals in the footer' },
     hint: {
@@ -743,7 +743,7 @@ export const ValueChangeFlashTotals: StoryObj<StoryProps> = {
   name: 'Totals in the footer',
   parameters: { scenario: '0221/S6', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Вспышка итога', en: 'Total flash' }}
       steps={TOTALS}
       args={guideArgs(

@@ -19,6 +19,8 @@ import {
   until,
   waitForRows,
 } from './__mocks__/catalogPlay'
+import { clickByMouse } from './__mocks__/cellGestures'
+import { dragGripTo, separatorOf } from './__mocks__/columnGrip'
 import {
   asyncHeaderActionsDemo,
   createDemoServer,
@@ -27,12 +29,12 @@ import { storyLabels } from './__mocks__/storyLabels'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   type StepRun,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 
@@ -152,7 +154,7 @@ const pinFromMenu = async (root: HTMLElement, signal: AbortSignal) => {
   }, signal)
 }
 
-const IN_MENU: readonly GuideStoryStep[] = [
+const IN_MENU: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Кнопки в заголовке', en: 'Buttons in the header' },
     hint: {
@@ -205,7 +207,7 @@ export const HeaderMenuInMenu: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Действия колонки в меню', en: 'Column actions in a menu' }}
       steps={IN_MENU}
       args={guideArgs(
@@ -299,7 +301,7 @@ const withActions = (
     actionsApi?.setColumnVisibility(visibility)
   })
 
-const ACTIVE: readonly GuideStoryStep[] = [
+const ACTIVE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Действия не включены', en: 'No actions are on' },
     hint: {
@@ -375,7 +377,7 @@ export const HeaderMenuActiveActions: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Включённые действия видны',
         en: 'Active actions are visible',
@@ -493,15 +495,16 @@ const sortFromMenu = async (root: HTMLElement, signal: AbortSignal) => {
     if (sorted()) return true
     const menu = openMenu()
     if (!menu) {
-      if (!chosen) headKebab(root, NARROW_COLUMN)?.click()
+      const trigger = headKebab(root, NARROW_COLUMN)
+      if (!chosen && trigger) clickByMouse(trigger)
       return false
     }
     if (!menu.hasAttribute('data-open') || chosen) return false
-    menu
-      .querySelector<HTMLElement>(
-        '[data-action-id="columnSorting"][data-item-id="asc"]',
-      )
-      ?.click()
+    const ascending = menu.querySelector<HTMLElement>(
+      '[data-action-id="columnSorting"][data-item-id="asc"]',
+    )
+    if (!ascending) return false
+    ascending.click()
     chosen = true
     return false
   }, signal)
@@ -520,7 +523,7 @@ const pointWhen =
     onLeave(pointAt(headCellOf(root, NARROW_COLUMN)!))
   }
 
-const NARROW: readonly GuideStoryStep[] = [
+const NARROW: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Узкая колонка', en: 'A narrow column' },
     hint: {
@@ -598,10 +601,12 @@ const NARROW: readonly GuideStoryStep[] = [
     },
     pseudo: NARROW_HOVER,
     enter: stepAction(async (root, run) => {
-      afterRows(() => {
-        narrowApi?.setSorting([])
-        narrowApi?.setColumnSizing({ [NARROW_COLUMN]: WIDE_WIDTH })
-      })(root)
+      await pollUntil(
+        () => !!narrowApi && !!separatorOf(root, NARROW_COLUMN),
+        run.signal,
+      )
+      narrowApi!.setSorting([])
+      await dragGripTo(root, run, NARROW_COLUMN, WIDE_WIDTH)
       await pointWhen(el => !!pinButton(el) && !!sortButton(el))(root, run)
     }),
   },
@@ -614,8 +619,9 @@ export const HeaderMenuNarrowActive: StoryObj<StoryProps> = {
     scenario: '0156/S1',
     ...guideControls(),
   },
-  render: args => (
-    <GuideStory
+  render: (args, { globals }) => (
+    <DemoStory
+      showActions={globals.catalog === true ? true : undefined}
       title={{
         ru: 'Включённое действие остаётся в ряду',
         en: 'An active action stays in the row',
@@ -655,6 +661,7 @@ export const HeaderMenuNarrowActive: StoryObj<StoryProps> = {
     })
     await step(NARROW[2]!.title.ru, async () => {
       await guideNext(canvas)
+      await stepDone(canvas)
       await until(() => expect(marked(sortButton(canvas))).toBe(true))
       await until(() => expect(pinButton(canvas)).toBeNull())
       // Отметка уходит с кнопки меню переходом.
@@ -765,7 +772,7 @@ const runIndex = (menu: HTMLElement) => {
   if (itemEnabled(item)) item!.click()
 }
 
-const ASYNC_ACTIONS: readonly GuideStoryStep[] = [
+const ASYNC_ACTIONS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Меню ещё не открыто', en: 'The menu is not open yet' },
     hint: {
@@ -854,7 +861,7 @@ export const HeaderMenuAsyncActions: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Асинхронные действия в меню колонки',
         en: 'Async actions in the column menu',

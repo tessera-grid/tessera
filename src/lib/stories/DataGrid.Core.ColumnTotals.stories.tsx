@@ -9,7 +9,7 @@ import { untilDone } from './__mocks__/cellGestures'
 import { press, typeInto } from './__mocks__/typeGuides'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import { DemoStory, type DemoStoryStep, guideArgs } from './demos/DemoStory'
 import type { ServerRowsRequest } from '../plugins'
 import type { ConsoleLog } from './demos/consoleLog'
 
@@ -185,7 +185,7 @@ export const ColumnTotalsPlayground: StoryObj<StoryProps> = {
 
 // --- S1 ------------------------------------------------------------------------------
 
-const SEARCH: readonly GuideStoryStep[] = [
+const SEARCH: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Итоги всех строк', en: 'Totals of all rows' },
     hint: {
@@ -208,7 +208,7 @@ export const ColumnTotalsSearch: StoryObj<StoryProps> = {
   name: 'Search changes the total',
   parameters: { scenario: '0184/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Подсчёт итого после поиска',
         en: 'Totals recalculated after a search',
@@ -254,7 +254,7 @@ const OWN_FOOTER_COLUMNS = COLUMNS.map(column =>
     : column,
 )
 
-const OWN_FOOTER: readonly GuideStoryStep[] = [
+const OWN_FOOTER: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Итог по типу колонки', en: 'A total by column type' },
     hint: {
@@ -277,7 +277,7 @@ export const ColumnTotalsOwnFooter: StoryObj<StoryProps> = {
   name: 'Own footer',
   parameters: { scenario: '0184/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Своё оформление итога', en: 'Custom total formatting' }}
       steps={OWN_FOOTER}
       args={guideArgs(TOTALS_ARGS, args)}
@@ -305,7 +305,7 @@ const ALL_NODES_COLUMNS = COLUMNS.map(column =>
   column.aggregationFn ? { ...column, aggregationScope: 'all' } : column,
 )
 
-const TREE: readonly GuideStoryStep[] = [
+const TREE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Родитель — свод детей', en: 'A parent sums up its children' },
     hint: {
@@ -334,7 +334,7 @@ export const ColumnTotalsTree: StoryObj<StoryProps> = {
   name: 'Tree',
   parameters: { scenario: '0184/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Итог в дереве', en: 'Totals in a tree' }}
       steps={TREE}
       args={guideArgs(
@@ -377,7 +377,7 @@ const SERVER_FOOTER_COLUMNS = COLUMNS.map(column =>
     : column,
 )
 
-const SERVER_PAGE: readonly GuideStoryStep[] = [
+const SERVER_PAGE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Итога нет', en: 'No total' },
     hint: {
@@ -400,7 +400,7 @@ export const ColumnTotalsServerPage: StoryObj<StoryProps> = {
   name: 'Server page',
   parameters: { scenario: '0184/S4', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Итог при странице с сервера',
         en: 'Totals with a page from the server',
@@ -467,7 +467,7 @@ const saveAmount = (root: HTMLElement, row: string, value: string) => {
   else press(input, 'Enter')
 }
 
-const EDITING: readonly GuideStoryStep[] = [
+const EDITING: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Итоги всех строк', en: 'Totals of all rows' },
     hint: {
@@ -501,7 +501,7 @@ export const ColumnTotalsEditing: StoryObj<StoryProps> = {
   name: 'Edit a value',
   parameters: { scenario: '0184/S8', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Итог после правки', en: 'Totals after an edit' }}
       steps={EDITING}
       args={guideArgs(EDITING_ARGS, args)}
@@ -533,7 +533,7 @@ const applyAll = (root: HTMLElement) => {
   }
 }
 
-const DRAFTS: readonly GuideStoryStep[] = [
+const DRAFTS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Итоги всех строк', en: 'Totals of all rows' },
     hint: {
@@ -582,7 +582,7 @@ export const ColumnTotalsDrafts: StoryObj<StoryProps> = {
   name: 'Edit before applying',
   parameters: { scenario: '0184/S9', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Итог и неприменённая правка',
         en: 'Totals and an unapplied edit',
@@ -634,7 +634,7 @@ const ALL_NODES_ARGS = {
 
 // S1 — поиск
 
-const ALL_NODES_SEARCH: readonly GuideStoryStep[] = [
+const ALL_NODES_SEARCH: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Итог всех строк дерева', en: 'Total of every tree row' },
     hint: {
@@ -657,7 +657,7 @@ export const ColumnTotalsAllNodesSearch: StoryObj<StoryProps> = {
   name: 'All tree rows — search',
   parameters: { scenario: '0229/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Итог всех строк и поиск',
         en: 'Total of all rows and search',
@@ -690,7 +690,7 @@ export const ColumnTotalsAllNodesSearch: StoryObj<StoryProps> = {
 
 // S2 — группировка
 
-const ALL_NODES_GROUPS: readonly GuideStoryStep[] = [
+const ALL_NODES_GROUPS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Группы по городу', en: 'Groups by city' },
     hint: {
@@ -720,7 +720,7 @@ export const ColumnTotalsAllNodesGroups: StoryObj<StoryProps> = {
   name: 'All tree rows — grouping',
   parameters: { scenario: '0229/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Итог всех строк в группах',
         en: 'Total of all rows in groups',
@@ -774,7 +774,7 @@ const expandDepartments = (root: HTMLElement) => {
   root.querySelector<HTMLElement>('.row-expand-all-button')?.click()
 }
 
-const LAZY_TREE: readonly GuideStoryStep[] = [
+const LAZY_TREE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Итога нет', en: 'No total' },
     hint: {
@@ -805,7 +805,7 @@ export const ColumnTotalsLazyTree: StoryObj<StoryProps> = {
   name: 'All tree rows — lazy children',
   parameters: { scenario: '0229/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Итог ленивого дерева', en: 'Totals of a lazy tree' }}
       steps={LAZY_TREE}
       args={guideArgs(
@@ -875,7 +875,7 @@ const serverTreeRowsOf = (log: ConsoleLog) => (request: ServerRowsRequest) => {
   })
 }
 
-const SERVER_TREE: readonly GuideStoryStep[] = [
+const SERVER_TREE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Итог верхнего уровня', en: 'Top-level total' },
     hint: {
@@ -920,7 +920,7 @@ export const ColumnTotalsServerTree: StoryObj<StoryProps> = {
   name: 'All tree rows — server row model',
   parameters: { scenario: '0229/S4', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Итог всех строк на сервере',
         en: 'Total of all rows on the server',

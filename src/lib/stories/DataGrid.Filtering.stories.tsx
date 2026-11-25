@@ -50,12 +50,12 @@ import {
 } from './__mocks__/viewSettings'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
-  GuideStory,
+  DemoStory,
   type GuideApp,
-  type GuideStoryStep,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import { type ConsoleLog, describeEvent } from './demos/consoleLog'
 import {
   OPTION_SERVER_DATA,
@@ -175,7 +175,7 @@ const filterByName = async (root: HTMLElement, signal: AbortSignal) => {
   await closePanel(signal)
 }
 
-const TEXT: readonly GuideStoryStep[] = [
+const TEXT: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Таблица без фильтров', en: 'The table without filters' },
     hint: {
@@ -214,7 +214,7 @@ export const FilteringText: StoryObj<StoryProps> = {
   name: 'Text filter',
   parameters: { scenario: '0045/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Фильтр по тексту', en: 'Text filter' }}
       steps={TEXT}
       args={guideArgs(GRID, args)}
@@ -268,7 +268,7 @@ const search = async (
   await pollUntil(done, signal)
 }
 
-const EMPTY: readonly GuideStoryStep[] = [
+const EMPTY: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Все строки', en: 'All rows' },
     hint: {
@@ -303,7 +303,7 @@ export const FilteringEmpty: StoryObj<StoryProps> = {
   name: 'Empty result',
   parameters: { scenario: '0045/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Ничего не найдено', en: 'Nothing found' }}
       steps={EMPTY}
       args={guideArgs(GRID, args)}
@@ -417,7 +417,7 @@ const hideAge = async (root: HTMLElement, signal: AbortSignal) => {
   await repeat(() => !viewSettingsPopover(), pressEscape, signal)
 }
 
-const SERVER: readonly GuideStoryStep[] = [
+const SERVER: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Фильтрует сервер', en: 'The server filters' },
     hint: {
@@ -494,7 +494,7 @@ export const FilteringServer: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Фильтры на сервере', en: 'Filters on the server' }}
       steps={SERVER}
       args={guideArgs(
@@ -593,7 +593,7 @@ const refetchFilters = (app: GuideApp, log: ConsoleLog) => {
 const searchedOnClient = (root: HTMLElement) =>
   allMatch(root, 'city', SEARCH) && serverAnswered(root)
 
-const MIXED: readonly GuideStoryStep[] = [
+const MIXED: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Фильтры на сервере, поиск в таблице',
@@ -646,7 +646,7 @@ export const FilteringServerFiltersClientSearch: StoryObj<StoryProps> = {
   name: 'Server filters, client search',
   parameters: { scenario: '0169/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Фильтры на сервере, поиск в таблице',
         en: 'Filters on the server, search in the table',
@@ -768,7 +768,7 @@ const TREE = [
   },
 ]
 
-const TREE_STEPS: readonly GuideStoryStep[] = [
+const TREE_STEPS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Дерево раскрыто', en: 'The tree is expanded' },
     hint: {
@@ -806,7 +806,7 @@ export const FilteringTree: StoryObj<StoryProps> = {
   name: 'Tree',
   parameters: { scenario: '0045/S4', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Фильтр дерева', en: 'Tree filter' }}
       steps={TREE_STEPS}
       args={guideArgs(
@@ -842,7 +842,7 @@ const searchDisabled = () =>
   byTestId('quick-search')?.getAttribute('aria-disabled') === 'true' ||
   !!(byTestId('quick-search') as HTMLInputElement | null)?.disabled
 
-const NO_COLUMNS: readonly GuideStoryStep[] = [
+const NO_COLUMNS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Таблица с поиском', en: 'A table with search' },
     hint: {
@@ -873,7 +873,7 @@ export const QuickSearchNoColumns: StoryObj<StoryProps> = {
   name: 'Quick search — no searchable columns',
   parameters: { scenario: '0053/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Искать негде', en: 'Nowhere to search' }}
       steps={NO_COLUMNS}
       args={guideArgs(GRID, args)}
@@ -921,7 +921,7 @@ const filterCreated = async (root: HTMLElement, signal: AbortSignal) => {
   await closePanel(signal)
 }
 
-const DATE_STEPS: readonly GuideStoryStep[] = [
+const DATE_STEPS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Колонки с датами', en: 'Date columns' },
     hint: {
@@ -995,7 +995,7 @@ export const FilteringDates: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Фильтр по датам', en: 'Date filter' }}
       steps={DATE_STEPS}
       args={guideArgs(DATES, args)}
@@ -1071,7 +1071,7 @@ const filterStatus = async (root: HTMLElement, signal: AbortSignal) => {
   await closePanel(signal)
 }
 
-const OPTION_STEPS: readonly GuideStoryStep[] = [
+const OPTION_STEPS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Колонки с вариантами', en: 'Columns with options' },
     hint: {
@@ -1135,7 +1135,7 @@ export const FilteringOptions: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Фильтр вариантов', en: 'Options filter' }}
       steps={OPTION_STEPS}
       args={guideArgs(OPTIONS, args)}
@@ -1279,7 +1279,7 @@ const filterManager = async (root: HTMLElement, signal: AbortSignal) => {
   await closePanel(signal)
 }
 
-const LOOKUP: readonly GuideStoryStep[] = [
+const LOOKUP: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Справочник менеджеров на сервере',
@@ -1361,7 +1361,7 @@ export const FilteringLookupServer: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Справочник на сервере', en: 'A lookup on the server' }}
       steps={LOOKUP}
       args={guideArgs(
@@ -1425,7 +1425,7 @@ const FILTERING_GUIDE = {
 
 const searchedCity = filteringData[0]!.city as string
 
-const EXTERNAL_FORM: readonly GuideStoryStep[] = [
+const EXTERNAL_FORM: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Все строки', en: 'All rows' },
     hint: {
@@ -1473,7 +1473,7 @@ export const FilteringExternalForm: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Фильтры и поиск из формы приложения',
         en: "Filters and search from the app's form",
@@ -1527,7 +1527,7 @@ const SAVED_VIEW = {
 const rangeText = (root: ParentNode) =>
   root.querySelector('[data-testid="pagination-range"]')?.textContent ?? ''
 
-const SAVED_VIEW_STEPS: readonly GuideStoryStep[] = [
+const SAVED_VIEW_STEPS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Вид по умолчанию', en: 'The default view' },
     hint: {
@@ -1578,7 +1578,7 @@ export const SavedViewRestore: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Вид из адреса страницы',
         en: 'A view from the page address',
@@ -1671,7 +1671,7 @@ const filterLong = async (root: HTMLElement, signal: AbortSignal) => {
   await pollUntil(() => !!pendingCancelOf(root), signal)
 }
 
-const CANCEL_FILTER: readonly GuideStoryStep[] = [
+const CANCEL_FILTER: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Фильтр на сервере', en: 'Filtering on the server' },
     hint: {
@@ -1724,7 +1724,7 @@ export const FilteringServerCancel: StoryObj<StoryProps> = {
   name: 'Cancel a server filter',
   parameters: { scenario: '0153/S7', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Отмена фильтра на сервере',
         en: 'Canceling a server filter',
@@ -1848,7 +1848,7 @@ const nameApplied = async (root: HTMLElement, signal: AbortSignal) => {
   }, signal)
 }
 
-const APPLY: readonly GuideStoryStep[] = [
+const APPLY: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Фильтр на сервере', en: 'Filtering on the server' },
     hint: {
@@ -1902,7 +1902,7 @@ export const FilteringServerApply: StoryObj<StoryProps> = {
   name: 'Apply a server filter',
   parameters: { scenario: '0154/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Применение фильтра на сервере',
         en: 'Applying a server filter',
@@ -1991,7 +1991,7 @@ const draftShown = async (root: HTMLElement, signal: AbortSignal) => {
   await pollUntil(() => filterValueText() === NAME && applyEnabled(), signal)
 }
 
-const REAPPLY: readonly GuideStoryStep[] = [
+const REAPPLY: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Фильтр на сервере', en: 'Filtering on the server' },
     hint: {
@@ -2053,7 +2053,7 @@ export const FilteringServerReapply: StoryObj<StoryProps> = {
   name: 'Reapply after cancel',
   parameters: { scenario: '0154/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Повтор отменённого фильтра',
         en: 'Repeating a canceled filter',
@@ -2188,7 +2188,7 @@ const nameFiltered = async (root: HTMLElement, signal: AbortSignal) => {
   await closePanel(signal)
 }
 
-const FILTER_DRAFT: readonly GuideStoryStep[] = [
+const FILTER_DRAFT: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Фильтр на сервере', en: 'Filtering on the server' },
     hint: {
@@ -2234,7 +2234,7 @@ export const FilterDraftClosedPanel: StoryObj<StoryProps> = {
   name: 'Unapplied condition',
   parameters: { scenario: '0178/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Неприменённое условие', en: 'An unapplied condition' }}
       steps={FILTER_DRAFT}
       args={guideArgs(DRAFT_GRID, args)}
@@ -2299,7 +2299,7 @@ const refusalDismissed = async (root: HTMLElement, signal: AbortSignal) => {
   }, signal)
 }
 
-const REFUSED_DRAFT: readonly GuideStoryStep[] = [
+const REFUSED_DRAFT: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Фильтр на сервере', en: 'Filtering on the server' },
     hint: {
@@ -2346,7 +2346,7 @@ export const FilterDraftAfterRefusal: StoryObj<StoryProps> = {
   name: 'Refused condition',
   parameters: { scenario: '0178/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Отказанное условие', en: 'A refused condition' }}
       steps={REFUSED_DRAFT}
       args={guideArgs(DRAFT_GRID, args)}
@@ -2398,7 +2398,7 @@ const URL_DRAFTS = [
   },
 ]
 
-const URL_STEPS: readonly GuideStoryStep[] = [
+const URL_STEPS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Адрес страницы', en: 'The page address' },
     hint: {
@@ -2453,7 +2453,7 @@ export const DraftsFromUrl: StoryObj<StoryProps> = {
   name: 'Restore unapplied conditions',
   parameters: { scenario: '0178/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Условия из адреса страницы',
         en: 'Conditions from the page address',

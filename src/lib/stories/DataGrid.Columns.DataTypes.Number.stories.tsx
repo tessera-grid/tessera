@@ -2,11 +2,11 @@ import { expect } from 'storybook/test'
 import { exportFormats } from '../plugins/dataExport'
 import { guideControls } from './__mocks__/utils/dataGridControls'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import {
   guideNext,
   pollUntil,
@@ -145,7 +145,7 @@ const savePrice = (root: HTMLElement) => {
 }
 const savedText = () => moneyIn('ru-RU', SAVED_PRICE)
 
-const EDIT_COMMA: readonly GuideStoryStep[] = [
+const EDIT_COMMA: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Цены на русском языке', en: 'Prices in Russian' },
     hint: {
@@ -200,7 +200,7 @@ export const DataTypesEditNumber: StoryObj<StoryProps> = {
   name: 'Edit with a decimal comma',
   parameters: { scenario: '0172/S8', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Правка числа по языку',
         en: 'Locale-aware number editing',
@@ -233,7 +233,7 @@ export const DataTypesEditNumber: StoryObj<StoryProps> = {
 const NOT_A_NUMBER = 'abc'
 const NEW_PRICE = '1250'
 
-const EDIT_NUMBER: readonly GuideStoryStep[] = [
+const EDIT_NUMBER: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Цены на языке таблицы',
@@ -292,7 +292,7 @@ export const EditingNumber: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Правка числа', en: 'Editing a number' }}
       steps={EDIT_NUMBER}
       args={guideArgs(productArgs, args)}
@@ -361,7 +361,7 @@ export const EditingNumber: StoryObj<StoryProps> = {
 
 // --- ADR 0172, S9: сортировка чисел --------------------------------------------------------
 
-const NUMBER_SORT: readonly GuideStoryStep[] = [
+const NUMBER_SORT: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Цены в порядке данных', en: 'Prices in data order' },
     hint: {
@@ -403,7 +403,7 @@ export const DataTypesNumberSort: StoryObj<StoryProps> = {
   name: 'Sort',
   parameters: { scenario: '0172/S9', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Сортировка чисел', en: 'Sorting numbers' }}
       steps={NUMBER_SORT}
       args={guideArgs({ height: '560' }, args)}
@@ -458,7 +458,7 @@ const filterAbove = async (root: HTMLElement, signal: AbortSignal) => {
   await closePanel(signal)
 }
 
-const NUMBER_FILTER: readonly GuideStoryStep[] = [
+const NUMBER_FILTER: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Цены без настройки фильтра',
@@ -508,7 +508,7 @@ export const DataTypesNumberFilter: StoryObj<StoryProps> = {
   name: 'Filter',
   parameters: { scenario: '0172/S13', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Фильтр чисел', en: 'Filtering numbers' }}
       steps={NUMBER_FILTER}
       args={guideArgs({ height: '460' }, args)}
@@ -546,7 +546,7 @@ const exportXlsx = async (root: HTMLElement, signal: AbortSignal) => {
   await chooseAxis('format', 'xlsx', signal)
 }
 
-const NUMBER_EXCEL: readonly GuideStoryStep[] = [
+const NUMBER_EXCEL: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Цена и количество', en: 'Price and quantity' },
     hint: {
@@ -588,7 +588,7 @@ export const DataTypesNumberExcel: StoryObj<StoryProps> = {
   name: 'Export to Excel',
   parameters: { scenario: '0172/S6', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Выгрузка чисел в Excel', en: 'Exporting numbers to Excel' }}
       steps={NUMBER_EXCEL}
       args={guideArgs({ height: '460' }, args)}

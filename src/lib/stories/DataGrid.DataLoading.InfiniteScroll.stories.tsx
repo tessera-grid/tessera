@@ -22,12 +22,12 @@ import { storyLabels } from './__mocks__/storyLabels'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
-  GuideStory,
+  DemoStory,
   type GuideApp,
-  type GuideStoryStep,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import {
   INITIAL_QUERY,
   InfiniteScrollDemo,
@@ -171,7 +171,7 @@ const loadMore =
 
 /** Лента гайда: первый блок, колбэк загрузки и сброс при новом открытии. */
 const feedProps =
-  (mode: FeedMode, knownTotal = true): GuideStoryStep['props'] =>
+  (mode: FeedMode, knownTotal = true): DemoStoryStep['props'] =>
   ({ app }) => ({
     columnsOverride: filteringColumns,
     dataOverride: SERVER_DATA.slice(0, BLOCK),
@@ -211,7 +211,7 @@ const settledAt = (root: HTMLElement, count: number) =>
 
 // --- ADR 0081 S1 ---------------------------------------------------------------------
 
-const UNKNOWN_TOTAL: readonly GuideStoryStep[] = [
+const UNKNOWN_TOTAL: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Первая порция', en: 'The first batch' },
     hint: {
@@ -260,7 +260,7 @@ export const InfiniteScrollUnknownTotal: StoryObj<StoryProps> = {
   name: 'Unknown total',
   parameters: { scenario: '0081/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Итог неизвестен', en: 'Unknown total' }}
       steps={UNKNOWN_TOTAL}
       args={guideArgs(layout, args)}
@@ -300,7 +300,7 @@ export const InfiniteScrollUnknownTotal: StoryObj<StoryProps> = {
 
 // --- ADR 0081 S2 ---------------------------------------------------------------------
 
-const ERRORS: readonly GuideStoryStep[] = [
+const ERRORS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Первая порция', en: 'The first batch' },
     hint: {
@@ -356,7 +356,7 @@ export const InfiniteScrollErrors: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Сбой загрузки и повтор', en: 'Loading failure and retry' }}
       steps={ERRORS}
       args={guideArgs(layout, args)}
@@ -422,7 +422,7 @@ const sortedByName = (root: HTMLElement) =>
   feed.rows.length === BLOCK &&
   firstNames(root)[0] === feed.rows[0]?.name
 
-const SERVER_QUERY: readonly GuideStoryStep[] = [
+const SERVER_QUERY: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Первый блок загружен', en: 'The first block is loaded' },
     hint: {
@@ -484,7 +484,7 @@ export const InfiniteScrollServerQuery: StoryObj<StoryProps> = {
   name: 'Server sort & filter',
   parameters: { scenario: '0081/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Сортировка на сервере', en: 'Sorting on the server' }}
       steps={SERVER_QUERY}
       args={guideArgs(layout, args)}
@@ -536,7 +536,7 @@ const everyChecked = (root: HTMLElement) =>
       'true',
   )
 
-const SELECT_ALL: readonly GuideStoryStep[] = [
+const SELECT_ALL: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Первая порция', en: 'The first batch' },
     hint: {
@@ -593,7 +593,7 @@ export const InfiniteScrollSelectAll: StoryObj<StoryProps> = {
   name: 'Select all',
   parameters: { scenario: '0179/S4', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Выбор всего в ленте',
         en: 'Selecting everything in a feed',

@@ -15,11 +15,11 @@ import {
 } from './__mocks__/catalogPlay'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 
 const gridTheme = (canvas: HTMLElement) =>
   canvas.querySelector<HTMLElement>('[data-tsr-grid]')!
@@ -191,7 +191,7 @@ const hover = (target: HTMLElement) => {
     target.dispatchEvent(new MouseEvent(type, at))
 }
 
-const ENABLE: readonly GuideStoryStep[] = [
+const ENABLE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Обычный контраст', en: 'Normal contrast' },
     hint: {
@@ -245,7 +245,7 @@ export const IncreasedContrastEnable: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: storyArgs => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Повышенный контраст', en: 'Increased contrast' }}
       steps={ENABLE}
       args={guideArgs(args, storyArgs)}
@@ -342,7 +342,7 @@ const recipe = (root: HTMLElement) => {
   return () => root.classList.remove('contrast-recipe')
 }
 
-const RECIPE_STEPS: readonly GuideStoryStep[] = [
+const RECIPE_STEPS: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Надстройка из коробки', en: 'The built-in setup' },
     hint: {
@@ -370,7 +370,7 @@ export const IncreasedContrastRecipe: StoryObj<StoryProps> = {
   render: storyArgs => (
     <>
       <style>{RECIPE}</style>
-      <GuideStory
+      <DemoStory
         title={{ ru: 'Свои рычаги и палитра', en: 'Custom levers and palette' }}
         steps={RECIPE_STEPS}
         args={guideArgs(args, storyArgs)}

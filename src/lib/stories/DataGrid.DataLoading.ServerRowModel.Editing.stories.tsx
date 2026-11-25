@@ -18,11 +18,11 @@ import { untilDone } from './__mocks__/cellGestures'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import { StoryComponent } from './DataGridStory'
 import type { CellEditCommit } from '../plugins'
 import type { CellEditBatch } from '../plugins/cellEditing/types'
@@ -45,7 +45,7 @@ const meta = {
 export default meta
 
 /** Контекст шага гайда, которого у `Playground` нет: фабрики «сервера» его не читают. */
-const AT_REST = {} as Parameters<NonNullable<GuideStoryStep['props']>>[0]
+const AT_REST = {} as Parameters<NonNullable<DemoStoryStep['props']>>[0]
 
 interface EditingPlaygroundArgs extends StoryProps {
   saveDelayMs: number
@@ -144,7 +144,7 @@ const saveAge = (root: HTMLElement) => {
     )
 }
 
-const editProps: GuideStoryStep['props'] = context => ({
+const editProps: DemoStoryStep['props'] = context => ({
   ...serverProps({
     total: EDIT_TOTAL,
     knownTotal: true,
@@ -162,7 +162,7 @@ const editProps: GuideStoryStep['props'] = context => ({
     }),
 })
 
-const EDIT_CELL: readonly GuideStoryStep[] = [
+const EDIT_CELL: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Строки с сервера', en: 'Rows from the server' },
     hint: {
@@ -199,7 +199,7 @@ export const ServerRowModelEditCell: StoryObj<StoryProps> = {
   name: 'Edit a cell',
   parameters: { scenario: '0139/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Правка на сервере', en: 'Editing on the server' }}
       steps={EDIT_CELL}
       args={guideArgs(layout, args)}
@@ -238,7 +238,7 @@ const rowAt = (i: number): FilteringItem => {
     : row
 }
 
-const undoProps: GuideStoryStep['props'] = () => ({
+const undoProps: DemoStoryStep['props'] = () => ({
   columnsOverride: filteringColumns,
   dataOverride: [],
   enableServerRowModel: true,
@@ -312,7 +312,7 @@ const undoAway = (root: HTMLElement) => {
   document.querySelector<HTMLElement>('[data-testid="undo-button"]')?.click()
 }
 
-const SERVER_UNDO: readonly GuideStoryStep[] = [
+const SERVER_UNDO: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Строки с сервера', en: 'Rows from the server' },
     hint: {
@@ -353,7 +353,7 @@ export const ServerUndo: StoryObj<StoryProps> = {
   name: 'Undo an edit off the window',
   parameters: { scenario: '0222/S7', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Отмена ушедшей правки', en: 'Undoing an edit out of view' }}
       steps={SERVER_UNDO}
       reset={() => {
@@ -402,7 +402,7 @@ const GONE_DRAFTS: Draft[] = [
   value: { value: Number(age), text: age! },
 }))
 
-const goneProps: GuideStoryStep['props'] = () => ({
+const goneProps: DemoStoryStep['props'] = () => ({
   columnsOverride: filteringColumns,
   dataOverride: [],
   enableServerRowModel: true,
@@ -509,7 +509,7 @@ const goneDiscarded = (root: ParentNode) =>
   // Плашка ушла целиком, без уходящего кадра.
   !root.querySelector('[data-testid="table-notice"]')
 
-const ROW_GONE: readonly GuideStoryStep[] = [
+const ROW_GONE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Правки ждут сохранения', en: 'Edits waiting to be saved' },
     hint: {
@@ -562,7 +562,7 @@ export const ServerEditingRowGone: StoryObj<StoryProps> = {
   name: 'Row is gone',
   parameters: { scenario: '0227/S4', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Строку удалили', en: 'The row was deleted' }}
       steps={ROW_GONE}
       reset={() => savedAges.clear()}

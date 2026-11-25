@@ -20,11 +20,11 @@ import { makeData } from './__mocks__/data'
 import { storyLabels } from './__mocks__/storyLabels'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import { rowExpandingLabels } from '../plugins/rowExpanding/labels'
 
 /**
@@ -117,7 +117,7 @@ const CONFIRM_SERVER = createConfirmServer()
 const confirmRow = (root: ParentNode) =>
   rowsInOrder(root).find(row => toggleIn(row)) ?? null
 
-const CONFIRMED: readonly GuideStoryStep[] = [
+const CONFIRMED: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Раскрытие подтверждает сервер',
@@ -171,7 +171,7 @@ export const ExpandingConfirmed: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Раскрытие ждёт сервера',
         en: 'Expanding waits for the server',
@@ -316,7 +316,7 @@ const bringChildren = (root: HTMLElement) => {
 const emptyIsLeaf = (root: HTMLElement) =>
   !!rowOf(root, CHILDREN.empty) && !toggleIn(rowOf(root, CHILDREN.empty))
 
-const LAZY_CHILDREN: readonly GuideStoryStep[] = [
+const LAZY_CHILDREN: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Дети на сервере', en: 'Child rows on the server' },
     hint: {
@@ -389,7 +389,7 @@ export const ExpandingLazyChildren: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Дети с сервера', en: 'Child rows from the server' }}
       steps={LAZY_CHILDREN}
       args={guideArgs(
@@ -495,7 +495,7 @@ const toggleOf = (root: ParentNode) =>
 const expandPending = (root: ParentNode) =>
   expandableOf(root)?.getAttribute('aria-busy') === 'true'
 
-const EXPAND_REJECTED: readonly GuideStoryStep[] = [
+const EXPAND_REJECTED: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Раскрытие подтверждает сервер',
@@ -546,7 +546,7 @@ export const ExpandingRejected: StoryObj<StoryProps> = {
   name: 'Expand refused by the server',
   parameters: { scenario: '0134/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Отказ в раскрытии', en: 'Expand refused' }}
       steps={EXPAND_REJECTED}
       args={guideArgs(
@@ -623,7 +623,7 @@ const expandHeld = (root: HTMLElement) => {
 
 let toggleCancelled = false
 
-const CANCEL_EXPAND: readonly GuideStoryStep[] = [
+const CANCEL_EXPAND: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Дети с сервера', en: 'Child rows from the server' },
     hint: {
@@ -686,7 +686,7 @@ export const ExpandingCancel: StoryObj<StoryProps> = {
   name: 'Cancel loading children',
   parameters: { scenario: '0153/S9', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Отмена раскрытия', en: 'Canceling an expand' }}
       steps={CANCEL_EXPAND}
       args={guideArgs(
@@ -769,7 +769,7 @@ const EXPAND_ALL_ARGS = {
   initialExpanded: {},
 } satisfies Partial<StoryProps>
 
-const EXPAND_ALL: readonly GuideStoryStep[] = [
+const EXPAND_ALL: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Дерево свёрнуто', en: 'The tree is collapsed' },
     hint: {
@@ -813,7 +813,7 @@ export const ExpandingExpandAll: StoryObj<StoryProps> = {
   name: 'Expand all',
   parameters: { scenario: '0160/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Раскрыть всё', en: 'Expand all' }}
       steps={EXPAND_ALL}
       args={guideArgs(EXPAND_ALL_ARGS, args)}
@@ -892,7 +892,7 @@ const restoredRefused = (root: HTMLElement) => {
   )
 }
 
-const LAZY_RESTORED: readonly GuideStoryStep[] = [
+const LAZY_RESTORED: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Таблица открылась с раскрытыми строками',
@@ -937,7 +937,7 @@ export const ExpandingLazyRestored: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Раскрытые строки при открытии',
         en: 'Expanded rows on open',

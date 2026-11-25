@@ -145,7 +145,7 @@ const actionsOf = (play: ts.Node, declarations: Declarations) => {
   return [...found].sort()
 }
 
-/** Рисует ли `render` — сам или функциями файла, до которых доходит, — `GuideStory`. */
+/** Рисует ли `render` — сам или функциями файла, до которых доходит, — `DemoStory`. */
 const rendersGuide = (render: ts.Node, declarations: Declarations) => {
   const seen = new Set<ts.Node>()
   const scan = (root: ts.Node): boolean => {
@@ -157,7 +157,7 @@ const rendersGuide = (render: ts.Node, declarations: Declarations) => {
       if (
         (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) &&
         ts.isIdentifier(node.tagName) &&
-        node.tagName.text === 'GuideStory'
+        node.tagName.text === 'DemoStory'
       ) {
         found = true
         return
@@ -273,12 +273,12 @@ describe('play истории сценария (ADR 0117)', () => {
 const PLAYGROUND_BASELINE: Record<string, string> = {}
 
 describe('форма раздела (ADR 0117)', () => {
-  it('SN38: история сценария проигрывает гайд — её render, сам или через функции своего файла, рисует GuideStory', async () => {
+  it('SN38: история сценария проигрывает гайд — её render, сам или через функции своего файла, рисует DemoStory', async () => {
     // Гайд за функцией файла страж видит; история без гайда — нарушитель.
     const probe = ts.createSourceFile(
       'probe.tsx',
       `
-        const guided = (steps: unknown[]) => () => <GuideStory steps={steps} />
+        const guided = (steps: unknown[]) => () => <DemoStory steps={steps} />
         export const WithGuide = { render: guided([]) }
         export const WithoutGuide = { render: () => <StoryComponent /> }
         `,

@@ -14,11 +14,11 @@ import {
 } from './__mocks__/catalogPlay'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 
 /**
  * Кнопки «наверх» и «к первой колонке» (ADR 0082, ADR 0105): в нижней панели, видны
@@ -107,7 +107,7 @@ const returnBy = async (
 
 const TOP = 'back-to-top'
 
-const RETURN: readonly GuideStoryStep[] = [
+const RETURN: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Начало таблицы', en: 'Top of the table' },
     hint: {
@@ -147,7 +147,7 @@ export const BackToTopReturn: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Возврат в начало', en: 'Back to the top' }}
       steps={RETURN}
       args={guideArgs({ ...GRID, columnCount: 8 }, args)}
@@ -183,7 +183,7 @@ export const BackToTopReturn: StoryObj<StoryProps> = {
 
 const START = 'back-to-start'
 
-const WIDE: readonly GuideStoryStep[] = [
+const WIDE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Широкая таблица', en: 'A wide table' },
     hint: {
@@ -228,7 +228,7 @@ export const BackToTopWide: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Возврат к первой колонке', en: 'Back to the first column' }}
       steps={WIDE}
       args={guideArgs({ ...GRID, columnCount: 40 }, args)}

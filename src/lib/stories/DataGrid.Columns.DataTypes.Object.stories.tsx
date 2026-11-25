@@ -19,11 +19,11 @@ import {
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 import {
@@ -130,7 +130,7 @@ const filterManager = async (root: HTMLElement, signal: AbortSignal) => {
   await closePanel(signal)
 }
 
-const OBJECT: readonly GuideStoryStep[] = [
+const OBJECT: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Менеджеры — записи', en: 'Managers are records' },
     hint: {
@@ -192,7 +192,7 @@ export const DataTypesObject: StoryObj<StoryProps> = {
   name: 'Sort and filter records',
   parameters: { scenario: '0174/S1', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Записи в колонке', en: 'Records in a column' }}
       steps={OBJECT}
       args={guideArgs({ height: '460' }, args)}
@@ -251,7 +251,7 @@ const ownerColumn = (dataType: string): ColumnDef<any, any> => ({
   dataType,
 })
 
-const OBJECT_LABEL: readonly GuideStoryStep[] = [
+const OBJECT_LABEL: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Запись без настройки', en: 'A record without setup' },
     hint: {
@@ -290,7 +290,7 @@ export const DataTypesObjectLabel: StoryObj<StoryProps> = {
   name: 'Key and label',
   parameters: { scenario: '0174/S2', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Ключ и подпись записи', en: "A record's key and label" }}
       steps={OBJECT_LABEL}
       args={guideArgs({ dataCount: 20, height: '360' }, args)}
@@ -319,7 +319,7 @@ const lookupFailed = () =>
   !!optionsPopup()?.querySelector('[data-testid="edit-options-retry"]')
 const NEW_MANAGER = 'm4'
 
-const EDIT_LOOKUP: readonly GuideStoryStep[] = [
+const EDIT_LOOKUP: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Менеджеры из справочника', en: 'Managers from a lookup' },
     hint: {
@@ -401,7 +401,7 @@ export const EditingLookup: StoryObj<StoryProps> = {
   name: 'Choose from a directory',
   parameters: { scenario: '0175/S5', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Выбор из справочника', en: 'Choosing from a lookup' }}
       steps={EDIT_LOOKUP}
       args={guideArgs(
@@ -446,7 +446,7 @@ export const EditingLookup: StoryObj<StoryProps> = {
 
 const PICKED = 'm3'
 
-const EDIT_RECORD_FROM_DATA: readonly GuideStoryStep[] = [
+const EDIT_RECORD_FROM_DATA: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Менеджеры без справочника', en: 'Managers without a lookup' },
     hint: {
@@ -489,7 +489,7 @@ export const EditingRecordFromData: StoryObj<StoryProps> = {
   name: 'Choose a record from the table',
   parameters: { scenario: '0175/S9', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Запись из таблицы', en: 'A record from the table' }}
       steps={EDIT_RECORD_FROM_DATA}
       args={guideArgs(

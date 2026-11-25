@@ -18,8 +18,8 @@ interface CountText {
 }
 
 export const STORY_SHELL = {
-  guideRegion: { ru: 'Сценарий: {title}', en: 'Scenario: {title}' },
-  guideTitle: { ru: 'Гайд · {title}', en: 'Guide · {title}' },
+  guideRegion: { ru: 'Демо: {title}', en: 'Demo: {title}' },
+  guideTitle: { ru: 'Демо · {title}', en: 'Demo · {title}' },
   guideStepOf: {
     ru: '· шаг {step} из {count}',
     en: '· step {step} of {count}',

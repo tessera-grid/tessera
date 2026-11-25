@@ -14,7 +14,7 @@ import {
 } from './__mocks__/catalogPlay'
 import { untilDone } from './__mocks__/cellGestures'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import { DemoStory, type DemoStoryStep, guideArgs } from './demos/DemoStory'
 
 /**
  * Движение строк (ADR 0107): раскрытие, сортировка, поиск и перестановка двигают строки
@@ -70,7 +70,7 @@ const expanded = (root: HTMLElement) =>
   bodyRow(root, PARENT)?.getAttribute('data-expanded') === 'true'
 const childShown = (root: HTMLElement) => !!bodyRow(root, CHILD)
 
-const TREE: readonly GuideStoryStep[] = [
+const TREE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Дерево свёрнуто', en: 'The tree is collapsed' },
     hint: {
@@ -118,7 +118,7 @@ export const RowMotionTree: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Раскрытие и сворачивание', en: 'Expand and collapse' }}
       steps={TREE}
       args={guideArgs(
@@ -182,7 +182,7 @@ const typeSearch = (root: HTMLElement) => {
   input.dispatchEvent(new Event('input', { bubbles: true }))
 }
 
-const SORT_SEARCH: readonly GuideStoryStep[] = [
+const SORT_SEARCH: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Строки в порядке данных', en: 'Rows in data order' },
     hint: {
@@ -225,7 +225,7 @@ export const RowMotionSearch: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Сортировка и поиск', en: 'Sort and search' }}
       steps={SORT_SEARCH}
       args={guideArgs(
@@ -279,7 +279,7 @@ export const RowMotionSearch: StoryObj<StoryProps> = {
 const REMOVED = 'item-id-3'
 const NEXT = 'item-id-4'
 
-const DELETE: readonly GuideStoryStep[] = [
+const DELETE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Строки на своих местах', en: 'Rows in their places' },
     hint: {
@@ -307,7 +307,7 @@ export const RowMotionDelete: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Удаление строки', en: 'Deleting a row' }}
       steps={DELETE}
       args={guideArgs(GRID, args)}

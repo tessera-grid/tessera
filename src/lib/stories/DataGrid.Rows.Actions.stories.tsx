@@ -25,11 +25,11 @@ import { createDemoServer } from './__mocks__/plugins/asyncActionsDemo/asyncActi
 import { nestedRowActions } from './__mocks__/plugins/nestedActionsDemo/nestedActionsDemo'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import {
-  GuideStory,
-  type GuideStoryStep,
+  DemoStory,
+  type DemoStoryStep,
   guideArgs,
   stepAction,
-} from './demos/GuideStory'
+} from './demos/DemoStory'
 
 /**
  * Действия строки (ADR 0025): `Playground` — колонка действий и набор действий строки;
@@ -111,7 +111,7 @@ const choose = (id: string, done: () => boolean, signal: AbortSignal) =>
 
 const ACTION = 'duplicate'
 
-const ACTION_MENU: readonly GuideStoryStep[] = [
+const ACTION_MENU: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Действия строки в меню', en: 'Row actions in a menu' },
     hint: {
@@ -155,7 +155,7 @@ export const RowActionMenu: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Действие из меню строки',
         en: 'An action from the row menu',
@@ -235,7 +235,7 @@ const inSection = async (
   await choose(section, done, signal)
 }
 
-const NESTED: readonly GuideStoryStep[] = [
+const NESTED: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Меню строки закрыто', en: 'The row menu is closed' },
     hint: {
@@ -335,7 +335,7 @@ export const RowActionsNested: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Разделы меню строки', en: 'Row menu sections' }}
       steps={NESTED}
       args={guideArgs(
@@ -452,7 +452,7 @@ const archive = (root: HTMLElement, done: () => boolean, signal: AbortSignal) =>
     signal,
   )
 
-const ASYNC_ACTION: readonly GuideStoryStep[] = [
+const ASYNC_ACTION: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Действие строки на сервере',
@@ -503,7 +503,7 @@ export const RowActionsAsync: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Действие строки на сервере',
         en: 'A row action on the server',
@@ -626,7 +626,7 @@ const cancelItemShown = async (root: HTMLElement, signal: AbortSignal) => {
   )
 }
 
-const CANCEL_ACTION: readonly GuideStoryStep[] = [
+const CANCEL_ACTION: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Долгое действие строки', en: 'A long row action' },
     hint: {
@@ -675,7 +675,7 @@ export const RowActionsCancel: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Отмена действия строки', en: 'Canceling a row action' }}
       steps={CANCEL_ACTION}
       args={guideArgs(

@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 
 import { StoryLocaleProvider } from '../../__mocks__/storyLocale'
 import type { StoryLocale, StoryText } from '../../__mocks__/storyText'
-import { GuidePanel, type GuideStep, useGuide } from '../../demos/GuidePanel'
+import { DemoPanel, type DemoStep, useGuide } from '../../demos/DemoPanel'
 import { StoryConsole } from '../../demos/StoryConsole'
 import { type ConsoleLog, createConsoleLog } from '../../demos/consoleLog'
 import { shellText, type StoryShellKey } from '../../demos/storyShell'
@@ -27,7 +27,7 @@ const LONG_TITLE: StoryText = {
   en: 'A very long scenario title that does not fit on one line of the panel',
 }
 
-const STEPS: readonly GuideStep[] = [
+const STEPS: readonly DemoStep[] = [
   {
     title: { ru: 'Данные загружаются', en: 'Data is loading' },
     hint: {
@@ -57,12 +57,12 @@ const Panel = ({
   changed = false,
 }: {
   title?: StoryText
-  steps?: readonly GuideStep[]
+  steps?: readonly DemoStep[]
   changed?: boolean
 }) => {
   const guide = useGuide(steps.length)
   return (
-    <GuidePanel
+    <DemoPanel
       title={title}
       steps={steps}
       step={guide.step}
@@ -89,11 +89,12 @@ describe('язык гайда и консоли (ADR 0225)', () => {
       const text = (key: StoryShellKey, params?: Record<string, unknown>) =>
         shellText(locale, key, params)
       const section = byTestId('guide')
+      const demoLabel = locale === 'ru' ? 'Демо' : 'Demo'
       expect(section.getAttribute('aria-label')).toBe(
-        text('guideRegion', { title: TITLE[locale] }),
+        `${demoLabel}: ${TITLE[locale]}`,
       )
       const toggle = byTestId('guide-toggle').textContent
-      expect(toggle).toContain(text('guideTitle', { title: TITLE[locale] }))
+      expect(toggle).toContain(`${demoLabel} · ${TITLE[locale]}`)
       expect(toggle).toContain(
         text('guideStepOf', { step: step + 1, count: STEPS.length }),
       )
@@ -233,7 +234,7 @@ describe('язык гайда и консоли (ADR 0225)', () => {
   })
 
   test('GT9: панель гайда на узкой и на минимальной ширине не выходит за карточку на обоих языках', async () => {
-    const long: readonly GuideStep[] = STEPS.map(item => ({
+    const long: readonly DemoStep[] = STEPS.map(item => ({
       title: {
         ru: `${item.title.ru}: подробное название шага`,
         en: `${item.title.en}: a detailed step title`,

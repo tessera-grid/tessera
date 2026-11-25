@@ -9,7 +9,7 @@ import type {
   ServerRowsRequest,
   ServerRowsResponse,
 } from '../../plugins'
-import type { GuideStoryStep } from '../demos/GuideStory'
+import type { DemoStoryStep } from '../demos/DemoStory'
 import {
   type FilteringItem,
   filteringColumns,
@@ -101,7 +101,7 @@ export const txProps =
   (
     extraPlugins: TesseraFeatureEntry[] = [],
     tree = false,
-  ): GuideStoryStep['props'] =>
+  ): DemoStoryStep['props'] =>
   () => ({
     columnsOverride: filteringColumns,
     dataOverride: [],

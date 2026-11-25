@@ -7,7 +7,7 @@ import { filteringColumns, filteringData } from './__mocks__/filteringData'
 import { vrStates } from './__mocks__/catalog'
 import { byTestId, guideNext, settle, until } from './__mocks__/catalogPlay'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import { DemoStory, type DemoStoryStep, guideArgs } from './demos/DemoStory'
 
 /**
  * Тулбар (ADR 0035, ADR 0051): `Playground` — все встроенные кнопки; до прихода
@@ -74,7 +74,7 @@ const TOOLBAR_ARGS = {
 } satisfies Partial<StoryProps>
 
 /** Грид открыт, данных ещё нет. */
-const OPENED: GuideStoryStep = {
+const OPENED: DemoStoryStep = {
   title: { ru: 'Данные загружаются', en: 'Data is loading' },
   hint: {
     ru: 'Данные ещё не пришли. Поиск и настройки вида уже работают, их результат станет запросом к данным. Выгружать пока нечего, поэтому на месте кнопки выгрузки — состояние загрузки.',
@@ -84,7 +84,7 @@ const OPENED: GuideStoryStep = {
 }
 
 /** Ответ сервера: данные и конец загрузки приходят одним обновлением. */
-const ANSWERED: GuideStoryStep = {
+const ANSWERED: DemoStoryStep = {
   title: { ru: 'Данные загружены', en: 'Data loaded' },
   hint: {
     ru: 'Данные пришли. Кнопка выгрузки встаёт на место состояния загрузки, остальные кнопки тулбара не сдвигаются.',
@@ -119,7 +119,7 @@ const waitTestId = (id: string) =>
 
 // --- S1 ------------------------------------------------------------------------------
 
-const INITIAL_LOADING: readonly GuideStoryStep[] = [OPENED, ANSWERED]
+const INITIAL_LOADING: readonly DemoStoryStep[] = [OPENED, ANSWERED]
 
 /** S1: клиентские данные — до них работают все функции тулбара, кроме экспорта. */
 export const ToolbarInitialLoading: StoryObj<StoryProps> = {
@@ -129,7 +129,7 @@ export const ToolbarInitialLoading: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Тулбар до прихода данных',
         en: 'The toolbar before data arrives',
@@ -187,7 +187,7 @@ const typeSearch = (text: string) => (root: HTMLElement) => {
 const matches = (row: Record<string, unknown>) =>
   Object.values(row).some(value => String(value).toLowerCase().includes(QUERY))
 
-const SEARCH_BEFORE_DATA: readonly GuideStoryStep[] = [
+const SEARCH_BEFORE_DATA: readonly DemoStoryStep[] = [
   {
     ...OPENED,
     hint: {
@@ -230,7 +230,7 @@ export const ToolbarSearchBeforeDataServer: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Серверный поиск до прихода данных',
         en: 'Server search before data arrives',
@@ -279,7 +279,7 @@ export const ToolbarSearchBeforeDataServer: StoryObj<StoryProps> = {
 
 // --- S3 ------------------------------------------------------------------------------
 
-const COLUMNS_ARRIVE: readonly GuideStoryStep[] = [
+const COLUMNS_ARRIVE: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Ожидание списка колонок от сервера',
@@ -314,7 +314,7 @@ export const ToolbarColumnsArrive: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Колонки приходят с сервера',
         en: 'Columns come from the server',
@@ -376,7 +376,7 @@ const EXPORT_LEFT = {
 const box = (testId: string) =>
   byTestId(testId)?.getBoundingClientRect() ?? null
 
-const OWN_ORDER: readonly GuideStoryStep[] = [
+const OWN_ORDER: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Кнопки на местах по умолчанию',
@@ -413,7 +413,7 @@ export const ToolbarOwnOrder: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Свой порядок кнопок', en: 'A custom button order' }}
       steps={OWN_ORDER}
       args={guideArgs(OWN_ORDER_ARGS, args)}

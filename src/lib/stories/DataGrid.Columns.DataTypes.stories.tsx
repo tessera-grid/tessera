@@ -16,7 +16,7 @@ import {
 } from './__mocks__/catalogPlay'
 import { guideControls, showControls } from './__mocks__/utils/dataGridControls'
 import { normalizeArgs } from './__mocks__/utils/normalizeArgs'
-import { GuideStory, type GuideStoryStep, guideArgs } from './demos/GuideStory'
+import { DemoStory, type DemoStoryStep, guideArgs } from './demos/DemoStory'
 import { WithConsole } from './demos/StoryConsole'
 import { createConsoleLog } from './demos/consoleLog'
 import {
@@ -98,7 +98,7 @@ export const DataTypesPlayground: StoryObj<StoryProps> = {
 
 // --- S3: свой тип «деньги» ------------------------------------------------------------
 
-const CUSTOM_TYPE: readonly GuideStoryStep[] = [
+const CUSTOM_TYPE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Цена — обычное число', en: 'The price is a plain number' },
     hint: {
@@ -129,7 +129,7 @@ export const DataTypesCustomType: StoryObj<StoryProps> = {
   name: 'Custom type',
   parameters: { scenario: '0172/S3', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Свой тип данных', en: 'A custom data type' }}
       steps={CUSTOM_TYPE}
       args={guideArgs({ dataCount: 20, height: '360' }, args)}
@@ -158,7 +158,7 @@ export const DataTypesCustomType: StoryObj<StoryProps> = {
 
 // --- S4: вид всех дат в одном месте ---------------------------------------------------
 
-const OVERRIDE_BUILT_IN: readonly GuideStoryStep[] = [
+const OVERRIDE_BUILT_IN: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Даты по умолчанию', en: 'Default dates' },
     hint: {
@@ -189,7 +189,7 @@ export const DataTypesOverrideBuiltIn: StoryObj<StoryProps> = {
   name: 'Override built-in type',
   parameters: { scenario: '0172/S4', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Вид встроенного типа', en: 'The look of a built-in type' }}
       steps={OVERRIDE_BUILT_IN}
       args={guideArgs({ dataCount: 20, height: '360' }, args)}
@@ -230,7 +230,7 @@ const LOCALE_COLUMNS = columnsOf('money', ['name', 'price', 'quantity'])
 const namesIn = (locale: string) =>
   LOCALE_ROWS.map(row => row.name).sort(new Intl.Collator(locale).compare)
 
-const LOCALE: readonly GuideStoryStep[] = [
+const LOCALE: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Таблица на английском языке', en: 'The table in English' },
     hint: {
@@ -275,7 +275,7 @@ export const DataTypesLocale: StoryObj<StoryProps> = {
   name: 'Switch language',
   parameters: { scenario: '0172/S7', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Язык таблицы', en: 'Table language' }}
       steps={LOCALE}
       args={guideArgs({ height: '400' }, args)}
@@ -349,7 +349,7 @@ const SEARCH_COUNTS = {
   sale: SEARCH_ROWS.filter(row => row.status === 'active').length,
 }
 
-const SEARCH: readonly GuideStoryStep[] = [
+const SEARCH: readonly DemoStoryStep[] = [
   {
     title: {
       ru: 'Товары с датами и статусами',
@@ -405,7 +405,7 @@ export const DataTypesSearch: StoryObj<StoryProps> = {
   name: 'Search shown text',
   parameters: { scenario: '0172/S5', ...guideControls() },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{
         ru: 'Поиск по показанному тексту',
         en: 'Search by the shown text',
@@ -464,7 +464,7 @@ const priorityText = (root: ParentNode) => {
 
 const HIGH = 3
 
-const EDIT_TYPE_EDITOR: readonly GuideStoryStep[] = [
+const EDIT_TYPE_EDITOR: readonly DemoStoryStep[] = [
   {
     title: { ru: 'Приоритет — свой тип', en: 'Priority is a custom type' },
     hint: {
@@ -517,7 +517,7 @@ export const EditingTypeEditor: StoryObj<StoryProps> = {
     ...guideControls(),
   },
   render: args => (
-    <GuideStory
+    <DemoStory
       title={{ ru: 'Свой редактор типа', en: 'A custom type editor' }}
       steps={EDIT_TYPE_EDITOR}
       args={guideArgs(
