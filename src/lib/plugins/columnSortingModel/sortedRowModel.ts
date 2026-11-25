@@ -7,6 +7,11 @@
  * изменённые и вставленные строки встают на свои места поиском, удалённые уходят.
  */
 import {
+  sortFn_alphanumeric,
+  sortFn_alphanumericCaseSensitive,
+} from '@tanstack/react-table'
+
+import {
   type RowModelChange,
   recordRowModelChange,
   rowModelChangeOf,
@@ -64,6 +69,42 @@ interface SortEntry {
   sortUndefined: SortColumn['columnDef']['sortUndefined']
   invertSorting: boolean | undefined
   sortFn: RowSortFn
+  resolveKey?: RowSortFn['resolveDataValue']
+  compareKey?: RowSortFn['sort']
+}
+
+type AlphanumericKey = readonly (string | number)[]
+
+/** Разбиение встроенного ключа на текстовые и числовые части один раз на значение. */
+const tokenizeAlphanumeric = (resolve: (value: unknown) => unknown) => {
+  const cache = new Map<string, AlphanumericKey>()
+  return (value: unknown): AlphanumericKey => {
+    const normalized = resolve(value) as string
+    let key = cache.get(normalized)
+    if (!key) {
+      key =
+        normalized
+          .match(/[0-9]+|[^0-9]+/g)
+          ?.map(part =>
+            /^[0-9]/.test(part) ? Number.parseInt(part, 10) : part,
+          ) ?? []
+      cache.set(normalized, key)
+    }
+    return key
+  }
+}
+
+const compareAlphanumericKeys = (a: unknown, b: unknown): number => {
+  const left = a as AlphanumericKey
+  const right = b as AlphanumericKey
+  const common = Math.min(left.length, right.length)
+  for (let i = 0; i < common; i++) {
+    const x = left[i]!
+    const y = right[i]!
+    if (typeof x !== typeof y) return typeof x === 'number' ? 1 : -1
+    if (x !== y) return x > y ? 1 : -1
+  }
+  return left.length - right.length
 }
 
 /**
@@ -95,9 +136,10 @@ const compareEntry = (
   }
   if (order === 0) {
     const { sortFn } = entry
-    order = sortFn.sort
-      ? sortFn.sort(keyA, keyB, rowA, rowB, entry.id)
-      : sortFn(rowA, rowB, entry.id)
+    if (entry.compareKey)
+      order = entry.compareKey(keyA, keyB, rowA, rowB, entry.id)
+    else if (sortFn.sort) order = sortFn.sort(keyA, keyB, rowA, rowB, entry.id)
+    else order = sortFn(rowA, rowB, entry.id)
   }
   if (order !== 0) {
     if (entry.desc) order *= -1
@@ -111,12 +153,20 @@ const sortEntries = (table: SortTable) => {
   for (const sort of table.atoms.sorting?.get() ?? []) {
     const column = table.getColumn(sort.id)
     if (!column?.getCanSort()) continue
+    const sortFn = column.getSortFn()
+    const builtIn =
+      sortFn === sortFn_alphanumeric ||
+      sortFn === sortFn_alphanumericCaseSensitive
+    const resolve = sortFn.sort ? sortFn.resolveDataValue : undefined
     entries.push({
       id: sort.id,
       desc: sort.desc,
       sortUndefined: column.columnDef.sortUndefined,
       invertSorting: column.columnDef.invertSorting,
-      sortFn: column.getSortFn(),
+      sortFn,
+      resolveKey:
+        builtIn && resolve ? tokenizeAlphanumeric(resolve) : undefined,
+      compareKey: builtIn && resolve ? compareAlphanumericKeys : undefined,
     })
   }
   return entries
@@ -135,8 +185,9 @@ const sorter = (
   own: Map<string, SortRow[]>,
 ) => {
   const width = entries.length
-  const resolvers = entries.map(entry =>
-    entry.sortFn.sort ? entry.sortFn.resolveDataValue : undefined,
+  const resolvers = entries.map(
+    ({ resolveKey, sortFn }) =>
+      resolveKey ?? (sortFn.sort ? sortFn.resolveDataValue : undefined),
   )
 
   /** Порядок строк уровня: значения читаются один раз, сортируются индексы. */
@@ -317,10 +368,11 @@ const rowComparator = (
       found = new Array<unknown>(width * 2)
       for (let e = 0; e < width; e++) {
         const value = row.getValue(entries[e]!.id)
-        const { sortFn } = entries[e]!
+        const { resolveKey, sortFn } = entries[e]!
         found[e] = value
-        found[width + e] =
-          sortFn.sort && sortFn.resolveDataValue
+        found[width + e] = resolveKey
+          ? resolveKey(value)
+          : sortFn.sort && sortFn.resolveDataValue
             ? sortFn.resolveDataValue(value)
             : value
       }

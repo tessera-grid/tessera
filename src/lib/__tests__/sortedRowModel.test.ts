@@ -469,3 +469,45 @@ describe('сортировка из прошлой модели (ADR 0072)', () 
     expectFull(table, 'после двух приходов')
   })
 })
+
+describe('Ключи встроенной сортировки (ADR 0235)', () => {
+  it('XW1: ключи сохраняют порядок TanStack для текста, чисел и равных значений', () => {
+    const data = [
+      'a10',
+      'a2',
+      'a002',
+      'A2',
+      'a2z',
+      'a!1',
+      'aé2',
+      '🟦2',
+      '0',
+      '',
+      '9007199254740993',
+      '9007199254740992',
+      '0'.repeat(30) + '4',
+      '9'.repeat(320),
+      '8'.repeat(320),
+      undefined,
+    ].map((name, index) => ({ id: String(index), name }))
+    parity(data, [
+      [{ id: 'name', desc: false }],
+      [{ id: 'name', desc: true }],
+      [{ id: 'nameCase', desc: false }],
+      [{ id: 'nameCase', desc: true }],
+    ])
+  })
+
+  it('XW2: изменение значения перестраивает порядок с актуальным ключом', () => {
+    const sorting = [{ id: 'name', desc: false }]
+    const table = build(createTesseraSortedRowModel, FLAT)
+    order(table, sorting)
+    const edited = FLAT.map(item =>
+      item.id === 'a' ? { ...item, name: 'item 0' } : item,
+    )
+    table.setOptions((options: any) => ({ ...options, data: edited }))
+    expect(order(table, sorting)).toEqual(
+      order(build(createSortedRowModel, edited), sorting),
+    )
+  })
+})
