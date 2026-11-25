@@ -83,8 +83,9 @@ export default defineConfig({
         ui: resolvePath('src/ui.ts'),
       },
       formats: ['es', 'cjs'],
+      // В preserveModules имя виртуального модуля может содержать запрос Worker.
       fileName: (format, entryName) =>
-        `${entryName}.${format === 'es' ? 'js' : 'cjs'}`,
+        `${entryName.replace('xlsx.worker.ts?worker&inline', 'xlsx.worker.inline')}.${format === 'es' ? 'js' : 'cjs'}`,
       // Стабильное имя единого CSS-файла (vite 8/rolldown иначе назвал бы его
       // по имени пакета — tessera.css)
       cssFileName: 'style',

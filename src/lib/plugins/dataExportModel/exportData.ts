@@ -3,6 +3,7 @@
  * строки по охвату пресета, значения ячеек, а не их отрисовка; у колонок с вариантами
  * — подписи (ADR 0048, §4).
  */
+import { timeSlicer } from '../../util/timeSlice'
 import { isPlaceholderRow } from '../../core/lazyPlaceholder'
 import { type ColumnOptionsDef, optionTextOf } from '../../core/columnOptions'
 import { objectLabelOf } from '../../core/dataTypeFormat'
@@ -256,12 +257,12 @@ const dataTypeOf = (
   }
 }
 
-export const collectExportData = (
+const prepareExportCollection = (
   table: unknown,
   { rows = 'all', columns = 'visible', formatValue }: ExportCollectOptions = {},
   /** Уже загруженные строки вместо строк охвата `rows`. */
   loaded?: readonly ExportRow[],
-): ExportData => {
+) => {
   const leaves = exportColumnsOf(table, columns)
   const exportColumns: ExportColumn[] = leaves.map(column => ({
     id: column.id,
@@ -271,19 +272,53 @@ export const collectExportData = (
     ...dataTypeOf(column),
   }))
   const timeZone = (table as ExportTable).options?.timeZone
+  const valuesOf = (row: ExportRow) =>
+    leaves.map(column => {
+      const value = row.getValue(column.id)
+      if (formatValue) return formatValue({ value, row, column })
+      // Запись object выгружается подписью (ADR 0174, TY7).
+      const type = column.getDataType?.()
+      if (type?.base === 'object') return objectLabelOf(type.definition, value)
+      return optionTextOf(table as object, column, value) ?? value
+    })
   return {
-    columns: exportColumns,
-    ...(timeZone ? { timeZone } : {}),
-    rows: (loaded ?? exportRowsOf(table, rows)).map(row =>
-      leaves.map(column => {
-        const value = row.getValue(column.id)
-        if (formatValue) return formatValue({ value, row, column })
-        // Запись `object` выгружается подписью (ADR 0174, TY7).
-        const type = column.getDataType?.()
-        if (type?.base === 'object')
-          return objectLabelOf(type.definition, value)
-        return optionTextOf(table as object, column, value) ?? value
-      }),
-    ),
+    header: { columns: exportColumns, ...(timeZone ? { timeZone } : {}) },
+    rows: loaded ?? exportRowsOf(table, rows),
+    valuesOf,
   }
+}
+
+export const collectExportData = (
+  table: unknown,
+  options: ExportCollectOptions = {},
+  loaded?: readonly ExportRow[],
+): ExportData => {
+  const { header, rows, valuesOf } = prepareExportCollection(
+    table,
+    options,
+    loaded,
+  )
+  return { ...header, rows: rows.map(valuesOf) }
+}
+
+export const collectExportDataInChunks = async (
+  table: unknown,
+  options: ExportCollectOptions,
+  loaded: readonly ExportRow[] | undefined,
+  signal: AbortSignal,
+): Promise<ExportData> => {
+  const { header, rows, valuesOf } = prepareExportCollection(
+    table,
+    options,
+    loaded,
+  )
+  const values: ExportData['rows'] = []
+  const slice = timeSlicer()
+  for (let offset = 0; offset < rows.length; offset += 2000) {
+    signal.throwIfAborted()
+    values.push(...rows.slice(offset, offset + 2000).map(valuesOf))
+    await slice()
+  }
+  signal.throwIfAborted()
+  return { ...header, rows: values }
 }

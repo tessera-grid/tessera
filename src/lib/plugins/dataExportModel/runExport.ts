@@ -17,8 +17,10 @@ import { logError, logWarn } from '../../util/logger'
 import { isSkeletonShown } from '../../core/skeletonOptions'
 import { isThenable } from '../../util/thenable'
 import { downloadFile } from './download'
+import { usesXlsxWorker } from './xlsx'
 import {
   collectExportData,
+  collectExportDataInChunks,
   exportColumnsOf,
   headerOf,
   listRowsLoaderOf,
@@ -29,6 +31,7 @@ import {
 import { exportConfigOf, settingsFromArg, whereOf } from './settings'
 import type {
   ExportContent,
+  ExportData,
   ExportContext,
   ExportFormat,
   ExportHooks,
@@ -205,33 +208,40 @@ export const runExport = (
     context: ExportContext,
     loaded?: Parameters<typeof collectExportData>[2],
   ) => {
-    const data = collectExportData(
-      table,
-      {
-        rows: settings.rows,
-        columns: settings.columns,
-        formatValue: config.formatValue,
-      },
-      loaded,
-    )
-    const filename = filenameOf(table, settings, format)
-    const finish = (content: ExportContent) => {
-      downloadFile(content, filename, format)
-      return invoke(table, hooks.onExported, {
-        settings,
-        format,
-        columns: data.columns,
-        rowCount: data.rows.length,
-        filename,
-      })
+    const options = {
+      rows: settings.rows,
+      columns: settings.columns,
+      formatValue: config.formatValue,
     }
-    const content = format.serialize(data, context)
-    if (!isThenable(content)) return finish(content)
-    // Асинхронный формат (xlsx): кнопка ждёт; отказ отклоняет промис — его причина на
-    // отметке кнопки (ADR 0136, FB6). После отмены файл не скачивается.
-    return Promise.resolve(content).then(resolved =>
-      context.signal.aborted ? undefined : finish(resolved),
-    )
+    const serialize = (data: ExportData) => {
+      const filename = filenameOf(table, settings, format)
+      const finish = (content: ExportContent) => {
+        downloadFile(content, filename, format)
+        return invoke(table, hooks.onExported, {
+          settings,
+          format,
+          columns: data.columns,
+          rowCount: data.rows.length,
+          filename,
+        })
+      }
+      const content = format.serialize(data, context)
+      if (!isThenable(content)) return finish(content)
+      // Асинхронный формат (xlsx): кнопка ждёт; отказ отклоняет промис — его причина на
+      // отметке кнопки (ADR 0136, FB6). После отмены файл не скачивается.
+      return Promise.resolve(content).then(resolved =>
+        context.signal.aborted ? undefined : finish(resolved),
+      )
+    }
+    if (usesXlsxWorker(format) && !options.formatValue) {
+      return collectExportDataInChunks(
+        table,
+        options,
+        loaded,
+        context.signal,
+      ).then(serialize)
+    }
+    return serialize(collectExportData(table, options, loaded))
   }
   const load =
     pageRowsLoaderOf(table, settings.rows) ??
