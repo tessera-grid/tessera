@@ -86,7 +86,13 @@ export default defineConfig({
             headless: true,
             // Реальный Chromium headless — визуальные тесты сверяют настоящий рендер.
             provider: playwright({
-              launchOptions: { channel: 'chromium', args: [EXPOSE_GC] },
+              launchOptions: {
+                channel: 'chromium',
+                // Chromium с --hide-scrollbars вычитает gutter из clientWidth,
+                // но не учитывает его при ограничении scrollLeft и закреплении.
+                ignoreDefaultArgs: ['--hide-scrollbars'],
+                args: [EXPOSE_GC],
+              },
             }),
             instances: [{ browser: 'chromium' }],
             commands: testCommands,

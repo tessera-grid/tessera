@@ -7,11 +7,13 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import { useCreateTable } from '../../../core/useCreateTable'
 import { DataGrid } from '../../../grid/DataGrid'
 import {
+  columnFiltering,
   columnPinning,
   columnSizing,
   columnVisibility,
   rowSelection,
 } from '../../../plugins'
+import type { ColumnFiltersState } from '../../../types'
 import { nextFrame, waitForGrid } from './core-helpers'
 
 // Флекс-колонки (ADR 0216): ширины — из раскладки шапки, тела и футера, а не из устройства среза.
@@ -210,7 +212,7 @@ describe('Флекс-колонки (ADR 0216)', () => {
     expect(scroller().scrollWidth).toBeGreaterThan(scroller().clientWidth)
   })
 
-  test('FX5: смена ширины контейнера и появление вертикальной полосы пересчитывают флекс-ширины в следующем кадре без ошибки петли ResizeObserver; шапка, тело и футер совпадают, горизонтальной полосы нет', async () => {
+  test('FX5: изменение доступной ширины пересчитывает флекс-ширины без ошибки петли ResizeObserver; шапка, тело и футер совпадают, горизонтальной полосы нет', async () => {
     const errors = vi.spyOn(console, 'error')
     const loop: string[] = []
     const onError = (event: ErrorEvent) => loop.push(event.message)
@@ -243,6 +245,44 @@ describe('Флекс-колонки (ADR 0216)', () => {
         String(call[0]).includes('ResizeObserver'),
       ),
     ).toEqual([])
+  })
+
+  test('FX11: фильтрация и сброс сохраняют доступную ширину и ширину каждой флекс-колонки', async ({
+    skip,
+  }) => {
+    if (!CSS.supports('scrollbar-gutter', 'stable')) skip()
+
+    let table!: { setColumnFilters: (filters: ColumnFiltersState) => void }
+    await render(
+      <Grid
+        count={200}
+        plugins={[columnSizing(), columnFiltering({ debounceMs: 0 })]}
+        onTable={value => (table = value as typeof table)}
+      />,
+    )
+    await waitForGrid()
+    const container = scroller()
+    const hasVerticalOverflow = () =>
+      container.scrollHeight > container.clientHeight
+    const widths = () => COLUMNS.map(({ id }) => headWidth(id))
+    await expect.poll(hasVerticalOverflow).toBe(true)
+    await expect.poll(headSum).toBe(container.clientWidth)
+
+    const initialWidth = container.clientWidth
+    const initialColumns = widths()
+    table.setColumnFilters([
+      { id: 'a', value: { operator: 'equals', value: 'A 0' } },
+    ])
+    await expect.poll(hasVerticalOverflow).toBe(false)
+    expect(getComputedStyle(container).scrollbarGutter).toBe('stable')
+    expect(container.clientWidth).toBe(initialWidth)
+    expect(widths()).toEqual(initialColumns)
+    expect(container.scrollWidth).toBe(initialWidth)
+
+    table.setColumnFilters([])
+    await expect.poll(hasVerticalOverflow).toBe(true)
+    expect(container.clientWidth).toBe(initialWidth)
+    expect(widths()).toEqual(initialColumns)
   })
 
   test('FX6: ширины целые, их сумма равна ширине области; заполнитель справа нулевой ширины', async () => {

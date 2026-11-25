@@ -13,11 +13,27 @@ export const PinnedEdgesAttribute = ({
     if (!root) {
       return
     }
+    const head = root.querySelector('.data-grid__head')
     let left = 0
     let right = 0
+    let gutter = 0
     const showEdges = () => {
+      let rightStuck = left < right
+      // Chromium может вычесть пустой gutter из clientWidth, но не из области прокрутки.
+      // У самого края проверяем фактический сдвиг закреплённой ячейки относительно шапки.
+      if (rightStuck && head && left >= right - gutter) {
+        const last = head.querySelector(
+          '[data-last-header-in-row="true"][data-cell-pinned="right"]',
+        )
+        if (last) {
+          rightStuck =
+            head.getBoundingClientRect().right -
+              last.getBoundingClientRect().right >
+            1
+        }
+      }
       root.toggleAttribute('data-pinned-left-stuck', left > 0)
-      root.toggleAttribute('data-pinned-right-stuck', left < right)
+      root.toggleAttribute('data-pinned-right-stuck', rightStuck)
     }
     const onScroll = () => {
       const next = root.scrollLeft
@@ -27,8 +43,10 @@ export const PinnedEdgesAttribute = ({
     }
     const measure = () => {
       left = root.scrollLeft
+      const width = root.clientWidth
+      gutter = root.offsetWidth - width
       // При дробном масштабе до правого края не хватает доли пикселя.
-      right = root.scrollWidth - root.clientWidth - 1
+      right = root.scrollWidth - width - 1
       showEdges()
     }
     measure()
@@ -36,7 +54,6 @@ export const PinnedEdgesAttribute = ({
     const resize = new ResizeObserver(measure)
     resize.observe(root)
     // Шапка шириной в колонки: её размер меняет смена ширин без прокрутки.
-    const head = root.querySelector('.data-grid__head')
     if (head) resize.observe(head)
     return () => {
       root.removeEventListener('scroll', onScroll)
