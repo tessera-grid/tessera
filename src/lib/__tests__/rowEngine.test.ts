@@ -236,6 +236,68 @@ describe('Движок строк (ADR 0200)', () => {
   })
 })
 
+describe('Переиспользование дерева фильтра (ADR 0234)', () => {
+  type TreeItem = Item & { subRows?: TreeItem[] }
+  const setup = () =>
+    build([columnFilteringModel(), quickSearchModel()], {
+      data: [
+        { ...item('parent', 'Paris'), subRows: [item('child', 'Rome')] },
+        item('other', 'Oslo'),
+      ],
+      getSubRows: (row: TreeItem) => row.subRows,
+    })
+
+  it('RF1: полный отбор переиспользует входную модель дерева', () => {
+    const table = setup()
+    table.setGlobalFilter('name')
+    expect(table.getFilteredRowModel()).toBe(table.getCoreRowModel())
+  })
+
+  it('RF2: после переиспользования дерева фасет видит метаданные фильтра', () => {
+    const table = setup()
+    table.setGlobalFilter('name')
+    const core = table.getCoreRowModel()
+    expect(table.getFilteredRowModel()).toBe(core)
+    expect(
+      core.flatRows.map((row: any) => row.columnFilters.__global__),
+    ).toEqual([true, true, true])
+    expect(
+      table
+        .getColumn('city')
+        .getFacetedRowModel()
+        .flatRows.map((row: any) => row.id),
+    ).toEqual(['parent', 'child', 'other'])
+  })
+
+  it('RF3: переходы между полным, частичным и пустым результатом сохраняют дерево и порядок', () => {
+    const table = setup()
+    const expectRows = (query: string, expected: string[]) => {
+      table.setGlobalFilter(query)
+      expect(ids({ rows: table.getFilteredRowModel().flatRows })).toEqual(
+        expected,
+      )
+    }
+    expectRows('name', ['parent', 'child', 'other'])
+    expectRows('oslo', ['other'])
+    expectRows('missing', [])
+    expectRows('name', ['parent', 'child', 'other'])
+  })
+
+  it('RF4: изменение данных после полного совпадения публикует актуальный результат', () => {
+    const table = setup()
+    table.setGlobalFilter('name')
+    expect(table.getFilteredRowModel()).toBe(table.getCoreRowModel())
+    table.setOptions((options: any) => ({
+      ...options,
+      data: [options.data[0], { ...options.data[1], name: 'changed' }],
+    }))
+    expect(ids({ rows: table.getFilteredRowModel().flatRows })).toEqual([
+      'parent',
+      'child',
+    ])
+  })
+})
+
 describe('Место строки (ADR 0200, §5)', () => {
   it('EN5: место строки знает хранилище — после вставки в середину сдвинутая строка прежним объектом с прежним index, positionOf — новое место, accessorFn получает индекс при создании, равные при сортировке — по месту, как у полной сборки', () => {
     const columns = [

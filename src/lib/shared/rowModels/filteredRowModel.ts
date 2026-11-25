@@ -91,6 +91,7 @@ interface Filtered {
   columnFilters: unknown
   globalFilter: unknown
   output: FilterModel
+  reusedTree?: boolean
 }
 
 /** Фильтры колонок и поиска — как у стоковой модели TanStack. */
@@ -458,7 +459,7 @@ const patchFiltered = (
   if (
     !change ||
     change.prev !== prev.input ||
-    prev.output === prev.input ||
+    (prev.output === prev.input && !prev.reusedTree) ||
     columnFilters !== prev.columnFilters ||
     globalFilter !== prev.globalFilter
   ) {
@@ -555,8 +556,13 @@ const fullFilter = (table: FilteringTable, input: FilterModel): FilterModel => {
   }
   if (isFlat(input)) return filterFlat(table, input)
   const filters = resolveFilters(table)
-  for (const row of input.flatRows) checkRow(row, filters)
-  return filterTree(table, input.rows, filters.ids)
+  const singleId = filters.ids.length === 1 ? filters.ids[0] : undefined
+  let allPass = singleId !== undefined
+  for (const row of input.flatRows) {
+    checkRow(row, filters)
+    if (allPass && row.columnFilters[singleId!] === false) allPass = false
+  }
+  return allPass ? input : filterTree(table, input.rows, filters.ids)
 }
 
 /** Таблицы, строки которых видели активный отбор: их словари фильтров не пустые (ADR 0068, §1а). */
@@ -595,7 +601,17 @@ export const createSearchAwareFilteredRowModel =
         return patched.output
       }
       const output = fullFilter(t, input)
-      last = { input, columnFilters, globalFilter, output }
+      last = {
+        input,
+        columnFilters,
+        globalFilter,
+        output,
+        reusedTree:
+          output === input &&
+          !isFlat(input) &&
+          (!!columnFilters?.length ||
+            (globalFilter != null && globalFilter !== '')),
+      }
       return output
     }
     const searchValue = () => atoms.globalFilter?.get()
