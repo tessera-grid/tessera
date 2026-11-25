@@ -17,7 +17,10 @@ import { ensureCellVisible } from './geometry'
 import { getHeaderOwner } from './header'
 import {
   type ActiveCell,
+  clampActiveColumn,
+  HEADER_ROW_INDEX,
   KEYBOARD_NAVIGATION,
+  rawActiveCellOf,
   reportNavigation,
   type NavTable,
   ROW_FOCUS_COLUMN,
@@ -98,6 +101,36 @@ interface NavigationCellTarget {
   headerId?: string
 }
 
+/** Проверка ячейки тела: к колонке переходим только в строке активной позиции (ADR 0239). */
+const isActiveBodyCell = (
+  table: NavTable,
+  state: Record<string, unknown>,
+  rowIndex: number,
+  columnId: string,
+): boolean => {
+  const raw = rawActiveCellOf(state)
+  const rawRow = raw?.rowIndex ?? HEADER_ROW_INDEX
+  // Нижняя граница шапки может поднять отрицательный индекс только до нуля.
+  if (rowIndex > 0 && rawRow < rowIndex) return false
+
+  const bodyRows = table.getRowSource().count()
+  const last = bodyRows + (table.options.enableFooter ? 1 : 0) - 1
+  const row = Math.min(
+    rawRow < 0 ? Math.max(rawRow, -table.getHeaderGroups().length) : rawRow,
+    last,
+  )
+  if (
+    row !== rowIndex ||
+    (raw?.columnIndex === ROW_FOCUS_COLUMN &&
+      rowIndex < bodyRows &&
+      isTreeGrid(table))
+  )
+    return false
+
+  const ids = getDisplayColumns(table).ids
+  return ids[clampActiveColumn(raw?.columnIndex, ids.length)] === columnId
+}
+
 /** Активна ли ячейка; `null` — ячейка в навигации не участвует. */
 export const selectNavigationCell = (
   table: unknown,
@@ -108,6 +141,14 @@ export const selectNavigationCell = (
     return null
   }
   const t = table as NavTable
+  if (headerId === undefined && rowIndex >= 0) {
+    return isActiveBodyCell(
+      t,
+      state as Record<string, unknown>,
+      rowIndex,
+      columnId,
+    )
+  }
   const active = resolveActive(t, state as Record<string, unknown>)
   if (headerId !== undefined) {
     return (

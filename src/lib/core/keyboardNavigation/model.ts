@@ -10,6 +10,7 @@ import { hasRowHierarchy } from '../rowHierarchy'
 import type { RowSource } from '../rowSource'
 
 export const KEYBOARD_NAVIGATION = 'keyboardNavigation'
+const ACTIVE_CELL_KEY = pluginStateKey(KEYBOARD_NAVIGATION)
 
 /**
  * Индекс листовой строки заголовка в модели навигации. Строки групп вложенной
@@ -107,6 +108,14 @@ export const isKeyboardNavigationEnabled = (table: unknown): boolean =>
 export const isTreeGrid = (table: unknown): boolean =>
   hasRowHierarchy(table, 'tree') || hasRowHierarchy(table, 'groups')
 
+export const rawActiveCellOf = (state: Record<string, unknown>) =>
+  state[ACTIVE_CELL_KEY] as ActiveCell | undefined
+
+export const clampActiveColumn = (
+  columnIndex: number | undefined,
+  columnCount: number,
+) => Math.min(Math.max(columnIndex ?? 0, 0), Math.max(columnCount - 1, 0))
+
 const clampActive = (
   raw: ActiveCell | undefined,
   rowCount: number,
@@ -117,10 +126,7 @@ const clampActive = (
     Math.max(raw?.rowIndex ?? HEADER_ROW_INDEX, -headerRowCount),
     rowCount - 1,
   ),
-  columnIndex: Math.min(
-    Math.max(raw?.columnIndex ?? 0, 0),
-    Math.max(columnCount - 1, 0),
-  ),
+  columnIndex: clampActiveColumn(raw?.columnIndex, columnCount),
 })
 
 /**
@@ -135,8 +141,7 @@ export const isFooterRowIndex = (table: unknown, rowIndex: number) =>
   rowIndex >= (table as NavTable).getRowSource().count()
 
 export const resolveActive = (t: NavTable, state: Record<string, unknown>) => {
-  const raw = state[pluginStateKey(KEYBOARD_NAVIGATION)] as
-    ActiveCell | undefined
+  const raw = rawActiveCellOf(state)
   const active = clampActive(
     raw,
     getNavRowCount(t),
