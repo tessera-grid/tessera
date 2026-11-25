@@ -125,6 +125,25 @@ const found = (table: any, query: string) => {
   return table.getFilteredRowModel().rows.map((row: { id: string }) => row.id)
 }
 
+const numberTable = (values: number[], columnOptions = {}) =>
+  hostTable({
+    data: values.map((value, index) => ({ value, label: `row-${index}` })),
+    columns: [
+      {
+        accessorKey: 'value',
+        dataType: 'number',
+        format: { signDisplay: 'always', useGrouping: false },
+        ...columnOptions,
+      },
+    ],
+    getRowId: (row: { label: string }) => row.label,
+    plugins: [quickSearch(), columnFiltering()],
+  })
+
+// В Intl это getter, хотя TypeScript объявляет format как метод.
+const spyOnNumberFormat = () =>
+  vi.spyOn(Intl.NumberFormat.prototype as { format: unknown }, 'format', 'get')
+
 /** Отбор проверкой каждой колонки поиска — прежний путь, эталон. */
 const byColumns = (table: any, query: string) => {
   const value = normalizeSearch(query)
@@ -152,6 +171,40 @@ const spiedSearch = () =>
   )
 
 describe('склеенный текст строки (ADR 0201)', () => {
+  it('QTN1: повтор числа в колонке форматируется один раз за проход', () => {
+    const table = numberTable([42, 42, 43, 42])
+    const format = spyOnNumberFormat()
+
+    expect(found(table, '+42')).toEqual(['row-0', 'row-1', 'row-3'])
+    expect(format).toHaveBeenCalledTimes(2)
+  })
+
+  it('QTN2: отрицательный ноль сохраняет знак в тексте поиска', () => {
+    const table = numberTable([0, -0, 0, -0])
+
+    expect(found(table, '-0')).toEqual(['row-1', 'row-3'])
+    expect(found(table, '+0')).toEqual(['row-0', 'row-2'])
+  })
+
+  it('QTN3: свой форматтер получает данные каждой строки с одинаковым числом', () => {
+    const formatValue = vi.fn(
+      (_value: unknown, row: { label: string }) => row.label,
+    )
+    const table = numberTable([42, 42], { formatValue })
+
+    expect(found(table, 'row-1')).toEqual(['row-1'])
+    expect(formatValue).toHaveBeenCalledTimes(2)
+  })
+
+  it('QTN4: после лимита новые числа по-прежнему находятся без пополнения кэша', () => {
+    const values = Array.from({ length: 1024 }, (_, i) => i)
+    const table = numberTable([...values, 1024, 1024, 0])
+    const format = spyOnNumberFormat()
+
+    expect(found(table, '+1024')).toEqual(['row-1024', 'row-1025'])
+    expect(format).toHaveBeenCalledTimes(1026)
+  })
+
   it('QT1: поиск по склеенному тексту строки даёт тот же отбор, что проверка каждой колонки поиска: формат типа, подписи вариантов, даты, колонка без типа с нетекстовым значением; булевы, служебные и исключённые колонки вне поиска', () => {
     const table = tableOf()
     const cases: [string, string[]][] = [

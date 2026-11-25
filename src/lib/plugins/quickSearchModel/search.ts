@@ -7,13 +7,20 @@
  */
 import type { FilterFn } from '@tanstack/react-table'
 
-import type { ColumnOptionsDef } from '../../core/columnOptions'
+import {
+  type ColumnOptionsDef,
+  hasColumnOptions,
+} from '../../core/columnOptions'
 import {
   type FormatColumn,
   columnFormatter,
   formatDataTypeValue,
 } from '../../core/dataTypeFormat'
-import type { DataTypeRegistry, ResolvedDataType } from '../../core/dataTypes'
+import {
+  type DataTypeRegistry,
+  type ResolvedDataType,
+  resolveDataType,
+} from '../../core/dataTypes'
 
 interface SearchTable {
   options: { dataTypes?: DataTypeRegistry; locale?: string; timeZone?: string }
@@ -125,6 +132,40 @@ const textByRow = new WeakMap<
   { pass: Pass; original: unknown; text: string }
 >()
 
+/** Кэш числового текста одной колонки на проход (ADR 0240). */
+const searchFormatter = (
+  table: SearchTable,
+  column: SearchFormatColumn,
+  limit: number,
+) => {
+  const format = columnFormatter(table, column)
+  const type = resolveDataType(table, column)
+  if (
+    !limit ||
+    type?.base !== 'number' ||
+    !type.definition.format ||
+    type.definition.formatValue ||
+    hasColumnOptions(column.columnDef)
+  ) {
+    return format
+  }
+
+  const cache = new Map<number, string>()
+  return (value: unknown, row: unknown): string => {
+    // Map объединяет 0 и -0, а Intl может отображать их по-разному.
+    if (typeof value !== 'number' || Object.is(value, -0)) {
+      return format(value, row)
+    }
+
+    const cached = cache.get(value)
+    if (cached !== undefined) return cached
+
+    const text = format(value, row)
+    if (cache.size < limit) cache.set(value, text)
+    return text
+  }
+}
+
 /** Проверка строки склеенным текстом, подготовленная раз на проход (ADR 0201, §2). */
 const prepareRowCheck = (
   table: SearchTable,
@@ -134,13 +175,14 @@ const prepareRowCheck = (
   if (typeof query !== 'string' || query.includes(SEPARATOR)) return undefined
   if (query === '') return () => true
   const pass = passOf(table, columns)
+  const cacheLimit = Math.min(1024, Math.floor(16_384 / columns.length))
   // Значение — функцией доступа колонки, как `row.getValue`, но без поиска колонки и записи в
   // кэш значений строки на каждую ячейку.
   const parts = columns.map(column => ({
     id: column.id,
     access: column.accessorFn,
     typed: isTyped(column),
-    format: columnFormatter(table, column),
+    format: searchFormatter(table, column, cacheLimit),
   }))
   const textOf = (row: SearchRow) => {
     const cached = textByRow.get(row)
