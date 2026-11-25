@@ -17,6 +17,7 @@ import { objectKeyOf, objectLabelOf } from '../../core/dataTypeFormat'
 import type { ResolvedDataType } from '../../core/dataTypes'
 import type { ColumnFilterType, OptionFilter } from './types'
 import { rowsOf } from '../../core/rowEngine/rows'
+import { reusableFacetRows } from './facetRows'
 
 export const isOptionType = (type: ColumnFilterType | undefined) =>
   type === 'select' || type === 'multiselect' || type === 'lookup'
@@ -72,10 +73,13 @@ export const optionKeyOf = (
 const filtersOnServer = (table: unknown) =>
   dataModeOf(table, 'filtering') === 'server'
 
-const countCache = new WeakMap<
-  readonly FacetRow[],
-  Map<string, Map<unknown, number>>
->()
+interface OptionCounts {
+  columnDef: ColumnOptionsDef
+  type: ResolvedDataType['definition'] | undefined
+  counts: Map<unknown, number>
+}
+
+const countCache = new WeakMap<readonly FacetRow[], Map<string, OptionCounts>>()
 
 const countValues = (
   table: unknown,
@@ -84,16 +88,18 @@ const countValues = (
 ) => {
   let byColumn = countCache.get(rows)
   if (!byColumn) countCache.set(rows, (byColumn = new Map()))
-  let counts = byColumn.get(column.id)
-  if (counts) return counts
-  counts = new Map()
+  const cached = byColumn.get(column.id)
+  const type = column.getDataType?.()?.definition
+  if (cached?.columnDef === column.columnDef && cached.type === type)
+    return cached.counts
+  const counts = new Map<unknown, number>()
   for (const row of rows) {
     const key = optionKeyOf(table, column, row.getValue(column.id))
     for (const value of valuesOf(key)) {
       counts.set(value, (counts.get(value) ?? 0) + 1)
     }
   }
-  byColumn.set(column.id, counts)
+  byColumn.set(column.id, { columnDef: column.columnDef, type, counts })
   return counts
 }
 
@@ -149,7 +155,9 @@ export const optionCountsOf = (
       ),
     )
   }
-  const rows = column.getFacetedRowModel?.().flatRows
+  const rows =
+    reusableFacetRows<FacetRow>(table, column.id) ??
+    column.getFacetedRowModel?.().flatRows
   return rows ? countValues(table, rows, column) : undefined
 }
 

@@ -88,6 +88,7 @@ const build = (
   plugins: any[] = [columnFiltering()],
   dataMode?: DataMode,
   logLevel = 'error',
+  extra: object = {},
 ) => {
   const entries = [
     {
@@ -108,6 +109,7 @@ const build = (
     hooks: resolveHooks(foldHooks(entries)),
     pluginDiagnostics: folded.pluginDiagnostics,
     logLevel,
+    ...extra,
   } as never) as any
 }
 
@@ -305,5 +307,98 @@ describe('варианты в соседних плагинах', () => {
       formatValue: ({ value }) => value,
     })
     expect(raw.rows[0]).toEqual(['lead', ['vip', 'partner'], 'm1', 'Rome'])
+  })
+})
+
+describe('Переиспользование строк фасета (ADR 0237)', () => {
+  const byCity = { id: 'city', value: { operator: 'anyOf', value: ['Rome'] } }
+  const byStatus = {
+    id: 'status',
+    value: { operator: 'anyOf', value: ['won'] },
+  }
+  const counts = (table: any, id = 'status') => [
+    ...optionCountsOf(table, table.getColumn(id))!,
+  ]
+
+  it('FC1: чужое условие переиспользует выход встроенной стадии', () => {
+    const table = build()
+    table.setColumnFilters([byCity])
+    const column = table.getColumn('status')
+    const stock = vi.spyOn(column, 'getFacetedRowModel')
+    expect(counts(table)).toEqual([
+      ['lead', 1],
+      ['won', 1],
+    ])
+    expect(stock).not.toHaveBeenCalled()
+  })
+
+  it('FC2: собственное условие исключается из фасета', () => {
+    const table = build()
+    table.setColumnFilters([byCity, byStatus])
+    expect(counts(table)).toEqual([
+      ['lead', 1],
+      ['won', 1],
+    ])
+    expect(ids(table)).toEqual(['6'])
+  })
+
+  it('FC3: дерево совпадает со штатным фасетом при отборе от корня и от листа', () => {
+    const data = [{ ...DATA[0], city: 'Paris', children: [DATA[5]] }, DATA[2]]
+    for (const filterFromLeafRows of [true, false]) {
+      const table = build([columnFiltering()], undefined, 'error', {
+        data,
+        getSubRows: (row: { children?: Item[] }) => row.children,
+        filterFromLeafRows,
+      })
+      table.setColumnFilters([byCity])
+      const stock = table.getColumn('status').getFacetedRowModel().flatRows
+      expect(counts(table)).toEqual(
+        stock.map((row: any) => [row.getValue('status'), 1]),
+      )
+    }
+  })
+
+  it('FC4: пользовательская модель фасета остаётся источником счётчиков', () => {
+    const plugin = {
+      id: 'customFacet',
+      features: {
+        facetedRowModel: () => () => ({
+          flatRows: [{ getValue: () => 'custom' }],
+        }),
+      },
+    }
+    const table = build([columnFiltering(), plugin])
+    table.setColumnFilters([byCity])
+    expect(counts(table)).toEqual([['custom', 1]])
+  })
+
+  it('FC5: серверные счётчики по-прежнему приходят из вариантов приложения', () => {
+    const table = build([columnFiltering()], { filtering: 'server' }, 'error', {
+      columns: [
+        { ...COLUMNS[0], options: [{ value: 'won', label: 'Won', count: 42 }] },
+      ],
+    })
+    expect(counts(table)).toEqual([['won', 42]])
+  })
+
+  it('FC6: новый тип колонки обновляет кэш при неизменном снимке строк', () => {
+    const rows = [{ getValue: () => ({ id: 'a', code: 'b' }) }]
+    const table = build()
+    const column = table.getColumn('status')
+    vi.spyOn(column, 'getFacetedRowModel').mockReturnValue({ flatRows: rows })
+    let definition = {
+      getKey: (value: { id: string; code: string }) => value.id,
+    }
+    const view = {
+      ...column,
+      getFacetedRowModel: column.getFacetedRowModel,
+      get columnDef() {
+        return { ...column.columnDef, dataType: 'object', ...definition }
+      },
+      getDataType: () => ({ base: 'object', definition }),
+    }
+    expect([...optionCountsOf(table, view)!]).toEqual([['a', 1]])
+    definition = { getKey: value => value.code }
+    expect([...optionCountsOf(table, view)!]).toEqual([['b', 1]])
   })
 })

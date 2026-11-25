@@ -8,9 +8,9 @@ import {
   type ColumnFiltersState,
   columnFacetingFeature,
   columnFilteringFeature,
-  createFacetedRowModel,
 } from '@tanstack/react-table'
 
+import { builtInFacetedRowModel } from './facetRows'
 import { definePlugin } from '../../core/definePlugin'
 import { FILTERED_STUB } from '../../shared/filtering/filtering'
 import { createSearchAwareFilteredRowModel } from '../../shared/rowModels/filteredRowModel'
@@ -37,7 +37,7 @@ export const columnFilteringModelFeatures = {
   filteredRowModel: ownStage('filter', createSearchAwareFilteredRowModel()),
   // Счётчики вариантов — по строкам без фильтра своей колонки (ADR 0048, §3).
   columnFacetingFeature,
-  facetedRowModel: createFacetedRowModel(),
+  facetedRowModel: builtInFacetedRowModel,
 }
 
 const NO_FILTERS: never[] = []

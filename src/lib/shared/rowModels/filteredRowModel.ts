@@ -17,7 +17,7 @@ import {
   rowModelChangeOf,
 } from '../../core/dataChanges'
 import { dataModeOf } from '../../core/dataMode'
-import type { StageRun } from '../../core/rowEngine/engine'
+import { stageOfSlot, type StageRun } from '../../core/rowEngine/engine'
 import { RowDict, dictModel, editDictOf } from '../../core/rowEngine/rowDict'
 import type { RowData, Table, TableFeatures } from '../../types'
 import { skipIdlePasses } from './idleRowModel'
@@ -568,10 +568,19 @@ const fullFilter = (table: FilteringTable, input: FilterModel): FilterModel => {
 /** Таблицы, строки которых видели активный отбор: их словари фильтров не пустые (ADR 0068, §1а). */
 const filteredOnce = new WeakSet<object>()
 
+const searchAwareStages = new WeakSet<object>()
+
+export const isSearchAwareFilterStage = (slot: unknown): boolean => {
+  const stage = stageOfSlot(slot)
+  return !!stage && searchAwareStages.has(stage.create)
+}
+
 /** Стадия фильтра и поиска: вход — у движка (ADR 0200, §3). */
-export const createSearchAwareFilteredRowModel =
-  <TFeatures extends TableFeatures, TData extends RowData = any>() =>
-  (table: Table<TFeatures, TData>): StageRun => {
+export const createSearchAwareFilteredRowModel = <
+  TFeatures extends TableFeatures,
+  TData extends RowData = any,
+>() => {
+  const create = (table: Table<TFeatures, TData>): StageRun => {
     const client = clientViewOf(table)
     const t = client as unknown as FilteringTable
     const { atoms } = t
@@ -659,6 +668,9 @@ export const createSearchAwareFilteredRowModel =
       return run()
     }
   }
+  searchAwareStages.add(create)
+  return create
+}
 
 /**
  * Модель после отбора — вход группировки (`getPreGroupedRowModel`): по её строкам считают итоги
