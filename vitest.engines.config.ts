@@ -16,6 +16,9 @@ import { testCommands } from './vitest.commands.ts'
 
 const { defaultBrowserType: _iphoneEngine, ...iphone } = devices['iPhone 15']
 const { defaultBrowserType: _pixelEngine, ...pixel } = devices['Pixel 7']
+const contrastGuide =
+  'src/lib/stories/__tests__/visual/contrast-guides.test.tsx'
+const contrastMode = process.env.TESSERA_ENGINE_CONTRAST
 
 const shared = {
   setupFiles: ['./vitest.setup.ts'],
@@ -34,10 +37,14 @@ export default defineConfig({
         test: {
           ...shared,
           name: 'engines',
-          include: ['src/lib/stories/__tests__/visual/**/*.test.tsx'],
+          include:
+            contrastMode === 'only'
+              ? [contrastGuide]
+              : ['src/lib/stories/__tests__/visual/**/*.test.tsx'],
           exclude: [
             ...configDefaults.exclude,
             ...ENGINE_EXCLUSIONS.map(exclusion => exclusion.file),
+            ...(contrastMode === 'skip' ? [contrastGuide] : []),
           ],
           browser: {
             enabled: true,

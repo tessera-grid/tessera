@@ -1,29 +1,30 @@
-// `npm run test:engines`: проекты движков по очереди — Firefox, WebKit, затем мобильная
-// эмуляция (ADR 0084, §5). Вместе Firefox и WebKit на длинных наборах (матрица контраста
-// гайдов) исчерпывают память, и WebKit обрывает соединение посреди прогона: остальные
-// файлы не запускаются. Аргументы уходят каждому прогону vitest; итог — ненулевой, если
-// упал хоть один.
+// `npm run test:engines`: движки идут по очереди (ADR 0084, §5). В полном прогоне
+// матрица контраста WebKit запускается последней в своём процессе: длительный
+// обход не удерживает браузер для остальных наборов. В целевых запусках
+// аргументы передаются каждому проекту по прежней схеме.
 
 import { spawnSync } from 'node:child_process'
 
 const VITEST = 'node_modules/vitest/vitest.mjs'
 const CONFIG = 'vitest.engines.config.ts'
-const RUNS = [['engines (firefox)'], ['engines (webkit)'], ['mobile*']]
-
 const args = process.argv.slice(2)
+const fullRun = args.length === 0
+const runs = [
+  { project: 'engines (firefox)' },
+  { project: 'engines (webkit)', contrast: fullRun ? 'skip' : '' },
+  { project: 'mobile*' },
+]
+if (fullRun) runs.push({ project: 'engines (webkit)', contrast: 'only' })
+
 let failed = false
-for (const projects of RUNS) {
+for (const { project, contrast } of runs) {
   const { status } = spawnSync(
     process.execPath,
-    [
-      VITEST,
-      'run',
-      '--config',
-      CONFIG,
-      ...projects.flatMap(project => ['--project', project]),
-      ...args,
-    ],
-    { stdio: 'inherit' },
+    [VITEST, 'run', '--config', CONFIG, '--project', project, ...args],
+    {
+      stdio: 'inherit',
+      env: { ...process.env, TESSERA_ENGINE_CONTRAST: contrast ?? '' },
+    },
   )
   if (status !== 0) failed = true
 }

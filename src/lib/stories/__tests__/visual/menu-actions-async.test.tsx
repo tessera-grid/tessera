@@ -333,17 +333,20 @@ describe('Проверка доступности пунктов', () => {
   })
 
   test('MI2: проверка начинается при наведении на кебаб и переиспользуется при открытии; пока меню открыто, не повторяется', async () => {
+    // Указатель прошлого теста может попасть на кебаб уже при монтировании.
+    await parkPointer()
     const { probe } = await renderGrid()
+    const headerChecks = () => probe.checks.filter(c => c.id === 'headerCheck')
+    expect(headerChecks()).toHaveLength(0)
     await userEvent.hover(headCell())
+    expect(headerChecks()).toHaveLength(0)
     await userEvent.hover(headKebab())
-    await expect
-      .poll(() => probe.checks.filter(c => c.id === 'headerCheck').length)
-      .toBe(1)
+    await expect.poll(() => headerChecks().length).toBe(1)
     expect(probe.lastCheck('headerCheck').target).toBe('column:name')
 
     await humanClick(headKebab())
     await expect.poll(() => item('Freeze')).toBeTruthy()
-    expect(probe.checks.filter(c => c.id === 'headerCheck').length).toBe(1)
+    expect(headerChecks()).toHaveLength(1)
     expect(isPending(item('Freeze'))).toBe(true)
 
     probe.lastCheck('headerCheck').answer.resolve(true)
@@ -353,7 +356,7 @@ describe('Проверка доступности пунктов', () => {
     await userEvent.hover(items()[0]!)
     await userEvent.hover(items()[1]!)
     await sleep(100)
-    expect(probe.checks.filter(c => c.id === 'headerCheck').length).toBe(1)
+    expect(headerChecks()).toHaveLength(1)
     await closeMenu()
   })
 

@@ -747,23 +747,27 @@ describe('Счётчики работы — ручка колонки (ADR 0114)
 
   test('AL26: слушатель канала действий не добавляет гриду работы — коммиты, отрисовки и пересборки моделей при сортировке те же, что без него', async () => {
     const sortOnce = async (onDebugAction?: OnDebugAction) => {
-      const { measure, screen } = await mountGrid(
+      // Все строки видны сразу: после сортировки отдельный рост запаса не
+      // вмешивается в сравнение порядка и числа коммитов (ADR 0202, §1а).
+      const data = getData(8)
+      const { grid, measure, screen } = await mountGrid(
         { enableColumnSorting: true },
-        getData(300),
+        data,
         undefined,
         onDebugAction,
       )
       const button = document.querySelector<HTMLElement>(
         '.data-grid__head-cell [aria-label^="Sort"]',
       )!
-      // Полоса дорастает в следующем кадре после монтирования и после смены списка (ADR 0202, §1а):
-      // замер — от покоя до покоя, иначе рост попадает в одну сторону сравнения.
-      await waitForQuietDocument(300)
+      expect(windowSize().rows).toBe(data.length)
+      const firstRowId = () =>
+        grid.querySelector('.data-grid__body-row')?.getAttribute('data-row-id')
+      const initialFirstRow = firstRowId()
       const work = await measure(
         async () => {
           // Считаем работу сортировки без коммитов подсказки от наведения и фокуса указателем.
           button.click()
-          await waitForQuietDocument(300)
+          await expect.poll(firstRowId).not.toBe(initialFirstRow)
         },
         { models: ['sortedRowModel'] },
       )

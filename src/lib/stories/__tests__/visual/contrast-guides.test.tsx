@@ -174,13 +174,13 @@ const auditStep = async (
       result.guard.push(scrollProblem)
     }
   }
-  // Псевдо-состояние: снимки режима до него, затем классы `pseudo-*`.
-  const before = new Map<string, Shot | null>()
-  if (step.pseudo) {
-    for (const combo of combos.filter(c => c.mode === 'forced')) {
-      reportProgress(`${label} | ${comboLabel(combo)} | до псевдосостояния`)
-      await applyCombo(combo, { finish })
-      await settleScroll()
+  for (const combo of combos) {
+    reportProgress(`${label} | ${comboLabel(combo)}`)
+    await applyCombo(combo, { finish })
+    await settleScroll()
+    const forced = combo.mode === 'forced'
+    let before: Shot | null = null
+    if (forced && step.pseudo) {
       // Действие шага наводит указатель само (`pointAt`), и смена сочетания может
       // повторить его: база — без наведения.
       for (const el of document.querySelectorAll(
@@ -189,21 +189,16 @@ const auditStep = async (
         el.classList.remove(...PSEUDO_CLASSES)
       }
       await frame()
-      before.set(comboLabel(combo), await shoot(combo))
+      before = await shoot(combo)
     }
-    await applyPseudoStates(storyId, step.pseudo)
-  }
-  for (const combo of combos) {
-    reportProgress(`${label} | ${comboLabel(combo)}`)
-    await applyCombo(combo, { finish })
-    await settleScroll()
+    // Смена сочетания может перемонтировать узел и снять класс псевдосостояния.
+    if (step.pseudo) await applyPseudoStates(storyId, step.pseudo)
     const { grids, popups } = gridsAndPopups(container)
     const roots = [...grids, ...popups]
     const body = container.querySelector('.data-grid__body')
     const opacity = body ? Number(style(body).opacity) : 1
     // Приглушённое тело обновления (ADR 0094) — по прозрачности, а не по состоянию.
     const dim = opacity < 0.99 ? opacity : undefined
-    const forced = combo.mode === 'forced'
     let measure = styleMeasure
     if (forced) {
       const shot = await shoot(combo)
@@ -212,10 +207,9 @@ const auditStep = async (
         continue
       }
       measure = pixelMeasure(shot)
-      const was = before.get(comboLabel(combo))
-      if (was) {
+      if (before) {
         for (const el of pseudoTargets(step)) {
-          const { changed, system } = pseudoChange(was, shot, el)
+          const { changed, system } = pseudoChange(before, shot, el)
           // WebKit режим только эмулирует: заливка наведения остаётся, важен системный контур.
           const unseen = forcing ? system < changed / 2 : system === 0
           if (changed === 0 || unseen) {
