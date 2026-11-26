@@ -19,6 +19,7 @@ import { userEvent } from 'vitest/browser'
 import { describe, expect, test } from 'vitest'
 
 import {
+  SEL,
   Stories,
   getScroller,
   headCells,
@@ -210,6 +211,8 @@ const firstColumnCheckbox = () =>
   columnsMenu()?.querySelector<HTMLElement>(
     '[data-column-id] [role="checkbox"]',
   )
+const firstColumnChecked = () =>
+  firstColumnCheckbox()?.getAttribute('aria-checked')
 const isColumnsMenuOpen = () => !!columnsMenu()?.hasAttribute('data-open')
 
 /** Поповер грузится лениво: ждём настоящий триггер Base UI. */
@@ -270,6 +273,14 @@ const pageSizeOption = (size: string) =>
   [...document.querySelectorAll<HTMLElement>('[role="option"]')].find(
     option => option.textContent?.trim() === size,
   )
+const currentPageSize = () => pageSizeTrigger()?.textContent?.trim()
+const togglePageSize = async () => {
+  const next = currentPageSize() === '100' ? '25' : '100'
+  pageSizeTrigger()!.click()
+  await expect.poll(() => pageSizeOption(next)).toBeTruthy()
+  pageSizeOption(next)!.click()
+  await expect.poll(currentPageSize).toBe(next)
+}
 
 // Экспорт (ADR 0044): «Выгрузить» в панели (строки «Все строки») сериализует всю таблицу синхронно.
 const EXPORT = { enableToolbar: true, enableDataExport: true }
@@ -636,7 +647,7 @@ const CASES: InteractionCase[] = [
   },
   {
     id: 'I4',
-    label: 'скрытие колонки из меню колонок, большая выборка, все плагины',
+    label: 'возврат скрытой колонки из меню, большая выборка, все плагины',
     args: { ...LARGE, ...ALL_PLUGINS, ...COLUMN_VISIBILITY },
     prepare: async () => {
       await waitForColumnsButton()
@@ -644,10 +655,23 @@ const CASES: InteractionCase[] = [
     },
     act: async () => firstColumnCheckbox()!.click(),
     // Прогрев скрыл колонку, замер вернул.
-    afterWarmup: () =>
-      expect(firstColumnCheckbox()!.getAttribute('aria-checked')).toBe('false'),
-    verify: () =>
-      expect(firstColumnCheckbox()!.getAttribute('aria-checked')).toBe('true'),
+    afterWarmup: () => expect(firstColumnChecked()).toBe('false'),
+    verify: () => expect(firstColumnChecked()).toBe('true'),
+  },
+  {
+    id: 'I4-hide',
+    label: 'скрытие колонки из меню, большая выборка, все плагины',
+    args: { ...LARGE, ...ALL_PLUGINS, ...COLUMN_VISIBILITY },
+    prepare: async () => {
+      await waitForColumnsButton()
+      await openColumnsMenu()
+      firstColumnCheckbox()!.click()
+      await expect.poll(firstColumnChecked).toBe('false')
+    },
+    act: async () => firstColumnCheckbox()!.click(),
+    // Прогрев вернул колонку, замер скрывает её снова.
+    afterWarmup: () => expect(firstColumnChecked()).toBe('true'),
+    verify: () => expect(firstColumnChecked()).toBe('false'),
   },
   {
     id: 'I5',
@@ -700,23 +724,33 @@ const CASES: InteractionCase[] = [
   },
   {
     id: 'I8',
-    label: 'смена размера страницы 25 ↔ 100, 100 000 строк, все плагины',
+    label: 'уменьшение страницы со 100 до 25, 100 000 строк, все плагины',
     size: '100 000×30',
-    args: { ...PAGED, ...ALL_PLUGINS, ...PAGINATION },
-    prepare: async () => {
-      await expect.poll(() => pageSizeTrigger()).not.toBeNull()
+    args: {
+      ...PAGED,
+      ...ALL_PLUGINS,
+      ...PAGINATION,
+      paginationInitialPageSize: 25,
     },
-    // Замер повторяет действие (прогрев + замер), поэтому размер чередуется;
-    // открытие списка — отдельная задача, в longest не попадает.
-    act: async () => {
-      const next = pageSizeTrigger()!.textContent?.includes('100')
-        ? '25'
-        : '100'
-      pageSizeTrigger()!.click()
-      await expect.poll(() => pageSizeOption(next)).toBeTruthy()
-      pageSizeOption(next)!.click()
-      await expect.poll(() => pageSizeTrigger()!.textContent?.trim()).toBe(next)
+    prepare: async () => expect.poll(currentPageSize).toBe('25'),
+    act: togglePageSize,
+    afterWarmup: () => expect(currentPageSize()).toBe('100'),
+    verify: () => expect(currentPageSize()).toBe('25'),
+  },
+  {
+    id: 'I8-increase',
+    label: 'увеличение страницы с 25 до 100, 100 000 строк, все плагины',
+    size: '100 000×30',
+    args: {
+      ...PAGED,
+      ...ALL_PLUGINS,
+      ...PAGINATION,
+      paginationInitialPageSize: 100,
     },
+    prepare: async () => expect.poll(currentPageSize).toBe('100'),
+    act: togglePageSize,
+    afterWarmup: () => expect(currentPageSize()).toBe('25'),
+    verify: () => expect(currentPageSize()).toBe('100'),
   },
   {
     id: 'FL35',
@@ -1022,8 +1056,25 @@ describe('Отзывчивость — корень «Все колонки»', 
       const hideBase = medianRun(hideRuns.base, r => r.longestMs)
       const hideAll = medianRun(hideRuns.variant, r => r.longestMs)
 
+      const rowCount = () => document.querySelectorAll(SEL.bodyRow).length
+      await openHa10Menu()
+      let fullWindowRows = 0
+      await expect
+        .poll(
+          () => {
+            const rows = rowCount()
+            const stable = rows > 0 && rows === fullWindowRows
+            fullWindowRows = rows
+            return stable && !document.querySelector('[data-portions-pending]')
+          },
+          { interval: 100 },
+        )
+        .toBe(true)
+      await cleanup()
+
+      // База и показ включают рост полосы после отрисовки видимых строк.
       const rowsReady = () =>
-        !!document.querySelector('.data-grid__body .data-grid__body-row') &&
+        rowCount() >= fullWindowRows &&
         !document.querySelector('[data-portions-pending]')
       const measureShow = async (isRoot: boolean) => {
         if (!isRoot) {
@@ -1038,6 +1089,11 @@ describe('Отзывчивость — корень «Все колонки»', 
           rootColumnsCheckbox()!.getAttribute('aria-checked')
         rootColumnsCheckbox()!.click()
         await expect.poll(checked).toBe('false')
+        await expect
+          .poll(() =>
+            document.querySelector('[data-testid="columns-hidden-stub"]'),
+          )
+          .not.toBeNull()
         const result = await measureTransitionWork(
           async () => rootColumnsCheckbox()!.click(),
           rowsReady,
@@ -1596,24 +1652,47 @@ describe('Отзывчивость — склеенный текст строк�
   test(
     'QT9: первый поиск после монтирования, 100 000×10, тексты строк не посчитаны',
     async () => {
-      await renderGrid({
-        ...SEARCH_SIZE,
-        ...ALL_PLUGINS,
-        ...SEARCH,
-      } as Parameters<typeof renderGrid>[0])
-      await waitForGrid()
-      await expect.poll(quickSearchInput).not.toBeNull()
-      expect(quickSearchInput()!.value).toBe('')
-      const result = await measureInteractionWork(
-        async () => alternate(quickSearchInput()!, 'a', 'e'),
-        { warmup: false },
+      const measure = async (query: string) => {
+        await renderGrid({
+          ...SEARCH_SIZE,
+          ...ALL_PLUGINS,
+          ...SEARCH,
+        } as Parameters<typeof renderGrid>[0])
+        await waitForGrid()
+        await expect.poll(quickSearchInput).not.toBeNull()
+        expect(quickSearchInput()!.value).toBe('')
+        const rowCount = () =>
+          Number(
+            document
+              .querySelector('.data-grid__table')
+              ?.getAttribute('aria-rowcount'),
+          )
+        const before = rowCount()
+        expect(before).toBeGreaterThanOrEqual(SEARCH_SIZE.dataCount)
+        const result = await measureInteractionWork(
+          async () => setInputValue(quickSearchInput()!, query),
+          { warmup: false },
+        )
+        expect(quickSearchInput()!.value).toBe(query)
+        const after = rowCount()
+        await cleanup()
+        return { before, after, result }
+      }
+      // «a» сохраняет историческую серию, «jamaica» также проверяет смену выборки.
+      const all = await measure('a')
+      expect(all.after).toBe(all.before)
+      const narrow = await measure('jamaica')
+      expect(narrow.after).toBeGreaterThan(1)
+      expect(narrow.after < narrow.before, 'поиск сузил выборку').toBe(true)
+      // Без гейта: значения — в дашборд против цели INP.
+      await recordSearch('QT9', 'первый поиск, тексты не посчитаны', all.result)
+      await recordSearch(
+        'QT9-narrow',
+        'первый поиск с сужением выборки',
+        narrow.result,
       )
-      expect(quickSearchInput()!.value).toBe('a')
-      await cleanup()
-      // Без гейта: значение — в дашборд против цели INP.
-      await recordSearch('QT9', 'первый поиск, тексты не посчитаны', result)
     },
-    PERF_TIMEOUT,
+    PERF_TIMEOUT * 2,
   )
 })
 

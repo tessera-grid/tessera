@@ -62,16 +62,25 @@ const cellWallOf = (
   return wall
 }
 
-const columnTypeFilter = ((
-  row: FilterRow,
+const resolveCondition = (
+  table: FilterRow['table'],
   columnId: string,
   filter: ColumnFilterValue,
 ) => {
-  const column = row.table.getColumn(columnId)
-  const def = column ? columnFilterDefOf(column) : undefined
+  const column = table.getColumn(columnId)
+  if (!column) return
+  const def = columnFilterDefOf(column)
   const type = filterTypeOf(def)
   // Значение не условие своего вида (`setFilterValue('b')`) — фильтром не считается.
-  if (!type || isInactiveFilter(filter)) return true
+  if (type && !isInactiveFilter(filter)) return { column, def, type }
+}
+
+const matchesRow = (
+  row: FilterRow,
+  columnId: string,
+  filter: ColumnFilterValue,
+  { column, def, type }: NonNullable<ReturnType<typeof resolveCondition>>,
+) => {
   if (isDateType(type)) {
     // Пояс дат — опция таблицы (ADR 0169, §5).
     const timeZone = row.table.options.timeZone
@@ -84,9 +93,26 @@ const columnTypeFilter = ((
   // Запись `object` сравнивается по ключу (ADR 0174, TY4).
   const value = optionKeyOf(row.table, column as never, row.getValue(columnId))
   return matchesColumnFilter(type, value, filter)
-}) as unknown as FilterFn<any, any>
+}
 
-columnTypeFilter.autoRemove = isInactiveFilter
+const columnTypeFilter = Object.assign(
+  (row: FilterRow, columnId: string, filter: ColumnFilterValue) => {
+    const condition = resolveCondition(row.table, columnId, filter)
+    return !condition || matchesRow(row, columnId, filter, condition)
+  },
+  {
+    autoRemove: isInactiveFilter,
+    prepareColumnCheck(
+      table: FilterRow['table'],
+      columnId: string,
+      filter: ColumnFilterValue,
+    ) {
+      const condition = resolveCondition(table, columnId, filter)
+      return (row: FilterRow) =>
+        !condition || matchesRow(row, columnId, filter, condition)
+    },
+  },
+) as unknown as FilterFn<any, any>
 
 export const columnFilterTypesFeature: TableFeature = {
   getDefaultColumnDef: () => ({ filterFn: columnTypeFilter }),

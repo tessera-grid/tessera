@@ -265,7 +265,15 @@ export const createLazyCoreRowModel =
         return prev
       }
 
-      const rows = prev.rows.map(current)
+      const rows = prev.rows.slice()
+      for (const [id, row] of replaced) {
+        if (row.depth !== 0) continue
+        const old = byId[id]!
+        // После транзакции исходный index может отстать от позиции корня.
+        const at =
+          prev.rows[old.index] === old ? old.index : prev.rows.indexOf(old)
+        if (at >= 0) rows[at] = row
+      }
       // flatRows — прежний массив: участок изменённого поддерева заменён целиком, предки —
       // на своих местах (порядок TanStack: строка, затем её потомки).
       let flatRows = prev.flatRows.slice()

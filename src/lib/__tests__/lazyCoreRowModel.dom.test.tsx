@@ -231,6 +231,24 @@ describe('Инкрементальная исходная модель лени�
     }
     expectParity(data)
   })
+
+  it('приход ответа заменяет корень на текущей позиции после вставки перед ним', () => {
+    const answers = { b: [node('b1')] }
+    render(answers)
+    const oldRoot = model().rowsById.b!
+    render(answers, [node('new'), ...ROWS])
+    const shifted = model()
+    expect(shifted.rows[2]).toBe(oldRoot)
+    expect(oldRoot.index).toBe(1)
+
+    toggle('b')
+    const after = model()
+    expect(after.rows.map(row => row.id)).toEqual(['new', 'a', 'b', 'c', 'd'])
+    expect(after.rows[2]).toBe(after.rowsById.b)
+    expect(after.rows[2]!.subRows).toEqual([after.rowsById.b1])
+    expect(shifted.rows[2]).toBe(oldRoot)
+    expect(oldRoot.subRows).toEqual([])
+  })
 })
 
 /** Словарь модели: ключи и объекты строк. */

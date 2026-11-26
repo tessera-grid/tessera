@@ -103,6 +103,24 @@ describe('columnSorting — подписи вариантов', () => {
     ])
     // Zoe Hart (m1), Alice Moss (m2), Bob Reed (m3) → Alice, Bob, Zoe.
     expect(sortedIds(table, 'manager')).toEqual(['b', 'c', 'a'])
+
+    const labels = [
+      'é',
+      'e\u0301',
+      ...Array.from({ length: 82 }, (_, index) => `Label ${111 - index}`),
+      'Å',
+      'A\u030a',
+    ].map((manager, index) => ({ id: String(index), manager }))
+    const lookup = build(labels, {
+      extra: { manager: { getOptionLabel: (label: string) => label } },
+    })
+    const collator = new Intl.Collator()
+    expect(sortedIds(lookup, 'manager')).toEqual(
+      labels
+        .slice()
+        .sort((a, b) => collator.compare(a.manager, b.manager))
+        .map(({ id }) => id),
+    )
   })
 
   it('OS3: подписи из кэша loadOptions участвуют в сортировке lookup', () => {

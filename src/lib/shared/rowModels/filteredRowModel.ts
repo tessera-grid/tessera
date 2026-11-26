@@ -35,6 +35,12 @@ type FilterFn = ((
   addMeta: AddMeta,
 ) => boolean) & {
   resolveFilterValue?: (value: unknown) => unknown
+  /** Проверка встроенного фильтра колонки, подготовленная раз на проход. */
+  prepareColumnCheck?: (
+    table: FilteringTable,
+    columnId: string,
+    value: unknown,
+  ) => (row: FilterRow) => boolean
   /** Проверка строки поиском, подготовленная раз на проход; `undefined` — по колонкам (ADR 0201, §2). */
   prepareRowCheck?: (
     table: FilteringTable,
@@ -98,14 +104,21 @@ interface Filtered {
 const resolveFilters = (table: FilteringTable) => {
   const columnFilters = table.atoms.columnFilters?.get() ?? []
   const globalFilter = table.atoms.globalFilter?.get()
-  const columns: { id: string; filterFn: FilterFn; value: unknown }[] = []
+  const columns: {
+    id: string
+    filterFn: FilterFn
+    value: unknown
+    check?: (row: FilterRow) => boolean
+  }[] = []
   for (const filter of columnFilters) {
     const filterFn = table.getColumn(filter.id)?.getFilterFn()
     if (!filterFn) continue
+    const value = filterFn.resolveFilterValue?.(filter.value) ?? filter.value
     columns.push({
       id: filter.id,
       filterFn,
-      value: filterFn.resolveFilterValue?.(filter.value) ?? filter.value,
+      value,
+      check: filterFn.prepareColumnCheck?.(table, filter.id, value),
     })
   }
   const ids = columnFilters.map(filter => filter.id)
@@ -155,12 +168,9 @@ const checkRow = (
     row.columnFiltersMeta[id] = meta
   }
   for (const filter of columns) {
-    row.columnFilters[filter.id] = filter.filterFn(
-      row,
-      filter.id,
-      filter.value,
-      addMeta(filter.id),
-    )
+    row.columnFilters[filter.id] = filter.check
+      ? filter.check(row)
+      : filter.filterFn(row, filter.id, filter.value, addMeta(filter.id))
   }
   if (search) row.columnFilters.__global__ = search(row)
   else if (global.length) {

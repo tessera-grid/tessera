@@ -18,6 +18,7 @@ import styles from '../Body/Body.module.css'
 
 const ROW = ':scope > [data-row-id]'
 const INLINE_FOOTER = ":scope > .data-grid__footer[data-position='inline']"
+const REPLACED_WINDOW = Symbol('replaced window')
 /** Вертикальный сдвиг строки от dnd-kit в её `style.transform`. */
 const DND_SHIFT = /translate3d\([^,]+,\s*(-?[\d.]+)px/
 
@@ -146,7 +147,9 @@ export class RowMotion extends Component<RowMotionProps> {
     this.ghosts.current?.setAttribute('inert', '')
   }
 
-  getSnapshotBeforeUpdate(prev: RowMotionProps): Snapshot | null {
+  getSnapshotBeforeUpdate(
+    prev: RowMotionProps,
+  ): Snapshot | typeof REPLACED_WINDOW | null {
     const body = this.props.bodyRef.current
     const { epoch } = this.props
     const newEpoch = epoch !== undefined && epoch !== this.shownEpoch
@@ -171,11 +174,20 @@ export class RowMotion extends Component<RowMotionProps> {
     ) {
       return null
     }
-    const bodyTop = body.getBoundingClientRect().top
     const next = new Set(virtualRows.map(item => this.idAt(item.index)))
+    const mounted = [...body.querySelectorAll<HTMLElement>(ROW)]
+    // Список клиентских строк известен до коммита. При полной замене окна
+    // (RM6) после коммита остаётся завершить движение предыдущего окна.
+    if (
+      !this.props.source?.keyByIndex &&
+      !mounted.some(row => next.has(row.dataset.rowId!))
+    ) {
+      return REPLACED_WINDOW
+    }
+    const bodyTop = body.getBoundingClientRect().top
     const before = new Map<string, number>()
     const leaving = new Map<string, HTMLElement>()
-    for (const row of body.querySelectorAll<HTMLElement>(ROW)) {
+    for (const row of mounted) {
       const id = row.dataset.rowId!
       before.set(id, row.getBoundingClientRect().top - bodyTop)
       if (!next.has(id)) leaving.set(id, row.cloneNode(true) as HTMLElement)
@@ -219,8 +231,12 @@ export class RowMotion extends Component<RowMotionProps> {
   componentDidUpdate(
     _prev: RowMotionProps,
     _state: unknown,
-    snapshot: Snapshot | null,
+    snapshot: Snapshot | typeof REPLACED_WINDOW | null,
   ) {
+    if (snapshot === REPLACED_WINDOW) {
+      this.finish()
+      return
+    }
     if (!snapshot) return
     this.play(snapshot)
     // React держит последний снимок до следующего обновления: прежние строки — нет (ADR 0200, EN26).

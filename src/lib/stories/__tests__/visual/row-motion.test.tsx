@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import axe from 'axe-core'
 import { commands, page, server, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
-import { afterEach, describe, expect, onTestFinished, test } from 'vitest'
+import { afterEach, describe, expect, onTestFinished, test, vi } from 'vitest'
 
 import { ENGLISH_LABELS } from '../../../core/localization'
 import { quickSearchModel, rowExpanding } from '../../../plugins'
@@ -537,9 +537,14 @@ describe('Движение строк (ADR 0107)', () => {
     await expect.poll(() => rowsTopDown().length).toBeGreaterThan(3)
 
     // Страница.
+    const cloneOldRow = vi.spyOn(rowById(id(0))!, 'cloneNode')
+    onTestFinished(() => {
+      cloneOldRow.mockRestore()
+    })
     const page = await sampleFrames(still, () => box.table!.setPageIndex(1))
     expect(rowById(id(10))).not.toBeNull()
     expect(page.every(Boolean)).toBe(true)
+    expect(cloneOldRow).not.toHaveBeenCalled()
 
     // Новый набор с другими id.
     const fresh = getData(30).map((row: { id: string }) => ({

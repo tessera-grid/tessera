@@ -9,7 +9,27 @@ export type ArcPhase = 'pending' | 'leaving' | 'stopping'
  * Отрезки хвоста с общей головой: `i`-й — `i/N` длины дуги с непрозрачностью `1/i`, в
  * сумме плотность растёт от конца к голове ровно.
  */
-const TAIL = Array.from({ length: 8 }, (_, i) => i + 1)
+const tail = (
+  <g className={styles.arcTail}>
+    {Array.from({ length: 8 }, (_, index) => (
+      <rect
+        key={index}
+        width="100%"
+        height="100%"
+        pathLength={100}
+        style={{ '--_i': index + 1 } as CSSProperties}
+      />
+    ))}
+  </g>
+)
+const track = (
+  <rect
+    className={styles.arcTrack}
+    width="100%"
+    height="100%"
+    pathLength={100}
+  />
+)
 
 /**
  * Радиус средней линии — радиус кнопки без половины толщины дуги; у дуги снаружи — радиус
@@ -79,23 +99,8 @@ export const PendingArc = ({
       aria-hidden
       focusable="false"
     >
-      <rect
-        className={styles.arcTrack}
-        width="100%"
-        height="100%"
-        pathLength={100}
-      />
-      <g className={styles.arcTail}>
-        {TAIL.map(i => (
-          <rect
-            key={i}
-            width="100%"
-            height="100%"
-            pathLength={100}
-            style={{ '--_i': i } as CSSProperties}
-          />
-        ))}
-      </g>
+      {track}
+      {tail}
     </svg>
   )
 }
