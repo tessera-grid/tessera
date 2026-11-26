@@ -4,7 +4,12 @@
  * стало» и «Сбросить».
  */
 import type { PluginCellProps } from '../../core/definePlugin'
-import { discardDraft, useDraft, type Draft } from '../../core/drafts/drafts'
+import {
+  discardDraft,
+  draftValueDetails,
+  useDraft,
+  type Draft,
+} from '../../core/drafts/drafts'
 import { useCellFailure } from '../../core/failures/failuresFeature'
 import { useLocalization } from '../../core/localization'
 import { CellIssue } from '../../ui/CellIssue'
@@ -36,10 +41,7 @@ const DraftIssue = ({
       tone="draft"
       reason={cellEditingLabels(labels).cellDraftReason(was, now)}
       label={cellEditingLabels(labels).cellDraft}
-      details={[
-        { label: labels.draftWas, value: was },
-        { label: labels.draftNow, value: now },
-      ]}
+      details={draftValueDetails(labels, was, now)}
       actions={[
         {
           id: 'rollback',

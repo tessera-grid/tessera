@@ -658,7 +658,7 @@ describe('Высокая контрастность (ADR 0087)', () => {
     const fillOf = (cell: HTMLElement) => {
       const own = style(cell).backgroundColor
       const row = cell.closest('.data-grid__body-row')
-      return toRgba(own)[3]! > 0.99 || !row ? own : style(row).backgroundColor
+      return toRgba(own)[3]! > 0 || !row ? own : style(row).backgroundColor
     }
     for (const [name, cell, fill] of cases) {
       await expect.poll(() => fillOf(cell), { message: name }).toBe(sys(fill))

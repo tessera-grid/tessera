@@ -2,6 +2,7 @@
 import { defineLabels } from '../../core/localization'
 
 export interface CellSelectionLabels {
+  selectAllCells: string
   /** Пункт «Копировать» (контекстное меню / действия выделения) */
   copy: string
   /** Объявление копирования выделения (`cells` — число ячеек) */
@@ -38,6 +39,7 @@ export interface CellSelectionLabels {
 export const cellSelectionLabels = defineLabels<CellSelectionLabels>()(
   'cellSelection',
   {
+    selectAllCells: 'Select all cells',
     copy: 'Copy',
     announceCopy: 'Copied {count} cells',
     announceCopy_one: 'Copied {count} cell',

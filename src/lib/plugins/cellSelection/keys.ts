@@ -296,7 +296,7 @@ export const cellSelectionKeys: NavigationKeys = {
     {
       combo: 'Mod+A',
       section: 'selection',
-      label: labels => labels.shortcutSelectAllCells,
+      label: labels => cellSelectionLabels(labels).selectAllCells,
     },
     {
       combo: 'Mod+C',

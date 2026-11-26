@@ -506,7 +506,21 @@ export const pseudoChange = (before: Shot, after: Shot, el: Element) => {
       const top = document.elementFromPoint(x, y)
       if (top && !el.contains(top) && top.closest(POPUP_ROOTS)) continue
       changed++
-      if (states.some(rgb => near(b, rgb))) system++
+      // У Linux Chromium Highlight полупрозрачен: на снимке видна его смесь с прежним пикселем.
+      if (
+        states.some(rgb =>
+          rgb[3] === 1
+            ? near(b, rgb)
+            : b
+                .slice(0, 3)
+                .every(
+                  (v, i) =>
+                    Math.abs(v - (rgb[i]! * rgb[3]! + a[i]! * (1 - rgb[3]!))) <
+                    8,
+                ),
+        )
+      )
+        system++
     }
   }
   return { changed, system }

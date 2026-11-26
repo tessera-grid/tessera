@@ -18,6 +18,7 @@ import {
   draftKindLabel,
   draftKindOf,
   draftKindsOf,
+  draftValueDetails,
   discardDraft,
   useOpenDrafts,
 } from '../../core/drafts/drafts'
@@ -77,18 +78,19 @@ const report = (
 const ChangeValue = ({ was, now }: { was?: string; now: string }) => {
   const labels = useLocalization()
   if (was === undefined) return <>{now}</>
+  const [previous, current] = draftValueDetails(labels, was, now)
   return (
     <>
       <span className={hidden['visually-hidden']} data-visually-hidden="">
-        {labels.draftWas}{' '}
+        {previous.label}{' '}
       </span>
-      {was}
+      {previous.value}
       <span aria-hidden> → </span>
       <span className={hidden['visually-hidden']} data-visually-hidden="">
         {' '}
-        {labels.draftNow}{' '}
+        {current.label}{' '}
       </span>
-      {now}
+      {current.value}
     </>
   )
 }

@@ -1162,7 +1162,12 @@ const wrapperOf = (root: ParentNode) =>
 /** Тема, в которой таблица нарисована сейчас. */
 const schemeOf = (root: ParentNode) => {
   const wrapper = wrapperOf(root)
-  return wrapper ? getComputedStyle(wrapper).colorScheme : ''
+  if (!wrapper) return ''
+  const style = getComputedStyle(wrapper)
+  // В forced-colors Chromium задаёт нативную схему «light dark» независимо от темы приложения.
+  return matchMedia('(forced-colors: active)').matches
+    ? style.getPropertyValue('--tsr-sys-scheme').trim()
+    : style.colorScheme
 }
 
 /** Контейнер приложения с темой: его фон из палитры приложения виден вокруг таблицы. */

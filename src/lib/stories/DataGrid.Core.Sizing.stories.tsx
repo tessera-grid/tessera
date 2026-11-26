@@ -2,7 +2,7 @@ import { Meta, StoryObj } from '@storybook/react'
 import { useState } from 'react'
 import { expect, spyOn } from 'storybook/test'
 
-import { __resetLogger } from '../util/logger'
+import { __resetLogger, isProduction } from '../util/logger'
 import { DATA_GRID_THEME_CLASS } from '../ui/theme'
 import { StoryComponent } from './DataGridStory'
 import type { StoryProps } from './DataGridStory.types'
@@ -589,11 +589,11 @@ export const SizingRowHeight: StoryObj<StoryProps> = {
       try {
         await guideNext(canvas)
         await rowsAre(40)
-        await until(() =>
-          expect(warn).toHaveBeenCalledWith(
-            expect.stringContaining('rowHeight: 30 is below the minimum 40px'),
-          ),
+        const message = expect.stringContaining(
+          'rowHeight: 30 is below the minimum 40px',
         )
+        if (isProduction()) expect(warn).not.toHaveBeenCalledWith(message)
+        else await until(() => expect(warn).toHaveBeenCalledWith(message))
       } finally {
         warn.mockRestore()
       }

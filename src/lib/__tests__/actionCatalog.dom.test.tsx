@@ -601,7 +601,8 @@ describe('Справочник действий (ADR 0182)', () => {
     const outside = files
       .filter(
         path =>
-          areaOf(path) !== 'plugins' && !/localization\/labels\.ts$/.test(path),
+          areaOf(path) !== 'plugins' &&
+          rel(path) !== 'core/localization/labels.ts',
       )
       .map(path => readFileSync(path, 'utf8'))
       .join('\n')

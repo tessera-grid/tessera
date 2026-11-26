@@ -172,6 +172,7 @@ const rowStateColor = (row: HTMLElement) =>
 
 /** Рамка палитры приложения в рецепте S2. */
 const RECIPE_BORDER = 'rgb(29, 78, 216)'
+const forcedColors = () => matchMedia('(forced-colors: active)').matches
 
 // --- S1 ------------------------------------------------------------------------------
 
@@ -275,6 +276,12 @@ export const IncreasedContrastEnable: StoryObj<StoryProps> = {
       await until(() => expect(selectedRow(canvas)).not.toBeNull())
       await settle()
       const row = getComputedStyle(selectedRow(canvas)!)
+      if (forcedColors()) {
+        expect(row.backgroundColor).not.toBe(
+          getComputedStyle(gridTheme(canvas)).backgroundColor,
+        )
+        return
+      }
       await until(() => expect(row.outlineStyle).toBe('solid'))
       await until(() => expect(row.outlineWidth).toBe('1px'))
       await until(() =>
@@ -292,6 +299,13 @@ export const IncreasedContrastEnable: StoryObj<StoryProps> = {
       await until(() => expect(getComputedStyle(row).outlineStyle).toBe('none'))
       // Наведение — псевдо-состояние; классы снимаются: матрица контраста ставит свои.
       await applyPseudoStates(id, ENABLE[2].pseudo!)
+      if (forcedColors()) {
+        await until(() =>
+          expect(getComputedStyle(row, '::after').borderTopStyle).toBe('solid'),
+        )
+        row.classList.remove('pseudo-hover')
+        return
+      }
       await until(() =>
         expect(getComputedStyle(row).outlineStyle).toBe('solid'),
       )
@@ -305,6 +319,14 @@ export const IncreasedContrastEnable: StoryObj<StoryProps> = {
       await guideNext(canvas)
       await stepDone(canvas)
       const menu = await waitForPopup('menu')
+      if (forcedColors()) {
+        await until(() =>
+          expect(
+            menu.querySelector('[role="menuitem"][data-highlighted]'),
+          ).not.toBeNull(),
+        )
+        return
+      }
       await until(() =>
         expect(getComputedStyle(menu).outlineStyle).toBe('solid'),
       )
@@ -390,6 +412,19 @@ export const IncreasedContrastRecipe: StoryObj<StoryProps> = {
     })
     await step(RECIPE_STEPS[1].title.ru, async () => {
       await guideNext(canvas)
+      if (forcedColors()) {
+        await until(() =>
+          expect(
+            getComputedStyle(gridTheme(canvas))
+              .getPropertyValue('--border')
+              .trim(),
+          ).toBe('#1d4ed8'),
+        )
+        expect(getComputedStyle(gridTheme(canvas)).borderTopColor).not.toBe(
+          RECIPE_BORDER,
+        )
+        return
+      }
       await until(() =>
         expect(getComputedStyle(gridTheme(canvas)).borderTopColor).toBe(
           RECIPE_BORDER,

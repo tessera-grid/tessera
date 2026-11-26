@@ -1969,7 +1969,11 @@ export const PluginApiBodyAttributes: StoryObj<StoryProps> = {
       )
       const cell = bodyCell(canvas, 'item-id-0', 'firstName')!
       expect(cell.style.getPropertyValue('--changes-tone')).not.toBe('')
-      expect(getComputedStyle(cell).backgroundImage).not.toBe('none')
+      if (matchMedia('(forced-colors: active)').matches) {
+        expect(getComputedStyle(cell).borderInlineStartWidth).toBe('3px')
+      } else {
+        expect(getComputedStyle(cell).backgroundImage).not.toBe('none')
+      }
     })
     await step(BODY_ATTRIBUTES[2]!.title.ru, async () => {
       await guideNext(canvas)

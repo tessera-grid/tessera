@@ -7,6 +7,7 @@
 import type { ColumnSizingState } from '@tanstack/react-table'
 
 import { reportAction } from '../../core/debugActions'
+import { whenViewport } from '../../core/scrollToRow/viewport'
 import {
   applyFitted,
   autosizableColumns,
@@ -50,7 +51,8 @@ export const reconcileAutosizeOnData = (
   if (entry.data === data || !hasRows(data)) return
   entry.data = data
   void (async () => {
-    // Строки новых данных — в DOM через кадр-другой (первый рендер частями, ADR 0203).
+    // В продакшене первый рендер может оставаться рамкой дольше двух кадров (ADR 0203).
+    if (!(await whenViewport(table))) return
     await frame()
     await frame()
     if (entry.data !== data) return

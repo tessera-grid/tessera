@@ -184,6 +184,7 @@ export const vrModes = (parameters: Record<string, unknown> = {}) => ({
 })
 
 export interface TwinSource {
+  globals?: object
   args?: object
   argTypes?: object
   decorators?: unknown
@@ -255,6 +256,7 @@ export const forcedTwin = <S extends TwinSource>(
   const snapshot = { ...(parameters.chromatic as object | undefined) }
   delete (snapshot as { modes?: unknown }).modes
   return {
+    globals: { ...own('globals'), ...story.globals },
     args: { ...own('args'), ...story.args },
     argTypes: { ...own('argTypes'), ...story.argTypes },
     decorators: [...list(story.decorators), ...list(own('decorators'))],

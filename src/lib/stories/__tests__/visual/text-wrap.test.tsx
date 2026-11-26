@@ -1250,8 +1250,9 @@ describe('Перенос текста и высота строк по содер
     )
     await waitForGrid()
     await expect.poll(() => heightOf(rowOf('0'))).toBeGreaterThan(ROW_HEIGHT)
-    const tall = heightOf(rowOf('0'))
     await revealCellButtons(cellOf('0', 'note')!)
+    // Раскрытая кнопка занимает часть ширины текста и может добавить строку.
+    const tall = heightOf(rowOf('0'))
     await humanClick(
       cellOf('0', 'note')!.querySelector<HTMLElement>('.cell__button button')!,
     )

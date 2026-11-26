@@ -64,7 +64,15 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - run: npx playwright install --with-deps chromium
-      - run: npm test -- --shard=${{ matrix.shard }}/4
+      # У каждого браузерного проекта свой пул: даже при fileParallelism: false
+      # одновременные каталоги отнимают кадры у тестов движения и замеров DOM.
+      - run: npm test -- --project unit --project 'touch*' --shard=${{ matrix.shard }}/4
+      - if: ${{ !cancelled() }}
+        run: npm test -- --project 'browser (chromium)' --shard=${{ matrix.shard }}/4
+      - if: ${{ !cancelled() }}
+        run: npm test -- --project 'storybook (chromium)' --shard=${{ matrix.shard }}/4
+      - if: ${{ !cancelled() }}
+        run: npm test -- --project 'storybook-dark (chromium)' --shard=${{ matrix.shard }}/4
       - if: failure()
         uses: actions/upload-artifact@v4
         with:

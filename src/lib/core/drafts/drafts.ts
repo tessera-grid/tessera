@@ -41,6 +41,17 @@ export const draftKindLabel = (
     labels,
   )
 
+/** Обе части изменения, в порядке чтения отметки и пульта черновиков. */
+export const draftValueDetails = (
+  labels: TableLabels,
+  was: string,
+  now: string,
+) =>
+  [
+    { label: labels.draftWas, value: was },
+    { label: labels.draftNow, value: now },
+  ] as const
+
 /** Поведение вида черновика (ADR 0178, §1, DR3). */
 export interface DraftKind {
   kind: string

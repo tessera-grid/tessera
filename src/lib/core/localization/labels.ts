@@ -45,8 +45,6 @@ export interface TableLabels {
   shortcutCellEdge: string
   shortcutPage: string
   shortcutActionMode: string
-  shortcutContextMenu: string
-  shortcutSelectAllCells: string
   shortcutCmd: string
   shortcutCtrl: string
   shortcutOption: string
@@ -284,8 +282,6 @@ export const DEFAULT_LABELS = {
   shortcutCellEdge: 'First or last cell',
   shortcutPage: 'Previous or next page',
   shortcutActionMode: 'Enter action mode',
-  shortcutContextMenu: 'Open the context menu',
-  shortcutSelectAllCells: 'Select all cells',
   shortcutCmd: '⌘',
   shortcutCtrl: 'Ctrl',
   shortcutOption: '⌥',

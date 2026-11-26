@@ -265,9 +265,15 @@
  * Иконка берёт цвет кнопки, а не цвет текста выбранной или подсвеченной строки.
  */
 @media (forced-colors: active) {
+  :is(.data-grid__body-row, [data-row-ghost]) {
+    --tsr-comp-action-button-bg: ButtonFace;
+    --tsr-comp-button-color: ButtonText;
+  }
+
   :is(.data-grid__body-row, [data-row-ghost]) .row__button button {
-    background-color: ButtonFace;
-    color: ButtonText;
+    forced-color-adjust: none;
+    background-color: var(--tsr-comp-action-button-bg);
+    color: var(--tsr-comp-button-color);
     box-shadow: none;
   }
 

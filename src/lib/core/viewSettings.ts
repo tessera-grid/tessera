@@ -156,3 +156,9 @@ export const countViewSettingsValue = (
   if (drafts > 0) parts.push(labels.viewSettingsDraftCount(drafts))
   return parts.join(', ')
 }
+
+/** Значение раздела с одним переключателем. */
+export const toggleViewSettingsValue = (
+  labels: TableLabels,
+  active: boolean,
+) => (active ? labels.viewSettingsOn : labels.viewSettingsNone)

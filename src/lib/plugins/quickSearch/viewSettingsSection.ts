@@ -2,7 +2,10 @@
  * Раздел «Поиск» «Настроек вида» (ADR 0215, §1, VW10): только когда поиск активен, а поля поиска в тулбаре
  * нет — текст поиска тогда не виден на месте. Уровень — строка поиска, снятие — очистка поиска.
  */
-import { type ViewSettingsSection } from '../../core/viewSettings'
+import {
+  toggleViewSettingsValue,
+  type ViewSettingsSection,
+} from '../../core/viewSettings'
 import { searchOf, setSearchByUser } from '../../shared/filtering/filtering'
 import { optionsLabels } from '../../shared/options/labels'
 import { hasOwnToolbarSlot } from '../../shared/toolbarPlacement'
@@ -18,7 +21,8 @@ export const searchSection: ViewSettingsSection = {
   visible: table =>
     searchOf(table) !== '' && !hasOwnToolbarSlot(table, 'quickSearch'),
   active: table => searchOf(table) !== '',
-  value: (_table, labels) => labels.viewSettingsOn,
+  value: (table, labels) =>
+    toggleViewSettingsValue(labels, searchOf(table) !== ''),
   levels: (table, labels) => [
     {
       id: 'search',
