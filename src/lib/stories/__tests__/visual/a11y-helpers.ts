@@ -101,7 +101,7 @@ export const resolveColor = (parent: Element, value: string) => {
   return color
 }
 
-const over = (top: number[], bottom: number[]) =>
+export const over = (top: number[], bottom: number[]) =>
   [0, 1, 2].map(i => top[i]! * top[3]! + bottom[i]! * (1 - top[3]!)).concat(1)
 
 /**

@@ -1,4 +1,4 @@
-import { userEvent } from 'vitest/browser'
+import { commands, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { describe, expect, test, vi } from 'vitest'
 
@@ -13,7 +13,6 @@ import { makeData } from '../../__mocks__/data'
 import {
   HANDLE,
   beginDrag,
-  dragRowOnto,
   firePointer,
   nextFrame,
   rowIdOrder,
@@ -620,7 +619,21 @@ describe('Сессии действий', () => {
     const [dropped] = rowIdOrder(document.body)
     const rowAt = (index: number) =>
       bodyRows().find(row => row.dataset.index === String(index))!
-    await dragRowOnto(rowAt(0), rowAt(3))
+    const handle = rowAt(0).querySelector<HTMLElement>(HANDLE)!
+    await userEvent.hover(handle)
+    const from = handle.getBoundingClientRect()
+    const to = rowAt(3).getBoundingClientRect()
+    const x = from.left + from.width / 2
+    const { realDrag } = commands as unknown as {
+      realDrag: (
+        from: { x: number; y: number },
+        to: { x: number; y: number },
+      ) => Promise<void>
+    }
+    await realDrag(
+      { x, y: from.top + from.height / 2 },
+      { x, y: to.top + to.height / 2 },
+    )
     await expect.poll(() => onRowDragEnd.mock.calls.length).toBe(1)
     expect(onRowDragEnd).toHaveBeenLastCalledWith(
       expect.objectContaining({ rowId: dropped, dragIndex: 0, hoverIndex: 3 }),

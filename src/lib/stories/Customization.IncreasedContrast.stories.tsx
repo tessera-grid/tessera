@@ -52,7 +52,12 @@ const selectionDemo: TesseraFeatureEntry = {
  */
 const meta = {
   ...dataGridMeta,
-  parameters: { ...dataGridMeta.parameters },
+  parameters: {
+    ...dataGridMeta.parameters,
+    chromatic: { disableSnapshot: true },
+    vrSkipReason:
+      'Contrast snapshots are paused until the Chromatic quota is restored.',
+  },
   title: 'Tessera/Customization/Increased contrast',
 } satisfies Meta<StoryProps>
 

@@ -201,14 +201,27 @@ export const StickyRows = ({
     return () => scroller.removeEventListener('scroll', onScroll)
   }, [update])
 
-  // Копия скрыта от скринридера: её кнопки — вне табуляции.
+  // Копия скрыта от скринридера. Слоты могут добавить кнопку после рендера стопки.
   useIsomorphicLayoutEffect(() => {
-    ref.current
-      ?.querySelectorAll<HTMLElement>(
+    const root = ref.current
+    if (!root) return
+    const removeTabStops = () => {
+      for (const node of root.querySelectorAll<HTMLElement>(
         'button, a[href], input, select, textarea, [tabindex]',
-      )
-      .forEach(node => node.setAttribute('tabindex', '-1'))
-  })
+      )) {
+        if (node.tabIndex !== -1) node.tabIndex = -1
+      }
+    }
+    removeTabStops()
+    const observer = new MutationObserver(removeTabStops)
+    observer.observe(root, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['tabindex', 'href'],
+    })
+    return () => observer.disconnect()
+  }, [])
 
   // Шеврон копии сворачивает группу на месте её строки: сначала плавная прокрутка к строке —
   // она встаёт под копиями предков, — затем сворачивание тем же действием, что у её кнопки.

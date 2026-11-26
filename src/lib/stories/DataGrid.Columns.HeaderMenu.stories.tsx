@@ -140,15 +140,36 @@ const pinned = (root: ParentNode) =>
  */
 const pinFromMenu = async (root: HTMLElement, signal: AbortSignal) => {
   let chosen = false
+  let leftHeader = false
   await pollUntil(() => {
-    if (pinned(root) && !openMenu()) return true
+    if (pinned(root) && !openMenu()) {
+      // После закрытия меню фокус может вернуться в шапку и удержать раскладку.
+      const head = headCellOf(root, MENU_COLUMN)
+      if (head && !leftHeader) {
+        head.dispatchEvent(
+          new PointerEvent('pointerout', {
+            bubbles: true,
+            pointerType: 'mouse',
+            relatedTarget: document.body,
+          }),
+        )
+        leftHeader = true
+      }
+      const focus = document.activeElement
+      if (focus instanceof HTMLElement && head?.contains(focus)) {
+        focus.blur()
+      }
+      return marked(buttonOf(root, MENU_COLUMN, 'column-pin'))
+    }
     const menu = openMenu()
     if (!menu) {
       if (!chosen) headKebab(root, MENU_COLUMN)?.click()
       return false
     }
     if (!menu.hasAttribute('data-open') || chosen) return false
-    menuItemsOf(menu, 'columnPinning')[0]?.click()
+    const item = menuItemsOf(menu, 'columnPinning')[0]
+    if (!item) return false
+    item.click()
     chosen = true
     return false
   }, signal)
@@ -251,6 +272,7 @@ export const HeaderMenuInMenu: StoryObj<StoryProps> = {
     })
     await step(IN_MENU[3]!.title.ru, async () => {
       await guideNext(canvas)
+      await stepDone(canvas)
       await until(() => expect(pinned(canvas)).toBe(true))
       await until(() =>
         expect(marked(buttonOf(canvas, MENU_COLUMN, 'column-pin'))).toBe(true),

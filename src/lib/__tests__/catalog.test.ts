@@ -28,7 +28,6 @@ import mainConfig from '../../../vitest.config'
 import {
   BASE_MODES,
   CATALOG_STATES,
-  CONTRASTS,
   FULL_MODES,
   PALETTES,
   THEMES,
@@ -157,17 +156,15 @@ describe('Каталог визуальных состояний', () => {
     // Полный перебор осей, каждый режим — на холсте каталога.
     const modes = Object.values(FULL_MODES)
     expect(modes).toHaveLength(
-      THEMES.length *
-        PALETTES.length *
-        CONTRASTS.length *
-        Object.keys(WIDTHS).length,
+      THEMES.length * PALETTES.length * Object.keys(WIDTHS).length,
     )
     expect(
       new Set(
         modes.map(m => `${m.theme}/${m.palette}/${m.contrast}/${m.viewport}`),
       ).size,
     ).toBe(modes.length)
-    expect(modes.every(m => m.catalog)).toBe(true)
+    expect(modes.every(m => m.catalog && m.contrast === 'standard')).toBe(true)
+    expect(preview.globalTypes?.contrast).not.toHaveProperty('toolbar')
 
     const parameters = vrModes({ own: 1, chromatic: { delay: 5 } })
     expect(parameters).toEqual({
@@ -332,7 +329,7 @@ describe('Каталог визуальных состояний', () => {
       0,
     )
     expect(twins).toBe(steps)
-    // Каждый близнец шага — один снимок в бюджете сборки.
+    // Мета файла временно исключает все шаги из бюджета Chromatic.
     const withoutSteps = files.map(file =>
       file.file === HIGH_CONTRAST
         ? {
@@ -346,7 +343,7 @@ describe('Каталог визуальных состояний', () => {
     )
     expect(
       countSnapshots(files, modes) - countSnapshots(withoutSteps, modes),
-    ).toBe(steps)
+    ).toBe(0)
   })
 
   it('VR18: история перечисляет ожидаемые сообщения console.error параметром consoleErrors — образцы и причина: сообщение по образцу тест не роняет, любое другое роняет; параметр без образцов или без причины роняет страж', async () => {
@@ -404,7 +401,7 @@ describe('Каталог визуальных состояний', () => {
         ].join('\n'),
       },
     ]
-    expect(countSnapshots(fixture, modes)).toBe(1 + modes)
+    expect(countSnapshots(fixture, modes)).toBe(2 + modes)
 
     const total = countSnapshots(storyFiles(), modes)
     expect(total).toBeGreaterThan(0)

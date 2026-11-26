@@ -76,6 +76,13 @@
   white-space: nowrap;
 }
 
+/* Даже с широким шрифтом оставляем описанию место для многоточия и наведения. */
+.title:has(+ .description) {
+  max-width: calc(100% - 3ch - var(--tsr-ref-space-1) * 2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Описание — одной строкой, полный текст в тултипе (ADR 0083). */
 .description {
   min-width: 0;

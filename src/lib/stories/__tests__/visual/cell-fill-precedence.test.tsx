@@ -23,6 +23,7 @@ import {
   sys,
 } from './contrast-helpers'
 import { parkPointer } from '../pointer'
+import { over, toRgba } from './a11y-helpers'
 
 // Первенство заливок ячейки (ADR 0126, FP1–FP3): стенд с закреплением слева и справа,
 // служебной колонкой выбора, колонкой действий, выбором строк, подсветкой строк, ячеек и
@@ -169,12 +170,6 @@ const forcedFacts: {
   markText: string
 }[] = []
 
-const rgb = (value: string) =>
-  value
-    .match(/[\d.]+/g)!
-    .slice(0, 3)
-    .map(Number)
-
 const near = (a: number[], b: number[], tolerance: number) =>
   a.every((v, i) => Math.abs(v - b[i]!) <= tolerance)
 
@@ -217,7 +212,7 @@ describe('Первенство заливок ячейки (ADR 0126)', () => {
               system: Object.fromEntries(
                 ['Canvas', 'Highlight', 'Mark'].map(name => [
                   name,
-                  rgb(sys(name)),
+                  over(toRgba(sys(name)), toRgba(sys('Canvas'))).slice(0, 3),
                 ]),
               ),
               markRowText: getComputedStyle(

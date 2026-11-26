@@ -538,6 +538,37 @@
     * {
     color: MarkText;
   }
+
+  /*
+   * Highlight в Linux Chromium полупрозрачен. На закреплённой ячейке выбранной строки
+   * и на диапазоне поверх подсветки рисуем системную заливку один раз поверх Canvas.
+   * Подложка не должна просвечивать при горизонтальной прокрутке.
+   */
+  :global(
+      .data-grid__body-row[data-selected='true']:not(
+          [data-highlight],
+          [data-flash='reverted']
+        )
+    )
+    .body__cell[data-cell-pinned]:not(
+      [data-highlight],
+      [data-column-highlight],
+      [data-flash='reverted'],
+      [data-column-flash='reverted']
+    ),
+  :global(.data-grid__body-row)
+    .body__cell[data-cell-selected='true']:not(
+      [data-cell-focused='true'],
+      [data-highlight],
+      [data-column-highlight],
+      [data-flash='reverted'],
+      [data-column-flash='reverted']
+    ) {
+    forced-color-adjust: none;
+    background-image:
+      linear-gradient(Highlight, Highlight), linear-gradient(Canvas, Canvas);
+    box-shadow: none;
+  }
 }
 
 /* Под виртуализацией колонок спейсер в DOM первый: правые закреплённые — после него. */

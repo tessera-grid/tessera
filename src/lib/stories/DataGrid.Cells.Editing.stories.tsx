@@ -1500,7 +1500,13 @@ const finishTouchEdit = async (
   action: 'done' | 'cancel',
 ) => {
   typeInto(inputOf(root, TOUCH_EDIT_ROW)!, value)
-  touch.tapButton(touchEditButton(root, action))
+  await pollUntil(() => hasDraft(root, TOUCH_EDIT_ROW, value), signal)
+  const button = touchEditButton(root, action)!
+  // Кнопки редактора отменяют pointerdown, чтобы blur поля не сохранял черновик.
+  const allowFocus = touch.touchPointer(button, 'pointerdown')
+  if (allowFocus) button.focus()
+  touch.touchPointer(button, 'pointerup')
+  button.click()
   await pollUntil(() => !inputOf(root, TOUCH_EDIT_ROW), signal)
 }
 

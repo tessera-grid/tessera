@@ -161,12 +161,16 @@ export const BASE_MODES: Record<string, Mode> = {
 export const FULL_MODES: Record<string, Mode> = Object.fromEntries(
   THEMES.flatMap(theme =>
     PALETTES.flatMap(palette =>
-      CONTRASTS.flatMap(contrast =>
-        Object.entries(WIDTHS).map(([width, viewport]) => [
-          `${theme} ${palette} ${contrast} ${width}`,
-          { theme, palette, contrast, catalog: true as const, viewport },
-        ]),
-      ),
+      Object.entries(WIDTHS).map(([width, viewport]) => [
+        `${theme} ${palette} standard ${width}`,
+        {
+          theme,
+          palette,
+          contrast: 'standard' as const,
+          catalog: true as const,
+          viewport,
+        },
+      ]),
     ),
   ),
 )

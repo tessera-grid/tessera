@@ -73,8 +73,17 @@ describe('CI', () => {
     const shards = /shard: \[([^\]]+)\]/.exec(test)![1].split(',').map(Number)
     const count = shards.length
     expect(shards).toEqual(Array.from({ length: count }, (_, i) => i + 1))
-    expect(runsOf(test)).toContain(
-      `npm test -- --shard=\${{ matrix.shard }}/${count}`,
+    const projects = [
+      "unit --project 'touch*'",
+      "'browser (chromium)'",
+      "'storybook (chromium)'",
+      "'storybook-dark (chromium)'",
+    ]
+    expect(runsOf(test).filter(run => run.startsWith('npm test'))).toEqual(
+      projects.map(
+        project =>
+          `npm test -- --project ${project} --shard=\${{ matrix.shard }}/${count}`,
+      ),
     )
     expect(test).toMatch(/fail-fast: false/)
     expect(test).toMatch(

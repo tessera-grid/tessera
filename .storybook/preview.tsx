@@ -62,15 +62,6 @@ const preview: Preview = {
     contrast: {
       description: 'Increased contrast (data-tsr-contrast on an ancestor)',
       defaultValue: 'standard',
-      toolbar: {
-        title: 'Contrast',
-        icon: 'eye',
-        items: [
-          { value: 'standard', title: 'Standard contrast' },
-          { value: 'more', title: 'More contrast' },
-        ],
-        dynamicTitle: true,
-      },
     },
     // Язык подписей таблицы (ADR 0132): английские умолчания или русский словарь историй.
     locale: {

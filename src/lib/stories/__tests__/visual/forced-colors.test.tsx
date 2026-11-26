@@ -20,7 +20,7 @@ import { SvgIcon } from '@/lib/ui/icons'
 import { arcHeadOf, arcTrackOf, pendingArcOf, renderGrid } from '../helpers'
 import { submittedCellsSeed } from '../performance/perf-cases'
 import { composed, treeLinesArgs } from '../stories'
-import { contrast, toRgba } from './a11y-helpers'
+import { contrast, effectiveBg, over, toRgba } from './a11y-helpers'
 import { tableLabels } from '../labels'
 
 // Высокая контрастность Windows (ADR 0087, HC1–HC10): эмуляция
@@ -174,7 +174,9 @@ const headCellEl = (columnId: string) =>
   document.querySelector<HTMLElement>(
     `.data-grid__head-cell[data-column-id="${columnId}"]`,
   )!
-const rgbOf = (name: string) => toRgba(sys(name)).slice(0, 3)
+const painted = (color: string, under = toRgba(sys('Canvas'))) =>
+  over(toRgba(color), under).slice(0, 3).map(Math.round)
+const rgbOf = (name: string, under?: number[]) => painted(sys(name), under)
 /**
  * Пиксель цвета `want` с допуском в 4 по каналу: закреплённые ячейки и шапка
  * полупрозрачны на сотую (`--tsr-comp-opacity`) и смешиваются с подложкой.
@@ -256,10 +258,9 @@ const textBox = (text: Node) => {
 const fillUnderText = (
   shot: (x: number, y: number) => number[],
   text: Node,
-  fill: string,
+  target: number[],
 ) => {
   const box = textBox(text)
-  const target = toRgba(fill)
   let hits = 0
   let total = 0
   for (let x = box.left + 1; x < box.right - 1; x++) {
@@ -398,11 +399,15 @@ describe('Высокая контрастность (ADR 0087)', () => {
       }
       expectPixel(
         divider('r3', 'b'),
-        rgbOf('Highlight'),
+        rgbOf('Highlight', rgbOf('Highlight')),
         'выбранные строки подряд',
       )
       expectPixel(divider('r1', 'a'), rgbOf('Mark'), 'подсветка колонки')
-      expectPixel(divider('r6', 'b'), rgbOf('Highlight'), 'диапазон')
+      expectPixel(
+        divider('r6', 'b'),
+        rgbOf('Highlight', rgbOf('Highlight')),
+        'диапазон',
+      )
       expectPixel(divider('r1', 'b'), rgbOf('GrayText'), 'вне заливок')
     } finally {
       await page.viewport(414, 896)
@@ -502,6 +507,7 @@ describe('Высокая контрастность (ADR 0087)', () => {
     await page.viewport(414, 720)
     try {
       await mount(['r5'])
+      const rest = await snapshot()
       await userEvent.hover(cellEl('r3', 'b'))
       const row = rowEl('r3')
       await expect.poll(() => style(row).backgroundColor).toBe(sys('Canvas'))
@@ -511,7 +517,6 @@ describe('Высокая контрастность (ADR 0087)', () => {
         .toBe(sys('Highlight'))
       // Контур виден на экране, а не только в стилях: ячейки его не перекрывают.
       const shot = await snapshot()
-      const highlight = toRgba(sys('Highlight')).slice(0, 3)
       const box = row.getBoundingClientRect()
       for (const column of ['a', 'b', 'c']) {
         const cell = cellEl('r3', column).getBoundingClientRect()
@@ -522,14 +527,18 @@ describe('Высокая контрастность (ADR 0087)', () => {
           box.bottom - 1.5,
           box.bottom - 0.5,
         ]) {
-          expect(shot(x, y), `строка, ${column} @ ${y}`).toEqual(highlight)
+          expectPixel(
+            shot(x, y),
+            rgbOf('Highlight', rest(x, y)),
+            `строка, ${column} @ ${y}`,
+          )
         }
       }
       const cell = cellEl('r3', 'b').getBoundingClientRect()
       expect(
         shot(cell.left + 0.5, cell.top + cell.height / 2),
         'ячейка, левый край',
-      ).toEqual(highlight)
+      ).toEqual(rgbOf('Highlight'))
       // Без заливки: середина строки — фон палитры.
       expect(
         shot(cell.left + cell.width - 4, cell.top + cell.height / 2),
@@ -676,11 +685,9 @@ describe('Высокая контрастность (ADR 0087)', () => {
         .soft(style(text.parentElement!).color, `${name}: цвет текста`)
         .toBe(sys(`${fill}Text`))
       const box = textBox(text)
-      const target = toRgba(sys(fill))
+      const target = effectiveBg(cell)
       // Подложка Canvas закрыла бы заливку под текстом целиком.
-      expect
-        .soft(fillUnderText(shot, text, sys(fill)), name)
-        .toBeGreaterThan(0.25)
+      expect.soft(fillUnderText(shot, text, target), name).toBeGreaterThan(0.25)
       // Заливка рядом с текстом — ровный системный цвет, без слоя тона.
       const aside = shot(box.right + 6, (box.top + box.bottom) / 2)
       expect
@@ -810,7 +817,7 @@ describe('Высокая контрастность (ADR 0087)', () => {
     let text = label.nextNode()
     while (text && !text.textContent!.trim()) text = label.nextNode()
     expect(
-      fillUnderText(await snapshot(), text!, sys('Highlight')),
+      fillUnderText(await snapshot(), text!, rgbOf('Highlight')),
       'сегмент',
     ).toBeGreaterThan(0.25)
     const on = document.querySelector<HTMLElement>('[role="switch"]')!

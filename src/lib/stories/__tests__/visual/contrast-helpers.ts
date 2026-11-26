@@ -932,6 +932,8 @@ export const gridsAndPopups = (container: HTMLElement) => {
   const popups = [...document.querySelectorAll(POPUP_ROOTS)].filter(
     el =>
       !container.contains(el) &&
+      el.getBoundingClientRect().width > 0 &&
+      el.getBoundingClientRect().height > 0 &&
       !el.closest('[data-ending-style], [data-closed]'),
   )
   const outer = popups.filter(

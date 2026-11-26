@@ -58,10 +58,15 @@ const hasVrTag = (body: string) => /['"]vr-modes['"]/.test(body)
 
 /** Снимков у истории: пропущенная — 0, узловая — по режиму на каждый, прочие — 1. */
 export const snapshotsOf = (story: StoryExport, fullModes: number) =>
-  skipsSnapshot(story.body) ? 0 : hasVrModes(story.body) ? fullModes : 1
+  skipsSnapshot(story.body) ? 0 : hasVrModes(story.body) ? 1 + fullModes : 1
 
 export const countSnapshots = (files: StoryFile[], fullModes: number) =>
   files
+    .filter(
+      ({ file, text }) =>
+        !file.includes('.dev.') &&
+        !skipsSnapshot(text.split(/^export const /m, 1)[0]!),
+    )
     .flatMap(storyExports)
     .reduce((sum, story) => sum + snapshotsOf(story, fullModes), 0)
 
