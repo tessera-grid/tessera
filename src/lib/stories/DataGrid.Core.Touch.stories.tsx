@@ -586,6 +586,8 @@ const TRUNCATED: readonly DemoStoryStep[] = [
     },
     states: ['overlay.tooltip'],
     enter: stepAction(async (root, { signal }) => {
+      if (!openMenu()) await holdLongCell(root, signal)
+      await pollUntil(() => !!showFullItem(), signal)
       tapButton(showFullItem())
       await pollUntil(() => tooltipText() === LONG_NAME, signal)
     }),

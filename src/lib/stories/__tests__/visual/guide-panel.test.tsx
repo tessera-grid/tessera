@@ -25,6 +25,7 @@ import {
   repeat,
   settle,
   shieldHeldDrag,
+  stepDone,
 } from '../../__mocks__/catalogPlay'
 import { pressCell, untilDone } from '../../__mocks__/cellGestures'
 import { dragGripTo, separatorOf } from '../../__mocks__/columnGrip'
@@ -773,6 +774,7 @@ describe('панель сценария (ADR 0117)', () => {
           `[data-step-button="${index}"]`,
         )!
       const toHidden = async () => {
+        await settled()
         stepButton(2).click()
         await expect.poll(stub).not.toBeNull()
         expect(rows()).toBe(0)
@@ -1224,10 +1226,13 @@ describe('ввод человека посреди гайда (ADR 0117)', () =>
       byId('guide-play').click()
       await expect.poll(() => window.scrollY).toBeGreaterThan(0)
       byId('guide-play').click()
+      await expect.poll(() => byId('guide-play').textContent).toContain('Play')
       const position = window.scrollY
       byId('guide-play').click()
+      await expect.poll(() => byId('guide-play').textContent).toContain('Pause')
       expect(window.scrollY).toBe(position)
       byId('guide-play').click()
+      await settled()
       window.scrollTo(0, 0)
       byId('guide-next').click()
       await expect.poll(() => window.scrollY).toBeGreaterThan(0)
@@ -2406,7 +2411,7 @@ describe('показ действий шага (ADR 0117)', () => {
       try {
         await rows().toBeGreaterThan(3)
         byId('guide-next').click()
-        await expect.poll(() => guideRoot().dataset.stepAction).toBe('done:1')
+        await stepDone(screen.container)
         expect(stepEvents).toEqual([
           { type: 'press', animating: !reduced },
           { type: 'move', animating: false },

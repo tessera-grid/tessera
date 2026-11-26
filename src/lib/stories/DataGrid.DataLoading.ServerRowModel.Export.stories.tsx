@@ -98,7 +98,7 @@ const exportProps =
 const busy = () => exportButton()?.getAttribute('aria-busy') === 'true'
 /** Объявление таблицы: текст зависит от языка, шаг ждёт только его смены. */
 const announced = (root: HTMLElement) =>
-  [...root.querySelectorAll('[aria-live]')]
+  [...root.querySelectorAll('[role="status"][aria-live][data-visually-hidden]')]
     .map(region => region.textContent)
     .join(' ')
 
@@ -241,8 +241,10 @@ export const ExportServerRowsLimit: StoryObj<StoryProps> = {
         const requests = server.starts.length
         await guideNext(canvas)
         await stepDone(canvas)
-        await expect(announced(canvas)).toContain(
-          dataExportModelLabels(labels).exportTooManyRows(LIMIT),
+        await until(() =>
+          expect(announced(canvas)).toContain(
+            dataExportModelLabels(labels).exportTooManyRows(LIMIT),
+          ),
         )
         await expect(server.starts.length).toBe(requests)
         await expect(download.names).toEqual([])

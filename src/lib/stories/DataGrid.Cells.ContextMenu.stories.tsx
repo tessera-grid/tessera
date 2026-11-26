@@ -1451,6 +1451,9 @@ const holdTouchCell = async (
     () => !touch.openMenu() && !!touchCellOf(root),
     signal,
   )
+  touchCellOf(root)!.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  await touchPlay.settle()
+  signal.throwIfAborted()
   await touch.holdTarget(touchCellOf(root)!, signal, move)
 }
 

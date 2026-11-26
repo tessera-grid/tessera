@@ -298,10 +298,17 @@ export const holdTarget = async (
 ) => {
   const at = centerOf(target)
   touchPointer(target, 'pointerdown', at)
-  if (move) touchPointer(target, 'pointermove', { x: at.x, y: at.y + move })
-  await sleep(700)
-  signal.throwIfAborted()
-  touchPointer(target, 'pointerup', { x: at.x, y: at.y + move })
+  try {
+    if (move) touchPointer(target, 'pointermove', { x: at.x, y: at.y + move })
+    await sleep(700)
+    signal.throwIfAborted()
+  } finally {
+    touchPointer(
+      target.isConnected ? target : document.body,
+      signal.aborted || !target.isConnected ? 'pointercancel' : 'pointerup',
+      { x: at.x, y: at.y + move },
+    )
+  }
 }
 
 /** Мышь сдвинулась по документу. */

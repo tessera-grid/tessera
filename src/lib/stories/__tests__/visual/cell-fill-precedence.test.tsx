@@ -146,10 +146,16 @@ const fillsOf = (shot: Awaited<ReturnType<typeof snapshot>>, id: string) =>
   Object.fromEntries(
     cellsOf(id).map(cell => {
       const r = cell.getBoundingClientRect()
-      return [
-        cell.dataset.columnId!,
-        shot(r.right - 4, r.top + r.height / 2)!.slice(0, 3),
-      ]
+      // Усредняем плоский участок вдали от кромок, чтобы сравнивать заливку,
+      // а не отдельный пиксель дизеринга многослойного градиента Chromium.
+      const rgb = [0, 0, 0]
+      for (let x = 5; x < 9; x++) {
+        for (let y = -2; y < 2; y++) {
+          const pixel = shot(r.right - x, r.top + r.height / 2 + y)!
+          for (let i = 0; i < 3; i++) rgb[i]! += pixel[i]! / 16
+        }
+      }
+      return [cell.dataset.columnId!, rgb]
     }),
   ) as Fills
 
@@ -365,7 +371,7 @@ describe('Первенство заливок ячейки (ADR 0126)', () => {
               Math.abs(now) > ROUNDING && Math.sign(now) !== Math.sign(step)
             if (grows || flips) {
               problems.push(
-                `${comboLabel(sample.combo)} ${sample.phase} ${sample.row}${sample.hover ? ' hover' : ''} ${group} ${column}[${i}]: ступень ${step} → ${now}`,
+                `${comboLabel(sample.combo)} ${sample.phase} ${sample.row}${sample.hover ? ' hover' : ''} ${group} ${column}[${i}]: ступень ${step} → ${now}; ${column} ${base[column]} → ${sample.fills[column]}, ${ref} ${base[ref]} → ${sample.fills[ref]}`,
               )
             }
           }

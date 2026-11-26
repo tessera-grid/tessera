@@ -278,9 +278,12 @@
   }
 
   /* Фона наведения в режиме нет: кнопку со «стопом» видно заливкой (ADR 0153). */
-  .iconButton[data-cancel-armed]:is(:hover, :focus-visible),
-  .iconButton[data-cancel-armed]:is(:hover, :focus-visible) > .cancelIcon {
+  .iconButton[data-cancel-armed]:is(:hover, :focus-visible) {
     background-color: Highlight;
+    color: HighlightText;
+  }
+
+  .iconButton[data-cancel-armed]:is(:hover, :focus-visible) > .cancelIcon {
     color: HighlightText;
   }
 }

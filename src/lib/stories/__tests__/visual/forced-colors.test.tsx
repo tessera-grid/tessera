@@ -527,9 +527,16 @@ describe('Высокая контрастность (ADR 0087)', () => {
           box.bottom - 1.5,
           box.bottom - 0.5,
         ]) {
+          const rowEdge = rgbOf('Highlight', rest(x, y))
+          // Верхняя и нижняя кромки ячейки под указателем добавляют свой контур.
+          const cellEdge =
+            column === 'b' &&
+            y >= cell.top &&
+            y < cell.bottom &&
+            (y < cell.top + 1 || y >= cell.bottom - 1)
           expectPixel(
             shot(x, y),
-            rgbOf('Highlight', rest(x, y)),
+            cellEdge ? rgbOf('Highlight', rowEdge) : rowEdge,
             `строка, ${column} @ ${y}`,
           )
         }

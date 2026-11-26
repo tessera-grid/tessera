@@ -202,7 +202,10 @@ export const ServerRowModelEditCell: StoryObj<StoryProps> = {
     <DemoStory
       title={{ ru: 'Правка на сервере', en: 'Editing on the server' }}
       steps={EDIT_CELL}
-      args={guideArgs(layout, args)}
+      args={guideArgs(
+        { ...layout, containerHeight: '520', height: '400', maxHeight: '400' },
+        args,
+      )}
     />
   ),
   play: async ({ canvasElement: canvas, globals, step }) => {

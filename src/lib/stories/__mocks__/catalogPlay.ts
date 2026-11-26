@@ -529,7 +529,7 @@ export const pointAt = (target: HTMLElement) => {
 
 /** Текст открытого тултипа. */
 export const tooltipText = () =>
-  [...document.querySelectorAll<HTMLElement>('[role="tooltip"], [data-side]')]
+  [...document.querySelectorAll<HTMLElement>('[data-tooltip-popup][data-open]')]
     .map(el => el.textContent?.trim() ?? '')
     .find(Boolean) ?? ''
 
