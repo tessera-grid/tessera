@@ -84,11 +84,17 @@ describe('Раскрытие кнопок ячейки в движках', () =>
     await userEvent.hover(document.body)
 
     // Во время прокрутки ширина — сразу полная.
-    let step = 1
-    const scrolling = setInterval(() => {
-      scroller.scrollTop += step
-      step = -step
-    }, 30)
+    // Меняем положение раз за кадр: одинаковые встречные сдвиги таймера
+    // под нагрузкой WebKit может объединить в один кадр без прокрутки.
+    const initialTop = scroller.scrollTop
+    const otherTop = initialTop >= 4 ? initialTop - 4 : initialTop + 4
+    let frame: number
+    const scroll = () => {
+      scroller.scrollTop =
+        scroller.scrollTop === initialTop ? otherTop : initialTop
+      frame = requestAnimationFrame(scroll)
+    }
+    frame = requestAnimationFrame(scroll)
     try {
       await expect
         .poll(() => scroller.hasAttribute('data-scrolling'))
@@ -102,7 +108,7 @@ describe('Раскрытие кнопок ячейки в движках', () =>
         outerWidth(second.querySelector('button')!),
       )
     } finally {
-      clearInterval(scrolling)
+      cancelAnimationFrame(frame)
       theme.style.removeProperty('--tsr-comp-motion-duration')
     }
   })

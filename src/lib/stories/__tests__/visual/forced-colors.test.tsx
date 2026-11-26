@@ -861,8 +861,9 @@ describe('Высокая контрастность (ADR 0087)', () => {
     const item = document.querySelector<HTMLElement>(
       '[role="menuitem"][data-highlighted]',
     )!
-    // Фон пункта переходит (токен перехода пунктов) — ждём конечный.
-    await expect.poll(() => style(item).backgroundColor).toBe(sys('Highlight'))
-    expect(style(item).color).toBe(sys('HighlightText'))
+    // Переходы фона и текста могут завершиться в разных кадрах.
+    await expect
+      .poll(() => [style(item).backgroundColor, style(item).color])
+      .toEqual([sys('Highlight'), sys('HighlightText')])
   })
 })
