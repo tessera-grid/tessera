@@ -136,6 +136,11 @@ describe('dataExport — Excel', () => {
       filename: 'people',
       formats: [exportFormats.csv(), exportFormats.xlsx()],
     })
+    // Наведение подгружает панель и заменяет заглушку на триггер Base UI.
+    await userEvent.hover(button()!)
+    await expect
+      .poll(() => button()?.getAttribute('aria-expanded'))
+      .toBe('false')
     await humanClick(button()!)
     const xlsx = () =>
       document.querySelector<HTMLElement>(

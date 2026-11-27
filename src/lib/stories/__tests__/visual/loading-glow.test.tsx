@@ -1,7 +1,7 @@
 import axe from 'axe-core'
 import { commands, userEvent } from 'vitest/browser'
 import { cleanup, render } from 'vitest-browser-react'
-import { afterEach, describe, expect, test } from 'vitest'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 
 import '../../../ui/theme/theme.css'
 import { ENGLISH_LABELS } from '../../../core/localization'
@@ -255,29 +255,36 @@ describe('Обновление данных (ADR 0094)', () => {
     const seen: boolean[] = []
     const observer = new MutationObserver(() => seen.push(!!loader()))
     observer.observe(document.body, { subtree: true, childList: true })
+    const screen = await render(
+      <composed.DataGridPlayground {...GRID} loading={false} />,
+    )
+    await waitForGrid()
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
     try {
-      const screen = await render(
+      await screen.rerender(
         <composed.DataGridPlayground {...GRID} loading="refresh" />,
       )
-      await waitForGrid()
-      await sleep(150)
+      await vi.advanceTimersByTimeAsync(150)
       expect(loader()).toBeNull()
       expect(refreshing()).toBe(false)
       await screen.rerender(
         <composed.DataGridPlayground {...GRID} loading={false} />,
       )
-      await sleep(600)
+      await vi.advanceTimersByTimeAsync(600)
       expect(seen).not.toContain(true)
-      await cleanup()
 
       // Без раннего снятия — через задержку.
-      await render(<composed.DataGridPlayground {...GRID} loading="refresh" />)
-      await waitForGrid()
-      const started = performance.now()
-      await expect.poll(loader).not.toBeNull()
-      expect(performance.now() - started).toBeGreaterThanOrEqual(150)
+      await screen.rerender(
+        <composed.DataGridPlayground {...GRID} loading="refresh" />,
+      )
+      await vi.advanceTimersByTimeAsync(299)
+      expect(loader()).toBeNull()
+      await vi.advanceTimersByTimeAsync(1)
+      await new Promise(resolve => requestAnimationFrame(resolve))
+      expect(loader()).not.toBeNull()
       expect(refreshing()).toBe(true)
       await cleanup()
+      vi.useRealTimers()
 
       // Своя задержка из опций.
       await render(
@@ -289,6 +296,7 @@ describe('Обновление данных (ADR 0094)', () => {
       )
       await expect.poll(loader, { timeout: 200 }).not.toBeNull()
     } finally {
+      vi.useRealTimers()
       observer.disconnect()
     }
   })

@@ -113,8 +113,9 @@ jobs:
     name: Chromatic
     # Снимки — на пуш в master и на PR, не в гейте выпуска.
     if: >-
-      (github.event_name == 'push' && github.ref == 'refs/heads/master') ||
-      github.event_name == 'pull_request'
+      vars.CHROMATIC_AUTO_PUBLISH != 'false' &&
+      ((github.event_name == 'push' && github.ref == 'refs/heads/master') ||
+      github.event_name == 'pull_request')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
