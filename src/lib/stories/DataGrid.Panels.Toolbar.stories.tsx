@@ -238,7 +238,9 @@ export const ToolbarSearchBeforeDataServer: StoryObj<StoryProps> = {
       steps={SEARCH_BEFORE_DATA}
       args={guideArgs(
         {
-          ...FIXED_HEIGHT,
+          containerHeight: '520',
+          height: '400',
+          maxHeight: '400',
           columnCount: 6,
           dataCount: 40,
           enableQuickSearch: true,

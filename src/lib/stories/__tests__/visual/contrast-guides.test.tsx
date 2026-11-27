@@ -30,7 +30,7 @@ import {
 } from './contrast-helpers'
 import { parkPointer } from '../pointer'
 import { CATALOG_STATES } from '../../__mocks__/catalog'
-import { applyPseudoStates } from '../../__mocks__/catalogPlay'
+import { PSEUDO_CLASS, applyPseudoStates } from '../../__mocks__/catalogPlay'
 import { type DemoStoryStep, guideSteps } from '../../demos/DemoStory'
 import { both } from '../storyText.helpers'
 
@@ -72,12 +72,7 @@ const emptyResult = (): GuideResult => ({
   guard: [],
 })
 
-const PSEUDO_CLASSES = [
-  'pseudo-hover',
-  'pseudo-focus',
-  'pseudo-focus-visible',
-  'pseudo-active',
-]
+const PSEUDO_CLASSES = Object.values(PSEUDO_CLASS)
 
 const stepsIn = (container: HTMLElement) => {
   const root = container.querySelector('[data-guide-root]')
@@ -88,9 +83,14 @@ const combosOf = (step: DemoStoryStep) => (step.states ? COMBOS : STEP_COMBOS)
 
 /** Узлы псевдо-состояния шага. */
 const pseudoTargets = (step: DemoStoryStep) =>
-  Object.values(step.pseudo ?? {})
-    .flat()
-    .flatMap(selector => [...document.querySelectorAll(selector)])
+  Object.entries(step.pseudo ?? {}).flatMap(([state, selectors]) =>
+    [selectors].flat().flatMap(selector =>
+      [...document.querySelectorAll(selector)].map(el => ({
+        el,
+        className: PSEUDO_CLASS[state]!,
+      })),
+    ),
+  )
 
 /** Остановка проигрывания после шага с `immediate` (CX15). */
 class StopReplay extends Error {}
@@ -201,14 +201,32 @@ const auditStep = async (
     const dim = opacity < 0.99 ? opacity : undefined
     let measure = styleMeasure
     if (forced) {
-      const shot = await shoot(combo)
+      let shot = await shoot(combo)
+      // React может заменить узел или перезаписать className во время снимка.
+      // Сравниваем только снимок, на котором целевое состояние сохранилось.
+      if (
+        shot &&
+        step.pseudo &&
+        pseudoTargets(step).some(
+          ({ el, className }) => !el.classList.contains(className),
+        )
+      ) {
+        await applyPseudoStates(storyId, step.pseudo)
+        shot = await shoot(combo)
+      }
       if (!shot) {
         audit.checked[comboLabel(combo)] = 0
         continue
       }
       measure = pixelMeasure(shot)
       if (before) {
-        for (const el of pseudoTargets(step)) {
+        for (const { el, className } of pseudoTargets(step)) {
+          if (!el.classList.contains(className)) {
+            result.pseudo.push(
+              `${label} | ${comboLabel(combo)}: ${className} исчез во время снимка`,
+            )
+            continue
+          }
           const { changed, system } = pseudoChange(before, shot, el)
           // WebKit режим только эмулирует: заливка наведения остаётся, важен системный контур.
           const unseen = forcing ? system < changed / 2 : system === 0

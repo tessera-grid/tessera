@@ -35,6 +35,20 @@ type Row = { id: string }
 type ModelTable = { getRowModel: () => { rows: object[] } }
 
 const freshData = () => getData(60).map((row: Row) => ({ ...row }))
+
+/** Окно колонок может измениться после первого стабильного кадра раскладки. */
+const waitForQuietGrid = async (container: HTMLElement) => {
+  let changedAt = performance.now()
+  const observer = new MutationObserver(() => {
+    changedAt = performance.now()
+  })
+  observer.observe(container, { childList: true, subtree: true })
+  try {
+    await waitFor(() => performance.now() - changedAt >= 300)
+  } finally {
+    observer.disconnect()
+  }
+}
 const freshColumns = () => mockColumns.map(column => ({ ...column }))
 
 /**
@@ -96,7 +110,12 @@ describe('Утечки при пересоздании таблицы', () => {
       ).toBeLessThanOrEqual(afterN + RETAINED_NOISE)
 
       tracking = false
-      expectFlat(await measureSlope(change))
+      expectFlat(
+        await measureSlope(async index => {
+          await change(index)
+          await waitForQuietGrid(mounted.container)
+        }),
+      )
     } finally {
       mounted.unmount()
     }
@@ -143,20 +162,7 @@ describe('Утечки при пересоздании таблицы', () => {
             await change(index)
             if ((index + 1) % toggles !== 0) return
             await settledDom(mounted.container)
-            // Пересчёт ширины после переключения ещё может сменить окно колонок.
-            let changedAt = performance.now()
-            const observer = new MutationObserver(() => {
-              changedAt = performance.now()
-            })
-            observer.observe(mounted.container, {
-              childList: true,
-              subtree: true,
-            })
-            try {
-              await waitFor(() => performance.now() - changedAt >= 300)
-            } finally {
-              observer.disconnect()
-            }
+            await waitForQuietGrid(mounted.container)
           },
           { warmup: toggles, cycles: toggles },
         ),

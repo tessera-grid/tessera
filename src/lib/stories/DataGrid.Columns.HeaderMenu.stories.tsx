@@ -676,6 +676,7 @@ export const HeaderMenuNarrowActive: StoryObj<StoryProps> = {
     })
     await step(NARROW[1]!.title.ru, async () => {
       await guideNext(canvas)
+      await stepDone(canvas)
       await waitForRows(canvas)
       await until(() => expect(pinButton(canvas)).not.toBeNull())
       await until(() => expect(sortButton(canvas)).toBeNull())
@@ -702,12 +703,14 @@ export const HeaderMenuNarrowActive: StoryObj<StoryProps> = {
     })
     await step(NARROW[4]!.title.ru, async () => {
       await guideNext(canvas)
+      await stepDone(canvas)
       await until(() => expect(pinButton(canvas)).not.toBeNull())
       await until(() => expect(sortButton(canvas)).toBeNull())
       await settle()
     })
     await step(NARROW[5]!.title.ru, async () => {
       await guideNext(canvas)
+      await stepDone(canvas)
       await until(() => expect(sortButton(canvas)).not.toBeNull())
       await until(() => expect(pinButton(canvas)).not.toBeNull())
       await until(() => expect(marked(kebab())).toBe(false))
