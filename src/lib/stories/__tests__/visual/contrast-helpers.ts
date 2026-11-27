@@ -937,7 +937,9 @@ export const gridsAndPopups = (container: HTMLElement) => {
       !el.closest('[data-ending-style], [data-closed]'),
   )
   const outer = popups.filter(
-    el => !popups.some(other => other !== el && other.contains(el)),
+    el =>
+      !popups.some(other => other !== el && other.contains(el)) &&
+      !el.querySelector('[data-guide-tooltip]'),
   )
   return { grids, popups: outer }
 }

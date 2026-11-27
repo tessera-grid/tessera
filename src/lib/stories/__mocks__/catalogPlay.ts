@@ -527,9 +527,10 @@ export const pointAt = (target: HTMLElement) => {
   }
 }
 
-/** Текст открытого тултипа. */
+/** Текст открытого тултипа грида. Панель гайда рендерит свои подсказки в том же портале. */
 export const tooltipText = () =>
   [...document.querySelectorAll<HTMLElement>('[data-tooltip-popup][data-open]')]
+    .filter(el => !el.querySelector('[data-guide-tooltip]'))
     .map(el => el.textContent?.trim() ?? '')
     .find(Boolean) ?? ''
 

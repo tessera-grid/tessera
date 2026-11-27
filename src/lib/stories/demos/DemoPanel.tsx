@@ -656,7 +656,11 @@ export const DemoPanel = ({
               aria-controls={id}
               disabled={toggleLocked}
               tooltipWhenDisabled
-              tooltip={toggleLocked ? text('guideToggleLocked') : undefined}
+              tooltip={
+                toggleLocked ? (
+                  <span data-guide-tooltip="">{text('guideToggleLocked')}</span>
+                ) : undefined
+              }
               onClick={() => {
                 if (!toggleLocked) setExpanded(open => !open)
               }}
@@ -726,7 +730,11 @@ export const DemoPanel = ({
                   variant="ghost"
                   data-testid="guide-restore"
                   onClick={onRestore}
-                  tooltip={text('guideRestoreTooltip')}
+                  tooltip={
+                    <span data-guide-tooltip="">
+                      {text('guideRestoreTooltip')}
+                    </span>
+                  }
                   icon={<Undo2 aria-hidden="true" />}
                   style={{ flex: 'none' }}
                 >

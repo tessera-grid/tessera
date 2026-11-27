@@ -53,7 +53,9 @@ describe('Ядро на TanStack — раскладка при прокрутк�
 
     // Последняя строка достижима до самого низа.
     await scrollToEnd('y')
-    expect(Math.max(...renderedRowIndexes())).toBe(dataCount - 1)
+    await expect
+      .poll(() => Math.max(...renderedRowIndexes()))
+      .toBe(dataCount - 1)
 
     // Средняя колонка достижима горизонтальной прокруткой.
     scroller.scrollTop = 0
@@ -70,7 +72,9 @@ describe('Ядро на TanStack — раскладка при прокрутк�
 
     // Последняя колонка достижима до самого края.
     await scrollToEnd('x')
-    expect(Math.max(...renderedColumnIndexes())).toBe(columnCount - 1)
+    await expect
+      .poll(() => Math.max(...renderedColumnIndexes()))
+      .toBe(columnCount - 1)
   })
 
   test('R21: грид не выходит за свою рамку — тулбар, шапка, тело и футер внутри рамки, лишняя ширина колонок прокручивается контейнером, а не страницей', async () => {
