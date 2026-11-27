@@ -1,0 +1,7 @@
+services:
+  tests:
+    build:
+      context: ../..
+      dockerfile: tools/ci-linux/Dockerfile
+    init: true
+    shm_size: 1gb
