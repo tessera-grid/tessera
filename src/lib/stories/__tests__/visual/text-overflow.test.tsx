@@ -518,8 +518,12 @@ describe('Длинный текст', () => {
       )!
     for (const width of [900, 520, 360, 260]) {
       await setWidth(width)
-      for (const el of [...counts(), range()])
-        expect(notCut(el), `${width}px ${shownForm(el)}`).toBe(true)
+      await expect
+        .poll(
+          () => [...counts(), range()].filter(el => !notCut(el)).map(shownForm),
+          { message: `Обрезанные подписи при ширине ${width}px` },
+        )
+        .toEqual([])
     }
     expect(layout()).toBe('stacked')
   })

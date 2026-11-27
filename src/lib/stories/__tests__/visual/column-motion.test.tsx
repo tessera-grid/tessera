@@ -383,14 +383,19 @@ describe('Движение колонок (ADR 0115)', () => {
   })
 
   test('CN5: при горизонтальной виртуализации колонка издалека въезжает от края окна, уходящая далеко — уезжает к краю призраком вне доступности и ввода', async () => {
+    // Оставляем время на промежуточные кадры при тяжёлой перестановке окна.
+    const duration = 1200
+    slowMotion(duration)
     const screen = await mount({ count: 60 })
     try {
       const ids = leafIds(60)
       // Издалека: c40 встаёт второй.
+      await expect.poll(() => headOf('c40')).toBeNull()
       const near = ['c0', 'c40', ...ids.slice(1).filter(id => id !== 'c40')]
       const lefts = await sampleFrames(
         () => leftOf(headOf('c40')),
         () => table.setColumnOrder(near),
+        duration + SETTLE_MS,
       )
       const seen = lefts.filter(left => !Number.isNaN(left))
       const edge = Math.max(
@@ -429,6 +434,7 @@ describe('Движение колонок (ADR 0115)', () => {
           }
         },
         () => table.setColumnOrder(far),
+        duration + SETTLE_MS,
       )
       const shown = ghosts.filter(frame => frame.count > 0)
       expect(shown.length, 'призрак есть').toBeGreaterThan(2)

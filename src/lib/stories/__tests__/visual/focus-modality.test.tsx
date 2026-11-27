@@ -43,7 +43,7 @@ describe('Кольцо фокуса — после мыши', () => {
     const head = document.querySelector<HTMLElement>(
       '.data-grid__head-cell[data-column-id="createdAt"]',
     )!
-    await revealCellButtons(head)
+    await revealCellButtons(head, true)
     await humanClick(head.querySelector('.column-filter__button')!)
     const dayButtons = () => [
       ...document.querySelectorAll<HTMLButtonElement>(
