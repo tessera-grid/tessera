@@ -6,13 +6,14 @@
 import type { BodyContributions } from '../../core/bodyContributions'
 import { readPluginHooks } from '../../core/definePlugin'
 import { followDataChanges } from '../../core/dataFollow'
+import { rowSourceOf } from '../../core/rowSource'
 import { viewportOf } from '../../core/scrollToRow/viewport'
 import {
   flashOutcome,
   type FlashOutcome,
 } from '../../core/flashes/flashFeature'
 import { consumeOwnWrite } from '../../shared/ownWrites'
-import type { Cell, Table } from '../../types'
+import type { Cell, Row, Table } from '../../types'
 import {
   changeOutcome,
   sameCellValue,
@@ -138,7 +139,7 @@ export const valueChangeFlashBody: BodyContributions = {
 /** Сравниваем одно и то же видимое окно двух списков только при смене данных. */
 export const followEnteringRows = (instance: unknown) => {
   const table = instance as Table<any, any>
-  return followDataChanges(table, (before, after, previousCore) => {
+  return followDataChanges(table, (before, after, previousRow) => {
     const range = viewportOf(table)?.rows.range
     if (!range) return
     const { startIndex, endIndex } = range
@@ -150,8 +151,8 @@ export const followEnteringRows = (instance: unknown) => {
         before.slice(startIndex, endIndex + 1).map(row => row.id),
       )
       if (previousWindow.has(id)) continue
-      const old = previousCore.rowsById[id]
-      const row = table.getCoreRowModel().rowsById[id]
+      const old = previousRow(id)
+      const row = rowSourceOf<Row<any, any>>(table).at(i)
       if (!old || !row || old.original === row.original) continue
       const { columnDefault } = readPluginHooks<ValueChangeFlashHooks>(
         table,

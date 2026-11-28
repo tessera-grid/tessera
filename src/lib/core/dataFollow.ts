@@ -3,11 +3,10 @@
  * строку — активная ячейка, выделение. Слушатели получают список строк до смены и после неё;
  * смену замечает эффект таблицы после рендера с новым `data`.
  */
-import { rowSourceOf } from './rowSource'
+import { rowSourceOf, snapshotDataRows } from './rowSource'
 import { settleTransactionOutcome } from './transactionOutcome'
-import type { Table } from '../types'
 
-type CoreModel = ReturnType<Table<any, any>['getCoreRowModel']>
+type DataRows = ReturnType<typeof snapshotDataRows>
 
 export interface ListedRow {
   id: string
@@ -16,7 +15,7 @@ export interface ListedRow {
 export type DataChangeListener = (
   previous: readonly ListedRow[],
   next: readonly ListedRow[],
-  previousCore: CoreModel,
+  previousRow: DataRows,
 ) => void
 
 const listeners = new WeakMap<object, Set<DataChangeListener>>()
@@ -39,7 +38,7 @@ export const followDataChanges = (
 export interface SeenData {
   data: unknown
   list: readonly ListedRow[]
-  core: CoreModel
+  rowById: DataRows
 }
 
 /** Проверка после рендера: `data` и список строк сменились — слушатели узнают об этом. */
@@ -56,10 +55,11 @@ export const checkDataChange = (
   // рендер приложения может быть уже с новым `data` (ADR 0196).
   const set = listeners.get(table as object)
   if (set?.size && seen && seen.data !== data && seen.list !== list) {
-    for (const listener of [...set]) listener(seen.list, list, seen.core)
+    for (const listener of [...set]) listener(seen.list, list, seen.rowById)
   }
   if (seen && seen.data !== data) {
     settleTransactionOutcome(table, id => source.byId(id) !== undefined)
   }
-  return { data, list, core: (table as Table<any, any>).getCoreRowModel() }
+  if (seen && seen.data === data && seen.list === list) return seen
+  return { data, list, rowById: snapshotDataRows(table) }
 }

@@ -1,3 +1,4 @@
+import type { Row, Table } from '../types'
 import { engineOf } from './rowEngine/engine'
 import { positionOf } from './rowPosition'
 /**
@@ -314,6 +315,12 @@ export const createClientRowSource = (table: unknown): RowSource => {
     groupRowCount: row => dataRowsInGroup(row as ModelRow),
     rows: () => list().rows,
   }
+}
+
+/** Поиск строки в версии данных до обновления, включая строки за пределами окна. */
+export const snapshotDataRows = (table: unknown) => {
+  const model = (table as Table<any, any>).getCoreRowModel()
+  return (id: string): Row<any, any> | undefined => model.rowsById[id]
 }
 
 /** Источник строк таблицы (метод `commonFeature`). */
