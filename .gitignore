@@ -29,7 +29,8 @@ storybook-public/
 # Editors
 .idea/
 .vscode/
-.claude/
+/.claude/*
+!/.claude/launch.json
 *.swp
 
 # OS
