@@ -9,7 +9,7 @@ import { neverInert } from '../../core/pluginDiagnostics'
 import type { ValueChangeFlashHooks } from './types'
 import { valueChangeFlashFeature } from './valueChangeFlashFeature'
 import { watchTotalsWith } from './totals'
-import { ID, valueChangeFlashBody } from './watch'
+import { followEnteringRows, ID, valueChangeFlashBody } from './watch'
 
 export interface ValueChangeFlashOptions {
   /** `false` — плагин отключён. */
@@ -22,6 +22,7 @@ const valueChangeFlashEntry = definePlugin<ValueChangeFlashOptions>()({
   id: ID,
   features: { valueChangeFlashFeature },
   diagnose: neverInert,
+  setup: () => followEnteringRows,
   hooks: (o): ValueChangeFlashHooks => ({
     columnDefault: o.columnDefault ?? true,
   }),

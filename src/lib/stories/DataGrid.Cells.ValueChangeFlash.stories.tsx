@@ -1,5 +1,6 @@
 import { Meta, StoryObj } from '@storybook/react'
 import { expect } from 'storybook/test'
+import { columnSortingModel } from '../plugins/columnSortingModel'
 import type { StoryProps } from './DataGridStory.types'
 import { StoryComponent } from './DataGridStory'
 import { dataGridMeta } from './dataGridMeta'
@@ -782,5 +783,167 @@ export const ValueChangeFlashTotals: StoryObj<StoryProps> = {
       await until(() => expect(totalFlash(canvas)).toBeNull())
       await settle()
     })
+  },
+}
+
+// Фиктивная торговая сессия: цены в USD, объём в акциях.
+const tape: [string, string, number, number, number][] = [
+  ['NVDA', 'NVIDIA', 136, 138.72, 3218900],
+  ['AVGO', 'Broadcom', 220, 223.74, 864200],
+  ['MSFT', 'Microsoft', 430, 428.71, 1364800],
+  ['AMZN', 'Amazon', 210, 209.16, 1521800],
+  ['AAPL', 'Apple', 225, 223.65, 2143200],
+  ['GOOGL', 'Alphabet', 176, 174.77, 1094800],
+  ['META', 'Meta Platforms', 585, 580.32, 638900],
+  ['ORCL', 'Oracle', 165, 163.35, 745200],
+  ['TSM', 'Taiwan Semiconductor', 195, 192.66, 917600],
+  ['CRM', 'Salesforce', 305, 301.34, 348100],
+  ['TXN', 'Texas Instruments', 192, 188.93, 417300],
+  ['INTC', 'Intel', 24, 23.52, 3128400],
+  ['CSCO', 'Cisco Systems', 61, 59.6, 916500],
+  ['AMAT', 'Applied Materials', 182, 177.27, 493800],
+  ['AMD', 'Advanced Micro Devices', 150, 145.5, 1872400],
+  ['QCOM', 'Qualcomm', 170, 168.3, 647100],
+]
+const quotes = tape.map(([id, company, close, price, volume]) => ({
+  id,
+  company,
+  close,
+  price,
+  volume,
+}))
+const afterRise = quotes.map(row =>
+  row.id === 'AMD'
+    ? { ...row, price: 154.35, volume: row.volume + 12400 }
+    : row,
+)
+const afterFall = afterRise.map(row =>
+  row.id === 'AMD' ? { ...row, price: 149.7, volume: row.volume + 6800 } : row,
+)
+
+const quoteRanking: Partial<StoryProps> = {
+  ...layout,
+  height: '260',
+  maxHeight: '260',
+  dataOverride: quotes,
+  dataTypes: {
+    quotePrice: {
+      extends: 'number',
+      format: { style: 'currency', currency: 'USD' },
+    },
+    dayReturn: {
+      extends: 'number',
+      format: {
+        style: 'percent',
+        signDisplay: 'exceptZero',
+        minimumFractionDigits: 2,
+      },
+    },
+  },
+  columnsOverride: [
+    { id: 'ticker', accessorKey: 'id', header: 'Ticker', size: 82 },
+    { id: 'company', accessorKey: 'company', header: 'Company', size: 194 },
+    {
+      id: 'price',
+      accessorKey: 'price',
+      header: 'Last trade',
+      dataType: 'quotePrice',
+      changeFlash: 'direction',
+      size: 116,
+    },
+    {
+      id: 'day',
+      accessorFn: row => row.price / row.close - 1,
+      header: 'Day change',
+      dataType: 'dayReturn',
+      size: 116,
+    },
+    {
+      id: 'close',
+      accessorKey: 'close',
+      header: 'Prev. close',
+      dataType: 'quotePrice',
+      size: 116,
+    },
+    {
+      id: 'volume',
+      accessorKey: 'volume',
+      header: 'Volume',
+      dataType: 'number',
+      size: 125,
+    },
+  ],
+  enableValueChangeFlash: true,
+  valueChangeFlashColumnDefault: false,
+  extraPlugins: [
+    columnSortingModel({ initialSorting: [{ id: 'day', desc: true }] }),
+  ],
+}
+
+const ENTERING_ROW: readonly DemoStoryStep[] = [
+  {
+    title: {
+      ru: 'Лидеры торговой сессии',
+      en: 'Session leaders',
+    },
+    hint: {
+      ru: 'Учебные котировки отсортированы по изменению к предыдущему закрытию. NVIDIA лидирует с +2,00%. AMD внизу списка с −3,00%.',
+      en: 'Simulated quotes are ranked by return since the previous close. NVIDIA leads at +2.00%. AMD is at the bottom at −3.00%.',
+    },
+  },
+  {
+    title: { ru: 'AMD выходит на первое место', en: 'AMD takes the lead' },
+    hint: {
+      ru: 'Новая сделка поднимает AMD со 145,50 до 154,35 доллара (+2,90% за сессию). AMD теперь на первом месте. Вспыхивает цена последней сделки, стрелка рядом с ней показывает рост.',
+      en: 'AMD trades at $154.35, up from $145.50 (+2.90% on the day). AMD takes first place. Its last trade flashes with an up arrow.',
+    },
+    immediate: true,
+    props: () => ({ dataOverride: afterRise }),
+  },
+  {
+    title: { ru: 'AMD опускается на третье место', en: 'AMD drops to third' },
+    hint: {
+      ru: 'Следующая сделка проходит по 149,70 доллара. Это на 0,20% ниже предыдущего закрытия. NVIDIA и Broadcom снова впереди, у цены AMD появляется стрелка вниз.',
+      en: 'The next trade is $149.70, down 0.20% from the previous close. NVIDIA and Broadcom move ahead of AMD, and its last trade shows a down arrow.',
+    },
+    immediate: true,
+    props: () => ({ dataOverride: afterFall }),
+  },
+]
+
+export const ValueChangeFlashEnteringRow: StoryObj<StoryProps> = {
+  name: 'Quote moves into view',
+  parameters: { scenario: '0221/S7', ...guideControls() },
+  render: args => (
+    <DemoStory
+      title={{ ru: 'Котировка входит в окно', en: 'A quote moves into view' }}
+      steps={ENTERING_ROW}
+      args={guideArgs(quoteRanking, args)}
+    />
+  ),
+  play: async ({ canvasElement: canvas, globals }) => {
+    if (globals.catalog !== true) return
+    await waitForRows(canvas)
+    await guideNext(canvas)
+    await until(() => expect(flashOf(canvas, 'AMD', 'price')).toBe('up'))
+    expect(canvas.querySelector('[data-row-id="AMD"]')).not.toHaveAttribute(
+      'data-flash',
+    )
+    expect(flashOf(canvas, 'AMD', 'ticker')).toBeNull()
+    expect(arrowOf(canvas, 'AMD', 'price')).toBe('up')
+    expect(canvas.querySelector('[data-row-id="AMD"]')).toHaveAttribute(
+      'data-index',
+      '0',
+    )
+    await guideNext(canvas)
+    await until(() => expect(arrowOf(canvas, 'AMD', 'price')).toBe('down'))
+    expect(canvas.querySelector('[data-row-id="AMD"]')).toHaveAttribute(
+      'data-index',
+      '2',
+    )
+    expect(canvas.querySelector('[data-row-id="AMD"]')).not.toHaveAttribute(
+      'data-flash',
+    )
+    expect(cellOf(canvas, 'AMD', 'day')?.textContent).toMatch(/[-−]0[.,]20/)
   },
 }

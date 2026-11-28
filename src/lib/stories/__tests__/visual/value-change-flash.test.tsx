@@ -19,7 +19,8 @@ import {
   type ServerRowsRequest,
   type ServerRowsResponse,
 } from '../../../plugins'
-import { OWN_WRITE_GRACE } from '../../../shared/ownWrites'
+import { viewportOf } from '../../../core/scrollToRow/viewport'
+import { markOwnWrites, OWN_WRITE_GRACE } from '../../../shared/ownWrites'
 import { startEditSession } from '../../../plugins/cellEditing/session'
 import { describeWork, measureWork, renders } from '../work.helpers'
 import { BodyCell } from '../../../grid/BodyCell'
@@ -532,6 +533,52 @@ describe('Вспышка при смене значения: окно и пер�
     expect(flashOf('r250', 'name')).toBeNull()
     await toRow('r1', 0)
     expect(flashOf('r1', 'name')).toBe('changed')
+    await screen.unmount()
+  })
+
+  test('VC25: обновление перемещает строку в окно — вспыхивают изменённые ячейки; последующая прокрутка к другой обновлённой строке проходит без вспышки', async () => {
+    holdLong()
+    const screen = await mount({
+      plugins: [
+        columnSorting({ initialSorting: [{ id: 'price', desc: false }] }),
+      ],
+    })
+    expect(rowEl('r250')).toBeNull()
+    update({ r250: { price: 0, amount: '999.50' }, r299: { price: 999 } })
+    await expect.poll(() => flashOf('r250', 'price')).toBe('down')
+    expect(rowEl('r250')).not.toHaveAttribute('data-flash')
+    expect(flashOf('r250', 'name')).toBeNull()
+    expect(arrowOf('r250', 'price')?.dataset.flashDirection).toBe('down')
+    expect(arrowOf('r250', 'amount')?.dataset.flashDirection).toBe('up')
+    expect(arrowOf('r250', 'name')).toBeNull()
+    expect(rowEl('r0')?.dataset.flash).toBeUndefined()
+    scroller().scrollTop = scroller().scrollHeight
+    await expect.poll(() => rowEl('r299')).not.toBeNull()
+    await settle()
+    expect(rowEl('r299')).not.toHaveAttribute('data-flash')
+    expect(flashOf('r299', 'price')).toBeNull()
+    await screen.unmount()
+  })
+
+  test('VC26: вход из запаса виртуализатора даёт одну вспышку изменённой ячейки, а эхо своей записи остаётся без вспышки', async () => {
+    holdLong()
+    const screen = await mount({
+      plugins: [
+        columnSorting({ initialSorting: [{ id: 'price', desc: false }] }),
+      ],
+    })
+    const end = viewportOf(table)!.rows.range!.endIndex
+    const incoming = 'r' + (end + 1)
+    const own = 'r' + (end + 2)
+    expect(rowEl(incoming)).not.toBeNull()
+    markOwnWrites(table, [{ rowId: own, columnId: 'price' }])()
+    update({ [incoming]: { price: 1 }, [own]: { price: 2 } })
+    await expect.poll(() => flashOf(incoming, 'price')).toBe('down')
+    expect(rowEl(incoming)).not.toHaveAttribute('data-flash')
+    await settle()
+    expect(arrowOf(incoming, 'price')?.dataset.flashDirection).toBe('down')
+    expect(rowEl(own)).not.toHaveAttribute('data-flash')
+    expect(flashOf(own, 'price')).toBeNull()
     await screen.unmount()
   })
 
