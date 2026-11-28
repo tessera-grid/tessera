@@ -347,16 +347,20 @@ describe('Растяжка высоты (ADR 0142)', () => {
     clearInterval(watch)
     expect(seen).toBe(false)
 
-    // Ползунок ~420 px/s физически — ниже порога; виртуально — в `scale` раз быстрее.
+    // 600 физических px/s ниже порога 2000, а при scale > 5 — выше него.
+    // Задаём путь по времени: под нагрузкой WebKit пропускает кадры.
     const thumb = async () => {
       let fast = false
       const el = scroller()
+      const top = el.scrollTop
+      const started = performance.now()
       for (let step = 0; step < 40; step++) {
-        el.scrollTop += 7
         await nextFrame()
         fast ||= fastNow()
+        el.scrollTop = top + (performance.now() - started) * 0.6
       }
-      return fast
+      await nextFrame()
+      return fast || fastNow()
     }
     expect(layer().scale()).toBeGreaterThan(5)
     expect(await thumb()).toBe(true)
