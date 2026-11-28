@@ -10694,6 +10694,36 @@ export const HighContrastValueChangeFlashOverFillStep2 = {
   tags: ['!test'],
 }
 
+export const HighContrastValueChangeFlashEnteringRowStep1 = {
+  ...twinStep(
+    cellsValueChangeFlashStories,
+    cellsValueChangeFlashStories.ValueChangeFlashEnteringRow,
+    1,
+  ),
+  name: 'Cells/Value change flash — Quote moves into view, step 1',
+  tags: ['!test'],
+}
+
+export const HighContrastValueChangeFlashEnteringRowStep2 = {
+  ...twinStep(
+    cellsValueChangeFlashStories,
+    cellsValueChangeFlashStories.ValueChangeFlashEnteringRow,
+    2,
+  ),
+  name: 'Cells/Value change flash — Quote moves into view, step 2',
+  tags: ['!test'],
+}
+
+export const HighContrastValueChangeFlashEnteringRowStep3 = {
+  ...twinStep(
+    cellsValueChangeFlashStories,
+    cellsValueChangeFlashStories.ValueChangeFlashEnteringRow,
+    3,
+  ),
+  name: 'Cells/Value change flash — Quote moves into view, step 3',
+  tags: ['!test'],
+}
+
 export const HighContrastValueChangeFlashTotalsStep1 = {
   ...twinStep(
     cellsValueChangeFlashStories,
