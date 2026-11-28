@@ -5,3 +5,8 @@ services:
       dockerfile: tools/ci-linux/Dockerfile
     init: true
     shm_size: 1gb
+    volumes:
+      - contrast-reports:/workspace/node_modules/.cache/contrast-reports
+
+volumes:
+  contrast-reports:

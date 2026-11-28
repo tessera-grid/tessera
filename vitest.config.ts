@@ -72,6 +72,9 @@ export default defineConfig({
             ...configDefaults.exclude,
             'src/lib/__tests__/**',
             'src/lib/stories/__tests__/performance/**',
+            ...(process.env.TESSERA_SEPARATE_GUIDES === '1'
+              ? ['**/contrast-guides.test.tsx', '**/guide-fresh.test.tsx']
+              : []),
             // Касания — только в мобильной эмуляции `test:engines` (ADR 0084, CB4).
             MOBILE_SUITE,
             TOUCH_SUITE,

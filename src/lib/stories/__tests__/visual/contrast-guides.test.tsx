@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { cleanup, render } from 'vitest-browser-react'
-import { page, server } from 'vitest/browser'
+import { commands, page, server } from 'vitest/browser'
 import { beforeAll, describe, expect, test } from 'vitest'
 
 import '../../../ui/theme/theme.css'
@@ -460,49 +460,102 @@ const newContrastProblems = ({ findings }: GuideResult) =>
         `${finding.key} — ${finding.ratio.toFixed(2)}:1 < ${finding.need}:1`,
     )
 
-describe('Шаги гайдов в матрице контраста (ADR 0089, §7)', () => {
-  beforeAll(async () => {
-    // Окно матрицы (§6): снимок без сжатия; консоль истории — не грид, на время обхода
-    // скрыта.
-    await page.viewport(900, 720)
-    const hide = document.createElement('style')
-    hide.textContent =
-      '[data-testid="story-console"] { display: none !important; }'
-    document.head.append(hide)
-    const guides = (await loadStories()).filter(
-      ({ path, story, Story }) =>
-        Story.parameters.scenario &&
-        !path.includes('.dev.stories') &&
-        !(story in WITHOUT_GUIDE) &&
-        (!ONLY || `${path} ${story}`.includes(ONLY)),
-    )
-    for (const { story, Story } of guides) {
-      // eslint-disable-next-line no-console -- прогресс долгой матрицы контраста
-      console.log(`[contrast-guides] ${walked + 1}/${guides.length} ${story}`)
-      let result = await walkGuide(story, Story)
-      // Случайный кадр подтверждается повтором. В Chromium повторяем только историю
-      // с новой находкой: известные записи базы не удлиняют обход.
-      const fresh = result.findings.some(finding => !(finding.key in known))
-      if ((!CHROMIUM || fresh) && hasFindings(result))
-        result = await walkGuide(story, Story)
-      const problems = [
-        ...result.guard,
-        ...newContrastProblems(result),
-        ...result.axeProblems,
-        ...result.axeViolations
-          .filter(violation => !(violation.key in known))
-          .map(violation => `${violation.key}: ${violation.summary}`),
-      ]
-      if (problems.length > 0) {
-        // eslint-disable-next-line no-console -- причина сбоя видна до окончания всей матрицы
-        console.log('[contrast-guides]', problems.join('\n'))
-      }
-      for (const key of Object.keys(all) as (keyof GuideResult)[]) {
-        ;(all[key] as unknown[]).push(...result[key])
-      }
-      walked++
+const guideStories = async () =>
+  (await loadStories()).filter(
+    ({ path, story, Story }) =>
+      Story.parameters.scenario &&
+      !path.includes('.dev.stories') &&
+      !(story in WITHOUT_GUIDE) &&
+      (!ONLY || `${path} ${story}`.includes(ONLY)),
+  )
+type Guides = Awaited<ReturnType<typeof guideStories>>
+const mode = import.meta.env.VITE_CONTRAST_PART as string | undefined
+if (mode && !['1', '2', '3', '4', 'merge'].includes(mode))
+  throw new Error(`Unknown contrast part: ${mode}`)
+const part = mode && mode !== 'merge' ? Number(mode) : 0
+const reportPath = (index: number) =>
+  `node_modules/.cache/contrast-reports/part-${index}.json`
+const guidePart = (guides: Guides, index: number) =>
+  guides.filter((_, i) => i % 4 === index - 1)
+
+function append(result: GuideResult) {
+  for (const key of Object.keys(all) as (keyof GuideResult)[]) {
+    ;(all[key] as unknown[]).push(...result[key])
+  }
+}
+
+async function walkGuides(guides: Guides) {
+  // Окно матрицы (§6): снимок без сжатия; консоль истории — не грид, на время обхода
+  // скрыта.
+  await page.viewport(900, 720)
+  const hide = document.createElement('style')
+  hide.textContent =
+    '[data-testid="story-console"] { display: none !important; }'
+  document.head.append(hide)
+  for (const { story, Story } of guides) {
+    // eslint-disable-next-line no-console -- прогресс долгой матрицы контраста
+    console.log(`[contrast-guides] ${walked + 1}/${guides.length} ${story}`)
+    let result = await walkGuide(story, Story)
+    // Случайный кадр подтверждается повтором. В Chromium повторяем только историю
+    // с новой находкой: известные записи базы не удлиняют обход.
+    const fresh = result.findings.some(finding => !(finding.key in known))
+    if ((!CHROMIUM || fresh) && hasFindings(result))
+      result = await walkGuide(story, Story)
+    const problems = [
+      ...result.guard,
+      ...newContrastProblems(result),
+      ...result.axeProblems,
+      ...result.axeViolations
+        .filter(violation => !(violation.key in known))
+        .map(violation => `${violation.key}: ${violation.summary}`),
+    ]
+    if (problems.length > 0) {
+      // eslint-disable-next-line no-console -- причина сбоя видна до окончания всей матрицы
+      console.log('[contrast-guides]', problems.join('\n'))
     }
-    hide.remove()
+    append(result)
+    walked++
+  }
+  hide.remove()
+}
+
+const verify = describe.skipIf(part > 0)
+
+if (part) {
+  test(
+    `Контраст гайдов — часть ${part}/4`,
+    async () => {
+      const guides = guidePart(await guideStories(), part)
+      await walkGuides(guides)
+      await commands.writeFile(
+        reportPath(part),
+        JSON.stringify({
+          stories: guides.map(({ Story }) => Story.id),
+          result: all,
+        }),
+      )
+    },
+    MATRIX_TIMEOUT,
+  )
+}
+
+verify('Шаги гайдов в матрице контраста (ADR 0089, §7)', () => {
+  beforeAll(async () => {
+    const guides = await guideStories()
+    if (mode !== 'merge') return walkGuides(guides)
+
+    await page.viewport(900, 720)
+    for (const index of [1, 2, 3, 4]) {
+      const report = JSON.parse(await commands.readFile(reportPath(index))) as {
+        stories: string[]
+        result: GuideResult
+      }
+      expect(report.stories).toEqual(
+        guidePart(guides, index).map(({ Story }) => Story.id),
+      )
+      append(report.result)
+      walked += report.stories.length
+    }
   }, MATRIX_TIMEOUT)
 
   test('CX12: каждый шаг каждого гайда проверен тем же play в каждом своём сочетании, пороги CX1–CX5 и CX10 держатся', () => {
@@ -664,7 +717,12 @@ describe('Шаги гайдов в матрице контраста (ADR 0089, 
         stand(
           [
             REST,
-            { title: both('Вспышка'), hint: both(''), enter: flash, immediate },
+            {
+              title: both('Вспышка'),
+              hint: both(''),
+              enter: flash,
+              immediate,
+            },
           ],
           <div className="cx15-flash">Flash text</div>,
         ),
@@ -775,7 +833,9 @@ describe('Шаги гайдов в матрице контраста (ADR 0089, 
         start()
         if (!ends) return
         watch = new MutationObserver(start)
-        watch.observe(document.documentElement, { attributeFilter: ['class'] })
+        watch.observe(document.documentElement, {
+          attributeFilter: ['class'],
+        })
       }
       const quiet = await walkGuide(
         `Стенд CX20 ${ends}`,
@@ -835,7 +895,7 @@ describe('Шаги гайдов в матрице контраста (ADR 0089, 
   })
 })
 
-describe('Снимок области (ADR 0089, §6)', () => {
+verify('Снимок области (ADR 0089, §6)', () => {
   // Окно матрицы (§6): снимок без сжатия.
   beforeAll(() => page.viewport(900, 720))
 

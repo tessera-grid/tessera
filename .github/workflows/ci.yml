@@ -71,6 +71,20 @@ jobs:
       - run: npm test -- --project unit --project 'touch*' --shard=${{ matrix.shard }}/4
       - if: ${{ !cancelled() }}
         run: npm test -- --project 'browser (chromium)' --shard=${{ matrix.shard }}/4
+        env:
+          TESSERA_SEPARATE_GUIDES: '1'
+      - if: ${{ !cancelled() }}
+        run: bash tools/ci-linux/run.sh guides ${{ matrix.shard }}
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: contrast-guides-${{ matrix.shard }}
+          path: |
+            node_modules/.cache/contrast-reports/part-${{ matrix.shard }}.json
+            node_modules/.cache/contrast-reports/fresh-${{ matrix.shard }}.json
+          if-no-files-found: error
+          retention-days: 1
+          include-hidden-files: true
       - if: ${{ !cancelled() }}
         run: npm test -- --project 'storybook (chromium)' --shard=${{ matrix.shard }}/4
       - if: ${{ !cancelled() }}
@@ -83,6 +97,30 @@ jobs:
             src/**/__screenshots__/
             .vitest-attachments/
           if-no-files-found: ignore
+
+  contrast-guides:
+    name: Contrast guide coverage
+    needs: test
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: contrast-guides-*
+          path: node_modules/.cache/contrast-reports
+          merge-multiple: true
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - run: npx playwright install --with-deps chromium
+      - run: bash tools/ci-linux/run.sh guides merge
 
   browsers:
     name: Firefox and WebKit
