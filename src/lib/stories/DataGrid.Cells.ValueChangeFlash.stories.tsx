@@ -920,29 +920,39 @@ export const ValueChangeFlashEnteringRow: StoryObj<StoryProps> = {
       args={guideArgs(quoteRanking, args)}
     />
   ),
-  play: async ({ canvasElement: canvas, globals }) => {
+  play: async ({ canvasElement: canvas, globals, step }) => {
     if (globals.catalog !== true) return
-    await waitForRows(canvas)
-    await guideNext(canvas)
-    await until(() => expect(flashOf(canvas, 'AMD', 'price')).toBe('up'))
-    expect(canvas.querySelector('[data-row-id="AMD"]')).not.toHaveAttribute(
-      'data-flash',
-    )
-    expect(flashOf(canvas, 'AMD', 'ticker')).toBeNull()
-    expect(arrowOf(canvas, 'AMD', 'price')).toBe('up')
-    expect(canvas.querySelector('[data-row-id="AMD"]')).toHaveAttribute(
-      'data-index',
-      '0',
-    )
-    await guideNext(canvas)
-    await until(() => expect(arrowOf(canvas, 'AMD', 'price')).toBe('down'))
-    expect(canvas.querySelector('[data-row-id="AMD"]')).toHaveAttribute(
-      'data-index',
-      '2',
-    )
-    expect(canvas.querySelector('[data-row-id="AMD"]')).not.toHaveAttribute(
-      'data-flash',
-    )
-    expect(cellOf(canvas, 'AMD', 'day')?.textContent).toMatch(/[-−]0[.,]20/)
+    await step(ENTERING_ROW[0]!.title.ru, async () => {
+      await waitForRows(canvas)
+      expect(canvas.querySelector('[data-row-id="NVDA"]')).toHaveAttribute(
+        'data-index',
+        '0',
+      )
+    })
+    await step(ENTERING_ROW[1]!.title.ru, async () => {
+      await guideNext(canvas)
+      await until(() => expect(flashOf(canvas, 'AMD', 'price')).toBe('up'))
+      expect(canvas.querySelector('[data-row-id="AMD"]')).not.toHaveAttribute(
+        'data-flash',
+      )
+      expect(flashOf(canvas, 'AMD', 'ticker')).toBeNull()
+      expect(arrowOf(canvas, 'AMD', 'price')).toBe('up')
+      expect(canvas.querySelector('[data-row-id="AMD"]')).toHaveAttribute(
+        'data-index',
+        '0',
+      )
+    })
+    await step(ENTERING_ROW[2]!.title.ru, async () => {
+      await guideNext(canvas)
+      await until(() => expect(arrowOf(canvas, 'AMD', 'price')).toBe('down'))
+      expect(canvas.querySelector('[data-row-id="AMD"]')).toHaveAttribute(
+        'data-index',
+        '2',
+      )
+      expect(canvas.querySelector('[data-row-id="AMD"]')).not.toHaveAttribute(
+        'data-flash',
+      )
+      expect(cellOf(canvas, 'AMD', 'day')?.textContent).toMatch(/[-−]0[.,]20/)
+    })
   },
 }
